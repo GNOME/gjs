@@ -1,0 +1,40 @@
+lib_LTLIBRARIES += 	\
+	libgjs-gi.la
+
+libgjs_gi_la_CFLAGS =			\
+        $(AM_CFLAGS)			\
+        $(GJS_CFLAGS)			\
+        $(GOBJECT_INTROSPECTION_CFLAGS)
+libgjs_gi_la_LIBADD =			\
+        $(GOBJECT_INTROSPECTION_LIBS)	\
+        libgjs.la
+libgjs_gi_la_LDFLAGS = \
+	-export-symbols-regex "^[^_].*" -version-info 0:0:0 -rdynamic
+
+noinst_HEADERS +=	\
+	gi/arg.h	\
+	gi/boxed.h	\
+	gi/closure.h	\
+	gi/enumeration.h	\
+	gi/function.h	\
+	gi/keep-alive.h	\
+	gi/native.h	\
+	gi/ns.h	\
+	gi/object.h	\
+	gi/param.h	\
+	gi/repo.h	\
+	gi/value.h
+
+libgjs_gi_la_SOURCES =	\
+	gi/arg.c	\
+	gi/boxed.c	\
+	gi/closure.c	\
+	gi/enumeration.c	\
+	gi/function.c	\
+	gi/keep-alive.c	\
+	gi/native.c	\
+	gi/ns.c	\
+	gi/object.c	\
+	gi/param.c	\
+        gi/repo.c	\
+        gi/value.c

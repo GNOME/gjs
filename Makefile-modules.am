@@ -1,0 +1,26 @@
+dist_gjsjs_DATA += modules/lang.js
+
+gjsnative_LTLIBRARIES += gi.la
+
+JS_NATIVE_MODULE_CFLAGS =	\
+        $(AM_CFLAGS)		\
+        $(GJS_CFLAGS)
+JS_NATIVE_MODULE_LIBADD =	\
+        $(GJS_LIBS)		\
+        libgjs.la
+JS_NATIVE_MODULE_LDFLAGS =	\
+        -module -avoid-version -Wl,-z,defs -rdynamic
+
+gi_la_CFLAGS = 					\
+	$(JS_NATIVE_MODULE_CFLAGS) 		\
+	$(GOBJECT_INTROSPECTION_CFLAGS)
+gi_la_LIBADD = \
+	libgjs-gi.la				\
+	$(JS_NATIVE_MODULE_LIBADD) 		\
+	$(GOBJECT_INTROSPECTION_LIBS)
+gi_la_LDFLAGS = 				\
+	$(JS_NATIVE_MODULE_LDFLAGS)
+
+gi_la_SOURCES =		\
+	modules/gi.h	\
+	modules/gi.c

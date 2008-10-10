@@ -1,0 +1,3 @@
+In order to run those example scripts, do:
+
+  gjs-console script-filename.js

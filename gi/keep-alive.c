@@ -1,0 +1,440 @@
+/* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
+/*
+ * Copyright (c) 2008  LiTL, LLC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ */
+
+#include <config.h>
+
+#include "keep-alive.h"
+
+#include <gjs/jsapi-util.h>
+
+#include <util/log.h>
+#include <util/glib.h>
+
+#include <jsapi.h>
+
+typedef struct {
+    GjsUnrootedFunc notify;
+    JSObject *child;
+    void *data;
+} Child;
+
+typedef struct {
+    GHashTable *children;
+    unsigned int inside_finalize : 1;
+    unsigned int inside_trace : 1;
+} KeepAlive;
+
+static struct JSClass gjs_keep_alive_class;
+
+GJS_DEFINE_PRIV_FROM_JS(KeepAlive, gjs_keep_alive_class)
+
+static guint
+child_hash(gconstpointer  v)
+{
+    const Child *child = v;
+
+    return
+        GPOINTER_TO_UINT(child->notify) ^
+        GPOINTER_TO_UINT(child->child) ^
+        GPOINTER_TO_UINT(child->data);
+}
+
+static gboolean
+child_equal (gconstpointer  v1,
+             gconstpointer  v2)
+{
+    const Child *child1 = v1;
+    const Child *child2 = v2;
+
+    /* notify is most likely to be equal, so check it last */
+    return child1->data == child2->data &&
+        child1->child == child2->child &&
+        child1->notify == child2->notify;
+}
+
+static void
+child_free(void *data)
+{
+    Child *child = data;
+    g_slice_free(Child, child);
+}
+
+/* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on
+ * the prototype in addition to on each instance. When called on the
+ * prototype, "obj" is the prototype, and "retval" is the prototype
+ * also, but can be replaced with another object to use instead as the
+ * prototype. If we don't set JSCLASS_CONSTRUCT_PROTOTYPE we can
+ * identify the prototype as an object of our class with NULL private
+ * data.
+ */
+static JSBool
+keep_alive_constructor(JSContext *context,
+                       JSObject  *obj,
+                       uintN      argc,
+                       jsval     *argv,
+                       jsval     *retval)
+{
+    KeepAlive *priv;
+
+    priv = g_slice_new0(KeepAlive);
+    priv->children = g_hash_table_new_full(child_hash, child_equal, NULL, child_free);
+
+    g_assert(priv_from_js(context, obj) == NULL);
+    JS_SetPrivate(context, obj, priv);
+
+    gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE,
+                        "keep_alive constructor, obj %p priv %p", obj, priv);
+
+    return JS_TRUE;
+}
+
+static void
+keep_alive_finalize(JSContext *context,
+                    JSObject  *obj)
+{
+    KeepAlive *priv;
+    void *key;
+    void *value;
+
+    priv = priv_from_js(context, obj);
+
+    gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE,
+                        "keep_alive finalizing, obj %p priv %p", obj, priv);
+
+    if (priv == NULL)
+        return; /* we are the prototype, not a real instance, so constructor never called */
+
+    priv->inside_finalize = TRUE;
+
+    while (gjs_g_hash_table_steal_one(priv->children,
+                                      &key, &value)) {
+        Child *child = value;
+        if (child->notify)
+            (* child->notify) (child->child, child->data);
+
+        child_free(child);
+    }
+
+    g_hash_table_destroy(priv->children);
+    g_slice_free(KeepAlive, priv);
+}
+
+static void
+trace_foreach(void *key,
+              void *value,
+              void *data)
+{
+    Child *child = value;
+    JSTracer *tracer = data;
+
+    if (child->child != NULL) {
+        JS_CallTracer(tracer, child->child, JSTRACE_OBJECT);
+    }
+}
+
+static void
+keep_alive_trace(JSTracer *tracer,
+                 JSObject *obj)
+{
+    KeepAlive *priv;
+
+    priv = priv_from_js(tracer->context, obj);
+
+    if (priv == NULL) /* prototype */
+        return;
+
+    g_assert(!priv->inside_trace);
+    priv->inside_trace = TRUE;
+    g_hash_table_foreach(priv->children, trace_foreach, tracer);
+    priv->inside_trace = FALSE;
+}
+
+/* The bizarre thing about this vtable is that it applies to both
+ * instances of the object, and to the prototype that instances of the
+ * class have.
+ *
+ * Also, there's a constructor field in here, but as far as I can
+ * tell, it would only be used if no constructor were provided to
+ * JS_InitClass. The constructor from JS_InitClass is not applied to
+ * the prototype unless JSCLASS_CONSTRUCT_PROTOTYPE is in flags.
+ */
+static struct JSClass gjs_keep_alive_class = {
+    "__private_GjsKeepAlive", /* means "new __private_GjsKeepAlive()" works */
+    JSCLASS_HAS_PRIVATE |
+    JSCLASS_MARK_IS_TRACE, /* TraceOp not MarkOp */
+    JS_PropertyStub,
+    JS_PropertyStub,
+    JS_PropertyStub,
+    JS_PropertyStub,
+    JS_EnumerateStub,
+    JS_ResolveStub,
+    JS_ConvertStub,
+    keep_alive_finalize,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    JS_CLASS_TRACE(keep_alive_trace),
+    NULL
+};
+
+static JSPropertySpec gjs_keep_alive_proto_props[] = {
+    { NULL }
+};
+
+static JSFunctionSpec gjs_keep_alive_proto_funcs[] = {
+    { NULL }
+};
+
+JSObject*
+gjs_keep_alive_new(JSContext *context)
+{
+    JSObject *keep_alive;
+    JSObject *global;
+
+    g_assert(context != NULL);
+
+    /* put constructor in the global namespace */
+    global = JS_GetGlobalObject(context);
+
+    g_assert(global != NULL);
+
+    if (!gjs_object_has_property(context, global, gjs_keep_alive_class.name)) {
+        JSObject *prototype;
+
+        gjs_debug(GJS_DEBUG_KEEP_ALIVE,
+                  "Initializing keep-alive class in context %p global %p",
+                  context, global);
+
+        prototype = JS_InitClass(context, global,
+                                 /* parent prototype JSObject* for
+                                  * prototype; NULL for
+                                  * Object.prototype
+                                  */
+                                 NULL,
+                                 &gjs_keep_alive_class,
+                                 /* constructor for instances (NULL for
+                                  * none - just name the prototype like
+                                  * Math - rarely correct)
+                                  */
+                                 keep_alive_constructor,
+                                 /* number of constructor args */
+                                 0,
+                                 /* props of prototype */
+                                 &gjs_keep_alive_proto_props[0],
+                                 /* funcs of prototype */
+                                 &gjs_keep_alive_proto_funcs[0],
+                                 /* props of constructor, MyConstructor.myprop */
+                                 NULL,
+                                 /* funcs of constructor, MyConstructor.myfunc() */
+                                 NULL);
+        if (prototype == NULL)
+            gjs_fatal("Can't init class %s", gjs_keep_alive_class.name);
+
+        g_assert(gjs_object_has_property(context, global, gjs_keep_alive_class.name));
+
+        gjs_debug(GJS_DEBUG_KEEP_ALIVE, "Initialized class %s prototype %p",
+                  gjs_keep_alive_class.name, prototype);
+    }
+
+    gjs_debug(GJS_DEBUG_KEEP_ALIVE,
+              "Creating new keep-alive object for context %p global %p",
+              context, global);
+
+    /* Without the "global" parent object, this craters inside of
+     * xulrunner because in jsobj.c:js_ConstructObject it looks up
+     * VOID as the constructor.  Exploring in gdb, it is walking up
+     * the scope chain in a way that involves scary xpconnect-looking
+     * stuff. Having "global" as parent seems to fix it. But, it would
+     * not hurt to understand this better.
+     */
+    keep_alive = JS_ConstructObject(context, &gjs_keep_alive_class, NULL, global);
+    if (keep_alive == NULL) {
+        gjs_log_exception(context, NULL);
+        gjs_fatal("Failed to create keep_alive object");
+    }
+
+    return keep_alive;
+}
+
+void
+gjs_keep_alive_add_child(JSContext         *context,
+                         JSObject          *keep_alive,
+                         GjsUnrootedFunc  notify,
+                         JSObject          *obj,
+                         void              *data)
+{
+    KeepAlive *priv;
+    Child *child;
+
+    g_assert(keep_alive != NULL);
+
+    priv = priv_from_js(context, keep_alive);
+
+    g_assert(priv != NULL);
+
+    g_return_if_fail(!priv->inside_trace);
+    g_return_if_fail(!priv->inside_finalize);
+
+    child = g_slice_new0(Child);
+    child->notify = notify;
+    child->child = obj;
+    child->data = data;
+
+    /* this is sort of an expensive check, probably */
+    g_return_if_fail(g_hash_table_lookup(priv->children, child) == NULL);
+
+    /* this overwrites any identical-by-value previous child,
+     * but there should not be one.
+     */
+    g_hash_table_replace(priv->children, child, child);
+}
+
+void
+gjs_keep_alive_remove_child(JSContext         *context,
+                            JSObject          *keep_alive,
+                            GjsUnrootedFunc  notify,
+                            JSObject          *obj,
+                            void              *data)
+{
+    KeepAlive *priv;
+    Child child;
+
+    priv = priv_from_js(context, keep_alive);
+
+    g_assert(priv != NULL);
+
+    g_return_if_fail(!priv->inside_trace);
+    g_return_if_fail(!priv->inside_finalize);
+
+    child.notify = notify;
+    child.child = obj;
+    child.data = data;
+
+    g_hash_table_remove(priv->children,
+                        &child);
+}
+
+#define GLOBAL_KEEP_ALIVE_NAME "__gc_this_on_context_destroy"
+
+JSObject*
+gjs_keep_alive_get_global(JSContext *context)
+{
+    jsval value;
+    JSObject *global;
+
+    global = JS_GetGlobalObject(context);
+
+    gjs_object_get_property(context, global, GLOBAL_KEEP_ALIVE_NAME, &value);
+
+    if (JSVAL_IS_OBJECT(value))
+        return JSVAL_TO_OBJECT(value);
+
+    return NULL;
+}
+
+static JSObject*
+gjs_keep_alive_create_in_global(JSContext *context)
+{
+    JSObject *keep_alive;
+    JSObject *global;
+
+    global = JS_GetGlobalObject(context);
+
+    keep_alive = gjs_keep_alive_new(context);
+
+    if (!JS_DefineProperty(context, global,
+                           GLOBAL_KEEP_ALIVE_NAME,
+                           OBJECT_TO_JSVAL(keep_alive),
+                           NULL, NULL,
+                           /* No ENUMERATE since this is a hidden
+                            * implementation detail kind of property
+                            */
+                           JSPROP_READONLY | JSPROP_PERMANENT))
+        gjs_fatal("no memory to define keep_alive property");
+
+    return keep_alive;
+}
+
+void
+gjs_keep_alive_add_global_child(JSContext         *context,
+                                GjsUnrootedFunc  notify,
+                                JSObject          *child,
+                                void              *data)
+{
+    JSObject *keep_alive;
+
+    keep_alive = gjs_keep_alive_get_global(context);
+
+    if (!keep_alive)
+        keep_alive = gjs_keep_alive_create_in_global(context);
+
+    if (!keep_alive)
+        gjs_fatal("could not create keep_alive on global object, no memory?");
+
+    gjs_keep_alive_add_child(context,
+                             keep_alive,
+                             notify, child, data);
+}
+
+void
+gjs_keep_alive_remove_global_child(JSContext         *context,
+                                   GjsUnrootedFunc  notify,
+                                   JSObject          *child,
+                                   void              *data)
+{
+    JSObject *keep_alive;
+
+    keep_alive = gjs_keep_alive_get_global(context);
+
+    if (!keep_alive)
+        gjs_fatal("no keep_alive property on the global object, have you "
+                  "previously added this child?");
+
+    gjs_keep_alive_remove_child(context,
+                                gjs_keep_alive_get_global(context),
+                                notify, child, data);
+}
+
+JSObject*
+gjs_keep_alive_get_for_load_context(JSRuntime *runtime)
+{
+    JSContext *context;
+    JSObject *keep_alive;
+
+    context = gjs_runtime_get_load_context(runtime);
+
+    g_assert(context != NULL);
+
+    keep_alive = gjs_keep_alive_get_global(context);
+
+    if (!keep_alive)
+        keep_alive = gjs_keep_alive_create_in_global(context);
+
+    if (!keep_alive)
+        gjs_fatal("could not create keep_alive on global object, no memory?");
+
+    return keep_alive;
+}
