@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT([gjs], [0.1], BUG-REPORT-ADDRESS)
+AC_INIT([gjs], [0.2], BUG-REPORT-ADDRESS)
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([gjs/console.c])
 AC_CONFIG_HEADER([config.h])
