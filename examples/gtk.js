@@ -6,7 +6,7 @@ function hello(widget) {
     log("Hello World");
 }
 
-function delete_event(widget, event) {
+function onDeleteEvent(widget, event) {
     // If you return FALSE in the "delete_event" signal handler,
     // GTK will emit the "destroy" signal. Returning TRUE means
     // you don't want the window to be destroyed.
@@ -19,7 +19,7 @@ function delete_event(widget, event) {
     return false;
 }
 
-function destroy(widget) {
+function onDestroy(widget) {
     log("destroy signal occurred");
     Gtk.main_quit();
 }
@@ -31,14 +31,14 @@ let win = new Gtk.Window({ type: Gtk.WindowType.toplevel });
 
 // When the window is given the "delete_event" signal (this is given
 // by the window manager, usually by the "close" option, or on the
-// titlebar), we ask it to call the delete_event () function
+// titlebar), we ask it to call the onDeleteEvent () function
 // as defined above.
-win.connect("delete-event", delete_event);
+win.connect("delete-event", onDeleteEvent);
 
 // Here we connect the "destroy" event to a signal handler.
 // This event occurs when we call gtk_widget_destroy() on the window,
-// or if we return FALSE in the "delete_event" callback.
-win.connect("destroy", destroy);
+// or if we return FALSE in the "onDeleteEvent" callback.
+win.connect("destroy", onDestroy);
 
 // Sets the border width of the window.
 win.set_border_width(10)
