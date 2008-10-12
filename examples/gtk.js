@@ -41,7 +41,7 @@ win.connect("delete-event", onDeleteEvent);
 win.connect("destroy", onDestroy);
 
 // Sets the border width of the window.
-win.set_border_width(10)
+win.set_border_width(10);
 
 // Creates a new button with the label "Hello World".
 let button = new Gtk.Button({ label: "Hello World" });
@@ -58,14 +58,15 @@ button.connect("clicked", function() {
                           });
 
 // This packs the button into the window (a GTK container).
-win.add(button)
+win.add(button);
 
 // The final step is to display this newly created widget.
-button.show()
+button.show();
 
 // and the window
-win.show()
+win.show();
 
 // All gtk applications must have a Gtk.main(). Control ends here
 // and waits for an event to occur (like a key press or mouse event).
 Gtk.main();
+
