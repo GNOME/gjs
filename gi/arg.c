@@ -139,6 +139,7 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
 {
     GITypeTag type_tag;
     gboolean wrong;
+    gboolean out_of_range;
     gboolean report_type_mismatch;
     gboolean nullable_type;
 
@@ -150,6 +151,7 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
 
     nullable_type = FALSE;
     wrong = FALSE; /* return JS_FALSE */
+    out_of_range = FALSE;
     report_type_mismatch = FALSE; /* wrong=TRUE, and still need to gjs_throw a type problem */
 
     switch (type_tag) {
@@ -163,16 +165,16 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
         if (!JS_ValueToInt32(context, value, &i))
             wrong = TRUE;
         if (i > G_MAXINT8 || i < G_MININT8)
-            wrong = TRUE;
+            out_of_range = TRUE;
         arg->v_int8 = (gint8)i;
         break;
     }
     case GI_TYPE_TAG_UINT8: {
-        guint16 i;
-        if (!JS_ValueToUint16(context, value, &i))
+        guint32 i;
+        if (!JS_ValueToECMAUint32(context, value, &i))
             wrong = TRUE;
         if (i > G_MAXUINT8)
-            wrong = TRUE;
+            out_of_range = TRUE;
         arg->v_uint8 = (guint8)i;
         break;
     }
@@ -181,15 +183,20 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
         if (!JS_ValueToInt32(context, value, &i))
             wrong = TRUE;
         if (i > G_MAXINT16 || i < G_MININT16)
-            wrong = TRUE;
+            out_of_range = TRUE;
         arg->v_int16 = (gint16)i;
         break;
     }
 
-    case GI_TYPE_TAG_UINT16:
-        if (!JS_ValueToUint16(context, value, &arg->v_uint16))
+    case GI_TYPE_TAG_UINT16: {
+        guint32 i;
+        if (!JS_ValueToECMAUint32(context, value, &i))
             wrong = TRUE;
+        if (i > G_MAXUINT16)
+            out_of_range = TRUE;
+        arg->v_uint16 = (guint16)i;
         break;
+    }
 
 #if (GLIB_SIZEOF_LONG == 4)
     case GI_TYPE_TAG_LONG:
@@ -206,10 +213,15 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
     case GI_TYPE_TAG_SIZE:
 #endif
     case GI_TYPE_TAG_UINT:
-    case GI_TYPE_TAG_UINT32:
-        if (!JS_ValueToECMAUint32(context, value, &arg->v_uint))
+    case GI_TYPE_TAG_UINT32: {
+        gdouble i;
+        if (!JS_ValueToNumber(context, value, &i))
             wrong = TRUE;
+        if (i > G_MAXUINT32 || i < 0)
+            out_of_range = TRUE;
+        arg->v_uint32 = (guint32)i;
         break;
+    }
 
 #if (GLIB_SIZEOF_LONG == 8)
     case GI_TYPE_TAG_LONG:
@@ -219,6 +231,8 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
         double v;
         if (!JS_ValueToNumber(context, value, &v))
             wrong = TRUE;
+        if (v > G_MAXINT64 || v < G_MININT64)
+            out_of_range = TRUE;
         arg->v_int64 = v;
     }
         break;
@@ -231,6 +245,7 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
         double v;
         if (!JS_ValueToNumber(context, value, &v))
             wrong = TRUE;
+        /* XXX we fail with values close to G_MAXUINT64 */
         arg->v_uint64 = v;
     }
         break;
@@ -245,7 +260,7 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
         if (!JS_ValueToNumber(context, value, &v))
             wrong = TRUE;
         if (v > G_MAXFLOAT || v < G_MINFLOAT)
-            wrong = TRUE;
+            out_of_range = TRUE;
         arg->v_float = (gfloat)v;
     }
         break;
@@ -470,6 +485,12 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
                                      JS_TypeOfValue(context, value)),
                       JSVAL_IS_OBJECT(value) ? JSVAL_TO_OBJECT(value) : NULL);
         }
+        return JS_FALSE;
+    } else if (G_UNLIKELY(out_of_range)) {
+        gjs_throw(context, "value is out of range for %s '%s' type %s",
+                  is_return_value ? "return value" : "argument",
+                  arg_name,
+                  g_type_tag_to_string(type_tag));
         return JS_FALSE;
     } else if (nullable_type &&
                arg->v_pointer == NULL &&
