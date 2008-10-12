@@ -418,6 +418,8 @@ gjs_define_info(JSContext  *context,
         if (!gjs_define_object_class(context, in_object, G_TYPE_INVALID, (GIObjectInfo*) info, NULL, NULL))
             return JS_FALSE;
         break;
+    case GI_INFO_TYPE_STRUCT:
+    case GI_INFO_TYPE_UNION:
     case GI_INFO_TYPE_BOXED:
         if (!gjs_define_boxed_class(context, in_object, (GIBoxedInfo*) info, NULL, NULL))
             return JS_FALSE;

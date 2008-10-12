@@ -534,7 +534,12 @@ gjs_boxed_from_g_boxed(JSContext    *context,
         return NULL;
     }
 
-    if (g_base_info_get_type( (GIBaseInfo*) info) != GI_INFO_TYPE_BOXED) {
+    /* FIXME: we're basically treating union, struct and boxes the same
+     * way. This should be split when we eventually add support for
+     * accessing fields in union and struct. */
+    if (g_base_info_get_type( (GIBaseInfo*) info) != GI_INFO_TYPE_BOXED &&
+        g_base_info_get_type( (GIBaseInfo*) info) != GI_INFO_TYPE_STRUCT &&
+        g_base_info_get_type( (GIBaseInfo*) info) != GI_INFO_TYPE_UNION) {
         gjs_throw(context,
                   "GType %s doesn't map to boxed in g-i?",
                   g_base_info_get_name( (GIBaseInfo*) info));
