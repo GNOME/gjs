@@ -808,6 +808,8 @@ gjs_g_arg_release(JSContext  *context,
     case GI_TYPE_TAG_LONG:
     case GI_TYPE_TAG_ULONG:
     case GI_TYPE_TAG_DOUBLE:
+    case GI_TYPE_TAG_SSIZE:
+    case GI_TYPE_TAG_SIZE:
         break;
 
     case GI_TYPE_TAG_UTF8:
