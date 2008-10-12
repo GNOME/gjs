@@ -529,6 +529,10 @@ gjs_context_eval(GjsContext *js_context,
         } else {
             gjs_debug(GJS_DEBUG_CONTEXT,
                       "JS_EvaluateScript() failed but no exception message?");
+            g_set_error(error,
+                        GJS_ERROR,
+                        GJS_ERROR_FAILED,
+                        "JS_EvaluateScript() failed but no exception message?");
         }
 
         success = FALSE;
