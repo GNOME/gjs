@@ -65,7 +65,7 @@ resolve_namespace_object(JSContext  *context,
     repo = g_irepository_get_default();
 
     error = NULL;
-    g_irepository_require(repo, fixed_ns_name, 0, &error);
+    g_irepository_require(repo, fixed_ns_name, NULL, 0, &error);
     if (error != NULL) {
         gjs_throw(context,
                   "Requiring %s fixed as %s: %s",
