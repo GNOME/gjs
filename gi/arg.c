@@ -240,6 +240,16 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
             wrong = TRUE;
         break;
 
+    case GI_TYPE_TAG_FLOAT: {
+        double v;
+        if (!JS_ValueToNumber(context, value, &v))
+            wrong = TRUE;
+        if (v > G_MAXFLOAT || v < G_MINFLOAT)
+            wrong = TRUE;
+        arg->v_float = (gfloat)v;
+    }
+        break;
+
     case GI_TYPE_TAG_DOUBLE:
         if (!JS_ValueToNumber(context, value, &arg->v_double))
             wrong = TRUE;
@@ -635,6 +645,9 @@ gjs_value_from_g_arg (JSContext  *context,
     case GI_TYPE_TAG_INT8:
         return JS_NewNumberValue(context, arg->v_int8, value_p);
 
+    case GI_TYPE_TAG_FLOAT:
+        return JS_NewDoubleValue(context, arg->v_float, value_p);
+
     case GI_TYPE_TAG_DOUBLE:
         return JS_NewDoubleValue(context, arg->v_double, value_p);
 
@@ -807,6 +820,7 @@ gjs_g_arg_release(JSContext  *context,
     case GI_TYPE_TAG_UINT64:
     case GI_TYPE_TAG_LONG:
     case GI_TYPE_TAG_ULONG:
+    case GI_TYPE_TAG_FLOAT:
     case GI_TYPE_TAG_DOUBLE:
     case GI_TYPE_TAG_SSIZE:
     case GI_TYPE_TAG_SIZE:
