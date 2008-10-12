@@ -49,7 +49,7 @@ TESTS_ENVIRONMENT =				\
 	abs_top_srcdir="$(abs_top_srcdir)"	\
 	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)"
 
-test:	${TEST_PROGS}
+test:	$(gjsnative_LTLIBRARIES) ${TEST_PROGS}
 	@test -z "${TEST_PROGS}" || ${GTESTER} --verbose ${TEST_PROGS}
 
 check:	test
