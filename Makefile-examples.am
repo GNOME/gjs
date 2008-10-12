@@ -1,3 +1,4 @@
 EXTRA_DIST +=			        \
 	examples/clutter.js		\
-	examples/gtk.js
+	examples/gtk.js                 \
+        examples/test.jpg
