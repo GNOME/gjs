@@ -39,67 +39,6 @@ static JSBool gjs_value_to_g_arg_with_type_info(JSContext  *context,
                                                 gboolean    may_be_null,
                                                 GArgument  *arg);
 
-static const char*
-type_tag_name(GITypeTag tag)
-{
-    switch (tag) {
-    case GI_TYPE_TAG_VOID:
-        return "VOID";
-    case GI_TYPE_TAG_BOOLEAN:
-        return "BOOLEAN";
-    case GI_TYPE_TAG_INT8:
-        return "INT8";
-    case GI_TYPE_TAG_UINT8:
-        return "UINT8";
-    case GI_TYPE_TAG_INT16:
-        return "INT16";
-    case GI_TYPE_TAG_UINT16:
-        return "UINT16";
-    case GI_TYPE_TAG_INT32:
-        return "INT32";
-    case GI_TYPE_TAG_UINT32:
-        return "UINT32";
-    case GI_TYPE_TAG_INT64:
-        return "INT64";
-    case GI_TYPE_TAG_UINT64:
-        return "UINT64";
-    case GI_TYPE_TAG_INT:
-        return "INT";
-    case GI_TYPE_TAG_UINT:
-        return "UINT";
-    case GI_TYPE_TAG_LONG:
-        return "LONG";
-    case GI_TYPE_TAG_ULONG:
-        return "ULONG";
-    case GI_TYPE_TAG_SSIZE:
-        return "SSIZE";
-    case GI_TYPE_TAG_SIZE:
-        return "SIZE";
-    case GI_TYPE_TAG_FLOAT:
-        return "FLOAT";
-    case GI_TYPE_TAG_DOUBLE:
-        return "DOUBLE";
-    case GI_TYPE_TAG_UTF8:
-        return "UTF8";
-    case GI_TYPE_TAG_FILENAME:
-        return "FILENAME";
-    case GI_TYPE_TAG_ARRAY:
-        return "ARRAY";
-    case GI_TYPE_TAG_INTERFACE:
-        return "INTERFACE";
-    case GI_TYPE_TAG_GLIST:
-        return "GLIST";
-    case GI_TYPE_TAG_GSLIST:
-        return "GSLIST";
-    case GI_TYPE_TAG_GHASH:
-        return "GHASH";
-    case GI_TYPE_TAG_ERROR:
-        return "GERROR";
-    }
-
-    return "???";
-}
-
 JSBool
 _gjs_flags_value_is_valid(JSContext   *context,
                           GFlagsClass *klass,
@@ -207,7 +146,7 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting jsval to GArgument %s",
-                      type_tag_name(type_tag));
+                      g_type_tag_to_string(type_tag));
 
     nullable_type = FALSE;
     wrong = FALSE; /* return JS_FALSE */
@@ -505,7 +444,7 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
     default:
         gjs_debug(GJS_DEBUG_ERROR,
                   "Unhandled type %s for JavaScript to GArgument conversion",
-                  type_tag_name(type_tag));
+                  g_type_tag_to_string(type_tag));
         wrong = TRUE;
         report_type_mismatch = TRUE;
         break;
@@ -514,7 +453,7 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
     if (G_UNLIKELY(wrong)) {
         if (report_type_mismatch) {
             gjs_throw(context, "Expected type %s for %s '%s' but got type '%s' %p",
-                      type_tag_name(type_tag),
+                      g_type_tag_to_string(type_tag),
                       is_return_value ? "return value" : "argument",
                       arg_name,
                       JS_GetTypeName(context,
@@ -529,7 +468,7 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
                   "%s '%s' (type %s) may not be null",
                   is_return_value ? "Return value" : "Argument",
                   arg_name,
-                  type_tag_name(type_tag));
+                  g_type_tag_to_string(type_tag));
         return JS_FALSE;
     } else {
         return JS_TRUE;
@@ -641,7 +580,7 @@ gjs_value_from_g_arg (JSContext  *context,
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting GArgument %s to jsval",
-                      type_tag_name(type_tag));
+                      g_type_tag_to_string(type_tag));
 
     *value_p = JSVAL_NULL;
 
@@ -829,7 +768,7 @@ gjs_value_from_g_arg (JSContext  *context,
     default:
         gjs_debug(GJS_DEBUG_ERROR,
                   "Unhandled type %s converting GArgument to JavaScript",
-                  type_tag_name(type_tag));
+                  g_type_tag_to_string(type_tag));
         return JS_FALSE;
     }
 
@@ -851,7 +790,7 @@ gjs_g_arg_release(JSContext  *context,
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Releasing GArgument %s out param or return value",
-                      type_tag_name(type_tag));
+                      g_type_tag_to_string(type_tag));
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
@@ -988,7 +927,7 @@ gjs_g_arg_release(JSContext  *context,
     default:
         gjs_debug(GJS_DEBUG_ERROR,
                   "Unhandled type %s releasing GArgument",
-                  type_tag_name(type_tag));
+                  g_type_tag_to_string(type_tag));
         return JS_FALSE;
     }
 
