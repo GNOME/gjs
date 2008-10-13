@@ -1,6 +1,6 @@
 dist_gjsjs_DATA += modules/lang.js
 
-gjsnative_LTLIBRARIES += gi.la
+gjsnative_LTLIBRARIES += gi.la mainloop.la
 
 JS_NATIVE_MODULE_CFLAGS =	\
         $(AM_CFLAGS)		\
@@ -24,3 +24,17 @@ gi_la_LDFLAGS = 				\
 gi_la_SOURCES =		\
 	modules/gi.h	\
 	modules/gi.c
+
+mainloop_la_CFLAGS = 					\
+	$(JS_NATIVE_MODULE_CFLAGS) 		\
+	$(GOBJECT_INTROSPECTION_CFLAGS)
+mainloop_la_LIBADD = \
+	libgjs-gi.la				\
+	$(JS_NATIVE_MODULE_LIBADD) 		\
+	$(GOBJECT_INTROSPECTION_LIBS)
+mainloop_la_LDFLAGS = 				\
+	$(JS_NATIVE_MODULE_LDFLAGS)
+
+mainloop_la_SOURCES =		\
+	modules/mainloop.h	\
+	modules/mainloop.c
