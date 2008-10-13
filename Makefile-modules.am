@@ -1,4 +1,5 @@
-dist_gjsjs_DATA += modules/lang.js
+dist_gjsjs_DATA += modules/lang.js	\
+                   modules/signals.js
 
 gjsnative_LTLIBRARIES += gi.la mainloop.la
 
