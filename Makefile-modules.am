@@ -1,3 +1,8 @@
+dist_gjstweener_DATA =			\
+	modules/tweener/equations.js	\
+	modules/tweener/tweener.js	\
+	modules/tweener/tweenList.js
+
 dist_gjsjs_DATA += modules/lang.js	\
                    modules/signals.js
 
