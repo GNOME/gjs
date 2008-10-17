@@ -1,0 +1,107 @@
+= Memory management in SpiderMonkey =
+
+When writing JavaScript extensions in C, we have to understand and be careful about memory management.
+
+This document only applies to C code using the jsapi.h API. If you simply write a GObject-style library and describe it via gobject-introspection typelib, there is no need to understand garbage collection details.
+
+== Mark-and-sweep collector ==
+
+As background, SpiderMonkey uses mark-and-sweep garbage collection. (see [http://www.brpreiss.com/books/opus5/html/page424.html this page] for one explanation, if not familiar with this.)
+
+This is a good approach for "embeddable" interpreters, because unlike say the Boehm GC, it doesn't rely on any weird hacks like scanning the entire memory or stack of the process. The collector only has to know about stuff that the language runtime created itself. Also, mark-and-sweep is simple to understand when working with the embedding API.
+
+== Representation of objects ==
+
+An object has two forms. 
+* "jsval" is a type-tagged version, think of GValue (though it is much more efficient)
+* inside a jsval can be one of: a 31-bit signed integer, a boolean, a double*, a JSString*, a JSObject*, JSVAL_NULL, or JSVAL_VOID.
+
+jsval is 32 bits. The three least significant bits are a type tag. When JavaScript allocates a double*, JSString*, or JSObject* it aligns the allocations so the least significant 3 bits are always zero in the pointer. This leaves those three bits for the type tag.
+
+The least significant bit in the type tag indicates "integer or not." If the value is an integer, then the remaining 31 bits are all used for the integer value.
+
+What would have been MAXINT is used for JSVAL_VOID. So JSVAL_VOID has the integer flag set, but is not an integer.
+
+If the type tag is not an integer, the remaining two bits distinguish objects, doubles, and strings.
+
+You check the type tag with macros JSVAL_IS_OBJECT(), JSVAL_IS_INT(), JSVAL_IS_DOUBLE(), JSVAL_IS_STRING(), JSVAL_IS_BOOLEAN(). You can just compare "val == JSVAL_NULL" and "val == JSVAL_VOID" or you can use JSVAL_IS_NULL(), JSVAL_IS_VOID().
+
+NULL counts as an object, so JSVAL_IS_OBJECT() returns true for null.
+
+VOID does not count as an integer. JSVAL_IS_INT() looks like:
+<pre>
+#define JSVAL_IS_INT(v)         (((v) & JSVAL_INT) && (v) != JSVAL_VOID)
+</pre>
+where JSVAL_INT is 0x1, the flag for integer.
+
+JSVAL_VOID shows up in the language as "undefined".
+
+The macros JSVAL_TO_OBJECT(), JSVAL_TO_INT(), etc. are just stripping out the type tag and returning the underlying JSObject* or integer or whatever.
+
+The jsapi.h header is pretty readable, if you want to learn more. Types you see in there not mentioned above, such as JSFunction*, would show up as an object - JSVAL_IS_OBJECT() would return true. From a jsval perspective, everything is one of object, string, double, int, boolean, null, or void. null is a special object, and again JSVAL_IS_OBJECT() returns true for it. void is stored like an integer but not considered an integer, so JSVAL_IS_INT() returns false.
+
+== Value types vs. allocated types; "gcthing" ==
+
+For integers, booleans, JSVAL_NULL, and JSVAL_VOID there is no pointer. The value is just stuffed into the jsval. So there is no way to "free" these, and no way for them to be finalized or become dangling.
+
+The importance is: these types just get ignored by the garbage collector.
+
+However, doubles, strings, and objects are all allocated pointers that get finalized eventually. These are what garbage collection applies to.
+
+The API refers to these allocated types as "GC things." The macro JSVAL_TO_GCTHING() masks out the type tag to return a pointer (remember the pointer has the low three bits all zero, since it was allocated aligned). JSVAL_IS_GCTHING() returns true for string, double, object, null; and false for void, boolean, integer.
+
+== Tracing ==
+
+The general rule is that SpiderMonkey has a set of GC roots. To do the garbage collection, it finds all objects accessible from those roots, and finalizes all objects that are not.
+
+So if you store a jsval or JSObject*/JSString*/JSFunction* somewhere that SpiderMonkey does not know about - say, in the private data of an object - that will not be found. SpiderMonkey may try to finalize this object even though you have a reference to it.
+
+If you reference JavaScript objects from your custom object, you have to set the JSCLASS_MARK_IS_TRACE flag in your JSClass, and define a trace function in the class struct. A trace function just invokes JS_CallTracer() to tell SpiderMonkey about any objects you reference. See [http://developer.mozilla.org/en/docs/JSTraceOp JSTraceOp docs].
+
+== Global roots == 
+
+The GC roots would generally include any stack variables SpiderMonkey knows about and the global object set on each JSContext*.
+You can also manually add roots with [http://developer.mozilla.org/en/docs/JS_AddRoot JS_AddRoot()]. Anything reachable from any of these root objects will not be collected.
+
+JS_AddRoot() pins an object in memory forever until you call JS_RemoveRoot(), so be careful of leaks. Basically JS_AddRoot() changes memory management of an object to manual mode.
+
+Note that the argument to JS_AddRoot() is the location of your value, not the value itself. That is, a "JSObject**" or "jsval*". Some implications are:
+* the location can't go away (don't use a stack address that will vanish before you JS_RemoveRoot(), for example)
+* the root is keeping "whatever is at the location" from being collected, not "whatever was originally at the location"
+
+== Local roots==
+
+Here is the trickier part. If you create an object, say:
+
+ JSObject *obj = JS_ConstructObject(NULL, NULL, whatever, ...);
+
+"obj" is NOT now referenced by any other object. If the GC ran right away, "obj" would be collected.
+
+As a partial solution, SpiderMonkey keeps the last-created object of each type as a GC root. This "newborn roots" feature avoids the problem in the simple case where you create an object then immediately reference it somehow. For example, if you create an object then use it as the value in JS_DefineProperty(), now the object is referenced by the object you defined it in, and should not vanish.
+
+If you do not immediately add the object to some other object so it's referenced, you have to arrange to hold onto it in some way. There are three basic ways.
+
+# call JS_AddRoot() on its location (and JS_RemoveRoot() when done)
+# when defining a [http://developer.mozilla.org/en/docs/JSFunctionSpec JSFunctionSpec], ask for argv to have "extra local roots"
+# use [http://developer.mozilla.org/en/docs/JS_EnterLocalRootScope JS_EnterLocalRootScope()]
+
+=== JSFunctionSpec and extra local roots ===
+
+When SpiderMonkey is calling a native function, it will pass in an argv of jsval. It already has to add all the argv values as GC roots. The "extra local roots" feature tells SpiderMonkey to stick some extra slots on the end of argv that are also GC roots. You can then assign to argv[MAX(min_args, actual_argc)] and whatever you put in there won't get garbage collected.
+
+This is kind of a confusing and unreadable hack IMO, though it is probably efficient and thus justified in certain cases. I don't know really.
+
+=== JS_EnterLocalRootScope() ===
+
+[http://developer.mozilla.org/en/docs/JS_EnterLocalRootScope JS_EnterLocalRootScope()] causes SpiderMonkey to automatically root all newborns until you call JS_LeaveLocalRootScope(). Remember the default behavior is to root only the most recent newborn of each type. 
+
+The downside of JS_EnterLocalRootScope() is that if you start allocating tons of stuff while inside the local root scope, none of it will be collected until you JS_LeaveLocalRootScope(). Basically you're disabling garbage collection for anything you create. So this function should not be used in an overzealous way.
+
+You can nest JS_EnterLocalRootScope() calls, but must JS_LeaveLocalRootScope() a matching number of times. JS_EnterLocalRootScope() can fail so check its return value.
+
+Note that newborn roots are tracked as *values* while JS_AddRoot() tracks *locations*.
+
+== More tips ==
+
+For another attempt to explain all this, see [http://developer.mozilla.org/en/docs/SpiderMonkey_Garbage_Collection_Tips GC tips from Mozilla.org].
+
