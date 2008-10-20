@@ -19,13 +19,13 @@ gjsincludedir = $(includedir)/gjs-1.0
 ########################################################################
 nobase_gjsinclude_HEADERS =	\
 	gjs/context.h		\
+	gjs/importer.h		\
 	gjs/gjs.h		\
 	gjs/jsapi-util.h	\
+	gjs/mem.h		\
 	gjs/native.h
 noinst_HEADERS =		\
 	gjs/context-jsapi.h	\
-	gjs/importer.h		\
-	gjs/mem.h		\
 	util/dirs.h		\
 	util/error.h		\
 	util/glib.h		\
