@@ -39,3 +39,10 @@ libgjs_gi_la_SOURCES =	\
 	gi/param.c	\
         gi/repo.c	\
         gi/value.c
+
+########################################################################
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = gjs-gi-1.0.pc
+
+EXTRA_DIST += 			\
+	gjs-gi-1.0.pc.in

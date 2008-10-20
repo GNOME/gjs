@@ -7,14 +7,10 @@ datarootdir=@datarootdir@
 datadir=@datadir@
 js_include_dir=@js_include_dir@
 
-gjs_console=${bindir}/gjs-console
-jsdir=@gjsjsdir@
-jsnativedir=@gjsnativedir@
-
 Cflags: -I${includedir}/gjs-1.0 -I${js_include_dir}
-Requires: gobject-introspection-1.0 @JS_PACKAGE@
-Libs: -L${libdir} -lgjs
+Requires: gjs-1.0
+Libs: -L${libdir} -lgjs-gi
 
-Name: gjs-1.0
-Description: JS bindings for GObjects
+Name: gjs-gi-1.0
+Description: GObject Introspection for Javascript
 Version: @VERSION@

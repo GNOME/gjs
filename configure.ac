@@ -86,5 +86,5 @@ AC_SUBST([gjsnativedir])
 PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
 GJSTESTS_CFLAGS="$GJSTESTS_CFLAGS -I$js_include_dir"
 
-AC_CONFIG_FILES([Makefile gjs-1.0.pc])
+AC_CONFIG_FILES([Makefile gjs-1.0.pc gjs-gi-1.0.pc])
 AC_OUTPUT
