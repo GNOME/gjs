@@ -1,5 +1,6 @@
-lib_LTLIBRARIES += 	\
-	libgjs-gi.la
+gjsgiincludedir = $(includedir)/gjs-1.0/gjs
+
+lib_LTLIBRARIES += libgjs-gi.la
 
 libgjs_gi_la_CFLAGS =			\
         $(AM_CFLAGS)			\
@@ -11,7 +12,7 @@ libgjs_gi_la_LIBADD =			\
 libgjs_gi_la_LDFLAGS = \
 	-export-symbols-regex "^[^_].*" -version-info 0:0:0 -rdynamic
 
-noinst_HEADERS +=	\
+nobase_gjsgiinclude_HEADERS =	\
 	gi/arg.h	\
 	gi/boxed.h	\
 	gi/closure.h	\
@@ -19,7 +20,7 @@ noinst_HEADERS +=	\
 	gi/function.h	\
 	gi/keep-alive.h	\
 	gi/native.h	\
-	gi/ns.h	\
+	gi/ns.h	        \
 	gi/object.h	\
 	gi/param.h	\
 	gi/repo.h	\
