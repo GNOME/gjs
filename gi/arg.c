@@ -65,6 +65,35 @@ _gjs_flags_value_is_valid(JSContext   *context,
 }
 
 static JSBool
+_gjs_enum_value_is_valid(JSContext  *context,
+                         GIEnumInfo *enum_info,
+                         int         value)
+{
+    JSBool found;
+    int n_values;
+    int i;
+
+    n_values = g_enum_info_get_n_values(enum_info);
+    found = JS_FALSE;
+
+    for (i = 0; i < n_values; ++i) {
+        GIValueInfo *value_info;
+        long enum_value;
+
+        value_info = g_enum_info_get_value(enum_info, i);
+        enum_value = g_value_info_get_value(value_info);
+        g_base_info_unref((GIBaseInfo *)value_info);
+
+        if (enum_value == value) {
+            found = JS_TRUE;
+            break;
+        }
+    }
+
+    return found;
+}
+
+static JSBool
 gjs_array_to_list(JSContext   *context,
                   jsval        array_value,
                   unsigned int length,
@@ -354,26 +383,12 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
 
             } else if (JSVAL_IS_NUMBER(value)) {
                 nullable_type = FALSE;
-                if (g_type_is_a(gtype, G_TYPE_ENUM)) {
+
+                if (g_base_info_get_type(symbol_info) == GI_INFO_TYPE_ENUM) {
                     if (!JS_ValueToInt32(context, value, &arg->v_int)) {
                         wrong = TRUE;
-                    } else {
-                        GEnumValue *v;
-                        void *klass;
-
-                        klass = g_type_class_ref(gtype);
-
-                        v = g_enum_get_value(G_ENUM_CLASS(klass),
-                                             arg->v_int);
-
-                        g_type_class_unref(klass);
-
-                        if (v == NULL) {
-                            gjs_throw(context,
-                                      "%d is not a valid value for enumeration %s",
-                                      arg->v_int, g_type_name(gtype));
-                            wrong = TRUE;
-                        }
+                    } else if (!_gjs_enum_value_is_valid(context, (GIEnumInfo *)symbol_info, arg->v_int)) {
+                          wrong = TRUE;
                     }
                 } else if (g_type_is_a(gtype, G_TYPE_FLAGS)) {
                     if (!JS_ValueToInt32(context, value, &arg->v_int)) {
@@ -724,24 +739,9 @@ gjs_value_from_g_arg (JSContext  *context,
                     obj = gjs_boxed_from_g_boxed(context, gtype, arg->v_pointer);
                     if (obj)
                         value = OBJECT_TO_JSVAL(obj);
-                } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {
-                    GEnumValue *v;
-                    void *klass;
-
-                    klass = g_type_class_ref(gtype);
-
-                    v = g_enum_get_value(G_ENUM_CLASS(klass),
-                                         arg->v_int);
-
-                    g_type_class_unref(klass);
-
-                    if (v == NULL) {
-                        gjs_throw(context,
-                                     "%d is not a valid value for enumeration %s",
-                                     arg->v_int, g_type_name(gtype));
-                    } else {
+                } else if (g_base_info_get_type(symbol_info) == GI_INFO_TYPE_ENUM) {
+                    if (_gjs_enum_value_is_valid(context, (GIEnumInfo *)symbol_info, arg->v_int))
                         value = INT_TO_JSVAL(arg->v_int);
-                    }
                 } else if (g_type_is_a(gtype, G_TYPE_FLAGS)) {
                     void *klass;
 
