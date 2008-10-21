@@ -90,6 +90,12 @@ _gjs_enum_value_is_valid(JSContext  *context,
         }
     }
 
+    if (!found) {
+        gjs_throw(context,
+                  "%d is not a valid value for enumeration %s",
+                  value, g_base_info_get_name((GIBaseInfo *)enum_info));
+    }
+
     return found;
 }
 
