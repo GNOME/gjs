@@ -59,17 +59,40 @@ resolve_namespace_object(JSContext  *context,
     GIRepository *repo;
     GError *error;
     char *fixed_ns_name;
+    JSContext *load_context;
+    jsval versions_val;
+    JSObject *versions;
+    jsval version_val;
+    const char *version;
+
+    load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
+    if (!gjs_object_require_property(load_context, repo_obj, "versions", &versions_val) ||
+        !JSVAL_IS_OBJECT(versions_val)) {
+        gjs_throw(context, "No 'versions' property in GI repository object");
+        return NULL;
+    }
+
+    versions = JSVAL_TO_OBJECT(versions_val);
 
     fixed_ns_name = gjs_fix_ns_name(ns_name);
+
+    version = NULL;
+    if (JS_GetProperty(load_context, versions, ns_name, &version_val) &&
+        JSVAL_IS_STRING(version_val)) {
+        version = gjs_string_get_ascii(version_val);
+    } else if (JS_GetProperty(load_context, versions, fixed_ns_name, &version_val) &&
+               JSVAL_IS_STRING(version_val)) {
+        version = gjs_string_get_ascii(version_val);
+    }
 
     repo = g_irepository_get_default();
 
     error = NULL;
-    g_irepository_require(repo, fixed_ns_name, NULL, 0, &error);
+    g_irepository_require(repo, fixed_ns_name, version, 0, &error);
     if (error != NULL) {
         gjs_throw(context,
-                  "Requiring %s fixed as %s: %s",
-                  ns_name, fixed_ns_name, error->message);
+                  "Requiring %s fixed as %s, version %s: %s",
+                  ns_name, fixed_ns_name, version?version:"none", error->message);
         g_error_free(error);
         g_free(fixed_ns_name);
         return JS_FALSE;
@@ -218,6 +241,7 @@ repo_new(JSContext *context)
 {
     JSObject *repo;
     JSObject *global;
+    JSObject *versions;
 
     /* We have to define the class in the global object so we can JS_ConstructObject */
 
@@ -261,6 +285,16 @@ repo_new(JSContext *context)
         gjs_throw(context, "No memory to create repo object");
         return JS_FALSE;
     }
+
+    versions = JS_ConstructObject(context, NULL, NULL, NULL);
+
+    JS_DefineProperty(context, repo,
+                      "versions",
+                      OBJECT_TO_JSVAL(versions),
+                      NULL, NULL,
+                      JSPROP_PERMANENT);
+
+    g_assert(gjs_object_has_property(context, repo, "versions"));
 
     /* FIXME - hack to make namespaces load, since
      * gobject-introspection does not yet search a path properly.

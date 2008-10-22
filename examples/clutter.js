@@ -1,3 +1,4 @@
+imports.gi.versions.clutter = '0.8';
 const Clutter = imports.gi.clutter;
 
 Clutter.init(null, null);
