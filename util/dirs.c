@@ -47,6 +47,25 @@ init_search_paths(void)
 }
 
 static void
+add_paths_from_environment(GPtrArray *path,
+                           const char *envvar)
+{
+    const char  *envstr;
+    char       **search_path;
+    gsize        i;
+
+    envstr = g_getenv(envvar);
+    if (envstr == NULL)
+        return;
+
+    search_path = g_strsplit(envstr, G_SEARCHPATH_SEPARATOR_S, 0);
+    for (i = 0; search_path[i]; ++i) {
+        g_ptr_array_add(path, g_strdup(search_path[i]));
+    }
+    g_strfreev(search_path);
+}
+
+static void
 ensure_search_path_in_cache(GjsDirectoryType dir_type)
 {
     GPtrArray *path;
@@ -67,6 +86,8 @@ ensure_search_path_in_cache(GjsDirectoryType dir_type)
     case GJS_DIRECTORY_SHARED_JAVASCRIPT: {
         int i;
 
+        add_paths_from_environment(path, "GJS_JS_PATH");
+
         if (installed) {
             g_ptr_array_add(path, g_strdup(GJS_JS_DIR));
         } else {
@@ -84,6 +105,8 @@ ensure_search_path_in_cache(GjsDirectoryType dir_type)
         break;
 
     case GJS_DIRECTORY_SHARED_JAVASCRIPT_NATIVE: {
+        add_paths_from_environment(path, "GJS_JS_NATIVE_PATH");
+
         if (installed) {
             g_ptr_array_add(path, g_strdup(GJS_NATIVE_DIR));
         } else {
