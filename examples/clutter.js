@@ -14,6 +14,11 @@ texture.connect('button-press-event',
                     return true;
                 });
 
+let color = new Clutter.Color();
+Clutter.color_parse('Black', color);
+
+stage.color = color;
+
 stage.add_actor(texture);
 stage.show();
 
