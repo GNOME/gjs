@@ -314,14 +314,6 @@ gjs_define_repo(JSContext  *context,
 {
     JSObject *repo;
 
-    if (gjs_environment_variable_is_set("GJS_USE_UNINSTALLED_FILES")) {
-        const char *builddir = g_getenv("BUILDDIR");
-
-        if (builddir != NULL) {
-            g_irepository_prepend_search_path(builddir);
-        }
-    }
-
     repo = repo_new(context);
 
     if (!JS_DefineProperty(context, module_obj,
