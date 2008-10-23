@@ -100,13 +100,13 @@ _gjs_enum_value_is_valid(JSContext  *context,
 }
 
 static JSBool
-gjs_array_to_list(JSContext   *context,
-                  jsval        array_value,
-                  unsigned int length,
-                  GITypeInfo  *param_info,
-                  GITypeTag    list_type,
-                  GList      **list_p,
-                  GSList     **slist_p)
+gjs_array_to_g_list(JSContext   *context,
+                    jsval        array_value,
+                    unsigned int length,
+                    GITypeInfo  *param_info,
+                    GITypeTag    list_type,
+                    GList      **list_p,
+                    GSList     **slist_p)
 {
     guint32 i;
     GList *list;
@@ -455,12 +455,12 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
                 list = NULL;
                 slist = NULL;
 
-                if (!gjs_array_to_list(context,
-                                       value,
-                                       length,
-                                       param_info,
-                                       type_tag,
-                                       &list, &slist)) {
+                if (!gjs_array_to_g_list(context,
+                                         value,
+                                         length,
+                                         param_info,
+                                         type_tag,
+                                         &list, &slist)) {
                     wrong = TRUE;
                 }
 
