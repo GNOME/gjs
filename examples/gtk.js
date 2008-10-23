@@ -27,7 +27,7 @@ function onDestroy(widget) {
 Gtk.init(0, null);
 
 // create a new window
-let win = new Gtk.Window({ type: Gtk.WindowType.toplevel });
+let win = new Gtk.Window({ type: Gtk.WindowType.TOPLEVEL });
 
 // When the window is given the "delete_event" signal (this is given
 // by the window manager, usually by the "close" option, or on the
