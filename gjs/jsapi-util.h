@@ -203,9 +203,6 @@ JSBool      gjs_get_string_id                (jsval            id_val,
                                               const char     **name_p);
 const char* gjs_get_type_name                (jsval            value);
 
-char*       gjs_fix_ns_name                  (const char      *ns_name);
-char*       gjs_unfix_ns_name                (const char      *ns_name);
-
 GjsRootedArray*   gjs_rooted_array_new        (void);
 void              gjs_rooted_array_append     (JSContext        *context,
                                                GjsRootedArray *array,

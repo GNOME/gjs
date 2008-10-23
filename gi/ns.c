@@ -287,35 +287,17 @@ gjs_define_ns(JSContext    *context,
               GIRepository *repo)
 {
     JSObject *ns;
-    char *fixed_ns_name, *unfixed_ns_name;
 
-    /* The idea here is to always define properties for both
-     * fixed (MyModule) and unfixed (myModule) namespace name
-     * format
-     */
-
-    fixed_ns_name = gjs_fix_ns_name(ns_name);
-    unfixed_ns_name = gjs_unfix_ns_name(ns_name);
-
-    ns = ns_new(context, fixed_ns_name, repo);
+    ns = ns_new(context, ns_name, repo);
 
     if (!JS_DefineProperty(context, in_object,
-                           fixed_ns_name, OBJECT_TO_JSVAL(ns),
-                           NULL, NULL,
-                           GJS_MODULE_PROP_FLAGS))
-        gjs_fatal("no memory to define ns property");
-
-    if (!JS_DefineProperty(context, in_object,
-                           unfixed_ns_name, OBJECT_TO_JSVAL(ns),
+                           ns_name, OBJECT_TO_JSVAL(ns),
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS))
         gjs_fatal("no memory to define ns property");
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
-              "Defined namespace '%s' %p in GIRepository %p", fixed_ns_name, ns, in_object);
-
-    g_free(fixed_ns_name);
-    g_free(unfixed_ns_name);
+              "Defined namespace '%s' %p in GIRepository %p", ns_name, ns, in_object);
 
     return ns;
 }

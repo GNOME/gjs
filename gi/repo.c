@@ -58,7 +58,6 @@ resolve_namespace_object(JSContext  *context,
 {
     GIRepository *repo;
     GError *error;
-    char *fixed_ns_name;
     JSContext *load_context;
     jsval versions_val;
     JSObject *versions;
@@ -74,31 +73,23 @@ resolve_namespace_object(JSContext  *context,
 
     versions = JSVAL_TO_OBJECT(versions_val);
 
-    fixed_ns_name = gjs_fix_ns_name(ns_name);
-
     version = NULL;
     if (JS_GetProperty(load_context, versions, ns_name, &version_val) &&
         JSVAL_IS_STRING(version_val)) {
-        version = gjs_string_get_ascii(version_val);
-    } else if (JS_GetProperty(load_context, versions, fixed_ns_name, &version_val) &&
-               JSVAL_IS_STRING(version_val)) {
         version = gjs_string_get_ascii(version_val);
     }
 
     repo = g_irepository_get_default();
 
     error = NULL;
-    g_irepository_require(repo, fixed_ns_name, version, 0, &error);
+    g_irepository_require(repo, ns_name, version, 0, &error);
     if (error != NULL) {
         gjs_throw(context,
-                  "Requiring %s fixed as %s, version %s: %s",
-                  ns_name, fixed_ns_name, version?version:"none", error->message);
+                  "Requiring %s, version %s: %s",
+                  ns_name, version?version:"none", error->message);
         g_error_free(error);
-        g_free(fixed_ns_name);
         return JS_FALSE;
     }
-
-    g_free(fixed_ns_name);
 
     /* Defines a property on "obj" (the javascript repo object)
      * with the given namespace name, pointing to that namespace
