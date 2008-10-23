@@ -61,23 +61,39 @@ gjs_define_enum_value(JSContext    *context,
                       GIValueInfo  *info)
 {
     const char *value_name;
+    char *fixed_name;
+    gsize i;
     int value_val;
 
     value_name = g_base_info_get_name( (GIBaseInfo*) info);
     value_val = (int) g_value_info_get_value(info);
 
+    /* g-i converts enum members such as GDK_GRAVITY_SOUTH_WEST to
+     * Gdk.GravityType.south-west (where 'south-west' is value_name)
+     * Convert back to all SOUTH_WEST.
+     */
+    fixed_name = g_ascii_strup(value_name, -1);
+    for (i = 0; fixed_name[i]; ++i) {
+        char c = fixed_name[i];
+        if (!(('A' <= c && c <= 'Z') ||
+              ('0' <= c && c <= '9')))
+            fixed_name[i] = '_';
+    }
+
     gjs_debug(GJS_DEBUG_GENUM,
-              "Defining enum value %s %d",
-              value_name, value_val);
+              "Defining enum value %s (fixed from %s) %d",
+              fixed_name, value_name, value_val);
 
     if (!JS_DefineProperty(context, in_object,
-                           value_name, INT_TO_JSVAL(value_val),
+                           fixed_name, INT_TO_JSVAL(value_val),
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS)) {
         gjs_throw(context, "Unable to define enumeration value %s %d (no memory most likely)",
-                     value_name, value_val);
+                     fixed_name, value_val);
+        g_free(fixed_name);
         return JS_FALSE;
     }
+    g_free(fixed_name);
 
     return JS_TRUE;
 }
