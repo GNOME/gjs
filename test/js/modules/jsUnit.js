@@ -283,6 +283,11 @@ function parseErrorStack(excp)
       name = 'anonymous';
     }
 
+    var line = framedata.match(/(:\d+)$/)[1];
+    if (line) {
+        name += line;
+    }
+
     stack[stack.length] = name;
   }
   // remove top level anonymous functions to match IE
