@@ -28,6 +28,7 @@
 #include "function.h"
 #include "object.h"
 #include "boxed.h"
+#include "union.h"
 #include "enumeration.h"
 #include "arg.h"
 
@@ -435,9 +436,12 @@ gjs_define_info(JSContext  *context,
             return JS_FALSE;
         break;
     case GI_INFO_TYPE_STRUCT:
-    case GI_INFO_TYPE_UNION:
     case GI_INFO_TYPE_BOXED:
         if (!gjs_define_boxed_class(context, in_object, (GIBoxedInfo*) info, NULL, NULL))
+            return JS_FALSE;
+        break;
+    case GI_INFO_TYPE_UNION:
+        if (!gjs_define_union_class(context, in_object, (GIUnionInfo*) info, NULL, NULL))
             return JS_FALSE;
         break;
     case GI_INFO_TYPE_ENUM:

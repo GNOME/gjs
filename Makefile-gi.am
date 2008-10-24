@@ -24,6 +24,7 @@ nobase_gjsgiinclude_HEADERS =	\
 	gi/object.h	\
 	gi/param.h	\
 	gi/repo.h	\
+	gi/union.h	\
 	gi/value.h
 
 libgjs_gi_la_SOURCES =	\
@@ -38,6 +39,7 @@ libgjs_gi_la_SOURCES =	\
 	gi/object.c	\
 	gi/param.c	\
         gi/repo.c	\
+	gi/union.c	\
         gi/value.c
 
 ########################################################################

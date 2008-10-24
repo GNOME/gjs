@@ -31,7 +31,10 @@
 #include "param.h"
 #include "object.h"
 #include "boxed.h"
+#include "union.h"
 #include <gjs/gjs.h>
+
+#include <girepository.h>
 
 static void
 closure_marshal(GClosure        *closure,
@@ -456,12 +459,22 @@ gjs_value_from_g_value(JSContext    *context,
         obj = gjs_object_from_g_object(context, gobj);
         *value_p = OBJECT_TO_JSVAL(obj);
     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
+        GIBaseInfo *info;
         void *gboxed;
         JSObject *obj;
 
         gboxed = g_value_get_boxed(gvalue);
 
-        obj = gjs_boxed_from_g_boxed(context, gtype, gboxed);
+        /* The only way to differentiate unions and structs is from
+         * their g-i info as both GBoxed */
+        info = g_irepository_find_by_gtype(g_irepository_get_default(),
+                                           gtype);
+
+        if (g_base_info_get_type(info) == GI_INFO_TYPE_UNION) {
+            obj = gjs_union_from_g_boxed(context, gtype, gboxed);
+        } else {
+            obj = gjs_boxed_from_g_boxed(context, gtype, gboxed);
+        }
         *value_p = OBJECT_TO_JSVAL(obj);
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {
         int v;

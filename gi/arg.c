@@ -26,6 +26,7 @@
 #include "arg.h"
 #include "object.h"
 #include "boxed.h"
+#include "union.h"
 #include "value.h"
 #include <gjs/gjs.h>
 
@@ -366,6 +367,9 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
                         arg->v_pointer = gjs_closure_new_marshaled(context,
                                                                    JSVAL_TO_OBJECT(value),
                                                                    "boxed");
+                    } else if (g_base_info_get_type(symbol_info) == GI_INFO_TYPE_UNION) {
+                        arg->v_pointer = gjs_g_boxed_from_union(context,
+                                                                JSVAL_TO_OBJECT(value));
                     } else {
                         arg->v_pointer = gjs_g_boxed_from_boxed(context,
                                                                 JSVAL_TO_OBJECT(value));
@@ -742,7 +746,11 @@ gjs_value_from_g_arg (JSContext  *context,
                     }
                 } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                     JSObject *obj;
-                    obj = gjs_boxed_from_g_boxed(context, gtype, arg->v_pointer);
+                    if (g_base_info_get_type(symbol_info) == GI_INFO_TYPE_UNION) {
+                        obj = gjs_union_from_g_boxed(context, gtype, arg->v_pointer);
+                    } else {
+                        obj = gjs_boxed_from_g_boxed(context, gtype, arg->v_pointer);
+                    }
                     if (obj)
                         value = OBJECT_TO_JSVAL(obj);
                 } else if (g_base_info_get_type(symbol_info) == GI_INFO_TYPE_ENUM) {

@@ -25,7 +25,7 @@
 
 #include <string.h>
 
-#include "boxed.h"
+#include "union.h"
 #include "arg.h"
 #include "object.h"
 #include <gjs/gjs.h>
@@ -39,15 +39,15 @@
 #include <girepository.h>
 
 typedef struct {
-    GIBoxedInfo *info;
+    GIUnionInfo *info;
     void *gboxed; /* NULL if we are the prototype and not an instance */
-} Boxed;
+} Union;
 
-static Boxed unthreadsafe_template_for_constructor = { NULL, NULL };
+static Union unthreadsafe_template_for_constructor = { NULL, NULL };
 
-static struct JSClass gjs_boxed_class;
+static struct JSClass gjs_union_class;
 
-GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Boxed, gjs_boxed_class)
+GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Union, gjs_union_class)
 
 /*
  * Like JSResolveOp, but flags provide contextual information as follows:
@@ -63,13 +63,13 @@ GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Boxed, gjs_boxed_class)
  * if id was resolved.
  */
 static JSBool
-boxed_new_resolve(JSContext *context,
+union_new_resolve(JSContext *context,
                   JSObject  *obj,
                   jsval      id,
                   uintN      flags,
                   JSObject **objp)
 {
-    Boxed *priv;
+    Union *priv;
     const char *name;
 
     *objp = NULL;
@@ -87,11 +87,11 @@ boxed_new_resolve(JSContext *context,
         /* We are the prototype, so look for methods and other class properties */
         GIFunctionInfo *method_info;
 
-        method_info = g_struct_info_find_method((GIStructInfo*) priv->info,
-                                                name);
+        method_info = g_union_info_find_method((GIUnionInfo*) priv->info,
+                                               name);
 
         if (method_info != NULL) {
-            JSObject *boxed_proto;
+            JSObject *union_proto;
             const char *method_name;
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
@@ -106,14 +106,14 @@ boxed_new_resolve(JSContext *context,
                       g_base_info_get_namespace( (GIBaseInfo*) priv->info),
                       g_base_info_get_name( (GIBaseInfo*) priv->info));
 
-            boxed_proto = obj;
+            union_proto = obj;
 
-            if (gjs_define_function(context, boxed_proto, method_info) == NULL) {
+            if (gjs_define_function(context, union_proto, method_info) == NULL) {
                 g_base_info_unref( (GIBaseInfo*) method_info);
                 return JS_FALSE;
             }
 
-            *objp = boxed_proto; /* we defined the prop in object_proto */
+            *objp = union_proto; /* we defined the prop in object_proto */
 
             g_base_info_unref( (GIBaseInfo*) method_info);
         }
@@ -131,22 +131,22 @@ boxed_new_resolve(JSContext *context,
 }
 
 static void*
-boxed_new(JSContext   *context,
+union_new(JSContext   *context,
           JSObject    *obj, /* "this" for constructor */
-          GIBoxedInfo *info)
+          GIUnionInfo *info)
 {
     int n_methods;
     int i;
 
     /* Find a zero-args constructor and call it */
 
-    n_methods = g_struct_info_get_n_methods(info);
+    n_methods = g_union_info_get_n_methods(info);
 
     for (i = 0; i < n_methods; ++i) {
         GIFunctionInfo *func_info;
         GIFunctionInfoFlags flags;
 
-        func_info = g_struct_info_get_method(info, i);
+        func_info = g_union_info_get_method(info, i);
 
         flags = g_function_info_get_flags(func_info);
         if ((flags & GI_FUNCTION_IS_CONSTRUCTOR) != 0 &&
@@ -156,24 +156,24 @@ boxed_new(JSContext   *context,
 
             rval = JSVAL_NULL;
             gjs_invoke_c_function(context, func_info, obj,
-                                     0, NULL, &rval);
+                                  0, NULL, &rval);
 
             g_base_info_unref((GIBaseInfo*) func_info);
 
             /* We are somewhat wasteful here; invoke_c_function() above
-             * creates a JSObject wrapper for the boxed that we immediately
+             * creates a JSObject wrapper for the union that we immediately
              * discard.
              */
             if (JSVAL_IS_NULL(rval))
                 return NULL;
             else
-                return gjs_g_boxed_from_boxed(context, JSVAL_TO_OBJECT(rval));
+                return gjs_g_boxed_from_union(context, JSVAL_TO_OBJECT(rval));
         }
 
         g_base_info_unref((GIBaseInfo*) func_info);
     }
 
-    gjs_throw(context, "Unable to construct boxed type %s since it has no zero-args <constructor>, can only wrap an existing one",
+    gjs_throw(context, "Unable to construct union type %s since it has no zero-args <constructor>, can only wrap an existing one",
               g_base_info_get_name((GIBaseInfo*) info));
 
     return NULL;
@@ -188,20 +188,20 @@ boxed_new(JSContext   *context,
  * data.
  */
 static JSBool
-boxed_constructor(JSContext *context,
+union_constructor(JSContext *context,
                   JSObject  *obj,
                   uintN      argc,
                   jsval     *argv,
                   jsval     *retval)
 {
-    Boxed *priv;
-    Boxed *proto_priv;
+    Union *priv;
+    Union *proto_priv;
     JSClass *obj_class;
     JSClass *proto_class;
     JSObject *proto;
     gboolean is_proto;
 
-    priv = g_slice_new0(Boxed);
+    priv = g_slice_new0(Union);
 
     GJS_INC_COUNTER(boxed);
 
@@ -209,11 +209,11 @@ boxed_constructor(JSContext *context,
     JS_SetPrivate(context, obj, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
-                        "boxed constructor, obj %p priv %p",
+                        "union constructor, obj %p priv %p",
                         obj, priv);
 
     proto = JS_GetPrototype(context, obj);
-    gjs_debug_lifecycle(GJS_DEBUG_GBOXED, "boxed instance __proto__ is %p", proto);
+    gjs_debug_lifecycle(GJS_DEBUG_GBOXED, "union instance __proto__ is %p", proto);
 
     /* If we're constructing the prototype, its __proto__ is not the same
      * class as us, but if we're constructing an instance, the prototype
@@ -225,7 +225,7 @@ boxed_constructor(JSContext *context,
     is_proto = (obj_class != proto_class);
 
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
-                        "boxed instance constructing proto %d, obj class %s proto class %s",
+                        "union instance constructing proto %d, obj class %s proto class %s",
                         is_proto, obj_class->name, proto_class->name);
 
     if (!is_proto) {
@@ -238,7 +238,7 @@ boxed_constructor(JSContext *context,
         proto_priv = priv_from_js(context, proto);
         if (proto_priv == NULL) {
             gjs_debug(GJS_DEBUG_GBOXED,
-                      "Bad prototype set on boxed? Must match JSClass of object. JS error should have been reported.");
+                      "Bad prototype set on union? Must match JSClass of object. JS error should have been reported.");
             return JS_FALSE;
         }
 
@@ -261,12 +261,12 @@ boxed_constructor(JSContext *context,
         if (unthreadsafe_template_for_constructor.gboxed == NULL) {
             void *gboxed;
 
-            /* boxed_new happens to be implemented by calling
+            /* union_new happens to be implemented by calling
              * gjs_invoke_c_function(), which returns a jsval.
              * The returned "gboxed" here is owned by that jsval,
              * not by us.
              */
-            gboxed = boxed_new(context, obj, priv->info);
+            gboxed = union_new(context, obj, priv->info);
 
             if (gboxed == NULL) {
                 return JS_FALSE;
@@ -283,7 +283,7 @@ boxed_constructor(JSContext *context,
         }
 
         gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
-                            "JSObject created with boxed instance %p type %s",
+                            "JSObject created with union instance %p type %s",
                             priv->gboxed, g_type_name(gtype));
     }
 
@@ -291,10 +291,10 @@ boxed_constructor(JSContext *context,
 }
 
 static void
-boxed_finalize(JSContext *context,
+union_finalize(JSContext *context,
                JSObject  *obj)
 {
-    Boxed *priv;
+    Union *priv;
 
     priv = priv_from_js(context, obj);
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
@@ -314,7 +314,7 @@ boxed_finalize(JSContext *context,
     }
 
     GJS_DEC_COUNTER(boxed);
-    g_slice_free(Boxed, priv);
+    g_slice_free(Union, priv);
 }
 
 /* The bizarre thing about this vtable is that it applies to both
@@ -326,7 +326,7 @@ boxed_finalize(JSContext *context,
  * JS_InitClass. The constructor from JS_InitClass is not applied to
  * the prototype unless JSCLASS_CONSTRUCT_PROTOTYPE is in flags.
  */
-static struct JSClass gjs_boxed_class = {
+static struct JSClass gjs_union_class = {
     NULL, /* dynamic class, no name here */
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
@@ -337,26 +337,26 @@ static struct JSClass gjs_boxed_class = {
     JS_PropertyStub,
     JS_PropertyStub,
     JS_EnumerateStub,
-    (JSResolveOp) boxed_new_resolve, /* needs cast since it's the new resolve signature */
+    (JSResolveOp) union_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,
-    boxed_finalize,
+    union_finalize,
     NULL,
     NULL,
     NULL,
     NULL, NULL, NULL, NULL, NULL
 };
 
-static JSPropertySpec gjs_boxed_proto_props[] = {
+static JSPropertySpec gjs_union_proto_props[] = {
     { NULL }
 };
 
-static JSFunctionSpec gjs_boxed_proto_funcs[] = {
+static JSFunctionSpec gjs_union_proto_funcs[] = {
     { NULL }
 };
 
 JSObject*
-gjs_lookup_boxed_constructor(JSContext    *context,
-                                GIBoxedInfo  *info)
+gjs_lookup_union_constructor(JSContext    *context,
+                             GIUnionInfo  *info)
 {
     JSObject *ns;
     JSObject *constructor;
@@ -367,16 +367,16 @@ gjs_lookup_boxed_constructor(JSContext    *context,
         return NULL;
 
     constructor = NULL;
-    if (gjs_define_boxed_class(context, ns, info,
-                                  &constructor, NULL))
+    if (gjs_define_union_class(context, ns, info,
+                               &constructor, NULL))
         return constructor;
     else
         return NULL;
 }
 
 JSObject*
-gjs_lookup_boxed_prototype(JSContext    *context,
-                              GIBoxedInfo  *info)
+gjs_lookup_union_prototype(JSContext    *context,
+                           GIUnionInfo  *info)
 {
     JSObject *ns;
     JSObject *proto;
@@ -387,37 +387,37 @@ gjs_lookup_boxed_prototype(JSContext    *context,
         return NULL;
 
     proto = NULL;
-    if (gjs_define_boxed_class(context, ns, info, NULL, &proto))
+    if (gjs_define_union_class(context, ns, info, NULL, &proto))
         return proto;
     else
         return NULL;
 }
 
 JSClass*
-gjs_lookup_boxed_class(JSContext    *context,
-                          GIBoxedInfo  *info)
+gjs_lookup_union_class(JSContext    *context,
+                       GIUnionInfo  *info)
 {
     JSObject *prototype;
 
-    prototype = gjs_lookup_boxed_prototype(context, info);
+    prototype = gjs_lookup_union_prototype(context, info);
 
     return JS_GetClass(context, prototype);
 }
 
 JSBool
-gjs_define_boxed_class(JSContext    *context,
-                          JSObject     *in_object,
-                          GIBoxedInfo  *info,
-                          JSObject    **constructor_p,
-                          JSObject    **prototype_p)
+gjs_define_union_class(JSContext    *context,
+                       JSObject     *in_object,
+                       GIUnionInfo  *info,
+                       JSObject    **constructor_p,
+                       JSObject    **prototype_p)
 {
     const char *constructor_name;
     JSObject *prototype;
     jsval value;
-    Boxed *priv;
+    Union *priv;
 
     /* See the comment in gjs_define_object_class() for an
-     * explanation of how this all works; Boxed is pretty much the
+     * explanation of how this all works; Union is pretty much the
      * same as Object.
      */
 
@@ -436,7 +436,7 @@ gjs_define_boxed_class(JSContext    *context,
 
         gjs_object_get_property(context, constructor, "prototype", &value);
         if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "boxed %s prototype property does not appear to exist or has wrong type", constructor_name);
+            gjs_throw(context, "union %s prototype property does not appear to exist or has wrong type", constructor_name);
             return JS_FALSE;
         } else {
             if (prototype_p)
@@ -449,29 +449,29 @@ gjs_define_boxed_class(JSContext    *context,
     }
 
     prototype = gjs_init_class_dynamic(context, in_object,
-                                          /* parent prototype JSObject* for
-                                           * prototype; NULL for
-                                           * Object.prototype
-                                           */
-                                          NULL,
-                                          g_base_info_get_namespace( (GIBaseInfo*) info),
-                                          constructor_name,
-                                          &gjs_boxed_class,
-                                          /* constructor for instances (NULL for
-                                           * none - just name the prototype like
-                                           * Math - rarely correct)
-                                           */
-                                          boxed_constructor,
-                                          /* number of constructor args */
-                                          0,
-                                          /* props of prototype */
-                                          &gjs_boxed_proto_props[0],
-                                          /* funcs of prototype */
-                                          &gjs_boxed_proto_funcs[0],
-                                          /* props of constructor, MyConstructor.myprop */
-                                          NULL,
-                                          /* funcs of constructor, MyConstructor.myfunc() */
-                                          NULL);
+                                       /* parent prototype JSObject* for
+                                        * prototype; NULL for
+                                        * Object.prototype
+                                        */
+                                       NULL,
+                                       g_base_info_get_namespace( (GIBaseInfo*) info),
+                                       constructor_name,
+                                       &gjs_union_class,
+                                       /* constructor for instances (NULL for
+                                        * none - just name the prototype like
+                                        * Math - rarely correct)
+                                        */
+                                       union_constructor,
+                                       /* number of constructor args */
+                                       0,
+                                       /* props of prototype */
+                                       &gjs_union_proto_props[0],
+                                       /* funcs of prototype */
+                                       &gjs_union_proto_funcs[0],
+                                       /* props of constructor, MyConstructor.myprop */
+                                       NULL,
+                                       /* funcs of constructor, MyConstructor.myfunc() */
+                                       NULL);
     if (prototype == NULL)
         gjs_fatal("Can't init class %s", constructor_name);
 
@@ -508,7 +508,7 @@ gjs_define_boxed_class(JSContext    *context,
 }
 
 JSObject*
-gjs_boxed_from_g_boxed(JSContext    *context,
+gjs_union_from_g_boxed(JSContext    *context,
                        GType         gtype,
                        void         *gboxed)
 {
@@ -520,7 +520,7 @@ gjs_boxed_from_g_boxed(JSContext    *context,
         return NULL;
 
     gjs_debug_marshal(GJS_DEBUG_GBOXED,
-                      "Wrapping boxed %s %p with JSObject",
+                      "Wrapping union %s %p with JSObject",
                       g_type_name(gtype), gboxed);
 
     info = g_irepository_find_by_gtype(g_irepository_get_default(),
@@ -528,24 +528,23 @@ gjs_boxed_from_g_boxed(JSContext    *context,
 
     if (info == NULL) {
         gjs_throw(context,
-                     "Unknown boxed type %s",
+                     "Unknown union type %s",
                      g_type_name(gtype));
         return NULL;
     }
 
-    if (g_base_info_get_type( (GIBaseInfo*) info) != GI_INFO_TYPE_BOXED &&
-        g_base_info_get_type( (GIBaseInfo*) info) != GI_INFO_TYPE_STRUCT) {
+    if (g_base_info_get_type( (GIBaseInfo*) info) != GI_INFO_TYPE_UNION) {
         gjs_throw(context,
-                  "GType %s doesn't map to boxed in g-i?",
+                  "GType %s doesn't map to union in g-i?",
                   g_base_info_get_name( (GIBaseInfo*) info));
         g_base_info_unref( (GIBaseInfo*) info);
         return NULL;
     }
 
-    proto = gjs_lookup_boxed_prototype(context, (GIBoxedInfo*) info);
+    proto = gjs_lookup_union_prototype(context, (GIUnionInfo*) info);
 
     /* can't come up with a better approach... */
-    unthreadsafe_template_for_constructor.info = (GIBoxedInfo*) info;
+    unthreadsafe_template_for_constructor.info = (GIUnionInfo*) info;
     unthreadsafe_template_for_constructor.gboxed = gboxed;
 
     obj = gjs_construct_object_dynamic(context, proto,
@@ -557,10 +556,10 @@ gjs_boxed_from_g_boxed(JSContext    *context,
 }
 
 void*
-gjs_g_boxed_from_boxed(JSContext    *context,
+gjs_g_boxed_from_union(JSContext    *context,
                        JSObject     *obj)
 {
-    Boxed *priv;
+    Union *priv;
 
     if (obj == NULL)
         return NULL;
@@ -572,7 +571,7 @@ gjs_g_boxed_from_boxed(JSContext    *context,
 
     if (priv->gboxed == NULL) {
         gjs_throw(context,
-                  "Object is %s.%s.prototype, not an object instance - cannot convert to a boxed instance",
+                  "Object is %s.%s.prototype, not an object instance - cannot convert to a union instance",
                   g_base_info_get_namespace( (GIBaseInfo*) priv->info),
                   g_base_info_get_name( (GIBaseInfo*) priv->info));
         return NULL;
