@@ -35,6 +35,23 @@ gjstest.h.stamp : scripts/make-tests $(gjstest_files_with_tests)
 gjstest.h gjstest.c : gjstest.h.stamp
 	@true
 
+TEST_PROGS += gjs-unit
+
+gjs_unit_CPPFLAGS =		\
+	$(AM_CPPFLAGS)          \
+	$(gjs_directory_defines)\
+	$(GJS_CFLAGS)
+gjs_unit_LDADD =		\
+	$(GJS_LIBS)		\
+	libgjs.la
+
+## -rdynamic makes backtraces work
+## we -export-dynamic so we can dlopen ourselves and use gobject-introspection
+gjs_unit_LDFLAGS=-export-dynamic -rdynamic
+gjs_unit_SOURCES =	\
+	test/gjs-unit.c
+
+
 BUILT_SOURCES += $(nodist_gjs_tests_SOURCES)
 CLEANFILES +=				\
 	$(nodist_gjs_tests_SOURCES)	\
