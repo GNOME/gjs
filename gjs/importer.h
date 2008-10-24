@@ -24,6 +24,10 @@
 #ifndef __GJS_IMPORTER_H__
 #define __GJS_IMPORTER_H__
 
+#ifndef __GJS_GJS_H__
+#warning Include <gjs/gjs.h> instead of <gjs/importer.h>
+#endif
+
 #include <glib.h>
 
 #include <jsapi.h>

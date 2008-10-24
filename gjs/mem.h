@@ -24,6 +24,10 @@
 #ifndef __GJS_MEM_H__
 #define __GJS_MEM_H__
 
+#ifndef __GJS_GJS_H__
+#warning Include <gjs/gjs.h> instead of <gjs/mem.h>
+#endif
+
 #include <glib.h>
 #include <jsapi.h>
 
