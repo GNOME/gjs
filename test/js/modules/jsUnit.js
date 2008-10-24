@@ -445,6 +445,7 @@ function jsUnitSetOnLoad(windowRef, onloadHandler)
 // calls to setUp() and tearDown()
 function gjstestRun() {
   var rv = 0;
+  var failures = [];
 
   for (propName in window) {
     if (!propName.match(/^test\w+/))
@@ -475,6 +476,7 @@ function gjstestRun() {
         // whole test as failed
         log(result);
         rv = 1;
+        failures.push(propName);
       }
       else {
         // unexpected error, let the shell handle it
@@ -482,6 +484,11 @@ function gjstestRun() {
       }
     }
     tearDown();
+  }
+
+  if (failures.length > 0) {
+    log(failures.length + " tests failed in this file");
+    log("Failures were: " + failures.join(", "));
   }
 
   // if gjstestRun() is the last call in a file, this becomes the
