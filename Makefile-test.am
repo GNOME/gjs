@@ -71,3 +71,6 @@ test:	$(gjsnative_LTLIBRARIES) ${TEST_PROGS}
 
 check:	test
 
+
+EXTRA_DIST +=				\
+	test/js/modules/jsUnit.js
