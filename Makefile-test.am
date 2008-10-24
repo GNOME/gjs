@@ -72,10 +72,18 @@ test:	$(gjsnative_LTLIBRARIES) ${TEST_PROGS}
 check:	test
 
 
-EXTRA_DIST +=				\
-	test/js/modules/jsUnit.js	\
-	test/js/testself.js		\
-	test/js/testLang.js		\
-	test/js/testMainloop.js		\
-	test/js/testSignals.js		\
+EXTRA_DIST +=					\
+	test/js/modules/jsUnit.js		\
+	test/js/modules/alwaysThrows.js         \
+	test/js/modules/foobar.js               \
+	test/js/modules/subA/foo                \
+	test/js/modules/subA/subB/foobar.js     \
+	test/js/modules/subA/subB/baz.js        \
+	test/js/modules/jsUnit.js               \
+	test/js/modules/testUtil.js             \
+	test/js/testself.js			\
+	test/js/testImporter.js			\
+	test/js/testLang.js			\
+	test/js/testMainloop.js			\
+	test/js/testSignals.js			\
 	test/js/testTweener.js
