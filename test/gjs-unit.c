@@ -101,7 +101,7 @@ main(int argc, char **argv)
     g_setenv("TOP_SRCDIR", GJS_TOP_SRCDIR, FALSE);
     g_setenv("BUILDDIR", GJS_BUILDDIR, FALSE);
     g_setenv("XDG_DATA_HOME", GJS_BUILDDIR "/test_user_data", FALSE);
-    g_setenv("GJS_USE_UNINSTALLED_FILES", "1", FALSE);
+    g_setenv("GJS_PATH", GJS_TOP_SRCDIR"/modules:"GJS_BUILDDIR"/.libs", FALSE);
 
     /* need ${top_srcdir} later */
     top_srcdir = g_getenv ("TOP_SRCDIR");
