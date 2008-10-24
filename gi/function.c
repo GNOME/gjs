@@ -26,6 +26,8 @@
 #include "function.h"
 #include "arg.h"
 #include "object.h"
+#include "boxed.h"
+#include "union.h"
 #include <gjs/gjs.h>
 
 #include <util/log.h>
@@ -161,7 +163,16 @@ gjs_invoke_c_function(JSContext      *context,
     argv_pos = 0; /* index into argv */
 
     if (is_method) {
-        in_args[0].v_pointer = gjs_g_object_from_object(context, obj);
+        GIBaseInfo *container = g_base_info_get_container((GIBaseInfo *) info);
+        GIInfoType type = g_base_info_get_type(container);
+
+        if (type == GI_INFO_TYPE_STRUCT || type == GI_INFO_TYPE_BOXED) {
+            in_args[0].v_pointer = gjs_g_boxed_from_boxed(context, obj);
+        } else if (type == GI_INFO_TYPE_UNION) {
+            in_args[0].v_pointer = gjs_g_boxed_from_union(context, obj);
+        } else { /* by fallback is always object */
+            in_args[0].v_pointer = gjs_g_object_from_object(context, obj);
+        }
         ++in_args_pos;
     }
 
