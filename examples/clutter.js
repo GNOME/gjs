@@ -1,5 +1,5 @@
-imports.gi.versions.clutter = '0.8';
-const Clutter = imports.gi.clutter;
+imports.gi.versions.Clutter = '0.8';
+const Clutter = imports.gi.Clutter;
 
 Clutter.init(null, null);
 
