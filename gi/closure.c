@@ -28,8 +28,7 @@
 
 #include "closure.h"
 #include "keep-alive.h"
-#include <gjs/mem.h>
-#include <gjs/jsapi-util.h>
+#include <gjs/gjs.h>
 
 typedef struct {
     GClosure base;

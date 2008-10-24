@@ -31,7 +31,7 @@
 #include "param.h"
 #include "object.h"
 #include "boxed.h"
-#include <gjs/jsapi-util.h>
+#include <gjs/gjs.h>
 
 static void
 closure_marshal(GClosure        *closure,

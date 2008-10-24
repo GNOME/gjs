@@ -26,7 +26,7 @@
 #include "ns.h"
 #include "repo.h"
 #include "param.h"
-#include <gjs/mem.h>
+#include <gjs/gjs.h>
 
 #include <util/log.h>
 

@@ -30,7 +30,7 @@
 
 #include <girepository.h>
 
-#include <gjs/jsapi-util.h>
+#include <gjs/gjs.h>
 
 G_BEGIN_DECLS
 

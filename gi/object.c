@@ -32,7 +32,7 @@
 #include "value.h"
 #include "keep-alive.h"
 
-#include <gjs/mem.h>
+#include <gjs/gjs.h>
 
 #include <util/log.h>
 

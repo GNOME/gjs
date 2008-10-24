@@ -26,8 +26,7 @@
 #include "function.h"
 #include "arg.h"
 #include "object.h"
-#include <gjs/jsapi-util.h>
-#include <gjs/mem.h>
+#include <gjs/gjs.h>
 
 #include <util/log.h>
 

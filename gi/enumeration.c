@@ -25,7 +25,7 @@
 
 #include <string.h>
 
-#include <gjs/jsapi-util.h>
+#include <gjs/gjs.h>
 #include "repo.h"
 
 #include <util/log.h>

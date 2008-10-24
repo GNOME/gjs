@@ -28,7 +28,7 @@
 #include <util/log.h>
 
 #include "native.h"
-#include <gjs/jsapi-util.h>
+#include <gjs/gjs.h>
 
 typedef struct {
     GjsDefineModuleFunc func;

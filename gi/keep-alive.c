@@ -25,7 +25,7 @@
 
 #include "keep-alive.h"
 
-#include <gjs/jsapi-util.h>
+#include <gjs/gjs.h>
 
 #include <util/log.h>
 #include <util/glib.h>

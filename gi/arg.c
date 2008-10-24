@@ -27,7 +27,7 @@
 #include "object.h"
 #include "boxed.h"
 #include "value.h"
-#include <gjs/jsapi-util.h>
+#include <gjs/gjs.h>
 
 #include <util/log.h>
 

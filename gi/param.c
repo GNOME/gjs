@@ -27,8 +27,7 @@
 
 #include "param.h"
 #include "repo.h"
-#include <gjs/jsapi-util.h>
-#include <gjs/mem.h>
+#include <gjs/gjs.h>
 
 #include <util/log.h>
 

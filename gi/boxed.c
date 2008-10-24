@@ -28,8 +28,7 @@
 #include "boxed.h"
 #include "arg.h"
 #include "object.h"
-#include <gjs/mem.h>
-#include <gjs/jsapi-util.h>
+#include <gjs/gjs.h>
 #include "repo.h"
 #include "function.h"
 
