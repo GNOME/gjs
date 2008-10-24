@@ -73,4 +73,5 @@ check:	test
 
 
 EXTRA_DIST +=				\
-	test/js/modules/jsUnit.js
+	test/js/modules/jsUnit.js	\
+	test/js/testMainloop.js
