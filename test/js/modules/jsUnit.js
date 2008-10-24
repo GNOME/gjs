@@ -59,9 +59,7 @@ function jsUnitFixTop() {
       }
     }
   }
-  try {
-    window.top = tempTop;
-  } catch (e) {}
+  top = tempTop;
 }
 
 jsUnitFixTop();
