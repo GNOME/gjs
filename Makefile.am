@@ -26,7 +26,6 @@ nobase_gjsinclude_HEADERS =	\
 	gjs/native.h
 noinst_HEADERS =		\
 	gjs/context-jsapi.h	\
-	util/dirs.h		\
 	util/error.h		\
 	util/glib.h		\
 	util/log.h		\
@@ -70,7 +69,6 @@ libgjs_la_SOURCES =		\
 	gjs/jsapi-util-string.c	\
 	gjs/mem.c		\
 	gjs/native.c		\
-	util/dirs.c		\
 	util/error.c		\
 	util/glib.c		\
 	util/log.c		\
@@ -80,7 +78,6 @@ gjstest_files_with_tests += 	\
 	gjs/jsapi-util-array.c	\
 	gjs/jsapi-util-error.c	\
 	gjs/jsapi-util-string.c	\
-	util/dirs.c		\
 	util/glib.c
 
 include Makefile-gi.am

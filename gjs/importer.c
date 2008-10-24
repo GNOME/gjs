@@ -24,7 +24,6 @@
 #include <config.h>
 
 #include <util/log.h>
-#include <util/dirs.h>
 #include <util/glib.h>
 
 #include <jsapi.h>
@@ -35,6 +34,8 @@
 #include "native.h"
 
 #include <string.h>
+
+static char **gjs_search_path = NULL;
 
 typedef struct {
     void *dummy;
@@ -820,6 +821,57 @@ importer_new(JSContext    *context)
     return importer;
 }
 
+static G_CONST_RETURN char * G_CONST_RETURN *
+gjs_get_search_path(void)
+{
+    char **search_path;
+
+    /* not thread safe */
+
+    if (!gjs_search_path) {
+        G_CONST_RETURN gchar* G_CONST_RETURN * system_data_dirs;
+        const char *envstr;
+        GPtrArray *path;
+        gsize i;
+
+        path = g_ptr_array_new();
+
+        /* in order of priority */
+
+        /* $GJS_PATH */
+        envstr = g_getenv("GJS_PATH");
+        if (envstr) {
+            char **dirs, **d;
+            dirs = g_strsplit(envstr, G_SEARCHPATH_SEPARATOR_S, 0);
+            for (d = dirs; *d != NULL; d++)
+                g_ptr_array_add(path, *d);
+            /* we assume the array and strings are allocated separately */
+            g_free(dirs);
+        }
+
+        /* $XDG_DATA_DIRS /gjs-1.0 */
+        system_data_dirs = g_get_system_data_dirs();
+        for (i = 0; system_data_dirs[i] != NULL; ++i) {
+            char *s;
+            s = g_build_filename(system_data_dirs[i], "gjs-1.0", NULL);
+            g_ptr_array_add(path, s);
+        }
+
+        /* ${libdir}/gjs-1.0 */
+        g_ptr_array_add(path, g_strdup(GJS_NATIVE_DIR));
+
+        g_ptr_array_add(path, NULL);
+
+        search_path = (char**)g_ptr_array_free(path, FALSE);
+
+        gjs_search_path = search_path;
+    } else {
+        search_path = gjs_search_path;
+    }
+
+    return (G_CONST_RETURN char * G_CONST_RETURN *)search_path;
+}
+
 JSObject*
 gjs_define_importer(JSContext    *context,
                     JSObject     *in_object,
@@ -828,19 +880,16 @@ gjs_define_importer(JSContext    *context,
                     gboolean      add_standard_search_path)
 {
     JSObject *importer;
-    char **paths[3] = {0};
+    char **paths[2] = {0};
     char **search_path;
 
     paths[0] = (char**)initial_search_path;
     if (add_standard_search_path) {
         /* Stick the "standard" shared search path after the provided one. */
-        paths[1] = gjs_get_search_path(GJS_DIRECTORY_SHARED_JAVASCRIPT);
-        paths[2] = gjs_get_search_path(GJS_DIRECTORY_SHARED_JAVASCRIPT_NATIVE);
+        paths[1] = (char**)gjs_get_search_path();
     }
 
-    search_path = gjs_g_strv_concat(paths, 3);
-    g_strfreev(paths[1]);
-    g_strfreev(paths[2]);
+    search_path = gjs_g_strv_concat(paths, 2);
 
     importer = importer_new(context);
 

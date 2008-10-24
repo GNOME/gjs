@@ -34,7 +34,6 @@
 #include <gjs/mem.h>
 
 #include <util/log.h>
-#include <util/dirs.h>
 #include <util/misc.h>
 
 #include <jsapi.h>
