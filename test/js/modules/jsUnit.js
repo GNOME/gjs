@@ -202,13 +202,14 @@ function assertRaises() {
     if (typeof(fun) != 'function')
         error("Bad argument to assertRaises(function)");
 
+    var retval;
     try {
-        fun();
+        retval = fun();
     } catch (e) {
         exception = e;
     }
 
-    _assert(commentArg(1, arguments), exception !== top.JSUNIT_UNDEFINED_VALUE, "Call to assertRaises(function) did not raise an exception");
+    _assert(commentArg(1, arguments), exception !== top.JSUNIT_UNDEFINED_VALUE, "Call to assertRaises(function) did not raise an exception. Return value was " + _displayStringForValue(retval) + ' (' + typeof(retval) + ')');
 }
 
 function isLoaded() {
