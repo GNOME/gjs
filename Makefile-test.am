@@ -71,6 +71,26 @@ test:	$(gjsnative_LTLIBRARIES) ${TEST_PROGS}
 
 check:	test
 
+valgrind-check valgrind-test: $(gjsnative_LTLIBRARIES) ${TEST_PROGS}
+	@test -z "${TEST_PROGS}" || { \
+	  failed=; for prog in ${TEST_PROGS}; do \
+	    ${TESTS_ENVIRONMENT} G_SLICE=always-malloc	\
+	    $(LIBTOOL) --mode=execute valgrind 		\
+	    --log-file=valgrind.$$prog.log 		\
+	    --error-exitcode=1 				\
+	    --trace-children=yes 			\
+	    --tool=memcheck 				\
+	    --leak-check=full 				\
+	    --suppressions=$(top_srcdir)/test/gjs.supp	\
+	    $$prog \
+	    && $(GREP) -q 'definitely lost: 0 bytes in 0 blocks' valgrind.$$prog.log \
+	    || failed="$$failed $$prog"; \
+	  done; \
+	  test -z "$$failed" || { \
+	    echo "valgrind failed for:$$failed"; exit 1; \
+	  }; \
+	}
+CLEANFILES += $(TEST_PROGS:%=valgrind.%.log)
 
 EXTRA_DIST +=					\
 	test/js/modules/jsUnit.js		\

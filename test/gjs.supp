@@ -1,0 +1,58 @@
+{
+   gjs-unit test filenames never freed
+   Memcheck:Leak
+   fun:realloc
+   fun:g_realloc
+   obj:/usr/lib/libglib-2.0.so.0.*.*
+   fun:g_string_insert_len
+   fun:g_string_append_len
+   obj:/usr/lib/libglib-2.0.so.0.*.*
+   fun:g_build_filename
+   fun:main
+}
+
+{
+   g_type_init_with_debug_flags never freed
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   obj:/usr/lib/libgobject-2.0.so.0.*.*
+   obj:/usr/lib/libgobject-2.0.so.0.*.*
+   fun:g_type_init_with_debug_flags
+   fun:g_type_init
+   fun:main
+}
+
+{
+   importer_new_resolve string never freed
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:g_utf16_to_utf8
+   fun:gjs_string_to_utf8
+   fun:importer_new_resolve
+   obj:/usr/lib/xulrunner*/libmozjs.so
+   obj:/usr/lib/xulrunner*/libmozjs.so
+   obj:/usr/lib/xulrunner*/libmozjs.so
+   obj:/usr/lib/xulrunner*/libmozjs.so
+   fun:JS_EvaluateUCScriptForPrincipals
+   fun:JS_EvaluateUCScript
+   fun:JS_EvaluateScript
+}
+
+{
+   xulrunner internal allocations never freed
+   Memcheck:Leak
+   fun:malloc
+   obj:/usr/lib/xulrunner*/libmozjs.so
+   obj:/usr/lib/xulrunner*/libmozjs.so
+   obj:/usr/lib/xulrunner*/libmozjs.so
+   fun:gjs_context_constructor
+   fun:g_object_newv
+   fun:g_object_new_valist
+   fun:g_object_new
+   fun:gjs_context_new_with_search_path
+   fun:setup
+   obj:/usr/lib/libglib-2.0.so.0.*.*
+   obj:/usr/lib/libglib-2.0.so.0.*.*
+}
