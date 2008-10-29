@@ -102,6 +102,7 @@ EXTRA_DIST +=					\
 	test/js/modules/jsUnit.js               \
 	test/js/modules/testUtil.js             \
 	test/js/testself.js			\
+	test/js/testEverythingBasic.js		\
 	test/js/testImporter.js			\
 	test/js/testLang.js			\
 	test/js/testMainloop.js			\
