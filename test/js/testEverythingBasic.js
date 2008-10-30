@@ -62,8 +62,7 @@ function testNoImplicitConversionToUnsigned() {
     assertRaises(function() { return Everything.test_uint16(-42); });
     assertRaises(function() { return Everything.test_uint32(-42); });
 
-    // FAIL: returns 18446744073709552000 instead of raising exception
-    //assertRaises(function() { return Everything.test_uint64(-42); });
+    assertRaises(function() { return Everything.test_uint64(-42); });
 
     assertRaises(function() { return Everything.test_uint(-42); });
     assertRaises(function() { return Everything.test_size(-42); });

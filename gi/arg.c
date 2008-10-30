@@ -281,6 +281,8 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
         double v;
         if (!JS_ValueToNumber(context, value, &v))
             wrong = TRUE;
+        if (v < 0)
+            out_of_range = TRUE;
         /* XXX we fail with values close to G_MAXUINT64 */
         arg->v_uint64 = v;
     }
