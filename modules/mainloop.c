@@ -103,7 +103,7 @@ gjs_main_loop_run(JSContext *context,
         main_loop = g_main_loop_new(NULL, FALSE);
         g_hash_table_replace(pending_main_loops, g_strdup(cancel_id), main_loop);
     } else {
-        g_object_ref(main_loop);
+        g_main_loop_ref(main_loop);
     }
 
     gjs_debug(GJS_DEBUG_MAINLOOP,
