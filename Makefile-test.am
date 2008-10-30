@@ -100,7 +100,6 @@ EXTRA_DIST +=					\
 	test/js/modules/subA/subB/foobar.js     \
 	test/js/modules/subA/subB/baz.js        \
 	test/js/modules/jsUnit.js               \
-	test/js/modules/testUtil.js             \
 	test/js/testself.js			\
 	test/js/testEverythingBasic.js		\
 	test/js/testImporter.js			\
