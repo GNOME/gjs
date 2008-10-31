@@ -12,8 +12,8 @@ JS_NATIVE_MODULE_CFLAGS =	\
         $(AM_CFLAGS)		\
         $(GJS_CFLAGS)
 JS_NATIVE_MODULE_LIBADD =	\
-        $(GJS_LIBS)		\
-        libgjs.la
+        libgjs.la		\
+        $(GJS_LIBS)
 JS_NATIVE_MODULE_LDFLAGS =	\
         -module -avoid-version -Wl,-z,defs -rdynamic
 

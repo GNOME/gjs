@@ -7,8 +7,8 @@ libgjs_gi_la_CFLAGS =			\
         $(GJS_CFLAGS)			\
         $(GOBJECT_INTROSPECTION_CFLAGS)
 libgjs_gi_la_LIBADD =			\
-        $(GOBJECT_INTROSPECTION_LIBS)	\
-        libgjs.la
+        libgjs.la			\
+        $(GOBJECT_INTROSPECTION_LIBS)
 libgjs_gi_la_LDFLAGS = \
 	-export-symbols-regex "^[^_].*" -version-info 0:0:0 -rdynamic
 

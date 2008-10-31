@@ -13,8 +13,8 @@ gjs_tests_CFLAGS =				\
 ## -rdynamic makes backtraces work
 gjs_tests_LDFLAGS = -rdynamic
 gjs_tests_LDADD =		\
-	$(GJSTESTS_LIBS)	\
-	libgjs.la
+	libgjs.la		\
+	$(GJSTESTS_LIBS)
 
 gjs_tests_SOURCES =		\
 	test/gjs-tests.c	\
@@ -42,8 +42,8 @@ gjs_unit_CPPFLAGS =		\
 	$(gjs_directory_defines)\
 	$(GJS_CFLAGS)
 gjs_unit_LDADD =		\
-	$(GJS_LIBS)		\
-	libgjs.la
+	libgjs.la		\
+	$(GJS_LIBS)
 
 ## -rdynamic makes backtraces work
 ## we -export-dynamic so we can dlopen ourselves and use gobject-introspection
