@@ -19,7 +19,6 @@ nobase_gjsgiinclude_HEADERS =	\
 	gi/enumeration.h	\
 	gi/function.h	\
 	gi/keep-alive.h	\
-	gi/native.h	\
 	gi/ns.h	        \
 	gi/object.h	\
 	gi/param.h	\
@@ -34,7 +33,6 @@ libgjs_gi_la_SOURCES =	\
 	gi/enumeration.c	\
 	gi/function.c	\
 	gi/keep-alive.c	\
-	gi/native.c	\
 	gi/ns.c	\
 	gi/object.c	\
 	gi/param.c	\
