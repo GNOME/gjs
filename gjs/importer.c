@@ -566,7 +566,13 @@ importer_new_enumerate(JSContext  *context,
             }
 
             while ((filename = g_dir_read_name(dir))) {
-                char *full_path = g_build_filename(dirname, filename, NULL);
+                char *full_path;
+
+                /* skip hidden files and directories (.svn, .git, ...) */
+                if (filename[0] == '.')
+                    continue;
+
+                full_path = g_build_filename(dirname, filename, NULL);
 
                 if (g_file_test(full_path, G_FILE_TEST_IS_DIR)) {
                     g_ptr_array_add(iter->elements, g_strdup(filename));

@@ -71,4 +71,18 @@ function testImporterEnumerate() {
 
 }
 
+function testImporterEnumerateSkipHidden() {
+    const subA = imports.subA;
+
+    for (let module in subA) {
+        assertTrue("hidden module '"+module+"' should not be seen", module[0] != '.');
+    }
+}
+
+function testImporterHidden() {
+    // mainly for distcheck, really
+    const secret = imports.subA['.secret'];
+    const hidden = imports.subA['.hidden'].hidden;
+}
+
 gjstestRun();
