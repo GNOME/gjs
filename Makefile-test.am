@@ -109,3 +109,28 @@ EXTRA_DIST +=					\
 	test/js/testMainloop.js			\
 	test/js/testSignals.js			\
 	test/js/testTweener.js
+
+########################################################################
+if ENABLE_COVERAGE
+lcov:
+	test -d lcov || mkdir lcov
+	$(LCOV) --compat-libtool --directory . --capture -o lcov/lcov.info
+	$(GENHTML) --legend -o lcov lcov/lcov.info
+
+lcov-clean:
+	find . -name '*.gcda' -delete
+	rm -rf lcov
+
+lcov-realclean: lcov-clean
+	find . -name '*.gcno' -delete
+
+clean-local: lcov-realclean
+
+.PHONY: lcov lcov-clean lcov-realclean
+else
+lcov:
+	@echo >&1 "*** ERROR: 'configure --enable-coverage' required"
+	@exit 1
+
+.PHONY: lcov
+endif

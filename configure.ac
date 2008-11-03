@@ -24,6 +24,27 @@ AM_DISABLE_STATIC
 AC_PROG_LIBTOOL
 dnl DOLT
 
+# coverage
+AC_ARG_ENABLE([coverage],
+              [AS_HELP_STRING([--enable-coverage],
+                              [enable code coverage])],
+              , [enable_coverage=no])
+if test x$enable_coverage = xyes; then
+    if test x$GCC != xyes; then
+        AC_MSG_ERROR([GCC is required for --enable-coverage])
+    fi
+
+    AC_PATH_TOOL([LCOV], [lcov])
+    AC_PATH_TOOL([GENHTML], [genhtml])
+
+    if test x$LCOV = x || test x$GENHTML = x; then
+        AC_MSG_ERROR([lcov and genhtml are required for --enable-coverage])
+    fi
+
+    CFLAGS="$CFLAGS -g -O0 -fprofile-arcs -ftest-coverage"
+fi
+AM_CONDITIONAL([ENABLE_COVERAGE], [test x$enable_coverage = xyes])
+
 # Checks for libraries.
 m4_define(gobject_required_version, 2.16.0)
 
