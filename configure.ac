@@ -48,9 +48,16 @@ AM_CONDITIONAL([ENABLE_COVERAGE], [test x$enable_coverage = xyes])
 # Checks for libraries.
 m4_define(gobject_required_version, 2.16.0)
 
-## spidermonkey .pc file name varies across distributions
-PKG_CHECK_EXISTS([firefox-js], [JS_PACKAGE=firefox-js],
-                 [PKG_CHECK_EXISTS([xulrunner-js], [JS_PACKAGE=xulrunner-js], [JS_PACKAGE=mozilla-js])])
+## spidermonkey .pc file name varies across distributions and Gecko version
+##
+## mozilla-js: Gecko 1.9, all distributions
+## xulrunner-js: Gecko 1.8 (and earlier?) Debian/Ubuntu
+## firefox-js: ???
+##
+## Checking for mozilla-js first will hopefully get us the newest version
+## of spidermonkey.
+PKG_CHECK_EXISTS([mozilla-js], [JS_PACKAGE=mozilla-js],
+                 [PKG_CHECK_EXISTS([xulrunner-js], [JS_PACKAGE=xulrunner-js], [JS_PACKAGE=firefox-js])])
 
 PKG_CHECK_MODULES(JS, $JS_PACKAGE)
 AC_SUBST(JS_PACKAGE)
