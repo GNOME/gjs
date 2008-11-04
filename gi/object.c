@@ -1330,7 +1330,7 @@ get_obj_key(JSRuntime *runtime,
     /* not thread safe, but that's fine for now - just nuke the
      * cache thingy if we ever need thread safety
      */
-    static char cached_buf[OBJ_KEY_LEN];
+    static char cached_buf[OBJ_KEY_LEN+1];
     static JSRuntime *cached_for = NULL;
 
     if (cached_for != runtime) {
