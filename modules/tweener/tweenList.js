@@ -62,39 +62,39 @@ TweenList.prototype = {
     },
 
     clone: function(omitEvents) {
-        var tween = new TweenList(scope, timeStart, timeComplete, useFrames,
-                                  transition, transitionParams);
+        var tween = new TweenList(this.scope, this.timeStart, this.timeComplete, this.userFrames,
+                                  this.transition, this.transitionParams);
         tween.properties = new Array();
-        for (let name in properties) {
-            tween.properties[name] = properties[name].clone();
+        for (let name in this.properties) {
+            tween.properties[name] = this.properties[name];
         }
-        tween.skipUpdates = skipUpdates;
-        tween.updatesSkipped = updatesSkipped;
+        tween.skipUpdates = this.skipUpdates;
+        tween.updatesSkipped = this.updatesSkipped;
 
         if (!omitEvents) {
-            tween.onStart = onStart;
-            tween.onUpdate = onUpdate;
-            tween.onComplete = onComplete;
-            tween.onOverwrite = onOverwrite;
-            tween.onError = onError;
-            tween.onStartParams = onStartParams;
-            tween.onUpdateParams = onUpdateParams;
-            tween.onCompleteParams = onCompleteParams;
-            tween.onOverwriteParams = onOverwriteParams;
-            tween.onStartScope = onStartScope;
-            tween.onUpdateScope = onUpdateScope;
-            tween.onCompleteScope = onCompleteScope;
-            tween.onOverwriteScope = onOverwriteScope;
-            tween.onErrorScope = onErrorScope;
+            tween.onStart = this.onStart;
+            tween.onUpdate = this.onUpdate;
+            tween.onComplete = this.onComplete;
+            tween.onOverwrite = this.onOverwrite;
+            tween.onError = this.onError;
+            tween.onStartParams = this.onStartParams;
+            tween.onUpdateParams = this.onUpdateParams;
+            tween.onCompleteParams = this.onCompleteParams;
+            tween.onOverwriteParams = this.onOverwriteParams;
+            tween.onStartScope = this.onStartScope;
+            tween.onUpdateScope = this.onUpdateScope;
+            tween.onCompleteScope = this.onCompleteScope;
+            tween.onOverwriteScope = this.onOverwriteScope;
+            tween.onErrorScope = this.onErrorScope;
         }
-        tween.rounded = rounded;
-        tween.isPaused = isPaused;
-        tween.timePaused = timePaused;
-        tween.isCaller = isCaller;
-        tween.count = count;
-        tween.timesCalled = timesCalled;
-        tween.waitFrames = waitFrames;
-        tween.hasStarted = hasStarted;
+        tween.rounded = this.rounded;
+        tween.isPaused = this.isPaused;
+        tween.timePaused = this.timePaused;
+        tween.isCaller = this.isCaller;
+        tween.count = this.count;
+        tween.timesCalled = this.timesCalled;
+        tween.waitFrames = this.waitFrames;
+        tween.hasStarted = this.hasStarted;
 
         return tween;
     }
