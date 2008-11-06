@@ -347,6 +347,17 @@ object_instance_new_resolve(JSContext *context,
 
             method_name = g_base_info_get_name( (GIBaseInfo*) method_info);
 
+            /* we do not define deprecated methods in the prototype */
+            if (g_base_info_is_deprecated( (GIBaseInfo*) method_info)) {
+                gjs_debug(GJS_DEBUG_GOBJECT,
+                          "Ignoring definition of deprecated method %s in prototype for %s (%s.%s)",
+                          method_name,
+                          g_type_name(priv->gtype),
+                          g_base_info_get_namespace( (GIBaseInfo*) priv->info),
+                          g_base_info_get_name( (GIBaseInfo*) priv->info));
+                return JS_FALSE;
+            }
+
             gjs_debug(GJS_DEBUG_GOBJECT,
                       "Defining method %s in prototype for %s (%s.%s)",
                       method_name,
