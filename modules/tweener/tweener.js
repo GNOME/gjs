@@ -610,7 +610,7 @@ function _splitTweens(tween, properties) {
     var found = false;
     for (name in newTween.properties) {
         found = false;
-        for (i = 0; i < properties.length; i++) {
+        for (let i = 0; i < properties.length; i++) {
             if (properties[i] == name) {
                 found = true;
                 break;
