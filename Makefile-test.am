@@ -96,6 +96,8 @@ EXTRA_DIST +=					\
 	test/js/modules/jsUnit.js		\
 	test/js/modules/alwaysThrows.js         \
 	test/js/modules/foobar.js               \
+ 	test/js/modules/mutualImport/a.js       \
+ 	test/js/modules/mutualImport/b.js       \
 	test/js/modules/subA/.secret.js         \
 	test/js/modules/subA/.hidden/hidden.js  \
 	test/js/modules/subA/foo                \

@@ -5,6 +5,9 @@ function testImporter() {
     assertRaises(function() { const m = imports.nonexistentModuleName; });
     assertRaises(function() { const m = imports.alwaysThrows; });
 
+    // Try again to make sure that we properly discarded the module object
+    assertRaises(function() { const m = imports.alwaysThrows; });
+
     // Import a non-broken module
     const foobar = imports.foobar;
     assertNotUndefined(foobar);
@@ -12,6 +15,11 @@ function testImporter() {
     assertNotUndefined(foobar.bar);
     assertEquals(foobar.foo, "This is foo");
     assertEquals(foobar.bar, "This is bar");
+
+    // Check that deleting the import is a no-op (imported properties are
+    // permanent)
+    delete imports.foobar;
+    assert(imports.foobar == foobar);
 
     // check that importing a second time gets the same object
     foobar.somethingElse = "Should remain";
@@ -83,6 +91,17 @@ function testImporterHidden() {
     // mainly for distcheck, really
     const secret = imports.subA['.secret'];
     const hidden = imports.subA['.hidden'].hidden;
+}
+
+function testMutualImport() {
+    // We want to check that the copy of the 'a' module imported directly
+    // is the same as the copy that 'b' imports, and that we don't have two
+    // copies because of the A imports B imports A loop.
+
+    let A = imports.mutualImport.a;
+    A.incrementCount();
+    assertEquals(1, A.getCount());
+    assertEquals(1, A.getCountViaB());
 }
 
 gjstestRun();

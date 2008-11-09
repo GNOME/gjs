@@ -131,18 +131,15 @@ finish_import(JSContext  *context,
 }
 
 static JSBool
-finish_import_and_define(JSContext  *context,
-                         JSObject   *obj,
-                         JSObject   *module_obj,
-                         const char *name)
+define_import(JSContext  *context,
+              JSObject   *obj,
+              JSObject   *module_obj,
+              const char *name)
 {
-    if (!finish_import(context, name))
-        return JS_FALSE;
-
     if (!JS_DefineProperty(context, obj,
                            name, OBJECT_TO_JSVAL(module_obj),
                            NULL, NULL,
-                           GJS_MODULE_PROP_FLAGS)) {
+                           GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT)) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to define '%s' in importer",
                   name);
@@ -150,6 +147,59 @@ finish_import_and_define(JSContext  *context,
     }
 
     return JS_TRUE;
+}
+
+/* Just like define_import, but makes the setting permament.
+ * we do this after the import succesfully completes.
+ */
+static void
+seal_import(JSContext    *context,
+            JSObject   *obj,
+            JSObject   *module_obj,
+            const char *name)
+{
+    if (!JS_DefineProperty(context, obj,
+                           name, OBJECT_TO_JSVAL(module_obj),
+                           NULL, NULL,
+                           GJS_MODULE_PROP_FLAGS)) {
+        gjs_debug(GJS_DEBUG_IMPORTER,
+                  "Failed to permanently define '%s' in importer",
+                  name);
+    }
+}
+
+/* An import failed. Delete the property pointing to the import
+ * from the parent namespace. In complicated situations this might
+ * not be sufficient to get us fully back to a sane state. If:
+ *
+ *  - We import module A
+ *  - module A imports module B
+ *  - module B imports module A, storing a reference to the current
+ *    module A module object
+ *  - module A subsequently throws an exception
+ *
+ * Then module B is left imported, but the imported module B has
+ * a reference to the failed module A module object. To handle this
+ * we could could try to track the entire "import operation" and
+ * roll back *all* modifications made to the namespace objects.
+ * It's not clear that the complexity would be worth the small gain
+ * in robustness. (You can still come up with ways of defeating
+ * the attempt to clean up.)
+ */
+static void
+cancel_import(JSContext  *context,
+              JSObject   *obj,
+              const char *name)
+{
+    gjs_debug(GJS_DEBUG_IMPORTER,
+              "Cleaning up from failed import of '%s'",
+              name);
+
+    if (!JS_DeleteProperty(context, obj, name)) {
+        gjs_debug(GJS_DEBUG_IMPORTER,
+                  "Failed to delete '%s' in importer",
+                  name);
+    }
 }
 
 static JSBool
@@ -170,7 +220,13 @@ import_native_file(JSContext  *context,
         return JS_FALSE;
     }
 
-    JS_AddRoot(context, &module_obj);
+    /* We store the module object into the parent module before
+     * initializing the module. If the module has the
+     * GJS_NATIVE_SUPPLIES_MODULE_OBJ flag, it will just overwrite
+     * the reference we stored when it initializes.
+     */
+    if (!define_import(context, obj, module_obj, name))
+        return JS_FALSE;
 
     if (!define_meta_properties(context, module_obj, name, obj))
         goto out;
@@ -178,21 +234,16 @@ import_native_file(JSContext  *context,
     if (!gjs_import_native_module(context, module_obj, full_path, &flags))
         goto out;
 
-    if (flags & GJS_NATIVE_SUPPLIES_MODULE_OBJ) {
-        /* In this case module_obj just gets garbage collected,
-         * we don't end up using it.
-         */
-        if (!finish_import(context, name))
-            goto out;
-    } else {
-        if (!finish_import_and_define(context, obj, module_obj, name))
-            goto out;
-    }
+    if (!finish_import(context, name))
+        goto out;
 
     retval = JS_TRUE;
 
  out:
-    JS_RemoveRoot(context, &module_obj);
+    if (!retval)
+        cancel_import(context, obj, name);
+    else if (!(flags & GJS_NATIVE_SUPPLIES_MODULE_OBJ))
+        seal_import(context, obj, module_obj, name);
 
     return retval;
 }
@@ -207,7 +258,8 @@ import_file(JSContext  *context,
     gsize script_len;
     JSObject *module_obj;
     GError *error;
-    jsval retval;
+    jsval script_retval;
+    JSBool retval = JS_FALSE;
 
     gjs_debug(GJS_DEBUG_IMPORTER,
               "Importing '%s'", full_path);
@@ -217,8 +269,11 @@ import_file(JSContext  *context,
         return JS_FALSE;
     }
 
-    if (!define_meta_properties(context, module_obj, name, obj))
+    if (!define_import(context, obj, module_obj, name))
         return JS_FALSE;
+
+    if (!define_meta_properties(context, module_obj, name, obj))
+        goto out;
 
     script = NULL;
     script_len = 0;
@@ -227,7 +282,7 @@ import_file(JSContext  *context,
     if (!g_file_get_contents(full_path, &script, &script_len, &error)) {
         gjs_throw(context, "Could not open %s: %s", full_path, error->message);
         g_error_free(error);
-        return JS_FALSE;
+        goto out;
     }
 
     g_assert(script != NULL);
@@ -238,7 +293,7 @@ import_file(JSContext  *context,
                            script_len,
                            full_path,
                            1, /* line number */
-                           &retval)) {
+                           &script_retval)) {
         g_free(script);
 
         /* If JSOPTION_DONT_REPORT_UNCAUGHT is set then the exception
@@ -255,15 +310,23 @@ import_file(JSContext  *context,
                          "JS_EvaluateScript() returned FALSE but did not set exception");
         }
 
-        return JS_FALSE;
+        goto out;
     }
 
     g_free(script);
 
-    if (!finish_import_and_define(context, obj, module_obj, name))
-        return JS_FALSE;
+    if (!finish_import(context, obj))
+        goto out;
 
-    return JS_TRUE;
+    retval = JS_TRUE;
+
+ out:
+    if (!retval)
+        cancel_import(context, obj, name);
+    else
+        seal_import(context, obj, module_obj, name);
+
+    return retval;
 }
 
 static JSBool
