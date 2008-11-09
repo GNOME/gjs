@@ -149,23 +149,36 @@ define_import(JSContext  *context,
     return JS_TRUE;
 }
 
-/* Just like define_import, but makes the setting permament.
+/* Make the property we set in define_import permament;
  * we do this after the import succesfully completes.
  */
-static void
-seal_import(JSContext    *context,
+static JSBool
+seal_import(JSContext  *context,
             JSObject   *obj,
-            JSObject   *module_obj,
             const char *name)
 {
-    if (!JS_DefineProperty(context, obj,
-                           name, OBJECT_TO_JSVAL(module_obj),
-                           NULL, NULL,
-                           GJS_MODULE_PROP_FLAGS)) {
+    JSBool found;
+    uintN attrs;
+
+    if (!JS_GetPropertyAttributes(context, obj, name,
+                                  &attrs, &found) || !found) {
         gjs_debug(GJS_DEBUG_IMPORTER,
-                  "Failed to permanently define '%s' in importer",
+                  "Failed to get attributes to seal '%s' in importer",
                   name);
+        return JS_FALSE;
     }
+
+    attrs |= JSPROP_PERMANENT;
+
+    if (!JS_SetPropertyAttributes(context, obj, name,
+                                  attrs, &found) || !found) {
+        gjs_debug(GJS_DEBUG_IMPORTER,
+                  "Failed to set attributes to seal '%s' in importer",
+                  name);
+        return JS_FALSE;
+    }
+
+    return JS_TRUE;
 }
 
 /* An import failed. Delete the property pointing to the import
@@ -237,13 +250,14 @@ import_native_file(JSContext  *context,
     if (!finish_import(context, name))
         goto out;
 
+    if (!seal_import(context, obj, name))
+        goto out;
+
     retval = JS_TRUE;
 
  out:
     if (!retval)
         cancel_import(context, obj, name);
-    else if (!(flags & GJS_NATIVE_SUPPLIES_MODULE_OBJ))
-        seal_import(context, obj, module_obj, name);
 
     return retval;
 }
@@ -437,13 +451,14 @@ import_file(JSContext  *context,
     if (!finish_import(context, name))
         goto out;
 
+    if (!seal_import(context, obj, name))
+        goto out;
+
     retval = JS_TRUE;
 
  out:
     if (!retval)
         cancel_import(context, obj, name);
-    else
-        seal_import(context, obj, module_obj, name);
 
     return retval;
 }
