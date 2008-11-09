@@ -211,6 +211,9 @@ boxed_constructor(JSContext *context,
     JSObject *proto;
     gboolean is_proto;
 
+    if (!gjs_check_constructing(context))
+        return JS_FALSE;
+
     priv = g_slice_new0(Boxed);
 
     GJS_INC_COUNTER(boxed);

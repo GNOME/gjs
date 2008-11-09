@@ -384,6 +384,18 @@ gjs_init_class_dynamic(JSContext      *context,
     return prototype;
 }
 
+gboolean
+gjs_check_constructing(JSContext *context)
+{
+    if (!JS_IsConstructing(context)) {
+        gjs_throw(context,
+                  "Constructor called as normal method. Use 'new SomeObject()' not 'SomeObject()'");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 void*
 gjs_get_instance_private_dynamic(JSContext      *context,
                                  JSObject       *obj,

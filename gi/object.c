@@ -617,6 +617,9 @@ object_instance_constructor(JSContext *context,
     JSClass *obj_class;
     JSClass *proto_class;
 
+    if (!gjs_check_constructing(context))
+        return JS_FALSE;
+
     priv = g_slice_new0(ObjectInstance);
 
     GJS_INC_COUNTER(object);

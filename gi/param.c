@@ -155,6 +155,9 @@ param_constructor(JSContext *context,
     JSObject *proto;
     gboolean is_proto;
 
+    if (!gjs_check_constructing(context))
+        return JS_FALSE;
+
     priv = g_slice_new0(Param);
 
     GJS_INC_COUNTER(param);

@@ -1,5 +1,8 @@
 const Everything = imports.gi.Everything;
 
+// We use Gio to have some objects that we know exist
+const Gio = imports.gi.Gio;
+
 const INT8_MIN = (-128);
 const INT16_MIN = (-32767-1);
 const INT32_MIN = (-2147483647-1);
@@ -66,6 +69,14 @@ function testNoImplicitConversionToUnsigned() {
 
     assertRaises(function() { return Everything.test_uint(-42); });
     assertRaises(function() { return Everything.test_size(-42); });
+}
+
+function testBadConstructor() {
+    try {
+	Gio.AppLaunchContext();
+    } catch (e) {
+	assert(e.message.indexOf("Constructor called as normal method") >= 0);
+    }
 }
 
 gjstestRun();

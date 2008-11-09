@@ -125,6 +125,7 @@ JSObject *  gjs_init_class_dynamic           (JSContext       *context,
                                               JSFunctionSpec  *fs,
                                               JSPropertySpec  *static_ps,
                                               JSFunctionSpec  *static_fs);
+gboolean    gjs_check_constructing           (JSContext       *context);
 void*       gjs_get_instance_private_dynamic (JSContext       *context,
                                               JSObject        *obj,
                                               JSClass         *static_clasp,
