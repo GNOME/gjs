@@ -139,7 +139,8 @@ gjs_debug(GjsDebugTopic topic,
                 free_me = NULL;
             }
 
-            logfp = fopen(log_file, "w");
+            /* avoid truncating in case we're using shared logfile */
+            logfp = fopen(log_file, "a");
             if (!logfp)
                 fprintf(stderr, "Failed to open log file `%s': %s\n",
                         log_file, g_strerror(errno));
@@ -258,6 +259,9 @@ gjs_debug(GjsDebugTopic topic,
         access(s2, F_OK);
         g_free(s2);
     } else {
+        /* seek to end to avoid truncating in case we're using shared logfile */
+        (void)fseek(logfp, 0, SEEK_END);
+
         if (print_timestamp) {
             static gdouble previous = 0.0;
             gdouble total = g_timer_elapsed(timer, NULL) * 1000.0;
