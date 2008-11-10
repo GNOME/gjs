@@ -82,7 +82,7 @@ typedef enum {
 
 /* Whether to be verbose about JavaScript function arg and closure marshaling */
 #ifndef GJS_VERBOSE_ENABLE_MARSHAL
-#define GJS_VERBOSE_ENABLE_MARSHAL 1
+#define GJS_VERBOSE_ENABLE_MARSHAL 0
 #endif
 
 /* Whether to be verbose about constructing, destroying, and gc-rooting
