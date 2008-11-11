@@ -292,44 +292,44 @@ gjs_invoke_c_function(JSContext      *context,
 
             arg_info = g_callable_info_get_arg( (GICallableInfo*) info, i);
             direction = g_arg_info_get_direction(arg_info);
-            if (direction == GI_DIRECTION_IN) {
-                g_assert(in_args_pos < expected_in_argc);
-                ++in_args_pos;
-                g_base_info_unref( (GIBaseInfo*) arg_info);
-                continue;
-            }
 
-            /* INOUT or OUT */
             arg_type_info = g_arg_info_get_type(arg_info);
 
-            if (direction == GI_DIRECTION_INOUT)
+            if (direction == GI_DIRECTION_IN) {
                 g_assert(in_args_pos < expected_in_argc);
-            g_assert(next_rval < n_return_values);
-            g_assert(out_args_pos < expected_out_argc);
 
-            if (!gjs_value_from_g_arg(context,
-                                      &return_values[next_rval],
-                                      arg_type_info,
-                                      out_args[out_args_pos].v_pointer)) {
-                failed = TRUE;
-            }
-
-            /* Free GArgument, the jsval should have ref'd or copied it */
-            if (!gjs_g_arg_release(context,
-                                   g_arg_info_get_ownership_transfer(arg_info),
-                                   arg_type_info,
-                                   out_args[out_args_pos].v_pointer))
-                failed = TRUE;
-
-            if (direction == GI_DIRECTION_INOUT)
                 ++in_args_pos;
+            } else {
+                /* INOUT or OUT */
+                if (direction == GI_DIRECTION_INOUT)
+                    g_assert(in_args_pos < expected_in_argc);
+                g_assert(next_rval < n_return_values);
+                g_assert(out_args_pos < expected_out_argc);
 
-            ++out_args_pos;
+                if (!gjs_value_from_g_arg(context,
+                                          &return_values[next_rval],
+                                          arg_type_info,
+                                          out_args[out_args_pos].v_pointer)) {
+                    failed = TRUE;
+                }
+
+                /* Free GArgument, the jsval should have ref'd or copied it */
+                if (!gjs_g_arg_release(context,
+                                       g_arg_info_get_ownership_transfer(arg_info),
+                                       arg_type_info,
+                                       out_args[out_args_pos].v_pointer))
+                    failed = TRUE;
+
+                if (direction == GI_DIRECTION_INOUT)
+                    ++in_args_pos;
+
+                ++out_args_pos;
+
+                ++next_rval;
+            }
 
             g_base_info_unref( (GIBaseInfo*) arg_type_info);
             g_base_info_unref( (GIBaseInfo*) arg_info);
-
-            ++next_rval;
         }
 
         g_assert(next_rval == n_return_values);
