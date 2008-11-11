@@ -164,6 +164,69 @@ gjs_array_to_g_list(JSContext   *context,
     return JS_TRUE;
 }
 
+JSBool
+gjs_array_to_strv(JSContext   *context,
+                  jsval        array_value,
+                  unsigned int length,
+                  void       **arr_p)
+{
+    char **result;
+    guint32 i;
+
+    result = g_new0(char *, length+1);
+
+    for (i = 0; i < length; ++i) {
+        jsval elem;
+
+        elem = JSVAL_VOID;
+        if (!JS_GetElement(context, JSVAL_TO_OBJECT(array_value),
+                           i, &elem)) {
+            g_free(result);
+            gjs_throw(context,
+                      "Missing array element %u",
+                      i);
+            return JS_FALSE;
+        }
+
+        if (!JSVAL_IS_STRING(elem)) {
+            gjs_throw(context,
+                      "Invalid element in string array");
+            g_strfreev(result);
+            return JS_FALSE;
+        }
+        if (!gjs_string_to_utf8(context, elem, (char **)&(result[i]))) {
+            g_strfreev(result);
+            return JS_FALSE;
+        }
+    }
+
+    *arr_p = result;
+
+    return JS_TRUE;
+}
+
+static JSBool
+gjs_array_to_array(JSContext   *context,
+                   jsval        array_value,
+                   unsigned int length,
+                   GITypeInfo  *param_info,
+                   void       **arr_p)
+{
+    guint32 i;
+    jsval elem;
+    GITypeTag element_type;
+
+    element_type = g_type_info_get_tag(param_info);
+
+    if (element_type == GI_TYPE_TAG_UTF8) {
+        return gjs_array_to_strv (context, array_value, length, arr_p);
+    } else {
+        gjs_throw(context,
+                  "Unhandled array element type %d", element_type);
+        return JS_FALSE;
+    }
+}
+
 static JSBool
 gjs_value_to_g_arg_with_type_info(JSContext  *context,
                                   jsval       value,
@@ -487,9 +550,32 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
     case GI_TYPE_TAG_ARRAY:
         if (JSVAL_IS_NULL(value)) {
             arg->v_pointer = NULL;
+        } else if (gjs_object_has_property(context,
+                                           JSVAL_TO_OBJECT(value),
+                                           "length")) {
+            jsval length_value;
+            guint32 length;
+
+            if (!gjs_object_require_property(context,
+                                             JSVAL_TO_OBJECT(value),
+                                             "length",
+                                             &length_value) ||
+                !JS_ValueToECMAUint32(context, length_value, &length)) {
+                wrong = TRUE;
+            } else {
+                GITypeInfo *param_info;
+
+                param_info = g_type_info_get_param_type(type_info, 0);
+                g_assert(param_info != NULL);
+
+                if (!gjs_array_to_array (context, value, length, param_info, &arg->v_pointer))
+                    wrong = TRUE;
+
+                g_base_info_unref((GIBaseInfo*) param_info);
+            }
         } else {
-            gjs_throw(context, "FIXME: Only supporting null ARRAYs");
             wrong = TRUE;
+            report_type_mismatch = TRUE;
         }
         break;
 
@@ -933,8 +1019,16 @@ gjs_g_arg_release_internal(JSContext  *context,
         if (arg->v_pointer == NULL) {
             /* OK */
         } else {
-            gjs_throw(context, "FIXME: Only supporting null ARRAYs");
-            return JS_FALSE;
+            GITypeInfo *param_info;
+
+            param_info = g_type_info_get_param_type(type_info, 0);
+
+            if (g_type_info_get_tag (param_info) == GI_TYPE_TAG_UTF8)
+                g_strfreev (arg->v_pointer);
+            else
+                g_assert_not_reached ();
+
+            g_base_info_unref((GIBaseInfo*) param_info);
         }
         break;
 

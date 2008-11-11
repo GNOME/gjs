@@ -53,6 +53,12 @@ JSBool _gjs_flags_value_is_valid (JSContext   *context,
                                   GFlagsClass *klass,
                                   guint        value);
 
+
+JSBool gjs_array_to_strv (JSContext   *context,
+                          jsval        array_value,
+                          unsigned int length,
+                          void       **arr_p);
+
 G_END_DECLS
 
 #endif  /* __GJS_ARG_H__ */

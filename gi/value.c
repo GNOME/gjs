@@ -282,6 +282,39 @@ gjs_value_to_g_value(JSContext    *context,
         }
 
         g_value_set_object(gvalue, gobj);
+    } else if (gtype == G_TYPE_STRV) {
+        if (JSVAL_IS_NULL(value)) {
+            /* do nothing */
+        } else if (gjs_object_has_property(context,
+                                           JSVAL_TO_OBJECT(value),
+                                           "length")) {
+            jsval length_value;
+            guint32 length;
+
+            if (!gjs_object_require_property(context,
+                                             JSVAL_TO_OBJECT(value),
+                                             "length",
+                                             &length_value) ||
+                !JS_ValueToECMAUint32(context, length_value, &length)) {
+                gjs_throw(context,
+                          "Wrong type %s; strv expected",
+                          gjs_get_type_name(value));
+                return JS_FALSE;
+            } else {
+                char **strv;
+
+                if (!gjs_array_to_strv (context,
+                                        value,
+                                        length, (void**)&strv))
+                    return JS_FALSE;
+                g_value_take_boxed (gvalue, strv);
+            }
+        } else {
+            gjs_throw(context,
+                      "Wrong type %s; strv expected",
+                      gjs_get_type_name(value));
+            return JS_FALSE;
+        }
     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
         void *gboxed;
 

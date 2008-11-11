@@ -71,12 +71,19 @@ function testNoImplicitConversionToUnsigned() {
     assertRaises(function() { return Everything.test_size(-42); });
 }
 
+
 function testBadConstructor() {
     try {
 	Gio.AppLaunchContext();
     } catch (e) {
 	assert(e.message.indexOf("Constructor called as normal method") >= 0);
     }
+}
+
+function testStrv() {
+    assertTrue(Everything.test_strv_in(['1', '2', '3']));
+    // Second two are deliberately not strings
+    assertRaises(function() { Everything.test_strv_in(['1', 2, 3]); });
 }
 
 gjstestRun();
