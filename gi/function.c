@@ -238,7 +238,9 @@ gjs_invoke_c_function(JSContext      *context,
                                 &error)) {
         GITypeInfo *return_info;
         GITypeTag return_tag;
+        jsval *return_values;
         int n_return_values;
+        int next_rval;
 
         failed = FALSE;
 
@@ -249,19 +251,16 @@ gjs_invoke_c_function(JSContext      *context,
 
         *rval = JSVAL_VOID;
 
+        next_rval = 0; /* index into return_values */
+
         n_return_values = expected_out_argc;
         if (return_tag != GI_TYPE_TAG_VOID)
             n_return_values += 1;
 
         if (n_return_values > 0) {
-            jsval *return_values;
-            int next_rval;
-
             return_values = g_newa(jsval, n_return_values);
             gjs_set_values(context, return_values, n_return_values, JSVAL_VOID);
             gjs_root_value_locations(context, return_values, n_return_values);
-
-            next_rval = 0; /* index into return_values */
 
             if (return_tag != GI_TYPE_TAG_VOID) {
                 if (!gjs_value_from_g_arg(context, &return_values[next_rval],
@@ -278,54 +277,57 @@ gjs_invoke_c_function(JSContext      *context,
 
                 ++next_rval;
             }
+        }
 
-            if (expected_out_argc > 0) {
-                /* We walk over all args (not just out args) and skip
-                 * the non-out args
-                 */
-                out_args_pos = 0;
+        /* We walk over all args (not just out args) and skip
+         * the non-out args
+         */
+        out_args_pos = 0; /* into out_args */
 
-                for (i = 0; i < n_args; i++) {
-                    GIDirection direction;
-                    GIArgInfo *arg_info;
-                    GITypeInfo *arg_type_info;
+        for (i = 0; i < n_args; i++) {
+            GIDirection direction;
+            GIArgInfo *arg_info;
+            GITypeInfo *arg_type_info;
 
-                    arg_info = g_callable_info_get_arg( (GICallableInfo*) info, i);
-                    direction = g_arg_info_get_direction(arg_info);
-                    if (direction == GI_DIRECTION_IN) {
-                        g_base_info_unref( (GIBaseInfo*) arg_info);
-                        continue;
-                    }
-
-                    /* INOUT or OUT */
-                    arg_type_info = g_arg_info_get_type(arg_info);
-
-                    g_assert(next_rval < n_return_values);
-                    g_assert(out_args_pos < expected_out_argc);
-
-                    if (!gjs_value_from_g_arg(context,
-                                              &return_values[next_rval],
-                                              arg_type_info,
-                                              out_args[out_args_pos].v_pointer)) {
-                        failed = TRUE;
-                    }
-
-                    /* Free GArgument, the jsval should have ref'd or copied it */
-                    if (!gjs_g_arg_release(context,
-                                           g_arg_info_get_ownership_transfer(arg_info),
-                                           arg_type_info,
-                                           out_args[out_args_pos].v_pointer))
-                        failed = TRUE;
-
-                    ++out_args_pos;
-
-                    g_base_info_unref( (GIBaseInfo*) arg_type_info);
-                    g_base_info_unref( (GIBaseInfo*) arg_info);
-
-                    ++next_rval;
-                }
+            arg_info = g_callable_info_get_arg( (GICallableInfo*) info, i);
+            direction = g_arg_info_get_direction(arg_info);
+            if (direction == GI_DIRECTION_IN) {
+                g_base_info_unref( (GIBaseInfo*) arg_info);
+                continue;
             }
 
+            /* INOUT or OUT */
+            arg_type_info = g_arg_info_get_type(arg_info);
+
+            g_assert(next_rval < n_return_values);
+            g_assert(out_args_pos < expected_out_argc);
+
+            if (!gjs_value_from_g_arg(context,
+                                      &return_values[next_rval],
+                                      arg_type_info,
+                                      out_args[out_args_pos].v_pointer)) {
+                failed = TRUE;
+            }
+
+            /* Free GArgument, the jsval should have ref'd or copied it */
+            if (!gjs_g_arg_release(context,
+                                   g_arg_info_get_ownership_transfer(arg_info),
+                                   arg_type_info,
+                                   out_args[out_args_pos].v_pointer))
+                failed = TRUE;
+
+            ++out_args_pos;
+
+            g_base_info_unref( (GIBaseInfo*) arg_type_info);
+            g_base_info_unref( (GIBaseInfo*) arg_info);
+
+            ++next_rval;
+        }
+
+        g_assert(next_rval == n_return_values);
+        g_assert(out_args_pos == expected_out_argc);
+
+        if (n_return_values > 0) {
             /* if we have 1 return value or out arg, return that item
              * on its own, otherwise return a JavaScript array with
              * [return value, out arg 1, out arg 2, ...]
