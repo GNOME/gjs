@@ -1116,6 +1116,7 @@ gjs_g_arg_release_in_arg(JSContext  *context,
 
     switch (type_tag) {
     case GI_TYPE_TAG_UTF8:
+    case GI_TYPE_TAG_ARRAY:
         return gjs_g_arg_release_internal(context, GI_TRANSFER_EVERYTHING,
                                           type_info, type_tag, arg);
     }
