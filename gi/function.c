@@ -279,8 +279,8 @@ gjs_invoke_c_function(JSContext      *context,
             }
         }
 
-        /* We walk over all args (not just out args) and skip
-         * the non-out args
+        /* We walk over all args, release in args (if allocated) and convert
+         * all out args to JS
          */
         in_args_pos = is_method ? 1 : 0; /* index into in_args */
         out_args_pos = 0; /* into out_args */
@@ -297,6 +297,12 @@ gjs_invoke_c_function(JSContext      *context,
 
             if (direction == GI_DIRECTION_IN) {
                 g_assert(in_args_pos < expected_in_argc);
+
+                if (!gjs_g_arg_release_in_arg(context,
+                                              g_arg_info_get_ownership_transfer(arg_info),
+                                              arg_type_info,
+                                              &in_args[in_args_pos]))
+                    failed = TRUE;
 
                 ++in_args_pos;
             } else {

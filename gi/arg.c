@@ -998,3 +998,34 @@ gjs_g_arg_release(JSContext  *context,
 
     return gjs_g_arg_release_internal(context, transfer, type_info, type_tag, arg);
 }
+
+JSBool
+gjs_g_arg_release_in_arg(JSContext  *context,
+                         GITransfer  transfer,
+                         GITypeInfo *type_info,
+                         GArgument  *arg)
+{
+    GITypeTag type_tag;
+
+    /* we don't own the argument anymore */
+    if (transfer == GI_TRANSFER_EVERYTHING)
+        return;
+
+    type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Releasing GArgument %s in param",
+                      g_type_tag_to_string(type_tag));
+
+    /* release all (temporary) arguments we allocated from JS types */
+    /* FIXME: check with lists, arrays, boxed types, objects, ... */
+
+    switch (type_tag) {
+    case GI_TYPE_TAG_UTF8:
+        return gjs_g_arg_release_internal(context, GI_TRANSFER_EVERYTHING,
+                                          type_info, type_tag, arg);
+    }
+
+    return JS_TRUE;
+}
+

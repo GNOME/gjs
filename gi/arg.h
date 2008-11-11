@@ -44,6 +44,10 @@ JSBool gjs_g_arg_release    (JSContext  *context,
                              GITransfer  transfer,
                              GITypeInfo *type_info,
                              GArgument  *arg);
+JSBool gjs_g_arg_release_in_arg (JSContext  *context,
+                                 GITransfer  transfer,
+                                 GITypeInfo *type_info,
+                                 GArgument  *arg);
 
 JSBool _gjs_flags_value_is_valid (JSContext   *context,
                                   GFlagsClass *klass,
