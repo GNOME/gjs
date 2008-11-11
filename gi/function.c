@@ -282,6 +282,7 @@ gjs_invoke_c_function(JSContext      *context,
         /* We walk over all args (not just out args) and skip
          * the non-out args
          */
+        in_args_pos = is_method ? 1 : 0; /* index into in_args */
         out_args_pos = 0; /* into out_args */
 
         for (i = 0; i < n_args; i++) {
@@ -292,6 +293,8 @@ gjs_invoke_c_function(JSContext      *context,
             arg_info = g_callable_info_get_arg( (GICallableInfo*) info, i);
             direction = g_arg_info_get_direction(arg_info);
             if (direction == GI_DIRECTION_IN) {
+                g_assert(in_args_pos < expected_in_argc);
+                ++in_args_pos;
                 g_base_info_unref( (GIBaseInfo*) arg_info);
                 continue;
             }
@@ -299,6 +302,8 @@ gjs_invoke_c_function(JSContext      *context,
             /* INOUT or OUT */
             arg_type_info = g_arg_info_get_type(arg_info);
 
+            if (direction == GI_DIRECTION_INOUT)
+                g_assert(in_args_pos < expected_in_argc);
             g_assert(next_rval < n_return_values);
             g_assert(out_args_pos < expected_out_argc);
 
@@ -316,6 +321,9 @@ gjs_invoke_c_function(JSContext      *context,
                                    out_args[out_args_pos].v_pointer))
                 failed = TRUE;
 
+            if (direction == GI_DIRECTION_INOUT)
+                ++in_args_pos;
+
             ++out_args_pos;
 
             g_base_info_unref( (GIBaseInfo*) arg_type_info);
@@ -326,6 +334,7 @@ gjs_invoke_c_function(JSContext      *context,
 
         g_assert(next_rval == n_return_values);
         g_assert(out_args_pos == expected_out_argc);
+        g_assert(in_args_pos == expected_in_argc);
 
         if (n_return_values > 0) {
             /* if we have 1 return value or out arg, return that item
