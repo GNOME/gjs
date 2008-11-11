@@ -106,6 +106,7 @@ gjs_invoke_c_function(JSContext      *context,
     gboolean failed;
     GIFunctionInfoFlags flags;
     gboolean is_method;
+    gboolean invoke_ok;
 
     flags = g_function_info_get_flags(info);
     is_method = (flags & GI_FUNCTION_IS_METHOD) != 0;
@@ -231,11 +232,16 @@ gjs_invoke_c_function(JSContext      *context,
     g_assert(out_args_pos == expected_out_argc);
 
     error = NULL;
-    if (g_function_info_invoke( (GIFunctionInfo*) info,
-                                in_args, expected_in_argc,
-                                out_args, expected_out_argc,
-                                &return_arg,
-                                &error)) {
+    invoke_ok = g_function_info_invoke( (GIFunctionInfo*) info,
+                                        in_args, expected_in_argc,
+                                        out_args, expected_out_argc,
+                                        &return_arg,
+                                        &error);
+
+    /* Return value and out arguments are valid only if invocation doesn't
+     * return error. In arguments need to be released always.
+     */
+    if (TRUE) {
         GITypeInfo *return_info;
         GITypeTag return_tag;
         jsval *return_values;
@@ -258,18 +264,22 @@ gjs_invoke_c_function(JSContext      *context,
             n_return_values += 1;
 
         if (n_return_values > 0) {
-            return_values = g_newa(jsval, n_return_values);
-            gjs_set_values(context, return_values, n_return_values, JSVAL_VOID);
-            gjs_root_value_locations(context, return_values, n_return_values);
+            if (invoke_ok) {
+                return_values = g_newa(jsval, n_return_values);
+                gjs_set_values(context, return_values, n_return_values, JSVAL_VOID);
+                gjs_root_value_locations(context, return_values, n_return_values);
+            }
 
             if (return_tag != GI_TYPE_TAG_VOID) {
-                if (!gjs_value_from_g_arg(context, &return_values[next_rval],
+                if (invoke_ok &&
+                    !gjs_value_from_g_arg(context, &return_values[next_rval],
                                              return_info, &return_arg)) {
                     failed = TRUE;
                 }
 
                 /* Free GArgument, the jsval should have ref'd or copied it */
-                if (!gjs_g_arg_release(context,
+                if (invoke_ok &&
+                    !gjs_g_arg_release(context,
                                           g_callable_info_get_caller_owns((GICallableInfo*) info),
                                           return_info,
                                           &return_arg))
@@ -312,7 +322,8 @@ gjs_invoke_c_function(JSContext      *context,
                 g_assert(next_rval < n_return_values);
                 g_assert(out_args_pos < expected_out_argc);
 
-                if (!gjs_value_from_g_arg(context,
+                if (invoke_ok &&
+                    !gjs_value_from_g_arg(context,
                                           &return_values[next_rval],
                                           arg_type_info,
                                           out_args[out_args_pos].v_pointer)) {
@@ -320,7 +331,8 @@ gjs_invoke_c_function(JSContext      *context,
                 }
 
                 /* Free GArgument, the jsval should have ref'd or copied it */
-                if (!gjs_g_arg_release(context,
+                if (invoke_ok &&
+                    !gjs_g_arg_release(context,
                                        g_arg_info_get_ownership_transfer(arg_info),
                                        arg_type_info,
                                        out_args[out_args_pos].v_pointer))
@@ -342,7 +354,7 @@ gjs_invoke_c_function(JSContext      *context,
         g_assert(out_args_pos == expected_out_argc);
         g_assert(in_args_pos == expected_in_argc);
 
-        if (n_return_values > 0) {
+        if (invoke_ok && n_return_values > 0) {
             /* if we have 1 return value or out arg, return that item
              * on its own, otherwise return a JavaScript array with
              * [return value, out arg 1, out arg 2, ...]
@@ -366,15 +378,17 @@ gjs_invoke_c_function(JSContext      *context,
 
         g_base_info_unref( (GIBaseInfo*) return_info);
 
-        return failed ? JS_FALSE : JS_TRUE;
-    } else {
-        g_assert(error != NULL);
-        gjs_throw(context, "Error invoking %s.%s: %s",
-                  g_base_info_get_namespace( (GIBaseInfo*) info),
-                  g_base_info_get_name( (GIBaseInfo*) info),
-                  error->message);
-        g_error_free(error);
-        return JS_FALSE;
+        if (invoke_ok) {
+            return failed ? JS_FALSE : JS_TRUE;
+        } else {
+            g_assert(error != NULL);
+            gjs_throw(context, "Error invoking %s.%s: %s",
+                      g_base_info_get_namespace( (GIBaseInfo*) info),
+                      g_base_info_get_name( (GIBaseInfo*) info),
+                      error->message);
+            g_error_free(error);
+            return JS_FALSE;
+        }
     }
 }
 
