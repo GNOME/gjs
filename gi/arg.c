@@ -825,22 +825,14 @@ gjs_value_from_g_arg (JSContext  *context,
     return JS_TRUE;
 }
 
-JSBool
-gjs_g_arg_release(JSContext  *context,
-                  GITransfer  transfer,
-                  GITypeInfo *type_info,
-                  GArgument  *arg)
+static JSBool
+gjs_g_arg_release_internal(JSContext  *context,
+                           GITransfer  transfer,
+                           GITypeInfo *type_info,
+                           GITypeTag   type_tag,
+                           GArgument  *arg)
 {
-    GITypeTag type_tag;
-
-    if (transfer == GI_TRANSFER_NOTHING)
-        return JS_TRUE;
-
-    type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
-
-    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Releasing GArgument %s out param or return value",
-                      g_type_tag_to_string(type_tag));
+    g_assert(transfer != GI_TRANSFER_NOTHING);
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
@@ -985,4 +977,24 @@ gjs_g_arg_release(JSContext  *context,
     }
 
     return JS_TRUE;
+}
+
+JSBool
+gjs_g_arg_release(JSContext  *context,
+                  GITransfer  transfer,
+                  GITypeInfo *type_info,
+                  GArgument  *arg)
+{
+    GITypeTag type_tag;
+
+    if (transfer == GI_TRANSFER_NOTHING)
+        return JS_TRUE;
+
+    type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Releasing GArgument %s out param or return value",
+                      g_type_tag_to_string(type_tag));
+
+    return gjs_g_arg_release_internal(context, transfer, type_info, type_tag, arg);
 }
