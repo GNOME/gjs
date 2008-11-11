@@ -331,6 +331,10 @@ gjstest_test_func_gjs_jsapi_util_array(void)
     }
 
     gjs_rooted_array_free(context, array, TRUE);
+
+    JS_DestroyContext(context);
+    JS_DestroyRuntime(runtime);
+    JS_ShutDown();
 }
 
 #endif /* GJS_BUILD_TESTS */
