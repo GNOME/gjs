@@ -86,4 +86,18 @@ function testStrv() {
     assertRaises(function() { Everything.test_strv_in(['1', 2, 3]); });
 }
 
+function testFilenameReturn() {
+    var filenames = Everything.test_filename_return();
+    assertEquals(2, filenames.length);
+    assertEquals('\u00e5\u00e4\u00f6', filenames[0]);
+    assertEquals('/etc/fstab', filenames[1]);
+}
+
+function testFilename() {
+    var filenames = Everything.test_filename_return();
+    assertEquals(2, filenames.length);
+    assertEquals('\u00e5\u00e4\u00f6', filenames[0]);
+    assertEquals('/etc/fstab', filenames[1]);
+}
+
 gjstestRun();

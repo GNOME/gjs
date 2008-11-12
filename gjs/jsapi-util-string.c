@@ -61,14 +61,13 @@ gjs_string_to_utf8(JSContext  *context,
 
     *utf8_string_p = utf8_string;
     return JS_TRUE;
-
 }
 
 JSBool
-gjs_string_from_utf8(JSContext *context,
+gjs_string_from_utf8(JSContext  *context,
                      const char *utf8_string,
-                     gsize n_bytes,
-                     jsval *value_p)
+                     gsize       n_bytes,
+                     jsval      *value_p)
 {
     jschar *u16_string;
     glong u16_string_length;
@@ -106,6 +105,71 @@ gjs_string_from_utf8(JSContext *context,
     *value_p = STRING_TO_JSVAL(s);
     return JS_TRUE;
 }
+
+JSBool
+gjs_string_to_filename(JSContext    *context,
+                       const jsval   filename_val,
+                       char        **filename_string_p)
+{
+    GError *error;
+    gchar *tmp, *filename_string;
+
+    /* gjs_string_to_filename verifies that filename_val is a string */
+
+    if (!gjs_string_to_utf8(context, filename_val, &tmp)) {
+        /* exception already set */
+        return JS_FALSE;
+    }
+    
+    error = NULL;
+    filename_string = g_filename_to_utf8(tmp, -1, NULL, NULL, &error);
+    if (error) {
+        gjs_throw(context,
+                  "Could not convert filename '%s' to UTF8: '%s'",
+                  tmp,
+                  error->message);
+        g_error_free(error);
+        g_free(tmp);
+        return JS_FALSE;
+    }
+
+    *filename_string_p = filename_string;
+    
+    g_free(tmp);
+    return JS_TRUE;
+}
+
+JSBool
+gjs_string_from_filename(JSContext  *context,
+                         const char *filename_string,
+                         gsize       n_bytes,
+                         jsval      *value_p)
+{
+    gssize written;
+    GError *error;
+    gchar *utf8_string;
+
+    error = NULL;
+    utf8_string = g_filename_from_utf8(filename_string, n_bytes, NULL,
+                                       &written, &error);
+    if (error) {
+        gjs_throw(context,
+                  "Could not convert UTF-8 string '%s' to a filename: '%s'",
+                  filename_string,
+                  error->message);
+        g_error_free(error);
+        g_free(utf8_string);
+        return JS_FALSE;
+    }
+    
+    if (!gjs_string_from_utf8(context, utf8_string, written, value_p))
+        return JS_FALSE;
+
+    g_free(utf8_string);
+
+    return JS_TRUE;
+}
+
 
 /**
  * gjs_string_get_ascii:

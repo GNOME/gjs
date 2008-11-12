@@ -371,6 +371,18 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
             wrong = TRUE;
         break;
 
+    case GI_TYPE_TAG_FILENAME:
+        nullable_type = TRUE;
+        if (JSVAL_IS_NULL(value)) {
+            arg->v_pointer = NULL;
+        } else if (JSVAL_IS_STRING(value)) {
+            if (!gjs_string_to_filename(context, value, (char **)&arg->v_pointer))
+                wrong = TRUE;
+        } else {
+            wrong = TRUE;
+            report_type_mismatch = TRUE;
+        }
+        break;
     case GI_TYPE_TAG_UTF8:
         nullable_type = TRUE;
         if (JSVAL_IS_NULL(value)) {
@@ -785,6 +797,15 @@ gjs_value_from_g_arg (JSContext  *context,
     case GI_TYPE_TAG_DOUBLE:
         return JS_NewDoubleValue(context, arg->v_double, value_p);
 
+    case GI_TYPE_TAG_FILENAME:
+        if (arg->v_pointer)
+            return gjs_string_from_filename(context, arg->v_pointer, -1, value_p);
+        else {
+            /* For NULL we'll return JSVAL_NULL, which is already set
+             * in *value_p
+             */
+            return JS_TRUE;
+        }
     case GI_TYPE_TAG_UTF8:
         if (arg->v_pointer)
             return gjs_string_from_utf8(context, arg->v_pointer, -1, value_p);
@@ -941,6 +962,7 @@ gjs_g_arg_release_internal(JSContext  *context,
     case GI_TYPE_TAG_SIZE:
         break;
 
+    case GI_TYPE_TAG_FILENAME:
     case GI_TYPE_TAG_UTF8:
         g_free(arg->v_pointer);
         break;
@@ -1023,7 +1045,8 @@ gjs_g_arg_release_internal(JSContext  *context,
 
             param_info = g_type_info_get_param_type(type_info, 0);
 
-            if (g_type_info_get_tag (param_info) == GI_TYPE_TAG_UTF8)
+            if (g_type_info_get_tag (param_info) == GI_TYPE_TAG_UTF8 ||
+                g_type_info_get_tag (param_info) == GI_TYPE_TAG_FILENAME)
                 g_strfreev (arg->v_pointer);
             else
                 g_assert_not_reached ();
@@ -1116,6 +1139,7 @@ gjs_g_arg_release_in_arg(JSContext  *context,
 
     switch (type_tag) {
     case GI_TYPE_TAG_UTF8:
+    case GI_TYPE_TAG_FILENAME:
     case GI_TYPE_TAG_ARRAY:
         return gjs_g_arg_release_internal(context, GI_TRANSFER_EVERYTHING,
                                           type_info, type_tag, arg);
