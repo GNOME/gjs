@@ -23,6 +23,7 @@
 
 #include <config.h>
 #include <stdlib.h>
+#include <locale.h>
 
 #include <util/log.h>
 #include <gjs/context.h>
@@ -56,6 +57,7 @@ main(int argc, char **argv)
         exit(1);
     }
 
+    setlocale(LC_ALL, "");
     g_type_init();
 
     error = NULL;

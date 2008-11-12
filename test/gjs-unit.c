@@ -25,6 +25,7 @@
 
 #include <glib.h>
 #include <gjs/gjs.h>
+#include <locale.h>
 
 #include <string.h>
 
@@ -106,6 +107,7 @@ main(int argc, char **argv)
     /* need ${top_srcdir} later */
     top_srcdir = g_getenv ("TOP_SRCDIR");
 
+    setlocale(LC_ALL, "");
     g_test_init(&argc, &argv, NULL);
 
     g_type_init();
