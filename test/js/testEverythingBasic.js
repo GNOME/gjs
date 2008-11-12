@@ -80,7 +80,7 @@ function testBadConstructor() {
     }
 }
 
-function testStrv() {
+function disabled_testStrv() {
     assertTrue(Everything.test_strv_in(['1', '2', '3']));
     // Second two are deliberately not strings
     assertRaises(function() { Everything.test_strv_in(['1', 2, 3]); });
