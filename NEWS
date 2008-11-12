@@ -1,3 +1,38 @@
+Version 0.2 (12-Nov-2008)
+-------------------------
+
+Changes:
+    - Compatible with gobject-introspection 0.6.0
+    - New modules: mainloop, signals, tweener
+    - Support passing string arrays to gobject-introspection methods
+    - Added jsUnit based unit testing framework
+    - Improved error handling and error reporting
+
+Contributors:
+    Colin Walters, Havoc Pennington, Johan Bilien, Johan Dahlin, Lucas Rocha,
+    Owen Taylor, Tommi Komulainen
+
+Bugs fixed:
+    Bug 557398 – Allow requiring namespace version
+    Bug 557448 – Enum and Flags members should be uppercase
+    Bug 557451 – Add search paths from environment variables
+    Bug 557451 – Add search paths from environment variables
+    Bug 557466 – Module name mangling considered harmful
+    Bug 557579 – Remove use of GJS_USE_UNINSTALLED_FILES in favor of GI_TYPELIB_PATH
+    Bug 557772 - gjs_invoke_c_function should work with union and boxed as well
+    Bug 558114 – assertRaises should print return value
+    Bug 558115 – Add test for basic types
+    Bug 558148 – 'const char*' in arguments are leaked
+    Bug 558227 – Memory leak if invoked function returns an error
+    Bug 558741 – Mutual imports cause great confusion
+    Bug 558882 – Bad error if you omit 'new'
+    Bug 559075 – enumerating importer should skip hidden files
+    Bug 559079 – generate code coverage report
+    Bug 559194 - Fix wrong length buffer in get_obj_key()
+    Bug 559612 - Ignore deprecated methods definitions.
+    Bug 560244 - support for strv parameters
+
+
 Version 0.1 
 -----------
 
