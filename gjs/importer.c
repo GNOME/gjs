@@ -393,6 +393,9 @@ do_import(JSContext  *context,
             goto out;
         }
 
+        g_free(dirname);
+        dirname = NULL;
+
         if (!gjs_string_to_utf8(context, elem, &dirname))
             goto out; /* Error message already set */
 

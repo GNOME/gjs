@@ -24,23 +24,6 @@
 }
 
 {
-   importer_new_resolve string never freed
-   Memcheck:Leak
-   fun:malloc
-   fun:g_malloc
-   fun:g_utf16_to_utf8
-   fun:gjs_string_to_utf8
-   fun:importer_new_resolve
-   obj:/usr/lib/xulrunner*/libmozjs.so
-   obj:/usr/lib/xulrunner*/libmozjs.so
-   obj:/usr/lib/xulrunner*/libmozjs.so
-   obj:/usr/lib/xulrunner*/libmozjs.so
-   fun:JS_EvaluateUCScriptForPrincipals
-   fun:JS_EvaluateUCScript
-   fun:JS_EvaluateScript
-}
-
-{
    xulrunner internal allocations never freed
    Memcheck:Leak
    fun:malloc
