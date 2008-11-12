@@ -122,7 +122,7 @@ gjs_string_to_filename(JSContext    *context,
     }
     
     error = NULL;
-    filename_string = g_filename_to_utf8(tmp, -1, NULL, NULL, &error);
+    filename_string = g_filename_from_utf8(tmp, -1, NULL, NULL, &error);
     if (error) {
         gjs_throw(context,
                   "Could not convert filename '%s' to UTF8: '%s'",
@@ -150,8 +150,8 @@ gjs_string_from_filename(JSContext  *context,
     gchar *utf8_string;
 
     error = NULL;
-    utf8_string = g_filename_from_utf8(filename_string, n_bytes, NULL,
-                                       &written, &error);
+    utf8_string = g_filename_to_utf8(filename_string, n_bytes, NULL,
+                                     &written, &error);
     if (error) {
         gjs_throw(context,
                   "Could not convert UTF-8 string '%s' to a filename: '%s'",
