@@ -100,7 +100,7 @@ GJS_CFLAGS="$GJS_CFLAGS -I$js_include_dir"
 AC_SUBST([js_include_dir])
 
 
-PKG_CHECK_MODULES([GOBJECT_INTROSPECTION], [gobject-introspection-1.0])
+PKG_CHECK_MODULES([GOBJECT_INTROSPECTION], [gobject-introspection-1.0 >= 0.6.0])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
