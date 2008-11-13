@@ -3,7 +3,7 @@ const WebKit = imports.gi.WebKit;
 
 Gtk.init(0, null);
 
-let win = new Gtk.Window({type: Gtk.WindowType.toplevel });
+let win = new Gtk.Window();
 
 let sw = new Gtk.ScrolledWindow({});
 win.add(sw);
