@@ -315,7 +315,7 @@ import_file(JSContext  *context,
 
     g_free(script);
 
-    if (!finish_import(context, obj))
+    if (!finish_import(context, name))
         goto out;
 
     retval = JS_TRUE;

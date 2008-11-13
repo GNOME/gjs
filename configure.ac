@@ -24,6 +24,30 @@ AM_DISABLE_STATIC
 AC_PROG_LIBTOOL
 dnl DOLT
 
+# Add extra warning flags
+changequote(,)dnl
+ensureflag() {
+  flag="$1"; shift
+  result="$@"
+
+  case " ${result} " in
+  *[\ \	]${flag}[\ \	]*) ;;
+  *) result="${flag} ${result}" ;;
+  esac
+
+  echo ${result}
+}
+changequote([,])dnl
+
+if test "$GCC" = "yes"; then
+    for flag in -Wall -Wchar-subscripts -Wmissing-declarations \
+        -Wmissing-prototypes -Wnested-externs -Wpointer-arith -Wcast-align \
+        -Wsign-compare  -Wfloat-equal;
+    do
+        CFLAGS="`ensureflag $flag $CFLAGS`"
+    done
+fi
+
 # coverage
 AC_ARG_ENABLE([coverage],
               [AS_HELP_STRING([--enable-coverage],

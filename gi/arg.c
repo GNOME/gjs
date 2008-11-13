@@ -212,8 +212,6 @@ gjs_array_to_array(JSContext   *context,
                    GITypeInfo  *param_info,
                    void       **arr_p)
 {
-    guint32 i;
-    jsval elem;
     GITypeTag element_type;
 
     element_type = g_type_info_get_tag(param_info);
@@ -1126,7 +1124,7 @@ gjs_g_arg_release_in_arg(JSContext  *context,
 
     /* we don't own the argument anymore */
     if (transfer == GI_TRANSFER_EVERYTHING)
-        return;
+        return JS_TRUE;
 
     type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
 
@@ -1143,8 +1141,10 @@ gjs_g_arg_release_in_arg(JSContext  *context,
     case GI_TYPE_TAG_ARRAY:
         return gjs_g_arg_release_internal(context, GI_TRANSFER_EVERYTHING,
                                           type_info, type_tag, arg);
+    default:
+        return JS_TRUE;
     }
-
-    return JS_TRUE;
 }
+
+
 

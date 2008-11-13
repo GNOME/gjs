@@ -23,11 +23,11 @@
 
 #include <config.h>
 
-#include "jsapi-util.h"
-#include "context-jsapi.h"
-
 #include <util/log.h>
 #include <util/glib.h>
+
+#include "jsapi-util.h"
+#include "context-jsapi.h"
 
 #include <string.h>
 

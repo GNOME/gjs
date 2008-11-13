@@ -261,6 +261,7 @@ gjs_invoke_c_function(JSContext      *context,
     if (return_tag != GI_TYPE_TAG_VOID)
         n_return_values += 1;
 
+    return_values = NULL; /* Quiet gcc warning about initialization */
     if (n_return_values > 0) {
         if (invoke_ok) {
             return_values = g_newa(jsval, n_return_values);
