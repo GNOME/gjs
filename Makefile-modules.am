@@ -19,11 +19,11 @@ JS_NATIVE_MODULE_LDFLAGS =	\
 
 gi_la_CFLAGS = 					\
 	$(JS_NATIVE_MODULE_CFLAGS) 		\
-	$(GOBJECT_INTROSPECTION_CFLAGS)
+	$(GJS_GI_CFLAGS)
 gi_la_LIBADD = \
 	libgjs-gi.la				\
 	$(JS_NATIVE_MODULE_LIBADD) 		\
-	$(GOBJECT_INTROSPECTION_LIBS)
+	$(GJS_GI_LIBS)
 gi_la_LDFLAGS = 				\
 	$(JS_NATIVE_MODULE_LDFLAGS)
 
@@ -31,13 +31,11 @@ gi_la_SOURCES =		\
 	modules/gi.h	\
 	modules/gi.c
 
-mainloop_la_CFLAGS = 					\
-	$(JS_NATIVE_MODULE_CFLAGS) 		\
-	$(GOBJECT_INTROSPECTION_CFLAGS)
+mainloop_la_CFLAGS = 				\
+	$(JS_NATIVE_MODULE_CFLAGS)
 mainloop_la_LIBADD = \
 	libgjs-gi.la				\
-	$(JS_NATIVE_MODULE_LIBADD) 		\
-	$(GOBJECT_INTROSPECTION_LIBS)
+	$(JS_NATIVE_MODULE_LIBADD)
 mainloop_la_LDFLAGS = 				\
 	$(JS_NATIVE_MODULE_LDFLAGS)
 

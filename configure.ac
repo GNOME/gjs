@@ -65,7 +65,9 @@ AC_CHECK_LIB([mozjs], [JS_CallTracer], :,
              [AC_MSG_ERROR([SpiderMonkey is too old, Firefox 3 is required])],
              [$JS_LIBS])
 
-gjs_packages="gmodule-2.0 gobject-2.0 >= gobject_required_version $JS_PACKAGE"
+common_packages="gobject-2.0 >= gobject_required_version $JS_PACKAGE"
+gjs_packages="gmodule-2.0 $common_packages"
+gjs_gi_packages="gobject-introspection-1.0 >= 0.6.0 $common_packages"
 gjstests_packages="$gjstests_packages $gjs_packages"
 PKG_CHECK_MODULES([GJS], [$gjs_packages])
 
@@ -100,7 +102,8 @@ GJS_CFLAGS="$GJS_CFLAGS -I$js_include_dir"
 AC_SUBST([js_include_dir])
 
 
-PKG_CHECK_MODULES([GOBJECT_INTROSPECTION], [gobject-introspection-1.0 >= 0.6.0])
+PKG_CHECK_MODULES([GJS_GI], [$gjs_gi_packages])
+GJS_GI_CFLAGS="$GJS_GI_CFLAGS -I$js_include_dir"
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

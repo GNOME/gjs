@@ -4,11 +4,10 @@ lib_LTLIBRARIES += libgjs-gi.la
 
 libgjs_gi_la_CFLAGS =			\
         $(AM_CFLAGS)			\
-        $(GJS_CFLAGS)			\
-        $(GOBJECT_INTROSPECTION_CFLAGS)
+        $(GJS_GI_CFLAGS)
 libgjs_gi_la_LIBADD =			\
         libgjs.la			\
-        $(GOBJECT_INTROSPECTION_LIBS)
+        $(GJS_GI_LIBS)
 libgjs_gi_la_LDFLAGS = \
 	-export-symbols-regex "^[^_].*" -version-info 0:0:0 -rdynamic
 
