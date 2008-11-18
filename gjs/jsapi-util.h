@@ -78,11 +78,13 @@ typedef struct GjsRootedArray GjsRootedArray;
                                 JSObject  *object,  \
                                 type      **out)    \
     {\
+        type *result; \
         if (!out) \
             return JS_FALSE; \
-        if (!JS_InstanceOf(context, object, &class, NULL)) \
+        result = gjs_get_instance_private_dynamic_with_typecheck(context, object, &class, NULL); \
+        if (result == NULL) \
             return JS_FALSE; \
-        *out = gjs_get_instance_private_dynamic(context, object, &class, NULL); \
+        *out = result; \
         return JS_TRUE; \
     }\
     static type*\
@@ -126,14 +128,16 @@ JSObject *  gjs_init_class_dynamic           (JSContext       *context,
                                               JSPropertySpec  *static_ps,
                                               JSFunctionSpec  *static_fs);
 gboolean    gjs_check_constructing           (JSContext       *context);
-void*       gjs_get_instance_private_dynamic (JSContext       *context,
-                                              JSObject        *obj,
-                                              JSClass         *static_clasp,
-                                              jsval           *argv);
-void*       gjs_get_instance_private_dynamic (JSContext       *context,
-                                              JSObject        *obj,
-                                              JSClass         *static_clasp,
-                                              jsval           *argv);
+
+void* gjs_get_instance_private_dynamic                (JSContext  *context,
+                                                       JSObject   *obj,
+                                                       JSClass    *static_clasp,
+                                                       jsval      *argv);
+void* gjs_get_instance_private_dynamic_with_typecheck (JSContext  *context,
+                                                       JSObject   *obj,
+                                                       JSClass    *static_clasp,
+                                                       jsval      *argv);
+
 JSObject*   gjs_construct_object_dynamic     (JSContext       *context,
                                               JSObject        *proto,
                                               uintN            argc,

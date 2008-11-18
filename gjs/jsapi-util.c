@@ -432,6 +432,38 @@ gjs_get_instance_private_dynamic(JSContext      *context,
     return JS_GetInstancePrivate(context, obj, obj_class, argv);
 }
 
+void*
+gjs_get_instance_private_dynamic_with_typecheck(JSContext      *context,
+                                                JSObject       *obj,
+                                                JSClass        *static_clasp,
+                                                jsval          *argv)
+{
+    RuntimeData *rd;
+    JSClass *obj_class;
+
+    if (static_clasp->name != NULL) {
+        g_warning("Dynamic class should not have a name in the JSClass struct");
+        return NULL;
+    }
+
+    obj_class = JS_GetClass(context, obj);
+    g_assert(obj_class != NULL);
+
+    rd = get_data_from_context(context);
+    g_assert(rd != NULL);
+
+    /* Check that it's safe to cast to DynamicJSClass */
+    if (g_hash_table_lookup(rd->dynamic_classes, obj_class) == NULL) {
+        return NULL;
+    }
+
+    if (static_clasp != ((DynamicJSClass*) obj_class)->static_class) {
+        return NULL;
+    }
+
+    return JS_GetInstancePrivate(context, obj, obj_class, argv);
+}
+
 JSObject*
 gjs_construct_object_dynamic(JSContext      *context,
                              JSObject       *proto,
