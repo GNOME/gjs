@@ -36,10 +36,34 @@ function testBoxedCopyConstructor()
 
 function testNestedSimpleBoxed() {
     let simple_boxed = new Everything.TestSimpleBoxedB();
+
+    // Test reading fields and nested fields
     simple_boxed.some_int8 = 42;
     simple_boxed.nested_a.some_int = 43;
     assertEquals(42, simple_boxed.some_int8);
     assertEquals(43, simple_boxed.nested_a.some_int);
+
+    // Try assigning the nested struct field from an instance
+    simple_boxed.nested_a = new Everything.TestSimpleBoxedA({ some_int: 53 });
+    assertEquals(53, simple_boxed.nested_a.some_int);
+
+    // And directly from a hash of field values
+    simple_boxed.nested_a = { some_int: 63 };
+    assertEquals(63, simple_boxed.nested_a.some_int);
+
+    // Try constructing with a nested hash of field values
+    let simple2 = new Everything.TestSimpleBoxedB({
+	some_int8: 42,
+	nested_a: {
+	    some_int: 43,
+	    some_int8: 44,
+	    some_double: 43.5
+	}
+    });
+    assertEquals(42, simple2.some_int8);
+    assertEquals(43, simple2.nested_a.some_int);
+    assertEquals(44, simple2.nested_a.some_int8);
+    assertEquals(43.5, simple2.nested_a.some_double);
 }
 
 function testBoxed() {

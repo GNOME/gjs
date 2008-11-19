@@ -678,6 +678,60 @@ out:
 }
 
 static JSBool
+set_nested_interface_object (JSContext   *context,
+                             Boxed       *parent_priv,
+                             GIFieldInfo *field_info,
+                             GITypeInfo  *type_info,
+                             jsval        value)
+{
+    JSObject *proto;
+    GIBaseInfo *info;
+    int offset;
+    gboolean success = FALSE;
+    Boxed *proto_priv;
+    Boxed *source_priv;
+
+    info = g_type_info_get_interface (type_info);
+    if (!(g_base_info_get_type (info) == GI_INFO_TYPE_STRUCT || g_base_info_get_type (info) == GI_INFO_TYPE_BOXED) ||
+        g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*)info) == G_TYPE_NONE ||
+        !struct_is_simple ((GIStructInfo *)info)) {
+        gjs_throw(context, "Writing field %s.%s is not supported",
+                  g_base_info_get_name ((GIBaseInfo *)parent_priv->info),
+                  g_base_info_get_name ((GIBaseInfo *)field_info));
+
+        goto out;
+    }
+
+    proto = gjs_lookup_boxed_prototype(context, (GIBoxedInfo*) info);
+    proto_priv = priv_from_js(context, proto);
+
+    /* If we can't directly copy from the source object we need
+     * to construct a new temporary object.
+     */
+    if (!boxed_get_copy_source(context, proto_priv, value, &source_priv)) {
+        JSObject *tmp_object = gjs_construct_object_dynamic(context, proto, 1, &value);
+        if (!tmp_object)
+            goto out;
+
+        source_priv = priv_from_js(context, tmp_object);
+        if (!source_priv)
+            goto out;
+    }
+
+    offset = g_field_info_get_offset (field_info);
+    memcpy(((char *)parent_priv->gboxed) + offset,
+           source_priv->gboxed,
+           g_struct_info_get_size (source_priv->info));
+
+    success = TRUE;
+
+out:
+    g_base_info_unref( (GIBaseInfo*) info);
+
+    return success;
+}
+
+static JSBool
 boxed_set_field_from_value(JSContext   *context,
                            Boxed       *priv,
                            GIFieldInfo *field_info,
@@ -690,20 +744,28 @@ boxed_set_field_from_value(JSContext   *context,
 
     type_info = g_field_info_get_type (field_info);
 
-    if (!gjs_value_to_g_argument(context, value,
-                                 type_info,
-                                 g_base_info_get_name ((GIBaseInfo *)field_info),
-                                 GJS_ARGUMENT_FIELD,
-                                 TRUE, &arg))
-        goto out;
+    if (!g_type_info_is_pointer (type_info) &&
+        g_type_info_get_tag (type_info) == GI_TYPE_TAG_INTERFACE) {
 
-    need_release = TRUE;
+        if (!set_nested_interface_object (context, priv, field_info, type_info, value))
+            goto out;
 
-    if (!g_field_info_set_field (field_info, priv->gboxed, &arg)) {
-        gjs_throw(context, "Writing field %s.%s is not supported",
-                  g_base_info_get_name ((GIBaseInfo *)priv->info),
-                  g_base_info_get_name ((GIBaseInfo *)field_info));
-        goto out;
+    } else {
+        if (!gjs_value_to_g_argument(context, value,
+                                     type_info,
+                                     g_base_info_get_name ((GIBaseInfo *)field_info),
+                                     GJS_ARGUMENT_FIELD,
+                                     TRUE, &arg))
+            goto out;
+
+        need_release = TRUE;
+
+        if (!g_field_info_set_field (field_info, priv->gboxed, &arg)) {
+            gjs_throw(context, "Writing field %s.%s is not supported",
+                      g_base_info_get_name ((GIBaseInfo *)priv->info),
+                      g_base_info_get_name ((GIBaseInfo *)field_info));
+            goto out;
+        }
     }
 
     success = TRUE;
