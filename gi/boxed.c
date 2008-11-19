@@ -54,6 +54,11 @@ typedef struct {
 
 static gboolean struct_is_simple(GIStructInfo *info);
 
+static JSBool boxed_set_field_from_value(JSContext   *context,
+                                         Boxed       *priv,
+                                         GIFieldInfo *field_info,
+                                         jsval        value);
+
 static BoxedConstructInfo unthreadsafe_template_for_constructor = { NULL, NULL, JSVAL_NULL };
 
 static struct JSClass gjs_boxed_class;
@@ -152,6 +157,32 @@ boxed_new_resolve(JSContext *context,
     return JS_TRUE;
 }
 
+/* Check to see if jsval passed in is another Boxed object of the same,
+ * and if so, retrieves the Boxed private structure for it.
+ */
+static JSBool
+boxed_get_copy_source(JSContext *context,
+                      Boxed     *priv,
+                      jsval      value,
+                      Boxed    **source_priv_out)
+{
+    Boxed *source_priv;
+
+    if (!JSVAL_IS_OBJECT(value))
+        return JS_FALSE;
+
+    if (!priv_from_js_with_typecheck(context, JSVAL_TO_OBJECT(value), &source_priv))
+        return JS_FALSE;
+
+    if (strcmp(g_base_info_get_name((GIBaseInfo*) priv->info),
+               g_base_info_get_name((GIBaseInfo*) source_priv->info)) != 0)
+        return JS_FALSE;
+
+    *source_priv_out = source_priv;
+
+    return JS_TRUE;
+}
+
 static JSBool
 boxed_new(JSContext   *context,
           JSObject    *obj, /* "this" for constructor */
@@ -218,6 +249,140 @@ boxed_new(JSContext   *context,
 
     gjs_throw(context, "Unable to construct boxed type %s since it has no zero-args <constructor>, can only wrap an existing one",
               g_base_info_get_name((GIBaseInfo*) priv->info));
+
+    return JS_FALSE;
+}
+
+/* When initializing a boxed object from a hash of properties, we don't want
+ * to do n O(n) lookups, so put temporarily put the fields into a hash table
+ * for fast lookup. We could also do this ahead of time and store it on proto->priv.
+ */
+static GHashTable *
+get_field_map(GIStructInfo *struct_info)
+{
+    GHashTable *result;
+    int n_fields;
+    int i;
+
+    result = g_hash_table_new_full(g_str_hash, g_str_equal,
+                                   NULL, (GDestroyNotify)g_base_info_unref);
+    n_fields = g_struct_info_get_n_fields(struct_info);
+
+    for (i = 0; i < n_fields; i++) {
+        GIFieldInfo *field_info = g_struct_info_get_field(struct_info, i);
+        g_hash_table_insert(result, (char *)g_base_info_get_name((GIBaseInfo *)field_info), field_info);
+    }
+
+    return result;
+}
+
+/* Initialize a newly created Boxed from an object that is a "hash" of
+ * properties to set as fieds of the object. We don't require that every field
+ * of the object be set.
+ */
+static JSBool
+boxed_init_from_props(JSContext   *context,
+                      JSObject    *obj,
+                      Boxed       *priv,
+                      jsval        props_value)
+{
+    JSObject *props;
+    JSObject *iter;
+    jsid prop_id;
+    GHashTable *field_map;
+    gboolean success;
+
+    success = FALSE;
+
+    if (!JSVAL_IS_OBJECT(props_value)) {
+        gjs_throw(context, "argument should be a hash with fields to set");
+        return JS_FALSE;
+    }
+
+    props = JSVAL_TO_OBJECT(props_value);
+
+    iter = JS_NewPropertyIterator(context, props);
+    if (iter == NULL) {
+        gjs_throw(context, "Failed to create property iterator for fields hash");
+        return JS_FALSE;
+    }
+
+    field_map = get_field_map(priv->info);
+
+    prop_id = JSVAL_VOID;
+    if (!JS_NextProperty(context, iter, &prop_id))
+        goto out;
+
+    while (prop_id != JSVAL_VOID) {
+        GIFieldInfo *field_info;
+        jsval nameval;
+        const char *name;
+        jsval value;
+
+        if (!JS_IdToValue(context, prop_id, &nameval))
+            goto out;
+
+        if (!gjs_get_string_id(nameval, &name))
+            goto out;
+
+        field_info = g_hash_table_lookup(field_map, name);
+        if (field_info == NULL) {
+            gjs_throw(context, "No field %s on boxed type %s",
+                      name, g_base_info_get_name((GIBaseInfo *)priv->info));
+            goto out;
+        }
+
+        if (!gjs_object_require_property(context, props, name, &value))
+            goto out;
+
+        if (!boxed_set_field_from_value(context, priv, field_info, value)) {
+            goto out;
+        }
+
+        prop_id = JSVAL_VOID;
+        if (!JS_NextProperty(context, iter, &prop_id))
+            goto out;
+    }
+
+    success = TRUE;
+
+out:
+    g_hash_table_destroy(field_map);
+
+    return success;
+}
+
+/* Do any initialization of a newly constructed object from the arguments passed
+ * in from Javascript.
+ */
+static JSBool
+boxed_init(JSContext   *context,
+           JSObject    *obj, /* "this" for constructor */
+           Boxed       *priv,
+           uintN        argc,
+           jsval       *argv)
+{
+    if (argc == 0)
+        return JS_TRUE;
+
+    if (argc == 1) {
+        Boxed *source_priv;
+
+        /* Short-cut to memcpy when possible */
+        if (priv->can_allocate_directly &&
+            boxed_get_copy_source (context, priv, argv[0], &source_priv)) {
+
+            memcpy(priv->gboxed, source_priv->gboxed,
+                   g_struct_info_get_size (priv->info));
+
+            return JS_TRUE;
+        }
+
+        return boxed_init_from_props(context, obj, priv, argv[0]);
+    }
+
+    gjs_throw(context, "Constructor with multiple arguments not supported for %s",
+              g_base_info_get_name((GIBaseInfo *)priv->info));
 
     return JS_FALSE;
 }
@@ -302,8 +467,25 @@ boxed_constructor(JSContext *context,
         unthreadsafe_template_for_constructor.info = NULL;
 
         if (unthreadsafe_template_for_constructor.gboxed == NULL) {
+            Boxed *source_priv;
+
+            /* Short-circuit copy-construction in the case where we can use g_boxed_copy */
+            if (argc == 1 &&
+                boxed_get_copy_source(context, priv, argv[0], &source_priv)) {
+
+                GType gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
+                if (gtype != G_TYPE_NONE) {
+                    priv->gboxed = g_boxed_copy(gtype, source_priv->gboxed);
+                    return JS_TRUE;
+                }
+            }
+
             if (!boxed_new(context, obj, priv))
                 return JS_FALSE;
+
+            if (!boxed_init(context, obj, priv, argc, argv))
+                return JS_FALSE;
+
         } else if (!JSVAL_IS_NULL(unthreadsafe_template_for_constructor.parent_jsval)) {
             /* A structure nested inside a parent object; doens't have an independent allocation */
 
@@ -496,36 +678,19 @@ out:
 }
 
 static JSBool
-boxed_field_setter (JSContext *context,
-                    JSObject  *obj,
-                    jsval      id,
-                    jsval     *value)
+boxed_set_field_from_value(JSContext   *context,
+                           Boxed       *priv,
+                           GIFieldInfo *field_info,
+                           jsval        value)
 {
-    Boxed *priv;
-    GIFieldInfo *field_info;
     GITypeInfo *type_info;
     GArgument arg;
     gboolean success = FALSE;
     gboolean need_release = FALSE;
 
-    priv = priv_from_js(context, obj);
-    if (!priv)
-        return JS_FALSE;
-
-    field_info = get_field_info(context, priv, id);
-    if (!field_info)
-        return JS_FALSE;
-
     type_info = g_field_info_get_type (field_info);
 
-    if (priv->gboxed == NULL) { /* direct access to proto field */
-        gjs_throw(context, "Can't set field %s.%s on prototype",
-                  g_base_info_get_name ((GIBaseInfo *)priv->info),
-                  g_base_info_get_name ((GIBaseInfo *)field_info));
-        goto out;
-    }
-
-    if (!gjs_value_to_g_argument(context, *value,
+    if (!gjs_value_to_g_argument(context, value,
                                  type_info,
                                  g_base_info_get_name ((GIBaseInfo *)field_info),
                                  GJS_ARGUMENT_FIELD,
@@ -549,8 +714,40 @@ out:
                                 type_info,
                                 &arg);
 
-    g_base_info_unref ((GIBaseInfo *)field_info);
     g_base_info_unref ((GIBaseInfo *)type_info);
+
+    return success;
+}
+
+static JSBool
+boxed_field_setter (JSContext *context,
+                    JSObject  *obj,
+                    jsval      id,
+                    jsval     *value)
+{
+    Boxed *priv;
+    GIFieldInfo *field_info;
+    gboolean success = FALSE;
+
+    priv = priv_from_js(context, obj);
+    if (!priv)
+        return JS_FALSE;
+
+    field_info = get_field_info(context, priv, id);
+    if (!field_info)
+        return JS_FALSE;
+
+    if (priv->gboxed == NULL) { /* direct access to proto field */
+        gjs_throw(context, "Can't set field %s.%s on prototype",
+                  g_base_info_get_name ((GIBaseInfo *)priv->info),
+                  g_base_info_get_name ((GIBaseInfo *)field_info));
+        goto out;
+    }
+
+    success = boxed_set_field_from_value (context, priv, field_info, *value);
+
+out:
+    g_base_info_unref ((GIBaseInfo *)field_info);
 
     return success;
 }
@@ -861,8 +1058,8 @@ gjs_define_boxed_class(JSContext    *context,
                                            * Math - rarely correct)
                                            */
                                           boxed_constructor,
-                                          /* number of constructor args */
-                                          0,
+                                          /* number of constructor args (less can be passed) */
+                                          1,
                                           /* props of prototype */
                                           &gjs_boxed_proto_props[0],
                                           /* funcs of prototype */
