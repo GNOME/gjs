@@ -331,6 +331,194 @@ boxed_finalize(JSContext *context,
     g_slice_free(Boxed, priv);
 }
 
+static GIFieldInfo *
+get_field_info (JSContext *context,
+                Boxed     *priv,
+                jsval      id)
+{
+    int field_index;
+
+    if (!JSVAL_IS_INT (id)) {
+        gjs_throw(context, "Field index for %s is not an integer",
+                  g_base_info_get_name ((GIBaseInfo *)priv->info));
+        return NULL;
+    }
+
+    field_index = JSVAL_TO_INT(id);
+    if (field_index < 0 || field_index >= g_struct_info_get_n_fields (priv->info)) {
+        gjs_throw(context, "Bad field index %d for %s", field_index,
+                  g_base_info_get_name ((GIBaseInfo *)priv->info));
+        return NULL;
+    }
+
+    return g_struct_info_get_field (priv->info, field_index);
+}
+
+static JSBool
+boxed_field_getter (JSContext *context,
+                    JSObject  *obj,
+                    jsval      id,
+                    jsval     *value)
+{
+    Boxed *priv;
+    GIFieldInfo *field_info;
+    GITypeInfo *type_info;
+    GArgument arg;
+    gboolean success = FALSE;
+
+    priv = priv_from_js(context, obj);
+    if (!priv)
+        return JS_FALSE;
+
+    field_info = get_field_info(context, priv, id);
+    if (!field_info)
+        return JS_FALSE;
+
+    type_info = g_field_info_get_type (field_info);
+
+    if (priv->gboxed == NULL) { /* direct access to proto field */
+        gjs_throw(context, "Can't get field %s.%s from a prototype",
+                  g_base_info_get_name ((GIBaseInfo *)priv->info),
+                  g_base_info_get_name ((GIBaseInfo *)field_info));
+        goto out;
+    }
+
+    if (!g_field_info_get_field (field_info, priv->gboxed, &arg)) {
+        gjs_throw(context, "Reading field %s.%s is not supported",
+                  g_base_info_get_name ((GIBaseInfo *)priv->info),
+                  g_base_info_get_name ((GIBaseInfo *)field_info));
+        goto out;
+    }
+
+    if (!gjs_value_from_g_argument (context, value,
+                                    type_info,
+                                    &arg))
+        goto out;
+
+    success = TRUE;
+
+out:
+    g_base_info_unref ((GIBaseInfo *)field_info);
+    g_base_info_unref ((GIBaseInfo *)type_info);
+
+    return success;
+}
+
+static JSBool
+boxed_field_setter (JSContext *context,
+                    JSObject  *obj,
+                    jsval      id,
+                    jsval     *value)
+{
+    Boxed *priv;
+    GIFieldInfo *field_info;
+    GITypeInfo *type_info;
+    GArgument arg;
+    gboolean success = FALSE;
+    gboolean need_release = FALSE;
+
+    priv = priv_from_js(context, obj);
+    if (!priv)
+        return JS_FALSE;
+
+    field_info = get_field_info(context, priv, id);
+    if (!field_info)
+        return JS_FALSE;
+
+    type_info = g_field_info_get_type (field_info);
+
+    if (priv->gboxed == NULL) { /* direct access to proto field */
+        gjs_throw(context, "Can't set field %s.%s on prototype",
+                  g_base_info_get_name ((GIBaseInfo *)priv->info),
+                  g_base_info_get_name ((GIBaseInfo *)field_info));
+        goto out;
+    }
+
+    if (!gjs_value_to_g_argument(context, *value,
+                                 type_info,
+                                 g_base_info_get_name ((GIBaseInfo *)field_info),
+                                 GJS_ARGUMENT_FIELD,
+                                 TRUE, &arg))
+        goto out;
+
+    need_release = TRUE;
+
+    if (!g_field_info_set_field (field_info, priv->gboxed, &arg)) {
+        gjs_throw(context, "Writing field %s.%s is not supported",
+                  g_base_info_get_name ((GIBaseInfo *)priv->info),
+                  g_base_info_get_name ((GIBaseInfo *)field_info));
+        goto out;
+    }
+
+    success = TRUE;
+
+out:
+    if (need_release)
+        gjs_g_argument_release (context, GI_TRANSFER_NOTHING,
+                                type_info,
+                                &arg);
+
+    g_base_info_unref ((GIBaseInfo *)field_info);
+    g_base_info_unref ((GIBaseInfo *)type_info);
+
+    return success;
+}
+
+static JSBool
+define_boxed_class_fields (JSContext *context,
+                           Boxed     *priv,
+                           JSObject  *proto)
+{
+    int n_fields = g_struct_info_get_n_fields (priv->info);
+    int i;
+
+    /* We identify properties with a 'TinyId': a 8-bit numeric value
+     * that can be retrieved in the property getter/setter. Using it
+     * allows us to avoid a hash-table lookup or linear search.
+     * It does restrict us to a maximum of 256 fields per type.
+     *
+     * We define all fields as read/write so that the user gets an
+     * error message. If we omitted fields or defined them read-only
+     * we'd:
+     *
+     *  - Storing a new property for a non-accessible field
+     *  - Silently do nothing when writing a read-only field
+     *
+     * Which is pretty confusing if the only reason a field isn't
+     * writable is language binding or memory-management restrictions.
+     *
+     * We just go ahead and define the fields immediately for the
+     * class; doing it lazily in boxed_new_resolve() would be possible
+     * as well if doing it ahead of time caused to much start-up
+     * memory overhead.
+     */
+    if (n_fields > 256) {
+        gjs_debug(GJS_DEBUG_ERROR,
+                  "Only defining the first 256 fields in boxed type '%s'",
+                  g_base_info_get_name ((GIBaseInfo *)priv->info));
+        n_fields = 256;
+    }
+
+    for (i = 0; i < n_fields; i++) {
+        GIFieldInfo *field = g_struct_info_get_field (priv->info, i);
+        const char *field_name = g_base_info_get_name ((GIBaseInfo *)field);
+        gboolean result;
+
+        result = JS_DefinePropertyWithTinyId(context, proto, field_name, i,
+                                             JSVAL_NULL,
+                                             boxed_field_getter, boxed_field_setter,
+                                             JSPROP_PERMANENT | JSPROP_SHARED);
+
+        g_base_info_unref ((GIBaseInfo *)field);
+
+        if (!result)
+            return JS_FALSE;
+    }
+
+    return JS_TRUE;
+}
+
+
 /* The bizarre thing about this vtable is that it applies to both
  * instances of the object, and to the prototype that instances of the
  * class have.
@@ -500,6 +688,8 @@ gjs_define_boxed_class(JSContext    *context,
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
               constructor_name, prototype, JS_GetClass(context, prototype), in_object);
+
+    define_boxed_class_fields (context, priv, prototype);
 
     if (constructor_p) {
         *constructor_p = NULL;
