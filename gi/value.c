@@ -324,7 +324,7 @@ gjs_value_to_g_value(JSContext    *context,
         } else if (JSVAL_IS_OBJECT(value)) {
             JSObject *obj;
             obj = JSVAL_TO_OBJECT(value);
-            gboxed = gjs_g_boxed_from_boxed(context, obj);
+            gboxed = gjs_c_struct_from_boxed(context, obj);
         } else {
             gjs_throw(context,
                       "Wrong type %s; boxed type %s expected",
@@ -502,11 +502,27 @@ gjs_value_from_g_value(JSContext    *context,
          * their g-i info as both GBoxed */
         info = g_irepository_find_by_gtype(g_irepository_get_default(),
                                            gtype);
+        if (info == NULL) {
+            gjs_throw(context,
+                      "No introspection information found for %s",
+                      g_type_name(gtype));
+            return JS_FALSE;
+        }
 
-        if (g_base_info_get_type(info) == GI_INFO_TYPE_UNION) {
-            obj = gjs_union_from_g_boxed(context, gtype, gboxed);
-        } else {
-            obj = gjs_boxed_from_g_boxed(context, gtype, gboxed);
+        switch (g_base_info_get_type(info)) {
+        case GI_INFO_TYPE_BOXED:
+        case GI_INFO_TYPE_STRUCT:
+            obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)info, gboxed);
+            break;
+        case GI_INFO_TYPE_UNION:
+            obj = gjs_union_from_c_union(context, (GIUnionInfo *)info, gboxed);
+            break;
+        default:
+            gjs_throw(context,
+                      "Unexpected introspection type %d for %s",
+                      g_base_info_get_type(info),
+                      g_type_name(gtype));
+            return JS_FALSE;
         }
         *value_p = OBJECT_TO_JSVAL(obj);
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {

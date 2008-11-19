@@ -1,5 +1,39 @@
 const Everything = imports.gi.Everything;
 
+function testStruct() {
+    let struct = new Everything.TestStructA();
+    struct.some_int = 42;
+    struct.some_int8 = 43;
+    struct.some_double = 42.5;
+    assertEquals(42, struct.some_int);
+    assertEquals(43, struct.some_int8);
+    assertEquals(42.5, struct.some_double);
+}
+
+function testStructConstructor()
+{
+    // "Copy" an object from a hash of field values
+    let struct = new Everything.TestStructA({ some_int: 42,
+					      some_int8: 43,
+					      some_double: 42.5 });
+
+    assertEquals(42, struct.some_int);
+    assertEquals(43, struct.some_int8);
+    assertEquals(42.5, struct.some_double);
+
+    // Make sure we catch bad field names
+    assertRaises(function() {
+	let t = new Everything.TestStructA({ junk: 42 });
+    });
+
+    // Copy an object from another object of the same type, shortcuts to memcpy()
+    let copy = new Everything.TestStructA(struct);
+
+    assertEquals(42, copy.some_int);
+    assertEquals(43, copy.some_int8);
+    assertEquals(42.5, copy.some_double);
+}
+
 function testSimpleBoxed() {
     let simple_boxed = new Everything.TestSimpleBoxedA();
     simple_boxed.some_int = 42;

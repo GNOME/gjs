@@ -43,10 +43,10 @@ JSObject* gjs_lookup_union_prototype   (JSContext    *context,
                                         GIUnionInfo  *info);
 JSClass*  gjs_lookup_union_class       (JSContext    *context,
                                         GIUnionInfo  *info);
-void*     gjs_g_boxed_from_union       (JSContext    *context,
+void*     gjs_c_union_from_union       (JSContext    *context,
                                         JSObject     *obj);
-JSObject* gjs_union_from_g_boxed       (JSContext    *context,
-                                        GType         gtype,
+JSObject* gjs_union_from_c_union       (JSContext    *context,
+                                        GIUnionInfo  *info,
                                         void         *gboxed);
 
 G_END_DECLS

@@ -178,7 +178,7 @@ union_new(JSContext   *context,
             if (JSVAL_IS_NULL(rval))
                 return NULL;
             else
-                return gjs_g_boxed_from_union(context, JSVAL_TO_OBJECT(rval));
+                return gjs_c_union_from_union(context, JSVAL_TO_OBJECT(rval));
         }
 
         g_base_info_unref((GIBaseInfo*) func_info);
@@ -429,6 +429,16 @@ gjs_define_union_class(JSContext    *context,
     JSObject *prototype;
     jsval value;
     Union *priv;
+    GType gtype;
+
+    /* For certain unions, we may be able to relax this in the future by
+     * directly allocating union memory, as we do for structures in boxed.c
+     */
+    gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) info);
+    if (gtype == G_TYPE_NONE) {
+        gjs_throw(context, "Unions must currently be registered as boxed types");
+        return JS_FALSE;
+    }
 
     /* See the comment in gjs_define_object_class() for an
      * explanation of how this all works; Union is pretty much the
@@ -522,38 +532,18 @@ gjs_define_union_class(JSContext    *context,
 }
 
 JSObject*
-gjs_union_from_g_boxed(JSContext    *context,
-                       GType         gtype,
+gjs_union_from_c_union(JSContext    *context,
+                       GIUnionInfo  *info,
                        void         *gboxed)
 {
-    JSObject *obj;
     JSObject *proto;
-    GIBaseInfo *info;
 
     if (gboxed == NULL)
         return NULL;
 
     gjs_debug_marshal(GJS_DEBUG_GBOXED,
                       "Wrapping union %s %p with JSObject",
-                      g_type_name(gtype), gboxed);
-
-    info = g_irepository_find_by_gtype(g_irepository_get_default(),
-                                       gtype);
-
-    if (info == NULL) {
-        gjs_throw(context,
-                     "Unknown union type %s",
-                     g_type_name(gtype));
-        return NULL;
-    }
-
-    if (g_base_info_get_type( (GIBaseInfo*) info) != GI_INFO_TYPE_UNION) {
-        gjs_throw(context,
-                  "GType %s doesn't map to union in g-i?",
-                  g_base_info_get_name( (GIBaseInfo*) info));
-        g_base_info_unref( (GIBaseInfo*) info);
-        return NULL;
-    }
+                      g_base_info_get_name((GBaseInfo *)info), gboxed);
 
     proto = gjs_lookup_union_prototype(context, (GIUnionInfo*) info);
 
@@ -561,16 +551,12 @@ gjs_union_from_g_boxed(JSContext    *context,
     unthreadsafe_template_for_constructor.info = (GIUnionInfo*) info;
     unthreadsafe_template_for_constructor.gboxed = gboxed;
 
-    obj = gjs_construct_object_dynamic(context, proto,
-                                       0, NULL);
-
-    g_base_info_unref( (GIBaseInfo*) info);
-
-    return obj;
+    return gjs_construct_object_dynamic(context, proto,
+                                        0, NULL);
 }
 
 void*
-gjs_g_boxed_from_union(JSContext    *context,
+gjs_c_union_from_union(JSContext    *context,
                        JSObject     *obj)
 {
     Union *priv;

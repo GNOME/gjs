@@ -46,10 +46,10 @@ JSObject* gjs_lookup_boxed_prototype   (JSContext    *context,
                                         GIBoxedInfo  *info);
 JSClass*  gjs_lookup_boxed_class       (JSContext    *context,
                                         GIBoxedInfo  *info);
-void*     gjs_g_boxed_from_boxed       (JSContext    *context,
+void*     gjs_c_struct_from_boxed      (JSContext    *context,
                                         JSObject     *obj);
-JSObject* gjs_boxed_from_g_boxed       (JSContext    *context,
-                                        GType         gtype,
+JSObject* gjs_boxed_from_c_struct      (JSContext    *context,
+                                        GIStructInfo *info,
                                         void         *gboxed);
 
 G_END_DECLS
