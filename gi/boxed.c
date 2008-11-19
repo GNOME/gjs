@@ -43,9 +43,18 @@ typedef struct {
     void *gboxed; /* NULL if we are the prototype and not an instance */
     guint can_allocate_directly : 1;
     guint allocated_directly : 1;
+    guint has_parent : 1; /* If set, this boxed doesn't have an independent allocation */
 } Boxed;
 
-static Boxed unthreadsafe_template_for_constructor = { NULL, NULL };
+typedef struct {
+    GIBoxedInfo *info;
+    void *gboxed;
+    jsval parent_jsval;
+} BoxedConstructInfo;
+
+static gboolean struct_is_simple(GIStructInfo *info);
+
+static BoxedConstructInfo unthreadsafe_template_for_constructor = { NULL, NULL, JSVAL_NULL };
 
 static struct JSClass gjs_boxed_class;
 
@@ -295,6 +304,20 @@ boxed_constructor(JSContext *context,
         if (unthreadsafe_template_for_constructor.gboxed == NULL) {
             if (!boxed_new(context, obj, priv))
                 return JS_FALSE;
+        } else if (!JSVAL_IS_NULL(unthreadsafe_template_for_constructor.parent_jsval)) {
+            /* A structure nested inside a parent object; doens't have an independent allocation */
+
+            priv->gboxed = unthreadsafe_template_for_constructor.gboxed;
+            priv->has_parent = TRUE;
+
+            /* We never actually read the reserved slot, but we put the parent object
+             * into it to hold onto the parent object.
+             */
+            JS_SetReservedSlot(context, obj, 0,
+                               unthreadsafe_template_for_constructor.parent_jsval);
+
+            unthreadsafe_template_for_constructor.parent_jsval = JSVAL_NULL;
+            unthreadsafe_template_for_constructor.gboxed = NULL;
         } else {
             GType gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
 
@@ -361,6 +384,59 @@ get_field_info (JSContext *context,
 }
 
 static JSBool
+get_nested_interface_object (JSContext   *context,
+                             JSObject    *parent_obj,
+                             Boxed       *parent_priv,
+                             GIFieldInfo *field_info,
+                             GITypeInfo  *type_info,
+                             jsval       *value)
+{
+    JSObject *obj;
+    JSObject *proto;
+    GIBaseInfo *info;
+    int offset;
+    gboolean success = FALSE;
+
+    info = g_type_info_get_interface (type_info);
+    if (!(g_base_info_get_type (info) == GI_INFO_TYPE_STRUCT || g_base_info_get_type (info) == GI_INFO_TYPE_BOXED) ||
+        g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*)info) == G_TYPE_NONE ||
+        !struct_is_simple ((GIStructInfo *)info)) {
+        gjs_throw(context, "Reading field %s.%s is not supported",
+                  g_base_info_get_name ((GIBaseInfo *)parent_priv->info),
+                  g_base_info_get_name ((GIBaseInfo *)field_info));
+
+        goto out;
+    }
+
+    proto = gjs_lookup_boxed_prototype(context, (GIBoxedInfo*) info);
+
+    offset = g_field_info_get_offset (field_info);
+    unthreadsafe_template_for_constructor.info = (GIBoxedInfo*) info;
+    unthreadsafe_template_for_constructor.gboxed = ((char *)parent_priv->gboxed) + offset;
+
+    /* Rooting the object here is a little paranoid; the JSObject has to be kept
+     * alive anyways by our caller; so this would matter only if there was an
+     * aggressive GC that moved rooted objects */
+    JS_AddRoot(context, &unthreadsafe_template_for_constructor.parent_jsval);
+    unthreadsafe_template_for_constructor.parent_jsval = OBJECT_TO_JSVAL(parent_obj);
+
+    obj = gjs_construct_object_dynamic(context, proto,
+                                       0, NULL);
+
+    JS_RemoveRoot(context, &unthreadsafe_template_for_constructor.parent_jsval);
+
+    if (obj != NULL) {
+        success = TRUE;
+        *value = OBJECT_TO_JSVAL(obj);
+    }
+
+out:
+    g_base_info_unref( (GIBaseInfo*) info);
+
+    return success;
+}
+
+static JSBool
 boxed_field_getter (JSContext *context,
                     JSObject  *obj,
                     jsval      id,
@@ -389,17 +465,26 @@ boxed_field_getter (JSContext *context,
         goto out;
     }
 
-    if (!g_field_info_get_field (field_info, priv->gboxed, &arg)) {
-        gjs_throw(context, "Reading field %s.%s is not supported",
-                  g_base_info_get_name ((GIBaseInfo *)priv->info),
-                  g_base_info_get_name ((GIBaseInfo *)field_info));
-        goto out;
-    }
+    if (!g_type_info_is_pointer (type_info) &&
+        g_type_info_get_tag (type_info) == GI_TYPE_TAG_INTERFACE) {
 
-    if (!gjs_value_from_g_argument (context, value,
-                                    type_info,
-                                    &arg))
-        goto out;
+        if (!get_nested_interface_object (context, obj, priv, field_info, type_info, value))
+            goto out;
+
+    } else {
+        if (!g_field_info_get_field (field_info, priv->gboxed, &arg)) {
+            gjs_throw(context, "Reading field %s.%s is not supported",
+                      g_base_info_get_name ((GIBaseInfo *)priv->info),
+                      g_base_info_get_name ((GIBaseInfo *)field_info));
+            goto out;
+        }
+
+        if (!gjs_value_from_g_argument (context, value,
+                                        type_info,
+                                        &arg))
+            goto out;
+
+    }
 
     success = TRUE;
 
@@ -533,13 +618,19 @@ define_boxed_class_fields (JSContext *context,
  * tell, it would only be used if no constructor were provided to
  * JS_InitClass. The constructor from JS_InitClass is not applied to
  * the prototype unless JSCLASS_CONSTRUCT_PROTOTYPE is in flags.
+ *
+ * We allocate 1 reserved slot; this is typically unused, but if the
+ * boxed is for a nested structure inside a parent structure, the
+ * reserved slot is used to hold onto the parent Javascript object and
+ * make sure it doesn't get freed.
  */
 static struct JSClass gjs_boxed_class = {
     NULL, /* dynamic class, no name here */
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
     JSCLASS_NEW_RESOLVE_GETS_START |
-    JSCLASS_CONSTRUCT_PROTOTYPE,
+    JSCLASS_CONSTRUCT_PROTOTYPE |
+    JSCLASS_HAS_RESERVED_SLOTS(1),
     JS_PropertyStub,
     JS_PropertyStub,
     JS_PropertyStub,
@@ -616,20 +707,19 @@ gjs_lookup_boxed_class(JSContext    *context,
  * type that we know how to assign to. If so, then we can allocate and free
  * instances without needing a constructor.
  */
-static void
-check_can_allocate_directly(Boxed *priv)
+static gboolean
+struct_is_simple(GIStructInfo *info)
 {
-    GIBoxedInfo *info = priv->info;
     int n_fields = g_struct_info_get_n_fields (info);
-    gboolean can_allocate_directly = TRUE;
+    gboolean is_simple = TRUE;
     int i;
 
-    for (i = 0; i < n_fields && can_allocate_directly; i++) {
+    for (i = 0; i < n_fields && is_simple; i++) {
         GIFieldInfo *field_info = g_struct_info_get_field (info, i);
         GITypeInfo *type_info = g_field_info_get_type (field_info);
 
         if (g_type_info_is_pointer (type_info)) {
-            can_allocate_directly = FALSE;
+            is_simple = FALSE;
         } else {
             switch (g_type_info_get_tag (type_info)) {
             case GI_TYPE_TAG_BOOLEAN:
@@ -665,17 +755,21 @@ check_can_allocate_directly(Boxed *priv)
 	    {
                 GIBaseInfo *interface = g_type_info_get_interface (type_info);
                 switch (g_base_info_get_type (interface)) {
-		case GI_INFO_TYPE_STRUCT:
-		case GI_INFO_TYPE_UNION:
 		case GI_INFO_TYPE_BOXED:
-                    /* FIXME: Check if the nested type can be allocated directly */
-                    can_allocate_directly = FALSE;
+		case GI_INFO_TYPE_STRUCT:
+                    if (g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*)info) == G_TYPE_NONE ||
+                        !struct_is_simple ((GIStructInfo *)interface))
+                        is_simple = FALSE;
+                    break;
+		case GI_INFO_TYPE_UNION:
+                    /* FIXME: Need to implement */
+                    is_simple = FALSE;
                     break;
 		case GI_INFO_TYPE_ENUM:
 		case GI_INFO_TYPE_FLAGS:
-                    can_allocate_directly = FALSE;
+                    is_simple = FALSE;
                     /* FIXME: Needs to be implemented in g_field_info_set_field */
-                    can_allocate_directly = FALSE;
+                    is_simple = FALSE;
                     break;
 		case GI_INFO_TYPE_OBJECT:
 		case GI_INFO_TYPE_VFUNC:
@@ -692,7 +786,7 @@ check_can_allocate_directly(Boxed *priv)
 		case GI_INFO_TYPE_ARG:
 		case GI_INFO_TYPE_TYPE:
 		case GI_INFO_TYPE_UNRESOLVED:
-                    can_allocate_directly = FALSE;
+                    is_simple = FALSE;
                     break;
 		}
 
@@ -706,7 +800,7 @@ check_can_allocate_directly(Boxed *priv)
         g_base_info_unref ((GIBaseInfo *)type_info);
     }
 
-    priv->can_allocate_directly = can_allocate_directly;
+    return is_simple;
 }
 
 JSBool
@@ -792,7 +886,7 @@ gjs_define_boxed_class(JSContext    *context,
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
               constructor_name, prototype, JS_GetClass(context, prototype), in_object);
 
-    check_can_allocate_directly (priv);
+    priv->can_allocate_directly = struct_is_simple (priv->info);
 
     define_boxed_class_fields (context, priv, prototype);
 
@@ -856,6 +950,7 @@ gjs_boxed_from_g_boxed(JSContext    *context,
     /* can't come up with a better approach... */
     unthreadsafe_template_for_constructor.info = (GIBoxedInfo*) info;
     unthreadsafe_template_for_constructor.gboxed = gboxed;
+    unthreadsafe_template_for_constructor.parent_jsval = JSVAL_NULL;
 
     obj = gjs_construct_object_dynamic(context, proto,
                                        0, NULL);
