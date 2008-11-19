@@ -560,6 +560,9 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
     case GI_TYPE_TAG_ARRAY:
         if (JSVAL_IS_NULL(value)) {
             arg->v_pointer = NULL;
+        } else if (!JSVAL_IS_OBJECT(value)) {
+            wrong = TRUE;
+            report_type_mismatch = TRUE;
         } else if (gjs_object_has_property(context,
                                            JSVAL_TO_OBJECT(value),
                                            "length")) {
