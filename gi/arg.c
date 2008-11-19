@@ -32,14 +32,6 @@
 
 #include <util/log.h>
 
-static JSBool gjs_value_to_g_arg_with_type_info(JSContext  *context,
-                                                jsval       value,
-                                                GITypeInfo *type_info,
-                                                const char *arg_name,
-                                                gboolean    is_return_value,
-                                                gboolean    may_be_null,
-                                                GArgument  *arg);
-
 JSBool
 _gjs_flags_value_is_valid(JSContext   *context,
                           GFlagsClass *klass,
@@ -136,13 +128,13 @@ gjs_array_to_g_list(JSContext   *context,
          * gobject-introspection needs to tell us this.
          * Always say they can't for now.
          */
-        if (!gjs_value_to_g_arg_with_type_info(context,
-                                               elem,
-                                               param_info,
-                                               "list element",
-                                               FALSE,
-                                               FALSE,
-                                               &elem_arg)) {
+        if (!gjs_value_to_g_argument(context,
+                                     elem,
+                                     param_info,
+                                     NULL,
+                                     GJS_ARGUMENT_LIST_ELEMENT,
+                                     FALSE,
+                                     &elem_arg)) {
             return JS_FALSE;
         }
 
@@ -225,14 +217,32 @@ gjs_array_to_array(JSContext   *context,
     }
 }
 
-static JSBool
-gjs_value_to_g_arg_with_type_info(JSContext  *context,
-                                  jsval       value,
-                                  GITypeInfo *type_info,
-                                  const char *arg_name,
-                                  gboolean    is_return_value,
-                                  gboolean    may_be_null,
-                                  GArgument  *arg)
+static gchar *
+get_argument_display_name(const char     *arg_name,
+                          GjsArgumentType arg_type)
+{
+    switch (arg_type) {
+    case GJS_ARGUMENT_ARGUMENT:
+        return g_strdup_printf("Argument '%s'", arg_name);
+    case GJS_ARGUMENT_RETURN_VALUE:
+        return g_strdup("Return value");
+    case GJS_ARGUMENT_FIELD:
+        return g_strdup_printf("Field '%s'", arg_name);
+    case GJS_ARGUMENT_LIST_ELEMENT:
+        return g_strdup("List element");
+    }
+
+    g_assert_not_reached ();
+}
+
+JSBool
+gjs_value_to_g_argument(JSContext      *context,
+                        jsval           value,
+                        GITypeInfo     *type_info,
+                        const char     *arg_name,
+                        GjsArgumentType arg_type,
+                        gboolean        may_be_null,
+                        GArgument      *arg)
 {
     GITypeTag type_tag;
     gboolean wrong;
@@ -603,29 +613,32 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
 
     if (G_UNLIKELY(wrong)) {
         if (report_type_mismatch) {
-            gjs_throw(context, "Expected type %s for %s '%s' but got type '%s' %p",
+            gchar *display_name = get_argument_display_name (arg_name, arg_type);
+            gjs_throw(context, "Expected type %s for %s but got type '%s' %p",
                       g_type_tag_to_string(type_tag),
-                      is_return_value ? "return value" : "argument",
-                      arg_name,
+                      display_name,
                       JS_GetTypeName(context,
                                      JS_TypeOfValue(context, value)),
                       JSVAL_IS_OBJECT(value) ? JSVAL_TO_OBJECT(value) : NULL);
+            g_free (display_name);
         }
         return JS_FALSE;
     } else if (G_UNLIKELY(out_of_range)) {
-        gjs_throw(context, "value is out of range for %s '%s' type %s",
-                  is_return_value ? "return value" : "argument",
-                  arg_name,
+        gchar *display_name = get_argument_display_name (arg_name, arg_type);
+        gjs_throw(context, "value is out of range for %s (type %s)",
+                  display_name,
                   g_type_tag_to_string(type_tag));
+        g_free (display_name);
         return JS_FALSE;
     } else if (nullable_type &&
                arg->v_pointer == NULL &&
                !may_be_null) {
+        gchar *display_name = get_argument_display_name (arg_name, arg_type);
         gjs_throw(context,
-                  "%s '%s' (type %s) may not be null",
-                  is_return_value ? "Return value" : "Argument",
-                  arg_name,
+                  "%s (type %s) may not be null",
+                  display_name,
                   g_type_tag_to_string(type_tag));
+        g_free (display_name);
         return JS_FALSE;
     } else {
         return JS_TRUE;
@@ -633,10 +646,10 @@ gjs_value_to_g_arg_with_type_info(JSContext  *context,
 }
 
 JSBool
-gjs_value_to_g_arg(JSContext  *context,
-                   jsval       value,
-                   GIArgInfo  *arg_info,
-                   GArgument  *arg)
+gjs_value_to_arg(JSContext  *context,
+                 jsval       value,
+                 GIArgInfo  *arg_info,
+                 GArgument  *arg)
 {
     GITypeInfo *type_info;
     gboolean result;
@@ -644,13 +657,14 @@ gjs_value_to_g_arg(JSContext  *context,
     type_info = g_arg_info_get_type(arg_info);
 
     result =
-        gjs_value_to_g_arg_with_type_info(context, value,
-                                          type_info,
-                                          g_base_info_get_name( (GIBaseInfo*) arg_info),
-                                          g_arg_info_is_return_value(arg_info),
-                                          g_arg_info_may_be_null(arg_info),
-                                          arg);
-
+        gjs_value_to_g_argument(context, value,
+                                type_info,
+                                g_base_info_get_name( (GIBaseInfo*) arg_info),
+                                (g_arg_info_is_return_value(arg_info) ?
+                                 GJS_ARGUMENT_RETURN_VALUE : GJS_ARGUMENT_ARGUMENT),
+                                g_arg_info_may_be_null(arg_info),
+                                arg);
+    
     g_base_info_unref((GIBaseInfo*) type_info);
 
     return result;
@@ -689,8 +703,8 @@ gjs_array_from_g_list (JSContext  *context,
         for ( ; list != NULL; list = list->next) {
             arg.v_pointer = list->data;
 
-            if (!gjs_value_from_g_arg(context, &elem,
-                                      param_info, &arg))
+            if (!gjs_value_from_g_argument(context, &elem,
+                                           param_info, &arg))
                 goto out;
 
             if (!JS_DefineElement(context, obj,
@@ -704,8 +718,8 @@ gjs_array_from_g_list (JSContext  *context,
         for ( ; slist != NULL; slist = slist->next) {
             arg.v_pointer = slist->data;
 
-            if (!gjs_value_from_g_arg(context, &elem,
-                                      param_info, &arg))
+            if (!gjs_value_from_g_argument(context, &elem,
+                                           param_info, &arg))
                 goto out;
 
             if (!JS_DefineElement(context, obj,
@@ -726,10 +740,10 @@ gjs_array_from_g_list (JSContext  *context,
 }
 
 JSBool
-gjs_value_from_g_arg (JSContext  *context,
-                      jsval      *value_p,
-                      GITypeInfo *type_info,
-                      GArgument  *arg)
+gjs_value_from_g_argument (JSContext  *context,
+                           jsval      *value_p,
+                           GITypeInfo *type_info,
+                           GArgument  *arg)
 {
     GITypeTag type_tag;
 
@@ -1021,10 +1035,10 @@ gjs_g_arg_release_internal(JSContext  *context,
                 GArgument elem;
                 elem.v_pointer = list->data;
 
-                if (!gjs_g_arg_release(context,
-                                       GI_TRANSFER_EVERYTHING,
-                                       param_info,
-                                       &elem)) {
+                if (!gjs_g_argument_release(context,
+                                            GI_TRANSFER_EVERYTHING,
+                                            param_info,
+                                            &elem)) {
                     /* no way to recover here, and errors should
                      * not be possible.
                      */
@@ -1070,10 +1084,10 @@ gjs_g_arg_release_internal(JSContext  *context,
                 GArgument elem;
                 elem.v_pointer = slist->data;
 
-                if (!gjs_g_arg_release(context,
-                                       GI_TRANSFER_EVERYTHING,
-                                       param_info,
-                                       &elem)) {
+                if (!gjs_g_argument_release(context,
+                                            GI_TRANSFER_EVERYTHING,
+                                            param_info,
+                                            &elem)) {
                     /* no way to recover here, and errors should
                      * not be possible.
                      */
@@ -1098,10 +1112,10 @@ gjs_g_arg_release_internal(JSContext  *context,
 }
 
 JSBool
-gjs_g_arg_release(JSContext  *context,
-                  GITransfer  transfer,
-                  GITypeInfo *type_info,
-                  GArgument  *arg)
+gjs_g_argument_release(JSContext  *context,
+                       GITransfer  transfer,
+                       GITypeInfo *type_info,
+                       GArgument  *arg)
 {
     GITypeTag type_tag;
 
@@ -1118,10 +1132,10 @@ gjs_g_arg_release(JSContext  *context,
 }
 
 JSBool
-gjs_g_arg_release_in_arg(JSContext  *context,
-                         GITransfer  transfer,
-                         GITypeInfo *type_info,
-                         GArgument  *arg)
+gjs_g_argument_release_in_arg(JSContext  *context,
+                              GITransfer  transfer,
+                              GITypeInfo *type_info,
+                              GArgument  *arg)
 {
     GITypeTag type_tag;
 

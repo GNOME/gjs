@@ -204,8 +204,8 @@ gjs_invoke_c_function(JSContext      *context,
         if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT) {
             GArgument in_value;
 
-            if (!gjs_value_to_g_arg(context, argv[argv_pos], arg_info,
-                                       &in_value)) {
+            if (!gjs_value_to_arg(context, argv[argv_pos], arg_info,
+                                  &in_value)) {
                 failed = TRUE;
             }
 
@@ -271,17 +271,17 @@ gjs_invoke_c_function(JSContext      *context,
 
         if (return_tag != GI_TYPE_TAG_VOID) {
             if (invoke_ok &&
-                !gjs_value_from_g_arg(context, &return_values[next_rval],
-                                         return_info, &return_arg)) {
+                !gjs_value_from_g_argument(context, &return_values[next_rval],
+                                           return_info, &return_arg)) {
                 failed = TRUE;
             }
 
             /* Free GArgument, the jsval should have ref'd or copied it */
             if (invoke_ok &&
-                !gjs_g_arg_release(context,
-                                      g_callable_info_get_caller_owns((GICallableInfo*) info),
-                                      return_info,
-                                      &return_arg))
+                !gjs_g_argument_release(context,
+                                        g_callable_info_get_caller_owns((GICallableInfo*) info),
+                                        return_info,
+                                        &return_arg))
                 failed = TRUE;
 
             ++next_rval;
@@ -307,10 +307,10 @@ gjs_invoke_c_function(JSContext      *context,
         if (direction == GI_DIRECTION_IN) {
             g_assert(in_args_pos < expected_in_argc);
 
-            if (!gjs_g_arg_release_in_arg(context,
-                                          g_arg_info_get_ownership_transfer(arg_info),
-                                          arg_type_info,
-                                          &in_args[in_args_pos]))
+            if (!gjs_g_argument_release_in_arg(context,
+                                               g_arg_info_get_ownership_transfer(arg_info),
+                                               arg_type_info,
+                                               &in_args[in_args_pos]))
                 failed = TRUE;
 
             ++in_args_pos;
@@ -322,19 +322,19 @@ gjs_invoke_c_function(JSContext      *context,
             g_assert(out_args_pos < expected_out_argc);
 
             if (invoke_ok &&
-                !gjs_value_from_g_arg(context,
-                                      &return_values[next_rval],
-                                      arg_type_info,
-                                      out_args[out_args_pos].v_pointer)) {
+                !gjs_value_from_g_argument(context,
+                                           &return_values[next_rval],
+                                           arg_type_info,
+                                           out_args[out_args_pos].v_pointer)) {
                 failed = TRUE;
             }
 
             /* Free GArgument, the jsval should have ref'd or copied it */
             if (invoke_ok &&
-                !gjs_g_arg_release(context,
-                                   g_arg_info_get_ownership_transfer(arg_info),
-                                   arg_type_info,
-                                   out_args[out_args_pos].v_pointer))
+                !gjs_g_argument_release(context,
+                                        g_arg_info_get_ownership_transfer(arg_info),
+                                        arg_type_info,
+                                        out_args[out_args_pos].v_pointer))
                 failed = TRUE;
 
             if (direction == GI_DIRECTION_INOUT)
