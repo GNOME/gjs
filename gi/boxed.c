@@ -107,6 +107,7 @@ boxed_new_resolve(JSContext *context,
                           method_name,
                           g_base_info_get_namespace( (GIBaseInfo*) priv->info),
                           g_base_info_get_name( (GIBaseInfo*) priv->info));
+                g_base_info_unref( (GIBaseInfo*) method_info);
                 return JS_FALSE;
             }
 
