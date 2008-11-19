@@ -607,28 +607,25 @@ get_nested_interface_object (JSContext   *context,
                              Boxed       *parent_priv,
                              GIFieldInfo *field_info,
                              GITypeInfo  *type_info,
+                             GIBaseInfo  *interface_info,
                              jsval       *value)
 {
     JSObject *obj;
     JSObject *proto;
-    GIBaseInfo *info;
     int offset;
-    gboolean success = FALSE;
 
-    info = g_type_info_get_interface (type_info);
-    if (!(g_base_info_get_type (info) == GI_INFO_TYPE_STRUCT || g_base_info_get_type (info) == GI_INFO_TYPE_BOXED) ||
-        !struct_is_simple ((GIStructInfo *)info)) {
+    if (!struct_is_simple ((GIStructInfo *)interface_info)) {
         gjs_throw(context, "Reading field %s.%s is not supported",
                   g_base_info_get_name ((GIBaseInfo *)parent_priv->info),
                   g_base_info_get_name ((GIBaseInfo *)field_info));
 
-        goto out;
+        return JS_FALSE;
     }
 
-    proto = gjs_lookup_boxed_prototype(context, (GIBoxedInfo*) info);
+    proto = gjs_lookup_boxed_prototype(context, (GIBoxedInfo*) interface_info);
 
     offset = g_field_info_get_offset (field_info);
-    unthreadsafe_template_for_constructor.info = (GIBoxedInfo*) info;
+    unthreadsafe_template_for_constructor.info = (GIBoxedInfo*) interface_info;
     unthreadsafe_template_for_constructor.gboxed = ((char *)parent_priv->gboxed) + offset;
 
     /* Rooting the object here is a little paranoid; the JSObject has to be kept
@@ -643,14 +640,11 @@ get_nested_interface_object (JSContext   *context,
     JS_RemoveRoot(context, &unthreadsafe_template_for_constructor.parent_jsval);
 
     if (obj != NULL) {
-        success = TRUE;
         *value = OBJECT_TO_JSVAL(obj);
+        return JS_TRUE;
+    } else {
+        return JS_FALSE;
     }
-
-out:
-    g_base_info_unref( (GIBaseInfo*) info);
-
-    return success;
 }
 
 static JSBool
@@ -685,23 +679,34 @@ boxed_field_getter (JSContext *context,
     if (!g_type_info_is_pointer (type_info) &&
         g_type_info_get_tag (type_info) == GI_TYPE_TAG_INTERFACE) {
 
-        if (!get_nested_interface_object (context, obj, priv, field_info, type_info, value))
-            goto out;
+        GIBaseInfo *interface_info = g_type_info_get_interface(type_info);
 
-    } else {
-        if (!g_field_info_get_field (field_info, priv->gboxed, &arg)) {
-            gjs_throw(context, "Reading field %s.%s is not supported",
-                      g_base_info_get_name ((GIBaseInfo *)priv->info),
-                      g_base_info_get_name ((GIBaseInfo *)field_info));
+        if (g_base_info_get_type (interface_info) == GI_INFO_TYPE_STRUCT ||
+            g_base_info_get_type (interface_info) == GI_INFO_TYPE_BOXED) {
+
+            success = get_nested_interface_object (context, obj, priv,
+                                                   field_info, type_info, interface_info,
+                                                   value);
+
+            g_base_info_unref ((GIBaseInfo *)interface_info);
+
             goto out;
         }
 
-        if (!gjs_value_from_g_argument (context, value,
-                                        type_info,
-                                        &arg))
-            goto out;
-
+        g_base_info_unref ((GIBaseInfo *)interface_info);
     }
+
+    if (!g_field_info_get_field (field_info, priv->gboxed, &arg)) {
+        gjs_throw(context, "Reading field %s.%s is not supported",
+                  g_base_info_get_name ((GIBaseInfo *)priv->info),
+                  g_base_info_get_name ((GIBaseInfo *)field_info));
+        goto out;
+    }
+
+    if (!gjs_value_from_g_argument (context, value,
+                                    type_info,
+                                    &arg))
+        goto out;
 
     success = TRUE;
 
@@ -717,26 +722,23 @@ set_nested_interface_object (JSContext   *context,
                              Boxed       *parent_priv,
                              GIFieldInfo *field_info,
                              GITypeInfo  *type_info,
+                             GIBaseInfo  *interface_info,
                              jsval        value)
 {
     JSObject *proto;
-    GIBaseInfo *info;
     int offset;
-    gboolean success = FALSE;
     Boxed *proto_priv;
     Boxed *source_priv;
 
-    info = g_type_info_get_interface (type_info);
-    if (!(g_base_info_get_type (info) == GI_INFO_TYPE_STRUCT || g_base_info_get_type (info) == GI_INFO_TYPE_BOXED) ||
-        !struct_is_simple ((GIStructInfo *)info)) {
+    if (!struct_is_simple ((GIStructInfo *)interface_info)) {
         gjs_throw(context, "Writing field %s.%s is not supported",
                   g_base_info_get_name ((GIBaseInfo *)parent_priv->info),
                   g_base_info_get_name ((GIBaseInfo *)field_info));
 
-        goto out;
+        return JS_FALSE;
     }
 
-    proto = gjs_lookup_boxed_prototype(context, (GIBoxedInfo*) info);
+    proto = gjs_lookup_boxed_prototype(context, (GIBoxedInfo*) interface_info);
     proto_priv = priv_from_js(context, proto);
 
     /* If we can't directly copy from the source object we need
@@ -745,11 +747,11 @@ set_nested_interface_object (JSContext   *context,
     if (!boxed_get_copy_source(context, proto_priv, value, &source_priv)) {
         JSObject *tmp_object = gjs_construct_object_dynamic(context, proto, 1, &value);
         if (!tmp_object)
-            goto out;
+            return JS_FALSE;
 
         source_priv = priv_from_js(context, tmp_object);
         if (!source_priv)
-            goto out;
+            return JS_FALSE;
     }
 
     offset = g_field_info_get_offset (field_info);
@@ -757,12 +759,7 @@ set_nested_interface_object (JSContext   *context,
            source_priv->gboxed,
            g_struct_info_get_size (source_priv->info));
 
-    success = TRUE;
-
-out:
-    g_base_info_unref( (GIBaseInfo*) info);
-
-    return success;
+    return JS_TRUE;
 }
 
 static JSBool
@@ -781,25 +778,38 @@ boxed_set_field_from_value(JSContext   *context,
     if (!g_type_info_is_pointer (type_info) &&
         g_type_info_get_tag (type_info) == GI_TYPE_TAG_INTERFACE) {
 
-        if (!set_nested_interface_object (context, priv, field_info, type_info, value))
-            goto out;
+        GIBaseInfo *interface_info = g_type_info_get_interface(type_info);
 
-    } else {
-        if (!gjs_value_to_g_argument(context, value,
-                                     type_info,
-                                     g_base_info_get_name ((GIBaseInfo *)field_info),
-                                     GJS_ARGUMENT_FIELD,
-                                     TRUE, &arg))
-            goto out;
+        if (g_base_info_get_type (interface_info) == GI_INFO_TYPE_STRUCT ||
+            g_base_info_get_type (interface_info) == GI_INFO_TYPE_BOXED) {
 
-        need_release = TRUE;
+            success = set_nested_interface_object (context, priv,
+                                                   field_info, type_info,
+                                                   interface_info, value);
 
-        if (!g_field_info_set_field (field_info, priv->gboxed, &arg)) {
-            gjs_throw(context, "Writing field %s.%s is not supported",
-                      g_base_info_get_name ((GIBaseInfo *)priv->info),
-                      g_base_info_get_name ((GIBaseInfo *)field_info));
+            g_base_info_unref ((GIBaseInfo *)interface_info);
+
             goto out;
         }
+
+        g_base_info_unref ((GIBaseInfo *)interface_info);
+
+    }
+
+    if (!gjs_value_to_g_argument(context, value,
+                                 type_info,
+                                 g_base_info_get_name ((GIBaseInfo *)field_info),
+                                 GJS_ARGUMENT_FIELD,
+                                 TRUE, &arg))
+        goto out;
+
+    need_release = TRUE;
+
+    if (!g_field_info_set_field (field_info, priv->gboxed, &arg)) {
+        gjs_throw(context, "Writing field %s.%s is not supported",
+                  g_base_info_get_name ((GIBaseInfo *)priv->info),
+                  g_base_info_get_name ((GIBaseInfo *)field_info));
+        goto out;
     }
 
     success = TRUE;
@@ -1059,9 +1069,6 @@ struct_is_simple(GIStructInfo *info)
                     break;
 		case GI_INFO_TYPE_ENUM:
 		case GI_INFO_TYPE_FLAGS:
-                    is_simple = FALSE;
-                    /* FIXME: Needs to be implemented in g_field_info_set_field */
-                    is_simple = FALSE;
                     break;
 		case GI_INFO_TYPE_OBJECT:
 		case GI_INFO_TYPE_VFUNC:

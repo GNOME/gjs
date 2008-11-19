@@ -5,9 +5,11 @@ function testStruct() {
     struct.some_int = 42;
     struct.some_int8 = 43;
     struct.some_double = 42.5;
+    struct.some_enum = Everything.TestEnum.VALUE3;
     assertEquals(42, struct.some_int);
     assertEquals(43, struct.some_int8);
     assertEquals(42.5, struct.some_double);
+    assertEquals(Everything.TestEnum.VALUE3, struct.some_enum);
 }
 
 function testStructConstructor()
@@ -15,11 +17,13 @@ function testStructConstructor()
     // "Copy" an object from a hash of field values
     let struct = new Everything.TestStructA({ some_int: 42,
 					      some_int8: 43,
-					      some_double: 42.5 });
+					      some_double: 42.5,
+					      some_enum: Everything.TestEnum.VALUE3 });
 
     assertEquals(42, struct.some_int);
     assertEquals(43, struct.some_int8);
     assertEquals(42.5, struct.some_double);
+    assertEquals(Everything.TestEnum.VALUE3, struct.some_enum);
 
     // Make sure we catch bad field names
     assertRaises(function() {
@@ -32,6 +36,7 @@ function testStructConstructor()
     assertEquals(42, copy.some_int);
     assertEquals(43, copy.some_int8);
     assertEquals(42.5, copy.some_double);
+    assertEquals(Everything.TestEnum.VALUE3, copy.some_enum);
 }
 
 function testSimpleBoxed() {
@@ -39,9 +44,11 @@ function testSimpleBoxed() {
     simple_boxed.some_int = 42;
     simple_boxed.some_int8 = 43;
     simple_boxed.some_double = 42.5;
+    simple_boxed.some_enum = Everything.TestEnum.VALUE3;
     assertEquals(42, simple_boxed.some_int);
     assertEquals(43, simple_boxed.some_int8);
     assertEquals(42.5, simple_boxed.some_double);
+    assertEquals(Everything.TestEnum.VALUE3, simple_boxed.some_enum);
 }
 
 function testBoxedCopyConstructor()
@@ -49,11 +56,13 @@ function testBoxedCopyConstructor()
     // "Copy" an object from a hash of field values
     let simple_boxed = new Everything.TestSimpleBoxedA({ some_int: 42,
 							 some_int8: 43,
-							 some_double: 42.5 });
+							 some_double: 42.5,
+							 some_enum: Everything.TestEnum.VALUE3 });
 
     assertEquals(42, simple_boxed.some_int);
     assertEquals(43, simple_boxed.some_int8);
     assertEquals(42.5, simple_boxed.some_double);
+    assertEquals(Everything.TestEnum.VALUE3, simple_boxed.some_enum);
 
     // Make sure we catch bad field names
     assertRaises(function() {
@@ -66,6 +75,7 @@ function testBoxedCopyConstructor()
     assertEquals(42, copy.some_int);
     assertEquals(43, copy.some_int8);
     assertEquals(42.5, copy.some_double);
+    assertEquals(Everything.TestEnum.VALUE3, copy.some_enum);
  }
 
 function testNestedSimpleBoxed() {
