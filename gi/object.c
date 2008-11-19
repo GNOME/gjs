@@ -1140,6 +1140,44 @@ static JSFunctionSpec gjs_object_instance_proto_funcs[] = {
     { NULL }
 };
 
+static JSBool
+gjs_define_static_methods(JSContext    *context,
+                          JSObject     *constructor,
+                          GIObjectInfo *object_info)
+{
+    int i;
+    const char *obj_name;
+    int n_methods;
+
+    obj_name = g_base_info_get_name ((GIBaseInfo*)object_info);
+    n_methods = g_object_info_get_n_methods(object_info);
+
+    for (i = 0; i < n_methods; i++) {
+        GIFunctionInfo *meth_info;
+        GIFunctionInfoFlags flags;
+        const char *name;
+
+        meth_info = g_object_info_get_method(object_info, i);
+        name = g_base_info_get_name((GIBaseInfo*)meth_info);
+        flags = g_function_info_get_flags (meth_info);
+
+        /* Anything that isn't a method we put on the prototype of the
+         * constructor.  This includes <constructor> introspection
+         * methods, as well as the forthcoming "static methods"
+         * support.  We may want to change this to use
+         * GI_FUNCTION_IS_CONSTRUCTOR and GI_FUNCTION_IS_STATIC or the
+         * like in the near future.
+         */
+        if (!(flags & GI_FUNCTION_IS_METHOD)) {
+            gjs_define_function(context, constructor, meth_info);
+        }
+
+        g_base_info_unref((GIBaseInfo*) meth_info);
+    }
+    return JS_TRUE;
+}
+
+
 JSBool
 gjs_define_object_class(JSContext    *context,
                         JSObject     *in_object,
@@ -1150,6 +1188,7 @@ gjs_define_object_class(JSContext    *context,
 {
     const char *constructor_name;
     JSObject *prototype;
+    JSObject *constructor;
     GIObjectInfo *parent_info;
     JSObject *parent_proto;
     jsval value;
@@ -1230,7 +1269,6 @@ gjs_define_object_class(JSContext    *context,
     }
 
     if (gjs_object_get_property(context, in_object, constructor_name, &value)) {
-        JSObject *constructor;
 
         if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "Existing property '%s' does not look like a constructor",
@@ -1311,25 +1349,30 @@ gjs_define_object_class(JSContext    *context,
     g_base_info_ref( (GIBaseInfo*) priv->info);
     priv->gtype = gtype;
 
-    gjs_debug(GJS_DEBUG_GOBJECT, "Defined class %s prototype is %p class %p in object %p",
+    gjs_debug(GJS_DEBUG_GOBJECT, "Defined class %s prototype %p class %p in object %p",
               constructor_name, prototype, JS_GetClass(context, prototype), in_object);
 
-    if (constructor_p) {
-        *constructor_p = NULL;
-        gjs_object_get_property(context, in_object, constructor_name, &value);
-        if (value != JSVAL_VOID) {
-            if (!JSVAL_IS_OBJECT(value)) {
-                gjs_throw(context, "Property '%s' does not look like a constructor",
-                          constructor_name);
-                return JS_FALSE;
-            }
+    /* Now get the constructor we defined in
+     * gjs_init_class_dynamic
+     */
+    gjs_object_get_property(context, in_object, constructor_name, &value);
+    constructor = NULL;
+    if (value != JSVAL_VOID) {
+       if (!JSVAL_IS_OBJECT(value)) {
+            gjs_throw(context, "Property '%s' does not look like a constructor",
+                      constructor_name);
+            return JS_FALSE;
+       }
 
-            *constructor_p = JSVAL_TO_OBJECT(value);
-        }
+       constructor = JSVAL_TO_OBJECT(value);
+       gjs_define_static_methods(context, constructor, info);
     }
 
     if (prototype_p)
         *prototype_p = prototype;
+
+    if (constructor_p)
+        *constructor_p = constructor;
 
     return JS_TRUE;
 }

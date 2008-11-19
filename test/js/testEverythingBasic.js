@@ -93,4 +93,9 @@ function testFilenameReturn() {
     assertEquals('/etc/fstab', filenames[1]);
 }
 
+function testStaticMeth() {
+    let v = Everything.TestObj.new_from_file("/enoent");
+    assertTrue(v instanceof Everything.TestObj);
+}
+
 gjstestRun();
