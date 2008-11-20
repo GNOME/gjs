@@ -556,7 +556,7 @@ boxed_finalize(JSContext *context,
     if (priv == NULL)
         return; /* wrong class? */
 
-    if (priv->gboxed) {
+    if (priv->gboxed && !priv->has_parent) {
         if (priv->allocated_directly) {
             g_slice_free1(g_struct_info_get_size (priv->info), priv->gboxed);
         } else {
