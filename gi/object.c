@@ -1403,9 +1403,10 @@ get_obj_key(JSRuntime *runtime,
         buf[1] = 's';
         buf[2] = '-';
         d.ptr = runtime;
-        for (i = 0; i < sizeof(void*)*2; i += 2) {
-            buf[OBJ_KEY_PREFIX_LEN+i] = 'a' + ((d.bytes[i] & 0xf0) >> 4);
-            buf[OBJ_KEY_PREFIX_LEN+i+1] = 'a' + (d.bytes[i] & 0x0f);
+        for (i = 0; i < sizeof(void*); i++) {
+        	int offset = OBJ_KEY_PREFIX_LEN+(i*2);
+        	buf[offset] = 'a' + ((d.bytes[i] & 0xf0) >> 4);
+        	buf[offset+1] = 'a' + (d.bytes[i] & 0x0f);
         }
         buf[OBJ_KEY_LEN] = '\0';
         strcpy(cached_buf, buf);
