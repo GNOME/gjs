@@ -359,6 +359,14 @@ gjs_value_to_g_argument(JSContext      *context,
     }
         break;
 
+    case GI_TYPE_TAG_TIME_T: {
+        double v;
+        if (!JS_ValueToNumber(context, value, &v))
+            wrong = TRUE;
+        arg->v_ulong = (unsigned long) (v/1000);
+    }
+        break;
+
     case GI_TYPE_TAG_BOOLEAN:
         if (!JS_ValueToBoolean(context, value, &arg->v_boolean))
             wrong = TRUE;
@@ -827,6 +835,11 @@ gjs_value_from_g_argument (JSContext  *context,
 
     case GI_TYPE_TAG_DOUBLE:
         return JS_NewDoubleValue(context, arg->v_double, value_p);
+
+    case GI_TYPE_TAG_TIME_T:
+        *value_p = gjs_date_from_time_t(context,
+                                        (time_t) arg->v_long);
+        return JS_TRUE;
 
     case GI_TYPE_TAG_FILENAME:
         if (arg->v_pointer)

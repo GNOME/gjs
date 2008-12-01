@@ -961,3 +961,34 @@ gjs_get_type_name(jsval value)
         return "<unknown>";
     }
 }
+
+jsval
+gjs_date_from_time_t (JSContext *context, time_t time)
+{
+    JSObject *date;
+    JSClass *date_class;
+    JSObject *date_constructor;
+    jsval date_prototype;
+    jsval args[1];
+
+    if (!JS_EnterLocalRootScope(context))
+        return JSVAL_VOID;
+
+    if (!JS_GetClassObject(context, JS_GetGlobalObject(context), JSProto_Date,
+                           &date_constructor))
+        gjs_fatal("Failed to lookup Date prototype");
+
+    if (!JS_GetProperty(context, date_constructor, "prototype", &date_prototype))
+        gjs_fatal("Failed to get prototype from Date constructor");
+
+    date_class = JS_GetClass(context, JSVAL_TO_OBJECT (date_prototype));
+
+    if (!JS_NewNumberValue(context, ((double) time) * 1000, &(args[0])))
+        gjs_fatal("Failed to convert time_t to number");
+
+    date = JS_ConstructObjectWithArguments(context, date_class,
+                                           NULL, NULL, 1, args);
+
+    JS_LeaveLocalRootScope(context);
+    return OBJECT_TO_JSVAL(date);
+}

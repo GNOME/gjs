@@ -38,6 +38,14 @@ function testLifeUniverseAndEverything() {
     assertEquals(42, Everything.test_size(42));
     assertEquals(42, Everything.test_float(42));
     assertEquals(42, Everything.test_double(42));
+
+    let now = new Date();
+    let bounced = Everything.test_timet(now);
+    assertEquals(now.getFullYear(), bounced.getFullYear());
+    assertEquals(now.getMonth(), bounced.getMonth());
+    assertEquals(now.getDay(), bounced.getDay());
+    assertEquals(now.getHours(), bounced.getHours());
+    assertEquals(now.getSeconds(), bounced.getSeconds());
 }
 
 function testLimits() {

@@ -215,6 +215,8 @@ JSBool      gjs_get_string_id                (jsval            id_val,
                                               const char     **name_p);
 const char* gjs_get_type_name                (jsval            value);
 
+jsval       gjs_date_from_time_t             (JSContext *context, time_t time);
+
 GjsRootedArray*   gjs_rooted_array_new        (void);
 void              gjs_rooted_array_append     (JSContext        *context,
                                                GjsRootedArray *array,
