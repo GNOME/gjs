@@ -78,3 +78,35 @@ function removeNullProperties(obj) {
             removeNullProperties(obj[property]);
     }
 }
+
+/**
+ * Binds obj to callback. Makes it possible to refer to "obj"
+ * using this within the callback.
+ * @param {object} obj the object to bind
+ * @param {function} callback callback to bind obj in
+ * @param arguments additional arguments to the callback
+ * @returns: a new callback
+ * @type: function
+ */
+function bind(obj, callback) {
+    let me = obj;
+    let bindArguments = Array.prototype.slice.call(arguments, 2);
+
+    if (typeof(obj) != 'object') {
+        throw new Error(
+            "first argument to Lang.bind() must be an object, not " +
+                typeof(obj));
+    }
+
+    if (typeof(callback) != 'function') {
+        throw new Error(
+            "second argument to Lang.bind() must be a function, not " +
+                typeof(callback));
+    }
+
+    return function() {
+        let args = Array.prototype.slice.call(arguments);
+        args = args.concat(bindArguments);
+        return callback.apply(me, args);
+    };
+}
