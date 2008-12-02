@@ -889,8 +889,20 @@ gjs_value_from_g_argument (JSContext  *context,
 
                 value = JSVAL_VOID;
 
+                gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
+
+                gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                                  "gtype of SYMBOL is %s", g_type_name(gtype));
+
+                if (g_type_is_a(gtype, G_TYPE_VALUE)) {
+                    if (!gjs_value_from_g_value(context, &value, arg->v_pointer)) {
+                        g_base_info_unref( (GIBaseInfo*) symbol_info);
+                        return JS_FALSE;
+                    }
+
+                    goto out;
                 /* Handle Struct/Union first since we don't necessarily need a GType for them */
-                if (symbol_type == GI_INFO_TYPE_STRUCT || symbol_type == GI_INFO_TYPE_BOXED) {
+                } else if (symbol_type == GI_INFO_TYPE_STRUCT || symbol_type == GI_INFO_TYPE_BOXED) {
                     JSObject *obj;
                     obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)symbol_info, arg->v_pointer);
                     if (obj)
@@ -906,21 +918,11 @@ gjs_value_from_g_argument (JSContext  *context,
                     goto out;
                 }
 
-                gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
-
-                gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                                  "gtype of SYMBOL is %s", g_type_name(gtype));
-
                 if (g_type_is_a(gtype, G_TYPE_OBJECT) || g_type_is_a(gtype, G_TYPE_INTERFACE)) {
                     JSObject *obj;
                     obj = gjs_object_from_g_object(context, G_OBJECT(arg->v_pointer));
                     if (obj)
                         value = OBJECT_TO_JSVAL(obj);
-                } else if (g_type_is_a(gtype, G_TYPE_VALUE)) {
-                    if (!gjs_value_from_g_value(context, &value, arg->v_pointer)) {
-                        g_base_info_unref( (GIBaseInfo*) symbol_info);
-                        return JS_FALSE;
-                    }
                 } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                     /* Should have been caught above as STRUCT/BOXED/UNION */
                     gjs_throw(context,
