@@ -1053,6 +1053,8 @@ gjs_g_arg_release_internal(JSContext  *context,
 
                 if (g_type_is_a(gtype, G_TYPE_OBJECT) || g_type_is_a(gtype, G_TYPE_INTERFACE)) {
                     g_object_unref(G_OBJECT(arg->v_pointer));
+                } else if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
+                    g_closure_unref(arg->v_pointer);
                 } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                     g_boxed_free(gtype, arg->v_pointer);
                 } else if (g_type_is_a(gtype, G_TYPE_VALUE)) {
@@ -1188,6 +1190,7 @@ gjs_g_argument_release_in_arg(JSContext  *context,
                               GArgument  *arg)
 {
     GITypeTag type_tag;
+    gboolean needs_release;
 
     /* we don't own the argument anymore */
     if (transfer == GI_TRANSFER_EVERYTHING)
@@ -1202,15 +1205,38 @@ gjs_g_argument_release_in_arg(JSContext  *context,
     /* release all (temporary) arguments we allocated from JS types */
     /* FIXME: check with lists, arrays, boxed types, objects, ... */
 
+    needs_release = FALSE;
+
     switch (type_tag) {
     case GI_TYPE_TAG_UTF8:
     case GI_TYPE_TAG_FILENAME:
     case GI_TYPE_TAG_ARRAY:
+        needs_release = TRUE;
+        break;
+    case GI_TYPE_TAG_INTERFACE: {
+        GIBaseInfo* symbol_info;
+        GType gtype;
+
+        symbol_info = g_type_info_get_interface(type_info);
+        g_assert(symbol_info != NULL);
+
+        gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
+
+        if (g_type_is_a(gtype, G_TYPE_CLOSURE))
+            needs_release = TRUE;
+
+        g_base_info_unref(symbol_info);
+        break;
+    }
+    default:
+        break;
+    }
+
+    if (needs_release)
         return gjs_g_arg_release_internal(context, GI_TRANSFER_EVERYTHING,
                                           type_info, type_tag, arg);
-    default:
-        return JS_TRUE;
-    }
+
+    return JS_TRUE;
 }
 
 
