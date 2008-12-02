@@ -446,7 +446,9 @@ gjs_value_to_g_argument(JSContext      *context,
                 arg->v_pointer = NULL;
             } else if (JSVAL_IS_OBJECT(value)) {
                 /* Handle Struct/Union first since we don't necessarily need a GType for them */
-                if (symbol_type == GI_INFO_TYPE_STRUCT || symbol_type == GI_INFO_TYPE_BOXED) {
+                if ((symbol_type == GI_INFO_TYPE_STRUCT || symbol_type == GI_INFO_TYPE_BOXED) &&
+                    /* We special case Closures later, so skip them here */
+                    !g_type_is_a(gtype, G_TYPE_CLOSURE)) {
                     arg->v_pointer = gjs_c_struct_from_boxed(context,
                                                              JSVAL_TO_OBJECT(value));
 
