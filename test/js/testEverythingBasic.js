@@ -106,4 +106,24 @@ function testStaticMeth() {
     assertTrue(v instanceof Everything.TestObj);
 }
 
+function testClosure() {
+    let someCallback = function() {
+                           return 42;
+                       };
+
+    let i = Everything.test_closure(someCallback);
+
+    assertEquals('callback return value', 42, i);
+}
+
+function testClosureOneArg() {
+    let someCallback = function(someValue) {
+                           return someValue;
+                       };
+
+    let i = Everything.test_closure_one_arg(someCallback, 42);
+
+    assertEquals('callback with one arg return value', 42, i);
+}
+
 gjstestRun();
