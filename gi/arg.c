@@ -477,6 +477,8 @@ gjs_value_to_g_argument(JSContext      *context,
                             arg->v_pointer = gjs_closure_new_marshaled(context,
                                                                        JSVAL_TO_OBJECT(value),
                                                                        "boxed");
+                            g_closure_ref(arg->v_pointer);
+                            g_closure_sink(arg->v_pointer);
                         } else {
                             /* Should have been caught above as STRUCT/BOXED/UNION */
                             gjs_throw(context,
