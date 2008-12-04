@@ -442,7 +442,9 @@ gjs_value_to_g_argument(JSContext      *context,
 
                 arg->v_pointer = gvalue;
 
-            } else if (JSVAL_IS_NULL(value)) {
+            } else if (JSVAL_IS_NULL(value) &&
+                       symbol_type != GI_INFO_TYPE_ENUM &&
+                       symbol_type != GI_INFO_TYPE_FLAGS) {
                 arg->v_pointer = NULL;
             } else if (JSVAL_IS_OBJECT(value)) {
                 /* Handle Struct/Union first since we don't necessarily need a GType for them */
@@ -866,95 +868,114 @@ gjs_value_from_g_argument (JSContext  *context,
 
     case GI_TYPE_TAG_INTERFACE:
         {
-            if (arg->v_pointer == NULL) {
-                /* OK, but no conversion to do */
-            } else {
-                jsval value;
-                GIBaseInfo* symbol_info;
-                GIInfoType symbol_type;
-                GType gtype;
+            jsval value;
+            GIBaseInfo* symbol_info;
+            GIInfoType symbol_type;
+            GType gtype;
 
-                symbol_info = g_type_info_get_interface(type_info);
-                g_assert(symbol_info != NULL);
+            symbol_info = g_type_info_get_interface(type_info);
+            g_assert(symbol_info != NULL);
 
-                symbol_type = g_base_info_get_type(symbol_info);
+            value = JSVAL_VOID;
 
-                if (symbol_type == GI_INFO_TYPE_UNRESOLVED) {
-                    gjs_throw(context,
-                              "Unable to resolve arg type '%s'",
-                              g_base_info_get_name(symbol_info));
-                    g_base_info_unref( (GIBaseInfo*) symbol_info);
-                    return JS_FALSE;
-                }
+            symbol_type = g_base_info_get_type(symbol_info);
 
-                value = JSVAL_VOID;
+            if (symbol_type == GI_INFO_TYPE_UNRESOLVED) {
+                gjs_throw(context,
+                          "Unable to resolve arg type '%s'",
+                          g_base_info_get_name(symbol_info));
+                goto out;
+            }
+
+            /* Enum/Flags are aren't pointer types, unlike the other interface subtypes */
+            if (symbol_type == GI_INFO_TYPE_ENUM) {
+                if (_gjs_enum_value_is_valid(context, (GIEnumInfo *)symbol_info, arg->v_int))
+                    value = INT_TO_JSVAL(arg->v_int);
+
+                goto out;
+            } else if (symbol_type == GI_INFO_TYPE_FLAGS) {
+                /* This should be fixed to work without a GType, just like Enum */
+                void *klass;
 
                 gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
-
-                gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                                  "gtype of SYMBOL is %s", g_type_name(gtype));
-
-                if (g_type_is_a(gtype, G_TYPE_VALUE)) {
-                    if (!gjs_value_from_g_value(context, &value, arg->v_pointer)) {
-                        g_base_info_unref( (GIBaseInfo*) symbol_info);
-                        return JS_FALSE;
-                    }
-
-                    goto out;
-                /* Handle Struct/Union first since we don't necessarily need a GType for them */
-                } else if (symbol_type == GI_INFO_TYPE_STRUCT || symbol_type == GI_INFO_TYPE_BOXED) {
-                    JSObject *obj;
-                    obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)symbol_info, arg->v_pointer);
-                    if (obj)
-                        value = OBJECT_TO_JSVAL(obj);
-
-                    goto out;
-                } else if (symbol_type == GI_INFO_TYPE_UNION) {
-                    JSObject *obj;
-                    obj = gjs_union_from_c_union(context, (GIUnionInfo *)symbol_info, arg->v_pointer);
-                    if (obj)
-                        value = OBJECT_TO_JSVAL(obj);
-
-                    goto out;
-                }
-
-                if (g_type_is_a(gtype, G_TYPE_OBJECT) || g_type_is_a(gtype, G_TYPE_INTERFACE)) {
-                    JSObject *obj;
-                    obj = gjs_object_from_g_object(context, G_OBJECT(arg->v_pointer));
-                    if (obj)
-                        value = OBJECT_TO_JSVAL(obj);
-                } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
-                    /* Should have been caught above as STRUCT/BOXED/UNION */
+                if (gtype == G_TYPE_NONE) {
                     gjs_throw(context,
-                              "Boxed type %s registered for unexpected symbol_type %d",
-                              g_type_name(gtype),
-                              symbol_type);
-                    return JS_FALSE;
-                } else if (symbol_type == GI_INFO_TYPE_ENUM) {
-                    if (_gjs_enum_value_is_valid(context, (GIEnumInfo *)symbol_info, arg->v_int))
-                        value = INT_TO_JSVAL(arg->v_int);
-                } else if (g_type_is_a(gtype, G_TYPE_FLAGS)) {
-                    void *klass;
-
-                    klass = g_type_class_ref(gtype);
-
-                    if (_gjs_flags_value_is_valid(context, G_FLAGS_CLASS(klass), arg->v_int))
-                        value = INT_TO_JSVAL(arg->v_int);
-
-                    g_type_class_unref(klass);
-                } else {
-                    gjs_throw(context, "Unhandled GType %s packing SYMBOL GArgument into jsval",
-                                 g_type_name(gtype));
+                              "Can't yet handle flags type '%s' that is not registered with GObject",
+                              g_base_info_get_name(symbol_info));
+                    goto out;
                 }
 
-            out:
-                g_base_info_unref( (GIBaseInfo*) symbol_info);
+                klass = g_type_class_ref(gtype);
 
-                if (JSVAL_IS_VOID(value))
-                    return JS_FALSE;
+                if (_gjs_flags_value_is_valid(context, G_FLAGS_CLASS(klass), arg->v_int))
+                    value = INT_TO_JSVAL(arg->v_int);
 
-                *value_p = value;
+                g_type_class_unref(klass);
+
+                goto out;
             }
+
+            /* Everything else is a pointer type, NULL is the easy case */
+            if (arg->v_pointer == NULL) {
+                value = JSVAL_NULL;
+                goto out;
+            }
+
+            /* Handle Struct/Union first since we don't necessarily need a GType for them */
+            if (symbol_type == GI_INFO_TYPE_STRUCT || symbol_type == GI_INFO_TYPE_BOXED) {
+                JSObject *obj;
+                obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)symbol_info, arg->v_pointer);
+                if (obj)
+                    value = OBJECT_TO_JSVAL(obj);
+
+                goto out;
+            } else if (symbol_type == GI_INFO_TYPE_UNION) {
+                JSObject *obj;
+                obj = gjs_union_from_c_union(context, (GIUnionInfo *)symbol_info, arg->v_pointer);
+                if (obj)
+                        value = OBJECT_TO_JSVAL(obj);
+
+                goto out;
+            }
+
+            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
+            gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                              "gtype of SYMBOL is %s", g_type_name(gtype));
+
+
+            if (g_type_is_a(gtype, G_TYPE_VALUE)) {
+                if (!gjs_value_from_g_value(context, &value, arg->v_pointer))
+                    value = JSVAL_VOID; /* Make sure error is flagged */
+
+                goto out;
+            }
+
+            if (g_type_is_a(gtype, G_TYPE_OBJECT) || g_type_is_a(gtype, G_TYPE_INTERFACE)) {
+                JSObject *obj;
+                obj = gjs_object_from_g_object(context, G_OBJECT(arg->v_pointer));
+                if (obj)
+                    value = OBJECT_TO_JSVAL(obj);
+            } else if (g_type_is_a(gtype, G_TYPE_BOXED) ||
+                       g_type_is_a(gtype, G_TYPE_ENUM) ||
+                       g_type_is_a(gtype, G_TYPE_FLAGS)) {
+                /* Should have been handled above */
+                gjs_throw(context,
+                          "Type %s registered for unexpected symbol_type %d",
+                          g_type_name(gtype),
+                          symbol_type);
+                return JS_FALSE;
+            } else {
+                gjs_throw(context, "Unhandled GType %s packing SYMBOL GArgument into jsval",
+                          g_type_name(gtype));
+            }
+
+         out:
+            g_base_info_unref( (GIBaseInfo*) symbol_info);
+
+            if (JSVAL_IS_VOID(value))
+                return JS_FALSE;
+
+            *value_p = value;
         }
         break;
 
@@ -1038,42 +1059,49 @@ gjs_g_arg_release_internal(JSContext  *context,
 
     case GI_TYPE_TAG_INTERFACE:
         {
-            if (arg->v_pointer == NULL) {
-                /* nothing to do */
+            GIBaseInfo* symbol_info;
+            GIInfoType symbol_type;
+            GType gtype;
+
+            symbol_info = g_type_info_get_interface(type_info);
+            g_assert(symbol_info != NULL);
+
+            symbol_type = g_base_info_get_type(symbol_info);
+
+            if (symbol_type == GI_INFO_TYPE_ENUM || symbol_type == GI_INFO_TYPE_FLAGS)
+                goto out;
+
+            /* Anything else is a pointer */
+            if (arg->v_pointer == NULL)
+                goto out;
+
+            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
+            gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                              "gtype of SYMBOL is %s", g_type_name(gtype));
+
+            /* In gjs_value_from_g_argument we handle Struct/Union types without a
+             * registered GType, but here we are specifically handling a GArgument that
+             * *owns* its value, and that is non-sensical for such types, so we
+             * don't have to worry about it.
+             */
+
+            if (g_type_is_a(gtype, G_TYPE_OBJECT) || g_type_is_a(gtype, G_TYPE_INTERFACE)) {
+                g_object_unref(G_OBJECT(arg->v_pointer));
+            } else if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
+                g_closure_unref(arg->v_pointer);
+            } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
+                g_boxed_free(gtype, arg->v_pointer);
+            } else if (g_type_is_a(gtype, G_TYPE_VALUE)) {
+                GValue *value = arg->v_pointer;
+                g_value_unset(value);
+                g_slice_free(GValue, value);
             } else {
-                jsval value;
-                GIBaseInfo* symbol_info;
-                GType gtype;
-
-                symbol_info = g_type_info_get_interface(type_info);
-                g_assert(symbol_info != NULL);
-
-                gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
-
-                gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                                  "gtype of SYMBOL is %s", g_type_name(gtype));
-
-                value = JSVAL_NULL;
-
-                if (g_type_is_a(gtype, G_TYPE_OBJECT) || g_type_is_a(gtype, G_TYPE_INTERFACE)) {
-                    g_object_unref(G_OBJECT(arg->v_pointer));
-                } else if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
-                    g_closure_unref(arg->v_pointer);
-                } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
-                    g_boxed_free(gtype, arg->v_pointer);
-                } else if (g_type_is_a(gtype, G_TYPE_VALUE)) {
-                    GValue *value = arg->v_pointer;
-                    g_value_unset(value);
-                    g_slice_free(GValue, value);
-                } else if (g_type_is_a(gtype, G_TYPE_ENUM) || g_type_is_a(gtype, G_TYPE_FLAGS)) {
-                    /* nothing to do */
-                } else {
-                    gjs_throw(context, "Unhandled GType %s releasing SYMBOL GArgument",
-                              g_type_name(gtype));
-                }
-
-                g_base_info_unref( (GIBaseInfo*) symbol_info);
+                gjs_throw(context, "Unhandled GType %s releasing SYMBOL GArgument",
+                          g_type_name(gtype));
             }
+
+        out:
+            g_base_info_unref( (GIBaseInfo*) symbol_info);
         }
         break;
 
