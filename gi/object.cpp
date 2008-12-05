@@ -253,6 +253,51 @@ proto_priv_from_js(JSContext       *context,
     return priv_from_js(context, proto);
 }
 
+static bool
+get_prop_from_g_param(JSContext             *context,
+                      JS::HandleObject       obj,
+                      ObjectInstance        *priv,
+                      const char            *name,
+                      JS::MutableHandleValue value_p)
+{
+    char *gname;
+    GParamSpec *param;
+    GValue gvalue = { 0, };
+
+    gname = gjs_hyphen_from_camel(name);
+    param = g_object_class_find_property(G_OBJECT_GET_CLASS(priv->gobj),
+                                         gname);
+    g_free(gname);
+
+    if (param == NULL) {
+        /* leave value_p as it was */
+        return true;
+    }
+
+    /* Do not fetch JS overridden properties from GObject, to avoid
+     * infinite recursion. */
+    if (g_param_spec_get_qdata(param, gjs_is_custom_property_quark()))
+        return true;
+
+    if ((param->flags & G_PARAM_READABLE) == 0)
+        return true;
+
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
+                     "Overriding %s with GObject prop %s",
+                     name, param->name);
+
+    g_value_init(&gvalue, G_PARAM_SPEC_VALUE_TYPE(param));
+    g_object_get_property(priv->gobj, param->name,
+                          &gvalue);
+    if (!gjs_value_from_g_value(context, value_p, &gvalue)) {
+        g_value_unset(&gvalue);
+        return false;
+    }
+    g_value_unset(&gvalue);
+
+    return true;
+}
+
 /* a hook on getting a property; set value_p to override property's value.
  * Return value is false on OOM/exception.
  */
@@ -264,9 +309,6 @@ object_instance_get_prop(JSContext              *context,
 {
     ObjectInstance *priv;
     char *name;
-    char *gname;
-    GParamSpec *param;
-    GValue gvalue = { 0, };
     bool ret = true;
 
     if (!gjs_get_string_id(context, id, &name))
@@ -286,41 +328,40 @@ object_instance_get_prop(JSContext              *context,
     if (priv->gobj == NULL) /* prototype, not an instance. */
         goto out;
 
-    gname = gjs_hyphen_from_camel(name);
-    param = g_object_class_find_property(G_OBJECT_GET_CLASS(priv->gobj),
-                                         gname);
-    g_free(gname);
-
-    if (param == NULL) {
-        /* leave value_p as it was */
-        goto out;
-    }
-
-    /* Do not fetch JS overridden properties from GObject, to avoid
-     * infinite recursion. */
-    if (g_param_spec_get_qdata(param, gjs_is_custom_property_quark()))
-        goto out;
-
-    if ((param->flags & G_PARAM_READABLE) == 0)
-        goto out;
-
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Overriding %s with GObject prop %s",
-                     name, param->name);
-
-    g_value_init(&gvalue, G_PARAM_SPEC_VALUE_TYPE(param));
-    g_object_get_property(priv->gobj, param->name,
-                          &gvalue);
-    if (!gjs_value_from_g_value(context, value_p, &gvalue)) {
-        g_value_unset(&gvalue);
-        ret = false;
-        goto out;
-    }
-    g_value_unset(&gvalue);
+    ret = get_prop_from_g_param(context, obj, priv, name, value_p);
 
  out:
     g_free(name);
     return ret;
+}
+
+static bool
+set_g_param_from_prop(JSContext      *context,
+                      ObjectInstance *priv,
+                      const char     *name,
+                      JS::HandleValue value_p)
+{
+    GParameter param = { NULL, { 0, }};
+
+    switch (init_g_param_from_property(context, name,
+                                       value_p,
+                                       G_TYPE_FROM_INSTANCE(priv->gobj),
+                                       &param,
+                                       false /* constructing */)) {
+    case SOME_ERROR_OCCURRED:
+        return false;
+    case NO_SUCH_G_PROPERTY:
+        return true;
+    case VALUE_WAS_SET:
+    default:
+        break;
+    }
+
+    g_object_set_property(priv->gobj, param.name,
+                          &param.value);
+
+    g_value_unset(&param.value);
+    return true;
 }
 
 /* a hook on setting a property; set value_p to override property value to
@@ -335,7 +376,6 @@ object_instance_set_prop(JSContext              *context,
 {
     ObjectInstance *priv;
     char *name;
-    GParameter param = { NULL, { 0, }};
     bool ret = true;
 
     if (!gjs_get_string_id(context, id, &name))
@@ -353,24 +393,7 @@ object_instance_set_prop(JSContext              *context,
     if (priv->gobj == NULL) /* prototype, not an instance. */
         goto out;
 
-    switch (init_g_param_from_property(context, name,
-                                       value_p,
-                                       G_TYPE_FROM_INSTANCE(priv->gobj),
-                                       &param,
-                                       false /* constructing */)) {
-    case SOME_ERROR_OCCURRED:
-        ret = false;
-    case NO_SUCH_G_PROPERTY:
-        goto out;
-    case VALUE_WAS_SET:
-    default:
-        break;
-    }
-
-    g_object_set_property(priv->gobj, param.name,
-                          &param.value);
-
-    g_value_unset(&param.value);
+    ret = set_g_param_from_prop(context, priv, name, value_p);
 
     /* note that the prop will also have been set in JS, which I think
      * is OK, since we hook get and set so will always override that
