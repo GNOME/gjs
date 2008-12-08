@@ -311,9 +311,10 @@ gjs_context_constructor (GType                  type,
     js_context = GJS_CONTEXT(object);
 
     if (js_context->runtime == NULL) {
-        js_context->runtime = JS_NewRuntime(1024*1024 /* max bytes */);
+        js_context->runtime = JS_NewRuntime(32*1024*1024 /* max bytes */);
         if (js_context->runtime == NULL)
             gjs_fatal("Failed to create javascript runtime");
+        JS_SetGCParameter(js_context->runtime, JSGC_MAX_BYTES, 0xffffffff);
         js_context->we_own_runtime = TRUE;
     }
 
