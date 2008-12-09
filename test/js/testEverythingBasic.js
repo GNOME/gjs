@@ -126,4 +126,14 @@ function testClosureOneArg() {
     assertEquals('callback with one arg return value', 42, i);
 }
 
+function testIntValueArg() {
+    let i = Everything.test_int_value_arg(42);
+    assertEquals('Method taking a GValue', 42, i);
+}
+
+function testValueReturn() {
+    let i = Everything.test_value_return(42);
+    assertEquals('Method returning a GValue', 42, i);
+}
+
 gjstestRun();
