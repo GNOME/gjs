@@ -921,7 +921,19 @@ gjs_value_from_g_argument (JSContext  *context,
                 goto out;
             }
 
-            /* Handle Struct/Union first since we don't necessarily need a GType for them */
+            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
+            gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                              "gtype of SYMBOL is %s", g_type_name(gtype));
+
+
+            /* Test GValue before Struct, or it will be handled as the latter */
+            if (g_type_is_a(gtype, G_TYPE_VALUE)) {
+                if (!gjs_value_from_g_value(context, &value, arg->v_pointer))
+                    value = JSVAL_VOID; /* Make sure error is flagged */
+
+                goto out;
+            }
+
             if (symbol_type == GI_INFO_TYPE_STRUCT || symbol_type == GI_INFO_TYPE_BOXED) {
                 JSObject *obj;
                 obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)symbol_info, arg->v_pointer);
@@ -934,18 +946,6 @@ gjs_value_from_g_argument (JSContext  *context,
                 obj = gjs_union_from_c_union(context, (GIUnionInfo *)symbol_info, arg->v_pointer);
                 if (obj)
                         value = OBJECT_TO_JSVAL(obj);
-
-                goto out;
-            }
-
-            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
-            gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                              "gtype of SYMBOL is %s", g_type_name(gtype));
-
-
-            if (g_type_is_a(gtype, G_TYPE_VALUE)) {
-                if (!gjs_value_from_g_value(context, &value, arg->v_pointer))
-                    value = JSVAL_VOID; /* Make sure error is flagged */
 
                 goto out;
             }
