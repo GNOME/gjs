@@ -22,12 +22,12 @@
  */
 
 #include <config.h>
+#include <string.h>
 #include <stdlib.h>
 #include <locale.h>
 
 #include <util/log.h>
-#include <gjs/context.h>
-#include <gjs/mem.h>
+#include <gjs/gjs.h>
 
 static char **include_path = NULL;
 
@@ -43,6 +43,7 @@ main(int argc, char **argv)
     GError *error = NULL;
     GjsContext *js_context;
     char *script;
+    const char *filename;
     gsize len;
     int code;
 
@@ -51,20 +52,8 @@ main(int argc, char **argv)
     if (!g_option_context_parse(context, &argc, &argv, &error))
         g_error("option parsing failed: %s", error->message);
 
-    if (argc < 2) {
-        /* FIXME add interpretation of stdin, and REPL */
-        g_printerr("Specify a script to run on the command line\n");
-        exit(1);
-    }
-
     setlocale(LC_ALL, "");
     g_type_init();
-
-    error = NULL;
-    if (!g_file_get_contents(argv[1], &script, &len, &error)) {
-        g_printerr("%s\n", error->message);
-        exit(1);
-    }
 
     gjs_debug(GJS_DEBUG_CONTEXT,
               "Creating new context to eval console script");
@@ -76,19 +65,34 @@ main(int argc, char **argv)
                                          &error)) {
         g_printerr("Failed to defined ARGV: %s", error->message);
         exit(1);
+    } 
+
+    if (argc == 1) {
+        script = g_strdup("const Console = imports.console; Console.interact();");
+        len = strlen(script);
+        filename = "<stdin>";
+    } else if (argc >= 2) {
+        error = NULL;
+        if (!g_file_get_contents(argv[1], &script, &len, &error)) {
+            g_printerr("%s\n", error->message);
+            exit(1);
+        }
+        filename = argv[1];
     }
 
     /* evaluate the script */
     error = NULL;
     if (!gjs_context_eval(js_context, script, len,
-                          argv[1], &code, &error)) {
+                          filename, &code, &error)) {
+        g_free(script);
         g_printerr("%s\n", error->message);
         exit(1);
     }
-
+    
     gjs_memory_report("before destroying context", FALSE);
     g_object_unref(js_context);
     gjs_memory_report("after destroying context", TRUE);
 
+    g_free(script);
     exit(code);
 }

@@ -1,0 +1,218 @@
+/* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
+/* vim: set ts=8 sw=4 et tw=78:
+ *
+ * ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Mozilla Communicator client code, released
+ * March 31, 1998.
+ *
+ * The Initial Developer of the Original Code is
+ * Netscape Communications Corporation.
+ * Portions created by the Initial Developer are Copyright (C) 1998
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either of the GNU General Public License Version 2 or later (the "GPL"),
+ * or the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+#include <string.h>
+
+#include <jsapi.h>
+#include <jsstddef.h> /* PTRDIFF */
+#include <glib.h>
+#include <glib/gprintf.h>
+#include <gjs/gjs.h>
+
+#include "console.h"
+
+static void
+gjs_console_error_reporter(JSContext *cx, const char *message, JSErrorReport *report)
+{
+    int i, j, k, n;
+    char *prefix, *tmp;
+    const char *ctmp;
+
+    if (!report) {
+        fprintf(stderr, "%s\n", message);
+        return;
+    }
+    
+    prefix = NULL;
+    if (report->filename)
+        prefix = g_strdup_printf("%s:", report->filename);
+    if (report->lineno) {
+        tmp = prefix;
+        prefix = g_strdup_printf("%s%u: ", tmp ? tmp : "", report->lineno);
+        g_free(tmp);
+    }
+    if (JSREPORT_IS_WARNING(report->flags)) {
+        tmp = prefix;
+        prefix = g_strdup_printf("%s%swarning: ",
+                                 tmp ? tmp : "",
+                                 JSREPORT_IS_STRICT(report->flags) ? "strict " : "");
+        g_free(tmp);
+    }
+
+    /* embedded newlines -- argh! */
+    while ((ctmp = strchr(message, '\n')) != NULL) {
+        ctmp++;
+        if (prefix)
+            fputs(prefix, stderr);
+        fwrite(message, 1, ctmp - message, stderr);
+        message = ctmp;
+    }
+
+    /* If there were no filename or lineno, the prefix might be empty */
+    if (prefix)
+        fputs(prefix, stderr);
+    fputs(message, stderr);
+
+    if (!report->linebuf) {
+        fputc('\n', stderr);
+        goto out;
+    }
+
+    /* report->linebuf usually ends with a newline. */
+    n = strlen(report->linebuf);
+    fprintf(stderr, ":\n%s%s%s%s",
+            prefix,
+            report->linebuf,
+            (n > 0 && report->linebuf[n-1] == '\n') ? "" : "\n",
+            prefix);
+    n = PTRDIFF(report->tokenptr, report->linebuf, char);
+    for (i = j = 0; i < n; i++) {
+        if (report->linebuf[i] == '\t') {
+            for (k = (j + 8) & ~7; j < k; j++) {
+                fputc('.', stderr);
+            }
+            continue;
+        }
+        fputc('.', stderr);
+        j++;
+    }
+    fputs("^\n", stderr);
+ out:
+    g_free(prefix);
+}
+
+static JSBool
+gjs_console_readline(JSContext *cx, char *bufp, FILE *file, const char *prompt)
+{
+    char line[256];
+    fprintf(stdout, prompt);
+    fflush(stdout);
+    if (!fgets(line, sizeof line, file))
+        return JS_FALSE;
+    strcpy(bufp, line);
+    return JS_TRUE;
+}
+
+JSBool
+gjs_console_interact(JSContext *context,
+                     JSObject  *obj,
+                     uintN      argc,
+                     jsval     *argv,
+                     jsval     *retval)
+{
+    gboolean eof = FALSE;
+    JSScript *script;
+    jsval result;
+    JSString *str;
+    char buffer[4096];
+    char *bufp;
+    int lineno;
+    int startline;
+    FILE *file = stdin;
+
+    JS_SetErrorReporter(context, gjs_console_error_reporter);
+
+        /* It's an interactive filehandle; drop into read-eval-print loop. */
+    lineno = 1;
+    do {
+        bufp = buffer;
+        *bufp = '\0';
+
+        /*
+         * Accumulate lines until we get a 'compilable unit' - one that either
+         * generates an error (before running out of source) or that compiles
+         * cleanly.  This should be whenever we get a complete statement that
+         * coincides with the end of a line.
+         */
+        startline = lineno;
+        do {
+            if (!gjs_console_readline(context, bufp, file,
+                                      startline == lineno ? "gjs> " : ".... ")) {
+                eof = JS_TRUE;
+                break;
+            }
+            bufp += strlen(bufp);
+            lineno++;
+        } while (!JS_BufferIsCompilableUnit(context, obj, buffer, strlen(buffer)));
+
+        script = JS_CompileScript(context, obj, buffer, strlen(buffer), "typein",
+                                  startline);
+
+        if (script)
+            JS_ExecuteScript(context, obj, script, &result);
+
+        if (JS_GetPendingException(context, &result)) {
+            str = JS_ValueToString(context, result);
+            JS_ClearPendingException(context);
+        } else if (result == JSVAL_VOID) {
+            continue;
+        } else {
+            str = JS_ValueToString(context, result);
+        }
+        
+        if (str)
+            g_fprintf(stdout, "%s\n", JS_GetStringBytes(str));
+
+        if (script)
+            JS_DestroyScript(context, script);
+    } while (!eof);
+
+    g_fprintf(stdout, "\n");
+
+    if (file != stdin)
+        fclose(file);
+
+    return JS_TRUE;
+}
+
+JSBool
+gjs_define_console_stuff(JSContext *context,
+                         JSObject  *module_obj)
+{
+    if (!JS_DefineFunction(context, module_obj,
+                           "interact",
+                           gjs_console_interact,
+                           1, GJS_MODULE_PROP_FLAGS))
+        return JS_FALSE;
+
+    return JS_TRUE;
+}
+
+GJS_REGISTER_NATIVE_MODULE("console", gjs_define_console_stuff);
