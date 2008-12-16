@@ -6,7 +6,7 @@ dist_gjstweener_DATA =			\
 dist_gjsjs_DATA += modules/lang.js	\
                    modules/signals.js
 
-gjsnative_LTLIBRARIES += console.la gi.la mainloop.la
+gjsnative_LTLIBRARIES += console.la debugger.la gi.la mainloop.la
 
 JS_NATIVE_MODULE_CFLAGS =	\
         $(AM_CFLAGS)		\
@@ -53,3 +53,15 @@ console_la_LDFLAGS = 				\
 console_la_SOURCES =		\
 	modules/console.h	\
 	modules/console.c
+
+debugger_la_CFLAGS = 				\
+	$(JS_NATIVE_MODULE_CFLAGS)
+debugger_la_LIBADD = \
+	libgjs-gi.la				\
+	$(JS_NATIVE_MODULE_LIBADD)
+debugger_la_LDFLAGS = 				\
+	$(JS_NATIVE_MODULE_LDFLAGS)
+
+debugger_la_SOURCES =		\
+	modules/debugger.h	\
+	modules/debugger.c

@@ -23,6 +23,7 @@
 
 #include <config.h>
 
+#include <string.h>
 #include <limits.h>
 #include <util/log.h>
 
@@ -222,6 +223,41 @@ gjs_closure_invoke(GClosure *closure,
         gjs_debug(GJS_DEBUG_ERROR,
                   "Closure invocation succeeded but an exception was set");
     }
+}
+
+gboolean
+gjs_closure_invoke_simple(JSContext   *context,
+                          GClosure    *closure,
+                          jsval       *retval,
+                          const gchar *format,
+                          ...)
+{
+    va_list ap;
+    int argc;
+    void *stack_space;
+    jsval *argv;
+    int i;
+
+    va_start(ap, format);
+    argv = JS_PushArgumentsVA(context, &stack_space, format, ap);
+    va_end(ap);
+    if (!argv)
+        return FALSE;
+
+    argc = (int)strlen(format);
+    for (i = 0; i < argc; i++)
+        JS_AddRoot(context, &argv[i]);
+    JS_AddRoot(context, retval);
+
+    gjs_closure_invoke(closure, argc, argv, retval);
+
+    for (i = 0; i < argc; i++)
+        JS_RemoveRoot(context, &argv[i]);
+    JS_RemoveRoot(context, retval);
+
+    JS_PopArguments(context, stack_space);
+
+    return TRUE;
 }
 
 JSContext*

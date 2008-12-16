@@ -21,30 +21,19 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_CLOSURE_H__
-#define __GJS_CLOSURE_H__
+#ifndef __GJS_DEBUGGER_H__
+#define __GJS_DEBUGGER_H__
 
-#include <glib-object.h>
+#include <config.h>
+#include <glib.h>
 
 #include <jsapi.h>
 
 G_BEGIN_DECLS
 
-GClosure*  gjs_closure_new           (JSContext    *context,
-                                      JSObject     *callable,
-                                      const char   *description);
-void       gjs_closure_invoke        (GClosure     *closure,
-                                      int           argc,
-                                      jsval        *argv,
-                                      jsval        *retval);
-gboolean   gjs_closure_invoke_simple (JSContext    *context,
-                                      GClosure     *closure,
-                                      jsval        *retval,
-                                      const gchar  *format,
-                                      ...);
-JSContext* gjs_closure_get_context   (GClosure     *closure);
-JSObject*  gjs_closure_get_callable  (GClosure     *closure);
+JSBool        gjs_define_debugger_stuff    (JSContext      *context,
+                                            JSObject       *in_object);
 
 G_END_DECLS
 
-#endif  /* __GJS_CLOSURE_H__ */
+#endif  /* __GJS_DEBUGGER_H__ */
