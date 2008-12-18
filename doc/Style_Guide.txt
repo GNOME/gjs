@@ -168,8 +168,7 @@ This pattern means that when you do "let f = new Foo()", f will be a new object,
 
 There are lots of ways to simulate "inheritance" in JavaScript. In general, it's a good idea to avoid class hierarchies in JavaScript. But sometimes it's the best solution.
 
-Our preferred approach is to copy the properties in the base class into your subclass prototype, and then add more properties or replace some of the copied properties.
-
+Our preferred approach is to use a Spidermonkey-specific extension and directly set the __proto__ member of the subclass's prototype to point to the prototype of the base class. Looking up a property in the subclass starts with the properties of the instance. If the property isn't there, then the prototype chain is followed first to the subclass's prototype and then to the base class's prototype.
 <pre>
 const Lang = imports.lang;
 
@@ -189,18 +188,18 @@ function Sub(foo, bar) {
   this._init(foo, bar);
 }
 
-// copy each method in Base.prototype to the new Sub.prototype
-Lang.copyProperties(Base.prototype, Sub.prototype);
+Sub.prototype = {
+  __proto__ : Base.prototype,
 
-// replace the _init property in Sub.prototype
-Sub.prototype._init = function(foo, bar) {
-  // here is an example of how to "chain up"
-  Base.prototype._init.call(this, foo);
-  this._bar = bar;
-}
+  _init : function(foo, bar) {
+    // here is an example of how to "chain up"
+    Base.prototype._init.call(this, foo);
+    this._bar = bar;
+  }
 
-// add a newMethod property in Sub.prototype
-Sub.prototype.newMethod = function() {
+  // add a newMethod property in Sub.prototype
+  newMethod : function() {
+  }
 }
 
 </pre>
@@ -209,7 +208,7 @@ Sub.prototype.newMethod = function() {
 
 {{Note|You cannot use this mechanism to inherit from a GObject. For that to work, we would need to create a new GType in C that was a subclass of the base class GType, and we'd need to override the class methods in the new GType so they called into JavaScript. Tons of work. For now, GObject subclasses must be implemented in C.}}
 
-Some JavaScript programmers use this pattern for inheritance:
+In portable JavaScript code you'll often see a different technique used to get this prototype chain:
 <pre>
 function Base(foo) ...
 
@@ -224,14 +223,6 @@ Sub.prototype = new Base();
 The problem with this pattern is that you might want to have side effects in the Base() constructor. Say Base() in its constructor creates a window on the screen, because Base() is a dialog class or something. If you use the pattern that some instances of Base() are just prototypes for subclasses, you'll get extra windows on the screen.
 
 The other problem with this pattern is that it's just confusing and weird.
-
-So, we prefer:
-<pre>
-// copy each method in Base.prototype to the new Sub.prototype
-Lang.copyProperties(Base.prototype, Sub.prototype);
-</pre>
-
-We copy the prototype properties from Base, instead of creating a new Base instance.
 
 == JavaScript attributes ==
 
