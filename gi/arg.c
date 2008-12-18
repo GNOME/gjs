@@ -1050,6 +1050,7 @@ gjs_g_arg_release_internal(JSContext  *context,
     case GI_TYPE_TAG_DOUBLE:
     case GI_TYPE_TAG_SSIZE:
     case GI_TYPE_TAG_SIZE:
+    case GI_TYPE_TAG_TIME_T:
         break;
 
     case GI_TYPE_TAG_FILENAME:
