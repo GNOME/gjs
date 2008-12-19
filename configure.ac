@@ -13,6 +13,9 @@ AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], ["$GETTEXT_PACKAGE"], [The name of the get
 
 AM_MAINTAINER_MODE
 
+# our first pkg-config invocation is conditional, ensure macros still work
+PKG_PROG_PKG_CONFIG
+
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_ISC_POSIX
@@ -75,42 +78,61 @@ AM_CONDITIONAL([ENABLE_COVERAGE], [test x$enable_coverage = xyes])
 # Checks for libraries.
 m4_define(gobject_required_version, 2.16.0)
 
-## spidermonkey .pc file name varies across distributions and Gecko version
-##
-## mozilla-js: Gecko 1.9, all distributions
-## xulrunner-js: Gecko 1.8 (and earlier?) Debian/Ubuntu
-## firefox-js: ???
-##
-## Checking for mozilla-js first will hopefully get us the newest version
-## of spidermonkey.
-PKG_CHECK_EXISTS([mozilla-js], [JS_PACKAGE=mozilla-js],
-                 [PKG_CHECK_EXISTS([xulrunner-js], [JS_PACKAGE=xulrunner-js], [JS_PACKAGE=firefox-js])])
+# Look for Spidermonkey. If js-config exists, use that;
+# otherwise we try some pkgconfig files from various distributions.
 
-PKG_CHECK_MODULES(JS, $JS_PACKAGE)
-AC_SUBST(JS_PACKAGE)
+AC_ARG_VAR([JS_CONFIG], [The js-config program to use])
+if test "$ac_cv_env_JS_CONFIG_set" != "set"; then
+    AC_PATH_PROG([JS_CONFIG], [js-config], [])
+fi
 
-## some flavors of Firefox .pc only set sdkdir, not libdir
-FIREFOX_JS_SDKDIR=`$PKG_CONFIG --variable=sdkdir $JS_PACKAGE`
-FIREFOX_JS_LIBDIR=`$PKG_CONFIG --variable=libdir $JS_PACKAGE`
+if test -n "$JS_CONFIG"; then
+    JS_CFLAGS="$($JS_CONFIG --cflags)"
+    JS_LIBS="$($JS_CONFIG --libs)"
+    FIREFOX_JS_LIBDIR="$($JS_CONFIG --libdir)"
+    JS_PACKAGE=
 
-## Ubuntu does not set libdir in mozilla-js.pc
-if test x"$FIREFOX_JS_LIBDIR" = x ; then
-   ## Ubuntu returns xulrunner-devel as the sdkdir, but for the
-   ## libdir we want the runtime location on the target system,
-   ## so can't use -devel.
-   ## The library is in the non-devel directory also.
-   ## Don't ask me why it's in two places.
-   FIREFOX_JS_LIBDIR=`echo "$FIREFOX_JS_SDKDIR" | sed -e 's/-devel//g'`
+    # js-config gives almost usable CFLAGS, we must define one of XP_BEOS,
+    # XP_OS2, XP_WIN or XP_UNIX
+    JS_CFLAGS="$JS_CFLAGS -DXP_UNIX"
+else
+    ## spidermonkey .pc file name varies across distributions and Gecko version
+    ##
+    ## mozilla-js: Gecko 1.9, all distributions
+    ## xulrunner-js: Gecko 1.8 (and earlier?) Debian/Ubuntu
+    ## firefox-js: ???
+    ##
+    ## Checking for mozilla-js first will hopefully get us the newest version
+    ## of spidermonkey.
+    PKG_CHECK_EXISTS([mozilla-js], [JS_PACKAGE=mozilla-js],
+                     [PKG_CHECK_EXISTS([xulrunner-js], [JS_PACKAGE=xulrunner-js], [JS_PACKAGE=firefox-js])])
 
-   if ! test -d "$FIREFOX_JS_LIBDIR" ; then
-      FIREFOX_JS_LIBDIR=
-   fi
+    PKG_CHECK_MODULES(JS, $JS_PACKAGE)
+
+    ## some flavors of Firefox .pc only set sdkdir, not libdir
+    FIREFOX_JS_SDKDIR=`$PKG_CONFIG --variable=sdkdir $JS_PACKAGE`
+    FIREFOX_JS_LIBDIR=`$PKG_CONFIG --variable=libdir $JS_PACKAGE`
+
+    ## Ubuntu does not set libdir in mozilla-js.pc
+    if test x"$FIREFOX_JS_LIBDIR" = x ; then
+       ## Ubuntu returns xulrunner-devel as the sdkdir, but for the
+       ## libdir we want the runtime location on the target system,
+       ## so can't use -devel.
+       ## The library is in the non-devel directory also.
+       ## Don't ask me why it's in two places.
+       FIREFOX_JS_LIBDIR=`echo "$FIREFOX_JS_SDKDIR" | sed -e 's/-devel//g'`
+
+       if ! test -d "$FIREFOX_JS_LIBDIR" ; then
+           FIREFOX_JS_LIBDIR=
+       fi
+    fi
 fi
 
 if test x"$FIREFOX_JS_LIBDIR" = x ; then
    AC_MSG_ERROR([Could not figure out where Firefox JavaScript library lives])
 fi
 
+AC_SUBST(JS_PACKAGE)
 AC_SUBST(FIREFOX_JS_LIBDIR)
 
 AC_CHECK_LIB([mozjs], [JS_CallTracer], :,
@@ -177,6 +199,17 @@ gjstests_packages="$gjstests_packages $gjs_packages"
 PKG_CHECK_MODULES([GJS], [$gjs_packages])
 PKG_CHECK_MODULES([GJS_GI], [$gjs_gi_packages])
 PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
+
+if test x"$JS_PACKAGE" = x; then
+    # if JS_PACKAGE is undefined, pkg-config modules don't include
+    # SpiderMonkey and we need to deal with it ourselves
+    GJS_CFLAGS="$GJS_CFLAGS $JS_CFLAGS"
+    GJS_LIBS="$GJS_LIBS $JS_LIBS"
+    GJS_GI_CFLAGS="$GJS_GI_CFLAGS $JS_CFLAGS"
+    GJS_GI_LIBS="$GJS_GI_LIBS $JS_LIBS"
+    GJSTESTS_CFLAGS="$GJSTESTS_CFLAGS $JS_CFLAGS"
+    GJSTESTS_LIBS="$GJSTEST_LIBS $JS_LIBS"
+fi
 
 GJS_CFLAGS="$GJS_CFLAGS $JS_EXTRA_CFLAGS"
 GJS_GI_CFLAGS="$GJS_GI_CFLAGS $JS_EXTRA_CFLAGS"
