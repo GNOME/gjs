@@ -24,6 +24,9 @@ AM_DISABLE_STATIC
 AC_PROG_LIBTOOL
 dnl DOLT
 
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+
 # Add extra warning flags
 changequote(,)dnl
 ensureflag() {
@@ -85,15 +88,6 @@ PKG_CHECK_EXISTS([mozilla-js], [JS_PACKAGE=mozilla-js],
 
 PKG_CHECK_MODULES(JS, $JS_PACKAGE)
 AC_SUBST(JS_PACKAGE)
-AC_CHECK_LIB([mozjs], [JS_CallTracer], :,
-             [AC_MSG_ERROR([SpiderMonkey is too old, Firefox 3 is required])],
-             [$JS_LIBS])
-
-common_packages="gobject-2.0 >= gobject_required_version $JS_PACKAGE"
-gjs_packages="gmodule-2.0 $common_packages"
-gjs_gi_packages="gobject-introspection-1.0 >= 0.6.0 $common_packages"
-gjstests_packages="$gjstests_packages $gjs_packages"
-PKG_CHECK_MODULES([GJS], [$gjs_packages])
 
 ## some flavors of Firefox .pc only set sdkdir, not libdir
 FIREFOX_JS_SDKDIR=`$PKG_CONFIG --variable=sdkdir $JS_PACKAGE`
@@ -119,15 +113,28 @@ fi
 
 AC_SUBST(FIREFOX_JS_LIBDIR)
 
+AC_CHECK_LIB([mozjs], [JS_CallTracer], :,
+             [AC_MSG_ERROR([SpiderMonkey is too old, Firefox 3 is required])],
+             [$JS_LIBS])
+
 ## workaround for Ubuntu Hardy bug where mozilla-js.pc gives CFLAGS
 ## -I.../stable while jsapi.h is in .../unstable
 js_include_dir=`$PKG_CONFIG --variable=includedir $JS_PACKAGE`/unstable
-GJS_CFLAGS="$GJS_CFLAGS -I$js_include_dir"
 AC_SUBST([js_include_dir])
 
+common_packages="gobject-2.0 >= gobject_required_version $JS_PACKAGE"
+gjs_packages="gmodule-2.0 $common_packages"
+gjs_gi_packages="gobject-introspection-1.0 >= 0.6.0 $common_packages"
+# gjs-tests links against everything
+gjstests_packages="$gjstests_packages $gjs_packages"
 
+PKG_CHECK_MODULES([GJS], [$gjs_packages])
 PKG_CHECK_MODULES([GJS_GI], [$gjs_gi_packages])
+PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
+
+GJS_CFLAGS="$GJS_CFLAGS -I$js_include_dir"
 GJS_GI_CFLAGS="$GJS_GI_CFLAGS -I$js_include_dir"
+GJSTESTS_CFLAGS="$GJSTESTS_CFLAGS -I$js_include_dir"
 
 # readline
 LIBS_no_readline=$LIBS
@@ -178,10 +185,6 @@ gjsjsdir="\${datadir}/gjs-1.0"
 gjsnativedir="\${libdir}/gjs-1.0"
 AC_SUBST([gjsjsdir])
 AC_SUBST([gjsnativedir])
-
-# gjs-tests links against everything
-PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
-GJSTESTS_CFLAGS="$GJSTESTS_CFLAGS -I$js_include_dir"
 
 AC_CONFIG_FILES([Makefile gjs-1.0.pc gjs-gi-1.0.pc])
 AC_OUTPUT
