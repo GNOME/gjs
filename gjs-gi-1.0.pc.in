@@ -5,9 +5,8 @@ bindir=@bindir@
 includedir=@includedir@
 datarootdir=@datarootdir@
 datadir=@datadir@
-js_include_dir=@js_include_dir@
 
-Cflags: -I${includedir}/gjs-1.0 -I${js_include_dir}
+Cflags: -I${includedir}/gjs-1.0
 Requires: gjs-1.0
 Libs: -L${libdir} -lgjs-gi
 
