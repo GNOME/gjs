@@ -119,7 +119,31 @@ AC_CHECK_LIB([mozjs], [JS_CallTracer], :,
 
 ## workaround for Ubuntu Hardy bug where mozilla-js.pc gives CFLAGS
 ## -I.../stable while jsapi.h is in .../unstable
-JS_EXTRA_CFLAGS="-I`$PKG_CONFIG --variable=includedir $JS_PACKAGE`/unstable"
+AC_MSG_CHECKING([if SpiderMonkey needs extra compiler flags])
+save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $JS_CFLAGS"
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <jsapi.h>]])],
+    [js_extra_cflags_needed=no],
+    [js_extra_cflags_needed=yes])
+CFLAGS="$save_CFLAGS"
+AC_MSG_RESULT([$js_extra_cflags_needed])
+
+JS_EXTRA_CFLAGS=
+if test "$js_extra_cflags_needed" = yes; then
+    try_cflags="-I`$PKG_CONFIG --variable=includedir $JS_PACKAGE`/unstable"
+    AC_MSG_CHECKING([if $try_cflags works])
+    save_CFLAGS="$CFLAGS"
+    CFLAGS="$CFLAGS $JS_CFLAGS $try_cflags"
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <jsapi.h>]])],
+        [AC_MSG_RESULT([yes])
+         JS_EXTRA_CFLAGS="$try_cflags"],
+        [AC_MSG_RESULT([no])])
+    CFLAGS="$save_CFLAGS"
+
+    if test x"$JS_EXTRA_CFLAGS" = x; then
+        AC_MSG_ERROR([Unable to determine extra compiler flags needed])
+    fi
+fi
 AC_SUBST([JS_EXTRA_CFLAGS])
 
 common_packages="gobject-2.0 >= gobject_required_version $JS_PACKAGE"
