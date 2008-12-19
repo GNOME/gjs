@@ -119,8 +119,8 @@ AC_CHECK_LIB([mozjs], [JS_CallTracer], :,
 
 ## workaround for Ubuntu Hardy bug where mozilla-js.pc gives CFLAGS
 ## -I.../stable while jsapi.h is in .../unstable
-js_include_dir=`$PKG_CONFIG --variable=includedir $JS_PACKAGE`/unstable
-AC_SUBST([js_include_dir])
+JS_EXTRA_CFLAGS="-I`$PKG_CONFIG --variable=includedir $JS_PACKAGE`/unstable"
+AC_SUBST([JS_EXTRA_CFLAGS])
 
 common_packages="gobject-2.0 >= gobject_required_version $JS_PACKAGE"
 gjs_packages="gmodule-2.0 $common_packages"
@@ -132,9 +132,9 @@ PKG_CHECK_MODULES([GJS], [$gjs_packages])
 PKG_CHECK_MODULES([GJS_GI], [$gjs_gi_packages])
 PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
 
-GJS_CFLAGS="$GJS_CFLAGS -I$js_include_dir"
-GJS_GI_CFLAGS="$GJS_GI_CFLAGS -I$js_include_dir"
-GJSTESTS_CFLAGS="$GJSTESTS_CFLAGS -I$js_include_dir"
+GJS_CFLAGS="$GJS_CFLAGS $JS_EXTRA_CFLAGS"
+GJS_GI_CFLAGS="$GJS_GI_CFLAGS $JS_EXTRA_CFLAGS"
+GJSTESTS_CFLAGS="$GJSTESTS_CFLAGS $JS_EXTRA_CFLAGS"
 
 # readline
 LIBS_no_readline=$LIBS
