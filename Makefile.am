@@ -27,6 +27,7 @@ nobase_gjsinclude_HEADERS =	\
 noinst_HEADERS =		\
 	gjs/context-jsapi.h	\
 	gjs/profiler.h		\
+	util/crash.h		\
 	util/error.h		\
 	util/glib.h		\
 	util/log.h		\
@@ -73,6 +74,7 @@ libgjs_la_SOURCES =		\
 	gjs/profiler.c		\
 	util/error.c		\
 	util/glib.c		\
+	util/crash.c		\
 	util/log.c		\
 	util/misc.c
 

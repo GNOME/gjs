@@ -20,29 +20,17 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
+#ifndef __GJS_UTIL_CRASH_H__
+#define __GJS_UTIL_CRASH_H__
 
-#include <config.h>
 #include <glib.h>
-#include <util/crash.h>
 
-#include "test.h"
+G_BEGIN_DECLS
 
-/* we redefine main in test.h so we can include files with tests that have a main();
- * here we actually want main, so we have to kill that off
- */
-#undef main
-int
-main(int    argc,
-     char **argv)
-{
-    gjs_crash_after_timeout(60*7); /* give the unit tests 7 minutes to complete */
-    gjs_init_sleep_on_crash();
+void gjs_init_sleep_on_crash (void);
+void gjs_print_backtrace     (void);
+void gjs_crash_after_timeout (int seconds);
 
-    g_test_init(&argc, &argv, NULL);
+G_END_DECLS
 
-    gjstest_add_all_tests();
-
-    g_test_run();
-
-    return 0;
-}
+#endif  /* __GJS_UTIL_CRASH_H__ */

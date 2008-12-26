@@ -25,6 +25,7 @@
 
 #include <glib.h>
 #include <gjs/gjs.h>
+#include <util/crash.h>
 #include <locale.h>
 
 #include <string.h>
@@ -103,6 +104,9 @@ main(int argc, char **argv)
     g_setenv("BUILDDIR", GJS_BUILDDIR, FALSE);
     g_setenv("XDG_DATA_HOME", GJS_BUILDDIR "/test_user_data", FALSE);
     g_setenv("GJS_PATH", GJS_TOP_SRCDIR"/modules:"GJS_TOP_SRCDIR"/test/js/modules:"GJS_BUILDDIR"/.libs:", FALSE);
+
+    gjs_crash_after_timeout(60*7); /* give the unit tests 7 minutes to complete */
+    gjs_init_sleep_on_crash();
 
     /* need ${top_srcdir} later */
     top_srcdir = g_getenv ("TOP_SRCDIR");
