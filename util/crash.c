@@ -149,8 +149,9 @@ gjs_crash_after_timeout(int seconds)
         return;
     }
 
-    while ((remaining = sleep(seconds)) > 0) {
-        sleep(remaining);
+    remaining = seconds;
+    while ((remaining = sleep(remaining)) > 0) {
+        /* empty */
     }
 
     if (kill(parent_pid, 0) == 0) {
