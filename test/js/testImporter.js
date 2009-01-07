@@ -104,4 +104,39 @@ function testMutualImport() {
     assertEquals(1, A.getCountViaB());
 }
 
+function testImporterFunctionFromInitFile() {
+    const subB = imports.subA.subB;
+
+    assertNotUndefined(subB.testImporterFunction);
+
+    let result = subB.testImporterFunction();
+
+    assertEquals(result, "__init__ function tested");
+}
+
+function testImporterClassFromInitFile() {
+    const subB = imports.subA.subB;
+
+    assertNotUndefined(subB.ImporterClass);
+
+    let o = new subB.ImporterClass();
+
+    assertNotNull(o);
+
+    let result = o.testMethod();
+
+    assertEquals(result, "__init__ class tested");
+}
+
+function testImporterEnumerateWithInitFile() {
+    const subB = imports.subA.subB;
+    let subModules = [];
+
+    for (let module in subB) {
+        subModules.push(module);
+    }
+
+    assertNotEquals(subModules.indexOf('testImporterFunction'), -1);
+}
+
 gjstestRun();

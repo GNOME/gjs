@@ -28,12 +28,12 @@
 
 #include <jsapi.h>
 
-#include "importer.h"
-#include "jsapi-util.h"
-#include "mem.h"
-#include "native.h"
+#include <gjs/gjs.h>
 
 #include <string.h>
+
+#define MODULE_INIT_PROPERTY "__init__"
+#define MODULE_INIT_FILENAME MODULE_INIT_PROPERTY".js"
 
 static char **gjs_search_path = NULL;
 
@@ -248,6 +248,125 @@ import_native_file(JSContext  *context,
     return retval;
 }
 
+static JSObject *
+load_module_init(JSContext  *context,
+                 JSObject   *in_object,
+                 const char *full_path)
+{
+    char *script;
+    gsize script_len;
+    jsval script_retval;
+    JSObject *module_obj;
+
+    /* First we check if js module has already been loaded  */
+    if (gjs_object_has_property(context, in_object, MODULE_INIT_PROPERTY)) {
+        jsval module_obj_val;
+
+        if (gjs_object_get_property(context,
+                                    in_object,
+                                    MODULE_INIT_PROPERTY,
+                                    &module_obj_val)) {
+            return JSVAL_TO_OBJECT(module_obj_val);
+        }
+    }
+
+    module_obj = JS_ConstructObject(context, NULL, NULL, NULL);
+    if (module_obj == NULL) {
+        return JS_FALSE;
+    }
+
+    /* Define module in importer for future use and to avoid module_obj
+     * object to be garbage collected during the evaluation of the script */
+    JS_DefineProperty(context, in_object,
+                      MODULE_INIT_PROPERTY, OBJECT_TO_JSVAL(module_obj),
+                      NULL, NULL,
+                      GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT);
+
+    script = NULL;
+    script_len = 0;
+
+    if (!g_file_get_contents(full_path, &script, &script_len, NULL)) {
+        return NULL;
+    }
+
+    g_assert(script != NULL);
+
+    gjs_debug(GJS_DEBUG_IMPORTER, "Importing %s", full_path);
+
+    if (!JS_EvaluateScript(context,
+                           module_obj,
+                           script,
+                           script_len,
+                           full_path,
+                           1, /* line number */
+                           &script_retval)) {
+        g_free(script);
+
+        /* If JSOPTION_DONT_REPORT_UNCAUGHT is set then the exception
+         * would be left set after the evaluate and not go to the error
+         * reporter function.
+         */
+        if (JS_IsExceptionPending(context)) {
+            gjs_debug(GJS_DEBUG_IMPORTER,
+                      "Module " MODULE_INIT_FILENAME " left an exception set");
+            gjs_log_and_keep_exception(context, NULL);
+        } else {
+            gjs_throw(context,
+                      "JS_EvaluateScript() returned FALSE but did not set exception");
+        }
+
+        return NULL;
+    }
+
+    g_free(script);
+
+    return module_obj;
+}
+
+static void
+load_module_elements(JSContext *context,
+                     JSObject *in_object,
+                     ImporterIterator *iter,
+                     const char *init_path) {
+    JSObject *module_obj;
+    JSObject *jsiter;
+
+    module_obj = load_module_init(context, in_object, init_path);
+
+    if (module_obj != NULL) {
+        jsid idp;
+
+        jsiter = JS_NewPropertyIterator(context, module_obj);
+
+        if (jsiter == NULL) {
+            return;
+        }
+
+        if (!JS_NextProperty(context, jsiter, &idp)) {
+            return;
+        }
+
+        while (idp != JSVAL_VOID) {
+            jsval nameval;
+            const char *name;
+
+            if (!JS_IdToValue(context, idp, &nameval)) {
+                continue;
+            }
+
+            if (!gjs_get_string_id(nameval, &name)) {
+                continue;
+            }
+
+            g_ptr_array_add(iter->elements, g_strdup(name));
+
+            if (!JS_NextProperty(context, jsiter, &idp)) {
+                break;
+            }
+        }
+    }
+}
+
 static JSBool
 import_file(JSContext  *context,
             JSObject   *obj,
@@ -341,10 +460,15 @@ do_import(JSContext  *context,
     char *dirname = NULL;
     jsval search_path_val;
     JSObject *search_path;
+    JSObject *module_obj = NULL;
     jsuint search_path_len;
     jsuint i;
     JSBool result;
     GPtrArray *directories;
+
+    if (strcmp(name, MODULE_INIT_PROPERTY) == 0) {
+        return JS_FALSE;
+    }
 
     if (!gjs_object_require_property(context, obj, "searchPath", &search_path_val)) {
         return JS_FALSE;
@@ -399,6 +523,31 @@ do_import(JSContext  *context,
         if (!gjs_string_to_utf8(context, elem, &dirname))
             goto out; /* Error message already set */
 
+        /* Try importing __init__.js and loading the symbol from it */
+        if (full_path)
+            g_free(full_path);
+        full_path = g_build_filename(dirname, MODULE_INIT_FILENAME,
+                                     NULL);
+
+        module_obj = load_module_init(context, obj, full_path);
+        if (module_obj != NULL) {
+            jsval obj_val;
+
+            if (gjs_object_get_property(context,
+                                        module_obj,
+                                        name,
+                                        &obj_val)) {
+                if (obj_val != JSVAL_VOID &&
+                    JS_DefineProperty(context, obj,
+                                      name, obj_val,
+                                      NULL, NULL,
+                                      GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT)) {
+                    result = JS_TRUE;
+                    goto out;
+                }
+            }
+        }
+
         /* First try importing a directory (a sub-importer) */
         if (full_path)
             g_free(full_path);
@@ -450,6 +599,7 @@ do_import(JSContext  *context,
         g_free(full_path);
         full_path = g_build_filename(dirname, native_filename,
                                      NULL);
+
         if (g_file_test(full_path, G_FILE_TEST_EXISTS)) {
             if (import_native_file(context, obj, name, full_path)) {
                 gjs_debug(GJS_DEBUG_IMPORTER,
@@ -597,6 +747,7 @@ importer_new_enumerate(JSContext  *context,
 
         for (i = 0; i < search_path_len; ++i) {
             char *dirname = NULL;
+            char *init_path;
             const char *filename;
             jsval elem;
             GDir *dir = NULL;
@@ -624,6 +775,13 @@ importer_new_enumerate(JSContext  *context,
                 return JS_FALSE; /* Error message already set */
             }
 
+            init_path = g_build_filename(dirname, MODULE_INIT_FILENAME,
+                                         NULL);
+
+            load_module_elements(context, object, iter, init_path);
+
+            g_free(init_path);
+
             dir = g_dir_open(dirname, 0, NULL);
 
             if (!dir) {
@@ -636,6 +794,10 @@ importer_new_enumerate(JSContext  *context,
 
                 /* skip hidden files and directories (.svn, .git, ...) */
                 if (filename[0] == '.')
+                    continue;
+
+                /* skip module init file */
+                if (strcmp(filename, MODULE_INIT_FILENAME) == 0)
                     continue;
 
                 full_path = g_build_filename(dirname, filename, NULL);
