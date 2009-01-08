@@ -106,9 +106,6 @@ global_context_finalized(JSObject *obj,
 
         invalidate_js_pointers(c);
     }
-
-    /* The "Keep Alive" (garbage collector) owns one reference. */
-    g_closure_unref(&c->base);
 }
 
 
@@ -137,8 +134,14 @@ check_context_valid(Closure *c)
     invalidate_js_pointers(c);
 }
 
-/* Invalidation is like "dispose" - it happens on signal disconnect,
- * is guaranteed to happen at finalize, but may happen before finalize
+/* Invalidation is like "dispose" - it is guaranteed to happen at
+ * finalize, but may happen before finalize. Normally, g_closure_invalidate()
+ * is called when the "target" of the closure becomes invalid, so that the
+ * source (the signal connection, say can be removed.) The usage above
+ * in invalidate_js_pointers() is typical. Since the target of the closure
+ * is under our control, it's unlikely that g_closure_invalidate() will ever
+ * be called by anyone else, but in case it ever does, it's slightly better
+ * to remove the "keep alive" here rather than in the finalize notifier.
  */
 static void
 closure_invalidated(gpointer data,
@@ -161,12 +164,6 @@ closure_invalidated(gpointer data,
         c->obj = NULL;
         c->context = NULL;
         c->runtime = NULL;
-
-        /* The "Keep Alive" (garbage collector) owns one reference,
-         * since we removed ourselves from the keep-alive we'll
-         * never be collected so drop the ref here
-         */
-        g_closure_unref(&c->base);
     }
 }
 
@@ -308,9 +305,6 @@ gjs_closure_new(JSContext  *context,
                                     global_context_finalized,
                                     c->obj,
                                     c);
-
-    /* The "Keep Alive" (garbage collector) owns one reference. */
-    g_closure_ref(&c->base);
 
     g_closure_add_invalidate_notifier(&c->base, NULL, closure_invalidated);
 
