@@ -45,7 +45,6 @@ var _engineExists = false;
 var _transitionList = null;
 var _tweenList = null;
 
-var _currentTimeFrame = 0;
 var _currentTime = 0;
 var _timeScale = 1;
 
@@ -139,7 +138,6 @@ function _startEngine() {
                                       _onEnterFrame);
     _ticker.start();
 
-    _currentTimeFrame = 0;
     _currentTime = 0;
 }
 
@@ -149,7 +147,6 @@ function _stopEngine() {
 
     _engineExists = false;
     _tweenList = false;
-    _currentTimeFrame = 0;
     _currentTime = 0;
 
     _ticker.disconnect(_prepareFrameId);
@@ -158,7 +155,7 @@ function _stopEngine() {
 }
 
 function _getCurrentTweeningTime(tweening) {
-    return tweening.useFrames ? _currentTimeFrame : _currentTime;
+    return _currentTime;
 }
 
 function _removeTweenByIndex(i) {
@@ -328,7 +325,6 @@ function _updateTweens() {
 
 /* Ran once every 'frame'. It's the main engine, updates all existing tweenings */
 function _onEnterFrame() {
-    _currentTimeFrame++;
     _currentTime += 1000/_ticker.FRAME_RATE;
 
     if (!_updateTweens())
@@ -472,21 +468,12 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
             }
         }
 
-        if (obj.useFrames == true) {
-            tween = new TweenList.TweenList(scopes[i],
-                                            _currentTimeFrame + (delay / _timeScale),
-                                            _currentTimeFrame + ((delay + time) / _timeScale),
-                                            true,
-                                            transition,
-                                            obj.transitionParams);
-        } else {
-            tween = new TweenList.TweenList(scopes[i],
-                                            _currentTime + ((delay * 1000) / _timeScale),
-                                            _currentTime + (((delay * 1000) + (time * 1000)) / _timeScale),
-                                            false,
-                                            transition,
-                                            obj.transitionParams);
-        }
+        tween = new TweenList.TweenList(scopes[i],
+                                        _currentTime + ((delay * 1000) / _timeScale),
+                                        _currentTime + (((delay * 1000) + (time * 1000)) / _timeScale),
+                                        false,
+                                        transition,
+                                        obj.transitionParams);
 
         tween.properties               =       isCaller ? null : copyProperties;
         tween.onStart                  =       obj.onStart;
