@@ -45,7 +45,6 @@ var _engineExists = false;
 var _transitionList = null;
 var _tweenList = null;
 
-var _currentTime = 0;
 var _timeScale = 1;
 
 /*
@@ -54,6 +53,7 @@ var _timeScale = 1;
  * property FRAME_RATE
  * start()
  * stop()
+ * getTime() gets time in milliseconds from start()
  * signal prepare-frame
  *
  */
@@ -73,10 +73,13 @@ FrameTicker.prototype = {
     },
 
     start : function() {
+        this._currentTime = 0;
+
         let me = this;
         this._timeoutID =
             Mainloop.timeout_add(Math.floor(1000 / 65),
                                  function() {
+                                     me._currentTime += 1000 / me.FRAME_RATE;
                                      me.emit('prepare-frame');
                                      return true;
                                  });
@@ -87,6 +90,12 @@ FrameTicker.prototype = {
             Mainloop.source_remove(this._timeoutID);
             delete this._timeoutID;
         }
+
+        this._currentTime = 0;
+    },
+
+    getTime : function() {
+        return this._currentTime;
     }
 };
 Signals.addSignalMethods(FrameTicker.prototype);
@@ -137,8 +146,6 @@ function _startEngine() {
     _prepareFrameId = _ticker.connect('prepare-frame',
                                       _onEnterFrame);
     _ticker.start();
-
-    _currentTime = 0;
 }
 
 function _stopEngine() {
@@ -147,7 +154,6 @@ function _stopEngine() {
 
     _engineExists = false;
     _tweenList = false;
-    _currentTime = 0;
 
     _ticker.disconnect(_prepareFrameId);
     _prepareFrameId = 0;
@@ -155,7 +161,7 @@ function _stopEngine() {
 }
 
 function _getCurrentTweeningTime(tweening) {
-    return _currentTime;
+    return _ticker.getTime();
 }
 
 function _removeTweenByIndex(i) {
@@ -325,8 +331,6 @@ function _updateTweens() {
 
 /* Ran once every 'frame'. It's the main engine, updates all existing tweenings */
 function _onEnterFrame() {
-    _currentTime += 1000/_ticker.FRAME_RATE;
-
     if (!_updateTweens())
         _stopEngine();
 
@@ -469,8 +473,8 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
         }
 
         tween = new TweenList.TweenList(scopes[i],
-                                        _currentTime + ((delay * 1000) / _timeScale),
-                                        _currentTime + (((delay * 1000) + (time * 1000)) / _timeScale),
+                                        _ticker.getTime() + ((delay * 1000) / _timeScale),
+                                        _ticker.getTime() + (((delay * 1000) + (time * 1000)) / _timeScale),
                                         false,
                                         transition,
                                         obj.transitionParams);
