@@ -321,6 +321,93 @@ function testGetTweenCount() {
     assertEquals(0, Tweener.getTweenCount(object));
 }
 
+Tweener.registerSpecialProperty(
+    'negative_x',
+    function(obj) { return -obj.x; },
+    function(obj, val) { obj.x = -val; }
+);
+
+function testSpecialProperty() {
+    var objectA = {
+        x: 0,
+        y: 0
+    };
+
+    Tweener.addTween(objectA, { negative_x: 10, y: 10, time: 1,
+				transition: "linear",
+                                onComplete: function() { Mainloop.quit('testSpecialProperty');}});
+
+    Mainloop.run('testSpecialProperty');
+
+    with (objectA) {
+        assertEquals("A: x coordinate", -10, x);
+        assertEquals("A: y coordinate", 10, y);
+    }
+}
+
+Tweener.registerSpecialPropertyModifier('discrete',
+					discrete_modifier,
+					discrete_get);
+function discrete_modifier(props) {
+    return props.map(function (prop) { return { name: prop, parameters: null }; });
+}
+function discrete_get(begin, end, time, params) {
+    return Math.floor(begin + time * (end - begin));
+}
+
+function testSpecialPropertyModifier() {
+    var objectA = {
+        x: 0,
+        y: 0,
+	xFraction: false,
+	yFraction: false
+    };
+
+    Tweener.addTween(objectA, { x: 10, y: 10, time: 1,
+				discrete: ["x"],
+				transition: "linear",
+				onUpdate: function() {
+				    if (objectA.x != Math.floor(objectA.x))
+					objectA.xFraction = true;
+				    if (objectA.y != Math.floor(objectA.y))
+					objectA.yFraction = true;
+				},
+				onComplete: function() { Mainloop.quit('testSpecialPropertyModifier');}});
+
+    Mainloop.run('testSpecialPropertyModifier');
+
+    with (objectA) {
+        assertEquals("A: x coordinate", 10, x);
+        assertEquals("A: y coordinate", 10, y);
+        assertEquals("A: x was fractional", false, xFraction);
+        assertEquals("A: y was fractional", true, yFraction);
+    }
+}
+
+Tweener.registerSpecialPropertySplitter(
+    'xnegy',
+    function(val) { return [ { name: "x", value: val },
+			     { name: "y", value: -val } ]; }
+);
+
+function testSpecialPropertySplitter() {
+    var objectA = {
+        x: 0,
+        y: 0
+    };
+
+    Tweener.addTween(objectA, { xnegy: 10, time: 1,
+				transition: "linear",
+                                onComplete: function() { Mainloop.quit('testSpecialPropertySplitter');}});
+
+    Mainloop.run('testSpecialPropertySplitter');
+
+    with (objectA) {
+        assertEquals("A: x coordinate", 10, x);
+        assertEquals("A: y coordinate", -10, y);
+    }
+}
+
 installFrameTicker();
 gjstestRun();
 

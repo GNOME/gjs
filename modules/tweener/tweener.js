@@ -47,6 +47,10 @@ var _tweenList = null;
 
 var _timeScale = 1;
 
+var _specialPropertyList = [];
+var _specialPropertyModifierList = [];
+var _specialPropertySplitterList = [];
+
 /*
  * Ticker should implement:
  *
@@ -260,8 +264,18 @@ function _updateTweenByIndex(i) {
                             scope, tweening.onStartParams);
 
             for (name in tweening.properties) {
-                // TODO: add support for special properties?
-                var pv = scope[name];
+                var pv;
+
+                if (tweening.properties[name].isSpecialProperty) {
+                    // It's a special property, tunnel via the special property function
+                    if (_specialPropertyList[name].preProcess != undefined) {
+                        tweening.properties[name].valueComplete = _specialPropertyList[name].preProcess(scope, _specialPropertyList[name].parameters, tweening.properties[name].originalValueComplete, tweening.properties[name].extra);
+                    }
+                    pv = _specialPropertyList[name].getValue(scope, _specialPropertyList[name].parameters, tweening.properties[name].extra);
+                } else {
+                    // Directly read property
+                    pv = scope[name];
+                }
                 tweening.properties[name].valueStart = isNaN(pv) ? tweening.properties[name].valueComplete : pv;
             }
 
@@ -277,19 +291,32 @@ function _updateTweenByIndex(i) {
                     // Tweening time has finished, just set it to the final value
                     nv = property.valueComplete;
                 } else {
-                    // TODO: add support for modifiers?
-                    t = currentTime - tweening.timeStart;
-                    b = property.valueStart;
-                    c = property.valueComplete - property.valueStart;
-                    d = tweening.timeComplete - tweening.timeStart;
-                    nv = tweening.transition(t, b, c, d, tweening.transitionParams);
+                    if (property.hasModifier) {
+                        // Modified
+                        t = currentTime - tweening.timeStart;
+                        d = tweening.timeComplete - tweening.timeStart;
+                        nv = tweening.transition(t, 0, 1, d, tweening.transitionParams);
+                        nv = property.modifierFunction(property.valueStart, property.valueComplete, nv, property.modifierParameters);
+                    } else {
+                        // Normal update
+                        t = currentTime - tweening.timeStart;
+                        b = property.valueStart;
+                        c = property.valueComplete - property.valueStart;
+                        d = tweening.timeComplete - tweening.timeStart;
+                        nv = tweening.transition(t, b, c, d, tweening.transitionParams);
+                    }
                 }
 
                 if (tweening.rounded)
                     nv = Math.round(nv);
 
-                // TODO: support for special properties
-                scope[name] = nv;
+                if (property.isSpecialProperty) {
+                    // It's a special property, tunnel via the special property method
+                    _specialPropertyList[name].setValue(scope, nv, _specialPropertyList[name].parameters, tweening.properties[name].extra);
+                } else {
+                    // Directly set property
+                    scope[name] = nv;
+                }
             }
 
             tweening.updatesSkipped = 0;
@@ -363,16 +390,58 @@ const restrictedWords = {
 
 function _constructPropertyList(obj) {
     var properties = new Object();
+    var modifiedProperties = new Object();
 
     for (let istr in obj) {
         if (restrictedWords[istr])
             continue;
 
-        // TODO: Add support for specialProperty{Splitter,Modifier} stuff?
-        properties[istr] = {
-            valueStart: undefined,
-            valueComplete: obj[istr]
-        };
+        if (_specialPropertySplitterList[istr] != undefined) {
+            // Special property splitter
+            var splitProperties = _specialPropertySplitterList[istr].splitValues(obj[istr], _specialPropertySplitterList[istr].parameters);
+            for (let i = 0; i < splitProperties.length; i++) {
+                if (_specialPropertySplitterList[splitProperties[i].name] != undefined) {
+                    var splitProperties2 = _specialPropertySplitterList[splitProperties[i].name].splitValues(splitProperties[i].value, _specialPropertySplitterList[splitProperties[i].name].parameters);
+                    for (let j = 0; j < splitProperties2.length; j++) {
+                        properties[splitProperties2[j].name] = {
+			    valueStart: undefined,
+			    valueComplete: splitProperties2[j].value,
+			    arrayIndex: splitProperties2[j].arrayIndex,
+			    isSpecialProperty: false
+			};
+                    }
+                } else {
+                    properties[splitProperties[i].name] = {
+			valueStart: undefined,
+			valueComplete: splitProperties[i].value,
+			arrayIndex: splitProperties[i].arrayIndex,
+			isSpecialProperty: false
+		    };
+                }
+            }
+        } else if (_specialPropertyModifierList[istr] != undefined) {
+            // Special property modifier
+            let tempModifiedProperties = _specialPropertyModifierList[istr].modifyValues(obj[istr]);
+            for (let i = 0; i < tempModifiedProperties.length; i++) {
+                modifiedProperties[tempModifiedProperties[i].name] = {
+                    modifierParameters: tempModifiedProperties[i].parameters,
+                    modifierFunction: _specialPropertyModifierList[istr].getValue
+                };
+            }
+        } else {
+            properties[istr] = {
+                valueStart: undefined,
+                valueComplete: obj[istr]
+            };
+        }
+    }
+
+    // Adds the modifiers to the list of properties
+    for (istr in modifiedProperties) {
+        if (properties[istr]) {
+            properties[istr].modifierParameters = modifiedProperties[istr].modifierParameters;
+            properties[istr].modifierFunction = modifiedProperties[istr].modifierFunction;
+        }
     }
 
     return properties;
@@ -426,10 +495,13 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
 
         // Verifies whether the properties exist or not, for warning messages
         for (istr in properties) {
-            // TODO: missing code for special properties
-            for (var i = 0; i < scopes.length; i++) {
-                if (scopes[i][istr] == undefined)
-                    log("The property " + istr + " doesn't seem to be a normal object property of " + scopes[i]);
+            if (_specialPropertyList[istr] != undefined) {
+                properties[istr].isSpecialProperty = true;
+            } else {
+                for (var i = 0; i < scopes.length; i++) {
+                    if (scopes[i][istr] == undefined)
+                        log("The property " + istr + " doesn't seem to be a normal object property of " + scopes[i] + " or a registered special property");
+                }
             }
         }
     }
@@ -685,8 +757,16 @@ function _affectTweensWithFunction(func, args) {
     }
 
     for (let i = 1; args[i] != undefined; i++) {
-        if (typeof(args[i]) == "string" && !_isInArray(args[i], properties))
-            properties.push(args[i]);
+        if (typeof(args[i]) == "string" && !_isInArray(args[i], properties)) {
+            if (_specialPropertySplitterList[args[i]]) {
+                // special property, get splitter array first
+                var sps = _specialPropertySplitterList[arguments[i]];
+                var specialProps = sps.splitValues(scope, null);
+                for (let j = 0; j < specialProps.length; j++)
+                    properties.push(specialProps[j].name);
+	    } else
+		properties.push(args[i]);
+	}
     }
 
     // the return now value means: "affect at least one tween"
@@ -748,5 +828,29 @@ function getTweenCount(scope) {
 
     return c;
 };
+
+function registerSpecialProperty(name, getFunction, setFunction,
+                                 parameters, preProcessFunction) {
+    _specialPropertyList[name] = {
+        getValue: getFunction,
+        setValue: setFunction,
+        parameters: parameters,
+        preProcess: preProcessFunction
+    };
+}
+
+function registerSpecialPropertyModifier(name, modifyFunction, getFunction) {
+    _specialPropertyModifierList[name] = {
+	modifyValues: modifyFunction,
+	getValue: getFunction
+    };
+}
+
+function registerSpecialPropertySplitter(name, splitFunction, parameters) {
+    _specialPropertySplitterList[name] = {
+	splitValues: splitFunction,
+	parameters: parameters
+    };
+}
 
 log("Done loading tweener.js");
