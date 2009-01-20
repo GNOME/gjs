@@ -77,7 +77,7 @@ FrameTicker.prototype = {
 
         let me = this;
         this._timeoutID =
-            Mainloop.timeout_add(Math.floor(1000 / 65),
+            Mainloop.timeout_add(Math.floor(1000 / me.FRAME_RATE),
                                  function() {
                                      me._currentTime += 1000 / me.FRAME_RATE;
                                      me.emit('prepare-frame');

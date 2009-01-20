@@ -5,21 +5,35 @@ function installFrameTicker() {
     // Set up Tweener to have a "frame pulse" from
     // our main rendering loop
     let ticker = {
-        FRAME_RATE : 50,
+        FRAME_RATE: 50,
+
+        _init : function() {
+        },
+
         start : function() {
+            this._currentTime = 0;
+
             let me = this;
-            this._id =
-                Mainloop.timeout_add(1000/this.FRAME_RATE,
+            this._timeoutID =
+                Mainloop.timeout_add(Math.floor(1000 / me.FRAME_RATE),
                                      function() {
+                                         me._currentTime += 1000 / me.FRAME_RATE;
                                          me.emit('prepare-frame');
                                          return true;
                                      });
         },
+
         stop : function() {
-            if (this._id) {
-                Mainloop.source_remove(this._id);
-                this._id = 0;
+            if ('_timeoutID' in this) {
+                Mainloop.source_remove(this._timeoutID);
+                delete this._timeoutID;
             }
+
+            this._currentTime = 0;
+        },
+
+        getTime : function() {
+            return this._currentTime;
         }
     };
     imports.signals.addSignalMethods(ticker);
