@@ -136,4 +136,8 @@ function testValueReturn() {
     assertEquals('Method returning a GValue', 42, i);
 }
 
+function testEnumParam() {
+   let e = Everything.test_enum_param(Everything.TestEnum.VALUE1);
+   assertEquals('Enum parameter', 'value1', e);
+}
 gjstestRun();
