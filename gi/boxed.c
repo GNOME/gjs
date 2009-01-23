@@ -195,7 +195,7 @@ boxed_new_direct(JSContext   *context,
 
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                         "JSObject created by directly allocating %s",
-                        g_base_info_get_name ((GBaseInfo *)priv->info));
+                        g_base_info_get_name ((GIBaseInfo *)priv->info));
 
     return JS_TRUE;
 }
