@@ -1,0 +1,244 @@
+#!/usr/bin/env python
+import sys
+import re
+import os
+import shutil
+
+DO_SVG = 1
+
+class Node:
+    def __init__(self, addr, kind, value=None):
+        self.addr = addr
+        self.kind = kind
+        self.value = value
+
+        self.parent = None
+        self.already_existed = False
+        self.replacement = False
+
+        # child -> string (string -> child isn't 1:1 for some objects)
+        self.refnames = {}
+
+    def __hash__(self):
+        return hash(self.addr)
+
+    def __repr__(self):
+        return "%s@%s" % (self.kind, self.addr)
+
+    def __cmp__(self, o):
+        if o == None:
+            return 1
+        return cmp(self.addr, o.addr)
+
+def parse_js_heap(fp):
+    nodes = {}
+    edges = set()
+    roots = set()
+
+    parent = None
+
+    for line in fp:
+        # 0x818b460 Function setHours      via root(0x816d3c0 GjsGlobal).CLASS_OBJECT(Date)(0x8187dc8 Function).prototype(0x816d740 Date).setHours
+        # 0x81814d0 Function               via root(0x816d3c0 GjsGlobal).__proto__(0x816d3e0 Object).toSource(0x8181658 Function).__proto__
+        line = line.strip()
+
+        parts = line.split('via ')
+        assert len(parts) == 2
+
+        # the object
+        #   0x818b460 Function setHours
+        #   0x81814d0 Function              
+        idparts = parts[0].split(None, 2)
+        assert len(idparts) in [2,3]
+
+        if len(idparts) == 2:
+            addr,kind = idparts
+            value = None
+        elif len(idparts) == 3:
+            addr,kind,value = idparts
+            value = value.strip()
+
+        child = nodes.setdefault(addr, Node(addr, kind, value))
+        assert child.addr == addr
+        assert child.kind == kind
+        assert child.value == value
+
+        # the path it's reachable from
+        #   root
+        #   root(0x816d3c0 GjsGlobal).CLASS_OBJECT(Date) [...]
+        #   ...(0x816d3c0 GjsGlobal).imports [...]
+        via = parts[1]
+        while via:
+            # JS_DumpHeap format is a bit weird starting with '...' or
+            # root(?) name followed by a sequence of "(%p %s).%s" concatenated
+            # one after another. Start from the last item that is the immediate
+            # parent of the object.
+            oparen = via.rfind('(0x')
+            if oparen == -1:
+                break
+
+            node = via[oparen:]
+            # (%p %s).%s
+            cparen = node.index(').', 1)
+            addr,kind = node[1:cparen].split()
+            refname = node[cparen+2:]
+
+            # build ancestor chain so that we can re-root nodes
+            parent = nodes[addr]
+            assert parent.kind == kind
+            assert child.parent in [None, parent]
+            child.parent = parent
+
+            name = parent.refnames.setdefault(child, refname)
+            assert name == refname
+
+            # collect edges
+            arc = parent,child
+            edges.add(arc)
+
+            child = parent
+            via = via[:oparen]
+
+    return edges,nodes
+
+e1,v1 = parse_js_heap(open(sys.argv[1]))
+print >>sys.stderr, '%s loaded, %d references' % (sys.argv[1], len(e1))
+e2,v2 = parse_js_heap(open(sys.argv[2]))
+print >>sys.stderr, '%s loaded, %d references' % (sys.argv[2], len(e2))
+
+# remove edges that already existed
+e2.difference_update(e1)
+new_refs = len(e2)
+
+
+# restore paths to root
+for child,unused in list(e2):
+    parent = child.parent
+    while parent is not None:
+        e = parent,child
+        if not e in e2:
+            e2.add(e)
+            # we want to color already existing nodes differently
+            parent.already_existed = True
+
+        child = parent
+        parent = child.parent
+
+
+# FIXME: Consider hiding homomorphic subgraphs as well to reduce noise when
+# references are replaced. As we're hiding only identical edges replacements
+# would appear as new allocations, for example:
+#
+#   foo = {}
+#   foo.bar = new Bar();
+#   // dump heap
+#   foo.bar = new Bar();
+#   // dump heap
+#
+# We would highlight new 'Bar' object being allocated (which is true) but it
+# should not be a leak as the old object ought to have been collected.
+
+# Go through all (parent) nodes that exist in both graphs and when
+# parent.reference refers to exactly one object (sometimes references to
+# multiple objects use the same name, e.g. 'id') that changed mark the object
+# to distinguish it from truly new allocations
+nreplacements = 0
+def mark_and_recurse(node):
+    global nreplacements
+
+    e = node.parent,node
+    if e in e2:
+        nreplacements += 1
+        node.replacement = True
+
+        for child in node.refnames.keys():
+            mark_and_recurse(child)
+
+
+common_nodes = set()
+for parent,child in e2:
+    common_nodes.add(parent.addr)
+    common_nodes.add(child.addr)
+common_nodes.intersection_update(v1.keys())
+
+for addr in common_nodes:
+    node1 = v1[addr]
+    node2 = v2[addr]
+
+    # check parent chain to see we're really the same nodes
+    n1,n2 = node1,node2
+    while n1 == n2 and n1 != None:
+        n1 = n1.parent
+        n2 = n2.parent
+    if n1 != n2:
+        continue
+
+    # unambiguous reference names
+    refs1 = {}
+    for child,refname in node1.refnames.items():
+        refs1.setdefault(refname, []).append(child)
+    refs2 = {}
+    for child,refname in node2.refnames.items():
+        refs2.setdefault(refname, []).append(child)
+
+    common_refs = set(refs1.keys())
+    common_refs.intersection_update(refs2.keys())
+
+    for ref in common_refs:
+        if len(refs1[ref]) == len(refs2[ref]) == 1:
+            child1 = refs1[ref][0]
+            child2 = refs2[ref][0]
+            if child1 != child2:
+                assert child1.kind == child2.kind
+                mark_and_recurse(child2)
+
+
+print >>sys.stderr, '%u changed references, %u new, %u to display' % (new_refs, (new_refs - nreplacements), len(e2))
+
+
+if DO_SVG:
+    chin,chout = os.popen2(['dot', '-Tsvgz'])
+    dot = chin
+else:
+    dot = sys.stdout
+
+# generate the graph
+def dotlabel(s):
+    return s.replace('\\', '\\\\').replace('"', '\\"')
+
+def dotnode(node):
+    label = dotlabel('%s@%s' % (node.kind, node.addr))
+    if node.value is not None:
+        label += '\\n%s' % (dotlabel(node.value),)
+    return label
+
+
+dot.write('''\
+digraph G {
+node [style=filled];
+
+''')
+
+for node in v2.values():
+    if node.already_existed:
+        dot.write('"%s" [style=dotted];\n' % (dotnode(node),))
+    elif node.replacement:
+        dot.write('"%s" [fillcolor=cyan];\n' % (dotnode(node),))
+dot.write('\n')
+
+for e in e2:
+    parent,child = e
+    refname = parent.refnames[child]
+
+    dot.write('"%s" -> "%s" [label="%s"];\n' % (
+        dotnode(parent),
+        dotnode(child),
+        dotlabel(refname)))
+
+dot.write('}\n')
+
+# finish
+if DO_SVG:
+    dot.close()
+    shutil.copyfileobj(chout, sys.stdout)
+
