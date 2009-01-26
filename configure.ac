@@ -130,19 +130,43 @@ PKG_CHECK_MODULES([GJS_GI], [$gjs_gi_packages])
 GJS_GI_CFLAGS="$GJS_GI_CFLAGS -I$js_include_dir"
 
 # readline
-AC_MSG_CHECKING([whether readline support is requested])
-AC_ARG_WITH(readline,
- AC_HELP_STRING([--without-readline],
- [do not support fancy command line editing]),
- [HAVE_READLINE="$withval"], [HAVE_READLINE=yes])
-case "$HAVE_READLINE" in yes);; no);; *)HAVE_READLINE=yes;; esac
-AC_MSG_RESULT($HAVE_READLINE)
-if test "$HAVE_READLINE" = yes ; then
- AC_CHECK_LIB(readline, add_history)
- AC_CHECK_HEADERS([readline/readline.h])
+LIBS_no_readline=$LIBS
+
+# On some systems we need to link readline to a termcap compatible
+# library.
+gjs_cv_lib_readline=no
+AC_MSG_CHECKING([how to link readline libs])
+for gjs_libtermcap in "" ncursesw ncurses curses termcap; do
+  if test -z "$gjs_libtermcap"; then
+    READLINE_LIBS="-lreadline"
+  else
+    READLINE_LIBS="-lreadline -l$gjs_libtermcap"
+  fi
+  LIBS="$READLINE_LIBS $LIBS_no_readline"
+  AC_LINK_IFELSE(
+    [AC_LANG_CALL([],[readline])],
+    [gjs_cv_lib_readline=yes])
+  if test $gjs_cv_lib_readline = yes; then
+    break
+  fi
+done
+AC_SUBST([READLINE_LIBS])
+if test $gjs_cv_lib_readline = no; then
+  AC_MSG_RESULT([none])
+else
+  AC_MSG_RESULT([$READLINE_LIBS])
+  AC_DEFINE(HAVE_LIBREADLINE, 1,
+    [Define if you have the readline library (-lreadline).])
 fi
-AM_CONDITIONAL([HAVE_READLINE], [test x$HAVE_READLINE = xyes])
+
+AC_TRY_CPP([#include <readline/readline.h>],
+have_readline=yes, have_readline=no)
+
+AM_CONDITIONAL([HAVE_READLINE], [test x$have_readline = xyes])
 AC_SUBST([HAVE_READLINE])
+
+# End of readline checks: restore LIBS
+LIBS=$LIBS_no_readline
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

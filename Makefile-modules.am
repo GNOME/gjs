@@ -46,13 +46,10 @@ mainloop_la_SOURCES =		\
 console_la_CFLAGS = 				\
 	$(JS_NATIVE_MODULE_CFLAGS)
 console_la_LIBADD = \
-	$(JS_NATIVE_MODULE_LIBADD)
+	$(JS_NATIVE_MODULE_LIBADD)		\
+	$(READLINE_LIBS)
 console_la_LDFLAGS = 				\
 	$(JS_NATIVE_MODULE_LDFLAGS)
-
-if HAVE_READLINE
-console_la_LIBADD += -lreadline
-endif
 
 console_la_SOURCES =		\
 	modules/console.h	\
