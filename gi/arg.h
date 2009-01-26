@@ -67,7 +67,7 @@ JSBool gjs_g_argument_release_in_arg (JSContext  *context,
                                       GArgument  *arg);
 
 JSBool _gjs_flags_value_is_valid (JSContext   *context,
-                                  GFlagsClass *klass,
+                                  GType        gtype,
                                   guint        value);
 
 

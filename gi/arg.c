@@ -34,11 +34,18 @@
 
 JSBool
 _gjs_flags_value_is_valid(JSContext   *context,
-                          GFlagsClass *klass,
+                          GType        gtype,
                           guint        value)
 {
     GFlagsValue *v;
     guint32 tmpval;
+    void *klass;
+
+    /* FIXME: Do proper value check for flags with GType's */
+    if (gtype == G_TYPE_NONE)
+        return JS_TRUE;
+    
+    klass = g_type_class_ref(gtype);
 
     /* check all bits are defined for flags.. not necessarily desired */
     tmpval = value;
@@ -53,6 +60,7 @@ _gjs_flags_value_is_valid(JSContext   *context,
 
         tmpval &= ~v->value;
     }
+    g_type_class_unref(klass);
 
     return JS_TRUE;
 }
@@ -513,18 +521,13 @@ gjs_value_to_g_argument(JSContext      *context,
                     if (!JS_ValueToInt32(context, value, &arg->v_int)) {
                         wrong = TRUE;
                     } else if (!_gjs_enum_value_is_valid(context, (GIEnumInfo *)symbol_info, arg->v_int)) {
-                          wrong = TRUE;
+                        wrong = TRUE;
                     }
-                } else if (g_type_is_a(gtype, G_TYPE_FLAGS)) {
+                } else if (symbol_type == GI_INFO_TYPE_FLAGS) {
                     if (!JS_ValueToInt32(context, value, &arg->v_int)) {
                         wrong = TRUE;
-                    } else {
-                        void *klass;
-
-                        klass = g_type_class_ref(gtype);
-                        if (!_gjs_flags_value_is_valid(context, klass, arg->v_int))
-                            wrong = TRUE;
-                        g_type_class_unref(klass);
+                    } else if (!_gjs_flags_value_is_valid(context, gtype, arg->v_int)) {
+                        wrong = TRUE;
                     }
                 } else {
                     gjs_throw(context, "Unhandled GType %s unpacking SYMBOL GArgument from Number",
@@ -905,12 +908,8 @@ gjs_value_from_g_argument (JSContext  *context,
                     goto out;
                 }
 
-                klass = g_type_class_ref(gtype);
-
-                if (_gjs_flags_value_is_valid(context, G_FLAGS_CLASS(klass), arg->v_int))
+                if (_gjs_flags_value_is_valid(context, gtype, arg->v_int))
                     value = INT_TO_JSVAL(arg->v_int);
-
-                g_type_class_unref(klass);
 
                 goto out;
             }
