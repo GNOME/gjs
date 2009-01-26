@@ -155,6 +155,20 @@ def mark_and_recurse(node):
             mark_and_recurse(child)
 
 
+ndropped = 0
+def drop_and_recurse(node):
+    global ndropped
+
+    for child in node.refnames.keys():
+        arc = node,child
+        if arc in e2:
+            e2.remove(arc)
+
+            ndropped += 1
+
+            drop_and_recurse(child)
+
+
 common_nodes = set()
 for parent,child in e2:
     common_nodes.add(parent.addr)
@@ -193,7 +207,21 @@ for addr in common_nodes:
                 mark_and_recurse(child2)
 
 
-print >>sys.stderr, '%u changed references, %u new, %u to display' % (new_refs, (new_refs - nreplacements), len(e2))
+# Drop keepalive references
+if 1:
+    keepalive = None
+    for each in e2:
+        for n in each:
+            if n.kind == '__private_GjsKeepAlive':
+                keepalive = n
+                break
+        if keepalive:
+            break
+    assert keepalive is not None
+
+    drop_and_recurse(keepalive)
+
+print >>sys.stderr, '%u changed references, %u new, %u dropped, %u to display' % (new_refs, (new_refs - nreplacements), ndropped, len(e2))
 
 
 if DO_SVG:
