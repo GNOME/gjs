@@ -50,6 +50,7 @@ function _connect(name, callback) {
     this._signalConnections.push({ 'id' : id,
                                    'name' : name,
                                    'callback' : callback,
+                                   'callbackSource' : callback.toSource(),
                                    'disconnected' : false
                                  });
     return id;
@@ -67,6 +68,8 @@ function _disconnect(id) {
 
                 // set a flag to deal with removal during emission
                 connection.disconnected = true;
+                delete connection.callback;
+                delete connection.callbackSource;
                 this._signalConnections.splice(i, 1);
 
                 return;
@@ -81,6 +84,7 @@ function _disconnectAll() {
         while (this._signalConnections.length > 0) {
             _disconnect.call(this, this._signalConnections[0].id);
         }
+        delete this._signalConnections;
     }
 }
 
