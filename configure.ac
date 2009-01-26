@@ -129,6 +129,21 @@ AC_SUBST([js_include_dir])
 PKG_CHECK_MODULES([GJS_GI], [$gjs_gi_packages])
 GJS_GI_CFLAGS="$GJS_GI_CFLAGS -I$js_include_dir"
 
+# readline
+AC_MSG_CHECKING([whether readline support is requested])
+AC_ARG_WITH(readline,
+ AC_HELP_STRING([--without-readline],
+ [do not support fancy command line editing]),
+ [HAVE_READLINE="$withval"], [HAVE_READLINE=yes])
+case "$HAVE_READLINE" in yes);; no);; *)HAVE_READLINE=yes;; esac
+AC_MSG_RESULT($HAVE_READLINE)
+if test "$HAVE_READLINE" = yes ; then
+ AC_CHECK_LIB(readline, add_history)
+ AC_CHECK_HEADERS([readline/readline.h])
+fi
+AM_CONDITIONAL([HAVE_READLINE], [test x$HAVE_READLINE = xyes])
+AC_SUBST([HAVE_READLINE])
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 

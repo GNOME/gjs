@@ -38,7 +38,15 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include "config.h"
+
+#include <stdlib.h>
 #include <string.h>
+
+#ifdef HAVE_LIBREADLINE
+#include <readline/readline.h>
+#include <readline/history.h>
+#endif
 
 #include <jsapi.h>
 #include <jsstddef.h> /* PTRDIFF */
@@ -118,6 +126,22 @@ gjs_console_error_reporter(JSContext *cx, const char *message, JSErrorReport *re
     g_free(prefix);
 }
 
+#ifdef HAVE_LIBREADLINE
+static JSBool
+gjs_console_readline(JSContext *cx, char *bufp, FILE *file, const char *prompt)
+{
+    char *line;
+    line = readline(prompt);
+    if (line && line[0] != '\0')
+        add_history(line);
+    if (!line) {
+        return JS_FALSE;
+    }        
+    strcpy(bufp, line);
+    free(line);
+    return JS_TRUE;
+}
+#else
 static JSBool
 gjs_console_readline(JSContext *cx, char *bufp, FILE *file, const char *prompt)
 {
@@ -129,6 +153,7 @@ gjs_console_readline(JSContext *cx, char *bufp, FILE *file, const char *prompt)
     strcpy(bufp, line);
     return JS_TRUE;
 }
+#endif    
 
 JSBool
 gjs_console_interact(JSContext *context,

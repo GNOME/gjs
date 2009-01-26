@@ -50,6 +50,10 @@ console_la_LIBADD = \
 console_la_LDFLAGS = 				\
 	$(JS_NATIVE_MODULE_LDFLAGS)
 
+if HAVE_READLINE
+console_la_LIBADD += -lreadline
+endif
+
 console_la_SOURCES =		\
 	modules/console.h	\
 	modules/console.c
