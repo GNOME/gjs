@@ -23,6 +23,10 @@
 
 #include <config.h>
 
+#include <signal.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include <array>
 #include <unordered_map>
 
@@ -34,6 +38,7 @@
 #include "importer.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
+#include "mem.h"
 #include "native.h"
 #include "profiler-private.h"
 #include "byteArray.h"
@@ -136,6 +141,72 @@ enum {
 
 static GMutex contexts_lock;
 static GList *all_contexts = NULL;
+
+static GjsAutoChar dump_heap_output;
+static unsigned dump_heap_idle_id = 0;
+
+static void
+gjs_context_dump_heaps(void)
+{
+    static unsigned counter = 0;
+
+    gjs_memory_report("signal handler", false);
+
+    /* dump to sequential files to allow easier comparisons */
+    GjsAutoChar filename = g_strdup_printf("%s.%jd.%u", dump_heap_output.get(),
+                                           intmax_t(getpid()), counter);
+    ++counter;
+
+    FILE *fp = fopen(filename, "w");
+    if (!fp)
+        return;
+
+    for (GList *l = all_contexts; l; l = g_list_next(l)) {
+        auto js_context = static_cast<GjsContext *>(l->data);
+        js::DumpHeap(js_context->context, fp, js::IgnoreNurseryObjects);
+    }
+
+    fclose(fp);
+}
+
+static gboolean
+dump_heap_idle(gpointer user_data)
+{
+    dump_heap_idle_id = 0;
+
+    gjs_context_dump_heaps();
+
+    return false;
+}
+
+static void
+dump_heap_signal_handler(int signum)
+{
+    if (dump_heap_idle_id == 0)
+        dump_heap_idle_id = g_idle_add_full(G_PRIORITY_HIGH_IDLE,
+                                            dump_heap_idle, nullptr, nullptr);
+}
+
+static void
+setup_dump_heap(void)
+{
+    static bool dump_heap_initialized = false;
+    if (!dump_heap_initialized) {
+        dump_heap_initialized = true;
+
+        /* install signal handler only if environment variable is set */
+        const char *heap_output = g_getenv("GJS_DEBUG_HEAP_OUTPUT");
+        if (heap_output) {
+            struct sigaction sa;
+
+            dump_heap_output = g_strdup(heap_output);
+
+            memset(&sa, 0, sizeof(sa));
+            sa.sa_handler = dump_heap_signal_handler;
+            sigaction(SIGUSR1, &sa, nullptr);
+        }
+    }
+}
 
 static void
 gjs_context_init(GjsContext *js_context)
@@ -442,6 +513,8 @@ gjs_context_constructed(GObject *object)
     g_mutex_lock (&contexts_lock);
     all_contexts = g_list_prepend(all_contexts, object);
     g_mutex_unlock (&contexts_lock);
+
+    setup_dump_heap();
 }
 
 static void
