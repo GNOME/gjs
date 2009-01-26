@@ -150,9 +150,9 @@ for gjs_libtermcap in "" ncursesw ncurses curses termcap; do
     break
   fi
 done
-AC_SUBST([READLINE_LIBS])
 if test $gjs_cv_lib_readline = no; then
   AC_MSG_RESULT([none])
+  READLINE_LIBS=""
 else
   AC_MSG_RESULT([$READLINE_LIBS])
   AC_DEFINE(HAVE_LIBREADLINE, 1,
@@ -163,6 +163,7 @@ AC_TRY_CPP([#include <readline/readline.h>],
 have_readline=yes, have_readline=no)
 
 AM_CONDITIONAL([HAVE_READLINE], [test x$have_readline = xyes])
+AC_SUBST([READLINE_LIBS])
 AC_SUBST([HAVE_READLINE])
 
 # End of readline checks: restore LIBS
