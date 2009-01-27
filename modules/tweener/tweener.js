@@ -203,7 +203,7 @@ function _callOnFunction(fn, fnname, scope, fallbackScope, params)
         try {
             fn.apply(eventScope, params);
         } catch (e) {
-            log("Error calling " + fnname + ": " + e);
+            logError(e, "Error calling " + fnname);
         }
     }
 }
