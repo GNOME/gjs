@@ -102,6 +102,7 @@ EXTRA_DIST +=					\
 	test/js/modules/subA/.secret.js         \
 	test/js/modules/subA/.hidden/hidden.js  \
 	test/js/modules/subA/foo                \
+	test/js/modules/subA/subB/__init__.js	\
 	test/js/modules/subA/subB/foobar.js     \
 	test/js/modules/subA/subB/baz.js        \
 	test/js/modules/jsUnit.js               \
