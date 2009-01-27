@@ -44,6 +44,7 @@
 #include <string.h>
 
 #ifdef HAVE_LIBREADLINE
+#include <stdio.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
