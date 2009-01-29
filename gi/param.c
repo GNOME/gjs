@@ -380,8 +380,10 @@ gjs_param_from_g_param(JSContext    *context,
         return NULL;
 
     gjs_debug(GJS_DEBUG_GPARAM,
-              "Wrapping %s with JSObject",
-              g_type_name(G_TYPE_FROM_INSTANCE((GTypeInstance*) gparam)));
+              "Wrapping %s '%s' on %s with JSObject",
+              g_type_name(G_TYPE_FROM_INSTANCE((GTypeInstance*) gparam)),
+              gparam->name,
+              g_type_name(gparam->owner_type));
 
     proto = gjs_lookup_param_prototype(context);
 
