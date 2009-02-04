@@ -211,6 +211,14 @@ JSBool      gjs_string_from_filename         (JSContext       *context,
 const char* gjs_string_get_ascii             (jsval            value);
 const char* gjs_string_get_ascii_checked     (JSContext       *context,
                                               jsval            value);
+JSBool      gjs_string_get_binary_data       (JSContext       *context,
+                                              jsval            value,
+                                              char           **data_p,
+                                              gsize           *len_p);
+JSBool      gjs_string_from_binary_data      (JSContext       *context,
+                                              const char      *data,
+                                              gsize            len,
+                                              jsval           *value_p);
 JSBool      gjs_get_string_id                (jsval            id_val,
                                               const char     **name_p);
 const char* gjs_get_type_name                (jsval            value);

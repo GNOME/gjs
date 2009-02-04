@@ -213,6 +213,96 @@ gjs_string_get_ascii_checked(JSContext       *context,
     return JS_GetStringBytes(JSVAL_TO_STRING(value));
 }
 
+static JSBool
+throw_if_binary_strings_broken(JSContext *context)
+{
+    /* JS_GetStringBytes() returns low byte of each jschar,
+     * unless JS_CStringsAreUTF8() in which case we're screwed.
+     */
+    if (JS_CStringsAreUTF8()) {
+        gjs_throw(context, "If JS_CStringsAreUTF8(), gjs doesn't know how to do binary strings");
+        return JS_TRUE;
+    }
+
+    return JS_FALSE;
+}
+
+/**
+ * gjs_string_get_binary_data:
+ * @context: js context
+ * @value: a jsval
+ * @data_p: address to return allocated data buffer
+ * @len_p: address to return length of data
+ *
+ * Get the binary data in the JSString contained in @value.
+ * Throws a JS exception if value is not a string.
+ *
+ * Returns: JS_FALSE if exception thrown
+ **/
+JSBool
+gjs_string_get_binary_data(JSContext       *context,
+                           jsval            value,
+                           char           **data_p,
+                           gsize           *len_p)
+{
+    char *js_data;
+
+    if (!JSVAL_IS_STRING(value)) {
+        gjs_throw(context,
+                  "Value is not a string, can't return binary data from it");
+        return JS_FALSE;
+    }
+
+    if (throw_if_binary_strings_broken(context))
+        return JS_FALSE;
+
+    js_data = JS_GetStringBytes(JSVAL_TO_STRING(value));
+    /* GetStringLength returns number of 16-bit jschar;
+     * we stored binary data as 1 byte per jschar
+     */
+    *len_p = JS_GetStringLength(JSVAL_TO_STRING(value));
+    *data_p = g_memdup(js_data, *len_p);
+
+    return JS_TRUE;
+}
+
+/**
+ * gjs_string_from_binary_data:
+ * @context: js context
+ * @data: binary data buffer
+ * @len: length of data
+ * @value_p: a jsval location, should be GC rooted
+ *
+ * Gets a string representing the passed-in binary data.
+ *
+ * Returns: JS_FALSE if exception thrown
+ **/
+JSBool
+gjs_string_from_binary_data(JSContext       *context,
+                            const char      *data,
+                            gsize            len,
+                            jsval           *value_p)
+{
+    JSString *s;
+
+    if (throw_if_binary_strings_broken(context))
+        return JS_FALSE;
+
+    /* store each byte in a 16-bit jschar so all high bytes are 0;
+     * we can't put two bytes per jschar because then we'd lose
+     * track of the string length if it was an odd number.
+     */
+    s = JS_NewStringCopyN(context, data, len);
+    if (s == NULL) {
+        /* gjs_throw() does nothing if exception already set */
+        gjs_throw(context, "Failed to allocate binary string");
+        return JS_FALSE;
+    }
+    *value_p = STRING_TO_JSVAL(s);
+
+    return JS_TRUE;
+}
+
 /**
  * gjs_get_string_id:
  * @id_val: a jsval that is an object hash key (could be an int or string)
@@ -238,6 +328,8 @@ gjs_get_string_id (jsval            id_val,
 
 
 #if GJS_BUILD_TESTS
+#include <string.h>
+
 
 static void
 test_error_reporter(JSContext     *context,
@@ -300,6 +392,72 @@ gjstest_test_func_gjs_jsapi_util_string_get_ascii(void)
     g_assert(g_str_equal(gjs_string_get_ascii(STRING_TO_JSVAL(js_string)), ascii_string));
     void_value = JSVAL_VOID;
     g_assert(gjs_string_get_ascii_checked(context, void_value) == NULL);
+    g_assert(JS_IsExceptionPending(context));
+
+    JS_DestroyContext(context);
+    JS_DestroyRuntime(runtime);
+}
+
+void
+gjstest_test_func_gjs_jsapi_util_string_get_binary(void)
+{
+    JSRuntime *runtime;
+    JSContext *context;
+    JSObject *global;
+    const char binary_string[] = "foo\0bar\0baz";
+    const char binary_string_odd[] = "foo\0bar\0baz123";
+    jsval js_string;
+    jsval void_value;
+    char *data;
+    gsize len;
+
+    g_assert_cmpuint(sizeof(binary_string), ==, 12);
+    g_assert_cmpuint(sizeof(binary_string_odd), ==, 15);
+
+    runtime = JS_NewRuntime(1024*1024 /* max bytes */);
+    context = JS_NewContext(runtime, 8192);
+    global = JS_NewObject(context, NULL, NULL, NULL);
+    JS_SetGlobalObject(context, global);
+    JS_InitStandardClasses(context, global);
+
+    JS_SetErrorReporter(context, test_error_reporter);
+
+    js_string = JSVAL_VOID;
+    JS_AddRoot(context, &js_string);
+
+    /* Even-length string (maps nicely to len/2 jschar) */
+    if (!gjs_string_from_binary_data(context,
+                                     binary_string, sizeof(binary_string),
+                                     &js_string))
+        g_error("Failed to create binary data string");
+
+    if (!gjs_string_get_binary_data(context,
+                                    js_string,
+                                    &data, &len))
+        g_error("Failed to get binary data from string");
+    g_assert_cmpuint(len, ==, sizeof(binary_string));
+    g_assert(memcmp(data, binary_string, len) == 0);
+
+
+    /* Odd-length string (does not map nicely to len/2 jschar) */
+    if (!gjs_string_from_binary_data(context,
+                                     binary_string_odd, sizeof(binary_string_odd),
+                                     &js_string))
+        g_error("Failed to create odd-length binary data string");
+
+    if (!gjs_string_get_binary_data(context,
+                                    js_string,
+                                    &data, &len))
+        g_error("Failed to get binary data from string");
+    g_assert_cmpuint(len, ==, sizeof(binary_string_odd));
+    g_assert(memcmp(data, binary_string_odd, len) == 0);
+
+    JS_RemoveRoot(context, &js_string);
+
+    void_value = JSVAL_VOID;
+    g_assert(!JS_IsExceptionPending(context));
+    g_assert(!gjs_string_get_binary_data(context, void_value,
+                                        &data, &len));
     g_assert(JS_IsExceptionPending(context));
 
     JS_DestroyContext(context);
