@@ -696,6 +696,7 @@ object_instance_constructor(JSContext *context,
             }
 
             priv->gobj = g_object_newv(gtype, n_params, params);
+            free_g_params(params, n_params);
 
             if (G_IS_INITIALLY_UNOWNED(priv->gobj) &&
                 !g_object_is_floating(priv->gobj)) {
