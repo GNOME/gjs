@@ -101,6 +101,7 @@ void        gjs_runtime_set_data             (JSRuntime       *runtime,
                                                  void            *data,
                                                  GDestroyNotify   dnotify);
 JSContext*  gjs_runtime_get_load_context     (JSRuntime       *runtime);
+JSContext*  gjs_runtime_peek_load_context    (JSRuntime       *runtime);
 void        gjs_runtime_clear_load_context   (JSRuntime       *runtime);
 JSContext*  gjs_runtime_get_call_context     (JSRuntime       *runtime);
 void        gjs_runtime_clear_call_context   (JSRuntime       *runtime);

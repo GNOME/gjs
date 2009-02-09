@@ -559,7 +559,15 @@ wrapped_gobj_toggle_notify(gpointer      data,
 
     runtime = data;
 
-    context = gjs_runtime_get_load_context(runtime);
+    /* The JSContext will be gone if runtime is being destroyed.
+     * In that case we effectively already converted to a weak ref without
+     * doing anything since the keep alive will be collected.
+     * Or if !is_last_ref, we do not want to convert to a strong
+     * ref since we want everything collected on runtime destroy.
+     */
+    context = gjs_runtime_peek_load_context(runtime);
+    if (!context)
+        return;
 
     obj = peek_js_obj(context, gobj);
 

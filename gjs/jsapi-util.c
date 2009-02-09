@@ -82,7 +82,7 @@ gjs_runtime_get_load_context(JSRuntime *runtime)
     return gjs_context_get_context(context);
 }
 
-static JSContext*
+JSContext*
 gjs_runtime_peek_load_context(JSRuntime *runtime)
 {
     GjsContext *context;
