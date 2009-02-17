@@ -145,7 +145,7 @@ gjs_string_from_filename(JSContext  *context,
                          gsize       n_bytes,
                          jsval      *value_p)
 {
-    gssize written;
+    gsize written;
     GError *error;
     gchar *utf8_string;
 
