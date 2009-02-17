@@ -898,8 +898,6 @@ gjs_value_from_g_argument (JSContext  *context,
                 goto out;
             } else if (symbol_type == GI_INFO_TYPE_FLAGS) {
                 /* This should be fixed to work without a GType, just like Enum */
-                void *klass;
-
                 gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
                 if (gtype == G_TYPE_NONE) {
                     gjs_throw(context,
