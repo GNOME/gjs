@@ -357,9 +357,7 @@ gjs_value_to_g_value(JSContext    *context,
         }
     } else if (g_type_is_a(gtype, G_TYPE_FLAGS)) {
         if (JSVAL_IS_INT(value)) {
-            if (!_gjs_flags_value_is_valid(context,
-                                           G_FLAGS_CLASS(g_type_class_peek(gtype)),
-                                           JSVAL_TO_INT(value)))
+            if (!_gjs_flags_value_is_valid(context, gtype, JSVAL_TO_INT(value)))
                 return JS_FALSE;
 
             g_value_set_flags(gvalue, value);
