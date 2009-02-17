@@ -437,6 +437,7 @@ gjstest_test_func_gjs_jsapi_util_string_get_binary(void)
         g_error("Failed to get binary data from string");
     g_assert_cmpuint(len, ==, sizeof(binary_string));
     g_assert(memcmp(data, binary_string, len) == 0);
+    g_free(data);
 
 
     /* Odd-length string (does not map nicely to len/2 jschar) */
@@ -451,6 +452,7 @@ gjstest_test_func_gjs_jsapi_util_string_get_binary(void)
         g_error("Failed to get binary data from string");
     g_assert_cmpuint(len, ==, sizeof(binary_string_odd));
     g_assert(memcmp(data, binary_string_odd, len) == 0);
+    g_free(data);
 
     JS_RemoveRoot(context, &js_string);
 
