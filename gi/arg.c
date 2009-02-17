@@ -1254,7 +1254,7 @@ gjs_g_argument_release_in_arg(JSContext  *context,
 
         gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
 
-        if (g_type_is_a(gtype, G_TYPE_CLOSURE))
+        if (g_type_is_a(gtype, G_TYPE_CLOSURE) || g_type_is_a(gtype, G_TYPE_VALUE))
             needs_release = TRUE;
 
         g_base_info_unref(symbol_info);
