@@ -27,6 +27,7 @@
 #include "context-jsapi.h"
 #include "importer.h"
 #include "jsapi-util.h"
+#include "profiler.h"
 
 #include <util/log.h>
 #include <util/error.h>
@@ -55,6 +56,8 @@ struct _GjsContext {
     JSRuntime *runtime;
     JSContext *context;
     JSObject *global;
+
+    GjsProfiler *profiler;
 
     char **search_path;
 
@@ -226,6 +229,12 @@ gjs_context_dispose(GObject *object)
 
     js_context = GJS_CONTEXT(object);
 
+    if (js_context->profiler) {
+        gjs_profiler_dump(js_context->profiler);
+        gjs_profiler_free(js_context->profiler);
+        js_context->profiler = NULL;
+    }
+
     if (js_context->global != NULL) {
         JS_RemoveRoot(js_context->context, &js_context->global);
         js_context->global = NULL;
@@ -396,6 +405,10 @@ gjs_context_constructor (GType                  type,
                                       js_context->global,
                                       "imports"))
             gjs_fatal("Failed to point 'imports' property at root importer");
+    }
+
+    if (js_context->we_own_runtime) {
+        js_context->profiler = gjs_profiler_new(js_context->runtime);
     }
 
     return object;
