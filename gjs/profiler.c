@@ -340,23 +340,19 @@ gjs_profiler_profile(GjsProfiler *self, gboolean enabled)
 
     if (enabled) {
         static gboolean signal_handler_initialized = FALSE;
+
         if (!signal_handler_initialized) {
-            const char *profiler_output;
+            struct sigaction sa;
 
             signal_handler_initialized = TRUE;
 
-            profiler_output = g_getenv("GJS_DEBUG_PROFILER_OUTPUT");
-            if (profiler_output != NULL) {
-                struct sigaction sa;
-
-                global_profiler_output = g_strdup(profiler_output);
-
-                memset(&sa, 0, sizeof(sa));
-                sa.sa_handler = dump_profile_signal_handler;
-                sigaction(SIGUSR1, &sa, NULL);
-            }
+            memset(&sa, 0, sizeof(sa));
+            sa.sa_handler = dump_profile_signal_handler;
+            sigaction(SIGUSR1, &sa, NULL);
         }
+
         global_profiler = self;
+        g_assert(global_profiler_output != NULL);
 
         /* script lifetime */
         JS_SetNewScriptHook(rt, gjs_profiler_new_script_hook, self);
@@ -366,7 +362,7 @@ gjs_profiler_profile(GjsProfiler *self, gboolean enabled)
         JS_SetExecuteHook(rt, gjs_profiler_execute_hook, self);
         /* function call */
         JS_SetCallHook(rt, gjs_profiler_call_hook, self);
-    } else {
+    } else if (self == global_profiler) {
         JS_SetNewScriptHook(rt, NULL, NULL);
         JS_SetDestroyScriptHook(rt, NULL, NULL);
         JS_SetExecuteHook(rt, NULL, NULL);
@@ -457,6 +453,7 @@ GjsProfiler *
 gjs_profiler_new(JSRuntime *runtime)
 {
     GjsProfiler *self;
+    const char  *profiler_output;
 
     /* FIXME: can handle only one runtime at the moment */
     g_return_val_if_fail(global_profiler == NULL, NULL);
@@ -469,8 +466,15 @@ gjs_profiler_new(JSRuntime *runtime)
                               NULL,
                               (GDestroyNotify)gjs_profile_function_free);
 
-    gjs_profiler_profile(self, TRUE);
-    g_assert(global_profiler == self);
+    profiler_output = g_getenv("GJS_DEBUG_PROFILER_OUTPUT");
+    if (profiler_output != NULL) {
+        if (global_profiler_output == NULL) {
+            global_profiler_output = g_strdup(profiler_output);
+        }
+
+        gjs_profiler_profile(self, TRUE);
+        g_assert(global_profiler == self);
+    }
 
     return self;
 }
