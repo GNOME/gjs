@@ -94,20 +94,27 @@ global_context_finalized(JSObject *obj,
                          void     *data)
 {
     Closure *c;
+    gboolean need_unref;
 
     c = data;
 
     gjs_debug_closure("Context global object destroy notifier on closure %p "
                       "which calls object %p",
                       c, c->obj);
+
+    /* invalidate_js_pointers() could free us so check flag now to avoid
+     * invalid memory access
+     */
+    need_unref = c->unref_on_global_object_finalized;
+    c->unref_on_global_object_finalized = FALSE;
+
     if (c->obj != NULL) {
         g_assert(c->obj == obj);
 
         invalidate_js_pointers(c);
     }
 
-    if (c->unref_on_global_object_finalized) {
-        c->unref_on_global_object_finalized = FALSE;
+    if (need_unref) {
         g_closure_unref(&c->base);
     }
 }
