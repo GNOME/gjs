@@ -1089,12 +1089,13 @@ gjs_g_arg_release_internal(JSContext  *context,
                 g_object_unref(G_OBJECT(arg->v_pointer));
             } else if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
                 g_closure_unref(arg->v_pointer);
-            } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
-                g_boxed_free(gtype, arg->v_pointer);
             } else if (g_type_is_a(gtype, G_TYPE_VALUE)) {
+                /* G_TYPE_VALUE is-a G_TYPE_BOXED, but we special case it */
                 GValue *value = arg->v_pointer;
                 g_value_unset(value);
                 g_slice_free(GValue, value);
+            } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
+                g_boxed_free(gtype, arg->v_pointer);
             } else {
                 gjs_throw(context, "Unhandled GType %s releasing SYMBOL GArgument",
                           g_type_name(gtype));
@@ -1254,7 +1255,7 @@ gjs_g_argument_release_in_arg(JSContext  *context,
 
         gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
 
-        if (g_type_is_a(gtype, G_TYPE_CLOSURE))
+        if (g_type_is_a(gtype, G_TYPE_CLOSURE) || g_type_is_a(gtype, G_TYPE_VALUE))
             needs_release = TRUE;
 
         g_base_info_unref(symbol_info);
