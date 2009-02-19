@@ -97,10 +97,9 @@ global_context_finalized(JSObject *obj,
 
     c = data;
 
-    gjs_debug(GJS_DEBUG_GCLOSURE,
-              "Context global object destroy notifier on closure %p which calls object %p",
-              c, c->obj);
-
+    gjs_debug_closure("Context global object destroy notifier on closure %p "
+                      "which calls object %p",
+                      c, c->obj);
     if (c->obj != NULL) {
         g_assert(c->obj == obj);
 
@@ -130,9 +129,9 @@ check_context_valid(Closure *c)
         }
     }
 
-    gjs_debug(GJS_DEBUG_GCLOSURE,
-              "Context %p no longer exists, invalidating closure %p which calls object %p",
-              c->context, c, c->obj);
+    gjs_debug_closure("Context %p no longer exists, invalidating "
+                      "closure %p which calls object %p",
+                      c->context, c, c->obj);
 
     /* Did not find the context. */
     invalidate_js_pointers(c);
@@ -155,14 +154,12 @@ closure_invalidated(gpointer data,
 
     c = (Closure*) closure;
 
-    gjs_debug(GJS_DEBUG_GCLOSURE,
-              "Invalidating closure %p which calls object %p",
-              closure, c->obj);
+    gjs_debug_closure("Invalidating closure %p which calls object %p",
+                      closure, c->obj);
 
     if (c->obj == NULL) {
-        gjs_debug(GJS_DEBUG_GCLOSURE,
-                  "   (closure %p already dead, nothing to do)",
-                  closure);
+        gjs_debug_closure("   (closure %p already dead, nothing to do)",
+                          closure);
         return;
     }
 
@@ -195,9 +192,9 @@ closure_invalidated(gpointer data,
          * ref ourselves, and set a flag to remove this ref
          * in global_context_finalized().
          */
-        gjs_debug(GJS_DEBUG_GCLOSURE,
-                  "   (closure %p's context was dead, holding ref until global object finalize)",
-                  closure);
+        gjs_debug_closure("   (closure %p's context was dead, holding ref "
+                          "until global object finalize)",
+                          closure);
 
         c->unref_on_global_object_finalized = TRUE;
         g_closure_ref(&c->base);
@@ -210,10 +207,9 @@ closure_invalidated(gpointer data,
          * invalidated for some reason other than destruction of the
          * JSContext.
          */
-        gjs_debug(GJS_DEBUG_GCLOSURE,
-                  "   (closure %p's context was alive, removing our destroy notifier on global object)",
-                  closure);
-
+        gjs_debug_closure("   (closure %p's context was alive, "
+                          "removing our destroy notifier on global object)",
+                          closure);
         gjs_keep_alive_remove_global_child(c->context,
                                            global_context_finalized,
                                            c->obj,
@@ -253,8 +249,8 @@ gjs_closure_invoke(GClosure *closure,
     }
 
     if (JS_IsExceptionPending(context)) {
-        gjs_debug(GJS_DEBUG_GCLOSURE,
-                  "Exception was pending before invoking callback??? Not expected");
+        gjs_debug_closure("Exception was pending before invoking callback??? "
+                          "Not expected");
         gjs_log_exception(c->context, NULL);
     }
 
@@ -265,18 +261,16 @@ gjs_closure_invoke(GClosure *closure,
                                  argv,
                                  retval)) {
         /* Exception thrown... */
-        gjs_debug(GJS_DEBUG_GCLOSURE,
-                  "Closure invocation failed (exception should have been thrown) closure %p callable %p",
-                  closure, c->obj);
+        gjs_debug_closure("Closure invocation failed (exception should "
+                          "have been thrown) closure %p callable %p",
+                          closure, c->obj);
         if (!gjs_log_exception(context, NULL))
-            gjs_debug(GJS_DEBUG_ERROR,
-                      "Closure invocation failed but no exception was set?");
+            gjs_debug_closure("Closure invocation failed but no exception was set?");
         return;
     }
 
     if (gjs_log_exception(context, NULL)) {
-        gjs_debug(GJS_DEBUG_ERROR,
-                  "Closure invocation succeeded but an exception was set");
+        gjs_debug_closure("Closure invocation succeeded but an exception was set");
     }
 }
 
@@ -367,9 +361,9 @@ gjs_closure_new(JSContext  *context,
 
     g_closure_add_invalidate_notifier(&c->base, NULL, closure_invalidated);
 
-    gjs_debug(GJS_DEBUG_GCLOSURE,
-              "Create closure %p which calls object %p '%s'",
-              c, c->obj, description);
+    gjs_debug_closure("Create closure %p which calls object %p '%s'",
+                      c, c->obj, description);
 
     return &c->base;
 }
+

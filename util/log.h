@@ -98,6 +98,12 @@ typedef enum {
 #define GJS_VERBOSE_ENABLE_GI_USAGE 0
 #endif
 
+/* Whether to log all callback GClosure debugging (finalizing, invalidating etc)
+ */
+#ifndef GJS_VERBOSE_ENABLE_GCLOSURE
+#define GJS_VERBOSE_ENABLE_GCLOSURE 0
+#endif
+
 #if GJS_VERBOSE_ENABLE_PROPS
 #define gjs_debug_jsprop(topic, format...) \
     do { gjs_debug(topic, format); } while(0)
@@ -125,6 +131,14 @@ typedef enum {
 #else
 #define gjs_debug_gi_usage(format...)
 #endif
+
+#if GJS_VERBOSE_ENABLE_GCLOSURE
+#define gjs_debug_closure(format...) \
+    do { gjs_debug(GJS_DEBUG_GCLOSURE, format); } while(0)
+#else
+#define gjs_debug_closure(format, ...)
+#endif
+
 
 void gjs_fatal(const char *format,
                ...) G_GNUC_PRINTF (1, 2) G_GNUC_NORETURN;
