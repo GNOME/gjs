@@ -104,6 +104,12 @@ typedef enum {
 #define GJS_VERBOSE_ENABLE_GCLOSURE 0
 #endif
 
+/* Whether to log all GObject signal debugging
+ */
+#ifndef GJS_VERBOSE_ENABLE_GSIGNAL
+#define GJS_VERBOSE_ENABLE_GSIGNAL 0
+#endif
+
 #if GJS_VERBOSE_ENABLE_PROPS
 #define gjs_debug_jsprop(topic, format...) \
     do { gjs_debug(topic, format); } while(0)
@@ -139,6 +145,12 @@ typedef enum {
 #define gjs_debug_closure(format, ...)
 #endif
 
+#if GJS_VERBOSE_ENABLE_GSIGNAL
+#define gjs_debug_gsignal(format...) \
+    do { gjs_debug(GJS_DEBUG_GOBJECT, format); } while(0)
+#else
+#define gjs_debug_gsignal(format...)
+#endif
 
 void gjs_fatal(const char *format,
                ...) G_GNUC_PRINTF (1, 2) G_GNUC_NORETURN;

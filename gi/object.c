@@ -892,8 +892,7 @@ real_connect_func(JSContext *context,
     *retval = INT_TO_JSVAL(0);
 
     priv = priv_from_js(context, obj);
-    gjs_debug(GJS_DEBUG_GOBJECT,
-              "connect obj %p priv %p argc %d", obj, priv, argc);
+    gjs_debug_gsignal("connect obj %p priv %p argc %d", obj, priv, argc);
     if (priv == NULL)
         return JS_FALSE; /* wrong class passed in */
     if (priv->gobj == NULL) {
@@ -973,8 +972,7 @@ disconnect_func(JSContext *context,
     *retval = JSVAL_VOID;
 
     priv = priv_from_js(context, obj);
-    gjs_debug(GJS_DEBUG_GOBJECT,
-              "disconnect obj %p priv %p argc %d", obj, priv, argc);
+    gjs_debug_gsignal("disconnect obj %p priv %p argc %d", obj, priv, argc);
 
     if (priv == NULL)
         return JS_FALSE; /* wrong class passed in */
@@ -1020,8 +1018,7 @@ emit_func(JSContext *context,
     *retval = JSVAL_VOID;
 
     priv = priv_from_js(context, obj);
-    gjs_debug(GJS_DEBUG_GOBJECT,
-              "emit obj %p priv %p argc %d", obj, priv, argc);
+    gjs_debug_gsignal("emit obj %p priv %p argc %d", obj, priv, argc);
 
     if (priv == NULL)
         return JS_FALSE; /* wrong class passed in */
