@@ -169,6 +169,8 @@ AC_SUBST([HAVE_READLINE])
 # End of readline checks: restore LIBS
 LIBS=$LIBS_no_readline
 
+AC_CHECK_FUNCS([backtrace])
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 

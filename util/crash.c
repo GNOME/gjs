@@ -26,9 +26,6 @@
 
 #include "crash.h"
 
-/* Put this in configure if we ever make non-glibc work */
-#define HAVE_BACKTRACE 1
-
 #ifdef HAVE_BACKTRACE
 #include <execinfo.h>
 #endif
@@ -40,6 +37,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#ifdef HAVE_BACKTRACE
 static void
 unbuffered_write_stderr(const char *s)
 {
@@ -67,11 +65,13 @@ gjs_print_maps(void)
         unbuffered_write_stderr("\n");
     }
 }
+#endif
 
 /* this only works if we build with -rdynamic */
 void
 gjs_print_backtrace(void)
 {
+#ifdef HAVE_BACKTRACE
     void *bt[500];
     int bt_size;
     char buf[128];
@@ -91,6 +91,7 @@ gjs_print_backtrace(void)
     /* best effort attempt to extract shared library relocations so that
      * mapping backtrace addresses to symbols is possible after the fact */
     gjs_print_maps();
+#endif
 }
 
 static void
