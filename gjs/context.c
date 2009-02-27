@@ -230,7 +230,6 @@ gjs_context_dispose(GObject *object)
     js_context = GJS_CONTEXT(object);
 
     if (js_context->profiler) {
-        gjs_profiler_dump(js_context->profiler);
         gjs_profiler_free(js_context->profiler);
         js_context->profiler = NULL;
     }
