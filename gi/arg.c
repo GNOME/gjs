@@ -384,7 +384,7 @@ gjs_value_to_g_argument(JSContext      *context,
         double v;
         if (!JS_ValueToNumber(context, value, &v))
             wrong = TRUE;
-        if (v > G_MAXFLOAT || v < G_MINFLOAT)
+        if (v > G_MAXFLOAT || v < - G_MAXFLOAT)
             out_of_range = TRUE;
         arg->v_float = (gfloat)v;
     }

@@ -23,21 +23,45 @@ function testLifeUniverseAndEverything() {
     assertEquals(true, Everything.test_boolean(true));
 
     assertEquals(42, Everything.test_int8(42));
+    assertEquals(-42, Everything.test_int8(-42));
+
     assertEquals(42, Everything.test_uint8(42));
+
     assertEquals(42, Everything.test_int16(42));
+    assertEquals(-42, Everything.test_int16(-42));
+
     assertEquals(42, Everything.test_uint16(42));
+
     assertEquals(42, Everything.test_int32(42));
+    assertEquals(-42, Everything.test_int32(-42));
+
     assertEquals(42, Everything.test_uint32(42));
+
     assertEquals(42, Everything.test_int64(42));
+    assertEquals(-42, Everything.test_int64(-42));
+
     assertEquals(42, Everything.test_uint64(42));
+
     assertEquals(42, Everything.test_int(42));
+    assertEquals(-42, Everything.test_int(-42));
+
     assertEquals(42, Everything.test_uint(42));
+
     assertEquals(42, Everything.test_long(42));
+    assertEquals(-42, Everything.test_long(-42));
+
     assertEquals(42, Everything.test_ulong(42));
+
     assertEquals(42, Everything.test_ssize(42));
+    assertEquals(-42, Everything.test_ssize(-42));
+
     assertEquals(42, Everything.test_size(42));
+
     assertEquals(42, Everything.test_float(42));
+    assertEquals(-42, Everything.test_float(-42));
+
     assertEquals(42, Everything.test_double(42));
+    assertEquals(-42, Everything.test_double(-42));
 
     let now = new Date();
     let bounced = Everything.test_timet(now);
