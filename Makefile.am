@@ -72,6 +72,7 @@ libgjs_la_SOURCES =		\
 	gjs/mem.c		\
 	gjs/native.c		\
 	gjs/profiler.c		\
+	gjs/stack.c		\
 	util/error.c		\
 	util/glib.c		\
 	util/crash.c		\
@@ -82,6 +83,7 @@ gjstest_files_with_tests += 	\
 	gjs/jsapi-util-array.c	\
 	gjs/jsapi-util-error.c	\
 	gjs/jsapi-util-string.c	\
+	gjs/stack.c				\
 	util/glib.c
 
 include Makefile-gi.am

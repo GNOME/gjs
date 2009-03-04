@@ -18,5 +18,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-The console module (modules/console.c) contains code from Mozilla which
-is tripple licensed under MPL1.1/LGPLv2+/GPLv2+.
+
+The following files contain code from Mozilla which
+is triple licensed under MPL1.1/LGPLv2+/GPLv2+:
+The console module (modules/console.c)
+Stack printer (gjs/stack.c)

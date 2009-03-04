@@ -62,6 +62,15 @@ gboolean        gjs_context_define_string_array  (GjsContext  *js_context,
                                                   const char   **array_values,
                                                   GError       **error);
 
+GList*          gjs_context_get_all              (void);
+
+void            gjs_context_print_stack_to_buffer (GjsContext *js_context,
+                                                   GString    *buf);
+
+void            gjs_context_print_stack_stderr    (GjsContext *js_context);
+
+void            gjs_dumpstack                     (void);
+
 G_END_DECLS
 
 #endif  /* __GJS_CONTEXT_H__ */

@@ -86,6 +86,11 @@ enum {
     PROP_IS_LOAD_CONTEXT
 };
 
+
+static GStaticMutex contexts_lock = G_STATIC_MUTEX_INIT;
+static GList *all_contexts = NULL;
+
+
 static JSBool
 gjs_log(JSContext *context,
         JSObject  *obj,
@@ -291,6 +296,10 @@ gjs_context_finalize(GObject *object)
         g_strfreev(js_context->search_path);
         js_context->search_path = NULL;
     }
+    
+    g_static_mutex_lock(&contexts_lock);
+    all_contexts = g_list_remove(all_contexts, object);
+    g_static_mutex_unlock(&contexts_lock);
 
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
@@ -411,6 +420,10 @@ gjs_context_constructor (GType                  type,
         js_context->profiler = gjs_profiler_new(js_context->runtime);
     }
 
+    g_static_mutex_lock (&contexts_lock);
+    all_contexts = g_list_prepend(all_contexts, object);
+    g_static_mutex_unlock (&contexts_lock);
+
     return object;
 }
 
@@ -474,6 +487,28 @@ gjs_context_new_with_search_path(char** search_path)
     return g_object_new (GJS_TYPE_CONTEXT,
                          "search-path", search_path,
                          NULL);
+}
+
+/**
+ * gjs_context_get_all:
+ * 
+ * Returns a newly-allocated list containing all known instances of #GjsContext.
+ * This is useful for operating on the contexts from a process-global situation
+ * such as a debugger.
+ * 
+ * Return value: (element-type GjsContext) (transfer full): Known #GjsContext instances
+ */
+GList*
+gjs_context_get_all(void)
+{
+  GList *result;
+  GList *iter;
+  g_static_mutex_lock (&contexts_lock);
+  result = g_list_copy(all_contexts);
+  for (iter = result; iter; iter = iter->next)
+    g_object_ref((GObject*)iter->data);
+  g_static_mutex_unlock (&contexts_lock);
+  return result;
 }
 
 JSContext*
