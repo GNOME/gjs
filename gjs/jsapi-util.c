@@ -253,9 +253,10 @@ gjs_object_get_property(JSContext  *context,
  */
 gboolean
 gjs_object_require_property(JSContext       *context,
-                               JSObject        *obj,
-                               const char      *property_name,
-                               jsval           *value_p)
+                            JSObject        *obj,
+                            const char      *obj_description,
+                            const char      *property_name,
+                            jsval           *value_p)
 {
     jsval value;
 
@@ -272,9 +273,14 @@ gjs_object_require_property(JSContext       *context,
         /* remember gjs_throw() is a no-op if JS_GetProperty()
          * already set an exception
          */
-        gjs_throw(context,
-                     "No property '%s' in object %p (or its value was undefined)",
-                     property_name, obj);
+        if (obj_description)
+            gjs_throw(context,
+                      "No property '%s' in %s (or its value was undefined)",
+                      property_name, obj_description);
+        else
+            gjs_throw(context,
+                      "No property '%s' in object %p (or its value was undefined)",
+                      property_name, obj);
         return FALSE;
     }
 }
@@ -326,7 +332,7 @@ gjs_init_class_dynamic(JSContext      *context,
 
         g_free(private_name); /* don't need it anymore */
 
-        if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(value),
+        if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(value), NULL,
                                             "prototype", &proto_val) ||
             !JSVAL_IS_OBJECT(proto_val)) {
             gjs_throw(context, "prototype was not defined or not an object?");
@@ -364,7 +370,7 @@ gjs_init_class_dynamic(JSContext      *context,
         /* Retrieve the property again so we can define it in
          * in_object
          */
-        if (!gjs_object_require_property(context, JS_GetGlobalObject(context),
+        if (!gjs_object_require_property(context, JS_GetGlobalObject(context), NULL,
                                             class_copy->base.name, &value))
             return NULL;
     }

@@ -561,7 +561,7 @@ gjs_value_to_g_argument(JSContext      *context,
             guint32 length;
 
             if (!gjs_object_require_property(context,
-                                             JSVAL_TO_OBJECT(value),
+                                             JSVAL_TO_OBJECT(value), NULL,
                                              "length",
                                              &length_value) ||
                 !JS_ValueToECMAUint32(context, length_value, &length)) {
@@ -613,7 +613,7 @@ gjs_value_to_g_argument(JSContext      *context,
             guint32 length;
 
             if (!gjs_object_require_property(context,
-                                             JSVAL_TO_OBJECT(value),
+                                             JSVAL_TO_OBJECT(value), NULL,
                                              "length",
                                              &length_value) ||
                 !JS_ValueToECMAUint32(context, length_value, &length)) {

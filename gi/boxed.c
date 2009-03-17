@@ -348,7 +348,7 @@ boxed_init_from_props(JSContext   *context,
             goto out;
         }
 
-        if (!gjs_object_require_property(context, props, name, &value))
+        if (!gjs_object_require_property(context, props, "property list", name, &value))
             goto out;
 
         if (!boxed_set_field_from_value(context, priv, field_info, value)) {

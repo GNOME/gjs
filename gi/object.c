@@ -480,7 +480,7 @@ object_instance_props_to_g_parameters(JSContext   *context,
         if (!gjs_get_string_id(nameval, &name))
             goto free_array_and_fail;
 
-        if (!gjs_object_require_property(context, props, name, &value))
+        if (!gjs_object_require_property(context, props, "property list", name, &value))
             goto free_array_and_fail;
 
         switch (init_g_param_from_property(context, name,

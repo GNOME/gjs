@@ -470,7 +470,7 @@ do_import(JSContext  *context,
         return JS_FALSE;
     }
 
-    if (!gjs_object_require_property(context, obj, "searchPath", &search_path_val)) {
+    if (!gjs_object_require_property(context, obj, "importer", "searchPath", &search_path_val)) {
         return JS_FALSE;
     }
 
@@ -723,7 +723,7 @@ importer_new_enumerate(JSContext  *context,
             /* we are enumerating the prototype properties */
             return JS_TRUE;
 
-        if (!gjs_object_require_property(context, object, "searchPath", &search_path_val))
+        if (!gjs_object_require_property(context, object, "importer", "searchPath", &search_path_val))
             return JS_FALSE;
 
         if (!JSVAL_IS_OBJECT(search_path_val)) {
@@ -1191,7 +1191,7 @@ gjs_define_root_importer(JSContext   *context,
     load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
 
     if (!gjs_object_require_property(load_context,
-                                     JS_GetGlobalObject(load_context),
+                                     JS_GetGlobalObject(load_context), "global object",
                                      "imports", &value) ||
         !JSVAL_IS_OBJECT(value)) {
         gjs_debug(GJS_DEBUG_IMPORTER, "Root importer did not exist, couldn't get from load context; must create it");

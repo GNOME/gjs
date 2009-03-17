@@ -114,6 +114,7 @@ gboolean    gjs_object_get_property          (JSContext       *context,
                                               jsval           *value_p);
 gboolean    gjs_object_require_property      (JSContext       *context,
                                               JSObject        *obj,
+                                              const char      *obj_description,
                                               const char      *property_name,
                                               jsval           *value_p);
 JSObject *  gjs_init_class_dynamic           (JSContext       *context,
