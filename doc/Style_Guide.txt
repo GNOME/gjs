@@ -29,8 +29,13 @@ const GLib = imports.gi.GLib;
 Always use one of "const", "var", or "let" when defining a variable. Always use "let" when block scope is intended; in particular, inside for() and while() loops, let is almost always correct.
 
 <pre>
+// Iterating over an array
 for (let i = 0; i < 10; ++i) {
   let foo = bar(i);
+}
+// Iterating over an object's properties
+for (let prop in someobj) {
+  ...
 }
 </pre>
 
