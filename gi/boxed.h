@@ -32,26 +32,31 @@
 
 G_BEGIN_DECLS
 
+typedef enum {
+    GJS_BOXED_CREATION_NONE    =  0,
+    GJS_BOXED_CREATION_NO_COPY = (1 << 0)
+} GjsBoxedCreationFlags;
+
 /* Hack for now... why doesn't gobject-introspection have this? */
 typedef GIStructInfo GIBoxedInfo;
 
-JSBool    gjs_define_boxed_class       (JSContext    *context,
-                                        JSObject     *in_object,
-                                        GIBoxedInfo  *info,
-                                        JSObject    **constructor_p,
-                                        JSObject    **prototype_p);
-JSObject* gjs_lookup_boxed_constructor (JSContext    *context,
-                                        GIBoxedInfo  *info);
-JSObject* gjs_lookup_boxed_prototype   (JSContext    *context,
-                                        GIBoxedInfo  *info);
-JSClass*  gjs_lookup_boxed_class       (JSContext    *context,
-                                        GIBoxedInfo  *info);
-void*     gjs_c_struct_from_boxed      (JSContext    *context,
-                                        JSObject     *obj);
-JSObject* gjs_boxed_from_c_struct      (JSContext    *context,
-                                        GIStructInfo *info,
-                                        void         *gboxed,
-                                        gboolean      no_copy);
+JSBool    gjs_define_boxed_class       (JSContext             *context,
+                                        JSObject              *in_object,
+                                        GIBoxedInfo           *info,
+                                        JSObject             **constructor_p,
+                                        JSObject             **prototype_p);
+JSObject* gjs_lookup_boxed_constructor (JSContext             *context,
+                                        GIBoxedInfo           *info);
+JSObject* gjs_lookup_boxed_prototype   (JSContext             *context,
+                                        GIBoxedInfo           *info);
+JSClass*  gjs_lookup_boxed_class       (JSContext             *context,
+                                        GIBoxedInfo           *info);
+void*     gjs_c_struct_from_boxed      (JSContext             *context,
+                                        JSObject              *obj);
+JSObject* gjs_boxed_from_c_struct      (JSContext             *context,
+                                        GIStructInfo          *info,
+                                        void                  *gboxed,
+                                        GjsBoxedCreationFlags  flags);
 
 G_END_DECLS
 

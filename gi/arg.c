@@ -933,7 +933,8 @@ gjs_value_from_g_argument (JSContext  *context,
 
             if (symbol_type == GI_INFO_TYPE_STRUCT || symbol_type == GI_INFO_TYPE_BOXED) {
                 JSObject *obj;
-                obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)symbol_info, arg->v_pointer, FALSE);
+                obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)symbol_info, arg->v_pointer,
+                                              GJS_BOXED_CREATION_NONE);
                 if (obj)
                     value = OBJECT_TO_JSVAL(obj);
 

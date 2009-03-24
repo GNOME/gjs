@@ -561,11 +561,13 @@ gjs_value_from_g_value_internal(JSContext    *context,
         obj = gjs_object_from_g_object(context, gobj);
         *value_p = OBJECT_TO_JSVAL(obj);
     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
+        GjsBoxedCreationFlags boxed_flags;
         GIBaseInfo *info;
         void *gboxed;
         JSObject *obj;
 
         gboxed = g_value_get_boxed(gvalue);
+        boxed_flags = GJS_BOXED_CREATION_NONE;
 
         /* The only way to differentiate unions and structs is from
          * their g-i info as both GBoxed */
@@ -581,7 +583,9 @@ gjs_value_from_g_value_internal(JSContext    *context,
         switch (g_base_info_get_type(info)) {
         case GI_INFO_TYPE_BOXED:
         case GI_INFO_TYPE_STRUCT:
-            obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)info, gboxed, no_copy);
+            if (no_copy)
+                boxed_flags |= GJS_BOXED_CREATION_NO_COPY;
+            obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)info, gboxed, boxed_flags);
             break;
         case GI_INFO_TYPE_UNION:
             obj = gjs_union_from_c_union(context, (GIUnionInfo *)info, gboxed);

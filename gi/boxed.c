@@ -1220,10 +1220,10 @@ gjs_define_boxed_class(JSContext    *context,
 }
 
 JSObject*
-gjs_boxed_from_c_struct(JSContext    *context,
-                        GIStructInfo *info,
-                        void         *gboxed,
-                        gboolean      no_copy)
+gjs_boxed_from_c_struct(JSContext             *context,
+                        GIStructInfo          *info,
+                        void                  *gboxed,
+                        GjsBoxedCreationFlags  flags)
 {
     JSObject *proto;
 
@@ -1240,7 +1240,7 @@ gjs_boxed_from_c_struct(JSContext    *context,
     unthreadsafe_template_for_constructor.info = info;
     unthreadsafe_template_for_constructor.gboxed = gboxed;
     unthreadsafe_template_for_constructor.parent_jsval = JSVAL_NULL;
-    unthreadsafe_template_for_constructor.no_copy = no_copy;
+    unthreadsafe_template_for_constructor.no_copy = (flags & GJS_BOXED_CREATION_NO_COPY) != 0;
 
     return gjs_construct_object_dynamic(context, proto,
                                         0, NULL);
