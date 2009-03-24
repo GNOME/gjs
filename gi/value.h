@@ -30,19 +30,22 @@
 
 G_BEGIN_DECLS
 
-JSBool     gjs_value_to_g_value      (JSContext    *context,
-                                      jsval         value,
-                                      GValue       *gvalue);
-JSBool     gjs_value_from_g_value    (JSContext    *context,
-                                      jsval        *value_p,
-                                      const GValue *gvalue);
-GClosure*  gjs_closure_new_marshaled (JSContext    *context,
-                                      JSObject     *callable,
-                                      const char   *description);
-GClosure*  gjs_closure_new_for_signal(JSContext    *context,
-                                      JSObject     *callable,
-                                      const char   *description,
-                                      guint         signal_id);
+JSBool     gjs_value_to_g_value         (JSContext    *context,
+                                         jsval         value,
+                                         GValue       *gvalue);
+JSBool     gjs_value_to_g_value_no_copy (JSContext    *context,
+                                         jsval         value,
+                                         GValue       *gvalue);
+JSBool     gjs_value_from_g_value       (JSContext    *context,
+                                         jsval        *value_p,
+                                         const GValue *gvalue);
+GClosure*  gjs_closure_new_marshaled    (JSContext    *context,
+                                         JSObject     *callable,
+                                         const char   *description);
+GClosure*  gjs_closure_new_for_signal   (JSContext    *context,
+                                         JSObject     *callable,
+                                         const char   *description,
+                                         guint         signal_id);
 
 G_END_DECLS
 

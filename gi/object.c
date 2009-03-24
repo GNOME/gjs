@@ -1088,11 +1088,13 @@ emit_func(JSContext *context,
         value = &instance_and_args[i + 1];
 
         g_value_init(value, signal_query.param_types[i] & ~G_SIGNAL_TYPE_STATIC_SCOPE);
-        if (!gjs_value_to_g_value(context, argv[i+1],
-                                     value)) {
-            failed = TRUE;
+        if (signal_query.param_types[i] & G_SIGNAL_TYPE_STATIC_SCOPE)
+            failed = !gjs_value_to_g_value_no_copy(context, argv[i+1], value);
+        else
+            failed = !gjs_value_to_g_value(context, argv[i+1], value);
+
+        if (failed)
             break;
-        }
     }
 
     if (!failed) {

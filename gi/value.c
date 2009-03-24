@@ -189,10 +189,11 @@ gjs_value_guess_g_type(jsval value)
     return G_TYPE_INVALID;
 }
 
-JSBool
-gjs_value_to_g_value(JSContext    *context,
-                     jsval         value,
-                     GValue       *gvalue)
+static JSBool
+gjs_value_to_g_value_internal(JSContext    *context,
+                              jsval         value,
+                              GValue       *gvalue,
+                              gboolean      no_copy)
 {
     GType gtype;
 
@@ -383,7 +384,10 @@ gjs_value_to_g_value(JSContext    *context,
             return JS_FALSE;
         }
 
-        g_value_set_boxed(gvalue, gboxed);
+        if (no_copy)
+            g_value_set_static_boxed(gvalue, gboxed);
+        else
+            g_value_set_boxed(gvalue, gboxed);
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {
         if (JSVAL_IS_INT(value)) {
             GEnumValue *v;
@@ -477,6 +481,22 @@ gjs_value_to_g_value(JSContext    *context,
     }
 
     return JS_TRUE;
+}
+
+JSBool
+gjs_value_to_g_value(JSContext    *context,
+                     jsval         value,
+                     GValue       *gvalue)
+{
+    return gjs_value_to_g_value_internal(context, value, gvalue, FALSE);
+}
+
+JSBool
+gjs_value_to_g_value_no_copy(JSContext    *context,
+                             jsval         value,
+                             GValue       *gvalue)
+{
+    return gjs_value_to_g_value_internal(context, value, gvalue, TRUE);
 }
 
 static JSBool
