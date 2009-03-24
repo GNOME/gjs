@@ -889,6 +889,7 @@ real_connect_func(JSContext *context,
     gulong id;
     guint signal_id;
     const char *signal_name;
+    GQuark signal_detail;
 
     *retval = INT_TO_JSVAL(0);
 
@@ -922,11 +923,14 @@ real_connect_func(JSContext *context,
         return JS_FALSE;
     }
 
-    signal_id = g_signal_lookup(signal_name, G_TYPE_FROM_INSTANCE(priv->gobj));
-    if (signal_id == 0) {
-        gjs_throw(context, "No signal %s on object of type %s",
-                  signal_name,
-                  g_base_info_get_name((GIBaseInfo*) priv->info));
+    if (!g_signal_parse_name(signal_name,
+                             G_OBJECT_TYPE(priv->gobj),
+                             &signal_id,
+                             &signal_detail,
+                             FALSE)) {
+        gjs_throw(context, "No signal '%s' on object '%s'",
+                     signal_name,
+                     g_type_name(G_OBJECT_TYPE(priv->gobj)));
         return JS_FALSE;
     }
 
