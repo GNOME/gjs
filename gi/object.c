@@ -887,6 +887,7 @@ real_connect_func(JSContext *context,
     ObjectInstance *priv;
     GClosure *closure;
     gulong id;
+    guint signal_id;
     const char *signal_name;
 
     *retval = INT_TO_JSVAL(0);
@@ -922,6 +923,15 @@ real_connect_func(JSContext *context,
 
     signal_name = gjs_string_get_ascii_checked(context, argv[0]);
     if (signal_name == NULL) {
+        g_closure_sink(closure);
+        return JS_FALSE;
+    }
+
+    signal_id = g_signal_lookup(signal_name, G_TYPE_FROM_INSTANCE(priv->gobj));
+    if (signal_id == 0) {
+        gjs_throw(context, "No signal %s on object of type %s",
+                  signal_name,
+                  g_base_info_get_name((GIBaseInfo*) priv->info));
         g_closure_sink(closure);
         return JS_FALSE;
     }

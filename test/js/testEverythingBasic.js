@@ -183,6 +183,15 @@ function testSignal() {
     assertEquals('disconnected handler not called', 1, handlerCounter);
 }
 
+function testInvalidSignal() {
+    let o = new Everything.TestObj();
+
+    assertRaises('connect to invalid signal',
+                 function() { o.connect('invalid-signal', function(o) {}); });
+    assertRaises('emit invalid signal',
+                 function() { o.emit('invalid-signal'); });
+}
+
 function testSignalWithStaticScopeArg() {
     let o = new Everything.TestObj();
     let b = new Everything.TestSimpleBoxedA({ some_int: 42,
