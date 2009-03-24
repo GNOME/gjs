@@ -36,6 +36,11 @@
 
 #include <girepository.h>
 
+static JSBool gjs_value_from_g_value_internal(JSContext    *context,
+                                              jsval        *value_p,
+                                              const GValue *gvalue,
+                                              gboolean      no_copy);
+
 static void
 closure_marshal(GClosure        *closure,
                 GValue          *return_value,
@@ -49,6 +54,7 @@ closure_marshal(GClosure        *closure,
     jsval *argv;
     jsval rval;
     int i;
+    GSignalQuery signal_query = { 0, };
 
     gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
                       "Marshal closure %p",
@@ -68,9 +74,38 @@ closure_marshal(GClosure        *closure,
     gjs_root_value_locations(context, argv, argc);
     JS_AddRoot(context, &rval);
 
+    if (marshal_data) {
+        /* we are used for a signal handler */
+        guint signal_id;
+
+        signal_id = GPOINTER_TO_UINT(marshal_data);
+
+        g_signal_query(signal_id, &signal_query);
+
+        if (!signal_query.signal_id) {
+            gjs_debug(GJS_DEBUG_GCLOSURE,
+                      "Signal handler being called on invalid signal");
+            goto cleanup;
+        }
+
+        if (signal_query.n_params + 1 != n_param_values) {
+            gjs_debug(GJS_DEBUG_GCLOSURE,
+                      "Signal handler being called with wrong number of parameters");
+            goto cleanup;
+        }
+    }
+
     for (i = 0; i < argc; ++i) {
         const GValue *gval = &param_values[i];
-        if (!gjs_value_from_g_value(context, &argv[i], gval)) {
+        gboolean no_copy;
+
+        no_copy = FALSE;
+
+        if (i >= 1 && signal_query.signal_id) {
+            no_copy = signal_query.param_types[i - 1] & G_SIGNAL_TYPE_STATIC_SCOPE;
+        }
+
+        if (!gjs_value_from_g_value_internal(context, &argv[i], gval, no_copy)) {
             gjs_debug(GJS_DEBUG_GCLOSURE,
                       "Unable to convert arg %d in order to invoke closure",
                       i);
@@ -98,6 +133,21 @@ closure_marshal(GClosure        *closure,
  cleanup:
     gjs_unroot_value_locations(context, argv, argc);
     JS_RemoveRoot(context, &rval);
+}
+
+GClosure*
+gjs_closure_new_for_signal(JSContext  *context,
+                           JSObject   *callable,
+                           const char *description,
+                           guint       signal_id)
+{
+    GClosure *closure;
+
+    closure = gjs_closure_new(context, callable, description);
+
+    g_closure_set_meta_marshal(closure, GUINT_TO_POINTER(signal_id), closure_marshal);
+
+    return closure;
 }
 
 GClosure*
@@ -429,10 +479,11 @@ gjs_value_to_g_value(JSContext    *context,
     return JS_TRUE;
 }
 
-JSBool
-gjs_value_from_g_value(JSContext    *context,
-                       jsval        *value_p,
-                       const GValue *gvalue)
+static JSBool
+gjs_value_from_g_value_internal(JSContext    *context,
+                                jsval        *value_p,
+                                const GValue *gvalue,
+                                gboolean      no_copy)
 {
     GType gtype;
 
@@ -510,7 +561,7 @@ gjs_value_from_g_value(JSContext    *context,
         switch (g_base_info_get_type(info)) {
         case GI_INFO_TYPE_BOXED:
         case GI_INFO_TYPE_STRUCT:
-            obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)info, gboxed, FALSE);
+            obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)info, gboxed, no_copy);
             break;
         case GI_INFO_TYPE_UNION:
             obj = gjs_union_from_c_union(context, (GIUnionInfo *)info, gboxed);
@@ -569,4 +620,12 @@ gjs_value_from_g_value(JSContext    *context,
     }
 
     return JS_TRUE;
+}
+
+JSBool
+gjs_value_from_g_value(JSContext    *context,
+                       jsval        *value_p,
+                       const GValue *gvalue)
+{
+    return gjs_value_from_g_value_internal(context, value_p, gvalue, FALSE);
 }

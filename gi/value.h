@@ -39,6 +39,10 @@ JSBool     gjs_value_from_g_value    (JSContext    *context,
 GClosure*  gjs_closure_new_marshaled (JSContext    *context,
                                       JSObject     *callable,
                                       const char   *description);
+GClosure*  gjs_closure_new_for_signal(JSContext    *context,
+                                      JSObject     *callable,
+                                      const char   *description,
+                                      guint         signal_id);
 
 G_END_DECLS
 

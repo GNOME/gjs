@@ -917,13 +917,8 @@ real_connect_func(JSContext *context,
         return JS_FALSE;
     }
 
-    closure = gjs_closure_new_marshaled(context, JSVAL_TO_OBJECT(argv[1]), "signal callback");
-    if (closure == NULL)
-        return JS_FALSE;
-
     signal_name = gjs_string_get_ascii_checked(context, argv[0]);
     if (signal_name == NULL) {
-        g_closure_sink(closure);
         return JS_FALSE;
     }
 
@@ -932,9 +927,12 @@ real_connect_func(JSContext *context,
         gjs_throw(context, "No signal %s on object of type %s",
                   signal_name,
                   g_base_info_get_name((GIBaseInfo*) priv->info));
-        g_closure_sink(closure);
         return JS_FALSE;
     }
+
+    closure = gjs_closure_new_for_signal(context, JSVAL_TO_OBJECT(argv[1]), "signal callback", signal_id);
+    if (closure == NULL)
+        return JS_FALSE;
 
     id = g_signal_connect_closure(priv->gobj,
                                   signal_name,
