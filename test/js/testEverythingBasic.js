@@ -164,4 +164,23 @@ function testEnumParam() {
    let e = Everything.test_enum_param(Everything.TestEnum.VALUE1);
    assertEquals('Enum parameter', 'value1', e);
 }
+
+function testSignal() {
+    let handlerCounter = 0;
+    let o = new Everything.TestObj();
+    let theObject = null;
+
+    let handlerId = o.connect('test', function(signalObject) {
+                                          handlerCounter ++;
+                                          theObject = signalObject;
+                                          o.disconnect(handlerId);
+                                      });
+
+    o.emit('test');
+    assertEquals('handler callled', 1, handlerCounter);
+    assertEquals('Signal handlers gets called with right object', o, theObject);
+    o.emit('test');
+    assertEquals('disconnected handler not called', 1, handlerCounter);
+}
+
 gjstestRun();
