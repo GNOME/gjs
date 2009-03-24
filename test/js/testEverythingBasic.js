@@ -183,4 +183,19 @@ function testSignal() {
     assertEquals('disconnected handler not called', 1, handlerCounter);
 }
 
+function testSignalWithStaticScopeArg() {
+    let o = new Everything.TestObj();
+    let b = new Everything.TestSimpleBoxedA({ some_int: 42,
+                                              some_int8: 43,
+                                              some_double: 42.5,
+                                              some_enum: Everything.TestEnum.VALUE3 });
+
+    o.connect('test-with-static-scope-arg', function(signalObject, signalArg) {
+                                                signalArg.some_int = 44;
+                                            });
+
+    o.emit('test-with-static-scope-arg', b);
+    assertEquals('signal handler was passed arg as reference', 44, b.some_int);
+}
+
 gjstestRun();
