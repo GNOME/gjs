@@ -510,7 +510,7 @@ gjs_value_from_g_value(JSContext    *context,
         switch (g_base_info_get_type(info)) {
         case GI_INFO_TYPE_BOXED:
         case GI_INFO_TYPE_STRUCT:
-            obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)info, gboxed);
+            obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)info, gboxed, FALSE);
             break;
         case GI_INFO_TYPE_UNION:
             obj = gjs_union_from_c_union(context, (GIUnionInfo *)info, gboxed);

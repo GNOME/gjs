@@ -43,13 +43,15 @@ typedef struct {
     void *gboxed; /* NULL if we are the prototype and not an instance */
     guint can_allocate_directly : 1;
     guint allocated_directly : 1;
-    guint has_parent : 1; /* If set, this boxed doesn't have an independent allocation */
+    guint not_owning_gboxed : 1; /* if set, the JS wrapper does not own
+                                    the reference to the C gboxed */
 } Boxed;
 
 typedef struct {
     GIBoxedInfo *info;
     void *gboxed;
     jsval parent_jsval;
+    gboolean no_copy;
 } BoxedConstructInfo;
 
 static gboolean struct_is_simple(GIStructInfo *info);
@@ -59,7 +61,7 @@ static JSBool boxed_set_field_from_value(JSContext   *context,
                                          GIFieldInfo *field_info,
                                          jsval        value);
 
-static BoxedConstructInfo unthreadsafe_template_for_constructor = { NULL, NULL, JSVAL_NULL };
+static BoxedConstructInfo unthreadsafe_template_for_constructor = { NULL, NULL, JSVAL_NULL, FALSE };
 
 static struct JSClass gjs_boxed_class;
 
@@ -506,7 +508,7 @@ boxed_constructor(JSContext *context,
             /* A structure nested inside a parent object; doens't have an independent allocation */
 
             priv->gboxed = unthreadsafe_template_for_constructor.gboxed;
-            priv->has_parent = TRUE;
+            priv->not_owning_gboxed = TRUE;
 
             /* We never actually read the reserved slot, but we put the parent object
              * into it to hold onto the parent object.
@@ -515,6 +517,14 @@ boxed_constructor(JSContext *context,
                                unthreadsafe_template_for_constructor.parent_jsval);
 
             unthreadsafe_template_for_constructor.parent_jsval = JSVAL_NULL;
+            unthreadsafe_template_for_constructor.gboxed = NULL;
+        } else if (unthreadsafe_template_for_constructor.no_copy) {
+            /* we need to create a JS Boxed which references the
+             * original C struct, not a copy of it. Used for
+             * G_SIGNAL_TYPE_STATIC_SCOPE
+             */
+            priv->gboxed = unthreadsafe_template_for_constructor.gboxed;
+            priv->not_owning_gboxed = TRUE;
             unthreadsafe_template_for_constructor.gboxed = NULL;
         } else {
             GType gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
@@ -556,7 +566,7 @@ boxed_finalize(JSContext *context,
     if (priv == NULL)
         return; /* wrong class? */
 
-    if (priv->gboxed && !priv->has_parent) {
+    if (priv->gboxed && !priv->not_owning_gboxed) {
         if (priv->allocated_directly) {
             g_slice_free1(g_struct_info_get_size (priv->info), priv->gboxed);
         } else {
@@ -1212,7 +1222,8 @@ gjs_define_boxed_class(JSContext    *context,
 JSObject*
 gjs_boxed_from_c_struct(JSContext    *context,
                         GIStructInfo *info,
-                        void         *gboxed)
+                        void         *gboxed,
+                        gboolean      no_copy)
 {
     JSObject *proto;
 
@@ -1229,6 +1240,7 @@ gjs_boxed_from_c_struct(JSContext    *context,
     unthreadsafe_template_for_constructor.info = info;
     unthreadsafe_template_for_constructor.gboxed = gboxed;
     unthreadsafe_template_for_constructor.parent_jsval = JSVAL_NULL;
+    unthreadsafe_template_for_constructor.no_copy = no_copy;
 
     return gjs_construct_object_dynamic(context, proto,
                                         0, NULL);

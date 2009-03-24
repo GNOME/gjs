@@ -50,7 +50,8 @@ void*     gjs_c_struct_from_boxed      (JSContext    *context,
                                         JSObject     *obj);
 JSObject* gjs_boxed_from_c_struct      (JSContext    *context,
                                         GIStructInfo *info,
-                                        void         *gboxed);
+                                        void         *gboxed,
+                                        gboolean      no_copy);
 
 G_END_DECLS
 
