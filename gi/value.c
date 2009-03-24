@@ -102,7 +102,7 @@ closure_marshal(GClosure        *closure,
         no_copy = FALSE;
 
         if (i >= 1 && signal_query.signal_id) {
-            no_copy = signal_query.param_types[i - 1] & G_SIGNAL_TYPE_STATIC_SCOPE;
+            no_copy = (signal_query.param_types[i - 1] & G_SIGNAL_TYPE_STATIC_SCOPE) != 0;
         }
 
         if (!gjs_value_from_g_value_internal(context, &argv[i], gval, no_copy)) {
