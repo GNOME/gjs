@@ -329,7 +329,7 @@ function easeOutInSine (t, b, c, d, p_params) {
  * @return              The correct value.
  */
 function easeInExpo (t, b, c, d, p_params) {
-    return (t==0) ? b : c * Math.pow(2, 10 * (t/d - 1)) + b - c * 0.001;
+    return (t<=0) ? b : c * Math.pow(2, 10 * (t/d - 1)) + b;
 }
 
 /**
@@ -342,7 +342,7 @@ function easeInExpo (t, b, c, d, p_params) {
  * @return              The correct value.
  */
 function easeOutExpo (t, b, c, d, p_params) {
-    return (t==d) ? b+c : c * 1.001 * (-Math.pow(2, -10 * t/d) + 1) + b;
+    return (t>=d) ? b+c : c * (-Math.pow(2, -10 * t/d) + 1) + b;
 }
 
 /**
@@ -355,10 +355,10 @@ function easeOutExpo (t, b, c, d, p_params) {
  * @return              The correct value.
  */
 function easeInOutExpo (t, b, c, d, p_params) {
-    if (t==0) return b;
-    if (t==d) return b+c;
-    if ((t/=d/2) < 1) return c/2 * Math.pow(2, 10 * (t - 1)) + b - c * 0.0005;
-    return c/2 * 1.0005 * (-Math.pow(2, -10 * --t) + 2) + b;
+    if (t<=0) return b;
+    if (t>=d) return b+c;
+    if ((t/=d/2) < 1) return c/2 * Math.pow(2, 10 * (t - 1)) + b;
+    return c/2 * (-Math.pow(2, -10 * --t) + 2) + b;
 }
 
 /**
@@ -441,8 +441,8 @@ function easeOutInCirc (t, b, c, d, p_params) {
  * @return              The correct value.
  */
 function easeInElastic (t, b, c, d, p_params) {
-    if (t==0) return b;
-    if ((t/=d)==1) return b+c;
+    if (t<=0) return b;
+    if ((t/=d)>=1) return b+c;
     var p = !Boolean(p_params) || isNaN(p_params.period) ? d*.3 : p_params.period;
     var s;
     var a = !Boolean(p_params) || isNaN(p_params.amplitude) ? 0 : p_params.amplitude;
@@ -467,8 +467,8 @@ function easeInElastic (t, b, c, d, p_params) {
  * @return              The correct value.
  */
 function easeOutElastic (t, b, c, d, p_params) {
-    if (t==0) return b;
-    if ((t/=d)==1) return b+c;
+    if (t<=0) return b;
+    if ((t/=d)>=1) return b+c;
     var p = !Boolean(p_params) || isNaN(p_params.period) ? d*.3 : p_params.period;
     var s;
     var a = !Boolean(p_params) || isNaN(p_params.amplitude) ? 0 : p_params.amplitude;
@@ -493,8 +493,8 @@ function easeOutElastic (t, b, c, d, p_params) {
  * @return              The correct value.
  */
 function easeInOutElastic (t, b, c, d, p_params) {
-    if (t==0) return b;
-    if ((t/=d/2)==2) return b+c;
+    if (t<=0) return b;
+    if ((t/=d/2)>=2) return b+c;
     var p = !Boolean(p_params) || isNaN(p_params.period) ? d*(.3*1.5) : p_params.period;
     var s;
     var a = !Boolean(p_params) || isNaN(p_params.amplitude) ? 0 : p_params.amplitude;
