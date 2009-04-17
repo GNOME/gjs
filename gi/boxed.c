@@ -1232,7 +1232,7 @@ gjs_boxed_from_c_struct(JSContext             *context,
 
     gjs_debug_marshal(GJS_DEBUG_GBOXED,
                       "Wrapping struct %s %p with JSObject",
-                      g_base_info_get_name((GBaseInfo *)info), gboxed);
+                      g_base_info_get_name((GIBaseInfo *)info), gboxed);
 
     proto = gjs_lookup_boxed_prototype(context, info);
 

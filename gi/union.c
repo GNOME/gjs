@@ -25,6 +25,9 @@
 
 #include <string.h>
 
+/* include first for logging related #define used in repo.h */
+#include <util/log.h>
+
 #include "union.h"
 #include "arg.h"
 #include "object.h"
@@ -32,7 +35,6 @@
 #include "repo.h"
 #include "function.h"
 
-#include <util/log.h>
 
 #include <jsapi.h>
 
@@ -543,7 +545,7 @@ gjs_union_from_c_union(JSContext    *context,
 
     gjs_debug_marshal(GJS_DEBUG_GBOXED,
                       "Wrapping union %s %p with JSObject",
-                      g_base_info_get_name((GBaseInfo *)info), gboxed);
+                      g_base_info_get_name((GIBaseInfo *)info), gboxed);
 
     proto = gjs_lookup_union_prototype(context, (GIUnionInfo*) info);
 
