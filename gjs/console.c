@@ -48,6 +48,10 @@ main(int argc, char **argv)
     int code;
 
     context = g_option_context_new(NULL);
+
+    /* pass unknown through to the JS script */
+    g_option_context_set_ignore_unknown_options(context, TRUE);
+
     g_option_context_add_main_entries(context, entries, GETTEXT_PACKAGE);
     if (!g_option_context_parse(context, &argc, &argv, &error))
         g_error("option parsing failed: %s", error->message);
