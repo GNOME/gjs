@@ -544,7 +544,7 @@ function conformExport(object, iface) {
         let missing = [];
         for (let i = 0; i < properties.length; ++i) {
             if (!(properties[i].name in object)) {
-                missing += properties[i];
+                missing.push(properties[i]);
             }
         }
 
