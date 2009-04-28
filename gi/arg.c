@@ -240,6 +240,43 @@ gjs_array_to_strv(JSContext   *context,
 }
 
 static JSBool
+gjs_string_to_intarray(JSContext   *context,
+                       jsval        string_val,
+                       GITypeInfo  *param_info,
+                       void       **arr_p)
+{
+    GITypeTag element_type;
+    char *result;
+    guint16 *result16;
+    gsize length;
+
+    element_type = g_type_info_get_tag(param_info);
+    element_type = normalize_int_types(element_type);
+
+    switch (element_type) {
+    case GI_TYPE_TAG_INT8:
+    case GI_TYPE_TAG_UINT8:
+        if (!gjs_string_get_binary_data(context, string_val,
+                                        &result, &length))
+            return JS_FALSE;
+        *arr_p = result;
+        return JS_TRUE;
+
+    case GI_TYPE_TAG_INT16:
+    case GI_TYPE_TAG_UINT16:
+        if (!gjs_string_get_uint16_data(context, string_val,
+                                        &result16, &length))
+            return JS_FALSE;
+        *arr_p = result16;
+        return JS_TRUE;
+
+    default:
+        // can't convert a string to this type.
+        return JS_FALSE;
+    }
+}
+
+static JSBool
 gjs_array_to_intarray(JSContext   *context,
                       jsval        array_value,
                       unsigned int length,
@@ -738,6 +775,22 @@ gjs_value_to_g_argument(JSContext      *context,
     case GI_TYPE_TAG_ARRAY:
         if (JSVAL_IS_NULL(value)) {
             arg->v_pointer = NULL;
+            if (!may_be_null) {
+                wrong = TRUE;
+                report_type_mismatch = TRUE;
+            }
+        } else if (JSVAL_IS_STRING(value)) {
+            /* Allow strings as int8/uint8/int16/uint16 arrays */
+            GITypeInfo *param_info;
+
+            param_info = g_type_info_get_param_type(type_info, 0);
+            g_assert(param_info != NULL);
+
+            if (!gjs_string_to_intarray(context, value, param_info,
+                                        &arg->v_pointer))
+                wrong = TRUE;
+
+            g_base_info_unref((GIBaseInfo*) param_info);
         } else if (!JSVAL_IS_OBJECT(value)) {
             wrong = TRUE;
             report_type_mismatch = TRUE;

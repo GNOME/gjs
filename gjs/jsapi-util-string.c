@@ -329,6 +329,40 @@ gjs_string_from_binary_data(JSContext       *context,
 }
 
 /**
+ * gjs_string_get_uint16_data:
+ * @context: js context
+ * @value: a jsval
+ * @data_p: address to return allocated data buffer
+ * @len_p: address to return length of data (number of 16-bit integers)
+ *
+ * Get the binary data (as a sequence of 16-bit integers) in the JSString
+ * contained in @value.
+ * Throws a JS exception if value is not a string.
+ *
+ * Returns: JS_FALSE if exception thrown
+ **/
+JSBool
+gjs_string_get_uint16_data(JSContext       *context,
+                           jsval            value,
+                           guint16        **data_p,
+                           gsize           *len_p)
+{
+    jschar *js_data;
+
+    if (!JSVAL_IS_STRING(value)) {
+        gjs_throw(context,
+                  "Value is not a string, can't return binary data from it");
+        return JS_FALSE;
+    }
+
+    js_data = JS_GetStringChars(JSVAL_TO_STRING(value));
+    *len_p = JS_GetStringLength(JSVAL_TO_STRING(value));
+    *data_p = g_memdup(js_data, sizeof(*js_data)*(*len_p));
+
+    return JS_TRUE;
+}
+
+/**
  * gjs_get_string_id:
  * @id_val: a jsval that is an object hash key (could be an int or string)
  * @name_p place to store ASCII string version of key
