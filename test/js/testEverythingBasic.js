@@ -120,6 +120,8 @@ function testStrv() {
     assertTrue(Everything.test_strv_in(['1', '2', '3']));
     // Second two are deliberately not strings
     assertRaises(function() { Everything.test_strv_in(['1', 2, 3]); });
+
+    // FIXME: Everything.test_strv_out not implemented.
 }
 
 function testUtf8() {
@@ -204,6 +206,20 @@ function testGSListIn() {
     Everything.test_gslist_nothing_in2(STR_LIST);
     Everything.test_gslist_container_in(STR_LIST);
     Everything.test_gslist_everything_in(STR_LIST);
+}
+
+/* Array tests */
+function testArrayIn() {
+    assertEquals(10, Everything.test_array_int_in(4, [1,2,3,4]));
+    assertEquals(10, Everything.test_array_gint8_in(4, [1,2,3,4]));
+    assertEquals(10, Everything.test_array_gint16_in(4, [1,2,3,4]));
+    assertEquals(10, Everything.test_array_gint32_in(4, [1,2,3,4]));
+    // FIXME: arrays of int64 are unimplemented
+    //assertEquals(10, Everything.test_array_gint64_in(4, [1,2,3,4]));
+}
+
+function testArrayOut() {
+    // FIXME: test_array_int_full_out and test_array_int_none_out unimplemented
 }
 
 /* Enums */

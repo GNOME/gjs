@@ -100,6 +100,43 @@ _gjs_enum_value_is_valid(JSContext  *context,
     return found;
 }
 
+/* Return the proper GI int type for the size and signedness. */
+static inline GITypeTag
+type_tag_from_size(int intsize, gboolean is_signed)
+{
+    /* Constant folding should be able to reduce this to a single constant,
+     * given constant inputs. */
+    switch (intsize) {
+    case 1: return (is_signed) ? GI_TYPE_TAG_INT8 : GI_TYPE_TAG_UINT8;
+    case 2: return (is_signed) ? GI_TYPE_TAG_INT16 : GI_TYPE_TAG_UINT16;
+    case 4: return (is_signed) ? GI_TYPE_TAG_INT32 : GI_TYPE_TAG_UINT32;
+    case 8: return (is_signed) ? GI_TYPE_TAG_INT64 : GI_TYPE_TAG_UINT64;
+    default: g_assert_not_reached ();
+    }
+}
+
+/** Convert machine-specific integer type tags such as 'int' and 'long'
+ *  into machine-independent explicitly-sized type tags such as 'int32'. */
+static GITypeTag
+normalize_int_types(GITypeTag type) {
+    enum { UNSIGNED=FALSE, SIGNED=TRUE };
+    switch (type) {
+#define INT_TYPE(tag, ty, sign) \
+    case GI_TYPE_TAG_##tag: return type_tag_from_size(sizeof(ty), (sign));
+        INT_TYPE(INT, int, SIGNED);
+        INT_TYPE(UINT, unsigned int, UNSIGNED);
+        INT_TYPE(LONG, long, SIGNED);
+        INT_TYPE(ULONG, unsigned long, UNSIGNED);
+        INT_TYPE(SSIZE, ssize_t, SIGNED);
+        INT_TYPE(SIZE, size_t, UNSIGNED);
+        INT_TYPE(TIME_T, time_t, SIGNED); /* time_t is signed */
+        INT_TYPE(GTYPE, GType, UNSIGNED);
+#undef INT_TYPE
+    default:
+        return type; /* not a weird int type, return untouched */
+    }
+}
+
 static JSBool
 gjs_array_to_g_list(JSContext   *context,
                     jsval        array_value,
@@ -113,9 +150,6 @@ gjs_array_to_g_list(JSContext   *context,
     GList *list;
     GSList *slist;
     jsval elem;
-    GITypeTag param_tag;
-
-    param_tag = g_type_info_get_tag(param_info);
 
     list = NULL;
     slist = NULL;
@@ -206,19 +240,98 @@ gjs_array_to_strv(JSContext   *context,
 }
 
 static JSBool
+gjs_array_to_intarray(JSContext   *context,
+                      jsval        array_value,
+                      unsigned int length,
+                      void       **arr_p,
+                      unsigned intsize,
+                      gboolean is_signed)
+{
+    /* nasty union types in an attempt to unify the various int types */
+    union { guint32 u; gint32 i; } intval;
+    union { guint8 u8[0]; guint16 u16[0]; guint32 u32[0]; } *result;
+    unsigned i;
+
+    result = g_malloc0(length * intsize);
+
+    for (i = 0; i < length; ++i) {
+        jsval elem;
+        JSBool success;
+
+        elem = JSVAL_VOID;
+        if (!JS_GetElement(context, JSVAL_TO_OBJECT(array_value),
+                           i, &elem)) {
+            g_free(result);
+            gjs_throw(context,
+                      "Missing array element %u",
+                      i);
+            return JS_FALSE;
+        }
+
+        /* do whatever sign extension is appropriate */
+        success = (is_signed) ?
+            JS_ValueToECMAInt32(context, elem, &(intval.i)) :
+            JS_ValueToECMAUint32(context, elem, &(intval.u));
+
+        if (!success) {
+            g_free(result);
+            gjs_throw(context,
+                      "Invalid element in string array");
+            return JS_FALSE;
+        }
+        /* Note that this is truncating assignment. */
+        switch (intsize) {
+        case 1:
+            result->u8[i] = (gint8) intval.u; break;
+        case 2:
+            result->u16[i] = (gint16) intval.u; break;
+        case 4:
+            result->u32[i] = (gint32) intval.u; break;
+        default:
+            g_assert_not_reached();
+        }
+    }
+
+    *arr_p = result;
+
+    return JS_TRUE;
+}
+
+static JSBool
 gjs_array_to_array(JSContext   *context,
                    jsval        array_value,
                    unsigned int length,
                    GITypeInfo  *param_info,
                    void       **arr_p)
 {
+    enum { UNSIGNED=FALSE, SIGNED=TRUE };
     GITypeTag element_type;
 
     element_type = g_type_info_get_tag(param_info);
+    element_type = normalize_int_types(element_type);
 
-    if (element_type == GI_TYPE_TAG_UTF8) {
+    switch (element_type) {
+    case GI_TYPE_TAG_UTF8:
         return gjs_array_to_strv (context, array_value, length, arr_p);
-    } else {
+    case GI_TYPE_TAG_UINT8:
+        return gjs_array_to_intarray
+            (context, array_value, length, arr_p, 1, UNSIGNED);
+    case GI_TYPE_TAG_INT8:
+        return gjs_array_to_intarray
+            (context, array_value, length, arr_p, 1, SIGNED);
+    case GI_TYPE_TAG_UINT16:
+        return gjs_array_to_intarray
+            (context, array_value, length, arr_p, 2, UNSIGNED);
+    case GI_TYPE_TAG_INT16:
+        return gjs_array_to_intarray
+            (context, array_value, length, arr_p, 2, SIGNED);
+    case GI_TYPE_TAG_UINT32:
+        return gjs_array_to_intarray
+            (context, array_value, length, arr_p, 4, UNSIGNED);
+    case GI_TYPE_TAG_INT32:
+        return gjs_array_to_intarray
+            (context, array_value, length, arr_p, 4, SIGNED);
+    default:
         gjs_throw(context,
                   "Unhandled array element type %d", element_type);
         return JS_FALSE;
@@ -259,6 +372,8 @@ gjs_value_to_g_argument(JSContext      *context,
     gboolean nullable_type;
 
     type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
+    if (type_tag != GI_TYPE_TAG_TIME_T) // we handle time_t as a non-int type
+        type_tag = normalize_int_types(type_tag);
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting jsval to GArgument %s",
@@ -313,21 +428,11 @@ gjs_value_to_g_argument(JSContext      *context,
         break;
     }
 
-#if (GLIB_SIZEOF_LONG == 4)
-    case GI_TYPE_TAG_LONG:
-    case GI_TYPE_TAG_SSIZE:
-#endif
-    case GI_TYPE_TAG_INT:
     case GI_TYPE_TAG_INT32:
         if (!JS_ValueToInt32(context, value, &arg->v_int))
             wrong = TRUE;
         break;
 
-#if (GLIB_SIZEOF_LONG == 4)
-    case GI_TYPE_TAG_ULONG:
-    case GI_TYPE_TAG_SIZE:
-#endif
-    case GI_TYPE_TAG_UINT:
     case GI_TYPE_TAG_UINT32: {
         gdouble i;
         if (!JS_ValueToNumber(context, value, &i))
@@ -338,10 +443,6 @@ gjs_value_to_g_argument(JSContext      *context,
         break;
     }
 
-#if (GLIB_SIZEOF_LONG == 8)
-    case GI_TYPE_TAG_LONG:
-    case GI_TYPE_TAG_SSIZE:
-#endif
     case GI_TYPE_TAG_INT64: {
         double v;
         if (!JS_ValueToNumber(context, value, &v))
@@ -352,10 +453,6 @@ gjs_value_to_g_argument(JSContext      *context,
     }
         break;
 
-#if (GLIB_SIZEOF_LONG == 8)
-    case GI_TYPE_TAG_ULONG:
-    case GI_TYPE_TAG_SIZE:
-#endif
     case GI_TYPE_TAG_UINT64: {
         double v;
         if (!JS_ValueToNumber(context, value, &v))
@@ -673,6 +770,16 @@ gjs_value_to_g_argument(JSContext      *context,
         }
         break;
 
+    case GI_TYPE_TAG_INT:
+    case GI_TYPE_TAG_UINT:
+    case GI_TYPE_TAG_LONG:
+    case GI_TYPE_TAG_ULONG:
+    case GI_TYPE_TAG_SIZE:
+    case GI_TYPE_TAG_SSIZE:
+    case GI_TYPE_TAG_GTYPE:
+        /* these types are converted by normalize_int_types */
+        g_assert_not_reached();
+
     default:
         gjs_debug(GJS_DEBUG_ERROR,
                   "Unhandled type %s for JavaScript to GArgument conversion",
@@ -754,9 +861,6 @@ gjs_array_from_g_list (JSContext  *context,
     jsval elem;
     GArgument arg;
     JSBool result;
-    GITypeTag param_tag;
-
-    param_tag = g_type_info_get_tag(param_info);
 
     obj = JS_NewArrayObject(context, 0, JSVAL_NULL);
     if (obj == NULL)
@@ -819,6 +923,8 @@ gjs_value_from_g_argument (JSContext  *context,
     GITypeTag type_tag;
 
     type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
+    if (type_tag != GI_TYPE_TAG_TIME_T) // we handle time_t as a non-int type
+        type_tag = normalize_int_types(type_tag);
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting GArgument %s to jsval",
@@ -835,33 +941,15 @@ gjs_value_from_g_argument (JSContext  *context,
         *value_p = BOOLEAN_TO_JSVAL(arg->v_int);
         break;
 
-#if (GLIB_SIZEOF_LONG == 4)
-    case GI_TYPE_TAG_LONG:
-    case GI_TYPE_TAG_SSIZE:
-#endif
-    case GI_TYPE_TAG_INT:
     case GI_TYPE_TAG_INT32:
         return JS_NewNumberValue(context, arg->v_int, value_p);
 
-#if (GLIB_SIZEOF_LONG == 4)
-    case GI_TYPE_TAG_ULONG:
-    case GI_TYPE_TAG_SIZE:
-#endif
-    case GI_TYPE_TAG_UINT:
     case GI_TYPE_TAG_UINT32:
         return JS_NewNumberValue(context, arg->v_uint, value_p);
 
-#if (GLIB_SIZEOF_LONG == 8)
-    case GI_TYPE_TAG_LONG:
-    case GI_TYPE_TAG_SSIZE:
-#endif
     case GI_TYPE_TAG_INT64:
         return JS_NewNumberValue(context, arg->v_int64, value_p);
 
-#if (GLIB_SIZEOF_LONG == 8)
-    case GI_TYPE_TAG_ULONG:
-    case GI_TYPE_TAG_SIZE:
-#endif
     case GI_TYPE_TAG_UINT64:
         return JS_NewNumberValue(context, arg->v_uint64, value_p);
 
@@ -1050,6 +1138,16 @@ gjs_value_from_g_argument (JSContext  *context,
         }
         break;
 
+    case GI_TYPE_TAG_INT:
+    case GI_TYPE_TAG_UINT:
+    case GI_TYPE_TAG_LONG:
+    case GI_TYPE_TAG_ULONG:
+    case GI_TYPE_TAG_SIZE:
+    case GI_TYPE_TAG_SSIZE:
+    case GI_TYPE_TAG_GTYPE:
+        /* these types are converted by normalize_int_types */
+        g_assert_not_reached();
+
     default:
         gjs_debug(GJS_DEBUG_ERROR,
                   "Unhandled type %s converting GArgument to JavaScript",
@@ -1186,14 +1284,30 @@ gjs_g_arg_release_internal(JSContext  *context,
             /* OK */
         } else {
             GITypeInfo *param_info;
+            GITypeTag element_type;
 
             param_info = g_type_info_get_param_type(type_info, 0);
+            element_type = g_type_info_get_tag(param_info);
+            element_type = normalize_int_types(element_type);
 
-            if (g_type_info_get_tag (param_info) == GI_TYPE_TAG_UTF8 ||
-                g_type_info_get_tag (param_info) == GI_TYPE_TAG_FILENAME)
+            switch (element_type) {
+            case GI_TYPE_TAG_UTF8:
+            case GI_TYPE_TAG_FILENAME:
                 g_strfreev (arg->v_pointer);
-            else
+                break;
+
+            case GI_TYPE_TAG_UINT8:
+            case GI_TYPE_TAG_UINT16:
+            case GI_TYPE_TAG_UINT32:
+            case GI_TYPE_TAG_INT8:
+            case GI_TYPE_TAG_INT16:
+            case GI_TYPE_TAG_INT32:
+                g_free (arg->v_pointer);
+                break;
+
+            default:
                 g_assert_not_reached ();
+            }
 
             g_base_info_unref((GIBaseInfo*) param_info);
         }
