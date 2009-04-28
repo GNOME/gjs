@@ -400,7 +400,11 @@ gjs_value_to_g_argument(JSContext      *context,
         if (JSVAL_IS_NULL(value)) {
             arg->v_pointer = NULL;
         } else if (JSVAL_IS_STRING(value)) {
-            if (!gjs_string_to_filename(context, value, (char **)&arg->v_pointer))
+            char *filename_str;
+            if (gjs_string_to_filename(context, value, &filename_str))
+                // doing this as a separate step to avoid type-punning
+                arg->v_pointer = filename_str;
+            else
                 wrong = TRUE;
         } else {
             wrong = TRUE;
@@ -412,7 +416,11 @@ gjs_value_to_g_argument(JSContext      *context,
         if (JSVAL_IS_NULL(value)) {
             arg->v_pointer = NULL;
         } else if (JSVAL_IS_STRING(value)) {
-            if (!gjs_string_to_utf8(context, value, (char **)&arg->v_pointer))
+            char *utf8_str;
+            if (gjs_string_to_utf8(context, value, &utf8_str))
+                // doing this as a separate step to avoid type-punning
+                arg->v_pointer = utf8_str;
+            else
                 wrong = TRUE;
         } else {
             wrong = TRUE;
