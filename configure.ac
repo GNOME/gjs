@@ -193,11 +193,13 @@ fi
 common_packages="gobject-2.0 >= gobject_required_version $JS_PACKAGE"
 gjs_packages="gmodule-2.0 $common_packages"
 gjs_gi_packages="gobject-introspection-1.0 >= 0.6.0 $common_packages"
+gjs_dbus_packages="dbus-glib-1 $common_packages"
 # gjs-tests links against everything
 gjstests_packages="$gjstests_packages $gjs_packages"
 
 PKG_CHECK_MODULES([GJS], [$gjs_packages])
 PKG_CHECK_MODULES([GJS_GI], [$gjs_gi_packages])
+PKG_CHECK_MODULES([GJS_DBUS], [$gjs_dbus_packages])
 PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
 
 if test x"$JS_PACKAGE" = x; then
@@ -207,12 +209,15 @@ if test x"$JS_PACKAGE" = x; then
     GJS_LIBS="$GJS_LIBS $JS_LIBS"
     GJS_GI_CFLAGS="$GJS_GI_CFLAGS $JS_CFLAGS"
     GJS_GI_LIBS="$GJS_GI_LIBS $JS_LIBS"
+    GJS_DBUS_CFLAGS="$GJS_DBUS_CFLAGS $JS_CFLAGS"
+    GJS_DBUS_LIBS="$GJS_DBUS_LIBS $JS_LIBS"
     GJSTESTS_CFLAGS="$GJSTESTS_CFLAGS $JS_CFLAGS"
     GJSTESTS_LIBS="$GJSTEST_LIBS $JS_LIBS"
 fi
 
 GJS_CFLAGS="$GJS_CFLAGS $JS_EXTRA_CFLAGS"
 GJS_GI_CFLAGS="$GJS_GI_CFLAGS $JS_EXTRA_CFLAGS"
+GJS_DBUS_CFLAGS="$GJS_DBUS_CFLAGS $JS_EXTRA_CFLAGS"
 GJSTESTS_CFLAGS="$GJSTESTS_CFLAGS $JS_EXTRA_CFLAGS"
 
 # readline
@@ -265,5 +270,5 @@ gjsnativedir="\${libdir}/gjs-1.0"
 AC_SUBST([gjsjsdir])
 AC_SUBST([gjsnativedir])
 
-AC_CONFIG_FILES([Makefile gjs-1.0.pc gjs-gi-1.0.pc])
+AC_CONFIG_FILES([Makefile gjs-1.0.pc gjs-gi-1.0.pc gjs-dbus-1.0.pc])
 AC_OUTPUT

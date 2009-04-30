@@ -223,6 +223,9 @@ gjs_debug(GjsDebugTopic topic,
     case GJS_DEBUG_DBUS:
         prefix = "JS DBUS";
         break;
+    case GJS_DEBUG_DBUS_MARSHAL:
+        prefix = "JS DBUS MARSHAL";
+        break;
     case GJS_DEBUG_KEEP_ALIVE:
         prefix = "JS KP ALV";
         break;

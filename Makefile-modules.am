@@ -4,9 +4,10 @@ dist_gjstweener_DATA =			\
 	modules/tweener/tweenList.js
 
 dist_gjsjs_DATA += modules/lang.js	\
-                   modules/signals.js
+                   modules/signals.js 	\
+		   modules/dbus.js
 
-gjsnative_LTLIBRARIES += console.la debugger.la gi.la mainloop.la
+gjsnative_LTLIBRARIES += console.la debugger.la gi.la mainloop.la dbusNative.la
 
 JS_NATIVE_MODULE_CFLAGS =	\
         $(AM_CFLAGS)		\
@@ -66,3 +67,21 @@ debugger_la_LDFLAGS = 				\
 debugger_la_SOURCES =		\
 	modules/debugger.h	\
 	modules/debugger.c
+
+dbusNative_la_SOURCES =	\
+	modules/dbus-exports.h	\
+	modules/dbus-values.h	\
+	modules/dbus.h		\
+	modules/dbus-exports.c	\
+	modules/dbus-values.c	\
+	modules/dbus.c
+dbusNative_la_CFLAGS = 					\
+	$(JS_NATIVE_MODULE_CFLAGS) 		\
+	$(GJS_DBUS_CFLAGS)
+dbusNative_la_LIBADD = \
+	libgjs-gi.la				\
+	libgjs-dbus.la				\
+	$(JS_NATIVE_MODULE_LIBADD) 		\
+	$(GJS_DBUS_LIBS)
+dbusNative_la_LDFLAGS = 				\
+	$(JS_NATIVE_MODULE_LDFLAGS)

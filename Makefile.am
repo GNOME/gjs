@@ -1,5 +1,6 @@
 bin_PROGRAMS =
 lib_LTLIBRARIES =
+noinst_HEADERS =
 noinst_LTLIBRARIES =
 dist_gjsjs_DATA =
 gjsnative_LTLIBRARIES =
@@ -24,7 +25,7 @@ nobase_gjsinclude_HEADERS =	\
 	gjs/jsapi-util.h	\
 	gjs/mem.h		\
 	gjs/native.h
-noinst_HEADERS =		\
+noinst_HEADERS +=		\
 	gjs/context-jsapi.h	\
 	gjs/profiler.h		\
 	util/crash.h		\
@@ -86,6 +87,7 @@ gjstest_files_with_tests += 	\
 	gjs/stack.c				\
 	util/glib.c
 
+include Makefile-gjsdbus.am
 include Makefile-gi.am
 include Makefile-modules.am
 include Makefile-examples.am
