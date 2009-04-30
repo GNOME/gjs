@@ -23,6 +23,8 @@
 
 #include <config.h>
 
+#include <string.h>
+
 #include "jsapi-util.h"
 
 JSBool
@@ -33,6 +35,8 @@ gjs_string_to_utf8(JSContext  *context,
     jschar *s;
     size_t s_length;
     char *utf8_string;
+    long read_items;
+    long utf8_length;
     GError *error;
 
     if (!JSVAL_IS_STRING(string_val)) {
@@ -47,7 +51,7 @@ gjs_string_to_utf8(JSContext  *context,
     error = NULL;
     utf8_string = g_utf16_to_utf8(s,
                                   (glong)s_length,
-                                  NULL, NULL,
+                                  &read_items, &utf8_length,
                                   &error);
 
     if (!utf8_string) {
@@ -56,6 +60,27 @@ gjs_string_to_utf8(JSContext  *context,
                   "UTF-8: %s",
                   error->message);
         g_error_free(error);
+        return JS_FALSE;
+    }
+
+    if ((size_t)read_items != s_length) {
+        gjs_throw(context, "JS string contains embedded NULs");
+        g_free(utf8_string);
+        return JS_FALSE;
+    }
+
+    /* Our assumption is that the string is being converted to UTF-8
+     * in order to use with GLib-style APIs; Javascript has a looser
+     * sense of validate-Unicode than GLib, so validate here to
+     * prevent problems later on. Given the success of the above,
+     * the only thing that could really be wrong here is including
+     * non-characters like a byte-reversed BOM. If the validation
+     * ever becomes a bottleneck, we could do an inline-special
+     * case of all-ASCII.
+     */
+    if (!g_utf8_validate (utf8_string, utf8_length, NULL)) {
+        gjs_throw(context, "JS string contains invalid Unicode characters");
+        g_free(utf8_string);
         return JS_FALSE;
     }
 
