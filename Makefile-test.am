@@ -112,6 +112,7 @@ EXTRA_DIST +=					\
 	test/js/testGI.js			\
 	test/js/testImporter.js			\
 	test/js/testLang.js			\
+	test/js/testLocale.js			\
 	test/js/testMainloop.js			\
 	test/js/testSignals.js			\
 	test/js/testTweener.js

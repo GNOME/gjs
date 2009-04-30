@@ -304,6 +304,122 @@ gjs_context_finalize(GObject *object)
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
 
+/* Implementations of locale-specific operations; these are used
+ * in the implementation of String.localeCompare(), Date.toLocaleDateString(),
+ * and so forth. We take the straight-forward approach of converting
+ * to UTF-8, using the appropriate GLib functions, and converting
+ * back if necessary.
+ */
+static JSBool
+gjs_locale_to_upper_case (JSContext *context,
+                          JSString  *src,
+                          jsval     *retval)
+{
+    JSBool success = JS_FALSE;
+    char *utf8 = NULL;
+    char *upper_case_utf8 = NULL;
+
+    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(src), &utf8))
+        goto out;
+
+    upper_case_utf8 = g_utf8_strup (utf8, -1);
+
+    if (!gjs_string_from_utf8(context, upper_case_utf8, -1, retval))
+        goto out;
+
+    success = JS_TRUE;
+
+out:
+    g_free(utf8);
+    g_free(upper_case_utf8);
+
+    return success;
+}
+
+static JSBool
+gjs_locale_to_lower_case (JSContext *context,
+                          JSString  *src,
+                          jsval     *retval)
+{
+    JSBool success = JS_FALSE;
+    char *utf8 = NULL;
+    char *lower_case_utf8 = NULL;
+
+    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(src), &utf8))
+        goto out;
+
+    lower_case_utf8 = g_utf8_strdown (utf8, -1);
+
+    if (!gjs_string_from_utf8(context, lower_case_utf8, -1, retval))
+        goto out;
+
+    success = JS_TRUE;
+
+out:
+    g_free(utf8);
+    g_free(lower_case_utf8);
+
+    return success;
+}
+
+static JSBool
+gjs_locale_compare (JSContext *context,
+                    JSString  *src_1,
+                    JSString  *src_2,
+                    jsval     *retval)
+{
+    JSBool success = JS_FALSE;
+    char *utf8_1 = NULL, *utf8_2 = NULL;
+    int result;
+
+    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(src_1), &utf8_1) ||
+        !gjs_string_to_utf8(context, STRING_TO_JSVAL(src_2), &utf8_2))
+        goto out;
+
+    result = g_utf8_collate (utf8_1, utf8_2);
+    *retval = INT_TO_JSVAL(result);
+
+    success = JS_TRUE;
+
+out:
+    g_free(utf8_1);
+    g_free(utf8_2);
+
+    return success;
+}
+
+static JSBool
+gjs_locale_to_unicode (JSContext *context,
+                       char      *src,
+                       jsval     *retval)
+{
+    JSBool success;
+    char *utf8;
+    GError *error = NULL;
+
+    utf8 = g_locale_to_utf8(src, -1, NULL, NULL, &error);
+    if (!utf8) {
+        gjs_throw(context,
+                  "Failed to convert locale string to UTF8: %s",
+                  error->message);
+        g_error_free(error);
+        return JS_FALSE;
+    }
+
+    success = gjs_string_from_utf8(context, utf8, -1, retval);
+    g_free (utf8);
+
+    return success;
+}
+
+static JSLocaleCallbacks gjs_locale_callbacks =
+{
+    gjs_locale_to_upper_case,
+    gjs_locale_to_lower_case,
+    gjs_locale_compare,
+    gjs_locale_to_unicode
+};
+
 static GObject*
 gjs_context_constructor (GType                  type,
                          guint                  n_construct_properties,
@@ -344,6 +460,8 @@ gjs_context_constructor (GType                  type,
                   JS_GetOptions(js_context->context) |
                   JSOPTION_DONT_REPORT_UNCAUGHT |
                   JSOPTION_STRICT);
+
+    JS_SetLocaleCallbacks(js_context->context, &gjs_locale_callbacks);
 
     JS_SetErrorReporter(js_context->context, gjs_error_reporter);
 
