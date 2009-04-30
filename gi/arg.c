@@ -440,7 +440,30 @@ gjs_value_to_g_argument(JSContext      *context,
 
             interface_type = g_base_info_get_type(interface_info);
 
-            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
+            switch(interface_type) {
+
+            case GI_INFO_TYPE_STRUCT:
+            case GI_INFO_TYPE_ENUM:
+            case GI_INFO_TYPE_OBJECT:
+            case GI_INFO_TYPE_INTERFACE:
+            case GI_INFO_TYPE_UNION:
+            case GI_INFO_TYPE_BOXED:
+                /* These are subtypes of GIRegisteredTypeInfo for which the
+                 * cast is safe */
+                gtype = g_registered_type_info_get_g_type
+                    ((GIRegisteredTypeInfo*)interface_info);
+                break;
+
+            case GI_INFO_TYPE_VALUE:
+                /* Special case for GValues */
+                gtype = G_TYPE_VALUE;
+                break;
+
+            default:
+                /* Everything else */
+                gtype = G_TYPE_NONE;
+                break;
+            }
 
             if (gtype != G_TYPE_NONE)
                 gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
