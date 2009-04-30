@@ -227,6 +227,22 @@ function testArrayOut() {
     // FIXME: test_array_int_full_out and test_array_int_none_out unimplemented
 }
 
+/* GHash type */
+function testGHashOut() {
+    const HASH_STR = '({foo:"bar", baz:"bat", qux:"quux"})';
+    assertEquals(null, Everything.test_ghash_null_return());
+    assertEquals(HASH_STR, Everything.test_ghash_nothing_return().toSource());
+    assertEquals(HASH_STR, Everything.test_ghash_nothing_return2().toSource());
+    assertEquals(HASH_STR, Everything.test_ghash_container_return().toSource());
+    assertEquals(HASH_STR, Everything.test_ghash_everything_return().toSource());
+}
+
+function testNestedGHashOut() {
+    const HASH_STR = '({wibble:{foo:"bar", baz:"bat", qux:"quux"}})';
+    assertEquals(HASH_STR, Everything.test_ghash_nested_everything_return().toSource());
+    assertEquals(HASH_STR, Everything.test_ghash_nested_everything_return2().toSource());
+}
+
 /* Enums */
 function testEnumParam() {
    let e = Everything.test_enum_param(Everything.TestEnum.VALUE1);

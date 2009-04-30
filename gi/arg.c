@@ -969,6 +969,83 @@ gjs_array_from_g_list (JSContext  *context,
     return result;
 }
 
+static JSBool
+gjs_object_from_g_hash (JSContext  *context,
+                        jsval      *value_p,
+                        GITypeInfo *key_param_info,
+                        GITypeInfo *val_param_info,
+                        GHashTable *hash)
+{
+    GHashTableIter iter;
+    JSObject *obj;
+    JSString *keystr;
+    char     *keyutf8 = NULL;
+    jsval     keyjs,  valjs;
+    GArgument keyarg, valarg;
+    JSBool result;
+
+    // a NULL hash table becomes a null JS value
+    if (hash==NULL) {
+        *value_p = JSVAL_NULL;
+        return JS_TRUE;
+    }
+
+    obj = JS_NewObject(context, NULL, NULL, NULL);
+    if (obj == NULL)
+        return JS_FALSE;
+
+    *value_p = OBJECT_TO_JSVAL(obj);
+    JS_AddRoot(context, &obj);
+
+    keyjs = JSVAL_VOID;
+    JS_AddRoot(context, &keyjs);
+
+    valjs = JSVAL_VOID;
+    JS_AddRoot(context, &valjs);
+
+    keystr = NULL;
+    JS_AddRoot(context, &keystr);
+
+    result = JS_FALSE;
+
+    g_hash_table_iter_init(&iter, hash);
+    while (g_hash_table_iter_next
+           (&iter, &keyarg.v_pointer, &valarg.v_pointer)) {
+        if (!gjs_value_from_g_argument(context, &keyjs,
+                                       key_param_info, &keyarg))
+            goto out;
+
+        keystr = JS_ValueToString(context, keyjs);
+        if (!keystr)
+            goto out;
+
+        if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(keystr), &keyutf8))
+            goto out;
+
+        if (!gjs_value_from_g_argument(context, &valjs,
+                                       val_param_info, &valarg))
+            goto out;
+
+        if (!JS_DefineProperty(context, obj, keyutf8, valjs,
+                               NULL, NULL, JSPROP_ENUMERATE))
+            goto out;
+
+        g_free(keyutf8);
+        keyutf8 = NULL;
+    }
+
+    result = JS_TRUE;
+
+ out:
+    if (keyutf8) g_free(keyutf8);
+    JS_RemoveRoot(context, &obj);
+    JS_RemoveRoot(context, &keyjs);
+    JS_RemoveRoot(context, &valjs);
+    JS_RemoveRoot(context, &keystr);
+
+    return result;
+}
+
 JSBool
 gjs_value_from_g_argument (JSContext  *context,
                            jsval      *value_p,
@@ -1193,6 +1270,29 @@ gjs_value_from_g_argument (JSContext  *context,
         }
         break;
 
+    case GI_TYPE_TAG_GHASH:
+        {
+            GITypeInfo *key_param_info, *val_param_info;
+            gboolean result;
+
+            key_param_info = g_type_info_get_param_type(type_info, 0);
+            g_assert(key_param_info != NULL);
+            val_param_info = g_type_info_get_param_type(type_info, 1);
+            g_assert(val_param_info != NULL);
+
+            result = gjs_object_from_g_hash(context,
+                                            value_p,
+                                            key_param_info,
+                                            val_param_info,
+                                            arg->v_pointer);
+
+            g_base_info_unref((GIBaseInfo*) key_param_info);
+            g_base_info_unref((GIBaseInfo*) val_param_info);
+
+            return result;
+        }
+        break;
+
     case GI_TYPE_TAG_INT:
     case GI_TYPE_TAG_UINT:
     case GI_TYPE_TAG_LONG:
@@ -1397,6 +1497,14 @@ gjs_g_arg_release_internal(JSContext  *context,
         }
 
         g_slist_free(arg->v_pointer);
+        break;
+
+    case GI_TYPE_TAG_GHASH:
+        // Note that we depend on the GHashTable's destroy functions to
+        // match the transfer mode.  If you don't want the keys and
+        // values freed, the GHashTable should have null key/value
+        // destroy functions.  Otherwise everything is released together.
+        g_hash_table_destroy(arg->v_pointer);
         break;
 
     default:
