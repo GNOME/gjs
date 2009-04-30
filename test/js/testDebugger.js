@@ -16,10 +16,10 @@ function testSetDebugErrorHook() {
     };
 
     let faulty = function() {
-        /* This is a non-obvious way to get an exception raised,
+        /* This is a non-obvious way to get a warning
          * just to workaround the error detection in js2-mode.
          * */
-        let x = faulty['undefinedProperty'];
+        new String(faulty['undefinedProperty']);
     };
 
     let old = Debugger.setDebugErrorHook(errorHook);
