@@ -176,6 +176,37 @@ function testValueReturn() {
     assertEquals('Method returning a GValue', 42, i);
 }
 
+/* GList types */
+function testGListOut() {
+    assertEquals("1,2,3", Everything.test_glist_nothing_return().join(','));
+    assertEquals("1,2,3", Everything.test_glist_nothing_return2().join(','));
+    assertEquals("1,2,3", Everything.test_glist_container_return().join(','));
+    assertEquals("1,2,3", Everything.test_glist_everything_return().join(','));
+}
+function testGListIn() {
+    const STR_LIST = ["1", "2", "3" ];
+    Everything.test_glist_nothing_in(STR_LIST);
+    Everything.test_glist_nothing_in2(STR_LIST);
+    Everything.test_glist_container_in(STR_LIST);
+    Everything.test_glist_everything_in(STR_LIST);
+}
+
+/* GSList types */
+function testGSListOut() {
+    assertEquals("1,2,3", Everything.test_gslist_nothing_return().join(','));
+    assertEquals("1,2,3", Everything.test_gslist_nothing_return2().join(','));
+    assertEquals("1,2,3", Everything.test_gslist_container_return().join(','));
+    assertEquals("1,2,3", Everything.test_gslist_everything_return().join(','));
+}
+function testGSListIn() {
+    const STR_LIST = ["1", "2", "3" ];
+    Everything.test_gslist_nothing_in(STR_LIST);
+    Everything.test_gslist_nothing_in2(STR_LIST);
+    Everything.test_gslist_container_in(STR_LIST);
+    Everything.test_gslist_everything_in(STR_LIST);
+}
+
+/* Enums */
 function testEnumParam() {
    let e = Everything.test_enum_param(Everything.TestEnum.VALUE1);
    assertEquals('Enum parameter', 'value1', e);
