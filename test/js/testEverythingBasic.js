@@ -1,4 +1,8 @@
 const Everything = imports.gi.Everything;
+if (!('assertEquals' in this)) { /* allow running this test standalone */
+    imports.lang.copyPublicProperties(imports.jsUnit, this);
+    gjstestRun = function() { return imports.jsUnit.gjstestRun(window); };
+}
 
 // We use Gio to have some objects that we know exist
 const Gio = imports.gi.Gio;

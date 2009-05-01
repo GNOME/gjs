@@ -1,4 +1,8 @@
 const Everything = imports.gi.Everything;
+if (!('assertEquals' in this)) { /* allow running this test standalone */
+    imports.lang.copyPublicProperties(imports.jsUnit, this);
+    gjstestRun = function() { return imports.jsUnit.gjstestRun(window); };
+}
 
 function testStruct() {
     let struct = new Everything.TestStructA();
