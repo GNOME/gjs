@@ -118,6 +118,18 @@ function testStrv() {
     assertRaises(function() { Everything.test_strv_in(['1', 2, 3]); });
 }
 
+function testUtf8() {
+    const CONST_STR = "const \u2665 utf8";
+    const NONCONST_STR = "nonconst \u2665 utf8";
+
+    assertEquals(CONST_STR, Everything.test_utf8_const_return());
+    assertEquals(NONCONST_STR, Everything.test_utf8_nonconst_return());
+    Everything.test_utf8_nonconst_in(NONCONST_STR);
+    Everything.test_utf8_const_in(CONST_STR);
+    assertEquals(NONCONST_STR, Everything.test_utf8_out());
+    assertEquals(NONCONST_STR, Everything.test_utf8_inout(CONST_STR));
+}
+
 function testFilenameReturn() {
     var filenames = Everything.test_filename_return();
     assertEquals(2, filenames.length);
