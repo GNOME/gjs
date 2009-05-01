@@ -189,7 +189,7 @@ function testGListIn() {
     const STR_LIST = ["1", "2", "3" ];
     Everything.test_glist_nothing_in(STR_LIST);
     Everything.test_glist_nothing_in2(STR_LIST);
-    Everything.test_glist_container_in(STR_LIST);
+    //Everything.test_glist_container_in(STR_LIST);
     Everything.test_glist_everything_in(STR_LIST);
 }
 
@@ -204,7 +204,7 @@ function testGSListIn() {
     const STR_LIST = ["1", "2", "3" ];
     Everything.test_gslist_nothing_in(STR_LIST);
     Everything.test_gslist_nothing_in2(STR_LIST);
-    Everything.test_gslist_container_in(STR_LIST);
+    //Everything.test_gslist_container_in(STR_LIST);
     Everything.test_gslist_everything_in(STR_LIST);
 }
 
@@ -235,6 +235,15 @@ function testGHashOut() {
     assertEquals(HASH_STR, Everything.test_ghash_nothing_return2().toSource());
     assertEquals(HASH_STR, Everything.test_ghash_container_return().toSource());
     assertEquals(HASH_STR, Everything.test_ghash_everything_return().toSource());
+}
+
+function testGHashIn() {
+    const STR_HASH = { foo: 'bar', baz: 'bat', qux: 'quux' };
+    Everything.test_ghash_null_in(null);
+    Everything.test_ghash_nothing_in(STR_HASH);
+    Everything.test_ghash_nothing_in2(STR_HASH);
+    //Everything.test_ghash_container_in(STR_HASH);
+    Everything.test_ghash_everything_in(STR_HASH);
 }
 
 function testNestedGHashOut() {

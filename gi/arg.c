@@ -198,6 +198,78 @@ gjs_array_to_g_list(JSContext   *context,
     return JS_TRUE;
 }
 
+static JSBool
+gjs_object_to_g_hash(JSContext   *context,
+                     jsval        hash_value,
+                     GITypeInfo  *key_param_info,
+                     GITypeInfo  *val_param_info,
+                     GHashTable **hash_p)
+{
+    GHashTable *result = NULL;
+    JSObject *props;
+    JSObject *iter;
+    jsid prop_id;
+
+    g_assert(JSVAL_IS_OBJECT(hash_value));
+    props = JSVAL_TO_OBJECT(hash_value);
+
+    iter = JS_NewPropertyIterator(context, props);
+    if (iter == NULL)
+        return JS_FALSE;
+
+    prop_id = JSVAL_VOID;
+    if (!JS_NextProperty(context, iter, &prop_id))
+        return JS_FALSE;
+
+    /* Don't use key/value destructor functions here, because we can't
+     * construct correct ones in general if the value type is complex.
+     * Rely on the type-aware g_argument_release functions. */
+   result = g_hash_table_new(g_str_hash, g_str_equal);
+
+    while (prop_id != JSVAL_VOID) {
+        jsval key_js, val_js;
+        GArgument key_arg, val_arg;
+
+        if (!JS_IdToValue(context, prop_id, &key_js))
+            goto free_hash_and_fail;
+
+        /* Type check key type. */
+        if (!gjs_value_to_g_argument(context, key_js, key_param_info, NULL,
+                                     GJS_ARGUMENT_HASH_ELEMENT,
+                                     FALSE /* don't allow null */,
+                                     &key_arg))
+            goto free_hash_and_fail;
+
+#if (JS_VERSION > 180)
+        if (!JS_GetPropertyById(context, props, prop_id, &val_js))
+            goto free_hash_and_fail;
+#else
+        if (!JS_GetProperty(context, props, key_arg.v_pointer, &val_js))
+            goto free_hash_and_fail;
+#endif
+
+        /* Type check and convert value to a c type */
+        if (!gjs_value_to_g_argument(context, val_js, val_param_info, NULL,
+                                     GJS_ARGUMENT_HASH_ELEMENT,
+                                     TRUE /* allow null */,
+                                     &val_arg))
+            goto free_hash_and_fail;
+
+        g_hash_table_insert(result, key_arg.v_pointer, val_arg.v_pointer);
+
+        prop_id = JSVAL_VOID;
+        if (!JS_NextProperty(context, iter, &prop_id))
+            goto free_hash_and_fail;
+    }
+
+    *hash_p = result;
+    return JS_TRUE;
+
+ free_hash_and_fail:
+    g_hash_table_destroy(result);
+    return JS_FALSE;
+}
+
 JSBool
 gjs_array_to_strv(JSContext   *context,
                   jsval        array_value,
@@ -390,6 +462,8 @@ get_argument_display_name(const char     *arg_name,
         return g_strdup_printf("Field '%s'", arg_name);
     case GJS_ARGUMENT_LIST_ELEMENT:
         return g_strdup("List element");
+    case GJS_ARGUMENT_HASH_ELEMENT:
+        return g_strdup("Hash element");
     }
 
     g_assert_not_reached ();
@@ -771,6 +845,40 @@ gjs_value_to_g_argument(JSContext      *context,
         } else {
             wrong = TRUE;
             report_type_mismatch = TRUE;
+        }
+        break;
+
+    case GI_TYPE_TAG_GHASH:
+        if (JSVAL_IS_NULL(value)) {
+            arg->v_pointer = NULL;
+            if (!may_be_null) {
+                wrong = TRUE;
+                report_type_mismatch = TRUE;
+            }
+        } else if (!JSVAL_IS_OBJECT(value)) {
+            wrong = TRUE;
+            report_type_mismatch = TRUE;
+        } else {
+            GITypeInfo *key_param_info, *val_param_info;
+            GHashTable *ghash;
+
+            key_param_info = g_type_info_get_param_type(type_info, 0);
+            g_assert(key_param_info != NULL);
+            val_param_info = g_type_info_get_param_type(type_info, 1);
+            g_assert(val_param_info != NULL);
+
+            if (!gjs_object_to_g_hash(context,
+                                      value,
+                                      key_param_info,
+                                      val_param_info,
+                                      &ghash)) {
+                wrong = TRUE;
+            } else {
+                arg->v_pointer = ghash;
+            }
+
+            g_base_info_unref((GIBaseInfo*) key_param_info);
+            g_base_info_unref((GIBaseInfo*) val_param_info);
         }
         break;
 
@@ -1313,6 +1421,27 @@ gjs_value_from_g_argument (JSContext  *context,
     return JS_TRUE;
 }
 
+typedef struct {
+    JSContext *context;
+    GITypeInfo *key_param_info, *val_param_info;
+} GHR_closure;
+
+static gboolean
+gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
+    GHR_closure *c = user_data;
+    GArgument key_arg, val_arg;
+    key_arg.v_pointer = key;
+    val_arg.v_pointer = val;
+    if (!gjs_g_argument_release(c->context, GI_TRANSFER_EVERYTHING,
+                                c->key_param_info, &key_arg))
+        g_error("Failed to release ghash key");
+
+    if (!gjs_g_argument_release(c->context, GI_TRANSFER_EVERYTHING,
+                                c->val_param_info, &val_arg))
+        g_error("Failed to release ghash value");
+    return TRUE;
+}
+
 static JSBool
 gjs_g_arg_release_internal(JSContext  *context,
                            GITransfer  transfer,
@@ -1500,11 +1629,26 @@ gjs_g_arg_release_internal(JSContext  *context,
         break;
 
     case GI_TYPE_TAG_GHASH:
-        // Note that we depend on the GHashTable's destroy functions to
-        // match the transfer mode.  If you don't want the keys and
-        // values freed, the GHashTable should have null key/value
-        // destroy functions.  Otherwise everything is released together.
-        g_hash_table_destroy(arg->v_pointer);
+        if (arg->v_pointer) {
+            if (transfer == GI_TRANSFER_CONTAINER)
+                g_hash_table_steal_all (arg->v_pointer);
+            else {
+                GHR_closure c = { .context = context };
+
+                c.key_param_info = g_type_info_get_param_type(type_info, 0);
+                g_assert(c.key_param_info != NULL);
+                c.val_param_info = g_type_info_get_param_type(type_info, 1);
+                g_assert(c.val_param_info != NULL);
+
+                g_hash_table_foreach_steal (arg->v_pointer,
+                                            gjs_ghr_helper, &c);
+
+                g_base_info_unref ((GIBaseInfo *)c.key_param_info);
+                g_base_info_unref ((GIBaseInfo *)c.val_param_info);
+            }
+
+            g_hash_table_destroy (arg->v_pointer);
+        }
         break;
 
     default:
@@ -1565,6 +1709,21 @@ gjs_g_argument_release_in_arg(JSContext  *context,
     case GI_TYPE_TAG_UTF8:
     case GI_TYPE_TAG_FILENAME:
     case GI_TYPE_TAG_ARRAY:
+        needs_release = TRUE;
+        break;
+    case GI_TYPE_TAG_GLIST:
+    case GI_TYPE_TAG_GSLIST:
+    case GI_TYPE_TAG_GHASH:
+        if (transfer == GI_TRANSFER_CONTAINER) {
+            /* FIXME: to make this work, we'd have to make an extra copy of
+             * the in argument and keep it around so that we could release
+             * the elements here even after the surrounding container had
+             * been freed by the callee. */
+            gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                              "Container transfer for in parameters not "
+                              "supported; leaking contents.");
+            return JS_TRUE; /* treat like GI_TRANSFER_EVERYTHING */
+        }
         needs_release = TRUE;
         break;
     case GI_TYPE_TAG_INTERFACE: {

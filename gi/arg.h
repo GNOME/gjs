@@ -37,7 +37,8 @@ typedef enum {
     GJS_ARGUMENT_ARGUMENT,
     GJS_ARGUMENT_RETURN_VALUE,
     GJS_ARGUMENT_FIELD,
-    GJS_ARGUMENT_LIST_ELEMENT
+    GJS_ARGUMENT_LIST_ELEMENT,
+    GJS_ARGUMENT_HASH_ELEMENT
 } GjsArgumentType;
 
 JSBool gjs_value_to_arg   (JSContext  *context,
