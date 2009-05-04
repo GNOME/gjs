@@ -302,6 +302,7 @@ gjs_init_class_dynamic(JSContext      *context,
     jsval value;
     char *private_name;
     JSObject *prototype;
+    JSContext *load_context;
 
     if (clasp->name != NULL) {
         g_warning("Dynamic class should not have a name in the JSClass struct");
@@ -314,7 +315,7 @@ gjs_init_class_dynamic(JSContext      *context,
      * the class in whatever global object initialized the
      * class first, which is not desirable.
      */
-    context = gjs_runtime_get_load_context(JS_GetRuntime(context));
+    load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
 
     /* JS_InitClass() wants to define the constructor in the global object, so
      * we give it a private and namespaced name... passing in the namespace
@@ -325,25 +326,25 @@ gjs_init_class_dynamic(JSContext      *context,
     private_name = g_strdup_printf("_private_%s_%s", ns_name, class_name);
 
     prototype = NULL;
-    if (gjs_object_get_property(context, JS_GetGlobalObject(context),
+    if (gjs_object_get_property(load_context, JS_GetGlobalObject(load_context),
                                    private_name, &value) &&
         JSVAL_IS_OBJECT(value)) {
         jsval proto_val;
 
         g_free(private_name); /* don't need it anymore */
 
-        if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(value), NULL,
+        if (!gjs_object_require_property(load_context, JSVAL_TO_OBJECT(value), NULL,
                                             "prototype", &proto_val) ||
             !JSVAL_IS_OBJECT(proto_val)) {
-            gjs_throw(context, "prototype was not defined or not an object?");
-            return NULL;
+            gjs_throw(load_context, "prototype was not defined or not an object?");
+            goto error;
         }
         prototype = JSVAL_TO_OBJECT(proto_val);
     } else {
         DynamicJSClass *class_copy;
         RuntimeData *rd;
 
-        rd = get_data_from_context(context);
+        rd = get_data_from_context(load_context);
 
         class_copy = g_slice_new0(DynamicJSClass);
         class_copy->base = *clasp;
@@ -361,7 +362,7 @@ gjs_init_class_dynamic(JSContext      *context,
                   "Initializing dynamic class %s %p",
                   class_name, class_copy);
 
-        prototype = JS_InitClass(context, JS_GetGlobalObject(context),
+        prototype = JS_InitClass(load_context, JS_GetGlobalObject(load_context),
                                  parent_proto, &class_copy->base,
                                  constructor, nargs,
                                  ps, fs,
@@ -370,9 +371,9 @@ gjs_init_class_dynamic(JSContext      *context,
         /* Retrieve the property again so we can define it in
          * in_object
          */
-        if (!gjs_object_require_property(context, JS_GetGlobalObject(context), NULL,
+        if (!gjs_object_require_property(load_context, JS_GetGlobalObject(load_context), NULL,
                                             class_copy->base.name, &value))
-            return NULL;
+            goto error;
     }
     g_assert(value != JSVAL_VOID);
     g_assert(prototype != NULL);
@@ -380,14 +381,24 @@ gjs_init_class_dynamic(JSContext      *context,
     /* Now manually define our constructor with a sane name, in the
      * namespace object.
      */
-    if (!JS_DefineProperty(context, in_object,
+    if (!JS_DefineProperty(load_context, in_object,
                            class_name,
                            value,
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS))
-        return NULL;
+        goto error;
 
     return prototype;
+
+ error:
+    /* Move the exception to the calling context from load context.
+     */
+    if (!gjs_move_exception(load_context, context)) {
+        /* set an exception since none was set */
+        gjs_throw(context, "No exception was set, but class initialize failed somehow");
+    }
+
+    return NULL;
 }
 
 gboolean
@@ -478,22 +489,24 @@ gjs_construct_object_dynamic(JSContext      *context,
 {
     RuntimeData *rd;
     JSClass *proto_class;
+    JSContext *load_context;
+    JSObject *result;
 
     /* We replace the passed-in context and global object with our
      * runtime-global permanent load context. Otherwise, JS_ConstructObject
      * can't find the constructor in whatever random global object is set
      * on the passed-in context.
      */
-    context = gjs_runtime_get_load_context(JS_GetRuntime(context));
+    load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
 
-    proto_class = JS_GetClass(context, proto);
+    proto_class = JS_GetClass(load_context, proto);
 
-    rd = get_data_from_context(context);
+    rd = get_data_from_context(load_context);
 
     /* Check that it's safe to cast to DynamicJSClass */
     if (g_hash_table_lookup(rd->dynamic_classes, proto_class) == NULL) {
-        gjs_throw(context, "Prototype is not for a dynamically-registered class");
-        return NULL;
+        gjs_throw(load_context, "Prototype is not for a dynamically-registered class");
+        goto error;
     }
 
     gjs_debug_lifecycle(GJS_DEBUG_GREPO,
@@ -501,9 +514,24 @@ gjs_construct_object_dynamic(JSContext      *context,
                         proto_class->name, proto_class, proto);
 
     if (argc > 0)
-        return JS_ConstructObjectWithArguments(context, proto_class, proto, NULL, argc, argv);
+        result = JS_ConstructObjectWithArguments(load_context, proto_class, proto, NULL, argc, argv);
     else
-        return JS_ConstructObject(context, proto_class, proto, NULL);
+        result = JS_ConstructObject(load_context, proto_class, proto, NULL);
+
+    if (!result)
+        goto error;
+
+    return result;
+
+ error:
+    /* Move the exception to the calling context from load context.
+     */
+    if (!gjs_move_exception(load_context, context)) {
+        /* set an exception since none was set */
+        gjs_throw(context, "No exception was set, but object construction failed somehow");
+    }
+
+    return NULL;
 }
 
 JSObject*
