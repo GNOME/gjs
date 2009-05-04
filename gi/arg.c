@@ -497,9 +497,11 @@ gjs_value_to_g_argument(JSContext      *context,
                                       symbol_type);
                         }
                     } else {
-                        gjs_throw(context, "Unhandled GType %s unpacking SYMBOL GArgument from Object",
+                        gjs_throw(context, "Unhandled GType %s unpacking GArgument from Object",
                                   g_type_name(gtype));
                     }
+                } else {
+                    gjs_throw(context, "Unexpected unregistered type unpacking GArgument from Object");
                 }
 
                 if (arg->v_pointer == NULL) {
@@ -529,9 +531,13 @@ gjs_value_to_g_argument(JSContext      *context,
                     } else if (!_gjs_flags_value_is_valid(context, gtype, arg->v_int)) {
                         wrong = TRUE;
                     }
+                } else if (gtype == G_TYPE_NONE) {
+                    gjs_throw(context, "Unexpected unregistered type unpacking GArgument from Number");
+                    wrong = TRUE;
                 } else {
-                    gjs_throw(context, "Unhandled GType %s unpacking SYMBOL GArgument from Number",
+                    gjs_throw(context, "Unhandled GType %s unpacking GArgument from Number",
                               g_type_name(gtype));
+                    wrong = TRUE;
                 }
 
             } else {
@@ -962,8 +968,10 @@ gjs_value_from_g_argument (JSContext  *context,
                           g_type_name(gtype),
                           symbol_type);
                 return JS_FALSE;
+            } else if (gtype == G_TYPE_NONE) {
+                gjs_throw(context, "Unexpected unregistered type packing GArgument into jsval");
             } else {
-                gjs_throw(context, "Unhandled GType %s packing SYMBOL GArgument into jsval",
+                gjs_throw(context, "Unhandled GType %s packing GArgument into jsval",
                           g_type_name(gtype));
             }
 
@@ -1027,7 +1035,11 @@ gjs_g_arg_release_internal(JSContext  *context,
                            GITypeTag   type_tag,
                            GArgument  *arg)
 {
+    JSBool failed;
+    
     g_assert(transfer != GI_TRANSFER_NOTHING);
+
+    failed = JS_FALSE;
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
@@ -1095,9 +1107,13 @@ gjs_g_arg_release_internal(JSContext  *context,
                 g_slice_free(GValue, value);
             } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                 g_boxed_free(gtype, arg->v_pointer);
+            } else if (gtype == G_TYPE_NONE) {
+                gjs_throw(context, "Don't know how to release GArgument: not an object or boxed type");
+                failed = JS_TRUE;
             } else {
-                gjs_throw(context, "Unhandled GType %s releasing SYMBOL GArgument",
+                gjs_throw(context, "Unhandled GType %s releasing GArgument",
                           g_type_name(gtype));
+                failed = JS_TRUE;
             }
 
         out:
@@ -1123,10 +1139,7 @@ gjs_g_arg_release_internal(JSContext  *context,
                                             GI_TRANSFER_EVERYTHING,
                                             param_info,
                                             &elem)) {
-                    /* no way to recover here, and errors should
-                     * not be possible.
-                     */
-                    g_error("Failed to release list element");
+                    failed = JS_TRUE;
                 }
             }
 
@@ -1192,7 +1205,7 @@ gjs_g_arg_release_internal(JSContext  *context,
         return JS_FALSE;
     }
 
-    return JS_TRUE;
+    return !failed;
 }
 
 JSBool
