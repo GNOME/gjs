@@ -99,6 +99,7 @@ gjs_debug(GjsDebugTopic topic,
           ...)
 {
     static FILE *logfp = NULL;
+    static gboolean debug_log_enabled = FALSE;
     static gboolean strace_timestamps = FALSE;
     static gboolean checked_for_timestamp = FALSE;
     static gboolean print_timestamp = FALSE;
@@ -146,6 +147,8 @@ gjs_debug(GjsDebugTopic topic,
                         log_file, g_strerror(errno));
 
             g_free(free_me);
+
+            debug_log_enabled = TRUE;
         }
 
         if (logfp == NULL)
@@ -153,6 +156,14 @@ gjs_debug(GjsDebugTopic topic,
 
         strace_timestamps = gjs_environment_variable_is_set("GJS_STRACE_TIMESTAMPS");
     }
+
+    /* only log errors and strace timestamps if debug
+     * log wasn't specifically switched on
+     */
+    if ((!debug_log_enabled) &&
+        !(topic == GJS_DEBUG_ERROR ||
+          topic == GJS_DEBUG_STRACE_TIMESTAMP))
+        return;
 
     error = FALSE;
     prefix = "???";
