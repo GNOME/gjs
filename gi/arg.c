@@ -423,20 +423,20 @@ gjs_value_to_g_argument(JSContext      *context,
     case GI_TYPE_TAG_INTERFACE:
         nullable_type = TRUE;
         {
-            GIBaseInfo* symbol_info;
-            GIInfoType symbol_type;
+            GIBaseInfo* interface_info;
+            GIInfoType interface_type;
             GType gtype;
 
-            symbol_info = g_type_info_get_interface(type_info);
-            g_assert(symbol_info != NULL);
+            interface_info = g_type_info_get_interface(type_info);
+            g_assert(interface_info != NULL);
 
-            symbol_type = g_base_info_get_type(symbol_info);
+            interface_type = g_base_info_get_type(interface_info);
 
-            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
+            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
 
             if (gtype != G_TYPE_NONE)
                 gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                                  "gtype of SYMBOL is %s", g_type_name(gtype));
+                                  "gtype of INTERFACE is %s", g_type_name(gtype));
 
             if (gtype == G_TYPE_VALUE) {
                 GValue *gvalue;
@@ -451,18 +451,18 @@ gjs_value_to_g_argument(JSContext      *context,
                 arg->v_pointer = gvalue;
 
             } else if (JSVAL_IS_NULL(value) &&
-                       symbol_type != GI_INFO_TYPE_ENUM &&
-                       symbol_type != GI_INFO_TYPE_FLAGS) {
+                       interface_type != GI_INFO_TYPE_ENUM &&
+                       interface_type != GI_INFO_TYPE_FLAGS) {
                 arg->v_pointer = NULL;
             } else if (JSVAL_IS_OBJECT(value)) {
                 /* Handle Struct/Union first since we don't necessarily need a GType for them */
-                if ((symbol_type == GI_INFO_TYPE_STRUCT || symbol_type == GI_INFO_TYPE_BOXED) &&
+                if ((interface_type == GI_INFO_TYPE_STRUCT || interface_type == GI_INFO_TYPE_BOXED) &&
                     /* We special case Closures later, so skip them here */
                     !g_type_is_a(gtype, G_TYPE_CLOSURE)) {
                     arg->v_pointer = gjs_c_struct_from_boxed(context,
                                                              JSVAL_TO_OBJECT(value));
 
-                } else if (symbol_type == GI_INFO_TYPE_UNION) {
+                } else if (interface_type == GI_INFO_TYPE_UNION) {
                     arg->v_pointer = gjs_c_union_from_union(context,
                                                             JSVAL_TO_OBJECT(value));
 
@@ -492,9 +492,9 @@ gjs_value_to_g_argument(JSContext      *context,
                         } else {
                             /* Should have been caught above as STRUCT/BOXED/UNION */
                             gjs_throw(context,
-                                      "Boxed type %s registered for unexpected symbol_type %d",
+                                      "Boxed type %s registered for unexpected interface_type %d",
                                       g_type_name(gtype),
-                                      symbol_type);
+                                      interface_type);
                         }
                     } else {
                         gjs_throw(context, "Unhandled GType %s unpacking GArgument from Object",
@@ -510,7 +510,7 @@ gjs_value_to_g_argument(JSContext      *context,
                               JSVAL_TO_OBJECT(value),
                               JS_GetTypeName(context,
                                              JS_TypeOfValue(context, value)),
-                              g_base_info_get_name ((GIBaseInfo *)symbol_info));
+                              g_base_info_get_name ((GIBaseInfo *)interface_info));
 
                     /* gjs_throw should have been called already */
                     wrong = TRUE;
@@ -519,13 +519,13 @@ gjs_value_to_g_argument(JSContext      *context,
             } else if (JSVAL_IS_NUMBER(value)) {
                 nullable_type = FALSE;
 
-                if (symbol_type == GI_INFO_TYPE_ENUM) {
+                if (interface_type == GI_INFO_TYPE_ENUM) {
                     if (!JS_ValueToInt32(context, value, &arg->v_int)) {
                         wrong = TRUE;
-                    } else if (!_gjs_enum_value_is_valid(context, (GIEnumInfo *)symbol_info, arg->v_int)) {
+                    } else if (!_gjs_enum_value_is_valid(context, (GIEnumInfo *)interface_info, arg->v_int)) {
                         wrong = TRUE;
                     }
-                } else if (symbol_type == GI_INFO_TYPE_FLAGS) {
+                } else if (interface_type == GI_INFO_TYPE_FLAGS) {
                     if (!JS_ValueToInt32(context, value, &arg->v_int)) {
                         wrong = TRUE;
                     } else if (!_gjs_flags_value_is_valid(context, gtype, arg->v_int)) {
@@ -548,7 +548,7 @@ gjs_value_to_g_argument(JSContext      *context,
                 wrong = TRUE;
                 report_type_mismatch = TRUE;
             }
-            g_base_info_unref( (GIBaseInfo*) symbol_info);
+            g_base_info_unref( (GIBaseInfo*) interface_info);
         }
         break;
 
@@ -878,37 +878,37 @@ gjs_value_from_g_argument (JSContext  *context,
     case GI_TYPE_TAG_INTERFACE:
         {
             jsval value;
-            GIBaseInfo* symbol_info;
-            GIInfoType symbol_type;
+            GIBaseInfo* interface_info;
+            GIInfoType interface_type;
             GType gtype;
 
-            symbol_info = g_type_info_get_interface(type_info);
-            g_assert(symbol_info != NULL);
+            interface_info = g_type_info_get_interface(type_info);
+            g_assert(interface_info != NULL);
 
             value = JSVAL_VOID;
 
-            symbol_type = g_base_info_get_type(symbol_info);
+            interface_type = g_base_info_get_type(interface_info);
 
-            if (symbol_type == GI_INFO_TYPE_UNRESOLVED) {
+            if (interface_type == GI_INFO_TYPE_UNRESOLVED) {
                 gjs_throw(context,
                           "Unable to resolve arg type '%s'",
-                          g_base_info_get_name(symbol_info));
+                          g_base_info_get_name(interface_info));
                 goto out;
             }
 
             /* Enum/Flags are aren't pointer types, unlike the other interface subtypes */
-            if (symbol_type == GI_INFO_TYPE_ENUM) {
-                if (_gjs_enum_value_is_valid(context, (GIEnumInfo *)symbol_info, arg->v_int))
+            if (interface_type == GI_INFO_TYPE_ENUM) {
+                if (_gjs_enum_value_is_valid(context, (GIEnumInfo *)interface_info, arg->v_int))
                     value = INT_TO_JSVAL(arg->v_int);
 
                 goto out;
-            } else if (symbol_type == GI_INFO_TYPE_FLAGS) {
+            } else if (interface_type == GI_INFO_TYPE_FLAGS) {
                 /* This should be fixed to work without a GType, just like Enum */
-                gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
+                gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
                 if (gtype == G_TYPE_NONE) {
                     gjs_throw(context,
                               "Can't yet handle flags type '%s' that is not registered with GObject",
-                              g_base_info_get_name(symbol_info));
+                              g_base_info_get_name(interface_info));
                     goto out;
                 }
 
@@ -924,9 +924,9 @@ gjs_value_from_g_argument (JSContext  *context,
                 goto out;
             }
 
-            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
+            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
             gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                              "gtype of SYMBOL is %s", g_type_name(gtype));
+                              "gtype of INTERFACE is %s", g_type_name(gtype));
 
 
             /* Test GValue before Struct, or it will be handled as the latter */
@@ -937,17 +937,17 @@ gjs_value_from_g_argument (JSContext  *context,
                 goto out;
             }
 
-            if (symbol_type == GI_INFO_TYPE_STRUCT || symbol_type == GI_INFO_TYPE_BOXED) {
+            if (interface_type == GI_INFO_TYPE_STRUCT || interface_type == GI_INFO_TYPE_BOXED) {
                 JSObject *obj;
-                obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)symbol_info, arg->v_pointer,
+                obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)interface_info, arg->v_pointer,
                                               GJS_BOXED_CREATION_NONE);
                 if (obj)
                     value = OBJECT_TO_JSVAL(obj);
 
                 goto out;
-            } else if (symbol_type == GI_INFO_TYPE_UNION) {
+            } else if (interface_type == GI_INFO_TYPE_UNION) {
                 JSObject *obj;
-                obj = gjs_union_from_c_union(context, (GIUnionInfo *)symbol_info, arg->v_pointer);
+                obj = gjs_union_from_c_union(context, (GIUnionInfo *)interface_info, arg->v_pointer);
                 if (obj)
                         value = OBJECT_TO_JSVAL(obj);
 
@@ -964,9 +964,9 @@ gjs_value_from_g_argument (JSContext  *context,
                        g_type_is_a(gtype, G_TYPE_FLAGS)) {
                 /* Should have been handled above */
                 gjs_throw(context,
-                          "Type %s registered for unexpected symbol_type %d",
+                          "Type %s registered for unexpected interface_type %d",
                           g_type_name(gtype),
-                          symbol_type);
+                          interface_type);
                 return JS_FALSE;
             } else if (gtype == G_TYPE_NONE) {
                 gjs_throw(context, "Unexpected unregistered type packing GArgument into jsval");
@@ -976,7 +976,7 @@ gjs_value_from_g_argument (JSContext  *context,
             }
 
          out:
-            g_base_info_unref( (GIBaseInfo*) symbol_info);
+            g_base_info_unref( (GIBaseInfo*) interface_info);
 
             if (JSVAL_IS_VOID(value))
                 return JS_FALSE;
@@ -1070,25 +1070,25 @@ gjs_g_arg_release_internal(JSContext  *context,
 
     case GI_TYPE_TAG_INTERFACE:
         {
-            GIBaseInfo* symbol_info;
-            GIInfoType symbol_type;
+            GIBaseInfo* interface_info;
+            GIInfoType interface_type;
             GType gtype;
 
-            symbol_info = g_type_info_get_interface(type_info);
-            g_assert(symbol_info != NULL);
+            interface_info = g_type_info_get_interface(type_info);
+            g_assert(interface_info != NULL);
 
-            symbol_type = g_base_info_get_type(symbol_info);
+            interface_type = g_base_info_get_type(interface_info);
 
-            if (symbol_type == GI_INFO_TYPE_ENUM || symbol_type == GI_INFO_TYPE_FLAGS)
+            if (interface_type == GI_INFO_TYPE_ENUM || interface_type == GI_INFO_TYPE_FLAGS)
                 goto out;
 
             /* Anything else is a pointer */
             if (arg->v_pointer == NULL)
                 goto out;
 
-            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
+            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
             gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                              "gtype of SYMBOL is %s", g_type_name(gtype));
+                              "gtype of INTERFACE is %s", g_type_name(gtype));
 
             /* In gjs_value_from_g_argument we handle Struct/Union types without a
              * registered GType, but here we are specifically handling a GArgument that
@@ -1117,7 +1117,7 @@ gjs_g_arg_release_internal(JSContext  *context,
             }
 
         out:
-            g_base_info_unref( (GIBaseInfo*) symbol_info);
+            g_base_info_unref( (GIBaseInfo*) interface_info);
         }
         break;
 
@@ -1259,18 +1259,18 @@ gjs_g_argument_release_in_arg(JSContext  *context,
         needs_release = TRUE;
         break;
     case GI_TYPE_TAG_INTERFACE: {
-        GIBaseInfo* symbol_info;
+        GIBaseInfo* interface_info;
         GType gtype;
 
-        symbol_info = g_type_info_get_interface(type_info);
-        g_assert(symbol_info != NULL);
+        interface_info = g_type_info_get_interface(type_info);
+        g_assert(interface_info != NULL);
 
-        gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)symbol_info);
+        gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
 
         if (g_type_is_a(gtype, G_TYPE_CLOSURE) || g_type_is_a(gtype, G_TYPE_VALUE))
             needs_release = TRUE;
 
-        g_base_info_unref(symbol_info);
+        g_base_info_unref(interface_info);
         break;
     }
     default:
