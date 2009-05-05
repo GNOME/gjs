@@ -93,6 +93,21 @@ is_allowed_prefix (const char *prefix)
 
 #define PREFIX_LENGTH 12
 
+static void
+write_to_stream(FILE       *logfp,
+                gboolean    error,
+                const char *prefix,
+                const char *s)
+{
+    /* seek to end to avoid truncating in case we're using shared logfile */
+    (void)fseek(logfp, 0, SEEK_END);
+
+    fprintf(logfp, "%*s: %s%s", PREFIX_LENGTH, prefix, error ? "!!!   " : "", s);
+    if (!g_str_has_suffix(s, "\n"))
+        fputs("\n", logfp);
+    fflush(logfp);
+}
+
 void
 gjs_debug(GjsDebugTopic topic,
           const char   *format,
@@ -270,30 +285,38 @@ gjs_debug(GjsDebugTopic topic,
         access(s2, F_OK);
         g_free(s2);
     } else {
-        /* seek to end to avoid truncating in case we're using shared logfile */
-        (void)fseek(logfp, 0, SEEK_END);
-
         if (print_timestamp) {
             static gdouble previous = 0.0;
             gdouble total = g_timer_elapsed(timer, NULL) * 1000.0;
             gdouble since = total - previous;
+            const char *ts_suffix;
+            char *s2;
 
-            fprintf(logfp, "%g ", total);
             if (since > 50.0) {
-                fprintf(logfp, "!!  ");
+                ts_suffix = "!!  ";
             } else if (since > 100.0) {
-                fprintf(logfp, "!!! ");
+                ts_suffix = "!!! ";
             } else if (since > 200.0) {
-                fprintf(logfp, "!!!!");
+                ts_suffix = "!!!!";
             } else {
-                fprintf(logfp, "    ");
+                ts_suffix = "    ";
             }
+
+            s2 = g_strdup_printf("%g %s%s",
+                                 total, ts_suffix, s);
+            g_free(s);
+            s = s2;
+
             previous = total;
         }
-        fprintf(logfp, "%*s: %s%s", PREFIX_LENGTH, prefix, error ? "!!!   " : "", s);
-        if (!g_str_has_suffix(s, "\n"))
-            fputs("\n", logfp);
-        fflush(logfp);
+
+        /* write to both stderr and logfile
+         * if it's an error
+         */
+        if (error && logfp != stderr)
+            write_to_stream(stderr, error, prefix, s);
+
+        write_to_stream(logfp, error, prefix, s);
     }
 
     g_free(s);
