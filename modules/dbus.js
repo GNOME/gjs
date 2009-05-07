@@ -25,8 +25,7 @@ const Lang = imports.lang;
 const SINGLE_INSTANCE = 0;
 const MANY_INSTANCES = 1;
 
-const NO_START_IF_NOT_FOUND = false;
-const START_IF_NOT_FOUND    = true;
+const CALL_FLAG_START = 1;
 
 // Merge stuff defined in native code
 Lang.copyProperties(imports.dbusNative, this);
@@ -56,6 +55,7 @@ var Properties = {
 
 function _proxyInvoker(obj, ifaceName, methodName, outSignature, inSignature, timeout, arg_array) {
     let replyFunc;
+    let flags = 0;
 
     /* Note: "this" in here is the module, "obj" is the proxy object
      */
@@ -69,20 +69,35 @@ function _proxyInvoker(obj, ifaceName, methodName, outSignature, inSignature, ti
     /* The default replyFunc only logs the responses */
     replyFunc = _logReply;
 
-    let expectedNumberArgs = this.signatureLength(inSignature);
+    let signatureLength = this.signatureLength(inSignature);
+    let minNumberArgs = signatureLength;
+    let maxNumberArgs = signatureLength + 2;
 
-    if (arg_array.length < expectedNumberArgs) {
+    if (arg_array.length < minNumberArgs) {
         throw new Error("Not enough arguments passed for method: " + methodName +
                        ". Expected " + expectedNumberArgs + ", got " + arg_array.length);
-    } else if (arg_array.length == expectedNumberArgs + 1) {
-        /* If there's one more than the expected number
-         * of argument we asume the last one is the reply
-         * function
-         */
-        replyFunc = arg_array.pop();
-    } else if (arg_array.length != expectedNumberArgs) {
+    } else if (arg_array.length > maxNumberArgs) {
         throw new Error("Too many arguments passed for method: " + methodName +
-                       ". Maximum is " + expectedNumberArgs + " + one callback");
+                       ". Maximum is " + expectedNumberArgs +
+                        " + one callback and/or flags");
+    }
+
+    while (arg_array.length > signatureLength) {
+        let argNum = arg_array.length - 1;
+        let arg = arg_array.pop();
+        if (typeof(arg) == "function") {
+            replyFunc = arg;
+        } else if (typeof(arg) == "number") {
+            flags = arg;
+        } else {
+            throw new Error("Argument " + argNum + " of method " + methodName +
+                            " is " + typeof(arg) + ". It should be a callback or flags");
+        }
+    }
+
+    let auto_start = false;
+    if (flags & CALL_FLAG_START) {
+        auto_start = true;
     }
 
     /* Auto-start on method calls is too unpredictable; in particular if
@@ -95,7 +110,7 @@ function _proxyInvoker(obj, ifaceName, methodName, outSignature, inSignature, ti
                             methodName,
                             outSignature,
                             inSignature,
-                            NO_START_IF_NOT_FOUND,
+                            auto_start,
                             timeout,
                             arg_array,
                             replyFunc);
