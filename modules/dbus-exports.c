@@ -1371,7 +1371,8 @@ handle_introspect(JSContext      *context,
     char *interfaceXML;
     GString *doc;
     int i;
-    JSObject *props_iter;
+    JSObject *props_iter = NULL;
+    JSString *key_str = NULL;
     jsid prop_id;
 
     reply = NULL;
@@ -1392,6 +1393,8 @@ handle_introspect(JSContext      *context,
                                children[i]);
     }
 
+    JS_AddRoot(context, &props_iter);
+    JS_AddRoot(context, &key_str);
     props_iter = JS_NewPropertyIterator(context, dir_obj);
 
     prop_id = JSVAL_VOID;
@@ -1402,7 +1405,9 @@ handle_introspect(JSContext      *context,
     }
 
     while (prop_id != JSVAL_VOID) {
+        char *key;
         jsval keyval;
+        jsval valueval = JSVAL_VOID;
 
         if (!JS_IdToValue(context, prop_id, &keyval)) {
             gjs_debug(GJS_DEBUG_DBUS,
@@ -1410,26 +1415,33 @@ handle_introspect(JSContext      *context,
             goto out;
         }
 
-        /* just ignore non-string keys */
-        if (JSVAL_IS_STRING(keyval)) {
-            const char *key;
-            jsval valueval;
+        // Note that keyval can be integer. For example, the path
+        //  /org/freedesktop/NetworkManagerSettings/0
+        // has an object with an JSVAL_IS_INT key at the end.  See
+        // the note at the end of
+        //   https://developer.mozilla.org/en/SpiderMonkey/JSAPI_Reference/jsid
+        // for a bit more info.  At any rate, force to string.
+        key_str = JS_ValueToString(context, keyval);
+        if (!key_str) {
+            gjs_debug(GJS_DEBUG_DBUS,
+                      "Failed to convert dbus object value to string");
+            goto out;
+        }
 
-            key = gjs_string_get_ascii(keyval);
+        key = JS_GetStringBytes(key_str);
 
-            if (!gjs_object_require_property(context, dir_obj,
-                                             "dbus directory",
-                                             key, &valueval)) {
-                gjs_debug(GJS_DEBUG_DBUS,
-                          "Somehow failed to get property of dbus object");
-                goto out;
-            }
+        if (!gjs_object_require_property(context, dir_obj,
+                                         "dbus directory",
+                                         key, &valueval)) {
+            gjs_debug(GJS_DEBUG_DBUS,
+                      "Somehow failed to get property of dbus object");
+            goto out;
+        }
 
-            /* ignore non-object values and the '-impl-' node. */
-            if (JSVAL_IS_OBJECT(valueval) && strcmp(key, "-impl-") != 0) {
-                g_string_append_printf(doc, "  <node name=\"%s\"/>\n",
-                                       key);
-            }
+        /* ignore non-object values and the '-impl-' node. */
+        if (JSVAL_IS_OBJECT(valueval) && strcmp(key, "-impl-") != 0) {
+            g_string_append_printf(doc, "  <node name=\"%s\"/>\n",
+                                   key);
         }
 
         prop_id = JSVAL_VOID;
@@ -1471,6 +1483,9 @@ handle_introspect(JSContext      *context,
     dbus_connection_send(connection, reply, NULL);
 
  out:
+    JS_RemoveRoot(context, &key_str);
+    JS_RemoveRoot(context, &props_iter);
+
     if (reply != NULL)
         dbus_message_unref(reply);
     else
