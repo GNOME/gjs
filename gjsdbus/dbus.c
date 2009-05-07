@@ -374,8 +374,6 @@ internal_add_connect_funcs(const GjsDBusConnectFuncs *funcs,
 
     all_connect_funcs = g_slist_prepend(all_connect_funcs, f);
 
-    _gjs_dbus_ensure_connect_idle(f->funcs->which_bus);
-
     if (sync_notify) {
         /* sync_notify means IF we are already connected
          * (we have a weak ref != NULL) then notify
