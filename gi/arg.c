@@ -480,7 +480,8 @@ gjs_value_to_g_argument(JSContext      *context,
                                           g_type_name(G_TYPE_FROM_INSTANCE(arg->v_pointer)));
                                 arg->v_pointer = NULL;
                                 wrong = TRUE;
-                            }
+                            } else
+                                g_object_ref(G_OBJECT(arg->v_pointer));
                         }
                     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                         if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
