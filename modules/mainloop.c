@@ -305,6 +305,7 @@ gjs_idle_add(JSContext *context,
 {
     GClosure *closure;
     guint id;
+    int priority;
 
     /* Best I can tell, there is no way to know if argv[0] is really
      * callable other than to just try it. Checking whether it's a
@@ -312,10 +313,17 @@ gjs_idle_add(JSContext *context,
      * JSClass::call, for example.
      */
 
-    if (argc != 1 ||
-        !JSVAL_IS_OBJECT(argv[0])) {
-        gjs_throw(context, "idle_add() takes one arg, the idle callback");
+    if (argc < 1 ||
+        !JSVAL_IS_OBJECT(argv[0]) ||
+        (argc >= 2 && !JSVAL_IS_INT(argv[1]))) {
+        gjs_throw(context, "idle_add() takes the idle callback and an optional priority");
         return JS_FALSE;
+    }
+
+    if (argc >= 2) {
+        priority = JSVAL_TO_INT(argv[1]);
+    } else {
+        priority = G_PRIORITY_DEFAULT_IDLE;
     }
 
     closure = gjs_closure_new(context, JSVAL_TO_OBJECT(argv[0]), "idle");
@@ -325,7 +333,9 @@ gjs_idle_add(JSContext *context,
     g_closure_ref(closure);
     g_closure_sink(closure);
 
-    id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+
+
+    id = g_idle_add_full(priority,
                          closure_source_func,
                          closure,
                          closure_destroy_notify);
