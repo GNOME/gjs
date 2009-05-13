@@ -272,6 +272,8 @@ gjs_string_to_intarray(JSContext   *context,
 
     default:
         // can't convert a string to this type.
+        gjs_throw(context, "Cannot convert string to type '%s'",
+                  g_base_info_get_name((GIBaseInfo*) param_info));
         return JS_FALSE;
     }
 }
