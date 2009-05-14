@@ -636,6 +636,10 @@ _gjs_dbus_signal_watch_filter_message(DBusConnection *connection,
     /* Sort so we can find dups */
     candidates = g_slist_sort(candidates, direct_cmp);
 
+    /* Ref everything so that calling a handler doesn't unref another
+     * and possibly leave it dangling in our candidates list */
+    g_slist_foreach(candidates, (GFunc)signal_watcher_ref, NULL);
+
     previous = NULL;
     while (candidates != NULL) {
         GjsSignalWatcher *watcher;
@@ -644,29 +648,28 @@ _gjs_dbus_signal_watch_filter_message(DBusConnection *connection,
         candidates = g_slist_delete_link(candidates, candidates);
 
         if (previous == watcher)
-            continue; /* watcher was in more than one table */
+            goto end_while; /* watcher was in more than one table */
 
         previous = watcher;
 
         if (!signal_watcher_watches(info,
                                     watcher,
                                     sender, path, iface, name))
-            continue;
+            goto end_while;
 
         /* destroyed would happen if e.g. removed while we are going
          * through here.
          */
         if (watcher->destroyed)
-            continue;
+            goto end_while;
 
         /* Invoke the watcher */
-
-        signal_watcher_ref(watcher);
 
         (* watcher->handler) (connection,
                               message,
                               watcher->data);
 
+    end_while:
         signal_watcher_unref(watcher);
     }
 
