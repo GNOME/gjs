@@ -1424,6 +1424,7 @@ gjs_value_from_g_argument (JSContext  *context,
 typedef struct {
     JSContext *context;
     GITypeInfo *key_param_info, *val_param_info;
+    JSBool failed;
 } GHR_closure;
 
 static gboolean
@@ -1434,11 +1435,11 @@ gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
     val_arg.v_pointer = val;
     if (!gjs_g_argument_release(c->context, GI_TRANSFER_EVERYTHING,
                                 c->key_param_info, &key_arg))
-        g_error("Failed to release ghash key");
+        c->failed = JS_TRUE;
 
     if (!gjs_g_argument_release(c->context, GI_TRANSFER_EVERYTHING,
                                 c->val_param_info, &val_arg))
-        g_error("Failed to release ghash value");
+        c->failed = JS_TRUE;
     return TRUE;
 }
 
@@ -1615,10 +1616,7 @@ gjs_g_arg_release_internal(JSContext  *context,
                                             GI_TRANSFER_EVERYTHING,
                                             param_info,
                                             &elem)) {
-                    /* no way to recover here, and errors should
-                     * not be possible.
-                     */
-                    g_error("Failed to release slist element");
+                    failed = JS_TRUE;
                 }
             }
 
@@ -1633,7 +1631,7 @@ gjs_g_arg_release_internal(JSContext  *context,
             if (transfer == GI_TRANSFER_CONTAINER)
                 g_hash_table_steal_all (arg->v_pointer);
             else {
-                GHR_closure c = { .context = context };
+                GHR_closure c = { .context = context, .failed = JS_FALSE };
 
                 c.key_param_info = g_type_info_get_param_type(type_info, 0);
                 g_assert(c.key_param_info != NULL);
@@ -1642,6 +1640,8 @@ gjs_g_arg_release_internal(JSContext  *context,
 
                 g_hash_table_foreach_steal (arg->v_pointer,
                                             gjs_ghr_helper, &c);
+
+                failed = c.failed;
 
                 g_base_info_unref ((GIBaseInfo *)c.key_param_info);
                 g_base_info_unref ((GIBaseInfo *)c.val_param_info);
