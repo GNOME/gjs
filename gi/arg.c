@@ -137,11 +137,51 @@ normalize_int_types(GITypeTag type) {
     }
 }
 
+/* Check if an argument of the given needs to be released if we created it
+ * from a JS value to pass it into a function and aren't transfering ownership.
+ */
+static gboolean
+type_needs_release (GITypeInfo *type_info,
+                    GITypeTag   type_tag)
+{
+    switch (type_tag) {
+    case GI_TYPE_TAG_UTF8:
+    case GI_TYPE_TAG_FILENAME:
+    case GI_TYPE_TAG_ARRAY:
+    case GI_TYPE_TAG_GLIST:
+    case GI_TYPE_TAG_GSLIST:
+    case GI_TYPE_TAG_GHASH:
+        return TRUE;
+    case GI_TYPE_TAG_INTERFACE: {
+        GIBaseInfo* interface_info;
+        GType gtype;
+        gboolean needs_release;
+
+        interface_info = g_type_info_get_interface(type_info);
+        g_assert(interface_info != NULL);
+
+        gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
+
+        if (g_type_is_a(gtype, G_TYPE_CLOSURE) || g_type_is_a(gtype, G_TYPE_VALUE))
+            needs_release = TRUE;
+        else
+            needs_release = FALSE;
+
+        g_base_info_unref(interface_info);
+
+        return needs_release;
+    }
+    default:
+        return FALSE;
+    }
+}
+
 static JSBool
 gjs_array_to_g_list(JSContext   *context,
                     jsval        array_value,
                     unsigned int length,
                     GITypeInfo  *param_info,
+                    GITransfer   transfer,
                     GITypeTag    list_type,
                     GList      **list_p,
                     GSList     **slist_p)
@@ -153,6 +193,20 @@ gjs_array_to_g_list(JSContext   *context,
 
     list = NULL;
     slist = NULL;
+
+    if (transfer == GI_TRANSFER_CONTAINER) {
+        if (type_needs_release (param_info, g_type_info_get_tag(param_info))) {
+            /* FIXME: to make this work, we'd have to keep a list of temporary
+             * GArguments for the function call so we could free them after
+             * the surrounding container had been freed by the callee.
+             */
+            gjs_throw(context,
+                      "Container transfer for in parameters not supported");
+            return JS_FALSE;
+        }
+
+        transfer = GI_TRANSFER_NOTHING;
+    }
 
     for (i = 0; i < length; ++i) {
         GArgument elem_arg;
@@ -175,6 +229,7 @@ gjs_array_to_g_list(JSContext   *context,
                                      param_info,
                                      NULL,
                                      GJS_ARGUMENT_LIST_ELEMENT,
+                                     transfer,
                                      FALSE,
                                      &elem_arg)) {
             return JS_FALSE;
@@ -203,6 +258,7 @@ gjs_object_to_g_hash(JSContext   *context,
                      jsval        hash_value,
                      GITypeInfo  *key_param_info,
                      GITypeInfo  *val_param_info,
+                     GITransfer   transfer,
                      GHashTable **hash_p)
 {
     GHashTable *result = NULL;
@@ -212,6 +268,21 @@ gjs_object_to_g_hash(JSContext   *context,
 
     g_assert(JSVAL_IS_OBJECT(hash_value));
     props = JSVAL_TO_OBJECT(hash_value);
+
+    if (transfer == GI_TRANSFER_CONTAINER) {
+        if (type_needs_release (key_param_info, g_type_info_get_tag(key_param_info)) ||
+            type_needs_release (val_param_info, g_type_info_get_tag(val_param_info))) {
+            /* FIXME: to make this work, we'd have to keep a list of temporary
+             * GArguments for the function call so we could free them after
+             * the surrounding container had been freed by the callee.
+             */
+            gjs_throw(context,
+                      "Container transfer for in parameters not supported");
+            return JS_FALSE;
+        }
+
+        transfer = GI_TRANSFER_NOTHING;
+    }
 
     iter = JS_NewPropertyIterator(context, props);
     if (iter == NULL)
@@ -236,6 +307,7 @@ gjs_object_to_g_hash(JSContext   *context,
         /* Type check key type. */
         if (!gjs_value_to_g_argument(context, key_js, key_param_info, NULL,
                                      GJS_ARGUMENT_HASH_ELEMENT,
+                                     transfer,
                                      FALSE /* don't allow null */,
                                      &key_arg))
             goto free_hash_and_fail;
@@ -251,6 +323,7 @@ gjs_object_to_g_hash(JSContext   *context,
         /* Type check and convert value to a c type */
         if (!gjs_value_to_g_argument(context, val_js, val_param_info, NULL,
                                      GJS_ARGUMENT_HASH_ELEMENT,
+                                     transfer,
                                      TRUE /* allow null */,
                                      &val_arg))
             goto free_hash_and_fail;
@@ -475,6 +548,7 @@ gjs_value_to_g_argument(JSContext      *context,
                         GITypeInfo     *type_info,
                         const char     *arg_name,
                         GjsArgumentType arg_type,
+                        GITransfer      transfer,
                         gboolean        may_be_null,
                         GArgument      *arg)
 {
@@ -702,10 +776,32 @@ gjs_value_to_g_argument(JSContext      *context,
                     !g_type_is_a(gtype, G_TYPE_CLOSURE)) {
                     arg->v_pointer = gjs_c_struct_from_boxed(context,
                                                              JSVAL_TO_OBJECT(value));
+                    if (transfer != GI_TRANSFER_NOTHING) {
+                        if (g_type_is_a(gtype, G_TYPE_BOXED))
+                            arg->v_pointer = g_boxed_copy (gtype, arg->v_pointer);
+                        else {
+                            gjs_throw(context,
+                                      "Can't transfer ownership of a structure type not registered as boxed");
+                            arg->v_pointer = NULL;
+                            wrong = TRUE;
+                        }
+                    }
 
                 } else if (interface_type == GI_INFO_TYPE_UNION) {
                     arg->v_pointer = gjs_c_union_from_union(context,
                                                             JSVAL_TO_OBJECT(value));
+
+                    if (transfer != GI_TRANSFER_NOTHING) {
+                        if (g_type_is_a(gtype, G_TYPE_BOXED))
+                            arg->v_pointer = g_boxed_copy (gtype, arg->v_pointer);
+                        else {
+                            gjs_throw(context,
+                                      "Can't transfer ownership of a union type not registered as boxed");
+
+                            arg->v_pointer = NULL;
+                            wrong = TRUE;
+                        }
+                    }
 
                 } else if (gtype != G_TYPE_NONE) {
 
@@ -721,7 +817,7 @@ gjs_value_to_g_argument(JSContext      *context,
                                           g_type_name(G_TYPE_FROM_INSTANCE(arg->v_pointer)));
                                 arg->v_pointer = NULL;
                                 wrong = TRUE;
-                            } else
+                            } else if (transfer != GI_TRANSFER_NOTHING)
                                 g_object_ref(G_OBJECT(arg->v_pointer));
                         }
                     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
@@ -829,6 +925,7 @@ gjs_value_to_g_argument(JSContext      *context,
                                          value,
                                          length,
                                          param_info,
+                                         transfer,
                                          type_tag,
                                          &list, &slist)) {
                     wrong = TRUE;
@@ -871,6 +968,7 @@ gjs_value_to_g_argument(JSContext      *context,
                                       value,
                                       key_param_info,
                                       val_param_info,
+                                      transfer,
                                       &ghash)) {
                 wrong = TRUE;
             } else {
@@ -1003,6 +1101,7 @@ gjs_value_to_arg(JSContext  *context,
                                 g_base_info_get_name( (GIBaseInfo*) arg_info),
                                 (g_arg_info_is_return_value(arg_info) ?
                                  GJS_ARGUMENT_RETURN_VALUE : GJS_ARGUMENT_ARGUMENT),
+                                g_arg_info_get_ownership_transfer (arg_info),
                                 g_arg_info_may_be_null(arg_info),
                                 arg);
     
@@ -1421,9 +1520,16 @@ gjs_value_from_g_argument (JSContext  *context,
     return JS_TRUE;
 }
 
+static JSBool gjs_g_arg_release_internal(JSContext  *context,
+                                         GITransfer  transfer,
+                                         GITypeInfo *type_info,
+                                         GITypeTag   type_tag,
+                                         GArgument  *arg);
+
 typedef struct {
     JSContext *context;
     GITypeInfo *key_param_info, *val_param_info;
+    GITransfer transfer;
     JSBool failed;
 } GHR_closure;
 
@@ -1433,15 +1539,25 @@ gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
     GArgument key_arg, val_arg;
     key_arg.v_pointer = key;
     val_arg.v_pointer = val;
-    if (!gjs_g_argument_release(c->context, GI_TRANSFER_EVERYTHING,
-                                c->key_param_info, &key_arg))
+    if (!gjs_g_arg_release_internal(c->context, c->transfer,
+                                    c->key_param_info,
+                                    g_type_info_get_tag(c->key_param_info),
+                                    &key_arg))
         c->failed = JS_TRUE;
 
-    if (!gjs_g_argument_release(c->context, GI_TRANSFER_EVERYTHING,
-                                c->val_param_info, &val_arg))
+    if (!gjs_g_arg_release_internal(c->context, c->transfer,
+                                    c->val_param_info,
+                                    g_type_info_get_tag(c->val_param_info),
+                                    &val_arg))
         c->failed = JS_TRUE;
     return TRUE;
 }
+
+/* We need to handle GI_TRANSFER_NOTHING differently for out parameters
+ * (free nothing) and for in parameters (free any temporaries we've
+ * allocated
+ */
+#define TRANSFER_IN_NOTHING (GI_TRANSFER_EVERYTHING + 1)
 
 static JSBool
 gjs_g_arg_release_internal(JSContext  *context,
@@ -1512,7 +1628,8 @@ gjs_g_arg_release_internal(JSContext  *context,
              */
 
             if (g_type_is_a(gtype, G_TYPE_OBJECT) || g_type_is_a(gtype, G_TYPE_INTERFACE)) {
-                g_object_unref(G_OBJECT(arg->v_pointer));
+                if (transfer != TRANSFER_IN_NOTHING)
+                    g_object_unref(G_OBJECT(arg->v_pointer));
             } else if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
                 g_closure_unref(arg->v_pointer);
             } else if (g_type_is_a(gtype, G_TYPE_VALUE)) {
@@ -1521,10 +1638,13 @@ gjs_g_arg_release_internal(JSContext  *context,
                 g_value_unset(value);
                 g_slice_free(GValue, value);
             } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
-                g_boxed_free(gtype, arg->v_pointer);
+                if (transfer != TRANSFER_IN_NOTHING)
+                    g_boxed_free(gtype, arg->v_pointer);
             } else if (gtype == G_TYPE_NONE) {
-                gjs_throw(context, "Don't know how to release GArgument: not an object or boxed type");
-                failed = JS_TRUE;
+                if (transfer != TRANSFER_IN_NOTHING) {
+                    gjs_throw(context, "Don't know how to release GArgument: not an object or boxed type");
+                    failed = JS_TRUE;
+                }
             } else {
                 gjs_throw(context, "Unhandled GType %s releasing GArgument",
                           g_type_name(gtype));
@@ -1537,7 +1657,7 @@ gjs_g_arg_release_internal(JSContext  *context,
         break;
 
     case GI_TYPE_TAG_GLIST:
-        if (transfer == GI_TRANSFER_EVERYTHING) {
+        if (transfer != GI_TRANSFER_CONTAINER) {
             GITypeInfo *param_info;
             GList *list;
 
@@ -1550,10 +1670,11 @@ gjs_g_arg_release_internal(JSContext  *context,
                 GArgument elem;
                 elem.v_pointer = list->data;
 
-                if (!gjs_g_argument_release(context,
-                                            GI_TRANSFER_EVERYTHING,
-                                            param_info,
-                                            &elem)) {
+                if (!gjs_g_arg_release_internal(context,
+                                                transfer,
+                                                param_info,
+                                                g_type_info_get_tag(param_info),
+                                                &elem)) {
                     failed = JS_TRUE;
                 }
             }
@@ -1599,7 +1720,7 @@ gjs_g_arg_release_internal(JSContext  *context,
         break;
 
     case GI_TYPE_TAG_GSLIST:
-        if (transfer == GI_TRANSFER_EVERYTHING) {
+        if (transfer != GI_TRANSFER_CONTAINER) {
             GITypeInfo *param_info;
             GSList *slist;
 
@@ -1612,10 +1733,11 @@ gjs_g_arg_release_internal(JSContext  *context,
                 GArgument elem;
                 elem.v_pointer = slist->data;
 
-                if (!gjs_g_argument_release(context,
-                                            GI_TRANSFER_EVERYTHING,
-                                            param_info,
-                                            &elem)) {
+                if (!gjs_g_arg_release_internal(context,
+                                                transfer,
+                                                param_info,
+                                                g_type_info_get_tag(param_info),
+                                                &elem)) {
                     failed = JS_TRUE;
                 }
             }
@@ -1631,7 +1753,11 @@ gjs_g_arg_release_internal(JSContext  *context,
             if (transfer == GI_TRANSFER_CONTAINER)
                 g_hash_table_steal_all (arg->v_pointer);
             else {
-                GHR_closure c = { .context = context, .failed = JS_FALSE };
+                GHR_closure c = {
+                    .context = context,
+                    .transfer = transfer,
+                    .failed = JS_FALSE
+                };
 
                 c.key_param_info = g_type_info_get_param_type(type_info, 0);
                 g_assert(c.key_param_info != NULL);
@@ -1688,10 +1814,14 @@ gjs_g_argument_release_in_arg(JSContext  *context,
                               GArgument  *arg)
 {
     GITypeTag type_tag;
-    gboolean needs_release;
 
-    /* we don't own the argument anymore */
-    if (transfer == GI_TRANSFER_EVERYTHING)
+    /* GI_TRANSFER_EVERYTHING: we don't own the argument anymore.
+     * GI_TRANSFER_CONTAINER:
+     * - non-containers: treated as GI_TRANSFER_EVERYTHING
+     * - containers: See FIXME in gjs_array_to_g_list(); currently
+     *   an error and we won't get here.
+     */
+    if (transfer != GI_TRANSFER_NOTHING)
         return JS_TRUE;
 
     type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
@@ -1700,53 +1830,8 @@ gjs_g_argument_release_in_arg(JSContext  *context,
                       "Releasing GArgument %s in param",
                       g_type_tag_to_string(type_tag));
 
-    /* release all (temporary) arguments we allocated from JS types */
-    /* FIXME: check with lists, arrays, boxed types, objects, ... */
-
-    needs_release = FALSE;
-
-    switch (type_tag) {
-    case GI_TYPE_TAG_UTF8:
-    case GI_TYPE_TAG_FILENAME:
-    case GI_TYPE_TAG_ARRAY:
-        needs_release = TRUE;
-        break;
-    case GI_TYPE_TAG_GLIST:
-    case GI_TYPE_TAG_GSLIST:
-    case GI_TYPE_TAG_GHASH:
-        if (transfer == GI_TRANSFER_CONTAINER) {
-            /* FIXME: to make this work, we'd have to make an extra copy of
-             * the in argument and keep it around so that we could release
-             * the elements here even after the surrounding container had
-             * been freed by the callee. */
-            gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                              "Container transfer for in parameters not "
-                              "supported; leaking contents.");
-            return JS_TRUE; /* treat like GI_TRANSFER_EVERYTHING */
-        }
-        needs_release = TRUE;
-        break;
-    case GI_TYPE_TAG_INTERFACE: {
-        GIBaseInfo* interface_info;
-        GType gtype;
-
-        interface_info = g_type_info_get_interface(type_info);
-        g_assert(interface_info != NULL);
-
-        gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
-
-        if (g_type_is_a(gtype, G_TYPE_CLOSURE) || g_type_is_a(gtype, G_TYPE_VALUE))
-            needs_release = TRUE;
-
-        g_base_info_unref(interface_info);
-        break;
-    }
-    default:
-        break;
-    }
-
-    if (needs_release)
-        return gjs_g_arg_release_internal(context, GI_TRANSFER_EVERYTHING,
+    if (type_needs_release (type_info, type_tag))
+        return gjs_g_arg_release_internal(context, TRANSFER_IN_NOTHING,
                                           type_info, type_tag, arg);
 
     return JS_TRUE;

@@ -810,6 +810,7 @@ boxed_set_field_from_value(JSContext   *context,
                                  type_info,
                                  g_base_info_get_name ((GIBaseInfo *)field_info),
                                  GJS_ARGUMENT_FIELD,
+                                 GI_TRANSFER_NOTHING,
                                  TRUE, &arg))
         goto out;
 
