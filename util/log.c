@@ -135,7 +135,10 @@ gjs_debug(GjsDebugTopic topic,
 
     if (logfp == NULL) {
         const char *debug_output = g_getenv("GJS_DEBUG_OUTPUT");
-        if (debug_output != NULL) {
+        if (debug_output != NULL &&
+            strcmp(debug_output, "stderr") == 0) {
+            debug_log_enabled = TRUE;
+        } else if (debug_output != NULL) {
             const char *log_file;
             char *free_me;
             char *c;
