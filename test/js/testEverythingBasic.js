@@ -228,13 +228,31 @@ function testArrayOut() {
 }
 
 /* GHash type */
+
+// Convert an object to a predictable (not-hash-order-dependent) string
+function objToString(v) {
+    if (typeof(v) == "object") {
+	let keys = [];
+	for (let k in v)
+	    keys.push(k);
+	keys.sort();
+	return "{" + keys.map(function(k) {
+	    return k + ":" + objToString(v[k]);
+	}) + "}";
+    } else if (typeof(v) == "string") {
+	return '"' + v + '"';
+    } else {
+	return v;
+    }
+}
+
 function testGHashOut() {
-    const HASH_STR = '({foo:"bar", baz:"bat", qux:"quux"})';
+    const HASH_STR = '{baz:"bat",foo:"bar",qux:"quux"}';
     assertEquals(null, Everything.test_ghash_null_return());
-    assertEquals(HASH_STR, Everything.test_ghash_nothing_return().toSource());
-    assertEquals(HASH_STR, Everything.test_ghash_nothing_return2().toSource());
-    assertEquals(HASH_STR, Everything.test_ghash_container_return().toSource());
-    assertEquals(HASH_STR, Everything.test_ghash_everything_return().toSource());
+    assertEquals(HASH_STR, objToString(Everything.test_ghash_nothing_return()));
+    assertEquals(HASH_STR, objToString(Everything.test_ghash_nothing_return2()));
+    assertEquals(HASH_STR, objToString(Everything.test_ghash_container_return()));
+    assertEquals(HASH_STR, objToString(Everything.test_ghash_everything_return()));
 }
 
 function testGHashIn() {
@@ -247,7 +265,7 @@ function testGHashIn() {
 }
 
 function testNestedGHashOut() {
-    const HASH_STR = '({wibble:{foo:"bar", baz:"bat", qux:"quux"}})';
+    const HASH_STR = '{wibble:{baz:"bat",foo:"bar",qux:"quux"}}';
     // FIXME uncomment this when it's added to everything module
     //assertEquals(HASH_STR, Everything.test_ghash_nested_everything_return().toSource());
     //assertEquals(HASH_STR, Everything.test_ghash_nested_everything_return2().toSource());
