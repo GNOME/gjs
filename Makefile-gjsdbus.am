@@ -1,0 +1,29 @@
+
+lib_LTLIBRARIES += libgjs-dbus.la
+
+gjs_dbusheaderdir=$(gjsincludedir)/gjs-dbus
+gjs_dbusheader_HEADERS =	\
+	gjsdbus/dbus.h		\
+	gjsdbus/dbus-proxy.h	\
+	gjsdbus/dbus-private.h
+
+libgjs_dbus_la_SOURCES =	\
+	gjsdbus/dbus.c		\
+	gjsdbus/dbus-signals.c	\
+	gjsdbus/dbus-proxy.c
+
+libgjs_dbus_la_CPPFLAGS =		\
+	$(AM_CPPFLAGS)				\
+	-DG_LOG_DOMAIN=\"GjsDBus\"
+libgjs_dbus_la_CFLAGS = 		\
+	$(AM_CFLAGS)		\
+	$(GJS_DBUS_CFLAGS)
+libgjs_dbus_la_LIBADD = 		\
+	libgjs.la					\
+	$(GJS_DBUS_LIBS)
+
+########################################################################
+pkgconfig_DATA += gjs-dbus-1.0.pc
+
+EXTRA_DIST += 			\
+	gjs-dbus-1.0.pc.in
