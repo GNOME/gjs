@@ -1,0 +1,15 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+bindir=@bindir@
+includedir=@includedir@
+datarootdir=@datarootdir@
+datadir=@datadir@
+
+Cflags: -I${includedir}/gjs-1.0
+Requires: gjs-1.0 dbus-1
+Libs: -L${libdir} -lgjs-dbus
+
+Name: gjs-dbus-1.0
+Description: DBus utility library
+Version: @VERSION@
