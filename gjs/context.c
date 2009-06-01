@@ -172,6 +172,96 @@ gjs_log_error(JSContext *context,
     return JS_TRUE;
 }
 
+static JSBool
+gjs_print_parse_args(JSContext *context,
+                     uintN      argc,
+                     jsval     *argv,
+                     char     **buffer)
+{
+    GString *str;
+    gchar *s;
+    guint n;
+
+    str = g_string_new("");
+    JS_EnterLocalRootScope(context);
+    for (n = 0; n < argc; ++n) {
+        JSExceptionState *exc_state;
+        JSString *jstr;
+
+        /* JS_ValueToString might throw, in which we will only
+         * log that the value could be converted to string */
+        exc_state = JS_SaveExceptionState(context);
+
+        jstr = JS_ValueToString(context, argv[n]);
+        if (jstr != NULL)
+            argv[n] = STRING_TO_JSVAL(jstr); // GC root
+
+        JS_RestoreExceptionState(context, exc_state);
+
+        if (jstr != NULL) {
+            if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(jstr), &s)) {
+                JS_LeaveLocalRootScope(context);
+                g_string_free(str, TRUE);
+                return JS_FALSE;
+            }
+
+            g_string_append(str, s);
+            g_free(s);
+            if (n < (argc-1))
+                g_string_append_c(str, ' ');
+        } else {
+            JS_LeaveLocalRootScope(context);
+            *buffer = g_string_free(str, TRUE);
+            if (!*buffer)
+                *buffer = g_strdup("<invalid string>");
+            return JS_TRUE;
+        }
+
+    }
+    JS_LeaveLocalRootScope(context);
+    *buffer = g_string_free(str, FALSE);
+
+    return JS_TRUE;
+}
+
+static JSBool
+gjs_print(JSContext *context,
+          JSObject  *obj,
+          uintN      argc,
+          jsval     *argv,
+          jsval     *retval)
+{
+    char *buffer;
+
+    if (!gjs_print_parse_args(context, argc, argv, &buffer)) {
+        return FALSE;
+    }
+
+    g_print("%s\n", buffer);
+    g_free(buffer);
+
+    return JS_TRUE;
+}
+
+static JSBool
+gjs_printerr(JSContext *context,
+             JSObject  *obj,
+             uintN      argc,
+             jsval     *argv,
+             jsval     *retval)
+{
+    char *buffer;
+
+    if (!gjs_print_parse_args(context, argc, argv, &buffer)) {
+        return FALSE;
+    }
+
+    g_printerr("%s\n", buffer);
+    g_free(buffer);
+
+    return JS_TRUE;
+}
+
 static JSClass global_class = {
     "GjsGlobal", JSCLASS_GLOBAL_FLAGS,
     JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
@@ -520,6 +610,18 @@ gjs_context_constructor (GType                  type,
                            gjs_log_error,
                            2, GJS_MODULE_PROP_FLAGS))
         gjs_fatal("Failed to define logError function");
+
+    /* Define global functions called print() and printerr() */
+    if (!JS_DefineFunction(js_context->context, js_context->global,
+                           "print",
+                           gjs_print,
+                           3, GJS_MODULE_PROP_FLAGS))
+        gjs_fatal("Failed to define print function");
+    if (!JS_DefineFunction(js_context->context, js_context->global,
+                           "printerr",
+                           gjs_printerr,
+                           4, GJS_MODULE_PROP_FLAGS))
+        gjs_fatal("Failed to define printerr function");
 
     /* If we created the root importer in the load context,
      * there would be infinite recursion since the load context
