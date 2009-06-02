@@ -25,11 +25,14 @@
 
 #include <util/log.h>
 #include <util/glib.h>
+#include <util/misc.h>
 
 #include "jsapi-util.h"
 #include "context-jsapi.h"
 
 #include <string.h>
+#include <jscntxt.h>
+
 
 typedef struct {
     GHashTable *dynamic_classes;
@@ -875,6 +878,14 @@ gjs_error_reporter(JSContext     *context,
                    JSErrorReport *report)
 {
     const char *warning;
+
+    if (gjs_environment_variable_is_set("GJS_ABORT_ON_OOM") &&
+        report->flags == JSREPORT_ERROR &&
+        report->errorNumber == JSMSG_OUT_OF_MEMORY) {
+        g_error("GJS ran out of memory at %s: %i.",
+                report->filename,
+                report->lineno);
+    }
 
     if ((report->flags & JSREPORT_WARNING) != 0) {
         /* We manually insert "WARNING" into the output instead of
