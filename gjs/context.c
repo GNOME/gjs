@@ -653,6 +653,7 @@ gjs_context_eval(GjsContext *js_context,
                  int          *exit_status_p,
                  GError      **error)
 {
+    int line_number;
     jsval retval;
     gboolean success;
 
@@ -665,6 +666,20 @@ gjs_context_eval(GjsContext *js_context,
      * script returned nonzero. We set GError if success = FALSE
      */
     success = TRUE;
+
+    /* handle scripts with UNIX shebangs */
+    line_number = 1;
+    if (script != NULL && script[0] == '#' && script[1] == '!') {
+        const char *s;
+
+        s = (const char *) strstr (script, "\n");
+        if (s != NULL) {
+            if (script_len > 0)
+                script_len -= (s + 1 - script);
+            script = s + 1;
+            line_number = 2;
+        }
+    }
 
     /* log and clear exception if it's set (should not be, normally...) */
     if (gjs_log_exception(js_context->context,
@@ -679,7 +694,7 @@ gjs_context_eval(GjsContext *js_context,
                            script,
                            script_len >= 0 ? script_len : (gssize) strlen(script),
                            filename,
-                           1, /* line number */
+                           line_number,
                            &retval)) {
         char *message;
 
