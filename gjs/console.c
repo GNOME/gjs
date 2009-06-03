@@ -71,11 +71,11 @@ main(int argc, char **argv)
         exit(1);
     } 
 
-    if (argc == 1) {
+    if (argc <= 1) {
         script = g_strdup("const Console = imports.console; Console.interact();");
         len = strlen(script);
         filename = "<stdin>";
-    } else if (argc >= 2) {
+    } else /*if (argc >= 2)*/ {
         error = NULL;
         if (!g_file_get_contents(argv[1], &script, &len, &error)) {
             g_printerr("%s\n", error->message);
