@@ -162,10 +162,15 @@ signal_watcher_table_add(GHashTable      **table_p,
                                          g_free,
                                          signal_watcher_list_free);
     } else {
-        if (!g_hash_table_lookup_extended(*table_p,
+        gpointer k, v;
+        if (g_hash_table_lookup_extended(*table_p,
                                           key,
-                                          (gpointer*)&original_key,
-                                          (gpointer*)&list)) {
+                                          &k, &v)) {
+            // do this assignment as separate step so as to avoid
+            // passing a type-punned pointer into g_hash_table_lookup_extended
+            original_key = (char *) k;
+            list = (GSList *) v;
+        } else {
             original_key = g_strdup(key);
             list = NULL;
         }
@@ -186,16 +191,20 @@ signal_watcher_table_remove(GHashTable       *table,
     GSList *list;
     GSList *l;
     char *original_key;
+    gpointer k, v;
 
     if (table == NULL)
         return; /* Never lazily-created the table, nothing ever added */
 
     if (!g_hash_table_lookup_extended(table,
                                       key,
-                                      (gpointer*)&original_key,
-                                      (gpointer*)&list)) {
+                                      &k, &v)) {
         return;
     }
+    // do this assignment as separate step so as to avoid
+    // passing a type-punned pointer into g_hash_table_lookup_extended
+    original_key = (char *) k;
+    list = (GSList *) v;
 
     l = g_slist_find(list, watcher);
     if (!l)

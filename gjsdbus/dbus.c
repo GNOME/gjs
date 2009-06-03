@@ -1608,7 +1608,10 @@ gjs_dbus_unregister_json(DBusConnection *connection,
 
 typedef struct {
     DBusConnection *connection;
-    GObject *gobj;
+    /* strict aliasing rules require us to relate the 'gobj' field to a
+     * void * type here, in order to be able to pass it to
+     * g_object_*_weak_pointer (which takes a void **) */
+    union { GObject *gobj; void *weak_ptr; };
     char *iface_name;
 } GjsDBusGObject;
 
@@ -1621,7 +1624,7 @@ gobj_path_unregistered(DBusConnection  *connection,
     g = user_data;
 
     if (g->gobj) {
-        g_object_remove_weak_pointer(g->gobj, (void**) &g->gobj);
+        g_object_remove_weak_pointer(g->gobj, &g->weak_ptr /* aka, gobj */);
         g->gobj = NULL;
     }
 
@@ -1802,7 +1805,7 @@ gjs_dbus_register_g_object(DBusConnection *connection,
         g_warning("Failed to register object path %s", path);
     }
 
-    g_object_add_weak_pointer(g->gobj, (void**) &g->gobj);
+    g_object_add_weak_pointer(g->gobj, &g->weak_ptr /* aka, gobj */);
 }
 
 void
