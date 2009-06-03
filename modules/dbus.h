@@ -19,8 +19,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#ifndef __BIG_JS_DBUS_H__
-#define __BIG_JS_DBUS_H__
+#ifndef __GJS_JS_DBUS_H__
+#define __GJS_JS_DBUS_H__
 
 #include <config.h>
 #include <glib.h>
@@ -31,9 +31,9 @@
 
 G_BEGIN_DECLS
 
-JSBool        big_js_define_dbus_stuff     (JSContext      *context,
+JSBool        gjs_js_define_dbus_stuff     (JSContext      *context,
                                             JSObject       *in_object);
 
 G_END_DECLS
 
-#endif  /* __BIG_JS_DBUS_H__ */
+#endif  /* __GJS_JS_DBUS_H__ */

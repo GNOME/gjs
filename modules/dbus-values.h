@@ -19,8 +19,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#ifndef __BIG_JS_DBUS_VALUES_H__
-#define __BIG_JS_DBUS_VALUES_H__
+#ifndef __GJS_JS_DBUS_VALUES_H__
+#define __GJS_JS_DBUS_VALUES_H__
 
 #include <glib.h>
 #include <dbus/dbus.h>
@@ -50,4 +50,4 @@ JSBool gjs_js_add_dbus_props      (JSContext          *context,
 
 G_END_DECLS
 
-#endif  /* __BIG_JS_DBUS_VALUES_H__ */
+#endif  /* __GJS_JS_DBUS_VALUES_H__ */
