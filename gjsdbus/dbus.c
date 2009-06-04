@@ -1287,6 +1287,8 @@ request_name_owner(DBusConnection *connection,
 
     call = NULL;
     dbus_connection_send_with_reply(connection, message, &call, -1);
+    dbus_message_unref(message);
+
     if (call != NULL) {
         GetOwnerRequest *gor;
         GjsDBusWatchNameFlags flags;
