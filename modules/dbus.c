@@ -29,7 +29,7 @@
 #include "../gi/closure.h"
 
 #include <util/log.h>
-#include <gjsdbus/dbus.h>
+#include <gjs-dbus/dbus.h>
 
 static gboolean session_bus_weakref_added = FALSE;
 static DBusConnection *session_bus = NULL;

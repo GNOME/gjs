@@ -24,7 +24,7 @@
 #include "dbus-exports.h"
 #include "dbus-values.h"
 
-#include "gjsdbus/dbus.h"
+#include "gjs-dbus/dbus.h"
 
 #include <gjs/gjs.h>
 

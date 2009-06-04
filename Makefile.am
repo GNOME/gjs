@@ -87,7 +87,7 @@ gjstest_files_with_tests += 	\
 	gjs/stack.c				\
 	util/glib.c
 
-include Makefile-gjsdbus.am
+include Makefile-gjs-dbus.am
 include Makefile-gi.am
 include Makefile-modules.am
 include Makefile-examples.am

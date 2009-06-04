@@ -19,6 +19,7 @@ configure
 depcomp
 gjs-1.0.pc
 gjs-console
+gjs-dbus-1.0.pc
 gjs-gi-1.0.pc
 gjstest.c
 gjstest.c.stamp
