@@ -467,7 +467,7 @@ function _getInterfaceXML() {
         let methods = ('methods' in iface) ? iface.methods : [];
         for (let j = 0; j < methods.length; j++) {
             let method = methods[j];
-            result += '    <method name="' + method.name + method.name + '">\n';
+            result += '    <method name="' + method.name + '">\n';
             for each (let sig in _parseDBusSigs(method.inSignature)) {
                 result += '      <arg type="' + sig + '" direction="in"/>\n';
             }
@@ -482,7 +482,7 @@ function _getInterfaceXML() {
             let signal = signals[j];
             result += '    <signal name="' + signal.name + '">\n';
             for each (let sig in _parseDBusSigs(signal.inSignature)) {
-                result += '      <arg type="' + sig + '%s"/>\n';
+                result += '      <arg type="' + sig + '"/>\n';
             }
             result += '    </signal>\n';
         }

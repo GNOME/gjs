@@ -1632,8 +1632,6 @@ gjs_js_define_dbus_stuff(JSContext      *context,
      * JS program may not even be using it.
      */
 
-    g_printerr ("RUNNING dbus init\n");
-
     if (!JS_DefineFunction(context, module_obj,
                            "signatureLength",
                            gjs_js_dbus_signature_length,
