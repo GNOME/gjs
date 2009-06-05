@@ -1,4 +1,5 @@
-GTESTER = ${TESTS_ENVIRONMENT} gtester
+RUN_WITH_DBUS = ${top_srcdir}/test/run-with-dbus --session --system
+GTESTER = ${TESTS_ENVIRONMENT} ${RUN_WITH_DBUS} gtester
 
 ########################################################################
 TEST_PROGS += gjs-tests
@@ -64,6 +65,11 @@ EXTRA_DIST +=			\
 ########################################################################
 TESTS_ENVIRONMENT =				\
 	abs_top_srcdir="$(abs_top_srcdir)"	\
+	DBUS_SESSION_BUS_ADDRESS=''			\
+	XDG_DATA_HOME=$(abs_top_builddir)/test_user_data \
+        GJS_DEBUG_OUTPUT=$(builddir)/test_user_data/logs/gjs.log    \
+	BUILDDIR=$(abs_top_builddir)			\
+	GJS_USE_UNINSTALLED_FILES=1			\
 	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)"	\
 	G_FILENAME_ENCODING=latin1	# ensure filenames are not utf8
 
@@ -96,14 +102,20 @@ valgrind-check valgrind-test: $(gjsnative_LTLIBRARIES) ${TEST_PROGS}
 	    echo "valgrind failed for:$$failed"; exit 1; \
 	  }; \
 	}
-CLEANFILES += $(TEST_PROGS:%=valgrind.%.log)
+CLEANFILES +=					\
+	$(TEST_PROGS:%=valgrind.%.log)		\
+	uninstalled-test-bus.conf		\
+	uninstalled-system-test-bus.conf
+
+clean-local:
+	-rm -rf test_user_data
 
 EXTRA_DIST +=					\
 	test/js/modules/jsUnit.js		\
 	test/js/modules/alwaysThrows.js         \
 	test/js/modules/foobar.js               \
- 	test/js/modules/mutualImport/a.js       \
- 	test/js/modules/mutualImport/b.js       \
+	test/js/modules/mutualImport/a.js       \
+	test/js/modules/mutualImport/b.js       \
 	test/js/modules/subA/.secret.js         \
 	test/js/modules/subA/.hidden/hidden.js  \
 	test/js/modules/subA/foo                \
@@ -120,7 +132,9 @@ EXTRA_DIST +=					\
 	test/js/testLocale.js			\
 	test/js/testMainloop.js			\
 	test/js/testSignals.js			\
-	test/js/testTweener.js
+	test/js/testTweener.js			\
+	test/run-with-dbus			\
+	test/test-bus.conf
 
 ########################################################################
 if ENABLE_COVERAGE

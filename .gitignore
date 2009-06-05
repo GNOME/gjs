@@ -1,6 +1,8 @@
 *.la
 *.lo
 *.o
+*.gir
+*.typelib
 .deps/
 .libs/
 INSTALL
@@ -21,6 +23,8 @@ gjs-1.0.pc
 gjs-console
 gjs-dbus-1.0.pc
 gjs-gi-1.0.pc
+gjs-tests
+gjs-unit
 gjstest.c
 gjstest.c.stamp
 gjstest.h
@@ -30,3 +34,6 @@ libtool
 ltmain.sh
 missing
 stamp-h1
+test_user_data
+uninstalled-test-bus.conf
+uninstalled-system-test-bus.conf
