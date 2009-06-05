@@ -63,6 +63,9 @@ void gjs_dbus_add_bus_weakref    (DBusBusType      bus_type,
 void gjs_dbus_remove_bus_weakref (DBusBusType      bus_type,
                                   DBusConnection **connection_p);
 
+DBusConnection* gjs_dbus_get_weak_ref       (DBusBusType     which_bus);
+
+
 void gjs_dbus_try_connecting_now (DBusBusType which_bus);
 
 /*

@@ -4,10 +4,10 @@ lib_LTLIBRARIES += libgjs-dbus.la
 gjs_dbusheaderdir=$(gjsincludedir)/gjs-dbus
 gjs_dbusheader_HEADERS =	\
 	gjs-dbus/dbus.h		\
-	gjs-dbus/dbus-proxy.h	\
-	gjs-dbus/dbus-private.h
+	gjs-dbus/dbus-proxy.h
 
 libgjs_dbus_la_SOURCES =	\
+	gjs-dbus/dbus-private.h \
 	gjs-dbus/dbus.c		\
 	gjs-dbus/dbus-signals.c	\
 	gjs-dbus/dbus-proxy.c

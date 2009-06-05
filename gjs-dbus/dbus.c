@@ -185,7 +185,7 @@ _gjs_dbus_dispose_info(DBusConnection *connection)
 }
 
 DBusConnection*
-_gjs_dbus_get_weak_ref(DBusBusType which_bus)
+gjs_dbus_get_weak_ref(DBusBusType which_bus)
 {
     if (which_bus == DBUS_BUS_SESSION) {
         return session_bus_weak_ref;
@@ -225,7 +225,7 @@ try_connecting(DBusBusType which_bus)
     DBusConnection *connection;
     GError *error;
 
-    connection = _gjs_dbus_get_weak_ref(which_bus);
+    connection = gjs_dbus_get_weak_ref(which_bus);
     if (connection != NULL)
         return connection;
 
@@ -381,7 +381,7 @@ internal_add_connect_funcs(const GjsDBusConnectFuncs *funcs,
          */
         DBusConnection *connection;
 
-        connection = _gjs_dbus_get_weak_ref(f->funcs->which_bus);
+        connection = gjs_dbus_get_weak_ref(f->funcs->which_bus);
 
         if (connection != NULL && !f->opened) {
             f->opened = TRUE;
@@ -891,7 +891,7 @@ release_name_internal (DBusBusType                  bus_type,
     GjsNameOwnershipMonitor *monitor;
     DBusConnection *connection;
 
-    connection = _gjs_dbus_get_weak_ref(bus_type);
+    connection = gjs_dbus_get_weak_ref(bus_type);
     if (!connection)
         return;
 
@@ -1329,7 +1329,7 @@ notify_watcher_name_appeared(gpointer data)
     watcher = data;
     watcher->notify_idle = 0;
 
-    connection = _gjs_dbus_get_weak_ref(watcher->bus_type);
+    connection = gjs_dbus_get_weak_ref(watcher->bus_type);
 
     if (!connection)
         return FALSE;
@@ -1444,7 +1444,7 @@ gjs_dbus_watch_name(DBusBusType                  bus_type,
 
     watcher = name_watcher_new(flags, funcs, data, bus_type);
 
-    connection = _gjs_dbus_get_weak_ref(bus_type);
+    connection = gjs_dbus_get_weak_ref(bus_type);
 
     if (connection) {
         GjsDBusInfo *info;
@@ -1498,7 +1498,7 @@ gjs_dbus_unwatch_name(DBusBusType                  bus_type,
     gjs_debug(GJS_DEBUG_DBUS, "Removing watch on name '%s'",
             name);
 
-    connection = _gjs_dbus_get_weak_ref(bus_type);
+    connection = gjs_dbus_get_weak_ref(bus_type);
     if (connection == NULL) {
         /* right now our state is entirely hosed if we disconnect
          * (we don't move the watchers out of the connection data),
@@ -1557,7 +1557,7 @@ gjs_dbus_get_watched_name_owner(DBusBusType   bus_type,
     GjsNameWatch *watch;
     GjsDBusInfo *info;
 
-    connection = _gjs_dbus_get_weak_ref(bus_type);
+    connection = gjs_dbus_get_weak_ref(bus_type);
     if (connection == NULL) {
         return NULL;
     }
@@ -2588,7 +2588,7 @@ bigtest_test_func_util_dbus_client(void)
      * next dbus-related test, which allows those tests
      * to fork new child processes.
      */
-    _gjs_dbus_dispose_info(_gjs_dbus_get_weak_ref(DBUS_BUS_SESSION));
+    _gjs_dbus_dispose_info(gjs_dbus_get_weak_ref(DBUS_BUS_SESSION));
     dbus_shutdown();
 
     gjs_debug(GJS_DEBUG_DBUS, "dbus shut down");

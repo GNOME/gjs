@@ -721,7 +721,7 @@ gjs_dbus_watch_signal(DBusBusType                  bus_type,
      * gets current state on connect, that will be after
      * all their match rules are added.
      */
-    weak = _gjs_dbus_get_weak_ref(bus_type);
+    weak = gjs_dbus_get_weak_ref(bus_type);
     if (weak != NULL) {
         signal_watcher_add(weak, _gjs_dbus_ensure_info(weak), watcher);
         signal_watcher_unref(watcher);
@@ -795,7 +795,7 @@ unwatch_signal(DBusBusType                  bus_type,
 
     /* Always remove only ONE watcher (the first one we find) */
 
-    weak = _gjs_dbus_get_weak_ref(bus_type);
+    weak = gjs_dbus_get_weak_ref(bus_type);
 
     /* First see if it's still pending */
     for (list = pending_signal_watchers;
@@ -947,8 +947,8 @@ fork_test_signal_service(void)
     pid_t child_pid;
 
     /* it would break to fork after we already connected */
-    g_assert(_gjs_dbus_get_weak_ref(DBUS_BUS_SESSION) == NULL);
-    g_assert(_gjs_dbus_get_weak_ref(DBUS_BUS_SYSTEM) == NULL);
+    g_assert(gjs_dbus_get_weak_ref(DBUS_BUS_SESSION) == NULL);
+    g_assert(gjs_dbus_get_weak_ref(DBUS_BUS_SYSTEM) == NULL);
     g_assert(test_service_pid == 0);
 
     child_pid = fork();
@@ -1214,7 +1214,7 @@ bigtest_test_func_util_dbus_signals_client(void)
      * next dbus-related test, which allows those tests
      * to fork new child processes.
      */
-    _gjs_dbus_dispose_info(_gjs_dbus_get_weak_ref(DBUS_BUS_SESSION));
+    _gjs_dbus_dispose_info(gjs_dbus_get_weak_ref(DBUS_BUS_SESSION));
     dbus_shutdown();
 
     gjs_debug(GJS_DEBUG_DBUS, "dbus shut down");

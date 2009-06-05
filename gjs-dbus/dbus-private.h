@@ -65,8 +65,6 @@ void              _gjs_dbus_set_matching_name_owner_changed (DBusConnection *con
                                                              const char     *bus_name,
                                                              gboolean        matched);
 void              _gjs_dbus_ensure_connect_idle             (DBusBusType     bus_type);
-DBusConnection*   _gjs_dbus_get_weak_ref                    (DBusBusType     which_bus);
-
 
 G_END_DECLS
 
