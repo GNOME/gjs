@@ -1,0 +1,134 @@
+= Overview of gjs-dbus API =
+
+This document assumes you've read some of the basic dbus introductory
+docs, see http://www.freedesktop.org/wiki/Software/dbus
+
+== Why ==
+
+libdbus is meant to be like XCB or Xlib; a low-level library used by a
+much more convenient higher-level "toolkit" or "binding."
+
+However, there is not really a good binding for C. Thus, the stuff in
+our gjs-dbus/ directory.
+
+We use dbus-glib for main loop integration, but not for "object
+mapping" or mapping remote objects and types to local objects and
+types.
+
+== How to connect two processes ==
+
+Two important things you want to do:
+
+1) Own a bus name, which other programs can use to contact you.
+
+You would frequently want to exit if the bus name is no longer owned
+(some other process took it over, perhaps). This provides "libunique"
+type of functionality.
+
+2) Keep track of a bus name you want to use.
+
+Get a notification when a service you plan to use appears or
+disappears.
+
+=== Owning a bus name ===
+
+Call gjs_dbus_acquire_name(). This sets up callbacks to be invoked
+when you begin to own, or no longer own, a particular bus name.
+
+If you want "libunique" type singleton behavior, use
+GJS_DBUS_NAME_SINGLE_INSTANCE, otherwise GJS_DBUS_NAME_MANY_INSTANCES
+
+(With MANY_INSTANCES, only one app has the name at once, but all
+instances keep running and if one exits another takes over.)
+
+Typically, when you get the name, you would then set up the APIs that
+you want to export:
+
+static void
+on_name_acquired (DBusConnection *connection,
+                  const char     *name,
+                  void           *data)
+{
+    gjs_dbus_register_json(connection, "org.foo.Bar",
+                           &methods, G_N_ELEMENTS(methods));
+    gjs_dbus_register_g_object(connection, "/org/foo/bars/this_bar",
+                               bar_gobj, "org.foo.Bar");
+}
+
+On losing the name, you could undo the registrations or just exit.
+
+The callbacks will always come in pairs, i.e. you should not get two
+"acquired name" callbacks in a row without an intervening "lost name"
+
+=== Watching a bus name ===
+
+If you want to use a service, register callbacks to track its
+appearance and disappearance with gjs_dbus_watch_name().
+
+The GJS_DBUS_NAME_START_IF_NOT_FOUND flag specifies that if nothing
+owns the name, we should try to start it up (for this to work, the
+name must have an associated .service file).
+
+== How to talk to another process once you find it by name ==
+
+Once you own a name or find someone else's name, you want to send
+around some method calls and signals.
+
+=== Receiving JSON Calls ===
+
+To avoid getting bogged down in dbus IDL, which is heavy and
+statically-typed and annoying, for custom interfaces within your
+app you might use "json" methods. In dbus IDL, a json method looks
+like:
+
+   DICT jsonMethodName(DICT)
+
+GJS defines two APIs to invoke this:
+
+  dbus.json_call('com.litl.viewers.Fake', '/foo',
+                  'com.litl.Frobatable', 'frobateStuff', {});
+
+and
+
+  dbus.json_call_async('com.litl.viewers.Fake', '/foo', 'com.litl.Frobatable', 'frobateStuff', {},
+                       function(result) {
+                          log("Reply from async json call: " + result.toSource());
+                       });
+
+The args are:
+
+  dbus.json_call(bus_name, object_path, interface,
+                 method_name, json_args_dict)
+
+  dbus.json_call_async(bus_name, object_path, interface,
+                       method_name, json_args_dict, on_reply_callback)
+
+
+=== Exporting JSON Calls ===
+
+In C, to implement a JSON API, there are two steps:
+
+1) register a set of JSON methods (an interface) with
+gjs_dbus_register_json()
+
+2) register specific objects that have that interface, with
+gjs_dbus_register_g_object(); each object needs its own path.
+
+The "virtual table" for a JSON interface is an array of
+GjsDBusJsonMethod.
+
+Each method can be either "sync" or "async"; "sync" methods
+immediately write key-value pairs to an out_iter to be sent as the
+return value of the method (or alternatively, they immediately set the
+DBusError). "async" methods are responsible for sending the return
+value or error by hand at some later time.
+
+The GObject you register can be anything, it does not have to support
+any special interfaces. It's passed to the JSON method functions as
+the "data". There's some idea that we could later support registering
+something other than a GObject, I guess, so the "data" is a void*.
+
+The registered object is weak-referenced so calls on it become no-ops
+if the object is destroyed. This avoids scary re-entrancy crashes,
+hopefully. But it means you have to hold a ref yourself. Maybe we need
+a strong-ref version, we'll see.
