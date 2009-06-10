@@ -870,6 +870,38 @@ gjs_js_dbus_emit_signal(JSContext  *context,
     return JS_TRUE;
 }
 
+/* Blocks until dbus outgoing message queue is empty.  This is the only way
+ * to ensure that a signal has been sent before proceeding. */
+static JSBool
+gjs_js_dbus_flush(JSContext  *context,
+                        JSObject   *obj,
+                        uintN       argc,
+                        jsval      *argv,
+                        jsval      *retval)
+{
+    DBusConnection *bus_connection;
+    DBusBusType bus_type;
+
+    if (argc != 0) {
+        gjs_throw(context, "Does not take any arguments.");
+        return JS_FALSE;
+    }
+
+    if (!get_bus_type_from_object(context, obj, &bus_type))
+        return JS_FALSE;
+
+    if (!bus_check(context, bus_type))
+        return JS_FALSE;
+
+    gjs_debug(GJS_DEBUG_DBUS, "Flushing bus");
+
+    bus_connection = DBUS_CONNECTION_FROM_TYPE(bus_type);
+
+    dbus_connection_flush(bus_connection);
+
+    return JS_TRUE;
+}
+
 /* Args are bus_name, object_path, iface, method, out signature, in signature, args */
 static JSBool
 gjs_js_dbus_call(JSContext  *context,
@@ -1538,6 +1570,12 @@ define_bus_proto(JSContext *context,
                            "emit_signal",
                            gjs_js_dbus_emit_signal,
                            3, GJS_MODULE_PROP_FLAGS))
+        goto out;
+
+    if (!JS_DefineFunction(context, bus_proto_obj,
+                           "flush",
+                           gjs_js_dbus_flush,
+                           0, GJS_MODULE_PROP_FLAGS))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
