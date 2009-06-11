@@ -686,12 +686,12 @@ find_js_property_by_path(JSContext  *context,
 
     g_strfreev(elements);
 
-    if (obj != NULL) {
-        // this is the directory object; see if there's an actual
-        // implementation object hanging off it.
-        if (dir_obj_p)
-            *dir_obj_p = obj;
+    // this is the directory object; see if there's an actual
+    // implementation object hanging off it.
+    if (dir_obj_p)
+        *dir_obj_p = obj;
 
+    if (obj != NULL) {
         gjs_object_get_property(context, obj, "-impl-", &value);
 
         if (value == JSVAL_VOID ||
@@ -1545,10 +1545,11 @@ on_message(DBusConnection *connection,
                   "Default-introspecting JS obj at dbus path %s",
                   path);
 
-        result = handle_introspect(priv->context,
-                                   connection,
-                                   dir_obj, obj,
-                                   message);
+        if (dir_obj != NULL)
+            result = handle_introspect(priv->context,
+                                       connection,
+                                       dir_obj, obj,
+                                       message);
         goto out;
     }
 
