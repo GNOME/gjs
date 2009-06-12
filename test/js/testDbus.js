@@ -13,7 +13,10 @@ Malarky.prototype = {
 };
 
 /* The methods list with their signatures. We test both notations for json
- * methods (only name or explicit signatures) */
+ * methods (only name or explicit signatures)
+ *
+ * *** NOTE: If you add stuff here, you need to update testIntrospectReal
+ */
 var realIface = {
     name: 'com.litl.Real',
     methods: [{ name: 'nonJsonFrobateStuff',
@@ -49,7 +52,9 @@ var realIface = {
               { name: "dictEcho", outSignature: "a{sv}",
                 inSignature: "a{sv}" },
               { name: "echo", outSignature: "si",
-                inSignature: "si" }
+                inSignature: "si" },
+              { name: "structArray", outSignature: "a(ii)",
+                inSignature: '' }
              ],
     signals: [
         { name: 'signalFoo', inSignature: 's' }
@@ -193,6 +198,10 @@ Real.prototype = {
 
     set PropReadWrite(value) {
         this._propReadWrite = value;
+    },
+    
+    structArray: function () {
+        return [[128, 123456], [42, 654321]];
     }
 };
 
@@ -777,6 +786,26 @@ function testBytes() {
     }
 }
 
+function testStructArray() {
+    let theResult, theExcp;
+    Mainloop.idle_add(function() {
+                      let proxy = new Malarky();
+                      proxy.structArrayRemote(function(result, excp) {
+                                                  theResult = result;
+                                                  theExcp = excp;
+                                                  Mainloop.quit('testDbus');
+                                              });
+                      });
+    Mainloop.run('testDbus');
+    assertNull(theExcp);
+    assertNotNull(theResult);
+    log(theResult);
+    assertEquals(theResult[0][0], 128);
+    assertEquals(theResult[0][1], 123456);
+    assertEquals(theResult[1][0], 42);
+    assertEquals(theResult[1][1], 654321);
+}
+
 function testDictSignatures() {
     let someDict = {
         // should be a double after round trip except
@@ -941,7 +970,7 @@ function testIntrospectReal() {
     // we get the 'realIface', plus 'Introspectable' and 'Properties'
     assertEquals(3, xml.interface.length());
     assertEquals('com.litl.Real', xml.interface[0].@name.toString());
-    assertEquals(18, xml.interface[0].method.length());
+    assertEquals(19, xml.interface[0].method.length());
     assertEquals(3, xml.interface[0].property.length());
     assertEquals(1, xml.interface[0].signal.length());
     assertEquals('org.freedesktop.DBus.Introspectable', xml.interface[1].@name.toString());

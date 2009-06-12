@@ -531,14 +531,13 @@ append_array(JSContext         *context,
     DBusSignatureIter element_sig_iter;
     int forced_type;
     jsval element;
-    DBusMessageIter array_iter;
-    DBusMessageIter variant_iter;
     int i;
     char *sig;
 
     forced_type = dbus_signature_iter_get_current_type(sig_iter);
 
     if (forced_type == DBUS_TYPE_VARIANT) {
+        DBusMessageIter variant_iter;
         DBusSignatureIter variant_sig_iter;
 
         dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT,
@@ -552,39 +551,83 @@ append_array(JSContext         *context,
         dbus_message_iter_close_container(iter, &variant_iter);
 
         return JS_TRUE;
-    } else if (forced_type != DBUS_TYPE_ARRAY) {
-        gjs_throw(context,
-                  "JavaScript Array can't be converted to dbus type %c",
-                  forced_type);
-        return JS_FALSE;
-    }
+    } else if (forced_type == DBUS_TYPE_STRUCT) {
+        DBusMessageIter struct_iter;
+        dbus_bool_t have_next;
 
-    g_assert(dbus_signature_iter_get_current_type(sig_iter) == DBUS_TYPE_ARRAY);
-    dbus_signature_iter_recurse(sig_iter, &element_sig_iter);
+        g_assert(dbus_signature_iter_get_current_type(sig_iter) == DBUS_TYPE_STRUCT);
+        dbus_signature_iter_recurse(sig_iter, &element_sig_iter);
 
-    sig = dbus_signature_iter_get_signature(&element_sig_iter);
-    dbus_message_iter_open_container(iter, DBUS_TYPE_ARRAY, sig, &array_iter);
-    dbus_free(sig);
+        dbus_message_iter_open_container(iter, DBUS_TYPE_STRUCT, NULL, &struct_iter);
+        
+        have_next = dbus_signature_iter_get_current_type(&element_sig_iter) != DBUS_TYPE_INVALID;
 
-    for (i = 0; i < length; i++) {
-        element = JSVAL_VOID;
+        for (i = 0; i < length; i++) {
+            element = JSVAL_VOID;
+            
+            if (!have_next) {
+                gjs_throw(context, "Insufficient elements for structure in JS Array");
+                return JS_FALSE;
+            }
 
-        if (!JS_GetElement(context, array, i, &element)) {
-            gjs_throw(context, "Failed to get element in JS Array");
+            if (!JS_GetElement(context, array, i, &element)) {
+                gjs_throw(context, "Failed to get element in JS Array");
+                return JS_FALSE;
+            }
+
+            gjs_debug(GJS_DEBUG_DBUS_MARSHAL,
+                      " Adding struct element %u", i);
+
+            if (!gjs_js_one_value_to_dbus(context, element, &struct_iter,
+                                          &element_sig_iter))
+                return JS_FALSE;
+            
+            have_next = dbus_signature_iter_next (&element_sig_iter);
+        }
+        
+        if (have_next) {
+            gjs_throw(context, "Too many elements for structure in JS Array");
             return JS_FALSE;
         }
 
-        gjs_debug(GJS_DEBUG_DBUS_MARSHAL,
-                  " Adding array element %u", i);
+        dbus_message_iter_close_container(iter, &struct_iter);
 
-        if (!gjs_js_one_value_to_dbus(context, element, &array_iter,
-                                      &element_sig_iter))
-            return JS_FALSE;
+        return JS_TRUE;
+    } else if (forced_type == DBUS_TYPE_ARRAY) {
+        DBusMessageIter array_iter;
+
+        g_assert(dbus_signature_iter_get_current_type(sig_iter) == DBUS_TYPE_ARRAY);
+        dbus_signature_iter_recurse(sig_iter, &element_sig_iter);
+
+        sig = dbus_signature_iter_get_signature(&element_sig_iter);
+        dbus_message_iter_open_container(iter, DBUS_TYPE_ARRAY, sig, &array_iter);
+        dbus_free(sig);
+
+        for (i = 0; i < length; i++) {
+            element = JSVAL_VOID;
+
+            if (!JS_GetElement(context, array, i, &element)) {
+                gjs_throw(context, "Failed to get element in JS Array");
+                return JS_FALSE;
+            }
+
+            gjs_debug(GJS_DEBUG_DBUS_MARSHAL,
+                      " Adding array element %u", i);
+
+            if (!gjs_js_one_value_to_dbus(context, element, &array_iter,
+                                          &element_sig_iter))
+                return JS_FALSE;
+        }
+
+        dbus_message_iter_close_container(iter, &array_iter);
+        
+        return JS_TRUE;
+    } else {
+      gjs_throw(context,
+                "JavaScript Array can't be converted to dbus type %c",
+                forced_type);
+      return JS_FALSE;
     }
-
-    dbus_message_iter_close_container(iter, &array_iter);
-
-    return JS_TRUE;
 }
 
 static JSBool
