@@ -59,7 +59,7 @@ setup(GjsTestJSFixture *fix,
      * importing a module, but also it's just less typing to have
      * "assert*" without a prefix.
      */
-    filename = g_build_filename(top_srcdir, "test", "js", "modules", "jsUnit.js", NULL);
+    filename = g_build_filename(top_srcdir, "modules", "jsUnit.js", NULL);
     success = gjs_context_eval_file(fix->context, filename, &code, &error);
     g_free(filename);
 

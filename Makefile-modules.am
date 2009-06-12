@@ -3,9 +3,11 @@ dist_gjstweener_DATA =			\
 	modules/tweener/tweener.js	\
 	modules/tweener/tweenList.js
 
-dist_gjsjs_DATA += modules/lang.js	\
-                   modules/signals.js 	\
-		   modules/dbus.js
+dist_gjsjs_DATA +=		\
+	modules/lang.js		\
+	modules/jsUnit.js	\
+	modules/signals.js	\
+	modules/dbus.js
 
 gjsnative_LTLIBRARIES += console.la debugger.la gi.la mainloop.la dbusNative.la
 

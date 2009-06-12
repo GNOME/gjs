@@ -111,7 +111,6 @@ clean-local:
 	-rm -rf test_user_data
 
 EXTRA_DIST +=					\
-	test/js/modules/jsUnit.js		\
 	test/js/modules/alwaysThrows.js         \
 	test/js/modules/foobar.js               \
 	test/js/modules/mutualImport/a.js       \
@@ -122,7 +121,6 @@ EXTRA_DIST +=					\
 	test/js/modules/subA/subB/__init__.js	\
 	test/js/modules/subA/subB/foobar.js     \
 	test/js/modules/subA/subB/baz.js        \
-	test/js/modules/jsUnit.js               \
 	test/js/testself.js			\
 	test/js/testEverythingBasic.js		\
 	test/js/testEverythingEncapsulated.js	\
