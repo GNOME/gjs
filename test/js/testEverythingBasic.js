@@ -266,9 +266,8 @@ function testGHashIn() {
 
 function testNestedGHashOut() {
     const HASH_STR = '{wibble:{baz:"bat",foo:"bar",qux:"quux"}}';
-    // FIXME uncomment this when it's added to everything module
-    //assertEquals(HASH_STR, Everything.test_ghash_nested_everything_return().toSource());
-    //assertEquals(HASH_STR, Everything.test_ghash_nested_everything_return2().toSource());
+    assertEquals(HASH_STR, objToString(Everything.test_ghash_nested_everything_return()));
+    assertEquals(HASH_STR, objToString(Everything.test_ghash_nested_everything_return2()));
 }
 
 /* Enums */
