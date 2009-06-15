@@ -121,7 +121,19 @@ function testStrv() {
     // Second two are deliberately not strings
     assertRaises(function() { Everything.test_strv_in(['1', 2, 3]); });
 
-    // FIXME: Everything.test_strv_out not implemented.
+    let strv = Everything.test_strv_out();
+    assertEquals(5, strv.length);
+    assertEquals("thanks", strv[0]);
+    assertEquals("for", strv[1]);
+    assertEquals("all", strv[2]);
+    assertEquals("the", strv[3]);
+    assertEquals("fish", strv[4]);
+
+    strv = Everything.test_strv_out_container();
+    assertEquals(3, strv.length);
+    assertEquals("1", strv[0]);
+    assertEquals("2", strv[1]);
+    assertEquals("3", strv[2]);
 }
 
 function testUtf8() {

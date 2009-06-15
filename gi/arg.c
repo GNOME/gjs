@@ -1448,8 +1448,47 @@ gjs_value_from_g_argument (JSContext  *context,
         if (arg->v_pointer == NULL) {
             /* OK, but no conversion to do */
         } else {
-            gjs_throw(context, "FIXME: Only supporting null ARRAYs");
-            return JS_FALSE;
+
+            if (g_type_info_is_zero_terminated(type_info)) {
+                GITypeInfo *param_info;
+                GITypeTag param_tag;
+                JSBool result;
+
+                param_info = g_type_info_get_param_type(type_info, 0);
+                g_assert(param_info != NULL);
+
+                param_tag = g_type_info_get_tag((GITypeInfo*) param_info);
+
+                if (param_tag != GI_TYPE_TAG_UTF8) {
+                    gjs_throw(context, "FIXME: Only supporting null-terminated arrays of strings");
+                    result = JS_FALSE;
+                } else {
+                    GSList *list;
+                    char ** strv;
+
+                    list = NULL;
+                    for (strv = arg->v_pointer; *strv; strv ++) {
+                        list = g_slist_prepend(list, *strv);
+                    }
+                    list = g_slist_reverse(list);
+
+                    result = gjs_array_from_g_list(context,
+                                                   value_p,
+                                                   type_tag,
+                                                   param_info,
+                                                   NULL,
+                                                   list);
+
+                    g_slist_free(list);
+                }
+
+                g_base_info_unref((GIBaseInfo*) param_info);
+
+                return result;
+            } else {
+                gjs_throw(context, "FIXME: Only supporting zero-terminated ARRAYs");
+                return JS_FALSE;
+            }
         }
         break;
 
@@ -1699,7 +1738,10 @@ gjs_g_arg_release_internal(JSContext  *context,
             switch (element_type) {
             case GI_TYPE_TAG_UTF8:
             case GI_TYPE_TAG_FILENAME:
-                g_strfreev (arg->v_pointer);
+                if (transfer == GI_TRANSFER_CONTAINER)
+                    g_free(arg->v_pointer);
+                else if (transfer == GI_TRANSFER_EVERYTHING)
+                    g_strfreev (arg->v_pointer);
                 break;
 
             case GI_TYPE_TAG_UINT8:
