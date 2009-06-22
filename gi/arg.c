@@ -123,6 +123,8 @@ normalize_int_types(GITypeTag type) {
     switch (type) {
 #define INT_TYPE(tag, ty, sign) \
     case GI_TYPE_TAG_##tag: return type_tag_from_size(sizeof(ty), (sign));
+        INT_TYPE(SHORT, short, SIGNED);
+        INT_TYPE(USHORT, unsigned short, UNSIGNED);
         INT_TYPE(INT, int, SIGNED);
         INT_TYPE(UINT, unsigned int, UNSIGNED);
         INT_TYPE(LONG, long, SIGNED);

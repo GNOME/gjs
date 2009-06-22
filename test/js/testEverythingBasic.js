@@ -45,6 +45,11 @@ function testLifeUniverseAndEverything() {
     assertEquals(-42, Everything.test_int64(-42));
 
     assertEquals(42, Everything.test_uint64(42));
+    
+    assertEquals(42, Everything.test_short(42));
+    assertEquals(-42, Everything.test_short(-42));
+    
+    assertEquals(42, Everything.test_ushort(42));
 
     assertEquals(42, Everything.test_int(42));
     assertEquals(-42, Everything.test_int(-42));
