@@ -1059,6 +1059,8 @@ gjs_value_to_g_argument(JSContext      *context,
         }
         break;
 
+    case GI_TYPE_TAG_SHORT:
+    case GI_TYPE_TAG_USHORT:
     case GI_TYPE_TAG_INT:
     case GI_TYPE_TAG_UINT:
     case GI_TYPE_TAG_LONG:
@@ -1567,6 +1569,8 @@ gjs_value_from_g_argument (JSContext  *context,
         }
         break;
 
+    case GI_TYPE_TAG_SHORT:
+    case GI_TYPE_TAG_USHORT:
     case GI_TYPE_TAG_INT:
     case GI_TYPE_TAG_UINT:
     case GI_TYPE_TAG_LONG:
@@ -1646,6 +1650,8 @@ gjs_g_arg_release_internal(JSContext  *context,
     case GI_TYPE_TAG_UINT8:
     case GI_TYPE_TAG_INT16:
     case GI_TYPE_TAG_UINT16:
+    case GI_TYPE_TAG_SHORT:
+    case GI_TYPE_TAG_USHORT:
     case GI_TYPE_TAG_INT:
     case GI_TYPE_TAG_INT32:
     case GI_TYPE_TAG_UINT:
