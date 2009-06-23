@@ -447,6 +447,20 @@ append_int32(JSContext       *context,
             append_basic_maybe_in_variant(iter, forced_type, &v_BYTE, FALSE);
         }
         break;
+    // All JavaScript integers can be converted to DBus INT64/UINT64
+    // (just not the other way 'round)
+    case DBUS_TYPE_INT64:
+        {
+            dbus_int64_t v_INT64 = v_INT32;
+            append_basic_maybe_in_variant(iter, forced_type, &v_INT64, FALSE);
+        }
+        break;
+    case DBUS_TYPE_UINT64:
+        {
+            dbus_uint64_t v_UINT64 = v_INT32;
+            append_basic_maybe_in_variant(iter, forced_type, &v_UINT64, FALSE);
+        }
+        break;
     default:
         gjs_throw(context,
                   "JavaScript Integer can't be converted to dbus type '%c'",
@@ -483,6 +497,20 @@ append_double(JSContext       *context,
         {
             dbus_uint32_t v_UINT32 = v_DOUBLE;
             append_basic_maybe_in_variant(iter, forced_type, &v_UINT32, FALSE);
+        }
+        break;
+    // All JavaScript integers can be converted to DBus INT64/UINT64
+    // (just not the other way 'round)
+    case DBUS_TYPE_INT64:
+        {
+            dbus_int64_t v_INT64 = v_DOUBLE;
+            append_basic_maybe_in_variant(iter, forced_type, &v_INT64, FALSE);
+        }
+        break;
+    case DBUS_TYPE_UINT64:
+        {
+            dbus_uint64_t v_UINT64 = v_DOUBLE;
+            append_basic_maybe_in_variant(iter, forced_type, &v_UINT64, FALSE);
         }
         break;
     default:
