@@ -782,16 +782,15 @@ gjs_value_to_g_argument(JSContext      *context,
                                   "gtype of INTERFACE is %s", g_type_name(gtype));
 
             if (gtype == G_TYPE_VALUE) {
-                GValue *gvalue;
+                GValue gvalue = { 0, };
 
-                gvalue = g_slice_new0(GValue);
-                if (!gjs_value_to_g_value(context, value, gvalue)) {
-                    g_slice_free(GValue, gvalue);
+                if (gjs_value_to_g_value(context, value, &gvalue)) {
+                    arg->v_pointer = g_boxed_copy (G_TYPE_VALUE, &gvalue);
+                    g_value_unset (&gvalue);
+                } else {
                     arg->v_pointer = NULL;
                     wrong = TRUE;
                 }
-
-                arg->v_pointer = gvalue;
 
             } else if (JSVAL_IS_NULL(value) &&
                        interface_type != GI_INFO_TYPE_ENUM &&
@@ -1707,9 +1706,7 @@ gjs_g_arg_release_internal(JSContext  *context,
                 g_closure_unref(arg->v_pointer);
             } else if (g_type_is_a(gtype, G_TYPE_VALUE)) {
                 /* G_TYPE_VALUE is-a G_TYPE_BOXED, but we special case it */
-                GValue *value = arg->v_pointer;
-                g_value_unset(value);
-                g_slice_free(GValue, value);
+                g_boxed_free(gtype, arg->v_pointer);
             } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                 if (transfer != TRANSFER_IN_NOTHING)
                     g_boxed_free(gtype, arg->v_pointer);
