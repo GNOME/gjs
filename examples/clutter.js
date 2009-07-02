@@ -1,7 +1,6 @@
-imports.gi.versions.Clutter = '0.8';
 const Clutter = imports.gi.Clutter;
 
-Clutter.init(null, null);
+Clutter.init(0, null);
 
 let stage = new Clutter.Stage();
 
@@ -15,7 +14,7 @@ texture.connect('button-press-event',
                 });
 
 let color = new Clutter.Color();
-Clutter.color_parse('Black', color);
+color.from_string('Black');
 
 stage.color = color;
 
