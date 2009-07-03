@@ -1,3 +1,100 @@
+Version 0.3 (03-Jul-2009)
+-------------------------
+
+Changes:
+    - DBus support
+      At a high level there are three pieces. First, the "gjs-dbus" library is
+      a C support library for DBus.  Second, the modules/dbus*.[ch] implement
+      parts of the JavaScript API in C.  Third, the modules/dbus.js file fills
+      out the rest of the JavaScript API and implementation.
+    - Support simple fields for boxed types
+    - Support "copy construction" of boxed types
+    - Support simple structures not registered as boxed
+      - Allow access to nested structures
+      - Allow direct assignment to nested structure fields
+      - Allow enum and flag structure fields
+      - Allow creating boxed wrapper without copy
+    - Support for non-default constructor (i.e. constructors like
+      GdkPixbuf.Pixbuf.new_from_file(file))
+    - Add a Lang.bind function which binds the meaning of 'this'
+    - Add an interactive console gjs-console
+    - Allow code in directory modules (i.e. the code should reside in
+      __init__.js files)
+    - Fix handling of enum/flags return values
+    - Handle non-gobject-registered flags
+    - Add Tweener.registerSpecialProperty to tweener module
+    - Add profiler for javascript code
+    - Add gjs_context_get_all and gjs_dumpstack - useful to invoke from a
+      debugger such as gdb
+    - Support GHashTable
+      - GHashTable return values/out parameters
+      - Support GHashTable 'in' parameters
+      - Convert JSON-style object to a GHashTable
+    - Add support for UNIX shebang (i.e. #!/usr/bin/gjs-console)
+    - Support new introspection short/ushort type tags
+    - Support GI_TYPE_TAG_FILENAME
+    - Improve support for machine-dependent integer types and arrays of
+      integers
+    - Fix several memory leaks
+
+Contributors:
+    Colin Walters, C. Scott Ananian, Dan Winship, David Zeuthen,
+    Havoc Pennington, Johan Bilien, Johan Dahlin, Lucas Rocha,
+    Marco Pesenti Gritti, Marina Zhurakhinskaya, Owen Taylor,
+    Tommi Komulainen
+
+Bugs fixed:
+    Bug 560506 - linking problem
+    Bug 560670 - Turn on compilation warnings
+    Bug 560808 - Simple field supported for boxed types
+    Bug 561514 - memory leak when skipping deprecated methods
+    Bug 561516 - skipping deprecated methods shouldn't signal error case
+    Bug 561849 - Alternate way of connecting signals.
+    Bug 562892 - valgrind errors on get_obj_key
+    Bug 564424 - Add an interactive console
+    Bug 564664 - Expose JS_SetDebugErrorHook
+    Bug 566185 - Allow code in directory modules
+    Bug 567675 - Handle non-gobject-registered flags
+    Bug 569178 - Add readline support to the console module
+    Bug 570775 - array of parameters leaked on each new GObject
+    Bug 570964 - Race when shutting down a context, r=hp
+    Bug 580948 - Add DBus support
+    Bug 584560 - Add support for UNIX shebang
+    Bug 584850 - Clean up some __BIG definitions.
+    Bug 584858 - Fix errors (and leftover debugging) from dbus merge.
+    Bug 584858 - Move gjsdbus to gjs-dbus to match installed location.
+    Bug 585386 - Add a flush() method to DBus bus object.
+    Bug 585460 - Fix segfault when a non-existing node is introspected.
+    Bug 586665 - Fix seg fault when attempting to free callback type.
+    Bug 586760 - Support converting JavaScript doubles to DBus int64/uint64.
+    Bug 561203 - Fix priv_from_js_with_typecheck() for dynamic types
+    Bug 561573 - Add non-default constructors and upcoming static methods to "class"
+    Bug 561585 - allow using self-built spidermonkey
+    Bug 561664 - Closure support is broken
+    Bug 561686 - Don't free prov->gboxed for "has_parent" Boxed
+    Bug 561812 - Support time_t
+    Bug 562575 - Set correct GC parameters and max memory usage
+    Bug 565029 - Style guide - change recommendation for inheritance
+    Bug 567078 - Don't keep an extra reference to closures
+    Bug 569374 - Logging exceptions from tweener callbacks could be better
+    Bug 572113 - add profiler
+    Bug 572121 - Invalid read of size 1
+    Bug 572130 - memory leaks
+    Bug 572258 - profiler hooks should be installed only when needed
+    Bug 580865 - Call JS_SetLocaleCallbacks()
+    Bug 580947 - Validate UTF-8 strings in gjs_string_to_utf8()
+    Bug 580957 - Change the way we trigger a warning in testDebugger
+    Bug 581277 - Call JS_SetScriptStackQuota on our contexts
+    Bug 581384 - Propagate exceptions from load context
+    Bug 581385 - Return false when gjs_g_arg_release_internal fails
+    Bug 581389 - Fix arg.c to use 'interface' instead of 'symbol'
+    Bug 582686 - Don't g_error() when failing to release an argument
+    Bug 582704 - Don't depend on hash table order in test cases
+    Bug 582707 - Fix problems with memory management for in parameters
+    Bug 584849 - Kill warnings (uninitialized variables, strict aliasing)
+    Bug 560808 - Structure support
+
+
 Version 0.2 (12-Nov-2008)
 -------------------------
 
