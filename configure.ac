@@ -192,7 +192,7 @@ fi
 
 common_packages="gobject-2.0 >= gobject_required_version $JS_PACKAGE"
 gjs_packages="gmodule-2.0 $common_packages"
-gjs_gi_packages="gobject-introspection-1.0 >= 0.6.0 $common_packages"
+gjs_gi_packages="gobject-introspection-1.0 >= 0.6.3 $common_packages"
 gjs_dbus_packages="dbus-glib-1 $common_packages"
 # gjs-tests links against everything
 gjstests_packages="$gjstests_packages $gjs_packages"
