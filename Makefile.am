@@ -102,5 +102,7 @@ gjs_console_LDADD =		\
 
 gjs_console_SOURCES = gjs/console.c
 
+install-exec-hook:
+	(cd $(DESTDIR)$(bindir) && ln -sf gjs-console$(EXEEXT) gjs$(EXEEXT))
 
 include Makefile-test.am
