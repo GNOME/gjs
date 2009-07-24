@@ -4,12 +4,13 @@ dist_gjstweener_DATA =			\
 	modules/tweener/tweenList.js
 
 dist_gjsjs_DATA +=		\
+	modules/gettext.js	\
 	modules/lang.js		\
 	modules/jsUnit.js	\
 	modules/signals.js	\
 	modules/dbus.js
 
-gjsnative_LTLIBRARIES += console.la debugger.la gi.la mainloop.la dbusNative.la
+gjsnative_LTLIBRARIES += console.la debugger.la gi.la mainloop.la gettextNative.la dbusNative.la
 
 JS_NATIVE_MODULE_CFLAGS =	\
         $(AM_CFLAGS)		\
@@ -45,6 +46,18 @@ mainloop_la_LDFLAGS = 				\
 mainloop_la_SOURCES =		\
 	modules/mainloop.h	\
 	modules/mainloop.c
+
+gettextNative_la_CFLAGS = 				\
+	$(JS_NATIVE_MODULE_CFLAGS)
+gettextNative_la_LIBADD = \
+	libgjs-gi.la				\
+	$(JS_NATIVE_MODULE_LIBADD)
+gettextNative_la_LDFLAGS = 				\
+	$(JS_NATIVE_MODULE_LDFLAGS)
+
+gettextNative_la_SOURCES =		\
+	modules/gettext-native.h	\
+	modules/gettext-native.c
 
 console_la_CFLAGS = 				\
 	$(JS_NATIVE_MODULE_CFLAGS)
