@@ -75,10 +75,10 @@ function _proxyInvoker(obj, ifaceName, methodName, outSignature, inSignature, ti
 
     if (arg_array.length < minNumberArgs) {
         throw new Error("Not enough arguments passed for method: " + methodName +
-                       ". Expected " + expectedNumberArgs + ", got " + arg_array.length);
+                       ". Expected " + minNumberArgs + ", got " + arg_array.length);
     } else if (arg_array.length > maxNumberArgs) {
         throw new Error("Too many arguments passed for method: " + methodName +
-                       ". Maximum is " + expectedNumberArgs +
+                       ". Maximum is " + maxNumberArgs +
                         " + one callback and/or flags");
     }
 
