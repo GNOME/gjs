@@ -91,7 +91,7 @@ gjs_string_to_utf8(JSContext  *context,
 JSBool
 gjs_string_from_utf8(JSContext  *context,
                      const char *utf8_string,
-                     gsize       n_bytes,
+                     gssize      n_bytes,
                      jsval      *value_p)
 {
     jschar *u16_string;
@@ -167,7 +167,7 @@ gjs_string_to_filename(JSContext    *context,
 JSBool
 gjs_string_from_filename(JSContext  *context,
                          const char *filename_string,
-                         gsize       n_bytes,
+                         gssize      n_bytes,
                          jsval      *value_p)
 {
     gsize written;

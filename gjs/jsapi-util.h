@@ -201,14 +201,14 @@ JSBool      gjs_string_to_utf8               (JSContext       *context,
                                               char           **utf8_string_p);
 JSBool      gjs_string_from_utf8             (JSContext       *context,
                                               const char      *utf8_string,
-                                              gsize            n_bytes,
+                                              gssize           n_bytes,
                                               jsval           *value_p);
 JSBool      gjs_string_to_filename           (JSContext       *context,
                                               const jsval      string_val,
                                               char           **filename_string_p);
 JSBool      gjs_string_from_filename         (JSContext       *context,
                                               const char      *filename_string,
-                                              gsize            n_bytes,
+                                              gssize           n_bytes,
                                               jsval           *value_p);
 const char* gjs_string_get_ascii             (jsval            value);
 const char* gjs_string_get_ascii_checked     (JSContext       *context,
