@@ -1,6 +1,7 @@
 /* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
  * Copyright (c) 2008  litl, LLC
+ * Copyright (c) 2009 Red Hat, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -33,6 +34,11 @@
 #include <string.h>
 #include <jscntxt.h>
 
+GQuark 
+gjs_util_error_quark (void)
+{
+  return g_quark_from_static_string ("gjs-util-error-quark");
+}
 
 typedef struct {
     GHashTable *dynamic_classes;
@@ -1036,4 +1042,137 @@ gjs_date_from_time_t (JSContext *context, time_t time)
 
     JS_LeaveLocalRootScope(context);
     return OBJECT_TO_JSVAL(date);
+}
+
+/**
+ * gjs_parse_args:
+ * @context:
+ * @function_name: The name of the function being called
+ * @format: Printf-like format specifier containing the expected arguments
+ * @argc: Number of JavaScript arguments
+ * @argv: JavaScript argument array
+ * @Varargs: for each character in @format, a pair of a char * which is the name
+ * of the argument, and a pointer to a location to store the value. The type of
+ * value stored depends on the format character, as described below.
+ * 
+ * This function is inspired by Python's PyArg_ParseTuple for those
+ * familiar with it.  It takes a format specifier which gives the
+ * types of the expected arguments, and a list of argument names and
+ * value location pairs.  The currently accepted format specifiers are:
+ * 
+ * s: A string, converted into UTF-8
+ * z: Like 's', but may be null in JavaScript (which appears as NULL in C)
+ * F: A string, converted into "filename encoding" (i.e. active locale)
+ * i: A number, will be converted to a C "gint32"
+ * u: A number, converted into a C "guint32"
+ */
+JSBool
+gjs_parse_args (JSContext  *context,
+                const char *function_name,
+                const char *format,
+                uintN      argc,
+                jsval     *argv,
+                ...)
+{
+    guint i;
+    const char *fmt_iter;
+    va_list args;
+    GError *arg_error = NULL;
+    guint n_unwind = 0;
+#define MAX_UNWIND_STRINGS 16
+    gpointer unwind_strings[MAX_UNWIND_STRINGS];
+  
+    va_start (args, argv);
+  
+    for (i = 0, fmt_iter = format; *fmt_iter; fmt_iter++, i++) {
+        const char *argname = va_arg (args, char *);
+        gpointer arg_location = va_arg (args, gpointer);
+        jsval js_value;
+        const char *arg_error_message = NULL;
+        
+        if (i >= argc) {
+            gjs_throw(context, "Error invoking %s: Expected %d arguments, got %d", function_name,
+                      strlen (format), argc);
+            goto error_unwind;
+        }
+        
+        g_return_val_if_fail (argname != NULL, JS_FALSE);
+        g_return_val_if_fail (arg_location != NULL, JS_FALSE);
+        
+        js_value = argv[i];
+        
+        switch (*fmt_iter) {
+            case 's':
+            case 'z': {
+                char **arg = arg_location;
+                
+                if (*fmt_iter == 'z' && JSVAL_IS_NULL(js_value)) {
+                    *arg = NULL;
+                } else {
+                    if (gjs_try_string_to_utf8 (context, js_value, arg, &arg_error)) {
+                        unwind_strings[n_unwind++] = *arg;
+                        g_assert(n_unwind < MAX_UNWIND_STRINGS);
+                    }
+                }    
+            }
+            break;
+            case 'F': {
+                char **arg = arg_location;
+                
+                if (gjs_try_string_to_filename (context, js_value, arg, &arg_error)) {
+                    unwind_strings[n_unwind++] = *arg;
+                    g_assert(n_unwind < MAX_UNWIND_STRINGS);
+                }
+            }
+            break;
+            case 'i': {
+                if (!JS_ValueToInt32(context, js_value, (gint32*) arg_location)) {
+                    /* Our error message is going to be more useful */
+                    JS_ClearPendingException(context);
+                    arg_error_message = "Couldn't convert to integer";
+                }
+            }
+            break;
+            case 'u': {
+                gdouble num;
+                if (!JS_ValueToNumber(context, js_value, &num)) {
+                    /* Our error message is going to be more useful */
+                    JS_ClearPendingException(context);
+                    arg_error_message = "Couldn't convert to unsigned integer";
+                } else if (num > G_MAXUINT32 || num < 0) {
+                    arg_error_message = "Value is out of range";
+                } else {
+                    *((guint32*) arg_location) = num;
+                }
+            }
+            break;
+        }
+        
+        if (arg_error != NULL)
+            arg_error_message = arg_error->message;
+        
+        if (arg_error_message != NULL) {
+            gjs_throw(context, "Error invoking %s, at argument %d (%s): %s", function_name, 
+                      i, argname, arg_error_message);
+            g_clear_error (&arg_error);
+            goto error_unwind;
+        }
+    }
+    
+    if (i < argc) {
+        gjs_throw(context, "Error invoking %s: Expected %d arguments, got %d", function_name,
+                  strlen (format), argc);
+        goto error_unwind;
+    }
+
+    va_end (args);
+    return JS_TRUE;
+
+  error_unwind:
+    va_end (args);
+    /* We still own the strings in the error case, free any we converted */
+    for (i = 0; i < n_unwind; i++) {
+        g_free (unwind_strings[i]);
+    }
+    return JS_FALSE;
 }

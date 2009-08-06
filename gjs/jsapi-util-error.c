@@ -162,6 +162,36 @@ gjs_throw(JSContext       *context,
     va_end(args);
 }
 
+/**
+ * gjs_throw_literal:
+ * 
+ * Similar to gjs_throw(), but does not treat its argument as
+ * a format string.
+ */
+void
+gjs_throw_literal(JSContext       *context,
+                  const char      *string)
+{
+    gjs_throw(context, "%s", string);
+}
+
+/**
+ * gjs_throw_g_error:
+ * 
+ * Convert a GError into a JavaScript Exception, and
+ * frees the GError.  Like gjs_throw(), will not overwrite
+ * an already pending exception.
+ */
+void
+gjs_throw_g_error (JSContext       *context,
+                   GError          *error)
+{
+    if (error == NULL)
+        return;
+    gjs_throw_literal(context, error->message);
+    g_error_free (error);
+}
+
 #if GJS_BUILD_TESTS
 static void
 test_error_reporter(JSContext     *context,

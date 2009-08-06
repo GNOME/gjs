@@ -33,6 +33,16 @@
 
 G_BEGIN_DECLS
 
+#define GJS_UTIL_ERROR gjs_util_error_quark ()
+GQuark gjs_util_error_quark (void);
+enum {
+  GJS_UTIL_ERROR_NONE,
+  GJS_UTIL_ERROR_ARGUMENT_INVALID,
+  GJS_UTIL_ERROR_ARGUMENT_UNDERFLOW,
+  GJS_UTIL_ERROR_ARGUMENT_OVERFLOW,
+  GJS_UTIL_ERROR_ARGUMENT_TYPE_MISMATCH
+};
+
 typedef struct GjsRootedArray GjsRootedArray;
 
 /* Flags that should be set on properties exported from native code modules.
@@ -153,6 +163,10 @@ JSObject*   gjs_define_string_array          (JSContext       *context,
 void        gjs_throw                        (JSContext       *context,
                                               const char      *format,
                                               ...)  G_GNUC_PRINTF (2, 3);
+void        gjs_throw_literal                (JSContext       *context,
+                                              const char      *string);
+void        gjs_throw_g_error                (JSContext       *context,
+                                              GError          *error);
 JSBool      gjs_log_exception                (JSContext       *context,
                                               char           **message_p);
 JSBool      gjs_log_and_keep_exception       (JSContext       *context,
@@ -196,6 +210,7 @@ JSBool      gjs_delete_prop_verbose_stub     (JSContext       *context,
                                               JSObject        *obj,
                                               jsval            id,
                                               jsval           *value_p);
+
 JSBool      gjs_string_to_utf8               (JSContext       *context,
                                               const            jsval string_val,
                                               char           **utf8_string_p);
@@ -231,6 +246,13 @@ const char* gjs_get_type_name                (jsval            value);
 
 jsval       gjs_date_from_time_t             (JSContext *context, time_t time);
 
+JSBool      gjs_parse_args                   (JSContext  *context,
+                                              const char *function_name,
+                                              const char *format,
+                                              uintN      argc,
+                                              jsval     *argv,
+                                              ...);
+
 GjsRootedArray*   gjs_rooted_array_new        (void);
 void              gjs_rooted_array_append     (JSContext        *context,
                                                GjsRootedArray *array,
@@ -256,6 +278,17 @@ void              gjs_unroot_value_locations  (JSContext        *context,
                                                jsval            *locations,
                                                int               n_locations);
 
+/* Functions intended for more "internal" use */
+
+gboolean gjs_try_string_to_filename           (JSContext    *context,
+                                               const jsval   filename_val,
+                                               char        **filename_string_p,
+                                               GError      **error);
+
+gboolean    gjs_try_string_to_utf8            (JSContext       *context,
+                                               const            jsval string_val,
+                                               char           **utf8_string_p,
+                                               GError         **error);
 
 G_END_DECLS
 

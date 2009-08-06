@@ -27,46 +27,46 @@
 
 #include "jsapi-util.h"
 
-JSBool
-gjs_string_to_utf8(JSContext  *context,
-                   const jsval string_val,
-                   char      **utf8_string_p)
+gboolean
+gjs_try_string_to_utf8 (JSContext  *context,
+                        const jsval string_val,
+                        char      **utf8_string_p,
+                        GError    **error)
 {
     jschar *s;
     size_t s_length;
     char *utf8_string;
     long read_items;
     long utf8_length;
-    GError *error;
+    GError *convert_error = NULL;
 
     if (!JSVAL_IS_STRING(string_val)) {
-        gjs_throw(context,
-                     "Object is not a string, cannot convert to UTF-8");
-        return JS_FALSE;
+        g_set_error_literal(error, GJS_UTIL_ERROR, GJS_UTIL_ERROR_ARGUMENT_TYPE_MISMATCH,
+                            "Object is not a string, cannot convert to UTF-8");
+        return FALSE;
     }
 
     s = JS_GetStringChars(JSVAL_TO_STRING(string_val));
     s_length = JS_GetStringLength(JSVAL_TO_STRING(string_val));
 
-    error = NULL;
     utf8_string = g_utf16_to_utf8(s,
                                   (glong)s_length,
                                   &read_items, &utf8_length,
-                                  &error);
+                                  &convert_error);
 
     if (!utf8_string) {
-        gjs_throw(context,
-                  "Failed to convert JS string to "
-                  "UTF-8: %s",
-                  error->message);
-        g_error_free(error);
-        return JS_FALSE;
+        g_set_error(error, GJS_UTIL_ERROR, GJS_UTIL_ERROR_ARGUMENT_INVALID,
+                    "Failed to convert JS string to UTF-8: %s",
+                    convert_error->message);
+        g_error_free(convert_error);
+        return FALSE;
     }
 
     if ((size_t)read_items != s_length) {
-        gjs_throw(context, "JS string contains embedded NULs");
+        g_set_error_literal(error, GJS_UTIL_ERROR, GJS_UTIL_ERROR_ARGUMENT_INVALID,
+                            "JS string contains embedded NULs");
         g_free(utf8_string);
-        return JS_FALSE;
+        return FALSE;
     }
 
     /* Our assumption is that the string is being converted to UTF-8
@@ -79,13 +79,29 @@ gjs_string_to_utf8(JSContext  *context,
      * case of all-ASCII.
      */
     if (!g_utf8_validate (utf8_string, utf8_length, NULL)) {
-        gjs_throw(context, "JS string contains invalid Unicode characters");
+        g_set_error_literal(error, GJS_UTIL_ERROR, GJS_UTIL_ERROR_ARGUMENT_INVALID,
+                            "JS string contains invalid Unicode characters");
         g_free(utf8_string);
-        return JS_FALSE;
+        return FALSE;
     }
 
     *utf8_string_p = utf8_string;
-    return JS_TRUE;
+    return TRUE;
+}
+
+JSBool
+gjs_string_to_utf8 (JSContext  *context,
+                    const jsval string_val,
+                    char      **utf8_string_p)
+{
+  GError *error = NULL;
+  
+  if (!gjs_try_string_to_utf8(context, string_val, utf8_string_p, &error))
+    {
+      gjs_throw_g_error(context, error);
+      return JS_FALSE;
+    }
+  return JS_TRUE;
 }
 
 JSBool
@@ -131,37 +147,49 @@ gjs_string_from_utf8(JSContext  *context,
     return JS_TRUE;
 }
 
+gboolean
+gjs_try_string_to_filename(JSContext    *context,
+                           const jsval   filename_val,
+                           char        **filename_string_p,
+                           GError      **error)
+{
+  gchar *tmp, *filename_string;
+
+  /* gjs_string_to_filename verifies that filename_val is a string */
+
+  if (!gjs_try_string_to_utf8(context, filename_val, &tmp, error)) {
+      /* exception already set */
+      return JS_FALSE;
+  }
+  
+  error = NULL;
+  filename_string = g_filename_from_utf8(tmp, -1, NULL, NULL, error);
+  if (!filename_string) {
+    g_free(tmp);
+    return FALSE;
+  }
+
+  *filename_string_p = filename_string;
+  
+  g_free(tmp);
+  return TRUE;  
+}
+
 JSBool
 gjs_string_to_filename(JSContext    *context,
                        const jsval   filename_val,
                        char        **filename_string_p)
 {
-    GError *error;
-    gchar *tmp, *filename_string;
+  GError *error = NULL;
 
-    /* gjs_string_to_filename verifies that filename_val is a string */
-
-    if (!gjs_string_to_utf8(context, filename_val, &tmp)) {
-        /* exception already set */
-        return JS_FALSE;
-    }
-    
-    error = NULL;
-    filename_string = g_filename_from_utf8(tmp, -1, NULL, NULL, &error);
-    if (error) {
-        gjs_throw(context,
-                  "Could not convert filename '%s' to UTF8: '%s'",
-                  tmp,
-                  error->message);
-        g_error_free(error);
-        g_free(tmp);
-        return JS_FALSE;
-    }
-
-    *filename_string_p = filename_string;
-    
-    g_free(tmp);
-    return JS_TRUE;
+  if (!gjs_try_string_to_filename(context, filename_val, filename_string_p, &error)) {
+      gjs_throw(context,
+                "Could not convert filename to UTF8: '%s'",
+                error->message);
+      g_error_free(error);
+      return JS_FALSE;
+  }
+  return JS_TRUE;
 }
 
 JSBool
