@@ -1163,7 +1163,7 @@ gjs_parse_args (JSContext  *context,
         
         if (arg_error_message != NULL) {
             gjs_throw(context, "Error invoking %s, at argument %d (%s): %s", function_name, 
-                      i, argname, arg_error_message);
+                      i+1, argname, arg_error_message);
             g_clear_error (&arg_error);
             goto error_unwind;
         }
