@@ -1065,6 +1065,7 @@ gjs_date_from_time_t (JSContext *context, time_t time)
  * F: A string, converted into "filename encoding" (i.e. active locale)
  * i: A number, will be converted to a C "gint32"
  * u: A number, converted into a C "guint32"
+ * o: A JavaScript object, as a "JSObject *"
  */
 JSBool
 gjs_parse_args (JSContext  *context,
@@ -1102,6 +1103,15 @@ gjs_parse_args (JSContext  *context,
         js_value = argv[i];
         
         switch (*fmt_iter) {
+            case 'o': {
+               if (!JSVAL_IS_OBJECT(js_value)) {
+                   arg_error_message = "Not an object";
+               } else {
+                   JSObject **arg = arg_location;
+                   *arg = JSVAL_TO_OBJECT(js_value);
+               }
+            }
+            break;
             case 's':
             case 'z': {
                 char **arg = arg_location;
