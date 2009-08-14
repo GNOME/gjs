@@ -1066,6 +1066,10 @@ gjs_date_from_time_t (JSContext *context, time_t time)
  * i: A number, will be converted to a C "gint32"
  * u: A number, converted into a C "guint32"
  * o: A JavaScript object, as a "JSObject *"
+ *
+ * The '|' character introduces optional arguments.  All format specifiers
+ * after a '|' when not specified, do not cause any changes in the C
+ * value location.
  */
 JSBool
 gjs_parse_args (JSContext  *context,
@@ -1082,25 +1086,62 @@ gjs_parse_args (JSContext  *context,
     guint n_unwind = 0;
 #define MAX_UNWIND_STRINGS 16
     gpointer unwind_strings[MAX_UNWIND_STRINGS];
-  
+    guint n_required;
+    guint n_total;
+    guint consumed_args;
+
     va_start (args, argv);
-  
-    for (i = 0, fmt_iter = format; *fmt_iter; fmt_iter++, i++) {
-        const char *argname = va_arg (args, char *);
-        gpointer arg_location = va_arg (args, gpointer);
+
+    /* Check for optional argument specifier */
+    fmt_iter = strchr (format, '|');
+    if (fmt_iter) {
+        /* Be sure there's not another '|' */
+        g_return_val_if_fail (strchr (fmt_iter + 1, '|') == NULL, JS_FALSE);
+
+        n_required = fmt_iter - format;
+        n_total = n_required + strlen (fmt_iter + 1);
+    } else {
+        n_required = n_total = strlen (format);
+    }
+
+    if (argc < n_required || argc > n_total) {
+        if (n_required == n_total) {
+            gjs_throw(context, "Error invoking %s: Expected %d arguments, got %d", function_name,
+                      n_required, argc);
+        } else {
+            gjs_throw(context, "Error invoking %s: Expected minimum %d arguments (and %d optional), got %d", function_name,
+                      n_required, n_total - n_required, argc);
+        }
+        goto error_unwind;
+    }
+
+    /* We have 3 iteration variables here.
+     * @i: The current integer position in fmt_args
+     * @fmt_iter: A pointer to the character in fmt_args
+     * @consumed_args: How many arguments we've taken from argv
+     * 
+     * consumed_args can currently be different from 'i' because of the '|' character.
+     */
+    for (i = 0, consumed_args = 0, fmt_iter = format; *fmt_iter; fmt_iter++, i++) {
+        const char *argname;
+        gpointer arg_location;
         jsval js_value;
         const char *arg_error_message = NULL;
-        
-        if (i >= argc) {
-            gjs_throw(context, "Error invoking %s: Expected %d arguments, got %d", function_name,
-                      strlen (format), argc);
-            goto error_unwind;
+
+        if (*fmt_iter == '|')
+            continue;
+
+        if (consumed_args == argc) {
+            break;
         }
-        
+
+        argname = va_arg (args, char *);
+        arg_location = va_arg (args, gpointer);
+
         g_return_val_if_fail (argname != NULL, JS_FALSE);
         g_return_val_if_fail (arg_location != NULL, JS_FALSE);
-        
-        js_value = argv[i];
+
+        js_value = argv[consumed_args];
         
         switch (*fmt_iter) {
             case 'o': {
@@ -1156,6 +1197,8 @@ gjs_parse_args (JSContext  *context,
                 }
             }
             break;
+            default:
+              g_assert_not_reached ();
         }
         
         if (arg_error != NULL)
@@ -1163,16 +1206,12 @@ gjs_parse_args (JSContext  *context,
         
         if (arg_error_message != NULL) {
             gjs_throw(context, "Error invoking %s, at argument %d (%s): %s", function_name, 
-                      i+1, argname, arg_error_message);
+                      consumed_args+1, argname, arg_error_message);
             g_clear_error (&arg_error);
             goto error_unwind;
         }
-    }
-    
-    if (i < argc) {
-        gjs_throw(context, "Error invoking %s: Expected %d arguments, got %d", function_name,
-                  strlen (format), argc);
-        goto error_unwind;
+        
+        consumed_args++;
     }
 
     va_end (args);
