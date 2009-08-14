@@ -46,15 +46,15 @@ Lang.copyProperties(imports.gettextNative, this);
 var domain = function(domainName) {
     return {
         gettext: function(msgid) {
-            return dgettext(domain, msgid);
+            return dgettext(domainName, msgid);
         },
     
         ngettext: function(msgid1, msgid2, n) {
-            return dngettext(domain, msgid1, msgid2, n);
+            return dngettext(domainName, msgid1, msgid2, n);
         },
     
         pgettext: function(context, msgid) {
-            return dpgettext(domain, context, msgid);
+            return dpgettext(domainName, context, msgid);
         }
     }
 };
