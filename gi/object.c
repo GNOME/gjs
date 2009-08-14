@@ -1122,6 +1122,44 @@ emit_func(JSContext *context,
     return !failed;
 }
 
+/* Default spidermonkey toString is worthless.  Replace it
+ * with something that gives us both the introspection name
+ * and a memory address.
+ */
+static JSBool
+to_string_func(JSContext *context,
+               JSObject  *obj,
+               uintN      argc,
+               jsval     *argv,
+               jsval     *retval)
+{
+    ObjectInstance *priv;
+    char *strval;
+    JSBool ret;
+    const char *namespace;
+    const char *name;
+    
+    *retval = JSVAL_VOID;
+
+    priv = priv_from_js(context, obj);
+
+    if (priv == NULL)
+        return JS_FALSE; /* wrong class passed in */
+    
+    namespace = g_base_info_get_namespace( (GIBaseInfo*) priv->info);
+    name = g_base_info_get_name( (GIBaseInfo*) priv->info); 
+
+    if (priv->gobj == NULL) {
+        strval = g_strdup_printf ("[object prototype of GIName:%s.%s jsobj@%p]", namespace, name, obj);
+    } else {
+        strval = g_strdup_printf ("[object instance proxy GIName:%s.%s jsobj@%p native@%p]", namespace, name, obj, priv->gobj);
+    }
+    
+    ret = gjs_string_from_utf8 (context, strval, -1, retval);
+    g_free (strval);
+    return ret;
+}
+
 /* The bizarre thing about this vtable is that it applies to both
  * instances of the object, and to the prototype that instances of the
  * class have.
@@ -1157,6 +1195,7 @@ static JSFunctionSpec gjs_object_instance_proto_funcs[] = {
     { "connect_after", connect_after_func, 0, 0 },
     { "disconnect", disconnect_func, 0, 0 },
     { "emit", emit_func, 0, 0 },
+    { "toString", to_string_func, 0, 0 },
     { NULL }
 };
 
