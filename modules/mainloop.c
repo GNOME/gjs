@@ -41,22 +41,17 @@ gjs_main_loop_quit(JSContext *context,
                       jsval     *argv,
                       jsval     *retval)
 {
-    const char *cancel_id;
+    char *cancel_id;
     GMainLoop *main_loop;
-
-    if (argc != 1 ||
-        !JSVAL_IS_STRING(argv[0])) {
-        gjs_throw(context, "quit() takes one arg, the cancel id");
-        return JS_FALSE;
-    }
-
-    cancel_id = gjs_string_get_ascii_checked(context, argv[0]);
-    if (cancel_id == NULL)
-        return JS_FALSE;
+    
+    if (!gjs_parse_args(context, "quit", "s", argc, argv,
+                        "cancelId", &cancel_id))
+      return JS_FALSE;
 
     main_loop = g_hash_table_lookup(pending_main_loops, cancel_id);
 
     if (!main_loop) {
+        g_free(cancel_id);
         gjs_throw(context, "No main loop with this id");
         return JS_FALSE;
     }
@@ -64,6 +59,7 @@ gjs_main_loop_quit(JSContext *context,
     g_hash_table_remove(pending_main_loops, cancel_id);
 
     if (!g_main_loop_is_running(main_loop)) {
+        g_free(cancel_id);
         gjs_throw(context, "Main loop was stopped already");
         return JS_FALSE;
     }
@@ -73,6 +69,7 @@ gjs_main_loop_quit(JSContext *context,
               cancel_id,
               context);
 
+    g_free(cancel_id);
     g_main_loop_quit(main_loop);
     return JS_TRUE;
 }
@@ -84,18 +81,12 @@ gjs_main_loop_run(JSContext *context,
                      jsval     *argv,
                      jsval     *retval)
 {
-    const char *cancel_id;
+    char *cancel_id;
     GMainLoop *main_loop;
 
-    if (argc != 1 ||
-        !JSVAL_IS_STRING(argv[0])) {
-        gjs_throw(context, "run() takes one arg, the cancel id");
-        return JS_FALSE;
-    }
-
-    cancel_id = gjs_string_get_ascii_checked(context, argv[0]);
-    if (cancel_id == NULL)
-        return JS_FALSE;
+    if (!gjs_parse_args(context, "run", "s", argc, argv,
+                        "cancelId", &cancel_id))
+      return JS_FALSE;
 
     main_loop = g_hash_table_lookup(pending_main_loops, cancel_id);
 
@@ -110,6 +101,7 @@ gjs_main_loop_run(JSContext *context,
               "main loop %s being run in context %p",
               cancel_id,
               context);
+    g_free(cancel_id);
 
     g_main_loop_run(main_loop);
     g_main_loop_unref(main_loop);
@@ -186,7 +178,8 @@ gjs_timeout_add(JSContext *context,
                    jsval     *retval)
 {
     GClosure *closure;
-    guint interval;
+    JSObject *callback;
+    guint32 interval;
     guint id;
 
     /* Best I can tell, there is no way to know if argv[1] is really
@@ -194,30 +187,16 @@ gjs_timeout_add(JSContext *context,
      * function will not detect native objects that provide
      * JSClass::call, for example.
      */
+    if (!gjs_parse_args(context, "timeout_add", "uo", argc, argv,
+                        "interval", &interval, "callback", &callback))
+      return JS_FALSE;
 
-    if (argc != 2) {
-        gjs_throw(context, "timeout_add() takes two args, the interval and the timeout callback");
-        return JS_FALSE;
-    }
-
-    if (!JSVAL_IS_INT(argv[0])) {
-        gjs_throw(context, "The interval for timeout_add must be an integer");
-        return JS_FALSE;
-    }
-
-    if (!JSVAL_IS_OBJECT(argv[1])) {
-        gjs_throw(context, "The callback for timeout_add is not callable");
-        return JS_FALSE;
-    }
-
-    closure = gjs_closure_new(context, JSVAL_TO_OBJECT(argv[1]), "timeout");
+    closure = gjs_closure_new(context, callback, "timeout");
     if (closure == NULL)
         return JS_FALSE;
 
     g_closure_ref(closure);
     g_closure_sink(closure);
-
-    interval = JSVAL_TO_INT(argv[0]);
 
     id = g_timeout_add_full(G_PRIORITY_DEFAULT,
                             interval,
@@ -245,38 +224,21 @@ gjs_timeout_add_seconds(JSContext *context,
                            jsval     *retval)
 {
     GClosure *closure;
-    guint interval;
+    JSObject *callback;
+    guint32 interval;
     guint id;
 
-    /* Best I can tell, there is no way to know if argv[1] is really
-     * callable other than to just try it. Checking whether it's a
-     * function will not detect native objects that provide
-     * JSClass::call, for example.
-     */
+    /* See comment for timeout_add above */
+    if (!gjs_parse_args(context, "timeout_add_seconds", "uo", argc, argv,
+                        "interval", &interval, "callback", &callback))
+      return JS_FALSE;
 
-    if (argc != 2) {
-        gjs_throw(context, "timeout_add_seconds() takes two args, the interval and the timeout callback");
-        return JS_FALSE;
-    }
-
-    if (!JSVAL_IS_INT(argv[0])) {
-        gjs_throw(context, "The interval for timeout_add_seconds must be an integer");
-        return JS_FALSE;
-    }
-
-    if (!JSVAL_IS_OBJECT(argv[1])) {
-        gjs_throw(context, "The callback for timeout_add_seconds is not callable");
-        return JS_FALSE;
-    }
-
-    closure = gjs_closure_new(context, JSVAL_TO_OBJECT(argv[1]), "timeout_seconds");
+    closure = gjs_closure_new(context, callback, "timeout_seconds");
     if (closure == NULL)
         return JS_FALSE;
 
     g_closure_ref(closure);
     g_closure_sink(closure);
-
-    interval = JSVAL_TO_INT(argv[0]);
 
     id = g_timeout_add_seconds_full(G_PRIORITY_DEFAULT,
                                     interval,
@@ -303,37 +265,26 @@ gjs_idle_add(JSContext *context,
                 jsval     *argv,
                 jsval     *retval)
 {
+    JSObject *callback;
     GClosure *closure;
     guint id;
-    int priority;
-
+    int priority = G_PRIORITY_DEFAULT_IDLE;
+    
     /* Best I can tell, there is no way to know if argv[0] is really
      * callable other than to just try it. Checking whether it's a
      * function will not detect native objects that provide
      * JSClass::call, for example.
      */
+    if (!gjs_parse_args(context, "idle_add", "o|i", argc, argv,
+                        "callback", &callback, "priority", &priority))
+      return JS_FALSE;
 
-    if (argc < 1 ||
-        !JSVAL_IS_OBJECT(argv[0]) ||
-        (argc >= 2 && !JSVAL_IS_INT(argv[1]))) {
-        gjs_throw(context, "idle_add() takes the idle callback and an optional priority");
-        return JS_FALSE;
-    }
-
-    if (argc >= 2) {
-        priority = JSVAL_TO_INT(argv[1]);
-    } else {
-        priority = G_PRIORITY_DEFAULT_IDLE;
-    }
-
-    closure = gjs_closure_new(context, JSVAL_TO_OBJECT(argv[0]), "idle");
+    closure = gjs_closure_new(context, callback, "idle");
     if (closure == NULL)
         return JS_FALSE;
 
     g_closure_ref(closure);
     g_closure_sink(closure);
-
-
 
     id = g_idle_add_full(priority,
                          closure_source_func,
@@ -359,15 +310,14 @@ gjs_source_remove(JSContext *context,
                      jsval     *argv,
                      jsval     *retval)
 {
+    guint32 source_id;
     gboolean success;
 
-    if (argc != 1 ||
-        !JSVAL_IS_INT(argv[0])) {
-        gjs_throw(context, "source_remove() takes one arg, the integer source id");
-        return JS_FALSE;
-    }
+    if (!gjs_parse_args(context, "source_remove", "u", argc, argv,
+                        "sourceId", &source_id))
+      return JS_FALSE;
 
-    success = g_source_remove(JSVAL_TO_INT(argv[0]));
+    success = g_source_remove(source_id);
 
     *retval = BOOLEAN_TO_JSVAL(success);
 
