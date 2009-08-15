@@ -43,8 +43,7 @@ EXTRA_DIST += 			\
 
 ########################################################################
 gjs_directory_defines = 				\
-	-DGJS_TOP_SRCDIR=\"$(abs_top_srcdir)\"		\
-	-DGJS_BUILDDIR=\"$(abs_top_builddir)\"		\
+	-DGJS_TOP_SRCDIR=\"$(top_srcdir)\"		\
 	-DGJS_JS_DIR=\"$(gjsjsdir)\"			\
 	-DGJS_NATIVE_DIR=\"$(gjsnativedir)\"
 

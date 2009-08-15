@@ -65,9 +65,8 @@ die()
 ## convenient to be able to ctrl+C without leaking the message bus process
 trap 'die "Received terminal signal"' INT TERM HUP
 
-TOP_SRCDIR="${TOP_SRCDIR:-$abs_top_srcdir}"
 if test -z "$TOP_SRCDIR" ; then
-    die "Must set TOP_SRCDIR or abs_top_srcdir"
+    die "Must set TOP_SRCDIR"
 fi
 
 if test -z "$BUILDDIR" ; then

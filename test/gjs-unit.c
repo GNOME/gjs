@@ -24,6 +24,7 @@
 #include <config.h>
 
 #include <glib.h>
+#include <glib/gstdio.h>
 #include <gjs/gjs.h>
 #include <util/crash.h>
 #include <locale.h>
@@ -34,7 +35,7 @@ typedef struct {
     GjsContext *context;
 } GjsTestJSFixture;
 
-static const char *top_srcdir;
+static char *top_srcdir;
 
 
 static void
@@ -94,22 +95,70 @@ test(GjsTestJSFixture *fix,
 int
 main(int argc, char **argv)
 {
+    /* These are relative to top_builddir */
+    const char * const path_directories[] = {
+        GJS_TOP_SRCDIR"/modules",
+        GJS_TOP_SRCDIR"/test/js/modules",
+        ".libs:",
+        NULL
+    };
+
     char *js_test_dir;
+    char *working_dir;
+    char *gjs_unit_path;
+    char *gjs_unit_dir;
+    char *top_builddir;
+    char *data_home;
     const char *name;
+    GString *path;
     GDir *dir;
+    size_t i;
+
+    working_dir = g_get_current_dir();
+
+    if(g_path_is_absolute(argv[0]))
+        gjs_unit_path = g_strdup(argv[0]);
+    else
+        gjs_unit_path = g_build_filename(working_dir, argv[0], NULL);
+
+    gjs_unit_dir = g_path_get_basename(gjs_unit_path);
+    top_builddir = g_build_filename(gjs_unit_dir, "..", NULL);
+    top_srcdir = g_build_filename(top_builddir, GJS_TOP_SRCDIR, NULL);
+
+    /* Normalize, not strictly necessary */
+    g_chdir(top_builddir);
+    g_free(top_builddir);
+    top_builddir = g_get_current_dir();
+
+    g_chdir(top_srcdir);
+    g_free(top_srcdir);
+    top_srcdir = g_get_current_dir();
+
+    g_chdir(working_dir);
 
     /* we're always going to use uninstalled files, set up necessary
      * environment variables, but don't overwrite if already set */
-    g_setenv("TOP_SRCDIR", GJS_TOP_SRCDIR, FALSE);
-    g_setenv("BUILDDIR", GJS_BUILDDIR, FALSE);
-    g_setenv("XDG_DATA_HOME", GJS_BUILDDIR "/test_user_data", FALSE);
-    g_setenv("GJS_PATH", GJS_TOP_SRCDIR"/modules:"GJS_TOP_SRCDIR"/test/js/modules:"GJS_BUILDDIR"/.libs:", FALSE);
+
+    data_home = g_build_filename(top_builddir, "test_user_data", NULL);
+    path = g_string_new(NULL);
+    for(i = 0; i < G_N_ELEMENTS(path_directories); i++) {
+        char *directory;
+
+        if (i != 0)
+            g_string_append_c(path, ':');
+
+        directory = g_build_filename(top_builddir, path_directories[i], NULL);
+        g_string_append(path, directory);
+        g_free(directory);
+    }
+
+    g_setenv("TOP_SRCDIR", top_srcdir, FALSE);
+    g_setenv("BUILDDIR", top_builddir, FALSE);
+    g_setenv("XDG_DATA_HOME", data_home, FALSE);
+    g_setenv("GJS_PATH", path->str, FALSE);
 
     gjs_crash_after_timeout(60*7); /* give the unit tests 7 minutes to complete */
     gjs_init_sleep_on_crash();
-
-    /* need ${top_srcdir} later */
-    top_srcdir = g_getenv ("TOP_SRCDIR");
 
     setlocale(LC_ALL, "");
     g_test_init(&argc, &argv, NULL);

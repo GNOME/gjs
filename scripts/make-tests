@@ -95,7 +95,7 @@ def find_tests(base_filename, full_filename):
 
 output_dir = sys.argv[1]
 input_files = sys.argv[2:]
-top_srcdir = os.getenv('abs_top_srcdir')
+top_srcdir = os.getenv('TOP_SRCDIR')
 
 out_header_name = os.path.join(output_dir, "gjstest.h")
 out_impl_name = os.path.join(output_dir, "gjstest.c")

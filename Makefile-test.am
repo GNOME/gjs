@@ -31,7 +31,7 @@ nodist_gjs_tests_SOURCES =	\
 ## .h.stamp and .c.stamp but if we listed both, make would run
 ## make-tests twice.
 gjstest.h.stamp : scripts/make-tests $(gjstest_files_with_tests)
-	$(TESTS_ENVIRONMENT) $(top_srcdir)/scripts/make-tests $(builddir) $(gjstest_files_with_tests)
+	$(TESTS_ENVIRONMENT) $(top_srcdir)/scripts/make-tests . $(gjstest_files_with_tests)
 
 gjstest.h gjstest.c : gjstest.h.stamp
 	@true
@@ -63,13 +63,13 @@ EXTRA_DIST +=			\
 	scripts/make-tests
 
 ########################################################################
-TESTS_ENVIRONMENT =				\
-	abs_top_srcdir="$(abs_top_srcdir)"	\
-	DBUS_SESSION_BUS_ADDRESS=''			\
-	XDG_DATA_HOME=$(abs_top_builddir)/test_user_data \
-        GJS_DEBUG_OUTPUT=$(builddir)/test_user_data/logs/gjs.log    \
-	BUILDDIR=$(abs_top_builddir)			\
-	GJS_USE_UNINSTALLED_FILES=1			\
+TESTS_ENVIRONMENT =							\
+	TOP_SRCDIR=$(top_srcdir)					\
+	DBUS_SESSION_BUS_ADDRESS=''					\
+	XDG_DATA_HOME=test_user_data					\
+	GJS_DEBUG_OUTPUT=test_user_data/logs/gjs.log			\
+	BUILDDIR=.							\
+	GJS_USE_UNINSTALLED_FILES=1					\
 	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)"	\
 	G_FILENAME_ENCODING=latin1	# ensure filenames are not utf8
 
