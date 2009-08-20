@@ -111,6 +111,12 @@ typedef enum {
 #define GJS_VERBOSE_ENABLE_GSIGNAL 0
 #endif
 
+/* Whether to log dbus argument marshaling
+ */
+#ifndef GJS_VERBOSE_ENABLE_DBUS_MARSHAL
+#define GJS_VERBOSE_ENABLE_DBUS_MARSHAL 0
+#endif
+
 #if GJS_VERBOSE_ENABLE_PROPS
 #define gjs_debug_jsprop(topic, format...) \
     do { gjs_debug(topic, format); } while(0)
@@ -151,6 +157,13 @@ typedef enum {
     do { gjs_debug(GJS_DEBUG_GOBJECT, format); } while(0)
 #else
 #define gjs_debug_gsignal(format...)
+#endif
+
+#if GJS_VERBOSE_ENABLE_DBUS_MARSHAL
+#define gjs_debug_dbus_marshal(format...) \
+    do { gjs_debug(GJS_DEBUG_DBUS_MARSHAL, format); } while(0)
+#else
+#define gjs_debug_dbus_marshal(format...)
 #endif
 
 void gjs_fatal(const char *format,

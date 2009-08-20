@@ -41,9 +41,8 @@ gjs_js_one_value_from_dbus(JSContext       *context,
 
     arg_type = dbus_message_iter_get_arg_type(iter);
 
-    gjs_debug(GJS_DEBUG_DBUS_MARSHAL,
-              "Converting dbus type '%c' to jsval",
-              arg_type != DBUS_TYPE_INVALID ? arg_type : '0');
+    gjs_debug_dbus_marshal("Converting dbus type '%c' to jsval",
+                           arg_type != DBUS_TYPE_INVALID ? arg_type : '0');
 
     switch (arg_type) {
     case DBUS_TYPE_STRUCT:
@@ -114,8 +113,7 @@ gjs_js_one_value_from_dbus(JSContext       *context,
 
                     dbus_message_iter_next(&entry_iter);
 
-                    gjs_debug(GJS_DEBUG_DBUS_MARSHAL,
-                              "Defining dict entry %s in jsval dict", key);
+                    gjs_debug_dbus_marshal("Defining dict entry %s in jsval dict", key);
 
                     entry_value = JSVAL_VOID;
                     JS_AddRoot(context, &entry_value);
@@ -603,8 +601,7 @@ append_array(JSContext         *context,
                 return JS_FALSE;
             }
 
-            gjs_debug(GJS_DEBUG_DBUS_MARSHAL,
-                      " Adding struct element %u", i);
+            gjs_debug_dbus_marshal(" Adding struct element %u", i);
 
             if (!gjs_js_one_value_to_dbus(context, element, &struct_iter,
                                           &element_sig_iter))
@@ -639,8 +636,7 @@ append_array(JSContext         *context,
                 return JS_FALSE;
             }
 
-            gjs_debug(GJS_DEBUG_DBUS_MARSHAL,
-                      " Adding array element %u", i);
+            gjs_debug_dbus_marshal(" Adding array element %u", i);
 
             if (!gjs_js_one_value_to_dbus(context, element, &array_iter,
                                           &element_sig_iter))
@@ -802,9 +798,8 @@ append_dict(JSContext         *context,
         if (!gjs_object_require_property(context, props, "DBus append_dict", name, &propval))
             return JS_FALSE;
 
-        gjs_debug(GJS_DEBUG_DBUS_MARSHAL,
-                  " Adding property %s",
-                  name);
+        gjs_debug_dbus_marshal(" Adding property %s",
+                               name);
 
         /* gjs_js_one_value_to_dbus() would check this also, but would not
          * print the property name, which is often useful
@@ -869,9 +864,8 @@ gjs_js_one_value_to_dbus(JSContext         *context,
 
     forced_type = dbus_signature_iter_get_current_type(sig_iter);
 
-    gjs_debug(GJS_DEBUG_DBUS_MARSHAL,
-              "Converting dbus type '%c' from jsval",
-              forced_type != DBUS_TYPE_INVALID ? forced_type : '0');
+    gjs_debug_dbus_marshal("Converting dbus type '%c' from jsval",
+                           forced_type != DBUS_TYPE_INVALID ? forced_type : '0');
 
     /* Don't write anything on the bus if the signature is empty */
     if (forced_type == DBUS_TYPE_INVALID)
@@ -955,13 +949,11 @@ gjs_js_one_value_to_dbus(JSContext         *context,
 
             length = JSVAL_TO_INT(lengthval);
 
-            gjs_debug(GJS_DEBUG_DBUS_MARSHAL,
-                              "Looks like an array length %u", length);
+            gjs_debug_dbus_marshal("Looks like an array length %u", length);
             if (!append_array(context, iter, sig_iter, obj, length))
                 return JS_FALSE;
         } else {
-            gjs_debug(GJS_DEBUG_DBUS_MARSHAL,
-                      "Looks like a dictionary");
+            gjs_debug_dbus_marshal("Looks like a dictionary");
             if (!append_dict(context, iter, sig_iter, obj))
                 return JS_FALSE;
         }
