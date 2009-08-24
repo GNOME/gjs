@@ -121,7 +121,8 @@ main(int argc, char **argv)
     else
         gjs_unit_path = g_build_filename(working_dir, argv[0], NULL);
 
-    gjs_unit_dir = g_path_get_basename(gjs_unit_path);
+    gjs_unit_dir = g_path_get_dirname(gjs_unit_path);
+    /* the gjs-unit executable will be in <top_builddir>/.libs */
     top_builddir = g_build_filename(gjs_unit_dir, "..", NULL);
     top_srcdir = g_build_filename(top_builddir, GJS_TOP_SRCDIR, NULL);
 
