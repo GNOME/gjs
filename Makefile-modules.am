@@ -10,7 +10,7 @@ dist_gjsjs_DATA +=		\
 	modules/signals.js	\
 	modules/dbus.js
 
-gjsnative_LTLIBRARIES += console.la debugger.la gi.la mainloop.la gettextNative.la dbusNative.la
+gjsnative_LTLIBRARIES += console.la debugger.la gi.la langNative.la mainloop.la gettextNative.la dbusNative.la
 
 JS_NATIVE_MODULE_CFLAGS =	\
         $(AM_CFLAGS)		\
@@ -34,6 +34,18 @@ gi_la_LDFLAGS = 				\
 gi_la_SOURCES =		\
 	modules/gi.h	\
 	modules/gi.c
+
+langNative_la_CFLAGS = 				\
+	$(JS_NATIVE_MODULE_CFLAGS)
+langNative_la_LIBADD = \
+	libgjs-gi.la				\
+	$(JS_NATIVE_MODULE_LIBADD)
+langNative_la_LDFLAGS = 			\
+	$(JS_NATIVE_MODULE_LDFLAGS)
+
+langNative_la_SOURCES =				\
+	modules/lang.h				\
+	modules/lang.c
 
 mainloop_la_CFLAGS = 				\
 	$(JS_NATIVE_MODULE_CFLAGS)

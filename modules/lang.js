@@ -110,3 +110,6 @@ function bind(obj, callback) {
         return callback.apply(me, args);
     };
 }
+
+// Merge stuff defined in native code
+copyProperties(imports.langNative, this);
