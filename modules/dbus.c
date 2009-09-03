@@ -367,8 +367,10 @@ gjs_js_dbus_call_async(JSContext  *context,
     pending = NULL;
     if (!dbus_connection_send_with_reply(bus_connection, message, &pending, timeout) ||
         pending == NULL) {
-        gjs_debug(GJS_DEBUG_DBUS, "Failed to send async dbus message");
-        gjs_throw(context, "Failed to send dbus message");
+        gjs_debug(GJS_DEBUG_DBUS, "Failed to send async dbus message connected %d pending %p",
+                  dbus_connection_get_is_connected(bus_connection), pending);
+        gjs_throw(context, "Failed to send dbus message, connected %d pending %p",
+                  dbus_connection_get_is_connected(bus_connection), pending);
         dbus_message_unref(message);
         return JS_FALSE;
     }
