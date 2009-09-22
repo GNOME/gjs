@@ -34,8 +34,6 @@
  http://code.google.com/p/tweener/wiki/License
  */
 
-log("Loading tweener.js");
-
 const TweenList = imports.tweener.tweenList;
 const Mainloop = imports.mainloop;
 const Signals = imports.signals;
@@ -852,5 +850,3 @@ function registerSpecialPropertySplitter(name, splitFunction, parameters) {
 	parameters: parameters
     };
 }
-
-log("Done loading tweener.js");

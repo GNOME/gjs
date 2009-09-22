@@ -32,7 +32,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 http://code.google.com/p/tweener/
 http://code.google.com/p/tweener/wiki/License
 */
-log("Loading tweenlist.js");
 
 function TweenList(scope, timeStart, timeComplete,
                       useFrames, transition, transitionParams) {
@@ -107,5 +106,3 @@ function makePropertiesChain(obj) {
      */
     return obj;
 };
-
-log("Done loading tweenlist.js");
