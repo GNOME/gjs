@@ -841,6 +841,44 @@ gjs_log_and_keep_exception(JSContext *context,
     return log_and_maybe_keep_exception(context, message_p, TRUE);
 }
 
+static void
+try_to_chain_stack_trace(JSContext *src_context, JSContext *dst_context,
+                         jsval src_exc) {
+    /* append current stack of dst_context to stack trace for src_exc.
+     * we bail if anything goes wrong, just using the src_exc unmodified
+     * in that case. */
+    jsval chained, src_stack, dst_stack, new_stack;
+    JSString *new_stack_str;
+
+    if (!JSVAL_IS_OBJECT(src_exc))
+        return; // src_exc doesn't have a stack trace
+
+    /* create a new exception in dst_context to get a stack trace */
+    gjs_throw_literal(dst_context, "Chained exception");
+    if (!(JS_GetPendingException(dst_context, &chained) &&
+          JSVAL_IS_OBJECT(chained)))
+        return; // gjs_throw_literal didn't work?!
+    JS_ClearPendingException(dst_context);
+
+    /* get stack trace for src_exc and chained */
+    if (!(gjs_object_get_property(dst_context, JSVAL_TO_OBJECT(chained),
+                                  "stack", &dst_stack) &&
+          JSVAL_IS_STRING(dst_stack)))
+        return; // couldn't get chained stack
+    if (!(gjs_object_get_property(src_context, JSVAL_TO_OBJECT(src_exc),
+                                  "stack", &src_stack) &&
+          JSVAL_IS_STRING(src_stack)))
+        return; // couldn't get source stack
+
+    /* add chained exception's stack trace to src_exc */
+    new_stack_str = JS_ConcatStrings
+        (dst_context, JSVAL_TO_STRING(src_stack), JSVAL_TO_STRING(dst_stack));
+    if (new_stack_str==NULL)
+        return; // couldn't concatenate src and dst stacks?!
+    new_stack = STRING_TO_JSVAL(new_stack_str);
+    JS_SetProperty(dst_context, JSVAL_TO_OBJECT(src_exc), "stack", &new_stack);
+}
+
 JSBool
 gjs_move_exception(JSContext      *src_context,
                    JSContext      *dest_context)
@@ -849,6 +887,10 @@ gjs_move_exception(JSContext      *src_context,
     jsval exc;
     if (JS_GetPendingException(src_context, &exc)) {
         if (src_context != dest_context) {
+            /* try to add the current stack of dest_context to the
+             * stack trace of exc */
+            try_to_chain_stack_trace(src_context, dest_context, exc);
+            /* move the exception to dest_context */
             JS_SetPendingException(dest_context, exc);
             JS_ClearPendingException(src_context);
         }
