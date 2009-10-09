@@ -409,6 +409,80 @@ function testSpecialPropertySplitter() {
     }
 }
 
+function testTweenerOverwriteBeforeStart() {
+    var object = {
+        a: 0,
+        b: 0,
+        c: 0,
+        d: 0
+    };
+
+    var startCount = 0;
+    var overwriteCount = 0;
+    var completeCount = 0;
+
+    var tweenA = { a: 10, b: 10, c: 10, d: 10, time: 0.1,
+                   onStart: function() { startCount += 1; },
+                   onOverwrite: function() { overwriteCount += 1; },
+                   onComplete: function() { completeCount += 1; }
+                 };
+    var tweenB = { a: 20, b: 20, c: 20, d: 20, time: 0.1,
+                   onStart: function() { startCount += 1; },
+                   onOverwrite: function() { overwriteCount += 1; },
+                   onComplete: function() {
+                       completeCount += 1;
+                       Mainloop.quit('testTweenerOverwriteBeforeStart');
+                   }
+                 };
+
+    Tweener.addTween(object, tweenA);
+    Tweener.addTween(object, tweenB);
+
+    Mainloop.run('testTweenerOverwriteBeforeStart');
+
+    JSUnit.assertEquals(1, completeCount);
+    JSUnit.assertEquals(1, startCount);
+    JSUnit.assertEquals(4, overwriteCount);    // FAIL, should be 1, not per property
+}
+
+function testTweenerOverwriteAfterStart() {
+    var object = {
+        a: 0,
+        b: 0,
+        c: 0,
+        d: 0
+    };
+
+    var startCount = 0;
+    var overwriteCount = 0;
+    var completeCount = 0;
+
+    var tweenA = { a: 10, b: 10, c: 10, d: 10, time: 0.1,
+                   onStart: function() {
+                     startCount += 1;
+                     Tweener.addTween(object, tweenB);
+                   },
+                   onOverwrite: function() { overwriteCount += 1; },
+                   onComplete: function() { completeCount += 1; }
+                 };
+    var tweenB = { a: 20, b: 20, c: 20, d: 20, time: 0.1,
+                   onStart: function() { startCount += 1; },
+                   onOverwrite: function() { overwriteCount += 1; },
+                   onComplete: function() {
+                       completeCount += 1;
+                       Mainloop.quit('testTweenerOverwriteAfterStart');
+                   }
+                 };
+
+    Tweener.addTween(object, tweenA);
+
+    Mainloop.run('testTweenerOverwriteAfterStart');
+
+    JSUnit.assertEquals(1, completeCount);
+    JSUnit.assertEquals(2, startCount);
+    JSUnit.assertEquals(4, overwriteCount);    // FAIL, should be 1, not per property
+}
+
 installFrameTicker();
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
 
