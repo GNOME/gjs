@@ -626,8 +626,10 @@ function removeTweensByTime(scope, properties, timeStart, timeComplete) {
 
             for (name in _tweenList[i].properties) {
                 if (properties[name]) {
-                    _callOnFunction(_tweenList[i].onOverwrite, "onOverwrite", _tweenList[i].onOverwriteScope,
-                                    _tweenList[i].scope, _tweenList[i].onOverwriteParams);
+                    if (!removedLocally) {
+                        _callOnFunction(_tweenList[i].onOverwrite, "onOverwrite", _tweenList[i].onOverwriteScope,
+                                        _tweenList[i].scope, _tweenList[i].onOverwriteParams);
+                    }
 
                     _tweenList[i].properties[name] = undefined;
                     delete _tweenList[i].properties[name];

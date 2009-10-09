@@ -442,7 +442,7 @@ function testTweenerOverwriteBeforeStart() {
 
     JSUnit.assertEquals(1, completeCount);
     JSUnit.assertEquals(1, startCount);
-    JSUnit.assertEquals(4, overwriteCount);    // FAIL, should be 1, not per property
+    JSUnit.assertEquals(1, overwriteCount);
 }
 
 function testTweenerOverwriteAfterStart() {
@@ -480,7 +480,7 @@ function testTweenerOverwriteAfterStart() {
 
     JSUnit.assertEquals(1, completeCount);
     JSUnit.assertEquals(2, startCount);
-    JSUnit.assertEquals(4, overwriteCount);    // FAIL, should be 1, not per property
+    JSUnit.assertEquals(1, overwriteCount);
 }
 
 installFrameTicker();
