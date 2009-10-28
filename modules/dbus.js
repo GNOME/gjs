@@ -261,7 +261,6 @@ function proxifyPrototype(proto, iface) {
              * old naming system. FooRemote is the actual proxy method.
              */
             let methodName = method.name + "Remote";
-            log('conforming method: ' + methodName + ' for ' + iface.name);
             proto[methodName] = _makeProxyMethod(method);
             proto[method.name] = function() {
                 log("PROXY-ERROR: " + method.name + " called, you should be using " +
