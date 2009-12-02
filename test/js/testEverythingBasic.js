@@ -185,6 +185,43 @@ function testClosureOneArg() {
     assertEquals('callback with one arg return value', 42, i);
 }
 
+function testCallback() {
+    let callback = function() {
+                       return 42;
+                   };
+    assertEquals('Callback', Everything.test_callback(callback), 42);
+}
+
+function testCallbackUserData() {
+    let callbackUserData = function(userData) {
+                               return userData.foo.length;
+                           };
+
+    let userData = {'foo': 'bar'};
+    assertEquals('CallbackUserData', Everything.test_callback_user_data(
+                                     callbackUserData, userData), userData.foo.length);
+}
+
+function testCallbackDestroyNotify() {
+    let called = 0;
+    let test = function(userData) {
+                   called++;
+                   return userData;
+               };
+    assertEquals('CallbackDestroyNotify', Everything.test_callback_destroy_notify(test, 42), 42);
+    assertEquals('CallbackDestroyNotify', called, 1);
+    assertEquals('CallbackDestroyNotify', Everything.test_callback_thaw_notifications(), 42);
+}
+
+function testCallbackAsync() {
+    let test = function(userData) {
+                   return 44;
+               };
+    Everything.test_callback_async(test, 44);
+    let i = Everything.test_callback_thaw_async();
+    assertEquals('testCallbackAsyncFinish', 44, i);
+}
+
 function testIntValueArg() {
     let i = Everything.test_int_value_arg(42);
     assertEquals('Method taking a GValue', 42, i);
