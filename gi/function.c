@@ -68,6 +68,8 @@ typedef struct {
     gboolean in_use;
 } GjsCallbackInvokeInfo;
 
+static void gjs_callback_invoke_info_free_content(gpointer user_data);
+
 GJS_DEFINE_PRIV_FROM_JS(Function, gjs_function_class)
 
 /*
@@ -108,16 +110,14 @@ function_new_resolve(JSContext *context,
     return JS_TRUE;
 }
 
-static void gjs_callback_invoke_info_free_content(GjsCallbackInvokeInfo *invoke_info);
-
 static void
-gjs_callback_invoke_info_free (gpointer data)
+gjs_callback_invoke_info_free(gpointer data)
 {
     GjsCallbackInvokeInfo *invoke_info = (GjsCallbackInvokeInfo *)data;
 
     gjs_callback_invoke_info_free_content(invoke_info);
     if (invoke_info->info)
-        g_base_info_unref(invoke_info->info);
+        g_base_info_unref((GIBaseInfo*)invoke_info->info);
     munmap(invoke_info->closure, sizeof(ffi_closure));
     if (invoke_info->need_free_arg_types)
         g_free(invoke_info->cif->arg_types);
@@ -127,9 +127,10 @@ gjs_callback_invoke_info_free (gpointer data)
 }
 
 static void
-gjs_callback_invoke_info_free_content(GjsCallbackInvokeInfo *invoke_info)
+gjs_callback_invoke_info_free_content(gpointer user_data)
 {
     GSList *l;
+    GjsCallbackInvokeInfo *invoke_info = (GjsCallbackInvokeInfo*)user_data;
 
     for (l = invoke_info->callback_info.arguments; l; l = g_slist_next(l)) {
         jsval *val = l->data;
@@ -139,7 +140,7 @@ gjs_callback_invoke_info_free_content(GjsCallbackInvokeInfo *invoke_info)
     g_slist_free(invoke_info->callback_info.arguments);
     invoke_info->callback_info.arguments = NULL;
 
-    g_slist_foreach(invoke_info->callback_info.invoke_infos, gjs_callback_invoke_info_free, NULL);
+    g_slist_foreach(invoke_info->callback_info.invoke_infos, (GFunc)gjs_callback_invoke_info_free, NULL);
     g_slist_free(invoke_info->callback_info.invoke_infos);
     invoke_info->callback_info.invoke_infos = NULL;
 }
@@ -241,16 +242,16 @@ destroynotify_callback(ffi_cif *cif,
 static gboolean
 gjs_destroy_notify_create(GjsCallbackInvokeInfo *info)
 {
-    static const ffi_type *destroynotify_args[] = {&ffi_type_pointer};
+    static const ffi_type *destroy_notify_args[] = {&ffi_type_pointer};
     ffi_status status;
 
     g_assert(info);
 
     info->need_free_arg_types = FALSE;
 
-    info->closure = mmap (NULL, sizeof (ffi_closure),
-                    PROT_EXEC | PROT_READ | PROT_WRITE,
-                    MAP_ANON | MAP_PRIVATE, -1, sysconf (_SC_PAGE_SIZE));
+    info->closure = mmap(NULL, sizeof (ffi_closure),
+                         PROT_EXEC | PROT_READ | PROT_WRITE,
+                         MAP_ANON | MAP_PRIVATE, -1, sysconf (_SC_PAGE_SIZE));
     if (!info->closure) {
         gjs_throw(info->context, "mmap failed\n");
         return FALSE;
@@ -340,10 +341,10 @@ gjs_callback_from_arguments(JSContext *context,
                             int n_args,
                             int *argv_pos,
                             jsval *argv,
-                            GList **all_invoke_infos,
+                            GSList **all_invoke_infos,
                             GSList **data_for_notify,
                             GSList **call_free_list,
-                            void **closure)
+                            gpointer *closure)
 {
     GjsCallbackInvokeInfo *invoke_info;
     GSList *l;
@@ -368,7 +369,7 @@ gjs_callback_from_arguments(JSContext *context,
         (*argv_pos)--;
         is_notify = TRUE;
         invoke_info->callback_info = *callback_info;
-        *all_invoke_infos = g_list_append(*all_invoke_infos, invoke_info);
+        *all_invoke_infos = g_slist_prepend(*all_invoke_infos, invoke_info);
         break;
     }
 
@@ -406,7 +407,7 @@ gjs_callback_from_arguments(JSContext *context,
             if (arg_n > current_arg_pos && arg_n < n_args) {
                 gjs_callback_info_add_argument(context, &invoke_info->callback_info, argv[arg_n]);
             }
-            *all_invoke_infos = g_list_append(*all_invoke_infos, invoke_info);
+            *all_invoke_infos = g_slist_prepend(*all_invoke_infos, invoke_info);
             break;
         default:
             gjs_throw(context, "Unknown callback scope");
@@ -421,25 +422,22 @@ out:
 }
 
 static void
-free_unused_invoke_infos(GSList **invoke_infos)
+gjs_free_unused_invoke_infos(GSList **invoke_infos)
 {
-    GSList *k;
-    GSList *node_for_delete = NULL;
+    GSList *l, *node_for_delete = NULL;
 
-    for (k = *invoke_infos; k; k = g_slist_next(k)) {
-        GList *t;
-        GjsCallbackInvokeInfo *info = (GjsCallbackInvokeInfo*)k->data;
+    for (l = *invoke_infos; l; l = l->next) {
+        GjsCallbackInvokeInfo *info = l->data;
 
-        if (info->in_use)
-            continue;
+         if (info->in_use)
+             continue;
 
-        gjs_callback_invoke_info_free(info);
-
-        node_for_delete = g_slist_prepend(node_for_delete, k);
+         gjs_callback_invoke_info_free(info);
+         node_for_delete = g_slist_prepend(node_for_delete, l);
     }
-    for (k = node_for_delete; k; k = g_slist_next(k)) {
-        *invoke_infos = g_slist_delete_link(*invoke_infos, (GSList*)k->data);
-    }
+    for (l = node_for_delete; l; l = l->next) {
+        *invoke_infos = g_slist_delete_link(*invoke_infos, l->data);
+     }
     g_slist_free(node_for_delete);
 }
 
