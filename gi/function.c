@@ -154,10 +154,10 @@ gjs_callback_invoke_info_free_content(gpointer user_data)
  * getting the return value back.
  */
 static void
-invoke_info_for_js_callback(ffi_cif *cif,
-                            void *result,
-                            void **args,
-                            void *data)
+gjs_callback_closure(ffi_cif *cif,
+                     void *result,
+                     void **args,
+                     void *data)
 {
     GjsCallbackInvokeInfo *invoke_info = (GjsCallbackInvokeInfo *) data;
     int i, n_args;
@@ -226,11 +226,16 @@ invoke_info_for_js_callback(ffi_cif *cif,
     invoke_info->in_use = FALSE;
 }
 
+/* For GI_SCOPE_TYPE_NOTIFIED callback we provide our own
+ * ffi closure so we can easily get the user data instead
+ * of always having to map the user_data argument on the
+ * invokation side.
+ */
 static void
-destroynotify_callback(ffi_cif *cif,
-                       void *result,
-                       void **args,
-                       void *data)
+gjs_destroy_notify_callback_closure(ffi_cif *cif,
+                                    void *result,
+                                    void **args,
+                                    void *data)
 {
     GjsCallbackInvokeInfo *info = (GjsCallbackInvokeInfo *)data;
 
@@ -259,16 +264,17 @@ gjs_destroy_notify_create(GjsCallbackInvokeInfo *info)
 
     info->cif = g_slice_new(ffi_cif);
 
-    status = ffi_prep_cif (info->cif, FFI_DEFAULT_ABI,
-                           1, &ffi_type_void,
-                           destroynotify_args);
+    status = ffi_prep_cif(info->cif, FFI_DEFAULT_ABI,
+                          1, &ffi_type_void,
+                          (ffi_type**)destroy_notify_args);
     if (status != FFI_OK) {
         gjs_throw(info->context, "ffi_prep_cif failed: %d\n", status);
         munmap(info->closure, sizeof (ffi_closure));
         return FALSE;
     }
 
-    status = ffi_prep_closure (info->closure, info->cif, destroynotify_callback, info);
+    status = ffi_prep_closure(info->closure, info->cif,
+                              gjs_destroy_notify_callback_closure, info);
     if (status != FFI_OK) {
         gjs_throw(info->context, "ffi_prep_cif failed: %d\n", status);
         munmap(info->closure, sizeof (ffi_closure));
@@ -307,7 +313,7 @@ gjs_callback_invoke_prepare(JSContext      *context,
     invoke_info->callback_info.arguments = NULL;
     invoke_info->callback_info.invoke_infos = NULL;
     invoke_info->closure = g_callable_info_prepare_closure(callable_info, invoke_info->cif,
-                                                           invoke_info_for_js_callback, invoke_info);
+                                                           gjs_callback_closure, invoke_info);
 
     g_assert(invoke_info->closure);
 
