@@ -144,6 +144,14 @@ gjs_callback_invoke_info_free_content(GjsCallbackInvokeInfo *invoke_info)
     invoke_info->callback_info.invoke_infos = NULL;
 }
 
+/* This is our main entry point for ffi_closure callbacks.
+ * (there's a similar one for GDestroyNotify callbacks below)
+ * ffi_prep_closure is doing pure magic and replaces the original
+ * function call with this one which gives us the ffi arguments,
+ * a place to store the return value and our use data.
+ * In other words, everything we need to call the JS function and
+ * getting the return value back.
+ */
 static void
 invoke_info_for_js_callback(ffi_cif *cif,
                             void *result,
@@ -470,7 +478,15 @@ gjs_invoke_c_function(JSContext      *context,
     GSList *callback_arg_indices = NULL; /* list of int */
     static GSList *invoke_infos = NULL;
 
-    free_unused_invoke_infos(&invoke_infos);
+    /* For async/notify callbacks we need to clean up some of the closure
+     * data in follow up calls due to the way mmap works. ffi closures works
+     * by rewriting the function trampolines, eg it modifies the page where
+     * the function is mapped, that page cannot be released/mumapped as long
+     * as we're currently using it, eg executing it. And as soon as we leave
+     * that function we loose control, it goes back into the control of the
+     * library where the function is called.
+     */
+    gjs_free_unused_invoke_infos(&invoke_infos);
 
     flags = g_function_info_get_flags(info);
     is_method = (flags & GI_FUNCTION_IS_METHOD) != 0;
