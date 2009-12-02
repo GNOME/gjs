@@ -582,7 +582,7 @@ gjs_invoke_c_function(JSContext      *context,
                 convert_argument = FALSE;
                 in_value.v_pointer = (gpointer)argv[argv_pos];
             } else if (type_tag == GI_TYPE_TAG_VOID) {
-                g_warning("Have incorrect annotation");
+                /* FIXME: notify/throw saying the callback annotation is wrong */
                 convert_argument = FALSE;
                 in_value.v_pointer = (gpointer)argv[argv_pos];
             }
