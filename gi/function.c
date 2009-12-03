@@ -382,6 +382,11 @@ gjs_callback_from_arguments(JSContext *context,
     if (is_notify)
         goto out;
 
+    if (JSVAL_IS_NULL(argv[*argv_pos]) || JSVAL_IS_VOID(argv[*argv_pos])) {
+        *closure = NULL;
+        return TRUE;
+    }
+
     invoke_info = gjs_callback_invoke_prepare(context,
                                               argv[*argv_pos],
                                               (GICallableInfo*)interface_info);
