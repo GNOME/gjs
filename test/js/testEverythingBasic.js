@@ -6,6 +6,7 @@ if (!('assertEquals' in this)) { /* allow running this test standalone */
 
 // We use Gio to have some objects that we know exist
 const Gio = imports.gi.Gio;
+const Lang = imports.lang;
 
 const INT8_MIN = (-128);
 const INT16_MIN = (-32767-1);
@@ -205,24 +206,20 @@ function testCallback() {
     assertEquals('CallbackUndefined', Everything.test_callback(undefined), 0);
 }
 
-function testCallbackUserData() {
-    let callbackUserData = function(userData) {
-                               return userData.foo.length;
-                           };
-
-    let userData = {'foo': 'bar'};
-    assertEquals('CallbackUserData', Everything.test_callback_user_data(
-                                     callbackUserData, userData), userData.foo.length);
-}
-
 function testCallbackDestroyNotify() {
-    let called = 0;
-    let test = function(userData) {
-                   called++;
-                   return userData;
-               };
-    assertEquals('CallbackDestroyNotify', Everything.test_callback_destroy_notify(test, 42), 42);
-    assertEquals('CallbackDestroyNotify', called, 1);
+    let testObj = {
+        called: 0,
+        test: function(data) {
+            this.called++;
+            return data;
+        }
+    };
+    assertEquals('CallbackDestroyNotify',
+                 Everything.test_callback_destroy_notify(Lang.bind(testObj,
+                     function() {
+                         return testObj.test(42);
+                     })), 42);
+    assertEquals('CallbackDestroyNotify', testObj.called, 1);
     assertEquals('CallbackDestroyNotify', Everything.test_callback_thaw_notifications(), 42);
 }
 
@@ -407,7 +404,7 @@ function testTortureSignature1Success() {
 
 function testTortureSignature2() {
     let [y, z, q] = Everything.test_torture_signature_2(42, function () {
-        }, null, 'foo', 7);
+        }, 'foo', 7);
     assertEquals(Math.floor(y), 42);
     assertEquals(z, 84);
     assertEquals(q, 10);

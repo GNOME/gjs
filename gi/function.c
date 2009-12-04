@@ -44,6 +44,7 @@
 typedef struct {
     GIFunctionInfo *info;
     guint n_destroy_notifies;
+    guint n_user_data;
     guint expected_js_argc;
     guint js_out_argc;
     guint inout_argc;
@@ -357,7 +358,6 @@ gjs_callback_from_arguments(JSContext *context,
     GSList *l;
     gboolean is_notify = FALSE;
     GjsCallbackInfo *callback_info = NULL;
-    int arg_n;
 
     for (l = *data_for_notify; l; l = l->next) {
         GjsCallbackInfo *callback_info = l->data;
@@ -406,11 +406,6 @@ gjs_callback_from_arguments(JSContext *context,
             g_assert(g_arg_info_get_destroy(arg_info) < n_args);
 
             gjs_callback_info_add_argument(context, callback_info, argv[*argv_pos]);
-            arg_n = g_arg_info_get_closure(arg_info);
-            if (arg_n > current_arg_pos && arg_n < n_args) {
-                g_assert_cmpuint(arg_n, <, argc);
-                gjs_callback_info_add_argument(context, callback_info, argv[arg_n]);
-            }
             callback_info->arg_index = g_arg_info_get_destroy(arg_info);
 
             callback_info->invoke_infos = g_slist_prepend(callback_info->invoke_infos, invoke_info);
@@ -419,11 +414,6 @@ gjs_callback_from_arguments(JSContext *context,
         case GI_SCOPE_TYPE_ASYNC:
             gjs_callback_info_add_argument(context, &invoke_info->callback_info, argv[*argv_pos]);
 
-            arg_n = g_arg_info_get_closure(arg_info);
-            if (arg_n > current_arg_pos && arg_n < n_args) {
-                g_assert_cmpuint(arg_n, <, argc);
-                gjs_callback_info_add_argument(context, &invoke_info->callback_info, argv[arg_n]);
-            }
             *all_invoke_infos = g_slist_prepend(*all_invoke_infos, invoke_info);
             break;
         default:
@@ -575,6 +565,7 @@ gjs_invoke_c_function(JSContext      *context,
     for (i = 0; i < n_args; i++) {
         GIDirection direction;
         GIArgInfo arg_info;
+        gboolean arg_removed = FALSE;
 
         /* gjs_debug(GJS_DEBUG_GFUNCTION, "i: %d in_args_pos: %d argv_pos: %d", i, in_args_pos, argv_pos); */
 
@@ -605,10 +596,9 @@ gjs_invoke_c_function(JSContext      *context,
 
             if (g_slist_find(callback_arg_indices, GUINT_TO_POINTER((guint)i)) != NULL) {
                 g_assert(type_tag == GI_TYPE_TAG_VOID);
+                arg_removed = TRUE;
                 convert_argument = FALSE;
-
-                g_assert_cmpuint(argv_pos, <, argc);
-                in_value->v_pointer = (gpointer)argv[argv_pos];
+                in_value->v_pointer = NULL;
             } else if (type_tag == GI_TYPE_TAG_VOID) {
                 /* FIXME: notify/throw saying the callback annotation is wrong */
                 convert_argument = FALSE;
@@ -625,6 +615,8 @@ gjs_invoke_c_function(JSContext      *context,
 
                 interface_type = g_base_info_get_type(interface_info);
                 if (interface_type == GI_INFO_TYPE_CALLBACK) {
+                    gint user_data_pos;
+
                     if (!gjs_callback_from_arguments(context, interface_info, &arg_info,
                                                      i, n_args, &argv_pos, argc, argv,
                                                      &invoke_infos,
@@ -633,8 +625,12 @@ gjs_invoke_c_function(JSContext      *context,
                         failed = TRUE;
                         break;
                     }
+                    user_data_pos = g_arg_info_get_closure(&arg_info);
+                    if (is_method)
+                        --user_data_pos;
                     callback_arg_indices = g_slist_prepend(callback_arg_indices,
-                                                           GINT_TO_POINTER(g_arg_info_get_closure(&arg_info)));
+                                                           GINT_TO_POINTER(user_data_pos));
+
                     convert_argument = FALSE;
                 }
 
@@ -661,7 +657,8 @@ gjs_invoke_c_function(JSContext      *context,
                 inout_args_pos++;
             }
 
-            ++argv_pos;
+            if (!arg_removed)
+                ++argv_pos;
         }
 
         ++in_args_pos;
@@ -993,6 +990,7 @@ init_cached_function_data (JSContext      *context,
                            GIFunctionInfo *info)
 {
     guint8 i, n_args;
+    gboolean is_method;
     GError *error = NULL;
     GITypeInfo return_type;
 
@@ -1000,6 +998,8 @@ init_cached_function_data (JSContext      *context,
         gjs_throw_g_error(context, error);
         return FALSE;
     }
+
+    is_method = (g_function_info_get_flags(info) & GI_FUNCTION_IS_METHOD) != 0;
 
     g_callable_info_load_return_type((GICallableInfo*)info, &return_type);
     if (g_type_info_get_tag(&return_type) != GI_TYPE_TAG_VOID)
@@ -1010,15 +1010,25 @@ init_cached_function_data (JSContext      *context,
     for (i = 0; i < n_args; i++) {
         GIDirection direction;
         GIArgInfo arg_info;
-        guint8 destroy;
+        guint8 destroy, closure;
 
         g_callable_info_load_arg((GICallableInfo*) info, i, &arg_info);
         destroy = g_arg_info_get_destroy(&arg_info);
+        if (is_method)
+            --destroy;
+        closure = g_arg_info_get_closure(&arg_info);
+        if (is_method)
+            --closure;
         direction = g_arg_info_get_direction(&arg_info);
 
         if (destroy > 0 && destroy < n_args) {
             function->expected_js_argc -= 1;
             function->n_destroy_notifies += 1;
+        }
+
+        if (closure > 0 && closure < n_args) {
+            function->expected_js_argc -= 1;
+            function->n_user_data += 1;
         }
 
         if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT)
