@@ -98,18 +98,29 @@ gjs_js_one_value_from_dbus(JSContext       *context,
                 dbus_message_iter_recurse(iter, &array_iter);
                 while (dbus_message_iter_get_arg_type(&array_iter) != DBUS_TYPE_INVALID) {
                     DBusMessageIter entry_iter;
+                    jsval key_value, entry_value;
+                    JSString *key_str;
                     const char *key;
-                    jsval entry_value;
 
                     dbus_message_iter_recurse(&array_iter, &entry_iter);
 
-                    if (dbus_message_iter_get_arg_type(&entry_iter) != DBUS_TYPE_STRING) {
-                        gjs_throw(context, "Dictionary keys are not strings, can't convert to JavaScript");
+                    if (!dbus_type_is_basic(dbus_message_iter_get_arg_type(&entry_iter))) {
+                        gjs_throw(context, "Dictionary keys are not a basic type, can't convert to JavaScript");
                         JS_RemoveRoot(context, &obj);
                         return JS_FALSE;
                     }
 
-                    dbus_message_iter_get_basic(&entry_iter, &key);
+                    entry_value = JSVAL_VOID;
+                    JS_AddRoot(context, &entry_value);
+                    if (!gjs_js_one_value_from_dbus(context, &entry_iter, &key_value)) {
+                        JS_RemoveRoot(context, &key_value);
+                        JS_RemoveRoot(context, &obj);
+                        return JS_FALSE;
+                    }
+
+                    key_str = JS_ValueToString(context, key_value);
+                    JS_AddRoot(context, &key_str);
+                    key = JS_GetStringBytes(key_str);
 
                     dbus_message_iter_next(&entry_iter);
 
@@ -118,6 +129,8 @@ gjs_js_one_value_from_dbus(JSContext       *context,
                     entry_value = JSVAL_VOID;
                     JS_AddRoot(context, &entry_value);
                     if (!gjs_js_one_value_from_dbus(context, &entry_iter, &entry_value)) {
+                        JS_RemoveRoot(context, &key_value);
+                        JS_RemoveRoot(context, &key_str);
                         JS_RemoveRoot(context, &entry_value);
                         JS_RemoveRoot(context, &obj);
                         return JS_FALSE;
@@ -126,11 +139,15 @@ gjs_js_one_value_from_dbus(JSContext       *context,
                     if (!JS_DefineProperty(context, obj,
                                            key, entry_value,
                                            NULL, NULL, JSPROP_ENUMERATE)) {
+                        JS_RemoveRoot(context, &key_value);
+                        JS_RemoveRoot(context, &key_str);
                         JS_RemoveRoot(context, &entry_value);
                         JS_RemoveRoot(context, &obj);
                         return JS_FALSE;
                     }
 
+                    JS_RemoveRoot(context, &key_value);
+                    JS_RemoveRoot(context, &key_str);
                     JS_RemoveRoot(context, &entry_value);
                     dbus_message_iter_next(&array_iter);
                 }
