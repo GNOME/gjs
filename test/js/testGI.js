@@ -10,4 +10,11 @@ function testThrows() {
     assertRaises(function() { return GLib.file_read_link(""); });
 }
 
+function testMultiReturn() {
+    const GLib = imports.gi.GLib;
+
+    let [success, content, len] = GLib.file_get_contents('/etc/passwd')
+    assertEquals(success, true);
+}
+
 gjstestRun();

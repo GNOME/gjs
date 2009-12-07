@@ -43,7 +43,11 @@
 
 typedef struct {
     GIFunctionInfo *info;
-
+    guint n_destroy_notifies;
+    guint expected_js_argc;
+    guint js_out_argc;
+    guint inout_argc;
+    GIFunctionInvoker invoker;
 } Function;
 
 static struct JSClass gjs_function_class;
@@ -162,7 +166,7 @@ gjs_callback_closure(ffi_cif *cif,
     GjsCallbackInvokeInfo *invoke_info = (GjsCallbackInvokeInfo *) data;
     int i, n_args;
     jsval *jsargs, rval;
-    GITypeInfo *ret_type;
+    GITypeInfo ret_type;
 
     g_assert(invoke_info != NULL);
 
@@ -172,24 +176,22 @@ gjs_callback_closure(ffi_cif *cif,
 
     jsargs = (jsval*)g_new0(jsval, n_args);
     for (i = 0; i < n_args; i++) {
-        GIArgInfo *arg_info;
-        GITypeInfo *type_info;
+        GIArgInfo arg_info;
+        GITypeInfo type_info;
 
-        arg_info = g_callable_info_get_arg(invoke_info->info, i);
-        type_info = g_arg_info_get_type(arg_info);
+        g_callable_info_load_arg(invoke_info->info, i, &arg_info);
+        g_arg_info_load_type(&arg_info, &type_info);
 
-        if (g_type_info_get_tag(type_info) == GI_TYPE_TAG_VOID) {
+        if (g_type_info_get_tag(&type_info) == GI_TYPE_TAG_VOID) {
             jsargs[i] = *((jsval*)args[i]);
         } else if (!gjs_value_from_g_argument(invoke_info->context,
                                               &jsargs[i],
-                                              type_info,
+                                              &type_info,
                                               args[i])) {
             gjs_throw(invoke_info->context, "could not convert argument of callback");
             g_free(jsargs);
             return;
         }
-        g_base_info_unref((GIBaseInfo*)arg_info);
-        g_base_info_unref((GIBaseInfo*)type_info);
     }
 
     if (!JS_CallFunctionValue(invoke_info->context,
@@ -203,23 +205,21 @@ gjs_callback_closure(ffi_cif *cif,
         return;
     }
 
-    ret_type = g_callable_info_get_return_type(invoke_info->info);
+    g_callable_info_load_return_type(invoke_info->info, &ret_type);
 
     if (!gjs_value_to_g_argument(invoke_info->context,
                                  rval,
-                                 ret_type,
+                                 &ret_type,
                                  "callback",
                                  GJS_ARGUMENT_RETURN_VALUE,
                                  FALSE,
                                  TRUE,
                                  result)) {
         gjs_throw(invoke_info->context, "Couldn't convert res value");
-        g_base_info_unref((GIBaseInfo*)ret_type);
         g_free(jsargs);
         result = NULL;
         return;
     }
-    g_base_info_unref((GIBaseInfo*)ret_type);
     g_free(jsargs);
 
     gjs_callback_invoke_info_free_content(invoke_info);
@@ -343,9 +343,9 @@ static inline gboolean
 gjs_callback_from_arguments(JSContext *context,
                             GIBaseInfo* interface_info,
                             GIArgInfo *arg_info,
-                            int current_arg_pos,
-                            int n_args,
-                            int *argv_pos,
+                            guint8 current_arg_pos,
+                            guint8 n_args,
+                            guint8 *argv_pos,
                             jsval *argv,
                             GSList **all_invoke_infos,
                             GSList **data_for_notify,
@@ -452,36 +452,45 @@ gjs_free_unused_invoke_infos(GSList **invoke_infos)
     g_slist_free(node_for_delete);
 }
 
-JSBool
+static JSBool
 gjs_invoke_c_function(JSContext      *context,
-                      GIFunctionInfo *info,
+                      Function       *function,
                       JSObject       *obj, /* "this" object */
                       uintN           argc,
                       jsval          *argv,
                       jsval          *rval)
 {
-    GArgument *in_args;
-    GArgument *out_args;
-    GArgument *out_values;
-    GArgument return_arg;
-    int n_args;
-    int expected_in_argc;
-    int expected_out_argc;
-    int i;
-    int argv_pos;
-    int destroy_notify_argc = 0;
-    int in_args_pos;
-    int out_args_pos;
-    GError *error;
-    gboolean failed;
+    /* These first four are arrays which hold argument pointers.
+     * @in_arg_cvalues: C values which are passed on input (in or inout)
+     * @out_arg_cvalues: C values which are returned as arguments (out or inout)
+     * @inout_original_arg_cvalues: For the special case of (inout) args, we need to
+     *  keep track of the original values we passed into the function, in case we
+     *  need to free it.
+     * @in_arg_pointers: For passing data to FFI, we need to create another layer
+     *  of indirection; this array is a pointer to an element in in_arg_cvalues
+     *  or out_arg_cvalues.
+     * @return_value: The actual return value of the C function, i.e. not an (out) param
+     */
+    GArgument *in_arg_cvalues;
+    GArgument *out_arg_cvalues;
+    GArgument *inout_original_arg_cvalues;
+    gpointer *in_arg_pointers;
+    GArgument return_value;
+
+    guint8 processed_in_args;
+    guint8 n_args, i, argv_pos;
+    guint8 in_args_pos, out_args_pos, inout_args_pos;
+    guint8 can_throw_gerror, did_throw_gerror;
+    GError *local_error = NULL;
+    guint8 failed, postinvoke_release_failed;
+
     GIFunctionInfoFlags flags;
     gboolean is_method;
-    gboolean invoke_ok;
-    GITypeInfo *return_info;
+    GITypeInfo return_info;
     GITypeTag return_tag;
     jsval *return_values;
-    int n_return_values;
-    int next_rval;
+    guint8 next_rval;
+
     GSList *call_free_list = NULL; /* list of GjsCallbackInvokeInfo* */
     GSList *data_for_notify = NULL; /* list of GjsCallbackInfo* */
     GSList *callback_arg_indices = NULL; /* list of int */
@@ -497,192 +506,159 @@ gjs_invoke_c_function(JSContext      *context,
      */
     gjs_free_unused_invoke_infos(&invoke_infos);
 
-    flags = g_function_info_get_flags(info);
+    flags = g_function_info_get_flags(function->info);
     is_method = (flags & GI_FUNCTION_IS_METHOD) != 0;
-
-    expected_in_argc = 0;
-    expected_out_argc = 0;
-
-    n_args = g_callable_info_get_n_args( (GICallableInfo*) info);
-    for (i = 0; i < n_args; i++) {
-        GIDirection direction;
-        GIArgInfo *arg_info;
-        gint destroy;
-
-        arg_info = g_callable_info_get_arg( (GICallableInfo*) info, i);
-        destroy = g_arg_info_get_destroy(arg_info);
-        direction = g_arg_info_get_direction(arg_info);
-
-        if (destroy > 0 && destroy < n_args) {
-            expected_in_argc --;
-            destroy_notify_argc++;
-        }
-
-        if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT)
-            expected_in_argc += 1;
-        if (direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT)
-            expected_out_argc += 1;
-        g_base_info_unref( (GIBaseInfo*) arg_info);
-    }
-
-    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Call is to %s %s.%s with argc %d, expected: %d in args, %d out args, %d total args",
-                      is_method ? "method" : "function",
-                      g_base_info_get_namespace( (GIBaseInfo*) info),
-                      g_base_info_get_name( (GIBaseInfo*) info),
-                      argc,
-                      expected_in_argc,
-                      expected_out_argc,
-                      n_args);
+    can_throw_gerror = (flags & GI_FUNCTION_THROWS) != 0;
 
     /* We allow too many args; convenient for re-using a function as a callback.
      * But we don't allow too few args, since that would break.
      */
-    if (argc + destroy_notify_argc < (unsigned) expected_in_argc) {
+    if (argc < function->expected_js_argc) {
         gjs_throw(context, "Too few arguments to %s %s.%s expected %d got %d",
                   is_method ? "method" : "function",
-                  g_base_info_get_namespace( (GIBaseInfo*) info),
-                  g_base_info_get_name( (GIBaseInfo*) info),
-                  expected_in_argc,
+                  g_base_info_get_namespace( (GIBaseInfo*) function->info),
+                  g_base_info_get_name( (GIBaseInfo*) function->info),
+                  function->expected_js_argc,
                   argc);
         return JS_FALSE;
     }
 
-    if (is_method)
-        expected_in_argc += 1;
-
-    in_args = g_newa(GArgument, expected_in_argc);
-    out_args = g_newa(GArgument, expected_out_argc);
-    /* each out arg is a pointer, they point to these values */
-    out_values = g_newa(GArgument, expected_out_argc);
+    in_arg_cvalues = g_newa(GArgument, function->invoker.cif.nargs);
+    in_arg_pointers = g_newa(gpointer, function->invoker.cif.nargs);
+    out_arg_cvalues = g_newa(GArgument, function->js_out_argc > 1 ? function->js_out_argc - 1 : 0);
+    inout_original_arg_cvalues = g_newa(GArgument, function->inout_argc);
 
     failed = FALSE;
-    in_args_pos = 0; /* index into in_args */
-    out_args_pos = 0; /* into out_args */
+    in_args_pos = 0; /* index into in_arg_cvalues */
+    out_args_pos = 0; /* index into out_arg_cvalues */
+    inout_args_pos = 0; /* index into inout_original_arg_cvalues */
     argv_pos = 0; /* index into argv */
 
+    n_args = g_callable_info_get_n_args( (GICallableInfo*) function->info);
+
     if (is_method) {
-        GIBaseInfo *container = g_base_info_get_container((GIBaseInfo *) info);
+        GIBaseInfo *container = g_base_info_get_container((GIBaseInfo *) function->info);
         GIInfoType type = g_base_info_get_type(container);
 
         if (type == GI_INFO_TYPE_STRUCT || type == GI_INFO_TYPE_BOXED) {
-            in_args[0].v_pointer = gjs_c_struct_from_boxed(context, obj);
+            in_arg_cvalues[0].v_pointer = gjs_c_struct_from_boxed(context, obj);
         } else if (type == GI_INFO_TYPE_UNION) {
-            in_args[0].v_pointer = gjs_c_union_from_union(context, obj);
+            in_arg_cvalues[0].v_pointer = gjs_c_union_from_union(context, obj);
         } else { /* by fallback is always object */
-            in_args[0].v_pointer = gjs_g_object_from_object(context, obj);
+            in_arg_cvalues[0].v_pointer = gjs_g_object_from_object(context, obj);
         }
+        in_arg_pointers[0] = &in_arg_cvalues[0];
         ++in_args_pos;
     }
 
+    processed_in_args = 0;
     for (i = 0; i < n_args; i++) {
         GIDirection direction;
-        GIArgInfo *arg_info;
-        GArgument *out_value;
+        GIArgInfo arg_info;
 
         /* gjs_debug(GJS_DEBUG_GFUNCTION, "i: %d in_args_pos: %d argv_pos: %d", i, in_args_pos, argv_pos); */
 
-        arg_info = g_callable_info_get_arg( (GICallableInfo*) info, i);
-        direction = g_arg_info_get_direction(arg_info);
+        g_callable_info_load_arg( (GICallableInfo*) function->info, i, &arg_info);
+        direction = g_arg_info_get_direction(&arg_info);
 
-        out_value = NULL;
-        if (direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT) {
-            g_assert(out_args_pos < expected_out_argc);
+        in_arg_pointers[in_args_pos] = &in_arg_cvalues[in_args_pos];
 
-            out_value = &out_values[out_args_pos];
-            out_args[out_args_pos].v_pointer = out_value;
-            ++out_args_pos;
-        }
-
-        if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT) {
-            GArgument in_value;
+        if (direction == GI_DIRECTION_OUT) {
+            out_arg_cvalues[out_args_pos].v_pointer = NULL;
+            in_arg_cvalues[in_args_pos].v_pointer = &out_arg_cvalues[out_args_pos];
+            out_args_pos++;
+        } else {
+            GArgument *in_value;
             GITypeTag type_tag;
-            GITypeInfo *ainfo;
+            GITypeInfo ainfo;
             gboolean convert_argument = TRUE;
 
-            ainfo = g_arg_info_get_type (arg_info);
-            type_tag = g_type_info_get_tag(ainfo);
+            g_arg_info_load_type(&arg_info, &ainfo);
+            type_tag = g_type_info_get_tag(&ainfo);
 
-            if (g_slist_find(callback_arg_indices, GINT_TO_POINTER(i)) != NULL) {
+            in_value = &in_arg_cvalues[in_args_pos];
+
+            if (g_slist_find(callback_arg_indices, GUINT_TO_POINTER((guint)i)) != NULL) {
                 g_assert(type_tag == GI_TYPE_TAG_VOID);
                 convert_argument = FALSE;
-                in_value.v_pointer = (gpointer)argv[argv_pos];
+                in_value->v_pointer = (gpointer)argv[argv_pos];
             } else if (type_tag == GI_TYPE_TAG_VOID) {
                 /* FIXME: notify/throw saying the callback annotation is wrong */
                 convert_argument = FALSE;
-                in_value.v_pointer = (gpointer)argv[argv_pos];
-            }
-
-            if (type_tag == GI_TYPE_TAG_INTERFACE) {
+                in_value->v_pointer = (gpointer)argv[argv_pos];
+            } else if (type_tag == GI_TYPE_TAG_INTERFACE) {
                 GIBaseInfo* interface_info;
                 GIInfoType interface_type;
 
-                interface_info = g_type_info_get_interface(ainfo);
+                interface_info = g_type_info_get_interface(&ainfo);
 
                 g_assert(interface_info != NULL);
 
                 interface_type = g_base_info_get_type(interface_info);
                 if (interface_type == GI_INFO_TYPE_CALLBACK) {
-                    if (!gjs_callback_from_arguments(context, interface_info, arg_info,
+                    if (!gjs_callback_from_arguments(context, interface_info, &arg_info,
                                                      i, n_args, &argv_pos, argv,
                                                      &invoke_infos,
                                                      &data_for_notify, &call_free_list,
-                                                     &(in_value.v_pointer))) {
+                                                     &(in_value->v_pointer))) {
                         failed = TRUE;
                         break;
                     }
                     callback_arg_indices = g_slist_prepend(callback_arg_indices,
-                                                           GINT_TO_POINTER(g_arg_info_get_closure(arg_info)));
+                                                           GINT_TO_POINTER(g_arg_info_get_closure(&arg_info)));
                     convert_argument = FALSE;
                 }
 
                 g_base_info_unref(interface_info);
             }
-            g_base_info_unref((GIBaseInfo*)ainfo);
 
             if (convert_argument)
-                if (!gjs_value_to_arg(context, argv[argv_pos], arg_info,
-                                  &in_value)) {
+                if (!gjs_value_to_arg(context, argv[argv_pos], &arg_info,
+                                      in_value)) {
                     failed = TRUE;
+                    break;
                 }
 
-            ++argv_pos;
-
-            if (direction == GI_DIRECTION_IN) {
-                in_args[in_args_pos] = in_value;
-            } else {
-                /* INOUT means we pass a pointer */
-                g_assert(out_value != NULL);
-                *out_value = in_value;
-                in_args[in_args_pos].v_pointer = out_value;
+            if (!failed && direction == GI_DIRECTION_INOUT) {
+                out_arg_cvalues[out_args_pos] = inout_original_arg_cvalues[inout_args_pos] = in_arg_cvalues[in_args_pos];
+                in_arg_cvalues[in_args_pos].v_pointer = &out_arg_cvalues[out_args_pos];
+                out_args_pos++;
+                inout_args_pos++;
             }
-
-            ++in_args_pos;
         }
 
-        g_base_info_unref( (GIBaseInfo*) arg_info);
+        ++argv_pos;
+        ++in_args_pos;
+        processed_in_args = in_args_pos;
 
         if (failed)
             break;
     }
 
-    /* gjs_value_to_g_arg should have reported a JS error if we failed, return FALSE */
-    if (failed)
-        return JS_FALSE;
+    /* Did argument conversion fail?  In that case, skip invocation and jump to release
+     * processing. */
+    if (failed) {
+        did_throw_gerror = FALSE;
+        goto release;
+    }
 
-    g_assert(in_args_pos == expected_in_argc + destroy_notify_argc);
-    g_assert(out_args_pos == expected_out_argc);
+    if (can_throw_gerror) {
+        in_arg_cvalues[in_args_pos].v_pointer = &local_error;
+        in_arg_pointers[in_args_pos] = &(in_arg_cvalues[in_args_pos]);
+        in_args_pos++;
+    }
 
-    error = NULL;
-    invoke_ok = g_function_info_invoke( (GIFunctionInfo*) info,
-                                        in_args, expected_in_argc + destroy_notify_argc,
-                                        out_args, expected_out_argc,
-                                        &return_arg,
-                                        &error);
+    g_assert(in_args_pos == (guint8)function->invoker.cif.nargs);
+    ffi_call(&(function->invoker.cif), function->invoker.native_address, &return_value, in_arg_pointers);
 
     /* Return value and out arguments are valid only if invocation doesn't
      * return error. In arguments need to be released always.
      */
-    failed = FALSE;
+    if (can_throw_gerror) {
+        did_throw_gerror = local_error != NULL;
+    } else {
+        did_throw_gerror = FALSE;
+    }
 
     g_slist_foreach(call_free_list, (GFunc)gjs_callback_invoke_info_free, NULL);
     g_slist_free(call_free_list);
@@ -690,122 +666,138 @@ gjs_invoke_c_function(JSContext      *context,
     g_slist_free(data_for_notify);
     g_slist_free(callback_arg_indices);
 
-    return_info = g_callable_info_get_return_type( (GICallableInfo*) info);
-    g_assert(return_info != NULL);
+    g_callable_info_load_return_type( (GICallableInfo*) function->info, &return_info);
 
-    return_tag = g_type_info_get_tag(return_info);
+    return_tag = g_type_info_get_tag(&return_info);
 
     *rval = JSVAL_VOID;
 
     next_rval = 0; /* index into return_values */
 
-    n_return_values = expected_out_argc;
-    if (return_tag != GI_TYPE_TAG_VOID)
-        n_return_values += 1;
-
     return_values = NULL; /* Quiet gcc warning about initialization */
-    if (n_return_values > 0) {
-        if (invoke_ok) {
-            return_values = g_newa(jsval, n_return_values);
-            gjs_set_values(context, return_values, n_return_values, JSVAL_VOID);
-            gjs_root_value_locations(context, return_values, n_return_values);
-        }
+    /* Only process return values if the function didn't throw */
+    if (function->js_out_argc > 0 && !did_throw_gerror) {
+        return_values = g_newa(jsval, function->js_out_argc);
+        gjs_set_values(context, return_values, function->js_out_argc, JSVAL_VOID);
+        gjs_root_value_locations(context, return_values, function->js_out_argc);
 
         if (return_tag != GI_TYPE_TAG_VOID) {
-            if (invoke_ok &&
-                !gjs_value_from_g_argument(context, &return_values[next_rval],
-                                           return_info, &return_arg)) {
+            gboolean arg_failed;
+
+            arg_failed = !gjs_value_from_g_argument(context, &return_values[next_rval],
+                                                    &return_info, (GArgument*)&return_value);
+            if (arg_failed)
                 failed = TRUE;
-            }
 
             /* Free GArgument, the jsval should have ref'd or copied it */
-            if (invoke_ok &&
+            if (!arg_failed &&
                 !gjs_g_argument_release(context,
-                                        g_callable_info_get_caller_owns((GICallableInfo*) info),
-                                        return_info,
-                                        &return_arg))
+                                        g_callable_info_get_caller_owns((GICallableInfo*) function->info),
+                                        &return_info,
+                                        (GArgument*)&return_value))
                 failed = TRUE;
 
             ++next_rval;
         }
     }
 
+release:
     /* We walk over all args, release in args (if allocated) and convert
      * all out args to JS
      */
     in_args_pos = is_method ? 1 : 0; /* index into in_args */
-    out_args_pos = 0; /* into out_args */
+    out_args_pos = 0;
+    inout_args_pos = 0;
 
+    postinvoke_release_failed = FALSE;
     for (i = 0; i < n_args; i++) {
         GIDirection direction;
-        GIArgInfo *arg_info;
-        GITypeInfo *arg_type_info;
+        GIArgInfo arg_info;
+        GITypeInfo arg_type_info;
 
-        arg_info = g_callable_info_get_arg( (GICallableInfo*) info, i);
-        direction = g_arg_info_get_direction(arg_info);
+        g_callable_info_load_arg( (GICallableInfo*) function->info, i, &arg_info);
+        direction = g_arg_info_get_direction(&arg_info);
 
-        arg_type_info = g_arg_info_get_type(arg_info);
+        g_arg_info_load_type(&arg_info, &arg_type_info);
 
-        if (direction == GI_DIRECTION_IN) {
-            g_assert(in_args_pos < expected_in_argc + destroy_notify_argc);
+        if ((direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT) &&
+            (in_args_pos < processed_in_args)) {
+            GArgument *arg;
+            GITransfer transfer;
 
+            if (direction == GI_DIRECTION_IN) {
+                arg = &in_arg_cvalues[in_args_pos];
+                transfer = g_arg_info_get_ownership_transfer(&arg_info);
+                ++in_args_pos;
+            } else {
+                arg = &inout_original_arg_cvalues[inout_args_pos];
+                ++inout_args_pos;
+                /* For inout, transfer refers to what we get back from the function; for
+                 * the temporary C value we allocated, clearly we're responsible for
+                 * freeing it.
+                 */
+                transfer = GI_TRANSFER_EVERYTHING;
+            }
             if (!gjs_g_argument_release_in_arg(context,
-                                               g_arg_info_get_ownership_transfer(arg_info),
-                                               arg_type_info,
-                                               &in_args[in_args_pos]))
-                failed = TRUE;
+                                               transfer,
+                                               &arg_type_info,
+                                               arg)) {
+                postinvoke_release_failed = TRUE;
+            }
+        }
 
-            ++in_args_pos;
-        } else {
-            /* INOUT or OUT */
-            if (direction == GI_DIRECTION_INOUT)
-                g_assert(in_args_pos < expected_in_argc);
-            g_assert(next_rval < n_return_values);
-            g_assert(out_args_pos < expected_out_argc);
+        /* Don't free out arguments if function threw an exception or we failed
+         * earlier - note "postinvoke_release_failed" is separate from "failed".  We
+         * sync them up after this loop.
+         */
+        if (did_throw_gerror || failed)
+            continue;
 
-            if (invoke_ok &&
-                !gjs_value_from_g_argument(context,
+        if (direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT) {
+            GArgument *arg;
+            gboolean arg_failed;
+
+            g_assert(next_rval < function->js_out_argc);
+
+            arg = &out_arg_cvalues[out_args_pos];
+
+            arg_failed = FALSE;
+            if (!gjs_value_from_g_argument(context,
                                            &return_values[next_rval],
-                                           arg_type_info,
-                                           out_args[out_args_pos].v_pointer)) {
-                failed = TRUE;
+                                           &arg_type_info,
+                                           arg)) {
+                arg_failed = TRUE;
+                postinvoke_release_failed = TRUE;
             }
 
             /* Free GArgument, the jsval should have ref'd or copied it */
-            if (invoke_ok &&
-                !gjs_g_argument_release(context,
-                                        g_arg_info_get_ownership_transfer(arg_info),
-                                        arg_type_info,
-                                        out_args[out_args_pos].v_pointer))
-                failed = TRUE;
-
-            if (direction == GI_DIRECTION_INOUT)
-                ++in_args_pos;
-
-            ++out_args_pos;
+            if (!arg_failed)
+                gjs_g_argument_release(context,
+                                       g_arg_info_get_ownership_transfer(&arg_info),
+                                       &arg_type_info,
+                                       arg);
 
             ++next_rval;
+            ++out_args_pos;
         }
-
-        g_base_info_unref( (GIBaseInfo*) arg_type_info);
-        g_base_info_unref( (GIBaseInfo*) arg_info);
     }
 
-    g_assert(next_rval == n_return_values);
-    g_assert(out_args_pos == expected_out_argc);
-    g_assert(in_args_pos == expected_in_argc + destroy_notify_argc);
+    if (postinvoke_release_failed)
+        failed = TRUE;
 
-    if (invoke_ok && n_return_values > 0) {
+    g_assert(failed || did_throw_gerror || next_rval == (guint8)function->js_out_argc);
+
+    if (function->js_out_argc > 0 && (!failed && !did_throw_gerror)) {
         /* if we have 1 return value or out arg, return that item
          * on its own, otherwise return a JavaScript array with
          * [return value, out arg 1, out arg 2, ...]
          */
-        if (n_return_values == 1) {
+        if (function->js_out_argc == 1) {
             *rval = return_values[0];
         } else {
             JSObject *array;
             array = JS_NewArrayObject(context,
-                                      n_return_values,
+                                      function->js_out_argc,
                                       return_values);
             if (array == NULL) {
                 failed = TRUE;
@@ -814,21 +806,20 @@ gjs_invoke_c_function(JSContext      *context,
             }
         }
 
-        gjs_unroot_value_locations(context, return_values, n_return_values);
+        gjs_unroot_value_locations(context, return_values, function->js_out_argc);
     }
 
-    g_base_info_unref( (GIBaseInfo*) return_info);
-
-    if (invoke_ok) {
-        return failed ? JS_FALSE : JS_TRUE;
-    } else {
-        g_assert(error != NULL);
+    if (!failed && did_throw_gerror) {
         gjs_throw(context, "Error invoking %s.%s: %s",
-                  g_base_info_get_namespace( (GIBaseInfo*) info),
-                  g_base_info_get_name( (GIBaseInfo*) info),
-                  error->message);
-        g_error_free(error);
+                  g_base_info_get_namespace( (GIBaseInfo*) function->info),
+                  g_base_info_get_name( (GIBaseInfo*) function->info),
+                  local_error->message);
+        g_error_free(local_error);
         return JS_FALSE;
+    } else if (failed) {
+        return JS_FALSE;
+    } else {
+        return JS_TRUE;
     }
 }
 
@@ -857,7 +848,7 @@ function_call(JSContext *context,
     if (priv == NULL)
         return JS_TRUE; /* we are the prototype, or have the wrong class */
 
-    return gjs_invoke_c_function(context, priv->info, obj, argc, argv, rval);
+    return gjs_invoke_c_function(context, priv, obj, argc, argv, rval);
 }
 
 /* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on
@@ -945,6 +936,55 @@ static JSFunctionSpec gjs_function_proto_funcs[] = {
     { NULL }
 };
 
+static gboolean
+init_cached_function_data (JSContext      *context,
+                           Function       *function,
+                           GIFunctionInfo *info)
+{
+    guint8 i, n_args;
+    GError *error = NULL;
+    GITypeInfo return_type;
+
+    if (!g_function_info_prep_invoker(info, &(function->invoker), &error)) {
+        gjs_throw_g_error(context, error);
+        return FALSE;
+    }
+
+    g_callable_info_load_return_type((GICallableInfo*)info, &return_type);
+    if (g_type_info_get_tag(&return_type) != GI_TYPE_TAG_VOID)
+      function->js_out_argc += 1;
+
+    n_args = g_callable_info_get_n_args((GICallableInfo*) info);
+
+    for (i = 0; i < n_args; i++) {
+        GIDirection direction;
+        GIArgInfo arg_info;
+        guint8 destroy;
+
+        g_callable_info_load_arg((GICallableInfo*) info, i, &arg_info);
+        destroy = g_arg_info_get_destroy(&arg_info);
+        direction = g_arg_info_get_direction(&arg_info);
+
+        if (destroy > 0 && destroy < n_args) {
+            function->expected_js_argc -= 1;
+            function->n_destroy_notifies += 1;
+        }
+
+        if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT)
+            function->expected_js_argc += 1;
+        if (direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT)
+            function->js_out_argc += 1;
+        if (direction == GI_DIRECTION_INOUT)
+            function->inout_argc += 1;
+    }
+
+    function->info = info;
+
+    g_base_info_ref((GIBaseInfo*) function->info);
+
+    return TRUE;
+}
+
 static JSObject*
 function_new(JSContext      *context,
              GIFunctionInfo *info)
@@ -1000,8 +1040,8 @@ function_new(JSContext      *context,
     }
 
     priv = priv_from_js(context, function);
-    priv->info = info;
-    g_base_info_ref( (GIBaseInfo*) info );
+    if (!init_cached_function_data(context, priv, info))
+      return NULL;
 
     return function;
 }
@@ -1032,4 +1072,22 @@ gjs_define_function(JSContext      *context,
     }
 
     return function;
+}
+
+
+JSBool
+gjs_invoke_c_function_uncached (JSContext      *context,
+                                GIFunctionInfo *info,
+                                JSObject       *obj,
+                                uintN           argc,
+                                jsval          *argv,
+                                jsval          *rval)
+{
+  Function function;
+
+  memset (&function, 0, sizeof (Function));
+  if (!init_cached_function_data (context, &function, info))
+    return JS_FALSE;
+
+  return gjs_invoke_c_function (context, &function, obj, argc, argv, rval);
 }

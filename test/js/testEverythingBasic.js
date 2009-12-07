@@ -151,6 +151,9 @@ function testUtf8() {
     Everything.test_utf8_const_in(CONST_STR);
     assertEquals(NONCONST_STR, Everything.test_utf8_out());
     assertEquals(NONCONST_STR, Everything.test_utf8_inout(CONST_STR));
+    assertEquals(NONCONST_STR, Everything.test_utf8_inout(CONST_STR));
+    assertEquals(NONCONST_STR, Everything.test_utf8_inout(CONST_STR));
+    assertEquals(NONCONST_STR, Everything.test_utf8_inout(CONST_STR));
 }
 
 function testFilenameReturn() {

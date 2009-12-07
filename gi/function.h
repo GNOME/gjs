@@ -35,13 +35,14 @@ G_BEGIN_DECLS
 JSObject* gjs_define_function   (JSContext      *context,
                                  JSObject       *in_object,
                                  GIFunctionInfo *info);
-JSBool    gjs_invoke_c_function (JSContext      *context,
-                                 GIFunctionInfo *info,
-                                 JSObject       *obj,
-                                 uintN           argc,
-                                 jsval          *argv,
-                                 jsval          *rval);
+JSBool    gjs_invoke_c_function_uncached (JSContext      *context,
+                                          GIFunctionInfo *info,
+                                          JSObject       *obj,
+                                          uintN           argc,
+                                          jsval          *argv,
+                                          jsval          *rval);
 
+void     gjs_init_cinvoke_profiling ();
 
 G_END_DECLS
 

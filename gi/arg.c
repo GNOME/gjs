@@ -1119,22 +1119,20 @@ gjs_value_to_arg(JSContext  *context,
                  GIArgInfo  *arg_info,
                  GArgument  *arg)
 {
-    GITypeInfo *type_info;
+    GITypeInfo type_info;
     gboolean result;
 
-    type_info = g_arg_info_get_type(arg_info);
+    g_arg_info_load_type(arg_info, &type_info);
 
     result =
         gjs_value_to_g_argument(context, value,
-                                type_info,
+                                &type_info,
                                 g_base_info_get_name( (GIBaseInfo*) arg_info),
                                 (g_arg_info_is_return_value(arg_info) ?
                                  GJS_ARGUMENT_RETURN_VALUE : GJS_ARGUMENT_ARGUMENT),
-                                g_arg_info_get_ownership_transfer (arg_info),
+                                g_arg_info_get_ownership_transfer(arg_info),
                                 g_arg_info_may_be_null(arg_info),
                                 arg);
-    
-    g_base_info_unref((GIBaseInfo*) type_info);
 
     return result;
 }

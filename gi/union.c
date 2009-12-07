@@ -168,8 +168,8 @@ union_new(JSContext   *context,
             jsval rval;
 
             rval = JSVAL_NULL;
-            gjs_invoke_c_function(context, func_info, obj,
-                                  0, NULL, &rval);
+            gjs_invoke_c_function_uncached(context, func_info, obj,
+                                           0, NULL, &rval);
 
             g_base_info_unref((GIBaseInfo*) func_info);
 
