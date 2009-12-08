@@ -74,7 +74,7 @@ TESTS_ENVIRONMENT =							\
 	G_FILENAME_ENCODING=latin1	# ensure filenames are not utf8
 
 test:	$(gjsnative_LTLIBRARIES) ${TEST_PROGS}
-	@test -z "${TEST_PROGS}" || ${GTESTER} --verbose ${TEST_PROGS}
+	@test -z "${TEST_PROGS}" || ${GTESTER} --verbose ${TEST_PROGS} ${TEST_PROGS_OPTIONS}
 
 check:	test
 

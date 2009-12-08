@@ -27,6 +27,7 @@
 #include <gjs/gjs.h>
 #include <jsapi.h>
 #include <glib/gi18n.h>
+#include <gjs/compat.h>
 
 static JSBool
 gjs_textdomain(JSContext *context,

@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include "jsapi-util.h"
+#include "compat.h"
 
 gboolean
 gjs_try_string_to_utf8 (JSContext  *context,

@@ -26,6 +26,7 @@ nobase_gjsinclude_HEADERS =	\
 	gjs/mem.h		\
 	gjs/native.h
 noinst_HEADERS +=		\
+	gjs/compat.h		\
 	gjs/context-jsapi.h	\
 	gjs/profiler.h		\
 	util/crash.h		\
