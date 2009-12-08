@@ -427,6 +427,7 @@ gjs_context_constructor (GType                  type,
 {
     GObject *object;
     GjsContext *js_context;
+    guint32 options_flags;
 
     object = (* G_OBJECT_CLASS (gjs_context_parent_class)->constructor) (type,
                                                                          n_construct_properties,
@@ -456,10 +457,17 @@ gjs_context_constructor (GType                  type,
      *
      * JSOPTION_STRICT: Report warnings to error reporter function.
      */
+    options_flags = JSOPTION_DONT_REPORT_UNCAUGHT | JSOPTION_STRICT;
+
+#ifdef JSOPTION_JIT
+    if (!g_getenv("GJS_DISABLE_JIT")) {
+        gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
+        options_flags |= JSOPTION_JIT;
+    }
+#endif
+
     JS_SetOptions(js_context->context,
-                  JS_GetOptions(js_context->context) |
-                  JSOPTION_DONT_REPORT_UNCAUGHT |
-                  JSOPTION_STRICT);
+                  JS_GetOptions(js_context->context) | options_flags);
 
     JS_SetLocaleCallbacks(js_context->context, &gjs_locale_callbacks);
 
