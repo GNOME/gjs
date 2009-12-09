@@ -47,6 +47,8 @@ main(int argc, char **argv)
     gsize len;
     int code;
 
+    g_thread_init(NULL);
+
     context = g_option_context_new(NULL);
 
     /* pass unknown through to the JS script */
