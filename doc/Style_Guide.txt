@@ -1,17 +1,17 @@
 = Coding style =
 
-Our goal is to have all JavaScript code in GNOME follow a consistent style. In a dynamic language like 
-JavaScript, it is essential to be rigorous about style (and unit tests), or you rapidly end up 
+Our goal is to have all JavaScript code in GNOME follow a consistent style. In a dynamic language like
+JavaScript, it is essential to be rigorous about style (and unit tests), or you rapidly end up
 with a spaghetti-code mess.
 
 == Semicolons ==
 
-JavaScript allows omitting semicolons at the end of lines, but don't. Always end 
+JavaScript allows omitting semicolons at the end of lines, but don't. Always end
 statements with a semicolon.
 
 == js2-mode ==
 
-If using Emacs, try js2-mode. It functions as a "lint" by highlighting missing semicolons 
+If using Emacs, try js2-mode. It functions as a "lint" by highlighting missing semicolons
 and the like.
 
 == Imports ==
@@ -56,7 +56,7 @@ Inside functions, "let" is always correct instead of "var" as far as we know. "v
 == "this" in closures ==
 
 "this" will not be captured in a closure; "this" is relative to how the closure is invoked, not to
-the value of this where the closure is created, because "this" is a keyword with a value passed 
+the value of this where the closure is created, because "this" is a keyword with a value passed
 in at function invocation time, it is not a variable that can be captured in closures.
 
 To solve this, use Lang.bind, eg:
@@ -80,7 +80,7 @@ MyPrototype = {
 
     _onFnorbFrobate : function(fnorb) {
        this._updateFnorb();
-    },    
+    },
 };
 </pre>
 
@@ -131,7 +131,7 @@ let f = new Foo();
 
 For "new Foo()" JavaScript will create a new, empty object; and execute Foo() with the new, empty object as "this". So the function Foo() sets up the new object.
 
-"new Foo()" will also set __proto__ on the new object to Foo.prototype. The property "prototype" on a constructor is used to initialize __proto__ for objects the constructor creates. To get the right __proto__ on objects, we need the right prototype property on the constructor. 
+"new Foo()" will also set __proto__ on the new object to Foo.prototype. The property "prototype" on a constructor is used to initialize __proto__ for objects the constructor creates. To get the right __proto__ on objects, we need the right prototype property on the constructor.
 
 You could think of "f = new Foo()" as:
 <pre>
@@ -146,7 +146,7 @@ function Foo(arg1, arg2) {
   this._init(arg1, arg2);
 }
 
-Foo.prototype = { 
+Foo.prototype = {
   _init : function(arg1, arg2) {
     this._myPrivateInstanceVariable = arg1;
   },
@@ -160,7 +160,7 @@ Foo.prototype = {
 
 This pattern means that when you do "let f = new Foo()", f will be a new object, f.__proto__ will point to Foo.prototype, and Foo.prototype._init will be called to set up the object.
 
-{{Note|Again, on the JavaScript language level, Foo is not a class in the sense of Java or C++; it's just a constructor function, which means it's intended for use with the "new Foo()" syntax to create an object. Once the object is created, from a JavaScript language perspective its type is the built-in type "Object" - though we're using it and thinking of it as if it had type "Foo", JavaScript doesn't have a clue about that and will never do any type-checking based on which constructor was used to create something. All typing is "duck typing." The built-in types, such as Object, String, Error, RegExp, and Array, ''are'' real types, however, and do get type-checked.}}  
+{{Note|Again, on the JavaScript language level, Foo is not a class in the sense of Java or C++; it's just a constructor function, which means it's intended for use with the "new Foo()" syntax to create an object. Once the object is created, from a JavaScript language perspective its type is the built-in type "Object" - though we're using it and thinking of it as if it had type "Foo", JavaScript doesn't have a clue about that and will never do any type-checking based on which constructor was used to create something. All typing is "duck typing." The built-in types, such as Object, String, Error, RegExp, and Array, ''are'' real types, however, and do get type-checked.}}
 
 {{Note|If a constructor function has a return value, it is used as the value of "new Foo()" - replacing the automatically-created "this" object passed in to the constructor. If a constructor function returns nothing (undefined), then the passed-in "this" is used. In general, avoid this feature - constructors should have no return value. But this feature may be necessary if you need the new instance to have a built-in type other than Object. If you return a value from the constructor, "this" is simply discarded, so referring to "this" while in the constructor won't make sense. }}
 
@@ -176,7 +176,7 @@ function Base(foo) {
   this._init(foo);
 }
 
-Base.prototype = { 
+Base.prototype = {
   _init : function(foo) {
     this._foo = foo;
   },
@@ -212,7 +212,7 @@ In portable JavaScript code you'll often see a different technique used to get t
 <pre>
 function Base(foo) ...
 
-Base.prototype = ... 
+Base.prototype = ...
 
 function Sub(foo, bar) ...
 
