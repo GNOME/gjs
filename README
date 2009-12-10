@@ -2,6 +2,6 @@ This module contains JavaScript bindings based on gobject-introspection.
 
 Because JavaScript is pretty free-form, consistent coding style and unit tests
 are critical to give it some structure and keep it readable.
-We propose that all GNOME usage of JavaScript conform to the style guide 
+We propose that all GNOME usage of JavaScript conform to the style guide
 in doc/Style_Guide.txt to help keep things sane.
 
