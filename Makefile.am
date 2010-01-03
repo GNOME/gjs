@@ -28,6 +28,7 @@ nobase_gjsinclude_HEADERS =	\
 noinst_HEADERS +=		\
 	gjs/compat.h		\
 	gjs/context-jsapi.h	\
+	gjs/jsapi-private.h	\
 	gjs/profiler.h		\
 	util/crash.h		\
 	util/error.h		\
@@ -66,7 +67,8 @@ libgjs_la_LIBADD = 		\
 libgjs_la_SOURCES =		\
 	gjs/context.c		\
 	gjs/importer.c		\
-	gjs/jsapi-util.c		\
+	gjs/jsapi-private.cpp	\
+	gjs/jsapi-util.c	\
 	gjs/jsapi-util-array.c	\
 	gjs/jsapi-util-error.c	\
 	gjs/jsapi-util-string.c	\

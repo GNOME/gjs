@@ -30,11 +30,11 @@
 
 #include "jsapi-util.h"
 #include "context-jsapi.h"
+#include "jsapi-private.h"
 
 #include <string.h>
-#include <jscntxt.h>
 
-GQuark 
+GQuark
 gjs_util_error_quark (void)
 {
   return g_quark_from_static_string ("gjs-util-error-quark");
@@ -918,55 +918,6 @@ gjs_call_function_value(JSContext      *context,
     gjs_move_exception(call_context, context);
 
     return result;
-}
-
-void
-gjs_error_reporter(JSContext     *context,
-                   const char    *message,
-                   JSErrorReport *report)
-{
-    const char *warning;
-
-    if (gjs_environment_variable_is_set("GJS_ABORT_ON_OOM") &&
-        report->flags == JSREPORT_ERROR &&
-        report->errorNumber == JSMSG_OUT_OF_MEMORY) {
-        g_error("GJS ran out of memory at %s: %i.",
-                report->filename,
-                report->lineno);
-    }
-
-    if ((report->flags & JSREPORT_WARNING) != 0) {
-        /* We manually insert "WARNING" into the output instead of
-         * having GJS_DEBUG_WARNING because it's convenient to
-         * search for 'JS ERROR' to find all problems
-         */
-        warning = "WARNING: ";
-
-        /* suppress bogus warnings. See mozilla/js/src/js.msg */
-        switch (report->errorNumber) {
-            /* 162, JSMSG_UNDEFINED_PROP: warns every time a lazy property
-             * is resolved, since the property starts out
-             * undefined. When this is a real bug it should usually
-             * fail somewhere else anyhow.
-             */
-        case 162:
-            return;
-        }
-    } else {
-        warning = "REPORTED: ";
-    }
-
-    gjs_debug(GJS_DEBUG_ERROR,
-              "%s'%s'",
-              warning,
-              message);
-
-    gjs_debug(GJS_DEBUG_ERROR,
-              "%sfile '%s' line %u exception %d number %d",
-              warning,
-              report->filename, report->lineno,
-              (report->flags & JSREPORT_EXCEPTION) != 0,
-              report->errorNumber);
 }
 
 static JSBool
