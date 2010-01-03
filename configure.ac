@@ -18,6 +18,7 @@ PKG_PROG_PKG_CONFIG
 
 AC_PROG_CC
 AM_PROG_CC_C_O
+AC_PROG_CXX
 AC_ISC_POSIX
 AC_HEADER_STDC
 
@@ -51,6 +52,7 @@ if test "$GCC" = "yes"; then
         -Wsign-compare  -Wfloat-equal;
     do
         CFLAGS="`ensureflag $flag $CFLAGS`"
+        CXXFLAGS="`ensureflag $flag $CXXFLAGS`"
     done
 fi
 
@@ -72,6 +74,7 @@ if test x$enable_coverage = xyes; then
     fi
 
     CFLAGS="$CFLAGS -g -O0 -fprofile-arcs -ftest-coverage"
+    CXXFLAGS="$CXXFLAGS -g -O0 -fprofile-arcs -ftest-coverage"
 fi
 AM_CONDITIONAL([ENABLE_COVERAGE], [test x$enable_coverage = xyes])
 
