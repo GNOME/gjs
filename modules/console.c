@@ -50,7 +50,6 @@
 #endif
 
 #include <jsapi.h>
-#include <jsstddef.h> /* PTRDIFF */
 #include <glib.h>
 #include <glib/gprintf.h>
 #include <gjs/gjs.h>
@@ -111,7 +110,7 @@ gjs_console_error_reporter(JSContext *cx, const char *message, JSErrorReport *re
             report->linebuf,
             (n > 0 && report->linebuf[n-1] == '\n') ? "" : "\n",
             prefix);
-    n = PTRDIFF(report->tokenptr, report->linebuf, char);
+    n = ((char*)report->tokenptr) - ((char*) report->linebuf);
     for (i = j = 0; i < n; i++) {
         if (report->linebuf[i] == '\t') {
             for (k = (j + 8) & ~7; j < k; j++) {
