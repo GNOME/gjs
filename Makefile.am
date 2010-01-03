@@ -53,10 +53,10 @@ lib_LTLIBRARIES += libgjs.la
 
 libgjs_la_CPPFLAGS =		\
 	$(AM_CPPFLAGS)		\
+	$(GJS_CFLAGS)		\
 	$(gjs_directory_defines)
 libgjs_la_CFLAGS = 		\
-	$(AM_CFLAGS)		\
-	$(GJS_CFLAGS)
+	$(AM_CFLAGS)
 libgjs_la_LDFLAGS = 		\
 	-export-symbols-regex "^[^_]" -version-info 0:0:0	\
 	-R $(FIREFOX_JS_LIBDIR) -rdynamic
