@@ -491,7 +491,7 @@ function _getInterfaceXML() {
             let property = properties[j];
             result += '    <property name="' + property.name + '" type="'
                       + property.signature + '" access="'
-                      + property.accesss + '"/>\n';
+                      + property.access + '"/>\n';
         }
         // close <interface> tag
         result += '  </interface>\n';
