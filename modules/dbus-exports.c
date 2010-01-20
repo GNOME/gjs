@@ -1482,6 +1482,7 @@ handle_introspect(JSContext      *context,
 
         if (!JS_CallFunctionName(context, obj, "getDBusInterfaceXML", 0, NULL,
                                  &valueval)) {
+            gjs_debug(GJS_DEBUG_DBUS, "Error calling getDBusInterfaceXML (did you forget to call conformExport?)");
             gjs_log_exception(context, NULL);
         } else if (!gjs_string_to_utf8(context, valueval, &interfaceXML)) {
             gjs_debug(GJS_DEBUG_DBUS,
