@@ -88,7 +88,7 @@ gjs_runtime_get_load_context(JSRuntime *runtime)
                                 g_object_unref);
     }
 
-    return gjs_context_get_context(context);
+    return (JSContext*)gjs_context_get_native_context(context);
 }
 
 JSContext*
@@ -100,7 +100,7 @@ gjs_runtime_peek_load_context(JSRuntime *runtime)
     if (context == NULL) {
         return NULL;
     } else {
-        return gjs_context_get_context(context);
+        return (JSContext*)gjs_context_get_native_context(context);
     }
 }
 
@@ -144,7 +144,7 @@ gjs_runtime_get_call_context(JSRuntime *runtime)
                                 g_object_unref);
     }
 
-    return gjs_context_get_context(context);
+    return (JSContext*)gjs_context_get_native_context(context);
 }
 
 static JSContext*
@@ -156,7 +156,7 @@ gjs_runtime_peek_call_context(JSRuntime *runtime)
     if (context == NULL) {
         return NULL;
     } else {
-        return gjs_context_get_context(context);
+        return (JSContext*)gjs_context_get_native_context(context);
     }
 }
 

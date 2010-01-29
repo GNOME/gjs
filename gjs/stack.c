@@ -188,7 +188,7 @@ format_frame(JSContext* cx, JSStackFrame* fp,
 void
 gjs_context_print_stack_to_buffer(GjsContext* context, GString *buf)
 {
-    JSContext *js_context = gjs_context_get_context(context);
+    JSContext *js_context = (JSContext*)gjs_context_get_native_context(context);
     JSStackFrame* fp;
     JSStackFrame* iter = NULL;
     int num = 0;

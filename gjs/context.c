@@ -743,9 +743,16 @@ gjs_context_get_all(void)
   return result;
 }
 
-JSContext*
-gjs_context_get_context(GjsContext *js_context)
+/**
+ * gjs_context_get_native_context:
+ *
+ * Returns a pointer to the underlying native context.  For SpiderMonkey, this
+ * is a JSContext *
+ */
+void*
+gjs_context_get_native_context (GjsContext *js_context)
 {
+    g_return_val_if_fail(GJS_IS_CONTEXT(js_context), NULL);
     return js_context->context;
 }
 
