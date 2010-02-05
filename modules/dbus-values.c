@@ -1028,26 +1028,3 @@ gjs_js_values_to_dbus(JSContext         *context,
     return JS_TRUE;
 }
 
-/* If jsval is an object, add properties from the DBusMessage such as the
- * sender. If jsval is not an object, do nothing.
- */
-JSBool
-gjs_js_add_dbus_props(JSContext       *context,
-                      DBusMessage     *message,
-                      jsval            value)
-{
-    const char *sender;
-
-    if (!JSVAL_IS_OBJECT(value))
-        return JS_TRUE;
-
-    sender = dbus_message_get_sender(message);
-
-    if (!JS_DefineProperty(context, JSVAL_TO_OBJECT(value),
-                           "_dbus_sender",
-                           STRING_TO_JSVAL(JS_NewStringCopyZ(context, sender)),
-                           NULL, NULL, JSPROP_ENUMERATE))
-        return JS_FALSE;
-
-    return JS_TRUE;
-}

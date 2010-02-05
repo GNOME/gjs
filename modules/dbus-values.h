@@ -43,9 +43,8 @@ JSBool gjs_js_one_value_to_dbus   (JSContext          *context,
                                    jsval               value,
                                    DBusMessageIter    *iter,
                                    DBusSignatureIter  *sig_iter);
-JSBool gjs_js_add_dbus_props      (JSContext          *context,
-                                   DBusMessage        *message,
-                                   jsval               value);
+                                            
+void gjs_js_set_current_message   (DBusMessage        *message);
 
 
 G_END_DECLS

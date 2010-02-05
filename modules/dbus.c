@@ -36,6 +36,12 @@ static DBusConnection *session_bus = NULL;
 static gboolean system_bus_weakref_added = FALSE;
 static DBusConnection *system_bus = NULL;
 
+/* A global not-threadsafe reference to the DBusMessage
+ * currently being processed when invoking a user callback.
+ * Accessible via dbus.currentMessageContext.
+ */
+static DBusMessage *_gjs_current_dbus_message = NULL;
+
 #define DBUS_CONNECTION_FROM_TYPE(type) ((type) == DBUS_BUS_SESSION ? session_bus : system_bus)
 
 static JSBool
@@ -86,6 +92,17 @@ bus_check(JSContext *context, DBusBusType bus_type)
     }
 
     return JS_TRUE;
+}
+
+void
+gjs_js_set_current_message (DBusMessage        *message)
+{
+  g_assert ((message == NULL && _gjs_current_dbus_message != NULL) ||
+            (message != NULL && _gjs_current_dbus_message == NULL));
+  /* Don't need to take a ref here, if someone forgets to unset the message,
+   * that's a bug.
+   */
+  _gjs_current_dbus_message = message;
 }
 
 static DBusMessage*
@@ -247,8 +264,6 @@ complete_call(JSContext   *context,
      */
     gjs_rooted_array_free(context, ret_values, TRUE);
 
-    gjs_js_add_dbus_props(context, reply, *retval);
-
     return JS_TRUE;
 }
 
@@ -288,11 +303,10 @@ pending_notify(DBusPendingCall *pending,
     /* argv[0] will be the return value if any, argv[1] we fill with exception if any */
     gjs_set_values(context, argv, 2, JSVAL_NULL);
     gjs_root_value_locations(context, argv, 2);
+    gjs_js_set_current_message(reply);
     complete_call(context, &argv[0], reply, &derror);
+    gjs_js_set_current_message(NULL);
     g_assert(!dbus_error_is_set(&derror)); /* not supposed to be left set by complete_call() */
-
-    if (reply)
-        dbus_message_unref(reply);
 
     /* If completing the call failed, we still call the callback, but with null for the reply
      * and an extra arg that is the exception. Kind of odd maybe.
@@ -302,7 +316,12 @@ pending_notify(DBusPendingCall *pending,
         JS_ClearPendingException(context);
     }
 
+    gjs_js_set_current_message(reply);
     gjs_closure_invoke(closure, 2, &argv[0], &discard);
+    gjs_js_set_current_message(NULL);
+    
+    if (reply)
+        dbus_message_unref(reply);
 
     gjs_unroot_value_locations(context, argv, 2);
 
@@ -628,10 +647,12 @@ signal_handler_callback(DBusConnection *connection,
     gjs_debug(GJS_DEBUG_DBUS,
               "Invoking closure on signal received, %d args",
               gjs_rooted_array_get_length(context, arguments));
+    gjs_js_set_current_message(message);
     gjs_closure_invoke(handler->closure,
                        gjs_rooted_array_get_length(context, arguments),
                        gjs_rooted_array_get_data(context, arguments),
                        &ret_val);
+    gjs_js_set_current_message(NULL);
 
     gjs_rooted_array_free(context, arguments, TRUE);
 
@@ -1492,6 +1513,62 @@ gjs_js_dbus_get_machine_id(JSContext *context,
 }
 
 static JSBool
+gjs_js_dbus_get_current_message_context(JSContext  *context,
+                                        JSObject   *obj,
+                                        uintN       argc,
+                                        jsval      *argv,
+                                        jsval      *retval)
+{
+    const char *sender;
+    JSString *sender_str;
+    JSObject *context_obj;
+    jsval context_val;
+    JSBool result = JS_FALSE;
+        
+    if (!gjs_parse_args(context, "getCurrentMessageContext", "", argc, argv))
+        return JS_FALSE;
+
+    if (!_gjs_current_dbus_message) {
+        *retval = JSVAL_NULL;
+        return JS_TRUE;
+    }
+
+    context_obj = JS_ConstructObject(context, NULL, NULL, NULL);
+    if (context_obj == NULL)
+        return JS_FALSE;
+
+    context_val = OBJECT_TO_JSVAL(context_obj);
+    JS_AddRoot(context, &context_val);
+    
+    sender = dbus_message_get_sender(_gjs_current_dbus_message);
+    if (sender)
+        sender_str = JS_NewStringCopyZ(context, sender);
+    else
+        sender_str = NULL;
+
+    if (!JS_DefineProperty(context, context_obj,
+                           "sender",
+                           sender_str ? STRING_TO_JSVAL(sender_str) : JSVAL_NULL,
+                           NULL, NULL,
+                           JSPROP_ENUMERATE))
+        goto out;
+        
+    if (!JS_DefineProperty(context, context_obj,
+                           "serial", INT_TO_JSVAL(dbus_message_get_serial(_gjs_current_dbus_message)),
+                           NULL, NULL,
+                           JSPROP_ENUMERATE))
+        goto out;
+
+    result = JS_TRUE;
+    *retval = context_val;
+
+out:
+    JS_RemoveRoot(context, &context_val);
+    return result;
+}
+
+
+static JSBool
 define_bus_proto(JSContext *context,
                  JSObject *module_obj,
                  JSObject **bus_proto_obj_out)
@@ -1704,6 +1781,12 @@ gjs_js_define_dbus_stuff(JSContext      *context,
                            JSVAL_VOID,
                            gjs_js_dbus_get_machine_id, NULL,
                            GJS_MODULE_PROP_FLAGS))
+        return JS_FALSE;
+        
+    if (!JS_DefineFunction(context, module_obj,
+                           "getCurrentMessageContext",
+                           gjs_js_dbus_get_current_message_context,
+                           0, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     /* Define both the session and system objects */

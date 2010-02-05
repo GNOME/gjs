@@ -726,7 +726,6 @@ function testGetAllProperties() {
     assertNotNull(theResult);
     assertTrue('PropReadOnly' in theResult);
     assertTrue('PropReadWrite' in theResult);
-    assertTrue('_dbus_sender' in theResult);
     assertFalse('PropWriteOnly' in theResult);
 
     assertEquals(true,
@@ -738,10 +737,7 @@ function testGetAllProperties() {
     for (let p in theResult) {
         count += 1;
     }
-    // two props plus _dbus_sender
-    // (I think including _dbus_sender is an API bug in our dbus
-    // stuff, but for now some code may rely on it)
-    assertEquals(3, count);
+    assertEquals(2, count);
 }
 
 function testByteArrays() {
