@@ -1119,19 +1119,21 @@ _gjs_dbus_set_matching_name_owner_changed(DBusConnection *connection,
 static void
 on_start_service_reply(GjsDBusProxy    *proxy,
                        DBusMessage     *message,
-                       void            *data)
+                       char            *name)
 {
-    gjs_debug(GJS_DEBUG_DBUS, "Got successful reply to service start");
+    gjs_debug(GJS_DEBUG_DBUS, "Got successful reply to service '%s' start", name);
+    g_free(name);
 }
 
 static void
 on_start_service_error(GjsDBusProxy    *proxy,
                        const char      *error_name,
                        const char      *error_message,
-                       void            *data)
+                       char            *name)
 {
-    gjs_debug(GJS_DEBUG_DBUS, "Got error starting service: %s: %s",
-            error_name, error_message);
+    gjs_debug(GJS_DEBUG_DBUS, "Got error starting service '%s': %s: %s",
+            name, error_name, error_message);
+    g_free(name);
 }
 
 void
@@ -1157,9 +1159,9 @@ gjs_dbus_start_service(DBusConnection *connection,
                                  DBUS_TYPE_INVALID)) {
         gjs_dbus_proxy_send(info->driver_proxy,
                             message,
-                            on_start_service_reply,
-                            on_start_service_error,
-                            NULL);
+                            (GjsDBusProxyReplyFunc)on_start_service_reply,
+                            (GjsDBusProxyErrorReplyFunc)on_start_service_error,
+                            g_strdup(name));
     } else {
         gjs_debug(GJS_DEBUG_DBUS, "No memory appending args to StartServiceByName");
     }
