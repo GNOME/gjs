@@ -740,6 +740,22 @@ function testGetAllProperties() {
     assertEquals(2, count);
 }
 
+function testGetMessageContextAsync() {
+    let sender, serial;
+    Mainloop.idle_add(function () {
+                        let proxy = new Malarky();
+                        proxy.noInParameterRemote(function (result, excp) {
+                                                    let context = DBus.getCurrentMessageContext();
+                                                    sender = context.sender;
+                                                    serial = context.serial;
+                                                    Mainloop.quit('testDbus');
+                                                  });
+                      });
+    Mainloop.run('testDbus');
+    assertTrue(typeof(sender) == 'string');
+    assertTrue(typeof(serial) == 'number');
+}
+
 function testByteArrays() {
     let someString = "Hello\0world!\0\0\1\2\3";
     let theResult, theExcp;
