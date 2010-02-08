@@ -421,7 +421,6 @@ gjs_define_info(JSContext  *context,
 #if GJS_VERBOSE_ENABLE_GI_USAGE
     _gjs_log_info_usage(info);
 #endif
-
     switch (g_base_info_get_type(info)) {
     case GI_INFO_TYPE_FUNCTION:
         {
@@ -432,8 +431,15 @@ gjs_define_info(JSContext  *context,
         }
         break;
     case GI_INFO_TYPE_OBJECT:
-        if (!gjs_define_object_class(context, in_object, G_TYPE_INVALID, (GIObjectInfo*) info, NULL, NULL))
-            return JS_FALSE;
+        {
+            GType gtype;
+            GIBaseInfo *info_for_gtype;
+            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
+            if (!gjs_define_object_class(context, in_object, gtype, NULL, NULL, &info_for_gtype))
+                return JS_FALSE;
+            g_assert(g_base_info_equal(info, info_for_gtype));
+            g_base_info_unref(info_for_gtype);
+        }
         break;
     case GI_INFO_TYPE_STRUCT:
     case GI_INFO_TYPE_BOXED:

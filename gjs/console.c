@@ -39,6 +39,7 @@ static GOptionEntry entries[] = {
 int
 main(int argc, char **argv)
 {
+    char *command_line;
     GOptionContext *context;
     GError *error = NULL;
     GjsContext *js_context;
@@ -60,6 +61,10 @@ main(int argc, char **argv)
 
     setlocale(LC_ALL, "");
     g_type_init();
+
+    command_line = g_strjoinv(" ", argv);
+    gjs_debug(GJS_DEBUG_LOG, "Command line: %s", command_line);
+    g_free(command_line);
 
     gjs_debug(GJS_DEBUG_CONTEXT,
               "Creating new context to eval console script");
