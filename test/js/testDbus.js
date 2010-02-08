@@ -199,7 +199,7 @@ Real.prototype = {
     set PropReadWrite(value) {
         this._propReadWrite = value;
     },
-    
+
     structArray: function () {
         return [[128, 123456], [42, 654321]];
     }

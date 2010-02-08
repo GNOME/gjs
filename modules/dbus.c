@@ -319,7 +319,7 @@ pending_notify(DBusPendingCall *pending,
     gjs_js_set_current_message(reply);
     gjs_closure_invoke(closure, 2, &argv[0], &discard);
     gjs_js_set_current_message(NULL);
-    
+
     if (reply)
         dbus_message_unref(reply);
 
@@ -1524,7 +1524,7 @@ gjs_js_dbus_get_current_message_context(JSContext  *context,
     JSObject *context_obj;
     jsval context_val;
     JSBool result = JS_FALSE;
-        
+
     if (!gjs_parse_args(context, "getCurrentMessageContext", "", argc, argv))
         return JS_FALSE;
 
@@ -1539,7 +1539,7 @@ gjs_js_dbus_get_current_message_context(JSContext  *context,
 
     context_val = OBJECT_TO_JSVAL(context_obj);
     JS_AddRoot(context, &context_val);
-    
+
     sender = dbus_message_get_sender(_gjs_current_dbus_message);
     if (sender)
         sender_str = JS_NewStringCopyZ(context, sender);
@@ -1552,7 +1552,7 @@ gjs_js_dbus_get_current_message_context(JSContext  *context,
                            NULL, NULL,
                            JSPROP_ENUMERATE))
         goto out;
-        
+
     if (!JS_DefineProperty(context, context_obj,
                            "serial", INT_TO_JSVAL(dbus_message_get_serial(_gjs_current_dbus_message)),
                            NULL, NULL,
@@ -1782,7 +1782,7 @@ gjs_js_define_dbus_stuff(JSContext      *context,
                            gjs_js_dbus_get_machine_id, NULL,
                            GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
-        
+
     if (!JS_DefineFunction(context, module_obj,
                            "getCurrentMessageContext",
                            gjs_js_dbus_get_current_message_context,
