@@ -44,7 +44,6 @@ gjs_throw_valist(JSContext       *context,
                     const char      *format,
                     va_list          args)
 {
-    JSString* jstr;
     char *s;
     jsval retval;
     jsval argv[1];
@@ -76,8 +75,7 @@ gjs_throw_valist(JSContext       *context,
 
     JS_EnterLocalRootScope(context);
 
-    jstr = JS_NewStringCopyZ(context, s);
-    if (jstr == NULL) {
+    if (!gjs_string_from_utf8(context, s, -1, &argv[0])) {
         JS_ReportError(context, "Failed to copy exception string");
         goto out;
     }
@@ -105,7 +103,6 @@ gjs_throw_valist(JSContext       *context,
     }
 
     retval = JSVAL_VOID;
-    argv[0] = STRING_TO_JSVAL(jstr);
 
     /* note the return value is whether function succeeded, which it shouldn't, since it
      * throws...
