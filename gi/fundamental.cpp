@@ -446,7 +446,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(fundamental_instance)
 
     g_callable_info_load_return_type((GICallableInfo*) priv->prototype->constructor_info, &return_info);
 
-    if (!gjs_g_argument_release (context,
+    if (!gjs_g_argument_release (context, {},  /* FIXME */
                                  g_callable_info_get_caller_owns((GICallableInfo*) priv->prototype->constructor_info),
                                  &return_info,
                                  &ret_value))

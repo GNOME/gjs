@@ -61,6 +61,7 @@ void gjs_g_argument_init_default (JSContext      *context,
 bool gjs_value_to_g_argument (JSContext      *context,
                               JS::HandleValue value,
                               GITypeInfo     *type_info,
+                              GITypeTag       type_tag,
                               const char     *arg_name,
                               GjsArgumentType argument_type,
                               GITransfer      transfer,
@@ -80,6 +81,7 @@ bool gjs_value_from_explicit_array(JSContext             *context,
                                    int                    length);
 
 bool gjs_g_argument_release    (JSContext  *context,
+                                JS::Value   value,
                                 GITransfer  transfer,
                                 GITypeInfo *type_info,
                                 GArgument  *arg);
@@ -94,6 +96,7 @@ bool gjs_g_argument_release_in_array (JSContext  *context,
                                       guint       length,
                                       GArgument  *arg);
 bool gjs_g_argument_release_in_arg (JSContext  *context,
+                                    JS::Value   value,
                                     GITransfer  transfer,
                                     GITypeInfo *type_info,
                                     GArgument  *arg);
@@ -113,6 +116,15 @@ bool gjs_array_to_strv (JSContext   *context,
                         JS::Value    array_value,
                         unsigned int length,
                         void       **arr_p);
+
+bool gjs_array_to_array(JSContext    *cx,
+                        JS::Value     array_value,
+                        unsigned      length,
+                        GITransfer    transfer,
+                        GITypeTag     param_type_tag,
+                        GITypeInfo   *param_info,
+                        bool          zero_terminated,
+                        void        **arguments);
 
 G_END_DECLS
 

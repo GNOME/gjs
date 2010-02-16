@@ -498,15 +498,12 @@ gjs_value_to_g_value_internal(JSContext      *context,
                               gjs_get_type_name(value));
                     return false;
                 } else {
-                    void *result;
                     char **strv;
 
-                    if (!gjs_array_to_strv (context,
-                                            value,
-                                            length, &result))
+                    if (!gjs_array_to_array(context, value, length, transfer,
+                                            GI_TYPE_TAG_UTF8, nullptr, true,
+                                            reinterpret_cast<void **>(&strv)))
                         return false;
-                    /* cast to strv in a separate step to avoid type-punning */
-                    strv = (char**) result;
                     g_value_take_boxed (gvalue, strv);
                 }
             } else {

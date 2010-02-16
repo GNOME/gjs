@@ -26,6 +26,8 @@
 #include <cstdlib>
 #include <cmath>
 
+#include <girffi.h>
+
 #include "arg.h"
 #include "gtype.h"
 #include "object.h"
@@ -304,7 +306,7 @@ gjs_array_to_g_list(JSContext   *context,
         if (!gjs_value_to_g_argument(context,
                                      elem,
                                      param_info,
-                                     NULL,
+                                     g_type_info_get_tag(param_info), nullptr,
                                      GJS_ARGUMENT_LIST_ELEMENT,
                                      transfer,
                                      false,
@@ -534,8 +536,9 @@ gjs_object_to_g_hash(JSContext   *context,
             goto free_hash_and_fail;
 
         /* Type check and convert value to a c type */
-        if (!gjs_value_to_g_argument(context, val_js, val_param_info, NULL,
-                                     GJS_ARGUMENT_HASH_ELEMENT,
+        if (!gjs_value_to_g_argument(context, val_js, val_param_info,
+                                     g_type_info_get_tag(val_param_info),
+                                     nullptr, GJS_ARGUMENT_HASH_ELEMENT,
                                      transfer,
                                      true /* allow null */,
                                      &val_arg))
@@ -606,42 +609,6 @@ gjs_array_from_strv(JSContext             *context,
     return true;
 }
 
-bool
-gjs_array_to_strv(JSContext   *context,
-                  JS::Value    array_value,
-                  unsigned int length,
-                  void       **arr_p)
-{
-    char **result;
-    guint32 i;
-    JS::RootedObject array(context, array_value.toObjectOrNull());
-    JS::RootedValue elem(context);
-
-    result = g_new0(char *, length+1);
-
-    for (i = 0; i < length; ++i) {
-        elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array, i, &elem)) {
-            g_free(result);
-            gjs_throw(context,
-                      "Missing array element %u",
-                      i);
-            return false;
-        }
-
-        GjsAutoJSChar tmp_result;
-        if (!gjs_string_to_utf8(context, elem, &tmp_result)) {
-            g_strfreev(result);
-            return false;
-        }
-        result[i] = tmp_result.copy();
-    }
-
-    *arr_p = result;
-
-    return true;
-}
-
 static bool
 gjs_string_to_intarray(JSContext       *context,
                        JS::HandleString str,
@@ -684,278 +651,28 @@ gjs_string_to_intarray(JSContext       *context,
     return false;
 }
 
-static bool
-gjs_array_to_gboolean_array(JSContext      *cx,
-                            JS::Value       array_value,
-                            unsigned        length,
-                            void          **arr_p)
+static GType
+gjs_interface_get_gvalue(GIBaseInfo *interface_info)
 {
-    unsigned i;
-    JS::RootedObject array(cx, array_value.toObjectOrNull());
-    JS::RootedValue elem(cx);
+    GIInfoType interface_type = g_base_info_get_type(interface_info);
 
-    gboolean *result = g_new0(gboolean, length);
+    /* These are subtypes of GIRegisteredTypeInfo for which the
+     * cast is safe */
+    if (interface_type == GI_INFO_TYPE_STRUCT ||
+        interface_type == GI_INFO_TYPE_ENUM ||
+        interface_type == GI_INFO_TYPE_FLAGS ||
+        interface_type == GI_INFO_TYPE_OBJECT ||
+        interface_type == GI_INFO_TYPE_INTERFACE ||
+        interface_type == GI_INFO_TYPE_UNION ||
+        interface_type == GI_INFO_TYPE_BOXED)
+        return g_registered_type_info_get_g_type(interface_info);
 
-    for (i = 0; i < length; i++) {
-        if (!JS_GetElement(cx, array, i, &elem)) {
-            g_free(result);
-            gjs_throw(cx, "Missing array element %u", i);
-            return false;
-        }
-        bool val = JS::ToBoolean(elem);
-        result[i] = val;
-    }
+    /* Special case for GValues */
+    if (interface_type == GI_INFO_TYPE_VALUE)
+        return G_TYPE_VALUE;
 
-    *arr_p = result;
-    return true;
-}
-
-static bool
-gjs_array_to_intarray(JSContext   *context,
-                      JS::Value    array_value,
-                      unsigned int length,
-                      void       **arr_p,
-                      unsigned     intsize,
-                      bool         is_signed)
-{
-    /* nasty union types in an attempt to unify the various int types */
-    union { uint64_t u; int64_t i; } intval;
-    void *result;
-    unsigned i;
-    JS::RootedObject array(context, array_value.toObjectOrNull());
-    JS::RootedValue elem(context);
-
-    /* add one so we're always zero terminated */
-    result = g_malloc0((length+1) * intsize);
-
-    for (i = 0; i < length; ++i) {
-        bool success;
-
-        elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array, i, &elem)) {
-            g_free(result);
-            gjs_throw(context,
-                      "Missing array element %u",
-                      i);
-            return false;
-        }
-
-        /* do whatever sign extension is appropriate */
-        success = (is_signed) ?
-            JS::ToInt64(context, elem, &(intval.i)) :
-            JS::ToUint64(context, elem, &(intval.u));
-
-        if (!success) {
-            g_free(result);
-            gjs_throw(context,
-                      "Invalid element in int array");
-            return false;
-        }
-        /* Note that this is truncating assignment. */
-        switch (intsize) {
-        case 1:
-            ((guint8*)result)[i] = (gint8) intval.u; break;
-        case 2:
-            ((guint16*)result)[i] = (gint16) intval.u; break;
-        case 4:
-            ((guint32*)result)[i] = (gint32) intval.u; break;
-        case 8:
-            ((uint64_t *)result)[i] = (int64_t) intval.u; break;
-        default:
-            g_assert_not_reached();
-        }
-    }
-
-    *arr_p = result;
-
-    return true;
-}
-
-static bool
-gjs_gtypearray_to_array(JSContext   *context,
-                        JS::Value    array_value,
-                        unsigned int length,
-                        void       **arr_p)
-{
-    GType *result;
-    unsigned i;
-
-    /* add one so we're always zero terminated */
-    result = (GType *) g_malloc0((length+1) * sizeof(GType));
-
-    JS::RootedObject elem_obj(context), array(context, array_value.toObjectOrNull());
-    JS::RootedValue elem(context);
-    for (i = 0; i < length; ++i) {
-        GType gtype;
-
-        elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array, i, &elem)) {
-            g_free(result);
-            gjs_throw(context, "Missing array element %u", i);
-            return false;
-        }
-
-        if (!elem.isObjectOrNull())
-            goto err;
-
-        elem_obj = elem.toObjectOrNull();
-        gtype = gjs_gtype_get_actual_gtype(context, elem_obj);
-        if (gtype == G_TYPE_INVALID)
-            goto err;
-
-        result[i] = gtype;
-    }
-
-    *arr_p = result;
-
-    return true;
-
- err:
-    g_free(result);
-    gjs_throw(context, "Invalid element in GType array");
-    return false;
-}
-
-static bool
-gjs_array_to_floatarray(JSContext   *context,
-                        JS::Value    array_value,
-                        unsigned int length,
-                        void       **arr_p,
-                        bool         is_double)
-{
-    unsigned int i;
-    void *result;
-    JS::RootedObject array(context, array_value.toObjectOrNull());
-    JS::RootedValue elem(context);
-
-    /* add one so we're always zero terminated */
-    result = g_malloc0((length+1) * (is_double ? sizeof(double) : sizeof(float)));
-
-    for (i = 0; i < length; ++i) {
-        double val;
-        bool success;
-
-        elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array, i, &elem)) {
-            g_free(result);
-            gjs_throw(context,
-                      "Missing array element %u",
-                      i);
-            return false;
-        }
-
-        /* do whatever sign extension is appropriate */
-        success = JS::ToNumber(context, elem, &val);
-
-        if (!success) {
-            g_free(result);
-            gjs_throw(context,
-                      "Invalid element in array");
-            return false;
-        }
-
-        /* Note that this is truncating assignment. */
-        if (is_double) {
-            double *darray = (double*)result;
-            darray[i] = val;
-        } else {
-            float *farray = (float*)result;
-            farray[i] = val;
-        }
-    }
-
-    *arr_p = result;
-
-    return true;
-}
-
-static bool
-gjs_array_to_ptrarray(JSContext   *context,
-                      JS::Value    array_value,
-                      unsigned int length,
-                      GITransfer   transfer,
-                      GITypeInfo  *param_info,
-                      void       **arr_p)
-{
-    unsigned int i;
-    JS::RootedObject array_obj(context, array_value.toObjectOrNull());
-    JS::RootedValue elem(context);
-
-    /* Always one extra element, to cater for null terminated arrays */
-    void **array = (void **) g_malloc((length + 1) * sizeof(gpointer));
-    array[length] = NULL;
-
-    for (i = 0; i < length; i++) {
-        GIArgument arg;
-        arg.v_pointer = NULL;
-
-        bool success;
-
-        elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array_obj, i, &elem)) {
-            g_free(array);
-            gjs_throw(context,
-                      "Missing array element %u",
-                      i);
-            return false;
-        }
-
-        success = gjs_value_to_g_argument (context,
-                                           elem,
-                                           param_info,
-                                           NULL, /* arg name */
-                                           GJS_ARGUMENT_ARRAY_ELEMENT,
-                                           transfer,
-                                           false, /* absent better information, false for now */
-                                           &arg);
-
-        if (!success) {
-            g_free(array);
-            gjs_throw(context,
-                      "Invalid element in array");
-            return false;
-        }
-
-        array[i] = arg.v_pointer;
-    }
-
-    *arr_p = array;
-    return true;
-}
-
-static bool
-gjs_array_to_flat_gvalue_array(JSContext   *context,
-                               JS::Value    array_value,
-                               unsigned int length,
-                               void       **arr_p)
-{
-    GValue *values = g_new0(GValue, length);
-    unsigned int i;
-    bool result = true;
-    JS::RootedObject array(context, array_value.toObjectOrNull());
-    JS::RootedValue elem(context);
-
-    for (i = 0; i < length; i ++) {
-        elem = JS::UndefinedValue();
-
-        if (!JS_GetElement(context, array, i, &elem)) {
-            g_free(values);
-            gjs_throw(context,
-                      "Missing array element %u",
-                      i);
-            return false;
-        }
-
-        result = gjs_value_to_g_value(context, elem, &values[i]);
-
-        if (!result)
-            break;
-    }
-
-    if (result)
-        *arr_p = values;
-
-    return result;
+    /* Everything else */
+    return G_TYPE_NONE;
 }
 
 static bool
@@ -1028,93 +745,93 @@ is_gvalue_flat_array(GITypeInfo *param_info,
     return result;
 }
 
-static bool
-gjs_array_to_array(JSContext   *context,
+bool
+gjs_array_to_array(JSContext   *cx,
                    JS::Value    array_value,
                    gsize        length,
                    GITransfer   transfer,
+                   GITypeTag    param_type_tag,
                    GITypeInfo  *param_info,
-                   void       **arr_p)
+                   bool         zero_terminated,
+                   void       **arguments_p)
 {
-    enum { UNSIGNED=false, SIGNED=true };
-    GITypeTag element_type;
+    bool copy_back = false;
+    bool failed = false;
 
-    element_type = g_type_info_get_tag(param_info);
+    ffi_type *ftype = gi_type_tag_get_ffi_type(param_type_tag,
+                                               true /* FIXME is_pointer */);
+    JS::RootedObject array(cx, &array_value.toObject());
 
-    /* Special case for GValue "flat arrays" */
-    if (is_gvalue_flat_array(param_info, element_type))
-        return gjs_array_to_flat_gvalue_array(context, array_value, length, arr_p);
+    size_t alloc_size = length;
+    if (zero_terminated)
+        alloc_size += 1;
 
-    if (element_type == GI_TYPE_TAG_INTERFACE) {
+    size_t type_size = ftype->size;
+
+    /* Special case GValue - note, this might need to be done for other
+     * types that are marked as interfaces (e.g. structs), but this needs
+     * some investigation.
+     */
+    if (param_type_tag == GI_TYPE_TAG_INTERFACE) {
         GIBaseInfo *interface_info = g_type_info_get_interface(param_info);
-        GIInfoType info_type = g_base_info_get_type(interface_info);
-        if (info_type == GI_INFO_TYPE_ENUM || info_type == GI_INFO_TYPE_FLAGS)
-            element_type = g_enum_info_get_storage_type ((GIEnumInfo*) interface_info);
-        g_base_info_unref(interface_info);
+
+        g_assert(interface_info);
+
+        GType gtype = gjs_interface_get_gvalue(interface_info);
+
+        if (gtype == G_TYPE_VALUE) {
+            type_size = sizeof (GValue);
+            copy_back = true;
+        }
     }
 
-    switch (element_type) {
-    case GI_TYPE_TAG_UTF8:
-        return gjs_array_to_strv (context, array_value, length, arr_p);
-    case GI_TYPE_TAG_BOOLEAN:
-        return gjs_array_to_gboolean_array(context, array_value, length, arr_p);
-    case GI_TYPE_TAG_UNICHAR:
-        return gjs_array_to_intarray(context, array_value, length, arr_p,
-            sizeof(gunichar), UNSIGNED);
-    case GI_TYPE_TAG_UINT8:
-        return gjs_array_to_intarray
-            (context, array_value, length, arr_p, 1, UNSIGNED);
-    case GI_TYPE_TAG_INT8:
-        return gjs_array_to_intarray
-            (context, array_value, length, arr_p, 1, SIGNED);
-    case GI_TYPE_TAG_UINT16:
-        return gjs_array_to_intarray
-            (context, array_value, length, arr_p, 2, UNSIGNED);
-    case GI_TYPE_TAG_INT16:
-        return gjs_array_to_intarray
-            (context, array_value, length, arr_p, 2, SIGNED);
-    case GI_TYPE_TAG_UINT32:
-        return gjs_array_to_intarray
-            (context, array_value, length, arr_p, 4, UNSIGNED);
-    case GI_TYPE_TAG_INT32:
-        return gjs_array_to_intarray
-            (context, array_value, length, arr_p, 4, SIGNED);
-    case GI_TYPE_TAG_INT64:
-        return gjs_array_to_intarray(context, array_value, length, arr_p, 8,
-            SIGNED);
-    case GI_TYPE_TAG_UINT64:
-        return gjs_array_to_intarray(context, array_value, length, arr_p, 8,
-            UNSIGNED);
-    case GI_TYPE_TAG_FLOAT:
-        return gjs_array_to_floatarray
-            (context, array_value, length, arr_p, false);
-    case GI_TYPE_TAG_DOUBLE:
-        return gjs_array_to_floatarray
-            (context, array_value, length, arr_p, true);
-    case GI_TYPE_TAG_GTYPE:
-        return gjs_gtypearray_to_array
-            (context, array_value, length, arr_p);
+    std::unique_ptr<void, decltype(&g_free)> tmp {
+        g_malloc0(alloc_size * type_size),
+        g_free
+    };
 
-    /* Everything else is a pointer type */
-    case GI_TYPE_TAG_INTERFACE:
-    case GI_TYPE_TAG_ARRAY:
-    case GI_TYPE_TAG_GLIST:
-    case GI_TYPE_TAG_GSLIST:
-    case GI_TYPE_TAG_GHASH:
-    case GI_TYPE_TAG_ERROR:
-    case GI_TYPE_TAG_FILENAME:
-        return gjs_array_to_ptrarray(context,
-                                     array_value,
-                                     length,
-                                     transfer == GI_TRANSFER_CONTAINER ? GI_TRANSFER_NOTHING : transfer,
-                                     param_info,
-                                     arr_p);
-    case GI_TYPE_TAG_VOID:
-    default:
-        gjs_throw(context,
-                  "Unhandled array element type %d", element_type);
+    JS::RootedValue elem(cx);
+    size_t i;
+    GArgument *arg;
+    for (i = 0; i < length; ++i) {
+        if (!JS_GetElement(cx, array, i, &elem)) {
+            gjs_throw(cx, "Missing array element %zu", i);
+            failed = true;
+            break;
+        }
+
+        arg = reinterpret_cast<GArgument *>(static_cast<uint8_t *>(tmp.get()) + i * type_size);
+
+        if (!gjs_value_to_g_argument(cx, elem, param_info, param_type_tag,
+                                     "element argument", GJS_ARGUMENT_ARGUMENT,
+                                     transfer, false /* FIXME nullable */, arg)) {
+            /* exception already set */
+            failed = true;
+            break;
+        } else if (copy_back) {
+            GValue *gvalue = static_cast<GValue *>(arg->v_pointer);
+            GValue gvalue_copy = *gvalue;
+
+            /* FIXME: This kind of relies on the knowledge that the GValue
+             *        boxed type copy func uses g_new...?
+             */
+            g_free(arg->v_pointer);
+
+            gvalue = (GValue *)arg;
+            *((GValue *)arg) = gvalue_copy;
+        }
+    }
+
+    if (failed) {
+        for (size_t j = 0; j < i; ++j) {
+            gjs_g_argument_release(cx, {}, /* FIXME, JS_GetElement */
+                                   GI_TRANSFER_EVERYTHING, param_info, arg);
+        }
         return false;
     }
+
+    *arguments_p = tmp.release();
+    return true;
 }
 
 static GArray*
@@ -1263,6 +980,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
     GITypeInfo *param_info;
     bool found_length;
 
+    g_assert(type_info);
     param_info = g_type_info_get_param_type(type_info, 0);
 
     if ((value.isNull() && !may_be_null) ||
@@ -1291,12 +1009,10 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
                                                        GJS_STRING_LENGTH, &length)) {
                 goto out;
             } else {
-                if (!gjs_array_to_array(context,
-                                        value,
-                                        length,
-                                        transfer,
-                                        param_info,
-                                        contents))
+                bool zero_terminated = g_type_info_is_zero_terminated(type_info);
+                if (!gjs_array_to_array(context, value, length, transfer,
+                                        g_type_info_get_tag(param_info),
+                                        param_info, zero_terminated, contents))
                     goto out;
 
                 *length_p = length;
@@ -1350,19 +1066,17 @@ bool
 gjs_value_to_g_argument(JSContext      *context,
                         JS::HandleValue value,
                         GITypeInfo     *type_info,
+                        GITypeTag       type_tag,
                         const char     *arg_name,
                         GjsArgumentType arg_type,
                         GITransfer      transfer,
                         bool            may_be_null,
                         GArgument      *arg)
 {
-    GITypeTag type_tag;
     bool wrong;
     bool out_of_range;
     bool report_type_mismatch;
     bool nullable_type;
-
-    type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting JS::Value to GArgument %s",
@@ -1555,6 +1269,7 @@ gjs_value_to_g_argument(JSContext      *context,
             GType gtype;
             bool expect_object;
 
+            g_assert(type_info);
             interface_info = g_type_info_get_interface(type_info);
             g_assert(interface_info != NULL);
 
@@ -1579,23 +1294,7 @@ gjs_value_to_g_argument(JSContext      *context,
                 return ret;
             }
 
-            if (interface_type == GI_INFO_TYPE_STRUCT ||
-                interface_type == GI_INFO_TYPE_ENUM ||
-                interface_type == GI_INFO_TYPE_FLAGS ||
-                interface_type == GI_INFO_TYPE_OBJECT ||
-                interface_type == GI_INFO_TYPE_INTERFACE ||
-                interface_type == GI_INFO_TYPE_UNION ||
-                interface_type == GI_INFO_TYPE_BOXED) {
-                /* These are subtypes of GIRegisteredTypeInfo for which the
-                 * cast is safe */
-                gtype = g_registered_type_info_get_g_type
-                    ((GIRegisteredTypeInfo*)interface_info);
-            } else if (interface_type == GI_INFO_TYPE_VALUE) {
-                /* Special case for GValues */
-                gtype = G_TYPE_VALUE;
-            } else {
-                gtype = G_TYPE_NONE;
-            }
+            gtype = gjs_interface_get_gvalue(interface_info);
 
             if (gtype != G_TYPE_NONE)
                 gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
@@ -1868,6 +1567,7 @@ gjs_value_to_g_argument(JSContext      *context,
                     GSList *slist;
                     GITypeInfo *param_info;
 
+                    g_assert(type_info);
                     param_info = g_type_info_get_param_type(type_info, 0);
                     g_assert(param_info != NULL);
 
@@ -2168,6 +1868,7 @@ gjs_value_to_arg(JSContext      *context,
 
     return gjs_value_to_g_argument(context, value,
                                    &type_info,
+                                   g_type_info_get_tag(&type_info),
                                    g_base_info_get_name( (GIBaseInfo*) arg_info),
                                    (g_arg_info_is_return_value(arg_info) ?
                                     GJS_ARGUMENT_RETURN_VALUE : GJS_ARGUMENT_ARGUMENT),
@@ -3078,6 +2779,7 @@ gjs_value_from_g_argument (JSContext             *context,
 }
 
 static bool gjs_g_arg_release_internal(JSContext  *context,
+                                       JS::Value   value,
                                          GITransfer  transfer,
                                          GITypeInfo *type_info,
                                          GITypeTag   type_tag,
@@ -3096,7 +2798,8 @@ gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
     GArgument key_arg, val_arg;
     key_arg.v_pointer = key;
     val_arg.v_pointer = val;
-    if (!gjs_g_arg_release_internal(c->context, c->transfer,
+    /* FIXME: Should values be zero here? */
+    if (!gjs_g_arg_release_internal(c->context, {}, c->transfer,
                                     c->key_param_info,
                                     g_type_info_get_tag(c->key_param_info),
                                     &key_arg))
@@ -3108,7 +2811,7 @@ gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
         val_type == GI_TYPE_TAG_FLOAT ||
         val_type == GI_TYPE_TAG_DOUBLE) {
         g_free(val_arg.v_pointer);
-    } else if (!gjs_g_arg_release_internal(c->context, c->transfer,
+    } else if (!gjs_g_arg_release_internal(c->context, {}, c->transfer,
                                            c->val_param_info, val_type,
                                            &val_arg)) {
         c->failed = true;
@@ -3124,6 +2827,7 @@ gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
 
 static bool
 gjs_g_arg_release_internal(JSContext  *context,
+                           JS::Value   value,
                            GITransfer  transfer,
                            GITypeInfo *type_info,
                            GITypeTag   type_tag,
@@ -3209,13 +2913,13 @@ gjs_g_arg_release_internal(JSContext  *context,
                 g_closure_unref((GClosure *) arg->v_pointer);
             } else if (g_type_is_a(gtype, G_TYPE_VALUE)) {
                 /* G_TYPE_VALUE is-a G_TYPE_BOXED, but we special case it */
-                if (g_type_info_is_pointer (type_info))
+                /*if (g_type_info_is_pointer (type_info))
                     g_boxed_free(gtype, arg->v_pointer);
                 else
-                    g_value_unset ((GValue *) arg->v_pointer);
+                    g_value_unset ((GValue *) arg->v_pointer);*/
             } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
-                if (transfer != TRANSFER_IN_NOTHING)
-                    g_boxed_free(gtype, arg->v_pointer);
+                /*if (transfer != TRANSFER_IN_NOTHING)
+                    g_boxed_free(gtype, arg->v_pointer);*/
             } else if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
                 if (transfer != TRANSFER_IN_NOTHING)
                     g_variant_unref ((GVariant *) arg->v_pointer);
@@ -3253,6 +2957,7 @@ gjs_g_arg_release_internal(JSContext  *context,
                 elem.v_pointer = list->data;
 
                 if (!gjs_g_arg_release_internal(context,
+                                                {},  /* FIXME: JS_GetElement */
                                                 transfer,
                                                 param_info,
                                                 g_type_info_get_tag(param_info),
@@ -3276,6 +2981,7 @@ gjs_g_arg_release_internal(JSContext  *context,
         } else if (array_type == GI_ARRAY_TYPE_C) {
             GITypeInfo *param_info;
             GITypeTag element_type;
+            void *arguments = arg->v_pointer;
 
             param_info = g_type_info_get_param_type(type_info, 0);
             element_type = g_type_info_get_tag(param_info);
@@ -3304,84 +3010,64 @@ gjs_g_arg_release_internal(JSContext  *context,
                 return true;
             }
 
-            switch (element_type) {
-            case GI_TYPE_TAG_UTF8:
-            case GI_TYPE_TAG_FILENAME:
-                if (transfer == GI_TRANSFER_CONTAINER)
-                    g_free(arg->v_pointer);
-                else
-                    g_strfreev ((gchar **) arg->v_pointer);
+            if (element_type == GI_TYPE_TAG_UTF8 ||
+                element_type == GI_TYPE_TAG_FILENAME)
+                gjs_debug_marshal(GJS_DEBUG_MEMORY,
+                                  "Releasing memory for string arrays is "
+                                  "not properly implement. Leaking.");
+
+            ffi_type *ftype = g_type_info_get_ffi_type (param_info);
+
+            uint32_t length;
+            JS::RootedObject list(context, &value.toObject());
+            if (!gjs_object_require_converted_property(context, list, nullptr,
+                                                       GJS_STRING_LENGTH,
+                                                       &length)) {
+                g_error("Failed to release list element");
                 break;
-
-            case GI_TYPE_TAG_BOOLEAN:
-            case GI_TYPE_TAG_UINT8:
-            case GI_TYPE_TAG_UINT16:
-            case GI_TYPE_TAG_UINT32:
-            case GI_TYPE_TAG_UINT64:
-            case GI_TYPE_TAG_INT8:
-            case GI_TYPE_TAG_INT16:
-            case GI_TYPE_TAG_INT32:
-            case GI_TYPE_TAG_INT64:
-            case GI_TYPE_TAG_FLOAT:
-            case GI_TYPE_TAG_DOUBLE:
-            case GI_TYPE_TAG_UNICHAR:
-            case GI_TYPE_TAG_GTYPE:
-                g_free (arg->v_pointer);
-                break;
-
-            case GI_TYPE_TAG_INTERFACE:
-            case GI_TYPE_TAG_GLIST:
-            case GI_TYPE_TAG_GSLIST:
-            case GI_TYPE_TAG_ARRAY:
-            case GI_TYPE_TAG_GHASH:
-            case GI_TYPE_TAG_ERROR:
-                if (transfer != GI_TRANSFER_CONTAINER
-                    && type_needs_out_release(param_info, element_type)) {
-                    if (g_type_info_is_zero_terminated (type_info)) {
-                        gpointer *array;
-                        GArgument elem;
-
-                        for (array = (void **) arg->v_pointer; *array; array++) {
-                            elem.v_pointer = *array;
-                            if (!gjs_g_arg_release_internal(context,
-                                                            GI_TRANSFER_EVERYTHING,
-                                                            param_info,
-                                                            element_type,
-                                                            &elem)) {
-                                failed = true;
-                            }
-                        }
-                    } else {
-                        gint len = g_type_info_get_array_fixed_size(type_info);
-                        gint i;
-                        GArgument elem;
-
-                        g_assert(len != -1);
-
-                        for (i = 0; i < len; i++) {
-                            elem.v_pointer = ((gpointer*)arg->v_pointer)[i];
-                            if (!gjs_g_arg_release_internal(context,
-                                                            GI_TRANSFER_EVERYTHING,
-                                                            param_info,
-                                                            element_type,
-                                                            &elem)) {
-                                failed = true;
-                            }
-                        }
-                    }
-                }
-                g_free (arg->v_pointer);
-                break;
-
-            case GI_TYPE_TAG_VOID:
-            default:
-                gjs_throw(context,
-                          "Releasing a C array with explicit length, that was nested"
-                          "inside another container. This is not supported (and will leak)");
-                failed = true;
             }
 
+            /* FIXME: Special case GValue (see gjs_array_to_array) - may need
+             * to do this for other types too, not sure.
+             */
+            if (element_type == GI_TYPE_TAG_INTERFACE) {
+                GIBaseInfo *interface_info = g_type_info_get_interface(param_info);
+                g_assert(interface_info);
+
+                GType gtype = gjs_interface_get_gvalue (interface_info);
+
+                if (gtype == G_TYPE_VALUE) {
+                    for (uint32_t i = 0; i < length; ++i)
+                        g_value_unset(&static_cast<GValue *>(arguments)[i]);
+                    g_free(arguments);
+                    break;
+                }
+            }
+
+            bool zero_terminated = g_type_info_is_zero_terminated(type_info);
+            if (zero_terminated)
+                length += 1;
+
+            for (uint32_t i = 0; i < length; ++i) {
+                /* FIXME: Special case GValue for now - see
+                 * gjs_array_to_array
+                 */
+                void *ptr = static_cast<uint8_t *>(arguments) + i * ftype->size;
+                if (!gjs_g_argument_release(context,
+                                            {},  /* FIXME, JS_GetElement */
+                                            GI_TRANSFER_EVERYTHING,
+                                            param_info,
+                                            reinterpret_cast<GIArgument *>(ptr))) {
+                    /* no way to recover here, and errors should
+                     * not be possible.
+                     */
+                    g_error("Failed to release list element");
+                    break;
+                }
+            }
             g_base_info_unref((GIBaseInfo*) param_info);
+            g_free(arguments);
+
         } else if (array_type == GI_ARRAY_TYPE_ARRAY) {
             GITypeInfo *param_info;
             GITypeTag element_type;
@@ -3425,6 +3111,7 @@ gjs_g_arg_release_internal(JSContext  *context,
 
                         arg_iter.v_pointer = g_array_index (array, gpointer, i);
                         gjs_g_arg_release_internal(context,
+                                                   {},  /* FIXME: JS_GetElement */
                                                    transfer,
                                                    param_info,
                                                    element_type,
@@ -3461,7 +3148,7 @@ gjs_g_arg_release_internal(JSContext  *context,
                     GArgument arg_iter;
 
                     arg_iter.v_pointer = g_ptr_array_index (array, i);
-                    gjs_g_argument_release(context,
+                    gjs_g_argument_release(context, {},  /* FIXME */
                                            transfer,
                                            param_info,
                                            &arg_iter);
@@ -3491,7 +3178,7 @@ gjs_g_arg_release_internal(JSContext  *context,
                 GArgument elem;
                 elem.v_pointer = slist->data;
 
-                if (!gjs_g_arg_release_internal(context,
+                if (!gjs_g_arg_release_internal(context, {},  /* FIXME */
                                                 transfer,
                                                 param_info,
                                                 g_type_info_get_tag(param_info),
@@ -3546,6 +3233,7 @@ gjs_g_arg_release_internal(JSContext  *context,
 
 bool
 gjs_g_argument_release(JSContext  *context,
+                       JS::Value   value,
                        GITransfer  transfer,
                        GITypeInfo *type_info,
                        GArgument  *arg)
@@ -3561,11 +3249,13 @@ gjs_g_argument_release(JSContext  *context,
                       "Releasing GArgument %s out param or return value",
                       g_type_tag_to_string(type_tag));
 
-    return gjs_g_arg_release_internal(context, transfer, type_info, type_tag, arg);
+    return gjs_g_arg_release_internal(context, value, transfer, type_info,
+                                      type_tag, arg);
 }
 
 bool
 gjs_g_argument_release_in_arg(JSContext  *context,
+                              JS::Value   value,
                               GITransfer  transfer,
                               GITypeInfo *type_info,
                               GArgument  *arg)
@@ -3588,7 +3278,8 @@ gjs_g_argument_release_in_arg(JSContext  *context,
                       g_type_tag_to_string(type_tag));
 
     if (type_needs_release (type_info, type_tag))
-        return gjs_g_arg_release_internal(context, (GITransfer) TRANSFER_IN_NOTHING,
+        return gjs_g_arg_release_internal(context, value,
+                                          GITransfer(TRANSFER_IN_NOTHING),
                                           type_info, type_tag, arg);
 
     return true;
@@ -3629,7 +3320,8 @@ gjs_g_argument_release_in_array (JSContext  *context,
     if (type_needs_release(param_type, type_tag)) {
         for (i = 0; i < length; i++) {
             elem.v_pointer = array[i];
-            if (!gjs_g_arg_release_internal(context, (GITransfer) TRANSFER_IN_NOTHING,
+            if (!gjs_g_arg_release_internal(context, {}, /* FIXME */
+                                            GITransfer(TRANSFER_IN_NOTHING),
                                             param_type, type_tag, &elem)) {
                 ret = false;
                 break;
@@ -3672,7 +3364,7 @@ gjs_g_argument_release_out_array (JSContext  *context,
         type_needs_out_release(param_type, type_tag)) {
         for (i = 0; i < length; i++) {
             elem.v_pointer = array[i];
-            if (!gjs_g_arg_release_internal(context,
+            if (!gjs_g_arg_release_internal(context, {},  /* FIXME */
                                             GI_TRANSFER_EVERYTHING,
                                             param_type,
                                             type_tag,

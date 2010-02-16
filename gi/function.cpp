@@ -312,7 +312,7 @@ gjs_callback_closure(ffi_cif *cif,
          * be a single return value. */
         if (!gjs_value_to_g_argument(context,
                                      rval,
-                                     &ret_type,
+                                     &ret_type, g_type_info_get_tag(&ret_type),
                                      "callback",
                                      GJS_ARGUMENT_RETURN_VALUE,
                                      transfer,
@@ -337,6 +337,7 @@ gjs_callback_closure(ffi_cif *cif,
             if (!gjs_value_to_g_argument(context,
                                          rval,
                                          &type_info,
+                                         g_type_info_get_tag(&type_info),
                                          "callback",
                                          GJS_ARGUMENT_ARGUMENT,
                                          GI_TRANSFER_NOTHING,
@@ -362,6 +363,7 @@ gjs_callback_closure(ffi_cif *cif,
             if (!gjs_value_to_g_argument(context,
                                          elem,
                                          &ret_type,
+                                         g_type_info_get_tag(&ret_type),
                                          "callback",
                                          GJS_ARGUMENT_ARGUMENT,
                                          GI_TRANSFER_NOTHING,
@@ -390,6 +392,7 @@ gjs_callback_closure(ffi_cif *cif,
             if (!gjs_value_to_g_argument(context,
                                          elem,
                                          &type_info,
+                                         g_type_info_get_tag(&type_info),
                                          "callback",
                                          GJS_ARGUMENT_ARGUMENT,
                                          GI_TRANSFER_NOTHING,
@@ -1135,7 +1138,7 @@ gjs_invoke_c_function(JSContext                             *context,
                 /* Free GArgument, the JS::Value should have ref'd or copied it */
                 if (!arg_failed &&
                     !r_value &&
-                    !gjs_g_argument_release(context,
+                    !gjs_g_argument_release(context, return_values[next_rval],
                                             transfer,
                                             &return_info,
                                             &return_gargument))
@@ -1215,8 +1218,7 @@ release:
                     postinvoke_release_failed = true;
                 }
             } else if (param_type == PARAM_NORMAL) {
-                if (!gjs_g_argument_release_in_arg(context,
-                                                   transfer,
+                if (!gjs_g_argument_release_in_arg(context, args[i], transfer,
                                                    &arg_type_info,
                                                    arg)) {
                     postinvoke_release_failed = true;
@@ -1285,8 +1287,7 @@ release:
                                                      array_length.toInt32(),
                                                      arg);
                 } else {
-                    gjs_g_argument_release(context,
-                                           transfer,
+                    gjs_g_argument_release(context, args[i], transfer,
                                            &arg_type_info,
                                            arg);
                 }
