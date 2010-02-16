@@ -101,7 +101,7 @@ gjs_console_CFLAGS = 		\
 	$(GJS_CFLAGS)
 gjs_console_LDADD =		\
          libgjs.la
-
+gjs_console_LDFLAGS = -R $(FIREFOX_JS_LIBDIR) -rdynamic
 gjs_console_SOURCES = gjs/console.c
 
 install-exec-hook:
