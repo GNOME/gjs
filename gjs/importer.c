@@ -1109,6 +1109,9 @@ gjs_get_search_path(void)
         /* ${libdir}/gjs-1.0 */
         g_ptr_array_add(path, g_strdup(GJS_NATIVE_DIR));
 
+        /* ${datadir}/share/gjs-1.0 */
+        g_ptr_array_add(path, g_strdup(GJS_JS_DIR));
+
         g_ptr_array_add(path, NULL);
 
         search_path = (char**)g_ptr_array_free(path, FALSE);
