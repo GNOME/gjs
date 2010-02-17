@@ -1190,6 +1190,17 @@ gjs_parse_args (JSContext  *context,
                 }
             }
             break;
+            case 'f': {
+                double num;
+                if (!JS_ValueToNumber(context, js_value, &num)) {
+                    /* Our error message is going to be more useful */
+                    JS_ClearPendingException(context);
+                    arg_error_message = "Couldn't convert to double";
+                } else {
+                    *((double*) arg_location) = num;
+                }
+            }
+            break;
             default:
               g_assert_not_reached ();
         }
