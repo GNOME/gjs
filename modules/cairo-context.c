@@ -23,22 +23,58 @@
 #include <config.h>
 
 #include <gjs/gjs.h>
-
+#include <cairo.h>
 #include "cairo-private.h"
 
-JSBool
-gjs_js_define_cairo_stuff(JSContext      *context,
-                          JSObject       *module_obj)
-{
-    jsval obj;
+typedef struct {
+    void *dummy;
+    JSContext  *context;
+    JSObject   *object;
+} GjsCairoContext;
 
-    obj = gjs_cairo_context_create_proto(context, module_obj,
-                                         "Context", NULL);
-    if (obj == JSVAL_NULL)
-        return JS_FALSE;
+GJS_DEFINE_PROTO("CairoContext", gjs_cairo_context)
+
+GJS_DEFINE_PRIV_FROM_JS(GjsCairoContext, gjs_cairo_context_class);
+
+static JSBool
+gjs_cairo_context_constructor(JSContext *context,
+                              JSObject  *obj,
+                              uintN      argc,
+                              jsval     *argv,
+                              jsval     *retval)
+{
+    GjsCairoContext *priv;
+
+    priv = g_slice_new0(GjsCairoContext);
+
+    g_assert(priv_from_js(context, obj) == NULL);
+    JS_SetPrivate(context, obj, priv);
+
+    priv->context = context;
+    priv->object = obj;
 
     return JS_TRUE;
 }
 
-GJS_REGISTER_NATIVE_MODULE("cairoNative", gjs_js_define_cairo_stuff)
+static void
+gjs_cairo_context_finalize(JSContext *context,
+                           JSObject  *obj)
+{
+    GjsCairoContext *priv;
+    priv = priv_from_js(context, obj);
+    if (priv == NULL)
+        return;
+
+    g_slice_free(GjsCairoContext, priv);
+}
+
+/* Properties */
+static JSPropertySpec gjs_cairo_context_proto_props[] = {
+    { NULL }
+};
+
+/* Methods */
+static JSFunctionSpec gjs_cairo_context_proto_funcs[] = {
+    { NULL }
+};
 

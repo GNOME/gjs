@@ -20,25 +20,14 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#ifndef __CAIRO_PRIVATE_H__
+#define __CAIRO_PRIVATE_H__
 
-#include <gjs/gjs.h>
+JSBool gjs_js_define_cairo_stuff(JSContext      *context,
+                                 JSObject       *module_obj);
 
-#include "cairo-private.h"
+jsval gjs_cairo_context_create_proto(JSContext *context, JSObject *module,
+                                     const char *proto_name, JSObject *parent);
 
-JSBool
-gjs_js_define_cairo_stuff(JSContext      *context,
-                          JSObject       *module_obj)
-{
-    jsval obj;
-
-    obj = gjs_cairo_context_create_proto(context, module_obj,
-                                         "Context", NULL);
-    if (obj == JSVAL_NULL)
-        return JS_FALSE;
-
-    return JS_TRUE;
-}
-
-GJS_REGISTER_NATIVE_MODULE("cairoNative", gjs_js_define_cairo_stuff)
+#endif /* __CAIRO_PRIVATE_H__ */
 

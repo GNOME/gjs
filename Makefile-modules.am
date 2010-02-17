@@ -85,7 +85,8 @@ cairoNative_la_LDFLAGS = 				\
 	$(JS_NATIVE_MODULE_LDFLAGS)
 
 cairoNative_la_SOURCES =		\
-	modules/cairo.h	\
+	modules/cairo-private.h	\
+	modules/cairo-context.c \
 	modules/cairo.c
 
 
