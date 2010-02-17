@@ -94,6 +94,7 @@ valgrind-check valgrind-test: $(gjsnative_LTLIBRARIES) ${TEST_PROGS}
 	    --tool=memcheck 				\
 	    --leak-check=full 				\
 	    --suppressions=$(top_srcdir)/test/gjs.supp	\
+	    $$VALGRIND_ARGS				\
 	    $$prog \
 	    && $(GREP) -q 'definitely lost: 0 bytes in 0 blocks' valgrind.$$prog.log \
 	    || failed="$$failed $$prog"; \
