@@ -30,8 +30,10 @@
 #include <gjs/gjs.h>
 
 static char **include_path = NULL;
+static char *command = NULL;
 
 static GOptionEntry entries[] = {
+    { "command", 'c', 0, G_OPTION_ARG_STRING, &command, "Program passed in as a string", "COMMAND" },
     { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &include_path, "Add the directory DIR to the list of directories to search for js files.", "DIR" },
     { NULL }
 };
@@ -76,9 +78,13 @@ main(int argc, char **argv)
                                          &error)) {
         g_printerr("Failed to defined ARGV: %s", error->message);
         exit(1);
-    } 
+    }
 
-    if (argc <= 1) {
+    if (command != NULL) {
+        script = command;
+        len = strlen(script);
+        filename = "<command line>";
+    } else if (argc <= 1) {
         script = g_strdup("const Console = imports.console; Console.interact();");
         len = strlen(script);
         filename = "<stdin>";
