@@ -20,6 +20,113 @@
 
 const Lang = imports.lang;
 
+const Antialias = {
+    DEFAULT: 0,
+    NONE: 1,
+    GRAY: 2,
+    SUBPIXEL: 3
+};
+
+const Content = {
+    COLOR : 0x1000,
+    ALPHA : 0x2000,
+    COLOR_ALPHA : 0x3000
+};
+
+const Extend = {
+    NONE : 0,
+    REPEAT : 1,
+    REFLECT : 2,
+    PAD : 3
+};
+
+const FillRule = {
+    WINDING: 0,
+    EVEN_ODD: 1
+};
+
+const Filter = {
+    FAST : 0,
+    GOOD : 1,
+    BEST : 2,
+    NEAREST : 3,
+    BILINEAR : 4,
+    GAUSSIAN : 5
+};
+
+const FontSlant = {
+    NORMAL: 0,
+    ITALIC: 1,
+    OBLIQUE: 2
+};
+
+const FontWeight = {
+    NORMAL : 0,
+    BOLD : 1
+};
+
+const Format = {
+    ARGB32 : 0,
+    RGB24 : 1,
+    A8 : 2,
+    A1 : 3,
+    // The value of 4 is reserved by a deprecated enum value
+    RGB16_565: 5
+};
+
+const LineCap = {
+    BUTT: 0,
+    ROUND: 1,
+    SQUASH: 2
+};
+
+const LineJoin = {
+    MITER: 0,
+    ROUND: 1,
+    BEVEL: 2
+};
+
+const Operator = {
+    CLEAR: 0,
+    SOURCE: 1,
+    OVER: 2,
+    IN : 3,
+    OUT : 4,
+    ATOP : 5,
+    DEST : 6,
+    DEST_OVER : 7,
+    DEST_IN : 8,
+    DEST_OUT : 9,
+    DEST_ATOP : 10,
+    XOR : 11,
+    ADD : 12,
+    SATURATE : 13
+};
+
+const PatternType = {
+    SOLID : 0,
+    SURFACE : 1,
+    LINEAR : 2,
+    RADIAL : 3
+};
+
+const SurfaceType = {
+    IMAGE : 0,
+    PDF : 1,
+    PS : 2,
+    XLIB : 3,
+    XCB : 4,
+    GLITZ : 5,
+    QUARTZ : 6,
+    WIN32 : 7,
+    BEOS : 8,
+    DIRECTFB : 9,
+    SVG : 10,
+    OS2 : 11,
+    WIN32_PRINTING : 12,
+    QUARTZ_IMAGE : 13
+};
+
 // Merge stuff defined in native code
 Lang.copyProperties(imports.cairoNative, this);
 
