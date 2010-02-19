@@ -87,6 +87,7 @@ cairoNative_la_LDFLAGS = 				\
 cairoNative_la_SOURCES =		\
 	modules/cairo-private.h	\
 	modules/cairo-context.c \
+	modules/cairo-surface.c \
 	modules/cairo.c
 
 

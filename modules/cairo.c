@@ -31,11 +31,18 @@ gjs_js_define_cairo_stuff(JSContext      *context,
                           JSObject       *module_obj)
 {
     jsval obj;
+    JSObject *surface_proto;
 
     obj = gjs_cairo_context_create_proto(context, module_obj,
                                          "Context", NULL);
     if (obj == JSVAL_NULL)
         return JS_FALSE;
+
+    obj = gjs_cairo_surface_create_proto(context, module_obj,
+                                         "Surface", NULL);
+    if (obj == JSVAL_NULL)
+        return JS_FALSE;
+    surface_proto = JSVAL_TO_OBJECT(obj);
 
     return JS_TRUE;
 }

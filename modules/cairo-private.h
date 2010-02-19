@@ -23,11 +23,28 @@
 #ifndef __CAIRO_PRIVATE_H__
 #define __CAIRO_PRIVATE_H__
 
-JSBool gjs_js_define_cairo_stuff(JSContext      *context,
-                                 JSObject       *module_obj);
+#include <cairo.h>
+
+typedef struct {
+    void *dummy;
+    JSContext  *context;
+    JSObject   *object;
+    cairo_surface_t *surface;
+} GjsCairoSurface;
+
+JSBool gjs_js_define_cairo_stuff(JSContext *context,
+                                 JSObject  *module_obj);
 
 jsval gjs_cairo_context_create_proto(JSContext *context, JSObject *module,
                                      const char *proto_name, JSObject *parent);
+
+/* surface */
+jsval gjs_cairo_surface_create_proto(JSContext *context, JSObject *module,
+                                     const char *proto_name, JSObject *parent);
+void gjs_cairo_surface_construct(JSContext *context, JSObject *obj, cairo_surface_t *surface);
+void gjs_cairo_surface_finalize_surface(JSContext *context, JSObject  *obj);
+cairo_surface_t * gjs_cairo_surface_get_surface(JSContext *context,
+                                                JSObject *object);
 
 #endif /* __CAIRO_PRIVATE_H__ */
 
