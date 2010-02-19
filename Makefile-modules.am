@@ -90,6 +90,7 @@ cairoNative_la_SOURCES =		\
 	modules/cairo-surface.c \
 	modules/cairo-image-surface.c \
 	modules/cairo-ps-surface.c \
+	modules/cairo-pdf-surface.c \
 	modules/cairo.c
 
 
