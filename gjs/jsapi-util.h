@@ -104,6 +104,97 @@ typedef struct GjsRootedArray GjsRootedArray;
         return gjs_get_instance_private_dynamic(context, object, &class, NULL); \
     }
 
+/**
+ * GJS_DEFINE_PROTO:
+ * @tn: The name of the prototype, as a string
+ * @cn: The name of the prototype, separated by _
+ *
+ * A convenience macro for prototype implementations.
+ */
+#define GJS_DEFINE_PROTO(tn, cn) \
+static JSBool cn##_constructor(JSContext *context, \
+                               JSObject  *obj, \
+                               uintN      argc, \
+                               jsval     *argv, \
+                               jsval     *retval); \
+_GJS_DEFINE_PROTO_FULL(tn, cn, cn##_constructor)
+
+/**
+ * GJS_DEFINE_PROTO_ABSTRACT:
+ * @tn: The name of the prototype, as a string
+ * @cn: The name of the prototype, separated by _
+ *
+ * A convenience macro for prototype implementations.
+ * Similar to GJS_DEFINE_PROTO but marks the prototype as abstract,
+ * you won't be able to instantiate it using the new keyword
+ */
+#define GJS_DEFINE_PROTO_ABSTRACT(tn, cn) \
+_GJS_DEFINE_PROTO_FULL(tn, cn, NULL)
+
+#define _GJS_DEFINE_PROTO_FULL(type_name, cname, ctor) \
+static JSPropertySpec cname##_proto_props[]; \
+static JSFunctionSpec cname##_proto_funcs[]; \
+static void cname##_finalize(JSContext *context, JSObject *obj); \
+static JSBool cname##_new_resolve(JSContext *context, \
+                                  JSObject  *obj, \
+                                  jsval      id, \
+                                  uintN      flags, \
+                                  JSObject **objp) \
+{ \
+    return JS_TRUE; \
+} \
+static struct JSClass cname##_class = { \
+    type_name, \
+    JSCLASS_HAS_PRIVATE | \
+    JSCLASS_NEW_RESOLVE | \
+    JSCLASS_NEW_RESOLVE_GETS_START, \
+    JS_PropertyStub, \
+    JS_PropertyStub, \
+    JS_PropertyStub, \
+    JS_PropertyStub,\
+    JS_EnumerateStub,\
+    (JSResolveOp) cname##_new_resolve, \
+    JS_ConvertStub, \
+    cname##_finalize, \
+    NULL, \
+    NULL, \
+    NULL, \
+    NULL, NULL, NULL, NULL, NULL \
+}; \
+jsval cname##_create_proto(JSContext *context, JSObject *module, const char *proto_name, JSObject *parent) \
+{ \
+    jsval rval; \
+    JSContext *load_context = gjs_runtime_get_load_context(JS_GetRuntime(context)); \
+    JSObject *global = JS_GetGlobalObject(context); \
+    if (!gjs_object_has_property(load_context, global, \
+                                 cname##_class.name)) { \
+        JSObject *prototype = JS_InitClass(load_context, global, \
+                                 parent, \
+                                 &cname##_class, \
+                                 ctor, \
+                                 0, \
+                                 &cname##_proto_props[0], \
+                                 &cname##_proto_funcs[0], \
+                                 NULL, \
+                                 NULL); \
+        if (prototype == NULL) { \
+            gjs_move_exception(load_context, context); \
+            return JSVAL_NULL; \
+        } \
+        if (!gjs_object_require_property( \
+                load_context, global, NULL, \
+                cname##_class.name, &rval)) { \
+            gjs_move_exception(load_context, context); \
+            return JSVAL_NULL; \
+        } \
+    } \
+    if (!JS_DefineProperty(context, module, proto_name, \
+                           rval, NULL, NULL, GJS_MODULE_PROP_FLAGS)) \
+        return JS_FALSE; \
+    return rval; \
+}
+
+
 void*       gjs_runtime_get_data             (JSRuntime       *runtime,
                                                  const char      *name);
 void        gjs_runtime_set_data             (JSRuntime       *runtime,
