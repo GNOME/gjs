@@ -75,5 +75,19 @@ jsval gjs_cairo_svg_surface_create_proto(JSContext *context, JSObject *module,
                                          const char *proto_name, JSObject *parent);
 #endif
 
+/* pattern */
+typedef struct {
+    void *dummy;
+    JSContext  *context;
+    JSObject   *object;
+    cairo_pattern_t *pattern;
+} GjsCairoPattern;
+
+jsval gjs_cairo_pattern_create_proto(JSContext *context, JSObject *module,
+                                     const char *proto_name, JSObject *parent);
+void gjs_cairo_pattern_construct(JSContext *context, JSObject *obj, cairo_pattern_t *pattern);
+void gjs_cairo_pattern_finalize_pattern(JSContext *context, JSObject *obj);
+cairo_pattern_t * gjs_cairo_pattern_get_pattern(JSContext *context, JSObject *object);
+
 #endif /* __CAIRO_PRIVATE_H__ */
 

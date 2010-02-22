@@ -73,6 +73,11 @@ gjs_js_define_cairo_stuff(JSContext      *context,
         return JS_FALSE;
 #endif
 
+    obj = gjs_cairo_pattern_create_proto(context, module_obj,
+                                         "Pattern", NULL);
+    if (obj == JSVAL_NULL)
+        return JS_FALSE;
+
     return JS_TRUE;
 }
 
