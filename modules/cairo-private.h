@@ -97,5 +97,9 @@ jsval gjs_cairo_gradient_create_proto(JSContext *context, JSObject *module,
 jsval gjs_cairo_linear_gradient_create_proto(JSContext *context, JSObject *module,
                                              const char *proto_name, JSObject *parent);
 
+/* radial gradient */
+jsval gjs_cairo_radial_gradient_create_proto(JSContext *context, JSObject *module,
+                                             const char *proto_name, JSObject *parent);
+
 #endif /* __CAIRO_PRIVATE_H__ */
 
