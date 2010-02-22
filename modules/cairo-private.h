@@ -89,5 +89,9 @@ void gjs_cairo_pattern_construct(JSContext *context, JSObject *obj, cairo_patter
 void gjs_cairo_pattern_finalize_pattern(JSContext *context, JSObject *obj);
 cairo_pattern_t * gjs_cairo_pattern_get_pattern(JSContext *context, JSObject *object);
 
+/* gradient */
+jsval gjs_cairo_gradient_create_proto(JSContext *context, JSObject *module,
+                                     const char *proto_name, JSObject *parent);
+
 #endif /* __CAIRO_PRIVATE_H__ */
 

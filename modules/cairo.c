@@ -31,7 +31,7 @@ gjs_js_define_cairo_stuff(JSContext      *context,
                           JSObject       *module_obj)
 {
     jsval obj;
-    JSObject *surface_proto;
+    JSObject *surface_proto, *pattern_proto;
 
     obj = gjs_cairo_context_create_proto(context, module_obj,
                                          "Context", NULL);
@@ -75,6 +75,12 @@ gjs_js_define_cairo_stuff(JSContext      *context,
 
     obj = gjs_cairo_pattern_create_proto(context, module_obj,
                                          "Pattern", NULL);
+    if (obj == JSVAL_NULL)
+        return JS_FALSE;
+    pattern_proto = JSVAL_TO_OBJECT(obj);
+
+    obj = gjs_cairo_gradient_create_proto(context, module_obj,
+                                         "Gradient", pattern_proto);
     if (obj == JSVAL_NULL)
         return JS_FALSE;
 
