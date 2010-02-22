@@ -94,6 +94,7 @@ cairoNative_la_SOURCES =		\
 	modules/cairo-svg-surface.c \
 	modules/cairo-pattern.c \
 	modules/cairo-gradient.c \
+	modules/cairo-linear-gradient.c \
 	modules/cairo.c
 
 
