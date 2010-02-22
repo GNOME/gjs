@@ -355,6 +355,119 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC2(translate, cairo_translate, "ff", double, tx, do
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFF(userToDevice, cairo_user_to_device)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFF(userToDeviceDistance, cairo_user_to_device_distance)
 
+static JSBool
+mask_func(JSContext *context,
+          JSObject  *obj,
+          uintN      argc,
+          jsval     *argv,
+          jsval     *retval)
+{
+    JSObject *pattern_wrapper;
+    cairo_pattern_t *pattern;
+    cairo_t *cr;
+
+    if (!gjs_parse_args(context, "mask", "o", argc, argv,
+                        "pattern", &pattern_wrapper))
+        return JS_FALSE;
+
+    pattern = gjs_cairo_pattern_get_pattern(context, pattern_wrapper);
+    if (!pattern) {
+        gjs_throw(context, "first argument to mask() should be a pattern");
+        return JS_FALSE;
+    }
+
+    cr = gjs_cairo_context_get_cr(context, obj);
+    cairo_mask(cr, pattern);
+
+    return JS_TRUE;
+}
+
+static JSBool
+maskSurface_func(JSContext *context,
+                 JSObject  *obj,
+                 uintN      argc,
+                 jsval     *argv,
+                 jsval     *retval)
+{
+    JSObject *surface_wrapper;
+    double x, y;
+    cairo_surface_t *surface;
+    cairo_t *cr;
+
+    if (!gjs_parse_args(context, "maskSurface", "off", argc, argv,
+                        "surface", &surface_wrapper,
+                        "x", &x,
+                        "y", &y))
+        return JS_FALSE;
+
+    surface = gjs_cairo_surface_get_surface(context, surface_wrapper);
+    if (!surface) {
+        gjs_throw(context, "first argument to maskSurface() should be a surface");
+        return JS_FALSE;
+    }
+
+    cr = gjs_cairo_context_get_cr(context, obj);
+    cairo_mask_surface(cr, surface, x, y);
+
+    return JS_TRUE;
+}
+
+static JSBool
+setSource_func(JSContext *context,
+               JSObject  *obj,
+               uintN      argc,
+               jsval     *argv,
+               jsval     *retval)
+{
+    JSObject *pattern_wrapper;
+    cairo_pattern_t *pattern;
+    cairo_t *cr;
+
+    if (!gjs_parse_args(context, "setSource", "o", argc, argv,
+                        "pattern", &pattern_wrapper))
+        return JS_FALSE;
+
+    pattern = gjs_cairo_pattern_get_pattern(context, pattern_wrapper);
+    if (!pattern) {
+        gjs_throw(context, "first argument to setSource() should be a pattern");
+        return JS_FALSE;
+    }
+
+    cr = gjs_cairo_context_get_cr(context, obj);
+    cairo_set_source(cr, pattern);
+
+    return JS_TRUE;
+}
+static JSBool
+setSourceSurface_func(JSContext *context,
+                      JSObject  *obj,
+                      uintN      argc,
+                      jsval     *argv,
+                      jsval     *retval)
+{
+    JSObject *surface_wrapper;
+    double x, y;
+    cairo_surface_t *surface;
+    cairo_t *cr;
+
+    if (!gjs_parse_args(context, "setSourceSurface", "off", argc, argv,
+                        "surface", &surface_wrapper,
+                        "x", &x,
+                        "y", &y))
+        return JS_FALSE;
+
+    surface = gjs_cairo_surface_get_surface(context, surface_wrapper);
+    if (!surface) {
+        gjs_throw(context, "first argument to setSourceSurface() should be a surface");
+        return JS_FALSE;
+    }
+
+    cr = gjs_cairo_context_get_cr(context, obj);
+    cairo_set_source_surface(cr, surface, x, y);
+
+    return JS_TRUE;
+}
+
 static JSFunctionSpec gjs_cairo_context_proto_funcs[] = {
     // appendPath
     { "arc", arc_func, 0, 0 },
@@ -399,8 +512,8 @@ static JSFunctionSpec gjs_cairo_context_proto_funcs[] = {
     // inFill
     // inStroke
     { "lineTo", lineTo_func, 0, 0 },
-    // mask
-    // maskSurface
+    { "mask", mask_func, 0, 0 },
+    { "maskSurface", maskSurface_func, 0, 0 },
     { "moveTo", moveTo_func, 0, 0 },
     { "newPath", newPath_func, 0, 0 },
     { "newSubPath", newSubPath_func, 0, 0 },
@@ -435,10 +548,10 @@ static JSFunctionSpec gjs_cairo_context_proto_funcs[] = {
     { "setMiterLimit", setMiterLimit_func, 0, 0 },
     { "setOperator", setOperator_func, 0, 0 },
     // setScaledFont
-    // setSource
+    { "setSource", setSource_func, 0, 0 },
     { "setSourceRGB", setSourceRGB_func, 0, 0 },
     { "setSourceRGBA", setSourceRGBA_func, 0, 0 },
-    // setSourceSurface
+    { "setSourceSurface", setSourceSurface_func, 0, 0 },
     { "setTolerance", setTolerance_func, 0, 0 },
     // showGlyphs
     { "showPage", showPage_func, 0, 0 },
