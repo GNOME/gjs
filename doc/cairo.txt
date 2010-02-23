@@ -1,0 +1,94 @@
+The cairo bindings follows the C API pretty closely.
+
+Naming
+======
+
+The module name is called 'cairo' and usually imported into
+the namespace as 'Cairo'.
+
+gjs> const Cairo = imports.cairo;
+
+Methods are studlyCaps, similar to other JavaScript apis, eg
+
+cairo_move_to is wrapped to Cairo.Context.moveTo()
+cairo_surface_write_to_png to Cairo.Context.writeToPNG().
+
+Abbrevations such as RGB, RGBA, PNG, PDF, SVG are always
+upper-case.
+
+Enums are set in the cairo namespace, the enum names are capitalized:
+
+CAIRO_FORMAT_ARGB32 is mapped to Cairo.Format.ARGB32 etc.
+
+Surfaces (cairo_surface_t)
+==========================
+
+Prototype hierarchya
+
+* Surface (abstract)
+  * ImageSurface
+  * PDFSurface
+  * SVGSurface
+  * PostScriptSurface
+
+The native surfaces (win32, quartz, xlib) are not supported at this point.
+
+Methods manipulating a surface are present in the surface class.
+Creating an ImageSurface from a PNG is done by calling a static method:
+
+gjs> let surface = Cairo.ImageSurface.createFromPNG("filename.png");
+
+
+Context (cairo_t)
+=================
+
+cairo_t is mapped as Cairo.Context.
+
+You will either get a context from a third-party library such
+as Clutter/Gtk/Poppler or by calling the cairo.Context constructor.
+
+
+gjs> let cr = new Cairo.Context(surface);
+
+gjs> let cr = new Gdk.cairo_create(...);
+
+All introspection methods taking or returning a cairo_t will automatically
+create a Cairo.Context.
+
+Patterns (cairo_pattern_t)
+==========================
+
+Prototype hierarchy
+
+* Pattern
+  * Gradient
+    * LinearGradient
+    * RadialGradient
+
+You can create a linear gradient by calling the constructor:
+
+Constructors:
+
+gjs> let pattern = new Cairo.LinearGradient(0, 0, 100, 100);
+
+gjs> let pattern = new Cairo.RadialGradient(0, 0, 10, 100, 100, 10);
+
+gjs> let pattern = new Cairo.SurfacePattern(surface);
+
+gjs> pattern.set_filter(Cairo.Filter.NEAREST);
+
+TODO:
+* context: wrap the remaning methods
+* surface methods
+* image surface methods
+* solid pattern
+* matrix
+* version
+* cairo_path_t and iteration
+
+Fonts & Glyphs are not wrapped, use PangoCairo instead.
+* glyphs
+* text cluster
+* font face
+* scaled font
+* font options
