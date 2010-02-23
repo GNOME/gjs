@@ -52,6 +52,13 @@ gjs_js_define_cairo_stuff(JSContext      *context,
     gjs_cairo_image_surface_init(context, JSVAL_TO_OBJECT(obj));
 #endif
 
+#if CAIRO_HAS_PS_SURFACE
+    obj = gjs_cairo_ps_surface_create_proto(context, module_obj,
+                                            "PSSurface", surface_proto);
+    if (obj == JSVAL_NULL)
+        return JS_FALSE;
+#endif
+
     return JS_TRUE;
 }
 

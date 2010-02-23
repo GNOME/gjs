@@ -53,5 +53,11 @@ jsval gjs_cairo_image_surface_create_proto(JSContext *context, JSObject *module,
 void gjs_cairo_image_surface_init(JSContext *context, JSObject *obj);
 #endif
 
+/* postscript surface */
+#ifdef CAIRO_HAS_PS_SURFACE
+jsval gjs_cairo_ps_surface_create_proto(JSContext *context, JSObject *module,
+                                        const char *proto_name, JSObject *parent);
+#endif
+
 #endif /* __CAIRO_PRIVATE_H__ */
 
