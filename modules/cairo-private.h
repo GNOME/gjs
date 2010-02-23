@@ -101,5 +101,9 @@ jsval gjs_cairo_linear_gradient_create_proto(JSContext *context, JSObject *modul
 jsval gjs_cairo_radial_gradient_create_proto(JSContext *context, JSObject *module,
                                              const char *proto_name, JSObject *parent);
 
+/* surface pattern */
+jsval gjs_cairo_surface_pattern_create_proto(JSContext *context, JSObject *module,
+                                             const char *proto_name, JSObject *parent);
+
 #endif /* __CAIRO_PRIVATE_H__ */
 

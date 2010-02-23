@@ -95,6 +95,11 @@ gjs_js_define_cairo_stuff(JSContext      *context,
     if (obj == JSVAL_NULL)
         return JS_FALSE;
 
+    obj = gjs_cairo_surface_pattern_create_proto(context, module_obj,
+                                                 "SurfacePattern", pattern_proto);
+    if (obj == JSVAL_NULL)
+        return JS_FALSE;
+
     return JS_TRUE;
 }
 
