@@ -65,5 +65,11 @@ jsval gjs_cairo_pdf_surface_create_proto(JSContext *context, JSObject *module,
                                          const char *proto_name, JSObject *parent);
 #endif
 
+/* svg surface */
+#ifdef CAIRO_HAS_SVG_SURFACE
+jsval gjs_cairo_svg_surface_create_proto(JSContext *context, JSObject *module,
+                                         const char *proto_name, JSObject *parent);
+#endif
+
 #endif /* __CAIRO_PRIVATE_H__ */
 

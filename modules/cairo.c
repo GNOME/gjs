@@ -66,6 +66,13 @@ gjs_js_define_cairo_stuff(JSContext      *context,
         return JS_FALSE;
 #endif
 
+#if CAIRO_HAS_SVG_SURFACE
+    obj = gjs_cairo_svg_surface_create_proto(context, module_obj,
+                                             "SVGSurface", surface_proto);
+    if (obj == JSVAL_NULL)
+        return JS_FALSE;
+#endif
+
     return JS_TRUE;
 }
 
