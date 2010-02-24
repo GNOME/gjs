@@ -29,7 +29,6 @@
 
 G_BEGIN_DECLS
 
-JSContext*    gjs_context_get_context     (GjsContext *js_context);
 gboolean      gjs_context_is_load_context (GjsContext *js_context);
 
 
