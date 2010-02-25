@@ -57,9 +57,12 @@ gjs_cairo_pdf_surface_constructor(JSContext *context,
     if (status != CAIRO_STATUS_SUCCESS) {
         gjs_throw(context, "Failed to create cairo surface: %s",
                   cairo_status_to_string(status));
+        g_free(filename);
         return JS_FALSE;
     }
+
     gjs_cairo_surface_construct(context, obj, surface);
+    g_free(filename);
 
     return JS_TRUE;
 }

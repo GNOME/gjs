@@ -80,8 +80,10 @@ writeToPNG_func(JSContext *context,
         return JS_FALSE;
 
     surface = gjs_cairo_surface_get_surface(context, obj);
-    if (!surface)
+    if (!surface) {
+        g_free(filename);
         return JS_FALSE;
+    }
     cairo_surface_write_to_png(surface, filename);
     g_free(filename);
     return JS_TRUE;
