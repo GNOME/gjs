@@ -594,17 +594,16 @@ DBusError.prototype = {
     }
 };
 
-// Introspectable proxy
-function IntrospectableProxy(bus, busName, path) {
-    this._init(bus, busName, path);
+// Creates a proxy class for a given interface
+function makeProxyClass(iface) {
+    let constructor = function() { this._init.apply(this, arguments); };
+
+    constructor.prototype._init = function(bus, name, path) {
+        bus.proxifyObject(this, name, path);
+    };
+
+    proxifyPrototype(constructor.prototype, iface);
+    return constructor;
 }
 
-IntrospectableProxy.prototype = {
-    _init : function(bus, busName, path) {
-        bus.proxifyObject(this, busName, path);
-    }
-
-};
-
-proxifyPrototype(IntrospectableProxy.prototype,
-                 Introspectable);
+var IntrospectableProxy = makeProxyClass(Introspectable);
