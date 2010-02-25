@@ -58,15 +58,12 @@ cairo_surface_t* gjs_cairo_surface_get_surface          (JSContext       *contex
                                                          JSObject        *object);
 
 /* image surface */
-#ifdef CAIRO_HAS_IMAGE_SURFACE
 jsval            gjs_cairo_image_surface_create_proto   (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
 void             gjs_cairo_image_surface_init           (JSContext       *context,
                                                          JSObject        *object);
-#endif
-
 /* postscript surface */
 #ifdef CAIRO_HAS_PS_SURFACE
 jsval            gjs_cairo_ps_surface_create_proto      (JSContext       *context,

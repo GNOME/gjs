@@ -44,13 +44,11 @@ gjs_js_define_cairo_stuff(JSContext *context,
         return JS_FALSE;
     surface_proto = JSVAL_TO_OBJECT(obj);
 
-#if CAIRO_HAS_IMAGE_SURFACE
     obj = gjs_cairo_image_surface_create_proto(context, module,
                                                "ImageSurface", surface_proto);
     if (obj == JSVAL_NULL)
         return JS_FALSE;
     gjs_cairo_image_surface_init(context, JSVAL_TO_OBJECT(obj));
-#endif
 
 #if CAIRO_HAS_PS_SURFACE
     obj = gjs_cairo_ps_surface_create_proto(context, module,

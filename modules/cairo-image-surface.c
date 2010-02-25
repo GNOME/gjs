@@ -26,8 +26,6 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
-#ifdef CAIRO_HAS_IMAGE_SURFACE
-
 GJS_DEFINE_PROTO("CairoImageSurface", gjs_cairo_image_surface)
 
 static JSBool
@@ -127,5 +125,3 @@ gjs_cairo_image_surface_init(JSContext *context, JSObject *module_obj)
                            1, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 }
-
-#endif /* CAIRO_HAS_IMAGE_SURFACE */
