@@ -50,7 +50,7 @@ as Clutter/Gtk/Poppler or by calling the cairo.Context constructor.
 
 gjs> let cr = new Cairo.Context(surface);
 
-gjs> let cr = new Gdk.cairo_create(...);
+gjs> let cr = Gdk.cairo_create(...);
 
 All introspection methods taking or returning a cairo_t will automatically
 create a Cairo.Context.
@@ -78,6 +78,9 @@ gjs> let pattern = new Cairo.SurfacePattern(surface);
 gjs> pattern.set_filter(Cairo.Filter.NEAREST);
 
 TODO:
+* string leaks in macros
+* status checking + raising after all calls
+* reference counting
 * context: wrap the remaning methods
 * surface methods
 * image surface methods
