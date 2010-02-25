@@ -228,10 +228,10 @@ _gjs_cairo_context_construct_internal(JSContext *context,
 
 static JSBool
 gjs_cairo_context_constructor(JSContext *context,
-                          JSObject  *obj,
-                          uintN      argc,
-                          jsval     *argv,
-                          jsval     *retval)
+                              JSObject  *obj,
+                              uintN      argc,
+                              jsval     *argv,
+                              jsval     *retval)
 {
     JSObject *surface_wrapper;
     cairo_surface_t *surface;

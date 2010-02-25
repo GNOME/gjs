@@ -26,84 +26,114 @@
 #include <cairo.h>
 
 typedef struct {
-    void *dummy;
-    JSContext  *context;
-    JSObject   *object;
+    void            *dummy;
+    JSContext       *context;
+    JSObject        *object;
     cairo_surface_t *surface;
 } GjsCairoSurface;
 
-JSBool gjs_js_define_cairo_stuff(JSContext *context,
-                                 JSObject  *module_obj);
+JSBool           gjs_js_define_cairo_stuff              (JSContext       *context,
+                                                         JSObject        *module);
 
-jsval gjs_cairo_context_create_proto(JSContext *context, JSObject *module,
-                                     const char *proto_name, JSObject *parent);
-cairo_t *gjs_cairo_context_get_cr(JSContext *context,
-                                  JSObject *object);
-JSObject * gjs_cairo_context_from_cr(JSContext *context,
-                                     cairo_t *cr);
+jsval            gjs_cairo_context_create_proto         (JSContext       *context,
+                                                         JSObject        *module,
+                                                         const char      *proto_name,
+                                                         JSObject        *parent);
+cairo_t *        gjs_cairo_context_get_cr               (JSContext       *context,
+                                                         JSObject        *object);
+JSObject *       gjs_cairo_context_from_cr              (JSContext       *context,
+                                                         cairo_t         *cr);
 
 /* surface */
-jsval gjs_cairo_surface_create_proto(JSContext *context, JSObject *module,
-                                     const char *proto_name, JSObject *parent);
-void gjs_cairo_surface_construct(JSContext *context, JSObject *obj, cairo_surface_t *surface);
-void gjs_cairo_surface_finalize_surface(JSContext *context, JSObject  *obj);
-cairo_surface_t * gjs_cairo_surface_get_surface(JSContext *context,
-                                                JSObject *object);
+jsval            gjs_cairo_surface_create_proto         (JSContext       *context,
+                                                         JSObject        *module,
+                                                         const char      *proto_name,
+                                                         JSObject        *parent);
+void             gjs_cairo_surface_construct            (JSContext       *context,
+                                                         JSObject        *object,
+                                                         cairo_surface_t *surface);
+void             gjs_cairo_surface_finalize_surface     (JSContext       *context,
+                                                         JSObject        *object);
+cairo_surface_t* gjs_cairo_surface_get_surface          (JSContext       *context,
+                                                         JSObject        *object);
 
 /* image surface */
 #ifdef CAIRO_HAS_IMAGE_SURFACE
-jsval gjs_cairo_image_surface_create_proto(JSContext *context, JSObject *module,
-                                           const char *proto_name, JSObject *parent);
-void gjs_cairo_image_surface_init(JSContext *context, JSObject *obj);
+jsval            gjs_cairo_image_surface_create_proto   (JSContext       *context,
+                                                         JSObject        *module,
+                                                         const char      *proto_name,
+                                                         JSObject        *parent);
+void             gjs_cairo_image_surface_init           (JSContext       *context,
+                                                         JSObject        *object);
 #endif
 
 /* postscript surface */
 #ifdef CAIRO_HAS_PS_SURFACE
-jsval gjs_cairo_ps_surface_create_proto(JSContext *context, JSObject *module,
-                                        const char *proto_name, JSObject *parent);
+jsval            gjs_cairo_ps_surface_create_proto      (JSContext       *context,
+                                                         JSObject        *module,
+                                                         const char      *proto_name,
+                                                         JSObject        *parent);
 #endif
 
 /* pdf surface */
 #ifdef CAIRO_HAS_PDF_SURFACE
-jsval gjs_cairo_pdf_surface_create_proto(JSContext *context, JSObject *module,
-                                         const char *proto_name, JSObject *parent);
+jsval            gjs_cairo_pdf_surface_create_proto     (JSContext       *context,
+                                                         JSObject        *module,
+                                                         const char      *proto_name,
+                                                         JSObject        *parent);
 #endif
 
 /* svg surface */
 #ifdef CAIRO_HAS_SVG_SURFACE
-jsval gjs_cairo_svg_surface_create_proto(JSContext *context, JSObject *module,
-                                         const char *proto_name, JSObject *parent);
+jsval            gjs_cairo_svg_surface_create_proto     (JSContext       *context,
+                                                         JSObject        *module,
+                                                         const char      *proto_name,
+                                                         JSObject        *parent);
 #endif
 
 /* pattern */
 typedef struct {
-    void *dummy;
-    JSContext  *context;
-    JSObject   *object;
+    void            *dummy;
+    JSContext       *context;
+    JSObject        *object;
     cairo_pattern_t *pattern;
 } GjsCairoPattern;
 
-jsval gjs_cairo_pattern_create_proto(JSContext *context, JSObject *module,
-                                     const char *proto_name, JSObject *parent);
-void gjs_cairo_pattern_construct(JSContext *context, JSObject *obj, cairo_pattern_t *pattern);
-void gjs_cairo_pattern_finalize_pattern(JSContext *context, JSObject *obj);
-cairo_pattern_t * gjs_cairo_pattern_get_pattern(JSContext *context, JSObject *object);
+jsval            gjs_cairo_pattern_create_proto         (JSContext       *context,
+                                                         JSObject        *module,
+                                                         const char      *proto_name,
+                                                         JSObject        *parent);
+void             gjs_cairo_pattern_construct            (JSContext       *context,
+                                                         JSObject        *object,
+                                                         cairo_pattern_t *pattern);
+void             gjs_cairo_pattern_finalize_pattern     (JSContext       *context,
+                                                         JSObject        *object);
+cairo_pattern_t* gjs_cairo_pattern_get_pattern          (JSContext       *context,
+                                                         JSObject        *object);
 
 /* gradient */
-jsval gjs_cairo_gradient_create_proto(JSContext *context, JSObject *module,
-                                     const char *proto_name, JSObject *parent);
+jsval            gjs_cairo_gradient_create_proto        (JSContext       *context,
+                                                         JSObject        *module,
+                                                         const char      *proto_name,
+                                                         JSObject        *parent);
 
 /* linear gradient */
-jsval gjs_cairo_linear_gradient_create_proto(JSContext *context, JSObject *module,
-                                             const char *proto_name, JSObject *parent);
+jsval            gjs_cairo_linear_gradient_create_proto (JSContext       *context,
+                                                         JSObject        *module,
+                                                         const char      *proto_name,
+                                                         JSObject        *parent);
 
 /* radial gradient */
-jsval gjs_cairo_radial_gradient_create_proto(JSContext *context, JSObject *module,
-                                             const char *proto_name, JSObject *parent);
+jsval            gjs_cairo_radial_gradient_create_proto(JSContext        *context,
+                                                         JSObject        *module,
+                                                         const char      *proto_name,
+                                                         JSObject        *parent);
 
 /* surface pattern */
-jsval gjs_cairo_surface_pattern_create_proto(JSContext *context, JSObject *module,
-                                             const char *proto_name, JSObject *parent);
+jsval            gjs_cairo_surface_pattern_create_proto(JSContext        *context,
+                                                         JSObject        *module,
+                                                         const char      *proto_name,
+                                                         JSObject        *parent);
 
 #endif /* __CAIRO_PRIVATE_H__ */
 

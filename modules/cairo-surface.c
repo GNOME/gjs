@@ -43,7 +43,9 @@ gjs_cairo_surface_finalize(JSContext *context,
 }
 
 void
-gjs_cairo_surface_construct(JSContext *context, JSObject *obj, cairo_surface_t *surface)
+gjs_cairo_surface_construct(JSContext       *context,
+                            JSObject        *obj,
+                            cairo_surface_t *surface)
 {
     GjsCairoSurface *priv;
 

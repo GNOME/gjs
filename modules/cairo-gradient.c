@@ -67,10 +67,10 @@ addColorStopRGB_func(JSContext *context,
 
 static JSBool
 addColorStopRGBA_func(JSContext *context,
-                     JSObject  *object,
-                     uintN      argc,
-                     jsval     *argv,
-                     jsval     *retval)
+                      JSObject  *object,
+                      uintN      argc,
+                      jsval     *argv,
+                      jsval     *retval)
 {
     double offset, red, green, blue, alpha;
     cairo_pattern_t *pattern;

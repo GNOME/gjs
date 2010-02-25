@@ -43,7 +43,9 @@ gjs_cairo_pattern_finalize(JSContext *context,
 }
 
 void
-gjs_cairo_pattern_construct(JSContext *context, JSObject *obj, cairo_pattern_t *pattern)
+gjs_cairo_pattern_construct(JSContext       *context,
+                            JSObject        *obj,
+                            cairo_pattern_t *pattern)
 {
     GjsCairoPattern *priv;
 
