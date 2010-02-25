@@ -376,7 +376,7 @@ mask_func(JSContext *context,
         return JS_FALSE;
     }
 
-    cr = gjs_cairo_context_get_cr(context, obj);
+    cr = gjs_cairo_context_get_context(context, obj);
     cairo_mask(cr, pattern);
 
     return JS_TRUE;
@@ -406,7 +406,7 @@ maskSurface_func(JSContext *context,
         return JS_FALSE;
     }
 
-    cr = gjs_cairo_context_get_cr(context, obj);
+    cr = gjs_cairo_context_get_context(context, obj);
     cairo_mask_surface(cr, surface, x, y);
 
     return JS_TRUE;
@@ -433,7 +433,7 @@ setSource_func(JSContext *context,
         return JS_FALSE;
     }
 
-    cr = gjs_cairo_context_get_cr(context, obj);
+    cr = gjs_cairo_context_get_context(context, obj);
     cairo_set_source(cr, pattern);
 
     return JS_TRUE;
@@ -462,7 +462,7 @@ setSourceSurface_func(JSContext *context,
         return JS_FALSE;
     }
 
-    cr = gjs_cairo_context_get_cr(context, obj);
+    cr = gjs_cairo_context_get_context(context, obj);
     cairo_set_source_surface(cr, surface, x, y);
 
     return JS_TRUE;
@@ -570,8 +570,8 @@ static JSFunctionSpec gjs_cairo_context_proto_funcs[] = {
 };
 
 JSObject *
-gjs_cairo_context_from_cr(JSContext *context,
-                          cairo_t *cr)
+gjs_cairo_context_from_context(JSContext *context,
+                               cairo_t *cr)
 {
     JSObject *object;
 
@@ -585,8 +585,8 @@ gjs_cairo_context_from_cr(JSContext *context,
 }
 
 cairo_t *
-gjs_cairo_context_get_cr(JSContext *context,
-                         JSObject *object)
+gjs_cairo_context_get_context(JSContext *context,
+                              JSObject *object)
 {
     GjsCairoContext *priv;
     priv = priv_from_js(context, object);

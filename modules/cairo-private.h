@@ -39,9 +39,9 @@ jsval            gjs_cairo_context_create_proto         (JSContext       *contex
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
-cairo_t *        gjs_cairo_context_get_cr               (JSContext       *context,
+cairo_t *        gjs_cairo_context_get_context          (JSContext       *context,
                                                          JSObject        *object);
-JSObject *       gjs_cairo_context_from_cr              (JSContext       *context,
+JSObject *       gjs_cairo_context_from_context         (JSContext       *context,
                                                          cairo_t         *cr);
 
 /* surface */
