@@ -42,32 +42,6 @@ gjs_cairo_pattern_finalize(JSContext *context,
     g_slice_free(GjsCairoPattern, priv);
 }
 
-/**
- * gjs_cairo_pattern_construct:
- * @context: the context
- * @object: object to construct
- * @pattern: cairo_pattern to attach to the object
- *
- * Constructs a pattern wrapper giving an empty JSObject and a
- * cairo pattern. A reference to @pattern will be taken.
- */
-void
-gjs_cairo_pattern_construct(JSContext       *context,
-                            JSObject        *obj,
-                            cairo_pattern_t *pattern)
-{
-    GjsCairoPattern *priv;
-
-    priv = g_slice_new0(GjsCairoPattern);
-
-    g_assert(priv_from_js(context, obj) == NULL);
-    JS_SetPrivate(context, obj, priv);
-
-    priv->context = context;
-    priv->object = obj;
-    priv->pattern = cairo_pattern_reference(pattern);
-}
-
 /* Properties */
 static JSPropertySpec gjs_cairo_pattern_proto_props[] = {
     { NULL }
@@ -108,24 +82,109 @@ static JSFunctionSpec gjs_cairo_pattern_proto_funcs[] = {
 };
 
 /* Public API */
+
+/**
+ * gjs_cairo_pattern_construct:
+ * @context: the context
+ * @object: object to construct
+ * @pattern: cairo_pattern to attach to the object
+ *
+ * Constructs a pattern wrapper giving an empty JSObject and a
+ * cairo pattern. A reference to @pattern will be taken.
+ *
+ * This is mainly used for subclasses where object is already created.
+ */
 void
-gjs_cairo_pattern_finalize_pattern(JSContext *context,
-                                   JSObject  *obj)
-{
-    g_return_if_fail(context != NULL);
-    g_return_if_fail(obj != NULL);
-
-    gjs_cairo_pattern_finalize(context, obj);
-}
-
-cairo_pattern_t *
-gjs_cairo_pattern_get_pattern(JSContext *context,
-                              JSObject *object)
+gjs_cairo_pattern_construct(JSContext       *context,
+                            JSObject        *object,
+                            cairo_pattern_t *pattern)
 {
     GjsCairoPattern *priv;
+
+    g_return_if_fail(context != NULL);
+    g_return_if_fail(object != NULL);
+    g_return_if_fail(pattern != NULL);
+
+    priv = g_slice_new0(GjsCairoPattern);
+
+    g_assert(priv_from_js(context, object) == NULL);
+    JS_SetPrivate(context, object, priv);
+
+    priv->context = context;
+    priv->object = object;
+    priv->pattern = cairo_pattern_reference(pattern);
+}
+
+/**
+ * gjs_cairo_pattern_finalize:
+ * @context: the context
+ * @object: object to finalize
+ *
+ * Destroys the resources assoicated with a pattern wrapper.
+ *
+ * This is mainly used for subclasses.
+ */
+
+void
+gjs_cairo_pattern_finalize_pattern(JSContext *context,
+                                   JSObject  *object)
+{
+    g_return_if_fail(context != NULL);
+    g_return_if_fail(object != NULL);
+
+    gjs_cairo_pattern_finalize(context, object);
+}
+
+/**
+ * gjs_cairo_pattern_from_pattern:
+ * @context: the context
+ * @pattern: cairo_pattern to attach to the object
+ *
+ * Constructs a pattern wrapper given cairo pattern.
+ * A reference to @pattern will be taken.
+ *
+ */
+JSObject *
+gjs_cairo_pattern_from_pattern(JSContext       *context,
+                               cairo_pattern_t *pattern)
+{
+    JSObject *object;
+
+    g_return_val_if_fail(context != NULL, NULL);
+    g_return_val_if_fail(pattern != NULL, NULL);
+
+    object = JS_NewObject(context, &gjs_cairo_pattern_class, NULL, NULL);
+    if (!object) {
+        gjs_throw(context, "failed to create surface");
+        return NULL;
+    }
+
+    gjs_cairo_pattern_construct(context, object, pattern);
+
+    return object;
+}
+
+/**
+ * gjs_cairo_pattern_get_pattern:
+ * @context: the context
+ * @object: pattern wrapper
+ *
+ * Returns: the pattern attaches to the wrapper.
+ *
+ */
+cairo_pattern_t *
+gjs_cairo_pattern_get_pattern(JSContext *context,
+                              JSObject  *object)
+{
+    GjsCairoPattern *priv;
+
+    g_return_val_if_fail(context != NULL, NULL);
+    g_return_val_if_fail(object != NULL, NULL);
+
     priv = JS_GetPrivate(context, object);
     if (priv == NULL)
         return NULL;
+
     return priv->pattern;
 }
 

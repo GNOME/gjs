@@ -42,32 +42,6 @@ gjs_cairo_surface_finalize(JSContext *context,
     g_slice_free(GjsCairoSurface, priv);
 }
 
-/**
- * gjs_cairo_surface_construct:
- * @context: the context
- * @object: object to construct
- * @surface: cairo_surface to attach to the object
- *
- * Constructs a surface wrapper giving an empty JSObject and a
- * cairo surface. A reference to @surface will be taken.
- */
-void
-gjs_cairo_surface_construct(JSContext       *context,
-                            JSObject        *object,
-                            cairo_surface_t *surface)
-{
-    GjsCairoSurface *priv;
-
-    priv = g_slice_new0(GjsCairoSurface);
-
-    g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(context, object, priv);
-
-    priv->context = context;
-    priv->object = object;
-    priv->surface = cairo_surface_reference(surface);
-}
-
 /* Properties */
 static JSPropertySpec gjs_cairo_surface_proto_props[] = {
     { NULL }
@@ -139,21 +113,104 @@ static JSFunctionSpec gjs_cairo_surface_proto_funcs[] = {
 };
 
 /* Public API */
-void
-gjs_cairo_surface_finalize_surface(JSContext *context,
-                                   JSObject  *obj)
-{
-    g_return_if_fail(context != NULL);
-    g_return_if_fail(obj != NULL);
 
-    gjs_cairo_surface_finalize(context, obj);
+/**
+ * gjs_cairo_surface_construct:
+ * @context: the context
+ * @object: object to construct
+ * @surface: cairo_surface to attach to the object
+ *
+ * Constructs a surface wrapper giving an empty JSObject and a
+ * cairo surface. A reference to @surface will be taken.
+ *
+ * This is mainly used for subclasses where object is already created.
+ */
+void
+gjs_cairo_surface_construct(JSContext       *context,
+                            JSObject        *object,
+                            cairo_surface_t *surface)
+{
+    GjsCairoSurface *priv;
+
+    g_return_if_fail(context != NULL);
+    g_return_if_fail(object != NULL);
+    g_return_if_fail(surface != NULL);
+
+    priv = g_slice_new0(GjsCairoSurface);
+
+    g_assert(priv_from_js(context, object) == NULL);
+    JS_SetPrivate(context, object, priv);
+
+    priv->context = context;
+    priv->object = object;
+    priv->surface = cairo_surface_reference(surface);
 }
 
+/**
+ * gjs_cairo_surface_finalize:
+ * @context: the context
+ * @object: object to finalize
+ *
+ * Destroys the resources assoicated with a surface wrapper.
+ *
+ * This is mainly used for subclasses.
+ */
+void
+gjs_cairo_surface_finalize_surface(JSContext *context,
+                                   JSObject  *object)
+{
+    g_return_if_fail(context != NULL);
+    g_return_if_fail(object != NULL);
+
+    gjs_cairo_surface_finalize(context, object);
+}
+
+/**
+ * gjs_cairo_surface_from_surface:
+ * @context: the context
+ * @surface: cairo_surface to attach to the object
+ *
+ * Constructs a surface wrapper given cairo surface.
+ * A reference to @surface will be taken.
+ *
+ */
+JSObject *
+gjs_cairo_surface_from_surface(JSContext       *context,
+                               cairo_surface_t *surface)
+{
+    JSObject *object;
+
+    g_return_val_if_fail(context != NULL, NULL);
+    g_return_val_if_fail(surface != NULL, NULL);
+
+    object = JS_NewObject(context, &gjs_cairo_surface_class, NULL, NULL);
+    if (!object) {
+        gjs_throw(context, "failed to create surface");
+        return NULL;
+    }
+
+    gjs_cairo_surface_construct(context, object, surface);
+
+    return object;
+}
+
+/**
+ * gjs_cairo_surface_get_surface:
+ * @context: the context
+ * @object: surface wrapper
+ *
+ * Returns: the surface attaches to the wrapper.
+ *
+ */
 cairo_surface_t *
 gjs_cairo_surface_get_surface(JSContext *context,
                               JSObject *object)
 {
     GjsCairoSurface *priv;
+
+    g_return_val_if_fail(context != NULL, NULL);
+    g_return_val_if_fail(object != NULL, NULL);
+
     priv = JS_GetPrivate(context, object);
     if (priv == NULL)
         return NULL;

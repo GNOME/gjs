@@ -58,6 +58,8 @@ void             gjs_cairo_surface_construct            (JSContext       *contex
                                                          cairo_surface_t *surface);
 void             gjs_cairo_surface_finalize_surface     (JSContext       *context,
                                                          JSObject        *object);
+JSObject *       gjs_cairo_surface_from_surface         (JSContext       *context,
+                                                         cairo_surface_t *surface);
 cairo_surface_t* gjs_cairo_surface_get_surface          (JSContext       *context,
                                                          JSObject        *object);
 
@@ -109,6 +111,8 @@ void             gjs_cairo_pattern_construct            (JSContext       *contex
                                                          cairo_pattern_t *pattern);
 void             gjs_cairo_pattern_finalize_pattern     (JSContext       *context,
                                                          JSObject        *object);
+JSObject*        gjs_cairo_pattern_from_pattern         (JSContext       *context,
+                                                         cairo_pattern_t *pattern);
 cairo_pattern_t* gjs_cairo_pattern_get_pattern          (JSContext       *context,
                                                          JSObject        *object);
 
