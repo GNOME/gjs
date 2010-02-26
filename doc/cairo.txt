@@ -78,7 +78,6 @@ gjs> let pattern = new Cairo.SurfacePattern(surface);
 gjs> pattern.set_filter(Cairo.Filter.NEAREST);
 
 TODO:
-* string leaks in macros
 * reference counting
 * context: wrap the remaning methods
 * surface methods

@@ -326,8 +326,6 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(restore, cairo_restore)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC1(rotate, cairo_rotate, "f", double, angle)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(save, cairo_save)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC2(scale, cairo_scale, "ff", double, sx, double, sy)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC3(selectFontFace, cairo_select_font_face, "sii", const char*, family,
-                                cairo_font_slant_t, slant, cairo_font_weight_t, weight)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setAntiAlias, cairo_set_antialias, "i", cairo_antialias_t, antialias)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setFillRule, cairo_set_fill_rule, "i", cairo_fill_rule_t, fill_rule)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setFontSize, cairo_set_font_size, "f", double, size)
@@ -342,7 +340,6 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC3(setSourceRGB, cairo_set_source_rgb, "fff",
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC4(setSourceRGBA, cairo_set_source_rgba, "ffff",
                                 double, red, double, green, double, blue, double, alpha)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(showPage, cairo_show_page)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(showText, cairo_show_text, "s", const char*, utf8)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(stroke, cairo_stroke)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(strokePreserve, cairo_stroke_preserve)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFFFF(strokeExtents, cairo_stroke_extents)
@@ -444,6 +441,7 @@ setSource_func(JSContext *context,
 
     return JS_TRUE;
 }
+
 static JSBool
 setSourceSurface_func(JSContext *context,
                       JSObject  *obj,
@@ -471,6 +469,60 @@ setSourceSurface_func(JSContext *context,
     cr = gjs_cairo_context_get_context(context, obj);
 
     cairo_set_source_surface(cr, surface, x, y);
+
+    if (!gjs_cairo_check_status(context, cairo_status(cr), "context"))
+        return JS_FALSE;
+
+    return JS_TRUE;
+}
+
+static JSBool
+showText_func(JSContext *context,
+              JSObject  *obj,
+              uintN      argc,
+              jsval     *argv,
+              jsval     *retval)
+{
+    char *utf8;
+    cairo_t *cr;
+
+    if (!gjs_parse_args(context, "showText", "s", argc, argv,
+                        "utf8", &utf8))
+        return JS_FALSE;
+
+    cr = gjs_cairo_context_get_context(context, obj);
+
+    cairo_show_text(cr, utf8);
+    g_free(utf8);
+
+    if (!gjs_cairo_check_status(context, cairo_status(cr), "context"))
+        return JS_FALSE;
+
+    return JS_TRUE;
+}
+
+static JSBool
+selectFontFace_func(JSContext *context,
+                    JSObject  *obj,
+                    uintN      argc,
+                    jsval     *argv,
+                    jsval     *retval)
+{
+    char *family;
+    cairo_font_slant_t slant;
+    cairo_font_weight_t weight;
+    cairo_t *cr;
+
+    if (!gjs_parse_args(context, "selectFontFace", "sii", argc, argv,
+                        "family", &family,
+                        "slang", &slant,
+                        "weight", &weight))
+        return JS_FALSE;
+
+    cr = gjs_cairo_context_get_context(context, obj);
+
+    cairo_select_font_face(cr, family, slant, weight);
+    g_free(family);
 
     if (!gjs_cairo_check_status(context, cairo_status(cr), "context"))
         return JS_FALSE;
