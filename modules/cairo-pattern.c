@@ -42,6 +42,15 @@ gjs_cairo_pattern_finalize(JSContext *context,
     g_slice_free(GjsCairoPattern, priv);
 }
 
+/**
+ * gjs_cairo_pattern_construct:
+ * @context: the context
+ * @object: object to construct
+ * @pattern: cairo_pattern to attach to the object
+ *
+ * Constructs a pattern wrapper giving an empty JSObject and a
+ * cairo pattern. A reference to @pattern will be taken.
+ */
 void
 gjs_cairo_pattern_construct(JSContext       *context,
                             JSObject        *obj,
@@ -56,7 +65,7 @@ gjs_cairo_pattern_construct(JSContext       *context,
 
     priv->context = context;
     priv->object = obj;
-    priv->pattern = pattern;
+    priv->pattern = cairo_pattern_reference(pattern);
 }
 
 /* Properties */

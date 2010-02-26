@@ -217,7 +217,7 @@ _gjs_cairo_context_construct_internal(JSContext *context,
 
     priv->context = context;
     priv->object = obj;
-    priv->cr = cr;
+    priv->cr = cairo_reference(cr);
 }
 
 static JSBool
@@ -250,6 +250,7 @@ gjs_cairo_context_constructor(JSContext *context,
         return JS_FALSE;
 
     _gjs_cairo_context_construct_internal(context, obj, cr);
+    cairo_destroy(cr);
 
     return JS_TRUE;
 }

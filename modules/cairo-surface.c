@@ -42,21 +42,30 @@ gjs_cairo_surface_finalize(JSContext *context,
     g_slice_free(GjsCairoSurface, priv);
 }
 
+/**
+ * gjs_cairo_surface_construct:
+ * @context: the context
+ * @object: object to construct
+ * @surface: cairo_surface to attach to the object
+ *
+ * Constructs a surface wrapper giving an empty JSObject and a
+ * cairo surface. A reference to @surface will be taken.
+ */
 void
 gjs_cairo_surface_construct(JSContext       *context,
-                            JSObject        *obj,
+                            JSObject        *object,
                             cairo_surface_t *surface)
 {
     GjsCairoSurface *priv;
 
     priv = g_slice_new0(GjsCairoSurface);
 
-    g_assert(priv_from_js(context, obj) == NULL);
-    JS_SetPrivate(context, obj, priv);
+    g_assert(priv_from_js(context, object) == NULL);
+    JS_SetPrivate(context, object, priv);
 
     priv->context = context;
-    priv->object = obj;
-    priv->surface = surface;
+    priv->object = object;
+    priv->surface = cairo_surface_reference(surface);
 }
 
 /* Properties */

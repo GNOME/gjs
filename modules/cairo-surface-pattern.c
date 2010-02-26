@@ -58,6 +58,7 @@ gjs_cairo_surface_pattern_constructor(JSContext *context,
         return JS_FALSE;
 
     gjs_cairo_pattern_construct(context, obj, pattern);
+    cairo_pattern_destroy(pattern);
 
     return JS_TRUE;
 }

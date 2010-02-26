@@ -54,6 +54,7 @@ gjs_cairo_image_surface_constructor(JSContext *context,
         return JS_FALSE;
 
     gjs_cairo_surface_construct(context, obj, surface);
+    cairo_surface_destroy(surface);
 
     return JS_TRUE;
 }
@@ -95,6 +96,7 @@ createFromPNG_func(JSContext *context,
         return JS_FALSE;
     }
     gjs_cairo_surface_construct(context, surface_wrapper, surface);
+    cairo_surface_destroy(surface);
 
     *retval = OBJECT_TO_JSVAL(surface_wrapper);
     return JS_TRUE;

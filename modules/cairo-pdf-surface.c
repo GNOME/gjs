@@ -60,6 +60,7 @@ gjs_cairo_pdf_surface_constructor(JSContext *context,
     }
 
     gjs_cairo_surface_construct(context, obj, surface);
+    cairo_surface_destroy(surface);
     g_free(filename);
 
     return JS_TRUE;
