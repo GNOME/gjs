@@ -26,6 +26,13 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
+typedef struct {
+    void            *dummy;
+    JSContext       *context;
+    JSObject        *object;
+    cairo_surface_t *surface;
+} GjsCairoSurface;
+
 GJS_DEFINE_PROTO_ABSTRACT("CairoSurface", gjs_cairo_surface)
 
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoSurface, gjs_cairo_surface_class)

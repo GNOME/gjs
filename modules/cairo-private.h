@@ -25,13 +25,6 @@
 
 #include <cairo.h>
 
-typedef struct {
-    void            *dummy;
-    JSContext       *context;
-    JSObject        *object;
-    cairo_surface_t *surface;
-} GjsCairoSurface;
-
 JSBool           gjs_js_define_cairo_stuff              (JSContext       *context,
                                                          JSObject        *module);
 
@@ -95,13 +88,6 @@ jsval            gjs_cairo_svg_surface_create_proto     (JSContext       *contex
 #endif
 
 /* pattern */
-typedef struct {
-    void            *dummy;
-    JSContext       *context;
-    JSObject        *object;
-    cairo_pattern_t *pattern;
-} GjsCairoPattern;
-
 jsval            gjs_cairo_pattern_create_proto         (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,

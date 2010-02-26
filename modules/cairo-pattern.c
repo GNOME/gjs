@@ -26,6 +26,13 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
+typedef struct {
+    void            *dummy;
+    JSContext       *context;
+    JSObject        *object;
+    cairo_pattern_t *pattern;
+} GjsCairoPattern;
+
 GJS_DEFINE_PROTO_ABSTRACT("CairoPattern", gjs_cairo_pattern)
 
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoPattern, gjs_cairo_pattern_class)
