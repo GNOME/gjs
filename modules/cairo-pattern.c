@@ -84,6 +84,9 @@ getType_func(JSContext *context,
     pattern = gjs_cairo_pattern_get_pattern(context, object);
     type = cairo_pattern_get_type(pattern);
 
+    if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
+        return JS_FALSE;
+
     *retval = INT_TO_JSVAL(type);
     return JS_TRUE;
 }

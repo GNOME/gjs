@@ -37,7 +37,6 @@ gjs_cairo_radial_gradient_constructor(JSContext *context,
 {
     double cx0, cy0, radius0, cx1, cy1, radius1;
     cairo_pattern_t *pattern;
-    cairo_status_t status;
 
     if (!gjs_check_constructing(context))
         return JS_FALSE;
@@ -52,12 +51,10 @@ gjs_cairo_radial_gradient_constructor(JSContext *context,
         return JS_FALSE;
 
     pattern = cairo_pattern_create_radial(cx0, cy0, radius0, cx1, cy1, radius1);
-    status = cairo_pattern_status(pattern);
-    if (status != CAIRO_STATUS_SUCCESS) {
-        gjs_throw(context, "Failed to create cairo pattern: %s",
-                  cairo_status_to_string(status));
+
+    if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
-    }
+
     gjs_cairo_pattern_construct(context, obj, pattern);
 
     return JS_TRUE;

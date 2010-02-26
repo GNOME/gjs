@@ -27,6 +27,21 @@
 #include "cairo-private.h"
 
 JSBool
+gjs_cairo_check_status(JSContext      *context,
+                       cairo_status_t  status,
+                       const char     *name)
+{
+    if (status != CAIRO_STATUS_SUCCESS) {
+        gjs_throw(context, "Could not create %s: %s",
+                  name,
+                  cairo_status_to_string(status));
+        return JS_FALSE;
+    }
+
+    return JS_TRUE;
+}
+
+JSBool
 gjs_js_define_cairo_stuff(JSContext *context,
                           JSObject  *module)
 {

@@ -79,7 +79,6 @@ gjs> pattern.set_filter(Cairo.Filter.NEAREST);
 
 TODO:
 * string leaks in macros
-* status checking + raising after all calls
 * reference counting
 * context: wrap the remaning methods
 * surface methods

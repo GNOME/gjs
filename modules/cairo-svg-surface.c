@@ -41,7 +41,6 @@ gjs_cairo_svg_surface_constructor(JSContext *context,
     char *filename;
     double width, height;
     cairo_surface_t *surface;
-    cairo_status_t status;
 
     if (!gjs_check_constructing(context))
         return JS_FALSE;
@@ -53,14 +52,16 @@ gjs_cairo_svg_surface_constructor(JSContext *context,
         return JS_FALSE;
 
     surface = cairo_svg_surface_create(filename, width, height);
-    status = cairo_surface_status(surface);
-    if (status != CAIRO_STATUS_SUCCESS) {
-        gjs_throw(context, "Failed to create cairo surface: %s",
-                  cairo_status_to_string(status));
+
+    if (!gjs_cairo_check_status(context, cairo_surface_status(surface),
+                                "surface")) {
+        g_free(filename);
         return JS_FALSE;
     }
+
     gjs_cairo_surface_construct(context, obj, surface);
 
+    g_free(filename);
     return JS_TRUE;
 }
 

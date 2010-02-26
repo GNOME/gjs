@@ -36,8 +36,10 @@ mname##_func(JSContext *context,                    \
 {                                                   \
     cairo_t *cr;
 
-#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END          \
-    return JS_TRUE;                                 \
+#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END                             \
+    if (!gjs_cairo_check_status(context, cairo_status(cr), "context")) \
+        return JS_FALSE;                                               \
+    return JS_TRUE;                                                    \
 }
 
 #define _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(m)                        \
@@ -228,7 +230,6 @@ gjs_cairo_context_constructor(JSContext *context,
     JSObject *surface_wrapper;
     cairo_surface_t *surface;
     cairo_t *cr;
-    cairo_status_t status;
 
     if (!gjs_check_constructing(context))
         return JS_FALSE;
@@ -244,12 +245,9 @@ gjs_cairo_context_constructor(JSContext *context,
     }
 
     cr = cairo_create(surface);
-    status = cairo_status(cr);
-    if (status != CAIRO_STATUS_SUCCESS) {
-        gjs_throw(context, "Could not create context: %s",
-                  cairo_status_to_string(status));
+
+    if (!gjs_cairo_check_status(context, cairo_status(cr), "context"))
         return JS_FALSE;
-    }
 
     _gjs_cairo_context_construct_internal(context, obj, cr);
 
@@ -376,6 +374,9 @@ mask_func(JSContext *context,
     cr = gjs_cairo_context_get_context(context, obj);
     cairo_mask(cr, pattern);
 
+    if (!gjs_cairo_check_status(context, cairo_status(cr), "context"))
+        return JS_FALSE;
+
     return JS_TRUE;
 }
 
@@ -404,7 +405,11 @@ maskSurface_func(JSContext *context,
     }
 
     cr = gjs_cairo_context_get_context(context, obj);
+
     cairo_mask_surface(cr, surface, x, y);
+
+    if (!gjs_cairo_check_status(context, cairo_status(cr), "context"))
+        return JS_FALSE;
 
     return JS_TRUE;
 }
@@ -431,7 +436,11 @@ setSource_func(JSContext *context,
     }
 
     cr = gjs_cairo_context_get_context(context, obj);
+
     cairo_set_source(cr, pattern);
+
+    if (!gjs_cairo_check_status(context, cairo_status(cr), "context"))
+        return JS_FALSE;
 
     return JS_TRUE;
 }
@@ -460,7 +469,11 @@ setSourceSurface_func(JSContext *context,
     }
 
     cr = gjs_cairo_context_get_context(context, obj);
+
     cairo_set_source_surface(cr, surface, x, y);
+
+    if (!gjs_cairo_check_status(context, cairo_status(cr), "context"))
+        return JS_FALSE;
 
     return JS_TRUE;
 }

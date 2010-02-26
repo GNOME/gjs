@@ -60,7 +60,11 @@ addColorStopRGB_func(JSContext *context,
         return JS_FALSE;
 
     pattern = gjs_cairo_pattern_get_pattern(context, object);
+
     cairo_pattern_add_color_stop_rgb(pattern, offset, red, green, blue);
+
+    if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
+        return JS_FALSE;
 
     return JS_TRUE;
 }
@@ -85,6 +89,9 @@ addColorStopRGBA_func(JSContext *context,
 
     pattern = gjs_cairo_pattern_get_pattern(context, object);
     cairo_pattern_add_color_stop_rgba(pattern, offset, red, green, blue, alpha);
+
+    if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
+        return JS_FALSE;
 
     return JS_TRUE;
 }

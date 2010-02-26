@@ -38,7 +38,6 @@ gjs_cairo_surface_pattern_constructor(JSContext *context,
     JSObject *surface_wrapper;
     cairo_surface_t *surface;
     cairo_pattern_t *pattern;
-    cairo_status_t status;
 
     if (!gjs_check_constructing(context))
         return JS_FALSE;
@@ -54,12 +53,10 @@ gjs_cairo_surface_pattern_constructor(JSContext *context,
     }
 
     pattern = cairo_pattern_create_for_surface(surface);
-    status = cairo_pattern_status(pattern);
-    if (status != CAIRO_STATUS_SUCCESS) {
-        gjs_throw(context, "Failed to create cairo pattern: %s",
-                  cairo_status_to_string(status));
+
+    if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
-    }
+
     gjs_cairo_pattern_construct(context, obj, pattern);
 
     return JS_TRUE;
@@ -95,6 +92,9 @@ setExtend_func(JSContext *context,
     pattern = gjs_cairo_pattern_get_pattern(context, object);
     cairo_pattern_set_extend(pattern, extend);
 
+    if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
+        return JS_FALSE;
+
     return JS_TRUE;
 }
 
@@ -115,6 +115,10 @@ getExtend_func(JSContext *context,
 
     pattern = gjs_cairo_pattern_get_pattern(context, object);
     extend = cairo_pattern_get_extend(pattern);
+
+    if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
+        return JS_FALSE;
+
     *retval = INT_TO_JSVAL(extend);
 
     return JS_TRUE;
@@ -137,6 +141,9 @@ setFilter_func(JSContext *context,
     pattern = gjs_cairo_pattern_get_pattern(context, object);
     cairo_pattern_set_filter(pattern, filter);
 
+    if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
+        return JS_FALSE;
+
     return JS_TRUE;
 }
 
@@ -157,6 +164,10 @@ getFilter_func(JSContext *context,
 
     pattern = gjs_cairo_pattern_get_pattern(context, object);
     filter = cairo_pattern_get_filter(pattern);
+
+    if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
+        return JS_FALSE;
+
     *retval = INT_TO_JSVAL(filter);
 
     return JS_TRUE;

@@ -35,6 +35,10 @@ typedef struct {
 JSBool           gjs_js_define_cairo_stuff              (JSContext       *context,
                                                          JSObject        *module);
 
+JSBool           gjs_cairo_check_status                 (JSContext       *context,
+                                                         cairo_status_t   status,
+                                                         const char      *name);
+
 jsval            gjs_cairo_context_create_proto         (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
