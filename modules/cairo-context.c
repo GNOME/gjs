@@ -318,7 +318,6 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(fillPreserve, cairo_fill_preserve)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFFFF(fillExtents, cairo_fill_extents)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0I(getAntiAlias, cairo_get_antialias)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFF(getCurrentPoint, cairo_get_current_point)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFF(getDash, cairo_get_dash)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0I(getDashCount, cairo_get_dash_count)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0I(getFillRule, cairo_get_fill_rule)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0I(getLineCap, cairo_get_line_cap)
@@ -709,7 +708,7 @@ static JSFunctionSpec gjs_cairo_context_proto_funcs[] = {
     // fontExtents
     { "getAntiAlias", getAntiAlias_func, 0, 0 },
     { "getCurrentPoint", getCurrentPoint_func, 0, 0 },
-    { "getDash", getDash_func, 0, 0 },
+    // getDash
     { "getDashCount", getDashCount_func, 0, 0 },
     { "getFillRule", getFillRule_func, 0, 0 },
     // getFontFace
