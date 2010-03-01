@@ -141,14 +141,12 @@ function testStrv() {
     assertEquals("3", strv[2]);
 }
 
-/* Failing, see https://bugzilla.gnome.org/show_bug.cgi?id=611529
 function testInAfterOut() {
     const str = "hello";
 
     let len = Everything.test_int_out_utf8(str);
     assertEquals("testInAfterOut", str.length, len);
 }
-*/
 
 function testUtf8() {
     const CONST_STR = "const \u2665 utf8";
