@@ -606,10 +606,14 @@ gjs_invoke_c_function(JSContext      *context,
             if (g_slist_find(callback_arg_indices, GUINT_TO_POINTER((guint)i)) != NULL) {
                 g_assert(type_tag == GI_TYPE_TAG_VOID);
                 convert_argument = FALSE;
+
+                g_assert_cmpuint(argv_pos, <, argc);
                 in_value->v_pointer = (gpointer)argv[argv_pos];
             } else if (type_tag == GI_TYPE_TAG_VOID) {
                 /* FIXME: notify/throw saying the callback annotation is wrong */
                 convert_argument = FALSE;
+
+                g_assert_cmpuint(argv_pos, <, argc);
                 in_value->v_pointer = (gpointer)argv[argv_pos];
             } else if (type_tag == GI_TYPE_TAG_INTERFACE) {
                 GIBaseInfo* interface_info;
@@ -637,12 +641,14 @@ gjs_invoke_c_function(JSContext      *context,
                 g_base_info_unref(interface_info);
             }
 
-            if (convert_argument)
+            if (convert_argument) {
+                g_assert_cmpuint(argv_pos, <, argc);
                 if (!gjs_value_to_arg(context, argv[argv_pos], &arg_info,
                                       in_value)) {
                     failed = TRUE;
                     break;
                 }
+            }
 
             if (!failed && direction == GI_DIRECTION_INOUT) {
                 g_assert_cmpuint(in_args_pos, <, in_args_len);
