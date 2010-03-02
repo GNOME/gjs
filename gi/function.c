@@ -685,7 +685,9 @@ gjs_invoke_c_function(JSContext      *context,
         in_args_pos++;
     }
 
-    g_assert(in_args_pos == (guint8)function->invoker.cif.nargs);
+    g_assert_cmpuint(in_args_pos, ==, (guint8)function->invoker.cif.nargs);
+    g_assert_cmpuint(inout_args_pos, ==, inout_args_len);
+    g_assert_cmpuint(out_args_pos, ==, out_args_len);
     ffi_call(&(function->invoker.cif), function->invoker.native_address, &return_value, in_arg_pointers);
 
     /* Return value and out arguments are valid only if invocation doesn't
