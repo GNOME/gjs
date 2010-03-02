@@ -738,7 +738,7 @@ release:
     inout_args_pos = 0;
 
     postinvoke_release_failed = FALSE;
-    for (i = 0; i < n_args; i++) {
+    for (i = 0; i < n_args && in_args_pos < processed_in_args; i++) {
         GIDirection direction;
         GIArgInfo arg_info;
         GITypeInfo arg_type_info;
@@ -748,8 +748,7 @@ release:
 
         g_arg_info_load_type(&arg_info, &arg_type_info);
 
-        if ((direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT) &&
-            (in_args_pos < processed_in_args)) {
+        if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT) {
             GArgument *arg;
             GITransfer transfer;
 
