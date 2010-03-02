@@ -530,9 +530,16 @@ gjs_invoke_c_function(JSContext      *context,
         return JS_FALSE;
     }
 
+    g_callable_info_load_return_type( (GICallableInfo*) function->info, &return_info);
+    return_tag = g_type_info_get_tag(&return_info);
+
     in_args_len = function->invoker.cif.nargs;
-    out_args_len = function->js_out_argc > 1 ? function->js_out_argc - 1 : 0;
+    out_args_len = function->js_out_argc;
     inout_args_len = function->inout_argc;
+
+    if (return_tag != GI_TYPE_TAG_VOID) {
+        --out_args_len;
+    }
 
     in_arg_cvalues = g_newa(GArgument, in_args_len);
     in_arg_pointers = g_newa(gpointer, in_args_len);
@@ -689,10 +696,6 @@ gjs_invoke_c_function(JSContext      *context,
     g_slist_foreach(data_for_notify, (GFunc)gjs_callback_info_free, NULL);
     g_slist_free(data_for_notify);
     g_slist_free(callback_arg_indices);
-
-    g_callable_info_load_return_type( (GICallableInfo*) function->info, &return_info);
-
-    return_tag = g_type_info_get_tag(&return_info);
 
     *rval = JSVAL_VOID;
 
