@@ -571,7 +571,7 @@ gjs_invoke_c_function(JSContext      *context,
         ++in_args_pos;
     }
 
-    processed_in_args = 0;
+    processed_in_args = in_args_pos;
     for (i = 0; i < n_args; i++) {
         GIDirection direction;
         GIArgInfo arg_info;
@@ -683,6 +683,9 @@ gjs_invoke_c_function(JSContext      *context,
         in_arg_cvalues[in_args_pos].v_pointer = &local_error;
         in_arg_pointers[in_args_pos] = &(in_arg_cvalues[in_args_pos]);
         in_args_pos++;
+
+        /* don't update processed_in_args as we deal with local_error
+         * separately */
     }
 
     g_assert_cmpuint(in_args_pos, ==, (guint8)function->invoker.cif.nargs);
@@ -825,6 +828,15 @@ release:
         failed = TRUE;
 
     g_assert(failed || did_throw_gerror || next_rval == (guint8)function->js_out_argc);
+    g_assert_cmpuint(in_args_pos, ==, processed_in_args);
+
+    if (!(did_throw_gerror || failed)) {
+        g_assert_cmpuint(out_args_pos, ==, out_args_len);
+        g_assert_cmpuint(inout_args_pos, ==, inout_args_len);
+    } else {
+        g_assert_cmpuint(out_args_pos, ==, 0);
+        g_assert_cmpuint(inout_args_pos, ==, 0);
+    }
 
     if (function->js_out_argc > 0 && (!failed && !did_throw_gerror)) {
         /* if we have 1 return value or out arg, return that item
