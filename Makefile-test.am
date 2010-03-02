@@ -123,6 +123,7 @@ EXTRA_DIST +=					\
 	test/js/modules/subA/subB/foobar.js     \
 	test/js/modules/subA/subB/baz.js        \
 	test/js/testself.js			\
+	test/js/testCairo.js			\
 	test/js/testEverythingBasic.js		\
 	test/js/testEverythingEncapsulated.js	\
 	test/js/testGI.js			\
