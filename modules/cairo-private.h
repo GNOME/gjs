@@ -141,5 +141,13 @@ jsval            gjs_cairo_surface_pattern_create_proto (JSContext       *contex
 JSObject *       gjs_cairo_surface_pattern_from_pattern (JSContext       *context,
                                                          cairo_pattern_t *pattern);
 
+/* solid pattern */
+jsval            gjs_cairo_solid_pattern_create_proto   (JSContext       *context,
+                                                         JSObject        *module,
+                                                         const char      *proto_name,
+                                                         JSObject        *parent);
+JSObject *       gjs_cairo_solid_pattern_from_pattern   (JSContext       *context,
+                                                         cairo_pattern_t *pattern);
+
 #endif /* __CAIRO_PRIVATE_H__ */
 

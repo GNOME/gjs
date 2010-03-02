@@ -161,8 +161,8 @@ gjs_cairo_pattern_from_pattern(JSContext       *context,
     g_return_val_if_fail(pattern != NULL, NULL);
 
     switch (cairo_pattern_get_type(pattern)) {
-//        case CAIRO_PATTERN_TYPE_SOLID:
-//            return gjs_cairo_solid_pattern_from_pattern(context, pattern);
+        case CAIRO_PATTERN_TYPE_SOLID:
+            return gjs_cairo_solid_pattern_from_pattern(context, pattern);
         case CAIRO_PATTERN_TYPE_SURFACE:
             return gjs_cairo_surface_pattern_from_pattern(context, pattern);
         case CAIRO_PATTERN_TYPE_LINEAR:
