@@ -63,12 +63,17 @@ jsval            gjs_cairo_image_surface_create_proto   (JSContext       *contex
                                                          JSObject        *parent);
 void             gjs_cairo_image_surface_init           (JSContext       *context,
                                                          JSObject        *object);
+JSObject *       gjs_cairo_image_surface_from_surface   (JSContext       *context,
+                                                         cairo_surface_t *surface);
+
 /* postscript surface */
 #ifdef CAIRO_HAS_PS_SURFACE
 jsval            gjs_cairo_ps_surface_create_proto      (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
+JSObject *       gjs_cairo_ps_surface_from_surface       (JSContext       *context,
+                                                          cairo_surface_t *surface);
 #endif
 
 /* pdf surface */
@@ -77,6 +82,8 @@ jsval            gjs_cairo_pdf_surface_create_proto     (JSContext       *contex
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
+JSObject *       gjs_cairo_pdf_surface_from_surface     (JSContext       *context,
+                                                         cairo_surface_t *surface);
 #endif
 
 /* svg surface */
@@ -85,6 +92,8 @@ jsval            gjs_cairo_svg_surface_create_proto     (JSContext       *contex
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
+JSObject *       gjs_cairo_svg_surface_from_surface     (JSContext       *context,
+                                                         cairo_surface_t *surface);
 #endif
 
 /* pattern */

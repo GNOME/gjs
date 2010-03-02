@@ -112,6 +112,27 @@ static JSFunctionSpec gjs_cairo_image_surface_proto_funcs[] = {
     { NULL }
 };
 
+JSObject *
+gjs_cairo_image_surface_from_surface(JSContext       *context,
+                                     cairo_surface_t *surface)
+{
+    JSObject *object;
+
+    g_return_val_if_fail(context != NULL, NULL);
+    g_return_val_if_fail(surface != NULL, NULL);
+    g_return_val_if_fail(cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_IMAGE, NULL);
+
+    object = JS_NewObject(context, &gjs_cairo_image_surface_class, NULL, NULL);
+    if (!object) {
+        gjs_throw(context, "failed to create image surface");
+        return NULL;
+    }
+
+    gjs_cairo_surface_construct(context, object, surface);
+
+    return object;
+}
+
 void
 gjs_cairo_image_surface_init(JSContext *context, JSObject *module_obj)
 {
