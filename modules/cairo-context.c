@@ -316,7 +316,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFF(deviceToUserDistance, cairo_device_to_user_di
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(fill, cairo_fill)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(fillPreserve, cairo_fill_preserve)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFFFF(fillExtents, cairo_fill_extents)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC0I(getAntiAlias, cairo_get_antialias)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC0I(getAntialias, cairo_get_antialias)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFF(getCurrentPoint, cairo_get_current_point)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0I(getDashCount, cairo_get_dash_count)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0I(getFillRule, cairo_get_fill_rule)
@@ -353,7 +353,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(restore, cairo_restore)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC1(rotate, cairo_rotate, "f", double, angle)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(save, cairo_save)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC2(scale, cairo_scale, "ff", double, sx, double, sy)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setAntiAlias, cairo_set_antialias, "i", cairo_antialias_t, antialias)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setAntialias, cairo_set_antialias, "i", cairo_antialias_t, antialias)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setFillRule, cairo_set_fill_rule, "i", cairo_fill_rule_t, fill_rule)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setFontSize, cairo_set_font_size, "f", double, size)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setLineCap, cairo_set_line_cap, "i", cairo_line_cap_t, line_cap)
@@ -706,7 +706,7 @@ static JSFunctionSpec gjs_cairo_context_proto_funcs[] = {
     { "fillPreserve", fillPreserve_func, 0, 0 },
     { "fillExtents", fillExtents_func, 0, 0 },
     // fontExtents
-    { "getAntiAlias", getAntiAlias_func, 0, 0 },
+    { "getAntialias", getAntialias_func, 0, 0 },
     { "getCurrentPoint", getCurrentPoint_func, 0, 0 },
     // getDash
     { "getDashCount", getDashCount_func, 0, 0 },
@@ -754,7 +754,7 @@ static JSFunctionSpec gjs_cairo_context_proto_funcs[] = {
     { "save", save_func, 0, 0 },
     { "scale", scale_func, 0, 0 },
     { "selectFontFace", selectFontFace_func, 0, 0 },
-    { "setAntiAlias", setAntiAlias_func, 0, 0 },
+    { "setAntialias", setAntialias_func, 0, 0 },
     // setDash
     // setFontFace
     // setFontMatrix
