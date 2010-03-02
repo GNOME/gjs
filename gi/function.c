@@ -625,9 +625,10 @@ gjs_invoke_c_function(JSContext      *context,
                 out_args_pos++;
                 inout_args_pos++;
             }
+
+            ++argv_pos;
         }
 
-        ++argv_pos;
         ++in_args_pos;
         processed_in_args = in_args_pos;
 

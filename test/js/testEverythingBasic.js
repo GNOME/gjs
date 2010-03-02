@@ -141,6 +141,13 @@ function testStrv() {
     assertEquals("3", strv[2]);
 }
 
+function testInAfterOut() {
+    const str = "hello";
+
+    let len = Everything.test_int_out_utf8(str);
+    assertEquals("testInAfterOut", str.length, len);
+}
+
 function testUtf8() {
     const CONST_STR = "const \u2665 utf8";
     const NONCONST_STR = "nonconst \u2665 utf8";
