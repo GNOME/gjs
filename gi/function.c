@@ -346,6 +346,7 @@ gjs_callback_from_arguments(JSContext *context,
                             guint8 current_arg_pos,
                             guint8 n_args,
                             guint8 *argv_pos,
+                            uintN argc,
                             jsval *argv,
                             GSList **all_invoke_infos,
                             GSList **data_for_notify,
@@ -371,6 +372,7 @@ gjs_callback_from_arguments(JSContext *context,
             return FALSE;
         }
 
+        g_assert_cmpuint(*argv_pos, <, argc);
         gjs_callback_info_add_argument(context, callback_info, argv[*argv_pos]);
         (*argv_pos)--;
         is_notify = TRUE;
@@ -382,6 +384,7 @@ gjs_callback_from_arguments(JSContext *context,
     if (is_notify)
         goto out;
 
+    g_assert_cmpuint(*argv_pos, <, argc);
     if (JSVAL_IS_NULL(argv[*argv_pos]) || JSVAL_IS_VOID(argv[*argv_pos])) {
         *closure = NULL;
         return TRUE;
@@ -404,6 +407,7 @@ gjs_callback_from_arguments(JSContext *context,
             gjs_callback_info_add_argument(context, callback_info, argv[*argv_pos]);
             arg_n = g_arg_info_get_closure(arg_info);
             if (arg_n > current_arg_pos && arg_n < n_args) {
+                g_assert_cmpuint(arg_n, <, argc);
                 gjs_callback_info_add_argument(context, callback_info, argv[arg_n]);
             }
             callback_info->arg_index = g_arg_info_get_destroy(arg_info);
@@ -416,6 +420,7 @@ gjs_callback_from_arguments(JSContext *context,
 
             arg_n = g_arg_info_get_closure(arg_info);
             if (arg_n > current_arg_pos && arg_n < n_args) {
+                g_assert_cmpuint(arg_n, <, argc);
                 gjs_callback_info_add_argument(context, &invoke_info->callback_info, argv[arg_n]);
             }
             *all_invoke_infos = g_slist_prepend(*all_invoke_infos, invoke_info);
@@ -597,7 +602,7 @@ gjs_invoke_c_function(JSContext      *context,
                 interface_type = g_base_info_get_type(interface_info);
                 if (interface_type == GI_INFO_TYPE_CALLBACK) {
                     if (!gjs_callback_from_arguments(context, interface_info, &arg_info,
-                                                     i, n_args, &argv_pos, argv,
+                                                     i, n_args, &argv_pos, argc, argv,
                                                      &invoke_infos,
                                                      &data_for_notify, &call_free_list,
                                                      &(in_value->v_pointer))) {
