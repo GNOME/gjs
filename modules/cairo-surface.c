@@ -164,7 +164,7 @@ gjs_cairo_surface_construct(JSContext       *context,
  * @context: the context
  * @object: object to finalize
  *
- * Destroys the resources assoicated with a surface wrapper.
+ * Destroys the resources associated with a surface wrapper.
  *
  * This is mainly used for subclasses.
  */
