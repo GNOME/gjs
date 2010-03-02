@@ -76,6 +76,9 @@ writeToPNG_func(JSContext *context,
     }
     cairo_surface_write_to_png(surface, filename);
     g_free(filename);
+    if (!gjs_cairo_check_status(context, cairo_surface_status(surface),
+                                "surface"))
+        return JS_TRUE;
     return JS_TRUE;
 }
 
@@ -96,6 +99,9 @@ getType_func(JSContext *context,
 
     surface = gjs_cairo_surface_get_surface(context, object);
     type = cairo_surface_get_type(surface);
+    if (!gjs_cairo_check_status(context, cairo_surface_status(surface),
+                                "surface"))
+        return JS_TRUE;
 
     *retval = INT_TO_JSVAL(type);
     return JS_TRUE;
