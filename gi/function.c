@@ -729,7 +729,6 @@ release:
             if (direction == GI_DIRECTION_IN) {
                 arg = &in_arg_cvalues[in_args_pos];
                 transfer = g_arg_info_get_ownership_transfer(&arg_info);
-                ++in_args_pos;
             } else {
                 arg = &inout_original_arg_cvalues[inout_args_pos];
                 ++inout_args_pos;
@@ -746,6 +745,8 @@ release:
                 postinvoke_release_failed = TRUE;
             }
         }
+
+        ++in_args_pos;
 
         /* Don't free out arguments if function threw an exception or we failed
          * earlier - note "postinvoke_release_failed" is separate from "failed".  We
