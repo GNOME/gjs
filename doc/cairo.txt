@@ -64,6 +64,8 @@ Prototype hierarchy
   * Gradient
     * LinearGradient
     * RadialGradient
+  * SurfacePattern
+  * SolidPattern
 
 You can create a linear gradient by calling the constructor:
 
@@ -75,14 +77,14 @@ gjs> let pattern = new Cairo.RadialGradient(0, 0, 10, 100, 100, 10);
 
 gjs> let pattern = new Cairo.SurfacePattern(surface);
 
-gjs> pattern.set_filter(Cairo.Filter.NEAREST);
+gjs> let pattern = new Cairo.SolidPattern.createRGB(0, 0, 0);
+
+gjs> let pattern = new Cairo.SolidPattern.createRGBA(0, 0, 0, 0);
 
 TODO:
-* reference counting
 * context: wrap the remaning methods
 * surface methods
 * image surface methods
-* solid pattern
 * matrix
 * version
 * cairo_path_t and iteration
