@@ -74,3 +74,25 @@ static JSFunctionSpec gjs_cairo_linear_gradient_proto_funcs[] = {
     // getLinearPoints
     { NULL }
 };
+
+JSObject *
+gjs_cairo_linear_gradient_from_pattern(JSContext       *context,
+                                       cairo_pattern_t *pattern)
+{
+    JSObject *object;
+
+    g_return_val_if_fail(context != NULL, NULL);
+    g_return_val_if_fail(pattern != NULL, NULL);
+    g_return_val_if_fail(cairo_pattern_get_type(pattern) == CAIRO_PATTERN_TYPE_LINEAR, NULL);
+
+    object = JS_NewObject(context, &gjs_cairo_linear_gradient_class, NULL, NULL);
+    if (!object) {
+        gjs_throw(context, "failed to create linear gradient pattern");
+        return NULL;
+    }
+
+    gjs_cairo_pattern_construct(context, object, pattern);
+
+    return object;
+}
+

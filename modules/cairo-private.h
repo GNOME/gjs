@@ -122,18 +122,24 @@ jsval            gjs_cairo_linear_gradient_create_proto (JSContext       *contex
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
+JSObject *       gjs_cairo_linear_gradient_from_pattern (JSContext       *context,
+                                                         cairo_pattern_t *pattern);
 
 /* radial gradient */
-jsval            gjs_cairo_radial_gradient_create_proto(JSContext        *context,
+jsval            gjs_cairo_radial_gradient_create_proto (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
+JSObject *       gjs_cairo_radial_gradient_from_pattern (JSContext       *context,
+                                                         cairo_pattern_t *pattern);
 
 /* surface pattern */
-jsval            gjs_cairo_surface_pattern_create_proto(JSContext        *context,
+jsval            gjs_cairo_surface_pattern_create_proto (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
+JSObject *       gjs_cairo_surface_pattern_from_pattern (JSContext       *context,
+                                                         cairo_pattern_t *pattern);
 
 #endif /* __CAIRO_PRIVATE_H__ */
 

@@ -160,13 +160,22 @@ gjs_cairo_pattern_from_pattern(JSContext       *context,
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(pattern != NULL, NULL);
 
-    object = JS_NewObject(context, &gjs_cairo_pattern_class, NULL, NULL);
-    if (!object) {
-        gjs_throw(context, "failed to create surface");
-        return NULL;
+    switch (cairo_pattern_get_type(pattern)) {
+//        case CAIRO_PATTERN_TYPE_SOLID:
+//            return gjs_cairo_solid_pattern_from_pattern(context, pattern);
+        case CAIRO_PATTERN_TYPE_SURFACE:
+            return gjs_cairo_surface_pattern_from_pattern(context, pattern);
+        case CAIRO_PATTERN_TYPE_LINEAR:
+            return gjs_cairo_linear_gradient_from_pattern(context, pattern);
+        case CAIRO_PATTERN_TYPE_RADIAL:
+            return gjs_cairo_radial_gradient_from_pattern(context, pattern);
+        default:
+            break;
     }
 
-    gjs_cairo_pattern_construct(context, object, pattern);
+    gjs_throw(context, "failed to create pattern, unsupported pattern type %d",
+              cairo_pattern_get_type(pattern));
+    return NULL;
 
     return object;
 }
