@@ -90,7 +90,7 @@ getType_func(JSContext *context,
     cairo_surface_type_t type;
 
     if (argc > 1) {
-        gjs_throw(context, "FIXME");
+        gjs_throw(context, "Surface.getType() takes no arguments");
         return JS_FALSE;
     }
 

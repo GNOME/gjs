@@ -32,9 +32,10 @@ gjs_cairo_check_status(JSContext      *context,
                        const char     *name)
 {
     if (status != CAIRO_STATUS_SUCCESS) {
-        gjs_throw(context, "Could not create %s: %s",
+        gjs_throw(context, "cairo error on %s: \"%s\" (%d)",
                   name,
-                  cairo_status_to_string(status));
+                  cairo_status_to_string(status),
+                  status);
         return JS_FALSE;
     }
 

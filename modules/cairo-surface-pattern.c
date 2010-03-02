@@ -110,7 +110,7 @@ getExtend_func(JSContext *context,
     cairo_pattern_t *pattern;
 
     if (argc > 0) {
-        gjs_throw(context, "Context.getExtend() requires no arguments");
+        gjs_throw(context, "SurfacePattern.getExtend() requires no arguments");
         return JS_FALSE;
     }
 
@@ -159,7 +159,7 @@ getFilter_func(JSContext *context,
     cairo_pattern_t *pattern;
 
     if (argc > 0) {
-        gjs_throw(context, "Context.getFilter() requires no arguments");
+        gjs_throw(context, "SurfacePattern.getFilter() requires no arguments");
         return JS_FALSE;
     }
 
@@ -194,7 +194,7 @@ gjs_cairo_surface_pattern_from_pattern(JSContext       *context,
 
     object = JS_NewObject(context, &gjs_cairo_surface_pattern_class, NULL, NULL);
     if (!object) {
-        gjs_throw(context, "failed to create linear gradient pattern");
+        gjs_throw(context, "failed to create surface pattern");
         return NULL;
     }
 

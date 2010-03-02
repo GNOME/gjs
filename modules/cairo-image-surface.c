@@ -141,5 +141,5 @@ gjs_cairo_image_surface_init(JSContext *context, JSObject *module_obj)
                            "createFromPNG",
                            createFromPNG_func,
                            1, GJS_MODULE_PROP_FLAGS))
-        return JS_FALSE;
+        return;
 }

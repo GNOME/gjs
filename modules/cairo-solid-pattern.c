@@ -116,7 +116,7 @@ gjs_cairo_solid_pattern_from_pattern(JSContext       *context,
 
     object = JS_NewObject(context, &gjs_cairo_solid_pattern_class, NULL, NULL);
     if (!object) {
-        gjs_throw(context, "failed to create linear gradient pattern");
+        gjs_throw(context, "failed to create solid pattern");
         return NULL;
     }
 
