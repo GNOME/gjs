@@ -372,9 +372,10 @@ gjs_callback_from_arguments(JSContext *context,
             return FALSE;
         }
 
-        g_assert_cmpuint(*argv_pos, <, argc);
-        gjs_callback_info_add_argument(context, callback_info, argv[*argv_pos]);
-        (*argv_pos)--;
+        if (*argv_pos < argc) {
+            gjs_callback_info_add_argument(context, callback_info, argv[*argv_pos]);
+            (*argv_pos)--;
+        }
         is_notify = TRUE;
         invoke_info->callback_info = *callback_info;
         *all_invoke_infos = g_slist_prepend(*all_invoke_infos, invoke_info);
