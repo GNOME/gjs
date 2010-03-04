@@ -385,4 +385,55 @@ function testSignalWithStaticScopeArg() {
     assertEquals('signal handler was passed arg as reference', 44, b.some_int);
 }
 
+function testTortureSignature0() {
+    let [y, z, q] = Everything.test_torture_signature_0(42, 'foo', 7);
+    assertEquals(Math.floor(y), 42);
+    assertEquals(z, 84);
+    assertEquals(q, 10);
+}
+
+function testTortureSignature1Fail() {
+    assertRaises(function () {
+        let [success, y, z, q] = Everything.test_torture_signature_1(42, 'foo', 7);
+    });
+}
+
+function testTortureSignature1Success() {
+    let [success, y, z, q] = Everything.test_torture_signature_1(11, 'barbaz', 8);
+    assertEquals(Math.floor(y), 11);
+    assertEquals(z, 22);
+    assertEquals(q, 14);
+}
+
+function testTortureSignature2() {
+    let [y, z, q] = Everything.test_torture_signature_2(42, function () {
+        }, null, 'foo', 7);
+    assertEquals(Math.floor(y), 42);
+    assertEquals(z, 84);
+    assertEquals(q, 10);
+}
+
+function testObjTortureSignature0() {
+    let o = new Everything.TestObj();
+    let [y, z, q] = o.torture_signature_0(42, 'foo', 7);
+    assertEquals(Math.floor(y), 42);
+    assertEquals(z, 84);
+    assertEquals(q, 10);
+}
+
+function testObjTortureSignature1Fail() {
+    let o = new Everything.TestObj();
+    assertRaises(function () {
+        let [success, y, z, q] = o.torture_signature_1(42, 'foo', 7);
+    });
+}
+
+function testObjTortureSignature1Success() {
+    let o = new Everything.TestObj();
+    let [success, y, z, q] = o.torture_signature_1(11, 'barbaz', 8);
+    assertEquals(Math.floor(y), 11);
+    assertEquals(z, 22);
+    assertEquals(q, 14);
+}
+
 gjstestRun();
