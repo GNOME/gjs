@@ -149,6 +149,9 @@ valgrind-check valgrind-test: $(tests_dependencies)
 	    echo "valgrind failed for:$$failed"; exit 1; \
 	  }; \
 	}
+
+.PHONY: test gdb-check gdb-test valgrind-check valgrind-test
+
 CLEANFILES +=					\
 	$(TEST_PROGS:%=valgrind.%.log)		\
 	uninstalled-test-bus.conf		\
