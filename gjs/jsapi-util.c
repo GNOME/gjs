@@ -436,7 +436,7 @@ gjs_get_instance_private_dynamic(JSContext      *context,
         return NULL;
     }
 
-    obj_class = JS_GetClass(context, obj);
+    obj_class = JS_GET_CLASS(context, obj);
     g_assert(obj_class != NULL);
 
     rd = get_data_from_context(context);
@@ -472,7 +472,7 @@ gjs_get_instance_private_dynamic_with_typecheck(JSContext      *context,
         return NULL;
     }
 
-    obj_class = JS_GetClass(context, obj);
+    obj_class = JS_GET_CLASS(context, obj);
     g_assert(obj_class != NULL);
 
     rd = get_data_from_context(context);
@@ -508,7 +508,7 @@ gjs_construct_object_dynamic(JSContext      *context,
      */
     load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
 
-    proto_class = JS_GetClass(load_context, proto);
+    proto_class = JS_GET_CLASS(load_context, proto);
 
     rd = get_data_from_context(load_context);
 
@@ -598,7 +598,7 @@ gjs_value_debug_string(JSContext      *context,
              */
             JSClass *klass;
 
-            klass = JS_GetClass(context, JSVAL_TO_OBJECT(value));
+            klass = JS_GET_CLASS(context, JSVAL_TO_OBJECT(value));
             if (klass != NULL) {
                 str = JS_NewStringCopyZ(context, klass->name);
                 JS_ClearPendingException(context);
@@ -1025,7 +1025,7 @@ gjs_date_from_time_t (JSContext *context, time_t time)
     if (!JS_GetProperty(context, date_constructor, "prototype", &date_prototype))
         gjs_fatal("Failed to get prototype from Date constructor");
 
-    date_class = JS_GetClass(context, JSVAL_TO_OBJECT (date_prototype));
+    date_class = JS_GET_CLASS(context, JSVAL_TO_OBJECT (date_prototype));
 
     if (!JS_NewNumberValue(context, ((double) time) * 1000, &(args[0])))
         gjs_fatal("Failed to convert time_t to number");

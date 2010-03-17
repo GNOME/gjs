@@ -235,8 +235,8 @@ union_constructor(JSContext *context,
      * class as us, but if we're constructing an instance, the prototype
      * has the same class.
      */
-    obj_class = JS_GetClass(context, obj);
-    proto_class = JS_GetClass(context, proto);
+    obj_class = JS_GET_CLASS(context, obj);
+    proto_class = JS_GET_CLASS(context, proto);
 
     is_proto = (obj_class != proto_class);
 
@@ -417,7 +417,7 @@ gjs_lookup_union_class(JSContext    *context,
 
     prototype = gjs_lookup_union_prototype(context, info);
 
-    return JS_GetClass(context, prototype);
+    return JS_GET_CLASS(context, prototype);
 }
 
 JSBool
@@ -511,7 +511,7 @@ gjs_define_union_class(JSContext    *context,
     g_base_info_ref( (GIBaseInfo*) priv->info);
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
-              constructor_name, prototype, JS_GetClass(context, prototype), in_object);
+              constructor_name, prototype, JS_GET_CLASS(context, prototype), in_object);
 
     if (constructor_p) {
         *constructor_p = NULL;

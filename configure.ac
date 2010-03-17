@@ -171,28 +171,6 @@ if test "$js_extra_cflags_needed" = yes; then
 fi
 AC_SUBST([JS_EXTRA_CFLAGS])
 
-# Check that SpiderMonkey is compiled with --enable-threadsafe, since
-# GJS needs JS_GetClass etc. to take a JSContext* argument.
-#
-# NOTE: This does not imply that GJS itself is thread-safe! (It isn't.)
-AC_MSG_CHECKING([if JS_GetClass is compatible])
-save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $JS_CFLAGS $JS_EXTRA_CFLAGS"
-AC_COMPILE_IFELSE(
-    [AC_LANG_PROGRAM([[#include <jsapi.h>]], [[
-JSContext *cx = NULL;
-JSObject *obj = NULL;
-(void)JS_GetClass(cx, obj);
-                     ]])],
-    [js_getclass=yes],
-    [js_getclass=no])
-CFLAGS="$save_CFLAGS"
-AC_MSG_RESULT([$js_getclass])
-
-if test "$js_getclass" = no; then
-    AC_MSG_ERROR([SpiderMonkey needs to be compiled with --enable-threadsafe])
-fi
-
 common_packages="gobject-2.0 >= gobject_required_version $JS_PACKAGE"
 gjs_packages="gmodule-2.0 gthread-2.0 $common_packages"
 gjs_gi_packages="gobject-introspection-1.0 >= 0.6.3 $common_packages"

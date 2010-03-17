@@ -175,8 +175,8 @@ param_constructor(JSContext *context,
      * class as us, but if we're constructing an instance, the prototype
      * has the same class.
      */
-    obj_class = JS_GetClass(context, obj);
-    proto_class = JS_GetClass(context, proto);
+    obj_class = JS_GET_CLASS(context, obj);
+    proto_class = JS_GET_CLASS(context, proto);
 
     is_proto = (obj_class != proto_class);
 
@@ -364,7 +364,7 @@ gjs_define_param_class(JSContext    *context,
         *prototype_p = prototype;
 
     gjs_debug(GJS_DEBUG_GPARAM, "Defined class %s prototype is %p class %p in object %p",
-              constructor_name, prototype, JS_GetClass(context, prototype), in_object);
+              constructor_name, prototype, JS_GET_CLASS(context, prototype), in_object);
 
     return JS_TRUE;
 }
