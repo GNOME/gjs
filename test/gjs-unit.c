@@ -118,10 +118,57 @@ read_all_dir_sorted (const char *dirpath)
     return result;
 }
 
+/* Always return an absolute filename and treat all absolute path elements as
+ * absolute, not just the first one, e.g.
+ *     ("/foo", "/bar", NULL) returns "/bar"
+ * (g_build_filename would return "/foo/bar")
+ * Returned path may still include '..' path elements.
+ */
+static char *
+build_absolute_filename(const char *first_element,
+                        ...)
+{
+    const char *element;
+    va_list ap;
+    char *cwd;
+    char *path;
+    GPtrArray *array;
+
+    cwd = g_get_current_dir();
+
+    array = g_ptr_array_new();
+
+    g_ptr_array_add(array, cwd);
+
+    va_start(ap, first_element);
+
+    element = first_element;
+    while (element != NULL) {
+        if (g_path_is_absolute(element))
+            g_ptr_array_set_size(array, 0);
+
+        g_ptr_array_add(array, (char*)element);
+
+        element = va_arg(ap, const char *);
+    }
+    va_end(ap);
+
+    g_ptr_array_add(array, NULL);
+
+    path = g_build_filenamev((char **)array->pdata);
+
+    g_ptr_array_free(array, TRUE);
+
+    g_free(cwd);
+
+    return path;
+}
+
 int
 main(int argc, char **argv)
 {
-    /* These are relative to top_builddir */
+    /* These may be absolute or relative to top_builddir, depending whether
+     * GJS_TOP_SRCDIR is absolute or not */
     const char * const path_directories[] = {
         GJS_TOP_SRCDIR"/modules",
         GJS_TOP_SRCDIR"/test/js/modules",
@@ -141,15 +188,12 @@ main(int argc, char **argv)
 
     working_dir = g_get_current_dir();
 
-    if(g_path_is_absolute(argv[0]))
-        gjs_unit_path = g_strdup(argv[0]);
-    else
-        gjs_unit_path = g_build_filename(working_dir, argv[0], NULL);
+    gjs_unit_path = build_absolute_filename(argv[0], NULL);
 
     gjs_unit_dir = g_path_get_dirname(gjs_unit_path);
     /* the gjs-unit executable will be in <top_builddir>/.libs */
-    top_builddir = g_build_filename(gjs_unit_dir, "..", NULL);
-    top_srcdir = g_build_filename(top_builddir, GJS_TOP_SRCDIR, NULL);
+    top_builddir = g_path_get_dirname(gjs_unit_dir);
+    top_srcdir = build_absolute_filename(top_builddir, GJS_TOP_SRCDIR, NULL);
 
     /* Normalize, not strictly necessary */
     g_chdir(top_builddir);
@@ -173,7 +217,7 @@ main(int argc, char **argv)
         if (i != 0)
             g_string_append_c(path, ':');
 
-        directory = g_build_filename(top_builddir, path_directories[i], NULL);
+        directory = build_absolute_filename(top_builddir, path_directories[i], NULL);
         g_string_append(path, directory);
         g_free(directory);
     }
