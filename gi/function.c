@@ -830,9 +830,6 @@ release:
     if (!(did_throw_gerror || failed)) {
         g_assert_cmpuint(out_args_pos, ==, out_args_len);
         g_assert_cmpuint(inout_args_pos, ==, inout_args_len);
-    } else {
-        g_assert_cmpuint(out_args_pos, ==, 0);
-        g_assert_cmpuint(inout_args_pos, ==, 0);
     }
 
     if (function->js_out_argc > 0 && (!failed && !did_throw_gerror)) {
