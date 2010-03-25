@@ -25,6 +25,7 @@
 
 #include "arg.h"
 #include "object.h"
+#include "foreign.h"
 #include "boxed.h"
 #include "union.h"
 #include "value.h"
@@ -753,8 +754,13 @@ gjs_value_to_g_argument(JSContext      *context,
             interface_type = g_base_info_get_type(interface_info);
 
             switch(interface_type) {
-
             case GI_INFO_TYPE_STRUCT:
+                if (g_struct_info_is_foreign((GIStructInfo*)interface_info)) {
+                    return gjs_struct_foreign_convert_to_g_argument(
+                            context, value, type_info, arg_name,
+                            arg_type, transfer, may_be_null, arg);
+                }
+                /* fall through */
             case GI_INFO_TYPE_ENUM:
             case GI_INFO_TYPE_OBJECT:
             case GI_INFO_TYPE_INTERFACE:
@@ -765,7 +771,6 @@ gjs_value_to_g_argument(JSContext      *context,
                 gtype = g_registered_type_info_get_g_type
                     ((GIRegisteredTypeInfo*)interface_info);
                 break;
-
             case GI_INFO_TYPE_VALUE:
                 /* Special case for GValues */
                 gtype = G_TYPE_VALUE;
@@ -1402,6 +1407,9 @@ gjs_value_from_g_argument (JSContext  *context,
                     value = INT_TO_JSVAL(arg->v_int);
 
                 goto out;
+            } else if (interface_type == GI_INFO_TYPE_STRUCT &&
+                       g_struct_info_is_foreign((GIStructInfo*)interface_info)) {
+                return gjs_struct_foreign_convert_from_g_argument(context, value_p, type_info, arg);
             }
 
             /* Everything else is a pointer type, NULL is the easy case */
@@ -1635,7 +1643,7 @@ gjs_g_arg_release_internal(JSContext  *context,
                            GArgument  *arg)
 {
     JSBool failed;
-    
+
     g_assert(transfer != GI_TRANSFER_NOTHING);
 
     failed = JS_FALSE;
@@ -1679,6 +1687,11 @@ gjs_g_arg_release_internal(JSContext  *context,
             g_assert(interface_info != NULL);
 
             interface_type = g_base_info_get_type(interface_info);
+
+            if (interface_type == GI_INFO_TYPE_STRUCT &&
+                g_struct_info_is_foreign((GIStructInfo*)interface_info))
+                return gjs_struct_foreign_release_g_argument(context,
+                        transfer, type_info, arg);
 
             if (interface_type == GI_INFO_TYPE_ENUM || interface_type == GI_INFO_TYPE_FLAGS)
                 goto out;

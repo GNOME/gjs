@@ -20,6 +20,7 @@ nobase_gjsgiinclude_HEADERS =	\
 	gi/keep-alive.h	\
 	gi/ns.h	        \
 	gi/object.h	\
+	gi/foreign.h	\
 	gi/param.h	\
 	gi/repo.h	\
 	gi/union.h	\
@@ -34,6 +35,7 @@ libgjs_gi_la_SOURCES =	\
 	gi/keep-alive.c	\
 	gi/ns.c	\
 	gi/object.c	\
+	gi/foreign.c	\
 	gi/param.c	\
         gi/repo.c	\
 	gi/union.c	\

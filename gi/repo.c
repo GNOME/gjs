@@ -31,6 +31,7 @@
 #include "union.h"
 #include "enumeration.h"
 #include "arg.h"
+#include "foreign.h"
 
 #include <gjs/mem.h>
 
