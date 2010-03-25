@@ -23,6 +23,8 @@
 #include <config.h>
 
 #include <gjs/gjs.h>
+#include <gi/foreign.h>
+
 #include <cairo.h>
 #include "cairo-private.h"
 
@@ -814,4 +816,66 @@ gjs_cairo_context_get_context(JSContext *context,
         return NULL;
 
     return priv->cr;
+}
+
+static JSBool
+context_to_g_argument(JSContext      *context,
+                      jsval           value,
+                      GITypeInfo     *type_info,
+                      const char     *arg_name,
+                      GjsArgumentType argument_type,
+                      GITransfer      transfer,
+                      gboolean        may_be_null,
+                      GArgument      *arg)
+{
+    JSObject *obj;
+    cairo_t *cr;
+
+    obj = JSVAL_TO_OBJECT(value);
+    cr = gjs_cairo_context_get_context(context, obj);
+    if (!cr)
+        return JS_FALSE;
+    if (transfer == GI_TRANSFER_EVERYTHING)
+        cairo_destroy(cr);
+
+    arg->v_pointer = cr;
+    return JS_TRUE;
+}
+
+static JSBool
+context_from_g_argument(JSContext  *context,
+                        jsval      *value_p,
+                        GITypeInfo *type_info,
+                        GArgument  *arg)
+{
+    JSObject *obj;
+
+    obj = gjs_cairo_context_from_context(context, (cairo_t*)arg->v_pointer);
+    if (!obj)
+        return JS_FALSE;
+
+    *value_p = OBJECT_TO_JSVAL(obj);
+    return JS_TRUE;
+}
+
+static JSBool
+context_release_argument(JSContext  *context,
+                         GITransfer  transfer,
+                         GITypeInfo *type_info,
+                         GArgument  *arg)
+{
+    cairo_destroy((cairo_t*)arg->v_pointer);
+    return JS_TRUE;
+}
+
+static GjsForeignInfo foreign_info = {
+    context_to_g_argument,
+    context_from_g_argument,
+    context_release_argument
+};
+
+void
+gjs_cairo_context_init(JSContext *context)
+{
+    gjs_struct_foreign_register("cairo", "Context", &foreign_info);
 }
