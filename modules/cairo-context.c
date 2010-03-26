@@ -648,7 +648,7 @@ getTarget_func(JSContext *context,
     /* surface belongs to the context, so keep the reference */
     surface_wrapper = gjs_cairo_surface_from_surface(context, surface);
     if (!surface_wrapper) {
-        gjs_throw(context, "failed to create surface");
+        /* exception already set */
         return JS_FALSE;
     }
 
@@ -681,7 +681,7 @@ getGroupTarget_func(JSContext *context,
     /* surface belongs to the context, so keep the reference */
     surface_wrapper = gjs_cairo_surface_from_surface(context, surface);
     if (!surface_wrapper) {
-        gjs_throw(context, "failed to create surface");
+        /* exception already set */
         return JS_FALSE;
     }
 

@@ -73,9 +73,9 @@ jsval            gjs_cairo_ps_surface_create_proto      (JSContext       *contex
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
+#endif
 JSObject *       gjs_cairo_ps_surface_from_surface       (JSContext       *context,
                                                           cairo_surface_t *surface);
-#endif
 
 /* pdf surface */
 #ifdef CAIRO_HAS_PDF_SURFACE
@@ -83,9 +83,9 @@ jsval            gjs_cairo_pdf_surface_create_proto     (JSContext       *contex
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
+#endif
 JSObject *       gjs_cairo_pdf_surface_from_surface     (JSContext       *context,
                                                          cairo_surface_t *surface);
-#endif
 
 /* svg surface */
 #ifdef CAIRO_HAS_SVG_SURFACE
@@ -93,9 +93,9 @@ jsval            gjs_cairo_svg_surface_create_proto     (JSContext       *contex
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
+#endif
 JSObject *       gjs_cairo_svg_surface_from_surface     (JSContext       *context,
                                                          cairo_surface_t *surface);
-#endif
 
 /* pattern */
 jsval            gjs_cairo_pattern_create_proto         (JSContext       *context,

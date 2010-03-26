@@ -101,5 +101,14 @@ gjs_cairo_svg_surface_from_surface(JSContext       *context,
 
     return object;
 }
-
+#else
+JSObject *
+gjs_cairo_svg_surface_from_surface(JSContext       *context,
+                                   cairo_surface_t *surface)
+{
+    gjs_throw(context,
+        "could not create SVG surface, recompile cairo and gjs with "
+        "SVG support.");
+    return NULL;
+}
 #endif /* CAIRO_HAS_SVG_SURFACE */
