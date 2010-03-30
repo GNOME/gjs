@@ -82,7 +82,8 @@ gjs_cairo_linear_gradient_from_pattern(JSContext       *context,
     g_return_val_if_fail(cairo_pattern_get_type(pattern) == CAIRO_PATTERN_TYPE_LINEAR, NULL);
 
     JS::RootedObject object(context,
-        JS_NewObject(context, &gjs_cairo_linear_gradient_class));
+        JS_NewObjectWithGivenProto(context, &gjs_cairo_linear_gradient_class,
+                                   gjs_cairo_linear_gradient_prototype));
     if (!object) {
         gjs_throw(context, "failed to create linear gradient pattern");
         return NULL;

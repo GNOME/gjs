@@ -923,7 +923,8 @@ gjs_cairo_context_from_context(JSContext *context,
                                cairo_t *cr)
 {
     JS::RootedObject object(context,
-        JS_NewObject(context, &gjs_cairo_context_class));
+        JS_NewObjectWithGivenProto(context, &gjs_cairo_context_class,
+                                   gjs_cairo_context_prototype));
     if (!object)
         return NULL;
 
@@ -974,8 +975,10 @@ context_from_g_argument(JSContext             *context,
     JSObject *obj;
 
     obj = gjs_cairo_context_from_context(context, (cairo_t*)arg->v_pointer);
-    if (!obj)
+    if (!obj) {
+        gjs_throw(context, "Could not create Cairo context");
         return false;
+    }
 
     value_p.setObject(*obj);
     return true;
