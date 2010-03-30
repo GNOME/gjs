@@ -156,7 +156,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
                         #n1, &arg1, #n2, &arg2))                           \
         return JS_FALSE;                                                   \
     cr = gjs_cairo_context_get_context(context, obj);                      \
-    cfunc(cr, arg1, arg2);                                                 \
+    ret = cfunc(cr, arg1, arg2);                                           \
     *retval = BOOLEAN_TO_JSVAL(ret);                                       \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
