@@ -203,6 +203,7 @@ _GJS_DEFINE_PROTO_FULL(tn, cn, NULL, gtype, flags)
 extern JSPropertySpec gjs_##cname##_proto_props[]; \
 extern JSFunctionSpec gjs_##cname##_proto_funcs[]; \
 static void gjs_##cname##_finalize(JSFreeOp *fop, JSObject *obj); \
+static JS::PersistentRootedObject gjs_##cname##_prototype;                     \
 static struct JSClass gjs_##cname##_class = { \
     type_name, \
     JSCLASS_HAS_PRIVATE | jsclass_flags,                                       \
@@ -233,12 +234,13 @@ gjs_##cname##_create_proto(JSContext *context,                                 \
             return JS::NullValue();                                            \
         return rval;                                                           \
     }                                                                          \
-    JS::RootedObject prototype(context,                                        \
+    gjs_##cname##_prototype.init(context);                                     \
+    gjs_##cname##_prototype =                                                  \
         JS_InitClass(context, global, parent, &gjs_##cname##_class, ctor,      \
                      0, &gjs_##cname##_proto_props[0],                         \
                      &gjs_##cname##_proto_funcs[0],                            \
-                     NULL, NULL));                                             \
-    if (prototype == NULL) { \
+                     nullptr, nullptr);                                        \
+    if (!gjs_##cname##_prototype) {                                            \
         return JS::NullValue(); \
     } \
     if (!gjs_object_require_property( \
