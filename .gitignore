@@ -29,6 +29,8 @@ gjstest.c
 gjstest.c.stamp
 gjstest.h
 gjstest.h.stamp
+gjs/gjs.stp
+gjs_gi_probes.h
 install-sh
 libtool
 ltmain.sh

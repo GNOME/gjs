@@ -31,6 +31,7 @@
 #include "function.h"
 #include "value.h"
 #include "keep-alive.h"
+#include "gjs_gi_trace.h"
 
 #include <gjs/gjs.h>
 
@@ -765,6 +766,9 @@ object_instance_constructor(JSContext *context,
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
                             "JSObject created with GObject %p %s",
                             priv->gobj, g_type_name_from_instance((GTypeInstance*) priv->gobj));
+
+        TRACE(GJS_OBJECT_PROXY_NEW(priv, priv->gobj, g_base_info_get_namespace ( (GIBaseInfo*) priv->info),
+                                    g_base_info_get_name ( (GIBaseInfo*) priv->info) ));
     }
 
     return JS_TRUE;
@@ -785,6 +789,9 @@ object_instance_finalize(JSContext *context,
                         priv ? priv->gobj : NULL);
     if (priv == NULL)
         return; /* we are the prototype, not a real instance, so constructor never called */
+
+    TRACE(GJS_OBJECT_PROXY_FINALIZE(priv, priv->gobj, g_base_info_get_namespace ( (GIBaseInfo*) priv->info),
+                                    g_base_info_get_name ( (GIBaseInfo*) priv->info) ));
 
     if (priv->gobj) {
         g_assert(priv->gobj->ref_count > 0);

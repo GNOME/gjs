@@ -18,6 +18,7 @@ nobase_gjsgiinclude_HEADERS =	\
 	gi/enumeration.h	\
 	gi/function.h	\
 	gi/keep-alive.h	\
+	gi/gjs_gi_trace.h \
 	gi/ns.h	        \
 	gi/object.h	\
 	gi/foreign.h	\
@@ -40,6 +41,16 @@ libgjs_gi_la_SOURCES =	\
         gi/repo.c	\
 	gi/union.c	\
         gi/value.c
+
+if ENABLE_DTRACE
+gjs_gi_probes.h: gi/gjs_gi_probes.d
+	$(DTRACE) -C -h -s $< -o $@
+gjs_gi_probes.o: gi/gjs_gi_probes.d
+	$(DTRACE) -G -s $< -o $@
+BUILT_SOURCES += gjs_gi_probes.h gjs_gi_probes.o
+libgjs_gi_la_LIBADD += gjs_gi_probes.o
+endif
+
 
 ########################################################################
 pkgconfig_DATA += gjs-gi-1.0.pc

@@ -248,6 +248,38 @@ LIBS=$LIBS_no_readline
 
 AC_CHECK_FUNCS([backtrace])
 
+dnl
+dnl Tracing
+dnl
+
+AC_MSG_CHECKING([whether to include systemtap tracing support])
+AC_ARG_ENABLE([systemtap],
+             [AS_HELP_STRING([--enable-systemtap],
+                              [Enable inclusion of systemtap trace support])],
+              [ENABLE_SYSTEMTAP="${enableval}"], [ENABLE_SYSTEMTAP='no'])
+AC_MSG_RESULT(${ENABLE_SYSTEMTAP})
+
+AC_MSG_CHECKING([whether to include dtrace tracing support])
+AC_ARG_ENABLE([dtrace],
+             [AS_HELP_STRING([--enable-dtrace],
+                              [Enable inclusion of dtrace trace support])],
+              [ENABLE_DTRACE="${enableval}"], [ENABLE_DTRACE='no'])
+AC_MSG_RESULT(${ENABLE_DTRACE})
+
+AM_CONDITIONAL([ENABLE_SYSTEMTAP], [test x$ENABLE_SYSTEMTAP = xyes])
+AM_CONDITIONAL([ENABLE_DTRACE], [test x$ENABLE_DTRACE = xyes -o x$ENABLE_SYSTEMTAP = xyes])
+
+if test "x${ENABLE_DTRACE}" = xyes -o "x${ENABLE_SYSTEMTAP}" = xyes; then
+  AC_CHECK_PROGS(DTRACE, dtrace)
+  if test -z "$DTRACE"; then
+    AC_MSG_ERROR([dtrace not found])
+  fi
+  AC_CHECK_HEADER([sys/sdt.h], [SDT_H_FOUND='yes'],
+                  [SDT_H_FOUND='no';
+                   AC_MSG_ERROR([tracing support needs sys/sdt.h header])])
+  AC_DEFINE([HAVE_DTRACE], [1], [Define to 1 if using dtrace probes.])
+fi
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 

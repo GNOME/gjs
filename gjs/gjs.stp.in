@@ -1,0 +1,18 @@
+
+probe gjs.object_proxy_new = process("@EXPANDED_LIBDIR@/libgjs-gi.so.0.0.0").mark("object__proxy__new")
+{
+  proxy_address = $arg1;
+  gobject_address = $arg2;
+  gi_namespace = user_string($arg3);
+  gi_name = user_string($arg4);
+  probestr = sprintf("gjs.object_proxy_new(%p, %s, %s)", proxy_address, gi_namespace, gi_name);
+}
+
+probe gjs.object_proxy_finalize = process("@EXPANDED_LIBDIR@/libgjs-gi.so.0.0.0").mark("object__proxy__finalize")
+{
+  proxy_address = $arg1;
+  gobject_address = $arg2;
+  gi_namespace = user_string($arg3);
+  gi_name = user_string($arg4);
+  probestr = sprintf("gjs.object_proxy_finalize(%p, %s, %s)", proxy_address, gi_namespace, gi_name);
+}
