@@ -344,9 +344,9 @@ gjs_callback_from_arguments(JSContext *context,
                             GIArgInfo *arg_info,
                             guint8 current_arg_pos,
                             guint8 n_args,
-                            guint8 *argv_pos,
-                            uintN argc,
-                            jsval *argv,
+                            guint8 *js_argv_pos,
+                            uintN js_argc,
+                            jsval *js_argv,
                             GSList **all_invoke_infos,
                             GSList **data_for_notify,
                             GSList **call_free_list,
@@ -370,9 +370,9 @@ gjs_callback_from_arguments(JSContext *context,
             return FALSE;
         }
 
-        if (*argv_pos < argc) {
-            gjs_callback_info_add_argument(context, callback_info, argv[*argv_pos]);
-            (*argv_pos)--;
+        if (*js_argv_pos < js_argc) {
+            gjs_callback_info_add_argument(context, callback_info, js_argv[*js_argv_pos]);
+            (*js_argv_pos)--;
         }
         is_notify = TRUE;
         invoke_info->callback_info = *callback_info;
@@ -383,14 +383,14 @@ gjs_callback_from_arguments(JSContext *context,
     if (is_notify)
         goto out;
 
-    g_assert_cmpuint(*argv_pos, <, argc);
-    if (JSVAL_IS_NULL(argv[*argv_pos]) || JSVAL_IS_VOID(argv[*argv_pos])) {
+    g_assert_cmpuint(*js_argv_pos, <, js_argc);
+    if (JSVAL_IS_NULL(js_argv[*js_argv_pos]) || JSVAL_IS_VOID(js_argv[*js_argv_pos])) {
         *closure = NULL;
         return TRUE;
     }
 
     invoke_info = gjs_callback_invoke_prepare(context,
-                                              argv[*argv_pos],
+                                              js_argv[*js_argv_pos],
                                               (GICallableInfo*)interface_info);
 
     switch (g_arg_info_get_scope(arg_info)) {
@@ -403,14 +403,14 @@ gjs_callback_from_arguments(JSContext *context,
 
             g_assert(g_arg_info_get_destroy(arg_info) < n_args);
 
-            gjs_callback_info_add_argument(context, callback_info, argv[*argv_pos]);
+            gjs_callback_info_add_argument(context, callback_info, js_argv[*js_argv_pos]);
             callback_info->arg_index = g_arg_info_get_destroy(arg_info);
 
             callback_info->invoke_infos = g_slist_prepend(callback_info->invoke_infos, invoke_info);
             *data_for_notify = g_slist_prepend(*data_for_notify, callback_info);
             break;
         case GI_SCOPE_TYPE_ASYNC:
-            gjs_callback_info_add_argument(context, &invoke_info->callback_info, argv[*argv_pos]);
+            gjs_callback_info_add_argument(context, &invoke_info->callback_info, js_argv[*js_argv_pos]);
 
             *all_invoke_infos = g_slist_prepend(*all_invoke_infos, invoke_info);
             break;
@@ -450,9 +450,9 @@ static JSBool
 gjs_invoke_c_function(JSContext      *context,
                       Function       *function,
                       JSObject       *obj, /* "this" object */
-                      uintN           argc,
-                      jsval          *argv,
-                      jsval          *rval)
+                      uintN           js_argc,
+                      jsval          *js_argv,
+                      jsval          *js_rval)
 {
     /* These first four are arrays which hold argument pointers.
      * @in_arg_cvalues: C values which are passed on input (in or inout)
@@ -472,7 +472,7 @@ gjs_invoke_c_function(JSContext      *context,
     GArgument return_value;
 
     guint8 processed_in_args;
-    guint8 n_args, i, argv_pos;
+    guint8 n_args, i, js_argv_pos;
     guint8 in_args_pos, out_args_pos, inout_args_pos;
     guint8 in_args_len, out_args_len, inout_args_len;
     guint8 can_throw_gerror, did_throw_gerror;
@@ -508,13 +508,13 @@ gjs_invoke_c_function(JSContext      *context,
     /* We allow too many args; convenient for re-using a function as a callback.
      * But we don't allow too few args, since that would break.
      */
-    if (argc < function->expected_js_argc) {
+    if (js_argc < function->expected_js_argc) {
         gjs_throw(context, "Too few arguments to %s %s.%s expected %d got %d",
                   is_method ? "method" : "function",
                   g_base_info_get_namespace( (GIBaseInfo*) function->info),
                   g_base_info_get_name( (GIBaseInfo*) function->info),
                   function->expected_js_argc,
-                  argc);
+                  js_argc);
         return JS_FALSE;
     }
 
@@ -538,7 +538,7 @@ gjs_invoke_c_function(JSContext      *context,
     in_args_pos = 0; /* index into in_arg_cvalues */
     out_args_pos = 0; /* index into out_arg_cvalues */
     inout_args_pos = 0; /* index into inout_original_arg_cvalues */
-    argv_pos = 0; /* index into argv */
+    js_argv_pos = 0; /* index into argv */
 
     n_args = g_callable_info_get_n_args( (GICallableInfo*) function->info);
 
@@ -565,7 +565,7 @@ gjs_invoke_c_function(JSContext      *context,
         GIArgInfo arg_info;
         gboolean arg_removed = FALSE;
 
-        /* gjs_debug(GJS_DEBUG_GFUNCTION, "i: %d in_args_pos: %d argv_pos: %d", i, in_args_pos, argv_pos); */
+        /* gjs_debug(GJS_DEBUG_GFUNCTION, "i: %d in_args_pos: %d argv_pos: %d", i, in_args_pos, js_argv_pos); */
 
         g_callable_info_load_arg( (GICallableInfo*) function->info, i, &arg_info);
         direction = g_arg_info_get_direction(&arg_info);
@@ -601,8 +601,8 @@ gjs_invoke_c_function(JSContext      *context,
                 /* FIXME: notify/throw saying the callback annotation is wrong */
                 convert_argument = FALSE;
 
-                g_assert_cmpuint(argv_pos, <, argc);
-                in_value->v_pointer = (gpointer)argv[argv_pos];
+                g_assert_cmpuint(js_argv_pos, <, js_argc);
+                in_value->v_pointer = (gpointer)js_argv[js_argv_pos];
             } else if (type_tag == GI_TYPE_TAG_INTERFACE) {
                 GIBaseInfo* interface_info;
                 GIInfoType interface_type;
@@ -616,7 +616,7 @@ gjs_invoke_c_function(JSContext      *context,
                     gint user_data_pos;
 
                     if (!gjs_callback_from_arguments(context, interface_info, &arg_info,
-                                                     i, n_args, &argv_pos, argc, argv,
+                                                     i, n_args, &js_argv_pos, js_argc, js_argv,
                                                      &invoke_infos,
                                                      &data_for_notify, &call_free_list,
                                                      &(in_value->v_pointer))) {
@@ -636,8 +636,8 @@ gjs_invoke_c_function(JSContext      *context,
             }
 
             if (convert_argument) {
-                g_assert_cmpuint(argv_pos, <, argc);
-                if (!gjs_value_to_arg(context, argv[argv_pos], &arg_info,
+                g_assert_cmpuint(js_argv_pos, <, js_argc);
+                if (!gjs_value_to_arg(context, js_argv[js_argv_pos], &arg_info,
                                       in_value)) {
                     failed = TRUE;
                     break;
@@ -656,7 +656,7 @@ gjs_invoke_c_function(JSContext      *context,
             }
 
             if (!arg_removed)
-                ++argv_pos;
+                ++js_argv_pos;
         }
 
         ++in_args_pos;
@@ -703,7 +703,7 @@ gjs_invoke_c_function(JSContext      *context,
     g_slist_free(data_for_notify);
     g_slist_free(callback_arg_indices);
 
-    *rval = JSVAL_VOID;
+    *js_rval = JSVAL_VOID;
 
     next_rval = 0; /* index into return_values */
 
@@ -836,7 +836,7 @@ release:
          * [return value, out arg 1, out arg 2, ...]
          */
         if (function->js_out_argc == 1) {
-            *rval = return_values[0];
+            *js_rval = return_values[0];
         } else {
             JSObject *array;
             array = JS_NewArrayObject(context,
@@ -845,7 +845,7 @@ release:
             if (array == NULL) {
                 failed = TRUE;
             } else {
-                *rval = OBJECT_TO_JSVAL(array);
+                *js_rval = OBJECT_TO_JSVAL(array);
             }
         }
 
@@ -874,14 +874,14 @@ release:
 static JSBool
 function_call(JSContext *context,
               JSObject  *obj, /* "this" object, not the function object */
-              uintN      argc,
-              jsval     *argv,
+              uintN      js_argc,
+              jsval     *js_argv,
               jsval     *rval)
 {
     Function *priv;
     JSObject *callee;
 
-    callee = JSVAL_TO_OBJECT(JS_ARGV_CALLEE(argv)); /* Callee is the Function object being called */
+    callee = JSVAL_TO_OBJECT(JS_ARGV_CALLEE(js_argv)); /* Callee is the Function object being called */
 
     priv = priv_from_js(context, callee);
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Call callee %p priv %p this obj %p %s", callee, priv,
@@ -891,7 +891,7 @@ function_call(JSContext *context,
     if (priv == NULL)
         return JS_TRUE; /* we are the prototype, or have the wrong class */
 
-    return gjs_invoke_c_function(context, priv, obj, argc, argv, rval);
+    return gjs_invoke_c_function(context, priv, obj, js_argc, js_argv, rval);
 }
 
 /* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on
