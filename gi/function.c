@@ -65,9 +65,9 @@ typedef struct {
     jsval function;
     ffi_cif *cif;
     gboolean need_free_arg_types;
-    ffi_closure *closure;
+    ffi_closure *closure, *writable_closure;
     GjsCallbackInfo callback_info;
-/* We can not munmap closure in ffi_callback.
+/* We can not free closure in ffi_callback.
  * This memory page will be used after it.
  * So we need to know when GjsCallbackInvokeInfo becoming unneeded.*/
     gboolean in_use;
@@ -121,9 +121,12 @@ gjs_callback_invoke_info_free(gpointer data)
     GjsCallbackInvokeInfo *invoke_info = (GjsCallbackInvokeInfo *)data;
 
     gjs_callback_invoke_info_free_content(invoke_info);
+    if (invoke_info->writable_closure)
+        ffi_closure_free(invoke_info->writable_closure);
+    else
+        g_callable_info_free_closure(invoke_info->info, invoke_info->closure);
     if (invoke_info->info)
         g_base_info_unref((GIBaseInfo*)invoke_info->info);
-    munmap(invoke_info->closure, sizeof(ffi_closure));
     if (invoke_info->need_free_arg_types)
         g_free(invoke_info->cif->arg_types);
     g_slice_free(ffi_cif, invoke_info->cif);
@@ -250,18 +253,18 @@ gjs_destroy_notify_create(GjsCallbackInvokeInfo *info)
 {
     static const ffi_type *destroy_notify_args[] = {&ffi_type_pointer};
     ffi_status status;
+    gpointer exec_closure;
 
     g_assert(info);
 
     info->need_free_arg_types = FALSE;
 
-    info->closure = mmap(NULL, sizeof (ffi_closure),
-                         PROT_EXEC | PROT_READ | PROT_WRITE,
-                         MAP_ANON | MAP_PRIVATE, -1, sysconf (_SC_PAGE_SIZE));
-    if (!info->closure) {
+    info->writable_closure = ffi_closure_alloc(sizeof (ffi_closure), &exec_closure);
+    if (!info->writable_closure) {
         gjs_throw(info->context, "mmap failed\n");
         return FALSE;
     }
+    info->closure = exec_closure;
 
     info->cif = g_slice_new(ffi_cif);
 
@@ -270,21 +273,16 @@ gjs_destroy_notify_create(GjsCallbackInvokeInfo *info)
                           (ffi_type**)destroy_notify_args);
     if (status != FFI_OK) {
         gjs_throw(info->context, "ffi_prep_cif failed: %d\n", status);
-        munmap(info->closure, sizeof (ffi_closure));
+        ffi_closure_free(info->writable_closure);
         return FALSE;
     }
 
-    status = ffi_prep_closure(info->closure, info->cif,
-                              gjs_destroy_notify_callback_closure, info);
+    status = ffi_prep_closure_loc(info->writable_closure, info->cif,
+                                  gjs_destroy_notify_callback_closure, info,
+                                  info->closure);
     if (status != FFI_OK) {
-        gjs_throw(info->context, "ffi_prep_cif failed: %d\n", status);
-        munmap(info->closure, sizeof (ffi_closure));
-        return FALSE;
-    }
-
-    if (mprotect(info->closure, sizeof (ffi_closure), PROT_READ | PROT_EXEC) == -1) {
-        gjs_throw(info->context, "ffi_prep_closure failed: %s\n", strerror(errno));
-        munmap(info->closure, sizeof (ffi_closure));
+        gjs_throw(info->context, "ffi_prep_closure_loc failed: %d\n", status);
+        ffi_closure_free(info->writable_closure);
         return FALSE;
     }
 
