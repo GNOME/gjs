@@ -203,7 +203,7 @@ function testCallback() {
     assertEquals('Callback', Everything.test_callback(callback), 42);
 
     assertEquals('CallbackNull', Everything.test_callback(null), 0);
-    assertEquals('CallbackUndefined', Everything.test_callback(undefined), 0);
+    assertRaises('CallbackUndefined', function () { Everything.test_callback(undefined) });
 }
 
 function testCallbackDestroyNotify() {
