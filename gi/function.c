@@ -787,6 +787,17 @@ function_constructor(JSContext *context,
     return JS_TRUE;
 }
 
+/* Does not actually free storage for structure, just
+ * reverses init_cached_function_data
+ */
+static void
+uninit_cached_function_data (Function *function)
+{
+    if (function->info)
+        g_base_info_unref( (GIBaseInfo*) function->info);
+    g_function_invoker_destroy(&function->invoker);
+}
+
 static void
 function_finalize(JSContext *context,
                   JSObject  *obj)
@@ -799,8 +810,7 @@ function_finalize(JSContext *context,
     if (priv == NULL)
         return; /* we are the prototype, not a real instance, so constructor never called */
 
-    if (priv->info)
-        g_base_info_unref( (GIBaseInfo*) priv->info);
+    uninit_cached_function_data(priv);
 
     GJS_DEC_COUNTER(function);
     g_slice_free(Function, priv);
@@ -1052,10 +1062,13 @@ gjs_invoke_c_function_uncached (JSContext      *context,
                                 jsval          *rval)
 {
   Function function;
+  JSBool result;
 
   memset (&function, 0, sizeof (Function));
   if (!init_cached_function_data (context, &function, info))
     return JS_FALSE;
 
-  return gjs_invoke_c_function (context, &function, obj, argc, argv, rval);
+  result = gjs_invoke_c_function (context, &function, obj, argc, argv, rval);
+  uninit_cached_function_data (&function);
+  return result;
 }
