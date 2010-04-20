@@ -1394,15 +1394,7 @@ gjs_value_from_g_argument (JSContext  *context,
 
                 goto out;
             } else if (interface_type == GI_INFO_TYPE_FLAGS) {
-                /* This should be fixed to work without a GType, just like Enum */
                 gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
-                if (gtype == G_TYPE_NONE) {
-                    gjs_throw(context,
-                              "Can't yet handle flags type '%s' that is not registered with GObject",
-                              g_base_info_get_name(interface_info));
-                    goto out;
-                }
-
                 if (_gjs_flags_value_is_valid(context, gtype, arg->v_int))
                     value = INT_TO_JSVAL(arg->v_int);
 
