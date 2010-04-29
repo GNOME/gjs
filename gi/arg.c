@@ -1344,6 +1344,95 @@ gjs_array_from_g_list (JSContext  *context,
 }
 
 static JSBool
+gjs_array_from_g_array (JSContext  *context,
+                        jsval      *value_p,
+                        GITypeInfo *param_info,
+                        GArray     *array)
+{
+    JSObject *obj;
+    jsval elem;
+    GArgument arg;
+    JSBool result;
+    GITypeTag element_type;
+    guint i;
+
+    element_type = g_type_info_get_tag(param_info);
+    element_type = normalize_int_types(element_type);
+
+    obj = JS_NewArrayObject(context, 0, JSVAL_NULL);
+    if (obj == NULL)
+      return JS_FALSE;
+
+    *value_p = OBJECT_TO_JSVAL(obj);
+
+    elem = JSVAL_VOID;
+
+#define ITERATE(type) \
+    for (i = 0; i < array->len; i++) { \
+        arg.v_##type = g_array_index(array, g##type, i); \
+        if (!gjs_value_from_g_argument(context, &elem, param_info, &arg)) \
+          goto finally; \
+        if (!JS_DefineElement(context, obj, i, elem, NULL, NULL, \
+              JSPROP_ENUMERATE)) \
+          goto finally; \
+    }
+
+    switch (element_type) {
+        case GI_TYPE_TAG_UINT8:
+          ITERATE(uint8);
+          break;
+        case GI_TYPE_TAG_INT8:
+          ITERATE(int8);
+          break;
+        case GI_TYPE_TAG_UINT16:
+          ITERATE(uint16);
+          break;
+        case GI_TYPE_TAG_INT16:
+          ITERATE(int16);
+          break;
+        case GI_TYPE_TAG_UINT32:
+          ITERATE(uint32);
+          break;
+        case GI_TYPE_TAG_INT32:
+          ITERATE(int32);
+          break;
+        case GI_TYPE_TAG_UINT64:
+          ITERATE(uint64);
+          break;
+        case GI_TYPE_TAG_INT64:
+          ITERATE(int64);
+          break;
+        case GI_TYPE_TAG_FLOAT:
+          ITERATE(float);
+          break;
+        case GI_TYPE_TAG_DOUBLE:
+          ITERATE(double);
+          break;
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_INTERFACE:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_GHASH:
+          ITERATE(pointer);
+          break;
+        default:
+          gjs_throw(context, "Unknown GArray element-type %d", element_type);
+          goto finally;
+    }
+
+#undef ITERATE
+
+    result = JS_TRUE;
+
+finally:
+    JS_RemoveRoot(context, &elem);
+
+    return result;
+}
+
+static JSBool
 gjs_object_from_g_hash (JSContext  *context,
                         jsval      *value_p,
                         GITypeInfo *key_param_info,
@@ -1609,7 +1698,7 @@ gjs_value_from_g_argument (JSContext  *context,
     case GI_TYPE_TAG_ARRAY:
         if (arg->v_pointer == NULL) {
             /* OK, but no conversion to do */
-        } else {
+        } else if (g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
 
             if (g_type_info_is_zero_terminated(type_info)) {
                 GITypeInfo *param_info;
@@ -1651,6 +1740,23 @@ gjs_value_from_g_argument (JSContext  *context,
                 gjs_throw(context, "FIXME: Only supporting zero-terminated ARRAYs");
                 return JS_FALSE;
             }
+        } else {
+            /* this assumes the array type is one of GArray, GPtrArray or
+             * GByteArray */
+            GITypeInfo *param_info;
+            gboolean result;
+
+            param_info = g_type_info_get_param_type(type_info, 0);
+            g_assert(param_info != NULL);
+
+            result = gjs_array_from_g_array(context,
+                                            value_p,
+                                            param_info,
+                                            arg->v_pointer);
+
+            g_base_info_unref((GIBaseInfo*) param_info);
+
+            return result;
         }
         break;
 
@@ -1894,9 +2000,12 @@ gjs_g_arg_release_internal(JSContext  *context,
         break;
 
     case GI_TYPE_TAG_ARRAY:
+    {
+        GIArrayType array_type = g_type_info_get_array_type(type_info);
+
         if (arg->v_pointer == NULL) {
             /* OK */
-        } else {
+        } else if (array_type == GI_ARRAY_TYPE_C) {
             GITypeInfo *param_info;
             GITypeTag element_type;
 
@@ -1927,8 +2036,67 @@ gjs_g_arg_release_internal(JSContext  *context,
             }
 
             g_base_info_unref((GIBaseInfo*) param_info);
+        } else if (array_type == GI_ARRAY_TYPE_ARRAY) {
+            GITypeInfo *param_info;
+            GITypeTag element_type;
+
+            param_info = g_type_info_get_param_type(type_info, 0);
+            element_type = g_type_info_get_tag(param_info);
+            element_type = normalize_int_types(element_type);
+
+            switch (element_type) {
+            case GI_TYPE_TAG_UINT8:
+            case GI_TYPE_TAG_UINT16:
+            case GI_TYPE_TAG_UINT32:
+            case GI_TYPE_TAG_UINT64:
+            case GI_TYPE_TAG_INT8:
+            case GI_TYPE_TAG_INT16:
+            case GI_TYPE_TAG_INT32:
+            case GI_TYPE_TAG_INT64:
+                g_array_free((GArray*) arg->v_pointer, TRUE);
+                break;
+
+            case GI_TYPE_TAG_UTF8:
+            case GI_TYPE_TAG_FILENAME:
+            case GI_TYPE_TAG_ARRAY:
+            case GI_TYPE_TAG_INTERFACE:
+            case GI_TYPE_TAG_GLIST:
+            case GI_TYPE_TAG_GSLIST:
+            case GI_TYPE_TAG_GHASH:
+                if (transfer == GI_TRANSFER_CONTAINER) {
+                    g_array_free((GArray*) arg->v_pointer, TRUE);
+                } else if (transfer == GI_TRANSFER_EVERYTHING) {
+                    GArray *array = arg->v_pointer;
+                    guint i;
+
+                    for (i = 0; i < array->len; i++) {
+                        GArgument arg;
+
+                        arg.v_pointer = g_array_index (array, gpointer, i);
+                        gjs_g_argument_release(context,
+                                               GI_TRANSFER_EVERYTHING,
+                                               param_info,
+                                               &arg);
+                    }
+
+                    g_array_free (array, TRUE);
+                }
+
+                break;
+
+            default:
+                gjs_throw(context,
+                          "Don't know how to release GArray element-type %d",
+                          element_type);
+                failed = JS_TRUE;
+            }
+
+            g_base_info_unref((GIBaseInfo*) param_info);
+        } else {
+            g_assert_not_reached();
         }
         break;
+    }
 
     case GI_TYPE_TAG_GSLIST:
         if (transfer != GI_TRANSFER_CONTAINER) {
