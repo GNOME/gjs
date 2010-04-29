@@ -551,6 +551,63 @@ gjs_array_to_array(JSContext   *context,
     }
 }
 
+static JSBool
+gjs_array_to_g_array(JSContext   *context,
+                     jsval        array_value,
+                     unsigned int length,
+                     GITypeInfo  *param_info,
+                     void       **arr_p)
+{
+    GArray *array;
+    GITypeTag element_type;
+    gpointer contents;
+    guint element_size;
+
+    element_type = g_type_info_get_tag(param_info);
+    element_type = normalize_int_types(element_type);
+
+    switch (element_type) {
+    case GI_TYPE_TAG_UINT8:
+    case GI_TYPE_TAG_INT8:
+      element_size = sizeof(guint8);
+      break;
+    case GI_TYPE_TAG_UINT16:
+    case GI_TYPE_TAG_INT16:
+      element_size = sizeof(guint16);
+      break;
+    case GI_TYPE_TAG_UINT32:
+    case GI_TYPE_TAG_INT32:
+      element_size = sizeof(guint32);
+      break;
+    case GI_TYPE_TAG_UINT64:
+    case GI_TYPE_TAG_INT64:
+      element_size = sizeof(guint64);
+      break;
+    default:
+        gjs_throw(context,
+                  "Unhandled GArray element-type %d", element_type);
+        return JS_FALSE;
+    }
+
+    /* create a C array */
+    if (!gjs_array_to_array (context,
+                             array_value,
+                             length,
+                             param_info,
+                             &contents))
+      return JS_FALSE;
+
+    /* append that array to the GArray */
+    array = g_array_sized_new(TRUE, TRUE, element_size, length);
+    g_array_append_vals(array, contents, length);
+
+    g_free(contents);
+
+    *arr_p = array;
+
+    return JS_TRUE;
+}
+
 static gchar *
 get_argument_display_name(const char     *arg_name,
                           GjsArgumentType arg_type)
@@ -1047,13 +1104,30 @@ gjs_value_to_g_argument(JSContext      *context,
                 !JS_ValueToECMAUint32(context, length_value, &length)) {
                 wrong = TRUE;
             } else {
+                GIArrayType array_type = g_type_info_get_array_type(type_info);
                 GITypeInfo *param_info;
 
                 param_info = g_type_info_get_param_type(type_info, 0);
                 g_assert(param_info != NULL);
 
-                if (!gjs_array_to_array (context, value, length, param_info, &arg->v_pointer))
-                    wrong = TRUE;
+                if (array_type == GI_ARRAY_TYPE_C) {
+                    if (!gjs_array_to_array (context,
+                                             value,
+                                             length,
+                                             param_info,
+                                             &arg->v_pointer))
+                      wrong = TRUE;
+                } else if (array_type == GI_ARRAY_TYPE_ARRAY) {
+                    if (!gjs_array_to_g_array (context,
+                                               value,
+                                               length,
+                                               param_info,
+                                               &arg->v_pointer))
+                      wrong = TRUE;
+                /* FIXME: support ByteArray and PtrArray */
+                } else {
+                    g_assert_not_reached();
+                }
 
                 g_base_info_unref((GIBaseInfo*) param_info);
             }
