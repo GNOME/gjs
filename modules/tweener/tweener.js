@@ -402,19 +402,19 @@ function _constructPropertyList(obj) {
                     var splitProperties2 = _specialPropertySplitterList[splitProperties[i].name].splitValues(splitProperties[i].value, _specialPropertySplitterList[splitProperties[i].name].parameters);
                     for (let j = 0; j < splitProperties2.length; j++) {
                         properties[splitProperties2[j].name] = {
-			    valueStart: undefined,
-			    valueComplete: splitProperties2[j].value,
-			    arrayIndex: splitProperties2[j].arrayIndex,
-			    isSpecialProperty: false
-			};
+                            valueStart: undefined,
+                            valueComplete: splitProperties2[j].value,
+                            arrayIndex: splitProperties2[j].arrayIndex,
+                            isSpecialProperty: false
+                        };
                     }
                 } else {
                     properties[splitProperties[i].name] = {
-			valueStart: undefined,
-			valueComplete: splitProperties[i].value,
-			arrayIndex: splitProperties[i].arrayIndex,
-			isSpecialProperty: false
-		    };
+                        valueStart: undefined,
+                        valueComplete: splitProperties[i].value,
+                        arrayIndex: splitProperties[i].arrayIndex,
+                        isSpecialProperty: false
+                    };
                 }
             }
         } else if (_specialPropertyModifierList[istr] != undefined) {
@@ -762,9 +762,9 @@ function _affectTweensWithFunction(func, args) {
                 var specialProps = sps.splitValues(scope, null);
                 for (let j = 0; j < specialProps.length; j++)
                     properties.push(specialProps[j].name);
-	    } else
-		properties.push(args[i]);
-	}
+            } else
+                properties.push(args[i]);
+        }
     }
 
     // the return now value means: "affect at least one tween"
@@ -839,14 +839,14 @@ function registerSpecialProperty(name, getFunction, setFunction,
 
 function registerSpecialPropertyModifier(name, modifyFunction, getFunction) {
     _specialPropertyModifierList[name] = {
-	modifyValues: modifyFunction,
-	getValue: getFunction
+        modifyValues: modifyFunction,
+        getValue: getFunction
     };
 }
 
 function registerSpecialPropertySplitter(name, splitFunction, parameters) {
     _specialPropertySplitterList[name] = {
-	splitValues: splitFunction,
-	parameters: parameters
+        splitValues: splitFunction,
+        parameters: parameters
     };
 }

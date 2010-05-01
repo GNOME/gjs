@@ -46,14 +46,14 @@
 #include <string.h>
 #include <jsdbgapi.h>
 
-static const char* 
+static const char*
 jsvalue_to_string(JSContext* cx, jsval val, gboolean* is_string)
 {
     const char* value = NULL;
     JSString* value_str;
-    
+
     JS_EnterLocalRootScope(cx);
-    
+
     value_str = JS_ValueToString(cx, val);
     if (value_str)
         value = JS_GetStringBytes(value_str);
@@ -65,14 +65,14 @@ jsvalue_to_string(JSContext* cx, jsval val, gboolean* is_string)
 
     if (is_string)
         *is_string = JSVAL_IS_STRING(val);
-    
+
     JS_LeaveLocalRootScope(cx);
-    
+
     return value;
 }
 
 
-static void 
+static void
 format_frame(JSContext* cx, JSStackFrame* fp,
              GString *buf, int num)
 {
@@ -91,7 +91,7 @@ format_frame(JSContext* cx, JSStackFrame* fp,
     jsval val;
 
     JS_EnterLocalRootScope(cx);
-    
+
     if (JS_IsNativeFrame(cx, fp)) {
         g_string_append_printf(buf, "%d [native frame]\n", num);
         goto out;
@@ -101,14 +101,14 @@ format_frame(JSContext* cx, JSStackFrame* fp,
 
     script = JS_GetFrameScript(cx, fp);
     pc = JS_GetFramePC(cx, fp);
-    
+
     if (script && pc) {
         filename = JS_GetScriptFilename(cx, script);
         lineno =  (guint32) JS_PCToLineNumber(cx, script, pc);
         fun = JS_GetFrameFunction(cx, fp);
         if (fun)
             funname = JS_GetFunctionName(fun);
-        
+
         call_obj = JS_GetFrameCallObject(cx, fp);
         if (call_obj) {
             if (!JS_GetPropertyDescArray(cx, call_obj, &call_props))
@@ -232,9 +232,9 @@ void
 gjstest_test_func_gjs_stack_dump(void)
 {
   GjsContext *context;
-  
+
   g_type_init();
-  
+
   /* TODO this test could be better - maybe expose dumpstack as a JS API
    * so that we have a JS stack to dump?  At least here we're getting some
    * coverage.

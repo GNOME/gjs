@@ -386,7 +386,7 @@ gjs_context_finalize(GObject *object)
         g_strfreev(js_context->search_path);
         js_context->search_path = NULL;
     }
-    
+
     g_static_mutex_lock(&contexts_lock);
     all_contexts = g_list_remove(all_contexts, object);
     g_static_mutex_unlock(&contexts_lock);
@@ -723,11 +723,11 @@ gjs_context_new_with_search_path(char** search_path)
 
 /**
  * gjs_context_get_all:
- * 
+ *
  * Returns a newly-allocated list containing all known instances of #GjsContext.
  * This is useful for operating on the contexts from a process-global situation
  * such as a debugger.
- * 
+ *
  * Return value: (element-type GjsContext) (transfer full): Known #GjsContext instances
  */
 GList*

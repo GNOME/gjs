@@ -161,7 +161,7 @@ gjs_throw(JSContext       *context,
 
 /**
  * gjs_throw_literal:
- * 
+ *
  * Similar to gjs_throw(), but does not treat its argument as
  * a format string.
  */
@@ -174,7 +174,7 @@ gjs_throw_literal(JSContext       *context,
 
 /**
  * gjs_throw_g_error:
- * 
+ *
  * Convert a GError into a JavaScript Exception, and
  * frees the GError.  Like gjs_throw(), will not overwrite
  * an already pending exception.

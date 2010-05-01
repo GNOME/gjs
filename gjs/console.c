@@ -105,7 +105,7 @@ main(int argc, char **argv)
         g_printerr("%s\n", error->message);
         exit(1);
     }
-    
+
     gjs_memory_report("before destroying context", FALSE);
     g_object_unref(js_context);
     gjs_memory_report("after destroying context", TRUE);

@@ -67,7 +67,7 @@ gjs_console_error_reporter(JSContext *cx, const char *message, JSErrorReport *re
         fprintf(stderr, "%s\n", message);
         return;
     }
-    
+
     prefix = NULL;
     if (report->filename)
         prefix = g_strdup_printf("%s:", report->filename);
@@ -136,7 +136,7 @@ gjs_console_readline(JSContext *cx, char *bufp, FILE *file, const char *prompt)
         add_history(line);
     if (!line) {
         return JS_FALSE;
-    }        
+    }
     strcpy(bufp, line);
     free(line);
     return JS_TRUE;
@@ -153,7 +153,7 @@ gjs_console_readline(JSContext *cx, char *bufp, FILE *file, const char *prompt)
     strcpy(bufp, line);
     return JS_TRUE;
 }
-#endif    
+#endif
 
 JSBool
 gjs_console_interact(JSContext *context,
@@ -211,7 +211,7 @@ gjs_console_interact(JSContext *context,
         } else {
             str = JS_ValueToString(context, result);
         }
-        
+
         if (str)
             g_fprintf(stdout, "%s\n", JS_GetStringBytes(str));
 

@@ -1098,23 +1098,23 @@ to_string_func(JSContext *context,
     JSBool ret;
     const char *namespace;
     const char *name;
-    
+
     *retval = JSVAL_VOID;
 
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         return JS_FALSE; /* wrong class passed in */
-    
+
     namespace = g_base_info_get_namespace( (GIBaseInfo*) priv->info);
-    name = g_base_info_get_name( (GIBaseInfo*) priv->info); 
+    name = g_base_info_get_name( (GIBaseInfo*) priv->info);
 
     if (priv->gobj == NULL) {
         strval = g_strdup_printf ("[object prototype of GIName:%s.%s jsobj@%p]", namespace, name, obj);
     } else {
         strval = g_strdup_printf ("[object instance proxy GIName:%s.%s jsobj@%p native@%p]", namespace, name, obj, priv->gobj);
     }
-    
+
     ret = gjs_string_from_utf8 (context, strval, -1, retval);
     g_free (strval);
     return ret;
@@ -1451,9 +1451,9 @@ get_obj_key(JSRuntime *runtime,
         buf[2] = '-';
         d.ptr = runtime;
         for (i = 0; i < sizeof(void*); i++) {
-        	int offset = OBJ_KEY_PREFIX_LEN+(i*2);
-        	buf[offset] = 'a' + ((d.bytes[i] & 0xf0) >> 4);
-        	buf[offset+1] = 'a' + (d.bytes[i] & 0x0f);
+                int offset = OBJ_KEY_PREFIX_LEN+(i*2);
+                buf[offset] = 'a' + ((d.bytes[i] & 0xf0) >> 4);
+                buf[offset+1] = 'a' + (d.bytes[i] & 0x0f);
         }
         buf[OBJ_KEY_LEN] = '\0';
         strcpy(cached_buf, buf);

@@ -21,12 +21,12 @@
 /**
  * This module provides bindings for the "gettext" family of functions.
  * Usage:
- * 
+ *
  * const Gettext = imports.gettext;
- * 
+ *
  * Gettext.textdomain("myapp");
  * Gettext.bindtextdomain("myapp", "/usr/share/locale");
- * 
+ *
  * let translated = Gettext.gettext("Hello world!");
  */
 
@@ -38,7 +38,7 @@ Lang.copyProperties(imports.gettextNative, this);
 /**
  * Create an object with bindings for gettext, ngettext,
  * and pgettext bound to a particular translation domain.
- * 
+ *
  * @param domainName Translation domain string
  * @returns: an object with gettext bindings
  * @type: function
@@ -48,11 +48,11 @@ var domain = function(domainName) {
         gettext: function(msgid) {
             return dgettext(domainName, msgid);
         },
-    
+
         ngettext: function(msgid1, msgid2, n) {
             return dngettext(domainName, msgid1, msgid2, n);
         },
-    
+
         pgettext: function(context, msgid) {
             return dpgettext(domainName, context, msgid);
         }

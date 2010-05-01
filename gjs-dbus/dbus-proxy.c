@@ -577,7 +577,7 @@ gjs_dbus_proxy_send_internal(GjsDBusProxy              *proxy,
         return;
     }
 
-    gjs_debug(GJS_DEBUG_DBUS, 
+    gjs_debug(GJS_DEBUG_DBUS,
               "Sending dbus proxy call %s",
               dbus_message_get_member(message));
 

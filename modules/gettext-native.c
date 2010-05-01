@@ -41,7 +41,7 @@ gjs_textdomain(JSContext *context,
     if (!gjs_parse_args(context, "textdomain", "s", argc, argv,
                         "domain", &domain))
         return JS_FALSE;
-    
+
     textdomain(domain);
     g_free(domain);
 
@@ -57,7 +57,7 @@ gjs_bindtextdomain(JSContext *context,
 {
     char *domain;
     char *location;
-    
+
     if (!gjs_parse_args (context, "bindtextdomain", "sF", argc, argv,
                          "domain", &domain,
                          "location", &location))
@@ -81,7 +81,7 @@ gjs_gettext(JSContext *context,
     char *msgid;
     const char *translated;
     JSBool result;
-    
+
     if (!gjs_parse_args (context, "gettext", "s", argc, argv,
                          "msgid", &msgid))
       return JS_FALSE;
@@ -103,7 +103,7 @@ gjs_dgettext(JSContext *context,
     char *msgid;
     const char *translated;
     JSBool result;
-    
+
     if (!gjs_parse_args (context, "dgettext", "zs", argc, argv,
                          "domain", &domain, "msgid", &msgid))
       return JS_FALSE;
@@ -128,13 +128,13 @@ gjs_ngettext(JSContext *context,
     guint32 n;
     const char *translated;
     JSBool result;
-    
+
     if (!gjs_parse_args (context, "ngettext", "ssu", argc, argv,
                          "msgid1", &msgid1, "msgid2", &msgid2, "n", &n))
       return JS_FALSE;
- 
+
     translated = ngettext(msgid1, msgid2, n);
-    
+
     result = gjs_string_from_utf8(context, translated, -1, retval);
     g_free (msgid1);
     g_free (msgid2);
@@ -154,7 +154,7 @@ gjs_dngettext(JSContext *context,
     guint n;
     const char *translated;
     JSBool result;
-    
+
     if (!gjs_parse_args (context, "dngettext", "zssu", argc, argv,
                          "domain", &domain, "msgid1", &msgid1,
                          "msgid2", &msgid2, "n", &n))
@@ -180,14 +180,14 @@ gjs_pgettext(JSContext *context,
     char *msgid;
     const char *translated;
     JSBool result;
-    
+
     if (!gjs_parse_args (context, "pgettext", "ss", argc, argv,
                          "context", &src_context, "msgid", &msgid))
       return JS_FALSE;
 
     translated = g_dpgettext2(NULL, src_context, msgid);
     g_free (src_context);
- 
+
     result = gjs_string_from_utf8(context, translated, -1, retval);
     g_free (msgid);
     return result;
@@ -205,7 +205,7 @@ gjs_dpgettext(JSContext *context,
     char *msgid;
     const char *translated;
     JSBool result;
-  
+
     if (!gjs_parse_args (context, "dpgettext", "sss", argc, argv,
                          "domain", &domain, "context", &src_context,
                          "msgid", &msgid))
@@ -235,7 +235,7 @@ gjs_define_gettext_stuff(JSContext      *context,
                            gjs_bindtextdomain,
                            2, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
-  
+
     if (!JS_DefineFunction(context, module_obj,
                            "gettext",
                            gjs_gettext,

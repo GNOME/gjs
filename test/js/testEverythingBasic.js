@@ -46,10 +46,10 @@ function testLifeUniverseAndEverything() {
     assertEquals(-42, Everything.test_int64(-42));
 
     assertEquals(42, Everything.test_uint64(42));
-    
+
     assertEquals(42, Everything.test_short(42));
     assertEquals(-42, Everything.test_short(-42));
-    
+
     assertEquals(42, Everything.test_ushort(42));
 
     assertEquals(42, Everything.test_int(42));
@@ -116,9 +116,9 @@ function testNoImplicitConversionToUnsigned() {
 
 function testBadConstructor() {
     try {
-	Gio.AppLaunchContext();
+        Gio.AppLaunchContext();
     } catch (e) {
-	assert(e.message.indexOf("Constructor called as normal method") >= 0);
+        assert(e.message.indexOf("Constructor called as normal method") >= 0);
     }
 }
 
@@ -296,17 +296,17 @@ function testArrayOut() {
 // Convert an object to a predictable (not-hash-order-dependent) string
 function objToString(v) {
     if (typeof(v) == "object") {
-	let keys = [];
-	for (let k in v)
-	    keys.push(k);
-	keys.sort();
-	return "{" + keys.map(function(k) {
-	    return k + ":" + objToString(v[k]);
-	}) + "}";
+        let keys = [];
+        for (let k in v)
+            keys.push(k);
+        keys.sort();
+        return "{" + keys.map(function(k) {
+            return k + ":" + objToString(v[k]);
+        }) + "}";
     } else if (typeof(v) == "string") {
-	return '"' + v + '"';
+        return '"' + v + '"';
     } else {
-	return v;
+        return v;
     }
 }
 

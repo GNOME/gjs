@@ -45,7 +45,7 @@ _gjs_flags_value_is_valid(JSContext   *context,
     /* FIXME: Do proper value check for flags with GType's */
     if (gtype == G_TYPE_NONE)
         return JS_TRUE;
-    
+
     klass = g_type_class_ref(gtype);
 
     /* check all bits are defined for flags.. not necessarily desired */

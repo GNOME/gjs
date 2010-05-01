@@ -43,7 +43,7 @@ gjs_main_loop_quit(JSContext *context,
 {
     char *cancel_id;
     GMainLoop *main_loop;
-    
+
     if (!gjs_parse_args(context, "quit", "s", argc, argv,
                         "cancelId", &cancel_id))
       return JS_FALSE;
@@ -269,7 +269,7 @@ gjs_idle_add(JSContext *context,
     GClosure *closure;
     guint id;
     int priority = G_PRIORITY_DEFAULT_IDLE;
-    
+
     /* Best I can tell, there is no way to know if argv[0] is really
      * callable other than to just try it. Checking whether it's a
      * function will not detect native objects that provide

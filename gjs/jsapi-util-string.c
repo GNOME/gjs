@@ -96,7 +96,7 @@ gjs_string_to_utf8 (JSContext  *context,
                     char      **utf8_string_p)
 {
   GError *error = NULL;
-  
+
   if (!gjs_try_string_to_utf8(context, string_val, utf8_string_p, &error))
     {
       gjs_throw_g_error(context, error);
@@ -162,7 +162,7 @@ gjs_try_string_to_filename(JSContext    *context,
       /* exception already set */
       return JS_FALSE;
   }
-  
+
   error = NULL;
   filename_string = g_filename_from_utf8(tmp, -1, NULL, NULL, error);
   if (!filename_string) {
@@ -171,9 +171,9 @@ gjs_try_string_to_filename(JSContext    *context,
   }
 
   *filename_string_p = filename_string;
-  
+
   g_free(tmp);
-  return TRUE;  
+  return TRUE;
 }
 
 JSBool
@@ -215,7 +215,7 @@ gjs_string_from_filename(JSContext  *context,
         g_free(utf8_string);
         return JS_FALSE;
     }
-    
+
     if (!gjs_string_from_utf8(context, utf8_string, written, value_p))
         return JS_FALSE;
 

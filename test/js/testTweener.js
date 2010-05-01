@@ -334,7 +334,7 @@ function testSpecialProperty() {
     };
 
     Tweener.addTween(objectA, { negative_x: 10, y: 10, time: 1,
-				transition: "linear",
+                                transition: "linear",
                                 onComplete: function() { Mainloop.quit('testSpecialProperty');}});
 
     Mainloop.run('testSpecialProperty');
@@ -346,8 +346,8 @@ function testSpecialProperty() {
 }
 
 Tweener.registerSpecialPropertyModifier('discrete',
-					discrete_modifier,
-					discrete_get);
+                                        discrete_modifier,
+                                        discrete_get);
 function discrete_modifier(props) {
     return props.map(function (prop) { return { name: prop, parameters: null }; });
 }
@@ -359,20 +359,20 @@ function testSpecialPropertyModifier() {
     var objectA = {
         x: 0,
         y: 0,
-	xFraction: false,
-	yFraction: false
+        xFraction: false,
+        yFraction: false
     };
 
     Tweener.addTween(objectA, { x: 10, y: 10, time: 1,
-				discrete: ["x"],
-				transition: "linear",
-				onUpdate: function() {
-				    if (objectA.x != Math.floor(objectA.x))
-					objectA.xFraction = true;
-				    if (objectA.y != Math.floor(objectA.y))
-					objectA.yFraction = true;
-				},
-				onComplete: function() { Mainloop.quit('testSpecialPropertyModifier');}});
+                                discrete: ["x"],
+                                transition: "linear",
+                                onUpdate: function() {
+                                    if (objectA.x != Math.floor(objectA.x))
+                                        objectA.xFraction = true;
+                                    if (objectA.y != Math.floor(objectA.y))
+                                        objectA.yFraction = true;
+                                },
+                                onComplete: function() { Mainloop.quit('testSpecialPropertyModifier');}});
 
     Mainloop.run('testSpecialPropertyModifier');
 
@@ -387,7 +387,7 @@ function testSpecialPropertyModifier() {
 Tweener.registerSpecialPropertySplitter(
     'xnegy',
     function(val) { return [ { name: "x", value: val },
-			     { name: "y", value: -val } ]; }
+                             { name: "y", value: -val } ]; }
 );
 
 function testSpecialPropertySplitter() {
@@ -397,7 +397,7 @@ function testSpecialPropertySplitter() {
     };
 
     Tweener.addTween(objectA, { xnegy: 10, time: 1,
-				transition: "linear",
+                                transition: "linear",
                                 onComplete: function() { Mainloop.quit('testSpecialPropertySplitter');}});
 
     Mainloop.run('testSpecialPropertySplitter');

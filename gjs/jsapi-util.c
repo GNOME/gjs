@@ -37,7 +37,7 @@
 GQuark
 gjs_util_error_quark (void)
 {
-  return g_quark_from_static_string ("gjs-util-error-quark");
+    return g_quark_from_static_string ("gjs-util-error-quark");
 }
 
 typedef struct {
@@ -83,9 +83,9 @@ gjs_runtime_get_load_context(JSRuntime *runtime)
                                "is-load-context", TRUE,
                                NULL);
         gjs_runtime_set_data(runtime,
-                                "gjs-load-context",
-                                context,
-                                g_object_unref);
+                             "gjs-load-context",
+                             context,
+                             g_object_unref);
     }
 
     return (JSContext*)gjs_context_get_native_context(context);
@@ -109,9 +109,9 @@ gjs_runtime_clear_load_context(JSRuntime *runtime)
 {
     gjs_debug(GJS_DEBUG_CONTEXT, "Clearing load context");
     gjs_runtime_set_data(runtime,
-                            "gjs-load-context",
-                            NULL,
-                            NULL);
+                         "gjs-load-context",
+                         NULL,
+                         NULL);
     gjs_debug(GJS_DEBUG_CONTEXT, "Load context cleared");
 }
 
@@ -139,9 +139,9 @@ gjs_runtime_get_call_context(JSRuntime *runtime)
                                "runtime", runtime,
                                NULL);
         gjs_runtime_set_data(runtime,
-                                "gjs-call-context",
-                                context,
-                                g_object_unref);
+                             "gjs-call-context",
+                             context,
+                             g_object_unref);
     }
 
     return (JSContext*)gjs_context_get_native_context(context);
@@ -165,9 +165,9 @@ gjs_runtime_clear_call_context(JSRuntime *runtime)
 {
     gjs_debug(GJS_DEBUG_CONTEXT, "Clearing call context");
     gjs_runtime_set_data(runtime,
-                            "gjs-call-context",
-                            NULL,
-                            NULL);
+                         "gjs-call-context",
+                         NULL,
+                         NULL);
     gjs_debug(GJS_DEBUG_CONTEXT, "Call context cleared");
 }
 
@@ -203,7 +203,7 @@ get_data_from_runtime(JSRuntime *runtime)
         rd = g_slice_new0(RuntimeData);
         rd->dynamic_classes = g_hash_table_new(g_direct_hash, g_direct_equal);
         gjs_runtime_set_data(runtime, "gjs-api-util-data",
-                                rd, runtime_data_destroy_notify);
+                             rd, runtime_data_destroy_notify);
     }
 
     return rd;
@@ -221,8 +221,8 @@ get_data_from_context(JSContext *context)
  */
 gboolean
 gjs_object_has_property(JSContext  *context,
-                           JSObject   *obj,
-                           const char *property_name)
+                        JSObject   *obj,
+                        const char *property_name)
 {
     return gjs_object_get_property(context, obj, property_name, NULL);
 }
@@ -235,9 +235,9 @@ gjs_object_has_property(JSContext  *context,
  */
 gboolean
 gjs_object_get_property(JSContext  *context,
-                           JSObject   *obj,
-                           const char *property_name,
-                           jsval      *value_p)
+                        JSObject   *obj,
+                        const char *property_name,
+                        jsval      *value_p)
 {
     jsval value;
     JSExceptionState *state;
@@ -336,14 +336,14 @@ gjs_init_class_dynamic(JSContext      *context,
 
     prototype = NULL;
     if (gjs_object_get_property(load_context, JS_GetGlobalObject(load_context),
-                                   private_name, &value) &&
+                                private_name, &value) &&
         JSVAL_IS_OBJECT(value)) {
         jsval proto_val;
 
         g_free(private_name); /* don't need it anymore */
 
         if (!gjs_object_require_property(load_context, JSVAL_TO_OBJECT(value), NULL,
-                                            "prototype", &proto_val) ||
+                                         "prototype", &proto_val) ||
             !JSVAL_IS_OBJECT(proto_val)) {
             gjs_throw(load_context, "prototype was not defined or not an object?");
             goto error;
@@ -381,7 +381,7 @@ gjs_init_class_dynamic(JSContext      *context,
          * in_object
          */
         if (!gjs_object_require_property(load_context, JS_GetGlobalObject(load_context), NULL,
-                                            class_copy->base.name, &value))
+                                         class_copy->base.name, &value))
             goto error;
     }
     g_assert(value != JSVAL_VOID);
@@ -445,8 +445,8 @@ gjs_get_instance_private_dynamic(JSContext      *context,
     /* Check that it's safe to cast to DynamicJSClass */
     if (g_hash_table_lookup(rd->dynamic_classes, obj_class) == NULL) {
         gjs_throw(context,
-                     "Object %p proto %p doesn't have a dynamically-registered class, it has %s",
-                     obj, JS_GetPrototype(context, obj), obj_class->name);
+                  "Object %p proto %p doesn't have a dynamically-registered class, it has %s",
+                  obj, JS_GetPrototype(context, obj), obj_class->name);
         return NULL;
     }
 
@@ -757,8 +757,8 @@ gjs_log_exception_props(JSContext *context,
         gjs_object_has_property(context, exc_obj, "message");
 
         gjs_log_object_props(context, exc_obj,
-                                GJS_DEBUG_ERROR,
-                                "  ");
+                             GJS_DEBUG_ERROR,
+                             "  ");
     } else if (JSVAL_IS_STRING(exc)) {
         gjs_debug(GJS_DEBUG_ERROR,
                   "Exception was a String");
@@ -1047,12 +1047,12 @@ gjs_date_from_time_t (JSContext *context, time_t time)
  * @Varargs: for each character in @format, a pair of a char * which is the name
  * of the argument, and a pointer to a location to store the value. The type of
  * value stored depends on the format character, as described below.
- * 
+ *
  * This function is inspired by Python's PyArg_ParseTuple for those
  * familiar with it.  It takes a format specifier which gives the
  * types of the expected arguments, and a list of argument names and
  * value location pairs.  The currently accepted format specifiers are:
- * 
+ *
  * s: A string, converted into UTF-8
  * z: Like 's', but may be null in JavaScript (which appears as NULL in C)
  * F: A string, converted into "filename encoding" (i.e. active locale)
@@ -1112,7 +1112,7 @@ gjs_parse_args (JSContext  *context,
      * @i: The current integer position in fmt_args
      * @fmt_iter: A pointer to the character in fmt_args
      * @consumed_args: How many arguments we've taken from argv
-     * 
+     *
      * consumed_args can currently be different from 'i' because of the '|' character.
      */
     for (i = 0, consumed_args = 0, fmt_iter = format; *fmt_iter; fmt_iter++, i++) {
@@ -1135,93 +1135,93 @@ gjs_parse_args (JSContext  *context,
         g_return_val_if_fail (arg_location != NULL, JS_FALSE);
 
         js_value = argv[consumed_args];
-        
+
         switch (*fmt_iter) {
-            case 'o': {
-               if (!JSVAL_IS_OBJECT(js_value)) {
-                   arg_error_message = "Not an object";
-               } else {
-                   JSObject **arg = arg_location;
-                   *arg = JSVAL_TO_OBJECT(js_value);
-               }
+        case 'o': {
+            if (!JSVAL_IS_OBJECT(js_value)) {
+                arg_error_message = "Not an object";
+            } else {
+                JSObject **arg = arg_location;
+                *arg = JSVAL_TO_OBJECT(js_value);
             }
+        }
             break;
-            case 's':
-            case 'z': {
-                char **arg = arg_location;
-                
-                if (*fmt_iter == 'z' && JSVAL_IS_NULL(js_value)) {
-                    *arg = NULL;
-                } else {
-                    if (gjs_try_string_to_utf8 (context, js_value, arg, &arg_error)) {
-                        unwind_strings[n_unwind++] = *arg;
-                        g_assert(n_unwind < MAX_UNWIND_STRINGS);
-                    }
-                }    
-            }
-            break;
-            case 'F': {
-                char **arg = arg_location;
-                
-                if (gjs_try_string_to_filename (context, js_value, arg, &arg_error)) {
+        case 's':
+        case 'z': {
+            char **arg = arg_location;
+
+            if (*fmt_iter == 'z' && JSVAL_IS_NULL(js_value)) {
+                *arg = NULL;
+            } else {
+                if (gjs_try_string_to_utf8 (context, js_value, arg, &arg_error)) {
                     unwind_strings[n_unwind++] = *arg;
                     g_assert(n_unwind < MAX_UNWIND_STRINGS);
                 }
             }
-            break;
-            case 'i': {
-                if (!JS_ValueToInt32(context, js_value, (gint32*) arg_location)) {
-                    /* Our error message is going to be more useful */
-                    JS_ClearPendingException(context);
-                    arg_error_message = "Couldn't convert to integer";
-                }
-            }
-            break;
-            case 'u': {
-                gdouble num;
-                if (!JS_ValueToNumber(context, js_value, &num)) {
-                    /* Our error message is going to be more useful */
-                    JS_ClearPendingException(context);
-                    arg_error_message = "Couldn't convert to unsigned integer";
-                } else if (num > G_MAXUINT32 || num < 0) {
-                    arg_error_message = "Value is out of range";
-                } else {
-                    *((guint32*) arg_location) = num;
-                }
-            }
-            break;
-            case 'f': {
-                double num;
-                if (!JS_ValueToNumber(context, js_value, &num)) {
-                    /* Our error message is going to be more useful */
-                    JS_ClearPendingException(context);
-                    arg_error_message = "Couldn't convert to double";
-                } else {
-                    *((double*) arg_location) = num;
-                }
-            }
-            break;
-            default:
-              g_assert_not_reached ();
         }
-        
+            break;
+        case 'F': {
+            char **arg = arg_location;
+
+            if (gjs_try_string_to_filename (context, js_value, arg, &arg_error)) {
+                unwind_strings[n_unwind++] = *arg;
+                g_assert(n_unwind < MAX_UNWIND_STRINGS);
+            }
+        }
+            break;
+        case 'i': {
+            if (!JS_ValueToInt32(context, js_value, (gint32*) arg_location)) {
+                /* Our error message is going to be more useful */
+                JS_ClearPendingException(context);
+                arg_error_message = "Couldn't convert to integer";
+            }
+        }
+            break;
+        case 'u': {
+            gdouble num;
+            if (!JS_ValueToNumber(context, js_value, &num)) {
+                /* Our error message is going to be more useful */
+                JS_ClearPendingException(context);
+                arg_error_message = "Couldn't convert to unsigned integer";
+            } else if (num > G_MAXUINT32 || num < 0) {
+                arg_error_message = "Value is out of range";
+            } else {
+                *((guint32*) arg_location) = num;
+            }
+        }
+            break;
+        case 'f': {
+            double num;
+            if (!JS_ValueToNumber(context, js_value, &num)) {
+                /* Our error message is going to be more useful */
+                JS_ClearPendingException(context);
+                arg_error_message = "Couldn't convert to double";
+            } else {
+                *((double*) arg_location) = num;
+            }
+        }
+            break;
+        default:
+            g_assert_not_reached ();
+        }
+
         if (arg_error != NULL)
             arg_error_message = arg_error->message;
-        
+
         if (arg_error_message != NULL) {
-            gjs_throw(context, "Error invoking %s, at argument %d (%s): %s", function_name, 
+            gjs_throw(context, "Error invoking %s, at argument %d (%s): %s", function_name,
                       consumed_args+1, argname, arg_error_message);
             g_clear_error (&arg_error);
             goto error_unwind;
         }
-        
+
         consumed_args++;
     }
 
     va_end (args);
     return JS_TRUE;
 
-  error_unwind:
+ error_unwind:
     va_end (args);
     /* We still own the strings in the error case, free any we converted */
     for (i = 0; i < n_unwind; i++) {

@@ -1068,43 +1068,43 @@ struct_is_simple(GIStructInfo *info)
             case GI_TYPE_TAG_GHASH:
                 break;
             case GI_TYPE_TAG_INTERFACE:
-	    {
+            {
                 GIBaseInfo *interface = g_type_info_get_interface (type_info);
                 switch (g_base_info_get_type (interface)) {
-		case GI_INFO_TYPE_BOXED:
-		case GI_INFO_TYPE_STRUCT:
+                case GI_INFO_TYPE_BOXED:
+                case GI_INFO_TYPE_STRUCT:
                     if (!struct_is_simple ((GIStructInfo *)interface))
                         is_simple = FALSE;
                     break;
-		case GI_INFO_TYPE_UNION:
+                case GI_INFO_TYPE_UNION:
                     /* FIXME: Need to implement */
                     is_simple = FALSE;
                     break;
-		case GI_INFO_TYPE_ENUM:
-		case GI_INFO_TYPE_FLAGS:
+                case GI_INFO_TYPE_ENUM:
+                case GI_INFO_TYPE_FLAGS:
                     break;
-		case GI_INFO_TYPE_OBJECT:
-		case GI_INFO_TYPE_VFUNC:
-		case GI_INFO_TYPE_CALLBACK:
-		case GI_INFO_TYPE_INVALID:
-		case GI_INFO_TYPE_INTERFACE:
-		case GI_INFO_TYPE_FUNCTION:
-		case GI_INFO_TYPE_CONSTANT:
-		case GI_INFO_TYPE_ERROR_DOMAIN:
-		case GI_INFO_TYPE_VALUE:
-		case GI_INFO_TYPE_SIGNAL:
-		case GI_INFO_TYPE_PROPERTY:
-		case GI_INFO_TYPE_FIELD:
-		case GI_INFO_TYPE_ARG:
-		case GI_INFO_TYPE_TYPE:
-		case GI_INFO_TYPE_UNRESOLVED:
+                case GI_INFO_TYPE_OBJECT:
+                case GI_INFO_TYPE_VFUNC:
+                case GI_INFO_TYPE_CALLBACK:
+                case GI_INFO_TYPE_INVALID:
+                case GI_INFO_TYPE_INTERFACE:
+                case GI_INFO_TYPE_FUNCTION:
+                case GI_INFO_TYPE_CONSTANT:
+                case GI_INFO_TYPE_ERROR_DOMAIN:
+                case GI_INFO_TYPE_VALUE:
+                case GI_INFO_TYPE_SIGNAL:
+                case GI_INFO_TYPE_PROPERTY:
+                case GI_INFO_TYPE_FIELD:
+                case GI_INFO_TYPE_ARG:
+                case GI_INFO_TYPE_TYPE:
+                case GI_INFO_TYPE_UNRESOLVED:
                     is_simple = FALSE;
                     break;
-		}
+                }
 
                 g_base_info_unref (interface);
                 break;
-	    }
+            }
             }
         }
 

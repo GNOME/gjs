@@ -602,12 +602,12 @@ append_array(JSContext         *context,
         dbus_signature_iter_recurse(sig_iter, &element_sig_iter);
 
         dbus_message_iter_open_container(iter, DBUS_TYPE_STRUCT, NULL, &struct_iter);
-        
+
         have_next = dbus_signature_iter_get_current_type(&element_sig_iter) != DBUS_TYPE_INVALID;
 
         for (i = 0; i < length; i++) {
             element = JSVAL_VOID;
-            
+
             if (!have_next) {
                 gjs_throw(context, "Insufficient elements for structure in JS Array");
                 return JS_FALSE;
@@ -623,10 +623,10 @@ append_array(JSContext         *context,
             if (!gjs_js_one_value_to_dbus(context, element, &struct_iter,
                                           &element_sig_iter))
                 return JS_FALSE;
-            
+
             have_next = dbus_signature_iter_next (&element_sig_iter);
         }
-        
+
         if (have_next) {
             gjs_throw(context, "Too many elements for structure in JS Array");
             return JS_FALSE;
@@ -661,7 +661,7 @@ append_array(JSContext         *context,
         }
 
         dbus_message_iter_close_container(iter, &array_iter);
-        
+
         return JS_TRUE;
     } else {
       gjs_throw(context,
