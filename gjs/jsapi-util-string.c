@@ -41,9 +41,12 @@ gjs_try_string_to_utf8 (JSContext  *context,
     long utf8_length;
     GError *convert_error = NULL;
 
+    JS_BeginRequest(context);
+
     if (!JSVAL_IS_STRING(string_val)) {
         g_set_error_literal(error, GJS_UTIL_ERROR, GJS_UTIL_ERROR_ARGUMENT_TYPE_MISMATCH,
                             "Object is not a string, cannot convert to UTF-8");
+        JS_EndRequest(context);
         return FALSE;
     }
 
@@ -54,6 +57,9 @@ gjs_try_string_to_utf8 (JSContext  *context,
                                   (glong)s_length,
                                   &read_items, &utf8_length,
                                   &convert_error);
+
+    /* ENDING REQUEST - no JSAPI after this point */
+    JS_EndRequest(context);
 
     if (!utf8_string) {
         g_set_error(error, GJS_UTIL_ERROR, GJS_UTIL_ERROR_ARGUMENT_INVALID,
@@ -136,15 +142,20 @@ gjs_string_from_utf8(JSContext  *context,
         return JS_FALSE;
     }
 
+    JS_BeginRequest(context);
+
     s = JS_NewUCStringCopyN(context,
                             (jschar*)u16_string,
                             u16_string_length);
     g_free(u16_string);
 
-    if (!s)
+    if (!s) {
+        JS_EndRequest(context);
         return JS_FALSE;
+    }
 
     *value_p = STRING_TO_JSVAL(s);
+    JS_EndRequest(context);
     return JS_TRUE;
 }
 
@@ -301,14 +312,18 @@ gjs_string_get_binary_data(JSContext       *context,
 {
     char *js_data;
 
+    JS_BeginRequest(context);
+
     if (!JSVAL_IS_STRING(value)) {
         gjs_throw(context,
                   "Value is not a string, can't return binary data from it");
         return JS_FALSE;
     }
 
-    if (throw_if_binary_strings_broken(context))
+    if (throw_if_binary_strings_broken(context)) {
+        JS_EndRequest(context);
         return JS_FALSE;
+    }
 
     js_data = JS_GetStringBytes(JSVAL_TO_STRING(value));
     /* GetStringLength returns number of 16-bit jschar;
@@ -316,6 +331,8 @@ gjs_string_get_binary_data(JSContext       *context,
      */
     *len_p = JS_GetStringLength(JSVAL_TO_STRING(value));
     *data_p = g_memdup(js_data, *len_p);
+
+    JS_EndRequest(context);
 
     return JS_TRUE;
 }
@@ -339,8 +356,12 @@ gjs_string_from_binary_data(JSContext       *context,
 {
     JSString *s;
 
-    if (throw_if_binary_strings_broken(context))
+    JS_BeginRequest(context);
+
+    if (throw_if_binary_strings_broken(context)) {
+        JS_EndRequest(context);
         return JS_FALSE;
+    }
 
     /* store each byte in a 16-bit jschar so all high bytes are 0;
      * we can't put two bytes per jschar because then we'd lose
@@ -350,10 +371,12 @@ gjs_string_from_binary_data(JSContext       *context,
     if (s == NULL) {
         /* gjs_throw() does nothing if exception already set */
         gjs_throw(context, "Failed to allocate binary string");
+        JS_EndRequest(context);
         return JS_FALSE;
     }
     *value_p = STRING_TO_JSVAL(s);
 
+    JS_EndRequest(context);
     return JS_TRUE;
 }
 
@@ -378,9 +401,12 @@ gjs_string_get_uint16_data(JSContext       *context,
 {
     jschar *js_data;
 
+    JS_BeginRequest(context);
+
     if (!JSVAL_IS_STRING(value)) {
         gjs_throw(context,
                   "Value is not a string, can't return binary data from it");
+        JS_EndRequest(context);
         return JS_FALSE;
     }
 
@@ -388,6 +414,7 @@ gjs_string_get_uint16_data(JSContext       *context,
     *len_p = JS_GetStringLength(JSVAL_TO_STRING(value));
     *data_p = g_memdup(js_data, sizeof(*js_data)*(*len_p));
 
+    JS_EndRequest(context);
     return JS_TRUE;
 }
 
@@ -439,6 +466,7 @@ gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(void)
 
     runtime = JS_NewRuntime(1024*1024 /* max bytes */);
     context = JS_NewContext(runtime, 8192);
+    JS_BeginRequest(context);
     global = JS_NewObject(context, NULL, NULL, NULL);
     JS_SetGlobalObject(context, global);
     JS_InitStandardClasses(context, global);
@@ -450,6 +478,7 @@ gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(void)
     g_assert(JSVAL_IS_STRING(js_string));
     g_assert(gjs_string_to_utf8(context, js_string, &utf8_result) == JS_TRUE);
 
+    JS_EndRequest(context);
     JS_DestroyContext(context);
     JS_DestroyRuntime(runtime);
 
@@ -470,6 +499,7 @@ gjstest_test_func_gjs_jsapi_util_string_get_ascii(void)
 
     runtime = JS_NewRuntime(1024*1024 /* max bytes */);
     context = JS_NewContext(runtime, 8192);
+    JS_BeginRequest(context);
     global = JS_NewObject(context, NULL, NULL, NULL);
     JS_SetGlobalObject(context, global);
     JS_InitStandardClasses(context, global);
@@ -482,6 +512,7 @@ gjstest_test_func_gjs_jsapi_util_string_get_ascii(void)
     g_assert(gjs_string_get_ascii_checked(context, void_value) == NULL);
     g_assert(JS_IsExceptionPending(context));
 
+    JS_EndRequest(context);
     JS_DestroyContext(context);
     JS_DestroyRuntime(runtime);
 }
@@ -504,6 +535,7 @@ gjstest_test_func_gjs_jsapi_util_string_get_binary(void)
 
     runtime = JS_NewRuntime(1024*1024 /* max bytes */);
     context = JS_NewContext(runtime, 8192);
+    JS_BeginRequest(context);
     global = JS_NewObject(context, NULL, NULL, NULL);
     JS_SetGlobalObject(context, global);
     JS_InitStandardClasses(context, global);
@@ -550,6 +582,7 @@ gjstest_test_func_gjs_jsapi_util_string_get_binary(void)
                                         &data, &len));
     g_assert(JS_IsExceptionPending(context));
 
+    JS_EndRequest(context);
     JS_DestroyContext(context);
     JS_DestroyRuntime(runtime);
 }

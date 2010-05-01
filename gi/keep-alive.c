@@ -217,6 +217,8 @@ gjs_keep_alive_new(JSContext *context)
 
     g_assert(context != NULL);
 
+    JS_BeginRequest(context);
+
     /* put constructor in the global namespace */
     global = JS_GetGlobalObject(context);
 
@@ -277,6 +279,8 @@ gjs_keep_alive_new(JSContext *context)
         gjs_fatal("Failed to create keep_alive object");
     }
 
+    JS_EndRequest(context);
+
     return keep_alive;
 }
 
@@ -292,7 +296,9 @@ gjs_keep_alive_add_child(JSContext         *context,
 
     g_assert(keep_alive != NULL);
 
+    JS_BeginRequest(context);
     priv = priv_from_js(context, keep_alive);
+    JS_EndRequest(context);
 
     g_assert(priv != NULL);
 
@@ -323,7 +329,9 @@ gjs_keep_alive_remove_child(JSContext         *context,
     KeepAlive *priv;
     Child child;
 
+    JS_BeginRequest(context);
     priv = priv_from_js(context, keep_alive);
+    JS_EndRequest(context);
 
     g_assert(priv != NULL);
 
@@ -345,15 +353,22 @@ gjs_keep_alive_get_global(JSContext *context)
 {
     jsval value;
     JSObject *global;
+    JSObject *result;
+
+    JS_BeginRequest(context);
 
     global = JS_GetGlobalObject(context);
 
     gjs_object_get_property(context, global, GLOBAL_KEEP_ALIVE_NAME, &value);
 
     if (JSVAL_IS_OBJECT(value))
-        return JSVAL_TO_OBJECT(value);
+        result = JSVAL_TO_OBJECT(value);
+    else
+        result = NULL;
 
-    return NULL;
+    JS_EndRequest(context);
+
+    return result;
 }
 
 static JSObject*
@@ -361,6 +376,8 @@ gjs_keep_alive_create_in_global(JSContext *context)
 {
     JSObject *keep_alive;
     JSObject *global;
+
+    JS_BeginRequest(context);
 
     global = JS_GetGlobalObject(context);
 
@@ -376,6 +393,7 @@ gjs_keep_alive_create_in_global(JSContext *context)
                            JSPROP_READONLY | JSPROP_PERMANENT))
         gjs_fatal("no memory to define keep_alive property");
 
+    JS_EndRequest(context);
     return keep_alive;
 }
 
@@ -386,6 +404,8 @@ gjs_keep_alive_add_global_child(JSContext         *context,
                                 void              *data)
 {
     JSObject *keep_alive;
+
+    JS_BeginRequest(context);
 
     keep_alive = gjs_keep_alive_get_global(context);
 
@@ -398,6 +418,8 @@ gjs_keep_alive_add_global_child(JSContext         *context,
     gjs_keep_alive_add_child(context,
                              keep_alive,
                              notify, child, data);
+
+    JS_EndRequest(context);
 }
 
 void
@@ -408,6 +430,8 @@ gjs_keep_alive_remove_global_child(JSContext         *context,
 {
     JSObject *keep_alive;
 
+    JS_BeginRequest(context);
+
     keep_alive = gjs_keep_alive_get_global(context);
 
     if (!keep_alive)
@@ -417,6 +441,8 @@ gjs_keep_alive_remove_global_child(JSContext         *context,
     gjs_keep_alive_remove_child(context,
                                 gjs_keep_alive_get_global(context),
                                 notify, child, data);
+
+    JS_EndRequest(context);
 }
 
 JSObject*
@@ -429,6 +455,8 @@ gjs_keep_alive_get_for_load_context(JSRuntime *runtime)
 
     g_assert(context != NULL);
 
+    JS_BeginRequest(context);
+
     keep_alive = gjs_keep_alive_get_global(context);
 
     if (!keep_alive)
@@ -436,6 +464,8 @@ gjs_keep_alive_get_for_load_context(JSRuntime *runtime)
 
     if (!keep_alive)
         gjs_fatal("could not create keep_alive on global object, no memory?");
+
+    JS_EndRequest(context);
 
     return keep_alive;
 }

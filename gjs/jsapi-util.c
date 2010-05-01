@@ -242,6 +242,8 @@ gjs_object_get_property(JSContext  *context,
     jsval value;
     JSExceptionState *state;
 
+    JS_BeginRequest(context);
+
     value = JSVAL_VOID;
     state = JS_SaveExceptionState(context);
     JS_GetProperty(context, obj, property_name, &value);
@@ -249,6 +251,8 @@ gjs_object_get_property(JSContext  *context,
 
     if (value_p)
         *value_p = value;
+
+    JS_EndRequest(context);
 
     return value != JSVAL_VOID;
 }
@@ -269,6 +273,8 @@ gjs_object_require_property(JSContext       *context,
 {
     jsval value;
 
+    JS_BeginRequest(context);
+
     value = JSVAL_VOID;
     JS_GetProperty(context, obj, property_name, &value);
 
@@ -277,6 +283,7 @@ gjs_object_require_property(JSContext       *context,
 
     if (value != JSVAL_VOID) {
         JS_ClearPendingException(context); /* in case JS_GetProperty() was on crack */
+        JS_EndRequest(context);
         return TRUE;
     } else {
         /* remember gjs_throw() is a no-op if JS_GetProperty()
@@ -290,6 +297,8 @@ gjs_object_require_property(JSContext       *context,
             gjs_throw(context,
                       "No property '%s' in object %p (or its value was undefined)",
                       property_name, obj);
+
+        JS_EndRequest(context);
         return FALSE;
     }
 }
@@ -318,6 +327,8 @@ gjs_init_class_dynamic(JSContext      *context,
         return NULL;
     }
 
+    JS_BeginRequest(context);
+
     /* We replace the passed-in context and global object with our
      * runtime-global permanent load context. Otherwise, in a
      * process with multiple contexts, we'd arbitrarily define
@@ -325,6 +336,7 @@ gjs_init_class_dynamic(JSContext      *context,
      * class first, which is not desirable.
      */
     load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
+    JS_BeginRequest(load_context);
 
     /* JS_InitClass() wants to define the constructor in the global object, so
      * we give it a private and namespaced name... passing in the namespace
@@ -397,6 +409,8 @@ gjs_init_class_dynamic(JSContext      *context,
                            GJS_MODULE_PROP_FLAGS))
         goto error;
 
+    JS_EndRequest(load_context);
+    JS_EndRequest(context);
     return prototype;
 
  error:
@@ -407,18 +421,23 @@ gjs_init_class_dynamic(JSContext      *context,
         gjs_throw(context, "No exception was set, but class initialize failed somehow");
     }
 
+    JS_EndRequest(load_context);
+    JS_EndRequest(context);
     return NULL;
 }
 
 gboolean
 gjs_check_constructing(JSContext *context)
 {
+    JS_BeginRequest(context);
     if (!JS_IsConstructing(context)) {
+        JS_EndRequest(context);
         gjs_throw(context,
                   "Constructor called as normal method. Use 'new SomeObject()' not 'SomeObject()'");
         return FALSE;
     }
 
+    JS_EndRequest(context);
     return TRUE;
 }
 
@@ -430,11 +449,14 @@ gjs_get_instance_private_dynamic(JSContext      *context,
 {
     RuntimeData *rd;
     JSClass *obj_class;
+    void *instance;
 
     if (static_clasp->name != NULL) {
         g_warning("Dynamic class should not have a name in the JSClass struct");
         return NULL;
     }
+
+    JS_BeginRequest(context);
 
     obj_class = JS_GET_CLASS(context, obj);
     g_assert(obj_class != NULL);
@@ -447,15 +469,20 @@ gjs_get_instance_private_dynamic(JSContext      *context,
         gjs_throw(context,
                   "Object %p proto %p doesn't have a dynamically-registered class, it has %s",
                   obj, JS_GetPrototype(context, obj), obj_class->name);
+        JS_EndRequest(context);
         return NULL;
     }
 
     if (static_clasp != ((DynamicJSClass*) obj_class)->static_class) {
         gjs_throw(context, "Object is not a dynamically-registered class based on expected static class pointer");
+        JS_EndRequest(context);
         return NULL;
     }
 
-    return JS_GetInstancePrivate(context, obj, obj_class, argv);
+    instance = JS_GetInstancePrivate(context, obj, obj_class, argv);
+    JS_EndRequest(context);
+
+    return instance;
 }
 
 void*
@@ -466,11 +493,14 @@ gjs_get_instance_private_dynamic_with_typecheck(JSContext      *context,
 {
     RuntimeData *rd;
     JSClass *obj_class;
+    void *instance;
 
     if (static_clasp->name != NULL) {
         g_warning("Dynamic class should not have a name in the JSClass struct");
         return NULL;
     }
+
+    JS_BeginRequest(context);
 
     obj_class = JS_GET_CLASS(context, obj);
     g_assert(obj_class != NULL);
@@ -480,14 +510,18 @@ gjs_get_instance_private_dynamic_with_typecheck(JSContext      *context,
 
     /* Check that it's safe to cast to DynamicJSClass */
     if (g_hash_table_lookup(rd->dynamic_classes, obj_class) == NULL) {
+        JS_EndRequest(context);
         return NULL;
     }
 
     if (static_clasp != ((DynamicJSClass*) obj_class)->static_class) {
+        JS_EndRequest(context);
         return NULL;
     }
 
-    return JS_GetInstancePrivate(context, obj, obj_class, argv);
+    instance = JS_GetInstancePrivate(context, obj, obj_class, argv);
+    JS_EndRequest(context);
+    return instance;
 }
 
 JSObject*
@@ -501,12 +535,15 @@ gjs_construct_object_dynamic(JSContext      *context,
     JSContext *load_context;
     JSObject *result;
 
+    JS_BeginRequest(context);
+
     /* We replace the passed-in context and global object with our
      * runtime-global permanent load context. Otherwise, JS_ConstructObject
      * can't find the constructor in whatever random global object is set
      * on the passed-in context.
      */
     load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
+    JS_BeginRequest(load_context);
 
     proto_class = JS_GET_CLASS(load_context, proto);
 
@@ -530,6 +567,8 @@ gjs_construct_object_dynamic(JSContext      *context,
     if (!result)
         goto error;
 
+    JS_EndRequest(load_context);
+    JS_EndRequest(context);
     return result;
 
  error:
@@ -540,6 +579,8 @@ gjs_construct_object_dynamic(JSContext      *context,
         gjs_throw(context, "No exception was set, but object construction failed somehow");
     }
 
+    JS_EndRequest(load_context);
+    JS_EndRequest(context);
     return NULL;
 }
 
@@ -554,6 +595,8 @@ gjs_define_string_array(JSContext   *context,
     GArray *elems;
     JSObject *array;
     int i;
+
+    JS_BeginRequest(context);
 
     if (!JS_EnterLocalRootScope(context))
         return JS_FALSE;
@@ -580,6 +623,8 @@ gjs_define_string_array(JSContext   *context,
     }
 
     JS_LeaveLocalRootScope(context);
+
+    JS_EndRequest(context);
     return array;
 }
 
@@ -588,6 +633,9 @@ gjs_value_debug_string(JSContext      *context,
                        jsval           value)
 {
     JSString *str;
+    const char *bytes;
+
+    JS_BeginRequest(context);
 
     str = JS_ValueToString(context, value);
 
@@ -616,7 +664,11 @@ gjs_value_debug_string(JSContext      *context,
 
     g_assert(str != NULL);
 
-    return JS_GetStringBytes(str);
+    bytes = JS_GetStringBytes(str);
+
+    JS_EndRequest(context);
+
+    return bytes;
 }
 
 void
@@ -627,6 +679,8 @@ gjs_log_object_props(JSContext      *context,
 {
     JSObject *props_iter;
     jsid prop_id;
+
+    JS_BeginRequest(context);
 
     /* We potentially create new strings, plus the property iterator,
      * that could get collected as we go through this process. So
@@ -672,6 +726,7 @@ gjs_log_object_props(JSContext      *context,
 
  done:
     JS_LeaveLocalRootScope(context);
+    JS_EndRequest(context);
 }
 
 void
@@ -690,6 +745,10 @@ gjs_explain_scope(JSContext  *context,
 
     load_context = gjs_runtime_peek_load_context(JS_GetRuntime(context));
     call_context = gjs_runtime_peek_call_context(JS_GetRuntime(context));
+
+    JS_BeginRequest(context);
+    JS_BeginRequest(load_context);
+    JS_BeginRequest(call_context);
 
     JS_EnterLocalRootScope(context);
 
@@ -724,12 +783,18 @@ gjs_explain_scope(JSContext  *context,
     g_string_free(chain, TRUE);
 
     JS_LeaveLocalRootScope(context);
+
+    JS_EndRequest(call_context);
+    JS_EndRequest(load_context);
+    JS_EndRequest(context);
 }
 
 void
 gjs_log_exception_props(JSContext *context,
                         jsval      exc)
 {
+    JS_BeginRequest(context);
+
     /* This is useful when the exception was never sent to an error reporter
      * due to JSOPTION_DONT_REPORT_UNCAUGHT, or if the exception was not
      * a normal Error object so jsapi didn't know how to report it sensibly.
@@ -766,6 +831,7 @@ gjs_log_exception_props(JSContext *context,
         gjs_debug(GJS_DEBUG_ERROR,
                   "Exception had some strange type");
     }
+    JS_EndRequest(context);
 }
 
 static JSBool
@@ -777,6 +843,8 @@ log_and_maybe_keep_exception(JSContext  *context,
     JSString *s;
     char *message;
     JSBool retval = JS_FALSE;
+
+    JS_BeginRequest(context);
 
     if (message_p)
         *message_p = NULL;
@@ -824,6 +892,8 @@ log_and_maybe_keep_exception(JSContext  *context,
  out:
     JS_RemoveRoot(context, &exc);
 
+    JS_EndRequest(context);
+
     return retval;
 }
 
@@ -850,39 +920,51 @@ try_to_chain_stack_trace(JSContext *src_context, JSContext *dst_context,
     jsval chained, src_stack, dst_stack, new_stack;
     JSString *new_stack_str;
 
+    JS_BeginRequest(src_context);
+    JS_BeginRequest(dst_context);
+
     if (!JSVAL_IS_OBJECT(src_exc))
-        return; // src_exc doesn't have a stack trace
+        goto out; // src_exc doesn't have a stack trace
 
     /* create a new exception in dst_context to get a stack trace */
     gjs_throw_literal(dst_context, "Chained exception");
     if (!(JS_GetPendingException(dst_context, &chained) &&
           JSVAL_IS_OBJECT(chained)))
-        return; // gjs_throw_literal didn't work?!
+        goto out; // gjs_throw_literal didn't work?!
     JS_ClearPendingException(dst_context);
 
     /* get stack trace for src_exc and chained */
     if (!(gjs_object_get_property(dst_context, JSVAL_TO_OBJECT(chained),
                                   "stack", &dst_stack) &&
           JSVAL_IS_STRING(dst_stack)))
-        return; // couldn't get chained stack
+        goto out; // couldn't get chained stack
     if (!(gjs_object_get_property(src_context, JSVAL_TO_OBJECT(src_exc),
                                   "stack", &src_stack) &&
           JSVAL_IS_STRING(src_stack)))
-        return; // couldn't get source stack
+        goto out; // couldn't get source stack
 
     /* add chained exception's stack trace to src_exc */
     new_stack_str = JS_ConcatStrings
         (dst_context, JSVAL_TO_STRING(src_stack), JSVAL_TO_STRING(dst_stack));
     if (new_stack_str==NULL)
-        return; // couldn't concatenate src and dst stacks?!
+        goto out; // couldn't concatenate src and dst stacks?!
     new_stack = STRING_TO_JSVAL(new_stack_str);
     JS_SetProperty(dst_context, JSVAL_TO_OBJECT(src_exc), "stack", &new_stack);
+
+ out:
+    JS_EndRequest(dst_context);
+    JS_EndRequest(src_context);
 }
 
 JSBool
 gjs_move_exception(JSContext      *src_context,
                    JSContext      *dest_context)
 {
+    JSBool success;
+
+    JS_BeginRequest(src_context);
+    JS_BeginRequest(dest_context);
+
     /* NOTE: src and dest could be the same. */
     jsval exc;
     if (JS_GetPendingException(src_context, &exc)) {
@@ -894,10 +976,15 @@ gjs_move_exception(JSContext      *src_context,
             JS_SetPendingException(dest_context, exc);
             JS_ClearPendingException(src_context);
         }
-        return JS_TRUE;
+        success = JS_TRUE;
     } else {
-        return JS_FALSE;
+        success = JS_FALSE;
     }
+
+    JS_EndRequest(dest_context);
+    JS_EndRequest(src_context);
+
+    return success;
 }
 
 JSBool
@@ -911,12 +998,17 @@ gjs_call_function_value(JSContext      *context,
     JSBool result;
     JSContext *call_context;
 
+    JS_BeginRequest(context);
+
     call_context = gjs_runtime_get_call_context(JS_GetRuntime(context));
+    JS_BeginRequest(call_context);
 
     result = JS_CallFunctionValue(call_context, obj, fval,
                                   argc, argv, rval);
     gjs_move_exception(call_context, context);
 
+    JS_EndRequest(call_context);
+    JS_EndRequest(context);
     return result;
 }
 
@@ -1014,6 +1106,9 @@ gjs_date_from_time_t (JSContext *context, time_t time)
     JSObject *date_constructor;
     jsval date_prototype;
     jsval args[1];
+    jsval result;
+
+    JS_BeginRequest(context);
 
     if (!JS_EnterLocalRootScope(context))
         return JSVAL_VOID;
@@ -1033,8 +1128,11 @@ gjs_date_from_time_t (JSContext *context, time_t time)
     date = JS_ConstructObjectWithArguments(context, date_class,
                                            NULL, NULL, 1, args);
 
+    result = OBJECT_TO_JSVAL(date);
     JS_LeaveLocalRootScope(context);
-    return OBJECT_TO_JSVAL(date);
+    JS_EndRequest(context);
+
+    return result;
 }
 
 /**
@@ -1082,6 +1180,8 @@ gjs_parse_args (JSContext  *context,
     guint n_required;
     guint n_total;
     guint consumed_args;
+
+    JS_BeginRequest(context);
 
     va_start (args, argv);
 
@@ -1219,6 +1319,8 @@ gjs_parse_args (JSContext  *context,
     }
 
     va_end (args);
+
+    JS_EndRequest(context);
     return JS_TRUE;
 
  error_unwind:
@@ -1227,5 +1329,6 @@ gjs_parse_args (JSContext  *context,
     for (i = 0; i < n_unwind; i++) {
         g_free (unwind_strings[i]);
     }
+    JS_EndRequest(context);
     return JS_FALSE;
 }

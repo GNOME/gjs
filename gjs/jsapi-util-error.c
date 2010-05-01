@@ -55,6 +55,8 @@ gjs_throw_valist(JSContext       *context,
 
     s = g_strdup_vprintf(format, args);
 
+    JS_BeginRequest(context);
+
     if (JS_IsExceptionPending(context)) {
         /* Often it's unclear whether a given jsapi.h function
          * will throw an exception, so we will throw ourselves
@@ -138,6 +140,8 @@ gjs_throw_valist(JSContext       *context,
                        s);
     }
     g_free(s);
+
+    JS_EndRequest(context);
 }
 
 /* Throws an exception, like "throw new Error(message)"
@@ -212,6 +216,9 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
      */
     runtime = JS_NewRuntime(1024*1024 /* max bytes */);
     context = JS_NewContext(runtime, 8192);
+
+    JS_BeginRequest(context);
+
     global = JS_NewObject(context, NULL, NULL, NULL);
     JS_SetGlobalObject(context, global);
     JS_InitStandardClasses(context, global);
@@ -265,6 +272,8 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
     g_assert(exc == previous);
 
     JS_RemoveRoot(context, &previous);
+
+    JS_EndRequest(context);
 
     JS_DestroyContext(context);
     JS_DestroyRuntime(runtime);

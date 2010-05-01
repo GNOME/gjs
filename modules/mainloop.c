@@ -123,6 +123,7 @@ closure_source_func(void *data)
         /* closure is invalid now */
         return FALSE;
     }
+    JS_BeginRequest(context);
 
     retval = JSVAL_VOID;
     JS_AddRoot(context, &retval);
@@ -135,12 +136,13 @@ closure_source_func(void *data)
      * JavaScript always makes some sense of any value in
      * an "if (value) {}" context.
      */
-    if (!JS_ValueToBoolean(gjs_closure_get_context(closure),
+    if (!JS_ValueToBoolean(context,
                            retval, &bool_val))
         bool_val = FALSE;
 
     JS_RemoveRoot(context, &retval);
 
+    JS_EndRequest(context);
     return bool_val;
 }
 

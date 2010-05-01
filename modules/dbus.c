@@ -632,9 +632,12 @@ signal_handler_callback(DBusConnection *connection,
         return;
     }
 
+    JS_BeginRequest(context);
+
     dbus_message_iter_init(message, &arg_iter);
     if (!gjs_js_values_from_dbus(context, &arg_iter, &arguments)) {
         gjs_debug(GJS_DEBUG_DBUS, "Failed to marshal dbus signal to JS");
+        JS_EndRequest(context);
         return;
     }
 
@@ -657,6 +660,8 @@ signal_handler_callback(DBusConnection *connection,
     gjs_rooted_array_free(context, arguments, TRUE);
 
     signal_handler_unref(handler); /* for safety */
+
+    JS_EndRequest(context);
 }
 
 /* Args are bus_name, object_path, iface, signal, and callback */
@@ -997,6 +1002,8 @@ on_name_acquired(DBusConnection *connection,
         return;
     }
 
+    JS_BeginRequest(context);
+
     argc = 1;
 
     argv[0] = STRING_TO_JSVAL(JS_NewStringCopyZ(context, name));
@@ -1010,6 +1017,8 @@ on_name_acquired(DBusConnection *connection,
 
     JS_RemoveRoot(context, &argv[0]);
     JS_RemoveRoot(context, &rval);
+
+    JS_EndRequest(context);
 }
 
 static void
@@ -1032,6 +1041,8 @@ on_name_lost(DBusConnection *connection,
         return;
     }
 
+    JS_BeginRequest(context);
+
     argc = 1;
 
     argv[0] = STRING_TO_JSVAL(JS_NewStringCopyZ(context, name));
@@ -1045,6 +1056,8 @@ on_name_lost(DBusConnection *connection,
 
     JS_RemoveRoot(context, &argv[0]);
     JS_RemoveRoot(context, &rval);
+
+    JS_EndRequest(context);
 }
 
 static void
@@ -1209,6 +1222,8 @@ on_name_appeared(DBusConnection *connection,
         return;
     }
 
+    JS_BeginRequest(context);
+
     argc = 2;
 
     gjs_set_values(context, argv, argc, JSVAL_VOID);
@@ -1225,6 +1240,8 @@ on_name_appeared(DBusConnection *connection,
 
     JS_RemoveRoot(context, &rval);
     gjs_unroot_value_locations(context, argv, argc);
+
+    JS_EndRequest(context);
 }
 
 static void
@@ -1248,6 +1265,8 @@ on_name_vanished(DBusConnection *connection,
         return;
     }
 
+    JS_BeginRequest(context);
+
     argc = 2;
 
     gjs_set_values(context, argv, argc, JSVAL_VOID);
@@ -1264,6 +1283,8 @@ on_name_vanished(DBusConnection *connection,
 
     JS_RemoveRoot(context, &rval);
     gjs_unroot_value_locations(context, argv, argc);
+
+    JS_EndRequest(context);
 }
 
 static const GjsDBusWatchNameFuncs watch_name_funcs = {

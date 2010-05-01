@@ -255,6 +255,8 @@ gjs_closure_invoke(GClosure *closure,
         return;
     }
 
+    JS_BeginRequest(context);
+
     if (JS_IsExceptionPending(context)) {
         gjs_debug_closure("Exception was pending before invoking callback??? "
                           "Not expected");
@@ -279,6 +281,8 @@ gjs_closure_invoke(GClosure *closure,
     if (gjs_log_exception(context, NULL)) {
         gjs_debug_closure("Closure invocation succeeded but an exception was set");
     }
+
+    JS_EndRequest(context);
 }
 
 gboolean
@@ -293,6 +297,8 @@ gjs_closure_invoke_simple(JSContext   *context,
     void *stack_space;
     jsval *argv;
     int i;
+
+    JS_BeginRequest(context);
 
     va_start(ap, format);
     argv = JS_PushArgumentsVA(context, &stack_space, format, ap);
@@ -312,6 +318,8 @@ gjs_closure_invoke_simple(JSContext   *context,
     JS_RemoveRoot(context, retval);
 
     JS_PopArguments(context, stack_space);
+
+    JS_EndRequest(context);
 
     return TRUE;
 }
@@ -352,6 +360,8 @@ gjs_closure_new(JSContext  *context,
      * is invoked (as long as the runtime lives)
      */
     c->context = gjs_runtime_get_load_context(c->runtime);
+    JS_BeginRequest(c->context);
+
     c->obj = callable;
     c->unref_on_global_object_finalized = FALSE;
 
@@ -370,6 +380,8 @@ gjs_closure_new(JSContext  *context,
 
     gjs_debug_closure("Create closure %p which calls object %p '%s'",
                       c, c->obj, description);
+
+    JS_EndRequest(c->context);
 
     return &c->base;
 }

@@ -925,8 +925,10 @@ importer_new_resolve(JSContext *context,
 
     /* We always import in the special load context. */
     load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
+    JS_BeginRequest(load_context);
     if (do_import(load_context, obj, priv, name)) {
         *objp = obj;
+        JS_EndRequest(load_context);
         return JS_TRUE;
     } else {
         /* Move the exception to the calling context from load context.
@@ -935,6 +937,7 @@ importer_new_resolve(JSContext *context,
             /* set an exception since none was set */
             gjs_throw(context, "No exception was set, but import failed somehow");
         }
+        JS_EndRequest(load_context);
         return JS_FALSE;
     }
 }
@@ -1182,19 +1185,25 @@ gjs_create_root_importer(JSRuntime   *runtime,
 
     context = gjs_runtime_get_load_context(runtime);
 
+    JS_BeginRequest(context);
+
     if (!gjs_object_has_property(context,
                                  JS_GetGlobalObject(context),
                                  "imports")) {
         if (gjs_define_importer(context, JS_GetGlobalObject(context),
                                 "imports",
-                                initial_search_path, add_standard_search_path) == NULL)
+                                initial_search_path, add_standard_search_path) == NULL) {
+            JS_EndRequest(context);
             return JS_FALSE;
+        }
     } else {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Someone else already created root importer, ignoring second request");
+        JS_EndRequest(context);
         return JS_TRUE;
     }
 
+    JS_EndRequest(context);
     return JS_TRUE;
 }
 
@@ -1205,15 +1214,18 @@ gjs_define_root_importer(JSContext   *context,
 {
     JSContext *load_context;
     jsval value;
+    JSBool success;
 
+    success = JS_FALSE;
     load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
+    JS_BeginRequest(load_context);
 
     if (!gjs_object_require_property(load_context,
                                      JS_GetGlobalObject(load_context), "global object",
                                      "imports", &value) ||
         !JSVAL_IS_OBJECT(value)) {
         gjs_debug(GJS_DEBUG_IMPORTER, "Root importer did not exist, couldn't get from load context; must create it");
-        return JS_FALSE;
+        goto fail;
     }
 
     if (!JS_DefineProperty(context, in_object,
@@ -1222,8 +1234,11 @@ gjs_define_root_importer(JSContext   *context,
                            GJS_MODULE_PROP_FLAGS)) {
         gjs_debug(GJS_DEBUG_IMPORTER, "DefineProperty %s on %p failed",
                   importer_name, in_object);
-        return JS_FALSE;
+        goto fail;
     }
 
-    return JS_TRUE;
+    success = JS_TRUE;
+ fail:
+    JS_EndRequest(load_context);
+    return success;
 }

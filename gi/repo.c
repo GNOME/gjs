@@ -64,11 +64,16 @@ resolve_namespace_object(JSContext  *context,
     JSObject *versions;
     jsval version_val;
     const char *version;
+    JSObject *result;
 
     load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
+    JS_BeginRequest(load_context);
+
     if (!gjs_object_require_property(load_context, repo_obj, "GI repository object", "versions", &versions_val) ||
         !JSVAL_IS_OBJECT(versions_val)) {
         gjs_throw(context, "No 'versions' property in GI repository object");
+
+        JS_EndRequest(load_context);
         return NULL;
     }
 
@@ -89,6 +94,7 @@ resolve_namespace_object(JSContext  *context,
                   "Requiring %s, version %s: %s",
                   ns_name, version?version:"none", error->message);
         g_error_free(error);
+        JS_EndRequest(load_context);
         return JS_FALSE;
     }
 
@@ -96,7 +102,9 @@ resolve_namespace_object(JSContext  *context,
      * with the given namespace name, pointing to that namespace
      * in the repo.
      */
-    return gjs_define_ns(context, repo_obj, ns_name, repo);
+    result = gjs_define_ns(context, repo_obj, ns_name, repo);
+    JS_EndRequest(load_context);
+    return result;
 }
 
 /*
@@ -140,11 +148,14 @@ repo_new_resolve(JSContext *context,
         return JS_TRUE; /* we are the prototype, or have the wrong class */
 
     load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
+    JS_BeginRequest(load_context);
     resolve_namespace_object(load_context, obj, name);
     if (gjs_move_exception(load_context, context)) {
+        JS_EndRequest(load_context);
         return JS_FALSE;
     } else {
         *objp = obj; /* store the object we defined the prop in */
+        JS_EndRequest(load_context);
         return JS_TRUE;
     }
 }
@@ -507,6 +518,7 @@ gjs_lookup_namespace_object_by_name(JSContext      *context,
      */
 
     load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
+    JS_BeginRequest(load_context);
     global = JS_GetGlobalObject(load_context);
 
     importer = JSVAL_VOID;
@@ -514,7 +526,7 @@ gjs_lookup_namespace_object_by_name(JSContext      *context,
         !JSVAL_IS_OBJECT(importer)) {
         gjs_log_exception(load_context, NULL);
         gjs_throw(context, "No imports property in global object");
-        return NULL;
+        goto fail;
     }
 
     girepository = JSVAL_VOID;
@@ -523,20 +535,26 @@ gjs_lookup_namespace_object_by_name(JSContext      *context,
         !JSVAL_IS_OBJECT(girepository)) {
         gjs_log_exception(load_context, NULL);
         gjs_throw(context, "No gi property in importer");
-        return NULL;
+        goto fail;
     }
 
     repo_obj = JSVAL_TO_OBJECT(girepository);
 
-    if (!gjs_object_require_property(context, repo_obj, "GI repository object", ns, &ns_obj))
-        return NULL;
+    if (!gjs_object_require_property(context, repo_obj, "GI repository object", ns, &ns_obj)) {
+        goto fail;
+    }
 
     if (!JSVAL_IS_OBJECT(ns_obj)) {
         gjs_throw(context, "Namespace '%s' is not an object?", ns);
-        return NULL;
+        goto fail;
     }
 
+    JS_EndRequest(load_context);
     return JSVAL_TO_OBJECT(ns_obj);
+
+ fail:
+    JS_EndRequest(load_context);
+    return NULL;
 }
 
 const char*

@@ -59,7 +59,9 @@ static void
 add_root_jsval(JSContext *context,
                jsval     *value_p)
 {
+    JS_BeginRequest(context);
     JS_AddRoot(context, value_p);
+    JS_EndRequest(context);
 }
 
 /* typesafe wrapper */
@@ -67,7 +69,9 @@ static void
 remove_root_jsval(JSContext *context,
                   jsval     *value_p)
 {
+    JS_BeginRequest(context);
     JS_RemoveRoot(context, value_p);
+    JS_EndRequest(context);
 }
 
 /**
@@ -190,9 +194,11 @@ gjs_root_value_locations(JSContext        *context,
     g_return_if_fail(locations != NULL);
     g_return_if_fail(n_locations >= 0);
 
+    JS_BeginRequest(context);
     for (i = 0; i < n_locations; i++) {
         add_root_jsval(context, ((jsval*)locations) + i);
     }
+    JS_EndRequest(context);
 }
 
 /**
@@ -215,9 +221,11 @@ gjs_unroot_value_locations(JSContext *context,
     g_return_if_fail(locations != NULL);
     g_return_if_fail(n_locations >= 0);
 
+    JS_BeginRequest(context);
     for (i = 0; i < n_locations; i++) {
         remove_root_jsval(context, ((jsval*)locations) + i);
     }
+    JS_EndRequest(context);
 }
 
 /**
@@ -302,6 +310,9 @@ gjstest_test_func_gjs_jsapi_util_array(void)
 
     runtime = JS_NewRuntime(1024*1024 /* max bytes */);
     context = JS_NewContext(runtime, 8192);
+
+    JS_BeginRequest(context);
+
     global = JS_NewObject(context, NULL, NULL, NULL);
     JS_SetGlobalObject(context, global);
     JS_InitStandardClasses(context, global);
@@ -331,6 +342,8 @@ gjstest_test_func_gjs_jsapi_util_array(void)
     }
 
     gjs_rooted_array_free(context, array, TRUE);
+
+    JS_EndRequest(context);
 
     JS_DestroyContext(context);
     JS_DestroyRuntime(runtime);

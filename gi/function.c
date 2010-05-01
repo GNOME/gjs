@@ -1033,10 +1033,13 @@ gjs_define_function(JSContext      *context,
     JSContext *load_context;
 
     load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
+    JS_BeginRequest(load_context);
 
     function = function_new(load_context, info);
     if (function == NULL) {
         gjs_move_exception(load_context, context);
+
+        JS_EndRequest(load_context);
         return NULL;
     }
 
@@ -1046,9 +1049,12 @@ gjs_define_function(JSContext      *context,
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS)) {
         gjs_debug(GJS_DEBUG_GFUNCTION, "Failed to define function");
+
+        JS_EndRequest(load_context);
         return NULL;
     }
 
+    JS_EndRequest(load_context);
     return function;
 }
 

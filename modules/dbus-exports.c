@@ -1852,24 +1852,30 @@ gjs_js_define_dbus_exports(JSContext      *context,
 {
     JSObject *exports;
     JSContext *load_context;
+    JSBool success;
 
+    success = JS_FALSE;
     load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
+    JS_BeginRequest(load_context);
 
     exports = exports_new(load_context, which_bus);
     if (exports == NULL) {
         gjs_move_exception(load_context, context);
-        return JS_FALSE;
+        goto fail;
     }
 
     if (!add_connect_funcs(context, exports, which_bus))
-        return JS_FALSE;
+        goto fail;
 
     if (!JS_DefineProperty(context, in_object,
                            "exports",
                            OBJECT_TO_JSVAL(exports),
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS))
-        return JS_FALSE;
+        goto fail;
 
-    return JS_TRUE;
+    success = JS_TRUE;
+ fail:
+    JS_EndRequest(load_context);
+    return success;
 }

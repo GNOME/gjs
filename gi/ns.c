@@ -89,6 +89,7 @@ ns_new_resolve(JSContext *context,
         return JS_TRUE; /* we are the prototype, or have the wrong class */
 
     load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
+    JS_BeginRequest(load_context);
 
     repo = g_irepository_get_default();
 
@@ -101,15 +102,18 @@ ns_new_resolve(JSContext *context,
                                    obj,
                                    NULL);
             if (gjs_move_exception(load_context, context)) {
+                JS_EndRequest(load_context);
                 return JS_FALSE;
             } else {
                 *objp = obj; /* we defined the property in this object */
+                JS_EndRequest(load_context);
                 return JS_TRUE;
             }
         } else {
             gjs_throw(context,
                       "No symbol '%s' in namespace '%s'",
                       name, priv->namespace);
+            JS_EndRequest(load_context);
             return JS_FALSE;
         }
     }
@@ -123,6 +127,7 @@ ns_new_resolve(JSContext *context,
     if (gjs_define_info(load_context, obj, info)) {
         g_base_info_unref(info);
         *objp = obj; /* we defined the property in this object */
+        JS_EndRequest(load_context);
         return JS_TRUE;
     } else {
         gjs_debug(GJS_DEBUG_GNAMESPACE,
@@ -137,6 +142,7 @@ ns_new_resolve(JSContext *context,
                          "Defining info failed but no exception set");
         }
 
+        JS_EndRequest(load_context);
         return JS_FALSE;
     }
 }

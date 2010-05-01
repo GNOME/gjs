@@ -66,6 +66,8 @@ closure_marshal(GClosure        *closure,
         return;
     }
 
+    JS_BeginRequest(context);
+
     argc = n_param_values;
     argv = g_newa(jsval, n_param_values);
     rval = JSVAL_VOID;
@@ -133,6 +135,7 @@ closure_marshal(GClosure        *closure,
  cleanup:
     gjs_unroot_value_locations(context, argv, argc);
     JS_RemoveRoot(context, &rval);
+    JS_EndRequest(context);
 }
 
 GClosure*

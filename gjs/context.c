@@ -107,6 +107,8 @@ gjs_log(JSContext *context,
         return JS_FALSE;
     }
 
+    JS_BeginRequest(context);
+
     /* JS_ValueToString might throw, in which we will only
      *log that the value could be converted to string */
     exc_state = JS_SaveExceptionState(context);
@@ -117,15 +119,19 @@ gjs_log(JSContext *context,
 
     if (jstr == NULL) {
         gjs_debug(GJS_DEBUG_LOG, "<cannot convert value to string>");
+        JS_EndRequest(context);
         return JS_TRUE;
     }
 
-    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(jstr), &s))
+    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(jstr), &s)) {
+        JS_EndRequest(context);
         return JS_FALSE;
+    }
 
     gjs_debug(GJS_DEBUG_LOG, "%s", s);
     g_free(s);
 
+    JS_EndRequest(context);
     return JS_TRUE;
 }
 
@@ -146,6 +152,8 @@ gjs_log_error(JSContext *context,
         return JS_FALSE;
     }
 
+    JS_BeginRequest(context);
+
     exc = argv[0];
 
     /* JS_ValueToString might throw, in which we will only
@@ -159,16 +167,20 @@ gjs_log_error(JSContext *context,
     if (jstr == NULL) {
         gjs_debug(GJS_DEBUG_ERROR, "<cannot convert value to string>");
         gjs_log_exception_props(context, exc);
+        JS_EndRequest(context);
         return JS_TRUE;
     }
 
-    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(jstr), &s))
+    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(jstr), &s)) {
+        JS_EndRequest(context);
         return JS_FALSE;
+    }
 
     gjs_debug(GJS_DEBUG_ERROR, "%s", s);
     gjs_log_exception_props(context, exc);
     g_free(s);
 
+    JS_EndRequest(context);
     return JS_TRUE;
 }
 
@@ -181,6 +193,8 @@ gjs_print_parse_args(JSContext *context,
     GString *str;
     gchar *s;
     guint n;
+
+    JS_BeginRequest(context);
 
     str = g_string_new("");
     JS_EnterLocalRootScope(context);
@@ -201,6 +215,7 @@ gjs_print_parse_args(JSContext *context,
         if (jstr != NULL) {
             if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(jstr), &s)) {
                 JS_LeaveLocalRootScope(context);
+                JS_EndRequest(context);
                 g_string_free(str, TRUE);
                 return JS_FALSE;
             }
@@ -211,6 +226,7 @@ gjs_print_parse_args(JSContext *context,
                 g_string_append_c(str, ' ');
         } else {
             JS_LeaveLocalRootScope(context);
+            JS_EndRequest(context);
             *buffer = g_string_free(str, TRUE);
             if (!*buffer)
                 *buffer = g_strdup("<invalid string>");
@@ -221,6 +237,7 @@ gjs_print_parse_args(JSContext *context,
     JS_LeaveLocalRootScope(context);
     *buffer = g_string_free(str, FALSE);
 
+    JS_EndRequest(context);
     return JS_TRUE;
 }
 
@@ -330,7 +347,9 @@ gjs_context_dispose(GObject *object)
     }
 
     if (js_context->global != NULL) {
+        JS_BeginRequest(js_context->context);
         JS_RemoveRoot(js_context->context, &js_context->global);
+        JS_EndRequest(js_context->context);
         js_context->global = NULL;
     }
 
@@ -537,6 +556,8 @@ gjs_context_constructor (GType                  type,
     if (js_context->context == NULL)
         gjs_fatal("Failed to create javascript context");
 
+    JS_BeginRequest(js_context->context);
+
     /* same as firefox, see discussion at
      * https://bugzilla.mozilla.org/show_bug.cgi?id=420869 */
     JS_SetScriptStackQuota(js_context->context, 100*1024*1024);
@@ -651,6 +672,8 @@ gjs_context_constructor (GType                  type,
     if (js_context->we_own_runtime) {
         js_context->profiler = gjs_profiler_new(js_context->runtime);
     }
+
+    JS_EndRequest(js_context->context);
 
     g_static_mutex_lock (&contexts_lock);
     all_contexts = g_list_prepend(all_contexts, object);
@@ -805,6 +828,11 @@ gjs_context_eval(GjsContext *js_context,
                   "Exception was set prior to JS_EvaluateScript()");
     }
 
+    /* JS_EvaluateScript requires a request even though it sort of seems like
+     * it means we're always in a request?
+     */
+    JS_BeginRequest(js_context->context);
+
     retval = JSVAL_VOID;
     if (!JS_EvaluateScript(js_context->context,
                            js_context->global,
@@ -868,6 +896,8 @@ gjs_context_eval(GjsContext *js_context,
     }
 
     g_object_unref(G_OBJECT(js_context));
+
+    JS_EndRequest(js_context->context);
 
     return success;
 }
