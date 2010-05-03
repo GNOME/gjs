@@ -87,7 +87,7 @@ TODO:
 * image surface methods
 * matrix
 * version
-* cairo_path_t and iteration
+* iterating over cairo_path_t
 
 Fonts & Glyphs are not wrapped, use PangoCairo instead.
 * glyphs

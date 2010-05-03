@@ -42,6 +42,13 @@ JSObject *       gjs_cairo_context_from_context         (JSContext       *contex
                                                          cairo_t         *cr);
 void             gjs_cairo_context_init                 (JSContext       *context);
 
+
+/* cairo_path_t */
+JSObject *       gjs_cairo_path_from_path               (JSContext       *context,
+                                                         cairo_path_t    *path);
+cairo_path_t *   gjs_cairo_path_get_path                (JSContext       *context,
+                                                         JSObject        *path_wrapper);
+
 /* surface */
 jsval            gjs_cairo_surface_create_proto         (JSContext       *context,
                                                          JSObject        *module,

@@ -110,6 +110,16 @@ function testContextMethods() {
     assertEquals("deviceToUserDistance", rv.length, 2);
 
     cr.showText("foobar");
+
+    cr.moveTo(0, 0);
+    cr.lineTo(1, 0);
+    cr.lineTo(1, 1);
+    cr.lineTo(0, 1);
+    cr.closePath();
+    let path = cr.copyPath();
+    cr.fill();
+    cr.appendPath(path);
+    cr.stroke();
 }
 
 function testSolidPattern() {

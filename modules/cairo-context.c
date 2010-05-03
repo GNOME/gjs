@@ -224,7 +224,6 @@ typedef struct {
 } GjsCairoContext;
 
 GJS_DEFINE_PROTO("CairoContext", gjs_cairo_context)
-
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoContext, gjs_cairo_context_class);
 
 static void
@@ -375,6 +374,72 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFFFF(strokeExtents, cairo_stroke_extents)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC2(translate, cairo_translate, "ff", double, tx, double, ty)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFF(userToDevice, cairo_user_to_device)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFF(userToDeviceDistance, cairo_user_to_device_distance)
+
+
+static JSBool
+appendPath_func(JSContext *context,
+                JSObject  *obj,
+                uintN      argc,
+                jsval     *argv,
+                jsval     *retval)
+{
+    JSObject *path_wrapper;
+    cairo_path_t *path;
+    cairo_t *cr;
+
+    if (!gjs_parse_args(context, "path", "o", argc, argv,
+                        "path", &path_wrapper))
+        return JS_FALSE;
+
+    path = gjs_cairo_path_get_path(context, path_wrapper);
+    if (!path) {
+        gjs_throw(context, "first argument to appendPath() should be a path");
+        return JS_FALSE;
+    }
+
+    cr = gjs_cairo_context_get_context(context, obj);
+    cairo_append_path(cr, path);
+    *retval = JSVAL_VOID;
+    return JS_TRUE;
+}
+
+static JSBool
+copyPath_func(JSContext *context,
+              JSObject  *obj,
+              uintN      argc,
+              jsval     *argv,
+              jsval     *retval)
+{
+    cairo_path_t *path;
+    cairo_t *cr;
+
+    if (!gjs_parse_args(context, "", "", argc, argv))
+        return JS_FALSE;
+
+    cr = gjs_cairo_context_get_context(context, obj);
+    path = cairo_copy_path(cr);
+    *retval = OBJECT_TO_JSVAL(gjs_cairo_path_from_path(context, path));
+    return JS_TRUE;
+}
+
+static JSBool
+copyPathFlat_func(JSContext *context,
+                  JSObject  *obj,
+                  uintN      argc,
+                  jsval     *argv,
+                  jsval     *retval)
+{
+    cairo_path_t *path;
+    cairo_t *cr;
+
+    if (!gjs_parse_args(context, "", "", argc, argv))
+        return JS_FALSE;
+
+    cr = gjs_cairo_context_get_context(context, obj);
+    path = cairo_copy_path_flat(cr);
+    *retval = OBJECT_TO_JSVAL(gjs_cairo_path_from_path(context, path));
+    return JS_TRUE;
+}
 
 static JSBool
 mask_func(JSContext *context,
@@ -691,7 +756,7 @@ getGroupTarget_func(JSContext *context,
 }
 
 static JSFunctionSpec gjs_cairo_context_proto_funcs[] = {
-    // appendPath
+    { "appendPath", appendPath_func, 0, 0},
     { "arc", arc_func, 0, 0 },
     { "arcNegative", arcNegative_func, 0, 0 },
     { "clip", clip_func, 0, 0 },
@@ -699,8 +764,8 @@ static JSFunctionSpec gjs_cairo_context_proto_funcs[] = {
     { "clipPreserve", clipPreserve_func, 0, 0 },
     { "closePath", closePath_func, 0, 0 },
     { "copyPage", copyPage_func, 0, 0 },
-    // copyPath
-    // copyPathFlat
+    { "copyPath", copyPath_func, 0, 0 },
+    { "copyPathFlat", copyPathFlat_func, 0, 0 },
     { "curveTo", curveTo_func, 0, 0 },
     { "deviceToUser", deviceToUser_func, 0, 0 },
     { "deviceToUserDistance", deviceToUserDistance_func, 0, 0 },
