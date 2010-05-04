@@ -323,7 +323,7 @@ invoke_js_from_dbus(JSContext   *context,
     rval = JSVAL_VOID;
     JS_AddRoot(context, &rval);
 
-    gjs_js_set_current_message(method_call);
+    gjs_js_push_current_message(method_call);
     if (!gjs_call_function_value(context,
                                  this_obj,
                                  OBJECT_TO_JSVAL(method_obj),
@@ -369,7 +369,7 @@ invoke_js_from_dbus(JSContext   *context,
     gjs_rooted_array_free(context, values, TRUE);
     JS_RemoveRoot(context, &rval);
 
-   gjs_js_set_current_message(NULL);
+    gjs_js_pop_current_message();
 
     if (reply)
         gjs_debug(GJS_DEBUG_DBUS, "Sending %s reply to dbus method %s",
