@@ -896,8 +896,7 @@ init_cached_function_data (JSContext      *context,
             interface_info = g_type_info_get_interface(&type_info);
             interface_type = g_base_info_get_type(interface_info);
             if (interface_type == GI_INFO_TYPE_CALLBACK &&
-                !(strcmp(g_base_info_get_namespace( (GIBaseInfo*) interface_info), "GLib") == 0 &&
-                  strcmp(g_base_info_get_name( (GIBaseInfo*) interface_info), "DestroyNotify") == 0)) {
+                i != function->destroy_notify_index) {
                 if (function->callback_index != GJS_ARG_INDEX_INVALID) {
                     gjs_throw(context, "Function %s.%s has multiple callbacks, not supported",
                               g_base_info_get_namespace( (GIBaseInfo*) info),
