@@ -150,6 +150,7 @@ gjs_callback_closure(ffi_cif *cif,
     int i, n_args, n_jsargs;
     jsval *jsargs, rval;
     GITypeInfo ret_type;
+    gboolean success = FALSE;
 
     trampoline = data;
     g_assert(trampoline);
@@ -183,7 +184,6 @@ gjs_callback_closure(ffi_cif *cif,
                               n_jsargs,
                               jsargs,
                               &rval)) {
-        gjs_throw(trampoline->context, "Couldn't call callback");
         goto out;
     }
 
@@ -197,11 +197,16 @@ gjs_callback_closure(ffi_cif *cif,
                                  FALSE,
                                  TRUE,
                                  result)) {
-        gjs_throw(trampoline->context, "Couldn't convert res value");
         result = NULL;
+        goto out;
     }
 
+    success = TRUE;
+
 out:
+    if (!success)
+        gjs_log_exception (trampoline->context, NULL);
+
     if (trampoline->scope == GI_SCOPE_TYPE_ASYNC) {
         completed_trampolines = g_slist_prepend(completed_trampolines, trampoline);
     }
