@@ -147,7 +147,7 @@ gjs_callback_closure(ffi_cif *cif,
                      void *data)
 {
     GjsCallbackTrampoline *trampoline;
-    int i, n_args;
+    int i, n_args, n_jsargs;
     jsval *jsargs, rval;
     GITypeInfo ret_type;
 
@@ -159,28 +159,28 @@ gjs_callback_closure(ffi_cif *cif,
     g_assert(n_args >= 0);
 
     jsargs = (jsval*)g_newa(jsval, n_args);
-    for (i = 0; i < n_args; i++) {
+    for (i = 0, n_jsargs = 0; i < n_args; i++) {
         GIArgInfo arg_info;
         GITypeInfo type_info;
 
         g_callable_info_load_arg(trampoline->info, i, &arg_info);
         g_arg_info_load_type(&arg_info, &type_info);
 
-        if (g_type_info_get_tag(&type_info) == GI_TYPE_TAG_VOID) {
-            jsargs[i] = *((jsval*)args[i]);
-        } else if (!gjs_value_from_g_argument(trampoline->context,
-                                              &jsargs[i],
-                                              &type_info,
-                                              args[i])) {
-            gjs_throw(trampoline->context, "could not convert argument of callback");
+        /* Skip void * arguments */
+        if (g_type_info_get_tag(&type_info) == GI_TYPE_TAG_VOID)
+            continue;
+
+        if (!gjs_value_from_g_argument(trampoline->context,
+                                       &jsargs[n_jsargs++],
+                                       &type_info,
+                                       args[i]))
             goto out;
-        }
     }
 
     if (!JS_CallFunctionValue(trampoline->context,
                               NULL,
                               trampoline->js_function,
-                              n_args,
+                              n_jsargs,
                               jsargs,
                               &rval)) {
         gjs_throw(trampoline->context, "Couldn't call callback");

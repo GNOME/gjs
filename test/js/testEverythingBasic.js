@@ -177,22 +177,29 @@ function testStaticMeth() {
 }
 
 function testClosure() {
+    let arguments_length = -1;
     let someCallback = function() {
+                           arguments_length = arguments.length;
                            return 42;
                        };
 
     let i = Everything.test_closure(someCallback);
 
+    assertEquals('callback arguments length', 0, arguments_length);
     assertEquals('callback return value', 42, i);
 }
 
 function testClosureOneArg() {
+    let arguments_length = -1;
     let someCallback = function(someValue) {
+                           arguments_length = arguments.length;
+                           assertEquals(1, arguments.length);
                            return someValue;
                        };
 
     let i = Everything.test_closure_one_arg(someCallback, 42);
 
+    assertEquals('callback arguments length', 1, arguments_length);
     assertEquals('callback with one arg return value', 42, i);
 }
 
