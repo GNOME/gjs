@@ -202,7 +202,7 @@ gjs_callback_closure(ffi_cif *cif,
     }
 
 out:
-    if (trampoline->scope != GI_SCOPE_TYPE_NOTIFIED) {
+    if (trampoline->scope == GI_SCOPE_TYPE_ASYNC) {
         completed_trampolines = g_slist_prepend(completed_trampolines, trampoline);
     }
 }
@@ -599,6 +599,11 @@ gjs_invoke_c_function(JSContext      *context,
     }
 
 release:
+    if (callback_trampoline &&
+        callback_trampoline->scope == GI_SCOPE_TYPE_CALL) {
+        gjs_callback_trampoline_free(callback_trampoline);
+    }
+
     /* We walk over all args, release in args (if allocated) and convert
      * all out args to JS
      */
