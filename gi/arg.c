@@ -1118,6 +1118,141 @@ gjs_value_to_g_argument(JSContext      *context,
     }
 }
 
+/* If a callback function with a return value throws, we still have
+ * to return something to C. This function defines what that something
+ * is. It basically boils down to memset(arg, 0, sizeof(*arg)), but
+ * gives as a bit more future flexibility and also will work if
+ * libffi passes us a buffer that only has room for the appropriate
+ * branch of GArgument. (Currently it appears that the return buffer
+ * has a fixed size large enough for the union of all types.)
+ */
+void
+gjs_g_argument_init_default(JSContext      *context,
+                            GITypeInfo     *type_info,
+                            GArgument      *arg)
+{
+    GITypeTag type_tag;
+
+    type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
+    if (type_tag != GI_TYPE_TAG_TIME_T) // we handle time_t as a non-int type
+        type_tag = normalize_int_types(type_tag);
+
+    switch (type_tag) {
+    case GI_TYPE_TAG_VOID:
+        arg->v_pointer = NULL; /* just so it isn't uninitialized */
+        break;
+
+    case GI_TYPE_TAG_INT8:
+        arg->v_int8 = 0;
+        break;
+
+    case GI_TYPE_TAG_UINT8:
+        arg->v_uint8 = 0;
+        break;
+
+    case GI_TYPE_TAG_INT16:
+        arg->v_int16 = 0;
+        break;
+
+    case GI_TYPE_TAG_UINT16:
+        arg->v_uint16 = 0;
+        break;
+
+    case GI_TYPE_TAG_INT32:
+        arg->v_int = 0;
+        break;
+
+    case GI_TYPE_TAG_UINT32:
+        arg->v_uint32 = 0;
+        break;
+
+    case GI_TYPE_TAG_INT64:
+        arg->v_int64 = 0;
+        break;
+
+    case GI_TYPE_TAG_UINT64:
+        arg->v_uint64 = 0;
+
+    case GI_TYPE_TAG_TIME_T:
+        arg->v_ulong = 0;
+        break;
+
+    case GI_TYPE_TAG_BOOLEAN:
+        arg->v_boolean = FALSE;
+        break;
+
+    case GI_TYPE_TAG_FLOAT:
+        arg->v_float = 0.0f;
+        break;
+
+    case GI_TYPE_TAG_DOUBLE:
+        arg->v_double = 0.0;
+        break;
+
+    case GI_TYPE_TAG_FILENAME:
+    case GI_TYPE_TAG_UTF8:
+    case GI_TYPE_TAG_GLIST:
+    case GI_TYPE_TAG_GSLIST:
+        arg->v_pointer = NULL;
+        break;
+
+    case GI_TYPE_TAG_INTERFACE:
+        {
+            GIBaseInfo* interface_info;
+            GIInfoType interface_type;
+
+            interface_info = g_type_info_get_interface(type_info);
+            g_assert(interface_info != NULL);
+
+            interface_type = g_base_info_get_type(interface_info);
+
+            switch(interface_type) {
+            case GI_INFO_TYPE_ENUM:
+            case GI_INFO_TYPE_FLAGS:
+                arg->v_int = 0;
+                break;
+            case GI_INFO_TYPE_VALUE:
+                /* Better to use a non-NULL value holding NULL? */
+                arg->v_pointer = NULL;
+                break;
+            default:
+                arg->v_pointer = NULL;
+                break;
+            }
+
+            g_base_info_unref( (GIBaseInfo*) interface_info);
+        }
+        break;
+
+    case GI_TYPE_TAG_GHASH:
+        /* Possibly better to return an empty hash table? */
+        arg->v_pointer = NULL;
+        break;
+
+    case GI_TYPE_TAG_ARRAY:
+        arg->v_pointer = NULL;
+        break;
+
+    case GI_TYPE_TAG_SHORT:
+    case GI_TYPE_TAG_USHORT:
+    case GI_TYPE_TAG_INT:
+    case GI_TYPE_TAG_UINT:
+    case GI_TYPE_TAG_LONG:
+    case GI_TYPE_TAG_ULONG:
+    case GI_TYPE_TAG_SIZE:
+    case GI_TYPE_TAG_SSIZE:
+    case GI_TYPE_TAG_GTYPE:
+        /* these types are converted by normalize_int_types */
+        g_assert_not_reached();
+
+    default:
+        gjs_debug(GJS_DEBUG_ERROR,
+                  "Unhandled type %s for default GArgument initialization",
+                  g_type_tag_to_string(type_tag));
+        break;
+    }
+}
+
 JSBool
 gjs_value_to_arg(JSContext  *context,
                  jsval       value,

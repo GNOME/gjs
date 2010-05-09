@@ -197,15 +197,19 @@ gjs_callback_closure(ffi_cif *cif,
                                  FALSE,
                                  TRUE,
                                  result)) {
-        result = NULL;
         goto out;
     }
 
     success = TRUE;
 
 out:
-    if (!success)
+    if (!success) {
         gjs_log_exception (trampoline->context, NULL);
+
+        /* Fill in the result with some hopefully neutral value */
+        g_callable_info_load_return_type(trampoline->info, &ret_type);
+        gjs_g_argument_init_default (trampoline->context, &ret_type, result);
+    }
 
     if (trampoline->scope == GI_SCOPE_TYPE_ASYNC) {
         completed_trampolines = g_slist_prepend(completed_trampolines, trampoline);

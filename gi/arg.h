@@ -46,6 +46,10 @@ JSBool gjs_value_to_arg   (JSContext  *context,
                            GIArgInfo  *arg_info,
                            GArgument  *arg);
 
+void gjs_g_argument_init_default (JSContext      *context,
+                                  GITypeInfo     *type_info,
+                                  GArgument      *arg);
+
 JSBool gjs_value_to_g_argument (JSContext      *context,
                                 jsval           value,
                                 GITypeInfo     *type_info,
