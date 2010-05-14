@@ -850,3 +850,11 @@ function registerSpecialPropertySplitter(name, splitFunction, parameters) {
         parameters: parameters
     };
 }
+
+function setTimeScale(scale) {
+    _timeScale = scale;
+}
+
+function getTimeScale() {
+    return _timeScale;
+}
