@@ -137,10 +137,19 @@ function _emit(name /* , arg1, arg2 */) {
     }
 }
 
+function _addSignalMethod(proto, functionName, func) {
+    if (proto[functionName] && proto[functionName] != func) {
+        log("WARNING: addSignalMethods is replacing existing " +
+            proto + " " + functionName + " method");
+    }
+
+    proto[functionName] = func;
+}
+
 function addSignalMethods(proto) {
-    proto.connect = _connect;
-    proto.disconnect = _disconnect;
-    proto.emit = _emit;
+    _addSignalMethod(proto, "connect", _connect);
+    _addSignalMethod(proto, "disconnect", _disconnect);
+    _addSignalMethod(proto, "emit", _emit);
     // this one is not in GObject, but useful
-    proto.disconnectAll = _disconnectAll;
+    _addSignalMethod(proto, "disconnectAll", _disconnectAll);
 }
