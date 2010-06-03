@@ -1144,6 +1144,7 @@ handle_get_all_properties(JSContext      *context,
             jsval property_val;
             PropertyDetails details;
             DBusMessageIter entry_iter;
+            DBusMessageIter entry_value_iter;
             DBusSignatureIter sig_iter;
             jsval value;
 
@@ -1191,18 +1192,24 @@ handle_get_all_properties(JSContext      *context,
             dbus_message_iter_append_basic(&entry_iter, DBUS_TYPE_STRING,
                                            &details.name);
 
-            property_details_clear(&details);
 
-            dbus_signature_iter_init(&sig_iter, "v");
-            if (!gjs_js_one_value_to_dbus(context, value, &entry_iter,
+            dbus_message_iter_open_container(&entry_iter, DBUS_TYPE_VARIANT,
+                                             details.signature, &entry_value_iter);
+
+            dbus_signature_iter_init(&sig_iter, details.signature);
+            if (!gjs_js_one_value_to_dbus(context, value, &entry_value_iter,
                                           &sig_iter)) {
+                dbus_message_iter_abandon_container(&entry_iter, &entry_value_iter);
                 JS_RemoveRoot(context, &value);
+                property_details_clear(&details);
                 goto js_exception;
             }
+            dbus_message_iter_close_container(&entry_iter, &entry_value_iter);
 
             JS_RemoveRoot(context, &value);
 
             dbus_message_iter_close_container(&dict_iter, &entry_iter);
+            property_details_clear(&details);
         }
     }
 
