@@ -183,6 +183,13 @@ PKG_CHECK_MODULES([GJS], [$gjs_packages])
 PKG_CHECK_MODULES([GJS_GI], [$gjs_gi_packages])
 PKG_CHECK_MODULES([GJS_CAIRO], [$gjs_cairo_packages])
 PKG_CHECK_MODULES([GJS_DBUS], [$gjs_dbus_packages])
+saved_CFLAGS=$CFLAGS
+CFLAGS=$GJS_DBUS_CFLAGS
+saved_LIBS=$LIBS
+LIBS=$GJS_DBUS_LIBS
+AC_CHECK_FUNCS(dbus_message_iter_abandon_container)
+CFLAGS=$saved_CFLAGS
+LIBS=$saved_LIBS
 PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
 
 if test x"$JS_PACKAGE" = x; then

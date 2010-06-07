@@ -1199,7 +1199,9 @@ handle_get_all_properties(JSContext      *context,
             dbus_signature_iter_init(&sig_iter, details.signature);
             if (!gjs_js_one_value_to_dbus(context, value, &entry_value_iter,
                                           &sig_iter)) {
+#ifdef HAVE_DBUS_MESSAGE_ITER_ABANDON_CONTAINER
                 dbus_message_iter_abandon_container(&entry_iter, &entry_value_iter);
+#endif
                 JS_RemoveRoot(context, &value);
                 property_details_clear(&details);
                 goto js_exception;
