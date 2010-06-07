@@ -8,8 +8,9 @@ dist_gjsjs_DATA +=		\
 	modules/lang.js		\
 	modules/jsUnit.js	\
 	modules/signals.js	\
-	modules/cairo.js     \
-	modules/dbus.js
+	modules/cairo.js	\
+	modules/dbus.js		\
+	modules/promise.js
 
 gjsnative_LTLIBRARIES += console.la debugger.la gi.la langNative.la mainloop.la gettextNative.la dbusNative.la cairoNative.la
 
