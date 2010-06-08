@@ -60,6 +60,7 @@ libgjs_la_CFLAGS = 		\
 	$(AM_CFLAGS)
 libgjs_la_LDFLAGS = 		\
 	-export-symbols-regex "^[^_]" -version-info 0:0:0	\
+	-no-undefined \
 	-R $(FIREFOX_JS_LIBDIR) -rdynamic
 libgjs_la_LIBADD = 		\
 	$(GJS_LIBS)

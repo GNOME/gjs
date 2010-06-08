@@ -9,7 +9,7 @@ libgjs_gi_la_LIBADD =			\
         libgjs.la			\
         $(GJS_GI_LIBS)
 libgjs_gi_la_LDFLAGS = \
-	-export-symbols-regex "^[^_].*" -version-info 0:0:0 -rdynamic
+	-export-symbols-regex "^[^_].*" -version-info 0:0:0 -rdynamic -no-undefined
 
 nobase_gjsgiinclude_HEADERS =	\
 	gi/arg.h	\

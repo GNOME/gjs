@@ -18,6 +18,8 @@ libgjs_dbus_la_CPPFLAGS =		\
 libgjs_dbus_la_CFLAGS = 		\
 	$(AM_CFLAGS)		\
 	$(GJS_DBUS_CFLAGS)
+libgjs_dbus_la_LDFLAGS =		\
+	-no-undefined
 libgjs_dbus_la_LIBADD = 		\
 	libgjs.la					\
 	$(GJS_DBUS_LIBS)
