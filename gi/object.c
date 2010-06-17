@@ -1378,9 +1378,9 @@ gjs_define_object_class(JSContext     *context,
                                        /* number of constructor args */
                                        0,
                                        /* props of prototype */
-                                       &gjs_object_instance_proto_props[0],
+                                       parent_proto ? NULL : &gjs_object_instance_proto_props[0],
                                        /* funcs of prototype */
-                                       &gjs_object_instance_proto_funcs[0],
+                                       parent_proto ? NULL : &gjs_object_instance_proto_funcs[0],
                                        /* props of constructor, MyConstructor.myprop */
                                        NULL,
                                        /* funcs of constructor, MyConstructor.myfunc() */
