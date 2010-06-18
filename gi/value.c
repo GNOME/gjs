@@ -566,6 +566,13 @@ gjs_value_from_g_value_internal(JSContext    *context,
 
         obj = gjs_object_from_g_object(context, gobj);
         *value_p = OBJECT_TO_JSVAL(obj);
+    } else if (gtype == G_TYPE_STRV) {
+        if (!gjs_array_from_strv (context,
+                                  value_p,
+                                  g_value_get_boxed (gvalue))) {
+            gjs_throw(context, "Failed to convert strv to array");
+            return JS_FALSE;
+        }
     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
         GjsBoxedCreationFlags boxed_flags;
         GIBaseInfo *info;
