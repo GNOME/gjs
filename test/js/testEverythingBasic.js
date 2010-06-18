@@ -440,4 +440,13 @@ function testObjTortureSignature1Success() {
     assertEquals(q, 14);
 }
 
+function testStrvInGValue() {
+    let v = Everything.test_strv_in_gvalue();
+
+    assertEquals(v.length, 3);
+    assertEquals(v[0], "one");
+    assertEquals(v[1], "two");
+    assertEquals(v[2], "three");
+}
+
 gjstestRun();
