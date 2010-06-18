@@ -573,6 +573,13 @@ gjs_value_from_g_value_internal(JSContext    *context,
             gjs_throw(context, "Failed to convert strv to array");
             return JS_FALSE;
         }
+    } else if (g_type_is_a(gtype, G_TYPE_HASH_TABLE) ||
+               g_type_is_a(gtype, G_TYPE_ARRAY) ||
+               g_type_is_a(gtype, G_TYPE_BYTE_ARRAY) ||
+               g_type_is_a(gtype, G_TYPE_PTR_ARRAY)) {
+        gjs_throw(context,
+                  "Unable to introspect element-type of container in GValue");
+        return JS_FALSE;
     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
         GjsBoxedCreationFlags boxed_flags;
         GIBaseInfo *info;
