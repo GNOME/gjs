@@ -1,6 +1,6 @@
 /* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
- * Copyright (c) 2008  litl, LLC
+ * Copyright (c) 2008-2010  litl, LLC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -89,13 +89,24 @@ module_get_parent(JSContext *context,
     }
 }
 
+/**
+ * gjs_import_native_module:
+ * @context:
+ * @module_obj:
+ * @filename: filename or %NULL
+ * @flags_p:
+ *
+ * Imports a native module by g_module_open a shared library.
+ * If @filename is %NULL, do not dlopen, assume the library
+ * is already loaded in the modules hash table
+ */
 JSBool
 gjs_import_native_module(JSContext        *context,
                          JSObject         *module_obj,
                          const char       *filename,
                          GjsNativeFlags *flags_p)
 {
-    GModule *gmodule;
+    GModule *gmodule = NULL;
     GString *module_id;
     JSObject *parent;
     GjsNativeModule *native_module;
@@ -103,16 +114,18 @@ gjs_import_native_module(JSContext        *context,
     if (flags_p)
         *flags_p = 0;
 
-    /* Vital to load in global scope so any dependent libs
-     * are loaded into the main app. We don't want a second
-     * private copy of GTK or something.
-     */
-    gmodule = g_module_open(filename, 0);
-    if (gmodule == NULL) {
-        gjs_throw(context,
-                     "Failed to load '%s': %s",
-                     filename, g_module_error());
-        return JS_FALSE;
+    if (filename != NULL) {
+        /* Vital to load in global scope so any dependent libs
+         * are loaded into the main app. We don't want a second
+         * private copy of GTK or something.
+         */
+        gmodule = g_module_open(filename, 0);
+        if (gmodule == NULL) {
+            gjs_throw(context,
+                      "Failed to load '%s': %s",
+                      filename, g_module_error());
+            return JS_FALSE;
+        }
     }
 
     /* dlopen() as a side effect should have registered us as
@@ -149,11 +162,13 @@ gjs_import_native_module(JSContext        *context,
         native_module = NULL;
 
     if (native_module == NULL) {
-        gjs_throw(context,
-                  "No native module '%s' has registered itself",
-                  module_id->str);
+        if (filename) {
+            gjs_throw(context,
+                      "No native module '%s' has registered itself",
+                      module_id->str);
+            g_module_close(gmodule);
+        }
         g_string_free(module_id, TRUE);
-        g_module_close(gmodule);
         return JS_FALSE;
     }
 
@@ -162,11 +177,13 @@ gjs_import_native_module(JSContext        *context,
     if (flags_p)
         *flags_p = native_module->flags;
 
-    /* make the module resident, which makes the close() a no-op
-     * (basically we leak the module permanently)
-     */
-    g_module_make_resident(gmodule);
-    g_module_close(gmodule);
+    if (gmodule) {
+        /* make the module resident, which makes the close() a no-op
+         * (basically we leak the module permanently)
+         */
+        g_module_make_resident(gmodule);
+        g_module_close(gmodule);
+    }
 
     if (native_module->flags & GJS_NATIVE_SUPPLIES_MODULE_OBJ) {
 

@@ -1,6 +1,6 @@
 /* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
- * Copyright (c) 2008  litl, LLC
+ * Copyright (c) 2008-2010  litl, LLC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -226,7 +226,7 @@ import_native_file(JSContext  *context,
     JSBool retval = JS_FALSE;
 
     gjs_debug(GJS_DEBUG_IMPORTER,
-              "Importing '%s'", full_path);
+              "Importing '%s' from '%s'", name, full_path ? full_path : "<internal>");
 
     module_obj = JS_ConstructObject(context, NULL, NULL, NULL);
     if (module_obj == NULL) {
@@ -563,7 +563,15 @@ do_import(JSContext  *context,
             }
         }
 
-        /* First try importing a directory (a sub-importer) */
+        /* First try importing an internal module like byteArray */
+        if (import_native_file(context, obj, name, NULL)) {
+            gjs_debug(GJS_DEBUG_IMPORTER,
+                      "successfully imported module '%s'", name);
+            result = JS_TRUE;
+            goto out;
+        }
+
+        /* Second try importing a directory (a sub-importer) */
         if (full_path)
             g_free(full_path);
         full_path = g_build_filename(dirname, name,
@@ -591,7 +599,7 @@ do_import(JSContext  *context,
             continue;
         }
 
-        /* Second, if it's not a directory, try importing a file */
+        /* Third, if it's not a directory, try importing a file */
         g_free(full_path);
         full_path = g_build_filename(dirname, filename,
                                      NULL);
