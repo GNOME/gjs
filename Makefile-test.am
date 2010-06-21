@@ -80,7 +80,8 @@ check:	test
 
 gdb-check gdb-test: $(gjsnative_LTLIBRARIES) ${TEST_PROGS}
 	failed=; for prog in ${TEST_PROGS}; do \
-	  ${TESTS_ENVIRONMENT} libtool --mode=execute gdb --args $$prog; \
+	  ${TESTS_ENVIRONMENT} libtool --mode=execute gdb -x \
+	      $(top_srcdir)/test/unittest.gdb --args $$prog; \
 	  done
 
 valgrind-check valgrind-test: $(gjsnative_LTLIBRARIES) ${TEST_PROGS}
