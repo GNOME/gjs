@@ -36,6 +36,9 @@
 
 #include <girepository.h>
 
+static GType _byte_array_type = G_TYPE_INVALID;
+static GType _ptr_array_type = G_TYPE_INVALID;
+
 static JSBool gjs_value_from_g_value_internal(JSContext    *context,
                                               jsval        *value_p,
                                               const GValue *gvalue,
@@ -575,8 +578,8 @@ gjs_value_from_g_value_internal(JSContext    *context,
         }
     } else if (g_type_is_a(gtype, G_TYPE_HASH_TABLE) ||
                g_type_is_a(gtype, G_TYPE_ARRAY) ||
-               g_type_is_a(gtype, G_TYPE_BYTE_ARRAY) ||
-               g_type_is_a(gtype, G_TYPE_PTR_ARRAY)) {
+               g_type_is_a(gtype, _byte_array_type) ||
+               g_type_is_a(gtype, _ptr_array_type)) {
         gjs_throw(context,
                   "Unable to introspect element-type of container in GValue");
         return JS_FALSE;
@@ -672,4 +675,11 @@ gjs_value_from_g_value(JSContext    *context,
                        const GValue *gvalue)
 {
     return gjs_value_from_g_value_internal(context, value_p, gvalue, FALSE);
+}
+
+__attribute__((constructor)) void
+_gjs_value_init_types(void)
+{
+    _byte_array_type = g_type_from_name("GByteArray");
+    _ptr_array_type = g_type_from_name("GPtrArray");
 }
