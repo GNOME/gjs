@@ -373,6 +373,40 @@ gjs_object_to_g_hash(JSContext   *context,
 }
 
 JSBool
+gjs_array_from_strv(JSContext   *context,
+                    jsval       *value_p,
+                    const char **strv)
+{
+    JSObject *obj;
+    jsval elem;
+    guint i;
+    JSBool result = JS_FALSE;
+
+    obj = JS_NewArrayObject(context, 0, JSVAL_NULL);
+    if (obj == NULL)
+        return JS_FALSE;
+
+    *value_p = OBJECT_TO_JSVAL(obj);
+
+    for (i = 0; strv[i] != NULL; i++) {
+        if (!gjs_string_from_utf8 (context, strv[i], -1, &elem))
+            goto out;
+
+        if (!JS_DefineElement(context, obj, i, elem,
+                              NULL, NULL, JSPROP_ENUMERATE)) {
+            goto out;
+        }
+    }
+
+    result = JS_TRUE;
+
+out:
+    JS_RemoveRoot(context, &elem);
+
+    return result;
+}
+
+JSBool
 gjs_array_to_strv(JSContext   *context,
                   jsval        array_value,
                   unsigned int length,
@@ -1784,27 +1818,12 @@ gjs_value_from_g_argument (JSContext  *context,
 
                 param_tag = g_type_info_get_tag((GITypeInfo*) param_info);
 
-                if (param_tag != GI_TYPE_TAG_UTF8) {
-                    gjs_throw(context, "FIXME: Only supporting null-terminated arrays of strings");
-                    result = JS_FALSE;
+                if (param_tag == GI_TYPE_TAG_UTF8) {
+                    result = gjs_array_from_strv(context,
+                                                 value_p,
+                                                 arg->v_pointer);
                 } else {
-                    GSList *list;
-                    char ** strv;
-
-                    list = NULL;
-                    for (strv = arg->v_pointer; *strv; strv ++) {
-                        list = g_slist_prepend(list, *strv);
-                    }
-                    list = g_slist_reverse(list);
-
-                    result = gjs_array_from_g_list(context,
-                                                   value_p,
-                                                   type_tag,
-                                                   param_info,
-                                                   NULL,
-                                                   list);
-
-                    g_slist_free(list);
+                    gjs_throw(context, "FIXME: Only supporting null-terminated arrays of strings");
                 }
 
                 g_base_info_unref((GIBaseInfo*) param_info);

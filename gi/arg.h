@@ -76,6 +76,9 @@ JSBool _gjs_flags_value_is_valid (JSContext   *context,
                                   GType        gtype,
                                   guint        value);
 
+JSBool gjs_array_from_strv (JSContext   *context,
+                            jsval       *value_p,
+                            const char **strv);
 
 JSBool gjs_array_to_strv (JSContext   *context,
                           jsval        array_value,
