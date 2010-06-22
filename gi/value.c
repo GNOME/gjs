@@ -36,6 +36,7 @@
 
 #include <girepository.h>
 
+static GType _array_type = G_TYPE_INVALID;
 static GType _byte_array_type = G_TYPE_INVALID;
 static GType _ptr_array_type = G_TYPE_INVALID;
 
@@ -577,7 +578,7 @@ gjs_value_from_g_value_internal(JSContext    *context,
             return JS_FALSE;
         }
     } else if (g_type_is_a(gtype, G_TYPE_HASH_TABLE) ||
-               g_type_is_a(gtype, G_TYPE_ARRAY) ||
+               g_type_is_a(gtype, _array_type) ||
                g_type_is_a(gtype, _byte_array_type) ||
                g_type_is_a(gtype, _ptr_array_type)) {
         gjs_throw(context,
@@ -680,6 +681,7 @@ gjs_value_from_g_value(JSContext    *context,
 __attribute__((constructor)) void
 _gjs_value_init_types(void)
 {
+    _array_type = g_type_from_name("GArray");
     _byte_array_type = g_type_from_name("GByteArray");
     _ptr_array_type = g_type_from_name("GPtrArray");
 }
