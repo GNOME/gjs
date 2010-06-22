@@ -388,6 +388,9 @@ gjs_array_from_strv(JSContext   *context,
 
     *value_p = OBJECT_TO_JSVAL(obj);
 
+    elem = JSVAL_VOID;
+    JS_AddRoot(context, &elem);
+
     for (i = 0; strv[i] != NULL; i++) {
         if (!gjs_string_from_utf8 (context, strv[i], -1, &elem))
             goto out;
