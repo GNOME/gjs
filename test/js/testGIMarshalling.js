@@ -43,4 +43,15 @@ function testGArray() {
     assertEquals("2", array[2]);
 }
 
+function testByteArray() {
+    var byteArray = GIMarshallingTests.bytearray_full_return();
+    assertEquals("arrayLength", 4, byteArray.length);
+    assertEquals("a[0]", '0'.charCodeAt(0), byteArray[0]);
+    assertEquals("a[1]", '1'.charCodeAt(0), byteArray[1])
+    assertEquals("a[2]", '2'.charCodeAt(0), byteArray[2]);
+    assertEquals("a[3]", '3'.charCodeAt(0), byteArray[3]);
+    let ba = imports.byteArray.fromString("0123");
+    GIMarshallingTests.bytearray_none_in(ba);
+}
+
 gjstestRun();

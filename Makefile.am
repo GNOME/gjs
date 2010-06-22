@@ -19,12 +19,14 @@ gjsincludedir = $(includedir)/gjs-1.0
 
 ########################################################################
 nobase_gjsinclude_HEADERS =	\
+	gjs/byteArray.h		\
 	gjs/context.h		\
 	gjs/importer.h		\
 	gjs/gjs.h		\
 	gjs/jsapi-util.h	\
 	gjs/mem.h		\
 	gjs/native.h
+
 noinst_HEADERS +=		\
 	gjs/compat.h		\
 	gjs/context-jsapi.h	\
@@ -66,6 +68,7 @@ libgjs_la_LIBADD = 		\
 	$(GJS_LIBS)
 
 libgjs_la_SOURCES =		\
+	gjs/byteArray.c		\
 	gjs/context.c		\
 	gjs/importer.c		\
 	gjs/jsapi-private.cpp	\

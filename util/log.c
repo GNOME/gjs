@@ -274,6 +274,9 @@ gjs_debug(GjsDebugTopic topic,
     case GJS_DEBUG_HTTP:
         prefix = "JS HTTP";
         break;
+    case GJS_DEBUG_BYTE_ARRAY:
+        prefix = "JS BYTE ARRAY";
+        break;
     }
 
     if (!is_allowed_prefix(prefix))

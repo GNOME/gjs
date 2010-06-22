@@ -28,6 +28,8 @@
 #include "importer.h"
 #include "jsapi-util.h"
 #include "profiler.h"
+#include "native.h"
+#include "byteArray.h"
 
 #include <util/log.h>
 #include <util/error.h>
@@ -332,6 +334,8 @@ gjs_context_class_init(GjsContextClass *klass)
     g_object_class_install_property(object_class,
                                     PROP_IS_LOAD_CONTEXT,
                                     pspec);
+
+    gjs_register_native_module("byteArray", gjs_define_byte_array_stuff, 0);
 }
 
 static void

@@ -29,6 +29,7 @@
 #include "boxed.h"
 #include "union.h"
 #include "value.h"
+#include "gjs/byteArray.h"
 #include <gjs/gjs.h>
 
 #include <util/log.h>
@@ -645,6 +646,21 @@ gjs_array_to_g_array(JSContext   *context,
     return JS_TRUE;
 }
 
+static JSBool
+gjs_array_to_byte_array(JSContext  *context,
+                        jsval       value,
+                        void      **arr_p)
+{
+   GByteArray *byte_array;
+   byte_array = gjs_byte_array_get_byte_array(context,
+                                              JSVAL_TO_OBJECT(value));
+   if (!byte_array)
+       return JS_FALSE;
+
+   *arr_p = byte_array;
+   return JS_TRUE;
+}
+
 static gchar *
 get_argument_display_name(const char     *arg_name,
                           GjsArgumentType arg_type)
@@ -1161,7 +1177,12 @@ gjs_value_to_g_argument(JSContext      *context,
                                                param_info,
                                                &arg->v_pointer))
                       wrong = TRUE;
-                /* FIXME: support ByteArray and PtrArray */
+                } else if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
+                    if (!gjs_array_to_byte_array(context,
+                                                 value,
+                                                 &arg->v_pointer))
+                        wrong = TRUE;
+                /* FIXME: support PtrArray */
                 } else {
                     g_assert_not_reached();
                 }
@@ -1169,8 +1190,16 @@ gjs_value_to_g_argument(JSContext      *context,
                 g_base_info_unref((GIBaseInfo*) param_info);
             }
         } else {
-            wrong = TRUE;
-            report_type_mismatch = TRUE;
+            GIArrayType array_type = g_type_info_get_array_type(type_info);
+            if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
+                if (!gjs_array_to_byte_array(context,
+                                             value,
+                                             &arg->v_pointer))
+                    wrong = TRUE;
+            } else {
+                wrong = TRUE;
+                report_type_mismatch = TRUE;
+            }
         }
         break;
 
@@ -1836,6 +1865,14 @@ gjs_value_from_g_argument (JSContext  *context,
                 gjs_throw(context, "FIXME: Only supporting zero-terminated ARRAYs");
                 return JS_FALSE;
             }
+        } else if (g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_BYTE_ARRAY) {
+            JSObject *array = gjs_byte_array_from_byte_array(context,
+                                                             (GByteArray*)arg->v_pointer);
+            if (!array) {
+                gjs_throw(context, "Couldn't convert GByteArray to a ByteArray");
+                return JS_FALSE;
+            }
+            *value_p = OBJECT_TO_JSVAL(array);
         } else {
             /* this assumes the array type is one of GArray, GPtrArray or
              * GByteArray */
@@ -2188,6 +2225,12 @@ gjs_g_arg_release_internal(JSContext  *context,
             }
 
             g_base_info_unref((GIBaseInfo*) param_info);
+        } else if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
+            if (transfer == GI_TRANSFER_CONTAINER) {
+                g_byte_array_free ((GByteArray*)arg->v_pointer, FALSE);
+            } else if (transfer == GI_TRANSFER_EVERYTHING) {
+                g_byte_array_free ((GByteArray*)arg->v_pointer, TRUE);
+            }
         } else {
             g_assert_not_reached();
         }
