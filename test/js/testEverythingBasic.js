@@ -73,13 +73,9 @@ function testLifeUniverseAndEverything() {
     assertEquals(42, Everything.test_double(42));
     assertEquals(-42, Everything.test_double(-42));
 
-    let now = new Date();
-    let bounced = Everything.test_timet(now);
-    assertEquals(now.getFullYear(), bounced.getFullYear());
-    assertEquals(now.getMonth(), bounced.getMonth());
-    assertEquals(now.getDay(), bounced.getDay());
-    assertEquals(now.getHours(), bounced.getHours());
-    assertEquals(now.getSeconds(), bounced.getSeconds());
+    let now = Math.floor(new Date().getTime() / 1000);
+    let bounced = Math.floor(Everything.test_timet(now));
+    assertEquals(bounced, now);
 }
 
 function testLimits() {

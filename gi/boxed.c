@@ -1043,19 +1043,10 @@ struct_is_simple(GIStructInfo *info)
             case GI_TYPE_TAG_UINT16:
             case GI_TYPE_TAG_INT32:
             case GI_TYPE_TAG_UINT32:
-            case GI_TYPE_TAG_SHORT:
-            case GI_TYPE_TAG_USHORT:
-            case GI_TYPE_TAG_INT:
-            case GI_TYPE_TAG_UINT:
             case GI_TYPE_TAG_INT64:
             case GI_TYPE_TAG_UINT64:
-            case GI_TYPE_TAG_LONG:
-            case GI_TYPE_TAG_ULONG:
-            case GI_TYPE_TAG_SSIZE:
-            case GI_TYPE_TAG_SIZE:
             case GI_TYPE_TAG_FLOAT:
             case GI_TYPE_TAG_DOUBLE:
-            case GI_TYPE_TAG_TIME_T:
                 break;
             case GI_TYPE_TAG_VOID:
             case GI_TYPE_TAG_GTYPE:
