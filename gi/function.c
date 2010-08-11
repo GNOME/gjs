@@ -497,8 +497,49 @@ gjs_invoke_c_function(JSContext      *context,
             g_assert_cmpuint(out_args_pos, <, out_args_len);
             g_assert_cmpuint(in_args_pos, <, in_args_len);
 
-            out_arg_cvalues[out_args_pos].v_pointer = NULL;
-            in_arg_cvalues[in_args_pos].v_pointer = &out_arg_cvalues[out_args_pos];
+            if (g_arg_info_is_caller_allocates(&arg_info)) {
+                GITypeTag type_tag;
+                GITypeInfo ainfo;
+
+                g_arg_info_load_type(&arg_info, &ainfo);
+                type_tag = g_type_info_get_tag(&ainfo);
+
+                switch (type_tag) {
+                case GI_TYPE_TAG_INTERFACE:
+                    {
+                        GIBaseInfo* interface_info;
+                        GIInfoType interface_type;
+                        gsize size;
+
+                        interface_info = g_type_info_get_interface(&ainfo);
+                        g_assert(interface_info != NULL);
+
+                        interface_type = g_base_info_get_type(interface_info);
+                        g_base_info_unref((GIBaseInfo*)interface_info);
+
+                        if (interface_type == GI_INFO_TYPE_STRUCT) {
+                            size = g_struct_info_get_size((GIStructInfo*)interface_info);
+                        } else if (interface_type == GI_INFO_TYPE_UNION) {
+                            size = g_union_info_get_size((GIUnionInfo*)interface_info);
+                        } else {
+                            failed = TRUE;
+                        }
+
+                        if (!failed) {
+                            in_arg_cvalues[in_args_pos].v_pointer = g_slice_alloc0(size);
+                            out_arg_cvalues[out_args_pos].v_pointer = in_arg_cvalues[in_args_pos].v_pointer;
+                        }
+                        break;
+                    }
+                default:
+                    failed = TRUE;
+                }
+                if (failed)
+                    gjs_throw(context, "Unsupported type %s for (out caller-allocates)", g_type_tag_to_string(type_tag));
+            } else {
+                out_arg_cvalues[out_args_pos].v_pointer = NULL;
+                in_arg_cvalues[in_args_pos].v_pointer = &out_arg_cvalues[out_args_pos];
+            }
             out_args_pos++;
         } else {
             GArgument *in_value;
@@ -694,6 +735,37 @@ release:
                                            arg)) {
                 arg_failed = TRUE;
                 postinvoke_release_failed = TRUE;
+            }
+
+            /* For caller-allocates, what happens here is we allocate
+             * a structure above, then gjs_value_from_g_argument calls
+             * g_boxed_copy on it, and takes ownership of that.  So
+             * here we release the memory allocated above.  It would be
+             * better to special case this and directly hand JS the boxed
+             * object and tell gjs_boxed it owns the memory, but for now
+             * this works OK.  We could also alloca() the structure instead
+             * of slice allocating.
+             */
+            if (g_arg_info_is_caller_allocates(&arg_info)) {
+                GITypeTag type_tag;
+                GIBaseInfo* interface_info;
+                GIInfoType interface_type;
+                gsize size;
+
+                type_tag = g_type_info_get_tag(&arg_type_info);
+                g_assert(type_tag == GI_TYPE_TAG_INTERFACE);
+                interface_info = g_type_info_get_interface(&arg_type_info);
+                interface_type = g_base_info_get_type(interface_info);
+                if (interface_type == GI_INFO_TYPE_STRUCT) {
+                    size = g_struct_info_get_size((GIStructInfo*)interface_info);
+                } else if (interface_type == GI_INFO_TYPE_UNION) {
+                    size = g_union_info_get_size((GIUnionInfo*)interface_info);
+                } else {
+                    g_assert_not_reached();
+                }
+
+                g_slice_free1(size, out_arg_cvalues[out_args_pos].v_pointer);
+                g_base_info_unref((GIBaseInfo*)interface_info);
             }
 
             /* Free GArgument, the jsval should have ref'd or copied it */

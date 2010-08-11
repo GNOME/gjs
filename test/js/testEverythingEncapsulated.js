@@ -15,6 +15,20 @@ function testStruct() {
     assertEquals(43, struct.some_int8);
     assertEquals(42.5, struct.some_double);
     assertEquals(Everything.TestEnum.VALUE3, struct.some_enum);
+    let b = struct.clone();
+    assertEquals(42, b.some_int);
+    assertEquals(43, b.some_int8);
+    assertEquals(42.5, b.some_double);
+    assertEquals(Everything.TestEnum.VALUE3, b.some_enum);
+
+    struct = new Everything.TestStructB();
+    struct.some_int8 = 43;
+    struct.nested_a.some_int8 = 66;
+    assertEquals(43, struct.some_int8);
+    assertEquals(66, struct.nested_a.some_int8);
+    b = struct.clone();
+    assertEquals(43, b.some_int8);
+    assertEquals(66, struct.nested_a.some_int8);
 }
 
 function testStructConstructor()
