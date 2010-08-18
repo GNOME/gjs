@@ -52,6 +52,12 @@ void            gjs_dbus_proxy_send            (GjsDBusProxy               *prox
                                                 GjsDBusProxyReplyFunc       reply_func,
                                                 GjsDBusProxyErrorReplyFunc  error_func,
                                                 void                       *data);
+void           gjs_dbus_proxy_send_full        (GjsDBusProxy              *proxy,
+                                                DBusMessage               *message,
+                                                GjsDBusProxyReplyFunc      plain_func,
+                                                GjsDBusProxyJsonReplyFunc  json_func,
+                                                GjsDBusProxyErrorReplyFunc error_func,
+                                                void                      *data);
 
 /* varargs are like:
  *

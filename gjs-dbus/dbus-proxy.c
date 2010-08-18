@@ -557,13 +557,13 @@ pending_call_free_data(void *data)
     reply_closure_free(c);
 }
 
-static void
-gjs_dbus_proxy_send_internal(GjsDBusProxy              *proxy,
-                             DBusMessage               *message,
-                             GjsDBusProxyReplyFunc      plain_func,
-                             GjsDBusProxyJsonReplyFunc  json_func,
-                             GjsDBusProxyErrorReplyFunc error_func,
-                             void                      *data)
+void
+gjs_dbus_proxy_send_full(GjsDBusProxy              *proxy,
+                         DBusMessage               *message,
+                         GjsDBusProxyReplyFunc      plain_func,
+                         GjsDBusProxyJsonReplyFunc  json_func,
+                         GjsDBusProxyErrorReplyFunc error_func,
+                         void                      *data)
 {
     ReplyClosure *c;
     DBusPendingCall *pending;
@@ -606,7 +606,7 @@ gjs_dbus_proxy_send(GjsDBusProxy              *proxy,
                     GjsDBusProxyErrorReplyFunc error_func,
                     void                      *data)
 {
-    gjs_dbus_proxy_send_internal(proxy, message, reply_func, NULL, error_func, data);
+    gjs_dbus_proxy_send_full(proxy, message, reply_func, NULL, error_func, data);
 }
 
 static void
@@ -658,7 +658,7 @@ gjs_dbus_proxy_call_json_async (GjsDBusProxy              *proxy,
 
     dbus_message_iter_close_container(&arg_iter, &dict_iter);
 
-    gjs_dbus_proxy_send_internal(proxy, message, NULL, reply_func, error_func, data);
+    gjs_dbus_proxy_send_full(proxy, message, NULL, reply_func, error_func, data);
 
     dbus_message_unref(message);
 }
