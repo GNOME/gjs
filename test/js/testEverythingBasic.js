@@ -1,4 +1,5 @@
-const Everything = imports.gi.Everything;
+// This used to be called "Everything"
+const Everything = imports.gi.Regress;
 if (!('assertEquals' in this)) { /* allow running this test standalone */
     imports.lang.copyPublicProperties(imports.jsUnit, this);
     gjstestRun = function() { return imports.jsUnit.gjstestRun(window); };

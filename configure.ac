@@ -192,6 +192,9 @@ CFLAGS=$saved_CFLAGS
 LIBS=$saved_LIBS
 PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
 
+GI_DATADIR=$($PKG_CONFIG --variable=gidatadir gobject-introspection-1.0)
+AC_SUBST(GI_DATADIR)
+
 if test x"$JS_PACKAGE" = x; then
     # if JS_PACKAGE is undefined, pkg-config modules don't include
     # SpiderMonkey and we need to deal with it ourselves
