@@ -107,6 +107,8 @@ gjs_value_to_gsize(JSContext         *context,
                    jsval              value,
                    gsize             *v_p)
 {
+    guint32 val32;
+
     /* Just JS_ValueToECMAUint32() would work. However,
      * we special case ints for two reasons:
      *  - JS_ValueToECMAUint32() always goes via a double which is slow
@@ -122,11 +124,15 @@ gjs_value_to_gsize(JSContext         *context,
         *v_p = i;
         return JS_TRUE;
     } else {
+        JSBool ret;
         /* This is pretty liberal (it converts about anything to
          * a number) but it's what we use elsewhere in gjs too.
          */
-        return JS_ValueToECMAUint32(context, value,
-                                    v_p);
+
+        ret = JS_ValueToECMAUint32(context, value,
+                                   &val32);
+        *v_p = val32;
+        return ret;
     }
 }
 
@@ -194,7 +200,7 @@ byte_array_get_prop(JSContext *context,
 
     /* First handle array indexing */
     if (JSVAL_IS_NUMBER(id)) {
-        unsigned int idx;
+        gsize idx;
         if (!gjs_value_to_gsize(context, id, &idx))
             return JS_FALSE;
         return byte_array_get_index(context, obj, priv, idx, value_p);
@@ -233,7 +239,7 @@ byte_array_length_setter(JSContext *context,
                          jsval     *value_p)
 {
     ByteArrayInstance *priv;
-    guint32 len = 0;
+    gsize len = 0;
 
     priv = priv_from_js(context, obj);
 
@@ -352,7 +358,7 @@ byte_array_new_resolve(JSContext *context,
         return JS_TRUE; /* prototype, not an instance. */
 
     if (JSVAL_IS_NUMBER(id)) {
-        unsigned int idx;
+        gsize idx;
         if (!gjs_value_to_gsize(context, id, &idx))
             return JS_FALSE;
         if (idx >= priv->array->len) {
@@ -425,7 +431,7 @@ byte_array_constructor(JSContext *context,
     gboolean is_proto;
     JSClass *obj_class;
     JSClass *proto_class;
-    guint32 preallocated_length;
+    gsize preallocated_length;
 
     if (!gjs_check_constructing(context))
         return JS_FALSE;
