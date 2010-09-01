@@ -111,10 +111,10 @@ replace_gtype(GITypeTag type) {
     if (type == GI_TYPE_TAG_GTYPE) {
         /* Constant folding should handle this hopefully */
         switch (sizeof(GType)) {
-        case 1: GI_TYPE_TAG_UINT8;
-        case 2: GI_TYPE_TAG_UINT16;
-        case 4: GI_TYPE_TAG_UINT32;
-        case 8: GI_TYPE_TAG_UINT64;
+        case 1: return GI_TYPE_TAG_UINT8;
+        case 2: return GI_TYPE_TAG_UINT16;
+        case 4: return GI_TYPE_TAG_UINT32;
+        case 8: return GI_TYPE_TAG_UINT64;
         default: g_assert_not_reached ();
         }
     }
