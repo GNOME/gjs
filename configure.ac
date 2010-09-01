@@ -141,6 +141,9 @@ AC_SUBST(FIREFOX_JS_LIBDIR)
 AC_CHECK_LIB([mozjs], [JS_CallTracer], :,
              [AC_MSG_ERROR([SpiderMonkey is too old, Firefox 3 is required])],
              [$JS_LIBS])
+AC_CHECK_LIB([mozjs], [JS_DefinePropertyById], :,
+             [AC_MSG_ERROR([SpiderMonkey is too old, xulrunner 1.9.1 is required])],
+             [$JS_LIBS])
 
 ## workaround for Ubuntu Hardy bug where mozilla-js.pc gives CFLAGS
 ## -I.../stable while jsapi.h is in .../unstable
