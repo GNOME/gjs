@@ -924,11 +924,7 @@ init_cached_function_data (JSContext      *context,
             g_base_info_unref(interface_info);
         }
         destroy = g_arg_info_get_destroy(&arg_info);
-        if (is_method)
-            --destroy;
         closure = g_arg_info_get_closure(&arg_info);
-        if (is_method)
-            --closure;
         direction = g_arg_info_get_direction(&arg_info);
 
         if (destroy > 0 && destroy < n_args) {
