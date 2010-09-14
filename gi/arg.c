@@ -38,7 +38,7 @@
 JSBool
 _gjs_flags_value_is_valid(JSContext   *context,
                           GType        gtype,
-                          guint        value)
+                          gint64       value)
 {
     GFlagsValue *v;
     guint32 tmpval;
@@ -51,13 +51,20 @@ _gjs_flags_value_is_valid(JSContext   *context,
     klass = g_type_class_ref(gtype);
 
     /* check all bits are defined for flags.. not necessarily desired */
-    tmpval = value;
+    tmpval = (guint32)value;
+    if (tmpval != value) { /* Not a guint32 */
+        gjs_throw(context,
+                  "0x%" G_GINT64_MODIFIER "x is not a valid value for flags %s",
+                  value, g_type_name(G_TYPE_FROM_CLASS(klass)));
+        return JS_FALSE;
+    }
+
     while (tmpval) {
         v = g_flags_get_first_value(klass, tmpval);
         if (!v) {
             gjs_throw(context,
                       "0x%x is not a valid value for flags %s",
-                      value, g_type_name(G_TYPE_FROM_CLASS(klass)));
+                      (guint32)value, g_type_name(G_TYPE_FROM_CLASS(klass)));
             return JS_FALSE;
         }
 
@@ -71,7 +78,7 @@ _gjs_flags_value_is_valid(JSContext   *context,
 static JSBool
 _gjs_enum_value_is_valid(JSContext  *context,
                          GIEnumInfo *enum_info,
-                         int         value)
+                         gint64      value)
 {
     JSBool found;
     int n_values;
@@ -82,7 +89,7 @@ _gjs_enum_value_is_valid(JSContext  *context,
 
     for (i = 0; i < n_values; ++i) {
         GIValueInfo *value_info;
-        long enum_value;
+        gint64 enum_value;
 
         value_info = g_enum_info_get_value(enum_info, i);
         enum_value = g_value_info_get_value(value_info);
@@ -96,11 +103,50 @@ _gjs_enum_value_is_valid(JSContext  *context,
 
     if (!found) {
         gjs_throw(context,
-                  "%d is not a valid value for enumeration %s",
+                  "%" G_GINT64_MODIFIER "d is not a valid value for enumeration %s",
                   value, g_base_info_get_name((GIBaseInfo *)enum_info));
     }
 
     return found;
+}
+
+static gboolean
+_gjs_enum_uses_signed_type (GIEnumInfo *enum_info)
+{
+    switch (g_enum_info_get_storage_type (enum_info)) {
+    case GI_TYPE_TAG_INT8:
+    case GI_TYPE_TAG_INT16:
+    case GI_TYPE_TAG_INT32:
+    case GI_TYPE_TAG_INT64:
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
+/* This is hacky - g_function_info_invoke() and g_field_info_get/set_field() expect
+ * arg->v_int to have the enum value in arg->v_int and depend on all flags and
+ * enumerations being passed on the stack in a 32-bit field. See FIXME comment in
+ * g_field_info_get_field. The same assumption of enums cast to 32-bit signed integers
+ * is found in g_value_set_enum/g_value_set_flags().
+ */
+
+gint64
+_gjs_enum_from_int (GIEnumInfo *enum_info,
+                    int         int_value)
+{
+    if (_gjs_enum_uses_signed_type (enum_info))
+        return (gint64)int_value;
+    else
+        return (gint64)(guint32)int_value;
+}
+
+/* Here for symmetry, but result is the same for the two cases */
+static int
+_gjs_enum_to_int (GIEnumInfo *enum_info,
+                  gint64      value)
+{
+    return (int)value;
 }
 
 /* The typelib used to have machine-independent types like
@@ -982,17 +1028,25 @@ gjs_value_to_g_argument(JSContext      *context,
                 nullable_type = FALSE;
 
                 if (interface_type == GI_INFO_TYPE_ENUM) {
-                    if (!JS_ValueToInt32(context, value, &arg->v_int)) {
+                    gint64 value_int64;
+
+                    if (!gjs_value_to_int64 (context, value, &value_int64))
                         wrong = TRUE;
-                    } else if (!_gjs_enum_value_is_valid(context, (GIEnumInfo *)interface_info, arg->v_int)) {
+                    else if (!_gjs_enum_value_is_valid(context, (GIEnumInfo *)interface_info, value_int64))
                         wrong = TRUE;
-                    }
+                    else
+                        arg->v_int = _gjs_enum_to_int ((GIEnumInfo *)interface_info, value_int64);
+
                 } else if (interface_type == GI_INFO_TYPE_FLAGS) {
-                    if (!JS_ValueToInt32(context, value, &arg->v_int)) {
+                    gint64 value_int64;
+
+                    if (!gjs_value_to_int64 (context, value, &value_int64))
                         wrong = TRUE;
-                    } else if (!_gjs_flags_value_is_valid(context, gtype, arg->v_int)) {
+                    else if (!_gjs_flags_value_is_valid(context, gtype, value_int64))
                         wrong = TRUE;
-                    }
+                    else
+                        arg->v_int = _gjs_enum_to_int ((GIEnumInfo *)interface_info, value_int64);
+
                 } else if (gtype == G_TYPE_NONE) {
                     gjs_throw(context, "Unexpected unregistered type unpacking GArgument from Number");
                     wrong = TRUE;
@@ -1720,14 +1774,24 @@ gjs_value_from_g_argument (JSContext  *context,
 
             /* Enum/Flags are aren't pointer types, unlike the other interface subtypes */
             if (interface_type == GI_INFO_TYPE_ENUM) {
-                if (_gjs_enum_value_is_valid(context, (GIEnumInfo *)interface_info, arg->v_int))
-                    value = INT_TO_JSVAL(arg->v_int);
+                gint64 value_int64 = _gjs_enum_from_int ((GIEnumInfo *)interface_info, arg->v_int);
+
+                if (_gjs_enum_value_is_valid(context, (GIEnumInfo *)interface_info, value_int64)) {
+                    jsval tmp;
+                    if (JS_NewNumberValue(context, value_int64, &tmp))
+                        value = tmp;
+                }
 
                 goto out;
             } else if (interface_type == GI_INFO_TYPE_FLAGS) {
+                gint64 value_int64 = _gjs_enum_from_int ((GIEnumInfo *)interface_info, arg->v_int);
+
                 gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
-                if (_gjs_flags_value_is_valid(context, gtype, arg->v_int))
-                    value = INT_TO_JSVAL(arg->v_int);
+                if (_gjs_flags_value_is_valid(context, gtype, value_int64)) {
+                    jsval tmp;
+                    if (JS_NewNumberValue(context, value_int64, &tmp))
+                        value = tmp;
+                }
 
                 goto out;
             } else if (interface_type == GI_INFO_TYPE_STRUCT &&

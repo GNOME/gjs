@@ -64,10 +64,11 @@ gjs_define_enum_value(JSContext    *context,
     const char *value_name;
     char *fixed_name;
     gsize i;
-    int value_val;
+    gint64 value_val;
+    jsval value_js;
 
     value_name = g_base_info_get_name( (GIBaseInfo*) info);
-    value_val = (int) g_value_info_get_value(info);
+    value_val = g_value_info_get_value(info);
 
     /* g-i converts enum members such as GDK_GRAVITY_SOUTH_WEST to
      * Gdk.GravityType.south-west (where 'south-west' is value_name)
@@ -82,11 +83,12 @@ gjs_define_enum_value(JSContext    *context,
     }
 
     gjs_debug(GJS_DEBUG_GENUM,
-              "Defining enum value %s (fixed from %s) %d",
+              "Defining enum value %s (fixed from %s) %" G_GINT64_MODIFIER "d",
               fixed_name, value_name, value_val);
 
-    if (!JS_DefineProperty(context, in_object,
-                           fixed_name, INT_TO_JSVAL(value_val),
+    if (!JS_NewNumberValue(context, value_val, &value_js) ||
+        !JS_DefineProperty(context, in_object,
+                           fixed_name, value_js,
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS)) {
         gjs_throw(context, "Unable to define enumeration value %s %d (no memory most likely)",

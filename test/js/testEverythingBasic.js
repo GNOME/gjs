@@ -340,8 +340,17 @@ function testNestedGHashOut() {
 
 /* Enums */
 function testEnumParam() {
-   let e = Everything.test_enum_param(Everything.TestEnum.VALUE1);
+   let e;
+
+   e = Everything.test_enum_param(Everything.TestEnum.VALUE1);
    assertEquals('Enum parameter', 'value1', e);
+   e = Everything.test_enum_param(Everything.TestEnum.VALUE3);
+   assertEquals('Enum parameter', 'value3', e);
+
+   e = Everything.test_unsigned_enum_param(Everything.TestEnumUnsigned.VALUE1);
+   assertEquals('Enum parameter', 'value1', e);
+   e = Everything.test_unsigned_enum_param(Everything.TestEnumUnsigned.VALUE2);
+   assertEquals('Enum parameter', 'value2', e);
 }
 
 function testSignal() {

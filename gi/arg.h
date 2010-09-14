@@ -74,7 +74,10 @@ JSBool gjs_g_argument_release_in_arg (JSContext  *context,
 
 JSBool _gjs_flags_value_is_valid (JSContext   *context,
                                   GType        gtype,
-                                  guint        value);
+                                  gint64       value);
+
+gint64 _gjs_enum_from_int (GIEnumInfo *enum_info,
+                           int         int_value);
 
 JSBool gjs_array_from_strv (JSContext   *context,
                             jsval       *value_p,

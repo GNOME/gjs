@@ -404,11 +404,14 @@ gjs_value_to_g_value_internal(JSContext    *context,
         else
             g_value_set_boxed(gvalue, gboxed);
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {
-        if (JSVAL_IS_INT(value)) {
+        gint64 value_int64;
+
+        if (gjs_value_to_int64 (context, value, &value_int64)) {
             GEnumValue *v;
 
+            /* See arg.c:_gjs_enum_to_int() */
             v = g_enum_get_value(G_ENUM_CLASS(g_type_class_peek(gtype)),
-                                 JSVAL_TO_INT(value));
+                                 (int)value_int64);
             if (v == NULL) {
                 gjs_throw(context,
                           "%d is not a valid value for enumeration %s",
@@ -425,11 +428,14 @@ gjs_value_to_g_value_internal(JSContext    *context,
             return JS_FALSE;
         }
     } else if (g_type_is_a(gtype, G_TYPE_FLAGS)) {
-        if (JSVAL_IS_INT(value)) {
-            if (!_gjs_flags_value_is_valid(context, gtype, JSVAL_TO_INT(value)))
+        gint64 value_int64;
+
+        if (gjs_value_to_int64 (context, value, &value_int64)) {
+            if (!_gjs_flags_value_is_valid(context, gtype, value_int64))
                 return JS_FALSE;
 
-            g_value_set_flags(gvalue, value);
+            /* See arg.c:_gjs_enum_to_int() */
+            g_value_set_flags(gvalue, (int)value_int64);
         } else {
             gjs_throw(context,
                       "Wrong type %s; flags %s expected",
@@ -512,6 +518,36 @@ gjs_value_to_g_value_no_copy(JSContext    *context,
                              GValue       *gvalue)
 {
     return gjs_value_to_g_value_internal(context, value, gvalue, TRUE);
+}
+
+static JSBool
+convert_int_to_enum (JSContext *context,
+                     jsval     *value_p,
+                     GType      gtype,
+                     int        v)
+{
+    double v_double;
+
+    if (v > 0 && v < G_MAXINT) {
+        /* Optimize the unambiguous case */
+        v_double = v;
+    } else {
+        GIBaseInfo *info;
+
+        /* Need to distinguish between negative integers and unsigned integers */
+
+        info = g_irepository_find_by_gtype(g_irepository_get_default(),
+                                           gtype);
+
+        if (info == NULL) /* hope for the best */
+            v_double = v;
+        else
+            v_double = _gjs_enum_from_int ((GIEnumInfo *)info, v);
+
+        g_base_info_unref(info);
+    }
+
+    return JS_NewNumberValue(context, v_double, value_p);
 }
 
 static JSBool
@@ -630,9 +666,7 @@ gjs_value_from_g_value_internal(JSContext    *context,
         }
         *value_p = OBJECT_TO_JSVAL(obj);
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {
-        int v;
-        v = g_value_get_enum(gvalue);
-        *value_p = INT_TO_JSVAL(v);
+        return convert_int_to_enum(context, value_p, gtype, g_value_get_enum(gvalue));
     } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
         GParamSpec *gparam;
         JSObject *obj;

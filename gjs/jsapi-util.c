@@ -1270,6 +1270,52 @@ gjs_date_from_time_t (JSContext *context, time_t time)
 }
 
 /**
+ * gjs_value_to_int64:
+ * @context: the Javascript context object
+ * @val: Javascript value to convert
+ * @gint64: location to store the return value
+ *
+ * Converts a Javascript value into the nearest 64 bit signed value.
+ *
+ * This function behaves indentically for rounding to JSValToInt32(), which
+ * means that it rounds (0.5 toward positive infinity) rather than doing
+ * a C-style truncation to 0. If we change to using JSValToEcmaInt32() then
+ * this should be changed to match.
+ *
+ * Return value: If the javascript value converted to a number (see
+ *   JS_ValueToNumber()) is NaN, or outside the range of 64-bit signed
+ *   numbers, fails and sets an exception. Otherwise returns the value
+ *   rounded to the nearest 64-bit integer. Like JS_ValueToInt32(),
+ *   undefined throws, but null => 0, false => 0, true => 1.
+ */
+JSBool
+gjs_value_to_int64  (JSContext  *context,
+                     const jsval val,
+                     gint64     *result)
+{
+    if (JSVAL_IS_INT (val)) {
+        *result = JSVAL_TO_INT (val);
+        return JS_TRUE;
+    } else {
+        double value_double;
+        if (!JS_ValueToNumber(context, val, &value_double))
+            return JS_FALSE;
+
+        if (isnan(value_double) ||
+            value_double < G_MININT64 ||
+            value_double > G_MAXINT64) {
+
+            gjs_throw(context,
+                      "Value is not a valid 64-bit integer");
+            return JS_FALSE;
+        }
+
+        *result = (gint64)(value_double + 0.5);
+        return JS_TRUE;
+    }
+}
+
+/**
  * gjs_parse_args:
  * @context:
  * @function_name: The name of the function being called
