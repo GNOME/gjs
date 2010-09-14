@@ -1792,6 +1792,7 @@ gjs_value_from_g_argument (JSContext  *context,
                                                  arg->v_pointer);
                 } else {
                     gjs_throw(context, "FIXME: Only supporting null-terminated arrays of strings");
+                    result = FALSE;
                 }
 
                 g_base_info_unref((GIBaseInfo*) param_info);
