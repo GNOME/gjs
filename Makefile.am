@@ -93,13 +93,13 @@ gjstest_files_with_tests += 	\
 	gjs/stack.c				\
 	util/glib.c
 
+tapset_in_files = gjs/gjs.stp.in
+EXTRA_DIST += $(tapset_in_files)
 if ENABLE_SYSTEMTAP
 gjs/gjs.stp: gjs/gjs.stp.in Makefile
 	sed -e s,@EXPANDED_LIBDIR@,$(libdir), < $< > $@.tmp && mv $@.tmp $@
-tapset_in_files = gjs/gjs.stp.in
 tapsetdir   = $(DESTDIR)$(datadir)/systemtap/tapset
 tapset_DATA = $(tapset_in_files:.stp.in=.stp)
-EXTRA_DIST += $(tapset_in_files)
 endif
 
 include Makefile-gjs-dbus.am

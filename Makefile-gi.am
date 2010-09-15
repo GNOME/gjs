@@ -49,8 +49,8 @@ gjs_gi_probes.o: gi/gjs_gi_probes.d
 	$(DTRACE) -G -s $< -o $@
 BUILT_SOURCES += gjs_gi_probes.h gjs_gi_probes.o
 libgjs_gi_la_LIBADD += gjs_gi_probes.o
-EXTRA_DIST += gi/gjs_gi_probes.d
 endif
+EXTRA_DIST += gi/gjs_gi_probes.d
 
 
 ########################################################################
