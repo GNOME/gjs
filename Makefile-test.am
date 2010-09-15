@@ -67,10 +67,10 @@ testlib_LTLIBRARIES = libregress.la libgimarshallingtests.la
 testlibdir = $(prefix)/unused
 install-testlibLTLIBRARIES: # prevent it from being installed
 
-libregress_la_SOURCES = $(GI_DATADIR)/tests/regress.c $(GI_DATADIR)/tests/regress.h
+nodist_libregress_la_SOURCES = $(GI_DATADIR)/tests/regress.c $(GI_DATADIR)/tests/regress.h
 libregress_la_CFLAGS = $(GJS_CFLAGS) $(GJS_CAIRO_CFLAGS)
 libregress_la_LDFLAGS = -avoid-version $(GJS_LIBS) $(GJS_CAIRO_LIBS)
-libgimarshallingtests_la_SOURCES = $(GI_DATADIR)/tests/gimarshallingtests.c $(GI_DATADIR)/tests/gimarshallingtests.h
+nodist_libgimarshallingtests_la_SOURCES = $(GI_DATADIR)/tests/gimarshallingtests.c $(GI_DATADIR)/tests/gimarshallingtests.h
 libgimarshallingtests_la_CFLAGS = $(GJS_CFLAGS)
 libgimarshallingtests_la_LDFLAGS = -avoid-version $(GJS_LIBS)
 
