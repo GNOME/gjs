@@ -1642,10 +1642,10 @@ gjs_value_from_g_argument (JSContext  *context,
         return JS_NewNumberValue(context, arg->v_int8, value_p);
 
     case GI_TYPE_TAG_FLOAT:
-        return JS_NewDoubleValue(context, arg->v_float, value_p);
+        return JS_NewNumberValue(context, arg->v_float, value_p);
 
     case GI_TYPE_TAG_DOUBLE:
-        return JS_NewDoubleValue(context, arg->v_double, value_p);
+        return JS_NewNumberValue(context, arg->v_double, value_p);
 
     case GI_TYPE_TAG_FILENAME:
         if (arg->v_pointer)

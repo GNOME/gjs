@@ -257,7 +257,7 @@ gjs_js_one_value_from_dbus(JSContext       *context,
         {
             double v_DOUBLE;
             dbus_message_iter_get_basic(iter, &v_DOUBLE);
-            if (!JS_NewDoubleValue(context, v_DOUBLE, value_p))
+            if (!JS_NewNumberValue(context, v_DOUBLE, value_p))
                 return JS_FALSE;
         }
         break;

@@ -98,7 +98,7 @@ gjs_value_from_gsize(JSContext         *context,
         *value_p = INT_TO_JSVAL(v);
         return JS_TRUE;
     } else {
-        return JS_NewDoubleValue(context, v, value_p);
+        return JS_NewNumberValue(context, v, value_p);
     }
 }
 
