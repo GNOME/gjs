@@ -104,7 +104,7 @@ gjs_js_push_current_message(DBusMessage *message)
 }
 
 void
-gjs_js_pop_current_message()
+gjs_js_pop_current_message(void)
 {
     g_assert(_gjs_current_dbus_messages != NULL);
 

@@ -45,7 +45,7 @@ JSBool gjs_js_one_value_to_dbus   (JSContext          *context,
                                    DBusSignatureIter  *sig_iter);
 
 void gjs_js_push_current_message  (DBusMessage        *message);
-void gjs_js_pop_current_message   ();
+void gjs_js_pop_current_message   (void);
 
 
 G_END_DECLS

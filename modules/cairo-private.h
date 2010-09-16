@@ -44,6 +44,10 @@ void             gjs_cairo_context_init                 (JSContext       *contex
 
 
 /* cairo_path_t */
+jsval            gjs_cairo_path_create_proto            (JSContext       *context,
+                                                         JSObject        *module,
+                                                         const char      *proto_name,
+                                                         JSObject        *parent);
 JSObject *       gjs_cairo_path_from_path               (JSContext       *context,
                                                          cairo_path_t    *path);
 cairo_path_t *   gjs_cairo_path_get_path                (JSContext       *context,
