@@ -16,6 +16,7 @@ gjsnative_LTLIBRARIES += console.la debugger.la gi.la langNative.la mainloop.la 
 
 JS_NATIVE_MODULE_CFLAGS =	\
         $(AM_CFLAGS)		\
+	-DGJS_COMPILATION	\
         $(GJS_CFLAGS)
 JS_NATIVE_MODULE_LIBADD =	\
         libgjs.la		\

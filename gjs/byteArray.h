@@ -24,6 +24,10 @@
 #ifndef __GJS_BYTE_ARRAY_H__
 #define __GJS_BYTE_ARRAY_H__
 
+#if !defined (__GJS_GJS_H__) && !defined (GJS_COMPILATION)
+#error "Only <gjs/gjs.h> can be included directly."
+#endif
+
 #include <glib.h>
 
 #include <jsapi.h>

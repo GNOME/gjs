@@ -57,7 +57,8 @@ lib_LTLIBRARIES += libgjs.la
 libgjs_la_CPPFLAGS =		\
 	$(AM_CPPFLAGS)		\
 	$(GJS_CFLAGS)		\
-	$(gjs_directory_defines)
+	$(gjs_directory_defines)\
+	-DGJS_COMPILATION
 libgjs_la_CFLAGS = 		\
 	$(AM_CFLAGS)
 libgjs_la_LDFLAGS = 		\

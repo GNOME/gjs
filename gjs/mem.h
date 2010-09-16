@@ -24,8 +24,8 @@
 #ifndef __GJS_MEM_H__
 #define __GJS_MEM_H__
 
-#ifndef __GJS_GJS_H__
-#warning Include <gjs/gjs.h> instead of <gjs/mem.h>
+#if !defined (__GJS_GJS_H__) && !defined (GJS_COMPILATION)
+#error "Only <gjs/gjs.h> can be included directly."
 #endif
 
 #include <glib.h>
