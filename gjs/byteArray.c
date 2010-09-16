@@ -148,7 +148,7 @@ gjs_value_to_byte(JSContext         *context,
 
     if (v >= 256) {
         gjs_throw(context,
-                  "Value %u is not a valid byte; must be in range [0,255]",
+                  "Value %" G_GSIZE_FORMAT " is not a valid byte; must be in range [0,255]",
                   v);
         return JS_FALSE;
     }
@@ -168,7 +168,7 @@ byte_array_get_index(JSContext         *context,
 
     if (idx >= priv->array->len) {
         gjs_throw(context,
-                  "Index %u is out of range for ByteArray length %u",
+                  "Index %" G_GSIZE_FORMAT " is out of range for ByteArray length %u",
                   idx,
                   priv->array->len);
         return JS_FALSE;
