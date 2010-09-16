@@ -384,8 +384,8 @@ gjs_invoke_c_function(JSContext      *context,
     gboolean is_method;
     GITypeInfo return_info;
     GITypeTag return_tag;
-    jsval *return_values;
-    guint8 next_rval;
+    jsval *return_values = NULL;
+    guint8 next_rval = 0; /* index into return_values */
     GSList *iter;
     GjsCallbackTrampoline *callback_trampoline;
     void *destroy_notify;
@@ -577,9 +577,6 @@ gjs_invoke_c_function(JSContext      *context,
 
     *js_rval = JSVAL_VOID;
 
-    next_rval = 0; /* index into return_values */
-
-    return_values = NULL; /* Quiet gcc warning about initialization */
     /* Only process return values if the function didn't throw */
     if (function->js_out_argc > 0 && !did_throw_gerror) {
         return_values = g_newa(jsval, function->js_out_argc);
