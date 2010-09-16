@@ -421,7 +421,8 @@ gjs_string_get_uint16_data(JSContext       *context,
 
 /**
  * gjs_get_string_id:
- * @id_val: a jsval that is an object hash key (could be an int or string)
+ * @context: a #JSContext
+ * @id: a jsid that is an object hash key (could be an int or string)
  * @name_p place to store ASCII string version of key
  *
  * If the id is not a string ID, return false and set *name_p to %NULL.
@@ -430,9 +431,15 @@ gjs_string_get_uint16_data(JSContext       *context,
  * Returns: true if *name_p is non-%NULL
  **/
 JSBool
-gjs_get_string_id (jsval            id_val,
+gjs_get_string_id (JSContext       *context,
+                   jsid             id,
                    const char     **name_p)
 {
+    jsval id_val;
+
+    if (!JS_IdToValue(context, id, &id_val))
+        return JS_FALSE;
+
     if (JSVAL_IS_STRING(id_val)) {
         *name_p = JS_GetStringBytes(JSVAL_TO_STRING(id_val));
         return JS_TRUE;

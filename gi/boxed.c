@@ -84,7 +84,7 @@ GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Boxed, gjs_boxed_class)
 static JSBool
 boxed_new_resolve(JSContext *context,
                   JSObject  *obj,
-                  jsval      id,
+                  jsid       id,
                   uintN      flags,
                   JSObject **objp)
 {
@@ -93,7 +93,7 @@ boxed_new_resolve(JSContext *context,
 
     *objp = NULL;
 
-    if (!gjs_get_string_id(id, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
     priv = priv_from_js(context, obj);
@@ -328,20 +328,16 @@ boxed_init_from_props(JSContext   *context,
 
     field_map = get_field_map(priv->info);
 
-    prop_id = JSVAL_VOID;
+    prop_id = JSID_VOID;
     if (!JS_NextProperty(context, iter, &prop_id))
         goto out;
 
-    while (prop_id != JSVAL_VOID) {
+    while (!JSID_IS_VOID(prop_id)) {
         GIFieldInfo *field_info;
-        jsval nameval;
         const char *name;
         jsval value;
 
-        if (!JS_IdToValue(context, prop_id, &nameval))
-            goto out;
-
-        if (!gjs_get_string_id(nameval, &name))
+        if (!gjs_get_string_id(context, prop_id, &name))
             goto out;
 
         field_info = g_hash_table_lookup(field_map, name);
@@ -358,7 +354,7 @@ boxed_init_from_props(JSContext   *context,
             goto out;
         }
 
-        prop_id = JSVAL_VOID;
+        prop_id = JSID_VOID;
         if (!JS_NextProperty(context, iter, &prop_id))
             goto out;
     }
@@ -592,17 +588,21 @@ boxed_finalize(JSContext *context,
 static GIFieldInfo *
 get_field_info (JSContext *context,
                 Boxed     *priv,
-                jsval      id)
+                jsid       id)
 {
     int field_index;
+    jsval id_val;
 
-    if (!JSVAL_IS_INT (id)) {
+    if (!JS_IdToValue(context, id, &id_val))
+        return JS_FALSE;
+
+    if (!JSVAL_IS_INT (id_val)) {
         gjs_throw(context, "Field index for %s is not an integer",
                   g_base_info_get_name ((GIBaseInfo *)priv->info));
         return NULL;
     }
 
-    field_index = JSVAL_TO_INT(id);
+    field_index = JSVAL_TO_INT(id_val);
     if (field_index < 0 || field_index >= g_struct_info_get_n_fields (priv->info)) {
         gjs_throw(context, "Bad field index %d for %s", field_index,
                   g_base_info_get_name ((GIBaseInfo *)priv->info));
@@ -661,7 +661,7 @@ get_nested_interface_object (JSContext   *context,
 static JSBool
 boxed_field_getter (JSContext *context,
                     JSObject  *obj,
-                    jsval      id,
+                    jsid       id,
                     jsval     *value)
 {
     Boxed *priv;
@@ -840,7 +840,7 @@ out:
 static JSBool
 boxed_field_setter (JSContext *context,
                     JSObject  *obj,
-                    jsval      id,
+                    jsid       id,
                     jsval     *value)
 {
     Boxed *priv;

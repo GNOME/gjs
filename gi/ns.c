@@ -63,7 +63,7 @@ GJS_DEFINE_PRIV_FROM_JS(Ns, gjs_ns_class)
 static JSBool
 ns_new_resolve(JSContext *context,
                JSObject  *obj,
-               jsval      id,
+               jsid       id,
                uintN      flags,
                JSObject **objp)
 {
@@ -75,7 +75,7 @@ ns_new_resolve(JSContext *context,
 
     *objp = NULL;
 
-    if (!gjs_get_string_id(id, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
     /* let Object.prototype resolve these */

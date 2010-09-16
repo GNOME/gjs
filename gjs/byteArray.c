@@ -40,15 +40,15 @@ GJS_DEFINE_PRIV_FROM_JS(ByteArrayInstance, gjs_byte_array_class)
 
 static JSBool byte_array_get_prop      (JSContext    *context,
                                         JSObject     *obj,
-                                        jsval         id,
+                                        jsid          id,
                                         jsval        *value_p);
 static JSBool byte_array_set_prop      (JSContext    *context,
                                         JSObject     *obj,
-                                        jsval         id,
+                                        jsid          id,
                                         jsval        *value_p);
 static JSBool byte_array_new_resolve   (JSContext    *context,
                                         JSObject     *obj,
-                                        jsval         id,
+                                        jsid          id,
                                         uintN         flags,
                                         JSObject    **objp);
 static JSBool byte_array_constructor   (JSContext    *context,
@@ -187,10 +187,11 @@ byte_array_get_index(JSContext         *context,
 static JSBool
 byte_array_get_prop(JSContext *context,
                     JSObject  *obj,
-                    jsval      id,
+                    jsid       id,
                     jsval     *value_p)
 {
     ByteArrayInstance *priv;
+    jsval id_value;
 
     priv = priv_from_js(context, obj);
 
@@ -199,10 +200,13 @@ byte_array_get_prop(JSContext *context,
     if (priv->array == NULL)
         return JS_TRUE; /* prototype, not an instance. */
 
+    if (!JS_IdToValue(context, id, &id_value))
+        return JS_FALSE;
+
     /* First handle array indexing */
-    if (JSVAL_IS_NUMBER(id)) {
+    if (JSVAL_IS_NUMBER(id_value)) {
         gsize idx;
-        if (!gjs_value_to_gsize(context, id, &idx))
+        if (!gjs_value_to_gsize(context, id_value, &idx))
             return JS_FALSE;
         return byte_array_get_index(context, obj, priv, idx, value_p);
     }
@@ -217,7 +221,7 @@ byte_array_get_prop(JSContext *context,
 static JSBool
 byte_array_length_getter(JSContext *context,
                          JSObject  *obj,
-                         jsval      id,
+                         jsid       id,
                          jsval     *value_p)
 {
     ByteArrayInstance *priv;
@@ -236,7 +240,7 @@ byte_array_length_getter(JSContext *context,
 static JSBool
 byte_array_length_setter(JSContext *context,
                          JSObject  *obj,
-                         jsval      id,
+                         jsid       id,
                          jsval     *value_p)
 {
     ByteArrayInstance *priv;
@@ -295,10 +299,11 @@ byte_array_set_index(JSContext         *context,
 static JSBool
 byte_array_set_prop(JSContext *context,
                     JSObject  *obj,
-                    jsval      id,
+                    jsid       id,
                     jsval     *value_p)
 {
     ByteArrayInstance *priv;
+    jsval id_value;
 
     priv = priv_from_js(context, obj);
 
@@ -307,10 +312,13 @@ byte_array_set_prop(JSContext *context,
     if (priv->array == NULL)
         return JS_TRUE; /* prototype, not an instance. */
 
+    if (!JS_IdToValue(context, id, &id_value))
+        return JS_FALSE;
+
     /* First handle array indexing */
-    if (JSVAL_IS_NUMBER(id)) {
+    if (JSVAL_IS_NUMBER(id_value)) {
         gsize idx;
-        if (!gjs_value_to_gsize(context, id, &idx))
+        if (!gjs_value_to_gsize(context, id_value, &idx))
             return JS_FALSE;
 
         return byte_array_set_index(context, obj, priv, idx, value_p);
@@ -345,11 +353,12 @@ byte_array_set_prop(JSContext *context,
 static JSBool
 byte_array_new_resolve(JSContext *context,
                        JSObject  *obj,
-                       jsval      id,
+                       jsid       id,
                        uintN      flags,
                        JSObject **objp)
 {
     ByteArrayInstance *priv;
+    jsval id_val;
 
     priv = priv_from_js(context, *objp);
 
@@ -358,9 +367,12 @@ byte_array_new_resolve(JSContext *context,
     if (priv->array == NULL)
         return JS_TRUE; /* prototype, not an instance. */
 
-    if (JSVAL_IS_NUMBER(id)) {
+    if (!JS_IdToValue(context, id, &id_val))
+        return JS_FALSE;
+
+    if (JSVAL_IS_NUMBER(id_val)) {
         gsize idx;
-        if (!gjs_value_to_gsize(context, id, &idx))
+        if (!gjs_value_to_gsize(context, id_val, &idx))
             return JS_FALSE;
         if (idx >= priv->array->len) {
             *objp = NULL;

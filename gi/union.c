@@ -68,7 +68,7 @@ GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Union, gjs_union_class)
 static JSBool
 union_new_resolve(JSContext *context,
                   JSObject  *obj,
-                  jsval      id,
+                  jsid       id,
                   uintN      flags,
                   JSObject **objp)
 {
@@ -77,7 +77,7 @@ union_new_resolve(JSContext *context,
 
     *objp = NULL;
 
-    if (!gjs_get_string_id(id, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
     priv = priv_from_js(context, obj);

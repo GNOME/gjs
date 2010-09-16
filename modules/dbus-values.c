@@ -776,11 +776,11 @@ append_dict(JSContext         *context,
         return JS_FALSE;
     }
 
-    prop_id = JSVAL_VOID;
+    prop_id = JSID_VOID;
     if (!JS_NextProperty(context, props_iter, &prop_id))
         return JS_FALSE;
 
-    while (prop_id != JSVAL_VOID) {
+    while (!JSID_IS_VOID(prop_id)) {
         jsval nameval;
         char *name;
         jsval propval;
@@ -864,7 +864,7 @@ append_dict(JSContext         *context,
         dbus_message_iter_close_container(&dict_iter, &entry_iter);
 
     next:
-        prop_id = JSVAL_VOID;
+        prop_id = JSID_VOID;
         if (!JS_NextProperty(context, props_iter, &prop_id))
             return JS_FALSE;
     }

@@ -361,15 +361,10 @@ load_module_elements(JSContext *context,
             return;
         }
 
-        while (idp != JSVAL_VOID) {
-            jsval nameval;
+        while (!JSID_IS_VOID(idp)) {
             const char *name;
 
-            if (!JS_IdToValue(context, idp, &nameval)) {
-                continue;
-            }
-
-            if (!gjs_get_string_id(nameval, &name)) {
+            if (!gjs_get_string_id(context, idp, &name)) {
                 continue;
             }
 
@@ -740,7 +735,7 @@ importer_new_enumerate(JSContext  *context,
             *state_p = JSVAL_NULL;
 
         if (id_p)
-            *id_p = JSVAL_ZERO;
+            *id_p = JSID_VOID;
 
         priv = priv_from_js(context, object);
         if (!priv)
@@ -908,7 +903,7 @@ importer_new_enumerate(JSContext  *context,
 static JSBool
 importer_new_resolve(JSContext *context,
                      JSObject  *obj,
-                     jsval      id,
+                     jsid       id,
                      uintN      flags,
                      JSObject **objp)
 {
@@ -918,7 +913,8 @@ importer_new_resolve(JSContext *context,
 
     *objp = NULL;
 
-    name = gjs_string_get_ascii(id);
+    if (!gjs_get_string_id(context, id, &name))
+        return JS_FALSE;
 
     /* let Object.prototype resolve these */
     if (strcmp(name, "valueOf") == 0 ||

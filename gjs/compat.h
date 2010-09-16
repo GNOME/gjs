@@ -39,6 +39,10 @@ G_BEGIN_DECLS
 
 /* See https://bugzilla.gnome.org/show_bug.cgi?id=622896 */
 #ifndef HAVE_JS_ADDVALUEROOT
+
+/* The old JS_AddRoot accepted anything via void *, new
+ * api is stricter.
+ */
 #define JS_AddValueRoot JS_AddRoot
 #define JS_AddObjectRoot JS_AddRoot
 #define JS_AddStringRoot JS_AddRoot
@@ -47,6 +51,14 @@ G_BEGIN_DECLS
 #define JS_RemoveObjectRoot JS_RemoveRoot
 #define JS_RemoveStringRoot JS_RemoveRoot
 #define JS_RemoveGCThingRoot JS_RemoveRoot
+
+/* This one is complex; jsid appears to be explicitly
+ * different from JSVAL now.  If we're on an old xulrunner,
+ * define JSID_IS_VOID in a simple way.
+ */
+#define JSID_VOID JSVAL_VOID
+#define JSID_IS_VOID(id) (id == JSVAL_VOID)
+
 #endif
 
 G_END_DECLS

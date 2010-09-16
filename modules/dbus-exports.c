@@ -1408,14 +1408,14 @@ handle_introspect(JSContext      *context,
     JS_AddStringRoot(context, &key_str);
     props_iter = JS_NewPropertyIterator(context, dir_obj);
 
-    prop_id = JSVAL_VOID;
+    prop_id = JSID_VOID;
     if (!JS_NextProperty(context, props_iter, &prop_id)) {
         gjs_debug(GJS_DEBUG_DBUS,
                   "Failed to get next property iterating dbus directory");
         goto out;
     }
 
-    while (prop_id != JSVAL_VOID) {
+    while (!JSID_IS_VOID(prop_id)) {
         char *key;
         jsval keyval;
         jsval valueval = JSVAL_VOID;
@@ -1455,7 +1455,7 @@ handle_introspect(JSContext      *context,
                                    key);
         }
 
-        prop_id = JSVAL_VOID;
+        prop_id = JSID_VOID;
         if (!JS_NextProperty(context, props_iter, &prop_id)) {
             gjs_debug(GJS_DEBUG_DBUS,
                       "Failed to get next property iterating dbus object");
@@ -1660,7 +1660,7 @@ on_message(DBusConnection *connection,
 static JSBool
 exports_new_resolve(JSContext *context,
                     JSObject  *obj,
-                    jsval      id,
+                    jsid       id,
                     uintN      flags,
                     JSObject **objp)
 {
@@ -1669,7 +1669,7 @@ exports_new_resolve(JSContext *context,
 
     *objp = NULL;
 
-    if (!gjs_get_string_id(id, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
     priv = priv_from_js(context, obj);

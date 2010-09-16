@@ -50,14 +50,14 @@ GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Param, gjs_param_class)
 static JSBool
 param_get_prop(JSContext *context,
                JSObject  *obj,
-               jsval      id,
+               jsid       id,
                jsval     *value_p)
 {
     Param *priv;
     const char *name;
     const char *value_str;
 
-    if (!gjs_get_string_id(id, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not something we affect, but no error */
 
     priv = priv_from_js(context, obj);
@@ -99,7 +99,7 @@ param_get_prop(JSContext *context,
 static JSBool
 param_new_resolve(JSContext *context,
                   JSObject  *obj,
-                  jsval      id,
+                  jsid       id,
                   uintN      flags,
                   JSObject **objp)
 {
@@ -108,7 +108,7 @@ param_new_resolve(JSContext *context,
 
     *objp = NULL;
 
-    if (!gjs_get_string_id(id, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
     priv = priv_from_js(context, obj);

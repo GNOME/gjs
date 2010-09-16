@@ -696,19 +696,15 @@ gjs_log_object_props(JSContext      *context,
         goto done;
     }
 
-    prop_id = JSVAL_VOID;
+    prop_id = JSID_VOID;
     if (!JS_NextProperty(context, props_iter, &prop_id))
         goto done;
 
-    while (prop_id != JSVAL_VOID) {
-        jsval nameval;
-        const char *name;
+    while (!JSID_IS_VOID(prop_id)) {
         jsval propval;
+        const char *name;
 
-        if (!JS_IdToValue(context, prop_id, &nameval))
-            goto next;
-
-        if (!gjs_get_string_id(nameval, &name))
+        if (!gjs_get_string_id(context, prop_id, &name))
             goto next;
 
         if (!gjs_object_get_property(context, obj, name, &propval))
@@ -720,7 +716,7 @@ gjs_log_object_props(JSContext      *context,
                   gjs_value_debug_string(context, propval));
 
     next:
-        prop_id = JSVAL_VOID;
+        prop_id = JSID_VOID;
         if (!JS_NextProperty(context, props_iter, &prop_id))
             break;
     }

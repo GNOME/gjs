@@ -299,7 +299,7 @@ gjs_object_to_g_hash(JSContext   *context,
     if (iter == NULL)
         return JS_FALSE;
 
-    prop_id = JSVAL_VOID;
+    prop_id = JSID_VOID;
     if (!JS_NextProperty(context, iter, &prop_id))
         return JS_FALSE;
 
@@ -308,7 +308,7 @@ gjs_object_to_g_hash(JSContext   *context,
      * Rely on the type-aware g_argument_release functions. */
    result = g_hash_table_new(g_str_hash, g_str_equal);
 
-    while (prop_id != JSVAL_VOID) {
+   while (!JSID_IS_VOID(prop_id)) {
         jsval key_js, val_js;
         GArgument key_arg, val_arg;
 
@@ -341,7 +341,7 @@ gjs_object_to_g_hash(JSContext   *context,
 
         g_hash_table_insert(result, key_arg.v_pointer, val_arg.v_pointer);
 
-        prop_id = JSVAL_VOID;
+        prop_id = JSID_VOID;
         if (!JS_NextProperty(context, iter, &prop_id))
             goto free_hash_and_fail;
     }

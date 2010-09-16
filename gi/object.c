@@ -121,7 +121,7 @@ init_g_param_from_property(JSContext  *context,
 static JSBool
 object_instance_get_prop(JSContext *context,
                          JSObject  *obj,
-                         jsval      id,
+                         jsid       id,
                          jsval     *value_p)
 {
     ObjectInstance *priv;
@@ -130,7 +130,7 @@ object_instance_get_prop(JSContext *context,
     GParamSpec *param;
     GValue gvalue = { 0, };
 
-    if (!gjs_get_string_id(id, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
     priv = priv_from_js(context, obj);
@@ -178,14 +178,14 @@ object_instance_get_prop(JSContext *context,
 static JSBool
 object_instance_set_prop(JSContext *context,
                          JSObject  *obj,
-                         jsval      id,
+                         jsid       id,
                          jsval     *value_p)
 {
     ObjectInstance *priv;
     const char *name;
     GParameter param = { NULL, { 0, }};
 
-    if (!gjs_get_string_id(id, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
     priv = priv_from_js(context, obj);
@@ -239,7 +239,7 @@ object_instance_set_prop(JSContext *context,
 static JSBool
 object_instance_new_resolve(JSContext *context,
                             JSObject  *obj,
-                            jsval      id,
+                            jsid       id,
                             uintN      flags,
                             JSObject **objp)
 {
@@ -248,7 +248,7 @@ object_instance_new_resolve(JSContext *context,
 
     *objp = NULL;
 
-    if (!gjs_get_string_id(id, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
     priv = priv_from_js(context, obj);
@@ -459,27 +459,23 @@ object_instance_props_to_g_parameters(JSContext   *context,
         return JS_FALSE;
     }
 
-    prop_id = JSVAL_VOID;
+    prop_id = JSID_VOID;
     if (!JS_NextProperty(context, iter, &prop_id))
         return JS_FALSE;
 
-    if (prop_id != JSVAL_VOID) {
+    if (!JSID_IS_VOID(prop_id)) {
         gparams = g_array_new(/* nul term */ FALSE, /* clear */ TRUE,
                               sizeof(GParameter));
     } else {
         return JS_TRUE;
     }
 
-    while (prop_id != JSVAL_VOID) {
-        jsval nameval;
+    while (!JSID_IS_VOID(prop_id)) {
         const char *name;
         jsval value;
         GParameter gparam = { NULL, { 0, }};
 
-        if (!JS_IdToValue(context, prop_id, &nameval))
-            goto free_array_and_fail;
-
-        if (!gjs_get_string_id(nameval, &name))
+        if (!gjs_get_string_id(context, prop_id, &name))
             goto free_array_and_fail;
 
         if (!gjs_object_require_property(context, props, "property list", name, &value))
@@ -501,7 +497,7 @@ object_instance_props_to_g_parameters(JSContext   *context,
 
         g_array_append_val(gparams, gparam);
 
-        prop_id = JSVAL_VOID;
+        prop_id = JSID_VOID;
         if (!JS_NextProperty(context, iter, &prop_id))
             goto free_array_and_fail;
     }
@@ -859,7 +855,7 @@ real_connect_func(JSContext *context,
     const char *signal_name;
     GQuark signal_detail;
 
-    *retval = INT_TO_JSVAL(0);
+    *retval = JSID_VOID;
 
     priv = priv_from_js(context, obj);
     gjs_debug_gsignal("connect obj %p priv %p argc %d", obj, priv, argc);

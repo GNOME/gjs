@@ -331,7 +331,8 @@ JSBool      gjs_string_get_uint16_data       (JSContext       *context,
                                               jsval            value,
                                               guint16        **data_p,
                                               gsize           *len_p);
-JSBool      gjs_get_string_id                (jsval            id_val,
+JSBool      gjs_get_string_id                (JSContext       *context,
+                                              jsid             id,
                                               const char     **name_p);
 const char* gjs_get_type_name                (jsval            value);
 
