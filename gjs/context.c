@@ -353,7 +353,7 @@ gjs_context_dispose(GObject *object)
 
     if (js_context->global != NULL) {
         JS_BeginRequest(js_context->context);
-        JS_RemoveRoot(js_context->context, &js_context->global);
+        JS_RemoveObjectRoot(js_context->context, &js_context->global);
         JS_EndRequest(js_context->context);
         js_context->global = NULL;
     }
@@ -621,7 +621,7 @@ gjs_context_constructor (GType                  type,
      * context already roots it presumably? Could not find where it
      * does in a quick glance through spidermonkey source though.
      */
-    if (!JS_AddRoot(js_context->context, &js_context->global))
+    if (!JS_AddObjectRoot(js_context->context, &js_context->global))
         gjs_fatal("No memory to add global object as GC root");
 
     /* Define a global function called log() */

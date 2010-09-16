@@ -512,7 +512,7 @@ gjstest_test_func_gjs_jsapi_util_string_get_binary(void)
     context = fixture.context;
 
     js_string = JSVAL_VOID;
-    JS_AddRoot(context, &js_string);
+    JS_AddValueRoot(context, &js_string);
 
     /* Even-length string (maps nicely to len/2 jschar) */
     if (!gjs_string_from_binary_data(context,
@@ -543,7 +543,7 @@ gjstest_test_func_gjs_jsapi_util_string_get_binary(void)
     g_assert(memcmp(data, binary_string_odd, len) == 0);
     g_free(data);
 
-    JS_RemoveRoot(context, &js_string);
+    JS_RemoveValueRoot(context, &js_string);
 
     void_value = JSVAL_VOID;
     g_assert(!JS_IsExceptionPending(context));

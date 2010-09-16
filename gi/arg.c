@@ -371,7 +371,7 @@ gjs_array_from_strv(JSContext   *context,
     *value_p = OBJECT_TO_JSVAL(obj);
 
     elem = JSVAL_VOID;
-    JS_AddRoot(context, &elem);
+    JS_AddValueRoot(context, &elem);
 
     for (i = 0; strv[i] != NULL; i++) {
         if (!gjs_string_from_utf8 (context, strv[i], -1, &elem))
@@ -386,7 +386,7 @@ gjs_array_from_strv(JSContext   *context,
     result = JS_TRUE;
 
 out:
-    JS_RemoveRoot(context, &elem);
+    JS_RemoveValueRoot(context, &elem);
 
     return result;
 }
@@ -1381,7 +1381,7 @@ gjs_array_from_g_list (JSContext  *context,
     *value_p = OBJECT_TO_JSVAL(obj);
 
     elem = JSVAL_VOID;
-    JS_AddRoot(context, &elem);
+    JS_AddValueRoot(context, &elem);
 
     result = JS_FALSE;
 
@@ -1421,7 +1421,7 @@ gjs_array_from_g_list (JSContext  *context,
     result = JS_TRUE;
 
  out:
-    JS_RemoveRoot(context, &elem);
+    JS_RemoveValueRoot(context, &elem);
 
     return result;
 }
@@ -1510,7 +1510,7 @@ gjs_array_from_g_array (JSContext  *context,
     result = JS_TRUE;
 
 finally:
-    JS_RemoveRoot(context, &elem);
+    JS_RemoveValueRoot(context, &elem);
 
     return result;
 }
@@ -1541,16 +1541,16 @@ gjs_object_from_g_hash (JSContext  *context,
         return JS_FALSE;
 
     *value_p = OBJECT_TO_JSVAL(obj);
-    JS_AddRoot(context, &obj);
+    JS_AddObjectRoot(context, &obj);
 
     keyjs = JSVAL_VOID;
-    JS_AddRoot(context, &keyjs);
+    JS_AddValueRoot(context, &keyjs);
 
     valjs = JSVAL_VOID;
-    JS_AddRoot(context, &valjs);
+    JS_AddValueRoot(context, &valjs);
 
     keystr = NULL;
-    JS_AddRoot(context, &keystr);
+    JS_AddStringRoot(context, &keystr);
 
     result = JS_FALSE;
 
@@ -1584,10 +1584,10 @@ gjs_object_from_g_hash (JSContext  *context,
 
  out:
     if (keyutf8) g_free(keyutf8);
-    JS_RemoveRoot(context, &obj);
-    JS_RemoveRoot(context, &keyjs);
-    JS_RemoveRoot(context, &valjs);
-    JS_RemoveRoot(context, &keystr);
+    JS_RemoveObjectRoot(context, &obj);
+    JS_RemoveValueRoot(context, &keyjs);
+    JS_RemoveValueRoot(context, &valjs);
+    JS_RemoveStringRoot(context, &keystr);
 
     return result;
 }

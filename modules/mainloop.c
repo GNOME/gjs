@@ -127,7 +127,7 @@ closure_source_func(void *data)
     JS_BeginRequest(context);
 
     retval = JSVAL_VOID;
-    JS_AddRoot(context, &retval);
+    JS_AddValueRoot(context, &retval);
 
     gjs_closure_invoke(closure,
                           0, NULL,
@@ -141,7 +141,7 @@ closure_source_func(void *data)
                            retval, &bool_val))
         bool_val = FALSE;
 
-    JS_RemoveRoot(context, &retval);
+    JS_RemoveValueRoot(context, &retval);
 
     JS_EndRequest(context);
     return bool_val;

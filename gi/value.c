@@ -79,7 +79,7 @@ closure_marshal(GClosure        *closure,
 
     gjs_set_values(context, argv, argc, JSVAL_VOID);
     gjs_root_value_locations(context, argv, argc);
-    JS_AddRoot(context, &rval);
+    JS_AddValueRoot(context, &rval);
 
     if (marshal_data) {
         /* we are used for a signal handler */
@@ -139,7 +139,7 @@ closure_marshal(GClosure        *closure,
 
  cleanup:
     gjs_unroot_value_locations(context, argv, argc);
-    JS_RemoveRoot(context, &rval);
+    JS_RemoveValueRoot(context, &rval);
     JS_EndRequest(context);
 }
 

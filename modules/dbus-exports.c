@@ -322,7 +322,7 @@ invoke_js_from_dbus(JSContext   *context,
     argv = gjs_rooted_array_get_data(context, values);
 
     rval = JSVAL_VOID;
-    JS_AddRoot(context, &rval);
+    JS_AddValueRoot(context, &rval);
 
     gjs_js_push_current_message(method_call);
     if (!gjs_call_function_value(context,
@@ -335,7 +335,7 @@ invoke_js_from_dbus(JSContext   *context,
         gjs_debug(GJS_DEBUG_DBUS,
                   "dbus method invocation failed");
 
-        JS_RemoveRoot(context, &rval);
+        JS_RemoveValueRoot(context, &rval);
 
         if (!dbus_reply_from_exception(context, method_call, &reply))
             gjs_debug(GJS_DEBUG_DBUS,
@@ -368,7 +368,7 @@ invoke_js_from_dbus(JSContext   *context,
 
  out:
     gjs_rooted_array_free(context, values, TRUE);
-    JS_RemoveRoot(context, &rval);
+    JS_RemoveValueRoot(context, &rval);
 
     gjs_js_pop_current_message();
 
@@ -1057,12 +1057,12 @@ handle_get_property(JSContext      *context,
     }
 
     value = JSVAL_VOID;
-    JS_AddRoot(context, &value);
+    JS_AddValueRoot(context, &value);
     if (!gjs_object_require_property(context, obj,
                                      "DBus GetProperty callee",
                                      prop_name, &value)) {
 
-        JS_RemoveRoot(context, &value);
+        JS_RemoveValueRoot(context, &value);
         property_details_clear(&details);
 
         dbus_reply_from_exception(context, message,
@@ -1085,7 +1085,7 @@ handle_get_property(JSContext      *context,
                                   &variant_iter, &sig_iter)) {
 
         property_details_clear(&details);
-        JS_RemoveRoot(context, &value);
+        JS_RemoveValueRoot(context, &value);
 
         dbus_message_unref(reply);
         reply = NULL;
@@ -1097,7 +1097,7 @@ handle_get_property(JSContext      *context,
 
     dbus_message_iter_close_container(&iter, &variant_iter);
 
-    JS_RemoveRoot(context, &value);
+    JS_RemoveValueRoot(context, &value);
 
     property_details_clear(&details);
 
@@ -1176,13 +1176,13 @@ handle_get_all_properties(JSContext      *context,
             }
 
             value = JSVAL_VOID;
-            JS_AddRoot(context, &value);
+            JS_AddValueRoot(context, &value);
             if (!gjs_object_require_property(context, obj,
                                              "DBus GetAllProperties callee",
                                              details.name, &value)) {
 
                 property_details_clear(&details);
-                JS_RemoveRoot(context, &value);
+                JS_RemoveValueRoot(context, &value);
 
                 goto js_exception;
             }
@@ -1203,13 +1203,13 @@ handle_get_all_properties(JSContext      *context,
 #ifdef HAVE_DBUS_MESSAGE_ITER_ABANDON_CONTAINER
                 dbus_message_iter_abandon_container(&entry_iter, &entry_value_iter);
 #endif
-                JS_RemoveRoot(context, &value);
+                JS_RemoveValueRoot(context, &value);
                 property_details_clear(&details);
                 goto js_exception;
             }
             dbus_message_iter_close_container(&entry_iter, &entry_value_iter);
 
-            JS_RemoveRoot(context, &value);
+            JS_RemoveValueRoot(context, &value);
 
             dbus_message_iter_close_container(&dict_iter, &entry_iter);
             property_details_clear(&details);
@@ -1311,18 +1311,18 @@ handle_set_property(JSContext      *context,
     property_details_clear(&details);
 
     value = JSVAL_VOID;
-    JS_AddRoot(context, &value);
+    JS_AddValueRoot(context, &value);
     gjs_js_one_value_from_dbus(context, &iter, &value);
 
     if (dbus_reply_from_exception(context, message, &reply)) {
-        JS_RemoveRoot(context, &value);
+        JS_RemoveValueRoot(context, &value);
         return reply;
     }
 
     /* this throws on oom or if prop is read-only for example */
     JS_SetProperty(context, obj, prop_name, &value);
 
-    JS_RemoveRoot(context, &value);
+    JS_RemoveValueRoot(context, &value);
 
     if (!dbus_reply_from_exception(context, message, &reply)) {
         g_assert(reply == NULL);
@@ -1404,8 +1404,8 @@ handle_introspect(JSContext      *context,
                                children[i]);
     }
 
-    JS_AddRoot(context, &props_iter);
-    JS_AddRoot(context, &key_str);
+    JS_AddObjectRoot(context, &props_iter);
+    JS_AddStringRoot(context, &key_str);
     props_iter = JS_NewPropertyIterator(context, dir_obj);
 
     prop_id = JSVAL_VOID;
@@ -1494,8 +1494,8 @@ handle_introspect(JSContext      *context,
     dbus_connection_send(connection, reply, NULL);
 
  out:
-    JS_RemoveRoot(context, &key_str);
-    JS_RemoveRoot(context, &props_iter);
+    JS_RemoveStringRoot(context, &key_str);
+    JS_RemoveObjectRoot(context, &props_iter);
 
     if (reply != NULL)
         dbus_message_unref(reply);
@@ -1532,7 +1532,7 @@ on_message(DBusConnection *connection,
 
     JS_BeginRequest(priv->context);
     method_value = JSVAL_VOID;
-    JS_AddRoot(priv->context, &method_value);
+    JS_AddValueRoot(priv->context, &method_value);
 
     result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
@@ -1639,7 +1639,7 @@ on_message(DBusConnection *connection,
  out:
     if (async_method_name)
         g_free(async_method_name);
-    JS_RemoveRoot(priv->context, &method_value);
+    JS_RemoveValueRoot(priv->context, &method_value);
     JS_EndRequest(priv->context);
     return result;
 }

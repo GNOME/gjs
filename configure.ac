@@ -144,6 +144,13 @@ AC_CHECK_LIB([mozjs], [JS_CallTracer], :,
 AC_CHECK_LIB([mozjs], [JS_DefinePropertyById], :,
              [AC_MSG_ERROR([SpiderMonkey is too old, xulrunner 1.9.1 is required])],
              [$JS_LIBS])
+AC_CHECK_LIB([mozjs], [JS_AddValueRoot], [have_js_addvalueroot=true],
+             [have_js_addvalueroot=false],
+             [$JS_LIBS])
+if test "x$have_js_addvalueroot" = xtrue; then
+  AC_DEFINE(HAVE_JS_ADDVALUEROOT, 1,
+    [Define if using xulrunner 1.9.3 or later])
+fi
 
 ## workaround for Ubuntu Hardy bug where mozilla-js.pc gives CFLAGS
 ## -I.../stable while jsapi.h is in .../unstable

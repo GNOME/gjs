@@ -310,14 +310,14 @@ gjs_closure_invoke_simple(JSContext   *context,
 
     argc = (int)strlen(format);
     for (i = 0; i < argc; i++)
-        JS_AddRoot(context, &argv[i]);
-    JS_AddRoot(context, retval);
+        JS_AddValueRoot(context, &argv[i]);
+    JS_AddValueRoot(context, retval);
 
     gjs_closure_invoke(closure, argc, argv, retval);
 
     for (i = 0; i < argc; i++)
-        JS_RemoveRoot(context, &argv[i]);
-    JS_RemoveRoot(context, retval);
+        JS_RemoveValueRoot(context, &argv[i]);
+    JS_RemoveValueRoot(context, retval);
 
     JS_PopArguments(context, stack_space);
 

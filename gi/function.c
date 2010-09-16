@@ -128,7 +128,7 @@ function_new_resolve(JSContext *context,
 static void
 gjs_callback_trampoline_free(GjsCallbackTrampoline *trampoline)
 {
-    JS_RemoveRoot(trampoline->context, &trampoline->js_function);
+    JS_RemoveValueRoot(trampoline->context, &trampoline->js_function);
     g_callable_info_free_closure(trampoline->info, trampoline->closure);
     g_base_info_unref( (GIBaseInfo*) trampoline->info);
     g_slice_free(GjsCallbackTrampoline, trampoline);
@@ -272,7 +272,7 @@ gjs_callback_trampoline_new(JSContext      *context,
     trampoline->info = callable_info;
     g_base_info_ref((GIBaseInfo*)trampoline->info);
     trampoline->js_function = function;
-    JS_AddRoot(context, &trampoline->js_function);
+    JS_AddValueRoot(context, &trampoline->js_function);
     trampoline->closure = g_callable_info_prepare_closure(callable_info, &trampoline->cif,
                                                           gjs_callback_closure, trampoline);
 

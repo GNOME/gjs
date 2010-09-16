@@ -642,13 +642,13 @@ get_nested_interface_object (JSContext   *context,
     /* Rooting the object here is a little paranoid; the JSObject has to be kept
      * alive anyways by our caller; so this would matter only if there was an
      * aggressive GC that moved rooted objects */
-    JS_AddRoot(context, &unthreadsafe_template_for_constructor.parent_jsval);
+    JS_AddValueRoot(context, &unthreadsafe_template_for_constructor.parent_jsval);
     unthreadsafe_template_for_constructor.parent_jsval = OBJECT_TO_JSVAL(parent_obj);
 
     obj = gjs_construct_object_dynamic(context, proto,
                                        0, NULL);
 
-    JS_RemoveRoot(context, &unthreadsafe_template_for_constructor.parent_jsval);
+    JS_RemoveValueRoot(context, &unthreadsafe_template_for_constructor.parent_jsval);
 
     if (obj != NULL) {
         *value = OBJECT_TO_JSVAL(obj);

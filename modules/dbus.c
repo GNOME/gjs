@@ -1019,16 +1019,16 @@ on_name_acquired(DBusConnection *connection,
     argc = 1;
 
     argv[0] = STRING_TO_JSVAL(JS_NewStringCopyZ(context, name));
-    JS_AddRoot(context, &argv[0]);
+    JS_AddValueRoot(context, &argv[0]);
 
     rval = JSVAL_VOID;
-    JS_AddRoot(context, &rval);
+    JS_AddValueRoot(context, &rval);
 
     gjs_closure_invoke(owner->acquired_closure,
                        argc, argv, &rval);
 
-    JS_RemoveRoot(context, &argv[0]);
-    JS_RemoveRoot(context, &rval);
+    JS_RemoveValueRoot(context, &argv[0]);
+    JS_RemoveValueRoot(context, &rval);
 
     JS_EndRequest(context);
 }
@@ -1058,16 +1058,16 @@ on_name_lost(DBusConnection *connection,
     argc = 1;
 
     argv[0] = STRING_TO_JSVAL(JS_NewStringCopyZ(context, name));
-    JS_AddRoot(context, &argv[0]);
+    JS_AddValueRoot(context, &argv[0]);
 
     rval = JSVAL_VOID;
-    JS_AddRoot(context, &rval);
+    JS_AddValueRoot(context, &rval);
 
     gjs_closure_invoke(owner->lost_closure,
                           argc, argv, &rval);
 
-    JS_RemoveRoot(context, &argv[0]);
-    JS_RemoveRoot(context, &rval);
+    JS_RemoveValueRoot(context, &argv[0]);
+    JS_RemoveValueRoot(context, &rval);
 
     JS_EndRequest(context);
 }
@@ -1245,12 +1245,12 @@ on_name_appeared(DBusConnection *connection,
     argv[1] = STRING_TO_JSVAL(JS_NewStringCopyZ(context, owner_unique_name));
 
     rval = JSVAL_VOID;
-    JS_AddRoot(context, &rval);
+    JS_AddValueRoot(context, &rval);
 
     gjs_closure_invoke(watcher->appeared_closure,
                           argc, argv, &rval);
 
-    JS_RemoveRoot(context, &rval);
+    JS_RemoveValueRoot(context, &rval);
     gjs_unroot_value_locations(context, argv, argc);
 
     JS_EndRequest(context);
@@ -1288,12 +1288,12 @@ on_name_vanished(DBusConnection *connection,
     argv[1] = STRING_TO_JSVAL(JS_NewStringCopyZ(context, owner_unique_name));
 
     rval = JSVAL_VOID;
-    JS_AddRoot(context, &rval);
+    JS_AddValueRoot(context, &rval);
 
     gjs_closure_invoke(watcher->vanished_closure,
                           argc, argv, &rval);
 
-    JS_RemoveRoot(context, &rval);
+    JS_RemoveValueRoot(context, &rval);
     gjs_unroot_value_locations(context, argv, argc);
 
     JS_EndRequest(context);
@@ -1574,7 +1574,7 @@ gjs_js_dbus_get_current_message_context(JSContext  *context,
         return JS_FALSE;
 
     context_val = OBJECT_TO_JSVAL(context_obj);
-    JS_AddRoot(context, &context_val);
+    JS_AddValueRoot(context, &context_val);
 
     sender = dbus_message_get_sender(current_message);
     if (sender)
@@ -1599,7 +1599,7 @@ gjs_js_dbus_get_current_message_context(JSContext  *context,
     *retval = context_val;
 
 out:
-    JS_RemoveRoot(context, &context_val);
+    JS_RemoveValueRoot(context, &context_val);
     return result;
 }
 
@@ -1616,7 +1616,7 @@ define_bus_proto(JSContext *context,
     result = JS_FALSE;
 
     bus_proto_val = JSVAL_VOID;
-    JS_AddRoot(context, &bus_proto_val);
+    JS_AddValueRoot(context, &bus_proto_val);
 
     bus_proto_obj = JS_ConstructObject(context, NULL, NULL, NULL);
     if (bus_proto_obj == NULL)
@@ -1710,7 +1710,7 @@ define_bus_proto(JSContext *context,
     result = JS_TRUE;
 
  out:
-    JS_RemoveRoot(context, &bus_proto_val);
+    JS_RemoveValueRoot(context, &bus_proto_val);
 
     return result;
 }
@@ -1735,7 +1735,7 @@ define_bus_object(JSContext  *context,
     result = JS_FALSE;
 
     bus_val = JSVAL_VOID;
-    JS_AddRoot(context, &bus_val);
+    JS_AddValueRoot(context, &bus_val);
 
     bus_obj = JS_ConstructObject(context, NULL, proto_obj, NULL);
     if (bus_obj == NULL)
@@ -1771,7 +1771,7 @@ define_bus_object(JSContext  *context,
     result = JS_TRUE;
 
  out:
-    JS_RemoveRoot(context, &bus_val);
+    JS_RemoveValueRoot(context, &bus_val);
 
     return result;
 }

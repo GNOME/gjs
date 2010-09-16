@@ -61,7 +61,7 @@ add_root_jsval(JSContext *context,
                jsval     *value_p)
 {
     JS_BeginRequest(context);
-    JS_AddRoot(context, value_p);
+    JS_AddValueRoot(context, value_p);
     JS_EndRequest(context);
 }
 
@@ -71,7 +71,7 @@ remove_root_jsval(JSContext *context,
                   jsval     *value_p)
 {
     JS_BeginRequest(context);
-    JS_RemoveRoot(context, value_p);
+    JS_RemoveValueRoot(context, value_p);
     JS_EndRequest(context);
 }
 
@@ -81,7 +81,7 @@ remove_root_jsval(JSContext *context,
  * @array: a #GjsRootedArray created by gjs_rooted_array_new()
  * @value: a jsval
  *
- * Appends @jsval to @array, calling JS_AddRoot on the location where it's stored.
+ * Appends @jsval to @array, calling JS_AddValueRoot on the location where it's stored.
  *
  **/
 void
@@ -181,7 +181,7 @@ gjs_rooted_array_get_length (JSContext        *context,
  * @locations: contiguous locations in memory that store jsvals (must be initialized)
  * @n_locations: the number of locations to root
  *
- * Calls JS_AddRoot() on each address in @locations.
+ * Calls JS_AddValueRoot() on each address in @locations.
  *
  **/
 void
@@ -208,7 +208,7 @@ gjs_root_value_locations(JSContext        *context,
  * @locations: contiguous locations in memory that store jsvals and have been added as GC roots
  * @n_locations: the number of locations to unroot
  *
- * Calls JS_RemoveRoot() on each address in @locations.
+ * Calls JS_RemoveValueRoot() on each address in @locations.
  *
  **/
 void
