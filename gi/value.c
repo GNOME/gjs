@@ -678,7 +678,7 @@ gjs_value_from_g_value(JSContext    *context,
     return gjs_value_from_g_value_internal(context, value_p, gvalue, FALSE);
 }
 
-__attribute__((constructor)) void
+__attribute__((constructor)) static void
 _gjs_value_init_types(void)
 {
     _array_type = g_type_from_name("GArray");
