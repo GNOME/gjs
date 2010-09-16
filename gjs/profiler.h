@@ -33,6 +33,7 @@ typedef struct _GjsProfiler GjsProfiler;
 
 GjsProfiler *gjs_profiler_new (JSRuntime *runtime);
 void         gjs_profiler_free(GjsProfiler *self);
+void         gjs_profiler_reset(GjsProfiler *self);
 
 void gjs_profiler_dump   (GjsProfiler *self);
 

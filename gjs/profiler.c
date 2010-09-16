@@ -387,7 +387,7 @@ by_file_reset_one(gpointer key,
     p->total_time = 0;
 }
 
-static void
+void
 gjs_profiler_reset(GjsProfiler *self)
 {
     g_hash_table_foreach(self->by_file,
