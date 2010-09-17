@@ -7,6 +7,7 @@ TEST_PROGS += gjs-tests
 gjs_tests_CFLAGS =				\
 	-include $(top_srcdir)/test/test.h	\
 	$(AM_CFLAGS)				\
+	-DGJS_COMPILATION			\
 	$(GJSTESTS_CFLAGS)			\
 	$(gjs_directory_defines)		\
 	-I$(top_srcdir)/test
