@@ -282,13 +282,6 @@ gjs_printerr(JSContext *context,
     return JS_TRUE;
 }
 
-static JSClass global_class = {
-    "GjsGlobal", JSCLASS_GLOBAL_FLAGS,
-    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
-    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
-    JSCLASS_NO_OPTIONAL_MEMBERS
-};
-
 static void
 gjs_context_init(GjsContext *js_context)
 {
@@ -352,9 +345,6 @@ gjs_context_dispose(GObject *object)
     }
 
     if (js_context->global != NULL) {
-        JS_BeginRequest(js_context->context);
-        JS_RemoveObjectRoot(js_context->context, &js_context->global);
-        JS_EndRequest(js_context->context);
         js_context->global = NULL;
     }
 
@@ -603,26 +593,15 @@ gjs_context_constructor (GType                  type,
         JS_SetVersion(js_context->context, OUR_JS_VERSION);
     }
 
-    js_context->global = JS_NewObject(js_context->context, &global_class, NULL, NULL);
-    if (js_context->global == NULL)
-        gjs_fatal("Failed to create javascript global object");
-
-    /* Sets global object and adds builtins to it */
-    if (!JS_InitStandardClasses(js_context->context, js_context->global))
-        gjs_fatal("Failed to init standard javascript classes");
+    if (!gjs_init_context_standard(js_context->context))
+        gjs_fatal("Failed to initialize context");
+    js_context->global = JS_GetGlobalObject(js_context->context);
 
     if (!JS_DefineProperty(js_context->context, js_context->global,
                            "window", OBJECT_TO_JSVAL(js_context->global),
                            NULL, NULL,
                            JSPROP_READONLY | JSPROP_PERMANENT))
         gjs_fatal("No memory to export global object as 'window'");
-
-    /* this is probably not necessary, having it as global object in
-     * context already roots it presumably? Could not find where it
-     * does in a quick glance through spidermonkey source though.
-     */
-    if (!JS_AddObjectRoot(js_context->context, &js_context->global))
-        gjs_fatal("No memory to add global object as GC root");
 
     /* Define a global function called log() */
     if (!JS_DefineFunction(js_context->context, js_context->global,

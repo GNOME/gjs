@@ -35,13 +35,11 @@ test_error_reporter(JSContext     *context,
 void
 _gjs_unit_test_fixture_begin (GjsUnitTestFixture *fixture)
 {
-    JSObject *global;
     fixture->runtime = JS_NewRuntime(1024*1024 /* max bytes */);
     fixture->context = JS_NewContext(fixture->runtime, 8192);
     JS_BeginRequest(fixture->context);
-    global = JS_NewObject(fixture->context, NULL, NULL, NULL);
-    JS_SetGlobalObject(fixture->context, global);
-    JS_InitStandardClasses(fixture->context, global);
+    if (!gjs_init_context_standard(fixture->context))
+        g_error("failed to init context");
     JS_SetErrorReporter(fixture->context, test_error_reporter);
 }
 

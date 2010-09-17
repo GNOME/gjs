@@ -194,6 +194,7 @@ jsval cname##_create_proto(JSContext *context, JSObject *module, const char *pro
     return rval; \
 }
 
+gboolean    gjs_init_context_standard        (JSContext       *context);
 
 void*       gjs_runtime_get_data             (JSRuntime       *runtime,
                                                  const char      *name);
