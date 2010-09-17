@@ -29,6 +29,7 @@
 #include "arg.h"
 #include "object.h"
 #include <gjs/gjs.h>
+#include <gjs/compat.h>
 #include "repo.h"
 #include "function.h"
 

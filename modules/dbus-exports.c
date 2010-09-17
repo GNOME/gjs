@@ -27,6 +27,7 @@
 #include "gjs-dbus/dbus.h"
 
 #include <gjs/gjs.h>
+#include <gjs/compat.h>
 
 #include <util/log.h>
 

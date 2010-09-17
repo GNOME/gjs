@@ -23,6 +23,7 @@
 
 #include "lang.h"
 #include <gjs/gjs.h>
+#include <gjs/compat.h>
 
 #include <glib.h>
 #include <jsapi.h>

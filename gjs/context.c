@@ -30,6 +30,7 @@
 #include "profiler.h"
 #include "native.h"
 #include "byteArray.h"
+#include "compat.h"
 
 #include <util/log.h>
 #include <util/error.h>

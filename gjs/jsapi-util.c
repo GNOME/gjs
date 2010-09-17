@@ -30,6 +30,7 @@
 
 #include "jsapi-util.h"
 #include "context-jsapi.h"
+#include "compat.h"
 #include "jsapi-private.h"
 
 #include <string.h>

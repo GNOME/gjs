@@ -26,6 +26,7 @@
 #include "dbus-values.h"
 
 #include "../gjs/gjs.h"
+#include "../gjs/compat.h"
 #include "../gi/closure.h"
 
 #include <util/log.h>

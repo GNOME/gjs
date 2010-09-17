@@ -34,6 +34,7 @@
 #include "gjs_gi_trace.h"
 
 #include <gjs/gjs.h>
+#include <gjs/compat.h>
 
 #include <util/log.h>
 

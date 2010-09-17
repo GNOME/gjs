@@ -24,6 +24,7 @@
 #include <config.h>
 
 #include "jsapi-util.h"
+#include "compat.h"
 
 /* Maximum number of elements allowed in a GArray of rooted jsvals.
  * We pre-alloc that amount and then never allow the array to grow,

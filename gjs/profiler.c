@@ -25,6 +25,7 @@
 
 #include "profiler.h"
 #include <jsdbgapi.h>
+#include "compat.h"
 
 #include <signal.h>
 #include <sys/types.h>

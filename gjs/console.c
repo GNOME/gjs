@@ -28,6 +28,7 @@
 
 #include <util/log.h>
 #include <gjs/gjs.h>
+#include <gjs/compat.h>
 
 static char **include_path = NULL;
 static char *command = NULL;

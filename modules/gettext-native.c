@@ -25,6 +25,7 @@
 #include "../gi/closure.h"
 #include <util/log.h>
 #include <gjs/gjs.h>
+#include <gjs/compat.h>
 #include <jsapi.h>
 #include <glib/gi18n.h>
 #include <gjs/compat.h>

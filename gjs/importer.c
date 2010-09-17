@@ -29,6 +29,7 @@
 #include <jsapi.h>
 
 #include <gjs/gjs.h>
+#include <gjs/compat.h>
 
 #include <string.h>
 

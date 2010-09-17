@@ -24,6 +24,7 @@
 #include <config.h>
 
 #include "mem.h"
+#include "compat.h"
 #include <util/log.h>
 
 #define GJS_DEFINE_COUNTER(name)             \

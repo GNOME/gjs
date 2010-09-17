@@ -30,6 +30,7 @@
 #include "closure.h"
 #include "keep-alive.h"
 #include <gjs/gjs.h>
+#include <gjs/compat.h>
 
 typedef struct {
     GClosure base;
