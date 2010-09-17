@@ -314,15 +314,17 @@ gjs_js_values_from_dbus(JSContext          *context,
 
     array = gjs_rooted_array_new();
 
-    do {
-        if (!gjs_js_one_value_from_dbus(context, iter, &value)) {
-            gjs_rooted_array_free(context, array, TRUE);
-            JS_RemoveRoot(context, &value);
-            return JS_FALSE; /* error message already set */
-        }
+    if (dbus_message_iter_get_arg_type(iter) != DBUS_TYPE_INVALID) {
+        do {
+            if (!gjs_js_one_value_from_dbus(context, iter, &value)) {
+                gjs_rooted_array_free(context, array, TRUE);
+                JS_RemoveRoot(context, &value);
+                return JS_FALSE; /* error message already set */
+            }
 
-        gjs_rooted_array_append(context, array, value);
-    } while (dbus_message_iter_next(iter));
+            gjs_rooted_array_append(context, array, value);
+        } while (dbus_message_iter_next(iter));
+    }
 
     *array_p = array;
 
