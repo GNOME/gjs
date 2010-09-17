@@ -252,7 +252,10 @@ complete_call(JSContext   *context,
     g_assert(ret_values != NULL);
 
     array_length = gjs_rooted_array_get_length(context, ret_values);
-    if (array_length == 1) {
+    if (array_length == 0) {
+        /* the callback expects to be called with callback(undefined, null) */
+        *retval = JSVAL_VOID;
+    } else if (array_length == 1) {
         /* If the array only has one element return that element alone */
         *retval = gjs_rooted_array_get(context,
                                           ret_values,
