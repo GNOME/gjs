@@ -363,7 +363,7 @@ gjs_array_from_strv(JSContext   *context,
     guint i;
     JSBool result = JS_FALSE;
 
-    obj = JS_NewArrayObject(context, 0, JSVAL_NULL);
+    obj = JS_NewArrayObject(context, 0, NULL);
     if (obj == NULL)
         return JS_FALSE;
 
@@ -1373,7 +1373,7 @@ gjs_array_from_g_list (JSContext  *context,
     GArgument arg;
     JSBool result;
 
-    obj = JS_NewArrayObject(context, 0, JSVAL_NULL);
+    obj = JS_NewArrayObject(context, 0, NULL);
     if (obj == NULL)
         return JS_FALSE;
 
@@ -1441,7 +1441,7 @@ gjs_array_from_g_array (JSContext  *context,
     element_type = g_type_info_get_tag(param_info);
     element_type = replace_gtype(element_type);
 
-    obj = JS_NewArrayObject(context, 0, JSVAL_NULL);
+    obj = JS_NewArrayObject(context, 0, NULL);
     if (obj == NULL)
       return JS_FALSE;
 
