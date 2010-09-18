@@ -287,45 +287,6 @@ gjs_closure_invoke(GClosure *closure,
     JS_EndRequest(context);
 }
 
-gboolean
-gjs_closure_invoke_simple(JSContext   *context,
-                          GClosure    *closure,
-                          jsval       *retval,
-                          const gchar *format,
-                          ...)
-{
-    va_list ap;
-    int argc;
-    void *stack_space;
-    jsval *argv;
-    int i;
-
-    JS_BeginRequest(context);
-
-    va_start(ap, format);
-    argv = JS_PushArgumentsVA(context, &stack_space, format, ap);
-    va_end(ap);
-    if (!argv)
-        return FALSE;
-
-    argc = (int)strlen(format);
-    for (i = 0; i < argc; i++)
-        JS_AddValueRoot(context, &argv[i]);
-    JS_AddValueRoot(context, retval);
-
-    gjs_closure_invoke(closure, argc, argv, retval);
-
-    for (i = 0; i < argc; i++)
-        JS_RemoveValueRoot(context, &argv[i]);
-    JS_RemoveValueRoot(context, retval);
-
-    JS_PopArguments(context, stack_space);
-
-    JS_EndRequest(context);
-
-    return TRUE;
-}
-
 JSContext*
 gjs_closure_get_context(GClosure *closure)
 {

@@ -37,11 +37,6 @@ void       gjs_closure_invoke        (GClosure     *closure,
                                       int           argc,
                                       jsval        *argv,
                                       jsval        *retval);
-gboolean   gjs_closure_invoke_simple (JSContext    *context,
-                                      GClosure     *closure,
-                                      jsval        *retval,
-                                      const gchar  *format,
-                                      ...);
 JSContext* gjs_closure_get_context   (GClosure     *closure);
 JSObject*  gjs_closure_get_callable  (GClosure     *closure);
 
