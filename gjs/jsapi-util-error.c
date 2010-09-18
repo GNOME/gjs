@@ -194,36 +194,18 @@ gjs_throw_g_error (JSContext       *context,
 }
 
 #if GJS_BUILD_TESTS
-static void
-test_error_reporter(JSContext     *context,
-                    const char    *message,
-                    JSErrorReport *report)
-{
-    g_printerr("error reported by test: %s\n", message);
-}
+#include "unit-test-utils.h"
 
 void
 gjstest_test_func_gjs_jsapi_util_error_throw(void)
 {
-    JSRuntime *runtime;
+    GjsUnitTestFixture fixture;
     JSContext *context;
-    JSObject *global;
     jsval exc, value, previous;
     const char *s;
 
-    /* create a runtime just to avoid tangling this test with all the
-     * code surrounding how we create one normally in context.c
-     */
-    runtime = JS_NewRuntime(1024*1024 /* max bytes */);
-    context = JS_NewContext(runtime, 8192);
-
-    JS_BeginRequest(context);
-
-    global = JS_NewObject(context, NULL, NULL, NULL);
-    JS_SetGlobalObject(context, global);
-    JS_InitStandardClasses(context, global);
-
-    JS_SetErrorReporter(context, test_error_reporter);
+    _gjs_unit_test_fixture_begin(&fixture);
+    context = fixture.context;
 
     /* Test that we can throw */
 
@@ -273,11 +255,7 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
 
     JS_RemoveRoot(context, &previous);
 
-    JS_EndRequest(context);
-
-    JS_DestroyContext(context);
-    JS_DestroyRuntime(runtime);
-    JS_ShutDown();
+    _gjs_unit_test_fixture_finish(&fixture);
 }
 
 #endif /* GJS_BUILD_TESTS */

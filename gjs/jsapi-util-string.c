@@ -443,44 +443,28 @@ gjs_get_string_id (jsval            id_val,
 
 
 #if GJS_BUILD_TESTS
+#include "unit-test-utils.h"
 #include <string.h>
 
-
-static void
-test_error_reporter(JSContext     *context,
-                    const char    *message,
-                    JSErrorReport *report)
-{
-    g_printerr("error reported by test: %s\n", message);
-}
 
 void
 gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(void)
 {
+    GjsUnitTestFixture fixture;
+    JSContext *context;
     const char *utf8_string = "\303\211\303\226 foobar \343\203\237";
     char *utf8_result;
-    JSRuntime *runtime;
-    JSContext *context;
-    JSObject *global;
     jsval js_string;
 
-    runtime = JS_NewRuntime(1024*1024 /* max bytes */);
-    context = JS_NewContext(runtime, 8192);
-    JS_BeginRequest(context);
-    global = JS_NewObject(context, NULL, NULL, NULL);
-    JS_SetGlobalObject(context, global);
-    JS_InitStandardClasses(context, global);
-
-    JS_SetErrorReporter(context, test_error_reporter);
+    _gjs_unit_test_fixture_begin(&fixture);
+    context = fixture.context;
 
     g_assert(gjs_string_from_utf8(context, utf8_string, -1, &js_string) == JS_TRUE);
     g_assert(js_string);
     g_assert(JSVAL_IS_STRING(js_string));
     g_assert(gjs_string_to_utf8(context, js_string, &utf8_result) == JS_TRUE);
 
-    JS_EndRequest(context);
-    JS_DestroyContext(context);
-    JS_DestroyRuntime(runtime);
+    _gjs_unit_test_fixture_finish(&fixture);
 
     g_assert(g_str_equal(utf8_string, utf8_result));
 
@@ -490,21 +474,14 @@ gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(void)
 void
 gjstest_test_func_gjs_jsapi_util_string_get_ascii(void)
 {
-    JSRuntime *runtime;
+    GjsUnitTestFixture fixture;
     JSContext *context;
-    JSObject *global;
     const char *ascii_string = "Hello, world";
     JSString  *js_string;
     jsval      void_value;
 
-    runtime = JS_NewRuntime(1024*1024 /* max bytes */);
-    context = JS_NewContext(runtime, 8192);
-    JS_BeginRequest(context);
-    global = JS_NewObject(context, NULL, NULL, NULL);
-    JS_SetGlobalObject(context, global);
-    JS_InitStandardClasses(context, global);
-
-    JS_SetErrorReporter(context, test_error_reporter);
+    _gjs_unit_test_fixture_begin(&fixture);
+    context = fixture.context;
 
     js_string = JS_NewStringCopyZ(context, ascii_string);
     g_assert(g_str_equal(gjs_string_get_ascii(STRING_TO_JSVAL(js_string)), ascii_string));
@@ -512,17 +489,14 @@ gjstest_test_func_gjs_jsapi_util_string_get_ascii(void)
     g_assert(gjs_string_get_ascii_checked(context, void_value) == NULL);
     g_assert(JS_IsExceptionPending(context));
 
-    JS_EndRequest(context);
-    JS_DestroyContext(context);
-    JS_DestroyRuntime(runtime);
+    _gjs_unit_test_fixture_finish(&fixture);
 }
 
 void
 gjstest_test_func_gjs_jsapi_util_string_get_binary(void)
 {
-    JSRuntime *runtime;
+    GjsUnitTestFixture fixture;
     JSContext *context;
-    JSObject *global;
     const char binary_string[] = "foo\0bar\0baz";
     const char binary_string_odd[] = "foo\0bar\0baz123";
     jsval js_string;
@@ -533,14 +507,8 @@ gjstest_test_func_gjs_jsapi_util_string_get_binary(void)
     g_assert_cmpuint(sizeof(binary_string), ==, 12);
     g_assert_cmpuint(sizeof(binary_string_odd), ==, 15);
 
-    runtime = JS_NewRuntime(1024*1024 /* max bytes */);
-    context = JS_NewContext(runtime, 8192);
-    JS_BeginRequest(context);
-    global = JS_NewObject(context, NULL, NULL, NULL);
-    JS_SetGlobalObject(context, global);
-    JS_InitStandardClasses(context, global);
-
-    JS_SetErrorReporter(context, test_error_reporter);
+    _gjs_unit_test_fixture_begin(&fixture);
+    context = fixture.context;
 
     js_string = JSVAL_VOID;
     JS_AddRoot(context, &js_string);
@@ -582,9 +550,7 @@ gjstest_test_func_gjs_jsapi_util_string_get_binary(void)
                                         &data, &len));
     g_assert(JS_IsExceptionPending(context));
 
-    JS_EndRequest(context);
-    JS_DestroyContext(context);
-    JS_DestroyRuntime(runtime);
+    _gjs_unit_test_fixture_finish(&fixture);
 }
 
 #endif /* GJS_BUILD_TESTS */

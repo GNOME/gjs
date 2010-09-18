@@ -286,38 +286,23 @@ gjs_rooted_array_free(JSContext        *context,
 }
 
 #if GJS_BUILD_TESTS
+#include "unit-test-utils.h"
 #include <string.h>
-
-static void
-test_error_reporter(JSContext     *context,
-                    const char    *message,
-                    JSErrorReport *report)
-{
-    g_printerr("error reported by test: %s\n", message);
-}
 
 #define N_ELEMS 15
 
 void
 gjstest_test_func_gjs_jsapi_util_array(void)
 {
-    JSRuntime *runtime;
+    GjsUnitTestFixture fixture;
     JSContext *context;
     JSObject *global;
     GjsRootedArray *array;
     int i;
     jsval value;
 
-    runtime = JS_NewRuntime(1024*1024 /* max bytes */);
-    context = JS_NewContext(runtime, 8192);
-
-    JS_BeginRequest(context);
-
-    global = JS_NewObject(context, NULL, NULL, NULL);
-    JS_SetGlobalObject(context, global);
-    JS_InitStandardClasses(context, global);
-
-    JS_SetErrorReporter(context, test_error_reporter);
+    _gjs_unit_test_fixture_begin(&fixture);
+    context = fixture.context;
 
     array = gjs_rooted_array_new();
 
@@ -343,11 +328,7 @@ gjstest_test_func_gjs_jsapi_util_array(void)
 
     gjs_rooted_array_free(context, array, TRUE);
 
-    JS_EndRequest(context);
-
-    JS_DestroyContext(context);
-    JS_DestroyRuntime(runtime);
-    JS_ShutDown();
+    _gjs_unit_test_fixture_finish(&fixture);
 }
 
 #endif /* GJS_BUILD_TESTS */
