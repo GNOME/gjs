@@ -160,6 +160,10 @@ EXTRA_DIST +=					\
 	test/js/modules/subA/subB/__init__.js	\
 	test/js/modules/subA/subB/foobar.js     \
 	test/js/modules/subA/subB/baz.js        \
+	test/js/test0010basic.js		\
+	test/js/test0020importer.js		\
+	test/js/test0030basicBoxed.js		\
+	test/js/test0040mainloop.js		\
 	test/js/testself.js			\
 	test/js/testByteArray.js		\
 	test/js/testCairo.js			\
