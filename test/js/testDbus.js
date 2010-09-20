@@ -757,7 +757,7 @@ function testGetMessageContextAsync() {
 }
 
 function testByteArrays() {
-    let someString = "Hello\0world!\0\0\1\2\3";
+    let someString = "Hello\x00world!\x00\x00\x01\x02\x03";
     let theResult, theExcp;
     Mainloop.idle_add(function() {
                           let proxy = new Malarky();
