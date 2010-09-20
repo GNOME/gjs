@@ -23,6 +23,7 @@
 
 #include <config.h>
 #include <glib.h>
+#include <glib-object.h>
 #include <util/crash.h>
 
 #include "test.h"
@@ -35,6 +36,8 @@ int
 main(int    argc,
      char **argv)
 {
+    g_type_init ();
+
     gjs_crash_after_timeout(60*7); /* give the unit tests 7 minutes to complete */
     gjs_init_sleep_on_crash();
 
