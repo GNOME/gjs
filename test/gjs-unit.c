@@ -174,6 +174,11 @@ main(int argc, char **argv)
     g_setenv("BUILDDIR", top_builddir, FALSE);
     g_setenv("XDG_DATA_HOME", data_home, FALSE);
     g_setenv("GJS_PATH", path->str, FALSE);
+    /* The tests are known to fail in the presence of the JIT;
+     * we leak objects.
+     * https://bugzilla.gnome.org/show_bug.cgi?id=616193
+     */
+    g_setenv("GJS_DISABLE_JIT", "1", FALSE);
 
     gjs_crash_after_timeout(60*7); /* give the unit tests 7 minutes to complete */
     gjs_init_sleep_on_crash();
