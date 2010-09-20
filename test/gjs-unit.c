@@ -92,6 +92,24 @@ test(GjsTestJSFixture *fix,
     g_assert_cmpint(code, ==, 0);
 }
 
+static GSList *
+read_all_dir_sorted (const char *dirpath)
+{
+    GSList *result = NULL;
+    GDir *dir;
+    const char *name;
+
+    dir = g_dir_open(dirpath, 0, NULL);
+    g_assert(dir != NULL);
+
+    while ((name = g_dir_read_name(dir)) != NULL)
+        result = g_slist_prepend (result, g_strdup (name));
+    result = g_slist_sort(result, (GCompareFunc) strcmp);
+
+    g_dir_close(dir);
+    return result;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -109,10 +127,9 @@ main(int argc, char **argv)
     char *gjs_unit_dir;
     char *top_builddir;
     char *data_home;
-    const char *name;
     GString *path;
-    GDir *dir;
     size_t i;
+    GSList *all_tests, *iter;
 
     working_dir = g_get_current_dir();
 
@@ -168,10 +185,10 @@ main(int argc, char **argv)
 
     /* iterate through all 'test*.js' files in ${top_srcdir}/test/js */
     js_test_dir = g_build_filename(top_srcdir, "test", "js", NULL);
-    dir = g_dir_open(js_test_dir, 0, NULL);
-    g_assert(dir != NULL);
 
-    while ((name = g_dir_read_name(dir)) != NULL) {
+    all_tests = read_all_dir_sorted(js_test_dir);
+    for (iter = all_tests; iter; iter = iter->next) {
+        char *name = iter->data;
         char *test_name;
         char *file_name;
 
@@ -185,10 +202,11 @@ main(int argc, char **argv)
 
         file_name = g_build_filename(js_test_dir, name, NULL);
         g_test_add(test_name, GjsTestJSFixture, file_name, setup, test, teardown);
+        g_free(name);
         g_free(test_name);
         /* not freeing file_name as it's needed while running the test */
     }
-    g_dir_close(dir);
+    g_slist_free(all_tests);
 
     return g_test_run ();
 }
