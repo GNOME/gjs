@@ -90,6 +90,7 @@ libgjs_la_SOURCES =		\
 	util/misc.c
 
 gjstest_files_with_tests += 	\
+	gjs/context.c		\
 	gjs/jsapi-util-array.c	\
 	gjs/jsapi-util-error.c	\
 	gjs/jsapi-util-string.c	\
