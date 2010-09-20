@@ -89,7 +89,8 @@ test(GjsTestJSFixture *fix,
     if (!success)
         g_error("%s", error->message);
     g_assert(error == NULL);
-    g_assert_cmpint(code, ==, 0);
+    if (code != 0)
+        g_error("Test script returned code %d; assertions will be in gjs.log", code);
 }
 
 static GSList *
