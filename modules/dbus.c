@@ -1750,9 +1750,16 @@ define_bus_object(JSContext  *context,
     bus_val = JSVAL_VOID;
     JS_AddValueRoot(context, &bus_val);
 
-    bus_obj = JS_ConstructObject(context, NULL, proto_obj, NULL);
+    bus_obj = JS_ConstructObject(context, NULL, NULL, NULL);
     if (bus_obj == NULL)
         goto out;
+    /* We need to use a separate call to SetPrototype to work
+     * around a SpiderMonkey bug where with clasp=NULL, the
+     * parent and proto arguments to JS_ConstructObject are
+     * lost.
+     * https://bugzilla.mozilla.org/show_bug.cgi?id=599651
+     */
+    JS_SetPrototype(context, bus_obj, proto_obj);
 
     bus_val = OBJECT_TO_JSVAL(bus_obj);
 

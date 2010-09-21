@@ -283,7 +283,10 @@ repo_new(JSContext *context)
         return JS_FALSE;
     }
 
-    versions = JS_ConstructObject(context, NULL, NULL, global);
+    versions = JS_ConstructObject(context, NULL, NULL, NULL);
+    /* https://bugzilla.mozilla.org/show_bug.cgi?id=599651 means we
+     * can't just pass in the global as the parent */
+    JS_SetParent(context, versions, global);
 
     JS_DefineProperty(context, repo,
                       "versions",

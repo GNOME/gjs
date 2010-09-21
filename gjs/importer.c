@@ -285,11 +285,15 @@ load_module_init(JSContext  *context,
         }
     }
 
-    module_obj = JS_NewObject(context, NULL, NULL,
-                              gjs_get_import_global(context));
+    module_obj = JS_NewObject(context, NULL, NULL, NULL);
     if (module_obj == NULL) {
         return JS_FALSE;
     }
+
+    /* https://bugzilla.mozilla.org/show_bug.cgi?id=599651 means we
+     * can't just pass in the global as the parent */
+    JS_SetParent(context, module_obj,
+                 gjs_get_import_global (context));
 
     /* Define module in importer for future use and to avoid module_obj
      * object to be garbage collected during the evaluation of the script */

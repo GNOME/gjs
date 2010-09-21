@@ -137,10 +137,14 @@ gjs_define_enumeration(JSContext    *context,
         return JS_TRUE;
     }
 
-    enum_obj = JS_ConstructObject(context, NULL, NULL,
-                                  gjs_get_import_global(context));
+    enum_obj = JS_ConstructObject(context, NULL, NULL, NULL);
     if (enum_obj == NULL)
         return JS_FALSE;
+
+    /* https://bugzilla.mozilla.org/show_bug.cgi?id=599651 means we
+     * can't just pass in the global as the parent */
+    JS_SetParent(context, enum_obj,
+                 gjs_get_import_global (context));
 
     /* Fill in enum values first, so we don't define the enum itself until we're
      * sure we can finish successfully.
