@@ -275,13 +275,14 @@ gjs_closure_invoke(GClosure *closure,
                           closure, c->obj);
         if (!gjs_log_exception(context, NULL))
             gjs_debug_closure("Closure invocation failed but no exception was set?");
-        return;
+        goto out;
     }
 
     if (gjs_log_exception(context, NULL)) {
         gjs_debug_closure("Closure invocation succeeded but an exception was set");
     }
 
+ out:
     JS_EndRequest(context);
 }
 
