@@ -70,6 +70,7 @@ gjs_throw_valist(JSContext       *context,
                   "Ignoring second exception: '%s'",
                   s);
         g_free(s);
+        JS_EndRequest(context);
         return;
     }
 
