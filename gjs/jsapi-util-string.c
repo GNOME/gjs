@@ -317,6 +317,7 @@ gjs_string_get_binary_data(JSContext       *context,
     if (!JSVAL_IS_STRING(value)) {
         gjs_throw(context,
                   "Value is not a string, can't return binary data from it");
+        JS_EndRequest(context);
         return JS_FALSE;
     }
 
