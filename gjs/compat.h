@@ -59,6 +59,8 @@ G_BEGIN_DECLS
 #define JSID_VOID JSVAL_VOID
 #define JSID_IS_VOID(id) (id == JSVAL_VOID)
 
+#else
+#define HAVE_JSENUMERATE_INIT_ALL 1
 #endif
 
 G_END_DECLS
