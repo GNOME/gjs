@@ -738,7 +738,7 @@ importer_new_enumerate(JSContext  *context,
             *state_p = JSVAL_NULL;
 
         if (id_p)
-            *id_p = JSID_VOID;
+            *id_p = INT_TO_JSID(0);
 
         priv = priv_from_js(context, object);
         if (!priv)
@@ -845,7 +845,7 @@ importer_new_enumerate(JSContext  *context,
             *state_p = PRIVATE_TO_JSVAL(iter);
 
         if (id_p)
-            *id_p = INT_TO_JSVAL(iter->elements->len);
+            *id_p = INT_TO_JSID(iter->elements->len);
 
         break;
     }
