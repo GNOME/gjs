@@ -54,7 +54,7 @@ jsvalue_to_string(JSContext* cx, jsval val, gboolean* is_string)
     const char* value = NULL;
     JSString* value_str;
 
-    JS_EnterLocalRootScope(cx);
+    (void)JS_EnterLocalRootScope(cx);
 
     value_str = JS_ValueToString(cx, val);
     if (value_str)
@@ -92,7 +92,7 @@ format_frame(JSContext* cx, JSStackFrame* fp,
     gboolean is_string;
     jsval val;
 
-    JS_EnterLocalRootScope(cx);
+    (void)JS_EnterLocalRootScope(cx);
 
     if (JS_IsNativeFrame(cx, fp)) {
         g_string_append_printf(buf, "%d [native frame]\n", num);

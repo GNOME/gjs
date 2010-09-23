@@ -722,7 +722,7 @@ gjs_log_object_props(JSContext      *context,
      * that could get collected as we go through this process. So
      * create a local root scope.
      */
-    JS_EnterLocalRootScope(context);
+    (void)JS_EnterLocalRootScope(context);
 
     props_iter = JS_NewPropertyIterator(context, obj);
     if (props_iter == NULL) {
@@ -782,7 +782,7 @@ gjs_explain_scope(JSContext  *context,
     JS_BeginRequest(load_context);
     JS_BeginRequest(call_context);
 
-    JS_EnterLocalRootScope(context);
+    (void)JS_EnterLocalRootScope(context);
 
     gjs_debug(GJS_DEBUG_SCOPE,
               "  Context: %p %s",

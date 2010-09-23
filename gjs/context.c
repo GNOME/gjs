@@ -200,7 +200,7 @@ gjs_print_parse_args(JSContext *context,
     JS_BeginRequest(context);
 
     str = g_string_new("");
-    JS_EnterLocalRootScope(context);
+    (void)JS_EnterLocalRootScope(context);
     for (n = 0; n < argc; ++n) {
         JSExceptionState *exc_state;
         JSString *jstr;

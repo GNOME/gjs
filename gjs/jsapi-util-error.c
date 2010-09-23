@@ -77,7 +77,7 @@ gjs_throw_valist(JSContext       *context,
 
     result = JS_FALSE;
 
-    JS_EnterLocalRootScope(context);
+    (void)JS_EnterLocalRootScope(context);
 
     if (!gjs_string_from_utf8(context, s, -1, &argv[0])) {
         JS_ReportError(context, "Failed to copy exception string");
