@@ -858,6 +858,9 @@ importer_new_enumerate(JSContext  *context,
             return JS_FALSE;
         }
 
+        if (*state_p == JSVAL_NULL) /* Iterating prototype */
+            return JS_TRUE;
+
         iter = JSVAL_TO_PRIVATE(*state_p);
 
         if (iter->index < iter->elements->len) {
