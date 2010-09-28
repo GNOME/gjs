@@ -49,7 +49,7 @@ changequote([,])dnl
 if test "$GCC" = "yes"; then
     for flag in -Wall -Wchar-subscripts -Wmissing-declarations \
         -Wmissing-prototypes -Wnested-externs -Wpointer-arith -Wcast-align \
-        -Wsign-compare  -Wfloat-equal;
+        -Wsign-compare;
     do
         CFLAGS="`ensureflag $flag $CFLAGS`"
         CXXFLAGS="`ensureflag $flag $CXXFLAGS`"
