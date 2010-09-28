@@ -71,7 +71,6 @@ ns_new_resolve(JSContext *context,
     const char *name;
     GIRepository *repo;
     GIBaseInfo *info;
-    JSContext *load_context;
 
     *objp = NULL;
 
@@ -89,8 +88,7 @@ ns_new_resolve(JSContext *context,
     if (priv == NULL)
         return JS_TRUE; /* we are the prototype, or have the wrong class */
 
-    load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
-    JS_BeginRequest(load_context);
+    JS_BeginRequest(context);
 
     repo = g_irepository_get_default();
 
@@ -99,22 +97,21 @@ ns_new_resolve(JSContext *context,
         /* Special-case fallback hack for GParamSpec */
         if (strcmp(name, "ParamSpec") == 0 &&
             strcmp(priv->namespace, "GLib") == 0) {
-            gjs_define_param_class(load_context,
-                                   obj,
-                                   NULL);
-            if (gjs_move_exception(load_context, context)) {
-                JS_EndRequest(load_context);
+            if (!gjs_define_param_class(context,
+                                        obj,
+                                        NULL)) {
+                JS_EndRequest(context);
                 return JS_FALSE;
             } else {
                 *objp = obj; /* we defined the property in this object */
-                JS_EndRequest(load_context);
+                JS_EndRequest(context);
                 return JS_TRUE;
             }
         } else {
             gjs_throw(context,
                       "No symbol '%s' in namespace '%s'",
                       name, priv->namespace);
-            JS_EndRequest(load_context);
+            JS_EndRequest(context);
             return JS_FALSE;
         }
     }
@@ -125,10 +122,10 @@ ns_new_resolve(JSContext *context,
               g_base_info_get_name(info),
               g_base_info_get_namespace(info));
 
-    if (gjs_define_info(load_context, obj, info)) {
+    if (gjs_define_info(context, obj, info)) {
         g_base_info_unref(info);
         *objp = obj; /* we defined the property in this object */
-        JS_EndRequest(load_context);
+        JS_EndRequest(context);
         return JS_TRUE;
     } else {
         gjs_debug(GJS_DEBUG_GNAMESPACE,
@@ -137,13 +134,7 @@ ns_new_resolve(JSContext *context,
 
         g_base_info_unref(info);
 
-        if (!gjs_move_exception(load_context, context)) {
-            /* set an exception if none was set */
-            gjs_throw(context,
-                         "Defining info failed but no exception set");
-        }
-
-        JS_EndRequest(load_context);
+        JS_EndRequest(context);
         return JS_FALSE;
     }
 }
@@ -241,7 +232,7 @@ ns_new(JSContext    *context,
     Ns *priv;
 
     /* put constructor in the global namespace */
-    global = JS_GetGlobalObject(context);
+    global = gjs_get_import_global(context);
 
     if (!gjs_object_has_property(context, global, gjs_ns_class.name)) {
         JSObject *prototype;
@@ -276,7 +267,7 @@ ns_new(JSContext    *context,
                   gjs_ns_class.name, prototype);
     }
 
-    ns = JS_ConstructObject(context, &gjs_ns_class, NULL, NULL);
+    ns = JS_ConstructObject(context, &gjs_ns_class, NULL, global);
     if (ns == NULL)
         gjs_fatal("No memory to create ns object");
 

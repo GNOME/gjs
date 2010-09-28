@@ -29,7 +29,6 @@
 #include <util/misc.h>
 
 #include "jsapi-util.h"
-#include "context-jsapi.h"
 #include "compat.h"
 #include "jsapi-private.h"
 
@@ -44,7 +43,7 @@ gjs_util_error_quark (void)
 typedef struct {
     GHashTable *dynamic_classes;
 
-    JSContext *default_context;
+    JSObject *import_global;
 
     JSContext *default_context;
 
@@ -76,54 +75,34 @@ gjs_runtime_set_data(JSRuntime      *runtime,
     g_dataset_set_data_full(runtime, name, data, dnotify);
 }
 
-/* The "load context" is the one we use for loading
- * modules and initializing classes.
+/**
+ * gjs_get_import_global:
+ * @context: a #JSContext
+ *
+ * Gets the "import global" for the context's runtime. The import
+ * global object is the global object for the default context. It is used
+ * as the root object for the scope of modules loaded by GJS in this
+ * runtime, and should also be used as the globals 'obj' argument passed
+ * to JS_InitClass() and the parent argument passed to JS_ConstructObject()
+ * when creating a native classes that are shared between all contexts using
+ * the runtime. (The standard JS classes are not shared, but we share
+ * classes such as GObject proxy classes since objects of these classes can
+ * easily migrate between contexts and having different classes depending
+ * on the context where they were first accessed would be confusing.)
+ *
+ * Return value: the "import global" for the context's
+ *  runtime. Will never return %NULL while GJS has an active context
+ *  for the runtime.
  */
-JSContext*
-gjs_runtime_get_load_context(JSRuntime *runtime)
+JSObject*
+gjs_get_import_global(JSContext *context)
 {
-    GjsContext *context;
+    JSRuntime *runtime = JS_GetRuntime(context);
+    RuntimeData *rd;
 
-    context = gjs_runtime_get_data(runtime, "gjs-load-context");
-    if (context == NULL) {
-        gjs_debug(GJS_DEBUG_CONTEXT,
-                  "Creating load context for runtime %p",
-                  runtime);
-        context = g_object_new(GJS_TYPE_CONTEXT,
-                               "runtime", runtime,
-                               "is-load-context", TRUE,
-                               NULL);
-        gjs_runtime_set_data(runtime,
-                             "gjs-load-context",
-                             context,
-                             g_object_unref);
-    }
+    rd = get_data_from_runtime(runtime);
 
-    return (JSContext*)gjs_context_get_native_context(context);
-}
-
-JSContext*
-gjs_runtime_peek_load_context(JSRuntime *runtime)
-{
-    GjsContext *context;
-
-    context = gjs_runtime_get_data(runtime, "gjs-load-context");
-    if (context == NULL) {
-        return NULL;
-    } else {
-        return (JSContext*)gjs_context_get_native_context(context);
-    }
-}
-
-void
-gjs_runtime_clear_load_context(JSRuntime *runtime)
-{
-    gjs_debug(GJS_DEBUG_CONTEXT, "Clearing load context");
-    gjs_runtime_set_data(runtime,
-                         "gjs-load-context",
-                         NULL,
-                         NULL);
-    gjs_debug(GJS_DEBUG_CONTEXT, "Load context cleared");
+    return rd->import_global;
 }
 
 /**
@@ -195,8 +174,10 @@ gjs_runtime_set_default_context(JSRuntime *runtime,
         if (rd->default_context != NULL)
             gjs_fatal("gjs_runtime_set_default_context() called twice on the same JSRuntime");
         rd->default_context = context;
+        rd->import_global = JS_GetGlobalObject(rd->default_context);
     } else {
         rd->default_context = NULL;
+        rd->import_global = NULL;
     }
 }
 
@@ -428,8 +409,8 @@ gjs_init_class_dynamic(JSContext      *context,
 {
     jsval value;
     char *private_name;
+    JSObject *global;
     JSObject *prototype;
-    JSContext *load_context;
 
     if (clasp->name != NULL) {
         g_warning("Dynamic class should not have a name in the JSClass struct");
@@ -438,14 +419,13 @@ gjs_init_class_dynamic(JSContext      *context,
 
     JS_BeginRequest(context);
 
-    /* We replace the passed-in context and global object with our
-     * runtime-global permanent load context. Otherwise, in a
-     * process with multiple contexts, we'd arbitrarily define
-     * the class in whatever global object initialized the
-     * class first, which is not desirable.
+    /* We use a special "fake" global object to store our constructors
+     * in for future use. Using the actual global object of the context would
+     * result in different contexts having different class definitions for
+     * the same GObject class; since the proxies are shared between all
+     * contexts, this would produce confusing results.
      */
-    load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
-    JS_BeginRequest(load_context);
+    global = gjs_get_import_global(context);
 
     /* JS_InitClass() wants to define the constructor in the global object, so
      * we give it a private and namespaced name... passing in the namespace
@@ -456,17 +436,17 @@ gjs_init_class_dynamic(JSContext      *context,
     private_name = g_strdup_printf("_private_%s_%s", ns_name, class_name);
 
     prototype = NULL;
-    if (gjs_object_get_property(load_context, JS_GetGlobalObject(load_context),
+    if (gjs_object_get_property(context, global,
                                 private_name, &value) &&
         JSVAL_IS_OBJECT(value)) {
         jsval proto_val;
 
         g_free(private_name); /* don't need it anymore */
 
-        if (!gjs_object_require_property(load_context, JSVAL_TO_OBJECT(value), NULL,
+        if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(value), NULL,
                                          "prototype", &proto_val) ||
             !JSVAL_IS_OBJECT(proto_val)) {
-            gjs_throw(load_context, "prototype was not defined or not an object?");
+            gjs_throw(context, "prototype was not defined or not an object?");
             goto error;
         }
         prototype = JSVAL_TO_OBJECT(proto_val);
@@ -474,7 +454,7 @@ gjs_init_class_dynamic(JSContext      *context,
         DynamicJSClass *class_copy;
         RuntimeData *rd;
 
-        rd = get_data_from_context(load_context);
+        rd = get_data_from_context(context);
 
         class_copy = g_slice_new0(DynamicJSClass);
         class_copy->base = *clasp;
@@ -492,7 +472,7 @@ gjs_init_class_dynamic(JSContext      *context,
                   "Initializing dynamic class %s %p",
                   class_name, class_copy);
 
-        prototype = JS_InitClass(load_context, JS_GetGlobalObject(load_context),
+        prototype = JS_InitClass(context, global,
                                  parent_proto, &class_copy->base,
                                  constructor, nargs,
                                  ps, fs,
@@ -501,7 +481,7 @@ gjs_init_class_dynamic(JSContext      *context,
         /* Retrieve the property again so we can define it in
          * in_object
          */
-        if (!gjs_object_require_property(load_context, JS_GetGlobalObject(load_context), NULL,
+        if (!gjs_object_require_property(context, global, NULL,
                                          class_copy->base.name, &value))
             goto error;
     }
@@ -511,26 +491,17 @@ gjs_init_class_dynamic(JSContext      *context,
     /* Now manually define our constructor with a sane name, in the
      * namespace object.
      */
-    if (!JS_DefineProperty(load_context, in_object,
+    if (!JS_DefineProperty(context, in_object,
                            class_name,
                            value,
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS))
         goto error;
 
-    JS_EndRequest(load_context);
     JS_EndRequest(context);
     return prototype;
 
  error:
-    /* Move the exception to the calling context from load context.
-     */
-    if (!gjs_move_exception(load_context, context)) {
-        /* set an exception since none was set */
-        gjs_throw(context, "No exception was set, but class initialize failed somehow");
-    }
-
-    JS_EndRequest(load_context);
     JS_EndRequest(context);
     return NULL;
 }
@@ -641,26 +612,24 @@ gjs_construct_object_dynamic(JSContext      *context,
 {
     RuntimeData *rd;
     JSClass *proto_class;
-    JSContext *load_context;
+    JSObject *global;
     JSObject *result;
 
     JS_BeginRequest(context);
 
-    /* We replace the passed-in context and global object with our
-     * runtime-global permanent load context. Otherwise, JS_ConstructObject
-     * can't find the constructor in whatever random global object is set
-     * on the passed-in context.
+    /* We use the "import global" rather than the global object for the current
+     * object so that we fine the constructors we stored there in
+     * js_init_class_dynamic.
      */
-    load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
-    JS_BeginRequest(load_context);
+    global = gjs_get_import_global(context);
 
-    proto_class = JS_GET_CLASS(load_context, proto);
+    proto_class = JS_GET_CLASS(context, proto);
 
-    rd = get_data_from_context(load_context);
+    rd = get_data_from_context(context);
 
     /* Check that it's safe to cast to DynamicJSClass */
     if (g_hash_table_lookup(rd->dynamic_classes, proto_class) == NULL) {
-        gjs_throw(load_context, "Prototype is not for a dynamically-registered class");
+        gjs_throw(context, "Prototype is not for a dynamically-registered class");
         goto error;
     }
 
@@ -668,27 +637,24 @@ gjs_construct_object_dynamic(JSContext      *context,
                         "Constructing instance of dynamic class %s %p from proto %p",
                         proto_class->name, proto_class, proto);
 
+    /* Passing in the import global as 'parent' results in it being the global object
+     * used for looking up the constructor for the object. It also results in
+     * it being stored as the parent object of the newly constructed object.
+     * (Not necessarily sensible, but for something like creating the proxy object
+     * for a GObject more sensible than using the global object of the current context.)
+     */
     if (argc > 0)
-        result = JS_ConstructObjectWithArguments(load_context, proto_class, proto, NULL, argc, argv);
+        result = JS_ConstructObjectWithArguments(context, proto_class, proto, global, argc, argv);
     else
-        result = JS_ConstructObject(load_context, proto_class, proto, NULL);
+        result = JS_ConstructObject(context, proto_class, proto, global);
 
     if (!result)
         goto error;
 
-    JS_EndRequest(load_context);
     JS_EndRequest(context);
     return result;
 
  error:
-    /* Move the exception to the calling context from load context.
-     */
-    if (!gjs_move_exception(load_context, context)) {
-        /* set an exception since none was set */
-        gjs_throw(context, "No exception was set, but object construction failed somehow");
-    }
-
-    JS_EndRequest(load_context);
     JS_EndRequest(context);
     return NULL;
 }
@@ -838,7 +804,6 @@ void
 gjs_explain_scope(JSContext  *context,
                   const char *title)
 {
-    JSContext *load_context;
     JSObject *global;
     JSObject *parent;
     GString *chain;
@@ -847,17 +812,13 @@ gjs_explain_scope(JSContext  *context,
               "=== %s ===",
               title);
 
-    load_context = gjs_runtime_peek_load_context(JS_GetRuntime(context));
-
     JS_BeginRequest(context);
-    JS_BeginRequest(load_context);
 
     (void)JS_EnterLocalRootScope(context);
 
     gjs_debug(GJS_DEBUG_SCOPE,
               "  Context: %p %s",
               context,
-              context == load_context ? "(LOAD CONTEXT)" :
               "");
 
     global = JS_GetGlobalObject(context);
@@ -885,7 +846,6 @@ gjs_explain_scope(JSContext  *context,
 
     JS_LeaveLocalRootScope(context);
 
-    JS_EndRequest(load_context);
     JS_EndRequest(context);
 }
 

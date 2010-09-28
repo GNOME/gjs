@@ -856,9 +856,8 @@ JSBool
 gjs_define_byte_array_stuff(JSContext      *context,
                             JSObject       *in_object)
 {
-    JSContext *load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
-    JSObject *global = JS_GetGlobalObject(context);
-    gjs_byte_array_prototype = JS_InitClass(load_context, global,
+    JSObject *global = gjs_get_import_global(context);
+    gjs_byte_array_prototype = JS_InitClass(context, global,
                              NULL,
                              &gjs_byte_array_class,
                              byte_array_constructor,
@@ -869,17 +868,13 @@ gjs_define_byte_array_stuff(JSContext      *context,
                              NULL);
     jsval rval;
 
-    if (gjs_byte_array_prototype == NULL) {
-        gjs_move_exception(load_context, context);
+    if (gjs_byte_array_prototype == NULL)
         return JS_FALSE;
-    }
 
     if (!gjs_object_require_property(
-            load_context, global, NULL,
-            "ByteArray", &rval)) {
-        gjs_move_exception(load_context, context);
+            context, global, NULL,
+            "ByteArray", &rval))
         return JS_FALSE;
-    }
 
     if (!JS_DefineProperty(context, in_object, "ByteArray",
                            rval, NULL, NULL, GJS_MODULE_PROP_FLAGS))

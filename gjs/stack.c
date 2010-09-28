@@ -41,7 +41,6 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <config.h>
-#include "context-jsapi.h"
 #include <glib.h>
 #include <string.h>
 #include <jsdbgapi.h>

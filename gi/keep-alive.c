@@ -216,12 +216,17 @@ gjs_keep_alive_new(JSContext *context)
     JSObject *keep_alive;
     JSObject *global;
 
+    /* This function creates an unattached KeepAlive object; following our
+     * general strategy, we have a single KeepAlive class with a constructor
+     * stored on our single "load global" pseudo-global object, and we create
+     * instances with the load global as parent.
+     */
+
     g_assert(context != NULL);
 
     JS_BeginRequest(context);
 
-    /* put constructor in the global namespace */
-    global = JS_GetGlobalObject(context);
+    global = gjs_get_import_global(context);
 
     g_assert(global != NULL);
 
@@ -267,13 +272,6 @@ gjs_keep_alive_new(JSContext *context)
               "Creating new keep-alive object for context %p global %p",
               context, global);
 
-    /* Without the "global" parent object, this craters inside of
-     * xulrunner because in jsobj.c:js_ConstructObject it looks up
-     * VOID as the constructor.  Exploring in gdb, it is walking up
-     * the scope chain in a way that involves scary xpconnect-looking
-     * stuff. Having "global" as parent seems to fix it. But, it would
-     * not hurt to understand this better.
-     */
     keep_alive = JS_ConstructObject(context, &gjs_keep_alive_class, NULL, global);
     if (keep_alive == NULL) {
         gjs_log_exception(context, NULL);
@@ -349,42 +347,38 @@ gjs_keep_alive_remove_child(JSContext         *context,
 
 #define GLOBAL_KEEP_ALIVE_NAME "__gc_this_on_context_destroy"
 
+static JSObject*
+gjs_keep_alive_get_from_parent(JSContext *context,
+                               JSObject  *parent)
+{
+    jsval value;
+
+    gjs_object_get_property(context, parent, GLOBAL_KEEP_ALIVE_NAME, &value);
+
+    if (JSVAL_IS_OBJECT(value))
+        return JSVAL_TO_OBJECT(value);
+    else
+        return NULL;
+}
+
 JSObject*
 gjs_keep_alive_get_global(JSContext *context)
 {
-    jsval value;
-    JSObject *global;
-    JSObject *result;
-
-    JS_BeginRequest(context);
-
-    global = JS_GetGlobalObject(context);
-
-    gjs_object_get_property(context, global, GLOBAL_KEEP_ALIVE_NAME, &value);
-
-    if (JSVAL_IS_OBJECT(value))
-        result = JSVAL_TO_OBJECT(value);
-    else
-        result = NULL;
-
-    JS_EndRequest(context);
-
-    return result;
+    return gjs_keep_alive_get_from_parent(context,
+                                          JS_GetGlobalObject(context));
 }
 
 static JSObject*
-gjs_keep_alive_create_in_global(JSContext *context)
+gjs_keep_alive_create_in_parent(JSContext *context,
+                                JSObject  *parent)
 {
     JSObject *keep_alive;
-    JSObject *global;
 
     JS_BeginRequest(context);
 
-    global = JS_GetGlobalObject(context);
-
     keep_alive = gjs_keep_alive_new(context);
 
-    if (!JS_DefineProperty(context, global,
+    if (!JS_DefineProperty(context, parent,
                            GLOBAL_KEEP_ALIVE_NAME,
                            OBJECT_TO_JSVAL(keep_alive),
                            NULL, NULL,
@@ -396,6 +390,13 @@ gjs_keep_alive_create_in_global(JSContext *context)
 
     JS_EndRequest(context);
     return keep_alive;
+}
+
+static JSObject*
+gjs_keep_alive_create_in_global(JSContext *context)
+{
+    return gjs_keep_alive_create_in_parent(context,
+                                           JS_GetGlobalObject(context));
 }
 
 void
@@ -447,21 +448,21 @@ gjs_keep_alive_remove_global_child(JSContext         *context,
 }
 
 JSObject*
-gjs_keep_alive_get_for_load_context(JSRuntime *runtime)
+gjs_keep_alive_get_for_import_global(JSContext *context)
 {
-    JSContext *context;
+    JSObject *global;
     JSObject *keep_alive;
 
-    context = gjs_runtime_get_load_context(runtime);
+    global = gjs_get_import_global(context);
 
-    g_assert(context != NULL);
+    g_assert(global != NULL);
 
     JS_BeginRequest(context);
 
-    keep_alive = gjs_keep_alive_get_global(context);
+    keep_alive = gjs_keep_alive_get_from_parent(context, global);
 
     if (!keep_alive)
-        keep_alive = gjs_keep_alive_create_in_global(context);
+        keep_alive = gjs_keep_alive_create_in_parent(context, global);
 
     if (!keep_alive)
         gjs_fatal("could not create keep_alive on global object, no memory?");

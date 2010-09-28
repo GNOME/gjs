@@ -326,12 +326,13 @@ gjs_closure_new(JSContext  *context,
 
     c = (Closure*) g_closure_new_simple(sizeof(Closure), NULL);
     c->runtime = JS_GetRuntime(context);
-    /* Closure are executed in our special "load-context" (one per runtime).
-     * This ensures that the context is still alive when the closure
-     * is invoked (as long as the runtime lives)
+    /* The saved context is used for lifetime management, so that the closure will
+     * be torn down with the context that created it. The context could be attached to
+     * the default context of the runtime using if we wanted the closure to survive
+     * the context that created it.
      */
-    c->context = gjs_runtime_get_load_context(c->runtime);
-    JS_BeginRequest(c->context);
+    c->context = context;
+    JS_BeginRequest(context);
 
     c->obj = callable;
     c->unref_on_global_object_finalized = FALSE;
@@ -342,7 +343,7 @@ gjs_closure_new(JSContext  *context,
      */
     g_closure_add_finalize_notifier(&c->base, NULL, closure_finalized);
 
-    gjs_keep_alive_add_global_child(c->context,
+    gjs_keep_alive_add_global_child(context,
                                     global_context_finalized,
                                     c->obj,
                                     c);
@@ -352,7 +353,7 @@ gjs_closure_new(JSContext  *context,
     gjs_debug_closure("Create closure %p which calls object %p '%s'",
                       c, c->obj, description);
 
-    JS_EndRequest(c->context);
+    JS_EndRequest(context);
 
     return &c->base;
 }

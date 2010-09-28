@@ -29,7 +29,6 @@ nobase_gjsinclude_HEADERS =	\
 
 noinst_HEADERS +=		\
 	gjs/compat.h		\
-	gjs/context-jsapi.h	\
 	gjs/jsapi-private.h	\
 	gjs/profiler.h		\
 	gjs/unit-test-utils.h	\

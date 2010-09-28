@@ -60,28 +60,26 @@ resolve_namespace_object(JSContext  *context,
 {
     GIRepository *repo;
     GError *error;
-    JSContext *load_context;
     jsval versions_val;
     JSObject *versions;
     jsval version_val;
     const char *version;
     JSObject *result;
 
-    load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
-    JS_BeginRequest(load_context);
+    JS_BeginRequest(context);
 
-    if (!gjs_object_require_property(load_context, repo_obj, "GI repository object", "versions", &versions_val) ||
+    if (!gjs_object_require_property(context, repo_obj, "GI repository object", "versions", &versions_val) ||
         !JSVAL_IS_OBJECT(versions_val)) {
         gjs_throw(context, "No 'versions' property in GI repository object");
 
-        JS_EndRequest(load_context);
+        JS_EndRequest(context);
         return NULL;
     }
 
     versions = JSVAL_TO_OBJECT(versions_val);
 
     version = NULL;
-    if (JS_GetProperty(load_context, versions, ns_name, &version_val) &&
+    if (JS_GetProperty(context, versions, ns_name, &version_val) &&
         JSVAL_IS_STRING(version_val)) {
         version = gjs_string_get_ascii(version_val);
     }
@@ -95,8 +93,8 @@ resolve_namespace_object(JSContext  *context,
                   "Requiring %s, version %s: %s",
                   ns_name, version?version:"none", error->message);
         g_error_free(error);
-        JS_EndRequest(load_context);
-        return JS_FALSE;
+        JS_EndRequest(context);
+        return NULL;
     }
 
     /* Defines a property on "obj" (the javascript repo object)
@@ -104,7 +102,7 @@ resolve_namespace_object(JSContext  *context,
      * in the repo.
      */
     result = gjs_define_ns(context, repo_obj, ns_name, repo);
-    JS_EndRequest(load_context);
+    JS_EndRequest(context);
     return result;
 }
 
@@ -130,7 +128,6 @@ repo_new_resolve(JSContext *context,
 {
     Repo *priv;
     const char *name;
-    JSContext *load_context;
 
     *objp = NULL;
 
@@ -148,15 +145,13 @@ repo_new_resolve(JSContext *context,
     if (priv == NULL)
         return JS_TRUE; /* we are the prototype, or have the wrong class */
 
-    load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
-    JS_BeginRequest(load_context);
-    resolve_namespace_object(load_context, obj, name);
-    if (gjs_move_exception(load_context, context)) {
-        JS_EndRequest(load_context);
+    JS_BeginRequest(context);
+    if (resolve_namespace_object(context, obj, name) == NULL) {
+        JS_EndRequest(context);
         return JS_FALSE;
     } else {
         *objp = obj; /* store the object we defined the prop in */
-        JS_EndRequest(load_context);
+        JS_EndRequest(context);
         return JS_TRUE;
     }
 }
@@ -247,9 +242,7 @@ repo_new(JSContext *context)
     JSObject *global;
     JSObject *versions;
 
-    /* We have to define the class in the global object so we can JS_ConstructObject */
-
-    global = JS_GetGlobalObject(context);
+    global = gjs_get_import_global(context);
 
     if (!gjs_object_has_property(context, global, gjs_repo_class.name)) {
         JSObject *prototype;
@@ -284,13 +277,13 @@ repo_new(JSContext *context)
                   gjs_repo_class.name, prototype);
     }
 
-    repo = JS_ConstructObject(context, &gjs_repo_class, NULL, NULL);
+    repo = JS_ConstructObject(context, &gjs_repo_class, NULL, global);
     if (repo == NULL) {
         gjs_throw(context, "No memory to create repo object");
         return JS_FALSE;
     }
 
-    versions = JS_ConstructObject(context, NULL, NULL, NULL);
+    versions = JS_ConstructObject(context, NULL, NULL, global);
 
     JS_DefineProperty(context, repo,
                       "versions",
@@ -506,7 +499,6 @@ JSObject*
 gjs_lookup_namespace_object_by_name(JSContext      *context,
                                     const char     *ns)
 {
-    JSContext *load_context;
     JSObject *global;
     JSObject *repo_obj;
     jsval importer;
@@ -515,26 +507,25 @@ gjs_lookup_namespace_object_by_name(JSContext      *context,
 
     /* This is a little bit of a hack, we hardcode an assumption that
      * the only repo object that exists is called "imports.gi" and is
-     * in the load context.
+     * is stored in the "import global" for the runtime.
      */
 
-    load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
-    JS_BeginRequest(load_context);
-    global = JS_GetGlobalObject(load_context);
+    JS_BeginRequest(context);
+    global = gjs_get_import_global(context);
 
     importer = JSVAL_VOID;
-    if (!gjs_object_require_property(load_context, global, "global object", "imports", &importer) ||
+    if (!gjs_object_require_property(context, global, "global object", "imports", &importer) ||
         !JSVAL_IS_OBJECT(importer)) {
-        gjs_log_exception(load_context, NULL);
+        gjs_log_exception(context, NULL);
         gjs_throw(context, "No imports property in global object");
         goto fail;
     }
 
     girepository = JSVAL_VOID;
-    if (!gjs_object_require_property(load_context, JSVAL_TO_OBJECT(importer), "importer",
+    if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(importer), "importer",
                                         "gi", &girepository) ||
         !JSVAL_IS_OBJECT(girepository)) {
-        gjs_log_exception(load_context, NULL);
+        gjs_log_exception(context, NULL);
         gjs_throw(context, "No gi property in importer");
         goto fail;
     }
@@ -550,11 +541,11 @@ gjs_lookup_namespace_object_by_name(JSContext      *context,
         goto fail;
     }
 
-    JS_EndRequest(load_context);
+    JS_EndRequest(context);
     return JSVAL_TO_OBJECT(ns_obj);
 
  fail:
-    JS_EndRequest(load_context);
+    JS_EndRequest(context);
     return NULL;
 }
 

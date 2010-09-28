@@ -34,7 +34,7 @@
 
 G_BEGIN_DECLS
 
-JSBool    gjs_create_root_importer (JSRuntime   *runtime,
+JSBool    gjs_create_root_importer (JSContext   *context,
                                     const char **initial_search_path,
                                     gboolean     add_standard_search_path);
 JSBool    gjs_define_root_importer (JSContext   *context,

@@ -164,11 +164,10 @@ static struct JSClass cname##_class = { \
 jsval cname##_create_proto(JSContext *context, JSObject *module, const char *proto_name, JSObject *parent) \
 { \
     jsval rval; \
-    JSContext *load_context = gjs_runtime_get_load_context(JS_GetRuntime(context)); \
-    JSObject *global = JS_GetGlobalObject(context); \
-    if (!gjs_object_has_property(load_context, global, \
+    JSObject *global = gjs_get_import_global(context); \
+    if (!gjs_object_has_property(context, global, \
                                  cname##_class.name)) { \
-        JSObject *prototype = JS_InitClass(load_context, global, \
+        JSObject *prototype = JS_InitClass(context, global, \
                                  parent, \
                                  &cname##_class, \
                                  ctor, \
@@ -178,13 +177,11 @@ jsval cname##_create_proto(JSContext *context, JSObject *module, const char *pro
                                  NULL, \
                                  NULL); \
         if (prototype == NULL) { \
-            gjs_move_exception(load_context, context); \
             return JSVAL_NULL; \
         } \
         if (!gjs_object_require_property( \
-                load_context, global, NULL, \
+                context, global, NULL, \
                 cname##_class.name, &rval)) { \
-            gjs_move_exception(load_context, context); \
             return JSVAL_NULL; \
         } \
     } \
@@ -209,9 +206,7 @@ JSContext*  gjs_runtime_get_default_context  (JSRuntime       *runtime);
 void        gjs_runtime_push_context         (JSRuntime       *runtime,
                                               JSContext       *context);
 void        gjs_runtime_pop_context          (JSRuntime       *runtime);
-JSContext*  gjs_runtime_get_load_context     (JSRuntime       *runtime);
-JSContext*  gjs_runtime_peek_load_context    (JSRuntime       *runtime);
-void        gjs_runtime_clear_load_context   (JSRuntime       *runtime);
+JSObject*   gjs_get_import_global            (JSContext       *context);
 gboolean    gjs_object_has_property          (JSContext       *context,
                                               JSObject        *obj,
                                               const char      *property_name);

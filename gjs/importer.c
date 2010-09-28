@@ -285,7 +285,8 @@ load_module_init(JSContext  *context,
         }
     }
 
-    module_obj = JS_ConstructObject(context, NULL, NULL, NULL);
+    module_obj = JS_NewObject(context, NULL, NULL,
+                              gjs_get_import_global(context));
     if (module_obj == NULL) {
         return JS_FALSE;
     }
@@ -915,7 +916,6 @@ importer_new_resolve(JSContext *context,
 {
     Importer *priv;
     const char *name;
-    JSContext *load_context;
 
     *objp = NULL;
 
@@ -934,21 +934,13 @@ importer_new_resolve(JSContext *context,
     if (priv == NULL)
         return JS_TRUE; /* we are the prototype, or have the wrong class */
 
-    /* We always import in the special load context. */
-    load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
-    JS_BeginRequest(load_context);
-    if (do_import(load_context, obj, priv, name)) {
+    JS_BeginRequest(context);
+    if (do_import(context, obj, priv, name)) {
         *objp = obj;
-        JS_EndRequest(load_context);
+        JS_EndRequest(context);
         return JS_TRUE;
     } else {
-        /* Move the exception to the calling context from load context.
-         */
-        if (!gjs_move_exception(load_context, context)) {
-            /* set an exception since none was set */
-            gjs_throw(context, "No exception was set, but import failed somehow");
-        }
-        JS_EndRequest(load_context);
+        JS_EndRequest(context);
         return JS_FALSE;
     }
 }
@@ -1040,7 +1032,7 @@ importer_new(JSContext    *context)
     Importer *priv;
     JSObject *global;
 
-    global = JS_GetGlobalObject(context);
+    global = gjs_get_import_global(context);
 
     if (!gjs_object_has_property(context, global, gjs_importer_class.name)) {
         JSObject *prototype;
@@ -1075,7 +1067,7 @@ importer_new(JSContext    *context)
                   gjs_importer_class.name, prototype);
     }
 
-    importer = JS_ConstructObject(context, &gjs_importer_class, NULL, NULL);
+    importer = JS_ConstructObject(context, &gjs_importer_class, NULL, global);
     if (importer == NULL)
         gjs_fatal("No memory to create ns object");
 
@@ -1188,20 +1180,20 @@ gjs_define_importer(JSContext    *context,
  * we just ignore all calls after the first and hope the args are the same.
  */
 JSBool
-gjs_create_root_importer(JSRuntime   *runtime,
+gjs_create_root_importer(JSContext   *context,
                          const char **initial_search_path,
                          gboolean     add_standard_search_path)
 {
-    JSContext *context;
+    JSObject *global;
 
-    context = gjs_runtime_get_load_context(runtime);
+    global = gjs_get_import_global(context);
 
     JS_BeginRequest(context);
 
     if (!gjs_object_has_property(context,
-                                 JS_GetGlobalObject(context),
+                                 global,
                                  "imports")) {
-        if (gjs_define_importer(context, JS_GetGlobalObject(context),
+        if (gjs_define_importer(context, global,
                                 "imports",
                                 initial_search_path, add_standard_search_path) == NULL) {
             JS_EndRequest(context);
@@ -1223,16 +1215,16 @@ gjs_define_root_importer(JSContext   *context,
                          JSObject    *in_object,
                          const char  *importer_name)
 {
-    JSContext *load_context;
+    JSObject *global;
     jsval value;
     JSBool success;
 
     success = JS_FALSE;
-    load_context = gjs_runtime_get_load_context(JS_GetRuntime(context));
-    JS_BeginRequest(load_context);
+    global = gjs_get_import_global(context);
+    JS_BeginRequest(context);
 
-    if (!gjs_object_require_property(load_context,
-                                     JS_GetGlobalObject(load_context), "global object",
+    if (!gjs_object_require_property(context,
+                                     global, "global object",
                                      "imports", &value) ||
         !JSVAL_IS_OBJECT(value)) {
         gjs_debug(GJS_DEBUG_IMPORTER, "Root importer did not exist, couldn't get from load context; must create it");
@@ -1250,6 +1242,6 @@ gjs_define_root_importer(JSContext   *context,
 
     success = JS_TRUE;
  fail:
-    JS_EndRequest(load_context);
+    JS_EndRequest(context);
     return success;
 }

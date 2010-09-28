@@ -24,7 +24,6 @@
 #include <config.h>
 
 #include "context.h"
-#include "context-jsapi.h"
 #include "importer.h"
 #include "jsapi-util.h"
 #include "profiler.h"
@@ -65,7 +64,6 @@ struct _GjsContext {
     char **search_path;
 
     unsigned int we_own_runtime : 1;
-    unsigned int is_load_context : 1;
 };
 
 struct _GjsContextClass {
@@ -85,8 +83,7 @@ static int signals[LAST_SIGNAL];
 enum {
     PROP_0,
     PROP_SEARCH_PATH,
-    PROP_RUNTIME,
-    PROP_IS_LOAD_CONTEXT
+    PROP_RUNTIME
 };
 
 
@@ -325,10 +322,6 @@ gjs_context_class_init(GjsContextClass *klass)
                                  FALSE,
                                  G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
 
-    g_object_class_install_property(object_class,
-                                    PROP_IS_LOAD_CONTEXT,
-                                    pspec);
-
     gjs_register_native_module("byteArray", gjs_define_byte_array_stuff, 0);
 }
 
@@ -351,8 +344,7 @@ gjs_context_dispose(GObject *object)
     if (js_context->context != NULL) {
 
         gjs_debug(GJS_DEBUG_CONTEXT,
-                  "Destroying JS context%s",
-                  js_context->is_load_context ? " (load context)" : "");
+                  "Destroying JS context");
 
         if (js_context->we_own_runtime)
             gjs_runtime_set_default_context(js_context->runtime, NULL);
@@ -362,11 +354,6 @@ gjs_context_dispose(GObject *object)
 
     if (js_context->runtime != NULL) {
         if (js_context->we_own_runtime) {
-            /* Avoid keeping JSContext with a dangling pointer to the
-             * runtime.
-             */
-            gjs_runtime_clear_load_context(js_context->runtime);
-
             gjs_debug(GJS_DEBUG_CONTEXT,
                       "Destroying JS runtime");
 
@@ -641,30 +628,24 @@ gjs_context_constructor (GType                  type,
             gjs_fatal("GjsContext created for a runtime not owned by GJS");
     }
 
-    /* If we created the root importer in the load context,
-     * there would be infinite recursion since the load context
-     * is a GjsContext
+    /* We create the global-to-runtime root importer with the
+     * passed-in search path. If someone else already created
+     * the root importer, this is a no-op.
      */
-    if (!js_context->is_load_context) {
-        /* We create the global-to-runtime root importer with the
-         * passed-in search path. If someone else already created
-         * the root importer, this is a no-op.
-         */
-        if (!gjs_create_root_importer(js_context->runtime,
-                                      js_context->search_path ?
-                                      (const char**) js_context->search_path :
-                                      NULL,
-                                      TRUE))
-            gjs_fatal("Failed to create root importer");
+    if (!gjs_create_root_importer(js_context->context,
+                                  js_context->search_path ?
+                                  (const char**) js_context->search_path :
+                                  NULL,
+                                  TRUE))
+        gjs_fatal("Failed to create root importer");
 
-        /* Now copy the global root importer (which we just created,
-         * if it didn't exist) to our global object
-         */
-        if (!gjs_define_root_importer(js_context->context,
-                                      js_context->global,
-                                      "imports"))
-            gjs_fatal("Failed to point 'imports' property at root importer");
-    }
+    /* Now copy the global root importer (which we just created,
+     * if it didn't exist) to our global object
+     */
+    if (!gjs_define_root_importer(js_context->context,
+                                  js_context->global,
+                                  "imports"))
+        gjs_fatal("Failed to point 'imports' property at root importer");
 
     if (js_context->we_own_runtime) {
         js_context->profiler = gjs_profiler_new(js_context->runtime);
@@ -690,10 +671,6 @@ gjs_context_get_property (GObject     *object,
     js_context = GJS_CONTEXT (object);
 
     switch (prop_id) {
-    case PROP_IS_LOAD_CONTEXT:
-        g_value_set_boolean(value, js_context->is_load_context);
-        break;
-
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         break;
@@ -716,9 +693,6 @@ gjs_context_set_property (GObject      *object,
         break;
     case PROP_RUNTIME:
         js_context->runtime = g_value_get_pointer(value);
-        break;
-    case PROP_IS_LOAD_CONTEXT:
-        js_context->is_load_context = g_value_get_boolean(value);
         break;
 
     default:
@@ -774,12 +748,6 @@ gjs_context_get_native_context (GjsContext *js_context)
 {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), NULL);
     return js_context->context;
-}
-
-gboolean
-gjs_context_is_load_context(GjsContext *js_context)
-{
-    return js_context->is_load_context;
 }
 
 gboolean
