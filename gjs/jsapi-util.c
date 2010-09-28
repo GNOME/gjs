@@ -43,12 +43,22 @@ gjs_util_error_quark (void)
 
 typedef struct {
     GHashTable *dynamic_classes;
+
+    JSContext *default_context;
+
+    JSContext *default_context;
+
+    /* In a thread-safe future we'd keep this in per-thread data */
+    GSList *context_stack;
 } RuntimeData;
 
 typedef struct {
     JSClass base;
     JSClass *static_class;
 } DynamicJSClass;
+
+static RuntimeData* get_data_from_runtime(JSRuntime *runtime);
+static RuntimeData* get_data_from_context(JSContext *context);
 
 void*
 gjs_runtime_get_data(JSRuntime      *runtime,
@@ -116,60 +126,123 @@ gjs_runtime_clear_load_context(JSRuntime *runtime)
     gjs_debug(GJS_DEBUG_CONTEXT, "Load context cleared");
 }
 
-/* The call context exists because when we call a closure, the scope
- * chain on the context is set to the original scope chain of the
- * closure. We want to avoid using any existing context (especially
- * the load context) because the closure "messes up" the scope chain
- * on the context.
+/**
+ * gjs_runtime_push_context:
+ * @runtime: a #JSRuntime
+ * @context: a #JSRuntime
  *
- * Unlike the load context, which is expected to be an eternal
- * singleton, we only cache the call context for efficiency. It would
- * be just as workable to recreate it for each call.
+ * Make @context the currently active context for @runtime.
+ * A stack is maintained, although switching between different contexts
+ * in a nested fashion in the same thread ecan trigger misbehavior in
+ * Spidermonkey, so is not recommended. This does not call JS_BeginRequest();
+ * the caller needs to do it themselves.
+ *
+ * Should be called when calling from Javascript into native code that
+ * could result in callbacks back to Javascript. The context stack allows
+ * the callbacks to find the right context to use via gjs_get_current_context().
+ *
+ * When GJS is made threadsafe, this needs to maintain a per-thread stack
+ * rather than a global stack.
  */
-JSContext*
-gjs_runtime_get_call_context(JSRuntime *runtime)
-{
-    GjsContext *context;
-
-    context = gjs_runtime_get_data(runtime, "gjs-call-context");
-    if (context == NULL) {
-        gjs_debug(GJS_DEBUG_CONTEXT,
-                  "Creating call context for runtime %p",
-                  runtime);
-        context = g_object_new(GJS_TYPE_CONTEXT,
-                               "runtime", runtime,
-                               NULL);
-        gjs_runtime_set_data(runtime,
-                             "gjs-call-context",
-                             context,
-                             g_object_unref);
-    }
-
-    return (JSContext*)gjs_context_get_native_context(context);
-}
-
-static JSContext*
-gjs_runtime_peek_call_context(JSRuntime *runtime)
-{
-    GjsContext *context;
-
-    context = gjs_runtime_get_data(runtime, "gjs-call-context");
-    if (context == NULL) {
-        return NULL;
-    } else {
-        return (JSContext*)gjs_context_get_native_context(context);
-    }
-}
-
 void
-gjs_runtime_clear_call_context(JSRuntime *runtime)
+gjs_runtime_push_context(JSRuntime *runtime,
+                         JSContext *context)
 {
-    gjs_debug(GJS_DEBUG_CONTEXT, "Clearing call context");
-    gjs_runtime_set_data(runtime,
-                         "gjs-call-context",
-                         NULL,
-                         NULL);
-    gjs_debug(GJS_DEBUG_CONTEXT, "Call context cleared");
+    RuntimeData *rd;
+
+    rd = get_data_from_runtime(runtime);
+
+    rd->context_stack = g_slist_prepend(rd->context_stack, context);
+}
+
+/**
+ * gjs_runtime_pop_context:
+ * @runtime: a #JSRuntime
+ *
+ * Pops a context pushed onto the stack of active contexts by
+ * gjs_runtime_push_context().
+ */
+void
+gjs_runtime_pop_context(JSRuntime *runtime)
+{
+    RuntimeData *rd;
+
+    rd = get_data_from_runtime(runtime);
+
+    rd->context_stack = g_slist_delete_link(rd->context_stack, rd->context_stack);
+}
+
+/**
+ * gjs_runtime_set_default_context:
+ * @runtime: a #JSRuntime
+ * @context: a #JSContext
+ *
+ * Makes @context the default context for @runtime. The default context is the
+ * context used for executing callbacks when no other context is active.
+ * This generally should only be called by GJS - GJS sets the default context
+ * when #GjsContext creates a runtime, and subsequent calls to this function
+ * will produce an error.
+ */
+void
+gjs_runtime_set_default_context(JSRuntime *runtime,
+                                JSContext *context)
+{
+    RuntimeData *rd;
+
+    rd = get_data_from_runtime(runtime);
+
+    if (context != NULL) {
+        if (rd->default_context != NULL)
+            gjs_fatal("gjs_runtime_set_default_context() called twice on the same JSRuntime");
+        rd->default_context = context;
+    } else {
+        rd->default_context = NULL;
+    }
+}
+
+/**
+ * gjs_runtime_get_default_context:
+ * @runtime: a #JSRuntime
+ *
+ * Gets the default context for @runtime. Generally you should use
+ * gjs_runtime_get_current_context() instead.
+ *
+ * Return value: the default context, or %NULL if GJS hasn't been initialized
+ *  for the runtime or is being shut down.
+ */
+JSContext *
+gjs_runtime_get_default_context(JSRuntime *runtime)
+{
+    RuntimeData *rd;
+
+    rd = get_data_from_runtime(runtime);
+
+    return rd->default_context;
+}
+
+/**
+ * gjs_runtime_get_current_context:
+ * @runtime: a #JSRuntime
+ *
+ * Gets the right context to use for code that doesn't already have a JSContext
+ * passed to it, like a callback from native code. If a context is currently
+ * active (see gjs_push_context()), uses that, otherwise uses the default
+ * context for the runtime.
+ *
+ * Return value: the current context, or %NULL if GJS hasn't been initialized
+ *  for the runtime or is being shut down.
+ */
+JSContext *
+gjs_runtime_get_current_context(JSRuntime *runtime)
+{
+    RuntimeData *rd;
+
+    rd = get_data_from_runtime(runtime);
+
+    if (rd->context_stack)
+        return rd->context_stack->data;
+    else
+        return rd->default_context;
 }
 
 static JSClass global_class = {
@@ -766,7 +839,6 @@ gjs_explain_scope(JSContext  *context,
                   const char *title)
 {
     JSContext *load_context;
-    JSContext *call_context;
     JSObject *global;
     JSObject *parent;
     GString *chain;
@@ -776,11 +848,9 @@ gjs_explain_scope(JSContext  *context,
               title);
 
     load_context = gjs_runtime_peek_load_context(JS_GetRuntime(context));
-    call_context = gjs_runtime_peek_call_context(JS_GetRuntime(context));
 
     JS_BeginRequest(context);
     JS_BeginRequest(load_context);
-    JS_BeginRequest(call_context);
 
     (void)JS_EnterLocalRootScope(context);
 
@@ -788,7 +858,6 @@ gjs_explain_scope(JSContext  *context,
               "  Context: %p %s",
               context,
               context == load_context ? "(LOAD CONTEXT)" :
-              context == call_context ? "(CALL CONTEXT)" :
               "");
 
     global = JS_GetGlobalObject(context);
@@ -816,7 +885,6 @@ gjs_explain_scope(JSContext  *context,
 
     JS_LeaveLocalRootScope(context);
 
-    JS_EndRequest(call_context);
     JS_EndRequest(load_context);
     JS_EndRequest(context);
 }
@@ -1028,18 +1096,12 @@ gjs_call_function_value(JSContext      *context,
                         jsval          *rval)
 {
     JSBool result;
-    JSContext *call_context;
 
     JS_BeginRequest(context);
 
-    call_context = gjs_runtime_get_call_context(JS_GetRuntime(context));
-    JS_BeginRequest(call_context);
-
-    result = JS_CallFunctionValue(call_context, obj, fval,
+    result = JS_CallFunctionValue(context, obj, fval,
                                   argc, argv, rval);
-    gjs_move_exception(call_context, context);
 
-    JS_EndRequest(call_context);
     JS_EndRequest(context);
     return result;
 }

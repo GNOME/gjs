@@ -202,11 +202,16 @@ void        gjs_runtime_set_data             (JSRuntime       *runtime,
                                                  const char      *name,
                                                  void            *data,
                                                  GDestroyNotify   dnotify);
+JSContext*  gjs_runtime_get_current_context  (JSRuntime       *runtime);
+void        gjs_runtime_set_default_context  (JSRuntime       *runtime,
+                                              JSContext       *context);
+JSContext*  gjs_runtime_get_default_context  (JSRuntime       *runtime);
+void        gjs_runtime_push_context         (JSRuntime       *runtime,
+                                              JSContext       *context);
+void        gjs_runtime_pop_context          (JSRuntime       *runtime);
 JSContext*  gjs_runtime_get_load_context     (JSRuntime       *runtime);
 JSContext*  gjs_runtime_peek_load_context    (JSRuntime       *runtime);
 void        gjs_runtime_clear_load_context   (JSRuntime       *runtime);
-JSContext*  gjs_runtime_get_call_context     (JSRuntime       *runtime);
-void        gjs_runtime_clear_call_context   (JSRuntime       *runtime);
 gboolean    gjs_object_has_property          (JSContext       *context,
                                               JSObject        *obj,
                                               const char      *property_name);

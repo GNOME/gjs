@@ -278,6 +278,18 @@ complete_call(JSContext   *context,
     return JS_TRUE;
 }
 
+static JSContext *
+get_callback_context(GClosure *closure)
+{
+    JSRuntime *runtime;
+
+    if (!gjs_closure_is_valid(closure))
+        return NULL;
+
+    runtime = gjs_closure_get_runtime(closure);
+    return gjs_runtime_get_current_context(runtime);
+}
+
 static void
 pending_notify(DBusPendingCall *pending,
                void            *user_data)
@@ -291,7 +303,7 @@ pending_notify(DBusPendingCall *pending,
 
     closure = user_data;
 
-    context = gjs_closure_get_context(closure);
+    context = get_callback_context(closure);
 
     gjs_debug(GJS_DEBUG_DBUS,
               "Notified of reply to async call closure %p context %p",
@@ -636,7 +648,7 @@ signal_handler_callback(DBusConnection *connection,
         return;
     }
 
-    context = gjs_closure_get_context(handler->closure);
+    context = get_callback_context(handler->closure);
 
     if (!context) {
         /* The runtime is gone */
@@ -1007,7 +1019,7 @@ on_name_acquired(DBusConnection *connection,
 
     owner = data;
 
-    context = gjs_closure_get_context(owner->acquired_closure);
+    context = get_callback_context(owner->acquired_closure);
     if (context == NULL) {
         gjs_debug(GJS_DEBUG_DBUS,
                   "Closure destroyed before we could notify name acquired");
@@ -1046,7 +1058,7 @@ on_name_lost(DBusConnection *connection,
 
     owner = data;
 
-    context = gjs_closure_get_context(owner->lost_closure);
+    context = get_callback_context(owner->lost_closure);
     if (context == NULL) {
         gjs_debug(GJS_DEBUG_DBUS,
                   "Closure destroyed before we could notify name lost");
@@ -1227,7 +1239,7 @@ on_name_appeared(DBusConnection *connection,
 
     watcher = data;
 
-    context = gjs_closure_get_context(watcher->appeared_closure);
+    context = get_callback_context(watcher->appeared_closure);
     if (context == NULL) {
         gjs_debug(GJS_DEBUG_DBUS,
                   "Closure destroyed before we could notify name appeared");
@@ -1270,7 +1282,7 @@ on_name_vanished(DBusConnection *connection,
 
     watcher = data;
 
-    context = gjs_closure_get_context(watcher->vanished_closure);
+    context = get_callback_context(watcher->vanished_closure);
     if (context == NULL) {
         gjs_debug(GJS_DEBUG_DBUS,
                   "Closure destroyed before we could notify name vanished");

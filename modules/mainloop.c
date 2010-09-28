@@ -104,7 +104,10 @@ gjs_main_loop_run(JSContext *context,
               context);
     g_free(cancel_id);
 
+    gjs_runtime_push_context(JS_GetRuntime(context), context);
     g_main_loop_run(main_loop);
+    gjs_runtime_pop_context(JS_GetRuntime(context));
+
     g_main_loop_unref(main_loop);
     return JS_TRUE;
 }
@@ -115,15 +118,17 @@ closure_source_func(void *data)
     jsval retval;
     GClosure *closure;
     JSBool bool_val;
+    JSRuntime *runtime;
     JSContext *context;
 
     closure = data;
 
-    context = gjs_closure_get_context(closure);
-    if (context == NULL) {
-        /* closure is invalid now */
+    if (!gjs_closure_is_valid(closure))
         return FALSE;
-    }
+
+    runtime = gjs_closure_get_runtime(closure);
+    context = gjs_runtime_get_current_context(runtime);
+
     JS_BeginRequest(context);
 
     retval = JSVAL_VOID;

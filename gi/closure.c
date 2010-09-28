@@ -248,7 +248,6 @@ gjs_closure_invoke(GClosure *closure,
     c = (Closure*) closure;
 
     check_context_valid(c);
-    context = c->context;
 
     if (c->obj == NULL) {
         /* We were destroyed; become a no-op */
@@ -256,12 +255,13 @@ gjs_closure_invoke(GClosure *closure,
         return;
     }
 
+    context = gjs_runtime_get_current_context(c->runtime);
     JS_BeginRequest(context);
 
     if (JS_IsExceptionPending(context)) {
         gjs_debug_closure("Exception was pending before invoking callback??? "
                           "Not expected");
-        gjs_log_exception(c->context, NULL);
+        gjs_log_exception(context, NULL);
     }
 
     if (!gjs_call_function_value(context,
@@ -287,16 +287,24 @@ gjs_closure_invoke(GClosure *closure,
     JS_EndRequest(context);
 }
 
-JSContext*
-gjs_closure_get_context(GClosure *closure)
+gboolean
+gjs_closure_is_valid(GClosure *closure)
 {
     Closure *c;
 
     c = (Closure*) closure;
 
-    check_context_valid(c);
+    return c->context != NULL;
+}
 
-    return c->context;
+JSRuntime*
+gjs_closure_get_runtime(GClosure *closure)
+{
+    Closure *c;
+
+    c = (Closure*) closure;
+
+    return c->runtime;
 }
 
 JSObject*

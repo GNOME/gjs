@@ -57,15 +57,8 @@ typedef struct {
      * around.  However, the alternatives are complicated, and
      * SpiderMonkey currently uses mark-and-sweep, so I think this
      * should be fine. We'll see I guess.
-     *
-     * Saving the context is also questionable: Objects can jump between
-     * contexts (they are only permanently bound to a runtime). However,
-     * we assume, AFAIK safely, that in our usage model the context where
-     * we created the exports object will always be the right one to
-     * invoke incoming calls. A context contains the global scope and an
-     * execution stack.
      */
-    JSContext  *context;
+    JSRuntime *runtime;
     JSObject   *object;
 
     DBusBusType which_bus;
@@ -1516,6 +1509,7 @@ on_message(DBusConnection *connection,
 {
     const char *path;
     DBusHandlerResult result;
+    JSContext *context;
     JSObject *obj, *dir_obj = NULL;
     const char *method_name;
     char *async_method_name;
@@ -1530,15 +1524,17 @@ on_message(DBusConnection *connection,
     if (dbus_message_get_type(message) != DBUS_MESSAGE_TYPE_METHOD_CALL)
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
-    JS_BeginRequest(priv->context);
+    context = gjs_runtime_get_current_context(priv->runtime);
+
+    JS_BeginRequest(context);
     method_value = JSVAL_VOID;
-    JS_AddValueRoot(priv->context, &method_value);
+    JS_AddValueRoot(context, &method_value);
 
     result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
     path = dbus_message_get_path(message);
 
-    obj = find_js_property_by_path(priv->context,
+    obj = find_js_property_by_path(context,
                                    priv->object,
                                    path, &dir_obj);
 
@@ -1557,7 +1553,7 @@ on_message(DBusConnection *connection,
                   path);
 
         if (dir_obj != NULL)
-            result = handle_introspect(priv->context,
+            result = handle_introspect(context,
                                        connection,
                                        dir_obj, obj,
                                        message);
@@ -1582,7 +1578,7 @@ on_message(DBusConnection *connection,
                   "Properties request %s on %s",
                   method_name,
                   iface ? iface : "MISSING INTERFACE");
-        result = handle_properties(priv->context, connection,
+        result = handle_properties(context, connection,
                                    obj, message, method_name);
         goto out;
     }
@@ -1590,7 +1586,7 @@ on_message(DBusConnection *connection,
     async_method_name = g_strdup_printf("%sAsync", method_name);
 
     /* try first if an async version exists */
-    if (find_method(priv->context,
+    if (find_method(context,
                     obj,
                     async_method_name,
                     &method_value)) {
@@ -1599,7 +1595,7 @@ on_message(DBusConnection *connection,
                   "Invoking async method %s on JS obj at dbus path %s",
                   async_method_name, path);
 
-        reply = invoke_js_async_from_dbus(priv->context,
+        reply = invoke_js_async_from_dbus(context,
                                           priv->which_bus,
                                           message,
                                           obj,
@@ -1608,7 +1604,7 @@ on_message(DBusConnection *connection,
         result = DBUS_HANDLER_RESULT_HANDLED;
 
         /* otherwise try the sync version */
-    } else if (find_method(priv->context,
+    } else if (find_method(context,
                            obj,
                            method_name,
                            &method_value)) {
@@ -1617,7 +1613,7 @@ on_message(DBusConnection *connection,
                   "Invoking method %s on JS obj at dbus path %s",
                   method_name, path);
 
-        reply = invoke_js_from_dbus(priv->context,
+        reply = invoke_js_from_dbus(context,
                                     message,
                                     obj,
                                     JSVAL_TO_OBJECT(method_value));
@@ -1639,8 +1635,8 @@ on_message(DBusConnection *connection,
  out:
     if (async_method_name)
         g_free(async_method_name);
-    JS_RemoveValueRoot(priv->context, &method_value);
-    JS_EndRequest(priv->context);
+    JS_RemoveValueRoot(context, &method_value);
+    JS_EndRequest(context);
     return result;
 }
 
@@ -1708,7 +1704,7 @@ exports_constructor(JSContext *context,
     gjs_debug_lifecycle(GJS_DEBUG_DBUS,
                         "exports constructor, obj %p priv %p", obj, priv);
 
-    priv->context = context;
+    priv->runtime = JS_GetRuntime(context);
     priv->object = obj;
 
     return JS_TRUE;

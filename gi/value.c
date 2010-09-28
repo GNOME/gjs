@@ -54,6 +54,7 @@ closure_marshal(GClosure        *closure,
                 gpointer         invocation_hint,
                 gpointer         marshal_data)
 {
+    JSRuntime *runtime;
     JSContext *context;
     int argc;
     jsval *argv;
@@ -65,12 +66,13 @@ closure_marshal(GClosure        *closure,
                       "Marshal closure %p",
                       closure);
 
-    context = gjs_closure_get_context(closure);
-    if (context == NULL) {
+    if (!gjs_closure_is_valid(closure)) {
         /* We were destroyed; become a no-op */
         return;
     }
 
+    runtime = gjs_closure_get_runtime(closure);
+    context = gjs_runtime_get_current_context(runtime);
     JS_BeginRequest(context);
 
     argc = n_param_values;

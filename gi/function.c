@@ -77,7 +77,7 @@ static struct {
 } global_destroy_trampoline;
 
 typedef struct {
-    JSContext *context;
+    JSRuntime *runtime;
     GICallableInfo *info;
     jsval js_function;
     ffi_cif cif;
@@ -128,7 +128,11 @@ function_new_resolve(JSContext *context,
 static void
 gjs_callback_trampoline_free(GjsCallbackTrampoline *trampoline)
 {
-    JS_RemoveValueRoot(trampoline->context, &trampoline->js_function);
+    JSContext *context;
+
+    context = gjs_runtime_get_current_context(trampoline->runtime);
+
+    JS_RemoveValueRoot(context, &trampoline->js_function);
     g_callable_info_free_closure(trampoline->info, trampoline->closure);
     g_base_info_unref( (GIBaseInfo*) trampoline->info);
     g_slice_free(GjsCallbackTrampoline, trampoline);
@@ -147,6 +151,7 @@ gjs_callback_closure(ffi_cif *cif,
                      void **args,
                      void *data)
 {
+    JSContext *context;
     GjsCallbackTrampoline *trampoline;
     int i, n_args, n_jsargs;
     jsval *jsargs, rval;
@@ -155,6 +160,9 @@ gjs_callback_closure(ffi_cif *cif,
 
     trampoline = data;
     g_assert(trampoline);
+
+    context = gjs_runtime_get_current_context(trampoline->runtime);
+    JS_BeginRequest(context);
 
     n_args = g_callable_info_get_n_args(trampoline->info);
 
@@ -172,14 +180,14 @@ gjs_callback_closure(ffi_cif *cif,
         if (g_type_info_get_tag(&type_info) == GI_TYPE_TAG_VOID)
             continue;
 
-        if (!gjs_value_from_g_argument(trampoline->context,
+        if (!gjs_value_from_g_argument(context,
                                        &jsargs[n_jsargs++],
                                        &type_info,
                                        args[i]))
             goto out;
     }
 
-    if (!JS_CallFunctionValue(trampoline->context,
+    if (!JS_CallFunctionValue(context,
                               NULL,
                               trampoline->js_function,
                               n_jsargs,
@@ -190,7 +198,7 @@ gjs_callback_closure(ffi_cif *cif,
 
     g_callable_info_load_return_type(trampoline->info, &ret_type);
 
-    if (!gjs_value_to_g_argument(trampoline->context,
+    if (!gjs_value_to_g_argument(context,
                                  rval,
                                  &ret_type,
                                  "callback",
@@ -205,16 +213,18 @@ gjs_callback_closure(ffi_cif *cif,
 
 out:
     if (!success) {
-        gjs_log_exception (trampoline->context, NULL);
+        gjs_log_exception (context, NULL);
 
         /* Fill in the result with some hopefully neutral value */
         g_callable_info_load_return_type(trampoline->info, &ret_type);
-        gjs_g_argument_init_default (trampoline->context, &ret_type, result);
+        gjs_g_argument_init_default (context, &ret_type, result);
     }
 
     if (trampoline->scope == GI_SCOPE_TYPE_ASYNC) {
         completed_trampolines = g_slist_prepend(completed_trampolines, trampoline);
     }
+
+    JS_EndRequest(context);
 }
 
 /* The global entry point for any invocations of GDestroyNotify;
@@ -268,7 +278,7 @@ gjs_callback_trampoline_new(JSContext      *context,
     g_assert(JS_TypeOfValue(context, function) == JSTYPE_FUNCTION);
 
     trampoline = g_slice_new(GjsCallbackTrampoline);
-    trampoline->context = context;
+    trampoline->runtime = JS_GetRuntime(context);
     trampoline->info = callable_info;
     g_base_info_ref((GIBaseInfo*)trampoline->info);
     trampoline->js_function = function;
@@ -562,10 +572,14 @@ gjs_invoke_c_function(JSContext      *context,
          * separately */
     }
 
+    gjs_runtime_push_context(JS_GetRuntime(context), context);
+
     g_assert_cmpuint(in_args_pos, ==, (guint8)function->invoker.cif.nargs);
     g_assert_cmpuint(inout_args_pos, ==, inout_args_len);
     g_assert_cmpuint(out_args_pos, ==, out_args_len);
     ffi_call(&(function->invoker.cif), function->invoker.native_address, &return_value, in_arg_pointers);
+
+    gjs_runtime_pop_context(JS_GetRuntime(context));
 
     /* Return value and out arguments are valid only if invocation doesn't
      * return error. In arguments need to be released always.
