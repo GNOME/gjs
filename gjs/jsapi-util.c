@@ -41,6 +41,11 @@ gjs_util_error_quark (void)
 }
 
 typedef struct {
+    JSContext *context;
+    int depth;
+} ContextFrame;
+
+typedef struct {
     GHashTable *dynamic_classes;
 
     JSObject *import_global;
@@ -48,6 +53,7 @@ typedef struct {
     JSContext *default_context;
 
     /* In a thread-safe future we'd keep this in per-thread data */
+    ContextFrame current_frame;
     GSList *context_stack;
 } RuntimeData;
 
@@ -131,7 +137,14 @@ gjs_runtime_push_context(JSRuntime *runtime,
 
     rd = get_data_from_runtime(runtime);
 
-    rd->context_stack = g_slist_prepend(rd->context_stack, context);
+    if (context == rd->current_frame.context) {
+        rd->current_frame.depth++;
+    } else {
+        rd->context_stack = g_slist_prepend(rd->context_stack,
+                                            g_slice_dup(ContextFrame, &rd->current_frame));
+        rd->current_frame.context = context;
+        rd->current_frame.depth = 0;
+    }
 }
 
 /**
@@ -148,7 +161,16 @@ gjs_runtime_pop_context(JSRuntime *runtime)
 
     rd = get_data_from_runtime(runtime);
 
-    rd->context_stack = g_slist_delete_link(rd->context_stack, rd->context_stack);
+    if (rd->current_frame.depth == 0) {
+        if (rd->context_stack == NULL)
+            gjs_fatal("gjs_runtime_pop_context() called more times than gjs_runtime_push_context()");
+
+        rd->current_frame = *(ContextFrame *)rd->context_stack->data;
+        g_slice_free(ContextFrame, rd->context_stack->data);
+        rd->context_stack = g_slist_delete_link(rd->context_stack, rd->context_stack);
+    } else {
+        rd->current_frame.depth--;
+    }
 }
 
 /**
@@ -170,13 +192,18 @@ gjs_runtime_set_default_context(JSRuntime *runtime,
 
     rd = get_data_from_runtime(runtime);
 
+    if (rd->context_stack != NULL || rd->current_frame.depth != 0)
+        gjs_fatal("gjs_runtime_set_default_context() called during gjs_push_context()");
+
     if (context != NULL) {
         if (rd->default_context != NULL)
             gjs_fatal("gjs_runtime_set_default_context() called twice on the same JSRuntime");
         rd->default_context = context;
+        rd->current_frame.context = context;
         rd->import_global = JS_GetGlobalObject(rd->default_context);
     } else {
         rd->default_context = NULL;
+        rd->current_frame.context = NULL;
         rd->import_global = NULL;
     }
 }
@@ -220,10 +247,7 @@ gjs_runtime_get_current_context(JSRuntime *runtime)
 
     rd = get_data_from_runtime(runtime);
 
-    if (rd->context_stack)
-        return rd->context_stack->data;
-    else
-        return rd->default_context;
+    return rd->current_frame.context;
 }
 
 static JSClass global_class = {
