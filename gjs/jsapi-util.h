@@ -193,12 +193,9 @@ jsval cname##_create_proto(JSContext *context, JSObject *module, const char *pro
 
 gboolean    gjs_init_context_standard        (JSContext       *context);
 
-void*       gjs_runtime_get_data             (JSRuntime       *runtime,
-                                                 const char      *name);
-void        gjs_runtime_set_data             (JSRuntime       *runtime,
-                                                 const char      *name,
-                                                 void            *data,
-                                                 GDestroyNotify   dnotify);
+void        gjs_runtime_init                 (JSRuntime       *runtime);
+void        gjs_runtime_destroy              (JSRuntime       *runtime);
+
 JSContext*  gjs_runtime_get_current_context  (JSRuntime       *runtime);
 void        gjs_runtime_set_default_context  (JSRuntime       *runtime,
                                               JSContext       *context);

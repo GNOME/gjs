@@ -354,22 +354,11 @@ gjs_context_dispose(GObject *object)
 
     if (js_context->runtime != NULL) {
         if (js_context->we_own_runtime) {
-            gjs_debug(GJS_DEBUG_CONTEXT,
-                      "Destroying JS runtime");
-
-            JS_DestroyRuntime(js_context->runtime);
-
-            /* finalize the dataset from jsapi-util.c ...  for
-             * "foreign" runtimes this just never happens for
-             * now... we do this after the runtime itself is destroyed
-             * because we might have finalizers run by
-             * JS_DestroyRuntime() that rely on data we've set on the
-             * runtime, such as the dynamic class structs.
+            /* Cleans up data as well as destroying the runtime. Foreign
+             * contexts aren't supported at the moment; if we supported
+             * them, then the data simply would't get cleaned up.
              */
-            gjs_debug(GJS_DEBUG_CONTEXT,
-                      "Destroying any remaining dataset items on runtime");
-
-            g_dataset_destroy(js_context->runtime);
+            gjs_runtime_destroy(js_context->runtime);
         }
         js_context->runtime = NULL;
     }
@@ -533,6 +522,7 @@ gjs_context_constructor (GType                  type,
             gjs_fatal("Failed to create javascript runtime");
         JS_SetGCParameter(js_context->runtime, JSGC_MAX_BYTES, 0xffffffff);
         js_context->we_own_runtime = TRUE;
+        gjs_runtime_init(js_context->runtime);
     }
 
     js_context->context = JS_NewContext(js_context->runtime, 8192 /* stack chunk size */);

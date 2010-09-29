@@ -65,22 +65,6 @@ typedef struct {
 static RuntimeData* get_data_from_runtime(JSRuntime *runtime);
 static RuntimeData* get_data_from_context(JSContext *context);
 
-void*
-gjs_runtime_get_data(JSRuntime      *runtime,
-                     const char     *name)
-{
-    return g_dataset_get_data(runtime, name);
-}
-
-void
-gjs_runtime_set_data(JSRuntime      *runtime,
-                     const char     *name,
-                     void           *data,
-                     GDestroyNotify  dnotify)
-{
-    g_dataset_set_data_full(runtime, name, data, dnotify);
-}
-
 /**
  * gjs_get_import_global:
  * @context: a #JSContext
@@ -285,12 +269,66 @@ gjs_init_context_standard (JSContext       *context)
     return TRUE;
 }
 
-static void
-runtime_data_destroy_notify(void *data)
+/**
+ * gjs_runtime_init:
+ * @runtime: a #JSRuntime
+ *
+ * Initializes a #JSRuntime for use with GJS
+ *
+ * This should only be called by GJS, not by applications.
+ */
+void
+gjs_runtime_init(JSRuntime *runtime)
 {
-    RuntimeData *rd = data;
+    RuntimeData *rd;
+
+    /* If we went back to supporting foreign contexts, we couldn't use
+     * JS_SetRuntimePrivate() because the runtime's owner might
+     * already be using it. A simple solution would be to just store
+     * the runtime data in a global variable - multiple copies of GJS
+     * in the same process at the same time have issues anyways
+     * because of limitations of GObject toggle references - if two
+     * separate entities toggle reference an object it will leak.
+     */
+    if (JS_GetRuntimePrivate(runtime) != NULL)
+        gjs_fatal("JSRuntime already initialized or private data in use by someone else");
+
+    rd = g_slice_new0(RuntimeData);
+    rd->dynamic_classes = g_hash_table_new(g_direct_hash, g_direct_equal);
+    JS_SetRuntimePrivate(runtime, rd);
+}
+
+/**
+ * gjs_runtime_destroy:
+ * @runtime: a #JSRuntime
+ *
+ * Calls JS_DestroyRuntime() on runtime and frees data allocated by
+ * gjs_runtime_init(); these are unified into a single call because we
+ * need to order things so that the allocated data is cleaned up
+ * after JS_DestroyRuntime(). We might have finalizers run by
+ * JS_DestroyRuntime() that rely on the information stored in the data,
+ * such as the dynamic class structs.
+ *
+ * This should only be called by GJS, not by applications.
+ */
+void
+gjs_runtime_destroy(JSRuntime *runtime)
+{
+    RuntimeData *rd;
     void *key;
     void *value;
+
+    rd = JS_GetRuntimePrivate(runtime);
+    if (rd->context_stack != NULL || rd->current_frame.depth != 0)
+        gjs_fatal("gjs_runtime_destroy() called during gjs_push_context()");
+
+    gjs_debug(GJS_DEBUG_CONTEXT,
+              "Destroying JS runtime");
+
+    JS_DestroyRuntime(runtime);
+
+    gjs_debug(GJS_DEBUG_CONTEXT,
+              "Destroying any remaining dataset items on runtime");
 
     while (gjs_g_hash_table_remove_one(rd->dynamic_classes, &key, &value)) {
         JSClass *clasp = value;
@@ -312,13 +350,9 @@ get_data_from_runtime(JSRuntime *runtime)
 {
     RuntimeData *rd;
 
-    rd = gjs_runtime_get_data(runtime, "gjs-api-util-data");
-    if (rd == NULL) {
-        rd = g_slice_new0(RuntimeData);
-        rd->dynamic_classes = g_hash_table_new(g_direct_hash, g_direct_equal);
-        gjs_runtime_set_data(runtime, "gjs-api-util-data",
-                             rd, runtime_data_destroy_notify);
-    }
+    rd = JS_GetRuntimePrivate(runtime);
+    if (G_UNLIKELY(rd == NULL))
+        gjs_fatal("JSRuntime not initialized for use with GJS");
 
     return rd;
 }
