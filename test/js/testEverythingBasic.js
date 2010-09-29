@@ -152,7 +152,6 @@ function testUtf8() {
 
     assertEquals(CONST_STR, Everything.test_utf8_const_return());
     assertEquals(NONCONST_STR, Everything.test_utf8_nonconst_return());
-    Everything.test_utf8_nonconst_in(NONCONST_STR);
     Everything.test_utf8_const_in(CONST_STR);
     assertEquals(NONCONST_STR, Everything.test_utf8_out());
     assertEquals(NONCONST_STR, Everything.test_utf8_inout(CONST_STR));
@@ -258,7 +257,6 @@ function testGListIn() {
     Everything.test_glist_nothing_in(STR_LIST);
     Everything.test_glist_nothing_in2(STR_LIST);
     //Everything.test_glist_container_in(STR_LIST);
-    Everything.test_glist_everything_in(STR_LIST);
 }
 
 /* GSList types */
@@ -273,7 +271,6 @@ function testGSListIn() {
     Everything.test_gslist_nothing_in(STR_LIST);
     Everything.test_gslist_nothing_in2(STR_LIST);
     //Everything.test_gslist_container_in(STR_LIST);
-    Everything.test_gslist_everything_in(STR_LIST);
 }
 
 /* Array tests */
@@ -328,8 +325,6 @@ function testGHashIn() {
     Everything.test_ghash_null_in(null);
     Everything.test_ghash_nothing_in(STR_HASH);
     Everything.test_ghash_nothing_in2(STR_HASH);
-    //Everything.test_ghash_container_in(STR_HASH);
-    Everything.test_ghash_everything_in(STR_HASH);
 }
 
 function testNestedGHashOut() {
