@@ -2,8 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT([gjs], [0.7.3],[http://bugzilla.gnome.org/enter_bug.cgi?product=gjs])
-AM_INIT_AUTOMAKE
+AC_INIT([gjs], [0.7.4],[http://bugzilla.gnome.org/enter_bug.cgi?product=gjs])
+AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
 AC_CONFIG_SRCDIR([gjs/console.c])
 AC_CONFIG_HEADER([config.h])
 
