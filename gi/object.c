@@ -254,10 +254,14 @@ object_instance_new_resolve(JSContext *context,
     priv = priv_from_js(context, obj);
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Resolve prop '%s' hook obj %p priv %p gobj %p %s",
-                     name, obj, priv, priv ? priv->gobj : NULL,
-                     (priv && priv->gobj) ?
-                     g_type_name_from_instance((GTypeInstance*) priv->gobj) : "(type unknown)");
+                     "Resolve prop '%s' hook obj %p priv %p (%s.%s) gobj %p %s",
+                     name,
+                     obj,
+                     priv,
+                     priv ? g_base_info_get_namespace (priv->info) : "",
+                     priv ? g_base_info_get_name (priv->info) : "",
+                     priv ? priv->gobj : NULL,
+                     (priv && priv->gobj) ? g_type_name_from_instance((GTypeInstance*) priv->gobj) : "(type unknown)");
 
     if (priv == NULL)
         return JS_FALSE; /* we are the wrong class */
