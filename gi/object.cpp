@@ -836,6 +836,35 @@ bool ObjectBase::resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
     return priv->to_prototype()->resolve_impl(cx, obj, id, resolved);
 }
 
+/* The JSResolveOp for an instance is called for every property not
+ * defined, even if it's one of the functions or properties we're
+ * adding to the proto manually.
+ */
+static bool name_is_overridden(const char *name, JSPropertySpec *properties,
+    JSFunctionSpec *functions) {
+    for (JSPropertySpec *prop_iter = properties; prop_iter->name; prop_iter++) {
+        if (strcmp(name, prop_iter->name) == 0)
+            return true;
+    }
+    for (JSFunctionSpec *func_iter = functions; func_iter->name; func_iter++) {
+        if (strcmp(name, func_iter->name) == 0)
+            return true;
+    }
+    return false;
+}
+
+JSPropertySpec gjs_object_instance_proto_props[] = {
+    JS_PS_END
+};
+
+JSFunctionSpec gjs_object_instance_proto_funcs[] = {
+    JS_FN("_init", &ObjectBase::init, 0, 0),
+    JS_FN("connect", &ObjectBase::connect, 0, 0),
+    JS_FN("connect_after", &ObjectBase::connect_after, 0, 0),
+    JS_FN("emit", &ObjectBase::emit, 0, 0),
+    JS_FN("toString", &ObjectBase::to_string, 0, 0),
+    JS_FS_END};
+
 bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
                                    JS::HandleId id, bool* resolved) {
     debug_jsprop("Resolve hook", id, obj);
@@ -844,6 +873,12 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true;  /* not resolved, but no error */
+    }
+
+    if (name_is_overridden(name, gjs_object_instance_proto_props,
+                           gjs_object_instance_proto_funcs)) {
+        *resolved = false;
+        return true;
     }
 
     /* If we have no GIRepository information (we're a JS GObject subclass),
@@ -1974,18 +2009,6 @@ bool ObjectBase::init(JSContext* context, unsigned argc, JS::Value* vp) {
 
     return priv->to_instance()->init_impl(context, argv, &obj);
 }
-
-JSPropertySpec gjs_object_instance_proto_props[] = {
-    JS_PS_END
-};
-
-JSFunctionSpec gjs_object_instance_proto_funcs[] = {
-    JS_FN("_init", &ObjectBase::init, 0, 0),
-    JS_FN("connect", &ObjectBase::connect, 0, 0),
-    JS_FN("connect_after", &ObjectBase::connect_after, 0, 0),
-    JS_FN("emit", &ObjectBase::emit, 0, 0),
-    JS_FN("toString", &ObjectBase::to_string, 0, 0),
-    JS_FS_END};
 
 bool
 gjs_object_define_static_methods(JSContext       *context,
