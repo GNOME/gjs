@@ -708,6 +708,45 @@ is_gobject_field_name(GIObjectInfo *info,
     return true;
 }
 
+static bool init_func(JSContext *, unsigned, JS::Value *);
+static bool connect_func(JSContext *, unsigned, JS::Value *);
+static bool connect_after_func(JSContext *, unsigned, JS::Value *);
+static bool emit_func(JSContext *, unsigned, JS::Value *);
+static bool to_string_func(JSContext *, unsigned, JS::Value *);
+
+JSPropertySpec gjs_object_instance_proto_props[] = {
+    JS_PS_END
+};
+
+JSFunctionSpec gjs_object_instance_proto_funcs[] = {
+    JS_FS("_init", init_func, 0, 0),
+    JS_FS("connect", connect_func, 0, 0),
+    JS_FS("connect_after", connect_after_func, 0, 0),
+    JS_FS("emit", emit_func, 0, 0),
+    JS_FS("toString", to_string_func, 0, 0),
+    JS_FS_END
+};
+
+/* The JSResolveOp for an instance is called for every property not
+ * defined, even if it's one of the functions or properties we're
+ * adding to the proto manually.
+ */
+static bool
+name_is_overridden(const char     *name,
+                   JSPropertySpec *properties,
+                   JSFunctionSpec *functions)
+{
+    for (JSPropertySpec *prop_iter = properties; prop_iter->name; prop_iter++) {
+        if (strcmp(name, prop_iter->name) == 0)
+            return true;
+    }
+    for (JSFunctionSpec *func_iter = functions; func_iter->name; func_iter++) {
+        if (strcmp(name, func_iter->name) == 0)
+            return true;
+    }
+    return false;
+}
+
 /* The *resolved out parameter, on success, should be false to indicate that id
  * was not resolved; and true if id was resolved. */
 static bool
@@ -723,6 +762,12 @@ object_instance_resolve(JSContext       *context,
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true; /* not resolved, but no error */
+    }
+
+    if (name_is_overridden(name, gjs_object_instance_proto_props,
+                           gjs_object_instance_proto_funcs)) {
+        *resolved = false;
+        return true;
     }
 
     priv = priv_from_js(context, obj);
@@ -1905,19 +1950,6 @@ init_func (JSContext *context,
 
     return ret;
 }
-
-JSPropertySpec gjs_object_instance_proto_props[] = {
-    JS_PS_END
-};
-
-JSFunctionSpec gjs_object_instance_proto_funcs[] = {
-    JS_FS("_init", init_func, 0, 0),
-    JS_FS("connect", connect_func, 0, 0),
-    JS_FS("connect_after", connect_after_func, 0, 0),
-    JS_FS("emit", emit_func, 0, 0),
-    JS_FS("toString", to_string_func, 0, 0),
-    JS_FS_END
-};
 
 void
 gjs_object_define_static_methods(JSContext       *context,
