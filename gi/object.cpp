@@ -832,9 +832,27 @@ bool ObjectBase::resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
     return priv->to_prototype()->resolve_impl(cx, obj, id, resolved);
 }
 
+/* The JSResolveOp for an instance is called for every property not
+ * defined, even if it's one of the functions or properties we're
+ * adding to the proto manually.
+ */
+static bool name_is_overridden(jsid name, const GjsAtoms& atoms) {
+    // Keep this list in sync with gjs_object_instance_proto_props and
+    // gjs_object_instance_proto_funcs. However, explicitly do not include
+    // connect() in it, because there are a few cases where the lazy property
+    // should override the predefined one, such as Gio.Cancellable.connect().
+    return name == atoms.init() || name == atoms.connect_after() ||
+           name == atoms.emit() || name == atoms.to_string();
+}
+
 bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
                                    JS::HandleId id, bool* resolved) {
     debug_jsprop("Resolve hook", id, obj);
+
+    if (name_is_overridden(id, GjsContextPrivate::atoms(context))) {
+        *resolved = false;
+        return true;
+    }
 
     JS::UniqueChars name;
     if (!gjs_get_string_id(context, id, &name)) {
