@@ -32,8 +32,10 @@
 #define FOR_EACH_ATOM(macro) \
     macro(code, "code") \
     macro(column_number, "columnNumber") \
+    macro(connect_after, "connect_after") \
     macro(constructor, "constructor") \
     macro(debuggee, "debuggee") \
+    macro(emit, "emit") \
     macro(file, "__file__") \
     macro(file_name, "fileName") \
     macro(gi, "gi") \
