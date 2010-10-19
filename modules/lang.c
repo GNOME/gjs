@@ -39,8 +39,15 @@ gjs_lang_seal(JSContext *cx, JSObject *obj, uintN argc,
         return JS_FALSE;
     if (!target)
         return JS_TRUE;
+#ifdef HAVE_MOZJS_2
+    if (deep && (!JS_DeepFreezeObject(cx, target)) )
+        return JS_FALSE;
+    if (!deep && (!JS_FreezeObject(cx, target)) )
+        return JS_FALSE;
+#else
     if (!JS_SealObject(cx, target, deep))
         return JS_FALSE;
+#endif
 
     *retval = OBJECT_TO_JSVAL(target);
     return JS_TRUE;
