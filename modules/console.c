@@ -158,11 +158,10 @@ gjs_console_readline(JSContext *cx, char *bufp, FILE *file, const char *prompt)
 
 JSBool
 gjs_console_interact(JSContext *context,
-                     JSObject  *obj,
                      uintN      argc,
-                     jsval     *argv,
-                     jsval     *retval)
+                     jsval     *vp)
 {
+    JSObject *object = JS_THIS_OBJECT(context, vp);
     gboolean eof = FALSE;
     JSScript *script;
     jsval result;
@@ -196,13 +195,13 @@ gjs_console_interact(JSContext *context,
             }
             bufp += strlen(bufp);
             lineno++;
-        } while (!JS_BufferIsCompilableUnit(context, obj, buffer, strlen(buffer)));
+        } while (!JS_BufferIsCompilableUnit(context, object, buffer, strlen(buffer)));
 
-        script = JS_CompileScript(context, obj, buffer, strlen(buffer), "typein",
+        script = JS_CompileScript(context, object, buffer, strlen(buffer), "typein",
                                   startline);
 
         if (script)
-            JS_ExecuteScript(context, obj, script, &result);
+            JS_ExecuteScript(context, object, script, &result);
 
         if (JS_GetPendingException(context, &result)) {
             str = JS_ValueToString(context, result);
@@ -234,8 +233,8 @@ gjs_define_console_stuff(JSContext *context,
 {
     if (!JS_DefineFunction(context, module_obj,
                            "interact",
-                           gjs_console_interact,
-                           1, GJS_MODULE_PROP_FLAGS))
+                           (JSNative) gjs_console_interact,
+                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     return JS_TRUE;

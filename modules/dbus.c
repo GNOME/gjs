@@ -365,11 +365,11 @@ pending_free_closure(void *data)
 /* Args are bus_name, object_path, iface, method, out signature, in signature, args, and callback to get returned value */
 static JSBool
 gjs_js_dbus_call_async(JSContext  *context,
-                       JSObject   *obj,
                        uintN       argc,
-                       jsval      *argv,
-                       jsval      *retval)
+                       jsval      *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     GClosure *closure;
     DBusMessage *message;
     DBusPendingCall *pending;
@@ -691,11 +691,11 @@ signal_handler_callback(DBusConnection *connection,
 /* Args are bus_name, object_path, iface, signal, and callback */
 static JSBool
 gjs_js_dbus_watch_signal(JSContext  *context,
-                         JSObject   *obj,
                          uintN       argc,
-                         jsval      *argv,
-                         jsval      *retval)
+                         jsval      *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     const char *bus_name;
     const char *object_path;
     const char *iface;
@@ -748,7 +748,7 @@ gjs_js_dbus_watch_signal(JSContext  *context,
      * ref to the SignalHandler
      */
 
-    *retval = INT_TO_JSVAL(id);
+    JS_SET_RVAL(context, vp, INT_TO_JSVAL(id));
 
     return JS_TRUE;
 }
@@ -756,11 +756,11 @@ gjs_js_dbus_watch_signal(JSContext  *context,
 /* Args are handler id */
 static JSBool
 gjs_js_dbus_unwatch_signal_by_id(JSContext  *context,
-                                 JSObject   *obj,
                                  uintN       argc,
-                                 jsval      *argv,
-                                 jsval      *retval)
+                                 jsval      *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     int id;
     DBusBusType bus_type;
 
@@ -782,11 +782,11 @@ gjs_js_dbus_unwatch_signal_by_id(JSContext  *context,
 /* Args are bus_name, object_path, iface, signal, and callback */
 static JSBool
 gjs_js_dbus_unwatch_signal(JSContext  *context,
-                           JSObject   *obj,
                            uintN       argc,
-                           jsval      *argv,
-                           jsval      *retval)
+                           jsval      *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     const char *bus_name;
     const char *object_path;
     const char *iface;
@@ -850,11 +850,11 @@ gjs_js_dbus_unwatch_signal(JSContext  *context,
 /* Args are object_path, iface, signal, arguments signature, arguments */
 static JSBool
 gjs_js_dbus_emit_signal(JSContext  *context,
-                        JSObject   *obj,
                         uintN       argc,
-                        jsval      *argv,
-                        jsval      *retval)
+                        jsval      *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     DBusConnection *bus_connection;
     DBusMessage *message;
     DBusMessageIter arg_iter;
@@ -926,11 +926,10 @@ gjs_js_dbus_emit_signal(JSContext  *context,
  * to ensure that a signal has been sent before proceeding. */
 static JSBool
 gjs_js_dbus_flush(JSContext  *context,
-                        JSObject   *obj,
-                        uintN       argc,
-                        jsval      *argv,
-                        jsval      *retval)
+                  uintN       argc,
+                  jsval      *vp)
 {
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     DBusConnection *bus_connection;
     DBusBusType bus_type;
 
@@ -957,17 +956,18 @@ gjs_js_dbus_flush(JSContext  *context,
 /* Args are bus_name, object_path, iface, method, out signature, in signature, args */
 static JSBool
 gjs_js_dbus_call(JSContext  *context,
-                 JSObject   *obj,
                  uintN       argc,
-                 jsval      *argv,
-                 jsval      *retval)
+                 jsval      *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     DBusMessage *message;
     DBusError derror;
     DBusMessage *reply;
     JSBool result;
     DBusConnection *bus_connection;
     DBusBusType bus_type;
+    jsval retval;
 
     if (argc < 8) {
         gjs_throw(context, "Not enough args, need bus name, object path, interface, method, out signature, in signature, autostart flag, and args");
@@ -991,7 +991,11 @@ gjs_js_dbus_call(JSContext  *context,
     /* The retval is (we hope) rooted by jsapi when it invokes the
      * native function
      */
-    result = complete_call(context, retval, reply, &derror);
+    retval = JSVAL_NULL;
+    JS_AddValueRoot(context, &retval);
+    result = complete_call(context, &retval, reply, &derror);
+    if (result)
+        JS_SET_RVAL(context, vp, retval);
 
     if (reply)
         dbus_message_unref(reply);
@@ -1108,11 +1112,11 @@ owner_closure_invalidated(gpointer  data,
 /* Args are bus_name, name type, acquired_func, lost_func */
 static JSBool
 gjs_js_dbus_acquire_name(JSContext  *context,
-                         JSObject   *obj,
                          uintN       argc,
-                         jsval      *argv,
-                         jsval      *retval)
+                         jsval      *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     const char *bus_name;
     JSObject *acquire_func;
     JSObject *lost_func;
@@ -1120,6 +1124,7 @@ gjs_js_dbus_acquire_name(JSContext  *context,
     DBusBusType bus_type;
     GjsDBusNameType name_type;
     unsigned int id;
+    jsval retval = JSVAL_VOID;
 
     if (argc < 4) {
         gjs_throw(context, "Not enough args, need bus name, name type, acquired_func, lost_func");
@@ -1184,10 +1189,11 @@ gjs_js_dbus_acquire_name(JSContext  *context,
                                &owner->funcs,
                                owner);
 
-    if (!JS_NewNumberValue(context, (jsdouble)id, retval)) {
+    if (!JS_NewNumberValue(context, (jsdouble)id, &retval)) {
         gjs_throw(context, "Could not convert name owner id to jsval");
         return JS_FALSE;
     }
+    JS_SET_RVAL(context, vp, retval);
 
     return JS_TRUE;
 }
@@ -1195,11 +1201,11 @@ gjs_js_dbus_acquire_name(JSContext  *context,
 /* Args are name owner monitor id */
 static JSBool
 gjs_js_dbus_release_name_by_id (JSContext  *context,
-                                JSObject   *obj,
                                 uintN       argc,
-                                jsval      *argv,
-                                jsval      *retval)
+                                jsval      *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     DBusBusType bus_type;
     unsigned int id;
 
@@ -1215,6 +1221,7 @@ gjs_js_dbus_release_name_by_id (JSContext  *context,
 
     gjs_dbus_release_name_by_id(bus_type,
                                 id);
+    JS_SET_RVAL(context, vp, JSVAL_VOID);
     return JS_TRUE;
 }
 
@@ -1342,11 +1349,11 @@ watch_closure_invalidated(gpointer  data,
 /* Args are bus_name, start_if_not_found, appeared_func, vanished_func */
 static JSBool
 gjs_js_dbus_watch_name(JSContext  *context,
-                       JSObject   *obj,
                        uintN       argc,
-                       jsval      *argv,
-                       jsval      *retval)
+                       jsval      *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     const char *bus_name;
     JSBool start_if_not_found;
     JSObject *appeared_func;
@@ -1416,6 +1423,7 @@ gjs_js_dbus_watch_name(JSContext  *context,
                         &watch_name_funcs,
                         watcher);
 
+    JS_SET_RVAL(context, vp, JSVAL_VOID);
     return JS_TRUE;
 }
 
@@ -1461,11 +1469,10 @@ unique_name_getter(JSContext  *context,
 
 static JSBool
 gjs_js_dbus_signature_length(JSContext  *context,
-                             JSObject   *obj,
                              uintN       argc,
-                             jsval      *argv,
-                             jsval      *retval)
+                             jsval      *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     const char *signature;
     DBusSignatureIter iter;
     int length = 0;
@@ -1495,18 +1502,18 @@ gjs_js_dbus_signature_length(JSContext  *context,
     } while (dbus_signature_iter_next(&iter));
 
  out:
-    *retval = INT_TO_JSVAL(length);
+    JS_SET_RVAL(context, vp, INT_TO_JSVAL(length));
 
     return JS_TRUE;
 }
 
 static JSBool
 gjs_js_dbus_start_service(JSContext  *context,
-                          JSObject   *obj,
                           uintN       argc,
-                          jsval      *argv,
-                          jsval      *retval)
+                          jsval      *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     const char     *name;
     DBusBusType     bus_type;
     DBusConnection *bus_connection;
@@ -1560,11 +1567,10 @@ gjs_js_dbus_get_machine_id(JSContext *context,
 
 static JSBool
 gjs_js_dbus_get_current_message_context(JSContext  *context,
-                                        JSObject   *obj,
                                         uintN       argc,
-                                        jsval      *argv,
-                                        jsval      *retval)
+                                        jsval      *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     const char *sender;
     JSString *sender_str;
     JSObject *context_obj;
@@ -1576,7 +1582,7 @@ gjs_js_dbus_get_current_message_context(JSContext  *context,
         return JS_FALSE;
 
     if (!_gjs_current_dbus_messages) {
-        *retval = JSVAL_NULL;
+        JS_SET_RVAL(context, vp, JSVAL_NULL);
         return JS_TRUE;
     }
 
@@ -1609,7 +1615,7 @@ gjs_js_dbus_get_current_message_context(JSContext  *context,
         goto out;
 
     result = JS_TRUE;
-    *retval = context_val;
+    JS_SET_RVAL(context, vp, context_val);
 
 out:
     JS_RemoveValueRoot(context, &context_val);
@@ -1647,69 +1653,69 @@ define_bus_proto(JSContext *context,
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "call",
-                           gjs_js_dbus_call,
-                           8, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_js_dbus_call,
+                           8, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "call_async",
-                           gjs_js_dbus_call_async,
-                           9, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_js_dbus_call_async,
+                           9, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "acquire_name",
-                           gjs_js_dbus_acquire_name,
-                           3, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_js_dbus_acquire_name,
+                           3, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "release_name_by_id",
-                           gjs_js_dbus_release_name_by_id,
-                           1, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_js_dbus_release_name_by_id,
+                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         goto out;
 
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "watch_name",
-                           gjs_js_dbus_watch_name,
-                           4, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_js_dbus_watch_name,
+                           4, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "watch_signal",
-                           gjs_js_dbus_watch_signal,
-                           5, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_js_dbus_watch_signal,
+                           5, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "unwatch_signal_by_id",
-                           gjs_js_dbus_unwatch_signal_by_id,
-                           1, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_js_dbus_unwatch_signal_by_id,
+                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "unwatch_signal",
-                           gjs_js_dbus_unwatch_signal,
-                           5, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_js_dbus_unwatch_signal,
+                           5, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "emit_signal",
-                           gjs_js_dbus_emit_signal,
-                           3, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_js_dbus_emit_signal,
+                           3, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "flush",
-                           gjs_js_dbus_flush,
-                           0, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_js_dbus_flush,
+                           0, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "start_service",
-                           gjs_js_dbus_start_service,
-                           1, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_js_dbus_start_service,
+                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         goto out;
 
     /* Add the bus proto object inside the passed in module object */
@@ -1807,42 +1813,42 @@ gjs_js_define_dbus_stuff(JSContext      *context,
 
     if (!JS_DefineFunction(context, module_obj,
                            "signatureLength",
-                           gjs_js_dbus_signature_length,
-                           1, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_js_dbus_signature_length,
+                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineProperty(context, module_obj,
                            "BUS_SESSION",
                            INT_TO_JSVAL(DBUS_BUS_SESSION),
                            NULL, NULL,
-                           GJS_MODULE_PROP_FLAGS))
+                           GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineProperty(context, module_obj,
                            "BUS_SYSTEM",
                            INT_TO_JSVAL(DBUS_BUS_SYSTEM),
                            NULL, NULL,
-                           GJS_MODULE_PROP_FLAGS))
+                           GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineProperty(context, module_obj,
                            "BUS_STARTER",
                            INT_TO_JSVAL(DBUS_BUS_STARTER),
                            NULL, NULL,
-                           GJS_MODULE_PROP_FLAGS))
+                           GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineProperty(context, module_obj,
                            "localMachineID",
                            JSVAL_VOID,
                            gjs_js_dbus_get_machine_id, NULL,
-                           GJS_MODULE_PROP_FLAGS))
+                           GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "getCurrentMessageContext",
-                           gjs_js_dbus_get_current_message_context,
-                           0, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_js_dbus_get_current_message_context,
+                           0, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     /* Define both the session and system objects */

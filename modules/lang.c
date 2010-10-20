@@ -29,9 +29,11 @@
 #include <jsapi.h>
 
 static JSBool
-gjs_lang_seal(JSContext *cx, JSObject *obj, uintN argc,
-              jsval *argv, jsval *retval)
+gjs_lang_seal(JSContext *cx,
+              uintN      argc,
+              jsval     *vp)
 {
+    jsval *argv = JS_ARGV(cx, vp);
     JSObject *target;
     JSBool deep = JS_FALSE;
 
@@ -49,7 +51,7 @@ gjs_lang_seal(JSContext *cx, JSObject *obj, uintN argc,
         return JS_FALSE;
 #endif
 
-    *retval = OBJECT_TO_JSVAL(target);
+    JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(target));
     return JS_TRUE;
 }
 
@@ -59,8 +61,8 @@ gjs_define_lang_stuff(JSContext      *context,
 {
     if (!JS_DefineFunction(context, module_obj,
                            "seal",
-                           gjs_lang_seal,
-                           1, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_lang_seal,
+                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     return JS_TRUE;

@@ -37,11 +37,10 @@ static GHashTable *pending_main_loops;
 
 static JSBool
 gjs_main_loop_quit(JSContext *context,
-                      JSObject  *obj,
-                      uintN      argc,
-                      jsval     *argv,
-                      jsval     *retval)
+                   uintN      argc,
+                   jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     char *cancel_id;
     GMainLoop *main_loop;
 
@@ -72,16 +71,16 @@ gjs_main_loop_quit(JSContext *context,
 
     g_free(cancel_id);
     g_main_loop_quit(main_loop);
+    JS_SET_RVAL(context, vp, JSVAL_VOID);
     return JS_TRUE;
 }
 
 static JSBool
 gjs_main_loop_run(JSContext *context,
-                     JSObject  *obj,
-                     uintN      argc,
-                     jsval     *argv,
-                     jsval     *retval)
+                  uintN      argc,
+                  jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     char *cancel_id;
     GMainLoop *main_loop;
 
@@ -180,15 +179,15 @@ closure_invalidated(gpointer  data,
 
 static JSBool
 gjs_timeout_add(JSContext *context,
-                   JSObject  *obj,
-                   uintN      argc,
-                   jsval     *argv,
-                   jsval     *retval)
+                uintN      argc,
+                jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     GClosure *closure;
     JSObject *callback;
     guint32 interval;
     guint id;
+    jsval retval;
 
     /* Best I can tell, there is no way to know if argv[1] is really
      * callable other than to just try it. Checking whether it's a
@@ -218,23 +217,24 @@ gjs_timeout_add(JSContext *context,
     g_closure_add_invalidate_notifier(closure, GUINT_TO_POINTER(id),
                                       closure_invalidated);
 
-    if (!JS_NewNumberValue(context, id, retval))
+    if (!JS_NewNumberValue(context, id, &retval))
         return JS_FALSE;
+    JS_SET_RVAL(context, vp, retval);
 
     return JS_TRUE;
 }
 
 static JSBool
 gjs_timeout_add_seconds(JSContext *context,
-                           JSObject  *obj,
-                           uintN      argc,
-                           jsval     *argv,
-                           jsval     *retval)
+                        uintN      argc,
+                        jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     GClosure *closure;
     JSObject *callback;
     guint32 interval;
     guint id;
+    jsval retval;
 
     /* See comment for timeout_add above */
     if (!gjs_parse_args(context, "timeout_add_seconds", "uo", argc, argv,
@@ -260,23 +260,24 @@ gjs_timeout_add_seconds(JSContext *context,
     g_closure_add_invalidate_notifier(closure, GUINT_TO_POINTER(id),
                                       closure_invalidated);
 
-    if (!JS_NewNumberValue(context, id, retval))
+    if (!JS_NewNumberValue(context, id, &retval))
         return JS_FALSE;
+    JS_SET_RVAL(context, vp, retval);
 
     return JS_TRUE;
 }
 
 static JSBool
 gjs_idle_add(JSContext *context,
-                JSObject  *obj,
-                uintN      argc,
-                jsval     *argv,
-                jsval     *retval)
+             uintN      argc,
+             jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     JSObject *callback;
     GClosure *closure;
     guint id;
     int priority = G_PRIORITY_DEFAULT_IDLE;
+    jsval retval;
 
     /* Best I can tell, there is no way to know if argv[0] is really
      * callable other than to just try it. Checking whether it's a
@@ -305,19 +306,19 @@ gjs_idle_add(JSContext *context,
     g_closure_add_invalidate_notifier(closure, GUINT_TO_POINTER(id),
                                       closure_invalidated);
 
-    if (!JS_NewNumberValue(context, id, retval))
+    if (!JS_NewNumberValue(context, id, &retval))
         return JS_FALSE;
+    JS_SET_RVAL(context, vp, retval);
 
     return JS_TRUE;
 }
 
 static JSBool
 gjs_source_remove(JSContext *context,
-                     JSObject  *obj,
-                     uintN      argc,
-                     jsval     *argv,
-                     jsval     *retval)
+                  uintN      argc,
+                  jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     guint32 source_id;
     gboolean success;
 
@@ -327,7 +328,7 @@ gjs_source_remove(JSContext *context,
 
     success = g_source_remove(source_id);
 
-    *retval = BOOLEAN_TO_JSVAL(success);
+    JS_SET_RVAL(context, vp, BOOLEAN_TO_JSVAL(success));
 
     return JS_TRUE;
 }
@@ -342,38 +343,38 @@ gjs_define_mainloop_stuff(JSContext      *context,
 
     if (!JS_DefineFunction(context, module_obj,
                            "run",
-                           gjs_main_loop_run,
-                           1, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_main_loop_run,
+                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "quit",
-                           gjs_main_loop_quit,
-                           1, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_main_loop_quit,
+                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "idle_add",
-                           gjs_idle_add,
-                           1, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_idle_add,
+                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "timeout_add",
-                           gjs_timeout_add,
-                           2, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_timeout_add,
+                           2, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "timeout_add_seconds",
-                           gjs_timeout_add_seconds,
-                           2, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_timeout_add_seconds,
+                           2, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "source_remove",
-                           gjs_source_remove,
-                           1, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_source_remove,
+                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     return JS_TRUE;

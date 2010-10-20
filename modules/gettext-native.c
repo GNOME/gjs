@@ -32,11 +32,10 @@
 
 static JSBool
 gjs_textdomain(JSContext *context,
-               JSObject  *obj,
                uintN      argc,
-               jsval     *argv,
-               jsval     *retval)
+               jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     char *domain;
 
     if (!gjs_parse_args(context, "textdomain", "s", argc, argv,
@@ -46,16 +45,16 @@ gjs_textdomain(JSContext *context,
     textdomain(domain);
     g_free(domain);
 
+    JS_SET_RVAL(context, vp, JSVAL_VOID);
     return JS_TRUE;
 }
 
 static JSBool
 gjs_bindtextdomain(JSContext *context,
-                   JSObject  *obj,
                    uintN      argc,
-                   jsval     *argv,
-                   jsval     *retval)
+                   jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     char *domain;
     char *location;
 
@@ -69,41 +68,44 @@ gjs_bindtextdomain(JSContext *context,
     bind_textdomain_codeset(domain, "UTF-8");
     g_free (domain);
     g_free (location);
+    JS_SET_RVAL(context, vp, JSVAL_VOID);
     return JS_TRUE;
 }
 
 static JSBool
 gjs_gettext(JSContext *context,
-            JSObject  *obj,
             uintN      argc,
-            jsval     *argv,
-            jsval     *retval)
+            jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     char *msgid;
     const char *translated;
     JSBool result;
+    jsval retval;
 
     if (!gjs_parse_args (context, "gettext", "s", argc, argv,
                          "msgid", &msgid))
       return JS_FALSE;
 
     translated = gettext(msgid);
-    result = gjs_string_from_utf8(context, translated, -1, retval);
+    result = gjs_string_from_utf8(context, translated, -1, &retval);
+    if (result)
+        JS_SET_RVAL(context, vp, retval);
     g_free (msgid);
     return result;
 }
 
 static JSBool
 gjs_dgettext(JSContext *context,
-             JSObject  *obj,
              uintN      argc,
-             jsval     *argv,
-             jsval     *retval)
+             jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     char *domain;
     char *msgid;
     const char *translated;
     JSBool result;
+    jsval retval;
 
     if (!gjs_parse_args (context, "dgettext", "zs", argc, argv,
                          "domain", &domain, "msgid", &msgid))
@@ -112,23 +114,25 @@ gjs_dgettext(JSContext *context,
     translated = dgettext(domain, msgid);
     g_free (domain);
 
-    result = gjs_string_from_utf8(context, translated, -1, retval);
+    result = gjs_string_from_utf8(context, translated, -1, &retval);
+    if (result)
+        JS_SET_RVAL(context, vp, retval);
     g_free (msgid);
     return result;
 }
 
 static JSBool
 gjs_ngettext(JSContext *context,
-             JSObject  *obj,
              uintN      argc,
-             jsval     *argv,
-             jsval     *retval)
+             jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     char *msgid1;
     char *msgid2;
     guint32 n;
     const char *translated;
     JSBool result;
+    jsval retval;
 
     if (!gjs_parse_args (context, "ngettext", "ssu", argc, argv,
                          "msgid1", &msgid1, "msgid2", &msgid2, "n", &n))
@@ -136,7 +140,9 @@ gjs_ngettext(JSContext *context,
 
     translated = ngettext(msgid1, msgid2, n);
 
-    result = gjs_string_from_utf8(context, translated, -1, retval);
+    result = gjs_string_from_utf8(context, translated, -1, &retval);
+    if (result)
+        JS_SET_RVAL(context, vp, retval);
     g_free (msgid1);
     g_free (msgid2);
     return result;
@@ -144,17 +150,17 @@ gjs_ngettext(JSContext *context,
 
 static JSBool
 gjs_dngettext(JSContext *context,
-              JSObject  *obj,
               uintN      argc,
-              jsval     *argv,
-              jsval     *retval)
+              jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     char *domain;
     char *msgid1;
     char *msgid2;
     guint n;
     const char *translated;
     JSBool result;
+    jsval retval;
 
     if (!gjs_parse_args (context, "dngettext", "zssu", argc, argv,
                          "domain", &domain, "msgid1", &msgid1,
@@ -164,7 +170,9 @@ gjs_dngettext(JSContext *context,
     translated = dngettext(domain, msgid1, msgid2, n);
     g_free (domain);
 
-    result = gjs_string_from_utf8(context, translated, -1, retval);
+    result = gjs_string_from_utf8(context, translated, -1, &retval);
+    if (result)
+        JS_SET_RVAL(context, vp, retval);
     g_free (msgid1);
     g_free (msgid2);
     return result;
@@ -172,15 +180,15 @@ gjs_dngettext(JSContext *context,
 
 static JSBool
 gjs_pgettext(JSContext *context,
-             JSObject  *obj,
              uintN      argc,
-             jsval     *argv,
-             jsval     *retval)
+             jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     char *src_context;
     char *msgid;
     const char *translated;
     JSBool result;
+    jsval retval;
 
     if (!gjs_parse_args (context, "pgettext", "ss", argc, argv,
                          "context", &src_context, "msgid", &msgid))
@@ -189,23 +197,25 @@ gjs_pgettext(JSContext *context,
     translated = g_dpgettext2(NULL, src_context, msgid);
     g_free (src_context);
 
-    result = gjs_string_from_utf8(context, translated, -1, retval);
+    result = gjs_string_from_utf8(context, translated, -1, &retval);
+    if (result)
+        JS_SET_RVAL(context, vp, retval);
     g_free (msgid);
     return result;
 }
 
 static JSBool
 gjs_dpgettext(JSContext *context,
-              JSObject  *obj,
               uintN      argc,
-              jsval     *argv,
-              jsval     *retval)
+              jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     char *domain;
     char *src_context;
     char *msgid;
     const char *translated;
     JSBool result;
+    jsval retval;
 
     if (!gjs_parse_args (context, "dpgettext", "sss", argc, argv,
                          "domain", &domain, "context", &src_context,
@@ -216,7 +226,9 @@ gjs_dpgettext(JSContext *context,
     g_free (domain);
     g_free (src_context);
 
-    result = gjs_string_from_utf8(context, translated, -1, retval);
+    result = gjs_string_from_utf8(context, translated, -1, &retval);
+    if (result)
+        JS_SET_RVAL(context, vp, retval);
     g_free (msgid);
     return result;
 }
@@ -227,50 +239,50 @@ gjs_define_gettext_stuff(JSContext      *context,
 {
     if (!JS_DefineFunction(context, module_obj,
                            "textdomain",
-                           gjs_textdomain,
-                           1, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_textdomain,
+                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "bindtextdomain",
-                           gjs_bindtextdomain,
-                           2, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_bindtextdomain,
+                           2, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "gettext",
-                           gjs_gettext,
-                           1, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_gettext,
+                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "dgettext",
-                           gjs_dgettext,
-                           2, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_dgettext,
+                           2, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "ngettext",
-                           gjs_ngettext,
-                           3, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_ngettext,
+                           3, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "dngettext",
-                           gjs_dngettext,
-                           4, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_dngettext,
+                           4, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "pgettext",
-                           gjs_pgettext,
-                           2, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_pgettext,
+                           2, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "dpgettext",
-                           gjs_dpgettext,
-                           3, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)gjs_dpgettext,
+                           3, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return JS_FALSE;
 
     return JS_TRUE;
