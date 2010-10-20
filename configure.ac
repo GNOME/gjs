@@ -149,6 +149,9 @@ AC_MSG_CHECKING([for mozilla-js >= 2 ])
 if `$PKG_CONFIG --exists $JS_PACKAGE '>=' 2`; then
   AC_MSG_RESULT([yes])
   AC_DEFINE(HAVE_MOZJS_2, [1], [Define if mozilla-js is at least 2])
+  AC_CHECK_LIB([mozjs], [JS_FreezeObject], AC_DEFINE([HAVE_JS_FREEZEOBJECT], [1], [Define if we have JS_FreezeObject]),
+              , [$JS_LIBS])
+
 else
   AC_MSG_RESULT([no])
 fi
