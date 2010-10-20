@@ -380,11 +380,10 @@ invoke_js_from_dbus(JSContext   *context,
 
 static JSBool
 async_call_callback(JSContext *context,
-                    JSObject  *obj,
                     uintN      argc,
-                    jsval     *argv,
-                    jsval     *retval)
+                    jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     DBusConnection *connection;
     DBusBusType which_bus;
     DBusMessage *reply;
@@ -395,7 +394,6 @@ async_call_callback(JSContext *context,
     const char *signature;
     gboolean thrown;
 
-    *retval = JSVAL_VOID;
     callback_object = JSVAL_TO_OBJECT(JS_ARGV_CALLEE(argv));
     reply = NULL;
     thrown = FALSE;
@@ -483,6 +481,8 @@ async_call_callback(JSContext *context,
         gjs_dbus_remove_bus_weakref(which_bus, &connection);
         dbus_message_unref(reply);
     }
+    if (!thrown)
+        JS_SET_RVAL(context, vp, JSVAL_VOID);
 
     return (thrown == FALSE);
 }
@@ -531,8 +531,8 @@ invoke_js_async_from_dbus(JSContext   *context,
 
     /* we will add an argument, the callback */
     callback = JS_NewFunction(context,
-                              async_call_callback,
-                              1, 0,
+                              (JSNative)async_call_callback,
+                              1, JSFUN_FAST_NATIVE,
                               NULL,
                               "" /* anonymous */);
 

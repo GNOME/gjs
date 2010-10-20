@@ -59,11 +59,10 @@ static JSPropertySpec gjs_cairo_pattern_proto_props[] = {
 
 static JSBool
 getType_func(JSContext *context,
-             JSObject  *object,
              uintN      argc,
-             jsval     *argv,
-             jsval     *retval)
+             jsval     *vp)
 {
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     cairo_pattern_t *pattern;
     cairo_pattern_type_t type;
 
@@ -72,19 +71,19 @@ getType_func(JSContext *context,
         return JS_FALSE;
     }
 
-    pattern = gjs_cairo_pattern_get_pattern(context, object);
+    pattern = gjs_cairo_pattern_get_pattern(context, obj);
     type = cairo_pattern_get_type(pattern);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
-    *retval = INT_TO_JSVAL(type);
+    JS_SET_RVAL(context, vp, INT_TO_JSVAL(type));
     return JS_TRUE;
 }
 
 static JSFunctionSpec gjs_cairo_pattern_proto_funcs[] = {
     // getMatrix
-    { "getType", getType_func, 0, 0 },
+    { "getType", (JSNative)getType_func, 0, JSFUN_FAST_NATIVE },
     // setMatrix
     { NULL }
 };

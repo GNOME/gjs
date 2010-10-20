@@ -842,20 +842,19 @@ gjs_lookup_object_prototype(JSContext    *context,
 
 static JSBool
 real_connect_func(JSContext *context,
-                  JSObject  *obj,
                   uintN      argc,
-                  jsval     *argv,
-                  jsval     *retval,
+                  jsval     *vp,
                   gboolean  after)
 {
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    jsval *argv = JS_ARGV(context, vp);
     ObjectInstance *priv;
     GClosure *closure;
     gulong id;
     guint signal_id;
     const char *signal_name;
     GQuark signal_detail;
-
-    *retval = JSID_VOID;
+    jsval retval;
 
     priv = priv_from_js(context, obj);
     gjs_debug_gsignal("connect obj %p priv %p argc %d", obj, priv, argc);
@@ -907,45 +906,41 @@ real_connect_func(JSContext *context,
                                   closure,
                                   after);
 
-    if (!JS_NewNumberValue(context, id, retval)) {
+    if (!JS_NewNumberValue(context, id, &retval)) {
         g_signal_handler_disconnect(priv->gobj, id);
         return JS_FALSE;
     }
+    
+    JS_SET_RVAL(context, vp, retval);
 
     return JS_TRUE;
 }
 
 static JSBool
 connect_after_func(JSContext *context,
-                   JSObject  *obj,
                    uintN      argc,
-                   jsval     *argv,
-                   jsval     *retval)
+                   jsval     *vp)
 {
-    return real_connect_func(context, obj, argc, argv, retval, TRUE);
+    return real_connect_func(context, argc, vp, TRUE);
 }
 
 static JSBool
 connect_func(JSContext *context,
-             JSObject  *obj,
              uintN      argc,
-             jsval     *argv,
-             jsval     *retval)
+             jsval     *vp)
 {
-    return real_connect_func(context, obj, argc, argv, retval, FALSE);
+    return real_connect_func(context, argc, vp, FALSE);
 }
 
 static JSBool
 disconnect_func(JSContext *context,
-                JSObject  *obj,
                 uintN      argc,
-                jsval     *argv,
-                jsval     *retval)
+                jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     ObjectInstance *priv;
     gulong id;
-
-    *retval = JSVAL_VOID;
 
     priv = priv_from_js(context, obj);
     gjs_debug_gsignal("disconnect obj %p priv %p argc %d", obj, priv, argc);
@@ -970,17 +965,19 @@ disconnect_func(JSContext *context,
     id = JSVAL_TO_INT(argv[0]);
 
     g_signal_handler_disconnect(priv->gobj, id);
+    
+    JS_SET_RVAL(context, vp, JSVAL_VOID);
 
     return JS_TRUE;
 }
 
 static JSBool
 emit_func(JSContext *context,
-          JSObject  *obj,
           uintN      argc,
-          jsval     *argv,
-          jsval     *retval)
+          jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     ObjectInstance *priv;
     guint signal_id;
     GQuark signal_detail;
@@ -990,8 +987,7 @@ emit_func(JSContext *context,
     GValue rvalue;
     unsigned int i;
     gboolean failed;
-
-    *retval = JSVAL_VOID;
+    jsval retval;
 
     priv = priv_from_js(context, obj);
     gjs_debug_gsignal("emit obj %p priv %p argc %d", obj, priv, argc);
@@ -1072,7 +1068,7 @@ emit_func(JSContext *context,
 
     if (signal_query.return_type != G_TYPE_NONE) {
         if (!gjs_value_from_g_value(context,
-                                       retval,
+                                       &retval,
                                        &rvalue))
             failed = TRUE;
 
@@ -1083,6 +1079,9 @@ emit_func(JSContext *context,
         g_value_unset(&instance_and_args[i]);
     }
 
+    if (!failed)
+        JS_SET_RVAL(context, vp, retval);
+
     return !failed;
 }
 
@@ -1092,18 +1091,16 @@ emit_func(JSContext *context,
  */
 static JSBool
 to_string_func(JSContext *context,
-               JSObject  *obj,
                uintN      argc,
-               jsval     *argv,
-               jsval     *retval)
+               jsval     *vp)
 {
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     ObjectInstance *priv;
     char *strval;
     JSBool ret;
     const char *namespace;
     const char *name;
-
-    *retval = JSVAL_VOID;
+    jsval retval;
 
     priv = priv_from_js(context, obj);
 
@@ -1119,7 +1116,9 @@ to_string_func(JSContext *context,
         strval = g_strdup_printf ("[object instance proxy GIName:%s.%s jsobj@%p native@%p]", namespace, name, obj, priv->gobj);
     }
 
-    ret = gjs_string_from_utf8 (context, strval, -1, retval);
+    ret = gjs_string_from_utf8 (context, strval, -1, &retval);
+    if (ret)
+        JS_SET_RVAL(context, vp, retval);
     g_free (strval);
     return ret;
 }
@@ -1155,11 +1154,11 @@ static JSPropertySpec gjs_object_instance_proto_props[] = {
 };
 
 static JSFunctionSpec gjs_object_instance_proto_funcs[] = {
-    { "connect", connect_func, 0, 0 },
-    { "connect_after", connect_after_func, 0, 0 },
-    { "disconnect", disconnect_func, 0, 0 },
-    { "emit", emit_func, 0, 0 },
-    { "toString", to_string_func, 0, 0 },
+    { "connect", (JSNative)connect_func, 0, JSFUN_FAST_NATIVE },
+    { "connect_after", (JSNative)connect_after_func, 0, JSFUN_FAST_NATIVE },
+    { "disconnect", (JSNative)disconnect_func, 0, JSFUN_FAST_NATIVE },
+    { "emit", (JSNative)emit_func, 0, JSFUN_FAST_NATIVE },
+    { "toString", (JSNative)to_string_func, 0, JSFUN_FAST_NATIVE },
     { NULL }
 };
 

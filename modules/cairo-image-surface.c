@@ -73,11 +73,10 @@ static JSPropertySpec gjs_cairo_image_surface_proto_props[] = {
 
 static JSBool
 createFromPNG_func(JSContext *context,
-                   JSObject  *obj,
                    uintN      argc,
-                   jsval     *argv,
-                   jsval     *retval)
+                   jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     char *filename;
     cairo_surface_t *surface;
     JSObject *surface_wrapper;
@@ -99,12 +98,12 @@ createFromPNG_func(JSContext *context,
     gjs_cairo_surface_construct(context, surface_wrapper, surface);
     cairo_surface_destroy(surface);
 
-    *retval = OBJECT_TO_JSVAL(surface_wrapper);
+    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(surface_wrapper));
     return JS_TRUE;
 }
 
 static JSFunctionSpec gjs_cairo_image_surface_proto_funcs[] = {
-    { "createFromPNG", createFromPNG_func, 0, 0},
+    { "createFromPNG", (JSNative)createFromPNG_func, 0, JSFUN_FAST_NATIVE},
     // getData
     // getFormat
     // getWidth
@@ -140,7 +139,7 @@ gjs_cairo_image_surface_init(JSContext *context, JSObject *module_obj)
 
     if (!JS_DefineFunction(context, module_obj,
                            "createFromPNG",
-                           createFromPNG_func,
-                           1, GJS_MODULE_PROP_FLAGS))
+                           (JSNative)createFromPNG_func,
+                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
         return;
 }

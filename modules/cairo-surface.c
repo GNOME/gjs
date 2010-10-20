@@ -58,11 +58,11 @@ static JSPropertySpec gjs_cairo_surface_proto_props[] = {
 /* Methods */
 static JSBool
 writeToPNG_func(JSContext *context,
-                JSObject  *obj,
                 uintN      argc,
-                jsval     *argv,
-                jsval     *retval)
+                jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     char *filename;
     cairo_surface_t *surface;
 
@@ -79,17 +79,17 @@ writeToPNG_func(JSContext *context,
     g_free(filename);
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface),
                                 "surface"))
-        return JS_TRUE;
+        return JS_FALSE;
+    JS_SET_RVAL(context, vp, JSVAL_VOID);
     return JS_TRUE;
 }
 
 static JSBool
 getType_func(JSContext *context,
-             JSObject  *object,
              uintN      argc,
-             jsval     *argv,
-             jsval     *retval)
+             jsval     *vp)
 {
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     cairo_surface_t *surface;
     cairo_surface_type_t type;
 
@@ -98,13 +98,13 @@ getType_func(JSContext *context,
         return JS_FALSE;
     }
 
-    surface = gjs_cairo_surface_get_surface(context, object);
+    surface = gjs_cairo_surface_get_surface(context, obj);
     type = cairo_surface_get_type(surface);
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface),
                                 "surface"))
-        return JS_TRUE;
+        return JS_FALSE;
 
-    *retval = INT_TO_JSVAL(type);
+    JS_SET_RVAL(context, vp, INT_TO_JSVAL(type));
     return JS_TRUE;
 }
 
@@ -112,7 +112,7 @@ static JSFunctionSpec gjs_cairo_surface_proto_funcs[] = {
     // flush
     // getContent
     // getFontOptions
-    { "getType", getType_func, 0, 0 },
+    { "getType", (JSNative)getType_func, 0, JSFUN_FAST_NATIVE},
     // markDirty
     // markDirtyRectangle
     // setDeviceOffset
@@ -122,7 +122,7 @@ static JSFunctionSpec gjs_cairo_surface_proto_funcs[] = {
     // copyPage
     // showPage
     // hasShowTextGlyphs
-    { "writeToPNG", writeToPNG_func, 0, 0 },
+    { "writeToPNG", (JSNative)writeToPNG_func, 0, JSFUN_FAST_NATIVE },
     { NULL }
 };
 

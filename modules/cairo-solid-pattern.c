@@ -42,11 +42,10 @@ static JSPropertySpec gjs_cairo_solid_pattern_proto_props[] = {
 
 static JSBool
 createRGB_func(JSContext *context,
-               JSObject  *object,
                uintN      argc,
-               jsval     *argv,
-               jsval     *retval)
+               jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     double red, green, blue;
     cairo_pattern_t *pattern;
     JSObject *pattern_wrapper;
@@ -64,18 +63,17 @@ createRGB_func(JSContext *context,
     pattern_wrapper = gjs_cairo_solid_pattern_from_pattern(context, pattern);
     cairo_pattern_destroy(pattern);
 
-    *retval = OBJECT_TO_JSVAL(pattern_wrapper);
+    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(pattern_wrapper));
 
     return JS_TRUE;
 }
 
 static JSBool
 createRGBA_func(JSContext *context,
-                JSObject  *object,
                 uintN      argc,
-                jsval     *argv,
-                jsval     *retval)
+                jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
     double red, green, blue, alpha;
     cairo_pattern_t *pattern;
     JSObject *pattern_wrapper;
@@ -94,14 +92,14 @@ createRGBA_func(JSContext *context,
     pattern_wrapper = gjs_cairo_solid_pattern_from_pattern(context, pattern);
     cairo_pattern_destroy(pattern);
 
-    *retval = OBJECT_TO_JSVAL(pattern_wrapper);
+    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(pattern_wrapper));
 
     return JS_TRUE;
 }
 
 static JSFunctionSpec gjs_cairo_solid_pattern_proto_funcs[] = {
-    { "createRGB", createRGB_func, 0, 0 },
-    { "createRGBA", createRGBA_func, 0, 0 },
+    { "createRGB", (JSNative)createRGB_func, 0, JSFUN_FAST_NATIVE },
+    { "createRGBA", (JSNative)createRGBA_func, 0, JSFUN_FAST_NATIVE },
     { NULL }
 };
 

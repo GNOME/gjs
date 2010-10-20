@@ -45,11 +45,11 @@ static JSPropertySpec gjs_cairo_gradient_proto_props[] = {
 
 static JSBool
 addColorStopRGB_func(JSContext *context,
-                     JSObject  *object,
                      uintN      argc,
-                     jsval     *argv,
-                     jsval     *retval)
+                     jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     double offset, red, green, blue;
     cairo_pattern_t *pattern;
 
@@ -60,23 +60,24 @@ addColorStopRGB_func(JSContext *context,
                         "blue", &blue))
         return JS_FALSE;
 
-    pattern = gjs_cairo_pattern_get_pattern(context, object);
+    pattern = gjs_cairo_pattern_get_pattern(context, obj);
 
     cairo_pattern_add_color_stop_rgb(pattern, offset, red, green, blue);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
+    JS_SET_RVAL(context, vp, JSVAL_VOID);
     return JS_TRUE;
 }
 
 static JSBool
 addColorStopRGBA_func(JSContext *context,
-                      JSObject  *object,
                       uintN      argc,
-                      jsval     *argv,
-                      jsval     *retval)
+                      jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     double offset, red, green, blue, alpha;
     cairo_pattern_t *pattern;
 
@@ -88,18 +89,19 @@ addColorStopRGBA_func(JSContext *context,
                         "alpha", &alpha))
         return JS_FALSE;
 
-    pattern = gjs_cairo_pattern_get_pattern(context, object);
+    pattern = gjs_cairo_pattern_get_pattern(context, obj);
     cairo_pattern_add_color_stop_rgba(pattern, offset, red, green, blue, alpha);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
+    JS_SET_RVAL(context, vp, JSVAL_VOID);
     return JS_TRUE;
 }
 
 static JSFunctionSpec gjs_cairo_gradient_proto_funcs[] = {
-    { "addColorStopRGB", addColorStopRGB_func, 0, 0 },
-    { "addColorStopRGBA", addColorStopRGBA_func, 0, 0 },
+    { "addColorStopRGB", (JSNative)addColorStopRGB_func, 0, JSFUN_FAST_NATIVE },
+    { "addColorStopRGBA", (JSNative)addColorStopRGBA_func, 0, JSFUN_FAST_NATIVE },
     // getColorStopRGB
     // getColorStopRGBA
     { NULL }

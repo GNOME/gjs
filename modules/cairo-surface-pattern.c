@@ -79,11 +79,11 @@ static JSPropertySpec gjs_cairo_surface_pattern_proto_props[] = {
 
 static JSBool
 setExtend_func(JSContext *context,
-               JSObject  *object,
                uintN      argc,
-               jsval     *argv,
-               jsval     *retval)
+               jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     cairo_extend_t extend;
     cairo_pattern_t *pattern;
 
@@ -91,22 +91,22 @@ setExtend_func(JSContext *context,
                         "extend", &extend))
         return JS_FALSE;
 
-    pattern = gjs_cairo_pattern_get_pattern(context, object);
+    pattern = gjs_cairo_pattern_get_pattern(context, obj);
     cairo_pattern_set_extend(pattern, extend);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
+    JS_SET_RVAL(context, vp, JSVAL_VOID);
     return JS_TRUE;
 }
 
 static JSBool
 getExtend_func(JSContext *context,
-               JSObject  *object,
                uintN      argc,
-               jsval     *argv,
-               jsval     *retval)
+               jsval     *vp)
 {
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     cairo_extend_t extend;
     cairo_pattern_t *pattern;
 
@@ -115,24 +115,24 @@ getExtend_func(JSContext *context,
         return JS_FALSE;
     }
 
-    pattern = gjs_cairo_pattern_get_pattern(context, object);
+    pattern = gjs_cairo_pattern_get_pattern(context, obj);
     extend = cairo_pattern_get_extend(pattern);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
-    *retval = INT_TO_JSVAL(extend);
+    JS_SET_RVAL(context, vp, INT_TO_JSVAL(extend));
 
     return JS_TRUE;
 }
 
 static JSBool
 setFilter_func(JSContext *context,
-               JSObject  *object,
                uintN      argc,
-               jsval     *argv,
-               jsval     *retval)
+               jsval     *vp)
 {
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     cairo_filter_t filter;
     cairo_pattern_t *pattern;
 
@@ -140,22 +140,22 @@ setFilter_func(JSContext *context,
                         "filter", &filter))
         return JS_FALSE;
 
-    pattern = gjs_cairo_pattern_get_pattern(context, object);
+    pattern = gjs_cairo_pattern_get_pattern(context, obj);
     cairo_pattern_set_filter(pattern, filter);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
+    JS_SET_RVAL(context, vp, JSVAL_VOID);
     return JS_TRUE;
 }
 
 static JSBool
 getFilter_func(JSContext *context,
-               JSObject  *object,
                uintN      argc,
-               jsval     *argv,
-               jsval     *retval)
+               jsval     *vp)
 {
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
     cairo_filter_t filter;
     cairo_pattern_t *pattern;
 
@@ -164,22 +164,22 @@ getFilter_func(JSContext *context,
         return JS_FALSE;
     }
 
-    pattern = gjs_cairo_pattern_get_pattern(context, object);
+    pattern = gjs_cairo_pattern_get_pattern(context, obj);
     filter = cairo_pattern_get_filter(pattern);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
-    *retval = INT_TO_JSVAL(filter);
+    JS_SET_RVAL(context, vp, INT_TO_JSVAL(filter));
 
     return JS_TRUE;
 }
 
 static JSFunctionSpec gjs_cairo_surface_pattern_proto_funcs[] = {
-    { "setExtend", setExtend_func, 0, 0 },
-    { "getExtend", getExtend_func, 0, 0 },
-    { "setFilter", setFilter_func, 0, 0 },
-    { "getFilter", getFilter_func, 0, 0 },
+    { "setExtend", (JSNative)setExtend_func, 0, JSFUN_FAST_NATIVE },
+    { "getExtend", (JSNative)getExtend_func, 0, JSFUN_FAST_NATIVE },
+    { "setFilter", (JSNative)setFilter_func, 0, JSFUN_FAST_NATIVE },
+    { "getFilter", (JSNative)getFilter_func, 0, JSFUN_FAST_NATIVE },
     { NULL }
 };
 
