@@ -956,24 +956,24 @@ importer_new_resolve(JSContext *context,
  * identify the prototype as an object of our class with NULL private
  * data.
  */
-static JSBool
-importer_constructor(JSContext *context,
-                     JSObject  *obj,
-                     uintN      argc,
-                     jsval     *argv,
-                     jsval     *retval)
+GJS_NATIVE_CONSTRUCTOR_DECLARE(importer)
 {
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(importer)
     Importer *priv;
+
+    GJS_NATIVE_CONSTRUCTOR_PRELUDE(importer);
 
     priv = g_slice_new0(Importer);
 
     GJS_INC_COUNTER(importer);
 
-    g_assert(priv_from_js(context, obj) == NULL);
-    JS_SetPrivate(context, obj, priv);
+    g_assert(priv_from_js(context, object) == NULL);
+    JS_SetPrivate(context, object, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_IMPORTER,
-                        "importer constructor, obj %p priv %p", obj, priv);
+                        "importer constructor, obj %p priv %p", object, priv);
+
+    GJS_NATIVE_CONSTRUCTOR_FINISH(importer);
 
     return JS_TRUE;
 }
@@ -1050,7 +1050,7 @@ importer_new(JSContext    *context)
                                   * none - just name the prototype like
                                   * Math - rarely correct)
                                   */
-                                 importer_constructor,
+                                 gjs_importer_constructor,
                                  /* number of constructor args */
                                  0,
                                  /* props of prototype */

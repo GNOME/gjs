@@ -29,6 +29,7 @@
 #endif
 
 #include <jsapi.h>
+#include <gjs/compat.h>
 #include <glib-object.h>
 
 G_BEGIN_DECLS
@@ -112,12 +113,8 @@ typedef struct GjsRootedArray GjsRootedArray;
  * A convenience macro for prototype implementations.
  */
 #define GJS_DEFINE_PROTO(tn, cn) \
-static JSBool cn##_constructor(JSContext *context, \
-                               JSObject  *obj, \
-                               uintN      argc, \
-                               jsval     *argv, \
-                               jsval     *retval); \
-_GJS_DEFINE_PROTO_FULL(tn, cn, cn##_constructor)
+GJS_NATIVE_CONSTRUCTOR_DECLARE(cn); \
+_GJS_DEFINE_PROTO_FULL(tn, cn, gjs_##cn##_constructor)
 
 /**
  * GJS_DEFINE_PROTO_ABSTRACT:
@@ -132,18 +129,18 @@ _GJS_DEFINE_PROTO_FULL(tn, cn, cn##_constructor)
 _GJS_DEFINE_PROTO_FULL(tn, cn, NULL)
 
 #define _GJS_DEFINE_PROTO_FULL(type_name, cname, ctor) \
-static JSPropertySpec cname##_proto_props[]; \
-static JSFunctionSpec cname##_proto_funcs[]; \
-static void cname##_finalize(JSContext *context, JSObject *obj); \
-static JSBool cname##_new_resolve(JSContext *context, \
-                                  JSObject  *obj, \
-                                  jsval      id, \
-                                  uintN      flags, \
-                                  JSObject **objp) \
+static JSPropertySpec gjs_##cname##_proto_props[]; \
+static JSFunctionSpec gjs_##cname##_proto_funcs[]; \
+static void gjs_##cname##_finalize(JSContext *context, JSObject *obj); \
+static JSBool gjs_##cname##_new_resolve(JSContext *context, \
+                                        JSObject  *obj, \
+                                        jsval      id, \
+                                        uintN      flags, \
+                                        JSObject **objp) \
 { \
     return JS_TRUE; \
 } \
-static struct JSClass cname##_class = { \
+static struct JSClass gjs_##cname##_class = { \
     type_name, \
     JSCLASS_HAS_PRIVATE | \
     JSCLASS_NEW_RESOLVE | \
@@ -153,27 +150,27 @@ static struct JSClass cname##_class = { \
     JS_PropertyStub, \
     JS_PropertyStub,\
     JS_EnumerateStub,\
-    (JSResolveOp) cname##_new_resolve, \
+    (JSResolveOp) gjs_##cname##_new_resolve, \
     JS_ConvertStub, \
-    cname##_finalize, \
+    gjs_##cname##_finalize, \
     NULL, \
     NULL, \
     NULL, \
     NULL, NULL, NULL, NULL, NULL \
 }; \
-jsval cname##_create_proto(JSContext *context, JSObject *module, const char *proto_name, JSObject *parent) \
+jsval gjs_##cname##_create_proto(JSContext *context, JSObject *module, const char *proto_name, JSObject *parent) \
 { \
     jsval rval; \
     JSObject *global = gjs_get_import_global(context); \
     if (!gjs_object_has_property(context, global, \
-                                 cname##_class.name)) { \
+                                 gjs_##cname##_class.name)) { \
         JSObject *prototype = JS_InitClass(context, global, \
                                  parent, \
-                                 &cname##_class, \
+                                 &gjs_##cname##_class, \
                                  ctor, \
                                  0, \
-                                 &cname##_proto_props[0], \
-                                 &cname##_proto_funcs[0], \
+                                 &gjs_##cname##_proto_props[0], \
+                                 &gjs_##cname##_proto_funcs[0], \
                                  NULL, \
                                  NULL); \
         if (prototype == NULL) { \
@@ -181,7 +178,7 @@ jsval cname##_create_proto(JSContext *context, JSObject *module, const char *pro
         } \
         if (!gjs_object_require_property( \
                 context, global, NULL, \
-                cname##_class.name, &rval)) { \
+                gjs_##cname##_class.name, &rval)) { \
             return JSVAL_NULL; \
         } \
     } \
@@ -228,7 +225,7 @@ JSObject *  gjs_init_class_dynamic           (JSContext       *context,
                                               JSFunctionSpec  *fs,
                                               JSPropertySpec  *static_ps,
                                               JSFunctionSpec  *static_fs);
-gboolean    gjs_check_constructing           (JSContext       *context);
+void gjs_throw_constructor_error             (JSContext       *context);
 
 void* gjs_get_instance_private_dynamic                (JSContext  *context,
                                                        JSObject   *obj,

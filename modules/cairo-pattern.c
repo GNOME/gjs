@@ -34,8 +34,7 @@ typedef struct {
     cairo_pattern_t *pattern;
 } GjsCairoPattern;
 
-GJS_DEFINE_PROTO_ABSTRACT("CairoPattern", gjs_cairo_pattern)
-
+GJS_DEFINE_PROTO_ABSTRACT("CairoPattern", cairo_pattern)
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoPattern, gjs_cairo_pattern_class)
 
 static void

@@ -27,7 +27,7 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
-GJS_DEFINE_PROTO_ABSTRACT("CairoGradient", gjs_cairo_gradient)
+GJS_DEFINE_PROTO_ABSTRACT("CairoGradient", cairo_gradient)
 
 static void
 gjs_cairo_gradient_finalize(JSContext *context,

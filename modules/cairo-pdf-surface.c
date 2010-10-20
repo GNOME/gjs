@@ -30,21 +30,16 @@
 #if CAIRO_HAS_PDF_SURFACE
 #include <cairo-pdf.h>
 
-GJS_DEFINE_PROTO("CairoPDFSurface", gjs_cairo_pdf_surface)
+GJS_DEFINE_PROTO("CairoPDFSurface", cairo_pdf_surface)
 
-static JSBool
-gjs_cairo_pdf_surface_constructor(JSContext *context,
-                                  JSObject  *obj,
-                                  uintN      argc,
-                                  jsval     *argv,
-                                  jsval     *retval)
+GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_pdf_surface)
 {
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_pdf_surface)
     char *filename;
     double width, height;
     cairo_surface_t *surface;
 
-    if (!gjs_check_constructing(context))
-        return JS_FALSE;
+    GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_pdf_surface);
 
     if (!gjs_parse_args(context, "PDFSurface", "sff", argc, argv,
                         "filename", &filename,
@@ -60,9 +55,11 @@ gjs_cairo_pdf_surface_constructor(JSContext *context,
         return JS_FALSE;
     }
 
-    gjs_cairo_surface_construct(context, obj, surface);
+    gjs_cairo_surface_construct(context, object, surface);
     cairo_surface_destroy(surface);
     g_free(filename);
+
+    GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_pdf_surface);
 
     return JS_TRUE;
 }

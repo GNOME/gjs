@@ -27,20 +27,15 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
-GJS_DEFINE_PROTO("CairoImageSurface", gjs_cairo_image_surface)
+GJS_DEFINE_PROTO("CairoImageSurface", cairo_image_surface)
 
-static JSBool
-gjs_cairo_image_surface_constructor(JSContext *context,
-                                    JSObject  *obj,
-                                    uintN      argc,
-                                    jsval     *argv,
-                                    jsval     *retval)
+GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_image_surface)
 {
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_image_surface)
     int format, width, height;
     cairo_surface_t *surface;
 
-    if (!gjs_check_constructing(context))
-        return JS_FALSE;
+    GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_image_surface);
 
     // create_for_data optional parameter
     if (!gjs_parse_args(context, "ImageSurface", "iii", argc, argv,
@@ -54,8 +49,10 @@ gjs_cairo_image_surface_constructor(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
         return JS_FALSE;
 
-    gjs_cairo_surface_construct(context, obj, surface);
+    gjs_cairo_surface_construct(context, object, surface);
     cairo_surface_destroy(surface);
+
+    GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_image_surface);
 
     return JS_TRUE;
 }

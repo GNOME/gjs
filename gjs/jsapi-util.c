@@ -566,19 +566,11 @@ gjs_init_class_dynamic(JSContext      *context,
     return NULL;
 }
 
-gboolean
-gjs_check_constructing(JSContext *context)
+void
+gjs_throw_constructor_error(JSContext *context)
 {
-    JS_BeginRequest(context);
-    if (!JS_IsConstructing(context)) {
-        JS_EndRequest(context);
-        gjs_throw(context,
-                  "Constructor called as normal method. Use 'new SomeObject()' not 'SomeObject()'");
-        return FALSE;
-    }
-
-    JS_EndRequest(context);
-    return TRUE;
+    gjs_throw(context,
+              "Constructor called as normal method. Use 'new SomeObject()' not 'SomeObject()'");
 }
 
 void*

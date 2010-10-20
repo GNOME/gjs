@@ -755,32 +755,49 @@ release:
     }
 }
 
-/* this macro was introduced with JSFastNative in 2007 */
-#ifndef JS_ARGV_CALLEE
-#define JS_ARGV_CALLEE(argv)    ((argv)[-2])
-#endif
-
+#ifdef JSFUN_CONSTRUCTOR
 static JSBool
 function_call(JSContext *context,
-              JSObject  *obj, /* "this" object, not the function object */
+              uintN      js_argc,
+              jsval     *vp)
+{
+    jsval *js_argv = JS_ARGV(context, vp);
+    JSObject *object = JS_THIS_OBJECT(context, vp);
+    JSObject *callee = JSVAL_TO_OBJECT(JS_CALLEE(context, vp));
+    jsval retval;
+#else
+static JSBool
+function_call(JSContext *context,
+              JSObject  *object, /* "this" object, not the function object */
               uintN      js_argc,
               jsval     *js_argv,
-              jsval     *rval)
+              jsval     *retval)
 {
+    JSObject *callee = JSVAL_TO_OBJECT(JS_ARGV_CALLEE(js_argv));
+#endif
+    JSBool success;
     Function *priv;
-    JSObject *callee;
-
-    callee = JSVAL_TO_OBJECT(JS_ARGV_CALLEE(js_argv)); /* Callee is the Function object being called */
 
     priv = priv_from_js(context, callee);
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Call callee %p priv %p this obj %p %s", callee, priv,
                       obj, JS_GetTypeName(context,
-                                          JS_TypeOfValue(context, OBJECT_TO_JSVAL(obj))));
+                                          JS_TypeOfValue(context, OBJECT_TO_JSVAL(object))));
 
     if (priv == NULL)
         return JS_TRUE; /* we are the prototype, or have the wrong class */
 
-    return gjs_invoke_c_function(context, priv, obj, js_argc, js_argv, rval);
+
+#ifdef JSFUN_CONSTRUCTOR
+    {
+        jsval retval;
+        success = gjs_invoke_c_function(context, priv, object, js_argc, js_argv, &retval);
+        if (success)
+            JS_SET_RVAL(context, vp, retval);
+    }
+#else
+    success = gjs_invoke_c_function(context, priv, object, js_argc, js_argv, retval);
+#endif
+    return success;
 }
 
 /* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on
@@ -791,24 +808,42 @@ function_call(JSContext *context,
  * identify the prototype as an object of our class with NULL private
  * data.
  */
+#ifdef JSFUN_CONSTRUCTOR
 static JSBool
 function_constructor(JSContext *context,
-                     JSObject  *obj,
+                     uintN      argc,
+                     jsval     *vp)
+{
+    JSObject *object;
+    if (!JS_IsConstructing_PossiblyWithGivenThisObject(context, vp, &object)) {
+        gjs_throw_constructor_error(context);
+        return JS_FALSE;
+    }
+    if (object == NULL)
+        object = JS_NewObjectForConstructor(context, vp);
+#else
+static JSBool
+function_constructor(JSContext *context,
+                     JSObject  *object,
                      uintN      argc,
                      jsval     *argv,
                      jsval     *retval)
 {
+#endif
     Function *priv;
 
     priv = g_slice_new0(Function);
 
     GJS_INC_COUNTER(function);
 
-    g_assert(priv_from_js(context, obj) == NULL);
-    JS_SetPrivate(context, obj, priv);
+    g_assert(priv_from_js(context, object) == NULL);
+    JS_SetPrivate(context, object, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GFUNCTION,
-                        "function constructor, obj %p priv %p", obj, priv);
+                        "function constructor, obj %p priv %p", object, priv);
+#ifdef JSFUN_CONSTRUCTOR
+    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(object));
+#endif
 
     return JS_TRUE;
 }

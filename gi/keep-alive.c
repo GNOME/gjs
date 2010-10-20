@@ -88,23 +88,23 @@ child_free(void *data)
  * identify the prototype as an object of our class with NULL private
  * data.
  */
-static JSBool
-keep_alive_constructor(JSContext *context,
-                       JSObject  *obj,
-                       uintN      argc,
-                       jsval     *argv,
-                       jsval     *retval)
+GJS_NATIVE_CONSTRUCTOR_DECLARE(keep_alive)
 {
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(keep_alive)
     KeepAlive *priv;
+
+    GJS_NATIVE_CONSTRUCTOR_PRELUDE(keep_alive);
 
     priv = g_slice_new0(KeepAlive);
     priv->children = g_hash_table_new_full(child_hash, child_equal, NULL, child_free);
 
-    g_assert(priv_from_js(context, obj) == NULL);
-    JS_SetPrivate(context, obj, priv);
+    g_assert(priv_from_js(context, object) == NULL);
+    JS_SetPrivate(context, object, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE,
-                        "keep_alive constructor, obj %p priv %p", obj, priv);
+                        "keep_alive constructor, obj %p priv %p", object, priv);
+
+    GJS_NATIVE_CONSTRUCTOR_FINISH(keep_alive);
 
     return JS_TRUE;
 }
@@ -248,7 +248,7 @@ gjs_keep_alive_new(JSContext *context)
                                   * none - just name the prototype like
                                   * Math - rarely correct)
                                   */
-                                 keep_alive_constructor,
+                                 gjs_keep_alive_constructor,
                                  /* number of constructor args */
                                  0,
                                  /* props of prototype */

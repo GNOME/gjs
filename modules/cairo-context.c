@@ -231,7 +231,7 @@ typedef struct {
     cairo_t * cr;
 } GjsCairoContext;
 
-GJS_DEFINE_PROTO("CairoContext", gjs_cairo_context)
+GJS_DEFINE_PROTO("CairoContext", cairo_context)
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoContext, gjs_cairo_context_class);
 
 static void
@@ -251,19 +251,14 @@ _gjs_cairo_context_construct_internal(JSContext *context,
     priv->cr = cairo_reference(cr);
 }
 
-static JSBool
-gjs_cairo_context_constructor(JSContext *context,
-                              JSObject  *obj,
-                              uintN      argc,
-                              jsval     *argv,
-                              jsval     *retval)
+GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_context)
 {
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_context)
     JSObject *surface_wrapper;
     cairo_surface_t *surface;
     cairo_t *cr;
 
-    if (!gjs_check_constructing(context))
-        return JS_FALSE;
+    GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_context);
 
     if (!gjs_parse_args(context, "Context", "o", argc, argv,
                         "surface", &surface_wrapper))
@@ -280,8 +275,10 @@ gjs_cairo_context_constructor(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_status(cr), "context"))
         return JS_FALSE;
 
-    _gjs_cairo_context_construct_internal(context, obj, cr);
+    _gjs_cairo_context_construct_internal(context, object, cr);
     cairo_destroy(cr);
+
+    GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_context);
 
     return JS_TRUE;
 }

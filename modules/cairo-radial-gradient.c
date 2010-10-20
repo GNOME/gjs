@@ -27,20 +27,15 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
-GJS_DEFINE_PROTO("CairoRadialGradient", gjs_cairo_radial_gradient)
+GJS_DEFINE_PROTO("CairoRadialGradient", cairo_radial_gradient)
 
-static JSBool
-gjs_cairo_radial_gradient_constructor(JSContext *context,
-                                      JSObject  *obj,
-                                      uintN      argc,
-                                      jsval     *argv,
-                                      jsval     *retval)
+GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_radial_gradient)
 {
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_radial_gradient)
     double cx0, cy0, radius0, cx1, cy1, radius1;
     cairo_pattern_t *pattern;
 
-    if (!gjs_check_constructing(context))
-        return JS_FALSE;
+    GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_radial_gradient);
 
     if (!gjs_parse_args(context, "RadialGradient", "ffffff", argc, argv,
                         "cx0", &cx0,
@@ -56,8 +51,10 @@ gjs_cairo_radial_gradient_constructor(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
-    gjs_cairo_pattern_construct(context, obj, pattern);
+    gjs_cairo_pattern_construct(context, object, pattern);
     cairo_pattern_destroy(pattern);
+
+    GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_radial_gradient);
 
     return JS_TRUE;
 }

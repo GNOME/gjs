@@ -25,6 +25,7 @@ nobase_gjs_public_include_HEADERS =	\
 
 nobase_gjs_module_include_HEADERS =	\
 	gjs/gjs-module.h	\
+	gjs/compat.h		\
 	gjs/byteArray.h		\
 	gjs/importer.h		\
 	gjs/jsapi-util.h	\
@@ -32,7 +33,6 @@ nobase_gjs_module_include_HEADERS =	\
 	gjs/native.h
 
 noinst_HEADERS +=		\
-	gjs/compat.h		\
 	gjs/jsapi-private.h	\
 	gjs/profiler.h		\
 	gjs/unit-test-utils.h	\

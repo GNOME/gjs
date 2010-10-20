@@ -201,13 +201,9 @@ union_new(JSContext   *context,
  * identify the prototype as an object of our class with NULL private
  * data.
  */
-static JSBool
-union_constructor(JSContext *context,
-                  JSObject  *obj,
-                  uintN      argc,
-                  jsval     *argv,
-                  jsval     *retval)
+GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
 {
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(union)
     Union *priv;
     Union *proto_priv;
     JSClass *obj_class;
@@ -215,28 +211,27 @@ union_constructor(JSContext *context,
     JSObject *proto;
     gboolean is_proto;
 
-    if (!gjs_check_constructing(context))
-        return JS_FALSE;
+    GJS_NATIVE_CONSTRUCTOR_PRELUDE(union);
 
     priv = g_slice_new0(Union);
 
     GJS_INC_COUNTER(boxed);
 
-    g_assert(priv_from_js(context, obj) == NULL);
-    JS_SetPrivate(context, obj, priv);
+    g_assert(priv_from_js(context, object) == NULL);
+    JS_SetPrivate(context, object, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                         "union constructor, obj %p priv %p",
-                        obj, priv);
+                        object, priv);
 
-    proto = JS_GetPrototype(context, obj);
+    proto = JS_GetPrototype(context, object);
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED, "union instance __proto__ is %p", proto);
 
     /* If we're constructing the prototype, its __proto__ is not the same
      * class as us, but if we're constructing an instance, the prototype
      * has the same class.
      */
-    obj_class = JS_GET_CLASS(context, obj);
+    obj_class = JS_GET_CLASS(context, object);
     proto_class = JS_GET_CLASS(context, proto);
 
     is_proto = (obj_class != proto_class);
@@ -283,7 +278,7 @@ union_constructor(JSContext *context,
              * The returned "gboxed" here is owned by that jsval,
              * not by us.
              */
-            gboxed = union_new(context, obj, priv->info);
+            gboxed = union_new(context, object, priv->info);
 
             if (gboxed == NULL) {
                 return JS_FALSE;
@@ -303,6 +298,8 @@ union_constructor(JSContext *context,
                             "JSObject created with union instance %p type %s",
                             priv->gboxed, g_type_name(gtype));
     }
+
+    GJS_NATIVE_CONSTRUCTOR_FINISH(union);
 
     return JS_TRUE;
 }
@@ -488,7 +485,7 @@ gjs_define_union_class(JSContext    *context,
                                         * none - just name the prototype like
                                         * Math - rarely correct)
                                         */
-                                       union_constructor,
+                                       gjs_union_constructor,
                                        /* number of constructor args */
                                        0,
                                        /* props of prototype */

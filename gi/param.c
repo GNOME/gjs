@@ -142,13 +142,9 @@ param_new_resolve(JSContext *context,
  * identify the prototype as an object of our class with NULL private
  * data.
  */
-static JSBool
-param_constructor(JSContext *context,
-                  JSObject  *obj,
-                  uintN      argc,
-                  jsval     *argv,
-                  jsval     *retval)
+GJS_NATIVE_CONSTRUCTOR_DECLARE(param)
 {
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(param)
     Param *priv;
     Param *proto_priv;
     JSClass *obj_class;
@@ -156,27 +152,26 @@ param_constructor(JSContext *context,
     JSObject *proto;
     gboolean is_proto;
 
-    if (!gjs_check_constructing(context))
-        return JS_FALSE;
+    GJS_NATIVE_CONSTRUCTOR_PRELUDE(param);
 
     priv = g_slice_new0(Param);
 
     GJS_INC_COUNTER(param);
 
-    g_assert(priv_from_js(context, obj) == NULL);
-    JS_SetPrivate(context, obj, priv);
+    g_assert(priv_from_js(context, object) == NULL);
+    JS_SetPrivate(context, object, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GPARAM,
-                        "param constructor, obj %p priv %p", obj, priv);
+                        "param constructor, obj %p priv %p", object, priv);
 
-    proto = JS_GetPrototype(context, obj);
+    proto = JS_GetPrototype(context, object);
     gjs_debug_lifecycle(GJS_DEBUG_GPARAM, "param instance __proto__ is %p", proto);
 
     /* If we're constructing the prototype, its __proto__ is not the same
      * class as us, but if we're constructing an instance, the prototype
      * has the same class.
      */
-    obj_class = JS_GET_CLASS(context, obj);
+    obj_class = JS_GET_CLASS(context, object);
     proto_class = JS_GET_CLASS(context, proto);
 
     is_proto = (obj_class != proto_class);
@@ -213,6 +208,8 @@ param_constructor(JSContext *context,
                   "JSObject created with param instance %p type %s",
                   priv->gparam, g_type_name(G_TYPE_FROM_INSTANCE((GTypeInstance*) priv->gparam)));
     }
+
+    GJS_NATIVE_CONSTRUCTOR_FINISH(param);
 
     return JS_TRUE;
 }
@@ -345,7 +342,7 @@ gjs_define_param_class(JSContext    *context,
                                            * none - just name the prototype like
                                            * Math - rarely correct)
                                            */
-                                          param_constructor,
+                                          gjs_param_constructor,
                                           /* number of constructor args */
                                           0,
                                           /* props of prototype */

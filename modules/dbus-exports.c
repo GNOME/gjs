@@ -1685,27 +1685,27 @@ exports_new_resolve(JSContext *context,
  * identify the prototype as an object of our class with NULL private
  * data.
  */
-static JSBool
-exports_constructor(JSContext *context,
-                    JSObject  *obj,
-                    uintN      argc,
-                    jsval     *argv,
-                    jsval     *retval)
+GJS_NATIVE_CONSTRUCTOR_DECLARE(js_exports)
 {
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(js_exports)
     Exports *priv;
+
+    GJS_NATIVE_CONSTRUCTOR_PRELUDE(js_exports);
 
     priv = g_slice_new0(Exports);
 
     GJS_INC_COUNTER(dbus_exports);
 
-    g_assert(priv_from_js(context, obj) == NULL);
-    JS_SetPrivate(context, obj, priv);
+    g_assert(priv_from_js(context, object) == NULL);
+    JS_SetPrivate(context, object, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_DBUS,
-                        "exports constructor, obj %p priv %p", obj, priv);
+                        "exports constructor, obj %p priv %p", object, priv);
 
     priv->runtime = JS_GetRuntime(context);
-    priv->object = obj;
+    priv->object = object;
+
+    GJS_NATIVE_CONSTRUCTOR_FINISH(js_exports);
 
     return JS_TRUE;
 }
@@ -1825,7 +1825,7 @@ exports_new(JSContext  *context,
                                   * none - just name the prototype like
                                   * Math - rarely correct)
                                   */
-                                 exports_constructor,
+                                 gjs_js_exports_constructor,
                                  /* number of constructor args */
                                  0,
                                  /* props of prototype */

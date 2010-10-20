@@ -615,13 +615,9 @@ wrapped_gobj_toggle_notify(gpointer      data,
  * also, but can be replaced with another object to use instead as the
  * prototype.
  */
-static JSBool
-object_instance_constructor(JSContext *context,
-                            JSObject  *obj,
-                            uintN      argc,
-                            jsval     *argv,
-                            jsval     *retval)
+GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
 {
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(object_instance)
     ObjectInstance *priv;
     ObjectInstance *proto_priv;
     JSObject *proto;
@@ -629,29 +625,26 @@ object_instance_constructor(JSContext *context,
     JSClass *obj_class;
     JSClass *proto_class;
 
-    if (!gjs_check_constructing(context))
-        return JS_FALSE;
+    GJS_NATIVE_CONSTRUCTOR_PRELUDE(object_instance);
 
     priv = g_slice_new0(ObjectInstance);
 
     GJS_INC_COUNTER(object);
 
-    g_assert(priv_from_js(context, obj) == NULL);
-    JS_SetPrivate(context, obj, priv);
+    g_assert(priv_from_js(context, object) == NULL);
+    JS_SetPrivate(context, object, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                        "obj instance constructor, obj %p priv %p retval %p", obj, priv,
-                        JSVAL_IS_OBJECT(*retval) ?
-                        JSVAL_TO_OBJECT(*retval) : NULL);
+                        "obj instance constructor, obj %p priv %p", object, priv);
 
-    proto = JS_GetPrototype(context, obj);
+    proto = JS_GetPrototype(context, object);
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "obj instance __proto__ is %p", proto);
 
     /* If we're constructing the prototype, its __proto__ is not the same
      * class as us, but if we're constructing an instance, the prototype
      * has the same class.
      */
-    obj_class = JS_GET_CLASS(context, obj);
+    obj_class = JS_GET_CLASS(context, object);
     proto_class = JS_GET_CLASS(context, proto);
 
     is_proto = (obj_class != proto_class);
@@ -700,7 +693,7 @@ object_instance_constructor(JSContext *context,
                 return JS_FALSE;
             }
 
-            if (!object_instance_props_to_g_parameters(context, obj, argc, argv,
+            if (!object_instance_props_to_g_parameters(context, object, argc, argv,
                                                        gtype,
                                                        &params, &n_params)) {
                 return JS_FALSE;
@@ -731,10 +724,10 @@ object_instance_constructor(JSContext *context,
         }
 
         g_assert(peek_js_obj(context, priv->gobj) == NULL);
-        set_js_obj(context, priv->gobj, obj);
+        set_js_obj(context, priv->gobj, object);
 
 #if DEBUG_DISPOSE
-        g_object_weak_ref(priv->gobj, wrapped_gobj_dispose_notify, obj);
+        g_object_weak_ref(priv->gobj, wrapped_gobj_dispose_notify, object);
 #endif
 
         /* OK, here is where things get complicated. We want the
@@ -752,7 +745,7 @@ object_instance_constructor(JSContext *context,
         gjs_keep_alive_add_child(context,
                                  priv->keep_alive,
                                  gobj_no_longer_kept_alive_func,
-                                 obj,
+                                 object,
                                  priv);
 
         g_object_add_toggle_ref(priv->gobj,
@@ -772,6 +765,8 @@ object_instance_constructor(JSContext *context,
         TRACE(GJS_OBJECT_PROXY_NEW(priv, priv->gobj, g_base_info_get_namespace ( (GIBaseInfo*) priv->info),
                                     g_base_info_get_name ( (GIBaseInfo*) priv->info) ));
     }
+
+    GJS_NATIVE_CONSTRUCTOR_FINISH(object_instance);
 
     return JS_TRUE;
 }
@@ -1375,7 +1370,7 @@ gjs_define_object_class(JSContext     *context,
                                         * none - just name the prototype like
                                         * Math - rarely correct)
                                         */
-                                       object_instance_constructor,
+                                       gjs_object_instance_constructor,
                                        /* number of constructor args */
                                        0,
                                        /* props of prototype */

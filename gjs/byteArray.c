@@ -51,11 +51,7 @@ static JSBool byte_array_new_resolve   (JSContext    *context,
                                         jsid          id,
                                         uintN         flags,
                                         JSObject    **objp);
-static JSBool byte_array_constructor   (JSContext    *context,
-                                        JSObject     *obj,
-                                        uintN         argc,
-                                        jsval        *argv,
-                                        jsval        *retval);
+GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array);
 static void   byte_array_finalize      (JSContext    *context,
                                         JSObject     *obj);
 
@@ -432,13 +428,9 @@ gjs_g_byte_array_new(int preallocated_length)
  * also, but can be replaced with another object to use instead as the
  * prototype.
  */
-static JSBool
-byte_array_constructor(JSContext *context,
-                       JSObject  *obj,
-                       uintN      argc,
-                       jsval     *argv,
-                       jsval     *retval)
+GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array)
 {
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(byte_array)
     ByteArrayInstance *priv;
     JSObject *proto;
     gboolean is_proto;
@@ -446,8 +438,7 @@ byte_array_constructor(JSContext *context,
     JSClass *proto_class;
     gsize preallocated_length;
 
-    if (!gjs_check_constructing(context))
-        return JS_FALSE;
+    GJS_NATIVE_CONSTRUCTOR_PRELUDE(byte_array);
 
     preallocated_length = 0;
     if (argc >= 1) {
@@ -460,17 +451,17 @@ byte_array_constructor(JSContext *context,
 
     priv = g_slice_new0(ByteArrayInstance);
 
-    g_assert(priv_from_js(context, obj) == NULL);
+    g_assert(priv_from_js(context, object) == NULL);
 
-    JS_SetPrivate(context, obj, priv);
+    JS_SetPrivate(context, object, priv);
 
-    proto = JS_GetPrototype(context, obj);
+    proto = JS_GetPrototype(context, object);
 
     /* If we're constructing the prototype, its __proto__ is not the same
      * class as us, but if we're constructing an instance, the prototype
      * has the same class.
      */
-    obj_class = JS_GetClass(context, obj);
+    obj_class = JS_GetClass(context, object);
     proto_class = JS_GetClass(context, proto);
 
     is_proto = (obj_class != proto_class);
@@ -478,6 +469,8 @@ byte_array_constructor(JSContext *context,
     if (!is_proto) {
         priv->array = gjs_g_byte_array_new(preallocated_length);
     }
+
+    GJS_NATIVE_CONSTRUCTOR_FINISH(byte_array);
 
     return JS_TRUE;
 }
@@ -862,7 +855,7 @@ gjs_define_byte_array_stuff(JSContext      *context,
     gjs_byte_array_prototype = JS_InitClass(context, global,
                              NULL,
                              &gjs_byte_array_class,
-                             byte_array_constructor,
+                             gjs_byte_array_constructor,
                              0,
                              &gjs_byte_array_proto_props[0],
                              &gjs_byte_array_proto_funcs[0],

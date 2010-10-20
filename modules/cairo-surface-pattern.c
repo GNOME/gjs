@@ -27,21 +27,16 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
-GJS_DEFINE_PROTO("CairoSurfacePattern", gjs_cairo_surface_pattern)
+GJS_DEFINE_PROTO("CairoSurfacePattern", cairo_surface_pattern)
 
-static JSBool
-gjs_cairo_surface_pattern_constructor(JSContext *context,
-                                      JSObject  *obj,
-                                      uintN      argc,
-                                      jsval     *argv,
-                                      jsval     *retval)
+GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_surface_pattern)
 {
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_surface_pattern)
     JSObject *surface_wrapper;
     cairo_surface_t *surface;
     cairo_pattern_t *pattern;
 
-    if (!gjs_check_constructing(context))
-        return JS_FALSE;
+    GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_surface_pattern);
 
     if (!gjs_parse_args(context, "SurfacePattern", "o", argc, argv,
                         "surface", &surface_wrapper))
@@ -58,8 +53,10 @@ gjs_cairo_surface_pattern_constructor(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
-    gjs_cairo_pattern_construct(context, obj, pattern);
+    gjs_cairo_pattern_construct(context, object, pattern);
     cairo_pattern_destroy(pattern);
+
+    GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_surface_pattern);
 
     return JS_TRUE;
 }

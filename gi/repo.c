@@ -161,24 +161,24 @@ repo_new_resolve(JSContext *context,
  * identify the prototype as an object of our class with NULL private
  * data.
  */
-static JSBool
-repo_constructor(JSContext *context,
-                 JSObject  *obj,
-                 uintN      argc,
-                 jsval     *argv,
-                 jsval     *retval)
+GJS_NATIVE_CONSTRUCTOR_DECLARE(repo)
 {
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(repo)
     Repo *priv;
+
+    GJS_NATIVE_CONSTRUCTOR_PRELUDE(repo);
 
     priv = g_slice_new0(Repo);
 
     GJS_INC_COUNTER(repo);
 
-    g_assert(priv_from_js(context, obj) == NULL);
-    JS_SetPrivate(context, obj, priv);
+    g_assert(priv_from_js(context, object) == NULL);
+    JS_SetPrivate(context, object, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GREPO,
-                        "repo constructor, obj %p priv %p", obj, priv);
+                        "repo constructor, obj %p priv %p", object, priv);
+
+    GJS_NATIVE_CONSTRUCTOR_FINISH(repo);
 
     return JS_TRUE;
 }
@@ -254,7 +254,7 @@ repo_new(JSContext *context)
                                   * none - just name the prototype like
                                   * Math - rarely correct)
                                   */
-                                 repo_constructor,
+                                 gjs_repo_constructor,
                                  /* number of constructor args */
                                  0,
                                  /* props of prototype */
