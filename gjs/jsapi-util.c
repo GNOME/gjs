@@ -254,7 +254,7 @@ gboolean
 gjs_init_context_standard (JSContext       *context)
 {
     JSObject *global;
-#ifdef HAVE_JS_NEWGLOBALOBJECT
+#ifdef HAVE_MOZJS_2
     global = JS_NewGlobalObject(context, &global_class);
     if (global == NULL)
         return FALSE;

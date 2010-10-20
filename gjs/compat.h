@@ -38,7 +38,7 @@ G_BEGIN_DECLS
 #endif
 
 /* See https://bugzilla.gnome.org/show_bug.cgi?id=622896 */
-#ifndef HAVE_JS_ADDVALUEROOT
+#ifndef HAVE_MOZJS_2
 
 /* The old JS_AddRoot accepted anything via void *, new
  * api is stricter.
@@ -60,8 +60,6 @@ G_BEGIN_DECLS
 #define JSID_IS_VOID(id) (id == JSVAL_VOID)
 #define INT_TO_JSID(i) ((jsid) INT_TO_JSVAL(i))
 
-#else
-#define HAVE_JSENUMERATE_INIT_ALL 1
 #endif
 
 G_END_DECLS

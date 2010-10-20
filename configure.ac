@@ -138,25 +138,19 @@ fi
 AC_SUBST(JS_PACKAGE)
 AC_SUBST(FIREFOX_JS_LIBDIR)
 
-AC_CHECK_LIB([mozjs], [JS_CallTracer], :,
-             [AC_MSG_ERROR([SpiderMonkey is too old, Firefox 3 is required])],
-             [$JS_LIBS])
-AC_CHECK_LIB([mozjs], [JS_DefinePropertyById], :,
-             [AC_MSG_ERROR([SpiderMonkey is too old, xulrunner 1.9.1 is required])],
-             [$JS_LIBS])
-AC_CHECK_LIB([mozjs], [JS_AddValueRoot], [have_js_addvalueroot=true],
-             [have_js_addvalueroot=false],
-             [$JS_LIBS])
-AC_CHECK_LIB([mozjs], [JS_NewGlobalObject], [have_js_newglobalobject=true],
-             [have_js_newglobalobject=false],
-             [$JS_LIBS])
-if test "x$have_js_addvalueroot" = xtrue; then
-  AC_DEFINE(HAVE_JS_ADDVALUEROOT, 1,
-    [Define if -lmozjs has AddValueRoot])
+AC_MSG_CHECKING([for mozilla-js >= 1.9.2 ])
+if `$PKG_CONFIG --exists $JS_PACKAGE '>=' 1.9.2`; then
+  AC_MSG_RESULT([yes])
+else
+  AC_MSG_ERROR([$JS_PACKAGE >= 1.9.2 is required])
 fi
-if test "x$have_js_newglobalobject" = xtrue; then
-  AC_DEFINE(HAVE_JS_NEWGLOBALOBJECT, 1,
-    [Define if -lmozjs has NewGlobalObject])
+
+AC_MSG_CHECKING([for mozilla-js >= 2 ])
+if `$PKG_CONFIG --exists $JS_PACKAGE '>=' 2`; then
+  AC_MSG_RESULT([yes])
+  AC_DEFINE(HAVE_MOZJS_2, [1], [Define if mozilla-js is at least 2])
+else
+  AC_MSG_RESULT([no])
 fi
 
 ## workaround for Ubuntu Hardy bug where mozilla-js.pc gives CFLAGS
