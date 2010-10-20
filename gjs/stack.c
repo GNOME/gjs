@@ -93,7 +93,11 @@ format_frame(JSContext* cx, JSStackFrame* fp,
 
     (void)JS_EnterLocalRootScope(cx);
 
+#ifdef HAVE_JS_ISSCRIPTFRAME
+    if (!JS_IsScriptFrame(cx, fp)) {
+#else
     if (JS_IsNativeFrame(cx, fp)) {
+#endif
         g_string_append_printf(buf, "%d [native frame]\n", num);
         goto out;
     }
