@@ -33,13 +33,10 @@
 #include "arg.h"
 #include "foreign.h"
 
-#include <gjs/mem.h>
 #include <gjs/compat.h>
 
 #include <util/log.h>
 #include <util/misc.h>
-
-#include <jsapi.h>
 
 #include <girepository.h>
 #include <string.h>

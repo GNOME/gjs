@@ -25,7 +25,7 @@
 
 #include "keep-alive.h"
 
-#include <gjs/gjs.h>
+#include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 
 #include <util/log.h>

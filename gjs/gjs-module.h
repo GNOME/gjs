@@ -1,6 +1,6 @@
 /* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
- * Copyright (c) 2010 Red Hat, Inc.
+ * Copyright (c) 2010  Red Hat, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,32 +21,13 @@
  * IN THE SOFTWARE.
  */
 
-#include <gjs/gjs-module.h>
-#include "unit-test-utils.h"
+#ifndef __GJS_GJS_MODULE_H__
+#define __GJS_GJS_MODULE_H__
 
-static void
-test_error_reporter(JSContext     *context,
-                    const char    *message,
-                    JSErrorReport *report)
-{
-    g_printerr("error reported by test: %s\n", message);
-}
+#include <gjs/gjs.h>
+#include <gjs/native.h>
+#include <gjs/mem.h>
+#include <gjs/importer.h>
+#include <gjs/jsapi-util.h>
 
-void
-_gjs_unit_test_fixture_begin (GjsUnitTestFixture *fixture)
-{
-    fixture->runtime = JS_NewRuntime(1024*1024 /* max bytes */);
-    fixture->context = JS_NewContext(fixture->runtime, 8192);
-    JS_BeginRequest(fixture->context);
-    if (!gjs_init_context_standard(fixture->context))
-        g_error("failed to init context");
-    JS_SetErrorReporter(fixture->context, test_error_reporter);
-}
-
-void
-_gjs_unit_test_fixture_finish (GjsUnitTestFixture *fixture)
-{
-    JS_EndRequest(fixture->context);
-    JS_DestroyContext(fixture->context);
-    JS_DestroyRuntime(fixture->runtime);
-}
+#endif /* __GJS_GJS_umodule_H__ */

@@ -1,0 +1,18 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+bindir=@bindir@
+includedir=@includedir@
+datarootdir=@datarootdir@
+datadir=@datadir@
+
+jsdir=@gjsjsdir@
+jsnativedir=@gjsnativedir@
+mozjslibdir=@FIREFOX_JS_LIBDIR@
+
+Cflags: -I${includedir}/gjs-1.0 @JS_EXTRA_CFLAGS@
+Requires: gjs-1.0 gobject-introspection-1.0 @JS_PACKAGE@
+
+Name: gjs-internals-1.0
+Description: Internal API for gjs (for modules and embedders); uses mozjs
+Version: @VERSION@

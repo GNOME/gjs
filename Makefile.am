@@ -15,14 +15,17 @@ gjsjsdir = @gjsjsdir@
 gjstweenerdir = @gjsjsdir@/tweener
 gjsnativedir = @gjsnativedir@
 
-gjsincludedir = $(includedir)/gjs-1.0
+gjs_public_includedir = $(includedir)/gjs-1.0
+gjs_module_includedir = $(includedir)/gjs-1.0
 
 ########################################################################
-nobase_gjsinclude_HEADERS =	\
-	gjs/byteArray.h		\
+nobase_gjs_public_include_HEADERS =	\
 	gjs/context.h		\
+	gjs/gjs.h
+
+nobase_gjs_module_include_HEADERS =	\
+	gjs/byteArray.h		\
 	gjs/importer.h		\
-	gjs/gjs.h		\
 	gjs/jsapi-util.h	\
 	gjs/mem.h		\
 	gjs/native.h
@@ -40,10 +43,11 @@ noinst_HEADERS +=		\
 
 ########################################################################
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = gjs-1.0.pc
+pkgconfig_DATA = gjs-1.0.pc gjs-internals-1.0.pc
 
 EXTRA_DIST += 			\
-	gjs-1.0.pc.in
+	gjs-1.0.pc.in           \
+	gjs-internals-1.0.pc.in
 
 ########################################################################
 gjs_directory_defines = 				\
@@ -116,7 +120,6 @@ gjs_console_CFLAGS = 		\
 	$(AM_CFLAGS)		\
 	$(GJS_CFLAGS)
 gjs_console_LDADD =		\
-         $(GJS_LIBS)    \
          libgjs.la
 gjs_console_LDFLAGS = -R $(FIREFOX_JS_LIBDIR) -rdynamic
 gjs_console_SOURCES = gjs/console.c

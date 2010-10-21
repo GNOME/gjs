@@ -22,6 +22,7 @@ depcomp
 gjs-1.0.pc
 gjs-console
 gjs-dbus-1.0.pc
+gjs-internals-1.0.pc
 gjs-gi-1.0.pc
 gjs-tests
 gjs-unit

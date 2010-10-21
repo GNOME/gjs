@@ -26,11 +26,9 @@
 
 #include <glib.h>
 
-#include <jsapi.h>
-
 #include <girepository.h>
 
-#include <gjs/gjs.h>
+#include <gjs/gjs-module.h>
 
 G_BEGIN_DECLS
 

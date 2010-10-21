@@ -27,7 +27,7 @@
 #include <locale.h>
 
 #include <util/log.h>
-#include <gjs/gjs.h>
+#include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 
 static char **include_path = NULL;

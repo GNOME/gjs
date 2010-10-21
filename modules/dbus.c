@@ -25,9 +25,9 @@
 #include "dbus-exports.h"
 #include "dbus-values.h"
 
-#include "../gjs/gjs.h"
-#include "../gjs/compat.h"
+#include <gjs/gjs-module.h>
 #include "../gi/closure.h"
+#include <gjs/compat.h>
 
 #include <util/log.h>
 #include <gjs-dbus/dbus.h>

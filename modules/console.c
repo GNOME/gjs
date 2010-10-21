@@ -52,7 +52,7 @@
 #include <jsapi.h>
 #include <glib.h>
 #include <glib/gprintf.h>
-#include <gjs/gjs.h>
+#include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 
 #include "console.h"

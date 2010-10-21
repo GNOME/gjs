@@ -22,9 +22,8 @@
 #ifndef __GJS_JS_DBUS_VALUES_H__
 #define __GJS_JS_DBUS_VALUES_H__
 
-#include <glib.h>
 #include <dbus/dbus.h>
-#include <gjs/gjs.h>
+#include <gjs/gjs-module.h>
 
 G_BEGIN_DECLS
 

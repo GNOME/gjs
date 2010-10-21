@@ -28,7 +28,7 @@
 #include "object.h"
 #include "boxed.h"
 #include "union.h"
-#include <gjs/gjs.h>
+#include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 
 #include <util/log.h>

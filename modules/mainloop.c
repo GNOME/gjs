@@ -22,7 +22,7 @@
  */
 
 #include "mainloop.h"
-#include <gjs/gjs.h>
+#include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 
 #include "../gi/closure.h"

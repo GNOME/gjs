@@ -25,9 +25,5 @@
 #define __GJS_GJS_H__
 
 #include <gjs/context.h>
-#include <gjs/importer.h>
-#include <gjs/jsapi-util.h>
-#include <gjs/native.h>
-#include <gjs/mem.h>
 
 #endif /* __GJS_GJS_H__ */

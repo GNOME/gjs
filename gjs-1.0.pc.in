@@ -7,12 +7,10 @@ datarootdir=@datarootdir@
 datadir=@datadir@
 
 gjs_console=${bindir}/gjs-console
-jsdir=@gjsjsdir@
-jsnativedir=@gjsnativedir@
-mozjslibdir=@FIREFOX_JS_LIBDIR@
 
-Cflags: -I${includedir}/gjs-1.0 @JS_EXTRA_CFLAGS@
-Requires: gobject-introspection-1.0 @JS_PACKAGE@
+Cflags: -I${includedir}/gjs-1.0
+Requires: gobject-2.0
+Requires.private: gobject-introspection-1.0 @JS_PACKAGE@
 Libs: -L${libdir} -lgjs
 
 Name: gjs-1.0
