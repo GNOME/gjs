@@ -154,6 +154,8 @@ if `$PKG_CONFIG --exists $JS_PACKAGE '>=' 2`; then
               , [$JS_LIBS])
   AC_CHECK_LIB([mozjs], [JS_IsScriptFrame], AC_DEFINE([HAVE_JS_ISSCRIPTFRAME], [1], [Define if we have JS_IsScriptFrame]),
               , [$JS_LIBS])
+  AC_CHECK_LIB([mozjs], [JS_EndPC], AC_DEFINE([HAVE_JS_ENDPC], [1], [Define if we have JS_EndPC]),
+              , [$JS_LIBS])
 
 else
   AC_MSG_RESULT([no])
