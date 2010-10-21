@@ -24,6 +24,7 @@ nobase_gjs_public_include_HEADERS =	\
 	gjs/gjs.h
 
 nobase_gjs_module_include_HEADERS =	\
+	gjs/gjs-module.h	\
 	gjs/byteArray.h		\
 	gjs/importer.h		\
 	gjs/jsapi-util.h	\
