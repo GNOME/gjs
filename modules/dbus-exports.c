@@ -394,7 +394,7 @@ async_call_callback(JSContext *context,
     const char *signature;
     gboolean thrown;
 
-    callback_object = JSVAL_TO_OBJECT(JS_ARGV_CALLEE(argv));
+    callback_object = JSVAL_TO_OBJECT(JS_CALLEE(context, vp));
     reply = NULL;
     thrown = FALSE;
 
