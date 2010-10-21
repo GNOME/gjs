@@ -24,18 +24,10 @@
 #ifndef __GJS_COMPAT_H__
 #define __GJS_COMPAT_H__
 
-#include <glib.h>
-
 G_BEGIN_DECLS
 
 #include "config.h"
 
-#if !GLIB_CHECK_VERSION(2, 18, 0)
-
-#define g_set_error_literal(error, domain, code, message) g_set_error(error, domain, code, "%s", message)
-#define g_dpgettext2(domain, ctx, msgid) dgettext(domain, msgid)
-
-#endif
 
 /* See https://bugzilla.gnome.org/show_bug.cgi?id=622896 */
 #ifndef HAVE_MOZJS_2

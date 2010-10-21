@@ -80,7 +80,7 @@ fi
 AM_CONDITIONAL([ENABLE_COVERAGE], [test x$enable_coverage = xyes])
 
 # Checks for libraries.
-m4_define(gobject_required_version, 2.16.0)
+m4_define(gobject_required_version, 2.18.0)
 
 # Look for Spidermonkey. If js-config exists, use that;
 # otherwise we try some pkgconfig files from various distributions.
