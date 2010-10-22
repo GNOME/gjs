@@ -669,37 +669,28 @@ find_vfunc_on_parents(GIObjectInfo *info,
 
 bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
                                       bool* resolved, const char* name) {
+    GIInterfaceInfo *interfaces;
     guint n_interfaces;
     guint i;
+    g_irepository_get_object_gtype_interfaces(g_irepository_get_default(),
+        priv->gtype, &n_interfaces, &interfaces);
 
-    GType *interfaces = g_type_interfaces(m_gtype, &n_interfaces);
     for (i = 0; i < n_interfaces; i++) {
-        GjsAutoInfo<GIInterfaceInfo> iface_info =
-            g_irepository_find_by_gtype(nullptr, interfaces[i]);
-        if (!iface_info)
-            continue;
-
-        /* An interface GType ought to have interface introspection info */
-        g_assert(iface_info.type() == GI_INFO_TYPE_INTERFACE);
-
+        GIInterfaceInfo *iface_info = interfaces + i;
         GjsAutoInfo<GIFunctionInfo> method_info =
             g_interface_info_find_method(iface_info, name);
         if (method_info != NULL) {
             if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-                if (!gjs_define_function(cx, obj, m_gtype, method_info)) {
-                    g_free(interfaces);
+                if (!gjs_define_function(cx, obj, m_gtype, method_info))
                     return false;
-                }
 
                 *resolved = true;
-                g_free(interfaces);
                 return true;
             }
         }
     }
 
     *resolved = false;
-    g_free(interfaces);
     return true;
 }
 
@@ -898,8 +889,8 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
 
     /**
      * Search through any interfaces implemented by the GType;
-     * this could be done better.  See
-     * https://bugzilla.gnome.org/show_bug.cgi?id=632922
+     * See https://bugzilla.gnome.org/show_bug.cgi?id=632922
+     * for background on why we need to do this.
      */
     if (!method_info)
         return resolve_no_info(context, obj, resolved, name);
