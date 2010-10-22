@@ -63,7 +63,7 @@ AX_VALGRIND_CHECK
 # Checks for libraries.
 m4_define(glib_required_version, 2.58.0)
 
-GOBJECT_INTROSPECTION_REQUIRE([1.41.4])
+GOBJECT_INTROSPECTION_REQUIRE([1.59.4])
 
 GOBJECT_REQUIREMENT="gobject-2.0 >= glib_required_version"
 gjs_base_packages="$GOBJECT_REQUIREMENT gio-2.0"
