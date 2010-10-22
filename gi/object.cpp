@@ -732,8 +732,11 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
                                       JS::HandleId id, bool* resolved,
                                       const char* name,
                                       ResolveWhat resolve_props) {
+    GIInterfaceInfo *interfaces;
     guint n_interfaces;
     guint i;
+    g_irepository_get_object_gtype_interfaces(nullptr, m_gtype, &n_interfaces,
+        &interfaces);
 
     GjsAutoChar canonical_name;
     if (resolve_props == ConsiderMethodsAndProperties) {
@@ -742,27 +745,16 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
         canonical_name.reset(canonical_name_unowned);
     }
 
-    GType *interfaces = g_type_interfaces(m_gtype, &n_interfaces);
     for (i = 0; i < n_interfaces; i++) {
-        GjsAutoInfo<GIInterfaceInfo> iface_info =
-            g_irepository_find_by_gtype(nullptr, interfaces[i]);
-        if (!iface_info)
-            continue;
-
-        /* An interface GType ought to have interface introspection info */
-        g_assert(iface_info.type() == GI_INFO_TYPE_INTERFACE);
-
+        GIInterfaceInfo *iface_info = interfaces + i;
         GjsAutoInfo<GIFunctionInfo> method_info =
             g_interface_info_find_method(iface_info, name);
         if (method_info != NULL) {
             if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-                if (!gjs_define_function(cx, obj, m_gtype, method_info)) {
-                    g_free(interfaces);
+                if (!gjs_define_function(cx, obj, m_gtype, method_info))
                     return false;
-                }
 
                 *resolved = true;
-                g_free(interfaces);
                 return true;
             }
         }
@@ -773,14 +765,11 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
         /* If the name refers to a GObject property, lazily define the property
          * in JS as we do below in the real resolve hook. We ignore fields here
          * because I don't think interfaces can have fields */
-        if (is_ginterface_property_name(iface_info, canonical_name)) {
-            g_free(interfaces);
+        if (is_ginterface_property_name(iface_info, canonical_name))
             return lazy_define_gobject_property(cx, obj, id, resolved, name);
-        }
     }
 
     *resolved = false;
-    g_free(interfaces);
     return true;
 }
 
@@ -937,8 +926,8 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
 
     /**
      * Search through any interfaces implemented by the GType;
-     * this could be done better.  See
-     * https://bugzilla.gnome.org/show_bug.cgi?id=632922
+     * See https://bugzilla.gnome.org/show_bug.cgi?id=632922
+     * for background on why we need to do this.
      */
     if (!method_info)
         return resolve_no_info(context, obj, id, resolved, name,
