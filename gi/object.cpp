@@ -676,30 +676,18 @@ object_instance_resolve_no_info(JSContext       *context,
                                 const char      *name)
 {
     GIFunctionInfo *method_info;
+    GIInterfaceInfo *interfaces;
     guint n_interfaces;
     guint i;
 
-    GType *interfaces = g_type_interfaces(priv->gtype, &n_interfaces);
+    g_irepository_get_object_gtype_interfaces(g_irepository_get_default(),
+                                              priv->gtype, &n_interfaces,
+                                              &interfaces);
+
     for (i = 0; i < n_interfaces; i++) {
-        GIBaseInfo *base_info;
-        GIInterfaceInfo *iface_info;
-
-        base_info = g_irepository_find_by_gtype(g_irepository_get_default(),
-                                                interfaces[i]);
-
-        if (base_info == NULL)
-            continue;
-
-        /* An interface GType ought to have interface introspection info */
-        g_assert (g_base_info_get_type(base_info) == GI_INFO_TYPE_INTERFACE);
-
-        iface_info = (GIInterfaceInfo*) base_info;
+        GIInterfaceInfo *iface_info = interfaces + i;
 
         method_info = g_interface_info_find_method(iface_info, name);
-
-        g_base_info_unref(base_info);
-
-
         if (method_info != NULL) {
             if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
                 if (!gjs_define_function(context, obj, priv->gtype,
@@ -711,7 +699,6 @@ object_instance_resolve_no_info(JSContext       *context,
 
                 g_base_info_unref((GIBaseInfo*) method_info);
                 *resolved = true;
-                g_free(interfaces);
                 return true;
             }
 
@@ -720,7 +707,6 @@ object_instance_resolve_no_info(JSContext       *context,
     }
 
     *resolved = false;
-    g_free(interfaces);
     return true;
 }
 
@@ -919,8 +905,8 @@ object_instance_resolve(JSContext       *context,
 
     /**
      * Search through any interfaces implemented by the GType;
-     * this could be done better.  See
-     * https://bugzilla.gnome.org/show_bug.cgi?id=632922
+     * See https://bugzilla.gnome.org/show_bug.cgi?id=632922
+     * for background on why we need to do this.
      */
     if (method_info == NULL) {
         bool retval = object_instance_resolve_no_info(context, obj, resolved, priv, name);
