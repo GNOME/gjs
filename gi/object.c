@@ -304,6 +304,11 @@ object_instance_new_resolve(JSContext *context,
             }
         }
 
+        /**
+         * Search through any interfaces implemented by the GType;
+         * this could be done better.  See
+         * https://bugzilla.gnome.org/show_bug.cgi?id=632922
+         */
         if (method_info == NULL) {
             GType *interfaces;
             guint n_interfaces;
