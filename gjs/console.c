@@ -26,9 +26,7 @@
 #include <stdlib.h>
 #include <locale.h>
 
-#include <util/log.h>
-#include <gjs/gjs-module.h>
-#include <gjs/compat.h>
+#include <gjs/gjs.h>
 
 static char **include_path = NULL;
 static char *command = NULL;
@@ -58,7 +56,7 @@ main(int argc, char **argv)
     /* pass unknown through to the JS script */
     g_option_context_set_ignore_unknown_options(context, TRUE);
 
-    g_option_context_add_main_entries(context, entries, GETTEXT_PACKAGE);
+    g_option_context_add_main_entries(context, entries, NULL);
     if (!g_option_context_parse(context, &argc, &argv, &error))
         g_error("option parsing failed: %s", error->message);
 
@@ -66,11 +64,10 @@ main(int argc, char **argv)
     g_type_init();
 
     command_line = g_strjoinv(" ", argv);
-    gjs_debug(GJS_DEBUG_LOG, "Command line: %s", command_line);
+    g_debug("Command line: %s", command_line);
     g_free(command_line);
 
-    gjs_debug(GJS_DEBUG_CONTEXT,
-              "Creating new context to eval console script");
+    g_debug("Creating new context to eval console script");
     js_context = gjs_context_new_with_search_path(include_path);
 
     /* prepare command line arguments */
@@ -106,10 +103,6 @@ main(int argc, char **argv)
         g_printerr("%s\n", error->message);
         exit(1);
     }
-
-    gjs_memory_report("before destroying context", FALSE);
-    g_object_unref(js_context);
-    gjs_memory_report("after destroying context", TRUE);
 
     g_free(script);
     exit(code);

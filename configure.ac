@@ -195,6 +195,7 @@ gjs_dbus_packages="dbus-glib-1 $common_packages"
 # gjs-tests links against everything
 gjstests_packages="$gjstests_packages $gjs_packages"
 
+PKG_CHECK_MODULES([GOBJECT], [gobject-2.0 >= gobject_required_version])
 PKG_CHECK_MODULES([GJS], [$gjs_packages])
 PKG_CHECK_MODULES([GJS_GI], [$gjs_gi_packages])
 PKG_CHECK_MODULES([GJS_CAIRO], [$gjs_cairo_packages])
