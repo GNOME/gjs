@@ -1170,8 +1170,10 @@ gjs_define_boxed_class(JSContext    *context,
                                           NULL,
                                           /* funcs of constructor, MyConstructor.myfunc() */
                                           NULL);
-    if (prototype == NULL)
+    if (prototype == NULL) {
+        gjs_log_exception(context, NULL);
         gjs_fatal("Can't init class %s", constructor_name);
+    }
 
     g_assert(gjs_object_has_property(context, in_object, constructor_name));
 

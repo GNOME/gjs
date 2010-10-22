@@ -535,6 +535,8 @@ gjs_init_class_dynamic(JSContext      *context,
                                  constructor, nargs,
                                  ps, fs,
                                  static_ps, static_fs);
+        if (prototype == NULL)
+            goto error;
 
         /* Retrieve the property again so we can define it in
          * in_object
