@@ -284,40 +284,17 @@ object_instance_new_resolve(JSContext *context,
         /* find_method does not look at methods on parent classes,
          * we rely on javascript to walk up the __proto__ chain
          * and find those and define them in the right prototype.
+         *
+         * Note that if it isn't a method on the object, since JS
+         * lacks multiple inheritance, we're sticking the iface
+         * methods in the object prototype, which means there are many
+         * copies of the iface methods (one per object class node that
+         * introduces the iface)
          */
-        method_info = g_object_info_find_method(priv->info,
-                                                name);
 
-        /* If it isn't a method on the object, see if it's one on an
-         * iface the object implements. Note that since JS lacks
-         * multiple inheritance, we stick the iface methods in the
-         * object prototype, which means there are many copies of the
-         * iface methods (one per object class node that introduces
-         * the iface)
-         */
-        if (method_info == NULL) {
-            int n_interfaces;
-            int i;
-
-            n_interfaces = g_object_info_get_n_interfaces(priv->info);
-
-            for (i = 0; i < n_interfaces; ++i) {
-                GIInterfaceInfo *iface_info;
-
-                iface_info = g_object_info_get_interface(priv->info, i);
-
-                method_info = g_interface_info_find_method(iface_info, name);
-
-                g_base_info_unref( (GIBaseInfo*) iface_info);
-
-                if (method_info != NULL) {
-                    gjs_debug(GJS_DEBUG_GOBJECT,
-                              "Found method %s in interface %d implemented by object",
-                              name, i);
-                    break;
-                }
-            }
-        }
+        method_info = g_object_info_find_method_using_interfaces(priv->info,
+                                                                 name,
+                                                                 NULL);
 
         /**
          * Search through any interfaces implemented by the GType;
