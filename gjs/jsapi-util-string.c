@@ -449,6 +449,31 @@ gjs_get_string_id (JSContext       *context,
     }
 }
 
+/**
+ * gjs_unichar_from_string:
+ * @string: A string
+ * @result: (out): A unicode character
+ *
+ * If successful, @result is assigned the Unicode codepoint
+ * corresponding to the first full character in @string.  This
+ * function handles characters outside the BMP.
+ *
+ * If @string is empty, @result will be 0.  An exception will
+ * be thrown if @string can not be represented as UTF-8.
+ */
+gboolean
+gjs_unichar_from_string (JSContext *context,
+                         JSString  *string,
+                         gunichar  *result)
+{
+    char *utf8_str;
+    if (gjs_string_to_utf8(context, STRING_TO_JSVAL(string), &utf8_str)) {
+        *result = g_utf8_get_char(utf8_str);
+        g_free(utf8_str);
+        return TRUE;
+    }
+    return FALSE;
+}
 
 #if GJS_BUILD_TESTS
 #include "unit-test-utils.h"

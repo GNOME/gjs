@@ -790,6 +790,16 @@ gjs_value_to_g_argument(JSContext      *context,
             wrong = TRUE;
         break;
 
+    case GI_TYPE_TAG_UNICHAR:
+        if (JSVAL_IS_STRING(value)) {
+            if (!gjs_unichar_from_string(context, value, &arg->v_uint32))
+                wrong = TRUE;
+        } else {
+            wrong = TRUE;
+            report_type_mismatch = TRUE;
+        }
+        break;
+
     case GI_TYPE_TAG_FILENAME:
         nullable_type = TRUE;
         if (JSVAL_IS_NULL(value)) {
@@ -1262,6 +1272,7 @@ gjs_g_argument_init_default(JSContext      *context,
         break;
 
     case GI_TYPE_TAG_UINT32:
+    case GI_TYPE_TAG_UNICHAR:
         arg->v_uint32 = 0;
         break;
 
@@ -1647,6 +1658,24 @@ gjs_value_from_g_argument (JSContext  *context,
 
     case GI_TYPE_TAG_DOUBLE:
         return JS_NewNumberValue(context, arg->v_double, value_p);
+
+    case GI_TYPE_TAG_UNICHAR:
+        {
+            char utf8[7];
+            gint bytes;
+
+            /* Preserve the bidirectional mapping between 0 and "" */
+            if (arg->v_uint32 == 0) {
+                return gjs_string_from_utf8 (context, "", 0, value_p);
+            } else if (!g_unichar_validate (arg->v_uint32)) {
+                gjs_throw("Invalid unicode codepoint %" G_GUINT32_FORMAT,
+                          arg->v_uint32);
+                return JS_FALSE;
+            } else {
+                bytes = g_unichar_to_utf8 (arg->v_uint32, &utf8);
+                return gjs_string_from_utf8 (context, (char*)utf8, bytes, value_p);
+            }
+        }
 
     case GI_TYPE_TAG_FILENAME:
         if (arg->v_pointer)

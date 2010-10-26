@@ -1045,6 +1045,7 @@ struct_is_simple(GIStructInfo *info)
             case GI_TYPE_TAG_UINT64:
             case GI_TYPE_TAG_FLOAT:
             case GI_TYPE_TAG_DOUBLE:
+            case GI_TYPE_TAG_UNICHAR:
                 break;
             case GI_TYPE_TAG_VOID:
             case GI_TYPE_TAG_GTYPE:

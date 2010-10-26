@@ -74,6 +74,10 @@ function testLifeUniverseAndEverything() {
     assertEquals(42, Everything.test_double(42));
     assertEquals(-42, Everything.test_double(-42));
 
+    assertEquals("c", Everything.test_unichar("c"));
+    assertEquals("", Everything.test_unichar(""));
+    assertEquals("\u2665", Everything.test_unichar("\u2665"));
+
     let now = Math.floor(new Date().getTime() / 1000);
     let bounced = Math.floor(Everything.test_timet(now));
     assertEquals(bounced, now);

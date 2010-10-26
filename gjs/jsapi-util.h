@@ -329,6 +329,12 @@ JSBool      gjs_string_get_uint16_data       (JSContext       *context,
 JSBool      gjs_get_string_id                (JSContext       *context,
                                               jsid             id,
                                               const char     **name_p);
+
+
+gboolean    gjs_unichar_from_string          (JSContext       *context,
+                                              JSString        *string,
+                                              gunichar        *result);
+
 const char* gjs_get_type_name                (jsval            value);
 
 jsval       gjs_date_from_time_t             (JSContext *context, time_t time);
