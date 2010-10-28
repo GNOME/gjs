@@ -110,6 +110,7 @@ TESTS_ENVIRONMENT =							\
 	GJS_DEBUG_OUTPUT=test_user_data/logs/gjs.log			\
 	BUILDDIR=.							\
 	GJS_USE_UNINSTALLED_FILES=1					\
+	GJS_TEST_TIMEOUT=420						\
 	GI_TYPELIB_PATH=$(builddir)					\
 	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)"	\
 	G_FILENAME_ENCODING=latin1	# ensure filenames are not utf8
@@ -121,7 +122,7 @@ check:	test
 
 gdb-check gdb-test: $(gjsnative_LTLIBRARIES) ${TEST_PROGS}
 	failed=; for prog in ${TEST_PROGS}; do \
-	  ${TESTS_ENVIRONMENT} libtool --mode=execute gdb -x \
+	  ${TESTS_ENVIRONMENT} GJS_TEST_TIMEOUT=0 libtool --mode=execute gdb -x \
 	      $(top_srcdir)/test/unittest.gdb --args $$prog; \
 	  done
 

@@ -181,7 +181,14 @@ main(int argc, char **argv)
      */
     g_setenv("GJS_DISABLE_JIT", "1", FALSE);
 
-    gjs_crash_after_timeout(60*7); /* give the unit tests 7 minutes to complete */
+    {
+        const char *timeout_str = g_getenv("GJS_TEST_TIMEOUT");
+        if (timeout_str != NULL) {
+            guint timeout = (guint)g_ascii_strtoull(timeout_str, NULL, 10);
+            if (timeout > 0)
+                gjs_crash_after_timeout(timeout);
+        }
+    }
     gjs_init_sleep_on_crash();
 
     setlocale(LC_ALL, "");
