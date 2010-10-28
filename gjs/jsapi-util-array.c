@@ -297,7 +297,6 @@ gjstest_test_func_gjs_jsapi_util_array(void)
 {
     GjsUnitTestFixture fixture;
     JSContext *context;
-    JSObject *global;
     GjsRootedArray *array;
     int i;
     jsval value;

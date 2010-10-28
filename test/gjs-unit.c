@@ -25,7 +25,7 @@
 
 #include <glib.h>
 #include <glib/gstdio.h>
-#include <gjs/gjs.h>
+#include <gjs/gjs-module.h>
 #include <util/crash.h>
 #include <locale.h>
 
