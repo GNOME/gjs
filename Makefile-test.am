@@ -115,18 +115,20 @@ TESTS_ENVIRONMENT =							\
 	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)"	\
 	G_FILENAME_ENCODING=latin1	# ensure filenames are not utf8
 
-test:	$(gjsnative_LTLIBRARIES) ${TEST_PROGS} Regress-1.0.typelib GIMarshallingTests-1.0.typelib
+tests_dependencies = $(gjsnative_LTLIBRARIES) ${TEST_PROGS} Regress-1.0.typelib GIMarshallingTests-1.0.typelib
+
+test: $(tests_dependencies)
 	@test -z "${TEST_PROGS}" || ${GTESTER} --verbose ${TEST_PROGS} ${TEST_PROGS_OPTIONS}
 
 check:	test
 
-gdb-check gdb-test: $(gjsnative_LTLIBRARIES) ${TEST_PROGS}
+gdb-check gdb-test: $(tests_dependencies)
 	failed=; for prog in ${TEST_PROGS}; do \
 	  ${TESTS_ENVIRONMENT} GJS_TEST_TIMEOUT=0 libtool --mode=execute gdb -x \
 	      $(top_srcdir)/test/unittest.gdb --args $$prog; \
 	  done
 
-valgrind-check valgrind-test: $(gjsnative_LTLIBRARIES) ${TEST_PROGS}
+valgrind-check valgrind-test: $(tests_dependencies)
 	@test -z "${TEST_PROGS}" || { \
 	  failed=; for prog in ${TEST_PROGS}; do \
 	    ${TESTS_ENVIRONMENT} G_SLICE=always-malloc	\
