@@ -233,24 +233,19 @@ boxed_new(JSContext   *context,
             if ((flags & GI_FUNCTION_IS_CONSTRUCTOR) != 0 &&
                 g_callable_info_get_n_args((GICallableInfo*) func_info) == 0) {
 
-                jsval rval;
-                void *gboxed;
+                GIArgument rval;
+                GError *error = NULL;
 
-                rval = JSVAL_NULL;
-                gjs_invoke_c_function_uncached(context, func_info, obj,
-                                               0, NULL, &rval);
+                if (!g_function_info_invoke(func_info, NULL, 0, NULL, 0, &rval, &error)) {
+                    gjs_throw(context, "Failed to invoke boxed constructor: %s", error->message);
+                    g_clear_error(&error);
+                    g_base_info_unref((GIBaseInfo*) func_info);
+                    return JS_FALSE;
+                }
 
                 g_base_info_unref((GIBaseInfo*) func_info);
 
-                if (JSVAL_IS_NULL(rval))
-                    return JS_FALSE;
-
-                /* We are somewhat wasteful here; invoke_c_function() above
-                 * creates a JSObject wrapper for the boxed that we immediately
-                 * discard.
-                 */
-                gboxed = gjs_c_struct_from_boxed(context, JSVAL_TO_OBJECT(rval));
-                priv->gboxed = g_boxed_copy (gtype, gboxed);
+                priv->gboxed = rval.v_pointer;
 
                 gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                                     "JSObject created with boxed instance %p type %s",
