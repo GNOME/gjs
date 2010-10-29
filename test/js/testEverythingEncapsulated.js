@@ -77,6 +77,7 @@ function testBoxedCopyConstructor()
     // Copy an object from another object of the same type, shortcuts to the boxed copy
     let copy = new Everything.TestSimpleBoxedA(simple_boxed);
 
+    assertTrue(copy instanceof Everything.TestSimpleBoxedA);
     assertEquals(42, copy.some_int);
     assertEquals(43, copy.some_int8);
     assertEquals(42.5, copy.some_double);
