@@ -1698,6 +1698,100 @@ finally:
 }
 
 static JSBool
+gjs_array_from_zero_terminated_c_array (JSContext  *context,
+                                        jsval      *value_p,
+                                        GITypeInfo *param_info,
+                                        gpointer    c_array)
+{
+    JSObject *obj;
+    jsval elem;
+    GArgument arg;
+    JSBool result;
+    GITypeTag element_type;
+    guint i;
+
+    element_type = g_type_info_get_tag(param_info);
+    element_type = replace_gtype(element_type);
+
+    obj = JS_NewArrayObject(context, 0, NULL);
+    if (obj == NULL)
+      return JS_FALSE;
+
+    *value_p = OBJECT_TO_JSVAL(obj);
+
+    elem = JSVAL_VOID;
+    JS_AddValueRoot(context, &elem);
+
+#define ITERATE(type) \
+    do { \
+        g##type *array = c_array; \
+        for (i = 0; array[i]; i++) { \
+            arg.v_##type = array[i]; \
+            if (!gjs_value_from_g_argument(context, &elem, param_info, &arg)) \
+                goto finally; \
+            if (!JS_DefineElement(context, obj, i, elem, NULL, NULL, \
+                                  JSPROP_ENUMERATE)) \
+                goto finally; \
+        } \
+    } while(0);
+
+    switch (element_type) {
+        case GI_TYPE_TAG_UINT8:
+          ITERATE(uint8);
+          break;
+        case GI_TYPE_TAG_INT8:
+          ITERATE(int8);
+          break;
+        case GI_TYPE_TAG_UINT16:
+          ITERATE(uint16);
+          break;
+        case GI_TYPE_TAG_INT16:
+          ITERATE(int16);
+          break;
+        case GI_TYPE_TAG_UINT32:
+          ITERATE(uint32);
+          break;
+        case GI_TYPE_TAG_INT32:
+          ITERATE(int32);
+          break;
+        case GI_TYPE_TAG_UINT64:
+          ITERATE(uint64);
+          break;
+        case GI_TYPE_TAG_INT64:
+          ITERATE(int64);
+          break;
+        case GI_TYPE_TAG_FLOAT:
+          ITERATE(float);
+          break;
+        case GI_TYPE_TAG_DOUBLE:
+          ITERATE(double);
+          break;
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_INTERFACE:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_GHASH:
+          ITERATE(pointer);
+          break;
+        default:
+          gjs_throw(context, "Unknown element-type %d", element_type);
+          goto finally;
+    }
+
+#undef ITERATE
+
+    result = JS_TRUE;
+
+finally:
+    JS_RemoveValueRoot(context, &elem);
+
+    return result;
+}
+
+
+static JSBool
 gjs_object_from_g_hash (JSContext  *context,
                         jsval      *value_p,
                         GITypeInfo *key_param_info,
@@ -1998,14 +2092,10 @@ gjs_value_from_g_argument (JSContext  *context,
 
                 param_tag = g_type_info_get_tag((GITypeInfo*) param_info);
 
-                if (param_tag == GI_TYPE_TAG_UTF8) {
-                    result = gjs_array_from_strv(context,
-                                                 value_p,
-                                                 arg->v_pointer);
-                } else {
-                    gjs_throw(context, "FIXME: Only supporting null-terminated arrays of strings");
-                    result = FALSE;
-                }
+                result = gjs_array_from_zero_terminated_c_array(context,
+                                                                value_p,
+                                                                param_info,
+                                                                arg->v_pointer);
 
                 g_base_info_unref((GIBaseInfo*) param_info);
 
@@ -2289,6 +2379,30 @@ gjs_g_arg_release_internal(JSContext  *context,
             case GI_TYPE_TAG_INT8:
             case GI_TYPE_TAG_INT16:
             case GI_TYPE_TAG_INT32:
+                g_free (arg->v_pointer);
+                break;
+
+            case GI_TYPE_TAG_INTERFACE:
+            case GI_TYPE_TAG_GLIST:
+            case GI_TYPE_TAG_GSLIST:
+            case GI_TYPE_TAG_ARRAY:
+            case GI_TYPE_TAG_GHASH:
+                if (transfer == GI_TRANSFER_EVERYTHING) {
+                    g_assert (g_type_info_is_zero_terminated (type_info));
+                    gpointer *array;
+                    GArgument elem;
+
+                    for (array = arg->v_pointer; *array; array++) {
+                        elem.v_pointer = *array;
+                        if (!gjs_g_arg_release_internal(context,
+                                                        GI_TRANSFER_EVERYTHING,
+                                                        param_info,
+                                                        element_type,
+                                                        &elem)) {
+                            failed = JS_TRUE;
+                        }
+                    }
+                }
                 g_free (arg->v_pointer);
                 break;
 

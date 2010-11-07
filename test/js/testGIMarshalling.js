@@ -5,6 +5,21 @@ const GIMarshallingTests = imports.gi.GIMarshallingTests;
 const Gio = imports.gi.Gio;
 const Lang = imports.lang;
 
+function testCArray() {
+    var array;
+    array = GIMarshallingTests.array_zero_terminated_return();
+    assertEquals("0", array[0]);
+    assertEquals("1", array[1]);
+    assertEquals("2", array[2]);
+    assertEquals(3, array.length);
+
+    array = GIMarshallingTests.array_zero_terminated_return_struct();
+    assertEquals(3, array.length);
+    assertEquals(42, array[0].long_);
+    assertEquals(43, array[1].long_);
+    assertEquals(44, array[2].long_);
+}
+
 function testGArray() {
     var array;
     // Tests disabled due to do g-i typelib compilation bug
