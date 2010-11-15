@@ -795,7 +795,11 @@ object_instance_finalize(JSContext *context,
                                     g_base_info_get_name ( (GIBaseInfo*) priv->info) ));
 
     if (priv->gobj) {
-        g_assert(priv->gobj->ref_count > 0);
+        if (G_UNLIKELY (priv->gobj->ref_count <= 0)) {
+            g_error("Finalizing proxy for an already freed object of type: %s.%s\n",
+                    g_base_info_get_namespace((GIBaseInfo*) priv->info),
+                    g_base_info_get_name((GIBaseInfo*) priv->info));
+        }
         set_js_obj(context, priv->gobj, NULL);
         g_object_remove_toggle_ref(priv->gobj, wrapped_gobj_toggle_notify,
                                    JS_GetRuntime(context));
