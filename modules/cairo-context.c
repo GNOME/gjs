@@ -535,6 +535,70 @@ maskSurface_func(JSContext *context,
 }
 
 static JSBool
+setDash_func(JSContext *context,
+             uintN      argc,
+             jsval     *vp)
+{
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    guint i;
+    cairo_t *cr;
+    JSObject *dashes;
+    double offset;
+    JSBool retval = JS_FALSE;
+    guint len;
+    GArray *dashes_c = NULL;
+
+    if (!gjs_parse_args(context, "setDash", "of", argc, argv,
+                        "dashes", &dashes, "offset", &offset))
+        return JS_FALSE;
+
+    JS_AddObjectRoot(context, &dashes);
+
+    if (!JS_IsArrayObject(context, dashes)) {
+        gjs_throw(context, "dashes must be an array");
+        goto out;
+    }
+
+    if (!JS_GetArrayLength(context, dashes, &len)) {
+        gjs_throw(context, "Can't get length of dashes");
+        goto out;
+    }
+
+    dashes_c = g_array_sized_new (FALSE, FALSE, sizeof(double), len);
+    for (i = 0; i < len; ++i) {
+        jsval elem;
+        double b;
+
+        elem = JSVAL_VOID;
+        if (!JS_GetElement(context, dashes, i, &elem)) {
+            goto out;
+        }
+        if (elem == JSVAL_VOID)
+            continue;
+
+        if (!JS_ValueToNumber(context, elem, &b))
+            goto out;
+        if (b <= 0) {
+            gjs_throw(context, "Dash value must be positive");
+            goto out;
+        }
+
+        g_array_append_val(dashes_c, b);
+    }
+
+    cr = gjs_cairo_context_get_context(context, obj);
+    cairo_set_dash(cr, (double*)dashes_c->data, dashes_c->len, offset);
+    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    retval = JS_TRUE;
+ out:
+    if (dashes_c != NULL)
+        g_array_free (dashes_c, TRUE);
+    JS_RemoveObjectRoot(context, &dashes);
+    return retval;
+}
+
+static JSBool
 setSource_func(JSContext *context,
                uintN      argc,
                jsval     *vp)
@@ -854,7 +918,7 @@ static JSFunctionSpec gjs_cairo_context_proto_funcs[] = {
     { "scale", (JSNative)scale_func, 0, JSFUN_FAST_NATIVE },
     { "selectFontFace", (JSNative)selectFontFace_func, 0, JSFUN_FAST_NATIVE },
     { "setAntialias", (JSNative)setAntialias_func, 0, JSFUN_FAST_NATIVE },
-    // setDash
+    { "setDash", (JSNative)setDash_func, 0, JSFUN_FAST_NATIVE },
     // setFontFace
     // setFontMatrix
     // setFontOptions

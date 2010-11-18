@@ -112,6 +112,7 @@ function testContextMethods() {
     cr.showText("foobar");
 
     cr.moveTo(0, 0);
+    cr.setDash([1, 0.5], 1)
     cr.lineTo(1, 0);
     cr.lineTo(1, 1);
     cr.lineTo(0, 1);
