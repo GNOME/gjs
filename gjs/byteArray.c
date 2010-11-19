@@ -800,7 +800,7 @@ gjs_byte_array_from_byte_array (JSContext *context,
     priv = g_slice_new0(ByteArrayInstance);
     g_assert(priv_from_js(context, object) == NULL);
     JS_SetPrivate(context, object, priv);
-    priv->array = g_new(GByteArray, 1);
+    priv->array = g_byte_array_new();
     priv->array->data = g_memdup(array->data, array->len);
     priv->array->len = array->len;
 
