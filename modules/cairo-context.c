@@ -75,13 +75,34 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     JS_SET_RVAL(context, vp, BOOLEAN_TO_JSVAL(ret));                       \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
+#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(method, cfunc, n1, n2)        \
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
+    double arg1, arg2;                                                     \
+    if (!gjs_parse_args(context, #method, "ff", argc, JS_ARGV(context, vp), \
+                        #n1, &arg1, #n2, &arg2))                           \
+        return JS_FALSE;                                                   \
+    cr = gjs_cairo_context_get_context(context, obj);                      \
+    cfunc(cr, &arg1, &arg2);                                               \
+    if (cairo_status(cr) == CAIRO_STATUS_SUCCESS) {                        \
+      JSObject *array = JS_NewArrayObject(context, 0, NULL);               \
+      if (!array)                                                          \
+        return JS_FALSE;                                                   \
+      jsval r;                                                             \
+      if (!JS_NewNumberValue(context, arg1, &r)) return JS_FALSE;          \
+      if (!JS_SetElement(context, array, 0, &r)) return JS_FALSE;          \
+      if (!JS_NewNumberValue(context, arg2, &r)) return JS_FALSE;          \
+      if (!JS_SetElement(context, array, 1, &r)) return JS_FALSE;          \
+      JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(array));                    \
+    }                                                                      \
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
+
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFF(method, cfunc)                  \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     double arg1, arg2;                                                     \
    _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                                \
     cr = gjs_cairo_context_get_context(context, obj);                      \
     cfunc(cr, &arg1, &arg2);                                               \
-    {                                                                      \
+    if (cairo_status(cr) == CAIRO_STATUS_SUCCESS) {                        \
       JSObject *array = JS_NewArrayObject(context, 0, NULL);               \
       if (!array)                                                          \
         return JS_FALSE;                                                   \
@@ -317,8 +338,8 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(clipPreserve, cairo_clip_preserve)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFFFF(clipExtents, cairo_clip_extents)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(closePath, cairo_close_path)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(copyPage, cairo_copy_page)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFF(deviceToUser, cairo_device_to_user)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFF(deviceToUserDistance, cairo_device_to_user_distance)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(deviceToUser, cairo_device_to_user, "x", "y")
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(deviceToUserDistance, cairo_device_to_user_distance, "x", "y")
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(fill, cairo_fill)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(fillPreserve, cairo_fill_preserve)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFFFF(fillExtents, cairo_fill_extents)
@@ -377,8 +398,8 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(stroke, cairo_stroke)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(strokePreserve, cairo_stroke_preserve)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFFFF(strokeExtents, cairo_stroke_extents)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC2(translate, cairo_translate, "ff", double, tx, double, ty)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFF(userToDevice, cairo_user_to_device)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFF(userToDeviceDistance, cairo_user_to_device_distance)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDevice, cairo_user_to_device, "x", "y")
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDeviceDistance, cairo_user_to_device_distance, "x", "y")
 
 
 static JSBool

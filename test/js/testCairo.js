@@ -97,16 +97,16 @@ function testContextMethods() {
     cr.scale(10, 10);
     cr.rotate(180);
     cr.identityMatrix();
-    let rv = cr.userToDevice();
+    let rv = cr.userToDevice(0, 0);
     assertEquals("userToDevice", rv.length, 2);
 
-    let rv = cr.userToDeviceDistance();
+    let rv = cr.userToDeviceDistance(0, 0);
     assertEquals("userToDeviceDistance", rv.length, 2);
 
-    let rv = cr.deviceToUser();
+    let rv = cr.deviceToUser(0, 0);
     assertEquals("deviceToUser", rv.length, 2);
 
-    let rv = cr.deviceToUserDistance();
+    let rv = cr.deviceToUserDistance(0, 0);
     assertEquals("deviceToUserDistance", rv.length, 2);
 
     cr.showText("foobar");
