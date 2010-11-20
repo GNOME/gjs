@@ -114,21 +114,30 @@ gjs_struct_foreign_lookup(JSContext  *context,
     GIBaseInfo *base_info;
     GjsForeignInfo *retval = NULL;
     GHashTable *hash_table;
+    char *key;
 
     base_info = g_type_info_get_interface(type_info);
-    if (base_info) {
-        char *key = g_strdup_printf("%s.%s", g_base_info_get_namespace(base_info),
-                                    g_base_info_get_name(base_info));
-        hash_table = get_foreign_structs();
-        retval = (GjsForeignInfo*)g_hash_table_lookup(hash_table, key);
-        if (!retval) {
-            if (gjs_foreign_load_foreign_module(context, g_base_info_get_namespace(base_info))) {
-                retval = (GjsForeignInfo*)g_hash_table_lookup(hash_table, key);
-            }
+    g_assert (base_info != NULL);
+
+    key = g_strdup_printf("%s.%s", g_base_info_get_namespace(base_info),
+                          g_base_info_get_name(base_info));
+    hash_table = get_foreign_structs();
+    retval = (GjsForeignInfo*)g_hash_table_lookup(hash_table, key);
+    if (!retval) {
+        if (gjs_foreign_load_foreign_module(context, g_base_info_get_namespace(base_info))) {
+            retval = (GjsForeignInfo*)g_hash_table_lookup(hash_table, key);
         }
-        g_base_info_unref(base_info);
-        g_free(key);
     }
+
+    if (!retval) {
+        gjs_throw(context, "Unable to find module implementing foreign type %s.%s",
+                  g_base_info_get_namespace(base_info),
+                  g_base_info_get_name(base_info));
+    }
+
+    g_base_info_unref(base_info);
+    g_free(key);
+
     return retval;
 }
 
