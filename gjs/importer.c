@@ -514,6 +514,14 @@ do_import(JSContext  *context,
     full_path = NULL;
     directories = NULL;
 
+    /* First try importing an internal module like byteArray */
+    if (import_native_file(context, obj, name, NULL)) {
+        gjs_debug(GJS_DEBUG_IMPORTER,
+                  "successfully imported module '%s'", name);
+        result = JS_TRUE;
+        goto out;
+    }
+
     for (i = 0; i < search_path_len; ++i) {
         jsval elem;
 
@@ -562,14 +570,6 @@ do_import(JSContext  *context,
                     goto out;
                 }
             }
-        }
-
-        /* First try importing an internal module like byteArray */
-        if (import_native_file(context, obj, name, NULL)) {
-            gjs_debug(GJS_DEBUG_IMPORTER,
-                      "successfully imported module '%s'", name);
-            result = JS_TRUE;
-            goto out;
         }
 
         /* Second try importing a directory (a sub-importer) */
