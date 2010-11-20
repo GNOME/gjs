@@ -547,6 +547,10 @@ do_import(JSContext  *context,
         if (!gjs_string_to_utf8(context, elem, &dirname))
             goto out; /* Error message already set */
 
+        /* Ignore empty path elements */
+        if (dirname[0] == '\0')
+            continue;
+
         /* Try importing __init__.js and loading the symbol from it */
         if (full_path)
             g_free(full_path);
