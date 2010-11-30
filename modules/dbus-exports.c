@@ -161,7 +161,7 @@ dbus_reply_from_exception_and_sender(JSContext    *context,
     if (JSVAL_IS_OBJECT(exc) &&
         gjs_object_get_property(context, JSVAL_TO_OBJECT(exc),
                                 "dbusErrorName", &nameval))
-        name = gjs_string_get_ascii_checked(context, nameval);
+        name = gjs_string_get_ascii(context, nameval);
 
     if (!gjs_log_exception(context, &s))
         return JS_FALSE;
@@ -204,7 +204,7 @@ signature_from_method(JSContext   *context,
     if (gjs_object_get_property(context,
                                 method_obj, "outSignature",
                                 &signature_value)) {
-        *signature = gjs_string_get_ascii_checked(context,
+        *signature = gjs_string_get_ascii(context,
                                                   signature_value);
         if (*signature == NULL) {
             return JS_FALSE;
@@ -408,7 +408,7 @@ async_call_callback(JSContext *context,
         gjs_log_and_keep_exception(context, NULL);
         return JS_FALSE;
     }
-    sender = gjs_string_get_ascii_checked(context, prop_value);
+    sender = gjs_string_get_ascii(context, prop_value);
     if (!sender)
         return JS_FALSE;
 
@@ -444,7 +444,7 @@ async_call_callback(JSContext *context,
         thrown = TRUE;
         goto out;
     }
-    signature = gjs_string_get_ascii_checked(context, prop_value);
+    signature = gjs_string_get_ascii(context, prop_value);
     if (!signature)
         return JS_FALSE;
 
@@ -834,7 +834,7 @@ unpack_property_details(JSContext       *context,
         return JS_FALSE;
     }
 
-    name = gjs_string_get_ascii_checked(context,
+    name = gjs_string_get_ascii(context,
                                         name_val);
     if (name == NULL) {
         return JS_FALSE;
@@ -850,7 +850,7 @@ unpack_property_details(JSContext       *context,
         return JS_FALSE;
     }
 
-    signature = gjs_string_get_ascii_checked(context,
+    signature = gjs_string_get_ascii(context,
                                              signature_val);
     if (signature == NULL) {
         return JS_FALSE;
@@ -866,7 +866,7 @@ unpack_property_details(JSContext       *context,
         return JS_FALSE;
     }
 
-    access = gjs_string_get_ascii_checked(context,
+    access = gjs_string_get_ascii(context,
                                           access_val);
     if (access == NULL) {
         return JS_FALSE;

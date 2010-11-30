@@ -78,7 +78,7 @@ resolve_namespace_object(JSContext  *context,
     version = NULL;
     if (JS_GetProperty(context, versions, ns_name, &version_val) &&
         JSVAL_IS_STRING(version_val)) {
-        version = gjs_string_get_ascii(version_val);
+        version = gjs_string_get_ascii(context, version_val);
     }
 
     repo = g_irepository_get_default();

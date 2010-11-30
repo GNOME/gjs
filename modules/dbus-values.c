@@ -807,7 +807,7 @@ append_dict(JSContext         *context,
                                     JSVAL_TO_OBJECT(prop_signatures),
                                     name, &signature_value);
             if (signature_value != JSVAL_VOID) {
-                value_signature = gjs_string_get_ascii_checked(context,
+                value_signature = gjs_string_get_ascii(context,
                                                                signature_value);
                 if (value_signature == NULL) {
                     return JS_FALSE;

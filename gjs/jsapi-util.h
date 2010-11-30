@@ -311,8 +311,7 @@ JSBool      gjs_string_from_filename         (JSContext       *context,
                                               const char      *filename_string,
                                               gssize           n_bytes,
                                               jsval           *value_p);
-const char* gjs_string_get_ascii             (jsval            value);
-const char* gjs_string_get_ascii_checked     (JSContext       *context,
+const char* gjs_string_get_ascii             (JSContext       *context,
                                               jsval            value);
 JSBool      gjs_string_get_binary_data       (JSContext       *context,
                                               jsval            value,

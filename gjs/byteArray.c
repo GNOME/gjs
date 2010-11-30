@@ -514,7 +514,7 @@ to_string_func(JSContext *context,
     encoding_is_utf8 = TRUE;
     if (argc >= 1 &&
         JSVAL_IS_STRING(argv[0])) {
-        encoding = gjs_string_get_ascii_checked(context, argv[0]);
+        encoding = gjs_string_get_ascii(context, argv[0]);
         if (encoding == NULL)
             return JS_FALSE;
 
@@ -634,7 +634,7 @@ from_string_func(JSContext *context,
     encoding_is_utf8 = TRUE;
     if (argc > 1 &&
         JSVAL_IS_STRING(argv[1])) {
-        encoding = gjs_string_get_ascii_checked(context, argv[1]);
+        encoding = gjs_string_get_ascii(context, argv[1]);
         if (encoding == NULL)
             goto out;
 

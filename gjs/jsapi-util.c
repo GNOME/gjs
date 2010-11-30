@@ -1128,7 +1128,7 @@ log_prop(JSContext  *context,
     if (JSVAL_IS_STRING(id)) {
         const char *name;
 
-        name = gjs_string_get_ascii(id);
+        name = gjs_string_get_ascii(context, id);
         gjs_debug(GJS_DEBUG_PROPS,
                   "prop %s: %s",
                   name, what);

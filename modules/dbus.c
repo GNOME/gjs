@@ -134,31 +134,31 @@ prepare_call(JSContext   *context,
     if (!bus_check(context, bus_type))
         return NULL;
 
-    bus_name = gjs_string_get_ascii_checked(context, argv[0]);
+    bus_name = gjs_string_get_ascii(context, argv[0]);
     if (bus_name == NULL)
         return NULL;
 
-    path = gjs_string_get_ascii_checked(context, argv[1]);
+    path = gjs_string_get_ascii(context, argv[1]);
     if (path == NULL)
         return NULL;
 
     if (JSVAL_IS_NULL(argv[2])) {
         interface = NULL;
     } else {
-        interface = gjs_string_get_ascii_checked(context, argv[2]);
+        interface = gjs_string_get_ascii(context, argv[2]);
         if (interface == NULL)
             return NULL; /* exception was set */
     }
 
-    method = gjs_string_get_ascii_checked(context, argv[3]);
+    method = gjs_string_get_ascii(context, argv[3]);
     if (method == NULL)
         return NULL;
 
-    out_signature = gjs_string_get_ascii_checked(context, argv[4]);
+    out_signature = gjs_string_get_ascii(context, argv[4]);
     if (out_signature == NULL)
         return NULL;
 
-    in_signature = gjs_string_get_ascii_checked(context, argv[5]);
+    in_signature = gjs_string_get_ascii(context, argv[5]);
     if (in_signature == NULL)
         return NULL;
 
@@ -447,7 +447,7 @@ fill_with_null_or_string(JSContext *context, const char **string_p, jsval value)
     if (JSVAL_IS_NULL(value))
         *string_p = NULL;
     else {
-        *string_p = gjs_string_get_ascii_checked(context, value);
+        *string_p = gjs_string_get_ascii(context, value);
         if (!*string_p)
             return JS_FALSE;
     }
@@ -878,16 +878,16 @@ gjs_js_dbus_emit_signal(JSContext  *context,
     if (!get_bus_type_from_object(context, obj, &bus_type))
         return JS_FALSE;
 
-    object_path = gjs_string_get_ascii_checked(context, argv[0]);
+    object_path = gjs_string_get_ascii(context, argv[0]);
     if (!object_path)
         return JS_FALSE;
-    iface = gjs_string_get_ascii_checked(context, argv[1]);
+    iface = gjs_string_get_ascii(context, argv[1]);
     if (!iface)
         return JS_FALSE;
-    signal = gjs_string_get_ascii_checked(context, argv[2]);
+    signal = gjs_string_get_ascii(context, argv[2]);
     if (!signal)
         return JS_FALSE;
-    in_signature = gjs_string_get_ascii_checked(context, argv[3]);
+    in_signature = gjs_string_get_ascii(context, argv[3]);
     if (!in_signature)
         return JS_FALSE;
 
@@ -1134,7 +1134,7 @@ gjs_js_dbus_acquire_name(JSContext  *context,
     if (!get_bus_type_from_object(context, obj, &bus_type))
         return JS_FALSE;
 
-    bus_name = gjs_string_get_ascii_checked(context, argv[0]);
+    bus_name = gjs_string_get_ascii(context, argv[0]);
     if (bus_name == NULL)
         return JS_FALSE;
 
@@ -1369,7 +1369,7 @@ gjs_js_dbus_watch_name(JSContext  *context,
     if (!get_bus_type_from_object(context, obj, &bus_type))
         return JS_FALSE;
 
-    bus_name = gjs_string_get_ascii_checked(context, argv[0]);
+    bus_name = gjs_string_get_ascii(context, argv[0]);
     if (bus_name == NULL)
         return JS_FALSE;
 
@@ -1482,7 +1482,7 @@ gjs_js_dbus_signature_length(JSContext  *context,
         return JS_FALSE;
     }
 
-    signature = gjs_string_get_ascii_checked(context, argv[0]);
+    signature = gjs_string_get_ascii(context, argv[0]);
     if (signature == NULL)
         return JS_FALSE;
 
@@ -1523,7 +1523,7 @@ gjs_js_dbus_start_service(JSContext  *context,
         return JS_FALSE;
     }
 
-    name = gjs_string_get_ascii_checked(context, argv[0]);
+    name = gjs_string_get_ascii(context, argv[0]);
     if (!name)
         return JS_FALSE;
 

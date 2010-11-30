@@ -238,25 +238,6 @@ gjs_string_from_filename(JSContext  *context,
 
 /**
  * gjs_string_get_ascii:
- * @value: a jsval
- *
- * Get the char array in the JSString contained in @value.
- * The string is expected to be encoded in ASCII, otherwise
- * you will get garbage out. See the documentation for
- * JS_GetStringBytes() for more details.
- *
- * Returns: an ASCII C string
- **/
-const char*
-gjs_string_get_ascii(jsval value)
-{
-    g_return_val_if_fail(JSVAL_IS_STRING(value), NULL);
-
-    return JS_GetStringBytes(JSVAL_TO_STRING(value));
-}
-
-/**
- * gjs_string_get_ascii_checked:
  * @context: a JSContext
  * @value: a jsval
  *
@@ -267,7 +248,7 @@ gjs_string_get_ascii(jsval value)
  * Returns: an ASCII C string or %NULL on error
  **/
 const char*
-gjs_string_get_ascii_checked(JSContext       *context,
+gjs_string_get_ascii(JSContext       *context,
                              jsval            value)
 {
     if (!JSVAL_IS_STRING(value)) {
@@ -517,9 +498,9 @@ gjstest_test_func_gjs_jsapi_util_string_get_ascii(void)
     context = fixture.context;
 
     js_string = JS_NewStringCopyZ(context, ascii_string);
-    g_assert(g_str_equal(gjs_string_get_ascii(STRING_TO_JSVAL(js_string)), ascii_string));
+    g_assert(g_str_equal(gjs_string_get_ascii(context, STRING_TO_JSVAL(js_string)), ascii_string));
     void_value = JSVAL_VOID;
-    g_assert(gjs_string_get_ascii_checked(context, void_value) == NULL);
+    g_assert(gjs_string_get_ascii(context, void_value) == NULL);
     g_assert(JS_IsExceptionPending(context));
 
     _gjs_unit_test_fixture_finish(&fixture);

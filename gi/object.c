@@ -889,7 +889,7 @@ real_connect_func(JSContext *context,
         return JS_FALSE;
     }
 
-    signal_name = gjs_string_get_ascii_checked(context, argv[0]);
+    signal_name = gjs_string_get_ascii(context, argv[0]);
     if (signal_name == NULL) {
         return JS_FALSE;
     }
@@ -1017,7 +1017,7 @@ emit_func(JSContext *context,
         return JS_FALSE;
     }
 
-    signal_name = gjs_string_get_ascii_checked(context,
+    signal_name = gjs_string_get_ascii(context,
                                                   argv[0]);
     if (signal_name == NULL)
         return JS_FALSE;
