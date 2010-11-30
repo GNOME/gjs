@@ -125,10 +125,11 @@ object_instance_get_prop(JSContext *context,
                          jsval     *value_p)
 {
     ObjectInstance *priv;
-    const char *name;
+    char *name;
     char *gname;
     GParamSpec *param;
     GValue gvalue = { 0, };
+    JSBool ret = JS_TRUE;
 
     if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
@@ -137,10 +138,12 @@ object_instance_get_prop(JSContext *context,
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
                      "Get prop '%s' hook obj %p priv %p", name, obj, priv);
 
-    if (priv == NULL)
-        return JS_FALSE; /* wrong class passed in */
-    if (priv->gobj == NULL)
-        return JS_TRUE; /* prototype, not an instance. */
+    if (priv == NULL) {
+        ret = JS_FALSE; /* wrong class passed in */
+        goto out;
+    }
+    if (priv->gobj == NULL) /* prototype, not an instance. */
+        goto out;
 
     gname = gjs_hyphen_from_camel(name);
     param = g_object_class_find_property(G_OBJECT_GET_CLASS(priv->gobj),
@@ -149,12 +152,11 @@ object_instance_get_prop(JSContext *context,
 
     if (param == NULL) {
         /* leave value_p as it was */
-        return JS_TRUE;
+        goto out;
     }
 
-    if ((param->flags & G_PARAM_READABLE) == 0) {
-        return JS_TRUE;
-    }
+    if ((param->flags & G_PARAM_READABLE) == 0)
+        goto out;
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
                      "Overriding %s with GObject prop %s",
@@ -165,11 +167,14 @@ object_instance_get_prop(JSContext *context,
                           &gvalue);
     if (!gjs_value_from_g_value(context, value_p, &gvalue)) {
         g_value_unset(&gvalue);
-        return JS_FALSE;
+        ret = JS_FALSE;
+        goto out;
     }
     g_value_unset(&gvalue);
 
-    return JS_TRUE;
+ out:
+    g_free(name);
+    return ret;
 }
 
 /* a hook on setting a property; set value_p to override property value to
@@ -182,8 +187,9 @@ object_instance_set_prop(JSContext *context,
                          jsval     *value_p)
 {
     ObjectInstance *priv;
-    const char *name;
+    char *name;
     GParameter param = { NULL, { 0, }};
+    JSBool ret = JS_TRUE;
 
     if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
@@ -192,19 +198,21 @@ object_instance_set_prop(JSContext *context,
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
                      "Set prop '%s' hook obj %p priv %p", name, obj, priv);
 
-    if (priv == NULL)
-        return JS_FALSE;  /* wrong class passed in */
-    if (priv->gobj == NULL)
-        return JS_TRUE; /* prototype, not an instance. */
+    if (priv == NULL) {
+        ret = JS_FALSE;  /* wrong class passed in */
+        goto out;
+    }
+    if (priv->gobj == NULL) /* prototype, not an instance. */
+        goto out;
 
     switch (init_g_param_from_property(context, name,
                                        *value_p,
                                        G_TYPE_FROM_INSTANCE(priv->gobj),
                                        &param)) {
     case SOME_ERROR_OCCURRED:
-        return JS_FALSE;
+        ret = JS_FALSE;
     case NO_SUCH_G_PROPERTY:
-        return JS_TRUE;
+        goto out;
     case VALUE_WAS_SET:
         break;
     }
@@ -220,7 +228,9 @@ object_instance_set_prop(JSContext *context,
      * getter/setter maybe, don't know if that is better.
      */
 
-    return JS_TRUE;
+ out:
+    g_free(name);
+    return ret;
 }
 
 /*
@@ -244,7 +254,8 @@ object_instance_new_resolve(JSContext *context,
                             JSObject **objp)
 {
     ObjectInstance *priv;
-    const char *name;
+    char *name;
+    JSBool ret = JS_FALSE;
 
     *objp = NULL;
 
@@ -264,7 +275,7 @@ object_instance_new_resolve(JSContext *context,
                      (priv && priv->gobj) ? g_type_name_from_instance((GTypeInstance*) priv->gobj) : "(type unknown)");
 
     if (priv == NULL)
-        return JS_FALSE; /* we are the wrong class */
+        goto out; /* we are the wrong class */
 
     if (priv->gobj == NULL) {
         /* We are the prototype, so look for methods and other class properties */
@@ -367,7 +378,8 @@ object_instance_new_resolve(JSContext *context,
                           g_base_info_get_namespace( (GIBaseInfo*) priv->info),
                           g_base_info_get_name( (GIBaseInfo*) priv->info));
                 g_base_info_unref( (GIBaseInfo*) method_info);
-                return JS_TRUE;
+                ret = JS_TRUE;
+                goto out;
             }
 
             gjs_debug(GJS_DEBUG_GOBJECT,
@@ -379,7 +391,7 @@ object_instance_new_resolve(JSContext *context,
 
             if (gjs_define_function(context, obj, method_info) == NULL) {
                 g_base_info_unref( (GIBaseInfo*) method_info);
-                return JS_FALSE;
+                goto out;
             }
 
             *objp = obj; /* we defined the prop in obj */
@@ -415,7 +427,10 @@ object_instance_new_resolve(JSContext *context,
         }
     }
 
-    return JS_TRUE;
+    ret = JS_TRUE;
+ out:
+    g_free(name);
+    return ret;
 }
 
 static void
@@ -480,29 +495,33 @@ object_instance_props_to_g_parameters(JSContext   *context,
     }
 
     while (!JSID_IS_VOID(prop_id)) {
-        const char *name;
+        char *name;
         jsval value;
         GParameter gparam = { NULL, { 0, }};
 
         if (!gjs_get_string_id(context, prop_id, &name))
             goto free_array_and_fail;
 
-        if (!gjs_object_require_property(context, props, "property list", name, &value))
+        if (!gjs_object_require_property(context, props, "property list", name, &value)) {
+            g_free(name);
             goto free_array_and_fail;
+        }
 
         switch (init_g_param_from_property(context, name,
                                            value,
                                            gtype,
                                            &gparam)) {
-        case SOME_ERROR_OCCURRED:
-            goto free_array_and_fail;
         case NO_SUCH_G_PROPERTY:
             gjs_throw(context, "No property %s on this GObject %s",
                          name, g_type_name(gtype));
+        case SOME_ERROR_OCCURRED:
+            g_free(name);
             goto free_array_and_fail;
         case VALUE_WAS_SET:
             break;
         }
+
+        g_free(name);
 
         g_array_append_val(gparams, gparam);
 
@@ -860,9 +879,10 @@ real_connect_func(JSContext *context,
     GClosure *closure;
     gulong id;
     guint signal_id;
-    const char *signal_name;
+    char *signal_name;
     GQuark signal_detail;
     jsval retval;
+    JSBool ret = JS_FALSE;
 
     priv = priv_from_js(context, obj);
     gjs_debug_gsignal("connect obj %p priv %p argc %d", obj, priv, argc);
@@ -902,12 +922,12 @@ real_connect_func(JSContext *context,
         gjs_throw(context, "No signal '%s' on object '%s'",
                      signal_name,
                      g_type_name(G_OBJECT_TYPE(priv->gobj)));
-        return JS_FALSE;
+        goto out;
     }
 
     closure = gjs_closure_new_for_signal(context, JSVAL_TO_OBJECT(argv[1]), "signal callback", signal_id);
     if (closure == NULL)
-        return JS_FALSE;
+        goto out;
 
     id = g_signal_connect_closure(priv->gobj,
                                   signal_name,
@@ -916,12 +936,15 @@ real_connect_func(JSContext *context,
 
     if (!JS_NewNumberValue(context, id, &retval)) {
         g_signal_handler_disconnect(priv->gobj, id);
-        return JS_FALSE;
+        goto out;
     }
     
     JS_SET_RVAL(context, vp, retval);
 
-    return JS_TRUE;
+    ret = JS_TRUE;
+ out:
+    g_free(signal_name);
+    return ret;
 }
 
 static JSBool
@@ -990,12 +1013,13 @@ emit_func(JSContext *context,
     guint signal_id;
     GQuark signal_detail;
     GSignalQuery signal_query;
-    const char *signal_name;
+    char *signal_name;
     GValue *instance_and_args;
     GValue rvalue;
     unsigned int i;
     gboolean failed;
     jsval retval;
+    JSBool ret = JS_FALSE;
 
     priv = priv_from_js(context, obj);
     gjs_debug_gsignal("emit obj %p priv %p argc %d", obj, priv, argc);
@@ -1030,7 +1054,7 @@ emit_func(JSContext *context,
         gjs_throw(context, "No signal '%s' on object '%s'",
                      signal_name,
                      g_type_name(G_OBJECT_TYPE(priv->gobj)));
-        return JS_FALSE;
+        goto out;
     }
 
     g_signal_query(signal_id, &signal_query);
@@ -1041,7 +1065,7 @@ emit_func(JSContext *context,
                      g_type_name(G_OBJECT_TYPE(priv->gobj)),
                      signal_query.n_params,
                      argc - 1);
-        return JS_FALSE;
+        goto out;
     }
 
     if (signal_query.return_type != G_TYPE_NONE) {
@@ -1090,7 +1114,10 @@ emit_func(JSContext *context,
     if (!failed)
         JS_SET_RVAL(context, vp, retval);
 
-    return !failed;
+    ret = !failed;
+ out:
+    g_free(signal_name);
+    return ret;
 }
 
 /* Default spidermonkey toString is worthless.  Replace it

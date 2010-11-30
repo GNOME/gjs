@@ -108,7 +108,7 @@ function_new_resolve(JSContext *context,
                      JSObject **objp)
 {
     Function *priv;
-    const char *name;
+    char *name;
 
     *objp = NULL;
 
@@ -118,6 +118,7 @@ function_new_resolve(JSContext *context,
     priv = priv_from_js(context, obj);
 
     gjs_debug_jsprop(GJS_DEBUG_GFUNCTION, "Resolve prop '%s' hook obj %p priv %p", name, obj, priv);
+    g_free(name);
 
     if (priv == NULL)
         return JS_TRUE; /* we are the prototype, or have the wrong class */

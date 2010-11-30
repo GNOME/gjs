@@ -146,6 +146,8 @@ else
   AC_MSG_ERROR([$JS_PACKAGE >= 1.9.2 is required])
 fi
 
+AC_CHECK_LIB([mozjs], [JS_GetStringBytes], AC_DEFINE([HAVE_JS_GETSTRINGBYTES], [1], [Define if we still have JS_GetStringBytes]),, [$JS_LIBS])
+
 AC_MSG_CHECKING([for mozilla-js >= 2 ])
 if `$PKG_CONFIG --exists $JS_PACKAGE '>=' 2`; then
   AC_MSG_RESULT([yes])

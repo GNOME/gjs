@@ -46,22 +46,25 @@
 #include <jsdbgapi.h>
 #include "context.h"
 #include "compat.h"
+#include "jsapi-util.h"
 
-static const char*
+static char*
 jsvalue_to_string(JSContext* cx, jsval val, gboolean* is_string)
 {
-    const char* value = NULL;
+    char* value = NULL;
     JSString* value_str;
 
     (void)JS_EnterLocalRootScope(cx);
 
     value_str = JS_ValueToString(cx, val);
     if (value_str)
-        value = JS_GetStringBytes(value_str);
+        value = gjs_value_debug_string(cx, val);
     if (value) {
         const char* found = strstr(value, "function ");
-        if(found && (value == found || value+1 == found || value+2 == found))
-            value = "[function]";
+        if(found && (value == found || value+1 == found || value+2 == found)) {
+            g_free(value);
+            value = g_strdup("[function]");
+        }
     }
 
     if (is_string)
@@ -145,13 +148,15 @@ format_frame(JSContext* cx, JSStackFrame* fp,
         g_string_append_printf(buf, "%d <TOP LEVEL>", num);
 
     for (i = 0; i < call_props.length; i++) {
-        const char *name;
-        const char *value;
+        char *name;
+        char *value;
         JSPropertyDesc* desc = &call_props.array[i];
         if(desc->flags & JSPD_ARGUMENT) {
             name = jsvalue_to_string(cx, desc->id, &is_string);
-            if(!is_string)
+            if(!is_string) {
+                g_free(name);
                 name = NULL;
+            }
             value = jsvalue_to_string(cx, desc->value, &is_string);
 
             g_string_append_printf(buf, "%s%s%s%s%s%s",
@@ -163,6 +168,8 @@ format_frame(JSContext* cx, JSStackFrame* fp,
                                    is_string ? "\"" : "");
             named_arg_count++;
         }
+        g_free(name);
+        g_free(value);
     }
 
     /* print any unnamed trailing args (found in 'arguments' object) */
@@ -181,12 +188,13 @@ format_frame(JSContext* cx, JSStackFrame* fp,
                 g_snprintf(number, 8, "%d", (int) k);
 
                 if (JS_GetProperty(cx, args_obj, number, &val)) {
-                    const char *value = jsvalue_to_string(cx, val, &is_string);
+                    char *value = jsvalue_to_string(cx, val, &is_string);
                     g_string_append_printf(buf, "%s%s%s%s",
                                            k ? ", " : "",
                                            is_string ? "\"" : "",
                                            value ? value : "?unknown?",
                                            is_string ? "\"" : "");
+                    g_free(value);
                 }
             }
         }

@@ -140,13 +140,14 @@ gjs_import_native_module(JSContext        *context,
 
         if (gjs_object_get_property(context, parent, "__moduleName__", &value) &&
             JSVAL_IS_STRING(value)) {
-            const char *name;
+            char *name;
             name = gjs_string_get_ascii(context, value);
 
             if (module_id->len > 0)
                 g_string_prepend(module_id, ".");
 
             g_string_prepend(module_id, name);
+            g_free(name);
         }
 
         /* Move up to parent */

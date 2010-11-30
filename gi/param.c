@@ -54,7 +54,7 @@ param_get_prop(JSContext *context,
                jsval     *value_p)
 {
     Param *priv;
-    const char *name;
+    char *name;
     const char *value_str;
 
     if (!gjs_get_string_id(context, id, &name))
@@ -65,8 +65,10 @@ param_get_prop(JSContext *context,
     gjs_debug_jsprop(GJS_DEBUG_GPARAM,
                      "Get prop '%s' hook obj %p priv %p", name, obj, priv);
 
-    if (priv == NULL)
+    if (priv == NULL) {
+        g_free(name);
         return JS_FALSE; /* wrong class */
+    }
 
     value_str = NULL;
     if (strcmp(name, "name") == 0)
@@ -75,6 +77,8 @@ param_get_prop(JSContext *context,
         value_str = g_param_spec_get_nick(priv->gparam);
     else if (strcmp(name, "blurb") == 0)
         value_str = g_param_spec_get_blurb(priv->gparam);
+
+    g_free(name);
 
     if (value_str != NULL) {
         *value_p = STRING_TO_JSVAL(JS_NewStringCopyZ(context, value_str));
@@ -104,7 +108,7 @@ param_new_resolve(JSContext *context,
                   JSObject **objp)
 {
     Param *priv;
-    const char *name;
+    char *name;
 
     *objp = NULL;
 
@@ -114,6 +118,8 @@ param_new_resolve(JSContext *context,
     priv = priv_from_js(context, obj);
 
     gjs_debug_jsprop(GJS_DEBUG_GPARAM, "Resolve prop '%s' hook obj %p priv %p", name, obj, priv);
+
+    g_free(name);
 
     if (priv == NULL)
         return JS_FALSE; /* wrong class */

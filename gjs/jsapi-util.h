@@ -311,7 +311,7 @@ JSBool      gjs_string_from_filename         (JSContext       *context,
                                               const char      *filename_string,
                                               gssize           n_bytes,
                                               jsval           *value_p);
-const char* gjs_string_get_ascii             (JSContext       *context,
+char*       gjs_string_get_ascii             (JSContext       *context,
                                               jsval            value);
 JSBool      gjs_string_get_binary_data       (JSContext       *context,
                                               jsval            value,
@@ -327,11 +327,11 @@ JSBool      gjs_string_get_uint16_data       (JSContext       *context,
                                               gsize           *len_p);
 JSBool      gjs_get_string_id                (JSContext       *context,
                                               jsid             id,
-                                              const char     **name_p);
+                                              char           **name_p);
 
 
 gboolean    gjs_unichar_from_string          (JSContext       *context,
-                                              JSString        *string,
+                                              jsval            string,
                                               gunichar        *result);
 
 const char* gjs_get_type_name                (jsval            value);

@@ -120,14 +120,14 @@ prepare_call(JSContext   *context,
              jsval       *argv,
              DBusBusType  bus_type)
 {
-    DBusMessage *message;
-    const char *bus_name;
-    const char *path;
-    const char *interface;
-    const char *method;
+    DBusMessage *message = NULL;
+    char *bus_name = NULL;
+    char *path = NULL;
+    char *interface = NULL;
+    char *method = NULL;
     gboolean    auto_start;
-    const char *out_signature;
-    const char *in_signature;
+    char *out_signature = NULL;
+    char *in_signature = NULL;
     DBusMessageIter arg_iter;
     DBusSignatureIter sig_iter;
 
@@ -140,33 +140,33 @@ prepare_call(JSContext   *context,
 
     path = gjs_string_get_ascii(context, argv[1]);
     if (path == NULL)
-        return NULL;
+        goto fail;
 
     if (JSVAL_IS_NULL(argv[2])) {
         interface = NULL;
     } else {
         interface = gjs_string_get_ascii(context, argv[2]);
         if (interface == NULL)
-            return NULL; /* exception was set */
+            goto fail; /* exception was set */
     }
 
     method = gjs_string_get_ascii(context, argv[3]);
     if (method == NULL)
-        return NULL;
+        goto fail;
 
     out_signature = gjs_string_get_ascii(context, argv[4]);
     if (out_signature == NULL)
-        return NULL;
+        goto fail;
 
     in_signature = gjs_string_get_ascii(context, argv[5]);
     if (in_signature == NULL)
-        return NULL;
+        goto fail;
 
     g_assert(bus_name && path && method && in_signature && out_signature);
 
     if (!JSVAL_IS_BOOLEAN(argv[6])) {
         gjs_throw(context, "arg 7 must be boolean");
-        return NULL;
+        goto fail;
     }
     auto_start = JSVAL_TO_BOOLEAN(argv[6]);
 
@@ -180,7 +180,7 @@ prepare_call(JSContext   *context,
                                            method);
     if (message == NULL) {
         gjs_throw(context, "Out of memory (or invalid args to dbus_message_new_method_call)");
-        return NULL;
+        goto fail;
     }
 
     dbus_message_set_auto_start(message, auto_start);
@@ -195,8 +195,16 @@ prepare_call(JSContext   *context,
     if (!gjs_js_values_to_dbus(context, 0, argv[8], &arg_iter, &sig_iter)) {
         gjs_debug(GJS_DEBUG_DBUS, "Failed to marshal call from JS to dbus");
         dbus_message_unref(message);
-        return NULL;
+        message = NULL;
     }
+
+ fail:
+    g_free(in_signature);
+    g_free(out_signature);
+    g_free(method);
+    g_free(interface);
+    g_free(path);
+    g_free(bus_name);
 
     return message;
 }
@@ -442,7 +450,7 @@ gjs_js_dbus_call_async(JSContext  *context,
 }
 
 static JSBool
-fill_with_null_or_string(JSContext *context, const char **string_p, jsval value)
+fill_with_null_or_string(JSContext *context, char **string_p, jsval value)
 {
     if (JSVAL_IS_NULL(value))
         *string_p = NULL;
@@ -696,13 +704,14 @@ gjs_js_dbus_watch_signal(JSContext  *context,
 {
     jsval *argv = JS_ARGV(context, vp);
     JSObject *obj = JS_THIS_OBJECT(context, vp);
-    const char *bus_name;
-    const char *object_path;
-    const char *iface;
-    const char *signal;
+    char *bus_name = NULL;
+    char *object_path = NULL;
+    char *iface = NULL;
+    char *signal = NULL;
     SignalHandler *handler;
     int id;
     DBusBusType bus_type;
+    JSBool ret = JS_FALSE;
 
     if (argc < 5) {
         gjs_throw(context, "Not enough args, need bus name, object path, interface, signal and callback");
@@ -720,18 +729,18 @@ gjs_js_dbus_watch_signal(JSContext  *context,
     if (!fill_with_null_or_string(context, &bus_name, argv[0]))
         return JS_FALSE;
     if (!fill_with_null_or_string(context, &object_path, argv[1]))
-        return JS_FALSE;
+        goto fail;
     if (!fill_with_null_or_string(context, &iface, argv[2]))
-        return JS_FALSE;
+        goto fail;
     if (!fill_with_null_or_string(context, &signal, argv[3]))
-        return JS_FALSE;
+        goto fail;
 
     if (!get_bus_type_from_object(context, obj, &bus_type))
-        return JS_FALSE;
+        goto fail;
 
     handler = signal_handler_new(context, argv[4]);
     if (handler == NULL)
-        return JS_FALSE;
+        goto fail;
 
     id = gjs_dbus_watch_signal(bus_type,
                                bus_name,
@@ -750,7 +759,15 @@ gjs_js_dbus_watch_signal(JSContext  *context,
 
     JS_SET_RVAL(context, vp, INT_TO_JSVAL(id));
 
-    return JS_TRUE;
+    ret = JS_TRUE;
+
+ fail:
+    g_free(signal);
+    g_free(iface);
+    g_free(object_path);
+    g_free(bus_name);
+
+    return ret;
 }
 
 /* Args are handler id */
@@ -787,12 +804,13 @@ gjs_js_dbus_unwatch_signal(JSContext  *context,
 {
     jsval *argv = JS_ARGV(context, vp);
     JSObject *obj = JS_THIS_OBJECT(context, vp);
-    const char *bus_name;
-    const char *object_path;
-    const char *iface;
-    const char *signal;
+    char *bus_name;
+    char *object_path;
+    char *iface;
+    char *signal;
     SignalHandler *handler;
     DBusBusType bus_type;
+    JSBool ret = JS_FALSE;
 
     if (argc < 5) {
         gjs_throw(context, "Not enough args, need bus name, object path, interface, signal and callback");
@@ -813,22 +831,26 @@ gjs_js_dbus_unwatch_signal(JSContext  *context,
     if (!fill_with_null_or_string(context, &bus_name, argv[0]))
         return JS_FALSE;
     if (!fill_with_null_or_string(context, &object_path, argv[1]))
-        return JS_FALSE;
+        goto object_path_fail;
     if (!fill_with_null_or_string(context, &iface, argv[2]))
-        return JS_FALSE;
+        goto iface_fail;
     if (!fill_with_null_or_string(context, &signal, argv[3]))
-        return JS_FALSE;
+        goto signal_fail;
 
     /* we don't complain if the signal seems to have been already removed
      * or to never have been watched, to match g_signal_handler_disconnect
      */
-    if (!signal_handlers_by_callable)
-        return JS_TRUE;
+    if (!signal_handlers_by_callable) {
+        ret = JS_TRUE;
+        goto free_and_exit;
+    }
 
     handler = g_hash_table_lookup(signal_handlers_by_callable, JSVAL_TO_OBJECT(argv[4]));
 
-    if (!handler)
-        return JS_TRUE;
+    if (!handler) {
+        ret = JS_TRUE;
+        goto free_and_exit;
+    }
 
     /* This should dispose the handler which should in turn
      * remove it from the handler table
@@ -844,7 +866,18 @@ gjs_js_dbus_unwatch_signal(JSContext  *context,
     g_assert(g_hash_table_lookup(signal_handlers_by_callable,
                                  JSVAL_TO_OBJECT(argv[4])) == NULL);
 
-    return JS_TRUE;
+    ret = JS_TRUE;
+
+ free_and_exit:
+    g_free(signal);
+ signal_fail:
+    g_free(iface);
+ iface_fail:
+    g_free(object_path);
+ object_path_fail:
+    g_free(bus_name);
+
+    return ret;
 }
 
 /* Args are object_path, iface, signal, arguments signature, arguments */
@@ -859,11 +892,12 @@ gjs_js_dbus_emit_signal(JSContext  *context,
     DBusMessage *message;
     DBusMessageIter arg_iter;
     DBusSignatureIter sig_iter;
-    const char *object_path;
-    const char *iface;
-    const char *signal;
-    const char *in_signature;
+    char *object_path;
+    char *iface;
+    char *signal;
+    char *in_signature;
     DBusBusType bus_type;
+    JSBool ret = JS_FALSE;
 
     if (argc < 4) {
         gjs_throw(context, "Not enough args, need object path, interface and signal and the arguments");
@@ -883,16 +917,16 @@ gjs_js_dbus_emit_signal(JSContext  *context,
         return JS_FALSE;
     iface = gjs_string_get_ascii(context, argv[1]);
     if (!iface)
-        return JS_FALSE;
+        goto iface_fail;
     signal = gjs_string_get_ascii(context, argv[2]);
     if (!signal)
-        return JS_FALSE;
+        goto signal_fail;
     in_signature = gjs_string_get_ascii(context, argv[3]);
     if (!in_signature)
-        return JS_FALSE;
+        goto in_signature_fail;
 
     if (!bus_check(context, bus_type))
-        return JS_FALSE;
+        goto free_and_exit;
 
     gjs_debug(GJS_DEBUG_DBUS,
               "Emitting signal %s %s %s",
@@ -912,14 +946,25 @@ gjs_js_dbus_emit_signal(JSContext  *context,
 
     if (!gjs_js_values_to_dbus(context, 0, argv[4], &arg_iter, &sig_iter)) {
         dbus_message_unref(message);
-        return JS_FALSE;
+        goto free_and_exit;
     }
 
     dbus_connection_send(bus_connection, message, NULL);
 
     dbus_message_unref(message);
 
-    return JS_TRUE;
+    ret = JS_TRUE;
+
+ free_and_exit:
+    g_free(in_signature);
+ in_signature_fail:
+    g_free(signal);
+ signal_fail:
+    g_free(iface);
+ iface_fail:
+    g_free(object_path);
+
+    return ret;
 }
 
 /* Blocks until dbus outgoing message queue is empty.  This is the only way
@@ -1117,7 +1162,7 @@ gjs_js_dbus_acquire_name(JSContext  *context,
 {
     jsval *argv = JS_ARGV(context, vp);
     JSObject *obj = JS_THIS_OBJECT(context, vp);
-    const char *bus_name;
+    char *bus_name;
     JSObject *acquire_func;
     JSObject *lost_func;
     GjsJSDBusNameOwner *owner;
@@ -1141,28 +1186,28 @@ gjs_js_dbus_acquire_name(JSContext  *context,
     if (!JSVAL_IS_INT(argv[1])) {
         gjs_throw(context, "Second arg is an integer representing the name type (single or multiple instances)\n"
                      "Use the constants DBus.SINGLE_INSTANCE and DBus.MANY_INSTANCES, defined in the DBus module");
-        return JS_FALSE;
+        goto fail;
     }
 
     name_type = (GjsDBusNameType)JSVAL_TO_INT(argv[1]);
 
     if (!JSVAL_IS_OBJECT(argv[2])) {
         gjs_throw(context, "Third arg is a callback to invoke on acquiring the name");
-        return JS_FALSE;
+        goto fail;
     }
 
     acquire_func = JSVAL_TO_OBJECT(argv[2]);
 
     if (!JSVAL_IS_OBJECT(argv[3])) {
         gjs_throw(context, "Fourth arg is a callback to invoke on losing the name");
-        return JS_FALSE;
+        goto fail;
     }
 
     lost_func = JSVAL_TO_OBJECT(argv[3]);
 
     owner = g_slice_new0(GjsJSDBusNameOwner);
 
-    owner->funcs.name = g_strdup(bus_name);
+    owner->funcs.name = bus_name;
     owner->funcs.type = name_type;
     owner->funcs.acquired = on_name_acquired;
     owner->funcs.lost = on_name_lost;
@@ -1191,11 +1236,15 @@ gjs_js_dbus_acquire_name(JSContext  *context,
 
     if (!JS_NewNumberValue(context, (jsdouble)id, &retval)) {
         gjs_throw(context, "Could not convert name owner id to jsval");
-        return JS_FALSE;
+        goto fail;
     }
     JS_SET_RVAL(context, vp, retval);
 
     return JS_TRUE;
+
+ fail:
+    g_free(bus_name);
+    return JS_FALSE;
 }
 
 /* Args are name owner monitor id */
@@ -1354,7 +1403,7 @@ gjs_js_dbus_watch_name(JSContext  *context,
 {
     jsval *argv = JS_ARGV(context, vp);
     JSObject *obj = JS_THIS_OBJECT(context, vp);
-    const char *bus_name;
+    char *bus_name;
     JSBool start_if_not_found;
     JSObject *appeared_func;
     JSObject *vanished_func;
@@ -1377,19 +1426,19 @@ gjs_js_dbus_watch_name(JSContext  *context,
     if (!JS_ValueToBoolean(context, argv[1], &start_if_not_found)) {
         if (!JS_IsExceptionPending(context))
             gjs_throw(context, "Second arg is a bool for whether to start the name if not found");
-        return JS_FALSE;
+        goto fail;
     }
 
     if (!JSVAL_IS_OBJECT(argv[2])) {
         gjs_throw(context, "Third arg is a callback to invoke on seeing the name");
-        return JS_FALSE;
+        goto fail;
     }
 
     appeared_func = JSVAL_TO_OBJECT(argv[2]);
 
     if (!JSVAL_IS_OBJECT(argv[3])) {
         gjs_throw(context, "Fourth arg is a callback to invoke when the name vanishes");
-        return JS_FALSE;
+        goto fail;
     }
 
     vanished_func = JSVAL_TO_OBJECT(argv[3]);
@@ -1409,7 +1458,7 @@ gjs_js_dbus_watch_name(JSContext  *context,
     g_closure_sink(watcher->vanished_closure);
 
     watcher->bus_type = bus_type;
-    watcher->bus_name = g_strdup(bus_name);
+    watcher->bus_name = bus_name;
 
     /* Only add the invalidate notifier to one of the closures, should
      * be enough */
@@ -1425,6 +1474,10 @@ gjs_js_dbus_watch_name(JSContext  *context,
 
     JS_SET_RVAL(context, vp, JSVAL_VOID);
     return JS_TRUE;
+
+ fail:
+    g_free(bus_name);
+    return JS_FALSE;
 }
 
 /* a hook on getting a property; set value_p to override property's value.
@@ -1436,7 +1489,7 @@ unique_name_getter(JSContext  *context,
                    jsid        id,
                    jsval      *value_p)
 {
-    const char *name;
+    char *name;
     DBusConnection *bus_connection;
     DBusBusType bus_type;
 
@@ -1447,6 +1500,7 @@ unique_name_getter(JSContext  *context,
         return JS_FALSE;
 
     gjs_debug_jsprop(GJS_DEBUG_DBUS, "Get prop '%s' on dbus object", name);
+    g_free(name);
 
     bus_check(context, bus_type);
 
@@ -1473,7 +1527,7 @@ gjs_js_dbus_signature_length(JSContext  *context,
                              jsval      *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
-    const char *signature;
+    char *signature;
     DBusSignatureIter iter;
     int length = 0;
 
@@ -1488,6 +1542,7 @@ gjs_js_dbus_signature_length(JSContext  *context,
 
     if (!dbus_signature_validate(signature, NULL)) {
         gjs_throw(context, "Invalid signature");
+        g_free(signature);
         return JS_FALSE;
     }
 
@@ -1502,6 +1557,7 @@ gjs_js_dbus_signature_length(JSContext  *context,
     } while (dbus_signature_iter_next(&iter));
 
  out:
+    g_free(signature);
     JS_SET_RVAL(context, vp, INT_TO_JSVAL(length));
 
     return JS_TRUE;
@@ -1514,9 +1570,10 @@ gjs_js_dbus_start_service(JSContext  *context,
 {
     jsval *argv = JS_ARGV(context, vp);
     JSObject *obj = JS_THIS_OBJECT(context, vp);
-    const char     *name;
+    char     *name;
     DBusBusType     bus_type;
     DBusConnection *bus_connection;
+    JSBool ret = JS_FALSE;
 
     if (argc != 1) {
         gjs_throw(context, "Wrong number of arguments, expected service name");
@@ -1528,16 +1585,20 @@ gjs_js_dbus_start_service(JSContext  *context,
         return JS_FALSE;
 
     if (!get_bus_type_from_object(context, obj, &bus_type))
-        return JS_FALSE;
+        goto out;
 
     if (!bus_check(context, bus_type))
-        return JS_FALSE;
+        goto out;
 
     bus_connection = DBUS_CONNECTION_FROM_TYPE(bus_type);
 
     gjs_dbus_start_service(bus_connection, name);
 
-    return JS_TRUE;
+    ret = JS_TRUE;
+
+ out:
+    g_free(name);
+    return ret;
 }
 
 static JSBool

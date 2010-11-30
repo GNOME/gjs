@@ -101,7 +101,7 @@ gjs_js_one_value_from_dbus(JSContext       *context,
                     DBusMessageIter entry_iter;
                     jsval key_value, entry_value;
                     JSString *key_str;
-                    const char *key;
+                    char *key;
 
                     dbus_message_iter_recurse(&array_iter, &entry_iter);
 
@@ -121,7 +121,11 @@ gjs_js_one_value_from_dbus(JSContext       *context,
 
                     key_str = JS_ValueToString(context, key_value);
                     JS_AddStringRoot(context, &key_str);
-                    key = JS_GetStringBytes(key_str);
+                    if (!gjs_string_to_utf8(context, key_value, &key)) {
+                        JS_RemoveValueRoot(context, &key_value);
+                        JS_RemoveObjectRoot(context, &obj);
+                        return JS_FALSE;
+                    }
 
                     dbus_message_iter_next(&entry_iter);
 
@@ -130,6 +134,7 @@ gjs_js_one_value_from_dbus(JSContext       *context,
                     entry_value = JSVAL_VOID;
                     JS_AddValueRoot(context, &entry_value);
                     if (!gjs_js_one_value_from_dbus(context, &entry_iter, &entry_value)) {
+                        g_free(key);
                         JS_RemoveValueRoot(context, &key_value);
                         JS_RemoveStringRoot(context, &key_str);
                         JS_RemoveValueRoot(context, &entry_value);
@@ -140,6 +145,7 @@ gjs_js_one_value_from_dbus(JSContext       *context,
                     if (!JS_DefineProperty(context, obj,
                                            key, entry_value,
                                            NULL, NULL, JSPROP_ENUMERATE)) {
+                        g_free(key);
                         JS_RemoveValueRoot(context, &key_value);
                         JS_RemoveStringRoot(context, &key_str);
                         JS_RemoveValueRoot(context, &entry_value);
@@ -147,6 +153,7 @@ gjs_js_one_value_from_dbus(JSContext       *context,
                         return JS_FALSE;
                     }
 
+                    g_free(key);
                     JS_RemoveValueRoot(context, &key_value);
                     JS_RemoveStringRoot(context, &key_str);
                     JS_RemoveValueRoot(context, &entry_value);
@@ -785,7 +792,7 @@ append_dict(JSContext         *context,
         char *name;
         jsval propval;
         DBusMessageIter entry_iter;
-        const char *value_signature;
+        char *value_signature;
 
         if (!JS_IdToValue(context, prop_id, &nameval))
             return JS_FALSE;
@@ -815,8 +822,10 @@ append_dict(JSContext         *context,
             }
         }
 
-        if (!gjs_object_require_property(context, props, "DBus append_dict", name, &propval))
+        if (!gjs_object_require_property(context, props, "DBus append_dict", name, &propval)) {
+            g_free(value_signature);
             return JS_FALSE;
+        }
 
         gjs_debug_dbus_marshal(" Adding property %s",
                                name);
@@ -827,6 +836,7 @@ append_dict(JSContext         *context,
         if (JSVAL_IS_NULL(propval)) {
             gjs_throw(context, "Property '%s' has a null value, can't send over dbus",
                       name);
+            g_free(value_signature);
             return JS_FALSE;
         }
 
@@ -855,6 +865,7 @@ append_dict(JSContext         *context,
                 return JS_FALSE;
 
             dbus_message_iter_close_container(&entry_iter, &variant_iter);
+            g_free(value_signature);
         } else {
             if (!gjs_js_one_value_to_dbus(context, propval, &entry_iter,
                                           &dict_value_sig_iter))

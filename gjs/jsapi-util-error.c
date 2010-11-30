@@ -204,7 +204,9 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
     GjsUnitTestFixture fixture;
     JSContext *context;
     jsval exc, value, previous;
-    const char *s;
+    char *s = NULL;
+    JSString *str;
+    int strcmp_result;
 
     _gjs_unit_test_fixture_begin(&fixture);
     context = fixture.context;
@@ -224,14 +226,24 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
                    &value);
 
     g_assert(JSVAL_IS_STRING(value));
+    str = JSVAL_TO_STRING(value);
 
+#ifdef HAVE_JS_GETSTRINGBYTES
     /* JS_GetStringBytes() is broken for non-ASCII but that's OK here */
-    s = JS_GetStringBytes(JSVAL_TO_STRING(value));
-    g_assert(s != NULL);
-    if (strcmp(s, "This is an exception 42") != 0) {
-        g_error("Exception has wrong message '%s'",
-                s);
+    s = g_strdup(JS_GetStringBytes(str));
+#else
+    size_t len = JS_GetStringEncodingLength(context, str);
+    if (len != (size_t)(-1)) {
+        s = g_malloc((len + 1) * sizeof(char));
+        JS_EncodeStringToBuffer(str, s, len);
+        s[len] = '\0';
     }
+#endif
+    g_assert(s != NULL);
+    strcmp_result = strcmp(s, "This is an exception 42");
+    free(s);
+    if (strcmp_result != 0)
+        g_error("Exception has wrong message '%s'", s);
 
     /* keep this around before we clear it */
     previous = exc;

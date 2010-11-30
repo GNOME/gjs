@@ -60,7 +60,7 @@ resolve_namespace_object(JSContext  *context,
     jsval versions_val;
     JSObject *versions;
     jsval version_val;
-    const char *version;
+    char *version;
     JSObject *result;
 
     JS_BeginRequest(context);
@@ -90,9 +90,12 @@ resolve_namespace_object(JSContext  *context,
                   "Requiring %s, version %s: %s",
                   ns_name, version?version:"none", error->message);
         g_error_free(error);
+        g_free(version);
         JS_EndRequest(context);
         return NULL;
     }
+
+    g_free(version);
 
     /* Defines a property on "obj" (the javascript repo object)
      * with the given namespace name, pointing to that namespace
@@ -124,7 +127,8 @@ repo_new_resolve(JSContext *context,
                  JSObject **objp)
 {
     Repo *priv;
-    const char *name;
+    char *name;
+    JSBool ret = JS_TRUE;
 
     *objp = NULL;
 
@@ -134,23 +138,25 @@ repo_new_resolve(JSContext *context,
     /* let Object.prototype resolve these */
     if (strcmp(name, "valueOf") == 0 ||
         strcmp(name, "toString") == 0)
-        return JS_TRUE;
+        goto out;
 
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GREPO, "Resolve prop '%s' hook obj %p priv %p", name, obj, priv);
 
-    if (priv == NULL)
-        return JS_TRUE; /* we are the prototype, or have the wrong class */
+    if (priv == NULL) /* we are the prototype, or have the wrong class */
+        goto out;
 
     JS_BeginRequest(context);
     if (resolve_namespace_object(context, obj, name) == NULL) {
-        JS_EndRequest(context);
-        return JS_FALSE;
+        ret = JS_FALSE;
     } else {
         *objp = obj; /* store the object we defined the prop in */
-        JS_EndRequest(context);
-        return JS_TRUE;
     }
+    JS_EndRequest(context);
+
+ out:
+    g_free(name);
+    return ret;
 }
 
 /* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on

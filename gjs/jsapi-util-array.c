@@ -315,15 +315,28 @@ gjstest_test_func_gjs_jsapi_util_array(void)
     JS_GC(context);
 
     for (i = 0; i < N_ELEMS; i++) {
-        const char *ascii;
+        char *ascii;
+        JSString *str;
 
         value = gjs_rooted_array_get(context, array, i);
         g_assert(JSVAL_IS_STRING(value));
-        ascii = JS_GetStringBytes(JSVAL_TO_STRING(value));
+        str = JSVAL_TO_STRING(value);
+#ifdef HAVE_JS_GETSTRINGBYTES
+        ascii = g_strdup(JS_GetStringBytes(str));
+#else
+        size_t len = JS_GetStringEncodingLength(context, str);
+        if (len == (size_t)(-1))
+            continue;
+
+        ascii = g_malloc((len + 1) * sizeof(char));
+        JS_EncodeStringToBuffer(str, ascii, len);
+        ascii[len] = '\0';
+#endif
         /* if the string was freed, hopefully this will fail
          * even if we didn't crash yet
          */
         g_assert(strcmp(ascii, "abcdefghijk") == 0);
+        g_free(ascii);
     }
 
     gjs_rooted_array_free(context, array, TRUE);

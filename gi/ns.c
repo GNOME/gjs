@@ -68,9 +68,10 @@ ns_new_resolve(JSContext *context,
                JSObject **objp)
 {
     Ns *priv;
-    const char *name;
+    char *name;
     GIRepository *repo;
     GIBaseInfo *info;
+    JSBool ret = JS_FALSE;
 
     *objp = NULL;
 
@@ -79,14 +80,18 @@ ns_new_resolve(JSContext *context,
 
     /* let Object.prototype resolve these */
     if (strcmp(name, "valueOf") == 0 ||
-        strcmp(name, "toString") == 0)
-        return JS_TRUE;
+        strcmp(name, "toString") == 0) {
+        ret = JS_TRUE;
+        goto out;
+    }
 
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GNAMESPACE, "Resolve prop '%s' hook obj %p priv %p", name, obj, priv);
 
-    if (priv == NULL)
-        return JS_TRUE; /* we are the prototype, or have the wrong class */
+    if (priv == NULL) {
+        ret = JS_TRUE; /* we are the prototype, or have the wrong class */
+        goto out;
+    }
 
     JS_BeginRequest(context);
 
@@ -101,18 +106,19 @@ ns_new_resolve(JSContext *context,
                                         obj,
                                         NULL)) {
                 JS_EndRequest(context);
-                return JS_FALSE;
+                goto out;
             } else {
                 *objp = obj; /* we defined the property in this object */
                 JS_EndRequest(context);
-                return JS_TRUE;
+                ret = JS_TRUE;
+                goto out;
             }
         } else {
             gjs_throw(context,
                       "No symbol '%s' in namespace '%s'",
                       name, priv->namespace);
             JS_EndRequest(context);
-            return JS_FALSE;
+            goto out;
         }
     }
 
@@ -125,18 +131,19 @@ ns_new_resolve(JSContext *context,
     if (gjs_define_info(context, obj, info)) {
         g_base_info_unref(info);
         *objp = obj; /* we defined the property in this object */
-        JS_EndRequest(context);
-        return JS_TRUE;
+        ret = JS_TRUE;
     } else {
         gjs_debug(GJS_DEBUG_GNAMESPACE,
                   "Failed to define info '%s'",
                   g_base_info_get_name(info));
 
         g_base_info_unref(info);
-
-        JS_EndRequest(context);
-        return JS_FALSE;
     }
+    JS_EndRequest(context);
+
+ out:
+    g_free(name);
+    return ret;
 }
 
 /* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on

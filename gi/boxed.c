@@ -89,7 +89,8 @@ boxed_new_resolve(JSContext *context,
                   JSObject **objp)
 {
     Boxed *priv;
-    const char *name;
+    char *name;
+    JSBool ret = JS_FALSE;
 
     *objp = NULL;
 
@@ -100,7 +101,8 @@ boxed_new_resolve(JSContext *context,
     gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook obj %p priv %p", name, obj, priv);
 
     if (priv == NULL)
-        return JS_FALSE; /* wrong class */
+        goto out; /* wrong class */
+
 
     if (priv->gboxed == NULL) {
         /* We are the prototype, so look for methods and other class properties */
@@ -127,7 +129,8 @@ boxed_new_resolve(JSContext *context,
                           g_base_info_get_namespace( (GIBaseInfo*) priv->info),
                           g_base_info_get_name( (GIBaseInfo*) priv->info));
                 g_base_info_unref( (GIBaseInfo*) method_info);
-                return JS_TRUE;
+                ret = JS_TRUE;
+                goto out;
             }
 
             gjs_debug(GJS_DEBUG_GBOXED,
@@ -140,7 +143,7 @@ boxed_new_resolve(JSContext *context,
 
             if (gjs_define_function(context, boxed_proto, method_info) == NULL) {
                 g_base_info_unref( (GIBaseInfo*) method_info);
-                return JS_FALSE;
+                goto out;
             }
 
             *objp = boxed_proto; /* we defined the prop in object_proto */
@@ -156,8 +159,11 @@ boxed_new_resolve(JSContext *context,
          * hooks, not this resolve hook.
          */
     }
+    ret = JS_TRUE;
 
-    return JS_TRUE;
+ out:
+    g_free(name);
+    return ret;
 }
 
 /* Check to see if jsval passed in is another Boxed object of the same,
@@ -329,7 +335,7 @@ boxed_init_from_props(JSContext   *context,
 
     while (!JSID_IS_VOID(prop_id)) {
         GIFieldInfo *field_info;
-        const char *name;
+        char *name;
         jsval value;
 
         if (!gjs_get_string_id(context, prop_id, &name))
@@ -339,15 +345,18 @@ boxed_init_from_props(JSContext   *context,
         if (field_info == NULL) {
             gjs_throw(context, "No field %s on boxed type %s",
                       name, g_base_info_get_name((GIBaseInfo *)priv->info));
+            g_free(name);
             goto out;
         }
 
-        if (!gjs_object_require_property(context, props, "property list", name, &value))
-            goto out;
-
-        if (!boxed_set_field_from_value(context, priv, field_info, value)) {
+        if (!gjs_object_require_property(context, props, "property list", name, &value)) {
+            g_free(name);
             goto out;
         }
+        g_free(name);
+
+        if (!boxed_set_field_from_value(context, priv, field_info, value))
+            goto out;
 
         prop_id = JSID_VOID;
         if (!JS_NextProperty(context, iter, &prop_id))
@@ -356,7 +365,7 @@ boxed_init_from_props(JSContext   *context,
 
     success = TRUE;
 
-out:
+ out:
     g_hash_table_destroy(field_map);
 
     return success;

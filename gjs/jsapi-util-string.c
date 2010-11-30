@@ -247,16 +247,32 @@ gjs_string_from_filename(JSContext  *context,
  *
  * Returns: an ASCII C string or %NULL on error
  **/
-const char*
+char*
 gjs_string_get_ascii(JSContext       *context,
-                             jsval            value)
+                     jsval            value)
 {
+    JSString *str;
+
     if (!JSVAL_IS_STRING(value)) {
         gjs_throw(context, "A string was expected, but value was not a string");
         return NULL;
     }
 
-    return JS_GetStringBytes(JSVAL_TO_STRING(value));
+    str = JSVAL_TO_STRING(value);
+
+#ifdef HAVE_JS_GETSTRINGBYTES
+    return g_strdup(JS_GetStringBytes(str));
+#else
+    char *ascii;
+    size_t len = JS_GetStringEncodingLength(context, str);
+    if (len == (size_t)(-1))
+        return NULL;
+
+    ascii = g_malloc((len + 1) * sizeof(char));
+    JS_EncodeStringToBuffer(str, ascii, len);
+    ascii[len] = '\0';
+    return ascii;
+#endif
 }
 
 static JSBool
@@ -291,7 +307,7 @@ gjs_string_get_binary_data(JSContext       *context,
                            char           **data_p,
                            gsize           *len_p)
 {
-    char *js_data;
+    JSString *str;
 
     JS_BeginRequest(context);
 
@@ -307,12 +323,25 @@ gjs_string_get_binary_data(JSContext       *context,
         return JS_FALSE;
     }
 
-    js_data = JS_GetStringBytes(JSVAL_TO_STRING(value));
+    str = JSVAL_TO_STRING(value);
+
+#ifdef HAVE_JS_GETSTRINGBYTES
+    const char *js_data = JS_GetStringBytes(str);
+
     /* GetStringLength returns number of 16-bit jschar;
      * we stored binary data as 1 byte per jschar
      */
-    *len_p = JS_GetStringLength(JSVAL_TO_STRING(value));
+    *len_p = JS_GetStringLength(str);
     *data_p = g_memdup(js_data, *len_p);
+#else
+    *len_p = JS_GetStringEncodingLength(context, str);
+    if (*len_p == (gsize)(-1))
+        return JS_FALSE;
+
+    *data_p = g_malloc((*len_p + 1) * sizeof(char));
+    JS_EncodeStringToBuffer(str, *data_p, *len_p);
+    (*data_p)[*len_p] = '\0';
+#endif
 
     JS_EndRequest(context);
 
@@ -414,15 +443,27 @@ gjs_string_get_uint16_data(JSContext       *context,
 JSBool
 gjs_get_string_id (JSContext       *context,
                    jsid             id,
-                   const char     **name_p)
+                   char           **name_p)
 {
     jsval id_val;
+    JSString *str;
 
     if (!JS_IdToValue(context, id, &id_val))
         return JS_FALSE;
 
     if (JSVAL_IS_STRING(id_val)) {
-        *name_p = JS_GetStringBytes(JSVAL_TO_STRING(id_val));
+        str = JSVAL_TO_STRING(id_val);
+#ifdef HAVE_JS_GETSTRINGBYTES
+        *name_p = g_strdup(JS_GetStringBytes(str));
+#else
+        size_t len = JS_GetStringEncodingLength(context, str);
+        if (len == (size_t)(-1))
+            return JS_FALSE;
+
+        *name_p = g_malloc((len + 1) * sizeof(char));
+        JS_EncodeStringToBuffer(str, *name_p, len);
+        (*name_p)[len] = '\0';
+#endif
         return JS_TRUE;
     } else {
         *name_p = NULL;
@@ -444,11 +485,11 @@ gjs_get_string_id (JSContext       *context,
  */
 gboolean
 gjs_unichar_from_string (JSContext *context,
-                         JSString  *string,
+                         jsval      value,
                          gunichar  *result)
 {
     char *utf8_str;
-    if (gjs_string_to_utf8(context, STRING_TO_JSVAL(string), &utf8_str)) {
+    if (gjs_string_to_utf8(context, value, &utf8_str)) {
         *result = g_utf8_get_char(utf8_str);
         g_free(utf8_str);
         return TRUE;
@@ -493,14 +534,19 @@ gjstest_test_func_gjs_jsapi_util_string_get_ascii(void)
     const char *ascii_string = "Hello, world";
     JSString  *js_string;
     jsval      void_value;
+    char *test;
 
     _gjs_unit_test_fixture_begin(&fixture);
     context = fixture.context;
 
     js_string = JS_NewStringCopyZ(context, ascii_string);
-    g_assert(g_str_equal(gjs_string_get_ascii(context, STRING_TO_JSVAL(js_string)), ascii_string));
+    test = gjs_string_get_ascii(context, STRING_TO_JSVAL(js_string));
+    g_assert(g_str_equal(test, ascii_string));
+    g_free(test);
     void_value = JSVAL_VOID;
-    g_assert(gjs_string_get_ascii(context, void_value) == NULL);
+    test = gjs_string_get_ascii(context, void_value);
+    g_assert(test == NULL);
+    g_free(test);
     g_assert(JS_IsExceptionPending(context));
 
     _gjs_unit_test_fixture_finish(&fixture);

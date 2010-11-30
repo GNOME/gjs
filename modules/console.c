@@ -212,8 +212,14 @@ gjs_console_interact(JSContext *context,
             str = JS_ValueToString(context, result);
         }
 
-        if (str)
-            g_fprintf(stdout, "%s\n", JS_GetStringBytes(str));
+        if (str) {
+            char *display_str;
+            display_str = gjs_value_debug_string(context, result);
+            if (display_str != NULL) {
+                g_fprintf(stdout, "%s\n", display_str);
+                g_free(display_str);
+            }
+        }
 
         if (script)
             JS_DestroyScript(context, script);

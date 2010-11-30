@@ -366,13 +366,14 @@ load_module_elements(JSContext *context,
         }
 
         while (!JSID_IS_VOID(idp)) {
-            const char *name;
+            char *name;
 
             if (!gjs_get_string_id(context, idp, &name)) {
                 continue;
             }
 
-            g_ptr_array_add(iter->elements, g_strdup(name));
+            /* Pass ownership of name */
+            g_ptr_array_add(iter->elements, name);
 
             if (!JS_NextProperty(context, jsiter, &idp)) {
                 break;
@@ -918,7 +919,8 @@ importer_new_resolve(JSContext *context,
                      JSObject **objp)
 {
     Importer *priv;
-    const char *name;
+    char *name;
+    JSBool ret = JS_TRUE;
 
     *objp = NULL;
 
@@ -929,23 +931,25 @@ importer_new_resolve(JSContext *context,
     if (strcmp(name, "valueOf") == 0 ||
         strcmp(name, "toString") == 0 ||
         strcmp(name, "__iterator__") == 0)
-        return JS_TRUE;
+        goto out;
 
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_IMPORTER, "Resolve prop '%s' hook obj %p priv %p", name, obj, priv);
 
-    if (priv == NULL)
-        return JS_TRUE; /* we are the prototype, or have the wrong class */
+    if (priv == NULL) /* we are the prototype, or have the wrong class */
+        goto out;
 
     JS_BeginRequest(context);
     if (do_import(context, obj, priv, name)) {
         *objp = obj;
-        JS_EndRequest(context);
-        return JS_TRUE;
     } else {
-        JS_EndRequest(context);
-        return JS_FALSE;
+        ret = JS_FALSE;
     }
+    JS_EndRequest(context);
+
+ out:
+    g_free(name);
+    return ret;
 }
 
 /* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on

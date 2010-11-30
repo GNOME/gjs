@@ -767,7 +767,7 @@ gjs_value_debug_string(JSContext      *context,
                        jsval           value)
 {
     JSString *str;
-    const char *bytes;
+    char *bytes;
     char *debugstr;
 
     JS_BeginRequest(context);
@@ -799,11 +799,20 @@ gjs_value_debug_string(JSContext      *context,
 
     g_assert(str != NULL);
 
-    bytes = JS_GetStringBytes(str);
-
+#ifdef HAVE_JS_GETSTRINGBYTES
+    bytes = g_strdup(JS_GetStringBytes(str));
+#else
+    size_t len = JS_GetStringEncodingLength(context, str);
+    if (len != (size_t)(-1)) {
+        bytes = g_malloc((len + 1) * sizeof(char));
+        JS_EncodeStringToBuffer(str, bytes, len);
+        bytes[len] = '\0';
+    }
+#endif
     JS_EndRequest(context);
 
     debugstr = _gjs_g_utf8_make_valid(bytes);
+    g_free(bytes);
 
     return debugstr;
 }
@@ -838,7 +847,7 @@ gjs_log_object_props(JSContext      *context,
 
     while (!JSID_IS_VOID(prop_id)) {
         jsval propval;
-        const char *name;
+        char *name;
         char *debugstr;
 
         if (!gjs_get_string_id(context, prop_id, &name))
@@ -855,6 +864,7 @@ gjs_log_object_props(JSContext      *context,
         g_free(debugstr);
 
     next:
+        g_free(name);
         prop_id = JSID_VOID;
         if (!JS_NextProperty(context, props_iter, &prop_id))
             break;
@@ -1143,12 +1153,13 @@ log_prop(JSContext  *context,
          const char *what)
 {
     if (JSVAL_IS_STRING(id)) {
-        const char *name;
+        char *name;
 
         name = gjs_string_get_ascii(context, id);
         gjs_debug(GJS_DEBUG_PROPS,
                   "prop %s: %s",
                   name, what);
+        g_free(name);
     } else if (JSVAL_IS_INT(id)) {
         gjs_debug(GJS_DEBUG_PROPS,
                   "prop %d: %s",

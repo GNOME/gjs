@@ -503,7 +503,7 @@ to_string_func(JSContext *context,
     jsval *argv = JS_ARGV(context, vp);
     JSObject *object = JS_THIS_OBJECT(context, vp);
     ByteArrayInstance *priv;
-    const char *encoding;
+    char *encoding;
     gboolean encoding_is_utf8;
 
     priv = priv_from_js(context, object);
@@ -523,6 +523,7 @@ to_string_func(JSContext *context,
          * just an optimization anyway.
          */
         if (strcmp(encoding, "UTF-8") == 0) {
+            g_free(encoding);
             encoding_is_utf8 = TRUE;
         } else {
             encoding_is_utf8 = FALSE;
@@ -560,6 +561,7 @@ to_string_func(JSContext *context,
                            NULL, /* bytes read */
                            &bytes_written,
                            &error);
+        g_free(encoding);
         if (u16_str == NULL) {
             /* frees the GError */
             gjs_throw_g_error(context, error);
@@ -609,7 +611,7 @@ from_string_func(JSContext *context,
 {
     jsval *argv = JS_ARGV(context, vp);
     ByteArrayInstance *priv;
-    const char *encoding;
+    char *encoding;
     gboolean encoding_is_utf8;
     JSObject *obj;
     JSBool retval = JS_FALSE;
@@ -643,6 +645,7 @@ from_string_func(JSContext *context,
          * just an optimization anyway.
          */
         if (strcmp(encoding, "UTF-8") == 0) {
+            g_free(encoding);
             encoding_is_utf8 = TRUE;
         } else {
             encoding_is_utf8 = FALSE;
@@ -686,6 +689,7 @@ from_string_func(JSContext *context,
                             NULL, /* bytes read */
                             &bytes_written,
                             &error);
+        g_free(encoding);
         if (encoded == NULL) {
             /* frees the GError */
             gjs_throw_g_error(context, error);

@@ -150,7 +150,7 @@ dbus_reply_from_exception_and_sender(JSContext    *context,
 {
     char *s;
     jsval exc;
-    const char *name = NULL;
+    char *name = NULL;
     jsval nameval;
 
     *reply_p = NULL;
@@ -163,8 +163,10 @@ dbus_reply_from_exception_and_sender(JSContext    *context,
                                 "dbusErrorName", &nameval))
         name = gjs_string_get_ascii(context, nameval);
 
-    if (!gjs_log_exception(context, &s))
+    if (!gjs_log_exception(context, &s)) {
+        g_free(name);
         return JS_FALSE;
+    }
 
     gjs_debug(GJS_DEBUG_DBUS,
               "JS exception we will send as dbus reply to %s: %s",
@@ -176,6 +178,7 @@ dbus_reply_from_exception_and_sender(JSContext    *context,
     dbus_message_set_reply_serial(*reply_p, serial);
     dbus_message_set_no_reply(*reply_p, TRUE);
     dbus_message_set_error_name(*reply_p, name ? name : DBUS_ERROR_FAILED);
+    g_free(name);
     if (s != NULL) {
         DBusMessageIter iter;
 
@@ -197,7 +200,7 @@ dbus_reply_from_exception_and_sender(JSContext    *context,
 static JSBool
 signature_from_method(JSContext   *context,
                       JSObject    *method_obj,
-                      const char **signature)
+                      char       **signature)
 {
     jsval signature_value;
 
@@ -211,7 +214,7 @@ signature_from_method(JSContext   *context,
         }
     } else {
         /* We default to a{sv} */
-        *signature = "a{sv}";
+        *signature = g_strdup("a{sv}");
     }
 
     return JS_TRUE;
@@ -292,7 +295,7 @@ invoke_js_from_dbus(JSContext   *context,
     jsval rval;
     DBusMessageIter arg_iter;
     GjsRootedArray *values;
-    const char *signature;
+    char *signature;
 
     if (JS_IsExceptionPending(context)) {
         gjs_debug(GJS_DEBUG_DBUS,
@@ -359,6 +362,8 @@ invoke_js_from_dbus(JSContext   *context,
                                    dbus_message_get_serial(method_call),
                                    rval);
 
+    g_free(signature);
+
  out:
     gjs_rooted_array_free(context, values, TRUE);
     JS_RemoveValueRoot(context, &rval);
@@ -388,10 +393,10 @@ async_call_callback(JSContext *context,
     DBusBusType which_bus;
     DBusMessage *reply;
     JSObject *callback_object;
-    const char *sender;
+    char *sender;
     dbus_uint32_t serial;
     jsval prop_value;
-    const char *signature;
+    char *signature = NULL;
     gboolean thrown;
 
     callback_object = JSVAL_TO_OBJECT(JS_CALLEE(context, vp));
@@ -418,10 +423,10 @@ async_call_callback(JSContext *context,
                                      "_dbusSerial",
                                      &prop_value)) {
         gjs_log_and_keep_exception(context, NULL);
-        return JS_FALSE;
+        goto fail;
     }
     if (!JS_ValueToECMAUint32(context, prop_value, &serial))
-        return JS_FALSE;
+        goto fail;
 
     if (!gjs_object_require_property(context,
                                      callback_object,
@@ -429,7 +434,7 @@ async_call_callback(JSContext *context,
                                      "_dbusBusType",
                                      &prop_value)) {
         gjs_log_and_keep_exception(context, NULL);
-        return JS_FALSE;
+        goto fail;
     }
     which_bus = JSVAL_TO_INT(prop_value);
 
@@ -446,7 +451,7 @@ async_call_callback(JSContext *context,
     }
     signature = gjs_string_get_ascii(context, prop_value);
     if (!signature)
-        return JS_FALSE;
+        goto fail;
 
     if (argc != 1) {
         gjs_throw(context, "The callback to async DBus calls takes one argument, "
@@ -468,6 +473,9 @@ async_call_callback(JSContext *context,
                       "dbus method invocation failed but no exception was set?");
     }
 
+    g_free(sender);
+    g_free(signature);
+
     if (reply) {
         gjs_dbus_add_bus_weakref(which_bus, &connection);
         if (!connection) {
@@ -485,6 +493,10 @@ async_call_callback(JSContext *context,
         JS_SET_RVAL(context, vp, JSVAL_VOID);
 
     return (thrown == FALSE);
+
+ fail:
+    g_free(sender);
+    return JS_FALSE;
 }
 
 /* returns an error message or NULL */
@@ -506,7 +518,7 @@ invoke_js_async_from_dbus(JSContext   *context,
     jsval serial_value;
     gboolean thrown;
     jsval ignored;
-    const char *signature;
+    char *signature;
     JSString *signature_string;
 
     reply = NULL;
@@ -600,6 +612,7 @@ invoke_js_async_from_dbus(JSContext   *context,
     }
 
     signature_string = JS_NewStringCopyZ(context, signature);
+    g_free(signature);
     if (!signature_string) {
         thrown = TRUE;
         goto out;
@@ -821,9 +834,9 @@ unpack_property_details(JSContext       *context,
     jsval name_val;
     jsval signature_val;
     jsval access_val;
-    const char *name;
-    const char *signature;
-    const char *access;
+    char *name = NULL;
+    char *signature = NULL;
+    char *access = NULL;
 
     if (!gjs_object_get_property(context,
                                  prop_description,
@@ -847,14 +860,13 @@ unpack_property_details(JSContext       *context,
         gjs_throw(context,
                   "Property %s has no signature",
                   name);
-        return JS_FALSE;
+        goto fail;
     }
 
     signature = gjs_string_get_ascii(context,
                                              signature_val);
-    if (signature == NULL) {
-        return JS_FALSE;
-    }
+    if (signature == NULL)
+        goto fail;
 
     if (!gjs_object_get_property(context,
                                  prop_description,
@@ -863,14 +875,13 @@ unpack_property_details(JSContext       *context,
         gjs_throw(context,
                   "Property %s has no access",
                   name);
-        return JS_FALSE;
+        goto fail;
     }
 
     access = gjs_string_get_ascii(context,
                                           access_val);
-    if (access == NULL) {
-        return JS_FALSE;
-    }
+    if (access == NULL)
+        goto fail;
 
     g_assert(name && signature && access);
 
@@ -883,13 +894,20 @@ unpack_property_details(JSContext       *context,
         details->writable = TRUE;
     } else {
         gjs_throw(context, "Unknown access on property, should be readwrite read or write");
-        return JS_FALSE;
+        goto fail;
     }
 
-    details->name = g_strdup(name);
-    details->signature = g_strdup(signature);
+    details->name = name;
+    details->signature = signature;
 
+    g_free(access);
     return JS_TRUE;
+
+ fail:
+    g_free(access);
+    g_free(signature);
+    g_free(name);
+    return JS_FALSE;
 }
 
 /* FALSE on exception, NULL property name in details if no such
@@ -1432,13 +1450,15 @@ handle_introspect(JSContext      *context,
             goto out;
         }
 
-        key = JS_GetStringBytes(key_str);
+        if (!gjs_string_to_utf8(context, keyval, &key))
+            goto out;
 
         if (!gjs_object_require_property(context, dir_obj,
                                          "dbus directory",
                                          key, &valueval)) {
             gjs_debug(GJS_DEBUG_DBUS,
                       "Somehow failed to get property of dbus object");
+            g_free(key);
             goto out;
         }
 
@@ -1447,6 +1467,7 @@ handle_introspect(JSContext      *context,
             g_string_append_printf(doc, "  <node name=\"%s\"/>\n",
                                    key);
         }
+        g_free(key);
 
         prop_id = JSID_VOID;
         if (!JS_NextProperty(context, props_iter, &prop_id)) {
@@ -1661,7 +1682,7 @@ exports_new_resolve(JSContext *context,
                     JSObject **objp)
 {
     Exports *priv;
-    const char *name;
+    char *name;
 
     *objp = NULL;
 
@@ -1670,6 +1691,7 @@ exports_new_resolve(JSContext *context,
 
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_DBUS, "Resolve prop '%s' hook obj %p priv %p", name, obj, priv);
+    g_free(name);
 
     if (priv == NULL)
         return JS_TRUE; /* we are the prototype, or have the wrong class */

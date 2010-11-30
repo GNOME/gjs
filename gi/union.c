@@ -73,7 +73,8 @@ union_new_resolve(JSContext *context,
                   JSObject **objp)
 {
     Union *priv;
-    const char *name;
+    char *name;
+    JSBool ret = JS_TRUE;
 
     *objp = NULL;
 
@@ -83,8 +84,10 @@ union_new_resolve(JSContext *context,
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook obj %p priv %p", name, obj, priv);
 
-    if (priv == NULL)
-        return JS_FALSE; /* wrong class */
+    if (priv == NULL) {
+        ret = JS_FALSE; /* wrong class */
+        goto out;
+    }
 
     if (priv->gboxed == NULL) {
         /* We are the prototype, so look for methods and other class properties */
@@ -111,7 +114,7 @@ union_new_resolve(JSContext *context,
                           g_base_info_get_namespace( (GIBaseInfo*) priv->info),
                           g_base_info_get_name( (GIBaseInfo*) priv->info));
                 g_base_info_unref( (GIBaseInfo*) method_info);
-                return JS_TRUE;
+                goto out;
             }
 
             gjs_debug(GJS_DEBUG_GBOXED,
@@ -124,7 +127,8 @@ union_new_resolve(JSContext *context,
 
             if (gjs_define_function(context, union_proto, method_info) == NULL) {
                 g_base_info_unref( (GIBaseInfo*) method_info);
-                return JS_FALSE;
+                ret = JS_FALSE;
+                goto out;
             }
 
             *objp = union_proto; /* we defined the prop in object_proto */
@@ -141,7 +145,9 @@ union_new_resolve(JSContext *context,
          */
     }
 
-    return JS_TRUE;
+ out:
+    g_free(name);
+    return ret;
 }
 
 static void*
