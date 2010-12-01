@@ -755,12 +755,20 @@ gjs_define_string_array(JSContext   *context,
     return array;
 }
 
-const char*
+/**
+ * gjs_value_debug_string:
+ * @context:
+ * @value: Any JavaScript value
+ *
+ * Returns: A UTF-8 encoded string describing @value
+ */
+char*
 gjs_value_debug_string(JSContext      *context,
                        jsval           value)
 {
     JSString *str;
     const char *bytes;
+    char *debugstr;
 
     JS_BeginRequest(context);
 
@@ -778,14 +786,14 @@ gjs_value_debug_string(JSContext      *context,
                 str = JS_NewStringCopyZ(context, klass->name);
                 JS_ClearPendingException(context);
                 if (str == NULL) {
-                    return "[out of memory copying class name]";
+                    return g_strdup("[out of memory copying class name]");
                 }
             } else {
                 gjs_log_exception(context, NULL);
-                return "[unknown object]";
+                return g_strdup("[unknown object]");
             }
         } else {
-            return "[unknown non-object]";
+            return g_strdup("[unknown non-object]");
         }
     }
 
@@ -795,7 +803,9 @@ gjs_value_debug_string(JSContext      *context,
 
     JS_EndRequest(context);
 
-    return bytes;
+    debugstr = _gjs_g_utf8_make_valid(bytes);
+
+    return debugstr;
 }
 
 void
@@ -829,6 +839,7 @@ gjs_log_object_props(JSContext      *context,
     while (!JSID_IS_VOID(prop_id)) {
         jsval propval;
         const char *name;
+        char *debugstr;
 
         if (!gjs_get_string_id(context, prop_id, &name))
             goto next;
@@ -836,10 +847,12 @@ gjs_log_object_props(JSContext      *context,
         if (!gjs_object_get_property(context, obj, name, &propval))
             goto next;
 
+        debugstr = gjs_value_debug_string(context, propval);
         gjs_debug(topic,
                   "%s%s = '%s'",
                   prefix, name,
-                  gjs_value_debug_string(context, propval));
+                  debugstr);
+        g_free(debugstr);
 
     next:
         prop_id = JSID_VOID;
@@ -859,6 +872,7 @@ gjs_explain_scope(JSContext  *context,
     JSObject *global;
     JSObject *parent;
     GString *chain;
+    char *debugstr;
 
     gjs_debug(GJS_DEBUG_SCOPE,
               "=== %s ===",
@@ -874,14 +888,16 @@ gjs_explain_scope(JSContext  *context,
               "");
 
     global = JS_GetGlobalObject(context);
+    debugstr = gjs_value_debug_string(context, OBJECT_TO_JSVAL(global));
     gjs_debug(GJS_DEBUG_SCOPE,
               "  Global: %p %s",
-              global, gjs_value_debug_string(context, OBJECT_TO_JSVAL(global)));
+              global, debugstr);
+    g_free(debugstr);
 
     parent = JS_GetScopeChain(context);
     chain = g_string_new(NULL);
     while (parent != NULL) {
-        const char *debug;
+        char *debug;
         debug = gjs_value_debug_string(context, OBJECT_TO_JSVAL(parent));
 
         if (chain->len > 0)
@@ -889,6 +905,7 @@ gjs_explain_scope(JSContext  *context,
 
         g_string_append_printf(chain, "%p %s",
                                parent, debug);
+        g_free(debug);
         parent = JS_GetParent(context, parent);
     }
     gjs_debug(GJS_DEBUG_SCOPE,

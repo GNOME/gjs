@@ -267,7 +267,7 @@ void        gjs_log_object_props             (JSContext       *context,
                                               GjsDebugTopic    topic,
                                               const char      *prefix);
 #endif
-const char* gjs_value_debug_string           (JSContext       *context,
+char*       gjs_value_debug_string           (JSContext       *context,
                                               jsval            value);
 void        gjs_explain_scope                (JSContext       *context,
                                               const char      *title);
