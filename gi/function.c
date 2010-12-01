@@ -518,7 +518,6 @@ gjs_invoke_c_function(JSContext      *context,
                         g_assert(interface_info != NULL);
 
                         interface_type = g_base_info_get_type(interface_info);
-                        g_base_info_unref((GIBaseInfo*)interface_info);
 
                         if (interface_type == GI_INFO_TYPE_STRUCT) {
                             size = g_struct_info_get_size((GIStructInfo*)interface_info);
@@ -527,6 +526,8 @@ gjs_invoke_c_function(JSContext      *context,
                         } else {
                             failed = TRUE;
                         }
+
+                        g_base_info_unref((GIBaseInfo*)interface_info);
 
                         if (!failed) {
                             in_arg_cvalues[in_args_pos].v_pointer = g_slice_alloc0(size);
