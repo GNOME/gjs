@@ -125,13 +125,14 @@ check:	test
 gdb-check gdb-test: $(tests_dependencies)
 	failed=; for prog in ${TEST_PROGS}; do \
 	  ${TESTS_ENVIRONMENT} GJS_TEST_TIMEOUT=0 libtool --mode=execute gdb -x \
-	      $(top_srcdir)/test/unittest.gdb --args $$prog; \
+	      $(RUN_WITH_DBUS) $(top_srcdir)/test/unittest.gdb --args $$prog; \
 	  done
 
 valgrind-check valgrind-test: $(tests_dependencies)
 	@test -z "${TEST_PROGS}" || { \
 	  failed=; for prog in ${TEST_PROGS}; do \
 	    ${TESTS_ENVIRONMENT} G_SLICE=always-malloc	\
+	    $(RUN_WITH_DBUS) \
 	    $(LIBTOOL) --mode=execute valgrind 		\
 	    --log-file=valgrind.$$prog.log 		\
 	    --error-exitcode=1 				\
