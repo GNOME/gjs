@@ -398,6 +398,7 @@ gjs_invoke_c_function(JSContext      *context,
     jsval *return_values = NULL;
     guint8 next_rval = 0; /* index into return_values */
     GSList *iter;
+    GIScopeType callback_scope = GI_SCOPE_TYPE_INVALID;
     GjsCallbackTrampoline *callback_trampoline;
     void *destroy_notify;
 
@@ -439,6 +440,8 @@ gjs_invoke_c_function(JSContext      *context,
                                            &callback_trampoline, &destroy_notify)) {
         return JS_FALSE;
     }
+    if (callback_trampoline != NULL)
+        callback_scope = callback_trampoline->scope;
 
     g_callable_info_load_return_type( (GICallableInfo*) function->info, &return_info);
     return_tag = g_type_info_get_tag(&return_info);
@@ -661,8 +664,11 @@ gjs_invoke_c_function(JSContext      *context,
     }
 
 release:
-    if (callback_trampoline &&
-        callback_trampoline->scope == GI_SCOPE_TYPE_CALL) {
+    /* Note we saved a copy of the scope in callback_scope above instead
+     * of inspecting callback_trampoline->scope here, because it's possible the
+     * callback was destroyed during the call.
+     */
+    if (callback_trampoline != NULL && callback_scope == GI_SCOPE_TYPE_CALL) {
         gjs_callback_trampoline_free(callback_trampoline);
     }
 
