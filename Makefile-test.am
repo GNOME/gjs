@@ -77,7 +77,7 @@ libgimarshallingtests_la_LDFLAGS = -avoid-version $(GJS_LIBS)
 
 # g-i doesn't ship these as shared libraries anymore; we build them here
 Regress-1.0.gir: libregress.la Makefile
-	$(AM_V_GEN) g-ir-scanner --include=cairo-1.0 --include=Gio-2.0 \
+	$(AM_V_GEN) LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)" g-ir-scanner --include=cairo-1.0 --include=Gio-2.0 \
 	--namespace=Regress --nsversion=1.0 \
 	--warn-all --warn-error \
 	--library=libregress.la \
@@ -90,7 +90,7 @@ Regress-1.0.typelib: Regress-1.0.gir Makefile
 CLEANFILES += Regress-1.0.gir Regress-1.0.typelib
 
 GIMarshallingTests-1.0.gir: libgimarshallingtests.la Makefile
-	$(AM_V_GEN) g-ir-scanner --include=Gio-2.0 \
+	$(AM_V_GEN) LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)" g-ir-scanner --include=Gio-2.0 \
 	--namespace=GIMarshallingTests --nsversion=1.0 --symbol-prefix=gi_marshalling_tests \
 	--warn-all --warn-error \
 	--library=libgimarshallingtests.la \
