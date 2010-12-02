@@ -804,10 +804,10 @@ gjs_js_dbus_unwatch_signal(JSContext  *context,
 {
     jsval *argv = JS_ARGV(context, vp);
     JSObject *obj = JS_THIS_OBJECT(context, vp);
-    char *bus_name;
-    char *object_path;
-    char *iface;
-    char *signal;
+    char *bus_name = NULL;
+    char *object_path = NULL;
+    char *iface = NULL;
+    char *signal = NULL;
     SignalHandler *handler;
     DBusBusType bus_type;
     JSBool ret = JS_FALSE;
@@ -831,25 +831,25 @@ gjs_js_dbus_unwatch_signal(JSContext  *context,
     if (!fill_with_null_or_string(context, &bus_name, argv[0]))
         return JS_FALSE;
     if (!fill_with_null_or_string(context, &object_path, argv[1]))
-        goto object_path_fail;
+        goto fail;
     if (!fill_with_null_or_string(context, &iface, argv[2]))
-        goto iface_fail;
+        goto fail;
     if (!fill_with_null_or_string(context, &signal, argv[3]))
-        goto signal_fail;
+        goto fail;
 
     /* we don't complain if the signal seems to have been already removed
      * or to never have been watched, to match g_signal_handler_disconnect
      */
     if (!signal_handlers_by_callable) {
         ret = JS_TRUE;
-        goto free_and_exit;
+        goto fail;
     }
 
     handler = g_hash_table_lookup(signal_handlers_by_callable, JSVAL_TO_OBJECT(argv[4]));
 
     if (!handler) {
         ret = JS_TRUE;
-        goto free_and_exit;
+        goto fail;
     }
 
     /* This should dispose the handler which should in turn
@@ -868,13 +868,10 @@ gjs_js_dbus_unwatch_signal(JSContext  *context,
 
     ret = JS_TRUE;
 
- free_and_exit:
+ fail:
     g_free(signal);
- signal_fail:
     g_free(iface);
- iface_fail:
     g_free(object_path);
- object_path_fail:
     g_free(bus_name);
 
     return ret;
@@ -892,10 +889,10 @@ gjs_js_dbus_emit_signal(JSContext  *context,
     DBusMessage *message;
     DBusMessageIter arg_iter;
     DBusSignatureIter sig_iter;
-    char *object_path;
-    char *iface;
-    char *signal;
-    char *in_signature;
+    char *object_path = NULL;
+    char *iface = NULL;
+    char *signal = NULL;
+    char *in_signature = NULL;
     DBusBusType bus_type;
     JSBool ret = JS_FALSE;
 
@@ -917,16 +914,16 @@ gjs_js_dbus_emit_signal(JSContext  *context,
         return JS_FALSE;
     iface = gjs_string_get_ascii(context, argv[1]);
     if (!iface)
-        goto iface_fail;
+        goto fail;
     signal = gjs_string_get_ascii(context, argv[2]);
     if (!signal)
-        goto signal_fail;
+        goto fail;
     in_signature = gjs_string_get_ascii(context, argv[3]);
     if (!in_signature)
-        goto in_signature_fail;
+        goto fail;
 
     if (!bus_check(context, bus_type))
-        goto free_and_exit;
+        goto fail;
 
     gjs_debug(GJS_DEBUG_DBUS,
               "Emitting signal %s %s %s",
@@ -946,7 +943,7 @@ gjs_js_dbus_emit_signal(JSContext  *context,
 
     if (!gjs_js_values_to_dbus(context, 0, argv[4], &arg_iter, &sig_iter)) {
         dbus_message_unref(message);
-        goto free_and_exit;
+        goto fail;
     }
 
     dbus_connection_send(bus_connection, message, NULL);
@@ -955,13 +952,10 @@ gjs_js_dbus_emit_signal(JSContext  *context,
 
     ret = JS_TRUE;
 
- free_and_exit:
+ fail:
     g_free(in_signature);
- in_signature_fail:
     g_free(signal);
- signal_fail:
     g_free(iface);
- iface_fail:
     g_free(object_path);
 
     return ret;
