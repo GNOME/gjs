@@ -124,8 +124,8 @@ check:	test
 
 gdb-check gdb-test: $(tests_dependencies)
 	failed=; for prog in ${TEST_PROGS}; do \
-	  ${TESTS_ENVIRONMENT} GJS_TEST_TIMEOUT=0 libtool --mode=execute gdb -x \
-	      $(RUN_WITH_DBUS) $(top_srcdir)/test/unittest.gdb --args $$prog; \
+	  ${TESTS_ENVIRONMENT} GJS_TEST_TIMEOUT=0 $(RUN_WITH_DBUS) libtool --mode=execute gdb -x \
+	      $(top_srcdir)/test/unittest.gdb --args $$prog; \
 	  done
 
 valgrind-check valgrind-test: $(tests_dependencies)
