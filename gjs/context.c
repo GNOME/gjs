@@ -316,12 +316,6 @@ gjs_context_class_init(GjsContextClass *klass)
                                     PROP_RUNTIME,
                                     pspec);
 
-    pspec = g_param_spec_boolean("is-load-context",
-                                 "IsLoadContext",
-                                 "Whether this is the load context",
-                                 FALSE,
-                                 G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
-
     gjs_register_native_module("byteArray", gjs_define_byte_array_stuff, 0);
 }
 
