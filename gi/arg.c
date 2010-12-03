@@ -1668,11 +1668,12 @@ gjs_value_from_g_argument (JSContext  *context,
             if (arg->v_uint32 == 0) {
                 return gjs_string_from_utf8 (context, "", 0, value_p);
             } else if (!g_unichar_validate (arg->v_uint32)) {
-                gjs_throw("Invalid unicode codepoint %" G_GUINT32_FORMAT,
+                gjs_throw(context,
+                          "Invalid unicode codepoint %" G_GUINT32_FORMAT,
                           arg->v_uint32);
                 return JS_FALSE;
             } else {
-                bytes = g_unichar_to_utf8 (arg->v_uint32, &utf8);
+                bytes = g_unichar_to_utf8 (arg->v_uint32, utf8);
                 return gjs_string_from_utf8 (context, (char*)utf8, bytes, value_p);
             }
         }
