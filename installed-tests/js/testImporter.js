@@ -57,6 +57,11 @@ describe('Importer', function () {
         expect(imports).toBeDefined();
     });
 
+    it('has a toString representation', function () {
+        expect(imports.toString()).toEqual('[GjsFileImporter root]');
+        expect(subA.toString()).toEqual('[GjsFileImporter subA]');
+    });
+
     it('throws an import error when trying to import a nonexistent module', function () {
         expect(() => imports.nonexistentModuleName)
             .toThrow(jasmine.objectContaining({ name: 'ImportError' }));
@@ -90,6 +95,11 @@ describe('Importer', function () {
         expect(subFoobar).toBeDefined();
         expect(subFoobar.foo).toEqual('This is foo');
         expect(subFoobar.bar).toEqual('This is bar');
+    });
+
+    it('imports modules with a toString representation', function () {
+        expect(foobar.toString()).toEqual('[GjsModule foobar]');
+        expect(subFoobar.toString()).toEqual('[GjsModule subA.subB.foobar]');
     });
 
     it('does not share the same object for a module on a different path', function () {

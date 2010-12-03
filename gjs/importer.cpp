@@ -53,6 +53,33 @@ extern struct JSClass gjs_importer_class;
 GJS_DEFINE_PRIV_FROM_JS(Importer, gjs_importer_class)
 
 static bool
+importer_to_string(JSContext *cx,
+                   unsigned   argc,
+                   JS::Value *vp)
+{
+    GJS_GET_THIS(cx, argc, vp, args, importer);
+    const JSClass *klass = JS_GetClass(importer);
+
+    JS::RootedValue module_path(cx);
+    if (!gjs_object_get_property_const(cx, importer, GJS_STRING_MODULE_PATH,
+                                       &module_path))
+        return false;
+
+    g_autofree char *path = NULL;
+    if (module_path.isNull()) {
+        path = g_strdup("root");
+    } else {
+        if (!gjs_string_to_utf8(cx, module_path, &path))
+            return false;
+    }
+
+    g_autofree char *output = g_strdup_printf("[%s %s]", klass->name, path);
+
+    args.rval().setString(JS_NewStringCopyZ(cx, output));
+    return true;
+}
+
+static bool
 define_meta_properties(JSContext       *context,
                        JS::HandleObject module_obj,
                        const char      *full_path,
@@ -80,26 +107,46 @@ define_meta_properties(JSContext       *context,
             return false;
     }
 
+    /* Null is used instead of undefined to make sure we don't try to invoke
+     * a "resolve" operation. */
     JS::RootedValue module_name_val(context, JS::NullValue());
     JS::RootedValue parent_module_val(context, JS::NullValue());
+    JS::RootedValue module_path(context, JS::NullValue());
     if (parent_is_module) {
         module_name_val.setString(JS_NewStringCopyZ(context, module_name));
         parent_module_val.setObject(*parent);
+
+        JS::RootedValue parent_module_path(context);
+        if (!gjs_object_get_property_const(context, parent,
+                                           GJS_STRING_MODULE_PATH,
+                                           &parent_module_path))
+            return false;
+
+        g_autofree char *module_path_buf = NULL;
+        if (parent_module_path.isNull()) {
+            module_path_buf = g_strdup(module_name);
+        } else {
+            g_autofree char *parent_path = NULL;
+            if (!gjs_string_to_utf8(context, parent_module_path, &parent_path))
+                return false;
+            module_path_buf = g_strdup_printf("%s.%s", parent_path, module_name);
+        }
+        module_path.setString(JS_NewStringCopyZ(context, module_path_buf));
     }
 
+    /* don't set ENUMERATE since we wouldn't want to copy these symbols to any
+     * other object for example. */
     if (!JS_DefineProperty(context, module_obj,
                            "__moduleName__", module_name_val,
-                           /* don't set ENUMERATE since we wouldn't want to copy
-                            * this symbol to any other object for example.
-                            */
                            JSPROP_READONLY | JSPROP_PERMANENT))
         return false;
 
     if (!JS_DefineProperty(context, module_obj,
                            "__parentModule__", parent_module_val,
-                           /* don't set ENUMERATE since we wouldn't want to copy
-                            * this symbol to any other object for example.
-                            */
+                           JSPROP_READONLY | JSPROP_PERMANENT))
+        return false;
+
+    if (!JS_DefineProperty(context, module_obj, "__modulePath__", module_path,
                            JSPROP_READONLY | JSPROP_PERMANENT))
         return false;
 
@@ -211,6 +258,29 @@ cancel_import(JSContext       *context,
 }
 
 static bool
+module_to_string(JSContext *cx,
+                 unsigned   argc,
+                 JS::Value *vp)
+{
+    GJS_GET_THIS(cx, argc, vp, args, module);
+
+    JS::RootedValue module_path(cx);
+    if (!gjs_object_get_property_const(cx, module, GJS_STRING_MODULE_PATH,
+                                       &module_path))
+        return false;
+
+    g_assert(!module_path.isNull());
+
+    g_autofree char *path = NULL;
+    if (!gjs_string_to_utf8(cx, module_path, &path))
+        return false;
+    g_autofree char *output = g_strdup_printf("[GjsModule %s]", path);
+
+    args.rval().setString(JS_NewStringCopyZ(cx, output));
+    return true;
+}
+
+static bool
 import_native_file(JSContext       *context,
                    JS::HandleObject obj,
                    const char      *name)
@@ -223,6 +293,10 @@ import_native_file(JSContext       *context,
         return false;
 
     if (!define_meta_properties(context, module_obj, NULL, name, obj))
+        return false;
+
+    if (!JS_DefineFunction(context, module_obj, "toString", module_to_string,
+                           0, 0))
         return false;
 
     if (JS_IsExceptionPending(context)) {
@@ -380,6 +454,10 @@ import_file_on_module(JSContext       *context,
 
     full_path = g_file_get_parse_name (file);
     if (!define_meta_properties(context, module_obj, full_path, name, obj))
+        goto out;
+
+    if (!JS_DefineFunction(context, module_obj, "toString", module_to_string,
+                           0, 0))
         goto out;
 
     if (!seal_import(context, obj, name))
@@ -889,6 +967,7 @@ JSPropertySpec gjs_importer_proto_props[] = {
 };
 
 JSFunctionSpec gjs_importer_proto_funcs[] = {
+    JS_FS("toString", importer_to_string, 0, 0),
     JS_FS_END
 };
 
