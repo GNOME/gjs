@@ -38,6 +38,8 @@
 
 #include <jsapi.h>
 
+#define _GJS_JS_VERSION_DEFAULT "1.8"
+
 static void     gjs_context_dispose           (GObject               *object);
 static void     gjs_context_finalize          (GObject               *object);
 static GObject* gjs_context_constructor       (GType                  type,
@@ -61,6 +63,8 @@ struct _GjsContext {
 
     GjsProfiler *profiler;
 
+    char *jsversion_string;
+
     char **search_path;
 
     unsigned int we_own_runtime : 1;
@@ -82,6 +86,7 @@ static int signals[LAST_SIGNAL];
 
 enum {
     PROP_0,
+    PROP_JS_VERSION,
     PROP_SEARCH_PATH,
     PROP_RUNTIME
 };
@@ -282,7 +287,7 @@ gjs_printerr(JSContext *context,
 static void
 gjs_context_init(GjsContext *js_context)
 {
-
+    js_context->jsversion_string = g_strdup(_GJS_JS_VERSION_DEFAULT);
 }
 
 static void
@@ -315,6 +320,16 @@ gjs_context_class_init(GjsContextClass *klass)
 
     g_object_class_install_property(object_class,
                                     PROP_RUNTIME,
+                                    pspec);
+
+    pspec = g_param_spec_string("js-version",
+                                 "JS Version",
+                                 "A string giving the default for the (SpiderMonkey) JavaScript version",
+                                 _GJS_JS_VERSION_DEFAULT,
+                                 G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+
+    g_object_class_install_property(object_class,
+                                    PROP_JS_VERSION,
                                     pspec);
 
     gjs_register_native_module("byteArray", gjs_define_byte_array_stuff, 0);
@@ -372,6 +387,8 @@ gjs_context_finalize(GObject *object)
         g_strfreev(js_context->search_path);
         js_context->search_path = NULL;
     }
+
+    g_free(js_context->jsversion_string);
 
     g_static_mutex_lock(&contexts_lock);
     all_contexts = g_list_remove(all_contexts, object);
@@ -504,6 +521,7 @@ gjs_context_constructor (GType                  type,
     GObject *object;
     GjsContext *js_context;
     guint32 options_flags;
+    JSVersion js_version;
 
     object = (* G_OBJECT_CLASS (gjs_context_parent_class)->constructor) (type,
                                                                          n_construct_properties,
@@ -555,15 +573,20 @@ gjs_context_constructor (GType                  type,
     /* set ourselves as the private data */
     JS_SetContextPrivate(js_context->context, js_context);
 
-    /* get all the fancy new language features */
-#define OUR_JS_VERSION JSVERSION_1_8
-    if (JS_GetVersion(js_context->context) != OUR_JS_VERSION) {
+    js_version = JS_StringToVersion(js_context->jsversion_string);
+    /* It doesn't make sense to throw here; just use the default if we
+     * don't know.
+     */
+    if (js_version == JSVERSION_UNKNOWN)
+        js_version = JSVERSION_DEFAULT;
+    /* Set the version if we need to. */
+    if (js_version != JSVERSION_DEFAULT && JS_GetVersion(js_context->context) != js_version) {
         gjs_debug(GJS_DEBUG_CONTEXT,
                   "Changing JavaScript version to %s from %s",
-                  JS_VersionToString(OUR_JS_VERSION),
+                  JS_VersionToString(js_version),
                   JS_VersionToString(JS_GetVersion(js_context->context)));
 
-        JS_SetVersion(js_context->context, OUR_JS_VERSION);
+        JS_SetVersion(js_context->context, js_version);
     }
 
     if (!gjs_init_context_standard(js_context->context))
@@ -656,6 +679,9 @@ gjs_context_get_property (GObject     *object,
     js_context = GJS_CONTEXT (object);
 
     switch (prop_id) {
+    case PROP_JS_VERSION:
+        g_value_set_string(value, js_context->jsversion_string);
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         break;
@@ -678,6 +704,10 @@ gjs_context_set_property (GObject      *object,
         break;
     case PROP_RUNTIME:
         js_context->runtime = g_value_get_pointer(value);
+        break;
+    case PROP_JS_VERSION:
+        g_free(js_context->jsversion_string);
+        js_context->jsversion_string = g_value_dup_string(value);
         break;
 
     default:
