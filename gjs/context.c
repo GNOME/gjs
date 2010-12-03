@@ -298,10 +298,11 @@ gjs_context_class_init(GjsContextClass *klass)
     object_class->get_property = gjs_context_get_property;
     object_class->set_property = gjs_context_set_property;
 
-    pspec = g_param_spec_pointer("search-path",
-                                 "Search path",
-                                 "Path where modules to import should reside",
-                                 G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY);
+    pspec = g_param_spec_boxed("search-path",
+                               "Search path",
+                               "Path where modules to import should reside",
+                               G_TYPE_STRV,
+                               G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY);
 
     g_object_class_install_property(object_class,
                                     PROP_SEARCH_PATH,
@@ -673,7 +674,7 @@ gjs_context_set_property (GObject      *object,
 
     switch (prop_id) {
     case PROP_SEARCH_PATH:
-        js_context->search_path = g_strdupv(g_value_get_pointer(value));
+        js_context->search_path = g_value_dup_boxed(value);
         break;
     case PROP_RUNTIME:
         js_context->runtime = g_value_get_pointer(value);
