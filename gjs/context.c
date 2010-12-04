@@ -32,6 +32,7 @@
 #include "compat.h"
 
 #include <util/log.h>
+#include <util/glib.h>
 #include <util/error.h>
 
 #include <string.h>
@@ -715,6 +716,96 @@ gjs_context_set_property (GObject      *object,
         break;
     }
 }
+
+/**
+ * gjs_context_scan_buffer_for_js_version:
+ * @buffer: A UTF-8 string
+ * @maxbytes: Maximum number of bytes to scan in buffer
+ *
+ * Given a buffer of JavaScript source code (in UTF-8), look for a
+ * comment in it which tells us which version to enable in the
+ * SpiderMonkey engine.
+ *
+ * The comment is inspired by the Firefox MIME type, see e.g.
+ * https://developer.mozilla.org/en/JavaScript/New_in_JavaScript/1.8
+ *
+ * A valid comment string looks like the following, on its own line:
+ * <literal>// application/javascript;version=1.8</literal>
+ *
+ * Returns: A string suitable for use as the GjsContext::version property.
+ *   If the version is unknown or invalid, "default" will be returned.
+ */
+const char *
+gjs_context_scan_buffer_for_js_version (const char *buffer,
+                                        gssize      maxbytes)
+{
+    const char *prefix = "// application/javascript;version=";
+    const char *substr;
+    JSVersion ver;
+    char buf[20];
+    gssize remaining_bytes;
+    guint i;
+
+    substr = g_strstr_len(buffer, maxbytes, prefix);
+    if (!substr)
+        return "default";
+
+    remaining_bytes = maxbytes - ((substr - buffer) + strlen (prefix));
+    /* 20 should give us enough space for all the valid JS version strings; anyways
+     * it's really a bug if we're close to the limit anyways. */
+    if (remaining_bytes < (gssize)sizeof(buf)-1)
+        return "default";
+
+    buf[sizeof(buf)-1] = '\0';
+    strncpy(buf, substr + strlen (prefix), sizeof(buf)-1);
+    for (i = 0; i < sizeof(buf)-1; i++) {
+        if (buf[i] == '\n') {
+            buf[i] = '\0';
+            break;
+        }
+    }
+
+    ver = JS_StringToVersion(buf);
+    if (ver == JSVERSION_UNKNOWN)
+        return "default";
+    return JS_VersionToString(ver);
+}
+
+/**
+ * gjs_context_scan_file_for_js_version:
+ * @file_path: (type filename): A file path
+ *
+ * Like gjs_context_scan_buffer_for_js_version(), but will open
+ * the file and use the initial 1024 bytes as a buffer.
+ *
+ * Returns: A string suitable for use as GjsContext::version property.
+ */
+const char *
+gjs_context_scan_file_for_js_version (const char *file_path)
+{
+    char *utf8_buf;
+    guint8 buf[1024];
+    const char *version = "default";
+    gssize len;
+    FILE *f;
+
+    f = fopen(file_path, "r");
+    if (!f)
+        return "default";
+
+    len = fread(buf, 1, sizeof(buf)-1, f);
+    fclose(f);
+    if (len < 0)
+        return "default";
+    buf[len] = '\0';
+
+    utf8_buf = _gjs_g_utf8_make_valid((const char*)buf);
+    version = gjs_context_scan_buffer_for_js_version(utf8_buf, sizeof(buf));
+    g_free(utf8_buf);
+
+    return version;
+}
+
 
 GjsContext*
 gjs_context_new(void)

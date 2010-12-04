@@ -44,6 +44,9 @@ typedef struct _GjsContextClass GjsContextClass;
 
 GType           gjs_context_get_type             (void) G_GNUC_CONST;
 
+const char *    gjs_context_scan_file_for_js_version (const char *file_path);
+const char *    gjs_context_scan_buffer_for_js_version (const char *buffer, gssize len);
+
 GjsContext*     gjs_context_new                  (void);
 GjsContext*     gjs_context_new_with_search_path (char         **search_path);
 gboolean        gjs_context_eval_file            (GjsContext  *js_context,
