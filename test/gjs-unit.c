@@ -47,11 +47,18 @@ setup(GjsTestJSFixture *fix,
     int code;
     char *filename;
     char *search_path[2];
+    const char *test_filename = test_data;
+    const char *js_version;
+
+    js_version = gjs_context_scan_file_for_js_version(test_filename);
 
     search_path[0] = g_build_filename(top_srcdir, "test", "modules", NULL);
     search_path[1] = NULL;
 
-    fix->context = gjs_context_new_with_search_path(search_path);
+    fix->context = g_object_new (GJS_TYPE_CONTEXT,
+                                 "search-path", search_path,
+                                 "js-version", js_version,
+                                 NULL);
     g_free(search_path[0]);
 
     /* Load jsUnit.js directly into global scope, rather than

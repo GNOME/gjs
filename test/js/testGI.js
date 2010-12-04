@@ -1,3 +1,4 @@
+// application/javascript;version=1.8
 function testUTF8() {
     const GLib = imports.gi.GLib;
 

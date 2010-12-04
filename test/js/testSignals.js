@@ -1,3 +1,4 @@
+// application/javascript;version=1.8
 const Signals = imports.signals;
 
 function Foo() {

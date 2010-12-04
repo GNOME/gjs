@@ -1,3 +1,4 @@
+// application/javascript;version=1.8
 var Regress = imports.gi.Regress;
 
 function testBasicBoxed() {

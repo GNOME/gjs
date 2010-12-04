@@ -1,3 +1,4 @@
+// application/javascript;version=1.8
 const GIMarshallingTests = imports.gi.GIMarshallingTests;
 
 // We use Gio to have some objects that we know exist

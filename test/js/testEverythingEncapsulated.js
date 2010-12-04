@@ -1,3 +1,4 @@
+// application/javascript;version=1.8
 // This used to be called "Everything"
 const Everything = imports.gi.Regress;
 if (!('assertEquals' in this)) { /* allow running this test standalone */

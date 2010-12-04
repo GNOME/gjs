@@ -1,3 +1,4 @@
+// application/javascript;version=1.8
 const DBus = imports.dbus;
 const Mainloop = imports.mainloop;
 

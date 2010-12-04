@@ -1,3 +1,4 @@
+// application/javascript;version=1.8
 // tests for imports.lang module
 
 const Lang = imports.lang;

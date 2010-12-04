@@ -1,3 +1,4 @@
+// application/javascript;version=1.8
 var someUndefined;
 var someNumber = 1;
 var someOtherNumber = 42;
