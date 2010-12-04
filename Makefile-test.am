@@ -180,6 +180,8 @@ EXTRA_DIST +=					\
 	test/js/testGI.js			\
 	test/js/testGIMarshalling.js		\
 	test/js/testImporter.js			\
+	test/js/testJS1_8.js			\
+	test/js/testJSDefault.js		\
 	test/js/testLang.js			\
 	test/js/testLocale.js			\
 	test/js/testMainloop.js			\
