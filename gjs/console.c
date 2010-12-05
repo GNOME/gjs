@@ -30,10 +30,12 @@
 
 static char **include_path = NULL;
 static char *command = NULL;
+static char *js_version= NULL;
 
 static GOptionEntry entries[] = {
     { "command", 'c', 0, G_OPTION_ARG_STRING, &command, "Program passed in as a string", "COMMAND" },
     { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &include_path, "Add the directory DIR to the list of directories to search for js files.", "DIR" },
+    { "js-version", 0, 0, G_OPTION_ARG_STRING, &js_version, "JavaScript version (e.g. \"default\", \"1.8\"", "JSVERSION" },
     { NULL }
 };
 
@@ -48,6 +50,7 @@ main(int argc, char **argv)
     const char *filename;
     gsize len;
     int code;
+    const char *source_js_version;
 
     g_thread_init(NULL);
 
@@ -67,22 +70,13 @@ main(int argc, char **argv)
     g_debug("Command line: %s", command_line);
     g_free(command_line);
 
-    g_debug("Creating new context to eval console script");
-    js_context = gjs_context_new_with_search_path(include_path);
-
-    /* prepare command line arguments */
-    if (!gjs_context_define_string_array(js_context, "ARGV",
-                                         argc - 2, (const char**)argv + 2,
-                                         &error)) {
-        g_printerr("Failed to defined ARGV: %s", error->message);
-        exit(1);
-    }
-
     if (command != NULL) {
+        source_js_version = gjs_context_scan_buffer_for_js_version(script, 1024);
         script = command;
         len = strlen(script);
         filename = "<command line>";
     } else if (argc <= 1) {
+        source_js_version = "default";
         script = g_strdup("const Console = imports.console; Console.interact();");
         len = strlen(script);
         filename = "<stdin>";
@@ -92,7 +86,22 @@ main(int argc, char **argv)
             g_printerr("%s\n", error->message);
             exit(1);
         }
+        source_js_version = gjs_context_scan_buffer_for_js_version(script, 1024);
         filename = argv[1];
+    }
+
+    g_debug("Creating new context to eval console script");
+    /* If user explicitly specifies a version, use it */
+    if (js_version != NULL)
+        source_js_version = js_version;
+    js_context = g_object_new(GJS_TYPE_CONTEXT, "search-path", include_path, "js-version", source_js_version, NULL);
+
+    /* prepare command line arguments */
+    if (!gjs_context_define_string_array(js_context, "ARGV",
+                                         argc - 2, (const char**)argv + 2,
+                                         &error)) {
+        g_printerr("Failed to defined ARGV: %s", error->message);
+        exit(1);
     }
 
     /* evaluate the script */
