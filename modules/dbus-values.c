@@ -31,6 +31,87 @@
 
 #include <string.h>
 
+static JSBool
+_gjs_js_one_value_from_dbus_dict_entry(JSContext        *context,
+                                       DBusMessageIter  *iter,
+                                       jsval            *value_p)
+{
+    /* Create a dictionary object */
+    JSObject *obj;
+    DBusMessageIter array_iter;
+    jsval key_value, entry_value;
+    JSString *key_str;
+    char *key;
+    JSBool retval = JS_FALSE;
+
+    obj = JS_ConstructObject(context, NULL, NULL, NULL);
+    if (obj == NULL)
+        return JS_FALSE;
+
+    key = NULL;
+    key_value = JSVAL_VOID;
+    entry_value = JSVAL_VOID;
+    key_str = NULL;
+
+    JS_AddObjectRoot(context, &obj);
+    JS_AddValueRoot(context, &key_value);
+    JS_AddValueRoot(context, &entry_value);
+    JS_AddStringRoot(context, &key_str);
+
+    dbus_message_iter_recurse(iter, &array_iter);
+
+    while (dbus_message_iter_get_arg_type(&array_iter) != DBUS_TYPE_INVALID) {
+        DBusMessageIter entry_iter;
+
+        /* Cleanup from previous loop */
+        g_free(key);
+        key = NULL;
+
+        dbus_message_iter_recurse(&array_iter, &entry_iter);
+
+        if (!dbus_type_is_basic(dbus_message_iter_get_arg_type(&entry_iter))) {
+            gjs_throw(context, "Dictionary keys are not a basic type, can't convert to JavaScript");
+            goto out;
+        }
+
+        if (!gjs_js_one_value_from_dbus(context, &entry_iter, &key_value))
+            goto out;
+
+        key_str = JS_ValueToString(context, key_value);
+        if (key_str == NULL) {
+            gjs_throw(context, "Couldn't convert value to string");
+            goto out;
+        }
+        if (!gjs_string_to_utf8(context, key_value, &key))
+            goto out;
+
+        dbus_message_iter_next(&entry_iter);
+
+        gjs_debug_dbus_marshal("Defining dict entry %s in jsval dict", key);
+
+        if (!gjs_js_one_value_from_dbus(context, &entry_iter, &entry_value))
+            goto out;
+
+        if (!JS_DefineProperty(context, obj,
+                               key, entry_value,
+                               NULL, NULL, JSPROP_ENUMERATE))
+            goto out;
+
+        dbus_message_iter_next(&array_iter);
+    }
+
+    *value_p = OBJECT_TO_JSVAL(obj);
+    retval = JS_TRUE;
+ out:
+    g_free(key);
+    JS_RemoveObjectRoot(context, &obj);
+    JS_RemoveValueRoot(context, &key_value);
+    JS_RemoveValueRoot(context, &entry_value);
+    JS_RemoveStringRoot(context, &key_str);
+    return retval;
+}
+
+
 JSBool
 gjs_js_one_value_from_dbus(JSContext       *context,
                            DBusMessageIter *iter,
@@ -87,81 +168,7 @@ gjs_js_one_value_from_dbus(JSContext       *context,
             int elem_type = dbus_message_iter_get_element_type(iter);
 
             if (elem_type == DBUS_TYPE_DICT_ENTRY) {
-                /* Create a dictionary object */
-                JSObject *obj;
-                DBusMessageIter array_iter;
-
-                obj = JS_ConstructObject(context, NULL, NULL, NULL);
-                if (obj == NULL)
-                    return JS_FALSE;
-
-                JS_AddObjectRoot(context, &obj);
-                dbus_message_iter_recurse(iter, &array_iter);
-                while (dbus_message_iter_get_arg_type(&array_iter) != DBUS_TYPE_INVALID) {
-                    DBusMessageIter entry_iter;
-                    jsval key_value, entry_value;
-                    JSString *key_str;
-                    char *key;
-
-                    dbus_message_iter_recurse(&array_iter, &entry_iter);
-
-                    if (!dbus_type_is_basic(dbus_message_iter_get_arg_type(&entry_iter))) {
-                        gjs_throw(context, "Dictionary keys are not a basic type, can't convert to JavaScript");
-                        JS_RemoveObjectRoot(context, &obj);
-                        return JS_FALSE;
-                    }
-
-                    entry_value = JSVAL_VOID;
-                    JS_AddValueRoot(context, &entry_value);
-                    if (!gjs_js_one_value_from_dbus(context, &entry_iter, &key_value)) {
-                        JS_RemoveValueRoot(context, &key_value);
-                        JS_RemoveObjectRoot(context, &obj);
-                        return JS_FALSE;
-                    }
-
-                    key_str = JS_ValueToString(context, key_value);
-                    JS_AddStringRoot(context, &key_str);
-                    if (!gjs_string_to_utf8(context, key_value, &key)) {
-                        JS_RemoveValueRoot(context, &key_value);
-                        JS_RemoveObjectRoot(context, &obj);
-                        return JS_FALSE;
-                    }
-
-                    dbus_message_iter_next(&entry_iter);
-
-                    gjs_debug_dbus_marshal("Defining dict entry %s in jsval dict", key);
-
-                    entry_value = JSVAL_VOID;
-                    JS_AddValueRoot(context, &entry_value);
-                    if (!gjs_js_one_value_from_dbus(context, &entry_iter, &entry_value)) {
-                        g_free(key);
-                        JS_RemoveValueRoot(context, &key_value);
-                        JS_RemoveStringRoot(context, &key_str);
-                        JS_RemoveValueRoot(context, &entry_value);
-                        JS_RemoveObjectRoot(context, &obj);
-                        return JS_FALSE;
-                    }
-
-                    if (!JS_DefineProperty(context, obj,
-                                           key, entry_value,
-                                           NULL, NULL, JSPROP_ENUMERATE)) {
-                        g_free(key);
-                        JS_RemoveValueRoot(context, &key_value);
-                        JS_RemoveStringRoot(context, &key_str);
-                        JS_RemoveValueRoot(context, &entry_value);
-                        JS_RemoveObjectRoot(context, &obj);
-                        return JS_FALSE;
-                    }
-
-                    g_free(key);
-                    JS_RemoveValueRoot(context, &key_value);
-                    JS_RemoveStringRoot(context, &key_str);
-                    JS_RemoveValueRoot(context, &entry_value);
-                    dbus_message_iter_next(&array_iter);
-                }
-
-                *value_p = OBJECT_TO_JSVAL(obj);
-                JS_RemoveObjectRoot(context, &obj);
+                return _gjs_js_one_value_from_dbus_dict_entry(context, iter, value_p);
             } else if (elem_type == DBUS_TYPE_BYTE) {
                 /* byte arrays go to a string */
                 const char *v_BYTES;
