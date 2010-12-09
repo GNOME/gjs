@@ -1039,6 +1039,8 @@ gjs_js_dbus_call(JSContext  *context,
     if (reply)
         dbus_message_unref(reply);
 
+    JS_RemoveValueRoot(context, &retval);
+
     return result;
 }
 

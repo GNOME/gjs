@@ -331,8 +331,6 @@ invoke_js_from_dbus(JSContext   *context,
         gjs_debug(GJS_DEBUG_DBUS,
                   "dbus method invocation failed");
 
-        JS_RemoveValueRoot(context, &rval);
-
         if (!dbus_reply_from_exception(context, method_call, &reply))
             gjs_debug(GJS_DEBUG_DBUS,
                       "dbus method invocation failed but no exception was set?");
