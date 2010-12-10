@@ -32,9 +32,9 @@
 #include <string.h>
 
 static JSBool
-_gjs_js_one_value_from_dbus_dict_entry(JSContext        *context,
-                                       DBusMessageIter  *iter,
-                                       jsval            *value_p)
+_gjs_js_one_value_from_dbus_array_dict_entry(JSContext        *context,
+                                             DBusMessageIter  *iter,
+                                             jsval            *value_p)
 {
     /* Create a dictionary object */
     JSObject *obj;
@@ -111,6 +111,104 @@ _gjs_js_one_value_from_dbus_dict_entry(JSContext        *context,
     return retval;
 }
 
+static JSBool
+_gjs_js_one_value_from_dbus_array_byte(JSContext       *context,
+                                       DBusMessageIter *iter,
+                                       jsval           *value_p)
+{
+    /* byte arrays go to a string */
+    const char *v_BYTES;
+    int n_bytes;
+    DBusMessageIter array_iter;
+
+    dbus_message_iter_recurse(iter, &array_iter);
+    dbus_message_iter_get_fixed_array(&array_iter,
+                                      &v_BYTES, &n_bytes);
+
+    return gjs_string_from_binary_data(context, v_BYTES, n_bytes, value_p);
+}
+
+static JSBool
+_gjs_js_one_value_from_dbus_struct(JSContext       *context,
+                                   DBusMessageIter *iter,
+                                   jsval           *value_p)
+{
+    JSObject *obj;
+    DBusMessageIter struct_iter;
+    int index;
+    jsval prop_value;
+    JSBool retval = JS_FALSE;
+
+    obj = JS_NewArrayObject(context, 0, NULL);
+    if (obj == NULL)
+        return JS_FALSE;
+
+    prop_value = JSVAL_VOID;
+    JS_AddValueRoot(context, &prop_value);
+
+    dbus_message_iter_recurse(iter, &struct_iter);
+    index = 0;
+    while (dbus_message_iter_get_arg_type(&struct_iter) != DBUS_TYPE_INVALID) {
+
+        if (!gjs_js_one_value_from_dbus(context, &struct_iter, &prop_value))
+            goto out;
+
+        if (!JS_DefineElement(context, obj,
+                              index, prop_value,
+                              NULL, NULL, JSPROP_ENUMERATE))
+            goto out;
+
+        dbus_message_iter_next(&struct_iter);
+        index++;
+    }
+    *value_p = OBJECT_TO_JSVAL(obj);
+    retval = JS_TRUE;
+ out:
+    JS_RemoveValueRoot(context, &prop_value);
+    return retval;
+}
+
+static JSBool
+_gjs_js_one_value_from_dbus_array_other(JSContext       *context,
+                                        DBusMessageIter *iter,
+                                        jsval           *value_p)
+{
+    JSObject *obj;
+    jsval prop_value;
+    DBusMessageIter array_iter;
+    int index;
+    JSBool retval = JS_FALSE;
+
+    obj = JS_NewArrayObject(context, 0, NULL);
+    if (obj == NULL)
+        return JS_FALSE;
+
+    prop_value = JSVAL_VOID;
+
+    JS_AddObjectRoot(context, &obj);
+    JS_AddValueRoot(context, &prop_value);
+    dbus_message_iter_recurse(iter, &array_iter);
+    index = 0;
+    while (dbus_message_iter_get_arg_type(&array_iter) != DBUS_TYPE_INVALID) {
+        if (!gjs_js_one_value_from_dbus(context, &array_iter, &prop_value))
+            goto out;
+
+        if (!JS_DefineElement(context, obj,
+                              index, prop_value,
+                              NULL, NULL, JSPROP_ENUMERATE))
+            goto out;
+
+        dbus_message_iter_next(&array_iter);
+        index++;
+    }
+
+    *value_p = OBJECT_TO_JSVAL(obj);
+    retval = JS_TRUE;
+ out:
+    JS_RemoveObjectRoot(context, &obj);
+    JS_RemoveValueRoot(context, &prop_value);
+    return retval;
+}
 
 JSBool
 gjs_js_one_value_from_dbus(JSContext       *context,
@@ -128,96 +226,17 @@ gjs_js_one_value_from_dbus(JSContext       *context,
 
     switch (arg_type) {
     case DBUS_TYPE_STRUCT:
-        {
-            JSObject *obj;
-            DBusMessageIter struct_iter;
-            int index;
-
-            obj = JS_NewArrayObject(context, 0, NULL);
-            if (obj == NULL)
-                return JS_FALSE;
-
-            dbus_message_iter_recurse(iter, &struct_iter);
-            index = 0;
-            while (dbus_message_iter_get_arg_type(&struct_iter) != DBUS_TYPE_INVALID) {
-                jsval prop_value;
-
-                prop_value = JSVAL_VOID;
-                JS_AddValueRoot(context, &prop_value);
-                if (!gjs_js_one_value_from_dbus(context, &struct_iter, &prop_value)) {
-                    JS_RemoveValueRoot(context, &prop_value);
-                    return JS_FALSE;
-                }
-
-                if (!JS_DefineElement(context, obj,
-                                      index, prop_value,
-                                      NULL, NULL, JSPROP_ENUMERATE)) {
-                    JS_RemoveValueRoot(context, &prop_value);
-                    return JS_FALSE;
-                }
-
-                JS_RemoveValueRoot(context, &prop_value);
-                dbus_message_iter_next(&struct_iter);
-                index ++;
-            }
-            *value_p = OBJECT_TO_JSVAL(obj);
-        }
-        break;
+        return _gjs_js_one_value_from_dbus_struct(context, iter, value_p);
     case DBUS_TYPE_ARRAY:
         {
             int elem_type = dbus_message_iter_get_element_type(iter);
 
             if (elem_type == DBUS_TYPE_DICT_ENTRY) {
-                return _gjs_js_one_value_from_dbus_dict_entry(context, iter, value_p);
+                return _gjs_js_one_value_from_dbus_array_dict_entry(context, iter, value_p);
             } else if (elem_type == DBUS_TYPE_BYTE) {
-                /* byte arrays go to a string */
-                const char *v_BYTES;
-                int n_bytes;
-                DBusMessageIter array_iter;
-
-                dbus_message_iter_recurse(iter, &array_iter);
-                dbus_message_iter_get_fixed_array(&array_iter,
-                                                  &v_BYTES, &n_bytes);
-
-                if (!gjs_string_from_binary_data(context, v_BYTES, n_bytes, value_p))
-                    return JS_FALSE;
+                return _gjs_js_one_value_from_dbus_array_byte(context, iter, value_p);
             } else {
-                JSObject *obj;
-                DBusMessageIter array_iter;
-                int index;
-
-                obj = JS_NewArrayObject(context, 0, NULL);
-                if (obj == NULL)
-                    return JS_FALSE;
-
-                JS_AddObjectRoot(context, &obj);
-                dbus_message_iter_recurse(iter, &array_iter);
-                index = 0;
-                while (dbus_message_iter_get_arg_type(&array_iter) != DBUS_TYPE_INVALID) {
-                    jsval prop_value;
-
-                    prop_value = JSVAL_VOID;
-                    JS_AddValueRoot(context, &prop_value);
-                    if (!gjs_js_one_value_from_dbus(context, &array_iter, &prop_value)) {
-                        JS_RemoveValueRoot(context, &prop_value);
-                        JS_RemoveObjectRoot(context, &obj);
-                        return JS_FALSE;
-                    }
-
-                    if (!JS_DefineElement(context, obj,
-                                          index, prop_value,
-                                          NULL, NULL, JSPROP_ENUMERATE)) {
-                        JS_RemoveValueRoot(context, &prop_value);
-                        JS_RemoveObjectRoot(context, &obj);
-                        return JS_FALSE;
-                    }
-
-                    JS_RemoveValueRoot(context, &prop_value);
-                    dbus_message_iter_next(&array_iter);
-                    index ++;
-                }
-                *value_p = OBJECT_TO_JSVAL(obj);
-                JS_RemoveObjectRoot(context, &obj);
+                return _gjs_js_one_value_from_dbus_array_other(context, iter, value_p);
             }
         }
         break;
@@ -226,54 +245,49 @@ gjs_js_one_value_from_dbus(JSContext       *context,
             dbus_bool_t v_BOOLEAN;
             dbus_message_iter_get_basic(iter, &v_BOOLEAN);
             *value_p = BOOLEAN_TO_JSVAL(v_BOOLEAN);
+            return JS_TRUE;
         }
         break;
     case DBUS_TYPE_BYTE:
         {
             unsigned char v_BYTE;
             dbus_message_iter_get_basic(iter, &v_BYTE);
-            if (!JS_NewNumberValue(context, v_BYTE, value_p))
-                return JS_FALSE;
+            return JS_NewNumberValue(context, v_BYTE, value_p);
         }
         break;
     case DBUS_TYPE_INT32:
         {
             dbus_int32_t v_INT32;
             dbus_message_iter_get_basic(iter, &v_INT32);
-            if (!JS_NewNumberValue(context, v_INT32, value_p))
-                return JS_FALSE;
+            return JS_NewNumberValue(context, v_INT32, value_p);
         }
         break;
     case DBUS_TYPE_UINT32:
         {
             dbus_uint32_t v_UINT32;
             dbus_message_iter_get_basic(iter, &v_UINT32);
-            if (!JS_NewNumberValue(context, v_UINT32, value_p))
-                return JS_FALSE;
+            return JS_NewNumberValue(context, v_UINT32, value_p);
         }
         break;
     case DBUS_TYPE_INT64:
         {
             dbus_int64_t v_INT64;
             dbus_message_iter_get_basic(iter, &v_INT64);
-            if (!JS_NewNumberValue(context, v_INT64, value_p))
-                return JS_FALSE;
+            return JS_NewNumberValue(context, v_INT64, value_p);
         }
         break;
     case DBUS_TYPE_UINT64:
         {
             dbus_uint64_t v_UINT64;
             dbus_message_iter_get_basic(iter, &v_UINT64);
-            if (!JS_NewNumberValue(context, v_UINT64, value_p))
-                return JS_FALSE;
+            return JS_NewNumberValue(context, v_UINT64, value_p);
         }
         break;
     case DBUS_TYPE_DOUBLE:
         {
             double v_DOUBLE;
             dbus_message_iter_get_basic(iter, &v_DOUBLE);
-            if (!JS_NewNumberValue(context, v_DOUBLE, value_p))
-                return JS_FALSE;
+            return JS_NewNumberValue(context, v_DOUBLE, value_p);
         }
         break;
     case DBUS_TYPE_OBJECT_PATH:
@@ -283,9 +297,7 @@ gjs_js_one_value_from_dbus(JSContext       *context,
 
             dbus_message_iter_get_basic(iter, &v_STRING);
 
-            if (!gjs_string_from_utf8(context, v_STRING, -1, value_p))
-                return JS_FALSE;
-
+            return gjs_string_from_utf8(context, v_STRING, -1, value_p);
         }
         break;
 
@@ -301,6 +313,7 @@ gjs_js_one_value_from_dbus(JSContext       *context,
 
     case DBUS_TYPE_INVALID:
         *value_p = JSVAL_VOID;
+        return JS_TRUE;
         break;
 
     default:
@@ -310,8 +323,6 @@ gjs_js_one_value_from_dbus(JSContext       *context,
                      arg_type);
         return JS_FALSE;
     }
-
-    return JS_TRUE;
 }
 
 JSBool
