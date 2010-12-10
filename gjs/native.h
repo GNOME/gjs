@@ -81,6 +81,11 @@ void   gjs_register_native_module (const char            *module_id,
                                    GjsDefineModuleFunc  func,
                                    GjsNativeFlags       flags);
 
+/* called by importer.c to to check for already loaded modules */
+gboolean gjs_is_registered_native_module(JSContext  *context,
+                                         JSObject   *parent,
+                                         const char *name);
+
 /* called by importer.c to load a native module once it finds
  * it in the search path
  */

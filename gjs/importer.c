@@ -515,7 +515,8 @@ do_import(JSContext  *context,
     directories = NULL;
 
     /* First try importing an internal module like byteArray */
-    if (import_native_file(context, obj, name, NULL)) {
+    if (gjs_is_registered_native_module(context, obj, name) &&
+        import_native_file(context, obj, name, NULL)) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "successfully imported module '%s'", name);
         result = JS_TRUE;
