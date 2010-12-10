@@ -451,8 +451,8 @@ async_call_callback(JSContext *context,
     if (!signature)
         goto fail;
 
-    if (argc == 0 && !g_str_equal(signature, "") ||
-        argc > 1) {
+    if ((argc == 0 && !g_str_equal(signature, ""))
+        || argc > 1) {
         gjs_throw(context, "The callback to async DBus calls takes one argument, "
                   "the return value or array of return values");
         thrown = TRUE;
