@@ -82,7 +82,7 @@ _gjs_js_one_value_from_dbus_array_dict_entry(JSContext        *context,
             gjs_throw(context, "Couldn't convert value to string");
             goto out;
         }
-        if (!gjs_string_to_utf8(context, key_value, &key))
+        if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(key_str), &key))
             goto out;
 
         dbus_message_iter_next(&entry_iter);
