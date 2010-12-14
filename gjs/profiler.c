@@ -26,6 +26,7 @@
 #include "profiler.h"
 #include <jsdbgapi.h>
 #include "compat.h"
+#include "jsapi-util.h"
 
 #include <signal.h>
 #include <sys/types.h>
@@ -109,7 +110,8 @@ gjs_profile_function_new(GjsProfileFunctionKey *key)
     self = g_slice_new0(GjsProfileFunction);
     self->key.filename = g_strdup(key->filename);
     self->key.lineno = key->lineno;
-    self->key.function_name = g_strdup(key->function_name);
+    // Pass ownership of function_name from key to the new function
+    self->key.function_name = key->function_name;
 
     g_assert(self->key.filename != NULL);
     g_assert(self->key.function_name != NULL);
@@ -132,6 +134,7 @@ gjs_profile_function_key_from_js(JSContext             *cx,
 {
     JSScript *script;
     JSFunction *function;
+    JSString *function_name = NULL;
 
     /* We're not using the JSScript or JSFunction as the key since the script
      * could be unloaded and addresses reused.
@@ -151,8 +154,15 @@ gjs_profile_function_key_from_js(JSContext             *cx,
      * (or other object with a 'call' method) and would be good to somehow
      * figure out the name of the called function.
      */
-    key->function_name = (char*)(function != NULL ? JS_GetFunctionName(function) : "(unknown)");
-
+#ifdef HAVE_JS_GETFUNCTIONNAME
+    key->function_name = g_strdup(function != NULL ? JS_GetFunctionName(function) : "(unknown)");
+#else
+    function_name = JS_GetFunctionId(function);
+    if (function_name)
+        key->function_name = gjs_string_get_ascii(cx, STRING_TO_JSVAL(function_name));
+    else
+        key->function_name = g_strdup("(unknown)");
+#endif
 
     g_assert(key->filename != NULL);
     g_assert(key->function_name != NULL);
@@ -171,16 +181,23 @@ gjs_profiler_lookup_function(GjsProfiler  *self,
 
     function = g_hash_table_lookup(self->by_file, &key);
     if (function)
-        return function;
+        goto error;
 
     if (!create_if_missing)
-        return NULL;
+        goto error;
 
     function = gjs_profile_function_new(&key);
 
     g_hash_table_insert(self->by_file, &function->key, function);
 
+    /* Don't free key.function_name if we get here since we passed its
+     * ownership to the new function.
+     */
     return function;
+
+ error:
+    g_free(key.function_name);
+    return NULL;
 }
 
 static void

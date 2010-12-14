@@ -83,7 +83,8 @@ format_frame(JSContext* cx, JSStackFrame* fp,
     JSPropertyDescArray call_props = { 0, NULL };
     JSObject* this_obj = NULL;
     JSObject* call_obj = NULL;
-    const char* funname = NULL;
+    JSString* funname = NULL;
+    char* funname_str = NULL;
     const char* filename = NULL;
     guint32 lineno = 0;
     guint32 named_arg_count = 0;
@@ -115,7 +116,11 @@ format_frame(JSContext* cx, JSStackFrame* fp,
         lineno =  (guint32) JS_PCToLineNumber(cx, script, pc);
         fun = JS_GetFrameFunction(cx, fp);
         if (fun)
-            funname = JS_GetFunctionName(fun);
+#ifdef HAVE_JS_GETFUNCTIONNAME
+            funname_str = JS_GetFunctionName(fun);
+#else
+            funname = JS_GetFunctionId(fun);
+#endif
 
         call_obj = JS_GetFrameCallObject(cx, fp);
         if (call_obj) {
@@ -140,8 +145,18 @@ format_frame(JSContext* cx, JSStackFrame* fp,
 
     /* print the frame number and function name */
 
-    if (funname)
-        g_string_append_printf(buf, "%d %s(", num, funname);
+#ifndef HAVE_JS_GETFUNCTIONNAME
+    if (funname) {
+        funname_str = gjs_string_get_ascii(cx, STRING_TO_JSVAL(funname));
+        g_string_append_printf(buf, "%d %s(", num, funname_str);
+    }
+#endif
+    if (funname_str) {
+        g_string_append_printf(buf, "%d %s(", num, funname_str);
+#ifndef HAVE_JS_GETFUNCTIONNAME
+        g_free(funname_str);
+#endif
+    }
     else if (fun)
         g_string_append_printf(buf, "%d anonymous(", num);
     else
