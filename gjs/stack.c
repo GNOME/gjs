@@ -120,6 +120,8 @@ format_frame(JSContext* cx, JSStackFrame* fp,
             funname_str = JS_GetFunctionName(fun);
 #else
             funname = JS_GetFunctionId(fun);
+            if (funname)
+                funname_str = gjs_string_get_ascii(cx, STRING_TO_JSVAL(funname));
 #endif
 
         call_obj = JS_GetFrameCallObject(cx, fp);
@@ -145,12 +147,6 @@ format_frame(JSContext* cx, JSStackFrame* fp,
 
     /* print the frame number and function name */
 
-#ifndef HAVE_JS_GETFUNCTIONNAME
-    if (funname) {
-        funname_str = gjs_string_get_ascii(cx, STRING_TO_JSVAL(funname));
-        g_string_append_printf(buf, "%d %s(", num, funname_str);
-    }
-#endif
     if (funname_str) {
         g_string_append_printf(buf, "%d %s(", num, funname_str);
 #ifndef HAVE_JS_GETFUNCTIONNAME
