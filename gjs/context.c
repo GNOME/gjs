@@ -708,7 +708,10 @@ gjs_context_set_property (GObject      *object,
         break;
     case PROP_JS_VERSION:
         g_free(js_context->jsversion_string);
-        js_context->jsversion_string = g_value_dup_string(value);
+        if (g_value_get_string (value) == NULL)
+            js_context->jsversion_string = g_strdup(_GJS_JS_VERSION_DEFAULT);
+        else
+            js_context->jsversion_string = g_value_dup_string(value);
         break;
 
     default:
@@ -733,7 +736,7 @@ gjs_context_set_property (GObject      *object,
  * <literal>// application/javascript;version=1.8</literal>
  *
  * Returns: A string suitable for use as the GjsContext::version property.
- *   If the version is unknown or invalid, "default" will be returned.
+ *   If the version is unknown or invalid, %NULL will be returned.
  */
 const char *
 gjs_context_scan_buffer_for_js_version (const char *buffer,
@@ -748,13 +751,13 @@ gjs_context_scan_buffer_for_js_version (const char *buffer,
 
     substr = g_strstr_len(buffer, maxbytes, prefix);
     if (!substr)
-        return "default";
+        return NULL;
 
     remaining_bytes = maxbytes - ((substr - buffer) + strlen (prefix));
     /* 20 should give us enough space for all the valid JS version strings; anyways
      * it's really a bug if we're close to the limit anyways. */
     if (remaining_bytes < (gssize)sizeof(buf)-1)
-        return "default";
+        return NULL;
 
     buf[sizeof(buf)-1] = '\0';
     strncpy(buf, substr + strlen (prefix), sizeof(buf)-1);
@@ -767,7 +770,7 @@ gjs_context_scan_buffer_for_js_version (const char *buffer,
 
     ver = JS_StringToVersion(buf);
     if (ver == JSVERSION_UNKNOWN)
-        return "default";
+        return NULL;
     return JS_VersionToString(ver);
 }
 
@@ -785,18 +788,18 @@ gjs_context_scan_file_for_js_version (const char *file_path)
 {
     char *utf8_buf;
     guint8 buf[1024];
-    const char *version = "default";
+    const char *version = NULL;
     gssize len;
     FILE *f;
 
     f = fopen(file_path, "r");
     if (!f)
-        return "default";
+        return NULL;
 
     len = fread(buf, 1, sizeof(buf)-1, f);
     fclose(f);
     if (len < 0)
-        return "default";
+        return NULL;
     buf[len] = '\0';
 
     utf8_buf = _gjs_g_utf8_make_valid((const char*)buf);

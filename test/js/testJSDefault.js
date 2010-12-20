@@ -1,5 +1,6 @@
 // Test that we *don't* get SpiderMonkey extensions; see
 // testJS1_8.js.
+// application/javascript;version=ECMAv3
 
 var GLib = imports.gi.GLib;
 
