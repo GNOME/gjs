@@ -71,8 +71,8 @@ main(int argc, char **argv)
     g_free(command_line);
 
     if (command != NULL) {
-        source_js_version = gjs_context_scan_buffer_for_js_version(script, 1024);
         script = command;
+        source_js_version = gjs_context_scan_buffer_for_js_version(script, 1024);
         len = strlen(script);
         filename = "<command line>";
     } else if (argc <= 1) {
