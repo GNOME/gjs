@@ -34,7 +34,7 @@ gjs_try_string_to_utf8 (JSContext  *context,
                         char      **utf8_string_p,
                         GError    **error)
 {
-    jschar *s;
+    const jschar *s;
     size_t s_length;
     char *utf8_string;
     long read_items;
@@ -50,8 +50,16 @@ gjs_try_string_to_utf8 (JSContext  *context,
         return FALSE;
     }
 
+#ifdef HAVE_JS_GETSTRINGCHARSANDLENGTH
+    s = JS_GetStringCharsAndLength(context, JSVAL_TO_STRING(string_val), &s_length);
+    if (s == NULL) {
+        JS_EndRequest(context);
+        return FALSE;
+    }
+#else
     s = JS_GetStringChars(JSVAL_TO_STRING(string_val));
     s_length = JS_GetStringLength(JSVAL_TO_STRING(string_val));
+#endif
 
     utf8_string = g_utf16_to_utf8(s,
                                   (glong)s_length,
@@ -410,23 +418,31 @@ gjs_string_get_uint16_data(JSContext       *context,
                            guint16        **data_p,
                            gsize           *len_p)
 {
-    jschar *js_data;
+    const jschar *js_data;
+    JSBool retval = JS_FALSE;
 
     JS_BeginRequest(context);
 
     if (!JSVAL_IS_STRING(value)) {
         gjs_throw(context,
                   "Value is not a string, can't return binary data from it");
-        JS_EndRequest(context);
-        return JS_FALSE;
+        goto out;
     }
 
+#ifdef HAVE_JS_GETSTRINGCHARSANDLENGTH
+    js_data = JS_GetStringCharsAndLength(context, JSVAL_TO_STRING(value), len_p);
+    if (js_data == NULL)
+        goto out;
+#else
     js_data = JS_GetStringChars(JSVAL_TO_STRING(value));
     *len_p = JS_GetStringLength(JSVAL_TO_STRING(value));
+#endif
     *data_p = g_memdup(js_data, sizeof(*js_data)*(*len_p));
 
+    retval = JS_TRUE;
+out:
     JS_EndRequest(context);
-    return JS_TRUE;
+    return retval;
 }
 
 /**
