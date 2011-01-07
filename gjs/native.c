@@ -118,6 +118,7 @@ lookup_native_module(JSContext  *context,
 
         name = get_module_name(context, parent, &tmp);
         if (name != NULL) {
+            g_string_prepend_c(module_id, '.');
             g_string_prepend(module_id, name);
         }
 
