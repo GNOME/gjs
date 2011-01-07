@@ -50,15 +50,15 @@ gjs_try_string_to_utf8 (JSContext  *context,
         return FALSE;
     }
 
-#ifdef HAVE_JS_GETSTRINGCHARSANDLENGTH
+#ifdef HAVE_JS_GETSTRINGCHARS
+    s = JS_GetStringChars(JSVAL_TO_STRING(string_val));
+    s_length = JS_GetStringLength(JSVAL_TO_STRING(string_val));
+#else
     s = JS_GetStringCharsAndLength(context, JSVAL_TO_STRING(string_val), &s_length);
     if (s == NULL) {
         JS_EndRequest(context);
         return FALSE;
     }
-#else
-    s = JS_GetStringChars(JSVAL_TO_STRING(string_val));
-    s_length = JS_GetStringLength(JSVAL_TO_STRING(string_val));
 #endif
 
     utf8_string = g_utf16_to_utf8(s,
@@ -429,13 +429,13 @@ gjs_string_get_uint16_data(JSContext       *context,
         goto out;
     }
 
-#ifdef HAVE_JS_GETSTRINGCHARSANDLENGTH
+#ifdef HAVE_JS_GETSTRINGCHARS
+    js_data = JS_GetStringChars(JSVAL_TO_STRING(value));
+    *len_p = JS_GetStringLength(JSVAL_TO_STRING(value));
+#else
     js_data = JS_GetStringCharsAndLength(context, JSVAL_TO_STRING(value), len_p);
     if (js_data == NULL)
         goto out;
-#else
-    js_data = JS_GetStringChars(JSVAL_TO_STRING(value));
-    *len_p = JS_GetStringLength(JSVAL_TO_STRING(value));
 #endif
     *data_p = g_memdup(js_data, sizeof(*js_data)*(*len_p));
 

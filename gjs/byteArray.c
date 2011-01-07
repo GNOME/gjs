@@ -678,13 +678,13 @@ from_string_func(JSContext *context,
         const jschar *u16_chars;
         gsize u16_len;
 
-#ifdef HAVE_JS_GETSTRINGCHARSANDLENGTH
+#ifdef HAVE_JS_GETSTRINGCHARS
+        u16_chars = JS_GetStringChars(JSVAL_TO_STRING(argv[0]));
+        u16_len = JS_GetStringLength(JSVAL_TO_STRING(argv[0]));
+#else
         u16_chars = JS_GetStringCharsAndLength(context, JSVAL_TO_STRING(argv[0]), &u16_len);
         if (u16_chars == NULL)
             goto out;
-#else
-        u16_chars = JS_GetStringChars(JSVAL_TO_STRING(argv[0]));
-        u16_len = JS_GetStringLength(JSVAL_TO_STRING(argv[0]));
 #endif
 
         error = NULL;

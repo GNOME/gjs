@@ -148,7 +148,7 @@ fi
 
 AC_CHECK_LIB([mozjs], [JS_GetStringBytes], AC_DEFINE([HAVE_JS_GETSTRINGBYTES], [1], [Define if we still have JS_GetStringBytes]),, [$JS_LIBS])
 AC_CHECK_LIB([mozjs], [JS_GetFunctionName], AC_DEFINE([HAVE_JS_GETFUNCTIONNAME], [1], [Define if we still have JS_GetFunctionName]),, [$JS_LIBS])
-AC_CHECK_LIB([mozjs], [JS_GetStringCharsAndLength], AC_DEFINE([HAVE_JS_GETSTRINGCHARSANDLENGTH], [1], [Define if we have JS_GetStringCharsAndLength]),, [$JS_LIBS])
+AC_CHECK_LIB([mozjs], [JS_GetStringChars], AC_DEFINE([HAVE_JS_GETSTRINGCHARS], [1], [Define if we still have JS_GetStringChars]),, [$JS_LIBS])
 
 AC_MSG_CHECKING([for mozilla-js >= 2 ])
 if `$PKG_CONFIG --exists $JS_PACKAGE '>=' 2`; then
