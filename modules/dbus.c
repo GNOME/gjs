@@ -1145,6 +1145,8 @@ owner_closure_invalidated(gpointer  data,
         g_closure_unref(owner->acquired_closure);
         g_closure_unref(owner->lost_closure);
 
+        g_free(owner->funcs.name);
+
         g_slice_free(GjsJSDBusNameOwner, owner);
     }
 
