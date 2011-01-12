@@ -196,7 +196,7 @@ AC_SUBST([JS_EXTRA_CFLAGS])
 
 common_packages="gobject-2.0 >= gobject_required_version $JS_PACKAGE"
 gjs_packages="gmodule-2.0 gthread-2.0 $common_packages"
-gjs_gi_packages="gobject-introspection-1.0 >= 0.9.5 $common_packages"
+gjs_gi_packages="gobject-introspection-1.0 >= 0.10.1 $common_packages"
 gjs_cairo_gobject_packages="cairo-gobject $common_packages"
 gjs_cairo_packages="cairo $common_packages"
 gjs_dbus_packages="dbus-glib-1 $common_packages"
