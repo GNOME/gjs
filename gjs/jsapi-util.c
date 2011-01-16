@@ -255,7 +255,11 @@ gjs_init_context_standard (JSContext       *context)
 {
     JSObject *global;
 #ifdef HAVE_MOZJS_2
+#ifdef HAVE_JS_NEWCOMPARTMENTANDGLOBALOBJECT
+    global = JS_NewCompartmentAndGlobalObject(context, &global_class, NULL);
+#else
     global = JS_NewGlobalObject(context, &global_class);
+#endif /* HAVE_JS_NEWCOMPARTMENTANDGLOBALOBJECT */
     if (global == NULL)
         return FALSE;
 #else
@@ -263,7 +267,7 @@ gjs_init_context_standard (JSContext       *context)
     if (global == NULL)
         return FALSE;
     JS_SetGlobalObject(context, global);
-#endif
+#endif /* HAVE_MOZJS_2 */
     if (!JS_InitStandardClasses(context, global))
         return FALSE;
     return TRUE;
