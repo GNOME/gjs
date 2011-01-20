@@ -129,29 +129,27 @@ gjs_console_error_reporter(JSContext *cx, const char *message, JSErrorReport *re
 
 #ifdef HAVE_LIBREADLINE
 static JSBool
-gjs_console_readline(JSContext *cx, char *bufp, FILE *file, const char *prompt)
+gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
 {
     char *line;
     line = readline(prompt);
-    if (line && line[0] != '\0')
-        add_history(line);
-    if (!line) {
+    if (!line)
         return JS_FALSE;
-    }
-    strcpy(bufp, line);
-    free(line);
+    if (line[0] != '\0')
+        add_history(line);
+    *bufp = line;
     return JS_TRUE;
 }
 #else
 static JSBool
-gjs_console_readline(JSContext *cx, char *bufp, FILE *file, const char *prompt)
+gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
 {
     char line[256];
     fprintf(stdout, prompt);
     fflush(stdout);
     if (!fgets(line, sizeof line, file))
         return JS_FALSE;
-    strcpy(bufp, line);
+    *bufp = g_strdup(line);
     return JS_TRUE;
 }
 #endif
@@ -163,11 +161,11 @@ gjs_console_interact(JSContext *context,
 {
     JSObject *object = JS_THIS_OBJECT(context, vp);
     gboolean eof = FALSE;
-    JSScript *script;
+    JSScript *script = NULL;
     jsval result;
     JSString *str;
-    char buffer[4096];
-    char *bufp;
+    GString *buffer = NULL;
+    char *temp_buf = NULL;
     int lineno;
     int startline;
     FILE *file = stdin;
@@ -177,9 +175,6 @@ gjs_console_interact(JSContext *context,
         /* It's an interactive filehandle; drop into read-eval-print loop. */
     lineno = 1;
     do {
-        bufp = buffer;
-        *bufp = '\0';
-
         /*
          * Accumulate lines until we get a 'compilable unit' - one that either
          * generates an error (before running out of source) or that compiles
@@ -187,17 +182,19 @@ gjs_console_interact(JSContext *context,
          * coincides with the end of a line.
          */
         startline = lineno;
+        buffer = g_string_new("");
         do {
-            if (!gjs_console_readline(context, bufp, file,
+            if (!gjs_console_readline(context, &temp_buf, file,
                                       startline == lineno ? "gjs> " : ".... ")) {
                 eof = JS_TRUE;
                 break;
             }
-            bufp += strlen(bufp);
+            g_string_append(buffer, temp_buf);
+            g_free(temp_buf);
             lineno++;
-        } while (!JS_BufferIsCompilableUnit(context, object, buffer, strlen(buffer)));
+        } while (!JS_BufferIsCompilableUnit(context, object, buffer->str, buffer->len));
 
-        script = JS_CompileScript(context, object, buffer, strlen(buffer), "typein",
+        script = JS_CompileScript(context, object, buffer->str, buffer->len, "typein",
                                   startline);
 
         if (script)
@@ -207,7 +204,7 @@ gjs_console_interact(JSContext *context,
             str = JS_ValueToString(context, result);
             JS_ClearPendingException(context);
         } else if (result == JSVAL_VOID) {
-            continue;
+            goto next;
         } else {
             str = JS_ValueToString(context, result);
         }
@@ -221,8 +218,10 @@ gjs_console_interact(JSContext *context,
             }
         }
 
+ next:
         if (script)
             JS_DestroyScript(context, script);
+        g_string_free(buffer, TRUE);
     } while (!eof);
 
     g_fprintf(stdout, "\n");
