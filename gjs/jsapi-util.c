@@ -34,6 +34,9 @@
 
 #include <string.h>
 #include <math.h>
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
 
 GQuark
 gjs_util_error_quark (void)
@@ -1516,4 +1519,42 @@ gjs_parse_args (JSContext  *context,
     }
     JS_EndRequest(context);
     return JS_FALSE;
+}
+
+/**
+ * gjs_maybe_gc:
+ *
+ * Low level version of gjs_context_maybe_gc().
+ */
+void
+gjs_maybe_gc (JSContext *context)
+{
+    /* Picked this number out of the air basically; 16 megabytes
+     * "feels" good for all of mobile/embedded/GP.  We don't
+     * expect the cost of JS_GC() to be too high, but we
+     * also don't want to call it too often.
+     *
+     * A better approach actually may be to dynamically watch "free";
+     * how much memory we're using before we hit swap.  Even better of
+     * course: some component of the OS sends us a signal when we
+     * should be trying a GC.
+     */
+#define _GJS_MAYBE_GC_MALLOC_BYTES (16 * 1024 * 1024)
+
+    static int _gjs_last_maybe_gc_malloc_blocks = -1;
+    
+    JS_MaybeGC(context);
+
+#ifdef HAVE_MALLINFO
+    {
+        struct mallinfo mstats;
+        mstats = mallinfo();
+        if (mstats.uordblks < _gjs_last_maybe_gc_malloc_blocks || _gjs_last_maybe_gc_malloc_blocks == -1) {
+            _gjs_last_maybe_gc_malloc_blocks = mstats.uordblks;
+        } else if ((mstats.uordblks - _gjs_last_maybe_gc_malloc_blocks) > _GJS_MAYBE_GC_MALLOC_BYTES) {
+            JS_GC(context);
+            _gjs_last_maybe_gc_malloc_blocks = mstats.uordblks;
+        }
+    }     
+#endif    
 }

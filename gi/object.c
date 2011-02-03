@@ -768,6 +768,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(object_instance);
 
+    gjs_maybe_gc(context);
+
     return JS_TRUE;
 }
 

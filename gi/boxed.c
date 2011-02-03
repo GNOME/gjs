@@ -490,6 +490,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
                 GType gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
                 if (gtype != G_TYPE_NONE) {
                     priv->gboxed = g_boxed_copy(gtype, source_priv->gboxed);
+                    gjs_maybe_gc(context);
                     GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
                     return JS_TRUE;
                 }
@@ -544,6 +545,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
             }
 
             unthreadsafe_template_for_constructor.gboxed = NULL;
+            gjs_maybe_gc(context);
 
             retval = priv->gboxed != NULL;
             if (retval)
@@ -551,6 +553,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
             return retval;
         }
     }
+
+    gjs_maybe_gc(context);
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
 

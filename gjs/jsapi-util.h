@@ -386,6 +386,8 @@ gboolean    gjs_try_string_to_utf8            (JSContext       *context,
                                                char           **utf8_string_p,
                                                GError         **error);
 
+void gjs_maybe_gc (JSContext *context);
+
 G_END_DECLS
 
 #endif  /* __GJS_JSAPI_UTIL_H__ */

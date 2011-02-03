@@ -825,6 +825,33 @@ gjs_context_new_with_search_path(char** search_path)
 }
 
 /**
+ * gjs_context_maybe_gc:
+ * @context: a #GjsContext
+ * 
+ * Similar to the Spidermonkey JS_MaybeGC() call which
+ * heuristically looks at JS runtime memory usage and
+ * may initiate a garbage collection. 
+ *
+ * This function always unconditionally invokes JS_MaybeGC(), but
+ * additionally looks at memory usage from the system malloc()
+ * when available, and if the delta has grown since the last run
+ * significantly, also initiates a full JavaScript garbage
+ * collection.  The idea is that since GJS is a bridge between
+ * JavaScript and system libraries, and JS objects act as proxies
+ * for these system memory objects, GJS consumers need a way to
+ * hint to the runtime that it may be a good idea to try a
+ * collection.
+ *
+ * A good time to call this function is when your application
+ * transitions to an idle state.
+ */ 
+void
+gjs_context_maybe_gc (GjsContext  *context)
+{
+    gjs_maybe_gc(context->context);
+}
+
+/**
  * gjs_context_get_all:
  *
  * Returns a newly-allocated list containing all known instances of #GjsContext.
