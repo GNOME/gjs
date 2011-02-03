@@ -91,8 +91,8 @@ gjs_define_enum_value(JSContext    *context,
                            fixed_name, value_js,
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS)) {
-        gjs_throw(context, "Unable to define enumeration value %s %d (no memory most likely)",
-                     fixed_name, value_val);
+        gjs_throw(context, "Unable to define enumeration value %s %" G_GINT64_FORMAT " (no memory most likely)",
+                  fixed_name, value_val);
         g_free(fixed_name);
         return JS_FALSE;
     }

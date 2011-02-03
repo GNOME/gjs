@@ -33,6 +33,7 @@
 #include "jsapi-private.h"
 
 #include <string.h>
+#include <math.h>
 
 GQuark
 gjs_util_error_quark (void)
