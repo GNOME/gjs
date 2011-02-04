@@ -157,8 +157,8 @@ format_frame(JSContext* cx, JSStackFrame* fp,
         g_string_append_printf(buf, "%d <TOP LEVEL>", num);
 
     for (i = 0; i < call_props.length; i++) {
-        char *name;
-        char *value;
+        char *name = NULL;
+        char *value = NULL;
         JSPropertyDesc* desc = &call_props.array[i];
         if(desc->flags & JSPD_ARGUMENT) {
             name = jsvalue_to_string(cx, desc->id, &is_string);

@@ -815,6 +815,8 @@ gjs_value_debug_string(JSContext      *context,
         bytes = g_malloc((len + 1) * sizeof(char));
         JS_EncodeStringToBuffer(str, bytes, len);
         bytes[len] = '\0';
+    } else {
+        bytes = g_strdup("[invalid string]");
     }
 #endif
     JS_EndRequest(context);
