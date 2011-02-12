@@ -187,7 +187,7 @@ static struct JSClass gjs_keep_alive_class = {
     JS_PropertyStub,
     JS_PropertyStub,
     JS_PropertyStub,
-    JS_PropertyStub,
+    JS_StrictPropertyStub,
     JS_EnumerateStub,
     JS_ResolveStub,
     JS_ConvertStub,

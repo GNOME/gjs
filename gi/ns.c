@@ -213,7 +213,7 @@ static struct JSClass gjs_ns_class = {
     JS_PropertyStub,
     JS_PropertyStub,
     JS_PropertyStub,
-    JS_PropertyStub,
+    JS_StrictPropertyStub,
     JS_EnumerateStub,
     (JSResolveOp) ns_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,

@@ -851,6 +851,9 @@ static JSBool
 boxed_field_setter (JSContext *context,
                     JSObject  *obj,
                     jsid       id,
+#ifdef HAVE_JS_STRICTPROPERTYSTUB
+                    JSBool     strict,
+#endif
                     jsval     *value)
 {
     Boxed *priv;
@@ -959,7 +962,7 @@ static struct JSClass gjs_boxed_class = {
     JS_PropertyStub,
     JS_PropertyStub,
     JS_PropertyStub,
-    JS_PropertyStub,
+    JS_StrictPropertyStub,
     JS_EnumerateStub,
     (JSResolveOp) boxed_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,

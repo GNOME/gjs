@@ -355,7 +355,7 @@ static struct JSClass gjs_union_class = {
     JS_PropertyStub,
     JS_PropertyStub,
     JS_PropertyStub,
-    JS_PropertyStub,
+    JS_StrictPropertyStub,
     JS_EnumerateStub,
     (JSResolveOp) union_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,

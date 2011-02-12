@@ -1021,7 +1021,7 @@ static struct JSClass gjs_importer_class = {
     JS_PropertyStub,
     JS_PropertyStub,
     JS_PropertyStub,
-    JS_PropertyStub,
+    JS_StrictPropertyStub,
     (JSEnumerateOp) importer_new_enumerate, /* needs cast since it's the new enumerate signature */
     (JSResolveOp) importer_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,

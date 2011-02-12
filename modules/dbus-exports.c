@@ -1803,7 +1803,7 @@ static struct JSClass gjs_js_exports_class = {
     JS_PropertyStub,
     JS_PropertyStub,
     JS_PropertyStub,
-    JS_PropertyStub,
+    JS_StrictPropertyStub,
     JS_EnumerateStub,
     (JSResolveOp) exports_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,

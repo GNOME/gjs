@@ -259,7 +259,7 @@ static struct JSClass gjs_param_class = {
     JS_PropertyStub,
     JS_PropertyStub,
     param_get_prop,
-    JS_PropertyStub,
+    JS_StrictPropertyStub,
     JS_EnumerateStub,
     (JSResolveOp) param_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,

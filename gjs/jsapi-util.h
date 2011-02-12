@@ -148,7 +148,7 @@ static struct JSClass gjs_##cname##_class = { \
     JS_PropertyStub, \
     JS_PropertyStub, \
     JS_PropertyStub, \
-    JS_PropertyStub,\
+    JS_StrictPropertyStub, \
     JS_EnumerateStub,\
     (JSResolveOp) gjs_##cname##_new_resolve, \
     JS_ConvertStub, \

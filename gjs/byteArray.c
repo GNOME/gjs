@@ -45,6 +45,9 @@ static JSBool byte_array_get_prop      (JSContext    *context,
 static JSBool byte_array_set_prop      (JSContext    *context,
                                         JSObject     *obj,
                                         jsid          id,
+#ifdef HAVE_JS_STRICTPROPERTYSTUB
+                                        JSBool        strict,
+#endif
                                         jsval        *value_p);
 static JSBool byte_array_new_resolve   (JSContext    *context,
                                         JSObject     *obj,
@@ -237,6 +240,9 @@ static JSBool
 byte_array_length_setter(JSContext *context,
                          JSObject  *obj,
                          jsid       id,
+#ifdef HAVE_JS_STRICTPROPERTYSTUB
+                         JSBool     strict,
+#endif
                          jsval     *value_p)
 {
     ByteArrayInstance *priv;
@@ -296,6 +302,9 @@ static JSBool
 byte_array_set_prop(JSContext *context,
                     JSObject  *obj,
                     jsid       id,
+#ifdef HAVE_JS_STRICTPROPERTYSTUB
+                    JSBool     strict,
+#endif
                     jsval     *value_p)
 {
     ByteArrayInstance *priv;

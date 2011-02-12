@@ -974,7 +974,7 @@ static struct JSClass gjs_function_class = {
     JS_PropertyStub,
     JS_PropertyStub,
     JS_PropertyStub,
-    JS_PropertyStub,
+    JS_StrictPropertyStub,
     JS_EnumerateStub,
     (JSResolveOp) function_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,

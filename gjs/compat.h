@@ -135,6 +135,10 @@ gjs_##name##_constructor(JSContext *context,            \
 
 #endif
 
+#ifndef HAVE_JS_STRICTPROPERTYSTUB
+#define JS_StrictPropertyStub JS_PropertyStub
+#endif
+
 G_END_DECLS
 
 #endif  /* __GJS_COMPAT_H__ */
