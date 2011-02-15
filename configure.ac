@@ -164,7 +164,7 @@ if `$PKG_CONFIG --exists $JS_PACKAGE '>=' 2`; then
               , [$JS_LIBS])
   AC_CHECK_LIB([mozjs], [JS_EndPC], AC_DEFINE([HAVE_JS_ENDPC], [1], [Define if we have JS_EndPC]),
               , [$JS_LIBS])
-  AC_CHECK_LIB([mozjs], [JS_NewCompartmentAndGlobalObject], 
+  AC_CHECK_LIB([mozjs], [JS_NewCompartmentAndGlobalObject],
               AC_DEFINE([HAVE_JS_NEWCOMPARTMENTANDGLOBALOBJECT], [1], [Define if we have JS_NewCompartmentAndGlobalObject]),
               , [$JS_LIBS])
 
@@ -200,6 +200,26 @@ if test "$js_extra_cflags_needed" = yes; then
     fi
 fi
 AC_SUBST([JS_EXTRA_CFLAGS])
+
+AC_MSG_CHECKING([whether JSLocaleToUnicode takes a const char*])
+save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $JS_CFLAGS -Wno-unused -Werror"
+AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+        [[
+            #include <jsapi.h>
+            extern JSBool test_fun (JSContext*, const char*, jsval*);
+        ]],
+        [[JSLocaleToUnicode jsltu = test_fun;]]
+    )],
+    [have_jslocale_to_unicode_const=yes],
+    [have_jslocale_to_unicode_const=no])
+AC_MSG_RESULT([$have_jslocale_to_unicode_const])
+CFLAGS="$save_CFLAGS"
+
+if test "$have_jslocale_to_unicode_const" = yes; then
+     AC_DEFINE([JS_LOCALETOUNICODE_NEEDS_CONST_CHAR], [1], [Define if JSLocaleToUnicode takes a const char* for its src])
+fi
 
 common_packages="gobject-2.0 >= gobject_required_version $JS_PACKAGE"
 gjs_packages="gmodule-2.0 gthread-2.0 $common_packages"
