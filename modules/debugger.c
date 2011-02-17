@@ -26,7 +26,7 @@
 #include <jsapi.h>
 
 #include <glib.h>
-#include <gjs/gjs.h>
+#include <gjs/gjs-module.h>
 
 #include "debugger.h"
 
