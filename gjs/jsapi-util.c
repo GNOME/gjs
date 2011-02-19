@@ -914,7 +914,7 @@ gjs_explain_scope(JSContext  *context,
               global, debugstr);
     g_free(debugstr);
 
-    parent = JS_GetScopeChain(context);
+    parent = JS_GetGlobalForScopeChain(context);
     chain = g_string_new(NULL);
     while (parent != NULL) {
         char *debug;

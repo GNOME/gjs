@@ -139,6 +139,10 @@ gjs_##name##_constructor(JSContext *context,            \
 #define JS_StrictPropertyStub JS_PropertyStub
 #endif
 
+#ifndef HAVE_JS_GETGLOBALFORSCOPECHAIN
+#define JS_GetGlobalForScopeChain JS_GetScopeChain
+#endif
+
 G_END_DECLS
 
 #endif  /* __GJS_COMPAT_H__ */
