@@ -246,7 +246,7 @@ function _updateTweenByIndex(i) {
             }
         } while (currentTime >= nv);
     } else {
-        var mustUpdate;
+        var mustUpdate, name;
 
         if (currentTime >= tweening.timeComplete) {
             isOver = true;
@@ -435,7 +435,7 @@ function _constructPropertyList(obj) {
     }
 
     // Adds the modifiers to the list of properties
-    for (istr in modifiedProperties) {
+    for (let istr in modifiedProperties) {
         if (properties[istr]) {
             properties[istr].modifierParameters = modifiedProperties[istr].modifierParameters;
             properties[istr].modifierFunction = modifiedProperties[istr].modifierFunction;
@@ -482,7 +482,7 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
         scopes = new Array(target);
     }
 
-    var obj;
+    var obj, istr;
 
     if (isCaller) {
         obj = tweeningParameters;
@@ -613,6 +613,7 @@ function _getNumberOfProperties(object) {
 function removeTweensByTime(scope, properties, timeStart, timeComplete) {
     var removed = false;
     var removedLocally;
+    var name;
 
     for (let i = 0; i < _tweenList.length; i++) {
         removedLocally = false;
@@ -659,9 +660,10 @@ function _pauseTweenByIndex(i) {
 function _splitTweens(tween, properties) {
     var originalTween = _tweenList[tween];
     var newTween = originalTween.clone();
+    var name;
 
     for (let i = 0; i < properties.length; i++) {
-        var name = properties[i];
+        name = properties[i];
         if (originalTween.properties[name]) {
             originalTween.properties[name] = undefined;
             delete originalTween.properties[name];
