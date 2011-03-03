@@ -34,9 +34,6 @@
 
 #include <string.h>
 #include <math.h>
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
 
 GQuark
 gjs_util_error_quark (void)
@@ -1523,6 +1520,41 @@ gjs_parse_args (JSContext  *context,
     return JS_FALSE;
 }
 
+#ifdef __linux__
+static void
+_linux_get_self_process_size (gulong *vm_size,
+                              gulong *rss_size)
+{
+    char *contents;
+    char *iter;
+    gsize len;
+    int i;
+
+    *vm_size = *rss_size = 0;
+
+    if (!g_file_get_contents ("/proc/self/stat", &contents, &len, NULL))
+        return;
+
+    iter = contents;
+    /* See "man proc" for where this 22 comes from */
+    for (i = 0; i < 22; i++) {
+        iter = strchr (iter, ' ');
+        if (!iter)
+            goto out;
+        iter++;
+    }
+    sscanf (iter, " %lu", vm_size);
+    iter = strchr (iter, ' ');
+    if (iter)
+        sscanf (iter, " %lu", rss_size);
+
+ out:
+    g_free (contents);
+}
+
+static gulong linux_rss_trigger;
+#endif
+
 /**
  * gjs_maybe_gc:
  *
@@ -1531,32 +1563,33 @@ gjs_parse_args (JSContext  *context,
 void
 gjs_maybe_gc (JSContext *context)
 {
-    /* Picked this number out of the air basically; 16 megabytes
-     * "feels" good for all of mobile/embedded/GP.  We don't
-     * expect the cost of JS_GC() to be too high, but we
-     * also don't want to call it too often.
-     *
-     * A better approach actually may be to dynamically watch "free";
-     * how much memory we're using before we hit swap.  Even better of
-     * course: some component of the OS sends us a signal when we
-     * should be trying a GC.
-     */
-#define _GJS_MAYBE_GC_MALLOC_BYTES (16 * 1024 * 1024)
-
-    static int _gjs_last_maybe_gc_malloc_blocks = -1;
-    
     JS_MaybeGC(context);
 
-#ifdef HAVE_MALLINFO
+#ifdef __linux__
     {
-        struct mallinfo mstats;
-        mstats = mallinfo();
-        if (mstats.uordblks < _gjs_last_maybe_gc_malloc_blocks || _gjs_last_maybe_gc_malloc_blocks == -1) {
-            _gjs_last_maybe_gc_malloc_blocks = mstats.uordblks;
-        } else if ((mstats.uordblks - _gjs_last_maybe_gc_malloc_blocks) > _GJS_MAYBE_GC_MALLOC_BYTES) {
+        /* We initiate a GC if VM or RSS has grown by this much */
+        gulong vmsize;
+        gulong rss_size;
+
+        _linux_get_self_process_size (&vmsize, &rss_size);
+
+        /* linux_rss_trigger is initialized to 0, so currently
+         * we always do a full GC early.
+         *
+         * Here we see if the RSS has grown by 25% since
+         * our last look; if so, initiate a full GC.  In
+         * theory using RSS is bad if we get swapped out,
+         * since we may be overzealous in GC, but on the
+         * other hand, if swapping is going on, better
+         * to GC.
+         */
+        if (rss_size > linux_rss_trigger) {
+            linux_rss_trigger = (gulong) MIN(G_MAXULONG, rss_size * 1.25);
             JS_GC(context);
-            _gjs_last_maybe_gc_malloc_blocks = mstats.uordblks;
+        } else if (rss_size < (0.75 * linux_rss_trigger)) {
+            /* If we've shrunk by 75%, lower the trigger */
+            linux_rss_trigger = (rss_size * 1.25);
         }
-    }     
-#endif    
+    }
+#endif
 }
