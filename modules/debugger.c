@@ -31,8 +31,7 @@
 #include "debugger.h"
 
 static JSBool
-gjs_debugger_native_trap(JSContext *cx, JSObject *obj, uintN argc,
-                         jsval *argv, jsval *retval)
+gjs_debugger_native_trap(JSContext *cx, uintN argc, jsval *vp)
 {
     G_BREAKPOINT();
 
