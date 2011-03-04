@@ -81,15 +81,6 @@ gjs_##name##_constructor(JSContext  *context,           \
                          jsval      *vp)
 
 /**
- * GJS_NATIVE_CONSTRUCTOR_VARIABLES:
- * Declare variables necessary for the constructor; should
- * be at the very top.
- */
-#define GJS_NATIVE_CONSTRUCTOR_VARIABLES(name)          \
-    JSObject *object = NULL;                            \
-    jsval *argv = JS_ARGV(context, vp);
-
-/**
  * GJS_NATIVE_CONSTRUCTOR_PRELUDE:
  * Call after the initial variable declaration.
  */
@@ -122,8 +113,6 @@ gjs_##name##_constructor(JSContext *context,            \
                          uintN      argc,               \
                          jsval     *argv,               \
                          jsval     *retval)
-
-#define GJS_NATIVE_CONSTRUCTOR_VARIABLES(name)
 
 #define GJS_NATIVE_CONSTRUCTOR_PRELUDE(name)            \
     if (!JS_IsConstructing(context)) {                  \

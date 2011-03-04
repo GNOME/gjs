@@ -31,7 +31,8 @@ GJS_DEFINE_PROTO("CairoSurfacePattern", cairo_surface_pattern)
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_surface_pattern)
 {
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_surface_pattern)
+    JSObject *object = NULL;                            \
+    jsval *argv = JS_ARGV(context, vp);
     JSObject *surface_wrapper;
     cairo_surface_t *surface;
     cairo_pattern_t *pattern;

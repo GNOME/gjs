@@ -169,7 +169,7 @@ repo_new_resolve(JSContext *context,
  */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(repo)
 {
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(repo)
+    JSObject *object = NULL;                            \
     Repo *priv;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(repo);

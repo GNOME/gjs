@@ -31,7 +31,8 @@ GJS_DEFINE_PROTO("CairoLinearGradient", cairo_linear_gradient)
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_linear_gradient)
 {
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_linear_gradient)
+    JSObject *object = NULL;                            \
+    jsval *argv = JS_ARGV(context, vp);
     double x0, y0, x1, y1;
     cairo_pattern_t *pattern;
 

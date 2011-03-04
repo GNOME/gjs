@@ -150,7 +150,7 @@ param_new_resolve(JSContext *context,
  */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(param)
 {
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(param)
+    JSObject *object = NULL;                            \
     Param *priv;
     Param *proto_priv;
     JSClass *obj_class;

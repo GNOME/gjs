@@ -274,7 +274,8 @@ _gjs_cairo_context_construct_internal(JSContext *context,
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_context)
 {
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_context)
+    JSObject *object = NULL;                            \
+    jsval *argv = JS_ARGV(context, vp);
     JSObject *surface_wrapper;
     cairo_surface_t *surface;
     cairo_t *cr;

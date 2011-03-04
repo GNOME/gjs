@@ -34,7 +34,8 @@ GJS_DEFINE_PROTO("CairoPDFSurface", cairo_pdf_surface)
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_pdf_surface)
 {
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_pdf_surface)
+    JSObject *object = NULL;                            \
+    jsval *argv = JS_ARGV(context, vp);
     char *filename;
     double width, height;
     cairo_surface_t *surface;

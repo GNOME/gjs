@@ -209,7 +209,7 @@ union_new(JSContext   *context,
  */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
 {
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(union)
+    JSObject *object = NULL;                            \
     Union *priv;
     Union *proto_priv;
     JSClass *obj_class;

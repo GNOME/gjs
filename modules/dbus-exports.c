@@ -1708,7 +1708,7 @@ exports_new_resolve(JSContext *context,
  */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(js_exports)
 {
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(js_exports)
+    JSObject *object = NULL;                            \
     Exports *priv;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(js_exports);

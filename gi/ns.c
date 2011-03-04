@@ -156,7 +156,7 @@ ns_new_resolve(JSContext *context,
  */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(ns)
 {
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(ns)
+    JSObject *object = NULL;                            \
     Ns *priv;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(ns);
