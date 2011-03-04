@@ -844,7 +844,6 @@ function_call(JSContext *context,
     jsval *js_argv = JS_ARGV(context, vp);
     JSObject *object = JS_THIS_OBJECT(context, vp);
     JSObject *callee = JSVAL_TO_OBJECT(JS_CALLEE(context, vp));
-    jsval retval;
 #else
 static JSBool
 function_call(JSContext *context,
