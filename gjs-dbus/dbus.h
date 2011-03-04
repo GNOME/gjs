@@ -86,7 +86,7 @@ typedef void (* GjsDBusNameLostFunc)     (DBusConnection *connection,
                                           void           *data);
 
 typedef struct {
-    const char *name;
+    char *name;
     GjsDBusNameType type;
     GjsDBusNameAcquiredFunc acquired;
     GjsDBusNameLostFunc lost;
