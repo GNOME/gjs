@@ -49,12 +49,13 @@ changequote([,])dnl
 
 if test "$GCC" = "yes"; then
     for flag in -Wall -Wchar-subscripts -Wmissing-declarations \
-        -Wmissing-prototypes -Wnested-externs -Wpointer-arith -Wcast-align \
-        -Wsign-compare;
+        -Wpointer-arith -Wcast-align -Wsign-compare;
     do
         CFLAGS="`ensureflag $flag $CFLAGS`"
         CXXFLAGS="`ensureflag $flag $CXXFLAGS`"
     done
+    CFLAGS="`ensureflag -Wmissing-prototypes $CFLAGS`"
+    CFLAGS="`ensureflag -Wnested-externs $CFLAGS`"
 fi
 
 # coverage
