@@ -11,6 +11,7 @@ jsnativedir=@gjsnativedir@
 mozjslibdir=@FIREFOX_JS_LIBDIR@
 
 Cflags: -I${includedir}/gjs-1.0 @JS_EXTRA_CFLAGS@
+Libs: -Wl,--rpath=${mozjslibdir}
 Requires: gjs-1.0 gobject-introspection-1.0 @JS_PACKAGE@
 
 Name: gjs-internals-1.0
