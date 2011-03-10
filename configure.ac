@@ -1,8 +1,13 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
+m4_define(pkg_major_version, 0)
+m4_define(pkg_minor_version, 7)
+m4_define(pkg_micro_version, 12)
+m4_define(pkg_version, pkg_major_version.pkg_minor_version.pkg_micro_version)
+
 AC_PREREQ(2.61)
-AC_INIT([gjs], [0.7.12],[http://bugzilla.gnome.org/enter_bug.cgi?product=gjs])
+AC_INIT([gjs], pkg_version, [http://bugzilla.gnome.org/enter_bug.cgi?product=gjs])
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
 AC_CONFIG_SRCDIR([gjs/console.c])
 AC_CONFIG_HEADER([config.h])

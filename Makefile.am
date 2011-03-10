@@ -130,3 +130,19 @@ install-exec-hook:
 	(cd $(DESTDIR)$(bindir) && ln -sf gjs-console$(EXEEXT) gjs$(EXEEXT))
 
 include Makefile-test.am
+
+prepare-release-tag:
+	@TAG=`echo $(VERSION)|sed s/\\\./_/g`;\
+	  echo "git tag $(PACKAGE)_$$TAG"; \
+          git tag -m "Tag $$VERSION" -a \
+              $(PACKAGE)_$$TAG
+
+prepare-minor-release: $(distdir).tar.bz2 prepare-release-tag
+	python $(top_srcdir)/scripts/verbump.py
+
+upload-release: $(distdir).tar.bz2
+	git log origin/master..master
+	@echo -n "Ok to push? [y/N] "; read ans; test x$$ans == xy || exit 1
+	git push --tags origin master:master
+	scp $(distdir).tar.bz2 gnome.org:
+	ssh gnome.org install-module $(distdir).tar.bz2
