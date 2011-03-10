@@ -93,6 +93,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(keep_alive)
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(keep_alive)
     KeepAlive *priv;
 
+    (void) argv;
+
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(keep_alive);
 
     priv = g_slice_new0(KeepAlive);

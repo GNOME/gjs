@@ -160,6 +160,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(param)
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(param);
 
+    (void) argv;
+
     priv = g_slice_new0(Param);
 
     GJS_INC_COUNTER(param);

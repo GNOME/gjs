@@ -971,6 +971,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(importer)
     Importer *priv;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(importer);
+    (void) argv;
 
     priv = g_slice_new0(Importer);
 

@@ -221,6 +221,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
 
     priv = g_slice_new0(Union);
 
+    (void) argv;
+
     GJS_INC_COUNTER(boxed);
 
     g_assert(priv_from_js(context, object) == NULL);
