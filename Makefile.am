@@ -132,10 +132,9 @@ install-exec-hook:
 include Makefile-test.am
 
 prepare-release-tag:
-	@TAG=`echo $(VERSION)|sed s/\\\./_/g`;\
-	  echo "git tag $(PACKAGE)_$$TAG"; \
-          git tag -m "Tag $$VERSION" -a \
-              $(PACKAGE)_$$TAG
+	TAGNAME=`echo $(PACKAGE) | tr - _ | tr a-z A-Z` \
+	TAGVER=`echo $(VERSION) | sed s/\\\./_/g`; \
+	  git tag -m "Tag $(VERSION)" -a "$$TAGNAME"_"$$TAGVER"
 
 prepare-minor-release: $(distdir).tar.bz2 prepare-release-tag
 	python $(top_srcdir)/scripts/verbump.py
