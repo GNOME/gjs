@@ -1056,6 +1056,7 @@ name_watch_filter_message(DBusConnection *connection,
     GjsDBusInfo *info;
 
     info = _gjs_dbus_ensure_info(connection);
+    (void) info;
 
     if (dbus_message_is_signal(message, DBUS_INTERFACE_DBUS, "NameOwnerChanged") &&
         dbus_message_has_sender(message, DBUS_SERVICE_DBUS)) {

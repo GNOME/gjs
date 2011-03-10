@@ -1043,6 +1043,7 @@ importer_new(JSContext    *context)
     JSObject *importer;
     Importer *priv;
     JSObject *global;
+    (void) priv;
 
     global = gjs_get_import_global(context);
 
@@ -1082,8 +1083,6 @@ importer_new(JSContext    *context)
     importer = JS_ConstructObject(context, &gjs_importer_class, NULL, global);
     if (importer == NULL)
         gjs_fatal("No memory to create ns object");
-
-    priv = priv_from_js(context, importer);
 
     return importer;
 }

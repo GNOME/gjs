@@ -548,11 +548,9 @@ gjs_invoke_c_function(JSContext      *context,
             out_args_pos++;
         } else {
             GArgument *in_value;
-            GITypeTag type_tag;
             GITypeInfo ainfo;
 
             g_arg_info_load_type(&arg_info, &ainfo);
-            type_tag = g_type_info_get_tag(&ainfo);
 
             g_assert_cmpuint(in_args_pos, <, in_args_len);
             in_value = &in_arg_cvalues[in_args_pos];
@@ -998,7 +996,6 @@ init_cached_function_data (JSContext      *context,
                            GIFunctionInfo *info)
 {
     guint8 i, n_args;
-    gboolean is_method;
     GError *error = NULL;
     GITypeInfo return_type;
 
@@ -1006,8 +1003,6 @@ init_cached_function_data (JSContext      *context,
         gjs_throw_g_error(context, error);
         return FALSE;
     }
-
-    is_method = (g_function_info_get_flags(info) & GI_FUNCTION_IS_METHOD) != 0;
 
     g_callable_info_load_return_type((GICallableInfo*)info, &return_type);
     if (g_type_info_get_tag(&return_type) != GI_TYPE_TAG_VOID)

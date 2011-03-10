@@ -1184,19 +1184,15 @@ gjs_define_static_methods(JSContext    *context,
                           GIObjectInfo *object_info)
 {
     int i;
-    const char *obj_name;
     int n_methods;
 
-    obj_name = g_base_info_get_name ((GIBaseInfo*)object_info);
     n_methods = g_object_info_get_n_methods(object_info);
 
     for (i = 0; i < n_methods; i++) {
         GIFunctionInfo *meth_info;
         GIFunctionInfoFlags flags;
-        const char *name;
 
         meth_info = g_object_info_get_method(object_info, i);
-        name = g_base_info_get_name((GIBaseInfo*)meth_info);
         flags = g_function_info_get_flags (meth_info);
 
         /* Anything that isn't a method we put on the prototype of the

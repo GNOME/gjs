@@ -362,10 +362,6 @@ pending_notify(DBusPendingCall *pending,
 static void
 pending_free_closure(void *data)
 {
-    GClosure *closure;
-
-    closure = data;
-
     g_closure_invalidate(data);
     g_closure_unref(data);
 }

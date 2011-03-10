@@ -169,13 +169,10 @@ gjs_dbus_proxy_constructor (GType                  type,
                             GObjectConstructParam *construct_params)
 {
     GObject *object;
-    GjsDBusProxy *proxy;
 
     object = (* G_OBJECT_CLASS (gjs_dbus_proxy_parent_class)->constructor) (type,
                                                                             n_construct_properties,
                                                                             construct_params);
-
-    proxy = GJS_DBUS_PROXY(object);
 
     return object;
 }
