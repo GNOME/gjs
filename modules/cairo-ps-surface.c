@@ -34,8 +34,7 @@ GJS_DEFINE_PROTO("CairoPSSurface", cairo_ps_surface)
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_ps_surface)
 {
-    JSObject *object = NULL;                            \
-    jsval *argv = JS_ARGV(context, vp);
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_ps_surface)
     char *filename;
     double width, height;
     cairo_surface_t *surface;

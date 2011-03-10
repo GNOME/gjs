@@ -90,7 +90,7 @@ child_free(void *data)
  */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(keep_alive)
 {
-    JSObject *object = NULL;                            \
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(keep_alive)
     KeepAlive *priv;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(keep_alive);

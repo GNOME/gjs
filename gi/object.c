@@ -620,8 +620,7 @@ wrapped_gobj_toggle_notify(gpointer      data,
  */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
 {
-    JSObject *object = NULL;                            \
-    jsval *argv = JS_ARGV(context, vp);
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(object_instance)
     ObjectInstance *priv;
     ObjectInstance *proto_priv;
     JSObject *proto;

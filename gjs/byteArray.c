@@ -439,8 +439,7 @@ gjs_g_byte_array_new(int preallocated_length)
  */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array)
 {
-    JSObject *object = NULL;                            \
-    jsval *argv = JS_ARGV(context, vp);
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(byte_array)
     ByteArrayInstance *priv;
     JSObject *proto;
     gboolean is_proto;

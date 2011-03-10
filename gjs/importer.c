@@ -967,7 +967,7 @@ importer_new_resolve(JSContext *context,
  */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(importer)
 {
-    JSObject *object = NULL;                            \
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(importer)
     Importer *priv;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(importer);

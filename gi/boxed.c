@@ -416,8 +416,7 @@ boxed_init(JSContext   *context,
  */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
 {
-    JSObject *object = NULL;                            \
-    jsval *argv = JS_ARGV(context, vp);
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(boxed)
     Boxed *priv;
     Boxed *proto_priv;
     JSClass *obj_class;
