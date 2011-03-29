@@ -50,6 +50,8 @@ static struct JSClass gjs_repo_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Repo, gjs_repo_class)
 
+static JSObject * lookup_override_function(JSContext *, const char *);
+
 static JSObject*
 resolve_namespace_object(JSContext  *context,
                          JSObject   *repo_obj,
@@ -61,7 +63,9 @@ resolve_namespace_object(JSContext  *context,
     JSObject *versions;
     jsval version_val;
     char *version;
-    JSObject *result;
+    JSObject *namespace;
+    JSObject *override;
+    jsval result;
 
     JS_BeginRequest(context);
 
@@ -101,9 +105,33 @@ resolve_namespace_object(JSContext  *context,
      * with the given namespace name, pointing to that namespace
      * in the repo.
      */
-    result = gjs_define_ns(context, repo_obj, ns_name, repo);
+    namespace = gjs_create_ns(context, ns_name, repo);
+    JS_AddObjectRoot(context, &namespace);
+
+    override = lookup_override_function(context, ns_name);
+    if (override && !JS_CallFunctionValue (context,
+                                           namespace, /* thisp */
+                                           OBJECT_TO_JSVAL(override), /* callee */
+                                           0, /* argc */
+                                           NULL, /* argv */
+                                           &result)) {
+        JS_RemoveObjectRoot(context, &namespace);
+        JS_EndRequest(context);
+        return NULL;
+    }
+
+    if (!JS_DefineProperty(context, repo_obj,
+                           ns_name, OBJECT_TO_JSVAL(namespace),
+                           NULL, NULL,
+                           GJS_MODULE_PROP_FLAGS))
+        gjs_fatal("no memory to define ns property");
+
+    gjs_debug(GJS_DEBUG_GNAMESPACE,
+              "Defined namespace '%s' %p in GIRepository %p", ns_name, namespace, repo_obj);
+
+    JS_RemoveObjectRoot(context, &namespace);
     JS_EndRequest(context);
-    return result;
+    return namespace;
 }
 
 /*
@@ -501,6 +529,49 @@ gjs_lookup_namespace_object(JSContext  *context,
     }
 
     return gjs_lookup_namespace_object_by_name(context, ns);
+}
+
+static JSObject*
+lookup_override_function(JSContext  *context,
+                         const char *ns)
+{
+    JSObject *global;
+    jsval importer;
+    jsval overridespkg;
+    jsval module;
+    jsval function;
+
+    JS_BeginRequest(context);
+    global = gjs_get_import_global(context);
+
+    importer = JSVAL_VOID;
+    if (!gjs_object_require_property(context, global, "global object", "imports", &importer) ||
+        !JSVAL_IS_OBJECT(importer))
+        goto fail;
+
+    overridespkg = JSVAL_VOID;
+    if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(importer), "importer",
+                                        "overrides", &overridespkg) ||
+        !JSVAL_IS_OBJECT(overridespkg))
+        goto fail;
+
+    module = JSVAL_VOID;
+    if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(overridespkg), "GI repository object", ns, &module)
+        || !JSVAL_IS_OBJECT(module))
+        goto fail;
+
+    if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(module), "override module",
+                                     "_init", &function) ||
+        !JSVAL_IS_OBJECT(function))
+        goto fail;
+
+    JS_EndRequest(context);
+    return JSVAL_TO_OBJECT(function);
+
+ fail:
+    JS_ClearPendingException(context);
+    JS_EndRequest(context);
+    return NULL;
 }
 
 JSObject*

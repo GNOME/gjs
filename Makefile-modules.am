@@ -3,6 +3,9 @@ dist_gjstweener_DATA =			\
 	modules/tweener/tweener.js	\
 	modules/tweener/tweenList.js
 
+dist_gjsoverride_DATA = 		\
+	modules/overrides/Gio.js
+
 dist_gjsjs_DATA +=		\
 	modules/gettext.js	\
 	modules/lang.js		\
