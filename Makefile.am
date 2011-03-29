@@ -12,7 +12,8 @@ TEST_PROGS =
 check_PROGRAMS = $(TEST_PROGS)
 
 gjsjsdir = @gjsjsdir@
-gjstweenerdir = @gjsjsdir@/tweener
+gjsoverridedir = $(gjsjsdir)/overrides
+gjstweenerdir = $(gjsjsdir)/tweener
 gjsnativedir = @gjsnativedir@
 
 gjs_public_includedir = $(includedir)/gjs-1.0
