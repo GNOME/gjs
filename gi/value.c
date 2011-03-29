@@ -403,6 +403,23 @@ gjs_value_to_g_value_internal(JSContext    *context,
             g_value_set_static_boxed(gvalue, gboxed);
         else
             g_value_set_boxed(gvalue, gboxed);
+    } else if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
+        GVariant *variant = NULL;
+
+        if (JSVAL_IS_NULL(value)) {
+            /* nothing to do */
+        } else if (JSVAL_IS_OBJECT(value)) {
+            JSObject *obj = JSVAL_TO_OBJECT(value);
+            variant = gjs_c_struct_from_boxed(context, obj);
+        } else {
+            gjs_throw(context,
+                      "Wrong type %s; boxed type %s expected",
+                      gjs_get_type_name(value),
+                      g_type_name(gtype));
+            return JS_FALSE;
+        }
+
+        g_value_set_variant (gvalue, variant);
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {
         gint64 value_int64;
 
@@ -627,13 +644,17 @@ gjs_value_from_g_value_internal(JSContext    *context,
         gjs_throw(context,
                   "Unable to introspect element-type of container in GValue");
         return JS_FALSE;
-    } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
+    } else if (g_type_is_a(gtype, G_TYPE_BOXED) ||
+               g_type_is_a(gtype, G_TYPE_VARIANT)) {
         GjsBoxedCreationFlags boxed_flags;
         GIBaseInfo *info;
         void *gboxed;
         JSObject *obj;
 
-        gboxed = g_value_get_boxed(gvalue);
+        if (g_type_is_a(gtype, G_TYPE_BOXED))
+            gboxed = g_value_get_boxed(gvalue);
+        else
+            gboxed = g_value_get_variant(gvalue);
         boxed_flags = GJS_BOXED_CREATION_NONE;
 
         /* The only way to differentiate unions and structs is from

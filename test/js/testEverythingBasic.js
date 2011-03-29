@@ -7,6 +7,7 @@ if (!('assertEquals' in this)) { /* allow running this test standalone */
 }
 
 // We use Gio to have some objects that we know exist
+const GLib = imports.gi.GLib;
 const Gio = imports.gi.Gio;
 const Lang = imports.lang;
 
@@ -460,6 +461,27 @@ function testStrvInGValue() {
     assertEquals(v[0], "one");
     assertEquals(v[1], "two");
     assertEquals(v[2], "three");
+}
+
+function testVariant() {
+    // Cannot access the variant contents, for now
+    let ivar = Everything.test_gvariant_i();
+    assertEquals('i', ivar.get_type_string());
+    assertTrue(ivar.equal(GLib.Variant.new_int32(1)));
+
+    let svar = Everything.test_gvariant_s();
+    assertEquals('s', String.fromCharCode(svar.classify()));
+    assertEquals('one', svar.get_string()[0]);
+
+    let asvvar = Everything.test_gvariant_asv();
+    assertEquals(2, asvvar.n_children());
+
+    let asvar = Everything.test_gvariant_as();
+    let as = asvar.get_strv();
+    assertEquals('one', as[0]);
+    assertEquals('two', as[1]);
+    assertEquals('three', as[2]);
+    assertEquals(3, as.length);
 }
 
 gjstestRun();

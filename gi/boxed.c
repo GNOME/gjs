@@ -503,17 +503,25 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
 
         if (unthreadsafe_template_for_constructor.gboxed == NULL) {
             Boxed *source_priv;
+            GType gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
 
             /* Short-circuit copy-construction in the case where we can use g_boxed_copy */
             if (argc == 1 &&
                 boxed_get_copy_source(context, priv, argv[0], &source_priv)) {
 
-                GType gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
-                if (gtype != G_TYPE_NONE) {
+                if (gtype != G_TYPE_NONE && g_type_is_a (gtype, G_TYPE_BOXED)) {
                     priv->gboxed = g_boxed_copy(gtype, source_priv->gboxed);
                     GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
                     return JS_TRUE;
                 }
+            }
+
+            /* Short-circuit construction for GVariants (simply cannot construct here,
+               the constructor should be overridden) */
+            if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
+                gjs_throw(context,
+                          "Can't create instance of GVariant directly, use GVariant.new_*");
+                return JS_FALSE;
             }
 
             if (!boxed_new(context, object, priv))
@@ -548,9 +556,11 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
             GType gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
             JSBool retval;
             
-            if (gtype != G_TYPE_NONE) {
+            if (gtype != G_TYPE_NONE && g_type_is_a (gtype, G_TYPE_BOXED)) {
                 priv->gboxed = g_boxed_copy(gtype,
                                             unthreadsafe_template_for_constructor.gboxed);
+            } else if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
+                priv->gboxed = g_variant_ref_sink (unthreadsafe_template_for_constructor.gboxed);
             } else if (priv->can_allocate_directly) {
                 if (!boxed_new_direct(context, object, priv))
                     return JS_FALSE;
@@ -597,7 +607,12 @@ boxed_finalize(JSContext *context,
             GType gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
             g_assert(gtype != G_TYPE_NONE);
 
-            g_boxed_free(gtype,  priv->gboxed);
+            if (g_type_is_a (gtype, G_TYPE_BOXED))
+                g_boxed_free (gtype,  priv->gboxed);
+            else if (g_type_is_a (gtype, G_TYPE_VARIANT))
+                g_variant_unref (priv->gboxed);
+            else
+                g_assert_not_reached ();
         }
 
         priv->gboxed = NULL;
@@ -1020,7 +1035,7 @@ gjs_lookup_boxed_constructor(JSContext    *context,
 
 JSObject*
 gjs_lookup_boxed_prototype(JSContext    *context,
-                              GIBoxedInfo  *info)
+                           GIBoxedInfo  *info)
 {
     JSObject *ns;
     JSObject *proto;

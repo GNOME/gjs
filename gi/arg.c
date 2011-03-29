@@ -1154,6 +1154,8 @@ gjs_value_to_g_argument(JSContext      *context,
                     if (transfer != GI_TRANSFER_NOTHING) {
                         if (g_type_is_a(gtype, G_TYPE_BOXED))
                             arg->v_pointer = g_boxed_copy (gtype, arg->v_pointer);
+                        else if (g_type_is_a(gtype, G_TYPE_VARIANT))
+                            g_variant_ref (arg->v_pointer);
                         else {
                             gjs_throw(context,
                                       "Can't transfer ownership of a structure type not registered as boxed");
@@ -2519,6 +2521,9 @@ gjs_g_arg_release_internal(JSContext  *context,
             } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                 if (transfer != TRANSFER_IN_NOTHING)
                     g_boxed_free(gtype, arg->v_pointer);
+            } else if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
+                if (transfer != TRANSFER_IN_NOTHING)
+                    g_variant_unref (arg->v_pointer);
             } else if (gtype == G_TYPE_NONE) {
                 if (transfer != TRANSFER_IN_NOTHING) {
                     gjs_throw(context, "Don't know how to release GArgument: not an object or boxed type");
