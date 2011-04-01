@@ -163,6 +163,7 @@ AC_CHECK_LIB([mozjs], [JS_StrictPropertyStub], AC_DEFINE([HAVE_JS_STRICTPROPERTY
 AC_CHECK_LIB([mozjs], [JS_GetGlobalForScopeChain], AC_DEFINE([HAVE_JS_GETGLOBALFORSCOPECHAIN], [1], [Define if we have JS_GetGlobalForScopeChain]),, [$JS_LIBS])
 dnl xulrunner 2.2 checks
 AC_CHECK_LIB([mozjs], [JS_CLASS_TRACE], AC_DEFINE([HAVE_JS_CLASS_TRACE], [1], [Define if we still have JS_CLASS_TRACE]),, [$JS_LIBS])
+AC_CHECK_LIB([mozjs], [JS_DestroyScript], AC_DEFINE([HAVE_JS_DESTROYSCRIPT], [1], [Define if we still have JS_DestroyScript]),, [$JS_LIBS])
 
 AC_MSG_CHECKING([for mozilla-js >= 2 ])
 if `$PKG_CONFIG --exists $JS_PACKAGE '>=' 2`; then

@@ -161,7 +161,11 @@ gjs_console_interact(JSContext *context,
 {
     JSObject *object = JS_THIS_OBJECT(context, vp);
     gboolean eof = FALSE;
+#ifdef HAVE_JS_DESTROYSCRIPT
     JSScript *script = NULL;
+#else
+    JSObject *script = NULL;
+#endif
     jsval result;
     JSString *str;
     GString *buffer = NULL;
@@ -219,8 +223,10 @@ gjs_console_interact(JSContext *context,
         }
 
  next:
+#ifdef HAVE_JS_DESTROYSCRIPT
         if (script)
             JS_DestroyScript(context, script);
+#endif
         g_string_free(buffer, TRUE);
     } while (!eof);
 
