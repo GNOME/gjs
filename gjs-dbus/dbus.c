@@ -349,11 +349,19 @@ _gjs_dbus_ensure_connect_idle(DBusBusType bus_type)
 {
     if (bus_type == DBUS_BUS_SESSION) {
         if (session_connect_idle_id == 0) {
-            session_connect_idle_id = g_idle_add(connect_idle, GINT_TO_POINTER(bus_type));
+            /* We use G_PRIORITY_HIGH to ensure that any deferred
+             * work (such as setting up exports) happens *before*
+             * potentially reading any messages from the socket.  If we
+             * didn't, this could lead to race conditions.  See
+             * https://bugzilla.gnome.org/show_bug.cgi?id=646246
+             */
+            session_connect_idle_id = g_timeout_add_full(G_PRIORITY_HIGH, 0, connect_idle,
+                                                         GINT_TO_POINTER(bus_type), NULL);
         }
     } else if (bus_type == DBUS_BUS_SYSTEM) {
         if (system_connect_idle_id == 0) {
-            system_connect_idle_id = g_idle_add(connect_idle, GINT_TO_POINTER(bus_type));
+            system_connect_idle_id = g_timeout_add_full(G_PRIORITY_HIGH, 0, connect_idle,
+                                                        GINT_TO_POINTER(bus_type), NULL);
         }
     } else {
         g_assert_not_reached();
