@@ -155,11 +155,14 @@ else
   AC_MSG_ERROR([$JS_PACKAGE >= 1.9.2 is required])
 fi
 
+dnl xulrunner 2 checks
 AC_CHECK_LIB([mozjs], [JS_GetStringBytes], AC_DEFINE([HAVE_JS_GETSTRINGBYTES], [1], [Define if we still have JS_GetStringBytes]),, [$JS_LIBS])
 AC_CHECK_LIB([mozjs], [JS_GetFunctionName], AC_DEFINE([HAVE_JS_GETFUNCTIONNAME], [1], [Define if we still have JS_GetFunctionName]),, [$JS_LIBS])
 AC_CHECK_LIB([mozjs], [JS_GetStringChars], AC_DEFINE([HAVE_JS_GETSTRINGCHARS], [1], [Define if we still have JS_GetStringChars]),, [$JS_LIBS])
 AC_CHECK_LIB([mozjs], [JS_StrictPropertyStub], AC_DEFINE([HAVE_JS_STRICTPROPERTYSTUB], [1], [Define if we have JS_StrictPropertyStub]),, [$JS_LIBS])
 AC_CHECK_LIB([mozjs], [JS_GetGlobalForScopeChain], AC_DEFINE([HAVE_JS_GETGLOBALFORSCOPECHAIN], [1], [Define if we have JS_GetGlobalForScopeChain]),, [$JS_LIBS])
+dnl xulrunner 2.2 checks
+AC_CHECK_LIB([mozjs], [JS_CLASS_TRACE], AC_DEFINE([HAVE_JS_CLASS_TRACE], [1], [Define if we still have JS_CLASS_TRACE]),, [$JS_LIBS])
 
 AC_MSG_CHECKING([for mozilla-js >= 2 ])
 if `$PKG_CONFIG --exists $JS_PACKAGE '>=' 2`; then
