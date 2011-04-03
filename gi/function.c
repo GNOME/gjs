@@ -707,6 +707,7 @@ release:
         if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT) {
             GArgument *arg;
             GITransfer transfer;
+            gint array_length_pos;
 
             if (direction == GI_DIRECTION_IN) {
                 g_assert_cmpuint(in_args_pos, <, in_args_len);
@@ -722,10 +723,26 @@ release:
                  */
                 transfer = GI_TRANSFER_EVERYTHING;
             }
-            if (!gjs_g_argument_release_in_arg(context,
-                                               transfer,
-                                               &arg_type_info,
-                                               arg)) {
+            if (g_type_info_get_tag(&arg_type_info) == GI_TYPE_TAG_ARRAY &&
+                (array_length_pos = g_type_info_get_array_length(&arg_type_info)) != -1) {
+                /* Assume that the length passed as an argument was the length of the Array
+                   (not necessarily true) */
+
+                if (is_method) /* get_array_length does not consider the instance argument */
+                    array_length_pos++;
+
+                guint length = in_arg_cvalues[array_length_pos].v_uint;
+                if (!gjs_g_argument_release_in_array(context,
+                                                     transfer,
+                                                     &arg_type_info,
+                                                     length,
+                                                     arg)) {
+                    postinvoke_release_failed = TRUE;
+                }
+            } else if (!gjs_g_argument_release_in_arg(context,
+                                                      transfer,
+                                                      &arg_type_info,
+                                                      arg)) {
                 postinvoke_release_failed = TRUE;
             }
         }
