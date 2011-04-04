@@ -143,5 +143,5 @@ upload-release: $(distdir).tar.bz2
 	git log origin/master..master
 	@echo -n "Ok to push? [y/N] "; read ans; test x$$ans == xy || exit 1
 	git push --tags origin master:master
-	scp $(distdir).tar.bz2 gnome.org:
-	ssh gnome.org install-module $(distdir).tar.bz2
+	scp $(distdir).tar.bz2 master.gnome.org:
+	ssh master.gnome.org install-module $(distdir).tar.bz2
