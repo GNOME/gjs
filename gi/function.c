@@ -477,7 +477,20 @@ gjs_invoke_c_function(JSContext      *context,
         } else if (type == GI_INFO_TYPE_UNION) {
             in_arg_cvalues[0].v_pointer = gjs_c_union_from_union(context, obj);
         } else { /* by fallback is always object */
+            GType gtype;
+
             in_arg_cvalues[0].v_pointer = gjs_g_object_from_object(context, obj);
+
+            gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo *)container);
+            if (!g_type_is_a (G_TYPE_FROM_INSTANCE (in_arg_cvalues[0].v_pointer),
+                              gtype)) {
+                gjs_throw(context,
+                          "Expected type '%s' but got '%s'",
+                          g_type_name(gtype),
+                          g_type_name(G_TYPE_FROM_INSTANCE(in_arg_cvalues[0].v_pointer)));
+                failed = TRUE;
+                goto release;
+            }
         }
         in_arg_pointers[0] = &in_arg_cvalues[0];
         ++in_args_pos;
@@ -954,6 +967,45 @@ function_finalize(JSContext *context,
     g_slice_free(Function, priv);
 }
 
+static JSBool
+function_to_string (JSContext *context,
+                    guint      argc,
+                    jsval     *vp)
+{
+    Function *priv;
+    gchar *string;
+    gboolean free;
+    JSObject *self;
+    jsval retval;
+    JSBool ret = JS_FALSE;
+
+    self = JS_THIS_OBJECT(context, vp);
+    if (!self) {
+        gjs_throw(context, "this cannot be null");
+        return JS_FALSE;
+    }
+
+    priv = priv_from_js (context, self);
+
+    if (priv == NULL) {
+        string = "function () {\n}";
+        free = FALSE;
+    } else {
+        string = g_strdup_printf("function %s(){\n\t[native code]\n}",
+                                 g_base_info_get_name ((GIBaseInfo *) priv->info));
+        free = TRUE;
+    }
+
+    if (gjs_string_from_utf8(context, string, -1, &retval)) {
+        JS_SET_RVAL(context, vp, retval);
+        ret = JS_TRUE;
+    }
+
+    if (free)
+        g_free(string);
+    return ret;
+}
+
 /* The bizarre thing about this vtable is that it applies to both
  * instances of the object, and to the prototype that instances of the
  * class have.
@@ -986,8 +1038,11 @@ static JSPropertySpec gjs_function_proto_props[] = {
     { NULL }
 };
 
+/* The original Function.prototype.toString complains when
+   given a GIRepository function as an argument */
 static JSFunctionSpec gjs_function_proto_funcs[] = {
-    { NULL }
+    JS_FN("toString", function_to_string, 0, 0),
+    JS_FS_END
 };
 
 static gboolean
@@ -1107,8 +1162,11 @@ function_new(JSContext      *context,
     if (!gjs_object_has_property(context, global, gjs_function_class.name)) {
         JSObject *prototype;
         JSObject *parent_proto;
+        jsval native_function;
 
-        parent_proto = NULL;
+        JS_GetProperty(context, global, "Function", &native_function);
+        /* We take advantage from that fact that Function.__proto__ is Function.prototype */
+        parent_proto = JS_GetPrototype(context, JSVAL_TO_OBJECT(native_function));
 
         prototype = JS_InitClass(context, global,
                                  /* parent prototype JSObject* for
