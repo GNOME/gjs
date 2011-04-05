@@ -4,6 +4,7 @@ dist_gjstweener_DATA =			\
 	modules/tweener/tweenList.js
 
 dist_gjsoverride_DATA = 		\
+	modules/overrides/GLib.js	\
 	modules/overrides/Gio.js
 
 dist_gjsjs_DATA +=		\
