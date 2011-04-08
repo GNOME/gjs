@@ -145,7 +145,7 @@ static JSBool
 gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
 {
     char line[256];
-    fprintf(stdout, prompt);
+    fprintf(stdout, "%s", prompt);
     fflush(stdout);
     if (!fgets(line, sizeof line, file))
         return JS_FALSE;
