@@ -217,11 +217,14 @@ else
 fi
 CFLAGS="$save_CFLAGS"
 
+GOBJECT_INTROSPECTION_CHECK([1.29.0])
+
 common_packages="gobject-2.0 >= gobject_required_version $JS_PACKAGE"
 gjs_packages="gmodule-2.0 gthread-2.0 gobject-introspection-1.0 >= 0.10.1 $common_packages"
 gjs_cairo_gobject_packages="cairo-gobject $common_packages"
 gjs_cairo_packages="cairo $common_packages"
 gjs_dbus_packages="dbus-glib-1 $common_packages"
+gjs_gdbus_packages="gobject-2.0 >= gobject_required_version gio-2.0"
 # gjs-tests links against everything
 gjstests_packages="$gjstests_packages $gjs_packages"
 
@@ -233,6 +236,8 @@ if test x${have_cairo_gobject} != xyes; then
   PKG_CHECK_MODULES([GJS_CAIRO], [$gjs_cairo_packages])
 fi
 PKG_CHECK_MODULES([GJS_DBUS], [$gjs_dbus_packages])
+PKG_CHECK_MODULES([GJS_GDBUS], [$gjs_gdbus_packages])
+
 saved_CFLAGS=$CFLAGS
 CFLAGS=$GJS_DBUS_CFLAGS
 saved_LIBS=$LIBS

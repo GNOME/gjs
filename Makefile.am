@@ -13,6 +13,8 @@ EXTRA_DIST =
 gjstest_files_with_tests =
 TEST_PROGS =
 check_PROGRAMS = $(TEST_PROGS)
+INTROSPECTION_GIRS =
+ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
 gjsjsdir = @gjsjsdir@
 gjsoverridedir = $(gjsjsdir)/overrides
@@ -58,7 +60,8 @@ EXTRA_DIST += 			\
 gjs_directory_defines = 				\
 	-DGJS_TOP_SRCDIR=\"$(top_srcdir)\"		\
 	-DGJS_JS_DIR=\"$(gjsjsdir)\"			\
-	-DGJS_NATIVE_DIR=\"$(gjsnativedir)\"
+	-DGJS_NATIVE_DIR=\"$(gjsnativedir)\"		\
+	-DPKGLIBDIR=\"$(pkglibdir)\"
 
 ########################################################################
 lib_LTLIBRARIES += libgjs.la
@@ -163,6 +166,9 @@ endif
 include Makefile-gjs-dbus.am
 include Makefile-modules.am
 include Makefile-examples.am
+
+pkglib_DATA = $(INTROSPECTION_GIRS) $(INTROSPECTION_GIRS:.gir=.typelib)
+
 ########################################################################
 bin_PROGRAMS += gjs-console
 
