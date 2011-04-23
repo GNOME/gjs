@@ -175,6 +175,8 @@ EXTRA_DIST +=					\
 	test/js/testself.js			\
 	test/js/testByteArray.js		\
 	test/js/testCairo.js			\
+	test/js/testDBus.js			\
+	test/js/testGDBus.js			\
 	test/js/testEverythingBasic.js		\
 	test/js/testEverythingEncapsulated.js	\
 	test/js/testGIMarshalling.js		\
