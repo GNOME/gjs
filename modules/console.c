@@ -196,7 +196,11 @@ gjs_console_interact(JSContext *context,
             g_string_append(buffer, temp_buf);
             g_free(temp_buf);
             lineno++;
+#ifdef HAVE_JS_DECODEUTF8
+        } while (!JS_BufferIsCompilableUnit(context, JS_TRUE, object, buffer->str, buffer->len));
+#else
         } while (!JS_BufferIsCompilableUnit(context, object, buffer->str, buffer->len));
+#endif
 
         script = JS_CompileScript(context, object, buffer->str, buffer->len, "typein",
                                   startline);
