@@ -1492,6 +1492,123 @@ gjs_array_from_g_list (JSContext  *context,
 }
 
 static JSBool
+gjs_array_from_carray_internal (JSContext  *context,
+                                jsval      *value_p,
+                                GITypeInfo *param_info,
+                                guint       length,
+                                gpointer    array)
+{
+    JSObject *obj;
+    jsval elem;
+    GArgument arg;
+    JSBool result;
+    GITypeTag element_type;
+    guint i;
+
+    element_type = g_type_info_get_tag(param_info);
+    element_type = replace_gtype(element_type);
+
+    obj = JS_NewArrayObject(context, 0, NULL);
+    if (obj == NULL)
+      return JS_FALSE;
+
+    *value_p = OBJECT_TO_JSVAL(obj);
+
+    elem = JSVAL_VOID;
+    JS_AddValueRoot(context, &elem);
+
+#define ITERATE(type) \
+    for (i = 0; i < length; i++) { \
+        arg.v_##type = *(((g##type*)array) + i);                         \
+        if (!gjs_value_from_g_argument(context, &elem, param_info, &arg)) \
+          goto finally; \
+        if (!JS_DefineElement(context, obj, i, elem, NULL, NULL, \
+              JSPROP_ENUMERATE)) \
+          goto finally; \
+    }
+
+    switch (element_type) {
+        case GI_TYPE_TAG_UINT8:
+          ITERATE(uint8);
+          break;
+        case GI_TYPE_TAG_INT8:
+          ITERATE(int8);
+          break;
+        case GI_TYPE_TAG_UINT16:
+          ITERATE(uint16);
+          break;
+        case GI_TYPE_TAG_INT16:
+          ITERATE(int16);
+          break;
+        case GI_TYPE_TAG_UINT32:
+          ITERATE(uint32);
+          break;
+        case GI_TYPE_TAG_INT32:
+          ITERATE(int32);
+          break;
+        case GI_TYPE_TAG_UINT64:
+          ITERATE(uint64);
+          break;
+        case GI_TYPE_TAG_INT64:
+          ITERATE(int64);
+          break;
+        case GI_TYPE_TAG_FLOAT:
+          ITERATE(float);
+          break;
+        case GI_TYPE_TAG_DOUBLE:
+          ITERATE(double);
+          break;
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_INTERFACE:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_GHASH:
+          ITERATE(pointer);
+          break;
+        default:
+          gjs_throw(context, "Unknown Array element-type %d", element_type);
+          goto finally;
+    }
+
+#undef ITERATE
+
+    result = JS_TRUE;
+
+finally:
+    JS_RemoveValueRoot(context, &elem);
+
+    return result;
+}
+
+static JSBool
+gjs_array_from_carray (JSContext  *context,
+                       jsval      *value_p,
+                       GITypeInfo *type_info,
+                       gpointer    array)
+{
+    gint length;
+    GITypeInfo *param_info;
+    JSBool res;
+
+    length = g_type_info_get_array_fixed_size(type_info);
+
+    if (length == -1) {
+        gjs_throw(context, "FIXME: Only supporting fixed size ARRAYs");
+        return JS_FALSE;
+    }
+
+    param_info = g_type_info_get_param_type(type_info, 0);
+
+    res = gjs_array_from_carray_internal(context, value_p, param_info, length, array);
+
+    g_base_info_unref((GIBaseInfo*)param_info);
+
+    return res;
+}
+
+static JSBool
 gjs_array_from_g_array (JSContext  *context,
                         jsval      *value_p,
                         GITypeInfo *param_info,
@@ -1894,8 +2011,7 @@ gjs_value_from_g_argument (JSContext  *context,
 
                 return result;
             } else {
-                gjs_throw(context, "FIXME: Only supporting zero-terminated ARRAYs");
-                return JS_FALSE;
+                return gjs_array_from_carray(context, value_p, type_info, arg->v_pointer);
             }
         } else if (g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_BYTE_ARRAY) {
             JSObject *array = gjs_byte_array_from_byte_array(context,

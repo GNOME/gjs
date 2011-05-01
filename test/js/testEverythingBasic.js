@@ -294,6 +294,13 @@ function testArrayIn() {
 }
 
 function testArrayOut() {
+    let array =  Everything.test_array_fixed_size_int_out();
+    assertEquals(0, array[0]);
+    assertEquals(4, array[4]);
+    array =  Everything.test_array_fixed_size_int_return();
+    assertEquals(0, array[0]);
+    assertEquals(4, array[4]);
+
     // FIXME: test_array_int_full_out and test_array_int_none_out unimplemented
 }
 

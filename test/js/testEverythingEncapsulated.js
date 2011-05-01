@@ -141,9 +141,9 @@ function testTestStructFixedArray() {
     let struct = new Everything.TestStructFixedArray();
     struct.frob();
     assertEquals(7, struct.just_int);
-    // assertEquals(43, struct.array[0]);
-    // assertEquals(44, struct.array[1]);
-    // assertEquals(51, struct.array[9]);
+    assertEquals(42, struct.array[0]);
+    assertEquals(43, struct.array[1]);
+    assertEquals(51, struct.array[9]);
 }
 
 gjstestRun();
