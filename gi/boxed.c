@@ -1027,55 +1027,55 @@ gjs_lookup_boxed_class(JSContext    *context,
     return JS_GET_CLASS(context, prototype);
 }
 
-/* Check if the type of the boxed is "simple" - every field is a non-pointer
- * type that we know how to assign to. If so, then we can allocate and free
- * instances without needing a constructor.
- */
 static gboolean
-struct_is_simple(GIStructInfo *info)
+type_can_be_allocated_directly(GITypeInfo *type_info)
 {
-    int n_fields = g_struct_info_get_n_fields (info);
     gboolean is_simple = TRUE;
-    int i;
 
-    for (i = 0; i < n_fields && is_simple; i++) {
-        GIFieldInfo *field_info = g_struct_info_get_field (info, i);
-        GITypeInfo *type_info = g_field_info_get_type (field_info);
+    if (g_type_info_is_pointer(type_info)) {
+        if (g_type_info_get_tag(type_info) == GI_TYPE_TAG_ARRAY &&
+            g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
+            GITypeInfo *param_info;
 
-        if (g_type_info_is_pointer (type_info)) {
-            is_simple = FALSE;
+            param_info = g_type_info_get_param_type(type_info, 0);
+            is_simple = type_can_be_allocated_directly(param_info);
+
+            g_base_info_unref((GIBaseInfo*)param_info);
         } else {
-            switch (g_type_info_get_tag (type_info)) {
-            case GI_TYPE_TAG_BOOLEAN:
-            case GI_TYPE_TAG_INT8:
-            case GI_TYPE_TAG_UINT8:
-            case GI_TYPE_TAG_INT16:
-            case GI_TYPE_TAG_UINT16:
-            case GI_TYPE_TAG_INT32:
-            case GI_TYPE_TAG_UINT32:
-            case GI_TYPE_TAG_INT64:
-            case GI_TYPE_TAG_UINT64:
-            case GI_TYPE_TAG_FLOAT:
-            case GI_TYPE_TAG_DOUBLE:
-            case GI_TYPE_TAG_UNICHAR:
-                break;
-            case GI_TYPE_TAG_VOID:
-            case GI_TYPE_TAG_GTYPE:
-            case GI_TYPE_TAG_ERROR:
-            case GI_TYPE_TAG_UTF8:
-            case GI_TYPE_TAG_FILENAME:
-            case GI_TYPE_TAG_ARRAY:
-            case GI_TYPE_TAG_GLIST:
-            case GI_TYPE_TAG_GSLIST:
-            case GI_TYPE_TAG_GHASH:
-                break;
-            case GI_TYPE_TAG_INTERFACE:
+            is_simple = FALSE;
+        }
+    } else {
+        switch (g_type_info_get_tag(type_info)) {
+        case GI_TYPE_TAG_BOOLEAN:
+        case GI_TYPE_TAG_INT8:
+        case GI_TYPE_TAG_UINT8:
+        case GI_TYPE_TAG_INT16:
+        case GI_TYPE_TAG_UINT16:
+        case GI_TYPE_TAG_INT32:
+        case GI_TYPE_TAG_UINT32:
+        case GI_TYPE_TAG_INT64:
+        case GI_TYPE_TAG_UINT64:
+        case GI_TYPE_TAG_FLOAT:
+        case GI_TYPE_TAG_DOUBLE:
+        case GI_TYPE_TAG_UNICHAR:
+            break;
+        case GI_TYPE_TAG_VOID:
+        case GI_TYPE_TAG_GTYPE:
+        case GI_TYPE_TAG_ERROR:
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_GHASH:
+            break;
+        case GI_TYPE_TAG_INTERFACE:
             {
-                GIBaseInfo *interface = g_type_info_get_interface (type_info);
-                switch (g_base_info_get_type (interface)) {
+                GIBaseInfo *interface = g_type_info_get_interface(type_info);
+                switch (g_base_info_get_type(interface)) {
                 case GI_INFO_TYPE_BOXED:
                 case GI_INFO_TYPE_STRUCT:
-                    if (!struct_is_simple ((GIStructInfo *)interface))
+                    if (!struct_is_simple((GIStructInfo *)interface))
                         is_simple = FALSE;
                     break;
                 case GI_INFO_TYPE_UNION:
@@ -1104,14 +1104,33 @@ struct_is_simple(GIStructInfo *info)
                     break;
                 }
 
-                g_base_info_unref (interface);
+                g_base_info_unref(interface);
                 break;
             }
-            }
         }
+    }
+    return is_simple;
+}
 
-        g_base_info_unref ((GIBaseInfo *)field_info);
-        g_base_info_unref ((GIBaseInfo *)type_info);
+/* Check if the type of the boxed is "simple" - every field is a non-pointer
+ * type that we know how to assign to. If so, then we can allocate and free
+ * instances without needing a constructor.
+ */
+static gboolean
+struct_is_simple(GIStructInfo *info)
+{
+    int n_fields = g_struct_info_get_n_fields(info);
+    gboolean is_simple = TRUE;
+    int i;
+
+    for (i = 0; i < n_fields && is_simple; i++) {
+        GIFieldInfo *field_info = g_struct_info_get_field(info, i);
+        GITypeInfo *type_info = g_field_info_get_type(field_info);
+
+        is_simple = type_can_be_allocated_directly(type_info);
+
+        g_base_info_unref((GIBaseInfo *)field_info);
+        g_base_info_unref((GIBaseInfo *)type_info);
     }
 
     return is_simple;
