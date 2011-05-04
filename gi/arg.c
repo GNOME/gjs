@@ -2047,6 +2047,7 @@ gjs_g_arg_release_internal(JSContext  *context,
     case GI_TYPE_TAG_UINT64:
     case GI_TYPE_TAG_FLOAT:
     case GI_TYPE_TAG_DOUBLE:
+    case GI_TYPE_TAG_UNICHAR:
         break;
 
     case GI_TYPE_TAG_FILENAME:
