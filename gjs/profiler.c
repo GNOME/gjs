@@ -134,7 +134,6 @@ gjs_profile_function_key_from_js(JSContext             *cx,
 {
     JSScript *script;
     JSFunction *function;
-    JSString *function_name = NULL;
 
     /* We're not using the JSScript or JSFunction as the key since the script
      * could be unloaded and addresses reused.

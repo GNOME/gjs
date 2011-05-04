@@ -384,11 +384,12 @@ gjs_invoke_c_function(JSContext      *context,
     gpointer *in_arg_pointers;
     GArgument return_value;
 
-    guint8 processed_in_args;
+    guint8 processed_in_args = 0;
     guint8 n_args, i, js_argv_pos;
     guint8 in_args_pos, out_args_pos, inout_args_pos;
     guint8 in_args_len, out_args_len, inout_args_len;
-    guint8 can_throw_gerror, did_throw_gerror;
+    guint8 can_throw_gerror;
+    gboolean did_throw_gerror = FALSE;
     GError *local_error = NULL;
     guint8 failed, postinvoke_release_failed;
 
