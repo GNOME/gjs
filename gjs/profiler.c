@@ -156,11 +156,13 @@ gjs_profile_function_key_from_js(JSContext             *cx,
 #ifdef HAVE_JS_GETFUNCTIONNAME
     key->function_name = g_strdup(function != NULL ? JS_GetFunctionName(function) : "(unknown)");
 #else
-    function_name = JS_GetFunctionId(function);
-    if (function_name)
-        key->function_name = gjs_string_get_ascii(cx, STRING_TO_JSVAL(function_name));
-    else
-        key->function_name = g_strdup("(unknown)");
+    {
+        JSString *function_name = JS_GetFunctionId(function);
+        if (function_name)
+            key->function_name = gjs_string_get_ascii(cx, STRING_TO_JSVAL(function_name));
+        else
+            key->function_name = g_strdup("(unknown)");
+    }
 #endif
 
     g_assert(key->filename != NULL);
