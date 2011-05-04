@@ -91,127 +91,148 @@ m4_define(gobject_required_version, 2.18.0)
 AC_CHECK_HEADERS([malloc.h])
 AC_CHECK_FUNCS(mallinfo)
 
-# Look for Spidermonkey. If js-config exists, use that;
-# otherwise we try some pkgconfig files from various distributions.
+# First, try separate mozjs185 release
+AC_MSG_CHECKING([for standalone mozjs])
+PKG_CHECK_EXISTS([mozjs185], JS_PACKAGE=mozjs185,)
+if test x$JS_PACKAGE != x; then
+    FIREFOX_JS_LIBDIR=`$PKG_CONFIG --variable=libdir $JS_PACKAGE`
+    MOZJS_IS_STANDALONE=yes
+    MOZJS_LIB=mozjs185
+    AC_MSG_RESULT([yes])
+    PKG_CHECK_MODULES(JS, $JS_PACKAGE)
+else
+    AC_MSG_RESULT([no])
+    MOZJS_LIB=mozjs
+fi
+
+# If we didn't find mozjs185 (the standalone spidermonkey); look for
+# one from Firefox/XULRunner. If js-config exists, use that; otherwise
+# we try some pkgconfig files from various distributions.
 
 AC_ARG_VAR([JS_CONFIG], [The js-config program to use])
-if test "$ac_cv_env_JS_CONFIG_set" != "set"; then
+if test x$JS_PACKAGE = x && test "$ac_cv_env_JS_CONFIG_set" != "set"; then
     AC_PATH_PROG([JS_CONFIG], [js-config], [])
 fi
 
-if test -n "$JS_CONFIG"; then
-    JS_CFLAGS="$($JS_CONFIG --cflags)"
-    JS_LIBS="$($JS_CONFIG --libs)"
-    FIREFOX_JS_LIBDIR="$($JS_CONFIG --libdir)"
-    JS_PACKAGE=
+if test x$JS_PACKAGE = x; then
+    if test -n "$JS_CONFIG"; then
+	JS_CFLAGS="$($JS_CONFIG --cflags)"
+	JS_LIBS="$($JS_CONFIG --libs)"
+	FIREFOX_JS_LIBDIR="$($JS_CONFIG --libdir)"
+	JS_PACKAGE=
 
-    # js-config gives almost usable CFLAGS, we must define one of XP_BEOS,
-    # XP_OS2, XP_WIN or XP_UNIX
-    JS_CFLAGS="$JS_CFLAGS -DXP_UNIX"
-else
-    ## spidermonkey .pc file name varies across distributions and Gecko version
-    ##
-    ## mozilla-js: Gecko 1.9, all distributions
-    ## xulrunner-js: Gecko 1.8 (and earlier?) Debian/Ubuntu
-    ## firefox-js: ???
-    ##
-    ## Checking for mozilla-js first will hopefully get us the newest version
-    ## of spidermonkey.
-    PKG_CHECK_EXISTS([mozilla-js], [JS_PACKAGE=mozilla-js],
-                     [PKG_CHECK_EXISTS([xulrunner-js], [JS_PACKAGE=xulrunner-js], [JS_PACKAGE=firefox-js])])
+	# js-config gives almost usable CFLAGS, we must define one of XP_BEOS,
+	# XP_OS2, XP_WIN or XP_UNIX
+	JS_CFLAGS="$JS_CFLAGS -DXP_UNIX"
+    else
+	## spidermonkey .pc file name varies across distributions and Gecko version
+	##
+	## mozilla-js: Gecko 1.9, all distributions
+	## xulrunner-js: Gecko 1.8 (and earlier?) Debian/Ubuntu
+	## firefox-js: ???
+	##
+	## Checking for mozilla-js first will hopefully get us the newest version
+	## of spidermonkey.
+	if test x$JS_PACKAGE = x; then
+	    PKG_CHECK_EXISTS([mozilla-js], [JS_PACKAGE=mozilla-js],)
 
-    PKG_CHECK_MODULES(JS, $JS_PACKAGE)
+	fi
+	if test x$JS_PACKAGE = x; then
+	    PKG_CHECK_EXISTS([xulrunner-js], [JS_PACKAGE=xulrunner-js])
+	fi
+	if test x$JS_PACKAGE = x; then
+	    PKG_CHECK_EXISTS([firefox-js], [JS_PACKAGE=firefox-js])
+	fi
+	if test x$JS_PACKAGE = x; then
+	    AC_MSG_ERROR([Unable to find spidermonkey package])
+	fi
 
-    ## some flavors of Firefox .pc only set sdkdir, not libdir
-    FIREFOX_JS_SDKDIR=`$PKG_CONFIG --variable=sdkdir $JS_PACKAGE`
-    FIREFOX_JS_LIBDIR=`$PKG_CONFIG --variable=libdir $JS_PACKAGE`
+	PKG_CHECK_MODULES(JS, $JS_PACKAGE)
 
-    ## Ubuntu does not set libdir in mozilla-js.pc
-    if test x"$FIREFOX_JS_LIBDIR" = x ; then
-       ## Ubuntu returns xulrunner-devel as the sdkdir, but for the
-       ## libdir we want the runtime location on the target system,
-       ## so can't use -devel.
-       ## The library is in the non-devel directory also.
-       ## Don't ask me why it's in two places.
-       FIREFOX_JS_LIBDIR=`echo "$FIREFOX_JS_SDKDIR" | sed -e 's/-devel//g'`
+	## some flavors of Firefox .pc only set sdkdir, not libdir
+	FIREFOX_JS_SDKDIR=`$PKG_CONFIG --variable=sdkdir $JS_PACKAGE`
+	FIREFOX_JS_LIBDIR=`$PKG_CONFIG --variable=libdir $JS_PACKAGE`
 
-       if ! test -d "$FIREFOX_JS_LIBDIR" ; then
-           FIREFOX_JS_LIBDIR=
-       fi
+	## Ubuntu does not set libdir in mozilla-js.pc
+	if test x"$FIREFOX_JS_LIBDIR" = x ; then
+	   ## Ubuntu returns xulrunner-devel as the sdkdir, but for the
+	   ## libdir we want the runtime location on the target system,
+	   ## so can't use -devel.
+	   ## The library is in the non-devel directory also.
+	   ## Don't ask me why it's in two places.
+	   FIREFOX_JS_LIBDIR=`echo "$FIREFOX_JS_SDKDIR" | sed -e 's/-devel//g'`
+
+	   if ! test -d "$FIREFOX_JS_LIBDIR" ; then
+	       FIREFOX_JS_LIBDIR=
+	   fi
+	fi
     fi
-fi
 
-if test x"$FIREFOX_JS_LIBDIR" = x ; then
-   AC_MSG_ERROR([Could not figure out where Firefox JavaScript library lives])
+    if test x"$FIREFOX_JS_LIBDIR" = x ; then
+       AC_MSG_ERROR([Could not figure out where Firefox JavaScript library lives])
+    fi
+
+    ## workaround for Ubuntu Hardy bug where mozilla-js.pc gives CFLAGS
+    ## -I.../stable while jsapi.h is in .../unstable
+    AC_MSG_CHECKING([if SpiderMonkey needs extra compiler flags])
+    save_CFLAGS="$CFLAGS"
+    CFLAGS="$CFLAGS $JS_CFLAGS"
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <jsapi.h>]])],
+	[js_extra_cflags_needed=no],
+	[js_extra_cflags_needed=yes])
+    CFLAGS="$save_CFLAGS"
+    AC_MSG_RESULT([$js_extra_cflags_needed])
+
+    JS_EXTRA_CFLAGS=
+    if test "$js_extra_cflags_needed" = yes; then
+	try_cflags="-I`$PKG_CONFIG --variable=includedir $JS_PACKAGE`/unstable"
+	AC_MSG_CHECKING([if $try_cflags works])
+	save_CFLAGS="$CFLAGS"
+	CFLAGS="$CFLAGS $JS_CFLAGS $try_cflags"
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <jsapi.h>]])],
+	    [AC_MSG_RESULT([yes])
+	     JS_EXTRA_CFLAGS="$try_cflags"],
+	    [AC_MSG_RESULT([no])])
+	CFLAGS="$save_CFLAGS"
+
+	if test x"$JS_EXTRA_CFLAGS" = x; then
+	    AC_MSG_ERROR([Unable to determine extra compiler flags needed])
+	fi
+    fi
+    AC_SUBST([JS_EXTRA_CFLAGS])
+
+    AC_MSG_CHECKING([for mozilla-js >= 1.9.2 ])
+    if `$PKG_CONFIG --exists $JS_PACKAGE '>=' 1.9.2`; then
+        AC_MSG_RESULT([yes])
+    else
+        AC_MSG_ERROR([$JS_PACKAGE >= 1.9.2 is required])
+    fi
 fi
 
 AC_SUBST(JS_PACKAGE)
 AC_SUBST(FIREFOX_JS_LIBDIR)
 
-AC_MSG_CHECKING([for mozilla-js >= 1.9.2 ])
-if `$PKG_CONFIG --exists $JS_PACKAGE '>=' 1.9.2`; then
-  AC_MSG_RESULT([yes])
-else
-  AC_MSG_ERROR([$JS_PACKAGE >= 1.9.2 is required])
-fi
-
-dnl xulrunner 2 checks
-AC_CHECK_LIB([mozjs], [JS_GetStringBytes], AC_DEFINE([HAVE_JS_GETSTRINGBYTES], [1], [Define if we still have JS_GetStringBytes]),, [$JS_LIBS])
-AC_CHECK_LIB([mozjs], [JS_GetFunctionName], AC_DEFINE([HAVE_JS_GETFUNCTIONNAME], [1], [Define if we still have JS_GetFunctionName]),, [$JS_LIBS])
-AC_CHECK_LIB([mozjs], [JS_GetStringChars], AC_DEFINE([HAVE_JS_GETSTRINGCHARS], [1], [Define if we still have JS_GetStringChars]),, [$JS_LIBS])
-AC_CHECK_LIB([mozjs], [JS_StrictPropertyStub], AC_DEFINE([HAVE_JS_STRICTPROPERTYSTUB], [1], [Define if we have JS_StrictPropertyStub]),, [$JS_LIBS])
-AC_CHECK_LIB([mozjs], [JS_GetGlobalForScopeChain], AC_DEFINE([HAVE_JS_GETGLOBALFORSCOPECHAIN], [1], [Define if we have JS_GetGlobalForScopeChain]),, [$JS_LIBS])
-dnl xulrunner 2.2 checks
-AC_CHECK_LIB([mozjs], [JS_CLASS_TRACE], AC_DEFINE([HAVE_JS_CLASS_TRACE], [1], [Define if we still have JS_CLASS_TRACE]),, [$JS_LIBS])
-AC_CHECK_LIB([mozjs], [JS_DestroyScript], AC_DEFINE([HAVE_JS_DESTROYSCRIPT], [1], [Define if we still have JS_DestroyScript]),, [$JS_LIBS])
-AC_CHECK_LIB([mozjs], [JS_DecodeUTF8], AC_DEFINE([HAVE_JS_DECODEUTF8], [1], [Define if we have JS_DecodeUTF8]),, [$JS_LIBS])
-
-AC_MSG_CHECKING([for mozilla-js >= 2 ])
-if `$PKG_CONFIG --exists $JS_PACKAGE '>=' 2`; then
-  AC_MSG_RESULT([yes])
-  AC_DEFINE(HAVE_MOZJS_2, [1], [Define if mozilla-js is at least 2])
-  AC_CHECK_LIB([mozjs], [JS_FreezeObject], AC_DEFINE([HAVE_JS_FREEZEOBJECT], [1], [Define if we have JS_FreezeObject]),
+AC_CHECK_LIB([$MOZJS_LIB], [JS_GetStringBytes], AC_DEFINE([HAVE_JS_GETSTRINGBYTES], [1], [Define if we still have JS_GetStringBytes]),, [$JS_LIBS])
+AC_CHECK_LIB([$MOZJS_LIB], [JS_GetFunctionName], AC_DEFINE([HAVE_JS_GETFUNCTIONNAME], [1], [Define if we still have JS_GetFunctionName]),, [$JS_LIBS])
+AC_CHECK_LIB([$MOZJS_LIB], [JS_GetStringChars], AC_DEFINE([HAVE_JS_GETSTRINGCHARS], [1], [Define if we still have JS_GetStringChars]),, [$JS_LIBS])
+AC_CHECK_LIB([$MOZJS_LIB], [JS_StrictPropertyStub], AC_DEFINE([HAVE_JS_STRICTPROPERTYSTUB], [1], [Define if we have JS_StrictPropertyStub]),, [$JS_LIBS])
+AC_CHECK_LIB([$MOZJS_LIB], [JS_GetGlobalForScopeChain], AC_DEFINE([HAVE_JS_GETGLOBALFORSCOPECHAIN], [1], [Define if we have JS_GetGlobalForScopeChain]),, [$JS_LIBS])
+AC_CHECK_LIB([$MOZJS_LIB], [JS_CLASS_TRACE], AC_DEFINE([HAVE_JS_CLASS_TRACE], [1], [Define if we still have JS_CLASS_TRACE]),, [$JS_LIBS])
+AC_CHECK_LIB([$MOZJS_LIB], [JS_DestroyScript], AC_DEFINE([HAVE_JS_DESTROYSCRIPT], [1], [Define if we still have JS_DestroyScript]),, [$JS_LIBS])
+AC_CHECK_LIB([$MOZJS_LIB], [JS_DecodeUTF8], AC_DEFINE([HAVE_JS_DECODEUTF8], [1], [Define if we have JS_DecodeUTF8]),, [$JS_LIBS])
+AC_CHECK_LIB([$MOZJS_LIB], [JS_FreezeObject], AC_DEFINE([HAVE_JS_FREEZEOBJECT], [1], [Define if we have JS_FreezeObject]),
               , [$JS_LIBS])
-  AC_CHECK_LIB([mozjs], [JS_IsScriptFrame], AC_DEFINE([HAVE_JS_ISSCRIPTFRAME], [1], [Define if we have JS_IsScriptFrame]),
+AC_CHECK_LIB([$MOZJS_LIB], [JS_IsScriptFrame], AC_DEFINE([HAVE_JS_ISSCRIPTFRAME], [1], [Define if we have JS_IsScriptFrame]),
               , [$JS_LIBS])
-  AC_CHECK_LIB([mozjs], [JS_EndPC], AC_DEFINE([HAVE_JS_ENDPC], [1], [Define if we have JS_EndPC]),
+AC_CHECK_LIB([$MOZJS_LIB], [JS_EndPC], AC_DEFINE([HAVE_JS_ENDPC], [1], [Define if we have JS_EndPC]),
               , [$JS_LIBS])
-  AC_CHECK_LIB([mozjs], [JS_NewCompartmentAndGlobalObject],
+AC_CHECK_LIB([$MOZJS_LIB], [JS_NewCompartmentAndGlobalObject],
               AC_DEFINE([HAVE_JS_NEWCOMPARTMENTANDGLOBALOBJECT], [1], [Define if we have JS_NewCompartmentAndGlobalObject]),
               , [$JS_LIBS])
 
-else
-  AC_MSG_RESULT([no])
+if test x$MOZJS_IS_STANDALONE = xyes || `$PKG_CONFIG --exists $JS_PACKAGE '>=' 2`; then
+  AC_DEFINE(HAVE_MOZJS_2, [1], [Define if mozilla-js is at least 2])
 fi
-
-## workaround for Ubuntu Hardy bug where mozilla-js.pc gives CFLAGS
-## -I.../stable while jsapi.h is in .../unstable
-AC_MSG_CHECKING([if SpiderMonkey needs extra compiler flags])
-save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $JS_CFLAGS"
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <jsapi.h>]])],
-    [js_extra_cflags_needed=no],
-    [js_extra_cflags_needed=yes])
-CFLAGS="$save_CFLAGS"
-AC_MSG_RESULT([$js_extra_cflags_needed])
-
-JS_EXTRA_CFLAGS=
-if test "$js_extra_cflags_needed" = yes; then
-    try_cflags="-I`$PKG_CONFIG --variable=includedir $JS_PACKAGE`/unstable"
-    AC_MSG_CHECKING([if $try_cflags works])
-    save_CFLAGS="$CFLAGS"
-    CFLAGS="$CFLAGS $JS_CFLAGS $try_cflags"
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <jsapi.h>]])],
-        [AC_MSG_RESULT([yes])
-         JS_EXTRA_CFLAGS="$try_cflags"],
-        [AC_MSG_RESULT([no])])
-    CFLAGS="$save_CFLAGS"
-
-    if test x"$JS_EXTRA_CFLAGS" = x; then
-        AC_MSG_ERROR([Unable to determine extra compiler flags needed])
-    fi
-fi
-AC_SUBST([JS_EXTRA_CFLAGS])
 
 AC_MSG_CHECKING([whether JSLocaleToUnicode takes a const char*])
 save_CFLAGS="$CFLAGS"
