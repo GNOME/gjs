@@ -217,7 +217,6 @@ AC_CHECK_LIB([$MOZJS_LIB], [JS_GetFunctionName], AC_DEFINE([HAVE_JS_GETFUNCTIONN
 AC_CHECK_LIB([$MOZJS_LIB], [JS_GetStringChars], AC_DEFINE([HAVE_JS_GETSTRINGCHARS], [1], [Define if we still have JS_GetStringChars]),, [$JS_LIBS])
 AC_CHECK_LIB([$MOZJS_LIB], [JS_StrictPropertyStub], AC_DEFINE([HAVE_JS_STRICTPROPERTYSTUB], [1], [Define if we have JS_StrictPropertyStub]),, [$JS_LIBS])
 AC_CHECK_LIB([$MOZJS_LIB], [JS_GetGlobalForScopeChain], AC_DEFINE([HAVE_JS_GETGLOBALFORSCOPECHAIN], [1], [Define if we have JS_GetGlobalForScopeChain]),, [$JS_LIBS])
-AC_CHECK_LIB([$MOZJS_LIB], [JS_CLASS_TRACE], AC_DEFINE([HAVE_JS_CLASS_TRACE], [1], [Define if we still have JS_CLASS_TRACE]),, [$JS_LIBS])
 AC_CHECK_LIB([$MOZJS_LIB], [JS_DestroyScript], AC_DEFINE([HAVE_JS_DESTROYSCRIPT], [1], [Define if we still have JS_DestroyScript]),, [$JS_LIBS])
 AC_CHECK_LIB([$MOZJS_LIB], [JS_DecodeUTF8], AC_DEFINE([HAVE_JS_DECODEUTF8], [1], [Define if we have JS_DecodeUTF8]),, [$JS_LIBS])
 AC_CHECK_LIB([$MOZJS_LIB], [JS_FreezeObject], AC_DEFINE([HAVE_JS_FREEZEOBJECT], [1], [Define if we have JS_FreezeObject]),
@@ -253,6 +252,30 @@ CFLAGS="$save_CFLAGS"
 if test "$have_jslocale_to_unicode_const" = yes; then
      AC_DEFINE([JS_LOCALETOUNICODE_NEEDS_CONST_CHAR], [1], [Define if JSLocaleToUnicode takes a const char* for its src])
 fi
+
+save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $JS_CFLAGS"
+AC_MSG_CHECKING([for JS_CLASS_TRACE macro])
+AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+        [[
+            #include <jsapi.h>
+	    #ifndef JS_CLASS_TRACE
+	    #error "No JS_CLASS_TRACE"
+	    #endif
+        ]],
+        [[(void) 0;]]
+    )],
+    [have_js_class_trace=yes],
+    [have_js_class_trace=no])
+
+if test "x$have_js_class_trace" = xyes; then
+    AC_MSG_RESULT([yes])
+    AC_DEFINE([HAVE_JS_CLASS_TRACE], [1], [Define if we still have JS_CLASS_TRACE])
+else
+    AC_MSG_RESULT([no])
+fi
+CFLAGS="$save_CFLAGS"
 
 common_packages="gobject-2.0 >= gobject_required_version $JS_PACKAGE"
 gjs_packages="gmodule-2.0 gthread-2.0 $common_packages"
