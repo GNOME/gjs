@@ -113,13 +113,14 @@ lookup_native_module(JSContext  *context,
 
     module_id = g_string_new(name);
     while (parent != NULL) {
-        const char *name;
+        char *name;
         jsval tmp;
 
         name = get_module_name(context, parent, &tmp);
         if (name != NULL) {
             g_string_prepend_c(module_id, '.');
             g_string_prepend(module_id, name);
+            g_free(name);
         }
 
         /* Move up to parent */
