@@ -151,8 +151,10 @@ trace_foreach(void *key,
     JSTracer *tracer = data;
 
     if (child->child != NULL) {
+        jsval val;
         JS_SET_TRACING_DETAILS(tracer, NULL, "keep-alive", 0);
-        JS_CallTracer(tracer, child->child, JSTRACE_OBJECT);
+        val = OBJECT_TO_JSVAL(child->child);
+        JS_CallTracer(tracer, JSVAL_TO_TRACEABLE (val), JSTRACE_OBJECT);
     }
 }
 
