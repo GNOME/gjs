@@ -114,9 +114,6 @@ ns_new_resolve(JSContext *context,
                 goto out;
             }
         } else {
-            gjs_throw(context,
-                      "No symbol '%s' in namespace '%s'",
-                      name, priv->namespace);
             JS_EndRequest(context);
             goto out;
         }
