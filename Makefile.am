@@ -121,8 +121,9 @@ gjs_console_CFLAGS = 		\
 	$(AM_CFLAGS)		\
         $(GOBJECT_CFLAGS)
 gjs_console_LDADD =		\
-         $(GOBJECT_LIBS)           \
-         libgjs.la
+	$(JS_LIBS)		\
+	$(GOBJECT_LIBS)		\
+	libgjs.la
 gjs_console_LDFLAGS = -R $(FIREFOX_JS_LIBDIR) -rdynamic
 gjs_console_SOURCES = gjs/console.c
 
