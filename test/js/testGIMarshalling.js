@@ -18,20 +18,6 @@ function testCArray() {
     assertEquals(42, array[0].long_);
     assertEquals(43, array[1].long_);
     assertEquals(44, array[2].long_);
-
-    GIMarshallingTests.array_string_in(["foo", "bar"], 2);
-
-    array = [];
-    for (var i = 0; i < 3; i++) {
-	array[i] = new GIMarshallingTests.BoxedStruct();
-	array[i].long_ = i + 1;
-    }
-
-    GIMarshallingTests.array_struct_in(array, array.length);
-
-    // Run twice to ensure that copies are correctly made for (transfer full)
-    GIMarshallingTests.array_struct_take_in(array, array.length);
-    GIMarshallingTests.array_struct_take_in(array, array.length);
 }
 
 function testGArray() {

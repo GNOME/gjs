@@ -38,8 +38,7 @@ typedef enum {
     GJS_ARGUMENT_RETURN_VALUE,
     GJS_ARGUMENT_FIELD,
     GJS_ARGUMENT_LIST_ELEMENT,
-    GJS_ARGUMENT_HASH_ELEMENT,
-    GJS_ARGUMENT_ARRAY_ELEMENT
+    GJS_ARGUMENT_HASH_ELEMENT
 } GjsArgumentType;
 
 JSBool gjs_value_to_arg   (JSContext  *context,
@@ -68,11 +67,6 @@ JSBool gjs_g_argument_release    (JSContext  *context,
                                   GITransfer  transfer,
                                   GITypeInfo *type_info,
                                   GArgument  *arg);
-JSBool gjs_g_argument_release_in_array (JSContext  *context,
-                                        GITransfer  transfer,
-                                        GITypeInfo *type_info,
-                                        guint       length,
-                                        GArgument  *arg);
 JSBool gjs_g_argument_release_in_arg (JSContext  *context,
                                       GITransfer  transfer,
                                       GITypeInfo *type_info,

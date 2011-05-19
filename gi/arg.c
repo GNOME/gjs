@@ -576,112 +576,9 @@ gjs_array_to_intarray(JSContext   *context,
 }
 
 static JSBool
-gjs_array_to_floatarray(JSContext   *context,
-                        jsval        array_value,
-                        unsigned int length,
-                        void       **arr_p,
-                        gboolean     is_double)
-{
-    unsigned int i;
-    void *result = g_malloc0(length * (is_double ? sizeof(double) : sizeof(float)));
-
-    for (i = 0; i < length; ++i) {
-        jsval elem;
-        jsdouble val;
-        JSBool success;
-
-        elem = JSVAL_VOID;
-        if (!JS_GetElement(context, JSVAL_TO_OBJECT(array_value),
-                           i, &elem)) {
-            g_free(result);
-            gjs_throw(context,
-                      "Missing array element %u",
-                      i);
-            return JS_FALSE;
-        }
-
-        /* do whatever sign extension is appropriate */
-        success = JS_ValueToNumber(context, elem, &val);
-
-        if (!success) {
-            g_free(result);
-            gjs_throw(context,
-                      "Invalid element in array");
-            return JS_FALSE;
-        }
-
-        /* Note that this is truncating assignment. */
-        if (is_double) {
-            double *darray = (double*)result;
-            darray[i] = val;
-        } else {
-            float *farray = (float*)result;
-            farray[i] = val;
-        }
-    }
-
-    *arr_p = result;
-
-    return JS_TRUE;
-}
-
-static JSBool
-gjs_array_to_ptrarray(JSContext   *context,
-                      jsval        array_value,
-                      unsigned int length,
-                      GITransfer   transfer,
-                      GITypeInfo  *param_info,
-                      void       **arr_p)
-{
-    unsigned int i;
-
-    void **array = g_malloc0(length * sizeof(gpointer));
-
-    for (i = 0; i < length; i++) {
-        jsval elem;
-        GIArgument arg;
-        arg.v_pointer = NULL;
-
-        JSBool success;
-
-        elem = JSVAL_VOID;
-        if (!JS_GetElement(context, JSVAL_TO_OBJECT(array_value),
-                           i, &elem)) {
-            g_free(array);
-            gjs_throw(context,
-                      "Missing array element %u",
-                      i);
-            return JS_FALSE;
-        }
-
-        success = gjs_value_to_g_argument (context,
-                                           elem,
-                                           param_info,
-                                           NULL, /* arg name */
-                                           GJS_ARGUMENT_ARRAY_ELEMENT,
-                                           transfer,
-                                           FALSE, /* absent better information, FALSE for now */
-                                           &arg);
-
-        if (!success) {
-            g_free(array);
-            gjs_throw(context,
-                      "Invalid element in array");
-            return JS_FALSE;
-        }
-
-        array[i] = arg.v_pointer;
-    }
-
-    *arr_p = array;
-    return JS_TRUE;
-} 
-
-static JSBool
 gjs_array_to_array(JSContext   *context,
                    jsval        array_value,
                    unsigned int length,
-                   GITransfer   transfer,
                    GITypeInfo  *param_info,
                    void       **arr_p)
 {
@@ -690,14 +587,6 @@ gjs_array_to_array(JSContext   *context,
 
     element_type = g_type_info_get_tag(param_info);
     element_type = replace_gtype(element_type);
-
-    if (element_type == GI_TYPE_TAG_INTERFACE) {
-        GIBaseInfo *interface_info = g_type_info_get_interface (param_info);
-        GIInfoType info_type = g_base_info_get_type (interface_info);
-        if (info_type == GI_INFO_TYPE_ENUM || info_type == GI_INFO_TYPE_FLAGS)
-            element_type = g_enum_info_get_storage_type ((GIEnumInfo*) interface_info);
-        g_base_info_unref (interface_info);
-    }
 
     switch (element_type) {
     case GI_TYPE_TAG_UTF8:
@@ -720,25 +609,6 @@ gjs_array_to_array(JSContext   *context,
     case GI_TYPE_TAG_INT32:
         return gjs_array_to_intarray
             (context, array_value, length, arr_p, 4, SIGNED);
-    case GI_TYPE_TAG_FLOAT:
-        return gjs_array_to_floatarray
-            (context, array_value, length, arr_p, FALSE);
-    case GI_TYPE_TAG_DOUBLE:
-        return gjs_array_to_floatarray
-            (context, array_value, length, arr_p, TRUE);
-
-    /* Everything else is a pointer type */
-    case GI_TYPE_TAG_INTERFACE:
-    case GI_TYPE_TAG_ARRAY:
-    case GI_TYPE_TAG_GLIST:
-    case GI_TYPE_TAG_GSLIST:
-    case GI_TYPE_TAG_GHASH:
-        return gjs_array_to_ptrarray(context,
-                                     array_value,
-                                     length,
-                                     transfer == GI_TRANSFER_CONTAINER ? GI_TRANSFER_NOTHING : transfer,
-                                     param_info,
-                                     arr_p);
     default:
         gjs_throw(context,
                   "Unhandled array element type %d", element_type);
@@ -788,7 +658,6 @@ gjs_array_to_g_array(JSContext   *context,
     if (!gjs_array_to_array (context,
                              array_value,
                              length,
-                             GI_TRANSFER_NOTHING, /* always good for the types we handle */
                              param_info,
                              &contents))
       return JS_FALSE;
@@ -834,8 +703,6 @@ get_argument_display_name(const char     *arg_name,
         return g_strdup("List element");
     case GJS_ARGUMENT_HASH_ELEMENT:
         return g_strdup("Hash element");
-    case GJS_ARGUMENT_ARRAY_ELEMENT:
-        return g_strdup("Array element");
     }
 
     g_assert_not_reached ();
@@ -1336,7 +1203,6 @@ gjs_value_to_g_argument(JSContext      *context,
                     if (!gjs_array_to_array (context,
                                              value,
                                              length,
-                                             transfer,
                                              param_info,
                                              &arg->v_pointer))
                       wrong = TRUE;
@@ -2503,7 +2369,7 @@ gjs_g_arg_release_internal(JSContext  *context,
             case GI_TYPE_TAG_FILENAME:
                 if (transfer == GI_TRANSFER_CONTAINER)
                     g_free(arg->v_pointer);
-                else if (transfer != TRANSFER_IN_NOTHING)
+                else if (transfer == GI_TRANSFER_EVERYTHING)
                     g_strfreev (arg->v_pointer);
                 break;
 
@@ -2541,10 +2407,7 @@ gjs_g_arg_release_internal(JSContext  *context,
                 break;
 
             default:
-                gjs_throw (context,
-                           "Releasing a C array with explicit length, that was nested"
-                           "inside another container. This is not supported (and will leak)");
-                failed = JS_TRUE;
+                g_assert_not_reached ();
             }
 
             g_base_info_unref((GIBaseInfo*) param_info);
@@ -2577,7 +2440,7 @@ gjs_g_arg_release_internal(JSContext  *context,
             case GI_TYPE_TAG_GHASH:
                 if (transfer == GI_TRANSFER_CONTAINER) {
                     g_array_free((GArray*) arg->v_pointer, TRUE);
-                } else if (transfer != TRANSFER_IN_NOTHING) {
+                } else if (transfer == GI_TRANSFER_EVERYTHING) {
                     GArray *array = arg->v_pointer;
                     guint i;
 
@@ -2586,7 +2449,7 @@ gjs_g_arg_release_internal(JSContext  *context,
 
                         arg.v_pointer = g_array_index (array, gpointer, i);
                         gjs_g_argument_release(context,
-                                               transfer,
+                                               GI_TRANSFER_EVERYTHING,
                                                param_info,
                                                &arg);
                     }
@@ -2734,42 +2597,5 @@ gjs_g_argument_release_in_arg(JSContext  *context,
     return JS_TRUE;
 }
 
-JSBool
-gjs_g_argument_release_in_array (JSContext  *context,
-                                 GITransfer  transfer,
-                                 GITypeInfo *type_info,
-                                 guint       length,
-                                 GArgument  *arg)
-{
-    GITypeInfo *param_type;
-    gpointer *array;
-    GArgument elem;
-    guint i;
-    JSBool ret = JS_TRUE;
-    GITypeTag type_tag;
 
-    if (transfer != GI_TRANSFER_NOTHING)
-        return JS_TRUE;
 
-    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Releasing GArgument array in param");
-
-    array = arg->v_pointer;
-
-    param_type = g_type_info_get_param_type (type_info, 0);
-    type_tag = g_type_info_get_tag (param_type);
-
-    if (type_needs_release (param_type, type_tag)) {
-        for (i = 0; i < length; i++) {
-            elem.v_pointer = array[i];
-            if (!gjs_g_arg_release_internal (context, TRANSFER_IN_NOTHING,
-                                             param_type, type_tag, &elem)) {
-                ret = JS_FALSE;
-                break;
-            }
-        }
-    }
-
-    g_free (array);
-    return ret;
-}
