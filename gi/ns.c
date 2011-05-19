@@ -287,9 +287,23 @@ ns_new(JSContext    *context,
 }
 
 JSObject*
-gjs_create_ns(JSContext    *context,
+gjs_define_ns(JSContext    *context,
+              JSObject     *in_object,
               const char   *ns_name,
               GIRepository *repo)
 {
-    return ns_new(context, ns_name, repo);
+    JSObject *ns;
+
+    ns = ns_new(context, ns_name, repo);
+
+    if (!JS_DefineProperty(context, in_object,
+                           ns_name, OBJECT_TO_JSVAL(ns),
+                           NULL, NULL,
+                           GJS_MODULE_PROP_FLAGS))
+        gjs_fatal("no memory to define ns property");
+
+    gjs_debug(GJS_DEBUG_GNAMESPACE,
+              "Defined namespace '%s' %p in GIRepository %p", ns_name, ns, in_object);
+
+    return ns;
 }
