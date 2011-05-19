@@ -53,7 +53,7 @@ typedef struct GjsRootedArray GjsRootedArray;
  * PERMANENT: forbid deleting the prop
  * ENUMERATE: allows copyProperties to work among other reasons to have it
  */
-#define GJS_MODULE_PROP_FLAGS (JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE)
+#define GJS_MODULE_PROP_FLAGS (JSPROP_PERMANENT | JSPROP_ENUMERATE)
 
 /* priv_from_js_with_typecheck checks that the object is in fact an
  * instance of the specified class before accessing its private data.
