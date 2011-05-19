@@ -114,7 +114,9 @@ ns_new_resolve(JSContext *context,
                 goto out;
             }
         } else {
+            /* No property defined, but no error either, so return TRUE */
             JS_EndRequest(context);
+            ret = JS_TRUE;
             goto out;
         }
     }
