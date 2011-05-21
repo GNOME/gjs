@@ -280,17 +280,17 @@ function testGSListIn() {
 
 /* Array tests */
 function testArrayIn() {
-    assertEquals(10, Everything.test_array_int_in(4, [1,2,3,4]));
-    assertEquals(10, Everything.test_array_gint8_in(4, [1,2,3,4]));
-    assertEquals(10, Everything.test_array_gint16_in(4, [1,2,3,4]));
-    assertEquals(10, Everything.test_array_gint32_in(4, [1,2,3,4]));
+    assertEquals(10, Everything.test_array_int_in([1,2,3,4]));
+    assertEquals(10, Everything.test_array_gint8_in([1,2,3,4]));
+    assertEquals(10, Everything.test_array_gint16_in([1,2,3,4]));
+    assertEquals(10, Everything.test_array_gint32_in([1,2,3,4]));
     // FIXME: arrays of int64 are unimplemented
-    //assertEquals(10, Everything.test_array_gint64_in(4, [1,2,3,4]));
+    //assertEquals(10, Everything.test_array_gint64_in([1,2,3,4]));
 
     // implicit conversions from strings to int arrays
-    assertEquals(10, Everything.test_array_gint8_in(4, "\x01\x02\x03\x04"));
-    assertEquals(10, Everything.test_array_gint16_in(4, "\x01\x02\x03\x04"));
-    assertEquals(2560, Everything.test_array_gint16_in(4, "\u0100\u0200\u0300\u0400"));
+    assertEquals(10, Everything.test_array_gint8_in("\x01\x02\x03\x04"));
+    assertEquals(10, Everything.test_array_gint16_in("\x01\x02\x03\x04"));
+    assertEquals(2560, Everything.test_array_gint16_in("\u0100\u0200\u0300\u0400"));
 }
 
 function testArrayOut() {

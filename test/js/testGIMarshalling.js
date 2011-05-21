@@ -19,7 +19,7 @@ function testCArray() {
     assertEquals(43, array[1].long_);
     assertEquals(44, array[2].long_);
 
-    GIMarshallingTests.array_string_in(["foo", "bar"], 2);
+    GIMarshallingTests.array_string_in(["foo", "bar"]);
 
     array = [];
     for (var i = 0; i < 3; i++) {
@@ -27,23 +27,23 @@ function testCArray() {
 	array[i].long_ = i + 1;
     }
 
-    GIMarshallingTests.array_struct_in(array, array.length);
+    GIMarshallingTests.array_struct_in(array);
 
     // Run twice to ensure that copies are correctly made for (transfer full)
-    GIMarshallingTests.array_struct_take_in(array, array.length);
-    GIMarshallingTests.array_struct_take_in(array, array.length);
+    GIMarshallingTests.array_struct_take_in(array);
+    GIMarshallingTests.array_struct_take_in(array);
 
     GIMarshallingTests.array_uint8_in ("abcd", 4);
     GIMarshallingTests.array_enum_in([GIMarshallingTests.Enum.VALUE1,
 				      GIMarshallingTests.Enum.VALUE2,
-				      GIMarshallingTests.Enum.VALUE3], 3);
+				      GIMarshallingTests.Enum.VALUE3]);
 
     array = [-1, 0, 1, 2];
-    GIMarshallingTests.array_in(array, array.length);
-    GIMarshallingTests.array_in_len_before(array.length, array);
-    GIMarshallingTests.array_in_len_zero_terminated(array, array.length);
-    GIMarshallingTests.array_in_guint64_len(array, array.length);
-    GIMarshallingTests.array_in_guint8_len(array, array.length);
+    GIMarshallingTests.array_in(array);
+    GIMarshallingTests.array_in_len_before(array);
+    GIMarshallingTests.array_in_len_zero_terminated(array);
+    GIMarshallingTests.array_in_guint64_len(array);
+    GIMarshallingTests.array_in_guint8_len(array);
 }
 
 function testGArray() {

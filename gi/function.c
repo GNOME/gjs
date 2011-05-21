@@ -47,13 +47,17 @@
  */
 #define GJS_ARG_INDEX_INVALID G_MAXUINT8
 
+typedef enum {
+    PARAM_NORMAL,
+    PARAM_SKIPPED,
+    PARAM_ARRAY,
+    PARAM_CALLBACK
+} ParamType;
+
 typedef struct {
     GIFunctionInfo *info;
 
-    /* We only support at most one of each of these */
-    guint8 callback_index;
-    guint8 destroy_notify_index;
-    guint8 user_data_index;
+    ParamType *param_types;
 
     guint8 expected_js_argc;
     guint8 js_out_argc;
@@ -69,14 +73,8 @@ static struct JSClass gjs_function_class;
  */
 static GSList *completed_trampolines = NULL;  /* GjsCallbackTrampoline */
 
-static gboolean trampoline_globals_initialized = FALSE;
-static struct {
-    GICallableInfo *info;
-    ffi_cif cif;
-    ffi_closure *closure;
-} global_destroy_trampoline;
-
 typedef struct {
+    gint ref_count;
     JSRuntime *runtime;
     GICallableInfo *info;
     jsval js_function;
@@ -127,17 +125,29 @@ function_new_resolve(JSContext *context,
 }
 
 static void
-gjs_callback_trampoline_free(GjsCallbackTrampoline *trampoline)
+gjs_callback_trampoline_ref(GjsCallbackTrampoline *trampoline)
 {
-    JSContext *context;
-
-    context = gjs_runtime_get_current_context(trampoline->runtime);
-
-    JS_RemoveValueRoot(context, &trampoline->js_function);
-    g_callable_info_free_closure(trampoline->info, trampoline->closure);
-    g_base_info_unref( (GIBaseInfo*) trampoline->info);
-    g_slice_free(GjsCallbackTrampoline, trampoline);
+    trampoline->ref_count++;
 }
+
+static void
+gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline)
+{
+    /* Not MT-safe, like all the rest of GJS */
+
+    trampoline->ref_count--;
+    if (trampoline->ref_count == 0) {
+        JSContext *context;
+
+        context = gjs_runtime_get_current_context(trampoline->runtime);
+
+        JS_RemoveValueRoot(context, &trampoline->js_function);
+        g_callable_info_free_closure(trampoline->info, trampoline->closure);
+        g_base_info_unref( (GIBaseInfo*) trampoline->info);
+        g_slice_free(GjsCallbackTrampoline, trampoline);
+    }
+}
+
 
 /* This is our main entry point for ffi_closure callbacks.
  * ffi_prep_closure is doing pure magic and replaces the original
@@ -232,53 +242,30 @@ out:
  * look up the callback through the user_data and then free it.
  */
 static void
-gjs_destroy_notify_callback_closure(ffi_cif *cif,
-                                    void *result,
-                                    void **args,
-                                    void *data)
+gjs_destroy_notify_callback(gpointer data)
 {
-    GjsCallbackTrampoline *trampoline = *(void**)(args[0]);
+    GjsCallbackTrampoline *trampoline = data;
 
     g_assert(trampoline);
-    gjs_callback_trampoline_free(trampoline);
-}
-
-/* Called when we first see a function that uses a callback */
-static void
-gjs_init_callback_statics ()
-{
-    if (G_LIKELY(trampoline_globals_initialized))
-      return;
-    trampoline_globals_initialized = TRUE;
-
-    global_destroy_trampoline.info = g_irepository_find_by_name(NULL, "GLib", "DestroyNotify");
-    g_assert(global_destroy_trampoline.info != NULL);
-    g_assert(g_base_info_get_type(global_destroy_trampoline.info) == GI_INFO_TYPE_CALLBACK);
-
-
-    global_destroy_trampoline.closure = g_callable_info_prepare_closure(global_destroy_trampoline.info,
-                                                                        &global_destroy_trampoline.cif,
-                                                                        gjs_destroy_notify_callback_closure,
-                                                                        NULL);
+    gjs_callback_trampoline_unref(trampoline);
 }
 
 static GjsCallbackTrampoline*
 gjs_callback_trampoline_new(JSContext      *context,
                             jsval           function,
                             GICallableInfo *callable_info,
-                            GIScopeType     scope,
-                            void          **destroy_notify)
+                            GIScopeType     scope)
 {
     GjsCallbackTrampoline *trampoline;
 
     if (function == JSVAL_NULL) {
-        *destroy_notify = NULL;
         return NULL;
     }
 
     g_assert(JS_TypeOfValue(context, function) == JSTYPE_FUNCTION);
 
     trampoline = g_slice_new(GjsCallbackTrampoline);
+    trampoline->ref_count = 1;
     trampoline->runtime = JS_GetRuntime(context);
     trampoline->info = callable_info;
     g_base_info_ref((GIBaseInfo*)trampoline->info);
@@ -288,75 +275,36 @@ gjs_callback_trampoline_new(JSContext      *context,
                                                           gjs_callback_closure, trampoline);
 
     trampoline->scope = scope;
-    if (scope == GI_SCOPE_TYPE_NOTIFIED) {
-        *destroy_notify = global_destroy_trampoline.closure;
-    } else {
-        *destroy_notify = NULL;
-    }
 
     return trampoline;
 }
 
-static JSBool
-init_callback_args_for_invocation(JSContext               *context,
-                                  Function                *function,
-                                  guint8                   n_args,
-                                  uintN                    js_argc,
-                                  jsval                   *js_argv,
-                                  GjsCallbackTrampoline  **trampoline_out,
-                                  void                   **destroy_notify_out)
+/* an helper function to retrieve array lengths from a GArgument
+   (letting the compiler generate good instructions in case of
+   big endian machines) */
+static unsigned long
+get_length_from_arg (GArgument *arg, GITypeTag tag)
 {
-    GIArgInfo callback_arg;
-    GITypeInfo callback_type;
-    GITypeInfo *callback_info;
-    GIScopeType scope;
-    gboolean found_js_function;
-    jsval js_function;
-    guint8 i, js_argv_pos;
-
-    if (function->callback_index == GJS_ARG_INDEX_INVALID) {
-        *trampoline_out = *destroy_notify_out = NULL;
-        return JS_TRUE;
+    switch (tag) {
+    case GI_TYPE_TAG_INT8:
+        return arg->v_int8;
+    case GI_TYPE_TAG_UINT8:
+        return arg->v_uint8;
+    case GI_TYPE_TAG_INT16:
+        return arg->v_int16;
+    case GI_TYPE_TAG_UINT16:
+        return arg->v_uint16;
+    case GI_TYPE_TAG_INT32:
+        return arg->v_int32;
+    case GI_TYPE_TAG_UINT32:
+        return arg->v_uint32;
+    case GI_TYPE_TAG_INT64:
+        return arg->v_int64;
+    case GI_TYPE_TAG_UINT64:
+        return arg->v_uint64;
+    default:
+        g_assert_not_reached ();
     }
-
-    g_callable_info_load_arg( (GICallableInfo*) function->info, function->callback_index, &callback_arg);
-    scope = g_arg_info_get_scope(&callback_arg);
-    g_arg_info_load_type(&callback_arg, &callback_type);
-    g_assert(g_type_info_get_tag(&callback_type) == GI_TYPE_TAG_INTERFACE);
-    callback_info = g_type_info_get_interface(&callback_type);
-    g_assert(g_base_info_get_type(callback_info) == GI_INFO_TYPE_CALLBACK);
-
-    /* Find the JS function passed for the callback */
-    found_js_function = FALSE;
-    js_function = JSVAL_NULL;
-    for (i = 0, js_argv_pos = 0; i < n_args; i++) {
-        if (i == function->callback_index) {
-            js_function = js_argv[js_argv_pos];
-            found_js_function = TRUE;
-            break;
-        } else if (i == function->user_data_index
-                   || i == function->destroy_notify_index) {
-            continue;
-        }
-        js_argv_pos++;
-    }
-
-    if (!found_js_function
-        || !(js_function == JSVAL_NULL || JS_TypeOfValue(context, js_function) == JSTYPE_FUNCTION)) {
-        gjs_throw(context, "Error invoking %s.%s: Invalid callback given for argument %s",
-                  g_base_info_get_namespace( (GIBaseInfo*) function->info),
-                  g_base_info_get_name( (GIBaseInfo*) function->info),
-                  g_base_info_get_name( (GIBaseInfo*) &callback_arg));
-        g_base_info_unref( (GIBaseInfo*) callback_info);
-        return JS_FALSE;
-    }
-
-    *trampoline_out = gjs_callback_trampoline_new(context, js_function,
-                                                  (GICallbackInfo*) callback_info,
-                                                  scope,
-                                                  destroy_notify_out);
-    g_base_info_unref( (GIBaseInfo*) callback_info);
-    return JS_TRUE;
 }
 
 static JSBool
@@ -400,9 +348,6 @@ gjs_invoke_c_function(JSContext      *context,
     jsval *return_values = NULL;
     guint8 next_rval = 0; /* index into return_values */
     GSList *iter;
-    GIScopeType callback_scope = GI_SCOPE_TYPE_INVALID;
-    GjsCallbackTrampoline *callback_trampoline;
-    void *destroy_notify;
 
     /* Because we can't free a closure while we're in it, we defer
      * freeing until the next time a C function is invoked.  What
@@ -411,7 +356,7 @@ gjs_invoke_c_function(JSContext      *context,
     if (completed_trampolines) {
         for (iter = completed_trampolines; iter; iter = iter->next) {
             GjsCallbackTrampoline *trampoline = iter->data;
-            gjs_callback_trampoline_free(trampoline);
+            gjs_callback_trampoline_unref(trampoline);
         }
         g_slist_free(completed_trampolines);
         completed_trampolines = NULL;
@@ -434,16 +379,6 @@ gjs_invoke_c_function(JSContext      *context,
                   js_argc);
         return JS_FALSE;
     }
-
-    /* Check if we have a callback; if so, process all the arguments (callback, destroy_notify, user_data)
-     * at once to avoid having special cases in the main loop below.
-     */
-    if (!init_callback_args_for_invocation(context, function, n_args, js_argc, js_argv,
-                                           &callback_trampoline, &destroy_notify)) {
-        return JS_FALSE;
-    }
-    if (callback_trampoline != NULL)
-        callback_scope = callback_trampoline->scope;
 
     g_callable_info_load_return_type( (GICallableInfo*) function->info, &return_info);
     return_tag = g_type_info_get_tag(&return_info);
@@ -563,25 +498,91 @@ gjs_invoke_c_function(JSContext      *context,
         } else {
             GArgument *in_value;
             GITypeInfo ainfo;
+            ParamType param_type;
 
             g_arg_info_load_type(&arg_info, &ainfo);
 
             g_assert_cmpuint(in_args_pos, <, in_args_len);
             in_value = &in_arg_cvalues[in_args_pos];
 
-            /* First check for callback stuff */
-            if (i == function->callback_index) {
-                if (callback_trampoline)
-                    in_value->v_pointer = callback_trampoline->closure;
-                else
-                    in_value->v_pointer = NULL;
-            } else if (i == function->user_data_index) {
-                in_value->v_pointer = callback_trampoline;
+            param_type = function->param_types[i];
+
+            switch (param_type) {
+            case PARAM_CALLBACK: {
+                GICallableInfo *callable_info;
+                GIScopeType scope = g_arg_info_get_scope(&arg_info);
+                GjsCallbackTrampoline *trampoline;
+                ffi_closure *closure;
+                jsval value = js_argv[js_argv_pos];
+
+                if (JSVAL_IS_NULL(value) && g_arg_info_may_be_null(&arg_info)) {
+                    closure = NULL;
+                    trampoline = NULL;
+                } else {
+                    if (!(JS_TypeOfValue(context, value) == JSTYPE_FUNCTION)) {
+                        gjs_throw(context, "Error invoking %s.%s: Invalid callback given for argument %s",
+                                  g_base_info_get_namespace( (GIBaseInfo*) function->info),
+                                  g_base_info_get_name( (GIBaseInfo*) function->info),
+                                  g_base_info_get_name( (GIBaseInfo*) &arg_info));
+                        failed = TRUE;
+                        break;
+                    }
+
+                    callable_info = (GICallableInfo*) g_type_info_get_interface(&ainfo);
+                    trampoline = gjs_callback_trampoline_new(context,
+                                                             value,
+                                                             callable_info,
+                                                             scope);
+                    closure = trampoline->closure;
+                    g_base_info_unref(callable_info);
+                }
+
+                gint destroy_pos = g_arg_info_get_destroy(&arg_info);
+                gint closure_pos = g_arg_info_get_closure(&arg_info);
+                if (destroy_pos >= 0) {
+                    gint pos = is_method ? destroy_pos + 1 : destroy_pos;
+                    g_assert (function->param_types[destroy_pos] == PARAM_SKIPPED);
+                    in_arg_cvalues[pos].v_pointer = trampoline ? gjs_destroy_notify_callback : NULL;
+                }
+                if (closure_pos >= 0) {
+                    gint pos = is_method ? closure_pos + 1 : closure_pos;
+                    g_assert (function->param_types[closure_pos] == PARAM_SKIPPED);
+                    in_arg_cvalues[pos].v_pointer = trampoline;
+                }
+
+                if (trampoline && scope != GI_SCOPE_TYPE_CALL) {
+                    /* Add an extra reference that will be cleared when collecting
+                       async calls, or when GDestroyNotify is called */
+                    gjs_callback_trampoline_ref(trampoline);
+                }
+                in_value->v_pointer = closure;
+                break;
+            }
+            case PARAM_SKIPPED:
                 arg_removed = TRUE;
-            } else if (i == function->destroy_notify_index) {
-                in_value->v_pointer = destroy_notify;
-                arg_removed = TRUE;
-            } else {
+                break;
+            case PARAM_ARRAY: {
+                GIArgInfo array_length_arg;
+
+                gint array_length_pos = g_type_info_get_array_length(&ainfo);
+                gsize length;
+
+                if (!gjs_value_to_explicit_array(context, js_argv[js_argv_pos], &arg_info,
+                                                 in_value, &length)) {
+                    failed = TRUE;
+                    break;
+                }
+
+                g_callable_info_load_arg(function->info, array_length_pos, &array_length_arg);
+
+                array_length_pos += is_method ? 1 : 0;
+                if (!gjs_value_to_arg(context, INT_TO_JSVAL(length), &array_length_arg,
+                                      in_arg_cvalues + array_length_pos)) {
+                    failed = TRUE;
+                    break;
+                }
+            }
+            case PARAM_NORMAL:
                 /* Ok, now just convert argument normally */
                 g_assert_cmpuint(js_argv_pos, <, js_argc);
                 if (!gjs_value_to_arg(context, js_argv[js_argv_pos], &arg_info,
@@ -600,6 +601,11 @@ gjs_invoke_c_function(JSContext      *context,
                 in_arg_cvalues[in_args_pos].v_pointer = &out_arg_cvalues[out_args_pos];
                 out_args_pos++;
                 inout_args_pos++;
+            }
+
+            if (failed) {
+                /* Exit from the loop */
+                break;
             }
 
             if (!arg_removed)
@@ -678,14 +684,6 @@ gjs_invoke_c_function(JSContext      *context,
     }
 
 release:
-    /* Note we saved a copy of the scope in callback_scope above instead
-     * of inspecting callback_trampoline->scope here, because it's possible the
-     * callback was destroyed during the call.
-     */
-    if (callback_trampoline != NULL && callback_scope == GI_SCOPE_TYPE_CALL) {
-        gjs_callback_trampoline_free(callback_trampoline);
-    }
-
     /* We walk over all args, release in args (if allocated) and convert
      * all out args to JS
      */
@@ -707,12 +705,13 @@ release:
         if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT) {
             GArgument *arg;
             GITransfer transfer;
-            gint array_length_pos;
+            ParamType param_type = PARAM_NORMAL;
 
             if (direction == GI_DIRECTION_IN) {
                 g_assert_cmpuint(in_args_pos, <, in_args_len);
                 arg = &in_arg_cvalues[in_args_pos];
                 transfer = g_arg_info_get_ownership_transfer(&arg_info);
+                param_type = function->param_types[i];
             } else {
                 g_assert_cmpuint(inout_args_pos, <, inout_args_len);
                 arg = &inout_original_arg_cvalues[inout_args_pos];
@@ -723,15 +722,32 @@ release:
                  */
                 transfer = GI_TRANSFER_EVERYTHING;
             }
-            if (g_type_info_get_tag(&arg_type_info) == GI_TYPE_TAG_ARRAY &&
-                (array_length_pos = g_type_info_get_array_length(&arg_type_info)) != -1) {
-                /* Assume that the length passed as an argument was the length of the Array
-                   (not necessarily true) */
+            if (param_type == PARAM_CALLBACK) {
+                ffi_closure *closure = arg->v_pointer;
+                if (closure) {
+                    GjsCallbackTrampoline *trampoline = closure->user_data;
+                    /* CallbackTrampolines are refcounted because for notified/async closures
+                       it is possible to destroy it while in call, and therefore we cannot check
+                       its scope at this point */
+                    gjs_callback_trampoline_unref(trampoline);
+                    arg->v_pointer = NULL;
+                }
+            } else if (param_type == PARAM_ARRAY) {
+                gsize length;
+                GIArgInfo array_length_arg;
+                GITypeInfo array_length_type;
+                gint array_length_pos = g_type_info_get_array_length(&arg_type_info);
 
-                if (is_method) /* get_array_length does not consider the instance argument */
-                    array_length_pos++;
+                g_assert(array_length_pos >= 0);
 
-                guint length = in_arg_cvalues[array_length_pos].v_uint;
+                g_callable_info_load_arg(function->info, array_length_pos, &array_length_arg);
+                g_arg_info_load_type(&array_length_arg, &array_length_type);
+
+                array_length_pos += is_method ? 1 : 0;
+
+                length = get_length_from_arg(in_arg_cvalues + array_length_pos,
+                                             g_type_info_get_tag(&array_length_type));
+
                 if (!gjs_g_argument_release_in_array(context,
                                                      transfer,
                                                      &arg_type_info,
@@ -739,11 +755,13 @@ release:
                                                      arg)) {
                     postinvoke_release_failed = TRUE;
                 }
-            } else if (!gjs_g_argument_release_in_arg(context,
-                                                      transfer,
-                                                      &arg_type_info,
-                                                      arg)) {
-                postinvoke_release_failed = TRUE;
+            } else if (param_type == PARAM_NORMAL) {
+                if (!gjs_g_argument_release_in_arg(context,
+                                                   transfer,
+                                                   &arg_type_info,
+                                                   arg)) {
+                    postinvoke_release_failed = TRUE;
+                }
             }
         }
 
@@ -964,6 +982,9 @@ uninit_cached_function_data (Function *function)
 {
     if (function->info)
         g_base_info_unref( (GIBaseInfo*) function->info);
+    if (function->param_types)
+        g_free(function->param_types);
+
     g_function_invoker_destroy(&function->invoker);
 }
 
@@ -1083,87 +1104,96 @@ init_cached_function_data (JSContext      *context,
 
     n_args = g_callable_info_get_n_args((GICallableInfo*) info);
 
-    function->callback_index = GJS_ARG_INDEX_INVALID;
-    function->destroy_notify_index = GJS_ARG_INDEX_INVALID;
-    function->user_data_index = GJS_ARG_INDEX_INVALID;
+    function->param_types = g_new0(ParamType, n_args);
 
     for (i = 0; i < n_args; i++) {
         GIDirection direction;
         GIArgInfo arg_info;
         GITypeInfo type_info;
-        guint8 destroy, closure;
+        guint8 destroy = -1;
+        guint8 closure = -1;
         GITypeTag type_tag;
+
+        if (function->param_types[i] == PARAM_SKIPPED)
+            continue;
 
         g_callable_info_load_arg((GICallableInfo*) info, i, &arg_info);
         g_arg_info_load_type(&arg_info, &type_info);
+
+        direction = g_arg_info_get_direction(&arg_info);
         type_tag = g_type_info_get_tag(&type_info);
+
         if (type_tag == GI_TYPE_TAG_INTERFACE) {
             GIBaseInfo* interface_info;
             GIInfoType interface_type;
 
             interface_info = g_type_info_get_interface(&type_info);
             interface_type = g_base_info_get_type(interface_info);
-            if (interface_type == GI_INFO_TYPE_CALLBACK &&
-                i != function->destroy_notify_index) {
-                if (function->callback_index != GJS_ARG_INDEX_INVALID) {
-                    gjs_throw(context, "Function %s.%s has multiple callbacks, not supported",
-                              g_base_info_get_namespace( (GIBaseInfo*) info),
-                              g_base_info_get_name( (GIBaseInfo*) info));
-                    g_base_info_unref(interface_info);
-                    return FALSE;
+            if (interface_type == GI_INFO_TYPE_CALLBACK) {
+                if (strcmp(g_base_info_get_name(interface_info), "DestroyNotify") == 0 &&
+                    strcmp(g_base_info_get_namespace(interface_info), "GLib") == 0) {
+                    /* Skip GDestroyNotify if they appear before the respective callback */
+                    function->param_types[i] = PARAM_SKIPPED;
+                } else {
+                    function->param_types[i] = PARAM_CALLBACK;
+                    function->expected_js_argc += 1;
+
+                    destroy = g_arg_info_get_destroy(&arg_info);
+                    closure = g_arg_info_get_closure(&arg_info);
+
+                    if (destroy >= 0 && destroy < n_args)
+                        function->param_types[destroy] = PARAM_SKIPPED;
+
+                    if (closure >= 0 && closure < n_args)
+                        function->param_types[closure] = PARAM_SKIPPED;
+
+                    if (destroy >= 0 && closure < 0) {
+                        gjs_throw(context, "Function %s.%s has a GDestroyNotify but no user_data, not supported",
+                                  g_base_info_get_namespace( (GIBaseInfo*) info),
+                                  g_base_info_get_name( (GIBaseInfo*) info));
+                        return JS_FALSE;
+                    }
                 }
-                function->callback_index = i;
-                gjs_init_callback_statics();
             }
             g_base_info_unref(interface_info);
-        }
-        destroy = g_arg_info_get_destroy(&arg_info);
-        closure = g_arg_info_get_closure(&arg_info);
-        direction = g_arg_info_get_direction(&arg_info);
+        } else if (type_tag == GI_TYPE_TAG_ARRAY) {
+            if (g_type_info_get_array_type(&type_info) == GI_ARRAY_TYPE_C) {
+                gint array_length_pos = g_type_info_get_array_length(&type_info);
 
-        if (destroy > 0 && destroy < n_args) {
-            function->expected_js_argc -= 1;
-            if (function->destroy_notify_index != GJS_ARG_INDEX_INVALID) {
-                gjs_throw(context, "Function %s has multiple GDestroyNotify, not supported",
-                          g_base_info_get_name((GIBaseInfo*)info));
-                return FALSE;
+                if (array_length_pos >= 0) {
+                    if (direction == GI_DIRECTION_IN) {
+                        function->param_types[array_length_pos] = PARAM_SKIPPED;
+                        function->param_types[i] = PARAM_ARRAY;
+                        function->expected_js_argc += 1;
+
+                        if (array_length_pos < i) {
+                            /* we already collected array_length_pos, remove it */
+                            function->expected_js_argc -= 1;
+                        }
+                    } else {
+                        gjs_throw(context, "Function %s.%s has a (out) or (inout) array with explicit length, not supported",
+                                  g_base_info_get_namespace( (GIBaseInfo*) info),
+                                  g_base_info_get_name( (GIBaseInfo*) info));
+                    }
+                }
             }
-            function->destroy_notify_index = destroy;
         }
 
-        if (closure > 0 && closure < n_args) {
-            function->expected_js_argc -= 1;
-            if (function->user_data_index != GJS_ARG_INDEX_INVALID) {
-                gjs_throw(context, "Function %s has multiple user_data arguments, not supported",
-                          g_base_info_get_name((GIBaseInfo*)info));
-                return FALSE;
-            }
-            function->user_data_index = closure;
+        if (function->param_types[i] == PARAM_NORMAL) {
+            if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT)
+                function->expected_js_argc += 1;
+            if (direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT)
+                function->js_out_argc += 1;
+            if (direction == GI_DIRECTION_INOUT)
+                function->inout_argc += 1;
         }
-
-        if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT)
-            function->expected_js_argc += 1;
-        if (direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT)
-            function->js_out_argc += 1;
-        if (direction == GI_DIRECTION_INOUT)
-            function->inout_argc += 1;
-    }
-
-
-    if (function->callback_index != GJS_ARG_INDEX_INVALID
-        && function->destroy_notify_index != GJS_ARG_INDEX_INVALID
-        && function->user_data_index == GJS_ARG_INDEX_INVALID) {
-        gjs_throw(context, "Function %s.%s has a GDestroyNotify but no user_data, not supported",
-                  g_base_info_get_namespace( (GIBaseInfo*) info),
-                  g_base_info_get_name( (GIBaseInfo*) info));
-        return JS_FALSE;
     }
 
     function->info = info;
 
     g_base_info_ref((GIBaseInfo*) function->info);
 
-    return TRUE;
+    return JS_TRUE;
 }
 
 static JSObject*

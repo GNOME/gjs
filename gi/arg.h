@@ -47,6 +47,12 @@ JSBool gjs_value_to_arg   (JSContext  *context,
                            GIArgInfo  *arg_info,
                            GArgument  *arg);
 
+JSBool gjs_value_to_explicit_array (JSContext  *context,
+                                    jsval       value,
+                                    GIArgInfo  *arg_info,
+                                    GArgument  *arg,
+                                    gsize      *length_p);
+
 void gjs_g_argument_init_default (JSContext      *context,
                                   GITypeInfo     *type_info,
                                   GArgument      *arg);
