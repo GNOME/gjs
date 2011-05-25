@@ -68,6 +68,39 @@ static struct JSClass gjs_boxed_class;
 
 GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Boxed, gjs_boxed_class)
 
+static JSBool
+gjs_define_static_methods(JSContext    *context,
+                          JSObject     *constructor,
+                          GIStructInfo *boxed_info)
+{
+    int i;
+    int n_methods;
+
+    n_methods = g_struct_info_get_n_methods(boxed_info);
+
+    for (i = 0; i < n_methods; i++) {
+        GIFunctionInfo *meth_info;
+        GIFunctionInfoFlags flags;
+
+        meth_info = g_struct_info_get_method (boxed_info, i);
+        flags = g_function_info_get_flags (meth_info);
+
+        /* Anything that isn't a method we put on the prototype of the
+         * constructor.  This includes <constructor> introspection
+         * methods, as well as the forthcoming "static methods"
+         * support.  We may want to change this to use
+         * GI_FUNCTION_IS_CONSTRUCTOR and GI_FUNCTION_IS_STATIC or the
+         * like in the near future.
+         */
+        if (!(flags & GI_FUNCTION_IS_METHOD)) {
+            gjs_define_function(context, constructor, meth_info);
+        }
+
+        g_base_info_unref((GIBaseInfo*) meth_info);
+    }
+    return JS_TRUE;
+}
+
 /*
  * Like JSResolveOp, but flags provide contextual information as follows:
  *
@@ -1133,6 +1166,7 @@ gjs_define_boxed_class(JSContext    *context,
 {
     const char *constructor_name;
     JSObject *prototype;
+    JSObject *constructor;
     jsval value;
     Boxed *priv;
 
@@ -1213,19 +1247,21 @@ gjs_define_boxed_class(JSContext    *context,
 
     define_boxed_class_fields (context, priv, prototype);
 
-    if (constructor_p) {
-        *constructor_p = NULL;
-        gjs_object_get_property(context, in_object, constructor_name, &value);
-        if (value != JSVAL_VOID) {
-            if (!JSVAL_IS_OBJECT(value)) {
-                gjs_throw(context, "Property '%s' does not look like a constructor",
-                          constructor_name);
-                return JS_FALSE;
-            }
+    constructor = NULL;
+    gjs_object_get_property(context, in_object, constructor_name, &value);
+    if (value != JSVAL_VOID) {
+        if (!JSVAL_IS_OBJECT(value)) {
+            gjs_throw(context, "Property '%s' does not look like a constructor",
+                      constructor_name);
+            return JS_FALSE;
         }
-
-        *constructor_p = JSVAL_TO_OBJECT(value);
     }
+
+    constructor = JSVAL_TO_OBJECT(value);
+    gjs_define_static_methods (context, constructor, info);
+
+    if (constructor_p)
+        *constructor_p = constructor;
 
     if (prototype_p)
         *prototype_p = prototype;
