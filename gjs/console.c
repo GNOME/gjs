@@ -76,7 +76,7 @@ main(int argc, char **argv)
         len = strlen(script);
         filename = "<command line>";
     } else if (argc <= 1) {
-        source_js_version = "default";
+        source_js_version = NULL;
         script = g_strdup("const Console = imports.console; Console.interact();");
         len = strlen(script);
         filename = "<stdin>";
@@ -94,8 +94,11 @@ main(int argc, char **argv)
     /* If user explicitly specifies a version, use it */
     if (js_version != NULL)
         source_js_version = js_version;
-    js_context = g_object_new(GJS_TYPE_CONTEXT, "search-path", include_path,
-                              "js-version", source_js_version, NULL);
+    if (source_js_version != NULL)
+        js_context = g_object_new(GJS_TYPE_CONTEXT, "search-path", include_path,
+                                  "js-version", source_js_version, NULL);
+    else
+        js_context = g_object_new(GJS_TYPE_CONTEXT, "search-path", include_path, NULL);
 
     /* prepare command line arguments */
     if (!gjs_context_define_string_array(js_context, "ARGV",
