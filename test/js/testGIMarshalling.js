@@ -6,7 +6,8 @@ const Gio = imports.gi.Gio;
 const Lang = imports.lang;
 
 function testCArray() {
-    var array;
+    var array, sum;
+
     array = GIMarshallingTests.array_zero_terminated_return();
     assertEquals("0", array[0]);
     assertEquals("1", array[1]);
@@ -18,6 +19,53 @@ function testCArray() {
     assertEquals(42, array[0].long_);
     assertEquals(43, array[1].long_);
     assertEquals(44, array[2].long_);
+
+    array = GIMarshallingTests.array_return();
+    assertEquals(4, array.length);
+    assertEquals(-1, array[0]);
+    assertEquals(0, array[1]);
+    assertEquals(1, array[2]);
+    assertEquals(2, array[3]);
+
+    [array, sum] = GIMarshallingTests.array_return_etc(9, 5);
+    assertEquals(14, sum);
+    assertEquals(4, array.length);
+    assertEquals(9, array[0]);
+    assertEquals(0, array[1]);
+    assertEquals(1, array[2]);
+    assertEquals(5, array[3]);
+
+    array = GIMarshallingTests.array_out();
+    assertEquals(4, array.length);
+    assertEquals(-1, array[0]);
+    assertEquals(0, array[1]);
+    assertEquals(1, array[2]);
+    assertEquals(2, array[3]);
+
+    [array, sum] = GIMarshallingTests.array_out_etc(9, 5);
+    assertEquals(14, sum);
+    assertEquals(4, array.length);
+    assertEquals(9, array[0]);
+    assertEquals(0, array[1]);
+    assertEquals(1, array[2]);
+    assertEquals(5, array[3]);
+
+    array = GIMarshallingTests.array_inout([-1, 0, 1, 2]);
+    assertEquals(5, array.length);
+    assertEquals(-2, array[0]);
+    assertEquals(-1, array[1]);
+    assertEquals(0, array[2]);
+    assertEquals(1, array[3]);
+    assertEquals(2, array[4]);
+
+    [array, sum] = GIMarshallingTests.array_inout_etc(9, [-1, 0, 1, 2], 5);
+    assertEquals(14, sum);
+    assertEquals(5, array.length);
+    assertEquals(9, array[0]);
+    assertEquals(-1, array[1]);
+    assertEquals(0, array[2]);
+    assertEquals(1, array[3]);
+    assertEquals(5, array[4]);
 
     GIMarshallingTests.array_string_in(["foo", "bar"]);
 

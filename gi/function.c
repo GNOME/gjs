@@ -651,20 +651,50 @@ gjs_invoke_c_function(JSContext      *context,
         gjs_root_value_locations(context, return_values, function->js_out_argc);
 
         if (return_tag != GI_TYPE_TAG_VOID) {
+            GITransfer transfer = g_callable_info_get_caller_owns((GICallableInfo*) function->info);
             gboolean arg_failed;
+            gint array_length_pos;
 
             g_assert_cmpuint(next_rval, <, function->js_out_argc);
-            arg_failed = !gjs_value_from_g_argument(context, &return_values[next_rval],
-                                                    &return_info, (GArgument*)&return_value);
-            if (arg_failed)
-                failed = TRUE;
 
-            /* Free GArgument, the jsval should have ref'd or copied it */
-            if (!arg_failed &&
-                !gjs_g_argument_release(context,
-                                        g_callable_info_get_caller_owns((GICallableInfo*) function->info),
-                                        &return_info,
-                                        (GArgument*)&return_value))
+            array_length_pos = g_type_info_get_array_length(&return_info);
+            if (array_length_pos >= 0) {
+                GIArgInfo array_length_arg;
+                GITypeInfo arg_type_info;
+                jsval length;
+
+                g_callable_info_load_arg(function->info, array_length_pos, &array_length_arg);
+                g_arg_info_load_type(&array_length_arg, &arg_type_info);
+                array_length_pos += is_method ? 1 : 0;
+                arg_failed = !gjs_value_from_g_argument(context, &length,
+                                                        &arg_type_info,
+                                                        &out_arg_cvalues[array_length_pos]);
+                if (!arg_failed) {
+                    arg_failed = !gjs_value_from_explicit_array(context,
+                                                                &return_values[next_rval],
+                                                                &return_info,
+                                                                &return_value,
+                                                                JSVAL_TO_INT(length));
+                }
+                if (!arg_failed &&
+                    !gjs_g_argument_release_out_array(context,
+                                                      transfer,
+                                                      &return_info,
+                                                      JSVAL_TO_INT(length),
+                                                      &return_value))
+                    failed = TRUE;
+            } else {
+                arg_failed = !gjs_value_from_g_argument(context, &return_values[next_rval],
+                                                        &return_info, &return_value);
+                /* Free GArgument, the jsval should have ref'd or copied it */
+                if (!arg_failed &&
+                    !gjs_g_argument_release(context,
+                                            transfer,
+                                            &return_info,
+                                            &return_value))
+                    failed = TRUE;
+            }
+            if (arg_failed)
                 failed = TRUE;
 
             ++next_rval;
@@ -681,21 +711,21 @@ release:
         GIDirection direction;
         GIArgInfo arg_info;
         GITypeInfo arg_type_info;
+        ParamType param_type;
 
         g_callable_info_load_arg( (GICallableInfo*) function->info, gi_arg_pos, &arg_info);
         direction = g_arg_info_get_direction(&arg_info);
 
         g_arg_info_load_type(&arg_info, &arg_type_info);
+        param_type = function->param_types[gi_arg_pos];
 
         if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT) {
             GArgument *arg;
             GITransfer transfer;
-            ParamType param_type = PARAM_NORMAL;
 
             if (direction == GI_DIRECTION_IN) {
                 arg = &in_arg_cvalues[c_arg_pos];
                 transfer = g_arg_info_get_ownership_transfer(&arg_info);
-                param_type = function->param_types[gi_arg_pos];
             } else {
                 arg = &inout_original_arg_cvalues[c_arg_pos];
                 /* For inout, transfer refers to what we get back from the function; for
@@ -754,22 +784,44 @@ release:
         if (did_throw_gerror || failed)
             continue;
 
-        if (direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT) {
+        if ((direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT) && param_type != PARAM_SKIPPED) {
             GArgument *arg;
             gboolean arg_failed;
+            gint array_length_pos;
+            jsval array_length;
+            GITransfer transfer;
 
             g_assert(next_rval < function->js_out_argc);
 
             arg = &out_arg_cvalues[c_arg_pos];
 
-            arg_failed = FALSE;
-            if (!gjs_value_from_g_argument(context,
-                                           &return_values[next_rval],
-                                           &arg_type_info,
-                                           arg)) {
-                arg_failed = TRUE;
-                postinvoke_release_failed = TRUE;
+            array_length_pos = g_type_info_get_array_length(&arg_type_info);
+            if (array_length_pos >= 0) {
+                GIArgInfo array_length_arg;
+                GITypeInfo array_length_type_info;
+
+                g_callable_info_load_arg(function->info, array_length_pos, &array_length_arg);
+                g_arg_info_load_type(&array_length_arg, &array_length_type_info);
+                array_length_pos += is_method ? 1 : 0;
+                arg_failed = !gjs_value_from_g_argument(context, &array_length,
+                                                        &array_length_type_info,
+                                                        &out_arg_cvalues[array_length_pos]);
+                if (!arg_failed) {
+                    arg_failed = !gjs_value_from_explicit_array(context,
+                                                                &return_values[next_rval],
+                                                                &arg_type_info,
+                                                                arg,
+                                                                JSVAL_TO_INT(array_length));
+                }
+            } else {
+                arg_failed = !gjs_value_from_g_argument(context,
+                                                        &return_values[next_rval],
+                                                        &arg_type_info,
+                                                        arg);
             }
+
+            if (arg_failed)
+                postinvoke_release_failed = TRUE;
 
             /* For caller-allocates, what happens here is we allocate
              * a structure above, then gjs_value_from_g_argument calls
@@ -803,11 +855,21 @@ release:
             }
 
             /* Free GArgument, the jsval should have ref'd or copied it */
-            if (!arg_failed)
-                gjs_g_argument_release(context,
-                                       g_arg_info_get_ownership_transfer(&arg_info),
-                                       &arg_type_info,
-                                       arg);
+            transfer = g_arg_info_get_ownership_transfer(&arg_info);
+            if (!arg_failed) {
+                if (array_length_pos >= 0) {
+                    gjs_g_argument_release_out_array(context,
+                                                     transfer,
+                                                     &arg_type_info,
+                                                     JSVAL_TO_INT(array_length),
+                                                     arg);
+                } else {
+                    gjs_g_argument_release(context,
+                                           transfer,
+                                           &arg_type_info,
+                                           arg);
+                }
+            }
 
             ++next_rval;
         }
@@ -1062,7 +1124,7 @@ init_cached_function_data (JSContext      *context,
                            Function       *function,
                            GIFunctionInfo *info)
 {
-    guint8 i, n_args;
+    guint8 i, n_args, array_length_pos;
     GError *error = NULL;
     GITypeInfo return_type;
 
@@ -1073,11 +1135,14 @@ init_cached_function_data (JSContext      *context,
 
     g_callable_info_load_return_type((GICallableInfo*)info, &return_type);
     if (g_type_info_get_tag(&return_type) != GI_TYPE_TAG_VOID)
-      function->js_out_argc += 1;
+        function->js_out_argc += 1;
 
     n_args = g_callable_info_get_n_args((GICallableInfo*) info);
-
     function->param_types = g_new0(ParamType, n_args);
+
+    array_length_pos = g_type_info_get_array_length(&return_type);
+    if (array_length_pos >= 0 && array_length_pos < n_args)
+        function->param_types[array_length_pos] = PARAM_SKIPPED;
 
     for (i = 0; i < n_args; i++) {
         GIDirection direction;
@@ -1131,28 +1196,34 @@ init_cached_function_data (JSContext      *context,
             g_base_info_unref(interface_info);
         } else if (type_tag == GI_TYPE_TAG_ARRAY) {
             if (g_type_info_get_array_type(&type_info) == GI_ARRAY_TYPE_C) {
-                gint array_length_pos = g_type_info_get_array_length(&type_info);
+                array_length_pos = g_type_info_get_array_length(&type_info);
 
-                if (array_length_pos >= 0) {
-                    if (direction == GI_DIRECTION_IN) {
-                        function->param_types[array_length_pos] = PARAM_SKIPPED;
-                        function->param_types[i] = PARAM_ARRAY;
-                        function->expected_js_argc += 1;
+                if (array_length_pos >= 0 && array_length_pos < n_args) {
+                    GIArgInfo length_arg_info;
 
-                        if (array_length_pos < i) {
-                            /* we already collected array_length_pos, remove it */
-                            function->expected_js_argc -= 1;
-                        }
-                    } else {
-                        gjs_throw(context, "Function %s.%s has a (out) or (inout) array with explicit length, not supported",
+                    g_callable_info_load_arg((GICallableInfo*) info, array_length_pos, &length_arg_info);
+                    if (g_arg_info_get_direction(&length_arg_info) != direction) {
+                        gjs_throw(context, "Function %s.%s has an array with different-direction length arg, not supported",
                                   g_base_info_get_namespace( (GIBaseInfo*) info),
                                   g_base_info_get_name( (GIBaseInfo*) info));
+                        return JS_FALSE;
+                    }
+
+                    function->param_types[array_length_pos] = PARAM_SKIPPED;
+                    function->param_types[i] = PARAM_ARRAY;
+
+                    if (array_length_pos < i) {
+                        /* we already collected array_length_pos, remove it */
+                        function->expected_js_argc -= 1;
+                        if (direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT)
+                            function->js_out_argc--;
                     }
                 }
             }
         }
 
-        if (function->param_types[i] == PARAM_NORMAL) {
+        if (function->param_types[i] == PARAM_NORMAL ||
+            function->param_types[i] == PARAM_ARRAY) {
             if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT)
                 function->expected_js_argc += 1;
             if (direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT)

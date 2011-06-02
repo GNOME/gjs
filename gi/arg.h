@@ -70,10 +70,21 @@ JSBool gjs_value_from_g_argument (JSContext  *context,
                                   jsval      *value_p,
                                   GITypeInfo *type_info,
                                   GArgument  *arg);
+JSBool gjs_value_from_explicit_array (JSContext  *context,
+                                      jsval      *value_p,
+                                      GITypeInfo *type_info,
+                                      GArgument  *arg,
+                                      int         length);
+
 JSBool gjs_g_argument_release    (JSContext  *context,
                                   GITransfer  transfer,
                                   GITypeInfo *type_info,
                                   GArgument  *arg);
+JSBool gjs_g_argument_release_out_array (JSContext  *context,
+                                         GITransfer  transfer,
+                                         GITypeInfo *type_info,
+                                         guint       length,
+                                         GArgument  *arg);
 JSBool gjs_g_argument_release_in_array (JSContext  *context,
                                         GITransfer  transfer,
                                         GITypeInfo *type_info,

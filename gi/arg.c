@@ -1806,6 +1806,25 @@ gjs_array_from_carray (JSContext  *context,
     return res;
 }
 
+JSBool
+gjs_value_from_explicit_array(JSContext  *context,
+                              jsval      *value_p,
+                              GITypeInfo *type_info,
+                              GArgument  *arg,
+                              int         length)
+{
+    GITypeInfo *param_info;
+    JSBool res;
+
+    param_info = g_type_info_get_param_type(type_info, 0);
+
+    res = gjs_array_from_carray_internal(context, value_p, param_info, length, arg->v_pointer);
+
+    g_base_info_unref((GIBaseInfo*)param_info);
+
+    return res;
+}
+
 static JSBool
 gjs_array_from_g_array (JSContext  *context,
                         jsval      *value_p,
@@ -2830,6 +2849,50 @@ gjs_g_argument_release_in_array (JSContext  *context,
                                             param_type, type_tag, &elem)) {
                 ret = JS_FALSE;
                 break;
+            }
+        }
+    }
+
+    g_base_info_unref(param_type);
+    g_free(array);
+
+    return ret;
+}
+
+JSBool
+gjs_g_argument_release_out_array (JSContext  *context,
+                                  GITransfer  transfer,
+                                  GITypeInfo *type_info,
+                                  guint       length,
+                                  GArgument  *arg)
+{
+    GITypeInfo *param_type;
+    gpointer *array;
+    GArgument elem;
+    guint i;
+    JSBool ret = JS_TRUE;
+    GITypeTag type_tag;
+
+    if (transfer == GI_TRANSFER_NOTHING)
+        return JS_TRUE;
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Releasing GArgument array out param");
+
+    array = arg->v_pointer;
+
+    param_type = g_type_info_get_param_type(type_info, 0);
+    type_tag = g_type_info_get_tag(param_type);
+
+    if (transfer != GI_TRANSFER_CONTAINER) {
+        for (i = 0; i < length; i++) {
+            elem.v_pointer = array[i];
+            if (!gjs_g_arg_release_internal(context,
+                                            GI_TRANSFER_EVERYTHING,
+                                            param_type,
+                                            type_tag,
+                                            &elem)) {
+                ret = JS_FALSE;
             }
         }
     }
