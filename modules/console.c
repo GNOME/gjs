@@ -170,8 +170,11 @@ gjs_console_interact(JSContext *context,
     JSString *str;
     GString *buffer = NULL;
     char *temp_buf = NULL;
+    gunichar2 *u16_buffer;
+    glong u16_buffer_len;
     int lineno;
     int startline;
+    GError *error = NULL;
     FILE *file = stdin;
 
     JS_SetErrorReporter(context, gjs_console_error_reporter);
@@ -199,11 +202,21 @@ gjs_console_interact(JSContext *context,
 #ifdef HAVE_JS_DECODEUTF8
         } while (!JS_BufferIsCompilableUnit(context, JS_TRUE, object, buffer->str, buffer->len));
 #else
+        /* Note in this case, we are trying to parse the buffer as
+         * ISO-8859-1 which is broken for non-ASCII.
+         */
         } while (!JS_BufferIsCompilableUnit(context, object, buffer->str, buffer->len));
 #endif
 
-        script = JS_CompileScript(context, object, buffer->str, buffer->len, "typein",
-                                  startline);
+        if ((u16_buffer = g_utf8_to_utf16 (buffer->str, buffer->len, NULL, &u16_buffer_len, &error)) == NULL) {
+            g_printerr ("%s\n", error->message);
+            g_clear_error (&error);
+            continue;
+        }
+
+        script = JS_CompileUCScript(context, object, u16_buffer, u16_buffer_len, "typein",
+                                    startline);
+        g_free (u16_buffer);
 
         if (script)
             JS_ExecuteScript(context, object, script, &result);

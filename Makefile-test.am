@@ -187,6 +187,7 @@ EXTRA_DIST +=					\
 	test/js/testMainloop.js			\
 	test/js/testSignals.js			\
 	test/js/testTweener.js			\
+	test/js/testUnicode.js			\
 	test/run-with-dbus			\
 	test/test-bus.conf
 
