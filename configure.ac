@@ -156,6 +156,7 @@ AC_CHECK_FUNC([JS_IsScriptFrame], AC_DEFINE([HAVE_JS_ISSCRIPTFRAME], [1], [Defin
 AC_CHECK_FUNC([JS_EndPC], AC_DEFINE([HAVE_JS_ENDPC], [1], [Define if we have JS_EndPC]),)
 AC_CHECK_FUNC([JS_NewCompartmentAndGlobalObject], AC_DEFINE([HAVE_JS_NEWCOMPARTMENTANDGLOBALOBJECT], [1], [Define if we have JS_NewCompartmentAndGlobalObject]),)
 AC_CHECK_FUNC([JS_SetScriptStackQuota], AC_DEFINE([HAVE_JS_SETSCRIPTSTACKQUOTA], [1], [Define if we have JS_SetScriptStackQuota]),)
+AC_CHECK_FUNC([JS_ClearNewbornRoots], AC_DEFINE([HAVE_JS_CLEARNEWBORNROOTS], [1], [Define if we have JS_ClearNewbornRoots]),)
 CFLAGS=$saved_CFLAGS
 LIBS=$saved_LIBS
 
