@@ -92,7 +92,7 @@ AC_CHECK_HEADERS([malloc.h])
 AC_CHECK_FUNCS(mallinfo)
 
 # First, try separate mozjs185 release
-AC_MSG_CHECKING([for standalone mozjs])
+AC_MSG_CHECKING([for standalone mozjs185])
 PKG_CHECK_EXISTS([mozjs185], JS_PACKAGE=mozjs185,)
 if test x$JS_PACKAGE != x; then
     FIREFOX_JS_LIBDIR=`$PKG_CONFIG --variable=libdir $JS_PACKAGE`
@@ -136,6 +136,10 @@ if test x$JS_PACKAGE = x; then
         AC_MSG_ERROR([Could not figure out where the Firefox JavaScript library lives])
     fi
 fi
+
+echo "Using JS_PACKAGE: $JS_PACKAGE"
+echo "Using JS_CFLAGS: $JS_CFLAGS"
+echo "Using JS_LIBS: $JS_LIBS"
 
 AC_SUBST(JS_PACKAGE)
 AC_SUBST(FIREFOX_JS_LIBDIR)
