@@ -761,6 +761,51 @@ gjs_define_string_array(JSContext   *context,
 }
 
 /**
+ * gjs_string_readable:
+ *
+ * Return a string that can be read back by gjs-console; for
+ * JS strings that contain valid Unicode, we return a UTF-8 formatted
+ * string.  Otherwise, we return one where non-ASCII-printable bytes
+ * are \x escaped.
+ *
+ */
+static char *
+gjs_string_readable (JSContext   *context,
+                     JSString    *string)
+{
+    GString *buf = g_string_new("");
+    char *chars;
+
+    JS_BeginRequest(context);
+
+    g_string_append_c(buf, '"');
+
+    if (!gjs_try_string_to_utf8(context, STRING_TO_JSVAL(string), &chars, NULL)) {
+        size_t i, len;
+        const jschar *uchars;
+
+        uchars = JS_GetStringCharsAndLength(context, string, &len);
+
+        for (i = 0; i < len; i++) {
+            jschar c = uchars[i];
+            if (c >> 8 == 0 && g_ascii_isprint(c & 0xFF))
+                g_string_append_c(buf, c & 0xFF);
+            else
+                g_string_append_printf(buf, "\\u%04X", c);
+        }
+    } else {
+        g_string_append(buf, chars);
+        g_free(chars);
+    }
+
+    g_string_append_c(buf, '"');
+
+    JS_EndRequest(context);
+
+    return g_string_free(buf, FALSE);
+}
+
+/**
  * gjs_value_debug_string:
  * @context:
  * @value: Any JavaScript value
@@ -774,6 +819,11 @@ gjs_value_debug_string(JSContext      *context,
     JSString *str;
     char *bytes;
     char *debugstr;
+
+    /* Special case debug strings for strings */
+    if (JSVAL_IS_STRING(value)) {
+        return gjs_string_readable(context, JSVAL_TO_STRING(value));
+    }
 
     JS_BeginRequest(context);
 
