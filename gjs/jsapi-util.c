@@ -784,7 +784,12 @@ gjs_string_readable (JSContext   *context,
         size_t i, len;
         const jschar *uchars;
 
+#ifdef HAVE_JS_GETSTRINGCHARS
+        uchars = JS_GetStringChars(string);
+        len = JS_GetStringLength(string);
+#else
         uchars = JS_GetStringCharsAndLength(context, string, &len);
+#endif
 
         for (i = 0; i < len; i++) {
             jschar c = uchars[i];
