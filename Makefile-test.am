@@ -177,7 +177,6 @@ EXTRA_DIST +=					\
 	test/js/testCairo.js			\
 	test/js/testEverythingBasic.js		\
 	test/js/testEverythingEncapsulated.js	\
-	test/js/testGI.js			\
 	test/js/testGIMarshalling.js		\
 	test/js/testImporter.js			\
 	test/js/testJS1_8.js			\
