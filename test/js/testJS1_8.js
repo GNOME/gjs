@@ -4,7 +4,7 @@
 // https://developer.mozilla.org/en/JavaScript/New_in_JavaScript/1.8
 
 // "const"
-const GLib = imports.gi.GLib;
+const Everything = imports.gi.Regress;
 
 function testLet() {
     // "let"
@@ -15,11 +15,9 @@ function testLet() {
 }
 
 function testMultiReturn() {
-    const GLib = imports.gi.GLib;
-
     // "destructuring bind"
-    let [success, content, len] = GLib.file_get_contents('/etc/passwd')
-    assertEquals(success, true);
+    let [y, z, q] = Everything.test_torture_signature_0(42, 'foo', 7);
+    assertEquals(z, 84);
 }
 
 function testYield() {
