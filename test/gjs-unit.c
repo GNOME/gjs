@@ -185,6 +185,8 @@ main(int argc, char **argv)
     GString *path;
     size_t i;
     GSList *all_tests, *iter;
+    GSList *test_filenames = NULL;
+    int retval;
 
     working_dir = g_get_current_dir();
 
@@ -193,6 +195,7 @@ main(int argc, char **argv)
     gjs_unit_dir = g_path_get_dirname(gjs_unit_path);
     /* the gjs-unit executable will be in <top_builddir>/.libs */
     top_builddir = g_path_get_dirname(gjs_unit_dir);
+    g_free(gjs_unit_dir);
     top_srcdir = build_absolute_filename(top_builddir, GJS_TOP_SRCDIR, NULL);
 
     /* Normalize, not strictly necessary */
@@ -205,6 +208,7 @@ main(int argc, char **argv)
     top_srcdir = g_get_current_dir();
 
     g_chdir(working_dir);
+    g_free(working_dir);
 
     /* we're always going to use uninstalled files, set up necessary
      * environment variables, but don't overwrite if already set */
@@ -224,6 +228,7 @@ main(int argc, char **argv)
 
     g_setenv("TOP_SRCDIR", top_srcdir, FALSE);
     g_setenv("BUILDDIR", top_builddir, FALSE);
+    g_free(top_builddir);
     g_setenv("XDG_DATA_HOME", data_home, FALSE);
     g_setenv("GJS_PATH", path->str, FALSE);
     /* The tests are known to fail in the presence of the JIT;
@@ -257,8 +262,10 @@ main(int argc, char **argv)
         char *file_name;
 
         if (!(g_str_has_prefix(name, "test") &&
-              g_str_has_suffix(name, ".js")))
+              g_str_has_suffix(name, ".js"))) {
+            g_free(name);
             continue;
+        }
 
         /* pretty print, drop 'test' prefix and '.js' suffix from test name */
         test_name = g_strconcat("/js/", name + 4, NULL);
@@ -268,9 +275,14 @@ main(int argc, char **argv)
         g_test_add(test_name, GjsTestJSFixture, file_name, setup, test, teardown);
         g_free(name);
         g_free(test_name);
-        /* not freeing file_name as it's needed while running the test */
+        test_filenames = g_slist_prepend(test_filenames, file_name);
+        /* not freeing file_name yet as it's needed while running the test */
     }
     g_slist_free(all_tests);
 
-    return g_test_run ();
+    retval =  g_test_run ();
+    g_slist_foreach(test_filenames, (GFunc)g_free, test_filenames);
+    g_slist_free(test_filenames);
+    g_free(top_srcdir);
+    return retval;
 }
