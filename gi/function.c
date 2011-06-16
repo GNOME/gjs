@@ -577,6 +577,20 @@ gjs_invoke_c_function(JSContext      *context,
                     failed = TRUE;
                     break;
                 }
+                if (direction == GI_DIRECTION_INOUT) {
+                    if (in_value->v_pointer == NULL) { 
+                        /* Special case where we were given JS null to
+                         * also pass null for length, and not a
+                         * pointer to an integer that derefs to 0.
+                         */
+                        in_arg_cvalues[array_length_pos].v_pointer = NULL;
+                        out_arg_cvalues[array_length_pos].v_pointer = NULL;
+                        inout_original_arg_cvalues[array_length_pos].v_pointer = NULL;
+                    } else {
+                        out_arg_cvalues[array_length_pos] = inout_original_arg_cvalues[array_length_pos] = *(in_arg_cvalues + array_length_pos);
+                        in_arg_cvalues[array_length_pos].v_pointer = &out_arg_cvalues[array_length_pos];
+                    }
+                }
             }
             case PARAM_NORMAL:
                 /* Ok, now just convert argument normally */
@@ -588,7 +602,7 @@ gjs_invoke_c_function(JSContext      *context,
                 }
             }
 
-            if (!failed && direction == GI_DIRECTION_INOUT) {
+            if (direction == GI_DIRECTION_INOUT && !arg_removed && !failed) {
                 out_arg_cvalues[c_arg_pos] = inout_original_arg_cvalues[c_arg_pos] = in_arg_cvalues[c_arg_pos];
                 in_arg_cvalues[c_arg_pos].v_pointer = &out_arg_cvalues[c_arg_pos];
             }

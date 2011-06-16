@@ -8,6 +8,20 @@ const Lang = imports.lang;
 function testCArray() {
     var array, sum;
 
+    var result = GIMarshallingTests.init_function(null);
+    assertEquals(result.length, 2);
+    var success = result[0];
+    var newArray = result[1];
+    assertEquals(newArray.length, 0);
+
+    array = ["foo","bar","baz"];
+    var result = GIMarshallingTests.init_function(array);
+    var success = result[0];
+    var newArray = result[1];
+    assertEquals(2, newArray.length);
+    assertEquals(newArray[0], "foo");
+    assertEquals(newArray[1], "bar");
+
     array = GIMarshallingTests.array_zero_terminated_return();
     assertEquals("0", array[0]);
     assertEquals("1", array[1]);
