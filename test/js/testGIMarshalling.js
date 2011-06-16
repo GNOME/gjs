@@ -34,7 +34,6 @@ function testCArray() {
     GIMarshallingTests.array_struct_take_in(array, array.length);
 
     GIMarshallingTests.array_uint8_in ("abcd", 4);
-    GIMarshallingTests.array_nested_in ([[11], [21, 22, 23], [31, 32]], 3);
     GIMarshallingTests.array_enum_in([GIMarshallingTests.Enum.VALUE1,
 				      GIMarshallingTests.Enum.VALUE2,
 				      GIMarshallingTests.Enum.VALUE3], 3);
