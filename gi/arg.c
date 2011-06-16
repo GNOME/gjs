@@ -529,7 +529,8 @@ gjs_array_to_intarray(JSContext   *context,
     union { guint8 u8[0]; guint16 u16[0]; guint32 u32[0]; } *result;
     unsigned i;
 
-    result = g_malloc0(length * intsize);
+    /* add one so we're always zero terminated */
+    result = g_malloc0((length+1) * intsize);
 
     for (i = 0; i < length; ++i) {
         jsval elem;
@@ -582,7 +583,10 @@ gjs_array_to_floatarray(JSContext   *context,
                         gboolean     is_double)
 {
     unsigned int i;
-    void *result = g_malloc0(length * (is_double ? sizeof(double) : sizeof(float)));
+    void *result;
+
+    /* add one so we're always zero terminated */
+    result = g_malloc0((length+1) * (is_double ? sizeof(double) : sizeof(float)));
 
     for (i = 0; i < length; ++i) {
         jsval elem;
