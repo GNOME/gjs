@@ -67,7 +67,6 @@ main(int argc, char **argv)
     g_type_init();
 
     command_line = g_strjoinv(" ", argv);
-    g_debug("Command line: %s", command_line);
     g_free(command_line);
 
     if (command != NULL) {
@@ -90,7 +89,6 @@ main(int argc, char **argv)
         filename = argv[1];
     }
 
-    g_debug("Creating new context to eval console script");
     /* If user explicitly specifies a version, use it */
     if (js_version != NULL)
         source_js_version = js_version;
