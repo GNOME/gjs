@@ -231,6 +231,7 @@ main(int argc, char **argv)
     g_setenv("BUILDDIR", top_builddir, FALSE);
     g_free(top_builddir);
     g_setenv("XDG_DATA_HOME", data_home, FALSE);
+    g_free(data_home);
     g_setenv("GJS_PATH", path->str, FALSE);
     g_string_free(path, TRUE);
     /* The tests are known to fail in the presence of the JIT;
