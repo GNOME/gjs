@@ -577,6 +577,7 @@ gjs_invoke_c_function(JSContext      *context,
                     failed = TRUE;
                     break;
                 }
+                /* Also handle the INOUT for the length here */
                 if (direction == GI_DIRECTION_INOUT) {
                     if (in_value->v_pointer == NULL) { 
                         /* Special case where we were given JS null to
@@ -591,6 +592,7 @@ gjs_invoke_c_function(JSContext      *context,
                         in_arg_cvalues[array_length_pos].v_pointer = &out_arg_cvalues[array_length_pos];
                     }
                 }
+                break;
             }
             case PARAM_NORMAL:
                 /* Ok, now just convert argument normally */
@@ -746,7 +748,7 @@ release:
                  * the temporary C value we allocated, clearly we're responsible for
                  * freeing it.
                  */
-                transfer = GI_TRANSFER_EVERYTHING;
+                transfer = GI_TRANSFER_NOTHING;
             }
             if (param_type == PARAM_CALLBACK) {
                 ffi_closure *closure = arg->v_pointer;
