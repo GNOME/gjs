@@ -193,6 +193,7 @@ main(int argc, char **argv)
     gjs_unit_path = build_absolute_filename(argv[0], NULL);
 
     gjs_unit_dir = g_path_get_dirname(gjs_unit_path);
+    g_free(gjs_unit_path);
     /* the gjs-unit executable will be in <top_builddir>/.libs */
     top_builddir = g_path_get_dirname(gjs_unit_dir);
     g_free(gjs_unit_dir);
@@ -231,6 +232,7 @@ main(int argc, char **argv)
     g_free(top_builddir);
     g_setenv("XDG_DATA_HOME", data_home, FALSE);
     g_setenv("GJS_PATH", path->str, FALSE);
+    g_string_free(path, TRUE);
     /* The tests are known to fail in the presence of the JIT;
      * we leak objects.
      * https://bugzilla.gnome.org/show_bug.cgi?id=616193
@@ -278,6 +280,7 @@ main(int argc, char **argv)
         test_filenames = g_slist_prepend(test_filenames, file_name);
         /* not freeing file_name yet as it's needed while running the test */
     }
+    g_free(js_test_dir);
     g_slist_free(all_tests);
 
     retval =  g_test_run ();
