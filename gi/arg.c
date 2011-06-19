@@ -481,7 +481,7 @@ gjs_array_to_strv(JSContext   *context,
 static JSBool
 gjs_string_to_intarray(JSContext   *context,
                        jsval        string_val,
-                       GITypeTag    param_tag,
+                       GITypeInfo  *param_info,
                        void       **arr_p,
                        gsize       *length)
 {
@@ -489,7 +489,8 @@ gjs_string_to_intarray(JSContext   *context,
     char *result;
     guint16 *result16;
 
-    element_type = replace_gtype(param_tag);
+    element_type = g_type_info_get_tag(param_info);
+    element_type = replace_gtype(element_type);
 
     switch (element_type) {
     case GI_TYPE_TAG_INT8:
@@ -680,21 +681,21 @@ gjs_array_to_ptrarray(JSContext   *context,
 
     *arr_p = array;
     return JS_TRUE;
-} 
+}
 
 static JSBool
 gjs_array_to_array(JSContext   *context,
                    jsval        array_value,
                    gsize        length,
                    GITransfer   transfer,
-                   GITypeTag    param_tag,
                    GITypeInfo  *param_info,
                    void       **arr_p)
 {
     enum { UNSIGNED=FALSE, SIGNED=TRUE };
     GITypeTag element_type;
 
-    element_type = replace_gtype(param_tag);
+    element_type = g_type_info_get_tag(param_info);
+    element_type = replace_gtype(element_type);
 
     if (element_type == GI_TYPE_TAG_INTERFACE) {
         GIBaseInfo *interface_info = g_type_info_get_interface(param_info);
@@ -849,24 +850,15 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
                                      gsize           *length_p)
 {
     JSBool ret = JS_TRUE;
-    GIArrayType array_type = g_type_info_get_array_type(type_info);
     GITypeInfo *param_info;
-    GITypeTag param_tag;
 
     param_info = g_type_info_get_param_type(type_info, 0);
-    param_tag = g_type_info_get_tag(param_info);
-
-    if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
-        /* HACK: ByteArrays are reported as having a param of gpointer (GI_TYPE_TAG_VOID),
-           which is obviously wrong. Override it here */
-        param_tag = GI_TYPE_TAG_UINT8;
-    }
 
     if ((JSVAL_IS_NULL(value) && !may_be_null) ||
         (!JSVAL_IS_STRING(value) && !JSVAL_IS_OBJECT(value) && !JSVAL_IS_NULL(value))) {
         gchar *display_name = get_argument_display_name(arg_name, arg_type);
         gjs_throw(context, "Expected type %s for %s but got type '%s' %p",
-                  g_type_tag_to_string(param_tag),
+                  g_type_tag_to_string(g_type_info_get_tag(param_info)),
                   display_name,
                   JS_GetTypeName(context,
                                  JS_TypeOfValue(context, value)),
@@ -880,7 +872,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
         *length_p = 0;
     } else if (JSVAL_IS_STRING(value)) {
         /* Allow strings as int8/uint8/int16/uint16 arrays */
-        if (!gjs_string_to_intarray(context, value, param_tag,
+        if (!gjs_string_to_intarray(context, value, param_info,
                                     contents, length_p))
             ret = JS_FALSE;
     } else if (gjs_object_has_property(context,
@@ -900,7 +892,6 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
                                     value,
                                     length,
                                     transfer,
-                                    param_tag,
                                     param_info,
                                     contents))
                 ret = JS_FALSE;
@@ -1376,9 +1367,7 @@ gjs_value_to_g_argument(JSContext      *context,
 
             byte_array = gjs_byte_array_get_byte_array(context, JSVAL_TO_OBJECT(value));
             if (byte_array) {
-                /* extra reference will be removed gjs_g_argument_release
-                   (and actually has no effect given that finalizer invokes
-                   g_byte_array_free without caring of refcount) */
+                /* extra reference will be removed by gjs_g_argument_release */
                 arg->v_pointer = g_byte_array_ref(byte_array);
                 break;
             }
@@ -1419,6 +1408,14 @@ gjs_value_to_g_argument(JSContext      *context,
 
             g_byte_array_append(byte_array, data, length);
             arg->v_pointer = byte_array;
+
+            g_free(data);
+        } else if (array_type == GI_ARRAY_TYPE_PTR_ARRAY) {
+            GPtrArray *array = g_ptr_array_sized_new(length);
+
+            g_ptr_array_set_size(array, length);
+            memcpy(array->pdata, data, sizeof(gpointer) * length);
+            arg->v_pointer = array;
 
             g_free(data);
         }
@@ -1800,10 +1797,10 @@ finally:
 }
 
 static JSBool
-gjs_array_from_carray (JSContext  *context,
-                       jsval      *value_p,
-                       GITypeInfo *type_info,
-                       gpointer    array)
+gjs_array_from_fixed_size_array (JSContext  *context,
+                                 jsval      *value_p,
+                                 GITypeInfo *type_info,
+                                 gpointer    array)
 {
     gint length;
     GITypeInfo *param_info;
@@ -1811,10 +1808,7 @@ gjs_array_from_carray (JSContext  *context,
 
     length = g_type_info_get_array_fixed_size(type_info);
 
-    if (length == -1) {
-        gjs_throw(context, "FIXME: Only supporting fixed size ARRAYs");
-        return JS_FALSE;
-    }
+    g_assert (length != -1);
 
     param_info = g_type_info_get_param_type(type_info, 0);
 
@@ -1845,92 +1839,35 @@ gjs_value_from_explicit_array(JSContext  *context,
 }
 
 static JSBool
-gjs_array_from_g_array (JSContext  *context,
-                        jsval      *value_p,
-                        GITypeInfo *param_info,
-                        GArray     *array)
+gjs_array_from_boxed_array (JSContext   *context,
+                            jsval       *value_p,
+                            GIArrayType  array_type,
+                            GITypeInfo  *param_info,
+                            GArgument   *arg)
 {
-    JSObject *obj;
-    jsval elem;
-    GArgument arg;
-    JSBool result;
-    GITypeTag element_type;
-    guint i;
+    GArray *array;
+    GPtrArray *ptr_array;
+    gpointer data = NULL;
+    gsize length = 0;
 
-    element_type = g_type_info_get_tag(param_info);
-    element_type = replace_gtype(element_type);
-
-    obj = JS_NewArrayObject(context, 0, NULL);
-    if (obj == NULL)
-      return JS_FALSE;
-
-    *value_p = OBJECT_TO_JSVAL(obj);
-
-    elem = JSVAL_VOID;
-
-#define ITERATE(type) \
-    for (i = 0; i < array->len; i++) { \
-        arg.v_##type = g_array_index(array, g##type, i); \
-        if (!gjs_value_from_g_argument(context, &elem, param_info, &arg)) \
-          goto finally; \
-        if (!JS_DefineElement(context, obj, i, elem, NULL, NULL, \
-              JSPROP_ENUMERATE)) \
-          goto finally; \
+    switch(array_type) {
+    case GI_ARRAY_TYPE_BYTE_ARRAY:
+        /* GByteArray is just a typedef for GArray internally */
+    case GI_ARRAY_TYPE_ARRAY:
+        array = (GArray*)(arg->v_pointer);
+        data = array->data;
+        length = array->len;
+        break;
+    case GI_ARRAY_TYPE_PTR_ARRAY:
+        ptr_array = (GPtrArray*)(arg->v_pointer);
+        data = ptr_array->pdata;
+        length = ptr_array->len;
+        break;
+    default:
+        g_assert_not_reached();
     }
 
-    switch (element_type) {
-        case GI_TYPE_TAG_UINT8:
-          ITERATE(uint8);
-          break;
-        case GI_TYPE_TAG_INT8:
-          ITERATE(int8);
-          break;
-        case GI_TYPE_TAG_UINT16:
-          ITERATE(uint16);
-          break;
-        case GI_TYPE_TAG_INT16:
-          ITERATE(int16);
-          break;
-        case GI_TYPE_TAG_UINT32:
-          ITERATE(uint32);
-          break;
-        case GI_TYPE_TAG_INT32:
-          ITERATE(int32);
-          break;
-        case GI_TYPE_TAG_UINT64:
-          ITERATE(uint64);
-          break;
-        case GI_TYPE_TAG_INT64:
-          ITERATE(int64);
-          break;
-        case GI_TYPE_TAG_FLOAT:
-          ITERATE(float);
-          break;
-        case GI_TYPE_TAG_DOUBLE:
-          ITERATE(double);
-          break;
-        case GI_TYPE_TAG_UTF8:
-        case GI_TYPE_TAG_FILENAME:
-        case GI_TYPE_TAG_ARRAY:
-        case GI_TYPE_TAG_INTERFACE:
-        case GI_TYPE_TAG_GLIST:
-        case GI_TYPE_TAG_GSLIST:
-        case GI_TYPE_TAG_GHASH:
-          ITERATE(pointer);
-          break;
-        default:
-          gjs_throw(context, "Unknown GArray element-type %d", element_type);
-          goto finally;
-    }
-
-#undef ITERATE
-
-    result = JS_TRUE;
-
-finally:
-    JS_RemoveValueRoot(context, &elem);
-
-    return result;
+    return gjs_array_from_carray_internal(context, value_p, param_info, length, data);
 }
 
 static JSBool
@@ -2348,7 +2285,8 @@ gjs_value_from_g_argument (JSContext  *context,
 
                 return result;
             } else {
-                return gjs_array_from_carray(context, value_p, type_info, arg->v_pointer);
+                /* arrays with length are handled outside of this function */
+                return gjs_array_from_fixed_size_array(context, value_p, type_info, arg->v_pointer);
             }
         } else if (g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_BYTE_ARRAY) {
             JSObject *array = gjs_byte_array_from_byte_array(context,
@@ -2367,10 +2305,11 @@ gjs_value_from_g_argument (JSContext  *context,
             param_info = g_type_info_get_param_type(type_info, 0);
             g_assert(param_info != NULL);
 
-            result = gjs_array_from_g_array(context,
-                                            value_p,
-                                            param_info,
-                                            arg->v_pointer);
+            result = gjs_array_from_boxed_array(context,
+                                                value_p,
+                                                g_type_info_get_array_type(type_info),
+                                                param_info,
+                                                arg);
 
             g_base_info_unref((GIBaseInfo*) param_info);
 
@@ -2721,11 +2660,31 @@ gjs_g_arg_release_internal(JSContext  *context,
 
             g_base_info_unref((GIBaseInfo*) param_info);
         } else if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
-            if (transfer == GI_TRANSFER_CONTAINER) {
-                g_byte_array_free ((GByteArray*)arg->v_pointer, FALSE);
-            } else if (transfer == GI_TRANSFER_EVERYTHING) {
-                g_byte_array_free ((GByteArray*)arg->v_pointer, TRUE);
+            g_byte_array_unref ((GByteArray*)arg->v_pointer);
+        } else if (array_type == GI_ARRAY_TYPE_PTR_ARRAY) {
+            GITypeInfo *param_info;
+            GPtrArray *array;
+
+            param_info = g_type_info_get_param_type(type_info, 0);
+            array = arg->v_pointer;
+
+            if (transfer != GI_TRANSFER_CONTAINER) {
+                guint i;
+
+                for (i = 0; i < array->len; i++) {
+                    GArgument arg;
+
+                    arg.v_pointer = g_ptr_array_index (array, i);
+                    gjs_g_argument_release(context,
+                                           transfer,
+                                           param_info,
+                                           &arg);
+                }
             }
+
+            g_ptr_array_free(array, TRUE);
+
+            g_base_info_unref((GIBaseInfo*) param_info);
         } else {
             g_assert_not_reached();
         }

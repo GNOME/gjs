@@ -102,13 +102,11 @@ function testCArray() {
 
 function testGArray() {
     var array;
-    // Tests disabled due to do g-i typelib compilation bug
-    // https://bugzilla.gnome.org/show_bug.cgi?id=622335
-    //array = GIMarshallingTests.garray_int_none_return();
-    //assertEquals(-1, array[0]);
-    //assertEquals(0, array[1]);
-    //assertEquals(1, array[2]);
-    //assertEquals(2, array[3]);
+    array = GIMarshallingTests.garray_int_none_return();
+    assertEquals(-1, array[0]);
+    assertEquals(0, array[1]);
+    assertEquals(1, array[2]);
+    assertEquals(2, array[3]);
     array = GIMarshallingTests.garray_utf8_none_return()
     assertEquals("0", array[0]);
     assertEquals("1", array[1]);
@@ -122,8 +120,8 @@ function testGArray() {
     assertEquals("1", array[1]);
     assertEquals("2", array[2]);
 
-    // GIMarshallingTests.garray_int_none_in([-1, 0, 1, 2])
-    // GIMarshallingTests.garray_utf8_none_in(["0", "1", "2"])
+    GIMarshallingTests.garray_int_none_in([-1, 0, 1, 2])
+    GIMarshallingTests.garray_utf8_none_in(["0", "1", "2"])
 
     array = GIMarshallingTests.garray_utf8_none_out()
     assertEquals("0", array[0]);
@@ -151,6 +149,33 @@ function testByteArray() {
     for (i = 0; i < refByteArray.length; i++)
 	assertEquals(refByteArray[i], byteArray[i]);
     GIMarshallingTests.bytearray_none_in(refByteArray);
+
+    // Another test, with a normal array, to test conversion
+    GIMarshallingTests.bytearray_none_in([0, 49, 0xFF, 51]);
+
+    // Another test, with a string, to test conversion
+    GIMarshallingTests.bytearray_none_in("\x00\x31\xFF\x33");
+}
+
+function testPtrArray() {
+    function arrayEqual(ref, val) {
+	assertEquals(ref.length, val.length);
+	for (i = 0; i < ref.length; i++)
+	    assertEquals(ref[i], val[i]);
+    }
+    var array;
+
+    GIMarshallingTests.gptrarray_utf8_none_in(["0", "1", "2"]);
+
+    var refArray = ["0", "1", "2"];
+
+    arrayEqual(refArray, GIMarshallingTests.gptrarray_utf8_none_return());
+    arrayEqual(refArray, GIMarshallingTests.gptrarray_utf8_container_return());
+    arrayEqual(refArray, GIMarshallingTests.gptrarray_utf8_full_return());
+
+    arrayEqual(refArray, GIMarshallingTests.gptrarray_utf8_none_out());
+    arrayEqual(refArray, GIMarshallingTests.gptrarray_utf8_container_out());
+    arrayEqual(refArray, GIMarshallingTests.gptrarray_utf8_full_out());
 }
 
 gjstestRun();
