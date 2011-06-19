@@ -187,10 +187,6 @@ main(int argc, char **argv)
     GSList *all_tests, *iter;
     GSList *test_filenames = NULL;
     int retval;
-    const char *target_unit = NULL;
-
-    if (argc >= 2)
-        target_unit = argv[1];
 
     working_dir = g_get_current_dir();
 
@@ -273,9 +269,6 @@ main(int argc, char **argv)
             g_free(name);
             continue;
         }
-        
-        if (target_unit != NULL && strcmp (name, target_unit) != 0)
-            continue;
 
         /* pretty print, drop 'test' prefix and '.js' suffix from test name */
         test_name = g_strconcat("/js/", name + 4, NULL);
