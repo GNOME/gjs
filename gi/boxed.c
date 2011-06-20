@@ -1144,6 +1144,10 @@ struct_is_simple(GIStructInfo *info)
     gboolean is_simple = TRUE;
     int i;
 
+    /* If it's opaque, it's not simple */
+    if (n_fields == 0)
+        return FALSE;
+
     for (i = 0; i < n_fields && is_simple; i++) {
         GIFieldInfo *field_info = g_struct_info_get_field(info, i);
         GITypeInfo *type_info = g_field_info_get_type(field_info);
