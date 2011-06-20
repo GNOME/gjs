@@ -2301,13 +2301,10 @@ gjs_value_from_g_argument (JSContext  *context,
 
             if (g_type_info_is_zero_terminated(type_info)) {
                 GITypeInfo *param_info;
-                GITypeTag param_tag;
                 JSBool result;
 
                 param_info = g_type_info_get_param_type(type_info, 0);
                 g_assert(param_info != NULL);
-
-                param_tag = g_type_info_get_tag((GITypeInfo*) param_info);
 
                 result = gjs_array_from_zero_terminated_c_array(context,
                                                                 value_p,
