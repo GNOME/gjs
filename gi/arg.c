@@ -1708,6 +1708,20 @@ gjs_array_from_carray_internal (JSContext  *context,
     element_type = g_type_info_get_tag(param_info);
     element_type = replace_gtype(element_type);
 
+    /* Special case array(guint8) */
+    if (element_type == GI_TYPE_TAG_UINT8) {
+        GByteArray gbytearray;
+
+        gbytearray.data = array;
+        gbytearray.len = length;
+        
+        obj = gjs_byte_array_from_byte_array (context, &gbytearray);
+        if (obj == NULL)
+            return JS_FALSE;
+        *value_p = OBJECT_TO_JSVAL(obj);
+        return JS_TRUE;
+    } 
+
     obj = JS_NewArrayObject(context, 0, NULL);
     if (obj == NULL)
       return JS_FALSE;
@@ -1931,6 +1945,20 @@ gjs_array_from_zero_terminated_c_array (JSContext  *context,
 
     element_type = g_type_info_get_tag(param_info);
     element_type = replace_gtype(element_type);
+
+    /* Special case array(guint8) */
+    if (element_type == GI_TYPE_TAG_UINT8) {
+        GByteArray gbytearray;
+
+        gbytearray.data = c_array;
+        gbytearray.len = strlen(c_array);
+
+        obj = gjs_byte_array_from_byte_array (context, &gbytearray);
+        if (obj == NULL)
+            return JS_FALSE;
+        *value_p = OBJECT_TO_JSVAL(obj);
+        return JS_TRUE;
+    } 
 
     obj = JS_NewArrayObject(context, 0, NULL);
     if (obj == NULL)
