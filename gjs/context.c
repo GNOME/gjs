@@ -31,6 +31,8 @@
 #include "byteArray.h"
 #include "compat.h"
 
+#include "gi.h"
+
 #include <util/log.h>
 #include <util/glib.h>
 #include <util/error.h>
@@ -665,6 +667,9 @@ gjs_context_constructor (GType                  type,
     if (js_context->we_own_runtime) {
         js_context->profiler = gjs_profiler_new(js_context->runtime);
     }
+
+    if (!gjs_is_registered_native_module(js_context->context, NULL, "gi"))
+        gjs_register_native_module("gi", gjs_define_gi_stuff, 0);
 
     JS_EndRequest(js_context->context);
 

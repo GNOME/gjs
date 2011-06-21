@@ -65,8 +65,9 @@ lib_LTLIBRARIES += libgjs.la
 
 libgjs_la_CPPFLAGS =		\
 	$(AM_CPPFLAGS)		\
-	$(GJS_CFLAGS)		\
+	$(GJS_CFLAGS)	\
 	$(gjs_directory_defines)\
+	-I$(top_srcdir)/gi	\
 	-DGJS_COMPILATION
 libgjs_la_CFLAGS = 		\
 	$(AM_CFLAGS)
@@ -84,6 +85,8 @@ libgjs_la_SOURCES =		\
 	gjs/byteArray.c		\
 	gjs/context.c		\
 	gjs/importer.c		\
+	gjs/gi.h		\
+	gjs/gi.c		\
 	gjs/jsapi-private.cpp	\
 	gjs/jsapi-util.c	\
 	gjs/jsapi-util-array.c	\
@@ -99,6 +102,46 @@ libgjs_la_SOURCES =		\
 	util/crash.c		\
 	util/log.c		\
 	util/misc.c
+
+# For historical reasons, some files live in gi/
+libgjs_la_SOURCES += \
+	gi/arg.h	\
+	gi/boxed.h	\
+	gi/closure.h	\
+	gi/enumeration.h	\
+	gi/function.h	\
+	gi/keep-alive.h	\
+	gi/gjs_gi_trace.h \
+	gi/ns.h	        \
+	gi/object.h	\
+	gi/foreign.h	\
+	gi/param.h	\
+	gi/repo.h	\
+	gi/union.h	\
+	gi/value.h	\
+	gi/arg.c	\
+	gi/boxed.c	\
+	gi/closure.c	\
+	gi/enumeration.c	\
+	gi/function.c	\
+	gi/keep-alive.c	\
+	gi/ns.c	\
+	gi/object.c	\
+	gi/foreign.c	\
+	gi/param.c	\
+        gi/repo.c	\
+	gi/union.c	\
+        gi/value.c
+
+if ENABLE_DTRACE
+gjs_gi_probes.h: gi/gjs_gi_probes.d
+	$(DTRACE) -C -h -s $< -o $@
+gjs_gi_probes.o: gi/gjs_gi_probes.d
+	$(DTRACE) -G -s $< -o $@
+BUILT_SOURCES += gjs_gi_probes.h gjs_gi_probes.o
+libgjs_la_LIBADD += gjs_gi_probes.o
+endif
+EXTRA_DIST += gi/gjs_gi_probes.d
 
 gjstest_files_with_tests += 	\
 	gjs/context.c		\
@@ -118,7 +161,6 @@ tapset_DATA = $(tapset_in_files:.stp.in=.stp)
 endif
 
 include Makefile-gjs-dbus.am
-include Makefile-gi.am
 include Makefile-modules.am
 include Makefile-examples.am
 ########################################################################

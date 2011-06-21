@@ -16,7 +16,7 @@ dist_gjsjs_DATA +=		\
 	modules/dbus.js		\
 	modules/promise.js
 
-gjsnative_LTLIBRARIES += console.la debugger.la gi.la langNative.la mainloop.la gettextNative.la dbusNative.la cairoNative.la
+gjsnative_LTLIBRARIES += console.la debugger.la langNative.la mainloop.la gettextNative.la dbusNative.la cairoNative.la
 
 JS_NATIVE_MODULE_CFLAGS =	\
         $(AM_CFLAGS)		\
@@ -28,24 +28,10 @@ JS_NATIVE_MODULE_LIBADD =	\
 JS_NATIVE_MODULE_LDFLAGS =	\
         -module -avoid-version -no-undefined -rdynamic
 
-gi_la_CFLAGS = 					\
-	$(JS_NATIVE_MODULE_CFLAGS) 		\
-	$(GJS_GI_CFLAGS)
-gi_la_LIBADD = \
-	libgjs-gi.la				\
-	$(JS_NATIVE_MODULE_LIBADD) 		\
-	$(GJS_GI_LIBS)
-gi_la_LDFLAGS = 				\
-	$(JS_NATIVE_MODULE_LDFLAGS)
-
-gi_la_SOURCES =		\
-	modules/gi.h	\
-	modules/gi.c
-
 langNative_la_CFLAGS = 				\
 	$(JS_NATIVE_MODULE_CFLAGS)
 langNative_la_LIBADD = \
-	libgjs-gi.la				\
+	libgjs.la				\
 	$(JS_NATIVE_MODULE_LIBADD)
 langNative_la_LDFLAGS = 			\
 	$(JS_NATIVE_MODULE_LDFLAGS)
@@ -57,7 +43,7 @@ langNative_la_SOURCES =				\
 mainloop_la_CFLAGS = 				\
 	$(JS_NATIVE_MODULE_CFLAGS)
 mainloop_la_LIBADD = \
-	libgjs-gi.la				\
+	libgjs.la				\
 	$(JS_NATIVE_MODULE_LIBADD)
 mainloop_la_LDFLAGS = 				\
 	$(JS_NATIVE_MODULE_LDFLAGS)
@@ -69,7 +55,7 @@ mainloop_la_SOURCES =		\
 gettextNative_la_CFLAGS = 				\
 	$(JS_NATIVE_MODULE_CFLAGS)
 gettextNative_la_LIBADD = \
-	libgjs-gi.la				\
+	libgjs.la				\
 	$(JS_NATIVE_MODULE_LIBADD)
 gettextNative_la_LDFLAGS = 				\
 	$(JS_NATIVE_MODULE_LDFLAGS)
@@ -81,12 +67,12 @@ gettextNative_la_SOURCES =		\
 cairoNative_la_CFLAGS =                         \
         $(JS_NATIVE_MODULE_CFLAGS)              \
         $(GJS_CAIRO_CFLAGS)                     \
-        $(GJS_GI_CFLAGS)
+        $(GJS_CFLAGS)
 cairoNative_la_LIBADD =                         \
-        libgjs-gi.la                            \
+        libgjs.la                            \
         $(JS_NATIVE_MODULE_LIBADD)              \
         $(GJS_CAIRO_LIBS)                       \
-        $(GJS_GI_LIBS)
+        $(GJS_LIBS)
 cairoNative_la_LDFLAGS =                        \
         $(JS_NATIVE_MODULE_LDFLAGS)
 
@@ -123,7 +109,7 @@ console_la_SOURCES =		\
 debugger_la_CFLAGS = 				\
 	$(JS_NATIVE_MODULE_CFLAGS)
 debugger_la_LIBADD = \
-	libgjs-gi.la				\
+	libgjs.la				\
 	$(JS_NATIVE_MODULE_LIBADD)
 debugger_la_LDFLAGS = 				\
 	$(JS_NATIVE_MODULE_LDFLAGS)
@@ -143,7 +129,7 @@ dbusNative_la_CFLAGS = 					\
 	$(JS_NATIVE_MODULE_CFLAGS) 		\
 	$(GJS_DBUS_CFLAGS)
 dbusNative_la_LIBADD = \
-	libgjs-gi.la				\
+	libgjs.la				\
 	libgjs-dbus.la				\
 	$(JS_NATIVE_MODULE_LIBADD) 		\
 	$(GJS_DBUS_LIBS)

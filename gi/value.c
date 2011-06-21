@@ -37,10 +37,6 @@
 
 #include <girepository.h>
 
-static GType _array_type = G_TYPE_INVALID;
-static GType _byte_array_type = G_TYPE_INVALID;
-static GType _ptr_array_type = G_TYPE_INVALID;
-
 static JSBool gjs_value_from_g_value_internal(JSContext    *context,
                                               jsval        *value_p,
                                               const GValue *gvalue,
@@ -638,9 +634,9 @@ gjs_value_from_g_value_internal(JSContext    *context,
             return JS_FALSE;
         }
     } else if (g_type_is_a(gtype, G_TYPE_HASH_TABLE) ||
-               g_type_is_a(gtype, _array_type) ||
-               g_type_is_a(gtype, _byte_array_type) ||
-               g_type_is_a(gtype, _ptr_array_type)) {
+               g_type_is_a(gtype, G_TYPE_ARRAY) ||
+               g_type_is_a(gtype, G_TYPE_BYTE_ARRAY) ||
+               g_type_is_a(gtype, G_TYPE_PTR_ARRAY)) {
         gjs_throw(context,
                   "Unable to introspect element-type of container in GValue");
         return JS_FALSE;
@@ -771,12 +767,4 @@ gjs_value_from_g_value(JSContext    *context,
                        const GValue *gvalue)
 {
     return gjs_value_from_g_value_internal(context, value_p, gvalue, FALSE, NULL, 0);
-}
-
-__attribute__((constructor)) static void
-_gjs_value_init_types(void)
-{
-    _array_type = g_type_from_name("GArray");
-    _byte_array_type = g_type_from_name("GByteArray");
-    _ptr_array_type = g_type_from_name("GPtrArray");
 }

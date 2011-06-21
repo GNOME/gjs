@@ -218,8 +218,7 @@ fi
 CFLAGS="$save_CFLAGS"
 
 common_packages="gobject-2.0 >= gobject_required_version $JS_PACKAGE"
-gjs_packages="gmodule-2.0 gthread-2.0 $common_packages"
-gjs_gi_packages="gobject-introspection-1.0 >= 0.10.1 $common_packages"
+gjs_packages="gmodule-2.0 gthread-2.0 gobject-introspection-1.0 >= 0.10.1 $common_packages"
 gjs_cairo_gobject_packages="cairo-gobject $common_packages"
 gjs_cairo_packages="cairo $common_packages"
 gjs_dbus_packages="dbus-glib-1 $common_packages"
@@ -228,7 +227,6 @@ gjstests_packages="$gjstests_packages $gjs_packages"
 
 PKG_CHECK_MODULES([GOBJECT], [gobject-2.0 >= gobject_required_version])
 PKG_CHECK_MODULES([GJS], [$gjs_packages])
-PKG_CHECK_MODULES([GJS_GI], [$gjs_gi_packages])
 # Prefer cairo-gobject if we have it
 PKG_CHECK_MODULES([GJS_CAIRO], [$gjs_cairo_gobject_packages], have_cairo_gobject=yes, have_cairo_gobject=no)
 if test x${have_cairo_gobject} != xyes; then
