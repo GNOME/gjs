@@ -1,3 +1,6 @@
+# http://people.gnome.org/~walters/docs/build-api.txt
+.buildapi-allow-builddir:
+
 bin_PROGRAMS =
 lib_LTLIBRARIES =
 noinst_HEADERS =
