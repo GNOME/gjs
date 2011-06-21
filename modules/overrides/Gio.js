@@ -93,12 +93,12 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
 			      -1,
 			      cancellable).deep_unpack();
     } else {
-	this.call_async(methodName,
-			inVariant,
-			flags,
-			-1,
-			cancellable,
-			asyncCallback);
+	return this.call_async(methodName,
+			       inVariant,
+			       flags,
+			       -1,
+			       cancellable,
+			       asyncCallback);
     }
 }
 
