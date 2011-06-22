@@ -108,6 +108,14 @@ resolve_namespace_object(JSContext  *context,
     namespace = gjs_create_ns(context, ns_name, repo);
     JS_AddObjectRoot(context, &namespace);
 
+    /* Define the property early, to avoid reentrancy issues if
+       the override module looks for namespaces that import this */
+    if (!JS_DefineProperty(context, repo_obj,
+                           ns_name, OBJECT_TO_JSVAL(namespace),
+                           NULL, NULL,
+                           GJS_MODULE_PROP_FLAGS))
+        gjs_fatal("no memory to define ns property");
+
     override = lookup_override_function(context, ns_name);
     if (override && !JS_CallFunctionValue (context,
                                            namespace, /* thisp */
@@ -119,12 +127,6 @@ resolve_namespace_object(JSContext  *context,
         JS_EndRequest(context);
         return NULL;
     }
-
-    if (!JS_DefineProperty(context, repo_obj,
-                           ns_name, OBJECT_TO_JSVAL(namespace),
-                           NULL, NULL,
-                           GJS_MODULE_PROP_FLAGS))
-        gjs_fatal("no memory to define ns property");
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
               "Defined namespace '%s' %p in GIRepository %p", ns_name, namespace, repo_obj);
