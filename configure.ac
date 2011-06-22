@@ -94,6 +94,9 @@ AC_CHECK_FUNCS(mallinfo)
 # First, try separate mozjs185 release
 AC_MSG_CHECKING([for standalone mozjs185])
 PKG_CHECK_EXISTS([mozjs185], JS_PACKAGE=mozjs185,)
+if test x$JS_PACKAGE = x; then
+    PKG_CHECK_EXISTS([libjs = 1.8.5], JS_PACKAGE=libjs,)
+fi
 if test x$JS_PACKAGE != x; then
     FIREFOX_JS_LIBDIR=
     MOZJS_IS_STANDALONE=yes
