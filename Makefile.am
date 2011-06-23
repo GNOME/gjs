@@ -184,6 +184,8 @@ install-exec-hook:
 
 include Makefile-test.am
 
+EXTRA_DIST += autogen.sh
+
 prepare-release-tag:
 	TAGNAME=`echo $(PACKAGE) | tr - _ | tr a-z A-Z` \
 	TAGVER=`echo $(VERSION) | sed s/\\\./_/g`; \
