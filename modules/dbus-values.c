@@ -255,6 +255,20 @@ gjs_js_one_value_from_dbus(JSContext       *context,
             return JS_NewNumberValue(context, v_BYTE, value_p);
         }
         break;
+    case DBUS_TYPE_INT16:
+        {
+            dbus_int16_t v_INT16;
+            dbus_message_iter_get_basic(iter, &v_INT16);
+            return JS_NewNumberValue(context, v_INT16, value_p);
+        }
+        break;
+    case DBUS_TYPE_UINT16:
+        {
+            dbus_uint16_t v_UINT16;
+            dbus_message_iter_get_basic(iter, &v_UINT16);
+            return JS_NewNumberValue(context, v_UINT16, value_p);
+        }
+        break;
     case DBUS_TYPE_INT32:
         {
             dbus_int32_t v_INT32;
