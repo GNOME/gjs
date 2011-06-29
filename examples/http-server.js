@@ -3,7 +3,7 @@
 const Lang = imports.lang;
 
 const GLib = imports.gi.GLib;
-const Soup = imports.gi.Soup
+const Soup = imports.gi.Soup;
 
 function HTTPServer(args) {
   this._init(args);
