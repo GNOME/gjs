@@ -89,9 +89,6 @@ function removeNullProperties(obj) {
  * @type: function
  */
 function bind(obj, callback) {
-    let me = obj;
-    let bindArguments = Array.prototype.slice.call(arguments, 2);
-
     if (typeof(obj) != 'object') {
         throw new Error(
             "first argument to Lang.bind() must be an object, not " +
@@ -103,6 +100,12 @@ function bind(obj, callback) {
             "second argument to Lang.bind() must be a function, not " +
                 typeof(callback));
     }
+
+    if (callback.bind && arguments.length == 2) // ECMAScript 5 (but only if not passing any bindArguments)
+	return callback.bind(obj);
+
+    let me = obj;
+    let bindArguments = Array.prototype.slice.call(arguments, 2);
 
     return function() {
         let args = Array.prototype.slice.call(arguments);
