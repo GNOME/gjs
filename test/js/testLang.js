@@ -108,4 +108,19 @@ function testBind() {
     assertEquals("o3.args[4] in callback", 1138, o3.args[4]);
 }
 
+function testDefineAccessorProperty() {
+    var obj = {};
+    var storage = 42;
+
+    assertEquals(obj.foo, undefined);
+
+    Lang.defineAccessorProperty(obj, 'foo',
+				function () { return storage; },
+				function (val) { storage = val; });
+
+    assertEquals(obj.foo, 42);
+    obj.foo = 43;
+    assertEquals(obj.foo, 43);
+}
+
 gjstestRun();

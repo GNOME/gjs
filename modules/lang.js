@@ -114,5 +114,19 @@ function bind(obj, callback) {
     };
 }
 
+function defineAccessorProperty(object, name, getter, setter) {
+    if (Object.defineProperty) { // ECMAScript 5
+	Object.defineProperty(object, name, { get: getter,
+					      set: setter,
+					      configurable: true,
+					      enumerable: true });
+	return;
+    }
+
+    // fallback to deprecated way
+    object.__defineGetter__(name, getter);
+    object.__defineSetter__(name, setter);
+}
+
 // Merge stuff defined in native code
 copyProperties(imports.langNative, this);
