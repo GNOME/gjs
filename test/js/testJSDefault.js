@@ -2,8 +2,6 @@
 // testJS1_8.js.
 // application/javascript;version=ECMAv3
 
-var GLib = imports.gi.GLib;
-
 function testLet() {
     assertRaises('missing ; before statement', function () { eval("let result = 1+1; result;") });
 }
