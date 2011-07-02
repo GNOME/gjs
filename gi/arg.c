@@ -198,6 +198,7 @@ type_needs_release (GITypeInfo *type_info,
 
         case GI_INFO_TYPE_STRUCT:
         case GI_INFO_TYPE_ENUM:
+        case GI_INFO_TYPE_FLAGS:
         case GI_INFO_TYPE_OBJECT:
         case GI_INFO_TYPE_INTERFACE:
         case GI_INFO_TYPE_UNION:
@@ -223,6 +224,49 @@ type_needs_release (GITypeInfo *type_info,
             needs_release = TRUE;
         else
             needs_release = FALSE;
+
+        g_base_info_unref(interface_info);
+
+        return needs_release;
+    }
+    default:
+        return FALSE;
+    }
+}
+
+/* Check if an argument of the given needs to be released if we obtained it
+ * from out argument (or the return value), and we're transferring ownership
+ */
+static JSBool
+type_needs_out_release(GITypeInfo *type_info,
+                       GITypeTag   type_tag)
+{
+    switch (type_tag) {
+    case GI_TYPE_TAG_UTF8:
+    case GI_TYPE_TAG_FILENAME:
+    case GI_TYPE_TAG_ARRAY:
+    case GI_TYPE_TAG_GLIST:
+    case GI_TYPE_TAG_GSLIST:
+    case GI_TYPE_TAG_GHASH:
+        return TRUE;
+    case GI_TYPE_TAG_INTERFACE: {
+        GIBaseInfo* interface_info;
+        GIInfoType interface_type;
+        gboolean needs_release;
+
+        interface_info = g_type_info_get_interface(type_info);
+        g_assert(interface_info != NULL);
+
+        interface_type = g_base_info_get_type(interface_info);
+
+        switch(interface_type) {
+        case GI_INFO_TYPE_ENUM:
+        case GI_INFO_TYPE_FLAGS:
+            needs_release = FALSE;
+
+        default:
+            needs_release = TRUE;
+        }
 
         g_base_info_unref(interface_info);
 
@@ -2576,19 +2620,38 @@ gjs_g_arg_release_internal(JSContext  *context,
             case GI_TYPE_TAG_GSLIST:
             case GI_TYPE_TAG_ARRAY:
             case GI_TYPE_TAG_GHASH:
-                if (transfer != GI_TRANSFER_CONTAINER) {
-                    g_assert (g_type_info_is_zero_terminated (type_info));
-                    gpointer *array;
-                    GArgument elem;
+                if (transfer != GI_TRANSFER_CONTAINER
+                    && type_needs_out_release(param_info, element_type)) {
+                    if (g_type_info_is_zero_terminated (type_info)) {
+                        gpointer *array;
+                        GArgument elem;
 
-                    for (array = arg->v_pointer; *array; array++) {
-                        elem.v_pointer = *array;
-                        if (!gjs_g_arg_release_internal(context,
-                                                        GI_TRANSFER_EVERYTHING,
-                                                        param_info,
-                                                        element_type,
-                                                        &elem)) {
-                            failed = JS_TRUE;
+                        for (array = arg->v_pointer; *array; array++) {
+                            elem.v_pointer = *array;
+                            if (!gjs_g_arg_release_internal(context,
+                                                            GI_TRANSFER_EVERYTHING,
+                                                            param_info,
+                                                            element_type,
+                                                            &elem)) {
+                                failed = JS_TRUE;
+                            }
+                        }
+                    } else {
+                        gint len = g_type_info_get_array_fixed_size(type_info);
+                        gint i;
+                        GArgument elem;
+
+                        g_assert(len != -1);
+
+                        for (i = 0; i < len; i++) {
+                            elem.v_pointer = ((gpointer*)arg->v_pointer)[i];
+                            if (!gjs_g_arg_release_internal(context,
+                                                            GI_TRANSFER_EVERYTHING,
+                                                            param_info,
+                                                            element_type,
+                                                            &elem)) {
+                                failed = TRUE;
+                            }
                         }
                     }
                 }
@@ -2632,7 +2695,7 @@ gjs_g_arg_release_internal(JSContext  *context,
             case GI_TYPE_TAG_GHASH:
                 if (transfer == GI_TRANSFER_CONTAINER) {
                     g_array_free((GArray*) arg->v_pointer, TRUE);
-                } else {
+                } else if (type_needs_out_release (param_info, element_type)) {
                     GArray *array = arg->v_pointer;
                     guint i;
 
@@ -2640,10 +2703,11 @@ gjs_g_arg_release_internal(JSContext  *context,
                         GArgument arg;
 
                         arg.v_pointer = g_array_index (array, gpointer, i);
-                        gjs_g_argument_release(context,
-                                               transfer,
-                                               param_info,
-                                               &arg);
+                        gjs_g_arg_release_internal(context,
+                                                   transfer,
+                                                   param_info,
+                                                   element_type,
+                                                   &arg);
                     }
 
                     g_array_free (array, TRUE);
@@ -2876,7 +2940,8 @@ gjs_g_argument_release_out_array (JSContext  *context,
     param_type = g_type_info_get_param_type(type_info, 0);
     type_tag = g_type_info_get_tag(param_type);
 
-    if (transfer != GI_TRANSFER_CONTAINER) {
+    if (transfer != GI_TRANSFER_CONTAINER &&
+        type_needs_out_release(param_type, type_tag)) {
         for (i = 0; i < length; i++) {
             elem.v_pointer = array[i];
             if (!gjs_g_arg_release_internal(context,

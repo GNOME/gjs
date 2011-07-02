@@ -295,6 +295,12 @@ function testArrayIn() {
 }
 
 function testArrayOut() {
+    function arrayEqual(ref, res) {
+	assertEquals(ref.length, res.length);
+	for (let i = 0; i < ref.length; i++)
+	    assertEquals(ref[i], res[i]);
+    }
+
     let array =  Everything.test_array_fixed_size_int_out();
     assertEquals(0, array[0]);
     assertEquals(4, array[4]);
@@ -302,7 +308,16 @@ function testArrayOut() {
     assertEquals(0, array[0]);
     assertEquals(4, array[4]);
 
-    // FIXME: test_array_int_full_out and test_array_int_none_out unimplemented
+    array = Everything.test_array_int_none_out();
+    arrayEqual([1, 2, 3, 4, 5], array);
+
+    array = Everything.test_array_int_full_out();
+    arrayEqual([0, 1, 2, 3, 4], array);
+
+    array = Everything.test_array_int_null_out();
+    assertEquals(0, array.length);
+
+    Everything.test_array_int_null_in(null);
 }
 
 /* GHash type */
