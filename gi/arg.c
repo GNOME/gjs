@@ -1418,6 +1418,8 @@ gjs_value_to_g_argument(JSContext      *context,
             GByteArray *byte_array = g_byte_array_sized_new(length);
 
             g_byte_array_append(byte_array, data, length);
+            arg->v_pointer = byte_array;
+
             g_free(data);
         }
         break;
