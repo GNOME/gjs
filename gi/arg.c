@@ -862,7 +862,8 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
         param_tag = GI_TYPE_TAG_UINT8;
     }
 
-    if ((JSVAL_IS_NULL(value) && !may_be_null) || (!JSVAL_IS_STRING(value) && !JSVAL_IS_OBJECT(value))) {
+    if ((JSVAL_IS_NULL(value) && !may_be_null) ||
+        (!JSVAL_IS_STRING(value) && !JSVAL_IS_OBJECT(value) && !JSVAL_IS_NULL(value))) {
         gchar *display_name = get_argument_display_name(arg_name, arg_type);
         gjs_throw(context, "Expected type %s for %s but got type '%s' %p",
                   g_type_tag_to_string(param_tag),
