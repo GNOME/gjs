@@ -33,6 +33,13 @@
 
 G_BEGIN_DECLS
 
+typedef enum {
+    PARAM_NORMAL,
+    PARAM_SKIPPED,
+    PARAM_ARRAY,
+    PARAM_CALLBACK
+} GjsParamType;
+
 typedef struct {
     gint ref_count;
     JSRuntime *runtime;
@@ -42,6 +49,7 @@ typedef struct {
     ffi_closure *closure;
     GIScopeType scope;
     gboolean is_vfunc;
+    GjsParamType *param_types;
 } GjsCallbackTrampoline;
 
 GjsCallbackTrampoline* gjs_callback_trampoline_new(JSContext      *context,

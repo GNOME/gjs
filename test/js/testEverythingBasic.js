@@ -215,6 +215,25 @@ function testCallback() {
     assertRaises('CallbackUndefined', function () { Everything.test_callback(undefined) });
 }
 
+function testArrayCallback() {
+    function arrayEqual(ref, one) {
+	assertEquals(ref.length, one.length);
+	for (let i = 0; i < ref.length; i++)
+	    assertEquals(ref[i], one[i]);
+    }
+
+    let callback = function(ints, strings) {
+	assertEquals(2, arguments.length);
+
+	arrayEqual([-1, 0, 1, 2], ints);
+	arrayEqual(["one", "two", "three"], strings);
+
+	return 7;
+    }
+    assertEquals(Everything.test_array_callback(callback), 14);
+    assertRaises(function () { Everything.test_array_callback(null) });
+}
+
 function testCallbackDestroyNotify() {
     let testObj = {
         called: 0,

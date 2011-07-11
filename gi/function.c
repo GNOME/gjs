@@ -46,17 +46,10 @@
  */
 #define GJS_ARG_INDEX_INVALID G_MAXUINT8
 
-typedef enum {
-    PARAM_NORMAL,
-    PARAM_SKIPPED,
-    PARAM_ARRAY,
-    PARAM_CALLBACK
-} ParamType;
-
 typedef struct {
     GIFunctionInfo *info;
 
-    ParamType *param_types;
+    GjsParamType *param_types;
 
     guint8 expected_js_argc;
     guint8 js_out_argc;
@@ -133,6 +126,7 @@ gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline)
             JS_RemoveValueRoot(context, &trampoline->js_function);
         g_callable_info_free_closure(trampoline->info, trampoline->closure);
         g_base_info_unref( (GIBaseInfo*) trampoline->info);
+        g_free (trampoline->param_types);
         g_slice_free(GjsCallbackTrampoline, trampoline);
     }
 }
@@ -231,6 +225,7 @@ gjs_callback_closure(ffi_cif *cif,
     for (i = 0, n_jsargs = 0; i < n_args; i++) {
         GIArgInfo arg_info;
         GITypeInfo type_info;
+        GjsParamType param_type;
 
         g_callable_info_load_arg(trampoline->info, i, &arg_info);
         g_arg_info_load_type(&arg_info, &type_info);
@@ -247,12 +242,39 @@ gjs_callback_closure(ffi_cif *cif,
         if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_INOUT)
             n_outargs++;
 
-        if (!gjs_value_from_g_argument(context,
-                                       &jsargs[n_jsargs++],
-                                       &type_info,
-                                       args[i],
-                                       FALSE))
-            goto out;
+        param_type = trampoline->param_types[i];
+
+        switch (param_type) {
+            case PARAM_SKIPPED:
+                continue;
+            case PARAM_ARRAY: {
+                gint array_length_pos = g_type_info_get_array_length(&type_info);
+                GIArgInfo array_length_arg;
+                GITypeInfo arg_type_info;
+                jsval length;
+
+                g_callable_info_load_arg(trampoline->info, array_length_pos, &array_length_arg);
+                g_arg_info_load_type(&array_length_arg, &arg_type_info);
+                if (!gjs_value_from_g_argument(context, &length,
+                                               &arg_type_info,
+                                               args[array_length_pos], TRUE))
+                    goto out;
+
+                if (!gjs_value_from_explicit_array(context, &jsargs[n_jsargs++],
+                                                   &type_info, args[i], JSVAL_TO_INT(length)))
+                    goto out;
+                break;
+            }
+            case PARAM_NORMAL:
+                if (!gjs_value_from_g_argument(context,
+                                               &jsargs[n_jsargs++],
+                                               &type_info,
+                                               args[i], FALSE))
+                    goto out;
+                break;
+            default:
+                g_assert_not_reached();
+        }
     }
 
     if (trampoline->is_vfunc)
@@ -405,6 +427,7 @@ gjs_callback_trampoline_new(JSContext      *context,
                             gboolean        is_vfunc)
 {
     GjsCallbackTrampoline *trampoline;
+    int n_args, i;
 
     if (function == JSVAL_NULL) {
         return NULL;
@@ -418,9 +441,65 @@ gjs_callback_trampoline_new(JSContext      *context,
     trampoline->info = callable_info;
     g_base_info_ref((GIBaseInfo*)trampoline->info);
     trampoline->js_function = function;
-
     if (!is_vfunc)
         JS_AddValueRoot(context, &trampoline->js_function);
+
+    /* Analyze param types and directions, similarly to init_cached_function_data */
+    n_args = g_callable_info_get_n_args(trampoline->info);
+    trampoline->param_types = g_new0(GjsParamType, n_args);
+
+    for (i = 0; i < n_args; i++) {
+        GIDirection direction;
+        GIArgInfo arg_info;
+        GITypeInfo type_info;
+        GITypeTag type_tag;
+
+        if (trampoline->param_types[i] == PARAM_SKIPPED)
+            continue;
+
+        g_callable_info_load_arg(trampoline->info, i, &arg_info);
+        g_arg_info_load_type(&arg_info, &type_info);
+
+        direction = g_arg_info_get_direction(&arg_info);
+        type_tag = g_type_info_get_tag(&type_info);
+
+        if (direction != GI_DIRECTION_IN) {
+            /* INOUT and OUT arguments are handled differently. */
+            continue;
+        }
+
+        if (type_tag == GI_TYPE_TAG_INTERFACE) {
+            GIBaseInfo* interface_info;
+            GIInfoType interface_type;
+
+            interface_info = g_type_info_get_interface(&type_info);
+            interface_type = g_base_info_get_type(interface_info);
+            if (interface_type == GI_INFO_TYPE_CALLBACK) {
+                gjs_throw(context, "Callback accepts another callback as a parameter. This is not supported");
+                g_base_info_unref(interface_info);
+                return NULL;
+            }
+            g_base_info_unref(interface_info);
+        } else if (type_tag == GI_TYPE_TAG_ARRAY) {
+            if (g_type_info_get_array_type(&type_info) == GI_ARRAY_TYPE_C) {
+                int array_length_pos = g_type_info_get_array_length(&type_info);
+
+                if (array_length_pos >= 0 && array_length_pos < n_args) {
+                    GIArgInfo length_arg_info;
+
+                    g_callable_info_load_arg(trampoline->info, array_length_pos, &length_arg_info);
+                    if (g_arg_info_get_direction(&length_arg_info) != direction) {
+                        gjs_throw(context, "Callback has an array with different-direction length arg, not supported");
+                        return NULL;
+                    }
+
+                    trampoline->param_types[array_length_pos] = PARAM_SKIPPED;
+                    trampoline->param_types[i] = PARAM_ARRAY;
+                }
+            }
+        }
+    }
+
     trampoline->closure = g_callable_info_prepare_closure(callable_info, &trampoline->cif,
                                                           gjs_callback_closure, trampoline);
 
@@ -752,7 +831,7 @@ gjs_invoke_c_function(JSContext      *context,
         } else {
             GArgument *in_value;
             GITypeInfo ainfo;
-            ParamType param_type;
+            GjsParamType param_type;
 
             g_arg_info_load_type(&arg_info, &ainfo);
 
@@ -999,7 +1078,7 @@ release:
         GIDirection direction;
         GIArgInfo arg_info;
         GITypeInfo arg_type_info;
-        ParamType param_type;
+        GjsParamType param_type;
 
         g_callable_info_load_arg( (GICallableInfo*) function->info, gi_arg_pos, &arg_info);
         direction = g_arg_info_get_direction(&arg_info);
@@ -1416,7 +1495,7 @@ init_cached_function_data (JSContext      *context,
         function->js_out_argc += 1;
 
     n_args = g_callable_info_get_n_args((GICallableInfo*) info);
-    function->param_types = g_new0(ParamType, n_args);
+    function->param_types = g_new0(GjsParamType, n_args);
 
     array_length_pos = g_type_info_get_array_length(&return_type);
     if (array_length_pos >= 0 && array_length_pos < n_args)
