@@ -230,10 +230,6 @@ gjs_callback_closure(ffi_cif *cif,
         g_callable_info_load_arg(trampoline->info, i, &arg_info);
         g_arg_info_load_type(&arg_info, &type_info);
 
-        /* Skip void * arguments */
-        if (g_type_info_get_tag(&type_info) == GI_TYPE_TAG_VOID)
-            continue;
-
         if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_OUT) {
             n_outargs++;
             continue;
@@ -453,6 +449,7 @@ gjs_callback_trampoline_new(JSContext      *context,
         GIArgInfo arg_info;
         GITypeInfo type_info;
         GITypeTag type_tag;
+        gint closure;
 
         if (trampoline->param_types[i] == PARAM_SKIPPED)
             continue;
@@ -465,6 +462,14 @@ gjs_callback_trampoline_new(JSContext      *context,
 
         if (direction != GI_DIRECTION_IN) {
             /* INOUT and OUT arguments are handled differently. */
+            continue;
+        }
+
+        closure = g_arg_info_get_closure(&arg_info);
+        if (closure == i) {
+            /* A closure id equal to current parameter is used to signal the user_data
+               argument in a callback */
+            trampoline->param_types[i] = PARAM_SKIPPED;
             continue;
         }
 
