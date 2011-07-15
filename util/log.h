@@ -34,7 +34,6 @@ G_BEGIN_DECLS
  * to the switch in log.c
  */
 typedef enum {
-    GJS_DEBUG_STRACE_TIMESTAMP,
     GJS_DEBUG_GI_USAGE,
     GJS_DEBUG_MEMORY,
     GJS_DEBUG_CONTEXT,

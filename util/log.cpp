@@ -99,7 +99,6 @@ gjs_debug(GjsDebugTopic topic,
 {
     static FILE *logfp = NULL;
     static bool debug_log_enabled = false;
-    static bool strace_timestamps = false;
     static bool checked_for_timestamp = false;
     static bool print_timestamp = false;
     static GTimer *timer = NULL;
@@ -161,30 +160,12 @@ _Pragma("GCC diagnostic pop")
 
         if (logfp == NULL)
             logfp = stderr;
-
-        strace_timestamps = gjs_environment_variable_is_set("GJS_STRACE_TIMESTAMPS");
     }
 
-    /* only strace timestamps if debug
-     * log wasn't specifically switched on
-     */
-    if (!debug_log_enabled &&
-        topic != GJS_DEBUG_STRACE_TIMESTAMP)
+    if (!debug_log_enabled)
         return;
 
     switch (topic) {
-    case GJS_DEBUG_STRACE_TIMESTAMP:
-        /* return early if strace timestamps are disabled, avoiding
-         * printf format overhead and so forth.
-         */
-        if (!strace_timestamps)
-            return;
-        /* this is a special magic topic for use with
-         * git clone http://www.gnome.org/~federico/git/performance-scripts.git
-         * http://www.gnome.org/~federico/news-2006-03.html#timeline-tools
-         */
-        prefix = "MARK";
-        break;
     case GJS_DEBUG_GI_USAGE:
         prefix = "JS GI USE";
         break;
@@ -272,41 +253,32 @@ _Pragma("GCC diagnostic pop")
     s = g_strdup_vprintf (format, args);
     va_end (args);
 
-    if (topic == GJS_DEBUG_STRACE_TIMESTAMP) {
-        /* Put a magic string in strace output */
+    if (print_timestamp) {
+        static gdouble previous = 0.0;
+        gdouble total = g_timer_elapsed(timer, NULL) * 1000.0;
+        gdouble since = total - previous;
+        const char *ts_suffix;
         char *s2;
-        s2 = g_strdup_printf("%s: gjs: %s",
-                             prefix, s);
-        access(s2, F_OK);
-        g_free(s2);
-    } else {
-        if (print_timestamp) {
-            static gdouble previous = 0.0;
-            gdouble total = g_timer_elapsed(timer, NULL) * 1000.0;
-            gdouble since = total - previous;
-            const char *ts_suffix;
-            char *s2;
 
-            if (since > 50.0) {
-                ts_suffix = "!!  ";
-            } else if (since > 100.0) {
-                ts_suffix = "!!! ";
-            } else if (since > 200.0) {
-                ts_suffix = "!!!!";
-            } else {
-                ts_suffix = "    ";
-            }
-
-            s2 = g_strdup_printf("%g %s%s",
-                                 total, ts_suffix, s);
-            g_free(s);
-            s = s2;
-
-            previous = total;
+        if (since > 50.0) {
+            ts_suffix = "!!  ";
+        } else if (since > 100.0) {
+            ts_suffix = "!!! ";
+        } else if (since > 200.0) {
+            ts_suffix = "!!!!";
+        } else {
+            ts_suffix = "    ";
         }
 
-        write_to_stream(logfp, prefix, s);
+        s2 = g_strdup_printf("%g %s%s",
+                             total, ts_suffix, s);
+        g_free(s);
+        s = s2;
+
+        previous = total;
     }
+
+    write_to_stream(logfp, prefix, s);
 
     g_free(s);
 }
