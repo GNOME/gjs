@@ -526,7 +526,7 @@ gjs_array_to_intarray(JSContext   *context,
 {
     /* nasty union types in an attempt to unify the various int types */
     union { guint32 u; gint32 i; } intval;
-    union { guint8 u8[0]; guint16 u16[0]; guint32 u32[0]; } *result;
+    void *result;
     unsigned i;
 
     /* add one so we're always zero terminated */
@@ -560,11 +560,11 @@ gjs_array_to_intarray(JSContext   *context,
         /* Note that this is truncating assignment. */
         switch (intsize) {
         case 1:
-            result->u8[i] = (gint8) intval.u; break;
+            ((guint8*)result)[i] = (gint8) intval.u; break;
         case 2:
-            result->u16[i] = (gint16) intval.u; break;
+            ((guint16*)result)[i] = (gint16) intval.u; break;
         case 4:
-            result->u32[i] = (gint32) intval.u; break;
+            ((guint32*)result)[i] = (gint32) intval.u; break;
         default:
             g_assert_not_reached();
         }
