@@ -96,38 +96,6 @@ gjs_print_backtrace(void)
 #endif
 }
 
-static void
-signal_handler(int num)
-{
-    const char *sleep_on_crash;
-
-    switch (num) {
-    case SIGSEGV:
-    case SIGABRT:
-        gjs_print_backtrace();
-
-        sleep_on_crash = g_getenv("GJS_SLEEP_ON_CRASH");
-
-        if (sleep_on_crash && !strcmp(sleep_on_crash, "1")) {
-            fprintf(stderr, "\n");
-            fprintf(stderr, "=== sleeping; attach debugger to PID %u\n", getpid());
-            fprintf(stderr, "\n");
-
-            sleep(1000);
-        }
-
-        exit(1);
-        break;
-    }
-}
-
-void
-gjs_init_sleep_on_crash(void)
-{
-    signal(SIGSEGV, signal_handler);
-    signal(SIGABRT, signal_handler);
-}
-
 /* Fork a process that waits the given time then
  * sends us ABRT
  */

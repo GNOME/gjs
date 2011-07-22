@@ -248,7 +248,6 @@ main(int argc, char **argv)
                 gjs_crash_after_timeout(timeout);
         }
     }
-    gjs_init_sleep_on_crash();
 
     setlocale(LC_ALL, "");
     g_test_init(&argc, &argv, NULL);
