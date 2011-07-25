@@ -1,5 +1,5 @@
 /* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
-/* Copyright 2008 litl, LLC. All Rights Reserved. */
+/* Copyright 2008 litl, LLC. */
 /**
  * The tween list object. Stores all of the properties and information that pertain to individual tweens.
  *

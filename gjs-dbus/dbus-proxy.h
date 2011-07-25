@@ -1,5 +1,5 @@
 /* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
-/* Copyright 2008 litl, LLC. All Rights Reserved. */
+/* Copyright 2008 litl, LLC. */
 
 #ifndef __GJS_UTIL_DBUS_PROXY_H__
 #define __GJS_UTIL_DBUS_PROXY_H__

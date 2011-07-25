@@ -1,5 +1,5 @@
 /* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
-/* Copyright 2008  litl, LLC. All Rights Reserved. */
+/* Copyright 2008  litl, LLC. */
 /**
  * Tweener
  * Transition controller for movieclips, sounds, textfields and other objects
