@@ -99,13 +99,109 @@ createFromPNG_func(JSContext *context,
     return JS_TRUE;
 }
 
+static JSBool
+getFormat_func(JSContext *context,
+               uintN      argc,
+               jsval     *vp)
+{
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    cairo_surface_t *surface;
+    cairo_format_t format;
+
+    if (argc > 1) {
+        gjs_throw(context, "ImageSurface.getFormat() takes no arguments");
+        return JS_FALSE;
+    }
+
+    surface = gjs_cairo_surface_get_surface(context, obj);
+    format = cairo_image_surface_get_format(surface);
+
+    if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
+        return JS_FALSE;
+
+    JS_SET_RVAL(context, vp, INT_TO_JSVAL(format));
+    return JS_TRUE;
+}
+
+static JSBool
+getWidth_func(JSContext *context,
+              uintN      argc,
+              jsval     *vp)
+{
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    cairo_surface_t *surface;
+    int width;
+
+    if (argc > 1) {
+        gjs_throw(context, "ImageSurface.getWidth() takes no arguments");
+        return JS_FALSE;
+    }
+
+    surface = gjs_cairo_surface_get_surface(context, obj);
+    width = cairo_image_surface_get_width(surface);
+
+    if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
+        return JS_FALSE;
+
+    JS_SET_RVAL(context, vp, INT_TO_JSVAL(width));
+    return JS_TRUE;
+}
+
+static JSBool
+getHeight_func(JSContext *context,
+               uintN      argc,
+               jsval     *vp)
+{
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    cairo_surface_t *surface;
+    int height;
+
+    if (argc > 1) {
+        gjs_throw(context, "ImageSurface.getHeight() takes no arguments");
+        return JS_FALSE;
+    }
+
+    surface = gjs_cairo_surface_get_surface(context, obj);
+    height = cairo_image_surface_get_height(surface);
+
+    if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
+        return JS_FALSE;
+
+    JS_SET_RVAL(context, vp, INT_TO_JSVAL(height));
+    return JS_TRUE;
+}
+
+static JSBool
+getStride_func(JSContext *context,
+               uintN      argc,
+               jsval     *vp)
+{
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    cairo_surface_t *surface;
+    int stride;
+
+    if (argc > 1) {
+        gjs_throw(context, "ImageSurface.getStride() takes no arguments");
+        return JS_FALSE;
+    }
+
+    surface = gjs_cairo_surface_get_surface(context, obj);
+    stride = cairo_image_surface_get_stride(surface);
+
+    if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
+        return JS_FALSE;
+
+    JS_SET_RVAL(context, vp, INT_TO_JSVAL(stride));
+    return JS_TRUE;
+}
+
 static JSFunctionSpec gjs_cairo_image_surface_proto_funcs[] = {
     { "createFromPNG", (JSNative)createFromPNG_func, 0, JSFUN_FAST_NATIVE},
     // getData
-    // getFormat
-    // getWidth
-    // getHeight
-    // getStride
+    { "getFormat", (JSNative)getFormat_func, 0, JSFUN_FAST_NATIVE },
+    { "getWidth", (JSNative)getWidth_func, 0, JSFUN_FAST_NATIVE },
+    { "getHeight", (JSNative)getHeight_func, 0, JSFUN_FAST_NATIVE },
+    { "getStride", (JSNative)getStride_func, 0, JSFUN_FAST_NATIVE },
     { NULL }
 };
 
