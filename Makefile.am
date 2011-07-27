@@ -192,17 +192,35 @@ include Makefile-test.am
 
 EXTRA_DIST += autogen.sh COPYING.LGPL
 
-prepare-release-tag:
-	TAGNAME=`echo $(PACKAGE) | tr - _ | tr a-z A-Z` \
-	TAGVER=`echo $(VERSION) | sed s/\\\./_/g`; \
-	  git tag -m "Tag $(VERSION)" -a "$$TAGNAME"_"$$TAGVER"
+# Colin's handy Makefile bits for:
+# 1) stuffing tarballs with pre-generated scripts from your workstation
+# 2) bumping configure.ac version post-release
+# 3) tagging correctly in git
+# 4) uploading to gnome.org
+# To use:
+#  $ make check
+#  $ make dist
+#  $ make prepare-minor-release
 
-prepare-minor-release: $(distdir).tar.bz2 prepare-release-tag
-	python $(top_srcdir)/scripts/verbump.py
+# Customize to taste
+TAG_PREFIX=GJS_
+COMPRESSION=.bz2
 
-upload-release: $(distdir).tar.bz2
+
+PACKAGE=@PACKAGE@
+VERSION=@VERSION@
+DISTNAME=$(PACKAGE)-$(VERSION).tar$(COMPRESSION)
+TAG_VERSION=$(shell echo $(VERSION) |sed s/\\\./_/g)
+
+prepare-release-tag: Makefile
+	git tag -m "Tag $(TAG_VERSION)" -a $(TAG_PREFIX)$(TAG_VERSION)
+
+prepare-minor-release: $(DISTNAME) prepare-release-tag Makefile
+	env top_srcdir=$(top_srcdir) python $(top_srcdir)/verbump.py
+
+upload-release: $(DISTNAME) Makefile
 	git log origin/master..master
 	@echo -n "Ok to push? [y/N] "; read ans; test x$$ans == xy || exit 1
 	git push --tags origin master:master
-	scp $(distdir).tar.bz2 master.gnome.org:
-	ssh master.gnome.org install-module $(distdir).tar.bz2
+	scp $(DISTNAME) master.gnome.org:
+	ssh master.gnome.org install-module $(DISTNAME)

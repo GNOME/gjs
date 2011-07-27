@@ -25,8 +25,9 @@ if not os.path.isfile('config.log'):
 package = _extract_config_log_variable('PACKAGE_TARNAME')
 version = _extract_config_log_variable('VERSION')
 
-f = open('configure.ac');
-newf = open('configure.ac.new', 'w')
+configure_path=os.path.join(os.environ['top_srcdir'], 'configure.ac')
+f = open(configure_path)
+newf = open(configure_path + '.tmp', 'w')
 for line in f:
   m = micro_version_re.match(line)
   if not m:
@@ -38,9 +39,9 @@ for line in f:
   newf.write(micro_version_replace % (newv, ))
 newf.close()
 
-os.rename('configure.ac.new', 'configure.ac')
+os.rename(configure_path + '.tmp', configure_path)
 print "Successfully wrote new 'configure.ac' with post-release version bump"
 
-args=['git', 'commit', '-m', "configure: Post-release version bump", 'configure.ac']
+args=['git', 'commit', '-m', "configure: Post-release version bump", configure_path]
 print "Running: %r" % (args, )
 subprocess.check_call(args)
