@@ -91,50 +91,64 @@ m4_define(gobject_required_version, 2.18.0)
 AC_CHECK_HEADERS([malloc.h])
 AC_CHECK_FUNCS(mallinfo)
 
+AC_ARG_WITH([js-package],
+    AS_HELP_STRING([--with-js-package[=@<:@auto/mozjs185/mozilla-js@:>@]],
+                   [Choose JavaScript package: 'mozjs185' (i.e. spidermonkey), 'mozilla-js' (i.e. xulrunner or firefox), or 'auto' (detect automatically)]),
+    [with_js_package=$withval],
+    [with_js_package="auto"])
+
 # First, try separate mozjs185 release
-AC_MSG_CHECKING([for standalone mozjs185])
-PKG_CHECK_EXISTS([mozjs185], JS_PACKAGE=mozjs185,)
-if test x$JS_PACKAGE != x; then
-    FIREFOX_JS_LIBDIR=
-    MOZJS_IS_STANDALONE=yes
-    AC_MSG_RESULT([yes])
-    PKG_CHECK_MODULES(JS, $JS_PACKAGE)
-else
-    AC_MSG_RESULT([no])
+if test $with_js_package = mozjs185 -o $with_js_package = auto; then
+    AC_MSG_CHECKING([for standalone mozjs185])
+    PKG_CHECK_EXISTS([mozjs185], JS_PACKAGE=mozjs185,)
+    if test x$JS_PACKAGE != x; then
+        FIREFOX_JS_LIBDIR=
+        MOZJS_IS_STANDALONE=yes
+        AC_MSG_RESULT([yes])
+        PKG_CHECK_MODULES(JS, $JS_PACKAGE)
+    else
+        AC_MSG_RESULT([no])
+    fi
 fi
 
-# If we didn't find mozjs185 (the standalone spidermonkey), look for mozilla-js
-if test x$JS_PACKAGE = x; then
-    AC_MSG_CHECKING([for mozilla-js 1.9.2])
-    PKG_CHECK_EXISTS([mozilla-js >= 1.9.2], JS_PACKAGE=mozilla-js,)
-    if test x$JS_PACKAGE != x; then
-        AC_MSG_RESULT([yes])
-    else
-        AC_MSG_ERROR([Could not find mozilla-js 1.9.2])
-    fi
+if test $with_js_package = mozilla-js -o $with_js_package = auto; then
+    # If we didn't find mozjs185 (the standalone spidermonkey), look for mozilla-js
+    if test x$JS_PACKAGE = x; then
+        AC_MSG_CHECKING([for mozilla-js 1.9.2])
+        PKG_CHECK_EXISTS([mozilla-js >= 1.9.2], JS_PACKAGE=mozilla-js,)
+        if test x$JS_PACKAGE != x; then
+            AC_MSG_RESULT([yes])
+        else
+            AC_MSG_ERROR([Could not find mozilla-js 1.9.2])
+        fi
 
-    PKG_CHECK_MODULES(JS, $JS_PACKAGE)
+        PKG_CHECK_MODULES(JS, $JS_PACKAGE)
 
-    ## some flavors of Firefox .pc only set sdkdir, not libdir
-    FIREFOX_JS_SDKDIR=`$PKG_CONFIG --variable=sdkdir $JS_PACKAGE`
-    FIREFOX_JS_LIBDIR=`$PKG_CONFIG --variable=libdir $JS_PACKAGE`
+        ## some flavors of Firefox .pc only set sdkdir, not libdir
+        FIREFOX_JS_SDKDIR=`$PKG_CONFIG --variable=sdkdir $JS_PACKAGE`
+        FIREFOX_JS_LIBDIR=`$PKG_CONFIG --variable=libdir $JS_PACKAGE`
 
-    ## Ubuntu does not set libdir in mozilla-js.pc
-    if test x"$FIREFOX_JS_LIBDIR" = x; then
-        ## Ubuntu returns xulrunner-devel as the sdkdir, but for the
-        ## libdir we want the runtime location on the target system,
-        ## so can't use -devel.
-        ## The library is in the non-devel directory also.
-        ## Don't ask me why it's in two places.
-        FIREFOX_JS_LIBDIR=`echo "$FIREFOX_JS_SDKDIR" | sed -e 's/-devel//g'`
-        if ! test -d "$FIREFOX_JS_LIBDIR"; then
-            FIREFOX_JS_LIBDIR=
+        ## Ubuntu does not set libdir in mozilla-js.pc
+        if test x"$FIREFOX_JS_LIBDIR" = x; then
+            ## Ubuntu returns xulrunner-devel as the sdkdir, but for the
+            ## libdir we want the runtime location on the target system,
+            ## so can't use -devel.
+            ## The library is in the non-devel directory also.
+            ## Don't ask me why it's in two places.
+            FIREFOX_JS_LIBDIR=`echo "$FIREFOX_JS_SDKDIR" | sed -e 's/-devel//g'`
+            if ! test -d "$FIREFOX_JS_LIBDIR"; then
+                FIREFOX_JS_LIBDIR=
+            fi
+        fi
+
+        if test x"$FIREFOX_JS_LIBDIR" = x; then
+            AC_MSG_ERROR([Could not figure out where the Firefox JavaScript library lives])
         fi
     fi
+fi
 
-    if test x"$FIREFOX_JS_LIBDIR" = x; then
-        AC_MSG_ERROR([Could not figure out where the Firefox JavaScript library lives])
-    fi
+if test x$JS_PACKAGE = x; then
+    AC_MSG_ERROR([No appropriate JavaScript package found])
 fi
 
 echo "Using JS_PACKAGE: $JS_PACKAGE"
