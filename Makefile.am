@@ -36,7 +36,20 @@ nobase_gjs_module_include_HEADERS =	\
 	gjs/importer.h		\
 	gjs/jsapi-util.h	\
 	gjs/mem.h		\
-	gjs/native.h
+	gjs/native.h	\
+	gi/ns.h	        \
+	gi/object.h	\
+	gi/foreign.h	\
+	gi/param.h	\
+	gi/repo.h	\
+	gi/union.h	\
+	gi/value.h	\
+	gi/arg.h	\
+	gi/boxed.h	\
+	gi/closure.h	\
+	gi/enumeration.h	\
+	gi/function.h	\
+	gi/keep-alive.h	
 
 noinst_HEADERS +=		\
 	gjs/jsapi-private.h	\
@@ -108,20 +121,7 @@ libgjs_la_SOURCES =		\
 
 # For historical reasons, some files live in gi/
 libgjs_la_SOURCES += \
-	gi/arg.h	\
-	gi/boxed.h	\
-	gi/closure.h	\
-	gi/enumeration.h	\
-	gi/function.h	\
-	gi/keep-alive.h	\
 	gi/gjs_gi_trace.h \
-	gi/ns.h	        \
-	gi/object.h	\
-	gi/foreign.h	\
-	gi/param.h	\
-	gi/repo.h	\
-	gi/union.h	\
-	gi/value.h	\
 	gi/arg.c	\
 	gi/boxed.c	\
 	gi/closure.c	\
