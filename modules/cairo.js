@@ -100,7 +100,22 @@ const Operator = {
     DEST_ATOP : 10,
     XOR : 11,
     ADD : 12,
-    SATURATE : 13
+    SATURATE : 13,
+    MULTIPLY : 14,
+    SCREEN : 15,
+    OVERLAY : 16,
+    DARKEN : 17,
+    LIGHTEN : 18,
+    COLOR_DODGE : 19,
+    COLOR_BURN : 20,
+    HARD_LIGHT : 21,
+    SOFT_LIGHT : 22,
+    DIFFERENCE : 23,
+    EXCLUSION : 24,
+    HSL_HUE : 25,
+    HSL_SATURATION : 26,
+    HSL_COLOR : 27,
+    HSL_LUMINOSITY : 28
 };
 
 const PatternType = {
