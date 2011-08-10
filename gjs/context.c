@@ -669,7 +669,7 @@ gjs_context_constructor (GType                  type,
     }
 
     if (!gjs_is_registered_native_module(js_context->context, NULL, "gi"))
-        gjs_register_native_module("gi", gjs_define_gi_stuff, 0);
+        gjs_register_native_module("gi", gjs_define_gi_stuff, GJS_NATIVE_SUPPLIES_MODULE_OBJ);
 
     /* For GjsDBus */
     g_irepository_prepend_search_path(PKGLIBDIR);

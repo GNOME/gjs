@@ -37,10 +37,3 @@ gjs_define_gi_stuff(JSContext      *context,
 {
     return gjs_define_repo(context, module_obj, "gi");
 }
-
-/* GJS_NATIVE_SUPPLIES_MODULE_OBJ means we will define "gi" instead
- * of defining the stuff inside "gi" only.
- */
-GJS_REGISTER_NATIVE_MODULE_WITH_FLAGS("gi",
-                                      gjs_define_gi_stuff,
-                                      GJS_NATIVE_SUPPLIES_MODULE_OBJ)
