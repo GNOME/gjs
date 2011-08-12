@@ -231,7 +231,7 @@ else
 fi
 CFLAGS="$save_CFLAGS"
 
-GOBJECT_INTROSPECTION_CHECK([1.29.15])
+GOBJECT_INTROSPECTION_CHECK([1.29.16])
 
 common_packages="gobject-2.0 >= gobject_required_version $JS_PACKAGE"
 gjs_packages="gmodule-2.0 gthread-2.0 gobject-introspection-1.0 >= 0.10.1 $common_packages"
