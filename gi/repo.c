@@ -654,8 +654,6 @@ gjs_info_type_name(GIInfoType type)
         return "INTERFACE";
     case GI_INFO_TYPE_CONSTANT:
         return "CONSTANT";
-    case GI_INFO_TYPE_ERROR_DOMAIN:
-        return "ERROR_DOMAIN";
     case GI_INFO_TYPE_UNION:
         return "UNION";
     case GI_INFO_TYPE_VALUE:

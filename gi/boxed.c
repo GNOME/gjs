@@ -1128,7 +1128,6 @@ type_can_be_allocated_directly(GITypeInfo *type_info)
                 case GI_INFO_TYPE_INTERFACE:
                 case GI_INFO_TYPE_FUNCTION:
                 case GI_INFO_TYPE_CONSTANT:
-                case GI_INFO_TYPE_ERROR_DOMAIN:
                 case GI_INFO_TYPE_VALUE:
                 case GI_INFO_TYPE_SIGNAL:
                 case GI_INFO_TYPE_PROPERTY:
