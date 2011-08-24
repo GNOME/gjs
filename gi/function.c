@@ -1081,8 +1081,9 @@ function_to_string (JSContext *context,
         string = "function () {\n}";
         free = FALSE;
     } else {
-        string = g_strdup_printf("function %s(){\n\t[native code]\n}",
-                                 g_base_info_get_name ((GIBaseInfo *) priv->info));
+        string = g_strdup_printf("function %s(){\n\t/* proxy for native symbol %s(); */\n}",
+                                 g_base_info_get_name ((GIBaseInfo *) priv->info),
+                                 g_function_info_get_symbol (priv->info));
         free = TRUE;
     }
 
