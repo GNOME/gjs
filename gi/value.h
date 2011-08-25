@@ -49,10 +49,6 @@ bool gjs_value_from_g_value(JSContext             *context,
 GJS_USE
 GClosure* gjs_closure_new_marshaled(JSContext* cx, JSFunction* callable,
                                     const char* description);
-GJS_USE
-GClosure* gjs_closure_new_for_signal(JSContext* cx, JSFunction* callable,
-                                     const char* description,
-                                     unsigned signal_id);
 
 G_END_DECLS
 
