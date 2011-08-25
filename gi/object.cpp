@@ -1787,6 +1787,24 @@ gjs_lookup_object_prototype(JSContext *context,
     return proto;
 }
 
+static GISignalInfo *
+lookup_signal(GIObjectInfo *info,
+              const char   *signal_name)
+{
+    GISignalInfo *signal_info = g_object_info_find_signal(info, signal_name);
+
+    if (!signal_info) {
+        /* Not found, recurse on parent object info */
+        GIObjectInfo *parent = g_object_info_get_parent(info);
+        if (parent) {
+            signal_info = lookup_signal(parent, signal_name);
+            g_base_info_unref(parent);
+        }
+    }
+
+    return signal_info;
+}
+
 static void
 do_associate_closure(ObjectInstance *priv,
                      GClosure       *closure)
@@ -1855,9 +1873,11 @@ real_connect_func(JSContext *context,
         return false;
     }
 
-    closure = gjs_closure_new_for_signal(context, &argv[1].toObject(), "signal callback", signal_id);
-    if (closure == NULL)
+    GISignalInfo *signal_info = lookup_signal(priv->info, g_signal_name(signal_id));
+    if (!signal_info)
         return false;
+
+    closure = gjs_signal_closure_new(context, argv[1], signal_info, signal_id);
     do_associate_closure(priv, closure);
 
     id = g_signal_connect_closure_by_id(priv->gobj,
