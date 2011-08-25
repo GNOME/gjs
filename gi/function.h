@@ -50,6 +50,7 @@ struct GjsCallbackTrampoline {
     ffi_cif cif;
     ffi_closure *closure;
     GIScopeType scope;
+    unsigned signal_id;
     bool is_vfunc;
     GjsParamType *param_types;
 };
@@ -80,6 +81,11 @@ bool gjs_invoke_constructor_from_c(JSContext                  *context,
                                    JS::HandleObject            obj,
                                    const JS::HandleValueArray& args,
                                    GIArgument                 *rvalue);
+
+GClosure *gjs_signal_closure_new(JSContext      *cx,
+                                 JS::HandleValue function,
+                                 GISignalInfo   *signal_info,
+                                 unsigned        signal_id);
 
 G_END_DECLS
 
