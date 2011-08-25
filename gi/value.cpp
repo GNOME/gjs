@@ -299,17 +299,6 @@ closure_marshal(GClosure        *closure,
     }
 }
 
-GClosure* gjs_closure_new_for_signal(JSContext* context, JSFunction* callable,
-                                     const char* description, guint signal_id) {
-    GClosure *closure;
-
-    closure = gjs_closure_new(context, callable, description, false);
-
-    g_closure_set_meta_marshal(closure, GUINT_TO_POINTER(signal_id), closure_marshal);
-
-    return closure;
-}
-
 GClosure* gjs_closure_new_marshaled(JSContext* context, JSFunction* callable,
                                     const char* description) {
     GClosure *closure;

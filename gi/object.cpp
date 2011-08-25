@@ -1751,6 +1751,22 @@ bool ObjectBase::connect_after(JSContext* cx, unsigned argc, JS::Value* vp) {
     return priv->to_instance()->connect_impl(cx, args, true);
 }
 
+/* Return value must be freed */
+GJS_USE
+static GISignalInfo* lookup_signal(GIObjectInfo* info,
+                                   const char* signal_name) {
+    GISignalInfo* signal_info = g_object_info_find_signal(info, signal_name);
+
+    if (!signal_info) {
+        /* Not found, recurse on parent object info */
+        GjsAutoObjectInfo parent = g_object_info_get_parent(info);
+        if (parent)
+            signal_info = lookup_signal(parent, signal_name);
+    }
+
+    return signal_info;
+}
+
 bool
 ObjectInstance::connect_impl(JSContext          *context,
                              const JS::CallArgs& args,
@@ -1785,10 +1801,16 @@ ObjectInstance::connect_impl(JSContext          *context,
         return false;
     }
 
-    closure = gjs_closure_new_for_signal(
-        context, JS_GetObjectFunction(callback), "signal callback", signal_id);
-    if (closure == NULL)
+    GjsAutoSignalInfo signal_info =
+        lookup_signal(info(), g_signal_name(signal_id));
+    if (!signal_info) {
+        gjs_throw(context, "No introspection information for signal %s",
+                  g_signal_name(signal_id));
         return false;
+    }
+
+    JS::RootedFunction func(context, JS_GetObjectFunction(callback));
+    closure = gjs_signal_closure_new(context, func, signal_info, signal_id);
     associate_closure(context, closure);
 
     id = g_signal_connect_closure_by_id(m_ptr, signal_id, signal_detail,
