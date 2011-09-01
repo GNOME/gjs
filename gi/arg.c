@@ -221,8 +221,10 @@ type_needs_release (GITypeInfo *type_info,
             break;
         }
 
-        if (g_type_is_a(gtype, G_TYPE_CLOSURE) || g_type_is_a(gtype, G_TYPE_VALUE))
+        if (g_type_is_a(gtype, G_TYPE_CLOSURE))
             needs_release = TRUE;
+        else if (g_type_is_a(gtype, G_TYPE_VALUE))
+            needs_release = g_type_info_is_pointer(type_info);
         else
             needs_release = FALSE;
 
@@ -729,6 +731,118 @@ gjs_array_to_ptrarray(JSContext   *context,
 }
 
 static JSBool
+gjs_array_to_flat_gvalue_array(JSContext   *context,
+                               jsval        array_value,
+                               unsigned int length,
+                               void       **arr_p)
+{
+    GValue *values = g_new0(GValue, length);
+    unsigned int i;
+    JSBool result = JS_TRUE;
+
+    for (i = 0; i < length; i ++) {
+        jsval elem;
+        elem = JSVAL_VOID;
+
+        if (!JS_GetElement(context, JSVAL_TO_OBJECT(array_value),
+                           i, &elem)) {
+            g_free(values);
+            gjs_throw(context,
+                      "Missing array element %u",
+                      i);
+            return JS_FALSE;
+        }
+
+        result = gjs_value_to_g_value(context, elem, &values[i]);
+
+        if (!result)
+            break;
+    }
+
+    if (result)
+        *arr_p = values;
+
+    return result;
+}
+
+static JSBool
+gjs_array_from_flat_gvalue_array(JSContext   *context,
+                                 gpointer     array,
+                                 unsigned int length,
+                                 jsval       *value)
+{
+    GValue *values = (GValue *)array;
+    unsigned int i;
+    jsval *elems = g_newa(jsval, length);
+    JSBool result = JS_TRUE;
+
+    for (i = 0; i < length; i ++) {
+        GValue *value = &values[i];
+        result = gjs_value_from_g_value(context, &elems[i], value);
+        if (!result)
+            break;
+    }
+
+    if (result) {
+        JSObject *jsarray;
+        jsarray = JS_NewArrayObject(context, length, elems);
+        *value = OBJECT_TO_JSVAL(jsarray);
+    }
+
+    return result;
+}
+
+static gboolean
+is_gvalue(GIBaseInfo *info,
+          GIInfoType  info_type)
+{
+    gboolean result = FALSE;
+
+    switch(info_type) {
+    case GI_INFO_TYPE_VALUE:
+        result = TRUE;
+        break;
+    case GI_INFO_TYPE_STRUCT:
+    case GI_INFO_TYPE_OBJECT:
+    case GI_INFO_TYPE_INTERFACE:
+    case GI_INFO_TYPE_BOXED:
+        {
+            GType gtype;
+            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo *) info);
+
+            result = g_type_is_a(gtype, G_TYPE_VALUE);
+        }
+        break;
+    default:
+        break;
+    }
+
+    return result;
+}
+
+static gboolean
+is_gvalue_flat_array(GITypeInfo *param_info,
+                     GITypeTag   element_type)
+{
+    GIBaseInfo *interface_info;
+    GIInfoType info_type;
+    gboolean result;
+
+    if (element_type != GI_TYPE_TAG_INTERFACE)
+        return FALSE;
+
+    interface_info = g_type_info_get_interface(param_info);
+    info_type = g_base_info_get_type(interface_info);
+
+    /* Special case for GValue "flat arrays" */
+    result = (is_gvalue(interface_info, info_type) &&
+              !g_type_info_is_pointer(param_info));
+    g_base_info_unref(interface_info);
+
+    return result;
+}
+
+static JSBool
 gjs_array_to_array(JSContext   *context,
                    jsval        array_value,
                    gsize        length,
@@ -741,6 +855,10 @@ gjs_array_to_array(JSContext   *context,
 
     element_type = g_type_info_get_tag(param_info);
     element_type = replace_gtype(element_type);
+
+    /* Special case for GValue "flat arrays" */
+    if (is_gvalue_flat_array(param_info, element_type))
+        return gjs_array_to_flat_gvalue_array(context, array_value, length, arr_p);
 
     if (element_type == GI_TYPE_TAG_INTERFACE) {
         GIBaseInfo *interface_info = g_type_info_get_interface(param_info);
@@ -1753,6 +1871,9 @@ gjs_array_from_carray_internal (JSContext  *context,
     element_type = g_type_info_get_tag(param_info);
     element_type = replace_gtype(element_type);
 
+    if (is_gvalue_flat_array(param_info, element_type))
+        return gjs_array_from_flat_gvalue_array(context, array, length, value_p);
+
     /* Special case array(guint8) */
     if (element_type == GI_TYPE_TAG_UINT8) {
         GByteArray gbytearray;
@@ -2602,6 +2723,11 @@ gjs_g_arg_release_internal(JSContext  *context,
             param_info = g_type_info_get_param_type(type_info, 0);
             element_type = g_type_info_get_tag(param_info);
             element_type = replace_gtype(element_type);
+
+            if (transfer != GI_TRANSFER_CONTAINER && is_gvalue_flat_array(param_info, element_type)) {
+                g_free(arg->v_pointer);
+                return JS_TRUE;
+            }
 
             switch (element_type) {
             case GI_TYPE_TAG_UTF8:

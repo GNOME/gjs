@@ -1,4 +1,17 @@
 // application/javascript;version=1.8
+
+if (!('assertEquals' in this)) { /* allow running this test standalone */
+    imports.lang.copyPublicProperties(imports.jsUnit, this);
+    gjstestRun = function() { return imports.jsUnit.gjstestRun(window); };
+}
+
+function assertArrayEquals(expected, got) {
+    assertEquals(expected.length, got.length);
+    for (let i = 0; i < expected.length; i ++) {
+        assertEquals(expected[i], got[i]);
+    }
+}
+
 const GIMarshallingTests = imports.gi.GIMarshallingTests;
 
 // We use Gio to have some objects that we know exist
@@ -158,24 +171,34 @@ function testByteArray() {
 }
 
 function testPtrArray() {
-    function arrayEqual(ref, val) {
-	assertEquals(ref.length, val.length);
-	for (i = 0; i < ref.length; i++)
-	    assertEquals(ref[i], val[i]);
-    }
     var array;
 
     GIMarshallingTests.gptrarray_utf8_none_in(["0", "1", "2"]);
 
     var refArray = ["0", "1", "2"];
 
-    arrayEqual(refArray, GIMarshallingTests.gptrarray_utf8_none_return());
-    arrayEqual(refArray, GIMarshallingTests.gptrarray_utf8_container_return());
-    arrayEqual(refArray, GIMarshallingTests.gptrarray_utf8_full_return());
+    assertArrayEquals(refArray, GIMarshallingTests.gptrarray_utf8_none_return());
+    assertArrayEquals(refArray, GIMarshallingTests.gptrarray_utf8_container_return());
+    assertArrayEquals(refArray, GIMarshallingTests.gptrarray_utf8_full_return());
 
-    arrayEqual(refArray, GIMarshallingTests.gptrarray_utf8_none_out());
-    arrayEqual(refArray, GIMarshallingTests.gptrarray_utf8_container_out());
-    arrayEqual(refArray, GIMarshallingTests.gptrarray_utf8_full_out());
+    assertArrayEquals(refArray, GIMarshallingTests.gptrarray_utf8_none_out());
+    assertArrayEquals(refArray, GIMarshallingTests.gptrarray_utf8_container_out());
+    assertArrayEquals(refArray, GIMarshallingTests.gptrarray_utf8_full_out());
+}
+
+function testGValue() {
+    assertEquals(42, GIMarshallingTests.gvalue_return());
+    assertEquals(42, GIMarshallingTests.gvalue_out());
+
+    GIMarshallingTests.gvalue_in(42);
+    GIMarshallingTests.gvalue_flat_array([42, "42", true]);
+
+    // gjs doesn't support native enum types
+    // GIMarshallingTests.gvalue_in_enum(GIMarshallingTests.Enum.VALUE_3);
+
+    // Test a flat GValue round-trip return
+    let thing = GIMarshallingTests.return_gvalue_flat_array();
+    assertArrayEquals([42, "42", true], thing);
 }
 
 gjstestRun();
