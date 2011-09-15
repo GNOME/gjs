@@ -56,6 +56,8 @@ static void     gjs_context_set_property      (GObject               *object,
                                                   guint                  prop_id,
                                                   const GValue          *value,
                                                   GParamSpec            *pspec);
+static JSBool gjs_on_context_gc (JSContext *cx,
+                                 JSGCStatus status);
 
 struct _GjsContext {
     GObject parent;
@@ -70,7 +72,10 @@ struct _GjsContext {
 
     char **search_path;
 
-    unsigned int we_own_runtime : 1;
+    guint idle_emit_gc_id;
+
+    guint we_own_runtime : 1;
+    guint gc_notifications_enabled : 1;
 };
 
 struct _GjsContextClass {
@@ -79,19 +84,19 @@ struct _GjsContextClass {
 
 G_DEFINE_TYPE(GjsContext, gjs_context, G_TYPE_OBJECT);
 
-#if 0
 enum {
+    SIGNAL_GC,
     LAST_SIGNAL
 };
 
 static int signals[LAST_SIGNAL];
-#endif
 
 enum {
     PROP_0,
     PROP_JS_VERSION,
     PROP_SEARCH_PATH,
-    PROP_RUNTIME
+    PROP_RUNTIME,
+    PROP_GC_NOTIFICATIONS
 };
 
 
@@ -335,6 +340,22 @@ gjs_context_class_init(GjsContextClass *klass)
                                     PROP_JS_VERSION,
                                     pspec);
 
+    pspec = g_param_spec_boolean("gc-notifications",
+                                 "",
+                                 "Whether or not to emit the \"gc\" signal",
+                                 FALSE,
+                                 G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+
+    g_object_class_install_property(object_class,
+                                    PROP_GC_NOTIFICATIONS,
+                                    pspec);
+
+    signals[SIGNAL_GC] = g_signal_new("gc", G_TYPE_FROM_CLASS(klass),
+                                      G_SIGNAL_RUN_LAST, 0,
+                                      NULL, NULL,
+                                      NULL,
+                                      G_TYPE_NONE, 0);
+
     gjs_register_native_module("byteArray", gjs_define_byte_array_stuff, 0);
 }
 
@@ -385,6 +406,11 @@ gjs_context_finalize(GObject *object)
     GjsContext *js_context;
 
     js_context = GJS_CONTEXT(object);
+
+    if (js_context->idle_emit_gc_id > 0) {
+        g_source_remove (js_context->idle_emit_gc_id);
+        js_context->idle_emit_gc_id = 0;
+    }
 
     if (js_context->search_path != NULL) {
         g_strfreev(js_context->search_path);
@@ -674,6 +700,9 @@ gjs_context_constructor (GType                  type,
     /* For GjsDBus */
     g_irepository_prepend_search_path(PKGLIBDIR);
 
+    if (js_context->gc_notifications_enabled)
+        JS_SetGCCallback(js_context->context, gjs_on_context_gc);
+
     JS_EndRequest(js_context->context);
 
     g_static_mutex_lock (&contexts_lock);
@@ -696,6 +725,9 @@ gjs_context_get_property (GObject     *object,
     switch (prop_id) {
     case PROP_JS_VERSION:
         g_value_set_string(value, js_context->jsversion_string);
+        break;
+    case PROP_GC_NOTIFICATIONS:
+        g_value_set_boolean(value, js_context->gc_notifications_enabled);
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -727,7 +759,9 @@ gjs_context_set_property (GObject      *object,
         else
             js_context->jsversion_string = g_value_dup_string(value);
         break;
-
+    case PROP_GC_NOTIFICATIONS:
+        js_context->gc_notifications_enabled = g_value_get_boolean(value);
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         break;
@@ -863,6 +897,32 @@ void
 gjs_context_maybe_gc (GjsContext  *context)
 {
     gjs_maybe_gc(context->context);
+}
+
+static gboolean
+gjs_context_idle_emit_gc (gpointer data)
+{
+    GjsContext *gjs_context = data;
+
+    gjs_context->idle_emit_gc_id = 0;
+    
+    g_signal_emit (gjs_context, signals[SIGNAL_GC], 0);
+    
+    return FALSE;
+}
+
+static JSBool
+gjs_on_context_gc (JSContext *cx,
+                   JSGCStatus status)
+{
+    GjsContext *gjs_context = JS_GetContextPrivate(cx);
+
+    if (status == JSGC_END) {
+        if (gjs_context->idle_emit_gc_id == 0)
+            gjs_context->idle_emit_gc_id = g_idle_add (gjs_context_idle_emit_gc, gjs_context);
+    }
+    
+    return TRUE;
 }
 
 /**
