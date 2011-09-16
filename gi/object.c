@@ -674,6 +674,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
         if (unthreadsafe_template_for_constructor.gobj == NULL) {
             GParameter *params;
             int n_params;
+            GTypeQuery query;
 
             gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
             if (gtype == G_TYPE_NONE) {
@@ -691,6 +692,9 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
 
             priv->gobj = g_object_newv(gtype, n_params, params);
             free_g_params(params, n_params);
+
+            g_type_query(gtype, &query);
+            JS_updateMallocCounter(context, query.instance_size);
 
             if (G_IS_INITIALLY_UNOWNED(priv->gobj) &&
                 !g_object_is_floating(priv->gobj)) {
