@@ -899,6 +899,19 @@ gjs_context_maybe_gc (GjsContext  *context)
     gjs_maybe_gc(context->context);
 }
 
+/**
+ * gjs_context_gc:
+ * @context: a #GjsContext
+ * 
+ * Initiate a full GC; may or may not block until complete.  This
+ * function just calls Spidermonkey JS_GC().
+ */ 
+void
+gjs_context_gc (GjsContext  *context)
+{
+    JS_GC(context->context);
+}
+
 static gboolean
 gjs_context_idle_emit_gc (gpointer data)
 {

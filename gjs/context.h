@@ -75,6 +75,8 @@ void            gjs_context_print_stack_stderr    (GjsContext *js_context);
 
 void            gjs_context_maybe_gc              (GjsContext  *context);
 
+void            gjs_context_gc                    (GjsContext  *context);
+
 void            gjs_dumpstack                     (void);
 
 G_END_DECLS
