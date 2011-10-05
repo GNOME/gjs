@@ -369,26 +369,26 @@ gjs_define_constant(JSContext      *context,
     GArgument garg = { 0, };
     GITypeInfo *type_info;
     const char *name;
+    JSBool ret = JS_FALSE;
 
     type_info = g_constant_info_get_type(info);
     g_constant_info_get_value(info, &garg);
 
-    if (!gjs_value_from_g_argument(context, &value, type_info, &garg)) {
-        g_base_info_unref((GIBaseInfo*) type_info);
-        return JS_FALSE;
-    }
-
-    g_base_info_unref((GIBaseInfo*) type_info);
+    if (!gjs_value_from_g_argument(context, &value, type_info, &garg))
+        goto out;
 
     name = g_base_info_get_name((GIBaseInfo*) info);
 
-    if (!JS_DefineProperty(context, in_object,
-                           name, value,
-                           NULL, NULL,
-                           GJS_MODULE_PROP_FLAGS))
-        return JS_FALSE;
+    if (JS_DefineProperty(context, in_object,
+                          name, value,
+                          NULL, NULL,
+                          GJS_MODULE_PROP_FLAGS))
+        ret = JS_TRUE;
 
-    return JS_TRUE;
+ out:
+    g_constant_info_free_value (info, &garg);
+    g_base_info_unref((GIBaseInfo*) type_info);
+    return ret;
 }
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
