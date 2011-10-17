@@ -250,7 +250,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
     } else if (gtype == G_TYPE_CHAR) {
         gint32 i;
         if (JS_ValueToInt32(context, value, &i) && i >= SCHAR_MIN && i <= SCHAR_MAX) {
-            g_value_set_char(gvalue, (signed char)i);
+            g_value_set_schar(gvalue, (signed char)i);
         } else {
             gjs_throw(context,
                       "Wrong type %s; char expected",
@@ -592,7 +592,7 @@ gjs_value_from_g_value_internal(JSContext    *context,
         }
     } else if (gtype == G_TYPE_CHAR) {
         char v;
-        v = g_value_get_char(gvalue);
+        v = g_value_get_schar(gvalue);
         *value_p = INT_TO_JSVAL(v);
     } else if (gtype == G_TYPE_UCHAR) {
         unsigned char v;
