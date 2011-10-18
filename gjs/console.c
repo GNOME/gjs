@@ -52,8 +52,6 @@ main(int argc, char **argv)
     int code;
     const char *source_js_version;
 
-    g_thread_init(NULL);
-
     context = g_option_context_new(NULL);
 
     /* pass unknown through to the JS script */
