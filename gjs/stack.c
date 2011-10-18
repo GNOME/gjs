@@ -81,7 +81,6 @@ format_frame(JSContext* cx, JSStackFrame* fp,
              GString *buf, int num)
 {
     JSPropertyDescArray call_props = { 0, NULL };
-    JSObject* this_obj = NULL;
     JSObject* call_obj = NULL;
     char* funname_str = NULL;
     const char* filename = NULL;
@@ -129,19 +128,6 @@ format_frame(JSContext* cx, JSStackFrame* fp,
             if (!JS_GetPropertyDescArray(cx, call_obj, &call_props))
                 call_props.array = NULL;
         }
-
-	/* mozilla-central commit 38cbd4e02afc */
-#ifdef HAVE_JS_ENDPC
-	{
-	  jsval thisval;
-	  if (JS_GetFrameThis(cx, fp, &thisval) && JSVAL_IS_OBJECT(thisval))
-	    this_obj = JSVAL_TO_OBJECT(thisval);
-	  else
-	    this_obj = NULL;
-	}
-#else
-        this_obj = JS_GetFrameThis(cx, fp);
-#endif
 
     }
 
