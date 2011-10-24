@@ -128,5 +128,85 @@ function defineAccessorProperty(object, name, getter, setter) {
     object.__defineSetter__(name, setter);
 }
 
+// Class magic
+// Adapted from MooTools, MIT license
+// https://github.com/mootools/moootools-core
+
+function _Base() {
+}
+
+_Base.prototype.__name__ = '_Base';
+_Base.prototype.toString = function() {
+    return '[object ' + this.__name__ + ']';
+}
+
+function _parent() {
+    if (!this.__caller__)
+        throw new TypeError("The method 'parent' cannot be called");
+
+    let caller = this.__caller__;
+    let name = caller._name;
+    let parent = caller._owner.__super__;
+
+    let previous = parent ? parent.prototype[name] : undefined;
+
+    if (!previous)
+        throw new TypeError("The method '" + name + "' is not on the superclass");
+
+    return previous.apply(this, arguments);
+}
+
+function wrapFunction(obj, name, meth) {
+    if (meth._origin) meth = meth._origin;
+
+    function wrapper() {
+        this.__caller__ = wrapper;
+        let result = meth.apply(this, arguments);
+        this.__caller__ = null;
+        return result;
+    }
+
+    wrapper._origin = meth;
+    wrapper._name = name;
+    wrapper._owner = obj;
+
+    return wrapper;
+}
+
+function Class(params) {
+    if (!params.Name) {
+        throw new TypeError("Classes require an explicit 'name' parameter.");
+    }
+
+    let newClass = function() {
+        if (!this._init)
+            return this;
+
+        return this._init.apply(this, arguments);
+    };
+
+    let parent = params.Extends;
+    if (!parent)
+        parent = _Base;
+
+    newClass.__super__ = parent;
+    newClass.prototype = Object.create(parent.prototype);
+
+    for (let prop in params) {
+        let value = params[prop];
+
+        if (typeof value === 'function')
+            value = wrapFunction(newClass, prop, value);
+
+        newClass.prototype[prop] = value;
+    }
+
+    newClass.prototype.constructor = newClass;
+    newClass.prototype.__name__ = params.Name;
+    newClass.prototype.parent = _parent;
+
+    return newClass;
+}
+
 // Merge stuff defined in native code
 copyProperties(imports.langNative, this);
