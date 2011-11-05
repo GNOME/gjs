@@ -140,23 +140,12 @@ param_new_resolve(JSContext *context,
     return JS_TRUE;
 }
 
-/* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on
- * the prototype in addition to on each instance. When called on the
- * prototype, "obj" is the prototype, and "retval" is the prototype
- * also, but can be replaced with another object to use instead as the
- * prototype. If we don't set JSCLASS_CONSTRUCT_PROTOTYPE we can
- * identify the prototype as an object of our class with NULL private
- * data.
- */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(param)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(param)
     Param *priv;
     Param *proto_priv;
-    JSClass *obj_class;
-    JSClass *proto_class;
     JSObject *proto;
-    gboolean is_proto;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(param);
 
@@ -175,47 +164,36 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(param)
     proto = JS_GetPrototype(context, object);
     gjs_debug_lifecycle(GJS_DEBUG_GPARAM, "param instance __proto__ is %p", proto);
 
-    /* If we're constructing the prototype, its __proto__ is not the same
-     * class as us, but if we're constructing an instance, the prototype
-     * has the same class.
-     */
-    obj_class = JS_GET_CLASS(context, object);
-    proto_class = JS_GET_CLASS(context, proto);
-
-    is_proto = (obj_class != proto_class);
-
     gjs_debug_lifecycle(GJS_DEBUG_GPARAM,
                         "param instance constructing proto %d, obj class %s proto class %s",
                         is_proto, obj_class->name, proto_class->name);
 
-    if (!is_proto) {
-        /* If we're the prototype, then post-construct we'll fill in priv->info.
-         * If we are not the prototype, though, then we'll get ->info from the
-         * prototype and then create a GObject if we don't have one already.
-         */
-        proto_priv = priv_from_js(context, proto);
-        if (proto_priv == NULL) {
-            gjs_debug(GJS_DEBUG_GPARAM,
-                      "Bad prototype set on object? Must match JSClass of object. JS error should have been reported.");
-            return JS_FALSE;
-        }
-
-        if (unthreadsafe_template_for_constructor.gparam == NULL) {
-            /* To construct these we'd have to wrap all the annoying subclasses.
-             * Since we only bind ParamSpec for purposes of the GObject::notify signal,
-             * there isn't much point.
-             */
-            gjs_throw(context, "Unable to construct ParamSpec, can only wrap an existing one");
-            return JS_FALSE;
-        } else {
-            priv->gparam = g_param_spec_ref(unthreadsafe_template_for_constructor.gparam);
-            unthreadsafe_template_for_constructor.gparam = NULL;
-        }
-
+    /* If we're the prototype, then post-construct we'll fill in priv->info.
+     * If we are not the prototype, though, then we'll get ->info from the
+     * prototype and then create a GObject if we don't have one already.
+     */
+    proto_priv = priv_from_js(context, proto);
+    if (proto_priv == NULL) {
         gjs_debug(GJS_DEBUG_GPARAM,
-                  "JSObject created with param instance %p type %s",
-                  priv->gparam, g_type_name(G_TYPE_FROM_INSTANCE((GTypeInstance*) priv->gparam)));
+                  "Bad prototype set on object? Must match JSClass of object. JS error should have been reported.");
+        return JS_FALSE;
     }
+
+    if (unthreadsafe_template_for_constructor.gparam == NULL) {
+        /* To construct these we'd have to wrap all the annoying subclasses.
+         * Since we only bind ParamSpec for purposes of the GObject::notify signal,
+         * there isn't much point.
+         */
+        gjs_throw(context, "Unable to construct ParamSpec, can only wrap an existing one");
+        return JS_FALSE;
+    } else {
+        priv->gparam = g_param_spec_ref(unthreadsafe_template_for_constructor.gparam);
+        unthreadsafe_template_for_constructor.gparam = NULL;
+    }
+
+    gjs_debug(GJS_DEBUG_GPARAM,
+              "JSObject created with param instance %p type %s",
+              priv->gparam, g_type_name(G_TYPE_FROM_INSTANCE((GTypeInstance*) priv->gparam)));
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(param);
 
@@ -256,8 +234,7 @@ static struct JSClass gjs_param_class = {
     NULL, /* dynamic */
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
-    JSCLASS_NEW_RESOLVE_GETS_START |
-    JSCLASS_CONSTRUCT_PROTOTYPE,
+    JSCLASS_NEW_RESOLVE_GETS_START,
     JS_PropertyStub,
     JS_PropertyStub,
     param_get_prop,

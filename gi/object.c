@@ -599,21 +599,13 @@ wrapped_gobj_toggle_notify(gpointer      data,
     }
 }
 
-/* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on
- * the prototype in addition to on each instance. When called on the
- * prototype, "obj" is the prototype, and "retval" is the prototype
- * also, but can be replaced with another object to use instead as the
- * prototype.
- */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(object_instance)
     ObjectInstance *priv;
     ObjectInstance *proto_priv;
     JSObject *proto;
-    gboolean is_proto;
-    JSClass *obj_class;
-    JSClass *proto_class;
+    GType gtype;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(object_instance);
 
@@ -630,135 +622,122 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
     proto = JS_GetPrototype(context, object);
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "obj instance __proto__ is %p", proto);
 
-    /* If we're constructing the prototype, its __proto__ is not the same
-     * class as us, but if we're constructing an instance, the prototype
-     * has the same class.
-     */
-    obj_class = JS_GET_CLASS(context, object);
-    proto_class = JS_GET_CLASS(context, proto);
-
-    is_proto = (obj_class != proto_class);
-
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                        "obj instance constructing proto %d, obj class %s proto class %s",
-                        is_proto, obj_class->name, proto_class->name);
+                        "obj instance constructing, obj class %s proto class %s",
+                        obj_class->name, proto_class->name);
 
-    if (!is_proto) {
-        GType gtype;
+    /* If we're the prototype, then post-construct we'll fill in priv->info.
+     * If we are not the prototype, though, then we'll get ->info from the
+     * prototype and then create a GObject if we don't have one already.
+     */
+    proto_priv = priv_from_js(context, proto);
+    if (proto_priv == NULL) {
+        gjs_debug(GJS_DEBUG_GOBJECT,
+                  "Bad prototype set on object? Must match JSClass of object. JS error should have been reported.");
+        return JS_FALSE;
+    }
 
-        /* If we're the prototype, then post-construct we'll fill in priv->info.
-         * If we are not the prototype, though, then we'll get ->info from the
-         * prototype and then create a GObject if we don't have one already.
-         */
-        proto_priv = priv_from_js(context, proto);
-        if (proto_priv == NULL) {
-            gjs_debug(GJS_DEBUG_GOBJECT,
-                      "Bad prototype set on object? Must match JSClass of object. JS error should have been reported.");
+    priv->info = proto_priv->info;
+    g_base_info_ref( (GIBaseInfo*) priv->info);
+
+    /* Since gobject-introspection is always creating new info
+     * objects, == is not meaningful on them, only comparison of
+     * their names. We prefer to use the info that is already ref'd
+     * by the prototype for the class.
+     */
+    g_assert(unthreadsafe_template_for_constructor.info == NULL ||
+             strcmp(g_base_info_get_name( (GIBaseInfo*) priv->info),
+                    g_base_info_get_name( (GIBaseInfo*) unthreadsafe_template_for_constructor.info))
+             == 0);
+    unthreadsafe_template_for_constructor.info = NULL;
+
+    if (unthreadsafe_template_for_constructor.gobj == NULL) {
+        GParameter *params;
+        int n_params;
+        GTypeQuery query;
+
+        gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
+        if (gtype == G_TYPE_NONE) {
+            gjs_throw(context,
+                      "No GType for object '%s'???",
+                      g_base_info_get_name( (GIBaseInfo*) priv->info));
             return JS_FALSE;
         }
 
-        priv->info = proto_priv->info;
-        g_base_info_ref( (GIBaseInfo*) priv->info);
-
-        /* Since gobject-introspection is always creating new info
-         * objects, == is not meaningful on them, only comparison of
-         * their names. We prefer to use the info that is already ref'd
-         * by the prototype for the class.
-         */
-        g_assert(unthreadsafe_template_for_constructor.info == NULL ||
-                 strcmp(g_base_info_get_name( (GIBaseInfo*) priv->info),
-                        g_base_info_get_name( (GIBaseInfo*) unthreadsafe_template_for_constructor.info))
-                 == 0);
-        unthreadsafe_template_for_constructor.info = NULL;
-
-        if (unthreadsafe_template_for_constructor.gobj == NULL) {
-            GParameter *params;
-            int n_params;
-            GTypeQuery query;
-
-            gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
-            if (gtype == G_TYPE_NONE) {
-                gjs_throw(context,
-                          "No GType for object '%s'???",
-                          g_base_info_get_name( (GIBaseInfo*) priv->info));
-                return JS_FALSE;
-            }
-
-            if (!object_instance_props_to_g_parameters(context, object, argc, argv,
-                                                       gtype,
-                                                       &params, &n_params)) {
-                return JS_FALSE;
-            }
-
-            priv->gobj = g_object_newv(gtype, n_params, params);
-            free_g_params(params, n_params);
-
-            g_type_query(gtype, &query);
-            JS_updateMallocCounter(context, query.instance_size);
-
-            if (G_IS_INITIALLY_UNOWNED(priv->gobj) &&
-                !g_object_is_floating(priv->gobj)) {
-                /* GtkWindow does not return a ref to caller of g_object_new.
-                 * Need a flag in gobject-introspection to tell us this.
-                 */
-                gjs_debug(GJS_DEBUG_GOBJECT,
-                          "Newly-created object is initially unowned but we did not get the "
-                          "floating ref, probably GtkWindow, using hacky workaround");
-                g_object_ref(priv->gobj);
-            } else if (g_object_is_floating(priv->gobj)) {
-                g_object_ref_sink(priv->gobj);
-            } else {
-                /* we should already have a ref */
-            }
-        } else {
-            priv->gobj = unthreadsafe_template_for_constructor.gobj;
-            unthreadsafe_template_for_constructor.gobj = NULL;
-
-            g_object_ref_sink(priv->gobj);
+        if (!object_instance_props_to_g_parameters(context, object, argc, argv,
+                                                   gtype,
+                                                   &params, &n_params)) {
+            return JS_FALSE;
         }
 
-        g_assert(peek_js_obj(context, priv->gobj) == NULL);
-        set_js_obj(context, priv->gobj, object);
+        priv->gobj = g_object_newv(gtype, n_params, params);
+        free_g_params(params, n_params);
+
+        g_type_query(gtype, &query);
+        JS_updateMallocCounter(context, query.instance_size);
+
+        if (G_IS_INITIALLY_UNOWNED(priv->gobj) &&
+            !g_object_is_floating(priv->gobj)) {
+            /* GtkWindow does not return a ref to caller of g_object_new.
+             * Need a flag in gobject-introspection to tell us this.
+             */
+            gjs_debug(GJS_DEBUG_GOBJECT,
+                      "Newly-created object is initially unowned but we did not get the "
+                      "floating ref, probably GtkWindow, using hacky workaround");
+            g_object_ref(priv->gobj);
+        } else if (g_object_is_floating(priv->gobj)) {
+            g_object_ref_sink(priv->gobj);
+        } else {
+            /* we should already have a ref */
+        }
+    } else {
+        priv->gobj = unthreadsafe_template_for_constructor.gobj;
+        unthreadsafe_template_for_constructor.gobj = NULL;
+
+        g_object_ref_sink(priv->gobj);
+    }
+
+    g_assert(peek_js_obj(context, priv->gobj) == NULL);
+    set_js_obj(context, priv->gobj, object);
 
 #if DEBUG_DISPOSE
-        g_object_weak_ref(priv->gobj, wrapped_gobj_dispose_notify, object);
+    g_object_weak_ref(priv->gobj, wrapped_gobj_dispose_notify, object);
 #endif
 
-        /* OK, here is where things get complicated. We want the
-         * wrapped gobj to keep the JSObject* wrapper alive, because
-         * people might set properties on the JSObject* that they care
-         * about. Therefore, whenever the refcount on the wrapped gobj
-         * is >1, i.e. whenever something other than the wrapper is
-         * referencing the wrapped gobj, the wrapped gobj has a strong
-         * ref (gc-roots the wrapper). When the refcount on the
-         * wrapped gobj is 1, then we change to a weak ref to allow
-         * the wrapper to be garbage collected (and thus unref the
-         * wrappee).
-         */
-        priv->keep_alive = gjs_keep_alive_get_for_import_global(context);
-        gjs_keep_alive_add_child(context,
-                                 priv->keep_alive,
-                                 gobj_no_longer_kept_alive_func,
-                                 object,
-                                 priv);
+    /* OK, here is where things get complicated. We want the
+     * wrapped gobj to keep the JSObject* wrapper alive, because
+     * people might set properties on the JSObject* that they care
+     * about. Therefore, whenever the refcount on the wrapped gobj
+     * is >1, i.e. whenever something other than the wrapper is
+     * referencing the wrapped gobj, the wrapped gobj has a strong
+     * ref (gc-roots the wrapper). When the refcount on the
+     * wrapped gobj is 1, then we change to a weak ref to allow
+     * the wrapper to be garbage collected (and thus unref the
+     * wrappee).
+     */
+    priv->keep_alive = gjs_keep_alive_get_for_import_global(context);
+    gjs_keep_alive_add_child(context,
+                             priv->keep_alive,
+                             gobj_no_longer_kept_alive_func,
+                             object,
+                             priv);
 
-        g_object_add_toggle_ref(priv->gobj,
-                                wrapped_gobj_toggle_notify,
-                                JS_GetRuntime(context));
+    g_object_add_toggle_ref(priv->gobj,
+                            wrapped_gobj_toggle_notify,
+                            JS_GetRuntime(context));
 
-        /* We now have both a ref and a toggle ref, we only want the
-         * toggle ref. This may immediately remove the GC root
-         * we just added, since refcount may drop to 1.
-         */
-        g_object_unref(priv->gobj);
+    /* We now have both a ref and a toggle ref, we only want the
+     * toggle ref. This may immediately remove the GC root
+     * we just added, since refcount may drop to 1.
+     */
+    g_object_unref(priv->gobj);
 
-        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                            "JSObject created with GObject %p %s",
-                            priv->gobj, g_type_name_from_instance((GTypeInstance*) priv->gobj));
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
+                        "JSObject created with GObject %p %s",
+                        priv->gobj, g_type_name_from_instance((GTypeInstance*) priv->gobj));
 
-        TRACE(GJS_OBJECT_PROXY_NEW(priv, priv->gobj, g_base_info_get_namespace ( (GIBaseInfo*) priv->info),
-                                    g_base_info_get_name ( (GIBaseInfo*) priv->info) ));
-    }
+    TRACE(GJS_OBJECT_PROXY_NEW(priv, priv->gobj, g_base_info_get_namespace ( (GIBaseInfo*) priv->info),
+                               g_base_info_get_name ( (GIBaseInfo*) priv->info) ));
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(object_instance);
 
@@ -1129,21 +1108,11 @@ to_string_func(JSContext *context,
     return ret;
 }
 
-/* The bizarre thing about this vtable is that it applies to both
- * instances of the object, and to the prototype that instances of the
- * class have.
- *
- * Also, there's a constructor field in here, but as far as I can
- * tell, it would only be used if no constructor were provided to
- * JS_InitClass. The constructor from JS_InitClass is not applied to
- * the prototype unless JSCLASS_CONSTRUCT_PROTOTYPE is in flags.
- */
 static struct JSClass gjs_object_instance_class = {
     NULL, /* We copy this class struct with multiple names */
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
-    JSCLASS_NEW_RESOLVE_GETS_START |
-    JSCLASS_CONSTRUCT_PROTOTYPE,
+    JSCLASS_NEW_RESOLVE_GETS_START,
     JS_PropertyStub,
     JS_PropertyStub,
     object_instance_get_prop,
@@ -1388,13 +1357,11 @@ gjs_define_object_class(JSContext     *context,
 
     g_assert(gjs_object_has_property(context, in_object, constructor_name));
 
-    /* Put the info in the prototype */
-    priv = priv_from_js(context, prototype);
-    g_assert(priv != NULL);
-    g_assert(priv->info == NULL);
+    priv = g_slice_new0(ObjectInstance);
     priv->info = info;
     g_base_info_ref( (GIBaseInfo*) priv->info);
     priv->gtype = gtype;
+    JS_SetPrivate(context, prototype, priv);
 
     gjs_debug(GJS_DEBUG_GOBJECT, "Defined class %s prototype %p class %p in object %p",
               constructor_name, prototype, JS_GET_CLASS(context, prototype), in_object);

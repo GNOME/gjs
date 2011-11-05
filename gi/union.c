@@ -188,23 +188,13 @@ union_new(JSContext   *context,
     return NULL;
 }
 
-/* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on
- * the prototype in addition to on each instance. When called on the
- * prototype, "obj" is the prototype, and "retval" is the prototype
- * also, but can be replaced with another object to use instead as the
- * prototype. If we don't set JSCLASS_CONSTRUCT_PROTOTYPE we can
- * identify the prototype as an object of our class with NULL private
- * data.
- */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(union)
     Union *priv;
     Union *proto_priv;
-    JSClass *obj_class;
-    JSClass *proto_class;
     JSObject *proto;
-    gboolean is_proto;
+    GType gtype;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(union);
 
@@ -224,77 +214,64 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
     proto = JS_GetPrototype(context, object);
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED, "union instance __proto__ is %p", proto);
 
-    /* If we're constructing the prototype, its __proto__ is not the same
-     * class as us, but if we're constructing an instance, the prototype
-     * has the same class.
-     */
-    obj_class = JS_GET_CLASS(context, object);
-    proto_class = JS_GET_CLASS(context, proto);
-
-    is_proto = (obj_class != proto_class);
-
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                         "union instance constructing proto %d, obj class %s proto class %s",
                         is_proto, obj_class->name, proto_class->name);
 
-    if (!is_proto) {
-        GType gtype;
+    /* If we're the prototype, then post-construct we'll fill in priv->info.
+     * If we are not the prototype, though, then we'll get ->info from the
+     * prototype and then create a GObject if we don't have one already.
+     */
+    proto_priv = priv_from_js(context, proto);
+    if (proto_priv == NULL) {
+        gjs_debug(GJS_DEBUG_GBOXED,
+                  "Bad prototype set on union? Must match JSClass of object. JS error should have been reported.");
+        return JS_FALSE;
+    }
 
-        /* If we're the prototype, then post-construct we'll fill in priv->info.
-         * If we are not the prototype, though, then we'll get ->info from the
-         * prototype and then create a GObject if we don't have one already.
+    priv->info = proto_priv->info;
+    g_base_info_ref( (GIBaseInfo*) priv->info);
+
+    gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
+
+    /* Since gobject-introspection is always creating new info
+     * objects, == is not meaningful on them, only comparison of
+     * their names. We prefer to use the info that is already ref'd
+     * by the prototype for the class.
+     */
+    g_assert(unthreadsafe_template_for_constructor.info == NULL ||
+             strcmp(g_base_info_get_name( (GIBaseInfo*) priv->info),
+                    g_base_info_get_name( (GIBaseInfo*) unthreadsafe_template_for_constructor.info))
+             == 0);
+    unthreadsafe_template_for_constructor.info = NULL;
+
+    if (unthreadsafe_template_for_constructor.gboxed == NULL) {
+        void *gboxed;
+
+        /* union_new happens to be implemented by calling
+         * gjs_invoke_c_function(), which returns a jsval.
+         * The returned "gboxed" here is owned by that jsval,
+         * not by us.
          */
-        proto_priv = priv_from_js(context, proto);
-        if (proto_priv == NULL) {
-            gjs_debug(GJS_DEBUG_GBOXED,
-                      "Bad prototype set on union? Must match JSClass of object. JS error should have been reported.");
+        gboxed = union_new(context, object, priv->info);
+
+        if (gboxed == NULL) {
             return JS_FALSE;
         }
 
-        priv->info = proto_priv->info;
-        g_base_info_ref( (GIBaseInfo*) priv->info);
-
-        gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
-
-        /* Since gobject-introspection is always creating new info
-         * objects, == is not meaningful on them, only comparison of
-         * their names. We prefer to use the info that is already ref'd
-         * by the prototype for the class.
+        /* Because "gboxed" is owned by a jsval and will
+         * be garbage colleced, we make a copy here to be
+         * owned by us.
          */
-        g_assert(unthreadsafe_template_for_constructor.info == NULL ||
-                 strcmp(g_base_info_get_name( (GIBaseInfo*) priv->info),
-                        g_base_info_get_name( (GIBaseInfo*) unthreadsafe_template_for_constructor.info))
-                 == 0);
-        unthreadsafe_template_for_constructor.info = NULL;
-
-        if (unthreadsafe_template_for_constructor.gboxed == NULL) {
-            void *gboxed;
-
-            /* union_new happens to be implemented by calling
-             * gjs_invoke_c_function(), which returns a jsval.
-             * The returned "gboxed" here is owned by that jsval,
-             * not by us.
-             */
-            gboxed = union_new(context, object, priv->info);
-
-            if (gboxed == NULL) {
-                return JS_FALSE;
-            }
-
-            /* Because "gboxed" is owned by a jsval and will
-             * be garbage colleced, we make a copy here to be
-             * owned by us.
-             */
-            priv->gboxed = g_boxed_copy(gtype, gboxed);
-        } else {
-            priv->gboxed = g_boxed_copy(gtype, unthreadsafe_template_for_constructor.gboxed);
-            unthreadsafe_template_for_constructor.gboxed = NULL;
-        }
-
-        gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
-                            "JSObject created with union instance %p type %s",
-                            priv->gboxed, g_type_name(gtype));
+        priv->gboxed = g_boxed_copy(gtype, gboxed);
+    } else {
+        priv->gboxed = g_boxed_copy(gtype, unthreadsafe_template_for_constructor.gboxed);
+        unthreadsafe_template_for_constructor.gboxed = NULL;
     }
+
+    gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
+                        "JSObject created with union instance %p type %s",
+                        priv->gboxed, g_type_name(gtype));
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(union);
 
@@ -341,8 +318,7 @@ static struct JSClass gjs_union_class = {
     NULL, /* dynamic class, no name here */
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
-    JSCLASS_NEW_RESOLVE_GETS_START |
-    JSCLASS_CONSTRUCT_PROTOTYPE,
+    JSCLASS_NEW_RESOLVE_GETS_START,
     JS_PropertyStub,
     JS_PropertyStub,
     JS_PropertyStub,
@@ -498,12 +474,10 @@ gjs_define_union_class(JSContext    *context,
 
     g_assert(gjs_object_has_property(context, in_object, constructor_name));
 
-    /* Put the info in the prototype */
-    priv = priv_from_js(context, prototype);
-    g_assert(priv != NULL);
-    g_assert(priv->info == NULL);
+    priv = g_slice_new0(Union);
     priv->info = info;
     g_base_info_ref( (GIBaseInfo*) priv->info);
+    JS_SetPrivate(context, prototype, priv);
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
               constructor_name, prototype, JS_GET_CLASS(context, prototype), in_object);

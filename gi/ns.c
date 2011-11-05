@@ -145,14 +145,6 @@ ns_new_resolve(JSContext *context,
     return ret;
 }
 
-/* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on
- * the prototype in addition to on each instance. When called on the
- * prototype, "obj" is the prototype, and "retval" is the prototype
- * also, but can be replaced with another object to use instead as the
- * prototype. If we don't set JSCLASS_CONSTRUCT_PROTOTYPE we can
- * identify the prototype as an object of our class with NULL private
- * data.
- */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(ns)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(ns)

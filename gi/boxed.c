@@ -427,23 +427,12 @@ boxed_init(JSContext   *context,
     return JS_FALSE;
 }
 
-/* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on
- * the prototype in addition to on each instance. When called on the
- * prototype, "obj" is the prototype, and "retval" is the prototype
- * also, but can be replaced with another object to use instead as the
- * prototype. If we don't set JSCLASS_CONSTRUCT_PROTOTYPE we can
- * identify the prototype as an object of our class with NULL private
- * data.
- */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(boxed)
     Boxed *priv;
     Boxed *proto_priv;
-    JSClass *obj_class;
-    JSClass *proto_class;
     JSObject *proto;
-    gboolean is_proto;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(boxed);
 
@@ -460,127 +449,111 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
 
     proto = JS_GetPrototype(context, object);
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED, "boxed instance __proto__ is %p", proto);
-
-    /* If we're constructing the prototype, its __proto__ is not the same
-     * class as us, but if we're constructing an instance, the prototype
-     * has the same class.
+    /* If we're the prototype, then post-construct we'll fill in priv->info.
+     * If we are not the prototype, though, then we'll get ->info from the
+     * prototype and then create a GObject if we don't have one already.
      */
-    obj_class = JS_GET_CLASS(context, object);
-    proto_class = JS_GET_CLASS(context, proto);
+    proto_priv = priv_from_js(context, proto);
+    if (proto_priv == NULL) {
+        gjs_debug(GJS_DEBUG_GBOXED,
+                  "Bad prototype set on boxed? Must match JSClass of object. JS error should have been reported.");
+        return JS_FALSE;
+    }
 
-    is_proto = (obj_class != proto_class);
+    priv->info = proto_priv->info;
+    priv->can_allocate_directly = proto_priv->can_allocate_directly;
+    g_base_info_ref( (GIBaseInfo*) priv->info);
 
-    gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
-                        "boxed instance constructing proto %d, obj class %s proto class %s",
-                        is_proto, obj_class->name, proto_class->name);
+    /* Since gobject-introspection is always creating new info
+     * objects, == is not meaningful on them, only comparison of
+     * their names. We prefer to use the info that is already ref'd
+     * by the prototype for the class.
+     */
+    g_assert(unthreadsafe_template_for_constructor.info == NULL ||
+             strcmp(g_base_info_get_name( (GIBaseInfo*) priv->info),
+                    g_base_info_get_name( (GIBaseInfo*) unthreadsafe_template_for_constructor.info))
+             == 0);
+    unthreadsafe_template_for_constructor.info = NULL;
 
-    if (!is_proto) {
-        /* If we're the prototype, then post-construct we'll fill in priv->info.
-         * If we are not the prototype, though, then we'll get ->info from the
-         * prototype and then create a GObject if we don't have one already.
-         */
-        proto_priv = priv_from_js(context, proto);
-        if (proto_priv == NULL) {
-            gjs_debug(GJS_DEBUG_GBOXED,
-                      "Bad prototype set on boxed? Must match JSClass of object. JS error should have been reported.");
+    if (unthreadsafe_template_for_constructor.gboxed == NULL) {
+        Boxed *source_priv;
+        GType gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
+
+        /* Short-circuit copy-construction in the case where we can use g_boxed_copy */
+        if (argc == 1 &&
+            boxed_get_copy_source(context, priv, argv[0], &source_priv)) {
+
+            if (gtype != G_TYPE_NONE && g_type_is_a (gtype, G_TYPE_BOXED)) {
+                priv->gboxed = g_boxed_copy(gtype, source_priv->gboxed);
+                GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
+                return JS_TRUE;
+            }
+        }
+
+        /* Short-circuit construction for GVariants (simply cannot construct here,
+           the constructor should be overridden) */
+        if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
+            gjs_throw(context,
+                      "Can't create instance of GVariant directly, use GVariant.new_*");
             return JS_FALSE;
         }
 
-        priv->info = proto_priv->info;
-        priv->can_allocate_directly = proto_priv->can_allocate_directly;
-        g_base_info_ref( (GIBaseInfo*) priv->info);
+        if (!boxed_new(context, object, priv))
+            return JS_FALSE;
 
-        /* Since gobject-introspection is always creating new info
-         * objects, == is not meaningful on them, only comparison of
-         * their names. We prefer to use the info that is already ref'd
-         * by the prototype for the class.
+        if (!boxed_init(context, object, priv, argc, argv))
+            return JS_FALSE;
+
+    } else if (!JSVAL_IS_NULL(unthreadsafe_template_for_constructor.parent_jsval)) {
+        /* A structure nested inside a parent object; doens't have an independent allocation */
+
+        priv->gboxed = unthreadsafe_template_for_constructor.gboxed;
+        priv->not_owning_gboxed = TRUE;
+
+        /* We never actually read the reserved slot, but we put the parent object
+         * into it to hold onto the parent object.
          */
-        g_assert(unthreadsafe_template_for_constructor.info == NULL ||
-                 strcmp(g_base_info_get_name( (GIBaseInfo*) priv->info),
-                        g_base_info_get_name( (GIBaseInfo*) unthreadsafe_template_for_constructor.info))
-                 == 0);
-        unthreadsafe_template_for_constructor.info = NULL;
+        JS_SetReservedSlot(context, object, 0,
+                           unthreadsafe_template_for_constructor.parent_jsval);
 
-        if (unthreadsafe_template_for_constructor.gboxed == NULL) {
-            Boxed *source_priv;
-            GType gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
+        unthreadsafe_template_for_constructor.parent_jsval = JSVAL_NULL;
+        unthreadsafe_template_for_constructor.gboxed = NULL;
+    } else if (unthreadsafe_template_for_constructor.no_copy) {
+        /* we need to create a JS Boxed which references the
+         * original C struct, not a copy of it. Used for
+         * G_SIGNAL_TYPE_STATIC_SCOPE
+         */
+        priv->gboxed = unthreadsafe_template_for_constructor.gboxed;
+        priv->not_owning_gboxed = TRUE;
+        unthreadsafe_template_for_constructor.gboxed = NULL;
+    } else {
+        GType gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
+        JSBool retval;
 
-            /* Short-circuit copy-construction in the case where we can use g_boxed_copy */
-            if (argc == 1 &&
-                boxed_get_copy_source(context, priv, argv[0], &source_priv)) {
-
-                if (gtype != G_TYPE_NONE && g_type_is_a (gtype, G_TYPE_BOXED)) {
-                    priv->gboxed = g_boxed_copy(gtype, source_priv->gboxed);
-                    GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
-                    return JS_TRUE;
-                }
-            }
-
-            /* Short-circuit construction for GVariants (simply cannot construct here,
-               the constructor should be overridden) */
-            if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
-                gjs_throw(context,
-                          "Can't create instance of GVariant directly, use GVariant.new_*");
-                return JS_FALSE;
-            }
-
-            if (!boxed_new(context, object, priv))
+        if (gtype != G_TYPE_NONE && g_type_is_a (gtype, G_TYPE_BOXED)) {
+            priv->gboxed = g_boxed_copy(gtype,
+                                        unthreadsafe_template_for_constructor.gboxed);
+        } else if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
+            priv->gboxed = g_variant_ref_sink (unthreadsafe_template_for_constructor.gboxed);
+        } else if (priv->can_allocate_directly) {
+            if (!boxed_new_direct(context, object, priv))
                 return JS_FALSE;
 
-            if (!boxed_init(context, object, priv, argc, argv))
-                return JS_FALSE;
-
-        } else if (!JSVAL_IS_NULL(unthreadsafe_template_for_constructor.parent_jsval)) {
-            /* A structure nested inside a parent object; doens't have an independent allocation */
-
-            priv->gboxed = unthreadsafe_template_for_constructor.gboxed;
-            priv->not_owning_gboxed = TRUE;
-
-            /* We never actually read the reserved slot, but we put the parent object
-             * into it to hold onto the parent object.
-             */
-            JS_SetReservedSlot(context, object, 0,
-                               unthreadsafe_template_for_constructor.parent_jsval);
-
-            unthreadsafe_template_for_constructor.parent_jsval = JSVAL_NULL;
-            unthreadsafe_template_for_constructor.gboxed = NULL;
-        } else if (unthreadsafe_template_for_constructor.no_copy) {
-            /* we need to create a JS Boxed which references the
-             * original C struct, not a copy of it. Used for
-             * G_SIGNAL_TYPE_STATIC_SCOPE
-             */
-            priv->gboxed = unthreadsafe_template_for_constructor.gboxed;
-            priv->not_owning_gboxed = TRUE;
-            unthreadsafe_template_for_constructor.gboxed = NULL;
+            memcpy(priv->gboxed,
+                   unthreadsafe_template_for_constructor.gboxed,
+                   g_struct_info_get_size (priv->info));
         } else {
-            GType gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
-            JSBool retval;
-            
-            if (gtype != G_TYPE_NONE && g_type_is_a (gtype, G_TYPE_BOXED)) {
-                priv->gboxed = g_boxed_copy(gtype,
-                                            unthreadsafe_template_for_constructor.gboxed);
-            } else if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
-                priv->gboxed = g_variant_ref_sink (unthreadsafe_template_for_constructor.gboxed);
-            } else if (priv->can_allocate_directly) {
-                if (!boxed_new_direct(context, object, priv))
-                    return JS_FALSE;
-
-                memcpy(priv->gboxed,
-                       unthreadsafe_template_for_constructor.gboxed,
-                       g_struct_info_get_size (priv->info));
-            } else {
-                gjs_throw(context,
-                          "Can't create a Javascript object for %s; no way to copy",
-                          g_base_info_get_name( (GIBaseInfo*) priv->info));
-            }
-
-            unthreadsafe_template_for_constructor.gboxed = NULL;
-
-            retval = priv->gboxed != NULL;
-            if (retval)
-                GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
-            return retval;
+            gjs_throw(context,
+                      "Can't create a Javascript object for %s; no way to copy",
+                      g_base_info_get_name( (GIBaseInfo*) priv->info));
         }
+
+        unthreadsafe_template_for_constructor.gboxed = NULL;
+
+        retval = priv->gboxed != NULL;
+        if (retval)
+            GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
+        return retval;
     }
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
@@ -974,11 +947,6 @@ define_boxed_class_fields (JSContext *context,
  * instances of the object, and to the prototype that instances of the
  * class have.
  *
- * Also, there's a constructor field in here, but as far as I can
- * tell, it would only be used if no constructor were provided to
- * JS_InitClass. The constructor from JS_InitClass is not applied to
- * the prototype unless JSCLASS_CONSTRUCT_PROTOTYPE is in flags.
- *
  * We allocate 1 reserved slot; this is typically unused, but if the
  * boxed is for a nested structure inside a parent structure, the
  * reserved slot is used to hold onto the parent Javascript object and
@@ -989,7 +957,6 @@ static struct JSClass gjs_boxed_class = {
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
     JSCLASS_NEW_RESOLVE_GETS_START |
-    JSCLASS_CONSTRUCT_PROTOTYPE |
     JSCLASS_HAS_RESERVED_SLOTS(1),
     JS_PropertyStub,
     JS_PropertyStub,
@@ -1251,12 +1218,10 @@ gjs_define_boxed_class(JSContext    *context,
 
     g_assert(gjs_object_has_property(context, in_object, constructor_name));
 
-    /* Put the info in the prototype */
-    priv = priv_from_js(context, prototype);
-    g_assert(priv != NULL);
-    g_assert(priv->info == NULL);
+    priv = g_slice_new0(Boxed);
     priv->info = info;
     g_base_info_ref( (GIBaseInfo*) priv->info);
+    JS_SetPrivate(context, prototype, priv);
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
               constructor_name, prototype, JS_GET_CLASS(context, prototype), in_object);
