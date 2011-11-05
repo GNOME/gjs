@@ -48,21 +48,12 @@ typedef struct {
                                     the reference to the C gboxed */
 } Boxed;
 
-typedef struct {
-    GIBoxedInfo *info;
-    void *gboxed;
-    jsval parent_jsval;
-    gboolean no_copy;
-} BoxedConstructInfo;
-
 static gboolean struct_is_simple(GIStructInfo *info);
 
 static JSBool boxed_set_field_from_value(JSContext   *context,
                                          Boxed       *priv,
                                          GIFieldInfo *field_info,
                                          jsval        value);
-
-static BoxedConstructInfo unthreadsafe_template_for_constructor = { NULL, NULL, JSVAL_NULL, FALSE };
 
 static struct JSClass gjs_boxed_class;
 
@@ -433,6 +424,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
     Boxed *priv;
     Boxed *proto_priv;
     JSObject *proto;
+    Boxed *source_priv;
+    GType gtype;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(boxed);
 
@@ -464,97 +457,31 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
     priv->can_allocate_directly = proto_priv->can_allocate_directly;
     g_base_info_ref( (GIBaseInfo*) priv->info);
 
-    /* Since gobject-introspection is always creating new info
-     * objects, == is not meaningful on them, only comparison of
-     * their names. We prefer to use the info that is already ref'd
-     * by the prototype for the class.
-     */
-    g_assert(unthreadsafe_template_for_constructor.info == NULL ||
-             strcmp(g_base_info_get_name( (GIBaseInfo*) priv->info),
-                    g_base_info_get_name( (GIBaseInfo*) unthreadsafe_template_for_constructor.info))
-             == 0);
-    unthreadsafe_template_for_constructor.info = NULL;
-
-    if (unthreadsafe_template_for_constructor.gboxed == NULL) {
-        Boxed *source_priv;
-        GType gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
-
-        /* Short-circuit copy-construction in the case where we can use g_boxed_copy */
-        if (argc == 1 &&
-            boxed_get_copy_source(context, priv, argv[0], &source_priv)) {
-
-            if (gtype != G_TYPE_NONE && g_type_is_a (gtype, G_TYPE_BOXED)) {
-                priv->gboxed = g_boxed_copy(gtype, source_priv->gboxed);
-                GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
-                return JS_TRUE;
-            }
-        }
-
-        /* Short-circuit construction for GVariants (simply cannot construct here,
-           the constructor should be overridden) */
-        if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
-            gjs_throw(context,
-                      "Can't create instance of GVariant directly, use GVariant.new_*");
-            return JS_FALSE;
-        }
-
-        if (!boxed_new(context, object, priv))
-            return JS_FALSE;
-
-        if (!boxed_init(context, object, priv, argc, argv))
-            return JS_FALSE;
-
-    } else if (!JSVAL_IS_NULL(unthreadsafe_template_for_constructor.parent_jsval)) {
-        /* A structure nested inside a parent object; doens't have an independent allocation */
-
-        priv->gboxed = unthreadsafe_template_for_constructor.gboxed;
-        priv->not_owning_gboxed = TRUE;
-
-        /* We never actually read the reserved slot, but we put the parent object
-         * into it to hold onto the parent object.
-         */
-        JS_SetReservedSlot(context, object, 0,
-                           unthreadsafe_template_for_constructor.parent_jsval);
-
-        unthreadsafe_template_for_constructor.parent_jsval = JSVAL_NULL;
-        unthreadsafe_template_for_constructor.gboxed = NULL;
-    } else if (unthreadsafe_template_for_constructor.no_copy) {
-        /* we need to create a JS Boxed which references the
-         * original C struct, not a copy of it. Used for
-         * G_SIGNAL_TYPE_STATIC_SCOPE
-         */
-        priv->gboxed = unthreadsafe_template_for_constructor.gboxed;
-        priv->not_owning_gboxed = TRUE;
-        unthreadsafe_template_for_constructor.gboxed = NULL;
-    } else {
-        GType gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
-        JSBool retval;
+    gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
+    /* Short-circuit copy-construction in the case where we can use g_boxed_copy */
+    if (argc == 1 &&
+        boxed_get_copy_source(context, priv, argv[0], &source_priv)) {
 
         if (gtype != G_TYPE_NONE && g_type_is_a (gtype, G_TYPE_BOXED)) {
-            priv->gboxed = g_boxed_copy(gtype,
-                                        unthreadsafe_template_for_constructor.gboxed);
-        } else if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
-            priv->gboxed = g_variant_ref_sink (unthreadsafe_template_for_constructor.gboxed);
-        } else if (priv->can_allocate_directly) {
-            if (!boxed_new_direct(context, object, priv))
-                return JS_FALSE;
-
-            memcpy(priv->gboxed,
-                   unthreadsafe_template_for_constructor.gboxed,
-                   g_struct_info_get_size (priv->info));
-        } else {
-            gjs_throw(context,
-                      "Can't create a Javascript object for %s; no way to copy",
-                      g_base_info_get_name( (GIBaseInfo*) priv->info));
-        }
-
-        unthreadsafe_template_for_constructor.gboxed = NULL;
-
-        retval = priv->gboxed != NULL;
-        if (retval)
+            priv->gboxed = g_boxed_copy(gtype, source_priv->gboxed);
             GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
-        return retval;
+            return JS_TRUE;
+        }
     }
+
+    /* Short-circuit construction for GVariants (simply cannot construct here,
+       the constructor should be overridden) */
+    if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
+        gjs_throw(context,
+                  "Can't create instance of GVariant directly, use GVariant.new_*");
+        return JS_FALSE;
+    }
+
+    if (!boxed_new(context, object, priv))
+        return JS_FALSE;
+
+    if (!boxed_init(context, object, priv, argc, argv))
+        return JS_FALSE;
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
 
@@ -639,6 +566,8 @@ get_nested_interface_object (JSContext   *context,
     JSObject *obj;
     JSObject *proto;
     int offset;
+    Boxed *priv;
+    Boxed *proto_priv;
 
     if (!struct_is_simple ((GIStructInfo *)interface_info)) {
         gjs_throw(context, "Reading field %s.%s is not supported",
@@ -649,28 +578,35 @@ get_nested_interface_object (JSContext   *context,
     }
 
     proto = gjs_lookup_boxed_prototype(context, (GIBoxedInfo*) interface_info);
+    proto_priv = priv_from_js(context, proto);
 
     offset = g_field_info_get_offset (field_info);
-    unthreadsafe_template_for_constructor.info = (GIBoxedInfo*) interface_info;
-    unthreadsafe_template_for_constructor.gboxed = ((char *)parent_priv->gboxed) + offset;
 
-    /* Rooting the object here is a little paranoid; the JSObject has to be kept
-     * alive anyways by our caller; so this would matter only if there was an
-     * aggressive GC that moved rooted objects */
-    JS_AddValueRoot(context, &unthreadsafe_template_for_constructor.parent_jsval);
-    unthreadsafe_template_for_constructor.parent_jsval = OBJECT_TO_JSVAL(parent_obj);
+    obj = JS_NewObjectWithGivenProto(context,
+                                     JS_GET_CLASS(context, proto), proto,
+                                     gjs_get_import_global (context));
 
-    obj = gjs_construct_object_dynamic(context, proto,
-                                       0, NULL);
-
-    JS_RemoveValueRoot(context, &unthreadsafe_template_for_constructor.parent_jsval);
-
-    if (obj != NULL) {
-        *value = OBJECT_TO_JSVAL(obj);
-        return JS_TRUE;
-    } else {
+    if (obj == NULL)
         return JS_FALSE;
-    }
+
+    priv = g_slice_new0(Boxed);
+    JS_SetPrivate(context, obj, priv);
+    priv->info = (GIBoxedInfo*) interface_info;
+    g_base_info_ref( (GIBaseInfo*) priv->info);
+    priv->can_allocate_directly = proto_priv->can_allocate_directly;
+
+    /* A structure nested inside a parent object; doesn't have an independent allocation */
+    priv->gboxed = ((char *)parent_priv->gboxed) + offset;
+    priv->not_owning_gboxed = TRUE;
+
+    /* We never actually read the reserved slot, but we put the parent object
+     * into it to hold onto the parent object.
+     */
+    JS_SetReservedSlot(context, obj, 0,
+                       OBJECT_TO_JSVAL (parent_obj));
+
+    *value = OBJECT_TO_JSVAL(obj);
+    return JS_TRUE;
 }
 
 static JSBool
@@ -1258,7 +1194,10 @@ gjs_boxed_from_c_struct(JSContext             *context,
                         void                  *gboxed,
                         GjsBoxedCreationFlags  flags)
 {
+    JSObject *obj;
     JSObject *proto;
+    Boxed *priv;
+    Boxed *proto_priv;
 
     if (gboxed == NULL)
         return NULL;
@@ -1268,15 +1207,45 @@ gjs_boxed_from_c_struct(JSContext             *context,
                       g_base_info_get_name((GIBaseInfo *)info), gboxed);
 
     proto = gjs_lookup_boxed_prototype(context, info);
+    proto_priv = priv_from_js(context, proto);
 
-    /* can't come up with a better approach... */
-    unthreadsafe_template_for_constructor.info = info;
-    unthreadsafe_template_for_constructor.gboxed = gboxed;
-    unthreadsafe_template_for_constructor.parent_jsval = JSVAL_NULL;
-    unthreadsafe_template_for_constructor.no_copy = (flags & GJS_BOXED_CREATION_NO_COPY) != 0;
+    obj = JS_NewObjectWithGivenProto(context,
+                                     JS_GET_CLASS(context, proto), proto,
+                                     gjs_get_import_global (context));
 
-    return gjs_construct_object_dynamic(context, proto,
-                                        0, NULL);
+    priv = g_slice_new0(Boxed);
+    JS_SetPrivate(context, obj, priv);
+    priv->info = info;
+    g_base_info_ref( (GIBaseInfo*) priv->info);
+    priv->can_allocate_directly = proto_priv->can_allocate_directly;
+
+    if ((flags & GJS_BOXED_CREATION_NO_COPY) != 0) {
+        /* we need to create a JS Boxed which references the
+         * original C struct, not a copy of it. Used for
+         * G_SIGNAL_TYPE_STATIC_SCOPE
+         */
+        priv->gboxed = gboxed;
+        priv->not_owning_gboxed = TRUE;
+    } else {
+        GType gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) info);
+
+        if (gtype != G_TYPE_NONE && g_type_is_a (gtype, G_TYPE_BOXED)) {
+            priv->gboxed = g_boxed_copy(gtype, gboxed);
+        } else if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
+            priv->gboxed = g_variant_ref_sink (gboxed);
+        } else if (priv->can_allocate_directly) {
+            if (!boxed_new_direct(context, obj, priv))
+                return JS_FALSE;
+
+            memcpy(priv->gboxed, gboxed, g_struct_info_get_size (priv->info));
+        } else {
+            gjs_throw(context,
+                      "Can't create a Javascript object for %s; no way to copy",
+                      g_base_info_get_name( (GIBaseInfo*) priv->info));
+        }
+    }
+
+    return obj;
 }
 
 void*

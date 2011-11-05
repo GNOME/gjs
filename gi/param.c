@@ -38,8 +38,6 @@ typedef struct {
     GParamSpec *gparam; /* NULL if we are the prototype and not an instance */
 } Param;
 
-static Param unthreadsafe_template_for_constructor = { NULL };
-
 static struct JSClass gjs_param_class;
 
 GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Param, gjs_param_class)
@@ -143,60 +141,9 @@ param_new_resolve(JSContext *context,
 GJS_NATIVE_CONSTRUCTOR_DECLARE(param)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(param)
-    Param *priv;
-    Param *proto_priv;
-    JSObject *proto;
-
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(param);
-
-    (void) argv;
-
-    priv = g_slice_new0(Param);
-
     GJS_INC_COUNTER(param);
-
-    g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(context, object, priv);
-
-    gjs_debug_lifecycle(GJS_DEBUG_GPARAM,
-                        "param constructor, obj %p priv %p", object, priv);
-
-    proto = JS_GetPrototype(context, object);
-    gjs_debug_lifecycle(GJS_DEBUG_GPARAM, "param instance __proto__ is %p", proto);
-
-    gjs_debug_lifecycle(GJS_DEBUG_GPARAM,
-                        "param instance constructing proto %d, obj class %s proto class %s",
-                        is_proto, obj_class->name, proto_class->name);
-
-    /* If we're the prototype, then post-construct we'll fill in priv->info.
-     * If we are not the prototype, though, then we'll get ->info from the
-     * prototype and then create a GObject if we don't have one already.
-     */
-    proto_priv = priv_from_js(context, proto);
-    if (proto_priv == NULL) {
-        gjs_debug(GJS_DEBUG_GPARAM,
-                  "Bad prototype set on object? Must match JSClass of object. JS error should have been reported.");
-        return JS_FALSE;
-    }
-
-    if (unthreadsafe_template_for_constructor.gparam == NULL) {
-        /* To construct these we'd have to wrap all the annoying subclasses.
-         * Since we only bind ParamSpec for purposes of the GObject::notify signal,
-         * there isn't much point.
-         */
-        gjs_throw(context, "Unable to construct ParamSpec, can only wrap an existing one");
-        return JS_FALSE;
-    } else {
-        priv->gparam = g_param_spec_ref(unthreadsafe_template_for_constructor.gparam);
-        unthreadsafe_template_for_constructor.gparam = NULL;
-    }
-
-    gjs_debug(GJS_DEBUG_GPARAM,
-              "JSObject created with param instance %p type %s",
-              priv->gparam, g_type_name(G_TYPE_FROM_INSTANCE((GTypeInstance*) priv->gparam)));
-
     GJS_NATIVE_CONSTRUCTOR_FINISH(param);
-
     return JS_TRUE;
 }
 
@@ -358,6 +305,7 @@ gjs_param_from_g_param(JSContext    *context,
 {
     JSObject *obj;
     JSObject *proto;
+    Param *priv;
 
     if (gparam == NULL)
         return NULL;
@@ -370,11 +318,18 @@ gjs_param_from_g_param(JSContext    *context,
 
     proto = gjs_lookup_param_prototype(context);
 
-    /* can't come up with a better approach... */
-    unthreadsafe_template_for_constructor.gparam = gparam;
+    obj = JS_NewObjectWithGivenProto(context,
+                                     JS_GET_CLASS(context, proto), proto,
+                                     gjs_get_import_global (context));
 
-    obj = gjs_construct_object_dynamic(context, proto,
-                                       0, NULL);
+    priv = g_slice_new0(Param);
+    JS_SetPrivate(context, obj, priv);
+    priv->gparam = gparam;
+    g_param_spec_ref (gparam);
+
+    gjs_debug(GJS_DEBUG_GPARAM,
+              "JSObject created with param instance %p type %s",
+              priv->gparam, g_type_name(G_TYPE_FROM_INSTANCE((GTypeInstance*) priv->gparam)));
 
     return obj;
 }

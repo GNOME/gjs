@@ -46,8 +46,6 @@ typedef struct {
     void *gboxed; /* NULL if we are the prototype and not an instance */
 } Union;
 
-static Union unthreadsafe_template_for_constructor = { NULL, NULL };
-
 static struct JSClass gjs_union_class;
 
 GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Union, gjs_union_class)
@@ -195,6 +193,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
     Union *proto_priv;
     JSObject *proto;
     GType gtype;
+    void *gboxed;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(union);
 
@@ -234,40 +233,22 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
 
     gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
 
-    /* Since gobject-introspection is always creating new info
-     * objects, == is not meaningful on them, only comparison of
-     * their names. We prefer to use the info that is already ref'd
-     * by the prototype for the class.
+    /* union_new happens to be implemented by calling
+     * gjs_invoke_c_function(), which returns a jsval.
+     * The returned "gboxed" here is owned by that jsval,
+     * not by us.
      */
-    g_assert(unthreadsafe_template_for_constructor.info == NULL ||
-             strcmp(g_base_info_get_name( (GIBaseInfo*) priv->info),
-                    g_base_info_get_name( (GIBaseInfo*) unthreadsafe_template_for_constructor.info))
-             == 0);
-    unthreadsafe_template_for_constructor.info = NULL;
+    gboxed = union_new(context, object, priv->info);
 
-    if (unthreadsafe_template_for_constructor.gboxed == NULL) {
-        void *gboxed;
-
-        /* union_new happens to be implemented by calling
-         * gjs_invoke_c_function(), which returns a jsval.
-         * The returned "gboxed" here is owned by that jsval,
-         * not by us.
-         */
-        gboxed = union_new(context, object, priv->info);
-
-        if (gboxed == NULL) {
-            return JS_FALSE;
-        }
-
-        /* Because "gboxed" is owned by a jsval and will
-         * be garbage colleced, we make a copy here to be
-         * owned by us.
-         */
-        priv->gboxed = g_boxed_copy(gtype, gboxed);
-    } else {
-        priv->gboxed = g_boxed_copy(gtype, unthreadsafe_template_for_constructor.gboxed);
-        unthreadsafe_template_for_constructor.gboxed = NULL;
+    if (gboxed == NULL) {
+        return JS_FALSE;
     }
+
+    /* Because "gboxed" is owned by a jsval and will
+     * be garbage collected, we make a copy here to be
+     * owned by us.
+     */
+    priv->gboxed = g_boxed_copy(gtype, gboxed);
 
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                         "JSObject created with union instance %p type %s",
@@ -507,10 +488,22 @@ gjs_union_from_c_union(JSContext    *context,
                        GIUnionInfo  *info,
                        void         *gboxed)
 {
+    JSObject *obj;
     JSObject *proto;
+    Union *priv;
+    GType gtype;
 
     if (gboxed == NULL)
         return NULL;
+
+    /* For certain unions, we may be able to relax this in the future by
+     * directly allocating union memory, as we do for structures in boxed.c
+     */
+    gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) info);
+    if (gtype == G_TYPE_NONE) {
+        gjs_throw(context, "Unions must currently be registered as boxed types");
+        return NULL;
+    }
 
     gjs_debug_marshal(GJS_DEBUG_GBOXED,
                       "Wrapping union %s %p with JSObject",
@@ -518,12 +511,17 @@ gjs_union_from_c_union(JSContext    *context,
 
     proto = gjs_lookup_union_prototype(context, (GIUnionInfo*) info);
 
-    /* can't come up with a better approach... */
-    unthreadsafe_template_for_constructor.info = (GIUnionInfo*) info;
-    unthreadsafe_template_for_constructor.gboxed = gboxed;
+    obj = JS_NewObjectWithGivenProto(context,
+                                     JS_GET_CLASS(context, proto), proto,
+                                     gjs_get_import_global (context));
 
-    return gjs_construct_object_dynamic(context, proto,
-                                        0, NULL);
+    priv = g_slice_new0(Union);
+    JS_SetPrivate(context, obj, priv);
+    priv->info = info;
+    g_base_info_ref( (GIBaseInfo *) priv->info);
+    priv->gboxed = g_boxed_copy(gtype, gboxed);
+
+    return obj;
 }
 
 void*
