@@ -1669,6 +1669,144 @@ gjs_g_object_from_object(JSContext    *context,
     return priv->gobj;
 }
 
+static void
+find_vfunc_info (JSContext *context,
+                 GType implementor_gtype,
+                 GIBaseInfo *vfunc_info,
+                 gchar *vfunc_name,
+                 gpointer *implementor_vtable_ret,
+                 GIFieldInfo **field_info_ret)
+{
+    GType ancestor_gtype;
+    int length, i;
+    GIBaseInfo *ancestor_info;
+    GIStructInfo *struct_info;
+    gpointer implementor_class;
+    gboolean is_interface;
+
+    *field_info_ret = NULL;
+    *implementor_vtable_ret = NULL;
+
+    ancestor_info = g_base_info_get_container(vfunc_info);
+    ancestor_gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)ancestor_info);
+
+    is_interface = g_base_info_get_type(ancestor_info) == GI_INFO_TYPE_INTERFACE;
+
+    implementor_class = g_type_class_ref(implementor_gtype);
+    if (is_interface) {
+        GTypeInstance *implementor_iface_class;
+        implementor_iface_class = g_type_interface_peek(implementor_class,
+                                                        ancestor_gtype);
+        if (implementor_iface_class == NULL) {
+            g_type_class_unref(implementor_class);
+            gjs_throw (context, "Couldn't find GType of implementor of interface %s.",
+                       g_type_name(ancestor_gtype));
+            return;
+        }
+
+        *implementor_vtable_ret = implementor_iface_class;
+
+        struct_info = g_interface_info_get_iface_struct((GIInterfaceInfo*)ancestor_info);
+    } else {
+        struct_info = g_object_info_get_class_struct((GIObjectInfo*)ancestor_info);
+        *implementor_vtable_ret = implementor_class;
+    }
+
+    g_type_class_unref(implementor_class);
+
+    length = g_struct_info_get_n_fields(struct_info);
+    for (i = 0; i < length; i++) {
+        GIFieldInfo *field_info;
+        GITypeInfo *type_info;
+
+        field_info = g_struct_info_get_field(struct_info, i);
+
+        if (strcmp(g_base_info_get_name((GIBaseInfo*)field_info), vfunc_name) != 0) {
+            g_base_info_unref(field_info);
+            continue;
+        }
+
+        type_info = g_field_info_get_type(field_info);
+        if (g_type_info_get_tag(type_info) != GI_TYPE_TAG_INTERFACE) {
+            /* We have a field with the same name, but it's not a callback.
+             * There's no hope of being another field with a correct name,
+             * so just abort early. */
+            g_base_info_unref(type_info);
+            g_base_info_unref(field_info);
+            break;
+        } else {
+            g_base_info_unref(type_info);
+            *field_info_ret = field_info;
+            break;
+        }
+    }
+
+    g_base_info_unref(struct_info);
+}
+
+static JSBool
+gjs_hook_up_vfunc(JSContext *cx,
+                  uintN      argc,
+                  jsval     *vp)
+{
+    jsval *argv = JS_ARGV(cx, vp);
+    gchar *name;
+    JSObject *object;
+    JSObject *function;
+    ObjectInstance *priv;
+    GType gtype;
+    GIObjectInfo *info;
+    GIVFuncInfo *vfunc;
+    gpointer implementor_vtable;
+    GIFieldInfo *field_info;
+
+    if (!gjs_parse_args(cx, "hook_up_vfunc",
+                        "oso", argc, argv,
+                        "object", &object,
+                        "name", &name,
+                        "function", &function))
+        return JS_FALSE;
+
+    priv = priv_from_js(cx, object);
+    gtype = priv->gtype;
+    info = priv->info;
+
+    JS_SET_RVAL(cx, vp, JSVAL_VOID);
+
+    vfunc = find_vfunc_on_parent(info, name);
+
+    find_vfunc_info(cx, gtype, vfunc, name, &implementor_vtable, &field_info);
+    if (field_info != NULL) {
+        GITypeInfo *type_info;
+        GIBaseInfo *interface_info;
+        GICallbackInfo *callback_info;
+        gint offset;
+        gpointer method_ptr;
+        GjsCallbackTrampoline *trampoline;
+
+        type_info = g_field_info_get_type(field_info);
+
+        interface_info = g_type_info_get_interface(type_info);
+
+        callback_info = (GICallbackInfo*)interface_info;
+        offset = g_field_info_get_offset(field_info);
+        method_ptr = G_STRUCT_MEMBER_P(implementor_vtable, offset);
+
+        trampoline = gjs_callback_trampoline_new(cx, OBJECT_TO_JSVAL(function), callback_info,
+                                                 GI_SCOPE_TYPE_NOTIFIED, TRUE);
+
+        *((ffi_closure **)method_ptr) = trampoline->closure;
+
+        g_base_info_unref(interface_info);
+        g_base_info_unref(type_info);
+        g_base_info_unref(field_info);
+    }
+
+    g_base_info_unref(vfunc);
+    g_free(name);
+    return JS_TRUE;
+}
+
 static JSBool
 gjs_register_type(JSContext *cx,
                   uintN      argc,
@@ -1742,6 +1880,12 @@ gjs_define_stuff(JSContext *context,
     if (!JS_DefineFunction(context, module_obj,
                            "register_type",
                            (JSNative)gjs_register_type,
+                           3, GJS_MODULE_PROP_FLAGS))
+        return JS_FALSE;
+
+    if (!JS_DefineFunction(context, module_obj,
+                           "hook_up_vfunc",
+                           (JSNative)gjs_hook_up_vfunc,
                            3, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 

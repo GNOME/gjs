@@ -273,4 +273,38 @@ function testCallbacks() {
     assertEquals(50, c);
 }
 
+const VFuncTester = new Lang.Class({
+    Name: 'VFuncTester',
+    Extends: GIMarshallingTests.Object,
+
+    vfunc_vfunc_return_value_only: callback_return_value_only,
+    vfunc_vfunc_one_out_parameter: callback_one_out_parameter,
+    vfunc_vfunc_multiple_out_parameters: callback_multiple_out_parameters,
+    vfunc_vfunc_return_value_and_one_out_parameter: callback_return_value_and_one_out_parameter,
+    vfunc_vfunc_return_value_and_multiple_out_parameters: callback_return_value_and_multiple_out_parameters
+});
+
+function testVFuncs() {
+    let tester = new VFuncTester();
+    let a, b, c;
+    a = tester.vfunc_return_value_only();
+    assertEquals(42, a);
+
+    a = tester.vfunc_one_out_parameter();
+    assertEquals(43, a);
+
+    [a, b] = tester.vfunc_multiple_out_parameters();
+    assertEquals(44, a);
+    assertEquals(45, b);
+
+    [a, b] = tester.vfunc_return_value_and_one_out_parameter();
+    assertEquals(46, a);
+    assertEquals(47, b);
+
+    [a, b, c] = tester.vfunc_return_value_and_multiple_out_parameters();
+    assertEquals(48, a);
+    assertEquals(49, b);
+    assertEquals(50, c);
+}
+
 gjstestRun();
