@@ -620,10 +620,6 @@ init_object_private (JSContext *context,
     proto = JS_GetPrototype(context, object);
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "obj instance __proto__ is %p", proto);
 
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                        "obj instance constructing, obj class %s proto class %s",
-                        obj_class->name, proto_class->name);
-
     proto_priv = priv_from_js(context, proto);
     if (proto_priv == NULL) {
         gjs_debug(GJS_DEBUG_GOBJECT,
