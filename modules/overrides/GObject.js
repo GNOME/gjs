@@ -19,7 +19,40 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
+const Lang = imports.lang;
+const Gi = imports._gi;
+
 let GObject;
+
+const GObjectMeta = new Lang.Class({
+    Name: 'GObjectClass',
+    Extends: Lang.Class,
+
+    _init: function(params) {
+        if (!params.Extends)
+            params.Extends = GObject.Object;
+
+        if (!this._isValidClass(params.Extends))
+            throw new TypeError('GObject.Class used with invalid base class (is ' + params.Extends.prototype + ')');
+
+        this.parent(params);
+
+        Gi.register_type(params.Extends.prototype, this.prototype, params.Name);
+    },
+
+    _isValidClass: function(klass) {
+        let proto = klass.prototype;
+
+        if (!proto)
+            return false;
+
+        // If proto == GObject.Object.prototype, then
+        // proto.__proto__ is Object, so "proto instanceof GObject.Object"
+        // will return false.
+        return proto == GObject.Object.prototype ||
+            proto instanceof GObject.Object;
+    }
+});
 
 function _init() {
 
@@ -117,4 +150,13 @@ function _init() {
                                                nick, blurb, flags, default_value);
     };
 
+    this.Class = GObjectMeta;
+    this.Object.prototype.__metaclass__ = this.Class;
+
+    // For compatibility with Lang.Class... we need a _construct
+    // or the Lang.Class constructor will fail.
+    this.Object.prototype._construct = function() {
+        this._init.apply(this, arguments);
+        return this;
+    };
 }

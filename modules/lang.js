@@ -21,6 +21,8 @@
 
 // Utilities that are "meta-language" things like manipulating object props
 
+const Gi = imports._gi;
+
 function countProperties(obj) {
     let count = 0;
     for (let property in obj) {
