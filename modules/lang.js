@@ -178,7 +178,7 @@ function wrapFunction(obj, name, meth) {
 
 function Class(params) {
     if (!params.Name) {
-        throw new TypeError("Classes require an explicit 'name' parameter.");
+        throw new TypeError("Classes require an explicit 'Name' parameter.");
     }
     let name = params.Name;
 
