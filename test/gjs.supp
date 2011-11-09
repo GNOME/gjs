@@ -8,6 +8,33 @@
 }
 
 {
+  g_type_add_interface_static malloc
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:g_type_add_interface_static
+  ...
+}
+
+{
+  g_type_add_interface_dynamic malloc
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:g_type_add_interface_dynamic
+  ...
+}
+
+{
+  g_type_class_ref malloc
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:g_type_class_ref
+  ...
+}
+
+{
    g_type_init_with_debug_flags malloc
    Memcheck:Leak
    fun:malloc
