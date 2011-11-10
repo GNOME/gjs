@@ -35,6 +35,15 @@
 }
 
 {
+  g_type_register_dynamic malloc
+  Memcheck:Leak
+  fun:malloc
+  ...
+  fun:g_type_register_dynamic
+  ...
+}
+
+{
    g_type_init_with_debug_flags malloc
    Memcheck:Leak
    fun:malloc
