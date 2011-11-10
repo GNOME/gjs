@@ -105,9 +105,6 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
 }
 
 function _logReply(result, exc) {
-    if (result != null) {
-        log("Ignored reply to dbus method: " + result);
-    }
     if (exc != null) {
         log("Ignored exception from dbus method: " + exc.toString());
     }
