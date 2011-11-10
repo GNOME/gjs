@@ -106,7 +106,7 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
 
 function _logReply(result, exc) {
     if (result != null) {
-        log("Ignored reply to dbus method: " + result.deep_unpack().toSource());
+        log("Ignored reply to dbus method: " + result);
     }
     if (exc != null) {
         log("Ignored exception from dbus method: " + exc.toString());
@@ -137,22 +137,22 @@ function _propertyGetter(name) {
 }
 
 function _propertySetter(value, name, signature) {
-    let variant = new GLib.Variant(signature, value);
-    proxy.set_cached_property(name, variant);
+    let variant = GLib.Variant.new(signature, value);
+    this.set_cached_property(name, variant);
 
     this.call('org.freedesktop.DBus.Properties.Set',
 	      GLib.Variant.new('(ssv)',
-			       this.g_interface_name,
-			       name, variant),
+			       [this.g_interface_name,
+				name, variant]),
 	      Gio.DBusCallFlags.NONE, -1, null,
-	      function(proxy, result) {
+	      Lang.bind(this, function(proxy, result) {
 		  try {
-		      proxy.call_finish(result);
+		      this.call_finish(result);
 		  } catch(e) {
 		      log('Could not set property ' + name + ' on remote object ' +
-			  proxy.g_object_path, '. Error is ' + e.message);
+			  this.g_object_path, '. Error is ' + e.message);
 		  }
-	      });
+	      }));
 }
 
 function _addDBusConvenience() {
