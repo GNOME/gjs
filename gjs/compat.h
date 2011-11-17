@@ -95,12 +95,11 @@ gjs_##name##_constructor(JSContext  *context,           \
  */
 #define GJS_NATIVE_CONSTRUCTOR_PRELUDE(name)                                         \
     {                                                                                \
-        if (!JS_IsConstructing_PossiblyWithGivenThisObject(context, vp, &object)) {  \
+        if (!JS_IsConstructing(context, vp)) {  \
             gjs_throw_constructor_error(context);                                    \
             return JS_FALSE;                                                         \
         }                                                                            \
-        if (object == NULL)                                                          \
-            object = JS_NewObjectForConstructor(context, vp);                        \
+        object = JS_NewObjectForConstructor(context, vp);                            \
         if (object == NULL)                                                          \
             return JS_FALSE;                                                         \
     }
