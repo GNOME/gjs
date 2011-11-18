@@ -933,7 +933,6 @@ release:
     }
 }
 
-#ifdef JSFUN_CONSTRUCTOR
 static JSBool
 function_call(JSContext *context,
               uintN      js_argc,
@@ -942,18 +941,9 @@ function_call(JSContext *context,
     jsval *js_argv = JS_ARGV(context, vp);
     JSObject *object = JS_THIS_OBJECT(context, vp);
     JSObject *callee = JSVAL_TO_OBJECT(JS_CALLEE(context, vp));
-#else
-static JSBool
-function_call(JSContext *context,
-              JSObject  *object, /* "this" object, not the function object */
-              uintN      js_argc,
-              jsval     *js_argv,
-              jsval     *retval)
-{
-    JSObject *callee = JSVAL_TO_OBJECT(JS_ARGV_CALLEE(js_argv));
-#endif
     JSBool success;
     Function *priv;
+    jsval retval;
 
     priv = priv_from_js(context, callee);
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Call callee %p priv %p this obj %p %s", callee, priv,
@@ -964,42 +954,19 @@ function_call(JSContext *context,
         return JS_TRUE; /* we are the prototype, or have the wrong class */
 
 
-#ifdef JSFUN_CONSTRUCTOR
-    {
-        jsval retval;
-        success = gjs_invoke_c_function(context, priv, object, js_argc, js_argv, &retval);
-        if (success)
-            JS_SET_RVAL(context, vp, retval);
-    }
-#else
-    success = gjs_invoke_c_function(context, priv, object, js_argc, js_argv, retval);
-#endif
+    success = gjs_invoke_c_function(context, priv, object, js_argc, js_argv, &retval);
+    if (success)
+        JS_SET_RVAL(context, vp, retval);
+
     return success;
 }
 
-#ifdef JSFUN_CONSTRUCTOR
-static JSBool
-function_constructor(JSContext *context,
-                     uintN      argc,
-                     jsval     *vp)
+GJS_NATIVE_CONSTRUCTOR_DECLARE(function)
 {
-    JSObject *object;
-    if (!JS_IsConstructing_PossiblyWithGivenThisObject(context, vp, &object)) {
-        gjs_throw_constructor_error(context);
-        return JS_FALSE;
-    }
-    if (object == NULL)
-        object = JS_NewObjectForConstructor(context, vp);
-#else
-static JSBool
-function_constructor(JSContext *context,
-                     JSObject  *object,
-                     uintN      argc,
-                     jsval     *argv,
-                     jsval     *retval)
-{
-#endif
+    GJS_NATIVE_CONSTRUCTOR_VARIABLES(function)
     Function *priv;
+
+    GJS_NATIVE_CONSTRUCTOR_PRELUDE(name);
 
     priv = g_slice_new0(Function);
 
@@ -1010,9 +977,8 @@ function_constructor(JSContext *context,
 
     gjs_debug_lifecycle(GJS_DEBUG_GFUNCTION,
                         "function constructor, obj %p priv %p", object, priv);
-#ifdef JSFUN_CONSTRUCTOR
-    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(object));
-#endif
+
+    GJS_NATIVE_CONSTRUCTOR_FINISH(name);
 
     return JS_TRUE;
 }
@@ -1278,7 +1244,7 @@ function_new(JSContext      *context,
                                   * none - just name the prototype like
                                   * Math - rarely correct)
                                   */
-                                 function_constructor,
+                                 gjs_function_constructor,
                                  /* number of constructor args */
                                  0,
                                  /* props of prototype */
