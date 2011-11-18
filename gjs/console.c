@@ -85,6 +85,8 @@ main(int argc, char **argv)
         }
         source_js_version = gjs_context_scan_buffer_for_js_version(script, 1024);
         filename = argv[1];
+        argc--;
+        argv++;
     }
 
     /* If user explicitly specifies a version, use it */
@@ -98,7 +100,7 @@ main(int argc, char **argv)
 
     /* prepare command line arguments */
     if (!gjs_context_define_string_array(js_context, "ARGV",
-                                         argc - 2, (const char**)argv + 2,
+                                         argc - 1, (const char**)argv + 1,
                                          &error)) {
         g_printerr("Failed to defined ARGV: %s", error->message);
         exit(1);
