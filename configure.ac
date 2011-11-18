@@ -92,77 +92,8 @@ m4_define(gobject_required_version, 2.18.0)
 AC_CHECK_HEADERS([malloc.h])
 AC_CHECK_FUNCS(mallinfo)
 
-AC_ARG_WITH([js-package],
-    AS_HELP_STRING([--with-js-package[=@<:@auto/mozjs185/mozilla-js@:>@]],
-                   [Choose JavaScript package: 'mozjs185' (i.e. spidermonkey), 'mozilla-js' (i.e. xulrunner or firefox), or 'auto' (detect automatically)]),
-    [with_js_package=$withval],
-    [with_js_package="auto"])
-
-# First, try separate mozjs185 release
-if test $with_js_package = mozjs185 -o $with_js_package = auto; then
-    AC_MSG_CHECKING([for standalone mozjs185])
-    PKG_CHECK_EXISTS([mozjs185], JS_PACKAGE=mozjs185,)
-    if test x$JS_PACKAGE != x; then
-        FIREFOX_JS_LIBDIR=
-        MOZJS_IS_STANDALONE=yes
-        AC_MSG_RESULT([yes])
-        PKG_CHECK_MODULES(JS, $JS_PACKAGE)
-    else
-        AC_MSG_RESULT([no])
-    fi
-fi
-
-if test $with_js_package = mozilla-js -o $with_js_package = auto; then
-    # If we didn't find mozjs185 (the standalone spidermonkey), look for mozilla-js
-    if test x$JS_PACKAGE = x; then
-        AC_MSG_CHECKING([for mozilla-js 1.9.2])
-        PKG_CHECK_EXISTS([mozilla-js >= 1.9.2], JS_PACKAGE=mozilla-js,)
-        if test x$JS_PACKAGE != x; then
-            AC_MSG_RESULT([yes])
-        else
-            AC_MSG_ERROR([Could not find mozilla-js 1.9.2])
-        fi
-
-        PKG_CHECK_MODULES(JS, $JS_PACKAGE)
-
-        ## some flavors of Firefox .pc only set sdkdir, not libdir
-        FIREFOX_JS_SDKDIR=`$PKG_CONFIG --variable=sdkdir $JS_PACKAGE`
-        FIREFOX_JS_LIBDIR=`$PKG_CONFIG --variable=libdir $JS_PACKAGE`
-
-        ## Ubuntu does not set libdir in mozilla-js.pc
-        if test x"$FIREFOX_JS_LIBDIR" = x; then
-            ## Ubuntu returns xulrunner-devel as the sdkdir, but for the
-            ## libdir we want the runtime location on the target system,
-            ## so can't use -devel.
-            ## The library is in the non-devel directory also.
-            ## Don't ask me why it's in two places.
-            FIREFOX_JS_LIBDIR=`echo "$FIREFOX_JS_SDKDIR" | sed -e 's/-devel//g'`
-            if ! test -d "$FIREFOX_JS_LIBDIR"; then
-                FIREFOX_JS_LIBDIR=
-            fi
-        fi
-
-        if test x"$FIREFOX_JS_LIBDIR" = x; then
-            AC_MSG_ERROR([Could not figure out where the Firefox JavaScript library lives])
-        fi
-    fi
-fi
-
-if test x$JS_PACKAGE = x; then
-    AC_MSG_ERROR([No appropriate JavaScript package found])
-fi
-
-echo "Using JS_PACKAGE: $JS_PACKAGE"
 echo "Using JS_CFLAGS: $JS_CFLAGS"
 echo "Using JS_LIBS: $JS_LIBS"
-
-AC_SUBST(JS_PACKAGE)
-AM_CONDITIONAL(HAVE_FIREFOX_JS_LIBDIR, test x$FIREFOX_JS_LIBDIR != x)
-if test x$FIREFOX_JS_LIBDIR != x; then
-   GJS_INTERNALS_LIBS="-Wl,--rpath=$FIREFOX_JS_LIBDIR"
-fi
-AC_SUBST(GJS_INTERNALS_LIBS)
-AC_SUBST(FIREFOX_JS_LIBDIR)
 
 saved_CFLAGS=$CFLAGS
 saved_LIBS=$LIBS
@@ -182,10 +113,6 @@ AC_CHECK_FUNC([JS_SetScriptStackQuota], AC_DEFINE([HAVE_JS_SETSCRIPTSTACKQUOTA],
 AC_CHECK_FUNC([JS_ClearNewbornRoots], AC_DEFINE([HAVE_JS_CLEARNEWBORNROOTS], [1], [Define if we have JS_ClearNewbornRoots]),)
 CFLAGS=$saved_CFLAGS
 LIBS=$saved_LIBS
-
-if test x$MOZJS_IS_STANDALONE = xyes || `$PKG_CONFIG --exists $JS_PACKAGE '>=' 2`; then
-  AC_DEFINE(HAVE_MOZJS_2, [1], [Define if mozilla-js is at least 2])
-fi
 
 AC_MSG_CHECKING([whether JSLocaleToUnicode takes a const char*])
 save_CFLAGS="$CFLAGS"
@@ -233,7 +160,7 @@ CFLAGS="$save_CFLAGS"
 
 GOBJECT_INTROSPECTION_REQUIRE([1.29.16])
 
-common_packages="glib-2.0 >= glib_required_version gobject-2.0 >= gobject_required_version $JS_PACKAGE"
+common_packages="glib-2.0 >= glib_required_version gobject-2.0 >= gobject_required_version mozjs185"
 gjs_packages="gmodule-2.0 gthread-2.0 gobject-introspection-1.0 >= 0.10.1 $common_packages"
 gjs_cairo_gobject_packages="cairo-gobject $common_packages"
 gjs_cairo_packages="cairo $common_packages"

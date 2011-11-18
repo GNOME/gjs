@@ -91,9 +91,6 @@ libgjs_la_LDFLAGS = 		\
 	-export-symbols-regex "^[^_]" -version-info 0:0:0	\
 	-no-undefined \
 	-rdynamic
-if HAVE_FIREFOX_JS_LIBDIR
-libgjs_la_LDFLAGS += -R $(FIREFOX_JS_LIBDIR) 
-endif
 libgjs_la_LIBADD = 		\
 	$(GJS_LIBS)
 
@@ -180,9 +177,6 @@ gjs_console_LDADD =		\
 	$(GOBJECT_LIBS)		\
 	libgjs.la
 gjs_console_LDFLAGS = -rdynamic
-if HAVE_FIREFOX_JS_LIBDIR
-gjs_console_LDFLAGS += -R $(FIREFOX_JS_LIBDIR)
-endif
 gjs_console_SOURCES = gjs/console.c
 
 install-exec-hook:
