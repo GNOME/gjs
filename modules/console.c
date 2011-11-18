@@ -161,11 +161,7 @@ gjs_console_interact(JSContext *context,
 {
     JSObject *object = JS_THIS_OBJECT(context, vp);
     gboolean eof = FALSE;
-#ifdef HAVE_JS_DESTROYSCRIPT
-    JSScript *script = NULL;
-#else
     JSObject *script = NULL;
-#endif
     jsval result;
     JSString *str;
     GString *buffer = NULL;
@@ -199,14 +195,10 @@ gjs_console_interact(JSContext *context,
             g_string_append(buffer, temp_buf);
             g_free(temp_buf);
             lineno++;
-#ifdef HAVE_JS_DECODEUTF8
-        } while (!JS_BufferIsCompilableUnit(context, JS_TRUE, object, buffer->str, buffer->len));
-#else
         /* Note in this case, we are trying to parse the buffer as
          * ISO-8859-1 which is broken for non-ASCII.
          */
         } while (!JS_BufferIsCompilableUnit(context, object, buffer->str, buffer->len));
-#endif
 
         if ((u16_buffer = g_utf8_to_utf16 (buffer->str, buffer->len, NULL, &u16_buffer_len, &error)) == NULL) {
             g_printerr ("%s\n", error->message);
@@ -240,10 +232,6 @@ gjs_console_interact(JSContext *context,
         }
 
  next:
-#ifdef HAVE_JS_DESTROYSCRIPT
-        if (script)
-            JS_DestroyScript(context, script);
-#endif
         g_string_free(buffer, TRUE);
     } while (!eof);
 

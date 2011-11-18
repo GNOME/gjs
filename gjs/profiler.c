@@ -134,6 +134,7 @@ gjs_profile_function_key_from_js(JSContext             *cx,
 {
     JSScript *script;
     JSFunction *function;
+    JSString *function_name;
 
     /* We're not using the JSScript or JSFunction as the key since the script
      * could be unloaded and addresses reused.
@@ -153,17 +154,11 @@ gjs_profile_function_key_from_js(JSContext             *cx,
      * (or other object with a 'call' method) and would be good to somehow
      * figure out the name of the called function.
      */
-#ifdef HAVE_JS_GETFUNCTIONNAME
-    key->function_name = g_strdup(function != NULL ? JS_GetFunctionName(function) : "(unknown)");
-#else
-    {
-        JSString *function_name = JS_GetFunctionId(function);
-        if (function_name)
-            key->function_name = gjs_string_get_ascii(cx, STRING_TO_JSVAL(function_name));
-        else
-            key->function_name = g_strdup("(unknown)");
-    }
-#endif
+    function_name = JS_GetFunctionId(function);
+    if (function_name)
+        key->function_name = gjs_string_get_ascii(cx, STRING_TO_JSVAL(function_name));
+    else
+        key->function_name = g_strdup("(unknown)");
 
     g_assert(key->filename != NULL);
     g_assert(key->function_name != NULL);

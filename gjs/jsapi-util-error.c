@@ -205,7 +205,6 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
     JSContext *context;
     jsval exc, value, previous;
     char *s = NULL;
-    JSString *str;
     int strcmp_result;
 
     _gjs_unit_test_fixture_begin(&fixture);
@@ -226,19 +225,8 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
                    &value);
 
     g_assert(JSVAL_IS_STRING(value));
-    str = JSVAL_TO_STRING(value);
 
-#ifdef HAVE_JS_GETSTRINGBYTES
-    /* JS_GetStringBytes() is broken for non-ASCII but that's OK here */
-    s = g_strdup(JS_GetStringBytes(str));
-#else
-    size_t len = JS_GetStringEncodingLength(context, str);
-    if (len != (size_t)(-1)) {
-        s = g_malloc((len + 1) * sizeof(char));
-        JS_EncodeStringToBuffer(str, s, len);
-        s[len] = '\0';
-    }
-#endif
+    gjs_string_get_binary_data (context, value, &s, NULL);
     g_assert(s != NULL);
     strcmp_result = strcmp(s, "This is an exception 42");
     free(s);

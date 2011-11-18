@@ -38,35 +38,6 @@ G_BEGIN_DECLS
  * See https://bugzilla.gnome.org/show_bug.cgi?id=622896 for some initial discussion.
  */
 
-/* The old JS_AddRoot accepted anything via void *, new
- * api is stricter.
- * Upstream commit 2fc2a12a4565, Spidermonkey >= Jun 07 2010
- */
-#ifndef JS_TYPED_ROOTING_API
-#define JS_AddValueRoot JS_AddRoot
-#define JS_AddObjectRoot JS_AddRoot
-#define JS_AddStringRoot JS_AddRoot
-#define JS_AddGCThingRoot JS_AddRoot
-#define JS_RemoveValueRoot JS_RemoveRoot
-#define JS_RemoveObjectRoot JS_RemoveRoot
-#define JS_RemoveStringRoot JS_RemoveRoot
-#define JS_RemoveGCThingRoot JS_RemoveRoot
-#endif
-
-/* commit 5ad4532aa996, Spidermonkey > Jun 17 2010
- * This one is complex; jsid appears to be explicitly
- * different from JSVAL now.  If we're on an old xulrunner,
- * define JSID_IS_VOID in a compatible way.
- */
-#ifndef JSID_VOID
-#define JSID_VOID JSVAL_VOID
-#define JSID_IS_VOID(id) (id == JSVAL_VOID)
-#define INT_TO_JSID(i) ((jsid) INT_TO_JSVAL(i))
-#endif
-
-/* commit 66c8ad02543b, Spidermonkey > Aug 16 2010
- * "Slow natives" */
-#ifdef JSFUN_CONSTRUCTOR
 /* All functions are "fast", so define this to a no-op */
 #define JSFUN_FAST_NATIVE 0
 
@@ -112,35 +83,6 @@ gjs_##name##_constructor(JSContext  *context,           \
  */
 #define GJS_NATIVE_CONSTRUCTOR_FINISH(name)             \
     JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(object));
-#else
-
-#define GJS_NATIVE_CONSTRUCTOR_DECLARE(name)            \
-static JSBool                                           \
-gjs_##name##_constructor(JSContext *context,            \
-                         JSObject  *object,             \
-                         uintN      argc,               \
-                         jsval     *argv,               \
-                         jsval     *retval)
-
-#define GJS_NATIVE_CONSTRUCTOR_VARIABLES(name)
-
-#define GJS_NATIVE_CONSTRUCTOR_PRELUDE(name)            \
-    if (!JS_IsConstructing(context)) {                  \
-        gjs_throw_constructor_error(context);           \
-        return JS_FALSE;                                \
-    }
-
-#define GJS_NATIVE_CONSTRUCTOR_FINISH(name)
-
-#endif
-
-#ifndef HAVE_JS_STRICTPROPERTYSTUB
-#define JS_StrictPropertyStub JS_PropertyStub
-#endif
-
-#ifndef HAVE_JS_GETGLOBALFORSCOPECHAIN
-#define JS_GetGlobalForScopeChain JS_GetScopeChain
-#endif
 
 G_END_DECLS
 

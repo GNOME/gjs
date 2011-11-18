@@ -95,11 +95,7 @@ format_frame(JSContext* cx, JSStackFrame* fp,
 
     (void)JS_EnterLocalRootScope(cx);
 
-#ifdef HAVE_JS_ISSCRIPTFRAME
     if (!JS_IsScriptFrame(cx, fp)) {
-#else
-    if (JS_IsNativeFrame(cx, fp)) {
-#endif
         g_string_append_printf(buf, "%d [native frame]\n", num);
         goto out;
     }
@@ -114,13 +110,9 @@ format_frame(JSContext* cx, JSStackFrame* fp,
         lineno =  (guint32) JS_PCToLineNumber(cx, script, pc);
         fun = JS_GetFrameFunction(cx, fp);
         if (fun) {
-#ifdef HAVE_JS_GETFUNCTIONNAME
-	    funname_str = g_strdup(JS_GetFunctionName(fun));
-#else
 	    JSString* funname = JS_GetFunctionId(fun);
             if (funname)
                 funname_str = gjs_string_get_ascii(cx, STRING_TO_JSVAL(funname));
-#endif
 	}
 
         call_obj = JS_GetFrameCallObject(cx, fp);

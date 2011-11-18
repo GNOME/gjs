@@ -50,16 +50,11 @@ gjs_try_string_to_utf8 (JSContext  *context,
         return FALSE;
     }
 
-#ifdef HAVE_JS_GETSTRINGCHARS
-    s = JS_GetStringChars(JSVAL_TO_STRING(string_val));
-    s_length = JS_GetStringLength(JSVAL_TO_STRING(string_val));
-#else
     s = JS_GetStringCharsAndLength(context, JSVAL_TO_STRING(string_val), &s_length);
     if (s == NULL) {
         JS_EndRequest(context);
         return FALSE;
     }
-#endif
 
     utf8_string = g_utf16_to_utf8(s,
                                   (glong)s_length,
@@ -259,28 +254,16 @@ char*
 gjs_string_get_ascii(JSContext       *context,
                      jsval            value)
 {
-    JSString *str;
+    char *ascii;
 
     if (!JSVAL_IS_STRING(value)) {
         gjs_throw(context, "A string was expected, but value was not a string");
         return NULL;
     }
 
-    str = JSVAL_TO_STRING(value);
+    gjs_string_get_binary_data(context, value, &ascii, NULL);
 
-#ifdef HAVE_JS_GETSTRINGBYTES
-    return g_strdup(JS_GetStringBytes(str));
-#else
-    char *ascii;
-    size_t len = JS_GetStringEncodingLength(context, str);
-    if (len == (size_t)(-1))
-        return NULL;
-
-    ascii = g_malloc((len + 1) * sizeof(char));
-    JS_EncodeStringToBuffer(str, ascii, len);
-    ascii[len] = '\0';
     return ascii;
-#endif
 }
 
 static JSBool
@@ -316,6 +299,8 @@ gjs_string_get_binary_data(JSContext       *context,
                            gsize           *len_p)
 {
     JSString *str;
+    gsize len;
+    char *bytes;
 
     JS_BeginRequest(context);
 
@@ -333,23 +318,19 @@ gjs_string_get_binary_data(JSContext       *context,
 
     str = JSVAL_TO_STRING(value);
 
-#ifdef HAVE_JS_GETSTRINGBYTES
-    const char *js_data = JS_GetStringBytes(str);
-
-    /* GetStringLength returns number of 16-bit jschar;
-     * we stored binary data as 1 byte per jschar
-     */
-    *len_p = JS_GetStringLength(str);
-    *data_p = g_memdup(js_data, *len_p);
-#else
-    *len_p = JS_GetStringEncodingLength(context, str);
-    if (*len_p == (gsize)(-1))
+    len = JS_GetStringEncodingLength(context, str);
+    if (len == (gsize)(-1))
         return JS_FALSE;
 
-    *data_p = g_malloc((*len_p + 1) * sizeof(char));
-    JS_EncodeStringToBuffer(str, *data_p, *len_p);
-    (*data_p)[*len_p] = '\0';
-#endif
+    if (data_p) {
+        bytes = g_malloc((len + 1) * sizeof(char));
+        JS_EncodeStringToBuffer(str, bytes, len);
+        bytes[len] = '\0';
+        *data_p = bytes;
+    }
+
+    if (len_p)
+        *len_p = len;
 
     JS_EndRequest(context);
 
@@ -429,14 +410,10 @@ gjs_string_get_uint16_data(JSContext       *context,
         goto out;
     }
 
-#ifdef HAVE_JS_GETSTRINGCHARS
-    js_data = JS_GetStringChars(JSVAL_TO_STRING(value));
-    *len_p = JS_GetStringLength(JSVAL_TO_STRING(value));
-#else
     js_data = JS_GetStringCharsAndLength(context, JSVAL_TO_STRING(value), len_p);
     if (js_data == NULL)
         goto out;
-#endif
+
     *data_p = g_memdup(js_data, sizeof(*js_data)*(*len_p));
 
     retval = JS_TRUE;
@@ -462,24 +439,12 @@ gjs_get_string_id (JSContext       *context,
                    char           **name_p)
 {
     jsval id_val;
-    JSString *str;
 
     if (!JS_IdToValue(context, id, &id_val))
         return JS_FALSE;
 
     if (JSVAL_IS_STRING(id_val)) {
-        str = JSVAL_TO_STRING(id_val);
-#ifdef HAVE_JS_GETSTRINGBYTES
-        *name_p = g_strdup(JS_GetStringBytes(str));
-#else
-        size_t len = JS_GetStringEncodingLength(context, str);
-        if (len == (size_t)(-1))
-            return JS_FALSE;
-
-        *name_p = g_malloc((len + 1) * sizeof(char));
-        JS_EncodeStringToBuffer(str, *name_p, len);
-        (*name_p)[len] = '\0';
-#endif
+        gjs_string_get_binary_data(context, id_val, name_p, NULL);
         return JS_TRUE;
     } else {
         *name_p = NULL;

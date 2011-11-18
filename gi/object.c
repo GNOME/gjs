@@ -182,9 +182,7 @@ static JSBool
 object_instance_set_prop(JSContext *context,
                          JSObject  *obj,
                          jsid       id,
-#ifdef HAVE_JS_STRICTPROPERTYSTUB
                          JSBool     strict,
-#endif
                          jsval     *value_p)
 {
     ObjectInstance *priv;

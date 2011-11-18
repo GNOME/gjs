@@ -792,9 +792,7 @@ static JSBool
 boxed_field_setter (JSContext *context,
                     JSObject  *obj,
                     jsid       id,
-#ifdef HAVE_JS_STRICTPROPERTYSTUB
                     JSBool     strict,
-#endif
                     jsval     *value)
 {
     Boxed *priv;

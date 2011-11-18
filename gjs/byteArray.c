@@ -45,9 +45,7 @@ static JSBool byte_array_get_prop      (JSContext    *context,
 static JSBool byte_array_set_prop      (JSContext    *context,
                                         JSObject     *obj,
                                         jsid          id,
-#ifdef HAVE_JS_STRICTPROPERTYSTUB
                                         JSBool        strict,
-#endif
                                         jsval        *value_p);
 static JSBool byte_array_new_resolve   (JSContext    *context,
                                         JSObject     *obj,
@@ -240,9 +238,7 @@ static JSBool
 byte_array_length_setter(JSContext *context,
                          JSObject  *obj,
                          jsid       id,
-#ifdef HAVE_JS_STRICTPROPERTYSTUB
                          JSBool     strict,
-#endif
                          jsval     *value_p)
 {
     ByteArrayInstance *priv;
@@ -302,9 +298,7 @@ static JSBool
 byte_array_set_prop(JSContext *context,
                     JSObject  *obj,
                     jsid       id,
-#ifdef HAVE_JS_STRICTPROPERTYSTUB
                     JSBool     strict,
-#endif
                     jsval     *value_p)
 {
     ByteArrayInstance *priv;
@@ -687,14 +681,9 @@ from_string_func(JSContext *context,
         const jschar *u16_chars;
         gsize u16_len;
 
-#ifdef HAVE_JS_GETSTRINGCHARS
-        u16_chars = JS_GetStringChars(JSVAL_TO_STRING(argv[0]));
-        u16_len = JS_GetStringLength(JSVAL_TO_STRING(argv[0]));
-#else
         u16_chars = JS_GetStringCharsAndLength(context, JSVAL_TO_STRING(argv[0]), &u16_len);
         if (u16_chars == NULL)
             goto out;
-#endif
 
         error = NULL;
         encoded = g_convert((char*) u16_chars,

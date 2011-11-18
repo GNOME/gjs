@@ -41,15 +41,10 @@ gjs_lang_seal(JSContext *cx,
         return JS_FALSE;
     if (!target)
         return JS_TRUE;
-#ifdef HAVE_JS_FREEZEOBJECT
     if (deep && (!JS_DeepFreezeObject(cx, target)) )
         return JS_FALSE;
     if (!deep && (!JS_FreezeObject(cx, target)) )
         return JS_FALSE;
-#else
-    if (!JS_SealObject(cx, target, deep))
-        return JS_FALSE;
-#endif
 
     JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(target));
     return JS_TRUE;

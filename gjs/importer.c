@@ -734,9 +734,7 @@ importer_new_enumerate(JSContext  *context,
     ImporterIterator *iter;
 
     switch (enum_op) {
-#ifdef HAVE_MOZJS_2
     case JSENUMERATE_INIT_ALL:
-#endif
     case JSENUMERATE_INIT: {
         Importer *priv;
         JSObject *search_path;

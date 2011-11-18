@@ -255,20 +255,9 @@ gboolean
 gjs_init_context_standard (JSContext       *context)
 {
     JSObject *global;
-#ifdef HAVE_MOZJS_2
-#ifdef HAVE_JS_NEWCOMPARTMENTANDGLOBALOBJECT
     global = JS_NewCompartmentAndGlobalObject(context, &global_class, NULL);
-#else
-    global = JS_NewGlobalObject(context, &global_class);
-#endif /* HAVE_JS_NEWCOMPARTMENTANDGLOBALOBJECT */
     if (global == NULL)
         return FALSE;
-#else
-    global = JS_NewObject(context, &global_class, NULL, NULL);
-    if (global == NULL)
-        return FALSE;
-    JS_SetGlobalObject(context, global);
-#endif /* HAVE_MOZJS_2 */
     if (!JS_InitStandardClasses(context, global))
         return FALSE;
     return TRUE;
@@ -784,12 +773,7 @@ gjs_string_readable (JSContext   *context,
         size_t i, len;
         const jschar *uchars;
 
-#ifdef HAVE_JS_GETSTRINGCHARS
-        uchars = JS_GetStringChars(string);
-        len = JS_GetStringLength(string);
-#else
         uchars = JS_GetStringCharsAndLength(context, string, &len);
-#endif
 
         for (i = 0; i < len; i++) {
             jschar c = uchars[i];
@@ -859,9 +843,6 @@ gjs_value_debug_string(JSContext      *context,
 
     g_assert(str != NULL);
 
-#ifdef HAVE_JS_GETSTRINGBYTES
-    bytes = g_strdup(JS_GetStringBytes(str));
-#else
     size_t len = JS_GetStringEncodingLength(context, str);
     if (len != (size_t)(-1)) {
         bytes = g_malloc((len + 1) * sizeof(char));
@@ -870,7 +851,6 @@ gjs_value_debug_string(JSContext      *context,
     } else {
         bytes = g_strdup("[invalid string]");
     }
-#endif
     JS_EndRequest(context);
 
     debugstr = _gjs_g_utf8_make_valid(bytes);

@@ -311,32 +311,15 @@ gjstest_test_func_gjs_jsapi_util_array(void)
         gjs_rooted_array_append(context, array, value);
     }
 
-#ifdef HAVE_JS_CLEARNEWBORNROOTS
     JS_ClearNewbornRoots(context);
-#endif
     JS_GC(context);
 
     for (i = 0; i < N_ELEMS; i++) {
         char *ascii;
-        JSString *str;
 
         value = gjs_rooted_array_get(context, array, i);
         g_assert(JSVAL_IS_STRING(value));
-        str = JSVAL_TO_STRING(value);
-#ifdef HAVE_JS_GETSTRINGBYTES
-        ascii = g_strdup(JS_GetStringBytes(str));
-#else
-        size_t len = JS_GetStringEncodingLength(context, str);
-        if (len == (size_t)(-1))
-            continue;
-
-        ascii = g_malloc((len + 1) * sizeof(char));
-        JS_EncodeStringToBuffer(str, ascii, len);
-        ascii[len] = '\0';
-#endif
-        /* if the string was freed, hopefully this will fail
-         * even if we didn't crash yet
-         */
+        ascii = gjs_string_get_ascii(context, value);
         g_assert(strcmp(ascii, "abcdefghijk") == 0);
         g_free(ascii);
     }

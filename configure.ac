@@ -95,25 +95,6 @@ AC_CHECK_FUNCS(mallinfo)
 echo "Using JS_CFLAGS: $JS_CFLAGS"
 echo "Using JS_LIBS: $JS_LIBS"
 
-saved_CFLAGS=$CFLAGS
-saved_LIBS=$LIBS
-CFLAGS=$JS_CFLAGS
-LIBS=$JS_LIBS
-AC_CHECK_FUNC([JS_GetStringBytes], AC_DEFINE([HAVE_JS_GETSTRINGBYTES], [1], [Define if we still have JS_GetStringBytes]),)
-AC_CHECK_FUNC([JS_GetFunctionName], AC_DEFINE([HAVE_JS_GETFUNCTIONNAME], [1], [Define if we still have JS_GetFunctionName]),)
-AC_CHECK_FUNC([JS_GetStringChars], AC_DEFINE([HAVE_JS_GETSTRINGCHARS], [1], [Define if we still have JS_GetStringChars]),)
-AC_CHECK_FUNC([JS_StrictPropertyStub], AC_DEFINE([HAVE_JS_STRICTPROPERTYSTUB], [1], [Define if we have JS_StrictPropertyStub]),)
-AC_CHECK_FUNC([JS_GetGlobalForScopeChain], AC_DEFINE([HAVE_JS_GETGLOBALFORSCOPECHAIN], [1], [Define if we have JS_GetGlobalForScopeChain]),)
-AC_CHECK_FUNC([JS_DestroyScript], AC_DEFINE([HAVE_JS_DESTROYSCRIPT], [1], [Define if we still have JS_DestroyScript]),)
-AC_CHECK_FUNC([JS_DecodeUTF8], AC_DEFINE([HAVE_JS_DECODEUTF8], [1], [Define if we have JS_DecodeUTF8]),)
-AC_CHECK_FUNC([JS_FreezeObject], AC_DEFINE([HAVE_JS_FREEZEOBJECT], [1], [Define if we have JS_FreezeObject]),)
-AC_CHECK_FUNC([JS_IsScriptFrame], AC_DEFINE([HAVE_JS_ISSCRIPTFRAME], [1], [Define if we have JS_IsScriptFrame]),)
-AC_CHECK_FUNC([JS_NewCompartmentAndGlobalObject], AC_DEFINE([HAVE_JS_NEWCOMPARTMENTANDGLOBALOBJECT], [1], [Define if we have JS_NewCompartmentAndGlobalObject]),)
-AC_CHECK_FUNC([JS_SetScriptStackQuota], AC_DEFINE([HAVE_JS_SETSCRIPTSTACKQUOTA], [1], [Define if we have JS_SetScriptStackQuota]),)
-AC_CHECK_FUNC([JS_ClearNewbornRoots], AC_DEFINE([HAVE_JS_CLEARNEWBORNROOTS], [1], [Define if we have JS_ClearNewbornRoots]),)
-CFLAGS=$saved_CFLAGS
-LIBS=$saved_LIBS
-
 AC_MSG_CHECKING([whether JSLocaleToUnicode takes a const char*])
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $JS_CFLAGS -Wno-unused -Werror"
