@@ -38,9 +38,6 @@ G_BEGIN_DECLS
  * See https://bugzilla.gnome.org/show_bug.cgi?id=622896 for some initial discussion.
  */
 
-/* All functions are "fast", so define this to a no-op */
-#define JSFUN_FAST_NATIVE 0
-
 /**
  * GJS_NATIVE_CONSTRUCTOR_DECLARE:
  * Prototype a constructor.

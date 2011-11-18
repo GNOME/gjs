@@ -98,8 +98,8 @@ createRGBA_func(JSContext *context,
 }
 
 static JSFunctionSpec gjs_cairo_solid_pattern_proto_funcs[] = {
-    { "createRGB", (JSNative)createRGB_func, 0, JSFUN_FAST_NATIVE },
-    { "createRGBA", (JSNative)createRGBA_func, 0, JSFUN_FAST_NATIVE },
+    { "createRGB", (JSNative)createRGB_func, 0, 0 },
+    { "createRGBA", (JSNative)createRGBA_func, 0, 0 },
     { NULL }
 };
 

@@ -344,37 +344,37 @@ gjs_define_mainloop_stuff(JSContext      *context,
     if (!JS_DefineFunction(context, module_obj,
                            "run",
                            (JSNative)gjs_main_loop_run,
-                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           1, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "quit",
                            (JSNative)gjs_main_loop_quit,
-                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           1, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "idle_add",
                            (JSNative)gjs_idle_add,
-                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           1, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "timeout_add",
                            (JSNative)gjs_timeout_add,
-                           2, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           2, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "timeout_add_seconds",
                            (JSNative)gjs_timeout_add_seconds,
-                           2, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           2, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "source_remove",
                            (JSNative)gjs_source_remove,
-                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           1, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     return JS_TRUE;

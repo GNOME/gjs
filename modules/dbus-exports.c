@@ -543,7 +543,7 @@ invoke_js_async_from_dbus(JSContext   *context,
     /* we will add an argument, the callback */
     callback = JS_NewFunction(context,
                               (JSNative)async_call_callback,
-                              1, JSFUN_FAST_NATIVE,
+                              1, 0,
                               NULL,
                               "" /* anonymous */);
 

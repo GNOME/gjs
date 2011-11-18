@@ -845,13 +845,13 @@ static JSPropertySpec gjs_byte_array_proto_props[] = {
 };
 
 static JSFunctionSpec gjs_byte_array_proto_funcs[] = {
-    { "toString", (JSNative) to_string_func, 0, JSFUN_FAST_NATIVE },
+    { "toString", (JSNative) to_string_func, 0, 0 },
     { NULL }
 };
 
 static JSFunctionSpec gjs_byte_array_module_funcs[] = {
-    { "fromString", (JSNative)from_string_func, 1, JSFUN_FAST_NATIVE },
-    { "fromArray", (JSNative)from_array_func, 1, JSFUN_FAST_NATIVE },
+    { "fromString", (JSNative)from_string_func, 1, 0 },
+    { "fromArray", (JSNative)from_array_func, 1, 0 },
     { NULL }
 };
 

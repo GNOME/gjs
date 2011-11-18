@@ -1709,68 +1709,68 @@ define_bus_proto(JSContext *context,
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "call",
                            (JSNative)gjs_js_dbus_call,
-                           8, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           8, GJS_MODULE_PROP_FLAGS))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "call_async",
                            (JSNative)gjs_js_dbus_call_async,
-                           9, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           9, GJS_MODULE_PROP_FLAGS))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "acquire_name",
                            (JSNative)gjs_js_dbus_acquire_name,
-                           3, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           3, GJS_MODULE_PROP_FLAGS))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "release_name_by_id",
                            (JSNative)gjs_js_dbus_release_name_by_id,
-                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           1, GJS_MODULE_PROP_FLAGS))
         goto out;
 
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "watch_name",
                            (JSNative)gjs_js_dbus_watch_name,
-                           4, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           4, GJS_MODULE_PROP_FLAGS))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "watch_signal",
                            (JSNative)gjs_js_dbus_watch_signal,
-                           5, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           5, GJS_MODULE_PROP_FLAGS))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "unwatch_signal_by_id",
                            (JSNative)gjs_js_dbus_unwatch_signal_by_id,
-                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           1, GJS_MODULE_PROP_FLAGS))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "unwatch_signal",
                            (JSNative)gjs_js_dbus_unwatch_signal,
-                           5, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           5, GJS_MODULE_PROP_FLAGS))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "emit_signal",
                            (JSNative)gjs_js_dbus_emit_signal,
-                           3, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           3, GJS_MODULE_PROP_FLAGS))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "flush",
                            (JSNative)gjs_js_dbus_flush,
-                           0, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           0, GJS_MODULE_PROP_FLAGS))
         goto out;
 
     if (!JS_DefineFunction(context, bus_proto_obj,
                            "start_service",
                            (JSNative)gjs_js_dbus_start_service,
-                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           1, GJS_MODULE_PROP_FLAGS))
         goto out;
 
     /* Add the bus proto object inside the passed in module object */
@@ -1869,41 +1869,41 @@ gjs_js_define_dbus_stuff(JSContext      *context,
     if (!JS_DefineFunction(context, module_obj,
                            "signatureLength",
                            (JSNative)gjs_js_dbus_signature_length,
-                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           1, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineProperty(context, module_obj,
                            "BUS_SESSION",
                            INT_TO_JSVAL(DBUS_BUS_SESSION),
                            NULL, NULL,
-                           GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineProperty(context, module_obj,
                            "BUS_SYSTEM",
                            INT_TO_JSVAL(DBUS_BUS_SYSTEM),
                            NULL, NULL,
-                           GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineProperty(context, module_obj,
                            "BUS_STARTER",
                            INT_TO_JSVAL(DBUS_BUS_STARTER),
                            NULL, NULL,
-                           GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineProperty(context, module_obj,
                            "localMachineID",
                            JSVAL_VOID,
                            gjs_js_dbus_get_machine_id, NULL,
-                           GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "getCurrentMessageContext",
                            (JSNative)gjs_js_dbus_get_current_message_context,
-                           0, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           0, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     /* Define both the session and system objects */

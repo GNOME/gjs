@@ -250,7 +250,7 @@ gjs_define_console_stuff(JSContext *context,
     if (!JS_DefineFunction(context, module_obj,
                            "interact",
                            (JSNative) gjs_console_interact,
-                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           1, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     return JS_TRUE;

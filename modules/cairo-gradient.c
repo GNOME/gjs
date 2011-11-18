@@ -100,8 +100,8 @@ addColorStopRGBA_func(JSContext *context,
 }
 
 static JSFunctionSpec gjs_cairo_gradient_proto_funcs[] = {
-    { "addColorStopRGB", (JSNative)addColorStopRGB_func, 0, JSFUN_FAST_NATIVE },
-    { "addColorStopRGBA", (JSNative)addColorStopRGBA_func, 0, JSFUN_FAST_NATIVE },
+    { "addColorStopRGB", (JSNative)addColorStopRGB_func, 0, 0 },
+    { "addColorStopRGBA", (JSNative)addColorStopRGBA_func, 0, 0 },
     // getColorStopRGB
     // getColorStopRGBA
     { NULL }

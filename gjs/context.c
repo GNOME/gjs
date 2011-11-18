@@ -636,25 +636,25 @@ gjs_context_constructor (GType                  type,
     if (!JS_DefineFunction(js_context->context, js_context->global,
                            "log",
                            (JSNative)gjs_log,
-                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           1, GJS_MODULE_PROP_FLAGS))
         gjs_fatal("Failed to define log function");
 
     if (!JS_DefineFunction(js_context->context, js_context->global,
                            "logError",
                            (JSNative)gjs_log_error,
-                           2, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           2, GJS_MODULE_PROP_FLAGS))
         gjs_fatal("Failed to define logError function");
 
     /* Define global functions called print() and printerr() */
     if (!JS_DefineFunction(js_context->context, js_context->global,
                            "print",
                            (JSNative)gjs_print,
-                           3, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           3, GJS_MODULE_PROP_FLAGS))
         gjs_fatal("Failed to define print function");
     if (!JS_DefineFunction(js_context->context, js_context->global,
                            "printerr",
                            (JSNative)gjs_printerr,
-                           4, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           4, GJS_MODULE_PROP_FLAGS))
         gjs_fatal("Failed to define printerr function");
 
     /* We need to know what the default context is, since it's the context whose

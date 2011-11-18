@@ -82,7 +82,7 @@ getType_func(JSContext *context,
 
 static JSFunctionSpec gjs_cairo_pattern_proto_funcs[] = {
     // getMatrix
-    { "getType", (JSNative)getType_func, 0, JSFUN_FAST_NATIVE },
+    { "getType", (JSNative)getType_func, 0, 0 },
     // setMatrix
     { NULL }
 };

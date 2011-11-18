@@ -196,12 +196,12 @@ getStride_func(JSContext *context,
 }
 
 static JSFunctionSpec gjs_cairo_image_surface_proto_funcs[] = {
-    { "createFromPNG", (JSNative)createFromPNG_func, 0, JSFUN_FAST_NATIVE},
+    { "createFromPNG", (JSNative)createFromPNG_func, 0, 0},
     // getData
-    { "getFormat", (JSNative)getFormat_func, 0, JSFUN_FAST_NATIVE },
-    { "getWidth", (JSNative)getWidth_func, 0, JSFUN_FAST_NATIVE },
-    { "getHeight", (JSNative)getHeight_func, 0, JSFUN_FAST_NATIVE },
-    { "getStride", (JSNative)getStride_func, 0, JSFUN_FAST_NATIVE },
+    { "getFormat", (JSNative)getFormat_func, 0, 0 },
+    { "getWidth", (JSNative)getWidth_func, 0, 0 },
+    { "getHeight", (JSNative)getHeight_func, 0, 0 },
+    { "getStride", (JSNative)getStride_func, 0, 0 },
     { NULL }
 };
 
@@ -233,6 +233,6 @@ gjs_cairo_image_surface_init(JSContext *context, JSObject *module_obj)
     if (!JS_DefineFunction(context, module_obj,
                            "createFromPNG",
                            (JSNative)createFromPNG_func,
-                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           1, GJS_MODULE_PROP_FLAGS))
         return;
 }

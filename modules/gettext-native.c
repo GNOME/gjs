@@ -240,49 +240,49 @@ gjs_define_gettext_stuff(JSContext      *context,
     if (!JS_DefineFunction(context, module_obj,
                            "textdomain",
                            (JSNative)gjs_textdomain,
-                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           1, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "bindtextdomain",
                            (JSNative)gjs_bindtextdomain,
-                           2, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           2, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "gettext",
                            (JSNative)gjs_gettext,
-                           1, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           1, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "dgettext",
                            (JSNative)gjs_dgettext,
-                           2, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           2, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "ngettext",
                            (JSNative)gjs_ngettext,
-                           3, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           3, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "dngettext",
                            (JSNative)gjs_dngettext,
-                           4, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           4, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "pgettext",
                            (JSNative)gjs_pgettext,
-                           2, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           2, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
                            "dpgettext",
                            (JSNative)gjs_dpgettext,
-                           3, GJS_MODULE_PROP_FLAGS | JSFUN_FAST_NATIVE))
+                           3, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     return JS_TRUE;
