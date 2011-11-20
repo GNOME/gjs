@@ -136,6 +136,7 @@ function defineAccessorProperty(object, name, getter, setter) {
 function _Base() {
 }
 
+_Base.prototype._init = function() { };
 _Base.prototype.__name__ = '_Base';
 _Base.prototype.toString = function() {
     return '[object ' + this.__name__ + ']';
@@ -161,9 +162,10 @@ function wrapFunction(obj, name, meth) {
     if (meth._origin) meth = meth._origin;
 
     function wrapper() {
+        let prevCaller = this.__caller__;
         this.__caller__ = wrapper;
         let result = meth.apply(this, arguments);
-        this.__caller__ = null;
+        this.__caller__ = prevCaller;
         return result;
     }
 
@@ -187,8 +189,7 @@ function Class(params) {
         };
     } else {
         newClass = function() {
-            if (!this._init)
-                return this;
+            this.__caller__ = null;
 
             return this._init.apply(this, arguments);
         };

@@ -20,6 +20,10 @@ const MagicBase = new Lang.Class({
     foo: function(a, buffer) {
         buffer.push(a);
         return a * 3;
+    },
+
+    bar: function(a) {
+        return a * 5;
     }
 });
 
@@ -38,6 +42,11 @@ const Magic = new Lang.Class({
         let val = this.parent(a, buffer);
         buffer.push(b);
         return val * 2;
+    },
+
+    bar: function(a, buffer) {
+        this.foo(a, 2*a, buffer);
+        return this.parent(a);
     }
 });
 
@@ -163,6 +172,17 @@ function testAbstract() {
 
     newAbstract = new AbstractImpl2();
     assertEquals(42, newAbstract.foo);
+}
+
+function testCrossCall() {
+    // test that a method can call another without clobbering
+    // __caller__
+    let newMagic = new Magic();
+    let buffer = [];
+
+    let res = newMagic.bar(10, buffer);
+    assertArrayEquals([10, 20], buffer);
+    assertEquals(50, res);
 }
 
 gjstestRun();
