@@ -1,4 +1,4 @@
-// application/javascript;version=1.8
+// application/javascript;version=1.8 -*- mode: js; indent-tabs-mode: nil -*-
 
 const Lang = imports.lang;
 
@@ -50,6 +50,24 @@ const ToStringOverride = new Lang.Class({
     }
 });
 
+const Accessor = new Lang.Class({
+    Name: 'AccessorMagic',
+
+    _init: function(val) {
+        this._val = val;
+    },
+
+    get value() {
+        return this._val;
+    },
+
+    set value(val) {
+        if (val != 42)
+            throw TypeError('Value is not a magic number');
+        this._val = val;
+    }
+});
+
 function testClassFramework() {
     let newMagic = new MagicBase('A');
     assertEquals('A',  newMagic.a);
@@ -87,6 +105,25 @@ function testToString() {
 
     let override = new ToStringOverride();
     assertEquals('[object ToStringOverride]; hello', override.toString());
+}
+
+function testConfigurable() {
+    let newMagic = new MagicBase();
+
+    delete newMagic.foo;
+    assertNotUndefined(newMagic.foo);
+}
+
+function testAccessor() {
+    let newAccessor = new Accessor(11);
+
+    assertEquals(11, newAccessor.value);
+    assertRaises(function() {
+        newAccessor.value = 12;
+    });
+
+    newAccessor.value = 42;
+    assertEquals(42, newAccessor.value);
 }
 
 gjstestRun();

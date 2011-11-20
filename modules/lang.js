@@ -1,3 +1,4 @@
+/* -*- mode: js; indent-tabs-mode: nil; -*- */
 // Copyright (c) 2008  litl, LLC
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -188,21 +189,30 @@ function Class(params) {
     let parent = params.Extends;
     if (!parent)
         parent = _Base;
+    let name = params.Name;
+
+    let propertyObj = { };
+    let propertyDescriptors = Object.getOwnPropertyNames(params).forEach(function(name) {
+        if (name == 'Name' || name == 'Extends')
+            return;
+
+        let descriptor = Object.getOwnPropertyDescriptor(params, name);
+
+        if (typeof descriptor.value === 'function')
+            descriptor.value = wrapFunction(newClass, name, descriptor.value);
+
+        // we inherit writable and enumerable from the property
+        // descriptor of params (they're both true if created from an
+        // object literal)
+        descriptor.configurable = false;
+
+        propertyObj[name] = descriptor;
+    });
 
     newClass.__super__ = parent;
-    newClass.prototype = Object.create(parent.prototype);
-
-    for (let prop in params) {
-        let value = params[prop];
-
-        if (typeof value === 'function')
-            value = wrapFunction(newClass, prop, value);
-
-        newClass.prototype[prop] = value;
-    }
-
+    newClass.prototype = Object.create(parent.prototype, propertyObj);
     newClass.prototype.constructor = newClass;
-    newClass.prototype.__name__ = params.Name;
+    newClass.prototype.__name__ = name;
     newClass.prototype.parent = _parent;
 
     return newClass;
