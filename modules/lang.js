@@ -178,22 +178,29 @@ function Class(params) {
     if (!params.Name) {
         throw new TypeError("Classes require an explicit 'name' parameter.");
     }
+    let name = params.Name;
 
-    let newClass = function() {
-        if (!this._init)
-            return this;
+    let newClass;
+    if (params.Abstract) {
+        newClass = function() {
+            throw new TypeError('Cannot instantiate abstract class ' + name);
+        };
+    } else {
+        newClass = function() {
+            if (!this._init)
+                return this;
 
-        return this._init.apply(this, arguments);
-    };
+            return this._init.apply(this, arguments);
+        };
+    }
 
     let parent = params.Extends;
     if (!parent)
         parent = _Base;
-    let name = params.Name;
 
     let propertyObj = { };
     let propertyDescriptors = Object.getOwnPropertyNames(params).forEach(function(name) {
-        if (name == 'Name' || name == 'Extends')
+        if (name == 'Name' || name == 'Extends' || name == 'Abstract')
             return;
 
         let descriptor = Object.getOwnPropertyDescriptor(params, name);

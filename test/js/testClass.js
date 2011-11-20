@@ -68,6 +68,32 @@ const Accessor = new Lang.Class({
     }
 });
 
+const AbstractBase = new Lang.Class({
+    Name: 'AbstractBase',
+    Abstract: true,
+
+    _init: function() {
+        this.foo = 42;
+    }
+});
+
+const AbstractImpl = new Lang.Class({
+    Name: 'AbstractImpl',
+    Extends: AbstractBase,
+
+    _init: function() {
+        this.parent();
+        this.bar = 42;
+    }
+});
+
+const AbstractImpl2 = new Lang.Class({
+    Name: 'AbstractImpl2',
+    Extends: AbstractBase,
+
+    // no _init here, we inherit the parent one
+});
+
 function testClassFramework() {
     let newMagic = new MagicBase('A');
     assertEquals('A',  newMagic.a);
@@ -124,6 +150,19 @@ function testAccessor() {
 
     newAccessor.value = 42;
     assertEquals(42, newAccessor.value);
+}
+
+function testAbstract() {
+    assertRaises(function() {
+        let newAbstract = new AbstractBase();
+    });
+
+    let newAbstract = new AbstractImpl();
+    assertEquals(42, newAbstract.foo);
+    assertEquals(42, newAbstract.bar);
+
+    newAbstract = new AbstractImpl2();
+    assertEquals(42, newAbstract.foo);
 }
 
 gjstestRun();
