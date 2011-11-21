@@ -218,7 +218,7 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
 
     exc = JSVAL_VOID;
     JS_GetPendingException(context, &exc);
-    g_assert(exc != JSVAL_VOID);
+    g_assert(!JSVAL_IS_VOID(exc));
 
     value = JSVAL_VOID;
     JS_GetProperty(context, JSVAL_TO_OBJECT(exc), "message",
@@ -252,7 +252,7 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
 
     exc = JSVAL_VOID;
     JS_GetPendingException(context, &exc);
-    g_assert(exc != JSVAL_VOID);
+    g_assert(!JSVAL_IS_VOID(exc));
     g_assert(exc == previous);
 
     JS_RemoveValueRoot(context, &previous);

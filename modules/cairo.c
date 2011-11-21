@@ -52,73 +52,73 @@ gjs_js_define_cairo_stuff(JSContext *context,
 
     obj = gjs_cairo_context_create_proto(context, module,
                                          "Context", NULL);
-    if (obj == JSVAL_NULL)
+    if (JSVAL_IS_NULL(obj))
         return JS_FALSE;
     gjs_cairo_context_init(context);
 
     obj = gjs_cairo_surface_create_proto(context, module,
                                          "Surface", NULL);
-    if (obj == JSVAL_NULL)
+    if (JSVAL_IS_NULL(obj))
         return JS_FALSE;
     surface_proto = JSVAL_TO_OBJECT(obj);
 
     obj = gjs_cairo_image_surface_create_proto(context, module,
                                                "ImageSurface", surface_proto);
-    if (obj == JSVAL_NULL)
+    if (JSVAL_IS_NULL(obj))
         return JS_FALSE;
     gjs_cairo_image_surface_init(context, JSVAL_TO_OBJECT(obj));
 
 #if CAIRO_HAS_PS_SURFACE
     obj = gjs_cairo_ps_surface_create_proto(context, module,
                                             "PSSurface", surface_proto);
-    if (obj == JSVAL_NULL)
+    if (JSVAL_IS_NULL(obj))
         return JS_FALSE;
 #endif
 
 #if CAIRO_HAS_PDF_SURFACE
     obj = gjs_cairo_pdf_surface_create_proto(context, module,
                                              "PDFSurface", surface_proto);
-    if (obj == JSVAL_NULL)
+    if (JSVAL_IS_NULL(obj))
         return JS_FALSE;
 #endif
 
 #if CAIRO_HAS_SVG_SURFACE
     obj = gjs_cairo_svg_surface_create_proto(context, module,
                                              "SVGSurface", surface_proto);
-    if (obj == JSVAL_NULL)
+    if (JSVAL_IS_NULL(obj))
         return JS_FALSE;
 #endif
 
     obj = gjs_cairo_pattern_create_proto(context, module,
                                          "Pattern", NULL);
-    if (obj == JSVAL_NULL)
+    if (JSVAL_IS_NULL(obj))
         return JS_FALSE;
     pattern_proto = JSVAL_TO_OBJECT(obj);
 
     obj = gjs_cairo_gradient_create_proto(context, module,
                                          "Gradient", pattern_proto);
-    if (obj == JSVAL_NULL)
+    if (JSVAL_IS_NULL(obj))
         return JS_FALSE;
     gradient_proto = JSVAL_TO_OBJECT(obj);
 
     obj = gjs_cairo_linear_gradient_create_proto(context, module,
                                                  "LinearGradient", gradient_proto);
-    if (obj == JSVAL_NULL)
+    if (JSVAL_IS_NULL(obj))
         return JS_FALSE;
 
     obj = gjs_cairo_radial_gradient_create_proto(context, module,
                                                  "RadialGradient", gradient_proto);
-    if (obj == JSVAL_NULL)
+    if (JSVAL_IS_NULL(obj))
         return JS_FALSE;
 
     obj = gjs_cairo_surface_pattern_create_proto(context, module,
                                                  "SurfacePattern", pattern_proto);
-    if (obj == JSVAL_NULL)
+    if (JSVAL_IS_NULL(obj))
         return JS_FALSE;
 
     obj = gjs_cairo_solid_pattern_create_proto(context, module,
                                                "SolidPattern", pattern_proto);
-    if (obj == JSVAL_NULL)
+    if (JSVAL_IS_NULL(obj))
         return JS_FALSE;
 
     return JS_TRUE;

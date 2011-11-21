@@ -574,7 +574,7 @@ setDash_func(JSContext *context,
         if (!JS_GetElement(context, dashes, i, &elem)) {
             goto out;
         }
-        if (elem == JSVAL_VOID)
+        if (JSVAL_IS_VOID(elem))
             continue;
 
         if (!JS_ValueToNumber(context, elem, &b))

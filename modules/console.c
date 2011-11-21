@@ -216,7 +216,7 @@ gjs_console_interact(JSContext *context,
         if (JS_GetPendingException(context, &result)) {
             str = JS_ValueToString(context, result);
             JS_ClearPendingException(context);
-        } else if (result == JSVAL_VOID) {
+        } else if (JSVAL_IS_VOID(result)) {
             goto next;
         } else {
             str = JS_ValueToString(context, result);

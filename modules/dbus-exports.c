@@ -252,7 +252,7 @@ build_reply_from_jsval(JSContext     *context,
 
     dbus_message_iter_init_append(reply, &arg_iter);
 
-    if (rval == JSVAL_VOID || g_str_equal(signature, "")) {
+    if (JSVAL_IS_VOID(rval) || g_str_equal(signature, "")) {
         /* We don't want to send anything in these cases so skip the
          * marshalling altogether.
          */
@@ -681,7 +681,7 @@ find_js_property_by_path(JSContext  *context,
 
         gjs_object_get_property(context, obj, elements[i], &value);
 
-        if (value == JSVAL_VOID ||
+        if (JSVAL_IS_VOID(value) ||
             JSVAL_IS_NULL(value) ||
             !JSVAL_IS_OBJECT(value)) {
             obj = NULL;
@@ -701,7 +701,7 @@ find_js_property_by_path(JSContext  *context,
     if (obj != NULL) {
         gjs_object_get_property(context, obj, "-impl-", &value);
 
-        if (value == JSVAL_VOID ||
+        if (JSVAL_IS_VOID(value) ||
             JSVAL_IS_NULL(value) ||
             !JSVAL_IS_OBJECT(value)) {
             obj = NULL;
@@ -724,7 +724,7 @@ find_method(JSContext  *context,
                             method_name,
                             method_value);
 
-    if (*method_value == JSVAL_VOID ||
+    if (JSVAL_IS_VOID(*method_value) ||
         JSVAL_IS_NULL(*method_value) ||
         !JSVAL_IS_OBJECT(*method_value)) {
         return JS_FALSE;
@@ -772,7 +772,7 @@ find_properties_array(JSContext       *context,
      * have any properties so there's no case where
      * we actually want to use it.
      */
-    if (iface_val == JSVAL_VOID &&
+    if (JSVAL_IS_VOID(iface_val) &&
         strcmp(iface, DBUS_INTERFACE_PROPERTIES) == 0) {
         gjs_debug(GJS_DEBUG_DBUS,
                   "Changing interface to work around GNOME bug 569933");
@@ -785,7 +785,7 @@ find_properties_array(JSContext       *context,
         }
     }
 
-    if (iface_val == JSVAL_VOID) {
+    if (JSVAL_IS_VOID(iface_val)) {
         /* NOT an exception ... object simply lacks the interface */
         return JS_TRUE;
     }
@@ -938,7 +938,7 @@ find_property_details(JSContext       *context,
         return JS_FALSE;
     }
 
-    if (properties_array_val == JSVAL_VOID) {
+    if (JSVAL_IS_VOID(properties_array_val)) {
         /* NOT an exception ... interface simply has no properties */
         return JS_TRUE;
     }
@@ -949,7 +949,7 @@ find_property_details(JSContext       *context,
         property_val = JSVAL_VOID;
         if (!JS_GetElement(context, JSVAL_TO_OBJECT(properties_array_val),
                            i, &property_val) ||
-            property_val == JSVAL_VOID) {
+            JSVAL_IS_VOID(property_val)) {
             gjs_throw(context,
                       "Error accessing element %d of properties array",
                       i);
@@ -1150,7 +1150,7 @@ handle_get_all_properties(JSContext      *context,
     dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
                                      "{sv}", &dict_iter);
 
-    if (properties_array_val != JSVAL_VOID) {
+    if (!JSVAL_IS_VOID(properties_array_val)) {
         for (i = 0; i < length; ++i) {
             jsval property_val;
             PropertyDetails details;
@@ -1162,7 +1162,7 @@ handle_get_all_properties(JSContext      *context,
             property_val = JSVAL_VOID;
             if (!JS_GetElement(context, JSVAL_TO_OBJECT(properties_array_val),
                                i, &property_val) ||
-                property_val == JSVAL_VOID) {
+                JSVAL_IS_VOID(property_val)) {
                 gjs_throw(context,
                           "Error accessing element %d of properties array",
                           i);

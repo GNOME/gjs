@@ -396,7 +396,7 @@ gjs_object_get_property(JSContext  *context,
 
     JS_EndRequest(context);
 
-    return value != JSVAL_VOID;
+    return !JSVAL_IS_VOID(value);
 }
 
 /* Returns whether the object had the property; if the object did
@@ -423,7 +423,7 @@ gjs_object_require_property(JSContext       *context,
     if (value_p)
         *value_p = value;
 
-    if (value != JSVAL_VOID) {
+    if (!JSVAL_IS_VOID(value)) {
         JS_ClearPendingException(context); /* in case JS_GetProperty() was on crack */
         JS_EndRequest(context);
         return TRUE;
@@ -539,7 +539,7 @@ gjs_init_class_dynamic(JSContext      *context,
                                          class_copy->base.name, &value))
             goto error;
     }
-    g_assert(value != JSVAL_VOID);
+    g_assert(!JSVAL_IS_VOID(value));
     g_assert(prototype != NULL);
 
     /* Now manually define our constructor with a sane name, in the
@@ -1257,7 +1257,7 @@ gjs_get_type_name(jsval value)
 {
     if (JSVAL_IS_NULL(value)) {
         return "null";
-    } else if (value == JSVAL_VOID) {
+    } else if (JSVAL_IS_VOID(value)) {
         return "undefined";
     } else if (JSVAL_IS_INT(value)) {
         return "integer";

@@ -534,7 +534,7 @@ do_import(JSContext  *context,
             goto out;
         }
 
-        if (elem == JSVAL_VOID)
+        if (JSVAL_IS_VOID(elem))
             continue;
 
         if (!JSVAL_IS_STRING(elem)) {
@@ -566,7 +566,7 @@ do_import(JSContext  *context,
                                         module_obj,
                                         name,
                                         &obj_val)) {
-                if (obj_val != JSVAL_VOID &&
+                if (!JSVAL_IS_VOID(obj_val) &&
                     JS_DefineProperty(context, obj,
                                       name, obj_val,
                                       NULL, NULL,
@@ -791,7 +791,7 @@ importer_new_enumerate(JSContext  *context,
                 return JS_FALSE;
             }
 
-            if (elem == JSVAL_VOID)
+            if (JSVAL_IS_VOID(elem))
                 continue;
 
             if (!JSVAL_IS_STRING(elem)) {
@@ -866,7 +866,7 @@ importer_new_enumerate(JSContext  *context,
             return JS_FALSE;
         }
 
-        if (*state_p == JSVAL_NULL) /* Iterating prototype */
+        if (JSVAL_IS_NULL(*state_p)) /* Iterating prototype */
             return JS_TRUE;
 
         iter = JSVAL_TO_PRIVATE(*state_p);
@@ -888,7 +888,7 @@ importer_new_enumerate(JSContext  *context,
     }
 
     case JSENUMERATE_DESTROY: {
-        if (state_p && *state_p != JSVAL_NULL) {
+        if (state_p && !JSVAL_IS_NULL(*state_p)) {
             iter = JSVAL_TO_PRIVATE(*state_p);
 
             importer_iterator_free(iter);

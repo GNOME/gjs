@@ -82,7 +82,7 @@ module_get_parent(JSContext *context,
     jsval value;
 
     if (gjs_object_get_property(context, module_obj, "__parentModule__", &value) &&
-        value != JSVAL_NULL &&
+        !JSVAL_IS_NULL(value) &&
         JSVAL_IS_OBJECT(value)) {
         return JSVAL_TO_OBJECT(value);
     } else {

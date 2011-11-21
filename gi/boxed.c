@@ -1173,7 +1173,7 @@ gjs_define_boxed_class(JSContext    *context,
 
     constructor = NULL;
     gjs_object_get_property(context, in_object, constructor_name, &value);
-    if (value != JSVAL_VOID) {
+    if (!JSVAL_IS_VOID(value)) {
         if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "Property '%s' does not look like a constructor",
                       constructor_name);

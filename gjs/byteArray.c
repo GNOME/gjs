@@ -771,7 +771,7 @@ from_array_func(JSContext *context,
             goto out;
         }
 
-        if (elem == JSVAL_VOID)
+        if (JSVAL_IS_VOID(elem))
             continue;
 
         if (!gjs_value_to_byte(context, elem, &b))

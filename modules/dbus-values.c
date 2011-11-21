@@ -794,14 +794,14 @@ append_dict(JSContext         *context,
                             "_dbus_signatures",
                             &prop_signatures);
 
-    if (prop_signatures != JSVAL_VOID &&
+    if (!JSVAL_IS_VOID(prop_signatures) &&
         !JSVAL_IS_OBJECT(prop_signatures)) {
         gjs_throw(context,
                   "_dbus_signatures prop must be an object");
         return JS_FALSE;
     }
 
-    if (prop_signatures != JSVAL_VOID &&
+    if (!JSVAL_IS_VOID(prop_signatures) &&
         dbus_signature_iter_get_current_type(&dict_value_sig_iter) !=
         DBUS_TYPE_VARIANT) {
         gjs_throw(context,
@@ -839,13 +839,13 @@ append_dict(JSContext         *context,
 
         /* see if this prop has a forced signature */
         value_signature = NULL;
-        if (prop_signatures != JSVAL_VOID) {
+        if (!JSVAL_IS_VOID(prop_signatures)) {
             jsval signature_value;
             signature_value = JSVAL_VOID;
             gjs_object_get_property(context,
                                     JSVAL_TO_OBJECT(prop_signatures),
                                     name, &signature_value);
-            if (signature_value != JSVAL_VOID) {
+            if (!JSVAL_IS_VOID(signature_value)) {
                 value_signature = gjs_string_get_ascii(context,
                                                                signature_value);
                 if (value_signature == NULL) {
@@ -1020,7 +1020,7 @@ gjs_js_one_value_to_dbus(JSContext         *context,
             if (!append_dict(context, iter, sig_iter, obj))
                 return JS_FALSE;
         }
-    } else if (value == JSVAL_VOID) {
+    } else if (JSVAL_IS_VOID(value)) {
         gjs_debug(GJS_DEBUG_DBUS, "Can't send void (undefined) values over dbus");
         gjs_throw(context, "Can't send void (undefined) values over dbus");
         return JS_FALSE;

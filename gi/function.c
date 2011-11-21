@@ -431,7 +431,7 @@ gjs_callback_trampoline_new(JSContext      *context,
     GjsCallbackTrampoline *trampoline;
     int n_args, i;
 
-    if (function == JSVAL_NULL) {
+    if (JSVAL_IS_NULL(function)) {
         return NULL;
     }
 

@@ -490,8 +490,7 @@ gjs_define_param_class(JSContext    *context,
     constructor_name = "ParamSpec";
 
     gjs_object_get_property(context, in_object, constructor_name, &value);
-    if (value != JSVAL_VOID) {
-
+    if (!JSVAL_IS_VOID(value)) {
         if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "Existing property '%s' does not look like a constructor",
                       constructor_name);

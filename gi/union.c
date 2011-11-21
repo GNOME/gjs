@@ -459,7 +459,7 @@ gjs_define_union_class(JSContext    *context,
               constructor_name, prototype, JS_GET_CLASS(context, prototype), in_object);
 
     gjs_object_get_property(context, in_object, constructor_name, &value);
-    if (value != JSVAL_VOID) {
+    if (!JSVAL_IS_VOID(value)) {
         if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "Property '%s' does not look like a constructor",
                       constructor_name);

@@ -1652,7 +1652,7 @@ gjs_define_object_class(JSContext     *context,
      */
     gjs_object_get_property(context, in_object, constructor_name, &value);
     constructor = NULL;
-    if (value != JSVAL_VOID) {
+    if (!JSVAL_IS_VOID(value)) {
        if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "Property '%s' does not look like a constructor",
                       constructor_name);
