@@ -36,6 +36,7 @@
 
 typedef struct {
     GIInterfaceInfo *info;
+    GType gtype;
 } Interface;
 
 static struct JSClass gjs_interface_class;
@@ -105,7 +106,7 @@ gjs_define_static_methods(JSContext       *context,
          * like in the near future.
          */
         if (!(flags & GI_FUNCTION_IS_METHOD)) {
-            gjs_define_function(context, constructor,
+            gjs_define_function(context, constructor, gtype,
                                 (GICallableInfo *)meth_info);
         }
 
@@ -140,6 +141,7 @@ interface_new_resolve(JSContext *context,
 
     if (method_info != NULL) {
         if (gjs_define_function(context, obj,
+                                priv->gtype,
                                 (GICallableInfo*)method_info) == NULL) {
             g_base_info_unref((GIBaseInfo*)method_info);
             goto out;
@@ -254,14 +256,13 @@ gjs_define_interface_class(JSContext       *context,
 
     priv = g_slice_new0(Interface);
     priv->info = info;
+    priv->gtype = g_registered_type_info_get_g_type(priv->info);
     g_base_info_ref((GIBaseInfo*)priv->info);
     JS_SetPrivate(context, prototype, priv);
 
     gjs_object_get_property(context, in_object, constructor_name, &value);
     constructor = JSVAL_TO_OBJECT(value);
-    gjs_define_static_methods(context, constructor,
-                              g_registered_type_info_get_g_type(priv->info),
-                              priv->info);
+    gjs_define_static_methods(context, constructor, priv->gtype, priv->info);
 
     if (prototype_p)
         *prototype_p = prototype;

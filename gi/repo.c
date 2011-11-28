@@ -460,7 +460,7 @@ gjs_define_info(JSContext  *context,
     case GI_INFO_TYPE_FUNCTION:
         {
             JSObject *f;
-            f = gjs_define_function(context, in_object, (GIFunctionInfo*) info);
+            f = gjs_define_function(context, in_object, 0, (GICallableInfo*) info);
             if (f == NULL)
                 return JS_FALSE;
         }

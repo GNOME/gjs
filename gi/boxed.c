@@ -62,6 +62,7 @@ GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Boxed, gjs_boxed_class)
 static JSBool
 gjs_define_static_methods(JSContext    *context,
                           JSObject     *constructor,
+                          GType         gtype,
                           GIStructInfo *boxed_info)
 {
     int i;
@@ -84,7 +85,8 @@ gjs_define_static_methods(JSContext    *context,
          * like in the near future.
          */
         if (!(flags & GI_FUNCTION_IS_METHOD)) {
-            gjs_define_function(context, constructor, meth_info);
+            gjs_define_function(context, constructor, gtype,
+                                (GICallableInfo *)meth_info);
         }
 
         g_base_info_unref((GIBaseInfo*) meth_info);
@@ -153,7 +155,9 @@ boxed_new_resolve(JSContext *context,
 
             boxed_proto = obj;
 
-            if (gjs_define_function(context, boxed_proto, method_info) == NULL) {
+            if (gjs_define_function(context, boxed_proto,
+                                    g_registered_type_info_get_g_type (priv->info),
+                                    (GICallableInfo *)method_info) == NULL) {
                 g_base_info_unref( (GIBaseInfo*) method_info);
                 goto out;
             }
@@ -1176,7 +1180,9 @@ gjs_define_boxed_class(JSContext    *context,
     }
 
     constructor = JSVAL_TO_OBJECT(value);
-    gjs_define_static_methods (context, constructor, info);
+    gjs_define_static_methods (context, constructor,
+                               g_registered_type_info_get_g_type (priv->info),
+                               priv->info);
 
     if (constructor_p)
         *constructor_p = constructor;

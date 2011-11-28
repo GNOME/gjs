@@ -233,6 +233,57 @@ object_instance_set_prop(JSContext *context,
     return ret;
 }
 
+static gboolean
+is_vfunc_unchanged(GIVFuncInfo *info,
+                   GType        gtype)
+{
+    GType ptype = g_type_parent(gtype);
+    GError *error = NULL;
+    gpointer addr1, addr2;
+
+    addr1 = g_vfunc_info_get_address(info, gtype, &error);
+    if (error) {
+        g_clear_error(&error);
+        return FALSE;
+    }
+
+    addr2 = g_vfunc_info_get_address(info, ptype, &error);
+    if (error) {
+        g_clear_error(&error);
+        return FALSE;
+    }
+
+    return addr1 == addr2;
+}
+
+static GIVFuncInfo *
+find_vfunc_on_parent(GIObjectInfo *info,
+                     gchar        *name)
+{
+    GIVFuncInfo *vfunc = NULL;
+    GIObjectInfo *parent, *old_parent;
+
+    /* ref the first info so that we don't destroy
+     * it when unrefing parents later */
+    g_base_info_ref(info);
+    parent = info;
+    vfunc = g_object_info_find_vfunc(parent, name);
+    while (!vfunc && parent) {
+        old_parent = parent;
+        parent = g_object_info_get_parent(old_parent);
+        if (!parent)
+            break;
+
+        g_base_info_unref(old_parent);
+        vfunc = g_object_info_find_vfunc(parent, name);
+    }
+
+    if (parent)
+        g_base_info_unref(parent);
+
+    return vfunc;
+}
+
 /*
  * Like JSResolveOp, but flags provide contextual information as follows:
  *
@@ -281,6 +332,45 @@ object_instance_new_resolve(JSContext *context,
     if (priv->gobj != NULL) {
         ret = JS_TRUE;
         goto out;
+    }
+
+    if (g_str_has_prefix (name, "vfunc_")) {
+        /* The only time we find a vfunc info is when we're the base
+         * class that defined the vfunc. If we let regular prototype
+         * chaining resolve this, we'd have the implementation for the base's
+         * vfunc on the base class, without any other "real" implementations
+         * in the way. If we want to expose a "real" vfunc implementation,
+         * we need to go down to the parent infos and look at their VFuncInfos.
+         *
+         * This is good, but it's memory-hungry -- we would define every
+         * possible vfunc on every possible object, even if it's the same
+         * "real" vfunc underneath. Instead, only expose vfuncs that are
+         * different from their parent, and let prototype chaining do the
+         * rest.
+         */
+
+        gchar *name_without_vfunc_ = &name[6];
+        GIVFuncInfo *vfunc;
+
+        vfunc = find_vfunc_on_parent(priv->info, name_without_vfunc_);
+        if (vfunc != NULL) {
+            /* In the event that the vfunc is unchanged, let regular
+             * prototypal inheritance take over. */
+            if (is_vfunc_unchanged(vfunc, priv->gtype)) {
+                g_base_info_unref((GIBaseInfo *)vfunc);
+                ret = JS_TRUE;
+                goto out;
+            }
+
+            gjs_define_function(context, obj, priv->gtype, vfunc);
+            *objp = obj;
+            g_base_info_unref((GIBaseInfo *)vfunc);
+            ret = JS_TRUE;
+            goto out;
+        }
+
+        /* If the vfunc wasn't found, fall through, back to normal
+         * method resolution. */
     }
 
     /* find_method does not look at methods on parent classes,
@@ -355,7 +445,7 @@ object_instance_new_resolve(JSContext *context,
                   g_base_info_get_namespace( (GIBaseInfo*) priv->info),
                   g_base_info_get_name( (GIBaseInfo*) priv->info));
 
-        if (gjs_define_function(context, obj, method_info) == NULL) {
+        if (gjs_define_function(context, obj, priv->gtype, method_info) == NULL) {
             g_base_info_unref( (GIBaseInfo*) method_info);
             goto out;
         }
@@ -1127,6 +1217,7 @@ static JSFunctionSpec gjs_object_instance_proto_funcs[] = {
 static JSBool
 gjs_define_static_methods(JSContext    *context,
                           JSObject     *constructor,
+                          GType         gtype,
                           GIObjectInfo *object_info)
 {
     int i;
@@ -1149,7 +1240,8 @@ gjs_define_static_methods(JSContext    *context,
          * like in the near future.
          */
         if (!(flags & GI_FUNCTION_IS_METHOD)) {
-            gjs_define_function(context, constructor, meth_info);
+            gjs_define_function(context, constructor, gtype,
+                                (GICallableInfo *)meth_info);
         }
 
         g_base_info_unref((GIBaseInfo*) meth_info);
@@ -1367,7 +1459,7 @@ gjs_define_object_class(JSContext     *context,
        }
 
        constructor = JSVAL_TO_OBJECT(value);
-       gjs_define_static_methods(context, constructor, info);
+       gjs_define_static_methods(context, constructor, gtype, info);
     }
 
     value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));

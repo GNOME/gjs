@@ -41,19 +41,23 @@ typedef struct {
     ffi_cif cif;
     ffi_closure *closure;
     GIScopeType scope;
+    gboolean is_vfunc;
 } GjsCallbackTrampoline;
 
 GjsCallbackTrampoline* gjs_callback_trampoline_new(JSContext      *context,
                                                    jsval           function,
                                                    GICallableInfo *callable_info,
-                                                   GIScopeType     scope);
+                                                   GIScopeType     scope,
+                                                   gboolean        is_vfunc);
 
 void gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline);
 void gjs_callback_trampoline_ref(GjsCallbackTrampoline *trampoline);
 
 JSObject* gjs_define_function   (JSContext      *context,
                                  JSObject       *in_object,
-                                 GIFunctionInfo *info);
+                                 GType           gtype,
+                                 GICallableInfo *info);
+
 JSBool    gjs_invoke_c_function_uncached (JSContext      *context,
                                           GIFunctionInfo *info,
                                           JSObject       *obj,

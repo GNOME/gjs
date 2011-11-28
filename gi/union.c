@@ -112,7 +112,9 @@ union_new_resolve(JSContext *context,
 
             union_proto = obj;
 
-            if (gjs_define_function(context, union_proto, method_info) == NULL) {
+            if (gjs_define_function(context, union_proto,
+                                    g_registered_type_info_get_g_type(priv->info),
+                                    method_info) == NULL) {
                 g_base_info_unref( (GIBaseInfo*) method_info);
                 ret = JS_FALSE;
                 goto out;
