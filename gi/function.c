@@ -208,11 +208,11 @@ gjs_callback_closure(ffi_cif *cif,
 {
     JSContext *context;
     GjsCallbackTrampoline *trampoline;
-    int i, n_args, n_jsargs;
+    int i, n_args, n_jsargs, n_outargs;
     jsval *jsargs, rval;
     GITypeInfo ret_type;
-    GArgument return_value;
     gboolean success = FALSE;
+    gboolean ret_type_is_void;
 
     trampoline = data;
     g_assert(trampoline);
@@ -224,6 +224,7 @@ gjs_callback_closure(ffi_cif *cif,
 
     g_assert(n_args >= 0);
 
+    n_outargs = 0;
     jsargs = (jsval*)g_newa(jsval, n_args);
     for (i = 0, n_jsargs = 0; i < n_args; i++) {
         GIArgInfo arg_info;
@@ -235,6 +236,14 @@ gjs_callback_closure(ffi_cif *cif,
         /* Skip void * arguments */
         if (g_type_info_get_tag(&type_info) == GI_TYPE_TAG_VOID)
             continue;
+
+        if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_OUT) {
+            n_outargs++;
+            continue;
+        }
+
+        if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_INOUT)
+            n_outargs++;
 
         if (!gjs_value_from_g_argument(context,
                                        &jsargs[n_jsargs++],
@@ -254,20 +263,102 @@ gjs_callback_closure(ffi_cif *cif,
     }
 
     g_callable_info_load_return_type(trampoline->info, &ret_type);
+    ret_type_is_void = g_type_info_get_tag (&ret_type) == GI_TYPE_TAG_VOID;
 
-    if (!gjs_value_to_g_argument(context,
-                                 rval,
-                                 &ret_type,
-                                 "callback",
-                                 GJS_ARGUMENT_RETURN_VALUE,
-                                 FALSE,
-                                 TRUE,
-                                 &return_value)) {
-        goto out;
+    if (n_outargs == 0 && !ret_type_is_void) {
+        GIArgument argument;
+
+        /* non-void return value, no out args. Should
+         * be a single return value. */
+        if (!gjs_value_to_g_argument(context,
+                                     rval,
+                                     &ret_type,
+                                     "callback",
+                                     GJS_ARGUMENT_RETURN_VALUE,
+                                     GI_TRANSFER_NOTHING,
+                                     TRUE,
+                                     &argument))
+            goto out;
+
+        set_return_ffi_arg_from_giargument(&ret_type,
+                                           result,
+                                           &argument);
+    } else if (n_outargs == 1 && ret_type_is_void) {
+        /* void return value, one out args. Should
+         * be a single return value. */
+        for (i = 0; i < n_args; i++) {
+            GIArgInfo arg_info;
+            GITypeInfo type_info;
+            g_callable_info_load_arg(trampoline->info, i, &arg_info);
+            if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_IN)
+                continue;
+
+            g_arg_info_load_type(&arg_info, &type_info);
+            if (!gjs_value_to_g_argument(context,
+                                         rval,
+                                         &type_info,
+                                         "callback",
+                                         GJS_ARGUMENT_ARGUMENT,
+                                         GI_TRANSFER_NOTHING,
+                                         TRUE,
+                                         *(gpointer *)args[i]))
+                goto out;
+
+            break;
+        }
+    } else {
+        jsval elem;
+        gsize elem_idx = 0;
+        /* more than one of a return value or an out argument.
+         * Should be an array of output values. */
+
+        if (!ret_type_is_void) {
+            GIArgument argument;
+
+            if (!JS_GetElement(context, JSVAL_TO_OBJECT(rval), elem_idx, &elem))
+                goto out;
+
+            if (!gjs_value_to_g_argument(context,
+                                         elem,
+                                         &ret_type,
+                                         "callback",
+                                         GJS_ARGUMENT_ARGUMENT,
+                                         GI_TRANSFER_NOTHING,
+                                         TRUE,
+                                         &argument))
+                goto out;
+
+            set_return_ffi_arg_from_giargument(&ret_type,
+                                               result,
+                                               &argument);
+
+            elem_idx++;
+        }
+
+        for (i = 0; i < n_args; i++) {
+            GIArgInfo arg_info;
+            GITypeInfo type_info;
+            g_callable_info_load_arg(trampoline->info, i, &arg_info);
+            if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_IN)
+                continue;
+
+            g_arg_info_load_type(&arg_info, &type_info);
+            if (!JS_GetElement(context, JSVAL_TO_OBJECT(rval), elem_idx, &elem))
+                goto out;
+
+            if (!gjs_value_to_g_argument(context,
+                                         elem,
+                                         &type_info,
+                                         "callback",
+                                         GJS_ARGUMENT_ARGUMENT,
+                                         GI_TRANSFER_NOTHING,
+                                         TRUE,
+                                         *(gpointer *)args[i]))
+                goto out;
+
+            elem_idx++;
+        }
     }
-
-    
-    set_return_ffi_arg_from_giargument(&ret_type, result, &return_value);
 
     success = TRUE;
 

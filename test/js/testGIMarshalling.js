@@ -230,4 +230,47 @@ function testGType() {
     assertEquals(GObject.TYPE_INT, GIMarshallingTests.gtype_inout(GObject.TYPE_NONE));
 }
 
+
+function callback_return_value_only() {
+    return 42;
+}
+
+function callback_one_out_parameter() {
+    return 43;
+}
+
+function callback_multiple_out_parameters() {
+    return [44, 45];
+}
+
+function callback_return_value_and_one_out_parameter() {
+    return [46, 47];
+}
+
+function callback_return_value_and_multiple_out_parameters() {
+    return [48, 49, 50];
+}
+
+function testCallbacks() {
+    let a, b, c;
+    a = GIMarshallingTests.callback_return_value_only(callback_return_value_only);
+    assertEquals(42, a);
+
+    a = GIMarshallingTests.callback_one_out_parameter(callback_one_out_parameter);
+    assertEquals(43, a);
+
+    [a, b] = GIMarshallingTests.callback_multiple_out_parameters(callback_multiple_out_parameters);
+    assertEquals(44, a);
+    assertEquals(45, b);
+
+    [a, b] = GIMarshallingTests.callback_return_value_and_one_out_parameter(callback_return_value_and_one_out_parameter);
+    assertEquals(46, a);
+    assertEquals(47, b);
+
+    [a, b, c] = GIMarshallingTests.callback_return_value_and_multiple_out_parameters(callback_return_value_and_multiple_out_parameters);
+    assertEquals(48, a);
+    assertEquals(49, b);
+    assertEquals(50, c);
+}
+
 gjstestRun();
