@@ -85,59 +85,6 @@ param_get_prop(JSContext *context,
     return JS_TRUE;
 }
 
-/*
- * Like JSResolveOp, but flags provide contextual information as follows:
- *
- *  JSRESOLVE_QUALIFIED   a qualified property id: obj.id or obj[id], not id
- *  JSRESOLVE_ASSIGNING   obj[id] is on the left-hand side of an assignment
- *  JSRESOLVE_DETECTING   'if (o.p)...' or similar detection opcode sequence
- *  JSRESOLVE_DECLARING   var, const, or param prolog declaration opcode
- *  JSRESOLVE_CLASSNAME   class name used when constructing
- *
- * The *objp out parameter, on success, should be null to indicate that id
- * was not resolved; and non-null, referring to obj or one of its prototypes,
- * if id was resolved.
- */
-static JSBool
-param_new_resolve(JSContext *context,
-                  JSObject  *obj,
-                  jsid       id,
-                  uintN      flags,
-                  JSObject **objp)
-{
-    Param *priv;
-    char *name;
-
-    *objp = NULL;
-
-    if (!gjs_get_string_id(context, id, &name))
-        return JS_TRUE; /* not resolved, but no error */
-
-    priv = priv_from_js(context, obj);
-
-    gjs_debug_jsprop(GJS_DEBUG_GPARAM, "Resolve prop '%s' hook obj %p priv %p", name, obj, priv);
-
-    g_free(name);
-
-    if (priv == NULL)
-        return JS_FALSE; /* wrong class */
-
-    if (priv->gparam == NULL) {
-        /* We are the prototype, so implement any methods or other class properties */
-
-    } else {
-        /* We are an instance, not a prototype, so look for
-         * per-instance props that we want to define on the
-         * JSObject. Generally we do not want to cache these in JS, we
-         * want to always pull them from the C object, or JS would not
-         * see any changes made from C. So we use the get/set prop
-         * hooks, not this resolve hook.
-         */
-    }
-
-    return JS_TRUE;
-}
-
 GJS_NATIVE_CONSTRUCTOR_DECLARE(param)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(param)
@@ -179,15 +126,13 @@ param_finalize(JSContext *context,
  */
 static struct JSClass gjs_param_class = {
     NULL, /* dynamic */
-    JSCLASS_HAS_PRIVATE |
-    JSCLASS_NEW_RESOLVE |
-    JSCLASS_NEW_RESOLVE_GETS_START,
+    JSCLASS_HAS_PRIVATE,
     JS_PropertyStub,
     JS_PropertyStub,
     param_get_prop,
     JS_StrictPropertyStub,
     JS_EnumerateStub,
-    (JSResolveOp) param_new_resolve, /* needs cast since it's the new resolve signature */
+    JS_ResolveStub,
     JS_ConvertStub,
     param_finalize,
     NULL,
