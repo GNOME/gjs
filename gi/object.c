@@ -30,6 +30,7 @@
 #include "arg.h"
 #include "repo.h"
 #include "function.h"
+#include "param.h"
 #include "value.h"
 #include "keep-alive.h"
 #include "gjs_gi_trace.h"
@@ -50,6 +51,13 @@ typedef struct {
     GType gtype;
 } ObjectInstance;
 
+enum {
+    PROP_0,
+    PROP_JS_CONTEXT,
+    PROP_JS_OBJECT,
+    PROP_JS_HANDLED,
+};
+
 static struct JSClass gjs_object_instance_class;
 
 GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
@@ -65,6 +73,26 @@ typedef enum {
     NO_SUCH_G_PROPERTY,
     VALUE_WAS_SET
 } ValueFromPropertyResult;
+
+static GQuark
+gjs_context_quark(void)
+{
+    static GQuark val = 0;
+    if (!val)
+        val = g_quark_from_static_string ("gjs::context");
+
+    return val;
+}
+
+static GQuark
+gjs_is_custom_type_quark (void)
+{
+    static GQuark val = 0;
+    if (!val)
+        val = g_quark_from_static_string ("gjs::custom-type");
+
+    return val;
+}
 
 static void
 throw_priv_is_null_error(JSContext *context)
@@ -533,11 +561,29 @@ object_instance_props_to_g_parameters(JSContext   *context,
     if (!JS_NextProperty(context, iter, &prop_id))
         return JS_FALSE;
 
-    if (!JSID_IS_VOID(prop_id)) {
-        gparams = g_array_new(/* nul term */ FALSE, /* clear */ TRUE,
-                              sizeof(GParameter));
-    } else {
-        return JS_TRUE;
+    gparams = g_array_new(/* nul term */ FALSE, /* clear */ TRUE,
+                          sizeof(GParameter));
+
+    /* For custom types we register, we need to set additional
+       properties for the JS context and JS object, so that we can retrieve
+       them inside the constructor, when handling construct properties
+       There is no other way to set those, as we need them before
+       g_object_newv returns.
+       We also need to ensure that these are the first properties set
+       (luckily g_object_newv preserves the order)
+    */
+    if (g_type_get_qdata(gtype, gjs_is_custom_type_quark())) {
+        GParameter gparam = { "js-context", { 0, } };
+
+        g_value_init(&gparam.value, G_TYPE_POINTER);
+        g_value_set_pointer(&gparam.value, context);
+
+        g_array_append_val(gparams, gparam);
+
+        gparam.name = "js-object";
+        g_value_set_pointer(&gparam.value, obj);
+
+        g_array_append_val(gparams, gparam);
     }
 
     while (!JSID_IS_VOID(prop_id)) {
@@ -719,15 +765,20 @@ init_object_private (JSContext *context,
 }
 
 static void
-manage_js_gobject (JSContext      *context,
-                   JSObject       *object,
-                   ObjectInstance *priv)
+associate_js_gobject (JSContext      *context,
+                      JSObject       *object,
+                      GObject        *gobj)
 {
-    g_assert(peek_js_obj(context, priv->gobj) == NULL);
-    set_js_obj(context, priv->gobj, object);
+    ObjectInstance *priv;
+
+    priv = priv_from_js(context, object);
+    priv->gobj = gobj;
+
+    g_assert(peek_js_obj(context, gobj) == NULL);
+    set_js_obj(context, gobj, object);
 
 #if DEBUG_DISPOSE
-    g_object_weak_ref(priv->gobj, wrapped_gobj_dispose_notify, object);
+    g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, object);
 #endif
 
     /* OK, here is where things get complicated. We want the
@@ -748,15 +799,9 @@ manage_js_gobject (JSContext      *context,
                              object,
                              priv);
 
-    g_object_add_toggle_ref(priv->gobj,
+    g_object_add_toggle_ref(gobj,
                             wrapped_gobj_toggle_notify,
                             JS_GetRuntime(context));
-
-    /* We now have both a ref and a toggle ref, we only want the
-     * toggle ref. This may immediately remove the GC root
-     * we just added, since refcount may drop to 1.
-     */
-    g_object_unref(priv->gobj);
 }
 
 static JSBool
@@ -771,6 +816,7 @@ object_instance_init (JSContext *context,
     int n_params;
     GTypeQuery query;
     JSObject *old_jsobj;
+    GObject *gobj;
 
     priv = init_object_private(context, *object);
 
@@ -788,10 +834,11 @@ object_instance_init (JSContext *context,
         return JS_FALSE;
     }
 
-    priv->gobj = g_object_newv(gtype, n_params, params);
+    gobj = g_object_newv(gtype, n_params, params);
+
     free_g_params(params, n_params);
 
-    old_jsobj = peek_js_obj(context, priv->gobj);
+    old_jsobj = peek_js_obj(context, gobj);
     if (old_jsobj != NULL) {
         /* g_object_newv returned an object that's already tracked by a JS
          * object. Let's assume this is a singleton like IBus.IBus and return
@@ -803,30 +850,36 @@ object_instance_init (JSContext *context,
          * this would require a non-trivial amount of work.
          * */
         *object = old_jsobj;
-        g_object_unref(priv->gobj); /* We already own a reference */
-        priv->gobj = NULL;
+        g_object_unref(gobj); /* We already own a reference */
+        gobj = NULL;
         goto out;
     }
 
     g_type_query(gtype, &query);
     JS_updateMallocCounter(context, query.instance_size);
 
-    if (G_IS_INITIALLY_UNOWNED(priv->gobj) &&
-        !g_object_is_floating(priv->gobj)) {
+    if (G_IS_INITIALLY_UNOWNED(gobj) &&
+        !g_object_is_floating(gobj)) {
         /* GtkWindow does not return a ref to caller of g_object_new.
          * Need a flag in gobject-introspection to tell us this.
          */
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Newly-created object is initially unowned but we did not get the "
                   "floating ref, probably GtkWindow, using hacky workaround");
-        g_object_ref(priv->gobj);
-    } else if (g_object_is_floating(priv->gobj)) {
-        g_object_ref_sink(priv->gobj);
+        g_object_ref(gobj);
+    } else if (g_object_is_floating(gobj)) {
+        g_object_ref_sink(gobj);
     } else {
         /* we should already have a ref */
     }
 
-    manage_js_gobject(context, *object, priv);
+    if (priv->gobj == NULL)
+        associate_js_gobject(context, *object, gobj);
+    /* We now have both a ref and a toggle ref, we only want the
+     * toggle ref. This may immediately remove the GC root
+     * we just added, since refcount may drop to 1.
+     */
+    g_object_unref(gobj);
 
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
                         "JSObject created with GObject %p %s",
@@ -1607,7 +1660,6 @@ gjs_object_from_g_object(JSContext    *context,
         /* We have to create a wrapper */
         JSObject *proto;
         GIObjectInfo *info;
-        ObjectInstance *priv;
 
         gjs_debug_marshal(GJS_DEBUG_GOBJECT,
                           "Wrapping %s with JSObject",
@@ -1628,12 +1680,13 @@ gjs_object_from_g_object(JSContext    *context,
         if (obj == NULL)
             goto out;
 
-        priv = init_object_private(context, obj);
-        priv->gobj = gobj;
+        init_object_private(context, obj);
 
-        g_object_ref_sink (gobj);
+        g_object_ref_sink(gobj);
+        associate_js_gobject(context, obj, gobj);
 
-        manage_js_gobject(context, obj, priv);
+        /* see the comment in init_object_instance() for this */
+        g_object_unref(gobj);
 
         g_base_info_unref( (GIBaseInfo*) info);
 
@@ -1807,6 +1860,105 @@ gjs_hook_up_vfunc(JSContext *cx,
     return JS_TRUE;
 }
 
+static gchar *
+hyphen_to_underscore (gchar *string)
+{
+    gchar *str, *s;
+    str = s = g_strdup(string);
+    while (*(str++) != '\0') {
+        if (*str == '-')
+            *str = '_';
+    }
+    return s;
+}
+
+static void
+gjs_object_get_gproperty (GObject    *object,
+                          guint       property_id,
+                          GValue     *value,
+                          GParamSpec *pspec)
+{
+    JSContext *context;
+    JSObject *js_obj;
+    jsval jsvalue;
+    gchar *underscore_name;
+
+    if (property_id != PROP_JS_HANDLED) {
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+        return;
+    }
+
+    context = g_object_get_qdata(object, gjs_context_quark());
+    js_obj = peek_js_obj(context, object);
+
+    underscore_name = hyphen_to_underscore((gchar *)pspec->name);
+    JS_GetProperty(context, js_obj, underscore_name, &jsvalue);
+    g_free (underscore_name);
+
+    if (!gjs_value_to_g_value(context, jsvalue, value))
+        return;
+}
+
+static void
+gjs_object_set_gproperty (GObject      *object,
+                          guint         property_id,
+                          const GValue *value,
+                          GParamSpec   *pspec)
+{
+    JSContext *context;
+    JSObject *js_obj;
+    jsval jsvalue;
+    gchar *underscore_name;
+
+    if (property_id == PROP_JS_CONTEXT) {
+        context = g_value_get_pointer (value);
+        g_object_set_qdata(object, gjs_context_quark(), context);
+        return;
+    }
+
+    context = g_object_get_qdata(object, gjs_context_quark());
+
+    if (property_id == PROP_JS_OBJECT) {
+        js_obj = g_value_get_pointer (value);
+        associate_js_gobject(context, js_obj, object);
+        return;
+    }
+
+    if (property_id != PROP_JS_HANDLED) {
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+        return;
+    }
+
+    js_obj = peek_js_obj(context, object);
+
+    if (!gjs_value_from_g_value(context, &jsvalue, value))
+        return;
+
+    underscore_name = hyphen_to_underscore((gchar *)pspec->name);
+    JS_SetProperty(context, js_obj, underscore_name, &jsvalue);
+    g_free (underscore_name);
+}
+
+static void
+gjs_object_class_init(GObjectClass *class,
+                      gpointer      user_data)
+{
+    class->set_property = gjs_object_set_gproperty;
+    class->get_property = gjs_object_get_gproperty;
+
+    g_object_class_install_property (class, PROP_JS_CONTEXT,
+                                     g_param_spec_pointer ("js-context",
+                                                           "JSContext",
+                                                           "The JSContext this object was created for",
+                                                           G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
+
+    g_object_class_install_property (class, PROP_JS_OBJECT,
+                                     g_param_spec_pointer ("js-object",
+                                                           "JSObject",
+                                                           "The JSObject wrapping this GObject",
+                                                           G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
+}
+
 static JSBool
 gjs_register_type(JSContext *cx,
                   uintN      argc,
@@ -1825,7 +1977,7 @@ gjs_register_type(JSContext *cx,
 	(GBaseInitFunc) NULL,
 	(GBaseFinalizeFunc) NULL,
 
-	(GClassInitFunc) NULL,
+	(GClassInitFunc) gjs_object_class_init,
 	(GClassFinalizeFunc) NULL,
 	NULL, /* class_data */
 
@@ -1862,6 +2014,8 @@ gjs_register_type(JSContext *cx,
                                            &type_info,
                                            0);
 
+    g_type_set_qdata (instance_type, gjs_is_custom_type_quark(), GINT_TO_POINTER (1));
+
     priv = g_slice_new0(ObjectInstance);
     priv->info = parent_priv->info;
     priv->gtype = instance_type;
@@ -1870,6 +2024,39 @@ gjs_register_type(JSContext *cx,
 
     JS_EndRequest(cx);
 
+    return JS_TRUE;
+}
+
+static JSBool
+gjs_register_property(JSContext *cx,
+                      uintN      argc,
+                      jsval     *vp)
+{
+    jsval *argv = JS_ARGV(cx, vp);
+    JSObject *obj;
+    JSObject *pspec_js;
+    GParamSpec *pspec;
+    ObjectInstance *priv;
+    GObjectClass *oclass;
+
+    if (argc != 2)
+        return JS_FALSE;
+
+    if (!JSVAL_IS_OBJECT(argv[0]) ||
+        !JSVAL_IS_OBJECT(argv[1]))
+        return JS_FALSE;
+
+    obj = JSVAL_TO_OBJECT(argv[0]);
+    pspec_js = JSVAL_TO_OBJECT(argv[1]);
+
+    priv = priv_from_js(cx, obj);
+    pspec = gjs_g_param_from_param(cx, pspec_js);
+
+    oclass = g_type_class_ref(priv->gtype);
+    g_object_class_install_property(oclass, PROP_JS_HANDLED, pspec);
+    g_type_class_unref(oclass);
+
+    JS_SET_RVAL(cx, vp, JSVAL_VOID);
     return JS_TRUE;
 }
 
@@ -1887,6 +2074,12 @@ gjs_define_stuff(JSContext *context,
                            "hook_up_vfunc",
                            (JSNative)gjs_hook_up_vfunc,
                            3, GJS_MODULE_PROP_FLAGS))
+        return JS_FALSE;
+
+    if (!JS_DefineFunction(context, module_obj,
+                           "register_property",
+                           (JSNative)gjs_register_property,
+                           2, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     return JS_TRUE;
