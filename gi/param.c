@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include "param.h"
+#include "arg.h"
 #include "repo.h"
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
@@ -42,6 +43,26 @@ static struct JSClass gjs_param_class;
 
 GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Param, gjs_param_class)
 
+static GIFieldInfo *
+find_field_info(GIObjectInfo *info,
+                gchar        *name)
+{
+    int i;
+    GIFieldInfo *field_info;
+
+    /* GParamSpecs aren't very big. We could optimize this so that it isn't
+     * O(N), but for the biggest GParamSpec, N=5, so it doesn't really matter. */
+    for (i = 0; i < g_object_info_get_n_fields((GIObjectInfo*)info); i++) {
+        field_info = g_object_info_get_field((GIObjectInfo*)info, i);
+        if (g_str_equal(name, g_base_info_get_name((GIBaseInfo*)field_info)))
+            return field_info;
+
+        g_base_info_unref((GIBaseInfo*)field_info);
+    }
+
+    return NULL;
+}
+
 /* a hook on getting a property; set value_p to override property's value.
  * Return value is JS_FALSE on OOM/exception.
  */
@@ -51,38 +72,70 @@ param_get_prop(JSContext *context,
                jsid       id,
                jsval     *value_p)
 {
+    JSBool success;
     Param *priv;
+    GParamSpec *pspec;
     char *name;
-    const char *value_str;
+    GType gtype;
+    GIObjectInfo *info, *parent_info;
+    GIFieldInfo *field_info = NULL;
+    GITypeInfo *type_info = NULL;
+    GIArgument arg;
 
     if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not something we affect, but no error */
 
     priv = priv_from_js(context, obj);
 
-    gjs_debug_jsprop(GJS_DEBUG_GPARAM,
-                     "Get prop '%s' hook obj %p priv %p", name, obj, priv);
-
     if (priv == NULL) {
         g_free(name);
         return JS_FALSE; /* wrong class */
     }
 
-    value_str = NULL;
-    if (strcmp(name, "name") == 0)
-        value_str = g_param_spec_get_name(priv->gparam);
-    else if (strcmp(name, "nick") == 0)
-        value_str = g_param_spec_get_nick(priv->gparam);
-    else if (strcmp(name, "blurb") == 0)
-        value_str = g_param_spec_get_blurb(priv->gparam);
+    success = JS_FALSE;
+    pspec = priv->gparam;
 
-    g_free(name);
+    gtype = G_TYPE_FROM_INSTANCE(pspec);
+    info = (GIObjectInfo*)g_irepository_find_by_gtype(g_irepository_get_default(), gtype);
+    parent_info = g_object_info_get_parent(info);
 
-    if (value_str != NULL) {
-        *value_p = STRING_TO_JSVAL(JS_NewStringCopyZ(context, value_str));
+    field_info = find_field_info(info, name);
+
+    if (field_info == NULL) {
+        /* Try it on the parent GParamSpec for generic GParamSpec properties. */
+        field_info = find_field_info(parent_info, name);
     }
 
-    return JS_TRUE;
+    if (field_info == NULL) {
+        *value_p = JSVAL_VOID;
+        success = JS_TRUE;
+        goto out;
+    }
+
+    type_info = g_field_info_get_type(field_info);
+
+    if (!g_field_info_get_field(field_info, priv->gparam, &arg)) {
+        gjs_throw(context, "Reading field %s.%s is not supported",
+                  g_base_info_get_name(info),
+                  g_base_info_get_name((GIBaseInfo*)field_info));
+        goto out;
+    }
+
+    if (!gjs_value_from_g_argument(context, value_p, type_info, &arg))
+        goto out;
+
+    success = JS_TRUE;
+
+ out:
+    if (field_info != NULL)
+        g_base_info_unref((GIBaseInfo*)field_info);
+    if (type_info != NULL)
+        g_base_info_unref((GIBaseInfo*)type_info);
+    g_base_info_unref((GIBaseInfo*)info);
+    g_base_info_unref((GIBaseInfo*)parent_info);
+    g_free(name);
+
+    return success;
 }
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(param)
