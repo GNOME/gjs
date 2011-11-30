@@ -28,6 +28,7 @@
 #include "foreign.h"
 #include "boxed.h"
 #include "union.h"
+#include "param.h"
 #include "value.h"
 #include "gjs/byteArray.h"
 #include <gjs/gjs-module.h>
@@ -2291,6 +2292,11 @@ gjs_value_from_g_argument (JSContext  *context,
                           g_type_name(gtype),
                           interface_type);
                 return JS_FALSE;
+            } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
+                JSObject *obj;
+                obj = gjs_param_from_g_param(context, G_PARAM_SPEC(arg->v_pointer));
+                if (obj)
+                    value = OBJECT_TO_JSVAL(obj);
             } else if (gtype == G_TYPE_NONE) {
                 gjs_throw(context, "Unexpected unregistered type packing GArgument into jsval");
             } else {
