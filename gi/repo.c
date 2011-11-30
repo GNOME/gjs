@@ -32,6 +32,7 @@
 #include "enumeration.h"
 #include "arg.h"
 #include "foreign.h"
+#include "interface.h"
 
 #include <gjs/compat.h>
 
@@ -493,6 +494,10 @@ gjs_define_info(JSContext  *context,
         break;
     case GI_INFO_TYPE_CONSTANT:
         if (!gjs_define_constant(context, in_object, (GIConstantInfo*) info))
+            return JS_FALSE;
+        break;
+    case GI_INFO_TYPE_INTERFACE:
+        if (!gjs_define_interface_class(context, in_object, (GIInterfaceInfo*) info, NULL))
             return JS_FALSE;
         break;
     default:
