@@ -210,7 +210,7 @@ gjs_lookup_param_prototype(JSContext    *context)
     JSObject *ns;
     JSObject *proto;
 
-    ns = gjs_lookup_namespace_object_by_name(context, "GLib");
+    ns = gjs_lookup_namespace_object_by_name(context, "GObject");
 
     if (ns == NULL)
         return NULL;
@@ -267,7 +267,7 @@ gjs_define_param_class(JSContext    *context,
                                            * Object.prototype
                                            */
                                           NULL,
-                                          "GLib",
+                                          "GObject",
                                           constructor_name,
                                           &gjs_param_class,
                                           /* constructor for instances (NULL for

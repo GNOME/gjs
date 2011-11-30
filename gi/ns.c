@@ -95,30 +95,30 @@ ns_new_resolve(JSContext *context,
 
     JS_BeginRequest(context);
 
-    repo = g_irepository_get_default();
-
-    info = g_irepository_find_by_name(repo, priv->namespace, name);
-    if (info == NULL) {
-        /* Special-case fallback hack for GParamSpec */
-        if (strcmp(name, "ParamSpec") == 0 &&
-            strcmp(priv->namespace, "GLib") == 0) {
-            if (!gjs_define_param_class(context,
-                                        obj,
-                                        NULL)) {
-                JS_EndRequest(context);
-                goto out;
-            } else {
-                *objp = obj; /* we defined the property in this object */
-                JS_EndRequest(context);
-                ret = JS_TRUE;
-                goto out;
-            }
+    /* Special-case fallback hack for GParamSpec */
+    if (strcmp(name, "ParamSpec") == 0 &&
+        strcmp(priv->namespace, "GObject") == 0) {
+        if (!gjs_define_param_class(context,
+                                    obj,
+                                    NULL)) {
+            JS_EndRequest(context);
+            goto out;
         } else {
-            /* No property defined, but no error either, so return TRUE */
+            *objp = obj; /* we defined the property in this object */
             JS_EndRequest(context);
             ret = JS_TRUE;
             goto out;
         }
+    }
+
+    repo = g_irepository_get_default();
+
+    info = g_irepository_find_by_name(repo, priv->namespace, name);
+    if (info == NULL) {
+        /* No property defined, but no error either, so return TRUE */
+        JS_EndRequest(context);
+        ret = JS_TRUE;
+        goto out;
     }
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
