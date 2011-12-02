@@ -66,6 +66,15 @@ typedef enum {
     VALUE_WAS_SET
 } ValueFromPropertyResult;
 
+static void
+throw_priv_is_null_error(JSContext *context)
+{
+    gjs_throw(context,
+              "This JS object wrapper isn't wrapping a GObject."
+              " If this is a custom subclass, are you sure you chained"
+              " up to the parent _init properly?");
+}
+
 static ValueFromPropertyResult
 init_g_param_from_property(JSContext  *context,
                            const char *js_prop_name,
@@ -140,8 +149,11 @@ object_instance_get_prop(JSContext *context,
     if (priv == NULL) {
         /* We won't have a private until the initializer is called, so
          * don't mark a call to _init() an error. */
-        if (!g_str_equal(name, "_init"))
+        if (!g_str_equal(name, "_init")) {
             ret = JS_FALSE;
+            throw_priv_is_null_error (context);
+        }
+
         goto out;
     }
     if (priv->gobj == NULL) /* prototype, not an instance. */
@@ -203,6 +215,7 @@ object_instance_set_prop(JSContext *context,
 
     if (priv == NULL) {
         ret = JS_FALSE;  /* wrong class passed in */
+        throw_priv_is_null_error(context);
         goto out;
     }
     if (priv->gobj == NULL) /* prototype, not an instance. */
@@ -329,8 +342,10 @@ object_instance_new_resolve(JSContext *context,
                      priv ? priv->gobj : NULL,
                      (priv && priv->gobj) ? g_type_name_from_instance((GTypeInstance*) priv->gobj) : "(type unknown)");
 
-    if (priv == NULL)
+    if (priv == NULL) {
+        throw_priv_is_null_error(context);
         goto out; /* we are the wrong class */
+    }
 
     if (priv->gobj != NULL) {
         ret = JS_TRUE;
@@ -926,8 +941,10 @@ real_connect_func(JSContext *context,
 
     priv = priv_from_js(context, obj);
     gjs_debug_gsignal("connect obj %p priv %p argc %d", obj, priv, argc);
-    if (priv == NULL)
+    if (priv == NULL) {
+        throw_priv_is_null_error(context);
         return JS_FALSE; /* wrong class passed in */
+    }
     if (priv->gobj == NULL) {
         /* prototype, not an instance. */
         gjs_throw(context, "Can't connect to signals on %s.%s.prototype; only on instances",
@@ -1016,8 +1033,10 @@ disconnect_func(JSContext *context,
     priv = priv_from_js(context, obj);
     gjs_debug_gsignal("disconnect obj %p priv %p argc %d", obj, priv, argc);
 
-    if (priv == NULL)
+    if (priv == NULL) {
+        throw_priv_is_null_error(context);
         return JS_FALSE; /* wrong class passed in */
+    }
 
     if (priv->gobj == NULL) {
         /* prototype, not an instance. */
@@ -1064,8 +1083,10 @@ emit_func(JSContext *context,
     priv = priv_from_js(context, obj);
     gjs_debug_gsignal("emit obj %p priv %p argc %d", obj, priv, argc);
 
-    if (priv == NULL)
+    if (priv == NULL) {
+        throw_priv_is_null_error(context);
         return JS_FALSE; /* wrong class passed in */
+    }
 
     if (priv->gobj == NULL) {
         /* prototype, not an instance. */
@@ -1179,8 +1200,10 @@ to_string_func(JSContext *context,
 
     priv = priv_from_js(context, obj);
 
-    if (priv == NULL)
+    if (priv == NULL) {
+        throw_priv_is_null_error(context);
         return JS_FALSE; /* wrong class passed in */
+    }
 
     namespace = g_base_info_get_namespace( (GIBaseInfo*) priv->info);
     name = g_base_info_get_name( (GIBaseInfo*) priv->info);
