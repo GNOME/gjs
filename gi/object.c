@@ -1376,6 +1376,10 @@ gjs_define_object_class(JSContext     *context,
        gjs_define_static_methods(context, constructor, info);
     }
 
+    value = INT_TO_JSVAL(gtype);
+    JS_DefineProperty(context, constructor, "$gtype", value,
+                      NULL, NULL, JSPROP_PERMANENT);
+
     if (prototype_p)
         *prototype_p = prototype;
 
@@ -1527,4 +1531,32 @@ gjs_g_object_from_object(JSContext    *context,
     }
 
     return priv->gobj;
+}
+
+GType
+gjs_gtype_from_value(JSContext *context,
+                     jsval      val)
+{
+    GType gtype = G_TYPE_NONE;
+
+    if (JSVAL_IS_INT(val))
+        return JSVAL_TO_INT(val);
+
+    if (JSVAL_IS_OBJECT(val)) {
+        JS_BeginRequest(context);
+
+        JSObject *obj = JSVAL_TO_OBJECT(val);
+        jsval gtype_val;
+        if (!JS_GetProperty(context, obj, "$gtype", &gtype_val))
+            goto out;
+
+        if (!JSVAL_IS_INT(gtype_val))
+            goto out;
+
+        gtype = JSVAL_TO_INT(gtype_val);
+    }
+
+ out:
+    JS_EndRequest(context);
+    return gtype;
 }

@@ -108,6 +108,7 @@ gjs_define_enumeration(JSContext    *context,
                        JSObject    **enumeration_p)
 {
     const char *enum_name;
+    GType gtype;
     JSObject *enum_obj;
     jsval value;
     int i;
@@ -164,6 +165,11 @@ gjs_define_enumeration(JSContext    *context,
             return JS_FALSE;
         }
     }
+
+    gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
+    value = INT_TO_JSVAL(gtype);
+    JS_DefineProperty(context, enum_obj, "$gtype", value,
+                      NULL, NULL, JSPROP_PERMANENT);
 
     gjs_debug(GJS_DEBUG_GENUM,
               "Defining %s.%s as %p",
