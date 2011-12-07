@@ -103,6 +103,14 @@ const AbstractImpl2 = new Lang.Class({
     // no _init here, we inherit the parent one
 });
 
+const CustomConstruct = new Lang.Class({
+    Name: 'CustomConstruct',
+
+    _construct: function(one, two) {
+        return [one, two];
+    }
+});
+
 function testClassFramework() {
     let newMagic = new MagicBase('A');
     assertEquals('A',  newMagic.a);
@@ -183,6 +191,15 @@ function testCrossCall() {
     let res = newMagic.bar(10, buffer);
     assertArrayEquals([10, 20], buffer);
     assertEquals(50, res);
+}
+
+function testConstruct() {
+    let instance = new CustomConstruct(1, 2);
+
+    assertTrue(instance instanceof Array);
+    assertTrue(!(instance instanceof CustomConstruct));
+
+    assertArrayEquals([1, 2], instance);
 }
 
 gjstestRun();

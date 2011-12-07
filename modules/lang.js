@@ -134,13 +134,19 @@ function defineAccessorProperty(object, name, getter, setter) {
 // https://github.com/mootools/moootools-core
 
 function _Base() {
+    throw new TypeError('Cannot instantiate abstract class _Base');
 }
 
+_Base.__super__ = null;
 _Base.prototype._init = function() { };
+_Base.prototype._construct = function() {
+    this._init.apply(this, arguments);
+    return this;
+};
 _Base.prototype.__name__ = '_Base';
 _Base.prototype.toString = function() {
     return '[object ' + this.__name__ + ']';
-}
+};
 
 function _parent() {
     if (!this.__caller__)
@@ -158,7 +164,36 @@ function _parent() {
     return previous.apply(this, arguments);
 }
 
-function wrapFunction(obj, name, meth) {
+function getMetaClass(params) {
+    if (params.MetaClass)
+        return params.MetaClass;
+
+    if (params.Extends && params.Extends.prototype.__metaclass__)
+        return params.Extends.prototype.__metaclass__;
+
+    return null;
+}
+
+function Class(params) {
+    let metaClass = getMetaClass(params);
+
+    if (metaClass && metaClass != this.constructor) {
+        // Trick to apply variadic arguments to constructors --
+        // bind the arguments into the constructor function.
+        let args = Array.prototype.slice.call(arguments);
+        let curried = Function.prototype.bind.apply(metaClass, [,].concat(args));
+        return new curried();
+    } else {
+        return this._construct.apply(this, arguments);
+    }
+}
+
+Class.__super__ = _Base;
+Class.prototype = Object.create(_Base.prototype);
+Class.prototype.constructor = Class;
+Class.prototype.__name__ = 'Class';
+
+Class.prototype.wrapFunction = function(name, meth) {
     if (meth._origin) meth = meth._origin;
 
     function wrapper() {
@@ -171,16 +206,24 @@ function wrapFunction(obj, name, meth) {
 
     wrapper._origin = meth;
     wrapper._name = name;
-    wrapper._owner = obj;
+    wrapper._owner = this;
 
     return wrapper;
 }
 
-function Class(params) {
+Class.prototype.toString = function() {
+    return '[object ' + this.__name__ + ' for ' + this.prototype.__name__ + ']';
+};
+
+Class.prototype._construct = function(params) {
     if (!params.Name) {
         throw new TypeError("Classes require an explicit 'Name' parameter.");
     }
     let name = params.Name;
+
+    let parent = params.Extends;
+    if (!parent)
+        parent = _Base;
 
     let newClass;
     if (params.Abstract) {
@@ -191,23 +234,43 @@ function Class(params) {
         newClass = function() {
             this.__caller__ = null;
 
-            return this._init.apply(this, arguments);
+            return this._construct.apply(this, arguments);
         };
     }
 
-    let parent = params.Extends;
-    if (!parent)
-        parent = _Base;
+    // Since it's not possible to create a constructor with
+    // a custom [[Prototype]], we have to do this to make
+    // "newClass instanceof Class" work, and so we can inherit
+    // methods/properties of Class.prototype, like wrapFunction.
+    newClass.__proto__ = this.constructor.prototype;
+
+    newClass.__super__ = parent;
+    newClass.prototype = Object.create(parent.prototype);
+    newClass.prototype.constructor = newClass;
+
+    newClass._init.apply(newClass, arguments);
+
+    Object.defineProperty(newClass.prototype, '__metaclass__',
+                          { writable: false,
+                            configurable: false,
+                            enumerable: false,
+                            value: this.constructor });
+
+    return newClass;
+};
+
+Class.prototype._init = function(params) {
+    let name = params.Name;
 
     let propertyObj = { };
-    let propertyDescriptors = Object.getOwnPropertyNames(params).forEach(function(name) {
+    Object.getOwnPropertyNames(params).forEach(function(name) {
         if (name == 'Name' || name == 'Extends' || name == 'Abstract')
             return;
 
         let descriptor = Object.getOwnPropertyDescriptor(params, name);
 
         if (typeof descriptor.value === 'function')
-            descriptor.value = wrapFunction(newClass, name, descriptor.value);
+            descriptor.value = this.wrapFunction(name, descriptor.value);
 
         // we inherit writable and enumerable from the property
         // descriptor of params (they're both true if created from an
@@ -215,16 +278,19 @@ function Class(params) {
         descriptor.configurable = false;
 
         propertyObj[name] = descriptor;
-    });
+    }.bind(this));
 
-    newClass.__super__ = parent;
-    newClass.prototype = Object.create(parent.prototype, propertyObj);
-    newClass.prototype.constructor = newClass;
-    newClass.prototype.__name__ = name;
-    newClass.prototype.parent = _parent;
-
-    return newClass;
-}
+    Object.defineProperties(this.prototype, propertyObj);
+    Object.defineProperties(this.prototype, {
+        '__name__': { writable: false,
+                      configurable: false,
+                      enumerable: false,
+                      value: name },
+        'parent': { writable: false,
+                    configurable: false,
+                    enumerable: false,
+                    value: _parent }});
+};
 
 // Merge stuff defined in native code
 copyProperties(imports.langNative, this);
