@@ -261,6 +261,65 @@ function _makeOutSignature(args) {
     return ret + ')';
 }
 
+function _handleMethodCall(info, impl, method_name, parameters, invocation) {
+    // prefer a sync version if available
+    if (this[method_name]) {
+	var retval;
+	try {
+	    retval = this[method_name].apply(this, parameters.deep_unpack());
+	} catch (e) {
+	    if (e.name.indexOf('.') == -1) {
+		// likely to be a normal JS error
+		e.name = 'org.gnome.gjs.JSError.' + e.name;
+	    }
+	    invocation.return_dbus_error(name, e.message);
+	    return;
+	}
+	if (retval === undefined) {
+	    // undefined (no return value) is the empty tuple
+	    retval = GLib.Variant.new('()', []);
+	}
+	try {
+	    if (!(retval instanceof GLib.Variant)) {
+		// attempt packing according to out signature
+		let methodInfo = info.lookup_method(method_name);
+		let outArgs = methodInfo.out_args;
+		let outSignature = _makeOutSignature(outArgs);
+		if (outArgs.length == 1) {
+		    // if one arg, we don't require the handler wrapping it
+		    // into an Array
+		    retval = [retval];
+		}
+		retval = GLib.Variant.new(outSignature, retval);
+	    }
+	    invocation.return_value(retval);
+	} catch(e) {
+	    // if we don't do this, the other side will never see a reply
+	    invocation.return_dbus_error('org.gnome.gjs.JSError.ValueError',
+					 "The return value from the method handler was not in the correct format");
+	}
+    } else if (this[method_name + 'Async']) {
+	this[method_name + 'Async'](parameters.deep_unpack(), invocation);
+    } else {
+	log('Missing handler for DBus method ' + method_name);
+	invocation.return_dbus_error('org.gnome.gjs.NotImplementedError',
+				     'Method ' + method_name + ' is not implemented');
+    }
+}
+
+function _handlePropertyGet(info, impl, property_name) {
+    let propInfo = info.lookup_property(property_name);
+    let jsval = this[property_name];
+    if (jsval != undefined)
+	return GLib.Variant.new(propInfo.signature, jsval);
+    else
+	return null;
+}
+
+function _handlePropertySet(info, impl, property_name, new_value) {
+    this[property_name] = new_value.deep_unpack();
+}
+
 function _wrapJSObject(interfaceInfo, jsObj) {
     var info;
     if (interfaceInfo instanceof Gio.DBusInterfaceInfo)
@@ -271,60 +330,13 @@ function _wrapJSObject(interfaceInfo, jsObj) {
 
     var impl = new GjsPrivate.DBusImplementation({ g_interface_info: info });
     impl.connect('handle-method-call', function(impl, method_name, parameters, invocation) {
-	// prefer a sync version if available
-	if (jsObj[method_name]) {
-	    var retval;
-	    try {
-		retval = jsObj[method_name].apply(jsObj, parameters.deep_unpack());
-	    } catch (e) {
-		if (e.name.indexOf('.') == -1) {
-		    // likely to be a normal JS error
-		    e.name = 'org.gnome.gjs.JSError.' + e.name;
-		}
-		invocation.return_dbus_error(e.name, e.message);
-		return;
-	    }
-	    if (retval === undefined) {
-		// undefined (no return value) is the empty tuple
-		retval = GLib.Variant.new_tuple([], 0);
-	    }
-	    try {
-		if (!(retval instanceof GLib.Variant)) {
-		    // attemp packing according to out signature
-		    var methodInfo = info.lookup_method(method_name);
-		    var outArgs = methodInfo.out_args;
-		    var outSignature = _makeOutSignature(outArgs);
-		    if (outArgs.length == 1) {
-			// if one arg, we don't require the handler wrapping it
-			// into an Array
-			retval = [retval];
-		    }
-		    retval = GLib.Variant.new(outSignature, retval);
-		}
-		invocation.return_value(retval);
-	    } catch(e) {
-		// if we don't do this, the other side will never see a reply
-		invocation.return_dbus_error('org.gnome.gjs.JSError.ValueError',
-					     "The return value from the method handler was not in the correct format");
-	    }
-	} else if (jsObj[method_name + 'Async']) {
-	    jsObj[method_name + 'Async'](parameters.deep_unpack(), invocation);
-	} else {
-	    log('Missing handler for DBus method ' + method_name);
-	    invocation.return_dbus_error('org.gnome.gjs.NotImplementedError',
-					 'Method ' + method_name + ' is not implemented');
-	}
+	return _handleMethodCall.call(jsObj, info, impl, method_name, parameters, invocation)
     });
     impl.connect('handle-property-get', function(impl, property_name) {
-	var propInfo = info.lookup_property(property_name);
-	var jsval = jsObj[property_name];
-	if (jsval != undefined)
-	    return GLib.Variant.new(propInfo.signature, jsval);
-	else
-	    return null;
+	return _handlePropertyGet.call(jsObj, info, impl, property_name);
     });
-    impl.connect('handle-property-set', function(impl, property_name, new_value) {
-	jsObj[property_name] = new_value.deep_unpack();
+    impl.connect('handle-property-set', function(impl, property_name, value) {
+	return _handlePropertySet.call(jsObj, info, impl, property_name, value);
     });
 
     return impl;
