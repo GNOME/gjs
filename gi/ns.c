@@ -95,22 +95,6 @@ ns_new_resolve(JSContext *context,
 
     JS_BeginRequest(context);
 
-    /* Special-case fallback hack for GParamSpec */
-    if (strcmp(name, "ParamSpec") == 0 &&
-        strcmp(priv->namespace, "GObject") == 0) {
-        if (!gjs_define_param_class(context,
-                                    obj,
-                                    NULL)) {
-            JS_EndRequest(context);
-            goto out;
-        } else {
-            *objp = obj; /* we defined the property in this object */
-            JS_EndRequest(context);
-            ret = JS_TRUE;
-            goto out;
-        }
-    }
-
     repo = g_irepository_get_default();
 
     info = g_irepository_find_by_name(repo, priv->namespace, name);

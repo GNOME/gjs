@@ -27,6 +27,7 @@
 #include "ns.h"
 #include "function.h"
 #include "object.h"
+#include "param.h"
 #include "boxed.h"
 #include "union.h"
 #include "enumeration.h"
@@ -470,10 +471,21 @@ gjs_define_info(JSContext  *context,
             GType gtype;
             GIBaseInfo *info_for_gtype;
             gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
-            if (!gjs_define_object_class(context, in_object, gtype, NULL, NULL, &info_for_gtype))
+
+            if (g_type_is_a (gtype, G_TYPE_PARAM)) {
+                if (!gjs_define_param_class(context, in_object, NULL))
+                    return JS_FALSE;
+            } else if (g_type_is_a (gtype, G_TYPE_OBJECT)) {
+                if (!gjs_define_object_class(context, in_object, gtype, NULL, NULL, &info_for_gtype))
+                    return JS_FALSE;
+                g_assert(g_base_info_equal(info, info_for_gtype));
+                g_base_info_unref(info_for_gtype);
+            } else {
+                gjs_throw (context,
+                           "Unsupported type %s, deriving from fundamental %s",
+                           g_type_name(gtype), g_type_name(g_type_fundamental(gtype)));
                 return JS_FALSE;
-            g_assert(g_base_info_equal(info, info_for_gtype));
-            g_base_info_unref(info_for_gtype);
+            }
         }
         break;
     case GI_INFO_TYPE_STRUCT:
