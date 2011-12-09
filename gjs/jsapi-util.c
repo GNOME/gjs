@@ -1474,9 +1474,11 @@ gjs_parse_args (JSContext  *context,
             if (!JSVAL_IS_BOOLEAN(js_value)) {
                 arg_error_message = "Not a boolean";
             } else {
-                *(gboolean *)arg = JSVAL_TO_BOOLEAN(js_value);
+                gboolean *arg = arg_location;
+                *arg = JSVAL_TO_BOOLEAN(js_value);
             }
         }
+            break;
         case 'o': {
             if (!JSVAL_IS_OBJECT(js_value)) {
                 arg_error_message = "Not an object";

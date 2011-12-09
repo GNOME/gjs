@@ -188,32 +188,33 @@ param_new_internal(JSContext *cx,
     jsval *argv = JS_ARGV(cx, vp);
     GParamSpec *pspec = NULL;
     JSBool ret = JS_FALSE;
+    gchar *method_name;
 
     gchar *prop_name;
+    JSObject *prop_gtype_jsobj;
     GType prop_gtype;
     GType prop_type;
     gchar *nick;
     gchar *blurb;
     GParamFlags flags;
 
-    if (argc < 5)
+    if (!gjs_parse_args(cx, "GObject.ParamSpec._new_internal",
+                        "!sossi", argc, argv,
+                        "prop_name", &prop_name,
+                        "prop_gtype", &prop_gtype_jsobj,
+                        "nick", &nick,
+                        "blurb", &blurb,
+                        "flags", &flags))
         return JS_FALSE;
 
-    if (!JSVAL_IS_STRING(argv[0]) ||
-        !JSVAL_IS_OBJECT(argv[1]) ||
-        !JSVAL_IS_STRING(argv[2]) ||
-        !JSVAL_IS_STRING(argv[3]) ||
-        !JSVAL_IS_INT(argv[4]))
-        return JS_FALSE;
-
-    prop_name = gjs_string_get_ascii(cx, argv[0]);
-    prop_gtype = gjs_gtype_get_actual_gtype(cx, JSVAL_TO_OBJECT(argv[1]));
+    prop_gtype = gjs_gtype_get_actual_gtype(cx, prop_gtype_jsobj);
     prop_type = G_TYPE_FUNDAMENTAL(prop_gtype);
-    nick = gjs_string_get_ascii(cx, argv[2]);
-    blurb = gjs_string_get_ascii(cx, argv[3]);
-    flags = JSVAL_TO_INT(argv[4]);
+
+    method_name = g_strdup_printf("GObject.ParamSpec.%s",
+                                  g_type_name(prop_type));
 
     argv += 5;
+    argc -= 5;
 
     switch (prop_type) {
     case G_TYPE_UCHAR:
@@ -221,14 +222,12 @@ param_new_internal(JSContext *cx,
 	{
 	    gchar *minimum, *maximum, *default_value;
 
-            if (!JSVAL_IS_STRING(argv[0]) ||
-                !JSVAL_IS_STRING(argv[1]) ||
-                !JSVAL_IS_STRING(argv[2]))
+            if (!gjs_parse_args(cx, method_name,
+                                "sss", argc, argv,
+                                "minimum", &minimum,
+                                "maximum", &maximum,
+                                "default_value", &default_value))
                 goto out;
-
-            minimum = gjs_string_get_ascii(cx, argv[0]);
-            maximum = gjs_string_get_ascii(cx, argv[1]);
-            default_value = gjs_string_get_ascii(cx, argv[2]);
 
             if (prop_type == G_TYPE_CHAR)
                 pspec = g_param_spec_char(prop_name, nick, blurb,
@@ -253,13 +252,11 @@ param_new_internal(JSContext *cx,
         {
             gint64 minimum, maximum, default_value;
 
-            if (!gjs_value_to_int64(cx, argv[0], &minimum))
-                goto out;
-
-            if (!gjs_value_to_int64(cx, argv[1], &maximum))
-                goto out;
-
-            if (!gjs_value_to_int64(cx, argv[2], &default_value))
+            if (!gjs_parse_args(cx, method_name,
+                                "ttt", argc, argv,
+                                "minimum", &minimum,
+                                "maximum", &maximum,
+                                "default_value", &default_value))
                 goto out;
 
             switch (prop_type) {
@@ -294,7 +291,9 @@ param_new_internal(JSContext *cx,
         {
             gboolean default_value;
 
-            if (!JSVAL_IS_BOOLEAN(argv[0]))
+            if (!gjs_parse_args(cx, method_name,
+                                "b", argc, argv,
+                                "default_value", &default_value))
                 goto out;
 
             default_value = JSVAL_TO_BOOLEAN(argv[0]);
@@ -305,25 +304,24 @@ param_new_internal(JSContext *cx,
         break;
     case G_TYPE_ENUM:
         {
+            JSObject *gtype_jsobj;
             GType gtype;
             GIEnumInfo *info;
             gint64 default_value;
 
-            if (!JSVAL_IS_OBJECT(argv[0])) {
-                gjs_throw(cx, "Passed invalid GType to GParamSpecEnum constructor");
+            if (!gjs_parse_args(cx, method_name,
+                                "ot", argc, argv,
+                                "gtype", &gtype_jsobj,
+                                "default_value", &default_value))
                 goto out;
-            }
 
-            gtype = gjs_gtype_get_actual_gtype(cx, JSVAL_TO_OBJECT(argv[0]));
+            gtype = gjs_gtype_get_actual_gtype(cx, gtype_jsobj);
             if (gtype == G_TYPE_NONE) {
                 gjs_throw(cx, "Passed invalid GType to GParamSpecEnum constructor");
                 goto out;
             }
 
             info = g_irepository_find_by_gtype(g_irepository_get_default(), gtype);
-
-            if (!gjs_value_to_int64(cx, argv[1], &default_value))
-                goto out;
 
             if (!_gjs_enum_value_is_valid(cx, info, default_value))
                 goto out;
@@ -334,22 +332,21 @@ param_new_internal(JSContext *cx,
         break;
     case G_TYPE_FLAGS:
         {
+            JSObject *gtype_jsobj;
             GType gtype;
             gint64 default_value;
 
-            if (!JSVAL_IS_OBJECT(argv[0])) {
-                gjs_throw(cx, "Passed invalid GType to GParamSpecFlags constructor");
+            if (!gjs_parse_args(cx, method_name,
+                                "ot", argc, argv,
+                                "gtype", &gtype_jsobj,
+                                "default_value", &default_value))
                 goto out;
-            }
 
-            gtype = gjs_gtype_get_actual_gtype(cx, JSVAL_TO_OBJECT(argv[0]));
+            gtype = gjs_gtype_get_actual_gtype(cx, gtype_jsobj);
             if (gtype == G_TYPE_NONE) {
                 gjs_throw(cx, "Passed invalid GType to GParamSpecFlags constructor");
                 goto out;
             }
-
-            if (!gjs_value_to_int64(cx, argv[1], &default_value))
-                goto out;
 
             if (!_gjs_flags_value_is_valid(cx, gtype, default_value))
                 goto out;
@@ -363,14 +360,12 @@ param_new_internal(JSContext *cx,
         {
 	    gfloat minimum, maximum, default_value;
 
-            if (!JSVAL_IS_DOUBLE(argv[0]) ||
-                !JSVAL_IS_DOUBLE(argv[1]) ||
-                !JSVAL_IS_DOUBLE(argv[2]))
+            if (!gjs_parse_args(cx, "GObject.ParamSpec.float",
+                                "fff", argc, argv,
+                                "minimum", &minimum,
+                                "maximum", &maximum,
+                                "default_value", &default_value))
                 goto out;
-
-            minimum = JSVAL_TO_DOUBLE(argv[0]);
-            maximum = JSVAL_TO_DOUBLE(argv[1]);
-            default_value = JSVAL_TO_DOUBLE(argv[2]);
 
             if (prop_type == G_TYPE_FLOAT)
                 pspec = g_param_spec_float(prop_name, nick, blurb,
@@ -384,10 +379,10 @@ param_new_internal(JSContext *cx,
         {
             const gchar *default_value;
 
-            if (!JSVAL_IS_STRING(argv[0]))
+            if (!gjs_parse_args(cx, method_name,
+                                "s", argc, argv,
+                                "default_value", &default_value))
                 goto out;
-
-            default_value = gjs_string_get_ascii(cx, argv[0]);
 
             pspec = g_param_spec_string(prop_name, nick, blurb,
                                         default_value, flags);
