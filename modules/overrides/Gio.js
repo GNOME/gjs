@@ -76,7 +76,7 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
         }
     }
 
-    var inVariant = GLib.Variant.new('(' + inSignature.join('') + ')', arg_array);
+    var inVariant = new GLib.Variant('(' + inSignature.join('') + ')', arg_array);
 
     var asyncCallback = function (proxy, result) {
         try {
@@ -132,11 +132,11 @@ function _propertyGetter(name) {
 }
 
 function _propertySetter(value, name, signature) {
-    let variant = GLib.Variant.new(signature, value);
+    let variant = new GLib.Variant(signature, value);
     this.set_cached_property(name, variant);
 
     this.call('org.freedesktop.DBus.Properties.Set',
-              GLib.Variant.new('(ssv)',
+              new GLib.Variant('(ssv)',
                                [this.g_interface_name,
                                 name, variant]),
               Gio.DBusCallFlags.NONE, -1, null,
@@ -286,7 +286,7 @@ function _handleMethodCall(info, impl, method_name, parameters, invocation) {
         }
         if (retval === undefined) {
             // undefined (no return value) is the empty tuple
-            retval = GLib.Variant.new('()', []);
+            retval = new GLib.Variant('()', []);
         }
         try {
             if (!(retval instanceof GLib.Variant)) {
@@ -299,7 +299,7 @@ function _handleMethodCall(info, impl, method_name, parameters, invocation) {
                     // into an Array
                     retval = [retval];
                 }
-                retval = GLib.Variant.new(outSignature, retval);
+                retval = new GLib.Variant(outSignature, retval);
             }
             invocation.return_value(retval);
         } catch(e) {
@@ -320,7 +320,7 @@ function _handlePropertyGet(info, impl, property_name) {
     let propInfo = info.lookup_property(property_name);
     let jsval = this[property_name];
     if (jsval != undefined)
-        return GLib.Variant.new(propInfo.signature, jsval);
+        return new GLib.Variant(propInfo.signature, jsval);
     else
         return null;
 }

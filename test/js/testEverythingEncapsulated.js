@@ -1,6 +1,8 @@
 // application/javascript;version=1.8
 // This used to be called "Everything"
 const Everything = imports.gi.Regress;
+const GLib = imports.gi.GLib;
+
 if (!('assertEquals' in this)) { /* allow running this test standalone */
     imports.lang.copyPublicProperties(imports.jsUnit, this);
     gjstestRun = function() { return imports.jsUnit.gjstestRun(window); };
@@ -144,6 +146,51 @@ function testTestStructFixedArray() {
     assertEquals(42, struct.array[0]);
     assertEquals(43, struct.array[1]);
     assertEquals(51, struct.array[9]);
+}
+
+function testComplexConstructor() {
+    let boxed = new Everything.TestBoxedD('abcd', 8);
+
+    assertEquals(12, boxed.get_magic());
+}
+
+function testComplexConstructorBackwardCompatibility() {
+    // RegressTestBoxedB has a constructor that takes multiple
+    // arguments, but since it is directly allocatable, we keep
+    // the old style of passing an hash of fields.
+    // The two real world structs that have this behavior are
+    // Clutter.Color and Clutter.ActorBox.
+    let boxed = new Everything.TestBoxedB({ some_int8: 7, some_long: 5 });
+
+    assertEquals(7, boxed.some_int8);
+    assertEquals(5, boxed.some_long);
+}
+
+function testVariantConstructor() {
+    let str_variant = new GLib.Variant('s', 'mystring');
+    assertEquals('mystring', str_variant.get_string()[0]);
+    assertEquals('mystring', str_variant.deep_unpack());
+
+    let str_variant_old = GLib.Variant.new('s', 'mystring');
+    assertTrue(str_variant.equal(str_variant_old));
+
+    let struct_variant = new GLib.Variant('(sogvau)',
+					  [ 'a string',
+					    '/a/object/path',
+					    'asig', //nature
+					    new GLib.Variant('s', 'variant'),
+					    [ 7, 3 ]
+					  ]);
+    assertEquals(5, struct_variant.n_children());
+
+    let unpacked = struct_variant.deep_unpack();
+    assertEquals('a string', unpacked[0]);
+    assertEquals('/a/object/path', unpacked[1]);
+    assertEquals('asig', unpacked[2]);
+    assertTrue(unpacked[3] instanceof GLib.Variant);
+    assertEquals('variant', unpacked[3].deep_unpack());
+    assertTrue(unpacked[4] instanceof Array);
+    assertEquals(2, unpacked[4].length);
 }
 
 gjstestRun();

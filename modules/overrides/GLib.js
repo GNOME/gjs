@@ -105,7 +105,7 @@ function _pack_variant(signature, value) {
 	if (value != null)
 	    return GLib.Variant.new_maybe(null, _pack_variant(signature, value))
 	else
-	    return GLib.Variant.new_maybe(GLib.VariantType.new(_read_single_type(signature, false).join('')), null);
+	    return GLib.Variant.new_maybe(new GLib.VariantType(_read_single_type(signature, false).join('')), null);
     case 'a':
 	let arrayType = _read_single_type(signature, false);
 	if (arrayType[0] == 's') {
@@ -136,7 +136,8 @@ function _pack_variant(signature, value) {
 		arrayValue.push(child);
 	    }
 	}
-	return GLib.Variant.new_array(GLib.VariantType.new(arrayType.join('')), arrayValue);
+	return GLib.Variant.new_array(new GLib.VariantType(arrayType.join('')), arrayValue);
+
     case '(':
 	let children = [ ];
 	for (let i = 0; i < value.length; i++) {
@@ -200,7 +201,7 @@ function _unpack_variant(variant, deep) {
 	else
 	    return val;
     case 'a':
-	if (variant.is_of_type(GLib.VariantType.new('a{?*}'))) {
+	if (variant.is_of_type(new GLib.VariantType('a{?*}'))) {
 	    // special case containers
 	    let ret = { };
 	    let nElements = variant.n_children();
@@ -245,7 +246,7 @@ function _init() {
     // without checking instanceof
     Error.prototype.matches = function() { return false; }
 
-    this.Variant.new = function (sig, value) {
+    this.Variant._new_internal = function(sig, value) {
 	let signature = Array.prototype.slice.call(sig);
 
 	let variant = _pack_variant(signature, value);
@@ -253,6 +254,11 @@ function _init() {
 	    throw new TypeError('Invalid GVariant signature (more than one single complete type)');
 
 	return variant;
+    }
+
+    // Deprecate version of new GLib.Variant()
+    this.Variant.new = function(sig, value) {
+	return new GLib.Variant(sig, value);
     }
     this.Variant.prototype.unpack = function() {
 	return _unpack_variant(this, false);
