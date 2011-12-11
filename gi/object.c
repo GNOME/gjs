@@ -2061,6 +2061,92 @@ gjs_register_property(JSContext *cx,
 }
 
 static JSBool
+gjs_signal_new(JSContext *cx,
+               uintN      argc,
+               jsval     *vp)
+{
+    jsval *argv = JS_ARGV(cx, vp);
+    JSObject *obj;
+    ObjectInstance *priv;
+    gchar *signal_name = NULL;
+    GSignalAccumulator accumulator;
+    gint signal_id;
+    guint i, n_parameters;
+    GType *params;
+    JSBool ret;
+
+    if (argc != 6)
+        return JS_FALSE;
+
+    JS_BeginRequest(cx);
+
+    if (!gjs_string_to_utf8(cx, argv[1], &signal_name)) {
+        ret = JS_FALSE;
+        goto out;
+    }
+
+    obj = JSVAL_TO_OBJECT(argv[0]);
+    priv = priv_from_js(cx, obj);
+
+    /* we only support standard accumulators for now */
+    switch (JSVAL_TO_INT(argv[3])) {
+    case 1:
+        accumulator = g_signal_accumulator_first_wins;
+        break;
+    case 2:
+        accumulator = g_signal_accumulator_true_handled;
+        break;
+    case 0:
+    default:
+        accumulator = NULL;
+    }
+
+    if (accumulator == g_signal_accumulator_true_handled &&
+        JSVAL_TO_INT(argv[4]) != G_TYPE_BOOLEAN) {
+        gjs_throw (cx, "GObject.SignalAccumulator.TRUE_HANDLED can only be used with boolean signals");
+        ret = JS_FALSE;
+        goto out;
+    }
+
+    if (!JS_GetArrayLength(cx, JSVAL_TO_OBJECT(argv[5]), &n_parameters)) {
+        ret = JS_FALSE;
+        goto out;
+    }
+    params = g_newa(GType, n_parameters);
+    for (i = 0; i < n_parameters; i++) {
+        jsval gtype_val;
+        if (!JS_GetElement(cx, JSVAL_TO_OBJECT(argv[5]), i, &gtype_val) ||
+            !JSVAL_IS_OBJECT(gtype_val)) {
+            gjs_throw(cx, "Invalid signal parameter number %d", i);
+            ret = JS_FALSE;
+            goto out;
+        }
+
+        params[i] = gjs_gtype_get_actual_gtype(cx, JSVAL_TO_OBJECT(gtype_val));
+    }
+
+    signal_id = g_signal_newv(signal_name,
+                              priv->gtype,
+                              JSVAL_TO_INT(argv[2]), /* signal_flags */
+                              NULL, /* class closure */
+                              accumulator,
+                              NULL, /* accu_data */
+                              g_cclosure_marshal_generic,
+                              gjs_gtype_get_actual_gtype(cx, JSVAL_TO_OBJECT(argv[4])), /* return type */
+                              n_parameters,
+                              params);
+
+    JS_SET_RVAL(cx, vp, INT_TO_JSVAL(signal_id));
+    ret = JS_TRUE;
+
+ out:
+    JS_EndRequest(cx);
+
+    free (signal_name);
+    return ret;
+}
+
+static JSBool
 gjs_define_stuff(JSContext *context,
                     JSObject  *module_obj)
 {
@@ -2080,6 +2166,12 @@ gjs_define_stuff(JSContext *context,
                            "register_property",
                            (JSNative)gjs_register_property,
                            2, GJS_MODULE_PROP_FLAGS))
+        return JS_FALSE;
+
+    if (!JS_DefineFunction(context, module_obj,
+                           "signal_new",
+                           (JSNative)gjs_signal_new,
+                           6, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     return JS_TRUE;

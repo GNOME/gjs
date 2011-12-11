@@ -44,12 +44,41 @@ const GObjectMeta = new Lang.Class({
                 Gi.register_property(this.prototype, params.Properties[prop]);
             }
         }
+
+        if (params.Signals) {
+            for (let signalName in params.Signals) {
+                let obj = params.Signals[signalName];
+                let flags = (obj.flags !== undefined) ? obj.flags : GObject.SignalFlags.RUN_FIRST;
+                let accumulator = (obj.accumulator !== undefined) ? obj.accumulator : GObject.AccumulatorType.NONE;
+                let rtype = (obj.return_type !== undefined) ? obj.return_type : GObject.TYPE_NONE;
+                let paramtypes = (obj.param_types !== undefined) ? obj.param_types : [];
+
+                try {
+                    obj.signal_id = Gi.signal_new(this.prototype, signal_name, flags, accumulator, rtype, paramtypes);
+                } catch(e) {
+                    throw new TypeError('Invalid signal ' + signal_name + ': ' + e.message);
+                }
+            }
+        }
         delete params.Properties;
+        delete params.Signals;
 
         for (let prop in params) {
             let value = this.prototype[prop];
-            if (typeof value === 'function' && prop.slice(0, 6) == 'vfunc_') {
-                Gi.hook_up_vfunc(this.prototype, prop.slice(6), value);
+            if (typeof value === 'function') {
+                if (prop.slice(0, 6) == 'vfunc_') {
+                    Gi.hook_up_vfunc(this.prototype, prop.slice(6), value);
+                } else if (prop.slice(0, 3) == 'on_') {
+                    let id = GObject.signal_lookup(prop.slice(3).replace('_', '-'), this.$gtype);
+                    if (id != 0) {
+                        GObject.signal_override_class_closure(id, this.$gtype, function() {
+                            let argArray = Array.prototype.slice.call(arguments);
+                            let emitter = argArray.shift();
+
+                            value.apply(emitter, argArray);
+                        });
+                    }
+                }
             }
         }
     },
@@ -172,5 +201,12 @@ function _init() {
     this.Object.prototype._construct = function() {
         this._init.apply(this, arguments);
         return this;
+    };
+
+    // fake enum for signal accumulators, keep in sync with gi/object.c
+    this.AccumulatorType = {
+        NONE: 0,
+        FIRST_WINS: 1,
+        TRUE_HANDLED: 2
     };
 }
