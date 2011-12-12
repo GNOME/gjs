@@ -311,7 +311,11 @@ find_vfunc_on_parent(GIObjectInfo *info,
      * it when unrefing parents later */
     g_base_info_ref(info);
     parent = info;
-    vfunc = g_object_info_find_vfunc(parent, name);
+
+    /* Since it isn't possible to override a vfunc on
+     * an interface without reimplementing it, we don't need
+     * to search the parent types when looking for a vfunc. */
+    vfunc = g_object_info_find_vfunc_using_interfaces(parent, name, NULL);
     while (!vfunc && parent) {
         old_parent = parent;
         parent = g_object_info_get_parent(old_parent);
@@ -1828,6 +1832,37 @@ gjs_hook_up_vfunc(JSContext *cx,
 
     vfunc = find_vfunc_on_parent(info, name);
 
+    if (!vfunc) {
+        guint i, n_interfaces;
+        GType *interface_list;
+        GIInterfaceInfo *interface;
+
+        interface_list = g_type_interfaces(gtype, &n_interfaces);
+
+        for (i = 0; i < n_interfaces; i++) {
+            interface = (GIInterfaceInfo*)g_irepository_find_by_gtype(g_irepository_get_default(),
+                                                                      interface_list[i]);
+
+            /* The interface doesn't have to exist -- it could be private
+             * or dynamic. */
+            if (interface)
+                vfunc = g_interface_info_find_vfunc(interface, name);
+
+            g_base_info_unref((GIBaseInfo*)interface);
+            if (vfunc)
+                break;
+        }
+
+        g_free(interface_list);
+    }
+
+    if (!vfunc) {
+        gjs_throw(cx, "Could not find definition of virtual function %s", name);
+
+        g_free(name);
+        return JS_FALSE;
+    }
+
     find_vfunc_info(cx, gtype, vfunc, name, &implementor_vtable, &field_info);
     if (field_info != NULL) {
         GITypeInfo *type_info;
@@ -2028,6 +2063,32 @@ gjs_register_type(JSContext *cx,
 }
 
 static JSBool
+gjs_add_interface(JSContext *cx,
+                  uintN      argc,
+                  jsval     *vp)
+{
+    jsval *argv = JS_ARGV(cx, vp);
+    GInterfaceInfo interface_vtable = { NULL, NULL, NULL };
+    ObjectInstance *priv;
+    JSObject *object;
+    JSObject *iface_jsobj;
+
+    if (!gjs_parse_args(cx, "add_interface",
+                        "oo", argc, argv,
+                        "object", &object,
+                        "gtype", &iface_jsobj))
+        return JS_FALSE;
+
+    priv = priv_from_js(cx, object);
+
+    g_type_add_interface_static(priv->gtype,
+                                gjs_gtype_get_actual_gtype(cx, iface_jsobj),
+                                &interface_vtable);
+
+    return JS_TRUE;
+}
+
+static JSBool
 gjs_register_property(JSContext *cx,
                       uintN      argc,
                       jsval     *vp)
@@ -2154,6 +2215,12 @@ gjs_define_stuff(JSContext *context,
                            "register_type",
                            (JSNative)gjs_register_type,
                            3, GJS_MODULE_PROP_FLAGS))
+        return JS_FALSE;
+
+    if (!JS_DefineFunction(context, module_obj,
+                           "add_interface",
+                           (JSNative)gjs_add_interface,
+                           2, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,

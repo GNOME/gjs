@@ -60,8 +60,15 @@ const GObjectMeta = new Lang.Class({
                 }
             }
         }
+
+        if (params.Implements) {
+            for (let i = 0; i < params.Implements.length; i++)
+                Gi.add_interface(this.prototype, ifaces[i]);
+        }
+
         delete params.Properties;
         delete params.Signals;
+        delete params.Implements;
 
         for (let prop in params) {
             let value = this.prototype[prop];

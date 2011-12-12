@@ -129,7 +129,22 @@ const MyApplication = new Lang.Class({
         this.emit('custom', n);
     }
 });
-printerr("almost");
+
+const MyInitable = new Lang.Class({
+    Name: 'MyInitable',
+    Extends: GObject.Object,
+    Implements: [ Gio.Initable ],
+
+    _init: function(params) {
+        this.parent(params);
+
+        this.inited = false;
+    },
+
+    vfunc_init: function(cancellable) { // error?
+        this.inited = true;
+    }
+});
 
 function testGObjectClass() {
     let myInstance = new MyObject();
@@ -231,6 +246,16 @@ function testSubclass() {
 
     instance.emit_custom(73);
     assertEquals(73, v);
+}
+
+function testInterface() {
+    let instance = new MyInitable();
+    assertEquals(false, instance.inited);
+
+    instance.init(null);
+    assertEquals(true, instance.inited);
+
+    // assertTrue(instance instanceof Gio.Initable)
 }
 
 gjstestRun();
