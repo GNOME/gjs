@@ -1713,8 +1713,6 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(js_exports)
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(js_exports);
 
-    (void) argv;
-
     priv = g_slice_new0(Exports);
 
     GJS_INC_COUNTER(dbus_exports);

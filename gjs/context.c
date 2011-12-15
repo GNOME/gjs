@@ -512,11 +512,7 @@ out:
 
 static JSBool
 gjs_locale_to_unicode (JSContext  *context,
-#ifdef JS_LOCALETOUNICODE_NEEDS_CONST_CHAR
                        const char *src,
-#else
-                       char       *src,
-#endif
                        jsval      *retval)
 {
     JSBool success;

@@ -95,26 +95,6 @@ AC_CHECK_FUNCS(mallinfo)
 echo "Using JS_CFLAGS: $JS_CFLAGS"
 echo "Using JS_LIBS: $JS_LIBS"
 
-AC_MSG_CHECKING([whether JSLocaleToUnicode takes a const char*])
-save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $JS_CFLAGS -Wno-unused -Werror"
-AC_COMPILE_IFELSE(
-    [AC_LANG_PROGRAM(
-        [[
-            #include <jsapi.h>
-            extern JSBool test_fun (JSContext*, const char*, jsval*);
-        ]],
-        [[JSLocaleToUnicode jsltu = test_fun;]]
-    )],
-    [have_jslocale_to_unicode_const=yes],
-    [have_jslocale_to_unicode_const=no])
-AC_MSG_RESULT([$have_jslocale_to_unicode_const])
-CFLAGS="$save_CFLAGS"
-
-if test "$have_jslocale_to_unicode_const" = yes; then
-     AC_DEFINE([JS_LOCALETOUNICODE_NEEDS_CONST_CHAR], [1], [Define if JSLocaleToUnicode takes a const char* for its src])
-fi
-
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $JS_CFLAGS"
 AC_MSG_CHECKING([for JS_CLASS_TRACE macro])

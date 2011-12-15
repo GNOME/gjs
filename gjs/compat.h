@@ -55,7 +55,7 @@ gjs_##name##_constructor(JSContext  *context,           \
  */
 #define GJS_NATIVE_CONSTRUCTOR_VARIABLES(name)          \
     JSObject *object = NULL;                            \
-    jsval *argv = JS_ARGV(context, vp);
+    jsval *argv G_GNUC_UNUSED = JS_ARGV(context, vp);
 
 /**
  * GJS_NATIVE_CONSTRUCTOR_PRELUDE:

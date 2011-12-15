@@ -197,8 +197,6 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(repo)
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(repo);
 
-    (void) argv;
-
     priv = g_slice_new0(Repo);
 
     GJS_INC_COUNTER(repo);

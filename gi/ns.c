@@ -150,8 +150,6 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(ns)
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(ns)
     Ns *priv;
 
-    (void) argv;
-
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(ns);
 
     priv = g_slice_new0(Ns);
