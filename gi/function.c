@@ -667,6 +667,13 @@ gjs_invoke_c_function(JSContext      *context,
             GType gtype;
 
             in_arg_cvalues[0].v_pointer = gjs_g_object_from_object(context, obj);
+            if (in_arg_cvalues[0].v_pointer == NULL) {
+                /* priv == NULL (user probably forgot to chain _init).
+                 * Anyway, in this case we've thrown an exception, so just
+                 * make sure we fail. */
+                failed = TRUE;
+                goto release;
+            }
 
             gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo *)container);
             if (!g_type_is_a (G_TYPE_FROM_INSTANCE (in_arg_cvalues[0].v_pointer),

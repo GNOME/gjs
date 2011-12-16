@@ -29,46 +29,44 @@ const GObjectMeta = new Lang.Class({
     Extends: Lang.Class,
 
     _init: function(params) {
-        if (!params.Extends)
-            params.Extends = GObject.Object;
-
-        if (!this._isValidClass(params.Extends))
-            throw new TypeError('GObject.Class used with invalid base class (is ' + params.Extends.prototype + ')');
-
         this.parent(params);
 
-        Gi.register_type(params.Extends.prototype, this.prototype, params.Name);
+        // retrieve all parameters and remove them from params before chaining
 
-        if (params.Properties) {
-            for (let prop in params.Properties) {
-                Gi.register_property(this.prototype, params.Properties[prop]);
+        let properties = params.Properties;
+        let signals = params.Signals;
+        let ifaces = params.Implements;
+
+        delete params.Properties;
+        delete params.Signals;
+        delete params.Implements;
+
+        if (properties) {
+            for (let prop in properties) {
+                Gi.register_property(this.prototype, properties[prop]);
             }
         }
 
-        if (params.Signals) {
-            for (let signalName in params.Signals) {
-                let obj = params.Signals[signalName];
+        if (signals) {
+            for (let signalName in signals) {
+                let obj = signals[signalName];
                 let flags = (obj.flags !== undefined) ? obj.flags : GObject.SignalFlags.RUN_FIRST;
                 let accumulator = (obj.accumulator !== undefined) ? obj.accumulator : GObject.AccumulatorType.NONE;
                 let rtype = (obj.return_type !== undefined) ? obj.return_type : GObject.TYPE_NONE;
                 let paramtypes = (obj.param_types !== undefined) ? obj.param_types : [];
 
                 try {
-                    obj.signal_id = Gi.signal_new(this.prototype, signal_name, flags, accumulator, rtype, paramtypes);
+                    obj.signal_id = Gi.signal_new(this.prototype, signalName, flags, accumulator, rtype, paramtypes);
                 } catch(e) {
                     throw new TypeError('Invalid signal ' + signal_name + ': ' + e.message);
                 }
             }
         }
 
-        if (params.Implements) {
-            for (let i = 0; i < params.Implements.length; i++)
+        if (ifaces) {
+            for (let i = 0; i < ifaces.length; i++)
                 Gi.add_interface(this.prototype, ifaces[i]);
         }
-
-        delete params.Properties;
-        delete params.Signals;
-        delete params.Implements;
 
         for (let prop in params) {
             let value = this.prototype[prop];
@@ -101,6 +99,44 @@ const GObjectMeta = new Lang.Class({
         // will return false.
         return proto == GObject.Object.prototype ||
             proto instanceof GObject.Object;
+    },
+
+    // If we want an object with a custom JSClass, we can't just
+    // use a function. We have to use a custom constructor here.
+    _construct: function(params) {
+        if (!params.Name)
+            throw new TypeError("Classes require an explicit 'Name' parameter.");
+        let name = params.Name;
+
+        let gtypename;
+        if (params.GTypeName)
+            gtypename = params.GTypeName;
+        else
+            gtypename = 'Gjs_' + params.Name;
+
+        if (!params.Extends)
+            params.Extends = GObject.Object;
+        let parent = params.Extends;
+
+        if (!this._isValidClass(parent))
+            throw new TypeError('GObject.Class used with invalid base class (is ' + parent + ')');
+
+        let newClass = Gi.register_type(parent.prototype, gtypename);
+
+        // See Class.prototype._construct in lang.js for the reasoning
+        // behind this direct __proto__ set.
+        newClass.__proto__ = this.constructor.prototype;
+        newClass.__super__ = parent;
+
+        newClass._init.apply(newClass, arguments);
+
+        Object.defineProperty(newClass.prototype, '__metaclass__',
+                              { writable: false,
+                                configurable: false,
+                                enumerable: false,
+                                value: this.constructor });
+
+        return newClass;
     }
 });
 

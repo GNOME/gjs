@@ -94,6 +94,16 @@ gjs_is_custom_type_quark (void)
     return val;
 }
 
+static GQuark
+gjs_is_custom_property_quark (void)
+{
+    static GQuark val = 0;
+    if (!val)
+        val = g_quark_from_static_string ("gjs::custom-property");
+
+    return val;
+}
+
 static void
 throw_priv_is_null_error(JSContext *context)
 {
@@ -108,7 +118,8 @@ init_g_param_from_property(JSContext  *context,
                            const char *js_prop_name,
                            jsval       js_value,
                            GType       gtype,
-                           GParameter *parameter)
+                           GParameter *parameter,
+                           gboolean    constructing)
 {
     char *gname;
     GParamSpec *param_spec;
@@ -128,6 +139,13 @@ init_g_param_from_property(JSContext  *context,
         /* not a GObject prop, so nothing else to do */
         return NO_SUCH_G_PROPERTY;
     }
+
+    /* Do not set JS overridden properties through GObject, to avoid
+     * infinite recursion (but set them when constructing) */
+    if (!constructing &&
+        g_param_spec_get_qdata(param_spec, gjs_is_custom_property_quark()))
+        return NO_SUCH_G_PROPERTY;
+
 
     if ((param_spec->flags & G_PARAM_WRITABLE) == 0) {
         /* prevent setting the prop even in JS */
@@ -175,13 +193,9 @@ object_instance_get_prop(JSContext *context,
                      "Get prop '%s' hook obj %p priv %p", name, obj, priv);
 
     if (priv == NULL) {
-        /* We won't have a private until the initializer is called, so
-         * don't mark a call to _init() an error. */
-        if (!g_str_equal(name, "_init")) {
-            ret = JS_FALSE;
-            throw_priv_is_null_error (context);
-        }
-
+        /* If we reach this point, either object_instance_new_resolve
+         * did not throw (so name == "_init"), or the property actually
+         * exists and it's not something we should be concerned with */
         goto out;
     }
     if (priv->gobj == NULL) /* prototype, not an instance. */
@@ -196,6 +210,11 @@ object_instance_get_prop(JSContext *context,
         /* leave value_p as it was */
         goto out;
     }
+
+    /* Do not fetch JS overridden properties from GObject, to avoid
+     * infinite recursion. */
+    if (g_param_spec_get_qdata(param, gjs_is_custom_property_quark()))
+        goto out;
 
     if ((param->flags & G_PARAM_READABLE) == 0)
         goto out;
@@ -242,8 +261,7 @@ object_instance_set_prop(JSContext *context,
                      "Set prop '%s' hook obj %p priv %p", name, obj, priv);
 
     if (priv == NULL) {
-        ret = JS_FALSE;  /* wrong class passed in */
-        throw_priv_is_null_error(context);
+        /* see the comment in object_instance_get_prop() on this */
         goto out;
     }
     if (priv->gobj == NULL) /* prototype, not an instance. */
@@ -252,7 +270,8 @@ object_instance_set_prop(JSContext *context,
     switch (init_g_param_from_property(context, name,
                                        *value_p,
                                        G_TYPE_FROM_INSTANCE(priv->gobj),
-                                       &param)) {
+                                       &param,
+                                       FALSE /* constructing */)) {
     case SOME_ERROR_OCCURRED:
         ret = JS_FALSE;
     case NO_SUCH_G_PROPERTY:
@@ -614,26 +633,6 @@ object_instance_props_to_g_parameters(JSContext   *context,
     if (n_gparams_p)
         *n_gparams_p = 0;
 
-    if (argc == 0)
-        return JS_TRUE;
-
-    if (!JSVAL_IS_OBJECT(argv[0])) {
-        gjs_throw(context, "argument should be a hash with props to set");
-        return JS_FALSE;
-    }
-
-    props = JSVAL_TO_OBJECT(argv[0]);
-
-    iter = JS_NewPropertyIterator(context, props);
-    if (iter == NULL) {
-        gjs_throw(context, "Failed to create property iterator for object props hash");
-        return JS_FALSE;
-    }
-
-    prop_id = JSID_VOID;
-    if (!JS_NextProperty(context, iter, &prop_id))
-        return JS_FALSE;
-
     gparams = g_array_new(/* nul term */ FALSE, /* clear */ TRUE,
                           sizeof(GParameter));
 
@@ -659,6 +658,26 @@ object_instance_props_to_g_parameters(JSContext   *context,
         g_array_append_val(gparams, gparam);
     }
 
+    if (argc == 0 || JSVAL_IS_VOID(argv[0]))
+        goto out;
+
+    if (!JSVAL_IS_OBJECT(argv[0])) {
+        gjs_throw(context, "argument should be a hash with props to set");
+        goto free_array_and_fail;
+    }
+
+    props = JSVAL_TO_OBJECT(argv[0]);
+
+    iter = JS_NewPropertyIterator(context, props);
+    if (iter == NULL) {
+        gjs_throw(context, "Failed to create property iterator for object props hash");
+        goto free_array_and_fail;
+    }
+
+    prop_id = JSID_VOID;
+    if (!JS_NextProperty(context, iter, &prop_id))
+        goto free_array_and_fail;
+
     while (!JSID_IS_VOID(prop_id)) {
         char *name;
         jsval value;
@@ -675,7 +694,8 @@ object_instance_props_to_g_parameters(JSContext   *context,
         switch (init_g_param_from_property(context, name,
                                            value,
                                            gtype,
-                                           &gparam)) {
+                                           &gparam,
+                                           TRUE /* constructing */)) {
         case NO_SUCH_G_PROPERTY:
             gjs_throw(context, "No property %s on this GObject %s",
                          name, g_type_name(gtype));
@@ -695,6 +715,7 @@ object_instance_props_to_g_parameters(JSContext   *context,
             goto free_array_and_fail;
     }
 
+ out:
     if (n_gparams_p)
         *n_gparams_p = gparams->len;
     if (gparams_p)
@@ -970,9 +991,21 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(object_instance)
     JSBool ret;
+    jsval initer;
+    jsval rval;
+
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(object_instance);
-    ret = object_instance_init(context, &object, argc, argv);
-    GJS_NATIVE_CONSTRUCTOR_FINISH(object_instance);
+
+    if (!gjs_object_require_property(context, object, "GObject instance", "_init", &initer))
+        return JS_FALSE;
+
+    rval = JSVAL_VOID;
+    ret = gjs_call_function_value(context, object, initer, argc, argv, &rval);
+
+    if (JSVAL_IS_VOID(rval))
+        rval = OBJECT_TO_JSVAL(object);
+
+    JS_SET_RVAL(context, vp, rval);
     return ret;
 }
 
@@ -1202,7 +1235,7 @@ emit_func(JSContext *context,
     GSignalQuery signal_query;
     char *signal_name;
     GValue *instance_and_args;
-    GValue rvalue;
+    GValue rvalue = G_VALUE_INIT;
     unsigned int i;
     gboolean failed;
     jsval retval;
@@ -1377,10 +1410,14 @@ init_func (JSContext *context,
 {
     jsval *argv = JS_ARGV(context, vp);
     JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JSBool ret;
 
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    ret = object_instance_init(context, &obj, argc, argv);
 
-    return object_instance_init(context, &obj, argc, argv);
+    if (ret)
+        JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(obj));
+
+    return ret;
 }
 
 static JSPropertySpec gjs_object_instance_proto_props[] = {
@@ -1768,14 +1805,18 @@ gjs_g_object_from_object(JSContext    *context,
 
     priv = priv_from_js(context, obj);
 
-    if (priv == NULL)
+    if (priv == NULL) {
+        gjs_throw(context,
+                  "Object instance or prototype has not been properly initialized yet. "
+                  "Did you forget to chain-up from _init()?");
         return NULL;
+    }
 
     if (priv->gobj == NULL) {
         gjs_throw(context,
                   "Object is %s.%s.prototype, not an object instance - cannot convert to GObject*",
-                  g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                  g_base_info_get_name( (GIBaseInfo*) priv->info));
+                  priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
+                  priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
         return NULL;
     }
 
@@ -2068,12 +2109,11 @@ gjs_register_type(JSContext *cx,
                   jsval     *vp)
 {
     jsval *argv = JS_ARGV(cx, vp);
-    jsval gtype;
     gchar *name;
-    JSObject *parent, *object;
+    JSObject *parent, *constructor;
     GType instance_type, parent_type;
     GTypeQuery query;
-    ObjectInstance *parent_priv, *priv;
+    ObjectInstance *parent_priv;
     GTypeInfo type_info = {
         0, /* class_size */
 
@@ -2092,9 +2132,8 @@ gjs_register_type(JSContext *cx,
     JS_BeginRequest(cx);
 
     if (!gjs_parse_args(cx, "register_type",
-                        "oos", argc, argv,
+                        "os", argc, argv,
                         "parent", &parent,
-                        "object", &object,
                         "name", &name))
         return JS_FALSE;
 
@@ -2119,11 +2158,11 @@ gjs_register_type(JSContext *cx,
 
     g_type_set_qdata (instance_type, gjs_is_custom_type_quark(), GINT_TO_POINTER (1));
 
-    priv = g_slice_new0(ObjectInstance);
-    priv->info = parent_priv->info;
-    priv->gtype = instance_type;
+    /* create a custom JSClass */
+    if (!gjs_define_object_class(cx, NULL, instance_type, &constructor, NULL))
+        return JS_FALSE;
 
-    JS_SetPrivate(cx, object, priv);
+    JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(constructor));
 
     JS_EndRequest(cx);
 
@@ -2180,6 +2219,8 @@ gjs_register_property(JSContext *cx,
 
     priv = priv_from_js(cx, obj);
     pspec = gjs_g_param_from_param(cx, pspec_js);
+
+    g_param_spec_set_qdata(pspec, gjs_is_custom_property_quark(), GINT_TO_POINTER(1));
 
     oclass = g_type_class_ref(priv->gtype);
     g_object_class_install_property(oclass, PROP_JS_HANDLED, pspec);
@@ -2282,7 +2323,7 @@ gjs_define_stuff(JSContext *context,
     if (!JS_DefineFunction(context, module_obj,
                            "register_type",
                            (JSNative)gjs_register_type,
-                           3, GJS_MODULE_PROP_FLAGS))
+                           2, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     if (!JS_DefineFunction(context, module_obj,
