@@ -29,8 +29,27 @@
 #include <jsapi.h>
 
 #include <girepository.h>
+#include <girffi.h>
 
 G_BEGIN_DECLS
+
+typedef struct {
+    gint ref_count;
+    JSRuntime *runtime;
+    GICallableInfo *info;
+    jsval js_function;
+    ffi_cif cif;
+    ffi_closure *closure;
+    GIScopeType scope;
+} GjsCallbackTrampoline;
+
+GjsCallbackTrampoline* gjs_callback_trampoline_new(JSContext      *context,
+                                                   jsval           function,
+                                                   GICallableInfo *callable_info,
+                                                   GIScopeType     scope);
+
+void gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline);
+void gjs_callback_trampoline_ref(GjsCallbackTrampoline *trampoline);
 
 JSObject* gjs_define_function   (JSContext      *context,
                                  JSObject       *in_object,

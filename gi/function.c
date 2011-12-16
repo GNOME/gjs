@@ -36,7 +36,6 @@
 #include <jsapi.h>
 
 #include <girepository.h>
-#include <girffi.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <errno.h>
@@ -71,16 +70,6 @@ static struct JSClass gjs_function_class;
  * will be freed the next time we invoke a C function.
  */
 static GSList *completed_trampolines = NULL;  /* GjsCallbackTrampoline */
-
-typedef struct {
-    gint ref_count;
-    JSRuntime *runtime;
-    GICallableInfo *info;
-    jsval js_function;
-    ffi_cif cif;
-    ffi_closure *closure;
-    GIScopeType scope;
-} GjsCallbackTrampoline;
 
 GJS_DEFINE_PRIV_FROM_JS(Function, gjs_function_class)
 
@@ -123,13 +112,13 @@ function_new_resolve(JSContext *context,
     return JS_TRUE;
 }
 
-static void
+void
 gjs_callback_trampoline_ref(GjsCallbackTrampoline *trampoline)
 {
     trampoline->ref_count++;
 }
 
-static void
+void
 gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline)
 {
     /* Not MT-safe, like all the rest of GJS */
@@ -310,7 +299,7 @@ gjs_destroy_notify_callback(gpointer data)
     gjs_callback_trampoline_unref(trampoline);
 }
 
-static GjsCallbackTrampoline*
+GjsCallbackTrampoline*
 gjs_callback_trampoline_new(JSContext      *context,
                             jsval           function,
                             GICallableInfo *callable_info,
