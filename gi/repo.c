@@ -43,6 +43,8 @@
 #include <girepository.h>
 #include <string.h>
 
+#define DUMPBIN "_gjs_private"
+
 typedef struct {
     void *dummy;
 
@@ -323,6 +325,8 @@ repo_new(JSContext *context)
 
     g_assert(gjs_object_has_property(context, repo, "versions"));
 
+    JS_DefineObject(context, repo, DUMPBIN, NULL, NULL, JSPROP_PERMANENT);
+
     /* FIXME - hack to make namespaces load, since
      * gobject-introspection does not yet search a path properly.
      */
@@ -469,17 +473,14 @@ gjs_define_info(JSContext  *context,
     case GI_INFO_TYPE_OBJECT:
         {
             GType gtype;
-            GIBaseInfo *info_for_gtype;
             gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
 
             if (g_type_is_a (gtype, G_TYPE_PARAM)) {
                 if (!gjs_define_param_class(context, in_object, NULL))
                     return JS_FALSE;
             } else if (g_type_is_a (gtype, G_TYPE_OBJECT)) {
-                if (!gjs_define_object_class(context, in_object, gtype, NULL, NULL, &info_for_gtype))
+                if (!gjs_define_object_class(context, in_object, gtype, NULL, NULL))
                     return JS_FALSE;
-                g_assert(g_base_info_equal(info, info_for_gtype));
-                g_base_info_unref(info_for_gtype);
             } else {
                 gjs_throw (context,
                            "Unsupported type %s, deriving from fundamental %s",
@@ -519,6 +520,13 @@ gjs_define_info(JSContext  *context,
     }
 
     return JS_TRUE;
+}
+
+/* Get the "unknown namespace", which should be used for unnamespaced types */
+JSObject*
+gjs_lookup_private_namespace(JSContext *context)
+{
+    return gjs_lookup_namespace_object_by_name(context, DUMPBIN);
 }
 
 /* Get the namespace object that the GIBaseInfo should be inside */

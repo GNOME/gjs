@@ -36,6 +36,7 @@ JSBool      gjs_define_repo                     (JSContext      *context,
                                                  JSObject       *module_obj,
                                                  const char     *name);
 const char* gjs_info_type_name                  (GIInfoType      type);
+JSObject*   gjs_lookup_private_namespace        (JSContext      *context);
 JSObject*   gjs_lookup_namespace_object         (JSContext      *context,
                                                  GIBaseInfo     *info);
 JSObject*   gjs_lookup_namespace_object_by_name (JSContext      *context,
