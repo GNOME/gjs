@@ -147,6 +147,61 @@ gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline)
     }
 }
 
+static void
+set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
+                                    void        *result,
+                                    GIArgument  *return_value)
+{
+    switch (g_type_info_get_tag(ret_type)) {
+    case GI_TYPE_TAG_INT8:
+        *(ffi_sarg *) result = return_value->v_int8;
+    case GI_TYPE_TAG_UINT8:
+        *(ffi_arg *) result = return_value->v_uint8;
+        break;
+    case GI_TYPE_TAG_INT16:
+        *(ffi_sarg *) result = return_value->v_int16;
+        break;
+    case GI_TYPE_TAG_UINT16:
+        *(ffi_arg *) result = return_value->v_uint16;
+        break;
+    case GI_TYPE_TAG_INT32:
+        *(ffi_sarg *) result = return_value->v_int32;
+        break;
+    case GI_TYPE_TAG_UINT32:
+    case GI_TYPE_TAG_BOOLEAN:
+    case GI_TYPE_TAG_UNICHAR:
+        *(ffi_arg *) result = return_value->v_uint32;
+		
+        break;
+    case GI_TYPE_TAG_INT64:
+        *(ffi_sarg *) result = return_value->v_int64;
+        break;
+    case GI_TYPE_TAG_UINT64:
+        *(ffi_arg *) result = return_value->v_uint64;
+        break;
+    case GI_TYPE_TAG_INTERFACE:
+        {
+            GIBaseInfo* interface_info;
+            GIInfoType interface_type;
+
+            interface_info = g_type_info_get_interface(ret_type);
+            interface_type = g_base_info_get_type(interface_info);
+
+            switch (interface_type) {
+            case GI_INFO_TYPE_ENUM:
+            case GI_INFO_TYPE_FLAGS:
+                *(ffi_sarg *) result = return_value->v_long;
+                break;
+            default:
+                *(ffi_arg *) result = (ffi_arg) return_value->v_pointer;
+                break;
+            }
+        }
+    default:
+        *(ffi_arg *) result = (ffi_arg) return_value->v_pointer;
+        break;
+    }
+}
 
 /* This is our main entry point for ffi_closure callbacks.
  * ffi_prep_closure is doing pure magic and replaces the original
@@ -166,6 +221,7 @@ gjs_callback_closure(ffi_cif *cif,
     int i, n_args, n_jsargs;
     jsval *jsargs, rval;
     GITypeInfo ret_type;
+    GArgument return_value;
     gboolean success = FALSE;
 
     trampoline = data;
@@ -215,9 +271,12 @@ gjs_callback_closure(ffi_cif *cif,
                                  GJS_ARGUMENT_RETURN_VALUE,
                                  FALSE,
                                  TRUE,
-                                 result)) {
+                                 &return_value)) {
         goto out;
     }
+
+    
+    set_return_ffi_arg_from_giargument(&ret_type, result, &return_value);
 
     success = TRUE;
 
@@ -306,6 +365,61 @@ get_length_from_arg (GArgument *arg, GITypeTag tag)
     }
 }
 
+/* Extract the correct bits from an ffi_arg return value into
+ * GIArgument: https://bugzilla.gnome.org/show_bug.cgi?id=665152
+ */
+static void
+set_gargument_from_ffi_return_value (GITypeInfo  *return_info,
+                                     GIArgument  *return_value,
+                                     ffi_arg      value)
+{
+    switch (g_type_info_get_tag (return_info)) {
+    case GI_TYPE_TAG_INT8:
+        return_value->v_int8 = (gint8) value;
+    case GI_TYPE_TAG_UINT8:
+        return_value->v_uint8 = (guint8) value;
+        break;
+    case GI_TYPE_TAG_INT16:
+        return_value->v_int16 = (gint16) value;
+        break;
+    case GI_TYPE_TAG_UINT16:
+        return_value->v_uint16 = (guint16) value; 
+        break;
+    case GI_TYPE_TAG_INT32:
+        return_value->v_int32 = (gint32) value;
+        break;
+    case GI_TYPE_TAG_UINT32:
+    case GI_TYPE_TAG_BOOLEAN:
+    case GI_TYPE_TAG_UNICHAR:
+        return_value->v_uint32 = (guint32) value;
+                        
+        break;
+    case GI_TYPE_TAG_INTERFACE:
+        {
+            GIBaseInfo* interface_info;
+            GIInfoType interface_type;
+
+            interface_info = g_type_info_get_interface(return_info);
+            interface_type = g_base_info_get_type(interface_info);
+
+            switch(interface_type) {
+            case GI_INFO_TYPE_ENUM:
+            case GI_INFO_TYPE_FLAGS:
+                return_value->v_int32 = (gint32) value;
+                break;
+            default:
+                return_value->v_pointer = (gpointer) value;
+                break;
+            }
+        }
+        break;
+    default:
+        return_value->v_pointer = (gpointer) value;
+        break;
+    }
+}
+
+
 static JSBool
 gjs_invoke_c_function(JSContext      *context,
                       Function       *function,
@@ -329,7 +443,8 @@ gjs_invoke_c_function(JSContext      *context,
     GArgument *out_arg_cvalues;
     GArgument *inout_original_arg_cvalues;
     gpointer *ffi_arg_pointers;
-    GArgument return_value;
+    ffi_arg return_value;
+    GArgument return_gargument;
 
     guint8 processed_c_args = 0;
     guint8 gi_argc, gi_arg_pos;
@@ -673,6 +788,8 @@ gjs_invoke_c_function(JSContext      *context,
 
             g_assert_cmpuint(next_rval, <, function->js_out_argc);
 
+            set_gargument_from_ffi_return_value(&return_info, &return_gargument, return_value);
+
             array_length_pos = g_type_info_get_array_length(&return_info);
             if (array_length_pos >= 0) {
                 GIArgInfo array_length_arg;
@@ -689,7 +806,7 @@ gjs_invoke_c_function(JSContext      *context,
                     arg_failed = !gjs_value_from_explicit_array(context,
                                                                 &return_values[next_rval],
                                                                 &return_info,
-                                                                &return_value,
+                                                                &return_gargument,
                                                                 JSVAL_TO_INT(length));
                 }
                 if (!arg_failed &&
@@ -697,17 +814,17 @@ gjs_invoke_c_function(JSContext      *context,
                                                       transfer,
                                                       &return_info,
                                                       JSVAL_TO_INT(length),
-                                                      &return_value))
+                                                      &return_gargument))
                     failed = TRUE;
             } else {
                 arg_failed = !gjs_value_from_g_argument(context, &return_values[next_rval],
-                                                        &return_info, &return_value);
+                                                        &return_info, &return_gargument);
                 /* Free GArgument, the jsval should have ref'd or copied it */
                 if (!arg_failed &&
                     !gjs_g_argument_release(context,
                                             transfer,
                                             &return_info,
-                                            &return_value))
+                                            &return_gargument))
                     failed = TRUE;
             }
             if (arg_failed)
