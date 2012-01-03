@@ -105,7 +105,7 @@ gjs_define_static_methods(JSContext       *context,
          * like in the near future.
          */
         if (!(flags & GI_FUNCTION_IS_METHOD)) {
-            gjs_define_function(context, constructor, gtype,
+            gjs_define_function(context, constructor,
                                 (GICallableInfo *)meth_info);
         }
 
@@ -140,7 +140,6 @@ interface_new_resolve(JSContext *context,
 
     if (method_info != NULL) {
         if (gjs_define_function(context, obj,
-                                g_registered_type_info_get_g_type(priv->info),
                                 (GICallableInfo*)method_info) == NULL) {
             g_base_info_unref((GIBaseInfo*)method_info);
             goto out;
