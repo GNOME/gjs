@@ -166,7 +166,12 @@ include Makefile-gjs-dbus.am
 include Makefile-modules.am
 include Makefile-examples.am
 
-pkglib_DATA = $(INTROSPECTION_GIRS) $(INTROSPECTION_GIRS:.gir=.typelib)
+girdir = $(datadir)/gir-1.0
+gir_DATA = $(INTROSPECTION_GIRS)
+
+typelibdir = $(libdir)/girepository-1.0
+typelib_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
+
 
 ########################################################################
 bin_PROGRAMS += gjs-console
