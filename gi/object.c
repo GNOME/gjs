@@ -693,6 +693,21 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
             priv->gobj = g_object_newv(gtype, n_params, params);
             free_g_params(params, n_params);
 
+            if (peek_js_obj(context, priv->gobj) != NULL) {
+                /* g_object_newv returned an object that's already tracked by a JS
+                 * object. Let's assume this is a singleton like IBus.IBus and return
+                 * the existing JS wrapper object.
+                 *
+                 * 'object' has a value that was originally created by
+                 * JS_NewObjectForConstructor in GJS_NATIVE_CONSTRUCTOR_PRELUDE, but
+                 * we're not actually using it, so just let it get collected. Avoiding
+                 * this would require a non-trivial amount of work.
+                 * */
+                object = peek_js_obj(context, priv->gobj);
+
+                goto out;
+            }
+
             g_type_query(gtype, &query);
             JS_updateMallocCounter(context, query.instance_size);
 
@@ -715,9 +730,9 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
             unthreadsafe_template_for_constructor.gobj = NULL;
 
             g_object_ref_sink(priv->gobj);
+            g_assert(peek_js_obj(context, priv->gobj) == NULL);
         }
 
-        g_assert(peek_js_obj(context, priv->gobj) == NULL);
         set_js_obj(context, priv->gobj, object);
 
 #if DEBUG_DISPOSE
@@ -760,6 +775,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
                                     g_base_info_get_name ( (GIBaseInfo*) priv->info) ));
     }
 
+ out:
     GJS_NATIVE_CONSTRUCTOR_FINISH(object_instance);
 
     return JS_TRUE;
