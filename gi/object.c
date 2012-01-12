@@ -703,6 +703,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
     }
 
     priv->gobj = g_object_newv(gtype, n_params, params);
+    free_g_params(params, n_params);
 
     if (peek_js_obj(context, priv->gobj) != NULL) {
         /* g_object_newv returned an object that's already tracked by a JS
@@ -717,8 +718,6 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
         object = peek_js_obj(context, priv->gobj);
         goto out;
     }
-
-    free_g_params(params, n_params);
 
     g_type_query(gtype, &query);
     JS_updateMallocCounter(context, query.instance_size);
