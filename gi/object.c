@@ -1541,9 +1541,13 @@ gjs_object_from_g_object(JSContext    *context,
         obj = gjs_construct_object_dynamic(context, proto,
                                               0, NULL);
 
+        unthreadsafe_template_for_constructor.info = NULL;
+        unthreadsafe_template_for_constructor.gobj = NULL;
+
         g_base_info_unref( (GIBaseInfo*) info);
 
-        g_assert(peek_js_obj(context, gobj) == obj);
+        if (obj != NULL)
+            g_assert(peek_js_obj(context, gobj) == obj);
     }
 
     return obj;
