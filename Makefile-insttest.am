@@ -59,8 +59,8 @@ common_test_libadd = $(GJS_LIBS)
 
 nodist_libregress_la_SOURCES = $(GI_DATADIR)/tests/regress.c $(GI_DATADIR)/tests/regress.h
 libregress_la_CPPFLAGS = $(AM_CPPFLAGS)
-libregress_la_CFLAGS = $(GJS_CFLAGS)
-libregress_la_LDFLAGS = $(common_test_ldflags)
+libregress_la_CFLAGS = $(GJS_CFLAGS) $(GJS_GDBUS_CFLAGS)
+libregress_la_LDFLAGS = $(common_test_ldflags) $(GJS_GDBUS_LIBS)
 libregress_la_LIBADD = $(common_test_libadd)
 libregress_scannerflags_includes = --include=Gio-2.0
 if ENABLE_CAIRO
