@@ -16,6 +16,7 @@ const GIMarshallingTests = imports.gi.GIMarshallingTests;
 
 // We use Gio to have some objects that we know exist
 const Gio = imports.gi.Gio;
+const GObject = imports.gi.GObject;
 const Lang = imports.lang;
 
 function testCArray() {
@@ -199,6 +200,34 @@ function testGValue() {
     // Test a flat GValue round-trip return
     let thing = GIMarshallingTests.return_gvalue_flat_array();
     assertArrayEquals([42, "42", true], thing);
+}
+
+function testGType() {
+    assertEquals("void", GObject.TYPE_NONE.name);
+    assertEquals("gchararray", GObject.TYPE_STRING.name);
+
+    // Make sure "name" is readonly
+    GObject.TYPE_STRING.name = "foo";
+    assertEquals("gchararray", GObject.TYPE_STRING.name);
+
+    // Make sure "name" is permanent
+    assertFalse((delete GObject.TYPE_STRING.name));
+
+    // Make sure "toString" works
+    assertEquals("[object GType for 'void']", GObject.TYPE_NONE.toString());
+    assertEquals("[object GType for 'gchararray']", GObject.TYPE_STRING.toString());
+
+    // Marshalling tests
+    assertEquals(GObject.TYPE_NONE, GIMarshallingTests.gtype_return());
+    assertEquals(GObject.TYPE_STRING, GIMarshallingTests.gtype_string_return());
+
+    GIMarshallingTests.gtype_in(GObject.TYPE_NONE);
+    GIMarshallingTests.gtype_string_in(GObject.TYPE_STRING);
+
+    assertEquals(GObject.TYPE_NONE, GIMarshallingTests.gtype_out());
+    assertEquals(GObject.TYPE_STRING, GIMarshallingTests.gtype_string_out());
+
+    assertEquals(GObject.TYPE_INT, GIMarshallingTests.gtype_inout(GObject.TYPE_NONE));
 }
 
 gjstestRun();

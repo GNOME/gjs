@@ -28,6 +28,7 @@
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 #include "repo.h"
+#include "gtype.h"
 
 #include <util/log.h>
 
@@ -167,7 +168,7 @@ gjs_define_enumeration(JSContext    *context,
     }
 
     gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
-    value = INT_TO_JSVAL(gtype);
+    value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, enum_obj, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 

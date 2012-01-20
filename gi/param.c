@@ -29,6 +29,7 @@
 #include "arg.h"
 #include "object.h"
 #include "repo.h"
+#include "gtype.h"
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 
@@ -189,14 +190,14 @@ param_new_internal(JSContext *cx,
         return JS_FALSE;
 
     if (!JSVAL_IS_STRING(argv[0]) ||
-        !JSVAL_IS_INT(argv[1]) ||
+        !JSVAL_IS_OBJECT(argv[1]) ||
         !JSVAL_IS_STRING(argv[2]) ||
         !JSVAL_IS_STRING(argv[3]) ||
         !JSVAL_IS_INT(argv[4]))
         return JS_FALSE;
 
     prop_name = gjs_string_get_ascii(cx, argv[0]);
-    prop_gtype = JSVAL_TO_INT(argv[1]);
+    prop_gtype = gjs_gtype_get_actual_gtype(cx, JSVAL_TO_OBJECT(argv[1]));
     prop_type = G_TYPE_FUNDAMENTAL(prop_gtype);
     nick = gjs_string_get_ascii(cx, argv[2]);
     blurb = gjs_string_get_ascii(cx, argv[3]);
@@ -298,7 +299,12 @@ param_new_internal(JSContext *cx,
             GIEnumInfo *info;
             gint64 default_value;
 
-            gtype = gjs_gtype_from_value(cx, argv[0]);
+            if (!JSVAL_IS_OBJECT(argv[0])) {
+                gjs_throw(cx, "Passed invalid GType to GParamSpecEnum constructor");
+                goto out;
+            }
+
+            gtype = gjs_gtype_get_actual_gtype(cx, JSVAL_TO_OBJECT(argv[0]));
             if (gtype == G_TYPE_NONE) {
                 gjs_throw(cx, "Passed invalid GType to GParamSpecEnum constructor");
                 goto out;
@@ -321,7 +327,12 @@ param_new_internal(JSContext *cx,
             GType gtype;
             gint64 default_value;
 
-            gtype = gjs_gtype_from_value(cx, argv[0]);
+            if (!JSVAL_IS_OBJECT(argv[0])) {
+                gjs_throw(cx, "Passed invalid GType to GParamSpecFlags constructor");
+                goto out;
+            }
+
+            gtype = gjs_gtype_get_actual_gtype(cx, JSVAL_TO_OBJECT(argv[0]));
             if (gtype == G_TYPE_NONE) {
                 gjs_throw(cx, "Passed invalid GType to GParamSpecFlags constructor");
                 goto out;

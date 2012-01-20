@@ -24,6 +24,7 @@
 #include <config.h>
 
 #include "arg.h"
+#include "gtype.h"
 #include "object.h"
 #include "foreign.h"
 #include "boxed.h"
@@ -148,25 +149,6 @@ _gjs_enum_to_int (GIEnumInfo *enum_info,
                   gint64      value)
 {
     return (int)value;
-}
-
-/* The typelib used to have machine-independent types like
- * GI_TYPE_TAG_LONG that had to be converted; now we only
- * handle GType specially here.
- */
-static inline GITypeTag
-replace_gtype(GITypeTag type) {
-    if (type == GI_TYPE_TAG_GTYPE) {
-        /* Constant folding should handle this hopefully */
-        switch (sizeof(GType)) {
-        case 1: return GI_TYPE_TAG_UINT8;
-        case 2: return GI_TYPE_TAG_UINT16;
-        case 4: return GI_TYPE_TAG_UINT32;
-        case 8: return GI_TYPE_TAG_UINT64;
-        default: g_assert_not_reached ();
-        }
-    }
-    return type;
 }
 
 /* Check if an argument of the given needs to be released if we created it
@@ -537,7 +519,6 @@ gjs_string_to_intarray(JSContext   *context,
     guint16 *result16;
 
     element_type = g_type_info_get_tag(param_info);
-    element_type = replace_gtype(element_type);
 
     switch (element_type) {
     case GI_TYPE_TAG_INT8:
@@ -616,6 +597,46 @@ gjs_array_to_intarray(JSContext   *context,
         default:
             g_assert_not_reached();
         }
+    }
+
+    *arr_p = result;
+
+    return JS_TRUE;
+}
+
+static JSBool
+gjs_gtypearray_to_array(JSContext   *context,
+                        jsval        array_value,
+                        unsigned int length,
+                        void       **arr_p)
+{
+    GType *result;
+    unsigned i;
+
+    /* add one so we're always zero terminated */
+    result = g_malloc0((length+1) * sizeof(GType));
+
+    for (i = 0; i < length; ++i) {
+        jsval elem;
+        GType gtype;
+
+        elem = JSVAL_VOID;
+        if (!JS_GetElement(context, JSVAL_TO_OBJECT(array_value),
+                           i, &elem)) {
+            g_free(result);
+            gjs_throw(context, "Missing array element %u", i);
+            return JS_FALSE;
+        }
+
+        gtype = gjs_gtype_get_actual_gtype(context, JSVAL_TO_OBJECT(elem));
+
+        if (gtype == G_TYPE_INVALID) {
+            g_free(result);
+            gjs_throw(context, "Invalid element in GType array");
+            return JS_FALSE;
+        }
+
+        result[i] = gtype;
     }
 
     *arr_p = result;
@@ -854,7 +875,6 @@ gjs_array_to_array(JSContext   *context,
     GITypeTag element_type;
 
     element_type = g_type_info_get_tag(param_info);
-    element_type = replace_gtype(element_type);
 
     /* Special case for GValue "flat arrays" */
     if (is_gvalue_flat_array(param_info, element_type))
@@ -895,6 +915,9 @@ gjs_array_to_array(JSContext   *context,
     case GI_TYPE_TAG_DOUBLE:
         return gjs_array_to_floatarray
             (context, array_value, length, arr_p, TRUE);
+    case GI_TYPE_TAG_GTYPE:
+        return gjs_gtypearray_to_array
+            (context, array_value, length, arr_p);
 
     /* Everything else is a pointer type */
     case GI_TYPE_TAG_INTERFACE:
@@ -924,7 +947,6 @@ gjs_g_array_new_for_type(JSContext    *context,
     guint element_size;
 
     element_type = g_type_info_get_tag(param_info);
-    element_type = replace_gtype(element_type);
 
     if (element_type == GI_TYPE_TAG_INTERFACE) {
         GIInterfaceInfo *interface_info = g_type_info_get_interface(param_info);
@@ -959,6 +981,9 @@ gjs_g_array_new_for_type(JSContext    *context,
       break;
     case GI_TYPE_TAG_DOUBLE:
       element_size = sizeof(gdouble);
+      break;
+    case GI_TYPE_TAG_GTYPE:
+      element_size = sizeof(GType);
       break;
     case GI_TYPE_TAG_INTERFACE:
     case GI_TYPE_TAG_UTF8:
@@ -1085,7 +1110,6 @@ gjs_value_to_g_argument(JSContext      *context,
     gboolean nullable_type;
 
     type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
-    type_tag = replace_gtype(type_tag);
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting jsval to GArgument %s",
@@ -1200,6 +1224,19 @@ gjs_value_to_g_argument(JSContext      *context,
         if (JSVAL_IS_STRING(value)) {
             if (!gjs_unichar_from_string(context, value, &arg->v_uint32))
                 wrong = TRUE;
+        } else {
+            wrong = TRUE;
+            report_type_mismatch = TRUE;
+        }
+        break;
+
+    case GI_TYPE_TAG_GTYPE:
+        if (JSVAL_IS_OBJECT(value)) {
+            GType gtype;
+            gtype = gjs_gtype_get_actual_gtype(context, JSVAL_TO_OBJECT(value));
+            if (gtype == G_TYPE_INVALID)
+                wrong = TRUE;
+            arg->v_ssize = gtype;
         } else {
             wrong = TRUE;
             report_type_mismatch = TRUE;
@@ -1643,7 +1680,6 @@ gjs_g_argument_init_default(JSContext      *context,
     GITypeTag type_tag;
 
     type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
-    type_tag = replace_gtype(type_tag);
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
@@ -1692,6 +1728,10 @@ gjs_g_argument_init_default(JSContext      *context,
 
     case GI_TYPE_TAG_DOUBLE:
         arg->v_double = 0.0;
+        break;
+
+    case GI_TYPE_TAG_GTYPE:
+        arg->v_ssize = 0;
         break;
 
     case GI_TYPE_TAG_FILENAME:
@@ -1869,7 +1909,6 @@ gjs_array_from_carray_internal (JSContext  *context,
     guint i;
 
     element_type = g_type_info_get_tag(param_info);
-    element_type = replace_gtype(element_type);
 
     if (is_gvalue_flat_array(param_info, element_type))
         return gjs_array_from_flat_gvalue_array(context, array, length, value_p);
@@ -1938,6 +1977,7 @@ gjs_array_from_carray_internal (JSContext  *context,
         case GI_TYPE_TAG_DOUBLE:
           ITERATE(double);
           break;
+        case GI_TYPE_TAG_GTYPE:
         case GI_TYPE_TAG_UTF8:
         case GI_TYPE_TAG_FILENAME:
         case GI_TYPE_TAG_ARRAY:
@@ -2050,7 +2090,6 @@ gjs_array_from_zero_terminated_c_array (JSContext  *context,
     guint i;
 
     element_type = g_type_info_get_tag(param_info);
-    element_type = replace_gtype(element_type);
 
     /* Special case array(guint8) */
     if (element_type == GI_TYPE_TAG_UINT8) {
@@ -2119,6 +2158,7 @@ gjs_array_from_zero_terminated_c_array (JSContext  *context,
         case GI_TYPE_TAG_DOUBLE:
           ITERATE(double);
           break;
+        case GI_TYPE_TAG_GTYPE:
         case GI_TYPE_TAG_UTF8:
         case GI_TYPE_TAG_FILENAME:
         case GI_TYPE_TAG_ARRAY:
@@ -2230,7 +2270,6 @@ gjs_value_from_g_argument (JSContext  *context,
     GITypeTag type_tag;
 
     type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
-    type_tag = replace_gtype(type_tag);
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting GArgument %s to jsval",
@@ -2276,6 +2315,14 @@ gjs_value_from_g_argument (JSContext  *context,
 
     case GI_TYPE_TAG_DOUBLE:
         return JS_NewNumberValue(context, arg->v_double, value_p);
+
+    case GI_TYPE_TAG_GTYPE:
+        {
+            JSObject *obj;
+            obj = gjs_gtype_create_gtype_wrapper(context, arg->v_ssize);
+            *value_p = OBJECT_TO_JSVAL(obj);
+        }
+        break;
 
     case GI_TYPE_TAG_UNICHAR:
         {
@@ -2722,7 +2769,6 @@ gjs_g_arg_release_internal(JSContext  *context,
 
             param_info = g_type_info_get_param_type(type_info, 0);
             element_type = g_type_info_get_tag(param_info);
-            element_type = replace_gtype(element_type);
 
             if (transfer != GI_TRANSFER_CONTAINER && is_gvalue_flat_array(param_info, element_type)) {
                 g_free(arg->v_pointer);
@@ -2744,6 +2790,7 @@ gjs_g_arg_release_internal(JSContext  *context,
             case GI_TYPE_TAG_INT8:
             case GI_TYPE_TAG_INT16:
             case GI_TYPE_TAG_INT32:
+            case GI_TYPE_TAG_GTYPE:
                 g_free (arg->v_pointer);
                 break;
 
@@ -2804,7 +2851,6 @@ gjs_g_arg_release_internal(JSContext  *context,
 
             param_info = g_type_info_get_param_type(type_info, 0);
             element_type = g_type_info_get_tag(param_info);
-            element_type = replace_gtype(element_type);
 
             switch (element_type) {
             case GI_TYPE_TAG_UINT8:
@@ -2815,6 +2861,7 @@ gjs_g_arg_release_internal(JSContext  *context,
             case GI_TYPE_TAG_INT16:
             case GI_TYPE_TAG_INT32:
             case GI_TYPE_TAG_INT64:
+            case GI_TYPE_TAG_GTYPE:
                 g_array_free((GArray*) arg->v_pointer, TRUE);
                 break;
 

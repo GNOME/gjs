@@ -1,6 +1,7 @@
 /* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
  * Copyright (c) 2008  litl, LLC
+ * Copyright (c) 2012  Red Hat, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,8 +22,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_OBJECT_H__
-#define __GJS_OBJECT_H__
+#ifndef __GJS_GTYPE_H__
+#define __GJS_GTYPE_H__
 
 #include <glib.h>
 
@@ -32,19 +33,18 @@
 
 G_BEGIN_DECLS
 
-JSBool    gjs_define_object_class       (JSContext     *context,
-                                         JSObject      *in_object,
-                                         GType          gtype,
-                                         JSObject     **constructor_p,
-                                         JSObject     **prototype_p,
-                                         GIObjectInfo **class_info_p);
-JSObject* gjs_lookup_object_prototype   (JSContext     *context,
-                                         GType          gtype);
-JSObject* gjs_object_from_g_object      (JSContext     *context,
-                                         GObject       *gobj);
-GObject*  gjs_g_object_from_object      (JSContext     *context,
-                                         JSObject      *obj);
+jsval      gjs_gtype_create_proto         (JSContext       *context,
+                                           JSObject        *module,
+                                           const char      *proto_name,
+                                           JSObject        *parent);
+
+JSObject * gjs_gtype_create_gtype_wrapper (JSContext *context,
+                                           GType      gtype);
+
+GType      gjs_gtype_get_actual_gtype (JSContext *context,
+                                       JSObject  *object);
+
 
 G_END_DECLS
 
-#endif  /* __GJS_OBJECT_H__ */
+#endif  /* __GJS_INTERFACE_H__ */
