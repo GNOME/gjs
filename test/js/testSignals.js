@@ -16,7 +16,6 @@ function testSimple() {
     var foo = new Foo();
     var id = foo.connect('bar',
                          function(theFoo, a, b) {
-                             log("Received signal 'bar'");
                              theFoo.a = a;
                              theFoo.b = b;
                          });
@@ -36,7 +35,6 @@ function testDisconnectDuringEmit() {
     var toRemove = [];
     var firstId = foo.connect('bar',
                          function(theFoo) {
-                             log("Received signal 'bar', disconnecting others");
                              theFoo.disconnect(toRemove[0]);
                              theFoo.disconnect(toRemove[1]);
                          });
@@ -70,17 +68,14 @@ function testMultipleSignals() {
     foo.bonkHandlersCalled = 0;
     foo.connect('bar',
                 function(theFoo) {
-                    log("Received signal 'bar'");
                     theFoo.barHandlersCalled += 1;
                 });
     foo.connect('bonk',
                 function(theFoo) {
-                    log("Received signal 'bonk'");
                     theFoo.bonkHandlersCalled += 1;
                 });
     foo.connect('bar',
                 function(theFoo) {
-                    log("Received signal 'bar' (handler 2)");
                     theFoo.barHandlersCalled += 1;
                 });
     foo.emit('bar');
@@ -115,13 +110,11 @@ function testExceptionInCallback() {
     foo.bar2Called = 0;
     foo.connect('bar',
                 function(theFoo) {
-                    log("Received signal 'bar' (throwing exception)");
                     theFoo.bar1Called += 1;
                     throw new Error("Exception we are throwing on purpose");
                 });
     foo.connect('bar',
                 function(theFoo) {
-                    log("Received signal 'bar' (handler 2)");
                     theFoo.bar2Called += 1;
                 });
 

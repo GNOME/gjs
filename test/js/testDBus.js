@@ -225,8 +225,6 @@ function testFrobateStuff() {
                       });
 
     Mainloop.run('testDbus');
-
-    log(theResult.toSource());
     assertEquals("world", theResult.hello);
 }
 
@@ -812,7 +810,6 @@ function testStructArray() {
     Mainloop.run('testDbus');
     assertNull(theExcp);
     assertNotNull(theResult);
-    log(theResult);
     assertEquals(theResult[0][0], 128);
     assertEquals(theResult[0][1], 123456);
     assertEquals(theResult[1][0], 42);

@@ -257,7 +257,6 @@ function testFrobateStuff() {
 
     Mainloop.run('testGDBus');
 
-    log(theResult.toSource());
     assertEquals("world", theResult.hello.deep_unpack());
 }
 
@@ -520,7 +519,6 @@ function testStructArray() {
     Mainloop.run('testGDBus');
     assertNull(theExcp);
     assertNotNull(theResult);
-    log(theResult);
     assertEquals(theResult[0][0], 128);
     assertEquals(theResult[0][1], 123456);
     assertEquals(theResult[1][0], 42);

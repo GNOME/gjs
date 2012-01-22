@@ -69,8 +69,6 @@ function testUInt64ParamSpec() {
     assertEquals(nick, uint64Spec._nick);
     assertEquals(blurb, uint64Spec._blurb);
     assertEquals(flags, uint64Spec.flags);
-
-    log(uint64Spec.default_value);
     assertEquals(0x2266bbff, uint64Spec.default_value);
 }
 
