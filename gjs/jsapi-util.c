@@ -1373,6 +1373,7 @@ gjs_value_to_int64  (JSContext  *context,
  * types of the expected arguments, and a list of argument names and
  * value location pairs.  The currently accepted format specifiers are:
  *
+ * b: A boolean
  * s: A string, converted into UTF-8
  * z: Like 's', but may be null in JavaScript (which appears as NULL in C)
  * F: A string, converted into "filename encoding" (i.e. active locale)
@@ -1469,6 +1470,13 @@ gjs_parse_args (JSContext  *context,
         js_value = argv[consumed_args];
 
         switch (*fmt_iter) {
+        case 'b': {
+            if (!JSVAL_IS_BOOLEAN(js_value)) {
+                arg_error_message = "Not a boolean";
+            } else {
+                *(gboolean *)arg = JSVAL_TO_BOOLEAN(js_value);
+            }
+        }
         case 'o': {
             if (!JSVAL_IS_OBJECT(js_value)) {
                 arg_error_message = "Not an object";
