@@ -1378,6 +1378,7 @@ gjs_value_to_int64  (JSContext  *context,
  * F: A string, converted into "filename encoding" (i.e. active locale)
  * i: A number, will be converted to a C "gint32"
  * u: A number, converted into a C "guint32"
+ * t: A 64-bit number, converted into a C "gint64" by way of gjs_value_to_int64()
  * o: A JavaScript object, as a "JSObject *"
  *
  * If the first character in the format string is a '!', then JS is allowed
@@ -1518,6 +1519,14 @@ gjs_parse_args (JSContext  *context,
                 arg_error_message = "Value is out of range";
             } else {
                 *((guint32*) arg_location) = num;
+            }
+        }
+            break;
+        case 't': {
+            if (!gjs_value_to_int64(context, js_value, (gint64*) arg_location)) {
+                /* Our error message is going to be more useful */
+                JS_ClearPendingException(context);
+                arg_error_message = "Couldn't convert to 64-bit integer";
             }
         }
             break;
