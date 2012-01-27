@@ -1380,6 +1380,9 @@ gjs_value_to_int64  (JSContext  *context,
  * u: A number, converted into a C "guint32"
  * o: A JavaScript object, as a "JSObject *"
  *
+ * If the first character in the format string is a '!', then JS is allowed
+ * to pass extra arguments that are ignored, to the function.
+ *
  * The '|' character introduces optional arguments.  All format specifiers
  * after a '|' when not specified, do not cause any changes in the C
  * value location.
@@ -1399,6 +1402,7 @@ gjs_parse_args (JSContext  *context,
     guint n_unwind = 0;
 #define MAX_UNWIND_STRINGS 16
     gpointer unwind_strings[MAX_UNWIND_STRINGS];
+    gboolean ignore_trailing_args = FALSE;
     guint n_required;
     guint n_total;
     guint consumed_args;
@@ -1406,6 +1410,11 @@ gjs_parse_args (JSContext  *context,
     JS_BeginRequest(context);
 
     va_start (args, argv);
+
+    if (*format == '!') {
+        ignore_trailing_args = TRUE;
+        format++;
+    }
 
     /* Check for optional argument specifier */
     fmt_iter = strchr (format, '|');
@@ -1419,7 +1428,7 @@ gjs_parse_args (JSContext  *context,
         n_required = n_total = strlen (format);
     }
 
-    if (argc < n_required || argc > n_total) {
+    if (argc < n_required || (argc > n_total && !ignore_trailing_args)) {
         if (n_required == n_total) {
             gjs_throw(context, "Error invoking %s: Expected %d arguments, got %d", function_name,
                       n_required, argc);
