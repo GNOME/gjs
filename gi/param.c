@@ -79,7 +79,7 @@ param_get_prop(JSContext *context,
     GParamSpec *pspec;
     char *name;
     GType gtype;
-    GIObjectInfo *info, *parent_info;
+    GIObjectInfo *info = NULL, *parent_info = NULL;
     GIFieldInfo *field_info = NULL;
     GITypeInfo *type_info = NULL;
     GIArgument arg;
@@ -99,6 +99,14 @@ param_get_prop(JSContext *context,
 
     gtype = G_TYPE_FROM_INSTANCE(pspec);
     info = (GIObjectInfo*)g_irepository_find_by_gtype(g_irepository_get_default(), gtype);
+
+    if (info == NULL) {
+        /* We may have a non-introspectable GParamSpec subclass here. Just return VOID. */
+        *value_p = JSVAL_VOID;
+        success = JS_TRUE;
+        goto out;
+    }
+
     parent_info = g_object_info_get_parent(info);
 
     field_info = find_field_info(info, name);
@@ -133,8 +141,10 @@ param_get_prop(JSContext *context,
         g_base_info_unref((GIBaseInfo*)field_info);
     if (type_info != NULL)
         g_base_info_unref((GIBaseInfo*)type_info);
-    g_base_info_unref((GIBaseInfo*)info);
-    g_base_info_unref((GIBaseInfo*)parent_info);
+    if (info != NULL)
+        g_base_info_unref((GIBaseInfo*)info);
+    if (parent_info != NULL)
+        g_base_info_unref((GIBaseInfo*)parent_info);
     g_free(name);
 
     return success;
