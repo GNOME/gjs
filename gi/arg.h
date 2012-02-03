@@ -69,7 +69,8 @@ JSBool gjs_value_to_g_argument (JSContext      *context,
 JSBool gjs_value_from_g_argument (JSContext  *context,
                                   jsval      *value_p,
                                   GITypeInfo *type_info,
-                                  GArgument  *arg);
+                                  GArgument  *arg,
+                                  gboolean    copy_structs);
 JSBool gjs_value_from_explicit_array (JSContext  *context,
                                       jsval      *value_p,
                                       GITypeInfo *type_info,

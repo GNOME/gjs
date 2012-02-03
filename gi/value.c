@@ -719,7 +719,7 @@ gjs_value_from_g_value_internal(JSContext    *context,
 
         arg.v_pointer = g_value_get_pointer(gvalue);
 
-        res = gjs_value_from_g_argument(context, value_p, &type_info, &arg);
+        res = gjs_value_from_g_argument(context, value_p, &type_info, &arg, TRUE);
 
         g_base_info_unref((GIBaseInfo*)arg_info);
         g_base_info_unref((GIBaseInfo*)signal_info);

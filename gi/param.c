@@ -131,7 +131,7 @@ param_get_prop(JSContext *context,
         goto out;
     }
 
-    if (!gjs_value_from_g_argument(context, value_p, type_info, &arg))
+    if (!gjs_value_from_g_argument(context, value_p, type_info, &arg, TRUE))
         goto out;
 
     success = JS_TRUE;

@@ -250,7 +250,8 @@ gjs_callback_closure(ffi_cif *cif,
         if (!gjs_value_from_g_argument(context,
                                        &jsargs[n_jsargs++],
                                        &type_info,
-                                       args[i]))
+                                       args[i],
+                                       FALSE))
             goto out;
     }
 
@@ -837,7 +838,8 @@ gjs_invoke_c_function(JSContext      *context,
                 array_length_pos += is_method ? 1 : 0;
                 arg_failed = !gjs_value_from_g_argument(context, &length,
                                                         &arg_type_info,
-                                                        &out_arg_cvalues[array_length_pos]);
+                                                        &out_arg_cvalues[array_length_pos],
+                                                        TRUE);
                 if (!arg_failed) {
                     arg_failed = !gjs_value_from_explicit_array(context,
                                                                 &return_values[next_rval],
@@ -854,7 +856,8 @@ gjs_invoke_c_function(JSContext      *context,
                     failed = TRUE;
             } else {
                 arg_failed = !gjs_value_from_g_argument(context, &return_values[next_rval],
-                                                        &return_info, &return_gargument);
+                                                        &return_info, &return_gargument,
+                                                        TRUE);
                 /* Free GArgument, the jsval should have ref'd or copied it */
                 if (!arg_failed &&
                     !gjs_g_argument_release(context,
@@ -974,7 +977,8 @@ release:
                 array_length_pos += is_method ? 1 : 0;
                 arg_failed = !gjs_value_from_g_argument(context, &array_length,
                                                         &array_length_type_info,
-                                                        &out_arg_cvalues[array_length_pos]);
+                                                        &out_arg_cvalues[array_length_pos],
+                                                        TRUE);
                 if (!arg_failed) {
                     arg_failed = !gjs_value_from_explicit_array(context,
                                                                 &return_values[next_rval],
@@ -986,7 +990,8 @@ release:
                 arg_failed = !gjs_value_from_g_argument(context,
                                                         &return_values[next_rval],
                                                         &arg_type_info,
-                                                        arg);
+                                                        arg,
+                                                        TRUE);
             }
 
             if (arg_failed)

@@ -365,7 +365,7 @@ gjs_define_constant(JSContext      *context,
     type_info = g_constant_info_get_type(info);
     g_constant_info_get_value(info, &garg);
 
-    if (!gjs_value_from_g_argument(context, &value, type_info, &garg))
+    if (!gjs_value_from_g_argument(context, &value, type_info, &garg, TRUE))
         goto out;
 
     name = g_base_info_get_name((GIBaseInfo*) info);

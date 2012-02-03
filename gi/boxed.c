@@ -667,7 +667,8 @@ boxed_field_getter (JSContext *context,
 
     if (!gjs_value_from_g_argument (context, value,
                                     type_info,
-                                    &arg))
+                                    &arg,
+                                    TRUE))
         goto out;
 
     success = TRUE;

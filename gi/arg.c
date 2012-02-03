@@ -1859,7 +1859,8 @@ gjs_array_from_g_list (JSContext  *context,
             arg.v_pointer = list->data;
 
             if (!gjs_value_from_g_argument(context, &elem,
-                                           param_info, &arg))
+                                           param_info, &arg,
+                                           TRUE))
                 goto out;
 
             if (!JS_DefineElement(context, obj,
@@ -1874,7 +1875,8 @@ gjs_array_from_g_list (JSContext  *context,
             arg.v_pointer = slist->data;
 
             if (!gjs_value_from_g_argument(context, &elem,
-                                           param_info, &arg))
+                                           param_info, &arg,
+                                           TRUE))
                 goto out;
 
             if (!JS_DefineElement(context, obj,
@@ -1939,7 +1941,7 @@ gjs_array_from_carray_internal (JSContext  *context,
 #define ITERATE(type) \
     for (i = 0; i < length; i++) { \
         arg.v_##type = *(((g##type*)array) + i);                         \
-        if (!gjs_value_from_g_argument(context, &elem, param_info, &arg)) \
+        if (!gjs_value_from_g_argument(context, &elem, param_info, &arg, TRUE)) \
           goto finally; \
         if (!JS_DefineElement(context, obj, i, elem, NULL, NULL, \
               JSPROP_ENUMERATE)) \
@@ -2119,7 +2121,7 @@ gjs_array_from_zero_terminated_c_array (JSContext  *context,
         g##type *array = c_array; \
         for (i = 0; array[i]; i++) { \
             arg.v_##type = array[i]; \
-            if (!gjs_value_from_g_argument(context, &elem, param_info, &arg)) \
+            if (!gjs_value_from_g_argument(context, &elem, param_info, &arg, TRUE)) \
                 goto finally; \
             if (!JS_DefineElement(context, obj, i, elem, NULL, NULL, \
                                   JSPROP_ENUMERATE)) \
@@ -2227,7 +2229,8 @@ gjs_object_from_g_hash (JSContext  *context,
     while (g_hash_table_iter_next
            (&iter, &keyarg.v_pointer, &valarg.v_pointer)) {
         if (!gjs_value_from_g_argument(context, &keyjs,
-                                       key_param_info, &keyarg))
+                                       key_param_info, &keyarg,
+                                       TRUE))
             goto out;
 
         keystr = JS_ValueToString(context, keyjs);
@@ -2238,7 +2241,8 @@ gjs_object_from_g_hash (JSContext  *context,
             goto out;
 
         if (!gjs_value_from_g_argument(context, &valjs,
-                                       val_param_info, &valarg))
+                                       val_param_info, &valarg,
+                                       TRUE))
             goto out;
 
         if (!JS_DefineProperty(context, obj, keyutf8, valjs,
@@ -2265,7 +2269,8 @@ JSBool
 gjs_value_from_g_argument (JSContext  *context,
                            jsval      *value_p,
                            GITypeInfo *type_info,
-                           GArgument  *arg)
+                           GArgument  *arg,
+                           gboolean    copy_structs)
 {
     GITypeTag type_tag;
 
@@ -2431,8 +2436,20 @@ gjs_value_from_g_argument (JSContext  *context,
 
             if (interface_type == GI_INFO_TYPE_STRUCT || interface_type == GI_INFO_TYPE_BOXED) {
                 JSObject *obj;
-                obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)interface_info, arg->v_pointer,
-                                              GJS_BOXED_CREATION_NONE);
+                GjsBoxedCreationFlags flags;
+
+                if (copy_structs)
+                    flags = GJS_BOXED_CREATION_NONE;
+                else if (g_type_is_a(gtype, G_TYPE_VARIANT))
+                    flags = GJS_BOXED_CREATION_NONE;
+                else
+                    flags = GJS_BOXED_CREATION_NO_COPY;
+
+                obj = gjs_boxed_from_c_struct(context,
+                                              (GIStructInfo *)interface_info,
+                                              arg->v_pointer,
+                                              flags);
+
                 if (obj)
                     value = OBJECT_TO_JSVAL(obj);
 
