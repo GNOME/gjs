@@ -362,33 +362,6 @@ object_instance_new_resolve(JSContext *context,
 
             g_base_info_unref( (GIBaseInfo*) method_info);
         }
-    } else {
-        /* We are an instance, not a prototype, so look for per-instance props that
-         * we want to define on the JSObject. Generally we do not want to cache
-         * these in JS, we want to always pull them from the GObject, or
-         * JS would not see any changes made from C. So we use the get/set prop hooks,
-         * not this resolve hook.
-         */
-
-        JSObject *proto;
-        ObjectInstance *proto_priv;
-
-        proto = JS_GetPrototype(context, obj);
-        proto_priv = priv_from_js(context, proto);
-        if (proto_priv->gtype == G_TYPE_INVALID) {
-            gjs_debug(GJS_DEBUG_GOBJECT,
-                      "storing gtype %s (%d) to prototype %p",
-                      G_OBJECT_TYPE_NAME(priv->gobj),
-                      (int) G_OBJECT_TYPE(priv->gobj),
-                      proto);
-            proto_priv->gtype = G_OBJECT_TYPE(priv->gobj);
-        } else if (proto_priv->gtype != G_OBJECT_TYPE(priv->gobj)) {
-            gjs_fatal("conflicting gtypes for prototype %s (%d) (was %s (%d))",
-                      G_OBJECT_TYPE_NAME(priv->gobj),
-                      (int) G_OBJECT_TYPE(priv->gobj),
-                      g_type_name(proto_priv->gtype),
-                      (int) proto_priv->gtype);
-        }
     }
 
     ret = JS_TRUE;
