@@ -32,8 +32,9 @@
 static JSBool
 gjs_address_of(JSContext *context,
                uintN      argc,
-               jsval     *argv)
+               jsval     *vp)
 {
+    jsval *argv = JS_ARGV(cx, vp);
     JSObject *target_obj;
     JSBool ret;
     char *pointer_string;
@@ -54,8 +55,9 @@ gjs_address_of(JSContext *context,
 static JSBool
 gjs_breakpoint(JSContext *context,
                uintN      argc,
-               jsval     *argv)
+               jsval     *vp)
 {
+    jsval *argv = JS_ARGV(cx, vp);
     if (!gjs_parse_args(context, "breakpoint", "", argc, argv))
         return JS_FALSE;
     G_BREAKPOINT();
@@ -65,8 +67,9 @@ gjs_breakpoint(JSContext *context,
 static JSBool
 gjs_gc(JSContext *context,
        uintN      argc,
-       jsval     *argv)
+       jsval     *vp)
 {
+    jsval *argv = JS_ARGV(cx, vp);
     if (!gjs_parse_args(context, "gc", "", argc, argv))
         return JS_FALSE;
     JS_GC(context);
