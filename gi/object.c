@@ -253,6 +253,7 @@ object_instance_new_resolve(JSContext *context,
                             uintN      flags,
                             JSObject **objp)
 {
+    GIFunctionInfo *method_info;
     ObjectInstance *priv;
     char *name;
     JSBool ret = JS_FALSE;
@@ -277,91 +278,91 @@ object_instance_new_resolve(JSContext *context,
     if (priv == NULL)
         goto out; /* we are the wrong class */
 
-    if (priv->gobj == NULL) {
-        /* We are the prototype, so look for methods and other class properties */
-        GIFunctionInfo *method_info;
+    if (priv->gobj != NULL) {
+        ret = JS_TRUE;
+        goto out;
+    }
 
-        /* find_method does not look at methods on parent classes,
-         * we rely on javascript to walk up the __proto__ chain
-         * and find those and define them in the right prototype.
-         *
-         * Note that if it isn't a method on the object, since JS
-         * lacks multiple inheritance, we're sticking the iface
-         * methods in the object prototype, which means there are many
-         * copies of the iface methods (one per object class node that
-         * introduces the iface)
-         */
+    /* find_method does not look at methods on parent classes,
+     * we rely on javascript to walk up the __proto__ chain
+     * and find those and define them in the right prototype.
+     *
+     * Note that if it isn't a method on the object, since JS
+     * lacks multiple inheritance, we're sticking the iface
+     * methods in the object prototype, which means there are many
+     * copies of the iface methods (one per object class node that
+     * introduces the iface)
+     */
 
-        method_info = g_object_info_find_method_using_interfaces(priv->info,
-                                                                 name,
-                                                                 NULL);
+    method_info = g_object_info_find_method_using_interfaces(priv->info,
+                                                             name,
+                                                             NULL);
 
-        /**
-         * Search through any interfaces implemented by the GType;
-         * this could be done better.  See
-         * https://bugzilla.gnome.org/show_bug.cgi?id=632922
-         */
-        if (method_info == NULL) {
-            GType *interfaces;
-            guint n_interfaces;
-            guint i;
+    /**
+     * Search through any interfaces implemented by the GType;
+     * this could be done better.  See
+     * https://bugzilla.gnome.org/show_bug.cgi?id=632922
+     */
+    if (method_info == NULL) {
+        GType *interfaces;
+        guint n_interfaces;
+        guint i;
 
-            interfaces = g_type_interfaces (priv->gtype, &n_interfaces);
-            for (i = 0; i < n_interfaces; i++) {
-                GIBaseInfo *base_info;
-                GIInterfaceInfo *iface_info;
+        interfaces = g_type_interfaces (priv->gtype, &n_interfaces);
+        for (i = 0; i < n_interfaces; i++) {
+            GIBaseInfo *base_info;
+            GIInterfaceInfo *iface_info;
 
-                base_info = g_irepository_find_by_gtype(g_irepository_get_default(),
-                                                        interfaces[i]);
-                if (!base_info)
-                    continue;
+            base_info = g_irepository_find_by_gtype(g_irepository_get_default(),
+                                                    interfaces[i]);
+            if (!base_info)
+                continue;
 
-                if (g_base_info_get_type(base_info) != GI_INFO_TYPE_INTERFACE) {
-                    g_base_info_unref(base_info);
-                    continue;
-                }
-
-                iface_info = (GIInterfaceInfo*) base_info;
-
-                method_info = g_interface_info_find_method(iface_info, name);
-
+            if (g_base_info_get_type(base_info) != GI_INFO_TYPE_INTERFACE) {
                 g_base_info_unref(base_info);
-
-                if (method_info != NULL) {
-                    gjs_debug(GJS_DEBUG_GOBJECT,
-                              "Found method %s in native interface %s",
-                              name, g_type_name(interfaces[i]));
-                    break;
-                }
+                continue;
             }
-            g_free(interfaces);
-        }
 
-        if (method_info != NULL) {
-            const char *method_name;
+            iface_info = (GIInterfaceInfo*) base_info;
+
+            method_info = g_interface_info_find_method(iface_info, name);
+
+            g_base_info_unref(base_info);
+
+            if (method_info != NULL) {
+                gjs_debug(GJS_DEBUG_GOBJECT,
+                          "Found method %s in native interface %s",
+                          name, g_type_name(interfaces[i]));
+                break;
+            }
+        }
+        g_free(interfaces);
+    }
+
+    if (method_info != NULL) {
+        const char *method_name;
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
-            _gjs_log_info_usage((GIBaseInfo*) method_info);
+        _gjs_log_info_usage((GIBaseInfo*) method_info);
 #endif
 
-            method_name = g_base_info_get_name( (GIBaseInfo*) method_info);
+        method_name = g_base_info_get_name( (GIBaseInfo*) method_info);
 
-            gjs_debug(GJS_DEBUG_GOBJECT,
-                      "Defining method %s in prototype for %s (%s.%s)",
-                      method_name,
-                      g_type_name(priv->gtype),
-                      g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                      g_base_info_get_name( (GIBaseInfo*) priv->info));
+        gjs_debug(GJS_DEBUG_GOBJECT,
+                  "Defining method %s in prototype for %s (%s.%s)",
+                  method_name,
+                  g_type_name(priv->gtype),
+                  g_base_info_get_namespace( (GIBaseInfo*) priv->info),
+                  g_base_info_get_name( (GIBaseInfo*) priv->info));
 
-            if (gjs_define_function(context, obj, method_info) == NULL) {
-                g_base_info_unref( (GIBaseInfo*) method_info);
-                goto out;
-            }
-
-            *objp = obj; /* we defined the prop in obj */
-
+        if (gjs_define_function(context, obj, method_info) == NULL) {
             g_base_info_unref( (GIBaseInfo*) method_info);
+            goto out;
         }
+
+        *objp = obj; /* we defined the prop in obj */
+
+        g_base_info_unref( (GIBaseInfo*) method_info);
     }
 
     ret = JS_TRUE;
