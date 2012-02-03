@@ -3,6 +3,7 @@
 *.o
 *.gir
 *.typelib
+*~
 .deps/
 .libs/
 INSTALL
@@ -40,3 +41,5 @@ stamp-h1
 test_user_data
 uninstalled-test-bus.conf
 uninstalled-system-test-bus.conf
+valgrind.gjs-tests.log
+valgrind.gjs-unit.log
