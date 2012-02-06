@@ -2058,6 +2058,11 @@ gjs_array_from_boxed_array (JSContext   *context,
     gpointer data = NULL;
     gsize length = 0;
 
+    if (arg->v_pointer == NULL) {
+        *value_p = JSVAL_NULL;
+        return TRUE;
+    }
+
     switch(array_type) {
     case GI_ARRAY_TYPE_BYTE_ARRAY:
         /* GByteArray is just a typedef for GArray internally */

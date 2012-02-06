@@ -508,6 +508,7 @@ to_string_func(JSContext *context,
     ByteArrayInstance *priv;
     char *encoding;
     gboolean encoding_is_utf8;
+    gchar *data;
 
     priv = priv_from_js(context, object);
 
@@ -535,6 +536,12 @@ to_string_func(JSContext *context,
         encoding = "UTF-8";
     }
 
+    if (priv->array->len == 0)
+        /* the internal data pointer could be NULL in this case */
+        data = "";
+    else
+        data = priv->array->data;
+
     if (encoding_is_utf8) {
         /* optimization, avoids iconv overhead and runs
          * glib's hardwired utf8-to-utf16
@@ -543,7 +550,7 @@ to_string_func(JSContext *context,
         JSBool ok;
 
         ok = gjs_string_from_utf8(context,
-                                  (char*) priv->array->data,
+                                  data,
                                   priv->array->len,
                                   &retval);
         if (ok)
@@ -557,7 +564,7 @@ to_string_func(JSContext *context,
         char *u16_str;
 
         error = NULL;
-        u16_str = g_convert((char*) priv->array->data,
+        u16_str = g_convert(data,
                            priv->array->len,
                            "UTF-16",
                            encoding,
