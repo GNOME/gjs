@@ -181,6 +181,8 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
                 *(ffi_arg *) result = (ffi_arg) return_value->v_pointer;
                 break;
             }
+
+            g_base_info_unref(interface_info);
         }
     default:
         *(ffi_arg *) result = (ffi_arg) return_value->v_uint64;
@@ -607,6 +609,8 @@ set_gargument_from_ffi_return_value (GITypeInfo                  *return_info,
                 return_value->v_pointer = (gpointer) value->rv_ffi_arg;
                 break;
             }
+
+            g_base_info_unref(interface_info);
         }
         break;
     default:
@@ -1546,6 +1550,7 @@ init_cached_function_data (JSContext      *context,
                         gjs_throw(context, "Function %s.%s has a GDestroyNotify but no user_data, not supported",
                                   g_base_info_get_namespace( (GIBaseInfo*) info),
                                   g_base_info_get_name( (GIBaseInfo*) info));
+                        g_base_info_unref(interface_info);
                         return JS_FALSE;
                     }
                 }
