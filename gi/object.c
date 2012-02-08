@@ -934,7 +934,7 @@ object_instance_init (JSContext *context,
     free_g_params(params, n_params);
 
     old_jsobj = peek_js_obj(context, gobj);
-    if (old_jsobj != NULL) {
+    if (old_jsobj != NULL && old_jsobj != *object) {
         /* g_object_newv returned an object that's already tracked by a JS
          * object. Let's assume this is a singleton like IBus.IBus and return
          * the existing JS wrapper object.
