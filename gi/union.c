@@ -213,10 +213,6 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
     proto = JS_GetPrototype(context, object);
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED, "union instance __proto__ is %p", proto);
 
-    gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
-                        "union instance constructing proto %d, obj class %s proto class %s",
-                        is_proto, obj_class->name, proto_class->name);
-
     /* If we're the prototype, then post-construct we'll fill in priv->info.
      * If we are not the prototype, though, then we'll get ->info from the
      * prototype and then create a GObject if we don't have one already.
