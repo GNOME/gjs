@@ -688,8 +688,15 @@ gjs_invoke_c_function(JSContext      *context,
             can_throw_gerror = (flags & GI_FUNCTION_THROWS) != 0;
         }
         break;
-    case GI_INFO_TYPE_CALLBACK:
     case GI_INFO_TYPE_VFUNC:
+        {
+            GIVFuncInfoFlags flags;
+            flags = g_vfunc_info_get_flags ((GIVFuncInfo *)function->info);
+            can_throw_gerror = (flags & GI_VFUNC_THROWS) != 0;
+        }
+        is_method = TRUE;
+      break;
+    case GI_INFO_TYPE_CALLBACK:
         is_method = TRUE;
         can_throw_gerror = FALSE;
         break;
