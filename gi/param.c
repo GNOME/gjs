@@ -485,12 +485,12 @@ gjs_define_param_class(JSContext    *context,
     const char *constructor_name;
     JSObject *prototype;
     jsval value;
+    JSObject *constructor;
 
     constructor_name = "ParamSpec";
 
     gjs_object_get_property(context, in_object, constructor_name, &value);
     if (value != JSVAL_VOID) {
-        JSObject *constructor;
 
         if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "Existing property '%s' does not look like a constructor",
@@ -544,8 +544,22 @@ gjs_define_param_class(JSContext    *context,
     if (prototype == NULL)
         gjs_fatal("Can't init class %s", constructor_name);
 
-    g_assert(gjs_object_has_property(context, in_object, constructor_name));
+    constructor = NULL;
+    gjs_object_get_property(context, in_object, constructor_name, &value);
+    if (value != JSVAL_VOID) {
+        if (!JSVAL_IS_OBJECT(value)) {
+            gjs_throw(context, "Property '%s' does not look like a constructor",
+                      constructor_name);
+            return JS_FALSE;
+        }
+    }
 
+    constructor = JSVAL_TO_OBJECT(value);
+
+    value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM));
+    JS_DefineProperty(context, constructor, "$gtype", value,
+                      NULL, NULL, JSPROP_PERMANENT);
+    
     if (prototype_p)
         *prototype_p = prototype;
 

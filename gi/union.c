@@ -35,7 +35,7 @@
 #include <gjs/compat.h>
 #include "repo.h"
 #include "function.h"
-
+#include "gtype.h"
 
 #include <jsapi.h>
 
@@ -380,6 +380,7 @@ gjs_define_union_class(JSContext    *context,
     jsval value;
     Union *priv;
     GType gtype;
+    JSObject *constructor;
 
     /* For certain unions, we may be able to relax this in the future by
      * directly allocating union memory, as we do for structures in boxed.c
@@ -398,8 +399,6 @@ gjs_define_union_class(JSContext    *context,
     constructor_name = g_base_info_get_name( (GIBaseInfo*) info);
 
     if (gjs_object_get_property(context, in_object, constructor_name, &value)) {
-        JSObject *constructor;
-
         if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "Existing property '%s' does not look like a constructor",
                          constructor_name);
@@ -459,19 +458,23 @@ gjs_define_union_class(JSContext    *context,
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
               constructor_name, prototype, JS_GET_CLASS(context, prototype), in_object);
 
-    if (constructor_p) {
-        *constructor_p = NULL;
-        gjs_object_get_property(context, in_object, constructor_name, &value);
-        if (value != JSVAL_VOID) {
-            if (!JSVAL_IS_OBJECT(value)) {
-                gjs_throw(context, "Property '%s' does not look like a constructor",
-                          constructor_name);
-                return JS_FALSE;
-            }
+    gjs_object_get_property(context, in_object, constructor_name, &value);
+    if (value != JSVAL_VOID) {
+        if (!JSVAL_IS_OBJECT(value)) {
+            gjs_throw(context, "Property '%s' does not look like a constructor",
+                      constructor_name);
+            return JS_FALSE;
         }
-
-        *constructor_p = JSVAL_TO_OBJECT(value);
     }
+
+    constructor = JSVAL_TO_OBJECT(value);
+    
+    value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));
+    JS_DefineProperty(context, constructor, "$gtype", value,
+                      NULL, NULL, JSPROP_PERMANENT);
+
+    if (constructor_p)
+        *constructor_p = constructor;
 
     if (prototype_p)
         *prototype_p = prototype;

@@ -32,6 +32,7 @@
 #include <gjs/compat.h>
 #include "repo.h"
 #include "function.h"
+#include "gtype.h"
 
 #include <util/log.h>
 
@@ -1093,6 +1094,7 @@ gjs_define_boxed_class(JSContext    *context,
     JSObject *constructor;
     jsval value;
     Boxed *priv;
+    GType gtype;
 
     /* See the comment in gjs_define_object_class() for an
      * explanation of how this all works; Boxed is pretty much the
@@ -1179,10 +1181,14 @@ gjs_define_boxed_class(JSContext    *context,
         }
     }
 
+    gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo *) priv->info);
+
     constructor = JSVAL_TO_OBJECT(value);
-    gjs_define_static_methods (context, constructor,
-                               g_registered_type_info_get_g_type (priv->info),
-                               priv->info);
+    gjs_define_static_methods (context, constructor, gtype, priv->info);
+
+    value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));
+    JS_DefineProperty(context, constructor, "$gtype", value,
+                      NULL, NULL, JSPROP_PERMANENT);
 
     if (constructor_p)
         *constructor_p = constructor;
