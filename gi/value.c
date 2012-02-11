@@ -32,6 +32,7 @@
 #include "object.h"
 #include "boxed.h"
 #include "union.h"
+#include "gtype.h"
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 
@@ -173,7 +174,8 @@ gjs_closure_new_marshaled (JSContext    *context,
 }
 
 static GType
-gjs_value_guess_g_type(jsval value)
+gjs_value_guess_g_type(JSContext *context,
+                       jsval      value)
 {
     if (JSVAL_IS_NULL(value))
         return G_TYPE_POINTER;
@@ -190,9 +192,8 @@ gjs_value_guess_g_type(jsval value)
     if (JSVAL_IS_BOOLEAN(value))
         return G_TYPE_BOOLEAN;
 
-    if (JSVAL_IS_OBJECT(value)) {
-        return G_TYPE_OBJECT;
-    }
+    if (JSVAL_IS_OBJECT(value))
+        return gjs_gtype_get_actual_gtype(context, JSVAL_TO_OBJECT(value));
 
     return G_TYPE_INVALID;
 }
@@ -208,7 +209,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
     gtype = G_VALUE_TYPE(gvalue);
 
     if (gtype == 0) {
-        gtype = gjs_value_guess_g_type(value);
+        gtype = gjs_value_guess_g_type(context, value);
 
         if (gtype == G_TYPE_INVALID) {
             gjs_throw(context, "Could not guess unspecified GValue type");
@@ -475,6 +476,17 @@ gjs_value_to_g_value_internal(JSContext    *context,
         }
 
         g_value_set_param(gvalue, gparam);
+    } else if (g_type_is_a(gtype, G_TYPE_GTYPE)) {
+        GType type;
+
+        if (!JSVAL_IS_OBJECT(value)) {
+            gjs_throw(context, "Wrong type %s; expect a GType object",
+                      gjs_get_type_name(value));
+            return JS_FALSE;
+        }
+
+        type = gjs_gtype_get_actual_gtype(context, JSVAL_TO_OBJECT(value));
+        g_value_set_gtype(gvalue, type);
     } else if (g_type_is_a(gtype, G_TYPE_POINTER)) {
         if (JSVAL_IS_NULL(value)) {
             /* Nothing to do */

@@ -164,6 +164,8 @@ function _init() {
     this.TYPE_BOXED = GObject.type_from_name('GBoxed');
     this.TYPE_PARAM = GObject.type_from_name('GParam');
     this.TYPE_OBJECT = GObject.type_from_name('GObject');
+    this.TYPE_GTYPE = GObject.type_from_name('GType');
+    this.TYPE_VARIANT = GObject.type_from_name('GVariant');
     this.TYPE_UNICHAR = this.TYPE_UINT;
 
     this.ParamSpec.char = function(name, nick, blurb, flags, minimum, maximum, default_value) {

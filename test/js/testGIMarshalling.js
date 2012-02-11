@@ -14,8 +14,9 @@ function assertArrayEquals(expected, got) {
 
 const GIMarshallingTests = imports.gi.GIMarshallingTests;
 
-// We use Gio to have some objects that we know exist
+// We use Gio and GLib to have some objects that we know exist
 const Gio = imports.gi.Gio;
+const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
 const Lang = imports.lang;
 
@@ -230,6 +231,33 @@ function testGType() {
     assertEquals(GObject.TYPE_INT, GIMarshallingTests.gtype_inout(GObject.TYPE_NONE));
 }
 
+function testGValueGType() {
+    // test that inferring the GType for a primitive value or an object works
+
+    // Primitives (and primitive like)
+    GIMarshallingTests.gvalue_in_with_type(42, GObject.TYPE_INT);
+    GIMarshallingTests.gvalue_in_with_type(42.5, GObject.TYPE_DOUBLE);
+    GIMarshallingTests.gvalue_in_with_type('42', GObject.TYPE_STRING);
+    GIMarshallingTests.gvalue_in_with_type(GObject.TYPE_GTYPE, GObject.TYPE_GTYPE)
+
+    // Object and interface
+    GIMarshallingTests.gvalue_in_with_type(new Gio.SimpleAction, Gio.SimpleAction);
+    GIMarshallingTests.gvalue_in_with_type(new Gio.SimpleAction, GObject.Object);
+    GIMarshallingTests.gvalue_in_with_type(new Gio.SimpleAction, GObject.TYPE_OBJECT);
+    GIMarshallingTests.gvalue_in_with_type(new Gio.SimpleAction, Gio.SimpleAction);
+
+    // Boxed and union
+    GIMarshallingTests.gvalue_in_with_type(new GLib.KeyFile, GLib.KeyFile);
+    GIMarshallingTests.gvalue_in_with_type(new GLib.KeyFile, GObject.TYPE_BOXED);
+    GIMarshallingTests.gvalue_in_with_type(GLib.Variant.new('u', 42), GLib.Variant);
+    GIMarshallingTests.gvalue_in_with_type(GLib.Variant.new('u', 42), GObject.TYPE_VARIANT);
+    GIMarshallingTests.gvalue_in_with_type(new GIMarshallingTests.BoxedStruct, GIMarshallingTests.BoxedStruct);
+    GIMarshallingTests.gvalue_in_with_type(GIMarshallingTests.union_returnv(), GIMarshallingTests.Union);
+
+    // Other
+    GIMarshallingTests.gvalue_in_with_type(GObject.ParamSpec.string('my-param', '', '', GObject.ParamFlags.READABLE, ''),
+					   GObject.TYPE_PARAM);
+}
 
 function callback_return_value_only() {
     return 42;

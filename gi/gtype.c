@@ -149,7 +149,7 @@ gjs_gtype_get_actual_gtype (JSContext *context,
                             JSObject  *object)
 {
     GType gtype = G_TYPE_INVALID;
-    jsval gtype_val;
+    jsval gtype_val = JSVAL_VOID;
 
     JS_BeginRequest(context);
     if (JS_InstanceOf(context, object, &gjs_gtype_class, NULL)) {
@@ -159,13 +159,17 @@ gjs_gtype_get_actual_gtype (JSContext *context,
 
     /* OK, we don't have a GType wrapper object -- grab the "$gtype"
      * property on that and hope it's a GType wrapper object */
-    if (!JS_GetProperty(context, object, "$gtype", &gtype_val))
-        goto out;
+    if (!JS_GetProperty(context, object, "$gtype", &gtype_val) ||
+        !JSVAL_IS_OBJECT(gtype_val)) {
 
-    if (!JSVAL_IS_OBJECT(gtype_val))
-        goto out;
+        /* OK, so we're not a class. But maybe we're an instance. Check
+           for "constructor" and recurse on that. */
+        if (!JS_GetProperty(context, object, "constructor", &gtype_val))
+            goto out;
+    }
 
-    gtype = gjs_gtype_get_actual_gtype(context, JSVAL_TO_OBJECT(gtype_val));
+    if (JSVAL_IS_OBJECT(gtype_val))
+        gtype = gjs_gtype_get_actual_gtype(context, JSVAL_TO_OBJECT(gtype_val));
 
  out:
     JS_EndRequest(context);
