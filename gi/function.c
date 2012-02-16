@@ -539,81 +539,6 @@ get_length_from_arg (GArgument *arg, GITypeTag tag)
     }
 }
 
-
-/* Extract the correct bits from an ffi_arg return value into
- * GIArgument: https://bugzilla.gnome.org/show_bug.cgi?id=665152
- *
- * Also see the ffi_call man page - the storage requirements for return
- * values are "special".
- */
-typedef GIArgument GjsFFIReturnValue;
-
-static void
-set_gargument_from_ffi_return_value (GITypeInfo                  *return_info,
-                                     GIArgument                  *arg,
-                                     GjsFFIReturnValue            *ffi_value)
-{
-    switch (g_type_info_get_tag (return_info)) {
-    case GI_TYPE_TAG_INT8:
-        arg->v_int8 = (gint8) ffi_value->v_long;
-        break;
-    case GI_TYPE_TAG_UINT8:
-        arg->v_uint8 = (guint8) ffi_value->v_ulong;
-        break;
-    case GI_TYPE_TAG_INT16:
-        arg->v_int16 = (gint16) ffi_value->v_long;
-        break;
-    case GI_TYPE_TAG_UINT16:
-        arg->v_uint16 = (guint16) ffi_value->v_ulong;
-        break;
-    case GI_TYPE_TAG_INT32:
-        arg->v_int32 = (gint32) ffi_value->v_long;
-        break;
-    case GI_TYPE_TAG_UINT32:
-    case GI_TYPE_TAG_BOOLEAN:
-    case GI_TYPE_TAG_UNICHAR:
-        arg->v_uint32 = (guint32) ffi_value->v_ulong;
-        break;
-    case GI_TYPE_TAG_INT64:
-        arg->v_int64 = (gint64) ffi_value->v_int64;
-        break;
-    case GI_TYPE_TAG_UINT64:
-        arg->v_uint64 = (guint64) ffi_value->v_uint64;
-        break;
-    case GI_TYPE_TAG_FLOAT:
-        arg->v_float = ffi_value->v_float;
-        break;
-    case GI_TYPE_TAG_DOUBLE:
-        arg->v_double = ffi_value->v_double;
-        break;
-    case GI_TYPE_TAG_INTERFACE:
-        {
-            GIBaseInfo* interface_info;
-            GIInfoType interface_type;
-
-            interface_info = g_type_info_get_interface(return_info);
-            interface_type = g_base_info_get_type(interface_info);
-
-            switch(interface_type) {
-            case GI_INFO_TYPE_ENUM:
-            case GI_INFO_TYPE_FLAGS:
-                arg->v_int32 = (gint32) ffi_value->v_long;
-                break;
-            default:
-                arg->v_pointer = (gpointer) ffi_value->v_ulong;
-                break;
-            }
-
-            g_base_info_unref(interface_info);
-        }
-        break;
-    default:
-        arg->v_pointer = (gpointer) ffi_value->v_ulong;
-        break;
-    }
-}
-
-
 static JSBool
 gjs_invoke_c_function(JSContext      *context,
                       Function       *function,
@@ -637,7 +562,7 @@ gjs_invoke_c_function(JSContext      *context,
     GArgument *out_arg_cvalues;
     GArgument *inout_original_arg_cvalues;
     gpointer *ffi_arg_pointers;
-    GjsFFIReturnValue return_value;
+    GIFFIReturnValue return_value;
     gpointer return_value_p; /* Will point inside the union return_value */
     GArgument return_gargument;
 
@@ -1025,7 +950,7 @@ gjs_invoke_c_function(JSContext      *context,
 
             g_assert_cmpuint(next_rval, <, function->js_out_argc);
 
-            set_gargument_from_ffi_return_value(&return_info, &return_gargument, &return_value);
+            gi_type_info_extract_ffi_return_value(&return_info, &return_value, &return_gargument);
 
             array_length_pos = g_type_info_get_array_length(&return_info);
             if (array_length_pos >= 0) {
