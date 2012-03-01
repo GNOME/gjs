@@ -1,7 +1,7 @@
 const Gtk = imports.gi.Gtk;
 const WebKit = imports.gi.WebKit;
 
-Gtk.init(0, null);
+Gtk.init(null);
 
 let win = new Gtk.Window();
 

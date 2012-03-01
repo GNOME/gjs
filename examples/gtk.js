@@ -24,7 +24,7 @@ function onDestroy(widget) {
     Gtk.main_quit();
 }
 
-Gtk.init(0, null);
+Gtk.init(null);
 
 // create a new window
 let win = new Gtk.Window({ type: Gtk.WindowType.TOPLEVEL });

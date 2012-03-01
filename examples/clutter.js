@@ -1,6 +1,6 @@
 const Clutter = imports.gi.Clutter;
 
-Clutter.init(0, null);
+Clutter.init(null);
 
 let stage = new Clutter.Stage();
 
