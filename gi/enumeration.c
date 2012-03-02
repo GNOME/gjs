@@ -103,17 +103,50 @@ gjs_define_enum_value(JSContext    *context,
 }
 
 JSBool
+gjs_define_enum_values(JSContext    *context,
+                       JSObject     *in_object,
+                       GIEnumInfo   *info)
+{
+    GType gtype;
+    int i, n_values;
+    jsval value;
+
+    /* Fill in enum values first, so we don't define the enum itself until we're
+     * sure we can finish successfully.
+     */
+    n_values = g_enum_info_get_n_values(info);
+    for (i = 0; i < n_values; ++i) {
+        GIValueInfo *value_info = g_enum_info_get_value(info, i);
+        gboolean failed;
+
+        failed = !gjs_define_enum_value(context, in_object, value_info);
+
+        g_base_info_unref( (GIBaseInfo*) value_info);
+
+        if (failed) {
+            return JS_FALSE;
+        }
+    }
+
+    gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
+    value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));
+    JS_DefineProperty(context, in_object, "$gtype", value,
+                      NULL, NULL, JSPROP_PERMANENT);
+
+    return JS_TRUE;
+}
+
+
+JSBool
 gjs_define_enumeration(JSContext    *context,
                        JSObject     *in_object,
                        GIEnumInfo   *info,
                        JSObject    **enumeration_p)
 {
     const char *enum_name;
-    GType gtype;
     JSObject *enum_obj;
     jsval value;
-    int i;
-    int n_values;
+
 
     /* An enumeration is simply an object containing integer attributes for
      * each enum value. It does not have a special JSClass.
@@ -150,27 +183,8 @@ gjs_define_enumeration(JSContext    *context,
     JS_SetParent(context, enum_obj,
                  gjs_get_import_global (context));
 
-    /* Fill in enum values first, so we don't define the enum itself until we're
-     * sure we can finish successfully.
-     */
-    n_values = g_enum_info_get_n_values(info);
-    for (i = 0; i < n_values; ++i) {
-        GIValueInfo *value_info = g_enum_info_get_value(info, i);
-        gboolean failed;
-
-        failed = !gjs_define_enum_value(context, enum_obj, value_info);
-
-        g_base_info_unref( (GIBaseInfo*) value_info);
-
-        if (failed) {
-            return JS_FALSE;
-        }
-    }
-
-    gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
-    value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));
-    JS_DefineProperty(context, enum_obj, "$gtype", value,
-                      NULL, NULL, JSPROP_PERMANENT);
+    if (!gjs_define_enum_values(context, enum_obj, info))
+        return JS_FALSE;
 
     gjs_debug(GJS_DEBUG_GENUM,
               "Defining %s.%s as %p",

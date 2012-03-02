@@ -521,4 +521,33 @@ function testVariant() {
     assertEquals(3, as.length);
 }
 
+function testGError() {
+    assertEquals(Gio.io_error_quark(), Number(Gio.IOErrorEnum));
+
+    try {
+	let file = Gio.file_new_for_path("\\/,.^!@&$_don't exist");
+	file.read(null);
+    } catch (x) {
+	assertTrue(x instanceof Gio.IOErrorEnum);
+	assertTrue(x.matches(Gio.io_error_quark(), Gio.IOErrorEnum.NOT_FOUND));
+	assertTrue(x.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.NOT_FOUND));
+
+	assertEquals(Gio.io_error_quark(), x.domain);
+	assertEquals(Gio.IOErrorEnum.NOT_FOUND, x.code);
+    }
+
+    Everything.test_gerror_callback(function(e) {
+	assertTrue(e instanceof Gio.IOErrorEnum);
+	assertEquals(Gio.io_error_quark(), e.domain);
+	assertEquals(Gio.IOErrorEnum.NOT_SUPPORTED, e.code);
+	assertEquals('regression test error', e.message);
+    });
+    Everything.test_owned_gerror_callback(function(e) {
+	assertTrue(e instanceof Gio.IOErrorEnum);
+	assertEquals(Gio.io_error_quark(), e.domain);
+	assertEquals(Gio.IOErrorEnum.PERMISSION_DENIED, e.code);
+	assertEquals('regression test owned error', e.message);
+    });
+}
+
 gjstestRun();

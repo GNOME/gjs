@@ -28,6 +28,7 @@
 #include "object.h"
 #include "boxed.h"
 #include "union.h"
+#include "gerror.h"
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 
@@ -674,7 +675,13 @@ gjs_invoke_c_function(JSContext      *context,
         g_assert_cmpuint(0, <, c_argc);
 
         if (type == GI_INFO_TYPE_STRUCT || type == GI_INFO_TYPE_BOXED) {
-            in_arg_cvalues[0].v_pointer = gjs_c_struct_from_boxed(context, obj);
+            GType gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo *)container);
+
+            /* GError must be special cased */
+            if (g_type_is_a(gtype, G_TYPE_ERROR))
+                in_arg_cvalues[0].v_pointer = gjs_gerror_from_error(context, obj);
+            else
+                in_arg_cvalues[0].v_pointer = gjs_c_struct_from_boxed(context, obj);
         } else if (type == GI_INFO_TYPE_UNION) {
             in_arg_cvalues[0].v_pointer = gjs_c_union_from_union(context, obj);
         } else { /* by fallback is always object */
@@ -1210,11 +1217,7 @@ release:
     }
 
     if (!failed && did_throw_gerror) {
-        gjs_throw(context, "Error invoking %s.%s: %s",
-                  g_base_info_get_namespace( (GIBaseInfo*) function->info),
-                  g_base_info_get_name( (GIBaseInfo*) function->info),
-                  local_error->message);
-        g_error_free(local_error);
+        gjs_throw_g_error(context, local_error);
         return JS_FALSE;
     } else if (failed) {
         return JS_FALSE;

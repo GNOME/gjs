@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_ENUMERATION_H__
-#define __GJS_ENUMERATION_H__
+#ifndef __GJS_ERROR_H__
+#define __GJS_ERROR_H__
 
 #include <glib.h>
 
@@ -32,16 +32,22 @@
 
 G_BEGIN_DECLS
 
-JSBool    gjs_define_enum_values       (JSContext    *context,
-                                        JSObject     *in_object,
-                                        GIEnumInfo   *info);
-JSBool    gjs_define_enumeration       (JSContext    *context,
-                                        JSObject     *in_object,
-                                        GIEnumInfo   *info,
-                                        JSObject    **enumeration_p);
-JSObject* gjs_lookup_enumeration       (JSContext    *context,
-                                        GIEnumInfo   *info);
+JSBool    gjs_define_error_class       (JSContext             *context,
+                                        JSObject              *in_object,
+                                        GIEnumInfo            *info,
+                                        JSObject             **constructor_p,
+                                        JSObject             **prototype_p);
+JSObject* gjs_lookup_error_constructor (JSContext             *context,
+                                        GIEnumInfo            *info);
+JSObject* gjs_lookup_error_prototype   (JSContext             *context,
+                                        GIEnumInfo            *info);
+JSClass*  gjs_lookup_error_class       (JSContext             *context,
+                                        GIEnumInfo            *info);
+GError*   gjs_gerror_from_error        (JSContext             *context,
+                                        JSObject              *obj);
+JSObject* gjs_error_from_gerror        (JSContext             *context,
+                                        GError                *gerror);
 
 G_END_DECLS
 
-#endif  /* __GJS_ENUMERATION_H__ */
+#endif  /* __GJS_ERROR_H__ */

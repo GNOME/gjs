@@ -44,6 +44,7 @@ typedef struct {
 GJS_DECLARE_COUNTER(everything)
 
 GJS_DECLARE_COUNTER(boxed)
+GJS_DECLARE_COUNTER(gerror)
 GJS_DECLARE_COUNTER(closure)
 GJS_DECLARE_COUNTER(database)
 GJS_DECLARE_COUNTER(dbus_exports)

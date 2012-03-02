@@ -34,6 +34,7 @@
 #include "arg.h"
 #include "foreign.h"
 #include "interface.h"
+#include "gerror.h"
 
 #include <gjs/compat.h>
 
@@ -499,6 +500,13 @@ gjs_define_info(JSContext  *context,
             return JS_FALSE;
         break;
     case GI_INFO_TYPE_ENUM:
+        if (g_enum_info_get_error_domain((GIEnumInfo*) info)) {
+            /* define as GError subclass */
+            if (!gjs_define_error_class(context, in_object, (GIEnumInfo*) info, NULL, NULL))
+                return JS_FALSE;
+        }
+        /* fall through */
+
     case GI_INFO_TYPE_FLAGS:
         if (!gjs_define_enumeration(context, in_object, (GIEnumInfo*) info, NULL))
             return JS_FALSE;

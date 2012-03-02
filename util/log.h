@@ -60,7 +60,8 @@ typedef enum {
     GJS_DEBUG_PROPS,
     GJS_DEBUG_SCOPE,
     GJS_DEBUG_HTTP,
-    GJS_DEBUG_BYTE_ARRAY
+    GJS_DEBUG_BYTE_ARRAY,
+    GJS_DEBUG_GERROR,
 } GjsDebugTopic;
 
 /* These defines are because we have some pretty expensive and

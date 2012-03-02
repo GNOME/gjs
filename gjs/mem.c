@@ -36,6 +36,7 @@
 GJS_DEFINE_COUNTER(everything)
 
 GJS_DEFINE_COUNTER(boxed)
+GJS_DEFINE_COUNTER(gerror)
 GJS_DEFINE_COUNTER(closure)
 GJS_DEFINE_COUNTER(database)
 GJS_DEFINE_COUNTER(dbus_exports)
@@ -54,6 +55,7 @@ GJS_DEFINE_COUNTER(interface)
 
 static GjsMemCounter* counters[] = {
     GJS_LIST_COUNTER(boxed),
+    GJS_LIST_COUNTER(gerror),
     GJS_LIST_COUNTER(closure),
     GJS_LIST_COUNTER(database),
     GJS_LIST_COUNTER(dbus_exports),

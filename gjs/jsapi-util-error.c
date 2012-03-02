@@ -25,6 +25,7 @@
 
 #include "jsapi-util.h"
 #include "compat.h"
+#include "gi/gerror.h"
 
 #include <util/log.h>
 
@@ -46,13 +47,9 @@ gjs_throw_valist(JSContext       *context,
                     va_list          args)
 {
     char *s;
-    jsval retval;
-    jsval argv[1];
-    JSFunction *func;
-    const char *body;
     JSBool result;
-    const char *names[] = { "message" };
-    guint options;
+    jsval v_constructor, v_message;
+    JSObject *err_obj;
 
     s = g_strdup_vprintf(format, args);
 
@@ -79,53 +76,20 @@ gjs_throw_valist(JSContext       *context,
 
     (void)JS_EnterLocalRootScope(context);
 
-    if (!gjs_string_from_utf8(context, s, -1, &argv[0])) {
+    if (!gjs_string_from_utf8(context, s, -1, &v_message)) {
         JS_ReportError(context, "Failed to copy exception string");
         goto out;
     }
 
-    body = "throw new Error(message);";
-    func = JS_CompileFunction(context,
-                              JS_GetGlobalObject(context), /* parent object (scope chain) */
-                              NULL, /* name of function if we wanted to define it in parent */
-                              1, /* nargs */
-                              &names[0], /* array of arg names if we had args */
-                              body,
-                              strlen(body),
-                              "gjs_throw", /* file */
-                              0); /* line */
-
-    if (func == NULL) {
-        JS_ReportError(context, "Failed to compile function");
+    if (!gjs_object_get_property(context, JS_GetGlobalObject(context),
+                                 "Error", &v_constructor)) {
+        JS_ReportError(context, "??? Missing Error constructor in global object?");
         goto out;
     }
 
-    /* we need JS_CallFunctionValue() to leave the exception set */
-    options = JS_GetOptions(context);
-    if (!(options & JSOPTION_DONT_REPORT_UNCAUGHT)) {
-        JS_SetOptions(context, options | JSOPTION_DONT_REPORT_UNCAUGHT);
-    }
-
-    retval = JSVAL_VOID;
-
-    /* note the return value is whether function succeeded, which it shouldn't, since it
-     * throws...
-     */
-    JS_CallFunctionValue(context,
-                         JS_GetGlobalObject(context),
-                         OBJECT_TO_JSVAL(JS_GetFunctionObject(func)),
-                         1, &argv[0],
-                         &retval);
-
-    if (!(options & JSOPTION_DONT_REPORT_UNCAUGHT)) {
-        JS_SetOptions(context, options);
-    }
-
-    if (!JS_IsExceptionPending(context)) {
-        JS_ReportError(context,
-                       "Failed to set exception by calling our exception-setting function");
-        goto out;
-    }
+    /* throw new Error(message) */
+    err_obj = JS_New(context, JSVAL_TO_OBJECT(v_constructor), 1, &v_message);
+    JS_SetPendingException(context, OBJECT_TO_JSVAL(err_obj));
 
     result = JS_TRUE;
 
@@ -182,17 +146,26 @@ gjs_throw_literal(JSContext       *context,
  * gjs_throw_g_error:
  *
  * Convert a GError into a JavaScript Exception, and
- * frees the GError.  Like gjs_throw(), will not overwrite
- * an already pending exception.
+ * frees the GError. Differently from gjs_throw(), it
+ * will overwrite an existing exception, as it is used
+ * to report errors from C functions.
  */
 void
 gjs_throw_g_error (JSContext       *context,
                    GError          *error)
 {
+    JSObject *err_obj;
+
     if (error == NULL)
         return;
-    gjs_throw_literal(context, error->message);
-    g_error_free (error);
+
+    JS_BeginRequest(context);
+
+    err_obj = gjs_error_from_gerror(context, error);
+    if (err_obj)
+        JS_SetPendingException(context, OBJECT_TO_JSVAL(err_obj));
+
+    JS_EndRequest(context);
 }
 
 #if GJS_BUILD_TESTS

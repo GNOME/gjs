@@ -34,6 +34,7 @@
 #include "boxed.h"
 #include "union.h"
 #include "gtype.h"
+#include "gerror.h"
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 
@@ -388,7 +389,13 @@ gjs_value_to_g_value_internal(JSContext    *context,
         } else if (JSVAL_IS_OBJECT(value)) {
             JSObject *obj;
             obj = JSVAL_TO_OBJECT(value);
-            gboxed = gjs_c_struct_from_boxed(context, obj);
+
+            if (g_type_is_a(gtype, G_TYPE_ERROR)) {
+                /* special case GError */
+                gboxed = gjs_gerror_from_error(context, obj);
+            } else {
+                gboxed = gjs_c_struct_from_boxed(context, obj);
+            }
         } else {
             gjs_throw(context,
                       "Wrong type %s; boxed type %s expected",
@@ -666,6 +673,14 @@ gjs_value_from_g_value_internal(JSContext    *context,
             gboxed = g_value_get_variant(gvalue);
         boxed_flags = GJS_BOXED_CREATION_NONE;
 
+        /* special case GError */
+        if (g_type_is_a(gtype, G_TYPE_ERROR)) {
+            obj = gjs_error_from_gerror(context, gboxed);
+            *value_p = OBJECT_TO_JSVAL(obj);
+
+            return TRUE;
+        }
+
         /* The only way to differentiate unions and structs is from
          * their g-i info as both GBoxed */
         info = g_irepository_find_by_gtype(g_irepository_get_default(),
@@ -705,6 +720,7 @@ gjs_value_from_g_value_internal(JSContext    *context,
             g_base_info_unref(info);
             return JS_FALSE;
         }
+
         *value_p = OBJECT_TO_JSVAL(obj);
         g_base_info_unref(info);
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {

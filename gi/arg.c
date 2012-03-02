@@ -31,6 +31,7 @@
 #include "union.h"
 #include "param.h"
 #include "value.h"
+#include "gerror.h"
 #include "gjs/byteArray.h"
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
@@ -1327,7 +1328,6 @@ gjs_value_to_g_argument(JSContext      *context,
                     arg->v_pointer = NULL;
                     wrong = TRUE;
                 }
-
             } else if (JSVAL_IS_NULL(value) &&
                        interface_type != GI_INFO_TYPE_ENUM &&
                        interface_type != GI_INFO_TYPE_FLAGS) {
@@ -1337,8 +1337,16 @@ gjs_value_to_g_argument(JSContext      *context,
                 if ((interface_type == GI_INFO_TYPE_STRUCT || interface_type == GI_INFO_TYPE_BOXED) &&
                     /* We special case Closures later, so skip them here */
                     !g_type_is_a(gtype, G_TYPE_CLOSURE)) {
-                    arg->v_pointer = gjs_c_struct_from_boxed(context,
-                                                             JSVAL_TO_OBJECT(value));
+
+                    /* special case GError too */
+                    if (g_type_is_a(gtype, G_TYPE_ERROR)) {
+                        arg->v_pointer = gjs_gerror_from_error(context,
+                                                               JSVAL_TO_OBJECT(value));
+                    } else {
+                        arg->v_pointer = gjs_c_struct_from_boxed(context,
+                                                                 JSVAL_TO_OBJECT(value));
+                    }
+
                     if (transfer != GI_TRANSFER_NOTHING) {
                         if (g_type_is_a(gtype, G_TYPE_BOXED))
                             arg->v_pointer = g_boxed_copy (gtype, arg->v_pointer);
@@ -2368,6 +2376,20 @@ gjs_value_from_g_argument (JSContext  *context,
             return JS_TRUE;
         }
 
+    case GI_TYPE_TAG_ERROR:
+        {
+            if (arg->v_pointer) {
+                JSObject *obj = gjs_error_from_gerror(context, arg->v_pointer);
+                if (obj) {
+                    *value_p = OBJECT_TO_JSVAL(obj);
+                    return JS_TRUE;
+                }
+
+                return JS_FALSE;
+            }
+            return JS_TRUE;
+        }
+
     case GI_TYPE_TAG_INTERFACE:
         {
             jsval value;
@@ -2427,10 +2449,21 @@ gjs_value_from_g_argument (JSContext  *context,
                               "gtype of INTERFACE is %s", g_type_name(gtype));
 
 
-            /* Test GValue before Struct, or it will be handled as the latter */
+            /* Test GValue and GError before Struct, or it will be handled as the latter */
             if (g_type_is_a(gtype, G_TYPE_VALUE)) {
                 if (!gjs_value_from_g_value(context, &value, arg->v_pointer))
                     value = JSVAL_VOID; /* Make sure error is flagged */
+
+                goto out;
+            }
+            if (g_type_is_a(gtype, G_TYPE_ERROR)) {
+                JSObject *obj;
+
+                obj = gjs_error_from_gerror(context, arg->v_pointer);
+                if (obj)
+                    value = OBJECT_TO_JSVAL(obj);
+                else
+                    value = JSVAL_VOID;
 
                 goto out;
             }
