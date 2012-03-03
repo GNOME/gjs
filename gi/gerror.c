@@ -35,6 +35,7 @@
 #include <util/log.h>
 
 #include <jsapi.h>
+#include <jsdbgapi.h>
 
 #include <girepository.h>
 
@@ -52,6 +53,8 @@ enum {
 };
 
 static struct JSClass gjs_error_class;
+
+static void define_error_properties(JSContext *, JSObject *);
 
 GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Error, gjs_error_class)
 
@@ -114,6 +117,9 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
                                         message);
 
     g_free (message);
+
+    /* We assume this error will be thrown in the same line as the constructor */
+    define_error_properties(context, object);
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
 
@@ -514,9 +520,61 @@ find_error_domain_info(GQuark domain)
     return info;
 }
 
+/* define properties that JS Error() expose, such as
+   fileName, lineNumber and stack
+*/
+static void
+define_error_properties(JSContext *context,
+                        JSObject  *obj)
+{
+    JSStackFrame *frame;
+    JSScript *script;
+    jsbytecode *pc;
+    jsval v;
+    GString *stack;
+    const char *filename;
+    GjsContext *gjs_context;
+
+    /* find the JS frame that triggered the error */
+    frame = NULL;
+    while (JS_FrameIterator(context, &frame)) {
+        if (JS_IsScriptFrame(context, frame))
+            break;
+    }
+
+    /* someone called gjs_throw at top of the stack?
+       well, no stack in that case
+    */
+    if (!frame)
+        return;
+
+    script = JS_GetFrameScript(context, frame);
+    pc = JS_GetFramePC(context, frame);
+
+    stack = g_string_new(NULL);
+    gjs_context = JS_GetContextPrivate(context);
+    gjs_context_print_stack_to_buffer(gjs_context, frame, stack);
+
+    if (gjs_string_from_utf8(context, stack->str, stack->len, &v))
+        JS_DefineProperty(context, obj, "stack", v,
+                          NULL, NULL, JSPROP_ENUMERATE);
+
+    filename = JS_GetScriptFilename(context, script);
+    if (gjs_string_from_filename(context, filename, -1, &v))
+        JS_DefineProperty(context, obj, "fileName", v,
+                          NULL, NULL, JSPROP_ENUMERATE);
+
+    v = INT_TO_JSVAL(JS_PCToLineNumber(context, script, pc));
+    JS_DefineProperty(context, obj, "lineNumber", v,
+                      NULL, NULL, JSPROP_ENUMERATE);
+
+    g_string_free(stack, TRUE);
+}
+
 JSObject*
 gjs_error_from_gerror(JSContext             *context,
-                      GError                *gerror)
+                      GError                *gerror,
+                      gboolean               add_stack)
 {
     JSObject *obj;
     JSObject *proto;
@@ -559,6 +617,9 @@ gjs_error_from_gerror(JSContext             *context,
     priv->domain = proto_priv->domain;
     g_base_info_ref( (GIBaseInfo*) priv->info);
     priv->gerror = g_error_copy(gerror);
+
+    if (add_stack)
+        define_error_properties(context, obj);
 
     return obj;
 }

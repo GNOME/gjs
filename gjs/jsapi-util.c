@@ -970,6 +970,21 @@ gjs_explain_scope(JSContext  *context,
     JS_EndRequest(context);
 }
 
+static void
+log_one_exception_property(JSContext  *context,
+                           JSObject   *object,
+                           const char *name)
+{
+    jsval v;
+    char *debugstr;
+
+    gjs_object_get_property(context, object, name, &v);
+
+    debugstr = gjs_value_debug_string(context, v);
+    gjs_debug(GJS_DEBUG_ERROR, "  %s = '%s'", name, debugstr);
+    g_free(debugstr);
+}
+
 void
 gjs_log_exception_props(JSContext *context,
                         jsval      exc)
@@ -988,23 +1003,10 @@ gjs_log_exception_props(JSContext *context,
 
         exc_obj = JSVAL_TO_OBJECT(exc);
 
-        /* I guess this is a SpiderMonkey bug.  If we don't get these
-         * properties here, only 'message' shows up when we enumerate
-         * all properties below. I did not debug in detail, so maybe
-         * it's something wrong with our enumeration loop below. In
-         * any case, if you remove this code block, check that "throw
-         * Error()" still results in printing all four of these props.
-         * For me right now, if you remove this block, only message
-         * gets printed.
-         */
-        gjs_object_has_property(context, exc_obj, "stack");
-        gjs_object_has_property(context, exc_obj, "fileName");
-        gjs_object_has_property(context, exc_obj, "lineNumber");
-        gjs_object_has_property(context, exc_obj, "message");
-
-        gjs_log_object_props(context, exc_obj,
-                             GJS_DEBUG_ERROR,
-                             "  ");
+        log_one_exception_property(context, exc_obj, "message");
+        log_one_exception_property(context, exc_obj, "fileName");
+        log_one_exception_property(context, exc_obj, "lineNumber");
+        log_one_exception_property(context, exc_obj, "stack");
     } else if (JSVAL_IS_STRING(exc)) {
         gjs_debug(GJS_DEBUG_ERROR,
                   "Exception was a String");

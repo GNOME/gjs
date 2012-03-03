@@ -2379,7 +2379,7 @@ gjs_value_from_g_argument (JSContext  *context,
     case GI_TYPE_TAG_ERROR:
         {
             if (arg->v_pointer) {
-                JSObject *obj = gjs_error_from_gerror(context, arg->v_pointer);
+                JSObject *obj = gjs_error_from_gerror(context, arg->v_pointer, FALSE);
                 if (obj) {
                     *value_p = OBJECT_TO_JSVAL(obj);
                     return JS_TRUE;
@@ -2459,7 +2459,7 @@ gjs_value_from_g_argument (JSContext  *context,
             if (g_type_is_a(gtype, G_TYPE_ERROR)) {
                 JSObject *obj;
 
-                obj = gjs_error_from_gerror(context, arg->v_pointer);
+                obj = gjs_error_from_gerror(context, arg->v_pointer, FALSE);
                 if (obj)
                     value = OBJECT_TO_JSVAL(obj);
                 else

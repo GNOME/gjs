@@ -46,7 +46,8 @@ JSClass*  gjs_lookup_error_class       (JSContext             *context,
 GError*   gjs_gerror_from_error        (JSContext             *context,
                                         JSObject              *obj);
 JSObject* gjs_error_from_gerror        (JSContext             *context,
-                                        GError                *gerror);
+                                        GError                *gerror,
+                                        gboolean               add_stack);
 
 G_END_DECLS
 

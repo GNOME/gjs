@@ -48,33 +48,39 @@
 #include "compat.h"
 #include "jsapi-util.h"
 
+/* Mimick the behaviour exposed by standard Error objects
+   (http://mxr.mozilla.org/mozilla-central/source/js/src/jsexn.cpp#554)
+*/
 static char*
 jsvalue_to_string(JSContext* cx, jsval val, gboolean* is_string)
 {
     char* value = NULL;
-    JSString* value_str;
+    JSString* value_str = NULL;
 
-    (void)JS_EnterLocalRootScope(cx);
+    if (JSVAL_IS_PRIMITIVE(val)) {
+      value_str = JS_ValueToSource(cx, val);
+    } else {
+      JSObject *obj = JSVAL_TO_OBJECT(val);
 
-    value_str = JS_ValueToString(cx, val);
-    if (value_str)
-        value = gjs_value_debug_string(cx, val);
-    if (value) {
-        const char* found = strstr(value, "function ");
-        if(found && (value == found || value+1 == found || value+2 == found)) {
-            g_free(value);
-            value = g_strdup("[function]");
-        }
+      if (JS_ObjectIsFunction(cx, obj)) {
+	JSFunction *fn = JS_ValueToFunction(cx, val);
+	value_str = JS_GetFunctionId(fn);
+
+	if (!value_str)
+	  value = g_strdup("[unknown function]");
+      } else {
+	value = g_strdup_printf("[object %s]", JS_GetClass(cx, obj)->name);
+      }
     }
+
+    if (!value && value_str)
+      value = gjs_value_debug_string(cx, val);
 
     if (is_string)
         *is_string = JSVAL_IS_STRING(val);
 
-    JS_LeaveLocalRootScope(cx);
-
     return value;
 }
-
 
 static void
 format_frame(JSContext* cx, JSStackFrame* fp,
@@ -167,14 +173,10 @@ format_frame(JSContext* cx, JSStackFrame* fp,
         guint32 k;
         guint32 arg_count;
         JSObject* args_obj = JSVAL_TO_OBJECT(val);
-        if (JS_GetProperty(cx, args_obj, "length", &val) &&
-            JS_ValueToECMAUint32(cx, val, &arg_count) &&
+        if (JS_GetArrayLength(cx, args_obj, &arg_count) &&
             arg_count > named_arg_count) {
             for (k = named_arg_count; k < arg_count; k++) {
-                char number[8];
-                g_snprintf(number, 8, "%d", (int) k);
-
-                if (JS_GetProperty(cx, args_obj, number, &val)) {
+                if (JS_GetElement(cx, args_obj, k, &val)) {
                     char *value = jsvalue_to_string(cx, val, &is_string);
                     g_string_append_printf(buf, "%s%s%s%s",
                                            k ? ", " : "",
@@ -189,38 +191,41 @@ format_frame(JSContext* cx, JSStackFrame* fp,
 
     /* print filename and line number */
 
-    g_string_append_printf(buf, "%s [\"%s\":%d]\n",
+    g_string_append_printf(buf, "%s@%s:%d\n",
                            fun ? ")" : "",
-                           filename ? filename : "<unknown>",
+                           filename ? filename : "",
                            lineno);
+
   out:
+    if (call_props.array)
+      JS_PutPropertyDescArray(cx, &call_props);
+
     JS_LeaveLocalRootScope(cx);
 }
 
 void
-gjs_context_print_stack_to_buffer(GjsContext* context, GString *buf)
+gjs_context_print_stack_to_buffer(GjsContext* context, void *initial, GString *buf)
 {
     JSContext *js_context = (JSContext*)gjs_context_get_native_context(context);
-    JSStackFrame* fp;
-    JSStackFrame* iter = NULL;
+    JSStackFrame* fp = initial;
     int num = 0;
 
-    g_string_append_printf(buf, "== Stack trace for context %p ==\n", context);
-    while ((fp = JS_FrameIterator(js_context, &iter)) != NULL) {
+    while (fp) {
         format_frame(js_context, fp, buf, num);
         num++;
-    }
 
-    if(!num)
-        g_string_append_printf(buf, "(JavaScript stack is empty)\n");
-    g_string_append(buf, "\n");
+	JS_FrameIterator(js_context, &fp);
+    }
 }
 
 void
 gjs_context_print_stack_stderr(GjsContext *context)
 {
   GString *str = g_string_new("");
-  gjs_context_print_stack_to_buffer(context, str);
+
+  g_string_append_printf(str, "== Stack trace for context %p ==\n", context);
+  gjs_context_print_stack_to_buffer(context, NULL, str);
+
   g_printerr("%s\n", str->str);
   g_string_free(str, TRUE);
 }

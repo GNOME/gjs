@@ -68,7 +68,11 @@ gboolean        gjs_context_define_string_array  (GjsContext  *js_context,
 GList*          gjs_context_get_all              (void);
 void*           gjs_context_get_native_context   (GjsContext *js_context);
 
+/* initial_frame is a JSStackFrame, but cannot be exposed as such in the
+   public API. Pass NULL to get the topmost frame.
+*/
 void            gjs_context_print_stack_to_buffer (GjsContext *js_context,
+                                                   void       *initial_frame,
                                                    GString    *buf);
 
 void            gjs_context_print_stack_stderr    (GjsContext *js_context);
