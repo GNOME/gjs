@@ -1027,7 +1027,7 @@ object_instance_finalize(JSContext *context,
 
     TRACE(GJS_OBJECT_PROXY_FINALIZE(priv, priv->gobj,
                                     priv->info ? g_base_info_get_namespace ( (GIBaseInfo*) priv->info) : "",
-                                    priv->info ? g_base_info_get_name ( (GIBaseInfo*) priv->info) ) : g_type_name(priv->gtype));
+                                    priv->info ? g_base_info_get_name ( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype)));
 
     if (priv->gobj) {
         if (G_UNLIKELY (priv->gobj->ref_count <= 0)) {
