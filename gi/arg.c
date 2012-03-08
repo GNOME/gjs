@@ -1288,7 +1288,7 @@ gjs_value_to_g_argument(JSContext      *context,
             case GI_INFO_TYPE_STRUCT:
                 if (g_struct_info_is_foreign((GIStructInfo*)interface_info)) {
                     return gjs_struct_foreign_convert_to_g_argument(
-                            context, value, type_info, arg_name,
+                            context, value, interface_info, arg_name,
                             arg_type, transfer, may_be_null, arg);
                 }
                 /* fall through */
@@ -2413,7 +2413,7 @@ gjs_value_from_g_argument (JSContext  *context,
                 goto out;
             } else if (interface_type == GI_INFO_TYPE_STRUCT &&
                        g_struct_info_is_foreign((GIStructInfo*)interface_info)) {
-                return gjs_struct_foreign_convert_from_g_argument(context, value_p, type_info, arg);
+                return gjs_struct_foreign_convert_from_g_argument(context, value_p, interface_info, arg);
             }
 
             /* Everything else is a pointer type, NULL is the easy case */
@@ -2698,7 +2698,7 @@ gjs_g_arg_release_internal(JSContext  *context,
             if (interface_type == GI_INFO_TYPE_STRUCT &&
                 g_struct_info_is_foreign((GIStructInfo*)interface_info))
                 return gjs_struct_foreign_release_g_argument(context,
-                        transfer, type_info, arg);
+                        transfer, interface_info, arg);
 
             if (interface_type == GI_INFO_TYPE_ENUM || interface_type == GI_INFO_TYPE_FLAGS)
                 goto out;

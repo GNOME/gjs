@@ -982,7 +982,6 @@ gjs_cairo_context_get_context(JSContext *context,
 static JSBool
 context_to_g_argument(JSContext      *context,
                       jsval           value,
-                      GITypeInfo     *type_info,
                       const char     *arg_name,
                       GjsArgumentType argument_type,
                       GITransfer      transfer,
@@ -1006,7 +1005,6 @@ context_to_g_argument(JSContext      *context,
 static JSBool
 context_from_g_argument(JSContext  *context,
                         jsval      *value_p,
-                        GITypeInfo *type_info,
                         GArgument  *arg)
 {
     JSObject *obj;
@@ -1022,7 +1020,6 @@ context_from_g_argument(JSContext  *context,
 static JSBool
 context_release_argument(JSContext  *context,
                          GITransfer  transfer,
-                         GITypeInfo *type_info,
                          GArgument  *arg)
 {
     cairo_destroy((cairo_t*)arg->v_pointer);

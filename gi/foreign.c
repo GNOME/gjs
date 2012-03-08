@@ -109,33 +109,29 @@ gjs_struct_foreign_register(const char *namespace,
 
 static GjsForeignInfo *
 gjs_struct_foreign_lookup(JSContext  *context,
-                          GITypeInfo *type_info)
+                          GIBaseInfo *interface_info)
 {
-    GIBaseInfo *base_info;
     GjsForeignInfo *retval = NULL;
     GHashTable *hash_table;
     char *key;
 
-    base_info = g_type_info_get_interface(type_info);
-    g_assert (base_info != NULL);
-
-    key = g_strdup_printf("%s.%s", g_base_info_get_namespace(base_info),
-                          g_base_info_get_name(base_info));
+    key = g_strdup_printf("%s.%s",
+                          g_base_info_get_namespace(interface_info),
+                          g_base_info_get_name(interface_info));
     hash_table = get_foreign_structs();
     retval = (GjsForeignInfo*)g_hash_table_lookup(hash_table, key);
     if (!retval) {
-        if (gjs_foreign_load_foreign_module(context, g_base_info_get_namespace(base_info))) {
+        if (gjs_foreign_load_foreign_module(context, g_base_info_get_namespace(interface_info))) {
             retval = (GjsForeignInfo*)g_hash_table_lookup(hash_table, key);
         }
     }
 
     if (!retval) {
         gjs_throw(context, "Unable to find module implementing foreign type %s.%s",
-                  g_base_info_get_namespace(base_info),
-                  g_base_info_get_name(base_info));
+                  g_base_info_get_namespace(interface_info),
+                  g_base_info_get_name(interface_info));
     }
 
-    g_base_info_unref(base_info);
     g_free(key);
 
     return retval;
@@ -144,7 +140,7 @@ gjs_struct_foreign_lookup(JSContext  *context,
 JSBool
 gjs_struct_foreign_convert_to_g_argument(JSContext      *context,
                                          jsval           value,
-                                         GITypeInfo     *type_info,
+                                         GIBaseInfo     *interface_info,
                                          const char     *arg_name,
                                          GjsArgumentType argument_type,
                                          GITransfer      transfer,
@@ -153,11 +149,11 @@ gjs_struct_foreign_convert_to_g_argument(JSContext      *context,
 {
     GjsForeignInfo *foreign;
 
-    foreign = gjs_struct_foreign_lookup(context, type_info);
+    foreign = gjs_struct_foreign_lookup(context, interface_info);
     if (!foreign)
         return JS_FALSE;
 
-    if (!foreign->to_func(context, value, type_info, arg_name,
+    if (!foreign->to_func(context, value, arg_name,
                            argument_type, transfer, may_be_null, arg))
         return JS_FALSE;
 
@@ -167,16 +163,16 @@ gjs_struct_foreign_convert_to_g_argument(JSContext      *context,
 JSBool
 gjs_struct_foreign_convert_from_g_argument(JSContext  *context,
                                            jsval      *value_p,
-                                           GITypeInfo *type_info,
+                                           GIBaseInfo *interface_info,
                                            GArgument  *arg)
 {
     GjsForeignInfo *foreign;
 
-    foreign = gjs_struct_foreign_lookup(context, type_info);
+    foreign = gjs_struct_foreign_lookup(context, interface_info);
     if (!foreign)
         return JS_FALSE;
 
-    if (!foreign->from_func(context, value_p, type_info, arg))
+    if (!foreign->from_func(context, value_p, arg))
         return JS_FALSE;
 
     return JS_TRUE;
@@ -185,19 +181,19 @@ gjs_struct_foreign_convert_from_g_argument(JSContext  *context,
 JSBool
 gjs_struct_foreign_release_g_argument(JSContext  *context,
                                       GITransfer  transfer,
-                                      GITypeInfo *type_info,
+                                      GIBaseInfo *interface_info,
                                       GArgument  *arg)
 {
     GjsForeignInfo *foreign;
 
-    foreign = gjs_struct_foreign_lookup(context, type_info);
+    foreign = gjs_struct_foreign_lookup(context, interface_info);
     if (!foreign)
         return JS_FALSE;
 
     if (!foreign->release_func)
         return JS_TRUE;
 
-    if (!foreign->release_func(context, transfer, type_info, arg))
+    if (!foreign->release_func(context, transfer, arg))
         return JS_FALSE;
 
     return JS_TRUE;
