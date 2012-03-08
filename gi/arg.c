@@ -398,13 +398,8 @@ gjs_object_to_g_hash(JSContext   *context,
                                      &key_arg))
             goto free_hash_and_fail;
 
-#if (JS_VERSION > 180)
         if (!JS_GetPropertyById(context, props, prop_id, &val_js))
             goto free_hash_and_fail;
-#else
-        if (!JS_GetProperty(context, props, key_arg.v_pointer, &val_js))
-            goto free_hash_and_fail;
-#endif
 
         /* Type check and convert value to a c type */
         if (!gjs_value_to_g_argument(context, val_js, val_param_info, NULL,
