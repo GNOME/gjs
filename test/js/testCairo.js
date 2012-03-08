@@ -1,5 +1,6 @@
 // application/javascript;version=1.8
 const Cairo = imports.cairo;
+const Everything = imports.gi.Regress;
 
 function _ts(obj) {
     return obj.toString().slice(8, -1);
@@ -163,6 +164,17 @@ function testRadialGradient() {
     assertEquals(_ts(p1), "CairoRadialGradient");
     cr.setSource(p1)
     assertEquals(_ts(cr.getSource()), "CairoRadialGradient");
+}
+
+function testCairoSignal() {
+    let o = new Everything.TestObj();
+    let called = false;
+    o.connect('sig-with-foreign-struct', function(o, cr) {
+        called = true;
+        assertTrue(_ts(cr), "CairoContext");
+    });
+    o.emit_sig_with_foreign_struct();
+    assertTrue(called);
 }
 
 gjstestRun();
