@@ -142,6 +142,8 @@ const MyInitable = new Lang.Class({
     },
 
     vfunc_init: function(cancellable) { // error?
+        assertTrue(cancellable instanceof Gio.Cancellable);
+
         this.inited = true;
     }
 });
@@ -252,7 +254,7 @@ function testInterface() {
     let instance = new MyInitable();
     assertEquals(false, instance.inited);
 
-    instance.init(null);
+    instance.init(new Gio.Cancellable);
     assertEquals(true, instance.inited);
 
     // assertTrue(instance instanceof Gio.Initable)

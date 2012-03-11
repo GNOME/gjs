@@ -279,10 +279,13 @@ gjs_callback_closure(ffi_cif *cif,
         }
     }
 
-    if (trampoline->is_vfunc)
+    if (trampoline->is_vfunc) {
         this_object = JSVAL_TO_OBJECT(jsargs[0]);
-    else
+        jsargs++;
+        n_jsargs--;
+    } else {
         this_object = NULL;
+    }
 
     if (!JS_CallFunctionValue(context,
                               this_object,
