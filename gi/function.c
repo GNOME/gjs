@@ -214,6 +214,7 @@ gjs_callback_closure(ffi_cif *cif,
 
     trampoline = data;
     g_assert(trampoline);
+    gjs_callback_trampoline_ref(trampoline);
 
     context = gjs_runtime_get_current_context(trampoline->runtime);
     JS_BeginRequest(context);
@@ -409,6 +410,7 @@ out:
         completed_trampolines = g_slist_prepend(completed_trampolines, trampoline);
     }
 
+    gjs_callback_trampoline_unref(trampoline);
     JS_EndRequest(context);
 }
 
