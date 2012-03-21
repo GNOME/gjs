@@ -119,7 +119,7 @@ else
 fi
 CFLAGS="$save_CFLAGS"
 
-GOBJECT_INTROSPECTION_REQUIRE([1.29.16])
+GOBJECT_INTROSPECTION_REQUIRE([1.31.22])
 
 common_packages="glib-2.0 >= glib_required_version gobject-2.0 >= gobject_required_version mozjs185"
 gjs_packages="gmodule-2.0 gthread-2.0 gobject-introspection-1.0 >= 0.10.1 $common_packages"
