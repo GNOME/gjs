@@ -2,8 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 m4_define(pkg_major_version, 1)
-m4_define(pkg_minor_version, 31)
-m4_define(pkg_micro_version, 22)
+m4_define(pkg_minor_version, 32)
+m4_define(pkg_micro_version, 0)
 m4_define(pkg_version, pkg_major_version.pkg_minor_version.pkg_micro_version)
 
 AC_PREREQ(2.61)
