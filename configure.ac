@@ -118,10 +118,10 @@ else
 fi
 CFLAGS="$save_CFLAGS"
 
-GOBJECT_INTROSPECTION_REQUIRE([1.33.2])
+GOBJECT_INTROSPECTION_REQUIRE([1.33.10])
 
 common_packages="gmodule-2.0 gthread-2.0 gio-2.0 >= glib_required_version mozjs185"
-gjs_packages="gobject-introspection-1.0 >= 0.10.1 $common_packages"
+gjs_packages="gobject-introspection-1.0 $common_packages"
 gjs_cairo_gobject_packages="cairo-gobject $common_packages"
 gjs_cairo_packages="cairo $common_packages"
 gjs_dbus_packages="dbus-glib-1 $common_packages"
