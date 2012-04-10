@@ -691,9 +691,11 @@ gjs_value_from_g_value_internal(JSContext    *context,
                       "Unexpected introspection type %d for %s",
                       g_base_info_get_type(info),
                       g_type_name(gtype));
+            g_base_info_unref(info);
             return JS_FALSE;
         }
         *value_p = OBJECT_TO_JSVAL(obj);
+        g_base_info_unref(info);
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {
         return convert_int_to_enum(context, value_p, gtype, g_value_get_enum(gvalue));
     } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
