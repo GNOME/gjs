@@ -787,10 +787,12 @@ gjs_invoke_c_function(JSContext      *context,
                     trampoline = NULL;
                 } else {
                     if (!(JS_TypeOfValue(context, value) == JSTYPE_FUNCTION)) {
-                        gjs_throw(context, "Error invoking %s.%s: Invalid callback given for argument %s",
+                        gjs_throw(context, "Error invoking %s.%s: Expected function for callback argument %s, got %s",
                                   g_base_info_get_namespace( (GIBaseInfo*) function->info),
                                   g_base_info_get_name( (GIBaseInfo*) function->info),
-                                  g_base_info_get_name( (GIBaseInfo*) &arg_info));
+                                  g_base_info_get_name( (GIBaseInfo*) &arg_info),
+                                  JS_GetTypeName(context,
+                                                 JS_TypeOfValue(context, value)));
                         failed = TRUE;
                         break;
                     }
