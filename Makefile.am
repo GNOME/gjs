@@ -1,6 +1,8 @@
 # http://people.gnome.org/~walters/docs/build-api.txt
 .buildapi-allow-builddir:
 
+-include $(INTROSPECTION_MAKEFILE)
+
 bin_PROGRAMS =
 lib_LTLIBRARIES =
 noinst_HEADERS =
@@ -137,6 +139,20 @@ libgjs_la_SOURCES += \
 	gi/interface.c	\
 	gi/gtype.c
 
+# Also, these files used to be a separate library
+gdbus_wrapper_source_files = \
+	gjs-dbus/gjs-gdbus-wrapper.c	\
+	gjs-dbus/gjs-gdbus-wrapper.h
+libgjs_la_SOURCES += $(gdbus_wrapper_source_files)
+
+GjsDBus-1.0.gir: libgjs.la
+GjsDBus_1_0_gir_LIBS = libgjs.la
+GjsDBus_1_0_gir_INCLUDES = GObject-2.0 Gio-2.0
+GjsDBus_1_0_gir_FILES = $(gdbus_wrapper_source_files)
+GjsDBus_1_0_gir_SCANNERFLAGS = --identifier-prefix=GjsDBus --symbol-prefix=gjs_dbus --warn-all
+
+INTROSPECTION_GIRS += GjsDBus-1.0.gir
+
 if ENABLE_DTRACE
 gjs_gi_probes.h: gi/gjs_gi_probes.d
 	$(DTRACE) -C -h -s $< -o $@
@@ -168,12 +184,8 @@ include Makefile-gjs-dbus.am
 include Makefile-modules.am
 include Makefile-examples.am
 
-girdir = $(datadir)/gir-1.0
-gir_DATA = $(INTROSPECTION_GIRS)
-
-typelibdir = $(libdir)/girepository-1.0
+typelibdir = $(pkglibdir)/girepository-1.0
 typelib_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
-
 
 ########################################################################
 bin_PROGRAMS += gjs-console

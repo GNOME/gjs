@@ -1,5 +1,5 @@
 
-lib_LTLIBRARIES += libgjs-dbus.la libgjs-gdbus.la
+lib_LTLIBRARIES += libgjs-dbus.la
 
 gjs_dbusheaderdir=$(gjs_module_includedir)/gjs-dbus
 gjs_dbusheader_HEADERS =	\
@@ -28,23 +28,3 @@ pkgconfig_DATA += gjs-dbus-1.0.pc
 
 EXTRA_DIST += 			\
 	gjs-dbus-1.0.pc.in
-
-######################################################################
-
-libgjs_gdbus_la_SOURCES = 	\
-	gjs-dbus/gjs-gdbus-wrapper.c	\
-	gjs-dbus/gjs-gdbus-wrapper.h
-
-libgjs_gdbus_la_CPPFLAGS = $(AM_CPPFLAGS) -DG_LOG_DOMAIN=\"GjsGDBus\"
-libgjs_gdbus_la_CFLAGS = $(AM_CFLAGS) $(GJS_GDBUS_CFLAGS)
-libgjs_gdbus_la_LIBADD = $(GJS_GDBUS_LIBS)
-
--include $(INTROSPECTION_MAKEFILE)
-
-GjsDBus-1.0.gir: libgjs-gdbus.la
-GjsDBus_1_0_gir_LIBS = libgjs-gdbus.la
-GjsDBus_1_0_gir_INCLUDES = GObject-2.0 Gio-2.0
-GjsDBus_1_0_gir_FILES = $(libgjs_gdbus_la_SOURCES)
-GjsDBus_1_0_gir_SCANNERFLAGS = --identifier-prefix=GjsDBus --symbol-prefix=gjs_dbus --warn-all
-
-INTROSPECTION_GIRS += GjsDBus-1.0.gir

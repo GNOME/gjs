@@ -692,7 +692,11 @@ gjs_context_constructor (GType                  type,
         gjs_register_native_module("gi", gjs_define_gi_stuff, GJS_NATIVE_SUPPLIES_MODULE_OBJ);
 
     /* For GjsDBus */
-    g_irepository_prepend_search_path(PKGLIBDIR);
+    {
+        char *priv_typelib_dir = g_build_filename (PKGLIBDIR, "girepository-1.0", NULL);
+        g_irepository_prepend_search_path(priv_typelib_dir);
+        g_free (priv_typelib_dir);
+    }
 
     if (js_context->gc_notifications_enabled)
         JS_SetGCCallback(js_context->context, gjs_on_context_gc);
