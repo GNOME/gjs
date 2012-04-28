@@ -312,7 +312,7 @@ function _wrapJSObject(interfaceInfo, jsObj) {
 	} else {
 	    log('Missing handler for DBus method ' + method_name);
 	    invocation.return_dbus_error('org.gnome.gjs.NotImplementedError',
-					 "Method ' + method_name + ' is not implemented");
+					 'Method ' + method_name + ' is not implemented');
 	}
     });
     impl.connect('handle-property-get', function(impl, property_name) {
