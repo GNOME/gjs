@@ -20,7 +20,7 @@
 // IN THE SOFTWARE.
 
 var GLib = imports.gi.GLib;
-var GjsDBus = imports.gi.GjsDBus;
+var GjsPrivate = imports.gi.GjsPrivate;
 var Lang = imports.lang;
 var Signals = imports.signals;
 var Gio;
@@ -269,7 +269,7 @@ function _wrapJSObject(interfaceInfo, jsObj) {
 	info = Gio.DBusInterfaceInfo.new_for_xml(interfaceInfo);
     info.cache_build();
 
-    var impl = new GjsDBus.Implementation({ g_interface_info: info });
+    var impl = new GjsPrivate.DBusImplementation({ g_interface_info: info });
     impl.connect('handle-method-call', function(impl, method_name, parameters, invocation) {
 	// prefer a sync version if available
 	if (jsObj[method_name]) {
@@ -382,6 +382,6 @@ function _init() {
     Gio.DBusInterfaceInfo.new_for_xml = _newInterfaceInfo;
 
     // More or less...
-    Gio.DBusExportedObject = GjsDBus.Implementation;
+    Gio.DBusExportedObject = GjsPrivate.DBusImplementation;
     Gio.DBusExportedObject.wrapJSObject = _wrapJSObject;
 }

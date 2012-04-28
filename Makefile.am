@@ -145,13 +145,13 @@ gdbus_wrapper_source_files = \
 	gjs-dbus/gjs-gdbus-wrapper.h
 libgjs_la_SOURCES += $(gdbus_wrapper_source_files)
 
-GjsDBus-1.0.gir: libgjs.la
-GjsDBus_1_0_gir_LIBS = libgjs.la
-GjsDBus_1_0_gir_INCLUDES = GObject-2.0 Gio-2.0
-GjsDBus_1_0_gir_FILES = $(gdbus_wrapper_source_files)
-GjsDBus_1_0_gir_SCANNERFLAGS = --identifier-prefix=GjsDBus --symbol-prefix=gjs_dbus --warn-all
+GjsPrivate-1.0.gir: libgjs.la
+GjsPrivate_1_0_gir_LIBS = libgjs.la
+GjsPrivate_1_0_gir_INCLUDES = GObject-2.0 Gio-2.0
+GjsPrivate_1_0_gir_FILES = $(gdbus_wrapper_source_files)
+GjsPrivate_1_0_gir_SCANNERFLAGS = --identifier-prefix=Gjs --symbol-prefix=gjs_ --warn-all
 
-INTROSPECTION_GIRS += GjsDBus-1.0.gir
+INTROSPECTION_GIRS += GjsPrivate-1.0.gir
 
 if ENABLE_DTRACE
 gjs_gi_probes.h: gi/gjs_gi_probes.d
