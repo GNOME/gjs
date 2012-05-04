@@ -15,9 +15,10 @@ dist_gjsjs_DATA +=		\
 	modules/signals.js	\
 	modules/cairo.js	\
 	modules/dbus.js		\
-	modules/promise.js
+	modules/promise.js	\
+	modules/format.js
 
-gjsnative_LTLIBRARIES += console.la debugger.la langNative.la mainloop.la gettextNative.la dbusNative.la cairoNative.la system.la
+gjsnative_LTLIBRARIES += console.la debugger.la langNative.la mainloop.la gettextNative.la dbusNative.la cairoNative.la system.la formatNative.la
 
 JS_NATIVE_MODULE_CFLAGS =	\
         $(AM_CFLAGS)		\
@@ -146,3 +147,15 @@ dbusNative_la_LIBADD = \
 	$(GJS_DBUS_LIBS)
 dbusNative_la_LDFLAGS = 				\
 	$(JS_NATIVE_MODULE_LDFLAGS)
+
+formatNative_la_CFLAGS = \
+	$(JS_NATIVE_MODULE_CFLAGS)
+formatNative_la_LIBADD = \
+	libgjs.la \
+	$(JS_NATIVE_MODULE_LIBADD)
+formatNative_la_LDFLAGS = \
+	$(JS_NATIVE_MODULE_LDFLAGS)
+
+formatNative_la_SOURCES = \
+	modules/format.h \
+	modules/format.c
