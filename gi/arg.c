@@ -920,6 +920,7 @@ gjs_array_to_array(JSContext   *context,
     case GI_TYPE_TAG_GLIST:
     case GI_TYPE_TAG_GSLIST:
     case GI_TYPE_TAG_GHASH:
+    case GI_TYPE_TAG_FILENAME:
         return gjs_array_to_ptrarray(context,
                                      array_value,
                                      length,
