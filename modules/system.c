@@ -28,6 +28,7 @@
 #include <unistd.h>
 
 #include <gjs/gjs-module.h>
+#include <gi/object.h>
 #include <jsapi.h>
 
 #include "system.h"
@@ -53,6 +54,29 @@ gjs_address_of(JSContext *context,
         JS_SET_RVAL(context, vp, retval);
 
     return ret;
+}
+
+static JSBool
+gjs_refcount(JSContext *context,
+             uintN      argc,
+             jsval     *vp)
+{
+    jsval *argv = JS_ARGV(cx, vp);
+    jsval retval;
+    JSObject *target_obj;
+    GObject *obj;
+
+    if (!gjs_parse_args(context, "refcount", "o", argc, argv, "object", &target_obj))
+        return JS_FALSE;
+
+    obj = gjs_g_object_from_object(context, target_obj);
+
+    if (obj == NULL)
+        return JS_FALSE;
+
+    retval = INT_TO_JSVAL(obj->ref_count);
+    JS_SET_RVAL(context, vp, retval);
+    return JS_TRUE;
 }
 
 static JSBool
@@ -128,6 +152,12 @@ gjs_js_define_system_stuff(JSContext *context,
     if (!JS_DefineFunction(context, module,
                            "addressOf",
                            (JSNative) gjs_address_of,
+                           1, GJS_MODULE_PROP_FLAGS))
+        return JS_FALSE;
+
+    if (!JS_DefineFunction(context, module,
+                           "refcount",
+                           (JSNative) gjs_refcount,
                            1, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
