@@ -25,6 +25,7 @@
 
 #include <string.h>
 
+#include <gjs/gi.h>
 #include "object.h"
 #include "gtype.h"
 #include "arg.h"
@@ -2316,9 +2317,9 @@ gjs_signal_new(JSContext *cx,
     return ret;
 }
 
-static JSBool
-gjs_define_stuff(JSContext *context,
-                    JSObject  *module_obj)
+JSBool
+gjs_define_private_gi_stuff(JSContext *context,
+                            JSObject  *module_obj)
 {
     if (!JS_DefineFunction(context, module_obj,
                            "register_type",
@@ -2352,5 +2353,3 @@ gjs_define_stuff(JSContext *context,
 
     return JS_TRUE;
 }
-
-GJS_REGISTER_NATIVE_MODULE("_gi", gjs_define_stuff)

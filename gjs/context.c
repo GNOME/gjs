@@ -357,6 +357,7 @@ gjs_context_class_init(GjsContextClass *klass)
                                       G_TYPE_NONE, 0);
 
     gjs_register_native_module("byteArray", gjs_define_byte_array_stuff, 0);
+    gjs_register_native_module("_gi", gjs_define_private_gi_stuff, 0);
 }
 
 static void
