@@ -1316,6 +1316,9 @@ function_to_string (JSContext *context,
     JSObject *self;
     jsval retval;
     JSBool ret = JS_FALSE;
+    int i, n_args, n_jsargs;
+    GString *arg_names_str;
+    gchar *arg_names;
 
     self = JS_THIS_OBJECT(context, vp);
     if (!self) {
@@ -1324,21 +1327,50 @@ function_to_string (JSContext *context,
     }
 
     priv = priv_from_js (context, self);
-
     if (priv == NULL) {
         string = "function () {\n}";
         free = FALSE;
-    } else if (g_base_info_get_type(priv->info) == GI_INFO_TYPE_FUNCTION) {
-        string = g_strdup_printf("function %s(){\n\t/* proxy for native symbol %s(); */\n}",
-                                 g_base_info_get_name ((GIBaseInfo *) priv->info),
-                                 g_function_info_get_symbol ((GIFunctionInfo *) priv->info));
-        free = TRUE;
-    } else {
-        string = g_strdup_printf("function %s(){\n\t/* proxy for native symbol */\n}",
-                                 g_base_info_get_name ((GIBaseInfo *) priv->info));
-        free = TRUE;
+        goto out;
     }
 
+    free = TRUE;
+
+    n_args = g_callable_info_get_n_args(priv->info);
+    n_jsargs = 0;
+    arg_names_str = g_string_new("");
+    for (i = 0; i < n_args; i++) {
+        GIArgInfo arg_info;
+
+        if (priv->param_types[i] == PARAM_SKIPPED)
+            continue;
+
+        g_callable_info_load_arg(priv->info, i, &arg_info);
+
+        if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_OUT)
+            continue;
+
+        if (n_jsargs > 0)
+            g_string_append(arg_names_str, ", ");
+
+        n_jsargs++;
+        g_string_append(arg_names_str, g_base_info_get_name(&arg_info));
+    }
+    arg_names = g_string_free(arg_names_str, FALSE);
+
+    if (g_base_info_get_type(priv->info) == GI_INFO_TYPE_FUNCTION) {
+        string = g_strdup_printf("function %s(%s) {\n\t/* proxy for native symbol %s(); */\n}",
+                                 g_base_info_get_name ((GIBaseInfo *) priv->info),
+                                 arg_names,
+                                 g_function_info_get_symbol ((GIFunctionInfo *) priv->info));
+    } else {
+        string = g_strdup_printf("function %s(%s) {\n\t/* proxy for native symbol */\n}",
+                                 g_base_info_get_name ((GIBaseInfo *) priv->info),
+                                 arg_names);
+    }
+
+    g_free(arg_names);
+
+ out:
     if (gjs_string_from_utf8(context, string, -1, &retval)) {
         JS_SET_RVAL(context, vp, retval);
         ret = JS_TRUE;
