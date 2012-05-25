@@ -1306,6 +1306,40 @@ function_finalize(JSContext *context,
 }
 
 static JSBool
+get_num_arguments (JSContext *context,
+                   JSObject  *obj,
+                   jsid       id,
+                   jsval     *vp)
+{
+    int n_args, n_jsargs, i;
+    jsval retval;
+    Function *priv;
+
+    priv = priv_from_js(context, obj);
+
+    if (priv == NULL)
+        return JS_FALSE;
+
+    n_args = g_callable_info_get_n_args(priv->info);
+    n_jsargs = 0;
+    for (i = 0; i < n_args; i++) {
+        GIArgInfo arg_info;
+
+        if (priv->param_types[i] == PARAM_SKIPPED)
+            continue;
+
+        g_callable_info_load_arg(priv->info, i, &arg_info);
+
+        if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_OUT)
+            continue;
+    }
+
+    retval = INT_TO_JSVAL(n_jsargs);
+    JS_SET_RVAL(context, vp, retval);
+    return JS_TRUE;
+}
+
+static JSBool
 function_to_string (JSContext *context,
                     guint      argc,
                     jsval     *vp)
@@ -1410,6 +1444,7 @@ static struct JSClass gjs_function_class = {
 };
 
 static JSPropertySpec gjs_function_proto_props[] = {
+    { "length", 0, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_SHARED, (JSPropertyOp)get_num_arguments, NULL },
     { NULL }
 };
 
