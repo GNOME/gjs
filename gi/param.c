@@ -377,7 +377,7 @@ param_new_internal(JSContext *cx,
         break;
     case G_TYPE_STRING:
         {
-            const gchar *default_value;
+            gchar *default_value;
 
             if (!gjs_parse_args(cx, method_name,
                                 "s", argc, argv,
@@ -386,6 +386,8 @@ param_new_internal(JSContext *cx,
 
             pspec = g_param_spec_string(prop_name, nick, blurb,
                                         default_value, flags);
+
+            g_free (default_value);
         }
         break;
     case G_TYPE_PARAM:
@@ -414,6 +416,7 @@ param_new_internal(JSContext *cx,
     JS_SET_RVAL(cx, vp, foo);
  out:
 
+    g_free(method_name);
     g_free(prop_name);
     g_free(nick);
     g_free(blurb);

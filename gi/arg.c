@@ -2791,6 +2791,7 @@ gjs_g_arg_release_internal(JSContext  *context,
 
             if (transfer != GI_TRANSFER_CONTAINER && is_gvalue_flat_array(param_info, element_type)) {
                 g_free(arg->v_pointer);
+                g_base_info_unref(param_info);
                 return JS_TRUE;
             }
 

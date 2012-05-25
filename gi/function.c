@@ -1483,6 +1483,7 @@ init_cached_function_data (JSContext      *context,
             if (error->code != G_INVOKE_ERROR_SYMBOL_NOT_FOUND)
                 gjs_throw_g_error(context, error);
 
+            g_clear_error(&error);
             return FALSE;
         }
 

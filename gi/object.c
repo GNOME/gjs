@@ -2157,6 +2157,8 @@ gjs_register_type(JSContext *cx,
                                            &type_info,
                                            0);
 
+    g_free(name);
+
     g_type_set_qdata (instance_type, gjs_is_custom_type_quark(), GINT_TO_POINTER (1));
 
     /* create a custom JSClass */

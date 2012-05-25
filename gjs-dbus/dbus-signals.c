@@ -811,7 +811,7 @@ unwatch_signal(DBusBusType                  bus_type,
                                    handler,
                                    data)) {
             GjsSignalWatcher *watcher = list->data;
-            pending_signal_watchers = g_slist_remove_link(pending_signal_watchers,
+            pending_signal_watchers = g_slist_delete_link(pending_signal_watchers,
                                                           list);
 
             if (weak != NULL)

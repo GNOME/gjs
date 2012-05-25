@@ -109,7 +109,7 @@ gjs_js_pop_current_message(void)
 {
     g_assert(_gjs_current_dbus_messages != NULL);
 
-    _gjs_current_dbus_messages = g_slist_remove_link(_gjs_current_dbus_messages,
+    _gjs_current_dbus_messages = g_slist_delete_link(_gjs_current_dbus_messages,
                                                      _gjs_current_dbus_messages);
 }
 
