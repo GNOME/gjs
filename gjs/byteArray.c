@@ -57,19 +57,9 @@ static void   byte_array_finalize      (JSContext    *context,
                                         JSObject     *obj);
 
 
-/* The bizarre thing about this vtable is that it applies to both
- * instances of the object, and to the prototype that instances of the
- * class have.
- *
- * Also, there's a constructor field in here, but as far as I can
- * tell, it would only be used if no constructor were provided to
- * JS_InitClass. The constructor from JS_InitClass is not applied to
- * the prototype unless JSCLASS_CONSTRUCT_PROTOTYPE is in flags.
- */
 static struct JSClass gjs_byte_array_class = {
     "ByteArray",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_CONSTRUCT_PROTOTYPE |
     JSCLASS_NEW_RESOLVE |
     JSCLASS_NEW_RESOLVE_GETS_START,
     JS_PropertyStub,
@@ -425,20 +415,10 @@ gjs_g_byte_array_new(int preallocated_length)
    return array;
 }
 
-/* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on
- * the prototype in addition to on each instance. When called on the
- * prototype, "obj" is the prototype, and "retval" is the prototype
- * also, but can be replaced with another object to use instead as the
- * prototype.
- */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(byte_array)
     ByteArrayInstance *priv;
-    JSObject *proto;
-    gboolean is_proto;
-    JSClass *obj_class;
-    JSClass *proto_class;
     gsize preallocated_length;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(byte_array);
@@ -453,25 +433,9 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array)
     }
 
     priv = g_slice_new0(ByteArrayInstance);
-
+    priv->array = gjs_g_byte_array_new(preallocated_length);
     g_assert(priv_from_js(context, object) == NULL);
-
     JS_SetPrivate(context, object, priv);
-
-    proto = JS_GetPrototype(context, object);
-
-    /* If we're constructing the prototype, its __proto__ is not the same
-     * class as us, but if we're constructing an instance, the prototype
-     * has the same class.
-     */
-    obj_class = JS_GetClass(context, object);
-    proto_class = JS_GetClass(context, proto);
-
-    is_proto = (obj_class != proto_class);
-
-    if (!is_proto) {
-        priv->array = gjs_g_byte_array_new(preallocated_length);
-    }
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(byte_array);
 
@@ -487,7 +451,7 @@ byte_array_finalize(JSContext *context,
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
-        return; /* possible? probably not */
+        return; /* prototype, not instance */
 
     if (priv->array) {
         g_byte_array_free(priv->array, TRUE);
