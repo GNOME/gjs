@@ -83,7 +83,7 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
             outVariant = proxy.call_finish(result);
             succeeded = true;
         } catch (e) {
-            replyFunc(null, e);
+            replyFunc([], e);
         }
 
         if (succeeded)

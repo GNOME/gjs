@@ -266,8 +266,26 @@ describe('Exported DBus object', function () {
             'JS ERROR: Exception in method call: alwaysThrowException: *');
 
         proxy.alwaysThrowExceptionRemote({}, function(result, excp) {
-            expect(result).toBeNull();
             expect(excp).not.toBeNull();
+            loop.quit();
+        });
+        loop.run();
+    });
+
+    it('can still destructure the return value when an exception is thrown', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: alwaysThrowException: *');
+
+        // This test will not fail, but instead if the functionality is not
+        // implemented correctly it will hang. The exception in the function
+        // argument destructuring will not propagate across the FFI boundary
+        // and the main loop will never quit.
+        // https://bugzilla.gnome.org/show_bug.cgi?id=729015
+        proxy.alwaysThrowExceptionRemote({}, function([a, b, c], excp) {
+            expect(a).not.toBeDefined();
+            expect(b).not.toBeDefined();
+            expect(c).not.toBeDefined();
+            void excp;
             loop.quit();
         });
         loop.run();
@@ -279,7 +297,6 @@ describe('Exported DBus object', function () {
 
         proxy.thisDoesNotExistRemote(function (result, excp) {
             expect(excp).not.toBeNull();
-            expect(result).toBeNull();
             loop.quit();
         });
         loop.run();
@@ -377,7 +394,6 @@ describe('Exported DBus object', function () {
 
     it('handles a bad signature by throwing an exception', function () {
         proxy.arrayOutBadSigRemote(function(result, excp) {
-            expect(result).toBeNull();
             expect(excp).not.toBeNull();
             loop.quit();
         });
