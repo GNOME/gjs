@@ -162,6 +162,7 @@ gjs_throw_g_error (JSContext       *context,
     JS_BeginRequest(context);
 
     err_obj = gjs_error_from_gerror(context, error, TRUE);
+    g_error_free (error);
     if (err_obj)
         JS_SetPendingException(context, OBJECT_TO_JSVAL(err_obj));
 

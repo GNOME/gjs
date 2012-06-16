@@ -2795,7 +2795,10 @@ gjs_g_arg_release_internal(JSContext  *context,
                 g_closure_unref(arg->v_pointer);
             } else if (g_type_is_a(gtype, G_TYPE_VALUE)) {
                 /* G_TYPE_VALUE is-a G_TYPE_BOXED, but we special case it */
-                g_boxed_free(gtype, arg->v_pointer);
+                if (g_type_info_is_pointer (type_info))
+                    g_boxed_free(gtype, arg->v_pointer);
+                else
+                    g_value_unset (arg->v_pointer);
             } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                 if (transfer != TRANSFER_IN_NOTHING)
                     g_boxed_free(gtype, arg->v_pointer);
@@ -2860,7 +2863,25 @@ gjs_g_arg_release_internal(JSContext  *context,
             param_info = g_type_info_get_param_type(type_info, 0);
             element_type = g_type_info_get_tag(param_info);
 
-            if (transfer != GI_TRANSFER_CONTAINER && is_gvalue_flat_array(param_info, element_type)) {
+            if (is_gvalue_flat_array(param_info, element_type)) {
+                if (transfer != GI_TRANSFER_CONTAINER) {
+                    gint len = g_type_info_get_array_fixed_size(type_info);
+                    gint i;
+
+                    if (len < 0) {
+                        gjs_throw(context,
+                                  "Releasing a flat GValue array that was not fixed-size or was nested"
+                                  "inside another container. This is not supported (and will leak)");
+                        g_base_info_unref(param_info);
+                        return JS_FALSE;
+                    }
+
+                    for (i = 0; i < len; i++) {
+                        GValue *v = ((GValue*)arg->v_pointer) + i;
+                        g_value_unset(v);
+                    }
+                }
+
                 g_free(arg->v_pointer);
                 g_base_info_unref(param_info);
                 return JS_TRUE;
@@ -3169,6 +3190,13 @@ gjs_g_argument_release_in_array (JSContext  *context,
 
     param_type = g_type_info_get_param_type(type_info, 0);
     type_tag = g_type_info_get_tag(param_type);
+
+    if (is_gvalue_flat_array(param_type, type_tag)) {
+        for (i = 0; i < length; i++) {
+            GValue *v = ((GValue*)array) + i;
+            g_value_unset(v);
+        }
+    }
 
     if (type_needs_release(param_type, type_tag)) {
         for (i = 0; i < length; i++) {
