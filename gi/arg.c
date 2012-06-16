@@ -166,6 +166,7 @@ type_needs_release (GITypeInfo *type_info,
     case GI_TYPE_TAG_GLIST:
     case GI_TYPE_TAG_GSLIST:
     case GI_TYPE_TAG_GHASH:
+    case GI_TYPE_TAG_ERROR:
         return TRUE;
     case GI_TYPE_TAG_INTERFACE: {
         GIBaseInfo* interface_info;
@@ -234,6 +235,7 @@ type_needs_out_release(GITypeInfo *type_info,
     case GI_TYPE_TAG_GLIST:
     case GI_TYPE_TAG_GSLIST:
     case GI_TYPE_TAG_GHASH:
+    case GI_TYPE_TAG_ERROR:
         return TRUE;
     case GI_TYPE_TAG_INTERFACE: {
         GIBaseInfo* interface_info;
@@ -921,6 +923,7 @@ gjs_array_to_array(JSContext   *context,
     case GI_TYPE_TAG_GLIST:
     case GI_TYPE_TAG_GSLIST:
     case GI_TYPE_TAG_GHASH:
+    case GI_TYPE_TAG_ERROR:
     case GI_TYPE_TAG_FILENAME:
         return gjs_array_to_ptrarray(context,
                                      array_value,
@@ -1267,6 +1270,22 @@ gjs_value_to_g_argument(JSContext      *context,
                 arg->v_pointer = utf8_str;
             else
                 wrong = TRUE;
+        } else {
+            wrong = TRUE;
+            report_type_mismatch = TRUE;
+        }
+        break;
+
+    case GI_TYPE_TAG_ERROR:
+        nullable_type = TRUE;
+        if (JSVAL_IS_NULL(value)) {
+            arg->v_pointer = NULL;
+        } else if (JSVAL_IS_OBJECT(value)) {
+            arg->v_pointer = gjs_gerror_from_error(context,
+                                                   JSVAL_TO_OBJECT(value));
+
+            if (transfer != GI_TRANSFER_NOTHING)
+                arg->v_pointer = g_error_copy (arg->v_pointer);
         } else {
             wrong = TRUE;
             report_type_mismatch = TRUE;
@@ -1742,6 +1761,7 @@ gjs_g_argument_init_default(JSContext      *context,
     case GI_TYPE_TAG_UTF8:
     case GI_TYPE_TAG_GLIST:
     case GI_TYPE_TAG_GSLIST:
+    case GI_TYPE_TAG_ERROR:
         arg->v_pointer = NULL;
         break;
 
@@ -1991,6 +2011,7 @@ gjs_array_from_carray_internal (JSContext  *context,
         case GI_TYPE_TAG_GLIST:
         case GI_TYPE_TAG_GSLIST:
         case GI_TYPE_TAG_GHASH:
+        case GI_TYPE_TAG_ERROR:
           ITERATE(pointer);
           break;
         default:
@@ -2177,6 +2198,7 @@ gjs_array_from_zero_terminated_c_array (JSContext  *context,
         case GI_TYPE_TAG_GLIST:
         case GI_TYPE_TAG_GSLIST:
         case GI_TYPE_TAG_GHASH:
+        case GI_TYPE_TAG_ERROR:
           ITERATE(pointer);
           break;
         default:
@@ -2717,6 +2739,11 @@ gjs_g_arg_release_internal(JSContext  *context,
         g_free(arg->v_pointer);
         break;
 
+    case GI_TYPE_TAG_ERROR:
+        if (transfer != TRANSFER_IN_NOTHING)
+            g_error_free (arg->v_pointer);
+        break;
+
     case GI_TYPE_TAG_INTERFACE:
         {
             GIBaseInfo* interface_info;
@@ -2852,6 +2879,7 @@ gjs_g_arg_release_internal(JSContext  *context,
             case GI_TYPE_TAG_GSLIST:
             case GI_TYPE_TAG_ARRAY:
             case GI_TYPE_TAG_GHASH:
+            case GI_TYPE_TAG_ERROR:
                 if (transfer != GI_TRANSFER_CONTAINER
                     && type_needs_out_release(param_info, element_type)) {
                     if (g_type_info_is_zero_terminated (type_info)) {
@@ -2925,6 +2953,7 @@ gjs_g_arg_release_internal(JSContext  *context,
             case GI_TYPE_TAG_GLIST:
             case GI_TYPE_TAG_GSLIST:
             case GI_TYPE_TAG_GHASH:
+            case GI_TYPE_TAG_ERROR:
                 if (transfer == GI_TRANSFER_CONTAINER) {
                     g_array_free((GArray*) arg->v_pointer, TRUE);
                 } else if (type_needs_out_release (param_info, element_type)) {
