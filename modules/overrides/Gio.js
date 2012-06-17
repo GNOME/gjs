@@ -20,6 +20,7 @@
 // IN THE SOFTWARE.
 
 var GLib = imports.gi.GLib;
+var GObject = imports.gi.GObject;
 var GjsPrivate = imports.gi.GjsPrivate;
 var Lang = imports.lang;
 var Signals = imports.signals;
@@ -30,8 +31,8 @@ function _signatureLength(sig) {
     // make it an array
     var signature = Array.prototype.slice.call(sig);
     while (signature.length) {
-	GLib._read_single_type(sig);
-	counter++;
+        GLib._read_single_type(sig);
+        counter++;
     }
     return counter;
 }
@@ -67,8 +68,8 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
             replyFunc = arg;
         } else if (typeof(arg) == "number") {
             flags = arg;
-	} else if (arg instanceof Gio.Cancellable) {
-	    cancellable = arg;
+        } else if (arg instanceof Gio.Cancellable) {
+            cancellable = arg;
         } else {
             throw new Error("Argument " + argNum + " of method " + methodName +
                             " is " + typeof(arg) + ". It should be a callback, flags or a Gio.Cancellable");
@@ -78,29 +79,27 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     var inVariant = GLib.Variant.new('(' + inSignature.join('') + ')', arg_array);
 
     var asyncCallback = function (proxy, result) {
-	try {
-	    var outVariant = proxy.call_finish(result);
-	    // XXX: is deep_unpack appropriate here?
-	    // (it converts everything to a JS type, except for nested Variants)
-	    replyFunc(outVariant.deep_unpack(), null);
-	} catch (e) {
-	    replyFunc(null, e);
-	}
+        try {
+            var outVariant = proxy.call_finish(result);
+            replyFunc(outVariant.deep_unpack(), null);
+        } catch (e) {
+            replyFunc(null, e);
+        }
     };
 
     if (sync) {
-	return this.call_sync(methodName,
-			      inVariant,
-			      flags,
-			      -1,
-			      cancellable).deep_unpack();
+        return this.call_sync(methodName,
+                              inVariant,
+                              flags,
+                              -1,
+                              cancellable).deep_unpack();
     } else {
-	return this.call(methodName,
-			 inVariant,
-			 flags,
-			 -1,
-			 cancellable,
-			 asyncCallback);
+        return this.call(methodName,
+                         inVariant,
+                         flags,
+                         -1,
+                         cancellable,
+                         asyncCallback);
     }
 }
 
@@ -111,13 +110,12 @@ function _logReply(result, exc) {
 }
 
 function _makeProxyMethod(method, sync) {
-    /* JSON methods are the default */
     var i;
     var name = method.name;
     var inArgs = method.in_args;
     var inSignature = [ ];
     for (i = 0; i < inArgs.length; i++)
-	inSignature.push(inArgs[i].signature);
+        inSignature.push(inArgs[i].signature);
 
     return function() {
         return _proxyInvoker.call(this, name, sync, inSignature, arguments);
@@ -138,42 +136,42 @@ function _propertySetter(value, name, signature) {
     this.set_cached_property(name, variant);
 
     this.call('org.freedesktop.DBus.Properties.Set',
-	      GLib.Variant.new('(ssv)',
-			       [this.g_interface_name,
-				name, variant]),
-	      Gio.DBusCallFlags.NONE, -1, null,
-	      Lang.bind(this, function(proxy, result) {
-		  try {
-		      this.call_finish(result);
-		  } catch(e) {
-		      log('Could not set property ' + name + ' on remote object ' +
-			  this.g_object_path, '. Error is ' + e.message);
-		  }
-	      }));
+              GLib.Variant.new('(ssv)',
+                               [this.g_interface_name,
+                                name, variant]),
+              Gio.DBusCallFlags.NONE, -1, null,
+              Lang.bind(this, function(proxy, result) {
+                  try {
+                      this.call_finish(result);
+                  } catch(e) {
+                      log('Could not set property ' + name + ' on remote object ' +
+                          this.g_object_path, '. Error is ' + e.message);
+                  }
+              }));
 }
 
 function _addDBusConvenience() {
     let info = this.g_interface_info;
     if (!info)
-	return;
+        return;
 
     if (info.signals.length > 0)
-	this.connect('g-signal', _convertToNativeSignal);
+        this.connect('g-signal', _convertToNativeSignal);
 
     let i, methods = info.methods;
     for (i = 0; i < methods.length; i++) {
-	var method = methods[i];
-	this[method.name + 'Remote'] = _makeProxyMethod(methods[i], false);
-	this[method.name + 'Sync'] = _makeProxyMethod(methods[i], true);
+        var method = methods[i];
+        this[method.name + 'Remote'] = _makeProxyMethod(methods[i], false);
+        this[method.name + 'Sync'] = _makeProxyMethod(methods[i], true);
     }
 
     let properties = info.properties;
     for (i = 0; i < properties.length; i++) {
-	let name = properties[i].name;
-	let signature = properties[i].signature;
-	Lang.defineAccessorProperty(this, name,
-				    Lang.bind(this, _propertyGetter, name),
-				    Lang.bind(this, _propertySetter, name, signature));
+        let name = properties[i].name;
+        let signature = properties[i].signature;
+        Lang.defineAccessorProperty(this, name,
+                                    Lang.bind(this, _propertyGetter, name),
+                                    Lang.bind(this, _propertySetter, name, signature));
     }
 }
 
@@ -181,54 +179,54 @@ function _makeProxyWrapper(interfaceXml) {
     var info = _newInterfaceInfo(interfaceXml);
     var iname = info.name;
     return function(bus, name, object, asyncCallback, cancellable) {
-	var obj = new Gio.DBusProxy({ g_connection: bus,
-				      g_interface_name: iname,
-				      g_interface_info: info,
-				      g_name: name,
-				      g_object_path: object });
-	if (!cancellable)
-	    cancellable = null;
-	if (asyncCallback)
-	    obj.init_async(GLib.PRIORITY_DEFAULT, cancellable, function(initable, result) {
-		try {
-		    initable.init_finish(result);
-		    asyncCallback(initable, null);
-		} catch(e) {
-		    asyncCallback(null, e);
-		}
-	    });
-	else
-	    obj.init(cancellable);
-	return obj;
+        var obj = new Gio.DBusProxy({ g_connection: bus,
+                                      g_interface_name: iname,
+                                      g_interface_info: info,
+                                      g_name: name,
+                                      g_object_path: object });
+        if (!cancellable)
+            cancellable = null;
+        if (asyncCallback)
+            obj.init_async(GLib.PRIORITY_DEFAULT, cancellable, function(initable, result) {
+                try {
+                    initable.init_finish(result);
+                    asyncCallback(initable, null);
+                } catch(e) {
+                    asyncCallback(null, e);
+                }
+            });
+        else
+            obj.init(cancellable);
+        return obj;
     };
 }
 
 
 function _newNodeInfo(constructor, value) {
     if (typeof value == 'string')
-	return constructor(value);
+        return constructor(value);
     else if (value instanceof XML)
-	return constructor(value.toXMLString());
+        return constructor(value.toXMLString());
     else
-	throw TypeError('Invalid type ' + Object.prototype.toString.call(value));
+        throw TypeError('Invalid type ' + Object.prototype.toString.call(value));
 }
 
 function _newInterfaceInfo(value) {
     var xml;
     if (typeof value == 'string')
-	xml = new XML(value);
+        xml = new XML(value);
     else if (value instanceof XML)
-	xml = value;
+        xml = value;
     else
-	throw TypeError('Invalid type ' + Object.prototype.toString.call(value));
+        throw TypeError('Invalid type ' + Object.prototype.toString.call(value));
 
     var node;
     if (value.name() == 'interface') {
-	// wrap inside a node
-	node = <node/>;
-	node.node += xml;
+        // wrap inside a node
+        node = <node/>;
+        node.node += xml;
     } else
-	node = xml;
+        node = xml;
 
     var nodeInfo = Gio.DBusNodeInfo.new_for_xml(node);
     return nodeInfo.interfaces[0];
@@ -238,8 +236,8 @@ function _injectToMethod(klass, method, addition) {
     var previous = klass[method];
 
     klass[method] = function() {
-	addition.apply(this, arguments);
-	return previous.apply(this, arguments);
+        addition.apply(this, arguments);
+        return previous.apply(this, arguments);
     }
 }
 
@@ -247,16 +245,16 @@ function _wrapFunction(klass, method, addition) {
     var previous = klass[method];
 
     klass[method] = function() {
-	var args = Array.prototype.slice.call(arguments);
-	args.unshift(previous);
-	return addition.apply(this, args);
+        var args = Array.prototype.slice.call(arguments);
+        args.unshift(previous);
+        return addition.apply(this, args);
     }
 }
 
 function _makeOutSignature(args) {
     var ret = '(';
     for (var i = 0; i < args.length; i++)
-	ret += args[i].signature;
+        ret += args[i].signature;
 
     return ret + ')';
 }
@@ -264,46 +262,51 @@ function _makeOutSignature(args) {
 function _handleMethodCall(info, impl, method_name, parameters, invocation) {
     // prefer a sync version if available
     if (this[method_name]) {
-	var retval;
-	try {
-	    retval = this[method_name].apply(this, parameters.deep_unpack());
-	} catch (e) {
-	    if (e.name.indexOf('.') == -1) {
-		// likely to be a normal JS error
-		e.name = 'org.gnome.gjs.JSError.' + e.name;
-	    }
-	    invocation.return_dbus_error(name, e.message);
-	    return;
-	}
-	if (retval === undefined) {
-	    // undefined (no return value) is the empty tuple
-	    retval = GLib.Variant.new('()', []);
-	}
-	try {
-	    if (!(retval instanceof GLib.Variant)) {
-		// attempt packing according to out signature
-		let methodInfo = info.lookup_method(method_name);
-		let outArgs = methodInfo.out_args;
-		let outSignature = _makeOutSignature(outArgs);
-		if (outArgs.length == 1) {
-		    // if one arg, we don't require the handler wrapping it
-		    // into an Array
-		    retval = [retval];
-		}
-		retval = GLib.Variant.new(outSignature, retval);
-	    }
-	    invocation.return_value(retval);
-	} catch(e) {
-	    // if we don't do this, the other side will never see a reply
-	    invocation.return_dbus_error('org.gnome.gjs.JSError.ValueError',
-					 "The return value from the method handler was not in the correct format");
-	}
+        let retval;
+        try {
+            retval = this[method_name].apply(this, parameters.deep_unpack());
+        } catch (e) {
+            if (e instanceof GLib.Error) {
+                invocation.return_gerror(e);
+            } else {
+                let name = e.name;
+                if (name.indexOf('.') == -1) {
+                    // likely to be a normal JS error
+                    name = 'org.gnome.gjs.JSError.' + name;
+                }
+                invocation.return_dbus_error(name, e.message);
+            }
+            return;
+        }
+        if (retval === undefined) {
+            // undefined (no return value) is the empty tuple
+            retval = GLib.Variant.new('()', []);
+        }
+        try {
+            if (!(retval instanceof GLib.Variant)) {
+                // attempt packing according to out signature
+                let methodInfo = info.lookup_method(method_name);
+                let outArgs = methodInfo.out_args;
+                let outSignature = _makeOutSignature(outArgs);
+                if (outArgs.length == 1) {
+                    // if one arg, we don't require the handler wrapping it
+                    // into an Array
+                    retval = [retval];
+                }
+                retval = GLib.Variant.new(outSignature, retval);
+            }
+            invocation.return_value(retval);
+        } catch(e) {
+            // if we don't do this, the other side will never see a reply
+            invocation.return_dbus_error('org.gnome.gjs.JSError.ValueError',
+                                         "Service implementation returned an incorrect value type");
+        }
     } else if (this[method_name + 'Async']) {
-	this[method_name + 'Async'](parameters.deep_unpack(), invocation);
+        this[method_name + 'Async'](parameters.deep_unpack(), invocation);
     } else {
-	log('Missing handler for DBus method ' + method_name);
-	invocation.return_dbus_error('org.gnome.gjs.NotImplementedError',
-				     'Method ' + method_name + ' is not implemented');
+        log('Missing handler for DBus method ' + method_name);
+        invocation.return_gerror(new Gio.DBusError({ code: Gio.DBusError.UNKNOWN_METHOD,
+                                                     message: 'Method ' + method_name + ' is not implemented' }));
     }
 }
 
@@ -311,9 +314,9 @@ function _handlePropertyGet(info, impl, property_name) {
     let propInfo = info.lookup_property(property_name);
     let jsval = this[property_name];
     if (jsval != undefined)
-	return GLib.Variant.new(propInfo.signature, jsval);
+        return GLib.Variant.new(propInfo.signature, jsval);
     else
-	return null;
+        return null;
 }
 
 function _handlePropertySet(info, impl, property_name, new_value) {
@@ -323,20 +326,20 @@ function _handlePropertySet(info, impl, property_name, new_value) {
 function _wrapJSObject(interfaceInfo, jsObj) {
     var info;
     if (interfaceInfo instanceof Gio.DBusInterfaceInfo)
-	info = interfaceInfo
+        info = interfaceInfo;
     else
-	info = Gio.DBusInterfaceInfo.new_for_xml(interfaceInfo);
+        info = Gio.DBusInterfaceInfo.new_for_xml(interfaceInfo);
     info.cache_build();
 
     var impl = new GjsPrivate.DBusImplementation({ g_interface_info: info });
     impl.connect('handle-method-call', function(impl, method_name, parameters, invocation) {
-	return _handleMethodCall.call(jsObj, info, impl, method_name, parameters, invocation)
+        return _handleMethodCall.call(jsObj, info, impl, method_name, parameters, invocation)
     });
     impl.connect('handle-property-get', function(impl, property_name) {
-	return _handlePropertyGet.call(jsObj, info, impl, property_name);
+        return _handlePropertyGet.call(jsObj, info, impl, property_name);
     });
     impl.connect('handle-property-set', function(impl, property_name, value) {
-	return _handlePropertySet.call(jsObj, info, impl, property_name, value);
+        return _handlePropertySet.call(jsObj, info, impl, property_name, value);
     });
 
     return impl;
@@ -346,42 +349,40 @@ function _init() {
     Gio = this;
 
     Gio.DBus = {
-	get session() {
-	    return Gio.bus_get_sync(Gio.BusType.SESSION, null);
-	},
-	get system() {
-	    return Gio.bus_get_sync(Gio.BusType.SYSTEM, null);
-	},
+        get session() {
+            return Gio.bus_get_sync(Gio.BusType.SESSION, null);
+        },
+        get system() {
+            return Gio.bus_get_sync(Gio.BusType.SYSTEM, null);
+        },
 
-	// Namespace some functions
-	get:        Gio.bus_get,
-	get_finish: Gio.bus_get_finish,
-	get_sync:   Gio.bus_get_sync,
+        // Namespace some functions
+        get:        Gio.bus_get,
+        get_finish: Gio.bus_get_finish,
+        get_sync:   Gio.bus_get_sync,
 
-	own_name:               Gio.bus_own_name,
-	own_name_on_connection: Gio.bus_own_name_on_connection,
-	unown_name:             Gio.bus_unown_name,
+        own_name:               Gio.bus_own_name,
+        own_name_on_connection: Gio.bus_own_name_on_connection,
+        unown_name:             Gio.bus_unown_name,
 
-	watch_name:               Gio.bus_watch_name,
-	watch_name_on_connection: Gio.bus_watch_name_on_connection,
-	unwatch_name:             Gio.bus_unwatch_name,
+        watch_name:               Gio.bus_watch_name,
+        watch_name_on_connection: Gio.bus_watch_name_on_connection,
+        unwatch_name:             Gio.bus_unwatch_name,
     };
 
-    // Some helpers to support current style (like DBus.system.watch_name)
     Gio.DBusConnection.prototype.watch_name = function(name, flags, appeared, vanished) {
-	return Gio.bus_watch_name_on_connection(this, name, flags, appeared, vanished);
+        return Gio.bus_watch_name_on_connection(this, name, flags, appeared, vanished);
     };
     Gio.DBusConnection.prototype.unwatch_name = function(id) {
-	return Gio.bus_unwatch_name(id);
+        return Gio.bus_unwatch_name(id);
     };
     Gio.DBusConnection.prototype.own_name = function(name, flags, acquired, lost) {
-	return Gio.bus_own_name_on_connection(this, name, flags, acquired, lost);
+        return Gio.bus_own_name_on_connection(this, name, flags, acquired, lost);
     };
     Gio.DBusConnection.prototype.unown_name = function(id) {
-	return Gio.bus_unown_name(id);
+        return Gio.bus_unown_name(id);
     };
 
-    // This should be done inside a constructor, but it cannot currently
     _injectToMethod(Gio.DBusProxy.prototype, 'init', _addDBusConvenience);
     _injectToMethod(Gio.DBusProxy.prototype, 'init_async', _addDBusConvenience);
     Gio.DBusProxy.prototype.connectSignal = Signals._connect;
@@ -393,7 +394,6 @@ function _init() {
     _wrapFunction(Gio.DBusNodeInfo, 'new_for_xml', _newNodeInfo);
     Gio.DBusInterfaceInfo.new_for_xml = _newInterfaceInfo;
 
-    // More or less...
     Gio.DBusExportedObject = GjsPrivate.DBusImplementation;
     Gio.DBusExportedObject.wrapJSObject = _wrapJSObject;
 }
