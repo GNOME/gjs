@@ -92,7 +92,9 @@ function bind(obj, callback) {
                 typeof(callback));
     }
 
-    if (callback.bind && arguments.length == 2) // ECMAScript 5 (but only if not passing any bindArguments)
+    // Use ES5 Function.prototype.bind, but only if not passing any bindArguments,
+    // because ES5 has them at the beginning, not at the end
+    if (arguments.length == 2)
 	return callback.bind(obj);
 
     let me = obj;
@@ -110,6 +112,26 @@ function defineAccessorProperty(object, name, getter, setter) {
 					  set: setter,
 					  configurable: true,
 					  enumerable: true });
+}
+
+function _deepFreeze(o) {
+    Object.freeze(o);
+
+    for (prop in o) {
+        if (!o.hasOwnProperty(prop) || !(typeof o === "object") || Object.isFrozen(o))
+            continue;
+
+        _deepFreeze(o[prop]);
+    }
+}
+
+// The name of this function is unfortunate, as it wraps
+// Object.freeze, not Object.seal
+function seal(object, deep) {
+    if (deep)
+        _deepFreeze(object);
+    else
+        Object.freeze(object);
 }
 
 // Class magic
@@ -274,6 +296,3 @@ Class.prototype._init = function(params) {
                     enumerable: false,
                     value: _parent }});
 };
-
-// Merge stuff defined in native code
-copyProperties(imports.langNative, this);

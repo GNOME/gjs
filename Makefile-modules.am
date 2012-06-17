@@ -17,7 +17,7 @@ dist_gjsjs_DATA +=		\
 	modules/promise.js	\
 	modules/format.js
 
-gjsnative_LTLIBRARIES += console.la langNative.la system.la
+gjsnative_LTLIBRARIES += console.la system.la
 
 if ENABLE_CAIRO
 dist_gjsjs_DATA +=		\
@@ -36,18 +36,6 @@ JS_NATIVE_MODULE_LIBADD =	\
 JS_NATIVE_MODULE_LDFLAGS =	\
 	$(EXTRA_LINK_FLAGS)	\
         -module -avoid-version -no-undefined -rdynamic
-
-langNative_la_CFLAGS = 				\
-	$(JS_NATIVE_MODULE_CFLAGS)
-langNative_la_LIBADD = \
-	libgjs.la				\
-	$(JS_NATIVE_MODULE_LIBADD)
-langNative_la_LDFLAGS = 			\
-	$(JS_NATIVE_MODULE_LDFLAGS)
-
-langNative_la_SOURCES =				\
-	modules/lang.h				\
-	modules/lang.c
 
 cairoNative_la_CFLAGS =                         \
         $(JS_NATIVE_MODULE_CFLAGS)              \
