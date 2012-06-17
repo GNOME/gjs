@@ -11,12 +11,13 @@ dist_gjsoverride_DATA = 		\
 dist_gjsjs_DATA +=		\
 	modules/gettext.js	\
 	modules/lang.js		\
+	modules/mainloop.js	\
 	modules/jsUnit.js	\
 	modules/signals.js	\
 	modules/promise.js	\
 	modules/format.js
 
-gjsnative_LTLIBRARIES += console.la debugger.la langNative.la mainloop.la gettextNative.la system.la formatNative.la
+gjsnative_LTLIBRARIES += console.la langNative.la system.la
 
 if ENABLE_CAIRO
 dist_gjsjs_DATA +=		\
@@ -47,30 +48,6 @@ langNative_la_LDFLAGS = 			\
 langNative_la_SOURCES =				\
 	modules/lang.h				\
 	modules/lang.c
-
-mainloop_la_CFLAGS = 				\
-	$(JS_NATIVE_MODULE_CFLAGS)
-mainloop_la_LIBADD = \
-	libgjs.la				\
-	$(JS_NATIVE_MODULE_LIBADD)
-mainloop_la_LDFLAGS = 				\
-	$(JS_NATIVE_MODULE_LDFLAGS)
-
-mainloop_la_SOURCES =		\
-	modules/mainloop.h	\
-	modules/mainloop.c
-
-gettextNative_la_CFLAGS = 				\
-	$(JS_NATIVE_MODULE_CFLAGS)
-gettextNative_la_LIBADD = \
-	libgjs.la				\
-	$(JS_NATIVE_MODULE_LIBADD)
-gettextNative_la_LDFLAGS = 				\
-	$(JS_NATIVE_MODULE_LDFLAGS)
-
-gettextNative_la_SOURCES =		\
-	modules/gettext-native.h	\
-	modules/gettext-native.c
 
 cairoNative_la_CFLAGS =                         \
         $(JS_NATIVE_MODULE_CFLAGS)              \
@@ -123,27 +100,3 @@ console_la_LDFLAGS = 				\
 console_la_SOURCES =		\
 	modules/console.h	\
 	modules/console.c
-
-debugger_la_CFLAGS = 				\
-	$(JS_NATIVE_MODULE_CFLAGS)
-debugger_la_LIBADD = \
-	libgjs.la				\
-	$(JS_NATIVE_MODULE_LIBADD)
-debugger_la_LDFLAGS = 				\
-	$(JS_NATIVE_MODULE_LDFLAGS)
-
-debugger_la_SOURCES =		\
-	modules/debugger.h	\
-	modules/debugger.c
-
-formatNative_la_CFLAGS = \
-	$(JS_NATIVE_MODULE_CFLAGS)
-formatNative_la_LIBADD = \
-	libgjs.la \
-	$(JS_NATIVE_MODULE_LIBADD)
-formatNative_la_LDFLAGS = \
-	$(JS_NATIVE_MODULE_LDFLAGS)
-
-formatNative_la_SOURCES = \
-	modules/format.h \
-	modules/format.c

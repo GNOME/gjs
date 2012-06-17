@@ -149,7 +149,9 @@ libgjs_la_SOURCES += \
 # Also, these files used to be a separate library
 libgjs_private_source_files = \
 	libgjs-private/gjs-gdbus-wrapper.c	\
-	libgjs-private/gjs-gdbus-wrapper.h
+	libgjs-private/gjs-gdbus-wrapper.h	\
+	libgjs-private/gjs-util.c		\
+	libgjs-private/gjs-util.h
 libgjs_la_SOURCES += $(libgjs_private_source_files)
 
 GjsPrivate-1.0.gir: libgjs.la

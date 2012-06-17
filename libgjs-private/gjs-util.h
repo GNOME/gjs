@@ -1,6 +1,5 @@
 /* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
-/*
- * Copyright (c) 2009  Red Hat, Inc.
+/* Copyright 2012 Giovanni Campagna <scampa.giovanni@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,18 +20,21 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_GETTEXT_H__
-#define __GJS_GETTEXT_H__
+#ifndef __GJS_PRIVATE_UTIL_H__
+#define __GJS_PRIVATE_UTIL_H__
 
-#include <config.h>
 #include <glib.h>
-#include "gjs/jsapi-util.h"
 
 G_BEGIN_DECLS
 
-JSBool        gjs_define_gettext_stuff     (JSContext      *context,
-                                            JSObject       *in_object);
+/* For imports.format */
+char * gjs_format_int_alternative_output (int n);
+
+/* For imports.gettext */
+void gjs_textdomain     (const char *domain);
+void gjs_bindtextdomain (const char *domain,
+                         const char *location);
 
 G_END_DECLS
 
-#endif  /* __GJS_MAINLOOP_H__ */
+#endif

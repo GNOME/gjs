@@ -1,6 +1,6 @@
 // -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
 
-const FormatNative = imports.formatNative;
+const GjsPrivate = imports.gi.GjsPrivate;
 
 function vprintf(str, args) {
     let i = 0;
@@ -33,7 +33,7 @@ function vprintf(str, args) {
         case 'd':
             let intV = parseInt(args[i++]);
             if (hasAlternativeIntFlag)
-                s = FormatNative.format_int_alternative_output(intV);
+                s = GjsPrivate.format_int_alternative_output(intV);
             else
                 s = intV.toString();
             break;

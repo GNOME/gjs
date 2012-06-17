@@ -1,6 +1,5 @@
 /* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
-/*
- * Copyright (c) 2012  Red Hat, Inc.
+/* Copyright 2012 Giovanni Campagna <scampa.giovanni@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,18 +20,31 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_LANG_H__
-#define __GJS_LANG_H__
-
 #include <config.h>
+#include <string.h>
+
 #include <glib.h>
-#include "gjs/jsapi-util.h"
+#include <glib/gi18n.h>
 
-G_BEGIN_DECLS
+#include "gjs-util.h"
 
-JSBool        gjs_define_format_stuff   (JSContext      *context,
-                                         JSObject       *in_object);
+char *
+gjs_format_int_alternative_output(int n)
+{
+    return g_strdup_printf("%Id", n);
+}
 
-G_END_DECLS
+void
+gjs_textdomain(const char *domain)
+{
+    textdomain(domain);
+}
 
-#endif  /* __GJS_LANG_H__ */
+void
+gjs_bindtextdomain(const char *domain,
+                   const char *location)
+{
+    bindtextdomain(domain, location);
+    /* Always use UTF-8; we assume it internally here */
+    bind_textdomain_codeset(domain, "UTF-8");
+}

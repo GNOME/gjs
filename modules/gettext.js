@@ -19,7 +19,9 @@
 // IN THE SOFTWARE.
 
 /**
- * This module provides bindings for the "gettext" family of functions.
+ * This module provides a convenience layer for the "gettext" family of functions,
+ * relying on GLib for the actual implementation.
+ *
  * Usage:
  *
  * const Gettext = imports.gettext;
@@ -30,10 +32,40 @@
  * let translated = Gettext.gettext("Hello world!");
  */
 
-const Lang = imports.lang;
+const GLib = imports.gi.GLib;
+const GjsPrivate = imports.gi.GjsPrivate;
 
-// Merge stuff defined in native code
-Lang.copyProperties(imports.gettextNative, this);
+function textdomain(domain) {
+    return GjsPrivate.textdomain(domain);
+}
+function bindtextdomain(domain, location) {
+    return GjsPrivate.bindtextdomain(domain, location);
+}
+
+function gettext(msgid) {
+    return GLib.dgettext(null, msgid);
+}
+function dgettext(domain, msgid) {
+    return GLib.dgetext(domain, msgid);
+}
+function dcgettext(domain, msgid, category) {
+    return GLib.dcgettext(domain, msgid, category);
+}
+
+function ngettext(msgid1, msgid2, n) {
+    return GLib.dngettext(null, msgid1, msgid2, n);
+}
+function dngettext(domain, msgid1, msgid2, n) {
+    return GLib.dngettext(domain, msgid1, msgid2, n);
+}
+// FIXME: missing dcngettext ?
+
+function pgettext(context, msgid) {
+    return GLib.dpgettext2(null, context, msgid);
+}
+function dpgettext(domain, context, msgid) {
+    return GLib.dpgettext2(domain, context, msgid);
+}
 
 /**
  * Create an object with bindings for gettext, ngettext,
@@ -46,15 +78,15 @@ Lang.copyProperties(imports.gettextNative, this);
 var domain = function(domainName) {
     return {
         gettext: function(msgid) {
-            return dgettext(domainName, msgid);
+            return GLib.dgettext(domainName, msgid);
         },
 
         ngettext: function(msgid1, msgid2, n) {
-            return dngettext(domainName, msgid1, msgid2, n);
+            return GLib.dngettext(domainName, msgid1, msgid2, n);
         },
 
         pgettext: function(context, msgid) {
-            return dpgettext(domainName, context, msgid);
+            return GLib.dpgettext2(domainName, context, msgid);
         }
     }
 };
