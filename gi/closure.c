@@ -230,6 +230,17 @@ closure_invalidated(gpointer data,
 }
 
 static void
+closure_set_invalid(gpointer  data,
+                    GClosure *closure)
+{
+    Closure *self = (Closure*) closure;
+
+    self->obj = NULL;
+    self->context = NULL;
+    self->runtime = NULL;
+}
+
+static void
 closure_finalized(gpointer data,
                   GClosure *closure)
 {
@@ -317,10 +328,25 @@ gjs_closure_get_callable(GClosure *closure)
     return c->obj;
 }
 
+void
+gjs_closure_trace(GClosure *closure,
+                  JSTracer *tracer)
+{
+    Closure *c;
+
+    c = (Closure*) closure;
+
+    if (c->obj == NULL)
+        return;
+
+    JS_CALL_OBJECT_TRACER(tracer, c->obj, "signal connection");
+}
+
 GClosure*
 gjs_closure_new(JSContext  *context,
-                   JSObject   *callable,
-                   const char *description)
+                JSObject   *callable,
+                const char *description,
+                gboolean    root_function)
 {
     Closure *c;
 
@@ -343,12 +369,19 @@ gjs_closure_new(JSContext  *context,
      */
     g_closure_add_finalize_notifier(&c->base, NULL, closure_finalized);
 
-    gjs_keep_alive_add_global_child(context,
-                                    global_context_finalized,
-                                    c->obj,
-                                    c);
+    if (root_function) {
+        /* Fully manage closure lifetime if so asked */
+        gjs_keep_alive_add_global_child(context,
+                                        global_context_finalized,
+                                        c->obj,
+                                        c);
 
-    g_closure_add_invalidate_notifier(&c->base, NULL, closure_invalidated);
+        g_closure_add_invalidate_notifier(&c->base, NULL, closure_invalidated);
+    } else {
+        /* Only mark the closure as invalid if memory is managed
+           outside (i.e. by object.c for signals) */
+        g_closure_add_invalidate_notifier(&c->base, NULL, closure_set_invalid);
+    }
 
     gjs_debug_closure("Create closure %p which calls object %p '%s'",
                       c, c->obj, description);
@@ -357,4 +390,3 @@ gjs_closure_new(JSContext  *context,
 
     return &c->base;
 }
-

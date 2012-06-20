@@ -429,7 +429,7 @@ gjs_js_dbus_call_async(JSContext  *context,
      * and deal with the GC root and other issues, even though we
      * won't ever marshal via GValue
      */
-    closure = gjs_closure_new(context, JSVAL_TO_OBJECT(argv[9]), "async call");
+    closure = gjs_closure_new(context, JSVAL_TO_OBJECT(argv[9]), "async call", TRUE);
     if (closure == NULL) {
         dbus_pending_call_unref(pending);
         return JS_FALSE;
@@ -505,7 +505,8 @@ signal_handler_new(JSContext *context,
      */
     handler->closure = gjs_closure_new(context,
                                        JSVAL_TO_OBJECT(callable),
-                                       "signal watch");
+                                       "signal watch",
+                                       TRUE);
     if (handler->closure == NULL) {
         g_free(handler);
         return NULL;
@@ -1208,13 +1209,13 @@ gjs_js_dbus_acquire_name(JSContext  *context,
     owner->bus_type = bus_type;
 
     owner->acquired_closure =
-        gjs_closure_new(context, acquire_func, "acquired bus name");
+        gjs_closure_new(context, acquire_func, "acquired bus name", TRUE);
 
     g_closure_ref(owner->acquired_closure);
     g_closure_sink(owner->acquired_closure);
 
     owner->lost_closure =
-        gjs_closure_new(context, lost_func, "lost bus name");
+        gjs_closure_new(context, lost_func, "lost bus name", TRUE);
 
     g_closure_ref(owner->lost_closure);
     g_closure_sink(owner->lost_closure);
@@ -1440,13 +1441,13 @@ gjs_js_dbus_watch_name(JSContext  *context,
     watcher = g_slice_new0(GjsJSDBusNameWatcher);
 
     watcher->appeared_closure =
-        gjs_closure_new(context, appeared_func, "service appeared");
+        gjs_closure_new(context, appeared_func, "service appeared", TRUE);
 
     g_closure_ref(watcher->appeared_closure);
     g_closure_sink(watcher->appeared_closure);
 
     watcher->vanished_closure =
-        gjs_closure_new(context, vanished_func, "service vanished");
+        gjs_closure_new(context, vanished_func, "service vanished", TRUE);
 
     g_closure_ref(watcher->vanished_closure);
     g_closure_sink(watcher->vanished_closure);

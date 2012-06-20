@@ -34,6 +34,7 @@
 #include "param.h"
 #include "value.h"
 #include "keep-alive.h"
+#include "closure.h"
 #include "gjs_gi_trace.h"
 
 #include <gjs/gjs-module.h>
@@ -50,7 +51,16 @@ typedef struct {
     GObject *gobj; /* NULL if we are the prototype and not an instance */
     JSObject *keep_alive; /* NULL if we are not added to it */
     GType gtype;
+
+    /* a list of all signal connections, used when tracing */
+    GList *signals;
 } ObjectInstance;
+
+typedef struct {
+    ObjectInstance *obj;
+    GList *link;
+    GClosure *closure;
+} ConnectData;
 
 enum {
     PROP_0,
@@ -1011,6 +1021,39 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
 }
 
 static void
+invalidate_all_signals(ObjectInstance *priv)
+{
+    GList *iter, *next;
+
+    for (iter = priv->signals; iter; ) {
+        ConnectData *cd = iter->data;
+        next = iter->next;
+
+        /* This will also free cd and iter, through
+           the closure invalidation mechanism */
+        g_closure_invalidate(cd->closure);
+
+        iter = next;
+    }
+}
+
+static void
+object_instance_trace(JSTracer *tracer,
+                      JSObject *obj)
+{
+    ObjectInstance *priv;
+    GList *iter;
+
+    priv = priv_from_js(tracer->context, obj);
+
+    for (iter = priv->signals; iter; iter = iter->next) {
+        ConnectData *cd = iter->data;
+
+        gjs_closure_trace(cd->closure, tracer);
+    }
+}
+
+static void
 object_instance_finalize(JSContext *context,
                          JSObject  *obj)
 {
@@ -1031,6 +1074,8 @@ object_instance_finalize(JSContext *context,
                                     priv->info ? g_base_info_get_name ( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype)));
 
     if (priv->gobj) {
+        invalidate_all_signals (priv);
+
         if (G_UNLIKELY (priv->gobj->ref_count <= 0)) {
             g_error("Finalizing proxy for an already freed object of type: %s.%s\n",
                     priv->info ? g_base_info_get_namespace((GIBaseInfo*) priv->info) : "",
@@ -1084,6 +1129,17 @@ gjs_lookup_object_prototype(JSContext    *context,
     return proto;
 }
 
+static void
+signal_connection_invalidated (gpointer  user_data,
+                               GClosure *closure)
+{
+    ConnectData *connect_data = user_data;
+
+    connect_data->obj->signals = g_list_delete_link(connect_data->obj->signals,
+                                                    connect_data->link);
+    g_slice_free(ConnectData, connect_data);
+}
+
 static JSBool
 real_connect_func(JSContext *context,
                   uintN      argc,
@@ -1099,6 +1155,7 @@ real_connect_func(JSContext *context,
     char *signal_name;
     GQuark signal_detail;
     jsval retval;
+    ConnectData *connect_data;
     JSBool ret = JS_FALSE;
 
     priv = priv_from_js(context, obj);
@@ -1147,6 +1204,14 @@ real_connect_func(JSContext *context,
     closure = gjs_closure_new_for_signal(context, JSVAL_TO_OBJECT(argv[1]), "signal callback", signal_id);
     if (closure == NULL)
         goto out;
+
+    connect_data = g_slice_new(ConnectData);
+    priv->signals = g_list_prepend(priv->signals, connect_data);
+    connect_data->obj = priv;
+    connect_data->link = priv->signals;
+    /* This is a weak reference, and will be cleared when the closure is invalidated */
+    connect_data->closure = closure;
+    g_closure_add_invalidate_notifier(closure, connect_data, signal_connection_invalidated);
 
     id = g_signal_connect_closure(priv->gobj,
                                   signal_name,
@@ -1392,7 +1457,8 @@ static struct JSClass gjs_object_instance_class = {
     NULL, /* We copy this class struct with multiple names */
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
-    JSCLASS_NEW_RESOLVE_GETS_START,
+    JSCLASS_NEW_RESOLVE_GETS_START |
+    JSCLASS_MARK_IS_TRACE,
     JS_PropertyStub,
     JS_PropertyStub,
     object_instance_get_prop,
@@ -1401,7 +1467,14 @@ static struct JSClass gjs_object_instance_class = {
     (JSResolveOp) object_instance_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,
     object_instance_finalize,
-    JSCLASS_NO_OPTIONAL_MEMBERS
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    JS_CLASS_TRACE(object_instance_trace),
+    NULL,
 };
 
 static JSBool

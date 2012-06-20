@@ -198,7 +198,7 @@ gjs_timeout_add(JSContext *context,
                         "interval", &interval, "callback", &callback))
       return JS_FALSE;
 
-    closure = gjs_closure_new(context, callback, "timeout");
+    closure = gjs_closure_new(context, callback, "timeout", TRUE);
     if (closure == NULL)
         return JS_FALSE;
 
@@ -241,7 +241,7 @@ gjs_timeout_add_seconds(JSContext *context,
                         "interval", &interval, "callback", &callback))
       return JS_FALSE;
 
-    closure = gjs_closure_new(context, callback, "timeout_seconds");
+    closure = gjs_closure_new(context, callback, "timeout_seconds", TRUE);
     if (closure == NULL)
         return JS_FALSE;
 
@@ -288,7 +288,7 @@ gjs_idle_add(JSContext *context,
                         "callback", &callback, "priority", &priority))
       return JS_FALSE;
 
-    closure = gjs_closure_new(context, callback, "idle");
+    closure = gjs_closure_new(context, callback, "idle", TRUE);
     if (closure == NULL)
         return JS_FALSE;
 

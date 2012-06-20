@@ -32,7 +32,8 @@ G_BEGIN_DECLS
 
 GClosure*  gjs_closure_new           (JSContext    *context,
                                       JSObject     *callable,
-                                      const char   *description);
+                                      const char   *description,
+                                      gboolean      root_function);
 void       gjs_closure_invoke        (GClosure     *closure,
                                       int           argc,
                                       jsval        *argv,
@@ -40,6 +41,9 @@ void       gjs_closure_invoke        (GClosure     *closure,
 JSRuntime* gjs_closure_get_runtime   (GClosure     *closure);
 gboolean   gjs_closure_is_valid      (GClosure     *closure);
 JSObject*  gjs_closure_get_callable  (GClosure     *closure);
+
+void       gjs_closure_trace         (GClosure     *closure,
+                                      JSTracer     *tracer);
 
 G_END_DECLS
 
