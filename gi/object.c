@@ -2292,6 +2292,11 @@ gjs_register_type(JSContext *cx,
     if (!do_base_typecheck(cx, parent, JS_TRUE))
         return JS_FALSE;
 
+    if (g_type_from_name(name) != G_TYPE_INVALID) {
+        gjs_throw (cx, "Type name %s is already registered", name);
+        return JS_FALSE;
+    }
+
     parent_priv = priv_from_js(cx, parent);
 
     if (!parent_priv)
