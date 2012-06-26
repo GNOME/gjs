@@ -1044,7 +1044,11 @@ object_instance_trace(JSTracer *tracer,
     ObjectInstance *priv;
     GList *iter;
 
-    priv = priv_from_js(tracer->context, obj);
+    /* DO NOT use priv_from_js here: that uses JS_BeginRequest,
+       but this is called from the GC thread, and deadlocks
+       We know we're of the right JSClass anyway.
+    */
+    priv = JS_GetPrivate(tracer->context, obj);
 
     for (iter = priv->signals; iter; iter = iter->next) {
         ConnectData *cd = iter->data;
