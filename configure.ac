@@ -86,8 +86,7 @@ fi
 AM_CONDITIONAL([ENABLE_COVERAGE], [test x$enable_coverage = xyes])
 
 # Checks for libraries.
-m4_define(glib_required_version, 2.31.0)
-m4_define(gobject_required_version, 2.18.0)
+m4_define(glib_required_version, 2.32.0)
 
 AC_CHECK_HEADERS([malloc.h])
 AC_CHECK_FUNCS(mallinfo)
@@ -121,8 +120,8 @@ CFLAGS="$save_CFLAGS"
 
 GOBJECT_INTROSPECTION_REQUIRE([1.33.2])
 
-common_packages="glib-2.0 >= glib_required_version gobject-2.0 >= gobject_required_version mozjs185"
-gjs_packages="gmodule-2.0 gthread-2.0 gobject-introspection-1.0 >= 0.10.1 $common_packages"
+common_packages="gmodule-2.0 gthread-2.0 gio-2.0 >= glib_required_version mozjs185"
+gjs_packages="gobject-introspection-1.0 >= 0.10.1 $common_packages"
 gjs_cairo_gobject_packages="cairo-gobject $common_packages"
 gjs_cairo_packages="cairo $common_packages"
 gjs_dbus_packages="dbus-glib-1 $common_packages"
