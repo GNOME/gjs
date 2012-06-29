@@ -2460,7 +2460,10 @@ gjs_value_from_g_argument (JSContext  *context,
                 goto out;
             } else if (interface_type == GI_INFO_TYPE_STRUCT &&
                        g_struct_info_is_foreign((GIStructInfo*)interface_info)) {
-                return gjs_struct_foreign_convert_from_g_argument(context, value_p, interface_info, arg);
+                JSBool ret;
+                ret = gjs_struct_foreign_convert_from_g_argument(context, value_p, interface_info, arg);
+                g_base_info_unref(interface_info);
+                return ret;
             }
 
             /* Everything else is a pointer type, NULL is the easy case */
