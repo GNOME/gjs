@@ -1307,9 +1307,12 @@ gjs_value_to_g_argument(JSContext      *context,
             switch(interface_type) {
             case GI_INFO_TYPE_STRUCT:
                 if (g_struct_info_is_foreign((GIStructInfo*)interface_info)) {
-                    return gjs_struct_foreign_convert_to_g_argument(
+                    JSBool ret;
+                    ret = gjs_struct_foreign_convert_to_g_argument(
                             context, value, interface_info, arg_name,
                             arg_type, transfer, may_be_null, arg);
+                    g_base_info_unref(interface_info);
+                    return ret;
                 }
                 /* fall through */
             case GI_INFO_TYPE_ENUM:
