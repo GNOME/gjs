@@ -39,6 +39,7 @@
 
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
+#include <gjs/type-module.h>
 
 #include <util/log.h>
 
@@ -54,6 +55,10 @@ typedef struct {
 
     /* a list of all signal connections, used when tracing */
     GList *signals;
+
+    /* the GObjectClass wrapped by this JS Object (only used for
+       prototypes) */
+    GTypeClass *klass;
 } ObjectInstance;
 
 typedef struct {
@@ -1118,6 +1123,11 @@ object_instance_finalize(JSContext *context,
         priv->info = NULL;
     }
 
+    if (priv->klass) {
+        g_type_class_unref (priv->klass);
+        priv->klass = NULL;
+    }
+
     GJS_DEC_COUNTER(object);
     g_slice_free(ObjectInstance, priv);
 }
@@ -1722,6 +1732,7 @@ gjs_define_object_class(JSContext     *context,
     if (info)
         g_base_info_ref( (GIBaseInfo*) priv->info);
     priv->gtype = gtype;
+    priv->klass = g_type_class_ref (gtype);
     JS_SetPrivate(context, prototype, priv);
 
     gjs_debug(GJS_DEBUG_GOBJECT, "Defined class %s prototype %p class %p in object %p",
@@ -2193,6 +2204,7 @@ gjs_register_type(JSContext *cx,
     JSObject *parent, *constructor;
     GType instance_type, parent_type;
     GTypeQuery query;
+    GTypeModule *type_module;
     ObjectInstance *parent_priv;
     GTypeInfo type_info = {
         0, /* class_size */
@@ -2231,10 +2243,12 @@ gjs_register_type(JSContext *cx,
     type_info.class_size = query.class_size;
     type_info.instance_size = query.instance_size;
 
-    instance_type = g_type_register_static(parent_type,
-                                           name,
-                                           &type_info,
-                                           0);
+    type_module = G_TYPE_MODULE (gjs_type_module_get());
+    instance_type = g_type_module_register_type(type_module,
+                                                parent_type,
+                                                name,
+                                                &type_info,
+                                                0);
 
     g_free(name);
 
@@ -2287,7 +2301,6 @@ gjs_register_property(JSContext *cx,
     JSObject *pspec_js;
     GParamSpec *pspec;
     ObjectInstance *priv;
-    GObjectClass *oclass;
 
     if (argc != 2)
         return JS_FALSE;
@@ -2304,9 +2317,7 @@ gjs_register_property(JSContext *cx,
 
     g_param_spec_set_qdata(pspec, gjs_is_custom_property_quark(), GINT_TO_POINTER(1));
 
-    oclass = g_type_class_ref(priv->gtype);
-    g_object_class_install_property(oclass, PROP_JS_HANDLED, pspec);
-    g_type_class_unref(oclass);
+    g_object_class_install_property(G_OBJECT_CLASS (priv->klass), PROP_JS_HANDLED, pspec);
 
     JS_SET_RVAL(cx, vp, JSVAL_VOID);
     return JS_TRUE;
