@@ -1727,6 +1727,7 @@ gjs_define_object_class(JSContext     *context,
 
     g_assert(gjs_object_has_property(context, in_object, constructor_name));
 
+    GJS_INC_COUNTER(object);
     priv = g_slice_new0(ObjectInstance);
     priv->info = info;
     if (info)

@@ -594,6 +594,7 @@ get_nested_interface_object (JSContext   *context,
     if (obj == NULL)
         return JS_FALSE;
 
+    GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Boxed);
     JS_SetPrivate(context, obj, priv);
     priv->info = (GIBoxedInfo*) interface_info;
@@ -1159,6 +1160,7 @@ gjs_define_boxed_class(JSContext    *context,
 
     g_assert(gjs_object_has_property(context, in_object, constructor_name));
 
+    GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Boxed);
     priv->info = info;
     g_base_info_ref( (GIBaseInfo*) priv->info);
@@ -1224,6 +1226,7 @@ gjs_boxed_from_c_struct(JSContext             *context,
                                      JS_GET_CLASS(context, proto), proto,
                                      gjs_get_import_global (context));
 
+    GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Boxed);
     JS_SetPrivate(context, obj, priv);
     priv->info = info;

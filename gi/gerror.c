@@ -461,6 +461,7 @@ gjs_define_error_class(JSContext    *context,
 
     g_assert(gjs_object_has_property(context, in_object, constructor_name));
 
+    GJS_INC_COUNTER(gerror);
     priv = g_slice_new0(Error);
     priv->info = info;
     g_base_info_ref( (GIBaseInfo*) priv->info);
@@ -611,6 +612,7 @@ gjs_error_from_gerror(JSContext             *context,
                                      JS_GET_CLASS(context, proto), proto,
                                      gjs_get_import_global (context));
 
+    GJS_INC_COUNTER(gerror);
     priv = g_slice_new0(Error);
     JS_SetPrivate(context, obj, priv);
     priv->info = info;

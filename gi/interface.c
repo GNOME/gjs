@@ -255,6 +255,7 @@ gjs_define_interface_class(JSContext       *context,
 
     g_assert(gjs_object_has_property(context, in_object, constructor_name));
 
+    GJS_INC_COUNTER(interface);
     priv = g_slice_new0(Interface);
     priv->info = info;
     priv->gtype = g_registered_type_info_get_g_type(priv->info);

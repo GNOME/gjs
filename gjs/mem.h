@@ -34,7 +34,7 @@
 G_BEGIN_DECLS
 
 typedef struct {
-    int value;
+    unsigned int value;
     const char *name;
 } GjsMemCounter;
 
