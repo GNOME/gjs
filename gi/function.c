@@ -67,45 +67,6 @@ static GSList *completed_trampolines = NULL;  /* GjsCallbackTrampoline */
 
 GJS_DEFINE_PRIV_FROM_JS(Function, gjs_function_class)
 
-/*
- * Like JSResolveOp, but flags provide contextual information as follows:
- *
- *  JSRESOLVE_QUALIFIED   a qualified property id: obj.id or obj[id], not id
- *  JSRESOLVE_ASSIGNING   obj[id] is on the left-hand side of an assignment
- *  JSRESOLVE_DETECTING   'if (o.p)...' or similar detection opcode sequence
- *  JSRESOLVE_DECLARING   var, const, or function prolog declaration opcode
- *  JSRESOLVE_CLASSNAME   class name used when constructing
- *
- * The *objp out parameter, on success, should be null to indicate that id
- * was not resolved; and non-null, referring to obj or one of its prototypes,
- * if id was resolved.
- */
-static JSBool
-function_new_resolve(JSContext *context,
-                     JSObject  *obj,
-                     jsid       id,
-                     uintN      flags,
-                     JSObject **objp)
-{
-    Function *priv;
-    char *name;
-
-    *objp = NULL;
-
-    if (!gjs_get_string_id(context, id, &name))
-        return JS_TRUE; /* not resolved, but no error */
-
-    priv = priv_from_js(context, obj);
-
-    gjs_debug_jsprop(GJS_DEBUG_GFUNCTION, "Resolve prop '%s' hook obj %p priv %p", name, obj, priv);
-    g_free(name);
-
-    if (priv == NULL)
-        return JS_TRUE; /* we are the prototype, or have the wrong class */
-
-    return JS_TRUE;
-}
-
 void
 gjs_callback_trampoline_ref(GjsCallbackTrampoline *trampoline)
 {
@@ -1429,15 +1390,13 @@ function_to_string (JSContext *context,
  */
 static struct JSClass gjs_function_class = {
     "GIRepositoryFunction", /* means "new GIRepositoryFunction()" works */
-    JSCLASS_HAS_PRIVATE |
-    JSCLASS_NEW_RESOLVE |
-    JSCLASS_NEW_RESOLVE_GETS_START,
+    JSCLASS_HAS_PRIVATE,
     JS_PropertyStub,
     JS_PropertyStub,
     JS_PropertyStub,
     JS_StrictPropertyStub,
     JS_EnumerateStub,
-    (JSResolveOp) function_new_resolve, /* needs cast since it's the new resolve signature */
+    JS_ResolveStub,
     JS_ConvertStub,
     function_finalize,
     NULL,
