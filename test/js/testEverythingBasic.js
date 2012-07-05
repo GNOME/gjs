@@ -550,4 +550,51 @@ function testGError() {
     });
 }
 
+function testWrongClassGObject() {
+    /* Function calls */
+    // Everything.func_obj_null_in expects a Everything.TestObj
+    assertRaises(function() {
+	Everything.func_obj_null_in(new Gio.SimpleAction);
+    });
+    assertRaises(function() {
+	Everything.func_obj_null_in(new GLib.KeyFile);
+    });
+    assertRaises(function() {
+	Everything.func_obj_null_in(Gio.File.new_for_path('/'));
+    });
+    Everything.func_obj_null_in(new Everything.TestSubObj);
+
+    /* Method calls */
+    assertRaises(function() {
+	Everything.TestObj.prototype.instance_method.call(new Gio.SimpleAction);
+    });
+    assertRaises(function() {
+	Everything.TestObj.prototype.instance_method.call(new GLib.KeyFile);
+    });
+    Everything.TestObj.prototype.instance_method.call(new Everything.TestSubObj);
+}
+
+function testWrongClassGBoxed() {
+    let simpleBoxed = new Everything.TestSimpleBoxedA;
+    // simpleBoxed.equals expects a Everything.TestSimpleBoxedA
+    assertRaises(function() {
+	simpleBoxed.equals(new Gio.SimpleAction);
+    })
+    assertRaises(function() {
+	simpleBoxed.equals(new Everything.TestObj);
+    })
+    assertRaises(function() {
+	simpleBoxed.equals(new GLib.KeyFile);
+    })
+    assertTrue(simpleBoxed.equals(simpleBoxed));
+
+    assertRaises(function() {
+	Everything.TestSimpleBoxedA.prototype.copy.call(new Gio.SimpleAction);
+    });
+    assertRaises(function() {
+	Everything.TestSimpleBoxedA.prototype.copy.call(new GLib.KeyFile);
+    })
+    Everything.TestSimpleBoxedA.prototype.copy.call(simpleBoxed);
+}
+
 gjstestRun();

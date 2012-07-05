@@ -57,6 +57,11 @@ JSObject* gjs_boxed_from_c_struct      (JSContext             *context,
                                         GIStructInfo          *info,
                                         void                  *gboxed,
                                         GjsBoxedCreationFlags  flags);
+JSBool    gjs_typecheck_boxed          (JSContext             *context,
+                                        JSObject              *obj,
+                                        GIStructInfo          *expected_info,
+                                        GType                  expected_type,
+                                        JSBool                 throw);
 
 G_END_DECLS
 

@@ -43,6 +43,10 @@ JSObject* gjs_object_from_g_object      (JSContext     *context,
                                          GObject       *gobj);
 GObject*  gjs_g_object_from_object      (JSContext     *context,
                                          JSObject      *obj);
+JSBool    gjs_typecheck_object          (JSContext     *context,
+                                         JSObject      *obj,
+                                         GType          expected_type,
+                                         JSBool         throw);
 
 G_END_DECLS
 

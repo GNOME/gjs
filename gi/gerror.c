@@ -650,3 +650,11 @@ gjs_gerror_from_error(JSContext    *context,
 
     return priv->gerror;
 }
+
+JSBool
+gjs_typecheck_gerror (JSContext *context,
+                      JSObject  *obj,
+                      JSBool     throw)
+{
+    return do_base_typecheck(context, obj, throw);
+}

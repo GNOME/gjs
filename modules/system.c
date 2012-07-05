@@ -69,8 +69,11 @@ gjs_refcount(JSContext *context,
     if (!gjs_parse_args(context, "refcount", "o", argc, argv, "object", &target_obj))
         return JS_FALSE;
 
-    obj = gjs_g_object_from_object(context, target_obj);
+    if (!gjs_typecheck_object(context, target_obj,
+                              G_TYPE_OBJECT, JS_TRUE))
+        return JS_FALSE;
 
+    obj = gjs_g_object_from_object(context, target_obj);
     if (obj == NULL)
         return JS_FALSE;
 

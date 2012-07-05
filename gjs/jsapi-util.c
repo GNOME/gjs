@@ -567,64 +567,48 @@ gjs_throw_constructor_error(JSContext *context)
               "Constructor called as normal method. Use 'new SomeObject()' not 'SomeObject()'");
 }
 
-void*
-gjs_get_instance_private_dynamic(JSContext      *context,
-                                 JSObject       *obj,
-                                 JSClass        *static_clasp,
-                                 jsval          *argv)
+static const char*
+format_dynamic_class_name (const char *name)
 {
-    RuntimeData *rd;
-    JSClass *obj_class;
-    void *instance;
-
-    if (static_clasp->name != NULL) {
-        g_warning("Dynamic class should not have a name in the JSClass struct");
-        return NULL;
-    }
-
-    JS_BeginRequest(context);
-
-    obj_class = JS_GET_CLASS(context, obj);
-    g_assert(obj_class != NULL);
-
-    rd = get_data_from_context(context);
-    g_assert(rd != NULL);
-
-    /* Check that it's safe to cast to DynamicJSClass */
-    if (g_hash_table_lookup(rd->dynamic_classes, obj_class) == NULL) {
-        gjs_throw(context,
-                  "Object %p proto %p doesn't have a dynamically-registered class, it has %s",
-                  obj, JS_GetPrototype(context, obj), obj_class->name);
-        JS_EndRequest(context);
-        return NULL;
-    }
-
-    if (static_clasp != ((DynamicJSClass*) obj_class)->static_class) {
-        gjs_throw(context, "Object is not a dynamically-registered class based on expected static class pointer");
-        JS_EndRequest(context);
-        return NULL;
-    }
-
-    instance = JS_GetInstancePrivate(context, obj, obj_class, argv);
-    JS_EndRequest(context);
-
-    return instance;
+    if (g_str_has_prefix(name, "_private_"))
+        return name + strlen("_private_");
+    else
+        return name;
 }
 
-void*
-gjs_get_instance_private_dynamic_with_typecheck(JSContext      *context,
-                                                JSObject       *obj,
-                                                JSClass        *static_clasp,
-                                                jsval          *argv)
+JSBool
+gjs_typecheck_static_instance(JSContext *context,
+                              JSObject  *obj,
+                              JSClass   *static_clasp,
+                              JSBool     throw)
+{
+    if (!JS_InstanceOf(context, obj, static_clasp, NULL)) {
+        if (throw) {
+            JSClass *obj_class = JS_GET_CLASS(context, obj);
+
+            gjs_throw_custom(context, "TypeError",
+                             "Object %p is not a subclass of %s, it's a %s",
+                             obj, static_clasp->name, format_dynamic_class_name (obj_class->name));
+        }
+
+        return JS_FALSE;
+    }
+
+    return JS_TRUE;
+}
+
+JSBool
+gjs_typecheck_dynamic_instance(JSContext *context,
+                               JSObject  *obj,
+                               JSClass   *static_clasp,
+                               JSBool     throw)
 {
     RuntimeData *rd;
     JSClass *obj_class;
-    void *instance;
+    gboolean wrong = FALSE;
 
-    if (static_clasp->name != NULL) {
-        g_warning("Dynamic class should not have a name in the JSClass struct");
-        return NULL;
-    }
+    obj_class = JS_GET_CLASS(context, obj);
+    g_assert(obj_class != NULL);
 
     JS_BeginRequest(context);
 
@@ -636,18 +620,29 @@ gjs_get_instance_private_dynamic_with_typecheck(JSContext      *context,
 
     /* Check that it's safe to cast to DynamicJSClass */
     if (g_hash_table_lookup(rd->dynamic_classes, obj_class) == NULL) {
-        JS_EndRequest(context);
-        return NULL;
+        wrong = TRUE;
+        goto out;
     }
 
     if (static_clasp != ((DynamicJSClass*) obj_class)->static_class) {
-        JS_EndRequest(context);
-        return NULL;
+        wrong = TRUE;
+        goto out;
     }
 
-    instance = JS_GetInstancePrivate(context, obj, obj_class, argv);
+ out:
     JS_EndRequest(context);
-    return instance;
+
+    if (wrong) {
+        if (throw) {
+            gjs_throw_custom(context, "TypeError",
+                             "Object %p is not a subclass of %s, it's a %s",
+                             obj, static_clasp->name, format_dynamic_class_name (obj_class->name));
+        }
+
+        return JS_FALSE;
+    }
+
+    return JS_TRUE;
 }
 
 JSObject*

@@ -1049,11 +1049,7 @@ object_instance_trace(JSTracer *tracer,
     ObjectInstance *priv;
     GList *iter;
 
-    /* DO NOT use priv_from_js here: that uses JS_BeginRequest,
-       but this is called from the GC thread, and deadlocks
-       We know we're of the right JSClass anyway.
-    */
-    priv = JS_GetPrivate(tracer->context, obj);
+    priv = priv_from_js(tracer->context, obj);
 
     for (iter = priv->signals; iter; iter = iter->next) {
         ConnectData *cd = iter->data;
@@ -1172,6 +1168,9 @@ real_connect_func(JSContext *context,
     ConnectData *connect_data;
     JSBool ret = JS_FALSE;
 
+    if (!do_base_typecheck(context, obj, JS_TRUE))
+        return JS_FALSE;
+
     priv = priv_from_js(context, obj);
     gjs_debug_gsignal("connect obj %p priv %p argc %d", obj, priv, argc);
     if (priv == NULL) {
@@ -1271,6 +1270,9 @@ disconnect_func(JSContext *context,
     ObjectInstance *priv;
     gulong id;
 
+    if (!do_base_typecheck(context, obj, JS_TRUE))
+        return JS_FALSE;
+
     priv = priv_from_js(context, obj);
     gjs_debug_gsignal("disconnect obj %p priv %p argc %d", obj, priv, argc);
 
@@ -1320,6 +1322,9 @@ emit_func(JSContext *context,
     gboolean failed;
     jsval retval;
     JSBool ret = JS_FALSE;
+
+    if (!do_base_typecheck(context, obj, JS_TRUE))
+        return JS_FALSE;
 
     priv = priv_from_js(context, obj);
     gjs_debug_gsignal("emit obj %p priv %p argc %d", obj, priv, argc);
@@ -1440,6 +1445,9 @@ to_string_func(JSContext *context,
     const char *namespace;
     const char *name;
     jsval retval;
+
+    if (!do_base_typecheck(context, obj, JS_TRUE))
+        return JS_FALSE;
 
     priv = priv_from_js(context, obj);
 
@@ -1896,24 +1904,69 @@ gjs_g_object_from_object(JSContext    *context,
         return NULL;
 
     priv = priv_from_js(context, obj);
+    return priv->gobj;
+}
+
+JSBool
+gjs_typecheck_object(JSContext     *context,
+                     JSObject      *object,
+                     GType          expected_type,
+                     JSBool         throw)
+{
+    ObjectInstance *priv;
+    JSBool result;
+
+    if (!do_base_typecheck(context, object, throw))
+        return JS_FALSE;
+
+    priv = priv_from_js(context, object);
 
     if (priv == NULL) {
-        gjs_throw(context,
-                  "Object instance or prototype has not been properly initialized yet. "
-                  "Did you forget to chain-up from _init()?");
-        return NULL;
+        if (throw) {
+            gjs_throw(context,
+                      "Object instance or prototype has not been properly initialized yet. "
+                      "Did you forget to chain-up from _init()?");
+        }
+
+        return JS_FALSE;
     }
 
     if (priv->gobj == NULL) {
-        gjs_throw(context,
-                  "Object is %s.%s.prototype, not an object instance - cannot convert to GObject*",
-                  priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
-                  priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
-        return NULL;
+        if (throw) {
+            gjs_throw(context,
+                      "Object is %s.%s.prototype, not an object instance - cannot convert to GObject*",
+                      priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
+                      priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
+        }
+
+        return JS_FALSE;
     }
 
-    return priv->gobj;
+    g_assert(priv->gtype == G_OBJECT_TYPE(priv->gobj));
+
+    if (expected_type != G_TYPE_NONE)
+        result = g_type_is_a (priv->gtype, expected_type);
+    else
+        result = JS_TRUE;
+
+    if (!result && throw) {
+        if (priv->info) {
+            gjs_throw_custom(context, "TypeError",
+                             "Object is of type %s.%s - cannot convert to %s",
+                             g_base_info_get_namespace((GIBaseInfo*) priv->info),
+                             g_base_info_get_name((GIBaseInfo*) priv->info),
+                             g_type_name(expected_type));
+        } else {
+            gjs_throw_custom(context, "TypeError",
+                             "Object is of type %s - cannot convert to %s",
+                             g_type_name(priv->gtype),
+                             g_type_name(expected_type));
+        }
+    }
+
+    return result;
 }
+
 
 static void
 find_vfunc_info (JSContext *context,
@@ -2011,6 +2064,9 @@ gjs_hook_up_vfunc(JSContext *cx,
                         "object", &object,
                         "name", &name,
                         "function", &function))
+        return JS_FALSE;
+
+    if (!do_base_typecheck(cx, object, JS_TRUE))
         return JS_FALSE;
 
     priv = priv_from_js(cx, object);
@@ -2233,6 +2289,9 @@ gjs_register_type(JSContext *cx,
     if (!parent)
         return JS_FALSE;
 
+    if (!do_base_typecheck(cx, parent, JS_TRUE))
+        return JS_FALSE;
+
     parent_priv = priv_from_js(cx, parent);
 
     if (!parent_priv)
@@ -2283,6 +2342,9 @@ gjs_add_interface(JSContext *cx,
                         "gtype", &iface_jsobj))
         return JS_FALSE;
 
+    if (!do_base_typecheck(cx, object, JS_TRUE))
+        return JS_FALSE;
+
     priv = priv_from_js(cx, object);
 
     g_type_add_interface_static(priv->gtype,
@@ -2312,6 +2374,11 @@ gjs_register_property(JSContext *cx,
 
     obj = JSVAL_TO_OBJECT(argv[0]);
     pspec_js = JSVAL_TO_OBJECT(argv[1]);
+
+    if (!do_base_typecheck(cx, obj, JS_TRUE))
+        return JS_FALSE;
+    if (!gjs_typecheck_param(cx, pspec_js, G_TYPE_NONE, JS_TRUE))
+        return JS_FALSE;
 
     priv = priv_from_js(cx, obj);
     pspec = gjs_g_param_from_param(cx, pspec_js);
@@ -2350,6 +2417,11 @@ gjs_signal_new(JSContext *cx,
     }
 
     obj = JSVAL_TO_OBJECT(argv[0]);
+    if (!do_base_typecheck(cx, obj, JS_TRUE)) {
+        ret = JS_FALSE;
+        goto out;
+    }
+
     priv = priv_from_js(cx, obj);
 
     /* we only support standard accumulators for now */

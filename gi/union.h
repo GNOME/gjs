@@ -48,6 +48,11 @@ void*     gjs_c_union_from_union       (JSContext    *context,
 JSObject* gjs_union_from_c_union       (JSContext    *context,
                                         GIUnionInfo  *info,
                                         void         *gboxed);
+JSBool    gjs_typecheck_union          (JSContext             *context,
+                                        JSObject              *obj,
+                                        GIStructInfo          *expected_info,
+                                        GType                  expected_type,
+                                        JSBool                 throw);
 
 G_END_DECLS
 

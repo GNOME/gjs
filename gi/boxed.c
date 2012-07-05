@@ -1261,17 +1261,61 @@ gjs_c_struct_from_boxed(JSContext    *context,
         return NULL;
 
     priv = priv_from_js(context, obj);
-
     if (priv == NULL)
         return NULL;
 
+    return priv->gboxed;
+}
+
+JSBool
+gjs_typecheck_boxed(JSContext     *context,
+                    JSObject      *object,
+                    GIStructInfo  *expected_info,
+                    GType          expected_type,
+                    JSBool         throw)
+{
+    Boxed *priv;
+    JSBool result;
+
+    if (!do_base_typecheck(context, object, throw))
+        return JS_FALSE;
+
+    priv = priv_from_js(context, object);
+
     if (priv->gboxed == NULL) {
-        gjs_throw(context,
-                  "Object is %s.%s.prototype, not an object instance - cannot convert to a boxed instance",
-                  g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                  g_base_info_get_name( (GIBaseInfo*) priv->info));
-        return NULL;
+        if (throw) {
+            gjs_throw_custom(context, "TypeError",
+                             "Object is %s.%s.prototype, not an object instance - cannot convert to a boxed instance",
+                             g_base_info_get_namespace( (GIBaseInfo*) priv->info),
+                             g_base_info_get_name( (GIBaseInfo*) priv->info));
+        }
+
+        return JS_FALSE;
     }
 
-    return priv->gboxed;
+    if (expected_type != G_TYPE_NONE)
+        result = g_type_is_a (priv->gtype, expected_type);
+    else if (expected_info != NULL)
+        result = g_base_info_equal((GIBaseInfo*) priv->info, (GIBaseInfo*) expected_info);
+    else
+        result = JS_TRUE;
+
+    if (!result && throw) {
+        if (expected_info != NULL) {
+            gjs_throw_custom(context, "TypeError",
+                             "Object is of type %s.%s - cannot convert to %s.%s",
+                             g_base_info_get_namespace((GIBaseInfo*) priv->info),
+                             g_base_info_get_name((GIBaseInfo*) priv->info),
+                             g_base_info_get_namespace((GIBaseInfo*) expected_info),
+                             g_base_info_get_name((GIBaseInfo*) expected_info));
+        } else {
+            gjs_throw_custom(context, "TypeError",
+                             "Object is of type %s.%s - cannot convert to %s",
+                             g_base_info_get_namespace((GIBaseInfo*) priv->info),
+                             g_base_info_get_name((GIBaseInfo*) priv->info),
+                             g_type_name(expected_type));
+        }
+    }
+
+    return result;
 }

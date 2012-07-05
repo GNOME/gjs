@@ -334,6 +334,11 @@ gjs_value_to_g_value_internal(JSContext    *context,
         } else if (JSVAL_IS_OBJECT(value)) {
             JSObject *obj;
             obj = JSVAL_TO_OBJECT(value);
+
+            if (!gjs_typecheck_object(context, obj,
+                                      gtype, JS_TRUE))
+                return JS_FALSE;
+
             gobj = gjs_g_object_from_object(context, obj);
         } else {
             gjs_throw(context,
@@ -392,9 +397,28 @@ gjs_value_to_g_value_internal(JSContext    *context,
 
             if (g_type_is_a(gtype, G_TYPE_ERROR)) {
                 /* special case GError */
+                if (!gjs_typecheck_gerror(context, obj, JS_TRUE))
+                    return JS_FALSE;
+
                 gboxed = gjs_gerror_from_error(context, obj);
             } else {
-                gboxed = gjs_c_struct_from_boxed(context, obj);
+                /* First try a union, if that fails,
+                   assume a boxed struct. Distinguishing
+                   which one is expected would require checking
+                   the associated GIBaseInfo, which is not necessary
+                   possible, if e.g. we see the GType without
+                   loading the typelib.
+                */
+                if (gjs_typecheck_union(context, obj,
+                                        NULL, gtype, JS_FALSE)) {
+                    gboxed = gjs_c_union_from_union(context, obj);
+                } else {
+                    if (!gjs_typecheck_boxed(context, obj,
+                                             NULL, gtype, JS_TRUE))
+                        return JS_FALSE;
+
+                    gboxed = gjs_c_struct_from_boxed(context, obj);
+                }
             }
         } else {
             gjs_throw(context,
@@ -415,6 +439,11 @@ gjs_value_to_g_value_internal(JSContext    *context,
             /* nothing to do */
         } else if (JSVAL_IS_OBJECT(value)) {
             JSObject *obj = JSVAL_TO_OBJECT(value);
+
+            if (!gjs_typecheck_boxed(context, obj,
+                                     NULL, G_TYPE_VARIANT, JS_TRUE))
+                return JS_FALSE;
+
             variant = gjs_c_struct_from_boxed(context, obj);
         } else {
             gjs_throw(context,
@@ -474,6 +503,10 @@ gjs_value_to_g_value_internal(JSContext    *context,
         } else if (JSVAL_IS_OBJECT(value)) {
             JSObject *obj;
             obj = JSVAL_TO_OBJECT(value);
+
+            if (!gjs_typecheck_param(context, obj, gtype, JS_TRUE))
+                return JS_FALSE;
+
             gparam = gjs_g_param_from_param(context, obj);
         } else {
             gjs_throw(context,

@@ -39,6 +39,10 @@ GParamSpec* gjs_g_param_from_param     (JSContext  *context,
                                         JSObject   *obj);
 JSObject*   gjs_param_from_g_param     (JSContext  *context,
                                         GParamSpec *param);
+JSBool      gjs_typecheck_param        (JSContext  *context,
+                                        JSObject   *obj,
+                                        GType       expected_type,
+                                        JSBool      throw);
 JSObject*   gjs_lookup_param_prototype (JSContext  *context);
 
 

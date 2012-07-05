@@ -44,6 +44,7 @@
 typedef struct {
     GIUnionInfo *info;
     void *gboxed; /* NULL if we are the prototype and not an instance */
+    GType gtype;
 } Union;
 
 static struct JSClass gjs_union_class;
@@ -194,7 +195,6 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
     Union *priv;
     Union *proto_priv;
     JSObject *proto;
-    GType gtype;
     void *gboxed;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(union);
@@ -226,8 +226,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
 
     priv->info = proto_priv->info;
     g_base_info_ref( (GIBaseInfo*) priv->info);
-
-    gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
+    priv->gtype = proto_priv->gtype;
 
     /* union_new happens to be implemented by calling
      * gjs_invoke_c_function(), which returns a jsval.
@@ -244,11 +243,11 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
      * be garbage collected, we make a copy here to be
      * owned by us.
      */
-    priv->gboxed = g_boxed_copy(gtype, gboxed);
+    priv->gboxed = g_boxed_copy(priv->gtype, gboxed);
 
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                         "JSObject created with union instance %p type %s",
-                        priv->gboxed, g_type_name(gtype));
+                        priv->gboxed, g_type_name(priv->gtype));
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(union);
 
@@ -454,6 +453,7 @@ gjs_define_union_class(JSContext    *context,
     priv = g_slice_new0(Union);
     priv->info = info;
     g_base_info_ref( (GIBaseInfo*) priv->info);
+    priv->gtype = gtype;
     JS_SetPrivate(context, prototype, priv);
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
@@ -520,6 +520,7 @@ gjs_union_from_c_union(JSContext    *context,
     JS_SetPrivate(context, obj, priv);
     priv->info = info;
     g_base_info_ref( (GIBaseInfo *) priv->info);
+    priv->gtype = gtype;
     priv->gboxed = g_boxed_copy(gtype, gboxed);
 
     return obj;
@@ -536,16 +537,58 @@ gjs_c_union_from_union(JSContext    *context,
 
     priv = priv_from_js(context, obj);
 
-    if (priv == NULL)
-        return NULL;
+    return priv->gboxed;
+}
+
+JSBool
+gjs_typecheck_union(JSContext     *context,
+                    JSObject      *object,
+                    GIStructInfo  *expected_info,
+                    GType          expected_type,
+                    JSBool         throw)
+{
+    Union *priv;
+    JSBool result;
+
+    if (!do_base_typecheck(context, object, throw))
+        return JS_FALSE;
+
+    priv = priv_from_js(context, object);
 
     if (priv->gboxed == NULL) {
-        gjs_throw(context,
-                  "Object is %s.%s.prototype, not an object instance - cannot convert to a union instance",
-                  g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                  g_base_info_get_name( (GIBaseInfo*) priv->info));
-        return NULL;
+        if (throw) {
+            gjs_throw_custom(context, "TypeError",
+                             "Object is %s.%s.prototype, not an object instance - cannot convert to a union instance",
+                             g_base_info_get_namespace( (GIBaseInfo*) priv->info),
+                             g_base_info_get_name( (GIBaseInfo*) priv->info));
+        }
+
+        return JS_FALSE;
     }
 
-    return priv->gboxed;
+    if (expected_type != G_TYPE_NONE)
+        result = g_type_is_a (priv->gtype, expected_type);
+    else if (expected_info != NULL)
+        result = g_base_info_equal((GIBaseInfo*) priv->info, (GIBaseInfo*) expected_info);
+    else
+        result = JS_TRUE;
+
+    if (!result && throw) {
+        if (expected_info != NULL) {
+            gjs_throw_custom(context, "TypeError",
+                             "Object is of type %s.%s - cannot convert to %s.%s",
+                             g_base_info_get_namespace((GIBaseInfo*) priv->info),
+                             g_base_info_get_name((GIBaseInfo*) priv->info),
+                             g_base_info_get_namespace((GIBaseInfo*) expected_info),
+                             g_base_info_get_name((GIBaseInfo*) expected_info));
+        } else {
+            gjs_throw_custom(context, "TypeError",
+                             "Object is of type %s.%s - cannot convert to %s",
+                             g_base_info_get_namespace((GIBaseInfo*) priv->info),
+                             g_base_info_get_name((GIBaseInfo*) priv->info),
+                             g_type_name(expected_type));
+        }
+    }
+
+    return result;
 }

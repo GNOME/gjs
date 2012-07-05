@@ -508,6 +508,59 @@ get_length_from_arg (GArgument *arg, GITypeTag tag)
 }
 
 static JSBool
+gjs_fill_method_instance (JSContext  *context,
+                          JSObject   *obj,
+                          Function   *function,
+                          GIArgument *out_arg)
+{
+    GIBaseInfo *container = g_base_info_get_container((GIBaseInfo *) function->info);
+    GIInfoType type = g_base_info_get_type(container);
+    GType gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo *)container);
+
+    switch (type) {
+    case GI_INFO_TYPE_STRUCT:
+    case GI_INFO_TYPE_BOXED:
+        /* GError must be special cased */
+        if (g_type_is_a(gtype, G_TYPE_ERROR)) {
+            if (!gjs_typecheck_gerror(context, obj, JS_TRUE))
+                return JS_FALSE;
+
+            out_arg->v_pointer = gjs_gerror_from_error(context, obj);
+        } else {
+            if (!gjs_typecheck_boxed(context, obj,
+                                     container, gtype,
+                                     JS_TRUE))
+                return JS_FALSE;
+
+            out_arg->v_pointer = gjs_c_struct_from_boxed(context, obj);
+        }
+        break;
+
+    case GI_INFO_TYPE_UNION:
+        if (!gjs_typecheck_union(context, obj,
+                                 container, gtype, JS_TRUE))
+            return JS_FALSE;
+
+        out_arg->v_pointer = gjs_c_union_from_union(context, obj);
+        break;
+
+    case GI_INFO_TYPE_OBJECT:
+    case GI_INFO_TYPE_INTERFACE:
+        if (!gjs_typecheck_object(context, obj,
+                                  gtype, JS_TRUE))
+            return JS_FALSE;
+
+        out_arg->v_pointer = gjs_g_object_from_object(context, obj);
+        break;
+
+    default:
+        g_assert_not_reached();
+    }
+
+    return JS_TRUE;
+}
+
+static JSBool
 gjs_invoke_c_function(JSContext      *context,
                       Function       *function,
                       JSObject       *obj, /* "this" object */
@@ -630,44 +683,9 @@ gjs_invoke_c_function(JSContext      *context,
     js_arg_pos = 0; /* index into argv */
 
     if (is_method) {
-        GIBaseInfo *container = g_base_info_get_container((GIBaseInfo *) function->info);
-        GIInfoType type = g_base_info_get_type(container);
-
-        g_assert_cmpuint(0, <, c_argc);
-
-        if (type == GI_INFO_TYPE_STRUCT || type == GI_INFO_TYPE_BOXED) {
-            GType gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo *)container);
-
-            /* GError must be special cased */
-            if (g_type_is_a(gtype, G_TYPE_ERROR))
-                in_arg_cvalues[0].v_pointer = gjs_gerror_from_error(context, obj);
-            else
-                in_arg_cvalues[0].v_pointer = gjs_c_struct_from_boxed(context, obj);
-        } else if (type == GI_INFO_TYPE_UNION) {
-            in_arg_cvalues[0].v_pointer = gjs_c_union_from_union(context, obj);
-        } else { /* by fallback is always object */
-            GType gtype;
-
-            in_arg_cvalues[0].v_pointer = gjs_g_object_from_object(context, obj);
-            if (in_arg_cvalues[0].v_pointer == NULL) {
-                /* priv == NULL (user probably forgot to chain _init).
-                 * Anyway, in this case we've thrown an exception, so just
-                 * make sure we fail. */
-                failed = TRUE;
-                goto release;
-            }
-
-            gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo *)container);
-            if (!g_type_is_a (G_TYPE_FROM_INSTANCE (in_arg_cvalues[0].v_pointer),
-                              gtype)) {
-                gjs_throw(context,
-                          "Expected type '%s' but got '%s'",
-                          g_type_name(gtype),
-                          g_type_name(G_TYPE_FROM_INSTANCE(in_arg_cvalues[0].v_pointer)));
-                failed = TRUE;
-                goto release;
-            }
-        }
+        if (!gjs_fill_method_instance(context, obj,
+                                      function, &in_arg_cvalues[0]))
+            return JS_FALSE;
         ffi_arg_pointers[0] = &in_arg_cvalues[0];
         ++c_arg_pos;
     }

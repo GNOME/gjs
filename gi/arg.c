@@ -1282,11 +1282,16 @@ gjs_value_to_g_argument(JSContext      *context,
         if (JSVAL_IS_NULL(value)) {
             arg->v_pointer = NULL;
         } else if (JSVAL_IS_OBJECT(value)) {
-            arg->v_pointer = gjs_gerror_from_error(context,
-                                                   JSVAL_TO_OBJECT(value));
+            if (gjs_typecheck_gerror(context, JSVAL_TO_OBJECT(value),
+                                      JS_TRUE)) {
+                arg->v_pointer = gjs_gerror_from_error(context,
+                                                       JSVAL_TO_OBJECT(value));
 
-            if (transfer != GI_TRANSFER_NOTHING)
-                arg->v_pointer = g_error_copy (arg->v_pointer);
+                if (transfer != GI_TRANSFER_NOTHING)
+                    arg->v_pointer = g_error_copy (arg->v_pointer);
+            } else {
+                wrong = TRUE;
+            }
         } else {
             wrong = TRUE;
             report_type_mismatch = TRUE;
@@ -1363,14 +1368,26 @@ gjs_value_to_g_argument(JSContext      *context,
 
                     /* special case GError too */
                     if (g_type_is_a(gtype, G_TYPE_ERROR)) {
-                        arg->v_pointer = gjs_gerror_from_error(context,
-                                                               JSVAL_TO_OBJECT(value));
+                        if (!gjs_typecheck_gerror(context, JSVAL_TO_OBJECT(value), JS_TRUE)) {
+                            arg->v_pointer = NULL;
+                            wrong = TRUE;
+                        } else {
+                            arg->v_pointer = gjs_gerror_from_error(context,
+                                                                   JSVAL_TO_OBJECT(value));
+                        }
                     } else {
-                        arg->v_pointer = gjs_c_struct_from_boxed(context,
-                                                                 JSVAL_TO_OBJECT(value));
+                        if (!gjs_typecheck_boxed(context, JSVAL_TO_OBJECT(value),
+                                                 interface_info, gtype,
+                                                 JS_TRUE)) {
+                            arg->v_pointer = NULL;
+                            wrong = TRUE;
+                        } else {
+                            arg->v_pointer = gjs_c_struct_from_boxed(context,
+                                                                     JSVAL_TO_OBJECT(value));
+                        }
                     }
 
-                    if (transfer != GI_TRANSFER_NOTHING) {
+                    if (!wrong && transfer != GI_TRANSFER_NOTHING) {
                         if (g_type_is_a(gtype, G_TYPE_BOXED))
                             arg->v_pointer = g_boxed_copy (gtype, arg->v_pointer);
                         else if (g_type_is_a(gtype, G_TYPE_VARIANT))
@@ -1384,37 +1401,39 @@ gjs_value_to_g_argument(JSContext      *context,
                     }
 
                 } else if (interface_type == GI_INFO_TYPE_UNION) {
-                    arg->v_pointer = gjs_c_union_from_union(context,
-                                                            JSVAL_TO_OBJECT(value));
+                    if (gjs_typecheck_union(context, JSVAL_TO_OBJECT(value),
+                                            interface_info, gtype, JS_TRUE)) {
+                        arg->v_pointer = gjs_c_union_from_union(context,
+                                                                JSVAL_TO_OBJECT(value));
 
-                    if (transfer != GI_TRANSFER_NOTHING) {
-                        if (g_type_is_a(gtype, G_TYPE_BOXED))
-                            arg->v_pointer = g_boxed_copy (gtype, arg->v_pointer);
-                        else {
-                            gjs_throw(context,
-                                      "Can't transfer ownership of a union type not registered as boxed");
+                        if (transfer != GI_TRANSFER_NOTHING) {
+                            if (g_type_is_a(gtype, G_TYPE_BOXED))
+                                arg->v_pointer = g_boxed_copy (gtype, arg->v_pointer);
+                            else {
+                                gjs_throw(context,
+                                          "Can't transfer ownership of a union type not registered as boxed");
 
-                            arg->v_pointer = NULL;
-                            wrong = TRUE;
+                                arg->v_pointer = NULL;
+                                wrong = TRUE;
+                            }
                         }
+                    } else {
+                        arg->v_pointer = NULL;
+                        wrong = TRUE;
                     }
 
                 } else if (gtype != G_TYPE_NONE) {
-
                     if (g_type_is_a(gtype, G_TYPE_OBJECT) || g_type_is_a(gtype, G_TYPE_INTERFACE)) {
-                        arg->v_pointer = gjs_g_object_from_object(context,
-                                                                  JSVAL_TO_OBJECT(value));
-                        if (arg->v_pointer != NULL) {
-                            if (!g_type_is_a(G_TYPE_FROM_INSTANCE(arg->v_pointer),
-                                             gtype)) {
-                                gjs_throw(context,
-                                          "Expected type '%s' but got '%s'",
-                                          g_type_name(gtype),
-                                          g_type_name(G_TYPE_FROM_INSTANCE(arg->v_pointer)));
-                                arg->v_pointer = NULL;
-                                wrong = TRUE;
-                            } else if (transfer != GI_TRANSFER_NOTHING)
+                        if (gjs_typecheck_object(context, JSVAL_TO_OBJECT(value),
+                                                 gtype, JS_TRUE)) {
+                            arg->v_pointer = gjs_g_object_from_object(context,
+                                                                      JSVAL_TO_OBJECT(value));
+
+                            if (transfer != GI_TRANSFER_NOTHING)
                                 g_object_ref(G_OBJECT(arg->v_pointer));
+                        } else {
+                            arg->v_pointer = NULL;
+                            wrong = TRUE;
                         }
                     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                         if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {

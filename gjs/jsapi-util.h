@@ -55,54 +55,67 @@ typedef struct GjsRootedArray GjsRootedArray;
  */
 #define GJS_MODULE_PROP_FLAGS (JSPROP_PERMANENT | JSPROP_ENUMERATE)
 
-/* priv_from_js_with_typecheck checks that the object is in fact an
- * instance of the specified class before accessing its private data.
- * Keep in mind that the function can return JS_TRUE and still fill the
- * out parameter with NULL if the object is the prototype for a class
- * without the JSCLASS_CONSTRUCT_PROTOTYPE flag or if it the class simply
- * does not have any private data.
+/*
+ * Helper methods to access private data:
+ *
+ * do_base_typecheck: checks that object has the right JSClass, and possibly
+ *                    throw a TypeError exception if the check fails
+ * priv_from_js: accesses the object private field; as a debug measure,
+ *               it also checks that the object is of a compatible
+ *               JSClass, but it doesn't raise an exception (it
+ *               wouldn't be of much use, if subsequent code crashes on
+ *               NULL)
+ * priv_from_js_with_typecheck: a convenience function to call
+ *                              do_base_typecheck and priv_from_js
  */
-#define GJS_DEFINE_PRIV_FROM_JS(type, class) \
-    __attribute__((unused)) static JSBool           \
-    priv_from_js_with_typecheck(JSContext *context,     \
-                                JSObject  *object,  \
-                                type      **out)    \
-    {\
-        if (!out) \
-            return JS_FALSE; \
-        if (!JS_InstanceOf(context, object, &class, NULL)) \
-            return JS_FALSE; \
-        *out = JS_GetInstancePrivate(context, object, &class, NULL); \
-        return JS_TRUE; \
-    }\
-    static type*\
-    priv_from_js(JSContext *context, \
-                 JSObject  *object)  \
-    {\
-        return JS_GetInstancePrivate(context, object, &class, NULL); \
+#define GJS_DEFINE_PRIV_FROM_JS(type, class)                            \
+    __attribute__((unused)) static inline JSBool                        \
+    do_base_typecheck(JSContext *context,                               \
+                      JSObject  *object,                                \
+                      JSBool     throw)                                 \
+    {                                                                   \
+        return gjs_typecheck_static_instance(context, object, &class, throw); \
+    }                                                                   \
+    static inline type*                                                 \
+    priv_from_js(JSContext *context,                                    \
+                 JSObject  *object)                                     \
+    {                                                                   \
+        return JS_GetInstancePrivate(context, object, &class, NULL);    \
+    }                                                                   \
+    __attribute__((unused)) static JSBool                               \
+    priv_from_js_with_typecheck(JSContext *context,                     \
+                                JSObject  *object,                      \
+                                type      **out)                        \
+    {                                                                   \
+        if (!do_base_typecheck(context, object, JS_FALSE))              \
+            return JS_FALSE;                                            \
+        *out = priv_from_js(context, object);                           \
+        return JS_TRUE;                                                 \
     }
 
-
-#define GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(type, class) \
-    __attribute__((unused)) static JSBool\
-    priv_from_js_with_typecheck(JSContext *context, \
-                                JSObject  *object,  \
-                                type      **out)    \
-    {\
-        type *result; \
-        if (!out) \
-            return JS_FALSE; \
-        result = gjs_get_instance_private_dynamic_with_typecheck(context, object, &class, NULL); \
-        if (result == NULL) \
-            return JS_FALSE; \
-        *out = result; \
-        return JS_TRUE; \
-    }\
-    static type*\
-    priv_from_js(JSContext *context, \
-                 JSObject  *object)  \
-    {\
-        return gjs_get_instance_private_dynamic(context, object, &class, NULL); \
+#define GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(type, class)                    \
+    __attribute__((unused)) static inline JSBool                        \
+    do_base_typecheck(JSContext *context,                               \
+                      JSObject  *object,                                \
+                      JSBool     throw)                                 \
+    {                                                                   \
+        return gjs_typecheck_dynamic_instance(context, object, &class, throw); \
+    }                                                                   \
+    static inline type*                                                 \
+    priv_from_js(JSContext *context,                                    \
+                 JSObject  *object)                                     \
+    {                                                                   \
+        return JS_GetPrivate(context, object);                          \
+    }                                                                   \
+    __attribute__((unused)) static JSBool                               \
+    priv_from_js_with_typecheck(JSContext *context,                     \
+                                JSObject  *object,                      \
+                                type      **out)                        \
+    {                                                                   \
+        if (!do_base_typecheck(context, object, JS_FALSE))              \
+            return JS_FALSE;                                            \
+        *out = priv_from_js(context, object);                           \
+        return JS_TRUE;                                                 \
     }
 
 /**
@@ -227,14 +240,14 @@ JSObject *  gjs_init_class_dynamic           (JSContext       *context,
                                               JSFunctionSpec  *static_fs);
 void gjs_throw_constructor_error             (JSContext       *context);
 
-void* gjs_get_instance_private_dynamic                (JSContext  *context,
-                                                       JSObject   *obj,
-                                                       JSClass    *static_clasp,
-                                                       jsval      *argv);
-void* gjs_get_instance_private_dynamic_with_typecheck (JSContext  *context,
-                                                       JSObject   *obj,
-                                                       JSClass    *static_clasp,
-                                                       jsval      *argv);
+JSBool gjs_typecheck_static_instance          (JSContext  *context,
+                                               JSObject   *obj,
+                                               JSClass    *static_clasp,
+                                               JSBool      _throw);
+JSBool gjs_typecheck_dynamic_instance         (JSContext  *context,
+                                               JSObject   *obj,
+                                               JSClass    *static_clasp,
+                                               JSBool      _throw);
 
 JSObject*   gjs_construct_object_dynamic     (JSContext       *context,
                                               JSObject        *proto,
@@ -249,6 +262,10 @@ JSObject*   gjs_define_string_array          (JSContext       *context,
 void        gjs_throw                        (JSContext       *context,
                                               const char      *format,
                                               ...)  G_GNUC_PRINTF (2, 3);
+void        gjs_throw_custom                 (JSContext       *context,
+                                              const char      *error_class,
+                                              const char      *format,
+                                              ...)  G_GNUC_PRINTF (3, 4);
 void        gjs_throw_literal                (JSContext       *context,
                                               const char      *string);
 void        gjs_throw_g_error                (JSContext       *context,

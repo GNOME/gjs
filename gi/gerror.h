@@ -48,6 +48,9 @@ GError*   gjs_gerror_from_error        (JSContext             *context,
 JSObject* gjs_error_from_gerror        (JSContext             *context,
                                         GError                *gerror,
                                         gboolean               add_stack);
+JSBool    gjs_typecheck_gerror         (JSContext             *context,
+                                        JSObject              *obj,
+                                        JSBool                 throw);
 
 G_END_DECLS
 

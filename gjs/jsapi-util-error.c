@@ -43,8 +43,9 @@
  */
 static void
 gjs_throw_valist(JSContext       *context,
-                    const char      *format,
-                    va_list          args)
+                 const char      *error_class,
+                 const char      *format,
+                 va_list          args)
 {
     char *s;
     JSBool result;
@@ -82,7 +83,7 @@ gjs_throw_valist(JSContext       *context,
     }
 
     if (!gjs_object_get_property(context, JS_GetGlobalObject(context),
-                                 "Error", &v_constructor)) {
+                                 error_class, &v_constructor)) {
         JS_ReportError(context, "??? Missing Error constructor in global object?");
         goto out;
     }
@@ -125,7 +126,25 @@ gjs_throw(JSContext       *context,
     va_list args;
 
     va_start(args, format);
-    gjs_throw_valist(context, format, args);
+    gjs_throw_valist(context, "Error", format, args);
+    va_end(args);
+}
+
+/*
+ * Like gjs_throw, but allows to customize the error
+ * class. Mainly used for throwing TypeError instead of
+ * error.
+ */
+void
+gjs_throw_custom(JSContext       *context,
+                 const char      *error_class,
+                 const char      *format,
+                 ...)
+{
+    va_list args;
+
+    va_start(args, format);
+    gjs_throw_valist(context, error_class, format, args);
     va_end(args);
 }
 

@@ -618,14 +618,44 @@ gjs_g_param_from_param(JSContext    *context,
 
     priv = priv_from_js(context, obj);
 
-    if (priv == NULL)
-        return NULL;
+    return priv->gparam;
+}
+
+JSBool
+gjs_typecheck_param(JSContext     *context,
+                    JSObject      *object,
+                    GType          expected_type,
+                    JSBool         throw)
+{
+    Param *priv;
+    JSBool result;
+
+    if (!do_base_typecheck(context, object, throw))
+        return JS_FALSE;
+
+    priv = priv_from_js(context, object);
 
     if (priv->gparam == NULL) {
-        gjs_throw(context,
-                  "Object is a prototype, not an object instance - cannot convert to a paramspec instance");
-        return NULL;
+        if (throw) {
+            gjs_throw_custom(context, "TypeError",
+                             "Object is GObject.ParamSpec.prototype, not an object instance - "
+                             "cannot convert to a GObject.ParamSpec instance");
+        }
+
+        return JS_FALSE;
     }
 
-    return priv->gparam;
+    if (expected_type != G_TYPE_NONE)
+        result = g_type_is_a (G_TYPE_FROM_INSTANCE (priv->gparam), expected_type);
+    else
+        result = JS_TRUE;
+
+    if (!result && throw) {
+        gjs_throw_custom(context, "TypeError",
+                         "Object is of type %s - cannot convert to %s",
+                         g_type_name(G_TYPE_FROM_INSTANCE (priv->gparam)),
+                         g_type_name(expected_type));
+    }
+
+    return result;
 }
