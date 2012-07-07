@@ -189,83 +189,71 @@ function _init() {
     _makeDummyClass(this, 'Type', 'GTYPE', 'GType', GObject.type_from_name);
 
     this.ParamSpec.char = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.Char,
-                                               nick, blurb, flags, minimum, maximum, default_value);
+        return GObject.param_spec_char(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
     this.ParamSpec.uchar = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.UChar,
-                                               nick, blurb, flags, minimum, maximum, default_value);
+        return GObject.param_spec_uchar(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
     this.ParamSpec.int = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.Int,
-                                               nick, blurb, flags, minimum, maximum, default_value);
+        return GObject.param_spec_int(name, nick, blurb, minimum, maxmium, default_value, flags);
     };
 
     this.ParamSpec.uint = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.UInt,
-                                               nick, blurb, flags, minimum, maximum, default_value);
+        return GObject.param_spec_uint(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
     this.ParamSpec.long = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.Long,
-                                               nick, blurb, flags, minimum, maximum, default_value);
+        return GObject.param_spec_long(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
     this.ParamSpec.ulong = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.ULong,
-                                               nick, blurb, flags, minimum, maximum, default_value);
+        return GObject.param_spec_ulong(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
     this.ParamSpec.int64 = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.Int64,
-                                               nick, blurb, flags, minimum, maximum, default_value);
+        return GObject.param_spec_int64(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
     this.ParamSpec.uint64 = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.UInt64,
-                                               nick, blurb, flags, minimum, maximum, default_value);
+        return GObject.param_spec_uint64(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
     this.ParamSpec.float = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.Float,
-                                               nick, blurb, flags, minimum, maximum, default_value);
+        return GObject.param_spec_float(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
     this.ParamSpec.boolean = function(name, nick, blurb, flags, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.Boolean,
-                                               nick, blurb, flags, default_value);
+        return GObject.param_spec_boolean(name, nick, blurb, default_value, flags);
     };
 
     this.ParamSpec.flags = function(name, nick, blurb, flags, flags_type, default_value) {
-        return GObject.ParamSpec._new_internal(name, flags_type, nick, blurb, flags, default_value);
+        return GObject.param_spec_flags(name, nick, blurb, flags_type, default_value, flags);
     };
 
     this.ParamSpec.enum = function(name, nick, blurb, flags, enum_type, default_value) {
-        return GObject.ParamSpec._new_internal(name, enum_type, nick, blurb, flags, default_value);
+        return GObject.param_spec_enum(name, nick, blurb, enum_type, default_value, flags);
     };
 
     this.ParamSpec.double = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.Double,
-                                               nick, blurb, flags, minimum, maximum, default_value);
+        return GObject.param_spec_double(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
     this.ParamSpec.string = function(name, nick, blurb, flags, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.String,
-                                               nick, blurb, flags, default_value);
+        return GObject.param_spec_string(name, nick, blurb, default_value, flags);
     };
 
     this.ParamSpec.boxed = function(name, nick, blurb, flags, boxed_type) {
-	return GObject.ParamSpec._new_internal(name, boxed_type, nick, blurb, flags);
+        return GObject.param_spec_boxed(name, nick, blurb, boxed_type, flags);
     };
 
     this.ParamSpec.object = function(name, nick, blurb, flags, object_type) {
-	return GObject.ParamSpec._new_internal(name, object_type, nick, blurb, flags);
+        return GObject.param_spec_object(name, nick, blurb, object_type, flags);
     };
 
     this.ParamSpec.param = function(name, nick, blurb, flags, param_type) {
-	return GObject.ParamSpec._new_internal(name, param_type, nick, blurb, flags);
+        return GObject.param_spec_param(name, nick, blurb, param_type, flags);
     };
 
     this.Class = GObjectMeta;
