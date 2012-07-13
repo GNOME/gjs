@@ -184,7 +184,6 @@ gjs_debug(GjsDebugTopic topic,
         return;
 
     error = FALSE;
-    prefix = "???";
     switch (topic) {
     case GJS_DEBUG_STRACE_TIMESTAMP:
         /* return early if strace timestamps are disabled, avoiding
@@ -279,6 +278,9 @@ gjs_debug(GjsDebugTopic topic,
         break;
     case GJS_DEBUG_GERROR:
         prefix = "JS G ERR";
+        break;
+    default:
+        prefix = "???";
         break;
     }
 

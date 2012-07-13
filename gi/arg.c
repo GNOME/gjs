@@ -251,6 +251,7 @@ type_needs_out_release(GITypeInfo *type_info,
         case GI_INFO_TYPE_ENUM:
         case GI_INFO_TYPE_FLAGS:
             needs_release = FALSE;
+            break;
 
         default:
             needs_release = TRUE;
@@ -1937,6 +1938,8 @@ gjs_array_from_carray_internal (JSContext  *context,
     GITypeTag element_type;
     guint i;
 
+    result = JS_FALSE;
+
     element_type = g_type_info_get_tag(param_info);
 
     if (is_gvalue_flat_array(param_info, element_type))
@@ -2123,6 +2126,8 @@ gjs_array_from_zero_terminated_c_array (JSContext  *context,
     JSBool result;
     GITypeTag element_type;
     guint i;
+
+    result = JS_FALSE;
 
     element_type = g_type_info_get_tag(param_info);
 

@@ -282,6 +282,7 @@ gjs_callback_closure(ffi_cif *cif,
     }
 
     if (trampoline->is_vfunc) {
+        g_assert(n_args > 0);
         this_object = JSVAL_TO_OBJECT(jsargs[0]);
         jsargs++;
         n_jsargs--;
@@ -665,7 +666,6 @@ gjs_invoke_c_function(JSContext      *context,
 
     failed = FALSE;
     c_arg_pos = 0; /* index into in_arg_cvalues, etc */
-    gi_arg_pos = 0; /* index into function->info arguments */
     js_arg_pos = 0; /* index into argv */
 
     if (is_method) {

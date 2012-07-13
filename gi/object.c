@@ -1392,11 +1392,13 @@ emit_func(JSContext *context,
 
     if (signal_query.return_type != G_TYPE_NONE) {
         if (!gjs_value_from_g_value(context,
-                                       &retval,
-                                       &rvalue))
+                                    &retval,
+                                    &rvalue))
             failed = TRUE;
 
         g_value_unset(&rvalue);
+    } else {
+        retval = JSVAL_VOID;
     }
 
     for (i = 0; i < (signal_query.n_params + 1); ++i) {
