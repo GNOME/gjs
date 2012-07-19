@@ -110,7 +110,7 @@ function _pack_variant(signature, value) {
 	let arrayType = _read_single_type(signature, false);
 	if (arrayType[0] == 's') {
 	    // special case for array of strings
-	    return GLib.Variant.new_strv(value, value.length);
+	    return GLib.Variant.new_strv(value);
 	}
 	if (arrayType[0] == 'y') {
 	    // special case for array of bytes
@@ -118,7 +118,7 @@ function _pack_variant(signature, value) {
 	}
 	if (arrayType[0] == 'a' && arrayType[1] == 'y') {
 	    // special case for array of array of bytes
-	    return GLib.Variant.new_bytestring_array(value, value.length);
+	    return GLib.Variant.new_bytestring_array(value);
 	}
 
 	let arrayValue = [];
@@ -136,7 +136,7 @@ function _pack_variant(signature, value) {
 		arrayValue.push(child);
 	    }
 	}
-	return GLib.Variant.new_array(GLib.VariantType.new(arrayType.join('')), arrayValue, arrayValue.length);
+	return GLib.Variant.new_array(GLib.VariantType.new(arrayType.join('')), arrayValue);
     case '(':
 	let children = [ ];
 	for (let i = 0; i < value.length; i++) {
@@ -149,7 +149,7 @@ function _pack_variant(signature, value) {
 	if (signature[0] != ')')
 	    throw new TypeError('Invalid GVariant signature for type TUPLE (expected ")")');
 	signature.shift();
-	return GLib.Variant.new_tuple(children, children.length);
+	return GLib.Variant.new_tuple(children);
     case '{':
 	let key = _pack_variant(signature, value[0]);
 	let child = _pack_variant(signature, value[1]);
