@@ -125,7 +125,7 @@ gjs_packages="gobject-introspection-1.0 >= 0.10.1 $common_packages"
 gjs_cairo_gobject_packages="cairo-gobject $common_packages"
 gjs_cairo_packages="cairo $common_packages"
 gjs_dbus_packages="dbus-glib-1 $common_packages"
-gjs_gdbus_packages="gobject-2.0 >= gobject_required_version gio-2.0"
+gjs_gdbus_packages="gobject-2.0 >= glib_required_version gio-2.0"
 # gjs-tests links against everything
 gjstests_packages="$gjstests_packages $gjs_packages"
 
