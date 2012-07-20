@@ -139,6 +139,9 @@ fi
 PKG_CHECK_MODULES([GJS_DBUS], [$gjs_dbus_packages])
 PKG_CHECK_MODULES([GJS_GDBUS], [$gjs_gdbus_packages])
 
+AC_ARG_ENABLE(tests,[  --disable-tests           disable test libraries ], enable_tests=$enableval,enable_tests=yes)
+AM_CONDITIONAL(ENABLE_TESTS, test x$enable_tests = xyes)
+
 saved_CFLAGS=$CFLAGS
 CFLAGS=$GJS_DBUS_CFLAGS
 saved_LIBS=$LIBS

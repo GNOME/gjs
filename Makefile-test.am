@@ -2,7 +2,9 @@ RUN_WITH_DBUS = ${top_srcdir}/test/run-with-dbus --session --system
 GTESTER = ${TESTS_ENVIRONMENT} ${RUN_WITH_DBUS} gtester
 
 ########################################################################
+if ENABLE_TESTS
 TEST_PROGS += gjs-tests
+endif
 
 gjs_tests_CFLAGS =				\
 	-include $(top_srcdir)/test/test.h	\
@@ -37,7 +39,9 @@ gjstest.h.stamp : scripts/make-tests $(gjstest_files_with_tests)
 gjstest.h gjstest.c : gjstest.h.stamp
 	@true
 
+if ENABLE_TESTS
 TEST_PROGS += gjs-unit
+endif
 
 gjs_unit_CPPFLAGS =		\
 	$(AM_CPPFLAGS)          \
@@ -64,9 +68,11 @@ EXTRA_DIST +=			\
 	scripts/make-tests
 
 # noinst_ always builds a static library
+if ENABLE_TESTS
 testlib_LTLIBRARIES = libregress.la libgimarshallingtests.la
 testlibdir = $(prefix)/unused
 install-testlibLTLIBRARIES: # prevent it from being installed
+endif
 
 nodist_libregress_la_SOURCES = $(GI_DATADIR)/tests/regress.c $(GI_DATADIR)/tests/regress.h
 libregress_la_CFLAGS = $(GJS_CFLAGS) $(GJS_CAIRO_CFLAGS)
