@@ -1101,7 +1101,7 @@ gjs_define_boxed_class(JSContext    *context,
 
         if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "Existing property '%s' does not look like a constructor",
-                         constructor_name);
+                      constructor_name);
             return JS_FALSE;
         }
 

@@ -166,11 +166,6 @@ keep_alive_trace(JSTracer *tracer,
 /* The bizarre thing about this vtable is that it applies to both
  * instances of the object, and to the prototype that instances of the
  * class have.
- *
- * Also, there's a constructor field in here, but as far as I can
- * tell, it would only be used if no constructor were provided to
- * JS_InitClass. The constructor from JS_InitClass is not applied to
- * the prototype unless JSCLASS_CONSTRUCT_PROTOTYPE is in flags.
  */
 static struct JSClass gjs_keep_alive_class = {
     "__private_GjsKeepAlive", /* means "new __private_GjsKeepAlive()" works */
