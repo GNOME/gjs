@@ -1697,38 +1697,7 @@ exports_new_resolve(JSContext *context,
     return JS_TRUE;
 }
 
-/* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on
- * the prototype in addition to on each instance. When called on the
- * prototype, "obj" is the prototype, and "retval" is the prototype
- * also, but can be replaced with another object to use instead as the
- * prototype. If we don't set JSCLASS_CONSTRUCT_PROTOTYPE we can
- * identify the prototype as an object of our class with NULL private
- * data.
- */
-GJS_NATIVE_CONSTRUCTOR_DECLARE(js_exports)
-{
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(js_exports)
-    Exports *priv;
-
-    GJS_NATIVE_CONSTRUCTOR_PRELUDE(js_exports);
-
-    priv = g_slice_new0(Exports);
-
-    GJS_INC_COUNTER(dbus_exports);
-
-    g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(context, object, priv);
-
-    gjs_debug_lifecycle(GJS_DEBUG_DBUS,
-                        "exports constructor, obj %p priv %p", object, priv);
-
-    priv->runtime = JS_GetRuntime(context);
-    priv->object = object;
-
-    GJS_NATIVE_CONSTRUCTOR_FINISH(js_exports);
-
-    return JS_TRUE;
-}
+GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(js_exports)
 
 static JSBool
 add_connect_funcs(JSContext  *context,
@@ -1820,6 +1789,7 @@ static JSObject*
 exports_new(JSContext  *context,
             DBusBusType which_bus)
 {
+    Exports *priv;
     JSObject *exports;
     JSObject *global;
 
@@ -1860,8 +1830,20 @@ exports_new(JSContext  *context,
                   gjs_js_exports_class.name, prototype);
     }
 
-    exports = JS_ConstructObject(context, &gjs_js_exports_class, NULL, global);
-    /* may be NULL */
+    exports = JS_NewObject(context, &gjs_js_exports_class, NULL, global);
+
+    priv = g_slice_new0(Exports);
+
+    GJS_INC_COUNTER(dbus_exports);
+
+    g_assert(priv_from_js(context, exports) == NULL);
+    JS_SetPrivate(context, exports, priv);
+
+    gjs_debug_lifecycle(GJS_DEBUG_DBUS,
+                        "exports constructor, obj %p priv %p", exports, priv);
+
+    priv->runtime = JS_GetRuntime(context);
+    priv->object = exports;
 
     return exports;
 }

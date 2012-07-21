@@ -1206,27 +1206,7 @@ function_call(JSContext *context,
     return success;
 }
 
-GJS_NATIVE_CONSTRUCTOR_DECLARE(function)
-{
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(function)
-    Function *priv;
-
-    GJS_NATIVE_CONSTRUCTOR_PRELUDE(name);
-
-    priv = g_slice_new0(Function);
-
-    GJS_INC_COUNTER(function);
-
-    g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(context, object, priv);
-
-    gjs_debug_lifecycle(GJS_DEBUG_GFUNCTION,
-                        "function constructor, obj %p priv %p", object, priv);
-
-    GJS_NATIVE_CONSTRUCTOR_FINISH(name);
-
-    return JS_TRUE;
-}
+GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(function)
 
 /* Does not actually free storage for structure, just
  * reverses init_cached_function_data
@@ -1602,13 +1582,23 @@ function_new(JSContext      *context,
                   gjs_function_class.name, prototype);
     }
 
-    function = JS_ConstructObject(context, &gjs_function_class, NULL, global);
+    function = JS_NewObject(context, &gjs_function_class, NULL, global);
     if (function == NULL) {
         gjs_debug(GJS_DEBUG_GFUNCTION, "Failed to construct function");
         return NULL;
     }
 
-    priv = priv_from_js(context, function);
+
+    priv = g_slice_new0(Function);
+
+    GJS_INC_COUNTER(function);
+
+    g_assert(priv_from_js(context, function) == NULL);
+    JS_SetPrivate(context, function, priv);
+
+    gjs_debug_lifecycle(GJS_DEBUG_GFUNCTION,
+                        "function constructor, obj %p priv %p", function, priv);
+
     if (!init_cached_function_data(context, priv, gtype, (GICallableInfo *)info))
       return NULL;
 

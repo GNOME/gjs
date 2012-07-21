@@ -43,24 +43,7 @@ static struct JSClass gjs_interface_class;
 
 GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Interface, gjs_interface_class)
 
-GJS_NATIVE_CONSTRUCTOR_DECLARE(interface)
-{
-    jsval obj;
-    JSObject *proto;
-    JSObject *constructor;
-    Interface *priv;
-
-    constructor = JSVAL_TO_OBJECT(JS_CALLEE(context, vp));
-    gjs_object_get_property(context, constructor, "prototype", &obj);
-    proto = JSVAL_TO_OBJECT(obj);
-    priv = priv_from_js(context, proto);
-
-    gjs_throw(context, "You cannot construct new instances of '%s.%s'",
-              g_base_info_get_namespace(priv->info),
-              g_base_info_get_name(priv->info));
-
-    return JS_TRUE;
-}
+GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(interface)
 
 static void
 interface_finalize(JSContext *context,

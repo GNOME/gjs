@@ -194,27 +194,7 @@ repo_new_resolve(JSContext *context,
     return ret;
 }
 
-GJS_NATIVE_CONSTRUCTOR_DECLARE(repo)
-{
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(repo)
-    Repo *priv;
-
-    GJS_NATIVE_CONSTRUCTOR_PRELUDE(repo);
-
-    priv = g_slice_new0(Repo);
-
-    GJS_INC_COUNTER(repo);
-
-    g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(context, object, priv);
-
-    gjs_debug_lifecycle(GJS_DEBUG_GREPO,
-                        "repo constructor, obj %p priv %p", object, priv);
-
-    GJS_NATIVE_CONSTRUCTOR_FINISH(repo);
-
-    return JS_TRUE;
-}
+GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(repo)
 
 static void
 repo_finalize(JSContext *context,
@@ -226,7 +206,7 @@ repo_finalize(JSContext *context,
     gjs_debug_lifecycle(GJS_DEBUG_GREPO,
                         "finalize, obj %p priv %p", obj, priv);
     if (priv == NULL)
-        return; /* we are the prototype, not a real instance, so constructor never called */
+        return; /* we are the prototype, not a real instance */
 
     GJS_DEC_COUNTER(repo);
     g_slice_free(Repo, priv);
@@ -263,6 +243,7 @@ static JSFunctionSpec gjs_repo_proto_funcs[] = {
 static JSObject*
 repo_new(JSContext *context)
 {
+    Repo *priv;
     JSObject *repo;
     JSObject *global;
     JSObject *versions;
@@ -302,16 +283,23 @@ repo_new(JSContext *context)
                   gjs_repo_class.name, prototype);
     }
 
-    repo = JS_ConstructObject(context, &gjs_repo_class, NULL, global);
+    repo = JS_NewObject(context, &gjs_repo_class, NULL, global);
     if (repo == NULL) {
         gjs_throw(context, "No memory to create repo object");
         return JS_FALSE;
     }
 
-    versions = JS_ConstructObject(context, NULL, NULL, NULL);
-    /* https://bugzilla.mozilla.org/show_bug.cgi?id=599651 means we
-     * can't just pass in the global as the parent */
-    JS_SetParent(context, versions, global);
+    priv = g_slice_new0(Repo);
+
+    GJS_INC_COUNTER(repo);
+
+    g_assert(priv_from_js(context, repo) == NULL);
+    JS_SetPrivate(context, repo, priv);
+
+    gjs_debug_lifecycle(GJS_DEBUG_GREPO,
+                        "repo constructor, obj %p priv %p", repo, priv);
+
+    versions = JS_NewObject(context, NULL, NULL, global);
 
     JS_DefineProperty(context, repo,
                       "versions",

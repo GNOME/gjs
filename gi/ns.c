@@ -126,26 +126,7 @@ ns_new_resolve(JSContext *context,
     return ret;
 }
 
-GJS_NATIVE_CONSTRUCTOR_DECLARE(ns)
-{
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(ns)
-    Ns *priv;
-
-    GJS_NATIVE_CONSTRUCTOR_PRELUDE(ns);
-
-    priv = g_slice_new0(Ns);
-
-    GJS_INC_COUNTER(ns);
-
-    g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(context, object, priv);
-
-    gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE, "ns constructor, obj %p priv %p", object, priv);
-
-    GJS_NATIVE_CONSTRUCTOR_FINISH(ns);
-
-    return JS_TRUE;
-}
+GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(ns)
 
 static void
 ns_finalize(JSContext *context,
@@ -157,7 +138,7 @@ ns_finalize(JSContext *context,
     gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE,
                         "finalize, obj %p priv %p", obj, priv);
     if (priv == NULL)
-        return; /* we are the prototype, not a real instance, so constructor never called */
+        return; /* we are the prototype, not a real instance */
 
     if (priv->namespace)
         g_free(priv->namespace);
@@ -241,9 +222,18 @@ ns_new(JSContext    *context,
                   gjs_ns_class.name, prototype);
     }
 
-    ns = JS_ConstructObject(context, &gjs_ns_class, NULL, global);
+    ns = JS_NewObject(context, &gjs_ns_class, NULL, global);
     if (ns == NULL)
         gjs_fatal("No memory to create ns object");
+
+    priv = g_slice_new0(Ns);
+
+    GJS_INC_COUNTER(ns);
+
+    g_assert(priv_from_js(context, ns) == NULL);
+    JS_SetPrivate(context, ns, priv);
+
+    gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE, "ns constructor, obj %p priv %p", ns, priv);
 
     priv = priv_from_js(context, ns);
     priv->repo = g_object_ref(repo);

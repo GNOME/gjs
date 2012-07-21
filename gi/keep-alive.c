@@ -78,26 +78,7 @@ child_free(void *data)
     g_slice_free(Child, child);
 }
 
-GJS_NATIVE_CONSTRUCTOR_DECLARE(keep_alive)
-{
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(keep_alive)
-    KeepAlive *priv;
-
-    GJS_NATIVE_CONSTRUCTOR_PRELUDE(keep_alive);
-
-    priv = g_slice_new0(KeepAlive);
-    priv->children = g_hash_table_new_full(child_hash, child_equal, NULL, child_free);
-
-    g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(context, object, priv);
-
-    gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE,
-                        "keep_alive constructor, obj %p priv %p", object, priv);
-
-    GJS_NATIVE_CONSTRUCTOR_FINISH(keep_alive);
-
-    return JS_TRUE;
-}
+GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(keep_alive)
 
 static void
 keep_alive_finalize(JSContext *context,
@@ -113,7 +94,7 @@ keep_alive_finalize(JSContext *context,
                         "keep_alive finalizing, obj %p priv %p", obj, priv);
 
     if (priv == NULL)
-        return; /* we are the prototype, not a real instance, so constructor never called */
+        return; /* we are the prototype, not a real instance */
 
     priv->inside_finalize = TRUE;
 
@@ -200,6 +181,7 @@ static JSFunctionSpec gjs_keep_alive_proto_funcs[] = {
 JSObject*
 gjs_keep_alive_new(JSContext *context)
 {
+    KeepAlive *priv;
     JSObject *keep_alive;
     JSObject *global;
 
@@ -259,11 +241,20 @@ gjs_keep_alive_new(JSContext *context)
               "Creating new keep-alive object for context %p global %p",
               context, global);
 
-    keep_alive = JS_ConstructObject(context, &gjs_keep_alive_class, NULL, global);
+    keep_alive = JS_NewObject(context, &gjs_keep_alive_class, NULL, global);
     if (keep_alive == NULL) {
         gjs_log_exception(context, NULL);
         gjs_fatal("Failed to create keep_alive object");
     }
+
+    priv = g_slice_new0(KeepAlive);
+    priv->children = g_hash_table_new_full(child_hash, child_equal, NULL, child_free);
+
+    g_assert(priv_from_js(context, keep_alive) == NULL);
+    JS_SetPrivate(context, keep_alive, priv);
+
+    gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE,
+                        "keep_alive constructor, obj %p priv %p", keep_alive, priv);
 
     JS_EndRequest(context);
 

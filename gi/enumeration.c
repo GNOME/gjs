@@ -172,7 +172,7 @@ gjs_define_enumeration(JSContext    *context,
         return JS_TRUE;
     }
 
-    enum_obj = JS_ConstructObject(context, NULL, NULL, NULL);
+    enum_obj = JS_NewObject(context, NULL, NULL, gjs_get_import_global (context));
     if (enum_obj == NULL)
         return JS_FALSE;
 

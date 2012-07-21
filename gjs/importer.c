@@ -228,7 +228,7 @@ import_native_file(JSContext  *context,
     gjs_debug(GJS_DEBUG_IMPORTER,
               "Importing '%s' from '%s'", name, full_path ? full_path : "<internal>");
 
-    module_obj = JS_ConstructObject(context, NULL, NULL, NULL);
+    module_obj = JS_NewObject(context, NULL, NULL, NULL);
     if (module_obj == NULL) {
         return JS_FALSE;
     }
@@ -422,7 +422,7 @@ import_file(JSContext  *context,
     gjs_debug(GJS_DEBUG_IMPORTER,
               "Importing '%s'", full_path);
 
-    module_obj = JS_ConstructObject(context, NULL, NULL, NULL);
+    module_obj = JS_NewObject(context, NULL, NULL, NULL);
     if (module_obj == NULL) {
         return JS_FALSE;
     }
@@ -981,35 +981,7 @@ importer_new_resolve(JSContext *context,
     return ret;
 }
 
-/* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on
- * the prototype in addition to on each instance. When called on the
- * prototype, "obj" is the prototype, and "retval" is the prototype
- * also, but can be replaced with another object to use instead as the
- * prototype. If we don't set JSCLASS_CONSTRUCT_PROTOTYPE we can
- * identify the prototype as an object of our class with NULL private
- * data.
- */
-GJS_NATIVE_CONSTRUCTOR_DECLARE(importer)
-{
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(importer)
-    Importer *priv;
-
-    GJS_NATIVE_CONSTRUCTOR_PRELUDE(importer);
-
-    priv = g_slice_new0(Importer);
-
-    GJS_INC_COUNTER(importer);
-
-    g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(context, object, priv);
-
-    gjs_debug_lifecycle(GJS_DEBUG_IMPORTER,
-                        "importer constructor, obj %p priv %p", object, priv);
-
-    GJS_NATIVE_CONSTRUCTOR_FINISH(importer);
-
-    return JS_TRUE;
-}
+GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(importer)
 
 static void
 importer_finalize(JSContext *context,
@@ -1021,7 +993,7 @@ importer_finalize(JSContext *context,
     gjs_debug_lifecycle(GJS_DEBUG_IMPORTER,
                         "finalize, obj %p priv %p", obj, priv);
     if (priv == NULL)
-        return; /* we are the prototype, not a real instance, so constructor never called */
+        return; /* we are the prototype, not a real instance */
 
     GJS_DEC_COUNTER(importer);
     g_slice_free(Importer, priv);
@@ -1099,9 +1071,19 @@ importer_new(JSContext    *context)
                   gjs_importer_class.name, prototype);
     }
 
-    importer = JS_ConstructObject(context, &gjs_importer_class, NULL, global);
+    importer = JS_NewObject(context, &gjs_importer_class, NULL, global);
     if (importer == NULL)
-        gjs_fatal("No memory to create ns object");
+        gjs_fatal("No memory to create importer importer");
+
+    priv = g_slice_new0(Importer);
+
+    GJS_INC_COUNTER(importer);
+
+    g_assert(priv_from_js(context, importer) == NULL);
+    JS_SetPrivate(context, importer, priv);
+
+    gjs_debug_lifecycle(GJS_DEBUG_IMPORTER,
+                        "importer constructor, obj %p priv %p", importer, priv);
 
     return importer;
 }

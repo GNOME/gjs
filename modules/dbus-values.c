@@ -44,7 +44,7 @@ _gjs_js_one_value_from_dbus_array_dict_entry(JSContext        *context,
     char *key;
     JSBool retval = JS_FALSE;
 
-    obj = JS_ConstructObject(context, NULL, NULL, NULL);
+    obj = JS_NewObject(context, NULL, NULL, NULL);
     if (obj == NULL)
         return JS_FALSE;
 

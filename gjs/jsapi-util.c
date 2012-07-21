@@ -567,6 +567,28 @@ gjs_throw_constructor_error(JSContext *context)
               "Constructor called as normal method. Use 'new SomeObject()' not 'SomeObject()'");
 }
 
+void
+gjs_throw_abstract_constructor_error(JSContext *context,
+                                     jsval     *vp)
+{
+    jsval callee;
+    jsval prototype;
+    JSClass *proto_class;
+    const char *name = "anonymous";
+
+    callee = JS_CALLEE(context, vp);
+
+    if (JSVAL_IS_OBJECT(callee)) {
+        if (gjs_object_get_property(context, JSVAL_TO_OBJECT(callee),
+                                    "prototype", &prototype)) {
+            proto_class = JS_GetClass(context, JSVAL_TO_OBJECT(prototype));
+            name = proto_class->name;
+        }
+    }
+
+    gjs_throw(context, "You cannot construct new instances of '%s'", name);
+}
+
 static const char*
 format_dynamic_class_name (const char *name)
 {

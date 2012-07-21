@@ -86,6 +86,19 @@ gjs_##name##_constructor(JSContext  *context,           \
 #define GJS_NATIVE_CONSTRUCTOR_FINISH(name)             \
     JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(object));
 
+/**
+ * GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT:
+ * Defines a constructor whose only purpose is to throw an error
+ * and fail. To be used with classes that require a constructor (because they have
+ * instances), but whose constructor cannot be used from JS code.
+ */
+#define GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(name)            \
+    GJS_NATIVE_CONSTRUCTOR_DECLARE(name)                        \
+    {                                                           \
+        gjs_throw_abstract_constructor_error(context, vp);      \
+        return JS_FALSE;                                        \
+    }
+
 G_END_DECLS
 
 #endif  /* __GJS_COMPAT_H__ */

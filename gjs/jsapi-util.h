@@ -238,6 +238,8 @@ JSObject *  gjs_init_class_dynamic           (JSContext       *context,
                                               JSPropertySpec  *static_ps,
                                               JSFunctionSpec  *static_fs);
 void gjs_throw_constructor_error             (JSContext       *context);
+void gjs_throw_abstract_constructor_error    (JSContext       *context,
+                                              jsval           *vp);
 
 JSBool gjs_typecheck_static_instance          (JSContext  *context,
                                                JSObject   *obj,
