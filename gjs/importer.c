@@ -53,6 +53,7 @@ GJS_DEFINE_PRIV_FROM_JS(Importer, gjs_importer_class)
 static JSBool
 define_meta_properties(JSContext  *context,
                        JSObject   *module_obj,
+                       const char *full_path,
                        const char *module_name,
                        JSObject   *parent)
 {
@@ -65,6 +66,18 @@ define_meta_properties(JSContext  *context,
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Defining parent %p of %p '%s' is mod %d",
               parent, module_obj, module_name ? module_name : "<root>", parent_is_module);
+
+    if (full_path != NULL) {
+        if (!JS_DefineProperty(context, module_obj,
+                               "__file__",
+                               STRING_TO_JSVAL(JS_NewStringCopyZ(context, full_path)),
+                               NULL, NULL,
+                               /* don't set ENUMERATE since we wouldn't want to copy
+                                * this symbol to any other object for example.
+                                */
+                               JSPROP_READONLY | JSPROP_PERMANENT))
+            return JS_FALSE;
+    }
 
     if (!JS_DefineProperty(context, module_obj,
                            "__moduleName__",
@@ -241,7 +254,7 @@ import_native_file(JSContext  *context,
     if (!define_import(context, obj, module_obj, name))
         return JS_FALSE;
 
-    if (!define_meta_properties(context, module_obj, name, obj))
+    if (!define_meta_properties(context, module_obj, full_path, name, obj))
         goto out;
 
     if (!gjs_import_native_module(context, module_obj, full_path, &flags))
@@ -430,7 +443,7 @@ import_file(JSContext  *context,
     if (!define_import(context, obj, module_obj, name))
         return JS_FALSE;
 
-    if (!define_meta_properties(context, module_obj, name, obj))
+    if (!define_meta_properties(context, module_obj, full_path, name, obj))
         goto out;
 
     script_len = 0;
@@ -1172,7 +1185,7 @@ gjs_define_importer(JSContext    *context,
 
     g_strfreev(search_path);
 
-    if (!define_meta_properties(context, importer, importer_name, in_object))
+    if (!define_meta_properties(context, importer, NULL, importer_name, in_object))
         gjs_fatal("failed to define meta properties on importer");
 
     if (!JS_DefineProperty(context, in_object,
