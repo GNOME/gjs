@@ -145,7 +145,7 @@ function _propertySetter(value, name, signature) {
                       this.call_finish(result);
                   } catch(e) {
                       log('Could not set property ' + name + ' on remote object ' +
-                          this.g_object_path, '. Error is ' + e.message);
+                          this.g_object_path + ': ' + e.message);
                   }
               }));
 }
