@@ -53,7 +53,7 @@ static struct JSClass gjs_error_class;
 
 static void define_error_properties(JSContext *, JSObject *);
 
-GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Error, gjs_error_class)
+GJS_DEFINE_PRIV_FROM_JS(Error, gjs_error_class)
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
 {
@@ -297,7 +297,7 @@ error_constructor_value_of(JSContext *context, uintN argc, jsval *vp)
  * class have.
  */
 static struct JSClass gjs_error_class = {
-    NULL, /* dynamic class, no name here */
+    "GLib_Error",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
     JSCLASS_NEW_RESOLVE_GETS_START,
@@ -435,28 +435,25 @@ gjs_define_error_class(JSContext    *context,
     parent_proto = gjs_lookup_boxed_prototype(context, glib_error_info);
     g_base_info_unref((GIBaseInfo*)glib_error_info);
 
-    prototype = gjs_init_class_dynamic(context, in_object,
-                                          parent_proto,
-                                          g_base_info_get_namespace( (GIBaseInfo*) info),
-                                          constructor_name,
-                                          &gjs_error_class,
-                                          gjs_error_constructor,
-                                          /* number of constructor args (less can be passed) */
-                                          1,
-                                          /* props of prototype */
-                                          &gjs_error_proto_props[0],
-                                          /* funcs of prototype */
-                                          &gjs_error_proto_funcs[0],
-                                          /* props of constructor, MyConstructor.myprop */
-                                          NULL,
-                                          /* funcs of constructor, MyConstructor.myfunc() */
-                                          &gjs_error_constructor_funcs[0]);
-    if (prototype == NULL) {
+    if (!gjs_init_class_dynamic(context, in_object,
+                                parent_proto,
+                                g_base_info_get_namespace( (GIBaseInfo*) info),
+                                constructor_name,
+                                &gjs_error_class,
+                                gjs_error_constructor, 1,
+                                /* props of prototype */
+                                &gjs_error_proto_props[0],
+                                /* funcs of prototype */
+                                &gjs_error_proto_funcs[0],
+                                /* props of constructor, MyConstructor.myprop */
+                                NULL,
+                                /* funcs of constructor, MyConstructor.myfunc() */
+                                &gjs_error_constructor_funcs[0],
+                                &prototype,
+                                &constructor)) {
         gjs_log_exception(context, NULL);
         gjs_fatal("Can't init class %s", constructor_name);
     }
-
-    g_assert(gjs_object_has_property(context, in_object, constructor_name));
 
     GJS_INC_COUNTER(gerror);
     priv = g_slice_new0(Error);
@@ -468,18 +465,6 @@ gjs_define_error_class(JSContext    *context,
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
               constructor_name, prototype, JS_GET_CLASS(context, prototype), in_object);
-
-    constructor = NULL;
-    gjs_object_get_property(context, in_object, constructor_name, &value);
-    if (!JSVAL_IS_VOID(value)) {
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "Property '%s' does not look like a constructor",
-                      constructor_name);
-            return JS_FALSE;
-        }
-    }
-
-    constructor = JSVAL_TO_OBJECT(value);
 
     gjs_define_enum_values(context, constructor, priv->info);
 

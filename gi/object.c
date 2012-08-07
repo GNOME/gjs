@@ -73,7 +73,7 @@ enum {
 
 static struct JSClass gjs_object_instance_class;
 
-GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
+GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 
 static JSObject*       peek_js_obj  (JSContext *context,
                                      GObject   *gobj);
@@ -1490,7 +1490,7 @@ to_string_func(JSContext *context,
 }
 
 static struct JSClass gjs_object_instance_class = {
-    NULL, /* We copy this class struct with multiple names */
+    "GObject_Object",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
     JSCLASS_NEW_RESOLVE_GETS_START |
@@ -1718,34 +1718,23 @@ gjs_define_object_class(JSContext     *context,
         ns = g_base_info_get_namespace((GIBaseInfo*) info);
     else
         ns = "unknown";
-    prototype = gjs_init_class_dynamic(context, in_object,
-                                       /* parent prototype JSObject* for
-                                        * prototype; NULL for
-                                        * Object.prototype
-                                        */
-                                       parent_proto,
-                                       ns,
-                                       constructor_name,
-                                       &gjs_object_instance_class,
-                                       /* constructor for instances (NULL for
-                                        * none - just name the prototype like
-                                        * Math - rarely correct)
-                                        */
-                                       gjs_object_instance_constructor,
-                                       /* number of constructor args */
-                                       0,
-                                       /* props of prototype */
-                                       parent_proto ? NULL : &gjs_object_instance_proto_props[0],
-                                       /* funcs of prototype */
-                                       parent_proto ? NULL : &gjs_object_instance_proto_funcs[0],
-                                       /* props of constructor, MyConstructor.myprop */
-                                       NULL,
-                                       /* funcs of constructor, MyConstructor.myfunc() */
-                                       NULL);
-    if (prototype == NULL)
+    if (!gjs_init_class_dynamic(context, in_object,
+                                parent_proto,
+                                ns, constructor_name,
+                                &gjs_object_instance_class,
+                                gjs_object_instance_constructor, 0,
+                                /* props of prototype */
+                                parent_proto ? NULL : &gjs_object_instance_proto_props[0],
+                                /* funcs of prototype */
+                                parent_proto ? NULL : &gjs_object_instance_proto_funcs[0],
+                                /* props of constructor, MyConstructor.myprop */
+                                NULL,
+                                /* funcs of constructor, MyConstructor.myfunc() */
+                                NULL,
+                                &prototype,
+                                &constructor)) {
         gjs_fatal("Can't init class %s", constructor_name);
-
-    g_assert(gjs_object_has_property(context, in_object, constructor_name));
+    }
 
     GJS_INC_COUNTER(object);
     priv = g_slice_new0(ObjectInstance);
@@ -1759,25 +1748,8 @@ gjs_define_object_class(JSContext     *context,
     gjs_debug(GJS_DEBUG_GOBJECT, "Defined class %s prototype %p class %p in object %p",
               constructor_name, prototype, JS_GET_CLASS(context, prototype), in_object);
 
-    /* Now get the constructor we defined in
-     * gjs_init_class_dynamic
-     */
-    gjs_object_get_property(context, in_object, constructor_name, &value);
-    constructor = NULL;
-    if (!JSVAL_IS_VOID(value)) {
-       if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "Property '%s' does not look like a constructor",
-                      constructor_name);
-            if (info)
-                g_base_info_unref((GIBaseInfo*)info);
-            return FALSE;
-       }
-
-       constructor = JSVAL_TO_OBJECT(value);
-
-       if (info)
-           gjs_define_static_methods(context, constructor, gtype, info);
-    }
+    if (info)
+        gjs_define_static_methods(context, constructor, gtype, info);
 
     value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,

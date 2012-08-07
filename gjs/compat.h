@@ -37,6 +37,8 @@
 #pragma GCC diagnostic pop
 #include <glib.h>
 
+#include <gjs/jsapi-util.h>
+
 G_BEGIN_DECLS
 
 /* This file inspects jsapi.h and attempts to provide a compatibility shim.
@@ -66,17 +68,16 @@ gjs_##name##_constructor(JSContext  *context,           \
  * GJS_NATIVE_CONSTRUCTOR_PRELUDE:
  * Call after the initial variable declaration.
  */
-#define GJS_NATIVE_CONSTRUCTOR_PRELUDE(name)                                         \
-    {                                                                                \
-        if (!JS_IsConstructing(context, vp)) {  \
-            gjs_throw_constructor_error(context);                                    \
-            return JS_FALSE;                                                         \
-        }                                                                            \
-        object = JS_NewObjectForConstructor(context, vp);                            \
-        if (object == NULL)                                                          \
-            return JS_FALSE;                                                         \
+#define GJS_NATIVE_CONSTRUCTOR_PRELUDE(name)                            \
+    {                                                                   \
+        if (!JS_IsConstructing(context, vp)) {                          \
+            gjs_throw_constructor_error(context);                       \
+            return JS_FALSE;                                            \
+        }                                                               \
+        object = gjs_new_object_for_constructor(context, &gjs_##name##_class, vp); \
+        if (object == NULL)                                             \
+            return JS_FALSE;                                            \
     }
-
 
 /**
  * GJS_NATIVE_CONSTRUCTOR_FINISH:

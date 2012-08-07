@@ -41,7 +41,7 @@ typedef struct {
 
 static struct JSClass gjs_param_class;
 
-GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Param, gjs_param_class)
+GJS_DEFINE_PRIV_FROM_JS(Param, gjs_param_class)
 
 static GIFieldInfo *
 find_field_info(GIObjectInfo *info,
@@ -427,7 +427,7 @@ param_new_internal(JSContext *cx,
  * class have.
  */
 static struct JSClass gjs_param_class = {
-    NULL, /* dynamic */
+    "GObject_ParamSpec",
     JSCLASS_HAS_PRIVATE,
     JS_PropertyStub,
     JS_PropertyStub,
@@ -509,47 +509,24 @@ gjs_define_param_class(JSContext    *context,
         return JS_TRUE;
     }
 
-    /* we could really just use JS_InitClass for this since we have one class instead of
-     * N classes on-demand. But, this deals with namespacing and such for us.
-     */
-    prototype = gjs_init_class_dynamic(context, in_object,
-                                          /* parent prototype JSObject* for
-                                           * prototype; NULL for
-                                           * Object.prototype
-                                           */
-                                          NULL,
-                                          "GObject",
-                                          constructor_name,
-                                          &gjs_param_class,
-                                          /* constructor for instances (NULL for
-                                           * none - just name the prototype like
-                                           * Math - rarely correct)
-                                           */
-                                          gjs_param_constructor,
-                                          /* number of constructor args */
-                                          0,
-                                          /* props of prototype */
-                                          &gjs_param_proto_props[0],
-                                          /* funcs of prototype */
-                                          &gjs_param_proto_funcs[0],
-                                          /* props of constructor, MyConstructor.myprop */
-                                          NULL,
-                                          /* funcs of constructor, MyConstructor.myfunc() */
-                                          gjs_param_constructor_funcs);
-    if (prototype == NULL)
+    if (!gjs_init_class_dynamic(context, in_object,
+                                NULL,
+                                "GObject",
+                                constructor_name,
+                                &gjs_param_class,
+                                gjs_param_constructor, 0,
+                                /* props of prototype */
+                                &gjs_param_proto_props[0],
+                                /* funcs of prototype */
+                                &gjs_param_proto_funcs[0],
+                                /* props of constructor, MyConstructor.myprop */
+                                NULL,
+                                /* funcs of constructor, MyConstructor.myfunc() */
+                                gjs_param_constructor_funcs,
+                                &prototype,
+                                &constructor)) {
         gjs_fatal("Can't init class %s", constructor_name);
-
-    constructor = NULL;
-    gjs_object_get_property(context, in_object, constructor_name, &value);
-    if (value != JSVAL_VOID) {
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "Property '%s' does not look like a constructor",
-                      constructor_name);
-            return JS_FALSE;
-        }
     }
-
-    constructor = JSVAL_TO_OBJECT(value);
 
     value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM));
     JS_DefineProperty(context, constructor, "$gtype", value,

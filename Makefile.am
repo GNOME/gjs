@@ -109,6 +109,7 @@ libgjs_la_SOURCES =		\
 	gjs/gi.c		\
 	gjs/jsapi-private.cpp	\
 	gjs/jsapi-util.c	\
+	gjs/jsapi-dynamic-class.c \
 	gjs/jsapi-util-array.c	\
 	gjs/jsapi-util-error.c	\
 	gjs/jsapi-util-string.c	\

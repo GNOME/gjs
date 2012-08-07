@@ -46,7 +46,7 @@ typedef struct {
 
 static struct JSClass gjs_union_class;
 
-GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Union, gjs_union_class)
+GJS_DEFINE_PRIV_FROM_JS(Union, gjs_union_class)
 
 /*
  * Like JSResolveOp, but flags provide contextual information as follows:
@@ -283,7 +283,7 @@ union_finalize(JSContext *context,
  * class have.
  */
 static struct JSClass gjs_union_class = {
-    NULL, /* dynamic class, no name here */
+    "GObject_Union",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
     JSCLASS_NEW_RESOLVE_GETS_START,
@@ -412,34 +412,24 @@ gjs_define_union_class(JSContext    *context,
         }
     }
 
-    prototype = gjs_init_class_dynamic(context, in_object,
-                                       /* parent prototype JSObject* for
-                                        * prototype; NULL for
-                                        * Object.prototype
-                                        */
-                                       NULL,
-                                       g_base_info_get_namespace( (GIBaseInfo*) info),
-                                       constructor_name,
-                                       &gjs_union_class,
-                                       /* constructor for instances (NULL for
-                                        * none - just name the prototype like
-                                        * Math - rarely correct)
-                                        */
-                                       gjs_union_constructor,
-                                       /* number of constructor args */
-                                       0,
-                                       /* props of prototype */
-                                       &gjs_union_proto_props[0],
-                                       /* funcs of prototype */
-                                       &gjs_union_proto_funcs[0],
-                                       /* props of constructor, MyConstructor.myprop */
-                                       NULL,
-                                       /* funcs of constructor, MyConstructor.myfunc() */
-                                       NULL);
-    if (prototype == NULL)
+    if (!gjs_init_class_dynamic(context, in_object,
+                                NULL,
+                                g_base_info_get_namespace( (GIBaseInfo*) info),
+                                constructor_name,
+                                &gjs_union_class,
+                                gjs_union_constructor, 0,
+                                /* props of prototype */
+                                &gjs_union_proto_props[0],
+                                /* funcs of prototype */
+                                &gjs_union_proto_funcs[0],
+                                /* props of constructor, MyConstructor.myprop */
+                                NULL,
+                                /* funcs of constructor, MyConstructor.myfunc() */
+                                NULL,
+                                &prototype,
+                                &constructor)) {
         gjs_fatal("Can't init class %s", constructor_name);
-
-    g_assert(gjs_object_has_property(context, in_object, constructor_name));
+    }
 
     GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Union);
@@ -451,17 +441,6 @@ gjs_define_union_class(JSContext    *context,
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
               constructor_name, prototype, JS_GET_CLASS(context, prototype), in_object);
 
-    gjs_object_get_property(context, in_object, constructor_name, &value);
-    if (!JSVAL_IS_VOID(value)) {
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "Property '%s' does not look like a constructor",
-                      constructor_name);
-            return JS_FALSE;
-        }
-    }
-
-    constructor = JSVAL_TO_OBJECT(value);
-    
     value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);

@@ -57,7 +57,7 @@ static JSBool boxed_set_field_from_value(JSContext   *context,
 
 static struct JSClass gjs_boxed_class;
 
-GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Boxed, gjs_boxed_class)
+GJS_DEFINE_PRIV_FROM_JS(Boxed, gjs_boxed_class)
 
 static JSBool
 gjs_define_static_methods(JSContext    *context,
@@ -884,7 +884,7 @@ define_boxed_class_fields (JSContext *context,
  * make sure it doesn't get freed.
  */
 static struct JSClass gjs_boxed_class = {
-    NULL, /* dynamic class, no name here */
+    "GObject_Boxed",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
     JSCLASS_NEW_RESOLVE_GETS_START |
@@ -1121,36 +1121,25 @@ gjs_define_boxed_class(JSContext    *context,
         }
     }
 
-    prototype = gjs_init_class_dynamic(context, in_object,
-                                          /* parent prototype JSObject* for
-                                           * prototype; NULL for
-                                           * Object.prototype
-                                           */
-                                          NULL,
-                                          g_base_info_get_namespace( (GIBaseInfo*) info),
-                                          constructor_name,
-                                          &gjs_boxed_class,
-                                          /* constructor for instances (NULL for
-                                           * none - just name the prototype like
-                                           * Math - rarely correct)
-                                           */
-                                          gjs_boxed_constructor,
-                                          /* number of constructor args (less can be passed) */
-                                          1,
-                                          /* props of prototype */
-                                          &gjs_boxed_proto_props[0],
-                                          /* funcs of prototype */
-                                          &gjs_boxed_proto_funcs[0],
-                                          /* props of constructor, MyConstructor.myprop */
-                                          NULL,
-                                          /* funcs of constructor, MyConstructor.myfunc() */
-                                          NULL);
-    if (prototype == NULL) {
+    if (!gjs_init_class_dynamic(context, in_object,
+                                NULL, /* parent prototype */
+                                g_base_info_get_namespace( (GIBaseInfo*) info),
+                                constructor_name,
+                                &gjs_boxed_class,
+                                gjs_boxed_constructor, 1,
+                                /* props of prototype */
+                                &gjs_boxed_proto_props[0],
+                                /* funcs of prototype */
+                                &gjs_boxed_proto_funcs[0],
+                                /* props of constructor, MyConstructor.myprop */
+                                NULL,
+                                /* funcs of constructor, MyConstructor.myfunc() */
+                                NULL,
+                                &prototype,
+                                &constructor)) {
         gjs_log_exception(context, NULL);
         gjs_fatal("Can't init class %s", constructor_name);
     }
-
-    g_assert(gjs_object_has_property(context, in_object, constructor_name));
 
     GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Boxed);
@@ -1165,18 +1154,6 @@ gjs_define_boxed_class(JSContext    *context,
     priv->can_allocate_directly = struct_is_simple (priv->info);
 
     define_boxed_class_fields (context, priv, prototype);
-
-    constructor = NULL;
-    gjs_object_get_property(context, in_object, constructor_name, &value);
-    if (!JSVAL_IS_VOID(value)) {
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "Property '%s' does not look like a constructor",
-                      constructor_name);
-            return JS_FALSE;
-        }
-    }
-
-    constructor = JSVAL_TO_OBJECT(value);
     gjs_define_static_methods (context, constructor, priv->gtype, priv->info);
 
     value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, priv->gtype));

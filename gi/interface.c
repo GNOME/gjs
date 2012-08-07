@@ -41,7 +41,7 @@ typedef struct {
 
 static struct JSClass gjs_interface_class;
 
-GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(Interface, gjs_interface_class)
+GJS_DEFINE_PRIV_FROM_JS(Interface, gjs_interface_class)
 
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(interface)
 
@@ -142,7 +142,7 @@ interface_new_resolve(JSContext *context,
 }
 
 static struct JSClass gjs_interface_class = {
-    NULL, /* dynamic */
+    "GObject_Interface",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
     JSCLASS_NEW_RESOLVE_GETS_START,
@@ -208,34 +208,24 @@ gjs_define_interface_class(JSContext       *context,
         return JS_TRUE;
     }
 
-    prototype = gjs_init_class_dynamic(context, in_object,
-                                       /* parent prototype JSObject* for
-                                        * prototype; NULL for
-                                        * Object.prototype
-                                        */
-                                       NULL,
-                                       g_base_info_get_namespace((GIBaseInfo*)info),
-                                       constructor_name,
-                                       &gjs_interface_class,
-                                       /* constructor for instances (NULL for
-                                        * none - just name the prototype like
-                                        * Math - rarely correct)
-                                        */
-                                       gjs_interface_constructor,
-                                       /* number of constructor args */
-                                       0,
-                                       /* props of prototype */
-                                       &gjs_interface_proto_props[0],
-                                       /* funcs of prototype */
-                                       &gjs_interface_proto_funcs[0],
-                                       /* props of constructor, MyConstructor.myprop */
-                                       NULL,
-                                       /* funcs of constructor, MyConstructor.myfunc() */
-                                       NULL);
-    if (prototype == NULL)
+    if (!gjs_init_class_dynamic(context, in_object,
+                                NULL,
+                                g_base_info_get_namespace((GIBaseInfo*)info),
+                                constructor_name,
+                                &gjs_interface_class,
+                                gjs_interface_constructor, 0,
+                                /* props of prototype */
+                                &gjs_interface_proto_props[0],
+                                /* funcs of prototype */
+                                &gjs_interface_proto_funcs[0],
+                                /* props of constructor, MyConstructor.myprop */
+                                NULL,
+                                /* funcs of constructor, MyConstructor.myfunc() */
+                                NULL,
+                                &prototype,
+                                &constructor)) {
         gjs_fatal("Can't init class %s", constructor_name);
-
-    g_assert(gjs_object_has_property(context, in_object, constructor_name));
+    }
 
     GJS_INC_COUNTER(interface);
     priv = g_slice_new0(Interface);
@@ -244,15 +234,6 @@ gjs_define_interface_class(JSContext       *context,
     g_base_info_ref((GIBaseInfo*)priv->info);
     JS_SetPrivate(context, prototype, priv);
 
-    gjs_object_get_property(context, in_object, constructor_name, &value);
-
-    if (!JSVAL_IS_OBJECT(value)) {
-        gjs_throw(context, "Property '%s' does not look like a constructor",
-                  constructor_name);
-        return FALSE;
-    }
-
-    constructor = JSVAL_TO_OBJECT(value);
     gjs_define_static_methods(context, constructor, priv->gtype, priv->info);
 
     value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, priv->gtype));

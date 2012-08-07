@@ -73,38 +73,13 @@ typedef struct GjsRootedArray GjsRootedArray;
                       JSObject  *object,                                \
                       JSBool     throw)                                 \
     {                                                                   \
-        return gjs_typecheck_static_instance(context, object, &class, throw); \
+        return gjs_typecheck_instance(context, object, &class, throw);  \
     }                                                                   \
     static inline type*                                                 \
     priv_from_js(JSContext *context,                                    \
                  JSObject  *object)                                     \
     {                                                                   \
         return JS_GetInstancePrivate(context, object, &class, NULL);    \
-    }                                                                   \
-    __attribute__((unused)) static JSBool                               \
-    priv_from_js_with_typecheck(JSContext *context,                     \
-                                JSObject  *object,                      \
-                                type      **out)                        \
-    {                                                                   \
-        if (!do_base_typecheck(context, object, JS_FALSE))              \
-            return JS_FALSE;                                            \
-        *out = priv_from_js(context, object);                           \
-        return JS_TRUE;                                                 \
-    }
-
-#define GJS_DEFINE_DYNAMIC_PRIV_FROM_JS(type, class)                    \
-    __attribute__((unused)) static inline JSBool                        \
-    do_base_typecheck(JSContext *context,                               \
-                      JSObject  *object,                                \
-                      JSBool     throw)                                 \
-    {                                                                   \
-        return gjs_typecheck_dynamic_instance(context, object, &class, throw); \
-    }                                                                   \
-    static inline type*                                                 \
-    priv_from_js(JSContext *context,                                    \
-                 JSObject  *object)                                     \
-    {                                                                   \
-        return JS_GetPrivate(context, object);                          \
     }                                                                   \
     __attribute__((unused)) static JSBool                               \
     priv_from_js_with_typecheck(JSContext *context,                     \
@@ -225,7 +200,11 @@ gboolean    gjs_object_require_property      (JSContext       *context,
                                               const char      *obj_description,
                                               const char      *property_name,
                                               jsval           *value_p);
-JSObject *  gjs_init_class_dynamic           (JSContext       *context,
+
+JSObject   *gjs_new_object_for_constructor   (JSContext       *context,
+                                              JSClass         *clasp,
+                                              jsval           *vp);
+JSBool      gjs_init_class_dynamic           (JSContext       *context,
                                               JSObject        *in_object,
                                               JSObject        *parent_proto,
                                               const char      *ns_name,
@@ -236,16 +215,14 @@ JSObject *  gjs_init_class_dynamic           (JSContext       *context,
                                               JSPropertySpec  *ps,
                                               JSFunctionSpec  *fs,
                                               JSPropertySpec  *static_ps,
-                                              JSFunctionSpec  *static_fs);
+                                              JSFunctionSpec  *static_fs,
+                                              JSObject       **constructor_p,
+                                              JSObject       **prototype_p);
 void gjs_throw_constructor_error             (JSContext       *context);
 void gjs_throw_abstract_constructor_error    (JSContext       *context,
                                               jsval           *vp);
 
-JSBool gjs_typecheck_static_instance          (JSContext  *context,
-                                               JSObject   *obj,
-                                               JSClass    *static_clasp,
-                                               JSBool      _throw);
-JSBool gjs_typecheck_dynamic_instance         (JSContext  *context,
+JSBool gjs_typecheck_instance                 (JSContext  *context,
                                                JSObject   *obj,
                                                JSClass    *static_clasp,
                                                JSBool      _throw);
