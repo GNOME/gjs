@@ -1539,9 +1539,10 @@ init_cached_function_data (JSContext      *context,
 
                     if (array_length_pos < i) {
                         /* we already collected array_length_pos, remove it */
-                        function->expected_js_argc -= 1;
+                        if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT)
+                            function->expected_js_argc -= 1;
                         if (direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT)
-                            function->js_out_argc--;
+                            function->js_out_argc -= 1;
                     }
                 }
             }
