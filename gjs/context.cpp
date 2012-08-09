@@ -79,6 +79,7 @@ static const char *const_strings[] = {
     "gi", "versions", "overrides",
     "_init", "_new_internal", "new",
     "message", "code", "stack", "fileName", "lineNumber", "name",
+    "x", "y", "width", "height",
 };
 
 G_STATIC_ASSERT(G_N_ELEMENTS(const_strings) == GJS_STRING_LAST);

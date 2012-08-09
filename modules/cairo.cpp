@@ -53,6 +53,12 @@ gjs_js_define_cairo_stuff(JSContext *context,
 
     module = JS_NewObject (context, NULL, NULL, NULL);
 
+    obj = gjs_cairo_region_create_proto(context, module,
+                                        "Region", NULL);
+    if (JSVAL_IS_NULL(obj))
+        return JS_FALSE;
+    gjs_cairo_region_init(context);
+
     obj = gjs_cairo_context_create_proto(context, module,
                                          "Context", NULL);
     if (JSVAL_IS_NULL(obj))

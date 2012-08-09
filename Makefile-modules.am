@@ -32,6 +32,7 @@ libcairoNative_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD) $(GJS_CAIRO_LIBS)
 libcairoNative_la_SOURCES =                       \
 	modules/cairo-private.h                   \
 	modules/cairo-module.h                    \
+	modules/cairo-region.cpp                  \
 	modules/cairo-context.cpp                 \
 	modules/cairo-path.cpp                 	  \
 	modules/cairo-surface.cpp                 \

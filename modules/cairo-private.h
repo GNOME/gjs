@@ -30,6 +30,13 @@ JSBool           gjs_cairo_check_status                 (JSContext       *contex
                                                          cairo_status_t   status,
                                                          const char      *name);
 
+jsval            gjs_cairo_region_create_proto          (JSContext       *context,
+                                                         JSObject        *module,
+                                                         const char      *proto_name,
+                                                         JSObject        *parent);
+void             gjs_cairo_region_init                  (JSContext       *context);
+
+
 jsval            gjs_cairo_context_create_proto         (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
