@@ -695,6 +695,9 @@ gjs_info_type_name(GIInfoType type)
         return "TYPE";
     case GI_INFO_TYPE_UNRESOLVED:
         return "UNRESOLVED";
+    case GI_INFO_TYPE_INVALID_0:
+        g_assert_not_reached();
+        break;
     }
 
     return "???";

@@ -540,7 +540,7 @@ to_string_func(JSContext *context,
         /* the internal data pointer could be NULL in this case */
         data = "";
     else
-        data = priv->array->data;
+        data = (gchar*)priv->array->data;
 
     if (encoding_is_utf8) {
         /* optimization, avoids iconv overhead and runs

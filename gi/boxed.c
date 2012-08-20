@@ -1037,6 +1037,9 @@ type_can_be_allocated_directly(GITypeInfo *type_info)
                 case GI_INFO_TYPE_UNRESOLVED:
                     is_simple = FALSE;
                     break;
+                case GI_INFO_TYPE_INVALID_0:
+                    g_assert_not_reached();
+                    break;
                 }
 
                 g_base_info_unref(interface);
