@@ -582,7 +582,7 @@ gjs_array_to_intarray(JSContext   *context,
         if (!success) {
             g_free(result);
             gjs_throw(context,
-                      "Invalid element in string array");
+                      "Invalid element in int array");
             return JS_FALSE;
         }
         /* Note that this is truncating assignment. */
