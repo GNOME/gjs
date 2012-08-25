@@ -32,6 +32,7 @@
 #include "gjs/mem.h"
 #include "repo.h"
 #include "gerror.h"
+#include "util/error.h"
 
 #include <util/log.h>
 
@@ -428,6 +429,48 @@ define_error_properties(JSContext       *cx,
         exc.restore();
 }
 
+static JSProtoKey
+proto_key_from_error_enum(int val)
+{
+    switch (val) {
+    case GJS_JS_ERROR_EVAL_ERROR:
+        return JSProto_EvalError;
+    case GJS_JS_ERROR_INTERNAL_ERROR:
+        return JSProto_InternalError;
+    case GJS_JS_ERROR_RANGE_ERROR:
+        return JSProto_RangeError;
+    case GJS_JS_ERROR_REFERENCE_ERROR:
+        return JSProto_ReferenceError;
+    case GJS_JS_ERROR_STOP_ITERATION:
+        return JSProto_StopIteration;
+    case GJS_JS_ERROR_SYNTAX_ERROR:
+        return JSProto_SyntaxError;
+    case GJS_JS_ERROR_TYPE_ERROR:
+        return JSProto_TypeError;
+    case GJS_JS_ERROR_URI_ERROR:
+        return JSProto_URIError;
+    case GJS_JS_ERROR_ERROR:
+    default:
+        return JSProto_Error;
+    }
+}
+
+static JSObject *
+gjs_error_from_js_gerror(JSContext *cx,
+                         GError    *gerror)
+{
+    JS::AutoValueArray<1> error_args(cx);
+    if (!gjs_string_from_utf8(cx, gerror->message, -1, error_args[0]))
+        return nullptr;
+
+    JSProtoKey error_kind = proto_key_from_error_enum(gerror->code);
+    JS::RootedObject error_constructor(cx);
+    if (!JS_GetClassObject(cx, error_kind, &error_constructor))
+        return nullptr;
+
+    return JS_New(cx, error_constructor, error_args);
+}
+
 JSObject*
 gjs_error_from_gerror(JSContext             *context,
                       GError                *gerror,
@@ -439,6 +482,9 @@ gjs_error_from_gerror(JSContext             *context,
 
     if (gerror == NULL)
         return NULL;
+
+    if (gerror->domain == GJS_JS_ERROR)
+        return gjs_error_from_js_gerror(context, gerror);
 
     info = find_error_domain_info(gerror->domain);
 
@@ -519,4 +565,46 @@ gjs_typecheck_gerror (JSContext       *context,
         return true;
 
     return do_base_typecheck(context, obj, throw_error);
+}
+
+GError *
+gjs_gerror_make_from_error(JSContext       *cx,
+                           JS::HandleObject obj)
+{
+    using AutoEnumClass = std::unique_ptr<GEnumClass, decltype(&g_type_class_unref)>;
+
+    if (gjs_typecheck_gerror(cx, obj, false)) {
+        /* This is already a GError, just copy it */
+        GError *inner = gjs_gerror_from_error(cx, obj);
+        return g_error_copy(inner);
+    }
+
+    /* Try to make something useful from the error
+       name and message (in case this is a JS error) */
+    JS::RootedValue v_name(cx);
+    if (!gjs_object_get_property(cx, obj, GJS_STRING_NAME, &v_name))
+        return nullptr;
+
+    GjsAutoJSChar name(cx);
+    if (!gjs_string_to_utf8(cx, v_name, &name))
+        return nullptr;
+
+    JS::RootedValue v_message(cx);
+    if (!gjs_object_get_property(cx, obj, GJS_STRING_MESSAGE, &v_message))
+        return nullptr;
+
+    GjsAutoJSChar message(cx);
+    if (!gjs_string_to_utf8(cx, v_message, &message))
+        return nullptr;
+
+    AutoEnumClass klass(static_cast<GEnumClass *>(g_type_class_ref(GJS_TYPE_JS_ERROR)),
+                        g_type_class_unref);
+    const GEnumValue *value = g_enum_get_value_by_name(klass.get(), name);
+    int code;
+    if (value)
+        code = value->value;
+    else
+        code = GJS_JS_ERROR_ERROR;
+
+    return g_error_new_literal(GJS_JS_ERROR, code, message);
 }
