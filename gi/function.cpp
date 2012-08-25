@@ -169,15 +169,16 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
 static void
 gjs_callback_closure(ffi_cif *cif,
                      void *result,
-                     void **args,
+                     void **ffi_args,
                      void *data)
 {
     JSContext *context;
     GjsCallbackTrampoline *trampoline;
-    int i, n_args, n_jsargs, n_outargs;
+    int i, n_args, n_jsargs, n_outargs, c_args_offset = 0;
     GITypeInfo ret_type;
     bool success = false;
     bool ret_type_is_void;
+    auto args = reinterpret_cast<GIArgument **>(ffi_args);
 
     trampoline = (GjsCallbackTrampoline *) data;
     g_assert(trampoline);
@@ -209,6 +210,16 @@ gjs_callback_closure(ffi_cif *cif,
 
     g_assert(n_args >= 0);
 
+    JS::RootedObject this_object(context);
+    if (trampoline->is_vfunc) {
+        auto this_gobject = static_cast<GObject *>(args[0]->v_pointer);
+        this_object = gjs_object_from_g_object(context, this_gobject);
+
+        /* "this" is not included in the GI signature, but is in the C (and
+         * FFI) signature */
+        c_args_offset = 1;
+    }
+
     n_outargs = 0;
     JS::AutoValueVector jsargs(context);
 
@@ -216,7 +227,6 @@ gjs_callback_closure(ffi_cif *cif,
         g_error("Unable to reserve space for vector");
 
     JS::RootedValue rval(context);
-    JS::RootedObject this_object(context);
 
     for (i = 0, n_jsargs = 0; i < n_args; i++) {
         GIArgInfo arg_info;
@@ -251,16 +261,18 @@ gjs_callback_closure(ffi_cif *cif,
 
                 g_callable_info_load_arg(trampoline->info, array_length_pos, &array_length_arg);
                 g_arg_info_load_type(&array_length_arg, &arg_type_info);
-                if (!gjs_value_from_g_argument(context, &length,
-                                               &arg_type_info,
-                                               (GArgument *) args[array_length_pos], true))
+                if (!gjs_value_from_g_argument(context, &length, &arg_type_info,
+                                               args[array_length_pos + c_args_offset],
+                                               true))
                     goto out;
 
                 if (!jsargs.growBy(1))
                     g_error("Unable to grow vector");
 
                 if (!gjs_value_from_explicit_array(context, jsargs[n_jsargs++],
-                                                   &type_info, (GArgument*) args[i], length.toInt32()))
+                                                   &type_info,
+                                                   args[i + c_args_offset],
+                                                   length.toInt32()))
                     goto out;
                 break;
             }
@@ -270,7 +282,8 @@ gjs_callback_closure(ffi_cif *cif,
 
                 if (!gjs_value_from_g_argument(context, jsargs[n_jsargs++],
                                                &type_info,
-                                               (GArgument *) args[i], false))
+                                               args[i + c_args_offset],
+                                               false))
                     goto out;
                 break;
             case PARAM_CALLBACK:
@@ -278,13 +291,6 @@ gjs_callback_closure(ffi_cif *cif,
                  * supported, see gjs_callback_trampoline_new() */
             default:
                 g_assert_not_reached();
-        }
-
-        if (trampoline->is_vfunc && i == 0) {
-            g_assert(n_jsargs > 0);
-            this_object = jsargs[0].toObjectOrNull();
-            jsargs.popBack();
-            n_jsargs--;
         }
     }
 
@@ -334,7 +340,7 @@ gjs_callback_closure(ffi_cif *cif,
                                          GJS_ARGUMENT_ARGUMENT,
                                          GI_TRANSFER_NOTHING,
                                          true,
-                                         *(GArgument **)args[i]))
+                                         *(GIArgument **)args[i + c_args_offset]))
                 goto out;
 
             break;
@@ -387,7 +393,7 @@ gjs_callback_closure(ffi_cif *cif,
                                          GJS_ARGUMENT_ARGUMENT,
                                          GI_TRANSFER_NOTHING,
                                          true,
-                                         *(GArgument **)args[i]))
+                                         *(GIArgument **)args[i + c_args_offset]))
                 goto out;
 
             elem_idx++;
