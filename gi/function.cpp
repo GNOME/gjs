@@ -206,6 +206,7 @@ gjs_callback_closure(ffi_cif *cif,
     JSAutoCompartment ac(context,
                          gjs_closure_get_callable(trampoline->js_function));
 
+    bool can_throw_gerror = g_callable_info_can_throw_gerror(trampoline->info);
     n_args = g_callable_info_get_n_args(trampoline->info);
 
     g_assert(n_args >= 0);
@@ -294,7 +295,8 @@ gjs_callback_closure(ffi_cif *cif,
         }
     }
 
-    if (!gjs_closure_invoke(trampoline->js_function, this_object, jsargs, &rval))
+    if (!gjs_closure_invoke(trampoline->js_function, this_object, jsargs, &rval,
+                            true))
         goto out;
 
     g_callable_info_load_return_type(trampoline->info, &ret_type);
@@ -418,11 +420,28 @@ out:
             exit(1);
         }
 
-        gjs_log_exception (context);
-
         /* Fill in the result with some hopefully neutral value */
         g_callable_info_load_return_type(trampoline->info, &ret_type);
         gjs_g_argument_init_default (context, &ret_type, (GArgument *) result);
+
+        /* If the callback has a GError** argument and invoking the closure
+         * returned an error, try to make a GError from it */
+        if (can_throw_gerror && rval.isObject()) {
+            JS::RootedObject exc_object(context, &rval.toObject());
+            GError *local_error = gjs_gerror_make_from_error(context, exc_object);
+
+            if (local_error) {
+                /* the GError ** pointer is the last argument, and is not
+                 * included in the n_args */
+                GIArgument *error_argument = args[n_args + c_args_offset];
+                auto gerror = static_cast<GError **>(error_argument->v_pointer);
+                g_propagate_error(gerror, local_error);
+                JS_ClearPendingException(context);  /* don't log */
+            }
+        } else if (!rval.isUndefined()) {
+            JS_SetPendingException(context, rval);
+        }
+        gjs_log_exception(context);
     }
 
     if (trampoline->scope == GI_SCOPE_TYPE_ASYNC) {

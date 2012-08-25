@@ -269,7 +269,7 @@ closure_marshal(GClosure        *closure,
             g_base_info_unref((GIBaseInfo *)type_info_for[i]);
 
     JS::RootedValue rval(context);
-    gjs_closure_invoke(closure, nullptr, argv, &rval);
+    gjs_closure_invoke(closure, nullptr, argv, &rval, false);
 
     if (return_value != NULL) {
         if (rval.isUndefined()) {

@@ -574,6 +574,28 @@ const VFuncTester = GObject.registerClass(class VFuncTester extends GIMarshallin
     vfunc_vfunc_return_value_and_one_out_parameter() { return [46, 47]; }
     vfunc_vfunc_return_value_and_multiple_out_parameters() { return [48, 49, 50]; }
     vfunc_vfunc_array_out_parameter() { return [50, 51]; }
+    vfunc_vfunc_meth_with_err(x) {
+        switch (x) {
+        case -1:
+            return true;
+        case 0:
+            undefined.throw_type_error();
+            break;
+        case 1:
+            void reference_error;  // eslint-disable-line no-undef
+            break;
+        case 2:
+            throw new Gio.IOErrorEnum({
+                code: Gio.IOErrorEnum.FAILED,
+                message: 'I FAILED, but the test passed!',
+            });
+        case 3:
+            throw new GLib.SpawnError({
+                code: GLib.SpawnError.TOO_BIG,
+                message: 'This test is Too Big to Fail',
+            });
+        }
+    }
 });
 
 describe('Virtual function', function () {
@@ -606,6 +628,33 @@ describe('Virtual function', function () {
 
     it('marshals an array out parameter', function () {
         expect(tester.vfunc_array_out_parameter()).toEqual([50, 51]);
+    });
+
+    it('marshals an error out parameter when no error', function () {
+        expect(tester.vfunc_meth_with_error(-1)).toBeTruthy();
+    });
+
+    it('marshals an error out parameter with a JavaScript exception', function () {
+        expect(() => tester.vfunc_meth_with_error(0)).toThrowError(TypeError);
+        expect(() => tester.vfunc_meth_with_error(1)).toThrowError(ReferenceError);
+    });
+
+    it('marshals an error out parameter with a GError exception', function () {
+        try {
+            tester.vfunc_meth_with_error(2);
+            fail('Exception should be thrown');
+        } catch (e) {
+            expect(e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.FAILED)).toBeTruthy();
+            expect(e.message).toEqual('I FAILED, but the test passed!');
+        }
+
+        try {
+            tester.vfunc_meth_with_error(3);
+            fail('Exception should be thrown');
+        } catch (e) {
+            expect(e.matches(GLib.SpawnError, GLib.SpawnError.TOO_BIG)).toBeTruthy();
+            expect(e.message).toEqual('This test is Too Big to Fail');
+        }
     });
 });
 

@@ -189,7 +189,8 @@ bool
 gjs_closure_invoke(GClosure                   *closure,
                    JS::HandleObject            this_obj,
                    const JS::HandleValueArray& args,
-                   JS::MutableHandleValue      retval)
+                   JS::MutableHandleValue      retval,
+                   bool                        return_exception)
 {
     Closure *c;
     JSContext *context;
@@ -218,9 +219,20 @@ gjs_closure_invoke(GClosure                   *closure,
         gjs_debug_closure("Closure invocation failed (exception should "
                           "have been thrown) closure %p callable %p",
                           closure, c->obj.get());
-        if (!gjs_log_exception(context))
+        /* If an exception has been thrown, log it, unless the caller
+         * explicitly wants to handle it manually (for example to turn it
+         * into a GError), in which case it replaces the return value
+         * (which is not valid anyway) */
+        if (JS_IsExceptionPending(context)) {
+            if (return_exception)
+                JS_GetPendingException(context, retval);
+            else
+                gjs_log_exception(context);
+        } else {
+            retval.setUndefined();
             gjs_debug_closure("Closure invocation failed but no exception was set?"
                               "closure %p", closure);
+        }
         return false;
     }
 
