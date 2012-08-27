@@ -42,17 +42,14 @@ cairoNative_la_CFLAGS =                         \
         $(GJS_CAIRO_CFLAGS)                     \
         $(GJS_CFLAGS)
 cairoNative_la_LIBADD =                         \
-        libgjs.la                            \
         $(JS_NATIVE_MODULE_LIBADD)              \
         $(GJS_CAIRO_LIBS)                       \
         $(GJS_LIBS)
-cairoNative_la_LDFLAGS =                        \
-        $(JS_NATIVE_MODULE_LDFLAGS)
-
+cairoNative_la_LDFLAGS = $(JS_NATIVE_MODULE_LDFLAGS)
 cairoNative_la_SOURCES =                        \
 	modules/cairo-private.h                 \
 	modules/cairo-context.c                 \
-	modules/cairo-path.c                 \
+	modules/cairo-path.c                 	\
 	modules/cairo-surface.c                 \
 	modules/cairo-image-surface.c           \
 	modules/cairo-ps-surface.c              \
@@ -66,25 +63,18 @@ cairoNative_la_SOURCES =                        \
 	modules/cairo-solid-pattern.c           \
 	modules/cairo.c
 
-system_la_CFLAGS = 				\
-	$(JS_NATIVE_MODULE_CFLAGS)
-system_la_LIBADD = \
-	$(JS_NATIVE_MODULE_LIBADD)
-system_la_LDFLAGS = 				\
-	$(JS_NATIVE_MODULE_LDFLAGS)
-
-system_la_SOURCES =		\
-	modules/system.h	\
+system_la_CFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
+system_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD)
+system_la_LDFLAGS = $(JS_NATIVE_MODULE_LDFLAGS)
+system_la_SOURCES =				\
+	modules/system.h			\
 	modules/system.c
 
-console_la_CFLAGS = 				\
-	$(JS_NATIVE_MODULE_CFLAGS)
-console_la_LIBADD = \
+console_la_CFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
+console_la_LIBADD =				\
 	$(JS_NATIVE_MODULE_LIBADD)		\
 	$(READLINE_LIBS)
-console_la_LDFLAGS = 				\
-	$(JS_NATIVE_MODULE_LDFLAGS)
-
-console_la_SOURCES =		\
-	modules/console.h	\
+console_la_LDFLAGS = $(JS_NATIVE_MODULE_LDFLAGS)
+console_la_SOURCES =				\
+	modules/console.h			\
 	modules/console.c
