@@ -996,8 +996,9 @@ object_instance_init (JSContext *context,
                         "JSObject created with GObject %p %s",
                         priv->gobj, g_type_name_from_instance((GTypeInstance*) priv->gobj));
 
-    TRACE(GJS_OBJECT_PROXY_NEW(priv, priv->gobj, g_base_info_get_namespace ( (GIBaseInfo*) priv->info),
-                               g_base_info_get_name ( (GIBaseInfo*) priv->info) ));
+    TRACE(GJS_OBJECT_PROXY_NEW(priv, priv->gobj,
+                               priv->info ? g_base_info_get_namespace((GIBaseInfo*) priv->info) : "_gjs_private",
+                               priv->info ? g_base_info_get_name((GIBaseInfo*) priv->info) : g_type_name(gtype)));
 
  out:
     return JS_TRUE;
@@ -1075,8 +1076,8 @@ object_instance_finalize(JSContext *context,
         return; /* we are the prototype, not a real instance, so constructor never called */
 
     TRACE(GJS_OBJECT_PROXY_FINALIZE(priv, priv->gobj,
-                                    priv->info ? g_base_info_get_namespace ( (GIBaseInfo*) priv->info) : "",
-                                    priv->info ? g_base_info_get_name ( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype)));
+                                    priv->info ? g_base_info_get_namespace((GIBaseInfo*) priv->info) : "_gjs_private",
+                                    priv->info ? g_base_info_get_name((GIBaseInfo*) priv->info) : g_type_name(priv->gtype)));
 
     if (priv->gobj) {
         invalidate_all_signals (priv);
