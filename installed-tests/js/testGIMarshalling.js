@@ -644,3 +644,17 @@ describe('Interface', function () {
         expect(ifaceImpl).toEqual(itself);
     });
 });
+
+describe('GObject properties', function () {
+    let obj;
+    beforeEach(function () {
+        obj = new GIMarshallingTests.PropertiesObject();
+    });
+
+    it('can handle GValues', function () {
+        obj.some_gvalue = 42;
+        expect(obj.some_gvalue).toEqual(42);
+        obj.some_gvalue = 'foo';
+        expect(obj.some_gvalue).toEqual('foo');
+    });
+});

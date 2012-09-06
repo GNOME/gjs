@@ -521,9 +521,21 @@ gjs_value_to_g_value_internal(JSContext      *context,
         void *gboxed;
 
         gboxed = NULL;
-        if (value.isNull()) {
-            /* nothing to do */
-        } else if (value.isObject()) {
+        if (value.isNull())
+            return true;
+
+        /* special case GValue */
+        if (g_type_is_a(gtype, G_TYPE_VALUE)) {
+            GValue nested_gvalue = G_VALUE_INIT;
+
+            if (!gjs_value_to_g_value(context, value, &nested_gvalue))
+                return false;
+
+            g_value_set_boxed(gvalue, &nested_gvalue);
+            return true;
+        }
+
+        if (value.isObject()) {
             JS::RootedObject obj(context, &value.toObject());
 
             if (g_type_is_a(gtype, G_TYPE_ERROR)) {
@@ -861,6 +873,12 @@ gjs_value_from_g_value_internal(JSContext             *context,
             value_p.setObjectOrNull(obj);
 
             return true;
+        }
+
+        /* special case GValue */
+        if (g_type_is_a(gtype, G_TYPE_VALUE)) {
+            return gjs_value_from_g_value(context, value_p,
+                                          static_cast<GValue *>(gboxed));
         }
 
         /* The only way to differentiate unions and structs is from
