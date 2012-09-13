@@ -207,8 +207,11 @@ void
 gjs_context_print_stack_to_buffer(GjsContext* context, void *initial, GString *buf)
 {
     JSContext *js_context = (JSContext*)gjs_context_get_native_context(context);
-    JSStackFrame* fp = initial;
+    JSStackFrame *fp = initial;
     int num = 0;
+
+    if (fp == NULL)
+        JS_FrameIterator(js_context, &fp);
 
     while (fp) {
         format_frame(js_context, fp, buf, num);
