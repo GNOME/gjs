@@ -28,7 +28,7 @@ function vprintf(str, args) {
             return '%';
             break;
         case 's':
-            s = args[i++].toString();
+            s = String(args[i++]);
             break;
         case 'd':
             let intV = parseInt(args[i++]);
