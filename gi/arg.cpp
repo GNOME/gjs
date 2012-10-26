@@ -655,7 +655,8 @@ gjs_string_to_intarray(JSContext       *context,
 
     element_type = g_type_info_get_tag(param_info);
 
-    if (element_type == GI_TYPE_TAG_INT8 || element_type == GI_TYPE_TAG_UINT8) {
+    if (element_type == GI_TYPE_TAG_INT8 || element_type == GI_TYPE_TAG_UINT8 ||
+        element_type == GI_TYPE_TAG_UTF8) {
         GjsAutoJSChar result(context, JS_EncodeStringToUTF8(context, str));
         if (!result)
             return false;
@@ -1277,7 +1278,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
         *contents = NULL;
         *length_p = 0;
     } else if (value.isString()) {
-        /* Allow strings as int8/uint8/int16/uint16 arrays */
+        /* Allow strings as int8/uint8/int16/uint16/utf8 arrays */
         JS::RootedString str(context, value.toString());
         if (!gjs_string_to_intarray(context, str, param_info, contents, length_p))
             goto out;
@@ -3627,7 +3628,8 @@ gjs_g_argument_release_in_array (JSContext  *context,
         }
     }
 
-    if (type_needs_release(param_type, type_tag)) {
+    if (type_needs_release(param_type, type_tag) &&
+        type_tag != GI_TYPE_TAG_UTF8) {
         for (i = 0; i < length; i++) {
             elem.v_pointer = array[i];
             if (!gjs_g_arg_release_internal(context, (GITransfer) TRANSFER_IN_NOTHING,
