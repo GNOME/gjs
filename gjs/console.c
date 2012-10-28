@@ -62,7 +62,6 @@ main(int argc, char **argv)
         g_error("option parsing failed: %s", error->message);
 
     setlocale(LC_ALL, "");
-    g_type_init();
 
     command_line = g_strjoinv(" ", argv);
     g_free(command_line);

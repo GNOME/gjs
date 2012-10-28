@@ -2534,8 +2534,6 @@ bigtest_test_func_util_dbus_client(void)
     fork_child_test_service();
     fork_child_test_io();
 
-    g_type_init();
-
     g_assert(test_service_pid != 0);
     g_assert(test_io_pid != 0);
 
@@ -2706,8 +2704,6 @@ static void
 do_test_service_child(void)
 {
     GMainLoop *loop;
-
-    g_type_init();
 
     loop = g_main_loop_new(NULL, FALSE);
 
@@ -2982,8 +2978,6 @@ static void
 do_test_io_child(void)
 {
     GMainLoop *loop;
-
-    g_type_init();
 
     loop = g_main_loop_new(NULL, FALSE);
 

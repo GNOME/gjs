@@ -253,8 +253,6 @@ gjstest_test_func_gjs_stack_dump(void)
 {
   GjsContext *context;
 
-  g_type_init();
-
   /* TODO this test could be better - maybe expose dumpstack as a JS API
    * so that we have a JS stack to dump?  At least here we're getting some
    * coverage.

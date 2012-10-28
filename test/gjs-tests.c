@@ -36,8 +36,6 @@ int
 main(int    argc,
      char **argv)
 {
-    g_type_init ();
-
     gjs_crash_after_timeout(60*7); /* give the unit tests 7 minutes to complete */
 
     g_test_init(&argc, &argv, NULL);

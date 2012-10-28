@@ -1174,8 +1174,6 @@ bigtest_test_func_util_dbus_signals_client(void)
 
     fork_test_signal_service();
 
-    g_type_init();
-
     /* We rely on the child-forking test functions being called first */
     g_assert(test_service_pid != 0);
 
@@ -1302,8 +1300,6 @@ static void
 do_test_service_child(void)
 {
     GMainLoop *loop;
-
-    g_type_init();
 
     loop = g_main_loop_new(NULL, FALSE);
 

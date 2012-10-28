@@ -252,8 +252,6 @@ main(int argc, char **argv)
     setlocale(LC_ALL, "");
     g_test_init(&argc, &argv, NULL);
 
-    g_type_init();
-
     /* iterate through all 'test*.js' files in ${top_srcdir}/test/js */
     js_test_dir = g_build_filename(top_srcdir, "test", "js", NULL);
 
