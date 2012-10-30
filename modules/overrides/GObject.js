@@ -58,7 +58,7 @@ const GObjectMeta = new Lang.Class({
                 try {
                     obj.signal_id = Gi.signal_new(this.prototype, signalName, flags, accumulator, rtype, paramtypes);
                 } catch(e) {
-                    throw new TypeError('Invalid signal ' + signal_name + ': ' + e.message);
+                    throw new TypeError('Invalid signal ' + signalName + ': ' + e.message);
                 }
             }
         }
