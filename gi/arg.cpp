@@ -711,6 +711,25 @@ gjs_array_to_gboolean_array(JSContext      *cx,
 }
 
 static bool
+gjs_byte_array_to_intarray(JSContext       *cx,
+                           JS::HandleObject byte_array,
+                           GITypeInfo      *param_info,
+                           void           **arr_p,
+                           size_t          *length)
+{
+    GITypeTag element_type = g_type_info_get_tag(param_info);
+
+    if (element_type != GI_TYPE_TAG_INT8 && element_type != GI_TYPE_TAG_UINT8)
+        return false;
+
+    GBytes *bytes = gjs_byte_array_get_bytes(cx, byte_array);
+    const void *result = g_bytes_get_data(bytes, length);
+    *arr_p = const_cast<void *>(result);
+    g_bytes_unref(bytes);
+    return true;
+}
+
+static bool
 gjs_array_to_intarray(JSContext   *context,
                       JS::Value    array_value,
                       unsigned int length,
@@ -1282,9 +1301,13 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
             goto out;
     } else {
         JS::RootedObject array_obj(context, &value.toObject());
-        if (gjs_object_has_property(context, array_obj, GJS_STRING_LENGTH,
-                                    &found_length) &&
-            found_length) {
+        if (gjs_typecheck_bytearray(context, array_obj, false)) {
+            if (!gjs_byte_array_to_intarray(context, array_obj, param_info,
+                                            contents, length_p))
+                goto out;
+        } else if (gjs_object_has_property(context, array_obj,
+                                           GJS_STRING_LENGTH, &found_length) &&
+                   found_length) {
             guint32 length;
 
             if (!gjs_object_require_converted_property(context, array_obj, NULL,
