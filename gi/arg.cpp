@@ -1282,9 +1282,14 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
             goto out;
     } else {
         JS::RootedObject array_obj(context, &value.toObject());
-        if (gjs_object_has_property(context, array_obj, GJS_STRING_LENGTH,
-                                    &found_length) &&
-            found_length) {
+        GITypeTag element_type = g_type_info_get_tag(param_info);
+        if (JS_IsUint8Array(array_obj) && (element_type == GI_TYPE_TAG_INT8 ||
+                                           element_type == GI_TYPE_TAG_UINT8)) {
+            GBytes* bytes = gjs_byte_array_get_bytes(array_obj);
+            *contents = g_bytes_unref_to_data(bytes, length_p);
+        } else if (gjs_object_has_property(context, array_obj,
+                                           GJS_STRING_LENGTH, &found_length) &&
+                   found_length) {
             guint32 length;
 
             if (!gjs_object_require_converted_property(context, array_obj, NULL,
