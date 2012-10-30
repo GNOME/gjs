@@ -120,6 +120,21 @@ gjs_is_custom_property_quark (void)
     return val;
 }
 
+/* Plain g_type_query fails and leaves @query uninitialized for
+   dynamic types.
+   See https://bugzilla.gnome.org/show_bug.cgi?id=687184 and
+   https://bugzilla.gnome.org/show_bug.cgi?id=687211
+*/
+static void
+g_type_query_dynamic_safe (GType       type,
+                           GTypeQuery *query)
+{
+    while (g_type_get_qdata(type, gjs_is_custom_type_quark()))
+        type = g_type_parent(type);
+
+    g_type_query(type, query);
+}
+
 static void
 throw_priv_is_null_error(JSContext *context)
 {
@@ -966,8 +981,9 @@ object_instance_init (JSContext *context,
         goto out;
     }
 
-    g_type_query(gtype, &query);
-    JS_updateMallocCounter(context, query.instance_size);
+    g_type_query_dynamic_safe(gtype, &query);
+    if (G_LIKELY (query.type))
+        JS_updateMallocCounter(context, query.instance_size);
 
     if (G_IS_INITIALLY_UNOWNED(gobj) &&
         !g_object_is_floating(gobj)) {
@@ -2305,7 +2321,12 @@ gjs_register_type(JSContext *cx,
 
     parent_type = parent_priv->gtype;
 
-    g_type_query(parent_type, &query);
+    g_type_query_dynamic_safe(parent_type, &query);
+    if (G_UNLIKELY (query.type == 0)) {
+        gjs_throw (cx, "Cannot inherit from a non-gjs dynamic type [bug 687184]");
+        return JS_FALSE;
+    }
+
     type_info.class_size = query.class_size;
     type_info.instance_size = query.instance_size;
 

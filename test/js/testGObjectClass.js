@@ -148,6 +148,15 @@ const MyInitable = new Lang.Class({
     }
 });
 
+const Derived = new Lang.Class({
+    Name: 'Derived',
+    Extends: MyObject,
+
+    _init: function() {
+        this.parent({ readwrite: 'yes' });
+    }
+});
+
 function testGObjectClass() {
     let myInstance = new MyObject();
 
@@ -258,6 +267,15 @@ function testInterface() {
     assertEquals(true, instance.inited);
 
     // assertTrue(instance instanceof Gio.Initable)
+}
+
+function testDerived() {
+    let derived = new Derived();
+
+    assertTrue(derived instanceof Derived);
+    assertTrue(derived instanceof MyObject);
+
+    assertEquals('yes', derived.readwrite);
 }
 
 gjstestRun();
