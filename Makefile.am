@@ -144,15 +144,15 @@ libgjs_la_SOURCES += \
 	gi/gerror.c
 
 # Also, these files used to be a separate library
-gdbus_wrapper_source_files = \
-	gjs-dbus/gjs-gdbus-wrapper.c	\
-	gjs-dbus/gjs-gdbus-wrapper.h
-libgjs_la_SOURCES += $(gdbus_wrapper_source_files)
+libgjs_private_source_files = \
+	libgjs-private/gjs-gdbus-wrapper.c	\
+	libgjs-private/gjs-gdbus-wrapper.h
+libgjs_la_SOURCES += $(libgjs_private_source_files)
 
 GjsPrivate-1.0.gir: libgjs.la
 GjsPrivate_1_0_gir_LIBS = libgjs.la
 GjsPrivate_1_0_gir_INCLUDES = GObject-2.0 Gio-2.0
-GjsPrivate_1_0_gir_FILES = $(gdbus_wrapper_source_files)
+GjsPrivate_1_0_gir_FILES = $(libgjs_private_source_files)
 GjsPrivate_1_0_gir_SCANNERFLAGS = --identifier-prefix=Gjs --symbol-prefix=gjs_ --warn-all
 
 INTROSPECTION_GIRS += GjsPrivate-1.0.gir
