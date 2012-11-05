@@ -751,24 +751,37 @@ from_array_func(JSContext *context,
     return ret;
 }
 
+/* Ensure that the module and class objects exists, and that in turn
+ * ensures that JS_InitClass has been called, causing
+ * gjs_byte_array_prototype to be valid for the later call to
+ * JS_NewObject.
+ */
+static void
+byte_array_ensure_initialized (JSContext *context)
+{
+    static gsize initialized = 0;
+
+    if (g_once_init_enter (&initialized)) {
+        jsval rval;
+        JS_EvaluateScript(context, JS_GetGlobalObject(context),
+                          "imports.byteArray.ByteArray;", 27,
+                          "<internal>", 1, &rval);
+        g_once_init_leave (&initialized, 1);
+    }
+}
+
 JSObject *
 gjs_byte_array_from_byte_array (JSContext *context,
                                 GByteArray *array)
 {
     JSObject *object;
     ByteArrayInstance *priv;
-    static gboolean init = FALSE;
 
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(array != NULL, NULL);
 
-    if (!init) {
-        jsval rval;
-        JS_EvaluateScript(context, JS_GetGlobalObject(context),
-                          "imports.byteArray.ByteArray;", 27,
-                          "<internal>", 1, &rval);
-        init = TRUE;
-    }
+    byte_array_ensure_initialized (context);
+
     object = JS_NewObject(context, &gjs_byte_array_class,
                           gjs_byte_array_prototype, NULL);
     if (!object) {
