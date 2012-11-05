@@ -33,13 +33,28 @@
 
 G_BEGIN_DECLS
 
+JSBool    gjs_typecheck_bytearray        (JSContext     *context,
+                                          JSObject      *obj,
+                                          JSBool         throw);
+
 JSBool        gjs_define_byte_array_stuff    (JSContext  *context,
                                               JSObject   *in_object);
 
 JSObject *    gjs_byte_array_from_byte_array (JSContext  *context,
                                               GByteArray *array);
+JSObject *    gjs_byte_array_from_bytes (JSContext  *context,
+                                         GBytes *bytes);
+
 GByteArray *   gjs_byte_array_get_byte_array (JSContext  *context,
                                               JSObject   *object);
+
+GBytes *      gjs_byte_array_get_bytes (JSContext  *context,
+                                        JSObject   *object);
+
+void          gjs_byte_array_peek_data (JSContext  *context,
+                                        JSObject   *object,
+                                        guint8    **out_data,
+                                        gsize      *out_len);
 
 G_END_DECLS
 

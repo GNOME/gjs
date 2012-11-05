@@ -25,12 +25,15 @@
 #include <string.h>
 #include <glib.h>
 #include "byteArray.h"
+#include "../gi/boxed.h"
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
+#include <girepository.h>
 #include <util/log.h>
 
 typedef struct {
     GByteArray *array;
+    GBytes     *bytes;
 } ByteArrayInstance;
 
 static struct JSClass gjs_byte_array_class;
@@ -75,6 +78,13 @@ static struct JSClass gjs_byte_array_class = {
     NULL, NULL, NULL, NULL, NULL
 };
 
+JSBool
+gjs_typecheck_bytearray(JSContext     *context,
+                        JSObject      *object,
+                        JSBool         throw)
+{
+    return do_base_typecheck(context, object, throw);
+}
 
 static JSBool
 gjs_value_from_gsize(JSContext         *context,
@@ -86,6 +96,28 @@ gjs_value_from_gsize(JSContext         *context,
         return JS_TRUE;
     } else {
         return JS_NewNumberValue(context, v, value_p);
+    }
+}
+
+static void
+byte_array_ensure_array (ByteArrayInstance  *priv)
+{
+    if (priv->bytes) {
+        priv->array = g_bytes_unref_to_array(priv->bytes);
+        priv->bytes = NULL;
+    } else {
+        g_assert(priv->array);
+    }
+}
+
+static void
+byte_array_ensure_gbytes (ByteArrayInstance  *priv)
+{
+    if (priv->array) {
+        priv->bytes = g_byte_array_free_to_bytes(priv->array);
+        priv->array = NULL;
+    } else {
+        g_assert(priv->bytes);
     }
 }
 
@@ -151,18 +183,20 @@ byte_array_get_index(JSContext         *context,
                      gsize              idx,
                      jsval             *value_p)
 {
-    guint8 v;
+    gsize len;
+    guint8 *data;
+    
+    gjs_byte_array_peek_data(context, obj, &data, &len);
 
-    if (idx >= priv->array->len) {
+    if (idx >= len) {
         gjs_throw(context,
-                  "Index %" G_GSIZE_FORMAT " is out of range for ByteArray length %u",
+                  "Index %" G_GSIZE_FORMAT " is out of range for ByteArray length %lu",
                   idx,
-                  priv->array->len);
+                  (unsigned long)len);
         return JS_FALSE;
     }
 
-    v = g_array_index(priv->array, guint8, idx);
-    *value_p = INT_TO_JSVAL(v);
+    *value_p = INT_TO_JSVAL(data[idx]);
 
     return JS_TRUE;
 }
@@ -183,7 +217,7 @@ byte_array_get_prop(JSContext *context,
 
     if (priv == NULL)
         return JS_FALSE; /* wrong class passed in */
-    if (priv->array == NULL)
+    if (priv->array == NULL && priv->bytes == NULL)
         return JS_TRUE; /* prototype, not an instance. */
 
     if (!JS_IdToValue(context, id, &id_value))
@@ -211,16 +245,20 @@ byte_array_length_getter(JSContext *context,
                          jsval     *value_p)
 {
     ByteArrayInstance *priv;
+    gsize len;
 
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         return JS_FALSE; /* wrong class passed in */
-    if (priv->array == NULL)
+    if (priv->array == NULL && priv->bytes == NULL)
         return JS_TRUE; /* prototype, not an instance. */
 
-    return gjs_value_from_gsize(context, priv->array->len,
-                                value_p);
+    if (priv->array != NULL)
+        len = priv->array->len;
+    else if (priv->bytes != NULL)
+        len = g_bytes_get_size (priv->bytes);
+    return gjs_value_from_gsize(context, len, value_p);
 }
 
 static JSBool
@@ -237,8 +275,10 @@ byte_array_length_setter(JSContext *context,
 
     if (priv == NULL)
         return JS_FALSE; /* wrong class passed in */
-    if (priv->array == NULL)
+    if (priv->array == NULL && priv->bytes == NULL)
         return JS_TRUE; /* prototype, not an instance. */
+
+    byte_array_ensure_array(priv);
 
     if (!gjs_value_to_gsize(context, *value_p,
                             &len)) {
@@ -263,6 +303,8 @@ byte_array_set_index(JSContext         *context,
                            &v)) {
         return JS_FALSE;
     }
+
+    byte_array_ensure_array(priv);
 
     /* grow the array if necessary */
     if (idx >= priv->array->len) {
@@ -297,11 +339,13 @@ byte_array_set_prop(JSContext *context,
 
     if (priv == NULL)
         return JS_FALSE; /* wrong class passed in */
-    if (priv->array == NULL)
+    if (priv->array == NULL && priv->bytes == NULL)
         return JS_TRUE; /* prototype, not an instance. */
 
     if (!JS_IdToValue(context, id, &id_value))
         return JS_FALSE;
+
+    byte_array_ensure_array(priv);
 
     /* First handle array indexing */
     if (JSVAL_IS_NUMBER(id_value)) {
@@ -352,11 +396,13 @@ byte_array_new_resolve(JSContext *context,
 
     if (priv == NULL)
         return JS_FALSE; /* wrong class passed in */
-    if (priv->array == NULL)
+    if (priv->array == NULL && priv->bytes == NULL)
         return JS_TRUE; /* prototype, not an instance. */
 
     if (!JS_IdToValue(context, id, &id_val))
         return JS_FALSE;
+
+    byte_array_ensure_array(priv);
 
     if (JSVAL_IS_NUMBER(id_val)) {
         gsize idx;
@@ -455,6 +501,8 @@ byte_array_finalize(JSContext *context,
     if (priv->array) {
         g_byte_array_free(priv->array, TRUE);
         priv->array = NULL;
+    } else if (priv->bytes) {
+        g_clear_pointer(&priv->bytes, g_bytes_unref);
     }
 
     g_slice_free(ByteArrayInstance, priv);
@@ -477,6 +525,8 @@ to_string_func(JSContext *context,
 
     if (priv == NULL)
         return JS_FALSE; /* wrong class passed in */
+
+    byte_array_ensure_array(priv);
 
     encoding_is_utf8 = TRUE;
     if (argc >= 1 &&
@@ -559,6 +609,30 @@ to_string_func(JSContext *context,
     }
 }
 
+static JSBool
+to_gbytes_func(JSContext *context,
+               uintN      argc,
+               jsval     *vp)
+{
+    JSObject *object = JS_THIS_OBJECT(context, vp);
+    ByteArrayInstance *priv;
+    JSObject *ret_bytes_obj;
+    GIBaseInfo *gbytes_info;
+
+    priv = priv_from_js(context, object);
+    if (priv == NULL)
+        return JS_FALSE; /* wrong class passed in */
+    
+    byte_array_ensure_gbytes(priv);
+
+    gbytes_info = g_irepository_find_by_gtype(NULL, G_TYPE_BYTES);
+    ret_bytes_obj = gjs_boxed_from_c_struct(context, (GIStructInfo*)gbytes_info,
+                                            priv->bytes, GJS_BOXED_CREATION_NONE);
+
+    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(ret_bytes_obj));
+    return JS_TRUE;
+}
+
 static JSObject*
 byte_array_new(JSContext *context)
 {
@@ -568,7 +642,6 @@ byte_array_new(JSContext *context)
     array = JS_NewObject(context, &gjs_byte_array_class, gjs_byte_array_prototype, NULL);
 
     priv = g_slice_new0(ByteArrayInstance);
-    priv->array = gjs_g_byte_array_new(0);
 
     g_assert(priv_from_js(context, array) == NULL);
     JS_SetPrivate(context, array, priv);
@@ -599,6 +672,8 @@ from_string_func(JSContext *context,
     g_assert (priv != NULL);
 
     g_assert(argc > 0); /* because we specified min args 1 */
+
+    priv->array = gjs_g_byte_array_new(0);
 
     if (!JSVAL_IS_STRING(argv[0])) {
         gjs_throw(context,
@@ -708,6 +783,8 @@ from_array_func(JSContext *context,
 
     g_assert(argc > 0); /* because we specified min args 1 */
 
+    priv->array = gjs_g_byte_array_new(0);
+
     if (!JS_IsArrayObject(context, JSVAL_TO_OBJECT(argv[0]))) {
         gjs_throw(context,
                   "byteArray.fromArray() called with non-array as first arg");
@@ -747,6 +824,40 @@ from_array_func(JSContext *context,
     JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(obj));
  out:
     JS_RemoveObjectRoot(context, &obj);
+    return ret;
+}
+
+static JSBool
+from_gbytes_func(JSContext *context,
+                 uintN      argc,
+                 jsval     *vp)
+{
+    jsval *argv = JS_ARGV(context, vp);
+    JSObject *bytes_obj;
+    GBytes *gbytes;
+    ByteArrayInstance *priv;
+    JSObject *obj;
+    JSBool ret = JS_FALSE;
+
+    if (!gjs_parse_args(context, "overrides_gbytes_to_array", "o", argc, argv,
+                        "bytes", &bytes_obj))
+        return JS_FALSE;
+
+    if (!gjs_typecheck_boxed(context, bytes_obj, NULL, G_TYPE_BYTES, TRUE))
+        return JS_FALSE;
+
+    gbytes = gjs_c_struct_from_boxed(context, bytes_obj);
+
+    obj = byte_array_new(context);
+    if (obj == NULL)
+        return JS_FALSE;
+    priv = priv_from_js(context, obj);
+    g_assert (priv != NULL);
+
+    priv->bytes = g_bytes_ref(gbytes);
+
+    ret = JS_TRUE;
+    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(obj));
     return ret;
 }
 
@@ -798,17 +909,77 @@ gjs_byte_array_from_byte_array (JSContext *context,
     return object;
 }
 
-GByteArray*
-gjs_byte_array_get_byte_array (JSContext  *context,
-                               JSObject   *object)
+JSObject *
+gjs_byte_array_from_bytes (JSContext *context,
+                           GBytes    *bytes)
 {
+    JSObject *object;
     ByteArrayInstance *priv;
 
-    priv = priv_from_js(context, object);
-    if (priv == NULL)
-        return NULL; /* wrong class passed in */
+    g_return_val_if_fail(context != NULL, NULL);
+    g_return_val_if_fail(bytes != NULL, NULL);
 
-    return priv->array;
+    byte_array_ensure_initialized (context);
+
+    object = JS_NewObject(context, &gjs_byte_array_class,
+                          gjs_byte_array_prototype, NULL);
+    if (!object) {
+        gjs_throw(context, "failed to create byte array");
+        return NULL;
+    }
+
+    priv = g_slice_new0(ByteArrayInstance);
+    g_assert(priv_from_js(context, object) == NULL);
+    JS_SetPrivate(context, object, priv);
+    priv->bytes = g_bytes_ref (bytes);
+
+    return object;
+}
+
+GBytes *
+gjs_byte_array_get_bytes (JSContext  *context,
+                          JSObject   *object)
+{
+    ByteArrayInstance *priv;
+    priv = priv_from_js(context, object);
+    g_assert(priv != NULL);
+
+    byte_array_ensure_gbytes(priv);
+
+    return g_bytes_ref (priv->bytes);
+}
+
+GByteArray *
+gjs_byte_array_get_byte_array (JSContext   *context,
+                               JSObject    *obj)
+{
+    ByteArrayInstance *priv;
+    priv = priv_from_js(context, obj);
+    g_assert(priv != NULL);
+
+    byte_array_ensure_array(priv);
+
+    return g_byte_array_ref (priv->array);
+}
+
+void
+gjs_byte_array_peek_data (JSContext  *context,
+                          JSObject   *obj,
+                          guint8    **out_data,
+                          gsize      *out_len)
+{
+    ByteArrayInstance *priv;
+    priv = priv_from_js(context, obj);
+    g_assert(priv != NULL);
+    
+    if (priv->array != NULL) {
+        *out_data = (guint8*)priv->array->data;
+        *out_len = (gsize)priv->array->len;
+    } else if (priv->bytes != NULL) {
+        *out_data = (guint8*)g_bytes_get_data(priv->bytes, out_len);
+    } else {
+        g_assert_not_reached();
+    }
 }
 
 /* no idea what this is used for. examples in
@@ -829,12 +1000,14 @@ static JSPropertySpec gjs_byte_array_proto_props[] = {
 
 static JSFunctionSpec gjs_byte_array_proto_funcs[] = {
     { "toString", (JSNative) to_string_func, 0, 0 },
+    { "toGBytes", (JSNative) to_gbytes_func, 0, 0 },
     { NULL }
 };
 
 static JSFunctionSpec gjs_byte_array_module_funcs[] = {
     { "fromString", (JSNative)from_string_func, 1, 0 },
     { "fromArray", (JSNative)from_array_func, 1, 0 },
+    { "fromGBytes", (JSNative)from_gbytes_func, 1, 0 },
     { NULL }
 };
 

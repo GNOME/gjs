@@ -263,4 +263,8 @@ function _init() {
     this.Variant.prototype.toString = function() {
 	return '[object variant of type "' + this.get_type_string() + '"]';
     }
+
+    this.Bytes.prototype.toArray = function() {
+	return imports.byteArray.fromGBytes(this);
+    }
 }

@@ -172,6 +172,42 @@ function testByteArray() {
     GIMarshallingTests.bytearray_none_in("\x00\x31\xFF\x33");
 }
 
+function testGBytes() {
+    var i = 0;
+    var refByteArray = new imports.byteArray.ByteArray();
+    refByteArray[i++] = 0;
+    refByteArray[i++] = 49;
+    refByteArray[i++] = 0xFF;
+    refByteArray[i++] = 51;
+    GIMarshallingTests.gbytes_none_in(refByteArray);
+
+    var bytes = GIMarshallingTests.gbytes_full_return();
+    GIMarshallingTests.gbytes_none_in(bytes);
+
+    var array = bytes.toArray();
+    assertEquals(array[0], 0);
+    assertEquals(array[1], 49);
+    assertEquals(array[2], 0xFF);
+    assertEquals(array[3], 51); 
+    
+    bytes = GLib.Bytes.new([0, 49, 0xFF, 51]);
+    GIMarshallingTests.gbytes_none_in(bytes);
+
+    bytes = GLib.Bytes.new("\x00\x31\xFF\x33");
+    GIMarshallingTests.gbytes_none_in(bytes);
+
+    bytes = GIMarshallingTests.gbytes_full_return();    
+    array = bytes.toArray(); // Array should just be holding a ref, not a copy
+    assertEquals(array[1], 49);
+    array[1] = 42;  // Assignment should force to GByteArray
+    assertEquals(array[1], 42);
+    array[1] = 49;  // Flip the value back
+    GIMarshallingTests.gbytes_none_in(array.toGBytes()); // Now convert back to GBytes
+
+    bytes = GLib.Bytes.new([97, 98, 99, 100])
+    GIMarshallingTests.array_uint8_in(bytes.toArray());
+}
+
 function testPtrArray() {
     var array;
 

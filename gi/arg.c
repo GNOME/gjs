@@ -1365,9 +1365,12 @@ gjs_value_to_g_argument(JSContext      *context,
                 if ((interface_type == GI_INFO_TYPE_STRUCT || interface_type == GI_INFO_TYPE_BOXED) &&
                     /* We special case Closures later, so skip them here */
                     !g_type_is_a(gtype, G_TYPE_CLOSURE)) {
+                    JSObject *obj = JSVAL_TO_OBJECT(value);
 
-                    /* special case GError too */
-                    if (g_type_is_a(gtype, G_TYPE_ERROR)) {
+                    if (g_type_is_a(gtype, G_TYPE_BYTES)
+                        && gjs_typecheck_bytearray(context, obj, FALSE)) {
+                        arg->v_pointer = gjs_byte_array_get_bytes(context, obj);
+                    } else if (g_type_is_a(gtype, G_TYPE_ERROR)) {
                         if (!gjs_typecheck_gerror(context, JSVAL_TO_OBJECT(value), JS_TRUE)) {
                             arg->v_pointer = NULL;
                             wrong = TRUE;
@@ -1607,21 +1610,36 @@ gjs_value_to_g_argument(JSContext      *context,
         gpointer data;
         gsize length;
         GIArrayType array_type = g_type_info_get_array_type(type_info);
+        GITypeTag element_type;
+        GITypeInfo *param_info;
+        gboolean bytearray_fastpath = FALSE;
 
-        if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY && JSVAL_IS_OBJECT(value)) {
-            GByteArray *byte_array;
+        param_info = g_type_info_get_param_type(type_info, 0);
+        element_type = g_type_info_get_tag(param_info);
 
-            byte_array = gjs_byte_array_get_byte_array(context, JSVAL_TO_OBJECT(value));
-            if (byte_array) {
-                /* extra reference will be removed by gjs_g_argument_release */
-                arg->v_pointer = g_byte_array_ref(byte_array);
-                break;
+        /* First, let's handle the case where we're passed an instance
+         * of our own byteArray class.
+         */
+        if (JSVAL_IS_OBJECT(value) &&
+            gjs_typecheck_bytearray(context,
+                                    JSVAL_TO_OBJECT(value),
+                                    FALSE))
+            {
+                JSObject *bytearray_obj = JSVAL_TO_OBJECT(value);
+                if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
+                    arg->v_pointer = gjs_byte_array_get_byte_array(context, bytearray_obj);
+                    break;
+                } else if (array_type == GI_ARRAY_TYPE_C && 
+                           (element_type == GI_TYPE_TAG_UINT8 || element_type == GI_TYPE_TAG_INT8)) {
+                    gjs_byte_array_peek_data(context, bytearray_obj, data, &length);
+                    bytearray_fastpath = TRUE;
+                } else {
+                    /* Fall through, !handled */
+                }
             }
-            /* otherwise this is not a JS ByteArray, so fall through to extracting
-               all elements from the String or the Array */
-        }
 
-        if (!gjs_array_to_explicit_array_internal(context,
+        if (!bytearray_fastpath &&
+            !gjs_array_to_explicit_array_internal(context,
                                                   value,
                                                   type_info,
                                                   arg_name,
