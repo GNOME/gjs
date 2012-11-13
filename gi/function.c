@@ -34,8 +34,6 @@
 
 #include <util/log.h>
 
-#include <jsapi.h>
-
 #include <girepository.h>
 #include <sys/mman.h>
 #include <unistd.h>

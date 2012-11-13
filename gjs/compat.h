@@ -29,7 +29,12 @@
 #ifndef __GJS_COMPAT_H__
 #define __GJS_COMPAT_H__
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-prototypes"
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
 #include <jsapi.h>
+#include <jsdbgapi.h> // Needed by some bits
+#pragma GCC diagnostic pop
 #include <glib.h>
 
 G_BEGIN_DECLS

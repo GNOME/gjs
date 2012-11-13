@@ -30,8 +30,8 @@
 #ifndef __GJS_JSAPI_PRIVATE_H__
 #define __GJS_JSAPI_PRIVATE_H__
 
-#include <jsapi.h>
 #include <glib-object.h>
+#include "gjs/jsapi-util.h"
 
 G_BEGIN_DECLS
 

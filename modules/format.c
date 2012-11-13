@@ -26,7 +26,6 @@
 #include <gjs/compat.h>
 
 #include <glib.h>
-#include <jsapi.h>
 
 static JSBool
 gjs_format_int_alternative_output(JSContext *context,

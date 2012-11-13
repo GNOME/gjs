@@ -31,8 +31,6 @@
 
 #include <util/log.h>
 
-#include <jsapi.h>
-
 #include <string.h>
 
 typedef struct {

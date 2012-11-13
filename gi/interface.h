@@ -26,10 +26,8 @@
 #define __GJS_INTERFACE_H__
 
 #include <glib.h>
-
-#include <jsapi.h>
-
 #include <girepository.h>
+#include "gjs/jsapi-util.h"
 
 G_BEGIN_DECLS
 

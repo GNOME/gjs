@@ -42,9 +42,6 @@
 #include <gjs/type-module.h>
 
 #include <util/log.h>
-
-#include <jsapi.h>
-
 #include <girepository.h>
 
 typedef struct {

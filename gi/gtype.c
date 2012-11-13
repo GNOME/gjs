@@ -29,8 +29,6 @@
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 #include <util/log.h>
-
-#include <jsapi.h>
 #include <girepository.h>
 
 GJS_DEFINE_PROTO_ABSTRACT("GIRepositoryGType", gtype);

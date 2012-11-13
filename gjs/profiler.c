@@ -24,7 +24,6 @@
 #include <config.h>
 
 #include "profiler.h"
-#include <jsdbgapi.h>
 #include "compat.h"
 #include "jsapi-util.h"
 

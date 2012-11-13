@@ -17,6 +17,7 @@ TEST_PROGS =
 check_PROGRAMS = $(TEST_PROGS)
 INTROSPECTION_GIRS =
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
+AM_CFLAGS = $(WARN_CFLAGS)
 
 gjsjsdir = @gjsjsdir@
 gjsoverridedir = $(gjsjsdir)/overrides

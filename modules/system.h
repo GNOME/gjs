@@ -27,8 +27,7 @@
 
 #include <config.h>
 #include <glib.h>
-
-#include <jsapi.h>
+#include "gjs/jsapi-util.h"
 
 G_BEGIN_DECLS
 

@@ -24,8 +24,8 @@
 #ifndef __GJS_PROFILER_H__
 #define __GJS_PROFILER_H__
 
-#include <jsapi.h>
 #include <glib.h>
+#include "gjs/jsapi-util.h"
 
 G_BEGIN_DECLS
 

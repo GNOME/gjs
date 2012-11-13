@@ -49,7 +49,6 @@
 #include <readline/history.h>
 #endif
 
-#include <jsapi.h>
 #include <glib.h>
 #include <glib/gprintf.h>
 #include <gjs/gjs-module.h>

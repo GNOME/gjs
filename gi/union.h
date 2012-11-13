@@ -25,10 +25,8 @@
 #define __GJS_UNION_H__
 
 #include <glib.h>
-
-#include <jsapi.h>
-
 #include <girepository.h>
+#include "gjs/jsapi-util.h"
 
 G_BEGIN_DECLS
 

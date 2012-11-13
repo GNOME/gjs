@@ -32,7 +32,6 @@
 #include <gjs/compat.h>
 #include <util/log.h>
 
-#include <jsapi.h>
 #include <girepository.h>
 
 typedef struct {

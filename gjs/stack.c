@@ -43,7 +43,6 @@
 #include <config.h>
 #include <glib.h>
 #include <string.h>
-#include <jsdbgapi.h>
 #include "context.h"
 #include "compat.h"
 #include "jsapi-util.h"

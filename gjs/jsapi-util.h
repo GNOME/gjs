@@ -28,7 +28,6 @@
 #error "Only <gjs/gjs-module.h> can be included directly."
 #endif
 
-#include <jsapi.h>
 #include <gjs/compat.h>
 #include <glib-object.h>
 

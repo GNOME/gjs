@@ -28,7 +28,6 @@
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 #include <util/log.h>
-#include <jsapi.h>
 
 typedef struct {
     GByteArray *array;

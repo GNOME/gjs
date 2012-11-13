@@ -31,8 +31,6 @@
 
 #include <glib.h>
 
-#include <jsapi.h>
-
 static GHashTable *pending_main_loops;
 
 static JSBool

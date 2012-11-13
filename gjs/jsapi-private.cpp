@@ -32,7 +32,11 @@
 #include "compat.h"
 
 #include <string.h>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-prototypes"
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
 #include <jscntxt.h>
+#pragma GCC diagnostic pop
 
 void
 gjs_error_reporter(JSContext     *context,

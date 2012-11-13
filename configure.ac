@@ -37,31 +37,8 @@ dnl DOLT
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 
-# Add extra warning flags
-changequote(,)dnl
-ensureflag() {
-  flag="$1"; shift
-  result="$@"
-
-  case " ${result} " in
-  *[\ \	]${flag}[\ \	]*) ;;
-  *) result="${flag} ${result}" ;;
-  esac
-
-  echo ${result}
-}
-changequote([,])dnl
-
-if test "$GCC" = "yes"; then
-    for flag in -Wall -Wchar-subscripts -Wmissing-declarations \
-        -Wpointer-arith -Wcast-align -Wsign-compare;
-    do
-        CFLAGS="`ensureflag $flag $CFLAGS`"
-        CXXFLAGS="`ensureflag $flag $CXXFLAGS`"
-    done
-    CFLAGS="`ensureflag -Wmissing-prototypes $CFLAGS`"
-    CFLAGS="`ensureflag -Wnested-externs $CFLAGS`"
-fi
+GNOME_COMPILE_WARNINGS([maximum])
+GNOME_MAINTAINER_MODE_DEFINES
 
 # coverage
 AC_ARG_ENABLE([coverage],

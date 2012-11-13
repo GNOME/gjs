@@ -23,8 +23,6 @@
 
 #include <string.h>
 
-#include <jsapi.h>
-
 #include <glib.h>
 #include <gjs/gjs-module.h>
 

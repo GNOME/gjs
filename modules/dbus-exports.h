@@ -23,8 +23,8 @@
 #define __GJS_JS_DBUS_EXPORTS_H__
 
 #include <glib.h>
-#include <jsapi.h>
 #include <dbus/dbus.h>
+#include "gjs/jsapi-util.h"
 
 G_BEGIN_DECLS
 

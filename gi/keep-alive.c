@@ -31,8 +31,6 @@
 #include <util/log.h>
 #include <util/glib.h>
 
-#include <jsapi.h>
-
 typedef struct {
     GjsUnrootedFunc notify;
     JSObject *child;

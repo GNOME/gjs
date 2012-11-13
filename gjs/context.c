@@ -39,8 +39,6 @@
 
 #include <string.h>
 
-#include <jsapi.h>
-
 #define _GJS_JS_VERSION_DEFAULT "1.8"
 
 static void     gjs_context_dispose           (GObject               *object);

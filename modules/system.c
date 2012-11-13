@@ -29,8 +29,6 @@
 
 #include <gjs/gjs-module.h>
 #include <gi/object.h>
-#include <jsapi.h>
-
 #include "system.h"
 
 static JSBool

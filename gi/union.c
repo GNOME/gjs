@@ -36,9 +36,6 @@
 #include "repo.h"
 #include "function.h"
 #include "gtype.h"
-
-#include <jsapi.h>
-
 #include <girepository.h>
 
 typedef struct {

@@ -26,7 +26,7 @@
 
 #include <glib.h>
 
-#include <jsapi.h>
+#include "gjs/jsapi-util.h"
 
 #include <girepository.h>
 #include <girffi.h>

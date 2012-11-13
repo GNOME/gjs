@@ -35,8 +35,6 @@
 
 #include <util/log.h>
 
-#include <jsapi.h>
-
 typedef struct {
     GParamSpec *gparam; /* NULL if we are the prototype and not an instance */
 } Param;
