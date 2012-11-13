@@ -73,7 +73,7 @@ JSBool    gjs_invoke_c_function_uncached (JSContext      *context,
                                           jsval          *argv,
                                           jsval          *rval);
 
-void     gjs_init_cinvoke_profiling ();
+void     gjs_init_cinvoke_profiling (void);
 
 G_END_DECLS
 
