@@ -19,6 +19,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
+const ByteArray = imports.byteArray;
+
 let GLib;
 let originalVariantClass;
 
@@ -66,6 +68,12 @@ function _read_single_type(signature, forceSimple) {
     return [char];
 }
 
+function _makeBytes(byteArray) {
+    if (byteArray instanceof ByteArray.ByteArray)
+        return byteArray.toGBytes();
+    else
+        return new GLib.Bytes(byteArray);
+}
 
 function _pack_variant(signature, value) {
     if (signature.length == 0)
@@ -114,11 +122,8 @@ function _pack_variant(signature, value) {
 	}
 	if (arrayType[0] == 'y') {
 	    // special case for array of bytes
-	    return GLib.Variant.new_bytestring(value);
-	}
-	if (arrayType[0] == 'a' && arrayType[1] == 'y') {
-	    // special case for array of array of bytes
-	    return GLib.Variant.new_bytestring_array(value);
+	    return GLib.Variant.new_from_bytes(new GLib.VariantType('ay'),
+                                               _makeBytes(value), true);
 	}
 
 	let arrayValue = [];
@@ -218,6 +223,11 @@ function _unpack_variant(variant, deep) {
 	    }
 	    return ret;
 	}
+        if (variant.is_of_type(new GLib.VariantType('ay'))) {
+            // special case byte arrays
+            return variant.get_data_as_bytes().toArray();
+        }
+
 	// fall through
     case '(':
     case '{':
