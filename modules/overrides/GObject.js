@@ -29,17 +29,15 @@ const GObjectMeta = new Lang.Class({
     Extends: Lang.Class,
 
     _init: function(params) {
-        this.parent(params);
-
         // retrieve all parameters and remove them from params before chaining
 
         let properties = params.Properties;
         let signals = params.Signals;
-        let ifaces = params.Implements;
 
         delete params.Properties;
         delete params.Signals;
-        delete params.Implements;
+
+        this.parent(params);
 
         if (properties) {
             for (let prop in properties) {
@@ -61,11 +59,6 @@ const GObjectMeta = new Lang.Class({
                     throw new TypeError('Invalid signal ' + signalName + ': ' + e.message);
                 }
             }
-        }
-
-        if (ifaces) {
-            for (let i = 0; i < ifaces.length; i++)
-                Gi.add_interface(this.prototype, ifaces[i]);
         }
 
         for (let prop in params) {
@@ -121,7 +114,10 @@ const GObjectMeta = new Lang.Class({
         if (!this._isValidClass(parent))
             throw new TypeError('GObject.Class used with invalid base class (is ' + parent + ')');
 
-        let newClass = Gi.register_type(parent.prototype, gtypename);
+        let interfaces = params.Implements || [];
+        delete params.Implements;
+
+        let newClass = Gi.register_type(parent.prototype, gtypename, interfaces);
 
         // See Class.prototype._construct in lang.js for the reasoning
         // behind this direct __proto__ set.

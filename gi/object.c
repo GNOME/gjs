@@ -2265,6 +2265,17 @@ gjs_object_class_init(GObjectClass *class,
                                                            G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
 }
 
+static inline void
+gjs_add_interface(GType instance_type,
+                  GType interface_type)
+{
+    static GInterfaceInfo interface_vtable = { NULL, NULL, NULL };
+
+    g_type_add_interface_static(instance_type,
+                                interface_type,
+                                &interface_vtable);
+}
+
 static JSBool
 gjs_register_type(JSContext *cx,
                   uintN      argc,
@@ -2272,7 +2283,7 @@ gjs_register_type(JSContext *cx,
 {
     jsval *argv = JS_ARGV(cx, vp);
     gchar *name;
-    JSObject *parent, *constructor;
+    JSObject *parent, *constructor, *interfaces;
     GType instance_type, parent_type;
     GTypeQuery query;
     GTypeModule *type_module;
@@ -2291,13 +2302,16 @@ gjs_register_type(JSContext *cx,
 	0,    /* n_preallocs */
 	(GInstanceInitFunc) NULL,
     };
+    jsuint i, n_interfaces;
+    GType *iface_types;
 
     JS_BeginRequest(cx);
 
     if (!gjs_parse_args(cx, "register_type",
-                        "os", argc, argv,
+                        "oso", argc, argv,
                         "parent", &parent,
-                        "name", &name))
+                        "name", &name,
+                        "interfaces", &interfaces))
         return JS_FALSE;
 
     if (!parent)
@@ -2305,6 +2319,35 @@ gjs_register_type(JSContext *cx,
 
     if (!do_base_typecheck(cx, parent, JS_TRUE))
         return JS_FALSE;
+
+    if (!JS_IsArrayObject(cx, interfaces)) {
+        gjs_throw(cx, "Invalid parameter interfaces (expected Array)");
+        return JS_FALSE;
+    }
+
+    if (!JS_GetArrayLength(cx, interfaces, &n_interfaces))
+        return JS_FALSE;
+
+    iface_types = g_alloca(sizeof(GType) * n_interfaces);
+
+    /* We do interface addition in two passes so that any failure
+       is caught early, before registering the GType (which we can't undo) */
+    for (i = 0; i < n_interfaces; i++) {
+        jsval iface_val;
+        GType iface_type;
+
+        if (!JS_GetElement(cx, interfaces, i, &iface_val))
+            return JS_FALSE;
+
+        if (!JSVAL_IS_OBJECT(iface_val) ||
+            ((iface_type = gjs_gtype_get_actual_gtype(cx, JSVAL_TO_OBJECT(iface_val)))
+             == G_TYPE_INVALID)) {
+            gjs_throw(cx, "Invalid parameter interfaces (element %d was not a GType)", i);
+            return JS_FALSE;
+        }
+
+        iface_types[i] = iface_type;
+    }
 
     if (g_type_from_name(name) != G_TYPE_INVALID) {
         gjs_throw (cx, "Type name %s is already registered", name);
@@ -2338,6 +2381,9 @@ gjs_register_type(JSContext *cx,
 
     g_type_set_qdata (instance_type, gjs_is_custom_type_quark(), GINT_TO_POINTER (1));
 
+    for (i = 0; i < n_interfaces; i++)
+        gjs_add_interface(instance_type, iface_types[i]);
+
     /* create a custom JSClass */
     if (!gjs_define_object_class(cx, NULL, instance_type, &constructor, NULL))
         return JS_FALSE;
@@ -2345,35 +2391,6 @@ gjs_register_type(JSContext *cx,
     JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(constructor));
 
     JS_EndRequest(cx);
-
-    return JS_TRUE;
-}
-
-static JSBool
-gjs_add_interface(JSContext *cx,
-                  uintN      argc,
-                  jsval     *vp)
-{
-    jsval *argv = JS_ARGV(cx, vp);
-    GInterfaceInfo interface_vtable = { NULL, NULL, NULL };
-    ObjectInstance *priv;
-    JSObject *object;
-    JSObject *iface_jsobj;
-
-    if (!gjs_parse_args(cx, "add_interface",
-                        "oo", argc, argv,
-                        "object", &object,
-                        "gtype", &iface_jsobj))
-        return JS_FALSE;
-
-    if (!do_base_typecheck(cx, object, JS_TRUE))
-        return JS_FALSE;
-
-    priv = priv_from_js(cx, object);
-
-    g_type_add_interface_static(priv->gtype,
-                                gjs_gtype_get_actual_gtype(cx, iface_jsobj),
-                                &interface_vtable);
 
     return JS_TRUE;
 }
