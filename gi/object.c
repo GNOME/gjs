@@ -352,7 +352,7 @@ find_vfunc_on_parent(GIObjectInfo *info,
                      gchar        *name)
 {
     GIVFuncInfo *vfunc = NULL;
-    GIObjectInfo *parent, *old_parent;
+    GIObjectInfo *parent;
 
     /* ref the first info so that we don't destroy
      * it when unrefing parents later */
@@ -364,13 +364,11 @@ find_vfunc_on_parent(GIObjectInfo *info,
      * to search the parent types when looking for a vfunc. */
     vfunc = g_object_info_find_vfunc_using_interfaces(parent, name, NULL);
     while (!vfunc && parent) {
-        old_parent = parent;
-        parent = g_object_info_get_parent(old_parent);
-        if (!parent)
-            break;
-
-        g_base_info_unref(old_parent);
-        vfunc = g_object_info_find_vfunc(parent, name);
+        GIObjectInfo *tmp = parent;
+        parent = g_object_info_get_parent(tmp);
+        g_base_info_unref(tmp);
+        if (parent)
+            vfunc = g_object_info_find_vfunc(parent, name);
     }
 
     if (parent)
