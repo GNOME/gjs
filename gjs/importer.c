@@ -717,7 +717,7 @@ do_import(JSContext  *context,
 }
 
 static ImporterIterator *
-importer_iterator_new()
+importer_iterator_new(void)
 {
     ImporterIterator *iter;
 
