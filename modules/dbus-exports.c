@@ -645,9 +645,7 @@ invoke_js_async_from_dbus(JSContext   *context,
                       "conversion of dbus method arg failed but no exception was set?");
     }
 
-    if (argv) {
-        gjs_unroot_value_locations(context, argv, argc);
-    }
+    gjs_rooted_array_free(context, values, TRUE);
 
     return reply;
 }
