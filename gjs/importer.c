@@ -345,6 +345,8 @@ load_module_init(JSContext  *context,
             !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOTDIR) &&
             !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
             gjs_throw_g_error(context, error);
+        else
+            g_error_free(error);
 
         return NULL;
     }
@@ -458,6 +460,8 @@ import_file(JSContext  *context,
             !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOTDIR) &&
             !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
             gjs_throw_g_error(context, error);
+        else
+            g_error_free(error);
 
         goto out;
     }
