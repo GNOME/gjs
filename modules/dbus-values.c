@@ -834,6 +834,7 @@ append_dict(JSContext         *context,
 
         if (strcmp(name, "_dbus_signatures") == 0) {
             /* skip the magic "_dbus_signatures" field */
+            g_free(name);
             goto next;
         }
 
