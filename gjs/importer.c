@@ -280,6 +280,7 @@ file_get_utf16_contents (const char  *filename,
                          glong       *length,
                          GError     **error)
 {
+    jschar *result;
     gchar *contents;
     gsize utf8_length;
 
@@ -290,8 +291,11 @@ file_get_utf16_contents (const char  *filename,
     /* No cast here, so we get a warning in the
        (impossible?) case that gunichar2 is different
        from jschar */
-    return g_utf8_to_utf16 (contents, utf8_length,
-                            NULL, length, error);
+    result = g_utf8_to_utf16 (contents, utf8_length,
+                              NULL, length, error);
+
+    g_free (contents);
+    return result;
 }
 static JSObject *
 load_module_init(JSContext  *context,
