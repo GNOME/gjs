@@ -1616,6 +1616,7 @@ gjs_value_to_g_argument(JSContext      *context,
 
         param_info = g_type_info_get_param_type(type_info, 0);
         element_type = g_type_info_get_tag(param_info);
+        g_base_info_unref(param_info);
 
         /* First, let's handle the case where we're passed an instance
          * of our own byteArray class.
