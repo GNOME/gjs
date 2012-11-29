@@ -167,9 +167,6 @@ function testByteArray() {
 
     // Another test, with a normal array, to test conversion
     GIMarshallingTests.bytearray_none_in([0, 49, 0xFF, 51]);
-
-    // Another test, with a string, to test conversion
-    GIMarshallingTests.bytearray_none_in("\x00\x31\xFF\x33");
 }
 
 function testGBytes() {
@@ -193,8 +190,8 @@ function testGBytes() {
     bytes = GLib.Bytes.new([0, 49, 0xFF, 51]);
     GIMarshallingTests.gbytes_none_in(bytes);
 
-    bytes = GLib.Bytes.new("\x00\x31\xFF\x33");
-    GIMarshallingTests.gbytes_none_in(bytes);
+    bytes = GLib.Bytes.new("const \u2665 utf8");
+    GIMarshallingTests.utf8_as_uint8array_in(bytes.toArray());
 
     bytes = GIMarshallingTests.gbytes_full_return();    
     array = bytes.toArray(); // Array should just be holding a ref, not a copy

@@ -522,10 +522,10 @@ gjs_string_to_intarray(JSContext   *context,
     switch (element_type) {
     case GI_TYPE_TAG_INT8:
     case GI_TYPE_TAG_UINT8:
-        if (!gjs_string_get_binary_data(context, string_val,
-                                        &result, length))
+        if (!gjs_string_to_utf8(context, string_val, &result))
             return JS_FALSE;
         *arr_p = result;
+        *length = strlen(result);
         return JS_TRUE;
 
     case GI_TYPE_TAG_INT16:
