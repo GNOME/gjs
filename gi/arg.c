@@ -1027,6 +1027,23 @@ get_argument_display_name(const char     *arg_name,
     g_assert_not_reached ();
 }
 
+static void
+throw_invalid_argument(JSContext      *context,
+                       jsval           value,
+                       GITypeInfo     *arginfo,
+                       const char     *arg_name,
+                       GjsArgumentType arg_type)
+{
+    gchar *display_name = get_argument_display_name(arg_name, arg_type);
+
+    gjs_throw(context, "Expected type %s for %s but got type '%s' %p",
+              g_type_tag_to_string(g_type_info_get_tag(arginfo)),
+              display_name,
+              JS_GetTypeName(context, JS_TypeOfValue(context, value)),
+              JSVAL_IS_OBJECT(value) ? JSVAL_TO_OBJECT(value) : NULL);
+    g_free(display_name);
+}
+
 static JSBool
 gjs_array_to_explicit_array_internal(JSContext       *context,
                                      jsval            value,
@@ -1045,14 +1062,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
 
     if ((JSVAL_IS_NULL(value) && !may_be_null) ||
         (!JSVAL_IS_STRING(value) && !JSVAL_IS_OBJECT(value) && !JSVAL_IS_NULL(value))) {
-        gchar *display_name = get_argument_display_name(arg_name, arg_type);
-        gjs_throw(context, "Expected type %s for %s but got type '%s' %p",
-                  g_type_tag_to_string(g_type_info_get_tag(param_info)),
-                  display_name,
-                  JS_GetTypeName(context,
-                                 JS_TypeOfValue(context, value)),
-                  JSVAL_IS_OBJECT(value) ? JSVAL_TO_OBJECT(value) : NULL);
-        g_free(display_name);
+        throw_invalid_argument(context, value, param_info, arg_name, arg_type);
         goto out;
     }
 
@@ -1088,14 +1098,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
             *length_p = length;
         }
     } else {
-        gchar *display_name = get_argument_display_name(arg_name, arg_type);
-        gjs_throw(context, "Expected type %s for %s but got type '%s' %p",
-                  g_type_tag_to_string(g_type_info_get_tag(param_info)),
-                  display_name,
-                  JS_GetTypeName(context,
-                                 JS_TypeOfValue(context, value)),
-                  JSVAL_IS_OBJECT(value) ? JSVAL_TO_OBJECT(value) : NULL);
-        g_free(display_name);
+        throw_invalid_argument(context, value, param_info, arg_name, arg_type);
         goto out;
     }
 
@@ -1709,14 +1712,7 @@ gjs_value_to_g_argument(JSContext      *context,
 
     if (G_UNLIKELY(wrong)) {
         if (report_type_mismatch) {
-            gchar *display_name = get_argument_display_name (arg_name, arg_type);
-            gjs_throw(context, "Expected type %s for %s but got type '%s' %p",
-                      g_type_tag_to_string(type_tag),
-                      display_name,
-                      JS_GetTypeName(context,
-                                     JS_TypeOfValue(context, value)),
-                      JSVAL_IS_OBJECT(value) ? JSVAL_TO_OBJECT(value) : NULL);
-            g_free (display_name);
+            throw_invalid_argument(context, value, type_info, arg_name, arg_type);
         }
         return JS_FALSE;
     } else if (G_UNLIKELY(out_of_range)) {
