@@ -1038,7 +1038,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
                                      gpointer        *contents,
                                      gsize           *length_p)
 {
-    JSBool ret = JS_TRUE;
+    JSBool ret = JS_FALSE;
     GITypeInfo *param_info;
 
     param_info = g_type_info_get_param_type(type_info, 0);
@@ -1053,7 +1053,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
                                  JS_TypeOfValue(context, value)),
                   JSVAL_IS_OBJECT(value) ? JSVAL_TO_OBJECT(value) : NULL);
         g_free(display_name);
-        return JS_FALSE;
+        goto out;
     }
 
     if (JSVAL_IS_NULL(value)) {
@@ -1063,7 +1063,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
         /* Allow strings as int8/uint8/int16/uint16 arrays */
         if (!gjs_string_to_intarray(context, value, param_info,
                                     contents, length_p))
-            ret = JS_FALSE;
+            goto out;
     } else if (gjs_object_has_property(context,
                                        JSVAL_TO_OBJECT(value),
                                        "length")) {
@@ -1075,7 +1075,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
                                          "length",
                                          &length_value) ||
             !JS_ValueToECMAUint32(context, length_value, &length)) {
-            ret = JS_FALSE;
+            goto out;
         } else {
             if (!gjs_array_to_array(context,
                                     value,
@@ -1083,12 +1083,14 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
                                     transfer,
                                     param_info,
                                     contents))
-                ret = JS_FALSE;
+                goto out;
 
             *length_p = length;
         }
     }
 
+    ret = JS_TRUE;
+ out:
     g_base_info_unref((GIBaseInfo*) param_info);
 
     return ret;
