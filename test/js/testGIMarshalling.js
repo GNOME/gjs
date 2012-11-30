@@ -206,6 +206,9 @@ function testGBytes() {
 
     bytes = GLib.Bytes.new([97, 98, 99, 100])
     GIMarshallingTests.array_uint8_in(bytes.toArray());
+    assertRaises(function() {
+	GIMarshallingTests.array_uint8_in(bytes);
+    });
 }
 
 function testPtrArray() {

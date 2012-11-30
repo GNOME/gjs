@@ -1087,6 +1087,16 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
 
             *length_p = length;
         }
+    } else {
+        gchar *display_name = get_argument_display_name(arg_name, arg_type);
+        gjs_throw(context, "Expected type %s for %s but got type '%s' %p",
+                  g_type_tag_to_string(g_type_info_get_tag(param_info)),
+                  display_name,
+                  JS_GetTypeName(context,
+                                 JS_TypeOfValue(context, value)),
+                  JSVAL_IS_OBJECT(value) ? JSVAL_TO_OBJECT(value) : NULL);
+        g_free(display_name);
+        goto out;
     }
 
     ret = JS_TRUE;
