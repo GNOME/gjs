@@ -31,6 +31,7 @@
 #include "arg.h"
 #include "repo.h"
 #include "function.h"
+#include "proxyutils.h"
 #include "param.h"
 #include "value.h"
 #include "keep-alive.h"
@@ -1441,10 +1442,6 @@ emit_func(JSContext *context,
     return ret;
 }
 
-/* Default spidermonkey toString is worthless.  Replace it
- * with something that gives us both the introspection name
- * and a memory address.
- */
 static JSBool
 to_string_func(JSContext *context,
                uintN      argc,
@@ -1452,40 +1449,26 @@ to_string_func(JSContext *context,
 {
     JSObject *obj = JS_THIS_OBJECT(context, vp);
     ObjectInstance *priv;
-    char *strval;
-    JSBool ret;
-    const char *namespace;
-    const char *name;
+    JSBool ret = JS_FALSE;
     jsval retval;
 
     if (!do_base_typecheck(context, obj, JS_TRUE))
-        return JS_FALSE;
+        goto out;
 
     priv = priv_from_js(context, obj);
 
     if (priv == NULL) {
         throw_priv_is_null_error(context);
-        return JS_FALSE; /* wrong class passed in */
+        goto out;  /* wrong class passed in */
     }
+    
+    if (!_gjs_proxy_to_string_func(context, obj, "object", (GIBaseInfo*)priv->info,
+                                   priv->gtype, priv->gobj, &retval))
+        goto out;
 
-    if (priv->info) {
-        namespace = g_base_info_get_namespace( (GIBaseInfo*) priv->info);
-        name = g_base_info_get_name( (GIBaseInfo*) priv->info);
-    } else {
-        namespace = "";
-        name = g_type_name(priv->gtype);
-    }
-
-    if (priv->gobj == NULL) {
-        strval = g_strdup_printf ("[object prototype of GIName:%s.%s jsobj@%p]", namespace, name, obj);
-    } else {
-        strval = g_strdup_printf ("[object instance proxy GIName:%s.%s jsobj@%p native@%p]", namespace, name, obj, priv->gobj);
-    }
-
-    ret = gjs_string_from_utf8 (context, strval, -1, &retval);
-    if (ret)
-        JS_SET_RVAL(context, vp, retval);
-    g_free (strval);
+    ret = JS_TRUE;
+    JS_SET_RVAL(context, vp, retval);
+ out:
     return ret;
 }
 

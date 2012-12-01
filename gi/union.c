@@ -34,6 +34,7 @@
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 #include "repo.h"
+#include "proxyutils.h"
 #include "function.h"
 #include "gtype.h"
 #include <girepository.h>
@@ -278,6 +279,29 @@ union_finalize(JSContext *context,
     g_slice_free(Union, priv);
 }
 
+static JSBool
+to_string_func(JSContext *context,
+               uintN      argc,
+               jsval     *vp)
+{
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    Union *priv;
+    JSBool ret = JS_FALSE;
+    jsval retval;
+
+    if (!priv_from_js_with_typecheck(context, obj, &priv))
+        goto out;
+    
+    if (!_gjs_proxy_to_string_func(context, obj, "union", (GIBaseInfo*)priv->info,
+                                   priv->gtype, priv->gboxed, &retval))
+        goto out;
+
+    ret = JS_TRUE;
+    JS_SET_RVAL(context, vp, retval);
+ out:
+    return ret;
+}
+
 /* The bizarre thing about this vtable is that it applies to both
  * instances of the object, and to the prototype that instances of the
  * class have.
@@ -306,6 +330,7 @@ static JSPropertySpec gjs_union_proto_props[] = {
 };
 
 static JSFunctionSpec gjs_union_proto_funcs[] = {
+    { "toString", (JSNative)to_string_func, 0, 0 },
     { NULL }
 };
 

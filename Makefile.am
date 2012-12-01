@@ -61,6 +61,7 @@ nobase_gjs_module_include_HEADERS =	\
 noinst_HEADERS +=		\
 	gjs/jsapi-private.h	\
 	gjs/profiler.h		\
+	gi/proxyutils.h		\
 	gjs/unit-test-utils.h	\
 	util/crash.h		\
 	util/error.h		\
@@ -138,6 +139,7 @@ libgjs_la_SOURCES += \
 	gi/object.c	\
 	gi/foreign.c	\
 	gi/param.c	\
+	gi/proxyutils.c	\
         gi/repo.c	\
 	gi/union.c	\
         gi/value.c	\
