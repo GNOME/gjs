@@ -28,6 +28,7 @@ JS_NATIVE_MODULE_LIBADD =	\
         libgjs.la		\
         $(GJS_LIBS)
 JS_NATIVE_MODULE_LDFLAGS =	\
+	$(EXTRA_LINK_FLAGS)	\
         -module -avoid-version -no-undefined -rdynamic
 
 langNative_la_CFLAGS = 				\

@@ -208,6 +208,29 @@ fi
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 
+dnl
+dnl Check for -Bsymbolic-functions linker flag used to avoid
+dnl intra-library PLT jumps, if available.
+dnl
+AC_ARG_ENABLE(Bsymbolic,
+              [AS_HELP_STRING([--disable-Bsymbolic],
+                              [avoid linking with -Bsymbolic])],,
+              [SAVED_LDFLAGS="${LDFLAGS}"
+               AC_MSG_CHECKING([for -Bsymbolic-functions linker flag])
+               LDFLAGS=-Wl,-Bsymbolic-functions
+               AC_TRY_LINK([], [int main (void) { return 0; }],
+                           AC_MSG_RESULT(yes)
+                           enable_Bsymbolic=yes,
+                           AC_MSG_RESULT(no)
+                           enable_Bsymbolic=no)
+               LDFLAGS="${SAVED_LDFLAGS}"])
+
+if test "x${enable_Bsymbolic}" = "xyes"; then
+  EXTRA_LINK_FLAGS=-Wl,-Bsymbolic-functions
+fi
+
+AC_SUBST(EXTRA_LINK_FLAGS)
+
 gjsjsdir="\${datadir}/gjs-1.0"
 gjsnativedir="\${libdir}/gjs-1.0"
 AC_SUBST([gjsjsdir])

@@ -96,6 +96,7 @@ libgjs_la_CPPFLAGS =		\
 libgjs_la_CFLAGS = 		\
 	$(AM_CFLAGS)
 libgjs_la_LDFLAGS = 		\
+	$(EXTRA_LINK_FLAGS)	\
 	-export-symbols-regex "^[^_]" -version-info 0:0:0	\
 	-no-undefined \
 	-rdynamic
