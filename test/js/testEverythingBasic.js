@@ -1,6 +1,7 @@
 // application/javascript;version=1.8
 // This used to be called "Everything"
 const Everything = imports.gi.Regress;
+const WarnLib = imports.gi.WarnLib;
 if (!('assertEquals' in this)) { /* allow running this test standalone */
     imports.lang.copyPublicProperties(imports.jsUnit, this);
     gjstestRun = function() { return imports.jsUnit.gjstestRun(window); };
@@ -548,6 +549,15 @@ function testGError() {
 	assertEquals(Gio.IOErrorEnum.PERMISSION_DENIED, e.code);
 	assertEquals('regression test owned error', e.message);
     });
+
+    // Calling matches() on an unpaired error used to assert:
+    // https://bugzilla.gnome.org/show_bug.cgi?id=689482
+    try {
+	WarnLib.throw_unpaired();
+	assertTrue(false);
+    } catch (e) {
+	assertFalse(e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.NOT_FOUND));
+    }
 }
 
 function testWrongClassGObject() {

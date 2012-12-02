@@ -617,6 +617,12 @@ gjs_gerror_from_error(JSContext    *context,
     if (obj == NULL)
         return NULL;
 
+    /* If this is a plain GBoxed (i.e. a GError without metadata),
+       delegate marshalling.
+    */
+    if (gjs_typecheck_boxed (context, obj, NULL, G_TYPE_ERROR, JS_FALSE))
+        return gjs_c_struct_from_boxed (context, obj);
+
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
@@ -638,5 +644,8 @@ gjs_typecheck_gerror (JSContext *context,
                       JSObject  *obj,
                       JSBool     throw)
 {
+    if (gjs_typecheck_boxed (context, obj, NULL, G_TYPE_ERROR, JS_FALSE))
+        return TRUE;
+
     return do_base_typecheck(context, obj, throw);
 }
