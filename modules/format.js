@@ -64,6 +64,11 @@ function vprintf(str, args) {
     });
 }
 
+function printf() {
+    let args = Array.prototype.slice.call(arguments);
+    let fmt = args.shift();
+    print(vprintf(fmt, args));
+}
 
 /*
  * This function is intended to extend the String object and provide
