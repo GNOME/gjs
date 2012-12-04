@@ -147,10 +147,15 @@ gjs_string_from_utf8(JSContext  *context,
 
     JS_BeginRequest(context);
 
-    s = JS_NewUCStringCopyN(context,
-                            (jschar*)u16_string,
-                            u16_string_length);
-    g_free(u16_string);
+    if (g_mem_is_system_malloc()) {
+        /* Avoid a copy - assumes that g_malloc == js_malloc == malloc */
+        s = JS_NewUCString(context, u16_string, u16_string_length);
+    } else {
+        s = JS_NewUCStringCopyN(context,
+                                (jschar*)u16_string,
+                                u16_string_length);
+        g_free(u16_string);
+    }
 
     if (!s) {
         JS_EndRequest(context);
