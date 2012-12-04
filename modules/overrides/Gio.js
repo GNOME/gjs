@@ -227,7 +227,7 @@ function _newInterfaceInfo(value) {
         throw TypeError('Invalid type ' + Object.prototype.toString.call(value));
 
     var node;
-    if (value.name() == 'interface') {
+    if (xml.name() == 'interface') {
         // wrap inside a node
         node = <node/>;
         node.node += xml;
