@@ -1,3 +1,4 @@
+imports.gi.versions.Gtk = '3.0';
 const Gtk = imports.gi.Gtk;
 
 // This is a callback function. The data arguments are ignored

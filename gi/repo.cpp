@@ -98,6 +98,17 @@ resolve_namespace_object(JSContext       *context,
         return false;
 
     repo = g_irepository_get_default();
+    GList *versions = g_irepository_enumerate_versions(repo, ns_name);
+    unsigned nversions = g_list_length(versions);
+    if (nversions != 1 && !version &&
+        !g_irepository_is_registered(repo, ns_name, NULL)) {
+        GjsAutoChar warn_text = g_strdup_printf("Requiring %s but it has %u "
+                                                "versions available; use "
+                                                "imports.gi.versions to pick one",
+                                                ns_name, nversions);
+        JS_ReportWarning(context, warn_text);
+    }
+    g_list_free_full(versions, g_free);
 
     error = NULL;
     g_irepository_require(repo, ns_name, version, (GIRepositoryLoadFlags) 0, &error);
@@ -297,18 +308,24 @@ repo_new(JSContext *context)
     gjs_object_define_property(context, repo, GJS_STRING_GI_VERSIONS,
                                versions, JSPROP_PERMANENT);
 
+    /* GLib/GObject/Gio are fixed at 2.0, since we depend on them
+     * internally.
+     */
+    JS::RootedString two_point_oh(context, JS_NewStringCopyZ(context, "2.0"));
+    if (!JS_DefineProperty(context, versions, "GLib", two_point_oh,
+                           JSPROP_PERMANENT))
+        return nullptr;
+    if (!JS_DefineProperty(context, versions, "GObject", two_point_oh,
+                           JSPROP_PERMANENT))
+        return nullptr;
+    if (!JS_DefineProperty(context, versions, "Gio", two_point_oh,
+                           JSPROP_PERMANENT))
+        return nullptr;
+
     JS::RootedObject private_ns(context, JS_NewObject(context, NULL, global));
     gjs_object_define_property(context, repo,
                                GJS_STRING_PRIVATE_NS_MARKER, private_ns,
                                JSPROP_PERMANENT);
-
-    /* FIXME - hack to make namespaces load, since
-     * gobject-introspection does not yet search a path properly.
-     */
-    {
-        JS::RootedValue value(context);
-        JS_GetProperty(context, repo, "GLib", &value);
-    }
 
     return repo;
 }

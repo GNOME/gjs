@@ -1,4 +1,4 @@
-
+imports.gi.versions.Gtk = '3.0';
 const Gettext = imports.gettext;
 const Gtk = imports.gi.Gtk;
 

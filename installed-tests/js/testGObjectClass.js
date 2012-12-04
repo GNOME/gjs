@@ -1,4 +1,5 @@
 // -*- mode: js; indent-tabs-mode: nil -*-
+imports.gi.versions.Gtk = '3.0';
 
 const Lang = imports.lang;
 const GObject = imports.gi.GObject;
