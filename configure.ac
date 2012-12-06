@@ -109,15 +109,21 @@ gjstests_packages="$gjstests_packages $gjs_packages"
 PKG_CHECK_MODULES([GOBJECT], [gobject-2.0 >= glib_required_version])
 PKG_CHECK_MODULES([GJS], [$gjs_packages])
 # Prefer cairo-gobject if we have it
-PKG_CHECK_MODULES([GJS_CAIRO], [$gjs_cairo_gobject_packages], have_cairo_gobject=yes, have_cairo_gobject=no)
-if test x${have_cairo_gobject} != xyes; then
-  PKG_CHECK_MODULES([GJS_CAIRO], [$gjs_cairo_packages])
-fi
+AC_ARG_WITH(cairo,
+	    AS_HELP_STRING([--without-cairo], [Use cairo @<:@default=yes@:>@]),
+	    [], [with_cairo=yes])
+AS_IF([test x$with_cairo = xyes], [
+  PKG_CHECK_MODULES([GJS_CAIRO], [$gjs_cairo_gobject_packages], have_cairo_gobject=yes, have_cairo_gobject=no)
+  AS_IF([test x${have_cairo_gobject} != xyes], [
+    PKG_CHECK_MODULES([GJS_CAIRO], [$gjs_cairo_packages])
+  ])
+])
+AM_CONDITIONAL(ENABLE_CAIRO, test x$with_cairo = xyes)
 PKG_CHECK_MODULES([GJS_DBUS], [$gjs_dbus_packages])
 PKG_CHECK_MODULES([GJS_GDBUS], [$gjs_gdbus_packages])
 
 AC_ARG_ENABLE(tests,[  --disable-tests           disable test libraries ], enable_tests=$enableval,enable_tests=yes)
-AM_CONDITIONAL(ENABLE_TESTS, test x$enable_tests = xyes)
+AM_CONDITIONAL(ENABLE_TESTS, test x$with_cairo = xyes && test x$enable_tests = xyes)
 
 saved_CFLAGS=$CFLAGS
 CFLAGS=$GJS_DBUS_CFLAGS

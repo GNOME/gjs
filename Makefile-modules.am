@@ -13,12 +13,18 @@ dist_gjsjs_DATA +=		\
 	modules/lang.js		\
 	modules/jsUnit.js	\
 	modules/signals.js	\
-	modules/cairo.js	\
 	modules/dbus.js		\
 	modules/promise.js	\
 	modules/format.js
 
-gjsnative_LTLIBRARIES += console.la debugger.la langNative.la mainloop.la gettextNative.la dbusNative.la cairoNative.la system.la formatNative.la
+gjsnative_LTLIBRARIES += console.la debugger.la langNative.la mainloop.la gettextNative.la dbusNative.la system.la formatNative.la
+
+if ENABLE_CAIRO
+dist_gjsjs_DATA +=		\
+	modules/cairo.js	\
+	$(NULL)
+gjsnative_LTLIBRARIES += cairoNative.la
+endif
 
 JS_NATIVE_MODULE_CFLAGS =	\
         $(AM_CFLAGS)		\
