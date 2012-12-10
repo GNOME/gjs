@@ -242,8 +242,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
             if (!gjs_string_to_utf8(context, value, &utf8_string))
                 return JS_FALSE;
 
-            g_value_set_string(gvalue, utf8_string);
-            g_free(utf8_string);
+            g_value_take_string(gvalue, utf8_string);
         } else {
             gjs_throw(context,
                       "Wrong type %s; string expected",
