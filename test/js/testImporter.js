@@ -140,4 +140,9 @@ function testImporterEnumerateWithInitFile() {
     assertNotEquals(subModules.indexOf('testImporterFunction'), -1);
 }
 
+function testImporterUTF8() {
+    const ModUnicode = imports.modunicode;
+    assertEquals(ModUnicode.uval, "const \u2665 utf8");
+}
+
 gjstestRun();
