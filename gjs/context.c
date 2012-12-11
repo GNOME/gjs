@@ -572,9 +572,6 @@ gjs_context_constructor (GType                  type,
 
     JS_BeginRequest(js_context->context);
 
-    /* same as firefox, see discussion at
-     * https://bugzilla.mozilla.org/show_bug.cgi?id=420869 */
-    JS_SetScriptStackQuota(js_context->context, 100*1024*1024);
 
     /* JSOPTION_DONT_REPORT_UNCAUGHT: Don't send exceptions to our
      * error report handler; instead leave them set.  This allows us

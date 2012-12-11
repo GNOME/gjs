@@ -170,7 +170,7 @@ jsval gjs_##cname##_create_proto(JSContext *context, JSObject *module, const cha
         } \
         if (!JS_DefineProperty(context, module, proto_name, \
                                rval, NULL, NULL, GJS_MODULE_PROP_FLAGS)) \
-            return JS_FALSE; \
+            return JSVAL_NULL; \
     } \
     return rval; \
 }
