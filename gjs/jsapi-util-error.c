@@ -246,7 +246,7 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
     exc = JSVAL_VOID;
     JS_GetPendingException(context, &exc);
     g_assert(!JSVAL_IS_VOID(exc));
-    g_assert(exc == previous);
+    g_assert(JSVAL_TO_OBJECT(exc) == JSVAL_TO_OBJECT(previous));
 
     JS_RemoveValueRoot(context, &previous);
 

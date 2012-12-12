@@ -501,7 +501,6 @@ gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(void)
     context = fixture.context;
 
     g_assert(gjs_string_from_utf8(context, utf8_string, -1, &js_string) == JS_TRUE);
-    g_assert(js_string);
     g_assert(JSVAL_IS_STRING(js_string));
     g_assert(gjs_string_to_utf8(context, js_string, &utf8_result) == JS_TRUE);
 
