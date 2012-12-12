@@ -183,7 +183,7 @@ gjs_define_interface_class(JSContext       *context,
     constructor_name = g_base_info_get_name((GIBaseInfo*)info);
 
     gjs_object_get_property(context, in_object, constructor_name, &value);
-    if (value != JSVAL_VOID) {
+    if (!JSVAL_IS_VOID(value)) {
         JSObject *constructor;
 
         if (!JSVAL_IS_OBJECT(value)) {
