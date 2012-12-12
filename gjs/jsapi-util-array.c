@@ -311,7 +311,6 @@ gjstest_test_func_gjs_jsapi_util_array(void)
         gjs_rooted_array_append(context, array, value);
     }
 
-    JS_ClearNewbornRoots(context);
     JS_GC(context);
 
     for (i = 0; i < N_ELEMS; i++) {
