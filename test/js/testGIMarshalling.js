@@ -244,11 +244,18 @@ function testGType() {
     assertEquals("gchararray", GObject.TYPE_STRING.name);
 
     // Make sure "name" is readonly
-    GObject.TYPE_STRING.name = "foo";
+    try {
+        GObject.TYPE_STRING.name = "foo";
+    } catch(e) {
+    }
     assertEquals("gchararray", GObject.TYPE_STRING.name);
 
     // Make sure "name" is permanent
-    assertFalse((delete GObject.TYPE_STRING.name));
+    try {
+        delete GObject.TYPE_STRING.name;
+    } catch(e) {
+    }
+    assertEquals("gchararray", GObject.TYPE_STRING.name);
 
     // Make sure "toString" works
     assertEquals("[object GType for 'void']", GObject.TYPE_NONE.toString());
