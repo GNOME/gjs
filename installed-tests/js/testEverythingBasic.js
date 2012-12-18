@@ -416,6 +416,35 @@ describe('Life, the Universe and Everything', function () {
         expect(Regress.TestEnum.param(Regress.TestEnum.VALUE4)).toEqual('value4');
     });
 
+    describe('Object-valued GProperty', function () {
+        let o1, t1, t2;
+        beforeEach(function () {
+            o1 = new GObject.Object();
+            t1 = new Regress.TestObj({bare: o1});
+            t2 = new Regress.TestSubObj();
+            t2.bare = o1;
+        });
+
+        it('marshals correctly in the getter', function () {
+            expect(t1.bare).toBe(o1);
+        });
+
+        it('marshals correctly when inherited', function () {
+            expect(t2.bare).toBe(o1);
+        });
+
+        it('marshals into setter function', function () {
+            let o2 = new GObject.Object();
+            t2.set_bare(o2);
+            expect(t2.bare).toBe(o2);
+        });
+
+        it('marshals null', function () {
+            t2.unset_bare();
+            expect(t2.bare).toBeNull();
+        });
+    });
+
     describe('Signal connection', function () {
         let o;
         beforeEach(function () {
