@@ -1495,6 +1495,9 @@ init_func (JSContext *context,
     JSObject *obj = JS_THIS_OBJECT(context, vp);
     JSBool ret;
 
+    if (!do_base_typecheck(context, obj, TRUE))
+        return FALSE;
+
     ret = object_instance_init(context, &obj, argc, argv);
 
     if (ret)
