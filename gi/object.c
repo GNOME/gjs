@@ -118,6 +118,16 @@ gjs_is_custom_property_quark (void)
     return val;
 }
 
+static GQuark
+gjs_object_priv_quark (void)
+{
+    static GQuark val = 0;
+    if (G_UNLIKELY (!val))
+        val = g_quark_from_static_string ("gjs::private");
+
+    return val;
+}
+
 /* Plain g_type_query fails and leaves @query uninitialized for
    dynamic types.
    See https://bugzilla.gnome.org/show_bug.cgi?id=687184 and
@@ -1742,55 +1752,11 @@ gjs_define_object_class(JSContext     *context,
     return TRUE;
 }
 
-/* multiple JSRuntime could have a proxy to the same GObject, in theory
- */
-#define OBJ_KEY_PREFIX_LEN 3
-#define OBJ_KEY_LEN (OBJ_KEY_PREFIX_LEN+sizeof(void*)*2)
-static void
-get_obj_key(JSRuntime *runtime,
-            char      *buf)
-{
-    /* not thread safe, but that's fine for now - just nuke the
-     * cache thingy if we ever need thread safety
-     */
-    static char cached_buf[OBJ_KEY_LEN+1];
-    static JSRuntime *cached_for = NULL;
-
-    if (cached_for != runtime) {
-        unsigned int i;
-        union {
-            const unsigned char bytes[sizeof(void*)];
-            void *ptr;
-        } d;
-        g_assert(sizeof(d) == sizeof(void*));
-
-        buf[0] = 'j';
-        buf[1] = 's';
-        buf[2] = '-';
-        d.ptr = runtime;
-        for (i = 0; i < sizeof(void*); i++) {
-                int offset = OBJ_KEY_PREFIX_LEN+(i*2);
-                buf[offset] = 'a' + ((d.bytes[i] & 0xf0) >> 4);
-                buf[offset+1] = 'a' + (d.bytes[i] & 0x0f);
-        }
-        buf[OBJ_KEY_LEN] = '\0';
-        strcpy(cached_buf, buf);
-        cached_for = runtime;
-        g_assert(strlen(buf) == OBJ_KEY_LEN);
-    } else {
-        strcpy(buf, cached_buf);
-    }
-}
-
 static JSObject*
 peek_js_obj(JSContext *context,
             GObject   *gobj)
 {
-    char buf[OBJ_KEY_LEN+1];
-
-    get_obj_key(JS_GetRuntime(context), buf);
-
-    return g_object_get_data(gobj, buf);
+    return g_object_get_qdata(gobj, gjs_object_priv_quark());
 }
 
 static void
@@ -1798,11 +1764,7 @@ set_js_obj(JSContext *context,
            GObject   *gobj,
            JSObject  *obj)
 {
-    char buf[OBJ_KEY_LEN+1];
-
-    get_obj_key(JS_GetRuntime(context), buf);
-
-    g_object_set_data(gobj, buf, obj);
+    g_object_set_qdata(gobj, gjs_object_priv_quark(), obj);
 }
 
 JSObject*
