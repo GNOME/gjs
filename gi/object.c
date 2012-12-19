@@ -198,6 +198,13 @@ init_g_param_from_property(JSContext  *context,
     return VALUE_WAS_SET;
 }
 
+static inline ObjectInstance *
+proto_priv_from_js(JSContext *context,
+                   JSObject  *obj)
+{
+    return priv_from_js(context, JS_GetPrototype(context, obj));
+}
+
 /* a hook on getting a property; set value_p to override property's value.
  * Return value is JS_FALSE on OOM/exception.
  */
@@ -403,10 +410,8 @@ object_instance_new_resolve_no_info(JSContext       *context,
         if (base_info == NULL)
             continue;
 
-        if (g_base_info_get_type(base_info) != GI_INFO_TYPE_INTERFACE) {
-            g_base_info_unref(base_info);
-            continue;
-        }
+        /* An interface GType ought to have interface introspection info */
+        g_assert (g_base_info_get_type(base_info) == GI_INFO_TYPE_INTERFACE);
 
         iface_info = (GIInterfaceInfo*) base_info;
 
@@ -851,7 +856,6 @@ init_object_private (JSContext *context,
 {
     ObjectInstance *proto_priv;
     ObjectInstance *priv;
-    JSObject *proto;
 
     JS_BeginRequest(context);
 
@@ -865,23 +869,14 @@ init_object_private (JSContext *context,
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
                         "obj instance constructor, obj %p priv %p", object, priv);
 
-    proto = JS_GetPrototype(context, object);
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "obj instance __proto__ is %p", proto);
-
-    proto_priv = priv_from_js(context, proto);
-    if (proto_priv == NULL) {
-        gjs_debug(GJS_DEBUG_GOBJECT,
-                  "Bad prototype set on object? Must match JSClass of object. JS error should have been reported.");
-        priv = NULL;
-        goto out;
-    }
+    proto_priv = proto_priv_from_js(context, object);
+    g_assert(proto_priv != NULL);
 
     priv->gtype = proto_priv->gtype;
     priv->info = proto_priv->info;
     if (priv->info)
         g_base_info_ref( (GIBaseInfo*) priv->info);
 
- out:
     JS_EndRequest(context);
     return priv;
 }
@@ -943,12 +938,7 @@ object_instance_init (JSContext *context,
     priv = init_object_private(context, *object);
 
     gtype = priv->gtype;
-    if (gtype == G_TYPE_NONE) {
-        gjs_throw(context,
-                  "No GType for object '%s'???",
-                  g_base_info_get_name( (GIBaseInfo*) priv->info));
-        return JS_FALSE;
-    }
+    g_assert(gtype != G_TYPE_NONE);
 
     if (!object_instance_props_to_g_parameters(context, *object, argc, argv,
                                                gtype,
@@ -1084,8 +1074,7 @@ object_instance_finalize(JSContext *context,
                         g_type_name_from_instance( (GTypeInstance*) priv->gobj) :
                         "<no gobject>",
                         priv ? priv->gobj : NULL);
-    if (priv == NULL)
-        return; /* we are the prototype, not a real instance, so constructor never called */
+    g_assert (priv != NULL);
 
     TRACE(GJS_OBJECT_PROXY_FINALIZE(priv, priv->gobj,
                                     priv->info ? g_base_info_get_namespace((GIBaseInfo*) priv->info) : "_gjs_private",
@@ -2309,8 +2298,8 @@ gjs_register_type(JSContext *cx,
 
     parent_priv = priv_from_js(cx, parent);
 
-    if (!parent_priv)
-        return JS_FALSE;
+    /* We checked parent above, in do_base_typecheck() */
+    g_assert(parent_priv != NULL);
 
     parent_type = parent_priv->gtype;
 
