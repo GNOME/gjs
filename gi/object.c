@@ -1228,10 +1228,11 @@ real_connect_func(JSContext *context,
     connect_data->closure = closure;
     g_closure_add_invalidate_notifier(closure, connect_data, signal_connection_invalidated);
 
-    id = g_signal_connect_closure(priv->gobj,
-                                  signal_name,
-                                  closure,
-                                  after);
+    id = g_signal_connect_closure_by_id(priv->gobj,
+                                        signal_id,
+                                        signal_detail,
+                                        closure,
+                                        after);
 
     if (!JS_NewNumberValue(context, id, &retval)) {
         g_signal_handler_disconnect(priv->gobj, id);
