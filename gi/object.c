@@ -574,53 +574,17 @@ object_instance_new_resolve(JSContext *context,
      * https://bugzilla.gnome.org/show_bug.cgi?id=632922
      */
     if (method_info == NULL) {
-        GType *interfaces;
-        guint n_interfaces;
-        guint i;
-
-        interfaces = g_type_interfaces (priv->gtype, &n_interfaces);
-        for (i = 0; i < n_interfaces; i++) {
-            GIBaseInfo *base_info;
-            GIInterfaceInfo *iface_info;
-
-            base_info = g_irepository_find_by_gtype(g_irepository_get_default(),
-                                                    interfaces[i]);
-            if (!base_info)
-                continue;
-
-            if (g_base_info_get_type(base_info) != GI_INFO_TYPE_INTERFACE) {
-                g_base_info_unref(base_info);
-                continue;
-            }
-
-            iface_info = (GIInterfaceInfo*) base_info;
-
-            method_info = g_interface_info_find_method(iface_info, name);
-
-            g_base_info_unref(base_info);
-
-            if (method_info != NULL) {
-                gjs_debug(GJS_DEBUG_GOBJECT,
-                          "Found method %s in native interface %s",
-                          name, g_type_name(interfaces[i]));
-                break;
-            }
-        }
-        g_free(interfaces);
-    }
-
-    if (method_info != NULL) {
-        const char *method_name;
-
+        ret = object_instance_new_resolve_no_info(context, obj, objp,
+                                                  priv, name);
+        goto out;
+    } else {
 #if GJS_VERBOSE_ENABLE_GI_USAGE
         _gjs_log_info_usage((GIBaseInfo*) method_info);
 #endif
 
-        method_name = g_base_info_get_name( (GIBaseInfo*) method_info);
-
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Defining method %s in prototype for %s (%s.%s)",
-                  method_name,
+                  g_base_info_get_name( (GIBaseInfo*) method_info),
                   g_type_name(priv->gtype),
                   g_base_info_get_namespace( (GIBaseInfo*) priv->info),
                   g_base_info_get_name( (GIBaseInfo*) priv->info));
