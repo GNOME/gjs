@@ -528,11 +528,9 @@ to_string_func(JSContext *context,
 
     byte_array_ensure_array(priv);
 
-    encoding_is_utf8 = TRUE;
     if (argc >= 1 &&
         JSVAL_IS_STRING(argv[0])) {
-        encoding = gjs_string_get_ascii(context, argv[0]);
-        if (encoding == NULL)
+        if (!gjs_string_to_utf8(context, argv[0], &encoding))
             return JS_FALSE;
 
         /* maybe we should be smarter about utf8 synonyms here.
@@ -540,13 +538,14 @@ to_string_func(JSContext *context,
          * just an optimization anyway.
          */
         if (strcmp(encoding, "UTF-8") == 0) {
-            g_free(encoding);
             encoding_is_utf8 = TRUE;
+            g_free(encoding);
+            encoding = NULL;
         } else {
             encoding_is_utf8 = FALSE;
         }
     } else {
-        encoding = "UTF-8";
+        encoding_is_utf8 = TRUE;
     }
 
     if (priv->array->len == 0)
@@ -557,7 +556,7 @@ to_string_func(JSContext *context,
 
     if (encoding_is_utf8) {
         /* optimization, avoids iconv overhead and runs
-         * glib's hardwired utf8-to-utf16
+         * libmozjs hardwired utf8-to-utf16
          */
         jsval retval;
         JSBool ok;
@@ -681,11 +680,9 @@ from_string_func(JSContext *context,
         goto out;
     }
 
-    encoding_is_utf8 = TRUE;
     if (argc > 1 &&
         JSVAL_IS_STRING(argv[1])) {
-        encoding = gjs_string_get_ascii(context, argv[1]);
-        if (encoding == NULL)
+        if (!gjs_string_to_utf8(context, argv[1], &encoding))
             goto out;
 
         /* maybe we should be smarter about utf8 synonyms here.
@@ -693,22 +690,19 @@ from_string_func(JSContext *context,
          * just an optimization anyway.
          */
         if (strcmp(encoding, "UTF-8") == 0) {
-            g_free(encoding);
             encoding_is_utf8 = TRUE;
+            g_free(encoding);
+            encoding = NULL;
         } else {
             encoding_is_utf8 = FALSE;
         }
     } else {
-        encoding = "UTF-8";
+        encoding_is_utf8 = TRUE;
     }
 
     if (encoding_is_utf8) {
         /* optimization? avoids iconv overhead and runs
-         * glib's hardwired utf16-to-utf8.
-         * Does a gratuitous copy/strlen, but
-         * the generic path below also has
-         * gratuitous copy. Could be fixed for this path,
-         * if it ever turns out to matter.
+         * libmozjs hardwired utf16-to-utf8.
          */
         char *utf8 = NULL;
         if (!gjs_string_to_utf8(context,
@@ -750,7 +744,7 @@ from_string_func(JSContext *context,
 
         g_free(encoded);
     }
-    
+
     JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(obj));
 
     retval = JS_TRUE;

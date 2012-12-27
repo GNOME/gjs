@@ -558,6 +558,7 @@ gjs_context_constructor (GType                  type,
     js_context = GJS_CONTEXT(object);
 
     if (js_context->runtime == NULL) {
+        JS_SetCStringsAreUTF8();
         js_context->runtime = JS_NewRuntime(32*1024*1024 /* max bytes */);
         if (js_context->runtime == NULL)
             gjs_fatal("Failed to create javascript runtime");

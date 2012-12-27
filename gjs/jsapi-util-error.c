@@ -219,7 +219,7 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
 
     g_assert(JSVAL_IS_STRING(value));
 
-    gjs_string_get_binary_data (context, value, &s, NULL);
+    gjs_string_to_utf8(context, value, &s);
     g_assert(s != NULL);
     strcmp_result = strcmp(s, "This is an exception 42");
     free(s);

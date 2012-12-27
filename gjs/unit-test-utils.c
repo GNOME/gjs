@@ -35,6 +35,7 @@ test_error_reporter(JSContext     *context,
 void
 _gjs_unit_test_fixture_begin (GjsUnitTestFixture *fixture)
 {
+    JS_SetCStringsAreUTF8();
     fixture->runtime = JS_NewRuntime(1024*1024 /* max bytes */);
     fixture->context = JS_NewContext(fixture->runtime, 8192);
     JS_BeginRequest(fixture->context);

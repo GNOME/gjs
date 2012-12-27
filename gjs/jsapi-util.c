@@ -509,7 +509,7 @@ gjs_string_readable (JSContext   *context,
 
     g_string_append_c(buf, '"');
 
-    if (!gjs_try_string_to_utf8(context, STRING_TO_JSVAL(string), &chars, NULL)) {
+    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(string), &chars)) {
         size_t i, len;
         const jschar *uchars;
 
@@ -939,7 +939,7 @@ log_prop(JSContext  *context,
     if (JSVAL_IS_STRING(id)) {
         char *name;
 
-        name = gjs_string_get_ascii(context, id);
+        gjs_string_to_utf8(context, id, &name);
         gjs_debug(GJS_DEBUG_PROPS,
                   "prop %s: %s",
                   name, what);
@@ -1142,7 +1142,6 @@ gjs_parse_args (JSContext  *context,
     guint i;
     const char *fmt_iter;
     va_list args;
-    GError *arg_error = NULL;
     guint n_unwind = 0;
 #define MAX_UNWIND_STRINGS 16
     gpointer unwind_strings[MAX_UNWIND_STRINGS];
@@ -1237,9 +1236,13 @@ gjs_parse_args (JSContext  *context,
             if (*fmt_iter == 'z' && JSVAL_IS_NULL(js_value)) {
                 *arg = NULL;
             } else {
-                if (gjs_try_string_to_utf8 (context, js_value, arg, &arg_error)) {
+                if (gjs_string_to_utf8 (context, js_value, arg)) {
                     unwind_strings[n_unwind++] = *arg;
                     g_assert(n_unwind < MAX_UNWIND_STRINGS);
+                } else {
+                    /* Our error message is going to be more useful */
+                    JS_ClearPendingException(context);
+                    arg_error_message = "Couldn't convert to string";
                 }
             }
         }
@@ -1247,9 +1250,13 @@ gjs_parse_args (JSContext  *context,
         case 'F': {
             char **arg = arg_location;
 
-            if (gjs_try_string_to_filename (context, js_value, arg, &arg_error)) {
+            if (gjs_string_to_filename (context, js_value, arg)) {
                 unwind_strings[n_unwind++] = *arg;
                 g_assert(n_unwind < MAX_UNWIND_STRINGS);
+            } else {
+                /* Our error message is going to be more useful */
+                JS_ClearPendingException(context);
+                arg_error_message = "Couldn't convert to filename";
             }
         }
             break;
@@ -1297,13 +1304,9 @@ gjs_parse_args (JSContext  *context,
             g_assert_not_reached ();
         }
 
-        if (arg_error != NULL)
-            arg_error_message = arg_error->message;
-
         if (arg_error_message != NULL) {
             gjs_throw(context, "Error invoking %s, at argument %d (%s): %s", function_name,
                       consumed_args+1, argname, arg_error_message);
-            g_clear_error (&arg_error);
             goto error_unwind;
         }
 

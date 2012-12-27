@@ -95,9 +95,14 @@ get_module_name(JSContext *context,
                 JSObject  *module_obj,
                 jsval     *tmp)
 {
+    char *name;
+
     if (gjs_object_get_property(context, module_obj, "__moduleName__", tmp) &&
         JSVAL_IS_STRING(*tmp))
-        return gjs_string_get_ascii(context, *tmp);
+        if (gjs_string_to_utf8(context, *tmp, &name))
+            return name;
+        else
+            return NULL;
     else
         return NULL;
 }

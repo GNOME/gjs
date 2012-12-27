@@ -318,7 +318,7 @@ gjstest_test_func_gjs_jsapi_util_array(void)
 
         value = gjs_rooted_array_get(context, array, i);
         g_assert(JSVAL_IS_STRING(value));
-        ascii = gjs_string_get_ascii(context, value);
+        gjs_string_to_utf8(context, value, &ascii);
         g_assert(strcmp(ascii, "abcdefghijk") == 0);
         g_free(ascii);
     }

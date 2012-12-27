@@ -306,16 +306,6 @@ JSBool      gjs_string_from_filename         (JSContext       *context,
                                               const char      *filename_string,
                                               gssize           n_bytes,
                                               jsval           *value_p);
-char*       gjs_string_get_ascii             (JSContext       *context,
-                                              jsval            value);
-JSBool      gjs_string_get_binary_data       (JSContext       *context,
-                                              jsval            value,
-                                              char           **data_p,
-                                              gsize           *len_p);
-JSBool      gjs_string_from_binary_data      (JSContext       *context,
-                                              const char      *data,
-                                              gsize            len,
-                                              jsval           *value_p);
 JSBool      gjs_string_get_uint16_data       (JSContext       *context,
                                               jsval            value,
                                               guint16        **data_p,
@@ -370,16 +360,6 @@ void              gjs_unroot_value_locations  (JSContext        *context,
                                                int               n_locations);
 
 /* Functions intended for more "internal" use */
-
-gboolean gjs_try_string_to_filename           (JSContext    *context,
-                                               const jsval   filename_val,
-                                               char        **filename_string_p,
-                                               GError      **error);
-
-gboolean    gjs_try_string_to_utf8            (JSContext       *context,
-                                               const            jsval string_val,
-                                               char           **utf8_string_p,
-                                               GError         **error);
 
 void gjs_maybe_gc (JSContext *context);
 

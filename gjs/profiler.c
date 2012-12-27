@@ -154,9 +154,8 @@ gjs_profile_function_key_from_js(JSContext             *cx,
      * figure out the name of the called function.
      */
     function_name = JS_GetFunctionId(function);
-    if (function_name)
-        key->function_name = gjs_string_get_ascii(cx, STRING_TO_JSVAL(function_name));
-    else
+    if (!function_name ||
+        !gjs_string_to_utf8(cx, STRING_TO_JSVAL(function_name), &key->function_name))
         key->function_name = g_strdup("(unknown)");
 
     g_assert(key->filename != NULL);

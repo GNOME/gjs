@@ -1174,8 +1174,7 @@ real_connect_func(JSContext *context,
         return JS_FALSE;
     }
 
-    signal_name = gjs_string_get_ascii(context, argv[0]);
-    if (signal_name == NULL) {
+    if (!gjs_string_to_utf8(context, argv[0], &signal_name)) {
         return JS_FALSE;
     }
 
@@ -1325,9 +1324,7 @@ emit_func(JSContext *context,
         return JS_FALSE;
     }
 
-    signal_name = gjs_string_get_ascii(context,
-                                                  argv[0]);
-    if (signal_name == NULL)
+    if (!gjs_string_to_utf8(context, argv[0], &signal_name))
         return JS_FALSE;
 
     if (!g_signal_parse_name(signal_name,

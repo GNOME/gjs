@@ -117,7 +117,7 @@ format_frame(JSContext* cx, JSStackFrame* fp,
         if (fun) {
 	    JSString* funname = JS_GetFunctionId(fun);
             if (funname)
-                funname_str = gjs_string_get_ascii(cx, STRING_TO_JSVAL(funname));
+              gjs_string_to_utf8(cx, STRING_TO_JSVAL(funname), &funname_str);
 	}
 
         call_obj = JS_GetFrameCallObject(cx, fp);

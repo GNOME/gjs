@@ -42,17 +42,4 @@ function testToLocaleCompare() {
     assertRaises(function() { "a".localeCompare("\ud800"); });
 }
 
-function testInvalidStrings() {
-    // Not really related to locale handling - here we are testing
-    // gjs_string_to_utf8() to properly catch things we'll choke
-    // on later.
-
-    // Unpaired surrogate
-    assertRaises(function() { "\ud800".toLocaleLowerCase(); });
-    // Embedded NUL
-    assertRaises(function() { "\u0000".toLocaleLowerCase(); });
-    // Byte-reversed BOM (an example of a non-character)
-    assertRaises(function() { "\ufffe".toLocaleLowerCase(); });
-}
-
 gjstestRun();
