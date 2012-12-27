@@ -275,35 +275,13 @@ import_native_file(JSContext  *context,
     return retval;
 }
 
-static jschar *
-file_get_utf16_contents (const char  *filename,
-                         glong       *length,
-                         GError     **error)
-{
-    jschar *result;
-    gchar *contents;
-    gsize utf8_length;
-
-    if (!g_file_get_contents (filename, &contents,
-                              &utf8_length, error))
-        return NULL;
-
-    /* No cast here, so we get a warning in the
-       (impossible?) case that gunichar2 is different
-       from jschar */
-    result = g_utf8_to_utf16 (contents, utf8_length,
-                              NULL, length, error);
-
-    g_free (contents);
-    return result;
-}
 static JSObject *
 load_module_init(JSContext  *context,
                  JSObject   *in_object,
                  const char *full_path)
 {
-    jschar *script;
-    glong script_len;
+    char *script;
+    gsize script_len;
     jsval script_retval;
     JSObject *module_obj;
     GError *error;
@@ -340,7 +318,7 @@ load_module_init(JSContext  *context,
     script_len = 0;
     error = NULL;
 
-    if (!(script = file_get_utf16_contents(full_path, &script_len, &error))) {
+    if (!g_file_get_contents(full_path, &script, &script_len, &error)) {
         if (!g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_ISDIR) &&
             !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOTDIR) &&
             !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
@@ -355,13 +333,13 @@ load_module_init(JSContext  *context,
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Importing %s", full_path);
 
-    if (!JS_EvaluateUCScript(context,
-                             module_obj,
-                             script,
-                             script_len,
-                             full_path,
-                             1, /* line number */
-                             &script_retval)) {
+    if (!JS_EvaluateScript(context,
+                           module_obj,
+                           script,
+                           script_len,
+                           full_path,
+                           1, /* line number */
+                           &script_retval)) {
         g_free(script);
 
         /* If JSOPTION_DONT_REPORT_UNCAUGHT is set then the exception
@@ -431,8 +409,8 @@ import_file(JSContext  *context,
             const char *name,
             const char *full_path)
 {
-    jschar *script;
-    glong script_len;
+    char *script;
+    gsize script_len;
     JSObject *module_obj;
     GError *error;
     jsval script_retval;
@@ -455,7 +433,7 @@ import_file(JSContext  *context,
     script_len = 0;
     error = NULL;
 
-    if (!(script = file_get_utf16_contents(full_path, &script_len, &error))) {
+    if (!(g_file_get_contents(full_path, &script, &script_len, &error))) {
         if (!g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_ISDIR) &&
             !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOTDIR) &&
             !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
@@ -468,13 +446,13 @@ import_file(JSContext  *context,
 
     g_assert(script != NULL);
 
-    if (!JS_EvaluateUCScript(context,
-                             module_obj,
-                             script,
-                             script_len,
-                             full_path,
-                             1, /* line number */
-                             &script_retval)) {
+    if (!JS_EvaluateScript(context,
+                           module_obj,
+                           script,
+                           script_len,
+                           full_path,
+                           1, /* line number */
+                           &script_retval)) {
         g_free(script);
 
         /* If JSOPTION_DONT_REPORT_UNCAUGHT is set then the exception

@@ -979,8 +979,6 @@ gjs_context_eval(GjsContext *js_context,
     int line_number;
     jsval retval;
     gboolean success;
-    gunichar2 *u16_script;
-    glong u16_script_len;
 
     g_object_ref(G_OBJECT(js_context));
 
@@ -1006,13 +1004,8 @@ gjs_context_eval(GjsContext *js_context,
         }
     }
 
-    if ((u16_script = g_utf8_to_utf16 (script, script_len, NULL, &u16_script_len, error)) == NULL)
-        return FALSE;
-    g_assert (u16_script_len < G_MAXUINT);
-
     /* log and clear exception if it's set (should not be, normally...) */
-    if (gjs_log_exception(js_context->context,
-                             NULL)) {
+    if (gjs_log_exception(js_context->context, NULL)) {
         gjs_debug(GJS_DEBUG_CONTEXT,
                   "Exception was set prior to JS_EvaluateScript()");
     }
@@ -1024,13 +1017,15 @@ gjs_context_eval(GjsContext *js_context,
     JS_BeginRequest(js_context->context);
 
     retval = JSVAL_VOID;
-    if (!JS_EvaluateUCScript(js_context->context,
-                             js_context->global,
-                             (const jschar*)u16_script,
-                             (guint) u16_script_len,
-                             filename,
-                             line_number,
-                             &retval)) {
+    if (script_len < 0)
+        script_len = strlen(script);
+    if (!JS_EvaluateScript(js_context->context,
+                           js_context->global,
+                           script,
+                           script_len,
+                           filename,
+                           line_number,
+                           &retval)) {
         char *message;
 
         gjs_debug(GJS_DEBUG_CONTEXT,
@@ -1057,7 +1052,6 @@ gjs_context_eval(GjsContext *js_context,
 
         success = FALSE;
     }
-    g_free (u16_script);
 
     gjs_debug(GJS_DEBUG_CONTEXT,
               "Script evaluation succeeded");
