@@ -229,7 +229,7 @@ gjs_keep_alive_new(JSContext *context)
                                  /* funcs of constructor, MyConstructor.myfunc() */
                                  NULL);
         if (prototype == NULL)
-            gjs_fatal("Can't init class %s", gjs_keep_alive_class.name);
+            g_error("Can't init class %s", gjs_keep_alive_class.name);
 
         gjs_debug(GJS_DEBUG_KEEP_ALIVE, "Initialized class %s prototype %p",
                   gjs_keep_alive_class.name, prototype);
@@ -241,8 +241,8 @@ gjs_keep_alive_new(JSContext *context)
 
     keep_alive = JS_NewObject(context, &gjs_keep_alive_class, NULL, global);
     if (keep_alive == NULL) {
-        gjs_log_exception(context, NULL);
-        gjs_fatal("Failed to create keep_alive object");
+        gjs_log_exception(context);
+        g_error("Failed to create keep_alive object");
     }
 
     priv = g_slice_new0(KeepAlive);
@@ -330,7 +330,7 @@ gjs_keep_alive_create(JSContext *context)
 
     keep_alive = gjs_keep_alive_new(context);
     if (!keep_alive)
-        gjs_fatal("could not create keep_alive on global object, no memory?");
+        g_error("could not create keep_alive on global object, no memory?");
 
     gjs_set_global_slot(context, GJS_GLOBAL_SLOT_KEEP_ALIVE, OBJECT_TO_JSVAL(keep_alive));
 
@@ -383,8 +383,8 @@ gjs_keep_alive_remove_global_child(JSContext         *context,
     keep_alive = gjs_keep_alive_get_global(context);
 
     if (!keep_alive)
-        gjs_fatal("no keep_alive property on the global object, have you "
-                  "previously added this child?");
+        g_error("no keep_alive property on the global object, have you "
+                "previously added this child?");
 
     gjs_keep_alive_remove_child(context,
                                 gjs_keep_alive_get_global(context),

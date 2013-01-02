@@ -1984,7 +1984,7 @@ gjs_define_object_class(JSContext     *context,
                                 NULL,
                                 &prototype,
                                 &constructor)) {
-        gjs_fatal("Can't init class %s", constructor_name);
+        g_error("Can't init class %s", constructor_name);
     }
 
     GJS_INC_COUNTER(object);

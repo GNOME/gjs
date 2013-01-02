@@ -350,7 +350,7 @@ load_module_init(JSContext  *context,
         if (JS_IsExceptionPending(context)) {
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "Module " MODULE_INIT_FILENAME " left an exception set");
-            gjs_log_and_keep_exception(context, NULL);
+            gjs_log_and_keep_exception(context);
         } else {
             gjs_throw(context,
                       "JS_EvaluateScript() returned FALSE but did not set exception");
@@ -464,7 +464,7 @@ import_file(JSContext  *context,
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "Module '%s' left an exception set",
                       name);
-            gjs_log_and_keep_exception(context, NULL);
+            gjs_log_and_keep_exception(context);
         } else {
             gjs_throw(context,
                          "JS_EvaluateScript() returned FALSE but did not set exception");
@@ -1023,7 +1023,8 @@ importer_new(JSContext    *context)
     global = gjs_get_import_global(context);
 
     if (!JS_HasProperty(context, global, gjs_importer_class.name, &found))
-        gjs_fatal("HasProperty call failed creating importer class");
+        g_error("HasProperty call failed creating importer class");
+
     if (!found) {
         JSObject *prototype;
         prototype = JS_InitClass(context, global,
@@ -1049,7 +1050,7 @@ importer_new(JSContext    *context)
                                  /* funcs of constructor, MyConstructor.myfunc() */
                                  NULL);
         if (prototype == NULL)
-            gjs_fatal("Can't init class %s", gjs_importer_class.name);
+            g_error("Can't init class %s", gjs_importer_class.name);
 
         gjs_debug(GJS_DEBUG_IMPORTER, "Initialized class %s prototype %p",
                   gjs_importer_class.name, prototype);
@@ -1057,7 +1058,7 @@ importer_new(JSContext    *context)
 
     importer = JS_NewObject(context, &gjs_importer_class, NULL, global);
     if (importer == NULL)
-        gjs_fatal("No memory to create importer importer");
+        g_error("No memory to create importer importer");
 
     priv = g_slice_new0(Importer);
 
@@ -1152,12 +1153,12 @@ gjs_create_importer(JSContext    *context,
                                  "searchPath", -1, (const char **)search_path,
                                  /* settable (no READONLY) but not deleteable (PERMANENT) */
                                  JSPROP_PERMANENT | JSPROP_ENUMERATE))
-        gjs_fatal("no memory to define importer search path prop");
+        g_error("no memory to define importer search path prop");
 
     g_strfreev(search_path);
 
     if (!define_meta_properties(context, importer, NULL, importer_name, in_object))
-        gjs_fatal("failed to define meta properties on importer");
+        g_error("failed to define meta properties on importer");
 
     return importer;
 }
@@ -1178,7 +1179,7 @@ gjs_define_importer(JSContext    *context,
                            importer_name, OBJECT_TO_JSVAL(importer),
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS))
-        gjs_fatal("no memory to define importer property");
+        g_error("no memory to define importer property");
 
     gjs_debug(GJS_DEBUG_IMPORTER,
               "Defined importer '%s' %p in %p", importer_name, importer, in_object);

@@ -131,7 +131,7 @@ gjs_log(JSContext *context,
     JS_RestoreExceptionState(context, exc_state);
 
     if (jstr == NULL) {
-        gjs_debug(GJS_DEBUG_LOG, "<cannot convert value to string>");
+        g_message("JS LOG: <cannot convert value to string>");
         JS_EndRequest(context);
         return JS_TRUE;
     }
@@ -141,7 +141,7 @@ gjs_log(JSContext *context,
         return JS_FALSE;
     }
 
-    gjs_debug(GJS_DEBUG_LOG, "%s", s);
+    g_message("JS LOG: %s", s);
     g_free(s);
 
     JS_EndRequest(context);
@@ -155,43 +155,29 @@ gjs_log_error(JSContext *context,
               jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
-    char *s;
     JSExceptionState *exc_state;
     JSString *jstr;
-    jsval exc;
-
-    if (argc != 2) {
-        gjs_throw(context, "Must pass an exception and message string to logError()");
-        return JS_FALSE;
-    }
 
     JS_BeginRequest(context);
 
-    exc = argv[0];
-
-    /* JS_ValueToString might throw, in which we will only
-     *log that the value could be converted to string */
-    exc_state = JS_SaveExceptionState(context);
-    jstr = JS_ValueToString(context, argv[1]);
-    if (jstr != NULL)
-        argv[1] = STRING_TO_JSVAL(jstr);    // GC root
-    JS_RestoreExceptionState(context, exc_state);
-
-    if (jstr == NULL) {
-        gjs_debug(GJS_DEBUG_ERROR, "<cannot convert value to string>");
-        gjs_log_exception_props(context, exc);
-        JS_EndRequest(context);
-        return JS_TRUE;
+    if ((argc != 1 && argc != 2) ||
+        !JSVAL_IS_OBJECT (argv[0])) {
+        gjs_throw(context, "Must pass an exception and optionally a message to logError()");
     }
 
-    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(jstr), &s)) {
-        JS_EndRequest(context);
-        return JS_FALSE;
+    if (argc == 2) {
+        /* JS_ValueToString might throw, in which we will only
+         *log that the value could be converted to string */
+        exc_state = JS_SaveExceptionState(context);
+        jstr = JS_ValueToString(context, argv[1]);
+        if (jstr != NULL)
+            argv[1] = STRING_TO_JSVAL(jstr);    // GC root
+        JS_RestoreExceptionState(context, exc_state);
+    } else {
+        jstr = NULL;
     }
 
-    gjs_debug(GJS_DEBUG_ERROR, "%s", s);
-    gjs_log_exception_props(context, exc);
-    g_free(s);
+    gjs_log_exception_full(context, argv[0], jstr);
 
     JS_EndRequest(context);
     JS_SET_RVAL(context, vp, JSVAL_VOID);
@@ -568,12 +554,12 @@ gjs_context_constructor (GType                  type,
 
     js_context->runtime = JS_NewRuntime(32*1024*1024 /* max bytes */);
     if (js_context->runtime == NULL)
-        gjs_fatal("Failed to create javascript runtime");
+        g_error("Failed to create javascript runtime");
     JS_SetGCParameter(js_context->runtime, JSGC_MAX_BYTES, 0xffffffff);
 
     js_context->context = JS_NewContext(js_context->runtime, 8192 /* stack chunk size */);
     if (js_context->context == NULL)
-        gjs_fatal("Failed to create javascript context");
+        g_error("Failed to create javascript context");
 
     gjs_runtime_init_for_context(js_context->runtime, js_context->context);
 
@@ -622,39 +608,39 @@ gjs_context_constructor (GType                  type,
     }
 
     if (!gjs_init_context_standard(js_context->context))
-        gjs_fatal("Failed to initialize context");
+        g_error("Failed to initialize context");
     js_context->global = JS_GetGlobalObject(js_context->context);
 
     if (!JS_DefineProperty(js_context->context, js_context->global,
                            "window", OBJECT_TO_JSVAL(js_context->global),
                            NULL, NULL,
                            JSPROP_READONLY | JSPROP_PERMANENT))
-        gjs_fatal("No memory to export global object as 'window'");
+        g_error("No memory to export global object as 'window'");
 
     /* Define a global function called log() */
     if (!JS_DefineFunction(js_context->context, js_context->global,
                            "log",
                            (JSNative)gjs_log,
                            1, GJS_MODULE_PROP_FLAGS))
-        gjs_fatal("Failed to define log function");
+        g_error("Failed to define log function");
 
     if (!JS_DefineFunction(js_context->context, js_context->global,
                            "logError",
                            (JSNative)gjs_log_error,
                            2, GJS_MODULE_PROP_FLAGS))
-        gjs_fatal("Failed to define logError function");
+        g_error("Failed to define logError function");
 
     /* Define global functions called print() and printerr() */
     if (!JS_DefineFunction(js_context->context, js_context->global,
                            "print",
                            (JSNative)gjs_print,
                            3, GJS_MODULE_PROP_FLAGS))
-        gjs_fatal("Failed to define print function");
+        g_error("Failed to define print function");
     if (!JS_DefineFunction(js_context->context, js_context->global,
                            "printerr",
                            (JSNative)gjs_printerr,
                            4, GJS_MODULE_PROP_FLAGS))
-        gjs_fatal("Failed to define printerr function");
+        g_error("Failed to define printerr function");
 
     /* We create the global-to-runtime root importer with the
      * passed-in search path. If someone else already created
@@ -665,14 +651,14 @@ gjs_context_constructor (GType                  type,
                                   (const char**) js_context->search_path :
                                   NULL,
                                   TRUE))
-        gjs_fatal("Failed to create root importer");
+        g_error("Failed to create root importer");
 
     /* Now copy the global root importer (which we just created,
      * if it didn't exist) to our global object
      */
     if (!gjs_define_root_importer(js_context->context,
                                   js_context->global))
-        gjs_fatal("Failed to point 'imports' property at root importer");
+        g_error("Failed to point 'imports' property at root importer");
 
     js_context->profiler = gjs_profiler_new(js_context->runtime);
 
@@ -996,7 +982,7 @@ gjs_context_eval(GjsContext *js_context,
     }
 
     /* log and clear exception if it's set (should not be, normally...) */
-    if (gjs_log_exception(js_context->context, NULL)) {
+    if (gjs_log_exception(js_context->context)) {
         gjs_debug(GJS_DEBUG_CONTEXT,
                   "Exception was set prior to JS_EvaluateScript()");
     }
@@ -1016,29 +1002,14 @@ gjs_context_eval(GjsContext *js_context,
                            filename,
                            line_number,
                            &retval)) {
-        char *message;
-
         gjs_debug(GJS_DEBUG_CONTEXT,
                   "Script evaluation failed");
 
-        /* if message is NULL then somehow exception wasn't set */
-        message = NULL;
-        gjs_log_exception(js_context->context,
-                             &message);
-        if (message) {
-            g_set_error(error,
-                        GJS_ERROR,
-                        GJS_ERROR_FAILED,
-                        "%s", message);
-            g_free(message);
-        } else {
-            gjs_debug(GJS_DEBUG_CONTEXT,
-                      "JS_EvaluateScript() failed but no exception message?");
-            g_set_error(error,
-                        GJS_ERROR,
-                        GJS_ERROR_FAILED,
-                        "JS_EvaluateScript() failed but no exception message?");
-        }
+        gjs_log_exception(js_context->context);
+        g_set_error(error,
+                    GJS_ERROR,
+                    GJS_ERROR_FAILED,
+                    "JS_EvaluateScript() failed");
 
         success = FALSE;
     }
@@ -1046,7 +1017,7 @@ gjs_context_eval(GjsContext *js_context,
     gjs_debug(GJS_DEBUG_CONTEXT,
               "Script evaluation succeeded");
 
-    if (gjs_log_exception(js_context->context, NULL)) {
+    if (gjs_log_exception(js_context->context)) {
         g_set_error(error,
                     GJS_ERROR,
                     GJS_ERROR_FAILED,
@@ -1109,24 +1080,11 @@ gjs_context_define_string_array(GjsContext  *js_context,
                                  js_context->global,
                                  array_name, array_length, array_values,
                                  JSPROP_READONLY | JSPROP_PERMANENT)) {
-        char *message;
-
-        message = NULL;
-        gjs_log_exception(js_context->context, &message);
-        if (message) {
-            g_set_error(error,
-                        GJS_ERROR,
-                        GJS_ERROR_FAILED,
-                        "%s", message);
-            g_free(message);
-        } else {
-            message = "gjs_define_string_array() failed but no exception message?";
-            gjs_debug(GJS_DEBUG_CONTEXT, "%s", message);
-            g_set_error(error,
-                        GJS_ERROR,
-                        GJS_ERROR_FAILED,
-                        "%s", message);
-        }
+        gjs_log_exception(js_context->context);
+        g_set_error(error,
+                    GJS_ERROR,
+                    GJS_ERROR_FAILED,
+                    "gjs_define_string_array() failed");
         return FALSE;
     }
 

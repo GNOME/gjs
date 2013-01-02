@@ -363,7 +363,7 @@ gjs_value_debug_string(JSContext      *context,
                     return g_strdup("[out of memory copying class name]");
                 }
             } else {
-                gjs_log_exception(context, NULL);
+                gjs_log_exception(context);
                 JS_EndRequest(context);
                 return g_strdup("[unknown object]");
             }
@@ -410,8 +410,7 @@ gjs_log_object_props(JSContext      *context,
 
     props_iter = JS_NewPropertyIterator(context, obj);
     if (props_iter == NULL) {
-        gjs_debug(GJS_DEBUG_ERROR,
-                  "Failed to create property iterator for object props");
+        gjs_log_exception(context);
         goto done;
     }
 
@@ -502,68 +501,62 @@ gjs_explain_scope(JSContext  *context,
     JS_EndRequest(context);
 }
 
-static void
-log_one_exception_property(JSContext  *context,
-                           JSObject   *object,
-                           const char *name)
+JSBool
+gjs_log_exception_full(JSContext *context,
+                       jsval      exc,
+                       JSString  *message)
 {
-    jsval v;
-    char *debugstr;
+    jsval stack;
+    JSString *exc_str;
+    char *utf8_exception, *utf8_message, *utf8_stack;
 
-    if (!JS_GetProperty(context, object, name, &v))
-        return;
-
-    debugstr = gjs_value_debug_string(context, v);
-    gjs_debug(GJS_DEBUG_ERROR, "  %s = '%s'", name, debugstr);
-    g_free(debugstr);
-}
-
-void
-gjs_log_exception_props(JSContext *context,
-                        jsval      exc)
-{
     JS_BeginRequest(context);
 
-    /* This is useful when the exception was never sent to an error reporter
-     * due to JSOPTION_DONT_REPORT_UNCAUGHT, or if the exception was not
-     * a normal Error object so jsapi didn't know how to report it sensibly.
-     */
-    if (JSVAL_IS_NULL(exc)) {
-        gjs_debug(GJS_DEBUG_ERROR,
-                  "Exception was null");
-    } else if (JSVAL_IS_OBJECT(exc)) {
-        JSObject *exc_obj;
+    exc_str = JS_ValueToString(context, exc);
+    if (exc_str != NULL)
+        gjs_string_to_utf8(context, STRING_TO_JSVAL(exc_str), &utf8_exception);
+    else
+        utf8_exception = NULL;
 
-        exc_obj = JSVAL_TO_OBJECT(exc);
+    if (message != NULL)
+        gjs_string_to_utf8(context, STRING_TO_JSVAL(message), &utf8_message);
+    else
+        utf8_message = NULL;
 
-        log_one_exception_property(context, exc_obj, "message");
-        log_one_exception_property(context, exc_obj, "fileName");
-        log_one_exception_property(context, exc_obj, "lineNumber");
-        log_one_exception_property(context, exc_obj, "stack");
-    } else if (JSVAL_IS_STRING(exc)) {
-        gjs_debug(GJS_DEBUG_ERROR,
-                  "Exception was a String");
+    if (JSVAL_IS_OBJECT(exc) &&
+        gjs_object_get_property_const(context, JSVAL_TO_OBJECT(exc),
+                                      GJS_STRING_STACK, &stack))
+        gjs_string_to_utf8(context, stack, &utf8_stack);
+    else
+        utf8_stack = NULL;
+
+    if (utf8_message) {
+        if (utf8_stack)
+            g_warning("JS ERROR: %s: %s\n%s", utf8_message, utf8_exception, utf8_stack);
+        else
+            g_warning("JS ERROR: %s: %s", utf8_message, utf8_exception);
     } else {
-        gjs_debug(GJS_DEBUG_ERROR,
-                  "Exception had some strange type");
+        if (utf8_stack)
+            g_warning("JS ERROR: %s\n%s", utf8_exception, utf8_stack);
+        else
+            g_warning("JS ERROR: %s", utf8_exception);
     }
-    JS_EndRequest(context);
+
+    g_free(utf8_exception);
+    g_free(utf8_message);
+    g_free(utf8_stack);
+
+    return JS_TRUE;
 }
 
 static JSBool
 log_and_maybe_keep_exception(JSContext  *context,
-                             char      **message_p,
                              gboolean    keep)
 {
     jsval exc = JSVAL_VOID;
-    JSString *s;
-    char *message;
     JSBool retval = JS_FALSE;
 
     JS_BeginRequest(context);
-
-    if (message_p)
-        *message_p = NULL;
 
     JS_AddValueRoot(context, &exc);
     if (!JS_GetPendingException(context, &exc))
@@ -571,31 +564,7 @@ log_and_maybe_keep_exception(JSContext  *context,
 
     JS_ClearPendingException(context);
 
-    s = JS_ValueToString(context, exc);
-
-    if (s == NULL) {
-        gjs_debug(GJS_DEBUG_ERROR,
-                  "Failed to convert exception to string");
-        goto out; /* Exception should be thrown already */
-    }
-
-    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(s), &message)) {
-        gjs_debug(GJS_DEBUG_ERROR,
-                  "Failed to convert exception string to UTF-8");
-        goto out; /* Error already set */
-    }
-
-    gjs_debug(GJS_DEBUG_ERROR,
-              "Exception was: %s",
-              message);
-
-    if (message_p) {
-        *message_p = message;
-    } else {
-        g_free(message);
-    }
-
-    gjs_log_exception_props(context, exc);
+    gjs_log_exception_full(context, exc, NULL);
 
     /* We clear above and then set it back so any exceptions
      * from the logging process don't overwrite the original
@@ -614,17 +583,15 @@ log_and_maybe_keep_exception(JSContext  *context,
 }
 
 JSBool
-gjs_log_exception(JSContext  *context,
-                  char      **message_p)
+gjs_log_exception(JSContext  *context)
 {
-    return log_and_maybe_keep_exception(context, message_p, FALSE);
+    return log_and_maybe_keep_exception(context, FALSE);
 }
 
 JSBool
-gjs_log_and_keep_exception(JSContext *context,
-                           char     **message_p)
+gjs_log_and_keep_exception(JSContext *context)
 {
-    return log_and_maybe_keep_exception(context, message_p, TRUE);
+    return log_and_maybe_keep_exception(context, TRUE);
 }
 
 static void
@@ -827,13 +794,13 @@ gjs_date_from_time_t (JSContext *context, time_t time)
 
     if (!JS_GetClassObject(context, JS_GetGlobalObject(context), JSProto_Date,
                            &date_constructor))
-        gjs_fatal("Failed to lookup Date prototype");
+        g_error("Failed to lookup Date prototype");
 
     if (!JS_GetProperty(context, date_constructor, "prototype", &date_prototype))
-        gjs_fatal("Failed to get prototype from Date constructor");
+        g_error("Failed to get prototype from Date constructor");
 
     if (!JS_NewNumberValue(context, ((double) time) * 1000, &(args[0])))
-        gjs_fatal("Failed to convert time_t to number");
+        g_error("Failed to convert time_t to number");
 
     date = JS_New(context, JSVAL_TO_OBJECT (date_prototype), 1, args);
 

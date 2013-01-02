@@ -36,9 +36,7 @@ G_BEGIN_DECLS
 typedef enum {
     GJS_DEBUG_STRACE_TIMESTAMP,
     GJS_DEBUG_GI_USAGE,
-    GJS_DEBUG_ERROR,
     GJS_DEBUG_MEMORY,
-    GJS_DEBUG_LOG,
     GJS_DEBUG_CONTEXT,
     GJS_DEBUG_IMPORTER,
     GJS_DEBUG_NATIVE,
@@ -152,9 +150,6 @@ typedef enum {
 #else
 #define gjs_debug_gsignal(format...)
 #endif
-
-void gjs_fatal(const char *format,
-               ...) G_GNUC_PRINTF (1, 2) G_GNUC_NORETURN;
 
 void gjs_debug(GjsDebugTopic topic,
                const char   *format,

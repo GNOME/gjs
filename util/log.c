@@ -33,30 +33,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-void
-gjs_fatal(const char *format, ...)
-{
-    va_list args;
-    char *s;
-
-    va_start (args, format);
-    s = g_strdup_vprintf (format, args);
-    va_end (args);
-
-    fputs(s, stderr);
-
-    if (!g_str_has_suffix(s, "\n"))
-        fputs("\n", stderr);
-    fputs("\n", stderr);
-
-    fflush(stderr);
-
-    g_free(s);
-
-    abort();
-    exit(1); /* not reached unless there's some weird SIGABRT handler */
-}
-
 /* prefix is allowed if it's in the ;-delimited environment variable
  * GJS_DEBUG_TOPICS or if that variable is not set.
  */
@@ -95,14 +71,13 @@ is_allowed_prefix (const char *prefix)
 
 static void
 write_to_stream(FILE       *logfp,
-                gboolean    error,
                 const char *prefix,
                 const char *s)
 {
     /* seek to end to avoid truncating in case we're using shared logfile */
     (void)fseek(logfp, 0, SEEK_END);
 
-    fprintf(logfp, "%*s: %s%s", PREFIX_LENGTH, prefix, error ? "!!!   " : "", s);
+    fprintf(logfp, "%*s: %s", PREFIX_LENGTH, prefix, s);
     if (!g_str_has_suffix(s, "\n"))
         fputs("\n", logfp);
     fflush(logfp);
@@ -122,7 +97,6 @@ gjs_debug(GjsDebugTopic topic,
     const char *prefix;
     va_list args;
     char *s;
-    gboolean error;
 
     if (!checked_for_timestamp) {
         print_timestamp = gjs_environment_variable_is_set("GJS_DEBUG_TIMESTAMP");
@@ -175,15 +149,13 @@ gjs_debug(GjsDebugTopic topic,
         strace_timestamps = gjs_environment_variable_is_set("GJS_STRACE_TIMESTAMPS");
     }
 
-    /* only log errors and strace timestamps if debug
+    /* only strace timestamps if debug
      * log wasn't specifically switched on
      */
-    if ((!debug_log_enabled) &&
-        !(topic == GJS_DEBUG_ERROR ||
-          topic == GJS_DEBUG_STRACE_TIMESTAMP))
+    if (!debug_log_enabled &&
+        topic != GJS_DEBUG_STRACE_TIMESTAMP)
         return;
 
-    error = FALSE;
     switch (topic) {
     case GJS_DEBUG_STRACE_TIMESTAMP:
         /* return early if strace timestamps are disabled, avoiding
@@ -200,15 +172,8 @@ gjs_debug(GjsDebugTopic topic,
     case GJS_DEBUG_GI_USAGE:
         prefix = "JS GI USE";
         break;
-    case GJS_DEBUG_ERROR:
-        prefix = "JS ERROR";
-        error = TRUE;
-        break;
     case GJS_DEBUG_MEMORY:
         prefix = "JS MEMORY";
-        break;
-    case GJS_DEBUG_LOG:
-        prefix = "JS LOG";
         break;
     case GJS_DEBUG_CONTEXT:
         prefix = "JS CTX";
@@ -318,13 +283,7 @@ gjs_debug(GjsDebugTopic topic,
             previous = total;
         }
 
-        /* write to both stderr and logfile
-         * if it's an error
-         */
-        if (error && logfp != stderr)
-            write_to_stream(stderr, error, prefix, s);
-
-        write_to_stream(logfp, error, prefix, s);
+        write_to_stream(logfp, prefix, s);
     }
 
     g_free(s);

@@ -1748,8 +1748,7 @@ gjs_value_to_g_argument(JSContext      *context,
         break;
     }
     default:
-        gjs_debug(GJS_DEBUG_ERROR,
-                  "Unhandled type %s for JavaScript to GArgument conversion",
+        g_warning("Unhandled type %s for JavaScript to GArgument conversion",
                   g_type_tag_to_string(type_tag));
         wrong = TRUE;
         report_type_mismatch = TRUE;
@@ -1899,8 +1898,7 @@ gjs_g_argument_init_default(JSContext      *context,
         break;
 
     default:
-        gjs_debug(GJS_DEBUG_ERROR,
-                  "Unhandled type %s for default GArgument initialization",
+        g_warning("Unhandled type %s for default GArgument initialization",
                   g_type_tag_to_string(type_tag));
         break;
     }
@@ -2757,8 +2755,7 @@ gjs_value_from_g_argument (JSContext  *context,
         break;
 
     default:
-        gjs_debug(GJS_DEBUG_ERROR,
-                  "Unhandled type %s converting GArgument to JavaScript",
+        g_warning("Unhandled type %s converting GArgument to JavaScript",
                   g_type_tag_to_string(type_tag));
         return JS_FALSE;
     }
@@ -3197,8 +3194,7 @@ gjs_g_arg_release_internal(JSContext  *context,
         break;
 
     default:
-        gjs_debug(GJS_DEBUG_ERROR,
-                  "Unhandled type %s releasing GArgument",
+        g_warning("Unhandled type %s releasing GArgument",
                   g_type_tag_to_string(type_tag));
         return JS_FALSE;
     }

@@ -122,7 +122,7 @@ closure_marshal(GClosure        *closure,
             gjs_debug(GJS_DEBUG_GCLOSURE,
                       "Unable to convert arg %d in order to invoke closure",
                       i);
-            gjs_log_exception(context, NULL);
+            gjs_log_exception(context);
             goto cleanup;
         }
     }
@@ -138,7 +138,7 @@ closure_marshal(GClosure        *closure,
         if (!gjs_value_to_g_value(context, rval, return_value)) {
             gjs_debug(GJS_DEBUG_GCLOSURE,
                       "Unable to convert return value when invoking closure");
-            gjs_log_exception(context, NULL);
+            gjs_log_exception(context);
             goto cleanup;
         }
     }

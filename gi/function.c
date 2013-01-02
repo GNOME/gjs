@@ -1582,7 +1582,7 @@ function_new(JSContext      *context,
                                  /* funcs of constructor, MyConstructor.myfunc() */
                                  NULL);
         if (prototype == NULL)
-            gjs_fatal("Can't init class %s", gjs_function_class.name);
+            g_error("Can't init class %s", gjs_function_class.name);
 
         gjs_debug(GJS_DEBUG_GFUNCTION, "Initialized class %s prototype %p",
                   gjs_function_class.name, prototype);

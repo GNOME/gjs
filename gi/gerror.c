@@ -441,8 +441,8 @@ gjs_define_error_class(JSContext    *context,
                                 &gjs_error_constructor_funcs[0],
                                 &prototype,
                                 &constructor)) {
-        gjs_log_exception(context, NULL);
-        gjs_fatal("Can't init class %s", constructor_name);
+        gjs_log_exception(context);
+        g_error("Can't init class %s", constructor_name);
     }
 
     GJS_INC_COUNTER(gerror);

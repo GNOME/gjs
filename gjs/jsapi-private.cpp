@@ -44,6 +44,7 @@ gjs_error_reporter(JSContext     *context,
                    JSErrorReport *report)
 {
     const char *warning;
+    GLogLevelFlags level;
 
     if (gjs_environment_variable_is_set("GJS_ABORT_ON_OOM") &&
         report->flags == JSREPORT_ERROR &&
@@ -54,11 +55,8 @@ gjs_error_reporter(JSContext     *context,
     }
 
     if ((report->flags & JSREPORT_WARNING) != 0) {
-        /* We manually insert "WARNING" into the output instead of
-         * having GJS_DEBUG_WARNING because it's convenient to
-         * search for 'JS ERROR' to find all problems
-         */
-        warning = "WARNING: ";
+        warning = "WARNING";
+        level = G_LOG_LEVEL_MESSAGE;
 
         /* suppress bogus warnings. See mozilla/js/src/js.msg */
         switch (report->errorNumber) {
@@ -71,18 +69,9 @@ gjs_error_reporter(JSContext     *context,
             return;
         }
     } else {
-        warning = "REPORTED: ";
+        warning = "REPORTED";
+        level = G_LOG_LEVEL_WARNING;
     }
 
-    gjs_debug(GJS_DEBUG_ERROR,
-              "%s'%s'",
-              warning,
-              message);
-
-    gjs_debug(GJS_DEBUG_ERROR,
-              "%sfile '%s' line %u exception %d number %d",
-              warning,
-              report->filename, report->lineno,
-              (report->flags & JSREPORT_EXCEPTION) != 0,
-              report->errorNumber);
+    g_log(G_LOG_DOMAIN, level, "JS %s: [%s %d]: %s", warning, report->filename, report->lineno, message);
 }

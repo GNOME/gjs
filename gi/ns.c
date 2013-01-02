@@ -216,7 +216,7 @@ ns_new(JSContext    *context,
                                  /* funcs of constructor, MyConstructor.myfunc() */
                                  NULL);
         if (prototype == NULL)
-            gjs_fatal("Can't init class %s", gjs_ns_class.name);
+            g_error("Can't init class %s", gjs_ns_class.name);
 
         gjs_debug(GJS_DEBUG_GNAMESPACE, "Initialized class %s prototype %p",
                   gjs_ns_class.name, prototype);
@@ -224,7 +224,7 @@ ns_new(JSContext    *context,
 
     ns = JS_NewObject(context, &gjs_ns_class, NULL, global);
     if (ns == NULL)
-        gjs_fatal("No memory to create ns object");
+        g_error("No memory to create ns object");
 
     priv = g_slice_new0(Ns);
 

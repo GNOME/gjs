@@ -122,7 +122,7 @@ resolve_namespace_object(JSContext  *context,
                            ns_name, OBJECT_TO_JSVAL(namespace),
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS))
-        gjs_fatal("no memory to define ns property");
+        g_error("no memory to define ns property");
 
     override = lookup_override_function(context, ns_id);
     if (override && !JS_CallFunctionValue (context,
@@ -282,7 +282,7 @@ repo_new(JSContext *context)
                                  /* funcs of constructor, MyConstructor.myfunc() */
                                  NULL);
         if (prototype == NULL)
-            gjs_fatal("Can't init class %s", gjs_repo_class.name);
+            g_error("Can't init class %s", gjs_repo_class.name);
 
         gjs_debug(GJS_DEBUG_GREPO, "Initialized class %s prototype %p",
                   gjs_repo_class.name, prototype);
@@ -620,7 +620,7 @@ gjs_lookup_namespace_object_by_name(JSContext      *context,
     if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(importer), "importer",
                                      gi_name, &girepository) ||
         !JSVAL_IS_OBJECT(girepository)) {
-        gjs_log_exception(context, NULL);
+        gjs_log_exception(context);
         gjs_throw(context, "No gi property in importer");
         goto fail;
     }

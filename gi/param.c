@@ -528,7 +528,7 @@ gjs_define_param_class(JSContext    *context,
                                 gjs_param_constructor_funcs,
                                 &prototype,
                                 &constructor)) {
-        gjs_fatal("Can't init class %s", constructor_name);
+        g_error("Can't init class %s", constructor_name);
     }
 
     value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM));

@@ -255,14 +255,15 @@ void        gjs_throw_literal                (JSContext       *context,
                                               const char      *string);
 void        gjs_throw_g_error                (JSContext       *context,
                                               GError          *error);
-JSBool      gjs_log_exception                (JSContext       *context,
-                                              char           **message_p);
-JSBool      gjs_log_and_keep_exception       (JSContext       *context,
-                                              char           **message_p);
+
+JSBool      gjs_log_exception                (JSContext       *context);
+JSBool      gjs_log_and_keep_exception       (JSContext       *context);
 JSBool      gjs_move_exception               (JSContext       *src_context,
                                               JSContext       *dest_context);
-void        gjs_log_exception_props          (JSContext       *context,
-                                              jsval            exc);
+JSBool      gjs_log_exception_full           (JSContext       *context,
+                                              jsval            exc,
+                                              JSString        *message);
+
 #ifdef __GJS_UTIL_LOG_H__
 void        gjs_log_object_props             (JSContext       *context,
                                               JSObject        *obj,

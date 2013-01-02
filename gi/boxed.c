@@ -869,8 +869,7 @@ define_boxed_class_fields (JSContext *context,
      * memory overhead.
      */
     if (n_fields > 256) {
-        gjs_debug(GJS_DEBUG_ERROR,
-                  "Only defining the first 256 fields in boxed type '%s'",
+        g_warning("Only defining the first 256 fields in boxed type '%s'",
                   g_base_info_get_name ((GIBaseInfo *)priv->info));
         n_fields = 256;
     }
@@ -1217,8 +1216,8 @@ gjs_define_boxed_class(JSContext    *context,
                                 NULL,
                                 &prototype,
                                 &constructor)) {
-        gjs_log_exception(context, NULL);
-        gjs_fatal("Can't init class %s", constructor_name);
+        gjs_log_exception(context);
+        g_error("Can't init class %s", constructor_name);
     }
 
     GJS_INC_COUNTER(boxed);

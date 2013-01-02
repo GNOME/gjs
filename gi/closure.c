@@ -271,7 +271,7 @@ gjs_closure_invoke(GClosure *closure,
     if (JS_IsExceptionPending(context)) {
         gjs_debug_closure("Exception was pending before invoking callback??? "
                           "Not expected");
-        gjs_log_exception(context, NULL);
+        gjs_log_exception(context);
     }
 
     if (!gjs_call_function_value(context,
@@ -284,12 +284,12 @@ gjs_closure_invoke(GClosure *closure,
         gjs_debug_closure("Closure invocation failed (exception should "
                           "have been thrown) closure %p callable %p",
                           closure, c->obj);
-        if (!gjs_log_exception(context, NULL))
+        if (!gjs_log_exception(context))
             gjs_debug_closure("Closure invocation failed but no exception was set?");
         goto out;
     }
 
-    if (gjs_log_exception(context, NULL)) {
+    if (gjs_log_exception(context)) {
         gjs_debug_closure("Closure invocation succeeded but an exception was set");
     }
 
