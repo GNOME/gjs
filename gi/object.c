@@ -1026,7 +1026,7 @@ object_instance_trace(JSTracer *tracer,
     ObjectInstance *priv;
     GList *iter;
 
-    priv = priv_from_js(tracer->context, obj);
+    priv = JS_GetPrivate(tracer->context, obj);
 
     for (iter = priv->signals; iter; iter = iter->next) {
         ConnectData *cd = iter->data;

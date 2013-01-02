@@ -133,7 +133,7 @@ keep_alive_trace(JSTracer *tracer,
 {
     KeepAlive *priv;
 
-    priv = priv_from_js(tracer->context, obj);
+    priv = JS_GetPrivate(tracer->context, obj);
 
     if (priv == NULL) /* prototype */
         return;
