@@ -104,48 +104,6 @@ gjs_gc(JSContext *context,
     return JS_TRUE;
 }
 
-static JSBool
-gjs_getpid(JSContext *context,
-           unsigned   argc,
-           jsval     *vp)
-{
-    jsval *argv = JS_ARGV(cx, vp);
-    jsval rval;
-    if (!gjs_parse_args(context, "getpid", "", argc, argv))
-        return JS_FALSE;
-    rval = INT_TO_JSVAL(getpid());
-    JS_SET_RVAL(context, vp, rval);
-    return JS_TRUE;
-}
-
-static JSBool
-gjs_getuid(JSContext *context,
-           unsigned   argc,
-           jsval     *vp)
-{
-    jsval *argv = JS_ARGV(cx, vp);
-    jsval rval;
-    if (!gjs_parse_args(context, "getuid", "", argc, argv))
-        return JS_FALSE;
-    rval = INT_TO_JSVAL(getuid());
-    JS_SET_RVAL(context, vp, rval);
-    return JS_TRUE;
-}
-
-static JSBool
-gjs_getgid(JSContext *context,
-           unsigned   argc,
-           jsval     *vp)
-{
-    jsval *argv = JS_ARGV(cx, vp);
-    jsval rval;
-    if (!gjs_parse_args(context, "getgid", "", argc, argv))
-        return JS_FALSE;
-    rval = INT_TO_JSVAL(getgid());
-    JS_SET_RVAL(context, vp, rval);
-    return JS_TRUE;
-}
-
 JSBool
 gjs_js_define_system_stuff(JSContext *context,
                            JSObject  *module)
@@ -173,24 +131,6 @@ gjs_js_define_system_stuff(JSContext *context,
                            (JSNative) gjs_gc,
                            0, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
-
-    if (!JS_DefineFunction(context, module,
-                           "getpid",
-                           (JSNative) gjs_getpid,
-                           0, GJS_MODULE_PROP_FLAGS))
-        return FALSE;
-
-    if (!JS_DefineFunction(context, module,
-                           "getuid",
-                           (JSNative) gjs_getuid,
-                           0, GJS_MODULE_PROP_FLAGS))
-        return FALSE;
-
-    if (!JS_DefineFunction(context, module,
-                           "getgid",
-                           (JSNative) gjs_getgid,
-                           0, GJS_MODULE_PROP_FLAGS))
-        return FALSE;
 
     return JS_TRUE;
 }
