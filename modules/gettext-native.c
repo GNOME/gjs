@@ -106,7 +106,7 @@ gjs_dgettext(JSContext *context,
     JSBool result;
     jsval retval;
 
-    if (!gjs_parse_args (context, "dgettext", "zs", argc, argv,
+    if (!gjs_parse_args (context, "dgettext", "?ss", argc, argv,
                          "domain", &domain, "msgid", &msgid))
       return JS_FALSE;
 
@@ -161,7 +161,7 @@ gjs_dngettext(JSContext *context,
     JSBool result;
     jsval retval;
 
-    if (!gjs_parse_args (context, "dngettext", "zssu", argc, argv,
+    if (!gjs_parse_args (context, "dngettext", "?sssu", argc, argv,
                          "domain", &domain, "msgid1", &msgid1,
                          "msgid2", &msgid2, "n", &n))
       return JS_FALSE;

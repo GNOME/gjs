@@ -1117,7 +1117,6 @@ gjs_value_to_int64  (JSContext  *context,
  *
  * b: A boolean
  * s: A string, converted into UTF-8
- * z: Like 's', but may be null in JavaScript (which appears as NULL in C)
  * F: A string, converted into "filename encoding" (i.e. active locale)
  * i: A number, will be converted to a C "gint32"
  * u: A number, converted into a C "guint32"
@@ -1130,6 +1129,9 @@ gjs_value_to_int64  (JSContext  *context,
  * The '|' character introduces optional arguments.  All format specifiers
  * after a '|' when not specified, do not cause any changes in the C
  * value location.
+ *
+ * A prefix character '?' means that the next value may be null, in
+ * which case the C value %NULL is returned.
  */
 JSBool
 gjs_parse_args (JSContext  *context,
@@ -1163,6 +1165,8 @@ gjs_parse_args (JSContext  *context,
         switch (*fmt_iter) {
         case '|':
             n_required = n_total;
+            continue;
+        case '?':
             continue;
         default:
             break;
@@ -1213,6 +1217,16 @@ gjs_parse_args (JSContext  *context,
 
         js_value = argv[consumed_args];
 
+        if (*fmt_iter == '?') {
+            fmt_iter++;
+
+            if (JSVAL_IS_NULL (js_value)) {
+                gpointer *arg = arg_location;
+                *arg = NULL;
+                goto got_value;
+            }
+        }
+
         switch (*fmt_iter) {
         case 'b': {
             if (!JSVAL_IS_BOOLEAN(js_value)) {
@@ -1232,21 +1246,16 @@ gjs_parse_args (JSContext  *context,
             }
         }
             break;
-        case 's':
-        case 'z': {
+        case 's': {
             char **arg = arg_location;
 
-            if (*fmt_iter == 'z' && JSVAL_IS_NULL(js_value)) {
-                *arg = NULL;
+            if (gjs_string_to_utf8 (context, js_value, arg)) {
+                unwind_strings[n_unwind++] = *arg;
+                g_assert(n_unwind < MAX_UNWIND_STRINGS);
             } else {
-                if (gjs_string_to_utf8 (context, js_value, arg)) {
-                    unwind_strings[n_unwind++] = *arg;
-                    g_assert(n_unwind < MAX_UNWIND_STRINGS);
-                } else {
-                    /* Our error message is going to be more useful */
-                    JS_ClearPendingException(context);
-                    arg_error_message = "Couldn't convert to string";
-                }
+                /* Our error message is going to be more useful */
+                JS_ClearPendingException(context);
+                arg_error_message = "Couldn't convert to string";
             }
         }
             break;
@@ -1307,6 +1316,7 @@ gjs_parse_args (JSContext  *context,
             g_assert_not_reached ();
         }
 
+    got_value:
         if (arg_error_message != NULL) {
             gjs_throw(context, "Error invoking %s, at argument %d (%s): %s", function_name,
                       consumed_args+1, argname, arg_error_message);
