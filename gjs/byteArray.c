@@ -52,7 +52,7 @@ static JSBool byte_array_set_prop      (JSContext    *context,
 static JSBool byte_array_new_resolve   (JSContext    *context,
                                         JSObject     *obj,
                                         jsid          id,
-                                        uintN         flags,
+                                        unsigned      flags,
                                         JSObject    **objp);
 GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array);
 static void   byte_array_finalize      (JSContext    *context,
@@ -386,7 +386,7 @@ static JSBool
 byte_array_new_resolve(JSContext *context,
                        JSObject  *obj,
                        jsid       id,
-                       uintN      flags,
+                       unsigned   flags,
                        JSObject **objp)
 {
     ByteArrayInstance *priv;
@@ -511,7 +511,7 @@ byte_array_finalize(JSContext *context,
 /* implement toString() with an optional encoding arg */
 static JSBool
 to_string_func(JSContext *context,
-               uintN      argc,
+               unsigned   argc,
                jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -611,7 +611,7 @@ to_string_func(JSContext *context,
 
 static JSBool
 to_gbytes_func(JSContext *context,
-               uintN      argc,
+               unsigned   argc,
                jsval     *vp)
 {
     JSObject *object = JS_THIS_OBJECT(context, vp);
@@ -652,7 +652,7 @@ byte_array_new(JSContext *context)
 /* fromString() function implementation */
 static JSBool
 from_string_func(JSContext *context,
-                 uintN      argc,
+                 unsigned   argc,
                  jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -762,7 +762,7 @@ from_string_func(JSContext *context,
 /* fromArray() function implementation */
 static JSBool
 from_array_func(JSContext *context,
-                uintN      argc,
+                unsigned   argc,
                 jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -829,7 +829,7 @@ from_array_func(JSContext *context,
 
 static JSBool
 from_gbytes_func(JSContext *context,
-                 uintN      argc,
+                 unsigned   argc,
                  jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);

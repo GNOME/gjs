@@ -29,7 +29,7 @@
 
 static JSBool
 gjs_format_int_alternative_output(JSContext *context,
-                                  uintN      argc,
+                                  unsigned   argc,
                                   jsval     *vp)
 {
     jsval *argv = JS_ARGV(cx, vp);

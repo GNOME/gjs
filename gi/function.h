@@ -69,7 +69,7 @@ JSObject* gjs_define_function   (JSContext      *context,
 JSBool    gjs_invoke_c_function_uncached (JSContext      *context,
                                           GIFunctionInfo *info,
                                           JSObject       *obj,
-                                          uintN           argc,
+                                          unsigned        argc,
                                           jsval          *argv,
                                           jsval          *rval);
 

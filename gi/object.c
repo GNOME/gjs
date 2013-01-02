@@ -463,7 +463,7 @@ static JSBool
 object_instance_new_resolve(JSContext *context,
                             JSObject  *obj,
                             jsid       id,
-                            uintN      flags,
+                            unsigned   flags,
                             JSObject **objp)
 {
     GIFunctionInfo *method_info;
@@ -623,7 +623,7 @@ free_g_params(GParameter *params,
 static JSBool
 object_instance_props_to_g_parameters(JSContext   *context,
                                       JSObject    *obj,
-                                      uintN        argc,
+                                      unsigned     argc,
                                       jsval       *argv,
                                       GType        gtype,
                                       GParameter **gparams_p,
@@ -898,7 +898,7 @@ associate_js_gobject (JSContext      *context,
 static JSBool
 object_instance_init (JSContext *context,
                       JSObject **object,
-                      uintN      argc,
+                      unsigned   argc,
                       jsval     *argv)
 {
     ObjectInstance *priv;
@@ -1128,7 +1128,7 @@ signal_connection_invalidated (gpointer  user_data,
 
 static JSBool
 real_connect_func(JSContext *context,
-                  uintN      argc,
+                  unsigned   argc,
                   jsval     *vp,
                   gboolean  after)
 {
@@ -1223,7 +1223,7 @@ real_connect_func(JSContext *context,
 
 static JSBool
 connect_after_func(JSContext *context,
-                   uintN      argc,
+                   unsigned   argc,
                    jsval     *vp)
 {
     return real_connect_func(context, argc, vp, TRUE);
@@ -1231,7 +1231,7 @@ connect_after_func(JSContext *context,
 
 static JSBool
 connect_func(JSContext *context,
-             uintN      argc,
+             unsigned   argc,
              jsval     *vp)
 {
     return real_connect_func(context, argc, vp, FALSE);
@@ -1239,7 +1239,7 @@ connect_func(JSContext *context,
 
 static JSBool
 disconnect_func(JSContext *context,
-                uintN      argc,
+                unsigned   argc,
                 jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -1283,7 +1283,7 @@ disconnect_func(JSContext *context,
 
 static JSBool
 emit_func(JSContext *context,
-          uintN      argc,
+          unsigned   argc,
           jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -1408,7 +1408,7 @@ emit_func(JSContext *context,
 
 static JSBool
 to_string_func(JSContext *context,
-               uintN      argc,
+               unsigned   argc,
                jsval     *vp)
 {
     JSObject *obj = JS_THIS_OBJECT(context, vp);
@@ -1461,7 +1461,7 @@ static struct JSClass gjs_object_instance_class = {
 
 static JSBool
 init_func (JSContext *context,
-           uintN      argc,
+           unsigned   argc,
            jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -1930,7 +1930,7 @@ find_vfunc_info (JSContext *context,
 
 static JSBool
 gjs_hook_up_vfunc(JSContext *cx,
-                  uintN      argc,
+                  unsigned   argc,
                   jsval     *vp)
 {
     jsval *argv = JS_ARGV(cx, vp);
@@ -2149,7 +2149,7 @@ gjs_add_interface(GType instance_type,
 
 static JSBool
 gjs_register_type(JSContext *cx,
-                  uintN      argc,
+                  unsigned   argc,
                   jsval     *vp)
 {
     jsval *argv = JS_ARGV(cx, vp);
@@ -2268,7 +2268,7 @@ gjs_register_type(JSContext *cx,
 
 static JSBool
 gjs_register_property(JSContext *cx,
-                      uintN      argc,
+                      unsigned   argc,
                       jsval     *vp)
 {
     jsval *argv = JS_ARGV(cx, vp);
@@ -2305,7 +2305,7 @@ gjs_register_property(JSContext *cx,
 
 static JSBool
 gjs_signal_new(JSContext *cx,
-               uintN      argc,
+               unsigned   argc,
                jsval     *vp)
 {
     jsval *argv = JS_ARGV(cx, vp);

@@ -70,7 +70,7 @@ gjs_init_class_dynamic(JSContext       *context,
                        const char      *class_name,
                        JSClass         *clasp,
                        JSNative         constructor_native,
-                       uintN            nargs,
+                       unsigned         nargs,
                        JSPropertySpec  *proto_ps,
                        JSFunctionSpec  *proto_fs,
                        JSPropertySpec  *static_ps,
@@ -200,7 +200,7 @@ gjs_typecheck_instance(JSContext *context,
 JSObject*
 gjs_construct_object_dynamic(JSContext      *context,
                              JSObject       *proto,
-                             uintN           argc,
+                             unsigned        argc,
                              jsval          *argv)
 {
     JSObject *constructor;

@@ -102,7 +102,7 @@ static JSBool
 interface_new_resolve(JSContext *context,
                       JSObject  *obj,
                       jsid       id,
-                      uintN      flags,
+                      unsigned   flags,
                       JSObject **objp)
 {
     Interface *priv;

@@ -33,7 +33,7 @@
 
 static JSBool
 gjs_address_of(JSContext *context,
-               uintN      argc,
+               unsigned   argc,
                jsval     *vp)
 {
     jsval *argv = JS_ARGV(cx, vp);
@@ -56,7 +56,7 @@ gjs_address_of(JSContext *context,
 
 static JSBool
 gjs_refcount(JSContext *context,
-             uintN      argc,
+             unsigned   argc,
              jsval     *vp)
 {
     jsval *argv = JS_ARGV(cx, vp);
@@ -82,7 +82,7 @@ gjs_refcount(JSContext *context,
 
 static JSBool
 gjs_breakpoint(JSContext *context,
-               uintN      argc,
+               unsigned   argc,
                jsval     *vp)
 {
     jsval *argv = JS_ARGV(cx, vp);
@@ -94,7 +94,7 @@ gjs_breakpoint(JSContext *context,
 
 static JSBool
 gjs_gc(JSContext *context,
-       uintN      argc,
+       unsigned   argc,
        jsval     *vp)
 {
     jsval *argv = JS_ARGV(cx, vp);
@@ -106,7 +106,7 @@ gjs_gc(JSContext *context,
 
 static JSBool
 gjs_getpid(JSContext *context,
-           uintN      argc,
+           unsigned   argc,
            jsval     *vp)
 {
     jsval *argv = JS_ARGV(cx, vp);
@@ -120,7 +120,7 @@ gjs_getpid(JSContext *context,
 
 static JSBool
 gjs_getuid(JSContext *context,
-           uintN      argc,
+           unsigned   argc,
            jsval     *vp)
 {
     jsval *argv = JS_ARGV(cx, vp);
@@ -134,7 +134,7 @@ gjs_getuid(JSContext *context,
 
 static JSBool
 gjs_getgid(JSContext *context,
-           uintN      argc,
+           unsigned   argc,
            jsval     *vp)
 {
     jsval *argv = JS_ARGV(cx, vp);

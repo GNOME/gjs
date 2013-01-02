@@ -52,7 +52,7 @@ G_BEGIN_DECLS
 #define GJS_NATIVE_CONSTRUCTOR_DECLARE(name)            \
 static JSBool                                           \
 gjs_##name##_constructor(JSContext  *context,           \
-                         uintN       argc,              \
+                         unsigned    argc,              \
                          jsval      *vp)
 
 /**

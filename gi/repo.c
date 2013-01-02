@@ -158,7 +158,7 @@ static JSBool
 repo_new_resolve(JSContext *context,
                  JSObject  *obj,
                  jsid       id,
-                 uintN      flags,
+                 unsigned   flags,
                  JSObject **objp)
 {
     Repo *priv;

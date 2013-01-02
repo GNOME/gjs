@@ -155,7 +155,7 @@ gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
 
 JSBool
 gjs_console_interact(JSContext *context,
-                     uintN      argc,
+                     unsigned   argc,
                      jsval     *vp)
 {
     JSObject *object = JS_THIS_OBJECT(context, vp);

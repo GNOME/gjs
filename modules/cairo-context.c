@@ -32,7 +32,7 @@
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(mname) \
 static JSBool                                       \
 mname##_func(JSContext *context,                    \
-              uintN      argc,                      \
+              unsigned   argc,                      \
               jsval     *vp)                    \
 {                                                   \
     JSObject *obj = JS_THIS_OBJECT(context, vp);        \
@@ -404,7 +404,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDeviceDistance, cairo_user_to_device_
 
 static JSBool
 appendPath_func(JSContext *context,
-                uintN      argc,
+                unsigned   argc,
                 jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -431,7 +431,7 @@ appendPath_func(JSContext *context,
 
 static JSBool
 copyPath_func(JSContext *context,
-              uintN      argc,
+              unsigned   argc,
               jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -451,7 +451,7 @@ copyPath_func(JSContext *context,
 
 static JSBool
 copyPathFlat_func(JSContext *context,
-                  uintN      argc,
+                  unsigned   argc,
                   jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -470,7 +470,7 @@ copyPathFlat_func(JSContext *context,
 
 static JSBool
 mask_func(JSContext *context,
-          uintN      argc,
+          unsigned   argc,
           jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -501,7 +501,7 @@ mask_func(JSContext *context,
 
 static JSBool
 maskSurface_func(JSContext *context,
-                 uintN      argc,
+                 unsigned   argc,
                  jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -536,7 +536,7 @@ maskSurface_func(JSContext *context,
 
 static JSBool
 setDash_func(JSContext *context,
-             uintN      argc,
+             unsigned   argc,
              jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -600,7 +600,7 @@ setDash_func(JSContext *context,
 
 static JSBool
 setSource_func(JSContext *context,
-               uintN      argc,
+               unsigned   argc,
                jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -633,7 +633,7 @@ setSource_func(JSContext *context,
 
 static JSBool
 setSourceSurface_func(JSContext *context,
-                      uintN      argc,
+                      unsigned   argc,
                       jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -669,7 +669,7 @@ setSourceSurface_func(JSContext *context,
 
 static JSBool
 showText_func(JSContext *context,
-              uintN      argc,
+              unsigned   argc,
               jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -696,7 +696,7 @@ showText_func(JSContext *context,
 
 static JSBool
 selectFontFace_func(JSContext *context,
-                    uintN      argc,
+                    unsigned   argc,
                     jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -726,7 +726,7 @@ selectFontFace_func(JSContext *context,
 
 static JSBool
 popGroup_func(JSContext *context,
-              uintN      argc,
+              unsigned   argc,
               jsval     *vp)
 {
     JSObject *obj = JS_THIS_OBJECT(context, vp);
@@ -757,7 +757,7 @@ popGroup_func(JSContext *context,
 }
 static JSBool
 getSource_func(JSContext *context,
-               uintN      argc,
+               unsigned   argc,
                jsval     *vp)
 {
     JSObject *obj = JS_THIS_OBJECT(context, vp);
@@ -789,7 +789,7 @@ getSource_func(JSContext *context,
 
 static JSBool
 getTarget_func(JSContext *context,
-               uintN      argc,
+               unsigned   argc,
                jsval     *vp)
 {
     JSObject *obj = JS_THIS_OBJECT(context, vp);
@@ -821,7 +821,7 @@ getTarget_func(JSContext *context,
 
 static JSBool
 getGroupTarget_func(JSContext *context,
-                    uintN      argc,
+                    unsigned   argc,
                     jsval     *vp)
 {
     JSObject *obj = JS_THIS_OBJECT(context, vp);

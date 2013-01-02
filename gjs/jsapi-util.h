@@ -122,7 +122,7 @@ static void gjs_##cname##_finalize(JSContext *context, JSObject *obj); \
 static JSBool gjs_##cname##_new_resolve(JSContext *context, \
                                         JSObject  *obj, \
                                         jsval      id, \
-                                        uintN      flags, \
+                                        unsigned   flags, \
                                         JSObject **objp) \
 { \
     return JS_TRUE; \
@@ -211,7 +211,7 @@ JSBool      gjs_init_class_dynamic           (JSContext       *context,
                                               const char      *class_name,
                                               JSClass         *clasp,
                                               JSNative         constructor,
-                                              uintN            nargs,
+                                              unsigned         nargs,
                                               JSPropertySpec  *ps,
                                               JSFunctionSpec  *fs,
                                               JSPropertySpec  *static_ps,
@@ -229,14 +229,14 @@ JSBool gjs_typecheck_instance                 (JSContext  *context,
 
 JSObject*   gjs_construct_object_dynamic     (JSContext       *context,
                                               JSObject        *proto,
-                                              uintN            argc,
+                                              unsigned         argc,
                                               jsval           *argv);
 JSObject*   gjs_define_string_array          (JSContext       *context,
                                               JSObject        *obj,
                                               const char      *array_name,
                                               gssize           array_length,
                                               const char     **array_values,
-                                              uintN            attrs);
+                                              unsigned         attrs);
 void        gjs_throw                        (JSContext       *context,
                                               const char      *format,
                                               ...)  G_GNUC_PRINTF (2, 3);
@@ -269,7 +269,7 @@ void        gjs_explain_scope                (JSContext       *context,
 JSBool      gjs_call_function_value          (JSContext       *context,
                                               JSObject        *obj,
                                               jsval            fval,
-                                              uintN            argc,
+                                              unsigned         argc,
                                               jsval           *argv,
                                               jsval           *rval);
 void        gjs_error_reporter               (JSContext       *context,
@@ -340,7 +340,7 @@ jsval       gjs_date_from_time_t             (JSContext *context, time_t time);
 JSBool      gjs_parse_args                   (JSContext  *context,
                                               const char *function_name,
                                               const char *format,
-                                              uintN      argc,
+                                              unsigned   argc,
                                               jsval     *argv,
                                               ...);
 

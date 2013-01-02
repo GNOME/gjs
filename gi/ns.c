@@ -61,7 +61,7 @@ static JSBool
 ns_new_resolve(JSContext *context,
                JSObject  *obj,
                jsid       id,
-               uintN      flags,
+               unsigned   flags,
                JSObject **objp)
 {
     Ns *priv;

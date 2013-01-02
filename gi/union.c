@@ -66,7 +66,7 @@ static JSBool
 union_new_resolve(JSContext *context,
                   JSObject  *obj,
                   jsid       id,
-                  uintN      flags,
+                  unsigned   flags,
                   JSObject **objp)
 {
     Union *priv;
@@ -281,7 +281,7 @@ union_finalize(JSContext *context,
 
 static JSBool
 to_string_func(JSContext *context,
-               uintN      argc,
+               unsigned   argc,
                jsval     *vp)
 {
     JSObject *obj = JS_THIS_OBJECT(context, vp);

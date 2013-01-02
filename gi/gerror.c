@@ -200,7 +200,7 @@ error_get_code(JSContext *context, JSObject *obj, jsid id, jsval *vp)
 }
 
 static JSBool
-error_to_string(JSContext *context, uintN argc, jsval *vp)
+error_to_string(JSContext *context, unsigned argc, jsval *vp)
 {
     jsval v_self;
     JSObject *self;
@@ -254,7 +254,7 @@ error_to_string(JSContext *context, uintN argc, jsval *vp)
 }
 
 static JSBool
-error_constructor_value_of(JSContext *context, uintN argc, jsval *vp)
+error_constructor_value_of(JSContext *context, unsigned argc, jsval *vp)
 {
     jsval v_self, v_prototype;
     Error *priv;

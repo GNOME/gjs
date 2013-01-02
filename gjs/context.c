@@ -104,7 +104,7 @@ static GList *all_contexts = NULL;
 
 static JSBool
 gjs_log(JSContext *context,
-        uintN      argc,
+        unsigned   argc,
         jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -148,7 +148,7 @@ gjs_log(JSContext *context,
 
 static JSBool
 gjs_log_error(JSContext *context,
-              uintN      argc,
+              unsigned   argc,
               jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -197,7 +197,7 @@ gjs_log_error(JSContext *context,
 
 static JSBool
 gjs_print_parse_args(JSContext *context,
-                     uintN      argc,
+                     unsigned   argc,
                      jsval     *argv,
                      char     **buffer)
 {
@@ -254,7 +254,7 @@ gjs_print_parse_args(JSContext *context,
 
 static JSBool
 gjs_print(JSContext *context,
-          uintN      argc,
+          unsigned   argc,
           jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -273,7 +273,7 @@ gjs_print(JSContext *context,
 
 static JSBool
 gjs_printerr(JSContext *context,
-             uintN      argc,
+             unsigned   argc,
              jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);

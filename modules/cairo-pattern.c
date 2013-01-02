@@ -58,7 +58,7 @@ static JSPropertySpec gjs_cairo_pattern_proto_props[] = {
 
 static JSBool
 getType_func(JSContext *context,
-             uintN      argc,
+             unsigned   argc,
              jsval     *vp)
 {
     JSObject *obj = JS_THIS_OBJECT(context, vp);

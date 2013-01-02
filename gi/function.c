@@ -562,7 +562,7 @@ static JSBool
 gjs_invoke_c_function(JSContext      *context,
                       Function       *function,
                       JSObject       *obj, /* "this" object */
-                      uintN           js_argc,
+                      unsigned        js_argc,
                       jsval          *js_argv,
                       jsval          *js_rval)
 {
@@ -1180,7 +1180,7 @@ release:
 
 static JSBool
 function_call(JSContext *context,
-              uintN      js_argc,
+              unsigned   js_argc,
               jsval     *vp)
 {
     jsval *js_argv = JS_ARGV(context, vp);
@@ -1660,7 +1660,7 @@ JSBool
 gjs_invoke_c_function_uncached (JSContext      *context,
                                 GIFunctionInfo *info,
                                 JSObject       *obj,
-                                uintN           argc,
+                                unsigned        argc,
                                 jsval          *argv,
                                 jsval          *rval)
 {

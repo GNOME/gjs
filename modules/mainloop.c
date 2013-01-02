@@ -35,7 +35,7 @@ static GHashTable *pending_main_loops;
 
 static JSBool
 gjs_main_loop_quit(JSContext *context,
-                   uintN      argc,
+                   unsigned   argc,
                    jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -75,7 +75,7 @@ gjs_main_loop_quit(JSContext *context,
 
 static JSBool
 gjs_main_loop_run(JSContext *context,
-                  uintN      argc,
+                  unsigned   argc,
                   jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -177,7 +177,7 @@ closure_invalidated(gpointer  data,
 
 static JSBool
 gjs_timeout_add(JSContext *context,
-                uintN      argc,
+                unsigned   argc,
                 jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -224,7 +224,7 @@ gjs_timeout_add(JSContext *context,
 
 static JSBool
 gjs_timeout_add_seconds(JSContext *context,
-                        uintN      argc,
+                        unsigned   argc,
                         jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -267,7 +267,7 @@ gjs_timeout_add_seconds(JSContext *context,
 
 static JSBool
 gjs_idle_add(JSContext *context,
-             uintN      argc,
+             unsigned   argc,
              jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -313,7 +313,7 @@ gjs_idle_add(JSContext *context,
 
 static JSBool
 gjs_source_remove(JSContext *context,
-                  uintN      argc,
+                  unsigned   argc,
                   jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);

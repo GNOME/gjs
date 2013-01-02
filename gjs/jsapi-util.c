@@ -451,7 +451,7 @@ gjs_define_string_array(JSContext   *context,
                         const char  *array_name,
                         gssize       array_length,
                         const char **array_values,
-                        uintN        attrs)
+                        unsigned     attrs)
 {
     GArray *elems;
     JSObject *array;
@@ -914,7 +914,7 @@ JSBool
 gjs_call_function_value(JSContext      *context,
                         JSObject       *obj,
                         jsval           fval,
-                        uintN           argc,
+                        unsigned        argc,
                         jsval          *argv,
                         jsval          *rval)
 {
@@ -1135,7 +1135,7 @@ JSBool
 gjs_parse_args (JSContext  *context,
                 const char *function_name,
                 const char *format,
-                uintN      argc,
+                unsigned   argc,
                 jsval     *argv,
                 ...)
 {

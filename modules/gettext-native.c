@@ -31,7 +31,7 @@
 
 static JSBool
 gjs_textdomain(JSContext *context,
-               uintN      argc,
+               unsigned   argc,
                jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -50,7 +50,7 @@ gjs_textdomain(JSContext *context,
 
 static JSBool
 gjs_bindtextdomain(JSContext *context,
-                   uintN      argc,
+                   unsigned   argc,
                    jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -73,7 +73,7 @@ gjs_bindtextdomain(JSContext *context,
 
 static JSBool
 gjs_gettext(JSContext *context,
-            uintN      argc,
+            unsigned   argc,
             jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -96,7 +96,7 @@ gjs_gettext(JSContext *context,
 
 static JSBool
 gjs_dgettext(JSContext *context,
-             uintN      argc,
+             unsigned   argc,
              jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -122,7 +122,7 @@ gjs_dgettext(JSContext *context,
 
 static JSBool
 gjs_ngettext(JSContext *context,
-             uintN      argc,
+             unsigned   argc,
              jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -149,7 +149,7 @@ gjs_ngettext(JSContext *context,
 
 static JSBool
 gjs_dngettext(JSContext *context,
-              uintN      argc,
+              unsigned   argc,
               jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -179,7 +179,7 @@ gjs_dngettext(JSContext *context,
 
 static JSBool
 gjs_pgettext(JSContext *context,
-             uintN      argc,
+             unsigned   argc,
              jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);
@@ -205,7 +205,7 @@ gjs_pgettext(JSContext *context,
 
 static JSBool
 gjs_dpgettext(JSContext *context,
-              uintN      argc,
+              unsigned   argc,
               jsval     *vp)
 {
     jsval *argv = JS_ARGV(context, vp);

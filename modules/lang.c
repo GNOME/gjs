@@ -29,7 +29,7 @@
 
 static JSBool
 gjs_lang_seal(JSContext *cx,
-              uintN      argc,
+              unsigned   argc,
               jsval     *vp)
 {
     jsval *argv = JS_ARGV(cx, vp);

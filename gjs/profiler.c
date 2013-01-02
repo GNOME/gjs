@@ -55,10 +55,10 @@ struct _GjsProfileData {
     GjsProfileData *caller;
     int64 enter_time;
     int64 runtime_so_far;
-    uintN recurse_depth;
+    unsigned recurse_depth;
 
     /* final statistics */
-    uintN call_count;
+    unsigned call_count;
 
     int64 total_time;
     int64 self_time;
@@ -66,7 +66,7 @@ struct _GjsProfileData {
 
 typedef struct {
     char       *filename;
-    uintN       lineno;
+    unsigned    lineno;
     char       *function_name;
 } GjsProfileFunctionKey;
 
@@ -277,7 +277,7 @@ gjs_profiler_log_call(GjsProfiler  *self,
 static void
 gjs_profiler_new_script_hook(JSContext  *cx,
                              const char *filename,
-                             uintN       lineno,
+                             unsigned    lineno,
                              JSScript   *script,
                              JSFunction *fun,
                              void       *callerdata)

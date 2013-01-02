@@ -180,7 +180,7 @@ param_finalize(JSContext *context,
 
 static JSBool
 param_new_internal(JSContext *cx,
-                   uintN      argc,
+                   unsigned   argc,
                    jsval     *vp)
 {
     jsval *argv = JS_ARGV(cx, vp);

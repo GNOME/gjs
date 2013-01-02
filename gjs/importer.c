@@ -171,7 +171,7 @@ seal_import(JSContext  *context,
             const char *name)
 {
     JSBool found;
-    uintN attrs;
+    unsigned attrs;
 
     if (!JS_GetPropertyAttributes(context, obj, name,
                                   &attrs, &found) || !found) {
@@ -965,7 +965,7 @@ static JSBool
 importer_new_resolve(JSContext *context,
                      JSObject  *obj,
                      jsid       id,
-                     uintN      flags,
+                     unsigned   flags,
                      JSObject **objp)
 {
     Importer *priv;

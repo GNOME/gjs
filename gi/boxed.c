@@ -118,7 +118,7 @@ static JSBool
 boxed_new_resolve(JSContext *context,
                   JSObject  *obj,
                   jsid       id,
-                  uintN      flags,
+                  unsigned   flags,
                   JSObject **objp)
 {
     Boxed *priv;
@@ -327,7 +327,7 @@ static JSBool
 boxed_invoke_constructor(JSContext   *context,
                          JSObject    *obj,
                          const gchar *constructor_name,
-                         uintN        argc,
+                         unsigned     argc,
                          jsval       *argv,
                          jsval       *rval)
 {
@@ -347,7 +347,7 @@ static JSBool
 boxed_new(JSContext   *context,
           JSObject    *obj, /* "this" for constructor */
           Boxed       *priv,
-          uintN        argc,
+          unsigned     argc,
           jsval       *argv,
           jsval       *rval)
 {
@@ -896,7 +896,7 @@ define_boxed_class_fields (JSContext *context,
 
 static JSBool
 to_string_func(JSContext *context,
-               uintN      argc,
+               unsigned   argc,
                jsval     *vp)
 {
     JSObject *obj = JS_THIS_OBJECT(context, vp);
