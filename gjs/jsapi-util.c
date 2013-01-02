@@ -1146,8 +1146,8 @@ gjs_parse_args (JSContext  *context,
 #define MAX_UNWIND_STRINGS 16
     gpointer unwind_strings[MAX_UNWIND_STRINGS];
     gboolean ignore_trailing_args = FALSE;
-    guint n_required;
-    guint n_total;
+    guint n_required = 0;
+    guint n_total = 0;
     guint consumed_args;
 
     JS_BeginRequest(context);
@@ -1159,17 +1159,20 @@ gjs_parse_args (JSContext  *context,
         format++;
     }
 
-    /* Check for optional argument specifier */
-    fmt_iter = strchr (format, '|');
-    if (fmt_iter) {
-        /* Be sure there's not another '|' */
-        g_return_val_if_fail (strchr (fmt_iter + 1, '|') == NULL, JS_FALSE);
+    for (fmt_iter = format; *fmt_iter; fmt_iter++) {
+        switch (*fmt_iter) {
+        case '|':
+            n_required = n_total;
+            continue;
+        default:
+            break;
+        }
 
-        n_required = fmt_iter - format;
-        n_total = n_required + strlen (fmt_iter + 1);
-    } else {
-        n_required = n_total = strlen (format);
+        n_total++;
     }
+
+    if (n_required == 0)
+        n_required = n_total;
 
     if (argc < n_required || (argc > n_total && !ignore_trailing_args)) {
         if (n_required == n_total) {
