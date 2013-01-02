@@ -98,7 +98,7 @@ enum {
 };
 
 
-static GStaticMutex contexts_lock = G_STATIC_MUTEX_INIT;
+static GMutex contexts_lock;
 static GList *all_contexts = NULL;
 
 
@@ -418,9 +418,9 @@ gjs_context_finalize(GObject *object)
 
     g_free(js_context->jsversion_string);
 
-    g_static_mutex_lock(&contexts_lock);
+    g_mutex_lock(&contexts_lock);
     all_contexts = g_list_remove(all_contexts, object);
-    g_static_mutex_unlock(&contexts_lock);
+    g_mutex_unlock(&contexts_lock);
 
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
@@ -699,9 +699,9 @@ gjs_context_constructor (GType                  type,
 
     JS_EndRequest(js_context->context);
 
-    g_static_mutex_lock (&contexts_lock);
+    g_mutex_lock (&contexts_lock);
     all_contexts = g_list_prepend(all_contexts, object);
-    g_static_mutex_unlock (&contexts_lock);
+    g_mutex_unlock (&contexts_lock);
 
     return object;
 }
@@ -946,11 +946,11 @@ gjs_context_get_all(void)
 {
   GList *result;
   GList *iter;
-  g_static_mutex_lock (&contexts_lock);
+  g_mutex_lock (&contexts_lock);
   result = g_list_copy(all_contexts);
   for (iter = result; iter; iter = iter->next)
     g_object_ref((GObject*)iter->data);
-  g_static_mutex_unlock (&contexts_lock);
+  g_mutex_unlock (&contexts_lock);
   return result;
 }
 
