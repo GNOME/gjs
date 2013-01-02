@@ -62,8 +62,7 @@ static void   byte_array_finalize      (JSContext    *context,
 static struct JSClass gjs_byte_array_class = {
     "ByteArray",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_NEW_RESOLVE |
-    JSCLASS_NEW_RESOLVE_GETS_START,
+    JSCLASS_NEW_RESOLVE,
     JS_PropertyStub,
     JS_PropertyStub,
     byte_array_get_prop,
@@ -358,22 +357,6 @@ byte_array_set_prop(JSContext *context,
     return JS_TRUE;
 }
 
-/*
- * Like JSResolveOp, but flags provide contextual information as follows:
- *
- *  JSRESOLVE_QUALIFIED   a qualified property id: obj.id or obj[id], not id
- *  JSRESOLVE_ASSIGNING   obj[id] is on the left-hand side of an assignment
- *  JSRESOLVE_DETECTING   'if (o.p)...' or similar detection opcode sequence
- *  JSRESOLVE_DECLARING   var, const, or function prolog declaration opcode
- *  JSRESOLVE_CLASSNAME   class name used when constructing
- *
- * The *objp out parameter, on success, should be null to indicate that id
- * was not resolved; and non-null, referring to obj or one of its prototypes,
- * if id was resolved.
- *
- * *objp will be the original object the property access was on, rather than the
- * prototype that "obj" may be, due to JSCLASS_NEW_RESOLVE_GETS_START
- */
 static JSBool
 byte_array_new_resolve(JSContext *context,
                        JSObject  *obj,
@@ -384,7 +367,9 @@ byte_array_new_resolve(JSContext *context,
     ByteArrayInstance *priv;
     jsval id_val;
 
-    priv = priv_from_js(context, *objp);
+    *objp = obj;
+
+    priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         return JS_TRUE; /* prototype, not an instance. */
@@ -414,7 +399,7 @@ byte_array_new_resolve(JSContext *context,
              * a property but must define it.
              */
             if (!JS_DefinePropertyById(context,
-                                       *objp,
+                                       obj,
                                        id,
                                        JSVAL_VOID,
                                        byte_array_get_prop,
