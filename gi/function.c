@@ -82,8 +82,12 @@ gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline)
 
         context = gjs_runtime_get_current_context(trampoline->runtime);
 
-        if (!trampoline->is_vfunc)
+        if (!trampoline->is_vfunc) {
+            JS_BeginRequest(context);
             JS_RemoveValueRoot(context, &trampoline->js_function);
+            JS_EndRequest(context);
+        }
+
         g_callable_info_free_closure(trampoline->info, trampoline->closure);
         g_base_info_unref( (GIBaseInfo*) trampoline->info);
         g_free (trampoline->param_types);
