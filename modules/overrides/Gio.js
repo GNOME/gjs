@@ -79,12 +79,16 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     var inVariant = new GLib.Variant('(' + inSignature.join('') + ')', arg_array);
 
     var asyncCallback = function (proxy, result) {
+        var outVariant = null, succeeded = false;
         try {
-            var outVariant = proxy.call_finish(result);
-            replyFunc(outVariant.deep_unpack(), null);
+            outVariant = proxy.call_finish(result);
+            succeeded = true;
         } catch (e) {
             replyFunc(null, e);
         }
+
+        if (succeeded)
+            replyFunc(outVariant.deep_unpack(), null);
     };
 
     if (sync) {
