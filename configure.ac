@@ -68,9 +68,6 @@ m4_define(glib_required_version, 2.35.0)
 AC_CHECK_HEADERS([malloc.h])
 AC_CHECK_FUNCS(mallinfo)
 
-echo "Using JS_CFLAGS: $JS_CFLAGS"
-echo "Using JS_LIBS: $JS_LIBS"
-
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $JS_CFLAGS"
 AC_MSG_CHECKING([for JS_CLASS_TRACE macro])
