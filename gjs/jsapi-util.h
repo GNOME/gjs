@@ -75,11 +75,15 @@ typedef struct GjsRootedArray GjsRootedArray;
     {                                                                   \
         return gjs_typecheck_instance(context, object, &class, throw);  \
     }                                                                   \
-    static inline type*                                                 \
+    static inline type *                                                \
     priv_from_js(JSContext *context,                                    \
                  JSObject  *object)                                     \
     {                                                                   \
-        return JS_GetInstancePrivate(context, object, &class, NULL);    \
+        type *priv;                                                     \
+        JS_BeginRequest(context);                                       \
+        priv = JS_GetInstancePrivate(context, object, &class, NULL);    \
+        JS_EndRequest(context);                                         \
+        return priv;                                                    \
     }                                                                   \
     __attribute__((unused)) static JSBool                               \
     priv_from_js_with_typecheck(JSContext *context,                     \
