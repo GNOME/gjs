@@ -216,8 +216,6 @@ byte_array_get_prop(JSContext *context,
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
-        return JS_FALSE; /* wrong class passed in */
-    if (priv->array == NULL && priv->bytes == NULL)
         return JS_TRUE; /* prototype, not an instance. */
 
     if (!JS_IdToValue(context, id, &id_value))
@@ -250,8 +248,6 @@ byte_array_length_getter(JSContext *context,
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
-        return JS_FALSE; /* wrong class passed in */
-    if (priv->array == NULL && priv->bytes == NULL)
         return JS_TRUE; /* prototype, not an instance. */
 
     if (priv->array != NULL)
@@ -274,9 +270,7 @@ byte_array_length_setter(JSContext *context,
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
-        return JS_FALSE; /* wrong class passed in */
-    if (priv->array == NULL && priv->bytes == NULL)
-        return JS_TRUE; /* prototype, not an instance. */
+        return JS_TRUE; /* prototype, not instance */
 
     byte_array_ensure_array(priv);
 
@@ -338,8 +332,6 @@ byte_array_set_prop(JSContext *context,
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
-        return JS_FALSE; /* wrong class passed in */
-    if (priv->array == NULL && priv->bytes == NULL)
         return JS_TRUE; /* prototype, not an instance. */
 
     if (!JS_IdToValue(context, id, &id_value))
@@ -395,8 +387,6 @@ byte_array_new_resolve(JSContext *context,
     priv = priv_from_js(context, *objp);
 
     if (priv == NULL)
-        return JS_FALSE; /* wrong class passed in */
-    if (priv->array == NULL && priv->bytes == NULL)
         return JS_TRUE; /* prototype, not an instance. */
 
     if (!JS_IdToValue(context, id, &id_val))
@@ -524,7 +514,7 @@ to_string_func(JSContext *context,
     priv = priv_from_js(context, object);
 
     if (priv == NULL)
-        return JS_FALSE; /* wrong class passed in */
+        return JS_TRUE; /* prototype, not instance */
 
     byte_array_ensure_array(priv);
 
@@ -620,7 +610,7 @@ to_gbytes_func(JSContext *context,
 
     priv = priv_from_js(context, object);
     if (priv == NULL)
-        return JS_FALSE; /* wrong class passed in */
+        return JS_TRUE; /* prototype, not instance */
     
     byte_array_ensure_gbytes(priv);
 
