@@ -13,11 +13,10 @@ dist_gjsjs_DATA +=		\
 	modules/lang.js		\
 	modules/jsUnit.js	\
 	modules/signals.js	\
-	modules/dbus.js		\
 	modules/promise.js	\
 	modules/format.js
 
-gjsnative_LTLIBRARIES += console.la debugger.la langNative.la mainloop.la gettextNative.la dbusNative.la system.la formatNative.la
+gjsnative_LTLIBRARIES += console.la debugger.la langNative.la mainloop.la gettextNative.la system.la formatNative.la
 
 if ENABLE_CAIRO
 dist_gjsjs_DATA +=		\
@@ -136,24 +135,6 @@ debugger_la_LDFLAGS = 				\
 debugger_la_SOURCES =		\
 	modules/debugger.h	\
 	modules/debugger.c
-
-dbusNative_la_SOURCES =	\
-	modules/dbus-exports.h	\
-	modules/dbus-values.h	\
-	modules/dbus.h		\
-	modules/dbus-exports.c	\
-	modules/dbus-values.c	\
-	modules/dbus.c
-dbusNative_la_CFLAGS = 					\
-	$(JS_NATIVE_MODULE_CFLAGS) 		\
-	$(GJS_DBUS_CFLAGS)
-dbusNative_la_LIBADD = \
-	libgjs.la				\
-	libgjs-dbus.la				\
-	$(JS_NATIVE_MODULE_LIBADD) 		\
-	$(GJS_DBUS_LIBS)
-dbusNative_la_LDFLAGS = 				\
-	$(JS_NATIVE_MODULE_LDFLAGS)
 
 formatNative_la_CFLAGS = \
 	$(JS_NATIVE_MODULE_CFLAGS)

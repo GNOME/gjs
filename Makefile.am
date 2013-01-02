@@ -189,7 +189,6 @@ tapsetdir   = $(DESTDIR)$(datadir)/systemtap/tapset
 tapset_DATA = $(tapset_in_files:.stp.in=.stp)
 endif
 
-include Makefile-gjs-dbus.am
 include Makefile-modules.am
 include Makefile-examples.am
 
