@@ -2173,7 +2173,7 @@ gjs_register_type(JSContext *cx,
 	0,    /* n_preallocs */
 	(GInstanceInitFunc) NULL,
     };
-    jsuint i, n_interfaces;
+    guint32 i, n_interfaces;
     GType *iface_types;
 
     JS_BeginRequest(cx);

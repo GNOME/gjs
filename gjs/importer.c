@@ -524,8 +524,8 @@ do_import(JSContext  *context,
     jsval search_path_val;
     JSObject *search_path;
     JSObject *module_obj = NULL;
-    jsuint search_path_len;
-    jsuint i;
+    guint32 search_path_len;
+    guint32 i;
     JSBool result;
     GPtrArray *directories;
 
@@ -786,8 +786,8 @@ importer_new_enumerate(JSContext  *context,
         Importer *priv;
         JSObject *search_path;
         jsval search_path_val;
-        jsuint search_path_len;
-        jsuint i;
+        guint32 search_path_len;
+        guint32 i;
 
         if (state_p)
             *state_p = JSVAL_NULL;

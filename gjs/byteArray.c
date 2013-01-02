@@ -767,8 +767,8 @@ from_array_func(JSContext *context,
 {
     jsval *argv = JS_ARGV(context, vp);
     ByteArrayInstance *priv;
-    jsuint len;
-    jsuint i;
+    guint32 len;
+    guint32 i;
     JSObject *obj;
     JSBool ret = JS_FALSE;
 
