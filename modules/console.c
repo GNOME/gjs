@@ -190,7 +190,7 @@ gjs_console_interact(JSContext *context,
             g_string_append(buffer, temp_buf);
             g_free(temp_buf);
             lineno++;
-        } while (!JS_BufferIsCompilableUnit(context, object, buffer->str, buffer->len));
+        } while (!JS_BufferIsCompilableUnit(context, JS_TRUE, object, buffer->str, buffer->len));
 
         JS_EvaluateScript(context, object, buffer->str, buffer->len, "typein",
                           startline, &result);
