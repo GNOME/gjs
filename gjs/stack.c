@@ -68,7 +68,7 @@ jsvalue_to_string(JSContext* cx, jsval val, gboolean* is_string)
 	if (!value_str)
 	  value = g_strdup("[unknown function]");
       } else {
-	value = g_strdup_printf("[object %s]", JS_GetClass(cx, obj)->name);
+	value = g_strdup_printf("[object %s]", JS_GetClass(obj)->name);
       }
     }
 

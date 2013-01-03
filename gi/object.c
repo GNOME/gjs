@@ -1692,7 +1692,7 @@ gjs_define_object_class(JSContext     *context,
     JS_SetPrivate(context, prototype, priv);
 
     gjs_debug(GJS_DEBUG_GOBJECT, "Defined class %s prototype %p class %p in object %p",
-              constructor_name, prototype, JS_GET_CLASS(context, prototype), in_object);
+              constructor_name, prototype, JS_GetClass(prototype), in_object);
 
     if (info)
         gjs_define_static_methods(context, constructor, gtype, info);
@@ -1753,7 +1753,7 @@ gjs_object_from_g_object(JSContext    *context,
         JS_BeginRequest(context);
 
         obj = JS_NewObjectWithGivenProto(context,
-                                         JS_GET_CLASS(context, proto), proto,
+                                         JS_GetClass(proto), proto,
                                          gjs_get_import_global (context));
 
         JS_EndRequest(context);

@@ -380,7 +380,7 @@ gjs_lookup_union_class(JSContext    *context,
 
     prototype = gjs_lookup_union_prototype(context, info);
 
-    return JS_GET_CLASS(context, prototype);
+    return JS_GetClass(prototype);
 }
 
 JSBool
@@ -463,7 +463,7 @@ gjs_define_union_class(JSContext    *context,
     JS_SetPrivate(context, prototype, priv);
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
-              constructor_name, prototype, JS_GET_CLASS(context, prototype), in_object);
+              constructor_name, prototype, JS_GetClass(prototype), in_object);
 
     value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,
@@ -507,7 +507,7 @@ gjs_union_from_c_union(JSContext    *context,
     proto = gjs_lookup_union_prototype(context, (GIUnionInfo*) info);
 
     obj = JS_NewObjectWithGivenProto(context,
-                                     JS_GET_CLASS(context, proto), proto,
+                                     JS_GetClass(proto), proto,
                                      gjs_get_import_global (context));
 
     GJS_INC_COUNTER(boxed);

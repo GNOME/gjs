@@ -184,7 +184,7 @@ gjs_typecheck_instance(JSContext *context,
 {
     if (!JS_InstanceOf(context, obj, static_clasp, NULL)) {
         if (throw) {
-            JSClass *obj_class = JS_GET_CLASS(context, obj);
+            JSClass *obj_class = JS_GetClass(obj);
 
             gjs_throw_custom(context, "TypeError",
                              "Object %p is not a subclass of %s, it's a %s",

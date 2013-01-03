@@ -536,7 +536,7 @@ gjs_define_param_class(JSContext    *context,
         *prototype_p = prototype;
 
     gjs_debug(GJS_DEBUG_GPARAM, "Defined class %s prototype is %p class %p in object %p",
-              constructor_name, prototype, JS_GET_CLASS(context, prototype), in_object);
+              constructor_name, prototype, JS_GetClass(prototype), in_object);
 
     return JS_TRUE;
 }
@@ -561,7 +561,7 @@ gjs_param_from_g_param(JSContext    *context,
     proto = gjs_lookup_param_prototype(context);
 
     obj = JS_NewObjectWithGivenProto(context,
-                                     JS_GET_CLASS(context, proto), proto,
+                                     JS_GetClass(proto), proto,
                                      gjs_get_import_global (context));
 
     GJS_INC_COUNTER(param);

@@ -598,7 +598,7 @@ get_nested_interface_object (JSContext   *context,
     offset = g_field_info_get_offset (field_info);
 
     obj = JS_NewObjectWithGivenProto(context,
-                                     JS_GET_CLASS(context, proto), proto,
+                                     JS_GetClass(proto), proto,
                                      gjs_get_import_global (context));
 
     if (obj == NULL)
@@ -1001,7 +1001,7 @@ gjs_lookup_boxed_class(JSContext    *context,
 
     prototype = gjs_lookup_boxed_prototype(context, info);
 
-    return JS_GET_CLASS(context, prototype);
+    return JS_GetClass(prototype);
 }
 
 static gboolean
@@ -1242,7 +1242,7 @@ gjs_define_boxed_class(JSContext    *context,
     JS_SetPrivate(context, prototype, priv);
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
-              constructor_name, prototype, JS_GET_CLASS(context, prototype), in_object);
+              constructor_name, prototype, JS_GetClass(prototype), in_object);
 
     priv->can_allocate_directly = struct_is_simple (priv->info);
 
@@ -1284,7 +1284,7 @@ gjs_boxed_from_c_struct(JSContext             *context,
     proto_priv = priv_from_js(context, proto);
 
     obj = JS_NewObjectWithGivenProto(context,
-                                     JS_GET_CLASS(context, proto), proto,
+                                     JS_GetClass(proto), proto,
                                      gjs_get_import_global (context));
 
     GJS_INC_COUNTER(boxed);
