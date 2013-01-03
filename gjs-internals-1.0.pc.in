@@ -10,7 +10,7 @@ jsdir=@gjsjsdir@
 jsnativedir=@gjsnativedir@
 
 Cflags: -I${includedir}/gjs-1.0
-Requires: gjs-1.0 gobject-introspection-1.0 mozjs185
+Requires: gjs-1.0 gobject-introspection-1.0 mozjs188
 
 Name: gjs-internals-1.0
 Description: Internal API for gjs (for modules and embedders); uses mozjs
