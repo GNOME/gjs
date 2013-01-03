@@ -367,7 +367,7 @@ byte_array_new_resolve(JSContext *context,
     ByteArrayInstance *priv;
     jsval id_val;
 
-    *objp = obj;
+    *objp = NULL;
 
     priv = priv_from_js(context, obj);
 
@@ -383,12 +383,7 @@ byte_array_new_resolve(JSContext *context,
         gsize idx;
         if (!gjs_value_to_gsize(context, id_val, &idx))
             return JS_FALSE;
-        if (idx >= priv->array->len) {
-            *objp = NULL;
-        } else {
-            /* leave objp set */
-            g_assert(*objp != NULL);
-
+        if (idx < priv->array->len) {
             /* define the property - AAARGH. Best I can tell from
              * reading the source, this is unavoidable...
              * which means using "for each" or "for ... in" on byte
@@ -406,6 +401,8 @@ byte_array_new_resolve(JSContext *context,
                                        byte_array_set_prop,
                                        JSPROP_ENUMERATE))
                 return JS_FALSE;
+
+            *objp = obj;
         }
     }
 
