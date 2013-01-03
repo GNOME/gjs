@@ -299,8 +299,7 @@ error_constructor_value_of(JSContext *context, unsigned argc, jsval *vp)
 static struct JSClass gjs_error_class = {
     "GLib_Error",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_NEW_RESOLVE |
-    JSCLASS_NEW_RESOLVE_GETS_START,
+    JSCLASS_NEW_RESOLVE,
     JS_PropertyStub,
     JS_PropertyStub,
     JS_PropertyStub,

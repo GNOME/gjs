@@ -1006,7 +1006,6 @@ static struct JSClass gjs_importer_class = {
     "GjsFileImporter",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
-    JSCLASS_NEW_RESOLVE_GETS_START |
     JSCLASS_NEW_ENUMERATE,
     JS_PropertyStub,
     JS_PropertyStub,

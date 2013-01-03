@@ -144,8 +144,7 @@ interface_new_resolve(JSContext *context,
 static struct JSClass gjs_interface_class = {
     "GObject_Interface",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_NEW_RESOLVE |
-    JSCLASS_NEW_RESOLVE_GETS_START,
+    JSCLASS_NEW_RESOLVE,
     JS_PropertyStub,
     JS_PropertyStub,
     JS_PropertyStub,

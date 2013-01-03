@@ -134,8 +134,7 @@ static JSBool gjs_##cname##_new_resolve(JSContext *context, \
 static struct JSClass gjs_##cname##_class = { \
     type_name, \
     JSCLASS_HAS_PRIVATE | \
-    JSCLASS_NEW_RESOLVE | \
-    JSCLASS_NEW_RESOLVE_GETS_START, \
+    JSCLASS_NEW_RESOLVE, \
     JS_PropertyStub, \
     JS_PropertyStub, \
     JS_PropertyStub, \

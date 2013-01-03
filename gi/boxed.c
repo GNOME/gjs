@@ -930,7 +930,6 @@ static struct JSClass gjs_boxed_class = {
     "GObject_Boxed",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
-    JSCLASS_NEW_RESOLVE_GETS_START |
     JSCLASS_HAS_RESERVED_SLOTS(1),
     JS_PropertyStub,
     JS_PropertyStub,

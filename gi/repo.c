@@ -219,8 +219,7 @@ repo_finalize(JSContext *context,
 static struct JSClass gjs_repo_class = {
     "GIRepository", /* means "new GIRepository()" works */
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_NEW_RESOLVE |
-    JSCLASS_NEW_RESOLVE_GETS_START,
+    JSCLASS_NEW_RESOLVE,
     JS_PropertyStub,
     JS_PropertyStub,
     JS_PropertyStub,
