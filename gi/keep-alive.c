@@ -133,7 +133,7 @@ keep_alive_trace(JSTracer *tracer,
 {
     KeepAlive *priv;
 
-    priv = JS_GetPrivate(tracer->context, obj);
+    priv = JS_GetPrivate(obj);
 
     if (priv == NULL) /* prototype */
         return;
@@ -251,7 +251,7 @@ gjs_keep_alive_new(JSContext *context)
     priv->children = g_hash_table_new_full(child_hash, child_equal, NULL, child_free);
 
     g_assert(priv_from_js(context, keep_alive) == NULL);
-    JS_SetPrivate(context, keep_alive, priv);
+    JS_SetPrivate(keep_alive, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE,
                         "keep_alive constructor, obj %p priv %p", keep_alive, priv);

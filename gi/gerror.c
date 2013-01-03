@@ -77,13 +77,13 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     GJS_INC_COUNTER(gerror);
 
     g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(context, object, priv);
+    JS_SetPrivate(object, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GERROR,
                         "GError constructor, obj %p priv %p",
                         object, priv);
 
-    proto = JS_GetPrototype(context, object);
+    proto = JS_GetPrototype(object);
     gjs_debug_lifecycle(GJS_DEBUG_GERROR, "GError instance __proto__ is %p", proto);
 
     /* If we're the prototype, then post-construct we'll fill in priv->info.
@@ -460,7 +460,7 @@ gjs_define_error_class(JSContext    *context,
     g_base_info_ref( (GIBaseInfo*) priv->info);
     priv->domain = g_quark_from_string (g_enum_info_get_error_domain(priv->info));
 
-    JS_SetPrivate(context, prototype, priv);
+    JS_SetPrivate(prototype, priv);
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
               constructor_name, prototype, JS_GetClass(prototype), in_object);
@@ -595,7 +595,7 @@ gjs_error_from_gerror(JSContext             *context,
 
     GJS_INC_COUNTER(gerror);
     priv = g_slice_new0(Error);
-    JS_SetPrivate(context, obj, priv);
+    JS_SetPrivate(obj, priv);
     priv->info = info;
     priv->domain = proto_priv->domain;
     g_base_info_ref( (GIBaseInfo*) priv->info);

@@ -202,13 +202,13 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
     GJS_INC_COUNTER(boxed);
 
     g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(context, object, priv);
+    JS_SetPrivate(object, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                         "union constructor, obj %p priv %p",
                         object, priv);
 
-    proto = JS_GetPrototype(context, object);
+    proto = JS_GetPrototype(object);
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED, "union instance __proto__ is %p", proto);
 
     /* If we're the prototype, then post-construct we'll fill in priv->info.
@@ -460,7 +460,7 @@ gjs_define_union_class(JSContext    *context,
     priv->info = info;
     g_base_info_ref( (GIBaseInfo*) priv->info);
     priv->gtype = gtype;
-    JS_SetPrivate(context, prototype, priv);
+    JS_SetPrivate(prototype, priv);
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
               constructor_name, prototype, JS_GetClass(prototype), in_object);
@@ -512,7 +512,7 @@ gjs_union_from_c_union(JSContext    *context,
 
     GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Union);
-    JS_SetPrivate(context, obj, priv);
+    JS_SetPrivate(obj, priv);
     priv->info = info;
     g_base_info_ref( (GIBaseInfo *) priv->info);
     priv->gtype = gtype;

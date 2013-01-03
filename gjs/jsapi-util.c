@@ -481,7 +481,7 @@ gjs_explain_scope(JSContext  *context,
         g_string_append_printf(chain, "%p %s",
                                parent, debug);
         g_free(debug);
-        parent = JS_GetParent(context, parent);
+        parent = JS_GetParent(parent);
     }
     gjs_debug(GJS_DEBUG_SCOPE,
               "  Chain: %s",

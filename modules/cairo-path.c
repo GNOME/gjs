@@ -41,7 +41,7 @@ gjs_cairo_path_finalize(JSContext *context,
                         JSObject  *obj)
 {
     GjsCairoPath *priv;
-    priv = JS_GetPrivate(context, obj);
+    priv = JS_GetPrivate(obj);
     if (priv == NULL)
         return;
     cairo_path_destroy(priv->path);
@@ -84,7 +84,7 @@ gjs_cairo_path_from_path(JSContext    *context,
     priv = g_slice_new0(GjsCairoPath);
 
     g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(context, object, priv);
+    JS_SetPrivate(object, priv);
 
     priv->context = context;
     priv->object = object;
@@ -111,7 +111,7 @@ gjs_cairo_path_get_path(JSContext *context,
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(object != NULL, NULL);
 
-    priv = JS_GetPrivate(context, object);
+    priv = JS_GetPrivate(object);
     if (priv == NULL)
         return NULL;
     return priv->path;

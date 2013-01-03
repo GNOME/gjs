@@ -265,7 +265,7 @@ _gjs_cairo_context_construct_internal(JSContext *context,
     priv = g_slice_new0(GjsCairoContext);
 
     g_assert(priv_from_js(context, obj) == NULL);
-    JS_SetPrivate(context, obj, priv);
+    JS_SetPrivate(obj, priv);
 
     priv->context = context;
     priv->object = obj;

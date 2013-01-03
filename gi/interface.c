@@ -231,7 +231,7 @@ gjs_define_interface_class(JSContext       *context,
     priv->info = info;
     priv->gtype = g_registered_type_info_get_g_type(priv->info);
     g_base_info_ref((GIBaseInfo*)priv->info);
-    JS_SetPrivate(context, prototype, priv);
+    JS_SetPrivate(prototype, priv);
 
     gjs_define_static_methods(context, constructor, priv->gtype, priv->info);
 

@@ -566,7 +566,7 @@ gjs_param_from_g_param(JSContext    *context,
 
     GJS_INC_COUNTER(param);
     priv = g_slice_new0(Param);
-    JS_SetPrivate(context, obj, priv);
+    JS_SetPrivate(obj, priv);
     priv->gparam = gparam;
     g_param_spec_ref (gparam);
 
