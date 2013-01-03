@@ -1549,7 +1549,7 @@ function_new(JSContext      *context,
 
         JS_GetProperty(context, global, "Function", &native_function);
         /* We take advantage from that fact that Function.__proto__ is Function.prototype */
-        parent_proto = JS_GetPrototype(context, JSVAL_TO_OBJECT(native_function));
+        parent_proto = JS_GetPrototype(JSVAL_TO_OBJECT(native_function));
 
         prototype = JS_InitClass(context, global,
                                  /* parent prototype JSObject* for
@@ -1594,7 +1594,7 @@ function_new(JSContext      *context,
     GJS_INC_COUNTER(function);
 
     g_assert(priv_from_js(context, function) == NULL);
-    JS_SetPrivate(context, function, priv);
+    JS_SetPrivate(function, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GFUNCTION,
                         "function constructor, obj %p priv %p", function, priv);

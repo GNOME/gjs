@@ -212,7 +212,7 @@ static inline ObjectInstance *
 proto_priv_from_js(JSContext *context,
                    JSObject  *obj)
 {
-    return priv_from_js(context, JS_GetPrototype(context, obj));
+    return priv_from_js(context, JS_GetPrototype(obj));
 }
 
 /* a hook on getting a property; set value_p to override property's value.
@@ -838,7 +838,7 @@ init_object_private (JSContext *context,
     GJS_INC_COUNTER(object);
 
     g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(context, object, priv);
+    JS_SetPrivate(object, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
                         "obj instance constructor, obj %p priv %p", object, priv);
@@ -1026,7 +1026,7 @@ object_instance_trace(JSTracer *tracer,
     ObjectInstance *priv;
     GList *iter;
 
-    priv = JS_GetPrivate(tracer->context, obj);
+    priv = JS_GetPrivate(obj);
 
     for (iter = priv->signals; iter; iter = iter->next) {
         ConnectData *cd = iter->data;
@@ -1689,7 +1689,7 @@ gjs_define_object_class(JSContext     *context,
         g_base_info_ref( (GIBaseInfo*) priv->info);
     priv->gtype = gtype;
     priv->klass = g_type_class_ref (gtype);
-    JS_SetPrivate(context, prototype, priv);
+    JS_SetPrivate(prototype, priv);
 
     gjs_debug(GJS_DEBUG_GOBJECT, "Defined class %s prototype %p class %p in object %p",
               constructor_name, prototype, JS_GetClass(prototype), in_object);

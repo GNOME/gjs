@@ -452,7 +452,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array)
     priv = g_slice_new0(ByteArrayInstance);
     priv->array = gjs_g_byte_array_new(preallocated_length);
     g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(context, object, priv);
+    JS_SetPrivate(object, priv);
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(byte_array);
 
@@ -615,7 +615,7 @@ byte_array_new(JSContext *context)
     priv = g_slice_new0(ByteArrayInstance);
 
     g_assert(priv_from_js(context, array) == NULL);
-    JS_SetPrivate(context, array, priv);
+    JS_SetPrivate(array, priv);
 
     return array;
 }
@@ -867,7 +867,7 @@ gjs_byte_array_from_byte_array (JSContext *context,
 
     priv = g_slice_new0(ByteArrayInstance);
     g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(context, object, priv);
+    JS_SetPrivate(object, priv);
     priv->array = g_byte_array_new();
     priv->array->data = g_memdup(array->data, array->len);
     priv->array->len = array->len;
@@ -896,7 +896,7 @@ gjs_byte_array_from_bytes (JSContext *context,
 
     priv = g_slice_new0(ByteArrayInstance);
     g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(context, object, priv);
+    JS_SetPrivate(object, priv);
     priv->bytes = g_bytes_ref (bytes);
 
     return object;

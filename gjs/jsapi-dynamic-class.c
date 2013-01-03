@@ -52,7 +52,7 @@ gjs_new_object_for_constructor(JSContext *context,
     jsval     prototype;
 
     callee = JS_CALLEE(context, vp);
-    parent = JS_GetParent(context, JSVAL_TO_OBJECT (callee));
+    parent = JS_GetParent(JSVAL_TO_OBJECT (callee));
 
     if (!gjs_object_get_property(context, JSVAL_TO_OBJECT (callee), "prototype",
                                  &prototype))

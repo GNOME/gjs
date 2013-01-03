@@ -443,13 +443,13 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
     GJS_INC_COUNTER(boxed);
 
     g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(context, object, priv);
+    JS_SetPrivate(object, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                         "boxed constructor, obj %p priv %p",
                         object, priv);
 
-    proto = JS_GetPrototype(context, object);
+    proto = JS_GetPrototype(object);
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED, "boxed instance __proto__ is %p", proto);
     /* If we're the prototype, then post-construct we'll fill in priv->info.
      * If we are not the prototype, though, then we'll get ->info from the
@@ -606,7 +606,7 @@ get_nested_interface_object (JSContext   *context,
 
     GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Boxed);
-    JS_SetPrivate(context, obj, priv);
+    JS_SetPrivate(obj, priv);
     priv->info = (GIBoxedInfo*) interface_info;
     g_base_info_ref( (GIBaseInfo*) priv->info);
     priv->gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo*) interface_info);
@@ -1239,7 +1239,7 @@ gjs_define_boxed_class(JSContext    *context,
 
     g_base_info_ref( (GIBaseInfo*) priv->info);
     priv->gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo*) priv->info);
-    JS_SetPrivate(context, prototype, priv);
+    JS_SetPrivate(prototype, priv);
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
               constructor_name, prototype, JS_GetClass(prototype), in_object);
@@ -1293,7 +1293,7 @@ gjs_boxed_from_c_struct(JSContext             *context,
     *priv = *proto_priv;
     g_base_info_ref( (GIBaseInfo*) priv->info);
 
-    JS_SetPrivate(context, obj, priv);
+    JS_SetPrivate(obj, priv);
 
     if ((flags & GJS_BOXED_CREATION_NO_COPY) != 0) {
         /* we need to create a JS Boxed which references the

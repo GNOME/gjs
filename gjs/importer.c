@@ -1053,7 +1053,7 @@ importer_new(JSContext    *context)
     GJS_INC_COUNTER(importer);
 
     g_assert(priv_from_js(context, importer) == NULL);
-    JS_SetPrivate(context, importer, priv);
+    JS_SetPrivate(importer, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_IMPORTER,
                         "importer constructor, obj %p priv %p", importer, priv);

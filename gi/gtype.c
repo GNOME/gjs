@@ -134,7 +134,7 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
     if (object == NULL)
         goto out;
 
-    JS_SetPrivate(context, object, GSIZE_TO_POINTER(gtype));
+    JS_SetPrivate(object, GSIZE_TO_POINTER(gtype));
     g_type_set_qdata(gtype, gjs_get_gtype_wrapper_quark(), object);
 
  out:

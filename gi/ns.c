@@ -230,7 +230,7 @@ ns_new(JSContext    *context,
     GJS_INC_COUNTER(ns);
 
     g_assert(priv_from_js(context, ns) == NULL);
-    JS_SetPrivate(context, ns, priv);
+    JS_SetPrivate(ns, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE, "ns constructor, obj %p priv %p", ns, priv);
 

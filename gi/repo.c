@@ -293,7 +293,7 @@ repo_new(JSContext *context)
     GJS_INC_COUNTER(repo);
 
     g_assert(priv_from_js(context, repo) == NULL);
-    JS_SetPrivate(context, repo, priv);
+    JS_SetPrivate(repo, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GREPO,
                         "repo constructor, obj %p priv %p", repo, priv);
