@@ -658,7 +658,7 @@ gjs_array_to_floatarray(JSContext   *context,
 
     for (i = 0; i < length; ++i) {
         jsval elem;
-        jsdouble val;
+        double val;
         JSBool success;
 
         elem = JSVAL_VOID;

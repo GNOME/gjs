@@ -47,21 +47,21 @@ struct _GjsProfiler {
     GHashTable *by_file;    /* GjsProfileFunctionKey -> GjsProfileFunction */
 
     GjsProfileData *last_function_entered; /* weak ref to by_file */
-    int64           last_function_exit_time;
+    int64_t         last_function_exit_time;
 };
 
 struct _GjsProfileData {
     /* runtime state tracking */
     GjsProfileData *caller;
-    int64 enter_time;
-    int64 runtime_so_far;
+    int64_t enter_time;
+    int64_t runtime_so_far;
     unsigned recurse_depth;
 
     /* final statistics */
     unsigned call_count;
 
-    int64 total_time;
-    int64 self_time;
+    int64_t total_time;
+    int64_t self_time;
 };
 
 typedef struct {
@@ -203,7 +203,7 @@ gjs_profiler_log_call(GjsProfiler  *self,
 {
     GjsProfileFunction *function;
     GjsProfileData *p;
-    int64 now;
+    int64_t now;
 
     function = gjs_profiler_lookup_function(self, cx, fp, before);
     if (!function)
@@ -218,7 +218,7 @@ gjs_profiler_log_call(GjsProfiler  *self,
 
             /* we just exited the caller so account for the time spent */
             if (p->caller) {
-                int64 delta;
+                int64_t delta;
 
                 if (self->last_function_exit_time != 0) {
                     delta = now - self->last_function_exit_time;
@@ -241,7 +241,7 @@ gjs_profiler_log_call(GjsProfiler  *self,
 
         p->recurse_depth += 1;
     } else {
-        int64 delta;
+        int64_t delta;
 
         g_assert(p->recurse_depth > 0);
 
