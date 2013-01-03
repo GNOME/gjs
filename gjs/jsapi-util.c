@@ -220,7 +220,7 @@ gjs_throw_abstract_constructor_error(JSContext *context,
     if (JSVAL_IS_OBJECT(callee)) {
         if (gjs_object_get_property(context, JSVAL_TO_OBJECT(callee),
                                     "prototype", &prototype)) {
-            proto_class = JS_GetClass(context, JSVAL_TO_OBJECT(prototype));
+            proto_class = JS_GetClass(JSVAL_TO_OBJECT(prototype));
             name = proto_class->name;
         }
     }
@@ -348,7 +348,7 @@ gjs_value_debug_string(JSContext      *context,
              */
             JSClass *klass;
 
-            klass = JS_GET_CLASS(context, JSVAL_TO_OBJECT(value));
+            klass = JS_GetClass(JSVAL_TO_OBJECT(value));
             if (klass != NULL) {
                 str = JS_NewStringCopyZ(context, klass->name);
                 JS_ClearPendingException(context);
@@ -821,13 +821,10 @@ gjs_date_from_time_t (JSContext *context, time_t time)
     if (!JS_GetProperty(context, date_constructor, "prototype", &date_prototype))
         gjs_fatal("Failed to get prototype from Date constructor");
 
-    date_class = JS_GET_CLASS(context, JSVAL_TO_OBJECT (date_prototype));
-
     if (!JS_NewNumberValue(context, ((double) time) * 1000, &(args[0])))
         gjs_fatal("Failed to convert time_t to number");
 
-    date = JS_ConstructObjectWithArguments(context, date_class,
-                                           NULL, NULL, 1, args);
+    date = JS_New(context, JSVAL_TO_OBJECT (date_prototype), 1, args);
 
     result = OBJECT_TO_JSVAL(date);
     JS_LeaveLocalRootScope(context);

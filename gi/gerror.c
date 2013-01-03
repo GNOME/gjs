@@ -380,7 +380,7 @@ gjs_lookup_error_class(JSContext    *context,
 
     prototype = gjs_lookup_error_prototype(context, info);
 
-    return JS_GET_CLASS(context, prototype);
+    return JS_GetClass(prototype);
 }
 
 JSBool
@@ -463,7 +463,7 @@ gjs_define_error_class(JSContext    *context,
     JS_SetPrivate(context, prototype, priv);
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
-              constructor_name, prototype, JS_GET_CLASS(context, prototype), in_object);
+              constructor_name, prototype, JS_GetClass(prototype), in_object);
 
     gjs_define_enum_values(context, constructor, priv->info);
 
@@ -590,7 +590,7 @@ gjs_error_from_gerror(JSContext             *context,
     proto_priv = priv_from_js(context, proto);
 
     obj = JS_NewObjectWithGivenProto(context,
-                                     JS_GET_CLASS(context, proto), proto,
+                                     JS_GetClass(proto), proto,
                                      gjs_get_import_global (context));
 
     GJS_INC_COUNTER(gerror);
