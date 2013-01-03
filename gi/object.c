@@ -1440,7 +1440,8 @@ static struct JSClass gjs_object_instance_class = {
     "GObject_Object",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
-    JSCLASS_NEW_RESOLVE_GETS_START,
+    JSCLASS_NEW_RESOLVE_GETS_START |
+    JSCLASS_MARK_IS_TRACE,
     JS_PropertyStub,
     JS_PropertyStub,
     object_instance_get_prop,
@@ -1455,7 +1456,7 @@ static struct JSClass gjs_object_instance_class = {
     NULL,
     NULL,
     NULL,
-    object_instance_trace,
+    JS_CLASS_TRACE(object_instance_trace),
     NULL,
 };
 
