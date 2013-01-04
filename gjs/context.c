@@ -523,6 +523,17 @@ static JSLocaleCallbacks gjs_locale_callbacks =
     gjs_locale_to_unicode
 };
 
+static void
+set_c_strings_are_utf8_if_needed (void)
+{
+    static gsize init = 0;
+    if (g_once_init_enter (&init)) {
+        gsize one = 1;
+        JS_SetCStringsAreUTF8();
+        g_once_init_leave (&init, &one);
+    }
+}
+
 static GObject*
 gjs_context_constructor (GType                  type,
                          guint                  n_construct_properties,
@@ -537,9 +548,10 @@ gjs_context_constructor (GType                  type,
                                                                          n_construct_properties,
                                                                          construct_params);
 
+    set_c_strings_are_utf8_if_needed ();
+
     js_context = GJS_CONTEXT(object);
 
-    JS_SetCStringsAreUTF8();
     js_context->runtime = JS_NewRuntime(32*1024*1024 /* max bytes */);
     if (js_context->runtime == NULL)
         gjs_fatal("Failed to create javascript runtime");
