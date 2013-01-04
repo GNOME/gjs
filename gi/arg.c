@@ -2373,7 +2373,7 @@ gjs_value_from_g_argument (JSContext  *context,
         break;
 
     case GI_TYPE_TAG_BOOLEAN:
-        *value_p = BOOLEAN_TO_JSVAL(arg->v_int);
+        *value_p = BOOLEAN_TO_JSVAL(!!arg->v_int);
         break;
 
     case GI_TYPE_TAG_INT32:

@@ -669,7 +669,7 @@ gjs_value_from_g_value_internal(JSContext    *context,
     } else if (gtype == G_TYPE_BOOLEAN) {
         gboolean v;
         v = g_value_get_boolean(gvalue);
-        *value_p = BOOLEAN_TO_JSVAL(v);
+        *value_p = BOOLEAN_TO_JSVAL(!!v);
     } else if (g_type_is_a(gtype, G_TYPE_OBJECT) || g_type_is_a(gtype, G_TYPE_INTERFACE)) {
         GObject *gobj;
         JSObject *obj;
