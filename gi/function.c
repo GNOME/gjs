@@ -80,7 +80,7 @@ gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline)
     if (trampoline->ref_count == 0) {
         JSContext *context;
 
-        context = gjs_runtime_get_current_context(trampoline->runtime);
+        context = gjs_runtime_get_context(trampoline->runtime);
 
         if (!trampoline->is_vfunc) {
             JS_BeginRequest(context);
@@ -180,7 +180,7 @@ gjs_callback_closure(ffi_cif *cif,
     g_assert(trampoline);
     gjs_callback_trampoline_ref(trampoline);
 
-    context = gjs_runtime_get_current_context(trampoline->runtime);
+    context = gjs_runtime_get_context(trampoline->runtime);
     JS_BeginRequest(context);
 
     n_args = g_callable_info_get_n_args(trampoline->info);
@@ -878,8 +878,6 @@ gjs_invoke_c_function(JSContext      *context,
          * separately */
     }
 
-    gjs_runtime_push_context(JS_GetRuntime(context), context);
-
     g_assert_cmpuint(c_arg_pos, ==, c_argc);
     g_assert_cmpuint(gi_arg_pos, ==, gi_argc);
 
@@ -893,8 +891,6 @@ gjs_invoke_c_function(JSContext      *context,
     else
         return_value_p = &return_value.v_long;
     ffi_call(&(function->invoker.cif), function->invoker.native_address, return_value_p, ffi_arg_pointers);
-
-    gjs_runtime_pop_context(JS_GetRuntime(context));
 
     /* Return value and out arguments are valid only if invocation doesn't
      * return error. In arguments need to be released always.

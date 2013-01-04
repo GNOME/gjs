@@ -43,17 +43,6 @@ gjs_util_error_quark (void)
 
 typedef struct {
     JSContext *context;
-    int depth;
-} ContextFrame;
-
-typedef struct {
-    JSObject *import_global;
-
-    JSContext *default_context;
-
-    /* In a thread-safe future we'd keep this in per-thread data */
-    ContextFrame current_frame;
-    GSList *context_stack;
 } RuntimeData;
 
 static RuntimeData* get_data_from_runtime(JSRuntime *runtime);
@@ -63,7 +52,7 @@ static RuntimeData* get_data_from_runtime(JSRuntime *runtime);
  * @context: a #JSContext
  *
  * Gets the "import global" for the context's runtime. The import
- * global object is the global object for the default context. It is used
+ * global object is the global object for the context. It is used
  * as the root object for the scope of modules loaded by GJS in this
  * runtime, and should also be used as the globals 'obj' argument passed
  * to JS_InitClass() and the parent argument passed to JS_ConstructObject()
@@ -80,151 +69,24 @@ static RuntimeData* get_data_from_runtime(JSRuntime *runtime);
 JSObject*
 gjs_get_import_global(JSContext *context)
 {
-    JSRuntime *runtime = JS_GetRuntime(context);
-    RuntimeData *rd;
-
-    rd = get_data_from_runtime(runtime);
-
-    return rd->import_global;
+    return JS_GetGlobalObject(context);
 }
 
 /**
- * gjs_runtime_push_context:
- * @runtime: a #JSRuntime
- * @context: a #JSRuntime
- *
- * Make @context the currently active context for @runtime.
- * A stack is maintained, although switching between different contexts
- * in a nested fashion in the same thread ecan trigger misbehavior in
- * Spidermonkey, so is not recommended. This does not call JS_BeginRequest();
- * the caller needs to do it themselves.
- *
- * Should be called when calling from Javascript into native code that
- * could result in callbacks back to Javascript. The context stack allows
- * the callbacks to find the right context to use via gjs_get_current_context().
- *
- * When GJS is made threadsafe, this needs to maintain a per-thread stack
- * rather than a global stack.
- */
-void
-gjs_runtime_push_context(JSRuntime *runtime,
-                         JSContext *context)
-{
-    RuntimeData *rd;
-
-    rd = get_data_from_runtime(runtime);
-
-    if (context == rd->current_frame.context) {
-        rd->current_frame.depth++;
-    } else {
-        rd->context_stack = g_slist_prepend(rd->context_stack,
-                                            g_slice_dup(ContextFrame, &rd->current_frame));
-        rd->current_frame.context = context;
-        rd->current_frame.depth = 0;
-    }
-}
-
-/**
- * gjs_runtime_pop_context:
+ * gjs_runtime_get_context:
  * @runtime: a #JSRuntime
  *
- * Pops a context pushed onto the stack of active contexts by
- * gjs_runtime_push_context().
- */
-void
-gjs_runtime_pop_context(JSRuntime *runtime)
-{
-    RuntimeData *rd;
-
-    rd = get_data_from_runtime(runtime);
-
-    if (rd->current_frame.depth == 0) {
-        if (rd->context_stack == NULL)
-            gjs_fatal("gjs_runtime_pop_context() called more times than gjs_runtime_push_context()");
-
-        rd->current_frame = *(ContextFrame *)rd->context_stack->data;
-        g_slice_free(ContextFrame, rd->context_stack->data);
-        rd->context_stack = g_slist_delete_link(rd->context_stack, rd->context_stack);
-    } else {
-        rd->current_frame.depth--;
-    }
-}
-
-/**
- * gjs_runtime_set_default_context:
- * @runtime: a #JSRuntime
- * @context: a #JSContext
+ * Gets the context associated with this runtime.
  *
- * Makes @context the default context for @runtime. The default context is the
- * context used for executing callbacks when no other context is active.
- * This generally should only be called by GJS - GJS sets the default context
- * when #GjsContext creates a runtime, and subsequent calls to this function
- * will produce an error.
- */
-void
-gjs_runtime_set_default_context(JSRuntime *runtime,
-                                JSContext *context)
-{
-    RuntimeData *rd;
-
-    rd = get_data_from_runtime(runtime);
-
-    if (rd->context_stack != NULL || rd->current_frame.depth != 0)
-        gjs_fatal("gjs_runtime_set_default_context() called during gjs_push_context()");
-
-    if (context != NULL) {
-        if (rd->default_context != NULL)
-            gjs_fatal("gjs_runtime_set_default_context() called twice on the same JSRuntime");
-        rd->default_context = context;
-        rd->current_frame.context = context;
-        rd->import_global = JS_GetGlobalObject(rd->default_context);
-    } else {
-        rd->default_context = NULL;
-        rd->current_frame.context = NULL;
-        rd->import_global = NULL;
-    }
-}
-
-/**
- * gjs_runtime_get_default_context:
- * @runtime: a #JSRuntime
- *
- * Gets the default context for @runtime. Generally you should use
- * gjs_runtime_get_current_context() instead.
- *
- * Return value: the default context, or %NULL if GJS hasn't been initialized
- *  for the runtime or is being shut down.
+ * Return value: the context, or %NULL if GJS hasn't been initialized
+ * for the runtime or is being shut down.
  */
 JSContext *
-gjs_runtime_get_default_context(JSRuntime *runtime)
+gjs_runtime_get_context(JSRuntime *runtime)
 {
     RuntimeData *rd;
-
     rd = get_data_from_runtime(runtime);
-
-    return rd->default_context;
-}
-
-/**
- * gjs_runtime_get_current_context:
- * @runtime: a #JSRuntime
- *
- * Gets the right context to use for code that doesn't already have a JSContext
- * passed to it, like a callback from native code. If a context is currently
- * active (see gjs_push_context()), uses that, otherwise uses the default
- * context for the runtime.
- *
- * Return value: the current context, or %NULL if GJS hasn't been initialized
- *  for the runtime or is being shut down.
- */
-JSContext *
-gjs_runtime_get_current_context(JSRuntime *runtime)
-{
-    RuntimeData *rd;
-
-    rd = get_data_from_runtime(runtime);
-
-    return rd->current_frame.context;
+    return rd->context;
 }
 
 static JSClass global_class = {
@@ -264,22 +126,16 @@ gjs_init_context_standard (JSContext       *context)
  * This should only be called by GJS, not by applications.
  */
 void
-gjs_runtime_init(JSRuntime *runtime)
+gjs_runtime_init(JSRuntime *runtime,
+                 JSContext *context)
 {
     RuntimeData *rd;
 
-    /* If we went back to supporting foreign contexts, we couldn't use
-     * JS_SetRuntimePrivate() because the runtime's owner might
-     * already be using it. A simple solution would be to just store
-     * the runtime data in a global variable - multiple copies of GJS
-     * in the same process at the same time have issues anyways
-     * because of limitations of GObject toggle references - if two
-     * separate entities toggle reference an object it will leak.
-     */
     if (JS_GetRuntimePrivate(runtime) != NULL)
         gjs_fatal("JSRuntime already initialized or private data in use by someone else");
 
     rd = g_slice_new0(RuntimeData);
+    rd->context = context;
     JS_SetRuntimePrivate(runtime, rd);
 }
 
@@ -302,8 +158,6 @@ gjs_runtime_destroy(JSRuntime *runtime)
     RuntimeData *rd;
 
     rd = JS_GetRuntimePrivate(runtime);
-    if (rd->context_stack != NULL || rd->current_frame.depth != 0)
-        gjs_fatal("gjs_runtime_destroy() called during gjs_push_context()");
 
     gjs_debug(GJS_DEBUG_CONTEXT,
               "Destroying JS runtime");

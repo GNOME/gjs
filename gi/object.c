@@ -783,7 +783,7 @@ wrapped_gobj_toggle_notify(gpointer      data,
      * Or if !is_last_ref, we do not want to convert to a strong
      * ref since we want everything collected on runtime destroy.
      */
-    context = gjs_runtime_get_current_context(runtime);
+    context = gjs_runtime_get_context(runtime);
     if (!context)
         return;
 

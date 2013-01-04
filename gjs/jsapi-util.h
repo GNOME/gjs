@@ -181,16 +181,11 @@ jsval gjs_##cname##_create_proto(JSContext *context, JSObject *module, const cha
 
 gboolean    gjs_init_context_standard        (JSContext       *context);
 
-void        gjs_runtime_init                 (JSRuntime       *runtime);
+void        gjs_runtime_init                 (JSRuntime       *runtime,
+                                              JSContext       *context);
 void        gjs_runtime_destroy              (JSRuntime       *runtime);
 
-JSContext*  gjs_runtime_get_current_context  (JSRuntime       *runtime);
-void        gjs_runtime_set_default_context  (JSRuntime       *runtime,
-                                              JSContext       *context);
-JSContext*  gjs_runtime_get_default_context  (JSRuntime       *runtime);
-void        gjs_runtime_push_context         (JSRuntime       *runtime,
-                                              JSContext       *context);
-void        gjs_runtime_pop_context          (JSRuntime       *runtime);
+JSContext*  gjs_runtime_get_context          (JSRuntime       *runtime);
 JSObject*   gjs_get_import_global            (JSContext       *context);
 gboolean    gjs_object_has_property          (JSContext       *context,
                                               JSObject        *obj,

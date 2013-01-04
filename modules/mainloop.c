@@ -101,9 +101,7 @@ gjs_main_loop_run(JSContext *context,
               context);
     g_free(cancel_id);
 
-    gjs_runtime_push_context(JS_GetRuntime(context), context);
     g_main_loop_run(main_loop);
-    gjs_runtime_pop_context(JS_GetRuntime(context));
 
     g_main_loop_unref(main_loop);
     return JS_TRUE;
@@ -124,7 +122,7 @@ closure_source_func(void *data)
         return FALSE;
 
     runtime = gjs_closure_get_runtime(closure);
-    context = gjs_runtime_get_current_context(runtime);
+    context = gjs_runtime_get_context(runtime);
 
     JS_BeginRequest(context);
 

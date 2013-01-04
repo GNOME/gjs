@@ -266,7 +266,7 @@ gjs_closure_invoke(GClosure *closure,
         return;
     }
 
-    context = gjs_runtime_get_current_context(c->runtime);
+    context = gjs_runtime_get_context(c->runtime);
     JS_BeginRequest(context);
 
     if (JS_IsExceptionPending(context)) {

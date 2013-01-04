@@ -368,7 +368,6 @@ gjs_context_dispose(GObject *object)
         gjs_debug(GJS_DEBUG_CONTEXT,
                   "Destroying JS context");
 
-        gjs_runtime_set_default_context(js_context->runtime, NULL);
         JS_DestroyContext(js_context->context);
         js_context->context = NULL;
     }
@@ -545,11 +544,12 @@ gjs_context_constructor (GType                  type,
     if (js_context->runtime == NULL)
         gjs_fatal("Failed to create javascript runtime");
     JS_SetGCParameter(js_context->runtime, JSGC_MAX_BYTES, 0xffffffff);
-    gjs_runtime_init(js_context->runtime);
 
     js_context->context = JS_NewContext(js_context->runtime, 8192 /* stack chunk size */);
     if (js_context->context == NULL)
         gjs_fatal("Failed to create javascript context");
+
+    gjs_runtime_init(js_context->runtime, js_context->context);
 
     JS_BeginRequest(js_context->context);
 
@@ -629,13 +629,6 @@ gjs_context_constructor (GType                  type,
                            (JSNative)gjs_printerr,
                            4, GJS_MODULE_PROP_FLAGS))
         gjs_fatal("Failed to define printerr function");
-
-    /* We need to know what the default context is, since it's the context whose
-     * global object is used to load imported JS modules. We currently say that
-     * it's the context of the runtime's owner, but if we needed to support
-     * externally created runtimes, we could define it in some other fashion.
-     */
-    gjs_runtime_set_default_context(js_context->runtime, js_context->context);
 
     /* We create the global-to-runtime root importer with the
      * passed-in search path. If someone else already created
@@ -983,7 +976,6 @@ gjs_context_eval(GjsContext *js_context,
     /* JS_EvaluateScript requires a request even though it sort of seems like
      * it means we're always in a request?
      */
-    gjs_runtime_push_context(js_context->runtime, js_context->context);
     JS_BeginRequest(js_context->context);
 
     retval = JSVAL_VOID;
@@ -1051,7 +1043,6 @@ gjs_context_eval(GjsContext *js_context,
     }
 
     JS_EndRequest(js_context->context);
-    gjs_runtime_pop_context(js_context->runtime);
 
     g_object_unref(G_OBJECT(js_context));
 

@@ -73,7 +73,7 @@ closure_marshal(GClosure        *closure,
     }
 
     runtime = gjs_closure_get_runtime(closure);
-    context = gjs_runtime_get_current_context(runtime);
+    context = gjs_runtime_get_context(runtime);
     JS_BeginRequest(context);
 
     argc = n_param_values;
