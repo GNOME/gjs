@@ -72,7 +72,6 @@ struct _GjsContext {
 
     guint idle_emit_gc_id;
 
-    guint we_own_runtime : 1;
     guint gc_notifications_enabled : 1;
 };
 
@@ -93,7 +92,6 @@ enum {
     PROP_0,
     PROP_JS_VERSION,
     PROP_SEARCH_PATH,
-    PROP_RUNTIME,
     PROP_GC_NOTIFICATIONS
 };
 
@@ -319,15 +317,6 @@ gjs_context_class_init(GjsContextClass *klass)
                                     PROP_SEARCH_PATH,
                                     pspec);
 
-    pspec = g_param_spec_pointer("runtime",
-                                 "JSRuntime",
-                                 "A runtime to use instead of creating our own",
-                                 G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY);
-
-    g_object_class_install_property(object_class,
-                                    PROP_RUNTIME,
-                                    pspec);
-
     pspec = g_param_spec_string("js-version",
                                  "JS Version",
                                  "A string giving the default for the (SpiderMonkey) JavaScript version",
@@ -379,20 +368,14 @@ gjs_context_dispose(GObject *object)
         gjs_debug(GJS_DEBUG_CONTEXT,
                   "Destroying JS context");
 
-        if (js_context->we_own_runtime)
-            gjs_runtime_set_default_context(js_context->runtime, NULL);
+        gjs_runtime_set_default_context(js_context->runtime, NULL);
         JS_DestroyContext(js_context->context);
         js_context->context = NULL;
     }
 
     if (js_context->runtime != NULL) {
-        if (js_context->we_own_runtime) {
-            /* Cleans up data as well as destroying the runtime. Foreign
-             * contexts aren't supported at the moment; if we supported
-             * them, then the data simply would't get cleaned up.
-             */
-            gjs_runtime_destroy(js_context->runtime);
-        }
+        /* Cleans up data as well as destroying the runtime. */
+        gjs_runtime_destroy(js_context->runtime);
         js_context->runtime = NULL;
     }
 
@@ -557,15 +540,12 @@ gjs_context_constructor (GType                  type,
 
     js_context = GJS_CONTEXT(object);
 
-    if (js_context->runtime == NULL) {
-        JS_SetCStringsAreUTF8();
-        js_context->runtime = JS_NewRuntime(32*1024*1024 /* max bytes */);
-        if (js_context->runtime == NULL)
-            gjs_fatal("Failed to create javascript runtime");
-        JS_SetGCParameter(js_context->runtime, JSGC_MAX_BYTES, 0xffffffff);
-        js_context->we_own_runtime = TRUE;
-        gjs_runtime_init(js_context->runtime);
-    }
+    JS_SetCStringsAreUTF8();
+    js_context->runtime = JS_NewRuntime(32*1024*1024 /* max bytes */);
+    if (js_context->runtime == NULL)
+        gjs_fatal("Failed to create javascript runtime");
+    JS_SetGCParameter(js_context->runtime, JSGC_MAX_BYTES, 0xffffffff);
+    gjs_runtime_init(js_context->runtime);
 
     js_context->context = JS_NewContext(js_context->runtime, 8192 /* stack chunk size */);
     if (js_context->context == NULL)
@@ -655,12 +635,7 @@ gjs_context_constructor (GType                  type,
      * it's the context of the runtime's owner, but if we needed to support
      * externally created runtimes, we could define it in some other fashion.
      */
-    if (js_context->we_own_runtime) {
-        gjs_runtime_set_default_context(js_context->runtime, js_context->context);
-    } else {
-        if (gjs_runtime_get_default_context(js_context->runtime) == NULL)
-            gjs_fatal("GjsContext created for a runtime not owned by GJS");
-    }
+    gjs_runtime_set_default_context(js_context->runtime, js_context->context);
 
     /* We create the global-to-runtime root importer with the
      * passed-in search path. If someone else already created
@@ -681,9 +656,7 @@ gjs_context_constructor (GType                  type,
                                   "imports"))
         gjs_fatal("Failed to point 'imports' property at root importer");
 
-    if (js_context->we_own_runtime) {
-        js_context->profiler = gjs_profiler_new(js_context->runtime);
-    }
+    js_context->profiler = gjs_profiler_new(js_context->runtime);
 
     if (!gjs_is_registered_native_module(js_context->context, NULL, "gi"))
         gjs_register_native_module("gi", gjs_define_gi_stuff, GJS_NATIVE_SUPPLIES_MODULE_OBJ);
@@ -743,9 +716,6 @@ gjs_context_set_property (GObject      *object,
     switch (prop_id) {
     case PROP_SEARCH_PATH:
         js_context->search_path = g_value_dup_boxed(value);
-        break;
-    case PROP_RUNTIME:
-        js_context->runtime = g_value_get_pointer(value);
         break;
     case PROP_JS_VERSION:
         g_free(js_context->jsversion_string);
