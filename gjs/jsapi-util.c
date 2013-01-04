@@ -41,11 +41,6 @@ gjs_util_error_quark (void)
     return g_quark_from_static_string ("gjs-util-error-quark");
 }
 
-typedef struct {
-    JSContext *context;
-} RuntimeData;
-
-static RuntimeData* get_data_from_runtime(JSRuntime *runtime);
 
 /**
  * gjs_get_import_global:
@@ -84,9 +79,7 @@ gjs_get_import_global(JSContext *context)
 JSContext *
 gjs_runtime_get_context(JSRuntime *runtime)
 {
-    RuntimeData *rd;
-    rd = get_data_from_runtime(runtime);
-    return rd->context;
+    return (JSContext *) JS_GetRuntimePrivate (runtime);
 }
 
 static JSClass global_class = {
@@ -117,70 +110,6 @@ gjs_init_context_standard (JSContext       *context)
     return TRUE;
 }
 
-/**
- * gjs_runtime_init:
- * @runtime: a #JSRuntime
- *
- * Initializes a #JSRuntime for use with GJS
- *
- * This should only be called by GJS, not by applications.
- */
-void
-gjs_runtime_init(JSRuntime *runtime,
-                 JSContext *context)
-{
-    RuntimeData *rd;
-
-    if (JS_GetRuntimePrivate(runtime) != NULL)
-        gjs_fatal("JSRuntime already initialized or private data in use by someone else");
-
-    rd = g_slice_new0(RuntimeData);
-    rd->context = context;
-    JS_SetRuntimePrivate(runtime, rd);
-}
-
-/**
- * gjs_runtime_destroy:
- * @runtime: a #JSRuntime
- *
- * Calls JS_DestroyRuntime() on runtime and frees data allocated by
- * gjs_runtime_init(); these are unified into a single call because we
- * need to order things so that the allocated data is cleaned up
- * after JS_DestroyRuntime(). We might have finalizers run by
- * JS_DestroyRuntime() that rely on the information stored in the data,
- * such as the dynamic class structs.
- *
- * This should only be called by GJS, not by applications.
- */
-void
-gjs_runtime_destroy(JSRuntime *runtime)
-{
-    RuntimeData *rd;
-
-    rd = JS_GetRuntimePrivate(runtime);
-
-    gjs_debug(GJS_DEBUG_CONTEXT,
-              "Destroying JS runtime");
-
-    JS_DestroyRuntime(runtime);
-
-    gjs_debug(GJS_DEBUG_CONTEXT,
-              "Destroying any remaining dataset items on runtime");
-
-    g_slice_free(RuntimeData, rd);
-}
-
-static RuntimeData*
-get_data_from_runtime(JSRuntime *runtime)
-{
-    RuntimeData *rd;
-
-    rd = JS_GetRuntimePrivate(runtime);
-    if (G_UNLIKELY(rd == NULL))
-        gjs_fatal("JSRuntime not initialized for use with GJS");
-
-    return rd;
-}
 
 /* Checks whether an object has a property; unlike JS_GetProperty(),
  * never sets an exception. Treats a property with a value of JSVAL_VOID

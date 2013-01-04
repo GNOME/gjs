@@ -374,7 +374,7 @@ gjs_context_dispose(GObject *object)
 
     if (js_context->runtime != NULL) {
         /* Cleans up data as well as destroying the runtime. */
-        gjs_runtime_destroy(js_context->runtime);
+        JS_DestroyRuntime(js_context->runtime);
         js_context->runtime = NULL;
     }
 
@@ -549,7 +549,7 @@ gjs_context_constructor (GType                  type,
     if (js_context->context == NULL)
         gjs_fatal("Failed to create javascript context");
 
-    gjs_runtime_init(js_context->runtime, js_context->context);
+    JS_SetRuntimePrivate(js_context->runtime, js_context->context);
 
     JS_BeginRequest(js_context->context);
 
