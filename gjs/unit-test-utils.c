@@ -35,12 +35,10 @@ test_error_reporter(JSContext     *context,
 void
 _gjs_unit_test_fixture_begin (GjsUnitTestFixture *fixture)
 {
-    JS_SetCStringsAreUTF8();
-    fixture->runtime = JS_NewRuntime(1024*1024 /* max bytes */);
-    fixture->context = JS_NewContext(fixture->runtime, 8192);
+    fixture->gjs_context = gjs_context_new ();
+    fixture->context = (JSContext *) gjs_context_get_native_context (fixture->gjs_context);
+    fixture->runtime = JS_GetRuntime(fixture->context);
     JS_BeginRequest(fixture->context);
-    if (!gjs_init_context_standard(fixture->context))
-        g_error("failed to init context");
     JS_SetErrorReporter(fixture->context, test_error_reporter);
 }
 
@@ -48,6 +46,5 @@ void
 _gjs_unit_test_fixture_finish (GjsUnitTestFixture *fixture)
 {
     JS_EndRequest(fixture->context);
-    JS_DestroyContext(fixture->context);
-    JS_DestroyRuntime(fixture->runtime);
+    g_object_unref(fixture->gjs_context);
 }

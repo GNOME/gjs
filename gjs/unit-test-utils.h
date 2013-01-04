@@ -24,11 +24,15 @@
 #ifndef _GJS_UNIT_TEST_UTILS_H
 #define _GJS_UNIT_TEST_UTILS_H
 
+#include <gjs/gjs.h>
+
 typedef struct _GjsUnitTestFixture GjsUnitTestFixture;
 
 struct _GjsUnitTestFixture {
     JSRuntime *runtime;
     JSContext *context;
+
+    GjsContext *gjs_context;
 };
 
 void _gjs_unit_test_fixture_begin (GjsUnitTestFixture *fixture);
