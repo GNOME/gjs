@@ -68,8 +68,8 @@ find_field_info(GIObjectInfo *info,
  */
 static JSBool
 param_get_prop(JSContext *context,
-               JSObject  *obj,
-               jsid       id,
+               JSObject **obj,
+               jsid      *id,
                jsval     *value_p)
 {
     JSBool success;
@@ -82,10 +82,10 @@ param_get_prop(JSContext *context,
     GITypeInfo *type_info = NULL;
     GIArgument arg;
 
-    if (!gjs_get_string_id(context, id, &name))
+    if (!gjs_get_string_id(context, *id, &name))
         return JS_TRUE; /* not something we affect, but no error */
 
-    priv = priv_from_js(context, obj);
+    priv = priv_from_js(context, *obj);
 
     if (priv == NULL) {
         g_free(name);

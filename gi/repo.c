@@ -156,8 +156,8 @@ resolve_namespace_object(JSContext  *context,
  */
 static JSBool
 repo_new_resolve(JSContext *context,
-                 JSObject  *obj,
-                 jsid       id,
+                 JSObject **obj,
+                 jsid      *id,
                  unsigned   flags,
                  JSObject **objp)
 {
@@ -167,7 +167,7 @@ repo_new_resolve(JSContext *context,
 
     *objp = NULL;
 
-    if (!gjs_get_string_id(context, id, &name))
+    if (!gjs_get_string_id(context, *id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
     /* let Object.prototype resolve these */
@@ -175,17 +175,17 @@ repo_new_resolve(JSContext *context,
         strcmp(name, "toString") == 0)
         goto out;
 
-    priv = priv_from_js(context, obj);
+    priv = priv_from_js(context, *obj);
     gjs_debug_jsprop(GJS_DEBUG_GREPO, "Resolve prop '%s' hook obj %p priv %p", name, obj, priv);
 
     if (priv == NULL) /* we are the prototype, or have the wrong class */
         goto out;
 
     JS_BeginRequest(context);
-    if (resolve_namespace_object(context, obj, name) == NULL) {
+    if (resolve_namespace_object(context, *obj, name) == NULL) {
         ret = JS_FALSE;
     } else {
-        *objp = obj; /* store the object we defined the prop in */
+        *objp = *obj; /* store the object we defined the prop in */
     }
     JS_EndRequest(context);
 

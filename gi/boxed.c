@@ -116,8 +116,8 @@ gjs_define_static_methods(JSContext    *context,
  */
 static JSBool
 boxed_new_resolve(JSContext *context,
-                  JSObject  *obj,
-                  jsid       id,
+                  JSObject **obj,
+                  jsid      *id,
                   unsigned   flags,
                   JSObject **objp)
 {
@@ -127,11 +127,11 @@ boxed_new_resolve(JSContext *context,
 
     *objp = NULL;
 
-    if (!gjs_get_string_id(context, id, &name))
+    if (!gjs_get_string_id(context, *id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
-    priv = priv_from_js(context, obj);
-    gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook obj %p priv %p", name, obj, priv);
+    priv = priv_from_js(context, *obj);
+    gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook obj %p priv %p", name, *obj, priv);
 
     if (priv == NULL)
         goto out; /* wrong class */
@@ -159,7 +159,7 @@ boxed_new_resolve(JSContext *context,
                       g_base_info_get_namespace( (GIBaseInfo*) priv->info),
                       g_base_info_get_name( (GIBaseInfo*) priv->info));
 
-            boxed_proto = obj;
+            boxed_proto = *obj;
 
             if (gjs_define_function(context, boxed_proto, priv->gtype,
                                     (GICallableInfo *)method_info) == NULL) {
@@ -619,7 +619,7 @@ get_nested_interface_object (JSContext   *context,
     /* We never actually read the reserved slot, but we put the parent object
      * into it to hold onto the parent object.
      */
-    JS_SetReservedSlot(context, obj, 0,
+    JS_SetReservedSlot(obj, 0,
                        OBJECT_TO_JSVAL (parent_obj));
 
     *value = OBJECT_TO_JSVAL(obj);
@@ -628,8 +628,8 @@ get_nested_interface_object (JSContext   *context,
 
 static JSBool
 boxed_field_getter (JSContext *context,
-                    JSObject  *obj,
-                    jsid       id,
+                    JSObject **obj,
+                    jsid      *id,
                     jsval     *value)
 {
     Boxed *priv;
@@ -638,11 +638,11 @@ boxed_field_getter (JSContext *context,
     GArgument arg;
     gboolean success = FALSE;
 
-    priv = priv_from_js(context, obj);
+    priv = priv_from_js(context, *obj);
     if (!priv)
         return JS_FALSE;
 
-    field_info = get_field_info(context, priv, id);
+    field_info = get_field_info(context, priv, *id);
     if (!field_info)
         return JS_FALSE;
 
@@ -663,7 +663,7 @@ boxed_field_getter (JSContext *context,
         if (g_base_info_get_type (interface_info) == GI_INFO_TYPE_STRUCT ||
             g_base_info_get_type (interface_info) == GI_INFO_TYPE_BOXED) {
 
-            success = get_nested_interface_object (context, obj, priv,
+            success = get_nested_interface_object (context, *obj, priv,
                                                    field_info, type_info, interface_info,
                                                    value);
 
@@ -808,8 +808,8 @@ out:
 
 static JSBool
 boxed_field_setter (JSContext *context,
-                    JSObject  *obj,
-                    jsid       id,
+                    JSObject **obj,
+                    jsid      *id,
                     JSBool     strict,
                     jsval     *value)
 {
@@ -817,11 +817,10 @@ boxed_field_setter (JSContext *context,
     GIFieldInfo *field_info;
     gboolean success = FALSE;
 
-    priv = priv_from_js(context, obj);
+    priv = priv_from_js(context, *obj);
     if (!priv)
         return JS_FALSE;
-
-    field_info = get_field_info(context, priv, id);
+    field_info = get_field_info(context, priv, *id);
     if (!field_info)
         return JS_FALSE;
 
