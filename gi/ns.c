@@ -59,8 +59,8 @@ GJS_DEFINE_PRIV_FROM_JS(Ns, gjs_ns_class)
  */
 static JSBool
 ns_new_resolve(JSContext *context,
-               JSObject  *obj,
-               jsid       id,
+               JSObject **obj,
+               jsid      *id,
                unsigned   flags,
                JSObject **objp)
 {
@@ -72,7 +72,7 @@ ns_new_resolve(JSContext *context,
 
     *objp = NULL;
 
-    if (!gjs_get_string_id(context, id, &name))
+    if (!gjs_get_string_id(context, *id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
     /* let Object.prototype resolve these */
@@ -82,8 +82,8 @@ ns_new_resolve(JSContext *context,
         goto out;
     }
 
-    priv = priv_from_js(context, obj);
-    gjs_debug_jsprop(GJS_DEBUG_GNAMESPACE, "Resolve prop '%s' hook obj %p priv %p", name, obj, priv);
+    priv = priv_from_js(context, *obj);
+    gjs_debug_jsprop(GJS_DEBUG_GNAMESPACE, "Resolve prop '%s' hook obj %p priv %p", name, *obj, priv);
 
     if (priv == NULL) {
         ret = JS_TRUE; /* we are the prototype, or have the wrong class */
@@ -108,9 +108,9 @@ ns_new_resolve(JSContext *context,
               g_base_info_get_name(info),
               g_base_info_get_namespace(info));
 
-    if (gjs_define_info(context, obj, info)) {
+    if (gjs_define_info(context, *obj, info)) {
         g_base_info_unref(info);
-        *objp = obj; /* we defined the property in this object */
+        *objp = *obj; /* we defined the property in this object */
         ret = JS_TRUE;
     } else {
         gjs_debug(GJS_DEBUG_GNAMESPACE,

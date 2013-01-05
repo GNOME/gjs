@@ -147,11 +147,11 @@ error_finalize(JSContext *context,
 }
 
 static JSBool
-error_get_domain(JSContext *context, JSObject *obj, jsid id, jsval *vp)
+error_get_domain(JSContext *context, JSObject **obj, jsid *id, jsval *vp)
 {
     Error *priv;
 
-    priv = priv_from_js(context, obj);
+    priv = priv_from_js(context, *obj);
 
     if (priv == NULL)
         return JS_FALSE;
@@ -161,11 +161,11 @@ error_get_domain(JSContext *context, JSObject *obj, jsid id, jsval *vp)
 }
 
 static JSBool
-error_get_message(JSContext *context, JSObject *obj, jsid id, jsval *vp)
+error_get_message(JSContext *context, JSObject **obj, jsid *id, jsval **vp)
 {
     Error *priv;
 
-    priv = priv_from_js(context, obj);
+    priv = priv_from_js(context, *obj);
 
     if (priv == NULL)
         return JS_FALSE;
@@ -180,11 +180,11 @@ error_get_message(JSContext *context, JSObject *obj, jsid id, jsval *vp)
 }
 
 static JSBool
-error_get_code(JSContext *context, JSObject *obj, jsid id, jsval *vp)
+error_get_code(JSContext *context, JSObject **obj, jsid *id, jsval *vp)
 {
     Error *priv;
 
-    priv = priv_from_js(context, obj);
+    priv = priv_from_js(context, *obj);
 
     if (priv == NULL)
         return JS_FALSE;
@@ -520,7 +520,8 @@ define_error_properties(JSContext *context,
     /* find the JS frame that triggered the error */
     frame = NULL;
     while (JS_FrameIterator(context, &frame)) {
-        if (JS_IsScriptFrame(context, frame))
+        script = JS_GetFrameScript(context, frame);
+        if (script)
             break;
     }
 
@@ -530,7 +531,6 @@ define_error_properties(JSContext *context,
     if (!frame)
         return;
 
-    script = JS_GetFrameScript(context, frame);
     pc = JS_GetFramePC(context, frame);
 
     stack = g_string_new(NULL);

@@ -85,15 +85,15 @@ to_string_func(JSContext *context,
 
 static JSBool
 get_name_func (JSContext *context,
-               JSObject  *obj,
-               jsid       id,
+               JSObject **obj,
+               jsid      *id,
                jsval     *vp)
 {
     GType gtype;
     JSBool ret;
     jsval retval;
 
-    gtype = GPOINTER_TO_SIZE(priv_from_js(context, obj));
+    gtype = GPOINTER_TO_SIZE(priv_from_js(context, *obj));
 
     ret = gjs_string_from_utf8(context, g_type_name(gtype), -1, &retval);
     if (ret)

@@ -1242,15 +1242,15 @@ function_finalize(JSContext *context,
 
 static JSBool
 get_num_arguments (JSContext *context,
-                   JSObject  *obj,
-                   jsid       id,
+                   JSObject **obj,
+                   jsid      *id,
                    jsval     *vp)
 {
     int n_args, n_jsargs, i;
     jsval retval;
     Function *priv;
 
-    priv = priv_from_js(context, obj);
+    priv = priv_from_js(context, *obj);
 
     if (priv == NULL)
         return JS_FALSE;

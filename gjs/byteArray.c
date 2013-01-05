@@ -41,17 +41,17 @@ static struct JSObject* gjs_byte_array_prototype;
 GJS_DEFINE_PRIV_FROM_JS(ByteArrayInstance, gjs_byte_array_class)
 
 static JSBool byte_array_get_prop      (JSContext    *context,
-                                        JSObject     *obj,
-                                        jsid          id,
+                                        JSObject    **obj,
+                                        jsid         *id,
                                         jsval        *value_p);
 static JSBool byte_array_set_prop      (JSContext    *context,
-                                        JSObject     *obj,
-                                        jsid          id,
+                                        JSObject    **obj,
+                                        jsid         *id,
                                         JSBool        strict,
                                         jsval        *value_p);
 static JSBool byte_array_new_resolve   (JSContext    *context,
-                                        JSObject     *obj,
-                                        jsid          id,
+                                        JSObject    **obj,
+                                        jsid         *id,
                                         unsigned      flags,
                                         JSObject    **objp);
 GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array);
@@ -205,19 +205,19 @@ byte_array_get_index(JSContext         *context,
  */
 static JSBool
 byte_array_get_prop(JSContext *context,
-                    JSObject  *obj,
-                    jsid       id,
+                    JSObject **obj,
+                    jsid      *id,
                     jsval     *value_p)
 {
     ByteArrayInstance *priv;
     jsval id_value;
 
-    priv = priv_from_js(context, obj);
+    priv = priv_from_js(context, *obj);
 
     if (priv == NULL)
         return JS_TRUE; /* prototype, not an instance. */
 
-    if (!JS_IdToValue(context, id, &id_value))
+    if (!JS_IdToValue(context, *id, &id_value))
         return JS_FALSE;
 
     /* First handle array indexing */
@@ -225,7 +225,7 @@ byte_array_get_prop(JSContext *context,
         gsize idx;
         if (!gjs_value_to_gsize(context, id_value, &idx))
             return JS_FALSE;
-        return byte_array_get_index(context, obj, priv, idx, value_p);
+        return byte_array_get_index(context, *obj, priv, idx, value_p);
     }
 
     /* We don't special-case anything else for now. Regular JS arrays
@@ -237,14 +237,14 @@ byte_array_get_prop(JSContext *context,
 
 static JSBool
 byte_array_length_getter(JSContext *context,
-                         JSObject  *obj,
-                         jsid       id,
+                         JSObject **obj,
+                         jsid      *id,
                          jsval     *value_p)
 {
     ByteArrayInstance *priv;
     gsize len = 0;
 
-    priv = priv_from_js(context, obj);
+    priv = priv_from_js(context, *obj);
 
     if (priv == NULL)
         return JS_TRUE; /* prototype, not an instance. */
@@ -258,15 +258,15 @@ byte_array_length_getter(JSContext *context,
 
 static JSBool
 byte_array_length_setter(JSContext *context,
-                         JSObject  *obj,
-                         jsid       id,
+                         JSObject **obj,
+                         jsid      *id,
                          JSBool     strict,
                          jsval     *value_p)
 {
     ByteArrayInstance *priv;
     gsize len = 0;
 
-    priv = priv_from_js(context, obj);
+    priv = priv_from_js(context, *obj);
 
     if (priv == NULL)
         return JS_TRUE; /* prototype, not instance */
@@ -320,20 +320,20 @@ byte_array_set_index(JSContext         *context,
  */
 static JSBool
 byte_array_set_prop(JSContext *context,
-                    JSObject  *obj,
-                    jsid       id,
+                    JSObject **obj,
+                    jsid      *id,
                     JSBool     strict,
                     jsval     *value_p)
 {
     ByteArrayInstance *priv;
     jsval id_value;
 
-    priv = priv_from_js(context, obj);
+    priv = priv_from_js(context, *obj);
 
     if (priv == NULL)
         return JS_TRUE; /* prototype, not an instance. */
 
-    if (!JS_IdToValue(context, id, &id_value))
+    if (!JS_IdToValue(context, *id, &id_value))
         return JS_FALSE;
 
     byte_array_ensure_array(priv);
@@ -344,7 +344,7 @@ byte_array_set_prop(JSContext *context,
         if (!gjs_value_to_gsize(context, id_value, &idx))
             return JS_FALSE;
 
-        return byte_array_set_index(context, obj, priv, idx, value_p);
+        return byte_array_set_index(context, *obj, priv, idx, value_p);
     }
 
     /* We don't special-case anything else for now */
@@ -359,8 +359,8 @@ byte_array_set_prop(JSContext *context,
 
 static JSBool
 byte_array_new_resolve(JSContext *context,
-                       JSObject  *obj,
-                       jsid       id,
+                       JSObject **obj,
+                       jsid      *id,
                        unsigned   flags,
                        JSObject **objp)
 {
@@ -374,7 +374,7 @@ byte_array_new_resolve(JSContext *context,
     if (priv == NULL)
         return JS_TRUE; /* prototype, not an instance. */
 
-    if (!JS_IdToValue(context, id, &id_val))
+    if (!JS_IdToValue(context, *id, &id_val))
         return JS_FALSE;
 
     byte_array_ensure_array(priv);
@@ -394,15 +394,15 @@ byte_array_new_resolve(JSContext *context,
              * a property but must define it.
              */
             if (!JS_DefinePropertyById(context,
-                                       obj,
-                                       id,
+                                       *obj,
+                                       *id,
                                        JSVAL_VOID,
                                        byte_array_get_prop,
                                        byte_array_set_prop,
                                        JSPROP_ENUMERATE))
                 return JS_FALSE;
 
-            *objp = obj;
+            *objp = *obj;
         }
     }
 
