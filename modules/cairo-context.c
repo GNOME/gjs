@@ -313,7 +313,9 @@ gjs_cairo_context_finalize(JSContext *context,
     if (priv == NULL)
         return;
 
-    cairo_destroy(priv->cr);
+    if (priv->cr != NULL)
+        cairo_destroy(priv->cr);
+
     g_slice_free(GjsCairoContext, priv);
 }
 
@@ -401,6 +403,23 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC2(translate, cairo_translate, "ff", double, tx, do
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDevice, cairo_user_to_device, "x", "y")
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDeviceDistance, cairo_user_to_device_distance, "x", "y")
 
+
+static JSBool
+dispose_func(JSContext *context,
+             unsigned   argc,
+             jsval     *vp)
+{
+    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    GjsCairoContext *priv;
+
+    priv = priv_from_js(context, obj);
+    if (priv->cr != NULL) {
+        cairo_destroy(priv->cr);
+        priv->cr = NULL;
+    }
+    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    return JS_TRUE;
+}
 
 static JSBool
 appendPath_func(JSContext *context,
@@ -852,6 +871,7 @@ getGroupTarget_func(JSContext *context,
 }
 
 static JSFunctionSpec gjs_cairo_context_proto_funcs[] = {
+    { "$dispose", (JSNative)dispose_func, 0, 0 },
     { "appendPath", (JSNative)appendPath_func, 0, 0},
     { "arc", (JSNative)arc_func, 0, 0 },
     { "arcNegative", (JSNative)arcNegative_func, 0, 0 },
