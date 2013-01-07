@@ -2,9 +2,7 @@ RUN_WITH_DBUS = ${top_srcdir}/test/run-with-dbus --session --system
 GTESTER = ${TESTS_ENVIRONMENT} ${RUN_WITH_DBUS} gtester
 
 ########################################################################
-if ENABLE_TESTS
 TEST_PROGS += gjs-tests
-endif
 
 gjs_tests_CFLAGS =				\
 	$(AM_CFLAGS)				\
@@ -22,9 +20,7 @@ gjs_tests_LDADD =		\
 gjs_tests_SOURCES =		\
 	test/gjs-tests.c
 
-if ENABLE_TESTS
 TEST_PROGS += gjs-unit
-endif
 
 gjs_unit_CPPFLAGS =		\
 	$(AM_CPPFLAGS)          \
@@ -41,15 +37,22 @@ gjs_unit_SOURCES =	\
 	test/gjs-unit.c
 
 # noinst_ always builds a static library
-if ENABLE_TESTS
 testlib_LTLIBRARIES = libregress.la libwarnlib.la libgimarshallingtests.la
 testlibdir = $(prefix)/unused
 install-testlibLTLIBRARIES: # prevent it from being installed
-endif
 
 nodist_libregress_la_SOURCES = $(GI_DATADIR)/tests/regress.c $(GI_DATADIR)/tests/regress.h
-libregress_la_CFLAGS = $(GJS_CFLAGS) $(GJS_CAIRO_CFLAGS)
-libregress_la_LDFLAGS = -avoid-version $(GJS_LIBS) $(GJS_CAIRO_LIBS)
+libregress_la_CPPFLAGS =
+libregress_la_CFLAGS = $(GJS_CFLAGS)
+libregress_la_LDFLAGS = -avoid-version $(GJS_LIBS)
+libregress_scannerflags_includes = --include=Gio-2.0
+if ENABLE_CAIRO
+libregress_la_CFLAGS += $(GJS_CAIRO_CFLAGS)
+libregress_la_LDFLAGS +=  $(GJS_CAIRO_LIBS)
+libregress_scannerflags_includes += --include=cairo-1.0
+else
+libregress_la_CPPFLAGS += -D_GI_DISABLE_CAIRO
+endif
 nodist_libwarnlib_la_SOURCES = $(GI_DATADIR)/tests/warnlib.c $(GI_DATADIR)/tests/warnlib.h
 libwarnlib_la_CFLAGS = $(GJS_CFLAGS)
 libwarnlib_la_LDFLAGS = -avoid-version $(GJS_LIBS)
@@ -59,7 +62,8 @@ libgimarshallingtests_la_LDFLAGS = -avoid-version $(GJS_LIBS)
 
 # g-i doesn't ship these as shared libraries anymore; we build them here
 Regress-1.0.gir: libregress.la Makefile
-	$(AM_V_GEN) LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)" g-ir-scanner --include=cairo-1.0 --include=Gio-2.0 \
+	$(AM_V_GEN) LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)" g-ir-scanner $(libregress_scannerflags_includes) \
+	$(libregress_la_CPPFLAGS) \
 	--namespace=Regress --nsversion=1.0 \
 	--warn-all --warn-error \
 	--library=libregress.la \
@@ -73,7 +77,7 @@ CLEANFILES += Regress-1.0.gir Regress-1.0.typelib
 
 # g-i doesn't ship these as shared libraries anymore; we build them here
 WarnLib-1.0.gir: libwarnlib.la Makefile
-	$(AM_V_GEN) g-ir-scanner --include=cairo-1.0 --include=Gio-2.0 \
+	$(AM_V_GEN) g-ir-scanner --include=Gio-2.0 \
 	--namespace=WarnLib --nsversion=1.0 \
 	--identifier-prefix=WarnLib_ \
 	--symbol-prefix=warnlib_ \
@@ -111,6 +115,10 @@ TESTS_ENVIRONMENT =							\
 	GI_TYPELIB_PATH=$(builddir)					\
 	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)"	\
 	G_FILENAME_ENCODING=latin1	# ensure filenames are not utf8
+
+if !ENABLE_CAIRO
+TESTS_ENVIRONMENT += GJS_TEST_SKIP_CAIRO=1
+endif
 
 tests_dependencies = $(gjsnative_LTLIBRARIES) ${TEST_PROGS} Regress-1.0.typelib WarnLib-1.0.typelib GIMarshallingTests-1.0.typelib
 

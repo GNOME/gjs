@@ -266,6 +266,8 @@ main(int argc, char **argv)
             g_free(name);
             continue;
         }
+        if (g_str_has_prefix (name, "testCairo") && g_getenv ("GJS_TEST_SKIP_CAIRO"))
+            continue;
 
         /* pretty print, drop 'test' prefix and '.js' suffix from test name */
         test_name = g_strconcat("/js/", name + 4, NULL);

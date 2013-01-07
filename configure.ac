@@ -117,9 +117,6 @@ AS_IF([test x$with_cairo = xyes], [
 AM_CONDITIONAL(ENABLE_CAIRO, test x$with_cairo = xyes)
 PKG_CHECK_MODULES([GJS_GDBUS], [$gjs_gdbus_packages])
 
-AC_ARG_ENABLE(tests,[  --disable-tests           disable test libraries ], enable_tests=$enableval,enable_tests=yes)
-AM_CONDITIONAL(ENABLE_TESTS, test x$with_cairo = xyes && test x$enable_tests = xyes)
-
 PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
 
 GI_DATADIR=$($PKG_CONFIG --variable=gidatadir gobject-introspection-1.0)
