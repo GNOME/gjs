@@ -62,7 +62,6 @@ noinst_HEADERS +=		\
 	gjs/jsapi-private.h	\
 	gjs/profiler.h		\
 	gi/proxyutils.h		\
-	gjs/unit-test-utils.h	\
 	util/crash.h		\
 	util/error.h		\
 	util/glib.h		\
@@ -120,7 +119,6 @@ libgjs_la_SOURCES =		\
 	gjs/profiler.c		\
 	gjs/stack.c		\
 	gjs/type-module.c	\
-	gjs/unit-test-utils.c	\
 	util/error.c		\
 	util/glib.c		\
 	util/crash.c		\

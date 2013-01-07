@@ -1116,35 +1116,3 @@ gjs_context_define_string_array(GjsContext  *js_context,
 
     return TRUE;
 }
-
-#if GJS_BUILD_TESTS
-
-void
-gjstest_test_func_gjs_context_construct_destroy(void)
-{
-    GjsContext *context;
-
-    /* Construct twice just to possibly a case where global state from
-     * the first leaks.
-     */
-    context = gjs_context_new ();
-    g_object_unref (context);
-
-    context = gjs_context_new ();
-    g_object_unref (context);
-}
-
-void
-gjstest_test_func_gjs_context_construct_eval(void)
-{
-    GjsContext *context;
-    int estatus;
-    GError *error = NULL;
-
-    context = gjs_context_new ();
-    if (!gjs_context_eval (context, "1+1", -1, "<input>", &estatus, &error))
-        g_error ("%s", error->message);
-    g_object_unref (context);
-}
-
-#endif /* GJS_BUILD_TESTS */

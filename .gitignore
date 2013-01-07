@@ -26,10 +26,6 @@ gjs-internals-1.0.pc
 gjs-gi-1.0.pc
 gjs-tests
 gjs-unit
-gjstest.c
-gjstest.c.stamp
-gjstest.h
-gjstest.h.stamp
 gjs/gjs.stp
 gjs_gi_probes.h
 install-sh

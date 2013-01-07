@@ -7,7 +7,6 @@ TEST_PROGS += gjs-tests
 endif
 
 gjs_tests_CFLAGS =				\
-	-include $(top_srcdir)/test/test.h	\
 	$(AM_CFLAGS)				\
 	-DGJS_COMPILATION			\
 	$(GJSTESTS_CFLAGS)			\
@@ -21,23 +20,7 @@ gjs_tests_LDADD =		\
 	$(GJSTESTS_LIBS)
 
 gjs_tests_SOURCES =		\
-	test/gjs-tests.c	\
-	test/test.h		\
-	$(gjstest_files_with_tests)
-
-nodist_gjs_tests_SOURCES =	\
-	gjstest.c		\
-	gjstest.h
-
-## make-tests always updates the ".stamp" files, but only modifies the
-## actual gjstest.[hc] if they change. make-tests creates both
-## .h.stamp and .c.stamp but if we listed both, make would run
-## make-tests twice.
-gjstest.h.stamp : scripts/make-tests $(gjstest_files_with_tests)
-	$(TESTS_ENVIRONMENT) $(top_srcdir)/scripts/make-tests . $(gjstest_files_with_tests)
-
-gjstest.h gjstest.c : gjstest.h.stamp
-	@true
+	test/gjs-tests.c
 
 if ENABLE_TESTS
 TEST_PROGS += gjs-unit
@@ -56,16 +39,6 @@ gjs_unit_LDADD =		\
 gjs_unit_LDFLAGS=-export-dynamic -rdynamic
 gjs_unit_SOURCES =	\
 	test/gjs-unit.c
-
-
-BUILT_SOURCES += $(nodist_gjs_tests_SOURCES)
-CLEANFILES +=				\
-	$(nodist_gjs_tests_SOURCES)	\
-	gjstest.c.stamp			\
-	gjstest.h.stamp
-
-EXTRA_DIST +=			\
-	scripts/make-tests
 
 # noinst_ always builds a static library
 if ENABLE_TESTS

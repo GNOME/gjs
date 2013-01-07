@@ -240,32 +240,3 @@ gjs_unichar_from_string (JSContext *context,
     }
     return FALSE;
 }
-
-#if GJS_BUILD_TESTS
-#include "unit-test-utils.h"
-#include <string.h>
-
-void
-gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(void)
-{
-    GjsUnitTestFixture fixture;
-    JSContext *context;
-    const char *utf8_string = "\303\211\303\226 foobar \343\203\237";
-    char *utf8_result;
-    jsval js_string;
-
-    _gjs_unit_test_fixture_begin(&fixture);
-    context = fixture.context;
-
-    g_assert(gjs_string_from_utf8(context, utf8_string, -1, &js_string) == JS_TRUE);
-    g_assert(JSVAL_IS_STRING(js_string));
-    g_assert(gjs_string_to_utf8(context, js_string, &utf8_result) == JS_TRUE);
-
-    _gjs_unit_test_fixture_finish(&fixture);
-
-    g_assert(g_str_equal(utf8_string, utf8_result));
-
-    g_free(utf8_result);
-}
-
-#endif /* GJS_BUILD_TESTS */

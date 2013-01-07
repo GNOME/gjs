@@ -245,20 +245,3 @@ gjs_dumpstack(void)
   }
   g_list_free(contexts);
 }
-
-#if GJS_BUILD_TESTS
-void
-gjstest_test_func_gjs_stack_dump(void)
-{
-  GjsContext *context;
-
-  /* TODO this test could be better - maybe expose dumpstack as a JS API
-   * so that we have a JS stack to dump?  At least here we're getting some
-   * coverage.
-   */
-  context = gjs_context_new();
-  gjs_dumpstack();
-  g_object_unref(context);
-  gjs_dumpstack();
-}
-#endif /* GJS_BUILD_TESTS */
