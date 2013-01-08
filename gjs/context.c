@@ -528,9 +528,8 @@ set_c_strings_are_utf8_if_needed (void)
 {
     static gsize init = 0;
     if (g_once_init_enter (&init)) {
-        gsize one = 1;
         JS_SetCStringsAreUTF8();
-        g_once_init_leave (&init, &one);
+        g_once_init_leave (&init, 1);
     }
 }
 
