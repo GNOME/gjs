@@ -1366,9 +1366,8 @@ static struct JSClass gjs_function_class = {
     JS_ConvertStub,
     function_finalize,
     NULL,
-    NULL,
     function_call,
-    NULL, NULL, NULL, NULL, NULL
+    NULL, NULL, NULL
 };
 
 static JSPropertySpec gjs_function_proto_props[] = {
