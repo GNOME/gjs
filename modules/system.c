@@ -104,6 +104,19 @@ gjs_gc(JSContext *context,
     return JS_TRUE;
 }
 
+static JSBool
+gjs_exit(JSContext *context,
+         unsigned   argc,
+         jsval     *vp)
+{
+    jsval *argv = JS_ARGV(cx, vp);
+    gint32 ecode;
+    if (!gjs_parse_args(context, "exit", "i", argc, argv, &ecode))
+        return JS_FALSE;
+    exit(ecode);
+    return JS_TRUE;
+}
+
 JSBool
 gjs_js_define_system_stuff(JSContext *context,
                            JSObject  *module)
@@ -129,6 +142,12 @@ gjs_js_define_system_stuff(JSContext *context,
     if (!JS_DefineFunction(context, module,
                            "gc",
                            (JSNative) gjs_gc,
+                           0, GJS_MODULE_PROP_FLAGS))
+        return JS_FALSE;
+
+    if (!JS_DefineFunction(context, module,
+                           "exit",
+                           (JSNative) gjs_exit,
                            0, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
