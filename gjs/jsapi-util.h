@@ -145,8 +145,7 @@ static struct JSClass gjs_##cname##_class = { \
     gjs_##cname##_finalize, \
     NULL, \
     NULL, \
-    NULL, \
-    NULL, NULL, NULL, NULL, NULL \
+    NULL, NULL, NULL \
 }; \
 jsval gjs_##cname##_create_proto(JSContext *context, JSObject *module, const char *proto_name, JSObject *parent) \
 { \

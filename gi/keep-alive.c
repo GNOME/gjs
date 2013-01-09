@@ -150,7 +150,6 @@ keep_alive_trace(JSTracer *tracer,
  */
 static struct JSClass gjs_keep_alive_class = {
     "__private_GjsKeepAlive", /* means "new __private_GjsKeepAlive()" works */
-    JSCLASS_MARK_IS_TRACE | /* TraceOp not MarkOp */
     JSCLASS_HAS_PRIVATE,
     JS_PropertyStub,
     JS_PropertyStub,
@@ -164,10 +163,7 @@ static struct JSClass gjs_keep_alive_class = {
     NULL,
     NULL,
     NULL,
-    NULL,
-    NULL,
-    JS_CLASS_TRACE(keep_alive_trace),
-    NULL
+    keep_alive_trace,
 };
 
 static JSPropertySpec gjs_keep_alive_proto_props[] = {

@@ -940,8 +940,7 @@ static struct JSClass gjs_boxed_class = {
     boxed_finalize,
     NULL,
     NULL,
-    NULL,
-    NULL, NULL, NULL, NULL, NULL
+    NULL, NULL, NULL
 };
 
 static JSPropertySpec gjs_boxed_proto_props[] = {

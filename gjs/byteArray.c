@@ -65,16 +65,15 @@ static struct JSClass gjs_byte_array_class = {
     JSCLASS_NEW_RESOLVE,
     JS_PropertyStub,
     JS_PropertyStub,
-    byte_array_get_prop,
-    byte_array_set_prop,
+    (JSPropertyOp)byte_array_get_prop,
+    (JSStrictPropertyOp)byte_array_set_prop,
     JS_EnumerateStub,
     (JSResolveOp) byte_array_new_resolve, /* cast due to new sig */
     JS_ConvertStub,
     byte_array_finalize,
     NULL,
     NULL,
-    NULL,
-    NULL, NULL, NULL, NULL, NULL
+    NULL, NULL, NULL
 };
 
 JSBool
