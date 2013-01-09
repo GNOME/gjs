@@ -32,20 +32,8 @@ function countProperties(obj) {
 }
 
 function _copyProperty(source, dest, property) {
-    let getterFunc = source.__lookupGetter__(property);
-    let setterFunc = source.__lookupSetter__(property);
-
-    if (getterFunc) {
-        dest.__defineGetter__(property, getterFunc);
-    }
-
-    if (setterFunc) {
-        dest.__defineSetter__(property, setterFunc);
-    }
-
-    if (!setterFunc && !getterFunc) {
-        dest[property] = source[property];
-    }
+    let desc = Object.getOwnPropertyDescriptor(source, property);
+    Object.defineProperty(dest, property, desc);
 }
 
 function copyProperties(source, dest) {
@@ -118,17 +106,10 @@ function bind(obj, callback) {
 }
 
 function defineAccessorProperty(object, name, getter, setter) {
-    if (Object.defineProperty) { // ECMAScript 5
-	Object.defineProperty(object, name, { get: getter,
-					      set: setter,
-					      configurable: true,
-					      enumerable: true });
-	return;
-    }
-
-    // fallback to deprecated way
-    object.__defineGetter__(name, getter);
-    object.__defineSetter__(name, setter);
+    Object.defineProperty(object, name, { get: getter,
+					  set: setter,
+					  configurable: true,
+					  enumerable: true });
 }
 
 // Class magic
