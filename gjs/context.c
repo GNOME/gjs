@@ -573,7 +573,7 @@ gjs_context_constructor (GType                  type,
      *
      * JSOPTION_STRICT: Report warnings to error reporter function.
      */
-    options_flags = JSOPTION_DONT_REPORT_UNCAUGHT | JSOPTION_STRICT;
+    options_flags = JSOPTION_DONT_REPORT_UNCAUGHT | JSOPTION_STRICT | JSOPTION_ALLOW_XML;
 
 #ifdef JSOPTION_JIT
     if (!g_getenv("GJS_DISABLE_JIT")) {
