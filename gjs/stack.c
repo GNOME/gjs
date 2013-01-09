@@ -100,15 +100,16 @@ format_frame(JSContext* cx, JSStackFrame* fp,
 
     (void)JS_EnterLocalRootScope(cx);
 
-    if (!JS_IsScriptFrame(cx, fp)) {
-        g_string_append_printf(buf, "%d [native frame]\n", num);
-        goto out;
-    }
-
     /* get the info for this stack frame */
 
     script = JS_GetFrameScript(cx, fp);
     pc = JS_GetFramePC(cx, fp);
+
+    if (!script) {
+        g_string_append_printf(buf, "%d [native frame]\n", num);
+        goto out;
+    }
+
 
     if (script && pc) {
         filename = JS_GetScriptFilename(cx, script);
@@ -143,7 +144,6 @@ format_frame(JSContext* cx, JSStackFrame* fp,
         char *name = NULL;
         char *value = NULL;
         JSPropertyDesc* desc = &call_props.array[i];
-        if(desc->flags & JSPD_ARGUMENT) {
             name = jsvalue_to_string(cx, desc->id, &is_string);
             if(!is_string) {
                 g_free(name);
@@ -159,7 +159,6 @@ format_frame(JSContext* cx, JSStackFrame* fp,
                                    value ? value : "?unknown?",
                                    is_string ? "\"" : "");
             named_arg_count++;
-        }
         g_free(name);
         g_free(value);
     }

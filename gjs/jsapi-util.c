@@ -102,7 +102,7 @@ gboolean
 gjs_init_context_standard (JSContext       *context)
 {
     JSObject *global;
-    global = JS_NewCompartmentAndGlobalObject(context, &global_class, NULL);
+    global = JS_NewGlobalObject(context, &global_class, NULL);
     if (global == NULL)
         return FALSE;
     if (!JS_InitStandardClasses(context, global))
