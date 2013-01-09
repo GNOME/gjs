@@ -956,9 +956,9 @@ enum ByteArrayTinyId {
 
 static JSPropertySpec gjs_byte_array_proto_props[] = {
     { "length", BYTE_ARRAY_TINY_ID_LENGTH,
-      JSPROP_PERMANENT | JSPROP_SHARED,
-      byte_array_length_getter,
-      byte_array_length_setter
+      JSPROP_PERMANENT,
+      (JSPropertyOp)byte_array_length_getter,
+      (JSStrictPropertyOp)byte_array_length_setter
     },
     { NULL }
 };
