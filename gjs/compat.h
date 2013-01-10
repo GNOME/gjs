@@ -45,6 +45,16 @@ G_BEGIN_DECLS
  * See https://bugzilla.gnome.org/show_bug.cgi?id=622896 for some initial discussion.
  */
 
+#define JSVAL_IS_OBJECT(obj) (JSVAL_IS_NULL(obj) || !JSVAL_IS_PRIMITIVE(obj))
+
+static JSBool JS_NewNumberValue(JSContext *cx, double d, jsval *rval)
+    {
+        *rval = JS_NumberValue(d);
+        if (JSVAL_IS_NUMBER(*rval))
+            return JS_TRUE;
+        return JS_FALSE;
+    }
+
 /**
  * GJS_NATIVE_CONSTRUCTOR_DECLARE:
  * Prototype a constructor.
