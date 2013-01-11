@@ -56,7 +56,7 @@ static void     gjs_context_set_property      (GObject               *object,
                                                   guint                  prop_id,
                                                   const GValue          *value,
                                                   GParamSpec            *pspec);
-static JSBool gjs_on_context_gc (JSContext *cx,
+static JSBool gjs_on_context_gc (JSRuntime *rt,
                                  JSGCStatus status);
 
 struct _GjsContext {
@@ -665,7 +665,7 @@ gjs_context_constructor (GType                  type,
     js_context->profiler = gjs_profiler_new(js_context->runtime);
 
     if (js_context->gc_notifications_enabled)
-        JS_SetGCCallback(js_context->context, gjs_on_context_gc);
+        JS_SetGCCallback(js_context->runtime, gjs_on_context_gc);
 
     JS_EndRequest(js_context->context);
 
@@ -870,7 +870,7 @@ gjs_context_maybe_gc (GjsContext  *context)
 void
 gjs_context_gc (GjsContext  *context)
 {
-    JS_GC(context->context);
+    JS_GC(context->runtime);
 }
 
 static gboolean
@@ -886,10 +886,11 @@ gjs_context_idle_emit_gc (gpointer data)
 }
 
 static JSBool
-gjs_on_context_gc (JSContext *cx,
+gjs_on_context_gc (JSRuntime *rt,
                    JSGCStatus status)
 {
-    GjsContext *gjs_context = JS_GetContextPrivate(cx);
+    JSContext *context = JS_GetRuntimePrivate(rt);
+    GjsContext *gjs_context = JS_GetContextPrivate(context);
 
     if (status == JSGC_END) {
         if (gjs_context->idle_emit_gc_id == 0)

@@ -102,7 +102,7 @@ gjs_gc(JSContext *context,
     jsval *argv = JS_ARGV(cx, vp);
     if (!gjs_parse_args(context, "gc", "", argc, argv))
         return JS_FALSE;
-    JS_GC(context);
+    JS_GC(JS_GetRuntime(context));
     return JS_TRUE;
 }
 
