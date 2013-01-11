@@ -111,7 +111,7 @@ gjstest_test_func_gjs_jsapi_util_array(void)
         gjs_rooted_array_append(context, array, value);
     }
 
-    JS_GC(context);
+    JS_GC(JS_GetRuntime(context));
 
     for (i = 0; i < N_ELEMS; i++) {
         char *ascii;
