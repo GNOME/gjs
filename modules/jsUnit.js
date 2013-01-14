@@ -450,6 +450,7 @@ function jsUnitSetOnLoad(windowRef, onloadHandler)
 // GJS: entry point to run all functions named as test*, surrounded by
 // calls to setUp() and tearDown()
 function gjstestRun(window_, setUp, tearDown) {
+  var propName;
   var rv = 0;
   var failures = [];
   if (!window_) window_ = window;
