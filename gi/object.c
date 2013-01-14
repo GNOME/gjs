@@ -1182,7 +1182,7 @@ real_connect_func(JSContext *context,
                              G_OBJECT_TYPE(priv->gobj),
                              &signal_id,
                              &signal_detail,
-                             FALSE)) {
+                             TRUE)) {
         gjs_throw(context, "No signal '%s' on object '%s'",
                      signal_name,
                      g_type_name(G_OBJECT_TYPE(priv->gobj)));
