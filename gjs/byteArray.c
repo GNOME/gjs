@@ -242,7 +242,7 @@ byte_array_length_getter(JSContext *context,
                          jsval     *value_p)
 {
     ByteArrayInstance *priv;
-    gsize len;
+    gsize len = 0;
 
     priv = priv_from_js(context, obj);
 
