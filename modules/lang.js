@@ -31,9 +31,15 @@ function countProperties(obj) {
     return count;
 }
 
+function getPropertyDescriptor(obj, property) {
+    if (obj.hasOwnProperty(property))
+        return Object.getOwnPropertyDescriptor(obj, property);
+    return getPropertyDescriptor(Object.getPrototypeOf(obj), property);
+}
+
 function _copyProperty(source, dest, property) {
-    let desc = Object.getOwnPropertyDescriptor(source, property);
-    Object.defineProperty(dest, property, desc);
+    let descriptor = getPropertyDescriptor(source, property);
+    Object.defineProperty(dest, property, descriptor);
 }
 
 function copyProperties(source, dest) {
