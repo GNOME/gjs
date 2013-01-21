@@ -61,6 +61,8 @@ main(int argc, char **argv)
     if (!g_option_context_parse(context, &argc, &argv, &error))
         g_error("option parsing failed: %s", error->message);
 
+    g_option_context_free (context);
+
     setlocale(LC_ALL, "");
 
     command_line = g_strjoinv(" ", argv);
