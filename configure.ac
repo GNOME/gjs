@@ -63,7 +63,7 @@ fi
 AM_CONDITIONAL([ENABLE_COVERAGE], [test x$enable_coverage = xyes])
 
 # Checks for libraries.
-m4_define(glib_required_version, 2.35.0)
+m4_define(glib_required_version, 2.35.6)
 
 AC_CHECK_HEADERS([malloc.h])
 AC_CHECK_FUNCS(mallinfo)
