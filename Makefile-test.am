@@ -60,48 +60,25 @@ nodist_libgimarshallingtests_la_SOURCES = $(GI_DATADIR)/tests/gimarshallingtests
 libgimarshallingtests_la_CFLAGS = $(GJS_CFLAGS)
 libgimarshallingtests_la_LDFLAGS = -avoid-version $(GJS_LIBS)
 
-# g-i doesn't ship these as shared libraries anymore; we build them here
-Regress-1.0.gir: libregress.la Makefile
-	$(AM_V_GEN) LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)" g-ir-scanner $(libregress_scannerflags_includes) \
-	$(libregress_la_CPPFLAGS) \
-	--namespace=Regress --nsversion=1.0 \
-	--warn-all --warn-error \
-	--library=libregress.la \
-	--libtool="$(top_builddir)/libtool" \
-	--output $@ \
-	$(nodist_libregress_la_SOURCES)
-Regress-1.0.typelib: Regress-1.0.gir Makefile
-	$(AM_V_GEN) g-ir-compiler $< -o $@
+Regress-1.0.gir: libregress.la
+Regress_1_0_gir_LIBS = libregress.la
+Regress_1_0_gir_FILES = $(nodist_libregress_la_SOURCES)
+Regress_1_0_gir_SCANNERFLAGS = --warn-all --warn-error $(libregress_scannerflags_includes)
+INTROSPECTION_GIRS += Regress-1.0.gir
 
-CLEANFILES += Regress-1.0.gir Regress-1.0.typelib
+WarnLib-1.0.gir: libwarnlib.la
+WarnLib_1_0_gir_LIBS = libwarnlib.la
+WarnLib_1_0_gir_INCLUDES = Gio-2.0
+WarnLib_1_0_gir_FILES = $(nodist_libwarnlib_la_SOURCES)
+WarnLib_1_0_gir_SCANNERFLAGS = --c-include="warnlib.h" --symbol-prefix=warnlib_
+INTROSPECTION_GIRS += WarnLib-1.0.gir
 
-# g-i doesn't ship these as shared libraries anymore; we build them here
-WarnLib-1.0.gir: libwarnlib.la Makefile
-	$(AM_V_GEN) g-ir-scanner --include=Gio-2.0 \
-	--namespace=WarnLib --nsversion=1.0 \
-	--identifier-prefix=WarnLib_ \
-	--symbol-prefix=warnlib_ \
-	--library=libwarnlib.la \
-	--libtool="$(top_builddir)/libtool" \
-	--output $@ \
-	$(nodist_libwarnlib_la_SOURCES)
-WarnLib-1.0.typelib: WarnLib-1.0.gir Makefile
-	$(AM_V_GEN) g-ir-compiler $< -o $@
-
-CLEANFILES += WarnLib-1.0.gir WarnLib-1.0.typelib
-
-GIMarshallingTests-1.0.gir: libgimarshallingtests.la Makefile
-	$(AM_V_GEN) LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)" g-ir-scanner --include=Gio-2.0 \
-	--namespace=GIMarshallingTests --nsversion=1.0 --symbol-prefix=gi_marshalling_tests \
-	--warn-all --warn-error \
-	--library=libgimarshallingtests.la \
-	--libtool="$(top_builddir)/libtool" \
-	--output $@ \
-	$(nodist_libgimarshallingtests_la_SOURCES)
-GIMarshallingTests-1.0.typelib: GIMarshallingTests-1.0.gir Makefile
-	$(AM_V_GEN) g-ir-compiler $< -o $@
-
-CLEANFILES += GIMarshallingTests-1.0.gir GIMarshallingTests-1.0.typelib
+GIMarshallingTests-1.0.gir: libgimarshallingtests.la
+GIMarshallingTests_1_0_gir_LIBS = libgimarshallingtests.la
+GIMarshallingTests_1_0_gir_INCLUDES = Gio-2.0
+GIMarshallingTests_1_0_gir_FILES = $(nodist_libgimarshallingtests_la_SOURCES)
+GIMarshallingTests_1_0_gir_SCANNERFLAGS = --symbol-prefix=gi_marshalling_tests --warn-all --warn-error
+INTROSPECTION_GIRS += GIMarshallingTests-1.0.gir
 
 ########################################################################
 TESTS_ENVIRONMENT =							\
