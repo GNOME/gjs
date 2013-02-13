@@ -73,8 +73,6 @@ gjs_srcs =				\
 	gjs/runtime.cpp			\
 	gjs/runtime.h			\
 	gjs/stack.cpp			\
-	gjs/type-module.cpp		\
-	gjs/type-module.h		\
 	modules/modules.cpp		\
 	modules/modules.h		\
 	util/error.cpp			\

@@ -48,7 +48,6 @@
 #include "gjs/jsapi-wrapper.h"
 #include "gjs/context-private.h"
 #include "gjs/mem.h"
-#include "gjs/type-module.h"
 
 #include <util/log.h>
 #include <util/hash-x32.h>
@@ -2895,7 +2894,6 @@ gjs_register_interface(JSContext *cx,
     guint32 i, n_interfaces, n_properties;
     GType *iface_types;
     GType interface_type;
-    GTypeModule *type_module;
     GTypeInfo type_info = {
         sizeof (GTypeInterface), /* class_size */
 
@@ -2939,12 +2937,8 @@ gjs_register_interface(JSContext *cx,
         return false;
     }
 
-    type_module = G_TYPE_MODULE(gjs_type_module_get());
-    interface_type = g_type_module_register_type(type_module,
-                                                 G_TYPE_INTERFACE,
-                                                 name,
-                                                 &type_info,
-                                                 (GTypeFlags) 0);
+    interface_type = g_type_register_static(G_TYPE_INTERFACE, name, &type_info,
+                                            (GTypeFlags) 0);
     g_clear_pointer(&name, g_free);
 
     g_type_set_qdata(interface_type, gjs_is_custom_type_quark(), GINT_TO_POINTER(1));
@@ -2976,7 +2970,6 @@ gjs_register_type(JSContext *cx,
     gchar *name;
     GType instance_type, parent_type;
     GTypeQuery query;
-    GTypeModule *type_module;
     ObjectInstance *parent_priv;
     GTypeInfo type_info = {
         0, /* class_size */
@@ -3043,12 +3036,8 @@ gjs_register_type(JSContext *cx,
     type_info.class_size = query.class_size;
     type_info.instance_size = query.instance_size;
 
-    type_module = G_TYPE_MODULE (gjs_type_module_get());
-    instance_type = g_type_module_register_type(type_module,
-                                                parent_type,
-                                                name,
-                                                &type_info,
-                                                (GTypeFlags) 0);
+    instance_type = g_type_register_static(parent_type, name, &type_info,
+                                           (GTypeFlags) 0);
 
     g_free(name);
 
