@@ -153,6 +153,8 @@ check_context_valid(Closure *c)
  * is under our control, it's unlikely that g_closure_invalidate() will ever
  * be called by anyone else, but in case it ever does, it's slightly better
  * to remove the "keep alive" here rather than in the finalize notifier.
+ *
+ * Unlike "dispose" invalidation only happens once.
  */
 static void
 closure_invalidated(gpointer data,
@@ -162,6 +164,7 @@ closure_invalidated(gpointer data,
 
     c = (Closure*) closure;
 
+    GJS_DEC_COUNTER(closure);
     gjs_debug_closure("Invalidating closure %p which calls object %p",
                       closure, c->obj);
 
@@ -238,12 +241,7 @@ closure_set_invalid(gpointer  data,
     self->obj = NULL;
     self->context = NULL;
     self->runtime = NULL;
-}
 
-static void
-closure_finalized(gpointer data,
-                  GClosure *closure)
-{
     GJS_DEC_COUNTER(closure);
 }
 
@@ -364,10 +362,6 @@ gjs_closure_new(JSContext  *context,
     c->unref_on_global_object_finalized = FALSE;
 
     GJS_INC_COUNTER(closure);
-    /* the finalize notifier right now is purely to track the counter
-     * of how many closures are alive.
-     */
-    g_closure_add_finalize_notifier(&c->base, NULL, closure_finalized);
 
     if (root_function) {
         /* Fully manage closure lifetime if so asked */
