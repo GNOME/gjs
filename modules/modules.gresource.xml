@@ -18,5 +18,6 @@
     <file>modules/jsUnit.js</file>
     <file>modules/signals.js</file>
     <file>modules/format.js</file>
+    <file>modules/package.js</file>
   </gresource>
 </gresources>

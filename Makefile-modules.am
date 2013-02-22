@@ -1,5 +1,6 @@
 
 NATIVE_MODULES = libconsole.la libsystem.la libmodules_resources.la
+
 if ENABLE_CAIRO
 NATIVE_MODULES += libcairoNative.la
 endif
