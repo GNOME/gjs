@@ -56,7 +56,6 @@ print_help (GOptionContext *context,
 int
 main(int argc, char **argv)
 {
-    char *command_line;
     GOptionContext *context;
     GError *error = NULL;
     GjsContext *js_context;
@@ -87,9 +86,6 @@ main(int argc, char **argv)
     g_option_context_free (context);
 
     setlocale(LC_ALL, "");
-
-    command_line = g_strjoinv(" ", argv);
-    g_free(command_line);
 
     if (command != NULL) {
         script = command;
