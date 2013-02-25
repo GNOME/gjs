@@ -63,7 +63,7 @@ libgimarshallingtests_la_LDFLAGS = -avoid-version $(GJS_LIBS)
 Regress-1.0.gir: libregress.la
 Regress_1_0_gir_LIBS = libregress.la
 Regress_1_0_gir_FILES = $(nodist_libregress_la_SOURCES)
-Regress_1_0_gir_SCANNERFLAGS = --warn-all --warn-error $(libregress_scannerflags_includes)
+Regress_1_0_gir_SCANNERFLAGS = --warn-all --warn-error $(libregress_scannerflags_includes) $(libregress_la_CPPFLAGS)
 INTROSPECTION_GIRS += Regress-1.0.gir
 
 WarnLib-1.0.gir: libwarnlib.la

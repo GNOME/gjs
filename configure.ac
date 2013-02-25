@@ -96,25 +96,20 @@ GOBJECT_INTROSPECTION_REQUIRE([1.33.10])
 
 common_packages="gmodule-2.0 gthread-2.0 gio-2.0 >= glib_required_version mozjs185"
 gjs_packages="gobject-introspection-1.0 libffi $common_packages"
-gjs_cairo_gobject_packages="cairo-gobject $common_packages"
-gjs_cairo_packages="cairo $common_packages"
+gjs_cairo_packages="cairo cairo-gobject $common_packages"
 gjs_gdbus_packages="gobject-2.0 >= glib_required_version gio-2.0"
 # gjs-tests links against everything
 gjstests_packages="$gjstests_packages $gjs_packages"
 
 PKG_CHECK_MODULES([GOBJECT], [gobject-2.0 >= glib_required_version])
 PKG_CHECK_MODULES([GJS], [$gjs_packages])
-# Prefer cairo-gobject if we have it
 AC_ARG_WITH(cairo,
 	    AS_HELP_STRING([--without-cairo], [Use cairo @<:@default=yes@:>@]),
 	    [], [with_cairo=yes])
 AS_IF([test x$with_cairo = xyes], [
-  PKG_CHECK_MODULES([GJS_CAIRO], [$gjs_cairo_gobject_packages], have_cairo_gobject=yes, have_cairo_gobject=no)
-  AS_IF([test x${have_cairo_gobject} != xyes], [
-    PKG_CHECK_MODULES([GJS_CAIRO], [$gjs_cairo_packages])
+  PKG_CHECK_MODULES([GJS_CAIRO], [$gjs_cairo_packages], have_cairo=yes, have_cairo=no)
   ])
-])
-AM_CONDITIONAL(ENABLE_CAIRO, test x$with_cairo = xyes)
+AM_CONDITIONAL(ENABLE_CAIRO, test x$have_cairo = xyes)
 PKG_CHECK_MODULES([GJS_GDBUS], [$gjs_gdbus_packages])
 
 PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
