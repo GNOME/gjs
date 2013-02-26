@@ -82,6 +82,8 @@ GIMarshallingTests_1_0_gir_FILES = $(nodist_libgimarshallingtests_la_SOURCES)
 GIMarshallingTests_1_0_gir_SCANNERFLAGS = --symbol-prefix=gi_marshalling_tests --warn-all --warn-error
 TEST_GIRS += GIMarshallingTests-1.0.gir
 
+$(foreach gir,$(TEST_GIRS),$(eval $(call introspection-scanner,$(gir))))
+
 ########################################################################
 TESTS_ENVIRONMENT =							\
 	TOP_SRCDIR=$(top_srcdir)					\
