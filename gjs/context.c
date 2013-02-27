@@ -343,6 +343,8 @@ gjs_context_class_init(GjsContextClass *klass)
                                       NULL,
                                       G_TYPE_NONE, 0);
 
+    JS_SetCStringsAreUTF8();
+
     gjs_register_native_module("byteArray", gjs_define_byte_array_stuff, 0);
     gjs_register_native_module("_gi", gjs_define_private_gi_stuff, 0);
 }
@@ -523,16 +525,6 @@ static JSLocaleCallbacks gjs_locale_callbacks =
     gjs_locale_to_unicode
 };
 
-static void
-set_c_strings_are_utf8_if_needed (void)
-{
-    static gsize init = 0;
-    if (g_once_init_enter (&init)) {
-        JS_SetCStringsAreUTF8();
-        g_once_init_leave (&init, 1);
-    }
-}
-
 static GObject*
 gjs_context_constructor (GType                  type,
                          guint                  n_construct_properties,
@@ -546,8 +538,6 @@ gjs_context_constructor (GType                  type,
     object = (* G_OBJECT_CLASS (gjs_context_parent_class)->constructor) (type,
                                                                          n_construct_properties,
                                                                          construct_params);
-
-    set_c_strings_are_utf8_if_needed ();
 
     js_context = GJS_CONTEXT(object);
 
