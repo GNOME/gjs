@@ -17,36 +17,33 @@ dist_gjsjs_DATA +=		\
 	modules/promise.js	\
 	modules/format.js
 
-gjsnative_LTLIBRARIES += console.la system.la
-
+NATIVE_MODULES = libconsole.la libsystem.la
 if ENABLE_CAIRO
 dist_gjsjs_DATA +=		\
 	modules/cairo.js	\
 	$(NULL)
-gjsnative_LTLIBRARIES += cairoNative.la
+NATIVE_MODULES += libcairoNative.la
 endif
+
+noinst_LTLIBRARIES += $(NATIVE_MODULES)
+libgjs_la_LIBADD += $(NATIVE_MODULES)
 
 JS_NATIVE_MODULE_CFLAGS =	\
         $(AM_CFLAGS)		\
 	-DGJS_COMPILATION	\
         $(GJS_CFLAGS)
 JS_NATIVE_MODULE_LIBADD =	\
-        libgjs.la		\
         $(GJS_LIBS)
-JS_NATIVE_MODULE_LDFLAGS =	\
-	$(EXTRA_LINK_FLAGS)	\
-        -module -avoid-version -no-undefined -rdynamic
 
-cairoNative_la_CFLAGS =                         \
+libcairoNative_la_CFLAGS =                      \
         $(JS_NATIVE_MODULE_CFLAGS)              \
         $(GJS_CAIRO_CFLAGS)                     \
         $(GJS_CFLAGS)
-cairoNative_la_LIBADD =                         \
+libcairoNative_la_LIBADD =                      \
         $(JS_NATIVE_MODULE_LIBADD)              \
         $(GJS_CAIRO_LIBS)                       \
         $(GJS_LIBS)
-cairoNative_la_LDFLAGS = $(JS_NATIVE_MODULE_LDFLAGS)
-cairoNative_la_SOURCES =                        \
+libcairoNative_la_SOURCES =                     \
 	modules/cairo-private.h                 \
 	modules/cairo-context.c                 \
 	modules/cairo-path.c                 	\
@@ -63,18 +60,16 @@ cairoNative_la_SOURCES =                        \
 	modules/cairo-solid-pattern.c           \
 	modules/cairo.c
 
-system_la_CFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
-system_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD)
-system_la_LDFLAGS = $(JS_NATIVE_MODULE_LDFLAGS)
-system_la_SOURCES =				\
+libsystem_la_CFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
+libsystem_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD)
+libsystem_la_SOURCES =				\
 	modules/system.h			\
 	modules/system.c
 
-console_la_CFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
-console_la_LIBADD =				\
+libconsole_la_CFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
+libconsole_la_LIBADD =				\
 	$(JS_NATIVE_MODULE_LIBADD)		\
 	$(READLINE_LIBS)
-console_la_LDFLAGS = $(JS_NATIVE_MODULE_LDFLAGS)
-console_la_SOURCES =				\
+libconsole_la_SOURCES =				\
 	modules/console.h			\
 	modules/console.c
