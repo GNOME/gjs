@@ -95,13 +95,9 @@ gboolean gjs_is_registered_native_module(JSContext  *context,
                                          JSObject   *parent,
                                          const char *name);
 
-/* called by importer.c to load a native module once it finds
- * it in the search path
- */
-JSBool gjs_import_native_module   (JSContext             *context,
-                                   JSObject              *module_obj,
-                                   const char            *filename);
-
+/* called by importer.c to load a statically linked native module */
+JSBool gjs_import_native_module (JSContext *context,
+                                 JSObject  *module_obj);
 
 G_END_DECLS
 

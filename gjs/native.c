@@ -183,35 +183,16 @@ gjs_is_registered_native_module(JSContext  *context,
  * gjs_import_native_module:
  * @context:
  * @module_obj:
- * @filename: filename or %NULL
  *
- * Imports a native module by g_module_open a shared library.
- * If @filename is %NULL, do not dlopen, assume the library
- * is already loaded in the modules hash table
+ * Return a native module that's been preloaded.
  */
 JSBool
-gjs_import_native_module(JSContext        *context,
-                         JSObject         *module_obj,
-                         const char       *filename)
+gjs_import_native_module(JSContext *context,
+                         JSObject  *module_obj)
 {
-    GModule *gmodule = NULL;
     GjsNativeModule *native_module;
     JSObject *parent;
     jsval tmp;
-
-    if (filename != NULL) {
-        /* Vital to load in global scope so any dependent libs
-         * are loaded into the main app. We don't want a second
-         * private copy of GTK or something.
-         */
-        gmodule = g_module_open(filename, 0);
-        if (gmodule == NULL) {
-            gjs_throw(context,
-                      "Failed to load '%s': %s",
-                      filename, g_module_error());
-            return JS_FALSE;
-        }
-    }
 
     /* dlopen() as a side effect should have registered us as
      * a native module. We just have to reverse-engineer
@@ -226,19 +207,8 @@ gjs_import_native_module(JSContext        *context,
         g_free(module_name);
     }
 
-    if (!native_module) {
-        if (gmodule)
-            g_module_close(gmodule);
+    if (!native_module)
         return JS_FALSE;
-    }
-
-    if (gmodule) {
-        /* make the module resident, which makes the close() a no-op
-         * (basically we leak the module permanently)
-         */
-        g_module_make_resident(gmodule);
-        g_module_close(gmodule);
-    }
 
     if (native_module->flags & GJS_NATIVE_SUPPLIES_MODULE_OBJ) {
 

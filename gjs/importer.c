@@ -231,14 +231,12 @@ cancel_import(JSContext  *context,
 static JSBool
 import_native_file(JSContext  *context,
                    JSObject   *obj,
-                   const char *name,
-                   const char *full_path)
+                   const char *name)
 {
     JSObject *module_obj;
     JSBool retval = JS_FALSE;
 
-    gjs_debug(GJS_DEBUG_IMPORTER,
-              "Importing '%s' from '%s'", name, full_path ? full_path : "<internal>");
+    gjs_debug(GJS_DEBUG_IMPORTER, "Importing '%s'", name);
 
     module_obj = JS_NewObject(context, NULL, NULL, NULL);
     if (module_obj == NULL) {
@@ -253,10 +251,10 @@ import_native_file(JSContext  *context,
     if (!define_import(context, obj, module_obj, name))
         return JS_FALSE;
 
-    if (!define_meta_properties(context, module_obj, full_path, name, obj))
+    if (!define_meta_properties(context, module_obj, NULL, name, obj))
         goto out;
 
-    if (!gjs_import_native_module(context, module_obj, full_path))
+    if (!gjs_import_native_module(context, module_obj))
         goto out;
 
     if (!finish_import(context, name))
@@ -495,7 +493,6 @@ do_import(JSContext  *context,
           const char *name)
 {
     char *filename;
-    char *native_filename;
     char *full_path;
     char *dirname = NULL;
     jsval search_path_val;
@@ -534,13 +531,12 @@ do_import(JSContext  *context,
     result = JS_FALSE;
 
     filename = g_strdup_printf("%s.js", name);
-    native_filename = g_strdup_printf("%s."G_MODULE_SUFFIX, name);
     full_path = NULL;
     directories = NULL;
 
     /* First try importing an internal module like byteArray */
     if (gjs_is_registered_native_module(context, obj, name) &&
-        import_native_file(context, obj, name, NULL)) {
+        import_native_file(context, obj, name)) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "successfully imported module '%s'", name);
         result = JS_TRUE;
@@ -648,25 +644,6 @@ do_import(JSContext  *context,
             goto out;
         }
 
-        /* Finally see if it's a native module */
-        g_free(full_path);
-        full_path = g_build_filename(dirname, native_filename,
-                                     NULL);
-
-        if (g_file_test(full_path, G_FILE_TEST_EXISTS)) {
-            if (import_native_file(context, obj, name, full_path)) {
-                gjs_debug(GJS_DEBUG_IMPORTER,
-                          "successfully imported module '%s'", name);
-                result = JS_TRUE;
-            }
-
-            /* Don't keep searching path if we fail to load the file for
-             * reasons other than it doesn't exist... i.e. broken files
-             * block searching for nonbroken ones
-             */
-            goto out;
-        }
-
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "JS import '%s' not found in %s",
                   name, dirname);
@@ -700,7 +677,6 @@ do_import(JSContext  *context,
 
     g_free(full_path);
     g_free(filename);
-    g_free(native_filename);
     g_free(dirname);
 
     if (!result &&
