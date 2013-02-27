@@ -184,7 +184,6 @@ gjs_is_registered_native_module(JSContext  *context,
  * @context:
  * @module_obj:
  * @filename: filename or %NULL
- * @flags_p:
  *
  * Imports a native module by g_module_open a shared library.
  * If @filename is %NULL, do not dlopen, assume the library
@@ -193,16 +192,12 @@ gjs_is_registered_native_module(JSContext  *context,
 JSBool
 gjs_import_native_module(JSContext        *context,
                          JSObject         *module_obj,
-                         const char       *filename,
-                         GjsNativeFlags *flags_p)
+                         const char       *filename)
 {
     GModule *gmodule = NULL;
     GjsNativeModule *native_module;
     JSObject *parent;
     jsval tmp;
-
-    if (flags_p)
-        *flags_p = 0;
 
     if (filename != NULL) {
         /* Vital to load in global scope so any dependent libs
@@ -236,9 +231,6 @@ gjs_import_native_module(JSContext        *context,
             g_module_close(gmodule);
         return JS_FALSE;
     }
-
-    if (flags_p)
-        *flags_p = native_module->flags;
 
     if (gmodule) {
         /* make the module resident, which makes the close() a no-op

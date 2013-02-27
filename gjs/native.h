@@ -100,8 +100,7 @@ gboolean gjs_is_registered_native_module(JSContext  *context,
  */
 JSBool gjs_import_native_module   (JSContext             *context,
                                    JSObject              *module_obj,
-                                   const char            *filename,
-                                   GjsNativeFlags      *flags_p);
+                                   const char            *filename);
 
 
 G_END_DECLS

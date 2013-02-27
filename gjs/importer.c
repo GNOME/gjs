@@ -235,7 +235,6 @@ import_native_file(JSContext  *context,
                    const char *full_path)
 {
     JSObject *module_obj;
-    GjsNativeFlags flags;
     JSBool retval = JS_FALSE;
 
     gjs_debug(GJS_DEBUG_IMPORTER,
@@ -257,7 +256,7 @@ import_native_file(JSContext  *context,
     if (!define_meta_properties(context, module_obj, full_path, name, obj))
         goto out;
 
-    if (!gjs_import_native_module(context, module_obj, full_path, &flags))
+    if (!gjs_import_native_module(context, module_obj, full_path))
         goto out;
 
     if (!finish_import(context, name))
