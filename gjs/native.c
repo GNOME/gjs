@@ -90,73 +90,6 @@ module_get_parent(JSContext *context,
     }
 }
 
-static char *
-get_module_name(JSContext *context,
-                JSObject  *module_obj,
-                jsval     *tmp)
-{
-    char *name;
-
-    if (gjs_object_get_property(context, module_obj, "__moduleName__", tmp) &&
-        JSVAL_IS_STRING(*tmp))
-        if (gjs_string_to_utf8(context, *tmp, &name))
-            return name;
-        else
-            return NULL;
-    else
-        return NULL;
-}
-
-static GjsNativeModule *
-lookup_native_module(JSContext  *context,
-                     JSObject   *parent,
-                     const char *name,
-                     gboolean    is_definition)
-{
-    GjsNativeModule *native_module;
-    GString *module_id;
-
-    module_id = g_string_new(name);
-    while (parent != NULL) {
-        char *name;
-        jsval tmp;
-
-        name = get_module_name(context, parent, &tmp);
-        if (name != NULL) {
-            g_string_prepend_c(module_id, '.');
-            g_string_prepend(module_id, name);
-            g_free(name);
-        }
-
-        /* Move up to parent */
-        parent = module_get_parent(context, parent);
-    }
-
-    if (is_definition)
-        gjs_debug(GJS_DEBUG_NATIVE,
-                  "Defining native module '%s'",
-                  module_id->str);
-
-    if (modules != NULL)
-        native_module = g_hash_table_lookup(modules, module_id->str);
-    else
-        native_module = NULL;
-
-    if (native_module == NULL) {
-        if (is_definition) {
-            gjs_throw(context,
-                      "No native module '%s' has registered itself",
-                      module_id->str);
-        }
-        g_string_free(module_id, TRUE);
-        return NULL;
-    }
-
-    g_string_free(module_id, TRUE);
-
-    return native_module;
-}
-
 /**
  * gjs_is_registered_native_module:
  * @context:
@@ -172,11 +105,10 @@ gjs_is_registered_native_module(JSContext  *context,
                                 JSObject   *parent,
                                 const char *name)
 {
-    GjsNativeModule *native_module;
+    if (modules == NULL)
+        return FALSE;
 
-    native_module = lookup_native_module(context, parent, name, FALSE);
-
-    return native_module != NULL;
+    return g_hash_table_lookup(modules, name) != NULL;
 }
 
 /**
@@ -194,13 +126,21 @@ gjs_import_native_module(JSContext *context,
     GjsNativeModule *native_module;
     JSObject *parent;
 
-    native_module = lookup_native_module (context,
-                                          module_get_parent(context, module_obj),
-                                          name,
-                                          TRUE);
+    gjs_debug(GJS_DEBUG_NATIVE,
+              "Defining native module '%s'",
+              name);
 
-    if (!native_module)
+    if (modules != NULL)
+        native_module = g_hash_table_lookup(modules, name);
+    else
+        native_module = NULL;
+
+    if (!native_module) {
+        gjs_throw(context,
+                  "No native module '%s' has registered itself",
+                  name);
         return JS_FALSE;
+    }
 
     if (native_module->flags & GJS_NATIVE_SUPPLIES_MODULE_OBJ) {
 
