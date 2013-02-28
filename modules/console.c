@@ -237,5 +237,3 @@ gjs_define_console_stuff(JSContext *context,
 
     return JS_TRUE;
 }
-
-GJS_REGISTER_NATIVE_MODULE("console", gjs_define_console_stuff);

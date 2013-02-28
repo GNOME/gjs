@@ -23,10 +23,8 @@
 #ifndef __CAIRO_PRIVATE_H__
 #define __CAIRO_PRIVATE_H__
 
+#include "cairo-module.h"
 #include <cairo.h>
-
-JSBool           gjs_js_define_cairo_stuff              (JSContext       *context,
-                                                         JSObject        *module);
 
 JSBool           gjs_cairo_check_status                 (JSContext       *context,
                                                          cairo_status_t   status,

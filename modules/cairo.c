@@ -123,6 +123,3 @@ gjs_js_define_cairo_stuff(JSContext *context,
 
     return JS_TRUE;
 }
-
-GJS_REGISTER_NATIVE_MODULE("cairoNative", gjs_js_define_cairo_stuff)
-

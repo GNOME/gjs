@@ -110,6 +110,9 @@ AS_IF([test x$with_cairo = xyes], [
   PKG_CHECK_MODULES([GJS_CAIRO], [$gjs_cairo_packages], have_cairo=yes, have_cairo=no)
   ])
 AM_CONDITIONAL(ENABLE_CAIRO, test x$have_cairo = xyes)
+AS_IF([test x$have_cairo = xyes], [
+  AC_DEFINE([ENABLE_CAIRO],[1],[Define if you want to build with cairo support])
+])
 PKG_CHECK_MODULES([GJS_GDBUS], [$gjs_gdbus_packages])
 
 PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])

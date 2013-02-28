@@ -119,6 +119,8 @@ libgjs_la_SOURCES =		\
 	gjs/profiler.c		\
 	gjs/stack.c		\
 	gjs/type-module.c	\
+	modules/modules.c	\
+	modules/modules.h	\
 	util/error.c		\
 	util/glib.c		\
 	util/crash.c		\

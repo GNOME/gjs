@@ -49,43 +49,11 @@ typedef enum {
 
 } GjsNativeFlags;
 
-/*
- * In a native module, you define a GjsDefineModuleFunc that
- * adds your stuff to module_obj.
- *
- * You then declare GJS_REGISTER_NATIVE_MODULE("my.module.path", my_module_func)
- *
- * This declaration will call gjs_register_native_module() when your
- * module is dlopen'd. We can't just use a well-known symbol name
- * in your module, because we need to dlopen modules with
- * global symbols.
- */
 
 typedef JSBool (* GjsDefineModuleFunc) (JSContext *context,
                                         JSObject  *module_obj);
 
-/* FIXME - Reuse glib/glib/gconstructor.h */
-#ifdef __GNUC__
-#define _GJS_CONSTRUCTOR __attribute__((constructor))
-#elif __SUNPRO_C
-#define Pragma(x) _Pragma(#x)
-#define _GJS_CONSTRUCTOR Pragma(init(register_native_module))
-#else
-Initialization routine in a dynamic object not defined for current compiler
-#endif
-
-#define GJS_REGISTER_NATIVE_MODULE_WITH_FLAGS(module_id_string, module_func, flags) \
-    _GJS_CONSTRUCTOR static void                                 \
-    register_native_module (void)                                            \
-    {                                                                        \
-        gjs_register_native_module(module_id_string, module_func, flags); \
-    }
-
-
-#define GJS_REGISTER_NATIVE_MODULE(module_id_string, module_func)           \
-    GJS_REGISTER_NATIVE_MODULE_WITH_FLAGS(module_id_string, module_func, 0)
-
-/* called in constructor function on dlopen() load */
+/* called on context init */
 void   gjs_register_native_module (const char            *module_id,
                                    GjsDefineModuleFunc  func,
                                    GjsNativeFlags       flags);
