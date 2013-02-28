@@ -188,24 +188,16 @@ gjs_is_registered_native_module(JSContext  *context,
  */
 JSBool
 gjs_import_native_module(JSContext *context,
-                         JSObject  *module_obj)
+                         JSObject  *module_obj,
+                         const char *name)
 {
     GjsNativeModule *native_module;
     JSObject *parent;
-    jsval tmp;
 
-    /* dlopen() as a side effect should have registered us as
-     * a native module. We just have to reverse-engineer
-     * the module id from module_obj.
-     */
-    {
-        char *module_name = get_module_name(context, module_obj, &tmp);
-        native_module = lookup_native_module (context,
-                                              module_get_parent(context, module_obj),
-                                              module_name,
-                                              TRUE);
-        g_free(module_name);
-    }
+    native_module = lookup_native_module (context,
+                                          module_get_parent(context, module_obj),
+                                          name,
+                                          TRUE);
 
     if (!native_module)
         return JS_FALSE;

@@ -254,7 +254,7 @@ import_native_file(JSContext  *context,
     if (!define_meta_properties(context, module_obj, NULL, name, obj))
         goto out;
 
-    if (!gjs_import_native_module(context, module_obj))
+    if (!gjs_import_native_module(context, module_obj, name))
         goto out;
 
     if (!finish_import(context, name))
