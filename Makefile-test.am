@@ -177,6 +177,7 @@ EXTRA_DIST +=					\
 	test/js/testLocale.js			\
 	test/js/testMainloop.js			\
 	test/js/testSignals.js			\
+	test/js/testSystem.js			\
 	test/js/testTweener.js			\
 	test/js/testUnicode.js			\
 	test/run-with-dbus			\
