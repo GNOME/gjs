@@ -48,6 +48,8 @@ gjs_address_of(JSContext *context,
     pointer_string = g_strdup_printf("%p", target_obj);
 
     ret = gjs_string_from_utf8(context, pointer_string, -1, &retval);
+    g_free(pointer_string);
+
     if (ret)
         JS_SET_RVAL(context, vp, retval);
 
