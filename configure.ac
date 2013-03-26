@@ -227,3 +227,15 @@ AC_SUBST([gjsnativedir])
 
 AC_CONFIG_FILES([Makefile gjs-1.0.pc gjs-internals-1.0.pc])
 AC_OUTPUT
+
+AC_MSG_RESULT([
+        $PACKAGE_NAME $VERSION
+
+	GJS_CFLAGS:		${GJS_CFLAGS}
+	GJS_LIBS:		${GJS_LIBS}
+
+	cairo:			${have_cairo}
+	readline:		${have_readline}
+	dtrace:			${ENABLE_DTRACE}
+	systemtap:		${ENABLE_SYSTEMTAP}
+])
