@@ -2,8 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 m4_define(pkg_major_version, 1)
-m4_define(pkg_minor_version, 35)
-m4_define(pkg_micro_version, 9)
+m4_define(pkg_minor_version, 36)
+m4_define(pkg_micro_version, 0)
 m4_define(pkg_version, pkg_major_version.pkg_minor_version.pkg_micro_version)
 
 AC_PREREQ(2.61)
@@ -63,7 +63,7 @@ fi
 AM_CONDITIONAL([ENABLE_COVERAGE], [test x$enable_coverage = xyes])
 
 # Checks for libraries.
-m4_define(glib_required_version, 2.35.6)
+m4_define(glib_required_version, 2.36.0)
 
 AC_CHECK_HEADERS([malloc.h])
 AC_CHECK_FUNCS(mallinfo)
@@ -92,7 +92,7 @@ else
 fi
 CFLAGS="$save_CFLAGS"
 
-GOBJECT_INTROSPECTION_REQUIRE([1.33.10])
+GOBJECT_INTROSPECTION_REQUIRE([1.36.0])
 
 common_packages="gmodule-2.0 gthread-2.0 gio-2.0 >= glib_required_version mozjs-17.0"
 gjs_packages="gobject-introspection-1.0 libffi $common_packages"
