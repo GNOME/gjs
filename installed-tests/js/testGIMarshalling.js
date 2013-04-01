@@ -556,6 +556,10 @@ function callback_return_value_and_multiple_out_parameters() {
     return [48, 49, 50];
 }
 
+function callback_array_out_parameter() {
+    return [50, 51];
+}
+
 describe('Callback', function () {
     it('marshals a return value', function () {
         expect(GIMarshallingTests.callback_return_value_only(callback_return_value_only))
@@ -581,6 +585,11 @@ describe('Callback', function () {
         expect(GIMarshallingTests.callback_return_value_and_multiple_out_parameters(callback_return_value_and_multiple_out_parameters))
             .toEqual([48, 49, 50]);
     });
+
+    xit('marshals an array out parameter', function () {
+        expect(GIMarshallingTests.callback_array_out_parameter(callback_array_out_parameter))
+            .toEqual([50, 51]);
+    }).pend('Function not added to gobject-introspection test suite yet');
 });
 
 const VFuncTester = new Lang.Class({
@@ -591,7 +600,8 @@ const VFuncTester = new Lang.Class({
     vfunc_vfunc_one_out_parameter: callback_one_out_parameter,
     vfunc_vfunc_multiple_out_parameters: callback_multiple_out_parameters,
     vfunc_vfunc_return_value_and_one_out_parameter: callback_return_value_and_one_out_parameter,
-    vfunc_vfunc_return_value_and_multiple_out_parameters: callback_return_value_and_multiple_out_parameters
+    vfunc_vfunc_return_value_and_multiple_out_parameters: callback_return_value_and_multiple_out_parameters,
+    vfunc_vfunc_array_out_parameter: callback_array_out_parameter,
 });
 
 describe('Virtual function', function () {
@@ -620,6 +630,10 @@ describe('Virtual function', function () {
     it('marshals a return value and multiple out parameters', function () {
         expect(tester.vfunc_return_value_and_multiple_out_parameters())
             .toEqual([48, 49, 50]);
+    });
+
+    it('marshals an array out parameter', function () {
+        expect(tester.vfunc_array_out_parameter()).toEqual([50, 51]);
     });
 });
 
