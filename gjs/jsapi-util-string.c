@@ -49,8 +49,10 @@ gjs_string_to_utf8 (JSContext  *context,
     str = JSVAL_TO_STRING(value);
 
     len = JS_GetStringEncodingLength(context, str);
-    if (len == (gsize)(-1))
+    if (len == (gsize)(-1)) {
+        JS_EndRequest(context);
         return JS_FALSE;
+    }
 
     if (utf8_string_p) {
         bytes = g_malloc((len + 1) * sizeof(char));
