@@ -2169,6 +2169,7 @@ gjs_register_type(JSContext *cx,
     };
     guint32 i, n_interfaces;
     GType *iface_types;
+    JSBool retval = JS_FALSE;
 
     JS_BeginRequest(cx);
 
@@ -2177,21 +2178,21 @@ gjs_register_type(JSContext *cx,
                         "parent", &parent,
                         "name", &name,
                         "interfaces", &interfaces))
-        return JS_FALSE;
+        goto out;
 
     if (!parent)
-        return JS_FALSE;
+        goto out;
 
     if (!do_base_typecheck(cx, parent, JS_TRUE))
-        return JS_FALSE;
+        goto out;
 
     if (!JS_IsArrayObject(cx, interfaces)) {
         gjs_throw(cx, "Invalid parameter interfaces (expected Array)");
-        return JS_FALSE;
+        goto out;
     }
 
     if (!JS_GetArrayLength(cx, interfaces, &n_interfaces))
-        return JS_FALSE;
+        goto out;
 
     iface_types = g_alloca(sizeof(GType) * n_interfaces);
 
@@ -2202,13 +2203,13 @@ gjs_register_type(JSContext *cx,
         GType iface_type;
 
         if (!JS_GetElement(cx, interfaces, i, &iface_val))
-            return JS_FALSE;
+            goto out;
 
         if (!JSVAL_IS_OBJECT(iface_val) ||
             ((iface_type = gjs_gtype_get_actual_gtype(cx, JSVAL_TO_OBJECT(iface_val)))
              == G_TYPE_INVALID)) {
             gjs_throw(cx, "Invalid parameter interfaces (element %d was not a GType)", i);
-            return JS_FALSE;
+            goto out;
         }
 
         iface_types[i] = iface_type;
@@ -2216,7 +2217,7 @@ gjs_register_type(JSContext *cx,
 
     if (g_type_from_name(name) != G_TYPE_INVALID) {
         gjs_throw (cx, "Type name %s is already registered", name);
-        return JS_FALSE;
+        goto out;
     }
 
     parent_priv = priv_from_js(cx, parent);
@@ -2229,7 +2230,7 @@ gjs_register_type(JSContext *cx,
     g_type_query_dynamic_safe(parent_type, &query);
     if (G_UNLIKELY (query.type == 0)) {
         gjs_throw (cx, "Cannot inherit from a non-gjs dynamic type [bug 687184]");
-        return JS_FALSE;
+        goto out;
     }
 
     type_info.class_size = query.class_size;
@@ -2251,13 +2252,16 @@ gjs_register_type(JSContext *cx,
 
     /* create a custom JSClass */
     if (!gjs_define_object_class(cx, NULL, instance_type, &constructor, NULL))
-        return JS_FALSE;
+        goto out;
 
     JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(constructor));
 
+    retval = JS_TRUE;
+
+out:
     JS_EndRequest(cx);
 
-    return JS_TRUE;
+    return retval;
 }
 
 static JSBool
