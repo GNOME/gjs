@@ -242,8 +242,10 @@ gjs_define_string_array(JSContext   *context,
 
     JS_BeginRequest(context);
 
-    if (!JS_EnterLocalRootScope(context))
+    if (!JS_EnterLocalRootScope(context)) {
+        JS_EndRequest(context);
         return JS_FALSE;
+    }
 
     if (array_length == -1)
         array_length = g_strv_length((char**)array_values);
@@ -353,13 +355,16 @@ gjs_value_debug_string(JSContext      *context,
                 str = JS_NewStringCopyZ(context, klass->name);
                 JS_ClearPendingException(context);
                 if (str == NULL) {
+                    JS_EndRequest(context);
                     return g_strdup("[out of memory copying class name]");
                 }
             } else {
                 gjs_log_exception(context, NULL);
+                JS_EndRequest(context);
                 return g_strdup("[unknown object]");
             }
         } else {
+            JS_EndRequest(context);
             return g_strdup("[unknown non-object]");
         }
     }
@@ -811,8 +816,10 @@ gjs_date_from_time_t (JSContext *context, time_t time)
 
     JS_BeginRequest(context);
 
-    if (!JS_EnterLocalRootScope(context))
+    if (!JS_EnterLocalRootScope(context)) {
+        JS_EndRequest(context);
         return JSVAL_VOID;
+    }
 
     if (!JS_GetClassObject(context, JS_GetGlobalObject(context), JSProto_Date,
                            &date_constructor))
