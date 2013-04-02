@@ -77,11 +77,13 @@ closure_marshal(GClosure        *closure,
     JS_BeginRequest(context);
 
     argc = n_param_values;
-    argv = g_newa(jsval, n_param_values);
     rval = JSVAL_VOID;
+    if (argc > 0) {
+        argv = g_newa(jsval, n_param_values);
 
-    gjs_set_values(context, argv, argc, JSVAL_VOID);
-    gjs_root_value_locations(context, argv, argc);
+        gjs_set_values(context, argv, argc, JSVAL_VOID);
+        gjs_root_value_locations(context, argv, argc);
+    }
     JS_AddValueRoot(context, &rval);
 
     if (marshal_data) {
@@ -141,7 +143,8 @@ closure_marshal(GClosure        *closure,
     }
 
  cleanup:
-    gjs_unroot_value_locations(context, argv, argc);
+    if (argc > 0)
+        gjs_unroot_value_locations(context, argv, argc);
     JS_RemoveValueRoot(context, &rval);
     JS_EndRequest(context);
 }
