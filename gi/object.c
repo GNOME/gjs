@@ -65,6 +65,20 @@ typedef struct {
     GClosure *closure;
 } ConnectData;
 
+typedef enum
+{
+  TOGGLE_DOWN,
+  TOGGLE_UP,
+} ToggleDirection;
+
+typedef struct
+{
+    JSContext       *context;
+    GObject         *gobj;
+    ToggleDirection  direction;
+    guint            needs_unref : 1;
+} ToggleRefNotifyOperation;
+
 enum {
     PROP_0,
     PROP_JS_CONTEXT,
@@ -124,6 +138,26 @@ gjs_object_priv_quark (void)
     static GQuark val = 0;
     if (G_UNLIKELY (!val))
         val = g_quark_from_static_string ("gjs::private");
+
+    return val;
+}
+
+static GQuark
+gjs_toggle_down_quark (void)
+{
+    static GQuark val = 0;
+    if (G_UNLIKELY (!val))
+        val = g_quark_from_static_string ("gjs::toggle-down-quark");
+
+    return val;
+}
+
+static GQuark
+gjs_toggle_up_quark (void)
+{
+    static GQuark val = 0;
+    if (G_UNLIKELY (!val))
+        val = g_quark_from_static_string ("gjs::toggle-up-quark");
 
     return val;
 }
@@ -765,6 +799,216 @@ gobj_no_longer_kept_alive_func(JSObject *obj,
     priv->keep_alive = NULL;
 }
 
+static GQuark
+get_qdata_key_for_toggle_direction(ToggleDirection direction)
+{
+    GQuark quark;
+
+    switch (direction) {
+        case TOGGLE_UP:
+            quark = gjs_toggle_up_quark();
+            break;
+        case TOGGLE_DOWN:
+            quark = gjs_toggle_down_quark();
+            break;
+        default:
+            g_assert_not_reached();
+    }
+
+    return quark;
+}
+
+static gboolean
+clear_toggle_idle_source(GObject          *gobj,
+                         ToggleDirection   direction)
+{
+    GQuark qdata_key;
+
+    qdata_key = get_qdata_key_for_toggle_direction(direction);
+
+    return g_object_steal_qdata(gobj, qdata_key) != NULL;
+}
+
+static gboolean
+cancel_toggle_idle(GObject         *gobj,
+                   ToggleDirection  direction)
+{
+    GQuark qdata_key;
+    GSource *source;
+
+    qdata_key = get_qdata_key_for_toggle_direction(direction);
+
+    source = g_object_steal_qdata(gobj, qdata_key);
+
+    if (source)
+        g_source_destroy(source);
+
+    return source != 0;
+}
+
+static void
+handle_toggle_down(JSContext *context,
+                   GObject   *gobj)
+{
+    ObjectInstance *priv;
+    JSObject *obj;
+
+    obj = peek_js_obj(context, gobj);
+
+    priv = priv_from_js(context, obj);
+
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
+                        "Toggle notify gobj %p obj %p is_last_ref TRUE keep-alive %p",
+                        gobj, obj, priv->keep_alive);
+
+    /* Change to weak ref so the wrapper-wrappee pair can be
+     * collected by the GC
+     */
+    if (priv->keep_alive != NULL) {
+        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Removing object from keep alive");
+        gjs_keep_alive_remove_child(context, priv->keep_alive,
+                                    gobj_no_longer_kept_alive_func,
+                                    obj,
+                                    priv);
+        priv->keep_alive = NULL;
+    }
+}
+
+static void
+handle_toggle_up(JSContext *context,
+                 GObject   *gobj)
+{
+    ObjectInstance *priv;
+    JSObject *obj;
+
+    /* We need to root the JSObject associated with the passed in GObject so it
+     * doesn't get garbage collected (and lose any associated javascript state
+     * such as custom properties).
+     *
+     * Note it's possible that the garbage collector is running in a secondary
+     * thread right now. If it is, we need to wait for it to finish, then block
+     * it from starting again while we root the object. After it's blocked we need
+     * to check if the associated JSObject was reaped. If it was we need to
+     * abort mission.
+     */
+    gjs_block_gc();
+
+    obj = peek_js_obj(context, gobj);
+
+    if (!obj) {
+        /* Object already GC'd */
+        goto out;
+    }
+
+    priv = priv_from_js(context, obj);
+
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
+                        "Toggle notify gobj %p obj %p is_last_ref FALSEd keep-alive %p",
+                        gobj, obj, priv->keep_alive);
+
+    /* Change to strong ref so the wrappee keeps the wrapper alive
+     * in case the wrapper has data in it that the app cares about
+     */
+    if (priv->keep_alive == NULL) {
+        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Adding object to keep alive");
+        priv->keep_alive = gjs_keep_alive_get_for_import_global(context);
+        gjs_keep_alive_add_child(context, priv->keep_alive,
+                                 gobj_no_longer_kept_alive_func,
+                                 obj,
+                                 priv);
+    }
+
+out:
+    gjs_unblock_gc();
+}
+
+static gboolean
+idle_handle_toggle(gpointer data)
+{
+    ToggleRefNotifyOperation *operation = data;
+
+    if (!clear_toggle_idle_source(operation->gobj, operation->direction)) {
+        /* Already cleared, the JSObject is going away, abort mission */
+        goto out;
+    }
+
+    switch (operation->direction) {
+        case TOGGLE_UP:
+            handle_toggle_up(operation->context, operation->gobj);
+            break;
+        case TOGGLE_DOWN:
+            handle_toggle_down(operation->context, operation->gobj);
+            break;
+        default:
+            g_assert_not_reached();
+    }
+
+out:
+    return FALSE;
+}
+
+static void
+toggle_ref_notify_operation_free(ToggleRefNotifyOperation *operation)
+{
+    if (operation->needs_unref)
+        g_object_unref (operation->gobj);
+    g_slice_free(ToggleRefNotifyOperation, operation);
+}
+
+static void
+queue_toggle_idle(GObject         *gobj,
+                  JSContext       *context,
+                  ToggleDirection  direction)
+{
+    ToggleRefNotifyOperation *operation;
+    GQuark qdata_key;
+    GSource *source;
+
+    operation = g_slice_new0(ToggleRefNotifyOperation);
+    operation->context = context;
+    operation->direction = direction;
+
+    switch (direction) {
+        case TOGGLE_UP:
+            /* If we're toggling up we take a reference to the object now,
+             * so it won't toggle down before we process it. This ensures we
+             * only ever have at most two toggle notifications queued.
+             * (either only up, or down-up)
+             */
+            operation->gobj = g_object_ref(gobj);
+            operation->needs_unref = TRUE;
+            break;
+        case TOGGLE_DOWN:
+            /* If we're toggling down, we don't need to take a reference since
+             * the associated JSObject already has one, and that JSObject won't
+             * get finalized until we've completed toggling (since it's rooted,
+             * until we unroot it when we dispatch the toggle down idle).
+             *
+             * Taking a reference now would be bad anyway, since it would force
+             * the object to toggle back up again.
+             */
+            operation->gobj = gobj;
+            break;
+        default:
+            g_assert_not_reached();
+    }
+
+    qdata_key = get_qdata_key_for_toggle_direction(direction);
+
+    source = g_idle_source_new();
+    g_source_set_priority(source, G_PRIORITY_HIGH);
+    g_source_set_callback(source,
+                          idle_handle_toggle,
+                          operation,
+                          (GDestroyNotify) toggle_ref_notify_operation_free);
+
+    g_object_set_qdata (gobj, qdata_key, source);
+    g_source_attach (source, NULL);
+
+    /* object qdata is piggy-backing off the main loop's ref of the source */
+    g_source_unref (source);
+}
+
 static void
 wrapped_gobj_toggle_notify(gpointer      data,
                            GObject      *gobj,
@@ -772,8 +1016,6 @@ wrapped_gobj_toggle_notify(gpointer      data,
 {
     JSRuntime *runtime;
     JSContext *context;
-    JSObject *obj;
-    ObjectInstance *priv;
 
     runtime = data;
 
@@ -787,40 +1029,25 @@ wrapped_gobj_toggle_notify(gpointer      data,
     if (!context)
         return;
 
-    obj = peek_js_obj(context, gobj);
-
-    g_assert(obj != NULL);
-
-    priv = priv_from_js(context, obj);
-
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                        "Toggle notify gobj %p obj %p is_last_ref %d keep-alive %p",
-                        gobj, obj, is_last_ref, priv->keep_alive);
-
+    /* We only want to touch javascript from one thread.
+     * If we're not in that thread, then we need to defer processing
+     * to it. We also don't want to touch javascript if a GC is going
+     * on in the same thread as us.
+     * For simplicity, we always defer to idle
+     */
     if (is_last_ref) {
-        /* Change to weak ref so the wrapper-wrappee pair can be
-         * collected by the GC
+        /* We've transitions from 2 -> 1 references,
+         * The JSObject is rooted and we need to unroot it so it
+         * can be garbage collected
          */
-        if (priv->keep_alive != NULL) {
-            gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Removing object from keep alive");
-            gjs_keep_alive_remove_child(context, priv->keep_alive,
-                                        gobj_no_longer_kept_alive_func,
-                                        obj,
-                                        priv);
-            priv->keep_alive = NULL;
-        }
+        queue_toggle_idle(gobj, context, TOGGLE_DOWN);
     } else {
-        /* Change to strong ref so the wrappee keeps the wrapper alive
-         * in case the wrapper has data in it that the app cares about
+        /* We've transitioned from 1 -> 2 references.
+         *
+         * The JSObject associated with the gobject is not rooted,
+         * but it needs to be. we'll root it on idle.
          */
-        if (priv->keep_alive == NULL) {
-            gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Adding object to keep alive");
-            priv->keep_alive = gjs_keep_alive_get_for_import_global(context);
-            gjs_keep_alive_add_child(context, priv->keep_alive,
-                                     gobj_no_longer_kept_alive_func,
-                                     obj,
-                                     priv);
-        }
+        queue_toggle_idle(gobj, context, TOGGLE_UP);
     }
 }
 
@@ -1062,6 +1289,15 @@ object_instance_finalize(JSContext *context,
                     priv->info ? g_base_info_get_namespace((GIBaseInfo*) priv->info) : "",
                     priv->info ? g_base_info_get_name((GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
         }
+
+        cancel_toggle_idle(priv->gobj, TOGGLE_UP);
+
+        if (G_UNLIKELY (cancel_toggle_idle(priv->gobj, TOGGLE_DOWN))) {
+            g_error("Finalizing proxy for an object that's scheduled to be unrooted: %s.%s\n",
+                    priv->info ? g_base_info_get_namespace((GIBaseInfo*) priv->info) : "",
+                    priv->info ? g_base_info_get_name((GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
+        }
+
         set_js_obj(context, priv->gobj, NULL);
         g_object_remove_toggle_ref(priv->gobj, wrapped_gobj_toggle_notify,
                                    JS_GetRuntime(context));

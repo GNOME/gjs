@@ -35,6 +35,8 @@
 #include <string.h>
 #include <math.h>
 
+static GMutex gc_lock;
+
 GQuark
 gjs_util_error_quark (void)
 {
@@ -1200,4 +1202,28 @@ gjs_maybe_gc (JSContext *context)
         }
     }
 #endif
+}
+
+void
+gjs_enter_gc(void)
+{
+    g_mutex_lock(&gc_lock);
+}
+
+void
+gjs_leave_gc(void)
+{
+    g_mutex_unlock(&gc_lock);
+}
+
+void
+gjs_block_gc(void)
+{
+    g_mutex_lock(&gc_lock);
+}
+
+void
+gjs_unblock_gc(void)
+{
+    g_mutex_unlock(&gc_lock);
 }

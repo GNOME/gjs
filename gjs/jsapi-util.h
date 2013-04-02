@@ -355,6 +355,10 @@ void              gjs_unroot_value_locations  (JSContext        *context,
 /* Functions intended for more "internal" use */
 
 void gjs_maybe_gc (JSContext *context);
+void gjs_enter_gc (void);
+void gjs_leave_gc (void);
+void gjs_block_gc (void);
+void gjs_unblock_gc (void);
 
 G_END_DECLS
 
