@@ -10,6 +10,7 @@ if (!('assertEquals' in this)) { /* allow running this test standalone */
 // We use Gio to have some objects that we know exist
 const GLib = imports.gi.GLib;
 const Gio = imports.gi.Gio;
+const GObject = imports.gi.GObject;
 const Lang = imports.lang;
 
 const INT8_MIN = (-128);
@@ -312,6 +313,20 @@ function testArrayIn() {
     assertEquals(10, Everything.test_array_gint8_in("\x01\x02\x03\x04"));
     assertEquals(10, Everything.test_array_gint16_in("\x01\x02\x03\x04"));
     assertEquals(2560, Everything.test_array_gint16_in("\u0100\u0200\u0300\u0400"));
+
+    // GType arrays
+    assertEquals('[GSimpleAction,GIcon,GBoxed,]',
+                 Everything.test_array_gtype_in([Gio.SimpleAction, Gio.Icon, GObject.TYPE_BOXED]));
+    assertRaises(function() {
+        Everything.test_array_gtype_in(42);
+    });
+    assertRaises(function() {
+        Everything.test_array_gtype_in([undefined]);
+    });
+    assertRaises(function() {
+        // 80 is G_TYPE_OBJECT, but we don't want it to work
+        Everything.test_array_gtype_in([80]);
+    });
 }
 
 function testArrayOut() {
