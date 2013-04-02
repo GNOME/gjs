@@ -627,13 +627,12 @@ gjs_gtypearray_to_array(JSContext   *context,
             return JS_FALSE;
         }
 
-        gtype = gjs_gtype_get_actual_gtype(context, JSVAL_TO_OBJECT(elem));
+        if (!JSVAL_IS_OBJECT(elem))
+            goto err;
 
-        if (gtype == G_TYPE_INVALID) {
-            g_free(result);
-            gjs_throw(context, "Invalid element in GType array");
-            return JS_FALSE;
-        }
+        gtype = gjs_gtype_get_actual_gtype(context, JSVAL_TO_OBJECT(elem));
+        if (gtype == G_TYPE_INVALID)
+            goto err;
 
         result[i] = gtype;
     }
@@ -641,6 +640,11 @@ gjs_gtypearray_to_array(JSContext   *context,
     *arr_p = result;
 
     return JS_TRUE;
+
+ err:
+    g_free(result);
+    gjs_throw(context, "Invalid element in GType array");
+    return JS_FALSE;
 }
 
 static JSBool
