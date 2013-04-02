@@ -385,7 +385,7 @@ boxed_new(JSContext   *context,
 
         gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                             "JSObject created with boxed instance %p type %s",
-                            priv->gboxed, g_type_name(gtype));
+                            priv->gboxed, g_type_name(priv->gtype));
 
     } else if (priv->can_allocate_directly) {
         boxed_new_direct(priv);
