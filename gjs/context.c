@@ -894,7 +894,11 @@ gjs_on_context_gc (JSContext *cx,
     GjsContext *gjs_context = JS_GetContextPrivate(cx);
 
     switch (status) {
+        case JSGC_BEGIN:
+            gjs_enter_gc();
+            break;
         case JSGC_END:
+            gjs_leave_gc();
             if (gjs_context->gc_notifications_enabled) {
                 g_mutex_lock(&gc_idle_lock);
                 if (gjs_context->idle_emit_gc_id == 0)
