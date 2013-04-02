@@ -665,8 +665,7 @@ gjs_context_constructor (GType                  type,
 
     js_context->profiler = gjs_profiler_new(js_context->runtime);
 
-    if (js_context->gc_notifications_enabled)
-        JS_SetGCCallback(js_context->runtime, gjs_on_context_gc);
+    JS_SetGCCallback(js_context->runtime, gjs_on_context_gc);
 
     JS_EndRequest(js_context->context);
 
@@ -895,13 +894,20 @@ gjs_on_context_gc (JSRuntime *rt,
     JSContext *context = JS_GetRuntimePrivate(rt);
     GjsContext *gjs_context = JS_GetContextPrivate(context);
 
-    if (status == JSGC_END) {
-        g_mutex_lock(&gc_idle_lock);
-        if (gjs_context->idle_emit_gc_id == 0)
-            gjs_context->idle_emit_gc_id = g_idle_add (gjs_context_idle_emit_gc, gjs_context);
-        g_mutex_unlock(&gc_idle_lock);
+    switch (status) {
+        case JSGC_END:
+            if (gjs_context->gc_notifications_enabled) {
+                g_mutex_lock(&gc_idle_lock);
+                if (gjs_context->idle_emit_gc_id == 0)
+                    gjs_context->idle_emit_gc_id = g_idle_add (gjs_context_idle_emit_gc, gjs_context);
+                g_mutex_unlock(&gc_idle_lock);
+            }
+        break;
+
+        default:
+        break;
     }
-    
+
     return TRUE;
 }
 
