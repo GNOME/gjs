@@ -358,6 +358,7 @@ void              gjs_unroot_value_locations  (JSContext        *context,
 void gjs_maybe_gc (JSContext *context);
 void gjs_enter_gc (void);
 void gjs_leave_gc (void);
+gboolean gjs_try_block_gc (void);
 void gjs_block_gc (void);
 void gjs_unblock_gc (void);
 

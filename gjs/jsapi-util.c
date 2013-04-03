@@ -1219,6 +1219,12 @@ gjs_leave_gc(void)
     g_mutex_unlock(&gc_lock);
 }
 
+gboolean
+gjs_try_block_gc(void)
+{
+    return g_mutex_trylock(&gc_lock);
+}
+
 void
 gjs_block_gc(void)
 {
