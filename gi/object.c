@@ -87,6 +87,7 @@ enum {
 };
 
 static struct JSClass gjs_object_instance_class;
+static GThread *gjs_eval_thread;
 
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 
@@ -830,6 +831,17 @@ clear_toggle_idle_source(GObject          *gobj,
 }
 
 static gboolean
+toggle_idle_source_is_queued(GObject          *gobj,
+                             ToggleDirection   direction)
+{
+    GQuark qdata_key;
+
+    qdata_key = get_qdata_key_for_toggle_direction(direction);
+
+    return g_object_get_qdata(gobj, qdata_key) != NULL;
+}
+
+static gboolean
 cancel_toggle_idle(GObject         *gobj,
                    ToggleDirection  direction)
 {
@@ -876,7 +888,8 @@ handle_toggle_down(JSContext *context,
 
 static void
 handle_toggle_up(JSContext *context,
-                 GObject   *gobj)
+                 GObject   *gobj,
+                 gboolean   gc_already_blocked)
 {
     ObjectInstance *priv;
     JSObject *obj;
@@ -891,7 +904,8 @@ handle_toggle_up(JSContext *context,
      * to check if the associated JSObject was reaped. If it was we need to
      * abort mission.
      */
-    gjs_block_gc();
+    if (!gc_already_blocked)
+        gjs_block_gc();
 
     obj = peek_js_obj(context, gobj);
 
@@ -919,7 +933,8 @@ handle_toggle_up(JSContext *context,
     }
 
 out:
-    gjs_unblock_gc();
+    if (!gc_already_blocked)
+        gjs_unblock_gc();
 }
 
 static gboolean
@@ -934,7 +949,7 @@ idle_handle_toggle(gpointer data)
 
     switch (operation->direction) {
         case TOGGLE_UP:
-            handle_toggle_up(operation->context, operation->gobj);
+            handle_toggle_up(operation->context, operation->gobj, FALSE);
             break;
         case TOGGLE_DOWN:
             handle_toggle_down(operation->context, operation->gobj);
@@ -1016,6 +1031,8 @@ wrapped_gobj_toggle_notify(gpointer      data,
 {
     JSRuntime *runtime;
     JSContext *context;
+    gboolean gc_blocked = FALSE;
+    gboolean toggle_up_queued, toggle_down_queued;
 
     runtime = data;
 
@@ -1033,22 +1050,54 @@ wrapped_gobj_toggle_notify(gpointer      data,
      * If we're not in that thread, then we need to defer processing
      * to it. We also don't want to touch javascript if a GC is going
      * on in the same thread as us.
-     * For simplicity, we always defer to idle
+     *
+     * Defer to idle in those cases, and in the case where an idle
+     * is already queued (to maintain ordering constraints) but handle
+     * the toggle notify directly when we can (for efficiency reasons)
      */
+    if (gjs_eval_thread == g_thread_self())
+        gc_blocked = gjs_try_block_gc();
+
+    toggle_up_queued = toggle_idle_source_is_queued(gobj, TOGGLE_UP);
+    toggle_down_queued = toggle_idle_source_is_queued(gobj, TOGGLE_DOWN);
+
     if (is_last_ref) {
         /* We've transitions from 2 -> 1 references,
          * The JSObject is rooted and we need to unroot it so it
          * can be garbage collected
          */
-        queue_toggle_idle(gobj, context, TOGGLE_DOWN);
+        if (gc_blocked) {
+            if (G_UNLIKELY (toggle_up_queued || toggle_down_queued)) {
+                g_error("toggling down object %s that's already queued to toggle %s\n",
+                        G_OBJECT_TYPE_NAME(gobj),
+                        toggle_up_queued && toggle_down_queued? "up and down" :
+                        toggle_up_queued? "up" : "down");
+            }
+
+            handle_toggle_down(context, gobj);
+        } else {
+            queue_toggle_idle(gobj, context, TOGGLE_DOWN);
+        }
     } else {
         /* We've transitioned from 1 -> 2 references.
          *
          * The JSObject associated with the gobject is not rooted,
-         * but it needs to be. we'll root it on idle.
+         * but it needs to be. We'll root it.
          */
-        queue_toggle_idle(gobj, context, TOGGLE_UP);
+        if (gc_blocked && !toggle_down_queued) {
+            if (G_UNLIKELY (toggle_up_queued)) {
+                g_error("toggling up object %s that's already queued to toggle up\n",
+                        G_OBJECT_TYPE_NAME(gobj));
+            }
+
+            handle_toggle_up(context, gobj, gc_blocked);
+        } else {
+            queue_toggle_idle(gobj, context, TOGGLE_UP);
+        }
     }
+
+    if (gc_blocked)
+        gjs_unblock_gc();
 }
 
 static ObjectInstance *
@@ -2364,6 +2413,7 @@ gjs_object_class_init(GObjectClass *class,
                                                            "JSObject",
                                                            "The JSObject wrapping this GObject",
                                                            G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
+    gjs_eval_thread = g_thread_self();
 }
 
 static inline void
