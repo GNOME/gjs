@@ -98,6 +98,7 @@ enum {
 };
 
 
+static GMutex gc_idle_lock;
 static GMutex contexts_lock;
 static GList *all_contexts = NULL;
 
@@ -878,8 +879,10 @@ gjs_context_idle_emit_gc (gpointer data)
 {
     GjsContext *gjs_context = data;
 
+    g_mutex_lock(&gc_idle_lock);
     gjs_context->idle_emit_gc_id = 0;
-    
+    g_mutex_unlock(&gc_idle_lock);
+
     g_signal_emit (gjs_context, signals[SIGNAL_GC], 0);
     
     return FALSE;
@@ -893,8 +896,10 @@ gjs_on_context_gc (JSRuntime *rt,
     GjsContext *gjs_context = JS_GetContextPrivate(context);
 
     if (status == JSGC_END) {
+        g_mutex_lock(&gc_idle_lock);
         if (gjs_context->idle_emit_gc_id == 0)
             gjs_context->idle_emit_gc_id = g_idle_add (gjs_context_idle_emit_gc, gjs_context);
+        g_mutex_unlock(&gc_idle_lock);
     }
     
     return TRUE;
