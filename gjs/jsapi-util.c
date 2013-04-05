@@ -810,7 +810,6 @@ jsval
 gjs_date_from_time_t (JSContext *context, time_t time)
 {
     JSObject *date;
-    JSClass *date_class;
     JSObject *date_constructor;
     jsval date_prototype;
     jsval args[1];
