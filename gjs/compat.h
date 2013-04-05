@@ -47,7 +47,7 @@ G_BEGIN_DECLS
 
 #define JSVAL_IS_OBJECT(obj) (JSVAL_IS_NULL(obj) || !JSVAL_IS_PRIMITIVE(obj))
 
-static JSBool JS_NewNumberValue(JSContext *cx, double d, jsval *rval)
+static JSBool G_GNUC_UNUSED JS_NewNumberValue(JSContext *cx, double d, jsval *rval)
     {
         *rval = JS_NumberValue(d);
         if (JSVAL_IS_NUMBER(*rval))
