@@ -56,8 +56,8 @@ static void     gjs_context_set_property      (GObject               *object,
                                                   guint                  prop_id,
                                                   const GValue          *value,
                                                   GParamSpec            *pspec);
-static JSBool gjs_on_context_gc (JSRuntime *rt,
-                                 JSGCStatus status);
+static void gjs_on_context_gc (JSRuntime *rt,
+                               JSGCStatus status);
 
 struct _GjsContext {
     GObject parent;
@@ -887,7 +887,7 @@ gjs_context_idle_emit_gc (gpointer data)
     return FALSE;
 }
 
-static JSBool
+static void
 gjs_on_context_gc (JSRuntime *rt,
                    JSGCStatus status)
 {
@@ -911,8 +911,6 @@ gjs_on_context_gc (JSRuntime *rt,
         default:
         break;
     }
-
-    return TRUE;
 }
 
 /**
