@@ -273,29 +273,6 @@ gjs_profiler_log_call(GjsProfiler  *self,
     }
 }
 
-static void
-gjs_profiler_new_script_hook(JSContext  *cx,
-                             const char *filename,
-                             unsigned    lineno,
-                             JSScript   *script,
-                             JSFunction *fun,
-                             void       *callerdata)
-{
-#if 0
-    GjsProfiler *self = callerdata;
-#endif
-}
-
-static void
-gjs_profiler_destroy_script_hook(JSContext *cx,
-                                 JSScript  *script,
-                                 void      *callerdata)
-{
-#if 0
-    GjsProfiler *self = callerdata;
-#endif
-}
-
 static void *
 gjs_profiler_execute_hook(JSContext    *cx,
                           JSStackFrame *fp,
@@ -366,17 +343,11 @@ gjs_profiler_profile(GjsProfiler *self, gboolean enabled)
         global_profiler = self;
         g_assert(global_profiler_output != NULL);
 
-        /* script lifetime */
-        JS_SetNewScriptHook(rt, gjs_profiler_new_script_hook, self);
-        JS_SetDestroyScriptHook(rt, gjs_profiler_destroy_script_hook, self);
-
         /* "toplevel" execution */
         JS_SetExecuteHook(rt, gjs_profiler_execute_hook, self);
         /* function call */
         JS_SetCallHook(rt, gjs_profiler_call_hook, self);
     } else if (self == global_profiler) {
-        JS_SetNewScriptHook(rt, NULL, NULL);
-        JS_SetDestroyScriptHook(rt, NULL, NULL);
         JS_SetExecuteHook(rt, NULL, NULL);
         JS_SetCallHook(rt, NULL, NULL);
 
