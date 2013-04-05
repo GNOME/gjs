@@ -161,7 +161,7 @@ error_get_domain(JSContext *context, JSObject **obj, jsid *id, jsval *vp)
 }
 
 static JSBool
-error_get_message(JSContext *context, JSObject **obj, jsid *id, jsval **vp)
+error_get_message(JSContext *context, JSObject **obj, jsid *id, jsval *vp)
 {
     Error *priv;
 
