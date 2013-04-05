@@ -155,8 +155,7 @@ static struct JSClass gjs_interface_class = {
     interface_finalize,
     NULL,
     NULL,
-    NULL,
-    NULL, NULL, NULL, NULL, NULL
+    NULL, NULL, NULL
 };
 
 static JSPropertySpec gjs_interface_proto_props[] = {

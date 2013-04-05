@@ -111,7 +111,7 @@ static JSFunctionSpec gjs_cairo_surface_proto_funcs[] = {
     // flush
     // getContent
     // getFontOptions
-    { "getType", (JSNative)getType_func, 0, 0},
+    { "getType", JSOP_WRAPPER((JSNative)getType_func), 0, 0},
     // markDirty
     // markDirtyRectangle
     // setDeviceOffset
@@ -121,7 +121,7 @@ static JSFunctionSpec gjs_cairo_surface_proto_funcs[] = {
     // copyPage
     // showPage
     // hasShowTextGlyphs
-    { "writeToPNG", (JSNative)writeToPNG_func, 0, 0 },
+    { "writeToPNG", JSOP_WRAPPER((JSNative)writeToPNG_func), 0, 0 },
     { NULL }
 };
 

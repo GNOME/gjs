@@ -196,12 +196,12 @@ getStride_func(JSContext *context,
 }
 
 static JSFunctionSpec gjs_cairo_image_surface_proto_funcs[] = {
-    { "createFromPNG", (JSNative)createFromPNG_func, 0, 0},
+    { "createFromPNG", JSOP_WRAPPER((JSNative)createFromPNG_func), 0, 0},
     // getData
-    { "getFormat", (JSNative)getFormat_func, 0, 0 },
-    { "getWidth", (JSNative)getWidth_func, 0, 0 },
-    { "getHeight", (JSNative)getHeight_func, 0, 0 },
-    { "getStride", (JSNative)getStride_func, 0, 0 },
+    { "getFormat", JSOP_WRAPPER((JSNative)getFormat_func), 0, 0 },
+    { "getWidth", JSOP_WRAPPER((JSNative)getWidth_func), 0, 0 },
+    { "getHeight", JSOP_WRAPPER((JSNative)getHeight_func), 0, 0 },
+    { "getStride", JSOP_WRAPPER((JSNative)getStride_func), 0, 0 },
     { NULL }
 };
 

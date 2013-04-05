@@ -310,26 +310,37 @@ static struct JSClass gjs_error_class = {
     error_finalize,
     NULL,
     NULL,
-    NULL,
-    NULL, NULL, NULL, NULL, NULL
+    NULL, NULL, NULL
 };
 
 /* We need to shadow all fields of GError, to prevent calling the getter from GBoxed
    (which would trash memory accessing the instance private data) */
 static JSPropertySpec gjs_error_proto_props[] = {
-    { "domain", PROP_DOMAIN, GJS_MODULE_PROP_FLAGS | JSPROP_READONLY, error_get_domain, NULL },
-    { "code", PROP_CODE, GJS_MODULE_PROP_FLAGS | JSPROP_READONLY, error_get_code, NULL },
-    { "message", PROP_MESSAGE, GJS_MODULE_PROP_FLAGS | JSPROP_READONLY, error_get_message, NULL },
+    { "domain", PROP_DOMAIN,
+      GJS_MODULE_PROP_FLAGS | JSPROP_READONLY,
+      JSOP_WRAPPER((JSPropertyOp)error_get_domain),
+      JSOP_WRAPPER(JS_StrictPropertyStub)
+    },
+    { "code", PROP_CODE,
+      GJS_MODULE_PROP_FLAGS | JSPROP_READONLY,
+      JSOP_WRAPPER((JSPropertyOp)error_get_code),
+      JSOP_WRAPPER(JS_StrictPropertyStub)
+    },
+    { "message", PROP_MESSAGE,
+      GJS_MODULE_PROP_FLAGS | JSPROP_READONLY,
+      JSOP_WRAPPER((JSPropertyOp)error_get_message),
+      JSOP_WRAPPER(JS_StrictPropertyStub)
+    },
     { NULL }
 };
 
 static JSFunctionSpec gjs_error_proto_funcs[] = {
-    { "toString", error_to_string, 0, GJS_MODULE_PROP_FLAGS },
+    { "toString", JSOP_WRAPPER((JSNative)error_to_string), 0, GJS_MODULE_PROP_FLAGS },
     JS_FS_END
 };
 
 static JSFunctionSpec gjs_error_constructor_funcs[] = {
-    { "valueOf", error_constructor_value_of, 0, GJS_MODULE_PROP_FLAGS },
+    { "valueOf", JSOP_WRAPPER((JSNative)error_constructor_value_of), 0, GJS_MODULE_PROP_FLAGS },
     JS_FS_END
 };
 

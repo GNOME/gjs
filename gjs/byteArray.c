@@ -957,22 +957,22 @@ enum ByteArrayTinyId {
 static JSPropertySpec gjs_byte_array_proto_props[] = {
     { "length", BYTE_ARRAY_TINY_ID_LENGTH,
       JSPROP_PERMANENT,
-      (JSPropertyOp)byte_array_length_getter,
-      (JSStrictPropertyOp)byte_array_length_setter
+      JSOP_WRAPPER ((JSPropertyOp) byte_array_length_getter),
+      JSOP_WRAPPER ((JSStrictPropertyOp) byte_array_length_setter),
     },
     { NULL }
 };
 
 static JSFunctionSpec gjs_byte_array_proto_funcs[] = {
-    { "toString", (JSNative) to_string_func, 0, 0 },
-    { "toGBytes", (JSNative) to_gbytes_func, 0, 0 },
+    { "toString", JSOP_WRAPPER ((JSNative) to_string_func), 0, 0 },
+    { "toGBytes", JSOP_WRAPPER ((JSNative) to_gbytes_func), 0, 0 },
     { NULL }
 };
 
 static JSFunctionSpec gjs_byte_array_module_funcs[] = {
-    { "fromString", (JSNative)from_string_func, 1, 0 },
-    { "fromArray", (JSNative)from_array_func, 1, 0 },
-    { "fromGBytes", (JSNative)from_gbytes_func, 1, 0 },
+    { "fromString", JSOP_WRAPPER (from_string_func), 1, 0 },
+    { "fromArray", JSOP_WRAPPER (from_array_func), 1, 0 },
+    { "fromGBytes", JSOP_WRAPPER (from_gbytes_func), 1, 0 },
     { NULL }
 };
 

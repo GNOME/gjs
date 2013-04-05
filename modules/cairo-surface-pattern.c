@@ -173,10 +173,10 @@ getFilter_func(JSContext *context,
 }
 
 static JSFunctionSpec gjs_cairo_surface_pattern_proto_funcs[] = {
-    { "setExtend", (JSNative)setExtend_func, 0, 0 },
-    { "getExtend", (JSNative)getExtend_func, 0, 0 },
-    { "setFilter", (JSNative)setFilter_func, 0, 0 },
-    { "getFilter", (JSNative)getFilter_func, 0, 0 },
+    { "setExtend", JSOP_WRAPPER((JSNative)setExtend_func), 0, 0 },
+    { "getExtend", JSOP_WRAPPER((JSNative)getExtend_func), 0, 0 },
+    { "setFilter", JSOP_WRAPPER((JSNative)setFilter_func), 0, 0 },
+    { "getFilter", JSOP_WRAPPER((JSNative)getFilter_func), 0, 0 },
     { NULL }
 };
 

@@ -1371,7 +1371,11 @@ static struct JSClass gjs_function_class = {
 };
 
 static JSPropertySpec gjs_function_proto_props[] = {
-    { "length", 0, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_SHARED, (JSPropertyOp)get_num_arguments, NULL },
+    { "length", 0,
+      (JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_SHARED),
+      JSOP_WRAPPER((JSPropertyOp)get_num_arguments),
+      JSOP_WRAPPER(JS_StrictPropertyStub)
+    },
     { NULL }
 };
 

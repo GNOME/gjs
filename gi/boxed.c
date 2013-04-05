@@ -948,7 +948,7 @@ static JSPropertySpec gjs_boxed_proto_props[] = {
 };
 
 static JSFunctionSpec gjs_boxed_proto_funcs[] = {
-    { "toString", (JSNative)to_string_func, 0, 0 },
+    { "toString", JSOP_WRAPPER((JSNative)to_string_func), 0, 0 },
     { NULL }
 };
 

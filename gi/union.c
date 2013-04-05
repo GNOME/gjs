@@ -320,8 +320,7 @@ static struct JSClass gjs_union_class = {
     union_finalize,
     NULL,
     NULL,
-    NULL,
-    NULL, NULL, NULL, NULL, NULL
+    NULL, NULL, NULL
 };
 
 static JSPropertySpec gjs_union_proto_props[] = {
@@ -329,7 +328,7 @@ static JSPropertySpec gjs_union_proto_props[] = {
 };
 
 static JSFunctionSpec gjs_union_proto_funcs[] = {
-    { "toString", (JSNative)to_string_func, 0, 0 },
+    { "toString", JSOP_WRAPPER((JSNative)to_string_func), 0, 0 },
     { NULL }
 };
 

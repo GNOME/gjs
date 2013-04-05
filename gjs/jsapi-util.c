@@ -84,10 +84,15 @@ gjs_runtime_get_context(JSRuntime *runtime)
     return (JSContext *) JS_GetRuntimePrivate (runtime);
 }
 
+static void
+finalize_stub(JSFreeOp *fop, JSObject *global)
+{
+}
+
 static JSClass global_class = {
     "GjsGlobal", JSCLASS_GLOBAL_FLAGS,
     JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
-    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub,
+    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, finalize_stub,
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
 

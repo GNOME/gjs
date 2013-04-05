@@ -439,8 +439,7 @@ static struct JSClass gjs_param_class = {
     param_finalize,
     NULL,
     NULL,
-    NULL,
-    NULL, NULL, NULL, NULL, NULL
+    NULL, NULL, NULL
 };
 
 static JSPropertySpec gjs_param_proto_props[] = {
@@ -452,7 +451,7 @@ static JSFunctionSpec gjs_param_proto_funcs[] = {
 };
 
 static JSFunctionSpec gjs_param_constructor_funcs[] = {
-    { "_new_internal", (JSNative)param_new_internal, 0, 0 },
+    { "_new_internal", JSOP_WRAPPER((JSNative)param_new_internal), 0, 0 },
     { NULL }
 };
 

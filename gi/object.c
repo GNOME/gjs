@@ -1763,12 +1763,12 @@ static JSPropertySpec gjs_object_instance_proto_props[] = {
 };
 
 static JSFunctionSpec gjs_object_instance_proto_funcs[] = {
-    { "_init", (JSNative)init_func, 0, 0 },
-    { "connect", (JSNative)connect_func, 0, 0 },
-    { "connect_after", (JSNative)connect_after_func, 0, 0 },
-    { "disconnect", (JSNative)disconnect_func, 0, 0 },
-    { "emit", (JSNative)emit_func, 0, 0 },
-    { "toString", (JSNative)to_string_func, 0, 0 },
+    { "_init", JSOP_WRAPPER((JSNative)init_func), 0, 0 },
+    { "connect", JSOP_WRAPPER((JSNative)connect_func), 0, 0 },
+    { "connect_after", JSOP_WRAPPER((JSNative)connect_after_func), 0, 0 },
+    { "disconnect", JSOP_WRAPPER((JSNative)disconnect_func), 0, 0 },
+    { "emit", JSOP_WRAPPER((JSNative)emit_func), 0, 0 },
+    { "toString", JSOP_WRAPPER((JSNative)to_string_func), 0, 0 },
     { NULL }
 };
 
