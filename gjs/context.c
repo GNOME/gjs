@@ -32,6 +32,7 @@
 #include "compat.h"
 
 #include "gi.h"
+#include "gi/object.h"
 
 #include <modules/modules.h>
 
@@ -382,6 +383,16 @@ gjs_context_dispose(GObject *object)
 
         gjs_debug(GJS_DEBUG_CONTEXT,
                   "Destroying JS context");
+
+        gjs_object_process_pending_toggles();
+
+        /* Do a full GC here before tearing down, since once we do
+         * that we may not have the JS_GetPrivate() to access the
+         * context
+         */
+        JS_GC(js_context->context);
+
+        gjs_object_process_pending_toggles();
 
         JS_DestroyContext(js_context->context);
         js_context->context = NULL;
