@@ -46,6 +46,8 @@ JSBool    gjs_typecheck_object          (JSContext     *context,
                                          GType          expected_type,
                                          JSBool         throw);
 
+void      gjs_object_process_pending_toggles (void);
+
 G_END_DECLS
 
 #endif  /* __GJS_OBJECT_H__ */

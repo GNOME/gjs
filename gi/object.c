@@ -88,6 +88,7 @@ enum {
 
 static struct JSClass gjs_object_instance_class;
 static GThread *gjs_eval_thread;
+static volatile gint pending_idle_toggles;
 
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 
@@ -968,6 +969,7 @@ toggle_ref_notify_operation_free(ToggleRefNotifyOperation *operation)
     if (operation->needs_unref)
         g_object_unref (operation->gobj);
     g_slice_free(ToggleRefNotifyOperation, operation);
+    g_atomic_int_add(&pending_idle_toggles, -1);
 }
 
 static void
@@ -1017,6 +1019,7 @@ queue_toggle_idle(GObject         *gobj,
                           operation,
                           (GDestroyNotify) toggle_ref_notify_operation_free);
 
+    g_atomic_int_inc(&pending_idle_toggles);
     g_object_set_qdata (gobj, qdata_key, source);
     g_source_attach (source, NULL);
 
@@ -1098,6 +1101,18 @@ wrapped_gobj_toggle_notify(gpointer      data,
 
     if (gc_blocked)
         gjs_unblock_gc();
+}
+
+/* At shutdown, we need to ensure we've cleared the context of any
+ * pending toggle references.
+ */
+void
+gjs_object_process_pending_toggles (void)
+{
+    while (g_main_context_pending (NULL) &&
+           g_atomic_int_get (&pending_idle_toggles) > 0) {
+        g_main_context_iteration (NULL, FALSE);
+    }
 }
 
 static ObjectInstance *
