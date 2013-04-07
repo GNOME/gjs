@@ -1393,7 +1393,8 @@ init_cached_function_data (JSContext      *context,
                            GType           gtype,
                            GICallableInfo *info)
 {
-    guint8 i, n_args, array_length_pos;
+    guint8 i, n_args;
+    int array_length_pos;
     GError *error = NULL;
     GITypeInfo return_type;
     GIInfoType info_type;
@@ -1442,8 +1443,8 @@ init_cached_function_data (JSContext      *context,
         GIDirection direction;
         GIArgInfo arg_info;
         GITypeInfo type_info;
-        guint8 destroy = -1;
-        guint8 closure = -1;
+        int destroy = -1;
+        int closure = -1;
         GITypeTag type_tag;
 
         if (function->param_types[i] == PARAM_SKIPPED)
