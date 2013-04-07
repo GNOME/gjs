@@ -2260,9 +2260,7 @@ gjs_array_from_zero_terminated_c_array (JSContext  *context,
     } while(0);
 
     switch (element_type) {
-        case GI_TYPE_TAG_UINT8:
-          ITERATE(uint8);
-          break;
+        /* We handle GI_TYPE_TAG_UINT8 above. */
         case GI_TYPE_TAG_INT8:
           ITERATE(int8);
           break;
