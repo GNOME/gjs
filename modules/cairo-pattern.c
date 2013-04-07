@@ -154,8 +154,6 @@ JSObject *
 gjs_cairo_pattern_from_pattern(JSContext       *context,
                                cairo_pattern_t *pattern)
 {
-    JSObject *object;
-
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(pattern != NULL, NULL);
 
@@ -175,8 +173,6 @@ gjs_cairo_pattern_from_pattern(JSContext       *context,
     gjs_throw(context, "failed to create pattern, unsupported pattern type %d",
               cairo_pattern_get_type(pattern));
     return NULL;
-
-    return object;
 }
 
 /**
