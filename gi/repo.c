@@ -559,22 +559,16 @@ static JSObject*
 lookup_override_function(JSContext  *context,
                          jsid        ns_name)
 {
-    JSObject *global;
     jsval importer;
     jsval overridespkg;
     jsval module;
     jsval function;
-    jsid imports_name, overrides_name, object_init_name;
+    jsid overrides_name, object_init_name;
 
     JS_BeginRequest(context);
-    global = gjs_get_import_global(context);
 
-    importer = JSVAL_VOID;
-    imports_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                GJS_STRING_IMPORTS);
-    if (!gjs_object_require_property(context, global, "global object", imports_name, &importer) ||
-        !JSVAL_IS_OBJECT(importer))
-        goto fail;
+    importer = gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS);
+    g_assert(JSVAL_IS_OBJECT(importer));
 
     overridespkg = JSVAL_VOID;
     overrides_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
@@ -609,25 +603,16 @@ JSObject*
 gjs_lookup_namespace_object_by_name(JSContext      *context,
                                     jsid            ns_name)
 {
-    JSObject *global;
     JSObject *repo_obj;
     jsval importer;
     jsval girepository;
     jsval ns_obj;
-    jsid imports_name, gi_name;
+    jsid gi_name;
 
     JS_BeginRequest(context);
-    global = gjs_get_import_global(context);
 
-    importer = JSVAL_VOID;
-    imports_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                GJS_STRING_IMPORTS);
-    if (!gjs_object_require_property(context, global, "global object", imports_name, &importer) ||
-        !JSVAL_IS_OBJECT(importer)) {
-        gjs_log_exception(context, NULL);
-        gjs_throw(context, "No imports property in global object");
-        goto fail;
-    }
+    importer = gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS);
+    g_assert(JSVAL_IS_OBJECT(importer));
 
     girepository = JSVAL_VOID;
     gi_name = gjs_runtime_get_const_string(JS_GetRuntime(context),

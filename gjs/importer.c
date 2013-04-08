@@ -62,7 +62,7 @@ define_meta_properties(JSContext  *context,
     /* We define both __moduleName__ and __parentModule__ to null
      * on the root importer
      */
-    parent_is_module = JS_InstanceOf(context, parent, &gjs_importer_class, NULL);
+    parent_is_module = parent && JS_InstanceOf(context, parent, &gjs_importer_class, NULL);
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Defining parent %p of %p '%s' is mod %d",
               parent, module_obj, module_name ? module_name : "<root>", parent_is_module);
@@ -1126,12 +1126,12 @@ gjs_get_search_path(void)
     return (G_CONST_RETURN char * G_CONST_RETURN *)search_path;
 }
 
-JSObject*
-gjs_define_importer(JSContext    *context,
-                    JSObject     *in_object,
+static JSObject*
+gjs_create_importer(JSContext    *context,
                     const char   *importer_name,
                     const char  **initial_search_path,
-                    gboolean      add_standard_search_path)
+                    gboolean      add_standard_search_path,
+                    JSObject     *in_object)
 {
     JSObject *importer;
     char **paths[2] = {0};
@@ -1149,15 +1149,30 @@ gjs_define_importer(JSContext    *context,
 
     /* API users can replace this property from JS, is the idea */
     if (!gjs_define_string_array(context, importer,
-                                    "searchPath", -1, (const char **)search_path,
-                                    /* settable (no READONLY) but not deleteable (PERMANENT) */
-                                    JSPROP_PERMANENT | JSPROP_ENUMERATE))
+                                 "searchPath", -1, (const char **)search_path,
+                                 /* settable (no READONLY) but not deleteable (PERMANENT) */
+                                 JSPROP_PERMANENT | JSPROP_ENUMERATE))
         gjs_fatal("no memory to define importer search path prop");
 
     g_strfreev(search_path);
 
     if (!define_meta_properties(context, importer, NULL, importer_name, in_object))
         gjs_fatal("failed to define meta properties on importer");
+
+    return importer;
+}
+
+JSObject*
+gjs_define_importer(JSContext    *context,
+                    JSObject     *in_object,
+                    const char   *importer_name,
+                    const char  **initial_search_path,
+                    gboolean      add_standard_search_path)
+
+{
+    JSObject *importer;
+
+    importer = gjs_create_importer(context, importer_name, initial_search_path, add_standard_search_path, in_object);
 
     if (!JS_DefineProperty(context, in_object,
                            importer_name, OBJECT_TO_JSVAL(importer),
@@ -1180,34 +1195,25 @@ gjs_create_root_importer(JSContext   *context,
                          const char **initial_search_path,
                          gboolean     add_standard_search_path)
 {
-    JSObject *global;
-    jsid imports_name;
+    jsval importer;
     JSBool found;
-
-    global = gjs_get_import_global(context);
 
     JS_BeginRequest(context);
 
-    imports_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                GJS_STRING_IMPORTS);
-    if (!JS_HasPropertyById(context, global, imports_name, &found)) {
-        JS_EndRequest(context);
-        return JS_FALSE;
-    }
+    importer = gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS);
 
-    if (!found) {
-        if (gjs_define_importer(context, global,
-                                "imports",
-                                initial_search_path, add_standard_search_path) == NULL) {
-            JS_EndRequest(context);
-            return JS_FALSE;
-        }
-    } else {
+    if (G_UNLIKELY (!JSVAL_IS_VOID(importer))) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Someone else already created root importer, ignoring second request");
+
         JS_EndRequest(context);
         return JS_TRUE;
     }
+
+    importer = OBJECT_TO_JSVAL(gjs_create_importer(context, "imports",
+                                                   initial_search_path,
+                                                   add_standard_search_path, NULL));
+    gjs_set_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS, importer);
 
     JS_EndRequest(context);
     return JS_TRUE;
@@ -1219,7 +1225,7 @@ gjs_define_root_importer(JSContext   *context,
                          const char  *importer_name)
 {
     JSObject *global;
-    jsval value;
+    jsval importer;
     JSBool success;
     jsid imports_name;
 
@@ -1227,18 +1233,11 @@ gjs_define_root_importer(JSContext   *context,
     global = gjs_get_import_global(context);
     JS_BeginRequest(context);
 
+    importer = gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS);
     imports_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
                                                 GJS_STRING_IMPORTS);
-    if (!gjs_object_require_property(context,
-                                     global, "global object",
-                                     imports_name, &value) ||
-        !JSVAL_IS_OBJECT(value)) {
-        gjs_debug(GJS_DEBUG_IMPORTER, "Root importer did not exist, couldn't get from load context; must create it");
-        goto fail;
-    }
-
     if (!JS_DefineProperty(context, in_object,
-                           importer_name, value,
+                           importer_name, importer,
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS)) {
         gjs_debug(GJS_DEBUG_IMPORTER, "DefineProperty %s on %p failed",

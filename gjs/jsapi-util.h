@@ -43,6 +43,12 @@ enum {
   GJS_UTIL_ERROR_ARGUMENT_TYPE_MISMATCH
 };
 
+typedef enum {
+    GJS_GLOBAL_SLOT_IMPORTS,
+    GJS_GLOBAL_SLOT_KEEP_ALIVE,
+    GJS_GLOBAL_SLOT_LAST,
+} GjsGlobalSlot;
+
 typedef struct GjsRootedArray GjsRootedArray;
 
 /* Flags that should be set on properties exported from native code modules.
@@ -182,6 +188,13 @@ jsval gjs_##cname##_create_proto(JSContext *context, JSObject *module, const cha
 gboolean    gjs_init_context_standard        (JSContext       *context);
 
 JSObject*   gjs_get_import_global            (JSContext       *context);
+
+jsval       gjs_get_global_slot              (JSContext       *context,
+                                              GjsGlobalSlot    slot);
+void        gjs_set_global_slot              (JSContext       *context,
+                                              GjsGlobalSlot    slot,
+                                              jsval            value);
+
 gboolean    gjs_object_require_property      (JSContext       *context,
                                               JSObject        *obj,
                                               const char      *obj_description,

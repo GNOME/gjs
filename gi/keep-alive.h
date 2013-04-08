@@ -73,7 +73,6 @@ void      gjs_keep_alive_remove_global_child       (JSContext         *context,
                                                     GjsUnrootedFunc  notify,
                                                     JSObject          *child,
                                                     void              *data);
-JSObject* gjs_keep_alive_get_for_import_global    (JSContext         *context);
 
 G_END_DECLS
 

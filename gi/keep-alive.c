@@ -322,62 +322,33 @@ gjs_keep_alive_remove_child(JSContext         *context,
 }
 
 static JSObject*
-gjs_keep_alive_get_from_parent(JSContext *context,
-                               JSObject  *parent)
-{
-    jsid keep_alive_name;
-    jsval value;
-
-    keep_alive_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                   GJS_STRING_KEEP_ALIVE_MARKER);
-    if (!JS_GetPropertyById(context, parent, keep_alive_name, &value))
-        return NULL;
-
-    if (JSVAL_IS_OBJECT(value))
-        return JSVAL_TO_OBJECT(value);
-    else
-        return NULL;
-}
-
-JSObject*
-gjs_keep_alive_get_global(JSContext *context)
-{
-    return gjs_keep_alive_get_from_parent(context,
-                                          JS_GetGlobalObject(context));
-}
-
-static JSObject*
-gjs_keep_alive_create_in_parent(JSContext *context,
-                                JSObject  *parent)
+gjs_keep_alive_create(JSContext *context)
 {
     JSObject *keep_alive;
-    jsid keep_alive_name;
 
     JS_BeginRequest(context);
 
     keep_alive = gjs_keep_alive_new(context);
+    if (!keep_alive)
+        gjs_fatal("could not create keep_alive on global object, no memory?");
 
-    keep_alive_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                   GJS_STRING_KEEP_ALIVE_MARKER);
-    if (!JS_DefinePropertyById(context, parent,
-                               keep_alive_name,
-                               OBJECT_TO_JSVAL(keep_alive),
-                               NULL, NULL,
-                               /* No ENUMERATE since this is a hidden
-                                * implementation detail kind of property
-                                */
-                               JSPROP_READONLY | JSPROP_PERMANENT))
-        gjs_fatal("no memory to define keep_alive property");
+    gjs_set_global_slot(context, GJS_GLOBAL_SLOT_KEEP_ALIVE, OBJECT_TO_JSVAL(keep_alive));
 
     JS_EndRequest(context);
     return keep_alive;
 }
 
-static JSObject*
-gjs_keep_alive_create_in_global(JSContext *context)
+JSObject*
+gjs_keep_alive_get_global(JSContext *context)
 {
-    return gjs_keep_alive_create_in_parent(context,
-                                           JS_GetGlobalObject(context));
+    jsval keep_alive;
+
+    keep_alive = gjs_get_global_slot(context, GJS_GLOBAL_SLOT_KEEP_ALIVE);
+
+    if (G_LIKELY (JSVAL_IS_OBJECT(keep_alive)))
+        return JSVAL_TO_OBJECT(keep_alive);
+
+    return gjs_keep_alive_create(context);
 }
 
 void
@@ -391,12 +362,6 @@ gjs_keep_alive_add_global_child(JSContext         *context,
     JS_BeginRequest(context);
 
     keep_alive = gjs_keep_alive_get_global(context);
-
-    if (!keep_alive)
-        keep_alive = gjs_keep_alive_create_in_global(context);
-
-    if (!keep_alive)
-        gjs_fatal("could not create keep_alive on global object, no memory?");
 
     gjs_keep_alive_add_child(context,
                              keep_alive,
@@ -426,29 +391,4 @@ gjs_keep_alive_remove_global_child(JSContext         *context,
                                 notify, child, data);
 
     JS_EndRequest(context);
-}
-
-JSObject*
-gjs_keep_alive_get_for_import_global(JSContext *context)
-{
-    JSObject *global;
-    JSObject *keep_alive;
-
-    global = gjs_get_import_global(context);
-
-    g_assert(global != NULL);
-
-    JS_BeginRequest(context);
-
-    keep_alive = gjs_keep_alive_get_from_parent(context, global);
-
-    if (!keep_alive)
-        keep_alive = gjs_keep_alive_create_in_parent(context, global);
-
-    if (!keep_alive)
-        gjs_fatal("could not create keep_alive on global object, no memory?");
-
-    JS_EndRequest(context);
-
-    return keep_alive;
 }

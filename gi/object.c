@@ -927,7 +927,7 @@ handle_toggle_up(JSContext *context,
      */
     if (priv->keep_alive == NULL) {
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Adding object to keep alive");
-        priv->keep_alive = gjs_keep_alive_get_for_import_global(context);
+        priv->keep_alive = gjs_keep_alive_get_global(context);
         gjs_keep_alive_add_child(context, priv->keep_alive,
                                  gobj_no_longer_kept_alive_func,
                                  obj,
@@ -1175,7 +1175,7 @@ associate_js_gobject (JSContext      *context,
      * the wrapper to be garbage collected (and thus unref the
      * wrappee).
      */
-    priv->keep_alive = gjs_keep_alive_get_for_import_global(context);
+    priv->keep_alive = gjs_keep_alive_get_global(context);
     gjs_keep_alive_add_child(context,
                              priv->keep_alive,
                              gobj_no_longer_kept_alive_func,
