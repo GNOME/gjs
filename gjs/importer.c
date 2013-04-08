@@ -29,11 +29,11 @@
 #include <gjs/gjs-module.h>
 #include <gjs/importer.h>
 #include <gjs/compat.h>
+#include <gjs/runtime.h>
 
 #include <string.h>
 
-#define MODULE_INIT_PROPERTY "__init__"
-#define MODULE_INIT_FILENAME MODULE_INIT_PROPERTY".js"
+#define MODULE_INIT_FILENAME "__init__.js"
 
 static char **gjs_search_path = NULL;
 
@@ -282,15 +282,19 @@ load_module_init(JSContext  *context,
     jsval script_retval;
     JSObject *module_obj;
     GError *error;
+    JSBool found;
+    jsid module_init_name;
 
     /* First we check if js module has already been loaded  */
-    if (gjs_object_has_property(context, in_object, MODULE_INIT_PROPERTY)) {
+    module_init_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                    GJS_STRING_MODULE_INIT);
+    if (JS_HasPropertyById(context, in_object, module_init_name, &found) && found) {
         jsval module_obj_val;
 
-        if (gjs_object_get_property(context,
-                                    in_object,
-                                    MODULE_INIT_PROPERTY,
-                                    &module_obj_val)) {
+        if (JS_GetPropertyById(context,
+                               in_object,
+                               module_init_name,
+                               &module_obj_val)) {
             return JSVAL_TO_OBJECT(module_obj_val);
         }
     }
@@ -307,10 +311,10 @@ load_module_init(JSContext  *context,
 
     /* Define module in importer for future use and to avoid module_obj
      * object to be garbage collected during the evaluation of the script */
-    JS_DefineProperty(context, in_object,
-                      MODULE_INIT_PROPERTY, OBJECT_TO_JSVAL(module_obj),
-                      NULL, NULL,
-                      GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT);
+    JS_DefinePropertyById(context, in_object,
+                          module_init_name, OBJECT_TO_JSVAL(module_obj),
+                          NULL, NULL,
+                          GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT);
 
     script_len = 0;
     error = NULL;
@@ -502,10 +506,6 @@ do_import(JSContext  *context,
     guint32 i;
     JSBool result;
     GPtrArray *directories;
-
-    if (strcmp(name, MODULE_INIT_PROPERTY) == 0) {
-        return JS_FALSE;
-    }
 
     if (!gjs_object_require_property(context, obj, "importer", "searchPath", &search_path_val)) {
         return JS_FALSE;
@@ -925,8 +925,14 @@ importer_new_resolve(JSContext *context,
     Importer *priv;
     char *name;
     JSBool ret = JS_TRUE;
+    jsid module_init_name;
 
     *objp = NULL;
+
+    module_init_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                    GJS_STRING_MODULE_INIT);
+    if (*id == module_init_name)
+        return JS_TRUE;
 
     if (!gjs_get_string_id(context, *id, &name))
         return JS_FALSE;
