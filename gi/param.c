@@ -32,6 +32,7 @@
 #include "gtype.h"
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
+#include <gjs/runtime.h>
 
 #include <util/log.h>
 
@@ -486,6 +487,8 @@ gjs_define_param_class(JSContext    *context,
 
     gjs_object_get_property(context, in_object, constructor_name, &value);
     if (!JSVAL_IS_VOID(value)) {
+        jsid prototype_name;
+
         if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "Existing property '%s' does not look like a constructor",
                       constructor_name);
@@ -494,7 +497,9 @@ gjs_define_param_class(JSContext    *context,
 
         constructor = JSVAL_TO_OBJECT(value);
 
-        gjs_object_get_property(context, constructor, "prototype", &value);
+        prototype_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                      GJS_STRING_PROTOTYPE);
+        JS_GetPropertyById(context, constructor, prototype_name, &value);
         if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "prototype property does not appear to exist or has wrong type");
             return JS_FALSE;

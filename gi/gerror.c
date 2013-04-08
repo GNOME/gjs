@@ -27,6 +27,7 @@
 
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
+#include <gjs/runtime.h>
 #include "boxed.h"
 #include "enumeration.h"
 #include "repo.h"
@@ -417,6 +418,7 @@ gjs_define_error_class(JSContext    *context,
 
     if (gjs_object_get_property(context, in_object, constructor_name, &value)) {
         JSObject *constructor;
+        jsid prototype_name;
 
         if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "Existing property '%s' does not look like a constructor",
@@ -426,7 +428,9 @@ gjs_define_error_class(JSContext    *context,
 
         constructor = JSVAL_TO_OBJECT(value);
 
-        gjs_object_get_property(context, constructor, "prototype", &value);
+        prototype_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                      GJS_STRING_PROTOTYPE);
+        JS_GetPropertyById(context, constructor, prototype_name, &value);
         if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "error %s prototype property does not appear to exist or has wrong type", constructor_name);
             return JS_FALSE;

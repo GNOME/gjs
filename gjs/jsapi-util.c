@@ -31,6 +31,7 @@
 #include "jsapi-util.h"
 #include "compat.h"
 #include "jsapi-private.h"
+#include "runtime.h"
 
 #include <string.h>
 #include <math.h>
@@ -204,14 +205,17 @@ gjs_throw_abstract_constructor_error(JSContext *context,
 {
     jsval callee;
     jsval prototype;
+    jsid prototype_name;
     JSClass *proto_class;
     const char *name = "anonymous";
 
     callee = JS_CALLEE(context, vp);
 
     if (JSVAL_IS_OBJECT(callee)) {
-        if (gjs_object_get_property(context, JSVAL_TO_OBJECT(callee),
-                                    "prototype", &prototype)) {
+        prototype_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                      GJS_STRING_PROTOTYPE);
+        if (JS_GetPropertyById(context, JSVAL_TO_OBJECT(callee),
+                               prototype_name, &prototype)) {
             proto_class = JS_GetClass(JSVAL_TO_OBJECT(prototype));
             name = proto_class->name;
         }

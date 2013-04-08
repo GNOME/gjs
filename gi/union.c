@@ -33,6 +33,7 @@
 #include "object.h"
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
+#include <gjs/runtime.h>
 #include "repo.h"
 #include "proxyutils.h"
 #include "function.h"
@@ -413,6 +414,8 @@ gjs_define_union_class(JSContext    *context,
     constructor_name = g_base_info_get_name( (GIBaseInfo*) info);
 
     if (gjs_object_get_property(context, in_object, constructor_name, &value)) {
+        jsid prototype_name;
+
         if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "Existing property '%s' does not look like a constructor",
                          constructor_name);
@@ -421,7 +424,9 @@ gjs_define_union_class(JSContext    *context,
 
         constructor = JSVAL_TO_OBJECT(value);
 
-        gjs_object_get_property(context, constructor, "prototype", &value);
+        prototype_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                      GJS_STRING_PROTOTYPE);
+        JS_GetPropertyById(context, constructor, prototype_name, &value);
         if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "union %s prototype property does not appear to exist or has wrong type", constructor_name);
             return JS_FALSE;
