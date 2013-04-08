@@ -179,7 +179,6 @@ jsval gjs_##cname##_create_proto(JSContext *context, JSObject *module, const cha
 
 gboolean    gjs_init_context_standard        (JSContext       *context);
 
-JSContext*  gjs_runtime_get_context          (JSRuntime       *runtime);
 JSObject*   gjs_get_import_global            (JSContext       *context);
 gboolean    gjs_object_has_property          (JSContext       *context,
                                               JSObject        *obj,

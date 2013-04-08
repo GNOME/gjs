@@ -41,6 +41,7 @@
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 #include <gjs/type-module.h>
+#include <gjs/runtime.h>
 
 #include <util/log.h>
 #include <girepository.h>

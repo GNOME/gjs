@@ -29,6 +29,7 @@
 #include "boxed.h"
 #include "union.h"
 #include "gerror.h"
+#include <gjs/runtime.h>
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 

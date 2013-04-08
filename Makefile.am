@@ -38,6 +38,7 @@ nobase_gjs_module_include_HEADERS =	\
 	gjs/byteArray.h		\
 	gjs/importer.h		\
 	gjs/jsapi-util.h	\
+	gjs/runtime.h		\
 	gjs/type-module.h	\
 	gjs/mem.h		\
 	gjs/native.h	\
@@ -117,6 +118,7 @@ libgjs_la_SOURCES =		\
 	gjs/mem.c		\
 	gjs/native.c		\
 	gjs/profiler.c		\
+	gjs/runtime.c		\
 	gjs/stack.c		\
 	gjs/type-module.c	\
 	modules/modules.c	\

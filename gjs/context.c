@@ -30,6 +30,7 @@
 #include "native.h"
 #include "byteArray.h"
 #include "compat.h"
+#include "runtime.h"
 
 #include "gi.h"
 #include "gi/object.h"
@@ -397,6 +398,8 @@ gjs_context_dispose(GObject *object)
     }
 
     if (js_context->runtime != NULL) {
+        gjs_runtime_deinit(js_context->runtime);
+
         /* Cleans up data as well as destroying the runtime. */
         JS_DestroyRuntime(js_context->runtime);
         js_context->runtime = NULL;
@@ -572,7 +575,7 @@ gjs_context_constructor (GType                  type,
     if (js_context->context == NULL)
         gjs_fatal("Failed to create javascript context");
 
-    JS_SetRuntimePrivate(js_context->runtime, js_context->context);
+    gjs_runtime_init_for_context(js_context->runtime, js_context->context);
 
     JS_BeginRequest(js_context->context);
 
@@ -900,7 +903,7 @@ static void
 gjs_on_context_gc (JSRuntime *rt,
                    JSGCStatus status)
 {
-    JSContext *context = JS_GetRuntimePrivate(rt);
+    JSContext *context = gjs_runtime_get_context(rt);
     GjsContext *gjs_context = JS_GetContextPrivate(context);
 
     switch (status) {

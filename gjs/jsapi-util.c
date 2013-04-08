@@ -69,21 +69,6 @@ gjs_get_import_global(JSContext *context)
     return JS_GetGlobalObject(context);
 }
 
-/**
- * gjs_runtime_get_context:
- * @runtime: a #JSRuntime
- *
- * Gets the context associated with this runtime.
- *
- * Return value: the context, or %NULL if GJS hasn't been initialized
- * for the runtime or is being shut down.
- */
-JSContext *
-gjs_runtime_get_context(JSRuntime *runtime)
-{
-    return (JSContext *) JS_GetRuntimePrivate (runtime);
-}
-
 static void
 finalize_stub(JSFreeOp *fop, JSObject *global)
 {
