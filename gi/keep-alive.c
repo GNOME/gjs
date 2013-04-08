@@ -27,6 +27,7 @@
 
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
+#include <gjs/runtime.h>
 
 #include <util/log.h>
 #include <util/glib.h>
@@ -319,15 +320,17 @@ gjs_keep_alive_remove_child(JSContext         *context,
                         &child);
 }
 
-#define GLOBAL_KEEP_ALIVE_NAME "__gc_this_on_context_destroy"
-
 static JSObject*
 gjs_keep_alive_get_from_parent(JSContext *context,
                                JSObject  *parent)
 {
+    jsid keep_alive_name;
     jsval value;
 
-    gjs_object_get_property(context, parent, GLOBAL_KEEP_ALIVE_NAME, &value);
+    keep_alive_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                   GJS_STRING_KEEP_ALIVE_MARKER);
+    if (!JS_GetPropertyById(context, parent, keep_alive_name, &value))
+        return NULL;
 
     if (JSVAL_IS_OBJECT(value))
         return JSVAL_TO_OBJECT(value);
@@ -347,19 +350,22 @@ gjs_keep_alive_create_in_parent(JSContext *context,
                                 JSObject  *parent)
 {
     JSObject *keep_alive;
+    jsid keep_alive_name;
 
     JS_BeginRequest(context);
 
     keep_alive = gjs_keep_alive_new(context);
 
-    if (!JS_DefineProperty(context, parent,
-                           GLOBAL_KEEP_ALIVE_NAME,
-                           OBJECT_TO_JSVAL(keep_alive),
-                           NULL, NULL,
-                           /* No ENUMERATE since this is a hidden
-                            * implementation detail kind of property
-                            */
-                           JSPROP_READONLY | JSPROP_PERMANENT))
+    keep_alive_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                   GJS_STRING_KEEP_ALIVE_MARKER);
+    if (!JS_DefinePropertyById(context, parent,
+                               keep_alive_name,
+                               OBJECT_TO_JSVAL(keep_alive),
+                               NULL, NULL,
+                               /* No ENUMERATE since this is a hidden
+                                * implementation detail kind of property
+                                */
+                               JSPROP_READONLY | JSPROP_PERMANENT))
         gjs_fatal("no memory to define keep_alive property");
 
     JS_EndRequest(context);
