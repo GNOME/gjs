@@ -151,7 +151,8 @@ jsval gjs_##cname##_create_proto(JSContext *context, JSObject *module, const cha
 { \
     jsval rval; \
     JSObject *global = gjs_get_import_global(context); \
-    if (!JS_GetProperty(context, global, gjs_##cname##_class.name, &rval)) \
+    jsid class_name = gjs_intern_string_to_id(context, gjs_##cname##_class.name); \
+    if (!JS_GetPropertyById(context, global, class_name, &rval))                       \
         return JSVAL_NULL; \
     if (JSVAL_IS_VOID(rval)) { \
         JSObject *prototype = JS_InitClass(context, global, \
@@ -168,7 +169,7 @@ jsval gjs_##cname##_create_proto(JSContext *context, JSObject *module, const cha
         } \
         if (!gjs_object_require_property( \
                 context, global, NULL, \
-                gjs_##cname##_class.name, &rval)) { \
+                class_name, &rval)) { \
             return JSVAL_NULL; \
         } \
         if (!JS_DefineProperty(context, module, proto_name, \
@@ -184,7 +185,7 @@ JSObject*   gjs_get_import_global            (JSContext       *context);
 gboolean    gjs_object_require_property      (JSContext       *context,
                                               JSObject        *obj,
                                               const char      *obj_description,
-                                              const char      *property_name,
+                                              jsid             property_name,
                                               jsval           *value_p);
 
 JSObject   *gjs_new_object_for_constructor   (JSContext       *context,
@@ -299,7 +300,8 @@ JSBool      gjs_string_get_uint16_data       (JSContext       *context,
 JSBool      gjs_get_string_id                (JSContext       *context,
                                               jsid             id,
                                               char           **name_p);
-
+jsid        gjs_intern_string_to_id          (JSContext       *context,
+                                              const char      *string);
 
 gboolean    gjs_unichar_from_string          (JSContext       *context,
                                               jsval            string,

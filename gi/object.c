@@ -726,13 +726,13 @@ object_instance_props_to_g_parameters(JSContext   *context,
         jsval value;
         GParameter gparam = { NULL, { 0, }};
 
-        if (!gjs_get_string_id(context, prop_id, &name))
-            goto free_array_and_fail;
-
-        if (!gjs_object_require_property(context, props, "property list", name, &value)) {
+        if (!gjs_object_require_property(context, props, "property list", prop_id, &value)) {
             g_free(name);
             goto free_array_and_fail;
         }
+
+        if (!gjs_get_string_id(context, prop_id, &name))
+            goto free_array_and_fail;
 
         switch (init_g_param_from_property(context, name,
                                            value,
@@ -1278,10 +1278,13 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
     JSBool ret;
     jsval initer;
     jsval rval;
+    jsid object_init_name;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(object_instance);
 
-    if (!gjs_object_require_property(context, object, "GObject instance", "_init", &initer))
+    object_init_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                    GJS_STRING_GOBJECT_INIT);
+    if (!gjs_object_require_property(context, object, "GObject instance", object_init_name, &initer))
         return JS_FALSE;
 
     rval = JSVAL_VOID;

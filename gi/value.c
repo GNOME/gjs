@@ -367,7 +367,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
 
             if (!gjs_object_require_property(context,
                                              JSVAL_TO_OBJECT(value), NULL,
-                                             "length",
+                                             length_name,
                                              &length_value) ||
                 !JS_ValueToECMAUint32(context, length_value, &length)) {
                 gjs_throw(context,

@@ -210,11 +210,14 @@ gjs_construct_object_dynamic(JSContext      *context,
     JSObject *constructor;
     JSObject *result = NULL;
     jsval value;
+    jsid constructor_name;
 
     JS_BeginRequest(context);
 
+    constructor_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                    GJS_STRING_CONSTRUCTOR);
     if (!gjs_object_require_property(context, proto, "prototype",
-                                     "constructor", &value))
+                                     constructor_name, &value))
         goto out;
 
     constructor = JSVAL_TO_OBJECT(value);

@@ -461,8 +461,10 @@ gjs_lookup_param_prototype(JSContext    *context)
 {
     JSObject *ns;
     JSObject *proto;
+    jsid gobject_name;
 
-    ns = gjs_lookup_namespace_object_by_name(context, "GObject");
+    gobject_name = gjs_intern_string_to_id(context, "GObject");
+    ns = gjs_lookup_namespace_object_by_name(context, gobject_name);
 
     if (ns == NULL)
         return NULL;

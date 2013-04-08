@@ -242,3 +242,13 @@ gjs_unichar_from_string (JSContext *context,
     }
     return FALSE;
 }
+
+jsid
+gjs_intern_string_to_id (JSContext  *context,
+                         const char *string)
+{
+    JSString *str;
+
+    str = JS_InternString(context, string);
+    return INTERNED_STRING_TO_JSID(context, str);
+}

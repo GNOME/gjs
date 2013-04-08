@@ -45,7 +45,9 @@ typedef struct {
     GIBoxedInfo *info;
     GType gtype;
     gint zero_args_constructor; /* -1 if none */
+    jsid zero_args_constructor_name;
     gint default_constructor; /* -1 if none */
+    jsid default_constructor_name;
 
     /* instance info */
     void *gboxed; /* NULL if we are the prototype and not an instance */
@@ -302,7 +304,7 @@ boxed_init_from_props(JSContext   *context,
             goto out;
         }
 
-        if (!gjs_object_require_property(context, props, "property list", name, &value)) {
+        if (!gjs_object_require_property(context, props, "property list", prop_id, &value)) {
             g_free(name);
             goto out;
         }
@@ -327,21 +329,24 @@ boxed_init_from_props(JSContext   *context,
 static JSBool
 boxed_invoke_constructor(JSContext   *context,
                          JSObject    *obj,
-                         const gchar *constructor_name,
+                         jsid         constructor_name,
                          unsigned     argc,
                          jsval       *argv,
                          jsval       *rval)
 {
     jsval js_constructor, js_constructor_func;
+    jsid constructor_const;
 
-    if (!gjs_object_require_property (context, obj, NULL, "constructor", &js_constructor))
+    constructor_const = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                     GJS_STRING_CONSTRUCTOR);
+    if (!gjs_object_require_property(context, obj, NULL, constructor_const, &js_constructor))
         return JS_FALSE;
 
-    if (!gjs_object_require_property (context, JSVAL_TO_OBJECT(js_constructor), NULL,
-                                      constructor_name, &js_constructor_func))
+    if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(js_constructor), NULL,
+                                     constructor_name, &js_constructor_func))
         return JS_FALSE;
 
-    return gjs_call_function_value (context, NULL, js_constructor_func, argc, argv, rval);
+    return gjs_call_function_value(context, NULL, js_constructor_func, argc, argv, rval);
 }
 
 static JSBool
@@ -353,9 +358,13 @@ boxed_new(JSContext   *context,
           jsval       *rval)
 {
     if (priv->gtype == G_TYPE_VARIANT) {
+        jsid constructor_name;
+
         /* Short-circuit construction for GVariants by calling into the JS packing
            function */
-        return boxed_invoke_constructor (context, obj, "_new_internal", argc, argv, rval);
+        constructor_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                        GJS_STRING_NEW_INTERNAL);
+        return boxed_invoke_constructor (context, obj, constructor_name, argc, argv, rval);
     }
 
     /* If the structure is registered as a boxed, we can create a new instance by
@@ -391,21 +400,12 @@ boxed_new(JSContext   *context,
     } else if (priv->can_allocate_directly) {
         boxed_new_direct(priv);
     } else if (priv->default_constructor >= 0) {
-        GIFunctionInfo *constructor;
-        const gchar *constructor_name;
         JSBool retval;
 
         /* for simplicity, we simply delegate all the work to the actual JS constructor
            function (which we retrieve from the JS constructor, that is, Namespace.BoxedType,
            or object.constructor, given that object was created with the right prototype */
-
-        constructor = g_struct_info_get_method(priv->info, priv->default_constructor);
-        constructor_name = g_base_info_get_name((GIBaseInfo*)constructor);
-
-        retval = boxed_invoke_constructor(context, obj, constructor_name, argc, argv, rval);
-
-        g_base_info_unref((GIBaseInfo*)constructor);
-
+        retval = boxed_invoke_constructor(context, obj, priv->default_constructor_name, argc, argv, rval);
         return retval;
     } else {
         gjs_throw(context, "Unable to construct struct type %s since it has no default constructor and cannot be allocated directly",
@@ -1119,10 +1119,12 @@ struct_is_simple(GIStructInfo *info)
 }
 
 static void
-boxed_fill_prototype_info(Boxed *priv)
+boxed_fill_prototype_info(JSContext *context,
+                          Boxed     *priv)
 {
     int i, n_methods;
     int first_constructor = -1;
+    jsid first_constructor_name = JSID_VOID;
 
     priv->gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
     priv->zero_args_constructor = -1;
@@ -1144,25 +1146,42 @@ boxed_fill_prototype_info(Boxed *priv)
 
             flags = g_function_info_get_flags(func_info);
             if ((flags & GI_FUNCTION_IS_CONSTRUCTOR) != 0) {
-                if (first_constructor < 0)
+                if (first_constructor < 0) {
+                    const char *name;
+
+                    name = g_base_info_get_name((GIBaseInfo*) func_info);
                     first_constructor = i;
+                    first_constructor_name = gjs_intern_string_to_id(context, name);
+                }
 
                 if (priv->zero_args_constructor < 0 &&
-                    g_callable_info_get_n_args((GICallableInfo*) func_info) == 0)
+                    g_callable_info_get_n_args((GICallableInfo*) func_info) == 0) {
+                    const char *name;
+
+                    name = g_base_info_get_name((GIBaseInfo*) func_info);
                     priv->zero_args_constructor = i;
+                    priv->zero_args_constructor_name = gjs_intern_string_to_id(context, name);
+                }
 
                 if (priv->default_constructor < 0 &&
-                    strcmp(g_base_info_get_name ((GIBaseInfo*) func_info), "new") == 0)
+                    strcmp(g_base_info_get_name ((GIBaseInfo*) func_info), "new") == 0) {
                     priv->default_constructor = i;
+                    priv->default_constructor_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                                                  GJS_STRING_NEW);
+                }
             }
 
             g_base_info_unref((GIBaseInfo*) func_info);
         }
 
-        if (priv->default_constructor < 0)
+        if (priv->default_constructor < 0) {
             priv->default_constructor = priv->zero_args_constructor;
-        if (priv->default_constructor < 0)
+            priv->default_constructor_name = priv->zero_args_constructor_name;
+        }
+        if (priv->default_constructor < 0) {
             priv->default_constructor = first_constructor;
+            priv->default_constructor_name = first_constructor_name;
+        }
     }
 }
 
@@ -1239,7 +1258,7 @@ gjs_define_boxed_class(JSContext    *context,
     GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Boxed);
     priv->info = info;
-    boxed_fill_prototype_info(priv);
+    boxed_fill_prototype_info(context, priv);
 
     g_base_info_ref( (GIBaseInfo*) priv->info);
     priv->gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo*) priv->info);

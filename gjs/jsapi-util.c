@@ -105,48 +105,52 @@ gjs_init_context_standard (JSContext       *context)
 
 /* Returns whether the object had the property; if the object did
  * not have the property, always sets an exception. Treats
- * "the property's value is JSVAL_VOID" the same as "no such property,"
- * while JS_GetProperty() treats only "no such property" as an error.
+ * "the property's value is JSVAL_VOID" the same as "no such property,".
  * Guarantees that *value_p is set to something, if only JSVAL_VOID,
  * even if an exception is set and false is returned.
+ *
+ * Requires request.
  */
 gboolean
 gjs_object_require_property(JSContext       *context,
                             JSObject        *obj,
                             const char      *obj_description,
-                            const char      *property_name,
+                            jsid             property_name,
                             jsval           *value_p)
 {
     jsval value;
-
-    JS_BeginRequest(context);
+    char *name;
 
     value = JSVAL_VOID;
-    JS_GetProperty(context, obj, property_name, &value);
-
     if (value_p)
         *value_p = value;
 
-    if (!JSVAL_IS_VOID(value)) {
-        JS_ClearPendingException(context); /* in case JS_GetProperty() was on crack */
-        JS_EndRequest(context);
-        return TRUE;
-    } else {
-        /* remember gjs_throw() is a no-op if JS_GetProperty()
-         * already set an exception
-         */
-        if (obj_description)
-            gjs_throw(context,
-                      "No property '%s' in %s (or its value was undefined)",
-                      property_name, obj_description);
-        else
-            gjs_throw(context,
-                      "No property '%s' in object %p (or its value was undefined)",
-                      property_name, obj);
+    if (G_UNLIKELY (!JS_GetPropertyById(context, obj, property_name, &value)))
+        return JS_FALSE;
 
-        JS_EndRequest(context);
-        return FALSE;
+    if (G_LIKELY (!JSVAL_IS_VOID(value))) {
+        if (value_p)
+            *value_p = value;
+        return JS_TRUE;
     }
+
+    /* remember gjs_throw() is a no-op if JS_GetProperty()
+     * already set an exception
+     */
+
+    gjs_get_string_id(context, property_name, &name);
+
+    if (obj_description)
+        gjs_throw(context,
+                  "No property '%s' in %s (or its value was undefined)",
+                  name, obj_description);
+    else
+        gjs_throw(context,
+                  "No property '%s' in object %p (or its value was undefined)",
+                  name, obj);
+
+    g_free(name);
+    return JS_FALSE;
 }
 
 void

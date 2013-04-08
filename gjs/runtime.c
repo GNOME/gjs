@@ -44,9 +44,10 @@ typedef struct {
 static const char *const_strings[] = {
     "constructor", "prototype", "length",
     "imports", "__parentModule__", "__init__", "searchPath",
-    "__gjsKeepAlive",
+    "__gjsKeepAlive", "__gjsPrivateNS",
     "gi", "versions", "overrides",
-    "_init"
+    "_init", "_new_internal", "new",
+    "message", "code", "stack", "fileName", "lineNumber"
 };
 
 G_STATIC_ASSERT(G_N_ELEMENTS(const_strings) == GJS_STRING_LAST);
@@ -91,12 +92,8 @@ gjs_runtime_init_for_context(JSRuntime *runtime,
     data = g_new(GjsRuntimeData, 1);
 
     data->context = context;
-    for (i = 0; i < GJS_STRING_LAST; i++) {
-        JSString *str;
-
-        str = JS_InternString(context, const_strings[i]);
-        data->const_strings[i] = INTERNED_STRING_TO_JSID(context, str);
-    }
+    for (i = 0; i < GJS_STRING_LAST; i++)
+        data->const_strings[i] = gjs_intern_string_to_id(context, const_strings[i]);
 
     JS_SetRuntimePrivate(runtime, data);
 }

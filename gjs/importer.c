@@ -506,8 +506,11 @@ do_import(JSContext  *context,
     guint32 i;
     JSBool result;
     GPtrArray *directories;
+    jsid search_path_name;
 
-    if (!gjs_object_require_property(context, obj, "importer", "searchPath", &search_path_val)) {
+    search_path_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                    GJS_STRING_SEARCH_PATH);
+    if (!gjs_object_require_property(context, obj, "importer", search_path_name, &search_path_val)) {
         return JS_FALSE;
     }
 
@@ -741,6 +744,7 @@ importer_new_enumerate(JSContext  *context,
         jsval search_path_val;
         guint32 search_path_len;
         guint32 i;
+        jsid search_path_name;
 
         if (state_p)
             *state_p = JSVAL_NULL;
@@ -754,7 +758,9 @@ importer_new_enumerate(JSContext  *context,
             /* we are enumerating the prototype properties */
             return JS_TRUE;
 
-        if (!gjs_object_require_property(context, *object, "importer", "searchPath", &search_path_val))
+        search_path_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                        GJS_STRING_SEARCH_PATH);
+        if (!gjs_object_require_property(context, *object, "importer", search_path_name, &search_path_val))
             return JS_FALSE;
 
         if (!JSVAL_IS_OBJECT(search_path_val)) {
@@ -1215,14 +1221,17 @@ gjs_define_root_importer(JSContext   *context,
     JSObject *global;
     jsval value;
     JSBool success;
+    jsid imports_name;
 
     success = JS_FALSE;
     global = gjs_get_import_global(context);
     JS_BeginRequest(context);
 
+    imports_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                GJS_STRING_IMPORTS);
     if (!gjs_object_require_property(context,
                                      global, "global object",
-                                     "imports", &value) ||
+                                     imports_name, &value) ||
         !JSVAL_IS_OBJECT(value)) {
         gjs_debug(GJS_DEBUG_IMPORTER, "Root importer did not exist, couldn't get from load context; must create it");
         goto fail;

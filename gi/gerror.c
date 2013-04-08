@@ -62,6 +62,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     Error *priv;
     Error *proto_priv;
     JSObject *proto;
+    jsid message_name, code_name;
     jsval v_message, v_code;
     gchar *message;
 
@@ -102,17 +103,21 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     g_base_info_ref( (GIBaseInfo*) priv->info);
     priv->domain = proto_priv->domain;
 
-    if (!gjs_object_require_property (context, JSVAL_TO_OBJECT(argv[0]),
-                                      "GError constructor", "message", &v_message))
+    message_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                GJS_STRING_MESSAGE);
+    code_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                             GJS_STRING_CODE);
+    if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(argv[0]),
+                                     "GError constructor", message_name, &v_message))
         return JS_FALSE;
-    if (!gjs_object_require_property (context, JSVAL_TO_OBJECT(argv[0]),
-                                      "GError constructor", "code", &v_code))
+    if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(argv[0]),
+                                     "GError constructor", code_name, &v_code))
         return JS_FALSE;
     if (!gjs_string_to_utf8 (context, v_message, &message))
         return JS_FALSE;
 
-    priv->gerror = g_error_new_literal (priv->domain, JSVAL_TO_INT(v_code),
-                                        message);
+    priv->gerror = g_error_new_literal(priv->domain, JSVAL_TO_INT(v_code),
+                                       message);
 
     g_free (message);
 
@@ -260,6 +265,7 @@ error_constructor_value_of(JSContext *context, unsigned argc, jsval *vp)
     jsval v_self, v_prototype;
     Error *priv;
     jsval v_out;
+    jsid prototype_name;
 
     v_self = JS_THIS(context, vp);
     if (!JSVAL_IS_OBJECT(v_self)) {
@@ -268,10 +274,12 @@ error_constructor_value_of(JSContext *context, unsigned argc, jsval *vp)
         return JS_FALSE;
     }
 
+    prototype_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                  GJS_STRING_PROTOTYPE);
     if (!gjs_object_require_property(context,
                                      JSVAL_TO_OBJECT(v_self),
                                      "constructor",
-                                     "prototype",
+                                     prototype_name,
                                      &v_prototype))
         return JS_FALSE;
 
@@ -533,6 +541,7 @@ define_error_properties(JSContext *context,
     GString *stack;
     const char *filename;
     GjsContext *gjs_context;
+    jsid stack_name, filename_name, linenumber_name;
 
     /* find the JS frame that triggered the error */
     frame = NULL;
@@ -554,18 +563,25 @@ define_error_properties(JSContext *context,
     gjs_context = JS_GetContextPrivate(context);
     gjs_context_print_stack_to_buffer(gjs_context, frame, stack);
 
+    stack_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                              GJS_STRING_STACK);
+    filename_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                 GJS_STRING_FILENAME);
+    linenumber_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                   GJS_STRING_LINE_NUMBER);
+
     if (gjs_string_from_utf8(context, stack->str, stack->len, &v))
-        JS_DefineProperty(context, obj, "stack", v,
+        JS_DefinePropertyById(context, obj, stack_name, v,
                           NULL, NULL, JSPROP_ENUMERATE);
 
     filename = JS_GetScriptFilename(context, script);
     if (gjs_string_from_filename(context, filename, -1, &v))
-        JS_DefineProperty(context, obj, "fileName", v,
-                          NULL, NULL, JSPROP_ENUMERATE);
+        JS_DefinePropertyById(context, obj, filename_name, v,
+                              NULL, NULL, JSPROP_ENUMERATE);
 
     v = INT_TO_JSVAL(JS_PCToLineNumber(context, script, pc));
-    JS_DefineProperty(context, obj, "lineNumber", v,
-                      NULL, NULL, JSPROP_ENUMERATE);
+    JS_DefinePropertyById(context, obj, linenumber_name, v,
+                          NULL, NULL, JSPROP_ENUMERATE);
 
     g_string_free(stack, TRUE);
 }
