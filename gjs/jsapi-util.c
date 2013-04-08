@@ -103,49 +103,6 @@ gjs_init_context_standard (JSContext       *context)
     return TRUE;
 }
 
-
-/* Checks whether an object has a property; unlike JS_GetProperty(),
- * never sets an exception. Treats a property with a value of JSVAL_VOID
- * the same as an absent property and returns false in both cases.
- */
-gboolean
-gjs_object_has_property(JSContext  *context,
-                        JSObject   *obj,
-                        const char *property_name)
-{
-    return gjs_object_get_property(context, obj, property_name, NULL);
-}
-
-/* Checks whether an object has a property; unlike JS_GetProperty(),
- * never sets an exception. Treats a property with a value of JSVAL_VOID
- * the same as an absent property and returns false in both cases.
- * Always initializes *value_p, if only to JSVAL_VOID, even if it
- * returns FALSE.
- */
-gboolean
-gjs_object_get_property(JSContext  *context,
-                        JSObject   *obj,
-                        const char *property_name,
-                        jsval      *value_p)
-{
-    jsval value;
-    JSExceptionState *state;
-
-    JS_BeginRequest(context);
-
-    value = JSVAL_VOID;
-    state = JS_SaveExceptionState(context);
-    JS_GetProperty(context, obj, property_name, &value);
-    JS_RestoreExceptionState(context, state);
-
-    if (value_p)
-        *value_p = value;
-
-    JS_EndRequest(context);
-
-    return !JSVAL_IS_VOID(value);
-}
-
 /* Returns whether the object had the property; if the object did
  * not have the property, always sets an exception. Treats
  * "the property's value is JSVAL_VOID" the same as "no such property,"
@@ -413,13 +370,13 @@ gjs_log_object_props(JSContext      *context,
 
     while (!JSID_IS_VOID(prop_id)) {
         jsval propval;
-        char *name;
         char *debugstr;
+        char *name;
 
-        if (!gjs_get_string_id(context, prop_id, &name))
+        if (!JS_GetPropertyById(context, obj, prop_id, &propval))
             goto next;
 
-        if (!gjs_object_get_property(context, obj, name, &propval))
+        if (!gjs_get_string_id(context, prop_id, &name))
             goto next;
 
         debugstr = gjs_value_debug_string(context, propval);
@@ -502,7 +459,8 @@ log_one_exception_property(JSContext  *context,
     jsval v;
     char *debugstr;
 
-    gjs_object_get_property(context, object, name, &v);
+    if (!JS_GetProperty(context, object, name, &v))
+        return;
 
     debugstr = gjs_value_debug_string(context, v);
     gjs_debug(GJS_DEBUG_ERROR, "  %s = '%s'", name, debugstr);
@@ -641,12 +599,12 @@ try_to_chain_stack_trace(JSContext *src_context, JSContext *dst_context,
     JS_ClearPendingException(dst_context);
 
     /* get stack trace for src_exc and chained */
-    if (!(gjs_object_get_property(dst_context, JSVAL_TO_OBJECT(chained),
-                                  "stack", &dst_stack) &&
+    if (!(JS_GetProperty(dst_context, JSVAL_TO_OBJECT(chained),
+                         "stack", &dst_stack) &&
           JSVAL_IS_STRING(dst_stack)))
         goto out; // couldn't get chained stack
-    if (!(gjs_object_get_property(src_context, JSVAL_TO_OBJECT(src_exc),
-                                  "stack", &src_stack) &&
+    if (!(JS_GetProperty(src_context, JSVAL_TO_OBJECT(src_exc),
+                         "stack", &src_stack) &&
           JSVAL_IS_STRING(src_stack)))
         goto out; // couldn't get source stack
 

@@ -353,11 +353,15 @@ gjs_value_to_g_value_internal(JSContext    *context,
 
         g_value_set_object(gvalue, gobj);
     } else if (gtype == G_TYPE_STRV) {
+        jsid length_name;
+        JSBool found_length;
+
+        length_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                   GJS_STRING_LENGTH);
         if (JSVAL_IS_NULL(value)) {
             /* do nothing */
-        } else if (gjs_object_has_property(context,
-                                           JSVAL_TO_OBJECT(value),
-                                           "length")) {
+        } else if (JS_HasPropertyById(context, JSVAL_TO_OBJECT(value), length_name, &found_length) &&
+                   found_length) {
             jsval length_value;
             guint32 length;
 

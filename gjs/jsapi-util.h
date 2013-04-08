@@ -151,8 +151,9 @@ jsval gjs_##cname##_create_proto(JSContext *context, JSObject *module, const cha
 { \
     jsval rval; \
     JSObject *global = gjs_get_import_global(context); \
-    if (!gjs_object_get_property(context, global, \
-                                 gjs_##cname##_class.name, &rval)) {  \
+    if (!JS_GetProperty(context, global, gjs_##cname##_class.name, &rval)) \
+        return JSVAL_NULL; \
+    if (JSVAL_IS_VOID(rval)) { \
         JSObject *prototype = JS_InitClass(context, global, \
                                  parent, \
                                  &gjs_##cname##_class, \
@@ -180,13 +181,6 @@ jsval gjs_##cname##_create_proto(JSContext *context, JSObject *module, const cha
 gboolean    gjs_init_context_standard        (JSContext       *context);
 
 JSObject*   gjs_get_import_global            (JSContext       *context);
-gboolean    gjs_object_has_property          (JSContext       *context,
-                                              JSObject        *obj,
-                                              const char      *property_name);
-gboolean    gjs_object_get_property          (JSContext       *context,
-                                              JSObject        *obj,
-                                              const char      *property_name,
-                                              jsval           *value_p);
 gboolean    gjs_object_require_property      (JSContext       *context,
                                               JSObject        *obj,
                                               const char      *obj_description,

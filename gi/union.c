@@ -413,7 +413,9 @@ gjs_define_union_class(JSContext    *context,
 
     constructor_name = g_base_info_get_name( (GIBaseInfo*) info);
 
-    if (gjs_object_get_property(context, in_object, constructor_name, &value)) {
+    if (!JS_GetProperty(context, in_object, constructor_name, &value))
+        return JS_FALSE;
+    if (!JSVAL_IS_VOID(value)) {
         jsid prototype_name;
 
         if (!JSVAL_IS_OBJECT(value)) {

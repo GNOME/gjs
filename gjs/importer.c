@@ -582,10 +582,10 @@ do_import(JSContext  *context,
         if (module_obj != NULL) {
             jsval obj_val;
 
-            if (gjs_object_get_property(context,
-                                        module_obj,
-                                        name,
-                                        &obj_val)) {
+            if (JS_GetProperty(context,
+                               module_obj,
+                               name,
+                               &obj_val)) {
                 if (!JSVAL_IS_VOID(obj_val) &&
                     JS_DefineProperty(context, obj,
                                       name, obj_val,
@@ -1012,11 +1012,13 @@ importer_new(JSContext    *context)
     JSObject *importer;
     Importer *priv;
     JSObject *global;
-    (void) priv;
+    JSBool found;
 
     global = gjs_get_import_global(context);
 
-    if (!gjs_object_has_property(context, global, gjs_importer_class.name)) {
+    if (!JS_HasProperty(context, global, gjs_importer_class.name, &found))
+        gjs_fatal("HasProperty call failed creating importer class");
+    if (!found) {
         JSObject *prototype;
         prototype = JS_InitClass(context, global,
                                  /* parent prototype JSObject* for
@@ -1042,8 +1044,6 @@ importer_new(JSContext    *context)
                                  NULL);
         if (prototype == NULL)
             gjs_fatal("Can't init class %s", gjs_importer_class.name);
-
-        g_assert(gjs_object_has_property(context, global, gjs_importer_class.name));
 
         gjs_debug(GJS_DEBUG_IMPORTER, "Initialized class %s prototype %p",
                   gjs_importer_class.name, prototype);
@@ -1175,14 +1175,21 @@ gjs_create_root_importer(JSContext   *context,
                          gboolean     add_standard_search_path)
 {
     JSObject *global;
+    jsid imports_name;
+    JSBool found;
 
     global = gjs_get_import_global(context);
 
     JS_BeginRequest(context);
 
-    if (!gjs_object_has_property(context,
-                                 global,
-                                 "imports")) {
+    imports_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                GJS_STRING_IMPORTS);
+    if (!JS_HasPropertyById(context, global, imports_name, &found)) {
+        JS_EndRequest(context);
+        return JS_FALSE;
+    }
+
+    if (!found) {
         if (gjs_define_importer(context, global,
                                 "imports",
                                 initial_search_path, add_standard_search_path) == NULL) {

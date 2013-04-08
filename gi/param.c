@@ -485,7 +485,8 @@ gjs_define_param_class(JSContext    *context,
 
     constructor_name = "ParamSpec";
 
-    gjs_object_get_property(context, in_object, constructor_name, &value);
+    if (!JS_GetProperty(context, in_object, constructor_name, &value))
+        return JS_FALSE;
     if (!JSVAL_IS_VOID(value)) {
         jsid prototype_name;
 

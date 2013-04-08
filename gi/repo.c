@@ -37,6 +37,7 @@
 #include "gerror.h"
 
 #include <gjs/compat.h>
+#include <gjs/runtime.h>
 
 #include <util/log.h>
 #include <util/misc.h>
@@ -246,10 +247,14 @@ repo_new(JSContext *context)
     JSObject *repo;
     JSObject *global;
     JSObject *versions;
+    JSBool found;
+    jsid versions_name;
 
     global = gjs_get_import_global(context);
 
-    if (!gjs_object_has_property(context, global, gjs_repo_class.name)) {
+    if (!JS_HasProperty(context, global, gjs_repo_class.name, &found))
+        return NULL;
+    if (!found) {
         JSObject *prototype;
         prototype = JS_InitClass(context, global,
                                  /* parent prototype JSObject* for
@@ -276,8 +281,6 @@ repo_new(JSContext *context)
         if (prototype == NULL)
             gjs_fatal("Can't init class %s", gjs_repo_class.name);
 
-        g_assert(gjs_object_has_property(context, global, gjs_repo_class.name));
-
         gjs_debug(GJS_DEBUG_GREPO, "Initialized class %s prototype %p",
                   gjs_repo_class.name, prototype);
     }
@@ -299,14 +302,14 @@ repo_new(JSContext *context)
                         "repo constructor, obj %p priv %p", repo, priv);
 
     versions = JS_NewObject(context, NULL, NULL, global);
+    versions_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                 GJS_STRING_GI_VERSIONS);
 
-    JS_DefineProperty(context, repo,
-                      "versions",
-                      OBJECT_TO_JSVAL(versions),
-                      NULL, NULL,
-                      JSPROP_PERMANENT);
-
-    g_assert(gjs_object_has_property(context, repo, "versions"));
+    JS_DefinePropertyById(context, repo,
+                          versions_name,
+                          OBJECT_TO_JSVAL(versions),
+                          NULL, NULL,
+                          JSPROP_PERMANENT);
 
     JS_DefineObject(context, repo, DUMPBIN, NULL, NULL, JSPROP_PERMANENT);
 

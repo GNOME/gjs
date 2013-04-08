@@ -1542,11 +1542,14 @@ function_new(JSContext      *context,
     JSObject *function;
     JSObject *global;
     Function *priv;
+    JSBool found;
 
     /* put constructor for GIRepositoryFunction() in the global namespace */
     global = gjs_get_import_global(context);
 
-    if (!gjs_object_has_property(context, global, gjs_function_class.name)) {
+    if (!JS_HasProperty(context, global, gjs_function_class.name, &found))
+        return NULL;
+    if (!found) {
         JSObject *prototype;
         JSObject *parent_proto;
         jsval native_function;
@@ -1579,8 +1582,6 @@ function_new(JSContext      *context,
                                  NULL);
         if (prototype == NULL)
             gjs_fatal("Can't init class %s", gjs_function_class.name);
-
-        g_assert(gjs_object_has_property(context, global, gjs_function_class.name));
 
         gjs_debug(GJS_DEBUG_GFUNCTION, "Initialized class %s prototype %p",
                   gjs_function_class.name, prototype);

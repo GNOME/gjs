@@ -35,6 +35,7 @@
 #include "gjs/byteArray.h"
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
+#include <gjs/runtime.h>
 
 #include <util/log.h>
 
@@ -1081,6 +1082,8 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
 {
     JSBool ret = JS_FALSE;
     GITypeInfo *param_info;
+    jsid length_name;
+    JSBool found_length;
 
     param_info = g_type_info_get_param_type(type_info, 0);
 
@@ -1090,6 +1093,9 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
         goto out;
     }
 
+    length_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                               GJS_STRING_LENGTH);
+
     if (JSVAL_IS_NULL(value)) {
         *contents = NULL;
         *length_p = 0;
@@ -1098,9 +1104,8 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
         if (!gjs_string_to_intarray(context, value, param_info,
                                     contents, length_p))
             goto out;
-    } else if (gjs_object_has_property(context,
-                                       JSVAL_TO_OBJECT(value),
-                                       "length")) {
+    } else if (JS_HasPropertyById(context, JSVAL_TO_OBJECT(value), length_name, &found_length) &&
+               found_length) {
         jsval length_value;
         guint32 length;
 
@@ -1567,16 +1572,21 @@ gjs_value_to_g_argument(JSContext      *context,
         break;
 
     case GI_TYPE_TAG_GLIST:
-    case GI_TYPE_TAG_GSLIST:
+    case GI_TYPE_TAG_GSLIST: {
+        jsid length_name;
+        JSBool found_length;
+
+        length_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                   GJS_STRING_LENGTH);
+
         /* nullable_type=FALSE; while a list can be NULL in C, that
          * means empty array in JavaScript, it doesn't mean null in
          * JavaScript.
          */
         if (!JSVAL_IS_NULL(value) &&
             JSVAL_IS_OBJECT(value) &&
-            gjs_object_has_property(context,
-                                    JSVAL_TO_OBJECT(value),
-                                    "length")) {
+            JS_HasPropertyById(context, JSVAL_TO_OBJECT(value), length_name, &found_length) &&
+            found_length) {
             jsval length_value;
             guint32 length;
 
@@ -1620,6 +1630,7 @@ gjs_value_to_g_argument(JSContext      *context,
             report_type_mismatch = TRUE;
         }
         break;
+    }
 
     case GI_TYPE_TAG_GHASH:
         if (JSVAL_IS_NULL(value)) {

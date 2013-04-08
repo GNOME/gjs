@@ -157,7 +157,9 @@ gjs_define_enumeration(JSContext    *context,
 
     enum_name = g_base_info_get_name( (GIBaseInfo*) info);
 
-    if (gjs_object_get_property(context, in_object, enum_name, &value)) {
+    if (!JS_GetProperty(context, in_object, enum_name, &value))
+        return JS_FALSE;
+    if (!JSVAL_IS_VOID(value)) {
         if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "Existing property '%s' does not look like an enum object",
                       enum_name);

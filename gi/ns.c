@@ -184,11 +184,14 @@ ns_new(JSContext    *context,
     JSObject *ns;
     JSObject *global;
     Ns *priv;
+    JSBool found;
 
     /* put constructor in the global namespace */
     global = gjs_get_import_global(context);
 
-    if (!gjs_object_has_property(context, global, gjs_ns_class.name)) {
+    if (!JS_HasProperty(context, global, gjs_ns_class.name, &found))
+        return JS_FALSE;
+    if (!found) {
         JSObject *prototype;
         prototype = JS_InitClass(context, global,
                                  /* parent prototype JSObject* for
@@ -214,8 +217,6 @@ ns_new(JSContext    *context,
                                  NULL);
         if (prototype == NULL)
             gjs_fatal("Can't init class %s", gjs_ns_class.name);
-
-        g_assert(gjs_object_has_property(context, global, gjs_ns_class.name));
 
         gjs_debug(GJS_DEBUG_GNAMESPACE, "Initialized class %s prototype %p",
                   gjs_ns_class.name, prototype);
