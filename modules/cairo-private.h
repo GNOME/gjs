@@ -59,7 +59,7 @@ jsval            gjs_cairo_surface_create_proto         (JSContext       *contex
 void             gjs_cairo_surface_construct            (JSContext       *context,
                                                          JSObject        *object,
                                                          cairo_surface_t *surface);
-void             gjs_cairo_surface_finalize_surface     (JSContext       *context,
+void             gjs_cairo_surface_finalize_surface     (JSFreeOp        *fop,
                                                          JSObject        *object);
 JSObject *       gjs_cairo_surface_from_surface         (JSContext       *context,
                                                          cairo_surface_t *surface);
@@ -114,7 +114,7 @@ jsval            gjs_cairo_pattern_create_proto         (JSContext       *contex
 void             gjs_cairo_pattern_construct            (JSContext       *context,
                                                          JSObject        *object,
                                                          cairo_pattern_t *pattern);
-void             gjs_cairo_pattern_finalize_pattern     (JSContext       *context,
+void             gjs_cairo_pattern_finalize_pattern     (JSFreeOp        *fop,
                                                          JSObject        *object);
 JSObject*        gjs_cairo_pattern_from_pattern         (JSContext       *context,
                                                          cairo_pattern_t *pattern);

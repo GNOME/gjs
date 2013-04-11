@@ -55,7 +55,7 @@ static JSBool byte_array_new_resolve   (JSContext    *context,
                                         unsigned      flags,
                                         JSObject    **objp);
 GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array);
-static void   byte_array_finalize      (JSContext    *context,
+static void   byte_array_finalize      (JSFreeOp     *fop,
                                         JSObject     *obj);
 
 
@@ -459,8 +459,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array)
 }
 
 static void
-byte_array_finalize(JSContext *context,
-                    JSObject  *obj)
+byte_array_finalize(JSFreeOp *fop,
+                    JSObject *obj)
 {
     ByteArrayInstance *priv;
 

@@ -49,8 +49,8 @@ gjs_get_gtype_wrapper_quark(void)
 }
 
 static void
-gjs_gtype_finalize(JSContext *context,
-                   JSObject  *obj)
+gjs_gtype_finalize(JSFreeOp *fop,
+                   JSObject *obj)
 {
     GType gtype = GPOINTER_TO_SIZE(JS_GetPrivate(obj));
 

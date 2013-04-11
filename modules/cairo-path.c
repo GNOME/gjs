@@ -37,8 +37,8 @@ GJS_DEFINE_PROTO_ABSTRACT("CairoPath", cairo_path)
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoPath, gjs_cairo_path_class)
 
 static void
-gjs_cairo_path_finalize(JSContext *context,
-                        JSObject  *obj)
+gjs_cairo_path_finalize(JSFreeOp *fop,
+                        JSObject *obj)
 {
     GjsCairoPath *priv;
     priv = JS_GetPrivate(obj);

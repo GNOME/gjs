@@ -30,10 +30,10 @@
 GJS_DEFINE_PROTO_ABSTRACT("CairoSolidPattern", cairo_solid_pattern)
 
 static void
-gjs_cairo_solid_pattern_finalize(JSContext *context,
-                                   JSObject  *obj)
+gjs_cairo_solid_pattern_finalize(JSFreeOp *fop,
+                                 JSObject *obj)
 {
-    gjs_cairo_pattern_finalize_pattern(context, obj);
+    gjs_cairo_pattern_finalize_pattern(fop, obj);
 }
 
 static JSPropertySpec gjs_cairo_solid_pattern_proto_props[] = {

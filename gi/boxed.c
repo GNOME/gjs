@@ -508,8 +508,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
 }
 
 static void
-boxed_finalize(JSContext *context,
-               JSObject  *obj)
+boxed_finalize(JSFreeOp *fop,
+               JSObject *obj)
 {
     Boxed *priv;
 

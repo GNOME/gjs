@@ -129,8 +129,8 @@ ns_new_resolve(JSContext *context,
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(ns)
 
 static void
-ns_finalize(JSContext *context,
-            JSObject  *obj)
+ns_finalize(JSFreeOp *fop,
+            JSObject *obj)
 {
     Ns *priv;
 

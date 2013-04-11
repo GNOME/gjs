@@ -159,8 +159,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(param)
 }
 
 static void
-param_finalize(JSContext *context,
-               JSObject  *obj)
+param_finalize(JSFreeOp *fop,
+               JSObject *obj)
 {
     Param *priv;
 

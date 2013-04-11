@@ -1224,8 +1224,8 @@ uninit_cached_function_data (Function *function)
 }
 
 static void
-function_finalize(JSContext *context,
-                  JSObject  *obj)
+function_finalize(JSFreeOp *fop,
+                  JSObject *obj)
 {
     Function *priv;
 

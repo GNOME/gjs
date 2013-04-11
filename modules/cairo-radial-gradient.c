@@ -60,10 +60,10 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_radial_gradient)
 }
 
 static void
-gjs_cairo_radial_gradient_finalize(JSContext *context,
-                                   JSObject  *obj)
+gjs_cairo_radial_gradient_finalize(JSFreeOp *fop,
+                                   JSObject *obj)
 {
-    gjs_cairo_pattern_finalize_pattern(context, obj);
+    gjs_cairo_pattern_finalize_pattern(fop, obj);
 }
 
 static JSPropertySpec gjs_cairo_radial_gradient_proto_props[] = {

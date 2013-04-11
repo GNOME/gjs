@@ -129,7 +129,7 @@ _GJS_DEFINE_PROTO_FULL(tn, cn, NULL)
 #define _GJS_DEFINE_PROTO_FULL(type_name, cname, ctor) \
 static JSPropertySpec gjs_##cname##_proto_props[]; \
 static JSFunctionSpec gjs_##cname##_proto_funcs[]; \
-static void gjs_##cname##_finalize(JSContext *context, JSObject *obj); \
+static void gjs_##cname##_finalize(JSFreeOp *fop, JSObject *obj); \
 static JSBool gjs_##cname##_new_resolve(JSContext *context, \
                                         JSObject  *obj, \
                                         jsval      id, \

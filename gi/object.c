@@ -1329,7 +1329,7 @@ object_instance_trace(JSTracer *tracer,
 }
 
 static void
-object_instance_finalize(JSContext *context,
+object_instance_finalize(JSFreeOp  *fop,
                          JSObject  *obj)
 {
     ObjectInstance *priv;
@@ -1366,7 +1366,7 @@ object_instance_finalize(JSContext *context,
 
         set_js_obj(priv->gobj, NULL);
         g_object_remove_toggle_ref(priv->gobj, wrapped_gobj_toggle_notify,
-                                   JS_GetRuntime(context));
+                                   fop->runtime);
         priv->gobj = NULL;
     }
 
@@ -1386,10 +1386,14 @@ object_instance_finalize(JSContext *context,
          * into jsapi, but we have to do this or the keep alive could
          * be finalized later and call gobj_no_longer_kept_alive_func.
          */
-        gjs_keep_alive_remove_child(context, priv->keep_alive,
-                                    gobj_no_longer_kept_alive_func,
-                                    obj,
-                                    priv);
+        {
+            JSContext *context = JS_NewContext(fop->runtime, 8192);
+            gjs_keep_alive_remove_child(context, priv->keep_alive,
+                                        gobj_no_longer_kept_alive_func,
+                                        obj,
+                                        priv);
+            JS_DestroyContext(context);
+        }
     }
 
     if (priv->info) {

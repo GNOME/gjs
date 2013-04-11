@@ -65,10 +65,10 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_svg_surface)
 }
 
 static void
-gjs_cairo_svg_surface_finalize(JSContext *context,
-                               JSObject  *obj)
+gjs_cairo_svg_surface_finalize(JSFreeOp *fop,
+                               JSObject *obj)
 {
-    gjs_cairo_surface_finalize_surface(context, obj);
+    gjs_cairo_surface_finalize_surface(fop, obj);
 }
 
 static JSPropertySpec gjs_cairo_svg_surface_proto_props[] = {

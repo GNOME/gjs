@@ -305,8 +305,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_context)
 }
 
 static void
-gjs_cairo_context_finalize(JSContext *context,
-                           JSObject  *obj)
+gjs_cairo_context_finalize(JSFreeOp *fop,
+                           JSObject *obj)
 {
     GjsCairoContext *priv;
     priv = JS_GetPrivate(obj);

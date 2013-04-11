@@ -130,8 +130,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
 }
 
 static void
-error_finalize(JSContext *context,
-               JSObject  *obj)
+error_finalize(JSFreeOp *fop,
+               JSObject *obj)
 {
     Error *priv;
 

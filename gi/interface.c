@@ -47,8 +47,8 @@ GJS_DEFINE_PRIV_FROM_JS(Interface, gjs_interface_class)
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(interface)
 
 static void
-interface_finalize(JSContext *context,
-                   JSObject  *obj)
+interface_finalize(JSFreeOp *fop,
+                   JSObject *obj)
 {
     Interface *priv;
 

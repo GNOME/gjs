@@ -38,8 +38,8 @@ GJS_DEFINE_PROTO_ABSTRACT("CairoSurface", cairo_surface)
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoSurface, gjs_cairo_surface_class)
 
 static void
-gjs_cairo_surface_finalize(JSContext *context,
-                           JSObject  *obj)
+gjs_cairo_surface_finalize(JSFreeOp *fop,
+                           JSObject *obj)
 {
     GjsCairoSurface *priv;
     priv = JS_GetPrivate(obj);
@@ -161,7 +161,7 @@ gjs_cairo_surface_construct(JSContext       *context,
 
 /**
  * gjs_cairo_surface_finalize:
- * @context: the context
+ * @fop: the free op
  * @object: object to finalize
  *
  * Destroys the resources associated with a surface wrapper.
@@ -169,13 +169,13 @@ gjs_cairo_surface_construct(JSContext       *context,
  * This is mainly used for subclasses.
  */
 void
-gjs_cairo_surface_finalize_surface(JSContext *context,
-                                   JSObject  *object)
+gjs_cairo_surface_finalize_surface(JSFreeOp *fop,
+                                   JSObject *object)
 {
-    g_return_if_fail(context != NULL);
+    g_return_if_fail(fop != NULL);
     g_return_if_fail(object != NULL);
 
-    gjs_cairo_surface_finalize(context, object);
+    gjs_cairo_surface_finalize(fop, object);
 }
 
 /**

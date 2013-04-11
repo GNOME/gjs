@@ -254,8 +254,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
 }
 
 static void
-union_finalize(JSContext *context,
-               JSObject  *obj)
+union_finalize(JSFreeOp *fop,
+               JSObject *obj)
 {
     Union *priv;
 

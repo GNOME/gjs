@@ -82,8 +82,8 @@ child_free(void *data)
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(keep_alive)
 
 static void
-keep_alive_finalize(JSContext *context,
-                    JSObject  *obj)
+keep_alive_finalize(JSFreeOp *fop,
+                    JSObject *obj)
 {
     KeepAlive *priv;
     void *key;

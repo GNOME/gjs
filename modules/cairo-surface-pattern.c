@@ -63,10 +63,10 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_surface_pattern)
 
 
 static void
-gjs_cairo_surface_pattern_finalize(JSContext *context,
-                                   JSObject  *obj)
+gjs_cairo_surface_pattern_finalize(JSFreeOp *fop,
+                                   JSObject *obj)
 {
-    gjs_cairo_pattern_finalize_pattern(context, obj);
+    gjs_cairo_pattern_finalize_pattern(fop, obj);
 }
 
 static JSPropertySpec gjs_cairo_surface_pattern_proto_props[] = {

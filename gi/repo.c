@@ -200,8 +200,8 @@ repo_new_resolve(JSContext *context,
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(repo)
 
 static void
-repo_finalize(JSContext *context,
-              JSObject  *obj)
+repo_finalize(JSFreeOp *fop,
+              JSObject *obj)
 {
     Repo *priv;
 

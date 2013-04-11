@@ -969,8 +969,8 @@ importer_new_resolve(JSContext *context,
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(importer)
 
 static void
-importer_finalize(JSContext *context,
-                  JSObject  *obj)
+importer_finalize(JSFreeOp *fop,
+                  JSObject *obj)
 {
     Importer *priv;
 

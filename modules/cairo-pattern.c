@@ -38,8 +38,8 @@ GJS_DEFINE_PROTO_ABSTRACT("CairoPattern", cairo_pattern)
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoPattern, gjs_cairo_pattern_class)
 
 static void
-gjs_cairo_pattern_finalize(JSContext *context,
-                           JSObject  *obj)
+gjs_cairo_pattern_finalize(JSFreeOp *fop,
+                           JSObject *obj)
 {
     GjsCairoPattern *priv;
     priv = JS_GetPrivate(obj);
@@ -123,7 +123,7 @@ gjs_cairo_pattern_construct(JSContext       *context,
 
 /**
  * gjs_cairo_pattern_finalize:
- * @context: the context
+ * @fop: the free op
  * @object: object to finalize
  *
  * Destroys the resources associated with a pattern wrapper.
@@ -132,13 +132,13 @@ gjs_cairo_pattern_construct(JSContext       *context,
  */
 
 void
-gjs_cairo_pattern_finalize_pattern(JSContext *context,
-                                   JSObject  *object)
+gjs_cairo_pattern_finalize_pattern(JSFreeOp *fop,
+                                   JSObject *object)
 {
-    g_return_if_fail(context != NULL);
+    g_return_if_fail(fop != NULL);
     g_return_if_fail(object != NULL);
 
-    gjs_cairo_pattern_finalize(context, object);
+    gjs_cairo_pattern_finalize(fop, object);
 }
 
 /**
