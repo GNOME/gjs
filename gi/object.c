@@ -93,10 +93,8 @@ static volatile gint pending_idle_toggles;
 
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 
-static JSObject*       peek_js_obj  (JSContext *context,
-                                     GObject   *gobj);
-static void            set_js_obj   (JSContext *context,
-                                     GObject   *gobj,
+static JSObject*       peek_js_obj  (GObject   *gobj);
+static void            set_js_obj   (GObject   *gobj,
                                      JSObject  *obj);
 
 typedef enum {
@@ -867,7 +865,7 @@ handle_toggle_down(JSContext *context,
     ObjectInstance *priv;
     JSObject *obj;
 
-    obj = peek_js_obj(context, gobj);
+    obj = peek_js_obj(gobj);
 
     priv = priv_from_js(context, obj);
 
@@ -909,7 +907,7 @@ handle_toggle_up(JSContext *context,
     if (!gc_already_blocked)
         gjs_block_gc();
 
-    obj = peek_js_obj(context, gobj);
+    obj = peek_js_obj(gobj);
 
     if (!obj) {
         /* Object already GC'd */
@@ -1157,8 +1155,8 @@ associate_js_gobject (JSContext      *context,
     priv = priv_from_js(context, object);
     priv->gobj = gobj;
 
-    g_assert(peek_js_obj(context, gobj) == NULL);
-    set_js_obj(context, gobj, object);
+    g_assert(peek_js_obj(gobj) == NULL);
+    set_js_obj(gobj, object);
 
 #if DEBUG_DISPOSE
     g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, object);
@@ -1216,7 +1214,7 @@ object_instance_init (JSContext *context,
 
     free_g_params(params, n_params);
 
-    old_jsobj = peek_js_obj(context, gobj);
+    old_jsobj = peek_js_obj(gobj);
     if (old_jsobj != NULL && old_jsobj != *object) {
         /* g_object_newv returned an object that's already tracked by a JS
          * object. Let's assume this is a singleton like IBus.IBus and return
@@ -1366,7 +1364,7 @@ object_instance_finalize(JSContext *context,
                     priv->info ? g_base_info_get_name((GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
         }
 
-        set_js_obj(context, priv->gobj, NULL);
+        set_js_obj(priv->gobj, NULL);
         g_object_remove_toggle_ref(priv->gobj, wrapped_gobj_toggle_notify,
                                    JS_GetRuntime(context));
         priv->gobj = NULL;
@@ -2018,16 +2016,14 @@ gjs_define_object_class(JSContext     *context,
 }
 
 static JSObject*
-peek_js_obj(JSContext *context,
-            GObject   *gobj)
+peek_js_obj(GObject *gobj)
 {
     return g_object_get_qdata(gobj, gjs_object_priv_quark());
 }
 
 static void
-set_js_obj(JSContext *context,
-           GObject   *gobj,
-           JSObject  *obj)
+set_js_obj(GObject  *gobj,
+           JSObject *obj)
 {
     g_object_set_qdata(gobj, gjs_object_priv_quark(), obj);
 }
@@ -2041,7 +2037,7 @@ gjs_object_from_g_object(JSContext    *context,
     if (gobj == NULL)
         return NULL;
 
-    obj = peek_js_obj(context, gobj);
+    obj = peek_js_obj(gobj);
 
     if (obj == NULL) {
         /* We have to create a wrapper */
@@ -2074,7 +2070,7 @@ gjs_object_from_g_object(JSContext    *context,
         /* see the comment in init_object_instance() for this */
         g_object_unref(gobj);
 
-        g_assert(peek_js_obj(context, gobj) == obj);
+        g_assert(peek_js_obj(gobj) == obj);
     }
 
  out:
@@ -2368,7 +2364,7 @@ gjs_object_get_gproperty (GObject    *object,
     }
 
     context = g_object_get_qdata(object, gjs_context_quark());
-    js_obj = peek_js_obj(context, object);
+    js_obj = peek_js_obj(object);
 
     underscore_name = hyphen_to_underscore((gchar *)pspec->name);
     JS_GetProperty(context, js_obj, underscore_name, &jsvalue);
@@ -2408,7 +2404,7 @@ gjs_object_set_gproperty (GObject      *object,
         return;
     }
 
-    js_obj = peek_js_obj(context, object);
+    js_obj = peek_js_obj(object);
 
     if (!gjs_value_from_g_value(context, &jsvalue, value))
         return;
