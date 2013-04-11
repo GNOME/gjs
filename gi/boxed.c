@@ -513,7 +513,7 @@ boxed_finalize(JSContext *context,
 {
     Boxed *priv;
 
-    priv = priv_from_js(context, obj);
+    priv = JS_GetPrivate(obj);
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                         "finalize, obj %p priv %p", obj, priv);
     if (priv == NULL)

@@ -52,7 +52,7 @@ static void
 gjs_gtype_finalize(JSContext *context,
                    JSObject  *obj)
 {
-    GType gtype = GPOINTER_TO_SIZE(priv_from_js(context, obj));
+    GType gtype = GPOINTER_TO_SIZE(JS_GetPrivate(obj));
 
     /* proto doesn't have a private set */
     if (G_UNLIKELY(gtype == 0))

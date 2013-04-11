@@ -89,7 +89,7 @@ keep_alive_finalize(JSContext *context,
     void *key;
     void *value;
 
-    priv = priv_from_js(context, obj);
+    priv = JS_GetPrivate(obj);
 
     gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE,
                         "keep_alive finalizing, obj %p priv %p", obj, priv);

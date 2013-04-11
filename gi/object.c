@@ -1334,7 +1334,7 @@ object_instance_finalize(JSContext *context,
 {
     ObjectInstance *priv;
 
-    priv = priv_from_js(context, obj);
+    priv = JS_GetPrivate(obj);
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
                         "finalize obj %p priv %p gtype %s gobj %p", obj, priv,
                         (priv && priv->gobj) ?

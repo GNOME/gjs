@@ -464,7 +464,7 @@ byte_array_finalize(JSContext *context,
 {
     ByteArrayInstance *priv;
 
-    priv = priv_from_js(context, obj);
+    priv = JS_GetPrivate(obj);
 
     if (priv == NULL)
         return; /* prototype, not instance */

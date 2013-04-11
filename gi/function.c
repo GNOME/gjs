@@ -1229,7 +1229,7 @@ function_finalize(JSContext *context,
 {
     Function *priv;
 
-    priv = priv_from_js(context, obj);
+    priv = JS_GetPrivate(obj);
     gjs_debug_lifecycle(GJS_DEBUG_GFUNCTION,
                         "finalize, obj %p priv %p", obj, priv);
     if (priv == NULL)
