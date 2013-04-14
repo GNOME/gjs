@@ -226,7 +226,7 @@ function testSignals() {
 
         return -1;
     });
-    result = myInstance.emit_full();
+    let result = myInstance.emit_full();
 
     assertEquals(true, ok);
     assertEquals(42, result);
