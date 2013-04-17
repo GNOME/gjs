@@ -1031,6 +1031,27 @@ get_argument_display_name(const char     *arg_name,
     g_assert_not_reached ();
 }
 
+static const char *
+type_tag_to_human_string(GITypeInfo *type_info)
+{
+    GITypeTag tag;
+
+    tag = g_type_info_get_tag(type_info);
+
+    if (tag == GI_TYPE_TAG_INTERFACE) {
+        GIBaseInfo *interface;
+        const char *ret;
+
+        interface = g_type_info_get_interface(type_info);
+        ret = g_info_type_to_string(g_base_info_get_type(interface));
+
+        g_base_info_unref(interface);
+        return ret;
+    } else {
+        return g_type_tag_to_string(tag);
+    }
+}
+
 static void
 throw_invalid_argument(JSContext      *context,
                        jsval           value,
@@ -1040,11 +1061,10 @@ throw_invalid_argument(JSContext      *context,
 {
     gchar *display_name = get_argument_display_name(arg_name, arg_type);
 
-    gjs_throw(context, "Expected type %s for %s but got type '%s' %p",
-              g_type_tag_to_string(g_type_info_get_tag(arginfo)),
+    gjs_throw(context, "Expected type %s for %s but got type '%s'",
+              type_tag_to_human_string(arginfo),
               display_name,
-              JS_GetTypeName(context, JS_TypeOfValue(context, value)),
-              JSVAL_IS_OBJECT(value) ? JSVAL_TO_OBJECT(value) : NULL);
+              JS_GetTypeName(context, JS_TypeOfValue(context, value)));
     g_free(display_name);
 }
 
@@ -1318,16 +1338,25 @@ gjs_value_to_g_argument(JSContext      *context,
         break;
 
     case GI_TYPE_TAG_INTERFACE:
-        nullable_type = TRUE;
         {
             GIBaseInfo* interface_info;
             GIInfoType interface_type;
             GType gtype;
+            gboolean expect_object;
 
             interface_info = g_type_info_get_interface(type_info);
             g_assert(interface_info != NULL);
 
             interface_type = g_base_info_get_type(interface_info);
+
+            if (interface_type == GI_INFO_TYPE_ENUM ||
+                interface_type == GI_INFO_TYPE_FLAGS) {
+                nullable_type = FALSE;
+                expect_object = FALSE;
+            } else {
+                nullable_type = TRUE;
+                expect_object = TRUE;
+            }
 
             switch(interface_type) {
             case GI_INFO_TYPE_STRUCT:
@@ -1341,6 +1370,7 @@ gjs_value_to_g_argument(JSContext      *context,
                 }
                 /* fall through */
             case GI_INFO_TYPE_ENUM:
+            case GI_INFO_TYPE_FLAGS:
             case GI_INFO_TYPE_OBJECT:
             case GI_INFO_TYPE_INTERFACE:
             case GI_INFO_TYPE_UNION:
@@ -1375,9 +1405,12 @@ gjs_value_to_g_argument(JSContext      *context,
                     arg->v_pointer = NULL;
                     wrong = TRUE;
                 }
-            } else if (JSVAL_IS_NULL(value) &&
-                       interface_type != GI_INFO_TYPE_ENUM &&
-                       interface_type != GI_INFO_TYPE_FLAGS) {
+            } else if (expect_object != JSVAL_IS_OBJECT(value)) {
+                /* JSVAL_IS_OBJECT handles null too */
+                wrong = TRUE;
+                report_type_mismatch = TRUE;
+                break;
+            } else if (JSVAL_IS_NULL(value)) {
                 arg->v_pointer = NULL;
             } else if (JSVAL_IS_OBJECT(value)) {
                 /* Handle Struct/Union first since we don't necessarily need a GType for them */
@@ -1492,8 +1525,6 @@ gjs_value_to_g_argument(JSContext      *context,
                 }
 
             } else if (JSVAL_IS_NUMBER(value)) {
-                nullable_type = FALSE;
-
                 if (interface_type == GI_INFO_TYPE_ENUM) {
                     gint64 value_int64;
 
