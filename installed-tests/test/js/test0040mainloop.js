@@ -1,4 +1,5 @@
 // application/javascript;version=1.8
+const JSUnit = imports.jsUnit;
 var Mainloop = imports.mainloop;
 
 function testBasicMainloop() {
@@ -13,4 +14,5 @@ function testDanglingIdle() {
     Mainloop.idle_add(function() { return true; });
 }
 
-gjstestRun();
+JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
+

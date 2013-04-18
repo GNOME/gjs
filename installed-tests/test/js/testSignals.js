@@ -1,4 +1,5 @@
 // application/javascript;version=1.8
+const JSUnit = imports.jsUnit;
 const Signals = imports.signals;
 
 function Foo() {
@@ -20,14 +21,14 @@ function testSimple() {
                              theFoo.b = b;
                          });
     foo.emit('bar', "This is a", "This is b");
-    assertEquals("This is a", foo.a);
-    assertEquals("This is b", foo.b);
+    JSUnit.assertEquals("This is a", foo.a);
+    JSUnit.assertEquals("This is b", foo.b);
     foo.disconnect(id);
     // this emission should do nothing
     foo.emit('bar', "Another a", "Another b");
     // so these values should be unchanged
-    assertEquals("This is a", foo.a);
-    assertEquals("This is b", foo.b);
+    JSUnit.assertEquals("This is a", foo.a);
+    JSUnit.assertEquals("This is b", foo.b);
 }
 
 function testDisconnectDuringEmit() {
@@ -58,7 +59,7 @@ function testDisconnectDuringEmit() {
     foo.disconnect(firstId);
 
     // poke in private implementation to sanity-check
-    assertEquals('no handlers left', 0, foo._signalConnections.length);
+    JSUnit.assertEquals('no handlers left', 0, foo._signalConnections.length);
 }
 
 function testMultipleSignals() {
@@ -80,18 +81,18 @@ function testMultipleSignals() {
                 });
     foo.emit('bar');
 
-    assertEquals(2, foo.barHandlersCalled);
-    assertEquals(0, foo.bonkHandlersCalled);
+    JSUnit.assertEquals(2, foo.barHandlersCalled);
+    JSUnit.assertEquals(0, foo.bonkHandlersCalled);
 
     foo.emit('bonk');
 
-    assertEquals(2, foo.barHandlersCalled);
-    assertEquals(1, foo.bonkHandlersCalled);
+    JSUnit.assertEquals(2, foo.barHandlersCalled);
+    JSUnit.assertEquals(1, foo.bonkHandlersCalled);
 
     foo.emit('bar');
 
-    assertEquals(4, foo.barHandlersCalled);
-    assertEquals(1, foo.bonkHandlersCalled);
+    JSUnit.assertEquals(4, foo.barHandlersCalled);
+    JSUnit.assertEquals(1, foo.bonkHandlersCalled);
 
     foo.disconnectAll();
 
@@ -99,8 +100,8 @@ function testMultipleSignals() {
     foo.emit('bar');
     foo.emit('bonk');
 
-    assertEquals(4, foo.barHandlersCalled);
-    assertEquals(1, foo.bonkHandlersCalled);
+    JSUnit.assertEquals(4, foo.barHandlersCalled);
+    JSUnit.assertEquals(1, foo.bonkHandlersCalled);
 }
 
 function testExceptionInCallback() {
@@ -120,13 +121,14 @@ function testExceptionInCallback() {
 
     // exception in callback does not effect other callbacks
     foo.emit('bar');
-    assertEquals(1, foo.bar1Called);
-    assertEquals(1, foo.bar2Called);
+    JSUnit.assertEquals(1, foo.bar1Called);
+    JSUnit.assertEquals(1, foo.bar2Called);
 
     // exception in callback does not disconnect the callback
     foo.emit('bar');
-    assertEquals(2, foo.bar1Called);
-    assertEquals(2, foo.bar2Called);
+    JSUnit.assertEquals(2, foo.bar1Called);
+    JSUnit.assertEquals(2, foo.bar2Called);
 }
 
-gjstestRun();
+JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
+

@@ -1,4 +1,5 @@
 // application/javascript;version=1.8
+const JSUnit = imports.jsUnit;
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 const Mainloop = imports.mainloop;
@@ -94,8 +95,8 @@ Test.prototype = {
         this._propWriteOnly = PROP_WRITE_ONLY_INITIAL_VALUE;
         this._propReadWrite = PROP_READ_WRITE_INITIAL_VALUE;
 
-	this._impl = Gio.DBusExportedObject.wrapJSObject(TestIface, this);
-	this._impl.export(Gio.DBus.session, '/org/gnome/gjs/Test');
+        this._impl = Gio.DBusExportedObject.wrapJSObject(TestIface, this);
+        this._impl.export(Gio.DBus.session, '/org/gnome/gjs/Test');
     },
 
     frobateStuff: function(args) {
@@ -176,7 +177,7 @@ Test.prototype = {
     /* This one is implemented asynchronously. Returns
      * the input arguments */
     echoAsync: function(parameters, invocation) {
-	var [someString, someInt] = parameters;
+        var [someString, someInt] = parameters;
         Mainloop.idle_add(function() {
             invocation.return_value(new GLib.Variant('(si)', [someString, someInt]));
             return false;
@@ -213,15 +214,15 @@ function testExportStuff() {
     new Test();
 
     own_name_id = Gio.DBus.session.own_name('org.gnome.gjs.Test',
-					    Gio.BusNameOwnerFlags.NONE,
-					    function(name) {
-						log("Acquired name " + name);
-						
-						Mainloop.quit('testGDBus');
-					    },
-					    function(name) {
-						log("Lost name " + name);
-					    });
+                                            Gio.BusNameOwnerFlags.NONE,
+                                            function(name) {
+                                                log("Acquired name " + name);
+                                                
+                                                Mainloop.quit('testGDBus');
+                                            },
+                                            function(name) {
+                                                log("Lost name " + name);
+                                            });
 
     Mainloop.run('testGDBus');
 }
@@ -232,32 +233,32 @@ var proxy;
 function testInitStuff() {
     var theError;
     proxy = new ProxyClass(Gio.DBus.session,
-			   'org.gnome.gjs.Test',
-			   '/org/gnome/gjs/Test',
-			   function (obj, error) {
-			       theError = error;
-			       proxy = obj;
+                           'org.gnome.gjs.Test',
+                           '/org/gnome/gjs/Test',
+                           function (obj, error) {
+                               theError = error;
+                               proxy = obj;
 
-			       Mainloop.quit('testGDBus');
-			   });
+                               Mainloop.quit('testGDBus');
+                           });
 
     Mainloop.run('testGDBus');
 
-    assertNotNull(proxy);
-    assertNull(theError);
+    JSUnit.assertNotNull(proxy);
+    JSUnit.assertNull(theError);
 }
 
 function testFrobateStuff() {
     let theResult, theExcp;
     proxy.frobateStuffRemote({}, function(result, excp) {
-	[theResult] = result;
-	theExcp = excp;
-	Mainloop.quit('testGDBus');
+        [theResult] = result;
+        theExcp = excp;
+        Mainloop.quit('testGDBus');
     });
 
     Mainloop.run('testGDBus');
 
-    assertEquals("world", theResult.hello.deep_unpack());
+    JSUnit.assertEquals("world", theResult.hello.deep_unpack());
 }
 
 /* excp must be exactly the exception thrown by the remote method
@@ -265,15 +266,15 @@ function testFrobateStuff() {
 function testThrowException() {
     let theResult, theExcp;
     proxy.alwaysThrowExceptionRemote({}, function(result, excp) {
-	theResult = result;
-	theExcp = excp;
-	Mainloop.quit('testGDBus');
+        theResult = result;
+        theExcp = excp;
+        Mainloop.quit('testGDBus');
     });
 
     Mainloop.run('testGDBus');
 
-    assertNull(theResult);
-    assertNotNull(theExcp);
+    JSUnit.assertNull(theResult);
+    JSUnit.assertNotNull(theExcp);
 }
 
 /* We check that the exception in the answer is not null when we try to call
@@ -285,15 +286,15 @@ function testDoesNotExist() {
     delete Test.prototype.thisDoesNotExist;
 
     proxy.thisDoesNotExistRemote(function (result, excp) {
-	theResult = result;
-	theExcp = excp;
-	Mainloop.quit('testGDBus');
+        theResult = result;
+        theExcp = excp;
+        Mainloop.quit('testGDBus');
     });
 
     Mainloop.run('testGDBus');
 
-    assertNotNull(theExcp);
-    assertNull(theResult);
+    JSUnit.assertNotNull(theExcp);
+    JSUnit.assertNull(theResult);
 }
 
 function testNonJsonFrobateStuff() {
@@ -306,8 +307,8 @@ function testNonJsonFrobateStuff() {
 
     Mainloop.run('testGDBus');
 
-    assertEquals("42 it is!", theResult);
-    assertNull(theExcp);
+    JSUnit.assertEquals("42 it is!", theResult);
+    JSUnit.assertNull(theExcp);
 }
 
 function testNoInParameter() {
@@ -320,8 +321,8 @@ function testNoInParameter() {
 
     Mainloop.run('testGDBus');
 
-    assertEquals("Yes!", theResult);
-    assertNull(theExcp);
+    JSUnit.assertEquals("Yes!", theResult);
+    JSUnit.assertNull(theExcp);
 }
 
 function testMultipleInArgs() {
@@ -334,8 +335,8 @@ function testMultipleInArgs() {
 
     Mainloop.run('testGDBus');
 
-    assertEquals("1 2 3 4 5", theResult);
-    assertNull(theExcp);
+    JSUnit.assertEquals("1 2 3 4 5", theResult);
+    JSUnit.assertNull(theExcp);
 }
 
 function testNoReturnValue() {
@@ -348,8 +349,8 @@ function testNoReturnValue() {
 
     Mainloop.run('testGDBus');
 
-    assertEquals(undefined, theResult);
-    assertNull(theExcp);
+    JSUnit.assertEquals(undefined, theResult);
+    JSUnit.assertNull(theExcp);
 }
 
 function testEmitSignal() {
@@ -357,12 +358,12 @@ function testEmitSignal() {
     let signalReceived = 0;
     let signalArgument = null;
     let id = proxy.connectSignal('signalFoo',
-				 function(emitter, senderName, parameters) {
-				     signalReceived ++;
-				     [signalArgument] = parameters;
+                                 function(emitter, senderName, parameters) {
+                                     signalReceived ++;
+                                     [signalArgument] = parameters;
 
-				     proxy.disconnectSignal(id);
-				 });
+                                     proxy.disconnectSignal(id);
+                                 });
     proxy.emitSignalRemote(function(result, excp) {
         [theResult] = result;
         theExcp = excp;
@@ -373,10 +374,10 @@ function testEmitSignal() {
 
     Mainloop.run('testGDBus');
 
-    assertUndefined('result should be undefined', theResult);
-    assertNull('no exception set', theExcp);
-    assertEquals('number of signals received', signalReceived, 1);
-    assertEquals('signal argument', signalArgument, "foobar");
+    JSUnit.assertUndefined('result should be undefined', theResult);
+    JSUnit.assertNull('no exception set', theExcp);
+    JSUnit.assertEquals('number of signals received', signalReceived, 1);
+    JSUnit.assertEquals('signal argument', signalArgument, "foobar");
 
 }
 
@@ -390,10 +391,10 @@ function testMultipleOutValues() {
 
     Mainloop.run('testGDBus');
 
-    assertEquals("Hello", theResult[0]);
-    assertEquals("World", theResult[1]);
-    assertEquals("!", theResult[2]);
-    assertNull(theExcp);
+    JSUnit.assertEquals("Hello", theResult[0]);
+    JSUnit.assertEquals("World", theResult[1]);
+    JSUnit.assertEquals("!", theResult[2]);
+    JSUnit.assertNull(theExcp);
 }
 
 function testOneArrayOut() {
@@ -406,10 +407,10 @@ function testOneArrayOut() {
 
     Mainloop.run('testGDBus');
 
-    assertEquals("Hello", theResult[0]);
-    assertEquals("World", theResult[1]);
-    assertEquals("!", theResult[2]);
-    assertNull(theExcp);
+    JSUnit.assertEquals("Hello", theResult[0]);
+    JSUnit.assertEquals("World", theResult[1]);
+    JSUnit.assertEquals("!", theResult[2]);
+    JSUnit.assertNull(theExcp);
 }
 
 function testArrayOfArrayOut() {
@@ -425,13 +426,13 @@ function testArrayOfArrayOut() {
     let a1 = theResult[0];
     let a2 = theResult[1];
 
-    assertEquals("Hello", a1[0]);
-    assertEquals("World", a1[1]);
+    JSUnit.assertEquals("Hello", a1[0]);
+    JSUnit.assertEquals("World", a1[1]);
 
-    assertEquals("World", a2[0]);
-    assertEquals("Hello", a2[1]);;
+    JSUnit.assertEquals("World", a2[0]);
+    JSUnit.assertEquals("Hello", a2[1]);;
 
-    assertNull(theExcp);
+    JSUnit.assertNull(theExcp);
 }
 
 function testMultipleArrayOut() {
@@ -447,13 +448,13 @@ function testMultipleArrayOut() {
     let a1 = theResult[0];
     let a2 = theResult[1];
 
-    assertEquals("Hello", a1[0]);
-    assertEquals("World", a1[1]);
+    JSUnit.assertEquals("Hello", a1[0]);
+    JSUnit.assertEquals("World", a1[1]);
 
-    assertEquals("World", a2[0]);
-    assertEquals("Hello", a2[1]);;
+    JSUnit.assertEquals("World", a2[0]);
+    JSUnit.assertEquals("Hello", a2[1]);;
 
-    assertNull(theExcp);
+    JSUnit.assertNull(theExcp);
 }
 
 /* We are returning an array but the signature says it's an integer,
@@ -468,8 +469,8 @@ function testArrayOutBadSig() {
     });
 
     Mainloop.run('testGDBus');
-    assertNull(theResult);
-    assertNotNull(theExcp);
+    JSUnit.assertNull(theResult);
+    JSUnit.assertNotNull(theExcp);
 }
 
 function testAsyncImplementation() {
@@ -484,10 +485,10 @@ function testAsyncImplementation() {
                      });
 
     Mainloop.run('testGDBus');
-    assertNull(theExcp);
-    assertNotNull(theResult);
-    assertEquals(theResult[0], someString);
-    assertEquals(theResult[1], someInt);
+    JSUnit.assertNull(theExcp);
+    JSUnit.assertNotNull(theResult);
+    JSUnit.assertEquals(theResult[0], someString);
+    JSUnit.assertEquals(theResult[1], someInt);
 }
 
 function testBytes() {
@@ -503,9 +504,9 @@ function testBytes() {
         });
 
         Mainloop.run('testGDBus');
-        assertNull(theExcp);
-        assertNotNull(theResult);
-        assertEquals(someBytes[i], theResult);
+        JSUnit.assertNull(theExcp);
+        JSUnit.assertNotNull(theResult);
+        JSUnit.assertEquals(someBytes[i], theResult);
     }
 }
 
@@ -517,12 +518,12 @@ function testStructArray() {
         Mainloop.quit('testGDBus');
     });
     Mainloop.run('testGDBus');
-    assertNull(theExcp);
-    assertNotNull(theResult);
-    assertEquals(theResult[0][0], 128);
-    assertEquals(theResult[0][1], 123456);
-    assertEquals(theResult[1][0], 42);
-    assertEquals(theResult[1][1], 654321);
+    JSUnit.assertNull(theExcp);
+    JSUnit.assertNotNull(theResult);
+    JSUnit.assertEquals(theResult[0][0], 128);
+    JSUnit.assertEquals(theResult[0][1], 123456);
+    JSUnit.assertEquals(theResult[1][0], 42);
+    JSUnit.assertEquals(theResult[1][1], 654321);
 }
 
 function testDictSignatures() {
@@ -541,19 +542,19 @@ function testDictSignatures() {
     });
 
     Mainloop.run('testGDBus');
-    assertNull(theExcp);
-    assertNotNull(theResult);
+    JSUnit.assertNull(theExcp);
+    JSUnit.assertNotNull(theResult);
 
     // verify the fractional part was dropped off int
-    assertEquals(11, theResult['anInteger'].deep_unpack());
+    JSUnit.assertEquals(11, theResult['anInteger'].deep_unpack());
 
     // and not dropped off a double
-    assertEquals(10.5, theResult['aDoubleBeforeAndAfter'].deep_unpack());
+    JSUnit.assertEquals(10.5, theResult['aDoubleBeforeAndAfter'].deep_unpack());
 
-    // this assertion is useless, it will work
+    // this JSUnit.assertion is useless, it will work
     // anyway if the result is really an int,
     // but it at least checks we didn't lose data
-    assertEquals(10.0, theResult['aDouble'].deep_unpack());
+    JSUnit.assertEquals(10.0, theResult['aDouble'].deep_unpack());
 }
 
 function testFinalize() {
@@ -563,4 +564,5 @@ function testFinalize() {
     Gio.DBus.session.unown_name(own_name_id);
 }
 
-gjstestRun();
+JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
+

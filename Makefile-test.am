@@ -1,8 +1,6 @@
 RUN_WITH_DBUS = ${top_srcdir}/test/run-with-dbus --session --system
 GTESTER = ${TESTS_ENVIRONMENT} ${RUN_WITH_DBUS} gtester
 
-TEST_GIRS =
-
 ########################################################################
 TEST_PROGS += gjs-tests
 
@@ -22,69 +20,11 @@ gjs_tests_LDADD =		\
 gjs_tests_SOURCES =		\
 	test/gjs-tests.c
 
-TEST_PROGS += gjs-unit
+check-local: gjs-tests
+	@test -z "${TEST_PROGS}" || ${GTESTER} --verbose ${TEST_PROGS} ${TEST_PROGS_OPTIONS}
 
-gjs_unit_CPPFLAGS =		\
-	$(AM_CPPFLAGS)          \
-	$(gjs_directory_defines)\
-	$(GJS_CFLAGS)
-gjs_unit_LDADD =		\
-	libgjs.la		\
-	$(GJS_LIBS)
+check: check-local
 
-## -rdynamic makes backtraces work
-## we -export-dynamic so we can dlopen ourselves and use gobject-introspection
-gjs_unit_LDFLAGS=-export-dynamic -rdynamic
-gjs_unit_SOURCES =	\
-	test/gjs-unit.c
-
-# noinst_ always builds a static library
-testlib_LTLIBRARIES = libregress.la libwarnlib.la libgimarshallingtests.la
-testlibdir = $(prefix)/unused
-install-testlibLTLIBRARIES: # prevent it from being installed
-
-nodist_libregress_la_SOURCES = $(GI_DATADIR)/tests/regress.c $(GI_DATADIR)/tests/regress.h
-libregress_la_CPPFLAGS =
-libregress_la_CFLAGS = $(GJS_CFLAGS)
-libregress_la_LDFLAGS = -avoid-version $(GJS_LIBS)
-libregress_scannerflags_includes = --include=Gio-2.0
-if ENABLE_CAIRO
-libregress_la_CFLAGS += $(GJS_CAIRO_CFLAGS)
-libregress_la_LDFLAGS +=  $(GJS_CAIRO_LIBS)
-libregress_scannerflags_includes += --include=cairo-1.0
-else
-libregress_la_CPPFLAGS += -D_GI_DISABLE_CAIRO
-endif
-nodist_libwarnlib_la_SOURCES = $(GI_DATADIR)/tests/warnlib.c $(GI_DATADIR)/tests/warnlib.h
-libwarnlib_la_CFLAGS = $(GJS_CFLAGS)
-libwarnlib_la_LDFLAGS = -avoid-version $(GJS_LIBS)
-nodist_libgimarshallingtests_la_SOURCES = $(GI_DATADIR)/tests/gimarshallingtests.c $(GI_DATADIR)/tests/gimarshallingtests.h
-libgimarshallingtests_la_CFLAGS = $(GJS_CFLAGS)
-libgimarshallingtests_la_LDFLAGS = -avoid-version $(GJS_LIBS)
-
-Regress-1.0.gir: libregress.la
-Regress_1_0_gir_LIBS = libregress.la
-Regress_1_0_gir_FILES = $(nodist_libregress_la_SOURCES)
-Regress_1_0_gir_SCANNERFLAGS = --warn-all --warn-error $(libregress_scannerflags_includes) $(libregress_la_CPPFLAGS)
-TEST_GIRS += Regress-1.0.gir
-
-WarnLib-1.0.gir: libwarnlib.la
-WarnLib_1_0_gir_LIBS = libwarnlib.la
-WarnLib_1_0_gir_INCLUDES = Gio-2.0
-WarnLib_1_0_gir_FILES = $(nodist_libwarnlib_la_SOURCES)
-WarnLib_1_0_gir_SCANNERFLAGS = --c-include="warnlib.h" --symbol-prefix=warnlib_
-TEST_GIRS += WarnLib-1.0.gir
-
-GIMarshallingTests-1.0.gir: libgimarshallingtests.la
-GIMarshallingTests_1_0_gir_LIBS = libgimarshallingtests.la
-GIMarshallingTests_1_0_gir_INCLUDES = Gio-2.0
-GIMarshallingTests_1_0_gir_FILES = $(nodist_libgimarshallingtests_la_SOURCES)
-GIMarshallingTests_1_0_gir_SCANNERFLAGS = --symbol-prefix=gi_marshalling_tests --warn-all --warn-error
-TEST_GIRS += GIMarshallingTests-1.0.gir
-
-$(foreach gir,$(TEST_GIRS),$(eval $(call introspection-scanner,$(gir))))
-
-########################################################################
 TESTS_ENVIRONMENT =							\
 	TOP_SRCDIR=$(top_srcdir)					\
 	DBUS_SESSION_BUS_ADDRESS=''					\
@@ -96,114 +36,3 @@ TESTS_ENVIRONMENT =							\
 	GI_TYPELIB_PATH=$(builddir)					\
 	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)"	\
 	G_FILENAME_ENCODING=latin1	# ensure filenames are not utf8
-
-if !ENABLE_CAIRO
-TESTS_ENVIRONMENT += GJS_TEST_SKIP_CAIRO=1
-endif
-
-tests_dependencies = $(gjsnative_LTLIBRARIES) ${TEST_PROGS} $(TEST_GIRS:.gir=.typelib)
-
-test: $(tests_dependencies)
-	@test -z "${TEST_PROGS}" || ${GTESTER} --verbose ${TEST_PROGS} ${TEST_PROGS_OPTIONS}
-
-check:	test
-
-gdb-check gdb-test: $(tests_dependencies)
-	failed=; for prog in ${TEST_PROGS}; do \
-	  ${TESTS_ENVIRONMENT} GJS_TEST_TIMEOUT=0 $(RUN_WITH_DBUS) libtool --mode=execute gdb -x \
-	      $(top_srcdir)/test/unittest.gdb --args $$prog; \
-	  done
-
-valgrind-check valgrind-test: $(tests_dependencies)
-	@test -z "${TEST_PROGS}" || { \
-	  failed=; for prog in ${TEST_PROGS}; do \
-	    ${TESTS_ENVIRONMENT} G_SLICE=always-malloc	\
-	    $(RUN_WITH_DBUS) \
-	    $(LIBTOOL) --mode=execute valgrind 		\
-	    --log-file=valgrind.$$prog.log 		\
-	    --error-exitcode=1 				\
-	    --trace-children=yes 			\
-	    --tool=memcheck 				\
-	    --leak-check=full 				\
-	    --suppressions=$(top_srcdir)/test/gjs.supp	\
-	    $$VALGRIND_ARGS				\
-	    $$prog \
-	    && $(GREP) -q 'definitely lost: 0 bytes in 0 blocks' valgrind.$$prog.log \
-	    || failed="$$failed $$prog"; \
-	  done; \
-	  test -z "$$failed" || { \
-	    echo "valgrind failed for:$$failed"; exit 1; \
-	  }; \
-	}
-
-.PHONY: test gdb-check gdb-test valgrind-check valgrind-test
-
-CLEANFILES +=					\
-	$(TEST_PROGS:%=valgrind.%.log)		\
-	uninstalled-test-bus.conf		\
-	uninstalled-system-test-bus.conf
-
-clean-local:
-	-rm -rf test_user_data
-
-EXTRA_DIST +=					\
-	test/js/modules/alwaysThrows.js         \
-	test/js/modules/foobar.js               \
-	test/js/modules/mutualImport/a.js       \
-	test/js/modules/mutualImport/b.js       \
-	test/js/modules/modunicode.js		\
-	test/js/modules/subA/.secret.js         \
-	test/js/modules/subA/.hidden/hidden.js  \
-	test/js/modules/subA/foo                \
-	test/js/modules/subA/subB/__init__.js	\
-	test/js/modules/subA/subB/foobar.js     \
-	test/js/modules/subA/subB/baz.js        \
-	test/js/test0010basic.js		\
-	test/js/test0020importer.js		\
-	test/js/test0030basicBoxed.js		\
-	test/js/test0040mainloop.js		\
-	test/js/testself.js			\
-	test/js/testByteArray.js		\
-	test/js/testCairo.js			\
-	test/js/testClass.js			\
-	test/js/testGDBus.js			\
-	test/js/testEverythingBasic.js		\
-	test/js/testEverythingEncapsulated.js	\
-	test/js/testGIMarshalling.js		\
-	test/js/testImporter.js			\
-	test/js/testJS1_8.js			\
-	test/js/testJSDefault.js		\
-	test/js/testLang.js			\
-	test/js/testLocale.js			\
-	test/js/testMainloop.js			\
-	test/js/testSignals.js			\
-	test/js/testSystem.js			\
-	test/js/testTweener.js			\
-	test/js/testUnicode.js			\
-	test/run-with-dbus			\
-	test/test-bus.conf
-
-########################################################################
-if ENABLE_COVERAGE
-lcov:
-	test -d lcov || mkdir lcov
-	$(LCOV) --compat-libtool --directory . --capture -o lcov/lcov.info
-	$(GENHTML) --legend -o lcov lcov/lcov.info
-
-lcov-clean:
-	find . -name '*.gcda' -delete
-	rm -rf lcov
-
-lcov-realclean: lcov-clean
-	find . -name '*.gcno' -delete
-
-clean-local: lcov-realclean
-
-.PHONY: lcov lcov-clean lcov-realclean
-else
-lcov:
-	@echo >&1 "*** ERROR: 'configure --enable-coverage' required"
-	@exit 1
-
-.PHONY: lcov
-endif

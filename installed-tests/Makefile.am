@@ -1,0 +1,20 @@
+bin_PROGRAMS =
+lib_LTLIBRARIES =
+noinst_HEADERS =
+noinst_LTLIBRARIES =
+pkglibexec_PROGRAMS =
+privlibdir = $(pkglibdir)
+privlib_LTLIBRARIES =
+BUILT_SOURCES =
+CLEANFILES =
+EXTRA_DIST =
+TEST_PROGS =
+INTROSPECTION_GIRS =
+ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
+AM_CPPFLAGS = -DPKGLIBDIR=\"$(pkglibdir)\"
+AM_CFLAGS = $(WARN_CFLAGS)
+
+include Makefile-test.am
+
+include $(INTROSPECTION_MAKEFILE)
+

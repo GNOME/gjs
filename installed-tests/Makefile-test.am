@@ -1,0 +1,84 @@
+
+installedtestmetadir = $(datadir)/installed-tests
+installedtestmeta_DATA = gjs-installed-tests.testmeta
+
+gjs-installed-tests.testmeta: gjs-installed-tests.testmeta.in Makefile
+	sed -e s,@pkglibexecdir\@,$(pkglibexecdir), < $< > $@.tmp && mv $@.tmp $@
+
+pkglibexec_PROGRAMS += gjs-installed-tests
+
+gjs_installed_tests_CFLAGS = $(AM_CFLAGS) $(GJS_CFLAGS)
+gjs_installed_tests_LDADD = $(GJS_LIBS)
+gjs_installed_tests_LDFLAGS = -rpath $(pkglibdir)
+gjs_installed_tests_SOURCES = test/gjs-unit.c
+
+privlib_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
+
+nodist_libregress_la_SOURCES = $(GI_DATADIR)/tests/regress.c $(GI_DATADIR)/tests/regress.h
+libregress_la_CPPFLAGS = $(AM_CPPFLAGS)
+libregress_la_CFLAGS = $(GJS_CFLAGS)
+libregress_la_LDFLAGS = -avoid-version $(GJS_LIBS)
+libregress_scannerflags_includes = --include=Gio-2.0
+if ENABLE_CAIRO
+libregress_la_CFLAGS += $(GJS_CAIRO_CFLAGS)
+libregress_la_LDFLAGS +=  $(GJS_CAIRO_LIBS)
+libregress_scannerflags_includes += --include=cairo-1.0
+else
+libregress_la_CPPFLAGS += -D_GI_DISABLE_CAIRO
+endif
+nodist_libwarnlib_la_SOURCES = $(GI_DATADIR)/tests/warnlib.c $(GI_DATADIR)/tests/warnlib.h
+libwarnlib_la_CFLAGS = $(GJS_CFLAGS)
+libwarnlib_la_LDFLAGS = -avoid-version $(GJS_LIBS)
+nodist_libgimarshallingtests_la_SOURCES = $(GI_DATADIR)/tests/gimarshallingtests.c $(GI_DATADIR)/tests/gimarshallingtests.h
+libgimarshallingtests_la_CFLAGS = $(GJS_CFLAGS)
+libgimarshallingtests_la_LDFLAGS = -avoid-version $(GJS_LIBS)
+
+Regress-1.0.gir: libregress.la
+Regress_1_0_gir_LIBS = libregress.la
+Regress_1_0_gir_FILES = $(nodist_libregress_la_SOURCES)
+Regress_1_0_gir_SCANNERFLAGS = --warn-all --warn-error $(libregress_scannerflags_includes) $(libregress_la_CPPFLAGS)
+INTROSPECTION_GIRS += Regress-1.0.gir
+
+WarnLib-1.0.gir: libwarnlib.la
+WarnLib_1_0_gir_LIBS = libwarnlib.la
+WarnLib_1_0_gir_INCLUDES = Gio-2.0
+WarnLib_1_0_gir_FILES = $(nodist_libwarnlib_la_SOURCES)
+WarnLib_1_0_gir_SCANNERFLAGS = --c-include="warnlib.h" --symbol-prefix=warnlib_
+INTROSPECTION_GIRS += WarnLib-1.0.gir
+
+GIMarshallingTests-1.0.gir: libgimarshallingtests.la
+GIMarshallingTests_1_0_gir_LIBS = libgimarshallingtests.la
+GIMarshallingTests_1_0_gir_INCLUDES = Gio-2.0
+GIMarshallingTests_1_0_gir_FILES = $(nodist_libgimarshallingtests_la_SOURCES)
+GIMarshallingTests_1_0_gir_SCANNERFLAGS = --symbol-prefix=gi_marshalling_tests --warn-all --warn-error
+INTROSPECTION_GIRS += GIMarshallingTests-1.0.gir
+
+typelibdir = $(pkglibdir)
+typelib_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
+
+jstestsdir = $(pkglibdir)/js
+jstests_DATA =					\
+	test/js/test0010basic.js		\
+	test/js/test0020importer.js		\
+	test/js/test0030basicBoxed.js		\
+	test/js/test0040mainloop.js		\
+	test/js/testself.js			\
+	test/js/testByteArray.js		\
+	test/js/testClass.js			\
+	test/js/testGDBus.js			\
+	test/js/testEverythingBasic.js		\
+	test/js/testEverythingEncapsulated.js	\
+	test/js/testGIMarshalling.js		\
+	test/js/testJS1_8.js			\
+	test/js/testJSDefault.js		\
+	test/js/testLang.js			\
+	test/js/testLocale.js			\
+	test/js/testMainloop.js			\
+	test/js/testSignals.js			\
+	test/js/testSystem.js			\
+	test/js/testTweener.js			\
+	test/js/testUnicode.js
+
+if ENABLE_CAIRO
+jstests_DATA += test/js/testCairo.js
+endif

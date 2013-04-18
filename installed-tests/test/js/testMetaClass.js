@@ -1,4 +1,5 @@
 // application/javascript;version=1.8 -*- mode: js; indent-tabs-mode: nil -*-
+const JSUnit = imports.jsUnit;
 
 if (!('assertEquals' in this)) { /* allow running this test standalone */
     imports.lang.copyPublicProperties(imports.jsUnit, this);
@@ -8,9 +9,9 @@ if (!('assertEquals' in this)) { /* allow running this test standalone */
 const Lang = imports.lang;
 
 function assertArrayEquals(expected, got) {
-    assertEquals(expected.length, got.length);
+    JSUnit.assertEquals(expected.length, got.length);
     for (let i = 0; i < expected.length; i ++) {
-        assertEquals(expected[i], got[i]);
+        JSUnit.assertEquals(expected[i], got[i]);
     }
 }
 
@@ -84,43 +85,44 @@ function testMetaClass() {
                        'CustomMetaTwo',
                        'CustomMetaSubclass'], Subclassed);
 
-    assertTrue(NormalClass instanceof Lang.Class);
-    assertTrue(MetaClass instanceof Lang.Class);
+    JSUnit.assertTrue(NormalClass instanceof Lang.Class);
+    JSUnit.assertTrue(MetaClass instanceof Lang.Class);
 
-    assertTrue(CustomMetaOne instanceof Lang.Class);
-    assertTrue(CustomMetaOne instanceof MetaClass);
+    JSUnit.assertTrue(CustomMetaOne instanceof Lang.Class);
+    JSUnit.assertTrue(CustomMetaOne instanceof MetaClass);
 
-    assertEquals(2, CustomMetaTwo.DYNAMIC_CONSTANT);
-    assertUndefined(CustomMetaOne.DYNAMIC_CONSTANT);
+    JSUnit.assertEquals(2, CustomMetaTwo.DYNAMIC_CONSTANT);
+    JSUnit.assertUndefined(CustomMetaOne.DYNAMIC_CONSTANT);
 }
 
 function testMetaInstance() {
     let instanceOne = new CustomMetaOne();
 
-    assertEquals(1, instanceOne.one);
-    assertEquals(2, instanceOne.two);
+    JSUnit.assertEquals(1, instanceOne.one);
+    JSUnit.assertEquals(2, instanceOne.two);
 
-    assertRaises(function() {
+    JSUnit.assertRaises(function() {
         instanceOne.dynamic_method();
     });
 
     let instanceTwo = new CustomMetaTwo();
-    assertEquals(1, instanceTwo.one);
-    assertEquals(2, instanceTwo.two);
-    assertEquals(73, instanceTwo.dynamic_method());
+    JSUnit.assertEquals(1, instanceTwo.one);
+    JSUnit.assertEquals(2, instanceTwo.two);
+    JSUnit.assertEquals(73, instanceTwo.dynamic_method());
 }
 
 function testMetaSubclass() {
-    assertTrue(CustomMetaSubclass instanceof MetaClass);
+    JSUnit.assertTrue(CustomMetaSubclass instanceof MetaClass);
 
     let instance = new CustomMetaSubclass();
 
-    assertEquals(1, instance.one);
-    assertEquals(2, instance.two);
-    assertEquals(3, instance.three);
+    JSUnit.assertEquals(1, instance.one);
+    JSUnit.assertEquals(2, instance.two);
+    JSUnit.assertEquals(3, instance.three);
 
-    assertEquals(73, instance.dynamic_method());
-    assertEquals(2, CustomMetaSubclass.DYNAMIC_CONSTANT);
+    JSUnit.assertEquals(73, instance.dynamic_method());
+    JSUnit.assertEquals(2, CustomMetaSubclass.DYNAMIC_CONSTANT);
 }
 
-gjstestRun();
+JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
+

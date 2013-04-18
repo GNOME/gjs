@@ -1,4 +1,5 @@
 // application/javascript;version=1.8
+const JSUnit = imports.jsUnit;
 const Mainloop = imports.mainloop;
 
 function testTimeout() {
@@ -34,9 +35,9 @@ function testTimeout() {
     Mainloop.run('testtimeout');
 
     with (trackTimeout) {
-        assertEquals("run ten times", 10, runTenTimes);
-        assertEquals("run only once", 1, runOnlyOnce);
-        assertEquals("never run", 0, neverRun);
+        JSUnit.assertEquals("run ten times", 10, runTenTimes);
+        JSUnit.assertEquals("run only once", 1, runOnlyOnce);
+        JSUnit.assertEquals("never run", 0, neverRun);
     }
 }
 
@@ -77,10 +78,10 @@ function testIdle() {
 
     Mainloop.run('foobar');
 
-    assertEquals("one-shot ran once", 1, trackIdles.runOnceCount);
-    assertEquals("two-shot ran twice", 2, trackIdles.runTwiceCount);
-    assertEquals("removed never ran", 0, trackIdles.neverRunsCount);
-    assertEquals("quit after many ran 11", 11, trackIdles.quitAfterManyRunsCount);
+    JSUnit.assertEquals("one-shot ran once", 1, trackIdles.runOnceCount);
+    JSUnit.assertEquals("two-shot ran twice", 2, trackIdles.runTwiceCount);
+    JSUnit.assertEquals("removed never ran", 0, trackIdles.neverRunsCount);
+    JSUnit.assertEquals("quit after many ran 11", 11, trackIdles.quitAfterManyRunsCount);
 
     // check re-entrancy of removing closures while they
     // are being invoked
@@ -102,4 +103,5 @@ function testIdle() {
                       });
 }
 
-gjstestRun();
+JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
+

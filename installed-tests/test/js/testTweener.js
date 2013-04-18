@@ -1,4 +1,5 @@
 // application/javascript;version=1.8
+const JSUnit = imports.jsUnit;
 const Tweener = imports.tweener.tweener;
 const Mainloop = imports.mainloop;
 
@@ -60,13 +61,13 @@ function testSimpleTween() {
     Mainloop.run('testTweener');
 
     with (objectA) {
-        assertEquals("A: x coordinate", 10, x);
-        assertEquals("A: y coordinate", 10, y);
+        JSUnit.assertEquals("A: x coordinate", 10, x);
+        JSUnit.assertEquals("A: y coordinate", 10, y);
     }
 
     with (objectB) {
-        assertEquals("B: x coordinate", 5, x);
-        assertEquals("B: y coordinate", 5, y);
+        JSUnit.assertEquals("B: x coordinate", 5, x);
+        JSUnit.assertEquals("B: y coordinate", 5, y);
     }
 }
 
@@ -92,9 +93,9 @@ function testOnFunctions() {
     Mainloop.run('testOnFunctions');
 
     with (object) {
-        assertEquals("onStart was run", true, start);
-        assertEquals("onUpdate was run", true, update);
-        assertEquals("onComplete was run", true, complete);
+        JSUnit.assertEquals("onStart was run", true, start);
+        JSUnit.assertEquals("onUpdate was run", true, update);
+        JSUnit.assertEquals("onComplete was run", true, complete);
     }
 }
 
@@ -116,7 +117,7 @@ function testPause() {
     Tweener.addTween(objectB, { bar: 100, time: 0.1,
                                onComplete: function() { Mainloop.quit('testPause');}});
     Tweener.pauseTweens(objectA);
-    assertEquals(false, Tweener.pauseTweens(objectB, "quux")); // This should do nothing
+    JSUnit.assertEquals(false, Tweener.pauseTweens(objectB, "quux")); // This should do nothing
 
     /* Pause and resume should be equal to doing nothing */
     Tweener.pauseTweens(objectC, "baaz");
@@ -125,15 +126,15 @@ function testPause() {
     Mainloop.run('testPause');
 
     with (objectA) {
-        assertEquals(0, foo);
+        JSUnit.assertEquals(0, foo);
     }
 
     with (objectB) {
-        assertEquals(100, bar);
+        JSUnit.assertEquals(100, bar);
     }
 
     with (objectC) {
-        assertEquals(100, baaz);
+        JSUnit.assertEquals(100, baaz);
     }
 }
 
@@ -154,9 +155,9 @@ function testRemoveTweens() {
     Mainloop.run('testRemoveTweens');
 
     with (object) {
-        assertEquals(50, foo);
-        assertEquals(0, bar);
-        assertEquals(0, baaz);
+        JSUnit.assertEquals(50, foo);
+        JSUnit.assertEquals(0, bar);
+        JSUnit.assertEquals(0, baaz);
     }
 }
 
@@ -187,11 +188,11 @@ function testConcurrent() {
     Mainloop.run('testConcurrent');
 
     with (objectA) {
-        assertEquals(0, foo);
+        JSUnit.assertEquals(0, foo);
     }
 
     with (objectB) {
-        assertEquals(150, bar);
+        JSUnit.assertEquals(150, bar);
     }
 }
 
@@ -217,11 +218,11 @@ function testPauseAllResumeAll() {
     Mainloop.run('testPauseAllResumeAll');
 
     with (objectA) {
-        assertEquals(100, foo);
+        JSUnit.assertEquals(100, foo);
     }
 
     with (objectB) {
-        assertEquals(100, bar);
+        JSUnit.assertEquals(100, bar);
     }
 }
 
@@ -240,8 +241,8 @@ function testRemoveAll() {
 
     Mainloop.timeout_add(200,
                         function () {
-                            assertEquals(0, objectA.foo);
-                            assertEquals(0, objectB.bar);
+                            JSUnit.assertEquals(0, objectA.foo);
+                            JSUnit.assertEquals(0, objectB.bar);
                             Mainloop.quit('testRemoveAll');
                             return false;
                         });
@@ -258,7 +259,7 @@ function testImmediateTween() {
     Tweener.addTween(object, { foo: 200, time: 0.1,
                                onStart: function () {
                                    /* The immediate tween should set it to 50 before we run */
-                                   assertEquals(50, object.foo);
+                                   JSUnit.assertEquals(50, object.foo);
                                },
                                onComplete: function () {
                                    Mainloop.quit('testImmediateTween');
@@ -267,7 +268,7 @@ function testImmediateTween() {
     Mainloop.run('testImmediateTween');
 
     with (object) {
-        assertEquals(200, foo);
+        JSUnit.assertEquals(200, foo);
     }
 }
 
@@ -288,7 +289,7 @@ function testAddCaller() {
     Mainloop.run('testAddCaller');
 
     with (object) {
-        assertEquals(10, foo);
+        JSUnit.assertEquals(10, foo);
     }
 }
 
@@ -300,26 +301,26 @@ function testGetTweenCount() {
         quux: 0
     };
 
-    assertEquals(0, Tweener.getTweenCount(object));
+    JSUnit.assertEquals(0, Tweener.getTweenCount(object));
 
     Tweener.addTween(object, { foo: 100, time: 0.1 });
-    assertEquals(1, Tweener.getTweenCount(object));
+    JSUnit.assertEquals(1, Tweener.getTweenCount(object));
     Tweener.addTween(object, { bar: 100, time: 0.1 });
-    assertEquals(2, Tweener.getTweenCount(object));
+    JSUnit.assertEquals(2, Tweener.getTweenCount(object));
     Tweener.addTween(object, { baaz: 100, time: 0.1 });
-    assertEquals(3, Tweener.getTweenCount(object));
+    JSUnit.assertEquals(3, Tweener.getTweenCount(object));
     Tweener.addTween(object, { quux: 100, time: 0.1,
                                onComplete: function () {
                                    Mainloop.quit('testGetTweenCount');}});
-    assertEquals(4, Tweener.getTweenCount(object));
+    JSUnit.assertEquals(4, Tweener.getTweenCount(object));
 
     Tweener.removeTweens(object, "bar", "baaz");
 
-    assertEquals(2, Tweener.getTweenCount(object));
+    JSUnit.assertEquals(2, Tweener.getTweenCount(object));
 
     Mainloop.run('testGetTweenCount');
 
-    assertEquals(0, Tweener.getTweenCount(object));
+    JSUnit.assertEquals(0, Tweener.getTweenCount(object));
 }
 
 Tweener.registerSpecialProperty(
@@ -341,8 +342,8 @@ function testSpecialProperty() {
     Mainloop.run('testSpecialProperty');
 
     with (objectA) {
-        assertEquals("A: x coordinate", -10, x);
-        assertEquals("A: y coordinate", 10, y);
+        JSUnit.assertEquals("A: x coordinate", -10, x);
+        JSUnit.assertEquals("A: y coordinate", 10, y);
     }
 }
 
@@ -378,10 +379,10 @@ function testSpecialPropertyModifier() {
     Mainloop.run('testSpecialPropertyModifier');
 
     with (objectA) {
-        assertEquals("A: x coordinate", 10, x);
-        assertEquals("A: y coordinate", 10, y);
-        assertEquals("A: x was fractional", false, xFraction);
-        assertEquals("A: y was fractional", true, yFraction);
+        JSUnit.assertEquals("A: x coordinate", 10, x);
+        JSUnit.assertEquals("A: y coordinate", 10, y);
+        JSUnit.assertEquals("A: x was fractional", false, xFraction);
+        JSUnit.assertEquals("A: y was fractional", true, yFraction);
     }
 }
 
@@ -404,11 +405,12 @@ function testSpecialPropertySplitter() {
     Mainloop.run('testSpecialPropertySplitter');
 
     with (objectA) {
-        assertEquals("A: x coordinate", 10, x);
-        assertEquals("A: y coordinate", -10, y);
+        JSUnit.assertEquals("A: x coordinate", 10, x);
+        JSUnit.assertEquals("A: y coordinate", -10, y);
     }
 }
 
 installFrameTicker();
-gjstestRun();
+JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
+
 

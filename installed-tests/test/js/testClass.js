@@ -1,11 +1,12 @@
 // application/javascript;version=1.8 -*- mode: js; indent-tabs-mode: nil -*-
 
+const JSUnit = imports.jsUnit;
 const Lang = imports.lang;
 
 function assertArrayEquals(expected, got) {
-    assertEquals(expected.length, got.length);
+    JSUnit.assertEquals(expected.length, got.length);
     for (let i = 0; i < expected.length; i ++) {
-        assertEquals(expected[i], got[i]);
+        JSUnit.assertEquals(expected[i], got[i]);
     }
 }
 
@@ -113,7 +114,7 @@ const CustomConstruct = new Lang.Class({
 
 function testClassFramework() {
     let newMagic = new MagicBase('A');
-    assertEquals('A',  newMagic.a);
+    JSUnit.assertEquals('A',  newMagic.a);
 }
 
 function testInheritance() {
@@ -125,61 +126,61 @@ function testInheritance() {
     buffer = [];
     let val = newMagic.foo(10, 20, buffer);
     assertArrayEquals([10, 20], buffer);
-    assertEquals(10*6, val);
+    JSUnit.assertEquals(10*6, val);
 }
 
 function testConstructor() {
-    assertEquals(Magic, Magic.prototype.constructor);
+    JSUnit.assertEquals(Magic, Magic.prototype.constructor);
 
     let newMagic = new Magic();
-    assertEquals(Magic, newMagic.constructor);
+    JSUnit.assertEquals(Magic, newMagic.constructor);
 }
 
 function testInstanceOf() {
     let newMagic = new Magic();
 
-    assertTrue(newMagic instanceof Magic);
-    assertTrue(newMagic instanceof MagicBase);
+    JSUnit.assertTrue(newMagic instanceof Magic);
+    JSUnit.assertTrue(newMagic instanceof MagicBase);
 }
 
 function testToString() {
     let newMagic = new MagicBase();
-    assertEquals('[object MagicBase]', newMagic.toString());
+    JSUnit.assertEquals('[object MagicBase]', newMagic.toString());
 
     let override = new ToStringOverride();
-    assertEquals('[object ToStringOverride]; hello', override.toString());
+    JSUnit.assertEquals('[object ToStringOverride]; hello', override.toString());
 }
 
 function testConfigurable() {
     let newMagic = new MagicBase();
 
     delete newMagic.foo;
-    assertNotUndefined(newMagic.foo);
+    JSUnit.assertNotUndefined(newMagic.foo);
 }
 
 function testAccessor() {
     let newAccessor = new Accessor(11);
 
-    assertEquals(11, newAccessor.value);
-    assertRaises(function() {
+    JSUnit.assertEquals(11, newAccessor.value);
+    JSUnit.assertRaises(function() {
         newAccessor.value = 12;
     });
 
     newAccessor.value = 42;
-    assertEquals(42, newAccessor.value);
+    JSUnit.assertEquals(42, newAccessor.value);
 }
 
 function testAbstract() {
-    assertRaises(function() {
+    JSUnit.assertRaises(function() {
         let newAbstract = new AbstractBase();
     });
 
     let newAbstract = new AbstractImpl();
-    assertEquals(42, newAbstract.foo);
-    assertEquals(42, newAbstract.bar);
+    JSUnit.assertEquals(42, newAbstract.foo);
+    JSUnit.assertEquals(42, newAbstract.bar);
 
     newAbstract = new AbstractImpl2();
-    assertEquals(42, newAbstract.foo);
+    JSUnit.assertEquals(42, newAbstract.foo);
 }
 
 function testCrossCall() {
@@ -190,16 +191,16 @@ function testCrossCall() {
 
     let res = newMagic.bar(10, buffer);
     assertArrayEquals([10, 20], buffer);
-    assertEquals(50, res);
+    JSUnit.assertEquals(50, res);
 }
 
 function testConstruct() {
     let instance = new CustomConstruct(1, 2);
 
-    assertTrue(instance instanceof Array);
-    assertTrue(!(instance instanceof CustomConstruct));
+    JSUnit.assertTrue(instance instanceof Array);
+    JSUnit.assertTrue(!(instance instanceof CustomConstruct));
 
     assertArrayEquals([1, 2], instance);
 }
 
-gjstestRun();
+JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
