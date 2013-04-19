@@ -728,6 +728,19 @@ format_function_name(Function *function,
                            g_base_info_get_name(baseinfo));
 }
 
+static void
+complete_async_calls(void)
+{
+    if (completed_trampolines) {
+        for (GSList *iter = completed_trampolines; iter; iter = iter->next) {
+            auto trampoline = static_cast<GjsCallbackTrampoline *>(iter->data);
+            gjs_callback_trampoline_unref(trampoline);
+        }
+        g_slist_free(completed_trampolines);
+        completed_trampolines = nullptr;
+    }
+}
+
 /*
  * This function can be called in 2 different ways. You can either use
  * it to create javascript objects by providing a @js_rval argument or
@@ -776,20 +789,12 @@ gjs_invoke_c_function(JSContext                             *context,
     GITypeTag return_tag;
     JS::AutoValueVector return_values(context);
     guint8 next_rval = 0; /* index into return_values */
-    GSList *iter;
 
     /* Because we can't free a closure while we're in it, we defer
      * freeing until the next time a C function is invoked.  What
      * we should really do instead is queue it for a GC thread.
      */
-    if (completed_trampolines) {
-        for (iter = completed_trampolines; iter; iter = iter->next) {
-            GjsCallbackTrampoline *trampoline = (GjsCallbackTrampoline *) iter->data;
-            gjs_callback_trampoline_unref(trampoline);
-        }
-        g_slist_free(completed_trampolines);
-        completed_trampolines = NULL;
-    }
+    complete_async_calls();
 
     is_method = g_callable_info_is_method(function->info);
     can_throw_gerror = g_callable_info_can_throw_gerror(function->info);
