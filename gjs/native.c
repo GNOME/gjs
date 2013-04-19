@@ -81,11 +81,8 @@ module_get_parent(JSContext *context,
                   JSObject  *module_obj)
 {
     jsval value;
-    jsid parent_module_name;
 
-    parent_module_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                      GJS_STRING_PARENT_MODULE);
-    if (JS_GetPropertyById(context, module_obj, parent_module_name, &value) &&
+    if (gjs_object_get_property_const(context, module_obj, GJS_STRING_PARENT_MODULE, &value) &&
         !JSVAL_IS_NULL(value) &&
         JSVAL_IS_OBJECT(value)) {
         return JSVAL_TO_OBJECT(value);

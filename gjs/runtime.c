@@ -82,6 +82,20 @@ gjs_runtime_get_const_string(JSRuntime      *runtime,
     return get_data(runtime)->const_strings[name];
 }
 
+gboolean
+gjs_object_get_property_const(JSContext      *context,
+                              JSObject       *obj,
+                              GjsConstString  property_name,
+                              jsval          *value_p)
+{
+    jsid pname;
+
+    pname = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                         property_name);
+    return JS_GetPropertyById(context, obj,
+                              pname, value_p);
+}
+
 void
 gjs_runtime_init_for_context(JSRuntime *runtime,
                              JSContext *context)

@@ -29,6 +29,7 @@
 #endif
 
 #include <gjs/compat.h>
+#include <gjs/runtime.h>
 #include <glib-object.h>
 
 G_BEGIN_DECLS
@@ -199,6 +200,12 @@ gboolean    gjs_object_require_property      (JSContext       *context,
                                               JSObject        *obj,
                                               const char      *obj_description,
                                               jsid             property_name,
+                                              jsval           *value_p);
+/* This one is defined in runtime.c, so the compiler can optimize the call
+   to get_const_string() it uses. */
+gboolean    gjs_object_get_property_const    (JSContext       *context,
+                                              JSObject        *obj,
+                                              GjsConstString   property_name,
                                               jsval           *value_p);
 
 JSObject   *gjs_new_object_for_constructor   (JSContext       *context,

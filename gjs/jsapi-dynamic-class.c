@@ -51,15 +51,11 @@ gjs_new_object_for_constructor(JSContext *context,
     jsval     callee;
     JSObject *parent;
     jsval     prototype;
-    jsid      prototype_name;
 
     callee = JS_CALLEE(context, vp);
     parent = JS_GetParent(JSVAL_TO_OBJECT (callee));
 
-    prototype_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                  GJS_STRING_PROTOTYPE);
-    if (!JS_GetPropertyById(context, JSVAL_TO_OBJECT(callee), prototype_name,
-                            &prototype))
+    if (!gjs_object_get_property_const(context, JSVAL_TO_OBJECT(callee), GJS_STRING_PROTOTYPE, &prototype))
         return NULL;
 
     return JS_NewObjectWithGivenProto(context, clasp,

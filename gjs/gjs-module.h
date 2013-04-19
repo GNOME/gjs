@@ -28,6 +28,7 @@
 #include <gjs/native.h>
 #include <gjs/mem.h>
 #include <gjs/importer.h>
+#include <gjs/runtime.h>
 #include <gjs/jsapi-util.h>
 
 #endif /* __GJS_GJS_umodule_H__ */

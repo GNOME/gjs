@@ -416,8 +416,6 @@ gjs_define_union_class(JSContext    *context,
     if (!JS_GetProperty(context, in_object, constructor_name, &value))
         return JS_FALSE;
     if (!JSVAL_IS_VOID(value)) {
-        jsid prototype_name;
-
         if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "Existing property '%s' does not look like a constructor",
                          constructor_name);
@@ -426,9 +424,7 @@ gjs_define_union_class(JSContext    *context,
 
         constructor = JSVAL_TO_OBJECT(value);
 
-        prototype_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                      GJS_STRING_PROTOTYPE);
-        JS_GetPropertyById(context, constructor, prototype_name, &value);
+        gjs_object_get_property_const(context, constructor, GJS_STRING_PROTOTYPE, &value);
         if (!JSVAL_IS_OBJECT(value)) {
             gjs_throw(context, "union %s prototype property does not appear to exist or has wrong type", constructor_name);
             return JS_FALSE;
