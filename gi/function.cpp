@@ -23,8 +23,9 @@
 
 #include <config.h>
 
-#include "function.h"
 #include "arg.h"
+#include "arg-cache.h"
+#include "function.h"
 #include "object.h"
 #include "fundamental.h"
 #include "boxed.h"
@@ -54,8 +55,10 @@ typedef struct {
     GIFunctionInfo *info;
 
     GjsParamType *param_types;
+    GjsArgumentCache *in_arguments;
+    GjsArgumentCache *out_arguments;
 
-    guint8 expected_js_argc;
+    uint8_t js_in_argc;
     guint8 js_out_argc;
     GIFunctionInvoker invoker;
 } Function;
@@ -800,22 +803,22 @@ gjs_invoke_c_function(JSContext                             *context,
     /* @c_argc is the number of arguments that the underlying C
      * function takes. @gi_argc is the number of arguments the
      * GICallableInfo describes (which does not include "this" or
-     * GError**). @function->expected_js_argc is the number of
+     * GError**). @function->js_in_argc is the number of
      * arguments we expect the JS function to take (which does not
      * include PARAM_SKIPPED args).
      *
      * @js_argc is the number of arguments that were actually passed.
      */
-    if (args.length() > function->expected_js_argc) {
+    if (args.length() > function->js_in_argc) {
         GjsAutoChar name = format_function_name(function, is_method);
         JS_ReportWarningUTF8(context, "Too many arguments to %s: expected %d, "
                              "got %" G_GSIZE_FORMAT, name.get(),
-                             function->expected_js_argc, args.length());
-    } else if (args.length() < function->expected_js_argc) {
+                             function->js_in_argc, args.length());
+    } else if (args.length() < function->js_in_argc) {
         GjsAutoChar name = format_function_name(function, is_method);
         gjs_throw(context, "Too few arguments to %s: "
                   "expected %d, got %" G_GSIZE_FORMAT,
-                  name.get(), function->expected_js_argc, args.length());
+                  name.get(), function->js_in_argc, args.length());
         return false;
     }
 
@@ -1556,6 +1559,18 @@ static JSFunctionSpec gjs_function_proto_funcs[] = {
 
 static JSFunctionSpec *gjs_function_static_funcs = nullptr;
 
+static void
+throw_not_introspectable_argument(JSContext      *cx,
+                                  GICallableInfo *function,
+                                  GIArgInfo      *arg)
+{
+    gjs_throw(cx, "Function %s.%s cannot be called: argument '%s' is not "
+              "introspectable.",
+              g_base_info_get_namespace(function),
+              g_base_info_get_name(function),
+              g_base_info_get_name(arg));
+}
+
 static bool
 init_cached_function_data (JSContext      *context,
                            Function       *function,
@@ -1563,9 +1578,7 @@ init_cached_function_data (JSContext      *context,
                            GICallableInfo *info)
 {
     guint8 i, n_args;
-    int array_length_pos;
     GError *error = NULL;
-    GITypeInfo return_type;
     GIInfoType info_type;
 
     info_type = g_base_info_get_type((GIBaseInfo *)info);
@@ -1597,103 +1610,111 @@ init_cached_function_data (JSContext      *context,
         }
     }
 
-    g_callable_info_load_return_type((GICallableInfo*)info, &return_type);
-    if (g_type_info_get_tag(&return_type) != GI_TYPE_TAG_VOID)
-        function->js_out_argc += 1;
+    n_args = g_callable_info_get_n_args((GICallableInfo *) info);
 
-    n_args = g_callable_info_get_n_args((GICallableInfo*) info);
+    /* We preallocate structures conservatively, then we copy in dynamic memory
+     * only those we need.
+     * Ideally, there would be a 1:1 mapping between GjsArgumentCache and JS
+     * arguments, but we need to handle the case of a length argument happening
+     * before its corresponding array, so we allow for "holes"
+     * (GjsArgumentCache whose param_type is PARAM_SKIPPED), and in_args maps
+     * to GI arguments, while out_args maps to GI arguments and the return
+     * value. To ease handling, out_args is actually one inside the array (so
+     * out_args[-1] is the return value).
+     * In any case, there is a 1:1 mapping between GI arguments and
+     * function->param_types. */
+    GjsArgumentCache *in_args = g_newa(GjsArgumentCache, n_args);
+    GjsArgumentCache *out_args = g_newa(GjsArgumentCache, n_args + 1) + 1;
+    /*memset(in_args, sizeof(GjsArgumentCache) * n_args, 0);
+      memset(out_args - 1, sizeof(GjsArgumentCache) * (n_args + 1), 0);*/
     function->param_types = g_new0(GjsParamType, n_args);
 
-    array_length_pos = g_type_info_get_array_length(&return_type);
-    if (array_length_pos >= 0 && array_length_pos < n_args)
-        function->param_types[array_length_pos] = PARAM_SKIPPED;
+    bool inc_counter;
+    if (!gjs_arg_cache_build_return(&out_args[-1], function->param_types,
+                                    info, inc_counter)) {
+        gjs_throw(context, "Function %s.%s cannot be called: the return value "
+                  "is not introspectable.",
+                  g_base_info_get_namespace(info),
+                  g_base_info_get_name(info));
+        return false;
+    }
+    int out_argc = inc_counter ? 1 : 0;
+    int in_argc = 0;
 
     for (i = 0; i < n_args; i++) {
         GIDirection direction;
         GIArgInfo arg_info;
-        GITypeInfo type_info;
-        int destroy = -1;
-        int closure = -1;
-        GITypeTag type_tag;
 
         if (function->param_types[i] == PARAM_SKIPPED)
             continue;
 
         g_callable_info_load_arg((GICallableInfo*) info, i, &arg_info);
-        g_arg_info_load_type(&arg_info, &type_info);
-
         direction = g_arg_info_get_direction(&arg_info);
-        type_tag = g_type_info_get_tag(&type_info);
 
-        if (type_tag == GI_TYPE_TAG_INTERFACE) {
-            GIBaseInfo* interface_info;
-            GIInfoType interface_type;
-
-            interface_info = g_type_info_get_interface(&type_info);
-            interface_type = g_base_info_get_type(interface_info);
-            if (interface_type == GI_INFO_TYPE_CALLBACK) {
-                if (strcmp(g_base_info_get_name(interface_info), "DestroyNotify") == 0 &&
-                    strcmp(g_base_info_get_namespace(interface_info), "GLib") == 0) {
-                    /* Skip GDestroyNotify if they appear before the respective callback */
-                    function->param_types[i] = PARAM_SKIPPED;
-                } else {
-                    function->param_types[i] = PARAM_CALLBACK;
-                    function->expected_js_argc += 1;
-
-                    destroy = g_arg_info_get_destroy(&arg_info);
-                    closure = g_arg_info_get_closure(&arg_info);
-
-                    if (destroy >= 0 && destroy < n_args)
-                        function->param_types[destroy] = PARAM_SKIPPED;
-
-                    if (closure >= 0 && closure < n_args)
-                        function->param_types[closure] = PARAM_SKIPPED;
-
-                    if (destroy >= 0 && closure < 0) {
-                        gjs_throw(context, "Function %s.%s has a GDestroyNotify but no user_data, not supported",
-                                  g_base_info_get_namespace( (GIBaseInfo*) info),
-                                  g_base_info_get_name( (GIBaseInfo*) info));
-                        g_base_info_unref(interface_info);
-                        return false;
-                    }
-                }
+        if (direction == GI_DIRECTION_IN) {
+            if (!gjs_arg_cache_build_in_arg(&in_args[i], function->param_types,
+                                            i, &arg_info, inc_counter)) {
+                throw_not_introspectable_argument(context, info, &arg_info);
+                return false;
             }
-            g_base_info_unref(interface_info);
-        } else if (type_tag == GI_TYPE_TAG_ARRAY) {
-            if (g_type_info_get_array_type(&type_info) == GI_ARRAY_TYPE_C) {
-                array_length_pos = g_type_info_get_array_length(&type_info);
 
-                if (array_length_pos >= 0 && array_length_pos < n_args) {
-                    GIArgInfo length_arg_info;
-
-                    g_callable_info_load_arg((GICallableInfo*) info, array_length_pos, &length_arg_info);
-                    if (g_arg_info_get_direction(&length_arg_info) != direction) {
-                        gjs_throw(context, "Function %s.%s has an array with different-direction length arg, not supported",
-                                  g_base_info_get_namespace( (GIBaseInfo*) info),
-                                  g_base_info_get_name( (GIBaseInfo*) info));
-                        return false;
-                    }
-
-                    function->param_types[array_length_pos] = PARAM_SKIPPED;
-                    function->param_types[i] = PARAM_ARRAY;
-
-                    if (array_length_pos < i) {
-                        /* we already collected array_length_pos, remove it */
-                        if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT)
-                            function->expected_js_argc -= 1;
-                        if (direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT)
-                            function->js_out_argc -= 1;
-                    }
-                }
+            function->param_types[i] = in_args[i].param_type;
+            if (inc_counter)
+                in_argc++;
+        } else if (direction == GI_DIRECTION_INOUT) {
+            if (!gjs_arg_cache_build_inout_arg(&in_args[i], &out_args[i],
+                                               function->param_types,
+                                               i, &arg_info, inc_counter)) {
+                throw_not_introspectable_argument(context, info, &arg_info);
+                return false;
             }
+
+            function->param_types[i] = in_args[i].param_type;
+            if (inc_counter) {
+                in_argc++;
+                out_argc++;
+            }
+        } else { /* GI_DIRECTION_OUT */
+            if (out_args[i].param_type == PARAM_SKIPPED)
+                continue;
+
+            if (!gjs_arg_cache_build_out_arg(&out_args[i],
+                                             function->param_types,
+                                             i, &arg_info, inc_counter)) {
+                throw_not_introspectable_argument(context, info, &arg_info);
+                return false;
+            }
+
+            function->param_types[i] = out_args[i].param_type;
+            if (inc_counter)
+                out_argc++;
         }
+    }
 
-        if (function->param_types[i] == PARAM_NORMAL ||
-            function->param_types[i] == PARAM_ARRAY) {
-            if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT)
-                function->expected_js_argc += 1;
-            if (direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT)
-                function->js_out_argc += 1;
+    function->in_arguments = g_new(GjsArgumentCache, in_argc);
+    function->out_arguments = g_new(GjsArgumentCache, out_argc);
+
+    function->js_in_argc = function->js_out_argc = 0;
+    if (out_args[-1].param_type != PARAM_SKIPPED) {
+        function->out_arguments[0] = out_args[-1];
+        function->js_out_argc = 1;
+    }
+
+    for (i = 0; i < n_args; i++) {
+        if (function->param_types[i] == PARAM_SKIPPED)
+            continue;
+
+        GIArgInfo arg_info;
+        g_callable_info_load_arg((GICallableInfo*) info, i, &arg_info);
+        GIDirection direction = g_arg_info_get_direction(&arg_info);
+
+        if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT) {
+            function->in_arguments[function->js_in_argc] = in_args[i];
+            function->js_in_argc++;
+        }
+        if (direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT) {
+            function->out_arguments[function->js_out_argc] = out_args[i];
+            function->js_out_argc++;
         }
     }
 
