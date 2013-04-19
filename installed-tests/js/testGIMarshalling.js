@@ -422,15 +422,7 @@ describe('C array with length', function () {
     it('marshals two arrays with the same length parameter', function () {
         const keys = ['one', 'two', 'three'];
         const values = [1, 2, 3];
-
-        // Intercept message; see https://gitlab.gnome.org/GNOME/gjs/issues/267
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            '*Too many arguments*');
-
         expect(() => GIMarshallingTests.multi_array_key_value_in(keys, values)).not.toThrow();
-
-        GLib.test_assert_expected_messages_internal('Gjs',
-            'testGIMarshalling.js', 0, 'Ignore message');
     });
 
     // Run twice to ensure that copies are correctly made for (transfer full)
