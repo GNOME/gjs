@@ -14,6 +14,8 @@ gjs_public_headers =		\
 gjs_srcs =				\
 	gi/arg.cpp			\
 	gi/arg.h			\
+	gi/arg-cache.cpp		\
+	gi/arg-cache.h			\
 	gi/boxed.cpp			\
 	gi/boxed.h			\
 	gi/closure.cpp			\
