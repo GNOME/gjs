@@ -1594,50 +1594,6 @@ connect_func(JSContext *context,
 }
 
 static JSBool
-disconnect_func(JSContext *context,
-                unsigned   argc,
-                jsval     *vp)
-{
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
-    ObjectInstance *priv;
-    gulong id;
-
-    if (!do_base_typecheck(context, obj, JS_TRUE))
-        return JS_FALSE;
-
-    priv = priv_from_js(context, obj);
-    gjs_debug_gsignal("disconnect obj %p priv %p argc %d", obj, priv, argc);
-
-    if (priv == NULL) {
-        throw_priv_is_null_error(context);
-        return JS_FALSE; /* wrong class passed in */
-    }
-
-    if (priv->gobj == NULL) {
-        /* prototype, not an instance. */
-        gjs_throw(context, "Can't disconnect signal on %s.%s.prototype; only on instances",
-                  priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
-                  priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
-        return JS_FALSE;
-    }
-
-    if (argc != 1 ||
-        !JSVAL_IS_INT(argv[0])) {
-        gjs_throw(context, "disconnect() takes one arg, the signal handler id");
-        return JS_FALSE;
-    }
-
-    id = JSVAL_TO_INT(argv[0]);
-
-    g_signal_handler_disconnect(priv->gobj, id);
-    
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
-
-    return JS_TRUE;
-}
-
-static JSBool
 emit_func(JSContext *context,
           unsigned   argc,
           jsval     *vp)
@@ -1838,7 +1794,6 @@ JSFunctionSpec gjs_object_instance_proto_funcs[] = {
     { "_init", JSOP_WRAPPER((JSNative)init_func), 0, 0 },
     { "connect", JSOP_WRAPPER((JSNative)connect_func), 0, 0 },
     { "connect_after", JSOP_WRAPPER((JSNative)connect_after_func), 0, 0 },
-    { "disconnect", JSOP_WRAPPER((JSNative)disconnect_func), 0, 0 },
     { "emit", JSOP_WRAPPER((JSNative)emit_func), 0, 0 },
     { "toString", JSOP_WRAPPER((JSNative)to_string_func), 0, 0 },
     { NULL }

@@ -264,4 +264,8 @@ function _init() {
         FIRST_WINS: 1,
         TRUE_HANDLED: 2
     };
+
+    this.Object.prototype.disconnect = function(id) {
+        return GObject.signal_handler_disconnect(this, id);
+    }
 }
