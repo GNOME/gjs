@@ -480,6 +480,30 @@ describe('Life, the Universe and Everything', function () {
         }).pend('Not yet implemented');
     });
 
+    describe('Signal alternative syntax', function () {
+        let o, handler;
+        beforeEach(function () {
+            handler = jasmine.createSpy('handler');
+            o = new Regress.TestObj();
+            let handlerId = GObject.signal_connect(o, 'test', handler);
+            handler.and.callFake(() =>
+                GObject.signal_handler_disconnect(o, handlerId));
+
+            GObject.signal_emit_by_name(o, 'test');
+        });
+
+        it('handler is called with the right object', function () {
+            expect(handler).toHaveBeenCalledTimes(1);
+            expect(handler).toHaveBeenCalledWith(o);
+        });
+
+        it('disconnected handler is not called', function () {
+            handler.calls.reset();
+            GObject.signal_emit_by_name(o, 'test');
+            expect(handler).not.toHaveBeenCalled();
+        });
+    });
+
     it('torture signature 0', function () {
         let [y, z, q] = Regress.test_torture_signature_0(42, 'foo', 7);
         expect(Math.floor(y)).toEqual(42);
