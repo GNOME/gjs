@@ -33,41 +33,72 @@
 G_BEGIN_DECLS
 
 typedef struct _GjsArgumentCache {
-    bool (*marshal) (struct _GjsArgumentCache *, GIArgument *, JS::HandleValue);
-    bool (*release) (struct _GjsArgumentCache *, GIArgument *);
-    bool (*free) (struct _GjsArgumentCache *);
+    bool (*marshal_in) (JSContext                *cx,
+                        struct _GjsArgumentCache *cache,
+                        GjsFunctionCallState     *state,
+                        GIArgument               *in_argument,
+                        JS::HandleValue           value);
+    bool (*marshal_out) (JSContext                *cx,
+                         struct _GjsArgumentCache *cache,
+                         GjsFunctionCallState     *state,
+                         GIArgument               *out_argument,
+                         JS::MutableHandleValue    value);
+    bool (*release) (JSContext                *cx,
+                     struct _GjsArgumentCache *cache,
+                     GjsFunctionCallState     *state,
+                     GIArgument               *in_argument,
+                     GIArgument               *out_argument);
+    bool (*free) (struct _GjsArgumentCache *cache);
 
-    /* For compatibility */
-    GjsParamType param_type;
+    const char *arg_name;
+    int         arg_index;
+    GITypeInfo  type_info;
+
+    unsigned    skip_in : 1;
+    unsigned    skip_out : 1;
+    GITransfer  transfer : 2;
+    unsigned    nullable : 1;
+    unsigned    is_return : 1;
 
     union {
+        struct {
+            int length_arg;
+            GITypeTag length_tag;
+        } array;
+        struct {
+            GIScopeType scope;
+            int closure;
+            int destroy;
+        } callback;
+        size_t caller_allocates_size;
         int dummy;
     } contents;
 } GjsArgumentCache;
 
-bool gjs_arg_cache_build_in_arg(GjsArgumentCache *self,
-                                GjsParamType     *param_types,
-                                int               gi_index,
-                                GIArgInfo        *arg,
-                                bool             *inc_counter);
-
-bool gjs_arg_cache_build_out_arg(GjsArgumentCache *self,
-                                 GjsParamType     *param_types,
-                                 int               gi_index,
-                                 GIArgInfo        *arg,
-                                 bool             *inc_counter);
-
-bool gjs_arg_cache_build_inout_arg(GjsArgumentCache *in_self,
-                                   GjsArgumentCache *out_self,
-                                   GjsParamType     *param_types,
-                                   int               gi_index,
-                                   GIArgInfo        *arg,
-                                   bool             *inc_counter);
+bool gjs_arg_cache_build_arg(GjsArgumentCache *self,
+                             GjsArgumentCache *arguments,
+                             int               gi_index,
+                             GIDirection       direction,
+                             GIArgInfo        *arg,
+                             GICallableInfo   *callable,
+                             bool             *inc_counter);
 
 bool gjs_arg_cache_build_return(GjsArgumentCache *self,
-                                GjsParamType     *param_types,
+                                GjsArgumentCache *arguments,
                                 GICallableInfo   *info,
                                 bool             *inc_counter);
+
+static inline bool
+gjs_arg_cache_is_skip_in(GjsArgumentCache *cache)
+{
+    return cache->skip_in;
+}
+
+static inline bool
+gjs_arg_cache_is_skip_out(GjsArgumentCache *cache)
+{
+    return cache->skip_out;
+}
 
 G_END_DECLS
 
