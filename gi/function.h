@@ -64,6 +64,12 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(JSContext       *context,
 void gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline);
 void gjs_callback_trampoline_ref(GjsCallbackTrampoline *trampoline);
 
+typedef struct {
+    GIArgument *in_arg_cvalues;
+    GIArgument *out_arg_cvalues;
+    GIArgument *inout_original_arg_cvalues;
+} GjsFunctionCallState;
+
 JSObject *gjs_define_function(JSContext       *context,
                               JS::HandleObject in_object,
                               GType            gtype,
