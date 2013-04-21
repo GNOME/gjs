@@ -57,11 +57,11 @@ bool gjs_value_to_arg(JSContext      *context,
                       GIArgument     *arg);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_value_to_explicit_array(JSContext       *context,
-                                 JS::HandleValue  value,
-                                 GIArgInfo       *arg_info,
-                                 GIArgument      *arg,
-                                 size_t          *length_p);
+bool gjs_array_to_explicit_array(JSContext* cx, JS::HandleValue value,
+                                 GITypeInfo* type_info, const char* arg_name,
+                                 GjsArgumentType arg_type, GITransfer transfer,
+                                 bool may_be_null, void** contents,
+                                 size_t* length_p);
 
 void gjs_gi_argument_init_default(GITypeInfo* type_info, GIArgument* arg);
 

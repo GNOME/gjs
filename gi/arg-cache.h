@@ -26,33 +26,66 @@
 
 #include <config.h>
 
+#include <stddef.h>
+
 #include <girepository.h>
 
+#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
-#include "gi/function.h"
 #include "gjs/macros.h"
 
+struct GjsFunctionCallState;
+
 typedef struct _GjsArgumentCache {
-    // For compatibility
-    GjsParamType param_type;
+    bool (*marshal_in)(JSContext* cx, struct _GjsArgumentCache* cache,
+                       GjsFunctionCallState* state, GIArgument* in_argument,
+                       JS::HandleValue value);
+    bool (*marshal_out)(JSContext* cx, struct _GjsArgumentCache* cache,
+                        GjsFunctionCallState* state, GIArgument* out_argument,
+                        JS::MutableHandleValue value);
+    bool (*release)(JSContext* cx, struct _GjsArgumentCache* cache,
+                    GjsFunctionCallState* state, GIArgument* in_argument,
+                    GIArgument* out_argument);
+
+    const char* arg_name;
+    int arg_pos;
+    GITypeInfo type_info;
+
+    bool skip_in : 1;
+    bool skip_out : 1;
+    GITransfer transfer : 2;
+    bool nullable : 1;
+    bool is_return : 1;
+
+    union {
+        // for explicit array only
+        struct {
+            int length_pos;
+            GITypeTag length_tag;
+        } array;
+
+        struct {
+            GIScopeType scope;
+            int closure_pos;
+            int destroy_pos;
+        } callback;
+
+        // out caller allocates (FIXME: should be in object)
+        size_t caller_allocates_size;
+    } contents;
 } GjsArgumentCache;
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
-                             GjsParamType* param_types, int gi_index,
+                             GjsArgumentCache* arguments, int gi_index,
                              GIDirection direction, GIArgInfo* arg,
                              GICallableInfo* callable, bool* inc_counter_out);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_arg_cache_build_inout_arg(JSContext* cx, GjsArgumentCache* in_self,
-                                   GjsArgumentCache* out_self,
-                                   GjsParamType* param_types, int gi_index,
-                                   GIArgInfo* arg, bool* inc_counter_out);
-
-GJS_JSAPI_RETURN_CONVENTION
 bool gjs_arg_cache_build_return(JSContext* cx, GjsArgumentCache* self,
-                                GjsParamType* param_types, GICallableInfo* info,
+                                GjsArgumentCache* arguments,
+                                GICallableInfo* callable,
                                 bool* inc_counter_out);
 
 #endif  // GI_ARG_CACHE_H_
