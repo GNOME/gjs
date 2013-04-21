@@ -71,6 +71,14 @@ typedef struct _GjsArgumentCache {
             int destroy_pos;
         } callback;
 
+        struct {
+            GITypeTag number_tag;
+            bool is_unsigned : 1;
+        } number;
+
+        // string / filename
+        bool string_is_filename : 1;
+
         // out caller allocates (FIXME: should be in object)
         size_t caller_allocates_size;
     } contents;
