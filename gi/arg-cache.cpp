@@ -34,6 +34,9 @@
 #include "arg-cache.h"
 #include "function.h"
 
+static bool gjs_arg_cache_build_normal_in_arg(GjsArgumentCache *self,
+                                              GITypeTag         tag);
+
 /* The global entry point for any invocations of GDestroyNotify;
  * look up the callback through the user_data and then free it.
  */
@@ -689,9 +692,8 @@ gjs_arg_cache_build_arg(GjsArgumentCache *self,
     }
 
     if (direction == GI_DIRECTION_IN) {
-        self->marshal_in = gjs_marshal_generic_in_in;
+        gjs_arg_cache_build_normal_in_arg(self, type_tag);
         self->marshal_out = gjs_marshal_skipped_out;
-        self->release = gjs_marshal_generic_in_release;
     } else if (direction == GI_DIRECTION_INOUT) {
         self->marshal_in = gjs_marshal_generic_inout_in;
         self->marshal_out = gjs_marshal_generic_out_out;
@@ -700,6 +702,316 @@ gjs_arg_cache_build_arg(GjsArgumentCache *self,
         self->marshal_in = gjs_marshal_generic_out_in;
         self->marshal_out = gjs_marshal_generic_out_out;
         self->release = gjs_marshal_generic_out_release;
+    }
+
+    return true;
+}
+
+static bool
+report_primitive_type_mismatch(JSContext        *cx,
+                               GjsArgumentCache *self,
+                               JS::HandleValue   value,
+                               JSType            expected)
+{
+    static const char *typenames[JSTYPE_LIMIT] = {
+        "undefined", "object", "function", "string", "number", "boolean",
+        "null", "symbol"
+    };
+
+    gjs_throw(cx, "Expected type %s for argument '%s' but got type %s",
+              typenames[expected], self->arg_name,
+              gjs_get_type_name(value));
+    return false;
+}
+
+static bool
+report_out_of_range(JSContext        *cx,
+                    GjsArgumentCache *self,
+                    GITypeTag         tag)
+{
+    gjs_throw(cx, "Argument %s: value is out of range for %s",
+              self->arg_name, g_type_tag_to_string(tag));
+    return false;
+}
+
+static bool
+report_invalid_null(JSContext        *cx,
+                    GjsArgumentCache *self)
+{
+    gjs_throw(cx, "Argument %s may not be null", self->arg_name);
+    return false;
+}
+
+static bool
+gjs_marshal_null_in_in(JSContext            *cx,
+                       GjsArgumentCache     *self,
+                       GjsFunctionCallState *state,
+                       GIArgument           *arg,
+                       JS::HandleValue       value)
+{
+    arg->v_pointer = nullptr;
+    return true;
+}
+
+static bool
+gjs_marshal_boolean_in_in(JSContext            *cx,
+                          GjsArgumentCache     *self,
+                          GjsFunctionCallState *state,
+                          GIArgument           *arg,
+                          JS::HandleValue       value)
+{
+    arg->v_boolean = JS::ToBoolean(value);
+    return true;
+}
+
+/* Type tags are alternated, signed / unsigned */
+static int32_t min_max_ints[5][2] = {
+    { G_MININT8,  G_MAXINT8 },
+    { 0,          G_MAXUINT8 },
+    { G_MININT16, G_MAXINT16 },
+    { 0,          G_MAXUINT16 },
+    { G_MININT32, G_MAXINT32 }
+};
+
+static inline bool
+value_in_range(int32_t   number,
+               GITypeTag tag)
+{
+    return (number >= min_max_ints[tag - GI_TYPE_TAG_INT8][0] &&
+            number <= min_max_ints[tag - GI_TYPE_TAG_INT8][1]);
+}
+
+static bool
+gjs_marshal_integer_in_in(JSContext            *cx,
+                          GjsArgumentCache     *self,
+                          GjsFunctionCallState *state,
+                          GIArgument           *arg,
+                          JS::HandleValue       value)
+{
+    GITypeTag tag = self->contents.number.number_tag;
+
+    if (self->contents.number.is_unsigned) {
+        uint32_t number;
+        if (!JS::ToUint32(cx, value, &number))
+            return false;
+
+        if (!value_in_range(number, tag))
+            return report_out_of_range(cx, self, tag);
+
+        gjs_g_argument_set_ulong(tag, arg, number);
+    } else {
+        int32_t number;
+        if (!JS::ToInt32(cx, value, &number))
+            return false;
+
+        if (!value_in_range(number, tag))
+            return report_out_of_range(cx, self, tag);
+
+        gjs_g_argument_set_ulong(tag, arg, number);
+    }
+
+    return true;
+}
+
+static bool
+gjs_marshal_number_in_in(JSContext            *cx,
+                         GjsArgumentCache     *self,
+                         GjsFunctionCallState *state,
+                         GIArgument           *arg,
+                         JS::HandleValue       value)
+{
+    double v;
+    if (!JS::ToNumber(cx, value, &v))
+        return false;
+
+    GITypeTag tag = self->contents.number.number_tag;
+    if (tag == GI_TYPE_TAG_DOUBLE) {
+        arg->v_double = v;
+    } else if (tag == GI_TYPE_TAG_FLOAT) {
+        if (v < - G_MAXFLOAT || v > G_MAXFLOAT)
+            return report_out_of_range(cx, self, GI_TYPE_TAG_FLOAT);
+
+        arg->v_float = v;
+    } else if (tag == GI_TYPE_TAG_INT64) {
+        if (v < G_MININT64 || v > G_MAXINT64)
+            return report_out_of_range(cx, self, GI_TYPE_TAG_INT64);
+
+        arg->v_int64 = v;
+    } else if (tag == GI_TYPE_TAG_UINT64) {
+        if (v < 0 || v > G_MAXUINT64)
+            return report_out_of_range(cx, self, GI_TYPE_TAG_UINT64);
+
+        arg->v_uint64 = v;
+    } else if (tag == GI_TYPE_TAG_UINT32) {
+        if (v < 0 || v > G_MAXUINT32)
+            return report_out_of_range(cx, self, GI_TYPE_TAG_UINT32);
+
+        arg->v_uint32 = v;
+    } else {
+        g_assert_not_reached();
+    }
+
+    return true;
+}
+
+static bool
+gjs_marshal_unichar_in_in(JSContext            *cx,
+                          GjsArgumentCache     *self,
+                          GjsFunctionCallState *state,
+                          GIArgument           *arg,
+                          JS::HandleValue       value)
+{
+    if (!value.isString())
+        return report_primitive_type_mismatch(cx, self, value, JSTYPE_STRING);
+
+    return gjs_unichar_from_string(cx, value, &arg->v_uint32);
+}
+
+static bool
+gjs_marshal_gtype_in_in(JSContext            *cx,
+                        GjsArgumentCache     *self,
+                        GjsFunctionCallState *state,
+                        GIArgument           *arg,
+                        JS::HandleValue       value)
+{
+    if (!value.isObjectOrNull())
+        return report_primitive_type_mismatch(cx, self, value, JSTYPE_OBJECT);
+    if (value.isNull())
+        return report_invalid_null(cx, self);
+
+    JS::RootedObject gtype_obj(cx, &value.toObject());
+    arg->v_ssize = gjs_gtype_get_actual_gtype(cx, gtype_obj);
+    return arg->v_ssize != G_TYPE_INVALID;
+}
+
+static bool
+gjs_marshal_string_in_in(JSContext            *cx,
+                         GjsArgumentCache     *self,
+                         GjsFunctionCallState *state,
+                         GIArgument           *arg,
+                         JS::HandleValue       value)
+{
+    if (value.isNull()) {
+        if (!self->nullable)
+            return report_invalid_null(cx, self);
+
+        arg->v_pointer = nullptr;
+        return true;
+    }
+
+    if (!value.isString())
+        return report_primitive_type_mismatch(cx, self, value, JSTYPE_STRING);
+
+    bool ok;
+    if (self->contents.string_is_filename) {
+        GjsAutoChar str;
+        ok = gjs_string_to_filename(cx, value, &str);
+        arg->v_pointer = str.release();
+    } else {
+        GjsAutoJSChar str;
+        ok = gjs_string_to_utf8(cx, value, &str);
+        arg->v_pointer = str.copy();
+    }
+
+    return ok;
+}
+
+static bool
+gjs_marshal_string_in_release(JSContext            *cx,
+                              GjsArgumentCache     *self,
+                              GjsFunctionCallState *state,
+                              GIArgument           *in_arg,
+                              GIArgument           *out_arg)
+{
+    g_free(in_arg->v_pointer);
+    return true;
+}
+
+static bool
+gjs_arg_cache_build_normal_in_arg(GjsArgumentCache *self,
+                                  GITypeTag         tag)
+{
+    /* "Normal" in arguments are those arguments that don't require special
+     * processing, and don't touch other arguments.
+     * Main categories are:
+     * - void*
+     * - small numbers (fit in 32bit)
+     * - big numbers (need a double)
+     * - strings
+     * - enums/flags (different from numbers in the way they're exposed in GI)
+     * - objects (GObjects, boxed, unions, etc.)
+     * - hashes
+     * - sequences (null-terminated arrays, lists, etc.)
+     */
+
+    self->release = gjs_marshal_skipped_release;
+
+    switch (tag) {
+    case GI_TYPE_TAG_VOID:
+        self->marshal_in = gjs_marshal_null_in_in;
+        break;
+
+    case GI_TYPE_TAG_BOOLEAN:
+        self->marshal_in = gjs_marshal_boolean_in_in;
+        break;
+
+    case GI_TYPE_TAG_INT8:
+    case GI_TYPE_TAG_INT16:
+    case GI_TYPE_TAG_INT32:
+        self->marshal_in = gjs_marshal_integer_in_in;
+        self->contents.number.number_tag = tag;
+        self->contents.number.is_unsigned = false;
+        break;
+
+    case GI_TYPE_TAG_UINT8:
+    case GI_TYPE_TAG_UINT16:
+        self->marshal_in = gjs_marshal_integer_in_in;
+        self->contents.number.number_tag = tag;
+        self->contents.number.is_unsigned = true;
+        break;
+
+    case GI_TYPE_TAG_UINT32:
+    case GI_TYPE_TAG_INT64:
+    case GI_TYPE_TAG_UINT64:
+    case GI_TYPE_TAG_FLOAT:
+    case GI_TYPE_TAG_DOUBLE:
+        self->marshal_in = gjs_marshal_number_in_in;
+        self->contents.number.number_tag = tag;
+        break;
+
+    case GI_TYPE_TAG_UNICHAR:
+        self->marshal_in = gjs_marshal_unichar_in_in;
+        break;
+
+    case GI_TYPE_TAG_GTYPE:
+        self->marshal_in = gjs_marshal_gtype_in_in;
+        break;
+
+    case GI_TYPE_TAG_FILENAME:
+        self->marshal_in = gjs_marshal_string_in_in;
+        if (self->transfer == GI_TRANSFER_NOTHING)
+            self->release = gjs_marshal_string_in_release;
+        self->contents.string_is_filename = true;
+        break;
+
+    case GI_TYPE_TAG_UTF8:
+        self->marshal_in = gjs_marshal_string_in_in;
+        if (self->transfer == GI_TRANSFER_NOTHING)
+            self->release = gjs_marshal_string_in_release;
+        self->contents.string_is_filename = false;
+        break;
+
+    case GI_TYPE_TAG_INTERFACE:
+    case GI_TYPE_TAG_ARRAY:
+    case GI_TYPE_TAG_GLIST:
+    case GI_TYPE_TAG_GSLIST:
+    case GI_TYPE_TAG_GHASH:
+    case GI_TYPE_TAG_ERROR:
+    default:
+        /* FIXME */
+        /* Falling back to the generic marshaller */
+        self->marshal_in = gjs_marshal_generic_in_in;
+        self->release = gjs_marshal_generic_in_release;
     }
 
     return true;
