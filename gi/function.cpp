@@ -723,7 +723,6 @@ gjs_invoke_c_function(JSContext                             *context,
     bool is_method;
     bool is_object_method = FALSE;
     GITypeTag return_tag;
-    JS::AutoValueVector return_values(context);
     GSList *iter;
 
     /* Because we can't free a closure while we're in it, we defer
@@ -887,11 +886,8 @@ gjs_invoke_c_function(JSContext                             *context,
                                               &state.out_cvalues[-1]);
     }
 
-    if (function->js_out_argc > 0) {
-        for (size_t i = 0; i < function->js_out_argc; i++)
-            if (!return_values.append(JS::UndefinedValue()))
-                g_error("Unable to append to vector");
-    }
+    if (function->js_out_argc > 1)
+        js_rval->setObject(*JS_NewArrayObject(context, 0));
 
     /* Process out arguments and return values. This loop is skipped if we fail
      * the type conversion above, or if did_throw_gerror is true. */
@@ -901,14 +897,22 @@ gjs_invoke_c_function(JSContext                             *context,
         GjsArgumentCache *cache = &function->arguments[gi_arg_pos];
         GIArgument *out_value = &state.out_cvalues[gi_arg_pos];
 
-        if (!cache->marshal_out(context, cache, &state, out_value,
-                                return_values[js_arg_pos])) {
+        JS::RootedValue value(context);
+        if (!cache->marshal_out(context, cache, &state, out_value, &value)) {
             failed = true;
             break;
         }
 
-        if (!gjs_arg_cache_is_skip_out(cache))
+        if (!gjs_arg_cache_is_skip_out(cache)) {
+            if (function->js_out_argc == 1) {
+                js_rval->set(value);
+            } else {
+                JS::RootedObject js_rval_array(context, &js_rval->toObject());
+                JS_SetElement(context, js_rval_array, js_arg_pos, value);
+            }
+
             js_arg_pos++;
+        }
     }
 
     g_assert(failed || did_throw_gerror || js_arg_pos == uint8_t(function->js_out_argc));
@@ -939,30 +943,6 @@ release:
         failed = true;
 
     g_assert_cmpuint(ffi_arg_pos, ==, processed_c_args + 1);
-
-    if (function->js_out_argc > 0 && (!failed && !did_throw_gerror)) {
-        /* if we have 1 return value or out arg, return that item
-         * on its own, otherwise return a JavaScript array with
-         * [return value, out arg 1, out arg 2, ...]
-         */
-        if (js_rval) {
-            if (function->js_out_argc == 1) {
-                js_rval.ref().set(return_values[0]);
-            } else {
-                JSObject *array;
-                array = JS_NewArrayObject(context, return_values);
-                if (array == NULL) {
-                    failed = true;
-                } else {
-                    js_rval.ref().setObject(*array);
-                }
-            }
-        }
-
-        if (r_value) {
-            *r_value = state.out_cvalues[-1];
-        }
-    }
 
     if (!failed && did_throw_gerror) {
         gjs_throw_g_error(context, local_error);
