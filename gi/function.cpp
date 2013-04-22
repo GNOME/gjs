@@ -44,22 +44,17 @@
 #include <js/Realm.h>  // for GetRealmFunctionPrototype
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/Value.h>
 #include <js/Warnings.h>
 #include <jsapi.h>        // for HandleValueArray, JS_GetElement
-#include <jspubtd.h>      // for JSProto_TypeError, JSTYPE_FUNCTION
 
 #include "gi/arg-cache.h"
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
-#include "gi/boxed.h"
 #include "gi/closure.h"
 #include "gi/function.h"
-#include "gi/fundamental.h"
 #include "gi/gerror.h"
-#include "gi/gtype.h"
 #include "gi/object.h"
-#include "gi/param.h"
-#include "gi/union.h"
 #include "gi/utils-inl.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
@@ -607,110 +602,6 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
     return trampoline;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_fill_method_instance(JSContext       *context,
-                         JS::HandleObject obj,
-                         Function        *function,
-                         GIArgument      *out_arg,
-                         bool&            is_gobject)
-{
-    GIBaseInfo *container = g_base_info_get_container((GIBaseInfo *) function->info);
-    GIInfoType type = g_base_info_get_type(container);
-    GType gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo *)container);
-    GITransfer transfer = g_callable_info_get_instance_ownership_transfer (function->info);
-
-    is_gobject = false;
-
-    if (type == GI_INFO_TYPE_STRUCT || type == GI_INFO_TYPE_BOXED) {
-        /* GError must be special cased */
-        if (g_type_is_a(gtype, G_TYPE_ERROR)) {
-            if (!ErrorBase::transfer_to_gi_argument(context, obj, out_arg,
-                                                    GI_DIRECTION_OUT, transfer))
-                return false;
-        } else if (type == GI_INFO_TYPE_STRUCT &&
-                   g_struct_info_is_gtype_struct((GIStructInfo*) container)) {
-            /* And so do GType structures */
-            GType actual_gtype;
-            gpointer klass;
-
-            if (!gjs_gtype_get_actual_gtype(context, obj, &actual_gtype))
-                return false;
-
-            if (actual_gtype == G_TYPE_NONE) {
-                gjs_throw(context, "Invalid GType class passed for instance parameter");
-                return false;
-            }
-
-            /* We use peek here to simplify reference counting (we just ignore
-               transfer annotation, as GType classes are never really freed)
-               We know that the GType class is referenced at least once when
-               the JS constructor is initialized.
-            */
-
-            if (g_type_is_a(actual_gtype, G_TYPE_INTERFACE))
-                klass = g_type_default_interface_peek(actual_gtype);
-            else
-                klass = g_type_class_peek(actual_gtype);
-
-            gjs_arg_set(out_arg, klass);
-        } else {
-            if (!BoxedBase::transfer_to_gi_argument(context, obj, out_arg,
-                                                    GI_DIRECTION_OUT, transfer,
-                                                    gtype, container))
-                return false;
-        }
-
-    } else if (type == GI_INFO_TYPE_UNION) {
-        if (!UnionBase::transfer_to_gi_argument(context, obj, out_arg,
-                                                GI_DIRECTION_OUT, transfer,
-                                                gtype, container))
-            return false;
-
-    } else if (type == GI_INFO_TYPE_OBJECT || type == GI_INFO_TYPE_INTERFACE) {
-        if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
-            if (!ObjectBase::transfer_to_gi_argument(
-                    context, obj, out_arg, GI_DIRECTION_OUT, transfer, gtype))
-                return false;
-            is_gobject = true;
-        } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-            if (!gjs_typecheck_param(context, obj, G_TYPE_PARAM, true))
-                return false;
-            gjs_arg_set(out_arg, gjs_g_param_from_param(context, obj));
-            if (transfer == GI_TRANSFER_EVERYTHING)
-                g_param_spec_ref(gjs_arg_get<GParamSpec*>(out_arg));
-        } else if (G_TYPE_IS_INTERFACE(gtype)) {
-            if (ObjectBase::check_jsclass(context, obj)) {
-                if (!ObjectBase::transfer_to_gi_argument(context, obj, out_arg,
-                                                         GI_DIRECTION_OUT,
-                                                         transfer, gtype))
-                    return false;
-                is_gobject = true;
-            } else {
-                if (!FundamentalBase::transfer_to_gi_argument(
-                        context, obj, out_arg, GI_DIRECTION_OUT, transfer,
-                        gtype))
-                    return false;
-            }
-        } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-            if (!FundamentalBase::transfer_to_gi_argument(
-                    context, obj, out_arg, GI_DIRECTION_OUT, transfer, gtype))
-                return false;
-        } else {
-            gjs_throw_custom(context, JSProto_TypeError, nullptr,
-                             "%s.%s is not an object instance neither a fundamental instance of a supported type",
-                             g_base_info_get_namespace(container),
-                             g_base_info_get_name(container));
-            return false;
-        }
-
-    } else {
-        g_assert_not_reached();
-    }
-
-    return true;
-}
-
 /* Intended for error messages. Return value must be freed */
 GJS_USE
 static char* format_function_name(Function* function) {
@@ -804,7 +695,6 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
     bool failed, postinvoke_release_failed;
 
     bool is_method;
-    bool is_object_method = false;
     JS::RootedValueVector return_values(context);
 
     /* Because we can't free a closure while we're in it, we defer
@@ -885,15 +775,20 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
         return false;
 
     if (is_method) {
+        GjsArgumentCache* cache = &function->arguments[-2];
         GIArgument* in_value = &state.in_cvalues[-2];
-        if (!gjs_fill_method_instance(context, obj, function, in_value,
-                                      is_object_method))
+        JS::RootedValue in_js_value(context, JS::ObjectValue(*obj));
+
+        if (!cache->marshal_in(context, cache, &state, in_value, in_js_value))
             return false;
 
         ffi_arg_pointers[ffi_arg_pos] = in_value;
         ++ffi_arg_pos;
 
-        if (is_object_method)
+        // Callback lifetimes will be attached to the instance object if it is
+        // a GObject or GInterface
+        if (g_type_is_a(cache->contents.object.gtype, G_TYPE_OBJECT) ||
+            g_type_is_a(cache->contents.object.gtype, G_TYPE_INTERFACE))
             state.instance_object = obj;
     }
 
@@ -1026,12 +921,14 @@ release:
 
     // In this loop we use ffi_arg_pos just to ensure we don't release stuff
     // we haven't allocated yet, if we failed in type conversion above.
-    // Because we start from -1 (the return value), we need to process 1 more
-    // than processed_c_args
+    // If we start from -1 (the return value), we need to process 1 more than
+    // processed_c_args.
+    // If we start from -2 (the instance parameter), we need to process 2 more
     ffi_arg_pos = is_method ? 1 : 0;
+    unsigned ffi_arg_max = processed_c_args + (is_method ? 2 : 1);
     postinvoke_release_failed = false;
-    for (gi_arg_pos = -1;
-         gi_arg_pos < gi_argc && ffi_arg_pos < (processed_c_args + 1);
+    for (gi_arg_pos = is_method ? -2 : -1;
+         gi_arg_pos < gi_argc && ffi_arg_pos < ffi_arg_max;
          gi_arg_pos++, ffi_arg_pos++) {
         GjsArgumentCache* cache = &function->arguments[gi_arg_pos];
         GIArgument* in_value = &state.in_cvalues[gi_arg_pos];
@@ -1062,7 +959,7 @@ release:
     if (postinvoke_release_failed)
         failed = true;
 
-    g_assert(ffi_arg_pos == processed_c_args + 1);
+    g_assert(ffi_arg_pos == processed_c_args + (is_method ? 2 : 1));
 
     if (!r_value && function->js_out_argc > 0 &&
         (!failed && !did_throw_gerror)) {
@@ -1122,15 +1019,16 @@ uninit_cached_function_data (Function *function)
     g_assert(function->info && "Don't know how to free cache without GI info");
 
     if (function->arguments) {
-        // Careful! function->arguments is offset by one element inside
-        // the allocated space, so we have to free index -1.
+        // Careful! function->arguments is offset by one or two elements inside
+        // the allocated space, so we have to free index -1 or -2.
+        int start_index = g_callable_info_is_method(function->info) ? -2 : -1;
         int gi_argc = g_callable_info_get_n_args(function->info);
-        for (int ix = -1; ix < gi_argc; ix++) {
+        for (int ix = start_index; ix < gi_argc; ix++) {
             if (function->arguments[ix].free)
                 function->arguments[ix].free(&function->arguments[ix]);
         }
 
-        g_free(&function->arguments[-1]);
+        g_free(&function->arguments[start_index]);
         function->arguments = nullptr;
     }
 
@@ -1288,11 +1186,19 @@ init_cached_function_data (JSContext      *context,
         }
     }
 
+    bool is_method = g_callable_info_is_method(info);
     n_args = g_callable_info_get_n_args((GICallableInfo*) info);
 
-    // arguments is one inside an array of n_args + 1, so arguments[-1] is the
-    // return value (if any)
-    GjsArgumentCache* arguments = g_new0(GjsArgumentCache, n_args + 1) + 1;
+    // arguments is one or two inside an array of n_args + 2, so
+    // arguments[-1] is the return value (which can be skipped if void)
+    // arguments[-2] is the instance parameter
+    size_t offset = is_method ? 2 : 1;
+    GjsArgumentCache* arguments =
+        g_new0(GjsArgumentCache, n_args + offset) + offset;
+
+    if (is_method &&
+        !gjs_arg_cache_build_instance(context, &arguments[-2], info))
+        return false;
 
     bool inc_counter;
     if (!gjs_arg_cache_build_return(context, &arguments[-1], arguments, info,

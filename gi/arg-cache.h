@@ -115,4 +115,8 @@ bool gjs_arg_cache_build_return(JSContext* cx, GjsArgumentCache* self,
                                 GICallableInfo* callable,
                                 bool* inc_counter_out);
 
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_arg_cache_build_instance(JSContext* cx, GjsArgumentCache* self,
+                                  GICallableInfo* callable);
+
 #endif  // GI_ARG_CACHE_H_

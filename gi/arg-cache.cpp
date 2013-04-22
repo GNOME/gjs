@@ -49,6 +49,7 @@
 #include "gi/gerror.h"
 #include "gi/gtype.h"
 #include "gi/object.h"
+#include "gi/param.h"
 #include "gi/union.h"
 #include "gi/value.h"
 #include "gjs/byteArray.h"
@@ -711,6 +712,60 @@ static bool gjs_marshal_object_in_in(JSContext* cx, GjsArgumentCache* self,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_marshal_gtype_struct_instance_in(JSContext* cx,
+                                                 GjsArgumentCache* self,
+                                                 GjsFunctionCallState*,
+                                                 GIArgument* arg,
+                                                 JS::HandleValue value) {
+    // Instance parameter is never nullable
+    if (!value.isObject())
+        return report_typeof_mismatch(cx, self->arg_name, value,
+                                      ExpectedType::OBJECT);
+
+    JS::RootedObject obj(cx, &value.toObject());
+    GType actual_gtype;
+    if (!gjs_gtype_get_actual_gtype(cx, obj, &actual_gtype))
+        return false;
+
+    if (actual_gtype == G_TYPE_NONE) {
+        gjs_throw(cx, "Invalid GType class passed for instance parameter");
+        return false;
+    }
+
+    // We use peek here to simplify reference counting (we just ignore transfer
+    // annotation, as GType classes are never really freed.) We know that the
+    // GType class is referenced at least once when the JS constructor is
+    // initialized.
+    if (g_type_is_a(actual_gtype, G_TYPE_INTERFACE))
+        gjs_arg_set(arg, g_type_default_interface_peek(actual_gtype));
+    else
+        gjs_arg_set(arg, g_type_class_peek(actual_gtype));
+
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_marshal_param_instance_in(JSContext* cx, GjsArgumentCache* self,
+                                          GjsFunctionCallState*,
+                                          GIArgument* arg,
+                                          JS::HandleValue value) {
+    // Instance parameter is never nullable
+    if (!value.isObject())
+        return report_typeof_mismatch(cx, self->arg_name, value,
+                                      ExpectedType::OBJECT);
+
+    JS::RootedObject obj(cx, &value.toObject());
+    if (!gjs_typecheck_param(cx, obj, G_TYPE_PARAM, true))
+        return false;
+    gjs_arg_set(arg, gjs_g_param_from_param(cx, obj));
+
+    if (self->transfer == GI_TRANSFER_EVERYTHING)
+        g_param_spec_ref(gjs_arg_get<GParamSpec*>(arg));
+
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_skipped_out(JSContext*, GjsArgumentCache*,
                                     GjsFunctionCallState*, GIArgument*,
                                     JS::MutableHandleValue) {
@@ -1239,6 +1294,48 @@ static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
     }
 
     return true;
+}
+
+bool gjs_arg_cache_build_instance(JSContext* cx, GjsArgumentCache* self,
+                                  GICallableInfo* callable) {
+    GIBaseInfo* interface_info = g_base_info_get_container(callable);  // !owned
+
+    self->arg_pos = -2;
+    self->arg_name = "instance parameter";
+    self->transfer = g_callable_info_get_instance_ownership_transfer(callable);
+    // Some calls accept null for the instance, but generally in an object
+    // oriented language it's wrong to call a method on null
+    self->nullable = false;
+    self->skip_out = true;
+
+    // These cases could be covered by the generic marshaller, except that
+    // there's no way to get GITypeInfo for a method's instance parameter.
+    // Instead, special-case the arguments here that would otherwise go through
+    // the generic marshaller.
+    // See: https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/334
+    GIInfoType info_type = g_base_info_get_type(interface_info);
+    if (info_type == GI_INFO_TYPE_STRUCT &&
+        g_struct_info_is_gtype_struct(interface_info)) {
+        self->marshal_in = gjs_marshal_gtype_struct_instance_in;
+        self->release = gjs_marshal_skipped_release;
+        return true;
+    }
+    if (info_type == GI_INFO_TYPE_OBJECT) {
+        GType gtype = g_registered_type_info_get_g_type(interface_info);
+
+        if (g_type_is_a(gtype, G_TYPE_PARAM)) {
+            self->marshal_in = gjs_marshal_param_instance_in;
+            self->release = gjs_marshal_skipped_release;
+            return true;
+        }
+    }
+
+    bool ok = gjs_arg_cache_build_interface_in_arg(cx, self, callable,
+                                                   interface_info);
+    // Don't set marshal_out, it should not be called for the instance
+    // parameter
+    self->release = gjs_marshal_skipped_release;
+    return ok;
 }
 
 bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
