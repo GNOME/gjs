@@ -115,6 +115,9 @@ bool gjs_arg_cache_build_return(GjsArgumentCache *self,
                                 GICallableInfo   *info,
                                 bool&             inc_counter);
 
+bool gjs_arg_cache_build_instance(GjsArgumentCache *self,
+                                  GICallableInfo   *info);
+
 static inline bool
 gjs_arg_cache_is_skip_in(GjsArgumentCache *cache)
 {

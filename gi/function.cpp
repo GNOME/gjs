@@ -721,7 +721,6 @@ gjs_invoke_c_function(JSContext                             *context,
     bool failed, postinvoke_release_failed;
 
     bool is_method;
-    bool is_object_method = false;
     GITypeTag return_tag;
     GSList *iter;
 
@@ -806,11 +805,15 @@ gjs_invoke_c_function(JSContext                             *context,
     js_arg_pos = 0; /* index into argv */
 
     if (is_method) {
-        if (!gjs_fill_method_instance(context, obj, function,
-                                      &state.in_cvalues[-2], is_object_method))
+        GjsArgumentCache *cache = &function->arguments[-2];
+        GIArgument *in_value = &state.in_cvalues[-2];
+        JS::RootedValue in_js_value(context, JS::ObjectValue(*obj));
+
+        if (!cache->marshal_in(context, cache, &state, in_value, in_js_value))
             return false;
-        ffi_arg_pointers[0] = &state.in_cvalues[-2];
-        ++ffi_arg_pos;
+
+        ffi_arg_pointers[ffi_arg_pos] = in_value;
+        ffi_arg_pos++;
     }
 
     processed_c_args = ffi_arg_pos;
@@ -931,11 +934,16 @@ gjs_invoke_c_function(JSContext                             *context,
 release:
     /* In this loop we use ffi_arg_pos just to ensure we don't release stuff
      * we haven't allocated yet, if we failed in type conversion above.
-     * Because we start from -1 (the return value), we need to process 1 more
-     * than processed_c_args */
+     * If we start from -1 (the return value), we need to process 1 more than
+     * processed_c_args.
+     * If we start from -2 (the instance parameter), we need to process 2 more
+    */
     ffi_arg_pos = is_method ? 1 : 0;
     postinvoke_release_failed = false;
-    for (gi_arg_pos = -1; gi_arg_pos < gi_argc && ffi_arg_pos < (processed_c_args + 1); gi_arg_pos++, ffi_arg_pos++) {
+    for (gi_arg_pos = is_method ? -2 : -1;
+         gi_arg_pos < gi_argc &&
+             ffi_arg_pos < (processed_c_args + (is_method ? 2 : 1));
+         gi_arg_pos++, ffi_arg_pos++) {
         GjsArgumentCache *cache = &function->arguments[gi_arg_pos];
         GIArgument *in_value = &state.in_cvalues[gi_arg_pos];
         GIArgument *out_value = &state.out_cvalues[gi_arg_pos];
@@ -953,7 +961,7 @@ release:
     if (postinvoke_release_failed)
         failed = true;
 
-    g_assert_cmpuint(ffi_arg_pos, ==, processed_c_args + 1);
+    g_assert_cmpuint(ffi_arg_pos, ==, processed_c_args + (is_method ? 2 : 1));
 
     /* Return a GIArgument for the first return value, if requested */
     if (r_value && function->js_out_argc > 0 && (!failed && !did_throw_gerror))
@@ -1006,12 +1014,18 @@ GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(function)
 static void
 uninit_cached_function_data (Function *function)
 {
-    g_clear_pointer(&function->info, g_base_info_unref);
+    /* Careful! function->arguments is one/two inside an array */
+    if (function->arguments) {
+        bool is_method = g_callable_info_is_method(function->info);
 
-    /* Careful! function->arguments is one inside an array */
-    if (function->arguments)
-        g_free(&function->arguments[-1]);
-    function->arguments = nullptr;
+        if (is_method)
+            g_free(&function->arguments[-2]);
+        else
+            g_free(&function->arguments[-1]);
+        function->arguments = nullptr;
+    }
+
+    g_clear_pointer(&function->info, g_base_info_unref);
 
     g_function_invoker_destroy(&function->invoker);
 }
@@ -1196,11 +1210,26 @@ init_cached_function_data (JSContext      *context,
         }
     }
 
+    bool is_method = g_callable_info_is_method(info);
     n_args = g_callable_info_get_n_args((GICallableInfo *) info);
 
-    /* arguments is one inside an array of n_args + 1, so
-     * arguments[-1] is the return value (if any) */
-    GjsArgumentCache *arguments = g_new0(GjsArgumentCache, n_args + 1) + 1;
+    /* arguments is one or two inside an array of n_args + 2, so
+     * arguments[-1] is the return value (which can be skipped if void)
+     * arguments[-2] is the instance parameter */
+    GjsArgumentCache *arguments;
+    if (is_method)
+        arguments = g_new0(GjsArgumentCache, n_args + 2) + 2;
+    else
+        arguments = g_new0(GjsArgumentCache, n_args + 1) + 1;
+
+    if (is_method) {
+        if (!gjs_arg_cache_build_instance(&arguments[-2], info)) {
+            gjs_throw(context, "Function %s.%s cannot be called: the instance parameter is not introspectable.",
+                      g_base_info_get_namespace((GIBaseInfo*) info),
+                      g_base_info_get_name((GIBaseInfo*) info));
+            return false;
+        }
+    }
 
     bool inc_counter;
     if (!gjs_arg_cache_build_return(&arguments[-1], arguments,
