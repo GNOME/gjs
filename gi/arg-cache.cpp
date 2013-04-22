@@ -23,6 +23,7 @@
 
 #include <config.h>
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -34,6 +35,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
 #include <jsapi.h>        // for JS_TypeOfValue
 #include <jsfriendapi.h>  // for JS_GetObjectFunction
 #include <jspubtd.h>      // for JSTYPE_FUNCTION
@@ -41,8 +43,15 @@
 #include "gi/arg-cache.h"
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
+#include "gi/boxed.h"
+#include "gi/foreign.h"
 #include "gi/function.h"
+#include "gi/gerror.h"
 #include "gi/gtype.h"
+#include "gi/object.h"
+#include "gi/union.h"
+#include "gi/value.h"
+#include "gjs/byteArray.h"
 #include "gjs/jsapi-util.h"
 
 enum ExpectedType {
@@ -127,12 +136,45 @@ static void gjs_g_argument_set_array_length(GITypeTag tag, GIArgument* arg,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool throw_not_introspectable_argument(JSContext* cx,
+                                              GICallableInfo* function,
+                                              const char* arg_name) {
+    gjs_throw(cx,
+              "Function %s.%s cannot be called: argument '%s' is not "
+              "introspectable.",
+              g_base_info_get_namespace(function),
+              g_base_info_get_name(function), arg_name);
+    return false;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool throw_not_introspectable_unboxed_type(JSContext* cx,
+                                                  GICallableInfo* function,
+                                                  const char* arg_name) {
+    gjs_throw(cx,
+              "Function %s.%s cannot be called: unexpected unregistered type "
+              "for argument '%s'.",
+              g_base_info_get_namespace(function),
+              g_base_info_get_name(function), arg_name);
+    return false;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static bool report_typeof_mismatch(JSContext* cx, const char* arg_name,
                                    JS::HandleValue value,
                                    ExpectedType expected) {
     gjs_throw(cx, "Expected type %s for argument '%s' but got type %s",
               expected_type_names[expected], arg_name,
               JS::InformalValueTypeName(value));
+    return false;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool report_gtype_mismatch(JSContext* cx, const char* arg_name,
+                                  JS::Value value, GType expected) {
+    gjs_throw(
+        cx, "Expected an object of type %s for argument '%s' but got type %s",
+        g_type_name(expected), arg_name, JS::InformalValueTypeName(value));
     return false;
 }
 
@@ -465,6 +507,210 @@ static bool gjs_marshal_string_in_in(JSContext* cx, GjsArgumentCache* self,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_marshal_enum_in_in(JSContext* cx, GjsArgumentCache* self,
+                                   GjsFunctionCallState*, GIArgument* arg,
+                                   JS::HandleValue value) {
+    int64_t number;
+    if (!JS::ToInt64(cx, value, &number))
+        return false;
+
+    if (number > self->contents.enum_type.enum_max ||
+        number < self->contents.enum_type.enum_min) {
+        gjs_throw(cx, "%" PRId64 " is not a valid value for enum argument %s",
+                  number, self->arg_name);
+        return false;
+    }
+
+    if (self->contents.enum_type.enum_max <= G_MAXINT32)
+        gjs_arg_set<int, GI_TYPE_TAG_INTERFACE>(arg, number);
+    else if (self->contents.enum_type.enum_max <= G_MAXUINT32)
+        gjs_arg_set<unsigned, GI_TYPE_TAG_INTERFACE>(arg, number);
+    else
+        gjs_arg_set(arg, number);
+
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_marshal_flags_in_in(JSContext* cx, GjsArgumentCache* self,
+                                    GjsFunctionCallState*, GIArgument* arg,
+                                    JS::HandleValue value) {
+    int64_t number;
+    if (!JS::ToInt64(cx, value, &number))
+        return false;
+
+    if ((uint64_t(number) & self->contents.flags_mask) != uint64_t(number)) {
+        gjs_throw(cx, "%" PRId64 " is not a valid value for flags argument %s",
+                  number, self->arg_name);
+        return false;
+    }
+
+    if (self->contents.flags_mask <= G_MAXUINT32)
+        gjs_arg_set<unsigned, GI_TYPE_TAG_INTERFACE>(arg, number);
+    else
+        gjs_arg_set(arg, uint64_t(number));
+
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_marshal_foreign_in_in(JSContext* cx, GjsArgumentCache* self,
+                                      GjsFunctionCallState*, GIArgument* arg,
+                                      JS::HandleValue value) {
+    GIStructInfo* foreign_info = g_type_info_get_interface(&self->type_info);
+    self->contents.tmp_foreign_info = foreign_info;
+    return gjs_struct_foreign_convert_to_g_argument(
+        cx, value, foreign_info, self->arg_name, GJS_ARGUMENT_ARGUMENT,
+        self->transfer, self->nullable, arg);
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_marshal_gvalue_in_in(JSContext* cx, GjsArgumentCache*,
+                                     GjsFunctionCallState*, GIArgument* arg,
+                                     JS::HandleValue value) {
+    GValue gvalue = G_VALUE_INIT;
+
+    if (!gjs_value_to_g_value(cx, value, &gvalue))
+        return false;
+
+    gjs_arg_set(arg, g_boxed_copy(G_TYPE_VALUE, &gvalue));
+
+    g_value_unset(&gvalue);
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_marshal_boxed_in_in(JSContext* cx, GjsArgumentCache* self,
+                                    GjsFunctionCallState*, GIArgument* arg,
+                                    JS::HandleValue value) {
+    if (value.isNull()) {
+        if (!self->nullable)
+            return report_invalid_null(cx, self->arg_name);
+
+        gjs_arg_unset<void*>(arg);
+        return true;
+    }
+
+    GType gtype = self->contents.object.gtype;
+
+    if (!value.isObject())
+        return report_gtype_mismatch(cx, self->arg_name, value, gtype);
+
+    JS::RootedObject object(cx, &value.toObject());
+    if (gtype == G_TYPE_ERROR) {
+        return ErrorBase::transfer_to_gi_argument(
+            cx, object, arg, GI_DIRECTION_IN, self->transfer);
+    }
+
+    return BoxedBase::transfer_to_gi_argument(cx, object, arg, GI_DIRECTION_IN,
+                                              self->transfer, gtype,
+                                              self->contents.object.info);
+}
+
+// Unions include ClutterEvent and GdkEvent, which occur fairly often in an
+// interactive application, so they're worth a special case in a different
+// virtual function.
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_marshal_union_in_in(JSContext* cx, GjsArgumentCache* self,
+                                    GjsFunctionCallState*, GIArgument* arg,
+                                    JS::HandleValue value) {
+    if (value.isNull()) {
+        if (!self->nullable)
+            return report_invalid_null(cx, self->arg_name);
+
+        gjs_arg_unset<void*>(arg);
+        return true;
+    }
+
+    GType gtype = self->contents.object.gtype;
+    g_assert(gtype != G_TYPE_NONE);
+
+    if (!value.isObject())
+        return report_gtype_mismatch(cx, self->arg_name, value, gtype);
+
+    JS::RootedObject object(cx, &value.toObject());
+    return UnionBase::transfer_to_gi_argument(cx, object, arg, GI_DIRECTION_IN,
+                                              self->transfer, gtype,
+                                              self->contents.object.info);
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_marshal_gclosure_in_in(JSContext* cx, GjsArgumentCache* self,
+                                       GjsFunctionCallState*, GIArgument* arg,
+                                       JS::HandleValue value) {
+    if (value.isNull()) {
+        if (!self->nullable)
+            return report_invalid_null(cx, self->arg_name);
+
+        gjs_arg_unset<void*>(arg);
+        return true;
+    }
+
+    if (!(JS_TypeOfValue(cx, value) == JSTYPE_FUNCTION))
+        return report_typeof_mismatch(cx, self->arg_name, value,
+                                      ExpectedType::FUNCTION);
+
+    JS::RootedFunction func(cx, JS_GetObjectFunction(&value.toObject()));
+    GClosure* closure = gjs_closure_new_marshaled(cx, func, "boxed");
+    gjs_arg_set(arg, closure);
+    g_closure_ref(closure);
+    g_closure_sink(closure);
+
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_marshal_gbytes_in_in(JSContext* cx, GjsArgumentCache* self,
+                                     GjsFunctionCallState*, GIArgument* arg,
+                                     JS::HandleValue value) {
+    if (value.isNull()) {
+        if (!self->nullable)
+            return report_invalid_null(cx, self->arg_name);
+
+        gjs_arg_unset<void*>(arg);
+        return true;
+    }
+
+    if (!value.isObject())
+        return report_gtype_mismatch(cx, self->arg_name, value, G_TYPE_BYTES);
+
+    JS::RootedObject object(cx, &value.toObject());
+    if (JS_IsUint8Array(object)) {
+        gjs_arg_set(arg, gjs_byte_array_get_bytes(object));
+        return true;
+    }
+
+    // The bytearray path is taking an extra ref irrespective of transfer
+    // ownership, so we need to do the same here.
+    return BoxedBase::transfer_to_gi_argument(
+        cx, object, arg, GI_DIRECTION_IN, GI_TRANSFER_EVERYTHING, G_TYPE_BYTES,
+        self->contents.object.info);
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_marshal_object_in_in(JSContext* cx, GjsArgumentCache* self,
+                                     GjsFunctionCallState*, GIArgument* arg,
+                                     JS::HandleValue value) {
+    if (value.isNull()) {
+        if (!self->nullable)
+            return report_invalid_null(cx, self->arg_name);
+
+        gjs_arg_unset<void*>(arg);
+        return true;
+    }
+
+    GType gtype = self->contents.object.gtype;
+    g_assert(gtype != G_TYPE_NONE);
+
+    if (!value.isObject())
+        return report_gtype_mismatch(cx, self->arg_name, value, gtype);
+
+    JS::RootedObject object(cx, &value.toObject());
+    return ObjectBase::transfer_to_gi_argument(cx, object, arg, GI_DIRECTION_IN,
+                                               self->transfer, gtype);
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_skipped_out(JSContext*, GjsArgumentCache*,
                                     GjsFunctionCallState*, GIArgument*,
                                     JS::MutableHandleValue) {
@@ -632,6 +878,44 @@ static bool gjs_marshal_string_in_release(JSContext*, GjsArgumentCache*,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_marshal_foreign_in_release(JSContext* cx,
+                                           GjsArgumentCache* self,
+                                           GjsFunctionCallState* state,
+                                           GIArgument* in_arg,
+                                           GIArgument* out_arg G_GNUC_UNUSED) {
+    bool ok = true;
+
+    GITransfer transfer =
+        state->call_completed ? self->transfer : GI_TRANSFER_NOTHING;
+
+    if (transfer == GI_TRANSFER_NOTHING)
+        ok = gjs_struct_foreign_release_g_argument(
+            cx, self->transfer, self->contents.tmp_foreign_info, in_arg);
+
+    g_base_info_unref(self->contents.tmp_foreign_info);
+    return ok;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_marshal_boxed_in_release(JSContext*, GjsArgumentCache* self,
+                                         GjsFunctionCallState*,
+                                         GIArgument* in_arg,
+                                         GIArgument* out_arg G_GNUC_UNUSED) {
+    GType gtype = self->contents.object.gtype;
+    g_assert(g_type_is_a(gtype, G_TYPE_BOXED));
+
+    if (!gjs_arg_get<void*>(in_arg))
+        return true;
+
+    g_boxed_free(gtype, gjs_arg_get<void*>(in_arg));
+    return true;
+}
+
+static void gjs_arg_cache_interface_free(GjsArgumentCache* self) {
+    g_clear_pointer(&self->contents.object.info, g_base_info_unref);
+}
+
 static inline void gjs_arg_cache_set_skip_all(GjsArgumentCache* self) {
     self->marshal_in = gjs_marshal_skipped_in;
     self->marshal_out = gjs_marshal_skipped_out;
@@ -695,9 +979,177 @@ bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
     return true;
 }
 
+static void gjs_arg_cache_build_enum_bounds(GjsArgumentCache* self,
+                                            GIEnumInfo* enum_info) {
+    int64_t min = G_MAXINT64;
+    int64_t max = G_MININT64;
+    int n = g_enum_info_get_n_values(enum_info);
+    for (int i = 0; i < n; i++) {
+        GjsAutoValueInfo value_info = g_enum_info_get_value(enum_info, i);
+        int64_t value = g_value_info_get_value(value_info);
+
+        if (value > max)
+            max = value;
+        if (value < min)
+            min = value;
+    }
+
+    self->contents.enum_type.enum_min = min;
+    self->contents.enum_type.enum_max = max;
+}
+
+static void gjs_arg_cache_build_flags_mask(GjsArgumentCache* self,
+                                           GIEnumInfo* enum_info) {
+    uint64_t mask = 0;
+    int n = g_enum_info_get_n_values(enum_info);
+    for (int i = 0; i < n; i++) {
+        GjsAutoValueInfo value_info = g_enum_info_get_value(enum_info, i);
+        uint64_t value = uint64_t(g_value_info_get_value(value_info));
+        mask |= value;
+    }
+
+    self->contents.flags_mask = mask;
+}
+
+GJS_USE
+static inline bool is_gdk_atom(GIBaseInfo* info) {
+    return strcmp("Atom", g_base_info_get_name(info)) == 0 &&
+           strcmp("Gdk", g_base_info_get_namespace(info)) == 0;
+}
+
+static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
+                                                 GjsArgumentCache* self,
+                                                 GICallableInfo* callable,
+                                                 GIBaseInfo* interface_info) {
+    GIInfoType interface_type = g_base_info_get_type(interface_info);
+
+    // We do some transfer magic later, so let's ensure we don't mess up.
+    // Should not happen in practice.
+    if (G_UNLIKELY(self->transfer == GI_TRANSFER_CONTAINER))
+        return throw_not_introspectable_argument(cx, callable, self->arg_name);
+
+    switch (interface_type) {
+        case GI_INFO_TYPE_ENUM:
+            gjs_arg_cache_build_enum_bounds(self, interface_info);
+            self->marshal_in = gjs_marshal_enum_in_in;
+            return true;
+
+        case GI_INFO_TYPE_FLAGS:
+            gjs_arg_cache_build_flags_mask(self, interface_info);
+            self->marshal_in = gjs_marshal_flags_in_in;
+            return true;
+
+        case GI_INFO_TYPE_STRUCT:
+            if (g_struct_info_is_foreign(interface_info)) {
+                self->marshal_in = gjs_marshal_foreign_in_in;
+                self->release = gjs_marshal_foreign_in_release;
+                return true;
+            }
+            // fall through
+        case GI_INFO_TYPE_BOXED:
+        case GI_INFO_TYPE_OBJECT:
+        case GI_INFO_TYPE_INTERFACE:
+        case GI_INFO_TYPE_UNION: {
+            GType gtype = g_registered_type_info_get_g_type(interface_info);
+            self->contents.object.gtype = gtype;
+            self->contents.object.info = g_base_info_ref(interface_info);
+            self->free = gjs_arg_cache_interface_free;
+
+            // Transfer handling is a bit complex here, because some of our _in
+            // marshallers know not to copy stuff if we don't need to.
+
+            if (gtype == G_TYPE_VALUE) {
+                self->marshal_in = gjs_marshal_gvalue_in_in;
+                if (self->transfer == GI_TRANSFER_NOTHING)
+                    self->release = gjs_marshal_boxed_in_release;
+                return true;
+            }
+
+            if (is_gdk_atom(interface_info)) {
+                // Fall back to the generic marshaller
+                self->marshal_in = gjs_marshal_generic_in_in;
+                self->release = gjs_marshal_generic_in_release;
+                return true;
+            }
+
+            if (gtype == G_TYPE_CLOSURE) {
+                self->marshal_in = gjs_marshal_gclosure_in_in;
+                if (self->transfer == GI_TRANSFER_NOTHING)
+                    self->release = gjs_marshal_boxed_in_release;
+                return true;
+            }
+
+            if (gtype == G_TYPE_BYTES) {
+                self->marshal_in = gjs_marshal_gbytes_in_in;
+                if (self->transfer == GI_TRANSFER_NOTHING)
+                    self->release = gjs_marshal_boxed_in_release;
+                return true;
+            }
+
+            if (g_type_is_a(gtype, G_TYPE_OBJECT) ||
+                g_type_is_a(gtype, G_TYPE_INTERFACE)) {
+                self->marshal_in = gjs_marshal_object_in_in;
+                // This is a smart marshaller, no release needed
+                return true;
+            }
+
+            if (g_type_is_a(gtype, G_TYPE_PARAM)) {
+                // Fall back to the generic marshaller
+                self->marshal_in = gjs_marshal_generic_in_in;
+                self->release = gjs_marshal_generic_in_release;
+                return true;
+            }
+
+            if (interface_type == GI_INFO_TYPE_UNION) {
+                if (gtype == G_TYPE_NONE) {
+                    // Can't handle unions without a GType
+                    return throw_not_introspectable_unboxed_type(
+                        cx, callable, self->arg_name);
+                }
+
+                self->marshal_in = gjs_marshal_union_in_in;
+                // This is a smart marshaller, no release needed
+                return true;
+            }
+
+            // generic boxed type
+            if (gtype == G_TYPE_NONE && self->transfer != GI_TRANSFER_NOTHING) {
+                // Can't transfer ownership of a structure type not
+                // registered as a boxed
+                return throw_not_introspectable_unboxed_type(cx, callable,
+                                                             self->arg_name);
+            }
+
+            self->marshal_in = gjs_marshal_boxed_in_in;
+            // This is a smart marshaller, no release needed
+            return true;
+        } break;
+
+        case GI_INFO_TYPE_INVALID:
+        case GI_INFO_TYPE_FUNCTION:
+        case GI_INFO_TYPE_CALLBACK:
+        case GI_INFO_TYPE_CONSTANT:
+        case GI_INFO_TYPE_INVALID_0:
+        case GI_INFO_TYPE_VALUE:
+        case GI_INFO_TYPE_SIGNAL:
+        case GI_INFO_TYPE_VFUNC:
+        case GI_INFO_TYPE_PROPERTY:
+        case GI_INFO_TYPE_FIELD:
+        case GI_INFO_TYPE_ARG:
+        case GI_INFO_TYPE_TYPE:
+        case GI_INFO_TYPE_UNRESOLVED:
+        default:
+            // Don't know how to handle this interface type (should not happen
+            // in practice, for typelibs emitted by g-ir-compiler)
+            return throw_not_introspectable_argument(cx, callable,
+                                                     self->arg_name);
+    }
+}
+
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_arg_cache_build_normal_in_arg(JSContext*,
+static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
                                               GjsArgumentCache* self,
+                                              GICallableInfo* callable,
                                               GITypeTag tag) {
     // "Normal" in arguments are those arguments that don't require special
     // processing, and don't touch other arguments.
@@ -768,7 +1220,13 @@ static bool gjs_arg_cache_build_normal_in_arg(JSContext*,
             self->contents.string_is_filename = false;
             break;
 
-        case GI_TYPE_TAG_INTERFACE:
+        case GI_TYPE_TAG_INTERFACE: {
+            GjsAutoBaseInfo interface_info =
+                g_type_info_get_interface(&self->type_info);
+            return gjs_arg_cache_build_interface_in_arg(cx, self, callable,
+                                                        interface_info);
+        }
+
         case GI_TYPE_TAG_ARRAY:
         case GI_TYPE_TAG_GLIST:
         case GI_TYPE_TAG_GSLIST:
@@ -933,7 +1391,8 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
     }
 
     if (direction == GI_DIRECTION_IN) {
-        bool ok = gjs_arg_cache_build_normal_in_arg(cx, self, type_tag);
+        bool ok =
+            gjs_arg_cache_build_normal_in_arg(cx, self, callable, type_tag);
         self->marshal_out = gjs_marshal_skipped_out;
         return ok;
     }

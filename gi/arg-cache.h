@@ -27,8 +27,10 @@
 #include <config.h>
 
 #include <stddef.h>
+#include <stdint.h>
 
 #include <girepository.h>
+#include <glib-object.h>
 
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -47,6 +49,7 @@ typedef struct _GjsArgumentCache {
     bool (*release)(JSContext* cx, struct _GjsArgumentCache* cache,
                     GjsFunctionCallState* state, GIArgument* in_argument,
                     GIArgument* out_argument);
+    void (*free)(struct _GjsArgumentCache* cache);
 
     const char* arg_name;
     int arg_pos;
@@ -75,6 +78,22 @@ typedef struct _GjsArgumentCache {
             GITypeTag number_tag;
             bool is_unsigned : 1;
         } number;
+
+        // boxed / union / GObject
+        struct {
+            GType gtype;
+            GIBaseInfo* info;
+        } object;
+
+        // foreign structures
+        GIStructInfo* tmp_foreign_info;
+
+        // enum / flags
+        struct {
+            int64_t enum_min;
+            int64_t enum_max;
+        } enum_type;
+        uint64_t flags_mask;
 
         // string / filename
         bool string_is_filename : 1;
