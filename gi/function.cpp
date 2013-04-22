@@ -572,127 +572,6 @@ gjs_callback_trampoline_new(JSContext       *context,
     return trampoline;
 }
 
-static bool
-gjs_fill_method_instance(JSContext       *context,
-                         JS::HandleObject obj,
-                         Function        *function,
-                         GIArgument      *out_arg,
-                         bool&            is_gobject)
-{
-    GIBaseInfo *container = g_base_info_get_container((GIBaseInfo *) function->info);
-    GIInfoType type = g_base_info_get_type(container);
-    GType gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo *)container);
-    GITransfer transfer = g_callable_info_get_instance_ownership_transfer (function->info);
-
-    is_gobject = false;
-
-    if (type == GI_INFO_TYPE_STRUCT || type == GI_INFO_TYPE_BOXED) {
-        /* GError must be special cased */
-        if (g_type_is_a(gtype, G_TYPE_ERROR)) {
-            if (!gjs_typecheck_gerror(context, obj, true))
-                return false;
-
-            out_arg->v_pointer = gjs_gerror_from_error(context, obj);
-            if (transfer == GI_TRANSFER_EVERYTHING)
-                out_arg->v_pointer = g_error_copy ((GError*) out_arg->v_pointer);
-        } else if (type == GI_INFO_TYPE_STRUCT &&
-                   g_struct_info_is_gtype_struct((GIStructInfo*) container)) {
-            /* And so do GType structures */
-            GType actual_gtype;
-            gpointer klass;
-
-            actual_gtype = gjs_gtype_get_actual_gtype(context, obj);
-
-            if (actual_gtype == G_TYPE_NONE) {
-                gjs_throw(context, "Invalid GType class passed for instance parameter");
-                return false;
-            }
-
-            /* We use peek here to simplify reference counting (we just ignore
-               transfer annotation, as GType classes are never really freed)
-               We know that the GType class is referenced at least once when
-               the JS constructor is initialized.
-            */
-
-            if (g_type_is_a(actual_gtype, G_TYPE_INTERFACE))
-                klass = g_type_default_interface_peek(actual_gtype);
-            else
-                klass = g_type_class_peek(actual_gtype);
-
-            out_arg->v_pointer = klass;
-        } else {
-            if (!gjs_typecheck_boxed(context, obj, container, gtype, true))
-                return false;
-
-            out_arg->v_pointer = gjs_c_struct_from_boxed(context, obj);
-            if (transfer == GI_TRANSFER_EVERYTHING) {
-                if (gtype != G_TYPE_NONE)
-                    out_arg->v_pointer = g_boxed_copy (gtype, out_arg->v_pointer);
-                else {
-                    gjs_throw (context, "Cannot transfer ownership of instance argument for non boxed structure");
-                    return false;
-                }
-            }
-        }
-
-    } else if (type == GI_INFO_TYPE_UNION) {
-        if (!gjs_typecheck_union(context, obj, container, gtype, true))
-            return false;
-
-        out_arg->v_pointer = gjs_c_union_from_union(context, obj);
-        if (transfer == GI_TRANSFER_EVERYTHING)
-            out_arg->v_pointer = g_boxed_copy (gtype, out_arg->v_pointer);
-
-    } else if (type == GI_INFO_TYPE_OBJECT || type == GI_INFO_TYPE_INTERFACE) {
-        if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
-            if (!gjs_typecheck_object(context, obj, gtype, true))
-                return false;
-            out_arg->v_pointer = gjs_g_object_from_object(context, obj);
-            is_gobject = true;
-            if (transfer == GI_TRANSFER_EVERYTHING)
-                g_object_ref (out_arg->v_pointer);
-        } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-            if (!gjs_typecheck_param(context, obj, G_TYPE_PARAM, true))
-                return false;
-            out_arg->v_pointer = gjs_g_param_from_param(context, obj);
-            if (transfer == GI_TRANSFER_EVERYTHING)
-                g_param_spec_ref ((GParamSpec*) out_arg->v_pointer);
-        } else if (G_TYPE_IS_INTERFACE(gtype)) {
-            if (gjs_typecheck_is_object(context, obj, false)) {
-                if (!gjs_typecheck_object(context, obj, gtype, true))
-                    return false;
-                out_arg->v_pointer = gjs_g_object_from_object(context, obj);
-                is_gobject = true;
-                if (transfer == GI_TRANSFER_EVERYTHING)
-                    g_object_ref (out_arg->v_pointer);
-            } else {
-                if (!gjs_typecheck_fundamental(context, obj, gtype, true))
-                    return false;
-                out_arg->v_pointer = gjs_g_fundamental_from_object(context, obj);
-                if (transfer == GI_TRANSFER_EVERYTHING)
-                    gjs_fundamental_ref (context, out_arg->v_pointer);
-            }
-        } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-            if (!gjs_typecheck_fundamental(context, obj, gtype, true))
-                return false;
-            out_arg->v_pointer = gjs_g_fundamental_from_object(context, obj);
-            if (transfer == GI_TRANSFER_EVERYTHING)
-                gjs_fundamental_ref (context, out_arg->v_pointer);
-        } else {
-            gjs_throw_custom(context, JSProto_TypeError, nullptr,
-                             "%s.%s is not an object instance neither a fundamental instance of a supported type",
-                             g_base_info_get_namespace(container),
-                             g_base_info_get_name(container));
-            return false;
-        }
-
-    } else {
-        g_assert_not_reached();
-    }
-
-    return true;
-}
-
 /* Intended for error messages. Return value must be freed */
 static char *
 format_function_name(Function *function,
@@ -751,7 +630,6 @@ gjs_invoke_c_function(JSContext                             *context,
     bool failed, postinvoke_release_failed;
 
     bool is_method;
-    bool is_object_method = false;
     GITypeTag return_tag;
 
     /* Because we can't free a closure while we're in it, we defer
@@ -828,10 +706,14 @@ gjs_invoke_c_function(JSContext                             *context,
     js_arg_pos = 0; /* index into argv */
 
     if (is_method) {
-        if (!gjs_fill_method_instance(context, obj, function,
-                                      &state.in_cvalues[-2], is_object_method))
+        GjsArgumentCache *cache = &function->arguments[-2];
+        GIArgument *in_value = &state.in_cvalues[-2];
+        JS::RootedValue in_js_value(context, JS::ObjectValue(*obj));
+
+        if (!cache->marshal_in(context, cache, &state, in_value, in_js_value))
             return false;
-        ffi_arg_pointers[0] = &state.in_cvalues[-2];
+
+        ffi_arg_pointers[ffi_arg_pos] = in_value;
         ++ffi_arg_pos;
     }
 
@@ -953,11 +835,16 @@ gjs_invoke_c_function(JSContext                             *context,
 release:
     /* In this loop we use ffi_arg_pos just to ensure we don't release stuff
      * we haven't allocated yet, if we failed in type conversion above.
-     * Because we start from -1 (the return value), we need to process 1 more
-     * than processed_c_args */
+     * If we start from -1 (the return value), we need to process 1 more than
+     * processed_c_args.
+     * If we start from -2 (the instance parameter), we need to process 2 more
+    */
     ffi_arg_pos = is_method ? 1 : 0;
     postinvoke_release_failed = false;
-    for (gi_arg_pos = -1; gi_arg_pos < gi_argc && ffi_arg_pos < (processed_c_args + 1); gi_arg_pos++, ffi_arg_pos++) {
+    for (gi_arg_pos = is_method ? -2 : -1;
+         gi_arg_pos < gi_argc &&
+             ffi_arg_pos < (processed_c_args + (is_method ? 2 : 1));
+         gi_arg_pos++, ffi_arg_pos++) {
         GjsArgumentCache *cache = &function->arguments[gi_arg_pos];
         GIArgument *in_value = &state.in_cvalues[gi_arg_pos];
         GIArgument *out_value = &state.out_cvalues[gi_arg_pos];
@@ -975,7 +862,7 @@ release:
     if (postinvoke_release_failed)
         failed = true;
 
-    g_assert_cmpuint(ffi_arg_pos, ==, processed_c_args + 1);
+    g_assert_cmpuint(ffi_arg_pos, ==, processed_c_args + (is_method ? 2 : 1));
 
     /* Return a GIArgument for the first return value, if requested */
     if (r_value && function->js_out_argc > 0 && (!failed && !did_throw_gerror))
@@ -1028,12 +915,18 @@ GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(function)
 static void
 uninit_cached_function_data (Function *function)
 {
-    g_clear_pointer(&function->info, g_base_info_unref);
+    /* Careful! function->arguments is one/two inside an array */
+    if (function->arguments) {
+        bool is_method = g_callable_info_is_method(function->info);
 
-    /* Careful! function->arguments is one inside an array */
-    if (function->arguments)
-        g_free(&function->arguments[-1]);
-    function->arguments = nullptr;
+        if (is_method)
+            g_free(&function->arguments[-2]);
+        else
+            g_free(&function->arguments[-1]);
+        function->arguments = nullptr;
+    }
+
+    g_clear_pointer(&function->info, g_base_info_unref);
 
     g_function_invoker_destroy(&function->invoker);
 }
@@ -1218,11 +1111,26 @@ init_cached_function_data (JSContext      *context,
         }
     }
 
+    bool is_method = g_callable_info_is_method(info);
     n_args = g_callable_info_get_n_args((GICallableInfo*) info);
 
-    /* arguments is one inside an array of n_args + 1, so
-     * arguments[-1] is the return value (if any) */
-    GjsArgumentCache *arguments = g_new0(GjsArgumentCache, n_args + 1) + 1;
+    /* arguments is one or two inside an array of n_args + 2, so
+     * arguments[-1] is the return value (which can be skipped if void)
+     * arguments[-2] is the instance parameter */
+    GjsArgumentCache *arguments;
+    if (is_method)
+        arguments = g_new0(GjsArgumentCache, n_args + 2) + 2;
+    else
+        arguments = g_new0(GjsArgumentCache, n_args + 1) + 1;
+
+    if (is_method) {
+        if (!gjs_arg_cache_build_instance(&arguments[-2], info)) {
+            gjs_throw(context, "Function %s.%s cannot be called: the instance parameter is not introspectable.",
+                      g_base_info_get_namespace((GIBaseInfo*) info),
+                      g_base_info_get_name((GIBaseInfo*) info));
+            return false;
+        }
+    }
 
     bool inc_counter;
     if (!gjs_arg_cache_build_return(&arguments[-1], arguments,
