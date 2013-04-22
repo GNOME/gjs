@@ -29,12 +29,16 @@
 #ifndef __GJS_COMPAT_H__
 #define __GJS_COMPAT_H__
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstrict-prototypes"
-#pragma GCC diagnostic ignored "-Winvalid-offsetof"
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+_Pragma("GCC diagnostic push")
+_Pragma("GCC diagnostic ignored \"-Wstrict-prototypes\"")
+_Pragma("GCC diagnostic ignored \"-Winvalid-offsetof\"")
+#endif
 #include <jsapi.h>
 #include <jsdbgapi.h> // Needed by some bits
-#pragma GCC diagnostic pop
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+_Pragma("GCC diagnostic pop")
+#endif
 #include <glib.h>
 
 #include <gjs/jsapi-util.h>
