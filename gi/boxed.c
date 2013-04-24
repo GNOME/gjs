@@ -954,26 +954,6 @@ static JSFunctionSpec gjs_boxed_proto_funcs[] = {
 };
 
 JSObject*
-gjs_lookup_boxed_constructor(JSContext    *context,
-                                GIBoxedInfo  *info)
-{
-    JSObject *ns;
-    JSObject *constructor;
-
-    ns = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
-
-    if (ns == NULL)
-        return NULL;
-
-    constructor = NULL;
-    if (gjs_define_boxed_class(context, ns, info,
-                                  &constructor, NULL))
-        return constructor;
-    else
-        return NULL;
-}
-
-JSObject*
 gjs_lookup_boxed_prototype(JSContext    *context,
                            GIBoxedInfo  *info)
 {
@@ -990,17 +970,6 @@ gjs_lookup_boxed_prototype(JSContext    *context,
         return proto;
     else
         return NULL;
-}
-
-JSClass*
-gjs_lookup_boxed_class(JSContext    *context,
-                          GIBoxedInfo  *info)
-{
-    JSObject *prototype;
-
-    prototype = gjs_lookup_boxed_prototype(context, info);
-
-    return JS_GetClass(prototype);
 }
 
 static gboolean

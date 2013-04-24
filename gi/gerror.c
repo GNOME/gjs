@@ -354,26 +354,6 @@ static JSFunctionSpec gjs_error_constructor_funcs[] = {
 };
 
 JSObject*
-gjs_lookup_error_constructor(JSContext    *context,
-                             GIEnumInfo  *info)
-{
-    JSObject *ns;
-    JSObject *constructor;
-
-    ns = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
-
-    if (ns == NULL)
-        return NULL;
-
-    constructor = NULL;
-    if (gjs_define_error_class(context, ns, info,
-                               &constructor, NULL))
-        return constructor;
-    else
-        return NULL;
-}
-
-JSObject*
 gjs_lookup_error_prototype(JSContext   *context,
                            GIEnumInfo  *info)
 {
@@ -390,17 +370,6 @@ gjs_lookup_error_prototype(JSContext   *context,
         return proto;
     else
         return NULL;
-}
-
-JSClass*
-gjs_lookup_error_class(JSContext    *context,
-                       GIEnumInfo   *info)
-{
-    JSObject *prototype;
-
-    prototype = gjs_lookup_error_prototype(context, info);
-
-    return JS_GetClass(prototype);
 }
 
 JSBool

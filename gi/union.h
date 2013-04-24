@@ -35,11 +35,7 @@ JSBool    gjs_define_union_class       (JSContext    *context,
                                         GIUnionInfo  *info,
                                         JSObject    **constructor_p,
                                         JSObject    **prototype_p);
-JSObject* gjs_lookup_union_constructor (JSContext    *context,
-                                        GIUnionInfo  *info);
 JSObject* gjs_lookup_union_prototype   (JSContext    *context,
-                                        GIUnionInfo  *info);
-JSClass*  gjs_lookup_union_class       (JSContext    *context,
                                         GIUnionInfo  *info);
 void*     gjs_c_union_from_union       (JSContext    *context,
                                         JSObject     *obj);

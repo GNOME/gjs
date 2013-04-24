@@ -36,11 +36,7 @@ JSBool    gjs_define_error_class       (JSContext             *context,
                                         GIEnumInfo            *info,
                                         JSObject             **constructor_p,
                                         JSObject             **prototype_p);
-JSObject* gjs_lookup_error_constructor (JSContext             *context,
-                                        GIEnumInfo            *info);
 JSObject* gjs_lookup_error_prototype   (JSContext             *context,
-                                        GIEnumInfo            *info);
-JSClass*  gjs_lookup_error_class       (JSContext             *context,
                                         GIEnumInfo            *info);
 GError*   gjs_gerror_from_error        (JSContext             *context,
                                         JSObject              *obj);
