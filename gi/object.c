@@ -1410,14 +1410,66 @@ object_instance_finalize(JSFreeOp  *fop,
     g_slice_free(ObjectInstance, priv);
 }
 
-JSObject*
-gjs_lookup_object_prototype(JSContext    *context,
-                            GType         gtype)
+static JSObject *
+gjs_lookup_object_prototype_from_info(JSContext    *context,
+                                      GIObjectInfo *info,
+                                      GType         gtype)
 {
+    JSObject *in_object;
+    JSObject *constructor;
+    const char *constructor_name;
+    jsval value;
+
+    if (info) {
+        in_object = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
+        constructor_name = g_base_info_get_name((GIBaseInfo*) info);
+    } else {
+        in_object = gjs_lookup_private_namespace(context);
+        constructor_name = g_type_name(gtype);
+    }
+
+    if (G_UNLIKELY (!in_object))
+        return NULL;
+
+    if (!JS_GetProperty(context, in_object, constructor_name, &value))
+        return NULL;
+
+    if (JSVAL_IS_VOID(value)) {
+        /* In case we're looking for a private type, and we don't find it,
+           we need to define it first.
+        */
+        gjs_define_object_class(context, in_object, NULL, gtype, &constructor);
+    } else {
+        if (G_UNLIKELY (!JSVAL_IS_OBJECT(value) || JSVAL_IS_NULL(value)))
+            return NULL;
+
+        constructor = JSVAL_TO_OBJECT(value);
+    }
+
+    g_assert(constructor != NULL);
+
+    if (!gjs_object_get_property_const(context, constructor,
+                                       GJS_STRING_PROTOTYPE, &value))
+        return NULL;
+
+    if (G_UNLIKELY (!JSVAL_IS_OBJECT(value)))
+        return NULL;
+
+    return JSVAL_TO_OBJECT(value);
+}
+
+static JSObject *
+gjs_lookup_object_prototype(JSContext *context,
+                            GType      gtype)
+{
+    GIObjectInfo *info;
     JSObject *proto;
 
-    if (!gjs_define_object_class(context, NULL, gtype, NULL, &proto))
-        return NULL;
+    info = (GIObjectInfo*)g_irepository_find_by_gtype(g_irepository_get_default(), gtype);
+    proto = gjs_lookup_object_prototype_from_info(context, info, gtype);
+    if (info)
+        g_base_info_unref((GIBaseInfo*)info);
+
     return proto;
 }
 
@@ -1828,12 +1880,12 @@ gjs_define_static_methods(JSContext    *context,
     return JS_TRUE;
 }
 
-JSBool
-gjs_define_object_class(JSContext     *context,
-                        JSObject      *in_object,
-                        GType          gtype,
-                        JSObject     **constructor_p,
-                        JSObject     **prototype_p)
+void
+gjs_define_object_class(JSContext      *context,
+                        JSObject       *in_object,
+                        GIObjectInfo   *info,
+                        GType           gtype,
+                        JSObject      **constructor_p)
 {
     const char *constructor_name;
     JSObject *prototype;
@@ -1841,25 +1893,12 @@ gjs_define_object_class(JSContext     *context,
     JSObject *parent_proto;
     jsval value;
     ObjectInstance *priv;
-    GIObjectInfo *info = NULL;
     const char *ns;
+    GType parent_type;
 
+    g_assert(in_object != NULL);
     g_assert(gtype != G_TYPE_INVALID);
 
-    info = (GIObjectInfo*)g_irepository_find_by_gtype(g_irepository_get_default(), gtype);
-
-    if (!in_object) {
-        if (info)
-            in_object = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
-        else
-            in_object = gjs_lookup_private_namespace(context);
-
-        if (!in_object) {
-            if (info)
-                g_base_info_unref((GIBaseInfo*)info);
-            return FALSE;
-        }
-    }
     /*   http://egachine.berlios.de/embedding-sm-best-practice/apa.html
      *   http://www.sitepoint.com/blogs/2006/01/17/javascript-inheritance/
      *   http://www.cs.rit.edu/~atk/JavaScript/manuals/jsobj/
@@ -1900,77 +1939,22 @@ gjs_define_object_class(JSContext     *context,
      * JavaScript is SO AWESOME
      */
 
-    /* 'gtype' is the GType of a concrete class (if any) which may or may not
-     * be defined in the GIRepository. 'info' corresponds to the first known
-     * ancestor of 'gtype' (or the gtype itself.)
-     *
-     * For example:
-     * gtype=GtkWindow  info=Gtk.Window     (defined)
-     * gtype=GLocalFile info=GLib.Object    (not defined)
-     * gtype=GHalMount  info=GLib.Object    (not defined)
-     *
-     * Each GType needs to have distinct JS class, otherwise the JS class for
-     * first common parent in GIRepository gets used with conflicting gtypes
-     * when resolving GTypeInterface methods.
-     *
-     * In case 'gtype' is not defined in GIRepository use the type name as
-     * constructor assuming it is unique enough instead of sharing
-     * 'Object' (or whatever the first known ancestor is)
-     *
-     */
-    if (!info) {
-        constructor_name = g_type_name(gtype);
-    } else {
-        constructor_name = g_base_info_get_name((GIBaseInfo*) info);
-    }
-
-    if (!JS_GetProperty(context, in_object, constructor_name, &value)) {
-        if (info)
-            g_base_info_unref(info);
-        return JS_FALSE;
-    }
-    if (!JSVAL_IS_VOID(value)) {
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "Existing property '%s' does not look like a constructor",
-                         constructor_name);
-            g_base_info_unref((GIBaseInfo*)info);
-            return FALSE;
-        }
-
-        constructor = JSVAL_TO_OBJECT(value);
-
-        gjs_object_get_property_const(context, constructor, GJS_STRING_PROTOTYPE, &value);
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "prototype property does not appear to exist or has wrong type");
-            g_base_info_unref((GIBaseInfo*)info);
-            return FALSE;
-        } else {
-            if (prototype_p)
-                *prototype_p = JSVAL_TO_OBJECT(value);
-            if (constructor_p)
-                *constructor_p = constructor;
-
-            if (info)
-                g_base_info_unref((GIBaseInfo*)info);
-            return TRUE;
-        }
-    }
-
     parent_proto = NULL;
-    if (g_type_parent(gtype) != G_TYPE_INVALID) {
-       GType parent_gtype;
+    parent_type = g_type_parent(gtype);
+    if (parent_type != G_TYPE_INVALID)
+       parent_proto = gjs_lookup_object_prototype(context, parent_type);
 
-       parent_gtype = g_type_parent(gtype);
-       parent_proto = gjs_lookup_object_prototype(context, parent_gtype);
-    }
-
-    /* This is only used to disambiguate classes in the import global.
+    /* ns is only used to set the JSClass->name field (exposed by Object.prototype.toString).
      * We can safely set "unknown" if there is no info, as in that case
      * the name is globally unique (it's a GType name). */
-    if (info)
+    if (info) {
         ns = g_base_info_get_namespace((GIBaseInfo*) info);
-    else
+        constructor_name = g_base_info_get_name((GIBaseInfo*) info);
+    } else {
         ns = "unknown";
+        constructor_name = g_type_name(gtype);
+    }
+
     if (!gjs_init_class_dynamic(context, in_object,
                                 parent_proto,
                                 ns, constructor_name,
@@ -1993,7 +1977,7 @@ gjs_define_object_class(JSContext     *context,
     priv = g_slice_new0(ObjectInstance);
     priv->info = info;
     if (info)
-        g_base_info_ref( (GIBaseInfo*) priv->info);
+        g_base_info_ref((GIBaseInfo*) info);
     priv->gtype = gtype;
     priv->klass = g_type_class_ref (gtype);
     JS_SetPrivate(prototype, priv);
@@ -2008,15 +1992,8 @@ gjs_define_object_class(JSContext     *context,
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 
-    if (prototype_p)
-        *prototype_p = prototype;
-
     if (constructor_p)
         *constructor_p = constructor;
-
-    if (info)
-        g_base_info_unref((GIBaseInfo*)info);
-    return TRUE;
 }
 
 static JSObject*
@@ -2046,14 +2023,14 @@ gjs_object_from_g_object(JSContext    *context,
     if (obj == NULL) {
         /* We have to create a wrapper */
         JSObject *proto;
+        GType gtype;
 
         gjs_debug_marshal(GJS_DEBUG_GOBJECT,
                           "Wrapping %s with JSObject",
                           g_type_name_from_instance((GTypeInstance*) gobj));
 
-
-        if (!gjs_define_object_class(context, NULL, G_TYPE_FROM_INSTANCE(gobj), NULL, &proto))
-            return NULL;
+        gtype = G_TYPE_FROM_INSTANCE(gobj);
+        proto = gjs_lookup_object_prototype(context, gtype);
 
         JS_BeginRequest(context);
 
@@ -2457,7 +2434,7 @@ gjs_register_type(JSContext *cx,
 {
     jsval *argv = JS_ARGV(cx, vp);
     gchar *name;
-    JSObject *parent, *constructor, *interfaces;
+    JSObject *parent, *constructor, *interfaces, *module;
     GType instance_type, parent_type;
     GTypeQuery query;
     GTypeModule *type_module;
@@ -2560,8 +2537,8 @@ gjs_register_type(JSContext *cx,
         gjs_add_interface(instance_type, iface_types[i]);
 
     /* create a custom JSClass */
-    if (!gjs_define_object_class(cx, NULL, instance_type, &constructor, NULL))
-        goto out;
+    module = gjs_lookup_private_namespace(cx);
+    gjs_define_object_class(cx, module, NULL, instance_type, &constructor);
 
     JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(constructor));
 

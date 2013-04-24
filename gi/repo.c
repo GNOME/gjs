@@ -473,8 +473,7 @@ gjs_define_info(JSContext  *context,
                 if (!gjs_define_param_class(context, in_object, NULL))
                     return JS_FALSE;
             } else if (g_type_is_a (gtype, G_TYPE_OBJECT)) {
-                if (!gjs_define_object_class(context, in_object, gtype, NULL, NULL))
-                    return JS_FALSE;
+                gjs_define_object_class(context, in_object, (GIObjectInfo*) info, gtype, NULL);
             } else {
                 gjs_throw (context,
                            "Unsupported type %s, deriving from fundamental %s",

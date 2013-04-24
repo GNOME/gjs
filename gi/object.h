@@ -30,13 +30,11 @@
 
 G_BEGIN_DECLS
 
-JSBool    gjs_define_object_class       (JSContext     *context,
+void      gjs_define_object_class       (JSContext     *context,
                                          JSObject      *in_object,
+                                         GIObjectInfo  *info,
                                          GType          gtype,
-                                         JSObject     **constructor_p,
-                                         JSObject     **prototype_p);
-JSObject* gjs_lookup_object_prototype   (JSContext     *context,
-                                         GType          gtype);
+                                         JSObject     **constructor_p);
 JSObject* gjs_object_from_g_object      (JSContext     *context,
                                          GObject       *gobj);
 GObject*  gjs_g_object_from_object      (JSContext     *context,
