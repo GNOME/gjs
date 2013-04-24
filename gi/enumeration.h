@@ -37,8 +37,7 @@ JSBool    gjs_define_enum_values       (JSContext    *context,
                                         GIEnumInfo   *info);
 JSBool    gjs_define_enumeration       (JSContext    *context,
                                         JSObject     *in_object,
-                                        GIEnumInfo   *info,
-                                        JSObject    **enumeration_p);
+                                        GIEnumInfo   *info);
 JSObject* gjs_lookup_enumeration       (JSContext    *context,
                                         GIEnumInfo   *info);
 

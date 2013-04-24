@@ -456,29 +456,42 @@ static JSFunctionSpec gjs_param_constructor_funcs[] = {
     { NULL }
 };
 
-JSObject*
+static JSObject*
 gjs_lookup_param_prototype(JSContext    *context)
 {
-    JSObject *ns;
-    JSObject *proto;
+    JSObject *in_object;
+    JSObject *constructor;
     jsid gobject_name;
+    jsval value;
 
     gobject_name = gjs_intern_string_to_id(context, "GObject");
-    ns = gjs_lookup_namespace_object_by_name(context, gobject_name);
+    in_object = gjs_lookup_namespace_object_by_name(context, gobject_name);
 
-    if (ns == NULL)
+    if (G_UNLIKELY (!in_object))
         return NULL;
 
-    if (gjs_define_param_class(context, ns, &proto))
-        return proto;
-    else
+    if (!JS_GetProperty(context, in_object, "ParamSpec", &value))
         return NULL;
+
+    if (G_UNLIKELY (!JSVAL_IS_OBJECT(value) || JSVAL_IS_NULL(value)))
+        return NULL;
+
+    constructor = JSVAL_TO_OBJECT(value);
+    g_assert(constructor != NULL);
+
+    if (!gjs_object_get_property_const(context, constructor,
+                                       GJS_STRING_PROTOTYPE, &value))
+        return NULL;
+
+    if (G_UNLIKELY (!JSVAL_IS_OBJECT(value)))
+        return NULL;
+
+    return JSVAL_TO_OBJECT(value);
 }
 
-JSBool
+void
 gjs_define_param_class(JSContext    *context,
-                       JSObject     *in_object,
-                       JSObject    **prototype_p)
+                       JSObject     *in_object)
 {
     const char *constructor_name;
     JSObject *prototype;
@@ -486,31 +499,6 @@ gjs_define_param_class(JSContext    *context,
     JSObject *constructor;
 
     constructor_name = "ParamSpec";
-
-    if (!JS_GetProperty(context, in_object, constructor_name, &value))
-        return JS_FALSE;
-    if (!JSVAL_IS_VOID(value)) {
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "Existing property '%s' does not look like a constructor",
-                      constructor_name);
-            return JS_FALSE;
-        }
-
-        constructor = JSVAL_TO_OBJECT(value);
-
-        gjs_object_get_property_const(context, constructor, GJS_STRING_PROTOTYPE, &value);
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "prototype property does not appear to exist or has wrong type");
-            return JS_FALSE;
-        } else {
-            if (prototype_p)
-                *prototype_p = JSVAL_TO_OBJECT(value);
-
-            return JS_TRUE;
-        }
-
-        return JS_TRUE;
-    }
 
     if (!gjs_init_class_dynamic(context, in_object,
                                 NULL,
@@ -534,14 +522,9 @@ gjs_define_param_class(JSContext    *context,
     value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
-    
-    if (prototype_p)
-        *prototype_p = prototype;
 
     gjs_debug(GJS_DEBUG_GPARAM, "Defined class %s prototype is %p class %p in object %p",
               constructor_name, prototype, JS_GetClass(prototype), in_object);
-
-    return JS_TRUE;
 }
 
 JSObject*

@@ -31,12 +31,8 @@
 
 G_BEGIN_DECLS
 
-JSBool    gjs_define_error_class       (JSContext             *context,
+void      gjs_define_error_class       (JSContext             *context,
                                         JSObject              *in_object,
-                                        GIEnumInfo            *info,
-                                        JSObject             **constructor_p,
-                                        JSObject             **prototype_p);
-JSObject* gjs_lookup_error_prototype   (JSContext             *context,
                                         GIEnumInfo            *info);
 GError*   gjs_gerror_from_error        (JSContext             *context,
                                         JSObject              *obj);

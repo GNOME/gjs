@@ -353,37 +353,15 @@ static JSFunctionSpec gjs_error_constructor_funcs[] = {
     JS_FS_END
 };
 
-JSObject*
-gjs_lookup_error_prototype(JSContext   *context,
-                           GIEnumInfo  *info)
-{
-    JSObject *ns;
-    JSObject *proto;
-
-    ns = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
-
-    if (ns == NULL)
-        return NULL;
-
-    proto = NULL;
-    if (gjs_define_error_class(context, ns, info, NULL, &proto))
-        return proto;
-    else
-        return NULL;
-}
-
-JSBool
+void
 gjs_define_error_class(JSContext    *context,
                        JSObject     *in_object,
-                       GIEnumInfo   *info,
-                       JSObject    **constructor_p,
-                       JSObject    **prototype_p)
+                       GIEnumInfo   *info)
 {
     const char *constructor_name;
     GIBoxedInfo *glib_error_info;
     JSObject *prototype, *parent_proto;
     JSObject *constructor;
-    jsval value;
     Error *priv;
 
     /* See the comment in gjs_define_boxed_class() for an
@@ -393,36 +371,9 @@ gjs_define_error_class(JSContext    *context,
 
     constructor_name = g_base_info_get_name( (GIBaseInfo*) info);
 
-    if (!JS_GetProperty(context, in_object, constructor_name, &value))
-        return JS_FALSE;
-    if (!JSVAL_IS_VOID(value)) {
-        JSObject *constructor;
-
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "Existing property '%s' does not look like a constructor",
-                         constructor_name);
-            return JS_FALSE;
-        }
-
-        constructor = JSVAL_TO_OBJECT(value);
-
-        gjs_object_get_property_const(context, constructor, GJS_STRING_PROTOTYPE, &value);
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "error %s prototype property does not appear to exist or has wrong type", constructor_name);
-            return JS_FALSE;
-        } else {
-            if (prototype_p)
-                *prototype_p = JSVAL_TO_OBJECT(value);
-            if (constructor_p)
-                *constructor_p = constructor;
-
-            return JS_TRUE;
-        }
-    }
-
     g_irepository_require(NULL, "GLib", "2.0", 0, NULL);
     glib_error_info = (GIBoxedInfo*) g_irepository_find_by_name(NULL, "GLib", "Error");
-    parent_proto = gjs_lookup_boxed_prototype(context, glib_error_info);
+    parent_proto = gjs_lookup_generic_prototype(context, glib_error_info);
     g_base_info_unref((GIBaseInfo*)glib_error_info);
 
     if (!gjs_init_class_dynamic(context, in_object,
@@ -457,14 +408,6 @@ gjs_define_error_class(JSContext    *context,
               constructor_name, prototype, JS_GetClass(prototype), in_object);
 
     gjs_define_enum_values(context, constructor, priv->info);
-
-    if (constructor_p)
-        *constructor_p = constructor;
-
-    if (prototype_p)
-        *prototype_p = prototype;
-
-    return JS_TRUE;
 }
 
 static GIEnumInfo *
@@ -559,7 +502,7 @@ gjs_error_from_gerror(JSContext             *context,
                       "Wrapping struct %s %p with JSObject",
                       g_base_info_get_name((GIBaseInfo *)info), gboxed);
 
-    proto = gjs_lookup_error_prototype(context, info);
+    proto = gjs_lookup_generic_prototype(context, info);
     proto_priv = priv_from_js(context, proto);
 
     obj = JS_NewObjectWithGivenProto(context,

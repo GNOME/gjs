@@ -38,21 +38,26 @@
 
 JSObject*
 gjs_lookup_enumeration(JSContext    *context,
-                          GIEnumInfo   *info)
+                       GIEnumInfo   *info)
 {
-    JSObject *ns;
-    JSObject *enum_obj;
+    JSObject *in_object;
+    const char *enum_name;
+    jsval value;
 
-    ns = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
+    in_object = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
 
-    if (ns == NULL)
+    if (G_UNLIKELY (!in_object))
         return NULL;
 
-    if (gjs_define_enumeration(context, ns, info,
-                               &enum_obj))
-        return enum_obj;
-    else
+    enum_name = g_base_info_get_name((GIBaseInfo*) info);
+
+    if (!JS_GetProperty(context, in_object, enum_name, &value))
         return NULL;
+
+    if (G_UNLIKELY (!JSVAL_IS_OBJECT(value)))
+        return NULL;
+
+    return JSVAL_TO_OBJECT(value);
 }
 
 static JSBool
@@ -138,13 +143,10 @@ gjs_define_enum_values(JSContext    *context,
 JSBool
 gjs_define_enumeration(JSContext    *context,
                        JSObject     *in_object,
-                       GIEnumInfo   *info,
-                       JSObject    **enumeration_p)
+                       GIEnumInfo   *info)
 {
     const char *enum_name;
     JSObject *enum_obj;
-    jsval value;
-
 
     /* An enumeration is simply an object containing integer attributes for
      * each enum value. It does not have a special JSClass.
@@ -156,27 +158,12 @@ gjs_define_enumeration(JSContext    *context,
      */
 
     enum_name = g_base_info_get_name( (GIBaseInfo*) info);
-
-    if (!JS_GetProperty(context, in_object, enum_name, &value))
-        return JS_FALSE;
-    if (!JSVAL_IS_VOID(value)) {
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "Existing property '%s' does not look like an enum object",
-                      enum_name);
-            return JS_FALSE;
-        }
-
-        enum_obj = JSVAL_TO_OBJECT(value);
-
-        if (enumeration_p)
-            *enumeration_p = enum_obj;
-
-        return JS_TRUE;
-    }
-
     enum_obj = JS_NewObject(context, NULL, NULL, gjs_get_import_global (context));
-    if (enum_obj == NULL)
-        return JS_FALSE;
+    if (enum_obj == NULL) {
+        g_error("Could not create enumeration %s.%s",
+               	g_base_info_get_namespace( (GIBaseInfo*) info),
+                enum_name);
+    }
 
     /* https://bugzilla.mozilla.org/show_bug.cgi?id=599651 means we
      * can't just pass in the global as the parent */
@@ -198,9 +185,6 @@ gjs_define_enumeration(JSContext    *context,
         gjs_throw(context, "Unable to define enumeration property (no memory most likely)");
         return JS_FALSE;
     }
-
-    if (enumeration_p)
-        *enumeration_p = enum_obj;
 
     return JS_TRUE;
 }

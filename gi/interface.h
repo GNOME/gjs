@@ -33,8 +33,7 @@ G_BEGIN_DECLS
 
 JSBool gjs_define_interface_class (JSContext       *context,
                                    JSObject        *in_object,
-                                   GIInterfaceInfo *info,
-                                   JSObject       **prototype_p);
+                                   GIInterfaceInfo *info);
 
 G_END_DECLS
 

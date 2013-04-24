@@ -470,8 +470,7 @@ gjs_define_info(JSContext  *context,
             gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
 
             if (g_type_is_a (gtype, G_TYPE_PARAM)) {
-                if (!gjs_define_param_class(context, in_object, NULL))
-                    return JS_FALSE;
+                gjs_define_param_class(context, in_object);
             } else if (g_type_is_a (gtype, G_TYPE_OBJECT)) {
                 gjs_define_object_class(context, in_object, (GIObjectInfo*) info, gtype, NULL);
             } else {
@@ -484,23 +483,21 @@ gjs_define_info(JSContext  *context,
         break;
     case GI_INFO_TYPE_STRUCT:
     case GI_INFO_TYPE_BOXED:
-        if (!gjs_define_boxed_class(context, in_object, (GIBoxedInfo*) info, NULL, NULL))
-            return JS_FALSE;
+        gjs_define_boxed_class(context, in_object, (GIBoxedInfo*) info);
         break;
     case GI_INFO_TYPE_UNION:
-        if (!gjs_define_union_class(context, in_object, (GIUnionInfo*) info, NULL, NULL))
-            return JS_FALSE;
+        gjs_define_union_class(context, in_object, (GIUnionInfo*) info);
         break;
     case GI_INFO_TYPE_ENUM:
         if (g_enum_info_get_error_domain((GIEnumInfo*) info)) {
             /* define as GError subclass */
-            if (!gjs_define_error_class(context, in_object, (GIEnumInfo*) info, NULL, NULL))
-                return JS_FALSE;
+            gjs_define_error_class(context, in_object, (GIEnumInfo*) info);
+            break;
         }
         /* fall through */
 
     case GI_INFO_TYPE_FLAGS:
-        if (!gjs_define_enumeration(context, in_object, (GIEnumInfo*) info, NULL))
+        if (!gjs_define_enumeration(context, in_object, (GIEnumInfo*) info))
             return JS_FALSE;
         break;
     case GI_INFO_TYPE_CONSTANT:
@@ -508,8 +505,7 @@ gjs_define_info(JSContext  *context,
             return JS_FALSE;
         break;
     case GI_INFO_TYPE_INTERFACE:
-        if (!gjs_define_interface_class(context, in_object, (GIInterfaceInfo*) info, NULL))
-            return JS_FALSE;
+        gjs_define_interface_class(context, in_object, (GIInterfaceInfo*) info);
         break;
     default:
         gjs_throw(context, "API of type %s not implemented, cannot define %s.%s",
@@ -743,4 +739,38 @@ gjs_hyphen_from_camel(const char *camel_name)
     }
 
     return g_string_free(s, FALSE);
+}
+
+JSObject *
+gjs_lookup_generic_prototype(JSContext  *context,
+                             GIBaseInfo *info)
+{
+    JSObject *in_object;
+    JSObject *constructor;
+    const char *constructor_name;
+    jsval value;
+
+    in_object = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
+    constructor_name = g_base_info_get_name((GIBaseInfo*) info);
+
+    if (G_UNLIKELY (!in_object))
+        return NULL;
+
+    if (!JS_GetProperty(context, in_object, constructor_name, &value))
+        return NULL;
+
+    if (G_UNLIKELY (!JSVAL_IS_OBJECT(value) || JSVAL_IS_NULL(value)))
+        return NULL;
+
+    constructor = JSVAL_TO_OBJECT(value);
+    g_assert(constructor != NULL);
+
+    if (!gjs_object_get_property_const(context, constructor,
+                                       GJS_STRING_PROTOTYPE, &value))
+        return NULL;
+
+    if (G_UNLIKELY (!JSVAL_IS_OBJECT(value)))
+        return NULL;
+
+    return JSVAL_TO_OBJECT(value);
 }

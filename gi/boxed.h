@@ -40,11 +40,9 @@ typedef enum {
 /* Hack for now... why doesn't gobject-introspection have this? */
 typedef GIStructInfo GIBoxedInfo;
 
-JSBool    gjs_define_boxed_class       (JSContext             *context,
+void      gjs_define_boxed_class       (JSContext             *context,
                                         JSObject              *in_object,
-                                        GIBoxedInfo           *info,
-                                        JSObject             **constructor_p,
-                                        JSObject             **prototype_p);
+                                        GIBoxedInfo           *info);
 JSObject* gjs_lookup_boxed_prototype   (JSContext             *context,
                                         GIBoxedInfo           *info);
 void*     gjs_c_struct_from_boxed      (JSContext             *context,

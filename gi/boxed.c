@@ -593,7 +593,7 @@ get_nested_interface_object (JSContext   *context,
         return JS_FALSE;
     }
 
-    proto = gjs_lookup_boxed_prototype(context, (GIBoxedInfo*) interface_info);
+    proto = gjs_lookup_generic_prototype(context, (GIBoxedInfo*) interface_info);
     proto_priv = priv_from_js(context, proto);
 
     offset = g_field_info_get_offset (field_info);
@@ -719,7 +719,7 @@ set_nested_interface_object (JSContext   *context,
         return JS_FALSE;
     }
 
-    proto = gjs_lookup_boxed_prototype(context, (GIBoxedInfo*) interface_info);
+    proto = gjs_lookup_generic_prototype(context, (GIBoxedInfo*) interface_info);
     proto_priv = priv_from_js(context, proto);
 
     /* If we can't directly copy from the source object we need
@@ -952,25 +952,6 @@ static JSFunctionSpec gjs_boxed_proto_funcs[] = {
     { NULL }
 };
 
-JSObject*
-gjs_lookup_boxed_prototype(JSContext    *context,
-                           GIBoxedInfo  *info)
-{
-    JSObject *ns;
-    JSObject *proto;
-
-    ns = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
-
-    if (ns == NULL)
-        return NULL;
-
-    proto = NULL;
-    if (gjs_define_boxed_class(context, ns, info, NULL, &proto))
-        return proto;
-    else
-        return NULL;
-}
-
 static gboolean
 type_can_be_allocated_directly(GITypeInfo *type_info)
 {
@@ -1153,12 +1134,10 @@ boxed_fill_prototype_info(JSContext *context,
     }
 }
 
-JSBool
+void
 gjs_define_boxed_class(JSContext    *context,
-                          JSObject     *in_object,
-                          GIBoxedInfo  *info,
-                          JSObject    **constructor_p,
-                          JSObject    **prototype_p)
+                       JSObject     *in_object,
+                       GIBoxedInfo  *info)
 {
     const char *constructor_name;
     JSObject *prototype;
@@ -1172,33 +1151,6 @@ gjs_define_boxed_class(JSContext    *context,
      */
 
     constructor_name = g_base_info_get_name( (GIBaseInfo*) info);
-
-    if (!JS_GetProperty(context, in_object, constructor_name, &value))
-        return JS_FALSE;
-    if (!JSVAL_IS_VOID(value)) {
-        JSObject *constructor;
-
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "Existing property '%s' does not look like a constructor",
-                      constructor_name);
-            return JS_FALSE;
-        }
-
-        constructor = JSVAL_TO_OBJECT(value);
-
-        gjs_object_get_property_const(context, constructor, GJS_STRING_PROTOTYPE, &value);
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "boxed %s prototype property does not appear to exist or has wrong type", constructor_name);
-            return JS_FALSE;
-        } else {
-            if (prototype_p)
-                *prototype_p = JSVAL_TO_OBJECT(value);
-            if (constructor_p)
-                *constructor_p = constructor;
-
-            return JS_TRUE;
-        }
-    }
 
     if (!gjs_init_class_dynamic(context, in_object,
                                 NULL, /* parent prototype */
@@ -1240,14 +1192,6 @@ gjs_define_boxed_class(JSContext    *context,
     value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, priv->gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
-
-    if (constructor_p)
-        *constructor_p = constructor;
-
-    if (prototype_p)
-        *prototype_p = prototype;
-
-    return JS_TRUE;
 }
 
 JSObject*
@@ -1268,7 +1212,7 @@ gjs_boxed_from_c_struct(JSContext             *context,
                       "Wrapping struct %s %p with JSObject",
                       g_base_info_get_name((GIBaseInfo *)info), gboxed);
 
-    proto = gjs_lookup_boxed_prototype(context, info);
+    proto = gjs_lookup_generic_prototype(context, info);
     proto_priv = priv_from_js(context, proto);
 
     obj = JS_NewObjectWithGivenProto(context,

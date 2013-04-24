@@ -333,31 +333,10 @@ static JSFunctionSpec gjs_union_proto_funcs[] = {
     { NULL }
 };
 
-JSObject*
-gjs_lookup_union_prototype(JSContext    *context,
-                           GIUnionInfo  *info)
-{
-    JSObject *ns;
-    JSObject *proto;
-
-    ns = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
-
-    if (ns == NULL)
-        return NULL;
-
-    proto = NULL;
-    if (gjs_define_union_class(context, ns, info, NULL, &proto))
-        return proto;
-    else
-        return NULL;
-}
-
-JSBool
+void
 gjs_define_union_class(JSContext    *context,
                        JSObject     *in_object,
-                       GIUnionInfo  *info,
-                       JSObject    **constructor_p,
-                       JSObject    **prototype_p)
+                       GIUnionInfo  *info)
 {
     const char *constructor_name;
     JSObject *prototype;
@@ -381,31 +360,6 @@ gjs_define_union_class(JSContext    *context,
      */
 
     constructor_name = g_base_info_get_name( (GIBaseInfo*) info);
-
-    if (!JS_GetProperty(context, in_object, constructor_name, &value))
-        return JS_FALSE;
-    if (!JSVAL_IS_VOID(value)) {
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "Existing property '%s' does not look like a constructor",
-                         constructor_name);
-            return JS_FALSE;
-        }
-
-        constructor = JSVAL_TO_OBJECT(value);
-
-        gjs_object_get_property_const(context, constructor, GJS_STRING_PROTOTYPE, &value);
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "union %s prototype property does not appear to exist or has wrong type", constructor_name);
-            return JS_FALSE;
-        } else {
-            if (prototype_p)
-                *prototype_p = JSVAL_TO_OBJECT(value);
-            if (constructor_p)
-                *constructor_p = constructor;
-
-            return JS_TRUE;
-        }
-    }
 
     if (!gjs_init_class_dynamic(context, in_object,
                                 NULL,
@@ -439,14 +393,6 @@ gjs_define_union_class(JSContext    *context,
     value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
-
-    if (constructor_p)
-        *constructor_p = constructor;
-
-    if (prototype_p)
-        *prototype_p = prototype;
-
-    return JS_TRUE;
 }
 
 JSObject*
@@ -475,7 +421,7 @@ gjs_union_from_c_union(JSContext    *context,
                       "Wrapping union %s %p with JSObject",
                       g_base_info_get_name((GIBaseInfo *)info), gboxed);
 
-    proto = gjs_lookup_union_prototype(context, (GIUnionInfo*) info);
+    proto = gjs_lookup_generic_prototype(context, (GIUnionInfo*) info);
 
     obj = JS_NewObjectWithGivenProto(context,
                                      JS_GetClass(proto), proto,

@@ -30,9 +30,8 @@
 
 G_BEGIN_DECLS
 
-JSBool      gjs_define_param_class     (JSContext  *context,
-                                        JSObject   *in_object,
-                                        JSObject  **prototype_p);
+void        gjs_define_param_class     (JSContext  *context,
+                                        JSObject   *in_object);
 GParamSpec* gjs_g_param_from_param     (JSContext  *context,
                                         JSObject   *obj);
 JSObject*   gjs_param_from_g_param     (JSContext  *context,
@@ -41,8 +40,6 @@ JSBool      gjs_typecheck_param        (JSContext  *context,
                                         JSObject   *obj,
                                         GType       expected_type,
                                         JSBool      throw);
-JSObject*   gjs_lookup_param_prototype (JSContext  *context);
-
 
 G_END_DECLS
 

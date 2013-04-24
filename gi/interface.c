@@ -170,8 +170,7 @@ static JSFunctionSpec gjs_interface_proto_funcs[] = {
 JSBool
 gjs_define_interface_class(JSContext       *context,
                            JSObject        *in_object,
-                           GIInterfaceInfo *info,
-                           JSObject       **prototype_p)
+                           GIInterfaceInfo *info)
 {
     Interface *priv;
     const char *constructor_name;
@@ -180,33 +179,6 @@ gjs_define_interface_class(JSContext       *context,
     jsval value;
 
     constructor_name = g_base_info_get_name((GIBaseInfo*)info);
-
-    if (!JS_GetProperty(context, in_object, constructor_name, &value))
-        return JS_FALSE;
-    if (!JSVAL_IS_VOID(value)) {
-        JSObject *constructor;
-
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "Existing property '%s' does not look like a constructor",
-                      constructor_name);
-            return JS_FALSE;
-        }
-
-        constructor = JSVAL_TO_OBJECT(value);
-
-        gjs_object_get_property_const(context, constructor, GJS_STRING_PROTOTYPE, &value);
-        if (!JSVAL_IS_OBJECT(value)) {
-            gjs_throw(context, "prototype property does not appear to exist or has wrong type");
-            return JS_FALSE;
-        } else {
-            if (prototype_p)
-                *prototype_p = JSVAL_TO_OBJECT(value);
-
-            return JS_TRUE;
-        }
-
-        return JS_TRUE;
-    }
 
     if (!gjs_init_class_dynamic(context, in_object,
                                 NULL,
@@ -239,9 +211,6 @@ gjs_define_interface_class(JSContext       *context,
     value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, priv->gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
-
-    if (prototype_p)
-        *prototype_p = prototype;
 
     return JS_TRUE;
 }
