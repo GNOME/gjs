@@ -22,6 +22,15 @@ gjs_tests_SOURCES =		\
 
 check-local: gjs-tests
 	@test -z "${TEST_PROGS}" || ${GTESTER} --verbose ${TEST_PROGS} ${TEST_PROGS_OPTIONS}
+	@echo ""
+	@echo "NOTICE"
+	@echo ""
+	@echo "This module contains installed tests.  See"
+	@echo "https://live.gnome.org/GnomeGoals/InstalledTests"
+	@echo "for more information about running them."
+	@echo ""
+	@echo "NOTICE"
+	@echo ""
 
 check: check-local
 

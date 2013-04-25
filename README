@@ -5,3 +5,11 @@ are critical to give it some structure and keep it readable.
 We propose that all GNOME usage of JavaScript conform to the style guide
 in doc/Style_Guide.txt to help keep things sane.
 
+= Testing =
+
+This module is prototyping https://live.gnome.org/GnomeGoals/InstalledTests
+To run the tests, simply build it as normal.  Now:
+
+cd installed-tests
+./autogen.sh && ./configure --prefix=... && make && make install
+$prefix/libexec/gjs/gjs-installed-tests
