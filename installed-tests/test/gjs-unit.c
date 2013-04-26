@@ -105,6 +105,8 @@ main(int argc, char **argv)
      * https://bugzilla.gnome.org/show_bug.cgi?id=616193
      */
     g_setenv("GJS_DISABLE_JIT", "1", FALSE);
+    /* The fact that this isn't the default is kind of lame... */
+    g_setenv("GJS_DEBUG_OUTPUT", "stderr", FALSE);
 
     setlocale(LC_ALL, "");
     g_test_init(&argc, &argv, NULL);
