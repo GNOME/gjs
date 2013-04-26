@@ -32,8 +32,6 @@ check-local: gjs-tests
 	@echo "NOTICE"
 	@echo ""
 
-check: check-local
-
 TESTS_ENVIRONMENT =							\
 	TOP_SRCDIR=$(top_srcdir)					\
 	DBUS_SESSION_BUS_ADDRESS=''					\
