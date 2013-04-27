@@ -1,16 +1,17 @@
 
-installedtestmetadir = $(datadir)/installed-tests
-installedtestmeta_DATA = gjs-installed-tests.testmeta
+installedtestmetadir = $(datadir)/installed-tests/gjs
+installedtestmeta_DATA = all.test
 
-gjs-installed-tests.testmeta: gjs-installed-tests.testmeta.in Makefile
+all.test: all.test.in Makefile
 	sed -e s,@pkglibexecdir\@,$(pkglibexecdir), < $< > $@.tmp && mv $@.tmp $@
 
-pkglibexec_PROGRAMS += gjs-installed-tests
+gjsalltestsdir = $(pkglibexecdir)/tests
+gjsalltests_PROGRAMS = all
 
-gjs_installed_tests_CFLAGS = $(AM_CFLAGS) $(GJS_CFLAGS)
-gjs_installed_tests_LDADD = $(GJS_LIBS)
-gjs_installed_tests_LDFLAGS = -rpath $(pkglibdir)
-gjs_installed_tests_SOURCES = test/gjs-unit.c
+all_CFLAGS = $(AM_CFLAGS) $(GJS_CFLAGS)
+all_LDADD = $(GJS_LIBS)
+all_LDFLAGS = -rpath $(pkglibdir)
+all_SOURCES = test/gjs-unit.c
 
 privlib_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
 

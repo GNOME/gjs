@@ -1,0 +1,2 @@
+[Test]
+Exec=@pkglibexecdir@/tests/all

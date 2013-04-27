@@ -1,2 +1,0 @@
-[Test]
-Exec=@pkglibexecdir@/gjs-installed-tests
