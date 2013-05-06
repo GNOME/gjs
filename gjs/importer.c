@@ -1196,7 +1196,6 @@ gjs_create_root_importer(JSContext   *context,
                          gboolean     add_standard_search_path)
 {
     jsval importer;
-    JSBool found;
 
     JS_BeginRequest(context);
 
@@ -1221,27 +1220,24 @@ gjs_create_root_importer(JSContext   *context,
 
 JSBool
 gjs_define_root_importer(JSContext   *context,
-                         JSObject    *in_object,
-                         const char  *importer_name)
+                         JSObject    *in_object)
 {
-    JSObject *global;
     jsval importer;
     JSBool success;
     jsid imports_name;
 
     success = JS_FALSE;
-    global = gjs_get_import_global(context);
     JS_BeginRequest(context);
 
     importer = gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS);
     imports_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
                                                 GJS_STRING_IMPORTS);
-    if (!JS_DefineProperty(context, in_object,
-                           importer_name, importer,
-                           NULL, NULL,
-                           GJS_MODULE_PROP_FLAGS)) {
-        gjs_debug(GJS_DEBUG_IMPORTER, "DefineProperty %s on %p failed",
-                  importer_name, in_object);
+    if (!JS_DefinePropertyById(context, in_object,
+                               imports_name, importer,
+                               NULL, NULL,
+                               GJS_MODULE_PROP_FLAGS)) {
+        gjs_debug(GJS_DEBUG_IMPORTER, "DefineProperty imports on %p failed",
+                  in_object);
         goto fail;
     }
 

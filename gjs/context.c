@@ -671,8 +671,7 @@ gjs_context_constructor (GType                  type,
      * if it didn't exist) to our global object
      */
     if (!gjs_define_root_importer(js_context->context,
-                                  js_context->global,
-                                  "imports"))
+                                  js_context->global))
         gjs_fatal("Failed to point 'imports' property at root importer");
 
     js_context->profiler = gjs_profiler_new(js_context->runtime);
