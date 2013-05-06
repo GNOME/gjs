@@ -126,6 +126,7 @@ gjs_js_define_system_stuff(JSContext *context,
     GjsContext *gjs_context;
     char *program_name;
     jsval value;
+    JSBool retval;
 
     if (!JS_DefineFunction(context, module,
                            "addressOf",
@@ -157,16 +158,16 @@ gjs_js_define_system_stuff(JSContext *context,
                            0, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
+    retval = JS_FALSE;
+
     gjs_context = JS_GetContextPrivate(context);
     g_object_get(gjs_context,
                  "program-name", &program_name,
                  NULL);
 
     if (!gjs_string_from_utf8(context, program_name,
-                              -1, &value)) {
-        g_free(program_name);
-        return JS_FALSE;
-    }
+                              -1, &value))
+        goto out;
 
     /* The name is modeled after program_invocation_name,
        part of the glibc */
@@ -175,12 +176,21 @@ gjs_js_define_system_stuff(JSContext *context,
                            value,
                            JS_PropertyStub,
                            JS_StrictPropertyStub,
-                           GJS_MODULE_PROP_FLAGS | JSPROP_READONLY)) {
-        g_free(program_name);
-        return JS_FALSE;
-    }
+                           GJS_MODULE_PROP_FLAGS | JSPROP_READONLY))
+        goto out;
 
+    if (!JS_DefineProperty(context, module,
+                           "version",
+                           INT_TO_JSVAL(GJS_VERSION),
+                           JS_PropertyStub,
+                           JS_StrictPropertyStub,
+                           GJS_MODULE_PROP_FLAGS | JSPROP_READONLY))
+        goto out;
+
+    retval = JS_TRUE;
+
+ out:
     g_free(program_name);
 
-    return JS_TRUE;
+    return retval;
 }

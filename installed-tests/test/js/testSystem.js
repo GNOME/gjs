@@ -11,5 +11,9 @@ function testAddressOf() {
     JSUnit.assert(System.addressOf(o1) != System.addressOf(o2));
 }
 
+function testVersion() {
+    JSUnit.assert(System.version >= 13600);
+}
+
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
 
