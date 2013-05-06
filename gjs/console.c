@@ -48,6 +48,7 @@ main(int argc, char **argv)
     GjsContext *js_context;
     char *script;
     const char *filename;
+    const char *program_name;
     gsize len;
     int code;
     const char *source_js_version;
@@ -73,11 +74,13 @@ main(int argc, char **argv)
         source_js_version = gjs_context_scan_buffer_for_js_version(script, 1024);
         len = strlen(script);
         filename = "<command line>";
+        program_name = NULL;
     } else if (argc <= 1) {
         source_js_version = NULL;
         script = g_strdup("const Console = imports.console; Console.interact();");
         len = strlen(script);
         filename = "<stdin>";
+        program_name = NULL;
     } else /*if (argc >= 2)*/ {
         error = NULL;
         if (!g_file_get_contents(argv[1], &script, &len, &error)) {
@@ -86,6 +89,7 @@ main(int argc, char **argv)
         }
         source_js_version = gjs_context_scan_buffer_for_js_version(script, 1024);
         filename = argv[1];
+        program_name = argv[1];
         argc--;
         argv++;
     }
@@ -94,10 +98,16 @@ main(int argc, char **argv)
     if (js_version != NULL)
         source_js_version = js_version;
     if (source_js_version != NULL)
-        js_context = g_object_new(GJS_TYPE_CONTEXT, "search-path", include_path,
-                                  "js-version", source_js_version, NULL);
+        js_context = g_object_new(GJS_TYPE_CONTEXT,
+                                  "search-path", include_path,
+                                  "js-version", source_js_version,
+                                  "program-name", program_name,
+                                  NULL);
     else
-        js_context = g_object_new(GJS_TYPE_CONTEXT, "search-path", include_path, NULL);
+        js_context = g_object_new(GJS_TYPE_CONTEXT,
+                                  "search-path", include_path,
+                                  "program-name", program_name,
+                                  NULL);
 
     /* prepare command line arguments */
     if (!gjs_context_define_string_array(js_context, "ARGV",

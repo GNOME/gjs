@@ -123,6 +123,10 @@ JSBool
 gjs_js_define_system_stuff(JSContext *context,
                            JSObject  *module)
 {
+    GjsContext *gjs_context;
+    char *program_name;
+    jsval value;
+
     if (!JS_DefineFunction(context, module,
                            "addressOf",
                            (JSNative) gjs_address_of,
@@ -152,6 +156,31 @@ gjs_js_define_system_stuff(JSContext *context,
                            (JSNative) gjs_exit,
                            0, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
+
+    gjs_context = JS_GetContextPrivate(context);
+    g_object_get(gjs_context,
+                 "program-name", &program_name,
+                 NULL);
+
+    if (!gjs_string_from_utf8(context, program_name,
+                              -1, &value)) {
+        g_free(program_name);
+        return JS_FALSE;
+    }
+
+    /* The name is modeled after program_invocation_name,
+       part of the glibc */
+    if (!JS_DefineProperty(context, module,
+                           "programInvocationName",
+                           value,
+                           JS_PropertyStub,
+                           JS_StrictPropertyStub,
+                           GJS_MODULE_PROP_FLAGS | JSPROP_READONLY)) {
+        g_free(program_name);
+        return JS_FALSE;
+    }
+
+    g_free(program_name);
 
     return JS_TRUE;
 }

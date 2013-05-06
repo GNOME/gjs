@@ -71,6 +71,7 @@ struct _GjsContext {
     GjsProfiler *profiler;
 
     char *jsversion_string;
+    char *program_name;
 
     char **search_path;
 
@@ -96,7 +97,8 @@ enum {
     PROP_0,
     PROP_JS_VERSION,
     PROP_SEARCH_PATH,
-    PROP_GC_NOTIFICATIONS
+    PROP_GC_NOTIFICATIONS,
+    PROP_PROGRAM_NAME,
 };
 
 
@@ -326,6 +328,16 @@ gjs_context_class_init(GjsContextClass *klass)
 
     g_object_class_install_property(object_class,
                                     PROP_GC_NOTIFICATIONS,
+                                    pspec);
+
+    pspec = g_param_spec_string("program-name",
+                                "Program Name",
+                                "The filename of the launched JS program",
+                                "",
+                                G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+
+    g_object_class_install_property(object_class,
+                                    PROP_PROGRAM_NAME,
                                     pspec);
 
     signals[SIGNAL_GC] = g_signal_new("gc", G_TYPE_FROM_CLASS(klass),
@@ -690,6 +702,9 @@ gjs_context_get_property (GObject     *object,
     case PROP_GC_NOTIFICATIONS:
         g_value_set_boolean(value, js_context->gc_notifications_enabled);
         break;
+    case PROP_PROGRAM_NAME:
+        g_value_set_string(value, js_context->program_name);
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         break;
@@ -719,6 +734,9 @@ gjs_context_set_property (GObject      *object,
         break;
     case PROP_GC_NOTIFICATIONS:
         js_context->gc_notifications_enabled = g_value_get_boolean(value);
+        break;
+    case PROP_PROGRAM_NAME:
+        js_context->program_name = g_value_dup_string(value);
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
