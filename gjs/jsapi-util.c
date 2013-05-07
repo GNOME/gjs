@@ -525,7 +525,8 @@ gjs_log_exception_full(JSContext *context,
 
     if (JSVAL_IS_OBJECT(exc) &&
         gjs_object_get_property_const(context, JSVAL_TO_OBJECT(exc),
-                                      GJS_STRING_STACK, &stack))
+                                      GJS_STRING_STACK, &stack) &&
+        JSVAL_IS_STRING(stack))
         gjs_string_to_utf8(context, stack, &utf8_stack);
     else
         utf8_stack = NULL;
