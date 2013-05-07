@@ -75,14 +75,11 @@ function _displayStringForValue(aVar) {
 }
 
 function fail(failureMessage) {
-  throw new JsUnitException(null, failureMessage);
+    throw new JsUnitException(null, failureMessage);
 }
 
 function error(errorMessage) {
-  var errorObject         = new Object();
-  errorObject.description = errorMessage;
-  errorObject.stackTrace  = getStackTrace();
-  throw errorObject;
+    throw new Error(errorMessage);
 }
 
 function argumentsIncludeComments(expectedNumberOfNonCommentArgs, args) {
@@ -231,38 +228,6 @@ function getFunctionName(aFunction) {
   return name;
 }
 
-function getStackTrace() {
-  var result = '';
-
-  if (typeof(arguments.caller) != 'undefined') { // IE, not ECMA
-    for (var a = arguments.caller; a != null; a = a.caller) {
-      result += '> ' + getFunctionName(a.callee) + '\n';
-      if (a.caller == a) {
-        result += '*';
-        break;
-      }
-    }
-  }
-  else { // Mozilla, not ECMA
-    // fake an exception so we can get Mozilla's error stack
-    var testExcp;
-    try
-    {
-      foo.bar;
-    }
-    catch(testExcp)
-    {
-      var stack = parseErrorStack(testExcp);
-      for (var i = 1; i < stack.length; i++)
-      {
-        result += '> ' + stack[i] + '\n';
-      }
-    }
-  }
-
-  return result;
-}
-
 function parseErrorStack(excp)
 {
   var stack = [];
@@ -303,9 +268,11 @@ function parseErrorStack(excp)
 function JsUnitException(comment, message) {
   this.isJsUnitException = true;
   this.comment           = comment;
-  this.jsUnitMessage     = message;
-  this.stackTrace        = getStackTrace();
+  this.message           = message;
+  this.stack             = (new Error()).stack;
 }
+
+JsUnitException.prototype = Object.create(Error.prototype, {});
 
 function warn() {
   if (top.tracer != null)
@@ -402,7 +369,6 @@ if (top && typeof(top.xbDEBUG) != 'undefined' && top.xbDEBUG.on && top.testManag
   top.xbDebugTraceFunction('top.testManager.containerTestFrame', 'setUp');
   top.xbDebugTraceFunction('top.testManager.containerTestFrame', 'tearDown');
   top.xbDebugTraceFunction('top.testManager.containerTestFrame', 'getFunctionName');
-  top.xbDebugTraceFunction('top.testManager.containerTestFrame', 'getStackTrace');
   top.xbDebugTraceFunction('top.testManager.containerTestFrame', 'warn');
   top.xbDebugTraceFunction('top.testManager.containerTestFrame', 'inform');
   top.xbDebugTraceFunction('top.testManager.containerTestFrame', 'debug');
