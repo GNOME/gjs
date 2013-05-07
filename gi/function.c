@@ -365,7 +365,7 @@ gjs_callback_closure(ffi_cif *cif,
 
 out:
     if (!success) {
-        gjs_log_exception (context, NULL);
+        gjs_log_exception (context);
 
         /* Fill in the result with some hopefully neutral value */
         g_callable_info_load_return_type(trampoline->info, &ret_type);
