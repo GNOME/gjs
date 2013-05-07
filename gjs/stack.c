@@ -53,7 +53,7 @@ gjs_context_get_frame_info (JSContext  *context,
                             jsval      *fileName,
                             jsval      *lineNumber)
 {
-    jsval v_constructor, value;
+    jsval v_constructor;
     JSObject *err_obj;
 
     if (!JS_GetProperty(context, JS_GetGlobalObject(context),
@@ -67,19 +67,19 @@ gjs_context_get_frame_info (JSContext  *context,
 
     if (stack != NULL) {
         if (!gjs_object_get_property_const(context, err_obj,
-                                           GJS_STRING_STACK, &value))
+                                           GJS_STRING_STACK, stack))
             return JS_FALSE;
     }
 
     if (fileName != NULL) {
         if (!gjs_object_get_property_const(context, err_obj,
-                                           GJS_STRING_FILENAME, &value))
+                                           GJS_STRING_FILENAME, fileName))
             return JS_FALSE;
     }
 
     if (lineNumber != NULL) {
         if (!gjs_object_get_property_const(context, err_obj,
-                                           GJS_STRING_LINE_NUMBER, &value))
+                                           GJS_STRING_LINE_NUMBER, lineNumber))
             return JS_FALSE;
     }
 
