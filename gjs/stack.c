@@ -47,200 +47,75 @@
 #include "compat.h"
 #include "jsapi-util.h"
 
-/* Mimick the behaviour exposed by standard Error objects
-   (http://mxr.mozilla.org/mozilla-central/source/js/src/jsexn.cpp#554)
-*/
-static char*
-jsvalue_to_string(JSContext* cx, jsval val, gboolean* is_string)
+JSBool
+gjs_context_get_frame_info (JSContext  *context,
+                            jsval      *stack,
+                            jsval      *fileName,
+                            jsval      *lineNumber)
 {
-    char* value = NULL;
-    JSString* value_str = NULL;
+    jsval v_constructor, value;
+    JSObject *err_obj;
 
-    if (JSVAL_IS_PRIMITIVE(val)) {
-      value_str = JS_ValueToSource(cx, val);
-    } else {
-      JSObject *obj = JSVAL_TO_OBJECT(val);
-
-      if (JS_ObjectIsFunction(cx, obj)) {
-	JSFunction *fn = JS_ValueToFunction(cx, val);
-	value_str = JS_GetFunctionId(fn);
-
-	if (!value_str)
-	  value = g_strdup("[unknown function]");
-      } else {
-	value = g_strdup_printf("[object %s]", JS_GetClass(obj)->name);
-      }
+    if (!JS_GetProperty(context, JS_GetGlobalObject(context),
+                        "Error", &v_constructor) ||
+        !JSVAL_IS_OBJECT(v_constructor)) {
+        g_error("??? Missing Error constructor in global object?");
+        return JS_FALSE;
     }
 
-    if (!value && value_str)
-      value = gjs_value_debug_string(cx, val);
+    err_obj = JS_New(context, JSVAL_TO_OBJECT(v_constructor), 0, NULL);
 
-    if (is_string)
-        *is_string = JSVAL_IS_STRING(val);
-
-    return value;
-}
-
-static void
-format_frame(JSContext* cx, JSStackFrame* fp,
-             GString *buf, int num)
-{
-    JSPropertyDescArray call_props = { 0, NULL };
-    JSObject* call_obj = NULL;
-    char* funname_str = NULL;
-    const char* filename = NULL;
-    guint32 lineno = 0;
-    guint32 named_arg_count = 0;
-    JSFunction* fun = NULL;
-    JSScript* script;
-    guchar* pc;
-    guint32 i;
-    gboolean is_string;
-    jsval val;
-
-    (void)JS_EnterLocalRootScope(cx);
-
-    /* get the info for this stack frame */
-
-    script = JS_GetFrameScript(cx, fp);
-    pc = JS_GetFramePC(cx, fp);
-
-    if (!script) {
-        g_string_append_printf(buf, "%d [native frame]\n", num);
-        goto out;
+    if (stack != NULL) {
+        if (!gjs_object_get_property_const(context, err_obj,
+                                           GJS_STRING_STACK, &value))
+            return JS_FALSE;
     }
 
-
-    if (script && pc) {
-        filename = JS_GetScriptFilename(cx, script);
-        lineno =  (guint32) JS_PCToLineNumber(cx, script, pc);
-        fun = JS_GetFrameFunction(cx, fp);
-        if (fun) {
-	    JSString* funname = JS_GetFunctionId(fun);
-            if (funname)
-              gjs_string_to_utf8(cx, STRING_TO_JSVAL(funname), &funname_str);
-	}
-
-        call_obj = JS_GetFrameCallObject(cx, fp);
-        if (call_obj) {
-            if (!JS_GetPropertyDescArray(cx, call_obj, &call_props))
-                call_props.array = NULL;
-        }
-
+    if (fileName != NULL) {
+        if (!gjs_object_get_property_const(context, err_obj,
+                                           GJS_STRING_FILENAME, &value))
+            return JS_FALSE;
     }
 
-    /* print the frame number and function name */
-
-    if (funname_str) {
-        g_string_append_printf(buf, "%d %s(", num, funname_str);
-        g_free(funname_str);
-    }
-    else if (fun)
-        g_string_append_printf(buf, "%d anonymous(", num);
-    else
-        g_string_append_printf(buf, "%d <TOP LEVEL>", num);
-
-    for (i = 0; i < call_props.length; i++) {
-        char *name = NULL;
-        char *value = NULL;
-        JSPropertyDesc* desc = &call_props.array[i];
-            name = jsvalue_to_string(cx, desc->id, &is_string);
-            if(!is_string) {
-                g_free(name);
-                name = NULL;
-            }
-            value = jsvalue_to_string(cx, desc->value, &is_string);
-
-            g_string_append_printf(buf, "%s%s%s%s%s%s",
-                                   named_arg_count ? ", " : "",
-                                   name ? name :"",
-                                   name ? " = " : "",
-                                   is_string ? "\"" : "",
-                                   value ? value : "?unknown?",
-                                   is_string ? "\"" : "");
-            named_arg_count++;
-        g_free(name);
-        g_free(value);
+    if (lineNumber != NULL) {
+        if (!gjs_object_get_property_const(context, err_obj,
+                                           GJS_STRING_LINE_NUMBER, &value))
+            return JS_FALSE;
     }
 
-    /* print any unnamed trailing args (found in 'arguments' object) */
-
-    if (call_obj != NULL &&
-        JS_GetProperty(cx, call_obj, "arguments", &val) &&
-        JSVAL_IS_OBJECT(val)) {
-        guint32 k;
-        guint32 arg_count;
-        JSObject* args_obj = JSVAL_TO_OBJECT(val);
-        if (JS_GetArrayLength(cx, args_obj, &arg_count) &&
-            arg_count > named_arg_count) {
-            for (k = named_arg_count; k < arg_count; k++) {
-                if (JS_GetElement(cx, args_obj, k, &val)) {
-                    char *value = jsvalue_to_string(cx, val, &is_string);
-                    g_string_append_printf(buf, "%s%s%s%s",
-                                           k ? ", " : "",
-                                           is_string ? "\"" : "",
-                                           value ? value : "?unknown?",
-                                           is_string ? "\"" : "");
-                    g_free(value);
-                }
-            }
-        }
-    }
-
-    /* print filename and line number */
-
-    g_string_append_printf(buf, "%s@%s:%d\n",
-                           fun ? ")" : "",
-                           filename ? filename : "",
-                           lineno);
-
-  out:
-    if (call_props.array)
-      JS_PutPropertyDescArray(cx, &call_props);
-
-    JS_LeaveLocalRootScope(cx);
-}
-
-void
-gjs_context_print_stack_to_buffer(GjsContext* context, void *initial, GString *buf)
-{
-    JSContext *js_context = (JSContext*)gjs_context_get_native_context(context);
-    JSStackFrame *fp = initial;
-    int num = 0;
-
-    if (fp == NULL)
-        JS_FrameIterator(js_context, &fp);
-
-    while (fp) {
-        format_frame(js_context, fp, buf, num);
-        num++;
-
-	JS_FrameIterator(js_context, &fp);
-    }
+    return JS_TRUE;
 }
 
 void
 gjs_context_print_stack_stderr(GjsContext *context)
 {
-  GString *str = g_string_new("");
+    JSContext *cx = gjs_context_get_native_context(context);
+    jsval v_stack;
+    char *stack;
 
-  g_string_append_printf(str, "== Stack trace for context %p ==\n", context);
-  gjs_context_print_stack_to_buffer(context, NULL, str);
+    g_printerr("== Stack trace for context %p ==\n", context);
 
-  g_printerr("%s\n", str->str);
-  g_string_free(str, TRUE);
+    /* Stderr is locale encoding, so we use string_to_filename here */
+    if (!gjs_context_get_frame_info(cx, &v_stack, NULL, NULL) ||
+        !gjs_string_to_filename(cx, v_stack, &stack)) {
+        g_printerr("No stack trace available\n");
+        return;
+    }
+
+    g_printerr("%s\n", stack);
+    g_free(stack);
 }
 
 void
 gjs_dumpstack(void)
 {
-  GList *contexts = gjs_context_get_all();
-  GList *iter;
+    GList *contexts = gjs_context_get_all();
+    GList *iter;
 
-  for (iter = contexts; iter; iter = iter->next) {
-    GjsContext *context = (GjsContext*)iter->data;
-    gjs_context_print_stack_stderr(context);
-    g_object_unref(context);
-  }
-  g_list_free(contexts);
+    for (iter = contexts; iter; iter = iter->next) {
+        GjsContext *context = (GjsContext*)iter->data;
+        gjs_context_print_stack_stderr(context);
+        g_object_unref(context);
+    }
+    g_list_free(contexts);
 }

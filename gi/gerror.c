@@ -500,34 +500,14 @@ static void
 define_error_properties(JSContext *context,
                         JSObject  *obj)
 {
-    JSStackFrame *frame;
-    JSScript *script;
-    jsbytecode *pc;
-    jsval v;
-    GString *stack;
-    const char *filename;
-    GjsContext *gjs_context;
     jsid stack_name, filename_name, linenumber_name;
+    jsval stack, fileName, lineNumber;
 
-    /* find the JS frame that triggered the error */
-    frame = NULL;
-    while (JS_FrameIterator(context, &frame)) {
-        script = JS_GetFrameScript(context, frame);
-        if (script)
-            break;
-    }
-
-    /* someone called gjs_throw at top of the stack?
-       well, no stack in that case
-    */
-    if (!frame)
+    if (!gjs_context_get_frame_info (context,
+                                     &stack,
+                                     &fileName,
+                                     &lineNumber))
         return;
-
-    pc = JS_GetFramePC(context, frame);
-
-    stack = g_string_new(NULL);
-    gjs_context = JS_GetContextPrivate(context);
-    gjs_context_print_stack_to_buffer(gjs_context, frame, stack);
 
     stack_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
                                               GJS_STRING_STACK);
@@ -536,20 +516,14 @@ define_error_properties(JSContext *context,
     linenumber_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
                                                    GJS_STRING_LINE_NUMBER);
 
-    if (gjs_string_from_utf8(context, stack->str, stack->len, &v))
-        JS_DefinePropertyById(context, obj, stack_name, v,
+    JS_DefinePropertyById(context, obj, stack_name, stack,
                           NULL, NULL, JSPROP_ENUMERATE);
 
-    filename = JS_GetScriptFilename(context, script);
-    if (gjs_string_from_filename(context, filename, -1, &v))
-        JS_DefinePropertyById(context, obj, filename_name, v,
-                              NULL, NULL, JSPROP_ENUMERATE);
-
-    v = INT_TO_JSVAL(JS_PCToLineNumber(context, script, pc));
-    JS_DefinePropertyById(context, obj, linenumber_name, v,
+    JS_DefinePropertyById(context, obj, filename_name, fileName,
                           NULL, NULL, JSPROP_ENUMERATE);
 
-    g_string_free(stack, TRUE);
+    JS_DefinePropertyById(context, obj, linenumber_name, lineNumber,
+                          NULL, NULL, JSPROP_ENUMERATE);
 }
 
 JSObject*

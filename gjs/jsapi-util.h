@@ -377,6 +377,11 @@ gboolean gjs_try_block_gc (void);
 void gjs_block_gc (void);
 void gjs_unblock_gc (void);
 
+JSBool            gjs_context_get_frame_info (JSContext  *context,
+                                              jsval      *stack,
+                                              jsval      *fileName,
+                                              jsval      *lineNumber);
+
 G_END_DECLS
 
 #endif  /* __GJS_JSAPI_UTIL_H__ */
