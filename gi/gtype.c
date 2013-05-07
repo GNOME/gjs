@@ -145,9 +145,10 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
     return object;
 }
 
-GType
-gjs_gtype_get_actual_gtype (JSContext *context,
-                            JSObject  *object)
+static GType
+_gjs_gtype_get_actual_gtype (JSContext *context,
+                             JSObject  *object,
+                             int        recurse)
 {
     GType gtype = G_TYPE_INVALID;
     jsval gtype_val = JSVAL_VOID;
@@ -169,10 +170,25 @@ gjs_gtype_get_actual_gtype (JSContext *context,
             goto out;
     }
 
-    if (JSVAL_IS_OBJECT(gtype_val))
-        gtype = gjs_gtype_get_actual_gtype(context, JSVAL_TO_OBJECT(gtype_val));
+    if (recurse > 0 && JSVAL_IS_OBJECT(gtype_val))
+        gtype = _gjs_gtype_get_actual_gtype(context, JSVAL_TO_OBJECT(gtype_val), recurse - 1);
 
  out:
     JS_EndRequest(context);
     return gtype;
+}
+
+GType
+gjs_gtype_get_actual_gtype (JSContext *context,
+                            JSObject  *object)
+{
+    /* 2 means: recurse at most three times (including this
+       call).
+       The levels are calculated considering that, in the
+       worst case we need to go from instance to class, from
+       class to GType object and from GType object to
+       GType value.
+     */
+
+    return _gjs_gtype_get_actual_gtype(context, object, 2);
 }
