@@ -171,7 +171,7 @@ function testCairoSignal() {
     let called = false;
     o.connect('sig-with-foreign-struct', function(o, cr) {
         called = true;
-        assertTrue(_ts(cr), "CairoContext");
+        assertEquals(_ts(cr), "CairoContext");
     });
     o.emit_sig_with_foreign_struct();
     assertTrue(called);
