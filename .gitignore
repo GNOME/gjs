@@ -40,3 +40,5 @@ valgrind.gjs-tests.log
 valgrind.gjs-unit.log
 installed-tests/gjs-installed-tests
 installed-tests/gjs-installed-tests.testmeta
+jsunit
+jsunit.test

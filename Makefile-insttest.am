@@ -1,19 +1,30 @@
 
 installedtestmetadir = $(datadir)/installed-tests/gjs
-installedtestmeta_DATA = all.test
+installedtestmeta_DATA = 
+if BUILDOPT_INSTALL_TESTS
+installedtestmeta_DATA += jsunit.test
+endif
 
-all.test: all.test.in Makefile
+jsunit.test: installed-tests/jsunit.test.in Makefile
 	sed -e s,@pkglibexecdir\@,$(pkglibexecdir), < $< > $@.tmp && mv $@.tmp $@
 
 gjsalltestsdir = $(pkglibexecdir)/tests
-gjsalltests_PROGRAMS = all
+gjsalltests_PROGRAMS = 
+if BUILDOPT_INSTALL_TESTS
+gjsalltests_PROGRAMS += jsunit
+endif
 
-all_CFLAGS = $(AM_CFLAGS) $(GJS_CFLAGS)
-all_LDADD = $(GJS_LIBS)
-all_LDFLAGS = -rpath $(pkglibdir)
-all_SOURCES = test/gjs-unit.c
+jsunit_CPPFLAGS = $(AM_CPPFLAGS) -DPKGLIBDIR=\"$(pkglibdir)\"
+jsunit_CFLAGS = $(AM_CFLAGS) $(GJS_CFLAGS) -I$(top_srcdir)
+jsunit_LDADD = $(GJS_LIBS) libgjs.la
+jsunit_LDFLAGS = -rpath $(pkglibdir)
+jsunit_SOURCES = installed-tests/gjs-unit.c
 
+privlibdir = $(pkglibdir)
+privlib_LTLIBRARIES =
+if BUILDOPT_INSTALL_TESTS
 privlib_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
+endif
 
 nodist_libregress_la_SOURCES = $(GI_DATADIR)/tests/regress.c $(GI_DATADIR)/tests/regress.h
 libregress_la_CPPFLAGS = $(AM_CPPFLAGS)
@@ -38,14 +49,18 @@ Regress-1.0.gir: libregress.la
 Regress_1_0_gir_LIBS = libregress.la
 Regress_1_0_gir_FILES = $(nodist_libregress_la_SOURCES)
 Regress_1_0_gir_SCANNERFLAGS = --warn-all --warn-error $(libregress_scannerflags_includes) $(libregress_la_CPPFLAGS)
+if BUILDOPT_INSTALL_TESTS
 INTROSPECTION_GIRS += Regress-1.0.gir
+endif
 
 WarnLib-1.0.gir: libwarnlib.la
 WarnLib_1_0_gir_LIBS = libwarnlib.la
 WarnLib_1_0_gir_INCLUDES = Gio-2.0
 WarnLib_1_0_gir_FILES = $(nodist_libwarnlib_la_SOURCES)
 WarnLib_1_0_gir_SCANNERFLAGS = --c-include="warnlib.h" --symbol-prefix=warnlib_
+if BUILDOPT_INSTALL_TESTS
 INTROSPECTION_GIRS += WarnLib-1.0.gir
+endif
 
 GIMarshallingTests-1.0.gir: libgimarshallingtests.la
 GIMarshallingTests_1_0_gir_LIBS = libgimarshallingtests.la
@@ -54,32 +69,38 @@ GIMarshallingTests_1_0_gir_FILES = $(nodist_libgimarshallingtests_la_SOURCES)
 GIMarshallingTests_1_0_gir_SCANNERFLAGS = --symbol-prefix=gi_marshalling_tests --warn-all --warn-error
 INTROSPECTION_GIRS += GIMarshallingTests-1.0.gir
 
-typelibdir = $(pkglibdir)
-typelib_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
+privtypelibdir = $(pkglibdir)
+privtypelib_DATA = 
+if BUILDOPT_INSTALL_TESTS
+privtypelib_DATA += $(INTROSPECTION_GIRS:.gir=.typelib)
+endif
 
 jstestsdir = $(pkglibdir)/js
-jstests_DATA =					\
-	test/js/test0010basic.js		\
-	test/js/test0020importer.js		\
-	test/js/test0030basicBoxed.js		\
-	test/js/test0040mainloop.js		\
-	test/js/testself.js			\
-	test/js/testByteArray.js		\
-	test/js/testClass.js			\
-	test/js/testGDBus.js			\
-	test/js/testEverythingBasic.js		\
-	test/js/testEverythingEncapsulated.js	\
-	test/js/testGIMarshalling.js		\
-	test/js/testJS1_8.js			\
-	test/js/testJSDefault.js		\
-	test/js/testLang.js			\
-	test/js/testLocale.js			\
-	test/js/testMainloop.js			\
-	test/js/testSignals.js			\
-	test/js/testSystem.js			\
-	test/js/testTweener.js			\
-	test/js/testUnicode.js
+jstests_DATA =
+if BUILDOPT_INSTALL_TESTS
+jstests_DATA += \
+	installed-tests/js/test0010basic.js		\
+	installed-tests/js/test0020importer.js		\
+	installed-tests/js/test0030basicBoxed.js		\
+	installed-tests/js/test0040mainloop.js		\
+	installed-tests/js/testself.js			\
+	installed-tests/js/testByteArray.js		\
+	installed-tests/js/testClass.js			\
+	installed-tests/js/testGDBus.js			\
+	installed-tests/js/testEverythingBasic.js		\
+	installed-tests/js/testEverythingEncapsulated.js	\
+	installed-tests/js/testGIMarshalling.js		\
+	installed-tests/js/testJS1_8.js			\
+	installed-tests/js/testJSDefault.js		\
+	installed-tests/js/testLang.js			\
+	installed-tests/js/testLocale.js			\
+	installed-tests/js/testMainloop.js			\
+	installed-tests/js/testSignals.js			\
+	installed-tests/js/testSystem.js			\
+	installed-tests/js/testTweener.js			\
+	installed-tests/js/testUnicode.js
 
 if ENABLE_CAIRO
-jstests_DATA += test/js/testCairo.js
+jstests_DATA += installed-tests/js/testCairo.js
+endif
 endif

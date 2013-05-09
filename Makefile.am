@@ -216,6 +216,7 @@ install-exec-hook:
 	(cd $(DESTDIR)$(bindir) && ln -sf gjs-console$(EXEEXT) gjs$(EXEEXT))
 
 include Makefile-test.am
+include Makefile-insttest.am
 
 EXTRA_DIST += autogen.sh COPYING.LGPL
 
