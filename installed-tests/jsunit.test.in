@@ -1,2 +1,2 @@
 [Test]
-Exec=@pkglibexecdir@/tests/all
+Exec=@pkglibexecdir@/tests/jsunit
