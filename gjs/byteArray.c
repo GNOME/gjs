@@ -49,11 +49,6 @@ static JSBool byte_array_set_prop      (JSContext    *context,
                                         jsid         *id,
                                         JSBool        strict,
                                         jsval        *value_p);
-static JSBool byte_array_new_resolve   (JSContext    *context,
-                                        JSObject    **obj,
-                                        jsid         *id,
-                                        unsigned      flags,
-                                        JSObject    **objp);
 GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array);
 static void   byte_array_finalize      (JSFreeOp     *fop,
                                         JSObject     *obj);
@@ -61,14 +56,13 @@ static void   byte_array_finalize      (JSFreeOp     *fop,
 
 static struct JSClass gjs_byte_array_class = {
     "ByteArray",
-    JSCLASS_HAS_PRIVATE |
-    JSCLASS_NEW_RESOLVE,
+    JSCLASS_HAS_PRIVATE,
     JS_PropertyStub,
     JS_PropertyStub,
     (JSPropertyOp)byte_array_get_prop,
     (JSStrictPropertyOp)byte_array_set_prop,
     JS_EnumerateStub,
-    (JSResolveOp) byte_array_new_resolve, /* cast due to new sig */
+    JS_ResolveStub,
     JS_ConvertStub,
     byte_array_finalize,
     NULL,
@@ -306,10 +300,8 @@ byte_array_set_index(JSContext         *context,
 
     g_array_index(priv->array, guint8, idx) = v;
 
-    /* we could have coerced a double or something, be sure
-     * *value_p is set to our actual set value
-     */
-    *value_p = INT_TO_JSVAL(v);
+    /* Stop JS from storing a copy of the value */
+    *value_p = JSVAL_VOID;
 
     return JS_TRUE;
 }
@@ -335,8 +327,6 @@ byte_array_set_prop(JSContext *context,
     if (!JS_IdToValue(context, *id, &id_value))
         return JS_FALSE;
 
-    byte_array_ensure_array(priv);
-
     /* First handle array indexing */
     if (JSVAL_IS_NUMBER(id_value)) {
         gsize idx;
@@ -347,63 +337,6 @@ byte_array_set_prop(JSContext *context,
     }
 
     /* We don't special-case anything else for now */
-
-    /* FIXME: note that the prop will also have been set in JS in the
-     * usual hash table... this is pretty wasteful and bloated. But I
-     * don't know how to turn it off. The set property function
-     * is only a hook, not a replacement.
-     */
-    return JS_TRUE;
-}
-
-static JSBool
-byte_array_new_resolve(JSContext *context,
-                       JSObject **obj,
-                       jsid      *id,
-                       unsigned   flags,
-                       JSObject **objp)
-{
-    ByteArrayInstance *priv;
-    jsval id_val;
-
-    *objp = NULL;
-
-    priv = priv_from_js(context, obj);
-
-    if (priv == NULL)
-        return JS_TRUE; /* prototype, not an instance. */
-
-    if (!JS_IdToValue(context, *id, &id_val))
-        return JS_FALSE;
-
-    byte_array_ensure_array(priv);
-
-    if (JSVAL_IS_NUMBER(id_val)) {
-        gsize idx;
-        if (!gjs_value_to_gsize(context, id_val, &idx))
-            return JS_FALSE;
-        if (idx < priv->array->len) {
-            /* define the property - AAARGH. Best I can tell from
-             * reading the source, this is unavoidable...
-             * which means using "for each" or "for ... in" on byte
-             * arrays is a horrible, horrible idea. FIXME - but how?
-             *
-             * The issue is that spidermonkey only calls resolve,
-             * not get, as it iterates. So you can lazy-define
-             * a property but must define it.
-             */
-            if (!JS_DefinePropertyById(context,
-                                       *obj,
-                                       *id,
-                                       JSVAL_VOID,
-                                       byte_array_get_prop,
-                                       byte_array_set_prop,
-                                       JSPROP_ENUMERATE))
-                return JS_FALSE;
-
-            *objp = *obj;
-        }
-    }
 
     return JS_TRUE;
 }
