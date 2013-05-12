@@ -46,7 +46,7 @@ function gettext(msgid) {
     return GLib.dgettext(null, msgid);
 }
 function dgettext(domain, msgid) {
-    return GLib.dgetext(domain, msgid);
+    return GLib.dgettext(domain, msgid);
 }
 function dcgettext(domain, msgid, category) {
     return GLib.dcgettext(domain, msgid, category);
