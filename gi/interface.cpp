@@ -27,6 +27,7 @@
 #include "function.h"
 #include "gtype.h"
 #include "interface.h"
+#include "repo.h"
 
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
@@ -213,5 +214,34 @@ gjs_define_interface_class(JSContext       *context,
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 
+    return JS_TRUE;
+}
+
+JSBool
+gjs_lookup_interface_constructor(JSContext *context,
+                                 GType      gtype,
+                                 jsval     *value_p)
+{
+    JSObject *constructor;
+    GIBaseInfo *interface_info;
+
+    interface_info = g_irepository_find_by_gtype(NULL, gtype);
+
+    if (interface_info == NULL) {
+        gjs_throw(context, "Cannot expose non introspectable interface %s",
+                  g_type_name(gtype));
+        return JS_FALSE;
+    }
+
+    g_assert(g_base_info_get_type(interface_info) ==
+             GI_INFO_TYPE_INTERFACE);
+
+    constructor = gjs_lookup_generic_constructor(context, interface_info);
+    if (G_UNLIKELY (constructor == NULL))
+        return JS_FALSE;
+
+    g_base_info_unref(interface_info);
+
+    *value_p = OBJECT_TO_JSVAL(constructor);
     return JS_TRUE;
 }

@@ -35,6 +35,9 @@ void      gjs_define_object_class       (JSContext     *context,
                                          GIObjectInfo  *info,
                                          GType          gtype,
                                          JSObject     **constructor_p);
+JSBool    gjs_lookup_object_constructor (JSContext     *context,
+                                         GType          gtype,
+                                         jsval         *value_p);
 JSObject* gjs_object_from_g_object      (JSContext     *context,
                                          GObject       *gobj);
 GObject*  gjs_g_object_from_object      (JSContext     *context,

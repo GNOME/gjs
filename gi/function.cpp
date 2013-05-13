@@ -556,6 +556,31 @@ gjs_fill_method_instance (JSContext  *context,
             out_arg->v_pointer = gjs_gerror_from_error(context, obj);
             if (transfer == GI_TRANSFER_EVERYTHING)
                 out_arg->v_pointer = g_error_copy ((GError*) out_arg->v_pointer);
+        } else if (type == GI_INFO_TYPE_STRUCT &&
+                   g_struct_info_is_gtype_struct((GIStructInfo*) container)) {
+            /* And so do GType structures */
+            GType gtype;
+            gpointer klass;
+
+            gtype = gjs_gtype_get_actual_gtype(context, obj);
+
+            if (gtype == G_TYPE_NONE) {
+                gjs_throw(context, "Invalid GType class passed for instance parameter");
+                return JS_FALSE;
+            }
+
+            /* We use peek here to simplify reference counting (we just ignore
+               transfer annotation, as GType classes are never really freed)
+               We know that the GType class is referenced at least once when
+               the JS constructor is initialized.
+            */
+
+            if (g_type_is_a(gtype, G_TYPE_INTERFACE))
+                klass = g_type_default_interface_peek(gtype);
+            else
+                klass = g_type_class_peek(gtype);
+
+            out_arg->v_pointer = klass;
         } else {
             if (!gjs_typecheck_boxed(context, obj,
                                      container, gtype,

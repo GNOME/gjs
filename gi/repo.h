@@ -43,6 +43,8 @@ JSObject*   gjs_lookup_namespace_object_by_name (JSContext      *context,
                                                  jsid            name);
 JSObject*   gjs_lookup_function_object          (JSContext      *context,
                                                  GIFunctionInfo *info);
+JSObject *  gjs_lookup_generic_constructor      (JSContext      *context,
+                                                 GIBaseInfo     *info);
 JSObject *  gjs_lookup_generic_prototype        (JSContext      *context,
                                                  GIBaseInfo     *info);
 JSBool      gjs_define_info                     (JSContext      *context,

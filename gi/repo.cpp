@@ -749,8 +749,8 @@ gjs_hyphen_from_camel(const char *camel_name)
 }
 
 JSObject *
-gjs_lookup_generic_prototype(JSContext  *context,
-                             GIBaseInfo *info)
+gjs_lookup_generic_constructor(JSContext  *context,
+                               GIBaseInfo *info)
 {
     JSObject *in_object;
     JSObject *constructor;
@@ -771,6 +771,20 @@ gjs_lookup_generic_prototype(JSContext  *context,
 
     constructor = JSVAL_TO_OBJECT(value);
     g_assert(constructor != NULL);
+
+    return constructor;
+}
+
+JSObject *
+gjs_lookup_generic_prototype(JSContext  *context,
+                             GIBaseInfo *info)
+{
+    JSObject *constructor;
+    jsval value;
+
+    constructor = gjs_lookup_generic_constructor(context, info);
+    if (G_UNLIKELY (constructor == NULL))
+        return NULL;
 
     if (!gjs_object_get_property_const(context, constructor,
                                        GJS_STRING_PROTOTYPE, &value))
