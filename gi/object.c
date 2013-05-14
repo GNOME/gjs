@@ -82,10 +82,10 @@ typedef struct
 
 enum {
     PROP_0,
-    PROP_JS_CONTEXT,
-    PROP_JS_OBJECT,
     PROP_JS_HANDLED,
 };
+
+static GSList *object_init_list;
 
 static struct JSClass gjs_object_instance_class;
 static GThread *gjs_eval_thread;
@@ -102,16 +102,6 @@ typedef enum {
     NO_SUCH_G_PROPERTY,
     VALUE_WAS_SET
 } ValueFromPropertyResult;
-
-static GQuark
-gjs_context_quark(void)
-{
-    static GQuark val = 0;
-    if (!val)
-        val = g_quark_from_static_string ("gjs::context");
-
-    return val;
-}
 
 static GQuark
 gjs_is_custom_type_quark (void)
@@ -677,28 +667,6 @@ object_instance_props_to_g_parameters(JSContext   *context,
     gparams = g_array_new(/* nul term */ FALSE, /* clear */ TRUE,
                           sizeof(GParameter));
 
-    /* For custom types we register, we need to set additional
-       properties for the JS context and JS object, so that we can retrieve
-       them inside the constructor, when handling construct properties
-       There is no other way to set those, as we need them before
-       g_object_newv returns.
-       We also need to ensure that these are the first properties set
-       (luckily g_object_newv preserves the order)
-    */
-    if (g_type_get_qdata(gtype, gjs_is_custom_type_quark())) {
-        GParameter gparam = { "js-context", { 0, } };
-
-        g_value_init(&gparam.value, G_TYPE_POINTER);
-        g_value_set_pointer(&gparam.value, context);
-
-        g_array_append_val(gparams, gparam);
-
-        gparam.name = "js-object";
-        g_value_set_pointer(&gparam.value, obj);
-
-        g_array_append_val(gparams, gparam);
-    }
-
     if (argc == 0 || JSVAL_IS_VOID(argv[0]))
         goto out;
 
@@ -1209,6 +1177,13 @@ object_instance_init (JSContext *context,
                                                &params, &n_params)) {
         return JS_FALSE;
     }
+
+    /* Mark this object in the construction stack, it
+       will be popped in gjs_object_custom_init() later
+       down.
+    */
+    if (g_type_get_qdata(gtype, gjs_is_custom_type_quark()))
+        object_init_list = g_slist_prepend(object_init_list, *object);
 
     gobj = g_object_newv(gtype, n_params, params);
 
@@ -2334,17 +2309,15 @@ gjs_object_get_gproperty (GObject    *object,
                           GValue     *value,
                           GParamSpec *pspec)
 {
+    GjsContext *gjs_context;
     JSContext *context;
     JSObject *js_obj;
     jsval jsvalue;
     gchar *underscore_name;
 
-    if (property_id != PROP_JS_HANDLED) {
-        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-        return;
-    }
+    gjs_context = gjs_context_get_current();
+    context = gjs_context_get_native_context(gjs_context);
 
-    context = g_object_get_qdata(object, gjs_context_quark());
     js_obj = peek_js_obj(object);
 
     underscore_name = hyphen_to_underscore((gchar *)pspec->name);
@@ -2361,29 +2334,14 @@ gjs_object_set_gproperty (GObject      *object,
                           const GValue *value,
                           GParamSpec   *pspec)
 {
+    GjsContext *gjs_context;
     JSContext *context;
     JSObject *js_obj;
     jsval jsvalue;
     gchar *underscore_name;
 
-    if (property_id == PROP_JS_CONTEXT) {
-        context = g_value_get_pointer (value);
-        g_object_set_qdata(object, gjs_context_quark(), context);
-        return;
-    }
-
-    context = g_object_get_qdata(object, gjs_context_quark());
-
-    if (property_id == PROP_JS_OBJECT) {
-        js_obj = g_value_get_pointer (value);
-        associate_js_gobject(context, js_obj, object);
-        return;
-    }
-
-    if (property_id != PROP_JS_HANDLED) {
-        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-        return;
-    }
+    gjs_context = gjs_context_get_current();
+    context = gjs_context_get_native_context(gjs_context);
 
     js_obj = peek_js_obj(object);
 
@@ -2402,18 +2360,35 @@ gjs_object_class_init(GObjectClass *class,
     class->set_property = gjs_object_set_gproperty;
     class->get_property = gjs_object_get_gproperty;
 
-    g_object_class_install_property (class, PROP_JS_CONTEXT,
-                                     g_param_spec_pointer ("js-context",
-                                                           "JSContext",
-                                                           "The JSContext this object was created for",
-                                                           G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
-
-    g_object_class_install_property (class, PROP_JS_OBJECT,
-                                     g_param_spec_pointer ("js-object",
-                                                           "JSObject",
-                                                           "The JSObject wrapping this GObject",
-                                                           G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
     gjs_eval_thread = g_thread_self();
+}
+
+static void
+gjs_object_custom_init(GTypeInstance *instance,
+                       gpointer       g_class)
+{
+    GjsContext *gjs_context;
+    JSContext *context;
+    JSObject *object;
+    ObjectInstance *priv;
+
+    object = object_init_list->data;
+    priv = JS_GetPrivate(object);
+
+    if (priv->gtype != G_TYPE_FROM_INSTANCE (instance)) {
+        /* This is not the most derived instance_init function,
+           do nothing.
+         */
+        return;
+    }
+
+    object_init_list = g_slist_delete_link(object_init_list,
+                                           object_init_list);
+
+    gjs_context = gjs_context_get_current();
+    context = gjs_context_get_native_context(gjs_context);
+
+    associate_js_gobject(context, object, G_OBJECT (instance));
 }
 
 static inline void
@@ -2451,7 +2426,7 @@ gjs_register_type(JSContext *cx,
 
 	0,    /* instance_size */
 	0,    /* n_preallocs */
-	(GInstanceInitFunc) NULL,
+	gjs_object_custom_init,
     };
     guint32 i, n_interfaces;
     GType *iface_types;
