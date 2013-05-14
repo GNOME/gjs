@@ -443,10 +443,10 @@ function gjstestRun(window_, setUp, tearDown) {
         if (e.comment != null)
           result += ('"' + e.comment + '"\n');
 
-        result += e.jsUnitMessage;
+        result += e.message;
 
-        if (e.stackTrace)
-          result += '\n\nStack trace follows:\n' + e.stackTrace;
+        if (e.stack)
+          result += '\n\nStack trace follows:\n' + e.stack;
 
         // assertion failure, kind of expected so just log it and flag the
         // whole test as failed
