@@ -80,7 +80,7 @@ static const char *const_strings[] = {
     "imports", "__parentModule__", "__init__", "searchPath",
     "__gjsKeepAlive", "__gjsPrivateNS",
     "gi", "versions", "overrides",
-    "_init", "_new_internal", "new",
+    "_init", "_instance_init", "_new_internal", "new",
     "message", "code", "stack", "fileName", "lineNumber", "name",
     "x", "y", "width", "height",
 };

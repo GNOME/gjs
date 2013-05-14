@@ -2481,6 +2481,7 @@ gjs_object_custom_init(GTypeInstance *instance,
     JSContext *context;
     JSObject *object;
     ObjectInstance *priv;
+    jsval v, r;
 
     object = (JSObject*) object_init_list->data;
     priv = (ObjectInstance*) JS_GetPrivate(object);
@@ -2499,6 +2500,19 @@ gjs_object_custom_init(GTypeInstance *instance,
     context = (JSContext*) gjs_context_get_native_context(gjs_context);
 
     associate_js_gobject(context, object, G_OBJECT (instance));
+
+    if (!gjs_object_get_property_const(context, object,
+                                       GJS_STRING_INSTANCE_INIT, &v)) {
+        gjs_log_exception(context);
+        return;
+    }
+
+    if (!JSVAL_IS_OBJECT(v) || JSVAL_IS_NULL(v))
+        return;
+
+    if (!JS_CallFunctionValue(context, object, v,
+                              0, NULL, &r))
+        gjs_log_exception(context);
 }
 
 static inline void

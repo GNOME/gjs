@@ -153,6 +153,23 @@ const Derived = new Lang.Class({
     }
 });
 
+const MyCustomInit = new Lang.Class({
+    Name: 'MyCustomInit',
+    Extends: GObject.Object,
+
+    _init: function() {
+        this.foo = false;
+
+        this.parent();
+
+        JSUnit.assert(this.foo);
+    },
+
+    _instance_init: function() {
+        this.foo = true;
+    }
+});
+
 function testGObjectClass() {
     let myInstance = new MyObject();
 
@@ -272,6 +289,10 @@ function testDerived() {
     JSUnit.assertTrue(derived instanceof MyObject);
 
     JSUnit.assertEquals('yes', derived.readwrite);
+}
+
+function testInstanceInit() {
+    new MyCustomInit();
 }
 
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
