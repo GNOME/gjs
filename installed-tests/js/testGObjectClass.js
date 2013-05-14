@@ -1,10 +1,6 @@
 // application/javascript;version=1.8 -*- mode: js; indent-tabs-mode: nil -*-
 
-if (!('assertEquals' in this)) { /* allow running this test standalone */
-    imports.lang.copyPublicProperties(imports.jsUnit, this);
-    gjstestRun = function() { return imports.jsUnit.gjstestRun(window); };
-}
-
+const JSUnit = imports.jsUnit;
 const Lang = imports.lang;
 const GObject = imports.gi.GObject;
 const Gio = imports.gi.Gio;
@@ -142,7 +138,7 @@ const MyInitable = new Lang.Class({
     },
 
     vfunc_init: function(cancellable) { // error?
-        assertTrue(cancellable instanceof Gio.Cancellable);
+        JSUnit.assertTrue(cancellable instanceof Gio.Cancellable);
 
         this.inited = true;
     }
@@ -160,15 +156,15 @@ const Derived = new Lang.Class({
 function testGObjectClass() {
     let myInstance = new MyObject();
 
-    assertEquals('foo', myInstance.readwrite);
-    assertEquals('bar', myInstance.readonly);
-    assertEquals('default', myInstance.construct);
+    JSUnit.assertEquals('foo', myInstance.readwrite);
+    JSUnit.assertEquals('bar', myInstance.readonly);
+    JSUnit.assertEquals('default', myInstance.construct);
 
     let myInstance2 = new MyObject({ readwrite: 'baz', construct: 'asdf' });
 
-    assertEquals('baz', myInstance2.readwrite);
-    assertEquals('bar', myInstance2.readonly);
-    assertEquals('asdf', myInstance2.construct);
+    JSUnit.assertEquals('baz', myInstance2.readwrite);
+    JSUnit.assertEquals('bar', myInstance2.readonly);
+    JSUnit.assertEquals('asdf', myInstance2.construct);
 
     // the following would (should) cause a CRITICAL:
     // myInstance.readonly = 'val';
@@ -187,7 +183,7 @@ function testNotify() {
     myInstance.notify_prop();
     myInstance.notify_prop();
 
-    assertEquals(2, counter);
+    JSUnit.assertEquals(2, counter);
 }
 
 function testSignals() {
@@ -199,8 +195,8 @@ function testSignals() {
     });
     myInstance.emit_empty();
 
-    assertEquals(true, ok);
-    assertEquals(true, myInstance.empty_called);
+    JSUnit.assertEquals(true, ok);
+    JSUnit.assertEquals(true, myInstance.empty_called);
 
     let args = [ ];
     myInstance.connect('minimal', function(emitter, one, two) {
@@ -211,8 +207,8 @@ function testSignals() {
     });
     myInstance.emit_minimal(7, 5);
 
-    assertEquals(7, args[0]);
-    assertEquals(5, args[1]);
+    JSUnit.assertEquals(7, args[0]);
+    JSUnit.assertEquals(5, args[1]);
 
     ok = true;
     myInstance.connect('full', function() {
@@ -228,8 +224,8 @@ function testSignals() {
     });
     let result = myInstance.emit_full();
 
-    assertEquals(true, ok);
-    assertEquals(42, result);
+    JSUnit.assertEquals(true, ok);
+    JSUnit.assertEquals(42, result);
 
     let stack = [ ];
     myInstance.connect('run-last', function() {
@@ -239,8 +235,8 @@ function testSignals() {
         stack.push(2);
     });
 
-    assertEquals(1, stack[0]);
-    assertEquals(2, stack[1]);
+    JSUnit.assertEquals(1, stack[0]);
+    JSUnit.assertEquals(2, stack[1]);
 }
 
 function testSubclass() {
@@ -256,26 +252,26 @@ function testSubclass() {
     });
 
     instance.emit_custom(73);
-    assertEquals(73, v);
+    JSUnit.assertEquals(73, v);
 }
 
 function testInterface() {
     let instance = new MyInitable();
-    assertEquals(false, instance.inited);
+    JSUnit.assertEquals(false, instance.inited);
 
     instance.init(new Gio.Cancellable);
-    assertEquals(true, instance.inited);
+    JSUnit.assertEquals(true, instance.inited);
 
-    // assertTrue(instance instanceof Gio.Initable)
+    // JSUnit.assertTrue(instance instanceof Gio.Initable)
 }
 
 function testDerived() {
     let derived = new Derived();
 
-    assertTrue(derived instanceof Derived);
-    assertTrue(derived instanceof MyObject);
+    JSUnit.assertTrue(derived instanceof Derived);
+    JSUnit.assertTrue(derived instanceof MyObject);
 
-    assertEquals('yes', derived.readwrite);
+    JSUnit.assertEquals('yes', derived.readwrite);
 }
 
-gjstestRun();
+JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);

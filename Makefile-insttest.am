@@ -90,11 +90,14 @@ jstests_DATA += \
 	installed-tests/js/testEverythingBasic.js		\
 	installed-tests/js/testEverythingEncapsulated.js	\
 	installed-tests/js/testGIMarshalling.js		\
+	installed-tests/js/testGObjectClass.js		\
 	installed-tests/js/testJS1_8.js			\
 	installed-tests/js/testJSDefault.js		\
 	installed-tests/js/testLang.js			\
 	installed-tests/js/testLocale.js			\
 	installed-tests/js/testMainloop.js			\
+	installed-tests/js/testMetaClass.js			\
+	installed-tests/js/testParamSpec.js			\
 	installed-tests/js/testSignals.js			\
 	installed-tests/js/testSystem.js			\
 	installed-tests/js/testTweener.js			\
