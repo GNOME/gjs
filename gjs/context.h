@@ -66,6 +66,10 @@ gboolean        gjs_context_define_string_array  (GjsContext  *js_context,
                                                   GError       **error);
 
 GList*          gjs_context_get_all              (void);
+
+GjsContext     *gjs_context_get_current          (void);
+void            gjs_context_make_current         (GjsContext *js_context);
+
 void*           gjs_context_get_native_context   (GjsContext *js_context);
 
 void            gjs_context_print_stack_stderr    (GjsContext *js_context);

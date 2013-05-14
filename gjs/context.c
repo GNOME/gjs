@@ -285,6 +285,8 @@ static void
 gjs_context_init(GjsContext *js_context)
 {
     js_context->jsversion_string = g_strdup(_GJS_JS_VERSION_DEFAULT);
+
+    gjs_context_make_current(js_context);
 }
 
 static void
@@ -424,6 +426,9 @@ gjs_context_finalize(GObject *object)
     }
 
     g_free(js_context->jsversion_string);
+
+    if (gjs_context_get_current() == (GjsContext*)object)
+        gjs_context_make_current(NULL);
 
     g_mutex_lock(&contexts_lock);
     all_contexts = g_list_remove(all_contexts, object);
@@ -1107,4 +1112,20 @@ gjs_context_define_string_array(GjsContext  *js_context,
     }
 
     return TRUE;
+}
+
+static GjsContext *current_context;
+
+GjsContext *
+gjs_context_get_current (void)
+{
+    return current_context;
+}
+
+void
+gjs_context_make_current (GjsContext *context)
+{
+    g_assert (context == NULL || current_context == NULL);
+
+    current_context = context;
 }
