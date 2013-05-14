@@ -10,7 +10,7 @@ const Gio = imports.gi.Gio;
 const GObject = imports.gi.GObject;
 
 function testGObjectClass() {
-    let find_property = GObject.ObjectClass.prototype.find_property;
+    let find_property = GObject.Object.find_property;
 
     let p1 = find_property.call(Gio.ThemedIcon, 'name');
 

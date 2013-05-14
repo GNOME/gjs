@@ -1871,6 +1871,7 @@ gjs_object_define_static_methods(JSContext    *context,
                                  GType         gtype,
                                  GIObjectInfo *object_info)
 {
+    GIStructInfo *gtype_struct;
     int i;
     int n_methods;
 
@@ -1897,6 +1898,26 @@ gjs_object_define_static_methods(JSContext    *context,
 
         g_base_info_unref((GIBaseInfo*) meth_info);
     }
+
+    gtype_struct = g_object_info_get_class_struct(object_info);
+
+    if (gtype_struct == NULL)
+        return JS_TRUE;
+
+    n_methods = g_struct_info_get_n_methods(gtype_struct);
+
+    for (i = 0; i < n_methods; i++) {
+        GIFunctionInfo *meth_info;
+
+        meth_info = g_struct_info_get_method(gtype_struct, i);
+
+        gjs_define_function(context, constructor, gtype,
+                            (GICallableInfo*)meth_info);
+
+        g_base_info_unref((GIBaseInfo*) meth_info);
+    }
+
+    g_base_info_unref((GIBaseInfo*) gtype_struct);
     return JS_TRUE;
 }
 

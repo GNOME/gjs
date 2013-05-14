@@ -67,6 +67,7 @@ ns_new_resolve(JSContext *context,
     GIRepository *repo;
     GIBaseInfo *info;
     JSBool ret = JS_FALSE;
+    gboolean defined;
 
     if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
@@ -104,9 +105,10 @@ ns_new_resolve(JSContext *context,
               g_base_info_get_name(info),
               g_base_info_get_namespace(info));
 
-    if (gjs_define_info(context, obj, info)) {
+    if (gjs_define_info(context, obj, info, &defined)) {
         g_base_info_unref(info);
-        objp.set(obj); /* we defined the property in this object */
+        if (defined)
+            objp.set(obj); /* we defined the property in this object */
         ret = JS_TRUE;
     } else {
         gjs_debug(GJS_DEBUG_GNAMESPACE,

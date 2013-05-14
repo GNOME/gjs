@@ -49,7 +49,8 @@ JSObject *  gjs_lookup_generic_prototype        (JSContext      *context,
                                                  GIBaseInfo     *info);
 JSBool      gjs_define_info                     (JSContext      *context,
                                                  JSObject       *in_object,
-                                                 GIBaseInfo     *info);
+                                                 GIBaseInfo     *info,
+                                                 gboolean       *defined);
 char*       gjs_camel_from_hyphen               (const char     *hyphen_name);
 char*       gjs_hyphen_from_camel               (const char     *camel_name);
 

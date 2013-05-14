@@ -453,11 +453,15 @@ _gjs_log_info_usage(GIBaseInfo *info)
 JSBool
 gjs_define_info(JSContext  *context,
                 JSObject   *in_object,
-                GIBaseInfo *info)
+                GIBaseInfo *info,
+                gboolean   *defined)
 {
 #if GJS_VERBOSE_ENABLE_GI_USAGE
     _gjs_log_info_usage(info);
 #endif
+
+    *defined = TRUE;
+
     switch (g_base_info_get_type(info)) {
     case GI_INFO_TYPE_FUNCTION:
         {
@@ -492,6 +496,16 @@ gjs_define_info(JSContext  *context,
         }
         break;
     case GI_INFO_TYPE_STRUCT:
+        /* We don't want GType structures in the namespace,
+           we expose their fields as vfuncs and their methods
+           as static methods
+        */
+        if (g_struct_info_is_gtype_struct((GIStructInfo*) info)) {
+            *defined = FALSE;
+            break;
+        }
+        /* Fall through */
+
     case GI_INFO_TYPE_BOXED:
         gjs_define_boxed_class(context, in_object, (GIBoxedInfo*) info);
         break;
