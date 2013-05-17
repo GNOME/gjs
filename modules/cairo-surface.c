@@ -24,6 +24,7 @@
 
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
+#include <gi/foreign.h>
 #include <cairo.h>
 #include "cairo-private.h"
 
@@ -243,3 +244,61 @@ gjs_cairo_surface_get_surface(JSContext *context,
     return priv->surface;
 }
 
+static JSBool
+surface_to_g_argument(JSContext      *context,
+                      jsval           value,
+                      const char     *arg_name,
+                      GjsArgumentType argument_type,
+                      GITransfer      transfer,
+                      gboolean        may_be_null,
+                      GArgument      *arg)
+{
+    JSObject *obj;
+    cairo_surface_t *s;
+
+    obj = JSVAL_TO_OBJECT(value);
+    s = gjs_cairo_surface_get_surface(context, obj);
+    if (!s)
+        return JS_FALSE;
+    if (transfer == GI_TRANSFER_EVERYTHING)
+        cairo_surface_destroy(s);
+
+    arg->v_pointer = s;
+    return JS_TRUE;
+}
+
+static JSBool
+surface_from_g_argument(JSContext  *context,
+                        jsval      *value_p,
+                        GArgument  *arg)
+{
+    JSObject *obj;
+
+    obj = gjs_cairo_surface_from_surface(context, (cairo_surface_t*)arg->v_pointer);
+    if (!obj)
+        return JS_FALSE;
+
+    *value_p = OBJECT_TO_JSVAL(obj);
+    return JS_TRUE;
+}
+
+static JSBool
+surface_release_argument(JSContext  *context,
+                         GITransfer  transfer,
+                         GArgument  *arg)
+{
+    cairo_surface_destroy((cairo_surface_t*)arg->v_pointer);
+    return JS_TRUE;
+}
+
+static GjsForeignInfo foreign_info = {
+    surface_to_g_argument,
+    surface_from_g_argument,
+    surface_release_argument
+};
+
+void
+gjs_cairo_surface_init(JSContext *context)
+{
+    gjs_struct_foreign_register("cairo", "Surface", &foreign_info);
+}

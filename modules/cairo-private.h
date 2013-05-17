@@ -39,6 +39,7 @@ cairo_t *        gjs_cairo_context_get_context          (JSContext       *contex
 JSObject *       gjs_cairo_context_from_context         (JSContext       *context,
                                                          cairo_t         *cr);
 void             gjs_cairo_context_init                 (JSContext       *context);
+void             gjs_cairo_surface_init                 (JSContext       *context);
 
 
 /* cairo_path_t */

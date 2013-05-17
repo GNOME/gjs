@@ -55,6 +55,7 @@ gjs_js_define_cairo_stuff(JSContext *context,
     if (JSVAL_IS_NULL(obj))
         return JS_FALSE;
     gjs_cairo_context_init(context);
+    gjs_cairo_surface_init(context);
 
     obj = gjs_cairo_surface_create_proto(context, module,
                                          "Surface", NULL);
