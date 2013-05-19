@@ -773,6 +773,8 @@ type_can_be_allocated_directly(GITypeInfo *type_info)
             is_simple = type_can_be_allocated_directly(param_info);
 
             g_base_info_unref((GIBaseInfo*)param_info);
+        } else if (g_type_info_get_tag(type_info) == GI_TYPE_TAG_VOID) {
+            return true;
         } else {
             is_simple = false;
         }

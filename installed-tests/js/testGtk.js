@@ -215,4 +215,10 @@ describe('Gtk overrides', function () {
         s.child_set_property(p, 'name', null);
         expect(s.get_child_by_name('foo')).toBeNull();
     });
+
+    it('can create a Gtk.TreeIter with accessible stamp field', function () {
+        const iter = new Gtk.TreeIter();
+        iter.stamp = 42;
+        expect(iter.stamp).toEqual(42);
+    });
 });
