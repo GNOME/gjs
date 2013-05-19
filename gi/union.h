@@ -30,7 +30,7 @@
 
 G_BEGIN_DECLS
 
-void      gjs_define_union_class       (JSContext    *context,
+JSBool    gjs_define_union_class       (JSContext    *context,
                                         JSObject     *in_object,
                                         GIUnionInfo  *info);
 void*     gjs_c_union_from_union       (JSContext    *context,

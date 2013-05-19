@@ -333,7 +333,7 @@ static JSFunctionSpec gjs_union_proto_funcs[] = {
     { NULL }
 };
 
-void
+JSBool
 gjs_define_union_class(JSContext    *context,
                        JSObject     *in_object,
                        GIUnionInfo  *info)
@@ -393,6 +393,8 @@ gjs_define_union_class(JSContext    *context,
     value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
+
+    return JS_TRUE;
 }
 
 JSObject*

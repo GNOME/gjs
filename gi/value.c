@@ -84,6 +84,9 @@ closure_marshal(GClosure        *closure,
 
         gjs_set_values(context, argv, argc, JSVAL_VOID);
         gjs_root_value_locations(context, argv, argc);
+    } else {
+        /* squash a compiler warning */
+        argv = NULL;
     }
     JS_AddValueRoot(context, &rval);
 

@@ -486,7 +486,8 @@ gjs_define_info(JSContext  *context,
         gjs_define_boxed_class(context, in_object, (GIBoxedInfo*) info);
         break;
     case GI_INFO_TYPE_UNION:
-        gjs_define_union_class(context, in_object, (GIUnionInfo*) info);
+        if (!gjs_define_union_class(context, in_object, (GIUnionInfo*) info))
+            return JS_FALSE;
         break;
     case GI_INFO_TYPE_ENUM:
         if (g_enum_info_get_error_domain((GIEnumInfo*) info)) {
