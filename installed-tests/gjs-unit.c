@@ -111,8 +111,13 @@ main(int argc, char **argv)
     setlocale(LC_ALL, "");
     g_test_init(&argc, &argv, NULL);
 
-    g_irepository_prepend_search_path(PKGLIBDIR);
-    js_test_dir = g_build_filename(PKGLIBDIR, "js", NULL);
+    if (g_getenv ("GJS_USE_UNINSTALLED_FILES") != NULL) {
+        /* typelib path is handled by the environment */
+        js_test_dir = g_build_filename("installed-tests", "js", NULL);
+    } else {
+        g_irepository_prepend_search_path(PKGLIBDIR);
+        js_test_dir = g_build_filename(PKGLIBDIR, "js", NULL);
+    }
 
     all_tests = read_all_dir_sorted(js_test_dir);
     for (iter = all_tests; iter; iter = iter->next) {

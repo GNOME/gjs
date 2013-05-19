@@ -1,4 +1,3 @@
-
 installedtestmetadir = $(datadir)/installed-tests/gjs
 installedtestmeta_DATA = 
 if BUILDOPT_INSTALL_TESTS
@@ -14,6 +13,8 @@ if BUILDOPT_INSTALL_TESTS
 gjsalltests_PROGRAMS += jsunit
 endif
 
+TEST_PROGS += jsunit
+
 jsunit_CPPFLAGS = $(AM_CPPFLAGS) -DPKGLIBDIR=\"$(pkglibdir)\"
 jsunit_CFLAGS = $(AM_CFLAGS) $(GJS_CFLAGS) -I$(top_srcdir)
 jsunit_LDADD = $(GJS_LIBS) libgjs.la
@@ -22,8 +23,11 @@ jsunit_SOURCES = installed-tests/gjs-unit.c
 
 privlibdir = $(pkglibdir)
 privlib_LTLIBRARIES =
+check_LTLIBRARIES =
 if BUILDOPT_INSTALL_TESTS
 privlib_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
+else
+check_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
 endif
 
 nodist_libregress_la_SOURCES = $(GI_DATADIR)/tests/regress.c $(GI_DATADIR)/tests/regress.h
@@ -49,18 +53,14 @@ Regress-1.0.gir: libregress.la
 Regress_1_0_gir_LIBS = libregress.la
 Regress_1_0_gir_FILES = $(nodist_libregress_la_SOURCES)
 Regress_1_0_gir_SCANNERFLAGS = --warn-all --warn-error $(libregress_scannerflags_includes) $(libregress_la_CPPFLAGS)
-if BUILDOPT_INSTALL_TESTS
 INTROSPECTION_GIRS += Regress-1.0.gir
-endif
 
 WarnLib-1.0.gir: libwarnlib.la
 WarnLib_1_0_gir_LIBS = libwarnlib.la
 WarnLib_1_0_gir_INCLUDES = Gio-2.0
 WarnLib_1_0_gir_FILES = $(nodist_libwarnlib_la_SOURCES)
 WarnLib_1_0_gir_SCANNERFLAGS = --c-include="warnlib.h" --symbol-prefix=warnlib_
-if BUILDOPT_INSTALL_TESTS
 INTROSPECTION_GIRS += WarnLib-1.0.gir
-endif
 
 GIMarshallingTests-1.0.gir: libgimarshallingtests.la
 GIMarshallingTests_1_0_gir_LIBS = libgimarshallingtests.la
@@ -70,9 +70,12 @@ GIMarshallingTests_1_0_gir_SCANNERFLAGS = --symbol-prefix=gi_marshalling_tests -
 INTROSPECTION_GIRS += GIMarshallingTests-1.0.gir
 
 privtypelibdir = $(pkglibdir)
-privtypelib_DATA = 
+privtypelib_DATA =
+noinst_DATA =
 if BUILDOPT_INSTALL_TESTS
 privtypelib_DATA += $(INTROSPECTION_GIRS:.gir=.typelib)
+else
+noinst_DATA += $(INTROSPECTION_GIRS:.gir=.typelib)
 endif
 
 jstestsdir = $(pkglibdir)/js

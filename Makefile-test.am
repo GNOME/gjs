@@ -22,15 +22,6 @@ gjs_tests_SOURCES =		\
 
 check-local: gjs-tests
 	@test -z "${TEST_PROGS}" || ${GTESTER} --verbose ${TEST_PROGS} ${TEST_PROGS_OPTIONS}
-	@echo ""
-	@echo "NOTICE"
-	@echo ""
-	@echo "This module contains installed tests.  See"
-	@echo "https://live.gnome.org/GnomeGoals/InstalledTests"
-	@echo "for more information about running them."
-	@echo ""
-	@echo "NOTICE"
-	@echo ""
 
 TESTS_ENVIRONMENT =							\
 	TOP_SRCDIR=$(top_srcdir)					\
@@ -39,6 +30,7 @@ TESTS_ENVIRONMENT =							\
 	GJS_DEBUG_OUTPUT=test_user_data/logs/gjs.log			\
 	BUILDDIR=.							\
 	GJS_USE_UNINSTALLED_FILES=1					\
+	GJS_PATH=$(top_srcdir)/modules/					\
 	GJS_TEST_TIMEOUT=420						\
 	GI_TYPELIB_PATH=$(builddir)					\
 	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)"	\
