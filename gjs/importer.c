@@ -38,7 +38,7 @@
 static char **gjs_search_path = NULL;
 
 typedef struct {
-    void *dummy;
+    gboolean is_root;
 } Importer;
 
 typedef struct {
@@ -538,7 +538,8 @@ do_import(JSContext  *context,
     directories = NULL;
 
     /* First try importing an internal module like byteArray */
-    if (gjs_is_registered_native_module(context, obj, name) &&
+    if (priv->is_root &&
+        gjs_is_registered_native_module(context, obj, name) &&
         import_native_file(context, obj, name)) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "successfully imported module '%s'", name);
@@ -1013,7 +1014,8 @@ static JSFunctionSpec gjs_importer_proto_funcs[] = {
 };
 
 static JSObject*
-importer_new(JSContext    *context)
+importer_new(JSContext *context,
+             gboolean   is_root)
 {
     JSObject *importer;
     Importer *priv;
@@ -1061,6 +1063,7 @@ importer_new(JSContext    *context)
         g_error("No memory to create importer importer");
 
     priv = g_slice_new0(Importer);
+    priv->is_root = is_root;
 
     GJS_INC_COUNTER(importer);
 
@@ -1129,6 +1132,7 @@ gjs_create_importer(JSContext    *context,
                     const char   *importer_name,
                     const char  **initial_search_path,
                     gboolean      add_standard_search_path,
+                    gboolean      is_root,
                     JSObject     *in_object)
 {
     JSObject *importer;
@@ -1143,7 +1147,7 @@ gjs_create_importer(JSContext    *context,
 
     search_path = gjs_g_strv_concat(paths, 2);
 
-    importer = importer_new(context);
+    importer = importer_new(context, is_root);
 
     /* API users can replace this property from JS, is the idea */
     if (!gjs_define_string_array(context, importer,
@@ -1170,7 +1174,7 @@ gjs_define_importer(JSContext    *context,
 {
     JSObject *importer;
 
-    importer = gjs_create_importer(context, importer_name, initial_search_path, add_standard_search_path, in_object);
+    importer = gjs_create_importer(context, importer_name, initial_search_path, add_standard_search_path, FALSE, in_object);
 
     if (!JS_DefineProperty(context, in_object,
                            importer_name, OBJECT_TO_JSVAL(importer),
@@ -1209,7 +1213,8 @@ gjs_create_root_importer(JSContext   *context,
 
     importer = OBJECT_TO_JSVAL(gjs_create_importer(context, "imports",
                                                    initial_search_path,
-                                                   add_standard_search_path, NULL));
+                                                   add_standard_search_path,
+                                                   TRUE, NULL));
     gjs_set_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS, importer);
 
     JS_EndRequest(context);
