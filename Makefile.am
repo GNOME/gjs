@@ -8,7 +8,6 @@ lib_LTLIBRARIES =
 noinst_HEADERS =
 noinst_LTLIBRARIES =
 dist_gjsjs_DATA =
-gjsnative_LTLIBRARIES =
 BUILT_SOURCES =
 CLEANFILES =
 EXTRA_DIST =
@@ -22,7 +21,6 @@ AM_CFLAGS = $(WARN_CFLAGS) -DG_LOG_DOMAIN=\"Gjs\"
 gjsjsdir = @gjsjsdir@
 gjsoverridedir = $(gjsjsdir)/overrides
 gjstweenerdir = $(gjsjsdir)/tweener
-gjsnativedir = @gjsnativedir@
 
 gjs_public_includedir = $(includedir)/gjs-1.0
 gjs_module_includedir = $(includedir)/gjs-1.0
@@ -81,7 +79,6 @@ EXTRA_DIST += 			\
 gjs_directory_defines = 				\
 	-DGJS_TOP_SRCDIR=\"$(top_srcdir)\"		\
 	-DGJS_JS_DIR=\"$(gjsjsdir)\"			\
-	-DGJS_NATIVE_DIR=\"$(gjsnativedir)\"		\
 	-DPKGLIBDIR=\"$(pkglibdir)\"
 
 ########################################################################

@@ -230,9 +230,7 @@ fi
 AC_SUBST(EXTRA_LINK_FLAGS)
 
 gjsjsdir="\${datadir}/gjs-1.0"
-gjsnativedir="\${libdir}/gjs-1.0"
 AC_SUBST([gjsjsdir])
-AC_SUBST([gjsnativedir])
 
 dnl automake 1.11/1.12 defines this but does not substitute it
 AC_SUBST([pkglibexecdir], ["${libexecdir}/${PACKAGE}"])

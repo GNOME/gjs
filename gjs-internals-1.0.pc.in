@@ -7,7 +7,6 @@ datarootdir=@datarootdir@
 datadir=@datadir@
 
 jsdir=@gjsjsdir@
-jsnativedir=@gjsnativedir@
 
 Cflags: -I${includedir}/gjs-1.0
 Requires: gjs-1.0 gobject-introspection-1.0 mozjs-17.0
