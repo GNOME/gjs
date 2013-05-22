@@ -14,7 +14,7 @@ function cat(filename) {
         }
         print(contents);
         Mainloop.quit('');
-    }, null);
+    });
 
     Mainloop.run('');
 }
