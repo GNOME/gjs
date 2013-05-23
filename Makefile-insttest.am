@@ -1,3 +1,6 @@
+EXTRA_DIST += \
+	installed-tests/jsunit.test.in
+
 installedtestmetadir = $(datadir)/installed-tests/gjs
 installedtestmeta_DATA = 
 if BUILDOPT_INSTALL_TESTS
@@ -71,19 +74,19 @@ GIMarshallingTests_1_0_gir_FILES = $(nodist_libgimarshallingtests_la_SOURCES)
 GIMarshallingTests_1_0_gir_SCANNERFLAGS = --symbol-prefix=gi_marshalling_tests --warn-all --warn-error
 TEST_INTROSPECTION_GIRS += GIMarshallingTests-1.0.gir
 
+$(foreach gir,$(TEST_INTROSPECTION_GIRS),$(eval $(call introspection-scanner,$(gir))))
 gjsinsttest_DATA =
 noinst_DATA =
 if BUILDOPT_INSTALL_TESTS
-$(foreach gir,$(TEST_INTROSPECTION_GIRS),$(eval $(call introspection-scanner,$(gir))))
 gjsinsttest_DATA += $(TEST_INTROSPECTION_GIRS:.gir=.typelib)
 else
 noinst_DATA += $(TEST_INTROSPECTION_GIRS:.gir=.typelib)
 endif
 
 jstestsdir = $(gjsinsttestdir)/js
-jstests_DATA =
+dist_jstests_DATA =
 if BUILDOPT_INSTALL_TESTS
-jstests_DATA += \
+dist_jstests_DATA += \
 	installed-tests/js/test0010basic.js		\
 	installed-tests/js/test0020importer.js		\
 	installed-tests/js/test0030basicBoxed.js		\
@@ -109,6 +112,6 @@ jstests_DATA += \
 	installed-tests/js/testUnicode.js
 
 if ENABLE_CAIRO
-jstests_DATA += installed-tests/js/testCairo.js
+dist_jstests_DATA += installed-tests/js/testCairo.js
 endif
 endif

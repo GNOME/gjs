@@ -234,6 +234,9 @@ gjsnativedir="\${libdir}/gjs-1.0"
 AC_SUBST([gjsjsdir])
 AC_SUBST([gjsnativedir])
 
+dnl automake 1.11/1.12 defines this but does not substitute it
+AC_SUBST([pkglibexecdir], ["${libexecdir}/${PACKAGE}"])
+
 AC_CONFIG_FILES([Makefile gjs-1.0.pc gjs-internals-1.0.pc])
 AC_OUTPUT
 

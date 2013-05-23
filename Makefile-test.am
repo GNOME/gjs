@@ -1,3 +1,7 @@
+EXTRA_DIST += \
+	test/run-with-dbus \
+	test/test-bus.conf
+
 RUN_WITH_DBUS = ${top_srcdir}/test/run-with-dbus --session --system
 GTESTER = ${TESTS_ENVIRONMENT} ${RUN_WITH_DBUS} gtester
 
