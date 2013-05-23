@@ -115,8 +115,8 @@ main(int argc, char **argv)
         /* typelib path is handled by the environment */
         js_test_dir = g_build_filename("installed-tests", "js", NULL);
     } else {
-        g_irepository_prepend_search_path(PKGLIBDIR);
-        js_test_dir = g_build_filename(PKGLIBDIR, "js", NULL);
+        g_irepository_prepend_search_path(INSTTESTDIR);
+        js_test_dir = g_build_filename(INSTTESTDIR, "js", NULL);
     }
 
     all_tests = read_all_dir_sorted(js_test_dir);
