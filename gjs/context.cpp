@@ -76,7 +76,7 @@ static const char *const_strings[] = {
     "__gjsKeepAlive", "__gjsPrivateNS",
     "gi", "versions", "overrides",
     "_init", "_new_internal", "new",
-    "message", "code", "stack", "fileName", "lineNumber"
+    "message", "code", "stack", "fileName", "lineNumber", "name",
 };
 
 G_STATIC_ASSERT(G_N_ELEMENTS(const_strings) == GJS_STRING_LAST);
@@ -603,6 +603,17 @@ gjs_context_eval(GjsContext   *js_context,
                     GJS_ERROR,
                     GJS_ERROR_FAILED,
                     "JS_EvaluateScript() failed");
+        goto out;
+    }
+
+    gjs_debug(GJS_DEBUG_CONTEXT,
+              "Script evaluation succeeded");
+
+    if (gjs_log_exception(js_context->context)) {
+        g_set_error(error,
+                    GJS_ERROR,
+                    GJS_ERROR_FAILED,
+                    "Exception was set even though JS_EvaluateScript() returned true - did you gjs_throw() but not return false somewhere perhaps?");
         goto out;
     }
 
