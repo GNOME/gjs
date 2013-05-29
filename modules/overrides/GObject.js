@@ -28,22 +28,12 @@ const GObjectMeta = new Lang.Class({
     Name: 'GObjectClass',
     Extends: Lang.Class,
 
-    _init: function(params) {
-        // retrieve all parameters and remove them from params before chaining
-
-        let properties = params.Properties;
-        let signals = params.Signals;
-
-        delete params.Properties;
+    _init: function (params) {
+        // retrieve signals and remove them from params before chaining
+	let signals = params.Signals;
         delete params.Signals;
 
         this.parent(params);
-
-        if (properties) {
-            for (let prop in properties) {
-                Gi.register_property(this.prototype, properties[prop]);
-            }
-        }
 
         if (signals) {
             for (let signalName in signals) {
@@ -54,7 +44,7 @@ const GObjectMeta = new Lang.Class({
                 let paramtypes = (obj.param_types !== undefined) ? obj.param_types : [];
 
                 try {
-                    obj.signal_id = Gi.signal_new(this.prototype, signalName, flags, accumulator, rtype, paramtypes);
+                    obj.signal_id = Gi.signal_new(this.$gtype, signalName, flags, accumulator, rtype, paramtypes);
                 } catch(e) {
                     throw new TypeError('Invalid signal ' + signalName + ': ' + e.message);
                 }
@@ -115,9 +105,17 @@ const GObjectMeta = new Lang.Class({
             throw new TypeError('GObject.Class used with invalid base class (is ' + parent + ')');
 
         let interfaces = params.Implements || [];
+        let properties = params.Properties;
         delete params.Implements;
+        delete params.Properties;
 
-        let newClass = Gi.register_type(parent.prototype, gtypename, interfaces);
+	let propertiesArray = [];
+        if (properties) {
+            for (let prop in properties) {
+		propertiesArray.push(properties[prop]);
+            }
+        }
+        let newClass = Gi.register_type(parent.prototype, gtypename, interfaces, propertiesArray);
 
         // See Class.prototype._construct in lang.js for the reasoning
         // behind this direct __proto__ set.

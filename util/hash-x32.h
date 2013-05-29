@@ -1,7 +1,6 @@
 /* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
- * Copyright (c) 2008  litl, LLC
- * Copyright (c) 2012  Red Hat, Inc.
+ * Copyright (c) 2013 Red Hat, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,31 +20,23 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-
-#ifndef __GJS_GTYPE_H__
-#define __GJS_GTYPE_H__
+#ifndef __GJS_UTIL_HASH_X32_H__
+#define __GJS_UTIL_HASH_X32_H__
 
 #include <glib.h>
-#include <girepository.h>
-#include "gjs/jsapi-util.h"
 
 G_BEGIN_DECLS
 
-jsval      gjs_gtype_create_proto         (JSContext       *context,
-                                           JSObject        *module,
-                                           const char      *proto_name,
-                                           JSObject        *parent);
+/* Hash table that operates on gsize; on every architecture except x32,
+ * sizeof(gsize) == sizeof(gpointer), and so we can just use it as a
+ * hash key directly.  But on x32, we have to fall back to malloc().
+ */
 
-JSObject * gjs_gtype_create_gtype_wrapper (JSContext *context,
-                                           GType      gtype);
-
-GType      gjs_gtype_get_actual_gtype (JSContext *context,
-                                       JSObject  *object);
-
-JSBool    gjs_typecheck_gtype         (JSContext             *context,
-                                       JSObject              *obj,
-                                       JSBool                 throw);
+GHashTable *gjs_hash_table_new_for_gsize (GDestroyNotify value_destroy);
+void gjs_hash_table_for_gsize_insert (GHashTable *table, gsize key, gpointer value);
+void gjs_hash_table_for_gsize_remove (GHashTable *table, gsize key);
+gpointer gjs_hash_table_for_gsize_lookup (GHashTable *table, gsize key);
 
 G_END_DECLS
 
-#endif  /* __GJS_INTERFACE_H__ */
+#endif

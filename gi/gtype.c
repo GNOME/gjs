@@ -192,3 +192,11 @@ gjs_gtype_get_actual_gtype (JSContext *context,
 
     return _gjs_gtype_get_actual_gtype(context, object, 2);
 }
+
+JSBool
+gjs_typecheck_gtype (JSContext             *context,
+                     JSObject              *obj,
+                     JSBool                 throw)
+{
+    return do_base_typecheck(context, obj, throw);
+}

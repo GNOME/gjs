@@ -62,6 +62,7 @@ noinst_HEADERS +=		\
 	gjs/profiler.h		\
 	gi/proxyutils.h		\
 	util/crash.h		\
+	util/hash-x32.h		\
 	util/error.h		\
 	util/glib.h		\
 	util/log.h		\
@@ -121,6 +122,7 @@ libgjs_la_SOURCES =		\
 	modules/modules.c	\
 	modules/modules.h	\
 	util/error.c		\
+	util/hash-x32.c		\
 	util/glib.c		\
 	util/crash.c		\
 	util/log.c		\
