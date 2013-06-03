@@ -691,12 +691,11 @@ object_instance_props_to_g_parameters(JSContext   *context,
         goto free_array_and_fail;
 
     while (!JSID_IS_VOID(prop_id)) {
-        char *name;
+        char *name = NULL;
         jsval value;
         GParameter gparam = { NULL, { 0, }};
 
         if (!gjs_object_require_property(context, props, "property list", prop_id, &value)) {
-            g_free(name);
             goto free_array_and_fail;
         }
 
