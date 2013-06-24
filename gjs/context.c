@@ -591,12 +591,10 @@ gjs_context_constructor (GType                  type,
      */
     options_flags = JSOPTION_DONT_REPORT_UNCAUGHT | JSOPTION_STRICT | JSOPTION_ALLOW_XML;
 
-#ifdef JSOPTION_JIT
     if (!g_getenv("GJS_DISABLE_JIT")) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
-        options_flags |= JSOPTION_JIT;
+        options_flags |= JSOPTION_METHODJIT;
     }
-#endif
 
     JS_SetOptions(js_context->context,
                   JS_GetOptions(js_context->context) | options_flags);
