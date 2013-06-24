@@ -248,7 +248,10 @@ gjs_intern_string_to_id (JSContext  *context,
                          const char *string)
 {
     JSString *str;
-
+    jsid id;
+    JS_BeginRequest(context);
     str = JS_InternString(context, string);
-    return INTERNED_STRING_TO_JSID(context, str);
+    id = INTERNED_STRING_TO_JSID(context, str);
+    JS_EndRequest(context);
+    return id;
 }
