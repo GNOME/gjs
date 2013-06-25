@@ -513,6 +513,8 @@ gjs_log_exception_full(JSContext *context,
     g_free(utf8_message);
     g_free(utf8_stack);
 
+    JS_EndRequest(context);
+
     return JS_TRUE;
 }
 
