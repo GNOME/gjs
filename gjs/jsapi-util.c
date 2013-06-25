@@ -69,32 +69,11 @@ gjs_get_import_global(JSContext *context)
     return JS_GetGlobalObject(context);
 }
 
-static void
-global_finalize(JSFreeOp *fop, JSObject *global)
-{
-    g_free(JS_GetPrivate(global));
-    JS_SetPrivate(global, NULL);
-}
-
-static void
-global_trace(JSTracer *trc, JSObject *global)
-{
-    jsval *slots;
-    int i;
-
-    slots = JS_GetPrivate(global);
-
-    for (i = 0; i < GJS_GLOBAL_SLOT_LAST; i++) {
-        if (!JSVAL_IS_VOID(slots[i]))
-            JS_CALL_VALUE_TRACER(trc, slots[i], "global slot");
-    }
-}
-
 static JSClass global_class = {
-    "GjsGlobal", JSCLASS_GLOBAL_FLAGS,
+    "GjsGlobal", JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST),
     JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
-    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, global_finalize,
-    NULL /* checkAccess */, NULL /* call */, NULL /* hasInstance */, NULL /* construct */, global_trace,
+    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, NULL,
+    NULL /* checkAccess */, NULL /* call */, NULL /* hasInstance */, NULL /* construct */, NULL,
     { NULL }
 };
 
@@ -111,8 +90,6 @@ gboolean
 gjs_init_context_standard (JSContext       *context)
 {
     JSObject *global;
-    jsval *slots;
-    int i;
 
     global = JS_NewGlobalObject(context, &global_class, NULL);
     if (global == NULL)
@@ -120,11 +97,6 @@ gjs_init_context_standard (JSContext       *context)
     if (!JS_InitStandardClasses(context, global))
         return FALSE;
 
-    slots = g_new(jsval, GJS_GLOBAL_SLOT_LAST);
-    for (i = 0; i < GJS_GLOBAL_SLOT_LAST; i++)
-        slots[i] = JSVAL_VOID;
-
-    JS_SetPrivate(global, slots);
     return TRUE;
 }
 
@@ -134,11 +106,8 @@ gjs_set_global_slot (JSContext     *context,
                      jsval          value)
 {
     JSObject *global;
-    jsval *slots;
-
     global = JS_GetGlobalObject(context);
-    slots = JS_GetPrivate(global);
-    slots[slot] = value;
+    JS_SetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot, value);
 }
 
 jsval
@@ -146,11 +115,8 @@ gjs_get_global_slot (JSContext     *context,
                      GjsGlobalSlot  slot)
 {
     JSObject *global;
-    jsval *slots;
-
     global = JS_GetGlobalObject(context);
-    slots = JS_GetPrivate(global);
-    return slots[slot];
+    return JS_GetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot);
 }
 
 /* Returns whether the object had the property; if the object did
