@@ -160,12 +160,13 @@ gjs_log_error(JSContext *context,
     JSExceptionState *exc_state;
     JSString *jstr;
 
-    JS_BeginRequest(context);
-
     if ((argc != 1 && argc != 2) ||
         !JSVAL_IS_OBJECT (argv[0])) {
         gjs_throw(context, "Must pass an exception and optionally a message to logError()");
+        return JS_FALSE;
     }
+
+    JS_BeginRequest(context);
 
     if (argc == 2) {
         /* JS_ValueToString might throw, in which we will only
