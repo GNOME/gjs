@@ -179,7 +179,7 @@ JSObject*
 gjs_keep_alive_new(JSContext *context)
 {
     KeepAlive *priv;
-    JSObject *keep_alive;
+    JSObject *keep_alive = NULL;
     JSObject *global;
     JSBool found;
 
@@ -198,7 +198,8 @@ gjs_keep_alive_new(JSContext *context)
     g_assert(global != NULL);
 
     if (!JS_HasProperty(context, global, gjs_keep_alive_class.name, &found))
-        return JS_FALSE;
+        goto out;
+
     if (!found) {
         JSObject *prototype;
 
@@ -254,6 +255,7 @@ gjs_keep_alive_new(JSContext *context)
     gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE,
                         "keep_alive constructor, obj %p priv %p", keep_alive, priv);
 
+ out:
     JS_EndRequest(context);
 
     return keep_alive;
