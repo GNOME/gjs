@@ -1629,9 +1629,7 @@ gjs_define_function(JSContext      *context,
     function = function_new(context, gtype, info);
     if (function == NULL) {
         gjs_move_exception(context, context);
-
-        JS_EndRequest(context);
-        return NULL;
+        goto out;
     }
 
     if (info_type == GI_INFO_TYPE_FUNCTION) {
@@ -1649,14 +1647,13 @@ gjs_define_function(JSContext      *context,
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS)) {
         gjs_debug(GJS_DEBUG_GFUNCTION, "Failed to define function");
-
-        JS_EndRequest(context);
-        return NULL;
+        function = NULL;
     }
 
     if (free_name)
         g_free(name);
 
+ out:
     JS_EndRequest(context);
     return function;
 }
