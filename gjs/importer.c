@@ -31,6 +31,8 @@
 #include <gjs/compat.h>
 #include <gjs/runtime.h>
 
+#include <gio/gio.h>
+
 #include <string.h>
 
 #define MODULE_INIT_FILENAME "__init__.js"
@@ -265,30 +267,37 @@ import_native_file(JSContext  *context,
 static JSBool
 import_file(JSContext  *context,
             const char *name,
-            const char *full_path,
+            GFile      *file,
             JSObject  **module_out)
 {
     JSBool ret = JS_FALSE;
     JSObject *module_obj;
     char *script = NULL;
+    char *full_path = NULL;
     gsize script_len = 0;
     jsval script_retval;
     GError *error = NULL;
 
     module_obj = JS_NewObject(context, NULL, NULL, NULL);
     if (module_obj == NULL)
-        return JS_FALSE;
+        goto out;
 
-    if (!(g_file_get_contents(full_path, &script, &script_len, &error))) {
-        if (!g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_ISDIR) &&
-            !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOTDIR) &&
-            !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+    if (!(g_file_load_contents(file, NULL, &script, &script_len, NULL, &error))) {
+        if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_IS_DIRECTORY) &&
+            !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_DIRECTORY) &&
+            !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
             gjs_throw_g_error(context, error);
         else
             g_error_free(error);
 
         goto out;
     }
+
+    g_assert(script != NULL);
+
+    gjs_debug(GJS_DEBUG_IMPORTER, "Importing %s", full_path);
+
+    full_path = g_file_get_parse_name (file);
 
     if (!JS_EvaluateScript(context,
                            module_obj,
@@ -319,6 +328,7 @@ import_file(JSContext  *context,
 
  out:
     g_free(script);
+    g_free(full_path);
     *module_out = module_obj;
     return ret;
 }
@@ -331,6 +341,7 @@ load_module_init(JSContext  *context,
     JSObject *module_obj;
     JSBool found;
     jsid module_init_name;
+    GFile *file;
 
     /* First we check if js module has already been loaded  */
     module_init_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
@@ -346,15 +357,18 @@ load_module_init(JSContext  *context,
         }
     }
 
-    if (!import_file (context, "__init__", full_path, &module_obj))
-        return NULL;
+    file = g_file_new_for_commandline_arg(full_path);
+    if (!import_file (context, "__init__", file, &module_obj))
+        goto out;
 
     if (!JS_DefinePropertyById(context, in_object,
                                module_init_name, OBJECT_TO_JSVAL(module_obj),
                                NULL, NULL,
                                GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT))
-        return NULL;
+        goto out;
 
+ out:
+    g_object_unref (file);
     return module_obj;
 }
 
@@ -402,15 +416,18 @@ static JSBool
 import_file_on_module(JSContext  *context,
                       JSObject   *obj,
                       const char *name,
-                      const char *full_path)
+                      GFile      *file)
 {
     JSObject *module_obj;
     JSBool retval = JS_FALSE;
+    gchar *full_path;
+
+    full_path = g_file_get_parse_name (file);
 
     gjs_debug(GJS_DEBUG_IMPORTER,
               "Importing '%s'", full_path);
 
-    if (!import_file (context, name, full_path, &module_obj))
+    if (!import_file (context, name, file, &module_obj))
         goto out;
 
     if (!define_import(context, obj, module_obj, name))
@@ -427,6 +444,8 @@ import_file_on_module(JSContext  *context,
  out:
     if (!retval)
         cancel_import(context, obj, name);
+
+    g_free (full_path);
 
     return retval;
 }
@@ -448,6 +467,8 @@ do_import(JSContext  *context,
     JSBool result;
     GPtrArray *directories;
     jsid search_path_name;
+    GFile *gfile;
+    gboolean exists;
 
     search_path_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
                                                     GJS_STRING_SEARCH_PATH);
@@ -547,8 +568,9 @@ do_import(JSContext  *context,
             g_free(full_path);
         full_path = g_build_filename(dirname, name,
                                      NULL);
+        gfile = g_file_new_for_commandline_arg(full_path);
 
-        if (g_file_test(full_path, G_FILE_TEST_IS_DIR)) {
+        if (g_file_query_file_type(gfile, 0, NULL) == G_FILE_TYPE_DIRECTORY) {
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "Adding directory '%s' to child importer '%s'",
                       full_path, name);
@@ -559,6 +581,8 @@ do_import(JSContext  *context,
             /* don't free it twice - pass ownership to ptr array */
             full_path = NULL;
         }
+
+        g_object_unref(gfile);
 
         /* If we just added to directories, we know we don't need to
          * check for a file.  If we added to directories on an earlier
@@ -574,24 +598,31 @@ do_import(JSContext  *context,
         g_free(full_path);
         full_path = g_build_filename(dirname, filename,
                                      NULL);
+        gfile = g_file_new_for_commandline_arg(full_path);
+        exists = g_file_query_exists(gfile, NULL);
 
-        if (g_file_test(full_path, G_FILE_TEST_EXISTS)) {
-            if (import_file_on_module (context, obj, name, full_path)) {
-                gjs_debug(GJS_DEBUG_IMPORTER,
-                          "successfully imported module '%s'", name);
-                result = JS_TRUE;
-            }
+        if (!exists) {
+            gjs_debug(GJS_DEBUG_IMPORTER,
+                      "JS import '%s' not found in %s",
+                      name, dirname);
 
-            /* Don't keep searching path if we fail to load the file for
-             * reasons other than it doesn't exist... i.e. broken files
-             * block searching for nonbroken ones
-             */
-            goto out;
+            g_object_unref(gfile);
+            continue;
         }
 
-        gjs_debug(GJS_DEBUG_IMPORTER,
-                  "JS import '%s' not found in %s",
-                  name, dirname);
+        if (import_file_on_module (context, obj, name, gfile)) {
+            gjs_debug(GJS_DEBUG_IMPORTER,
+                      "successfully imported module '%s'", name);
+            result = JS_TRUE;
+        }
+
+        g_object_unref(gfile);
+
+        /* Don't keep searching path if we fail to load the file for
+         * reasons other than it doesn't exist... i.e. broken files
+         * block searching for nonbroken ones
+         */
+        goto out;
     }
 
     if (directories != NULL) {
