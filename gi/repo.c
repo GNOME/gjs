@@ -56,6 +56,36 @@ GJS_DEFINE_PRIV_FROM_JS(Repo, gjs_repo_class)
 
 static JSObject * lookup_override_function(JSContext *, jsid);
 
+static JSBool
+get_version_for_ns (JSContext *context,
+                    JSObject  *repo_obj,
+                    jsid       ns_id,
+                    char     **version)
+{
+    jsid versions_name;
+    jsval versions_val;
+    JSObject *versions;
+    jsval version_val;
+
+    versions_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
+                                                 GJS_STRING_GI_VERSIONS);
+    if (!gjs_object_require_property(context, repo_obj, "GI repository object", versions_name, &versions_val) ||
+        !JSVAL_IS_OBJECT(versions_val)) {
+        gjs_throw(context, "No 'versions' property in GI repository object");
+        return JS_FALSE;
+    }
+
+    versions = JSVAL_TO_OBJECT(versions_val);
+
+    *version = NULL;
+    if (JS_GetPropertyById(context, versions, ns_id, &version_val) &&
+        JSVAL_IS_STRING(version_val)) {
+        gjs_string_to_utf8(context, version_val, version);
+    }
+
+    return JS_TRUE;
+}
+
 static JSObject*
 resolve_namespace_object(JSContext  *context,
                          JSObject   *repo_obj,
@@ -64,10 +94,6 @@ resolve_namespace_object(JSContext  *context,
 {
     GIRepository *repo;
     GError *error;
-    jsid versions_name;
-    jsval versions_val;
-    JSObject *versions;
-    jsval version_val;
     char *version;
     JSObject *namespace;
     JSObject *override;
@@ -75,22 +101,9 @@ resolve_namespace_object(JSContext  *context,
 
     JS_BeginRequest(context);
 
-    versions_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                 GJS_STRING_GI_VERSIONS);
-    if (!gjs_object_require_property(context, repo_obj, "GI repository object", versions_name, &versions_val) ||
-        !JSVAL_IS_OBJECT(versions_val)) {
-        gjs_throw(context, "No 'versions' property in GI repository object");
-
+    if (!get_version_for_ns(context, repo_obj, ns_id, &version)) {
         JS_EndRequest(context);
         return NULL;
-    }
-
-    versions = JSVAL_TO_OBJECT(versions_val);
-
-    version = NULL;
-    if (JS_GetPropertyById(context, versions, ns_id, &version_val) &&
-        JSVAL_IS_STRING(version_val)) {
-        gjs_string_to_utf8(context, version_val, &version);
     }
 
     repo = g_irepository_get_default();
