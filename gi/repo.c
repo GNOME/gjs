@@ -86,7 +86,7 @@ get_version_for_ns (JSContext *context,
     return JS_TRUE;
 }
 
-static JSObject*
+static JSBool
 resolve_namespace_object(JSContext  *context,
                          JSObject   *repo_obj,
                          jsid        ns_id,
@@ -95,16 +95,15 @@ resolve_namespace_object(JSContext  *context,
     GIRepository *repo;
     GError *error;
     char *version;
-    JSObject *namespace;
     JSObject *override;
     jsval result;
+    JSObject *namespace = NULL;
+    JSBool ret = JS_FALSE;
 
     JS_BeginRequest(context);
 
-    if (!get_version_for_ns(context, repo_obj, ns_id, &version)) {
-        JS_EndRequest(context);
-        return NULL;
-    }
+    if (!get_version_for_ns(context, repo_obj, ns_id, &version))
+        goto out;
 
     repo = g_irepository_get_default();
 
@@ -114,10 +113,10 @@ resolve_namespace_object(JSContext  *context,
         gjs_throw(context,
                   "Requiring %s, version %s: %s",
                   ns_name, version?version:"none", error->message);
+
         g_error_free(error);
         g_free(version);
-        JS_EndRequest(context);
-        return NULL;
+        goto out;
     }
 
     g_free(version);
@@ -143,18 +142,19 @@ resolve_namespace_object(JSContext  *context,
                                            OBJECT_TO_JSVAL(override), /* callee */
                                            0, /* argc */
                                            NULL, /* argv */
-                                           &result)) {
-        JS_RemoveObjectRoot(context, &namespace);
-        JS_EndRequest(context);
-        return NULL;
-    }
+                                           &result))
+        goto out;
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
               "Defined namespace '%s' %p in GIRepository %p", ns_name, namespace, repo_obj);
 
-    JS_RemoveObjectRoot(context, &namespace);
+    ret = JS_TRUE;
+
+ out:
+    if (namespace)
+        JS_RemoveObjectRoot(context, &namespace);
     JS_EndRequest(context);
-    return namespace;
+    return ret;
 }
 
 /*
@@ -197,13 +197,11 @@ repo_new_resolve(JSContext *context,
     if (priv == NULL) /* we are the prototype, or have the wrong class */
         goto out;
 
-    JS_BeginRequest(context);
-    if (resolve_namespace_object(context, *obj, *id, name) == NULL) {
+    if (!resolve_namespace_object(context, *obj, *id, name)) {
         ret = JS_FALSE;
     } else {
         *objp = *obj; /* store the object we defined the prop in */
     }
-    JS_EndRequest(context);
 
  out:
     g_free(name);
