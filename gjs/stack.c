@@ -55,12 +55,15 @@ gjs_context_get_frame_info (JSContext  *context,
 {
     jsval v_constructor;
     JSObject *err_obj;
+    JSBool ret = JS_FALSE;
+
+    JS_BeginRequest(context);
 
     if (!JS_GetProperty(context, JS_GetGlobalObject(context),
                         "Error", &v_constructor) ||
         !JSVAL_IS_OBJECT(v_constructor)) {
         g_error("??? Missing Error constructor in global object?");
-        return JS_FALSE;
+        goto out;
     }
 
     err_obj = JS_New(context, JSVAL_TO_OBJECT(v_constructor), 0, NULL);
@@ -68,22 +71,26 @@ gjs_context_get_frame_info (JSContext  *context,
     if (stack != NULL) {
         if (!gjs_object_get_property_const(context, err_obj,
                                            GJS_STRING_STACK, stack))
-            return JS_FALSE;
+            goto out;
     }
 
     if (fileName != NULL) {
         if (!gjs_object_get_property_const(context, err_obj,
                                            GJS_STRING_FILENAME, fileName))
-            return JS_FALSE;
+            goto out;
     }
 
     if (lineNumber != NULL) {
         if (!gjs_object_get_property_const(context, err_obj,
                                            GJS_STRING_LINE_NUMBER, lineNumber))
-            return JS_FALSE;
+            goto out;
     }
 
-    return JS_TRUE;
+    ret = JS_TRUE;
+
+ out:
+    JS_EndRequest(context);
+    return ret;
 }
 
 void
