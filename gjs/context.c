@@ -571,6 +571,7 @@ gjs_context_constructor (GType                  type,
     js_context = GJS_CONTEXT(object);
 
     js_context->runtime = JS_NewRuntime(32*1024*1024 /* max bytes */);
+    JS_SetNativeStackQuota(js_context->runtime, 1024*1024);
     if (js_context->runtime == NULL)
         g_error("Failed to create javascript runtime");
     JS_SetGCParameter(js_context->runtime, JSGC_MAX_BYTES, 0xffffffff);
