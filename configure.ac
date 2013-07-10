@@ -3,7 +3,7 @@
 
 m4_define(pkg_major_version, 1)
 m4_define(pkg_minor_version, 37)
-m4_define(pkg_micro_version, 1)
+m4_define(pkg_micro_version, 4)
 m4_define(pkg_version, pkg_major_version.pkg_minor_version.pkg_micro_version)
 m4_define(pkg_int_version, (pkg_major_version * 100 + pkg_minor_version) * 100 + pkg_micro_version)
 
@@ -95,7 +95,7 @@ else
 fi
 CFLAGS="$save_CFLAGS"
 
-GOBJECT_INTROSPECTION_REQUIRE([1.36.0])
+GOBJECT_INTROSPECTION_REQUIRE([1.37.1])
 
 common_packages="gmodule-2.0 gthread-2.0 gio-2.0 >= glib_required_version mozjs-17.0"
 gjs_packages="gobject-introspection-1.0 libffi $common_packages"
