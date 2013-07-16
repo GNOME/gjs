@@ -212,11 +212,6 @@ gjs_define_string_array(JSContext   *context,
 
     JS_BeginRequest(context);
 
-    if (!JS_EnterLocalRootScope(context)) {
-        JS_EndRequest(context);
-        return JS_FALSE;
-    }
-
     if (array_length == -1)
         array_length = g_strv_length((char**)array_values);
 
@@ -237,8 +232,6 @@ gjs_define_string_array(JSContext   *context,
                                NULL, NULL, attrs))
             array = NULL;
     }
-
-    JS_LeaveLocalRootScope(context);
 
     JS_EndRequest(context);
     return array;
@@ -368,12 +361,6 @@ gjs_log_object_props(JSContext      *context,
 
     JS_BeginRequest(context);
 
-    /* We potentially create new strings, plus the property iterator,
-     * that could get collected as we go through this process. So
-     * create a local root scope.
-     */
-    (void)JS_EnterLocalRootScope(context);
-
     props_iter = JS_NewPropertyIterator(context, obj);
     if (props_iter == NULL) {
         gjs_log_exception(context);
@@ -410,7 +397,6 @@ gjs_log_object_props(JSContext      *context,
     }
 
  done:
-    JS_LeaveLocalRootScope(context);
     JS_EndRequest(context);
 }
 
@@ -428,8 +414,6 @@ gjs_explain_scope(JSContext  *context,
               title);
 
     JS_BeginRequest(context);
-
-    (void)JS_EnterLocalRootScope(context);
 
     gjs_debug(GJS_DEBUG_SCOPE,
               "  Context: %p %s",
@@ -461,8 +445,6 @@ gjs_explain_scope(JSContext  *context,
               "  Chain: %s",
               chain->str);
     g_string_free(chain, TRUE);
-
-    JS_LeaveLocalRootScope(context);
 
     JS_EndRequest(context);
 }
@@ -756,11 +738,6 @@ gjs_date_from_time_t (JSContext *context, time_t time)
 
     JS_BeginRequest(context);
 
-    if (!JS_EnterLocalRootScope(context)) {
-        JS_EndRequest(context);
-        return JSVAL_VOID;
-    }
-
     if (!JS_GetClassObject(context, JS_GetGlobalObject(context), JSProto_Date,
                            &date_constructor))
         g_error("Failed to lookup Date prototype");
@@ -774,7 +751,6 @@ gjs_date_from_time_t (JSContext *context, time_t time)
     date = JS_New(context, JSVAL_TO_OBJECT (date_prototype), 1, args);
 
     result = OBJECT_TO_JSVAL(date);
-    JS_LeaveLocalRootScope(context);
     JS_EndRequest(context);
 
     return result;

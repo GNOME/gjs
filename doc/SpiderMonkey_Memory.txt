@@ -83,21 +83,12 @@ If you do not immediately add the object to some other object so it's referenced
 
 # call JS_AddRoot() on its location (and JS_RemoveRoot() when done)
 # when defining a [http://developer.mozilla.org/en/docs/JSFunctionSpec JSFunctionSpec], ask for argv to have "extra local roots"
-# use [http://developer.mozilla.org/en/docs/JS_EnterLocalRootScope JS_EnterLocalRootScope()]
 
 === JSFunctionSpec and extra local roots ===
 
 When SpiderMonkey is calling a native function, it will pass in an argv of jsval. It already has to add all the argv values as GC roots. The "extra local roots" feature tells SpiderMonkey to stick some extra slots on the end of argv that are also GC roots. You can then assign to argv[MAX(min_args, actual_argc)] and whatever you put in there won't get garbage collected.
 
 This is kind of a confusing and unreadable hack IMO, though it is probably efficient and thus justified in certain cases. I don't know really.
-
-=== JS_EnterLocalRootScope() ===
-
-[http://developer.mozilla.org/en/docs/JS_EnterLocalRootScope JS_EnterLocalRootScope()] causes SpiderMonkey to automatically root all newborns until you call JS_LeaveLocalRootScope(). Remember the default behavior is to root only the most recent newborn of each type. 
-
-The downside of JS_EnterLocalRootScope() is that if you start allocating tons of stuff while inside the local root scope, none of it will be collected until you JS_LeaveLocalRootScope(). Basically you're disabling garbage collection for anything you create. So this function should not be used in an overzealous way.
-
-You can nest JS_EnterLocalRootScope() calls, but must JS_LeaveLocalRootScope() a matching number of times. JS_EnterLocalRootScope() can fail so check its return value.
 
 Note that newborn roots are tracked as *values* while JS_AddRoot() tracks *locations*.
 

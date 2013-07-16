@@ -75,8 +75,6 @@ gjs_throw_valist(JSContext       *context,
 
     result = JS_FALSE;
 
-    (void)JS_EnterLocalRootScope(context);
-
     if (!gjs_string_from_utf8(context, s, -1, &v_message)) {
         JS_ReportError(context, "Failed to copy exception string");
         goto out;
@@ -96,8 +94,6 @@ gjs_throw_valist(JSContext       *context,
     result = JS_TRUE;
 
  out:
-
-    JS_LeaveLocalRootScope(context);
 
     if (!result) {
         /* try just reporting it to error handler? should not

@@ -200,7 +200,6 @@ gjs_print_parse_args(JSContext *context,
     JS_BeginRequest(context);
 
     str = g_string_new("");
-    (void)JS_EnterLocalRootScope(context);
     for (n = 0; n < argc; ++n) {
         JSExceptionState *exc_state;
         JSString *jstr;
@@ -217,7 +216,6 @@ gjs_print_parse_args(JSContext *context,
 
         if (jstr != NULL) {
             if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(jstr), &s)) {
-                JS_LeaveLocalRootScope(context);
                 JS_EndRequest(context);
                 g_string_free(str, TRUE);
                 return JS_FALSE;
@@ -228,7 +226,6 @@ gjs_print_parse_args(JSContext *context,
             if (n < (argc-1))
                 g_string_append_c(str, ' ');
         } else {
-            JS_LeaveLocalRootScope(context);
             JS_EndRequest(context);
             *buffer = g_string_free(str, TRUE);
             if (!*buffer)
@@ -237,7 +234,6 @@ gjs_print_parse_args(JSContext *context,
         }
 
     }
-    JS_LeaveLocalRootScope(context);
     *buffer = g_string_free(str, FALSE);
 
     JS_EndRequest(context);
