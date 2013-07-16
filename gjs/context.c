@@ -595,7 +595,7 @@ gjs_context_constructor (GType                  type,
 
     if (!g_getenv("GJS_DISABLE_JIT")) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
-        options_flags |= JSOPTION_METHODJIT;
+        options_flags |= JSOPTION_METHODJIT | JSOPTION_TYPE_INFERENCE;
     }
 
     JS_SetOptions(js_context->context,
