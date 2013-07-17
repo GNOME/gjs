@@ -630,6 +630,9 @@ gjs_context_constructor (GType                  type,
                            JSPROP_READONLY | JSPROP_PERMANENT))
         g_error("No memory to export global object as 'window'");
 
+    if (!JS_InitReflect(js_context->context, js_context->global))
+        g_error("Failed to register Reflect Parser Api");
+
     /* Define a global function called log() */
     if (!JS_DefineFunction(js_context->context, js_context->global,
                            "log",

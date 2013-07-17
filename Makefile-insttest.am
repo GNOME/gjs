@@ -106,6 +106,7 @@ dist_jstests_DATA += \
 	installed-tests/js/testMainloop.js			\
 	installed-tests/js/testMetaClass.js			\
 	installed-tests/js/testParamSpec.js			\
+	installed-tests/js/testReflectObject.js			\
 	installed-tests/js/testSignals.js			\
 	installed-tests/js/testSystem.js			\
 	installed-tests/js/testTweener.js			\
