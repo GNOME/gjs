@@ -71,30 +71,6 @@ m4_define(glib_required_version, 2.36.0)
 AC_CHECK_HEADERS([malloc.h])
 AC_CHECK_FUNCS(mallinfo)
 
-save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $JS_CFLAGS"
-AC_MSG_CHECKING([for JS_CLASS_TRACE macro])
-AC_COMPILE_IFELSE(
-    [AC_LANG_PROGRAM(
-        [[
-            #include <jsapi.h>
-	    #ifndef JS_CLASS_TRACE
-	    #error "No JS_CLASS_TRACE"
-	    #endif
-        ]],
-        [[(void) 0;]]
-    )],
-    [have_js_class_trace=yes],
-    [have_js_class_trace=no])
-
-if test "x$have_js_class_trace" = xyes; then
-    AC_MSG_RESULT([yes])
-    AC_DEFINE([HAVE_JS_CLASS_TRACE], [1], [Define if we still have JS_CLASS_TRACE])
-else
-    AC_MSG_RESULT([no])
-fi
-CFLAGS="$save_CFLAGS"
-
 GOBJECT_INTROSPECTION_REQUIRE([1.37.1])
 
 common_packages="gmodule-2.0 gthread-2.0 gio-2.0 >= glib_required_version mozjs-17.0"
