@@ -113,7 +113,7 @@ gjs_exit(JSContext *context,
 {
     jsval *argv = JS_ARGV(cx, vp);
     gint32 ecode;
-    if (!gjs_parse_args(context, "exit", "i", argc, argv, &ecode))
+    if (!gjs_parse_args(context, "exit", "i", argc, argv, "ecode", &ecode))
         return JS_FALSE;
     exit(ecode);
     return JS_TRUE;
@@ -155,7 +155,7 @@ gjs_js_define_system_stuff(JSContext *context,
     if (!JS_DefineFunction(context, module,
                            "exit",
                            (JSNative) gjs_exit,
-                           0, GJS_MODULE_PROP_FLAGS))
+                           1, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
     retval = JS_FALSE;
