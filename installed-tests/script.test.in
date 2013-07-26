@@ -1,0 +1,3 @@
+[Test]
+Type=session
+Exec=gjs @pkglibexecdir@/installed-tests/scripts/@name@
