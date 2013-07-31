@@ -1,6 +1,7 @@
 #!/usr/bin/env gjs
 
 const ByteArray = imports.byteArray;
+const Gdk = imports.gi.Gdk;
 const Gio = imports.gi.Gio;
 const Gtk = imports.gi.Gtk;
 const Lang = imports.lang;
@@ -90,6 +91,14 @@ function testGtk() {
 
     validateTemplate(new MyComplexGtkSubclass());
     validateTemplate(new MyComplexGtkSubclassFromResource());
+}
+
+// https://bugzilla.gnome.org/show_bug.cgi?id=704842
+function testGdkKeymap() {
+    Gtk.init(null);
+
+    let keymap = Gdk.Keymap.get_default();
+    JSUnit.assertNotEquals(keymap.get_entries_for_keyval(Gdk.KEY_a), null);
 }
 
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);

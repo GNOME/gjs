@@ -255,6 +255,11 @@ type_needs_out_release(GITypeInfo *type_info,
             needs_release = FALSE;
             break;
 
+        case GI_INFO_TYPE_STRUCT:
+        case GI_INFO_TYPE_UNION:
+            needs_release = g_type_info_is_pointer (type_info);
+            break;
+
         default:
             needs_release = TRUE;
         }
@@ -2157,11 +2162,42 @@ gjs_array_from_carray_internal (JSContext  *context,
         case GI_TYPE_TAG_DOUBLE:
           ITERATE(double);
           break;
+        case GI_TYPE_TAG_INTERFACE: {
+          GIBaseInfo *interface_info;
+          GIInfoType info_type;
+
+          interface_info = g_type_info_get_interface (param_info);
+          info_type = g_base_info_get_type (interface_info);
+
+          if ((info_type == GI_INFO_TYPE_STRUCT ||
+               info_type == GI_INFO_TYPE_UNION) &&
+              !g_type_info_is_pointer (param_info)) {
+              gsize struct_size;
+
+              if (info_type == GI_INFO_TYPE_UNION)
+                  struct_size = g_union_info_get_size ((GIUnionInfo*)interface_info);
+              else
+                  struct_size = g_struct_info_get_size ((GIStructInfo*)interface_info);
+
+              for (i = 0; i < length; i++) {
+                  arg.v_pointer = ((char*)array) + struct_size;
+
+                  if (!gjs_value_from_g_argument(context, &elem, param_info, &arg, TRUE))
+                      goto finally;
+                  if (!JS_DefineElement(context, obj, i, elem, NULL, NULL,
+                                        JSPROP_ENUMERATE))
+                      goto finally;
+              }
+
+              break;
+          }
+
+          /* fallthrough */
+        }
         case GI_TYPE_TAG_GTYPE:
         case GI_TYPE_TAG_UTF8:
         case GI_TYPE_TAG_FILENAME:
         case GI_TYPE_TAG_ARRAY:
-        case GI_TYPE_TAG_INTERFACE:
         case GI_TYPE_TAG_GLIST:
         case GI_TYPE_TAG_GSLIST:
         case GI_TYPE_TAG_GHASH:
