@@ -27,6 +27,7 @@
 #include <gi/foreign.h>
 
 #include <cairo.h>
+#include <cairo-gobject.h>
 #include "cairo-private.h"
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(mname) \
@@ -252,7 +253,7 @@ typedef struct {
     cairo_t * cr;
 } GjsCairoContext;
 
-GJS_DEFINE_PROTO("CairoContext", cairo_context)
+GJS_DEFINE_PROTO_WITH_GTYPE("CairoContext", cairo_context, CAIRO_GOBJECT_TYPE_CONTEXT)
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoContext, gjs_cairo_context_class);
 
 static void

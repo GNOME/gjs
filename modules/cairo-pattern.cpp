@@ -25,6 +25,7 @@
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 #include <cairo.h>
+#include <cairo-gobject.h>
 #include "cairo-private.h"
 
 typedef struct {
@@ -34,7 +35,7 @@ typedef struct {
     cairo_pattern_t *pattern;
 } GjsCairoPattern;
 
-GJS_DEFINE_PROTO_ABSTRACT("CairoPattern", cairo_pattern)
+GJS_DEFINE_PROTO_ABSTRACT_WITH_GTYPE("CairoPattern", cairo_pattern, CAIRO_GOBJECT_TYPE_PATTERN)
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoPattern, gjs_cairo_pattern_class)
 
 static void

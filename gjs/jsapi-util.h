@@ -31,6 +31,7 @@
 #include <gjs/compat.h>
 #include <gjs/runtime.h>
 #include <glib-object.h>
+#include <gi/gtype.h>
 
 G_BEGIN_DECLS
 
@@ -112,7 +113,7 @@ typedef struct GjsRootedArray GjsRootedArray;
  */
 #define GJS_DEFINE_PROTO(tn, cn) \
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cn); \
-_GJS_DEFINE_PROTO_FULL(tn, cn, gjs_##cn##_constructor)
+_GJS_DEFINE_PROTO_FULL(tn, cn, gjs_##cn##_constructor, G_TYPE_NONE)
 
 /**
  * GJS_DEFINE_PROTO_ABSTRACT:
@@ -124,9 +125,16 @@ _GJS_DEFINE_PROTO_FULL(tn, cn, gjs_##cn##_constructor)
  * you won't be able to instantiate it using the new keyword
  */
 #define GJS_DEFINE_PROTO_ABSTRACT(tn, cn) \
-_GJS_DEFINE_PROTO_FULL(tn, cn, NULL)
+_GJS_DEFINE_PROTO_FULL(tn, cn, NULL, G_TYPE_NONE)
 
-#define _GJS_DEFINE_PROTO_FULL(type_name, cname, ctor) \
+#define GJS_DEFINE_PROTO_WITH_GTYPE(tn, cn, gtype)   \
+GJS_NATIVE_CONSTRUCTOR_DECLARE(cn); \
+_GJS_DEFINE_PROTO_FULL(tn, cn, gjs_##cn##_constructor, gtype)
+
+#define GJS_DEFINE_PROTO_ABSTRACT_WITH_GTYPE(tn, cn, gtype)   \
+_GJS_DEFINE_PROTO_FULL(tn, cn, NULL, gtype)
+
+#define _GJS_DEFINE_PROTO_FULL(type_name, cname, ctor, gtype) \
 extern JSPropertySpec gjs_##cname##_proto_props[]; \
 extern JSFunctionSpec gjs_##cname##_proto_funcs[]; \
 static void gjs_##cname##_finalize(JSFreeOp *fop, JSObject *obj); \
@@ -162,7 +170,8 @@ jsval gjs_##cname##_create_proto(JSContext *context, JSObject *module, const cha
     if (!JS_GetPropertyById(context, global, class_name, &rval))                       \
         return JSVAL_NULL; \
     if (JSVAL_IS_VOID(rval)) { \
-        JSObject *prototype = JS_InitClass(context, global, \
+        jsval value; \
+        JSObject *prototype = JS_InitClass(context, global,     \
                                  parent, \
                                  &gjs_##cname##_class, \
                                  ctor, \
@@ -182,6 +191,11 @@ jsval gjs_##cname##_create_proto(JSContext *context, JSObject *module, const cha
         if (!JS_DefineProperty(context, module, proto_name, \
                                rval, NULL, NULL, GJS_MODULE_PROP_FLAGS)) \
             return JSVAL_NULL; \
+        if (gtype != G_TYPE_NONE) { \
+            value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype)); \
+            JS_DefineProperty(context, JSVAL_TO_OBJECT(rval), "$gtype", value, \
+                              NULL, NULL, JSPROP_PERMANENT);            \
+        } \
     } \
     return rval; \
 }
