@@ -299,6 +299,19 @@ function testGValueGType() {
     // Other
     GIMarshallingTests.gvalue_in_with_type(GObject.ParamSpec.string('my-param', '', '', GObject.ParamFlags.READABLE, ''),
 					   GObject.TYPE_PARAM);
+
+    // Foreign
+    let Cairo;
+    try {
+        Cairo = imports.cairo;
+    } catch(e) {
+        return;
+    }
+
+    let surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, 2, 2);
+    let cr = new Cairo.Context(surface);
+    GIMarshallingTests.gvalue_in_with_type(cr, Cairo.Context);
+    GIMarshallingTests.gvalue_in_with_type(surface, Cairo.Surface);
 }
 
 function callback_return_value_only() {

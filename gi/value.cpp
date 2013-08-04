@@ -412,6 +412,29 @@ gjs_value_to_g_value_internal(JSContext    *context,
 
                 gboxed = gjs_gerror_from_error(context, obj);
             } else {
+                GIBaseInfo *registered = g_irepository_find_by_gtype (NULL, gtype);
+
+                /* We don't necessarily have the typelib loaded when
+                   we first see the structure... */
+                if (registered) {
+                    GIInfoType info_type = g_base_info_get_type (registered);
+
+                    if (info_type == GI_INFO_TYPE_STRUCT &&
+                        g_struct_info_is_foreign ((GIStructInfo*)registered)) {
+                        GArgument arg;
+
+                        if (!gjs_struct_foreign_convert_to_g_argument (context, value,
+                                                                       registered,
+                                                                       NULL,
+                                                                       GJS_ARGUMENT_ARGUMENT,
+                                                                       GI_TRANSFER_NOTHING,
+                                                                       TRUE, &arg))
+                            return FALSE;
+
+                        gboxed = arg.v_pointer;
+                    }
+                }
+
                 /* First try a union, if that fails,
                    assume a boxed struct. Distinguishing
                    which one is expected would require checking
@@ -419,15 +442,17 @@ gjs_value_to_g_value_internal(JSContext    *context,
                    possible, if e.g. we see the GType without
                    loading the typelib.
                 */
-                if (gjs_typecheck_union(context, obj,
-                                        NULL, gtype, JS_FALSE)) {
-                    gboxed = gjs_c_union_from_union(context, obj);
-                } else {
-                    if (!gjs_typecheck_boxed(context, obj,
-                                             NULL, gtype, JS_TRUE))
-                        return JS_FALSE;
+                if (!gboxed) {
+                    if (gjs_typecheck_union(context, obj,
+                                            NULL, gtype, JS_FALSE)) {
+                        gboxed = gjs_c_union_from_union(context, obj);
+                    } else {
+                        if (!gjs_typecheck_boxed(context, obj,
+                                                 NULL, gtype, JS_TRUE))
+                            return JS_FALSE;
 
-                    gboxed = gjs_c_struct_from_boxed(context, obj);
+                        gboxed = gjs_c_struct_from_boxed(context, obj);
+                    }
                 }
             }
         } else {
