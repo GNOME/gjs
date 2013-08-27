@@ -74,13 +74,13 @@ main(int argc, char **argv)
         source_js_version = gjs_context_scan_buffer_for_js_version(script, 1024);
         len = strlen(script);
         filename = "<command line>";
-        program_name = NULL;
+        program_name = argv[0];
     } else if (argc <= 1) {
         source_js_version = NULL;
         script = g_strdup("const Console = imports.console; Console.interact();");
         len = strlen(script);
         filename = "<stdin>";
-        program_name = NULL;
+        program_name = argv[0];
     } else /*if (argc >= 2)*/ {
         error = NULL;
         if (!g_file_get_contents(argv[1], &script, &len, &error)) {
