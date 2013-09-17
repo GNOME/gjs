@@ -996,7 +996,7 @@ gjs_parse_args (JSContext  *context,
             break;
         case 'u': {
             gdouble num;
-            if (!JS_ValueToNumber(context, js_value, &num)) {
+            if (!JSVAL_IS_NUMBER(js_value) || !JS_ValueToNumber(context, js_value, &num)) {
                 /* Our error message is going to be more useful */
                 JS_ClearPendingException(context);
                 arg_error_message = "Couldn't convert to unsigned integer";
