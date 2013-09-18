@@ -120,6 +120,6 @@ endif
 	sed -e s,@pkglibexecdir\@,$(pkglibexecdir), -e s,@name\@,$(notdir $<), < $(srcdir)/installed-tests/script.test.in > $@.tmp && mv $@.tmp $@
 
 jsscripttestsdir = $(gjsinsttestdir)/scripts
-jsscripttests_DATA = installed-tests/scripts/testSystemExit.js
+dist_jsscripttests_DATA = installed-tests/scripts/testSystemExit.js
 installedtestmeta_DATA += testSystemExit.test
 endif
