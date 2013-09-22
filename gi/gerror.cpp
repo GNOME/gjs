@@ -50,7 +50,7 @@ enum {
     PROP_MESSAGE
 };
 
-static struct JSClass gjs_error_class;
+extern struct JSClass gjs_error_class;
 
 static void define_error_properties(JSContext *, JSObject *);
 
@@ -305,7 +305,7 @@ error_constructor_value_of(JSContext *context, unsigned argc, jsval *vp)
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
-static struct JSClass gjs_error_class = {
+struct JSClass gjs_error_class = {
     "GLib_Error",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE,

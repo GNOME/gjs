@@ -40,7 +40,7 @@ typedef struct {
     GParamSpec *gparam; /* NULL if we are the prototype and not an instance */
 } Param;
 
-static struct JSClass gjs_param_class;
+extern struct JSClass gjs_param_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Param, gjs_param_class)
 
@@ -409,7 +409,7 @@ param_new_internal(JSContext *cx,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
-static struct JSClass gjs_param_class = {
+struct JSClass gjs_param_class = {
     "GObject_ParamSpec",
     JSCLASS_HAS_PRIVATE,
     JS_PropertyStub,

@@ -40,7 +40,7 @@ typedef struct {
 
 } Ns;
 
-static struct JSClass gjs_ns_class;
+extern struct JSClass gjs_ns_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Ns, gjs_ns_class)
 
@@ -153,7 +153,7 @@ ns_finalize(JSFreeOp *fop,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
-static struct JSClass gjs_ns_class = {
+struct JSClass gjs_ns_class = {
     "GIRepositoryNamespace",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE,

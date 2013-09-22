@@ -40,7 +40,7 @@ typedef struct {
     GType gtype;
 } Interface;
 
-static struct JSClass gjs_interface_class;
+extern struct JSClass gjs_interface_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Interface, gjs_interface_class)
 
@@ -142,7 +142,7 @@ interface_new_resolve(JSContext *context,
     return ret;
 }
 
-static struct JSClass gjs_interface_class = {
+struct JSClass gjs_interface_class = {
     "GObject_Interface",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE,

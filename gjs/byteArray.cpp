@@ -36,7 +36,7 @@ typedef struct {
     GBytes     *bytes;
 } ByteArrayInstance;
 
-static struct JSClass gjs_byte_array_class;
+extern struct JSClass gjs_byte_array_class;
 static struct JSObject* gjs_byte_array_prototype;
 GJS_DEFINE_PRIV_FROM_JS(ByteArrayInstance, gjs_byte_array_class)
 
@@ -54,7 +54,7 @@ static void   byte_array_finalize      (JSFreeOp     *fop,
                                         JSObject     *obj);
 
 
-static struct JSClass gjs_byte_array_class = {
+struct JSClass gjs_byte_array_class = {
     "ByteArray",
     JSCLASS_HAS_PRIVATE,
     JS_PropertyStub,

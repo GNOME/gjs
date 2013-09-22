@@ -44,7 +44,7 @@ typedef struct {
     unsigned int inside_trace : 1;
 } KeepAlive;
 
-static struct JSClass gjs_keep_alive_class;
+extern struct JSClass gjs_keep_alive_class;
 
 GJS_DEFINE_PRIV_FROM_JS(KeepAlive, gjs_keep_alive_class)
 
@@ -149,7 +149,7 @@ keep_alive_trace(JSTracer *tracer,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
-static struct JSClass gjs_keep_alive_class = {
+struct JSClass gjs_keep_alive_class = {
     "__private_GjsKeepAlive", /* means "new __private_GjsKeepAlive()" works */
     JSCLASS_HAS_PRIVATE,
     JS_PropertyStub,

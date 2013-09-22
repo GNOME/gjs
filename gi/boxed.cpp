@@ -65,7 +65,7 @@ static JSBool boxed_set_field_from_value(JSContext   *context,
                                          GIFieldInfo *field_info,
                                          jsval        value);
 
-static struct JSClass gjs_boxed_class;
+extern struct JSClass gjs_boxed_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Boxed, gjs_boxed_class)
 
@@ -925,7 +925,7 @@ to_string_func(JSContext *context,
  * reserved slot is used to hold onto the parent Javascript object and
  * make sure it doesn't get freed.
  */
-static struct JSClass gjs_boxed_class = {
+struct JSClass gjs_boxed_class = {
     "GObject_Boxed",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |

@@ -50,7 +50,7 @@ typedef struct {
 
 } Repo;
 
-static struct JSClass gjs_repo_class;
+extern struct JSClass gjs_repo_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Repo, gjs_repo_class)
 
@@ -230,7 +230,7 @@ repo_finalize(JSFreeOp *fop,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
-static struct JSClass gjs_repo_class = {
+struct JSClass gjs_repo_class = {
     "GIRepository", /* means "new GIRepository()" works */
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE,

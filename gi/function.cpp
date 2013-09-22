@@ -56,7 +56,7 @@ typedef struct {
     GIFunctionInvoker invoker;
 } Function;
 
-static struct JSClass gjs_function_class;
+extern struct JSClass gjs_function_class;
 
 /* Because we can't free the mmap'd data for a callback
  * while it's in use, this list keeps track of ones that
@@ -1355,7 +1355,7 @@ function_to_string (JSContext *context,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
-static struct JSClass gjs_function_class = {
+struct JSClass gjs_function_class = {
     "GIRepositoryFunction", /* means "new GIRepositoryFunction()" works */
     JSCLASS_HAS_PRIVATE,
     JS_PropertyStub,

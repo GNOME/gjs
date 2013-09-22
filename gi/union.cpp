@@ -46,7 +46,7 @@ typedef struct {
     GType gtype;
 } Union;
 
-static struct JSClass gjs_union_class;
+extern struct JSClass gjs_union_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Union, gjs_union_class)
 
@@ -307,7 +307,7 @@ to_string_func(JSContext *context,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
-static struct JSClass gjs_union_class = {
+struct JSClass gjs_union_class = {
     "GObject_Union",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE,

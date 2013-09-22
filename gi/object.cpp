@@ -90,7 +90,7 @@ enum {
 static GSList *object_init_list;
 static GHashTable *class_init_properties;
 
-static struct JSClass gjs_object_instance_class;
+extern struct JSClass gjs_object_instance_class;
 static GThread *gjs_eval_thread;
 static volatile gint pending_idle_toggles;
 
@@ -1768,7 +1768,7 @@ to_string_func(JSContext *context,
     return ret;
 }
 
-static struct JSClass gjs_object_instance_class = {
+struct JSClass gjs_object_instance_class = {
     "GObject_Object",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE,
