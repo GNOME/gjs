@@ -31,9 +31,9 @@ typedef struct _GjsTypeModuleClass GjsTypeModuleClass;
 
 #define GJS_TYPE_TYPE_MODULE              (gjs_type_module_get_type ())
 #define GJS_TYPE_MODULE(module)           (G_TYPE_CHECK_INSTANCE_CAST ((module), GJS_TYPE_TYPE_MODULE, GjsTypeModule))
-#define GJS_TYPE_MODULE_CLASS(class)      (G_TYPE_CHECK_CLASS_CAST ((class), GJS_TYPE_TYPE_MODULE, GjsTypeModuleClass))
+#define GJS_TYPE_MODULE_CLASS(klass)      (G_TYPE_CHECK_CLASS_CAST ((klass), GJS_TYPE_TYPE_MODULE, GjsTypeModuleClass))
 #define GJS_IS_TYPE_MODULE(module)        (G_TYPE_CHECK_INSTANCE_TYPE ((module), GJS_TYPE_TYPE_MODULE))
-#define GJS_IS_TYPE_MODULE_CLASS(class)   (G_TYPE_CHECK_CLASS_TYPE ((class), GJS_TYPE_TYPE_MODULE))
+#define GJS_IS_TYPE_MODULE_CLASS(klass)   (G_TYPE_CHECK_CLASS_TYPE ((klass), GJS_TYPE_TYPE_MODULE))
 #define GJS_TYPE_MODULE_GET_CLASS(module) (G_TYPE_INSTANCE_GET_CLASS ((module), GJS_TYPE_TYPE_MODULE, GjsTypeModuleClass))
 
 GType gjs_type_module_get_type (void) G_GNUC_CONST;

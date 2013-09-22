@@ -36,7 +36,7 @@
 
 typedef struct {
     GIRepository *repo;
-    char *namespace;
+    char *gi_namespace;
 
 } Ns;
 
@@ -94,7 +94,7 @@ ns_new_resolve(JSContext *context,
 
     repo = g_irepository_get_default();
 
-    info = g_irepository_find_by_name(repo, priv->namespace, name);
+    info = g_irepository_find_by_name(repo, priv->gi_namespace, name);
     if (info == NULL) {
         /* No property defined, but no error either, so return TRUE */
         JS_EndRequest(context);
@@ -140,8 +140,8 @@ ns_finalize(JSFreeOp *fop,
     if (priv == NULL)
         return; /* we are the prototype, not a real instance */
 
-    if (priv->namespace)
-        g_free(priv->namespace);
+    if (priv->gi_namespace)
+        g_free(priv->gi_namespace);
     if (priv->repo)
         g_object_unref(priv->repo);
 
@@ -237,7 +237,7 @@ ns_new(JSContext    *context,
 
     priv = priv_from_js(context, ns);
     priv->repo = g_object_ref(repo);
-    priv->namespace = g_strdup(ns_name);
+    priv->gi_namespace = g_strdup(ns_name);
 
     return ns;
 }

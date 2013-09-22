@@ -74,13 +74,13 @@ typedef struct GjsRootedArray GjsRootedArray;
  * priv_from_js_with_typecheck: a convenience function to call
  *                              do_base_typecheck and priv_from_js
  */
-#define GJS_DEFINE_PRIV_FROM_JS(type, class)                            \
+#define GJS_DEFINE_PRIV_FROM_JS(type, klass)                          \
     __attribute__((unused)) static inline JSBool                        \
     do_base_typecheck(JSContext *context,                               \
                       JSObject  *object,                                \
-                      JSBool     throw)                                 \
+                      JSBool     throw_error)                           \
     {                                                                   \
-        return gjs_typecheck_instance(context, object, &class, throw);  \
+        return gjs_typecheck_instance(context, object, &klass, throw_error);  \
     }                                                                   \
     static inline type *                                                \
     priv_from_js(JSContext *context,                                    \
@@ -88,7 +88,7 @@ typedef struct GjsRootedArray GjsRootedArray;
     {                                                                   \
         type *priv;                                                     \
         JS_BeginRequest(context);                                       \
-        priv = JS_GetInstancePrivate(context, object, &class, NULL);    \
+        priv = JS_GetInstancePrivate(context, object, &klass, NULL);  \
         JS_EndRequest(context);                                         \
         return priv;                                                    \
     }                                                                   \

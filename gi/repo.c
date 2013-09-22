@@ -97,7 +97,7 @@ resolve_namespace_object(JSContext  *context,
     char *version;
     JSObject *override;
     jsval result;
-    JSObject *namespace = NULL;
+    JSObject *gi_namespace = NULL;
     JSBool ret = JS_FALSE;
 
     JS_BeginRequest(context);
@@ -125,20 +125,20 @@ resolve_namespace_object(JSContext  *context,
      * with the given namespace name, pointing to that namespace
      * in the repo.
      */
-    namespace = gjs_create_ns(context, ns_name, repo);
-    JS_AddObjectRoot(context, &namespace);
+    gi_namespace = gjs_create_ns(context, ns_name, repo);
+    JS_AddObjectRoot(context, &gi_namespace);
 
     /* Define the property early, to avoid reentrancy issues if
        the override module looks for namespaces that import this */
     if (!JS_DefineProperty(context, repo_obj,
-                           ns_name, OBJECT_TO_JSVAL(namespace),
+                           ns_name, OBJECT_TO_JSVAL(gi_namespace),
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS))
         g_error("no memory to define ns property");
 
     override = lookup_override_function(context, ns_id);
     if (override && !JS_CallFunctionValue (context,
-                                           namespace, /* thisp */
+                                           gi_namespace, /* thisp */
                                            OBJECT_TO_JSVAL(override), /* callee */
                                            0, /* argc */
                                            NULL, /* argv */
@@ -146,13 +146,13 @@ resolve_namespace_object(JSContext  *context,
         goto out;
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
-              "Defined namespace '%s' %p in GIRepository %p", ns_name, namespace, repo_obj);
+              "Defined namespace '%s' %p in GIRepository %p", ns_name, gi_namespace, repo_obj);
 
     ret = JS_TRUE;
 
  out:
-    if (namespace)
-        JS_RemoveObjectRoot(context, &namespace);
+    if (gi_namespace)
+        JS_RemoveObjectRoot(context, &gi_namespace);
     JS_EndRequest(context);
     return ret;
 }

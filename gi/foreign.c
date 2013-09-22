@@ -32,7 +32,7 @@
 #include "foreign.h"
 
 static struct {
-    char *namespace;
+    char *gi_namespace;
     char *module; // relative to "imports."
     gboolean loaded;
 } foreign_modules[] = {
@@ -57,16 +57,16 @@ get_foreign_structs(void)
 
 static JSBool
 gjs_foreign_load_foreign_module(JSContext *context,
-                                const gchar *namespace)
+                                const gchar *gi_namespace)
 {
     int i;
 
-    for (i = 0; foreign_modules[i].namespace; ++i) {
+    for (i = 0; foreign_modules[i].gi_namespace; ++i) {
         int code;
         GError *error = NULL;
         char *script;
 
-        if (strcmp(namespace, foreign_modules[i].namespace) != 0)
+        if (strcmp(gi_namespace, foreign_modules[i].gi_namespace) != 0)
             continue;
 
         if (foreign_modules[i].loaded) {
@@ -75,7 +75,7 @@ gjs_foreign_load_foreign_module(JSContext *context,
 
         // FIXME: Find a way to check if a module is imported
         //        and only execute this statement if isn't
-        script = g_strdup_printf("imports.%s;", namespace);
+        script = g_strdup_printf("imports.%s;", gi_namespace);
         if (!gjs_context_eval(JS_GetContextPrivate(context), script, strlen(script),
                               "<internal>", &code,
                               &error)) {
@@ -92,7 +92,7 @@ gjs_foreign_load_foreign_module(JSContext *context,
 }
 
 JSBool
-gjs_struct_foreign_register(const char *namespace,
+gjs_struct_foreign_register(const char *gi_namespace,
                             const char *type_name,
                             GjsForeignInfo *info)
 {
@@ -102,7 +102,7 @@ gjs_struct_foreign_register(const char *namespace,
     g_return_val_if_fail(info->to_func != NULL, JS_FALSE);
     g_return_val_if_fail(info->from_func != NULL, JS_FALSE);
 
-    canonical_name = g_strdup_printf("%s.%s", namespace, type_name);
+    canonical_name = g_strdup_printf("%s.%s", gi_namespace, type_name);
     g_hash_table_insert(get_foreign_structs(), canonical_name, info);
     return JS_TRUE;
 }

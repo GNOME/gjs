@@ -73,9 +73,9 @@ static struct JSClass gjs_byte_array_class = {
 JSBool
 gjs_typecheck_bytearray(JSContext     *context,
                         JSObject      *object,
-                        JSBool         throw)
+                        JSBool         throw_error)
 {
-    return do_base_typecheck(context, object, throw);
+    return do_base_typecheck(context, object, throw_error);
 }
 
 static JSBool

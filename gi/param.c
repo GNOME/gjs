@@ -563,18 +563,18 @@ JSBool
 gjs_typecheck_param(JSContext     *context,
                     JSObject      *object,
                     GType          expected_type,
-                    JSBool         throw)
+                    JSBool         throw_error)
 {
     Param *priv;
     JSBool result;
 
-    if (!do_base_typecheck(context, object, throw))
+    if (!do_base_typecheck(context, object, throw_error))
         return JS_FALSE;
 
     priv = priv_from_js(context, object);
 
     if (priv->gparam == NULL) {
-        if (throw) {
+        if (throw_error) {
             gjs_throw_custom(context, "TypeError",
                              "Object is GObject.ParamSpec.prototype, not an object instance - "
                              "cannot convert to a GObject.ParamSpec instance");
@@ -588,7 +588,7 @@ gjs_typecheck_param(JSContext     *context,
     else
         result = JS_TRUE;
 
-    if (!result && throw) {
+    if (!result && throw_error) {
         gjs_throw_custom(context, "TypeError",
                          "Object is of type %s - cannot convert to %s",
                          g_type_name(G_TYPE_FROM_INSTANCE (priv->gparam)),

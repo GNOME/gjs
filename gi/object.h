@@ -42,7 +42,7 @@ GObject*  gjs_g_object_from_object      (JSContext     *context,
 JSBool    gjs_typecheck_object          (JSContext     *context,
                                          JSObject      *obj,
                                          GType          expected_type,
-                                         JSBool         throw);
+                                         JSBool         throw_error);
 
 void      gjs_object_process_pending_toggles (void);
 

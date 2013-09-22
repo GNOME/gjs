@@ -180,10 +180,10 @@ JSBool
 gjs_typecheck_instance(JSContext *context,
                        JSObject  *obj,
                        JSClass   *static_clasp,
-                       JSBool     throw)
+                       JSBool     throw_error)
 {
     if (!JS_InstanceOf(context, obj, static_clasp, NULL)) {
-        if (throw) {
+        if (throw_error) {
             JSClass *obj_class = JS_GetClass(obj);
 
             gjs_throw_custom(context, "TypeError",

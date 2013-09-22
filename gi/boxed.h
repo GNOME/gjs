@@ -55,7 +55,7 @@ JSBool    gjs_typecheck_boxed          (JSContext             *context,
                                         JSObject              *obj,
                                         GIStructInfo          *expected_info,
                                         GType                  expected_type,
-                                        JSBool                 throw);
+                                        JSBool                 throw_error);
 
 G_END_DECLS
 

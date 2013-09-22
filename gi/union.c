@@ -459,18 +459,18 @@ gjs_typecheck_union(JSContext     *context,
                     JSObject      *object,
                     GIStructInfo  *expected_info,
                     GType          expected_type,
-                    JSBool         throw)
+                    JSBool         throw_error)
 {
     Union *priv;
     JSBool result;
 
-    if (!do_base_typecheck(context, object, throw))
+    if (!do_base_typecheck(context, object, throw_error))
         return JS_FALSE;
 
     priv = priv_from_js(context, object);
 
     if (priv->gboxed == NULL) {
-        if (throw) {
+        if (throw_error) {
             gjs_throw_custom(context, "TypeError",
                              "Object is %s.%s.prototype, not an object instance - cannot convert to a union instance",
                              g_base_info_get_namespace( (GIBaseInfo*) priv->info),
@@ -487,7 +487,7 @@ gjs_typecheck_union(JSContext     *context,
     else
         result = JS_TRUE;
 
-    if (!result && throw) {
+    if (!result && throw_error) {
         if (expected_info != NULL) {
             gjs_throw_custom(context, "TypeError",
                              "Object is of type %s.%s - cannot convert to %s.%s",

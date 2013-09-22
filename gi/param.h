@@ -39,7 +39,7 @@ JSObject*   gjs_param_from_g_param     (JSContext  *context,
 JSBool      gjs_typecheck_param        (JSContext  *context,
                                         JSObject   *obj,
                                         GType       expected_type,
-                                        JSBool      throw);
+                                        JSBool      throw_error);
 
 G_END_DECLS
 

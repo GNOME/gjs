@@ -2052,18 +2052,18 @@ JSBool
 gjs_typecheck_object(JSContext     *context,
                      JSObject      *object,
                      GType          expected_type,
-                     JSBool         throw)
+                     JSBool         throw_error)
 {
     ObjectInstance *priv;
     JSBool result;
 
-    if (!do_base_typecheck(context, object, throw))
+    if (!do_base_typecheck(context, object, throw_error))
         return JS_FALSE;
 
     priv = priv_from_js(context, object);
 
     if (priv == NULL) {
-        if (throw) {
+        if (throw_error) {
             gjs_throw(context,
                       "Object instance or prototype has not been properly initialized yet. "
                       "Did you forget to chain-up from _init()?");
@@ -2073,7 +2073,7 @@ gjs_typecheck_object(JSContext     *context,
     }
 
     if (priv->gobj == NULL) {
-        if (throw) {
+        if (throw_error) {
             gjs_throw(context,
                       "Object is %s.%s.prototype, not an object instance - cannot convert to GObject*",
                       priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
@@ -2090,7 +2090,7 @@ gjs_typecheck_object(JSContext     *context,
     else
         result = JS_TRUE;
 
-    if (!result && throw) {
+    if (!result && throw_error) {
         if (priv->info) {
             gjs_throw_custom(context, "TypeError",
                              "Object is of type %s.%s - cannot convert to %s",
@@ -2356,17 +2356,17 @@ gjs_object_set_gproperty (GObject      *object,
 }
 
 static void
-gjs_object_class_init(GObjectClass *class,
+gjs_object_class_init(GObjectClass *klass,
                       gpointer      user_data)
 {
     GPtrArray *properties;
     GType gtype;
     guint i;
 
-    gtype = G_OBJECT_CLASS_TYPE (class);
+    gtype = G_OBJECT_CLASS_TYPE (klass);
 
-    class->set_property = gjs_object_set_gproperty;
-    class->get_property = gjs_object_get_gproperty;
+    klass->set_property = gjs_object_set_gproperty;
+    klass->get_property = gjs_object_get_gproperty;
 
     gjs_eval_thread = g_thread_self();
 
@@ -2375,7 +2375,7 @@ gjs_object_class_init(GObjectClass *class,
         for (i = 0; i < properties->len; i++) {
             GParamSpec *pspec = properties->pdata[i];
             g_param_spec_set_qdata(pspec, gjs_is_custom_property_quark(), GINT_TO_POINTER(1));
-            g_object_class_install_property (class, i+1, pspec);
+            g_object_class_install_property (klass, i+1, pspec);
         }
         
         gjs_hash_table_for_gsize_remove (class_init_properties, gtype);
@@ -2384,7 +2384,7 @@ gjs_object_class_init(GObjectClass *class,
 
 static void
 gjs_object_custom_init(GTypeInstance *instance,
-                       gpointer       g_class)
+                       gpointer       klass)
 {
     GjsContext *gjs_context;
     JSContext *context;
