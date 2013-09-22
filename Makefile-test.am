@@ -8,8 +8,8 @@ GTESTER = ${TESTS_ENVIRONMENT} ${RUN_WITH_DBUS} gtester
 ########################################################################
 TEST_PROGS += gjs-tests
 
-gjs_tests_CFLAGS =				\
-	$(AM_CFLAGS)				\
+gjs_tests_CPPFLAGS =				\
+	$(AM_CPPFLAGS)				\
 	-DGJS_COMPILATION			\
 	$(GJSTESTS_CFLAGS)			\
 	$(gjs_directory_defines)		\
@@ -22,7 +22,7 @@ gjs_tests_LDADD =		\
 	$(GJSTESTS_LIBS)
 
 gjs_tests_SOURCES =		\
-	test/gjs-tests.c
+	test/gjs-tests.cpp
 
 check-local: gjs-tests
 	@test -z "${TEST_PROGS}" || ${GTESTER} --verbose ${TEST_PROGS} ${TEST_PROGS_OPTIONS}

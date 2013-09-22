@@ -29,13 +29,13 @@ noinst_LTLIBRARIES += $(NATIVE_MODULES)
 libgjs_la_LIBADD += $(NATIVE_MODULES)
 
 JS_NATIVE_MODULE_CFLAGS =	\
-        $(AM_CFLAGS)		\
+        $(AM_CPPFLAGS)		\
 	-DGJS_COMPILATION	\
         $(GJS_CFLAGS)
 JS_NATIVE_MODULE_LIBADD =	\
         $(GJS_LIBS)
 
-libcairoNative_la_CFLAGS =                      \
+libcairoNative_la_CPPFLAGS =                      \
         $(JS_NATIVE_MODULE_CFLAGS)              \
         $(GJS_CAIRO_CFLAGS)                     \
         $(GJS_CFLAGS)
@@ -46,31 +46,32 @@ libcairoNative_la_LIBADD =                      \
 libcairoNative_la_SOURCES =                     \
 	modules/cairo-private.h                 \
 	modules/cairo-module.h                  \
-	modules/cairo-context.c                 \
-	modules/cairo-path.c                 	\
-	modules/cairo-surface.c                 \
-	modules/cairo-image-surface.c           \
-	modules/cairo-ps-surface.c              \
-	modules/cairo-pdf-surface.c             \
-	modules/cairo-svg-surface.c             \
-	modules/cairo-pattern.c                 \
-	modules/cairo-gradient.c                \
-	modules/cairo-linear-gradient.c         \
-	modules/cairo-radial-gradient.c         \
-	modules/cairo-surface-pattern.c         \
-	modules/cairo-solid-pattern.c           \
-	modules/cairo.c
+	modules/cairo-context.cpp                 \
+	modules/cairo-path.cpp                 	\
+	modules/cairo-surface.cpp                 \
+	modules/cairo-image-surface.cpp           \
+	modules/cairo-ps-surface.cpp              \
+	modules/cairo-pdf-surface.cpp             \
+	modules/cairo-svg-surface.cpp             \
+	modules/cairo-pattern.cpp                 \
+	modules/cairo-gradient.cpp                \
+	modules/cairo-linear-gradient.cpp         \
+	modules/cairo-radial-gradient.cpp         \
+	modules/cairo-surface-pattern.cpp         \
+	modules/cairo-solid-pattern.cpp           \
+	modules/cairo.cpp
 
-libsystem_la_CFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
+libsystem_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
 libsystem_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD)
-libsystem_la_SOURCES =				\
-	modules/system.h			\
-	modules/system.c
+libsystem_la_SOURCES =				            \
+	modules/system.h			                \
+	modules/system.cpp
 
-libconsole_la_CFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
+libconsole_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS) \
+			 $(GJS_CFLAGS)
 libconsole_la_LIBADD =				\
 	$(JS_NATIVE_MODULE_LIBADD)		\
 	$(READLINE_LIBS)
 libconsole_la_SOURCES =				\
 	modules/console.h			\
-	modules/console.c
+	modules/console.cpp

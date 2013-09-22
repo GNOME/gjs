@@ -17,6 +17,7 @@ check_PROGRAMS = $(TEST_PROGS)
 INTROSPECTION_GIRS =
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 AM_CFLAGS = $(WARN_CFLAGS) -DG_LOG_DOMAIN=\"Gjs\"
+AM_CPPFLAGS = $(WARN_CXXFLAGS) -DG_LOG_DOMAIN=\"Gjs\"
 
 gjsjsdir = @gjsjsdir@
 gjsoverridedir = $(gjsjsdir)/overrides
@@ -102,58 +103,58 @@ libgjs_la_LIBADD = 		\
 	$(GJS_LIBS)
 
 libgjs_la_SOURCES =		\
-	gjs/byteArray.c		\
-	gjs/context.c		\
-	gjs/importer.c		\
+	gjs/byteArray.cpp		\
+	gjs/context.cpp		\
+	gjs/importer.cpp		\
 	gjs/gi.h		\
-	gjs/gi.c		\
+	gjs/gi.cpp		\
 	gjs/jsapi-private.cpp	\
-	gjs/jsapi-util.c	\
-	gjs/jsapi-dynamic-class.c \
-	gjs/jsapi-util-array.c	\
-	gjs/jsapi-util-error.c	\
-	gjs/jsapi-util-string.c	\
-	gjs/mem.c		\
-	gjs/native.c		\
-	gjs/profiler.c		\
-	gjs/runtime.c		\
-	gjs/stack.c		\
-	gjs/type-module.c	\
-	modules/modules.c	\
+	gjs/jsapi-util.cpp	\
+	gjs/jsapi-dynamic-class.cpp \
+	gjs/jsapi-util-array.cpp	\
+	gjs/jsapi-util-error.cpp	\
+	gjs/jsapi-util-string.cpp	\
+	gjs/mem.cpp		\
+	gjs/native.cpp		\
+	gjs/profiler.cpp		\
+	gjs/runtime.cpp		\
+	gjs/stack.cpp		\
+	gjs/type-module.cpp	\
+	modules/modules.cpp	\
 	modules/modules.h	\
-	util/error.c		\
-	util/hash-x32.c		\
-	util/glib.c		\
-	util/crash.c		\
-	util/log.c		\
-	util/misc.c
+	util/error.cpp		\
+	util/hash-x32.cpp		\
+	util/glib.cpp		\
+	util/crash.cpp		\
+	util/log.cpp		\
+	util/misc.cpp
 
 # For historical reasons, some files live in gi/
 libgjs_la_SOURCES += \
 	gi/gjs_gi_trace.h \
-	gi/arg.c	\
-	gi/boxed.c	\
-	gi/closure.c	\
-	gi/enumeration.c	\
-	gi/function.c	\
-	gi/keep-alive.c	\
-	gi/ns.c	\
-	gi/object.c	\
-	gi/foreign.c	\
-	gi/param.c	\
-	gi/proxyutils.c	\
-        gi/repo.c	\
-	gi/union.c	\
-        gi/value.c	\
-	gi/interface.c	\
-	gi/gtype.c	\
-	gi/gerror.c
+	gi/arg.cpp	\
+	gi/boxed.cpp	\
+	gi/closure.cpp	\
+	gi/enumeration.cpp	\
+	gi/function.cpp	\
+	gi/keep-alive.cpp	\
+	gi/ns.cpp	\
+	gi/object.cpp	\
+	gi/foreign.cpp	\
+	gi/param.cpp	\
+	gi/proxyutils.cpp	\
+        gi/repo.cpp	\
+	gi/union.cpp	\
+        gi/value.cpp	\
+	gi/interface.cpp	\
+	gi/gtype.cpp	\
+	gi/gerror.cpp
 
 # Also, these files used to be a separate library
 libgjs_private_source_files = \
-	libgjs-private/gjs-gdbus-wrapper.c	\
+	libgjs-private/gjs-gdbus-wrapper.cpp	\
 	libgjs-private/gjs-gdbus-wrapper.h	\
-	libgjs-private/gjs-util.c		\
+	libgjs-private/gjs-util.cpp		\
 	libgjs-private/gjs-util.h
 libgjs_la_SOURCES += $(libgjs_private_source_files)
 
@@ -176,12 +177,12 @@ endif
 EXTRA_DIST += gi/gjs_gi_probes.d
 
 gjstest_files_with_tests += 	\
-	gjs/context.c		\
-	gjs/jsapi-util-array.c	\
-	gjs/jsapi-util-error.c	\
-	gjs/jsapi-util-string.c	\
-	gjs/stack.c				\
-	util/glib.c
+	gjs/context.cpp		\
+	gjs/jsapi-util-array.cpp	\
+	gjs/jsapi-util-error.cpp	\
+	gjs/jsapi-util-string.cpp	\
+	gjs/stack.cpp				\
+	util/glib.cpp
 
 tapset_in_files = gjs/gjs.stp.in
 EXTRA_DIST += $(tapset_in_files)
@@ -201,15 +202,15 @@ typelib_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
 ########################################################################
 bin_PROGRAMS += gjs-console
 
-gjs_console_CFLAGS = 		\
-	$(AM_CFLAGS)		\
+gjs_console_CPPFLAGS = 		\
+	$(AM_CPPFLAGS)		\
         $(GOBJECT_CFLAGS)
 gjs_console_LDADD =		\
 	$(JS_LIBS)		\
 	$(GOBJECT_LIBS)		\
 	libgjs.la
 gjs_console_LDFLAGS = -rdynamic
-gjs_console_SOURCES = gjs/console.c
+gjs_console_SOURCES = gjs/console.cpp
 
 install-exec-hook:
 	(cd $(DESTDIR)$(bindir) && ln -sf gjs-console$(EXEEXT) gjs$(EXEEXT))

@@ -10,7 +10,7 @@ m4_define(pkg_int_version, (pkg_major_version * 100 + pkg_minor_version) * 100 +
 AC_PREREQ(2.61)
 AC_INIT([gjs], pkg_version, [http://bugzilla.gnome.org/enter_bug.cgi?product=gjs])
 AM_INIT_AUTOMAKE([dist-xz no-dist-gzip])
-AC_CONFIG_SRCDIR([gjs/console.c])
+AC_CONFIG_SRCDIR([gjs/console.cpp])
 AC_CONFIG_HEADER([config.h])
 
 AC_DEFINE([GJS_VERSION], pkg_int_version, [The gjs version as an integer])
@@ -40,7 +40,7 @@ dnl DOLT
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 
-GNOME_COMPILE_WARNINGS([maximum])
+GNOME_CXX_WARNINGS([maximum])
 GNOME_MAINTAINER_MODE_DEFINES
 
 # coverage
