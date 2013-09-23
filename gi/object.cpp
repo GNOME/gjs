@@ -1343,7 +1343,7 @@ object_instance_finalize(JSFreeOp  *fop,
 
         set_js_obj(priv->gobj, NULL);
         g_object_remove_toggle_ref(priv->gobj, wrapped_gobj_toggle_notify,
-                                   fop->runtime);
+                                   fop->runtime());
         priv->gobj = NULL;
     }
 
@@ -1364,7 +1364,7 @@ object_instance_finalize(JSFreeOp  *fop,
          * be finalized later and call gobj_no_longer_kept_alive_func.
          */
         {
-            JSContext *context = JS_NewContext(fop->runtime, 8192);
+            JSContext *context = JS_NewContext(fop->runtime(), 8192);
             gjs_keep_alive_remove_child(context, priv->keep_alive,
                                         gobj_no_longer_kept_alive_func,
                                         obj,
