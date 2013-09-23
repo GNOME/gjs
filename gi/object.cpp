@@ -247,10 +247,10 @@ proto_priv_from_js(JSContext *context,
  * Return value is JS_FALSE on OOM/exception.
  */
 static JSBool
-object_instance_get_prop(JSContext            *context,
-                         JSHandleObject        obj,
-                         JSHandleId            id,
-                         JSMutableHandleValue  value_p)
+object_instance_get_prop(JSContext              *context,
+                         JS::HandleObject        obj,
+                         JS::HandleId            id,
+                         JS::MutableHandleValue  value_p)
 {
     ObjectInstance *priv;
     char *name;
@@ -259,12 +259,12 @@ object_instance_get_prop(JSContext            *context,
     GValue gvalue = { 0, };
     JSBool ret = JS_TRUE;
 
-    if (!gjs_get_string_id(context, *id._, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
-    priv = priv_from_js(context, *obj._);
+    priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Get prop '%s' hook obj %p priv %p", name, *obj._, priv);
+                     "Get prop '%s' hook obj %p priv %p", name, obj, priv);
 
     if (priv == NULL) {
         /* If we reach this point, either object_instance_new_resolve
@@ -300,7 +300,7 @@ object_instance_get_prop(JSContext            *context,
     g_value_init(&gvalue, G_PARAM_SPEC_VALUE_TYPE(param));
     g_object_get_property(priv->gobj, param->name,
                           &gvalue);
-    if (!gjs_value_from_g_value(context, value_p._, &gvalue)) {
+    if (!gjs_value_from_g_value(context, value_p.address(), &gvalue)) {
         g_value_unset(&gvalue);
         ret = JS_FALSE;
         goto out;
@@ -316,23 +316,23 @@ object_instance_get_prop(JSContext            *context,
  * be set. Return value is JS_FALSE on OOM/exception.
  */
 static JSBool
-object_instance_set_prop(JSContext            *context,
-                         JSHandleObject        obj,
-                         JSHandleId            id,
-                         JSBool                strict,
-                         JSMutableHandleValue  value_p)
+object_instance_set_prop(JSContext              *context,
+                         JS::HandleObject        obj,
+                         JS::HandleId            id,
+                         JSBool                  strict,
+                         JS::MutableHandleValue  value_p)
 {
     ObjectInstance *priv;
     char *name;
     GParameter param = { NULL, { 0, }};
     JSBool ret = JS_TRUE;
 
-    if (!gjs_get_string_id(context, *id._, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
-    priv = priv_from_js(context, *obj._);
+    priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Set prop '%s' hook obj %p priv %p", name, *obj._, priv);
+                     "Set prop '%s' hook obj %p priv %p", name, obj, priv);
 
     if (priv == NULL) {
         /* see the comment in object_instance_get_prop() on this */
@@ -342,7 +342,7 @@ object_instance_set_prop(JSContext            *context,
         goto out;
 
     switch (init_g_param_from_property(context, name,
-                                       *value_p._,
+                                       value_p,
                                        G_TYPE_FROM_INSTANCE(priv->gobj),
                                        &param,
                                        FALSE /* constructing */)) {

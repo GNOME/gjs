@@ -628,10 +628,10 @@ get_nested_interface_object (JSContext   *context,
 }
 
 static JSBool
-boxed_field_getter (JSContext            *context,
-                    JSHandleObject        obj,
-                    JSHandleId            id,
-                    JSMutableHandleValue  value)
+boxed_field_getter (JSContext              *context,
+                    JS::HandleObject        obj,
+                    JS::HandleId            id,
+                    JS::MutableHandleValue  value)
 {
     Boxed *priv;
     GIFieldInfo *field_info;
@@ -639,11 +639,11 @@ boxed_field_getter (JSContext            *context,
     GArgument arg;
     gboolean success = FALSE;
 
-    priv = priv_from_js(context, *obj._);
+    priv = priv_from_js(context, obj);
     if (!priv)
         return JS_FALSE;
 
-    field_info = get_field_info(context, priv, *id._);
+    field_info = get_field_info(context, priv, id);
     if (!field_info)
         return JS_FALSE;
 
@@ -664,9 +664,9 @@ boxed_field_getter (JSContext            *context,
         if (g_base_info_get_type (interface_info) == GI_INFO_TYPE_STRUCT ||
             g_base_info_get_type (interface_info) == GI_INFO_TYPE_BOXED) {
 
-            success = get_nested_interface_object (context, *obj._, priv,
+            success = get_nested_interface_object (context, obj, priv,
                                                    field_info, type_info, interface_info,
-                                                   value._);
+                                                   value.address());
 
             g_base_info_unref ((GIBaseInfo *)interface_info);
 
@@ -683,7 +683,7 @@ boxed_field_getter (JSContext            *context,
         goto out;
     }
 
-    if (!gjs_value_from_g_argument (context, value._,
+    if (!gjs_value_from_g_argument (context, value.address(),
                                     type_info,
                                     &arg,
                                     TRUE))
@@ -808,20 +808,20 @@ out:
 }
 
 static JSBool
-boxed_field_setter (JSContext            *context,
-                    JSHandleObject        obj,
-                    JSHandleId            id,
-                    JSBool                strict,
-                    JSMutableHandleValue  value)
+boxed_field_setter (JSContext              *context,
+                    JS::HandleObject        obj,
+                    JS::HandleId            id,
+                    JSBool                  strict,
+                    JS::MutableHandleValue  value)
 {
     Boxed *priv;
     GIFieldInfo *field_info;
     gboolean success = FALSE;
 
-    priv = priv_from_js(context, *obj._);
+    priv = priv_from_js(context, obj);
     if (!priv)
         return JS_FALSE;
-    field_info = get_field_info(context, priv, *id._);
+    field_info = get_field_info(context, priv, id);
     if (!field_info)
         return JS_FALSE;
 
@@ -832,7 +832,7 @@ boxed_field_setter (JSContext            *context,
         goto out;
     }
 
-    success = boxed_set_field_from_value (context, priv, field_info, *value._);
+    success = boxed_set_field_from_value (context, priv, field_info, value);
 
 out:
     g_base_info_unref ((GIBaseInfo *)field_info);

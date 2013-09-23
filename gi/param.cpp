@@ -68,10 +68,10 @@ find_field_info(GIObjectInfo *info,
  * Return value is JS_FALSE on OOM/exception.
  */
 static JSBool
-param_get_prop(JSContext            *context,
-               JSHandleObject        obj,
-               JSHandleId            id,
-               JSMutableHandleValue  value_p)
+param_get_prop(JSContext              *context,
+               JS::HandleObject        obj,
+               JS::HandleId            id,
+               JS::MutableHandleValue  value_p)
 {
     JSBool success;
     Param *priv;
@@ -83,10 +83,10 @@ param_get_prop(JSContext            *context,
     GITypeInfo *type_info = NULL;
     GIArgument arg;
 
-    if (!gjs_get_string_id(context, *id._, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not something we affect, but no error */
 
-    priv = priv_from_js(context, *obj._);
+    priv = priv_from_js(context, obj);
 
     if (priv == NULL) {
         g_free(name);
@@ -101,7 +101,7 @@ param_get_prop(JSContext            *context,
 
     if (info == NULL) {
         /* We may have a non-introspectable GParamSpec subclass here. Just return VOID. */
-        *value_p._ = JSVAL_VOID;
+        value_p.set(JSVAL_VOID);
         success = JS_TRUE;
         goto out;
     }
@@ -116,7 +116,7 @@ param_get_prop(JSContext            *context,
     }
 
     if (field_info == NULL) {
-        *value_p._ = JSVAL_VOID;
+        value_p.set(JSVAL_VOID);
         success = JS_TRUE;
         goto out;
     }
@@ -130,7 +130,7 @@ param_get_prop(JSContext            *context,
         goto out;
     }
 
-    if (!gjs_value_from_g_argument(context, value_p._, type_info, &arg, TRUE))
+    if (!gjs_value_from_g_argument(context, value_p.address(), type_info, &arg, TRUE))
         goto out;
 
     success = JS_TRUE;
