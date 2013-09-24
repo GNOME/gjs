@@ -196,6 +196,7 @@ param_new_internal(JSContext *cx,
     gchar *nick;
     gchar *blurb;
     GParamFlags flags;
+    jsval foo;
 
     if (!gjs_parse_args(cx, "GObject.ParamSpec._new_internal",
                         "!sossi", argc, argv,
@@ -392,7 +393,7 @@ param_new_internal(JSContext *cx,
 
     ret = JS_TRUE;
 
-    jsval foo = OBJECT_TO_JSVAL(gjs_param_from_g_param(cx, pspec));
+    foo = OBJECT_TO_JSVAL(gjs_param_from_g_param(cx, pspec));
 
     JS_SET_RVAL(cx, vp, foo);
  out:
