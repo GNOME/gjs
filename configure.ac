@@ -2,8 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 m4_define(pkg_major_version, 1)
-m4_define(pkg_minor_version, 37)
-m4_define(pkg_micro_version, 6)
+m4_define(pkg_minor_version, 38)
+m4_define(pkg_micro_version, 0)
 m4_define(pkg_version, pkg_major_version.pkg_minor_version.pkg_micro_version)
 m4_define(pkg_int_version, (pkg_major_version * 100 + pkg_minor_version) * 100 + pkg_micro_version)
 
@@ -71,7 +71,7 @@ m4_define(glib_required_version, 2.36.0)
 AC_CHECK_HEADERS([malloc.h])
 AC_CHECK_FUNCS(mallinfo)
 
-GOBJECT_INTROSPECTION_REQUIRE([1.37.1])
+GOBJECT_INTROSPECTION_REQUIRE([1.38.0])
 
 common_packages="gmodule-2.0 gthread-2.0 gio-2.0 >= glib_required_version mozjs-17.0"
 gjs_packages="gobject-introspection-1.0 libffi $common_packages"
