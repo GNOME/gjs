@@ -887,7 +887,7 @@ enum ByteArrayTinyId {
     BYTE_ARRAY_TINY_ID_LENGTH = -1
 };
 
-static JSPropertySpec gjs_byte_array_proto_props[] = {
+JSPropertySpec gjs_byte_array_proto_props[] = {
     { "length", BYTE_ARRAY_TINY_ID_LENGTH,
       JSPROP_PERMANENT,
       JSOP_WRAPPER ((JSPropertyOp) byte_array_length_getter),
@@ -896,7 +896,7 @@ static JSPropertySpec gjs_byte_array_proto_props[] = {
     { NULL }
 };
 
-static JSFunctionSpec gjs_byte_array_proto_funcs[] = {
+JSFunctionSpec gjs_byte_array_proto_funcs[] = {
     { "toString", JSOP_WRAPPER ((JSNative) to_string_func), 0, 0 },
     { "toGBytes", JSOP_WRAPPER ((JSNative) to_gbytes_func), 0, 0 },
     { NULL }

@@ -959,11 +959,11 @@ struct JSClass gjs_importer_class = {
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
-static JSPropertySpec gjs_importer_proto_props[] = {
+JSPropertySpec gjs_importer_proto_props[] = {
     { NULL }
 };
 
-static JSFunctionSpec gjs_importer_proto_funcs[] = {
+JSFunctionSpec gjs_importer_proto_funcs[] = {
     { NULL }
 };
 

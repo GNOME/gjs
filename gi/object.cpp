@@ -1808,11 +1808,11 @@ init_func (JSContext *context,
     return ret;
 }
 
-static JSPropertySpec gjs_object_instance_proto_props[] = {
+JSPropertySpec gjs_object_instance_proto_props[] = {
     { NULL }
 };
 
-static JSFunctionSpec gjs_object_instance_proto_funcs[] = {
+JSFunctionSpec gjs_object_instance_proto_funcs[] = {
     { "_init", JSOP_WRAPPER((JSNative)init_func), 0, 0 },
     { "connect", JSOP_WRAPPER((JSNative)connect_func), 0, 0 },
     { "connect_after", JSOP_WRAPPER((JSNative)connect_after_func), 0, 0 },

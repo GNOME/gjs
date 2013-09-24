@@ -426,11 +426,11 @@ struct JSClass gjs_param_class = {
     NULL, NULL, NULL
 };
 
-static JSPropertySpec gjs_param_proto_props[] = {
+JSPropertySpec gjs_param_proto_props[] = {
     { NULL }
 };
 
-static JSFunctionSpec gjs_param_proto_funcs[] = {
+JSFunctionSpec gjs_param_proto_funcs[] = {
     { NULL }
 };
 

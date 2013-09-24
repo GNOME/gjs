@@ -324,7 +324,7 @@ struct JSClass gjs_error_class = {
 
 /* We need to shadow all fields of GError, to prevent calling the getter from GBoxed
    (which would trash memory accessing the instance private data) */
-static JSPropertySpec gjs_error_proto_props[] = {
+JSPropertySpec gjs_error_proto_props[] = {
     { "domain", PROP_DOMAIN,
       GJS_MODULE_PROP_FLAGS | JSPROP_READONLY,
       JSOP_WRAPPER((JSPropertyOp)error_get_domain),
@@ -343,7 +343,7 @@ static JSPropertySpec gjs_error_proto_props[] = {
     { NULL }
 };
 
-static JSFunctionSpec gjs_error_proto_funcs[] = {
+JSFunctionSpec gjs_error_proto_funcs[] = {
     { "toString", JSOP_WRAPPER((JSNative)error_to_string), 0, GJS_MODULE_PROP_FLAGS },
     JS_FS_END
 };

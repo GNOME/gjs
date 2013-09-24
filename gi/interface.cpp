@@ -159,11 +159,11 @@ struct JSClass gjs_interface_class = {
     NULL, NULL, NULL
 };
 
-static JSPropertySpec gjs_interface_proto_props[] = {
+JSPropertySpec gjs_interface_proto_props[] = {
     { NULL }
 };
 
-static JSFunctionSpec gjs_interface_proto_funcs[] = {
+JSFunctionSpec gjs_interface_proto_funcs[] = {
     { NULL }
 };
 

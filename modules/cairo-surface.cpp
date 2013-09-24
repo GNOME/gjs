@@ -51,7 +51,7 @@ gjs_cairo_surface_finalize(JSFreeOp *fop,
 }
 
 /* Properties */
-static JSPropertySpec gjs_cairo_surface_proto_props[] = {
+JSPropertySpec gjs_cairo_surface_proto_props[] = {
     { NULL }
 };
 
@@ -108,7 +108,7 @@ getType_func(JSContext *context,
     return JS_TRUE;
 }
 
-static JSFunctionSpec gjs_cairo_surface_proto_funcs[] = {
+JSFunctionSpec gjs_cairo_surface_proto_funcs[] = {
     // flush
     // getContent
     // getFontOptions

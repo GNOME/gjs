@@ -245,11 +245,11 @@ struct JSClass gjs_repo_class = {
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
-static JSPropertySpec gjs_repo_proto_props[] = {
+JSPropertySpec gjs_repo_proto_props[] = {
     { NULL }
 };
 
-static JSFunctionSpec gjs_repo_proto_funcs[] = {
+JSFunctionSpec gjs_repo_proto_funcs[] = {
     { NULL }
 };
 

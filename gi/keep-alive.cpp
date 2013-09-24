@@ -167,11 +167,11 @@ struct JSClass gjs_keep_alive_class = {
     keep_alive_trace,
 };
 
-static JSPropertySpec gjs_keep_alive_proto_props[] = {
+JSPropertySpec gjs_keep_alive_proto_props[] = {
     { NULL }
 };
 
-static JSFunctionSpec gjs_keep_alive_proto_funcs[] = {
+JSFunctionSpec gjs_keep_alive_proto_funcs[] = {
     { NULL }
 };
 

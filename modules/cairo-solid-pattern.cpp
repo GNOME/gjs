@@ -36,7 +36,7 @@ gjs_cairo_solid_pattern_finalize(JSFreeOp *fop,
     gjs_cairo_pattern_finalize_pattern(fop, obj);
 }
 
-static JSPropertySpec gjs_cairo_solid_pattern_proto_props[] = {
+JSPropertySpec gjs_cairo_solid_pattern_proto_props[] = {
     { NULL }
 };
 
@@ -97,7 +97,7 @@ createRGBA_func(JSContext *context,
     return JS_TRUE;
 }
 
-static JSFunctionSpec gjs_cairo_solid_pattern_proto_funcs[] = {
+JSFunctionSpec gjs_cairo_solid_pattern_proto_funcs[] = {
     { "createRGB", JSOP_WRAPPER((JSNative)createRGB_func), 0, 0 },
     { "createRGBA", JSOP_WRAPPER((JSNative)createRGBA_func), 0, 0 },
     { NULL }

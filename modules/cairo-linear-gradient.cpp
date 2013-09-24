@@ -64,11 +64,11 @@ gjs_cairo_linear_gradient_finalize(JSFreeOp *fop,
     gjs_cairo_pattern_finalize_pattern(fop, obj);
 }
 
-static JSPropertySpec gjs_cairo_linear_gradient_proto_props[] = {
+JSPropertySpec gjs_cairo_linear_gradient_proto_props[] = {
     { NULL }
 };
 
-static JSFunctionSpec gjs_cairo_linear_gradient_proto_funcs[] = {
+JSFunctionSpec gjs_cairo_linear_gradient_proto_funcs[] = {
     // getLinearPoints
     { NULL }
 };

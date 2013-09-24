@@ -320,7 +320,7 @@ gjs_cairo_context_finalize(JSFreeOp *fop,
 }
 
 /* Properties */
-static JSPropertySpec gjs_cairo_context_proto_props[] = {
+JSPropertySpec gjs_cairo_context_proto_props[] = {
     { NULL }
 };
 
@@ -870,7 +870,7 @@ getGroupTarget_func(JSContext *context,
     return JS_TRUE;
 }
 
-static JSFunctionSpec gjs_cairo_context_proto_funcs[] = {
+JSFunctionSpec gjs_cairo_context_proto_funcs[] = {
     { "$dispose", JSOP_WRAPPER((JSNative)dispose_func), 0, 0 },
     { "appendPath", JSOP_WRAPPER((JSNative)appendPath_func), 0, 0},
     { "arc", JSOP_WRAPPER((JSNative)arc_func), 0, 0 },

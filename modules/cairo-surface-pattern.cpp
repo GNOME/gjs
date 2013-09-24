@@ -69,7 +69,7 @@ gjs_cairo_surface_pattern_finalize(JSFreeOp *fop,
     gjs_cairo_pattern_finalize_pattern(fop, obj);
 }
 
-static JSPropertySpec gjs_cairo_surface_pattern_proto_props[] = {
+JSPropertySpec gjs_cairo_surface_pattern_proto_props[] = {
     { NULL }
 };
 
@@ -172,7 +172,7 @@ getFilter_func(JSContext *context,
     return JS_TRUE;
 }
 
-static JSFunctionSpec gjs_cairo_surface_pattern_proto_funcs[] = {
+JSFunctionSpec gjs_cairo_surface_pattern_proto_funcs[] = {
     { "setExtend", JSOP_WRAPPER((JSNative)setExtend_func), 0, 0 },
     { "getExtend", JSOP_WRAPPER((JSNative)getExtend_func), 0, 0 },
     { "setFilter", JSOP_WRAPPER((JSNative)setFilter_func), 0, 0 },

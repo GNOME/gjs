@@ -102,7 +102,7 @@ get_name_func (JSContext *context,
 }
 
 /* Properties */
-static JSPropertySpec gjs_gtype_proto_props[] = {
+JSPropertySpec gjs_gtype_proto_props[] = {
     { "name", 0,
       JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_SHARED,
       JSOP_WRAPPER((JSPropertyOp)get_name_func),
@@ -111,7 +111,7 @@ static JSPropertySpec gjs_gtype_proto_props[] = {
 };
 
 /* Functions */
-static JSFunctionSpec gjs_gtype_proto_funcs[] = {
+JSFunctionSpec gjs_gtype_proto_funcs[] = {
     { "toString", JSOP_WRAPPER((JSNative)to_string_func), 0, 0 },
     { NULL }
 };

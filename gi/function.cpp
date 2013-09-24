@@ -1371,7 +1371,7 @@ struct JSClass gjs_function_class = {
     NULL, NULL, NULL
 };
 
-static JSPropertySpec gjs_function_proto_props[] = {
+JSPropertySpec gjs_function_proto_props[] = {
     { "length", 0,
       (JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_SHARED),
       JSOP_WRAPPER((JSPropertyOp)get_num_arguments),
@@ -1382,7 +1382,7 @@ static JSPropertySpec gjs_function_proto_props[] = {
 
 /* The original Function.prototype.toString complains when
    given a GIRepository function as an argument */
-static JSFunctionSpec gjs_function_proto_funcs[] = {
+JSFunctionSpec gjs_function_proto_funcs[] = {
     JS_FN("toString", function_to_string, 0, 0),
     JS_FS_END
 };

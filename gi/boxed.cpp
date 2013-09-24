@@ -943,11 +943,11 @@ struct JSClass gjs_boxed_class = {
     NULL, NULL, NULL
 };
 
-static JSPropertySpec gjs_boxed_proto_props[] = {
+JSPropertySpec gjs_boxed_proto_props[] = {
     { NULL }
 };
 
-static JSFunctionSpec gjs_boxed_proto_funcs[] = {
+JSFunctionSpec gjs_boxed_proto_funcs[] = {
     { "toString", JSOP_WRAPPER((JSNative)to_string_func), 0, 0 },
     { NULL }
 };

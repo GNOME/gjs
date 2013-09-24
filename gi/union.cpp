@@ -324,11 +324,11 @@ struct JSClass gjs_union_class = {
     NULL, NULL, NULL
 };
 
-static JSPropertySpec gjs_union_proto_props[] = {
+JSPropertySpec gjs_union_proto_props[] = {
     { NULL }
 };
 
-static JSFunctionSpec gjs_union_proto_funcs[] = {
+JSFunctionSpec gjs_union_proto_funcs[] = {
     { "toString", JSOP_WRAPPER((JSNative)to_string_func), 0, 0 },
     { NULL }
 };

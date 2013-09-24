@@ -64,7 +64,7 @@ gjs_cairo_image_surface_finalize(JSFreeOp *fop,
     gjs_cairo_surface_finalize_surface(fop, obj);
 }
 
-static JSPropertySpec gjs_cairo_image_surface_proto_props[] = {
+JSPropertySpec gjs_cairo_image_surface_proto_props[] = {
     { NULL }
 };
 
@@ -195,7 +195,7 @@ getStride_func(JSContext *context,
     return JS_TRUE;
 }
 
-static JSFunctionSpec gjs_cairo_image_surface_proto_funcs[] = {
+JSFunctionSpec gjs_cairo_image_surface_proto_funcs[] = {
     { "createFromPNG", JSOP_WRAPPER((JSNative)createFromPNG_func), 0, 0},
     // getData
     { "getFormat", JSOP_WRAPPER((JSNative)getFormat_func), 0, 0 },

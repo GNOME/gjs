@@ -37,7 +37,7 @@ gjs_cairo_gradient_finalize(JSFreeOp *fop,
 }
 
 /* Properties */
-static JSPropertySpec gjs_cairo_gradient_proto_props[] = {
+JSPropertySpec gjs_cairo_gradient_proto_props[] = {
     { NULL }
 };
 
@@ -99,7 +99,7 @@ addColorStopRGBA_func(JSContext *context,
     return JS_TRUE;
 }
 
-static JSFunctionSpec gjs_cairo_gradient_proto_funcs[] = {
+JSFunctionSpec gjs_cairo_gradient_proto_funcs[] = {
     { "addColorStopRGB", JSOP_WRAPPER((JSNative)addColorStopRGB_func), 0, 0 },
     { "addColorStopRGBA", JSOP_WRAPPER((JSNative)addColorStopRGBA_func), 0, 0 },
     // getColorStopRGB

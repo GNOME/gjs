@@ -71,11 +71,11 @@ gjs_cairo_pdf_surface_finalize(JSFreeOp *fop,
     gjs_cairo_surface_finalize_surface(fop, obj);
 }
 
-static JSPropertySpec gjs_cairo_pdf_surface_proto_props[] = {
+JSPropertySpec gjs_cairo_pdf_surface_proto_props[] = {
     { NULL }
 };
 
-static JSFunctionSpec gjs_cairo_pdf_surface_proto_funcs[] = {
+JSFunctionSpec gjs_cairo_pdf_surface_proto_funcs[] = {
     { NULL }
 };
 

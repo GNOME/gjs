@@ -168,11 +168,11 @@ struct JSClass gjs_ns_class = {
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
-static JSPropertySpec gjs_ns_proto_props[] = {
+JSPropertySpec gjs_ns_proto_props[] = {
     { NULL }
 };
 
-static JSFunctionSpec gjs_ns_proto_funcs[] = {
+JSFunctionSpec gjs_ns_proto_funcs[] = {
     { NULL }
 };
 
