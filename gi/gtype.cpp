@@ -129,7 +129,7 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
     global = gjs_get_import_global(context);
     gjs_gtype_create_proto(context, global, "GIRepositoryGType", NULL);
 
-    object = g_type_get_qdata(gtype, gjs_get_gtype_wrapper_quark());
+    object = (JSObject*) g_type_get_qdata(gtype, gjs_get_gtype_wrapper_quark());
     if (object != NULL)
         goto out;
 

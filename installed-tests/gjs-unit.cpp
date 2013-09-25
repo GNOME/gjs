@@ -39,14 +39,14 @@ static void
 setup(GjsTestJSFixture *fix,
       gconstpointer     test_data)
 {
-    const char *test_filename = test_data;
+    const char *test_filename = (const char*) test_data;
     const char *js_version;
 
     js_version = gjs_context_scan_file_for_js_version(test_filename);
 
-    fix->context = g_object_new (GJS_TYPE_CONTEXT,
-                                 "js-version", js_version,
-                                 NULL);
+    fix->context = (GjsContext*) g_object_new (GJS_TYPE_CONTEXT,
+                                               "js-version", js_version,
+                                               NULL);
 }
 
 static void
@@ -121,7 +121,7 @@ main(int argc, char **argv)
 
     all_tests = read_all_dir_sorted(js_test_dir);
     for (iter = all_tests; iter; iter = iter->next) {
-        char *name = iter->data;
+        char *name = (char*) iter->data;
         char *test_name;
         char *file_name;
 

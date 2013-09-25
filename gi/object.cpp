@@ -730,7 +730,7 @@ object_instance_props_to_g_parameters(JSContext   *context,
     if (n_gparams_p)
         *n_gparams_p = gparams->len;
     if (gparams_p)
-        *gparams_p = (void*) g_array_free(gparams, FALSE);
+        *gparams_p = (GParameter*) g_array_free(gparams, FALSE);
 
     return JS_TRUE;
 
@@ -739,7 +739,7 @@ object_instance_props_to_g_parameters(JSContext   *context,
         GParameter *to_free;
         int count;
         count = gparams->len;
-        to_free = (void*) g_array_free(gparams, FALSE);
+        to_free = (GParameter*) g_array_free(gparams, FALSE);
         free_g_params(to_free, count);
     }
     return JS_FALSE;
@@ -761,7 +761,7 @@ gobj_no_longer_kept_alive_func(JSObject *obj,
 {
     ObjectInstance *priv;
 
-    priv = data;
+    priv = (ObjectInstance *) data;
 
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
                         "GObject wrapper %p will no longer be kept alive, eligible for collection",
@@ -820,7 +820,7 @@ cancel_toggle_idle(GObject         *gobj,
 
     qdata_key = get_qdata_key_for_toggle_direction(direction);
 
-    source = g_object_steal_qdata(gobj, qdata_key);
+    source = (GSource*) g_object_steal_qdata(gobj, qdata_key);
 
     if (source)
         g_source_destroy(source);
@@ -910,7 +910,7 @@ out:
 static gboolean
 idle_handle_toggle(gpointer data)
 {
-    ToggleRefNotifyOperation *operation = data;
+    ToggleRefNotifyOperation *operation = (ToggleRefNotifyOperation *) data;
 
     if (!clear_toggle_idle_source(operation->gobj, operation->direction)) {
         /* Already cleared, the JSObject is going away, abort mission */
@@ -961,7 +961,7 @@ queue_toggle_idle(GObject         *gobj,
              * only ever have at most two toggle notifications queued.
              * (either only up, or down-up)
              */
-            operation->gobj = g_object_ref(gobj);
+            operation->gobj = (GObject*) g_object_ref(gobj);
             operation->needs_unref = TRUE;
             break;
         case TOGGLE_DOWN:
@@ -1006,7 +1006,7 @@ wrapped_gobj_toggle_notify(gpointer      data,
     gboolean gc_blocked = FALSE;
     gboolean toggle_up_queued, toggle_down_queued;
 
-    runtime = data;
+    runtime = (JSRuntime*) data;
 
     /* During teardown, this can return NULL if runtime is being destroyed.
      * In that case we effectively already converted to a weak ref without
@@ -1187,7 +1187,7 @@ object_instance_init (JSContext *context,
     if (g_type_get_qdata(gtype, gjs_is_custom_type_quark()))
         object_init_list = g_slist_prepend(object_init_list, *object);
 
-    gobj = g_object_newv(gtype, n_params, params);
+    gobj = (GObject*) g_object_newv(gtype, n_params, params);
 
     free_g_params(params, n_params);
 
@@ -1278,7 +1278,7 @@ invalidate_all_signals(ObjectInstance *priv)
     GList *iter, *next;
 
     for (iter = priv->signals; iter; ) {
-        ConnectData *cd = iter->data;
+        ConnectData *cd = (ConnectData*) iter->data;
         next = iter->next;
 
         /* This will also free cd and iter, through
@@ -1296,10 +1296,10 @@ object_instance_trace(JSTracer *tracer,
     ObjectInstance *priv;
     GList *iter;
 
-    priv = JS_GetPrivate(obj);
+    priv = (ObjectInstance *) JS_GetPrivate(obj);
 
     for (iter = priv->signals; iter; iter = iter->next) {
-        ConnectData *cd = iter->data;
+        ConnectData *cd = (ConnectData *) iter->data;
 
         gjs_closure_trace(cd->closure, tracer);
     }
@@ -1311,7 +1311,7 @@ object_instance_finalize(JSFreeOp  *fop,
 {
     ObjectInstance *priv;
 
-    priv = JS_GetPrivate(obj);
+    priv = (ObjectInstance *) JS_GetPrivate(obj);
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
                         "finalize obj %p priv %p gtype %s gobj %p", obj, priv,
                         (priv && priv->gobj) ?
@@ -1454,7 +1454,7 @@ static void
 signal_connection_invalidated (gpointer  user_data,
                                GClosure *closure)
 {
-    ConnectData *connect_data = user_data;
+    ConnectData *connect_data = (ConnectData *) user_data;
 
     connect_data->obj->signals = g_list_delete_link(connect_data->obj->signals,
                                                     connect_data->link);
@@ -1956,7 +1956,7 @@ gjs_define_object_class(JSContext      *context,
     if (info)
         g_base_info_ref((GIBaseInfo*) info);
     priv->gtype = gtype;
-    priv->klass = g_type_class_ref (gtype);
+    priv->klass = (GTypeClass*) g_type_class_ref (gtype);
     JS_SetPrivate(prototype, priv);
 
     gjs_debug(GJS_DEBUG_GOBJECT, "Defined class %s prototype %p class %p in object %p",
@@ -1976,7 +1976,7 @@ gjs_define_object_class(JSContext      *context,
 static JSObject*
 peek_js_obj(GObject *gobj)
 {
-    return g_object_get_qdata(gobj, gjs_object_priv_quark());
+    return (JSObject*) g_object_get_qdata(gobj, gjs_object_priv_quark());
 }
 
 static void
@@ -2135,7 +2135,7 @@ find_vfunc_info (JSContext *context,
     implementor_class = g_type_class_ref(implementor_gtype);
     if (is_interface) {
         GTypeInstance *implementor_iface_class;
-        implementor_iface_class = g_type_interface_peek(implementor_class,
+        implementor_iface_class = (GTypeInstance*) g_type_interface_peek(implementor_class,
                                                         ancestor_gtype);
         if (implementor_iface_class == NULL) {
             g_type_class_unref(implementor_class);
@@ -2318,7 +2318,7 @@ gjs_object_get_gproperty (GObject    *object,
     gchar *underscore_name;
 
     gjs_context = gjs_context_get_current();
-    context = gjs_context_get_native_context(gjs_context);
+    context = (JSContext*) gjs_context_get_native_context(gjs_context);
 
     js_obj = peek_js_obj(object);
 
@@ -2343,7 +2343,7 @@ gjs_object_set_gproperty (GObject      *object,
     gchar *underscore_name;
 
     gjs_context = gjs_context_get_current();
-    context = gjs_context_get_native_context(gjs_context);
+    context = (JSContext*) gjs_context_get_native_context(gjs_context);
 
     js_obj = peek_js_obj(object);
 
@@ -2370,10 +2370,10 @@ gjs_object_class_init(GObjectClass *klass,
 
     gjs_eval_thread = g_thread_self();
 
-    properties = gjs_hash_table_for_gsize_lookup (class_init_properties, gtype);
+    properties = (GPtrArray*) gjs_hash_table_for_gsize_lookup (class_init_properties, gtype);
     if (properties != NULL) {
         for (i = 0; i < properties->len; i++) {
-            GParamSpec *pspec = properties->pdata[i];
+            GParamSpec *pspec = (GParamSpec*) properties->pdata[i];
             g_param_spec_set_qdata(pspec, gjs_is_custom_property_quark(), GINT_TO_POINTER(1));
             g_object_class_install_property (klass, i+1, pspec);
         }
@@ -2391,8 +2391,8 @@ gjs_object_custom_init(GTypeInstance *instance,
     JSObject *object;
     ObjectInstance *priv;
 
-    object = object_init_list->data;
-    priv = JS_GetPrivate(object);
+    object = (JSObject*) object_init_list->data;
+    priv = (ObjectInstance*) JS_GetPrivate(object);
 
     if (priv->gtype != G_TYPE_FROM_INSTANCE (instance)) {
         /* This is not the most derived instance_init function,
@@ -2405,7 +2405,7 @@ gjs_object_custom_init(GTypeInstance *instance,
                                            object_init_list);
 
     gjs_context = gjs_context_get_current();
-    context = gjs_context_get_native_context(gjs_context);
+    context = (JSContext*) gjs_context_get_native_context(gjs_context);
 
     associate_js_gobject(context, object, G_OBJECT (instance));
 }
@@ -2484,7 +2484,7 @@ gjs_register_type(JSContext *cx,
     if (!JS_GetArrayLength(cx, properties, &n_properties))
         goto out;
 
-    iface_types = g_alloca(sizeof(GType) * n_interfaces);
+    iface_types = (GType*) g_alloca(sizeof(GType) * n_interfaces);
 
     /* We do interface addition in two passes so that any failure
        is caught early, before registering the GType (which we can't undo) */
@@ -2531,7 +2531,7 @@ gjs_register_type(JSContext *cx,
                                                 parent_type,
                                                 name,
                                                 &type_info,
-                                                0);
+                                                (GTypeFlags) 0);
 
     g_free(name);
 
@@ -2647,7 +2647,7 @@ gjs_signal_new(JSContext *cx,
 
     signal_id = g_signal_newv(signal_name,
                               gtype,
-                              JSVAL_TO_INT(argv[2]), /* signal_flags */
+                              (GSignalFlags) JSVAL_TO_INT(argv[2]), /* signal_flags */
                               NULL, /* class closure */
                               accumulator,
                               NULL, /* accu_data */

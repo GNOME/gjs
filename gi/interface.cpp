@@ -52,7 +52,7 @@ interface_finalize(JSFreeOp *fop,
 {
     Interface *priv;
 
-    priv = JS_GetPrivate(obj);
+    priv = (Interface*) JS_GetPrivate(obj);
 
     if (priv == NULL)
         return;

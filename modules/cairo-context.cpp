@@ -309,7 +309,7 @@ gjs_cairo_context_finalize(JSFreeOp *fop,
                            JSObject *obj)
 {
     GjsCairoContext *priv;
-    priv = JS_GetPrivate(obj);
+    priv = (GjsCairoContext*) JS_GetPrivate(obj);
     if (priv == NULL)
         return;
 

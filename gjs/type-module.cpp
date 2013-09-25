@@ -39,7 +39,7 @@ GjsTypeModule *
 gjs_type_module_get ()
 {
     if (global_type_module == NULL) {
-        global_type_module = g_object_new (GJS_TYPE_TYPE_MODULE, NULL);
+        global_type_module = (GjsTypeModule *) g_object_new (GJS_TYPE_TYPE_MODULE, NULL);
     }
 
     return global_type_module;

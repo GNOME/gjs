@@ -145,7 +145,7 @@ gjs_js_define_system_stuff(JSContext  *context,
 
     retval = JS_FALSE;
 
-    gjs_context = JS_GetContextPrivate(context);
+    gjs_context = (GjsContext*) JS_GetContextPrivate(context);
     g_object_get(gjs_context,
                  "program-name", &program_name,
                  NULL);

@@ -55,7 +55,7 @@ gjs_string_to_utf8 (JSContext  *context,
     }
 
     if (utf8_string_p) {
-        bytes = g_malloc((len + 1) * sizeof(char));
+        bytes = (char*) g_malloc((len + 1) * sizeof(char));
         JS_EncodeStringToBuffer(str, bytes, len);
         bytes[len] = '\0';
         *utf8_string_p = bytes;
@@ -180,7 +180,7 @@ gjs_string_get_uint16_data(JSContext       *context,
     if (js_data == NULL)
         goto out;
 
-    *data_p = g_memdup(js_data, sizeof(*js_data)*(*len_p));
+    *data_p = (guint16*) g_memdup(js_data, sizeof(*js_data)*(*len_p));
 
     retval = JS_TRUE;
 out:

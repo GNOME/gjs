@@ -337,7 +337,7 @@ gjs_value_debug_string(JSContext      *context,
 
     size_t len = JS_GetStringEncodingLength(context, str);
     if (len != (size_t)(-1)) {
-        bytes = g_malloc((len + 1) * sizeof(char));
+        bytes = (char*) g_malloc((len + 1) * sizeof(char));
         JS_EncodeStringToBuffer(str, bytes, len);
         bytes[len] = '\0';
     } else {
@@ -465,7 +465,7 @@ gjs_log_exception_full(JSContext *context,
         gjs_typecheck_boxed(context, JSVAL_TO_OBJECT(exc), NULL, G_TYPE_ERROR, FALSE)) {
         GError *gerror;
 
-        gerror = gjs_c_struct_from_boxed(context, JSVAL_TO_OBJECT(exc));
+        gerror = (GError*) gjs_c_struct_from_boxed(context, JSVAL_TO_OBJECT(exc));
         utf8_exception = g_strdup_printf("GLib.Error %s: %s",
                                          g_quark_to_string(gerror->domain),
                                          gerror->message);
@@ -935,7 +935,7 @@ gjs_parse_args (JSContext  *context,
             fmt_iter++;
 
             if (JSVAL_IS_NULL (js_value)) {
-                gpointer *arg = arg_location;
+                gpointer *arg = (gpointer*) arg_location;
                 *arg = NULL;
                 goto got_value;
             }
@@ -946,7 +946,7 @@ gjs_parse_args (JSContext  *context,
             if (!JSVAL_IS_BOOLEAN(js_value)) {
                 arg_error_message = "Not a boolean";
             } else {
-                gboolean *arg = arg_location;
+                gboolean *arg = (gboolean*) arg_location;
                 *arg = JSVAL_TO_BOOLEAN(js_value);
             }
         }
@@ -955,13 +955,13 @@ gjs_parse_args (JSContext  *context,
             if (!JSVAL_IS_OBJECT(js_value)) {
                 arg_error_message = "Not an object";
             } else {
-                JSObject **arg = arg_location;
+                JSObject **arg = (JSObject**) arg_location;
                 *arg = JSVAL_TO_OBJECT(js_value);
             }
         }
             break;
         case 's': {
-            char **arg = arg_location;
+            char **arg = (char**) arg_location;
 
             if (gjs_string_to_utf8 (context, js_value, arg)) {
                 unwind_strings[n_unwind++] = *arg;
@@ -974,7 +974,7 @@ gjs_parse_args (JSContext  *context,
         }
             break;
         case 'F': {
-            char **arg = arg_location;
+            char **arg = (char**) arg_location;
 
             if (gjs_string_to_filename (context, js_value, arg)) {
                 unwind_strings[n_unwind++] = *arg;

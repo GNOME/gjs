@@ -552,7 +552,7 @@ do_import(JSContext  *context,
                                      NULL);
         gfile = g_file_new_for_commandline_arg(full_path);
 
-        if (g_file_query_file_type(gfile, 0, NULL) == G_FILE_TYPE_DIRECTORY) {
+        if (g_file_query_file_type(gfile, (GFileQueryInfoFlags) 0, NULL) == G_FILE_TYPE_DIRECTORY) {
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "Adding directory '%s' to child importer '%s'",
                       full_path, name);
@@ -831,11 +831,11 @@ importer_new_enumerate(JSContext  *context,
         if (JSVAL_IS_NULL(*state_p)) /* Iterating prototype */
             return JS_TRUE;
 
-        iter = JSVAL_TO_PRIVATE(*state_p);
+        iter = (ImporterIterator*) JSVAL_TO_PRIVATE(*state_p);
 
         if (iter->index < iter->elements->len) {
             if (!gjs_string_from_utf8(context,
-                                         g_ptr_array_index(iter->elements,
+                                         (const char*) g_ptr_array_index(iter->elements,
                                                            iter->index++),
                                          -1,
                                          &element_val))
@@ -851,7 +851,7 @@ importer_new_enumerate(JSContext  *context,
 
     case JSENUMERATE_DESTROY: {
         if (state_p && !JSVAL_IS_NULL(*state_p)) {
-            iter = JSVAL_TO_PRIVATE(*state_p);
+            iter = (ImporterIterator*) JSVAL_TO_PRIVATE(*state_p);
 
             importer_iterator_free(iter);
 
@@ -929,7 +929,7 @@ importer_finalize(JSFreeOp *fop,
 {
     Importer *priv;
 
-    priv = JS_GetPrivate(obj);
+    priv = (Importer*) JS_GetPrivate(obj);
     gjs_debug_lifecycle(GJS_DEBUG_IMPORTER,
                         "finalize, obj %p priv %p", obj, priv);
     if (priv == NULL)

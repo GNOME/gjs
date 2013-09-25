@@ -43,7 +43,7 @@ gjs_cairo_surface_finalize(JSFreeOp *fop,
                            JSObject *obj)
 {
     GjsCairoSurface *priv;
-    priv = JS_GetPrivate(obj);
+    priv = (GjsCairoSurface*) JS_GetPrivate(obj);
     if (priv == NULL)
         return;
     cairo_surface_destroy(priv->surface);
@@ -238,7 +238,7 @@ gjs_cairo_surface_get_surface(JSContext *context,
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(object != NULL, NULL);
 
-    priv = JS_GetPrivate(object);
+    priv = (GjsCairoSurface*) JS_GetPrivate(object);
     if (priv == NULL)
         return NULL;
     return priv->surface;

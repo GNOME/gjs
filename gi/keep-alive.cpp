@@ -51,7 +51,7 @@ GJS_DEFINE_PRIV_FROM_JS(KeepAlive, gjs_keep_alive_class)
 static guint
 child_hash(gconstpointer  v)
 {
-    const Child *child = v;
+    const Child *child = (const Child *) v;
 
     return
         GPOINTER_TO_UINT(child->notify) ^
@@ -63,8 +63,8 @@ static gboolean
 child_equal (gconstpointer  v1,
              gconstpointer  v2)
 {
-    const Child *child1 = v1;
-    const Child *child2 = v2;
+    const Child *child1 = (const Child *) v1;
+    const Child *child2 = (const Child *) v2;
 
     /* notify is most likely to be equal, so check it last */
     return child1->data == child2->data &&
@@ -75,7 +75,7 @@ child_equal (gconstpointer  v1,
 static void
 child_free(void *data)
 {
-    Child *child = data;
+    Child *child = (Child *) data;
     g_slice_free(Child, child);
 }
 
@@ -89,7 +89,7 @@ keep_alive_finalize(JSFreeOp *fop,
     void *key;
     void *value;
 
-    priv = JS_GetPrivate(obj);
+    priv = (KeepAlive *) JS_GetPrivate(obj);
 
     gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE,
                         "keep_alive finalizing, obj %p priv %p", obj, priv);
@@ -101,7 +101,7 @@ keep_alive_finalize(JSFreeOp *fop,
 
     while (gjs_g_hash_table_steal_one(priv->children,
                                       &key, &value)) {
-        Child *child = value;
+        Child *child = (Child *) value;
         if (child->notify)
             (* child->notify) (child->child, child->data);
 
@@ -117,8 +117,8 @@ trace_foreach(void *key,
               void *value,
               void *data)
 {
-    Child *child = value;
-    JSTracer *tracer = data;
+    Child *child = (Child *) value;
+    JSTracer *tracer = (JSTracer *) data;
 
     if (child->child != NULL) {
         jsval val;
@@ -134,7 +134,7 @@ keep_alive_trace(JSTracer *tracer,
 {
     KeepAlive *priv;
 
-    priv = JS_GetPrivate(obj);
+    priv = (KeepAlive *) JS_GetPrivate(obj);
 
     if (priv == NULL) /* prototype */
         return;

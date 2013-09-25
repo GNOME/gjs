@@ -47,7 +47,7 @@ gjs_register_native_module (const char          *module_id,
         return;
     }
 
-    g_hash_table_replace(modules, g_strdup(module_id), func);
+    g_hash_table_replace(modules, g_strdup(module_id), (void*) func);
 
     gjs_debug(GJS_DEBUG_NATIVE,
               "Registered native JS module '%s'",
@@ -94,7 +94,7 @@ gjs_import_native_module(JSContext   *context,
               name);
 
     if (modules != NULL)
-        func = g_hash_table_lookup(modules, name);
+        func = (GjsDefineModuleFunc) g_hash_table_lookup(modules, name);
     else
         func = NULL;
 

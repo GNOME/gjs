@@ -42,7 +42,7 @@ gjs_cairo_pattern_finalize(JSFreeOp *fop,
                            JSObject *obj)
 {
     GjsCairoPattern *priv;
-    priv = JS_GetPrivate(obj);
+    priv = (GjsCairoPattern*) JS_GetPrivate(obj);
     if (priv == NULL)
         return;
     cairo_pattern_destroy(priv->pattern);
@@ -192,7 +192,7 @@ gjs_cairo_pattern_get_pattern(JSContext *context,
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(object != NULL, NULL);
 
-    priv = JS_GetPrivate(object);
+    priv = (GjsCairoPattern*) JS_GetPrivate(object);
     if (priv == NULL)
         return NULL;
 

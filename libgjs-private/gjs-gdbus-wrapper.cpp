@@ -116,7 +116,7 @@ gjs_dbus_implementation_set_property(GObject *object, guint property_id, const G
 
     switch (property_id) {
     case PROP_G_INTERFACE_INFO:
-        self->priv->ifaceinfo = g_value_dup_boxed (value);
+        self->priv->ifaceinfo = (GDBusInterfaceInfo*) g_value_dup_boxed (value);
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -152,7 +152,7 @@ gjs_dbus_implementation_get_properties (GDBusInterfaceSkeleton *skeleton) {
         GVariant *value;
 
         /* If we have a cached value, we use that instead of querying again */
-        if ((value = g_hash_table_lookup(self->priv->outstanding_properties, prop->name))) {
+        if ((value = (GVariant*) g_hash_table_lookup(self->priv->outstanding_properties, prop->name))) {
             g_variant_builder_add(&builder, "{sv}", prop->name, value);
             continue;
         }
@@ -223,11 +223,11 @@ gjs_dbus_implementation_class_init(GjsDBusImplementationClass *klass) {
                                                        "Interface Info",
                                                        "A DBusInterfaceInfo representing the exported object",
                                                        G_TYPE_DBUS_INTERFACE_INFO,
-                                                       G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+                                                       (GParamFlags) (G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY)));
 
     signals[SIGNAL_HANDLE_METHOD] = g_signal_new("handle-method-call",
                                                  G_TYPE_FROM_CLASS(klass),
-                                                 0, /* flags */
+                                                 (GSignalFlags) 0, /* flags */
                                                  0, /* closure */
                                                  NULL, /* accumulator */
                                                  NULL, /* accumulator data */
@@ -240,7 +240,7 @@ gjs_dbus_implementation_class_init(GjsDBusImplementationClass *klass) {
 
     signals[SIGNAL_HANDLE_PROPERTY_GET] = g_signal_new("handle-property-get",
                                                        G_TYPE_FROM_CLASS(klass),
-                                                       0, /* flags */
+                                                       (GSignalFlags) 0, /* flags */
                                                        0, /* closure */
                                                        g_signal_accumulator_first_wins,
                                                        NULL, /* accumulator data */
@@ -252,7 +252,7 @@ gjs_dbus_implementation_class_init(GjsDBusImplementationClass *klass) {
 
     signals[SIGNAL_HANDLE_PROPERTY_SET] = g_signal_new("handle-property-set",
                                                        G_TYPE_FROM_CLASS(klass),
-                                                       0, /* flags */
+                                                       (GSignalFlags) 0, /* flags */
                                                        0, /* closure */
                                                        NULL, /* accumulator */
                                                        NULL, /* accumulator data */

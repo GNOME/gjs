@@ -134,7 +134,7 @@ ns_finalize(JSFreeOp *fop,
 {
     Ns *priv;
 
-    priv = JS_GetPrivate(obj);
+    priv = (Ns *)JS_GetPrivate(obj);
     gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE,
                         "finalize, obj %p priv %p", obj, priv);
     if (priv == NULL)
@@ -236,7 +236,7 @@ ns_new(JSContext    *context,
     gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE, "ns constructor, obj %p priv %p", ns, priv);
 
     priv = priv_from_js(context, ns);
-    priv->repo = g_object_ref(repo);
+    priv->repo = (GIRepository*) g_object_ref(repo);
     priv->gi_namespace = g_strdup(ns_name);
 
     return ns;

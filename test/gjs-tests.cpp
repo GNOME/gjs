@@ -245,10 +245,10 @@ gjstest_test_func_util_glib_strv_concat_null(void)
 static void
 gjstest_test_func_util_glib_strv_concat_pointers(void)
 {
-    char  *strv0[2] = {"foo", NULL};
+    char  *strv0[2] = {(char*)"foo", NULL};
     char  *strv1[1] = {NULL};
     char **strv2    = NULL;
-    char  *strv3[2] = {"bar", NULL};
+    char  *strv3[2] = {(char*)"bar", NULL};
     char **stuff[4];
     char **ret;
 

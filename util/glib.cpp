@@ -37,7 +37,7 @@ get_first_one_predicate(void  *key,
                         void  *value,
                         void  *data)
 {
-    StoreOneData *sod = data;
+    StoreOneData *sod = (StoreOneData *) data;
 
     sod->key = key;
     sod->value = value;

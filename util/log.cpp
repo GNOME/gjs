@@ -123,7 +123,7 @@ gjs_debug(GjsDebugTopic topic,
              * (printf below should be safe as we check '%u' is the only format
              * string)
              */
-            c = strchr(debug_output, '%');
+            c = strchr((char *) debug_output, '%');
             if (c && c[1] == 'u' && !strchr(c+1, '%')) {
                 free_me = g_strdup_printf(debug_output, (guint)getpid());
                 log_file = free_me;

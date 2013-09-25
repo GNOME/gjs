@@ -108,7 +108,7 @@ resolve_namespace_object(JSContext  *context,
     repo = g_irepository_get_default();
 
     error = NULL;
-    g_irepository_require(repo, ns_name, version, 0, &error);
+    g_irepository_require(repo, ns_name, version, (GIRepositoryLoadFlags) 0, &error);
     if (error != NULL) {
         gjs_throw(context,
                   "Requiring %s, version %s: %s",
@@ -216,7 +216,7 @@ repo_finalize(JSFreeOp *fop,
 {
     Repo *priv;
 
-    priv = JS_GetPrivate(obj);
+    priv = (Repo*) JS_GetPrivate(obj);
     gjs_debug_lifecycle(GJS_DEBUG_GREPO,
                         "finalize, obj %p priv %p", obj, priv);
     if (priv == NULL)

@@ -96,7 +96,7 @@ gjs_context_get_frame_info (JSContext  *context,
 void
 gjs_context_print_stack_stderr(GjsContext *context)
 {
-    JSContext *cx = gjs_context_get_native_context(context);
+    JSContext *cx = (JSContext*) gjs_context_get_native_context(context);
     jsval v_stack;
     char *stack;
 

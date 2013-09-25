@@ -36,7 +36,7 @@ static struct {
     char *module; // relative to "imports."
     gboolean loaded;
 } foreign_modules[] = {
-    { "cairo", "cairo", FALSE },
+    { (char*)"cairo", (char*)"cairo", FALSE },
     { NULL }
 };
 
@@ -76,7 +76,7 @@ gjs_foreign_load_foreign_module(JSContext *context,
         // FIXME: Find a way to check if a module is imported
         //        and only execute this statement if isn't
         script = g_strdup_printf("imports.%s;", gi_namespace);
-        if (!gjs_context_eval(JS_GetContextPrivate(context), script, strlen(script),
+        if (!gjs_context_eval((GjsContext*) JS_GetContextPrivate(context), script, strlen(script),
                               "<internal>", &code,
                               &error)) {
             g_printerr("ERROR: %s\n", error->message);

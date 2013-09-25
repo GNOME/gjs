@@ -397,7 +397,7 @@ byte_array_finalize(JSFreeOp *fop,
 {
     ByteArrayInstance *priv;
 
-    priv = JS_GetPrivate(obj);
+    priv = (ByteArrayInstance*) JS_GetPrivate(obj);
 
     if (priv == NULL)
         return; /* prototype, not instance */
@@ -454,7 +454,7 @@ to_string_func(JSContext *context,
 
     if (priv->array->len == 0)
         /* the internal data pointer could be NULL in this case */
-        data = "";
+        data = (gchar*)"";
     else
         data = (gchar*)priv->array->data;
 
@@ -744,7 +744,7 @@ from_gbytes_func(JSContext *context,
     if (!gjs_typecheck_boxed(context, bytes_obj, NULL, G_TYPE_BYTES, TRUE))
         return JS_FALSE;
 
-    gbytes = gjs_c_struct_from_boxed(context, bytes_obj);
+    gbytes = (GBytes*) gjs_c_struct_from_boxed(context, bytes_obj);
 
     obj = byte_array_new(context);
     if (obj == NULL)
@@ -801,7 +801,7 @@ gjs_byte_array_from_byte_array (JSContext *context,
     g_assert(priv_from_js(context, object) == NULL);
     JS_SetPrivate(object, priv);
     priv->array = g_byte_array_new();
-    priv->array->data = g_memdup(array->data, array->len);
+    priv->array->data = (guint8*) g_memdup(array->data, array->len);
     priv->array->len = array->len;
 
     return object;

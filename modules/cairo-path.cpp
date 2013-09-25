@@ -41,7 +41,7 @@ gjs_cairo_path_finalize(JSFreeOp *fop,
                         JSObject *obj)
 {
     GjsCairoPath *priv;
-    priv = JS_GetPrivate(obj);
+    priv = (GjsCairoPath*) JS_GetPrivate(obj);
     if (priv == NULL)
         return;
     cairo_path_destroy(priv->path);
@@ -111,7 +111,7 @@ gjs_cairo_path_get_path(JSContext *context,
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(object != NULL, NULL);
 
-    priv = JS_GetPrivate(object);
+    priv = (GjsCairoPath*) JS_GetPrivate(object);
     if (priv == NULL)
         return NULL;
     return priv->path;

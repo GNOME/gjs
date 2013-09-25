@@ -386,7 +386,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
                                         length, &result))
                     return JS_FALSE;
                 /* cast to strv in a separate step to avoid type-punning */
-                strv = result;
+                strv = (char**) result;
                 g_value_take_boxed (gvalue, strv);
             }
         } else {
@@ -454,7 +454,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
                                      NULL, G_TYPE_VARIANT, JS_TRUE))
                 return JS_FALSE;
 
-            variant = gjs_c_struct_from_boxed(context, obj);
+            variant = (GVariant*) gjs_c_struct_from_boxed(context, obj);
         } else {
             gjs_throw(context,
                       "Wrong type %s; boxed type %s expected",
@@ -528,7 +528,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
             return JS_FALSE;
         }
 
-        g_value_set_param(gvalue, gparam);
+        g_value_set_param(gvalue, (GParamSpec*) gparam);
     } else if (g_type_is_a(gtype, G_TYPE_GTYPE)) {
         GType type;
 
@@ -687,14 +687,14 @@ gjs_value_from_g_value_internal(JSContext    *context,
         GObject *gobj;
         JSObject *obj;
 
-        gobj = g_value_get_object(gvalue);
+        gobj = (GObject*) g_value_get_object(gvalue);
 
         obj = gjs_object_from_g_object(context, gobj);
         *value_p = OBJECT_TO_JSVAL(obj);
     } else if (gtype == G_TYPE_STRV) {
         if (!gjs_array_from_strv (context,
                                   value_p,
-                                  g_value_get_boxed (gvalue))) {
+                                  (const char**) g_value_get_boxed (gvalue))) {
             gjs_throw(context, "Failed to convert strv to array");
             return JS_FALSE;
         }
@@ -720,7 +720,7 @@ gjs_value_from_g_value_internal(JSContext    *context,
 
         /* special case GError */
         if (g_type_is_a(gtype, G_TYPE_ERROR)) {
-            obj = gjs_error_from_gerror(context, gboxed, FALSE);
+            obj = gjs_error_from_gerror(context, (GError*) gboxed, FALSE);
             *value_p = OBJECT_TO_JSVAL(obj);
 
             return TRUE;
@@ -751,7 +751,7 @@ gjs_value_from_g_value_internal(JSContext    *context,
         case GI_INFO_TYPE_BOXED:
         case GI_INFO_TYPE_STRUCT:
             if (no_copy)
-                boxed_flags |= GJS_BOXED_CREATION_NO_COPY;
+                boxed_flags = (GjsBoxedCreationFlags) (boxed_flags | GJS_BOXED_CREATION_NO_COPY);
             obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)info, gboxed, boxed_flags);
             break;
         case GI_INFO_TYPE_UNION:

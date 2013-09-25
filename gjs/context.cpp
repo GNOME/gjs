@@ -303,7 +303,7 @@ gjs_context_class_init(GjsContextClass *klass)
                                "Search path",
                                "Path where modules to import should reside",
                                G_TYPE_STRV,
-                               G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY);
+                               (GParamFlags) (G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
 
     g_object_class_install_property(object_class,
                                     PROP_SEARCH_PATH,
@@ -313,7 +313,7 @@ gjs_context_class_init(GjsContextClass *klass)
                                  "JS Version",
                                  "A string giving the default for the (SpiderMonkey) JavaScript version",
                                  _GJS_JS_VERSION_DEFAULT,
-                                 G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+                                 (GParamFlags) (G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 
     g_object_class_install_property(object_class,
                                     PROP_JS_VERSION,
@@ -323,7 +323,7 @@ gjs_context_class_init(GjsContextClass *klass)
                                  "",
                                  "Whether or not to emit the \"gc\" signal",
                                  FALSE,
-                                 G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+                                 (GParamFlags) (G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 
     g_object_class_install_property(object_class,
                                     PROP_GC_NOTIFICATIONS,
@@ -333,7 +333,7 @@ gjs_context_class_init(GjsContextClass *klass)
                                 "Program Name",
                                 "The filename of the launched JS program",
                                 "",
-                                G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+                                (GParamFlags) (G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 
     g_object_class_install_property(object_class,
                                     PROP_PROGRAM_NAME,
@@ -351,7 +351,7 @@ gjs_context_class_init(GjsContextClass *klass)
     {
         char *priv_typelib_dir = g_build_filename (PKGLIBDIR, "girepository-1.0", NULL);
         g_irepository_prepend_search_path(priv_typelib_dir);
-        g_free (priv_typelib_dir);
+    g_free (priv_typelib_dir);
     }
 
     gjs_register_native_module("byteArray", gjs_define_byte_array_stuff);
@@ -727,7 +727,7 @@ gjs_context_set_property (GObject      *object,
 
     switch (prop_id) {
     case PROP_SEARCH_PATH:
-        js_context->search_path = g_value_dup_boxed(value);
+        js_context->search_path = (char**) g_value_dup_boxed(value);
         break;
     case PROP_JS_VERSION:
         g_free(js_context->jsversion_string);
@@ -841,13 +841,13 @@ gjs_context_scan_file_for_js_version (const char *file_path)
 GjsContext*
 gjs_context_new(void)
 {
-    return g_object_new (GJS_TYPE_CONTEXT, NULL);
+    return (GjsContext*) g_object_new (GJS_TYPE_CONTEXT, NULL);
 }
 
 GjsContext*
 gjs_context_new_with_search_path(char** search_path)
 {
-    return g_object_new (GJS_TYPE_CONTEXT,
+    return (GjsContext*) g_object_new (GJS_TYPE_CONTEXT,
                          "search-path", search_path,
                          NULL);
 }
@@ -895,7 +895,7 @@ gjs_context_gc (GjsContext  *context)
 static gboolean
 gjs_context_idle_emit_gc (gpointer data)
 {
-    GjsContext *gjs_context = data;
+    GjsContext *gjs_context = (GjsContext*) data;
 
     g_mutex_lock(&gc_idle_lock);
     gjs_context->idle_emit_gc_id = 0;
@@ -911,7 +911,7 @@ gjs_on_context_gc (JSRuntime *rt,
                    JSGCStatus status)
 {
     JSContext *context = gjs_runtime_get_context(rt);
-    GjsContext *gjs_context = JS_GetContextPrivate(context);
+    GjsContext *gjs_context = (GjsContext*) JS_GetContextPrivate(context);
 
     switch (status) {
         case JSGC_BEGIN:

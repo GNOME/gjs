@@ -259,7 +259,7 @@ union_finalize(JSFreeOp *fop,
 {
     Union *priv;
 
-    priv = JS_GetPrivate(obj);
+    priv = (Union*) JS_GetPrivate(obj);
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                         "finalize, obj %p priv %p", obj, priv);
     if (priv == NULL)

@@ -79,7 +79,7 @@ struct _GjsProfileFunction {
 static guint
 gjs_profile_function_key_hash(gconstpointer keyp)
 {
-    const GjsProfileFunctionKey *key = keyp;
+    const GjsProfileFunctionKey *key = (const GjsProfileFunctionKey*) keyp;
 
     return g_str_hash(key->filename) ^
         key->lineno ^
@@ -90,8 +90,8 @@ static gboolean
 gjs_profile_function_key_equal(gconstpointer ap,
                                gconstpointer bp)
 {
-    const GjsProfileFunctionKey *a = ap;
-    const GjsProfileFunctionKey *b = bp;
+    const GjsProfileFunctionKey *a = (const GjsProfileFunctionKey*) ap;
+    const GjsProfileFunctionKey *b = (const GjsProfileFunctionKey*) bp;
 
     g_assert(a != NULL);
     g_assert(b != NULL);
@@ -144,7 +144,7 @@ gjs_profile_function_key_from_js(JSContext             *cx,
         key->filename = (char*)JS_GetScriptFilename(cx, script);
         key->lineno = JS_GetScriptBaseLineNumber(cx, script);
     } else {
-        key->filename = "(native)";
+        key->filename = (char*)"(native)";
         key->lineno = 0;
     }
 
@@ -173,7 +173,7 @@ gjs_profiler_lookup_function(GjsProfiler  *self,
 
     gjs_profile_function_key_from_js(cx, fp, &key);
 
-    function = g_hash_table_lookup(self->by_file, &key);
+    function = (GjsProfileFunction*) g_hash_table_lookup(self->by_file, &key);
     if (function)
         goto error;
 
@@ -280,7 +280,7 @@ gjs_profiler_execute_hook(JSContext    *cx,
                           JSBool       *ok,
                           void         *callerdata)
 {
-    GjsProfiler *self = callerdata;
+    GjsProfiler *self = (GjsProfiler*) callerdata;
 
     gjs_profiler_log_call(self, cx, fp, before, ok);
 
@@ -294,7 +294,7 @@ gjs_profiler_call_hook(JSContext    *cx,
                        JSBool       *ok,
                        void         *callerdata)
 {
-    GjsProfiler *self = callerdata;
+    GjsProfiler *self = (GjsProfiler*) callerdata;
 
     gjs_profiler_log_call(self, cx, fp, before, ok);
 
@@ -360,7 +360,7 @@ by_file_reset_one(gpointer key,
                   gpointer value,
                   gpointer user_data)
 {
-    GjsProfileFunction *function = value;
+    GjsProfileFunction *function = (GjsProfileFunction*) value;
     GjsProfileData *p;
 
     p = &function->profile;
@@ -383,8 +383,8 @@ by_file_dump_one(gpointer key,
                  gpointer value,
                  gpointer user_data)
 {
-    GjsProfileFunction *function = value;
-    FILE *fp = user_data;
+    GjsProfileFunction *function = (GjsProfileFunction*) value;
+    FILE *fp = (FILE*) user_data;
     GjsProfileData *p;
 
     p = &function->profile;

@@ -88,7 +88,7 @@ typedef struct GjsRootedArray GjsRootedArray;
     {                                                                   \
         type *priv;                                                     \
         JS_BeginRequest(context);                                       \
-        priv = JS_GetInstancePrivate(context, object, &klass, NULL);  \
+        priv = (type*) JS_GetInstancePrivate(context, object, &klass, NULL);  \
         JS_EndRequest(context);                                         \
         return priv;                                                    \
     }                                                                   \

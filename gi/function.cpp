@@ -177,7 +177,7 @@ gjs_callback_closure(ffi_cif *cif,
     gboolean success = FALSE;
     gboolean ret_type_is_void;
 
-    trampoline = data;
+    trampoline = (GjsCallbackTrampoline *) data;
     g_assert(trampoline);
     gjs_callback_trampoline_ref(trampoline);
 
@@ -225,11 +225,11 @@ gjs_callback_closure(ffi_cif *cif,
                 g_arg_info_load_type(&array_length_arg, &arg_type_info);
                 if (!gjs_value_from_g_argument(context, &length,
                                                &arg_type_info,
-                                               args[array_length_pos], TRUE))
+                                               (GArgument *) args[array_length_pos], TRUE))
                     goto out;
 
                 if (!gjs_value_from_explicit_array(context, &jsargs[n_jsargs++],
-                                                   &type_info, args[i], JSVAL_TO_INT(length)))
+                                                   &type_info, (GArgument*) args[i], JSVAL_TO_INT(length)))
                     goto out;
                 break;
             }
@@ -237,7 +237,7 @@ gjs_callback_closure(ffi_cif *cif,
                 if (!gjs_value_from_g_argument(context,
                                                &jsargs[n_jsargs++],
                                                &type_info,
-                                               args[i], FALSE))
+                                               (GArgument *) args[i], FALSE))
                     goto out;
                 break;
             default:
@@ -302,7 +302,7 @@ gjs_callback_closure(ffi_cif *cif,
                                          GJS_ARGUMENT_ARGUMENT,
                                          GI_TRANSFER_NOTHING,
                                          TRUE,
-                                         *(gpointer *)args[i]))
+                                         *(GArgument **)args[i]))
                 goto out;
 
             break;
@@ -354,7 +354,7 @@ gjs_callback_closure(ffi_cif *cif,
                                          GJS_ARGUMENT_ARGUMENT,
                                          GI_TRANSFER_NOTHING,
                                          TRUE,
-                                         *(gpointer *)args[i]))
+                                         *(GArgument **)args[i]))
                 goto out;
 
             elem_idx++;
@@ -369,7 +369,7 @@ out:
 
         /* Fill in the result with some hopefully neutral value */
         g_callable_info_load_return_type(trampoline->info, &ret_type);
-        gjs_g_argument_init_default (context, &ret_type, result);
+        gjs_g_argument_init_default (context, &ret_type, (GArgument *) result);
     }
 
     if (trampoline->scope == GI_SCOPE_TYPE_ASYNC) {
@@ -386,7 +386,7 @@ out:
 static void
 gjs_destroy_notify_callback(gpointer data)
 {
-    GjsCallbackTrampoline *trampoline = data;
+    GjsCallbackTrampoline *trampoline = (GjsCallbackTrampoline *) data;
 
     g_assert(trampoline);
     gjs_callback_trampoline_unref(trampoline);
@@ -612,7 +612,7 @@ gjs_invoke_c_function(JSContext      *context,
      */
     if (completed_trampolines) {
         for (iter = completed_trampolines; iter; iter = iter->next) {
-            GjsCallbackTrampoline *trampoline = iter->data;
+            GjsCallbackTrampoline *trampoline = (GjsCallbackTrampoline *) iter->data;
             gjs_callback_trampoline_unref(trampoline);
         }
         g_slist_free(completed_trampolines);
@@ -776,7 +776,7 @@ gjs_invoke_c_function(JSContext      *context,
                 if (destroy_pos >= 0) {
                     gint c_pos = is_method ? destroy_pos + 1 : destroy_pos;
                     g_assert (function->param_types[destroy_pos] == PARAM_SKIPPED);
-                    in_arg_cvalues[c_pos].v_pointer = trampoline ? gjs_destroy_notify_callback : NULL;
+                    in_arg_cvalues[c_pos].v_pointer = trampoline ? (gpointer) gjs_destroy_notify_callback : NULL;
                 }
                 if (closure_pos >= 0) {
                     gint c_pos = is_method ? closure_pos + 1 : closure_pos;
@@ -891,7 +891,7 @@ gjs_invoke_c_function(JSContext      *context,
         return_value_p = &return_value.v_uint64;
     else
         return_value_p = &return_value.v_long;
-    ffi_call(&(function->invoker.cif), function->invoker.native_address, return_value_p, ffi_arg_pointers);
+    ffi_call(&(function->invoker.cif), FFI_FN(function->invoker.native_address), return_value_p, ffi_arg_pointers);
 
     /* Return value and out arguments are valid only if invocation doesn't
      * return error. In arguments need to be released always.
@@ -999,9 +999,9 @@ release:
                 transfer = GI_TRANSFER_NOTHING;
             }
             if (param_type == PARAM_CALLBACK) {
-                ffi_closure *closure = arg->v_pointer;
+                ffi_closure *closure = (ffi_closure *) arg->v_pointer;
                 if (closure) {
-                    GjsCallbackTrampoline *trampoline = closure->user_data;
+                    GjsCallbackTrampoline *trampoline = (GjsCallbackTrampoline *) closure->user_data;
                     /* CallbackTrampolines are refcounted because for notified/async closures
                        it is possible to destroy it while in call, and therefore we cannot check
                        its scope at this point */
@@ -1229,7 +1229,7 @@ function_finalize(JSFreeOp *fop,
 {
     Function *priv;
 
-    priv = JS_GetPrivate(obj);
+    priv = (Function *) JS_GetPrivate(obj);
     gjs_debug_lifecycle(GJS_DEBUG_GFUNCTION,
                         "finalize, obj %p priv %p", obj, priv);
     if (priv == NULL)
@@ -1298,7 +1298,7 @@ function_to_string (JSContext *context,
 
     priv = priv_from_js (context, self);
     if (priv == NULL) {
-        string = "function () {\n}";
+        string = (gchar *) "function () {\n}";
         free = FALSE;
         goto out;
     }

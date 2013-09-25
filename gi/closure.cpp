@@ -98,7 +98,7 @@ global_context_finalized(JSObject *obj,
     Closure *c;
     gboolean need_unref;
 
-    c = data;
+    c = (Closure *) data;
 
     gjs_debug_closure("Context global object destroy notifier on closure %p "
                       "which calls object %p",

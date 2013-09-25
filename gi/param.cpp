@@ -164,7 +164,7 @@ param_finalize(JSFreeOp *fop,
 {
     Param *priv;
 
-    priv = JS_GetPrivate(obj);
+    priv = (Param*) JS_GetPrivate(obj);
     gjs_debug_lifecycle(GJS_DEBUG_GPARAM,
                         "finalize, obj %p priv %p", obj, priv);
     if (priv == NULL)

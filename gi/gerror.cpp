@@ -135,7 +135,7 @@ error_finalize(JSFreeOp *fop,
 {
     Error *priv;
 
-    priv = JS_GetPrivate(obj);
+    priv = (Error*) JS_GetPrivate(obj);
     gjs_debug_lifecycle(GJS_DEBUG_GERROR,
                         "finalize, obj %p priv %p", obj, priv);
     if (priv == NULL)
@@ -371,7 +371,7 @@ gjs_define_error_class(JSContext    *context,
 
     constructor_name = g_base_info_get_name( (GIBaseInfo*) info);
 
-    g_irepository_require(NULL, "GLib", "2.0", 0, NULL);
+    g_irepository_require(NULL, "GLib", "2.0", (GIRepositoryLoadFlags) 0, NULL);
     glib_error_info = (GIBoxedInfo*) g_irepository_find_by_name(NULL, "GLib", "Error");
     parent_proto = gjs_lookup_generic_prototype(context, glib_error_info);
     g_base_info_unref((GIBaseInfo*)glib_error_info);
@@ -421,16 +421,16 @@ find_error_domain_info(GQuark domain)
         return info;
 
     /* load standard stuff */
-    g_irepository_require(NULL, "GLib", "2.0", 0, NULL);
-    g_irepository_require(NULL, "GObject", "2.0", 0, NULL);
-    g_irepository_require(NULL, "Gio", "2.0", 0, NULL);
+    g_irepository_require(NULL, "GLib", "2.0", (GIRepositoryLoadFlags) 0, NULL);
+    g_irepository_require(NULL, "GObject", "2.0", (GIRepositoryLoadFlags) 0, NULL);
+    g_irepository_require(NULL, "Gio", "2.0", (GIRepositoryLoadFlags) 0, NULL);
     info = g_irepository_find_by_error_domain(NULL, domain);
     if (info)
         return info;
 
     /* last attempt: load GIRepository (for invoke errors, rarely
        needed) */
-    g_irepository_require(NULL, "GIRepository", "1.0", 0, NULL);
+    g_irepository_require(NULL, "GIRepository", "1.0", (GIRepositoryLoadFlags) 0, NULL);
     info = g_irepository_find_by_error_domain(NULL, domain);
 
     return info;
@@ -492,7 +492,7 @@ gjs_error_from_gerror(JSContext             *context,
         JSObject *retval;
 
         glib_boxed = g_irepository_find_by_name(NULL, "GLib", "Error");
-        retval = gjs_boxed_from_c_struct(context, glib_boxed, gerror, 0);
+        retval = gjs_boxed_from_c_struct(context, glib_boxed, gerror, (GjsBoxedCreationFlags) 0);
 
         g_base_info_unref(glib_boxed);
         return retval;
@@ -536,7 +536,7 @@ gjs_gerror_from_error(JSContext    *context,
        delegate marshalling.
     */
     if (gjs_typecheck_boxed (context, obj, NULL, G_TYPE_ERROR, JS_FALSE))
-        return gjs_c_struct_from_boxed (context, obj);
+        return (GError*) gjs_c_struct_from_boxed (context, obj);
 
     priv = priv_from_js(context, obj);
 

@@ -44,7 +44,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_image_surface)
                         "height", &height))
         return JS_FALSE;
 
-    surface = cairo_image_surface_create(format, width, height);
+    surface = cairo_image_surface_create((cairo_format_t) format, width, height);
 
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
         return JS_FALSE;

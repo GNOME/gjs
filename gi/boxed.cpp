@@ -296,7 +296,7 @@ boxed_init_from_props(JSContext   *context,
         if (!gjs_get_string_id(context, prop_id, &name))
             goto out;
 
-        field_info = g_hash_table_lookup(field_map, name);
+        field_info = (GIFieldInfo *) g_hash_table_lookup(field_map, name);
         if (field_info == NULL) {
             gjs_throw(context, "No field %s on boxed type %s",
                       name, g_base_info_get_name((GIBaseInfo *)priv->info));
@@ -513,7 +513,7 @@ boxed_finalize(JSFreeOp *fop,
 {
     Boxed *priv;
 
-    priv = JS_GetPrivate(obj);
+    priv = (Boxed *) JS_GetPrivate(obj);
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                         "finalize, obj %p priv %p", obj, priv);
     if (priv == NULL)
@@ -526,7 +526,7 @@ boxed_finalize(JSFreeOp *fop,
             if (g_type_is_a (priv->gtype, G_TYPE_BOXED))
                 g_boxed_free (priv->gtype,  priv->gboxed);
             else if (g_type_is_a (priv->gtype, G_TYPE_VARIANT))
-                g_variant_unref (priv->gboxed);
+                g_variant_unref ((GVariant *) priv->gboxed);
             else
                 g_assert_not_reached ();
         }
@@ -1238,7 +1238,7 @@ gjs_boxed_from_c_struct(JSContext             *context,
         if (priv->gtype != G_TYPE_NONE && g_type_is_a (priv->gtype, G_TYPE_BOXED)) {
             priv->gboxed = g_boxed_copy(priv->gtype, gboxed);
         } else if (priv->gtype == G_TYPE_VARIANT) {
-            priv->gboxed = g_variant_ref_sink (gboxed);
+            priv->gboxed = g_variant_ref_sink ((GVariant *) gboxed);
         } else if (priv->can_allocate_directly) {
             boxed_new_direct(priv);
             memcpy(priv->gboxed, gboxed, g_struct_info_get_size (priv->info));

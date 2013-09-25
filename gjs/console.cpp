@@ -120,13 +120,13 @@ main(int argc, char **argv)
     if (js_version != NULL)
         source_js_version = js_version;
     if (source_js_version != NULL)
-        js_context = g_object_new(GJS_TYPE_CONTEXT,
+        js_context = (GjsContext*) g_object_new(GJS_TYPE_CONTEXT,
                                   "search-path", include_path,
                                   "js-version", source_js_version,
                                   "program-name", program_name,
                                   NULL);
     else
-        js_context = g_object_new(GJS_TYPE_CONTEXT,
+        js_context = (GjsContext*) g_object_new(GJS_TYPE_CONTEXT,
                                   "search-path", include_path,
                                   "program-name", program_name,
                                   NULL);
