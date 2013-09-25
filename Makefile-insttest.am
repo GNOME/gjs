@@ -1,5 +1,7 @@
 EXTRA_DIST += \
-	installed-tests/jsunit.test.in
+	installed-tests/jsunit.test.in \
+	installed-tests/script.test.in \
+	$(NULL)
 
 installedtestmetadir = $(datadir)/installed-tests/gjs
 installedtestmeta_DATA = 
