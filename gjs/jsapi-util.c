@@ -32,6 +32,7 @@
 #include "compat.h"
 #include "jsapi-private.h"
 #include "runtime.h"
+#include <gi/boxed.h>
 
 #include <string.h>
 #include <math.h>
@@ -460,11 +461,21 @@ gjs_log_exception_full(JSContext *context,
 
     JS_BeginRequest(context);
 
-    exc_str = JS_ValueToString(context, exc);
-    if (exc_str != NULL)
-        gjs_string_to_utf8(context, STRING_TO_JSVAL(exc_str), &utf8_exception);
-    else
-        utf8_exception = NULL;
+    if (JSVAL_IS_OBJECT(exc) &&
+        gjs_typecheck_boxed(context, JSVAL_TO_OBJECT(exc), NULL, G_TYPE_ERROR, FALSE)) {
+        GError *gerror;
+
+        gerror = gjs_c_struct_from_boxed(context, JSVAL_TO_OBJECT(exc));
+        utf8_exception = g_strdup_printf("GLib.Error %s: %s",
+                                         g_quark_to_string(gerror->domain),
+                                         gerror->message);
+    } else {
+        exc_str = JS_ValueToString(context, exc);
+        if (exc_str != NULL)
+            gjs_string_to_utf8(context, STRING_TO_JSVAL(exc_str), &utf8_exception);
+        else
+            utf8_exception = NULL;
+    }
 
     if (message != NULL)
         gjs_string_to_utf8(context, STRING_TO_JSVAL(message), &utf8_message);
