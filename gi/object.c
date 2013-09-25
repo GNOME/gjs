@@ -2361,7 +2361,7 @@ gjs_object_class_init(GObjectClass *class,
 {
     GPtrArray *properties;
     GType gtype;
-    gint i;
+    guint i;
 
     gtype = G_OBJECT_CLASS_TYPE (class);
 
