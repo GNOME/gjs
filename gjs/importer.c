@@ -130,91 +130,6 @@ import_directory(JSContext   *context,
 }
 
 static JSBool
-define_import(JSContext  *context,
-              JSObject   *obj,
-              JSObject   *module_obj,
-              const char *name)
-{
-    if (!JS_DefineProperty(context, obj,
-                           name, OBJECT_TO_JSVAL(module_obj),
-                           NULL, NULL,
-                           GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT)) {
-        gjs_debug(GJS_DEBUG_IMPORTER,
-                  "Failed to define '%s' in importer",
-                  name);
-        return JS_FALSE;
-    }
-
-    return JS_TRUE;
-}
-
-/* Make the property we set in define_import permament;
- * we do this after the import succesfully completes.
- */
-static JSBool
-seal_import(JSContext  *context,
-            JSObject   *obj,
-            const char *name)
-{
-    JSBool found;
-    unsigned attrs;
-
-    if (!JS_GetPropertyAttributes(context, obj, name,
-                                  &attrs, &found) || !found) {
-        gjs_debug(GJS_DEBUG_IMPORTER,
-                  "Failed to get attributes to seal '%s' in importer",
-                  name);
-        return JS_FALSE;
-    }
-
-    attrs |= JSPROP_PERMANENT;
-
-    if (!JS_SetPropertyAttributes(context, obj, name,
-                                  attrs, &found) || !found) {
-        gjs_debug(GJS_DEBUG_IMPORTER,
-                  "Failed to set attributes to seal '%s' in importer",
-                  name);
-        return JS_FALSE;
-    }
-
-    return JS_TRUE;
-}
-
-/* An import failed. Delete the property pointing to the import
- * from the parent namespace. In complicated situations this might
- * not be sufficient to get us fully back to a sane state. If:
- *
- *  - We import module A
- *  - module A imports module B
- *  - module B imports module A, storing a reference to the current
- *    module A module object
- *  - module A subsequently throws an exception
- *
- * Then module B is left imported, but the imported module B has
- * a reference to the failed module A module object. To handle this
- * we could could try to track the entire "import operation" and
- * roll back *all* modifications made to the namespace objects.
- * It's not clear that the complexity would be worth the small gain
- * in robustness. (You can still come up with ways of defeating
- * the attempt to clean up.)
- */
-static void
-cancel_import(JSContext  *context,
-              JSObject   *obj,
-              const char *name)
-{
-    gjs_debug(GJS_DEBUG_IMPORTER,
-              "Cleaning up from failed import of '%s'",
-              name);
-
-    if (!JS_DeleteProperty(context, obj, name)) {
-        gjs_debug(GJS_DEBUG_IMPORTER,
-                  "Failed to delete '%s' in importer",
-                  name);
-    }
-}
-
-static JSBool
 import_native_file(JSContext  *context,
                    JSObject   *obj,
                    const char *name)
@@ -224,23 +139,10 @@ import_native_file(JSContext  *context,
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Importing '%s'", name);
 
-    module_obj = JS_NewObject(context, NULL, NULL, NULL);
-    if (module_obj == NULL) {
-        return JS_FALSE;
-    }
-
-    /* We store the module object into the parent module before
-     * initializing the module. If the module has the
-     * GJS_NATIVE_SUPPLIES_MODULE_OBJ flag, it will just overwrite
-     * the reference we stored when it initializes.
-     */
-    if (!define_import(context, obj, module_obj, name))
-        return JS_FALSE;
-
-    if (!define_meta_properties(context, module_obj, NULL, name, obj))
+    if (!gjs_import_native_module(context, name, &module_obj))
         goto out;
 
-    if (!gjs_import_native_module(context, module_obj, name))
+    if (!define_meta_properties(context, module_obj, NULL, name, obj))
         goto out;
 
     if (JS_IsExceptionPending(context)) {
@@ -252,15 +154,14 @@ import_native_file(JSContext  *context,
         goto out;
     }
 
-    if (!seal_import(context, obj, name))
+    if (!JS_DefineProperty(context, obj,
+                           name, OBJECT_TO_JSVAL(module_obj),
+                           NULL, NULL, GJS_MODULE_PROP_FLAGS))
         goto out;
 
     retval = JS_TRUE;
 
  out:
-    if (!retval)
-        cancel_import(context, obj, name);
-
     return retval;
 }
 

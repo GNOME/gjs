@@ -33,30 +33,12 @@
 
 G_BEGIN_DECLS
 
-typedef enum {
-    /* This means that the GjsDefineModuleFunc defines the module
-     * name in the parent module, as opposed to the normal process
-     * where the GjsDefineModuleFunc defines module contents. When
-     * importing imports.foo.bar, this flag means the native module is
-     * given foo and defines bar in it, while normally the native
-     * module is given bar and defines stuff in that.
-     *
-     * The purpose of this is to allow a module with lazy properties
-     * by allowing module objects to be custom classes. It's used for
-     * the gobject-introspection module for example.
-     */
-    GJS_NATIVE_SUPPLIES_MODULE_OBJ = 1 << 0
-
-} GjsNativeFlags;
-
-
-typedef JSBool (* GjsDefineModuleFunc) (JSContext *context,
-                                        JSObject  *module_obj);
+typedef JSBool (* GjsDefineModuleFunc) (JSContext  *context,
+                                        JSObject  **module_out);
 
 /* called on context init */
 void   gjs_register_native_module (const char            *module_id,
-                                   GjsDefineModuleFunc  func,
-                                   GjsNativeFlags       flags);
+                                   GjsDefineModuleFunc  func);
 
 /* called by importer.c to to check for already loaded modules */
 gboolean gjs_is_registered_native_module(JSContext  *context,
@@ -64,9 +46,9 @@ gboolean gjs_is_registered_native_module(JSContext  *context,
                                          const char *name);
 
 /* called by importer.c to load a statically linked native module */
-JSBool gjs_import_native_module (JSContext *context,
-                                 JSObject  *module_obj,
-                                 const char *name);
+JSBool gjs_import_native_module (JSContext  *context,
+                                 const char *name,
+                                 JSObject   **module_out);
 
 G_END_DECLS
 

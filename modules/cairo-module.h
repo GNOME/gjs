@@ -24,6 +24,6 @@
 #define __CAIRO_MODULE_H__
 
 JSBool           gjs_js_define_cairo_stuff              (JSContext       *context,
-                                                         JSObject        *module);
+                                                         JSObject       **module_out);
 
 #endif /* __CAIRO_MODULE_H__ */

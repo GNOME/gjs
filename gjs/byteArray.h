@@ -38,7 +38,7 @@ JSBool    gjs_typecheck_bytearray        (JSContext     *context,
                                           JSBool         throw);
 
 JSBool        gjs_define_byte_array_stuff    (JSContext  *context,
-                                              JSObject   *in_object);
+                                              JSObject  **module_out);
 
 JSObject *    gjs_byte_array_from_byte_array (JSContext  *context,
                                               GByteArray *array);

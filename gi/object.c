@@ -2676,10 +2676,16 @@ static JSFunctionSpec module_funcs[] = {
 
 JSBool
 gjs_define_private_gi_stuff(JSContext *context,
-                            JSObject  *module_obj)
+                            JSObject **module_out)
 {
-    if (!JS_DefineFunctions(context, module_obj, &module_funcs[0]))
+    JSObject *module;
+
+    module = JS_NewObject (context, NULL, NULL, NULL);
+
+    if (!JS_DefineFunctions(context, module, &module_funcs[0]))
         return JS_FALSE;
+
+    *module_out = module;
 
     return JS_TRUE;
 }

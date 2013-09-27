@@ -31,9 +31,9 @@
 G_BEGIN_DECLS
 
 JSBool        gjs_define_gi_stuff     (JSContext      *context,
-                                       JSObject       *module_obj);
+                                       JSObject      **module_out);
 JSBool        gjs_define_private_gi_stuff   (JSContext     *context,
-                                             JSObject      *module_obj);
+                                             JSObject     **module_out);
 
 G_END_DECLS
 

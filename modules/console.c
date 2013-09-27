@@ -226,14 +226,19 @@ gjs_console_interact(JSContext *context,
 }
 
 JSBool
-gjs_define_console_stuff(JSContext *context,
-                         JSObject  *module_obj)
+gjs_define_console_stuff(JSContext  *context,
+                         JSObject  **module_out)
 {
-    if (!JS_DefineFunction(context, module_obj,
+    JSObject *module;
+
+    module = JS_NewObject (context, NULL, NULL, NULL);
+
+    if (!JS_DefineFunction(context, module,
                            "interact",
                            (JSNative) gjs_console_interact,
                            1, GJS_MODULE_PROP_FLAGS))
         return JS_FALSE;
 
+    *module_out = module;
     return JS_TRUE;
 }
