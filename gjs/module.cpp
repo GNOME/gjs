@@ -57,7 +57,23 @@ class GjsModule {
     create(JSContext  *cx,
            const char *name)
     {
-        JSObject *module = JS_NewObject(cx, &GjsModule::klass);
+        JS::RootedObject module(cx, JS_NewObject(cx, &GjsModule::klass));
+        JS::RootedObject exports(cx, JS_NewPlainObject(cx));
+        if (!JS_DefineProperty(cx, module, "exports", exports,
+                               JSPROP_READONLY | JSPROP_PERMANENT))
+            return nullptr;
+
+        JS::RootedValue v_id(cx);
+        if (!gjs_string_from_utf8(cx, name, &v_id))
+            return nullptr;
+
+        JS::RootedObject module_info(cx, JS_NewPlainObject(cx));
+        if (!JS_DefineProperty(cx, module_info, "id", v_id,
+                               JSPROP_READONLY | JSPROP_PERMANENT) ||
+            !JS_DefineProperty(cx, module, "module", module,
+                               JSPROP_READONLY | JSPROP_PERMANENT))
+            return nullptr;
+
         JS_SetPrivate(module, new GjsModule(name));
         return module;
     }
@@ -110,6 +126,24 @@ class GjsModule {
         gjs_debug(GJS_DEBUG_IMPORTER, "Importing module %s succeeded", m_name);
 
         return true;
+    }
+
+    static bool
+    define_module_url(JSContext       *cx,
+                      JS::HandleObject module,
+                      GFile           *file)
+    {
+        JS::RootedObject module_info(cx);
+        if (!gjs_object_require_property(cx, module, "module", "module object",
+                                         &module_info))
+            return false;
+
+        GjsAutoChar url = g_file_get_uri(file);
+        JS::RootedValue v_url(cx);
+        if (!gjs_string_from_utf8(cx, url, &v_url) ||
+            !JS_DefineProperty(cx, module_info, "url", v_url,
+                               JSPROP_READONLY | JSPROP_PERMANENT))
+            return false;
     }
 
     /* Loads JS code from a file and imports it */
