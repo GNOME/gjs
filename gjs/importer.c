@@ -406,33 +406,20 @@ load_module_elements(JSContext *context,
 
 static JSBool
 import_file(JSContext  *context,
-            JSObject   *obj,
             const char *name,
-            const char *full_path)
+            const char *full_path,
+            JSObject  **module_out)
 {
-    char *script;
-    gsize script_len;
+    JSBool ret = JS_FALSE;
     JSObject *module_obj;
-    GError *error;
+    char *script = NULL;
+    gsize script_len = 0;
     jsval script_retval;
-    JSBool retval = JS_FALSE;
-
-    gjs_debug(GJS_DEBUG_IMPORTER,
-              "Importing '%s'", full_path);
+    GError *error = NULL;
 
     module_obj = JS_NewObject(context, NULL, NULL, NULL);
-    if (module_obj == NULL) {
+    if (module_obj == NULL)
         return JS_FALSE;
-    }
-
-    if (!define_import(context, obj, module_obj, name))
-        return JS_FALSE;
-
-    if (!define_meta_properties(context, module_obj, full_path, name, obj))
-        goto out;
-
-    script_len = 0;
-    error = NULL;
 
     if (!(g_file_get_contents(full_path, &script, &script_len, &error))) {
         if (!g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_ISDIR) &&
@@ -445,8 +432,6 @@ import_file(JSContext  *context,
         goto out;
     }
 
-    g_assert(script != NULL);
-
     if (!JS_EvaluateScript(context,
                            module_obj,
                            script,
@@ -454,7 +439,6 @@ import_file(JSContext  *context,
                            full_path,
                            1, /* line number */
                            &script_retval)) {
-        g_free(script);
 
         /* If JSOPTION_DONT_REPORT_UNCAUGHT is set then the exception
          * would be left set after the evaluate and not go to the error
@@ -473,7 +457,34 @@ import_file(JSContext  *context,
         goto out;
     }
 
+    ret = JS_TRUE;
+
+ out:
     g_free(script);
+    *module_out = module_obj;
+    return ret;
+}
+
+static JSBool
+import_file_on_module(JSContext  *context,
+                      JSObject   *obj,
+                      const char *name,
+                      const char *full_path)
+{
+    JSObject *module_obj;
+    JSBool retval = JS_FALSE;
+
+    gjs_debug(GJS_DEBUG_IMPORTER,
+              "Importing '%s'", full_path);
+
+    if (!import_file (context, name, full_path, &module_obj))
+        goto out;
+
+    if (!define_import(context, obj, module_obj, name))
+        goto out;
+
+    if (!define_meta_properties(context, module_obj, full_path, name, obj))
+        goto out;
 
     if (!finish_import(context, name))
         goto out;
@@ -635,7 +646,7 @@ do_import(JSContext  *context,
                                      NULL);
 
         if (g_file_test(full_path, G_FILE_TEST_EXISTS)) {
-            if (import_file(context, obj, name, full_path)) {
+            if (import_file_on_module (context, obj, name, full_path)) {
                 gjs_debug(GJS_DEBUG_IMPORTER,
                           "successfully imported module '%s'", name);
                 result = JS_TRUE;
