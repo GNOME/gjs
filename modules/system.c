@@ -119,6 +119,15 @@ gjs_exit(JSContext *context,
     return JS_TRUE;
 }
 
+static JSFunctionSpec module_funcs[] = {
+    { "addressOf", JSOP_WRAPPER (gjs_address_of), 1, GJS_MODULE_PROP_FLAGS },
+    { "refcount", JSOP_WRAPPER (gjs_refcount), 1, GJS_MODULE_PROP_FLAGS },
+    { "breakpoint", JSOP_WRAPPER (gjs_breakpoint), 0, GJS_MODULE_PROP_FLAGS },
+    { "gc", JSOP_WRAPPER (gjs_gc), 0, GJS_MODULE_PROP_FLAGS },
+    { "exit", JSOP_WRAPPER (gjs_exit), 0, GJS_MODULE_PROP_FLAGS },
+    { NULL },
+};
+
 JSBool
 gjs_js_define_system_stuff(JSContext *context,
                            JSObject  *module)
@@ -128,34 +137,7 @@ gjs_js_define_system_stuff(JSContext *context,
     jsval value;
     JSBool retval;
 
-    if (!JS_DefineFunction(context, module,
-                           "addressOf",
-                           (JSNative) gjs_address_of,
-                           1, GJS_MODULE_PROP_FLAGS))
-        return JS_FALSE;
-
-    if (!JS_DefineFunction(context, module,
-                           "refcount",
-                           (JSNative) gjs_refcount,
-                           1, GJS_MODULE_PROP_FLAGS))
-        return JS_FALSE;
-
-    if (!JS_DefineFunction(context, module,
-                           "breakpoint",
-                           (JSNative) gjs_breakpoint,
-                           0, GJS_MODULE_PROP_FLAGS))
-        return JS_FALSE;
-
-    if (!JS_DefineFunction(context, module,
-                           "gc",
-                           (JSNative) gjs_gc,
-                           0, GJS_MODULE_PROP_FLAGS))
-        return JS_FALSE;
-
-    if (!JS_DefineFunction(context, module,
-                           "exit",
-                           (JSNative) gjs_exit,
-                           1, GJS_MODULE_PROP_FLAGS))
+    if (!JS_DefineFunctions(context, module, &module_funcs[0]))
         return JS_FALSE;
 
     retval = JS_FALSE;
