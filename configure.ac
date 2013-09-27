@@ -73,7 +73,7 @@ AC_CHECK_FUNCS(mallinfo)
 
 GOBJECT_INTROSPECTION_REQUIRE([1.38.0])
 
-common_packages="gmodule-2.0 gthread-2.0 gio-2.0 >= glib_required_version mozjs-17.0"
+common_packages="gmodule-2.0 gthread-2.0 gio-2.0 >= glib_required_version mozjs-24.1"
 gjs_packages="gobject-introspection-1.0 libffi $common_packages"
 gjs_cairo_packages="cairo cairo-gobject $common_packages"
 gjs_gdbus_packages="gobject-2.0 >= glib_required_version gio-2.0"

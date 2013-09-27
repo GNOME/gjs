@@ -10,7 +10,7 @@ gjs_console=${bindir}/gjs-console
 
 Cflags: -I${includedir}/gjs-1.0
 Requires: gobject-2.0
-Requires.private: gobject-introspection-1.0 mozjs-17.0
+Requires.private: gobject-introspection-1.0 mozjs-24.1
 Libs: -L${libdir} -lgjs
 
 Name: gjs-1.0
