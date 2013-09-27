@@ -27,6 +27,8 @@
 #include <sys/types.h>
 #include <time.h>
 
+#include <gio/gio.h>
+
 #include "gjs/jsapi-wrapper.h"
 #include <js/Date.h>
 
@@ -35,6 +37,7 @@
 #include "gi/object.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-args.h"
+#include "gjs/module.h"
 #include "system.h"
 
 /* Note that this cannot be relied on to test whether two objects are the same!
@@ -164,6 +167,33 @@ gjs_clear_date_caches(JSContext *context,
     return true;
 }
 
+static bool
+import_file(JSContext *cx,
+            unsigned   argc,
+            JS::Value *vp)
+{
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+
+    GjsAutoJSChar name;
+    JS::RootedObject file_obj(cx);
+    if (!gjs_parse_call_args(cx, "importFile", argv, "so",
+                             "name", &name,
+                             "object", &file_obj))
+        return false;
+
+    GjsAutoUnref<GFile> file = G_FILE(gjs_g_object_from_object(cx, file_obj));
+    if (!file)
+        return false;
+
+    JS::RootedObject module_obj(cx, gjs_module_import_file(cx, name, file));
+    if (!module_obj)
+        return false;
+
+    argv.rval().setObject(*module_obj);
+    return true;
+}
+
+
 static JSFunctionSpec module_funcs[] = {
     JS_FS("addressOf", gjs_address_of, 1, GJS_MODULE_PROP_FLAGS),
     JS_FS("refcount", gjs_refcount, 1, GJS_MODULE_PROP_FLAGS),
@@ -172,6 +202,7 @@ static JSFunctionSpec module_funcs[] = {
     JS_FS("gc", gjs_gc, 0, GJS_MODULE_PROP_FLAGS),
     JS_FS("exit", gjs_exit, 0, GJS_MODULE_PROP_FLAGS),
     JS_FS("clearDateCaches", gjs_clear_date_caches, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FS("importFile", import_file, 1, GJS_MODULE_PROP_FLAGS),
     JS_FS_END
 };
 

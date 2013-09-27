@@ -114,9 +114,9 @@ class GjsModule {
 
     /* Loads JS code from a file and imports it */
     bool
-    import_file(JSContext       *cx,
-                JS::HandleObject module,
-                GFile           *file)
+    import_file_internal(JSContext       *cx,
+                         JS::HandleObject module,
+                         GFile           *file)
     {
         GError *error = nullptr;
         char *unowned_script;
@@ -226,9 +226,20 @@ public:
         JS::RootedObject module(cx, GjsModule::create(cx, name));
         if (!module ||
             !priv(module)->define_import(cx, module, importer, id) ||
-            !priv(module)->import_file(cx, module, file))
+            !priv(module)->import_file_internal(cx, module, file))
             return nullptr;
 
+        return module;
+    }
+
+    static JSObject *
+    import_file(JSContext  *cx,
+                const char *name,
+                GFile      *file)
+    {
+        JS::RootedObject module(cx, GjsModule::create(cx, name));
+        if (!module || !priv(module)->import_file_internal(cx, module, file))
+            return nullptr;
         return module;
     }
 };
@@ -257,6 +268,14 @@ gjs_module_import(JSContext       *cx,
                   GFile           *file)
 {
     return GjsModule::import(cx, importer, id, name, file);
+}
+
+JSObject *
+gjs_module_import_file(JSContext  *cx,
+                       const char *name,
+                       GFile      *file)
+{
+    return GjsModule::import_file(cx, name, file);
 }
 
 decltype(GjsModule::klass) constexpr GjsModule::klass;

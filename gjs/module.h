@@ -37,6 +37,10 @@ gjs_module_import(JSContext       *cx,
                   const char      *name,
                   GFile           *file);
 
+JSObject *gjs_module_import_file(JSContext  *cx,
+                                 const char *name,
+                                 GFile      *file);
+
 G_END_DECLS
 
 #endif  /* GJS_MODULE_H */
