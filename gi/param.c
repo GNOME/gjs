@@ -390,16 +390,16 @@ param_new_internal(JSContext *cx,
         }
         break;
     case G_TYPE_PARAM:
-        pspec = g_param_spec_param(prop_name, nick, blurb, prop_type, flags);
+        pspec = g_param_spec_param(prop_name, nick, blurb, prop_gtype, flags);
         break;
     case G_TYPE_BOXED:
-        pspec = g_param_spec_boxed(prop_name, nick, blurb, prop_type, flags);
+        pspec = g_param_spec_boxed(prop_name, nick, blurb, prop_gtype, flags);
         break;
     case G_TYPE_POINTER:
         pspec = g_param_spec_pointer(prop_name, nick, blurb, flags);
         break;
     case G_TYPE_OBJECT:
-        pspec = g_param_spec_object(prop_name, nick, blurb, prop_type, flags);
+        pspec = g_param_spec_object(prop_name, nick, blurb, prop_gtype, flags);
         break;
     default:
         gjs_throw(cx,
