@@ -129,13 +129,16 @@ static JSFunctionSpec module_funcs[] = {
 };
 
 JSBool
-gjs_js_define_system_stuff(JSContext *context,
-                           JSObject  *module)
+gjs_js_define_system_stuff(JSContext  *context,
+                           JSObject  **module_out)
 {
     GjsContext *gjs_context;
     char *program_name;
     jsval value;
     JSBool retval;
+    JSObject *module;
+
+    module = JS_NewObject (context, NULL, NULL, NULL);
 
     if (!JS_DefineFunctions(context, module, &module_funcs[0]))
         return JS_FALSE;
@@ -173,6 +176,7 @@ gjs_js_define_system_stuff(JSContext *context,
 
  out:
     g_free(program_name);
+    *module_out = module;
 
     return retval;
 }

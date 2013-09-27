@@ -37,8 +37,8 @@ void
 gjs_register_static_modules (void)
 {
 #ifdef ENABLE_CAIRO
-    gjs_register_native_module("cairoNative", gjs_js_define_cairo_stuff, 0);
+    gjs_register_native_module("cairoNative", gjs_js_define_cairo_stuff);
 #endif
-    gjs_register_native_module("system", gjs_js_define_system_stuff, 0);
-    gjs_register_native_module("console", gjs_define_console_stuff, 0);
+    gjs_register_native_module("system", gjs_js_define_system_stuff);
+    gjs_register_native_module("console", gjs_define_console_stuff);
 }

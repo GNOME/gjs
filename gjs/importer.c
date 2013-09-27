@@ -224,23 +224,10 @@ import_native_file(JSContext  *context,
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Importing '%s'", name);
 
-    module_obj = JS_NewObject(context, NULL, NULL, NULL);
-    if (module_obj == NULL) {
-        return JS_FALSE;
-    }
-
-    /* We store the module object into the parent module before
-     * initializing the module. If the module has the
-     * GJS_NATIVE_SUPPLIES_MODULE_OBJ flag, it will just overwrite
-     * the reference we stored when it initializes.
-     */
-    if (!define_import(context, obj, module_obj, name))
-        return JS_FALSE;
-
-    if (!define_meta_properties(context, module_obj, NULL, name, obj))
+    if (!gjs_import_native_module(context, name, &module_obj))
         goto out;
 
-    if (!gjs_import_native_module(context, module_obj, name))
+    if (!define_meta_properties(context, module_obj, NULL, name, obj))
         goto out;
 
     if (JS_IsExceptionPending(context)) {
@@ -252,15 +239,14 @@ import_native_file(JSContext  *context,
         goto out;
     }
 
-    if (!seal_import(context, obj, name))
+    if (!JS_DefineProperty(context, obj,
+                           name, OBJECT_TO_JSVAL(module_obj),
+                           NULL, NULL, GJS_MODULE_PROP_FLAGS))
         goto out;
 
     retval = JS_TRUE;
 
  out:
-    if (!retval)
-        cancel_import(context, obj, name);
-
     return retval;
 }
 

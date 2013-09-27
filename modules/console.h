@@ -31,7 +31,7 @@
 G_BEGIN_DECLS
 
 JSBool        gjs_define_console_stuff     (JSContext      *context,
-                                            JSObject       *in_object);
+                                            JSObject      **module_out);
 JSBool        gjs_console_interact         (JSContext      *context,
                                             unsigned        argc,
                                             jsval          *vp);

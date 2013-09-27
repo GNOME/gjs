@@ -345,18 +345,13 @@ repo_new(JSContext *context)
 
 JSBool
 gjs_define_repo(JSContext  *context,
-                JSObject   *module_obj,
+                JSObject  **module_out,
                 const char *name)
 {
     JSObject *repo;
 
     repo = repo_new(context);
-
-    if (!JS_DefineProperty(context, module_obj,
-                           name, OBJECT_TO_JSVAL(repo),
-                           NULL, NULL,
-                           GJS_MODULE_PROP_FLAGS))
-        return JS_FALSE;
+    *module_out = repo;
 
     return JS_TRUE;
 }
