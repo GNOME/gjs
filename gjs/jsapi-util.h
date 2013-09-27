@@ -143,7 +143,7 @@ static struct JSClass gjs_##cname##_class = { \
     JSCLASS_HAS_PRIVATE | \
     JSCLASS_NEW_RESOLVE, \
     JS_PropertyStub, \
-    JS_PropertyStub, \
+    JS_DeletePropertyStub, \
     JS_PropertyStub, \
     JS_StrictPropertyStub, \
     JS_EnumerateStub,\

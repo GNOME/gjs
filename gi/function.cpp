@@ -1359,7 +1359,7 @@ struct JSClass gjs_function_class = {
     "GIRepositoryFunction", /* means "new GIRepositoryFunction()" works */
     JSCLASS_HAS_PRIVATE,
     JS_PropertyStub,
-    JS_PropertyStub,
+    JS_DeletePropertyStub,
     JS_PropertyStub,
     JS_StrictPropertyStub,
     JS_EnumerateStub,

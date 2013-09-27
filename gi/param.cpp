@@ -414,7 +414,7 @@ struct JSClass gjs_param_class = {
     "GObject_ParamSpec",
     JSCLASS_HAS_PRIVATE,
     JS_PropertyStub,
-    JS_PropertyStub,
+    JS_DeletePropertyStub,
     param_get_prop,
     JS_StrictPropertyStub,
     JS_EnumerateStub,

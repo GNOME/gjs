@@ -1781,7 +1781,7 @@ struct JSClass gjs_object_instance_class = {
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE,
     JS_PropertyStub,
-    JS_PropertyStub,
+    JS_DeletePropertyStub,
     object_instance_get_prop,
     object_instance_set_prop,
     JS_EnumerateStub,

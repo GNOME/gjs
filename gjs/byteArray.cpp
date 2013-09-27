@@ -58,7 +58,7 @@ struct JSClass gjs_byte_array_class = {
     "ByteArray",
     JSCLASS_HAS_PRIVATE,
     JS_PropertyStub,
-    JS_PropertyStub,
+    JS_DeletePropertyStub,
     (JSPropertyOp)byte_array_get_prop,
     (JSStrictPropertyOp)byte_array_set_prop,
     JS_EnumerateStub,

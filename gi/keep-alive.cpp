@@ -153,7 +153,7 @@ struct JSClass gjs_keep_alive_class = {
     "__private_GjsKeepAlive", /* means "new __private_GjsKeepAlive()" works */
     JSCLASS_HAS_PRIVATE,
     JS_PropertyStub,
-    JS_PropertyStub,
+    JS_DeletePropertyStub,
     JS_PropertyStub,
     JS_StrictPropertyStub,
     JS_EnumerateStub,

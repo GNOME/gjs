@@ -949,7 +949,7 @@ struct JSClass gjs_importer_class = {
     JSCLASS_NEW_RESOLVE |
     JSCLASS_NEW_ENUMERATE,
     JS_PropertyStub,
-    JS_PropertyStub,
+    JS_DeletePropertyStub,
     JS_PropertyStub,
     JS_StrictPropertyStub,
     (JSEnumerateOp) importer_new_enumerate, /* needs cast since it's the new enumerate signature */
