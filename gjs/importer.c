@@ -272,6 +272,62 @@ import_native_file(JSContext  *context,
     return retval;
 }
 
+
+static JSBool
+import_file(JSContext  *context,
+            const char *name,
+            const char *full_path,
+            JSObject   *module_obj)
+{
+    JSBool ret = JS_FALSE;
+    char *script = NULL;
+    gsize script_len = 0;
+    jsval script_retval;
+    GError *error = NULL;
+
+    if (!(g_file_get_contents(full_path, &script, &script_len, &error))) {
+        if (!g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_ISDIR) &&
+            !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOTDIR) &&
+            !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+            gjs_throw_g_error(context, error);
+        else
+            g_error_free(error);
+
+        goto out;
+    }
+
+    if (!JS_EvaluateScript(context,
+                           module_obj,
+                           script,
+                           script_len,
+                           full_path,
+                           1, /* line number */
+                           &script_retval)) {
+
+        /* If JSOPTION_DONT_REPORT_UNCAUGHT is set then the exception
+         * would be left set after the evaluate and not go to the error
+         * reporter function.
+         */
+        if (JS_IsExceptionPending(context)) {
+            gjs_debug(GJS_DEBUG_IMPORTER,
+                      "Module '%s' left an exception set",
+                      name);
+            gjs_log_and_keep_exception(context);
+        } else {
+            gjs_throw(context,
+                         "JS_EvaluateScript() returned FALSE but did not set exception");
+        }
+
+        goto out;
+    }
+
+    ret = JS_TRUE;
+
+ out:
+    g_free(script);
+    return ret;
+}
+
 static JSObject *
 load_module_init(JSContext  *context,
                  JSObject   *in_object,
@@ -405,75 +461,29 @@ load_module_elements(JSContext *context,
 }
 
 static JSBool
-import_file(JSContext  *context,
-            JSObject   *obj,
-            const char *name,
-            const char *full_path)
+import_file_on_module(JSContext  *context,
+                      JSObject   *obj,
+                      const char *name,
+                      const char *full_path)
 {
-    char *script;
-    gsize script_len;
     JSObject *module_obj;
-    GError *error;
-    jsval script_retval;
     JSBool retval = JS_FALSE;
 
     gjs_debug(GJS_DEBUG_IMPORTER,
               "Importing '%s'", full_path);
 
     module_obj = JS_NewObject(context, NULL, NULL, NULL);
-    if (module_obj == NULL) {
-        return JS_FALSE;
-    }
+    if (module_obj == NULL)
+        goto out;
 
     if (!define_import(context, obj, module_obj, name))
-        return JS_FALSE;
+        goto out;
+
+    if (!import_file(context, name, full_path, module_obj))
+        goto out;
 
     if (!define_meta_properties(context, module_obj, full_path, name, obj))
         goto out;
-
-    script_len = 0;
-    error = NULL;
-
-    if (!(g_file_get_contents(full_path, &script, &script_len, &error))) {
-        if (!g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_ISDIR) &&
-            !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOTDIR) &&
-            !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
-            gjs_throw_g_error(context, error);
-        else
-            g_error_free(error);
-
-        goto out;
-    }
-
-    g_assert(script != NULL);
-
-    if (!JS_EvaluateScript(context,
-                           module_obj,
-                           script,
-                           script_len,
-                           full_path,
-                           1, /* line number */
-                           &script_retval)) {
-        g_free(script);
-
-        /* If JSOPTION_DONT_REPORT_UNCAUGHT is set then the exception
-         * would be left set after the evaluate and not go to the error
-         * reporter function.
-         */
-        if (JS_IsExceptionPending(context)) {
-            gjs_debug(GJS_DEBUG_IMPORTER,
-                      "Module '%s' left an exception set",
-                      name);
-            gjs_log_and_keep_exception(context);
-        } else {
-            gjs_throw(context,
-                         "JS_EvaluateScript() returned FALSE but did not set exception");
-        }
-
-        goto out;
-    }
-
-    g_free(script);
 
     if (!finish_import(context, name))
         goto out;
@@ -635,7 +645,7 @@ do_import(JSContext  *context,
                                      NULL);
 
         if (g_file_test(full_path, G_FILE_TEST_EXISTS)) {
-            if (import_file(context, obj, name, full_path)) {
+            if (import_file_on_module (context, obj, name, full_path)) {
                 gjs_debug(GJS_DEBUG_IMPORTER,
                           "successfully imported module '%s'", name);
                 result = JS_TRUE;
