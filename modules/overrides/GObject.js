@@ -213,13 +213,11 @@ function _init() {
     };
 
     this.ParamSpec.flags = function(name, nick, blurb, flags, flags_type, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.TYPE_FLAGS,
-                                               nick, blurb, flags, flags_type, default_value);
+        return GObject.ParamSpec._new_internal(name, flags_type, nick, blurb, flags, default_value);
     };
 
     this.ParamSpec.enum = function(name, nick, blurb, flags, enum_type, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.TYPE_ENUM,
-                                               nick, blurb, flags, enum_type, default_value);
+        return GObject.ParamSpec._new_internal(name, enum_type, nick, blurb, flags, default_value);
     };
 
     this.ParamSpec.double = function(name, nick, blurb, flags, minimum, maximum, default_value) {

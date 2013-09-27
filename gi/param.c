@@ -303,55 +303,37 @@ param_new_internal(JSContext *cx,
         break;
     case G_TYPE_ENUM:
         {
-            JSObject *gtype_jsobj;
-            GType gtype;
             GIEnumInfo *info;
             gint64 default_value;
 
             if (!gjs_parse_args(cx, method_name,
                                 "ot", argc, argv,
-                                "gtype", &gtype_jsobj,
                                 "default_value", &default_value))
                 goto out;
 
-            gtype = gjs_gtype_get_actual_gtype(cx, gtype_jsobj);
-            if (gtype == G_TYPE_NONE) {
-                gjs_throw(cx, "Passed invalid GType to GParamSpecEnum constructor");
-                goto out;
-            }
-
-            info = g_irepository_find_by_gtype(g_irepository_get_default(), gtype);
+            info = g_irepository_find_by_gtype(g_irepository_get_default(), prop_gtype);
 
             if (!_gjs_enum_value_is_valid(cx, info, default_value))
                 goto out;
 
             pspec = g_param_spec_enum(prop_name, nick, blurb,
-                                      gtype, default_value, flags);
+                                      prop_gtype, default_value, flags);
         }
         break;
     case G_TYPE_FLAGS:
         {
-            JSObject *gtype_jsobj;
-            GType gtype;
             gint64 default_value;
 
             if (!gjs_parse_args(cx, method_name,
-                                "ot", argc, argv,
-                                "gtype", &gtype_jsobj,
+                                "t", argc, argv,
                                 "default_value", &default_value))
                 goto out;
 
-            gtype = gjs_gtype_get_actual_gtype(cx, gtype_jsobj);
-            if (gtype == G_TYPE_NONE) {
-                gjs_throw(cx, "Passed invalid GType to GParamSpecFlags constructor");
-                goto out;
-            }
-
-            if (!_gjs_flags_value_is_valid(cx, gtype, default_value))
+            if (!_gjs_flags_value_is_valid(cx, prop_gtype, default_value))
                 goto out;
 
             pspec = g_param_spec_flags(prop_name, nick, blurb,
-                                       gtype, default_value, flags);
+                                       prop_gtype, default_value, flags);
         }
         break;
     case G_TYPE_FLOAT:
