@@ -51,24 +51,31 @@ const GObjectMeta = new Lang.Class({
             }
         }
 
-        for (let prop in params) {
-            let value = this.prototype[prop];
-            if (typeof value === 'function') {
-                if (prop.slice(0, 6) == 'vfunc_') {
-                    Gi.hook_up_vfunc(this.prototype, prop.slice(6), value);
-                } else if (prop.slice(0, 3) == 'on_') {
-                    let id = GObject.signal_lookup(prop.slice(3).replace('_', '-'), this.$gtype);
+	let propertyObj = { };
+	Object.getOwnPropertyNames(params).forEach(function(name) {
+            if (name == 'Name' || name == 'Extends' || name == 'Abstract')
+		return;
+
+            let descriptor = Object.getOwnPropertyDescriptor(params, name);
+
+            if (typeof descriptor.value === 'function') {
+		let wrapped = this.prototype[name];
+
+                if (name.slice(0, 6) == 'vfunc_') {
+                    Gi.hook_up_vfunc(this.prototype, name.slice(6), wrapped);
+                } else if (name.slice(0, 3) == 'on_') {
+                    let id = GObject.signal_lookup(name.slice(3).replace('_', '-'), this.$gtype);
                     if (id != 0) {
                         GObject.signal_override_class_closure(id, this.$gtype, function() {
                             let argArray = Array.prototype.slice.call(arguments);
                             let emitter = argArray.shift();
 
-                            value.apply(emitter, argArray);
+                            wrapped.apply(emitter, argArray);
                         });
                     }
                 }
-            }
-        }
+	    }
+	}.bind(this));
     },
 
     _isValidClass: function(klass) {
