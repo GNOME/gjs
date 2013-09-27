@@ -328,11 +328,7 @@ load_module_init(JSContext  *context,
                  JSObject   *in_object,
                  const char *full_path)
 {
-    char *script;
-    gsize script_len;
-    jsval script_retval;
     JSObject *module_obj;
-    GError *error;
     JSBool found;
     jsid module_init_name;
 
@@ -350,67 +346,14 @@ load_module_init(JSContext  *context,
         }
     }
 
-    module_obj = JS_NewObject(context, NULL, NULL, NULL);
-    if (module_obj == NULL) {
-        return JS_FALSE;
-    }
-
-    /* https://bugzilla.mozilla.org/show_bug.cgi?id=599651 means we
-     * can't just pass in the global as the parent */
-    JS_SetParent(context, module_obj,
-                 gjs_get_import_global (context));
-
-    /* Define module in importer for future use and to avoid module_obj
-     * object to be garbage collected during the evaluation of the script */
-    JS_DefinePropertyById(context, in_object,
-                          module_init_name, OBJECT_TO_JSVAL(module_obj),
-                          NULL, NULL,
-                          GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT);
-
-    script_len = 0;
-    error = NULL;
-
-    if (!g_file_get_contents(full_path, &script, &script_len, &error)) {
-        if (!g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_ISDIR) &&
-            !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOTDIR) &&
-            !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
-            gjs_throw_g_error(context, error);
-        else
-            g_error_free(error);
-
+    if (!import_file (context, "__init__", full_path, &module_obj))
         return NULL;
-    }
 
-    g_assert(script != NULL);
-
-    gjs_debug(GJS_DEBUG_IMPORTER, "Importing %s", full_path);
-
-    if (!JS_EvaluateScript(context,
-                           module_obj,
-                           script,
-                           script_len,
-                           full_path,
-                           1, /* line number */
-                           &script_retval)) {
-        g_free(script);
-
-        /* If JSOPTION_DONT_REPORT_UNCAUGHT is set then the exception
-         * would be left set after the evaluate and not go to the error
-         * reporter function.
-         */
-        if (JS_IsExceptionPending(context)) {
-            gjs_debug(GJS_DEBUG_IMPORTER,
-                      "Module " MODULE_INIT_FILENAME " left an exception set");
-            gjs_log_and_keep_exception(context);
-        } else {
-            gjs_throw(context,
-                      "JS_EvaluateScript() returned FALSE but did not set exception");
-        }
-
+    if (!JS_DefinePropertyById(context, in_object,
+                               module_init_name, OBJECT_TO_JSVAL(module_obj),
+                               NULL, NULL,
+                               GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT))
         return NULL;
-    }
-
-    g_free(script);
 
     return module_obj;
 }
