@@ -128,22 +128,6 @@ import_directory(JSContext   *context,
 }
 
 static JSBool
-finish_import(JSContext  *context,
-              const char *name)
-{
-    if (JS_IsExceptionPending(context)) {
-        /* I am not sure whether this can happen, but if it does we want to trap it.
-         */
-        gjs_debug(GJS_DEBUG_IMPORTER,
-                  "Module '%s' reported an exception but gjs_import_native_module() returned TRUE",
-                  name);
-        return JS_FALSE;
-    }
-
-    return JS_TRUE;
-}
-
-static JSBool
 define_import(JSContext  *context,
               JSObject   *obj,
               JSObject   *module_obj,
@@ -257,8 +241,14 @@ import_native_file(JSContext  *context,
     if (!gjs_import_native_module(context, module_obj, name))
         goto out;
 
-    if (!finish_import(context, name))
+    if (JS_IsExceptionPending(context)) {
+        /* I am not sure whether this can happen, but if it does we want to trap it.
+         */
+        gjs_debug(GJS_DEBUG_IMPORTER,
+                  "Module '%s' reported an exception but gjs_import_native_module() returned TRUE",
+                  name);
         goto out;
+    }
 
     if (!seal_import(context, obj, name))
         goto out;
@@ -484,9 +474,6 @@ import_file_on_module(JSContext  *context,
         goto out;
 
     if (!define_meta_properties(context, module_obj, full_path, name, obj))
-        goto out;
-
-    if (!finish_import(context, name))
         goto out;
 
     if (!seal_import(context, obj, name))
