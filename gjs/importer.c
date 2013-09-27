@@ -430,21 +430,17 @@ import_file_on_module(JSContext  *context,
     if (!import_file (context, name, file, &module_obj))
         goto out;
 
-    if (!define_import(context, obj, module_obj, name))
-        goto out;
-
     if (!define_meta_properties(context, module_obj, full_path, name, obj))
         goto out;
 
-    if (!seal_import(context, obj, name))
+    if (!JS_DefineProperty(context, obj,
+                           name, OBJECT_TO_JSVAL(module_obj),
+                           NULL, NULL, GJS_MODULE_PROP_FLAGS))
         goto out;
 
     retval = JS_TRUE;
 
  out:
-    if (!retval)
-        cancel_import(context, obj, name);
-
     g_free (full_path);
 
     return retval;
