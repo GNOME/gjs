@@ -128,7 +128,7 @@ gjs_profile_function_free(GjsProfileFunction *self)
 
 static void
 gjs_profile_function_key_from_js(JSContext             *cx,
-                                 JSStackFrame          *fp,
+                                 JSAbstractFramePtr     frame,
                                  GjsProfileFunctionKey *key)
 {
     JSScript *script;
@@ -139,7 +139,7 @@ gjs_profile_function_key_from_js(JSContext             *cx,
      * could be unloaded and addresses reused.
      */
 
-    script = JS_GetFrameScript(cx, fp);
+    script = frame.script();
     if (script != NULL) {
         key->filename = (char*)JS_GetScriptFilename(cx, script);
         key->lineno = JS_GetScriptBaseLineNumber(cx, script);
@@ -148,7 +148,7 @@ gjs_profile_function_key_from_js(JSContext             *cx,
         key->lineno = 0;
     }
 
-    function = JS_GetFrameFunction(cx, fp);
+    function = frame.maybeFun();
     /* If function == NULL we're probably calling a GIRepositoryFunction object
      * (or other object with a 'call' method) and would be good to somehow
      * figure out the name of the called function.
@@ -163,15 +163,15 @@ gjs_profile_function_key_from_js(JSContext             *cx,
 }
 
 static GjsProfileFunction *
-gjs_profiler_lookup_function(GjsProfiler  *self,
-                             JSContext    *cx,
-                             JSStackFrame *fp,
-                             gboolean      create_if_missing)
+gjs_profiler_lookup_function(GjsProfiler       *self,
+                             JSContext         *cx,
+                             JSAbstractFramePtr frame,
+                             gboolean           create_if_missing)
 {
     GjsProfileFunctionKey key;
     GjsProfileFunction *function;
 
-    gjs_profile_function_key_from_js(cx, fp, &key);
+    gjs_profile_function_key_from_js(cx, frame, &key);
 
     function = (GjsProfileFunction*) g_hash_table_lookup(self->by_file, &key);
     if (function)
@@ -195,17 +195,17 @@ gjs_profiler_lookup_function(GjsProfiler  *self,
 }
 
 static void
-gjs_profiler_log_call(GjsProfiler  *self,
-                      JSContext    *cx,
-                      JSStackFrame *fp,
-                      JSBool        before,
-                      JSBool       *ok)
+gjs_profiler_log_call(GjsProfiler       *self,
+                      JSContext         *cx,
+                      JSAbstractFramePtr frame,
+                      JSBool             before,
+                      JSBool            *ok)
 {
     GjsProfileFunction *function;
     GjsProfileData *p;
     int64_t now;
 
-    function = gjs_profiler_lookup_function(self, cx, fp, before);
+    function = gjs_profiler_lookup_function(self, cx, frame, before);
     if (!function)
         return;
 
@@ -274,29 +274,31 @@ gjs_profiler_log_call(GjsProfiler  *self,
 }
 
 static void *
-gjs_profiler_execute_hook(JSContext    *cx,
-                          JSStackFrame *fp,
-                          JSBool        before,
-                          JSBool       *ok,
-                          void         *callerdata)
+gjs_profiler_execute_hook(JSContext         *cx,
+                          JSAbstractFramePtr frame,
+                          bool               isConstructing,
+                          JSBool             before,
+                          JSBool            *ok,
+                          void              *callerdata)
 {
     GjsProfiler *self = (GjsProfiler*) callerdata;
 
-    gjs_profiler_log_call(self, cx, fp, before, ok);
+    gjs_profiler_log_call(self, cx, frame, before, ok);
 
     return callerdata;
 }
 
 static void *
-gjs_profiler_call_hook(JSContext    *cx,
-                       JSStackFrame *fp,
-                       JSBool        before,
-                       JSBool       *ok,
-                       void         *callerdata)
+gjs_profiler_call_hook(JSContext          *cx,
+                       JSAbstractFramePtr frame,
+                       bool               isConstructing,
+                       JSBool             before,
+                       JSBool            *ok,
+                       void              *callerdata)
 {
     GjsProfiler *self = (GjsProfiler*) callerdata;
 
-    gjs_profiler_log_call(self, cx, fp, before, ok);
+    gjs_profiler_log_call(self, cx, frame, before, ok);
 
     return callerdata;
 }
