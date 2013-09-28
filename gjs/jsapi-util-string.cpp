@@ -55,9 +55,7 @@ gjs_string_to_utf8 (JSContext  *context,
     }
 
     if (utf8_string_p) {
-        bytes = (char*) g_malloc((len + 1) * sizeof(char));
-        JS_EncodeStringToBuffer(context, str, bytes, len);
-        bytes[len] = '\0';
+        bytes = JS_EncodeStringToUTF8(context, str);
         *utf8_string_p = bytes;
     }
 
@@ -72,13 +70,41 @@ gjs_string_from_utf8(JSContext  *context,
                      gssize      n_bytes,
                      jsval      *value_p)
 {
+    jschar *u16_string;
+    glong u16_string_length;
     JSString *str;
+    GError *error;
+
+    /* intentionally using n_bytes even though glib api suggests n_chars; with
+    * n_chars (from g_utf8_strlen()) the result appears truncated
+    */
+
+    error = NULL;
+    u16_string = g_utf8_to_utf16(utf8_string,
+                                 n_bytes,
+                                 NULL,
+                                 &u16_string_length,
+                                 &error);
+    if (!u16_string) {
+        gjs_throw(context,
+                  "Failed to convert UTF-8 string to "
+                  "JS string: %s",
+                  error->message);
+                  g_error_free(error);
+        return JS_FALSE;
+    }
 
     JS_BeginRequest(context);
 
-    if (n_bytes < 0)
-        n_bytes = strlen(utf8_string);
-    str = JS_NewStringCopyN(context, utf8_string, n_bytes);
+    if (g_mem_is_system_malloc()) {
+        /* Avoid a copy - assumes that g_malloc == js_malloc == malloc */
+        str = JS_NewUCString(context, u16_string, u16_string_length);
+    } else {
+        str = JS_NewUCStringCopyN(context,
+                                (jschar*)u16_string,
+                                u16_string_length);
+        g_free(u16_string);
+    }
 
     if (str && value_p)
         *value_p = STRING_TO_JSVAL(str);

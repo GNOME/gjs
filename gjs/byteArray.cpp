@@ -771,9 +771,13 @@ byte_array_ensure_initialized (JSContext *context)
 
     if (g_once_init_enter (&initialized)) {
         jsval rval;
-        JS_EvaluateScript(context, JS_GetGlobalObject(context),
-                          "imports.byteArray.ByteArray;", 27,
-                          "<internal>", 1, &rval);
+        JS::CompileOptions options(context);
+        options.setUTF8(true)
+               .setFileAndLine("<internal>", 1);
+        js::RootedObject rootedObj(context, JS_GetGlobalObject(context));
+        JS::Evaluate(context, rootedObj, options,
+                     "imports.byteArray.ByteArray;", 27,
+                     &rval);
         g_once_init_leave (&initialized, 1);
     }
 }

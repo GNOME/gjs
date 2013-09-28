@@ -190,10 +190,13 @@ gjs_console_interact(JSContext *context,
             g_string_append(buffer, temp_buf);
             g_free(temp_buf);
             lineno++;
-        } while (!JS_BufferIsCompilableUnit(context, JS_TRUE, object, buffer->str, buffer->len));
+        } while (!JS_BufferIsCompilableUnit(context, object, buffer->str, buffer->len));
 
-        JS_EvaluateScript(context, object, buffer->str, buffer->len, "typein",
-                          startline, &result);
+        JS::CompileOptions options(context);
+        options.setUTF8(true)
+               .setFileAndLine("typein", startline);
+        js::RootedObject rootedObj(context, object);
+        JS::Evaluate(context, rootedObj, options, buffer->str, buffer->len,  &result);
 
         if (JS_GetPendingException(context, &result)) {
             str = JS_ValueToString(context, result);

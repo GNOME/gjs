@@ -345,8 +345,6 @@ gjs_context_class_init(GjsContextClass *klass)
                                       NULL,
                                       G_TYPE_NONE, 0);
 
-    JS_SetCStringsAreUTF8();
-
     /* For GjsPrivate */
     {
         char *priv_typelib_dir = g_build_filename (PKGLIBDIR, "girepository-1.0", NULL);
@@ -1017,13 +1015,19 @@ gjs_context_eval(GjsContext *js_context,
     retval = JSVAL_VOID;
     if (script_len < 0)
         script_len = strlen(script);
-    if (!JS_EvaluateScript(js_context->context,
-                           js_context->global,
-                           script,
-                           script_len,
-                           filename,
-                           line_number,
-                           &retval)) {
+
+    JS::CompileOptions options(js_context->context);
+    options.setUTF8(true)
+           .setFileAndLine(filename, line_number)
+           .setSourcePolicy(JS::CompileOptions::LAZY_SOURCE);
+    js::RootedObject rootedObj(js_context->context, js_context->global);
+
+    if (!JS::Evaluate(js_context->context,
+                      rootedObj,
+                      options,
+                      script,
+                      script_len,
+                      &retval)) {
         gjs_debug(GJS_DEBUG_CONTEXT,
                   "Script evaluation failed");
 

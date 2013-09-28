@@ -269,6 +269,9 @@ import_file(JSContext  *context,
     jsval script_retval;
     GError *error = NULL;
 
+    JS::CompileOptions options(context);
+    js::RootedObject rootedObj(context, module_obj);
+
     if (!(g_file_load_contents(file, NULL, &script, &script_len, NULL, &error))) {
         if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_IS_DIRECTORY) &&
             !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_DIRECTORY) &&
@@ -284,13 +287,18 @@ import_file(JSContext  *context,
 
     full_path = g_file_get_parse_name (file);
 
-    if (!JS_EvaluateScript(context,
-                           module_obj,
-                           script,
-                           script_len,
-                           full_path,
-                           1, /* line number */
-                           &script_retval)) {
+
+    options.setUTF8(true)
+           .setFileAndLine(full_path, 1)
+           .setSourcePolicy(JS::CompileOptions::LAZY_SOURCE);
+
+    if (!JS::Evaluate(context,
+                      rootedObj,
+                      options,
+                      script,
+                      script_len,
+                      &script_retval)) {
+
 
         /* If JSOPTION_DONT_REPORT_UNCAUGHT is set then the exception
          * would be left set after the evaluate and not go to the error
