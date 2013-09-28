@@ -1557,7 +1557,7 @@ function_new(JSContext      *context,
 
         JS_GetProperty(context, global, "Function", &native_function);
         /* We take advantage from that fact that Function.__proto__ is Function.prototype */
-        parent_proto = JS_GetPrototype(JSVAL_TO_OBJECT(native_function));
+        JS_GetPrototype(context, JSVAL_TO_OBJECT(native_function), &parent_proto);
 
         prototype = JS_InitClass(context, global,
                                  /* parent prototype JSObject* for

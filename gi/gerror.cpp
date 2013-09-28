@@ -85,7 +85,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
                         "GError constructor, obj %p priv %p",
                         object, priv);
 
-    proto = JS_GetPrototype(object);
+    JS_GetPrototype(context, object, &proto);
     gjs_debug_lifecycle(GJS_DEBUG_GERROR, "GError instance __proto__ is %p", proto);
 
     /* If we're the prototype, then post-construct we'll fill in priv->info.

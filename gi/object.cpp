@@ -240,7 +240,9 @@ static inline ObjectInstance *
 proto_priv_from_js(JSContext *context,
                    JSObject  *obj)
 {
-    return priv_from_js(context, JS_GetPrototype(obj));
+    JSObject *proto;
+    JS_GetPrototype(context, obj, &proto);
+    return priv_from_js(context, proto);
 }
 
 /* a hook on getting a property; set value_p to override property's value.
