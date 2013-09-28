@@ -283,6 +283,7 @@ JSBool      gjs_call_function_value          (JSContext       *context,
 void        gjs_error_reporter               (JSContext       *context,
                                               const char      *message,
                                               JSErrorReport   *report);
+JSObject*   gjs_get_global_object            (JSContext *cx);
 JSBool      gjs_get_prop_verbose_stub        (JSContext       *context,
                                               JSObject        *obj,
                                               jsval            id,

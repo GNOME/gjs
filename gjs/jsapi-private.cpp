@@ -75,3 +75,8 @@ gjs_error_reporter(JSContext     *context,
 
     g_log(G_LOG_DOMAIN, level, "JS %s: [%s %d]: %s", warning, report->filename, report->lineno, message);
 }
+
+JSObject *
+gjs_get_global_object(JSContext *cx){
+    return js::GetDefaultGlobalForContext(cx);
+}

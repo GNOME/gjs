@@ -51,6 +51,8 @@ G_BEGIN_DECLS
 
 #define JSVAL_IS_OBJECT(obj) (JSVAL_IS_NULL(obj) || !JSVAL_IS_PRIMITIVE(obj))
 
+#define JS_GetGlobalObject(cx) gjs_get_global_object(cx)
+
 static JSBool G_GNUC_UNUSED JS_NewNumberValue(JSContext *cx, double d, jsval *rval)
     {
         *rval = JS_NumberValue(d);
