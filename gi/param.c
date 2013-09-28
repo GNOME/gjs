@@ -307,7 +307,7 @@ param_new_internal(JSContext *cx,
             gint64 default_value;
 
             if (!gjs_parse_args(cx, method_name,
-                                "ot", argc, argv,
+                                "t", argc, argv,
                                 "default_value", &default_value))
                 goto out;
 
