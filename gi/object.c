@@ -2666,32 +2666,19 @@ gjs_signal_new(JSContext *cx,
     return ret;
 }
 
+static JSFunctionSpec module_funcs[] = {
+    { "register_type", JSOP_WRAPPER ((JSNative) gjs_register_type), 4, GJS_MODULE_PROP_FLAGS },
+    { "add_interface", JSOP_WRAPPER ((JSNative) gjs_add_interface), 2, GJS_MODULE_PROP_FLAGS },
+    { "hook_up_vfunc", JSOP_WRAPPER ((JSNative) gjs_hook_up_vfunc), 3, GJS_MODULE_PROP_FLAGS },
+    { "signal_new", JSOP_WRAPPER ((JSNative) gjs_signal_new), 6, GJS_MODULE_PROP_FLAGS },
+    { NULL },
+};
+
 JSBool
 gjs_define_private_gi_stuff(JSContext *context,
                             JSObject  *module_obj)
 {
-    if (!JS_DefineFunction(context, module_obj,
-                           "register_type",
-                           (JSNative)gjs_register_type,
-                           4, GJS_MODULE_PROP_FLAGS))
-        return JS_FALSE;
-
-    if (!JS_DefineFunction(context, module_obj,
-                           "add_interface",
-                           (JSNative)gjs_add_interface,
-                           2, GJS_MODULE_PROP_FLAGS))
-        return JS_FALSE;
-
-    if (!JS_DefineFunction(context, module_obj,
-                           "hook_up_vfunc",
-                           (JSNative)gjs_hook_up_vfunc,
-                           3, GJS_MODULE_PROP_FLAGS))
-        return JS_FALSE;
-
-    if (!JS_DefineFunction(context, module_obj,
-                           "signal_new",
-                           (JSNative)gjs_signal_new,
-                           6, GJS_MODULE_PROP_FLAGS))
+    if (!JS_DefineFunctions(context, module_obj, &module_funcs[0]))
         return JS_FALSE;
 
     return JS_TRUE;
