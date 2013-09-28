@@ -124,7 +124,8 @@ trace_foreach(void *key,
         jsval val;
         JS_SET_TRACING_DETAILS(tracer, NULL, "keep-alive", 0);
         val = OBJECT_TO_JSVAL(child->child);
-        JS_CallTracer(tracer, JSVAL_TO_TRACEABLE (val), JSTRACE_OBJECT);
+        g_assert (JSVAL_TO_TRACEABLE (val));
+        JS_CallValueTracer(tracer, &val, "keep-alive::val");
     }
 }
 

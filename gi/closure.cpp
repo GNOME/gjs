@@ -338,7 +338,7 @@ gjs_closure_trace(GClosure *closure,
     if (c->obj == NULL)
         return;
 
-    JS_CALL_OBJECT_TRACER(tracer, c->obj, "signal connection");
+    JS_CallObjectTracer(tracer, &c->obj, "signal connection");
 }
 
 GClosure*

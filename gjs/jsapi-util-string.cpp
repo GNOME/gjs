@@ -56,7 +56,7 @@ gjs_string_to_utf8 (JSContext  *context,
 
     if (utf8_string_p) {
         bytes = (char*) g_malloc((len + 1) * sizeof(char));
-        JS_EncodeStringToBuffer(str, bytes, len);
+        JS_EncodeStringToBuffer(context, str, bytes, len);
         bytes[len] = '\0';
         *utf8_string_p = bytes;
     }

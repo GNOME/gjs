@@ -338,7 +338,7 @@ gjs_value_debug_string(JSContext      *context,
     size_t len = JS_GetStringEncodingLength(context, str);
     if (len != (size_t)(-1)) {
         bytes = (char*) g_malloc((len + 1) * sizeof(char));
-        JS_EncodeStringToBuffer(str, bytes, len);
+        JS_EncodeStringToBuffer(context, str, bytes, len);
         bytes[len] = '\0';
     } else {
         bytes = g_strdup("[invalid string]");
