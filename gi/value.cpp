@@ -58,6 +58,8 @@ closure_marshal(GClosure        *closure,
 {
     JSRuntime *runtime;
     JSContext *context;
+    JSObject *global;
+
     int argc;
     jsval *argv;
     jsval rval;
@@ -76,6 +78,8 @@ closure_marshal(GClosure        *closure,
     runtime = gjs_closure_get_runtime(closure);
     context = gjs_runtime_get_context(runtime);
     JS_BeginRequest(context);
+    global = JS_GetGlobalObject(context);
+    JSAutoCompartment ac(context, global);
 
     argc = n_param_values;
     rval = JSVAL_VOID;

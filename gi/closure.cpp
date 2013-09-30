@@ -254,6 +254,7 @@ gjs_closure_invoke(GClosure *closure,
 {
     Closure *c;
     JSContext *context;
+    JSObject *global;
 
     c = (Closure*) closure;
 
@@ -267,6 +268,8 @@ gjs_closure_invoke(GClosure *closure,
 
     context = gjs_runtime_get_context(c->runtime);
     JS_BeginRequest(context);
+    global = JS_GetGlobalObject(context);
+    JSAutoCompartment ac(context, global);
 
     if (JS_IsExceptionPending(context)) {
         gjs_debug_closure("Exception was pending before invoking callback??? "

@@ -90,6 +90,23 @@ gjstest_test_func_gjs_context_construct_eval(void)
     g_object_unref (context);
 }
 
+static void
+gjstest_test_func_gjs_context_fixture(void)
+{
+    GjsUnitTestFixture fixture;
+    JSContext *context;
+    JSObject *global;
+
+    _gjs_unit_test_fixture_begin(&fixture);
+    context = fixture.context;
+
+    global = JS_GetGlobalObject(context);
+    JSCompartment *oldCompartment = JS_EnterCompartment(context, global);
+
+    JS_LeaveCompartment(context, oldCompartment);
+    _gjs_unit_test_fixture_finish(&fixture);
+}
+
 #define N_ELEMS 15
 
 static void
@@ -97,6 +114,7 @@ gjstest_test_func_gjs_jsapi_util_array(void)
 {
     GjsUnitTestFixture fixture;
     JSContext *context;
+    JSObject *global;
     GjsRootedArray *array;
     int i;
     jsval value;
@@ -105,6 +123,9 @@ gjstest_test_func_gjs_jsapi_util_array(void)
     context = fixture.context;
 
     array = gjs_rooted_array_new();
+
+    global = JS_GetGlobalObject(context);
+    JSCompartment *oldCompartment = JS_EnterCompartment(context, global);
 
     for (i = 0; i < N_ELEMS; i++) {
         value = STRING_TO_JSVAL(JS_NewStringCopyZ(context, "abcdefghijk"));
@@ -125,6 +146,7 @@ gjstest_test_func_gjs_jsapi_util_array(void)
 
     gjs_rooted_array_free(context, array, TRUE);
 
+    JS_LeaveCompartment(context, oldCompartment);
     _gjs_unit_test_fixture_finish(&fixture);
 }
 
@@ -135,17 +157,22 @@ gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(void)
 {
     GjsUnitTestFixture fixture;
     JSContext *context;
+    JSObject *global;
+
     const char *utf8_string = "\303\211\303\226 foobar \343\203\237";
     char *utf8_result;
     jsval js_string;
 
     _gjs_unit_test_fixture_begin(&fixture);
     context = fixture.context;
+    global = JS_GetGlobalObject(context);
+    JSCompartment *oldCompartment = JS_EnterCompartment(context, global);
 
     g_assert(gjs_string_from_utf8(context, utf8_string, -1, &js_string) == JS_TRUE);
     g_assert(JSVAL_IS_STRING(js_string));
     g_assert(gjs_string_to_utf8(context, js_string, &utf8_result) == JS_TRUE);
 
+    JS_LeaveCompartment(context, oldCompartment);
     _gjs_unit_test_fixture_finish(&fixture);
 
     g_assert(g_str_equal(utf8_string, utf8_result));
@@ -163,6 +190,7 @@ gjstest_test_func_gjs_stack_dump(void)
    * coverage.
    */
   context = gjs_context_new();
+
   gjs_dumpstack();
   g_object_unref(context);
   gjs_dumpstack();
@@ -173,13 +201,15 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
 {
     GjsUnitTestFixture fixture;
     JSContext *context;
+    JSObject *global;
     jsval exc, value, previous;
     char *s = NULL;
     int strcmp_result;
 
     _gjs_unit_test_fixture_begin(&fixture);
     context = fixture.context;
-
+    global = JS_GetGlobalObject(context);
+    JSCompartment *oldCompartment = JS_EnterCompartment(context, global);
     /* Test that we can throw */
 
     gjs_throw(context, "This is an exception %d", 42);
@@ -227,6 +257,7 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
 
     JS_RemoveValueRoot(context, &previous);
 
+    JS_LeaveCompartment(context, oldCompartment);
     _gjs_unit_test_fixture_finish(&fixture);
 }
 
@@ -278,6 +309,7 @@ main(int    argc,
 
     g_test_add_func("/gjs/context/construct/destroy", gjstest_test_func_gjs_context_construct_destroy);
     g_test_add_func("/gjs/context/construct/eval", gjstest_test_func_gjs_context_construct_eval);
+    g_test_add_func("/gjs/context/fixture", gjstest_test_func_gjs_context_fixture);
     g_test_add_func("/gjs/jsapi/util/array", gjstest_test_func_gjs_jsapi_util_array);
     g_test_add_func("/gjs/jsapi/util/error/throw", gjstest_test_func_gjs_jsapi_util_error_throw);
     g_test_add_func("/gjs/jsapi/util/string/js/string/utf8", gjstest_test_func_gjs_jsapi_util_string_js_string_utf8);

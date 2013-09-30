@@ -621,6 +621,7 @@ gjs_context_constructor (GType                  type,
     if (!gjs_init_context_standard(js_context->context))
         g_error("Failed to initialize context");
     js_context->global = JS_GetGlobalObject(js_context->context);
+    JSAutoCompartment ac(js_context->context, js_context->global);
 
     if (!JS_DefineProperty(js_context->context, js_context->global,
                            "window", OBJECT_TO_JSVAL(js_context->global),
@@ -1016,6 +1017,7 @@ gjs_context_eval(GjsContext *js_context,
     if (script_len < 0)
         script_len = strlen(script);
 
+    JSAutoCompartment ac(js_context->context, js_context->global);
     JS::CompileOptions options(js_context->context);
     options.setUTF8(true)
            .setFileAndLine(filename, line_number)
@@ -1028,6 +1030,7 @@ gjs_context_eval(GjsContext *js_context,
                       script,
                       script_len,
                       &retval)) {
+
         gjs_debug(GJS_DEBUG_CONTEXT,
                   "Script evaluation failed");
 
@@ -1102,6 +1105,7 @@ gjs_context_define_string_array(GjsContext  *js_context,
                                 const char   **array_values,
                                 GError       **error)
 {
+    JSAutoCompartment ac(js_context->context, js_context->global);
     if (!gjs_define_string_array(js_context->context,
                                  js_context->global,
                                  array_name, array_length, array_values,

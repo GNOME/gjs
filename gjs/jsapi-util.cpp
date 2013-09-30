@@ -95,6 +95,11 @@ gjs_init_context_standard (JSContext       *context)
     global = JS_NewGlobalObject(context, &global_class, NULL);
     if (global == NULL)
         return FALSE;
+
+    /* Set the context's global */
+    JSAutoCompartment ac(context, global);
+    JS_SetGlobalObject(context, global);
+
     if (!JS_InitStandardClasses(context, global))
         return FALSE;
 

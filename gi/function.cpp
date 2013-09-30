@@ -169,6 +169,7 @@ gjs_callback_closure(ffi_cif *cif,
                      void *data)
 {
     JSContext *context;
+    JSObject *global;
     GjsCallbackTrampoline *trampoline;
     int i, n_args, n_jsargs, n_outargs;
     jsval *jsargs, rval;
@@ -183,6 +184,8 @@ gjs_callback_closure(ffi_cif *cif,
 
     context = gjs_runtime_get_context(trampoline->runtime);
     JS_BeginRequest(context);
+    global = JS_GetGlobalObject(context);
+    JSAutoCompartment ac(context, global);
 
     n_args = g_callable_info_get_n_args(trampoline->info);
 

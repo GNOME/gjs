@@ -55,9 +55,12 @@ gjs_context_get_frame_info (JSContext  *context,
 {
     jsval v_constructor;
     JSObject *err_obj;
+    JSObject *global;
     JSBool ret = JS_FALSE;
 
     JS_BeginRequest(context);
+    global = JS_GetGlobalObject(context);
+    JSAutoCompartment ac(context, global);
 
     if (!JS_GetProperty(context, JS_GetGlobalObject(context),
                         "Error", &v_constructor) ||
