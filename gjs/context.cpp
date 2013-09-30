@@ -608,18 +608,10 @@ gjs_context_constructor (GType                  type,
      */
     if (js_version == JSVERSION_UNKNOWN)
         js_version = JSVERSION_DEFAULT;
-    /* Set the version if we need to. */
-    if (js_version != JSVERSION_DEFAULT && JS_GetVersion(js_context->context) != js_version) {
-        gjs_debug(GJS_DEBUG_CONTEXT,
-                  "Changing JavaScript version to %s from %s",
-                  JS_VersionToString(js_version),
-                  JS_VersionToString(JS_GetVersion(js_context->context)));
 
-        JS_SetVersion(js_context->context, js_version);
-    }
-
-    if (!gjs_init_context_standard(js_context->context))
+    if (!gjs_init_context_standard(js_context->context, js_version))
         g_error("Failed to initialize context");
+
     js_context->global = JS_GetGlobalObject(js_context->context);
     JSAutoCompartment ac(js_context->context, js_context->global);
 
