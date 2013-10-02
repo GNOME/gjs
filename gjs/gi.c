@@ -33,7 +33,7 @@
 
 JSBool
 gjs_define_gi_stuff(JSContext      *context,
-                    JSObject      **module_out)
+                    JSObject       *module_obj)
 {
-    return gjs_define_repo(context, module_out, "gi");
+    return gjs_define_repo(context, module_obj, "gi");
 }

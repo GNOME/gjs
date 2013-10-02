@@ -31,8 +31,6 @@
 #include <gjs/compat.h>
 #include <gjs/runtime.h>
 
-#include <gio/gio.h>
-
 #include <string.h>
 
 #define MODULE_INIT_FILENAME "__init__.js"
@@ -130,6 +128,107 @@ import_directory(JSContext   *context,
 }
 
 static JSBool
+finish_import(JSContext  *context,
+              const char *name)
+{
+    if (JS_IsExceptionPending(context)) {
+        /* I am not sure whether this can happen, but if it does we want to trap it.
+         */
+        gjs_debug(GJS_DEBUG_IMPORTER,
+                  "Module '%s' reported an exception but gjs_import_native_module() returned TRUE",
+                  name);
+        return JS_FALSE;
+    }
+
+    return JS_TRUE;
+}
+
+static JSBool
+define_import(JSContext  *context,
+              JSObject   *obj,
+              JSObject   *module_obj,
+              const char *name)
+{
+    if (!JS_DefineProperty(context, obj,
+                           name, OBJECT_TO_JSVAL(module_obj),
+                           NULL, NULL,
+                           GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT)) {
+        gjs_debug(GJS_DEBUG_IMPORTER,
+                  "Failed to define '%s' in importer",
+                  name);
+        return JS_FALSE;
+    }
+
+    return JS_TRUE;
+}
+
+/* Make the property we set in define_import permament;
+ * we do this after the import succesfully completes.
+ */
+static JSBool
+seal_import(JSContext  *context,
+            JSObject   *obj,
+            const char *name)
+{
+    JSBool found;
+    unsigned attrs;
+
+    if (!JS_GetPropertyAttributes(context, obj, name,
+                                  &attrs, &found) || !found) {
+        gjs_debug(GJS_DEBUG_IMPORTER,
+                  "Failed to get attributes to seal '%s' in importer",
+                  name);
+        return JS_FALSE;
+    }
+
+    attrs |= JSPROP_PERMANENT;
+
+    if (!JS_SetPropertyAttributes(context, obj, name,
+                                  attrs, &found) || !found) {
+        gjs_debug(GJS_DEBUG_IMPORTER,
+                  "Failed to set attributes to seal '%s' in importer",
+                  name);
+        return JS_FALSE;
+    }
+
+    return JS_TRUE;
+}
+
+/* An import failed. Delete the property pointing to the import
+ * from the parent namespace. In complicated situations this might
+ * not be sufficient to get us fully back to a sane state. If:
+ *
+ *  - We import module A
+ *  - module A imports module B
+ *  - module B imports module A, storing a reference to the current
+ *    module A module object
+ *  - module A subsequently throws an exception
+ *
+ * Then module B is left imported, but the imported module B has
+ * a reference to the failed module A module object. To handle this
+ * we could could try to track the entire "import operation" and
+ * roll back *all* modifications made to the namespace objects.
+ * It's not clear that the complexity would be worth the small gain
+ * in robustness. (You can still come up with ways of defeating
+ * the attempt to clean up.)
+ */
+static void
+cancel_import(JSContext  *context,
+              JSObject   *obj,
+              const char *name)
+{
+    gjs_debug(GJS_DEBUG_IMPORTER,
+              "Cleaning up from failed import of '%s'",
+              name);
+
+    if (!JS_DeleteProperty(context, obj, name)) {
+        gjs_debug(GJS_DEBUG_IMPORTER,
+                  "Failed to delete '%s' in importer",
+                  name);
+    }
+}
+
+static JSBool
 import_native_file(JSContext  *context,
                    JSObject   *obj,
                    const char *name)
@@ -139,99 +238,38 @@ import_native_file(JSContext  *context,
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Importing '%s'", name);
 
-    if (!gjs_import_native_module(context, name, &module_obj))
-        goto out;
+    module_obj = JS_NewObject(context, NULL, NULL, NULL);
+    if (module_obj == NULL) {
+        return JS_FALSE;
+    }
+
+    /* We store the module object into the parent module before
+     * initializing the module. If the module has the
+     * GJS_NATIVE_SUPPLIES_MODULE_OBJ flag, it will just overwrite
+     * the reference we stored when it initializes.
+     */
+    if (!define_import(context, obj, module_obj, name))
+        return JS_FALSE;
 
     if (!define_meta_properties(context, module_obj, NULL, name, obj))
         goto out;
 
-    if (JS_IsExceptionPending(context)) {
-        /* I am not sure whether this can happen, but if it does we want to trap it.
-         */
-        gjs_debug(GJS_DEBUG_IMPORTER,
-                  "Module '%s' reported an exception but gjs_import_native_module() returned TRUE",
-                  name);
+    if (!gjs_import_native_module(context, module_obj, name))
         goto out;
-    }
 
-    if (!JS_DefineProperty(context, obj,
-                           name, OBJECT_TO_JSVAL(module_obj),
-                           NULL, NULL, GJS_MODULE_PROP_FLAGS))
+    if (!finish_import(context, name))
+        goto out;
+
+    if (!seal_import(context, obj, name))
         goto out;
 
     retval = JS_TRUE;
 
  out:
+    if (!retval)
+        cancel_import(context, obj, name);
+
     return retval;
-}
-
-static JSBool
-import_file(JSContext  *context,
-            const char *name,
-            GFile      *file,
-            JSObject  **module_out)
-{
-    JSBool ret = JS_FALSE;
-    JSObject *module_obj;
-    char *script = NULL;
-    char *full_path = NULL;
-    gsize script_len = 0;
-    jsval script_retval;
-    GError *error = NULL;
-
-    module_obj = JS_NewObject(context, NULL, NULL, NULL);
-    if (module_obj == NULL)
-        goto out;
-
-    if (!(g_file_load_contents(file, NULL, &script, &script_len, NULL, &error))) {
-        if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_IS_DIRECTORY) &&
-            !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_DIRECTORY) &&
-            !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-            gjs_throw_g_error(context, error);
-        else
-            g_error_free(error);
-
-        goto out;
-    }
-
-    g_assert(script != NULL);
-
-    gjs_debug(GJS_DEBUG_IMPORTER, "Importing %s", full_path);
-
-    full_path = g_file_get_parse_name (file);
-
-    if (!JS_EvaluateScript(context,
-                           module_obj,
-                           script,
-                           script_len,
-                           full_path,
-                           1, /* line number */
-                           &script_retval)) {
-
-        /* If JSOPTION_DONT_REPORT_UNCAUGHT is set then the exception
-         * would be left set after the evaluate and not go to the error
-         * reporter function.
-         */
-        if (JS_IsExceptionPending(context)) {
-            gjs_debug(GJS_DEBUG_IMPORTER,
-                      "Module '%s' left an exception set",
-                      name);
-            gjs_log_and_keep_exception(context);
-        } else {
-            gjs_throw(context,
-                         "JS_EvaluateScript() returned FALSE but did not set exception");
-        }
-
-        goto out;
-    }
-
-    ret = JS_TRUE;
-
- out:
-    g_free(script);
-    g_free(full_path);
-    *module_out = module_obj;
-    return ret;
 }
 
 static JSObject *
@@ -239,10 +277,13 @@ load_module_init(JSContext  *context,
                  JSObject   *in_object,
                  const char *full_path)
 {
+    char *script;
+    gsize script_len;
+    jsval script_retval;
     JSObject *module_obj;
+    GError *error;
     JSBool found;
     jsid module_init_name;
-    GFile *file;
 
     /* First we check if js module has already been loaded  */
     module_init_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
@@ -258,18 +299,68 @@ load_module_init(JSContext  *context,
         }
     }
 
-    file = g_file_new_for_commandline_arg(full_path);
-    if (!import_file (context, "__init__", file, &module_obj))
-        goto out;
+    module_obj = JS_NewObject(context, NULL, NULL, NULL);
+    if (module_obj == NULL) {
+        return JS_FALSE;
+    }
 
-    if (!JS_DefinePropertyById(context, in_object,
-                               module_init_name, OBJECT_TO_JSVAL(module_obj),
-                               NULL, NULL,
-                               GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT))
-        goto out;
+    /* https://bugzilla.mozilla.org/show_bug.cgi?id=599651 means we
+     * can't just pass in the global as the parent */
+    JS_SetParent(context, module_obj,
+                 gjs_get_import_global (context));
 
- out:
-    g_object_unref (file);
+    /* Define module in importer for future use and to avoid module_obj
+     * object to be garbage collected during the evaluation of the script */
+    JS_DefinePropertyById(context, in_object,
+                          module_init_name, OBJECT_TO_JSVAL(module_obj),
+                          NULL, NULL,
+                          GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT);
+
+    script_len = 0;
+    error = NULL;
+
+    if (!g_file_get_contents(full_path, &script, &script_len, &error)) {
+        if (!g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_ISDIR) &&
+            !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOTDIR) &&
+            !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+            gjs_throw_g_error(context, error);
+        else
+            g_error_free(error);
+
+        return NULL;
+    }
+
+    g_assert(script != NULL);
+
+    gjs_debug(GJS_DEBUG_IMPORTER, "Importing %s", full_path);
+
+    if (!JS_EvaluateScript(context,
+                           module_obj,
+                           script,
+                           script_len,
+                           full_path,
+                           1, /* line number */
+                           &script_retval)) {
+        g_free(script);
+
+        /* If JSOPTION_DONT_REPORT_UNCAUGHT is set then the exception
+         * would be left set after the evaluate and not go to the error
+         * reporter function.
+         */
+        if (JS_IsExceptionPending(context)) {
+            gjs_debug(GJS_DEBUG_IMPORTER,
+                      "Module " MODULE_INIT_FILENAME " left an exception set");
+            gjs_log_and_keep_exception(context);
+        } else {
+            gjs_throw(context,
+                      "JS_EvaluateScript() returned FALSE but did not set exception");
+        }
+
+        return NULL;
+    }
+
+    g_free(script);
+
     return module_obj;
 }
 
@@ -314,35 +405,87 @@ load_module_elements(JSContext *context,
 }
 
 static JSBool
-import_file_on_module(JSContext  *context,
-                      JSObject   *obj,
-                      const char *name,
-                      GFile      *file)
+import_file(JSContext  *context,
+            JSObject   *obj,
+            const char *name,
+            const char *full_path)
 {
+    char *script;
+    gsize script_len;
     JSObject *module_obj;
+    GError *error;
+    jsval script_retval;
     JSBool retval = JS_FALSE;
-    gchar *full_path;
-
-    full_path = g_file_get_parse_name (file);
 
     gjs_debug(GJS_DEBUG_IMPORTER,
               "Importing '%s'", full_path);
 
-    if (!import_file (context, name, file, &module_obj))
-        goto out;
+    module_obj = JS_NewObject(context, NULL, NULL, NULL);
+    if (module_obj == NULL) {
+        return JS_FALSE;
+    }
+
+    if (!define_import(context, obj, module_obj, name))
+        return JS_FALSE;
 
     if (!define_meta_properties(context, module_obj, full_path, name, obj))
         goto out;
 
-    if (!JS_DefineProperty(context, obj,
-                           name, OBJECT_TO_JSVAL(module_obj),
-                           NULL, NULL, GJS_MODULE_PROP_FLAGS))
+    script_len = 0;
+    error = NULL;
+
+    if (!(g_file_get_contents(full_path, &script, &script_len, &error))) {
+        if (!g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_ISDIR) &&
+            !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOTDIR) &&
+            !g_error_matches(error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+            gjs_throw_g_error(context, error);
+        else
+            g_error_free(error);
+
+        goto out;
+    }
+
+    g_assert(script != NULL);
+
+    if (!JS_EvaluateScript(context,
+                           module_obj,
+                           script,
+                           script_len,
+                           full_path,
+                           1, /* line number */
+                           &script_retval)) {
+        g_free(script);
+
+        /* If JSOPTION_DONT_REPORT_UNCAUGHT is set then the exception
+         * would be left set after the evaluate and not go to the error
+         * reporter function.
+         */
+        if (JS_IsExceptionPending(context)) {
+            gjs_debug(GJS_DEBUG_IMPORTER,
+                      "Module '%s' left an exception set",
+                      name);
+            gjs_log_and_keep_exception(context);
+        } else {
+            gjs_throw(context,
+                         "JS_EvaluateScript() returned FALSE but did not set exception");
+        }
+
+        goto out;
+    }
+
+    g_free(script);
+
+    if (!finish_import(context, name))
+        goto out;
+
+    if (!seal_import(context, obj, name))
         goto out;
 
     retval = JS_TRUE;
 
  out:
-    g_free (full_path);
+    if (!retval)
+        cancel_import(context, obj, name);
 
     return retval;
 }
@@ -364,8 +507,6 @@ do_import(JSContext  *context,
     JSBool result;
     GPtrArray *directories;
     jsid search_path_name;
-    GFile *gfile;
-    gboolean exists;
 
     search_path_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
                                                     GJS_STRING_SEARCH_PATH);
@@ -465,9 +606,8 @@ do_import(JSContext  *context,
             g_free(full_path);
         full_path = g_build_filename(dirname, name,
                                      NULL);
-        gfile = g_file_new_for_commandline_arg(full_path);
 
-        if (g_file_query_file_type(gfile, 0, NULL) == G_FILE_TYPE_DIRECTORY) {
+        if (g_file_test(full_path, G_FILE_TEST_IS_DIR)) {
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "Adding directory '%s' to child importer '%s'",
                       full_path, name);
@@ -478,8 +618,6 @@ do_import(JSContext  *context,
             /* don't free it twice - pass ownership to ptr array */
             full_path = NULL;
         }
-
-        g_object_unref(gfile);
 
         /* If we just added to directories, we know we don't need to
          * check for a file.  If we added to directories on an earlier
@@ -495,31 +633,24 @@ do_import(JSContext  *context,
         g_free(full_path);
         full_path = g_build_filename(dirname, filename,
                                      NULL);
-        gfile = g_file_new_for_commandline_arg(full_path);
-        exists = g_file_query_exists(gfile, NULL);
 
-        if (!exists) {
-            gjs_debug(GJS_DEBUG_IMPORTER,
-                      "JS import '%s' not found in %s",
-                      name, dirname);
+        if (g_file_test(full_path, G_FILE_TEST_EXISTS)) {
+            if (import_file(context, obj, name, full_path)) {
+                gjs_debug(GJS_DEBUG_IMPORTER,
+                          "successfully imported module '%s'", name);
+                result = JS_TRUE;
+            }
 
-            g_object_unref(gfile);
-            continue;
+            /* Don't keep searching path if we fail to load the file for
+             * reasons other than it doesn't exist... i.e. broken files
+             * block searching for nonbroken ones
+             */
+            goto out;
         }
 
-        if (import_file_on_module (context, obj, name, gfile)) {
-            gjs_debug(GJS_DEBUG_IMPORTER,
-                      "successfully imported module '%s'", name);
-            result = JS_TRUE;
-        }
-
-        g_object_unref(gfile);
-
-        /* Don't keep searching path if we fail to load the file for
-         * reasons other than it doesn't exist... i.e. broken files
-         * block searching for nonbroken ones
-         */
-        goto out;
+        gjs_debug(GJS_DEBUG_IMPORTER,
+                  "JS import '%s' not found in %s",
+                  name, dirname);
     }
 
     if (directories != NULL) {

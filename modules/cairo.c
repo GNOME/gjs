@@ -45,13 +45,10 @@ gjs_cairo_check_status(JSContext      *context,
 
 JSBool
 gjs_js_define_cairo_stuff(JSContext *context,
-                          JSObject **module_out)
+                          JSObject  *module)
 {
     jsval obj;
-    JSObject *module;
     JSObject *surface_proto, *pattern_proto, *gradient_proto;
-
-    module = JS_NewObject (context, NULL, NULL, NULL);
 
     obj = gjs_cairo_context_create_proto(context, module,
                                          "Context", NULL);
@@ -124,8 +121,6 @@ gjs_js_define_cairo_stuff(JSContext *context,
                                                "SolidPattern", pattern_proto);
     if (JSVAL_IS_NULL(obj))
         return JS_FALSE;
-
-    *module_out = module;
 
     return JS_TRUE;
 }

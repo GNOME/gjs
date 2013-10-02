@@ -910,14 +910,10 @@ static JSFunctionSpec gjs_byte_array_module_funcs[] = {
 };
 
 JSBool
-gjs_define_byte_array_stuff(JSContext  *context,
-                            JSObject  **module_out)
+gjs_define_byte_array_stuff(JSContext      *context,
+                            JSObject       *in_object)
 {
-    JSObject *module;
-
-    module = JS_NewObject (context, NULL, NULL, NULL);
-
-    gjs_byte_array_prototype = JS_InitClass(context, module,
+    gjs_byte_array_prototype = JS_InitClass(context, in_object,
                              NULL,
                              &gjs_byte_array_class,
                              gjs_byte_array_constructor,
@@ -930,9 +926,8 @@ gjs_define_byte_array_stuff(JSContext  *context,
     if (gjs_byte_array_prototype == NULL)
         return JS_FALSE;
 
-    if (!JS_DefineFunctions(context, module, &gjs_byte_array_module_funcs[0]))
+    if (!JS_DefineFunctions(context, in_object, &gjs_byte_array_module_funcs[0]))
         return JS_FALSE;
 
-    *module_out = module;
     return JS_TRUE;
 }

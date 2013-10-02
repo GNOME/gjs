@@ -33,7 +33,7 @@
 G_BEGIN_DECLS
 
 JSBool      gjs_define_repo                     (JSContext      *context,
-                                                 JSObject      **module_out,
+                                                 JSObject       *module_obj,
                                                  const char     *name);
 const char* gjs_info_type_name                  (GIInfoType      type);
 JSObject*   gjs_lookup_private_namespace        (JSContext      *context);
