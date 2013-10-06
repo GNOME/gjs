@@ -19,15 +19,11 @@ function testToLocaleLowerCase() {
     // characters are handled specially for a few locales,
     // like i in Turkish. But not A WITH ACUTE)
     JSUnit.assertEquals("\u00e1", "\u00c1".toLocaleLowerCase());
-
-    // Unpaired surrogate, can't be converted to UTF-8
-    JSUnit.assertRaises(function() { "\ud800".toLocaleLowerCase(); });
 }
 
 function testToLocaleUpperCase() {
     JSUnit.assertEquals("AAA", "aaa".toLocaleUpperCase());
     JSUnit.assertEquals("\u00c1", "\u00e1".toLocaleUpperCase());
-    JSUnit.assertRaises(function() { "\ud800".toLocaleUpperCase(); });
 }
 
 function testToLocaleCompare() {
