@@ -4,13 +4,20 @@ const GjsPrivate = imports.gi.GjsPrivate;
 
 function vprintf(str, args) {
     let i = 0;
-    return str.replace(/%(I+)?([0-9]+)?(?:\.([0-9]+))?(.)/g, function (str, flagsGroup, widthGroup, precisionGroup, genericGroup) {
+    let usePos = false;
+    return str.replace(/%(?:([1-9][0-9]*)\$)?(I+)?([0-9]+)?(?:\.([0-9]+))?(.)/g, function (str, posGroup, flagsGroup, widthGroup, precisionGroup, genericGroup) {
         if (precisionGroup != '' && genericGroup != 'f')
             throw new Error("Precision can only be specified for 'f'");
 
         let hasAlternativeIntFlag = (flagsGroup.indexOf('I') != -1);
         if (hasAlternativeIntFlag && genericGroup != 'd')
             throw new Error("Alternative output digits can only be specfied for 'd'");
+
+        let pos = parseInt(posGroup, 10) || 0;
+        if (usePos == false && i == 0)
+            usePos = pos > 0;
+        if (usePos && pos == 0 || !usePos && pos > 0)
+            throw new Error("Numbered and unnumbered conversion specifications cannot be mixed");
 
         let fillChar = (widthGroup[0] == '0') ? '0' : ' ';
         let width = parseInt(widthGroup, 10) || 0;
@@ -22,29 +29,33 @@ function vprintf(str, args) {
             return fill.substr(s.length) + s;
         }
 
+        function getArg() {
+            return usePos ? args[pos - 1] : args[i++];
+        }
+
         let s = '';
         switch (genericGroup) {
         case '%':
             return '%';
             break;
         case 's':
-            s = String(args[i++]);
+            s = String(getArg());
             break;
         case 'd':
-            let intV = parseInt(args[i++]);
+            let intV = parseInt(getArg());
             if (hasAlternativeIntFlag)
                 s = GjsPrivate.format_int_alternative_output(intV);
             else
                 s = intV.toString();
             break;
         case 'x':
-            s = parseInt(args[i++]).toString(16);
+            s = parseInt(getArg()).toString(16);
             break;
         case 'f':
             if (precisionGroup == '')
-                s = parseFloat(args[i++]).toString();
+                s = parseFloat(getArg()).toString();
             else
-                s = parseFloat(args[i++]).toFixed(parseInt(precisionGroup));
+                s = parseFloat(getArg()).toFixed(parseInt(precisionGroup));
             break;
         default:
             throw new Error('Unsupported conversion character %' + genericGroup);
