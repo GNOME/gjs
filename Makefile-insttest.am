@@ -99,6 +99,7 @@ dist_jstests_DATA += \
 	installed-tests/js/testGDBus.js			\
 	installed-tests/js/testEverythingBasic.js		\
 	installed-tests/js/testEverythingEncapsulated.js	\
+	installed-tests/js/testFormat.js		\
 	installed-tests/js/testGIMarshalling.js		\
 	installed-tests/js/testGObjectClass.js		\
 	installed-tests/js/testJS1_8.js			\
