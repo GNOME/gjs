@@ -222,23 +222,7 @@ function _newNodeInfo(constructor, value) {
 }
 
 function _newInterfaceInfo(value) {
-    var xml;
-    if (typeof value == 'string')
-        xml = new XML(value);
-    else if (value instanceof XML)
-        xml = value;
-    else
-        throw TypeError('Invalid type ' + Object.prototype.toString.call(value));
-
-    var node;
-    if (xml.name() == 'interface') {
-        // wrap inside a node
-        node = <node/>;
-        node.node += xml;
-    } else
-        node = xml;
-
-    var nodeInfo = Gio.DBusNodeInfo.new_for_xml(node);
+    var nodeInfo = Gio.DBusNodeInfo.new_for_xml(value);
     return nodeInfo.interfaces[0];
 }
 
