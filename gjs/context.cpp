@@ -587,11 +587,11 @@ gjs_context_constructor (GType                  type,
      *
      * JSOPTION_STRICT: Report warnings to error reporter function.
      */
-    options_flags = JSOPTION_DONT_REPORT_UNCAUGHT | JSOPTION_STRICT;
+    options_flags = JSOPTION_DONT_REPORT_UNCAUGHT | JSOPTION_EXTRA_WARNINGS;
 
     if (!g_getenv("GJS_DISABLE_JIT")) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
-        options_flags |= JSOPTION_METHODJIT | JSOPTION_TYPE_INFERENCE;
+        options_flags |= JSOPTION_TYPE_INFERENCE | JSOPTION_ION | JSOPTION_BASELINE | JSOPTION_ASMJS;
     }
 
     JS_SetOptions(js_context->context,
