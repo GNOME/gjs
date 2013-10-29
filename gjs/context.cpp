@@ -440,8 +440,8 @@ gjs_context_finalize(GObject *object)
  */
 static JSBool
 gjs_locale_to_upper_case (JSContext *context,
-                          JSString  *src,
-                          jsval     *retval)
+                          JS::HandleString src,
+                          JS::MutableHandleValue retval)
 {
     JSBool success = JS_FALSE;
     char *utf8 = NULL;
@@ -452,7 +452,7 @@ gjs_locale_to_upper_case (JSContext *context,
 
     upper_case_utf8 = g_utf8_strup (utf8, -1);
 
-    if (!gjs_string_from_utf8(context, upper_case_utf8, -1, retval))
+    if (!gjs_string_from_utf8(context, upper_case_utf8, -1, retval.address()))
         goto out;
 
     success = JS_TRUE;
@@ -466,8 +466,8 @@ out:
 
 static JSBool
 gjs_locale_to_lower_case (JSContext *context,
-                          JSString  *src,
-                          jsval     *retval)
+                          JS::HandleString src,
+                          JS::MutableHandleValue retval)
 {
     JSBool success = JS_FALSE;
     char *utf8 = NULL;
@@ -478,7 +478,7 @@ gjs_locale_to_lower_case (JSContext *context,
 
     lower_case_utf8 = g_utf8_strdown (utf8, -1);
 
-    if (!gjs_string_from_utf8(context, lower_case_utf8, -1, retval))
+    if (!gjs_string_from_utf8(context, lower_case_utf8, -1, retval.address()))
         goto out;
 
     success = JS_TRUE;
@@ -492,9 +492,9 @@ out:
 
 static JSBool
 gjs_locale_compare (JSContext *context,
-                    JSString  *src_1,
-                    JSString  *src_2,
-                    jsval     *retval)
+                    JS::HandleString src_1,
+                    JS::HandleString src_2,
+                    JS::MutableHandleValue retval)
 {
     JSBool success = JS_FALSE;
     char *utf8_1 = NULL, *utf8_2 = NULL;
@@ -505,7 +505,7 @@ gjs_locale_compare (JSContext *context,
         goto out;
 
     result = g_utf8_collate (utf8_1, utf8_2);
-    *retval = INT_TO_JSVAL(result);
+    retval.set(INT_TO_JSVAL(result));
 
     success = JS_TRUE;
 
@@ -519,7 +519,7 @@ out:
 static JSBool
 gjs_locale_to_unicode (JSContext  *context,
                        const char *src,
-                       jsval      *retval)
+                       JS::MutableHandleValue retval)
 {
     JSBool success;
     char *utf8;
@@ -534,7 +534,7 @@ gjs_locale_to_unicode (JSContext  *context,
         return JS_FALSE;
     }
 
-    success = gjs_string_from_utf8(context, utf8, -1, retval);
+    success = gjs_string_from_utf8(context, utf8, -1, retval.address());
     g_free (utf8);
 
     return success;
@@ -595,7 +595,7 @@ gjs_context_constructor (GType                  type,
     JS_SetOptions(js_context->context,
                   JS_GetOptions(js_context->context) | options_flags);
 
-    JS_SetLocaleCallbacks(js_context->context, &gjs_locale_callbacks);
+    JS_SetLocaleCallbacks(js_context->runtime, &gjs_locale_callbacks);
 
     JS_SetErrorReporter(js_context->context, gjs_error_reporter);
 
