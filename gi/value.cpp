@@ -663,7 +663,7 @@ gjs_value_from_g_value_internal(JSContext    *context,
         v = g_value_get_int(gvalue);
         return JS_NewNumberValue(context, v, value_p);
     } else if (gtype == G_TYPE_UINT) {
-        uint v;
+        guint v;
         v = g_value_get_uint(gvalue);
         return JS_NewNumberValue(context, v, value_p);
     } else if (gtype == G_TYPE_DOUBLE) {
