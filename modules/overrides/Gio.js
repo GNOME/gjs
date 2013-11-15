@@ -268,6 +268,7 @@ function _handleMethodCall(info, impl, method_name, parameters, invocation) {
                     // likely to be a normal JS error
                     name = 'org.gnome.gjs.JSError.' + name;
                 }
+                logError(e, "Exception in method call: " + method_name);
                 invocation.return_dbus_error(name, e.message);
             }
             return;
