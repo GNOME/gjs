@@ -266,6 +266,9 @@ function testFrobateStuff() {
 /* excp must be exactly the exception thrown by the remote method
    (more or less) */
 function testThrowException() {
+    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+                             'JS ERROR: Exception in method call: alwaysThrowException: *');
+
     let theResult, theExcp;
     proxy.alwaysThrowExceptionRemote({}, function(result, excp) {
         theResult = result;
