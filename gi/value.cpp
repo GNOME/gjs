@@ -618,6 +618,7 @@ convert_int_to_enum (JSContext *context,
         g_assert (info);
 
         v_double = _gjs_enum_from_int ((GIEnumInfo *)info, v);
+        g_base_info_unref(info);
     }
 
     return JS_NewNumberValue(context, v_double, value_p);
