@@ -394,11 +394,13 @@ is_vfunc_unchanged(GIVFuncInfo *info,
 }
 
 static GIVFuncInfo *
-find_vfunc_on_parent(GIObjectInfo *info,
-                     gchar        *name)
+find_vfunc_on_parents(GIObjectInfo *info,
+                      gchar        *name,
+                      gboolean     *out_defined_by_parent)
 {
     GIVFuncInfo *vfunc = NULL;
     GIObjectInfo *parent;
+    gboolean defined_by_parent = FALSE;
 
     /* ref the first info so that we don't destroy
      * it when unrefing parents later */
@@ -415,10 +417,15 @@ find_vfunc_on_parent(GIObjectInfo *info,
         g_base_info_unref(tmp);
         if (parent)
             vfunc = g_object_info_find_vfunc(parent, name);
+
+        defined_by_parent = TRUE;
     }
 
     if (parent)
         g_base_info_unref(parent);
+
+    if (out_defined_by_parent)
+        *out_defined_by_parent = defined_by_parent;
 
     return vfunc;
 }
@@ -559,12 +566,13 @@ object_instance_new_resolve(JSContext *context,
 
         gchar *name_without_vfunc_ = &name[6];
         GIVFuncInfo *vfunc;
+        gboolean defined_by_parent;
 
-        vfunc = find_vfunc_on_parent(priv->info, name_without_vfunc_);
+        vfunc = find_vfunc_on_parents(priv->info, name_without_vfunc_, &defined_by_parent);
         if (vfunc != NULL) {
             /* In the event that the vfunc is unchanged, let regular
              * prototypal inheritance take over. */
-            if (is_vfunc_unchanged(vfunc, priv->gtype)) {
+            if (defined_by_parent && is_vfunc_unchanged(vfunc, priv->gtype)) {
                 g_base_info_unref((GIBaseInfo *)vfunc);
                 ret = JS_TRUE;
                 goto out;
@@ -2228,7 +2236,7 @@ gjs_hook_up_vfunc(JSContext *cx,
 
     JS_SET_RVAL(cx, vp, JSVAL_VOID);
 
-    vfunc = find_vfunc_on_parent(info, name);
+    vfunc = find_vfunc_on_parents(info, name, NULL);
 
     if (!vfunc) {
         guint i, n_interfaces;
