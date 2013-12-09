@@ -43,6 +43,9 @@ JSBool    gjs_typecheck_object          (JSContext     *context,
                                          JSObject      *obj,
                                          GType          expected_type,
                                          JSBool         throw_error);
+JSBool    gjs_typecheck_is_object       (JSContext     *context,
+                                         JSObject      *obj,
+                                         JSBool         throw_error);
 
 void      gjs_object_prepare_shutdown   (JSContext     *context);
 
