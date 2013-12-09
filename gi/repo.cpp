@@ -33,6 +33,7 @@
 #include "enumeration.h"
 #include "arg.h"
 #include "foreign.h"
+#include "fundamental.h"
 #include "interface.h"
 #include "gerror.h"
 
@@ -475,6 +476,13 @@ gjs_define_info(JSContext  *context,
                 gjs_define_param_class(context, in_object);
             } else if (g_type_is_a (gtype, G_TYPE_OBJECT)) {
                 gjs_define_object_class(context, in_object, (GIObjectInfo*) info, gtype, NULL);
+            } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
+                if (!gjs_define_fundamental_class(context, in_object, (GIObjectInfo*)info, NULL, NULL)) {
+                    gjs_throw (context,
+                               "Unsupported fundamental class creation for type %s",
+                               g_type_name(gtype));
+                    return JS_FALSE;
+                }
             } else {
                 gjs_throw (context,
                            "Unsupported type %s, deriving from fundamental %s",

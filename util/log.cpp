@@ -199,6 +199,9 @@ gjs_debug(GjsDebugTopic topic,
     case GJS_DEBUG_GFUNCTION:
         prefix = "JS G FUNC";
         break;
+    case GJS_DEBUG_GFUNDAMENTAL:
+        prefix = "JS G FNDMTL";
+        break;
     case GJS_DEBUG_GCLOSURE:
         prefix = "JS G CLSR";
         break;

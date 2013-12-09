@@ -31,6 +31,7 @@
 #include "arg.h"
 #include "param.h"
 #include "object.h"
+#include "fundamental.h"
 #include "boxed.h"
 #include "union.h"
 #include "gtype.h"
@@ -858,6 +859,15 @@ gjs_value_from_g_value_internal(JSContext    *context,
         g_value_transform(gvalue, &int_value);
         v = g_value_get_int(&int_value);
         return JS_NewNumberValue(context, v, value_p);
+    } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
+        /* The gtype is none of the above, it should be a custom
+           fundamental type. */
+        JSObject *obj;
+        obj = gjs_fundamental_from_g_value(context, (const GValue*)gvalue, gtype);
+        if (obj == NULL)
+            return JS_FALSE;
+        else
+            *value_p = OBJECT_TO_JSVAL(obj);
     } else {
         gjs_throw(context,
                   "Don't know how to convert GType %s to JavaScript object",

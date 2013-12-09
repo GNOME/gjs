@@ -58,6 +58,7 @@ typedef enum {
     GJS_DEBUG_HTTP,
     GJS_DEBUG_BYTE_ARRAY,
     GJS_DEBUG_GERROR,
+    GJS_DEBUG_GFUNDAMENTAL,
 } GjsDebugTopic;
 
 /* These defines are because we have some pretty expensive and

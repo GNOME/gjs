@@ -40,6 +40,7 @@ GJS_DEFINE_COUNTER(gerror)
 GJS_DEFINE_COUNTER(closure)
 GJS_DEFINE_COUNTER(database)
 GJS_DEFINE_COUNTER(function)
+GJS_DEFINE_COUNTER(fundamental)
 GJS_DEFINE_COUNTER(importer)
 GJS_DEFINE_COUNTER(ns)
 GJS_DEFINE_COUNTER(object)
@@ -58,6 +59,7 @@ static GjsMemCounter* counters[] = {
     GJS_LIST_COUNTER(closure),
     GJS_LIST_COUNTER(database),
     GJS_LIST_COUNTER(function),
+    GJS_LIST_COUNTER(fundamental),
     GJS_LIST_COUNTER(importer),
     GJS_LIST_COUNTER(ns),
     GJS_LIST_COUNTER(object),

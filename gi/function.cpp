@@ -26,6 +26,7 @@
 #include "function.h"
 #include "arg.h"
 #include "object.h"
+#include "fundamental.h"
 #include "boxed.h"
 #include "union.h"
 #include "gerror.h"
@@ -549,11 +550,21 @@ gjs_fill_method_instance (JSContext  *context,
 
     case GI_INFO_TYPE_OBJECT:
     case GI_INFO_TYPE_INTERFACE:
-        if (!gjs_typecheck_object(context, obj,
-                                  gtype, JS_TRUE))
+        if (gjs_typecheck_is_object(context, obj, JS_FALSE)) {
+            if (!gjs_typecheck_object(context, obj, gtype, JS_TRUE))
+                return JS_FALSE;
+            out_arg->v_pointer = gjs_g_object_from_object(context, obj);
+        } else if (gjs_typecheck_is_fundamental(context, obj, JS_FALSE)) {
+            if (!gjs_typecheck_fundamental(context, obj, gtype, JS_TRUE))
+                return JS_FALSE;
+            out_arg->v_pointer = gjs_g_fundamental_from_object(context, obj);
+        } else {
+            gjs_throw_custom(context, "TypeError",
+                             "%s.%s is not an object instance neither a fundamental instance of a supported type",
+                             g_base_info_get_namespace(container),
+                             g_base_info_get_name(container));
             return JS_FALSE;
-
-        out_arg->v_pointer = gjs_g_object_from_object(context, obj);
+        }
         break;
 
     default:
