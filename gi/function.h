@@ -73,6 +73,13 @@ JSBool    gjs_invoke_c_function_uncached (JSContext      *context,
                                           jsval          *argv,
                                           jsval          *rval);
 
+JSBool    gjs_invoke_constructor_from_c (JSContext      *context,
+                                         JSObject       *constructor,
+                                         JSObject       *obj,
+                                         unsigned        argc,
+                                         jsval          *argv,
+                                         GArgument      *rvalue);
+
 void     gjs_init_cinvoke_profiling (void);
 
 G_END_DECLS

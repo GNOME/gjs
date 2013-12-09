@@ -563,13 +563,20 @@ gjs_fill_method_instance (JSContext  *context,
     return JS_TRUE;
 }
 
+/*
+ * This function can be called in 2 different ways. You can either use
+ * it to create javascript objects by providing a @js_rval argument or
+ * you can decide to keep the return values in #GArgument format by
+ * providing a @r_value argument.
+ */
 static JSBool
 gjs_invoke_c_function(JSContext      *context,
                       Function       *function,
                       JSObject       *obj, /* "this" object */
                       unsigned        js_argc,
                       jsval          *js_argv,
-                      jsval          *js_rval)
+                      jsval          *js_rval,
+                      GArgument      *r_value)
 {
     /* These first four are arrays which hold argument pointers.
      * @in_arg_cvalues: C values which are passed on input (in or inout)
@@ -902,7 +909,8 @@ gjs_invoke_c_function(JSContext      *context,
         did_throw_gerror = FALSE;
     }
 
-    *js_rval = JSVAL_VOID;
+    if (js_rval)
+        *js_rval = JSVAL_VOID;
 
     /* Only process return values if the function didn't throw */
     if (function->js_out_argc > 0 && !did_throw_gerror) {
@@ -912,7 +920,7 @@ gjs_invoke_c_function(JSContext      *context,
 
         if (return_tag != GI_TYPE_TAG_VOID) {
             GITransfer transfer = g_callable_info_get_caller_owns((GICallableInfo*) function->info);
-            gboolean arg_failed;
+            gboolean arg_failed = FALSE;
             gint array_length_pos;
 
             g_assert_cmpuint(next_rval, <, function->js_out_argc);
@@ -932,7 +940,7 @@ gjs_invoke_c_function(JSContext      *context,
                                                         &arg_type_info,
                                                         &out_arg_cvalues[array_length_pos],
                                                         TRUE);
-                if (!arg_failed) {
+                if (!arg_failed && js_rval) {
                     arg_failed = !gjs_value_from_explicit_array(context,
                                                                 &return_values[next_rval],
                                                                 &return_info,
@@ -940,6 +948,7 @@ gjs_invoke_c_function(JSContext      *context,
                                                                 JSVAL_TO_INT(length));
                 }
                 if (!arg_failed &&
+                    !r_value &&
                     !gjs_g_argument_release_out_array(context,
                                                       transfer,
                                                       &return_info,
@@ -947,11 +956,13 @@ gjs_invoke_c_function(JSContext      *context,
                                                       &return_gargument))
                     failed = TRUE;
             } else {
-                arg_failed = !gjs_value_from_g_argument(context, &return_values[next_rval],
-                                                        &return_info, &return_gargument,
-                                                        TRUE);
+                if (js_rval)
+                    arg_failed = !gjs_value_from_g_argument(context, &return_values[next_rval],
+                                                            &return_info, &return_gargument,
+                                                            TRUE);
                 /* Free GArgument, the jsval should have ref'd or copied it */
                 if (!arg_failed &&
+                    !r_value &&
                     !gjs_g_argument_release(context,
                                             transfer,
                                             &return_info,
@@ -1050,7 +1061,7 @@ release:
 
         if ((direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT) && param_type != PARAM_SKIPPED) {
             GArgument *arg;
-            gboolean arg_failed;
+            gboolean arg_failed = FALSE;
             gint array_length_pos;
             jsval array_length;
             GITransfer transfer;
@@ -1060,30 +1071,33 @@ release:
             arg = &out_arg_cvalues[c_arg_pos];
 
             array_length_pos = g_type_info_get_array_length(&arg_type_info);
-            if (array_length_pos >= 0) {
-                GIArgInfo array_length_arg;
-                GITypeInfo array_length_type_info;
 
-                g_callable_info_load_arg(function->info, array_length_pos, &array_length_arg);
-                g_arg_info_load_type(&array_length_arg, &array_length_type_info);
-                array_length_pos += is_method ? 1 : 0;
-                arg_failed = !gjs_value_from_g_argument(context, &array_length,
-                                                        &array_length_type_info,
-                                                        &out_arg_cvalues[array_length_pos],
-                                                        TRUE);
-                if (!arg_failed) {
-                    arg_failed = !gjs_value_from_explicit_array(context,
-                                                                &return_values[next_rval],
-                                                                &arg_type_info,
-                                                                arg,
-                                                                JSVAL_TO_INT(array_length));
+            if (js_rval) {
+                if (array_length_pos >= 0) {
+                    GIArgInfo array_length_arg;
+                    GITypeInfo array_length_type_info;
+
+                    g_callable_info_load_arg(function->info, array_length_pos, &array_length_arg);
+                    g_arg_info_load_type(&array_length_arg, &array_length_type_info);
+                    array_length_pos += is_method ? 1 : 0;
+                    arg_failed = !gjs_value_from_g_argument(context, &array_length,
+                                                            &array_length_type_info,
+                                                            &out_arg_cvalues[array_length_pos],
+                                                            TRUE);
+                    if (!arg_failed) {
+                        arg_failed = !gjs_value_from_explicit_array(context,
+                                                                    &return_values[next_rval],
+                                                                    &arg_type_info,
+                                                                    arg,
+                                                                    JSVAL_TO_INT(array_length));
+                    }
+                } else {
+                    arg_failed = !gjs_value_from_g_argument(context,
+                                                            &return_values[next_rval],
+                                                            &arg_type_info,
+                                                            arg,
+                                                            TRUE);
                 }
-            } else {
-                arg_failed = !gjs_value_from_g_argument(context,
-                                                        &return_values[next_rval],
-                                                        &arg_type_info,
-                                                        arg,
-                                                        TRUE);
             }
 
             if (arg_failed)
@@ -1152,21 +1166,27 @@ release:
          * on its own, otherwise return a JavaScript array with
          * [return value, out arg 1, out arg 2, ...]
          */
-        if (function->js_out_argc == 1) {
-            *js_rval = return_values[0];
-        } else {
-            JSObject *array;
-            array = JS_NewArrayObject(context,
-                                      function->js_out_argc,
-                                      return_values);
-            if (array == NULL) {
-                failed = TRUE;
+        if (js_rval) {
+            if (function->js_out_argc == 1) {
+                *js_rval = return_values[0];
             } else {
-                *js_rval = OBJECT_TO_JSVAL(array);
+                JSObject *array;
+                array = JS_NewArrayObject(context,
+                                          function->js_out_argc,
+                                          return_values);
+                if (array == NULL) {
+                    failed = TRUE;
+                } else {
+                    *js_rval = OBJECT_TO_JSVAL(array);
+                }
             }
         }
 
         gjs_unroot_value_locations(context, return_values, function->js_out_argc);
+
+        if (r_value) {
+            *r_value = return_gargument;
+        }
     }
 
     if (!failed && did_throw_gerror) {
@@ -1200,7 +1220,7 @@ function_call(JSContext *context,
         return JS_TRUE; /* we are the prototype, or have the wrong class */
 
 
-    success = gjs_invoke_c_function(context, priv, object, js_argc, js_argv, &retval);
+    success = gjs_invoke_c_function(context, priv, object, js_argc, js_argv, &retval, NULL);
     if (success)
         JS_SET_RVAL(context, vp, retval);
 
@@ -1674,7 +1694,22 @@ gjs_invoke_c_function_uncached (JSContext      *context,
   if (!init_cached_function_data (context, &function, 0, info))
     return JS_FALSE;
 
-  result = gjs_invoke_c_function (context, &function, obj, argc, argv, rval);
+  result = gjs_invoke_c_function (context, &function, obj, argc, argv, rval, NULL);
   uninit_cached_function_data (&function);
   return result;
+}
+
+JSBool
+gjs_invoke_constructor_from_c (JSContext      *context,
+                               JSObject       *constructor,
+                               JSObject       *obj,
+                               unsigned        argc,
+                               jsval          *argv,
+                               GArgument      *rvalue)
+{
+    Function *priv;
+
+    priv = priv_from_js(context, constructor);
+
+    return gjs_invoke_c_function(context, priv, obj, argc, argv, NULL, rvalue);
 }
