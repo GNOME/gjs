@@ -25,13 +25,13 @@
 #define __GJS_PROFILER_H__
 
 #include <glib.h>
-#include "gjs/jsapi-util.h"
 
 G_BEGIN_DECLS
 
 typedef struct _GjsProfiler GjsProfiler;
+typedef struct _GjsInterruptRegister GjsInterruptRegister;
 
-GjsProfiler *gjs_profiler_new (JSRuntime *runtime);
+GjsProfiler *gjs_profiler_new (GjsInterruptRegister *interrupts);
 void         gjs_profiler_free(GjsProfiler *self);
 void         gjs_profiler_reset(GjsProfiler *self);
 
