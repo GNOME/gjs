@@ -22,7 +22,11 @@ gjs_tests_LDADD =		\
 	$(GJSTESTS_LIBS)
 
 gjs_tests_SOURCES =		\
-	test/gjs-tests.cpp
+	test/gjs-tests.cpp \
+	test/gjs-test-debug-connection.cpp \
+	test/gjs-test-interrupt-register.cpp \
+	test/gjs-test-coverage.cpp \
+	test/gjs-test-add-funcs.h
 
 check-local: gjs-tests
 	@test -z "${TEST_PROGS}" || ${GTESTER} --verbose ${TEST_PROGS} ${TEST_PROGS_OPTIONS}

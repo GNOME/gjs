@@ -23,6 +23,8 @@
 
 #include <config.h>
 
+#include "debug-connection.h"
+#include "interrupt-register.h"
 #include "profiler.h"
 #include "compat.h"
 #include "jsapi-util.h"
@@ -42,9 +44,9 @@ typedef struct _GjsProfileData     GjsProfileData;
 typedef struct _GjsProfileFunction GjsProfileFunction;
 
 struct _GjsProfiler {
-    JSRuntime *runtime;
-
     GHashTable *by_file;    /* GjsProfileFunctionKey -> GjsProfileFunction */
+    GjsInterruptRegister *interrupts;
+    GjsDebugConnection *interpreter_connection;
 
     GjsProfileData *last_function_entered; /* weak ref to by_file */
     int64_t         last_function_exit_time;
@@ -110,7 +112,7 @@ gjs_profile_function_new(GjsProfileFunctionKey *key)
     self->key.filename = g_strdup(key->filename);
     self->key.lineno = key->lineno;
     // Pass ownership of function_name from key to the new function
-    self->key.function_name = key->function_name;
+    self->key.function_name = g_strdup (key->function_name);
 
     g_assert(self->key.filename != NULL);
     g_assert(self->key.function_name != NULL);
@@ -126,93 +128,60 @@ gjs_profile_function_free(GjsProfileFunction *self)
     g_slice_free(GjsProfileFunction, self);
 }
 
-static void
-gjs_profile_function_key_from_js(JSContext             *cx,
-                                 JSAbstractFramePtr     frame,
-                                 GjsProfileFunctionKey *key)
-{
-    JSScript *script;
-    JSFunction *function;
-    JSString *function_name;
-
-    /* We're not using the JSScript or JSFunction as the key since the script
-     * could be unloaded and addresses reused.
-     */
-
-    script = frame.script();
-    if (script != NULL) {
-        key->filename = (char*)JS_GetScriptFilename(cx, script);
-        key->lineno = JS_GetScriptBaseLineNumber(cx, script);
-    } else {
-        key->filename = (char*)"(native)";
-        key->lineno = 0;
-    }
-
-    function = frame.maybeFun();
-    /* If function == NULL we're probably calling a GIRepositoryFunction object
-     * (or other object with a 'call' method) and would be good to somehow
-     * figure out the name of the called function.
-     */
-    function_name = JS_GetFunctionId(function);
-    if (!function_name ||
-        !gjs_string_to_utf8(cx, STRING_TO_JSVAL(function_name), &key->function_name))
-        key->function_name = g_strdup("(unknown)");
-
-    g_assert(key->filename != NULL);
-    g_assert(key->function_name != NULL);
-}
-
 static GjsProfileFunction *
 gjs_profiler_lookup_function(GjsProfiler       *self,
-                             JSContext         *cx,
-                             JSAbstractFramePtr frame,
-                             gboolean           create_if_missing)
+                             GjsFrameInfo      *info,
+                             gboolean          create_if_missing)
 {
-    GjsProfileFunctionKey key;
+    GjsProfileFunctionKey key =
+    {
+      (char *) info->interrupt.filename,
+      info->interrupt.line,
+      (char *) info->interrupt.functionName
+    };
     GjsProfileFunction *function;
-
-    gjs_profile_function_key_from_js(cx, frame, &key);
 
     function = (GjsProfileFunction*) g_hash_table_lookup(self->by_file, &key);
     if (function)
-        goto error;
+        return function;
 
     if (!create_if_missing)
-        goto error;
+        return NULL;
 
     function = gjs_profile_function_new(&key);
 
+    /* The function now owns the strings inside of key, so use its
+     * copy as the key and not the one we just initialized above
+     * (which has no ownership) */
     g_hash_table_insert(self->by_file, &function->key, function);
 
     /* Don't free key.function_name if we get here since we passed its
      * ownership to the new function.
      */
     return function;
-
- error:
-    g_free(key.function_name);
-    return NULL;
 }
 
 static void
-gjs_profiler_log_call(GjsProfiler       *self,
-                      JSContext         *cx,
-                      JSAbstractFramePtr frame,
-                      JSBool             before,
-                      JSBool            *ok)
+gjs_profiler_log_call (GjsInterruptRegister *reg,
+                       GjsContext           *context,
+                       GjsFrameInfo         *info,
+                       gpointer             user_data)
 {
+    GjsProfiler *self = (GjsProfiler *) user_data;
     GjsProfileFunction *function;
     GjsProfileData *p;
     int64_t now;
 
-    function = gjs_profiler_lookup_function(self, cx, frame, before);
+    function = gjs_profiler_lookup_function(self,
+                                            info,
+                                            info->frame_state == GJS_INTERRUPT_FRAME_BEFORE);
     if (!function)
         return;
 
     p = &function->profile;
     now = JS_Now();
 
-    if (before) {
+    if (info->frame_state == GJS_INTERRUPT_FRAME_BEFORE) {
         if (p->recurse_depth == 0) {
             g_assert(p->enter_time == 0);
 
@@ -273,36 +242,6 @@ gjs_profiler_log_call(GjsProfiler       *self,
     }
 }
 
-static void *
-gjs_profiler_execute_hook(JSContext         *cx,
-                          JSAbstractFramePtr frame,
-                          bool               isConstructing,
-                          JSBool             before,
-                          JSBool            *ok,
-                          void              *callerdata)
-{
-    GjsProfiler *self = (GjsProfiler*) callerdata;
-
-    gjs_profiler_log_call(self, cx, frame, before, ok);
-
-    return callerdata;
-}
-
-static void *
-gjs_profiler_call_hook(JSContext          *cx,
-                       JSAbstractFramePtr frame,
-                       bool               isConstructing,
-                       JSBool             before,
-                       JSBool            *ok,
-                       void              *callerdata)
-{
-    GjsProfiler *self = (GjsProfiler*) callerdata;
-
-    gjs_profiler_log_call(self, cx, frame, before, ok);
-
-    return callerdata;
-}
-
 static gboolean
 dump_profile_idle(gpointer user_data)
 {
@@ -325,10 +264,6 @@ dump_profile_signal_handler(int signum)
 static void
 gjs_profiler_profile(GjsProfiler *self, gboolean enabled)
 {
-    JSRuntime *rt;
-
-    rt = self->runtime;
-
     if (enabled) {
         static gboolean signal_handler_initialized = FALSE;
 
@@ -345,14 +280,12 @@ gjs_profiler_profile(GjsProfiler *self, gboolean enabled)
         global_profiler = self;
         g_assert(global_profiler_output != NULL);
 
-        /* "toplevel" execution */
-        JS_SetExecuteHook(rt, gjs_profiler_execute_hook, self);
-        /* function call */
-        JS_SetCallHook(rt, gjs_profiler_call_hook, self);
+        self->interpreter_connection =
+            gjs_interrupt_register_connect_to_function_calls_and_execution (self->interrupts,
+                                                                            gjs_profiler_log_call,
+                                                                            self);
     } else if (self == global_profiler) {
-        JS_SetExecuteHook(rt, NULL, NULL);
-        JS_SetCallHook(rt, NULL, NULL);
-
+        g_object_unref(self->interpreter_connection);
         global_profiler = NULL;
     }
 }
@@ -435,7 +368,7 @@ gjs_profiler_dump(GjsProfiler *self)
 }
 
 GjsProfiler *
-gjs_profiler_new(JSRuntime *runtime)
+gjs_profiler_new(GjsInterruptRegister *interrupts)
 {
     GjsProfiler *self;
     const char  *profiler_output;
@@ -444,12 +377,12 @@ gjs_profiler_new(JSRuntime *runtime)
     g_return_val_if_fail(global_profiler == NULL, NULL);
 
     self = g_slice_new0(GjsProfiler);
-    self->runtime = runtime;
     self->by_file =
         g_hash_table_new_full(gjs_profile_function_key_hash,
                               gjs_profile_function_key_equal,
                               NULL,
                               (GDestroyNotify)gjs_profile_function_free);
+    self->interrupts = (GjsInterruptRegister *) g_object_ref(interrupts);
 
     profiler_output = g_getenv("GJS_DEBUG_PROFILER_OUTPUT");
     if (profiler_output != NULL) {
@@ -471,5 +404,10 @@ gjs_profiler_free(GjsProfiler *self)
     g_assert(global_profiler == NULL);
 
     g_hash_table_destroy(self->by_file);
+
+    if (self->interpreter_connection)
+        g_object_unref(self->interpreter_connection);
+    g_object_unref(self->interrupts);
+
     g_slice_free(GjsProfiler, self);
 }
