@@ -147,6 +147,8 @@ main(int argc, char **argv)
         g_printerr("%s\n", error->message);
         exit(1);
     }
+    
+    g_object_unref(js_context);
 
     g_free(script);
     exit(code);
