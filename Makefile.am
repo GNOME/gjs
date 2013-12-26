@@ -11,7 +11,6 @@ dist_gjsjs_DATA =
 BUILT_SOURCES =
 CLEANFILES =
 EXTRA_DIST =
-gjstest_files_with_tests =
 TEST_PROGS =
 check_PROGRAMS = $(TEST_PROGS)
 INTROSPECTION_GIRS =
@@ -175,14 +174,6 @@ BUILT_SOURCES += gjs_gi_probes.h gjs_gi_probes.o
 libgjs_la_LIBADD += gjs_gi_probes.o
 endif
 EXTRA_DIST += gi/gjs_gi_probes.d
-
-gjstest_files_with_tests += 	\
-	gjs/context.cpp		\
-	gjs/jsapi-util-array.cpp	\
-	gjs/jsapi-util-error.cpp	\
-	gjs/jsapi-util-string.cpp	\
-	gjs/stack.cpp				\
-	util/glib.cpp
 
 tapset_in_files = gjs/gjs.stp.in
 EXTRA_DIST += $(tapset_in_files)
