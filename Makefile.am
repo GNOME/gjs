@@ -115,6 +115,8 @@ libgjs_la_SOURCES =		\
 	gjs/debug-interrupt-register.h \
 	gjs/interrupt-register.cpp \
 	gjs/interrupt-register.h \
+	gjs/coverage.cpp \
+	gjs/coverage.h \
 	gjs/jsapi-private.cpp	\
 	gjs/jsapi-util.cpp	\
 	gjs/jsapi-dynamic-class.cpp \

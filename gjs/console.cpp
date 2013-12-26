@@ -29,11 +29,15 @@
 #include <gjs/gjs.h>
 
 static char **include_path = NULL;
+static char **coverage_paths = NULL;
+static char *coverage_output_file = NULL;
 static char *command = NULL;
 static char *js_version= NULL;
 
 static GOptionEntry entries[] = {
     { "command", 'c', 0, G_OPTION_ARG_STRING, &command, "Program passed in as a string", "COMMAND" },
+    { "coverage-path", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &coverage_paths, "Add the directory DIR to the list of directories to generate coverage info for", "DIR" },
+    { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &coverage_output_file, "Write coverage output to a single FILE", "FILE", },
     { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &include_path, "Add the directory DIR to the list of directories to search for js files.", "DIR" },
     { "js-version", 0, 0, G_OPTION_ARG_STRING, &js_version, "JavaScript version (e.g. \"default\", \"1.8\"", "JSVERSION" },
     { NULL }
@@ -51,6 +55,33 @@ print_help (GOptionContext *context,
   g_free (help);
 
   exit (0);
+}
+
+static GValue *
+init_array_parameter(GArray      *array,
+                     guint       index,
+                     const gchar *name,
+                     GType       type)
+{
+    g_print ("index %i array len %i\n", index, array->len);
+    if (index >= array->len)
+    {
+        g_print ("expanding array size to %i\n", index + 1);
+        g_array_set_size(array, array->len + 1);
+    }
+
+    GParameter *param = &(g_array_index(array, GParameter, index));
+    param->name = name;
+    param->value.g_type = 0;
+    g_value_init(&param->value, type);
+    return &param->value;
+}
+
+static void
+clear_array_parameter_value(gpointer value)
+{
+    GParameter *parameter = (GParameter *) value;
+    g_value_unset(&parameter->value);
 }
 
 int
@@ -119,17 +150,38 @@ main(int argc, char **argv)
     /* If user explicitly specifies a version, use it */
     if (js_version != NULL)
         source_js_version = js_version;
+
+    /* There are a few properties that we might want to
+     * set on construction here that could be optional.
+     * So we need to dynamically generate a list of
+     * construction properties. */
+    GArray *parameters = g_array_sized_new (FALSE, TRUE, sizeof (GParameter), 2);
+    guint  n_param = 0;
+    g_value_set_boxed(init_array_parameter(parameters, n_param++, "search-path", G_TYPE_STRV),
+                      include_path);
+    g_value_set_string(init_array_parameter(parameters, n_param++, "program-name", G_TYPE_STRING),
+                       program_name);
+
     if (source_js_version != NULL)
-        js_context = (GjsContext*) g_object_new(GJS_TYPE_CONTEXT,
-                                  "search-path", include_path,
-                                  "js-version", source_js_version,
-                                  "program-name", program_name,
-                                  NULL);
-    else
-        js_context = (GjsContext*) g_object_new(GJS_TYPE_CONTEXT,
-                                  "search-path", include_path,
-                                  "program-name", program_name,
-                                  NULL);
+        g_value_set_string(init_array_parameter(parameters, n_param++, "js-version", G_TYPE_STRING),
+                           source_js_version);
+
+    if (coverage_paths)
+        g_value_set_boxed(init_array_parameter(parameters, n_param++, "coverage-paths", G_TYPE_STRV),
+                          coverage_paths);
+
+    if (coverage_output_file)
+        g_value_set_string(init_array_parameter(parameters, n_param++, "coverage-output", G_TYPE_STRING),
+                           coverage_output_file);
+
+    g_array_set_clear_func(parameters, clear_array_parameter_value);
+
+    js_context =
+        GJS_CONTEXT(g_object_newv(GJS_TYPE_CONTEXT,
+                                  n_param,
+                                  (GParameter *) parameters->data));
+
+    g_array_unref(parameters);
 
     /* prepare command line arguments */
     if (!gjs_context_define_string_array(js_context, "ARGV",

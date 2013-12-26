@@ -20,6 +20,7 @@
 #ifndef GJS_TESTS_ADD_FUNCS_H
 #define GJS_TESTS_ADD_FUNCS_H
 
+void add_tests_for_debug_coverage ();
 void add_tests_for_debug_register ();
 void add_tests_for_debug_connection ();
 

@@ -321,6 +321,7 @@ main(int    argc,
     
     add_tests_for_debug_connection ();
     add_tests_for_debug_register ();
+    add_tests_for_debug_coverage ();
 
     g_test_run();
 
