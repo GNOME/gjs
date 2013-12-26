@@ -107,6 +107,14 @@ libgjs_la_SOURCES =		\
 	gjs/importer.cpp		\
 	gjs/gi.h		\
 	gjs/gi.cpp		\
+	gjs/debug-connection.cpp \
+	gjs/debug-connection.h \
+	gjs/executable-linesutil.cpp \
+	gjs/executable-linesutil.h \
+	gjs/debug-interrupt-register.cpp \
+	gjs/debug-interrupt-register.h \
+	gjs/interrupt-register.cpp \
+	gjs/interrupt-register.h \
 	gjs/jsapi-private.cpp	\
 	gjs/jsapi-util.cpp	\
 	gjs/jsapi-dynamic-class.cpp \

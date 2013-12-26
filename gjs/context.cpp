@@ -24,6 +24,9 @@
 #include <config.h>
 
 #include "context.h"
+#include "debug-connection.h"
+#include "debug-interrupt-register.h"
+#include "interrupt-register.h"
 #include "importer.h"
 #include "jsapi-util.h"
 #include "profiler.h"
@@ -68,6 +71,7 @@ struct _GjsContext {
     JSContext *context;
     JSObject *global;
 
+    GjsInterruptRegister *interrupts;
     GjsProfiler *profiler;
 
     char *jsversion_string;
@@ -370,6 +374,8 @@ gjs_context_dispose(GObject *object)
         gjs_profiler_free(js_context->profiler);
         js_context->profiler = NULL;
     }
+    
+    g_object_unref(js_context->interrupts);
 
     if (js_context->global != NULL) {
         js_context->global = NULL;
@@ -668,6 +674,7 @@ gjs_context_constructor (GType                  type,
         g_error("Failed to point 'imports' property at root importer");
 
     js_context->profiler = gjs_profiler_new(js_context->runtime);
+    js_context->interrupts = GJS_INTERRUPT_REGISTER_INTERFACE (gjs_debug_interrupt_register_new (js_context));
 
     JS_SetGCCallback(js_context->runtime, gjs_on_context_gc);
 
