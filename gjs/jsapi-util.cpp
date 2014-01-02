@@ -27,6 +27,7 @@
 #include <util/log.h>
 #include <util/glib.h>
 #include <util/misc.h>
+#include <util/error.h>
 
 #include "jsapi-util.h"
 #include "compat.h"
@@ -1164,4 +1165,95 @@ void
 gjs_unblock_gc(void)
 {
     g_mutex_unlock(&gc_lock);
+}
+
+static void
+strip_unix_shebang(const char  **script,
+                   gssize       *script_len,
+                   int          *line_number)
+{
+    /* handle scripts with UNIX shebangs */
+    if (strncmp(*script, "#!", *script_len) == 0) {
+        const char *s;
+
+        s = (const char *) strstr (*script, "\n");
+        if (s != NULL) {
+            if (*script_len > 0)
+                *script_len -= (s + 1 - *script);
+            *script = s + 1;
+            *line_number++;
+        }
+    }
+}
+
+JSBool
+gjs_eval_with_scope(JSContext    *context,
+                    JSObject     *object,
+                    const char   *script,
+                    gssize        script_len,
+                    const char   *filename,
+                    jsval        *retval_p,
+                    GError      **error)
+{
+    JSBool ret = JS_FALSE;
+    int line_number = 1;
+    jsval retval = JSVAL_VOID;
+
+    if (script_len < 0)
+        script_len = strlen(script);
+    strip_unix_shebang(&script, &script_len, &line_number);
+
+    /* log and clear exception if it's set (should not be, normally...) */
+    if (gjs_log_exception(context)) {
+        gjs_debug(GJS_DEBUG_CONTEXT,
+                  "Exception was set prior to JS_EvaluateScript()");
+    }
+
+    /* JS_EvaluateScript requires a request even though it sort of seems like
+     * it means we're always in a request?
+     */
+    JS_BeginRequest(context);
+
+    if (!object)
+        object = JS_GetGlobalObject(context);
+
+    JSAutoCompartment ac(context, object);
+
+    JS::CompileOptions options(context);
+    options.setUTF8(true)
+           .setFileAndLine(filename, line_number)
+           .setSourcePolicy(JS::CompileOptions::LAZY_SOURCE);
+
+    js::RootedObject rootedObj(context, object);
+
+    if (!JS::Evaluate(context, rootedObj, options, script, script_len, &retval)) {
+        gjs_debug(GJS_DEBUG_CONTEXT,
+                  "Script evaluation failed");
+
+        gjs_log_exception(context);
+        g_set_error(error,
+                    GJS_ERROR,
+                    GJS_ERROR_FAILED,
+                    "JS_EvaluateScript() failed");
+        goto out;
+    }
+
+    gjs_debug(GJS_DEBUG_CONTEXT,
+              "Script evaluation succeeded");
+
+    if (gjs_log_exception(context)) {
+        g_set_error(error,
+                    GJS_ERROR,
+                    GJS_ERROR_FAILED,
+                    "Exception was set even though JS_EvaluateScript() returned true - did you gjs_throw() but not return false somewhere perhaps?");
+        goto out;
+    }
+
+    ret = JS_TRUE;
+    if (retval_p)
+        *retval_p = retval;
+
+ out:
+    JS_EndRequest(context);
+    return ret;
 }

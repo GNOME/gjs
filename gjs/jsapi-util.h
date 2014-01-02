@@ -383,6 +383,14 @@ JSBool            gjs_context_get_frame_info (JSContext  *context,
                                               jsval      *fileName,
                                               jsval      *lineNumber);
 
+JSBool            gjs_eval_with_scope        (JSContext    *context,
+                                              JSObject     *object,
+                                              const char   *script,
+                                              gssize        script_len,
+                                              const char   *filename,
+                                              jsval        *retval_p,
+                                              GError      **error);
+
 G_END_DECLS
 
 #endif  /* __GJS_JSAPI_UTIL_H__ */

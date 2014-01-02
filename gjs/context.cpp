@@ -827,101 +827,31 @@ gjs_context_get_native_context (GjsContext *js_context)
 }
 
 gboolean
-gjs_context_eval(GjsContext *js_context,
+gjs_context_eval(GjsContext   *js_context,
                  const char   *script,
                  gssize        script_len,
                  const char   *filename,
                  int          *exit_status_p,
                  GError      **error)
 {
-    int line_number;
+    gboolean ret = FALSE;
     jsval retval;
-    gboolean success;
 
     g_object_ref(G_OBJECT(js_context));
 
-    if (exit_status_p)
-        *exit_status_p = 1; /* "Failure" (like a shell script) */
+    if (!gjs_eval_with_scope(js_context->context,
+                             js_context->global,
+                             script, script_len, filename,
+                             &retval, error))
+        goto out;
 
-    /* whether we evaluated the script OK; not related to whether
-     * script returned nonzero. We set GError if success = FALSE
-     */
-    success = TRUE;
-
-    /* handle scripts with UNIX shebangs */
-    line_number = 1;
-    if (script != NULL && script[0] == '#' && script[1] == '!') {
-        const char *s;
-
-        s = (const char *) strstr (script, "\n");
-        if (s != NULL) {
-            if (script_len > 0)
-                script_len -= (s + 1 - script);
-            script = s + 1;
-            line_number = 2;
-        }
-    }
-
-    /* log and clear exception if it's set (should not be, normally...) */
-    if (gjs_log_exception(js_context->context)) {
-        gjs_debug(GJS_DEBUG_CONTEXT,
-                  "Exception was set prior to JS_EvaluateScript()");
-    }
-
-    /* JS_EvaluateScript requires a request even though it sort of seems like
-     * it means we're always in a request?
-     */
-    JS_BeginRequest(js_context->context);
-
-    retval = JSVAL_VOID;
-    if (script_len < 0)
-        script_len = strlen(script);
-
-    JSAutoCompartment ac(js_context->context, js_context->global);
-    JS::CompileOptions options(js_context->context);
-    options.setUTF8(true)
-           .setFileAndLine(filename, line_number)
-           .setSourcePolicy(JS::CompileOptions::LAZY_SOURCE);
-    js::RootedObject rootedObj(js_context->context, js_context->global);
-
-    if (!JS::Evaluate(js_context->context,
-                      rootedObj,
-                      options,
-                      script,
-                      script_len,
-                      &retval)) {
-
-        gjs_debug(GJS_DEBUG_CONTEXT,
-                  "Script evaluation failed");
-
-        gjs_log_exception(js_context->context);
-        g_set_error(error,
-                    GJS_ERROR,
-                    GJS_ERROR_FAILED,
-                    "JS_EvaluateScript() failed");
-
-        success = FALSE;
-    }
-
-    gjs_debug(GJS_DEBUG_CONTEXT,
-              "Script evaluation succeeded");
-
-    if (gjs_log_exception(js_context->context)) {
-        g_set_error(error,
-                    GJS_ERROR,
-                    GJS_ERROR_FAILED,
-                    "Exception was set even though JS_EvaluateScript() returned true - did you gjs_throw() but not return false somewhere perhaps?");
-        success = FALSE;
-    }
-
-    if (success && exit_status_p) {
+    if (exit_status_p) {
         if (JSVAL_IS_INT(retval)) {
             int code;
             if (JS_ValueToInt32(js_context->context, retval, &code)) {
 
                 gjs_debug(GJS_DEBUG_CONTEXT,
                           "Script returned integer code %d", code);
-
                 *exit_status_p = code;
             }
         } else {
@@ -930,15 +860,15 @@ gjs_context_eval(GjsContext *js_context,
         }
     }
 
-    JS_EndRequest(js_context->context);
+    ret = TRUE;
 
+ out:
     g_object_unref(G_OBJECT(js_context));
-
-    return success;
+    return ret;
 }
 
 gboolean
-gjs_context_eval_file(GjsContext  *js_context,
+gjs_context_eval_file(GjsContext    *js_context,
                       const char    *filename,
                       int           *exit_status_p,
                       GError       **error)
