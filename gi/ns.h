@@ -31,8 +31,7 @@
 G_BEGIN_DECLS
 
 JSObject* gjs_create_ns(JSContext    *context,
-                        const char   *ns_name,
-                        GIRepository *repo);
+                        const char   *ns_name);
 
 G_END_DECLS
 

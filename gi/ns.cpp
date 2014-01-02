@@ -35,9 +35,7 @@
 #include <string.h>
 
 typedef struct {
-    GIRepository *repo;
     char *gi_namespace;
-
 } Ns;
 
 extern struct JSClass gjs_ns_class;
@@ -142,8 +140,6 @@ ns_finalize(JSFreeOp *fop,
 
     if (priv->gi_namespace)
         g_free(priv->gi_namespace);
-    if (priv->repo)
-        g_object_unref(priv->repo);
 
     GJS_DEC_COUNTER(ns);
     g_slice_free(Ns, priv);
@@ -178,8 +174,7 @@ JSFunctionSpec gjs_ns_proto_funcs[] = {
 
 static JSObject*
 ns_new(JSContext    *context,
-       const char   *ns_name,
-       GIRepository *repo)
+       const char   *ns_name)
 {
     JSObject *ns;
     JSObject *global;
@@ -236,16 +231,13 @@ ns_new(JSContext    *context,
     gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE, "ns constructor, obj %p priv %p", ns, priv);
 
     priv = priv_from_js(context, ns);
-    priv->repo = (GIRepository*) g_object_ref(repo);
     priv->gi_namespace = g_strdup(ns_name);
-
     return ns;
 }
 
 JSObject*
 gjs_create_ns(JSContext    *context,
-              const char   *ns_name,
-              GIRepository *repo)
+              const char   *ns_name)
 {
-    return ns_new(context, ns_name, repo);
+    return ns_new(context, ns_name);
 }

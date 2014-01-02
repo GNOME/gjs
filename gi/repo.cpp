@@ -125,7 +125,7 @@ resolve_namespace_object(JSContext  *context,
      * with the given namespace name, pointing to that namespace
      * in the repo.
      */
-    gi_namespace = gjs_create_ns(context, ns_name, repo);
+    gi_namespace = gjs_create_ns(context, ns_name);
     JS_AddObjectRoot(context, &gi_namespace);
 
     /* Define the property early, to avoid reentrancy issues if
