@@ -351,6 +351,12 @@ JSBool      gjs_parse_args                   (JSContext  *context,
                                               jsval     *argv,
                                               ...);
 
+JSBool      gjs_parse_call_args              (JSContext    *context,
+                                              const char   *function_name,
+                                              const char   *format,
+                                              JS::CallArgs &args,
+                                              ...);
+
 GjsRootedArray*   gjs_rooted_array_new        (void);
 void              gjs_rooted_array_append     (JSContext        *context,
                                                GjsRootedArray *array,

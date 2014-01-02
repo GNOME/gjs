@@ -865,51 +865,16 @@ gjs_value_to_int64  (JSContext  *context,
     }
 }
 
-/**
- * gjs_parse_args:
- * @context:
- * @function_name: The name of the function being called
- * @format: Printf-like format specifier containing the expected arguments
- * @argc: Number of JavaScript arguments
- * @argv: JavaScript argument array
- * @Varargs: for each character in @format, a pair of a char * which is the name
- * of the argument, and a pointer to a location to store the value. The type of
- * value stored depends on the format character, as described below.
- *
- * This function is inspired by Python's PyArg_ParseTuple for those
- * familiar with it.  It takes a format specifier which gives the
- * types of the expected arguments, and a list of argument names and
- * value location pairs.  The currently accepted format specifiers are:
- *
- * b: A boolean
- * s: A string, converted into UTF-8
- * F: A string, converted into "filename encoding" (i.e. active locale)
- * i: A number, will be converted to a C "gint32"
- * u: A number, converted into a C "guint32"
- * t: A 64-bit number, converted into a C "gint64" by way of gjs_value_to_int64()
- * o: A JavaScript object, as a "JSObject *"
- *
- * If the first character in the format string is a '!', then JS is allowed
- * to pass extra arguments that are ignored, to the function.
- *
- * The '|' character introduces optional arguments.  All format specifiers
- * after a '|' when not specified, do not cause any changes in the C
- * value location.
- *
- * A prefix character '?' means that the next value may be null, in
- * which case the C value %NULL is returned.
- */
-JSBool
-gjs_parse_args (JSContext  *context,
-                const char *function_name,
-                const char *format,
-                unsigned   argc,
-                jsval     *argv,
-                ...)
+static JSBool
+gjs_parse_args_valist (JSContext  *context,
+                       const char *function_name,
+                       const char *format,
+                       unsigned    argc,
+                       jsval      *argv,
+                       va_list     args)
 {
     guint i;
     const char *fmt_iter;
-    va_list args;
     guint n_unwind = 0;
 #define MAX_UNWIND_STRINGS 16
     gpointer unwind_strings[MAX_UNWIND_STRINGS];
@@ -919,8 +884,6 @@ gjs_parse_args (JSContext  *context,
     guint consumed_args;
 
     JS_BeginRequest(context);
-
-    va_start (args, argv);
 
     if (*format == '!') {
         ignore_trailing_args = TRUE;
@@ -1092,19 +1055,81 @@ gjs_parse_args (JSContext  *context,
         consumed_args++;
     }
 
-    va_end (args);
-
     JS_EndRequest(context);
     return JS_TRUE;
 
  error_unwind:
-    va_end (args);
     /* We still own the strings in the error case, free any we converted */
     for (i = 0; i < n_unwind; i++) {
         g_free (unwind_strings[i]);
     }
     JS_EndRequest(context);
     return JS_FALSE;
+}
+
+/**
+ * gjs_parse_args:
+ * @context:
+ * @function_name: The name of the function being called
+ * @format: Printf-like format specifier containing the expected arguments
+ * @argc: Number of JavaScript arguments
+ * @argv: JavaScript argument array
+ * @Varargs: for each character in @format, a pair of a char * which is the name
+ * of the argument, and a pointer to a location to store the value. The type of
+ * value stored depends on the format character, as described below.
+ *
+ * This function is inspired by Python's PyArg_ParseTuple for those
+ * familiar with it.  It takes a format specifier which gives the
+ * types of the expected arguments, and a list of argument names and
+ * value location pairs.  The currently accepted format specifiers are:
+ *
+ * b: A boolean
+ * s: A string, converted into UTF-8
+ * F: A string, converted into "filename encoding" (i.e. active locale)
+ * i: A number, will be converted to a C "gint32"
+ * u: A number, converted into a C "guint32"
+ * t: A 64-bit number, converted into a C "gint64" by way of gjs_value_to_int64()
+ * o: A JavaScript object, as a "JSObject *"
+ *
+ * If the first character in the format string is a '!', then JS is allowed
+ * to pass extra arguments that are ignored, to the function.
+ *
+ * The '|' character introduces optional arguments.  All format specifiers
+ * after a '|' when not specified, do not cause any changes in the C
+ * value location.
+ *
+ * A prefix character '?' means that the next value may be null, in
+ * which case the C value %NULL is returned.
+ */
+JSBool
+gjs_parse_args (JSContext  *context,
+                const char *function_name,
+                const char *format,
+                unsigned    argc,
+                jsval      *argv,
+                ...)
+{
+    va_list args;
+    JSBool ret;
+    va_start (args, argv);
+    ret = gjs_parse_args_valist (context, function_name, format, argc, argv, args);
+    va_end (args);
+    return ret;
+}
+
+JSBool
+gjs_parse_call_args (JSContext    *context,
+                     const char   *function_name,
+                     const char   *format,
+                     JS::CallArgs &call_args,
+                     ...)
+{
+    va_list args;
+    JSBool ret;
+    va_start (args, call_args);
+    ret = gjs_parse_args_valist (context, function_name, format, call_args.length(), call_args.array(), args);
+    va_end (args);
+    return ret;
 }
 
 #ifdef __linux__
