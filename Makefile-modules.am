@@ -35,14 +35,8 @@ JS_NATIVE_MODULE_CFLAGS =	\
 JS_NATIVE_MODULE_LIBADD =	\
         $(GJS_LIBS)
 
-libcairoNative_la_CPPFLAGS =                      \
-        $(JS_NATIVE_MODULE_CFLAGS)              \
-        $(GJS_CAIRO_CFLAGS)                     \
-        $(GJS_CFLAGS)
-libcairoNative_la_LIBADD =                      \
-        $(JS_NATIVE_MODULE_LIBADD)              \
-        $(GJS_CAIRO_LIBS)                       \
-        $(GJS_LIBS)
+libcairoNative_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS) $(GJS_CAIRO_CFLAGS)
+libcairoNative_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD) $(GJS_CAIRO_LIBS)
 libcairoNative_la_SOURCES =                     \
 	modules/cairo-private.h                 \
 	modules/cairo-module.h                  \
@@ -63,15 +57,8 @@ libcairoNative_la_SOURCES =                     \
 
 libsystem_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
 libsystem_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD)
-libsystem_la_SOURCES =				            \
-	modules/system.h			                \
-	modules/system.cpp
+libsystem_la_SOURCES = modules/system.h modules/system.cpp
 
-libconsole_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS) \
-			 $(GJS_CFLAGS)
-libconsole_la_LIBADD =				\
-	$(JS_NATIVE_MODULE_LIBADD)		\
-	$(READLINE_LIBS)
-libconsole_la_SOURCES =				\
-	modules/console.h			\
-	modules/console.cpp
+libconsole_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
+libconsole_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD) $(READLINE_LIBS)
+libconsole_la_SOURCES = modules/console.h modules/console.cpp
