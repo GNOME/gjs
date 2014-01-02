@@ -43,3 +43,4 @@ installed-tests/gjs-installed-tests.testmeta
 jsunit
 jsunit.test
 testSystemExit.test
+modules-resources.[ch]

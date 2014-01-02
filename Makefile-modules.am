@@ -1,27 +1,6 @@
-dist_gjstweener_DATA =			\
-	modules/tweener/equations.js	\
-	modules/tweener/tweener.js	\
-	modules/tweener/tweenList.js
 
-dist_gjsoverride_DATA = 		\
-	modules/overrides/GLib.js	\
-	modules/overrides/Gio.js	\
-	modules/overrides/GObject.js
-
-dist_gjsjs_DATA +=		\
-	modules/gettext.js	\
-	modules/lang.js		\
-	modules/mainloop.js	\
-	modules/jsUnit.js	\
-	modules/signals.js	\
-	modules/promise.js	\
-	modules/format.js
-
-NATIVE_MODULES = libconsole.la libsystem.la
+NATIVE_MODULES = libconsole.la libsystem.la libmodules_resources.la
 if ENABLE_CAIRO
-dist_gjsjs_DATA +=		\
-	modules/cairo.js	\
-	$(NULL)
 NATIVE_MODULES += libcairoNative.la
 endif
 
@@ -34,6 +13,18 @@ JS_NATIVE_MODULE_CFLAGS =	\
         $(GJS_CFLAGS)
 JS_NATIVE_MODULE_LIBADD =	\
         $(GJS_LIBS)
+
+modules_resources_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/modules/modules.gresource.xml)
+modules-resources.h: $(srcdir)/modules/modules.gresource.xml $(modules_resource_files)
+	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --sourcedir=$(builddir) --generate --c-name modules_resources $<
+modules-resources.c: $(srcdir)/modules/modules.gresource.xml $(modules_resource_files)
+	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --sourcedir=$(builddir) --generate --c-name modules_resources $<
+
+EXTRA_DIST += $(modules_resources_files)
+
+nodist_libmodules_resources_la_SOURCES = modules-resources.c modules-resources.h
+libmodules_resources_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
+libmodules_resources_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD)
 
 libcairoNative_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS) $(GJS_CAIRO_CFLAGS)
 libcairoNative_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD) $(GJS_CAIRO_LIBS)
