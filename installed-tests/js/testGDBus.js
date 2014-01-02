@@ -1,4 +1,3 @@
-// application/javascript;version=1.8
 const JSUnit = imports.jsUnit;
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;

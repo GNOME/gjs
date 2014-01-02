@@ -1,4 +1,3 @@
-// application/javascript;version=1.8
 // tests for JS_SetLocaleCallbacks().
 const JSUnit = imports.jsUnit;
 

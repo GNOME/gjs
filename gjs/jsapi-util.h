@@ -186,8 +186,7 @@ jsval gjs_##cname##_create_proto(JSContext *context, JSObject *module, const cha
     return rval; \
 }
 
-gboolean    gjs_init_context_standard        (JSContext       *context,
-                                              JSVersion        js_version);
+gboolean    gjs_init_context_standard        (JSContext       *context);
 
 JSObject*   gjs_get_import_global            (JSContext       *context);
 

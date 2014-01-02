@@ -1,4 +1,3 @@
-// application/javascript;version=1.8
 const JSUnit = imports.jsUnit;
 const Tweener = imports.tweener.tweener;
 const Mainloop = imports.mainloop;

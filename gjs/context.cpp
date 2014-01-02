@@ -43,8 +43,6 @@
 
 #include <string.h>
 
-#define _GJS_JS_VERSION_DEFAULT "1.8"
-
 static void     gjs_context_dispose           (GObject               *object);
 static void     gjs_context_finalize          (GObject               *object);
 static void     gjs_context_constructed       (GObject               *object);
@@ -68,7 +66,6 @@ struct _GjsContext {
 
     GjsProfiler *profiler;
 
-    char *jsversion_string;
     char *program_name;
 
     char **search_path;
@@ -93,7 +90,6 @@ static int signals[LAST_SIGNAL];
 
 enum {
     PROP_0,
-    PROP_JS_VERSION,
     PROP_SEARCH_PATH,
     PROP_GC_NOTIFICATIONS,
     PROP_PROGRAM_NAME,
@@ -279,8 +275,6 @@ gjs_printerr(JSContext *context,
 static void
 gjs_context_init(GjsContext *js_context)
 {
-    js_context->jsversion_string = g_strdup(_GJS_JS_VERSION_DEFAULT);
-
     gjs_context_make_current(js_context);
 }
 
@@ -305,16 +299,6 @@ gjs_context_class_init(GjsContextClass *klass)
 
     g_object_class_install_property(object_class,
                                     PROP_SEARCH_PATH,
-                                    pspec);
-
-    pspec = g_param_spec_string("js-version",
-                                 "JS Version",
-                                 "A string giving the default for the (SpiderMonkey) JavaScript version",
-                                 _GJS_JS_VERSION_DEFAULT,
-                                 (GParamFlags) (G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
-
-    g_object_class_install_property(object_class,
-                                    PROP_JS_VERSION,
                                     pspec);
 
     pspec = g_param_spec_boolean("gc-notifications",
@@ -417,8 +401,6 @@ gjs_context_finalize(GObject *object)
         g_strfreev(js_context->search_path);
         js_context->search_path = NULL;
     }
-
-    g_free(js_context->jsversion_string);
 
     if (gjs_context_get_current() == (GjsContext*)object)
         gjs_context_make_current(NULL);
@@ -551,7 +533,6 @@ gjs_context_constructed(GObject *object)
 {
     GjsContext *js_context = GJS_CONTEXT(object);
     guint32 options_flags;
-    JSVersion js_version;
 
     G_OBJECT_CLASS(gjs_context_parent_class)->constructed(object);
 
@@ -592,14 +573,7 @@ gjs_context_constructed(GObject *object)
     /* set ourselves as the private data */
     JS_SetContextPrivate(js_context->context, js_context);
 
-    js_version = JS_StringToVersion(js_context->jsversion_string);
-    /* It doesn't make sense to throw here; just use the default if we
-     * don't know.
-     */
-    if (js_version == JSVERSION_UNKNOWN)
-        js_version = JSVERSION_DEFAULT;
-
-    if (!gjs_init_context_standard(js_context->context, js_version))
+    if (!gjs_init_context_standard(js_context->context))
         g_error("Failed to initialize context");
 
     js_context->global = JS_GetGlobalObject(js_context->context);
@@ -679,9 +653,6 @@ gjs_context_get_property (GObject     *object,
     js_context = GJS_CONTEXT (object);
 
     switch (prop_id) {
-    case PROP_JS_VERSION:
-        g_value_set_string(value, js_context->jsversion_string);
-        break;
     case PROP_GC_NOTIFICATIONS:
         g_value_set_boolean(value, js_context->gc_notifications_enabled);
         break;
@@ -708,13 +679,6 @@ gjs_context_set_property (GObject      *object,
     case PROP_SEARCH_PATH:
         js_context->search_path = (char**) g_value_dup_boxed(value);
         break;
-    case PROP_JS_VERSION:
-        g_free(js_context->jsversion_string);
-        if (g_value_get_string (value) == NULL)
-            js_context->jsversion_string = g_strdup(_GJS_JS_VERSION_DEFAULT);
-        else
-            js_context->jsversion_string = g_value_dup_string(value);
-        break;
     case PROP_GC_NOTIFICATIONS:
         js_context->gc_notifications_enabled = g_value_get_boolean(value);
         break;
@@ -725,95 +689,6 @@ gjs_context_set_property (GObject      *object,
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         break;
     }
-}
-
-/**
- * gjs_context_scan_buffer_for_js_version:
- * @buffer: A UTF-8 string
- * @maxbytes: Maximum number of bytes to scan in buffer
- *
- * Given a buffer of JavaScript source code (in UTF-8), look for a
- * comment in it which tells us which version to enable in the
- * SpiderMonkey engine.
- *
- * The comment is inspired by the Firefox MIME type, see e.g.
- * https://developer.mozilla.org/en/JavaScript/New_in_JavaScript/1.8
- *
- * A valid comment string looks like the following, on its own line:
- * <literal>// application/javascript;version=1.8</literal>
- *
- * Returns: A string suitable for use as the GjsContext::version property.
- *   If the version is unknown or invalid, %NULL will be returned.
- */
-const char *
-gjs_context_scan_buffer_for_js_version (const char *buffer,
-                                        gssize      maxbytes)
-{
-    const char *prefix = "// application/javascript;version=";
-    const char *substr;
-    JSVersion ver;
-    char buf[20];
-    gssize remaining_bytes;
-    guint i;
-
-    substr = g_strstr_len(buffer, maxbytes, prefix);
-    if (!substr)
-        return NULL;
-
-    remaining_bytes = maxbytes - ((substr - buffer) + strlen (prefix));
-    /* 20 should give us enough space for all the valid JS version strings; anyways
-     * it's really a bug if we're close to the limit anyways. */
-    if (remaining_bytes < (gssize)sizeof(buf)-1)
-        return NULL;
-
-    buf[sizeof(buf)-1] = '\0';
-    strncpy(buf, substr + strlen (prefix), sizeof(buf)-1);
-    for (i = 0; i < sizeof(buf)-1; i++) {
-        if (buf[i] == '\n') {
-            buf[i] = '\0';
-            break;
-        }
-    }
-
-    ver = JS_StringToVersion(buf);
-    if (ver == JSVERSION_UNKNOWN)
-        return NULL;
-    return JS_VersionToString(ver);
-}
-
-/**
- * gjs_context_scan_file_for_js_version:
- * @file_path: (type filename): A file path
- *
- * Like gjs_context_scan_buffer_for_js_version(), but will open
- * the file and use the initial 1024 bytes as a buffer.
- *
- * Returns: A string suitable for use as GjsContext::version property.
- */
-const char *
-gjs_context_scan_file_for_js_version (const char *file_path)
-{
-    char *utf8_buf;
-    guint8 buf[1024];
-    const char *version = NULL;
-    gssize len;
-    FILE *f;
-
-    f = fopen(file_path, "r");
-    if (!f)
-        return NULL;
-
-    len = fread(buf, 1, sizeof(buf)-1, f);
-    fclose(f);
-    if (len < 0)
-        return NULL;
-    buf[len] = '\0';
-
-    utf8_buf = _gjs_g_utf8_make_valid((const char*)buf);
-    version = gjs_context_scan_buffer_for_js_version(utf8_buf, sizeof(buf));
-    g_free(utf8_buf);
-
-    return version;
 }
 
 

@@ -1,4 +1,3 @@
-// application/javascript;version=1.8
 function testImporterFunction() {
     return "__init__ function tested";
 }

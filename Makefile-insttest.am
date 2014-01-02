@@ -108,7 +108,6 @@ dist_jstests_DATA += \
 	installed-tests/js/testGIMarshalling.js		\
 	installed-tests/js/testGObjectClass.js		\
 	installed-tests/js/testJS1_8.js			\
-	installed-tests/js/testJSDefault.js		\
 	installed-tests/js/testLang.js			\
 	installed-tests/js/testLocale.js			\
 	installed-tests/js/testMainloop.js			\

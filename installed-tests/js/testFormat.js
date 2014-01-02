@@ -1,4 +1,3 @@
-// application/javascript;version=1.8
 // tests for imports.format module
 
 const Format = imports.format;

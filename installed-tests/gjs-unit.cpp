@@ -39,14 +39,7 @@ static void
 setup(GjsTestJSFixture *fix,
       gconstpointer     test_data)
 {
-    const char *test_filename = (const char*) test_data;
-    const char *js_version;
-
-    js_version = gjs_context_scan_file_for_js_version(test_filename);
-
-    fix->context = (GjsContext*) g_object_new (GJS_TYPE_CONTEXT,
-                                               "js-version", js_version,
-                                               NULL);
+    fix->context = gjs_context_new ();
 }
 
 static void

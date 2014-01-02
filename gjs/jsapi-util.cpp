@@ -88,17 +88,12 @@ static JSClass global_class = {
  * Returns: %TRUE on success, %FALSE otherwise
  */
 gboolean
-gjs_init_context_standard (JSContext       *context,
-                           JSVersion        js_version)
+gjs_init_context_standard (JSContext *context)
 {
     JSObject *global;
     JS::CompartmentOptions options;
 
-    gjs_debug(GJS_DEBUG_CONTEXT,
-              "Setting JavaScript version to %s",
-              JS_VersionToString(js_version));
-
-    options.setVersion(js_version);
+    options.setVersion(JSVERSION_LATEST);
     global = JS_NewGlobalObject(context, &global_class, NULL, options);
     if (global == NULL)
         return FALSE;

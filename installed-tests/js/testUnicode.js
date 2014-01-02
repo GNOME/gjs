@@ -1,4 +1,3 @@
-// application/javascript;version=1.8
 const JSUnit = imports.jsUnit;
 
 function testUnicode() {

@@ -1,4 +1,3 @@
-// application/javascript;version=1.8
 const B = imports.mutualImport.b;
 
 let count = 0;

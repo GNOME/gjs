@@ -1,5 +1,3 @@
-// application/javascript;version=1.8
-
 // Test SpiderMonkey JS extensions; see
 // https://developer.mozilla.org/en/JavaScript/New_in_JavaScript/1.8
 

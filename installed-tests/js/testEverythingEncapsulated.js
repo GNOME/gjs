@@ -1,4 +1,3 @@
-// application/javascript;version=1.8
 // This used to be called "Everything"
 const JSUnit = imports.jsUnit;
 const Everything = imports.gi.Regress;

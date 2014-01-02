@@ -1,4 +1,3 @@
-// application/javascript;version=1.8
 // Copyright 2011 Jasper St. Pierre
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy

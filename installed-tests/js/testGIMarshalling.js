@@ -1,4 +1,3 @@
-// application/javascript;version=1.8
 
 if (!('assertEquals' in this)) { /* allow running this test standalone */
     imports.lang.copyPublicProperties(imports.jsUnit, this);

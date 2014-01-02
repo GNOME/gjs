@@ -30,12 +30,10 @@
 
 static char **include_path = NULL;
 static char *command = NULL;
-static char *js_version= NULL;
 
 static GOptionEntry entries[] = {
     { "command", 'c', 0, G_OPTION_ARG_STRING, &command, "Program passed in as a string", "COMMAND" },
     { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &include_path, "Add the directory DIR to the list of directories to search for js files.", "DIR" },
-    { "js-version", 0, 0, G_OPTION_ARG_STRING, &js_version, "JavaScript version (e.g. \"default\", \"1.8\"", "JSVERSION" },
     { NULL }
 };
 
@@ -64,7 +62,6 @@ main(int argc, char **argv)
     const char *program_name;
     gsize len;
     int code;
-    const char *source_js_version;
 
     context = g_option_context_new(NULL);
 
@@ -89,12 +86,10 @@ main(int argc, char **argv)
 
     if (command != NULL) {
         script = command;
-        source_js_version = gjs_context_scan_buffer_for_js_version(script, 1024);
         len = strlen(script);
         filename = "<command line>";
         program_name = argv[0];
     } else if (argc <= 1) {
-        source_js_version = NULL;
         script = g_strdup("const Console = imports.console; Console.interact();");
         len = strlen(script);
         filename = "<stdin>";
@@ -105,27 +100,16 @@ main(int argc, char **argv)
             g_printerr("%s\n", error->message);
             exit(1);
         }
-        source_js_version = gjs_context_scan_buffer_for_js_version(script, 1024);
         filename = argv[1];
         program_name = argv[1];
         argc--;
         argv++;
     }
 
-    /* If user explicitly specifies a version, use it */
-    if (js_version != NULL)
-        source_js_version = js_version;
-    if (source_js_version != NULL)
-        js_context = (GjsContext*) g_object_new(GJS_TYPE_CONTEXT,
-                                  "search-path", include_path,
-                                  "js-version", source_js_version,
-                                  "program-name", program_name,
-                                  NULL);
-    else
-        js_context = (GjsContext*) g_object_new(GJS_TYPE_CONTEXT,
-                                  "search-path", include_path,
-                                  "program-name", program_name,
-                                  NULL);
+    js_context = (GjsContext*) g_object_new(GJS_TYPE_CONTEXT,
+                                            "search-path", include_path,
+                                            "program-name", program_name,
+                                            NULL);
 
     /* prepare command line arguments */
     if (!gjs_context_define_string_array(js_context, "ARGV",

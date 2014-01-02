@@ -1,4 +1,4 @@
-// application/javascript;version=1.8 -*- mode: js; indent-tabs-mode: nil -*-
+// -*- mode: js; indent-tabs-mode: nil -*-
 const JSUnit = imports.jsUnit;
 
 if (!('assertEquals' in this)) { /* allow running this test standalone */
