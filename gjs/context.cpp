@@ -47,9 +47,7 @@
 
 static void     gjs_context_dispose           (GObject               *object);
 static void     gjs_context_finalize          (GObject               *object);
-static GObject* gjs_context_constructor       (GType                  type,
-                                                  guint                  n_construct_properties,
-                                                  GObjectConstructParam *construct_params);
+static void     gjs_context_constructed       (GObject               *object);
 static void     gjs_context_get_property      (GObject               *object,
                                                   guint                  prop_id,
                                                   GValue                *value,
@@ -295,7 +293,7 @@ gjs_context_class_init(GjsContextClass *klass)
     object_class->dispose = gjs_context_dispose;
     object_class->finalize = gjs_context_finalize;
 
-    object_class->constructor = gjs_context_constructor;
+    object_class->constructed = gjs_context_constructed;
     object_class->get_property = gjs_context_get_property;
     object_class->set_property = gjs_context_set_property;
 
@@ -548,21 +546,14 @@ static JSLocaleCallbacks gjs_locale_callbacks =
     gjs_locale_to_unicode
 };
 
-static GObject*
-gjs_context_constructor (GType                  type,
-                         guint                  n_construct_properties,
-                         GObjectConstructParam *construct_params)
+static void
+gjs_context_constructed(GObject *object)
 {
-    GObject *object;
-    GjsContext *js_context;
+    GjsContext *js_context = GJS_CONTEXT(object);
     guint32 options_flags;
     JSVersion js_version;
 
-    object = (* G_OBJECT_CLASS (gjs_context_parent_class)->constructor) (type,
-                                                                         n_construct_properties,
-                                                                         construct_params);
-
-    js_context = GJS_CONTEXT(object);
+    G_OBJECT_CLASS(gjs_context_parent_class)->constructed(object);
 
     js_context->runtime = JS_NewRuntime(32*1024*1024 /* max bytes */, JS_USE_HELPER_THREADS);
     JS_SetNativeStackQuota(js_context->runtime, 1024*1024);
@@ -577,7 +568,6 @@ gjs_context_constructor (GType                  type,
     gjs_runtime_init_for_context(js_context->runtime, js_context->context);
 
     JS_BeginRequest(js_context->context);
-
 
     /* JSOPTION_DONT_REPORT_UNCAUGHT: Don't send exceptions to our
      * error report handler; instead leave them set.  This allows us
@@ -676,8 +666,6 @@ gjs_context_constructor (GType                  type,
     g_mutex_lock (&contexts_lock);
     all_contexts = g_list_prepend(all_contexts, object);
     g_mutex_unlock (&contexts_lock);
-
-    return object;
 }
 
 static void
