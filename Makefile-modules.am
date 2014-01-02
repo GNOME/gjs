@@ -14,13 +14,13 @@ JS_NATIVE_MODULE_CFLAGS =	\
 JS_NATIVE_MODULE_LIBADD =	\
         $(GJS_LIBS)
 
-modules_resources_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/modules/modules.gresource.xml)
+modules_resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/modules/modules.gresource.xml)
 modules-resources.h: $(srcdir)/modules/modules.gresource.xml $(modules_resource_files)
 	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --sourcedir=$(builddir) --generate --c-name modules_resources $<
 modules-resources.c: $(srcdir)/modules/modules.gresource.xml $(modules_resource_files)
 	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --sourcedir=$(builddir) --generate --c-name modules_resources $<
 
-EXTRA_DIST += $(modules_resources_files)
+EXTRA_DIST += $(modules_resource_files)
 
 nodist_libmodules_resources_la_SOURCES = modules-resources.c modules-resources.h
 libmodules_resources_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
