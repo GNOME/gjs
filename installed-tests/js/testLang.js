@@ -108,20 +108,5 @@ function testBind() {
     JSUnit.assertEquals("o3.args[4] in callback", 1138, o3.args[4]);
 }
 
-function testDefineAccessorProperty() {
-    var obj = {};
-    var storage = 42;
-
-    JSUnit.assertEquals(obj.foo, undefined);
-
-    Lang.defineAccessorProperty(obj, 'foo',
-                                function () { return storage; },
-                                function (val) { storage = val; });
-
-    JSUnit.assertEquals(obj.foo, 42);
-    obj.foo = 43;
-    JSUnit.assertEquals(obj.foo, 43);
-}
-
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
 

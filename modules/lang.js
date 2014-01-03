@@ -59,23 +59,6 @@ function copyPublicProperties(source, dest) {
     }
 }
 
-function copyPropertiesNoOverwrite(source, dest) {
-    for (let property in source) {
-        if (!(property in dest)) {
-            _copyProperty(source, dest, property);
-        }
-    }
-}
-
-function removeNullProperties(obj) {
-    for (let property in obj) {
-        if (obj[property] == null)
-            delete obj[property];
-        else if (typeof(obj[property]) == 'object')
-            removeNullProperties(obj[property]);
-    }
-}
-
 /**
  * Binds obj to callback. Makes it possible to refer to "obj"
  * using this within the callback.
@@ -111,33 +94,6 @@ function bind(obj, callback) {
         args = args.concat(bindArguments);
         return callback.apply(me, args);
     };
-}
-
-function defineAccessorProperty(object, name, getter, setter) {
-    Object.defineProperty(object, name, { get: getter,
-					  set: setter,
-					  configurable: true,
-					  enumerable: true });
-}
-
-function _deepFreeze(o) {
-    Object.freeze(o);
-
-    for (prop in o) {
-        if (!o.hasOwnProperty(prop) || !(typeof o === "object") || Object.isFrozen(o))
-            continue;
-
-        _deepFreeze(o[prop]);
-    }
-}
-
-// The name of this function is unfortunate, as it wraps
-// Object.freeze, not Object.seal
-function seal(object, deep) {
-    if (deep)
-        _deepFreeze(object);
-    else
-        Object.freeze(object);
 }
 
 // Class magic

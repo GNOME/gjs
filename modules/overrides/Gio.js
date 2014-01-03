@@ -172,9 +172,10 @@ function _addDBusConvenience() {
     for (i = 0; i < properties.length; i++) {
         let name = properties[i].name;
         let signature = properties[i].signature;
-        Lang.defineAccessorProperty(this, name,
-                                    Lang.bind(this, _propertyGetter, name),
-                                    Lang.bind(this, _propertySetter, name, signature));
+        Object.defineProperty(this, name, { get: Lang.bind(this, _propertyGetter, name),
+                                            set: Lang.bind(this, _propertySetter, name, signature),
+                                            configurable: true,
+                                            enumerable: true });
     }
 }
 
