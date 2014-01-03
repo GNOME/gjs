@@ -1,5 +1,8 @@
+
+const GLib = imports.gi.GLib;
 const Gio = imports.gi.Gio;
-const Mainloop = imports.mainloop;
+
+let loop = GLib.MainLoop.new(null, false);
 
 function cat(filename) {
     let f = Gio.file_new_for_path(filename);
@@ -9,14 +12,14 @@ function cat(filename) {
             contents = f.load_contents_finish(res)[1];
         } catch (e) {
             log("*** ERROR: " + e.message);
-            Mainloop.quit('');
+            loop.quit();
             return;
         }
         print(contents);
-        Mainloop.quit('');
+        loop.quit();
     });
 
-    Mainloop.run('');
+    loop.run();
 }
 
 if (ARGV.length != 1) {

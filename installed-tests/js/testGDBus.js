@@ -1,7 +1,8 @@
-const JSUnit = imports.jsUnit;
+
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
-const Mainloop = imports.mainloop;
+
+const JSUnit = imports.jsUnit;
 
 /* The methods list with their signatures.
  *
@@ -179,7 +180,7 @@ Test.prototype = {
      * the input arguments */
     echoAsync: function(parameters, invocation) {
         var [someString, someInt] = parameters;
-        Mainloop.idle_add(function() {
+        GLib.idle_add(GLib.PRIORITY_DEFAULT, function() {
             invocation.return_value(new GLib.Variant('(si)', [someString, someInt]));
             return false;
         });
@@ -212,6 +213,8 @@ Test.prototype = {
 var own_name_id;
 
 function testExportStuff() {
+    let loop = GLib.MainLoop.new(null, false);
+
     new Test();
 
     own_name_id = Gio.DBus.session.own_name('org.gnome.gjs.Test',
@@ -219,19 +222,21 @@ function testExportStuff() {
                                             function(name) {
                                                 log("Acquired name " + name);
                                                 
-                                                Mainloop.quit('testGDBus');
+                                                loop.quit();
                                             },
                                             function(name) {
                                                 log("Lost name " + name);
                                             });
 
-    Mainloop.run('testGDBus');
+    loop.run();
 }
 
 const ProxyClass = Gio.DBusProxy.makeProxyWrapper(TestIface);
 var proxy;
 
 function testInitStuff() {
+    let loop = GLib.MainLoop.new(null, false);
+
     var theError;
     proxy = new ProxyClass(Gio.DBus.session,
                            'org.gnome.gjs.Test',
@@ -240,24 +245,26 @@ function testInitStuff() {
                                theError = error;
                                proxy = obj;
 
-                               Mainloop.quit('testGDBus');
+                               loop.quit();
                            });
 
-    Mainloop.run('testGDBus');
+    loop.run();
 
     JSUnit.assertNotNull(proxy);
     JSUnit.assertNull(theError);
 }
 
 function testFrobateStuff() {
+    let loop = GLib.MainLoop.new(null, false);
+
     let theResult, theExcp;
     proxy.frobateStuffRemote({}, function(result, excp) {
         [theResult] = result;
         theExcp = excp;
-        Mainloop.quit('testGDBus');
+        loop.quit();
     });
 
-    Mainloop.run('testGDBus');
+    loop.run();
 
     JSUnit.assertEquals("world", theResult.hello.deep_unpack());
 }
@@ -265,6 +272,8 @@ function testFrobateStuff() {
 /* excp must be exactly the exception thrown by the remote method
    (more or less) */
 function testThrowException() {
+    let loop = GLib.MainLoop.new(null, false);
+
     GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
                              'JS ERROR: Exception in method call: alwaysThrowException: *');
 
@@ -272,10 +281,10 @@ function testThrowException() {
     proxy.alwaysThrowExceptionRemote({}, function(result, excp) {
         theResult = result;
         theExcp = excp;
-        Mainloop.quit('testGDBus');
+        loop.quit();
     });
 
-    Mainloop.run('testGDBus');
+    loop.run();
 
     JSUnit.assertNull(theResult);
     JSUnit.assertNotNull(theExcp);
@@ -284,6 +293,8 @@ function testThrowException() {
 /* We check that the exception in the answer is not null when we try to call
  * a method that does not exist */
 function testDoesNotExist() {
+    let loop = GLib.MainLoop.new(null, false);
+
     let theResult, theExcp;
 
     /* First remove the method from the object! */
@@ -292,72 +303,82 @@ function testDoesNotExist() {
     proxy.thisDoesNotExistRemote(function (result, excp) {
         theResult = result;
         theExcp = excp;
-        Mainloop.quit('testGDBus');
+        loop.quit();
     });
 
-    Mainloop.run('testGDBus');
+    loop.run();
 
     JSUnit.assertNotNull(theExcp);
     JSUnit.assertNull(theResult);
 }
 
 function testNonJsonFrobateStuff() {
+    let loop = GLib.MainLoop.new(null, false);
+
     let theResult, theExcp;
     proxy.nonJsonFrobateStuffRemote(42, function(result, excp) {
         [theResult] = result;
         theExcp = excp;
-        Mainloop.quit('testGDBus');
+        loop.quit();
     });
 
-    Mainloop.run('testGDBus');
+    loop.run();
 
     JSUnit.assertEquals("42 it is!", theResult);
     JSUnit.assertNull(theExcp);
 }
 
 function testNoInParameter() {
+    let loop = GLib.MainLoop.new(null, false);
+
     let theResult, theExcp;
     proxy.noInParameterRemote(function(result, excp) {
         [theResult] = result;
         theExcp = excp;
-        Mainloop.quit('testGDBus');
+        loop.quit();
     });
 
-    Mainloop.run('testGDBus');
+    loop.run();
 
     JSUnit.assertEquals("Yes!", theResult);
     JSUnit.assertNull(theExcp);
 }
 
 function testMultipleInArgs() {
+    let loop = GLib.MainLoop.new(null, false);
+
     let theResult, theExcp;
     proxy.multipleInArgsRemote(1, 2, 3, 4, 5, function(result, excp) {
         [theResult] = result;
         theExcp = excp;
-        Mainloop.quit('testGDBus');
+        loop.quit();
     });
 
-    Mainloop.run('testGDBus');
+    loop.run();
 
     JSUnit.assertEquals("1 2 3 4 5", theResult);
     JSUnit.assertNull(theExcp);
 }
 
 function testNoReturnValue() {
+    let loop = GLib.MainLoop.new(null, false);
+
     let theResult, theExcp;
     proxy.noReturnValueRemote(function(result, excp) {
         [theResult] = result;
         theExcp = excp;
-        Mainloop.quit('testGDBus');
+        loop.quit();
     });
 
-    Mainloop.run('testGDBus');
+    loop.run();
 
     JSUnit.assertEquals(undefined, theResult);
     JSUnit.assertNull(theExcp);
 }
 
 function testEmitSignal() {
+    let loop = GLib.MainLoop.new(null, false);
+
     let theResult, theExcp;
     let signalReceived = 0;
     let signalArgument = null;
@@ -373,10 +394,10 @@ function testEmitSignal() {
         theExcp = excp;
         if (excp)
             log("Signal emission exception: " + excp);
-        Mainloop.quit('testGDBus');
+        loop.quit();
     });
 
-    Mainloop.run('testGDBus');
+    loop.run();
 
     JSUnit.assertUndefined('result should be undefined', theResult);
     JSUnit.assertNull('no exception set', theExcp);
@@ -386,14 +407,16 @@ function testEmitSignal() {
 }
 
 function testMultipleOutValues() {
+    let loop = GLib.MainLoop.new(null, false);
+
     let theResult, theExcp;
     proxy.multipleOutValuesRemote(function(result, excp) {
         theResult = result;
         theExcp = excp;
-        Mainloop.quit('testGDBus');
+        loop.quit();
     });
 
-    Mainloop.run('testGDBus');
+    loop.run();
 
     JSUnit.assertEquals("Hello", theResult[0]);
     JSUnit.assertEquals("World", theResult[1]);
@@ -402,14 +425,16 @@ function testMultipleOutValues() {
 }
 
 function testOneArrayOut() {
+    let loop = GLib.MainLoop.new(null, false);
+
     let theResult, theExcp;
     proxy.oneArrayOutRemote(function(result, excp) {
         [theResult] = result;
         theExcp = excp;
-        Mainloop.quit('testGDBus');
+        loop.quit();
     });
 
-    Mainloop.run('testGDBus');
+    loop.run();
 
     JSUnit.assertEquals("Hello", theResult[0]);
     JSUnit.assertEquals("World", theResult[1]);
@@ -418,14 +443,16 @@ function testOneArrayOut() {
 }
 
 function testArrayOfArrayOut() {
+    let loop = GLib.MainLoop.new(null, false);
+
     let theResult, theExcp;
     proxy.arrayOfArrayOutRemote(function(result, excp) {
         [theResult] = result;
         theExcp = excp;
-        Mainloop.quit('testGDBus');
+        loop.quit();
     });
 
-    Mainloop.run('testGDBus');
+    loop.run();
 
     let a1 = theResult[0];
     let a2 = theResult[1];
@@ -440,14 +467,16 @@ function testArrayOfArrayOut() {
 }
 
 function testMultipleArrayOut() {
+    let loop = GLib.MainLoop.new(null, false);
+
     let theResult, theExcp;
     proxy.multipleArrayOutRemote(function(result, excp) {
         theResult = result;
         theExcp = excp;
-        Mainloop.quit('testGDBus');
+        loop.quit();
     });
 
-    Mainloop.run('testGDBus');
+    loop.run();
 
     let a1 = theResult[0];
     let a2 = theResult[1];
@@ -465,19 +494,23 @@ function testMultipleArrayOut() {
  * so this should fail
  */
 function testArrayOutBadSig() {
+    let loop = GLib.MainLoop.new(null, false);
+
     let theResult, theExcp;
     proxy.arrayOutBadSigRemote(function(result, excp) {
         theResult = result;
         theExcp = excp;
-        Mainloop.quit('testGDBus');
+        loop.quit();
     });
 
-    Mainloop.run('testGDBus');
+    loop.run();
     JSUnit.assertNull(theResult);
     JSUnit.assertNotNull(theExcp);
 }
 
 function testAsyncImplementation() {
+    let loop = GLib.MainLoop.new(null, false);
+
     let someString = "Hello world!";
     let someInt = 42;
     let theResult, theExcp;
@@ -485,10 +518,10 @@ function testAsyncImplementation() {
                      function(result, excp) {
                          theResult = result;
                          theExcp = excp;
-                         Mainloop.quit('testGDBus');
+                         loop.quit();
                      });
 
-    Mainloop.run('testGDBus');
+    loop.run();
     JSUnit.assertNull(theExcp);
     JSUnit.assertNotNull(theResult);
     JSUnit.assertEquals(theResult[0], someString);
@@ -496,6 +529,8 @@ function testAsyncImplementation() {
 }
 
 function testBytes() {
+    let loop = GLib.MainLoop.new(null, false);
+
     let someBytes = [ 0, 63, 234 ];
     let theResult, theExcp;
     for (let i = 0; i < someBytes.length; ++i) {
@@ -504,10 +539,10 @@ function testBytes() {
         proxy.byteEchoRemote(someBytes[i], function(result, excp) {
             [theResult] = result;
             theExcp = excp;
-            Mainloop.quit('testGDBus');
+            loop.quit();
         });
 
-        Mainloop.run('testGDBus');
+        loop.run();
         JSUnit.assertNull(theExcp);
         JSUnit.assertNotNull(theResult);
         JSUnit.assertEquals(someBytes[i], theResult);
@@ -515,13 +550,15 @@ function testBytes() {
 }
 
 function testStructArray() {
+    let loop = GLib.MainLoop.new(null, false);
+
     let theResult, theExcp;
     proxy.structArrayRemote(function(result, excp) {
         [theResult] = result;
         theExcp = excp;
-        Mainloop.quit('testGDBus');
+        loop.quit();
     });
-    Mainloop.run('testGDBus');
+    loop.run();
     JSUnit.assertNull(theExcp);
     JSUnit.assertNotNull(theResult);
     JSUnit.assertEquals(theResult[0][0], 128);
@@ -531,6 +568,8 @@ function testStructArray() {
 }
 
 function testDictSignatures() {
+    let loop = GLib.MainLoop.new(null, false);
+
     let someDict = {
         aDouble: new GLib.Variant('d', 10),
         // should be an integer after round trip
@@ -542,10 +581,10 @@ function testDictSignatures() {
     proxy.dictEchoRemote(someDict, function(result, excp) {
         [theResult] = result;
         theExcp = excp;
-        Mainloop.quit('testGDBus');
+        loop.quit();
     });
 
-    Mainloop.run('testGDBus');
+    loop.run();
     JSUnit.assertNull(theExcp);
     JSUnit.assertNotNull(theResult);
 

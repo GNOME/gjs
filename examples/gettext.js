@@ -1,6 +1,6 @@
+
 const Gettext = imports.gettext;
 const Gtk = imports.gi.Gtk;
-const Mainloop = imports.mainloop;
 
 Gettext.bindtextdomain("gnome-panel-3.0", "/usr/share/locale");
 Gettext.textdomain("gnome-panel-3.0");
@@ -11,4 +11,4 @@ let w = new Gtk.Window({ type: Gtk.WindowType.TOPLEVEL });
 w.add(new Gtk.Label({ label: Gettext.gettext("Panel") }));
 w.show_all();
 
-Mainloop.run("main");
+Gtk.main();

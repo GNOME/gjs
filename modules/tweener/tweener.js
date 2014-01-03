@@ -34,8 +34,9 @@
  http://code.google.com/p/tweener/wiki/License
  */
 
+const GLib = imports.gi.GLib;
+
 const TweenList = imports.tweener.tweenList;
-const Mainloop = imports.mainloop;
 const Signals = imports.signals;
 
 var _inited = false;
@@ -78,18 +79,18 @@ FrameTicker.prototype = {
         this._currentTime = 0;
 
         let me = this;
-        this._timeoutID =
-            Mainloop.timeout_add(Math.floor(1000 / me.FRAME_RATE),
-                                 function() {
-                                     me._currentTime += 1000 / me.FRAME_RATE;
-                                     me.emit('prepare-frame');
-                                     return true;
-                                 });
+        this._timeoutID = GLib.timeout_add(GLib.PRIORITY_DEFAULT,
+                                           Math.floor(1000 / me.FRAME_RATE),
+                                           function() {
+                                               me._currentTime += 1000 / me.FRAME_RATE;
+                                               me.emit('prepare-frame');
+                                               return true;
+                                           });
     },
 
     stop : function() {
         if ('_timeoutID' in this) {
-            Mainloop.source_remove(this._timeoutID);
+            GLib.source_remove(this._timeoutID);
             delete this._timeoutID;
         }
 
