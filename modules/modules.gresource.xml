@@ -15,7 +15,6 @@
     <file>modules/mainloop.js</file>
     <file>modules/jsUnit.js</file>
     <file>modules/signals.js</file>
-    <file>modules/promise.js</file>
     <file>modules/format.js</file>
   </gresource>
 </gresources>
