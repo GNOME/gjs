@@ -391,6 +391,26 @@ JSBool            gjs_eval_with_scope        (JSContext    *context,
                                               jsval        *retval_p,
                                               GError      **error);
 
+/**
+ * gjs_strip_unix_shebang:
+ *
+ * @script: (in): A pointer to a JS script
+ * @script_len: (inout): A pointer to the script length. The
+ * pointer will be modified if a shebang is stripped.
+ * @new_start_line_number: (out) (allow-none): A pointer to
+ * write the start-line number to account for the offset
+ * as a result of stripping the shebang.
+ *
+ * Returns a pointer to the beginning of a script with unix
+ * shebangs removed. The outparams are useful to know the
+ * new length of the script and on what line of the
+ * original script we're executing from, so that any relevant
+ * offsets can be applied to the results of an execution pass.
+ */
+const char * gjs_strip_unix_shebang(const char *script,
+                                    gssize     *script_len,
+                                    int        *new_start_line_number);
+
 G_END_DECLS
 
 #endif  /* __GJS_JSAPI_UTIL_H__ */

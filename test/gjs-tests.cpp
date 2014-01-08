@@ -299,6 +299,57 @@ gjstest_test_func_util_glib_strv_concat_pointers(void)
     g_strfreev(ret);
 }
 
+static void
+gjstest_test_strip_shebang_no_advance_for_no_shebang(void)
+{
+    const char *script = "foo\nbar";
+    gssize     script_len_original = strlen(script);
+    gssize     script_len = script_len_original;
+    int        line_number = 1;
+
+    const char *stripped = gjs_strip_unix_shebang(script,
+                                                  &script_len,
+                                                  &line_number);
+
+    g_assert_cmpstr(script, ==, stripped);
+    g_assert(script_len == script_len_original);
+    g_assert(line_number == 1);
+}
+
+static void
+gjstest_test_strip_shebang_advance_for_shebang(void)
+{
+    const char *script = "#!foo\nbar";
+    gssize     script_len_original = strlen(script);
+    gssize     script_len = script_len_original;
+    int        line_number = 1;
+
+    const char *stripped = gjs_strip_unix_shebang(script,
+                                                  &script_len,
+                                                  &line_number);
+
+    g_assert_cmpstr(stripped, ==, "bar");
+    g_assert(script_len == 3);
+    g_assert(line_number == 2);
+}
+
+static void
+gjstest_test_strip_shebang_return_null_for_just_shebang(void)
+{
+    const char *script = "#!foo";
+    gssize     script_len_original = strlen(script);
+    gssize     script_len = script_len_original;
+    int        line_number = 1;
+
+    const char *stripped = gjs_strip_unix_shebang(script,
+                                                  &script_len,
+                                                  &line_number);
+
+    g_assert(stripped == NULL);
+    g_assert(script_len == 0);
+    g_assert(line_number == -1);
+}
+
 int
 main(int    argc,
      char **argv)
@@ -313,6 +364,9 @@ main(int    argc,
     g_test_add_func("/gjs/jsapi/util/array", gjstest_test_func_gjs_jsapi_util_array);
     g_test_add_func("/gjs/jsapi/util/error/throw", gjstest_test_func_gjs_jsapi_util_error_throw);
     g_test_add_func("/gjs/jsapi/util/string/js/string/utf8", gjstest_test_func_gjs_jsapi_util_string_js_string_utf8);
+    g_test_add_func("/gjs/jsutil/strip_shebang/no_shebang", gjstest_test_strip_shebang_no_advance_for_no_shebang);
+    g_test_add_func("/gjs/jsutil/strip_shebang/have_shebang", gjstest_test_strip_shebang_advance_for_shebang);
+    g_test_add_func("/gjs/jsutil/strip_shebang/only_shebang", gjstest_test_strip_shebang_return_null_for_just_shebang);
     g_test_add_func("/gjs/stack/dump", gjstest_test_func_gjs_stack_dump);
     g_test_add_func("/util/glib/strv/concat/null", gjstest_test_func_util_glib_strv_concat_null);
     g_test_add_func("/util/glib/strv/concat/pointers", gjstest_test_func_util_glib_strv_concat_pointers);
