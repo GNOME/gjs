@@ -402,6 +402,11 @@ gjs_context_finalize(GObject *object)
         js_context->search_path = NULL;
     }
 
+    if (js_context->program_name != NULL) {
+        g_free(js_context->program_name);
+        js_context->program_name = NULL;
+    }
+
     if (gjs_context_get_current() == (GjsContext*)object)
         gjs_context_make_current(NULL);
 
