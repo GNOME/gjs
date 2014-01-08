@@ -23,6 +23,8 @@
 
 #include <config.h>
 
+#include <gio/gio.h>
+
 #include "context.h"
 #include "importer.h"
 #include "jsapi-util.h"
@@ -873,19 +875,31 @@ gjs_context_eval_file(GjsContext    *js_context,
                       int           *exit_status_p,
                       GError       **error)
 {
-    char *script;
-    gsize script_len;
+    char     *script = NULL;
+    gsize    script_len;
+    gboolean ret = TRUE;
 
-    if (!g_file_get_contents(filename, &script, &script_len, error))
-        return FALSE;
+    GFile *file = g_file_new_for_commandline_arg(filename);
 
-    if (!gjs_context_eval(js_context, script, script_len, filename, exit_status_p, error)) {
-        g_free(script);
-        return FALSE;
+    if (!g_file_query_exists(file, NULL)) {
+        ret = FALSE;
+        goto out;
     }
 
+    if (!g_file_load_contents(file, NULL, &script, &script_len, NULL, error)) {
+        ret = FALSE;
+        goto out;
+    }
+
+    if (!gjs_context_eval(js_context, script, script_len, filename, exit_status_p, error)) {
+        ret = FALSE;
+        goto out;
+    }
+
+out:
     g_free(script);
-    return TRUE;
+    g_object_unref(file);
+    return ret;
 }
 
 gboolean
