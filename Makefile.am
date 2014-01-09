@@ -97,6 +97,11 @@ libgjs_la_LDFLAGS = 		\
 libgjs_la_LIBADD = 		\
 	$(GJS_LIBS)
 
+if ENABLE_GTK
+libgjs_la_CPPFLAGS += $(GJS_GTK_CFLAGS)
+libgjs_la_LIBADD += $(GJS_GTK_LIBS)
+endif
+
 libgjs_la_SOURCES =		\
 	gjs/byteArray.cpp		\
 	gjs/context.cpp		\
@@ -151,6 +156,14 @@ libgjs_private_source_files = \
 	libgjs-private/gjs-gdbus-wrapper.h	\
 	libgjs-private/gjs-util.cpp		\
 	libgjs-private/gjs-util.h
+
+if ENABLE_GTK
+libgjs_private_source_files += 			\
+	libgjs-private/gjs-gtk-util.c		\
+	libgjs-private/gjs-gtk-util.h		\
+	$(NULL)
+endif
+
 libgjs_la_SOURCES += $(libgjs_private_source_files)
 
 GjsPrivate-1.0.gir: libgjs.la
@@ -158,6 +171,10 @@ GjsPrivate_1_0_gir_LIBS = libgjs.la
 GjsPrivate_1_0_gir_INCLUDES = GObject-2.0 Gio-2.0
 GjsPrivate_1_0_gir_FILES = $(libgjs_private_source_files)
 GjsPrivate_1_0_gir_SCANNERFLAGS = --identifier-prefix=Gjs --symbol-prefix=gjs_ --warn-all
+
+if ENABLE_GTK
+GjsPrivate_1_0_gir_INCLUDES += Gtk-3.0
+endif
 
 INTROSPECTION_GIRS += GjsPrivate-1.0.gir
 

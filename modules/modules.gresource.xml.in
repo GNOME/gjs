@@ -8,6 +8,7 @@
     <file>modules/overrides/GLib.js</file>
     <file>modules/overrides/Gio.js</file>
     <file>modules/overrides/GObject.js</file>
+    @GTK_OVERRIDE@
 
     <file>modules/cairo.js</file>
     <file>modules/gettext.js</file>

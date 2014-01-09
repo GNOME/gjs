@@ -77,11 +77,16 @@ common_packages="gmodule-2.0 gthread-2.0 gio-2.0 >= glib_required_version mozjs-
 gjs_packages="gobject-introspection-1.0 libffi $common_packages"
 gjs_cairo_packages="cairo cairo-gobject $common_packages"
 gjs_gdbus_packages="gobject-2.0 >= glib_required_version gio-2.0"
+gjs_gtk_packages="gtk+-3.0"
 # gjs-tests links against everything
 gjstests_packages="$gjstests_packages $gjs_packages"
 
 PKG_CHECK_MODULES([GOBJECT], [gobject-2.0 >= glib_required_version])
 PKG_CHECK_MODULES([GJS], [$gjs_packages])
+PKG_CHECK_MODULES([GJS_GDBUS], [$gjs_gdbus_packages])
+PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
+
+# Optional cairo dep (enabled by default)
 AC_ARG_WITH(cairo,
 	    AS_HELP_STRING([--without-cairo], [Use cairo @<:@default=yes@:>@]),
 	    [], [with_cairo=yes])
@@ -92,9 +97,18 @@ AM_CONDITIONAL(ENABLE_CAIRO, test x$have_cairo = xyes)
 AS_IF([test x$have_cairo = xyes], [
   AC_DEFINE([ENABLE_CAIRO],[1],[Define if you want to build with cairo support])
 ])
-PKG_CHECK_MODULES([GJS_GDBUS], [$gjs_gdbus_packages])
 
-PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
+# Optional GTK+ dep (enabled by default)
+AC_ARG_WITH(gtk,
+            AS_HELP_STRING([--without-gtk], [Use GTK+ @<:@default=yes@:>@]),
+            [], [with_gtk=yes])
+AS_IF([test x$with_gtk = xyes], [
+  PKG_CHECK_MODULES([GJS_GTK], [$gjs_gtk_packages], have_gtk=yes, have_gtk=no)
+  ], [have_gtk=no])
+AM_CONDITIONAL(ENABLE_GTK, test x$have_gtk = xyes)
+AS_IF([test x$have_gtk = xyes], [
+  AC_DEFINE([ENABLE_GTK],[1],[Define if you want to build with GTK+ support])
+])
 
 GI_DATADIR=$($PKG_CONFIG --variable=gidatadir gobject-introspection-1.0)
 AC_SUBST(GI_DATADIR)
@@ -221,6 +235,7 @@ AC_MSG_RESULT([
 	GJS_LIBS:		${GJS_LIBS}
 
 	cairo:			${have_cairo}
+	GTK+:			${have_gtk}
 	readline:		${have_readline}
 	dtrace:			${ENABLE_DTRACE}
 	systemtap:		${ENABLE_SYSTEMTAP}
