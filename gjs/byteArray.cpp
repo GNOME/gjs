@@ -37,7 +37,6 @@ typedef struct {
 } ByteArrayInstance;
 
 extern struct JSClass gjs_byte_array_class;
-static struct JSObject* gjs_byte_array_prototype;
 GJS_DEFINE_PRIV_FROM_JS(ByteArrayInstance, gjs_byte_array_class)
 
 static JSBool byte_array_get_prop      (JSContext    *context,
@@ -536,13 +535,30 @@ to_gbytes_func(JSContext *context,
     return JS_TRUE;
 }
 
+/* Ensure that the module and class objects exists, and that in turn
+ * ensures that JS_InitClass has been called. */
+static JSObject *
+byte_array_get_prototype(JSContext *context)
+{
+    jsval retval;
+    JSObject *prototype;
+
+    if (!gjs_eval_with_scope(context, NULL,
+                             "imports.byteArray.ByteArray.prototype;", -1,
+                             "<internal>", &retval))
+        g_error ("Could not import byte array prototype\n");
+
+    return JSVAL_TO_OBJECT(retval);
+}
+
 static JSObject*
 byte_array_new(JSContext *context)
 {
     JSObject *array;
     ByteArrayInstance *priv;
 
-    array = JS_NewObject(context, &gjs_byte_array_class, gjs_byte_array_prototype, NULL);
+    array = JS_NewObject(context, &gjs_byte_array_class,
+                         byte_array_get_prototype(context), NULL);
 
     priv = g_slice_new0(ByteArrayInstance);
 
@@ -759,24 +775,6 @@ from_gbytes_func(JSContext *context,
     return ret;
 }
 
-/* Ensure that the module and class objects exists, and that in turn
- * ensures that JS_InitClass has been called, causing
- * gjs_byte_array_prototype to be valid for the later call to
- * JS_NewObject.
- */
-static void
-byte_array_ensure_initialized (JSContext *context)
-{
-    static gsize initialized = 0;
-
-    if (g_once_init_enter (&initialized)) {
-        gjs_eval_with_scope(context, NULL,
-                            "imports.byteArray.ByteArray;", 27,
-                            "<internal>", NULL);
-        g_once_init_leave (&initialized, 1);
-    }
-}
-
 JSObject *
 gjs_byte_array_from_byte_array (JSContext *context,
                                 GByteArray *array)
@@ -787,10 +785,8 @@ gjs_byte_array_from_byte_array (JSContext *context,
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(array != NULL, NULL);
 
-    byte_array_ensure_initialized (context);
-
     object = JS_NewObject(context, &gjs_byte_array_class,
-                          gjs_byte_array_prototype, NULL);
+                          byte_array_get_prototype(context), NULL);
     if (!object) {
         gjs_throw(context, "failed to create byte array");
         return NULL;
@@ -816,10 +812,8 @@ gjs_byte_array_from_bytes (JSContext *context,
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(bytes != NULL, NULL);
 
-    byte_array_ensure_initialized (context);
-
     object = JS_NewObject(context, &gjs_byte_array_class,
-                          gjs_byte_array_prototype, NULL);
+                          byte_array_get_prototype(context), NULL);
     if (!object) {
         gjs_throw(context, "failed to create byte array");
         return NULL;
@@ -916,18 +910,15 @@ gjs_define_byte_array_stuff(JSContext  *context,
 
     module = JS_NewObject (context, NULL, NULL, NULL);
 
-    gjs_byte_array_prototype = JS_InitClass(context, module,
-                             NULL,
-                             &gjs_byte_array_class,
-                             gjs_byte_array_constructor,
-                             0,
-                             &gjs_byte_array_proto_props[0],
-                             &gjs_byte_array_proto_funcs[0],
-                             NULL,
-                             NULL);
-
-    if (gjs_byte_array_prototype == NULL)
-        return JS_FALSE;
+    JS_InitClass(context, module,
+                 NULL,
+                 &gjs_byte_array_class,
+                 gjs_byte_array_constructor,
+                 0,
+                 &gjs_byte_array_proto_props[0],
+                 &gjs_byte_array_proto_funcs[0],
+                 NULL,
+                 NULL);
 
     if (!JS_DefineFunctions(context, module, &gjs_byte_array_module_funcs[0]))
         return JS_FALSE;
