@@ -44,3 +44,4 @@ jsunit
 jsunit.test
 testSystemExit.test
 modules-resources.[ch]
+modules.gresource.xml
