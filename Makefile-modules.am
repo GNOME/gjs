@@ -18,7 +18,7 @@ if ENABLE_GTK
 gtk_override = <file>modules/overrides/Gtk.js</file>
 endif
 
-modules/modules.gresource.xml: $(srcdir)/modules/modules.gresource.xml.in Makefile
+$(srcdir)/modules/modules.gresource.xml: $(srcdir)/modules/modules.gresource.xml.in Makefile
 	$(AM_V_GEN) sed -e 's|@GTK_OVERRIDE[@]|$(gtk_override)|g' $< > $@
 
 modules_resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/modules/modules.gresource.xml)
