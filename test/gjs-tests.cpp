@@ -350,6 +350,48 @@ gjstest_test_strip_shebang_return_null_for_just_shebang(void)
     g_assert(line_number == -1);
 }
 
+static void
+gjstest_test_context_pushed_on_creation(void)
+{
+    GjsContext *context = gjs_context_new();
+    g_assert(gjs_context_get_current() == context);
+    g_object_unref(context);
+}
+
+static void
+gjstest_test_context_removed_on_deletion(void)
+{
+    GjsContext *context = gjs_context_new();
+    g_object_unref(context);
+    g_assert(gjs_context_get_current() == NULL);
+}
+
+static void
+gjstest_test_all_instances_removed_on_deletion(void)
+{
+    GjsContext *context = gjs_context_new();
+    GjsContext *other = gjs_context_new();
+
+    gjs_context_push(context);
+    gjs_context_push(other);
+    gjs_context_push(context);
+    gjs_context_push(context);
+
+    g_object_unref(context);
+
+    g_assert(gjs_context_get_current() == other);
+    g_object_unref(other);
+}
+
+static void
+gjstest_test_pop_context(void)
+{
+    GjsContext *context = gjs_context_new();
+    gjs_context_pop();
+    g_assert(gjs_context_get_current() == NULL);
+    g_object_unref(context);
+}
+
 int
 main(int    argc,
      char **argv)
@@ -367,6 +409,10 @@ main(int    argc,
     g_test_add_func("/gjs/jsutil/strip_shebang/no_shebang", gjstest_test_strip_shebang_no_advance_for_no_shebang);
     g_test_add_func("/gjs/jsutil/strip_shebang/have_shebang", gjstest_test_strip_shebang_advance_for_shebang);
     g_test_add_func("/gjs/jsutil/strip_shebang/only_shebang", gjstest_test_strip_shebang_return_null_for_just_shebang);
+    g_test_add_func("/gjs/context_stack/creation", gjstest_test_context_pushed_on_creation);
+    g_test_add_func("/gjs/context_stack/removed_on_deletion", gjstest_test_context_removed_on_deletion);
+    g_test_add_func("/gjs/context_stack/all_removed_on_deletion", gjstest_test_all_instances_removed_on_deletion);
+    g_test_add_func("/gjs/context_stack/pop_context", gjstest_test_pop_context);
     g_test_add_func("/gjs/stack/dump", gjstest_test_func_gjs_stack_dump);
     g_test_add_func("/util/glib/strv/concat/null", gjstest_test_func_util_glib_strv_concat_null);
     g_test_add_func("/util/glib/strv/concat/pointers", gjstest_test_func_util_glib_strv_concat_pointers);

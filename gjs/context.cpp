@@ -101,6 +101,7 @@ enum {
 static GMutex gc_idle_lock;
 static GMutex contexts_lock;
 static GList *all_contexts = NULL;
+static GList *context_stack = NULL;
 
 
 static JSBool
@@ -277,7 +278,7 @@ gjs_printerr(JSContext *context,
 static void
 gjs_context_init(GjsContext *js_context)
 {
-    gjs_context_make_current(js_context);
+    gjs_context_push(js_context);
 }
 
 static void
@@ -409,10 +410,8 @@ gjs_context_finalize(GObject *object)
         js_context->program_name = NULL;
     }
 
-    if (gjs_context_get_current() == (GjsContext*)object)
-        gjs_context_make_current(NULL);
-
     g_mutex_lock(&contexts_lock);
+    context_stack = g_list_remove_all(context_stack, object);
     all_contexts = g_list_remove(all_contexts, object);
     g_mutex_unlock(&contexts_lock);
 
@@ -925,18 +924,41 @@ gjs_context_define_string_array(GjsContext  *js_context,
     return TRUE;
 }
 
-static GjsContext *current_context;
-
 GjsContext *
-gjs_context_get_current (void)
+gjs_context_get_current(void)
 {
+    GjsContext *current_context = NULL;
+    g_mutex_lock(&contexts_lock);
+    if (context_stack)
+        current_context = (GjsContext *) (g_list_last(context_stack))->data;
+    g_mutex_unlock(&contexts_lock);
     return current_context;
 }
 
 void
-gjs_context_make_current (GjsContext *context)
+gjs_context_push(GjsContext *context)
 {
-    g_assert (context == NULL || current_context == NULL);
+    g_mutex_lock(&contexts_lock);
+    context_stack = g_list_append(context_stack, context);
+    g_mutex_unlock(&contexts_lock);
+}
 
-    current_context = context;
+GjsContext *
+gjs_context_pop(void)
+{
+    GjsContext *last = NULL;
+    g_mutex_lock(&contexts_lock);
+    GList *last_link = g_list_last(context_stack);
+    if (last_link) {
+        last = (GjsContext *) last_link->data;
+        context_stack = g_list_remove_link(context_stack, last_link);
+    }
+    g_mutex_unlock(&contexts_lock);
+    return last;
+}
+
+void
+gjs_context_make_current(GjsContext *context)
+{
+    gjs_context_push(context);
 }
