@@ -1226,11 +1226,10 @@ gjs_eval_with_scope(JSContext    *context,
                     const char   *script,
                     gssize        script_len,
                     const char   *filename,
-                    jsval        *retval_p,
-                    GError      **error)
+                    jsval        *retval_p)
 {
     JSBool ret = JS_FALSE;
-    int start_line_number;
+    int start_line_number = 1;
     jsval retval = JSVAL_VOID;
 
     if (script_len < 0)
@@ -1263,28 +1262,17 @@ gjs_eval_with_scope(JSContext    *context,
 
     js::RootedObject rootedObj(context, object);
 
-    if (!JS::Evaluate(context, rootedObj, options, script, script_len, &retval)) {
-        gjs_debug(GJS_DEBUG_CONTEXT,
-                  "Script evaluation failed");
+    if (!JS::Evaluate(context, rootedObj, options, script, script_len, &retval))
+        goto out;
 
-        gjs_log_exception(context);
-        g_set_error(error,
-                    GJS_ERROR,
-                    GJS_ERROR_FAILED,
-                    "JS_EvaluateScript() failed");
+    if (JS_IsExceptionPending(context)) {
+        g_warning("EvaluateScript returned JS_TRUE but exception was pending; "
+                  "did somebody call gjs_throw() without returning JS_FALSE?");
         goto out;
     }
 
     gjs_debug(GJS_DEBUG_CONTEXT,
               "Script evaluation succeeded");
-
-    if (gjs_log_exception(context)) {
-        g_set_error(error,
-                    GJS_ERROR,
-                    GJS_ERROR_FAILED,
-                    "Exception was set even though JS_EvaluateScript() returned true - did you gjs_throw() but not return false somewhere perhaps?");
-        goto out;
-    }
 
     ret = JS_TRUE;
     if (retval_p)

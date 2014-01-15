@@ -765,8 +765,14 @@ gjs_context_eval(GjsContext   *js_context,
     if (!gjs_eval_with_scope(js_context->context,
                              js_context->global,
                              script, script_len, filename,
-                             &retval, error))
+                             &retval)) {
+        gjs_log_exception(js_context->context);
+        g_set_error(error,
+                    GJS_ERROR,
+                    GJS_ERROR_FAILED,
+                    "JS_EvaluateScript() failed");
         goto out;
+    }
 
     if (exit_status_p) {
         if (JSVAL_IS_INT(retval)) {

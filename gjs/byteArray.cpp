@@ -772,7 +772,7 @@ byte_array_ensure_initialized (JSContext *context)
     if (g_once_init_enter (&initialized)) {
         gjs_eval_with_scope(context, NULL,
                             "imports.byteArray.ByteArray;", 27,
-                            "<internal>", NULL, NULL);
+                            "<internal>", NULL);
         g_once_init_leave (&initialized, 1);
     }
 }

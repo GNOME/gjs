@@ -286,7 +286,7 @@ import_file(JSContext  *context,
     full_path = g_file_get_parse_name (file);
 
     if (!gjs_eval_with_scope(context, module_obj, script, script_len,
-                             full_path, NULL, NULL))
+                             full_path, NULL))
         goto out;
 
     ret = JS_TRUE;

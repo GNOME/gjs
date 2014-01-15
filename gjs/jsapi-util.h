@@ -382,8 +382,7 @@ JSBool            gjs_eval_with_scope        (JSContext    *context,
                                               const char   *script,
                                               gssize        script_len,
                                               const char   *filename,
-                                              jsval        *retval_p,
-                                              GError      **error);
+                                              jsval        *retval_p);
 
 typedef enum {
   GJS_STRING_CONSTRUCTOR,
