@@ -37,20 +37,7 @@
 
 typedef struct {
     JSContext *context;
-    jsid const_strings[GJS_STRING_LAST];
 } GjsRuntimeData;
-
-/* Keep this consistent with GjsConstString */
-static const char *const_strings[] = {
-    "constructor", "prototype", "length",
-    "imports", "__parentModule__", "__init__", "searchPath",
-    "__gjsKeepAlive", "__gjsPrivateNS",
-    "gi", "versions", "overrides",
-    "_init", "_new_internal", "new",
-    "message", "code", "stack", "fileName", "lineNumber"
-};
-
-G_STATIC_ASSERT(G_N_ELEMENTS(const_strings) == GJS_STRING_LAST);
 
 static inline GjsRuntimeData *
 get_data(JSRuntime *runtime)
@@ -73,42 +60,14 @@ gjs_runtime_get_context(JSRuntime *runtime)
     return get_data(runtime)->context;
 }
 
-jsid
-gjs_runtime_get_const_string(JSRuntime      *runtime,
-                             GjsConstString  name)
-{
-    /* Do not add prerequisite checks here, this is a very hot call! */
-
-    return get_data(runtime)->const_strings[name];
-}
-
-gboolean
-gjs_object_get_property_const(JSContext      *context,
-                              JSObject       *obj,
-                              GjsConstString  property_name,
-                              jsval          *value_p)
-{
-    jsid pname;
-
-    pname = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                         property_name);
-    return JS_GetPropertyById(context, obj,
-                              pname, value_p);
-}
-
 void
 gjs_runtime_init_for_context(JSRuntime *runtime,
                              JSContext *context)
 {
     GjsRuntimeData *data;
-    int i;
 
     data = g_new(GjsRuntimeData, 1);
-
     data->context = context;
-    for (i = 0; i < GJS_STRING_LAST; i++)
-        data->const_strings[i] = gjs_intern_string_to_id(context, const_strings[i]);
-
     JS_SetRuntimePrivate(runtime, data);
 }
 

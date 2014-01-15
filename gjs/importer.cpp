@@ -309,8 +309,7 @@ load_module_init(JSContext  *context,
     GFile *file;
 
     /* First we check if js module has already been loaded  */
-    module_init_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                    GJS_STRING_MODULE_INIT);
+    module_init_name = gjs_context_get_const_string(context, GJS_STRING_MODULE_INIT);
     if (JS_HasPropertyById(context, in_object, module_init_name, &found) && found) {
         jsval module_obj_val;
 
@@ -433,8 +432,7 @@ do_import(JSContext  *context,
     GFile *gfile;
     gboolean exists;
 
-    search_path_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                    GJS_STRING_SEARCH_PATH);
+    search_path_name = gjs_context_get_const_string(context, GJS_STRING_SEARCH_PATH);
     if (!gjs_object_require_property(context, obj, "importer", search_path_name, &search_path_val)) {
         return JS_FALSE;
     }
@@ -694,8 +692,7 @@ importer_new_enumerate(JSContext  *context,
             /* we are enumerating the prototype properties */
             return JS_TRUE;
 
-        search_path_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                        GJS_STRING_SEARCH_PATH);
+        search_path_name = gjs_context_get_const_string(context, GJS_STRING_SEARCH_PATH);
         if (!gjs_object_require_property(context, *object, "importer", search_path_name, &search_path_val))
             return JS_FALSE;
 
@@ -871,8 +868,7 @@ importer_new_resolve(JSContext *context,
 
     *objp = NULL;
 
-    module_init_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                    GJS_STRING_MODULE_INIT);
+    module_init_name = gjs_context_get_const_string(context, GJS_STRING_MODULE_INIT);
     if (*id == module_init_name)
         return JS_TRUE;
 
@@ -1160,8 +1156,7 @@ gjs_define_root_importer(JSContext   *context,
     JS_BeginRequest(context);
 
     importer = gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS);
-    imports_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                GJS_STRING_IMPORTS);
+    imports_name = gjs_context_get_const_string(context, GJS_STRING_IMPORTS);
     if (!JS_DefinePropertyById(context, in_object,
                                imports_name, importer,
                                NULL, NULL,

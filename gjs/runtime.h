@@ -53,7 +53,5 @@ void        gjs_runtime_init_for_context     (JSRuntime       *runtime,
 void        gjs_runtime_deinit               (JSRuntime       *runtime);
 
 JSContext*  gjs_runtime_get_context          (JSRuntime       *runtime);
-jsid        gjs_runtime_get_const_string     (JSRuntime       *runtime,
-                                              GjsConstString   string);
 
 #endif /* __GJS_RUNTIME_H__ */

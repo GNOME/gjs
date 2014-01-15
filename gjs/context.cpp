@@ -65,7 +65,21 @@ struct _GjsContext {
     char *program_name;
 
     char **search_path;
+
+    jsid const_strings[GJS_STRING_LAST];
 };
+
+/* Keep this consistent with GjsConstString */
+static const char *const_strings[] = {
+    "constructor", "prototype", "length",
+    "imports", "__parentModule__", "__init__", "searchPath",
+    "__gjsKeepAlive", "__gjsPrivateNS",
+    "gi", "versions", "overrides",
+    "_init", "_new_internal", "new",
+    "message", "code", "stack", "fileName", "lineNumber"
+};
+
+G_STATIC_ASSERT(G_N_ELEMENTS(const_strings) == GJS_STRING_LAST);
 
 struct _GjsContextClass {
     GObjectClass parent;
@@ -493,6 +507,7 @@ gjs_context_constructed(GObject *object)
 {
     GjsContext *js_context = GJS_CONTEXT(object);
     guint32 options_flags;
+    int i;
 
     G_OBJECT_CLASS(gjs_context_parent_class)->constructed(object);
 
@@ -507,6 +522,9 @@ gjs_context_constructed(GObject *object)
         g_error("Failed to create javascript context");
 
     gjs_runtime_init_for_context(js_context->runtime, js_context->context);
+
+    for (i = 0; i < GJS_STRING_LAST; i++)
+        js_context->const_strings[i] = gjs_intern_string_to_id(js_context->context, const_strings[i]);
 
     JS_BeginRequest(js_context->context);
 
@@ -842,4 +860,23 @@ gjs_context_make_current (GjsContext *context)
     g_assert (context == NULL || current_context == NULL);
 
     current_context = context;
+}
+
+jsid
+gjs_context_get_const_string(JSContext      *context,
+                             GjsConstString  name)
+{
+    GjsContext *gjs_context = (GjsContext *) JS_GetContextPrivate(context);
+    return gjs_context->const_strings[name];
+}
+
+gboolean
+gjs_object_get_property_const(JSContext      *context,
+                              JSObject       *obj,
+                              GjsConstString  property_name,
+                              jsval          *value_p)
+{
+    jsid pname;
+    pname = gjs_context_get_const_string(context, property_name);
+    return JS_GetPropertyById(context, obj, pname, value_p);
 }

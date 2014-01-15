@@ -363,8 +363,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
         jsid length_name;
         JSBool found_length;
 
-        length_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                   GJS_STRING_LENGTH);
+        length_name = gjs_context_get_const_string(context, GJS_STRING_LENGTH);
         if (JSVAL_IS_NULL(value)) {
             /* do nothing */
         } else if (JS_HasPropertyById(context, JSVAL_TO_OBJECT(value), length_name, &found_length) &&

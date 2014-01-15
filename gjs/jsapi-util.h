@@ -390,6 +390,8 @@ JSBool            gjs_eval_with_scope        (JSContext    *context,
                                               const char   *filename,
                                               jsval        *retval_p,
                                               GError      **error);
+jsid              gjs_context_get_const_string (JSContext       *context,
+                                                GjsConstString   string);
 
 /**
  * gjs_strip_unix_shebang:

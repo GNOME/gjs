@@ -1093,8 +1093,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
         goto out;
     }
 
-    length_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                               GJS_STRING_LENGTH);
+    length_name = gjs_context_get_const_string(context, GJS_STRING_LENGTH);
 
     if (JSVAL_IS_NULL(value)) {
         *contents = NULL;
@@ -1576,8 +1575,7 @@ gjs_value_to_g_argument(JSContext      *context,
         jsid length_name;
         JSBool found_length;
 
-        length_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                   GJS_STRING_LENGTH);
+        length_name = gjs_context_get_const_string(context, GJS_STRING_LENGTH);
 
         /* nullable_type=FALSE; while a list can be NULL in C, that
          * means empty array in JavaScript, it doesn't mean null in

@@ -1267,8 +1267,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(object_instance);
 
-    object_init_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                    GJS_STRING_GOBJECT_INIT);
+    object_init_name = gjs_context_get_const_string(context, GJS_STRING_GOBJECT_INIT);
     if (!gjs_object_require_property(context, object, "GObject instance", object_init_name, &initer))
         return JS_FALSE;
 

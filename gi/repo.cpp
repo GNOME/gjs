@@ -67,8 +67,7 @@ get_version_for_ns (JSContext *context,
     JSObject *versions;
     jsval version_val;
 
-    versions_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                 GJS_STRING_GI_VERSIONS);
+    versions_name = gjs_context_get_const_string(context, GJS_STRING_GI_VERSIONS);
     if (!gjs_object_require_property(context, repo_obj, "GI repository object", versions_name, &versions_val) ||
         !JSVAL_IS_OBJECT(versions_val)) {
         gjs_throw(context, "No 'versions' property in GI repository object");
@@ -316,8 +315,7 @@ repo_new(JSContext *context)
                         "repo constructor, obj %p priv %p", repo, priv);
 
     versions = JS_NewObject(context, NULL, NULL, global);
-    versions_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                 GJS_STRING_GI_VERSIONS);
+    versions_name = gjs_context_get_const_string(context, GJS_STRING_GI_VERSIONS);
     JS_DefinePropertyById(context, repo,
                           versions_name,
                           OBJECT_TO_JSVAL(versions),
@@ -325,8 +323,7 @@ repo_new(JSContext *context)
                           JSPROP_PERMANENT);
 
     private_ns = JS_NewObject(context, NULL, NULL, global);
-    private_ns_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                   GJS_STRING_PRIVATE_NS_MARKER);
+    private_ns_name = gjs_context_get_const_string(context, GJS_STRING_PRIVATE_NS_MARKER);
     JS_DefinePropertyById(context, repo,
                           private_ns_name,
                           OBJECT_TO_JSVAL(private_ns),
@@ -531,8 +528,7 @@ gjs_lookup_private_namespace(JSContext *context)
 {
     jsid ns_name;
 
-    ns_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                           GJS_STRING_PRIVATE_NS_MARKER);
+    ns_name = gjs_context_get_const_string(context, GJS_STRING_PRIVATE_NS_MARKER);
     return gjs_lookup_namespace_object_by_name(context, ns_name);
 }
 
@@ -573,8 +569,7 @@ lookup_override_function(JSContext  *context,
     g_assert(JSVAL_IS_OBJECT(importer));
 
     overridespkg = JSVAL_VOID;
-    overrides_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                  GJS_STRING_GI_OVERRIDES);
+    overrides_name = gjs_context_get_const_string(context, GJS_STRING_GI_OVERRIDES);
     if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(importer), "importer",
                                      overrides_name, &overridespkg) ||
         !JSVAL_IS_OBJECT(overridespkg))
@@ -585,8 +580,7 @@ lookup_override_function(JSContext  *context,
         || !JSVAL_IS_OBJECT(module))
         goto fail;
 
-    object_init_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                    GJS_STRING_GOBJECT_INIT);
+    object_init_name = gjs_context_get_const_string(context, GJS_STRING_GOBJECT_INIT);
     if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(module), "override module",
                                      object_init_name, &function) ||
         !JSVAL_IS_OBJECT(function))
@@ -617,8 +611,7 @@ gjs_lookup_namespace_object_by_name(JSContext      *context,
     g_assert(JSVAL_IS_OBJECT(importer));
 
     girepository = JSVAL_VOID;
-    gi_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                           GJS_STRING_GI_MODULE);
+    gi_name = gjs_context_get_const_string(context, GJS_STRING_GI_MODULE);
     if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(importer), "importer",
                                      gi_name, &girepository) ||
         !JSVAL_IS_OBJECT(girepository)) {

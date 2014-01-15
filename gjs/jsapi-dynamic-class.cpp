@@ -210,8 +210,7 @@ gjs_construct_object_dynamic(JSContext      *context,
 
     JS_BeginRequest(context);
 
-    constructor_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                    GJS_STRING_CONSTRUCTOR);
+    constructor_name = gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR);
     if (!gjs_object_require_property(context, proto, "prototype",
                                      constructor_name, &value))
         goto out;

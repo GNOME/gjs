@@ -337,8 +337,7 @@ boxed_invoke_constructor(JSContext   *context,
     jsval js_constructor, js_constructor_func;
     jsid constructor_const;
 
-    constructor_const = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                     GJS_STRING_CONSTRUCTOR);
+    constructor_const = gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR);
     if (!gjs_object_require_property(context, obj, NULL, constructor_const, &js_constructor))
         return JS_FALSE;
 
@@ -362,8 +361,7 @@ boxed_new(JSContext   *context,
 
         /* Short-circuit construction for GVariants by calling into the JS packing
            function */
-        constructor_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                        GJS_STRING_NEW_INTERNAL);
+        constructor_name = gjs_context_get_const_string(context, GJS_STRING_NEW_INTERNAL);
         return boxed_invoke_constructor (context, obj, constructor_name, argc, argv, rval);
     }
 
@@ -1115,8 +1113,7 @@ boxed_fill_prototype_info(JSContext *context,
                 if (priv->default_constructor < 0 &&
                     strcmp(g_base_info_get_name ((GIBaseInfo*) func_info), "new") == 0) {
                     priv->default_constructor = i;
-                    priv->default_constructor_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                                                  GJS_STRING_NEW);
+                    priv->default_constructor_name = gjs_context_get_const_string(context, GJS_STRING_NEW);
                 }
             }
 

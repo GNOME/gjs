@@ -103,10 +103,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     g_base_info_ref( (GIBaseInfo*) priv->info);
     priv->domain = proto_priv->domain;
 
-    message_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                GJS_STRING_MESSAGE);
-    code_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                             GJS_STRING_CODE);
+    message_name = gjs_context_get_const_string(context, GJS_STRING_MESSAGE);
+    code_name = gjs_context_get_const_string(context, GJS_STRING_CODE);
     if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(argv[0]),
                                      "GError constructor", message_name, &v_message))
         return JS_FALSE;
@@ -274,8 +272,7 @@ error_constructor_value_of(JSContext *context, unsigned argc, jsval *vp)
         return JS_FALSE;
     }
 
-    prototype_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                  GJS_STRING_PROTOTYPE);
+    prototype_name = gjs_context_get_const_string(context, GJS_STRING_PROTOTYPE);
     if (!gjs_object_require_property(context,
                                      JSVAL_TO_OBJECT(v_self),
                                      "constructor",
@@ -452,12 +449,9 @@ define_error_properties(JSContext *context,
                                      &lineNumber))
         return;
 
-    stack_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                              GJS_STRING_STACK);
-    filename_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                 GJS_STRING_FILENAME);
-    linenumber_name = gjs_runtime_get_const_string(JS_GetRuntime(context),
-                                                   GJS_STRING_LINE_NUMBER);
+    stack_name = gjs_context_get_const_string(context, GJS_STRING_STACK);
+    filename_name = gjs_context_get_const_string(context, GJS_STRING_FILENAME);
+    linenumber_name = gjs_context_get_const_string(context, GJS_STRING_LINE_NUMBER);
 
     JS_DefinePropertyById(context, obj, stack_name, stack,
                           NULL, NULL, JSPROP_ENUMERATE);
