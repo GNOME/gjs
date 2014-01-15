@@ -163,22 +163,6 @@ gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(void)
 }
 
 static void
-gjstest_test_func_gjs_stack_dump(void)
-{
-  GjsContext *context;
-
-  /* TODO this test could be better - maybe expose dumpstack as a JS API
-   * so that we have a JS stack to dump?  At least here we're getting some
-   * coverage.
-   */
-  context = gjs_context_new();
-
-  gjs_dumpstack();
-  g_object_unref(context);
-  gjs_dumpstack();
-}
-
-static void
 gjstest_test_func_gjs_jsapi_util_error_throw(void)
 {
     GjsUnitTestFixture fixture;
@@ -348,7 +332,6 @@ main(int    argc,
     g_test_add_func("/gjs/jsutil/strip_shebang/no_shebang", gjstest_test_strip_shebang_no_advance_for_no_shebang);
     g_test_add_func("/gjs/jsutil/strip_shebang/have_shebang", gjstest_test_strip_shebang_advance_for_shebang);
     g_test_add_func("/gjs/jsutil/strip_shebang/only_shebang", gjstest_test_strip_shebang_return_null_for_just_shebang);
-    g_test_add_func("/gjs/stack/dump", gjstest_test_func_gjs_stack_dump);
     g_test_add_func("/util/glib/strv/concat/null", gjstest_test_func_util_glib_strv_concat_null);
     g_test_add_func("/util/glib/strv/concat/pointers", gjstest_test_func_util_glib_strv_concat_pointers);
 
