@@ -379,6 +379,14 @@ gjs_context_finalize(GObject *object)
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
 
+static JSFunctionSpec global_funcs[] = {
+    { "log", JSOP_WRAPPER (gjs_log), 1, GJS_MODULE_PROP_FLAGS },
+    { "logError", JSOP_WRAPPER (gjs_log_error), 2, GJS_MODULE_PROP_FLAGS },
+    { "print", JSOP_WRAPPER (gjs_log), 0, GJS_MODULE_PROP_FLAGS },
+    { "printerr", JSOP_WRAPPER (gjs_log), 0, GJS_MODULE_PROP_FLAGS },
+    { NULL },
+};
+
 static void
 gjs_context_constructed(GObject *object)
 {
@@ -413,30 +421,8 @@ gjs_context_constructed(GObject *object)
                            JSPROP_READONLY | JSPROP_PERMANENT))
         g_error("No memory to export global object as 'window'");
 
-    /* Define a global function called log() */
-    if (!JS_DefineFunction(js_context->context, js_context->global,
-                           "log",
-                           (JSNative)gjs_log,
-                           1, GJS_MODULE_PROP_FLAGS))
-        g_error("Failed to define log function");
-
-    if (!JS_DefineFunction(js_context->context, js_context->global,
-                           "logError",
-                           (JSNative)gjs_log_error,
-                           2, GJS_MODULE_PROP_FLAGS))
-        g_error("Failed to define logError function");
-
-    /* Define global functions called print() and printerr() */
-    if (!JS_DefineFunction(js_context->context, js_context->global,
-                           "print",
-                           (JSNative)gjs_print,
-                           3, GJS_MODULE_PROP_FLAGS))
-        g_error("Failed to define print function");
-    if (!JS_DefineFunction(js_context->context, js_context->global,
-                           "printerr",
-                           (JSNative)gjs_printerr,
-                           4, GJS_MODULE_PROP_FLAGS))
-        g_error("Failed to define printerr function");
+    if (!JS_DefineFunctions(js_context->context, js_context->global, &global_funcs[0]))
+        g_error("Failed to define properties on the global object");
 
     /* We create the global-to-runtime root importer with the
      * passed-in search path. If someone else already created
