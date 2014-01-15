@@ -768,35 +768,6 @@ gjs_get_type_name(jsval value)
     }
 }
 
-jsval
-gjs_date_from_time_t (JSContext *context, time_t time)
-{
-    JSObject *date;
-    JSObject *date_constructor;
-    jsval date_prototype;
-    jsval args[1];
-    jsval result;
-
-    JS_BeginRequest(context);
-
-    if (!JS_GetClassObject(context, JS_GetGlobalObject(context), JSProto_Date,
-                           &date_constructor))
-        g_error("Failed to lookup Date prototype");
-
-    if (!JS_GetProperty(context, date_constructor, "prototype", &date_prototype))
-        g_error("Failed to get prototype from Date constructor");
-
-    if (!JS_NewNumberValue(context, ((double) time) * 1000, &(args[0])))
-        g_error("Failed to convert time_t to number");
-
-    date = JS_New(context, JSVAL_TO_OBJECT (date_prototype), 1, args);
-
-    result = OBJECT_TO_JSVAL(date);
-    JS_EndRequest(context);
-
-    return result;
-}
-
 /**
  * gjs_value_to_int64:
  * @context: the Javascript context object

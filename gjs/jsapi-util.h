@@ -343,8 +343,6 @@ JSBool      gjs_value_to_int64               (JSContext       *context,
                                               const jsval      val,
                                               gint64          *result);
 
-jsval       gjs_date_from_time_t             (JSContext *context, time_t time);
-
 JSBool      gjs_parse_args                   (JSContext  *context,
                                               const char *function_name,
                                               const char *format,
