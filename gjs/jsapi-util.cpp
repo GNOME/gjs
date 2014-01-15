@@ -1273,10 +1273,10 @@ gjs_eval_with_scope(JSContext    *context,
      */
     JS_BeginRequest(context);
 
-    if (!object)
-        object = JS_GetGlobalObject(context);
+    JSAutoCompartment ac(context, JS_GetGlobalObject(context));
 
-    JSAutoCompartment ac(context, object);
+    if (!object)
+        object = JS_NewObject(context, NULL, NULL, NULL);
 
     JS::CompileOptions options(context);
     options.setUTF8(true)

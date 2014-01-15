@@ -595,10 +595,7 @@ gjs_context_eval(GjsContext   *js_context,
 
     g_object_ref(G_OBJECT(js_context));
 
-    if (!gjs_eval_with_scope(js_context->context,
-                             js_context->global,
-                             script, script_len, filename,
-                             &retval)) {
+    if (!gjs_eval_with_scope(js_context->context, NULL, script, script_len, filename, &retval)) {
         gjs_log_exception(js_context->context);
         g_set_error(error,
                     GJS_ERROR,
@@ -611,7 +608,6 @@ gjs_context_eval(GjsContext   *js_context,
         if (JSVAL_IS_INT(retval)) {
             int code;
             if (JS_ValueToInt32(js_context->context, retval, &code)) {
-
                 gjs_debug(GJS_DEBUG_CONTEXT,
                           "Script returned integer code %d", code);
                 *exit_status_p = code;
