@@ -346,13 +346,6 @@ gjs_context_dispose(GObject *object)
 
         JS_DestroyContext(js_context->context);
         js_context->context = NULL;
-    }
-
-    if (js_context->runtime != NULL) {
-        gjs_runtime_deinit(js_context->runtime);
-
-        /* Cleans up data as well as destroying the runtime. */
-        JS_DestroyRuntime(js_context->runtime);
         js_context->runtime = NULL;
     }
 
@@ -386,122 +379,6 @@ gjs_context_finalize(GObject *object)
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
 
-/* Implementations of locale-specific operations; these are used
- * in the implementation of String.localeCompare(), Date.toLocaleDateString(),
- * and so forth. We take the straight-forward approach of converting
- * to UTF-8, using the appropriate GLib functions, and converting
- * back if necessary.
- */
-static JSBool
-gjs_locale_to_upper_case (JSContext *context,
-                          JS::HandleString src,
-                          JS::MutableHandleValue retval)
-{
-    JSBool success = JS_FALSE;
-    char *utf8 = NULL;
-    char *upper_case_utf8 = NULL;
-
-    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(src), &utf8))
-        goto out;
-
-    upper_case_utf8 = g_utf8_strup (utf8, -1);
-
-    if (!gjs_string_from_utf8(context, upper_case_utf8, -1, retval.address()))
-        goto out;
-
-    success = JS_TRUE;
-
-out:
-    g_free(utf8);
-    g_free(upper_case_utf8);
-
-    return success;
-}
-
-static JSBool
-gjs_locale_to_lower_case (JSContext *context,
-                          JS::HandleString src,
-                          JS::MutableHandleValue retval)
-{
-    JSBool success = JS_FALSE;
-    char *utf8 = NULL;
-    char *lower_case_utf8 = NULL;
-
-    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(src), &utf8))
-        goto out;
-
-    lower_case_utf8 = g_utf8_strdown (utf8, -1);
-
-    if (!gjs_string_from_utf8(context, lower_case_utf8, -1, retval.address()))
-        goto out;
-
-    success = JS_TRUE;
-
-out:
-    g_free(utf8);
-    g_free(lower_case_utf8);
-
-    return success;
-}
-
-static JSBool
-gjs_locale_compare (JSContext *context,
-                    JS::HandleString src_1,
-                    JS::HandleString src_2,
-                    JS::MutableHandleValue retval)
-{
-    JSBool success = JS_FALSE;
-    char *utf8_1 = NULL, *utf8_2 = NULL;
-    int result;
-
-    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(src_1), &utf8_1) ||
-        !gjs_string_to_utf8(context, STRING_TO_JSVAL(src_2), &utf8_2))
-        goto out;
-
-    result = g_utf8_collate (utf8_1, utf8_2);
-    retval.set(INT_TO_JSVAL(result));
-
-    success = JS_TRUE;
-
-out:
-    g_free(utf8_1);
-    g_free(utf8_2);
-
-    return success;
-}
-
-static JSBool
-gjs_locale_to_unicode (JSContext  *context,
-                       const char *src,
-                       JS::MutableHandleValue retval)
-{
-    JSBool success;
-    char *utf8;
-    GError *error = NULL;
-
-    utf8 = g_locale_to_utf8(src, -1, NULL, NULL, &error);
-    if (!utf8) {
-        gjs_throw(context,
-                  "Failed to convert locale string to UTF8: %s",
-                  error->message);
-        g_error_free(error);
-        return JS_FALSE;
-    }
-
-    success = gjs_string_from_utf8(context, utf8, -1, retval.address());
-    g_free (utf8);
-
-    return success;
-}
-
-static JSLocaleCallbacks gjs_locale_callbacks =
-{
-    gjs_locale_to_upper_case,
-    gjs_locale_to_lower_case,
-    gjs_locale_compare,
-    gjs_locale_to_unicode
-};
-
 static void
 gjs_context_constructed(GObject *object)
 {
@@ -511,17 +388,11 @@ gjs_context_constructed(GObject *object)
 
     G_OBJECT_CLASS(gjs_context_parent_class)->constructed(object);
 
-    js_context->runtime = JS_NewRuntime(32*1024*1024 /* max bytes */, JS_USE_HELPER_THREADS);
-    JS_SetNativeStackQuota(js_context->runtime, 1024*1024);
-    if (js_context->runtime == NULL)
-        g_error("Failed to create javascript runtime");
-    JS_SetGCParameter(js_context->runtime, JSGC_MAX_BYTES, 0xffffffff);
+    js_context->runtime = gjs_runtime_for_current_thread();
 
     js_context->context = JS_NewContext(js_context->runtime, 8192 /* stack chunk size */);
     if (js_context->context == NULL)
         g_error("Failed to create javascript context");
-
-    gjs_runtime_init_for_context(js_context->runtime, js_context->context);
 
     for (i = 0; i < GJS_STRING_LAST; i++)
         js_context->const_strings[i] = gjs_intern_string_to_id(js_context->context, const_strings[i]);
@@ -543,8 +414,6 @@ gjs_context_constructed(GObject *object)
 
     JS_SetOptions(js_context->context,
                   JS_GetOptions(js_context->context) | options_flags);
-
-    JS_SetLocaleCallbacks(js_context->runtime, &gjs_locale_callbacks);
 
     JS_SetErrorReporter(js_context->context, gjs_error_reporter);
 

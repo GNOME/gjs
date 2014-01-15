@@ -24,8 +24,6 @@
 #ifndef __GJS_RUNTIME_H__
 #define __GJS_RUNTIME_H__
 
-void        gjs_runtime_init_for_context     (JSRuntime       *runtime,
-                                              JSContext       *context);
-void        gjs_runtime_deinit               (JSRuntime       *runtime);
+JSRuntime * gjs_runtime_for_current_thread (void);
 
 #endif /* __GJS_RUNTIME_H__ */
