@@ -382,8 +382,8 @@ gjs_context_finalize(GObject *object)
 static JSFunctionSpec global_funcs[] = {
     { "log", JSOP_WRAPPER (gjs_log), 1, GJS_MODULE_PROP_FLAGS },
     { "logError", JSOP_WRAPPER (gjs_log_error), 2, GJS_MODULE_PROP_FLAGS },
-    { "print", JSOP_WRAPPER (gjs_log), 0, GJS_MODULE_PROP_FLAGS },
-    { "printerr", JSOP_WRAPPER (gjs_log), 0, GJS_MODULE_PROP_FLAGS },
+    { "print", JSOP_WRAPPER (gjs_print), 0, GJS_MODULE_PROP_FLAGS },
+    { "printerr", JSOP_WRAPPER (gjs_printerr), 0, GJS_MODULE_PROP_FLAGS },
     { NULL },
 };
 
