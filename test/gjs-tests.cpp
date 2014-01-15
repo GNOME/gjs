@@ -87,23 +87,6 @@ gjstest_test_func_gjs_context_construct_eval(void)
     g_object_unref (context);
 }
 
-static void
-gjstest_test_func_gjs_context_fixture(void)
-{
-    GjsUnitTestFixture fixture;
-    JSContext *context;
-    JSObject *global;
-
-    _gjs_unit_test_fixture_begin(&fixture);
-    context = fixture.context;
-
-    global = JS_GetGlobalObject(context);
-    JSCompartment *oldCompartment = JS_EnterCompartment(context, global);
-
-    JS_LeaveCompartment(context, oldCompartment);
-    _gjs_unit_test_fixture_finish(&fixture);
-}
-
 #define N_ELEMS 15
 
 static void
@@ -357,7 +340,6 @@ main(int    argc,
 
     g_test_add_func("/gjs/context/construct/destroy", gjstest_test_func_gjs_context_construct_destroy);
     g_test_add_func("/gjs/context/construct/eval", gjstest_test_func_gjs_context_construct_eval);
-    g_test_add_func("/gjs/context/fixture", gjstest_test_func_gjs_context_fixture);
     g_test_add_func("/gjs/jsapi/util/array", gjstest_test_func_gjs_jsapi_util_array);
     g_test_add_func("/gjs/jsapi/util/error/throw", gjstest_test_func_gjs_jsapi_util_error_throw);
     g_test_add_func("/gjs/jsapi/util/string/js/string/utf8", gjstest_test_func_gjs_jsapi_util_string_js_string_utf8);
