@@ -475,7 +475,8 @@ function testTortureSignature1Success() {
 
 function testTortureSignature2() {
     let [y, z, q] = Everything.test_torture_signature_2(42, function () {
-        }, 'foo', 7);
+        return 0;
+    }, 'foo', 7);
     JSUnit.assertEquals(Math.floor(y), 42);
     JSUnit.assertEquals(z, 84);
     JSUnit.assertEquals(q, 10);
