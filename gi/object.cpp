@@ -1365,19 +1365,10 @@ object_instance_finalize(JSFreeOp  *fop,
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
                             "Removing from keep alive");
 
-        /* We're in a finalizer while the runtime is about to be
-         * destroyed. This is not the safest time to be calling back
-         * into jsapi, but we have to do this or the keep alive could
-         * be finalized later and call gobj_no_longer_kept_alive_func.
-         */
-        {
-            JSContext *context = JS_NewContext(fop->runtime(), 8192);
-            gjs_keep_alive_remove_child(priv->keep_alive,
-                                        gobj_no_longer_kept_alive_func,
-                                        obj,
-                                        priv);
-            JS_DestroyContext(context);
-        }
+        gjs_keep_alive_remove_child(priv->keep_alive,
+                                    gobj_no_longer_kept_alive_func,
+                                    obj,
+                                    priv);
     }
 
     if (priv->info) {
