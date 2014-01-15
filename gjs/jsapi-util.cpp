@@ -125,6 +125,9 @@ gjs_init_context_standard (JSContext *context)
     if (!JS_InitReflect(context, global))
         return FALSE;
 
+    if (!JS_DefineDebuggerObject(context, global))
+        return FALSE;
+
     return TRUE;
 }
 
