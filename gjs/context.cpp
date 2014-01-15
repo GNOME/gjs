@@ -593,6 +593,8 @@ gjs_context_eval(GjsContext   *js_context,
     gboolean ret = FALSE;
     jsval retval;
 
+    JSAutoCompartment ac(js_context->context, js_context->global);
+
     g_object_ref(G_OBJECT(js_context));
 
     if (!gjs_eval_with_scope(js_context->context, NULL, script, script_len, filename, &retval)) {
