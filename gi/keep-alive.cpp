@@ -27,7 +27,6 @@
 
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
-#include <gjs/runtime.h>
 
 #include <util/log.h>
 #include <util/glib.h>

@@ -24,30 +24,6 @@
 #ifndef __GJS_RUNTIME_H__
 #define __GJS_RUNTIME_H__
 
-typedef enum {
-  GJS_STRING_CONSTRUCTOR,
-  GJS_STRING_PROTOTYPE,
-  GJS_STRING_LENGTH,
-  GJS_STRING_IMPORTS,
-  GJS_STRING_PARENT_MODULE,
-  GJS_STRING_MODULE_INIT,
-  GJS_STRING_SEARCH_PATH,
-  GJS_STRING_KEEP_ALIVE_MARKER,
-  GJS_STRING_PRIVATE_NS_MARKER,
-  GJS_STRING_GI_MODULE,
-  GJS_STRING_GI_VERSIONS,
-  GJS_STRING_GI_OVERRIDES,
-  GJS_STRING_GOBJECT_INIT,
-  GJS_STRING_NEW_INTERNAL,
-  GJS_STRING_NEW,
-  GJS_STRING_MESSAGE,
-  GJS_STRING_CODE,
-  GJS_STRING_STACK,
-  GJS_STRING_FILENAME,
-  GJS_STRING_LINE_NUMBER,
-  GJS_STRING_LAST
-} GjsConstString;
-
 void        gjs_runtime_init_for_context     (JSRuntime       *runtime,
                                               JSContext       *context);
 void        gjs_runtime_deinit               (JSRuntime       *runtime);

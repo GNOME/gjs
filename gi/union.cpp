@@ -33,7 +33,6 @@
 #include "object.h"
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
-#include <gjs/runtime.h>
 #include "repo.h"
 #include "proxyutils.h"
 #include "function.h"

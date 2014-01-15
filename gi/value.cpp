@@ -37,7 +37,6 @@
 #include "gerror.h"
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
-#include <gjs/runtime.h>
 
 #include <girepository.h>
 

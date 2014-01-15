@@ -27,7 +27,6 @@
 
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
-#include <gjs/runtime.h>
 #include "boxed.h"
 #include "enumeration.h"
 #include "repo.h"

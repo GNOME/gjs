@@ -29,7 +29,6 @@
 #include <gjs/gjs-module.h>
 #include <gjs/importer.h>
 #include <gjs/compat.h>
-#include <gjs/runtime.h>
 
 #include <gio/gio.h>
 

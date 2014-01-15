@@ -32,7 +32,6 @@
 #include "jsapi-util.h"
 #include "compat.h"
 #include "jsapi-private.h"
-#include "runtime.h"
 #include <gi/boxed.h>
 
 #include <string.h>

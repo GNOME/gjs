@@ -201,12 +201,6 @@ gboolean    gjs_object_require_property      (JSContext       *context,
                                               const char      *obj_description,
                                               jsid             property_name,
                                               jsval           *value_p);
-/* This one is defined in runtime.c, so the compiler can optimize the call
-   to get_const_string() it uses. */
-gboolean    gjs_object_get_property_const    (JSContext       *context,
-                                              JSObject        *obj,
-                                              GjsConstString   property_name,
-                                              jsval           *value_p);
 
 JSObject   *gjs_new_object_for_constructor   (JSContext       *context,
                                               JSClass         *clasp,
@@ -390,8 +384,37 @@ JSBool            gjs_eval_with_scope        (JSContext    *context,
                                               const char   *filename,
                                               jsval        *retval_p,
                                               GError      **error);
-jsid              gjs_context_get_const_string (JSContext       *context,
-                                                GjsConstString   string);
+
+typedef enum {
+  GJS_STRING_CONSTRUCTOR,
+  GJS_STRING_PROTOTYPE,
+  GJS_STRING_LENGTH,
+  GJS_STRING_IMPORTS,
+  GJS_STRING_PARENT_MODULE,
+  GJS_STRING_MODULE_INIT,
+  GJS_STRING_SEARCH_PATH,
+  GJS_STRING_KEEP_ALIVE_MARKER,
+  GJS_STRING_PRIVATE_NS_MARKER,
+  GJS_STRING_GI_MODULE,
+  GJS_STRING_GI_VERSIONS,
+  GJS_STRING_GI_OVERRIDES,
+  GJS_STRING_GOBJECT_INIT,
+  GJS_STRING_NEW_INTERNAL,
+  GJS_STRING_NEW,
+  GJS_STRING_MESSAGE,
+  GJS_STRING_CODE,
+  GJS_STRING_STACK,
+  GJS_STRING_FILENAME,
+  GJS_STRING_LINE_NUMBER,
+  GJS_STRING_LAST
+} GjsConstString;
+
+jsid              gjs_context_get_const_string  (JSContext       *context,
+                                                 GjsConstString   string);
+gboolean          gjs_object_get_property_const (JSContext       *context,
+                                                 JSObject        *obj,
+                                                 GjsConstString   property_name,
+                                                 jsval           *value_p);
 
 const char * gjs_strip_unix_shebang(const char *script,
                                     gssize     *script_len,

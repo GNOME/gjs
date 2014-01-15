@@ -30,7 +30,6 @@
 #include "native.h"
 #include "compat.h"
 #include "jsapi-util.h"
-#include "runtime.h"
 
 static GHashTable *modules = NULL;
 

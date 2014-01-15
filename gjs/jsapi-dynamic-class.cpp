@@ -31,7 +31,6 @@
 #include "jsapi-util.h"
 #include "compat.h"
 #include "jsapi-private.h"
-#include "runtime.h"
 
 #include <string.h>
 #include <math.h>
