@@ -858,7 +858,7 @@ handle_toggle_down(JSContext *context,
      */
     if (priv->keep_alive != NULL) {
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Removing object from keep alive");
-        gjs_keep_alive_remove_child(context, priv->keep_alive,
+        gjs_keep_alive_remove_child(priv->keep_alive,
                                     gobj_no_longer_kept_alive_func,
                                     obj,
                                     priv);
@@ -906,7 +906,7 @@ handle_toggle_up(JSContext *context,
     if (priv->keep_alive == NULL) {
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Adding object to keep alive");
         priv->keep_alive = gjs_keep_alive_get_global(context);
-        gjs_keep_alive_add_child(context, priv->keep_alive,
+        gjs_keep_alive_add_child(priv->keep_alive,
                                  gobj_no_longer_kept_alive_func,
                                  obj,
                                  priv);
@@ -1154,8 +1154,7 @@ associate_js_gobject (JSContext      *context,
      * wrappee).
      */
     priv->keep_alive = gjs_keep_alive_get_global(context);
-    gjs_keep_alive_add_child(context,
-                             priv->keep_alive,
+    gjs_keep_alive_add_child(priv->keep_alive,
                              gobj_no_longer_kept_alive_func,
                              object,
                              priv);
@@ -1374,7 +1373,7 @@ object_instance_finalize(JSFreeOp  *fop,
          */
         {
             JSContext *context = JS_NewContext(fop->runtime(), 8192);
-            gjs_keep_alive_remove_child(context, priv->keep_alive,
+            gjs_keep_alive_remove_child(priv->keep_alive,
                                         gobj_no_longer_kept_alive_func,
                                         obj,
                                         priv);

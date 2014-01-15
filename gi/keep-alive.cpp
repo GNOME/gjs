@@ -263,9 +263,8 @@ gjs_keep_alive_new(JSContext *context)
 }
 
 void
-gjs_keep_alive_add_child(JSContext         *context,
-                         JSObject          *keep_alive,
-                         GjsUnrootedFunc  notify,
+gjs_keep_alive_add_child(JSObject          *keep_alive,
+                         GjsUnrootedFunc    notify,
                          JSObject          *obj,
                          void              *data)
 {
@@ -273,11 +272,7 @@ gjs_keep_alive_add_child(JSContext         *context,
     Child *child;
 
     g_assert(keep_alive != NULL);
-
-    JS_BeginRequest(context);
-    priv = priv_from_js(context, keep_alive);
-    JS_EndRequest(context);
-
+    priv = (KeepAlive *) JS_GetPrivate(keep_alive);
     g_assert(priv != NULL);
 
     g_return_if_fail(!priv->inside_trace);
@@ -298,19 +293,16 @@ gjs_keep_alive_add_child(JSContext         *context,
 }
 
 void
-gjs_keep_alive_remove_child(JSContext         *context,
-                            JSObject          *keep_alive,
-                            GjsUnrootedFunc  notify,
+gjs_keep_alive_remove_child(JSObject          *keep_alive,
+                            GjsUnrootedFunc    notify,
                             JSObject          *obj,
                             void              *data)
 {
     KeepAlive *priv;
     Child child;
 
-    JS_BeginRequest(context);
-    priv = priv_from_js(context, keep_alive);
-    JS_EndRequest(context);
-
+    g_assert(keep_alive != NULL);
+    priv = (KeepAlive *) JS_GetPrivate(keep_alive);
     g_assert(priv != NULL);
 
     g_return_if_fail(!priv->inside_trace);
@@ -320,8 +312,7 @@ gjs_keep_alive_remove_child(JSContext         *context,
     child.child = obj;
     child.data = data;
 
-    g_hash_table_remove(priv->children,
-                        &child);
+    g_hash_table_remove(priv->children, &child);
 }
 
 static JSObject*
@@ -366,9 +357,7 @@ gjs_keep_alive_add_global_child(JSContext         *context,
 
     keep_alive = gjs_keep_alive_get_global(context);
 
-    gjs_keep_alive_add_child(context,
-                             keep_alive,
-                             notify, child, data);
+    gjs_keep_alive_add_child(keep_alive, notify, child, data);
 
     JS_EndRequest(context);
 }
@@ -389,9 +378,7 @@ gjs_keep_alive_remove_global_child(JSContext         *context,
         g_error("no keep_alive property on the global object, have you "
                 "previously added this child?");
 
-    gjs_keep_alive_remove_child(context,
-                                gjs_keep_alive_get_global(context),
-                                notify, child, data);
+    gjs_keep_alive_remove_child(keep_alive, notify, child, data);
 
     JS_EndRequest(context);
 }
