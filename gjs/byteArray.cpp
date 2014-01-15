@@ -543,10 +543,14 @@ byte_array_get_prototype(JSContext *context)
     jsval retval;
     JSObject *prototype;
 
-    if (!gjs_eval_with_scope(context, NULL,
-                             "imports.byteArray.ByteArray.prototype;", -1,
-                             "<internal>", &retval))
-        g_error ("Could not import byte array prototype\n");
+    retval = gjs_get_global_slot (context, GJS_GLOBAL_SLOT_BYTE_ARRAY_PROTOTYPE);
+
+    if (!JSVAL_IS_OBJECT (retval)) {
+        if (!gjs_eval_with_scope(context, NULL,
+                                 "imports.byteArray.ByteArray.prototype;", -1,
+                                 "<internal>", &retval))
+            g_error ("Could not import byte array prototype\n");
+    }
 
     return JSVAL_TO_OBJECT(retval);
 }
@@ -907,21 +911,26 @@ gjs_define_byte_array_stuff(JSContext  *context,
                             JSObject  **module_out)
 {
     JSObject *module;
+    JSObject *prototype;
 
     module = JS_NewObject (context, NULL, NULL, NULL);
 
-    JS_InitClass(context, module,
-                 NULL,
-                 &gjs_byte_array_class,
-                 gjs_byte_array_constructor,
-                 0,
-                 &gjs_byte_array_proto_props[0],
-                 &gjs_byte_array_proto_funcs[0],
-                 NULL,
-                 NULL);
+    prototype = JS_InitClass(context, module,
+                             NULL,
+                             &gjs_byte_array_class,
+                             gjs_byte_array_constructor,
+                             0,
+                             &gjs_byte_array_proto_props[0],
+                             &gjs_byte_array_proto_funcs[0],
+                             NULL,
+                             NULL);
 
     if (!JS_DefineFunctions(context, module, &gjs_byte_array_module_funcs[0]))
         return JS_FALSE;
+
+    g_assert(JSVAL_IS_VOID(gjs_get_global_slot(context, GJS_GLOBAL_SLOT_BYTE_ARRAY_PROTOTYPE)));
+    gjs_set_global_slot(context, GJS_GLOBAL_SLOT_BYTE_ARRAY_PROTOTYPE,
+                        OBJECT_TO_JSVAL(prototype));
 
     *module_out = module;
     return JS_TRUE;
