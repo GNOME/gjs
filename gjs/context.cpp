@@ -56,9 +56,6 @@ static void     gjs_context_set_property      (GObject               *object,
                                                   guint                  prop_id,
                                                   const GValue          *value,
                                                   GParamSpec            *pspec);
-static void gjs_on_context_gc (JSRuntime *rt,
-                               JSGCStatus status);
-
 struct _GjsContext {
     GObject parent;
 
@@ -71,10 +68,6 @@ struct _GjsContext {
     char *program_name;
 
     char **search_path;
-
-    guint idle_emit_gc_id;
-
-    guint gc_notifications_enabled : 1;
 };
 
 struct _GjsContextClass {
@@ -84,24 +77,13 @@ struct _GjsContextClass {
 G_DEFINE_TYPE(GjsContext, gjs_context, G_TYPE_OBJECT);
 
 enum {
-    SIGNAL_GC,
-    LAST_SIGNAL
-};
-
-static int signals[LAST_SIGNAL];
-
-enum {
     PROP_0,
     PROP_SEARCH_PATH,
-    PROP_GC_NOTIFICATIONS,
     PROP_PROGRAM_NAME,
 };
 
-
-static GMutex gc_idle_lock;
 static GMutex contexts_lock;
 static GList *all_contexts = NULL;
-
 
 static JSBool
 gjs_log(JSContext *context,
@@ -303,16 +285,6 @@ gjs_context_class_init(GjsContextClass *klass)
                                     PROP_SEARCH_PATH,
                                     pspec);
 
-    pspec = g_param_spec_boolean("gc-notifications",
-                                 "",
-                                 "Whether or not to emit the \"gc\" signal",
-                                 FALSE,
-                                 (GParamFlags) (G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
-
-    g_object_class_install_property(object_class,
-                                    PROP_GC_NOTIFICATIONS,
-                                    pspec);
-
     pspec = g_param_spec_string("program-name",
                                 "Program Name",
                                 "The filename of the launched JS program",
@@ -322,12 +294,6 @@ gjs_context_class_init(GjsContextClass *klass)
     g_object_class_install_property(object_class,
                                     PROP_PROGRAM_NAME,
                                     pspec);
-
-    signals[SIGNAL_GC] = g_signal_new("gc", G_TYPE_FROM_CLASS(klass),
-                                      G_SIGNAL_RUN_LAST, 0,
-                                      NULL, NULL,
-                                      NULL,
-                                      G_TYPE_NONE, 0);
 
     /* For GjsPrivate */
     {
@@ -393,11 +359,6 @@ gjs_context_finalize(GObject *object)
     GjsContext *js_context;
 
     js_context = GJS_CONTEXT(object);
-
-    if (js_context->idle_emit_gc_id > 0) {
-        g_source_remove (js_context->idle_emit_gc_id);
-        js_context->idle_emit_gc_id = 0;
-    }
 
     if (js_context->search_path != NULL) {
         g_strfreev(js_context->search_path);
@@ -640,8 +601,6 @@ gjs_context_constructed(GObject *object)
 
     js_context->profiler = gjs_profiler_new(js_context->runtime);
 
-    JS_SetGCCallback(js_context->runtime, gjs_on_context_gc);
-
     JS_EndRequest(js_context->context);
 
     g_mutex_lock (&contexts_lock);
@@ -660,9 +619,6 @@ gjs_context_get_property (GObject     *object,
     js_context = GJS_CONTEXT (object);
 
     switch (prop_id) {
-    case PROP_GC_NOTIFICATIONS:
-        g_value_set_boolean(value, js_context->gc_notifications_enabled);
-        break;
     case PROP_PROGRAM_NAME:
         g_value_set_string(value, js_context->program_name);
         break;
@@ -685,9 +641,6 @@ gjs_context_set_property (GObject      *object,
     switch (prop_id) {
     case PROP_SEARCH_PATH:
         js_context->search_path = (char**) g_value_dup_boxed(value);
-        break;
-    case PROP_GC_NOTIFICATIONS:
-        js_context->gc_notifications_enabled = g_value_get_boolean(value);
         break;
     case PROP_PROGRAM_NAME:
         js_context->program_name = g_value_dup_string(value);
@@ -751,46 +704,6 @@ void
 gjs_context_gc (GjsContext  *context)
 {
     JS_GC(context->runtime);
-}
-
-static gboolean
-gjs_context_idle_emit_gc (gpointer data)
-{
-    GjsContext *gjs_context = (GjsContext*) data;
-
-    g_mutex_lock(&gc_idle_lock);
-    gjs_context->idle_emit_gc_id = 0;
-    g_mutex_unlock(&gc_idle_lock);
-
-    g_signal_emit (gjs_context, signals[SIGNAL_GC], 0);
-    
-    return FALSE;
-}
-
-static void
-gjs_on_context_gc (JSRuntime *rt,
-                   JSGCStatus status)
-{
-    JSContext *context = gjs_runtime_get_context(rt);
-    GjsContext *gjs_context = (GjsContext*) JS_GetContextPrivate(context);
-
-    switch (status) {
-        case JSGC_BEGIN:
-            gjs_enter_gc();
-            break;
-        case JSGC_END:
-            gjs_leave_gc();
-            if (gjs_context->gc_notifications_enabled) {
-                g_mutex_lock(&gc_idle_lock);
-                if (gjs_context->idle_emit_gc_id == 0)
-                    gjs_context->idle_emit_gc_id = g_idle_add (gjs_context_idle_emit_gc, gjs_context);
-                g_mutex_unlock(&gc_idle_lock);
-            }
-        break;
-
-        default:
-        break;
-    }
 }
 
 /**
