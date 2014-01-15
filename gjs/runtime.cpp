@@ -45,21 +45,6 @@ get_data(JSRuntime *runtime)
     return (GjsRuntimeData*) JS_GetRuntimePrivate(runtime);
 }
 
-/**
- * gjs_runtime_get_context:
- * @runtime: a #JSRuntime
- *
- * Gets the context associated with this runtime.
- *
- * Return value: the context, or %NULL if GJS hasn't been initialized
- * for the runtime or is being shut down.
- */
-JSContext *
-gjs_runtime_get_context(JSRuntime *runtime)
-{
-    return get_data(runtime)->context;
-}
-
 void
 gjs_runtime_init_for_context(JSRuntime *runtime,
                              JSContext *context)

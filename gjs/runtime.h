@@ -28,6 +28,4 @@ void        gjs_runtime_init_for_context     (JSRuntime       *runtime,
                                               JSContext       *context);
 void        gjs_runtime_deinit               (JSRuntime       *runtime);
 
-JSContext*  gjs_runtime_get_context          (JSRuntime       *runtime);
-
 #endif /* __GJS_RUNTIME_H__ */

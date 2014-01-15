@@ -75,7 +75,6 @@ typedef enum
 
 typedef struct
 {
-    JSContext       *context;
     GObject         *gobj;
     ToggleDirection  direction;
     guint            needs_unref : 1;
@@ -838,15 +837,14 @@ cancel_toggle_idle(GObject         *gobj,
 }
 
 static void
-handle_toggle_down(JSContext *context,
-                   GObject   *gobj)
+handle_toggle_down(GObject *gobj)
 {
     ObjectInstance *priv;
     JSObject *obj;
 
     obj = peek_js_obj(gobj);
 
-    priv = priv_from_js(context, obj);
+    priv = (ObjectInstance *) JS_GetPrivate(obj);
 
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
                         "Toggle notify gobj %p obj %p is_last_ref TRUE keep-alive %p",
@@ -866,8 +864,7 @@ handle_toggle_down(JSContext *context,
 }
 
 static void
-handle_toggle_up(JSContext *context,
-                 GObject   *gobj,
+handle_toggle_up(GObject   *gobj,
                  gboolean   gc_already_blocked)
 {
     ObjectInstance *priv;
@@ -893,7 +890,7 @@ handle_toggle_up(JSContext *context,
         goto out;
     }
 
-    priv = priv_from_js(context, obj);
+    priv = (ObjectInstance *) JS_GetPrivate(obj);
 
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
                         "Toggle notify gobj %p obj %p is_last_ref FALSEd keep-alive %p",
@@ -903,8 +900,11 @@ handle_toggle_up(JSContext *context,
      * in case the wrapper has data in it that the app cares about
      */
     if (priv->keep_alive == NULL) {
+        /* FIXME: thread the context through somehow. Maybe by looking up
+         * the compartment that obj belongs to. */
+        GjsContext *context = gjs_context_get_current();
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Adding object to keep alive");
-        priv->keep_alive = gjs_keep_alive_get_global(context);
+        priv->keep_alive = gjs_keep_alive_get_global((JSContext*) gjs_context_get_native_context(context));
         gjs_keep_alive_add_child(priv->keep_alive,
                                  gobj_no_longer_kept_alive_func,
                                  obj,
@@ -928,10 +928,10 @@ idle_handle_toggle(gpointer data)
 
     switch (operation->direction) {
         case TOGGLE_UP:
-            handle_toggle_up(operation->context, operation->gobj, FALSE);
+            handle_toggle_up(operation->gobj, FALSE);
             break;
         case TOGGLE_DOWN:
-            handle_toggle_down(operation->context, operation->gobj);
+            handle_toggle_down(operation->gobj);
             break;
         default:
             g_assert_not_reached();
@@ -952,7 +952,6 @@ toggle_ref_notify_operation_free(ToggleRefNotifyOperation *operation)
 
 static void
 queue_toggle_idle(GObject         *gobj,
-                  JSContext       *context,
                   ToggleDirection  direction)
 {
     ToggleRefNotifyOperation *operation;
@@ -960,7 +959,6 @@ queue_toggle_idle(GObject         *gobj,
     GSource *source;
 
     operation = g_slice_new0(ToggleRefNotifyOperation);
-    operation->context = context;
     operation->direction = direction;
 
     switch (direction) {
@@ -1010,22 +1008,8 @@ wrapped_gobj_toggle_notify(gpointer      data,
                            GObject      *gobj,
                            gboolean      is_last_ref)
 {
-    JSRuntime *runtime;
-    JSContext *context;
     gboolean gc_blocked = FALSE;
     gboolean toggle_up_queued, toggle_down_queued;
-
-    runtime = (JSRuntime*) data;
-
-    /* During teardown, this can return NULL if runtime is being destroyed.
-     * In that case we effectively already converted to a weak ref without
-     * doing anything since the keep alive will be collected.
-     * Or if !is_last_ref, we do not want to convert to a strong
-     * ref since we want everything collected on runtime destroy.
-     */
-    context = gjs_runtime_get_context(runtime);
-    if (!context)
-        return;
 
     /* We only want to touch javascript from one thread.
      * If we're not in that thread, then we need to defer processing
@@ -1055,9 +1039,9 @@ wrapped_gobj_toggle_notify(gpointer      data,
                         toggle_up_queued? "up" : "down");
             }
 
-            handle_toggle_down(context, gobj);
+            handle_toggle_down(gobj);
         } else {
-            queue_toggle_idle(gobj, context, TOGGLE_DOWN);
+            queue_toggle_idle(gobj, TOGGLE_DOWN);
         }
     } else {
         /* We've transitioned from 1 -> 2 references.
@@ -1071,9 +1055,9 @@ wrapped_gobj_toggle_notify(gpointer      data,
                         G_OBJECT_TYPE_NAME(gobj));
             }
 
-            handle_toggle_up(context, gobj, gc_blocked);
+            handle_toggle_up(gobj, gc_blocked);
         } else {
-            queue_toggle_idle(gobj, context, TOGGLE_UP);
+            queue_toggle_idle(gobj, TOGGLE_UP);
         }
     }
 
@@ -1158,9 +1142,7 @@ associate_js_gobject (JSContext      *context,
                              object,
                              priv);
 
-    g_object_add_toggle_ref(gobj,
-                            wrapped_gobj_toggle_notify,
-                            JS_GetRuntime(context));
+    g_object_add_toggle_ref(gobj, wrapped_gobj_toggle_notify, NULL);
 }
 
 static JSBool
@@ -1349,8 +1331,7 @@ object_instance_finalize(JSFreeOp  *fop,
         }
 
         set_js_obj(priv->gobj, NULL);
-        g_object_remove_toggle_ref(priv->gobj, wrapped_gobj_toggle_notify,
-                                   fop->runtime());
+        g_object_remove_toggle_ref(priv->gobj, wrapped_gobj_toggle_notify, NULL);
         priv->gobj = NULL;
     }
 
