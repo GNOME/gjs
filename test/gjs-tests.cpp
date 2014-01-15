@@ -31,9 +31,7 @@
 typedef struct _GjsUnitTestFixture GjsUnitTestFixture;
 
 struct _GjsUnitTestFixture {
-    JSRuntime *runtime;
     JSContext *context;
-
     GjsContext *gjs_context;
 };
 
@@ -50,7 +48,6 @@ _gjs_unit_test_fixture_begin (GjsUnitTestFixture *fixture)
 {
     fixture->gjs_context = gjs_context_new ();
     fixture->context = (JSContext *) gjs_context_get_native_context (fixture->gjs_context);
-    fixture->runtime = JS_GetRuntime(fixture->context);
     JS_BeginRequest(fixture->context);
     JS_SetErrorReporter(fixture->context, test_error_reporter);
 }
