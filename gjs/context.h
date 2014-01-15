@@ -66,8 +66,6 @@ GList*          gjs_context_get_all              (void);
 
 GjsContext     *gjs_context_get_current          (void);
 void            gjs_context_make_current         (GjsContext *js_context);
-void            gjs_context_push                 (GjsContext *js_context);
-GjsContext     *gjs_context_pop                  (void);
 
 void*           gjs_context_get_native_context   (GjsContext *js_context);
 
