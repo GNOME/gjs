@@ -55,7 +55,6 @@ closure_marshal(GClosure        *closure,
                 gpointer         invocation_hint,
                 gpointer         marshal_data)
 {
-    JSRuntime *runtime;
     JSContext *context;
     JSObject *global;
 
@@ -74,8 +73,7 @@ closure_marshal(GClosure        *closure,
         return;
     }
 
-    runtime = gjs_closure_get_runtime(closure);
-    context = gjs_runtime_get_context(runtime);
+    context = gjs_closure_get_context(closure);
     JS_BeginRequest(context);
     global = JS_GetGlobalObject(context);
     JSAutoCompartment ac(context, global);

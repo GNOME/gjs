@@ -38,7 +38,7 @@ void       gjs_closure_invoke        (GClosure     *closure,
                                       int           argc,
                                       jsval        *argv,
                                       jsval        *retval);
-JSRuntime* gjs_closure_get_runtime   (GClosure     *closure);
+JSContext* gjs_closure_get_context   (GClosure     *closure);
 gboolean   gjs_closure_is_valid      (GClosure     *closure);
 JSObject*  gjs_closure_get_callable  (GClosure     *closure);
 

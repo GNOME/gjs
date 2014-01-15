@@ -78,9 +78,7 @@ gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline)
 
     trampoline->ref_count--;
     if (trampoline->ref_count == 0) {
-        JSContext *context;
-
-        context = gjs_runtime_get_context(trampoline->runtime);
+        JSContext *context = trampoline->context;
 
         if (!trampoline->is_vfunc) {
             JS_BeginRequest(context);
@@ -181,7 +179,7 @@ gjs_callback_closure(ffi_cif *cif,
     g_assert(trampoline);
     gjs_callback_trampoline_ref(trampoline);
 
-    context = gjs_runtime_get_context(trampoline->runtime);
+    context = trampoline->context;
     JS_BeginRequest(context);
     global = JS_GetGlobalObject(context);
     JSAutoCompartment ac(context, global);
@@ -412,7 +410,7 @@ gjs_callback_trampoline_new(JSContext      *context,
 
     trampoline = g_slice_new(GjsCallbackTrampoline);
     trampoline->ref_count = 1;
-    trampoline->runtime = JS_GetRuntime(context);
+    trampoline->context = context;
     trampoline->info = callable_info;
     g_base_info_ref((GIBaseInfo*)trampoline->info);
     trampoline->js_function = function;

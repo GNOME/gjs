@@ -265,7 +265,7 @@ gjs_closure_invoke(GClosure *closure,
         return;
     }
 
-    context = gjs_runtime_get_context(c->runtime);
+    context = c->context;
     JS_BeginRequest(context);
     global = JS_GetGlobalObject(context);
     JSAutoCompartment ac(context, global);
@@ -309,14 +309,14 @@ gjs_closure_is_valid(GClosure *closure)
     return c->context != NULL;
 }
 
-JSRuntime*
-gjs_closure_get_runtime(GClosure *closure)
+JSContext*
+gjs_closure_get_context(GClosure *closure)
 {
     Closure *c;
 
     c = (Closure*) closure;
 
-    return c->runtime;
+    return c->context;
 }
 
 JSObject*

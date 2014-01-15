@@ -42,7 +42,7 @@ typedef enum {
 
 typedef struct {
     gint ref_count;
-    JSRuntime *runtime;
+    JSContext *context;
     GICallableInfo *info;
     jsval js_function;
     ffi_cif cif;
