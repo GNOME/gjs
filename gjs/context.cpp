@@ -28,7 +28,6 @@
 #include "context.h"
 #include "importer.h"
 #include "jsapi-util.h"
-#include "profiler.h"
 #include "native.h"
 #include "byteArray.h"
 #include "compat.h"
@@ -62,8 +61,6 @@ struct _GjsContext {
     JSRuntime *runtime;
     JSContext *context;
     JSObject *global;
-
-    GjsProfiler *profiler;
 
     char *program_name;
 
@@ -315,11 +312,6 @@ gjs_context_dispose(GObject *object)
     GjsContext *js_context;
 
     js_context = GJS_CONTEXT(object);
-
-    if (js_context->profiler) {
-        gjs_profiler_free(js_context->profiler);
-        js_context->profiler = NULL;
-    }
 
     if (js_context->global != NULL) {
         js_context->global = NULL;
@@ -598,8 +590,6 @@ gjs_context_constructed(GObject *object)
     if (!gjs_define_root_importer(js_context->context,
                                   js_context->global))
         g_error("Failed to point 'imports' property at root importer");
-
-    js_context->profiler = gjs_profiler_new(js_context->runtime);
 
     JS_EndRequest(js_context->context);
 

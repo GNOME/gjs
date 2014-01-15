@@ -55,7 +55,6 @@ nobase_gjs_module_include_HEADERS =	\
 
 noinst_HEADERS +=		\
 	gjs/jsapi-private.h	\
-	gjs/profiler.h		\
 	gi/proxyutils.h		\
 	util/crash.h		\
 	util/hash-x32.h		\
@@ -115,7 +114,6 @@ libgjs_la_SOURCES =		\
 	gjs/jsapi-util-string.cpp	\
 	gjs/mem.cpp		\
 	gjs/native.cpp		\
-	gjs/profiler.cpp		\
 	gjs/runtime.cpp		\
 	gjs/stack.cpp		\
 	gjs/type-module.cpp	\
