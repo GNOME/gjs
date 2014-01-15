@@ -92,6 +92,23 @@ gjs_init_context_standard (JSContext *context)
 {
     JSObject *global;
     JS::CompartmentOptions options;
+    guint32 options_flags;
+
+    /* JSOPTION_DONT_REPORT_UNCAUGHT: Don't send exceptions to our
+     * error report handler; instead leave them set.  This allows us
+     * to get at the exception object.
+     *
+     * JSOPTION_STRICT: Report warnings to error reporter function.
+     */
+    options_flags = JSOPTION_DONT_REPORT_UNCAUGHT | JSOPTION_EXTRA_WARNINGS;
+
+    if (!g_getenv("GJS_DISABLE_JIT")) {
+        gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
+        options_flags |= JSOPTION_TYPE_INFERENCE | JSOPTION_ION | JSOPTION_BASELINE | JSOPTION_ASMJS;
+    }
+
+    JS_SetOptions(context, JS_GetOptions(context) | options_flags);
+    JS_SetErrorReporter(context, gjs_error_reporter);
 
     options.setVersion(JSVERSION_LATEST);
     global = JS_NewGlobalObject(context, &global_class, NULL, options);
@@ -103,6 +120,9 @@ gjs_init_context_standard (JSContext *context)
     JS_SetGlobalObject(context, global);
 
     if (!JS_InitStandardClasses(context, global))
+        return FALSE;
+
+    if (!JS_InitReflect(context, global))
         return FALSE;
 
     return TRUE;

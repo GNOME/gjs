@@ -383,7 +383,6 @@ static void
 gjs_context_constructed(GObject *object)
 {
     GjsContext *js_context = GJS_CONTEXT(object);
-    guint32 options_flags;
     int i;
 
     G_OBJECT_CLASS(gjs_context_parent_class)->constructed(object);
@@ -399,24 +398,6 @@ gjs_context_constructed(GObject *object)
 
     JS_BeginRequest(js_context->context);
 
-    /* JSOPTION_DONT_REPORT_UNCAUGHT: Don't send exceptions to our
-     * error report handler; instead leave them set.  This allows us
-     * to get at the exception object.
-     *
-     * JSOPTION_STRICT: Report warnings to error reporter function.
-     */
-    options_flags = JSOPTION_DONT_REPORT_UNCAUGHT | JSOPTION_EXTRA_WARNINGS;
-
-    if (!g_getenv("GJS_DISABLE_JIT")) {
-        gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
-        options_flags |= JSOPTION_TYPE_INFERENCE | JSOPTION_ION | JSOPTION_BASELINE | JSOPTION_ASMJS;
-    }
-
-    JS_SetOptions(js_context->context,
-                  JS_GetOptions(js_context->context) | options_flags);
-
-    JS_SetErrorReporter(js_context->context, gjs_error_reporter);
-
     /* set ourselves as the private data */
     JS_SetContextPrivate(js_context->context, js_context);
 
@@ -431,9 +412,6 @@ gjs_context_constructed(GObject *object)
                            NULL, NULL,
                            JSPROP_READONLY | JSPROP_PERMANENT))
         g_error("No memory to export global object as 'window'");
-
-    if (!JS_InitReflect(js_context->context, js_context->global))
-        g_error("Failed to register Reflect Parser Api");
 
     /* Define a global function called log() */
     if (!JS_DefineFunction(js_context->context, js_context->global,
