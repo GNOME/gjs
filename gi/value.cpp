@@ -57,8 +57,8 @@ closure_marshal(GClosure        *closure,
                 gpointer         marshal_data)
 {
     JSContext *context;
-    JSObject *global;
     JSRuntime *runtime;
+    JSObject *obj;
     int argc;
     jsval *argv;
     jsval rval;
@@ -100,9 +100,9 @@ closure_marshal(GClosure        *closure,
         return;
     }
 
+    obj = gjs_closure_get_callable(closure);
     JS_BeginRequest(context);
-    global = JS_GetGlobalObject(context);
-    JSAutoCompartment ac(context, global);
+    JSAutoCompartment ac(context, obj);
 
     argc = n_param_values;
     rval = JSVAL_VOID;

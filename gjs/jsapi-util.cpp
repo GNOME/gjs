@@ -46,31 +46,6 @@ gjs_util_error_quark (void)
     return g_quark_from_static_string ("gjs-util-error-quark");
 }
 
-/**
- * gjs_get_import_global:
- * @context: a #JSContext
- *
- * Gets the "import global" for the context's runtime. The import
- * global object is the global object for the context. It is used
- * as the root object for the scope of modules loaded by GJS in this
- * runtime, and should also be used as the globals 'obj' argument passed
- * to JS_InitClass() and the parent argument passed to JS_ConstructObject()
- * when creating a native classes that are shared between all contexts using
- * the runtime. (The standard JS classes are not shared, but we share
- * classes such as GObject proxy classes since objects of these classes can
- * easily migrate between contexts and having different classes depending
- * on the context where they were first accessed would be confusing.)
- *
- * Return value: the "import global" for the context's
- *  runtime. Will never return %NULL while GJS has an active context
- *  for the runtime.
- */
-JSObject*
-gjs_get_import_global(JSContext *context)
-{
-    return JS_GetGlobalObject(context);
-}
-
 static JSClass global_class = {
     "GjsGlobal", JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST),
     JS_PropertyStub, JS_DeletePropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
@@ -82,14 +57,16 @@ static JSClass global_class = {
 /**
  * gjs_init_context_standard:
  * @context: a #JSContext
- *
- * This function creates a default global object for @context,
- * and calls JS_InitStandardClasses using it.
+ * @global_out: (out): The created global object.
+
+ * This function creates a global object given the context,
+ * and initializes it with the default API.
  *
  * Returns: %TRUE on success, %FALSE otherwise
  */
 gboolean
-gjs_init_context_standard (JSContext *context)
+gjs_init_context_standard (JSContext  *context,
+                           JSObject  **global_out)
 {
     JSObject *global;
     JS::CompartmentOptions options;
@@ -123,7 +100,6 @@ gjs_init_context_standard (JSContext *context)
 
     /* Set the context's global */
     JSAutoCompartment ac(context, global);
-    JS_SetGlobalObject(context, global);
 
     if (!JS_InitStandardClasses(context, global))
         return FALSE;
@@ -133,6 +109,8 @@ gjs_init_context_standard (JSContext *context)
 
     if (!JS_DefineDebuggerObject(context, global))
         return FALSE;
+
+    *global_out = global;
 
     return TRUE;
 }

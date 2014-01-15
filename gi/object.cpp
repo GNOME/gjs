@@ -1998,9 +1998,6 @@ gjs_define_object_class(JSContext      *context,
         constructor_name = g_type_name(gtype);
     }
 
-    global = JS_GetGlobalObject(context);
-    JSAutoCompartment ac(context, global);
-
     if (!gjs_init_class_dynamic(context, in_object,
                                 parent_proto,
                                 ns, constructor_name,
@@ -2088,15 +2085,9 @@ gjs_object_from_g_object(JSContext    *context,
         gtype = G_TYPE_FROM_INSTANCE(gobj);
         proto = gjs_lookup_object_prototype(context, gtype);
 
-        JS_BeginRequest(context);
-        global = JS_GetGlobalObject(context);
-        JSAutoCompartment ac(context, global);
-
         obj = JS_NewObjectWithGivenProto(context,
                                          JS_GetClass(proto), proto,
                                          gjs_get_import_global (context));
-
-        JS_EndRequest(context);
 
         if (obj == NULL)
             goto out;

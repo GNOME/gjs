@@ -59,11 +59,10 @@ gjs_context_get_frame_info (JSContext  *context,
     JSBool ret = JS_FALSE;
 
     JS_BeginRequest(context);
-    global = JS_GetGlobalObject(context);
+    global = JS_GetGlobalForScopeChain(context);
     JSAutoCompartment ac(context, global);
 
-    if (!JS_GetProperty(context, JS_GetGlobalObject(context),
-                        "Error", &v_constructor) ||
+    if (!JS_GetProperty(context, global, "Error", &v_constructor) ||
         !JSVAL_IS_OBJECT(v_constructor)) {
         g_error("??? Missing Error constructor in global object?");
         goto out;

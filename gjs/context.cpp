@@ -429,10 +429,9 @@ gjs_context_constructed(GObject *object)
     /* set ourselves as the private data */
     JS_SetContextPrivate(js_context->context, js_context);
 
-    if (!gjs_init_context_standard(js_context->context))
+    if (!gjs_init_context_standard(js_context->context, &js_context->global))
         g_error("Failed to initialize context");
 
-    js_context->global = JS_GetGlobalObject(js_context->context);
     JSAutoCompartment ac(js_context->context, js_context->global);
 
     if (!JS_DefineProperty(js_context->context, js_context->global,
@@ -763,4 +762,30 @@ gjs_object_get_property_const(JSContext      *context,
     jsid pname;
     pname = gjs_context_get_const_string(context, property_name);
     return JS_GetPropertyById(context, obj, pname, value_p);
+}
+
+/**
+ * gjs_get_import_global:
+ * @context: a #JSContext
+ *
+ * Gets the "import global" for the context's runtime. The import
+ * global object is the global object for the context. It is used
+ * as the root object for the scope of modules loaded by GJS in this
+ * runtime, and should also be used as the globals 'obj' argument passed
+ * to JS_InitClass() and the parent argument passed to JS_ConstructObject()
+ * when creating a native classes that are shared between all contexts using
+ * the runtime. (The standard JS classes are not shared, but we share
+ * classes such as GObject proxy classes since objects of these classes can
+ * easily migrate between contexts and having different classes depending
+ * on the context where they were first accessed would be confusing.)
+ *
+ * Return value: the "import global" for the context's
+ *  runtime. Will never return %NULL while GJS has an active context
+ *  for the runtime.
+ */
+JSObject*
+gjs_get_import_global(JSContext *context)
+{
+    GjsContext *gjs_context = (GjsContext *) JS_GetContextPrivate(context);
+    return gjs_context->global;
 }
