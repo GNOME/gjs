@@ -1290,8 +1290,6 @@ gjs_eval_with_scope(JSContext    *context,
         return JS_FALSE;
     }
 
-    JSAutoCompartment ac(context, JS_GetGlobalObject(context));
-
     if (!object)
         object = JS_NewObject(context, NULL, NULL, NULL);
 
