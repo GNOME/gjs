@@ -1285,9 +1285,9 @@ gjs_eval_with_scope(JSContext    *context,
                                     &start_line_number);
 
     /* log and clear exception if it's set (should not be, normally...) */
-    if (gjs_log_exception(context)) {
-        gjs_debug(GJS_DEBUG_CONTEXT,
-                  "Exception was set prior to JS_EvaluateScript()");
+    if (JS_IsExceptionPending(context)) {
+        g_warning("gjs_eval_in_scope called with a pending exception");
+        goto out;
     }
 
     /* JS_EvaluateScript requires a request even though it sort of seems like
