@@ -606,17 +606,6 @@ gjs_context_eval(GjsContext   *js_context,
         goto out;
     }
 
-    gjs_debug(GJS_DEBUG_CONTEXT,
-              "Script evaluation succeeded");
-
-    if (gjs_log_exception(js_context->context)) {
-        g_set_error(error,
-                    GJS_ERROR,
-                    GJS_ERROR_FAILED,
-                    "Exception was set even though JS_EvaluateScript() returned true - did you gjs_throw() but not return false somewhere perhaps?");
-        goto out;
-    }
-
     if (exit_status_p) {
         if (JSVAL_IS_INT(retval)) {
             int code;
