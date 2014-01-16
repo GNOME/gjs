@@ -1273,9 +1273,9 @@ gjs_eval_with_scope(JSContext    *context,
                     const char   *filename,
                     jsval        *retval_p)
 {
-    JSBool ret = JS_FALSE;
     int start_line_number = 1;
     jsval retval = JSVAL_VOID;
+    JSAutoRequest ar(context);
 
     if (script_len < 0)
         script_len = strlen(script);
@@ -1287,13 +1287,8 @@ gjs_eval_with_scope(JSContext    *context,
     /* log and clear exception if it's set (should not be, normally...) */
     if (JS_IsExceptionPending(context)) {
         g_warning("gjs_eval_in_scope called with a pending exception");
-        goto out;
+        return JS_FALSE;
     }
-
-    /* JS_EvaluateScript requires a request even though it sort of seems like
-     * it means we're always in a request?
-     */
-    JS_BeginRequest(context);
 
     JSAutoCompartment ac(context, JS_GetGlobalObject(context));
 
@@ -1308,22 +1303,19 @@ gjs_eval_with_scope(JSContext    *context,
     js::RootedObject rootedObj(context, object);
 
     if (!JS::Evaluate(context, rootedObj, options, script, script_len, &retval))
-        goto out;
+        return JS_FALSE;
 
     if (JS_IsExceptionPending(context)) {
         g_warning("EvaluateScript returned JS_TRUE but exception was pending; "
                   "did somebody call gjs_throw() without returning JS_FALSE?");
-        goto out;
+        return JS_FALSE;
     }
 
     gjs_debug(GJS_DEBUG_CONTEXT,
               "Script evaluation succeeded");
 
-    ret = JS_TRUE;
     if (retval_p)
         *retval_p = retval;
 
- out:
-    JS_EndRequest(context);
-    return ret;
+    return JS_TRUE;
 }
