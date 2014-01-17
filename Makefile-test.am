@@ -15,6 +15,15 @@ gjs_tests_CPPFLAGS =				\
 	$(gjs_directory_defines)		\
 	-I$(top_srcdir)/test
 
+mock_js_resources_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/test/mock-js-resources.gresource.xml)
+mock-js-resources.h: $(srcdir)/test/mock-js-resources.gresource.xml $(modules_resource_files)
+	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --sourcedir=$(builddir) --generate --c-name mock_js_resources $<
+mock-js-resources.c: $(srcdir)/test/mock-js-resources.gresource.xml $(modules_resource_files)
+	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --sourcedir=$(builddir) --generate --c-name mock_js_resources $<
+
+EXTRA_DIST += $(mock_js_resources_files) $(srcdir)/test/mock-js-resources.gresource.xml \
+    $(srcdir)/test/gjs-test-coverage/loadedJSFromResource.js
+
 ## -rdynamic makes backtraces work
 gjs_tests_LDFLAGS = -rdynamic
 gjs_tests_LDADD =		\
@@ -22,7 +31,10 @@ gjs_tests_LDADD =		\
 	$(GJSTESTS_LIBS)
 
 gjs_tests_SOURCES =		\
-	test/gjs-tests.cpp
+	test/gjs-tests.cpp \
+	test/gjs-tests-add-funcs.h \
+	test/gjs-test-coverage.cpp \
+	mock-js-resources.c
 
 check-local: gjs-tests
 	@test -z "${TEST_PROGS}" || ${GTESTER} --verbose ${TEST_PROGS} ${TEST_PROGS_OPTIONS}
@@ -34,8 +46,7 @@ TESTS_ENVIRONMENT =							\
 	GJS_DEBUG_OUTPUT=test_user_data/logs/gjs.log			\
 	BUILDDIR=.							\
 	GJS_USE_UNINSTALLED_FILES=1					\
-	GJS_PATH=$(top_srcdir)/modules/					\
 	GJS_TEST_TIMEOUT=420						\
-	GI_TYPELIB_PATH=$(builddir)					\
+	GI_TYPELIB_PATH=$(builddir):$(GI_TYPELIB_PATH)					\
 	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)"	\
 	G_FILENAME_ENCODING=latin1	# ensure filenames are not utf8

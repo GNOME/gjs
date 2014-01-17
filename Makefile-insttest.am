@@ -101,6 +101,7 @@ dist_jstests_DATA += \
 	installed-tests/js/testself.js			\
 	installed-tests/js/testByteArray.js		\
 	installed-tests/js/testClass.js			\
+	installed-tests/js/testCoverage.js \
 	installed-tests/js/testGDBus.js			\
 	installed-tests/js/testEverythingBasic.js		\
 	installed-tests/js/testEverythingEncapsulated.js	\
