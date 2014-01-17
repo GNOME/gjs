@@ -54,6 +54,8 @@ gjs_throw_valist(JSContext       *context,
 
     s = g_strdup_vprintf(format, args);
 
+    JSAutoCompartment compartment(context, JS_GetGlobalObject(context));
+
     JS_BeginRequest(context);
 
     if (JS_IsExceptionPending(context)) {
