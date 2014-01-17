@@ -11,6 +11,7 @@
     @GTK_OVERRIDE@
 
     <file>modules/cairo.js</file>
+    <file>modules/coverage.js</file>
     <file>modules/gettext.js</file>
     <file>modules/lang.js</file>
     <file>modules/mainloop.js</file>

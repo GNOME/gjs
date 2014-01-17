@@ -45,3 +45,4 @@ jsunit.test
 testSystemExit.test
 modules-resources.[ch]
 modules.gresource.xml
+mock-js-resources.[ch]

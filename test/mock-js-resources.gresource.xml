@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/org/gnome/gjs/mock">
+    <file>test/gjs-test-coverage/loadedJSFromResource.js</file>
+  </gresource>
+</gresources>
