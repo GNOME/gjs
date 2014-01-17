@@ -39,6 +39,8 @@ gjs_tests_SOURCES =		\
 check-local: gjs-tests
 	@test -z "${TEST_PROGS}" || ${GTESTER} --verbose ${TEST_PROGS} ${TEST_PROGS_OPTIONS}
 
+# GJS_PATH is empty here since we want to force the use of our own
+# resources
 TESTS_ENVIRONMENT =							\
 	TOP_SRCDIR=$(top_srcdir)					\
 	DBUS_SESSION_BUS_ADDRESS=''					\
@@ -47,6 +49,58 @@ TESTS_ENVIRONMENT =							\
 	BUILDDIR=.							\
 	GJS_USE_UNINSTALLED_FILES=1					\
 	GJS_TEST_TIMEOUT=420						\
+	GJS_PATH= \
 	GI_TYPELIB_PATH=$(builddir):$(GI_TYPELIB_PATH)					\
 	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)"	\
 	G_FILENAME_ENCODING=latin1	# ensure filenames are not utf8
+
+if ENABLE_COVERAGE
+# These paths are resource paths but they have resource://
+# stripped out, for ease of parsing in the test runner
+coverage_paths = \
+	/org/gnome/gjs/modules/cairo.js \
+	/org/gnome/gjs/modules/coverage.js \
+	/org/gnome/gjs/modules/format.js \
+	/org/gnome/gjs/modules/gettext.js \
+	/org/gnome/gjs/modules/jsUnit.js \
+	/org/gnome/gjs/modules/lang.js \
+	/org/gnome/gjs/modules/mainloop.js \
+	/org/gnome/gjs/modules/signals.js
+
+empty :=
+space := $(empty) $(empty)
+colon := :
+
+coverage_env := $(subst $(space),$(colon),$(coverage_paths))
+
+TESTS_ENVIRONMENT += \
+	GJS_UNIT_COVERAGE_OUTPUT=lcov \
+	GJS_UNIT_COVERAGE_PATHS=$(coverage_env)
+endif
+
+########################################################################
+if ENABLE_COVERAGE
+lcov:
+	test -d lcov || mkdir lcov
+	$(LCOV) --compat-libtool --directory . --capture -o lcov/lcov_tmp.info
+	$(LCOV) --extract lcov/lcov_tmp.info "$(PWD)/*" -o lcov/lcov.info
+	rm -f lcov/lcov_tmp.info
+	$(GENHTML) --legend -o lcov lcov/lcov.info lcov/coverage.lcov
+
+lcov-clean:
+	find . -name '*.gcda' -delete
+	rm -rf lcov
+
+lcov-realclean: lcov-clean
+	find . -name '*.gcno' -delete
+
+clean-local: lcov-realclean
+
+.PHONY: lcov lcov-clean lcov-realclean
+else
+lcov:
+	@echo >&1 "*** ERROR: 'configure --enable-coverage' required"
+	@exit 1
+
+.PHONY: lcov
+endif
