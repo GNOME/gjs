@@ -27,25 +27,72 @@
 #include <glib/gstdio.h>
 #include <girepository.h>
 #include <gjs/gjs-module.h>
+#include <gjs/coverage.h>
 #include <locale.h>
 
 #include <string.h>
 
 typedef struct {
-    GjsContext *context;
+    const char **coverage_paths;
+    const char *coverage_output_path;
+    char       *filename;
+} GjsTestData;
+
+GjsTestData *
+gjs_unit_test_data_new(const char **coverage_paths,
+                       const char *coverage_output_path,
+                       char       *filename)
+{
+    GjsTestData *data = (GjsTestData *) g_new0(GjsTestData, 1);
+    data->coverage_paths = coverage_paths;
+    data->coverage_output_path = coverage_output_path;
+    data->filename = filename;
+    return data;
+}
+
+void
+gjs_unit_test_data_free(gpointer test_data, gpointer user_data)
+{
+    GjsTestData *data = (GjsTestData *) test_data;
+    g_free(data->filename);
+    g_free(data);
+}
+
+typedef struct {
+    GjsContext  *context;
+    GjsCoverage *coverage;
 } GjsTestJSFixture;
 
 static void
 setup(GjsTestJSFixture *fix,
       gconstpointer     test_data)
 {
+    GjsTestData *data = (GjsTestData *) test_data;
     fix->context = gjs_context_new ();
+
+    if (data->coverage_paths) {
+        if (!data->coverage_output_path) {
+            g_error("GJS_UNIT_COVERAGE_OUTPUT is required when using GJS_UNIT_COVERAGE_PATHS");
+        }
+
+        fix->coverage = gjs_coverage_new((const char **) data->coverage_paths,
+                                         fix->context);
+    }
 }
 
 static void
 teardown(GjsTestJSFixture *fix,
          gconstpointer     test_data)
 {
+    GjsTestData *data = (GjsTestData *) test_data;
+
+    if (fix->coverage) {
+        gjs_coverage_write_statistics(fix->coverage,
+                                      data->coverage_output_path);
+
+        g_clear_object(&fix->coverage);
+    }
+
     gjs_memory_report("before destroying context", FALSE);
     g_object_unref(fix->context);
     gjs_memory_report("after destroying context", TRUE);
@@ -59,7 +106,9 @@ test(GjsTestJSFixture *fix,
     gboolean success;
     int code;
 
-    success = gjs_context_eval_file(fix->context, (const char*)test_data, &code, &error);
+    GjsTestData *data = (GjsTestData *) test_data;
+
+    success = gjs_context_eval_file(fix->context, data->filename, &code, &error);
     if (!success)
         g_error("%s", error->message);
     g_assert(error == NULL);
@@ -85,12 +134,42 @@ read_all_dir_sorted (const char *dirpath)
     return result;
 }
 
+static char **
+get_coverage_uris_from_env(const char *key)
+{
+    const char *value = g_getenv(key);
+
+    if (!value)
+        return NULL;
+
+    char **splitted_pathnames = g_strsplit(value, ":", -1);
+    char **splitted_pathnamed_iterator = splitted_pathnames;
+
+    for (; *splitted_pathnamed_iterator; splitted_pathnamed_iterator++) {
+
+        /* Don't just have resource:// for the last element */
+        if (g_strcmp0(*splitted_pathnamed_iterator, "") == 0) {
+            g_free(*splitted_pathnamed_iterator);
+            *splitted_pathnamed_iterator = NULL;
+            continue;
+        }
+
+        char *uri = g_strconcat("resource://",
+                                *splitted_pathnamed_iterator,
+                                NULL);
+        g_free(*splitted_pathnamed_iterator);
+        *splitted_pathnamed_iterator = uri;
+    }
+
+    return splitted_pathnames;
+}
+
 int
 main(int argc, char **argv)
 {
     char *js_test_dir;
     GSList *all_tests, *iter;
-    GSList *test_filenames = NULL;
+    GSList *all_registered_test_data = NULL;
     int retval;
 
     /* The tests are known to fail in the presence of the JIT;
@@ -112,11 +191,15 @@ main(int argc, char **argv)
         js_test_dir = g_build_filename(INSTTESTDIR, "js", NULL);
     }
 
+    char       **coverage_paths = get_coverage_uris_from_env("GJS_UNIT_COVERAGE_PATHS");
+    const char *coverage_output_directory = g_getenv("GJS_UNIT_COVERAGE_OUTPUT");
+
     all_tests = read_all_dir_sorted(js_test_dir);
     for (iter = all_tests; iter; iter = iter->next) {
         char *name = (char*) iter->data;
         char *test_name;
         char *file_name;
+        GjsTestData *test_data;
 
         if (!(g_str_has_prefix(name, "test") &&
               g_str_has_suffix(name, ".js"))) {
@@ -131,17 +214,26 @@ main(int argc, char **argv)
         test_name[strlen(test_name)-3] = '\0';
 
         file_name = g_build_filename(js_test_dir, name, NULL);
-        g_test_add(test_name, GjsTestJSFixture, file_name, setup, test, teardown);
+        test_data = gjs_unit_test_data_new((const char **) coverage_paths,
+                                           coverage_output_directory,
+                                           file_name);
+        g_test_add(test_name, GjsTestJSFixture, test_data, setup, test, teardown);
         g_free(name);
         g_free(test_name);
-        test_filenames = g_slist_prepend(test_filenames, file_name);
-        /* not freeing file_name yet as it's needed while running the test */
+        all_registered_test_data = g_slist_prepend(all_registered_test_data, test_data);
+        /* not freeing file_name or test_data yet as it's needed while running the test */
     }
     g_free(js_test_dir);
     g_slist_free(all_tests);
 
     retval =  g_test_run ();
-    g_slist_foreach(test_filenames, (GFunc)g_free, test_filenames);
-    g_slist_free(test_filenames);
+    g_slist_foreach(all_registered_test_data,
+                    (GFunc)gjs_unit_test_data_free,
+                    all_registered_test_data);
+    g_slist_free(all_registered_test_data);
+
+    if (coverage_paths)
+        g_strfreev(coverage_paths);
+
     return retval;
 }

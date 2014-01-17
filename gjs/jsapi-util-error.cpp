@@ -53,6 +53,8 @@ gjs_throw_valist(JSContext       *context,
     JSObject *err_obj;
 
     s = g_strdup_vprintf(format, args);
+    
+    JSAutoCompartment compartment(context, JS_GetGlobalObject(context));
 
     JS_BeginRequest(context);
 

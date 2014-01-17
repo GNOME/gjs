@@ -28,6 +28,8 @@
 #include <util/glib.h>
 #include <util/crash.h>
 
+#include "gjs-tests-add-funcs.h"
+
 typedef struct _GjsUnitTestFixture GjsUnitTestFixture;
 
 struct _GjsUnitTestFixture {
@@ -349,6 +351,8 @@ main(int    argc,
     g_test_add_func("/gjs/stack/dump", gjstest_test_func_gjs_stack_dump);
     g_test_add_func("/util/glib/strv/concat/null", gjstest_test_func_util_glib_strv_concat_null);
     g_test_add_func("/util/glib/strv/concat/pointers", gjstest_test_func_util_glib_strv_concat_pointers);
+
+    gjs_test_add_tests_for_coverage ();
 
     g_test_run();
 
