@@ -144,77 +144,97 @@ function _init() {
 
     GObject = this;
 
-    this.TYPE_NONE = GObject.type_from_name('void');
-    this.TYPE_INTERFACE = GObject.type_from_name('GInterface');
-    this.TYPE_CHAR = GObject.type_from_name('gchar');
-    this.TYPE_UCHAR = GObject.type_from_name('guchar');
+    function _makeDummyClass(obj, name, upperName, gtypeName, actual) {
+        let gtype = GObject.type_from_name(gtypeName);
+        obj['TYPE_' + upperName] = gtype;
+        obj[name] = function(v) { return new actual(v); }
+        obj[name].$gtype = gtype;
+    }
+
+    _makeDummyClass(this, 'VoidType', 'NONE', 'void', function() {});
+    _makeDummyClass(this, 'Char', 'CHAR', 'gchar', String);
+    _makeDummyClass(this, 'UChar', 'UCHAR', 'guchar', String);
+    _makeDummyClass(this, 'Unichar', 'UNICHAR', 'gint', String);
+
     this.TYPE_BOOLEAN = GObject.type_from_name('gboolean');
-    this.TYPE_INT = GObject.type_from_name('gint');
-    this.TYPE_UINT = GObject.type_from_name('guint');
-    this.TYPE_LONG = GObject.type_from_name('glong');
-    this.TYPE_ULONG = GObject.type_from_name('gulong');
-    this.TYPE_INT64 = GObject.type_from_name('gint64');
-    this.TYPE_UINT64 = GObject.type_from_name('guint64');
+    this.Boolean = Boolean;
+    Boolean.$gtype = this.TYPE_BOOLEAN;
+
+    _makeDummyClass(this, 'Int', 'INT', 'gint', Number);
+    _makeDummyClass(this, 'UInt', 'UINT', 'guint', Number);
+    _makeDummyClass(this, 'Long', 'LONG', 'glong', Number);
+    _makeDummyClass(this, 'ULong', 'ULONG', 'gulong', Number);
+    _makeDummyClass(this, 'Int64', 'INT64', 'gint64', Number);
+    _makeDummyClass(this, 'UInt64', 'UINT64', 'guint64', Number);
+
     this.TYPE_ENUM = GObject.type_from_name('GEnum');
     this.TYPE_FLAGS = GObject.type_from_name('GFlags');
-    this.TYPE_FLOAT = GObject.type_from_name('gfloat');
+
+    _makeDummyClass(this, 'Float', 'FLOAT', 'gfloat', Number);
     this.TYPE_DOUBLE = GObject.type_from_name('gdouble');
+    this.Double = Number;
+    Number.$gtype = this.TYPE_DOUBLE;
+
     this.TYPE_STRING = GObject.type_from_name('gchararray');
+    this.String = String;
+    String.$gtype = this.TYPE_STRING;
+
     this.TYPE_POINTER = GObject.type_from_name('gpointer');
     this.TYPE_BOXED = GObject.type_from_name('GBoxed');
     this.TYPE_PARAM = GObject.type_from_name('GParam');
+    this.TYPE_INTERFACE = GObject.type_from_name('GInterface');
     this.TYPE_OBJECT = GObject.type_from_name('GObject');
-    this.TYPE_GTYPE = GObject.type_from_name('GType');
     this.TYPE_VARIANT = GObject.type_from_name('GVariant');
-    this.TYPE_UNICHAR = this.TYPE_UINT;
+
+    _makeDummyClass(this, 'Type', 'GTYPE', 'GType', GObject.type_from_name);
 
     this.ParamSpec.char = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.TYPE_CHAR,
+        return GObject.ParamSpec._new_internal(name, GObject.Char,
                                                nick, blurb, flags, minimum, maximum, default_value);
     };
 
     this.ParamSpec.uchar = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.TYPE_UCHAR,
+        return GObject.ParamSpec._new_internal(name, GObject.UChar,
                                                nick, blurb, flags, minimum, maximum, default_value);
     };
 
     this.ParamSpec.int = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.TYPE_INT,
+        return GObject.ParamSpec._new_internal(name, GObject.Int,
                                                nick, blurb, flags, minimum, maximum, default_value);
     };
 
     this.ParamSpec.uint = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.TYPE_UINT,
+        return GObject.ParamSpec._new_internal(name, GObject.UInt,
                                                nick, blurb, flags, minimum, maximum, default_value);
     };
 
     this.ParamSpec.long = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.TYPE_LONG,
+        return GObject.ParamSpec._new_internal(name, GObject.Long,
                                                nick, blurb, flags, minimum, maximum, default_value);
     };
 
     this.ParamSpec.ulong = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.TYPE_ULONG,
+        return GObject.ParamSpec._new_internal(name, GObject.ULong,
                                                nick, blurb, flags, minimum, maximum, default_value);
     };
 
     this.ParamSpec.int64 = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.TYPE_INT64,
+        return GObject.ParamSpec._new_internal(name, GObject.Int64,
                                                nick, blurb, flags, minimum, maximum, default_value);
     };
 
     this.ParamSpec.uint64 = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.TYPE_UINT64,
+        return GObject.ParamSpec._new_internal(name, GObject.UInt64,
                                                nick, blurb, flags, minimum, maximum, default_value);
     };
 
     this.ParamSpec.float = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.TYPE_FLOAT,
+        return GObject.ParamSpec._new_internal(name, GObject.Float,
                                                nick, blurb, flags, minimum, maximum, default_value);
     };
 
     this.ParamSpec.boolean = function(name, nick, blurb, flags, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.TYPE_BOOLEAN,
+        return GObject.ParamSpec._new_internal(name, GObject.Boolean,
                                                nick, blurb, flags, default_value);
     };
 
@@ -227,12 +247,12 @@ function _init() {
     };
 
     this.ParamSpec.double = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.TYPE_DOUBLE,
+        return GObject.ParamSpec._new_internal(name, GObject.Double,
                                                nick, blurb, flags, minimum, maximum, default_value);
     };
 
     this.ParamSpec.string = function(name, nick, blurb, flags, default_value) {
-        return GObject.ParamSpec._new_internal(name, GObject.TYPE_STRING,
+        return GObject.ParamSpec._new_internal(name, GObject.String,
                                                nick, blurb, flags, default_value);
     };
 

@@ -265,7 +265,10 @@ function testGType() {
     assertEquals(GObject.TYPE_STRING, GIMarshallingTests.gtype_string_return());
 
     GIMarshallingTests.gtype_in(GObject.TYPE_NONE);
+    GIMarshallingTests.gtype_in(GObject.VoidType);
     GIMarshallingTests.gtype_string_in(GObject.TYPE_STRING);
+    GIMarshallingTests.gtype_string_in(GObject.String);
+    GIMarshallingTests.gtype_string_in(String);
 
     assertEquals(GObject.TYPE_NONE, GIMarshallingTests.gtype_out());
     assertEquals(GObject.TYPE_STRING, GIMarshallingTests.gtype_string_out());
@@ -286,6 +289,10 @@ function testGValueGType() {
     GIMarshallingTests.gvalue_in_with_type(42.5, GObject.TYPE_DOUBLE);
     GIMarshallingTests.gvalue_in_with_type('42', GObject.TYPE_STRING);
     GIMarshallingTests.gvalue_in_with_type(GObject.TYPE_GTYPE, GObject.TYPE_GTYPE)
+
+    GIMarshallingTests.gvalue_in_with_type(42, GObject.Int);
+    GIMarshallingTests.gvalue_in_with_type(42.5, GObject.Double);
+    GIMarshallingTests.gvalue_in_with_type(42.5, Number);
 
     // Object and interface
     GIMarshallingTests.gvalue_in_with_type(new Gio.SimpleAction, Gio.SimpleAction);
