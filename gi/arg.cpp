@@ -1688,10 +1688,6 @@ gjs_value_to_g_argument(JSContext      *context,
                 if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
                     arg->v_pointer = gjs_byte_array_get_byte_array(context, bytearray_obj);
                     break;
-                } else if (array_type == GI_ARRAY_TYPE_C && 
-                           (element_type == GI_TYPE_TAG_UINT8 || element_type == GI_TYPE_TAG_INT8)) {
-                    gjs_byte_array_peek_data(context, bytearray_obj, (guint8**) &data, &length);
-                    bytearray_fastpath = TRUE;
                 } else {
                     /* Fall through, !handled */
                 }
