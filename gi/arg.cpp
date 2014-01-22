@@ -1671,7 +1671,6 @@ gjs_value_to_g_argument(JSContext      *context,
         GITypeTag element_type;
         GITypeInfo *param_info;
         gboolean bytearray_fastpath = FALSE;
-        gboolean free_data = TRUE;
 
         param_info = g_type_info_get_param_type(type_info, 0);
         element_type = g_type_info_get_tag(param_info);
@@ -1693,7 +1692,6 @@ gjs_value_to_g_argument(JSContext      *context,
                            (element_type == GI_TYPE_TAG_UINT8 || element_type == GI_TYPE_TAG_INT8)) {
                     gjs_byte_array_peek_data(context, bytearray_obj, (guint8**) &data, &length);
                     bytearray_fastpath = TRUE;
-                    free_data = FALSE;
                 } else {
                     /* Fall through, !handled */
                 }
@@ -1715,7 +1713,6 @@ gjs_value_to_g_argument(JSContext      *context,
 
         if (array_type == GI_ARRAY_TYPE_C) {
             arg->v_pointer = data;
-            free_data = FALSE;
         } else if (array_type == GI_ARRAY_TYPE_ARRAY) {
             GITypeInfo *param_info = g_type_info_get_param_type(type_info, 0);
             GArray *array = gjs_g_array_new_for_type(context, length, param_info);
@@ -1727,23 +1724,24 @@ gjs_value_to_g_argument(JSContext      *context,
                 arg->v_pointer = array;
             }
 
+            g_free(data);
             g_base_info_unref((GIBaseInfo*) param_info);
         } else if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
             GByteArray *byte_array = g_byte_array_sized_new(length);
 
             g_byte_array_append(byte_array, (const guint8 *) data, length);
             arg->v_pointer = byte_array;
+
+            g_free(data);
         } else if (array_type == GI_ARRAY_TYPE_PTR_ARRAY) {
             GPtrArray *array = g_ptr_array_sized_new(length);
 
             g_ptr_array_set_size(array, length);
             memcpy(array->pdata, data, sizeof(gpointer) * length);
             arg->v_pointer = array;
-        }
 
-        if (free_data)
             g_free(data);
-
+        }
         break;
     }
     default:
