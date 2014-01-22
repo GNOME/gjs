@@ -1670,7 +1670,6 @@ gjs_value_to_g_argument(JSContext      *context,
         GIArrayType array_type = g_type_info_get_array_type(type_info);
         GITypeTag element_type;
         GITypeInfo *param_info;
-        gboolean bytearray_fastpath = FALSE;
 
         param_info = g_type_info_get_param_type(type_info, 0);
         element_type = g_type_info_get_tag(param_info);
@@ -1693,8 +1692,7 @@ gjs_value_to_g_argument(JSContext      *context,
                 }
             }
 
-        if (!bytearray_fastpath &&
-            !gjs_array_to_explicit_array_internal(context,
+        if (!gjs_array_to_explicit_array_internal(context,
                                                   value,
                                                   type_info,
                                                   arg_name,
