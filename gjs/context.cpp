@@ -594,6 +594,7 @@ gjs_context_eval(GjsContext   *js_context,
     jsval retval;
 
     JSAutoCompartment ac(js_context->context, js_context->global);
+    JSAutoRequest ar(js_context->context);
 
     g_object_ref(G_OBJECT(js_context));
 
