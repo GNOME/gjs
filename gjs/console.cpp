@@ -119,7 +119,7 @@ main(int argc, char **argv)
 
     if (coverage_paths) {
         if (!coverage_output_path)
-            g_error("--coverage-output-path is required when taking coverage statistics");
+            g_error("--coverage-output is required when taking coverage statistics");
 
         coverage = gjs_coverage_new((const gchar **) coverage_paths,
                                     js_context);
