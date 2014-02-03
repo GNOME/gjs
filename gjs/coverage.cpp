@@ -303,7 +303,7 @@ write_line_coverage(GOutputStream *stream,
         write_string_into_stream(stream, "\n");
 
         if (hit_count_for_line > 0)
-          ++(*lines_hit_count);
+            ++(*lines_hit_count);
 
         ++(*executable_lines_count);
     }
@@ -450,9 +450,7 @@ get_absolute_path(const char *path)
 
     if (!g_path_is_absolute(path)) {
         char *current_dir = g_get_current_dir();
-        absolute_path = g_build_filename(current_dir,
-                                                path,
-                                                NULL);
+        absolute_path = g_build_filename(current_dir, path, NULL);
         g_free(current_dir);
     } else {
         absolute_path = g_strdup(path);
