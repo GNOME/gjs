@@ -653,18 +653,16 @@ function _convertFunctionCountersToArray(functionCounters) {
     return arrayReturn;
 }
 
-function CoverageStatisticsContainer(files) {
-    let pendingFiles = files;
+function CoverageStatisticsContainer(prefixes) {
     let coveredFiles = {};
 
     function wantsStatisticsFor(filename) {
-        return pendingFiles.indexOf(filename) !== -1;
+        return prefixes.some(function(prefix) {
+            return filename.startsWith(prefix);
+        });
     }
 
     function createStatisticsFor(filename) {
-        let idx = pendingFiles.indexOf(filename);
-        pendingFiles.splice(idx, 1);
-
         let contents = getFileContents(filename);
         let reflection = Reflect.parse(contents);
         let nLines = _getNumberOfLinesForScript(contents);
@@ -708,8 +706,8 @@ function CoverageStatisticsContainer(files) {
  *
  * It isn't poissible to unit test this class because it depends on running
  * Debugger which in turn depends on objects injected in from another compartment */
-function CoverageStatistics(files) {
-    this.container = new CoverageStatisticsContainer(files);
+function CoverageStatistics(prefixes) {
+    this.container = new CoverageStatisticsContainer(prefixes);
     let fetchStatistics = this.container.fetchStatistics.bind(this.container);
     let deleteStatistics = this.container.deleteStatistics.bind(this.container);
 

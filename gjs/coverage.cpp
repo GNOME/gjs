@@ -30,10 +30,9 @@ typedef struct _GjsDebugHooks GjsDebugHooks;
 typedef struct _GjsCoverageBranchData GjsCoverageBranchData;
 
 struct _GjsCoveragePrivate {
-    gchar         **covered_paths;
-
-    GjsContext    *context;
-    JSObject      *coverage_statistics;
+    gchar **prefixes;
+    GjsContext *context;
+    JSObject *coverage_statistics;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE(GjsCoverage,
@@ -42,7 +41,7 @@ G_DEFINE_TYPE_WITH_PRIVATE(GjsCoverage,
 
 enum {
     PROP_0,
-    PROP_COVERAGE_PATHS,
+    PROP_PREFIXES,
     PROP_CONTEXT,
     PROP_N
 };
@@ -1128,11 +1127,11 @@ bootstrap_coverage(GjsCoverage *coverage)
 
         JSObject *coverage_statistics_constructor = JSVAL_TO_OBJECT(coverage_statistics_prototype_value);
 
-        /* Now create the array to pass the desired script names over */
-        JSObject *filenames_js_array = gjs_build_string_array(context, -1, priv->covered_paths);
+        /* Now create the array to pass the desired prefixes over */
+        JSObject *prefixes = gjs_build_string_array(context, -1, priv->prefixes);
 
         jsval coverage_statistics_constructor_arguments[] = {
-            OBJECT_TO_JSVAL(filenames_js_array)
+            OBJECT_TO_JSVAL(prefixes)
         };
 
         JSObject *coverage_statistics = JS_New(context,
@@ -1181,9 +1180,9 @@ gjs_coverage_set_property(GObject      *object,
     GjsCoverage *coverage = GJS_DEBUG_COVERAGE(object);
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
     switch (prop_id) {
-    case PROP_COVERAGE_PATHS:
-        g_assert(priv->covered_paths == NULL);
-        priv->covered_paths = (char **) g_value_dup_boxed (value);
+    case PROP_PREFIXES:
+        g_assert(priv->prefixes == NULL);
+        priv->prefixes = (char **) g_value_dup_boxed (value);
         break;
     case PROP_CONTEXT:
         priv->context = GJS_CONTEXT(g_value_dup_object(value));
@@ -1211,7 +1210,7 @@ gjs_coverage_finalize (GObject *object)
     GjsCoverage *coverage = GJS_DEBUG_COVERAGE(object);
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
-    g_strfreev(priv->covered_paths);
+    g_strfreev(priv->prefixes);
 
     G_OBJECT_CLASS(gjs_coverage_parent_class)->finalize(object);
 }
@@ -1226,11 +1225,11 @@ gjs_coverage_class_init (GjsCoverageClass *klass)
     object_class->finalize = gjs_coverage_finalize;
     object_class->set_property = gjs_coverage_set_property;
 
-    properties[PROP_COVERAGE_PATHS] = g_param_spec_boxed("coverage-paths",
-                                                         "Coverage Paths",
-                                                         "Paths (and included subdirectories) of which to perform coverage analysis",
-                                                         G_TYPE_STRV,
-                                                         (GParamFlags) (G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE));
+    properties[PROP_PREFIXES] = g_param_spec_boxed("prefixes",
+                                                   "Prefixes",
+                                                   "Prefixes of files on which to perform coverage analysis",
+                                                   G_TYPE_STRV,
+                                                   (GParamFlags) (G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE));
     properties[PROP_CONTEXT] = g_param_spec_object("context",
                                                    "Context",
                                                    "A context to gather coverage stats for",
@@ -1244,18 +1243,18 @@ gjs_coverage_class_init (GjsCoverageClass *klass)
 
 /**
  * gjs_coverage_new:
- * @coverage_paths: (transfer none): A null-terminated strv of directories to generate
+ * @coverage_prefixes: (transfer none): A null-terminated strv of prefixes of files to perform coverage on
  * coverage_data for
  *
  * Returns: A #GjsDebugCoverage
  */
 GjsCoverage *
-gjs_coverage_new (const char    **coverage_paths,
-                  GjsContext    *context)
+gjs_coverage_new (const char **prefixes,
+                  GjsContext  *context)
 {
     GjsCoverage *coverage =
         GJS_DEBUG_COVERAGE(g_object_new(GJS_TYPE_DEBUG_COVERAGE,
-                                        "coverage-paths", coverage_paths,
+                                        "prefixes", prefixes,
                                         "context", context,
                                         NULL));
 
