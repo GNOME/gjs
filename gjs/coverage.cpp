@@ -1079,7 +1079,7 @@ coverage_warning(JSContext *context,
     JSString *jstr;
 
     if (argc != 1) {
-        gjs_throw(context, "Must pass a single argument to Warning()");
+        gjs_throw(context, "Must pass a single argument to warning()");
         return JS_FALSE;
     }
 
@@ -1158,10 +1158,10 @@ bootstrap_coverage(GjsCoverage *coverage)
         }
 
         if (!JS_DefineFunction(context, debugger_compartment,
-                               "Warning",
+                               "warning",
                                (JSNative) coverage_warning,
                                1, GJS_MODULE_PROP_FLAGS))
-            g_error("Failed to define log function");
+            g_error("Failed to define warning function");
 
         if (!gjs_context_eval_file_in_compartment(priv->context,
                                                   coverage_script,

@@ -743,7 +743,7 @@ function CoverageStatistics(files) {
             _incrementExpressionCounters(statistics.expressionCounters,
                                          offsetLine,
                                          function(line) {
-                                             Warning("executed " +
+                                             warning("executed " +
                                                      frame.script.url +
                                                      ":" +
                                                      offsetLine +
