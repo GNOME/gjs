@@ -60,8 +60,9 @@ if test x$enable_coverage = xyes; then
         AC_MSG_ERROR([lcov and genhtml are required for --enable-coverage])
     fi
 
-    CFLAGS="$CFLAGS -g -O0 -fprofile-arcs -ftest-coverage"
-    CXXFLAGS="$CXXFLAGS -g -O0 -fprofile-arcs -ftest-coverage"
+    CFLAGS="$CFLAGS -g -O0 --coverage"
+    CXXFLAGS="$CXXFLAGS -g -O0 --coverage"
+    LIBS="$LIBS -lgcov"
 fi
 AM_CONDITIONAL([ENABLE_COVERAGE], [test x$enable_coverage = xyes])
 
