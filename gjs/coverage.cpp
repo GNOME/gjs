@@ -1112,6 +1112,10 @@ coverage_warning(JSContext *context,
     return JS_TRUE;
 }
 
+static JSFunctionSpec coverage_funcs[] = {
+    { "warning", JSOP_WRAPPER (coverage_warning), 1, GJS_MODULE_PROP_FLAGS },
+    { NULL },
+};
 
 static gboolean
 bootstrap_coverage(GjsCoverage *coverage)
@@ -1157,11 +1161,8 @@ bootstrap_coverage(GjsCoverage *coverage)
             return FALSE;
         }
 
-        if (!JS_DefineFunction(context, debugger_compartment,
-                               "warning",
-                               (JSNative) coverage_warning,
-                               1, GJS_MODULE_PROP_FLAGS))
-            g_error("Failed to define warning function");
+        if (!JS_DefineFunctions(context, debugger_compartment, &coverage_funcs[0]))
+            g_error("Failed to init coverage");
 
         if (!gjs_context_eval_file_in_compartment(priv->context,
                                                   coverage_script,
