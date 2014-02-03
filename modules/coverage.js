@@ -679,32 +679,26 @@ function CoverageStatisticsContainer(files) {
  * Debugger which in turn depends on objects injected in from another compartment */
 function CoverageStatistics(files) {
     this.container = new CoverageStatisticsContainer(files);
+    let fetchStatistics = this.container.fetchStatistics.bind(this.container);
 
     /* 'debuggee' comes from the invocation from
      * a separate compartment inside of coverage.cpp */
     this.dbg = new Debugger(debuggee);
-    this.dbg.fetchStatistics = function(statisticsContainer) {
-        let container = statisticsContainer;
-        return function (filename) {
-            return container.fetchStatistics(filename);
-        }
-    } (this.container);
 
     this.getNumberOfLinesFor = function(filename) {
-        return this.container.fetchStatistics(filename).nLines;
+        return fetchStatistics(filename).nLines;
     };
 
     this.getExecutedLinesFor = function(filename) {
-        return this.container.fetchStatistics(filename).expressionCounters;
+        return fetchStatistics(filename).expressionCounters;
     };
 
     this.getBranchesFor = function(filename) {
-        return this.container.fetchStatistics(filename).branchCounters;
+        return fetchStatistics(filename).branchCounters;
     };
 
     this.getFunctionsFor = function(filename) {
-        let functionCounters = this.container.fetchStatistics(filename).functionCounters;
-
+        let functionCounters = fetchStatistics(filename).functionCounters;
         return _convertFunctionCountersToArray(functionCounters);
     };
 
@@ -712,7 +706,7 @@ function CoverageStatistics(files) {
         let statistics;
 
         try {
-            statistics = this.fetchStatistics(frame.script.url);
+            statistics = fetchStatistics(frame.script.url);
         } catch (e) {
             /* We don't care about this frame, return */
             return undefined;
