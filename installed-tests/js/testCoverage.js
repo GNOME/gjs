@@ -394,7 +394,7 @@ function testSimpleTwoExitBranchWithoutBlocks() {
 function testNoBranchFoundIfConsequentWasEmpty() {
     let foundBranches =
         parseScriptForBranches("let a, b;\n" +
-                               "if (1);\n");
+                               "if (1) {}\n");
     assertArrayEquals(foundBranches,
                       [],
                       branchInfoEqual);
@@ -403,7 +403,7 @@ function testNoBranchFoundIfConsequentWasEmpty() {
 function testSingleExitFoundIfOnlyAlternateExitDefined() {
     let foundBranchesForOnlyAlternateDefinition =
         parseScriptForBranches("let a, b;\n" +
-                               "if (1);\n" +
+                               "if (1) {}\n" +
                                "else\n" +
                                "    a++;\n");
     assertArrayEquals(foundBranchesForOnlyAlternateDefinition,
