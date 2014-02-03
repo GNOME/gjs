@@ -648,26 +648,25 @@ function _convertFunctionCountersToArray(functionCounters) {
 }
 
 function CoverageStatisticsContainer(files) {
+    let pendingFiles = [];
+    let coveredFiles = {};
 
-    this._pendingFiles = [];
-    this._coveredFiles = {};
-
-    this._ensureStatisticsFor = function(filename) {
-        let statistics = _createStatisticsForFoundFilename(filename, this._pendingFiles);
+    function ensureStatisticsFor(filename) {
+        let statistics = _createStatisticsForFoundFilename(filename, pendingFiles);
         if (statistics)
-            this._coveredFiles[filename] = statistics;
-    };
+            coveredFiles[filename] = statistics;
+    }
 
     this.fetchStatistics = function(filename) {
-        this._ensureStatisticsFor(filename);
-        let statistics = this._coveredFiles[filename];
+        ensureStatisticsFor(filename);
+        let statistics = coveredFiles[filename];
         if (statistics === undefined)
             throw new Error('Not tracking statistics for ' + filename);
         return statistics;
     };
 
     for (let file of files)
-        this._pendingFiles.push(file);
+        pendingFiles.push(file);
 }
 
 /**
