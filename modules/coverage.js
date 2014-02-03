@@ -652,15 +652,14 @@ function CoverageStatisticsContainer(files) {
     let coveredFiles = {};
 
     function ensureStatisticsFor(filename) {
-        let statistics = _createStatisticsForFoundFilename(filename, pendingFiles);
-        if (statistics)
-            coveredFiles[filename] = statistics;
+        if (!coveredFiles[filename])
+            coveredFiles[filename] = _createStatisticsForFoundFilename(filename, pendingFiles);
+        return coveredFiles[filename];
     }
 
     this.fetchStatistics = function(filename) {
-        ensureStatisticsFor(filename);
-        let statistics = coveredFiles[filename];
-        if (statistics === undefined)
+        let statistics = ensureStatisticsFor(filename);
+        if (statistics === null)
             throw new Error('Not tracking statistics for ' + filename);
         return statistics;
     };
