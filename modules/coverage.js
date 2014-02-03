@@ -469,37 +469,6 @@ function _populateKnownFunctions(functions, nLines) {
 }
 
 /**
- * _createStatisticsForFoundFilename
- *
- * filename: a string describing a filename, potentially in
- * pendingFiles
- * pendingFiles: an array of filenames
- */
-function _createStatisticsForFoundFilename(filename, pendingFiles) {
-    let pendingIndex = pendingFiles.indexOf(filename);
-    if (pendingIndex !== -1) {
-        pendingFiles.splice(pendingIndex, 1);
-
-        let contents = getFileContents(filename);
-        let reflection = Reflect.parse(contents);
-        let nLines = _getNumberOfLinesForScript(contents);
-
-        let functions = functionsForAST(reflection);
-
-        return {
-            contents: contents,
-            nLines: nLines,
-            expressionCounters: _expressionLinesToCounters(expressionLinesForAST(reflection), nLines),
-            branchCounters: _branchesToBranchCounters(branchesForAST(reflection), nLines),
-            functionCounters: _functionsToFunctionCounters(functions),
-            linesWithKnownFunctions: _populateKnownFunctions(functions, nLines)
-        }
-    }
-
-    return null;
-}
-
-/**
  * _incrementFunctionCounters
  *
  * functionCounters: An object which is a key-value pair with the following schema:
@@ -641,15 +610,39 @@ function CoverageStatisticsContainer(files) {
     let pendingFiles = files;
     let coveredFiles = {};
 
+    function wantsStatisticsFor(filename) {
+        return pendingFiles.indexOf(filename) !== -1;
+    }
+
+    function createStatisticsFor(filename) {
+        let idx = pendingFiles.indexOf(filename);
+        pendingFiles.splice(idx, 1);
+
+        let contents = getFileContents(filename);
+        let reflection = Reflect.parse(contents);
+        let nLines = _getNumberOfLinesForScript(contents);
+
+        let functions = functionsForAST(reflection);
+
+        return {
+            contents: contents,
+            nLines: nLines,
+            expressionCounters: _expressionLinesToCounters(expressionLinesForAST(reflection), nLines),
+            branchCounters: _branchesToBranchCounters(branchesForAST(reflection), nLines),
+            functionCounters: _functionsToFunctionCounters(functions),
+            linesWithKnownFunctions: _populateKnownFunctions(functions, nLines)
+        };
+    }
+
     function ensureStatisticsFor(filename) {
-        if (!coveredFiles[filename])
-            coveredFiles[filename] = _createStatisticsForFoundFilename(filename, pendingFiles);
+        if (!coveredFiles[filename] && wantsStatisticsFor(filename))
+            coveredFiles[filename] = createStatisticsFor(filename);
         return coveredFiles[filename];
     }
 
     this.fetchStatistics = function(filename) {
         let statistics = ensureStatisticsFor(filename);
-        if (statistics === null)
+        if (statistics === undefined)
             throw new Error('Not tracking statistics for ' + filename);
         return statistics;
     };
