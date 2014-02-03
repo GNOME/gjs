@@ -1138,13 +1138,9 @@ test_no_hits_to_coverage_data_for_unexecuted(gpointer      fixture_data,
                                                fixture->output_file_directory,
                                                NULL);
 
-    /* More than one assert per test is bad, but we are testing interlinked concepts */
-    g_assert(coverage_data_contains_value_for_key(coverage_data_contents,
-                                                  "LF:",
-                                                  "1"));
-    g_assert(coverage_data_contains_value_for_key(coverage_data_contents,
-                                                  "LH:",
-                                                  "0"));
+    /* No files were executed, so the coverage data is empty. */
+    g_assert_cmpstr(coverage_data_contents, ==, "");
+
     g_free(coverage_data_contents);
 }
 

@@ -810,9 +810,12 @@ Coverage.getFileContents = function(filename) {
 
 function testCoverageStatisticsContainerFetchesValidStatisticsForFile() {
     let container = new Coverage.CoverageStatisticsContainer(MockFilenames);
-    let statistics = container.fetchStatistics('filename');
 
+    let statistics = container.fetchStatistics('filename');
     JSUnit.assertNotEquals(undefined, statistics);
+
+    let files = container.getCoveredFiles();
+    assertArrayEquals(files, ['filename'], JSUnit.assertEquals);
 }
 
 function testCoverageStatisticsContainerThrowsForNonExistingFile() {
@@ -821,7 +824,6 @@ function testCoverageStatisticsContainerThrowsForNonExistingFile() {
     JSUnit.assertRaises(function() {
         container.fetchStatistics('nonexistent');
     });
-
 }
 
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);

@@ -828,8 +828,6 @@ print_statistics_for_file(GjsCoverage   *coverage,
                                                   NULL);
 
     JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
-    JSAutoCompartment compartment(context, priv->coverage_statistics);
-    JSAutoRequest ar(context);
 
     JSString *filename_jsstr = JS_NewStringCopyZ(context, filename);
     jsval    filename_jsval = STRING_TO_JSVAL(filename_jsstr);
@@ -889,12 +887,60 @@ print_statistics_for_file(GjsCoverage   *coverage,
     g_free(absolute_output_directory);
 }
 
+static char **
+get_covered_files(GjsCoverage *coverage)
+{
+    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
+    jsval rval;
+    JSObject *files_obj;
+
+    char **files = NULL;
+    uint32_t n_files;
+
+    if (!JS_CallFunctionName(context, priv->coverage_statistics, "getCoveredFiles", 0, NULL, &rval)) {
+        gjs_log_exception(context);
+        goto error;
+    }
+
+    if (!rval.isObject())
+        goto error;
+
+    files_obj = &rval.toObject();
+    if (!JS_GetArrayLength(context, files_obj, &n_files))
+        goto error;
+
+    files = g_new0 (char *, n_files + 1);
+    for (uint32_t i = 0; i < n_files; i++) {
+        jsval element;
+        char *file;
+        if (!JS_GetElement(context, files_obj, i, &element))
+            goto error;
+
+        if (!gjs_string_to_utf8(context, element, &file))
+            goto error;
+
+        files[i] = file;
+    }
+
+    files[n_files] = NULL;
+    return files;
+
+ error:
+    g_strfreev(files);
+    return NULL;
+}
+
 void
 gjs_coverage_write_statistics(GjsCoverage *coverage,
                               const char  *output_directory)
 {
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
     GError *error = NULL;
+
+    JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
+    JSAutoCompartment compartment(context, priv->coverage_statistics);
+    JSAutoRequest ar(context);
 
     /* Create output_directory if it doesn't exist */
     g_mkdir_with_parents(output_directory, 0755);
@@ -911,10 +957,11 @@ gjs_coverage_write_statistics(GjsCoverage *coverage,
                                          NULL,
                                          &error));
 
-    char **file_iter = priv->covered_paths;
-    while (*file_iter) {
-        print_statistics_for_file(coverage, *file_iter, output_directory, ostream);
-        ++file_iter;
+    char **files = get_covered_files(coverage);
+    if (files) {
+        for (char **file_iter = files; *file_iter; file_iter++)
+            print_statistics_for_file(coverage, *file_iter, output_directory, ostream);
+        g_strfreev(files);
     }
 
     g_object_unref(ostream);

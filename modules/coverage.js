@@ -640,6 +640,10 @@ function CoverageStatisticsContainer(files) {
         return coveredFiles[filename];
     }
 
+    this.getCoveredFiles = function() {
+        return Object.keys(coveredFiles);
+    };
+
     this.fetchStatistics = function(filename) {
         let statistics = ensureStatisticsFor(filename);
         if (statistics === undefined)
@@ -660,6 +664,10 @@ function CoverageStatistics(files) {
     /* 'debuggee' comes from the invocation from
      * a separate compartment inside of coverage.cpp */
     this.dbg = new Debugger(debuggee);
+
+    this.getCoveredFiles = function() {
+        return this.container.getCoveredFiles();
+    };
 
     this.getNumberOfLinesFor = function(filename) {
         return fetchStatistics(filename).nLines;
