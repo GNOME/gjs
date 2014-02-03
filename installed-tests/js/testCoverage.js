@@ -544,7 +544,6 @@ function testSingleExpressionLineToCounters() {
     let nLines = 4;
     let counters = Coverage._expressionLinesToCounters(expressionLines, nLines);
 
-    log(counters);
     assertArrayEquals([undefined, 0, 0, undefined], counters, JSUnit.assertEquals);
 }
 
