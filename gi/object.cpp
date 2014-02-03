@@ -2297,12 +2297,14 @@ gjs_hook_up_vfunc(JSContext *cx,
 
             /* The interface doesn't have to exist -- it could be private
              * or dynamic. */
-            if (interface)
+            if (interface) {
                 vfunc = g_interface_info_find_vfunc(interface, name);
 
-            g_base_info_unref((GIBaseInfo*)interface);
-            if (vfunc)
-                break;
+                g_base_info_unref((GIBaseInfo*)interface);
+
+                if (vfunc)
+                    break;
+            }
         }
 
         g_free(interface_list);
