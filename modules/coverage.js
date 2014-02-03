@@ -473,24 +473,14 @@ function _populateKnownFunctions(functions, nLines) {
  *
  * filename: a string describing a filename, potentially in
  * pendingFiles
- * pendingFiles: an array of an object with the following properties:
- * - filename: a string describing its filename
- * - getContents: a method to get the contents of a file
+ * pendingFiles: an array of filenames
  */
 function _createStatisticsForFoundFilename(filename, pendingFiles) {
-    let pendingIndex = -1;
-
-    for (let i = 0; i < pendingFiles.length; i++) {
-        if (filename == pendingFiles[i].filename) {
-            pendingIndex = i;
-            break;
-        }
-    }
-
+    let pendingIndex = pendingFiles.indexOf(filename);
     if (pendingIndex !== -1) {
-        let file = (pendingFiles.splice(pendingIndex, 1))[0];
+        pendingFiles.splice(pendingIndex, 1);
 
-        let contents = file.getContents();
+        let contents = getFileContents(filename);
         let reflection = Reflect.parse(contents);
         let nLines = _getNumberOfLinesForScript(contents);
 

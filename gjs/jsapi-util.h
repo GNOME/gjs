@@ -247,6 +247,9 @@ JSObject*   gjs_construct_object_dynamic     (JSContext       *context,
                                               JSObject        *proto,
                                               unsigned         argc,
                                               jsval           *argv);
+JSObject*   gjs_build_string_array           (JSContext       *context,
+                                              gssize           array_length,
+                                              char           **array_values);
 JSObject*   gjs_define_string_array          (JSContext       *context,
                                               JSObject        *obj,
                                               const char      *array_name,

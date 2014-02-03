@@ -229,22 +229,17 @@ gjs_throw_abstract_constructor_error(JSContext *context,
     gjs_throw(context, "You cannot construct new instances of '%s'", name);
 }
 
-JSObject*
-gjs_define_string_array(JSContext   *context,
-                        JSObject    *in_object,
-                        const char  *array_name,
-                        gssize       array_length,
-                        const char **array_values,
-                        unsigned     attrs)
+JSObject *
+gjs_build_string_array(JSContext   *context,
+                       gssize       array_length,
+                       char       **array_values)
 {
     GArray *elems;
     JSObject *array;
     int i;
 
-    JS_BeginRequest(context);
-
     if (array_length == -1)
-        array_length = g_strv_length((char**)array_values);
+        array_length = g_strv_length(array_values);
 
     elems = g_array_sized_new(FALSE, FALSE, sizeof(jsval), array_length);
 
@@ -257,6 +252,23 @@ gjs_define_string_array(JSContext   *context,
     array = JS_NewArrayObject(context, elems->len, (jsval*) elems->data);
     g_array_free(elems, TRUE);
 
+    return array;
+}
+
+JSObject*
+gjs_define_string_array(JSContext   *context,
+                        JSObject    *in_object,
+                        const char  *array_name,
+                        gssize       array_length,
+                        const char **array_values,
+                        unsigned     attrs)
+{
+    JSObject *array;
+
+    JSAutoRequest ar(context);
+
+    array = gjs_build_string_array(context, array_length, (char **) array_values);
+
     if (array != NULL) {
         if (!JS_DefineProperty(context, in_object,
                                array_name, OBJECT_TO_JSVAL(array),
@@ -264,7 +276,6 @@ gjs_define_string_array(JSContext   *context,
             array = NULL;
     }
 
-    JS_EndRequest(context);
     return array;
 }
 

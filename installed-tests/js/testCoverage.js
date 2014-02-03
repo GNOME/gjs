@@ -819,25 +819,27 @@ function testConvertFunctionCountersToArrayIsSorted() {
                       });
 }
 
-const MockFiles = [
-    {
-        filename: 'filename',
-        getContents: function() {
-            return "let f = function() { return 1; };"
-        }
-    }
-];
+const MockFiles = {
+    'filename': "let f = function() { return 1; };",
+};
 
+const MockFilenames = Object.keys(MockFiles);
+
+Coverage.getFileContents = function(filename) {
+    if (MockFiles[filename])
+        return MockFiles[filename];
+    throw new Error("Non existent");
+};
 
 function testCoverageStatisticsContainerFetchesValidStatisticsForFile() {
-    let container = new Coverage.CoverageStatisticsContainer(MockFiles);
+    let container = new Coverage.CoverageStatisticsContainer(MockFilenames);
     let statistics = container.fetchStatistics('filename');
 
     JSUnit.assertNotEquals(undefined, statistics);
 }
 
 function testCoverageStatisticsContainerThrowsForNonExistingFile() {
-    let container = new Coverage.CoverageStatisticsContainer(MockFiles);
+    let container = new Coverage.CoverageStatisticsContainer(MockFilenames);
 
     JSUnit.assertRaises(function() {
         container.fetchStatistics('nonexistent');

@@ -941,86 +941,6 @@ gjs_coverage_init(GjsCoverage *self)
 {
 }
 
-static JSBool
-lazy_get_script_contents(JSContext *context,
-                         unsigned   argc,
-                         jsval     *vp)
-{
-    JSObject *this_object = JS_THIS_OBJECT(context, vp);
-
-    jsval filename_value;
-    if (!JS_GetProperty(context, this_object, "filename", &filename_value) ||
-        !JSVAL_IS_STRING(filename_value)) {
-        gjs_throw(context, "The 'filename' property on this is not set");
-        return JS_FALSE;
-    }
-
-    char *filename = NULL;
-
-    if (!gjs_string_to_utf8(context, filename_value, &filename)) {
-        gjs_throw(context, "Failed to convert filename to a string");
-        return JS_FALSE;
-    }
-
-    GFile *file = g_file_new_for_commandline_arg(filename);
-    GError *error = NULL;
-
-    char *script;
-    gsize script_len;
-
-    if (!g_file_load_contents(file,
-                              NULL,
-                              &script,
-                              &script_len,
-                              NULL,
-                              &error)) {
-        gjs_throw(context, "Failed to load contents for filename %s: %s", filename, error->message);
-        g_object_unref(file);
-        g_free(filename);
-        g_clear_error(&error);
-        return JS_FALSE;
-    }
-
-    g_object_unref(file);
-    g_free(filename);
-
-    JSString *script_jsstr = JS_NewStringCopyN(context, script, script_len);
-    JS_SET_RVAL(context, vp, STRING_TO_JSVAL(script_jsstr));
-
-    g_free(script);
-
-    return JS_TRUE;
-}
-
-
-static GArray *
-strv_to_js_script_info_value_array(JSContext *context, char **strv)
-{
-    GArray *script_filenames = g_array_new(TRUE, TRUE, sizeof(jsval));
-    g_array_set_size(script_filenames, g_strv_length(strv));
-
-    unsigned int i = 0;
-    for (; i < script_filenames->len; ++i) {
-        const char *filename = strv[i];
-        JSString *filename_str = JS_NewStringCopyZ(context, filename);
-        jsval filename_str_value = STRING_TO_JSVAL(filename_str);
-
-        JSObject *object = JS_NewObject(context, NULL, NULL, NULL);
-
-        JS_SetProperty(context, object, "filename", &filename_str_value);
-        JS_DefineFunction(context,
-                          object,
-                          "getContents",
-                          (JSNative) lazy_get_script_contents,
-                          0,
-                          GJS_MODULE_PROP_FLAGS);
-
-        g_array_index(script_filenames, jsval, i) = OBJECT_TO_JSVAL(object);
-    }
-
-    return script_filenames;
-}
-
 static JSClass coverage_global_class = {
     "GjsCoverageGlobal", JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST),
     JS_PropertyStub, JS_DeletePropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
@@ -1112,8 +1032,51 @@ coverage_warning(JSContext *context,
     return JS_TRUE;
 }
 
+static JSBool
+coverage_get_file_contents(JSContext *context,
+                           unsigned   argc,
+                           jsval     *vp)
+{
+    JSBool ret = JS_FALSE;
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    char *filename = NULL;
+    GFile *file = NULL;
+    char *script = NULL;
+    gsize script_len;
+    JSString *script_jsstr;
+    GError *error = NULL;
+
+    if (!gjs_parse_call_args(context, "getFileContents", "s", args,
+                             "filename", &filename))
+        goto out;
+
+    file = g_file_new_for_commandline_arg(filename);
+
+    if (!g_file_load_contents(file,
+                              NULL,
+                              &script,
+                              &script_len,
+                              NULL,
+                              &error)) {
+        gjs_throw(context, "Failed to load contents for filename %s: %s", filename, error->message);
+        goto out;
+    }
+
+    args.rval().setString(JS_NewStringCopyN(context, script, script_len));
+    ret = JS_TRUE;
+
+ out:
+    g_clear_error(&error);
+    if (file)
+        g_object_unref(file);
+    g_free(filename);
+    g_free(script);
+    return ret;
+}
+
 static JSFunctionSpec coverage_funcs[] = {
     { "warning", JSOP_WRAPPER (coverage_warning), 1, GJS_MODULE_PROP_FLAGS },
+    { "getFileContents", JSOP_WRAPPER (coverage_get_file_contents), 1, GJS_MODULE_PROP_FLAGS },
     { NULL },
 };
 
@@ -1180,8 +1143,7 @@ bootstrap_coverage(GjsCoverage *coverage)
         JSObject *coverage_statistics_constructor = JSVAL_TO_OBJECT(coverage_statistics_prototype_value);
 
         /* Now create the array to pass the desired script names over */
-        GArray *filenames = strv_to_js_script_info_value_array(context, priv->covered_paths);
-        JSObject *filenames_js_array = JS_NewArrayObject(context, filenames->len, (jsval *) filenames->data);
+        JSObject *filenames_js_array = gjs_build_string_array(context, -1, priv->covered_paths);
 
         jsval coverage_statistics_constructor_arguments[] = {
             OBJECT_TO_JSVAL(filenames_js_array)
@@ -1194,13 +1156,10 @@ bootstrap_coverage(GjsCoverage *coverage)
 
         if (!coverage_statistics) {
             gjs_throw(context, "Failed to create coverage_statitiscs object");
-            g_array_unref(filenames);
             return FALSE;
         }
 
         priv->coverage_statistics = coverage_statistics;
-
-        g_array_unref(filenames);
     }
 
     return TRUE;
