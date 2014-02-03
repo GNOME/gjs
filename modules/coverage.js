@@ -648,7 +648,7 @@ function _convertFunctionCountersToArray(functionCounters) {
 }
 
 function CoverageStatisticsContainer(files) {
-    let pendingFiles = [];
+    let pendingFiles = files;
     let coveredFiles = {};
 
     function ensureStatisticsFor(filename) {
@@ -663,9 +663,6 @@ function CoverageStatisticsContainer(files) {
             throw new Error('Not tracking statistics for ' + filename);
         return statistics;
     };
-
-    for (let file of files)
-        pendingFiles.push(file);
 }
 
 /**
