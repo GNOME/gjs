@@ -210,16 +210,6 @@ function testExpressionLinesFoundForObjectPropertyFunction() {
                       JSUnit.assertEquals);
 }
 
-function testExpressionLinesFoundForObjectPropertyFunction() {
-    let foundLinesInsideObjectPropertyFunction =
-        parseScriptForExpressionLines("var a = {\n" +
-                                      "    Name: function() {},\n" +
-                                      "};\n");
-    assertArrayEquals(foundLinesInsideObjectPropertyFunction,
-                      [1, 2],
-                      JSUnit.assertEquals);
-}
-
 function testExpressionLinesFoundForObjectPropertyObjectExpression() {
     let foundLinesInsideObjectPropertyObjectExpression =
         parseScriptForExpressionLines("var a = {\n" +
@@ -430,19 +420,6 @@ function testImplicitBranchFoundForWhileStatement() {
                                "}\n" +
                                "let b = 2;");
     assertArrayEquals(foundBranchesForWhileStatement,
-                      [
-                          { point: 1, exits: [2] }
-                      ],
-                      branchInfoEqual);
-}
-
-function testImplicitBranchFoundForDoWhileStatement() {
-    let foundBranchesForDoWhileStatement =
-        parseScriptForBranches("do {\n" +
-                               "    let a = 1;\n" +
-                               "} while (1)\n" +
-                               "let b = 2;");
-    assertArrayEquals(foundBranchesForDoWhileStatement,
                       [
                           { point: 1, exits: [2] }
                       ],
