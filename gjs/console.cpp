@@ -36,7 +36,7 @@ static char *command = NULL;
 
 static GOptionEntry entries[] = {
     { "command", 'c', 0, G_OPTION_ARG_STRING, &command, "Program passed in as a string", "COMMAND" },
-    { "coverage-path", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &coverage_paths, "Add the directory DIR to the list of directories to generate coverage info for", "DIR" },
+    { "coverage-path", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &coverage_paths, "Add the filename FILE to the list of files to generate coverage info for", "FILE" },
     { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &coverage_output_path, "Write coverage output to a directory DIR. This option is mandatory when using --coverage-path", "DIR", },
     { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &include_path, "Add the directory DIR to the list of directories to search for js files.", "DIR" },
     { NULL }
