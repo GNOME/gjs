@@ -678,10 +678,10 @@ function CoverageStatisticsContainer(files) {
  * It isn't poissible to unit test this class because it depends on running
  * Debugger which in turn depends on objects injected in from another compartment */
 function CoverageStatistics(files) {
+    this.container = new CoverageStatisticsContainer(files);
 
     /* 'debuggee' comes from the invocation from
      * a separate compartment inside of coverage.cpp */
-    this.container = new CoverageStatisticsContainer(files);
     this.dbg = new Debugger(debuggee);
     this.dbg.fetchStatistics = function(statisticsContainer) {
         let container = statisticsContainer;
