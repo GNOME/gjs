@@ -64,18 +64,16 @@ write_to_file_at_beginning(int        handle,
 static int
 unlink_if_node_is_a_file(const char *path, const struct stat *sb, int typeflag)
 {
-    if (typeflag & FTW_F)
+    if (typeflag == FTW_F)
         unlink(path);
-
     return 0;
 }
 
 static int
 rmdir_if_node_is_a_dir(const char *path, const struct stat *sb, int typeflag)
 {
-    if (typeflag & FTW_D)
+    if (typeflag == FTW_D)
         rmdir(path);
-
     return 0;
 }
 
