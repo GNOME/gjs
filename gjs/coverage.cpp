@@ -513,35 +513,6 @@ get_array_from_js_value(JSContext             *context,
     return TRUE;
 }
 
-static GArray *
-call_js_function_for_array_return(JSContext             *context,
-                                  JSObject              *object,
-                                  size_t                 array_element_size,
-                                  GDestroyNotify         element_clear_func,
-                                  ConvertAndInsertJSVal  inserter,
-                                  const char            *function_name,
-                                  jsval                 *argument)
-{
-    GArray *array = NULL;
-    jsval rval;
-    if (!JS_CallFunctionName(context, object, function_name, 1, argument, &rval)) {
-        gjs_log_exception(context);
-        return NULL;
-    }
-
-    if (!get_array_from_js_value(context,
-                                 &rval,
-                                 array_element_size,
-                                 element_clear_func,
-                                 inserter,
-                                 &array)) {
-        gjs_log_exception(context);
-        return NULL;
-    }
-
-    return array;
-}
-
 static gboolean
 convert_and_insert_unsigned_int(GArray    *array,
                                 JSContext *context,
@@ -566,17 +537,25 @@ convert_and_insert_unsigned_int(GArray    *array,
 }
 
 static GArray *
-get_line_hits_for_js_dbg_coverage_object(JSContext *context,
-                                         JSObject  *object,
-                                         jsval     *filename_value)
+get_executed_lines_for(GjsCoverage *coverage,
+                       jsval       *filename_value)
 {
-    return call_js_function_for_array_return(context,
-                                             object,
-                                             sizeof(unsigned int),
-                                             NULL,
-                                             convert_and_insert_unsigned_int,
-                                             "getExecutedLinesFor",
-                                             filename_value);
+    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
+    GArray *array = NULL;
+    jsval rval;
+
+    if (!JS_CallFunctionName(context, priv->coverage_statistics, "getExecutedLinesFor", 1, filename_value, &rval)) {
+        gjs_log_exception(context);
+        return NULL;
+    }
+
+    if (!get_array_from_js_value(context, &rval, sizeof (unsigned int), NULL, convert_and_insert_unsigned_int, &array)) {
+        gjs_log_exception(context);
+        return NULL;
+    }
+
+    return array;
 }
 
 static void
@@ -650,17 +629,25 @@ convert_and_insert_function_decl(GArray    *array,
 }
 
 static GArray *
-get_function_hits_from_js_dbg_coverage_object(JSContext *context,
-                                              JSObject  *object,
-                                              jsval     *filename_value)
+get_functions_for(GjsCoverage *coverage,
+                  jsval       *filename_value)
 {
-    return call_js_function_for_array_return(context,
-                                             object,
-                                             sizeof(GjsCoverageFunction),
-                                             clear_coverage_function,
-                                             convert_and_insert_function_decl,
-                                             "getFunctionsFor",
-                                             filename_value);
+    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
+    GArray *array = NULL;
+    jsval rval;
+
+    if (!JS_CallFunctionName(context, priv->coverage_statistics, "getFunctionsFor", 1, filename_value, &rval)) {
+        gjs_log_exception(context);
+        return NULL;
+    }
+
+    if (!get_array_from_js_value(context, &rval, sizeof (GjsCoverageFunction), clear_coverage_function, convert_and_insert_function_decl, &array)) {
+        gjs_log_exception(context);
+        return NULL;
+    }
+
+    return array;
 }
 
 static void
@@ -803,26 +790,35 @@ convert_and_insert_branch_info(GArray    *array,
 }
 
 static GArray *
-get_branches_from_js_dbg_coverage_object(JSContext *context,
-                                         JSObject  *object,
-                                         jsval     *filename)
+get_branches_for(GjsCoverage *coverage,
+                 jsval       *filename_value)
 {
-    return call_js_function_for_array_return(context,
-                                             object,
-                                             sizeof(GjsCoverageBranch),
-                                             clear_coverage_branch,
-                                             convert_and_insert_branch_info,
-                                             "getBranchesFor",
-                                             filename);
+    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
+    GArray *array = NULL;
+    jsval rval;
+
+    if (!JS_CallFunctionName(context, priv->coverage_statistics, "getBranchesFor", 1, filename_value, &rval)) {
+        gjs_log_exception(context);
+        return NULL;
+    }
+
+    if (!get_array_from_js_value(context, &rval, sizeof (GjsCoverageBranch), clear_coverage_branch, convert_and_insert_branch_info, &array)) {
+        gjs_log_exception(context);
+        return NULL;
+    }
+
+    return array;
 }
 
 static void
-print_statistics_for_file(const char    *filename,
+print_statistics_for_file(GjsCoverage   *coverage,
+                          char          *filename,
                           const char    *output_directory,
-                          JSContext     *context,
-                          JSObject      *stats_obj,
                           GOutputStream *ostream)
 {
+    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+
     char *absolute_output_directory = get_absolute_path(output_directory);
     char *diverged_paths =
         find_diverging_child_components(filename,
@@ -831,27 +827,23 @@ print_statistics_for_file(const char    *filename,
                                                   diverged_paths,
                                                   NULL);
 
-    JSAutoCompartment compartment(context, stats_obj);
+    JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
+    JSAutoCompartment compartment(context, priv->coverage_statistics);
 
     JSString *filename_jsstr = JS_NewStringCopyZ(context, filename);
     jsval    filename_jsval = STRING_TO_JSVAL(filename_jsstr);
 
-    GArray *lines = get_line_hits_for_js_dbg_coverage_object(context, stats_obj,
-                                                             &filename_jsval);
-    GArray *functions = get_function_hits_from_js_dbg_coverage_object(context, stats_obj,
-                                                                      &filename_jsval);
-    GArray *branches = get_branches_from_js_dbg_coverage_object(context, stats_obj,
-                                                                &filename_jsval);
+    GArray *lines = get_executed_lines_for(coverage, &filename_jsval);
+    GArray *functions = get_functions_for(coverage, &filename_jsval);
+    GArray *branches = get_branches_for(coverage, &filename_jsval);
 
     if (!lines || !functions || !branches)
         return;
 
-
     copy_source_file_to_coverage_output(filename, destination_filename);
 
     write_source_file_header(ostream, (const char *) destination_filename);
-    write_functions(ostream,
-                    functions);
+    write_functions(ostream, functions);
 
     unsigned int functions_hit_count = 0;
     unsigned int functions_found_count = 0;
@@ -918,17 +910,9 @@ gjs_coverage_write_statistics(GjsCoverage *coverage,
                                          NULL,
                                          &error));
 
-
-    JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
-    JSAutoRequest ar(context);
-
     char **file_iter = priv->covered_paths;
     while (*file_iter) {
-        print_statistics_for_file(*file_iter,
-                                  output_directory,
-                                  context,
-                                  priv->coverage_statistics,
-                                  ostream);
+        print_statistics_for_file(coverage, *file_iter, output_directory, ostream);
         ++file_iter;
     }
 
