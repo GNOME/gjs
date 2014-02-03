@@ -668,8 +668,6 @@ function CoverageStatisticsContainer(files) {
 
     for (let file of files)
         this._pendingFiles.push(file);
-
-    return this;
 }
 
 /**
@@ -749,7 +747,5 @@ function CoverageStatistics(files) {
 
         return undefined;
     };
-
-    return this;
 }
 
