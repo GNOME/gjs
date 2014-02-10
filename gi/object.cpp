@@ -1355,6 +1355,9 @@ object_instance_finalize(JSFreeOp  *fop,
                                     priv->info ? g_base_info_get_name((GIBaseInfo*) priv->info) : g_type_name(priv->gtype)));
 
     if (priv->gobj) {
+        gboolean had_toggle_up;
+        gboolean had_toggle_down;
+
         invalidate_all_signals (priv);
 
         if (G_UNLIKELY (priv->gobj->ref_count <= 0)) {
@@ -1363,9 +1366,10 @@ object_instance_finalize(JSFreeOp  *fop,
                     priv->info ? g_base_info_get_name((GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
         }
 
-        cancel_toggle_idle(priv->gobj, TOGGLE_UP);
+        had_toggle_up = cancel_toggle_idle(priv->gobj, TOGGLE_UP);
+        had_toggle_down = cancel_toggle_idle(priv->gobj, TOGGLE_DOWN);
 
-        if (G_UNLIKELY (cancel_toggle_idle(priv->gobj, TOGGLE_DOWN))) {
+        if (!had_toggle_up && had_toggle_down) {
             g_error("Finalizing proxy for an object that's scheduled to be unrooted: %s.%s\n",
                     priv->info ? g_base_info_get_namespace((GIBaseInfo*) priv->info) : "",
                     priv->info ? g_base_info_get_name((GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
