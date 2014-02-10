@@ -1,6 +1,6 @@
 /* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
- * Copyright (c) 2008  litl, LLC
+ * Copyright (c) 2014 Colin Walters <walters@verbum.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,31 +21,15 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_OBJECT_H__
-#define __GJS_OBJECT_H__
+#ifndef __GJS_CONTEXT_PRIVATE_H__
+#define __GJS_CONTEXT_PRIVATE_H__
 
-#include <glib.h>
-#include <girepository.h>
-#include "gjs/jsapi-util.h"
+#include "context.h"
 
 G_BEGIN_DECLS
 
-void      gjs_define_object_class       (JSContext     *context,
-                                         JSObject      *in_object,
-                                         GIObjectInfo  *info,
-                                         GType          gtype,
-                                         JSObject     **constructor_p);
-JSObject* gjs_object_from_g_object      (JSContext     *context,
-                                         GObject       *gobj);
-GObject*  gjs_g_object_from_object      (JSContext     *context,
-                                         JSObject      *obj);
-JSBool    gjs_typecheck_object          (JSContext     *context,
-                                         JSObject      *obj,
-                                         GType          expected_type,
-                                         JSBool         throw_error);
-
-void      gjs_object_prepare_shutdown   (JSContext     *context);
+gboolean     _gjs_context_destroying                  (GjsContext *js_context);
 
 G_END_DECLS
 
-#endif  /* __GJS_OBJECT_H__ */
+#endif  /* __GJS_CONTEXT_PRIVATE_H__ */

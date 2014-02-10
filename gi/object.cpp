@@ -42,6 +42,7 @@
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 #include <gjs/type-module.h>
+#include <gjs/context-private.h>
 
 #include <util/log.h>
 #include <util/hash-x32.h>
@@ -1010,6 +1011,15 @@ wrapped_gobj_toggle_notify(gpointer      data,
 {
     gboolean gc_blocked = FALSE;
     gboolean toggle_up_queued, toggle_down_queued;
+    GjsContext *context;
+
+    context = gjs_context_get_current();
+    if (_gjs_context_destroying(context)) {
+        /* Do nothing here - we're in the process of disassociating
+         * the objects.
+         */
+        return;
+    }
 
     /* We only want to touch javascript from one thread.
      * If we're not in that thread, then we need to defer processing
@@ -1065,15 +1075,46 @@ wrapped_gobj_toggle_notify(gpointer      data,
         gjs_unblock_gc();
 }
 
+static void
+release_native_object (ObjectInstance *priv)
+{
+    set_js_obj(priv->gobj, NULL);
+    g_object_remove_toggle_ref(priv->gobj, wrapped_gobj_toggle_notify, NULL);
+    priv->gobj = NULL;
+}
+
 /* At shutdown, we need to ensure we've cleared the context of any
  * pending toggle references.
  */
 void
-gjs_object_process_pending_toggles (void)
+gjs_object_prepare_shutdown (JSContext *context)
 {
-    while (g_main_context_pending (NULL) &&
-           g_atomic_int_get (&pending_idle_toggles) > 0) {
-        g_main_context_iteration (NULL, FALSE);
+    JSObject *keep_alive = gjs_keep_alive_get_global_if_exists (context);
+    GjsKeepAliveIter kiter;
+    JSObject *child;
+    void *data;
+
+    if (!keep_alive)
+        return;
+
+    /* First, get rid of anything left over on the main context */
+    while (g_main_context_pending(NULL) &&
+           g_atomic_int_get(&pending_idle_toggles) > 0) {
+        g_main_context_iteration(NULL, FALSE);
+    }
+
+    /* Now, we iterate over all of the objects, breaking the JS <-> C
+     * associaton.  We avoid the potential recursion implied in:
+     *   toggle ref removal -> gobj dispose -> toggle ref notify
+     * by simply ignoring toggle ref notifications during this process.
+     */
+    gjs_keep_alive_iterator_init(&kiter, keep_alive);
+    while (gjs_keep_alive_iterator_next(&kiter,
+                                        gobj_no_longer_kept_alive_func,
+                                        &child, &data)) {
+        ObjectInstance *priv = (ObjectInstance*)data;
+
+        release_native_object(priv);
     }
 }
 
@@ -1329,10 +1370,8 @@ object_instance_finalize(JSFreeOp  *fop,
                     priv->info ? g_base_info_get_namespace((GIBaseInfo*) priv->info) : "",
                     priv->info ? g_base_info_get_name((GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
         }
-
-        set_js_obj(priv->gobj, NULL);
-        g_object_remove_toggle_ref(priv->gobj, wrapped_gobj_toggle_notify, NULL);
-        priv->gobj = NULL;
+        
+        release_native_object(priv);
     }
 
     if (priv->keep_alive != NULL) {

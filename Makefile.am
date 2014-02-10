@@ -56,6 +56,7 @@ nobase_gjs_module_include_HEADERS =	\
 
 noinst_HEADERS +=		\
 	gjs/jsapi-private.h	\
+	gjs/context-private.h	\
 	gi/proxyutils.h		\
 	util/crash.h		\
 	util/hash-x32.h		\

@@ -332,7 +332,7 @@ gjs_keep_alive_create(JSContext *context)
 }
 
 JSObject*
-gjs_keep_alive_get_global(JSContext *context)
+gjs_keep_alive_get_global_if_exists (JSContext *context)
 {
     jsval keep_alive;
 
@@ -340,6 +340,17 @@ gjs_keep_alive_get_global(JSContext *context)
 
     if (G_LIKELY (JSVAL_IS_OBJECT(keep_alive)))
         return JSVAL_TO_OBJECT(keep_alive);
+    
+    return NULL;
+}
+
+JSObject*
+gjs_keep_alive_get_global(JSContext *context)
+{
+    JSObject *keep_alive = gjs_keep_alive_get_global_if_exists(context);
+
+    if (G_LIKELY(keep_alive))
+        return keep_alive;
 
     return gjs_keep_alive_create(context);
 }
@@ -380,4 +391,43 @@ gjs_keep_alive_remove_global_child(JSContext         *context,
     gjs_keep_alive_remove_child(keep_alive, notify, child, data);
 
     JS_EndRequest(context);
+}
+
+typedef struct {
+    GHashTableIter hashiter;
+} GjsRealKeepAliveIter;
+
+void
+gjs_keep_alive_iterator_init (GjsKeepAliveIter *iter,
+                              JSObject         *keep_alive)
+{
+    GjsRealKeepAliveIter *real = (GjsRealKeepAliveIter*)iter;
+    KeepAlive *priv = (KeepAlive *) JS_GetPrivate(keep_alive);
+    g_assert(priv != NULL);
+    g_hash_table_iter_init(&real->hashiter, priv->children);
+}
+
+gboolean
+gjs_keep_alive_iterator_next (GjsKeepAliveIter  *iter,
+                              GjsUnrootedFunc    notify_func,
+                              JSObject         **out_child,
+                              void             **out_data)
+{
+    GjsRealKeepAliveIter *real = (GjsRealKeepAliveIter*)iter;
+    gpointer k, v;
+    gboolean ret = FALSE;
+
+    while (g_hash_table_iter_next(&real->hashiter, &k, &v)) {
+        Child *child = (Child*)k;
+
+        if (child->notify != notify_func)
+            continue;
+
+        ret = TRUE;
+        *out_child = child->child;
+        *out_data = child->data;
+        break;
+    }
+
+    return ret;
 }

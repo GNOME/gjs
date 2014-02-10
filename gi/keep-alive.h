@@ -63,6 +63,7 @@ void      gjs_keep_alive_remove_child              (JSObject          *keep_aliv
                                                     JSObject          *child,
                                                     void              *data);
 JSObject* gjs_keep_alive_get_global                (JSContext         *context);
+JSObject* gjs_keep_alive_get_global_if_exists      (JSContext         *context);
 void      gjs_keep_alive_add_global_child          (JSContext         *context,
                                                     GjsUnrootedFunc  notify,
                                                     JSObject          *child,
@@ -71,6 +72,20 @@ void      gjs_keep_alive_remove_global_child       (JSContext         *context,
                                                     GjsUnrootedFunc  notify,
                                                     JSObject          *child,
                                                     void              *data);
+
+typedef struct GjsKeepAliveIter GjsKeepAliveIter;
+struct GjsKeepAliveIter {
+    gpointer dummy[4];
+    guint v;
+    GHashTableIter dummyhiter;
+};
+
+void gjs_keep_alive_iterator_init (GjsKeepAliveIter *iter, JSObject *keep_alive);
+
+gboolean gjs_keep_alive_iterator_next (GjsKeepAliveIter  *iter,
+                                       GjsUnrootedFunc    notify_func,
+                                       JSObject         **out_child,
+                                       void             **out_data);
 
 G_END_DECLS
 

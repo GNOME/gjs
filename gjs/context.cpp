@@ -25,7 +25,7 @@
 
 #include <gio/gio.h>
 
-#include "context.h"
+#include "context-private.h"
 #include "importer.h"
 #include "jsapi-util.h"
 #include "native.h"
@@ -65,6 +65,8 @@ struct _GjsContext {
     char *program_name;
 
     char **search_path;
+
+    gboolean destroying;
 
     jsid const_strings[GJS_STRING_LAST];
 };
@@ -342,8 +344,15 @@ gjs_context_dispose(GObject *object)
          */
         JS_GC(js_context->runtime);
 
-        gjs_object_process_pending_toggles();
+        js_context->destroying = TRUE;
 
+        /* Now, release all native objects, to avoid recursion between
+         * the JS teardown and the C teardown.  The JSObject proxies
+         * still exist, but point to NULL.
+         */
+        gjs_object_prepare_shutdown(js_context->context);
+
+        /* Tear down JS */
         JS_DestroyContext(js_context->context);
         js_context->context = NULL;
         js_context->runtime = NULL;
@@ -505,6 +514,12 @@ gjs_context_new_with_search_path(char** search_path)
     return (GjsContext*) g_object_new (GJS_TYPE_CONTEXT,
                          "search-path", search_path,
                          NULL);
+}
+
+gboolean
+_gjs_context_destroying (GjsContext *context)
+{
+    return context->destroying;
 }
 
 /**
