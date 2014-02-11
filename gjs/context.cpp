@@ -335,6 +335,8 @@ gjs_context_dispose(GObject *object)
 
     if (js_context->context != NULL) {
 
+        JSAutoRequest ar(js_context->context);
+
         gjs_debug(GJS_DEBUG_CONTEXT,
                   "Destroying JS context");
 
