@@ -338,11 +338,13 @@ gjs_context_dispose(GObject *object)
         gjs_debug(GJS_DEBUG_CONTEXT,
                   "Destroying JS context");
 
+        JS_BeginRequest(js_context->context);
         /* Do a full GC here before tearing down, since once we do
          * that we may not have the JS_GetPrivate() to access the
          * context
          */
         JS_GC(js_context->runtime);
+        JS_EndRequest(js_context->context);
 
         js_context->destroying = TRUE;
 
