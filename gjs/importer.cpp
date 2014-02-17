@@ -774,7 +774,7 @@ importer_new_enumerate(JSContext  *context,
                 if (g_file_test(full_path, G_FILE_TEST_IS_DIR)) {
                     g_ptr_array_add(iter->elements, g_strdup(filename));
                 } else {
-                    if (g_str_has_suffix(filename, "."G_MODULE_SUFFIX) ||
+                    if (g_str_has_suffix(filename, "." G_MODULE_SUFFIX) ||
                         g_str_has_suffix(filename, ".js")) {
                         g_ptr_array_add(iter->elements,
                                         g_strndup(filename, strlen(filename) - 3));
