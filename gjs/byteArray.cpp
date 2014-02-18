@@ -56,7 +56,8 @@ static void   byte_array_finalize      (JSFreeOp     *fop,
 struct JSClass gjs_byte_array_class = {
     "ByteArray",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_BACKGROUND_FINALIZE,
+    JSCLASS_BACKGROUND_FINALIZE |
+    JSCLASS_IMPLEMENTS_BARRIERS,
     JS_PropertyStub,
     JS_DeletePropertyStub,
     (JSPropertyOp)byte_array_get_prop,

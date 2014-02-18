@@ -1260,7 +1260,8 @@ gjs_coverage_init(GjsCoverage *self)
 
 static JSClass coverage_global_class = {
     "GjsCoverageGlobal",
-    JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST),
+    JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST) |
+    JSCLASS_IMPLEMENTS_BARRIERS,
     JS_PropertyStub,
     JS_DeletePropertyStub,
     JS_PropertyStub,

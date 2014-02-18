@@ -46,7 +46,8 @@ gjs_util_error_quark (void)
 
 static JSClass global_class = {
     "GjsGlobal",
-    JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST),
+    JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST) |
+    JSCLASS_IMPLEMENTS_BARRIERS,
     JS_PropertyStub,
     JS_DeletePropertyStub,
     JS_PropertyStub,

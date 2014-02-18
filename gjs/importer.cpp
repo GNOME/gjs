@@ -938,7 +938,8 @@ struct JSClass gjs_importer_class = {
     "GjsFileImporter",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
-    JSCLASS_NEW_ENUMERATE,
+    JSCLASS_NEW_ENUMERATE |
+    JSCLASS_IMPLEMENTS_BARRIERS,
     JS_PropertyStub,
     JS_DeletePropertyStub,
     JS_PropertyStub,
