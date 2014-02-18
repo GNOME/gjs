@@ -301,6 +301,7 @@ gjs_runtime_for_current_thread(void)
 
         JS_SetNativeStackQuota(runtime, 1024*1024);
         JS_SetGCParameter(runtime, JSGC_MAX_BYTES, 0xffffffff);
+        JS_SetGCParameter(runtime, JSGC_MODE, JSGC_MODE_INCREMENTAL);
         JS_SetLocaleCallbacks(runtime, &gjs_locale_callbacks);
         JS_AddFinalizeCallback(runtime, gjs_finalize_callback, data);
         JS_SetErrorReporter(runtime, gjs_error_reporter);
