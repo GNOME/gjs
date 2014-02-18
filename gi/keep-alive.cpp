@@ -29,11 +29,12 @@
 #include <util/log.h>
 #include <util/glib.h>
 
-typedef struct {
+struct Child {
+    JS::Heap<JSObject*> child;
+
     GjsUnrootedFunc notify;
-    JSObject *child;
     void *data;
-} Child;
+};
 
 typedef struct {
     GHashTable *children;
@@ -52,7 +53,7 @@ child_hash(gconstpointer  v)
 
     return
         GPOINTER_TO_UINT(child->notify) ^
-        GPOINTER_TO_UINT(child->child) ^
+        GPOINTER_TO_UINT(child->child.get()) ^
         GPOINTER_TO_UINT(child->data);
 }
 
@@ -73,6 +74,8 @@ static void
 child_free(void *data)
 {
     Child *child = (Child *) data;
+
+    child->~Child();
     g_slice_free(Child, child);
 }
 
@@ -118,9 +121,7 @@ trace_foreach(void *key,
     JSTracer *tracer = (JSTracer *) data;
 
     if (child->child != NULL) {
-        JS::Value val;
-        val = JS::ObjectValue(*(child->child));
-        JS_CallValueTracer(tracer, &val, "keep-alive::val");
+        JS_CallHeapObjectTracer(tracer, &child->child, "keep-alive::val");
     }
 }
 
@@ -270,6 +271,7 @@ gjs_keep_alive_add_child(JSObject          *keep_alive,
     g_return_if_fail(!priv->inside_finalize);
 
     child = g_slice_new0(Child);
+    child = new (child) Child();
     child->notify = notify;
     child->child = obj;
     child->data = data;

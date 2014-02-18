@@ -32,13 +32,20 @@
 #include "gjs/mem.h"
 #include "keep-alive.h"
 
-typedef struct {
-    GClosure base;
+struct Closure {
     JSRuntime *runtime;
     JSContext *context;
     JS::Heap<JSObject *> obj;
     guint unref_on_global_object_finalized : 1;
-} Closure;
+};
+
+struct GjsClosure {
+    GClosure base;
+
+    /* We need a separate object to be able to call
+       the C++ constructor without stomping on the base */
+    Closure priv;
+};
 
 /*
  * Memory management of closures is "interesting" because we're keeping around
@@ -75,8 +82,12 @@ typedef struct {
  */
 
 static void
-invalidate_js_pointers(Closure *c)
+invalidate_js_pointers(GjsClosure *gc)
 {
+    Closure *c;
+
+    c = &gc->priv;
+
     if (c->obj == NULL)
         return;
 
@@ -87,17 +98,18 @@ invalidate_js_pointers(Closure *c)
     /* Notify any closure reference holders they
      * may want to drop references.
      */
-    g_closure_invalidate(&c->base);
+    g_closure_invalidate(&gc->base);
 }
 
 static void
 global_context_finalized(JSObject *obj,
                          void     *data)
 {
+    GjsClosure *gc = (GjsClosure*) data;
     Closure *c;
     bool need_unref;
 
-    c = (Closure *) data;
+    c = &gc->priv;
 
     gjs_debug_closure("Context global object destroy notifier on closure %p "
                       "which calls object %p",
@@ -112,17 +124,18 @@ global_context_finalized(JSObject *obj,
     if (c->obj != NULL) {
         g_assert(c->obj == obj);
 
-        invalidate_js_pointers(c);
+        invalidate_js_pointers(gc);
     }
 
     if (need_unref) {
-        g_closure_unref(&c->base);
+        g_closure_unref(&gc->base);
     }
 }
 
 static void
-check_context_valid(Closure *c)
+check_context_valid(GjsClosure *gc)
 {
+    Closure *c = &gc->priv;
     JSContext *a_context;
     JSContext *iter;
 
@@ -142,7 +155,7 @@ check_context_valid(Closure *c)
                       c->context, c, c->obj);
 
     /* Did not find the context. */
-    invalidate_js_pointers(c);
+    invalidate_js_pointers(gc);
 }
 
 /* Invalidation is like "dispose" - it is guaranteed to happen at
@@ -162,7 +175,7 @@ closure_invalidated(gpointer data,
 {
     Closure *c;
 
-    c = (Closure*) closure;
+    c = &((GjsClosure*) closure)->priv;
 
     GJS_DEC_COUNTER(closure);
     gjs_debug_closure("Invalidating closure %p which calls object %p",
@@ -176,7 +189,7 @@ closure_invalidated(gpointer data,
 
     /* this will set c->obj to null if the context is dead
      */
-    check_context_valid(c);
+    check_context_valid((GjsClosure*)closure);
 
     if (c->obj == NULL) {
         /* Context is dead here. This happens if, as a side effect of
@@ -208,7 +221,7 @@ closure_invalidated(gpointer data,
                           closure);
 
         c->unref_on_global_object_finalized = true;
-        g_closure_ref(&c->base);
+        g_closure_ref(closure);
     } else {
         /* If the context still exists, then remove our destroy
          * notifier.  Otherwise we would call the destroy notifier on
@@ -224,7 +237,7 @@ closure_invalidated(gpointer data,
         gjs_keep_alive_remove_global_child(c->context,
                                            global_context_finalized,
                                            c->obj,
-                                           c);
+                                           closure);
 
         c->obj = NULL;
         c->context = NULL;
@@ -236,13 +249,22 @@ static void
 closure_set_invalid(gpointer  data,
                     GClosure *closure)
 {
-    Closure *self = (Closure*) closure;
+    Closure *self = &((GjsClosure*) closure)->priv;
 
     self->obj = NULL;
     self->context = NULL;
     self->runtime = NULL;
 
     GJS_DEC_COUNTER(closure);
+}
+
+static void
+closure_finalize(gpointer  data,
+                 GClosure *closure)
+{
+    Closure *self = &((GjsClosure*) closure)->priv;
+
+    self->~Closure();
 }
 
 void
@@ -253,9 +275,9 @@ gjs_closure_invoke(GClosure                   *closure,
     Closure *c;
     JSContext *context;
 
-    c = (Closure*) closure;
+    c = &((GjsClosure*) closure)->priv;
 
-    check_context_valid(c);
+    check_context_valid((GjsClosure*)closure);
 
     if (c->obj == NULL) {
         /* We were destroyed; become a no-op */
@@ -302,7 +324,7 @@ gjs_closure_is_valid(GClosure *closure)
 {
     Closure *c;
 
-    c = (Closure*) closure;
+    c = &((GjsClosure*) closure)->priv;
 
     return c->context != NULL;
 }
@@ -312,7 +334,7 @@ gjs_closure_get_context(GClosure *closure)
 {
     Closure *c;
 
-    c = (Closure*) closure;
+    c = &((GjsClosure*) closure)->priv;
 
     return c->context;
 }
@@ -322,7 +344,7 @@ gjs_closure_get_callable(GClosure *closure)
 {
     Closure *c;
 
-    c = (Closure*) closure;
+    c = &((GjsClosure*) closure)->priv;
 
     return c->obj;
 }
@@ -333,7 +355,7 @@ gjs_closure_trace(GClosure *closure,
 {
     Closure *c;
 
-    c = (Closure*) closure;
+    c = &((GjsClosure*) closure)->priv;
 
     if (c->obj == NULL)
         return;
@@ -347,9 +369,12 @@ gjs_closure_new(JSContext  *context,
                 const char *description,
                 bool        root_function)
 {
+    GjsClosure *gc;
     Closure *c;
 
-    c = (Closure*) g_closure_new_simple(sizeof(Closure), NULL);
+    gc = (GjsClosure*) g_closure_new_simple(sizeof(GjsClosure), NULL);
+    c = new (&gc->priv) Closure();
+
     c->runtime = JS_GetRuntime(context);
     /* The saved context is used for lifetime management, so that the closure will
      * be torn down with the context that created it. The context could be attached to
@@ -369,19 +394,21 @@ gjs_closure_new(JSContext  *context,
         gjs_keep_alive_add_global_child(context,
                                         global_context_finalized,
                                         c->obj,
-                                        c);
+                                        gc);
 
-        g_closure_add_invalidate_notifier(&c->base, NULL, closure_invalidated);
+        g_closure_add_invalidate_notifier(&gc->base, NULL, closure_invalidated);
     } else {
         /* Only mark the closure as invalid if memory is managed
            outside (i.e. by object.c for signals) */
-        g_closure_add_invalidate_notifier(&c->base, NULL, closure_set_invalid);
+        g_closure_add_invalidate_notifier(&gc->base, NULL, closure_set_invalid);
     }
 
+    g_closure_add_finalize_notifier(&gc->base, NULL, closure_finalize);
+
     gjs_debug_closure("Create closure %p which calls object %p '%s'",
-                      c, c->obj, description);
+                      gc, c->obj, description);
 
     JS_EndRequest(context);
 
-    return &c->base;
+    return &gc->base;
 }
