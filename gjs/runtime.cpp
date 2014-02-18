@@ -299,9 +299,22 @@ gjs_runtime_for_current_thread(void)
         data = g_new0(RuntimeData, 1);
         JS_SetRuntimePrivate(runtime, data);
 
+        // commented are defaults in moz-24
         JS_SetNativeStackQuota(runtime, 1024*1024);
-        JS_SetGCParameter(runtime, JSGC_MAX_BYTES, 0xffffffff);
+        JS_SetGCParameter(runtime, JSGC_MAX_MALLOC_BYTES, 128*1024*1024);
+        JS_SetGCParameter(runtime, JSGC_MAX_BYTES, -1);
         JS_SetGCParameter(runtime, JSGC_MODE, JSGC_MODE_INCREMENTAL);
+        JS_SetGCParameter(runtime, JSGC_SLICE_TIME_BUDGET, 10); /* ms */
+        // JS_SetGCParameter(runtime, JSGC_HIGH_FREQUENCY_TIME_LIMIT, 1000); /* ms */
+        JS_SetGCParameter(runtime, JSGC_DYNAMIC_MARK_SLICE, true);
+        JS_SetGCParameter(runtime, JSGC_DYNAMIC_HEAP_GROWTH, true);
+        // JS_SetGCParameter(runtime, JSGC_LOW_FREQUENCY_HEAP_GROWTH, 150);
+        // JS_SetGCParameter(runtime, JSGC_HIGH_FREQUENCY_HEAP_GROWTH_MIN, 150);
+        // JS_SetGCParameter(runtime, JSGC_HIGH_FREQUENCY_HEAP_GROWTH_MAX, 300);
+        // JS_SetGCParameter(runtime, JSGC_HIGH_FREQUENCY_LOW_LIMIT, 100);
+        // JS_SetGCParameter(runtime, JSGC_HIGH_FREQUENCY_HIGH_LIMIT, 500);
+        // JS_SetGCParameter(runtime, JSGC_ALLOCATION_THRESHOLD, 30);
+        // JS_SetGCParameter(runtime, JSGC_DECOMMIT_THRESHOLD, 32);
         JS_SetLocaleCallbacks(runtime, &gjs_locale_callbacks);
         JS_AddFinalizeCallback(runtime, gjs_finalize_callback, data);
         JS_SetErrorReporter(runtime, gjs_error_reporter);
