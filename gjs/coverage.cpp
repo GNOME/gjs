@@ -829,6 +829,7 @@ print_statistics_for_file(GjsCoverage   *coverage,
 
     JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
     JSAutoCompartment compartment(context, priv->coverage_statistics);
+    JSAutoRequest ar(context);
 
     JSString *filename_jsstr = JS_NewStringCopyZ(context, filename);
     jsval    filename_jsval = STRING_TO_JSVAL(filename_jsstr);
