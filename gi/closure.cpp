@@ -245,6 +245,8 @@ gjs_closure_invoke(GClosure                   *closure,
                           " - closure %p", closure);
     }
 
+    JS_MaybeGC(context);
+
  out:
     JS_EndRequest(context);
 }
