@@ -40,12 +40,14 @@ endif
 # This rpath /nowhere thing is the libtool upstream recommended way to
 # force generation of shared libraries, which we need in order for the
 # tests to work uninstalled.
-common_test_ldflags = -avoid-version -rpath /nowhere $(GJS_LIBS)
+common_test_ldflags = -avoid-version -rpath /nowhere
+common_test_libadd = $(GJS_LIBS)
 
 nodist_libregress_la_SOURCES = $(GI_DATADIR)/tests/regress.c $(GI_DATADIR)/tests/regress.h
 libregress_la_CPPFLAGS = $(AM_CPPFLAGS)
 libregress_la_CFLAGS = $(GJS_CFLAGS)
 libregress_la_LDFLAGS = $(common_test_ldflags)
+libregress_la_LIBADD = $(common_test_libadd)
 libregress_scannerflags_includes = --include=Gio-2.0
 if ENABLE_CAIRO
 libregress_la_CFLAGS += $(GJS_CAIRO_CFLAGS)
@@ -57,9 +59,11 @@ endif
 nodist_libwarnlib_la_SOURCES = $(GI_DATADIR)/tests/warnlib.c $(GI_DATADIR)/tests/warnlib.h
 libwarnlib_la_CFLAGS = $(GJS_CFLAGS)
 libwarnlib_la_LDFLAGS = $(common_test_ldflags)
+libwarnlib_la_LIBADD = $(common_test_libadd)
 nodist_libgimarshallingtests_la_SOURCES = $(GI_DATADIR)/tests/gimarshallingtests.c $(GI_DATADIR)/tests/gimarshallingtests.h
 libgimarshallingtests_la_CFLAGS = $(GJS_CFLAGS)
 libgimarshallingtests_la_LDFLAGS = $(common_test_ldflags)
+libgimarshallingtests_la_LIBADD = $(common_test_libadd)
 
 Regress-1.0.gir: libregress.la
 Regress_1_0_gir_LIBS = libregress.la
