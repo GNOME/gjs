@@ -1217,36 +1217,6 @@ gjs_maybe_gc (JSContext *context)
 #endif
 }
 
-void
-gjs_enter_gc(void)
-{
-    g_mutex_lock(&gc_lock);
-}
-
-void
-gjs_leave_gc(void)
-{
-    g_mutex_unlock(&gc_lock);
-}
-
-gboolean
-gjs_try_block_gc(void)
-{
-    return g_mutex_trylock(&gc_lock);
-}
-
-void
-gjs_block_gc(void)
-{
-    g_mutex_lock(&gc_lock);
-}
-
-void
-gjs_unblock_gc(void)
-{
-    g_mutex_unlock(&gc_lock);
-}
-
 /**
  * gjs_strip_unix_shebang:
  *
