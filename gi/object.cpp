@@ -99,6 +99,8 @@ static JSObject*       peek_js_obj  (GObject   *gobj);
 static void            set_js_obj   (GObject   *gobj,
                                      JSObject  *obj);
 
+static void            disassociate_js_gobject (GObject *gobj);
+static void            invalidate_all_signals (ObjectInstance *priv);
 typedef enum {
     SOME_ERROR_OCCURRED = JS_FALSE,
     NO_SUCH_G_PROPERTY,
@@ -993,9 +995,10 @@ wrapped_gobj_toggle_notify(gpointer      data,
                            GObject      *gobj,
                            gboolean      is_last_ref)
 {
-    gboolean gc_blocked = FALSE;
+    gboolean is_main_thread, is_sweeping;
     gboolean toggle_up_queued, toggle_down_queued;
     GjsContext *context;
+    JSContext *js_context;
 
     context = gjs_context_get_current();
     if (_gjs_context_destroying(context)) {
@@ -1007,15 +1010,43 @@ wrapped_gobj_toggle_notify(gpointer      data,
 
     /* We only want to touch javascript from one thread.
      * If we're not in that thread, then we need to defer processing
-     * to it. We also don't want to touch javascript if a GC is going
-     * on in the same thread as us.
+     * to it.
+     * In case we're toggling up (and thus rooting the JS object) we
+     * also need to take care if GC is running. The marking side
+     * of it is taken care by JS::Heap, which we use in KeepAlive,
+     * so we're safe. As for sweeping, it is too late: the JS object
+     * is dead, and attempting to keep it alive would soon crash
+     * the process. Plus, if we touch the JSAPI, libmozjs aborts in
+     * the first BeginRequest.
+     * Thus, in the toggleup+sweeping case we deassociate the object
+     * and the wrapper and let the wrapper die. Then, if the object
+     * appears again, we log a critical.
+     * In practice, a toggle up during JS finalize can only happen
+     * for temporary refs/unrefs of objects that are garbage anyway,
+     * because JS code is never invoked while the finalizers run
+     * and C code needs to clean after itself before it returns
+     * from dispose()/finalize().
+     * On the other hand, toggling down is a lot simpler, because
+     * we're creating more garbage. So we just add the object to
+     * the keep alive and wait for the next GC cycle.
      *
-     * Defer to idle in those cases, and in the case where an idle
-     * is already queued (to maintain ordering constraints) but handle
-     * the toggle notify directly when we can (for efficiency reasons)
+     * Note that one would think that toggling up only happens
+     * in the main thread (because toggling up is the result of
+     * the JS object, previously visible only to JS code, becoming
+     * visible to the refcounted C world), but because of weird
+     * weak singletons like g_bus_get_sync() objects can see toggle-ups
+     * from different threads too.
+     * We could lock the keep alive structure and avoid the idle maybe,
+     * but there aren't many peculiar objects like that and it's
+     * not a big deal.
      */
-    if (gjs_eval_thread == g_thread_self())
-        gc_blocked = gjs_try_block_gc();
+    is_main_thread = (gjs_eval_thread == g_thread_self());
+    if (is_main_thread) {
+        js_context = (JSContext*) gjs_context_get_native_context(context);
+        is_sweeping = gjs_runtime_is_sweeping(JS_GetRuntime(js_context));
+    } else {
+        is_sweeping = FALSE;
+    }
 
     toggle_up_queued = toggle_idle_source_is_queued(gobj, TOGGLE_UP);
     toggle_down_queued = toggle_idle_source_is_queued(gobj, TOGGLE_DOWN);
@@ -1025,7 +1056,7 @@ wrapped_gobj_toggle_notify(gpointer      data,
          * The JSObject is rooted and we need to unroot it so it
          * can be garbage collected
          */
-        if (gc_blocked) {
+        if (is_main_thread) {
             if (G_UNLIKELY (toggle_up_queued || toggle_down_queued)) {
                 g_error("toggling down object %s that's already queued to toggle %s\n",
                         G_OBJECT_TYPE_NAME(gobj),
@@ -1043,20 +1074,28 @@ wrapped_gobj_toggle_notify(gpointer      data,
          * The JSObject associated with the gobject is not rooted,
          * but it needs to be. We'll root it.
          */
-        if (gc_blocked && !toggle_down_queued) {
+        if (is_main_thread && !toggle_down_queued) {
             if (G_UNLIKELY (toggle_up_queued)) {
                 g_error("toggling up object %s that's already queued to toggle up\n",
                         G_OBJECT_TYPE_NAME(gobj));
             }
+            if (is_sweeping) {
+                JSObject *object;
 
-            handle_toggle_up(gobj);
+                object = peek_js_obj(gobj);
+                if (JS_IsAboutToBeFinalized(&object)) {
+                    /* Ouch, the JS object is dead already. Disassociate the GObject
+                     * and hope the GObject dies too.
+                     */
+                    disassociate_js_gobject(gobj);
+                }
+            } else {
+                handle_toggle_up(gobj);
+            }
         } else {
             queue_toggle_idle(gobj, TOGGLE_UP);
         }
     }
-
-    if (gc_blocked)
-        gjs_unblock_gc();
 }
 
 static void
@@ -1168,6 +1207,31 @@ associate_js_gobject (JSContext      *context,
                              priv);
 
     g_object_add_toggle_ref(gobj, wrapped_gobj_toggle_notify, NULL);
+}
+
+static void
+disassociate_js_gobject (GObject   *gobj)
+{
+    JSObject *object;
+    ObjectInstance *priv;
+
+    object = peek_js_obj(gobj);
+    priv = (ObjectInstance*) JS_GetPrivate(object);
+    /* Idles are already checked in the only caller of this
+       function, the toggle ref notify, but let's check again...
+    */
+    g_assert(!cancel_toggle_idle(gobj, TOGGLE_UP));
+    g_assert(!cancel_toggle_idle(gobj, TOGGLE_DOWN));
+
+    invalidate_all_signals(priv);
+    release_native_object(priv);
+
+    /* Use -1 to mark that a JS object once existed, but it doesn't any more */
+    set_js_obj(gobj, (JSObject*)(-1));
+
+#if DEBUG_DISPOSE
+    g_object_weak_unref(gobj, wrapped_gobj_dispose_notify, object);
+#endif
 }
 
 static JSBool
@@ -1942,7 +2006,16 @@ gjs_define_object_class(JSContext      *context,
 static JSObject*
 peek_js_obj(GObject *gobj)
 {
-    return (JSObject*) g_object_get_qdata(gobj, gjs_object_priv_quark());
+    JSObject *object = (JSObject*) g_object_get_qdata(gobj, gjs_object_priv_quark());
+
+    if (G_UNLIKELY (object == (JSObject*)(-1))) {
+        g_critical ("Object %p (a %s) resurfaced after the JS wrapper was finalized. "
+                    "This is some library doing dubious memory management inside dispose()",
+                    gobj, g_type_name(G_TYPE_FROM_INSTANCE(object)));
+        return NULL; /* return null to associate again with a new wrapper */
+    }
+
+    return object;
 }
 
 static void
