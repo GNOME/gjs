@@ -388,11 +388,6 @@ void              gjs_unroot_value_locations  (JSContext        *context,
 /* Functions intended for more "internal" use */
 
 void gjs_maybe_gc (JSContext *context);
-void gjs_enter_gc (void);
-void gjs_leave_gc (void);
-gboolean gjs_try_block_gc (void);
-void gjs_block_gc (void);
-void gjs_unblock_gc (void);
 
 JSBool            gjs_context_get_frame_info (JSContext  *context,
                                               jsval      *stack,
