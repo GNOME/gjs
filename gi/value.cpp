@@ -58,7 +58,7 @@ closure_marshal(GClosure        *closure,
 {
     JSContext *context;
     JSObject *global;
-
+    JSRuntime *runtime;
     int argc;
     jsval *argv;
     jsval rval;
@@ -75,6 +75,31 @@ closure_marshal(GClosure        *closure,
     }
 
     context = gjs_closure_get_context(closure);
+    runtime = JS_GetRuntime(context);
+    if (G_UNLIKELY (gjs_runtime_is_sweeping(runtime))) {
+        GSignalInvocationHint *hint = (GSignalInvocationHint*) invocation_hint;
+
+        g_critical("Attempting to call back into JSAPI during the sweeping phase of GC. "
+                   "This is most likely caused by not destroying a Clutter actor or Gtk+ "
+                   "widget with ::destroy signals connected, but can also be caused by "
+                   "using the destroy() or dispose() vfuncs. Because it would crash the "
+                   "application, it has been blocked and the JS callback not invoked.");
+        if (hint) {
+            gpointer instance;
+            g_signal_query(hint->signal_id, &signal_query);
+
+            instance = g_value_peek_pointer(&param_values[0]);
+            g_critical("The offending signal was %s on %s %p.", signal_query.signal_name,
+                       g_type_name(G_TYPE_FROM_INSTANCE(instance)), instance);
+        }
+        /* A gjs_dumpstack() would be nice here, but we can't,
+           because that works by creating a new Error object and
+           reading the stack property, which is the worst possible
+           idea during a GC session.
+        */
+        return;
+    }
+
     JS_BeginRequest(context);
     global = JS_GetGlobalObject(context);
     JSAutoCompartment ac(context, global);

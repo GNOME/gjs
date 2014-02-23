@@ -24,6 +24,19 @@
 #include <config.h>
 
 #include "compat.h"
+#include "runtime.h"
+
+struct RuntimeData {
+  JSBool in_gc_sweep;
+};
+
+JSBool
+gjs_runtime_is_sweeping (JSRuntime *runtime)
+{
+  RuntimeData *data = (RuntimeData*) JS_GetRuntimePrivate(runtime);
+
+  return data->in_gc_sweep;
+}
 
 /* Implementations of locale-specific operations; these are used
  * in the implementation of String.localeCompare(), Date.toLocaleDateString(),
@@ -137,6 +150,9 @@ static void
 destroy_runtime(gpointer data)
 {
     JSRuntime *runtime = (JSRuntime *) data;
+    RuntimeData *rtdata = (RuntimeData *) JS_GetRuntimePrivate(runtime);
+
+    g_free(rtdata);
     JS_DestroyRuntime(runtime);
 }
 
@@ -150,19 +166,81 @@ static JSLocaleCallbacks gjs_locale_callbacks =
     gjs_locale_to_unicode
 };
 
+void
+gjs_finalize_callback(JSFreeOp         *fop,
+                      JSFinalizeStatus  status,
+                      JSBool            isCompartment)
+{
+  JSRuntime *runtime;
+  RuntimeData *data;
+
+  runtime = fop->runtime();
+  data = (RuntimeData*) JS_GetRuntimePrivate(runtime);
+
+  /* Implementation note for mozjs 24:
+     sweeping happens in two phases, in the first phase all
+     GC things from the allocation arenas are queued for
+     sweeping, then the actual sweeping happens.
+     The first phase is marked by JSFINALIZE_GROUP_START,
+     the second one by JSFINALIZE_GROUP_END, and finally
+     we will see JSFINALIZE_COLLECTION_END at the end of
+     all GC.
+     (see jsgc.cpp, BeginSweepPhase/BeginSweepingZoneGroup
+     and SweepPhase, all called from IncrementalCollectSlice).
+     Incremental GC muds the waters, because BeginSweepPhase
+     is always run to entirety, but SweepPhase can be run
+     incrementally and mixed with JS code runs or even
+     native code, when MaybeGC/IncrementalGC return.
+
+     Luckily for us, objects are treated specially, and
+     are not really queued for deferred incremental
+     finalization (unless they are marked for background
+     sweeping). Instead, they are finalized immediately
+     during phase 1, so the following guarantees are
+     true (and we rely on them)
+     - phase 1 of GC will begin and end in the same JSAPI
+       call (ie, our callback will be called with GROUP_START
+       and the triggering JSAPI call will not return until
+       we see a GROUP_END)
+     - object finalization will begin and end in the same
+       JSAPI call
+     - therefore, if there is a finalizer frame somewhere
+       in the stack, gjs_runtime_is_sweeping() will return
+       TRUE.
+
+     Comments in mozjs24 imply that this behavior might
+     change in the future, but it hasn't changed in
+     mozilla-central as of 2014-02-23. In addition to
+     that, the mozilla-central version has a huge comment
+     in a different portion of the file, explaining
+     why finalization of objects can't be mixed with JS
+     code, so we can probably rely on this behavior.
+  */
+
+  if (status == JSFINALIZE_GROUP_START)
+    data->in_gc_sweep = JS_TRUE;
+  else if (status == JSFINALIZE_GROUP_END)
+    data->in_gc_sweep = JS_FALSE;
+}
+
 JSRuntime *
 gjs_runtime_for_current_thread(void)
 {
     JSRuntime *runtime = (JSRuntime *) g_private_get(&thread_runtime);
+    RuntimeData *data;
 
     if (!runtime) {
         runtime = JS_NewRuntime(32*1024*1024 /* max bytes */, JS_USE_HELPER_THREADS);
         if (runtime == NULL)
             g_error("Failed to create javascript runtime");
 
+        data = g_new0(RuntimeData, 1);
+        JS_SetRuntimePrivate(runtime, data);
+
         JS_SetNativeStackQuota(runtime, 1024*1024);
         JS_SetGCParameter(runtime, JSGC_MAX_BYTES, 0xffffffff);
         JS_SetLocaleCallbacks(runtime, &gjs_locale_callbacks);
+        JS_SetFinalizeCallback(runtime, gjs_finalize_callback);
 
         g_private_set(&thread_runtime, runtime);
     }

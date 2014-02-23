@@ -26,4 +26,6 @@
 
 JSRuntime * gjs_runtime_for_current_thread (void);
 
+JSBool      gjs_runtime_is_sweeping        (JSRuntime *runtime);
+
 #endif /* __GJS_RUNTIME_H__ */
