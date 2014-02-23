@@ -865,8 +865,7 @@ handle_toggle_down(GObject *gobj)
 }
 
 static void
-handle_toggle_up(GObject   *gobj,
-                 gboolean   gc_already_blocked)
+handle_toggle_up(GObject   *gobj)
 {
     ObjectInstance *priv;
     JSObject *obj;
@@ -874,22 +873,11 @@ handle_toggle_up(GObject   *gobj,
     /* We need to root the JSObject associated with the passed in GObject so it
      * doesn't get garbage collected (and lose any associated javascript state
      * such as custom properties).
-     *
-     * Note it's possible that the garbage collector is running in a secondary
-     * thread right now. If it is, we need to wait for it to finish, then block
-     * it from starting again while we root the object. After it's blocked we need
-     * to check if the associated JSObject was reaped. If it was we need to
-     * abort mission.
      */
-    if (!gc_already_blocked)
-        gjs_block_gc();
-
     obj = peek_js_obj(gobj);
 
-    if (!obj) {
-        /* Object already GC'd */
-        goto out;
-    }
+    if (!obj) /* Object already GC'd */
+        return;
 
     priv = (ObjectInstance *) JS_GetPrivate(obj);
 
@@ -911,10 +899,6 @@ handle_toggle_up(GObject   *gobj,
                                  obj,
                                  priv);
     }
-
-out:
-    if (!gc_already_blocked)
-        gjs_unblock_gc();
 }
 
 static gboolean
@@ -929,7 +913,7 @@ idle_handle_toggle(gpointer data)
 
     switch (operation->direction) {
         case TOGGLE_UP:
-            handle_toggle_up(operation->gobj, FALSE);
+            handle_toggle_up(operation->gobj);
             break;
         case TOGGLE_DOWN:
             handle_toggle_down(operation->gobj);
@@ -1065,7 +1049,7 @@ wrapped_gobj_toggle_notify(gpointer      data,
                         G_OBJECT_TYPE_NAME(gobj));
             }
 
-            handle_toggle_up(gobj, gc_blocked);
+            handle_toggle_up(gobj);
         } else {
             queue_toggle_idle(gobj, TOGGLE_UP);
         }
