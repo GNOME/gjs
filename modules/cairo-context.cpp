@@ -253,7 +253,7 @@ typedef struct {
     cairo_t * cr;
 } GjsCairoContext;
 
-GJS_DEFINE_PROTO_WITH_GTYPE("CairoContext", cairo_context, CAIRO_GOBJECT_TYPE_CONTEXT)
+GJS_DEFINE_PROTO_WITH_GTYPE("CairoContext", cairo_context, CAIRO_GOBJECT_TYPE_CONTEXT, JSCLASS_BACKGROUND_FINALIZE)
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoContext, gjs_cairo_context_class);
 
 static void

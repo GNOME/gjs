@@ -34,7 +34,7 @@
 G_BEGIN_DECLS
 
 typedef struct {
-    unsigned int value;
+    volatile int value;
     const char *name;
 } GjsMemCounter;
 
@@ -60,18 +60,18 @@ GJS_DECLARE_COUNTER(interface)
 
 #define GJS_INC_COUNTER(name)                \
     do {                                        \
-        gjs_counter_everything.value += 1;   \
-        gjs_counter_ ## name .value += 1;    \
+        g_atomic_int_add(&gjs_counter_everything.value, 1); \
+        g_atomic_int_add(&gjs_counter_ ## name .value, 1); \
     } while (0)
 
 #define GJS_DEC_COUNTER(name)                \
     do {                                        \
-        gjs_counter_everything.value -= 1;   \
-        gjs_counter_ ## name .value -= 1;    \
+        g_atomic_int_add(&gjs_counter_everything.value, -1); \
+        g_atomic_int_add(&gjs_counter_ ## name .value, -1); \
     } while (0)
 
 #define GJS_GET_COUNTER(name) \
-    (gjs_counter_ ## name .value)
+    g_atomic_int_get(&gjs_counter_ ## name .value)
 
 void gjs_memory_report(const char *where,
                        gboolean    die_if_leaks);

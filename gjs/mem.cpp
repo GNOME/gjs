@@ -76,7 +76,7 @@ gjs_memory_report(const char *where,
 {
     int i;
     int n_counters;
-    guint total_objects;
+    int total_objects;
 
     gjs_debug(GJS_DEBUG_MEMORY,
               "Memory report: %s",

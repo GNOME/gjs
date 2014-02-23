@@ -36,7 +36,7 @@ typedef struct {
     cairo_surface_t *surface;
 } GjsCairoSurface;
 
-GJS_DEFINE_PROTO_ABSTRACT_WITH_GTYPE("CairoSurface", cairo_surface, CAIRO_GOBJECT_TYPE_SURFACE)
+GJS_DEFINE_PROTO_ABSTRACT_WITH_GTYPE("CairoSurface", cairo_surface, CAIRO_GOBJECT_TYPE_SURFACE, JSCLASS_BACKGROUND_FINALIZE)
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoSurface, gjs_cairo_surface_class)
 
 static void

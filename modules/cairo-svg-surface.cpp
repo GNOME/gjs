@@ -30,7 +30,7 @@
 #if CAIRO_HAS_SVG_SURFACE
 #include <cairo-svg.h>
 
-GJS_DEFINE_PROTO("CairoSVGSurface", cairo_svg_surface)
+GJS_DEFINE_PROTO("CairoSVGSurface", cairo_svg_surface, JSCLASS_BACKGROUND_FINALIZE)
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_svg_surface)
 {

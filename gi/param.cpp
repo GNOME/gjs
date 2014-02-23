@@ -411,7 +411,8 @@ param_new_internal(JSContext *cx,
  */
 struct JSClass gjs_param_class = {
     "GObject_ParamSpec",
-    JSCLASS_HAS_PRIVATE,
+    JSCLASS_HAS_PRIVATE |
+    JSCLASS_BACKGROUND_FINALIZE,
     JS_PropertyStub,
     JS_DeletePropertyStub,
     param_get_prop,

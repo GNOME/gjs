@@ -30,7 +30,7 @@
 #if CAIRO_HAS_PS_SURFACE
 #include <cairo-ps.h>
 
-GJS_DEFINE_PROTO("CairoPSSurface", cairo_ps_surface)
+GJS_DEFINE_PROTO("CairoPSSurface", cairo_ps_surface, JSCLASS_BACKGROUND_FINALIZE)
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_ps_surface)
 {

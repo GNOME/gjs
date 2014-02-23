@@ -30,7 +30,7 @@
 #if CAIRO_HAS_PDF_SURFACE
 #include <cairo-pdf.h>
 
-GJS_DEFINE_PROTO("CairoPDFSurface", cairo_pdf_surface)
+GJS_DEFINE_PROTO("CairoPDFSurface", cairo_pdf_surface, JSCLASS_BACKGROUND_FINALIZE)
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_pdf_surface)
 {

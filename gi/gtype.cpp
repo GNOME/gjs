@@ -31,7 +31,7 @@
 #include <util/log.h>
 #include <girepository.h>
 
-GJS_DEFINE_PROTO_ABSTRACT("GIRepositoryGType", gtype);
+GJS_DEFINE_PROTO_ABSTRACT("GIRepositoryGType", gtype, 0);
 
 /* priv_from_js adds a "*", so this returns "void *" */
 GJS_DEFINE_PRIV_FROM_JS(void, gjs_gtype_class);

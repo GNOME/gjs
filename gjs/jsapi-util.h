@@ -109,12 +109,13 @@ typedef struct GjsRootedArray GjsRootedArray;
  * GJS_DEFINE_PROTO:
  * @tn: The name of the prototype, as a string
  * @cn: The name of the prototype, separated by _
+ * @flags: additional JSClass flags, such as JSCLASS_BACKGROUND_FINALIZE
  *
  * A convenience macro for prototype implementations.
  */
-#define GJS_DEFINE_PROTO(tn, cn) \
+#define GJS_DEFINE_PROTO(tn, cn, flags) \
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cn); \
-_GJS_DEFINE_PROTO_FULL(tn, cn, gjs_##cn##_constructor, G_TYPE_NONE)
+_GJS_DEFINE_PROTO_FULL(tn, cn, gjs_##cn##_constructor, G_TYPE_NONE, flags)
 
 /**
  * GJS_DEFINE_PROTO_ABSTRACT:
@@ -125,17 +126,17 @@ _GJS_DEFINE_PROTO_FULL(tn, cn, gjs_##cn##_constructor, G_TYPE_NONE)
  * Similar to GJS_DEFINE_PROTO but marks the prototype as abstract,
  * you won't be able to instantiate it using the new keyword
  */
-#define GJS_DEFINE_PROTO_ABSTRACT(tn, cn) \
-_GJS_DEFINE_PROTO_FULL(tn, cn, NULL, G_TYPE_NONE)
+#define GJS_DEFINE_PROTO_ABSTRACT(tn, cn, flags) \
+_GJS_DEFINE_PROTO_FULL(tn, cn, NULL, G_TYPE_NONE, flags)
 
-#define GJS_DEFINE_PROTO_WITH_GTYPE(tn, cn, gtype)   \
+#define GJS_DEFINE_PROTO_WITH_GTYPE(tn, cn, gtype, flags)   \
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cn); \
-_GJS_DEFINE_PROTO_FULL(tn, cn, gjs_##cn##_constructor, gtype)
+_GJS_DEFINE_PROTO_FULL(tn, cn, gjs_##cn##_constructor, gtype, flags)
 
-#define GJS_DEFINE_PROTO_ABSTRACT_WITH_GTYPE(tn, cn, gtype)   \
-_GJS_DEFINE_PROTO_FULL(tn, cn, NULL, gtype)
+#define GJS_DEFINE_PROTO_ABSTRACT_WITH_GTYPE(tn, cn, gtype, flags)   \
+_GJS_DEFINE_PROTO_FULL(tn, cn, NULL, gtype, flags)
 
-#define _GJS_DEFINE_PROTO_FULL(type_name, cname, ctor, gtype) \
+#define _GJS_DEFINE_PROTO_FULL(type_name, cname, ctor, gtype, jsclass_flags)     \
 extern JSPropertySpec gjs_##cname##_proto_props[]; \
 extern JSFunctionSpec gjs_##cname##_proto_funcs[]; \
 static void gjs_##cname##_finalize(JSFreeOp *fop, JSObject *obj); \
@@ -150,7 +151,7 @@ static JSBool gjs_##cname##_new_resolve(JSContext *context, \
 static struct JSClass gjs_##cname##_class = { \
     type_name, \
     JSCLASS_HAS_PRIVATE | \
-    JSCLASS_NEW_RESOLVE, \
+    JSCLASS_NEW_RESOLVE | jsclass_flags, \
     JS_PropertyStub, \
     JS_DeletePropertyStub, \
     JS_PropertyStub, \

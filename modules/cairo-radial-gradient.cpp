@@ -27,7 +27,7 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
-GJS_DEFINE_PROTO("CairoRadialGradient", cairo_radial_gradient)
+GJS_DEFINE_PROTO("CairoRadialGradient", cairo_radial_gradient, JSCLASS_BACKGROUND_FINALIZE)
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_radial_gradient)
 {
