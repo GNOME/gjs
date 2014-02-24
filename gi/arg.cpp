@@ -39,26 +39,6 @@
 
 #include <util/log.h>
 
-static gboolean
-_gjs_gtype_interface_requires_object (GType interface_type)
-{
-    guint i, n_prerequisites;
-    GType *prerequisites = g_type_interface_prerequisites (interface_type,
-                                                           &n_prerequisites);
-
-    for (i = 0; i < n_prerequisites; i++) {
-        if (g_type_is_a (prerequisites[i], G_TYPE_INTERFACE)) {
-            if (_gjs_gtype_interface_requires_object(prerequisites[i]))
-                return TRUE;
-        } else if (g_type_is_a (prerequisites[i], G_TYPE_OBJECT))
-            return TRUE;
-    }
-
-    g_free (prerequisites);
-
-    return FALSE;
-}
-
 JSBool
 _gjs_flags_value_is_valid(JSContext   *context,
                           GType        gtype,
@@ -2645,21 +2625,11 @@ gjs_value_from_g_argument (JSContext  *context,
                 goto out;
             }
 
-
-            gtype_is_object = g_type_is_a(gtype, G_TYPE_OBJECT);
-            gtype_is_interface = g_type_is_a(gtype, G_TYPE_INTERFACE);
-            if (gtype_is_object || gtype_is_interface) {
-                if (gtype_is_object || (gtype_is_interface && _gjs_gtype_interface_requires_object(gtype))) {
-                    JSObject *obj;
-                    obj = gjs_object_from_g_object(context, G_OBJECT(arg->v_pointer));
-                    if (obj)
-                        value = OBJECT_TO_JSVAL(obj);
-                } else {
-                    JSObject *obj;
-                    obj = gjs_object_from_g_fundamental(context, (GIObjectInfo *)interface_info, arg->v_pointer);
-                    if (obj)
-                        value = OBJECT_TO_JSVAL(obj);
-                }
+            if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
+                JSObject *obj;
+                obj = gjs_object_from_g_object(context, G_OBJECT(arg->v_pointer));
+                if (obj)
+                    value = OBJECT_TO_JSVAL(obj);
             } else if (g_type_is_a(gtype, G_TYPE_BOXED) ||
                        g_type_is_a(gtype, G_TYPE_ENUM) ||
                        g_type_is_a(gtype, G_TYPE_FLAGS)) {
@@ -2676,11 +2646,11 @@ gjs_value_from_g_argument (JSContext  *context,
                     value = OBJECT_TO_JSVAL(obj);
             } else if (gtype == G_TYPE_NONE) {
                 gjs_throw(context, "Unexpected unregistered type packing GArgument into jsval");
-            } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-                    JSObject *obj;
-                    obj = gjs_object_from_g_fundamental(context, (GIObjectInfo *)interface_info, arg->v_pointer);
-                    if (obj)
-                        value = OBJECT_TO_JSVAL(obj);
+            } else if (G_TYPE_IS_INSTANTIATABLE(gtype) || G_TYPE_IS_INTERFACE(gtype)) {
+                JSObject *obj;
+                obj = gjs_object_from_g_fundamental(context, (GIObjectInfo *)interface_info, arg->v_pointer);
+                if (obj)
+                    value = OBJECT_TO_JSVAL(obj);
             } else {
                 gjs_throw(context, "Unhandled GType %s packing GArgument into jsval",
                           g_type_name(gtype));
