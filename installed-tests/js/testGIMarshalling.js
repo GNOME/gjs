@@ -273,6 +273,11 @@ function testGType() {
     assertEquals(GObject.TYPE_INT, GIMarshallingTests.gtype_inout(GObject.TYPE_NONE));
 }
 
+function testGTypePrototype() {
+    assertNull(GIRepositoryGType.name);
+    assertEquals("[object GType prototype]", GIRepositoryGType.toString());
+}
+
 function testGValueGType() {
     // test that inferring the GType for a primitive value or an object works
 
