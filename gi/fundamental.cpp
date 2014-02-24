@@ -896,16 +896,7 @@ gjs_typecheck_fundamental(JSContext *context,
         return JS_FALSE;
 
     priv = priv_from_js(context, object);
-
-    if (priv == NULL) {
-        if (throw_error) {
-            gjs_throw(context,
-                      "Fundamental instance or prototype has not been properly initialized yet. "
-                      "Did you forget to chain-up from _init()?");
-        }
-
-        return JS_FALSE;
-    }
+    g_assert(priv != NULL);
 
     if (priv->gfundamental == NULL) {
         if (throw_error) {
