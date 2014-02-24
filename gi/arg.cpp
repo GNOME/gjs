@@ -1482,20 +1482,13 @@ gjs_value_to_g_argument(JSContext      *context,
                     }
 
                 } else if (gtype != G_TYPE_NONE) {
-                    if (g_type_is_a(gtype, G_TYPE_OBJECT) || g_type_is_a(gtype, G_TYPE_INTERFACE)) {
-                        if (gjs_typecheck_object(context, JSVAL_TO_OBJECT(value),
-                                                 gtype, JS_FALSE)) {
+                    if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
+                        if (gjs_typecheck_object(context, JSVAL_TO_OBJECT(value), gtype, JS_TRUE)) {
                             arg->v_pointer = gjs_g_object_from_object(context,
                                                                       JSVAL_TO_OBJECT(value));
 
                             if (transfer != GI_TRANSFER_NOTHING)
                                 g_object_ref(G_OBJECT(arg->v_pointer));
-                        } else if (gjs_typecheck_fundamental(context, JSVAL_TO_OBJECT(value), gtype, JS_FALSE)) {
-                            arg->v_pointer = gjs_g_fundamental_from_object(context,
-                                                                           JSVAL_TO_OBJECT(value));
-
-                            if (transfer != GI_TRANSFER_NOTHING)
-                                gjs_fundamental_ref(context, arg->v_pointer);
                         } else {
                             arg->v_pointer = NULL;
                             wrong = TRUE;
@@ -1514,12 +1507,36 @@ gjs_value_to_g_argument(JSContext      *context,
                                       g_type_name(gtype),
                                       interface_type);
                         }
-                    } else if (gjs_typecheck_fundamental(context, JSVAL_TO_OBJECT(value), gtype, JS_FALSE)) {
-                        arg->v_pointer = gjs_g_fundamental_from_object(context,
-                                                                       JSVAL_TO_OBJECT(value));
+                    } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
+                        if (gjs_typecheck_fundamental(context, JSVAL_TO_OBJECT(value), gtype, JS_TRUE)) {
+                            arg->v_pointer = gjs_g_fundamental_from_object(context,
+                                                                           JSVAL_TO_OBJECT(value));
 
-                        if (transfer != GI_TRANSFER_NOTHING)
-                            gjs_fundamental_ref(context, arg->v_pointer);
+                            if (transfer != GI_TRANSFER_NOTHING)
+                                gjs_fundamental_ref(context, arg->v_pointer);
+                        } else {
+                            arg->v_pointer = NULL;
+                            wrong = TRUE;
+                        }
+                    } else if (G_TYPE_IS_INTERFACE(gtype)) {
+                        /* Could be a GObject interface that's missing a prerequisite, or could
+                           be a fundamental */
+                        if (gjs_typecheck_object(context, JSVAL_TO_OBJECT(value), gtype, JS_FALSE)) {
+                            arg->v_pointer = gjs_g_object_from_object(context, JSVAL_TO_OBJECT(value));
+
+                            if (transfer != GI_TRANSFER_NOTHING)
+                                g_object_ref(arg->v_pointer);
+                        } else if (gjs_typecheck_fundamental(context, JSVAL_TO_OBJECT(value), gtype, JS_FALSE)) {
+                            arg->v_pointer = gjs_g_fundamental_from_object(context, JSVAL_TO_OBJECT(value));
+
+                            if (transfer != GI_TRANSFER_NOTHING)
+                                gjs_fundamental_ref(context, arg->v_pointer);
+                        } else {
+                            /* Call again with throw=TRUE to set the exception */
+                            gjs_typecheck_object(context, JSVAL_TO_OBJECT(value), gtype, JS_TRUE);
+                            arg->v_pointer = NULL;
+                            wrong = TRUE;
+                        }
                     } else {
                         gjs_throw(context, "Unhandled GType %s unpacking GArgument from Object",
                                   g_type_name(gtype));
