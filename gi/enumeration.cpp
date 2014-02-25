@@ -29,6 +29,7 @@
 #include <gjs/compat.h>
 #include "repo.h"
 #include "gtype.h"
+#include "function.h"
 
 #include <util/log.h>
 
@@ -139,6 +140,40 @@ gjs_define_enum_values(JSContext    *context,
     return JS_TRUE;
 }
 
+JSBool
+gjs_define_enum_static_methods(JSContext    *context,
+                               JSObject     *constructor,
+                               GIEnumInfo   *enum_info)
+{
+    int i, n_methods;
+
+    n_methods = g_enum_info_get_n_methods(enum_info);
+
+    for (i = 0; i < n_methods; i++) {
+        GIFunctionInfo *meth_info;
+        GIFunctionInfoFlags flags;
+
+        meth_info = g_enum_info_get_method(enum_info, i);
+        flags = g_function_info_get_flags(meth_info);
+
+        g_warn_if_fail(!(flags & GI_FUNCTION_IS_METHOD));
+        /* Anything that isn't a method we put on the prototype of the
+         * constructor.  This includes <constructor> introspection
+         * methods, as well as the forthcoming "static methods"
+         * support.  We may want to change this to use
+         * GI_FUNCTION_IS_CONSTRUCTOR and GI_FUNCTION_IS_STATIC or the
+         * like in the near future.
+         */
+        if (!(flags & GI_FUNCTION_IS_METHOD)) {
+            gjs_define_function(context, constructor, G_TYPE_NONE,
+                                (GICallableInfo *)meth_info);
+        }
+
+        g_base_info_unref((GIBaseInfo*) meth_info);
+    }
+
+    return JS_TRUE;
+}
 
 JSBool
 gjs_define_enumeration(JSContext    *context,
@@ -172,6 +207,7 @@ gjs_define_enumeration(JSContext    *context,
 
     if (!gjs_define_enum_values(context, enum_obj, info))
         return JS_FALSE;
+    gjs_define_enum_static_methods (context, enum_obj, info);
 
     gjs_debug(GJS_DEBUG_GENUM,
               "Defining %s.%s as %p",

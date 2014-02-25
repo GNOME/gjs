@@ -404,6 +404,7 @@ gjs_define_error_class(JSContext    *context,
               constructor_name, prototype, JS_GetClass(prototype), in_object);
 
     gjs_define_enum_values(context, constructor, priv->info);
+    gjs_define_enum_static_methods(context, constructor, priv->info);
 }
 
 static GIEnumInfo *

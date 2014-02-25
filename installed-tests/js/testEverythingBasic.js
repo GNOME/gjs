@@ -409,6 +409,9 @@ function testEnumParam() {
 
     JSUnit.assertNotUndefined("Enum $gtype", Everything.TestEnumUnsigned.$gtype);
     JSUnit.assertTrue("Enum $gtype enumerable", "$gtype" in Everything.TestEnumUnsigned);
+
+    JSUnit.assertEquals(Number(Everything.TestError), Everything.TestError.quark());
+    JSUnit.assertEquals('value4', Everything.TestEnum.param(Everything.TestEnum.VALUE4));
 }
 
 function testSignal() {

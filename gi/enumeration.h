@@ -35,6 +35,9 @@ G_BEGIN_DECLS
 JSBool    gjs_define_enum_values       (JSContext    *context,
                                         JSObject     *in_object,
                                         GIEnumInfo   *info);
+JSBool    gjs_define_enum_static_methods(JSContext    *context,
+                                         JSObject     *constructor,
+                                         GIEnumInfo   *enum_info);
 JSBool    gjs_define_enumeration       (JSContext    *context,
                                         JSObject     *in_object,
                                         GIEnumInfo   *info);
