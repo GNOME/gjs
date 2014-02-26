@@ -91,5 +91,13 @@ function testFlagsParamSpec() {
     JSUnit.assertEquals(Regress.TestFlags.FLAG2, flagsSpec.default_value);
 }
 
+function testParamSpecMethod() {
+    let objectSpec = GObject.ParamSpec.object(name, nick, blurb, flags, GObject.Object);
+
+    JSUnit.assertEquals(name, objectSpec.get_name());
+    JSUnit.assertEquals(nick, objectSpec.get_nick());
+    JSUnit.assertEquals(blurb, objectSpec.get_blurb());
+}
+
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
 

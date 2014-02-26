@@ -30,6 +30,9 @@
 #include "boxed.h"
 #include "union.h"
 #include "gerror.h"
+#include "closure.h"
+#include "gtype.h"
+#include "param.h"
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 #include <gjs/jsapi-private.h>
@@ -570,11 +573,25 @@ gjs_fill_method_instance (JSContext  *context,
 
     case GI_INFO_TYPE_OBJECT:
     case GI_INFO_TYPE_INTERFACE:
-        if (gjs_typecheck_is_object(context, obj, JS_FALSE)) {
+        if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
             if (!gjs_typecheck_object(context, obj, gtype, JS_TRUE))
                 return JS_FALSE;
             out_arg->v_pointer = gjs_g_object_from_object(context, obj);
-        } else if (gjs_typecheck_is_fundamental(context, obj, JS_FALSE)) {
+        } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
+            if (!gjs_typecheck_param(context, obj, G_TYPE_PARAM, JS_TRUE))
+                return JS_FALSE;
+            out_arg->v_pointer = gjs_g_param_from_param(context, obj);
+        } else if (G_TYPE_IS_INTERFACE(gtype)) {
+            if (gjs_typecheck_is_object(context, obj, JS_FALSE)) {
+                if (!gjs_typecheck_object(context, obj, gtype, JS_TRUE))
+                    return JS_FALSE;
+                out_arg->v_pointer = gjs_g_object_from_object(context, obj);
+            } else {
+                if (!gjs_typecheck_fundamental(context, obj, gtype, JS_TRUE))
+                    return JS_FALSE;
+                out_arg->v_pointer = gjs_g_fundamental_from_object(context, obj);
+            }
+        } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
             if (!gjs_typecheck_fundamental(context, obj, gtype, JS_TRUE))
                 return JS_FALSE;
             out_arg->v_pointer = gjs_g_fundamental_from_object(context, obj);

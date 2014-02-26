@@ -30,6 +30,7 @@
 #include "object.h"
 #include "repo.h"
 #include "gtype.h"
+#include "function.h"
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
 
@@ -42,6 +43,79 @@ typedef struct {
 extern struct JSClass gjs_param_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Param, gjs_param_class)
+
+/*
+ * Like JSResolveOp, but flags provide contextual information as follows:
+ *
+ *  JSRESOLVE_QUALIFIED   a qualified property id: obj.id or obj[id], not id
+ *  JSRESOLVE_ASSIGNING   obj[id] is on the left-hand side of an assignment
+ *  JSRESOLVE_DETECTING   'if (o.p)...' or similar detection opcode sequence
+ *  JSRESOLVE_DECLARING   var, const, or object prolog declaration opcode
+ *  JSRESOLVE_CLASSNAME   class name used when constructing
+ *
+ * The *objp out parameter, on success, should be null to indicate that id
+ * was not resolved; and non-null, referring to obj or one of its prototypes,
+ * if id was resolved.
+ */
+static JSBool
+param_new_resolve(JSContext *context,
+                  JSObject **obj,
+                  jsid      *id,
+                  unsigned   flags,
+                  JSObject **objp)
+{
+    GIObjectInfo *info = NULL;
+    GIFunctionInfo *method_info;
+    Param *priv;
+    char *name;
+    JSBool ret = JS_FALSE;
+
+    *objp = NULL;
+
+    if (!gjs_get_string_id(context, *id, &name))
+        return JS_TRUE; /* not resolved, but no error */
+
+    priv = priv_from_js(context, *obj);
+
+    if (priv != NULL) {
+        /* instance, not prototype */
+        ret = JS_TRUE;
+        goto out;
+    }
+
+    info = (GIObjectInfo*)g_irepository_find_by_gtype(g_irepository_get_default(), G_TYPE_PARAM);
+    method_info = g_object_info_find_method(info, name);
+
+    if (method_info == NULL) {
+        ret = JS_TRUE;
+        goto out;
+    }
+#if GJS_VERBOSE_ENABLE_GI_USAGE
+    _gjs_log_info_usage((GIBaseInfo*) method_info);
+#endif
+
+    gjs_debug(GJS_DEBUG_GOBJECT,
+              "Defining method %s in prototype for GObject.ParamSpec",
+              g_base_info_get_name( (GIBaseInfo*) method_info));
+
+    if (gjs_define_function(context, *obj, G_TYPE_PARAM, method_info) == NULL) {
+        g_base_info_unref( (GIBaseInfo*) method_info);
+        goto out;
+    }
+
+    *objp = *obj; /* we defined the prop in obj */
+
+    g_base_info_unref( (GIBaseInfo*) method_info);
+
+    ret = JS_TRUE;
+ out:
+    g_free(name);
+    if (info != NULL)
+        g_base_info_unref( (GIBaseInfo*)info);
+
+    return ret;
+}
+
 
 static GIFieldInfo *
 find_field_info(GIObjectInfo *info,
@@ -82,15 +156,14 @@ param_get_prop(JSContext              *context,
     GITypeInfo *type_info = NULL;
     GIArgument arg;
 
+    priv = priv_from_js(context, obj);
+    if (priv == NULL) {
+        /* prototype */
+        return JS_TRUE;
+    }
+
     if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not something we affect, but no error */
-
-    priv = priv_from_js(context, obj);
-
-    if (priv == NULL) {
-        g_free(name);
-        return JS_FALSE; /* wrong class */
-    }
 
     success = JS_FALSE;
     pspec = priv->gparam;
@@ -115,7 +188,6 @@ param_get_prop(JSContext              *context,
     }
 
     if (field_info == NULL) {
-        value_p.set(JSVAL_VOID);
         success = JS_TRUE;
         goto out;
     }
@@ -186,13 +258,14 @@ param_finalize(JSFreeOp *fop,
 struct JSClass gjs_param_class = {
     "GObject_ParamSpec",
     JSCLASS_HAS_PRIVATE |
+    JSCLASS_NEW_RESOLVE |
     JSCLASS_BACKGROUND_FINALIZE,
     JS_PropertyStub,
     JS_DeletePropertyStub,
     param_get_prop,
     JS_StrictPropertyStub,
     JS_EnumerateStub,
-    JS_ResolveStub,
+    (JSResolveOp) param_new_resolve,
     JS_ConvertStub,
     param_finalize,
     NULL,
