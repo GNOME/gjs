@@ -49,6 +49,11 @@ JSBool    gjs_typecheck_is_object       (JSContext     *context,
 
 void      gjs_object_prepare_shutdown   (JSContext     *context);
 
+JSBool    gjs_object_define_static_methods(JSContext    *context,
+                                           JSObject     *constructor,
+                                           GType         gtype,
+                                           GIObjectInfo *object_info);
+
 G_END_DECLS
 
 #endif  /* __GJS_OBJECT_H__ */

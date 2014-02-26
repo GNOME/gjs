@@ -1851,11 +1851,11 @@ JSFunctionSpec gjs_object_instance_proto_funcs[] = {
     { NULL }
 };
 
-static JSBool
-gjs_define_static_methods(JSContext    *context,
-                          JSObject     *constructor,
-                          GType         gtype,
-                          GIObjectInfo *object_info)
+JSBool
+gjs_object_define_static_methods(JSContext    *context,
+                                 JSObject     *constructor,
+                                 GType         gtype,
+                                 GIObjectInfo *object_info)
 {
     int i;
     int n_methods;
@@ -1997,7 +1997,7 @@ gjs_define_object_class(JSContext      *context,
               constructor_name, prototype, JS_GetClass(prototype), in_object);
 
     if (info)
-        gjs_define_static_methods(context, constructor, gtype, info);
+        gjs_object_define_static_methods(context, constructor, gtype, info);
 
     value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,

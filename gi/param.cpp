@@ -224,6 +224,7 @@ gjs_define_param_class(JSContext    *context,
     JSObject *prototype;
     jsval value;
     JSObject *constructor;
+    GIObjectInfo *info;
 
     constructor_name = "ParamSpec";
 
@@ -249,6 +250,10 @@ gjs_define_param_class(JSContext    *context,
     value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
+
+    info = (GIObjectInfo*)g_irepository_find_by_gtype(g_irepository_get_default(), G_TYPE_PARAM);
+    gjs_object_define_static_methods(context, constructor, G_TYPE_PARAM, info);
+    g_base_info_unref( (GIBaseInfo*) info);
 
     gjs_debug(GJS_DEBUG_GPARAM, "Defined class %s prototype is %p class %p in object %p",
               constructor_name, prototype, JS_GetClass(prototype), in_object);
