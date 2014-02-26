@@ -1493,6 +1493,15 @@ gjs_value_to_g_argument(JSContext      *context,
                             arg->v_pointer = NULL;
                             wrong = TRUE;
                         }
+                    } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
+                        if (gjs_typecheck_param(context, JSVAL_TO_OBJECT(value), gtype, JS_TRUE)) {
+                            arg->v_pointer = gjs_g_param_from_param(context, JSVAL_TO_OBJECT(value));
+                            if (transfer != GI_TRANSFER_NOTHING)
+                                g_param_spec_ref(G_PARAM_SPEC(arg->v_pointer));
+                        } else {
+                            arg->v_pointer = NULL;
+                            wrong = TRUE;
+                        }
                     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                         if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
                             arg->v_pointer = gjs_closure_new_marshaled(context,
@@ -2537,7 +2546,6 @@ gjs_value_from_g_argument (JSContext  *context,
             GIBaseInfo* interface_info;
             GIInfoType interface_type;
             GType gtype;
-            gboolean gtype_is_object, gtype_is_interface;
 
             interface_info = g_type_info_get_interface(type_info);
             g_assert(interface_info != NULL);
@@ -2876,7 +2884,6 @@ gjs_g_arg_release_internal(JSContext  *context,
             GIBaseInfo* interface_info;
             GIInfoType interface_type;
             GType gtype;
-            gboolean gtype_is_object, gtype_is_interface;
 
             interface_info = g_type_info_get_interface(type_info);
             g_assert(interface_info != NULL);
@@ -2905,16 +2912,12 @@ gjs_g_arg_release_internal(JSContext  *context,
              * don't have to worry about it.
              */
 
-            gtype_is_object = g_type_is_a(gtype, G_TYPE_OBJECT);
-            gtype_is_interface = g_type_is_a(gtype, G_TYPE_INTERFACE);
-            if (gtype_is_object || gtype_is_interface) {
-                if (gtype_is_object) {
-                    if (transfer != TRANSFER_IN_NOTHING)
-                        g_object_unref(G_OBJECT(arg->v_pointer));
-                } else {
-                    if (transfer != TRANSFER_IN_NOTHING)
-                        gjs_fundamental_unref(context, arg->v_pointer);
-                }
+            if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
+                if (transfer != TRANSFER_IN_NOTHING)
+                    g_object_unref(G_OBJECT(arg->v_pointer));
+            } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
+                if (transfer != TRANSFER_IN_NOTHING)
+                    g_param_spec_unref(G_PARAM_SPEC(arg->v_pointer));
             } else if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
                 g_closure_unref((GClosure *) arg->v_pointer);
             } else if (g_type_is_a(gtype, G_TYPE_VALUE)) {
