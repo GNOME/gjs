@@ -24,6 +24,7 @@
 #define __GJS_PRIVATE_UTIL_H__
 
 #include <glib.h>
+#include <glib-object.h>
 
 G_BEGIN_DECLS
 
@@ -34,6 +35,11 @@ char * gjs_format_int_alternative_output (int n);
 void gjs_textdomain     (const char *domain);
 void gjs_bindtextdomain (const char *domain,
                          const char *location);
+
+/* For imports.overrides.GObject */
+GParamFlags gjs_param_spec_get_flags (GParamSpec *pspec);
+GType       gjs_param_spec_get_value_type (GParamSpec *pspec);
+GType       gjs_param_spec_get_owner_type (GParamSpec *pspec);
 
 G_END_DECLS
 

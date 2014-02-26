@@ -48,3 +48,21 @@ gjs_bindtextdomain(const char *domain,
     /* Always use UTF-8; we assume it internally here */
     bind_textdomain_codeset(domain, "UTF-8");
 }
+
+GParamFlags
+gjs_param_spec_get_flags(GParamSpec *pspec)
+{
+    return pspec->flags;
+}
+
+GType
+gjs_param_spec_get_value_type(GParamSpec *pspec)
+{
+    return pspec->value_type;
+}
+
+GType
+gjs_param_spec_get_owner_type(GParamSpec *pspec)
+{
+    return pspec->owner_type;
+}

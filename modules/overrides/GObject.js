@@ -20,6 +20,7 @@
 
 const Lang = imports.lang;
 const Gi = imports._gi;
+const GjsPrivate = imports.gi.GjsPrivate;
 
 let GObject;
 
@@ -255,6 +256,37 @@ function _init() {
     this.ParamSpec.param = function(name, nick, blurb, flags, param_type) {
         return GObject.param_spec_param(name, nick, blurb, param_type, flags);
     };
+
+    Object.defineProperties(this.ParamSpec.prototype, {
+        'name': { configurable: false,
+                  enumerable: false,
+                  get: function() { return this.get_name() } },
+        '_nick': { configurable: false,
+                   enumerable: false,
+                   get: function() { return this.get_nick() } },
+        'nick': { configurable: false,
+                  enumerable: false,
+                  get: function() { return this.get_nick() } },
+        '_blurb': { configurable: false,
+                    enumerable: false,
+                    get: function() { return this.get_blurb() } },
+        'blurb': { configurable: false,
+                   enumerable: false,
+                   get: function() { return this.get_blurb() } },
+        'default_value': { configurable: false,
+                           enumerable: false,
+                           get: function() { return this.get_default_value() } },
+        'flags':  { configurable: false,
+                    enumerable: false,
+                    get: function() { return GjsPrivate.param_spec_get_flags(this) } },
+        'value_type':  { configurable: false,
+                         enumerable: false,
+                         get: function() { return GjsPrivate.param_spec_get_value_type(this) } },
+        'owner_type':  { configurable: false,
+                         enumerable: false,
+                         get: function() { return GjsPrivate.param_spec_get_owner_type(this) } },
+    });
+
 
     this.Class = GObjectMeta;
     this.Object.prototype.__metaclass__ = this.Class;

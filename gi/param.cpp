@@ -118,110 +118,6 @@ param_new_resolve(JSContext *context,
     return ret;
 }
 
-
-static GIFieldInfo *
-find_field_info(GIObjectInfo *info,
-                gchar        *name)
-{
-    int i;
-    GIFieldInfo *field_info;
-
-    /* GParamSpecs aren't very big. We could optimize this so that it isn't
-     * O(N), but for the biggest GParamSpec, N=5, so it doesn't really matter. */
-    for (i = 0; i < g_object_info_get_n_fields((GIObjectInfo*)info); i++) {
-        field_info = g_object_info_get_field((GIObjectInfo*)info, i);
-        if (g_str_equal(name, g_base_info_get_name((GIBaseInfo*)field_info)))
-            return field_info;
-
-        g_base_info_unref((GIBaseInfo*)field_info);
-    }
-
-    return NULL;
-}
-
-/* a hook on getting a property; set value_p to override property's value.
- * Return value is JS_FALSE on OOM/exception.
- */
-static JSBool
-param_get_prop(JSContext              *context,
-               JS::HandleObject        obj,
-               JS::HandleId            id,
-               JS::MutableHandleValue  value_p)
-{
-    JSBool success;
-    Param *priv;
-    GParamSpec *pspec;
-    char *name;
-    GType gtype;
-    GIObjectInfo *info = NULL, *parent_info = NULL;
-    GIFieldInfo *field_info = NULL;
-    GITypeInfo *type_info = NULL;
-    GIArgument arg;
-
-    priv = priv_from_js(context, obj);
-    if (priv == NULL) {
-        /* prototype */
-        return JS_TRUE;
-    }
-
-    if (!gjs_get_string_id(context, id, &name))
-        return JS_TRUE; /* not something we affect, but no error */
-
-    success = JS_FALSE;
-    pspec = priv->gparam;
-
-    gtype = G_TYPE_FROM_INSTANCE(pspec);
-    info = (GIObjectInfo*)g_irepository_find_by_gtype(g_irepository_get_default(), gtype);
-
-    if (info == NULL) {
-        /* We may have a non-introspectable GParamSpec subclass here. Just return VOID. */
-        value_p.set(JSVAL_VOID);
-        success = JS_TRUE;
-        goto out;
-    }
-
-    parent_info = g_object_info_get_parent(info);
-
-    field_info = find_field_info(info, name);
-
-    if (field_info == NULL) {
-        /* Try it on the parent GParamSpec for generic GParamSpec properties. */
-        field_info = find_field_info(parent_info, name);
-    }
-
-    if (field_info == NULL) {
-        success = JS_TRUE;
-        goto out;
-    }
-
-    type_info = g_field_info_get_type(field_info);
-
-    if (!g_field_info_get_field(field_info, priv->gparam, &arg)) {
-        gjs_throw(context, "Reading field %s.%s is not supported",
-                  g_base_info_get_name(info),
-                  g_base_info_get_name((GIBaseInfo*)field_info));
-        goto out;
-    }
-
-    if (!gjs_value_from_g_argument(context, value_p.address(), type_info, &arg, TRUE))
-        goto out;
-
-    success = JS_TRUE;
-
- out:
-    if (field_info != NULL)
-        g_base_info_unref((GIBaseInfo*)field_info);
-    if (type_info != NULL)
-        g_base_info_unref((GIBaseInfo*)type_info);
-    if (info != NULL)
-        g_base_info_unref((GIBaseInfo*)info);
-    if (parent_info != NULL)
-        g_base_info_unref((GIBaseInfo*)parent_info);
-    g_free(name);
-
-    return success;
-}
-
 GJS_NATIVE_CONSTRUCTOR_DECLARE(param)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(param)
@@ -264,7 +160,7 @@ struct JSClass gjs_param_class = {
     JSCLASS_BACKGROUND_FINALIZE,
     JS_PropertyStub,
     JS_DeletePropertyStub,
-    param_get_prop,
+    JS_PropertyStub,
     JS_StrictPropertyStub,
     JS_EnumerateStub,
     (JSResolveOp) param_new_resolve,
