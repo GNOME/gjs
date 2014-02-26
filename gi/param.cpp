@@ -94,16 +94,18 @@ param_new_resolve(JSContext *context,
     _gjs_log_info_usage((GIBaseInfo*) method_info);
 #endif
 
-    gjs_debug(GJS_DEBUG_GOBJECT,
-              "Defining method %s in prototype for GObject.ParamSpec",
-              g_base_info_get_name( (GIBaseInfo*) method_info));
+    if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+        gjs_debug(GJS_DEBUG_GOBJECT,
+                  "Defining method %s in prototype for GObject.ParamSpec",
+                  g_base_info_get_name( (GIBaseInfo*) method_info));
 
-    if (gjs_define_function(context, *obj, G_TYPE_PARAM, method_info) == NULL) {
-        g_base_info_unref( (GIBaseInfo*) method_info);
-        goto out;
+        if (gjs_define_function(context, *obj, G_TYPE_PARAM, method_info) == NULL) {
+            g_base_info_unref( (GIBaseInfo*) method_info);
+            goto out;
+        }
+
+        *objp = *obj; /* we defined the prop in obj */
     }
-
-    *objp = *obj; /* we defined the prop in obj */
 
     g_base_info_unref( (GIBaseInfo*) method_info);
 

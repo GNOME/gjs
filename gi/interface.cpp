@@ -123,14 +123,17 @@ interface_new_resolve(JSContext *context,
     method_info = g_interface_info_find_method((GIInterfaceInfo*) priv->info, name);
 
     if (method_info != NULL) {
-        if (gjs_define_function(context, *obj,
-                                priv->gtype,
-                                (GICallableInfo*)method_info) == NULL) {
-            g_base_info_unref((GIBaseInfo*)method_info);
-            goto out;
+        if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+            if (gjs_define_function(context, *obj,
+                                    priv->gtype,
+                                    (GICallableInfo*)method_info) == NULL) {
+                g_base_info_unref((GIBaseInfo*)method_info);
+                goto out;
+            }
+
+            *objp = *obj;
         }
 
-        *objp = *obj;
         g_base_info_unref((GIBaseInfo*)method_info);
     }
 

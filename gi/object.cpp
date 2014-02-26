@@ -469,11 +469,13 @@ object_instance_new_resolve_no_info(JSContext       *context,
 
 
         if (method_info != NULL) {
-            if (gjs_define_function(context, obj, priv->gtype,
-                                    (GICallableInfo *)method_info)) {
-                *objp = obj;
-            } else {
-                ret = JS_FALSE;
+            if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+                if (gjs_define_function(context, obj, priv->gtype,
+                                        (GICallableInfo *)method_info)) {
+                    *objp = obj;
+                } else {
+                    ret = JS_FALSE;
+                }
             }
 
             g_base_info_unref( (GIBaseInfo*) method_info);
@@ -621,19 +623,21 @@ object_instance_new_resolve(JSContext *context,
         _gjs_log_info_usage((GIBaseInfo*) method_info);
 #endif
 
-        gjs_debug(GJS_DEBUG_GOBJECT,
-                  "Defining method %s in prototype for %s (%s.%s)",
-                  g_base_info_get_name( (GIBaseInfo*) method_info),
-                  g_type_name(priv->gtype),
-                  g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                  g_base_info_get_name( (GIBaseInfo*) priv->info));
+        if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+            gjs_debug(GJS_DEBUG_GOBJECT,
+                      "Defining method %s in prototype for %s (%s.%s)",
+                      g_base_info_get_name( (GIBaseInfo*) method_info),
+                      g_type_name(priv->gtype),
+                      g_base_info_get_namespace( (GIBaseInfo*) priv->info),
+                      g_base_info_get_name( (GIBaseInfo*) priv->info));
 
-        if (gjs_define_function(context, *obj, priv->gtype, method_info) == NULL) {
-            g_base_info_unref( (GIBaseInfo*) method_info);
-            goto out;
+            if (gjs_define_function(context, *obj, priv->gtype, method_info) == NULL) {
+                g_base_info_unref( (GIBaseInfo*) method_info);
+                goto out;
+            }
+
+            *objp = *obj; /* we defined the prop in obj */
         }
-
-        *objp = *obj; /* we defined the prop in obj */
 
         g_base_info_unref( (GIBaseInfo*) method_info);
     }

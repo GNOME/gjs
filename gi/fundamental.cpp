@@ -302,12 +302,14 @@ fundamental_instance_new_resolve_interface(JSContext    *context,
 
 
         if (method_info != NULL) {
-            if (gjs_define_function(context, obj,
-                                    proto_priv->gtype,
-                                    (GICallableInfo *) method_info)) {
-                *objp = obj;
-            } else {
-                ret = JS_FALSE;
+            if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+                if (gjs_define_function(context, obj,
+                                        proto_priv->gtype,
+                                        (GICallableInfo *) method_info)) {
+                    *objp = obj;
+                } else {
+                    ret = JS_FALSE;
+                }
             }
 
             g_base_info_unref((GIBaseInfo *) method_info);
@@ -367,34 +369,35 @@ fundamental_instance_new_resolve(JSContext  *context,
 #if GJS_VERBOSE_ENABLE_GI_USAGE
             _gjs_log_info_usage((GIBaseInfo *) method_info);
 #endif
+            if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+                method_name = g_base_info_get_name((GIBaseInfo *) method_info);
 
-            method_name = g_base_info_get_name((GIBaseInfo *) method_info);
+                /* we do not define deprecated methods in the prototype */
+                if (g_base_info_is_deprecated((GIBaseInfo *) method_info)) {
+                    gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
+                              "Ignoring definition of deprecated method %s in prototype %s.%s",
+                              method_name,
+                              g_base_info_get_namespace((GIBaseInfo *) proto_priv->info),
+                              g_base_info_get_name((GIBaseInfo *) proto_priv->info));
+                    g_base_info_unref((GIBaseInfo *) method_info);
+                    ret = JS_TRUE;
+                    goto out;
+                }
 
-            /* we do not define deprecated methods in the prototype */
-            if (g_base_info_is_deprecated((GIBaseInfo *) method_info)) {
                 gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
-                          "Ignoring definition of deprecated method %s in prototype %s.%s",
+                          "Defining method %s in prototype for %s.%s",
                           method_name,
                           g_base_info_get_namespace((GIBaseInfo *) proto_priv->info),
                           g_base_info_get_name((GIBaseInfo *) proto_priv->info));
-                g_base_info_unref((GIBaseInfo *) method_info);
-                ret = JS_TRUE;
-                goto out;
+
+                if (gjs_define_function(context, *obj, proto_priv->gtype,
+                                        method_info) == NULL) {
+                    g_base_info_unref((GIBaseInfo *) method_info);
+                    goto out;
+                }
+
+                *objp = *obj;
             }
-
-            gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
-                      "Defining method %s in prototype for %s.%s",
-                      method_name,
-                      g_base_info_get_namespace((GIBaseInfo *) proto_priv->info),
-                      g_base_info_get_name((GIBaseInfo *) proto_priv->info));
-
-            if (gjs_define_function(context, *obj, proto_priv->gtype,
-                                    method_info) == NULL) {
-                g_base_info_unref((GIBaseInfo *) method_info);
-                goto out;
-            }
-
-            *objp = *obj;
 
             g_base_info_unref((GIBaseInfo *) method_info);
         }

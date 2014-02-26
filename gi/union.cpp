@@ -100,26 +100,27 @@ union_new_resolve(JSContext *context,
 #if GJS_VERBOSE_ENABLE_GI_USAGE
             _gjs_log_info_usage((GIBaseInfo*) method_info);
 #endif
+            if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+                method_name = g_base_info_get_name( (GIBaseInfo*) method_info);
 
-            method_name = g_base_info_get_name( (GIBaseInfo*) method_info);
+                gjs_debug(GJS_DEBUG_GBOXED,
+                          "Defining method %s in prototype for %s.%s",
+                          method_name,
+                          g_base_info_get_namespace( (GIBaseInfo*) priv->info),
+                          g_base_info_get_name( (GIBaseInfo*) priv->info));
 
-            gjs_debug(GJS_DEBUG_GBOXED,
-                      "Defining method %s in prototype for %s.%s",
-                      method_name,
-                      g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                      g_base_info_get_name( (GIBaseInfo*) priv->info));
+                union_proto = *obj;
 
-            union_proto = *obj;
+                if (gjs_define_function(context, union_proto,
+                                        g_registered_type_info_get_g_type(priv->info),
+                                        method_info) == NULL) {
+                    g_base_info_unref( (GIBaseInfo*) method_info);
+                    ret = JS_FALSE;
+                    goto out;
+                }
 
-            if (gjs_define_function(context, union_proto,
-                                    g_registered_type_info_get_g_type(priv->info),
-                                    method_info) == NULL) {
-                g_base_info_unref( (GIBaseInfo*) method_info);
-                ret = JS_FALSE;
-                goto out;
+                *objp = union_proto; /* we defined the prop in object_proto */
             }
-
-            *objp = union_proto; /* we defined the prop in object_proto */
 
             g_base_info_unref( (GIBaseInfo*) method_info);
         }

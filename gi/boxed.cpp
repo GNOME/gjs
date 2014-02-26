@@ -152,24 +152,25 @@ boxed_new_resolve(JSContext *context,
 #if GJS_VERBOSE_ENABLE_GI_USAGE
             _gjs_log_info_usage((GIBaseInfo*) method_info);
 #endif
+            if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+                method_name = g_base_info_get_name( (GIBaseInfo*) method_info);
 
-            method_name = g_base_info_get_name( (GIBaseInfo*) method_info);
+                gjs_debug(GJS_DEBUG_GBOXED,
+                          "Defining method %s in prototype for %s.%s",
+                          method_name,
+                          g_base_info_get_namespace( (GIBaseInfo*) priv->info),
+                          g_base_info_get_name( (GIBaseInfo*) priv->info));
 
-            gjs_debug(GJS_DEBUG_GBOXED,
-                      "Defining method %s in prototype for %s.%s",
-                      method_name,
-                      g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                      g_base_info_get_name( (GIBaseInfo*) priv->info));
+                boxed_proto = *obj;
 
-            boxed_proto = *obj;
+                if (gjs_define_function(context, boxed_proto, priv->gtype,
+                                        (GICallableInfo *)method_info) == NULL) {
+                    g_base_info_unref( (GIBaseInfo*) method_info);
+                    goto out;
+                }
 
-            if (gjs_define_function(context, boxed_proto, priv->gtype,
-                                    (GICallableInfo *)method_info) == NULL) {
-                g_base_info_unref( (GIBaseInfo*) method_info);
-                goto out;
+                *objp = boxed_proto; /* we defined the prop in object_proto */
             }
-
-            *objp = boxed_proto; /* we defined the prop in object_proto */
 
             g_base_info_unref( (GIBaseInfo*) method_info);
         }
