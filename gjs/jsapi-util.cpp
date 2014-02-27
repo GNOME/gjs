@@ -1178,16 +1178,9 @@ _linux_get_self_process_size (gulong *vm_size,
 static gulong linux_rss_trigger;
 #endif
 
-/**
- * gjs_maybe_gc:
- *
- * Low level version of gjs_context_maybe_gc().
- */
 void
-gjs_maybe_gc (JSContext *context)
+gjs_gc_if_needed (JSContext *context)
 {
-    JS_MaybeGC(context);
-
 #ifdef __linux__
     {
         /* We initiate a GC if VM or RSS has grown by this much */
@@ -1215,6 +1208,18 @@ gjs_maybe_gc (JSContext *context)
         }
     }
 #endif
+}
+
+/**
+ * gjs_maybe_gc:
+ *
+ * Low level version of gjs_context_maybe_gc().
+ */
+void
+gjs_maybe_gc (JSContext *context)
+{
+    JS_MaybeGC(context);
+    gjs_gc_if_needed(context);
 }
 
 /**
