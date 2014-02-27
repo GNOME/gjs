@@ -32,6 +32,7 @@
 #include "gerror.h"
 #include <gjs/gjs-module.h>
 #include <gjs/compat.h>
+#include <gjs/jsapi-private.h>
 
 #include <util/log.h>
 
@@ -395,6 +396,8 @@ out:
     }
 
     gjs_callback_trampoline_unref(trampoline);
+    gjs_schedule_gc_if_needed(context);
+
     JS_EndRequest(context);
 }
 

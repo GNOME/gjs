@@ -740,6 +740,9 @@ gjs_call_function_value(JSContext      *context,
     result = JS_CallFunctionValue(context, obj, fval,
                                   argc, argv, rval);
 
+    if (result)
+        gjs_schedule_gc_if_needed(context);
+
     JS_EndRequest(context);
     return result;
 }
@@ -1329,6 +1332,8 @@ gjs_eval_with_scope(JSContext    *context,
 
     if (!JS::Evaluate(context, rootedObj, options, script, script_len, &retval))
         return JS_FALSE;
+
+    gjs_schedule_gc_if_needed(context);
 
     if (JS_IsExceptionPending(context)) {
         g_warning("EvaluateScript returned JS_TRUE but exception was pending; "
