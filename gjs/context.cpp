@@ -27,6 +27,7 @@
 
 #include "context-private.h"
 #include "importer.h"
+#include "jsapi-private.h"
 #include "jsapi-util.h"
 #include "native.h"
 #include "byteArray.h"
@@ -67,6 +68,8 @@ struct _GjsContext {
     char **search_path;
 
     gboolean destroying;
+
+    guint    auto_gc_id;
 
     jsid const_strings[GJS_STRING_LAST];
 };
@@ -355,6 +358,11 @@ gjs_context_dispose(GObject *object)
          */
         gjs_object_prepare_shutdown(js_context->context);
 
+        if (js_context->auto_gc_id > 0) {
+            g_source_remove (js_context->auto_gc_id);
+            js_context->auto_gc_id = 0;
+        }
+
         /* Tear down JS */
         JS_DestroyContext(js_context->context);
         js_context->context = NULL;
@@ -523,6 +531,26 @@ gboolean
 _gjs_context_destroying (GjsContext *context)
 {
     return context->destroying;
+}
+
+static gboolean
+trigger_gc_if_needed (gpointer user_data)
+{
+    GjsContext *js_context = GJS_CONTEXT(user_data);
+    js_context->auto_gc_id = 0;
+    gjs_gc_if_needed(js_context->context);
+    return FALSE;
+}
+
+void
+_gjs_context_schedule_gc_if_needed (GjsContext *js_context)
+{
+    if (js_context->auto_gc_id > 0)
+        return;
+
+    js_context->auto_gc_id = g_idle_add_full(G_PRIORITY_LOW,
+                                             trigger_gc_if_needed,
+                                             js_context, NULL);
 }
 
 /**

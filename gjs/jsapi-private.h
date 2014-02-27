@@ -35,7 +35,8 @@
 
 G_BEGIN_DECLS
 
-void gjs_gc_if_needed      (JSContext *context);
+void gjs_schedule_gc_if_needed (JSContext *context);
+void gjs_gc_if_needed          (JSContext *context);
 
 G_END_DECLS
 
