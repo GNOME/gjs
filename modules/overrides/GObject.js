@@ -152,8 +152,8 @@ function _init() {
     }
 
     _makeDummyClass(this, 'VoidType', 'NONE', 'void', function() {});
-    _makeDummyClass(this, 'Char', 'CHAR', 'gchar', String);
-    _makeDummyClass(this, 'UChar', 'UCHAR', 'guchar', String);
+    _makeDummyClass(this, 'Char', 'CHAR', 'gchar', Number);
+    _makeDummyClass(this, 'UChar', 'UCHAR', 'guchar', Number);
     _makeDummyClass(this, 'Unichar', 'UNICHAR', 'gint', String);
 
     this.TYPE_BOOLEAN = GObject.type_from_name('gboolean');
