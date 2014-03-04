@@ -14,21 +14,13 @@ JS_NATIVE_MODULE_CFLAGS =	\
 JS_NATIVE_MODULE_LIBADD =	\
         $(GJS_LIBS)
 
-if ENABLE_GTK
-gtk_override = <file>modules/overrides/Gtk.js</file>
-endif
-
-$(srcdir)/modules/modules.gresource.xml: $(srcdir)/modules/modules.gresource.xml.in Makefile
-	$(AM_V_GEN) sed -e 's|@GTK_OVERRIDE[@]|$(gtk_override)|g' $< > $@
-
 modules_resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/modules/modules.gresource.xml)
 modules-resources.h: $(srcdir)/modules/modules.gresource.xml $(modules_resource_files)
 	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --sourcedir=$(builddir) --generate --c-name modules_resources $<
 modules-resources.c: $(srcdir)/modules/modules.gresource.xml $(modules_resource_files)
 	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --sourcedir=$(builddir) --generate --c-name modules_resources $<
 
-EXTRA_DIST += $(modules_resource_files) $(srcdir)/modules/modules.gresource.xml.in
-CLEANFILES += $(srcdir)/modules/modules.gresource.xml
+EXTRA_DIST += $(modules_resource_files) $(srcdir)/modules/modules.gresource.xml
 
 nodist_libmodules_resources_la_SOURCES = modules-resources.c modules-resources.h
 libmodules_resources_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS)

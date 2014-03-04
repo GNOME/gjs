@@ -23,9 +23,13 @@
 #ifndef __GJS_PRIVATE_GTK_UTIL_H__
 #define __GJS_PRIVATE_GTK_UTIL_H__
 
+#ifdef ENABLE_GTK
+
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
+
+#define GJS_ENABLE_GTK 1
 
 void gjs_gtk_container_child_set_property (GtkContainer *container,
                                            GtkWidget    *child,
@@ -33,5 +37,11 @@ void gjs_gtk_container_child_set_property (GtkContainer *container,
                                            const GValue *value);
 
 G_END_DECLS
+
+#else
+
+#define GJS_ENABLE_GTK 0
+
+#endif
 
 #endif /* __GJS_PRIVATE_GTK_UTIL_H__ */

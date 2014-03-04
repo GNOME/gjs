@@ -157,12 +157,12 @@ libgjs_private_source_files = \
 	libgjs-private/gjs-gdbus-wrapper.cpp	\
 	libgjs-private/gjs-gdbus-wrapper.h	\
 	libgjs-private/gjs-util.cpp		\
-	libgjs-private/gjs-util.h
+	libgjs-private/gjs-util.h		\
+	libgjs-private/gjs-gtk-util.h
 
 if ENABLE_GTK
 libgjs_private_source_files += 			\
 	libgjs-private/gjs-gtk-util.c		\
-	libgjs-private/gjs-gtk-util.h		\
 	$(NULL)
 endif
 
