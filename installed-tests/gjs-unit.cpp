@@ -185,7 +185,7 @@ main(int argc, char **argv)
 
     if (g_getenv ("GJS_USE_UNINSTALLED_FILES") != NULL) {
         /* typelib path is handled by the environment */
-        js_test_dir = g_build_filename("installed-tests", "js", NULL);
+        js_test_dir = g_build_filename(g_getenv ("TOP_SRCDIR"), "installed-tests", "js", NULL);
     } else {
         g_irepository_prepend_search_path(INSTTESTDIR);
         js_test_dir = g_build_filename(INSTTESTDIR, "js", NULL);

@@ -42,7 +42,7 @@ check-local: gjs-tests
 # GJS_PATH is empty here since we want to force the use of our own
 # resources
 TESTS_ENVIRONMENT =							\
-	TOP_SRCDIR=$(top_srcdir)					\
+	TOP_SRCDIR=$(abs_top_srcdir)					\
 	DBUS_SESSION_BUS_ADDRESS=''					\
 	XDG_DATA_HOME=test_user_data					\
 	GJS_DEBUG_OUTPUT=test_user_data/logs/gjs.log			\
