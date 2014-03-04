@@ -205,6 +205,8 @@ include Makefile-examples.am
 typelibdir = $(pkglibdir)/girepository-1.0
 typelib_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
 
+CLEANFILES += $(INTROSPECTION_GIRS) $(typelib_DATA)
+
 ########################################################################
 bin_PROGRAMS += gjs-console
 

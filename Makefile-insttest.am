@@ -93,6 +93,7 @@ gjsinsttest_DATA += $(TEST_INTROSPECTION_GIRS:.gir=.typelib)
 else
 noinst_DATA += $(TEST_INTROSPECTION_GIRS:.gir=.typelib)
 endif
+CLEANFILES += $(TEST_INTROSPECTION_GIRS) $(TEST_INTROSPECTION_GIRS:.gir=.typelib)
 
 jstestsdir = $(gjsinsttestdir)/js
 dist_jstests_DATA =

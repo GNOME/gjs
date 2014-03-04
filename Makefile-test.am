@@ -4,6 +4,11 @@ EXTRA_DIST += \
 
 RUN_WITH_DBUS = ${top_srcdir}/test/run-with-dbus --session --system
 GTESTER = ${TESTS_ENVIRONMENT} ${RUN_WITH_DBUS} gtester
+CLEANFILES += uninstalled-system-test-bus.conf uninstalled-test-bus.conf
+clean-local: test-user-data-clean
+
+test-user-data-clean:
+	-rm -fr $(builddir)/test_user_data
 
 ########################################################################
 TEST_PROGS += gjs-tests

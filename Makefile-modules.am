@@ -23,6 +23,7 @@ modules-resources.c: $(srcdir)/modules/modules.gresource.xml $(modules_resource_
 EXTRA_DIST += $(modules_resource_files) $(srcdir)/modules/modules.gresource.xml
 
 nodist_libmodules_resources_la_SOURCES = modules-resources.c modules-resources.h
+CLEANFILES += $(nodist_libmodules_resources_la_SOURCES)
 libmodules_resources_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
 libmodules_resources_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD)
 
