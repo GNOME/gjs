@@ -30,4 +30,11 @@
     </foaf:Person>
   </maintainer>
 
+  <maintainer>
+    <foaf:Person>
+      <foaf:name>Giovanni Campagna</foaf:name>
+      <foaf:mbox rdf:resource="mailto:gcampagna@gnome.org"/>
+      <gnome:userid>gcampagna</gnome:userid>
+    </foaf:Person>
+  </maintainer>
 </Project>
