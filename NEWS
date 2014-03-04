@@ -1,3 +1,13 @@
+Version 1.39.90
+---------------
+
+- Implemented fundamental object support [Lionel Landwerlin, #621716, #725061]
+- Fixed GIRepositoryGType prototype [#724925]
+- Moved GObject.prototype.disconnect() to a JS implementation [#698283]
+- Added support for enumeration methods [#725143]
+- Added pseudo-classes for fundamental types [#722554]
+- Build fixes [Ting-Wei Lan, #724853]
+
 Version 0.3 (03-Jul-2009)
 -------------------------
 
