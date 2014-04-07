@@ -797,7 +797,7 @@ function testConvertFunctionCountersToArrayIsSorted() {
 }
 
 const MockFiles = {
-    'filename': "let f = function() { return 1; };",
+    'filename': "let f = function() { return 1; };"
 };
 
 const MockFilenames = Object.keys(MockFiles);

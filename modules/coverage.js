@@ -581,7 +581,7 @@ function _BranchTracker(branchCounters) {
             this._activeBranch = nextActiveBranch;
             this._activeBranch.hit = true;
         }
-    }
+    };
 }
 
 function _convertFunctionCountersToArray(functionCounters) {
@@ -721,7 +721,7 @@ function CoverageStatistics(files) {
                                          });
 
             this._branchTracker.incrementBranchCounters(offsetLine);
-        }
+        };
 
         return undefined;
     };

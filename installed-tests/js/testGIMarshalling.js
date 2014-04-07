@@ -134,18 +134,18 @@ function testGArray() {
     assertEquals("1", array[1]);
     assertEquals("2", array[2]);
 
-    GIMarshallingTests.garray_int_none_in([-1, 0, 1, 2])
-    GIMarshallingTests.garray_utf8_none_in(["0", "1", "2"])
+    GIMarshallingTests.garray_int_none_in([-1, 0, 1, 2]);
+    GIMarshallingTests.garray_utf8_none_in(["0", "1", "2"]);
 
-    array = GIMarshallingTests.garray_utf8_none_out()
+    array = GIMarshallingTests.garray_utf8_none_out();
     assertEquals("0", array[0]);
     assertEquals("1", array[1]);
     assertEquals("2", array[2]);
-    array = GIMarshallingTests.garray_utf8_container_out()
+    array = GIMarshallingTests.garray_utf8_container_out();
     assertEquals("0", array[0]);
     assertEquals("1", array[1]);
     assertEquals("2", array[2]);
-    array = GIMarshallingTests.garray_utf8_full_out()
+    array = GIMarshallingTests.garray_utf8_full_out();
     assertEquals("0", array[0]);
     assertEquals("1", array[1]);
     assertEquals("2", array[2]);
@@ -200,7 +200,7 @@ function testGBytes() {
     array[1] = 49;  // Flip the value back
     GIMarshallingTests.gbytes_none_in(array.toGBytes()); // Now convert back to GBytes
 
-    bytes = GLib.Bytes.new([97, 98, 99, 100])
+    bytes = GLib.Bytes.new([97, 98, 99, 100]);
     GIMarshallingTests.array_uint8_in(bytes.toArray());
     assertRaises(function() {
 	GIMarshallingTests.array_uint8_in(bytes);
@@ -288,7 +288,7 @@ function testGValueGType() {
     GIMarshallingTests.gvalue_in_with_type(42, GObject.TYPE_INT);
     GIMarshallingTests.gvalue_in_with_type(42.5, GObject.TYPE_DOUBLE);
     GIMarshallingTests.gvalue_in_with_type('42', GObject.TYPE_STRING);
-    GIMarshallingTests.gvalue_in_with_type(GObject.TYPE_GTYPE, GObject.TYPE_GTYPE)
+    GIMarshallingTests.gvalue_in_with_type(GObject.TYPE_GTYPE, GObject.TYPE_GTYPE);
 
     GIMarshallingTests.gvalue_in_with_type(42, GObject.Int);
     GIMarshallingTests.gvalue_in_with_type(42.5, GObject.Double);
