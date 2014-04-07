@@ -147,7 +147,7 @@ function _init() {
     function _makeDummyClass(obj, name, upperName, gtypeName, actual) {
         let gtype = GObject.type_from_name(gtypeName);
         obj['TYPE_' + upperName] = gtype;
-        obj[name] = function(v) { return new actual(v); }
+        obj[name] = function(v) { return new actual(v); };
         obj[name].$gtype = gtype;
     }
 
@@ -265,7 +265,7 @@ function _init() {
     };
 
     this.ParamSpec.param = function(name, nick, blurb, flags, param_type) {
-	return GObject.ParamSpec._new_internal(name, boxed_type, nick, blurb, flags);
+	return GObject.ParamSpec._new_internal(name, param_type, nick, blurb, flags);
     };
 
     this.Class = GObjectMeta;
@@ -287,5 +287,5 @@ function _init() {
 
     this.Object.prototype.disconnect = function(id) {
         return GObject.signal_handler_disconnect(this, id);
-    }
+    };
 }
