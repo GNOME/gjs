@@ -110,7 +110,7 @@ function _pack_variant(signature, value) {
 	return GLib.Variant.new_variant(value);
     case 'm':
 	if (value != null)
-	    return GLib.Variant.new_maybe(null, _pack_variant(signature, value))
+	    return GLib.Variant.new_maybe(null, _pack_variant(signature, value));
 	else
 	    return GLib.Variant.new_maybe(new GLib.VariantType(_read_single_type(signature, false).join('')), null);
     case 'a':
@@ -213,7 +213,7 @@ function _unpack_variant(variant, deep) {
 		// always unpack the dictionary entry, and always unpack
 		// the key (or it cannot be added as a key)
 		let val = _unpack_variant(variant.get_child_value(i), deep);
-		let key
+		let key;
 		if (!deep)
 		    key = _unpack_variant(val[0], true);
 		else
@@ -253,7 +253,7 @@ function _init() {
     // small HACK: we add a matches() method to standard Errors so that
     // you can do "catch(e if e.matches(Ns.FooError, Ns.FooError.SOME_CODE))"
     // without checking instanceof
-    Error.prototype.matches = function() { return false; }
+    Error.prototype.matches = function() { return false; };
 
     this.Variant._new_internal = function(sig, value) {
 	let signature = Array.prototype.slice.call(sig);
@@ -263,23 +263,23 @@ function _init() {
 	    throw new TypeError('Invalid GVariant signature (more than one single complete type)');
 
 	return variant;
-    }
+    };
 
     // Deprecate version of new GLib.Variant()
     this.Variant.new = function(sig, value) {
 	return new GLib.Variant(sig, value);
-    }
+    };
     this.Variant.prototype.unpack = function() {
 	return _unpack_variant(this, false);
-    }
+    };
     this.Variant.prototype.deep_unpack = function() {
 	return _unpack_variant(this, true);
-    }
+    };
     this.Variant.prototype.toString = function() {
 	return '[object variant of type "' + this.get_type_string() + '"]';
-    }
+    };
 
     this.Bytes.prototype.toArray = function() {
 	return imports.byteArray.fromGBytes(this);
-    }
+    };
 }

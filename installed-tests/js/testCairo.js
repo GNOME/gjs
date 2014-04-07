@@ -114,7 +114,7 @@ function testContextMethods() {
     cr.showText("foobar");
 
     cr.moveTo(0, 0);
-    cr.setDash([1, 0.5], 1)
+    cr.setDash([1, 0.5], 1);
     cr.lineTo(1, 0);
     cr.lineTo(1, 1);
     cr.lineTo(0, 1);
@@ -130,12 +130,12 @@ function testSolidPattern() {
 
     let p1 = Cairo.SolidPattern.createRGB(1, 2, 3);
     JSUnit.assertEquals(_ts(p1), "CairoSolidPattern");
-    cr.setSource(p1)
+    cr.setSource(p1);
     JSUnit.assertEquals(_ts(cr.getSource()), "CairoSolidPattern");
 
     let p2 = Cairo.SolidPattern.createRGBA(1, 2, 3, 4);
     JSUnit.assertEquals(_ts(p2), "CairoSolidPattern");
-    cr.setSource(p2)
+    cr.setSource(p2);
     JSUnit.assertEquals(_ts(cr.getSource()), "CairoSolidPattern");
 }
 
@@ -144,7 +144,7 @@ function testSurfacePattern() {
     let surface = _createSurface();
     let p1 = new Cairo.SurfacePattern(surface);
     JSUnit.assertEquals(_ts(p1), "CairoSurfacePattern");
-    cr.setSource(p1)
+    cr.setSource(p1);
     JSUnit.assertEquals(_ts(cr.getSource()), "CairoSurfacePattern");
 }
 
@@ -153,7 +153,7 @@ function testLinearGradient() {
     let surface = _createSurface();
     let p1 = new Cairo.LinearGradient(1, 2, 3, 4);
     JSUnit.assertEquals(_ts(p1), "CairoLinearGradient");
-    cr.setSource(p1)
+    cr.setSource(p1);
     JSUnit.assertEquals(_ts(cr.getSource()), "CairoLinearGradient");
 }
 
@@ -162,7 +162,7 @@ function testRadialGradient() {
     let surface = _createSurface();
     let p1 = new Cairo.RadialGradient(1, 2, 3, 4, 5, 6);
     JSUnit.assertEquals(_ts(p1), "CairoRadialGradient");
-    cr.setSource(p1)
+    cr.setSource(p1);
     JSUnit.assertEquals(_ts(cr.getSource()), "CairoRadialGradient");
 }
 

@@ -232,7 +232,7 @@ function _injectToMethod(klass, method, addition) {
     klass[method] = function() {
         addition.apply(this, arguments);
         return previous.apply(this, arguments);
-    }
+    };
 }
 
 function _wrapFunction(klass, method, addition) {
@@ -242,7 +242,7 @@ function _wrapFunction(klass, method, addition) {
         var args = Array.prototype.slice.call(arguments);
         args.unshift(previous);
         return addition.apply(this, args);
-    }
+    };
 }
 
 function _makeOutSignature(args) {
@@ -328,7 +328,7 @@ function _wrapJSObject(interfaceInfo, jsObj) {
 
     var impl = new GjsPrivate.DBusImplementation({ g_interface_info: info });
     impl.connect('handle-method-call', function(impl, method_name, parameters, invocation) {
-        return _handleMethodCall.call(jsObj, info, impl, method_name, parameters, invocation)
+        return _handleMethodCall.call(jsObj, info, impl, method_name, parameters, invocation);
     });
     impl.connect('handle-property-get', function(impl, property_name) {
         return _handlePropertyGet.call(jsObj, info, impl, property_name);
@@ -362,7 +362,7 @@ function _init() {
 
         watch_name:               Gio.bus_watch_name,
         watch_name_on_connection: Gio.bus_watch_name_on_connection,
-        unwatch_name:             Gio.bus_unwatch_name,
+        unwatch_name:             Gio.bus_unwatch_name
     };
 
     Gio.DBusConnection.prototype.watch_name = function(name, flags, appeared, vanished) {

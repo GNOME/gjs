@@ -211,7 +211,7 @@ function testCallback() {
     JSUnit.assertEquals('Callback', Everything.test_callback(callback), 42);
 
     JSUnit.assertEquals('CallbackNull', Everything.test_callback(null), 0);
-    JSUnit.assertRaises('CallbackUndefined', function () { Everything.test_callback(undefined) });
+    JSUnit.assertRaises('CallbackUndefined', function () { Everything.test_callback(undefined); });
 }
 
 function testArrayCallback() {
@@ -228,7 +228,7 @@ function testArrayCallback() {
         arrayEqual(["one", "two", "three"], strings);
 
         return 7;
-    }
+    };
     JSUnit.assertEquals(Everything.test_array_callback(callback), 14);
     JSUnit.assertRaises(function () { Everything.test_array_callback(null) });
 }
@@ -669,13 +669,13 @@ function testWrongClassGBoxed() {
     // simpleBoxed.equals expects a Everything.TestSimpleBoxedA
     JSUnit.assertRaises(function() {
         simpleBoxed.equals(new Gio.SimpleAction);
-    })
+    });
     JSUnit.assertRaises(function() {
         simpleBoxed.equals(new Everything.TestObj);
-    })
+    });
     JSUnit.assertRaises(function() {
         simpleBoxed.equals(new GLib.KeyFile);
-    })
+    });
     JSUnit.assertTrue(simpleBoxed.equals(simpleBoxed));
 
     JSUnit.assertRaises(function() {
@@ -683,7 +683,7 @@ function testWrongClassGBoxed() {
     });
     JSUnit.assertRaises(function() {
         Everything.TestSimpleBoxedA.prototype.copy.call(new GLib.KeyFile);
-    })
+    });
     Everything.TestSimpleBoxedA.prototype.copy.call(simpleBoxed);
 }
 
