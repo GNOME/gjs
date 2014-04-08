@@ -401,4 +401,11 @@ function testVFuncs() {
     assertEquals(50, c);
 }
 
+function testInterfaces() {
+    let ifaceImpl = new GIMarshallingTests.InterfaceImpl();
+    let itself = ifaceImpl.get_as_interface();
+
+    assertEquals(ifaceImpl, itself);
+}
+
 gjstestRun();
