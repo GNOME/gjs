@@ -2590,6 +2590,10 @@ gjs_value_from_g_argument (JSContext  *context,
             }
 
             gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
+            if (G_TYPE_IS_INSTANTIATABLE(gtype) ||
+                G_TYPE_IS_INTERFACE(gtype))
+                gtype = G_TYPE_FROM_INSTANCE(arg->v_pointer);
+
             gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                               "gtype of INTERFACE is %s", g_type_name(gtype));
 
@@ -2896,6 +2900,10 @@ gjs_g_arg_release_internal(JSContext  *context,
                 goto out;
 
             gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
+            if (G_TYPE_IS_INSTANTIATABLE(gtype) ||
+                G_TYPE_IS_INTERFACE(gtype))
+                gtype = G_TYPE_FROM_INSTANCE(arg->v_pointer);
+
             gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                               "gtype of INTERFACE is %s", g_type_name(gtype));
 
