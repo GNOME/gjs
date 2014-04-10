@@ -36,7 +36,7 @@ typedef struct {
     cairo_region_t *region;
 } GjsCairoRegion;
 
-GJS_DEFINE_PROTO_WITH_GTYPE("CairoRegion", cairo_region, CAIRO_GOBJECT_TYPE_REGION)
+GJS_DEFINE_PROTO_WITH_GTYPE("CairoRegion", cairo_region, CAIRO_GOBJECT_TYPE_REGION, JSCLASS_BACKGROUND_FINALIZE)
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoRegion, gjs_cairo_region_class);
 
 static cairo_region_t *
