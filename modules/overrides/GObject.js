@@ -197,7 +197,7 @@ function _init() {
     };
 
     this.ParamSpec.int = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.param_spec_int(name, nick, blurb, minimum, maxmium, default_value, flags);
+        return GObject.param_spec_int(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
     this.ParamSpec.uint = function(name, nick, blurb, flags, minimum, maximum, default_value) {
