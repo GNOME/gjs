@@ -211,11 +211,12 @@ Test.prototype = {
 };
 
 var own_name_id;
+var test;
 
 function testExportStuff() {
     let loop = GLib.MainLoop.new(null, false);
 
-    new Test();
+    test = new Test();
 
     own_name_id = Gio.DBus.session.own_name('org.gnome.gjs.Test',
                                             Gio.BusNameOwnerFlags.NONE,
@@ -259,6 +260,7 @@ function testFrobateStuff() {
 
     let theResult, theExcp;
     proxy.frobateStuffRemote({}, function(result, excp) {
+        JSUnit.assertNull(excp);
         [theResult] = result;
         theExcp = excp;
         loop.quit();
