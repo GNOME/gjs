@@ -232,41 +232,6 @@ find_fundamental_constructor(JSContext    *context,
 /**/
 
 static JSBool
-gjs_define_static_methods(JSContext    *context,
-                          JSObject     *constructor,
-                          GType         gtype,
-                          GIObjectInfo *object_info)
-{
-    int i;
-    int n_methods;
-
-    n_methods = g_object_info_get_n_methods(object_info);
-
-    for (i = 0; i < n_methods; i++) {
-        GIFunctionInfo *meth_info;
-        GIFunctionInfoFlags flags;
-
-        meth_info = g_object_info_get_method(object_info, i);
-        flags = g_function_info_get_flags(meth_info);
-
-        /* Anything that isn't a method we put on the prototype of the
-         * constructor.  This includes <constructor> introspection
-         * methods, as well as the forthcoming "static methods"
-         * support.  We may want to change this to use
-         * GI_FUNCTION_IS_CONSTRUCTOR and GI_FUNCTION_IS_STATIC or the
-         * like in the near future.
-         */
-        if (!(flags & GI_FUNCTION_IS_METHOD)) {
-          gjs_define_function(context, constructor, gtype,
-                              (GICallableInfo *)meth_info);
-        }
-
-        g_base_info_unref((GIBaseInfo *) meth_info);
-    }
-    return JS_TRUE;
-}
-
-static JSBool
 fundamental_instance_new_resolve_interface(JSContext    *context,
                                            JSObject     *obj,
                                            JSObject    **objp,
@@ -772,7 +737,7 @@ gjs_define_fundamental_class(JSContext     *context,
                   g_base_info_get_name ((GIBaseInfo *)priv->info));
     }
 
-    gjs_define_static_methods(context, constructor, gtype, info);
+    gjs_object_define_static_methods(context, constructor, gtype, info);
 
     value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,
