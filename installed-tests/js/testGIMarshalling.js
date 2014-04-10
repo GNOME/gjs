@@ -1,7 +1,6 @@
-
 if (!('assertEquals' in this)) { /* allow running this test standalone */
     imports.lang.copyPublicProperties(imports.jsUnit, this);
-    gjstestRun = function() { return imports.jsUnit.gjstestRun(window); };
+    gjstestRun = function() { return imports.jsUnit.gjstestRun(this); };
 }
 
 function assertArrayEquals(expected, got) {
