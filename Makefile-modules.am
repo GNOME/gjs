@@ -29,11 +29,11 @@ libmodules_resources_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD)
 
 libcairoNative_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS) $(GJS_CAIRO_CFLAGS)
 libcairoNative_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD) $(GJS_CAIRO_LIBS)
-libcairoNative_la_SOURCES =                     \
-	modules/cairo-private.h                 \
-	modules/cairo-module.h                  \
+libcairoNative_la_SOURCES =                       \
+	modules/cairo-private.h                   \
+	modules/cairo-module.h                    \
 	modules/cairo-context.cpp                 \
-	modules/cairo-path.cpp                 	\
+	modules/cairo-path.cpp                 	  \
 	modules/cairo-surface.cpp                 \
 	modules/cairo-image-surface.cpp           \
 	modules/cairo-ps-surface.cpp              \
