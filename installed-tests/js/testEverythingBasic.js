@@ -251,10 +251,10 @@ function testCallbackDestroyNotify() {
 }
 
 function testCallbackAsync() {
-    let test = function(userData) {
+    let test = function() {
                    return 44;
                };
-    Everything.test_callback_async(test, 44);
+    Everything.test_callback_async(test);
     let i = Everything.test_callback_thaw_async();
     JSUnit.assertEquals('testCallbackAsyncFinish', 44, i);
 }

@@ -100,7 +100,7 @@ function testCArray() {
     GIMarshallingTests.array_struct_take_in(array);
     GIMarshallingTests.array_struct_take_in(array);
 
-    GIMarshallingTests.array_uint8_in ("abcd", 4);
+    GIMarshallingTests.array_uint8_in ("abcd");
     GIMarshallingTests.array_enum_in([GIMarshallingTests.Enum.VALUE1,
 				      GIMarshallingTests.Enum.VALUE2,
 				      GIMarshallingTests.Enum.VALUE3]);
