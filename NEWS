@@ -1,3 +1,13 @@
+Version 1.40.1
+--------------
+
+- Fixed build-time detection of GTK enablement [#727394]
+- Fixed a crash caused by reentrancy in GObject finalizers [#725024]
+- Fixed the GIMarshallingTests suite [Lionel Landwerlin, #728004]
+- Fixed marshalling of GObjects when known by an interface type
+  from C to JS [Lionel Landwerlin, #727824]
+- Some typos and JS style cleanups [Mattias Bengtsson, #727781, #727786]
+
 Version 1.40.0
 --------------
 
