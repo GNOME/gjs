@@ -357,7 +357,7 @@ gjs_callback_closure(ffi_cif *cif,
                                          GJS_ARGUMENT_ARGUMENT,
                                          GI_TRANSFER_NOTHING,
                                          true,
-                                         *(GIArgument **)args[i + c_args_offset]))
+                                         reinterpret_cast<GArgument *>(args[i + c_args_offset])))
                 goto out;
 
             break;
@@ -410,7 +410,7 @@ gjs_callback_closure(ffi_cif *cif,
                                          GJS_ARGUMENT_ARGUMENT,
                                          GI_TRANSFER_NOTHING,
                                          true,
-                                         *(GIArgument **)args[i + c_args_offset]))
+                                         reinterpret_cast<GArgument *>(args[i + c_args_offset])))
                 goto out;
 
             elem_idx++;
