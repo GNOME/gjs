@@ -363,20 +363,12 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
          * be a single return value. */
         for (i = 0; i < n_args; i++) {
             GIArgInfo arg_info;
-            GITypeInfo type_info;
             g_callable_info_load_arg(trampoline->info, i, &arg_info);
             if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_IN)
                 continue;
 
-            g_arg_info_load_type(&arg_info, &type_info);
-            if (!gjs_value_to_g_argument(context,
-                                         rval,
-                                         &type_info,
-                                         "callback",
-                                         GJS_ARGUMENT_ARGUMENT,
-                                         GI_TRANSFER_NOTHING,
-                                         true,
-                                         *(GIArgument **)args[i + c_args_offset]))
+            if (!gjs_value_to_arg(context, rval, &arg_info,
+                                  *reinterpret_cast<GIArgument **>(args[i + c_args_offset])))
                 goto out;
 
             break;
@@ -390,6 +382,7 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
 
         if (!ret_type_is_void) {
             GIArgument argument;
+            GITransfer transfer = g_callable_info_get_caller_owns(trampoline->info);
 
             if (!JS_GetElement(context, out_array, elem_idx, &elem))
                 goto out;
@@ -399,7 +392,7 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
                                          &ret_type,
                                          "callback",
                                          GJS_ARGUMENT_ARGUMENT,
-                                         GI_TRANSFER_NOTHING,
+                                         transfer,
                                          true,
                                          &argument))
                 goto out;
@@ -413,23 +406,15 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
 
         for (i = 0; i < n_args; i++) {
             GIArgInfo arg_info;
-            GITypeInfo type_info;
             g_callable_info_load_arg(trampoline->info, i, &arg_info);
             if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_IN)
                 continue;
 
-            g_arg_info_load_type(&arg_info, &type_info);
             if (!JS_GetElement(context, out_array, elem_idx, &elem))
                 goto out;
 
-            if (!gjs_value_to_g_argument(context,
-                                         elem,
-                                         &type_info,
-                                         "callback",
-                                         GJS_ARGUMENT_ARGUMENT,
-                                         GI_TRANSFER_NOTHING,
-                                         true,
-                                         *(GIArgument **)args[i + c_args_offset]))
+            if (!gjs_value_to_arg(context, elem, &arg_info,
+                                  *(GIArgument **)args[i + c_args_offset]))
                 goto out;
 
             elem_idx++;
