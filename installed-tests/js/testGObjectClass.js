@@ -109,6 +109,11 @@ const MyObject = new GObject.Class({
 
     on_empty: function() {
         this.empty_called = true;
+    },
+
+    on_full: function() {
+        this.full_default_handler_called = true;
+        return 79;
     }
 });
 
@@ -242,6 +247,7 @@ function testSignals() {
     let result = myInstance.emit_full();
 
     JSUnit.assertEquals(true, ok);
+    JSUnit.assertUndefined(myInstance.full_default_handler_called);
     JSUnit.assertEquals(42, result);
 
     let stack = [ ];
@@ -335,6 +341,14 @@ function testClassCannotOverrideNonexistentProperty() {
             'nonexistent': GObject.ParamSpec.override('nonexistent', GObject.Object)
         }
     }));
+}
+
+function testDefaultHandler() {
+    let myInstance = new MyObject();
+    let result = myInstance.emit_full();
+
+    JSUnit.assertEquals(true, myInstance.full_default_handler_called);
+    JSUnit.assertEquals(79, result);
 }
 
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);

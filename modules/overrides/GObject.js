@@ -96,7 +96,7 @@ const GObjectMeta = new Lang.Class({
                             let argArray = Array.prototype.slice.call(arguments);
                             let emitter = argArray.shift();
 
-                            wrapped.apply(emitter, argArray);
+                            return wrapped.apply(emitter, argArray);
                         });
                     }
                 }
