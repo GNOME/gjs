@@ -91,6 +91,7 @@ gjs_breakpoint(JSContext *context,
     if (!gjs_parse_args(context, "breakpoint", "", argc, argv))
         return JS_FALSE;
     G_BREAKPOINT();
+    JS_SET_RVAL(context, vp, JSVAL_VOID);
     return JS_TRUE;
 }
 
@@ -103,6 +104,7 @@ gjs_gc(JSContext *context,
     if (!gjs_parse_args(context, "gc", "", argc, argv))
         return JS_FALSE;
     JS_GC(JS_GetRuntime(context));
+    JS_SET_RVAL(context, vp, JSVAL_VOID);
     return JS_TRUE;
 }
 
