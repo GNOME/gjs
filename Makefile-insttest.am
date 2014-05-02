@@ -69,6 +69,9 @@ Regress-1.0.gir: libregress.la
 Regress_1_0_gir_LIBS = libregress.la
 Regress_1_0_gir_FILES = $(nodist_libregress_la_SOURCES)
 Regress_1_0_gir_SCANNERFLAGS = --warn-all --warn-error $(libregress_scannerflags_includes)
+if !ENABLE_CAIRO
+Regress_1_0_gir_CFLAGS = -D_GI_DISABLE_CAIRO
+endif
 TEST_INTROSPECTION_GIRS += Regress-1.0.gir
 
 WarnLib-1.0.gir: libwarnlib.la
