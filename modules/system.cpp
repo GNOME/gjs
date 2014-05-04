@@ -26,6 +26,7 @@
 
 #include <sys/types.h>
 #include <unistd.h>
+#include <time.h>
 
 #include <gjs/gjs-module.h>
 #include <gi/object.h>
@@ -121,12 +122,31 @@ gjs_exit(JSContext *context,
     return JS_TRUE;
 }
 
+static JSBool
+gjs_clear_date_caches(JSContext *context,
+             unsigned   argc,
+             jsval     *vp)
+{
+    JS_BeginRequest(context);
+
+    // Workaround for a bug in SpiderMonkey where tzset is not called before
+    // localtime_r, see https://bugzilla.mozilla.org/show_bug.cgi?id=1004706
+    tzset();
+
+    JS_ClearDateCaches(context);
+    JS_EndRequest(context);
+
+    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    return JS_TRUE;
+}
+
 static JSFunctionSpec module_funcs[] = {
     { "addressOf", JSOP_WRAPPER (gjs_address_of), 1, GJS_MODULE_PROP_FLAGS },
     { "refcount", JSOP_WRAPPER (gjs_refcount), 1, GJS_MODULE_PROP_FLAGS },
     { "breakpoint", JSOP_WRAPPER (gjs_breakpoint), 0, GJS_MODULE_PROP_FLAGS },
     { "gc", JSOP_WRAPPER (gjs_gc), 0, GJS_MODULE_PROP_FLAGS },
     { "exit", JSOP_WRAPPER (gjs_exit), 0, GJS_MODULE_PROP_FLAGS },
+    { "clearDateCaches", JSOP_WRAPPER (gjs_clear_date_caches), 0, GJS_MODULE_PROP_FLAGS },
     { NULL },
 };
 
