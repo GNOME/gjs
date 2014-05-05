@@ -173,18 +173,16 @@ resolve_namespace_object(JSContext  *context,
  */
 static JSBool
 repo_new_resolve(JSContext *context,
-                 JSObject **obj,
-                 jsid      *id,
-                 unsigned   flags,
-                 JSObject **objp)
+                 JS::HandleObject obj,
+                 JS::HandleId id,
+                 unsigned flags,
+                 JS::MutableHandleObject objp)
 {
     Repo *priv;
     char *name;
     JSBool ret = JS_TRUE;
 
-    *objp = NULL;
-
-    if (!gjs_get_string_id(context, *id, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
     /* let Object.prototype resolve these */
@@ -192,16 +190,16 @@ repo_new_resolve(JSContext *context,
         strcmp(name, "toString") == 0)
         goto out;
 
-    priv = priv_from_js(context, *obj);
-    gjs_debug_jsprop(GJS_DEBUG_GREPO, "Resolve prop '%s' hook obj %p priv %p", name, obj, priv);
+    priv = priv_from_js(context, obj);
+    gjs_debug_jsprop(GJS_DEBUG_GREPO, "Resolve prop '%s' hook obj %p priv %p", name, *obj, priv);
 
     if (priv == NULL) /* we are the prototype, or have the wrong class */
         goto out;
 
-    if (!resolve_namespace_object(context, *obj, *id, name)) {
+    if (!resolve_namespace_object(context, obj, id, name)) {
         ret = JS_FALSE;
     } else {
-        *objp = *obj; /* store the object we defined the prop in */
+        objp.set(obj); /* store the object we defined the prop in */
     }
 
  out:

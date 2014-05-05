@@ -100,22 +100,20 @@ gjs_define_static_methods(JSContext       *context,
 
 static JSBool
 interface_new_resolve(JSContext *context,
-                      JSObject **obj,
-                      jsid      *id,
-                      unsigned   flags,
-                      JSObject **objp)
+                      JS::HandleObject obj,
+                      JS::HandleId id,
+                      unsigned flags,
+                      JS::MutableHandleObject objp)
 {
     Interface *priv;
     char *name;
     JSBool ret = JS_FALSE;
     GIFunctionInfo *method_info;
 
-    *objp = NULL;
-
-    if (!gjs_get_string_id(context, *id, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE;
 
-    priv = priv_from_js(context, *obj);
+    priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         goto out;
@@ -124,14 +122,14 @@ interface_new_resolve(JSContext *context,
 
     if (method_info != NULL) {
         if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-            if (gjs_define_function(context, *obj,
+            if (gjs_define_function(context, obj,
                                     priv->gtype,
                                     (GICallableInfo*)method_info) == NULL) {
                 g_base_info_unref((GIBaseInfo*)method_info);
                 goto out;
             }
 
-            *objp = *obj;
+            objp.set(obj);
         }
 
         g_base_info_unref((GIBaseInfo*)method_info);

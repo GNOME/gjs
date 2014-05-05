@@ -40,14 +40,14 @@ extern struct JSClass gjs_byte_array_class;
 GJS_DEFINE_PRIV_FROM_JS(ByteArrayInstance, gjs_byte_array_class)
 
 static JSBool byte_array_get_prop      (JSContext    *context,
-                                        JSObject    **obj,
-                                        jsid         *id,
-                                        jsval        *value_p);
+                                        JS::HandleObject obj,
+                                        JS::HandleId id,
+                                        JS::MutableHandleValue value_p);
 static JSBool byte_array_set_prop      (JSContext    *context,
-                                        JSObject    **obj,
-                                        jsid         *id,
+                                        JS::HandleObject obj,
+                                        JS::HandleId id,
                                         JSBool        strict,
-                                        jsval        *value_p);
+                                        JS::MutableHandleValue value_p);
 GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array);
 static void   byte_array_finalize      (JSFreeOp     *fop,
                                         JSObject     *obj);
@@ -81,13 +81,13 @@ gjs_typecheck_bytearray(JSContext     *context,
 static JSBool
 gjs_value_from_gsize(JSContext         *context,
                      gsize              v,
-                     jsval             *value_p)
+                     JS::MutableHandleValue value_p)
 {
     if (v > (gsize) JSVAL_INT_MAX) {
-        *value_p = INT_TO_JSVAL(v);
+        value_p.set(INT_TO_JSVAL(v));
         return JS_TRUE;
     } else {
-        return JS_NewNumberValue(context, v, value_p);
+        return JS_NewNumberValue(context, v, value_p.address());
     }
 }
 
@@ -170,10 +170,10 @@ gjs_value_to_byte(JSContext         *context,
 
 static JSBool
 byte_array_get_index(JSContext         *context,
-                     JSObject          *obj,
+                     JS::HandleObject obj,
                      ByteArrayInstance *priv,
                      gsize              idx,
-                     jsval             *value_p)
+                     JS::MutableHandleValue value_p)
 {
     gsize len;
     guint8 *data;
@@ -188,7 +188,7 @@ byte_array_get_index(JSContext         *context,
         return JS_FALSE;
     }
 
-    *value_p = INT_TO_JSVAL(data[idx]);
+    value_p.set(INT_TO_JSVAL(data[idx]));
 
     return JS_TRUE;
 }
@@ -198,19 +198,19 @@ byte_array_get_index(JSContext         *context,
  */
 static JSBool
 byte_array_get_prop(JSContext *context,
-                    JSObject **obj,
-                    jsid      *id,
-                    jsval     *value_p)
+                    JS::HandleObject obj,
+                    JS::HandleId id,
+                    JS::MutableHandleValue value_p)
 {
     ByteArrayInstance *priv;
     jsval id_value;
 
-    priv = priv_from_js(context, *obj);
+    priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         return JS_TRUE; /* prototype, not an instance. */
 
-    if (!JS_IdToValue(context, *id, &id_value))
+    if (!JS_IdToValue(context, id, &id_value))
         return JS_FALSE;
 
     /* First handle array indexing */
@@ -218,7 +218,7 @@ byte_array_get_prop(JSContext *context,
         gsize idx;
         if (!gjs_value_to_gsize(context, id_value, &idx))
             return JS_FALSE;
-        return byte_array_get_index(context, *obj, priv, idx, value_p);
+        return byte_array_get_index(context, obj, priv, idx, value_p);
     }
 
     /* We don't special-case anything else for now. Regular JS arrays
@@ -230,14 +230,14 @@ byte_array_get_prop(JSContext *context,
 
 static JSBool
 byte_array_length_getter(JSContext *context,
-                         JSObject **obj,
-                         jsid      *id,
-                         jsval     *value_p)
+                         JS::HandleObject obj,
+                         JS::HandleId id,
+                         JS::MutableHandleValue value_p)
 {
     ByteArrayInstance *priv;
     gsize len = 0;
 
-    priv = priv_from_js(context, *obj);
+    priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         return JS_TRUE; /* prototype, not an instance. */
@@ -251,23 +251,22 @@ byte_array_length_getter(JSContext *context,
 
 static JSBool
 byte_array_length_setter(JSContext *context,
-                         JSObject **obj,
-                         jsid      *id,
-                         JSBool     strict,
-                         jsval     *value_p)
+                         JS::HandleObject obj,
+                         JS::HandleId id,
+                         JSBool strict,
+                         JS::MutableHandleValue value_p)
 {
     ByteArrayInstance *priv;
     gsize len = 0;
 
-    priv = priv_from_js(context, *obj);
+    priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         return JS_TRUE; /* prototype, not instance */
 
     byte_array_ensure_array(priv);
 
-    if (!gjs_value_to_gsize(context, *value_p,
-                            &len)) {
+    if (!gjs_value_to_gsize(context, value_p, &len)) {
         gjs_throw(context,
                   "Can't set ByteArray length to non-integer");
         return JS_FALSE;
@@ -278,15 +277,14 @@ byte_array_length_setter(JSContext *context,
 
 static JSBool
 byte_array_set_index(JSContext         *context,
-                     JSObject          *obj,
+                     JS::HandleObject obj,
                      ByteArrayInstance *priv,
                      gsize              idx,
-                     jsval             *value_p)
+                     JS::MutableHandleValue value_p)
 {
     guint8 v;
 
-    if (!gjs_value_to_byte(context, *value_p,
-                           &v)) {
+    if (!gjs_value_to_byte(context, value_p, &v)) {
         return JS_FALSE;
     }
 
@@ -301,7 +299,7 @@ byte_array_set_index(JSContext         *context,
     g_array_index(priv->array, guint8, idx) = v;
 
     /* Stop JS from storing a copy of the value */
-    *value_p = JSVAL_VOID;
+    value_p.set(JSVAL_VOID);
 
     return JS_TRUE;
 }
@@ -311,20 +309,20 @@ byte_array_set_index(JSContext         *context,
  */
 static JSBool
 byte_array_set_prop(JSContext *context,
-                    JSObject **obj,
-                    jsid      *id,
-                    JSBool     strict,
-                    jsval     *value_p)
+                    JS::HandleObject obj,
+                    JS::HandleId id,
+                    JSBool strict,
+                    JS::MutableHandleValue value_p)
 {
     ByteArrayInstance *priv;
     jsval id_value;
 
-    priv = priv_from_js(context, *obj);
+    priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         return JS_TRUE; /* prototype, not an instance. */
 
-    if (!JS_IdToValue(context, *id, &id_value))
+    if (!JS_IdToValue(context, id, &id_value))
         return JS_FALSE;
 
     /* First handle array indexing */
@@ -333,7 +331,7 @@ byte_array_set_prop(JSContext *context,
         if (!gjs_value_to_gsize(context, id_value, &idx))
             return JS_FALSE;
 
-        return byte_array_set_index(context, *obj, priv, idx, value_p);
+        return byte_array_set_index(context, obj, priv, idx, value_p);
     }
 
     /* We don't special-case anything else for now */

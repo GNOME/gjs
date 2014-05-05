@@ -855,23 +855,21 @@ importer_new_enumerate(JSContext  *context,
  */
 static JSBool
 importer_new_resolve(JSContext *context,
-                     JSObject **obj,
-                     jsid      *id,
-                     unsigned   flags,
-                     JSObject **objp)
+                     JS::HandleObject obj,
+                     JS::HandleId id,
+                     unsigned flags,
+                     JS::MutableHandleObject objp)
 {
     Importer *priv;
     char *name;
     JSBool ret = JS_TRUE;
     jsid module_init_name;
 
-    *objp = NULL;
-
     module_init_name = gjs_context_get_const_string(context, GJS_STRING_MODULE_INIT);
-    if (*id == module_init_name)
+    if (id == module_init_name)
         return JS_TRUE;
 
-    if (!gjs_get_string_id(context, *id, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_FALSE;
 
     /* let Object.prototype resolve these */
@@ -879,14 +877,14 @@ importer_new_resolve(JSContext *context,
         strcmp(name, "toString") == 0 ||
         strcmp(name, "__iterator__") == 0)
         goto out;
-    priv = priv_from_js(context, *obj);
+    priv = priv_from_js(context, obj);
 
     gjs_debug_jsprop(GJS_DEBUG_IMPORTER, "Resolve prop '%s' hook obj %p priv %p", name, *obj, priv);
     if (priv == NULL) /* we are the prototype, or have the wrong class */
         goto out;
     JS_BeginRequest(context);
-    if (do_import(context, *obj, priv, name)) {
-        *objp = *obj;
+    if (do_import(context, obj, priv, name)) {
+        objp.set(obj);
     } else {
         ret = JS_FALSE;
     }

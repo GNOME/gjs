@@ -88,23 +88,23 @@ to_string_func(JSContext *context,
 
 static JSBool
 get_name_func (JSContext *context,
-               JSObject **obj,
-               jsid      *id,
-               jsval     *vp)
+               JS::HandleObject obj,
+               JS::HandleId id,
+               JS::MutableHandleValue vp)
 {
     GType gtype;
     JSBool ret;
     jsval retval;
 
-    gtype = GPOINTER_TO_SIZE(priv_from_js(context, *obj));
+    gtype = GPOINTER_TO_SIZE(priv_from_js(context, obj));
 
     if (gtype == 0) {
-        JS_SET_RVAL(context, vp, JSVAL_NULL);
+        JS_SET_RVAL(context, vp.address(), JSVAL_NULL);
         return TRUE;
     } else {
         ret = gjs_string_from_utf8(context, g_type_name(gtype), -1, &retval);
         if (ret)
-            JS_SET_RVAL(context, vp, retval);
+            JS_SET_RVAL(context, vp.address(), retval);
         return ret;
     }
 }

@@ -118,21 +118,19 @@ gjs_define_static_methods(JSContext    *context,
  */
 static JSBool
 boxed_new_resolve(JSContext *context,
-                  JSObject **obj,
-                  jsid      *id,
-                  unsigned   flags,
-                  JSObject **objp)
+                  JS::HandleObject obj,
+                  JS::HandleId id,
+                  unsigned flags,
+                  JS::MutableHandleObject objp)
 {
     Boxed *priv;
     char *name;
     JSBool ret = JS_FALSE;
 
-    *objp = NULL;
-
-    if (!gjs_get_string_id(context, *id, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
-    priv = priv_from_js(context, *obj);
+    priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook obj %p priv %p", name, *obj, priv);
 
     if (priv == NULL)
@@ -161,7 +159,7 @@ boxed_new_resolve(JSContext *context,
                           g_base_info_get_namespace( (GIBaseInfo*) priv->info),
                           g_base_info_get_name( (GIBaseInfo*) priv->info));
 
-                boxed_proto = *obj;
+                boxed_proto = obj;
 
                 if (gjs_define_function(context, boxed_proto, priv->gtype,
                                         (GICallableInfo *)method_info) == NULL) {
@@ -169,7 +167,7 @@ boxed_new_resolve(JSContext *context,
                     goto out;
                 }
 
-                *objp = boxed_proto; /* we defined the prop in object_proto */
+                objp.set(boxed_proto); /* we defined the prop in object_proto */
             }
 
             g_base_info_unref( (GIBaseInfo*) method_info);

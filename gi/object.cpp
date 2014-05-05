@@ -267,7 +267,7 @@ object_instance_get_prop(JSContext              *context,
 
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Get prop '%s' hook obj %p priv %p", name, obj, priv);
+                     "Get prop '%s' hook obj %p priv %p", name, *obj, priv);
 
     if (priv == NULL) {
         /* If we reach this point, either object_instance_new_resolve
@@ -335,7 +335,7 @@ object_instance_set_prop(JSContext              *context,
 
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Set prop '%s' hook obj %p priv %p", name, obj, priv);
+                     "Set prop '%s' hook obj %p priv %p", name, *obj, priv);
 
     if (priv == NULL) {
         /* see the comment in object_instance_get_prop() on this */
@@ -435,8 +435,8 @@ find_vfunc_on_parents(GIObjectInfo *info,
 
 static JSBool
 object_instance_new_resolve_no_info(JSContext       *context,
-                                    JSObject        *obj,
-                                    JSObject       **objp,
+                                    JS::HandleObject obj,
+                                    JS::MutableHandleObject objp,
                                     ObjectInstance  *priv,
                                     char            *name)
 {
@@ -472,7 +472,7 @@ object_instance_new_resolve_no_info(JSContext       *context,
             if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
                 if (gjs_define_function(context, obj, priv->gtype,
                                         (GICallableInfo *)method_info)) {
-                    *objp = obj;
+                    objp.set(obj);
                 } else {
                     ret = JS_FALSE;
                 }
@@ -501,22 +501,20 @@ object_instance_new_resolve_no_info(JSContext       *context,
  */
 static JSBool
 object_instance_new_resolve(JSContext *context,
-                            JSObject **obj,
-                            jsid      *id,
-                            unsigned   flags,
-                            JSObject **objp)
+                            JS::HandleObject obj,
+                            JS::HandleId id,
+                            unsigned flags,
+                            JS::MutableHandleObject objp)
 {
     GIFunctionInfo *method_info;
     ObjectInstance *priv;
     char *name;
     JSBool ret = JS_FALSE;
 
-    *objp = NULL;
-
-    if (!gjs_get_string_id(context, *id, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
-    priv = priv_from_js(context, *obj);
+    priv = priv_from_js(context, obj);
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
                      "Resolve prop '%s' hook obj %p priv %p (%s.%s) gobj %p %s",
@@ -550,7 +548,7 @@ object_instance_new_resolve(JSContext *context,
      * we need to look at exposing interfaces. Look up our interfaces through
      * GType data, and then hope that *those* are introspectable. */
     if (priv->info == NULL) {
-        ret = object_instance_new_resolve_no_info(context, *obj, objp, priv, name);
+        ret = object_instance_new_resolve_no_info(context, obj, objp, priv, name);
         goto out;
     }
 
@@ -583,8 +581,8 @@ object_instance_new_resolve(JSContext *context,
                 goto out;
             }
 
-            gjs_define_function(context, *obj, priv->gtype, vfunc);
-            *objp = *obj;
+            gjs_define_function(context, obj, priv->gtype, vfunc);
+            objp.set(obj);
             g_base_info_unref((GIBaseInfo *)vfunc);
             ret = JS_TRUE;
             goto out;
@@ -615,7 +613,7 @@ object_instance_new_resolve(JSContext *context,
      * https://bugzilla.gnome.org/show_bug.cgi?id=632922
      */
     if (method_info == NULL) {
-        ret = object_instance_new_resolve_no_info(context, *obj, objp,
+        ret = object_instance_new_resolve_no_info(context, obj, objp,
                                                   priv, name);
         goto out;
     } else {
@@ -631,12 +629,12 @@ object_instance_new_resolve(JSContext *context,
                       g_base_info_get_namespace( (GIBaseInfo*) priv->info),
                       g_base_info_get_name( (GIBaseInfo*) priv->info));
 
-            if (gjs_define_function(context, *obj, priv->gtype, method_info) == NULL) {
+            if (gjs_define_function(context, obj, priv->gtype, method_info) == NULL) {
                 g_base_info_unref( (GIBaseInfo*) method_info);
                 goto out;
             }
 
-            *objp = *obj; /* we defined the prop in obj */
+            objp.set(obj); /* we defined the prop in obj */
         }
 
         g_base_info_unref( (GIBaseInfo*) method_info);

@@ -1334,15 +1334,15 @@ function_finalize(JSFreeOp *fop,
 
 static JSBool
 get_num_arguments (JSContext *context,
-                   JSObject **obj,
-                   jsid      *id,
-                   jsval     *vp)
+                   JS::HandleObject obj,
+                   JS::HandleId id,
+                   JS::MutableHandleValue vp)
 {
     int n_args, n_jsargs, i;
     jsval retval;
     Function *priv;
 
-    priv = priv_from_js(context, *obj);
+    priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         return JS_FALSE;
@@ -1362,7 +1362,7 @@ get_num_arguments (JSContext *context,
     }
 
     retval = INT_TO_JSVAL(n_jsargs);
-    JS_SET_RVAL(context, vp, retval);
+    JS_SET_RVAL(context, vp.address(), retval);
     return JS_TRUE;
 }
 

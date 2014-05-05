@@ -233,8 +233,8 @@ find_fundamental_constructor(JSContext    *context,
 
 static JSBool
 fundamental_instance_new_resolve_interface(JSContext    *context,
-                                           JSObject     *obj,
-                                           JSObject    **objp,
+                                           JS::HandleObject obj,
+                                           JS::MutableHandleObject objp,
                                            Fundamental  *proto_priv,
                                            char         *name)
 {
@@ -271,7 +271,7 @@ fundamental_instance_new_resolve_interface(JSContext    *context,
                 if (gjs_define_function(context, obj,
                                         proto_priv->gtype,
                                         (GICallableInfo *) method_info)) {
-                    *objp = obj;
+                    objp.set(obj);
                 } else {
                     ret = JS_FALSE;
                 }
@@ -300,21 +300,19 @@ fundamental_instance_new_resolve_interface(JSContext    *context,
  */
 static JSBool
 fundamental_instance_new_resolve(JSContext  *context,
-                                 JSObject  **obj,
-                                 jsid       *id,
-                                 unsigned    flags,
-                                 JSObject  **objp)
+                                 JS::HandleObject obj,
+                                 JS::HandleId id,
+                                 unsigned flags,
+                                 JS::MutableHandleObject objp)
 {
     FundamentalInstance *priv;
     char *name;
     JSBool ret = JS_FALSE;
 
-    *objp = NULL;
-
-    if (!gjs_get_string_id(context, *id, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
-    priv = priv_from_js(context, *obj);
+    priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GFUNDAMENTAL, "Resolve prop '%s' hook obj %p priv %p", name, *obj, priv);
 
     if (priv == NULL)
@@ -355,19 +353,19 @@ fundamental_instance_new_resolve(JSContext  *context,
                           g_base_info_get_namespace((GIBaseInfo *) proto_priv->info),
                           g_base_info_get_name((GIBaseInfo *) proto_priv->info));
 
-                if (gjs_define_function(context, *obj, proto_priv->gtype,
+                if (gjs_define_function(context, obj, proto_priv->gtype,
                                         method_info) == NULL) {
                     g_base_info_unref((GIBaseInfo *) method_info);
                     goto out;
                 }
 
-                *objp = *obj;
+                objp.set(obj);
             }
 
             g_base_info_unref((GIBaseInfo *) method_info);
         }
 
-        ret = fundamental_instance_new_resolve_interface(context, *obj, objp,
+        ret = fundamental_instance_new_resolve_interface(context, obj, objp,
                                                          proto_priv, name);
     } else {
         /* We are an instance, not a prototype, so look for

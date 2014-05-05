@@ -150,25 +150,27 @@ error_finalize(JSFreeOp *fop,
 }
 
 static JSBool
-error_get_domain(JSContext *context, JSObject **obj, jsid *id, jsval *vp)
+error_get_domain(JSContext *context, JS::HandleObject obj,
+                 JS::HandleId id, JS::MutableHandleValue vp)
 {
     Error *priv;
 
-    priv = priv_from_js(context, *obj);
+    priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         return JS_FALSE;
 
-    *vp = INT_TO_JSVAL(priv->domain);
+    vp.set(INT_TO_JSVAL(priv->domain));
     return JS_TRUE;
 }
 
 static JSBool
-error_get_message(JSContext *context, JSObject **obj, jsid *id, jsval *vp)
+error_get_message(JSContext *context, JS::HandleObject obj,
+                  JS::HandleId id, JS::MutableHandleValue vp)
 {
     Error *priv;
 
-    priv = priv_from_js(context, *obj);
+    priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         return JS_FALSE;
@@ -179,15 +181,16 @@ error_get_message(JSContext *context, JSObject **obj, jsid *id, jsval *vp)
         return JS_FALSE;
     }
 
-    return gjs_string_from_utf8(context, priv->gerror->message, -1, vp);
+    return gjs_string_from_utf8(context, priv->gerror->message, -1, vp.address());
 }
 
 static JSBool
-error_get_code(JSContext *context, JSObject **obj, jsid *id, jsval *vp)
+error_get_code(JSContext *context, JS::HandleObject obj,
+               JS::HandleId id, JS::MutableHandleValue vp)
 {
     Error *priv;
 
-    priv = priv_from_js(context, *obj);
+    priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         return JS_FALSE;
@@ -198,7 +201,7 @@ error_get_code(JSContext *context, JSObject **obj, jsid *id, jsval *vp)
         return JS_FALSE;
     }
 
-    *vp = INT_TO_JSVAL(priv->gerror->code);
+    vp.set(INT_TO_JSVAL(priv->gerror->code));
     return JS_TRUE;
 }
 
