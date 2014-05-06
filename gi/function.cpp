@@ -543,6 +543,7 @@ gjs_fill_method_instance (JSContext  *context,
     GIBaseInfo *container = g_base_info_get_container((GIBaseInfo *) function->info);
     GIInfoType type = g_base_info_get_type(container);
     GType gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo *)container);
+    GITransfer transfer = g_callable_info_get_instance_ownership_transfer (function->info);
 
     switch (type) {
     case GI_INFO_TYPE_STRUCT:
@@ -553,6 +554,8 @@ gjs_fill_method_instance (JSContext  *context,
                 return JS_FALSE;
 
             out_arg->v_pointer = gjs_gerror_from_error(context, obj);
+            if (transfer == GI_TRANSFER_EVERYTHING)
+                out_arg->v_pointer = g_error_copy ((GError*) out_arg->v_pointer);
         } else {
             if (!gjs_typecheck_boxed(context, obj,
                                      container, gtype,
@@ -560,6 +563,14 @@ gjs_fill_method_instance (JSContext  *context,
                 return JS_FALSE;
 
             out_arg->v_pointer = gjs_c_struct_from_boxed(context, obj);
+            if (transfer == GI_TRANSFER_EVERYTHING) {
+                if (gtype != G_TYPE_NONE)
+                    out_arg->v_pointer = g_boxed_copy (gtype, out_arg->v_pointer);
+                else {
+                    gjs_throw (context, "Cannot transfer ownership of instance argument for non boxed structure");
+                    return JS_FALSE;
+                }
+            }
         }
         break;
 
@@ -569,6 +580,8 @@ gjs_fill_method_instance (JSContext  *context,
             return JS_FALSE;
 
         out_arg->v_pointer = gjs_c_union_from_union(context, obj);
+        if (transfer == GI_TRANSFER_EVERYTHING)
+            out_arg->v_pointer = g_boxed_copy (gtype, out_arg->v_pointer);
         break;
 
     case GI_INFO_TYPE_OBJECT:
@@ -577,24 +590,34 @@ gjs_fill_method_instance (JSContext  *context,
             if (!gjs_typecheck_object(context, obj, gtype, JS_TRUE))
                 return JS_FALSE;
             out_arg->v_pointer = gjs_g_object_from_object(context, obj);
+            if (transfer == GI_TRANSFER_EVERYTHING)
+                g_object_ref (out_arg->v_pointer);
         } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
             if (!gjs_typecheck_param(context, obj, G_TYPE_PARAM, JS_TRUE))
                 return JS_FALSE;
             out_arg->v_pointer = gjs_g_param_from_param(context, obj);
+            if (transfer == GI_TRANSFER_EVERYTHING)
+                g_param_spec_ref ((GParamSpec*) out_arg->v_pointer);
         } else if (G_TYPE_IS_INTERFACE(gtype)) {
             if (gjs_typecheck_is_object(context, obj, JS_FALSE)) {
                 if (!gjs_typecheck_object(context, obj, gtype, JS_TRUE))
                     return JS_FALSE;
                 out_arg->v_pointer = gjs_g_object_from_object(context, obj);
+                if (transfer == GI_TRANSFER_EVERYTHING)
+                    g_object_ref (out_arg->v_pointer);
             } else {
                 if (!gjs_typecheck_fundamental(context, obj, gtype, JS_TRUE))
                     return JS_FALSE;
                 out_arg->v_pointer = gjs_g_fundamental_from_object(context, obj);
+                if (transfer == GI_TRANSFER_EVERYTHING)
+                    gjs_fundamental_ref (context, out_arg->v_pointer);
             }
         } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
             if (!gjs_typecheck_fundamental(context, obj, gtype, JS_TRUE))
                 return JS_FALSE;
             out_arg->v_pointer = gjs_g_fundamental_from_object(context, obj);
+            if (transfer == GI_TRANSFER_EVERYTHING)
+                gjs_fundamental_ref (context, out_arg->v_pointer);
         } else {
             gjs_throw_custom(context, "TypeError",
                              "%s.%s is not an object instance neither a fundamental instance of a supported type",
