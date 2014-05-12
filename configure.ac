@@ -98,6 +98,7 @@ AM_CONDITIONAL(ENABLE_CAIRO, test x$have_cairo = xyes)
 AS_IF([test x$have_cairo = xyes], [
   AC_DEFINE([ENABLE_CAIRO],[1],[Define if you want to build with cairo support])
 ])
+PKG_CHECK_MODULES([GJS_CAIRO_XLIB], [cairo-xlib], , )
 
 # Optional GTK+ dep (enabled by default)
 AC_ARG_WITH(gtk,

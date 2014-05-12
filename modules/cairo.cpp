@@ -27,6 +27,19 @@
 
 #include "cairo-private.h"
 
+#if CAIRO_HAS_XLIB_SURFACE
+#include "cairo-xlib.h"
+
+class XLibConstructor {
+ public:
+    XLibConstructor() {
+        XInitThreads();
+    }
+};
+
+static XLibConstructor constructor;
+#endif
+
 JSBool
 gjs_cairo_check_status(JSContext      *context,
                        cairo_status_t  status,

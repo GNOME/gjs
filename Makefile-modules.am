@@ -27,8 +27,8 @@ CLEANFILES += $(nodist_libmodules_resources_la_SOURCES)
 libmodules_resources_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
 libmodules_resources_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD)
 
-libcairoNative_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS) $(GJS_CAIRO_CFLAGS)
-libcairoNative_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD) $(GJS_CAIRO_LIBS)
+libcairoNative_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS) $(GJS_CAIRO_CFLAGS) $(GJS_CAIRO_XLIB_CFLAGS)
+libcairoNative_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD) $(GJS_CAIRO_LIBS) $(GJS_CAIRO_XLIB_LIBS)
 libcairoNative_la_SOURCES =                       \
 	modules/cairo-private.h                   \
 	modules/cairo-module.h                    \
