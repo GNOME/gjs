@@ -2415,11 +2415,11 @@ gjs_object_get_gproperty (GObject    *object,
     js_obj = peek_js_obj(object);
 
     underscore_name = hyphen_to_underscore((gchar *)pspec->name);
-    JS_GetProperty(context, js_obj, underscore_name, &jsvalue);
+    if (!JS_GetProperty(context, js_obj, underscore_name, &jsvalue))
+        gjs_log_exception(context);
+    else
+        gjs_value_to_g_value(context, jsvalue, value);
     g_free (underscore_name);
-
-    if (!gjs_value_to_g_value(context, jsvalue, value))
-        return;
 }
 
 static void
@@ -2443,7 +2443,8 @@ gjs_object_set_gproperty (GObject      *object,
         return;
 
     underscore_name = hyphen_to_underscore((gchar *)pspec->name);
-    JS_SetProperty(context, js_obj, underscore_name, &jsvalue);
+    if (!JS_SetProperty(context, js_obj, underscore_name, &jsvalue))
+        gjs_log_exception(context);
     g_free (underscore_name);
 }
 
