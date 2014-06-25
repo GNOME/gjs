@@ -1,3 +1,21 @@
+Version 1.41.3
+--------------
+
+- Fixed GObject and Gtk overrides [Mattias Bengtsson, #727781] [#727394]
+- Fixed crashes caused by reentrancy during finalization [#725024]
+- Added a wrapper type for cairo regions [Jasper St. Pierre, #682303]
+- Several cleanups to GC [#725024]
+- Thread-safe structures are now finalized in the background, for greater
+  responsiveness [#725024] [#730030]
+- A full GC is now scheduled if after executing a piece of JS we see
+  that the RSS has grown by over 150% [Cosimo Cecchi, #725099] [#728048]
+- ParamSpecs now support methods and static methods implemented by glib
+  and exposed by gobject-introspection, in addition to the manually
+  bound fields [#725282]
+- Protototypes no longer include static properties or constructors [#725282]
+- Misc cleanups and bugfixes [Mattias Bengtsson, #727786] [#725282]
+  [Lionel Landwerlin, #728004] [Lionel Landwerlin, #727824]
+
 Version 1.40.0
 --------------
 
