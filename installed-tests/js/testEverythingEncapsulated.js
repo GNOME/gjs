@@ -186,6 +186,12 @@ function testVariantConstructor() {
     JSUnit.assertEquals('variant', unpacked[3].deep_unpack());
     JSUnit.assertTrue(unpacked[4] instanceof Array);
     JSUnit.assertEquals(2, unpacked[4].length);
+
+    let maybe_variant = new GLib.Variant('ms', null);
+    JSUnit.assertEquals(null, maybe_variant.deep_unpack());
+
+    maybe_variant = new GLib.Variant('ms', 'string');
+    JSUnit.assertEquals('string', maybe_variant.deep_unpack());
 }
 
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);

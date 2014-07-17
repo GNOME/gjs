@@ -200,7 +200,7 @@ function _unpack_variant(variant, deep) {
 	return variant.get_variant();
     case 'm':
 	let val = variant.get_maybe();
-	if (deep)
+	if (deep && val)
 	    return _unpack_variant(val, deep);
 	else
 	    return val;
