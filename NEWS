@@ -1,3 +1,13 @@
+Version 1.41.4
+--------------
+
+- Fixed memory management of GObject methods that unref their instance
+  [#729545]
+- Added a package module implementing the
+  https://wiki.gnome.org/Projects/Gjs/Package application conventions
+  [#690136]
+- Misc bug fixes
+
 Version 1.41.3
 --------------
 
