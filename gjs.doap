@@ -7,6 +7,7 @@
 
   <name>gjs</name>
   <shortname>gjs</shortname>
+  <category rdf:resource="http://api.gnome.org/doap-extensions#core" />
 
   <shortdesc xml:lang="en">GNOME JavaScript/Spidermonkey bindings</shortdesc>
 
