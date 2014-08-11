@@ -101,11 +101,16 @@ gjs_init_context_standard (JSContext *context)
      *
      * JSOPTION_STRICT: Report warnings to error reporter function.
      */
-    options_flags = JSOPTION_DONT_REPORT_UNCAUGHT | JSOPTION_EXTRA_WARNINGS;
+    options_flags = JSOPTION_DONT_REPORT_UNCAUGHT;
 
     if (!g_getenv("GJS_DISABLE_JIT")) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
         options_flags |= JSOPTION_TYPE_INFERENCE | JSOPTION_ION | JSOPTION_BASELINE | JSOPTION_ASMJS;
+    }
+
+    if (!g_getenv("GJS_DISABLE_EXTRA_WARNINGS")) {
+        gjs_debug(GJS_DEBUG_CONTEXT, "Enabling extra warnings");
+        options_flags |= JSOPTION_EXTRA_WARNINGS;
     }
 
     JS_SetOptions(context, JS_GetOptions(context) | options_flags);
