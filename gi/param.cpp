@@ -59,10 +59,10 @@ GJS_DEFINE_PRIV_FROM_JS(Param, gjs_param_class)
  */
 static JSBool
 param_new_resolve(JSContext *context,
-                  JSObject **obj,
-                  jsid      *id,
-                  unsigned   flags,
-                  JSObject **objp)
+                  JS::HandleObject obj,
+                  JS::HandleId id,
+                  unsigned flags,
+                  JS::MutableHandleObject objp)
 {
     GIObjectInfo *info = NULL;
     GIFunctionInfo *method_info;
@@ -70,12 +70,10 @@ param_new_resolve(JSContext *context,
     char *name;
     JSBool ret = JS_FALSE;
 
-    *objp = NULL;
-
-    if (!gjs_get_string_id(context, *id, &name))
+    if (!gjs_get_string_id(context, id, &name))
         return JS_TRUE; /* not resolved, but no error */
 
-    priv = priv_from_js(context, *obj);
+    priv = priv_from_js(context, obj);
 
     if (priv != NULL) {
         /* instance, not prototype */
@@ -99,12 +97,12 @@ param_new_resolve(JSContext *context,
                   "Defining method %s in prototype for GObject.ParamSpec",
                   g_base_info_get_name( (GIBaseInfo*) method_info));
 
-        if (gjs_define_function(context, *obj, G_TYPE_PARAM, method_info) == NULL) {
+        if (gjs_define_function(context, obj, G_TYPE_PARAM, method_info) == NULL) {
             g_base_info_unref( (GIBaseInfo*) method_info);
             goto out;
         }
 
-        *objp = *obj; /* we defined the prop in obj */
+        objp.set(obj); /* we defined the prop in obj */
     }
 
     g_base_info_unref( (GIBaseInfo*) method_info);

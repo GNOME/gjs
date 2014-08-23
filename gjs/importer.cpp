@@ -662,10 +662,10 @@ importer_iterator_free(ImporterIterator *iter)
  */
 static JSBool
 importer_new_enumerate(JSContext  *context,
-                       JSObject  **object,
+                       JS::HandleObject object,
                        JSIterateOp enum_op,
-                       jsval      *state_p,
-                       jsid       *id_p)
+                       JS::MutableHandleValue statep,
+                       JS::MutableHandleId idp)
 {
     ImporterIterator *iter;
 
@@ -679,20 +679,18 @@ importer_new_enumerate(JSContext  *context,
         guint32 i;
         jsid search_path_name;
 
-        if (state_p)
-            *state_p = JSVAL_NULL;
+        statep.set(JSVAL_NULL);
 
-        if (id_p)
-            *id_p = INT_TO_JSID(0);
+        idp.set(INT_TO_JSID(0));
 
-        priv = priv_from_js(context, *object);
+        priv = priv_from_js(context, object);
 
         if (!priv)
             /* we are enumerating the prototype properties */
             return JS_TRUE;
 
         search_path_name = gjs_context_get_const_string(context, GJS_STRING_SEARCH_PATH);
-        if (!gjs_object_require_property(context, *object, "importer", search_path_name, &search_path_val))
+        if (!gjs_object_require_property(context, object, "importer", search_path_name, &search_path_val))
             return JS_FALSE;
 
         if (!JSVAL_IS_OBJECT(search_path_val)) {
@@ -747,7 +745,7 @@ importer_new_enumerate(JSContext  *context,
             init_path = g_build_filename(dirname, MODULE_INIT_FILENAME,
                                          NULL);
 
-            load_module_elements(context, *object, iter, init_path);
+            load_module_elements(context, object, iter, init_path);
 
             g_free(init_path);
 
@@ -788,11 +786,9 @@ importer_new_enumerate(JSContext  *context,
             g_free(dirname);
         }
 
-        if (state_p)
-            *state_p = PRIVATE_TO_JSVAL(iter);
+        statep.set(PRIVATE_TO_JSVAL(iter));
 
-        if (id_p)
-            *id_p = INT_TO_JSID(iter->elements->len);
+        idp.set(INT_TO_JSID(iter->elements->len));
 
         break;
     }
@@ -800,15 +796,10 @@ importer_new_enumerate(JSContext  *context,
     case JSENUMERATE_NEXT: {
         jsval element_val;
 
-        if (!state_p) {
-            gjs_throw(context, "Enumerate with no iterator set?");
-            return JS_FALSE;
-        }
-
-        if (JSVAL_IS_NULL(*state_p)) /* Iterating prototype */
+        if (JSVAL_IS_NULL(statep)) /* Iterating prototype */
             return JS_TRUE;
 
-        iter = (ImporterIterator*) JSVAL_TO_PRIVATE(*state_p);
+        iter = (ImporterIterator*) JSVAL_TO_PRIVATE(statep);
 
         if (iter->index < iter->elements->len) {
             if (!gjs_string_from_utf8(context,
@@ -818,7 +809,8 @@ importer_new_enumerate(JSContext  *context,
                                          &element_val))
                 return JS_FALSE;
 
-            if (!JS_ValueToId(context, element_val, id_p))
+            jsid id = idp;
+            if (!JS_ValueToId(context, element_val, &id))
                 return JS_FALSE;
 
             break;
@@ -827,12 +819,12 @@ importer_new_enumerate(JSContext  *context,
     }
 
     case JSENUMERATE_DESTROY: {
-        if (state_p && !JSVAL_IS_NULL(*state_p)) {
-            iter = (ImporterIterator*) JSVAL_TO_PRIVATE(*state_p);
+        if (!JSVAL_IS_NULL(statep)) {
+            iter = (ImporterIterator*) JSVAL_TO_PRIVATE(statep);
 
             importer_iterator_free(iter);
 
-            *state_p = JSVAL_NULL;
+            statep.set(JSVAL_NULL);
         }
     }
     }
