@@ -18,6 +18,9 @@ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 AM_CFLAGS = $(WARN_CFLAGS) -DG_LOG_DOMAIN=\"Gjs\"
 AM_CPPFLAGS = $(WARN_CXXFLAGS) -DG_LOG_DOMAIN=\"Gjs\"
 
+gjsjsdir = @gjsjsdir@
+gjsoverridedir = $(gjsjsdir)/overrides
+
 gjs_public_includedir = $(includedir)/gjs-1.0
 gjs_module_includedir = $(includedir)/gjs-1.0
 
@@ -77,6 +80,7 @@ EXTRA_DIST += 			\
 ########################################################################
 gjs_directory_defines = 				\
 	-DGJS_TOP_SRCDIR=\"$(top_srcdir)\"		\
+	-DGJS_JS_DIR=\"$(gjsjsdir)\"			\
 	-DPKGLIBDIR=\"$(pkglibdir)\"
 
 ########################################################################
