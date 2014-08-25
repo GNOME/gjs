@@ -116,7 +116,7 @@ if ! test -z "$START_SESSION_BUS" ; then
 
     echo "Running dbus-launch --config-file=$CONFIG_FILE" >&2
 
-    eval `dbus-launch --exit-with-session --sh-syntax --config-file=$CONFIG_FILE 2>"$STDERR_LOGFILE"`
+    eval `dbus-launch --sh-syntax --config-file=$CONFIG_FILE 2>"$STDERR_LOGFILE"`
 
     if test -z "$DBUS_SESSION_BUS_PID" ; then
         die "Failed to launch message bus for test script to run"
