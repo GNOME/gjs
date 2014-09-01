@@ -1,3 +1,14 @@
+Version 1.41.91
+---------------
+
+- Added the ability to disable JS language warnings [Lionel Landwerlin,
+  #734569]
+- Fixed crashes in PPC (and probably other arches) due to invalid
+  callback signatures [Michel Danzer, #729554]
+- Fixed regressions with dbus 1.8.6 [Tim Lunn, #735358]
+- Readded file system paths to the default module search, to allow
+  custom GI overrides for third party libraries [Jasper St. Pierre]
+
 Version 1.41.4
 --------------
 
