@@ -809,9 +809,10 @@ importer_new_enumerate(JSContext  *context,
                                          &element_val))
                 return JS_FALSE;
 
-            jsid id = idp;
+            jsid id;
             if (!JS_ValueToId(context, element_val, &id))
                 return JS_FALSE;
+            idp.set(id);
 
             break;
         }
