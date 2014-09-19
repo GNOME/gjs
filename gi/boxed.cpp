@@ -548,7 +548,7 @@ get_field_info (JSContext *context,
     jsval id_val;
 
     if (!JS_IdToValue(context, id, &id_val))
-        return JS_FALSE;
+        return NULL;
 
     if (!JSVAL_IS_INT (id_val)) {
         gjs_throw(context, "Field index for %s is not an integer",

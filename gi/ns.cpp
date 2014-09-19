@@ -185,7 +185,7 @@ ns_new(JSContext    *context,
     global = gjs_get_import_global(context);
 
     if (!JS_HasProperty(context, global, gjs_ns_class.name, &found))
-        return JS_FALSE;
+        return NULL;
     if (!found) {
         JSObject *prototype;
         prototype = JS_InitClass(context, global,

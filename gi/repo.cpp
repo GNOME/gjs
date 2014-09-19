@@ -301,7 +301,7 @@ repo_new(JSContext *context)
     repo = JS_NewObject(context, &gjs_repo_class, NULL, global);
     if (repo == NULL) {
         gjs_throw(context, "No memory to create repo object");
-        return JS_FALSE;
+        return NULL;
     }
 
     priv = g_slice_new0(Repo);
