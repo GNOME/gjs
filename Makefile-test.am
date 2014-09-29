@@ -3,7 +3,7 @@ EXTRA_DIST += \
 	test/test-bus.conf
 
 # Other custom tests, not automated
-dist_noinst_DATA =
+dist_noinst_DATA = \
 	test/interactive/testGtk.js
 
 RUN_WITH_DBUS = ${top_srcdir}/test/run-with-dbus --session --system
