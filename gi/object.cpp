@@ -2685,7 +2685,7 @@ gjs_signal_new(JSContext *cx,
     GSignalAccumulator accumulator;
     gint signal_id;
     guint i, n_parameters;
-    GType *params;
+    GType *params, return_type;
     JSBool ret;
 
     if (argc != 6)
@@ -2715,8 +2715,9 @@ gjs_signal_new(JSContext *cx,
         accumulator = NULL;
     }
 
-    if (accumulator == g_signal_accumulator_true_handled &&
-        JSVAL_TO_INT(argv[4]) != G_TYPE_BOOLEAN) {
+    return_type = gjs_gtype_get_actual_gtype(cx, JSVAL_TO_OBJECT(argv[4]));
+
+    if (accumulator == g_signal_accumulator_true_handled && return_type != G_TYPE_BOOLEAN) {
         gjs_throw (cx, "GObject.SignalAccumulator.TRUE_HANDLED can only be used with boolean signals");
         ret = JS_FALSE;
         goto out;
@@ -2748,7 +2749,7 @@ gjs_signal_new(JSContext *cx,
                               accumulator,
                               NULL, /* accu_data */
                               g_cclosure_marshal_generic,
-                              gjs_gtype_get_actual_gtype(cx, JSVAL_TO_OBJECT(argv[4])), /* return type */
+                              return_type, /* return type */
                               n_parameters,
                               params);
 
