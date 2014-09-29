@@ -4,6 +4,9 @@ const ByteArray = imports.byteArray;
 const Gio = imports.gi.Gio;
 const Gtk = imports.gi.Gtk;
 const Lang = imports.lang;
+const System = imports.system;
+
+const JSUnit = imports.jsUnit;
 
 // This is ugly here, but usually it would be in a resource
 const template = ' \
@@ -33,22 +36,18 @@ const MyComplexGtkSubclass = new Lang.Class({
         this.parent(params);
 
         this._internalLabel = this.get_template_child(MyComplexGtkSubclass, 'label-child');
-        log(this._internalLabel);
+        JSUnit.assertNotEquals(this._internalLabel, null);
     }
 });
 
-function main() {
-    let app = new Gtk.Application({ application_id: 'org.gnome.gjs.TestApplication' });
+function testGtk() {
+    Gtk.init(null);
+    let win = new Gtk.Window({ type: Gtk.WindowType.TOPLEVEL });
+    let content = new MyComplexGtkSubclass();
 
-    app.connect('activate', function() {
-        let win = new Gtk.ApplicationWindow({ application: app });
-        let content = new MyComplexGtkSubclass();
+    win.add(content);
 
-        win.add(content);
-        win.show();
-    });
-
-    app.run(null);
+    JSUnit.assertEquals("label is set to 'Complex!'", 'Complex!', content._internalLabel.get_label());
 }
 
-main();
+JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
