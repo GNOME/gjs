@@ -10,7 +10,7 @@ const MyObject = new GObject.Class({
     Properties: {
         'readwrite': GObject.ParamSpec.string('readwrite', 'ParamReadwrite',
                                               'A read write parameter',
-                                              GObject.ParamFlags.READABLE | GObject.ParamFlags.WRITABLE,
+                                              GObject.ParamFlags.READWRITE,
                                               ''),
         'readonly': GObject.ParamSpec.string('readonly', 'ParamReadonly',
                                              'A readonly parameter',
@@ -19,7 +19,7 @@ const MyObject = new GObject.Class({
 
         'construct': GObject.ParamSpec.string('construct', 'ParamConstructOnly',
                                               'A readwrite construct-only parameter',
-                                              GObject.ParamFlags.READABLE | GObject.ParamFlags.WRITABLE | GObject.ParamFlags.CONSTRUCT_ONLY,
+                                              GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY,
                                               'default')
     },
     Signals: {
