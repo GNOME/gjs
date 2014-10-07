@@ -45,6 +45,7 @@ gjs_dbus_implementation_method_call(GDBusConnection       *connection,
     GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (user_data);
 
     g_signal_emit(self, signals[SIGNAL_HANDLE_METHOD], 0, method_name, parameters, invocation);
+    g_object_unref (invocation);
 }
 
 static GVariant *
