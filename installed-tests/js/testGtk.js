@@ -23,6 +23,18 @@ const template = ' \
         <property name="visible">True</property> \
       </object> \
     </child> \
+    <child> \
+      <object class="GtkLabel" id="label-child2"> \
+        <property name="label">Complex as well!</property> \
+        <property name="visible">True</property> \
+      </object> \
+    </child> \
+    <child> \
+      <object class="GtkLabel" id="internal-label-child"> \
+        <property name="label">Complex and internal!</property> \
+        <property name="visible">True</property> \
+      </object> \
+    </child> \
   </template> \
 </interface>';
 
@@ -30,13 +42,17 @@ const MyComplexGtkSubclass = new Lang.Class({
     Name: 'MyComplexGtkSubclass',
     Extends: Gtk.Grid,
     Template: ByteArray.fromString(template),
-    Children: ['label-child'],
+    Children: ['label-child', 'label-child2'],
+    InternalChildren: ['internal-label-child'],
 
     _init: function(params) {
         this.parent(params);
 
         this._internalLabel = this.get_template_child(MyComplexGtkSubclass, 'label-child');
         JSUnit.assertNotEquals(this._internalLabel, null);
+
+        JSUnit.assertNotEquals(this.label_child2, null);
+        JSUnit.assertNotEquals(this._internal_label_child, null);
     }
 });
 
@@ -48,6 +64,8 @@ function testGtk() {
     win.add(content);
 
     JSUnit.assertEquals("label is set to 'Complex!'", 'Complex!', content._internalLabel.get_label());
+    JSUnit.assertEquals("label is set to 'Complex as well!'", 'Complex as well!', content.label_child2.get_label());
+    JSUnit.assertEquals("label is set to 'Complex and internal!'", 'Complex and internal!', content._internal_label_child.get_label());
 }
 
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);

@@ -57,6 +57,8 @@ const GtkWidgetClass = new Lang.Class({
         }
 
         this.Template = template;
+        this.Children = children;
+        this.InternalChildren = internalChildren;
 
         if (children) {
             for (let i = 0; i < children.length; i++)
@@ -94,4 +96,18 @@ function _init() {
             GjsPrivate.gtk_container_child_set_property(this, child, property, value);
         };
     }
+
+    Gtk.Widget.prototype._init = function(params) {
+        GObject.Object.prototype._init.call(this, params);
+
+        if (this.constructor.Template) {
+            let children = this.constructor.Children || [];
+            for (let child of children)
+                this[child.replace('-', '_', 'g')] = this.get_template_child(this.constructor, child);
+
+            let internalChildren = this.constructor.InternalChildren || [];
+            for (let child of internalChildren)
+                this['_' + child.replace('-', '_', 'g')] = this.get_template_child(this.constructor, child);
+        }
+    };
 }
