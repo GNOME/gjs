@@ -35,10 +35,10 @@ const GtkWidgetClass = new Lang.Class({
         delete params.Template;
 
         let children = params.Children;
-        delete params.children;
+        delete params.Children;
 
         let internalChildren = params.InternalChildren;
-        delete params.internalChildren;
+        delete params.InternalChildren;
 
         if (template) {
             params._instance_init = function() {
