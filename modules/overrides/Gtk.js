@@ -51,7 +51,7 @@ const GtkWidgetClass = new Lang.Class({
         if (template) {
             if (typeof template == 'string' &&
                 template.startsWith('resource:///'))
-                Gtk.Widget.set_template_from_resource.call(this, template);
+                Gtk.Widget.set_template_from_resource.call(this, template.slice(11));
             else
                 Gtk.Widget.set_template.call(this, template);
         }
