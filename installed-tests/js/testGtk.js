@@ -56,16 +56,40 @@ const MyComplexGtkSubclass = new Lang.Class({
     }
 });
 
-function testGtk() {
-    Gtk.init(null);
-    let win = new Gtk.Window({ type: Gtk.WindowType.TOPLEVEL });
-    let content = new MyComplexGtkSubclass();
 
+const MyComplexGtkSubclassFromResource = new Lang.Class({
+    Name: 'MyComplexGtkSubclassFromResource',
+    Extends: Gtk.Grid,
+    Template: 'resource:///org/gjs/jsunit/complex.ui',
+    Children: ['label-child', 'label-child2'],
+    InternalChildren: ['internal-label-child'],
+
+    _init: function(params) {
+        this.parent(params);
+
+        this._internalLabel = this.label_child;
+        JSUnit.assertNotEquals(this.label_child, null);
+        JSUnit.assertNotEquals(this.label_child2, null);
+        JSUnit.assertNotEquals(this._internal_label_child, null);
+    }
+});
+
+function validateTemplate(content) {
+    let win = new Gtk.Window({ type: Gtk.WindowType.TOPLEVEL });
     win.add(content);
 
     JSUnit.assertEquals("label is set to 'Complex!'", 'Complex!', content._internalLabel.get_label());
     JSUnit.assertEquals("label is set to 'Complex as well!'", 'Complex as well!', content.label_child2.get_label());
     JSUnit.assertEquals("label is set to 'Complex and internal!'", 'Complex and internal!', content._internal_label_child.get_label());
+
+    win.destroy();
+}
+
+function testGtk() {
+    Gtk.init(null);
+
+    validateTemplate(new MyComplexGtkSubclass());
+    validateTemplate(new MyComplexGtkSubclassFromResource());
 }
 
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);

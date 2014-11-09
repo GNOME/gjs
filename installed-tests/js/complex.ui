@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="Gjs_MyComplexGtkSubclassFromResource" parent="GtkGrid">
+    <property name="margin_top">10</property>
+    <property name="margin_bottom">10</property>
+    <property name="margin_start">10</property>
+    <property name="margin_end">10</property>
+    <property name="visible">True</property>
+    <child>
+      <object class="GtkLabel" id="label-child">
+        <property name="label">Complex!</property>
+        <property name="visible">True</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkLabel" id="label-child2">
+        <property name="label">Complex as well!</property>
+        <property name="visible">True</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkLabel" id="internal-label-child">
+        <property name="label">Complex and internal!</property>
+        <property name="visible">True</property>
+      </object>
+    </child>
+  </template>
+</interface>

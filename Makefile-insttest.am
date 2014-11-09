@@ -1,6 +1,8 @@
 EXTRA_DIST += \
-	installed-tests/jsunit.test.in \
-	installed-tests/script.test.in \
+	installed-tests/jsunit.test.in			\
+	installed-tests/script.test.in			\
+	installed-tests/js/jsunit.gresources.xml	\
+	installed-tests/js/complex.ui			\
 	$(NULL)
 
 installedtestmetadir = $(datadir)/installed-tests/gjs
@@ -26,7 +28,18 @@ jsunit_CPPFLAGS = $(AM_CPPFLAGS) $(GJS_CFLAGS) -DPKGLIBDIR=\"$(pkglibdir)\" -DIN
 jsunit_CFLAGS = $(AM_CFLAGS) $(GJS_CFLAGS) -I$(top_srcdir)
 jsunit_LDADD = $(GJS_LIBS) libgjs.la
 jsunit_LDFLAGS = -rpath $(pkglibdir)
-jsunit_SOURCES = installed-tests/gjs-unit.cpp
+jsunit_SOURCES = \
+	installed-tests/gjs-unit.cpp	\
+	jsunit-resources.c		\
+	jsunit-resources.h
+
+jsunit_resources_files = $(shell glib-compile-resources --sourcedir=$(srcdir)/installed-tests/js --generate-dependencies $(srcdir)/test/jsunit.gresource.xml)
+jsunit-resources.h: $(srcdir)/installed-tests/js/jsunit.gresources.xml $(jsunit_resource_files)
+	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir)/installed-tests/js --sourcedir=$(builddir) --generate --c-name jsunit_resources $<
+jsunit-resources.c: $(srcdir)/installed-tests/js/jsunit.gresources.xml $(jsunit_resource_files)
+	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir)/installed-tests/js --sourcedir=$(builddir) --generate --c-name jsunit_resources $<
+
+CLEANFILES += jsunit-resources.h jsunit-resources.c
 
 privlibdir = $(pkglibdir)
 privlib_LTLIBRARIES =
