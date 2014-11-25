@@ -11,6 +11,7 @@ AC_PREREQ(2.61)
 AC_INIT([gjs], pkg_version, [http://bugzilla.gnome.org/enter_bug.cgi?product=gjs])
 AM_INIT_AUTOMAKE([dist-xz no-dist-gzip])
 AC_CONFIG_SRCDIR([gjs/console.cpp])
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([config.h])
 
 AC_DEFINE([GJS_VERSION], pkg_int_version, [The gjs version as an integer])

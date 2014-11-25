@@ -31,6 +31,7 @@ gjs_gi_probes.h
 install-sh
 libtool
 ltmain.sh
+/m4
 missing
 stamp-h1
 test_user_data
