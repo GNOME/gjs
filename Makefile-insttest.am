@@ -40,7 +40,7 @@ endif
 # This rpath /nowhere thing is the libtool upstream recommended way to
 # force generation of shared libraries, which we need in order for the
 # tests to work uninstalled.
-common_test_ldflags = -avoid-version -R /nowhere
+common_test_ldflags = -avoid-version -rpath /nowhere
 common_test_libadd = $(GJS_LIBS)
 
 nodist_libregress_la_SOURCES = $(GI_DATADIR)/tests/regress.c $(GI_DATADIR)/tests/regress.h
