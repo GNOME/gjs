@@ -1,3 +1,14 @@
+Version 1.43.3
+--------------
+
+- GTypeClass and GTypeInterface methods, such as
+  g_object_class_list_properties(), are now available [#700347]
+- Added full automatic support for GTK widget templates [#700347,
+  #737661] [Jonas Danielsson, #739739]
+- Added control of JS Date caches to system module [#739790]
+- Misc bug fixes and memory leak fixes [Owen Taylor, #738122]
+  [Philip Chimento, #740696, #737701]
+
 Version 1.42.0
 --------------
 
