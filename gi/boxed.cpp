@@ -50,6 +50,7 @@ typedef struct {
 
     /* instance info */
     void *gboxed; /* NULL if we are the prototype and not an instance */
+    GHashTable *field_map;
 
     guint can_allocate_directly : 1;
     guint allocated_directly : 1;
@@ -228,8 +229,8 @@ boxed_new_direct(Boxed       *priv)
 }
 
 /* When initializing a boxed object from a hash of properties, we don't want
- * to do n O(n) lookups, so put temporarily put the fields into a hash table
- * for fast lookup. We could also do this ahead of time and store it on proto->priv.
+ * to do n O(n) lookups, so put put the fields into a hash table and store it on proto->priv
+ * for fast lookup. 
  */
 static GHashTable *
 get_field_map(GIStructInfo *struct_info)
@@ -263,7 +264,6 @@ boxed_init_from_props(JSContext   *context,
     JSObject *props;
     JSObject *iter;
     jsid prop_id;
-    GHashTable *field_map;
     gboolean success;
 
     success = FALSE;
@@ -281,7 +281,8 @@ boxed_init_from_props(JSContext   *context,
         return JS_FALSE;
     }
 
-    field_map = get_field_map(priv->info);
+    if (!priv->field_map)
+        priv->field_map = get_field_map(priv->info);
 
     prop_id = JSID_VOID;
     if (!JS_NextProperty(context, iter, &prop_id))
@@ -295,7 +296,7 @@ boxed_init_from_props(JSContext   *context,
         if (!gjs_get_string_id(context, prop_id, &name))
             goto out;
 
-        field_info = (GIFieldInfo *) g_hash_table_lookup(field_map, name);
+        field_info = (GIFieldInfo *) g_hash_table_lookup(priv->field_map, name);
         if (field_info == NULL) {
             gjs_throw(context, "No field %s on boxed type %s",
                       name, g_base_info_get_name((GIBaseInfo *)priv->info));
@@ -320,7 +321,6 @@ boxed_init_from_props(JSContext   *context,
     success = TRUE;
 
  out:
-    g_hash_table_destroy(field_map);
 
     return success;
 }
@@ -536,6 +536,10 @@ boxed_finalize(JSFreeOp *fop,
         priv->info = NULL;
     }
 
+    if (priv->field_map) {
+        g_hash_table_destroy(priv->field_map);
+    }
+
     GJS_DEC_COUNTER(boxed);
     g_slice_free(Boxed, priv);
 }
@@ -545,26 +549,30 @@ get_field_info (JSContext *context,
                 Boxed     *priv,
                 jsid       id)
 {
-    int field_index;
-    jsval id_val;
+    GIFieldInfo *field_info;
+    char *name;
+    jsval value;
 
-    if (!JS_IdToValue(context, id, &id_val))
-        return NULL;
+    if (!priv->field_map)
+        priv->field_map = get_field_map(priv->info);
 
-    if (!JSVAL_IS_INT (id_val)) {
-        gjs_throw(context, "Field index for %s is not an integer",
-                  g_base_info_get_name ((GIBaseInfo *)priv->info));
-        return NULL;
+    if (!gjs_get_string_id(context, id, &name))
+        goto out;
+
+    field_info = (GIFieldInfo *) g_hash_table_lookup(priv->field_map, name);
+    if (field_info == NULL) {
+        gjs_throw(context, "No field %s on boxed type %s",
+                  name, g_base_info_get_name((GIBaseInfo *)priv->info));
+        g_free(name);
+        goto out;
     }
 
-    field_index = JSVAL_TO_INT(id_val);
-    if (field_index < 0 || field_index >= g_struct_info_get_n_fields (priv->info)) {
-        gjs_throw(context, "Bad field index %d for %s", field_index,
-                  g_base_info_get_name ((GIBaseInfo *)priv->info));
-        return NULL;
-    }
+    g_free(name);
 
-    return g_struct_info_get_field (priv->info, field_index);
+    return field_info;
+
+ out:
+    return NULL;
 }
 
 static JSBool
@@ -689,7 +697,6 @@ boxed_field_getter (JSContext              *context,
     success = TRUE;
 
 out:
-    g_base_info_unref ((GIBaseInfo *)field_info);
     g_base_info_unref ((GIBaseInfo *)type_info);
 
     return success;
@@ -832,7 +839,6 @@ boxed_field_setter (JSContext              *context,
     success = boxed_set_field_from_value (context, priv, field_info, value);
 
 out:
-    g_base_info_unref ((GIBaseInfo *)field_info);
 
     return success;
 }
@@ -845,12 +851,7 @@ define_boxed_class_fields (JSContext *context,
     int n_fields = g_struct_info_get_n_fields (priv->info);
     int i;
 
-    /* We identify properties with a 'TinyId': a 8-bit numeric value
-     * that can be retrieved in the property getter/setter. Using it
-     * allows us to avoid a hash-table lookup or linear search.
-     * It does restrict us to a maximum of 256 fields per type.
-     *
-     * We define all fields as read/write so that the user gets an
+    /* We define all fields as read/write so that the user gets an
      * error message. If we omitted fields or defined them read-only
      * we'd:
      *
@@ -876,10 +877,9 @@ define_boxed_class_fields (JSContext *context,
         const char *field_name = g_base_info_get_name ((GIBaseInfo *)field);
         gboolean result;
 
-        result = JS_DefinePropertyWithTinyId(context, proto, field_name, i,
-                                             JSVAL_NULL,
-                                             boxed_field_getter, boxed_field_setter,
-                                             JSPROP_PERMANENT | JSPROP_SHARED);
+        result = JS_DefineProperty(context, proto, field_name, JSVAL_NULL,
+                                   boxed_field_getter, boxed_field_setter,
+                                   JSPROP_PERMANENT | JSPROP_SHARED);
 
         g_base_info_unref ((GIBaseInfo *)field);
 
