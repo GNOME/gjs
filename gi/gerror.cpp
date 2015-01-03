@@ -215,7 +215,8 @@ error_to_string(JSContext *context, unsigned argc, jsval *vp)
     gchar *descr;
     JSBool retval;
 
-    v_self = JS_THIS(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    v_self = rec.thisv();
     if (!JSVAL_IS_OBJECT(v_self)) {
         /* Lie a bit here... */
         gjs_throw(context, "GLib.Error.prototype.toString() called on a non object");
@@ -251,7 +252,7 @@ error_to_string(JSContext *context, unsigned argc, jsval *vp)
             goto out;
     }
 
-    JS_SET_RVAL(context, vp, v_out);
+    rec.rval().set(v_out);
     retval = JS_TRUE;
 
  out:
@@ -267,7 +268,8 @@ error_constructor_value_of(JSContext *context, unsigned argc, jsval *vp)
     jsval v_out;
     jsid prototype_name;
 
-    v_self = JS_THIS(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    v_self = rec.thisv();
     if (!JSVAL_IS_OBJECT(v_self)) {
         /* Lie a bit here... */
         gjs_throw(context, "GLib.Error.valueOf() called on a non object");
@@ -295,7 +297,7 @@ error_constructor_value_of(JSContext *context, unsigned argc, jsval *vp)
 
     v_out = INT_TO_JSVAL(priv->domain);
 
-    JS_SET_RVAL(context, vp, v_out);
+    rec.rval().set(v_out);
     return TRUE;
 }
 

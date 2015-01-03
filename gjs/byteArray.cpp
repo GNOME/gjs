@@ -416,8 +416,8 @@ to_string_func(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *object = JS_THIS_OBJECT(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *object = JSVAL_TO_OBJECT(argv.thisv());
     ByteArrayInstance *priv;
     char *encoding;
     gboolean encoding_is_utf8;
@@ -468,7 +468,7 @@ to_string_func(JSContext *context,
                                   priv->array->len,
                                   &retval);
         if (ok)
-            JS_SET_RVAL(context, vp, retval);
+            argv.rval().set(retval);
         return ok;
     } else {
         JSBool ok = JS_FALSE;
@@ -502,7 +502,7 @@ to_string_func(JSContext *context,
                                 bytes_written / 2);
         if (s != NULL) {
             ok = JS_TRUE;
-            JS_SET_RVAL(context, vp, STRING_TO_JSVAL(s));
+            argv.rval().set(STRING_TO_JSVAL(s));
         }
 
         g_free(u16_str);
@@ -515,7 +515,8 @@ to_gbytes_func(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    JSObject *object = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *object = JSVAL_TO_OBJECT(rec.thisv());
     ByteArrayInstance *priv;
     JSObject *ret_bytes_obj;
     GIBaseInfo *gbytes_info;
@@ -530,7 +531,7 @@ to_gbytes_func(JSContext *context,
     ret_bytes_obj = gjs_boxed_from_c_struct(context, (GIStructInfo*)gbytes_info,
                                             priv->bytes, GJS_BOXED_CREATION_NONE);
 
-    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(ret_bytes_obj));
+    rec.rval().set(OBJECT_TO_JSVAL(ret_bytes_obj));
     return JS_TRUE;
 }
 
@@ -577,7 +578,7 @@ from_string_func(JSContext *context,
                  unsigned   argc,
                  jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     ByteArrayInstance *priv;
     char *encoding;
     gboolean encoding_is_utf8;
@@ -668,7 +669,7 @@ from_string_func(JSContext *context,
         g_free(encoded);
     }
 
-    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(obj));
+    argv.rval().set(OBJECT_TO_JSVAL(obj));
 
     retval = JS_TRUE;
  out:
@@ -682,7 +683,7 @@ from_array_func(JSContext *context,
                 unsigned   argc,
                 jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     ByteArrayInstance *priv;
     guint32 len;
     guint32 i;
@@ -738,7 +739,7 @@ from_array_func(JSContext *context,
     }
 
     ret = JS_TRUE;
-    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(obj));
+    argv.rval().set(OBJECT_TO_JSVAL(obj));
  out:
     JS_RemoveObjectRoot(context, &obj);
     return ret;
@@ -749,14 +750,14 @@ from_gbytes_func(JSContext *context,
                  unsigned   argc,
                  jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *bytes_obj;
     GBytes *gbytes;
     ByteArrayInstance *priv;
     JSObject *obj;
     JSBool ret = JS_FALSE;
 
-    if (!gjs_parse_args(context, "overrides_gbytes_to_array", "o", argc, argv,
+    if (!gjs_parse_call_args(context, "overrides_gbytes_to_array", "o", argv,
                         "bytes", &bytes_obj))
         return JS_FALSE;
 
@@ -774,7 +775,7 @@ from_gbytes_func(JSContext *context,
     priv->bytes = g_bytes_ref(gbytes);
 
     ret = JS_TRUE;
-    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(obj));
+    argv.rval().set(OBJECT_TO_JSVAL(obj));
     return ret;
 }
 

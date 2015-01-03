@@ -37,7 +37,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_radial_gradient)
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_radial_gradient);
 
-    if (!gjs_parse_args(context, "RadialGradient", "ffffff", argc, argv,
+    if (!gjs_parse_call_args(context, "RadialGradient", "ffffff", argv,
                         "cx0", &cx0,
                         "cy0", &cy0,
                         "radius0", &radius0,

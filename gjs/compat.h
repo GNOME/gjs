@@ -77,8 +77,8 @@ gjs_##name##_constructor(JSContext  *context,           \
  * be at the very top.
  */
 #define GJS_NATIVE_CONSTRUCTOR_VARIABLES(name)          \
-    JSObject *object = NULL;                            \
-    jsval *argv G_GNUC_UNUSED = JS_ARGV(context, vp);
+    JSObject *object = NULL;                                            \
+    JS::CallArgs argv G_GNUC_UNUSED = JS::CallArgsFromVp(argc, vp);
 
 /**
  * GJS_NATIVE_CONSTRUCTOR_PRELUDE:
@@ -101,7 +101,7 @@ gjs_##name##_constructor(JSContext  *context,           \
  * successfully.
  */
 #define GJS_NATIVE_CONSTRUCTOR_FINISH(name)             \
-    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(object));
+    argv.rval().set(OBJECT_TO_JSVAL(object));
 
 /**
  * GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT:

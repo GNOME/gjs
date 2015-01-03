@@ -979,7 +979,7 @@ coverage_warning(JSContext *context,
                  unsigned   argc,
                  jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     char *s;
     JSExceptionState *exc_state;
     JSString *jstr;
@@ -1014,7 +1014,7 @@ coverage_warning(JSContext *context,
     g_free(s);
 
     JS_EndRequest(context);
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
     return JS_TRUE;
 }
 

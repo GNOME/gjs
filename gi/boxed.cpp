@@ -489,11 +489,11 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
     actual_rval = JSVAL_VOID;
     JS_AddValueRoot(context, &actual_rval);
 
-    retval = boxed_new(context, object, priv, argc, argv, &actual_rval);
+    retval = boxed_new(context, object, priv, argc, argv.array(), &actual_rval);
 
     if (retval) {
         if (!JSVAL_IS_VOID (actual_rval))
-            JS_SET_RVAL(context, vp, actual_rval);
+            argv.rval().set(actual_rval);
         else
             GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
     }
@@ -894,7 +894,9 @@ to_string_func(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+
     Boxed *priv;
     JSBool ret = JS_FALSE;
     jsval retval;
@@ -907,7 +909,7 @@ to_string_func(JSContext *context,
         goto out;
 
     ret = JS_TRUE;
-    JS_SET_RVAL(context, vp, retval);
+    rec.rval().set(retval);
  out:
     return ret;
 }

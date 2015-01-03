@@ -107,7 +107,7 @@ gjs_log(JSContext *context,
         unsigned   argc,
         jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     char *s;
     JSExceptionState *exc_state;
     JSString *jstr;
@@ -142,7 +142,7 @@ gjs_log(JSContext *context,
     g_free(s);
 
     JS_EndRequest(context);
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
     return JS_TRUE;
 }
 
@@ -151,7 +151,7 @@ gjs_log_error(JSContext *context,
               unsigned   argc,
               jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSExceptionState *exc_state;
     JSString *jstr;
 
@@ -178,14 +178,13 @@ gjs_log_error(JSContext *context,
     gjs_log_exception_full(context, argv[0], jstr);
 
     JS_EndRequest(context);
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
     return JS_TRUE;
 }
 
 static JSBool
 gjs_print_parse_args(JSContext *context,
-                     unsigned   argc,
-                     jsval     *argv,
+                     JS::CallArgs &argv,
                      char     **buffer)
 {
     GString *str;
@@ -195,7 +194,7 @@ gjs_print_parse_args(JSContext *context,
     JS_BeginRequest(context);
 
     str = g_string_new("");
-    for (n = 0; n < argc; ++n) {
+    for (n = 0; n < argv.length(); ++n) {
         JSExceptionState *exc_state;
         JSString *jstr;
 
@@ -218,7 +217,7 @@ gjs_print_parse_args(JSContext *context,
 
             g_string_append(str, s);
             g_free(s);
-            if (n < (argc-1))
+            if (n < (argv.length()-1))
                 g_string_append_c(str, ' ');
         } else {
             JS_EndRequest(context);
@@ -240,17 +239,17 @@ gjs_print(JSContext *context,
           unsigned   argc,
           jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     char *buffer;
 
-    if (!gjs_print_parse_args(context, argc, argv, &buffer)) {
+    if (!gjs_print_parse_args(context, argv, &buffer)) {
         return FALSE;
     }
 
     g_print("%s\n", buffer);
     g_free(buffer);
 
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
     return JS_TRUE;
 }
 
@@ -259,17 +258,17 @@ gjs_printerr(JSContext *context,
              unsigned   argc,
              jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     char *buffer;
 
-    if (!gjs_print_parse_args(context, argc, argv, &buffer)) {
+    if (!gjs_print_parse_args(context, argv, &buffer)) {
         return FALSE;
     }
 
     g_printerr("%s\n", buffer);
     g_free(buffer);
 
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
     return JS_TRUE;
 }
 

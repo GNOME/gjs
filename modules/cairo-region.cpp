@@ -54,7 +54,8 @@ fill_rectangle(JSContext *context, JSObject *obj,
                cairo_rectangle_int_t *rect);
 
 #define PRELUDE                                                 \
-    JSObject *obj = JS_THIS_OBJECT(context, vp);                \
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);          \
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());              \
     cairo_region_t *this_region = get_region(context, obj);
 
 #define RETURN_STATUS                                           \
@@ -69,8 +70,7 @@ fill_rectangle(JSContext *context, JSObject *obj,
         PRELUDE;                                                \
         JSObject *other_obj;                                    \
         cairo_region_t *other_region;                           \
-        if (!gjs_parse_args(context, #method, "o", argc,        \
-                            JS_ARGV(context, vp),               \
+        if (!gjs_parse_call_args(context, #method, "o", argv,   \
                             "other_region", &other_obj))        \
             return JS_FALSE;                                    \
                                                                 \
@@ -78,7 +78,7 @@ fill_rectangle(JSContext *context, JSObject *obj,
         other_region = get_region(context, other_obj);          \
                                                                 \
         cairo_region_##method(this_region, other_region);       \
-            JS_SET_RVAL(context, vp, JSVAL_VOID);               \
+            argv.rval().set(JSVAL_VOID);               \
             RETURN_STATUS;                                      \
     }
 
@@ -91,8 +91,7 @@ fill_rectangle(JSContext *context, JSObject *obj,
         PRELUDE;                                                \
         JSObject *rect_obj;                                     \
         cairo_rectangle_int_t rect;                             \
-        if (!gjs_parse_args(context, #method, "o", argc,        \
-                            JS_ARGV(context, vp),               \
+        if (!gjs_parse_call_args(context, #method, "o", argv,   \
                             "rect", &rect_obj))                 \
             return JS_FALSE;                                    \
                                                                 \
@@ -100,7 +99,7 @@ fill_rectangle(JSContext *context, JSObject *obj,
             return JS_FALSE;                                    \
                                                                 \
         cairo_region_##method##_rectangle(this_region, &rect);  \
-            JS_SET_RVAL(context, vp, JSVAL_VOID);               \
+            argv.rval().set(JSVAL_VOID);               \
             RETURN_STATUS;                                      \
     }
 
@@ -174,12 +173,12 @@ num_rectangles_func(JSContext *context,
     int n_rects;
     jsval retval;
 
-    if (!gjs_parse_args(context, "num_rectangles", "", argc, JS_ARGV(context, vp)))
+    if (!gjs_parse_call_args(context, "num_rectangles", "", argv))
         return JS_FALSE;
 
     n_rects = cairo_region_num_rectangles(this_region);
     retval = INT_TO_JSVAL(n_rects);
-    JS_SET_RVAL (context, vp, retval);
+    argv.rval().set(retval);
     RETURN_STATUS;
 }
 
@@ -194,14 +193,14 @@ get_rectangle_func(JSContext *context,
     cairo_rectangle_int_t rect;
     jsval retval;
 
-    if (!gjs_parse_args(context, "get_rectangle", "i", argc, JS_ARGV(context, vp), "rect", &i))
+    if (!gjs_parse_call_args(context, "get_rectangle", "i", argv, "rect", &i))
         return JS_FALSE;
 
     cairo_region_get_rectangle(this_region, i, &rect);
     rect_obj = make_rectangle(context, &rect);
 
     retval = OBJECT_TO_JSVAL(rect_obj);
-    JS_SET_RVAL (context, vp, retval);
+    argv.rval().set(retval);
     RETURN_STATUS;
 }
 
@@ -249,7 +248,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_region)
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_region);
 
-    if (!gjs_parse_args(context, "Region", "", argc, argv))
+    if (!gjs_parse_call_args(context, "Region", "", argv))
         return JS_FALSE;
 
     region = cairo_region_create();

@@ -41,7 +41,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_ps_surface)
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_ps_surface);
 
-    if (!gjs_parse_args(context, "PSSurface", "sff", argc, argv,
+    if (!gjs_parse_call_args(context, "PSSurface", "sff", argv,
                         "filename", &filename,
                         "width", &width,
                         "height", &height))

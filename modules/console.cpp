@@ -159,7 +159,8 @@ gjs_console_interact(JSContext *context,
                      unsigned   argc,
                      jsval     *vp)
 {
-    JSObject *object = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *object = JSVAL_TO_OBJECT(rec.thisv());
     gboolean eof = FALSE;
     jsval result;
     JSString *str;

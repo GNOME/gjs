@@ -62,7 +62,9 @@ getType_func(JSContext *context,
              unsigned   argc,
              jsval     *vp)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+
     cairo_pattern_t *pattern;
     cairo_pattern_type_t type;
 
@@ -77,7 +79,7 @@ getType_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
-    JS_SET_RVAL(context, vp, INT_TO_JSVAL(type));
+    rec.rval().setInt32(type);
     return JS_TRUE;
 }
 

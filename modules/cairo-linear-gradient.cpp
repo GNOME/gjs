@@ -37,7 +37,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_linear_gradient)
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_linear_gradient);
 
-    if (!gjs_parse_args(context, "LinearGradient", "ffff", argc, argv,
+    if (!gjs_parse_call_args(context, "LinearGradient", "ffff", argv,
                         "x0", &x0,
                         "y0", &y0,
                         "x1", &x1,

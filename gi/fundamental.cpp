@@ -444,7 +444,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(fundamental_instance)
                         "fundamental constructor, obj %p priv %p",
                         object, priv);
 
-    if (!fundamental_invoke_constructor(priv, context, object, argc, argv, &ret_value))
+    if (!fundamental_invoke_constructor(priv, context, object, argc, argv.array(), &ret_value))
         return JS_FALSE;
 
     associate_js_instance_to_fundamental(context, object, ret_value.v_pointer, FALSE);
@@ -504,7 +504,9 @@ to_string_func(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+
     FundamentalInstance *priv;
     JSBool ret = JS_FALSE;
     jsval retval;
@@ -531,7 +533,7 @@ to_string_func(JSContext *context,
     }
 
     ret = JS_TRUE;
-    JS_SET_RVAL(context, vp, retval);
+    rec.rval().set(retval);
  out:
     return ret;
 }

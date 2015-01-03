@@ -37,13 +37,13 @@ gjs_address_of(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    jsval *argv = JS_ARGV(cx, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *target_obj;
     JSBool ret;
     char *pointer_string;
     jsval retval;
 
-    if (!gjs_parse_args(context, "addressOf", "o", argc, argv, "object", &target_obj))
+    if (!gjs_parse_call_args(context, "addressOf", "o", argv, "object", &target_obj))
         return JS_FALSE;
 
     pointer_string = g_strdup_printf("%p", target_obj);
@@ -52,7 +52,7 @@ gjs_address_of(JSContext *context,
     g_free(pointer_string);
 
     if (ret)
-        JS_SET_RVAL(context, vp, retval);
+        argv.rval().set(retval);
 
     return ret;
 }
@@ -62,12 +62,12 @@ gjs_refcount(JSContext *context,
              unsigned   argc,
              jsval     *vp)
 {
-    jsval *argv = JS_ARGV(cx, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     jsval retval;
     JSObject *target_obj;
     GObject *obj;
 
-    if (!gjs_parse_args(context, "refcount", "o", argc, argv, "object", &target_obj))
+    if (!gjs_parse_call_args(context, "refcount", "o", argv, "object", &target_obj))
         return JS_FALSE;
 
     if (!gjs_typecheck_object(context, target_obj,
@@ -79,7 +79,7 @@ gjs_refcount(JSContext *context,
         return JS_FALSE;
 
     retval = INT_TO_JSVAL(obj->ref_count);
-    JS_SET_RVAL(context, vp, retval);
+    argv.rval().set(retval);
     return JS_TRUE;
 }
 
@@ -88,11 +88,11 @@ gjs_breakpoint(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    jsval *argv = JS_ARGV(cx, vp);
-    if (!gjs_parse_args(context, "breakpoint", "", argc, argv))
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    if (!gjs_parse_call_args(context, "breakpoint", "", argv))
         return JS_FALSE;
     G_BREAKPOINT();
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
     return JS_TRUE;
 }
 
@@ -101,11 +101,11 @@ gjs_gc(JSContext *context,
        unsigned   argc,
        jsval     *vp)
 {
-    jsval *argv = JS_ARGV(cx, vp);
-    if (!gjs_parse_args(context, "gc", "", argc, argv))
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    if (!gjs_parse_call_args(context, "gc", "", argv))
         return JS_FALSE;
     JS_GC(JS_GetRuntime(context));
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
     return JS_TRUE;
 }
 
@@ -114,9 +114,9 @@ gjs_exit(JSContext *context,
          unsigned   argc,
          jsval     *vp)
 {
-    jsval *argv = JS_ARGV(cx, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     gint32 ecode;
-    if (!gjs_parse_args(context, "exit", "i", argc, argv, "ecode", &ecode))
+    if (!gjs_parse_call_args(context, "exit", "i", argv, "ecode", &ecode))
         return JS_FALSE;
     exit(ecode);
     return JS_TRUE;
@@ -127,6 +127,7 @@ gjs_clear_date_caches(JSContext *context,
              unsigned   argc,
              jsval     *vp)
 {
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JS_BeginRequest(context);
 
     // Workaround for a bug in SpiderMonkey where tzset is not called before
@@ -136,7 +137,7 @@ gjs_clear_date_caches(JSContext *context,
     JS_ClearDateCaches(context);
     JS_EndRequest(context);
 
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    rec.rval().set(JSVAL_VOID);
     return JS_TRUE;
 }
 

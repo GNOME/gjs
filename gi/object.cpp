@@ -1348,12 +1348,12 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
         return JS_FALSE;
 
     rval = JSVAL_VOID;
-    ret = gjs_call_function_value(context, object, initer, argc, argv, &rval);
+    ret = gjs_call_function_value(context, object, initer, argc, argv.array(), &rval);
 
     if (JSVAL_IS_VOID(rval))
         rval = OBJECT_TO_JSVAL(object);
 
-    JS_SET_RVAL(context, vp, rval);
+    argv.rval().set(rval);
     return ret;
 }
 
@@ -1560,8 +1560,9 @@ real_connect_func(JSContext *context,
                   jsval     *vp,
                   gboolean  after)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
-    jsval *argv = JS_ARGV(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+
     ObjectInstance *priv;
     GClosure *closure;
     gulong id;
@@ -1640,7 +1641,7 @@ real_connect_func(JSContext *context,
         goto out;
     }
     
-    JS_SET_RVAL(context, vp, retval);
+    argv.rval().set(retval);
 
     ret = JS_TRUE;
  out:
@@ -1669,8 +1670,9 @@ emit_func(JSContext *context,
           unsigned   argc,
           jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+
     ObjectInstance *priv;
     guint signal_id;
     GQuark signal_detail;
@@ -1779,7 +1781,7 @@ emit_func(JSContext *context,
     }
 
     if (!failed)
-        JS_SET_RVAL(context, vp, retval);
+        argv.rval().set(retval);
 
     ret = !failed;
  out:
@@ -1792,7 +1794,9 @@ to_string_func(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+
     ObjectInstance *priv;
     JSBool ret = JS_FALSE;
     jsval retval;
@@ -1812,7 +1816,7 @@ to_string_func(JSContext *context,
         goto out;
 
     ret = JS_TRUE;
-    JS_SET_RVAL(context, vp, retval);
+    rec.rval().set(retval);
  out:
     return ret;
 }
@@ -1842,17 +1846,18 @@ init_func (JSContext *context,
            unsigned   argc,
            jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+
     JSBool ret;
 
     if (!do_base_typecheck(context, obj, TRUE))
         return FALSE;
 
-    ret = object_instance_init(context, &obj, argc, argv);
+    ret = object_instance_init(context, &obj, argc, argv.array());
 
     if (ret)
-        JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(obj));
+        argv.rval().set(OBJECT_TO_JSVAL(obj));
 
     return ret;
 }
@@ -2274,7 +2279,7 @@ gjs_hook_up_vfunc(JSContext *cx,
                   unsigned   argc,
                   jsval     *vp)
 {
-    jsval *argv = JS_ARGV(cx, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     gchar *name;
     JSObject *object;
     JSObject *function;
@@ -2285,8 +2290,8 @@ gjs_hook_up_vfunc(JSContext *cx,
     gpointer implementor_vtable;
     GIFieldInfo *field_info;
 
-    if (!gjs_parse_args(cx, "hook_up_vfunc",
-                        "oso", argc, argv,
+    if (!gjs_parse_call_args(cx, "hook_up_vfunc",
+                        "oso", argv,
                         "object", &object,
                         "name", &name,
                         "function", &function))
@@ -2311,7 +2316,7 @@ gjs_hook_up_vfunc(JSContext *cx,
      * This is awful, so abort now. */
     g_assert(info != NULL);
 
-    JS_SET_RVAL(cx, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
 
     vfunc = find_vfunc_on_parents(info, name, NULL);
 
@@ -2527,7 +2532,7 @@ gjs_register_type(JSContext *cx,
                   unsigned   argc,
                   jsval     *vp)
 {
-    jsval *argv = JS_ARGV(cx, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     gchar *name;
     JSObject *parent, *constructor, *interfaces, *properties, *module;
     GType instance_type, parent_type;
@@ -2555,8 +2560,8 @@ gjs_register_type(JSContext *cx,
 
     JS_BeginRequest(cx);
 
-    if (!gjs_parse_args(cx, "register_type",
-                        "osoo", argc, argv,
+    if (!gjs_parse_call_args(cx, "register_type",
+                        "osoo", argv,
                         "parent", &parent,
                         "name", &name,
                         "interfaces", &interfaces,
@@ -2667,7 +2672,7 @@ gjs_register_type(JSContext *cx,
     module = gjs_lookup_private_namespace(cx);
     gjs_define_object_class(cx, module, NULL, instance_type, &constructor);
 
-    JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(constructor));
+    argv.rval().set(OBJECT_TO_JSVAL(constructor));
 
     retval = JS_TRUE;
 
@@ -2683,7 +2688,7 @@ gjs_signal_new(JSContext *cx,
                unsigned   argc,
                jsval     *vp)
 {
-    jsval *argv = JS_ARGV(cx, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj;
     GType gtype;
     gchar *signal_name = NULL;
@@ -2758,7 +2763,7 @@ gjs_signal_new(JSContext *cx,
                               n_parameters,
                               params);
 
-    JS_SET_RVAL(cx, vp, INT_TO_JSVAL(signal_id));
+    argv.rval().set(INT_TO_JSVAL(signal_id));
     ret = JS_TRUE;
 
  out:

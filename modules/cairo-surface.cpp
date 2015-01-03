@@ -62,12 +62,13 @@ writeToPNG_func(JSContext *context,
                 unsigned   argc,
                 jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+
     char *filename;
     cairo_surface_t *surface;
 
-    if (!gjs_parse_args(context, "writeToPNG", "s", argc, argv,
+    if (!gjs_parse_call_args(context, "writeToPNG", "s", argv,
                         "filename", &filename))
         return JS_FALSE;
 
@@ -81,7 +82,7 @@ writeToPNG_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface),
                                 "surface"))
         return JS_FALSE;
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
     return JS_TRUE;
 }
 
@@ -90,7 +91,9 @@ getType_func(JSContext *context,
              unsigned   argc,
              jsval     *vp)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+
     cairo_surface_t *surface;
     cairo_surface_type_t type;
 
@@ -105,7 +108,7 @@ getType_func(JSContext *context,
                                 "surface"))
         return JS_FALSE;
 
-    JS_SET_RVAL(context, vp, INT_TO_JSVAL(type));
+    rec.rval().setInt32(type);
     return JS_TRUE;
 }
 

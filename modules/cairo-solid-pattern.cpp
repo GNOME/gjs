@@ -45,12 +45,12 @@ createRGB_func(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     double red, green, blue;
     cairo_pattern_t *pattern;
     JSObject *pattern_wrapper;
 
-    if (!gjs_parse_args(context, "createRGB", "fff", argc, argv,
+    if (!gjs_parse_call_args(context, "createRGB", "fff", argv,
                         "red", &red,
                         "green", &green,
                         "blue", &blue))
@@ -63,7 +63,7 @@ createRGB_func(JSContext *context,
     pattern_wrapper = gjs_cairo_solid_pattern_from_pattern(context, pattern);
     cairo_pattern_destroy(pattern);
 
-    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(pattern_wrapper));
+    argv.rval().set(OBJECT_TO_JSVAL(pattern_wrapper));
 
     return JS_TRUE;
 }
@@ -73,12 +73,12 @@ createRGBA_func(JSContext *context,
                 unsigned   argc,
                 jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     double red, green, blue, alpha;
     cairo_pattern_t *pattern;
     JSObject *pattern_wrapper;
 
-    if (!gjs_parse_args(context, "createRGBA", "ffff", argc, argv,
+    if (!gjs_parse_call_args(context, "createRGBA", "ffff", argv,
                         "red", &red,
                         "green", &green,
                         "blue", &blue,
@@ -92,7 +92,7 @@ createRGBA_func(JSContext *context,
     pattern_wrapper = gjs_cairo_solid_pattern_from_pattern(context, pattern);
     cairo_pattern_destroy(pattern);
 
-    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(pattern_wrapper));
+    argv.rval().set(OBJECT_TO_JSVAL(pattern_wrapper));
 
     return JS_TRUE;
 }

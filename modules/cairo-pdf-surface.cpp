@@ -41,7 +41,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_pdf_surface)
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_pdf_surface);
 
-    if (!gjs_parse_args(context, "PDFSurface", "sff", argc, argv,
+    if (!gjs_parse_call_args(context, "PDFSurface", "sff", argv,
                         "filename", &filename,
                         "width", &width,
                         "height", &height))

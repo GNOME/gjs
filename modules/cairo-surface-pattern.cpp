@@ -38,7 +38,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_surface_pattern)
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_surface_pattern);
 
-    if (!gjs_parse_args(context, "SurfacePattern", "o", argc, argv,
+    if (!gjs_parse_call_args(context, "SurfacePattern", "o", argv,
                         "surface", &surface_wrapper))
         return JS_FALSE;
 
@@ -79,12 +79,13 @@ setExtend_func(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+
     cairo_extend_t extend;
     cairo_pattern_t *pattern;
 
-    if (!gjs_parse_args(context, "setExtend", "i", argc, argv,
+    if (!gjs_parse_call_args(context, "setExtend", "i", argv,
                         "extend", &extend))
         return JS_FALSE;
 
@@ -94,7 +95,7 @@ setExtend_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
     return JS_TRUE;
 }
 
@@ -103,7 +104,9 @@ getExtend_func(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+
     cairo_extend_t extend;
     cairo_pattern_t *pattern;
 
@@ -118,7 +121,7 @@ getExtend_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
-    JS_SET_RVAL(context, vp, INT_TO_JSVAL(extend));
+    rec.rval().setInt32(extend);
 
     return JS_TRUE;
 }
@@ -128,12 +131,13 @@ setFilter_func(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+
     cairo_filter_t filter;
     cairo_pattern_t *pattern;
 
-    if (!gjs_parse_args(context, "setFilter", "i", argc, argv,
+    if (!gjs_parse_call_args(context, "setFilter", "i", argv,
                         "filter", &filter))
         return JS_FALSE;
 
@@ -143,7 +147,7 @@ setFilter_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
     return JS_TRUE;
 }
 
@@ -152,7 +156,9 @@ getFilter_func(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+
     cairo_filter_t filter;
     cairo_pattern_t *pattern;
 
@@ -167,7 +173,7 @@ getFilter_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
-    JS_SET_RVAL(context, vp, INT_TO_JSVAL(filter));
+    rec.rval().setInt32(filter);
 
     return JS_TRUE;
 }

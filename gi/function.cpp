@@ -1300,9 +1300,10 @@ function_call(JSContext *context,
               unsigned   js_argc,
               jsval     *vp)
 {
-    jsval *js_argv = JS_ARGV(context, vp);
-    JSObject *object = JS_THIS_OBJECT(context, vp);
-    JSObject *callee = JSVAL_TO_OBJECT(JS_CALLEE(context, vp));
+    JS::CallArgs js_argv = JS::CallArgsFromVp (js_argc, vp);
+    JSObject *object = JSVAL_TO_OBJECT(js_argv.thisv());
+    JSObject *callee = &js_argv.callee();
+
     JSBool success;
     Function *priv;
     jsval retval;
@@ -1316,9 +1317,9 @@ function_call(JSContext *context,
         return JS_TRUE; /* we are the prototype, or have the wrong class */
 
 
-    success = gjs_invoke_c_function(context, priv, object, js_argc, js_argv, &retval, NULL);
+    success = gjs_invoke_c_function(context, priv, object, js_argc, js_argv.array(), &retval, NULL);
     if (success)
-        JS_SET_RVAL(context, vp, retval);
+        js_argv.rval().set(retval);
 
     return success;
 }
@@ -1367,6 +1368,8 @@ get_num_arguments (JSContext *context,
     jsval retval;
     Function *priv;
 
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp.address());
+
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
@@ -1387,7 +1390,7 @@ get_num_arguments (JSContext *context,
     }
 
     retval = INT_TO_JSVAL(n_jsargs);
-    JS_SET_RVAL(context, vp.address(), retval);
+    rec.rval().set(retval);
     return JS_TRUE;
 }
 
@@ -1406,7 +1409,9 @@ function_to_string (JSContext *context,
     GString *arg_names_str;
     gchar *arg_names;
 
-    self = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    self = JSVAL_TO_OBJECT(rec.thisv());
+
     if (!self) {
         gjs_throw(context, "this cannot be null");
         return JS_FALSE;
@@ -1458,7 +1463,7 @@ function_to_string (JSContext *context,
 
  out:
     if (gjs_string_from_utf8(context, string, -1, &retval)) {
-        JS_SET_RVAL(context, vp, retval);
+        rec.rval().set(retval);
         ret = JS_TRUE;
     }
 

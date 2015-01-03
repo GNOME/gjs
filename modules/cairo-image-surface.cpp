@@ -38,7 +38,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_image_surface)
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_image_surface);
 
     // create_for_data optional parameter
-    if (!gjs_parse_args(context, "ImageSurface", "iii", argc, argv,
+    if (!gjs_parse_call_args(context, "ImageSurface", "iii", argv,
                         "format", &format,
                         "width", &width,
                         "height", &height))
@@ -73,12 +73,12 @@ createFromPNG_func(JSContext *context,
                    unsigned   argc,
                    jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     char *filename;
     cairo_surface_t *surface;
     JSObject *surface_wrapper;
 
-    if (!gjs_parse_args(context, "createFromPNG", "s", argc, argv,
+    if (!gjs_parse_call_args(context, "createFromPNG", "s", argv,
                         "filename", &filename))
         return JS_FALSE;
 
@@ -95,7 +95,7 @@ createFromPNG_func(JSContext *context,
     gjs_cairo_surface_construct(context, surface_wrapper, surface);
     cairo_surface_destroy(surface);
 
-    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(surface_wrapper));
+    argv.rval().set(OBJECT_TO_JSVAL(surface_wrapper));
     return JS_TRUE;
 }
 
@@ -104,7 +104,9 @@ getFormat_func(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+
     cairo_surface_t *surface;
     cairo_format_t format;
 
@@ -119,7 +121,7 @@ getFormat_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
         return JS_FALSE;
 
-    JS_SET_RVAL(context, vp, INT_TO_JSVAL(format));
+    rec.rval().setInt32(format);
     return JS_TRUE;
 }
 
@@ -128,7 +130,9 @@ getWidth_func(JSContext *context,
               unsigned   argc,
               jsval     *vp)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+
     cairo_surface_t *surface;
     int width;
 
@@ -143,7 +147,7 @@ getWidth_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
         return JS_FALSE;
 
-    JS_SET_RVAL(context, vp, INT_TO_JSVAL(width));
+    rec.rval().setInt32(width);
     return JS_TRUE;
 }
 
@@ -152,7 +156,9 @@ getHeight_func(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+
     cairo_surface_t *surface;
     int height;
 
@@ -167,7 +173,7 @@ getHeight_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
         return JS_FALSE;
 
-    JS_SET_RVAL(context, vp, INT_TO_JSVAL(height));
+    rec.rval().setInt32(height);
     return JS_TRUE;
 }
 
@@ -176,7 +182,9 @@ getStride_func(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+
     cairo_surface_t *surface;
     int stride;
 
@@ -191,7 +199,7 @@ getStride_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
         return JS_FALSE;
 
-    JS_SET_RVAL(context, vp, INT_TO_JSVAL(stride));
+    rec.rval().setInt32(stride);
     return JS_TRUE;
 }
 

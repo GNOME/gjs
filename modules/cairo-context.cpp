@@ -36,7 +36,8 @@ mname##_func(JSContext *context,                    \
               unsigned   argc,                      \
               jsval     *vp)                    \
 {                                                   \
-    JSObject *obj = JS_THIS_OBJECT(context, vp);        \
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);             \
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());                  \
     cairo_t *cr;
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END                             \
@@ -55,7 +56,7 @@ mname##_func(JSContext *context,                    \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     cr = gjs_cairo_context_get_context(context, obj);                      \
     cfunc(cr);                                                             \
-    JS_SET_RVAL(context, vp, JSVAL_VOID);                                  \
+    argv.rval().set(JSVAL_VOID);                                           \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0I(method, cfunc)                    \
@@ -64,7 +65,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
    _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                                \
     cr = gjs_cairo_context_get_context(context, obj);                      \
     ret = (int)cfunc(cr);                                                  \
-    JS_SET_RVAL(context, vp, INT_TO_JSVAL(ret));                           \
+    argv.rval().setInt32(ret);                                             \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0B(method, cfunc)                    \
@@ -73,13 +74,13 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
    _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                                \
     cr = gjs_cairo_context_get_context(context, obj);                      \
     ret = cfunc(cr);                                                       \
-    JS_SET_RVAL(context, vp, BOOLEAN_TO_JSVAL(ret));                       \
+    argv.rval().set(BOOLEAN_TO_JSVAL(ret));                                \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(method, cfunc, n1, n2)        \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     double arg1, arg2;                                                     \
-    if (!gjs_parse_args(context, #method, "ff", argc, JS_ARGV(context, vp), \
+    if (!gjs_parse_call_args(context, #method, "ff", argv,                 \
                         #n1, &arg1, #n2, &arg2))                           \
         return JS_FALSE;                                                   \
     cr = gjs_cairo_context_get_context(context, obj);                      \
@@ -93,7 +94,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
       if (!JS_SetElement(context, array, 0, &r)) return JS_FALSE;          \
       if (!JS_NewNumberValue(context, arg2, &r)) return JS_FALSE;          \
       if (!JS_SetElement(context, array, 1, &r)) return JS_FALSE;          \
-      JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(array));                    \
+      argv.rval().set(OBJECT_TO_JSVAL(array));                    \
     }                                                                      \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
@@ -112,7 +113,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
       if (!JS_SetElement(context, array, 0, &r)) return JS_FALSE;          \
       if (!JS_NewNumberValue(context, arg2, &r)) return JS_FALSE;          \
       if (!JS_SetElement(context, array, 1, &r)) return JS_FALSE;          \
-      JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(array));                    \
+      argv.rval().set(OBJECT_TO_JSVAL(array));                    \
     }                                                                      \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
@@ -135,7 +136,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
       if (!JS_SetElement(context, array, 2, &r)) return JS_FALSE;          \
       if (!JS_NewNumberValue(context, arg4, &r)) return JS_FALSE;          \
       if (!JS_SetElement(context, array, 3, &r)) return JS_FALSE;          \
-      JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(array));                    \
+      argv.rval().set(OBJECT_TO_JSVAL(array));                    \
     }                                                                      \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
@@ -148,30 +149,30 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     ret = cfunc(cr);                                                       \
     if (!JS_NewNumberValue(context, ret, &retval))                         \
         return JS_FALSE;                                                   \
-    JS_SET_RVAL(context, vp, retval);                                      \
+    argv.rval().set(retval);                                      \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC1(method, cfunc, fmt, t1, n1)        \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     t1 arg1;                                                               \
-    if (!gjs_parse_args(context, #method, fmt, argc, JS_ARGV(context, vp), \
+    if (!gjs_parse_call_args(context, #method, fmt, argv,                  \
                         #n1, &arg1))                                       \
         return JS_FALSE;                                                   \
     cr = gjs_cairo_context_get_context(context, obj);                      \
     cfunc(cr, arg1);                                                       \
-    JS_SET_RVAL(context, vp, JSVAL_VOID);                                  \
+    argv.rval().set(JSVAL_VOID);                                  \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC2(method, cfunc, fmt, t1, n1, t2, n2) \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     t1 arg1;                                                               \
     t2 arg2;                                                               \
-    if (!gjs_parse_args(context, #method, fmt, argc, JS_ARGV(context, vp),                 \
+    if (!gjs_parse_call_args(context, #method, fmt, argv,                  \
                         #n1, &arg1, #n2, &arg2))                           \
         return JS_FALSE;                                                   \
     cr = gjs_cairo_context_get_context(context, obj);                      \
     cfunc(cr, arg1, arg2);                                                 \
-    JS_SET_RVAL(context, vp, JSVAL_VOID);                                  \
+    argv.rval().set(JSVAL_VOID);                                  \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC2B(method, cfunc, fmt, t1, n1, t2, n2) \
@@ -179,12 +180,12 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     t1 arg1;                                                               \
     t2 arg2;                                                               \
     cairo_bool_t ret;                                                      \
-    if (!gjs_parse_args(context, #method, fmt, argc, JS_ARGV(context, vp),                 \
+    if (!gjs_parse_call_args(context, #method, fmt, argv,                 \
                         #n1, &arg1, #n2, &arg2))                           \
         return JS_FALSE;                                                   \
     cr = gjs_cairo_context_get_context(context, obj);                      \
     ret = cfunc(cr, arg1, arg2);                                           \
-    JS_SET_RVAL(context, vp, BOOLEAN_TO_JSVAL(ret));                       \
+    argv.rval().set(BOOLEAN_TO_JSVAL(ret));                       \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC3(method, cfunc, fmt, t1, n1, t2, n2, t3, n3) \
@@ -192,12 +193,12 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     t1 arg1;                                                               \
     t2 arg2;                                                               \
     t3 arg3;                                                               \
-    if (!gjs_parse_args(context, #method, fmt, argc, JS_ARGV(context, vp),                 \
+    if (!gjs_parse_call_args(context, #method, fmt, argv,                  \
                         #n1, &arg1, #n2, &arg2, #n3, &arg3))               \
         return JS_FALSE;                                                   \
     cr = gjs_cairo_context_get_context(context, obj);                      \
     cfunc(cr, arg1, arg2, arg3);                                           \
-    JS_SET_RVAL(context, vp, JSVAL_VOID);                                  \
+    argv.rval().set(JSVAL_VOID);                                  \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC4(method, cfunc, fmt, t1, n1, t2, n2, t3, n3, t4, n4) \
@@ -206,7 +207,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     t2 arg2;                                                               \
     t3 arg3;                                                               \
     t4 arg4;                                                               \
-    if (!gjs_parse_args(context, #method, fmt, argc, JS_ARGV(context, vp),                 \
+    if (!gjs_parse_call_args(context, #method, fmt, argv,                  \
                         #n1, &arg1, #n2, &arg2, #n3, &arg3, #n4, &arg4))   \
         return JS_FALSE;                                                   \
     cr = gjs_cairo_context_get_context(context, obj);                      \
@@ -220,13 +221,13 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     t3 arg3;                                                               \
     t4 arg4;                                                               \
     t5 arg5;                                                               \
-    if (!gjs_parse_args(context, #method, fmt, argc, JS_ARGV(context, vp),                 \
+    if (!gjs_parse_call_args(context, #method, fmt, argv,                  \
                         #n1, &arg1, #n2, &arg2, #n3, &arg3,                \
                         #n4, &arg4, #n5, &arg5))                           \
         return JS_FALSE;                                                   \
     cr = gjs_cairo_context_get_context(context, obj);                      \
     cfunc(cr, arg1, arg2, arg3, arg4, arg5);                               \
-    JS_SET_RVAL(context, vp, JSVAL_VOID);                                  \
+    argv.rval().set(JSVAL_VOID);                                  \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC6(method, cfunc, fmt, t1, n1, t2, n2, t3, n3, t4, n4, t5, n5, t6, n6) \
@@ -237,13 +238,13 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     t4 arg4;                                                               \
     t5 arg5;                                                               \
     t6 arg6;                                                               \
-    if (!gjs_parse_args(context, #method, fmt, argc, JS_ARGV(context, vp),                 \
+    if (!gjs_parse_call_args(context, #method, fmt, argv,                  \
                         #n1, &arg1, #n2, &arg2, #n3, &arg3,                \
                         #n4, &arg4, #n5, &arg5, #n6, &arg6))               \
         return JS_FALSE;                                                   \
     cr = gjs_cairo_context_get_context(context, obj);                      \
     cfunc(cr, arg1, arg2, arg3, arg4, arg5, arg6);                         \
-    JS_SET_RVAL(context, vp, JSVAL_VOID);                                  \
+    argv.rval().set(JSVAL_VOID);                                  \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 typedef struct {
@@ -282,7 +283,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_context)
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_context);
 
-    if (!gjs_parse_args(context, "Context", "o", argc, argv,
+    if (!gjs_parse_call_args(context, "Context", "o", argv,
                         "surface", &surface_wrapper))
         return JS_FALSE;
 
@@ -410,7 +411,9 @@ dispose_func(JSContext *context,
              unsigned   argc,
              jsval     *vp)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+
     GjsCairoContext *priv;
 
     priv = priv_from_js(context, obj);
@@ -418,7 +421,7 @@ dispose_func(JSContext *context,
         cairo_destroy(priv->cr);
         priv->cr = NULL;
     }
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    rec.rval().set(JSVAL_VOID);
     return JS_TRUE;
 }
 
@@ -427,13 +430,14 @@ appendPath_func(JSContext *context,
                 unsigned   argc,
                 jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+
     JSObject *path_wrapper;
     cairo_path_t *path;
     cairo_t *cr;
 
-    if (!gjs_parse_args(context, "path", "o", argc, argv,
+    if (!gjs_parse_call_args(context, "path", "o", argv,
                         "path", &path_wrapper))
         return JS_FALSE;
 
@@ -445,7 +449,7 @@ appendPath_func(JSContext *context,
 
     cr = gjs_cairo_context_get_context(context, obj);
     cairo_append_path(cr, path);
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
     return JS_TRUE;
 }
 
@@ -454,17 +458,18 @@ copyPath_func(JSContext *context,
               unsigned   argc,
               jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+
     cairo_path_t *path;
     cairo_t *cr;
 
-    if (!gjs_parse_args(context, "", "", argc, argv))
+    if (!gjs_parse_call_args(context, "", "", argv))
         return JS_FALSE;
 
     cr = gjs_cairo_context_get_context(context, obj);
     path = cairo_copy_path(cr);
-    JS_SET_RVAL(context, vp,
+    argv.rval().set(
                 OBJECT_TO_JSVAL(gjs_cairo_path_from_path(context, path)));
     return JS_TRUE;
 }
@@ -474,17 +479,18 @@ copyPathFlat_func(JSContext *context,
                   unsigned   argc,
                   jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+
     cairo_path_t *path;
     cairo_t *cr;
 
-    if (!gjs_parse_args(context, "", "", argc, argv))
+    if (!gjs_parse_call_args(context, "", "", argv))
         return JS_FALSE;
 
     cr = gjs_cairo_context_get_context(context, obj);
     path = cairo_copy_path_flat(cr);
-    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(gjs_cairo_path_from_path(context, path)));
+    argv.rval().set(OBJECT_TO_JSVAL(gjs_cairo_path_from_path(context, path)));
     return JS_TRUE;
 }
 
@@ -493,13 +499,14 @@ mask_func(JSContext *context,
           unsigned   argc,
           jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+
     JSObject *pattern_wrapper;
     cairo_pattern_t *pattern;
     cairo_t *cr;
 
-    if (!gjs_parse_args(context, "mask", "o", argc, argv,
+    if (!gjs_parse_call_args(context, "mask", "o", argv,
                         "pattern", &pattern_wrapper))
         return JS_FALSE;
 
@@ -515,7 +522,7 @@ mask_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_status(cr), "context"))
         return JS_FALSE;
 
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
     return JS_TRUE;
 }
 
@@ -524,14 +531,15 @@ maskSurface_func(JSContext *context,
                  unsigned   argc,
                  jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+
     JSObject *surface_wrapper;
     double x, y;
     cairo_surface_t *surface;
     cairo_t *cr;
 
-    if (!gjs_parse_args(context, "maskSurface", "off", argc, argv,
+    if (!gjs_parse_call_args(context, "maskSurface", "off", argv,
                         "surface", &surface_wrapper,
                         "x", &x,
                         "y", &y))
@@ -550,7 +558,7 @@ maskSurface_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_status(cr), "context"))
         return JS_FALSE;
 
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
     return JS_TRUE;
 }
 
@@ -559,8 +567,9 @@ setDash_func(JSContext *context,
              unsigned   argc,
              jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+
     guint i;
     cairo_t *cr;
     JSObject *dashes;
@@ -569,7 +578,7 @@ setDash_func(JSContext *context,
     guint len;
     GArray *dashes_c = NULL;
 
-    if (!gjs_parse_args(context, "setDash", "of", argc, argv,
+    if (!gjs_parse_call_args(context, "setDash", "of", argv,
                         "dashes", &dashes, "offset", &offset))
         return JS_FALSE;
 
@@ -609,7 +618,7 @@ setDash_func(JSContext *context,
 
     cr = gjs_cairo_context_get_context(context, obj);
     cairo_set_dash(cr, (double*)dashes_c->data, dashes_c->len, offset);
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
     retval = JS_TRUE;
  out:
     if (dashes_c != NULL)
@@ -623,13 +632,14 @@ setSource_func(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+
     JSObject *pattern_wrapper;
     cairo_pattern_t *pattern;
     cairo_t *cr;
 
-    if (!gjs_parse_args(context, "setSource", "o", argc, argv,
+    if (!gjs_parse_call_args(context, "setSource", "o", argv,
                         "pattern", &pattern_wrapper))
         return JS_FALSE;
 
@@ -646,7 +656,7 @@ setSource_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_status(cr), "context"))
         return JS_FALSE;
 
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
 
     return JS_TRUE;
 }
@@ -656,14 +666,15 @@ setSourceSurface_func(JSContext *context,
                       unsigned   argc,
                       jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+
     JSObject *surface_wrapper;
     double x, y;
     cairo_surface_t *surface;
     cairo_t *cr;
 
-    if (!gjs_parse_args(context, "setSourceSurface", "off", argc, argv,
+    if (!gjs_parse_call_args(context, "setSourceSurface", "off", argv,
                         "surface", &surface_wrapper,
                         "x", &x,
                         "y", &y))
@@ -682,7 +693,7 @@ setSourceSurface_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_status(cr), "context"))
         return JS_FALSE;
 
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
 
     return JS_TRUE;
 }
@@ -692,12 +703,13 @@ showText_func(JSContext *context,
               unsigned   argc,
               jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+
     char *utf8;
     cairo_t *cr;
 
-    if (!gjs_parse_args(context, "showText", "s", argc, argv,
+    if (!gjs_parse_call_args(context, "showText", "s", argv,
                         "utf8", &utf8))
         return JS_FALSE;
 
@@ -709,7 +721,7 @@ showText_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_status(cr), "context"))
         return JS_FALSE;
 
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
 
     return JS_TRUE;
 }
@@ -719,14 +731,15 @@ selectFontFace_func(JSContext *context,
                     unsigned   argc,
                     jsval     *vp)
 {
-    jsval *argv = JS_ARGV(context, vp);
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+
     char *family;
     cairo_font_slant_t slant;
     cairo_font_weight_t weight;
     cairo_t *cr;
 
-    if (!gjs_parse_args(context, "selectFontFace", "sii", argc, argv,
+    if (!gjs_parse_call_args(context, "selectFontFace", "sii", argv,
                         "family", &family,
                         "slang", &slant,
                         "weight", &weight))
@@ -739,7 +752,7 @@ selectFontFace_func(JSContext *context,
 
     if (!gjs_cairo_check_status(context, cairo_status(cr), "context"))
         return JS_FALSE;
-    JS_SET_RVAL(context, vp, JSVAL_VOID);
+    argv.rval().set(JSVAL_VOID);
 
     return JS_TRUE;
 }
@@ -749,7 +762,9 @@ popGroup_func(JSContext *context,
               unsigned   argc,
               jsval     *vp)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+
     cairo_t *cr;
     cairo_pattern_t *pattern;
     JSObject *pattern_wrapper;
@@ -771,7 +786,7 @@ popGroup_func(JSContext *context,
         return JS_FALSE;
     }
 
-    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(pattern_wrapper));
+    rec.rval().set(OBJECT_TO_JSVAL(pattern_wrapper));
 
     return JS_TRUE;
 }
@@ -780,7 +795,9 @@ getSource_func(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+
     cairo_t *cr;
     cairo_pattern_t *pattern;
     JSObject *pattern_wrapper;
@@ -802,7 +819,7 @@ getSource_func(JSContext *context,
         return JS_FALSE;
     }
 
-    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(pattern_wrapper));
+    rec.rval().set(OBJECT_TO_JSVAL(pattern_wrapper));
 
     return JS_TRUE;
 }
@@ -812,7 +829,9 @@ getTarget_func(JSContext *context,
                unsigned   argc,
                jsval     *vp)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+
     cairo_t *cr;
     cairo_surface_t *surface;
     JSObject *surface_wrapper;
@@ -834,7 +853,7 @@ getTarget_func(JSContext *context,
         return JS_FALSE;
     }
 
-    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(surface_wrapper));
+    rec.rval().set(OBJECT_TO_JSVAL(surface_wrapper));
 
     return JS_TRUE;
 }
@@ -844,7 +863,9 @@ getGroupTarget_func(JSContext *context,
                     unsigned   argc,
                     jsval     *vp)
 {
-    JSObject *obj = JS_THIS_OBJECT(context, vp);
+    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+
     cairo_t *cr;
     cairo_surface_t *surface;
     JSObject *surface_wrapper;
@@ -866,7 +887,7 @@ getGroupTarget_func(JSContext *context,
         return JS_FALSE;
     }
 
-    JS_SET_RVAL(context, vp, OBJECT_TO_JSVAL(surface_wrapper));
+    rec.rval().set(OBJECT_TO_JSVAL(surface_wrapper));
 
     return JS_TRUE;
 }
