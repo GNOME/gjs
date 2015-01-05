@@ -81,6 +81,15 @@ write_string_into_stream(GOutputStream *stream,
 }
 
 static void
+write_uint32_into_stream(GOutputStream *stream,
+                         unsigned int   integer)
+{
+    char buf[32];
+    g_snprintf(buf, 32, "%u", integer);
+    g_output_stream_write(stream, (gconstpointer) buf, strlen(buf) * sizeof(char), NULL, NULL);
+}
+
+static void
 write_source_file_header(GOutputStream *stream,
                          const gchar   *source_file_path)
 {
@@ -163,15 +172,6 @@ write_functions(GOutputStream *data_stream,
                 GArray        *functions)
 {
     for_each_element_in_array(functions, write_function_foreach_func, data_stream);
-}
-
-static void
-write_uint32_into_stream(GOutputStream *stream,
-                         unsigned int   integer)
-{
-    char buf[32];
-    g_snprintf(buf, 32, "%u", integer);
-    g_output_stream_write(stream, (gconstpointer) buf, strlen(buf) * sizeof(char), NULL, NULL);
 }
 
 static void
