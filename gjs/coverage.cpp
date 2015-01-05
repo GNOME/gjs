@@ -70,6 +70,7 @@ typedef struct _GjsCoverageBranch {
 
 typedef struct _GjsCoverageFunction {
     char         *key;
+    unsigned int line_number;
     unsigned int hit_count;
 } GjsCoverageFunction;
 
@@ -126,7 +127,7 @@ write_function_foreach_func(gpointer value,
     GOutputStream       *stream = (GOutputStream *) user_data;
     GjsCoverageFunction *function = (GjsCoverageFunction *) value;
 
-    g_output_stream_printf(stream, NULL, NULL, NULL, "FN:%s\n", function->key);
+    g_output_stream_printf(stream, NULL, NULL, NULL, "FN:%d,%s\n", function->line_number, function->key);
 }
 
 static void
@@ -503,9 +504,11 @@ get_executed_lines_for(GjsCoverage *coverage,
 static void
 init_covered_function(GjsCoverageFunction *function,
                       char                *key,
+                      unsigned int        line_number,
                       unsigned int        hit_count)
 {
     function->key = key;
+    function->line_number = line_number;
     function->hit_count = hit_count;
 }
 
@@ -558,12 +561,21 @@ convert_and_insert_function_decl(GArray    *array,
         return FALSE;
     }
 
-    unsigned int line_number = JSVAL_TO_INT(hit_count_property_value);
+    jsval line_number_property_value;
+    if (!JS_GetProperty(context, object, "line", &line_number_property_value) ||
+        !JSVAL_IS_INT(line_number_property_value)) {
+        gjs_throw(context, "Failed to get line property for function object");
+        return FALSE;
+    }
+
+    unsigned int line_number = JSVAL_TO_INT(line_number_property_value);
+    unsigned int hit_count = JSVAL_TO_INT(hit_count_property_value);
 
     GjsCoverageFunction info;
     init_covered_function(&info,
                           utf8_string,
-                          line_number);
+                          line_number,
+                          hit_count);
 
     g_array_append_val(array, info);
 

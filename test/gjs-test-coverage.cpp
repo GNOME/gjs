@@ -802,6 +802,10 @@ has_function_name(const char *line,
     /* Advance past "FN:" */
     line += 3;
 
+    /* Advance past the first comma */
+    while (*(line - 1) != ',')
+        ++line;
+
     return strncmp(line,
                    expected_function_name,
                    strlen(expected_function_name)) == 0;
@@ -835,13 +839,62 @@ test_function_names_written_to_coverage_data(gpointer      fixture_data,
     };
     const gsize expected_function_names_len = G_N_ELEMENTS(expected_function_names);
 
-    /* There are two possible branches here, the second should be taken
-     * and the first should not have been */
+    /* Just expect that we've got an FN matching out expected function names */
     g_assert(coverage_data_matches_values_for_key(coverage_data_contents,
                                                   "FN:",
                                                   expected_function_names_len,
                                                   has_function_name,
                                                   (gpointer) expected_function_names,
+                                                  sizeof(const char *)));
+    g_free(coverage_data_contents);
+}
+
+static gboolean
+has_function_line(const char *line,
+                  gpointer    user_data)
+{
+    /* User data is const char ** */
+    const char *expected_function_line = *((const char **) user_data);
+
+    /* Advance past "FN:" */
+    line += 3;
+
+    return strncmp(line,
+                   expected_function_line,
+                   strlen(expected_function_line)) == 0;
+}
+
+static void
+test_function_lines_written_to_coverage_data(gpointer      fixture_data,
+                                             gconstpointer user_data)
+{
+    GjsCoverageToSingleOutputFileFixture *fixture = (GjsCoverageToSingleOutputFileFixture *) fixture_data;
+
+    const char *script_with_functions =
+        "function f(){}\n"
+        "\n"
+        "function g(){}\n";
+
+    write_to_file_at_beginning(fixture->base_fixture.temporary_js_script_open_handle,
+                               script_with_functions);
+
+    char *coverage_data_contents =
+        eval_script_and_get_coverage_data(fixture->base_fixture.context,
+                                          fixture->base_fixture.coverage,
+                                          fixture->base_fixture.temporary_js_script_filename,
+                                          fixture->output_file_directory,
+                                          NULL);
+    const char * expected_function_lines[] = {
+        "1",
+        "3"
+    };
+    const gsize expected_function_lines_len = G_N_ELEMENTS(expected_function_lines);
+
+    g_assert(coverage_data_matches_values_for_key(coverage_data_contents,
+                                                  "FN:",
+                                                  expected_function_lines_len,
+                                                  has_function_line,
+                                                  (gpointer) expected_function_lines,
                                                   sizeof(const char *)));
     g_free(coverage_data_contents);
 }
@@ -1434,6 +1487,10 @@ void gjs_test_add_tests_for_coverage()
     add_test_for_fixture("/gjs/coverage/function_names_written_to_coverage_data",
                          &coverage_to_single_output_fixture,
                          test_function_names_written_to_coverage_data,
+                         NULL);
+    add_test_for_fixture("/gjs/coverage/function_lines_written_to_coverage_data",
+                         &coverage_to_single_output_fixture,
+                         test_function_lines_written_to_coverage_data,
                          NULL);
     add_test_for_fixture("/gjs/coverage/function_hit_counts_written_to_coverage_data",
                          &coverage_to_single_output_fixture,

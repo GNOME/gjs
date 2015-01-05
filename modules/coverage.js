@@ -591,7 +591,10 @@ function _convertFunctionCountersToArray(functionCounters) {
      * of that object */
     for (let key in functionCounters) {
         let func = functionCounters[key];
+        /* The name of the function contains its line, after the first
+         * colon. Split the name and retrieve it here */
         arrayReturn.push({ name: key,
+                           line: Number(key.split(':')[1]),
                            hitCount: func.hitCount });
     }
 
