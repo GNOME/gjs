@@ -1157,6 +1157,44 @@ test_single_line_hit_written_to_coverage_data(gpointer      fixture_data,
 }
 
 static void
+test_hits_on_multiline_if_cond(gpointer      fixture_data,
+                                gconstpointer user_data)
+{
+    GjsCoverageToSingleOutputFileFixture *fixture = (GjsCoverageToSingleOutputFileFixture *) fixture_data;
+
+    const char *script_with_multine_if_cond =
+            "let a = 1;\n"
+            "let b = 1;\n"
+            "if (a &&\n"
+            "    b) {\n"
+            "}\n";
+
+    write_to_file_at_beginning(fixture->base_fixture.temporary_js_script_open_handle,
+                               script_with_multine_if_cond);
+
+    char *coverage_data_contents =
+        eval_script_and_get_coverage_data(fixture->base_fixture.context,
+                                          fixture->base_fixture.coverage,
+                                          fixture->base_fixture.temporary_js_script_filename,
+                                          fixture->output_file_directory,
+                                          NULL);
+
+    /* Hits on all lines, including both lines with a condition (3 and 4) */
+    LineCountIsMoreThanData data[] = {
+        { 1, 0 },
+        { 2, 0 },
+        { 3, 0 },
+        { 4, 0 }
+    };
+
+    g_assert(coverage_data_matches_value_for_key(coverage_data_contents,
+                                                 "DA:",
+                                                 line_hit_count_is_more_than,
+                                                 data));
+    g_free(coverage_data_contents);
+}
+
+static void
 test_full_line_tally_written_to_coverage_data(gpointer      fixture_data,
                                               gconstpointer user_data)
 {
@@ -1511,6 +1549,10 @@ void gjs_test_add_tests_for_coverage()
     add_test_for_fixture("/gjs/coverage/single_line_hit_written_to_coverage_data",
                          &coverage_to_single_output_fixture,
                          test_single_line_hit_written_to_coverage_data,
+                         NULL);
+    add_test_for_fixture("/gjs/coverage/hits_on_multiline_if_cond",
+                         &coverage_to_single_output_fixture,
+                         test_hits_on_multiline_if_cond,
                          NULL);
     add_test_for_fixture("/gjs/coverage/full_line_tally_written_to_coverage_data",
                          &coverage_to_single_output_fixture,

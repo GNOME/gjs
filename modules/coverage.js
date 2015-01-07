@@ -28,13 +28,13 @@ function getSubNodesForNode(node) {
     /* These statements have a single body */
     case 'LabelledStatement':
     case 'WithStatement':
-    case 'LetStatement':
-    case 'ForInStatement':
-    case 'ForOfStatement':
     case 'FunctionDeclaration':
     case 'FunctionExpression':
-    case 'ArrowExpression':
     case 'CatchClause':
+        subNodes.push(node.body);
+        break;
+    case 'LetStatement':
+        Array.prototype.push.apply(subNodes, node.head);
         subNodes.push(node.body);
         break;
     case 'WhileStatement':
@@ -52,11 +52,21 @@ function getSubNodesForNode(node) {
 
         subNodes.push(node.body);
         break;
+    case 'ForInStatement':
+        if (node.each)
+            subNodes.push(node.left);
+
+        subNodes.push(node.right, node.body);
+        break;
+    case 'ForOfStatement':
+        subNodes.push(node.left, node.right, node.body);
+        break;
     case 'BlockStatement':
         Array.prototype.push.apply(subNodes, node.body);
         break;
     case 'ThrowStatement':
     case 'ReturnStatement':
+    case 'YieldExpression':
         if (node.argument !== null)
             subNodes.push(node.argument);
         break;
@@ -64,12 +74,44 @@ function getSubNodesForNode(node) {
         subNodes.push(node.expression);
         break;
     case 'AssignmentExpression':
+    case 'BinaryExpression':
+    case 'LogicalExpression':
         subNodes.push(node.left, node.right);
+        break;
+    case 'ConditionalExpression':
+        subNodes.push(node.test, node.consequent, node.alternate);
         break;
     case 'ObjectExpression':
         node.properties.forEach(function(prop) {
             subNodes.push(prop.value);
         });
+        break;
+    case 'ArrayExpression':
+        node.elements.forEach(function(elem) {
+            if (elem !== null)
+                subNodes.push(elem);
+        });
+        break;
+    case 'ArrowExpression':
+        Array.prototype.push.apply(subNodes, node.defaults);
+        subNodes.push(node.body);
+        break;
+    case 'SequenceExpression':
+        Array.prototype.push.apply(subNodes, node.expressions);
+        break;
+    case 'UnaryExpression':
+    case 'UpdateExpression':
+        subNodes.push(node.argument);
+        break;
+    case 'ComprehensionExpression':
+    case 'GeneratorExpression':
+        subNodes.push(node.body);
+        Array.prototype.push.apply(subNodes, node.blocks);
+        if (node.filter !== null)
+            subNodes.push(node.filter);
+        break;
+    case 'ComprehensionBlock':
+        subNodes.push(node.right);
         break;
     /* It is very possible that there might be something
      * interesting in the function arguments, so we need to
@@ -99,16 +141,18 @@ function getSubNodesForNode(node) {
                 subNodes.push(expression);
             });
         }
-
         break;
-    /* Variable declarations might be initialized to
-     * some expression, so traverse the tree and see if
-     * we can get into the expression */
     case 'VariableDeclaration':
-        node.declarations.forEach(function (declarator) {
-            if (declarator.init !== null)
-                subNodes.push(declarator.init);
-        });
+        Array.prototype.push.apply(subNodes, node.declarations);
+        break;
+    case 'VariableDeclarator':
+        if (node.init !== null)
+            subNodes.push(node.init);
+        break;
+    case 'MemberExpression':
+        subNodes.push(node.object);
+        if (node.computed)
+            subNodes.push(node.property);
 
         break;
     }

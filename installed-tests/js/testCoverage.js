@@ -34,7 +34,6 @@ function testExpressionLinesFoundForAssignmentExpressionSides() {
                       JSUnit.assertEquals);
 }
 
-
 function testExpressionLinesFoundForLinesInsideFunctions() {
     let foundLinesInsideNamedFunction =
         parseScriptForExpressionLines("function f(a, b) {\n" +
@@ -183,7 +182,7 @@ function testExpressionLinesFoundForIfExits() {
                       JSUnit.assertEquals);
 }
 
-function testExpressionLinesFoundForFirstLineOfMultilineIfTests() {
+function testExpressionLinesFoundForAllLinesOfMultilineIfTests() {
     let foundLinesInsideMultilineIfTest =
         parseScriptForExpressionLines("if (1 > 0 &&\n" +
                                       "    2 > 0 &&\n" +
@@ -191,7 +190,7 @@ function testExpressionLinesFoundForFirstLineOfMultilineIfTests() {
                                       "    let a = 3;\n" +
                                       "}\n");
     assertArrayEquals(foundLinesInsideMultilineIfTest,
-                      [1, 4],
+                      [1, 2, 3, 4],
                       JSUnit.assertEquals);
 }
 
@@ -327,6 +326,303 @@ function testFunctionsFoundOnSameLineButDifferentiatedOnArgs() {
                           { name: "f1", line: 1, n_params: 0 },
                           { name: null, line: 1, n_params: 1 },
                           { name: null, line: 1, n_params: 2 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInsideArrayExpression() {
+    let foundFunctions =
+        parseScriptForFunctionNames("let a = [function() {}];\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 0 },
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInsideArrowExpression() {
+    let foundFunctions =
+        parseScriptForFunctionNames("(a) => (function(){})();\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 0 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInsideSequence() {
+    let foundFunctions =
+        parseScriptForFunctionNames("(function(a){})()," +
+                                    "(function(a, b){})();\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 1 },
+                          { name: null, line: 1, n_params: 2 },
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInsideUnaryExpression() {
+    let foundFunctions =
+        parseScriptForFunctionNames("let a = (function () {}())++;\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 0 },
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInsideBinaryExpression() {
+    let foundFunctions =
+        parseScriptForFunctionNames("let a = function (a) {}() +" +
+                                    " function (a, b) {}();\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 1 },
+                          { name: null, line: 1, n_params: 2 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInsideAssignmentExpression() {
+    let foundFunctions =
+        parseScriptForFunctionNames("let a = function () {}();\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 0 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInsideUpdateExpression() {
+    let foundFunctions =
+        parseScriptForFunctionNames("let a;\n" +
+                                    "a += function () {}();\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 2, n_params: 0 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInsideIfConditions() {
+    let foundFunctions =
+        parseScriptForFunctionNames("if (function (a) {}(a) >" +
+                                    "    function (a, b) {}(a, b)) {};\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 1 },
+                          { name: null, line: 1, n_params: 2 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInsideWhileConditions() {
+    let foundFunctions =
+        parseScriptForFunctionNames("while (function (a) {}(a) >" +
+                                    "       function (a, b) {}(a, b)) {};\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 1 },
+                          { name: null, line: 1, n_params: 2 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInsideForInitializer() {
+    let foundFunctions =
+        parseScriptForFunctionNames("for (function() {};;) {}\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 0 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+/* SpiderMonkey parses for (let i = <init>; <cond>; <update>) as though
+ * they were let i = <init> { for (; <cond> <update>) } so test the
+ * LetStatement initializer case too */
+function testFunctionsInsideForLetInitializer() {
+    let foundFunctions =
+        parseScriptForFunctionNames("for (let i = function() {};;) {}\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 0 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInsideForVarInitializer() {
+    let foundFunctions =
+        parseScriptForFunctionNames("for (var i = function() {};;) {}\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 0 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInsideForCondition() {
+    let foundFunctions =
+        parseScriptForFunctionNames("for (; function() {}();) {}\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 0 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInsideForIncrement() {
+    let foundFunctions =
+        parseScriptForFunctionNames("for (;;function() {}()) {}\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 0 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInsideForInObject() {
+    let foundFunctions =
+        parseScriptForFunctionNames("for (let x in function() {}()) {}\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 0 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInsideForInObject() {
+    let foundFunctions =
+        parseScriptForFunctionNames("for each (x in function() {}()) {}\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 0 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInsideForOfObject() {
+    let foundFunctions =
+        parseScriptForFunctionNames("for (x of (function(){}())) {}\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 0 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsUsedAsObjectFound() {
+    let foundFunctions =
+        parseScriptForFunctionNames("f = function() { }.bind();\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 0 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsUsedAsObjectDynamicProp() {
+    let foundFunctions =
+        parseScriptForFunctionNames("f = function() { }['bind']();\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 0 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsOnEitherSideOfLogicalExpression() {
+    let foundFunctions =
+        parseScriptForFunctionNames("let f = function(a) { } ||" +
+                                    " function(a, b) { };\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 1, n_params: 1 },
+                          { name: null, line: 1, n_params: 2 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsOnEitherSideOfConditionalExpression() {
+    let foundFunctions =
+        parseScriptForFunctionNames("let a\n" +
+                                    "let f = a ? function(a) { }() :" +
+                                    " function(a, b) { }();\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 2, n_params: 1 },
+                          { name: null, line: 2, n_params: 2 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsYielded() {
+    let foundFunctions =
+        parseScriptForFunctionNames("function a () { yield function (){} };\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: "a", line: 1, n_params: 0 },
+                          { name: null, line: 1, n_params: 0 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInArrayComprehensionBody() {
+    let foundFunctions =
+        parseScriptForFunctionNames("let a = new Array(1);\n" +
+                                    "let b = [function () {} for (i of a)];\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 2, n_params: 0 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInArrayComprehensionBlock() {
+    let foundFunctions =
+        parseScriptForFunctionNames("let a = new Array(1);\n" +
+                                    "let b = [i for (i of function () {})];\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 2, n_params: 0 }
+                      ],
+                      functionDeclarationsEqual);
+}
+
+function testFunctionsInArrayComprehensionFilter() {
+    let foundFunctions =
+        parseScriptForFunctionNames("let a = new Array(1);\n" +
+                                    "let b = [i for (i of a)" +
+                                    "if (function () {} ())];\n");
+
+    assertArrayEquals(foundFunctions,
+                      [
+                          { name: null, line: 2, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
