@@ -1250,7 +1250,7 @@ object_instance_init (JSContext *context,
     JSObject *old_jsobj;
     GObject *gobj;
 
-    priv = init_object_private(context, *object);
+    priv = (ObjectInstance *) JS_GetPrivate(*object);
 
     gtype = priv->gtype;
     g_assert(gtype != G_TYPE_NONE);
@@ -1337,6 +1337,11 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
     jsid object_init_name;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(object_instance);
+
+    /* Init the private variable before we do anything else. If a garbage
+     * collection happens when calling the init function then this object
+     * might be traced and we will end up dereferencing a null pointer */
+    init_object_private(context, object);
 
     object_init_name = gjs_context_get_const_string(context, GJS_STRING_GOBJECT_INIT);
     if (!gjs_object_require_property(context, object, "GObject instance", object_init_name, &initer))
