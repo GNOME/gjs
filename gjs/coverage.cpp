@@ -70,6 +70,7 @@ typedef struct _GjsCoverageBranch {
 
 typedef struct _GjsCoverageFunction {
     char         *key;
+    unsigned int line_number;
     unsigned int hit_count;
 } GjsCoverageFunction;
 
@@ -78,6 +79,15 @@ write_string_into_stream(GOutputStream *stream,
                          const gchar   *string)
 {
     g_output_stream_write(stream, (gconstpointer) string, strlen(string) * sizeof(gchar), NULL, NULL);
+}
+
+static void
+write_uint32_into_stream(GOutputStream *stream,
+                         unsigned int   integer)
+{
+    char buf[32];
+    g_snprintf(buf, 32, "%u", integer);
+    g_output_stream_write(stream, (gconstpointer) buf, strlen(buf) * sizeof(char), NULL, NULL);
 }
 
 static void
@@ -141,6 +151,8 @@ write_function_foreach_func(gpointer value,
     GjsCoverageFunction *function = (GjsCoverageFunction *) value;
 
     write_string_into_stream(stream, "FN:");
+    write_uint32_into_stream(stream, function->line_number);
+    write_string_into_stream(stream, ",");
     write_string_into_stream(stream, function->key);
     write_string_into_stream(stream, "\n");
 }
@@ -163,15 +175,6 @@ write_functions(GOutputStream *data_stream,
                 GArray        *functions)
 {
     for_each_element_in_array(functions, write_function_foreach_func, data_stream);
-}
-
-static void
-write_uint32_into_stream(GOutputStream *stream,
-                         unsigned int   integer)
-{
-    char buf[32];
-    g_snprintf(buf, 32, "%u", integer);
-    g_output_stream_write(stream, (gconstpointer) buf, strlen(buf) * sizeof(char), NULL, NULL);
 }
 
 static void
@@ -561,9 +564,11 @@ get_executed_lines_for(GjsCoverage *coverage,
 static void
 init_covered_function(GjsCoverageFunction *function,
                       char                *key,
+                      unsigned int        line_number,
                       unsigned int        hit_count)
 {
     function->key = key;
+    function->line_number = line_number;
     function->hit_count = hit_count;
 }
 
@@ -616,12 +621,21 @@ convert_and_insert_function_decl(GArray    *array,
         return FALSE;
     }
 
-    unsigned int line_number = JSVAL_TO_INT(hit_count_property_value);
+    jsval line_number_property_value;
+    if (!JS_GetProperty(context, object, "line", &line_number_property_value) ||
+        !JSVAL_IS_INT(line_number_property_value)) {
+        gjs_throw(context, "Failed to get line property for function object");
+        return FALSE;
+    }
+
+    unsigned int line_number = JSVAL_TO_INT(line_number_property_value);
+    unsigned int hit_count = JSVAL_TO_INT(hit_count_property_value);
 
     GjsCoverageFunction info;
     init_covered_function(&info,
                           utf8_string,
-                          line_number);
+                          line_number,
+                          hit_count);
 
     g_array_append_val(array, info);
 
