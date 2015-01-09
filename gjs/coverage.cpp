@@ -1706,20 +1706,18 @@ gjs_coverage_constructed(GObject *object)
     GjsCoverage *coverage = GJS_COVERAGE(object);
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
-    JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
-
     if (!priv->cache_specified) {
         g_message("Cache path was not given, picking default one");
         priv->cache = g_file_new_for_path(".internal-gjs-coverage-cache");
     }
 
-    /* Before bootstrapping, turn off the JIT on the context */
-    JS::RuntimeOptionsRef(context)
-        .setIon(false)
-        .setBaseline(false)
-        .setAsmJS(false);
+    /* We now enable Ion and BaselineJIT in coverage mode. See the comment
+     * in gjs/runtime.cpp:gjs_clear_thread_runtime for some important
+     * information regarding runtime lifecycle management and garbage collection
+     * bugs in js24 */
 
     if (!bootstrap_coverage(coverage)) {
+        JSContext *context = static_cast<JSContext *>(gjs_context_get_native_context(priv->context));
         JSAutoCompartment compartment(context, gjs_get_import_global(context));
         gjs_log_exception(context);
     }
