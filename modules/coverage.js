@@ -697,6 +697,10 @@ function CoverageStatisticsContainer(files) {
             throw new Error('Not tracking statistics for ' + filename);
         return statistics;
     };
+
+    this.deleteStatistics = function(filename) {
+        coveredFiles[filename] = undefined;
+    };
 }
 
 /**
@@ -707,6 +711,7 @@ function CoverageStatisticsContainer(files) {
 function CoverageStatistics(files) {
     this.container = new CoverageStatisticsContainer(files);
     let fetchStatistics = this.container.fetchStatistics.bind(this.container);
+    let deleteStatistics = this.container.deleteStatistics.bind(this.container);
 
     /* 'debuggee' comes from the invocation from
      * a separate compartment inside of coverage.cpp */
@@ -743,17 +748,34 @@ function CoverageStatistics(files) {
             return undefined;
         }
 
+        function _logExceptionAndReset(exception, callee, line) {
+            warning(e.fileName + ":" + e.lineNumber + " (processing " +
+                    frame.script.url + ":" + callee + ":" + line + ") - " +
+                    e.message);
+            warning("Will not log statistics for this file");
+            frame.onStep = undefined;
+            frame._branchTracker = undefined;
+            deleteStatistics(frame.script.url);
+        }
+
         /* Log function calls */
         if (frame.callee !== null && frame.callee.callable) {
             let name = frame.callee.name ? frame.callee.name : "(anonymous)";
             let line = frame.script.getOffsetLine(frame.offset);
             let nArgs = frame.callee.parameterNames.length;
 
-            _incrementFunctionCounters(statistics.functionCounters,
-                                       statistics.linesWithKnownFunctions,
-                                       name,
-                                       line,
-                                       nArgs);
+            try {
+                _incrementFunctionCounters(statistics.functionCounters,
+                                           statistics.linesWithKnownFunctions,
+                                           name,
+                                           line,
+                                           nArgs);
+            } catch (e) {
+                /* Something bad happened. Log the exception and delete
+                 * statistics for this file */
+                _logExceptionAndReset(e, name, line);
+                return undefined;
+            }
         }
 
         /* Upon entering the frame, the active branch is always inactive */
@@ -765,19 +787,26 @@ function CoverageStatistics(files) {
             let offset = this.offset;
             let offsetLine = this.script.getOffsetLine(offset);
 
-            _incrementExpressionCounters(statistics.expressionCounters,
-                                         offsetLine,
-                                         function(line) {
-                                             warning("executed " +
-                                                     frame.script.url +
-                                                     ":" +
-                                                     offsetLine +
-                                                     " which we thought wasn't executable");
-                                         });
-
-            this._branchTracker.incrementBranchCounters(offsetLine);
+            try {
+                _incrementExpressionCounters(statistics.expressionCounters,
+                                             offsetLine,
+                                             function(line) {
+                                                 warning("executed " +
+                                                         frame.script.url +
+                                                         ":" +
+                                                         offsetLine +
+                                                         " which we thought" +
+                                                         " wasn't executable");
+                                             });
+                this._branchTracker.incrementBranchCounters(offsetLine);
+            } catch (e) {
+                /* Something bad happened. Log the exception and delete
+                 * statistics for this file */
+                _logExceptionAndReset(e, name, line);
+            }
         };
 
+        /* Explicitly return here to satisfy strict mode */
         return undefined;
     };
 }
