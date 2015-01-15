@@ -8,9 +8,9 @@ function parseScriptForExpressionLines(script) {
 
 function assertArrayEquals(actual, expected, assertion) {
     if (actual.length != expected.length)
-        throw "Arrays not equal length. Actual array was " +
-                actual.length + " and Expected array was " +
-                expected.length;
+        throw new Error("Arrays not equal length. Actual array was " +
+                        actual.length + " and Expected array was " +
+                        expected.length);
 
     for (let i = 0; i < actual.length; i++) {
         assertion(expected[i], actual[i]);
