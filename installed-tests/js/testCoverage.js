@@ -507,7 +507,7 @@ function testFunctionsInsideForInObject() {
                       functionDeclarationsEqual);
 }
 
-function testFunctionsInsideForInObject() {
+function testFunctionsInsideForEachInObject() {
     let foundFunctions =
         parseScriptForFunctionNames("for each (x in function() {}()) {}\n");
 
