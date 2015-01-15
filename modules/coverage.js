@@ -371,7 +371,7 @@ function _expressionLinesToCounters(expressionLines, nLines) {
     expressionLines.sort(function(left, right) { return left - right; });
 
     let expressionLinesIndex = 0;
-    let counters = new Array(nLines);
+    let counters = new Array(nLines + 1);
 
     if (expressionLines.length === 0)
         return counters;
@@ -399,7 +399,7 @@ function _branchesToBranchCounters(branches, nLines) {
     });
 
     let branchIndex = 0;
-    let counters = new Array(nLines);
+    let counters = new Array(nLines + 1);
 
     if (branches.length === 0)
         return counters;
@@ -459,7 +459,7 @@ function _functionsToFunctionCounters(functions) {
 }
 
 function _populateKnownFunctions(functions, nLines) {
-    let knownFunctions = new Array(nLines);
+    let knownFunctions = new Array(nLines + 1);
 
     functions.forEach(function(func) {
         knownFunctions[func.line] = true;
