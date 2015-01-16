@@ -543,7 +543,7 @@ function _incrementFunctionCounters(functionCounters,
             --line;
             functionKey = name + ':' + line + ':' + nArgs;
             functionCountersForKey = functionCounters[functionKey];
-        } while(linesWithKnownFunctions[line] !== true)
+        } while (linesWithKnownFunctions[line] !== true);
     }
 
     if (functionCountersForKey !== undefined) {
@@ -633,7 +633,7 @@ function _convertFunctionCountersToArray(functionCounters) {
     /* functionCounters is an object so convert it to
      * an array-of-object using the key as a property
      * of that object */
-    for (let key in functionCounters) {
+    for (let key of Object.getOwnPropertyNames(functionCounters)) {
         let func = functionCounters[key];
         /* The name of the function contains its line, after the first
          * colon. Split the name and retrieve it here */
@@ -748,7 +748,7 @@ function CoverageStatistics(files) {
             return undefined;
         }
 
-        function _logExceptionAndReset(exception, callee, line) {
+        function _logExceptionAndReset(e, callee, line) {
             warning(e.fileName + ":" + e.lineNumber + " (processing " +
                     frame.script.url + ":" + callee + ":" + line + ") - " +
                     e.message);
@@ -794,7 +794,7 @@ function CoverageStatistics(files) {
                                                  warning("executed " +
                                                          frame.script.url +
                                                          ":" +
-                                                         offsetLine +
+                                                         line +
                                                          " which we thought" +
                                                          " wasn't executable");
                                              });
@@ -802,7 +802,7 @@ function CoverageStatistics(files) {
             } catch (e) {
                 /* Something bad happened. Log the exception and delete
                  * statistics for this file */
-                _logExceptionAndReset(e, name, line);
+                _logExceptionAndReset(e, name, offsetLine);
             }
         };
 
