@@ -43,6 +43,7 @@ installed-tests/gjs-installed-tests
 installed-tests/gjs-installed-tests.testmeta
 jsunit
 jsunit.test
+jsunit-resources.c
 testSystemExit.test
 modules-resources.[ch]
 mock-js-resources.[ch]
