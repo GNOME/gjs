@@ -3050,12 +3050,59 @@ gjs_signal_new(JSContext *cx,
     return true;
 }
 
+static bool
+gjs_define_enum_gtype(JSContext *cx,
+                      unsigned   argc,
+                      JS::Value *vp)
+{
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+
+    JSAutoRequest ar(cx);
+
+    GjsAutoJSChar enum_name;
+    JS::RootedObject obj(cx);
+    if (!gjs_parse_call_args(cx, "define_enum_gtype", argv, "so",
+                             "enum_name", &enum_name,
+                             "obj", &obj))
+        return false;
+
+    JS::Rooted<JS::IdVector> props(cx, cx);
+    if (!JS_Enumerate(cx, obj, &props))
+        return false;
+
+    std::vector<GEnumValue> arr;
+    JS::RootedValue propval(cx);
+    JS::RootedId prop_id(cx);
+    for (size_t ix = 0, length = props.length(); ix < length; ix++) {
+        GjsAutoJSChar name;
+        if (!gjs_get_string_id(cx, props[ix], &name) ||
+            !JS_GetPropertyById(cx, obj, prop_id, &propval))
+            return false;
+        if (!propval.isInt32())
+            continue;
+
+        /* must copy, because allocated with js_malloc() */
+        char *name_unowned = name.copy();
+        arr.push_back({
+            .value = propval.toInt32(),
+            .value_name = name_unowned,
+            .value_nick = name_unowned,
+        });
+    }
+    arr.push_back({});
+
+    GType gtype = g_enum_register_static(enum_name, arr.data());
+    JS::RootedObject gtype_wrapper(cx, gjs_gtype_create_gtype_wrapper(cx, gtype));
+    return JS_DefineProperty(cx, obj, "$gtype", gtype_wrapper, JSPROP_PERMANENT);
+}
+
 static JSFunctionSpec module_funcs[] = {
     JS_FS("override_property", gjs_override_property, 2, GJS_MODULE_PROP_FLAGS),
     JS_FS("register_interface", gjs_register_interface, 3, GJS_MODULE_PROP_FLAGS),
     JS_FS("register_type", gjs_register_type, 4, GJS_MODULE_PROP_FLAGS),
     JS_FS("hook_up_vfunc", gjs_hook_up_vfunc, 3, GJS_MODULE_PROP_FLAGS),
     JS_FS("signal_new", gjs_signal_new, 6, GJS_MODULE_PROP_FLAGS),
+    JS_FS("define_enum_gtype", gjs_define_enum_gtype, 2, GJS_MODULE_PROP_FLAGS),
     JS_FS_END,
 };
 
