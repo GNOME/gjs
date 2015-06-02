@@ -290,7 +290,9 @@ gjs_callback_closure(ffi_cif *cif,
 
     if (n_outargs == 0 && !ret_type_is_void) {
         GIArgument argument;
+        GITransfer transfer;
 
+        transfer = g_callable_info_get_caller_owns (trampoline->info);
         /* non-void return value, no out args. Should
          * be a single return value. */
         if (!gjs_value_to_g_argument(context,
@@ -298,7 +300,7 @@ gjs_callback_closure(ffi_cif *cif,
                                      &ret_type,
                                      "callback",
                                      GJS_ARGUMENT_RETURN_VALUE,
-                                     GI_TRANSFER_NOTHING,
+                                     transfer,
                                      TRUE,
                                      &argument))
             goto out;
