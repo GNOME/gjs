@@ -233,6 +233,15 @@ function testArrayCallback() {
     JSUnit.assertRaises(function () { Everything.test_array_callback(null) });
 }
 
+function testCallbackTransferFull() {
+    let callback = function() {
+                       let obj = Everything.TestObj.new_from_file("/enoent");
+                       return obj;
+                   };
+
+    Everything.test_callback_return_full(callback);
+}
+
 function testCallbackDestroyNotify() {
     let testObj = {
         called: 0,
