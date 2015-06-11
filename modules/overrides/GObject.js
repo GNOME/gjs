@@ -112,8 +112,10 @@ const GObjectMeta = new Lang.Class({
             throw new TypeError('GObject.Class used with invalid base class (is ' + parent + ')');
 
         let interfaces = params.Implements || [];
-        let properties = params.Properties;
         delete params.Implements;
+        let gobjectInterfaces = interfaces.filter((iface) => iface.hasOwnProperty('$gtype'));
+
+        let properties = params.Properties;
         delete params.Properties;
 
 	let propertiesArray = [];
@@ -122,7 +124,8 @@ const GObjectMeta = new Lang.Class({
 		propertiesArray.push(properties[prop]);
             }
         }
-        let newClass = Gi.register_type(parent.prototype, gtypename, interfaces, propertiesArray);
+        let newClass = Gi.register_type(parent.prototype, gtypename,
+            gobjectInterfaces, propertiesArray);
 
         // See Class.prototype._construct in lang.js for the reasoning
         // behind this direct __proto__ set.
@@ -131,11 +134,21 @@ const GObjectMeta = new Lang.Class({
 
         newClass._init.apply(newClass, arguments);
 
-        Object.defineProperty(newClass.prototype, '__metaclass__',
-                              { writable: false,
+        Object.defineProperties(newClass.prototype, {
+            '__metaclass__': { writable: false,
+                               configurable: false,
+                               enumerable: false,
+                               value: this.constructor },
+            '__interfaces__': { writable: false,
                                 configurable: false,
                                 enumerable: false,
-                                value: this.constructor });
+                                value: interfaces }
+        });
+
+        interfaces.forEach((iface) => {
+            if (iface instanceof Lang.Interface)
+                iface._check(newClass.prototype);
+        });
 
         return newClass;
     }

@@ -132,8 +132,10 @@ dist_jstests_DATA += \
 	installed-tests/js/testFundamental.js			\
 	installed-tests/js/testGIMarshalling.js		\
 	installed-tests/js/testGObjectClass.js		\
+	installed-tests/js/testGObjectInterface.js		\
 	installed-tests/js/testGtk.js			\
 	installed-tests/js/testGTypeClass.js		\
+	installed-tests/js/testInterface.js			\
 	installed-tests/js/testJS1_8.js			\
 	installed-tests/js/testLang.js			\
 	installed-tests/js/testLocale.js			\
