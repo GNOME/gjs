@@ -33,12 +33,13 @@ jsunit_SOURCES = \
 	jsunit-resources.c		\
 	jsunit-resources.h
 
-jsunit_resources_files = $(shell glib-compile-resources --sourcedir=$(srcdir)/installed-tests/js --generate-dependencies $(srcdir)/test/jsunit.gresource.xml)
-jsunit-resources.h: $(srcdir)/installed-tests/js/jsunit.gresources.xml $(jsunit_resource_files)
+jsunit_resources_files := $(shell glib-compile-resources --sourcedir=$(srcdir)/installed-tests/js --generate-dependencies $(srcdir)/installed-tests/js/jsunit.gresources.xml)
+jsunit-resources.h: $(srcdir)/installed-tests/js/jsunit.gresources.xml $(jsunit_resources_files)
 	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir)/installed-tests/js --sourcedir=$(builddir) --generate --c-name jsunit_resources $<
-jsunit-resources.c: $(srcdir)/installed-tests/js/jsunit.gresources.xml $(jsunit_resource_files)
+jsunit-resources.c: $(srcdir)/installed-tests/js/jsunit.gresources.xml $(jsunit_resources_files)
 	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir)/installed-tests/js --sourcedir=$(builddir) --generate --c-name jsunit_resources $<
 
+BUILT_SOURCES += jsunit-resources.h jsunit-resources.c
 CLEANFILES += jsunit-resources.h jsunit-resources.c
 
 privlibdir = $(pkglibdir)
