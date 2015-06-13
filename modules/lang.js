@@ -227,6 +227,9 @@ Class.prototype._construct = function(params) {
     newClass._init.apply(newClass, arguments);
 
     let interfaces = params.Implements || [];
+    // If the parent already implements an interface, then we do too
+    if (parent instanceof Class)
+        interfaces = interfaces.filter((iface) => !parent.implements(iface));
 
     Object.defineProperties(newClass.prototype, {
         '__metaclass__': { writable: false,
@@ -244,6 +247,20 @@ Class.prototype._construct = function(params) {
     });
 
     return newClass;
+};
+
+/**
+ * Check whether this class conforms to the interface "iface".
+ * @param {object} iface a Lang.Interface
+ * @returns: whether this class implements iface
+ * @type: boolean
+ */
+Class.prototype.implements = function (iface) {
+    if (_interfacePresent(iface, this.prototype))
+        return true;
+    if (this.__super__ instanceof Class)
+        return this.__super__.implements(iface);
+    return false;
 };
 
 Class.prototype._init = function(params) {

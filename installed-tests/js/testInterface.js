@@ -104,8 +104,9 @@ function testInterfaceCannotBeInstantiated() {
 }
 
 function testObjectCanImplementInterface() {
-    // Test considered passing if no exception thrown
-    new ObjectImplementingAnInterface();
+    // Test will fail if the constructor throws an exception
+    let obj = new ObjectImplementingAnInterface();
+    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
 }
 
 function testObjectImplementingInterfaceHasCorrectConstructor() {
@@ -127,8 +128,9 @@ function testClassMustImplementRequiredFunction() {
 }
 
 function testClassDoesntHaveToImplementOptionalFunction() {
-    // Test considered passing if no exception thrown
-    new MinimalImplementationOfAnInterface();
+    // Test will fail if the constructor throws an exception
+    let obj = new MinimalImplementationOfAnInterface();
+    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
 }
 
 function testObjectCanDeferToInterfaceOptionalFunction() {
@@ -181,8 +183,10 @@ function testObjectCanOverrideInterfaceSetter() {
 }
 
 function testInterfaceCanRequireOtherInterface() {
-    // Test considered passing if no exception thrown
-    new ImplementationOfTwoInterfaces();
+    // Test will fail if the constructor throws an exception
+    let obj = new ImplementationOfTwoInterfaces();
+    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
+    JSUnit.assertTrue(obj.constructor.implements(InterfaceRequiringOtherInterface));
 }
 
 function testRequiresCanBeEmpty() {
@@ -240,23 +244,28 @@ function testClassMustImplementRequiredInterfacesInCorrectOrder() {
 }
 
 function testInterfacesCanBeImplementedOnAParentClass() {
-    // Test considered passing if no exception thrown
+    // Test will fail if the constructor throws an exception
     const ObjectInheritingFromInterfaceImplementation = new Lang.Class({
         Name: 'ObjectInheritingFromInterfaceImplementation',
         Extends: ObjectImplementingAnInterface,
         Implements: [ InterfaceRequiringOtherInterface ],
     });
-    new ObjectInheritingFromInterfaceImplementation();
+    let obj = new ObjectInheritingFromInterfaceImplementation();
+    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
+    JSUnit.assertTrue(obj.constructor.implements(InterfaceRequiringOtherInterface));
 }
 
 function testInterfacesCanRequireBeingImplementedOnASubclass() {
-    // Test considered passing if no exception thrown
+    // Test will fail if the constructor throws an exception
     const ObjectImplementingInterfaceRequiringParentObject = new Lang.Class({
         Name: 'ObjectImplementingInterfaceRequiringParentObject',
         Extends: ObjectImplementingAnInterface,
         Implements: [ InterfaceRequiringOtherInterface, InterfaceRequiringClassAndInterface ]
     });
-    new ObjectImplementingInterfaceRequiringParentObject();
+    let obj = new ObjectImplementingInterfaceRequiringParentObject();
+    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
+    JSUnit.assertTrue(obj.constructor.implements(InterfaceRequiringOtherInterface));
+    JSUnit.assertTrue(obj.constructor.implements(InterfaceRequiringClassAndInterface));
 }
 
 function testObjectsMustSubclassIfRequired() {
@@ -270,6 +279,25 @@ function testObjectsMustSubclassIfRequired() {
 function testInterfaceMethodsCanCallOtherInterfaceMethods() {
     let obj = new ObjectImplementingAnInterface();
     JSUnit.assertEquals('interface private method', obj.usesThis());
+}
+
+function testSubclassImplementsTheSameInterfaceAsItsParent() {
+    const SubObject = new Lang.Class({
+        Name: 'SubObject',
+        Extends: ObjectImplementingAnInterface
+    });
+    let obj = new SubObject();
+    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
+}
+
+function testSubclassCanReimplementTheSameInterfaceAsItsParent() {
+    const SubImplementer = new Lang.Class({
+        Name: 'SubImplementer',
+        Extends: ObjectImplementingAnInterface,
+        Implements: [ AnInterface ]
+    });
+    let obj = new SubImplementer();
+    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
 }
 
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);

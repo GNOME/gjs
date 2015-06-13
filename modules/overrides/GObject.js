@@ -134,6 +134,8 @@ const GObjectMeta = new Lang.Class({
             throw new TypeError('GObject.Class used with invalid base class (is ' + parent + ')');
 
         let interfaces = params.Implements || [];
+        if (parent instanceof Lang.Class)
+            interfaces = interfaces.filter((iface) => !parent.implements(iface));
         let gobjectInterfaces = _getGObjectInterfaces(interfaces);
 
         let propertiesArray = _propertiesAsArray(params.Properties);
@@ -166,6 +168,15 @@ const GObjectMeta = new Lang.Class({
         });
 
         return newClass;
+    },
+
+    // Overrides Lang.Class.implements()
+    implements: function (iface) {
+        if (iface instanceof GObject.Interface) {
+            return GObject.type_is_a(this.$gtype, iface.$gtype);
+        } else {
+            return this.parent(iface);
+        }
     }
 });
 

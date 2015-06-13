@@ -279,7 +279,7 @@ function testInterface() {
     instance.init(new Gio.Cancellable);
     JSUnit.assertEquals(true, instance.inited);
 
-    // JSUnit.assertTrue(instance instanceof Gio.Initable)
+    JSUnit.assertTrue(instance.constructor.implements(Gio.Initable));
 }
 
 function testDerived() {

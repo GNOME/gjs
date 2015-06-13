@@ -117,12 +117,13 @@ const ImplementationOfTwoInterfaces = new Lang.Class({
 });
 
 function testGObjectClassCanImplementInterface() {
-    // Test considered passing if no exception thrown
-    new GObjectImplementingLangInterface();
+    // Test will fail if the constructor throws an exception
+    let obj = new GObjectImplementingLangInterface();
+    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
 }
 
 function testGObjectCanImplementInterfacesFromJSAndC() {
-    // Test considered passing if no exception thrown
+    // Test will fail if the constructor throws an exception
     const ObjectImplementingLangInterfaceAndCInterface = new Lang.Class({
         Name: 'ObjectImplementingLangInterfaceAndCInterface',
         Extends: GObject.Object,
@@ -132,7 +133,9 @@ function testGObjectCanImplementInterfacesFromJSAndC() {
             this.parent(props);
         }
     });
-    new ObjectImplementingLangInterfaceAndCInterface();
+    let obj = new ObjectImplementingLangInterfaceAndCInterface();
+    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
+    JSUnit.assertTrue(obj.constructor.implements(Gio.Initable));
 }
 
 function testGObjectInterfaceIsInstanceOfInterfaces() {
@@ -149,8 +152,9 @@ function testGObjectInterfaceTypeName() {
 }
 
 function testGObjectCanImplementInterface() {
-    // Test considered passing if no exception thrown
-    new GObjectImplementingGObjectInterface();
+    // Test will fail if the constructor throws an exception
+    let obj = new GObjectImplementingGObjectInterface();
+    JSUnit.assertTrue(obj.constructor.implements(AGObjectInterface));
 }
 
 function testGObjectImplementingInterfaceHasCorrectClassObject() {
@@ -162,7 +166,7 @@ function testGObjectImplementingInterfaceHasCorrectClassObject() {
 }
 
 function testGObjectCanImplementBothGObjectAndNonGObjectInterfaces() {
-    // Test considered passing if no exception thrown
+    // Test will fail if the constructor throws an exception
     const GObjectImplementingBothKindsOfInterface = new Lang.Class({
         Name: 'GObjectImplementingBothKindsOfInterface',
         Extends: GObject.Object,
@@ -178,7 +182,9 @@ function testGObjectCanImplementBothGObjectAndNonGObjectInterfaces() {
         required: function () {},
         requiredG: function () {}
     });
-    new GObjectImplementingBothKindsOfInterface();
+    let obj = new GObjectImplementingBothKindsOfInterface();
+    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
+    JSUnit.assertTrue(obj.constructor.implements(AGObjectInterface));
 }
 
 function testGObjectCanImplementRequiredFunction() {
@@ -200,8 +206,9 @@ function testGObjectMustImplementRequiredFunction () {
 }
 
 function testGObjectDoesntHaveToImplementOptionalFunction() {
-    // Test considered passing if no exception thrown
-    new MinimalImplementationOfAGObjectInterface();
+    // Test will fail if the constructor throws an exception
+    let obj = new MinimalImplementationOfAGObjectInterface();
+    JSUnit.assertTrue(obj.constructor.implements(AGObjectInterface));
 }
 
 function testGObjectCanDeferToInterfaceOptionalFunction() {
@@ -215,8 +222,10 @@ function testGObjectCanChainUpToInterface() {
 }
 
 function testGObjectInterfaceCanRequireOtherInterface() {
-    // Test considered passing if no exception thrown
-    new ImplementationOfTwoInterfaces();
+    // Test will fail if the constructor throws an exception
+    let obj = new ImplementationOfTwoInterfaces();
+    JSUnit.assertTrue(obj.constructor.implements(AGObjectInterface));
+    JSUnit.assertTrue(obj.constructor.implements(InterfaceRequiringGObjectInterface));
 }
 
 function testGObjectInterfaceCanChainUpToOtherInterface() {
@@ -333,6 +342,27 @@ function testInterfaceIsOfCorrectTypeForMetaclass() {
         Requires: [ MyMetaObject ]
     });
     JSUnit.assertTrue(MyMetaInterface instanceof GObject.Interface);
+}
+
+function testSubclassImplementsTheSameInterfaceAsItsParent() {
+    const SubObject = new Lang.Class({
+        Name: 'SubObject',
+        Extends: GObjectImplementingGObjectInterface
+    });
+    let obj = new SubObject();
+    JSUnit.assertTrue(obj.constructor.implements(AGObjectInterface));
+    JSUnit.assertEquals('foobar', obj.interface_prop);  // override not needed
+}
+
+function testSubclassCanReimplementTheSameInterfaceAsItsParent() {
+    const SubImplementer = new Lang.Class({
+        Name: 'SubImplementer',
+        Extends: GObjectImplementingGObjectInterface,
+        Implements: [ AGObjectInterface ]
+    });
+    let obj = new SubImplementer();
+    JSUnit.assertTrue(obj.constructor.implements(AGObjectInterface));
+    JSUnit.assertEquals('foobar', obj.interface_prop);  // override not needed
 }
 
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
