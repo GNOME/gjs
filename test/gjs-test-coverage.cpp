@@ -94,14 +94,14 @@ gjs_coverage_fixture_set_up(gpointer      fixture_data,
                             gconstpointer user_data)
 {
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
-    const char         *js_script = "function f () { return 1; }\n";
+    const char         *js_script = "function f() { return 1; }\n";
 
     fixture->temporary_js_script_directory_name = g_strdup("/tmp/gjs_coverage_tmp.XXXXXX");
     fixture->temporary_js_script_directory_name =
-        mkdtemp (fixture->temporary_js_script_directory_name);
+        mkdtemp(fixture->temporary_js_script_directory_name);
 
     if (!fixture->temporary_js_script_directory_name)
-        g_error ("Failed to create temporary directory for test files: %s\n", strerror (errno));
+        g_error("Failed to create temporary directory for test files: %s\n", strerror(errno));
 
     fixture->temporary_js_script_filename = g_strconcat(fixture->temporary_js_script_directory_name,
                                                         "/",
@@ -151,10 +151,10 @@ typedef struct _GjsCoverageToSingleOutputFileFixture {
 } GjsCoverageToSingleOutputFileFixture;
 
 static void
-gjs_coverage_to_single_output_file_fixture_set_up (gpointer      fixture_data,
-                                                   gconstpointer user_data)
+gjs_coverage_to_single_output_file_fixture_set_up(gpointer      fixture_data,
+                                                  gconstpointer user_data)
 {
-    gjs_coverage_fixture_set_up (fixture_data, user_data);
+    gjs_coverage_fixture_set_up(fixture_data, user_data);
 
     GjsCoverageToSingleOutputFileFixture *fixture = (GjsCoverageToSingleOutputFileFixture *) fixture_data;
     fixture->output_file_directory = g_build_filename(fixture->base_fixture.temporary_js_script_directory_name,
@@ -170,8 +170,8 @@ gjs_coverage_to_single_output_file_fixture_set_up (gpointer      fixture_data,
 }
 
 static void
-gjs_coverage_to_single_output_file_fixture_tear_down (gpointer      fixture_data,
-                                                      gconstpointer user_data)
+gjs_coverage_to_single_output_file_fixture_tear_down(gpointer      fixture_data,
+                                                     gconstpointer user_data)
 {
     GjsCoverageToSingleOutputFileFixture *fixture = (GjsCoverageToSingleOutputFileFixture *) fixture_data;
     unlink(fixture->output_file_name);
@@ -187,14 +187,14 @@ static const char *
 line_starting_with(const char *data,
                    const char *needle)
 {
-    const gsize needle_length = strlen (needle);
+    const gsize needle_length = strlen(needle);
     const char  *iter = data;
 
     while (iter) {
-        if (strncmp (iter, needle, needle_length) == 0)
+        if (strncmp(iter, needle, needle_length) == 0)
           return iter;
 
-        iter = strstr (iter, "\n");
+        iter = strstr(iter, "\n");
 
         if (iter)
           iter += 1;
@@ -259,9 +259,9 @@ coverage_data_contains_value_for_key(const char *data,
     if (!sf_line)
         return FALSE;
 
-    return strncmp(&sf_line[strlen (key)],
+    return strncmp(&sf_line[strlen(key)],
                    value,
-                   strlen (value)) == 0;
+                   strlen(value)) == 0;
 }
 
 typedef gboolean (*CoverageDataMatchFunc) (const char *value,
@@ -273,7 +273,7 @@ coverage_data_matches_value_for_key_internal(const char            *line,
                                              CoverageDataMatchFunc  match,
                                              gpointer               user_data)
 {
-    return (*match) (line, user_data);
+    return (*match)(line, user_data);
 }
 
 static gboolean
@@ -322,10 +322,10 @@ coverage_data_matches_values_for_key(const char            *data,
     char *data_iterator = (char *) user_data;
 
     while (line && n > 0) {
-        if (!coverage_data_matches_value_for_key_internal (line, key, match, (gpointer) data_iterator))
+        if (!coverage_data_matches_value_for_key_internal(line, key, match, (gpointer) data_iterator))
             return FALSE;
 
-        line = line_starting_with (line + 1, key);
+        line = line_starting_with(line + 1, key);
         --n;
         data_iterator += data_size;
     }
@@ -1288,7 +1288,7 @@ static void
 gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(gpointer fixture_data,
                                                                          gconstpointer user_data)
 {
-    gjs_coverage_to_single_output_file_fixture_set_up (fixture_data, user_data);
+    gjs_coverage_to_single_output_file_fixture_set_up(fixture_data, user_data);
 
     GjsCoverageMultpleSourcesFixutre *fixture = (GjsCoverageMultpleSourcesFixutre *) fixture_data;
     fixture->second_js_source_file_name = g_strconcat(fixture->base_fixture.base_fixture.temporary_js_script_directory_name,
@@ -1346,8 +1346,8 @@ gjs_coverage_multiple_source_files_to_single_output_fixture_tear_down(gpointer  
 }
 
 static void
-test_multiple_source_file_records_written_to_coverage_data (gpointer      fixture_data,
-                                                            gconstpointer user_data)
+test_multiple_source_file_records_written_to_coverage_data(gpointer      fixture_data,
+                                                           gconstpointer user_data)
 {
     GjsCoverageMultpleSourcesFixutre *fixture = (GjsCoverageMultpleSourcesFixutre *) fixture_data;
 
@@ -1382,18 +1382,18 @@ check_coverage_data_for_source_file(ExpectedSourceFileCoverageData *expected,
 {
     gsize i;
     for (i = 0; i < expected_size; ++i) {
-        if (strncmp (&section_start[3],
-                     expected[i].source_file_path,
-                     strlen (expected[i].source_file_path)) == 0) {
-            const gboolean line_hits_match = coverage_data_matches_values_for_key (section_start,
-                                                                                   "DA:",
-                                                                                   expected[i].n_more_than_matchers,
-                                                                                   line_hit_count_is_more_than,
-                                                                                   expected[i].more_than,
-                                                                                   sizeof (LineCountIsMoreThanData));
-            const char *total_hits_record = line_starting_with (section_start, "LH:");
+        if (strncmp(&section_start[3],
+                    expected[i].source_file_path,
+                    strlen (expected[i].source_file_path)) == 0) {
+            const gboolean line_hits_match = coverage_data_matches_values_for_key(section_start,
+                                                                                  "DA:",
+                                                                                  expected[i].n_more_than_matchers,
+                                                                                  line_hit_count_is_more_than,
+                                                                                  expected[i].more_than,
+                                                                                  sizeof (LineCountIsMoreThanData));
+            const char *total_hits_record = line_starting_with(section_start, "LH:");
             const gboolean total_hits_match = total_hits_record[3] == expected[i].expected_lines_hit_character;
-            const char *total_found_record = line_starting_with (section_start, "LF:");
+            const char *total_found_record = line_starting_with(section_start, "LF:");
             const gboolean total_found_match = total_found_record[3] == expected[i].expected_lines_found_character;
 
             return line_hits_match &&

@@ -487,7 +487,7 @@ get_executed_lines_for(JSContext        *context,
         return NULL;
     }
 
-    if (!get_array_from_js_value(context, &rval, sizeof (unsigned int), NULL, convert_and_insert_unsigned_int, &array)) {
+    if (!get_array_from_js_value(context, &rval, sizeof(unsigned int), NULL, convert_and_insert_unsigned_int, &array)) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -589,7 +589,7 @@ get_functions_for(JSContext        *context,
         return NULL;
     }
 
-    if (!get_array_from_js_value(context, &rval, sizeof (GjsCoverageFunction), clear_coverage_function, convert_and_insert_function_decl, &array)) {
+    if (!get_array_from_js_value(context, &rval, sizeof(GjsCoverageFunction), clear_coverage_function, convert_and_insert_function_decl, &array)) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -749,7 +749,7 @@ get_branches_for(JSContext        *context,
         return NULL;
     }
 
-    if (!get_array_from_js_value(context, &rval, sizeof (GjsCoverageBranch), clear_coverage_branch, convert_and_insert_branch_info, &array)) {
+    if (!get_array_from_js_value(context, &rval, sizeof(GjsCoverageBranch), clear_coverage_branch, convert_and_insert_branch_info, &array)) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -888,7 +888,7 @@ get_covered_files(GjsCoverage *coverage)
     if (!JS_GetArrayLength(context, files_obj, &n_files))
         goto error;
 
-    files = g_new0 (char *, n_files + 1);
+    files = g_new0(char *, n_files + 1);
     for (uint32_t i = 0; i < n_files; i++) {
         jsval element;
         char *file;
@@ -1243,7 +1243,7 @@ gjs_coverage_write_statistics(GjsCoverage *coverage,
                                                "coverage.lcov",
                                                NULL);
     GFile *output_file = g_file_new_for_commandline_arg(output_file_path);
-    g_free (output_file_path);
+    g_free(output_file_path);
 
     GOutputStream *ostream =
         G_OUTPUT_STREAM(g_file_append_to(output_file,
@@ -1625,7 +1625,6 @@ bootstrap_coverage(GjsCoverage *coverage)
     options.setVersion(JSVERSION_LATEST);
     JS::RootedObject debugger_compartment(JS_GetRuntime(context),
                                           JS_NewGlobalObject(context, &coverage_global_class, NULL, options));
-
     {
         JSAutoCompartment compartment(context, debugger_compartment);
         JS::RootedObject debuggeeWrapper(context, debuggee);

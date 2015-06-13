@@ -12,9 +12,8 @@ function assertArrayEquals(actual, expected, assertion) {
                         actual.length + " and Expected array was " +
                         expected.length);
 
-    for (let i = 0; i < actual.length; i++) {
+    for (let i = 0; i < actual.length; i++)
         assertion(expected[i], actual[i]);
-    }
 }
 
 function testExpressionLinesWithNoTrailingNewline() {
