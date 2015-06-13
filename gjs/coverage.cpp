@@ -950,8 +950,12 @@ gjs_context_eval_file_in_compartment(GjsContext *context,
                               &script,
                               &script_len,
                               NULL,
-                              error))
+                              error)) {
+        g_object_unref(file);
         return FALSE;
+    }
+
+    g_object_unref(file);
 
     jsval return_value;
 
@@ -964,6 +968,7 @@ gjs_context_eval_file_in_compartment(GjsContext *context,
                              script, script_len, filename,
                              &return_value)) {
         gjs_log_exception(js_context);
+        g_free(script);
         g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED, "Failed to evaluate %s", filename);
         return FALSE;
     }
@@ -1072,6 +1077,77 @@ coverage_statistics_tracer(JSTracer *trc, void *data)
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
     JS_CallObjectTracer(trc, &priv->coverage_statistics, "coverage_statistics");
+}
+
+/* This function is mainly used in the tests in order to fiddle with
+ * the internals of the coverage statisics collector on the coverage
+ * compartment side */
+gboolean
+gjs_run_script_in_coverage_compartment(GjsCoverage *coverage,
+                                       const char  *script)
+{
+    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    JSContext          *js_context = (JSContext *) gjs_context_get_native_context(priv->context);
+    JSAutoCompartment ac(js_context, priv->coverage_statistics);
+    jsval rval;
+    if (!gjs_eval_with_scope(js_context,
+                             priv->coverage_statistics,
+                             script,
+                             strlen(script),
+                             "<coverage_modifier>",
+                             &rval)) {
+        gjs_log_exception(js_context);
+        g_warning("Failed to evaluate <coverage_modifier>");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+gboolean
+gjs_inject_value_into_coverage_compartment(GjsCoverage     *coverage,
+                                           JS::HandleValue handle_value,
+                                           const char      *property)
+{
+    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+
+    JSContext     *js_context = (JSContext *) gjs_context_get_native_context(priv->context);
+    JSAutoRequest ar(js_context);
+    JSAutoCompartment ac(js_context, priv->coverage_statistics);
+
+    JS::RootedObject coverage_global_scope(JS_GetRuntime(js_context),
+                                           JS_GetGlobalForObject(js_context, priv->coverage_statistics));
+
+    jsval value = handle_value;
+    if (!JS_SetProperty(js_context, coverage_global_scope, property, &value)) {
+        g_warning("Failed to set property %s to requested value", property);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+/* Gets the root import and wraps it into a cross-compartment
+ * object so that it can be used in the debugger compartment */
+static JSObject *
+gjs_wrap_root_importer_in_compartment(JSContext *context,
+                                      JS::HandleObject compartment)
+{
+    JSAutoRequest ar(context);
+    JSAutoCompartment ac(context, compartment);
+    JS::RootedValue importer (JS_GetRuntime(context),
+                              gjs_get_global_slot(context,
+                                                  GJS_GLOBAL_SLOT_IMPORTS));
+
+    g_assert (!JSVAL_IS_VOID(importer));
+
+    JS::RootedObject wrapped_importer(JS_GetRuntime(context),
+                                      JSVAL_TO_OBJECT(importer));
+    if (!JS_WrapObject(context, wrapped_importer.address())) {
+        return NULL;
+    }
+
+    return wrapped_importer;
 }
 
 static gboolean

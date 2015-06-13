@@ -38,12 +38,14 @@ JSBool    gjs_create_root_importer (JSContext   *context,
                                     gboolean     add_standard_search_path);
 JSBool    gjs_define_root_importer (JSContext   *context,
                                     JSObject    *in_object);
+JSBool    gjs_define_root_importer_object(JSContext        *context,
+                                          JS::HandleObject  in_object,
+                                          JS::HandleObject  root_importer);
 JSObject* gjs_define_importer      (JSContext   *context,
                                     JSObject    *in_object,
                                     const char  *importer_name,
                                     const char **initial_search_path,
                                     gboolean     add_standard_search_path);
-
 
 G_END_DECLS
 
