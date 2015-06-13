@@ -1741,7 +1741,7 @@ gjs_coverage_constructed(GObject *object)
 {
     G_OBJECT_CLASS(gjs_coverage_parent_class)->constructed(object);
 
-    GjsCoverage *coverage = GJS_DEBUG_COVERAGE(object);
+    GjsCoverage *coverage = GJS_COVERAGE(object);
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
     JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
@@ -1763,7 +1763,7 @@ gjs_coverage_set_property(GObject      *object,
                           const GValue *value,
                           GParamSpec   *pspec)
 {
-    GjsCoverage *coverage = GJS_DEBUG_COVERAGE(object);
+    GjsCoverage *coverage = GJS_COVERAGE(object);
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
     switch (prop_id) {
     case PROP_PREFIXES:
@@ -1816,7 +1816,7 @@ gjs_clear_js_side_statistics_from_coverage_object(GjsCoverage *coverage)
 static void
 gjs_coverage_dispose(GObject *object)
 {
-    GjsCoverage *coverage = GJS_DEBUG_COVERAGE(object);
+    GjsCoverage *coverage = GJS_COVERAGE(object);
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
     /* Decomission objects inside of the JSContext before
@@ -1830,7 +1830,7 @@ gjs_coverage_dispose(GObject *object)
 static void
 gjs_coverage_finalize (GObject *object)
 {
-    GjsCoverage *coverage = GJS_DEBUG_COVERAGE(object);
+    GjsCoverage *coverage = GJS_COVERAGE(object);
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
     g_strfreev(priv->prefixes);
@@ -1875,17 +1875,17 @@ gjs_coverage_class_init (GjsCoverageClass *klass)
  * @coverage_prefixes: (transfer none): A null-terminated strv of prefixes of files to perform coverage on
  * coverage_data for
  *
- * Returns: A #GjsDebugCoverage
+ * Returns: A #GjsCoverage object
  */
 GjsCoverage *
 gjs_coverage_new (const char **prefixes,
                   GjsContext  *context)
 {
     GjsCoverage *coverage =
-        GJS_DEBUG_COVERAGE(g_object_new(GJS_TYPE_DEBUG_COVERAGE,
-                                        "prefixes", prefixes,
-                                        "context", context,
-                                        NULL));
+        GJS_COVERAGE(g_object_new(GJS_TYPE_COVERAGE,
+                                  "prefixes", prefixes,
+                                  "context", context,
+                                  NULL));
 
     return coverage;
 }
@@ -1908,11 +1908,11 @@ gjs_coverage_new_from_cache(const char **coverage_prefixes,
                             const char *cache_path)
 {
     GjsCoverage *coverage =
-        GJS_DEBUG_COVERAGE(g_object_new(GJS_TYPE_DEBUG_COVERAGE,
-                                        "prefixes", coverage_prefixes,
-                                        "context", context,
-                                        "cache", cache_path,
-                                        NULL));
+        GJS_COVERAGE(g_object_new(GJS_TYPE_COVERAGE,
+                                  "prefixes", coverage_prefixes,
+                                  "context", context,
+                                  "cache", cache_path,
+                                  NULL));
 
     return coverage;
 }
