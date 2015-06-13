@@ -2,5 +2,8 @@
 <gresources>
   <gresource prefix="/org/gnome/gjs/mock">
     <file>test/gjs-test-coverage/loadedJSFromResource.js</file>
+    <file>test/gjs-test-coverage/cache_notation/simple_executable_lines.js</file>
+    <file>test/gjs-test-coverage/cache_notation/simple_branch.js</file>
+    <file>test/gjs-test-coverage/cache_notation/simple_function.js</file>
   </gresource>
 </gresources>

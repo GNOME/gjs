@@ -80,7 +80,8 @@ EXTRA_DIST += 			\
 ########################################################################
 gjs_directory_defines = 				\
 	-DGJS_TOP_SRCDIR=\"$(top_srcdir)\"		\
-	-DGJS_JS_DIR=\"$(gjsjsdir)\"			\
+	-DGJS_TOP_BUILDDIR=\"$(top_builddir)\"		\
+	-DGJS_JS_DIR=\"$(gjsjsdir)\"                    \
 	-DPKGLIBDIR=\"$(pkglibdir)\"
 
 ########################################################################

@@ -47,6 +47,8 @@ jsunit-resources.[ch]
 testSystemExit.test
 modules-resources.[ch]
 mock-js-resources.[ch]
+mock-cache-invalidation-before.gresource
+mock-cache-invalidation-after.gresource
 *.gcda
 *.gcno
 lcov

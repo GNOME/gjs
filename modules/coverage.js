@@ -180,6 +180,14 @@ function collectForSubNodes(subNodes, collector) {
     return result;
 }
 
+function _getFunctionKeyFromReflectedFunction(node) {
+    let name = node.id !== null ? node.id.name : '(anonymous)';
+    let line = node.loc.start.line;
+    let n_params = node.params.length;
+
+    return [name, line, n_params].join(':');
+}
+
 /* Unfortunately, the Reflect API doesn't give us enough information to
  * uniquely identify a function. A function might be anonymous, in which
  * case the JS engine uses some heurisitics to get a unique string identifier
@@ -211,22 +219,9 @@ function functionsForNode(node) {
     switch (node.type) {
     case 'FunctionDeclaration':
     case 'FunctionExpression':
-        if (node.id !== null) {
-            functionNames.push({ name: node.id.name,
-                                 line: node.loc.start.line,
-                                 n_params: node.params.length });
-        }
-        /* If the function wasn't found, we just push a name
-         * that looks like 'function:lineno' to signify that
-         * this was an anonymous function. If the coverage tool
-         * enters a function with no name (but a line number)
-         * then it can probably use this information to
-         * figure out which function it was */
-        else {
-            functionNames.push({ name: null,
-                                 line: node.loc.start.line,
-                                 n_params: node.params.length });
-        }
+        functionNames.push({ key: _getFunctionKeyFromReflectedFunction(node),
+                             line: node.loc.start.line,
+                             n_params: node.params.length });
     }
 
     return functionNames;
@@ -481,20 +476,11 @@ function _branchesToBranchCounters(branches, nLines) {
     return counters;
 }
 
-function _getFunctionKeyFromReflectedFunction(func) {
-    let name = func.name !== null ? func.name : '(anonymous)';
-    let line = func.line;
-    let n_params = func.n_params;
-
-    return name + ':' + line + ':' + n_params;
-}
-
 function _functionsToFunctionCounters(functions) {
     let functionCounters = {};
 
     functions.forEach(function(func) {
-        let functionKey = _getFunctionKeyFromReflectedFunction(func);
-        functionCounters[functionKey] = {
+        functionCounters[func.key] = {
             hitCount: 0
         };
     });
@@ -653,8 +639,58 @@ function _convertFunctionCountersToArray(functionCounters) {
     return arrayReturn;
 }
 
-function CoverageStatisticsContainer(prefixes) {
-    let coveredFiles = {};
+/* Looks up filename in cache and fetches statistics
+ * directly from the cache */
+function _fetchCountersFromCache(filename, cache, nLines) {
+    if (!cache)
+        return null;
+
+    if (Object.keys(cache).indexOf(filename) !== -1) {
+        let cache_for_file = cache[filename];
+
+        if (cache_for_file.mtime) {
+             let mtime = getFileModificationTime(filename);
+             if (mtime[0] != cache[filename].mtime[0] ||
+                 mtime[1] != cache[filename].mtime[1])
+                 return null;
+        } else {
+            let checksum = getFileChecksum(filename);
+            if (checksum != cache[filename].checksum)
+                return null;
+        }
+
+        let functions = cache_for_file.functions;
+
+        return {
+            expressionCounters: _expressionLinesToCounters(cache_for_file.lines, nLines),
+            branchCounters: _branchesToBranchCounters(cache_for_file.branches, nLines),
+            functionCounters: _functionsToFunctionCounters(functions),
+            linesWithKnownFunctions: _populateKnownFunctions(functions, nLines),
+            nLines: nLines
+        };
+    }
+
+    return null;
+}
+
+function _fetchCountersFromReflection(contents, nLines) {
+    let reflection = Reflect.parse(contents);
+    let functions = functionsForAST(reflection);
+
+    return {
+        expressionCounters: _expressionLinesToCounters(expressionLinesForAST(reflection), nLines),
+        branchCounters: _branchesToBranchCounters(branchesForAST(reflection), nLines),
+        functionCounters: _functionsToFunctionCounters(functions),
+        linesWithKnownFunctions: _populateKnownFunctions(functions, nLines),
+        nLines: nLines
+    };
+}
+
+function CoverageStatisticsContainer(prefixes, cache) {
+    /* Copy the files array, so that it can be re-used in the tests */
+    let cachedASTs = cache !== undefined ? JSON.parse(cache) : null;
+    let coveredFiles = {}
+    let cacheMisses = 0;
 
     function wantsStatisticsFor(filename) {
         return prefixes.some(function(prefix) {
@@ -664,25 +700,78 @@ function CoverageStatisticsContainer(prefixes) {
 
     function createStatisticsFor(filename) {
         let contents = getFileContents(filename);
-        let reflection = Reflect.parse(contents);
         let nLines = _getNumberOfLinesForScript(contents);
 
-        let functions = functionsForAST(reflection);
+        let counters = _fetchCountersFromCache(filename, cachedASTs, nLines);
+        if (counters === null) {
+            cacheMisses++;
+            counters = _fetchCountersFromReflection(contents, nLines);
+        }
 
-        return {
-            contents: contents,
-            nLines: nLines,
-            expressionCounters: _expressionLinesToCounters(expressionLinesForAST(reflection), nLines),
-            branchCounters: _branchesToBranchCounters(branchesForAST(reflection), nLines),
-            functionCounters: _functionsToFunctionCounters(functions),
-            linesWithKnownFunctions: _populateKnownFunctions(functions, nLines)
-        };
+        if (counters === null)
+            throw new Error('Failed to parse and reflect file ' + filename);
+
+        /* Set contents here as we don't pass it to _fetchCountersFromCache. */
+        counters.contents = contents;
+
+        return counters;
     }
 
     function ensureStatisticsFor(filename) {
-        if (!coveredFiles[filename] && wantsStatisticsFor(filename))
+        let wantStatistics = wantsStatisticsFor(filename);
+        let haveStatistics = !!coveredFiles[filename];
+
+        if (wantStatistics && !haveStatistics)
             coveredFiles[filename] = createStatisticsFor(filename);
         return coveredFiles[filename];
+    }
+
+    this.stringify = function() {
+        let cache_data = {}
+        Object.keys(coveredFiles).forEach(function(filename) {
+            let statisticsForFilename = coveredFiles[filename];
+            let mtime = getFileModificationTime(filename);
+            let cacheDataForFilename = {
+                mtime: mtime,
+                checksum: mtime === null ? getFileChecksum(filename) : null,
+                lines: [],
+                branches: [],
+                functions: Object.keys(statisticsForFilename.functionCounters).map(function(key) {
+                    return {
+                        key: key,
+                        line: Number(key.split(':')[1])
+                    };
+                })
+            };
+
+            /* We're using a index based loop here since we need access to the
+             * index, since it actually represents the current line number
+             * on the file (see _expressionLinesToCounters). */
+            for (let line_index = 0;
+                 line_index < statisticsForFilename.expressionCounters.length;
+                 ++line_index) {
+                 if (statisticsForFilename.expressionCounters[line_index] !== undefined)
+                     cacheDataForFilename.lines.push(line_index);
+
+                 if (statisticsForFilename.branchCounters[line_index] !== undefined) {
+                     let branchCounters = statisticsForFilename.branchCounters[line_index]
+                     cacheDataForFilename.branches.push({
+                         point: statisticsForFilename.branchCounters[line_index].point,
+                         exits: statisticsForFilename.branchCounters[line_index].exits.map(function(exit) {
+                             return exit.line;
+                         })
+                     });
+                 }
+            }
+            cacheDataForFilename.functions = Object.keys(statisticsForFilename.functionCounters).map(function(key) {
+                return {
+                    key: key,
+                    line: Number(key.split(':')[1])
+                };
+            });
+            cache_data[filename] = cacheDataForFilename;
+        });
+        return JSON.stringify(cache_data);
     }
 
     this.getCoveredFiles = function() {
@@ -691,9 +780,14 @@ function CoverageStatisticsContainer(prefixes) {
 
     this.fetchStatistics = function(filename) {
         let statistics = ensureStatisticsFor(filename);
+
         if (statistics === undefined)
             throw new Error('Not tracking statistics for ' + filename);
         return statistics;
+    };
+
+    this.staleCache = function() {
+        return cacheMisses > 0;
     };
 
     this.deleteStatistics = function(filename) {
@@ -706,8 +800,8 @@ function CoverageStatisticsContainer(prefixes) {
  *
  * It isn't poissible to unit test this class because it depends on running
  * Debugger which in turn depends on objects injected in from another compartment */
-function CoverageStatistics(prefixes) {
-    this.container = new CoverageStatisticsContainer(prefixes);
+function CoverageStatistics(prefixes, cache) {
+    this.container = new CoverageStatisticsContainer(prefixes, cache);
     let fetchStatistics = this.container.fetchStatistics.bind(this.container);
     let deleteStatistics = this.container.deleteStatistics.bind(this.container);
 
@@ -746,10 +840,10 @@ function CoverageStatistics(prefixes) {
             return undefined;
         }
 
-        function _logExceptionAndReset(e, callee, line) {
-            warning(e.fileName + ":" + e.lineNumber + " (processing " +
+        function _logExceptionAndReset(exception, callee, line) {
+            warning(exception.fileName + ":" + exception.lineNumber + " (processing " +
                     frame.script.url + ":" + callee + ":" + line + ") - " +
-                    e.message);
+                    exception.message);
             warning("Will not log statistics for this file");
             frame.onStep = undefined;
             frame._branchTracker = undefined;
@@ -800,12 +894,20 @@ function CoverageStatistics(prefixes) {
             } catch (e) {
                 /* Something bad happened. Log the exception and delete
                  * statistics for this file */
-                _logExceptionAndReset(e, name, offsetLine);
+                _logExceptionAndReset(e, frame.callee, offsetLine);
             }
         };
 
-        /* Explicitly return here to satisfy strict mode */
         return undefined;
     };
-}
 
+    this.deactivate = function() {
+        /* This property is designed to be a one-stop-shop to
+         * disable the debugger for this debugee, without having
+         * to traverse all its scripts or frames */
+        this.dbg.enabled = false;
+    };
+
+    this.staleCache = this.container.staleCache.bind(this.container);
+    this.stringify = this.container.stringify.bind(this.container);
+}

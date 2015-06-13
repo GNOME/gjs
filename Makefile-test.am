@@ -41,8 +41,31 @@ mock-js-resources.h: $(srcdir)/test/mock-js-resources.gresource.xml $(modules_re
 mock-js-resources.c: $(srcdir)/test/mock-js-resources.gresource.xml $(modules_resource_files)
 	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --sourcedir=$(builddir) --generate --c-name mock_js_resources $<
 
-EXTRA_DIST += $(mock_js_resources_files) $(srcdir)/test/mock-js-resources.gresource.xml \
-    $(srcdir)/test/gjs-test-coverage/loadedJSFromResource.js
+mock_js_invalidation_resources_dir = $(top_srcdir)/test/gjs-test-coverage/cache_invalidation
+mock_js_invalidation_before_resources_files =								\
+	$(mock_js_invalidation_resources_dir)/before/resource.js					\
+	$(mock_js_invalidation_resources_dir)/before/mock-js-resource-cache-before.gresource.xml	\
+	$(NULL)
+mock_js_invalidation_after_resources_files =								\
+	$(mock_js_invalidation_resources_dir)/after/resource.js						\
+	$(mock_js_invalidation_resources_dir)/after/mock-js-resource-cache-after.gresource.xml		\
+	$(NULL)
+mock_js_invalidation_resources_files =			\
+	$(mock_js_invalidation_before_resources_files)	\
+	$(mock_js_invalidation_after_resources_files)	\
+	$(NULL)
+
+mock-cache-invalidation-before.gresource: $(mock_js_invalidation_before_resources_files)
+	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(mock_js_invalidation_resources_dir)/before $(mock_js_invalidation_resources_dir)/before/mock-js-resource-cache-before.gresource.xml
+mock-cache-invalidation-after.gresource: $(mock_js_invalidation_after_resources_files)
+	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(mock_js_invalidation_resources_dir)/after $(mock_js_invalidation_resources_dir)/after/mock-js-resource-cache-after.gresource.xml
+
+EXTRA_DIST += 							\
+	$(mock_js_resources_files)				\
+	$(mock_js_invalidation_resources_files)			\
+	$(srcdir)/test/mock-js-resources.gresource.xml		\
+	$(srcdir)/test/gjs-test-coverage/loadedJSFromResource.js \
+	$(NULL)
 
 ## -rdynamic makes backtraces work
 gjs_tests_LDFLAGS = -rdynamic
@@ -50,11 +73,23 @@ gjs_tests_LDADD =		\
 	libgjs.la		\
 	$(GJSTESTS_LIBS)
 
-gjs_tests_SOURCES =		\
-	test/gjs-tests.cpp \
-	test/gjs-tests-add-funcs.h \
-	test/gjs-test-coverage.cpp \
-	mock-js-resources.c
+gjs_tests_SOURCES =					\
+	test/gjs-tests.cpp				\
+	test/gjs-tests-add-funcs.h			\
+	test/gjs-test-coverage.cpp			\
+	mock-js-resources.c				\
+	$(NULL)
+
+gjs_tests_DEPENDENCIES =				\
+	mock-cache-invalidation-before.gresource	\
+	mock-cache-invalidation-after.gresource		\
+	$(NULL)
+
+CLEANFILES +=						\
+	mock-cache-invalidation-before.gresource	\
+	mock-cache-invalidation-after.gresource		\
+	mock-js-resources.c				\
+	$(NULL)
 
 check-local: gjs-tests
 	@test -z "${TEST_PROGS}" || ${GTESTER} --verbose ${TEST_PROGS} ${TEST_PROGS_OPTIONS}

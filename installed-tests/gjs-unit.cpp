@@ -77,7 +77,13 @@ setup(GjsTestJSFixture *fix,
             g_error("GJS_UNIT_COVERAGE_OUTPUT is required when using GJS_UNIT_COVERAGE_PREFIX");
         }
 
-        fix->coverage = gjs_coverage_new(coverage_prefixes, fix->context);
+        char *path_to_cache_file = g_build_filename(data->coverage_output_path,
+                                                    ".internal-coverage-cache",
+                                                    NULL);
+        fix->coverage = gjs_coverage_new_from_cache((const char **) coverage_prefixes,
+                                                    fix->context,
+                                                    path_to_cache_file);
+        g_free(path_to_cache_file);
     }
 }
 

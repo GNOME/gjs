@@ -23,6 +23,7 @@
 
 #include "gjs-module.h"
 #include "coverage.h"
+#include "coverage-internal.h"
 
 #include "util/error.h"
 
@@ -33,6 +34,8 @@ struct _GjsCoveragePrivate {
     gchar **prefixes;
     GjsContext *context;
     JSObject *coverage_statistics;
+
+    char *cache_path;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE(GjsCoverage,
@@ -43,6 +46,7 @@ enum {
     PROP_0,
     PROP_PREFIXES,
     PROP_CONTEXT,
+    PROP_CACHE,
     PROP_N
 };
 
@@ -275,6 +279,9 @@ static void
 copy_source_file_to_coverage_output(const char *source,
                                     const char *destination)
 {
+    /* Either source_file or destination_file could be a resource,
+     * so we must use g_file_new_for_commandline_arg to disambiguate
+     * between URI paths and filesystem paths. */
     GFile *source_file = g_file_new_for_commandline_arg(source);
     GFile *destination_file = g_file_new_for_commandline_arg(destination);
     GError *error = NULL;
@@ -479,15 +486,14 @@ convert_and_insert_unsigned_int(GArray    *array,
 }
 
 static GArray *
-get_executed_lines_for(GjsCoverage *coverage,
-                       jsval       *filename_value)
+get_executed_lines_for(JSContext        *context,
+                       JS::HandleObject  coverage_statistics,
+                       jsval            *filename_value)
 {
-    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
-    JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
     GArray *array = NULL;
     jsval rval;
 
-    if (!JS_CallFunctionName(context, priv->coverage_statistics, "getExecutedLinesFor", 1, filename_value, &rval)) {
+    if (!JS_CallFunctionName(context, coverage_statistics, "getExecutedLinesFor", 1, filename_value, &rval)) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -582,15 +588,14 @@ convert_and_insert_function_decl(GArray    *array,
 }
 
 static GArray *
-get_functions_for(GjsCoverage *coverage,
-                  jsval       *filename_value)
+get_functions_for(JSContext        *context,
+                  JS::HandleObject  coverage_statistics,
+                  jsval            *filename_value)
 {
-    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
-    JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
     GArray *array = NULL;
     jsval rval;
 
-    if (!JS_CallFunctionName(context, priv->coverage_statistics, "getFunctionsFor", 1, filename_value, &rval)) {
+    if (!JS_CallFunctionName(context, coverage_statistics, "getFunctionsFor", 1, filename_value, &rval)) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -743,15 +748,14 @@ convert_and_insert_branch_info(GArray    *array,
 }
 
 static GArray *
-get_branches_for(GjsCoverage *coverage,
-                 jsval       *filename_value)
+get_branches_for(JSContext        *context,
+                 JS::HandleObject  coverage_statistics,
+                 jsval            *filename_value)
 {
-    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
-    JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
     GArray *array = NULL;
     jsval rval;
 
-    if (!JS_CallFunctionName(context, priv->coverage_statistics, "getBranchesFor", 1, filename_value, &rval)) {
+    if (!JS_CallFunctionName(context, coverage_statistics, "getBranchesFor", 1, filename_value, &rval)) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -764,44 +768,78 @@ get_branches_for(GjsCoverage *coverage,
     return array;
 }
 
-static void
-print_statistics_for_file(GjsCoverage   *coverage,
-                          char          *filename,
-                          const char    *output_directory,
-                          GOutputStream *ostream)
-{
-    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+typedef struct _GjsCoverageFileStatistics {
+    char       *filename;
+    GArray     *lines;
+    GArray     *functions;
+    GArray     *branches;
+} GjsCoverageFileStatistics;
 
+static gboolean
+fetch_coverage_file_statistics_from_js(JSContext                 *context,
+                                       JS::HandleObject           coverage_statistics,
+                                       const char                *filename,
+                                       GjsCoverageFileStatistics *statistics)
+{
+    JSAutoCompartment compartment(context, coverage_statistics);
+    JSAutoRequest ar(context);
+
+    JSString *filename_jsstr = JS_NewStringCopyZ(context, filename);
+    jsval    filename_jsval = STRING_TO_JSVAL(filename_jsstr);
+
+    GArray *lines = get_executed_lines_for(context, coverage_statistics, &filename_jsval);
+    GArray *functions = get_functions_for(context, coverage_statistics, &filename_jsval);
+    GArray *branches = get_branches_for(context, coverage_statistics, &filename_jsval);
+
+    if (!lines || !functions || !branches)
+    {
+        g_clear_pointer(&lines, g_array_unref);
+        g_clear_pointer(&functions, g_array_unref);
+        g_clear_pointer(&branches, g_array_unref);
+        return FALSE;
+    }
+
+    statistics->filename = g_strdup(filename);
+    statistics->lines = lines;
+    statistics->functions = functions;
+    statistics->branches = branches;
+
+    return TRUE;
+}
+
+static void
+gjs_coverage_statistics_file_statistics_clear(gpointer data)
+{
+    GjsCoverageFileStatistics *statistics = (GjsCoverageFileStatistics *) data;
+    g_free(statistics->filename);
+    g_array_unref(statistics->lines);
+    g_array_unref(statistics->functions);
+    g_array_unref(statistics->branches);
+}
+
+static void
+print_statistics_for_file(GjsCoverageFileStatistics *file_statistics,
+                          const char                *output_directory,
+                          GOutputStream             *ostream)
+{
     char *absolute_output_directory = get_absolute_path(output_directory);
     char *diverged_paths =
-        find_diverging_child_components(filename,
+        find_diverging_child_components(file_statistics->filename,
                                         absolute_output_directory);
     char *destination_filename = g_build_filename(absolute_output_directory,
                                                   diverged_paths,
                                                   NULL);
 
-    JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
-
-    JSString *filename_jsstr = JS_NewStringCopyZ(context, filename);
-    jsval    filename_jsval = STRING_TO_JSVAL(filename_jsstr);
-
-    GArray *lines = get_executed_lines_for(coverage, &filename_jsval);
-    GArray *functions = get_functions_for(coverage, &filename_jsval);
-    GArray *branches = get_branches_for(coverage, &filename_jsval);
-
-    if (!lines || !functions || !branches)
-        return;
-
-    copy_source_file_to_coverage_output(filename, destination_filename);
+    copy_source_file_to_coverage_output(file_statistics->filename, destination_filename);
 
     write_source_file_header(ostream, (const char *) destination_filename);
-    write_functions(ostream, functions);
+    write_functions(ostream, file_statistics->functions);
 
     unsigned int functions_hit_count = 0;
     unsigned int functions_found_count = 0;
 
     write_functions_hit_counts(ostream,
-                               functions,
+                               file_statistics->functions,
                                &functions_found_count,
                                &functions_hit_count);
     write_function_coverage(ostream,
@@ -812,7 +850,7 @@ print_statistics_for_file(GjsCoverage   *coverage,
     unsigned int branches_found_count = 0;
 
     write_branch_coverage(ostream,
-                          branches,
+                          file_statistics->branches,
                           &branches_found_count,
                           &branches_hit_count);
     write_branch_totals(ostream,
@@ -823,17 +861,13 @@ print_statistics_for_file(GjsCoverage   *coverage,
     unsigned int executable_lines_count = 0;
 
     write_line_coverage(ostream,
-                        lines,
+                        file_statistics->lines,
                         &lines_hit_count,
                         &executable_lines_count);
     write_line_totals(ostream,
                       lines_hit_count,
                       executable_lines_count);
     write_end_of_record(ostream);
-
-    g_array_unref(lines);
-    g_array_unref(functions);
-    g_array_unref(branches);
 
     g_free(diverged_paths);
     g_free(destination_filename);
@@ -886,6 +920,322 @@ get_covered_files(GjsCoverage *coverage)
     return NULL;
 }
 
+gboolean
+gjs_get_path_mtime(const char *path, GTimeVal *mtime)
+{
+    /* path could be a resource path, as the callers don't check
+     * if the path is a resource path, but rather if the mtime fetch
+     * operation succeeded. Use g_file_new_for_commandline_arg to handle
+     * that case. */
+    GError *error = NULL;
+    GFile *file = g_file_new_for_commandline_arg(path);
+    GFileInfo *info = g_file_query_info(file,
+                                        "time::modified,time::modified-usec",
+                                        G_FILE_QUERY_INFO_NONE,
+                                        NULL,
+                                        &error);
+
+    g_clear_object(&file);
+
+    if (!info) {
+        g_warning("Failed to get modification time of %s, "
+                  "falling back to checksum method for caching. Reason was: %s",
+                  path, error->message);
+        g_clear_object(&info);
+        return FALSE;
+    }
+
+    g_file_info_get_modification_time(info, mtime);
+    g_clear_object(&info);
+
+    /* For some URI types, eg, resources, the operation getting
+     * the mtime might succeed, but by default zero is returned.
+     *
+     * Check if that is the case for boht tv_sec and tv_usec and if
+     * so return FALSE. */
+    return !(mtime->tv_sec == 0 && mtime->tv_usec == 0);
+}
+
+static GBytes *
+read_all_bytes_from_path(const char *path)
+{
+    /* path could be a resource, so use g_file_new_for_commandline_arg. */
+    GFile *file = g_file_new_for_commandline_arg(path);
+
+    /* We have to use g_file_query_exists here since
+     * g_file_test(path, G_FILE_TEST_EXISTS) is implemented in terms
+     * of access(), which doesn't work with resource paths. */
+    if (!g_file_query_exists(file, NULL)) {
+        g_object_unref(file);
+        return NULL;
+    }
+
+    gsize len = 0;
+    gchar *data = NULL;
+
+    GError *error = NULL;
+
+    if (!g_file_load_contents(file,
+                              NULL,
+                              &data,
+                              &len,
+                              NULL,
+                              &error)) {
+        g_printerr("Unable to read bytes from: %s, reason was: %s\n",
+                   path, error->message);
+        g_clear_error(&error);
+        g_object_unref(file);
+        return NULL;
+    }
+
+    return g_bytes_new_take(data, len);
+}
+
+gchar *
+gjs_get_path_checksum(const char *path)
+{
+    GBytes *data = read_all_bytes_from_path(path);
+
+    if (!data)
+        return NULL;
+
+    gchar *checksum = g_compute_checksum_for_bytes(G_CHECKSUM_SHA512, data);
+
+    g_bytes_unref(data);
+    return checksum;
+}
+
+static unsigned int COVERAGE_STATISTICS_CACHE_MAGIC = 0xC0432463;
+
+/* The binary data for the cache has the following structure:
+ *
+ * {
+ *     array [ tuple {
+ *         string filename;
+ *         string? checksum;
+ *         tuple? {
+ *             mtime_sec;
+ *             mtime_usec;
+ *         }
+ *         array [
+ *             int line;
+ *         ] executable lines;
+ *         array [ tuple {
+ *             int branch_point;
+ *             array [
+ *                 int line;
+ *             ] exits;
+ *         } branch_info ] branches;
+ *         array [ tuple {
+ *             int line;
+ *             string key;
+ *         } function ] functions;
+ *     } file ] files;
+ */
+const char *COVERAGE_STATISTICS_CACHE_BINARY_DATA_TYPE = "a(sm(xx)msaia(iai)a(is))";
+
+GBytes *
+gjs_serialize_statistics(GjsCoverage *coverage)
+{
+    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    JSContext *js_context = (JSContext *) gjs_context_get_native_context(priv->context);
+    JSRuntime *js_runtime = JS_GetRuntime(js_context);
+
+    JSAutoRequest ar(js_context);
+    JSAutoCompartment ac(js_context,
+                         JS_GetGlobalForObject(js_context,
+                                               priv->coverage_statistics));
+
+    JS::RootedValue string_value_return(js_runtime);
+
+    if (!JS_CallFunctionName(js_context,
+                             priv->coverage_statistics,
+                             "stringify",
+                             0,
+                             NULL,
+                             &(string_value_return.get()))) {
+        gjs_log_exception(js_context);
+        return NULL;
+    }
+
+    if (!string_value_return.isString())
+        return NULL;
+
+    /* Free'd by g_bytes_new_take */
+    char *statistics_as_json_string = NULL;
+
+    if (!gjs_string_to_utf8(js_context,
+                            string_value_return.get(),
+                            &statistics_as_json_string)) {
+        gjs_log_exception(js_context);
+        return NULL;
+    }
+
+    return g_bytes_new_take((guint8 *) statistics_as_json_string,
+                            strlen(statistics_as_json_string));
+}
+
+static JSObject *
+gjs_get_generic_object_constructor(JSContext        *context,
+                                   JSRuntime        *runtime,
+                                   JS::HandleObject  global_object)
+{
+    JSAutoRequest ar(context);
+    JSAutoCompartment ac(context, global_object);
+
+    jsval object_constructor_value;
+    if (!JS_GetProperty(context, global_object, "Object", &object_constructor_value) ||
+        !JSVAL_IS_OBJECT(object_constructor_value))
+        g_assert_not_reached();
+
+    return JSVAL_TO_OBJECT(object_constructor_value);
+}
+
+static JSString *
+gjs_deserialize_cache_to_object_for_compartment(JSContext        *context,
+                                                JS::HandleObject global_object,
+                                                GBytes           *cache_data)
+{
+    JSAutoRequest ar(context);
+    JSAutoCompartment ac(context,
+                         JS_GetGlobalForObject(context,
+                                               global_object));
+
+    gsize len = 0;
+    gpointer string = g_bytes_unref_to_data(g_bytes_ref(cache_data),
+                                            &len);
+
+    return JS_NewStringCopyN(context, (const char *) string, len);
+}
+
+JSString *
+gjs_deserialize_cache_to_object(GjsCoverage *coverage,
+                                GBytes      *cache_data)
+{
+    /* Deserialize into an object with the following structure:
+     *
+     * object = {
+     *     'filename': {
+     *         contents: (file contents),
+     *         nLines: (number of lines in file),
+     *         lines: Number[nLines + 1],
+     *         branches: Array for n_branches of {
+     *             point: branch_point,
+     *             exits: Number[nLines + 1]
+     *         },
+     *         functions: Array for n_functions of {
+     *             key: function_name,r
+     *             line: line
+     *         }
+     * }
+     */
+
+    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
+    JSAutoRequest ar(context);
+    JSAutoCompartment ac(context, priv->coverage_statistics);
+    JS::RootedObject global_object(JS_GetRuntime(context),
+                                   JS_GetGlobalForObject(context, priv->coverage_statistics));
+    return gjs_deserialize_cache_to_object_for_compartment(context, global_object, cache_data);
+}
+
+GArray *
+gjs_fetch_statistics_from_js(GjsCoverage *coverage,
+                             gchar       **coverage_files)
+{
+    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    JSContext          *js_context = (JSContext *) gjs_context_get_native_context(priv->context);
+
+    GArray *file_statistics_array = g_array_new(FALSE,
+                                                FALSE,
+                                                sizeof(GjsCoverageFileStatistics));
+    g_array_set_clear_func(file_statistics_array,
+                           gjs_coverage_statistics_file_statistics_clear);
+
+    JS::RootedObject rooted_coverage_statistics(JS_GetRuntime(js_context),
+                                                priv->coverage_statistics);
+
+    char                      **file_iter = coverage_files;
+    GjsCoverageFileStatistics *statistics_iter = (GjsCoverageFileStatistics *) file_statistics_array->data;
+    while (*file_iter) {
+        GjsCoverageFileStatistics statistics;
+        if (fetch_coverage_file_statistics_from_js(js_context,
+                                                   rooted_coverage_statistics,
+                                                   *file_iter,
+                                                   &statistics))
+            g_array_append_val(file_statistics_array, statistics);
+        else
+            g_warning("Couldn't fetch statistics for %s", *file_iter);
+
+        ++file_iter;
+    }
+
+    return file_statistics_array;
+}
+
+gboolean
+gjs_write_cache_to_path(const char *path,
+                        GBytes     *cache)
+{
+    GFile *file = g_file_new_for_commandline_arg(path);
+    gsize cache_len = 0;
+    char *cache_data = (char *) g_bytes_get_data(cache, &cache_len);
+    GError *error = NULL;
+
+    if (!g_file_replace_contents(file,
+                                 cache_data,
+                                 cache_len,
+                                 NULL,
+                                 FALSE,
+                                 G_FILE_CREATE_NONE,
+                                 NULL,
+                                 NULL,
+                                 &error)) {
+        g_object_unref(file);
+        g_warning("Failed to write all bytes to %s, reason was: %s\n",
+                  path, error->message);
+        g_warning("Will remove this file to prevent inconsistent cache "
+                  "reads next time.");
+        g_clear_error(&error);
+        if (!g_file_delete(file, NULL, &error)) {
+            g_assert(error != NULL);
+            g_critical("Deleting %s failed because %s! You will need to "
+                       "delete it manually before running the coverage "
+                       "mode again.");
+            g_clear_error(&error);
+        }
+
+        return FALSE;
+    }
+
+    g_object_unref(file);
+
+    return TRUE;
+}
+
+static JSBool
+coverage_statistics_has_stale_cache(GjsCoverage *coverage)
+{
+    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    JSContext          *js_context = (JSContext *) gjs_context_get_native_context(priv->context);
+
+    JSAutoRequest ar(js_context);
+    JSAutoCompartment ac(js_context, priv->coverage_statistics);
+
+    jsval stale_cache_value;
+    if (!JS_CallFunctionName(js_context,
+                             priv->coverage_statistics,
+                             "staleCache",
+                             0,
+                             NULL,
+                             &stale_cache_value)) {
+        gjs_log_exception(js_context);
+        g_error("Failed to call into javascript to get stale cache value. This is a bug");
+    }
+
+    return JSVAL_TO_BOOLEAN(stale_cache_value);
+}
+
 void
 gjs_coverage_write_statistics(GjsCoverage *coverage,
                               const char  *output_directory)
@@ -912,13 +1262,37 @@ gjs_coverage_write_statistics(GjsCoverage *coverage,
                                          NULL,
                                          &error));
 
-    char **files = get_covered_files(coverage);
-    if (files) {
-        for (char **file_iter = files; *file_iter; file_iter++)
-            print_statistics_for_file(coverage, *file_iter, output_directory, ostream);
-        g_strfreev(files);
+    char **executed_coverage_files = get_covered_files(coverage);
+    GArray *file_statistics_array = gjs_fetch_statistics_from_js(coverage,
+                                                                 executed_coverage_files);
+
+    for (size_t i = 0; i < file_statistics_array->len; ++i)
+    {
+        GjsCoverageFileStatistics *statistics = &(g_array_index(file_statistics_array, GjsCoverageFileStatistics, i));
+
+        /* Only print statistics if the file was actually executed */
+        for (char **iter = executed_coverage_files; *iter; ++iter) {
+            if (g_strcmp0(*iter, statistics->filename) == 0) {
+                print_statistics_for_file(statistics, output_directory, ostream);
+
+                /* Inner loop */
+                break;
+            }
+        }
     }
 
+    g_strfreev(executed_coverage_files);
+
+    const gboolean has_cache_path = priv->cache_path != NULL;
+    const gboolean cache_is_stale = coverage_statistics_has_stale_cache(coverage);
+
+    if (has_cache_path && cache_is_stale) {
+        GBytes *cache_data = gjs_serialize_statistics(coverage);
+        gjs_write_cache_to_path(priv->cache_path, cache_data);
+        g_bytes_unref(cache_data);
+    }
+
+    g_array_unref(file_statistics_array);
     g_object_unref(ostream);
     g_object_unref(output_file);
 }
@@ -969,6 +1343,7 @@ gjs_context_eval_file_in_compartment(GjsContext *context,
                              compartment_object,
                              script, script_len, filename,
                              &return_value)) {
+        g_free(script);
         gjs_log_exception(js_context);
         g_free(script);
         g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED, "Failed to evaluate %s", filename);
@@ -1024,6 +1399,97 @@ coverage_warning(JSContext *context,
     return JS_TRUE;
 }
 
+static char *
+get_filename_from_filename_as_js_string(JSContext    *context,
+                                        JS::CallArgs &args) {
+    char *filename = NULL;
+
+    if (!gjs_parse_call_args(context, "getFileContents", "s", args,
+                             "filename", &filename))
+        return NULL;
+
+    return filename;
+}
+
+static GFile *
+get_file_from_filename_as_js_string(JSContext    *context,
+                                    JS::CallArgs &args) {
+    char *filename = get_filename_from_filename_as_js_string(context, args);
+
+    if (!filename) {
+        gjs_throw(context, "Failed to parse arguments for filename");
+        return NULL;
+    }
+
+    GFile *file = g_file_new_for_commandline_arg(filename);
+
+    g_free(filename);
+    return file;
+}
+
+static JSBool
+coverage_get_file_modification_time(JSContext *context,
+                                    unsigned  argc,
+                                    jsval     *vp)
+{
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    JSRuntime    *runtime = JS_GetRuntime(context);
+    GTimeVal mtime;
+    JSBool ret = JS_FALSE;
+    char *filename = get_filename_from_filename_as_js_string(context, args);
+
+    if (!filename)
+        goto out;
+
+    if (gjs_get_path_mtime(filename, &mtime)) {
+        JS::RootedObject mtime_values_array(runtime,
+                                            JS_NewArrayObject(context, 0, NULL));
+        if (!JS_DefineElement(context, mtime_values_array, 0, JS::Int32Value(mtime.tv_sec), NULL, NULL, 0))
+            goto out;
+        if (!JS_DefineElement(context, mtime_values_array, 1, JS::Int32Value(mtime.tv_usec), NULL, NULL, 0))
+            goto out;
+        args.rval().setObject(*(mtime_values_array.get()));
+    } else {
+        args.rval().setNull();
+    }
+
+    ret = JS_TRUE;
+
+out:
+    g_free(filename);
+    return ret;
+}
+
+static JSBool
+coverage_get_file_checksum(JSContext *context,
+                           unsigned  argc,
+                           jsval     *vp)
+{
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    JSRuntime    *runtime = JS_GetRuntime(context);
+    GTimeVal mtime;
+    JSBool ret = JS_FALSE;
+    char *filename = get_filename_from_filename_as_js_string(context, args);
+
+    if (!filename)
+        return JS_FALSE;
+
+    char *checksum = gjs_get_path_checksum(filename);
+
+    if (!checksum) {
+        gjs_throw(context, "Failed to read %s and get its checksum", filename);
+        return JS_FALSE;
+    }
+
+    JS::RootedString rooted_checksum(runtime, JS_NewStringCopyZ(context,
+                                                                checksum));
+    args.rval().setString(rooted_checksum);
+
+    g_free(filename);
+    g_free(checksum);
+    return JS_TRUE;
+}
+
 static JSBool
 coverage_get_file_contents(JSContext *context,
                            unsigned   argc,
@@ -1067,9 +1533,11 @@ coverage_get_file_contents(JSContext *context,
 }
 
 static JSFunctionSpec coverage_funcs[] = {
-    { "warning", JSOP_WRAPPER (coverage_warning), 1, GJS_MODULE_PROP_FLAGS },
-    { "getFileContents", JSOP_WRAPPER (coverage_get_file_contents), 1, GJS_MODULE_PROP_FLAGS },
-    { NULL },
+    { "warning", JSOP_WRAPPER(coverage_warning), 1, GJS_MODULE_PROP_FLAGS },
+    { "getFileContents", JSOP_WRAPPER(coverage_get_file_contents), 1, GJS_MODULE_PROP_FLAGS },
+    { "getFileModificationTime", JSOP_WRAPPER(coverage_get_file_modification_time), 1, GJS_MODULE_PROP_FLAGS },
+    { "getFileChecksum", JSOP_WRAPPER(coverage_get_file_checksum), 1, GJS_MODULE_PROP_FLAGS },
+    { NULL }
 };
 
 static void
@@ -1157,6 +1625,7 @@ bootstrap_coverage(GjsCoverage *coverage)
 {
     static const char  *coverage_script = "resource:///org/gnome/gjs/modules/coverage.js";
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    GBytes             *cache_bytes = NULL;
     GError             *error = NULL;
 
     JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
@@ -1165,7 +1634,8 @@ bootstrap_coverage(GjsCoverage *coverage)
     JSObject *debuggee = JS_GetGlobalObject(context);
     JS::CompartmentOptions options;
     options.setVersion(JSVERSION_LATEST);
-    JSObject *debugger_compartment = JS_NewGlobalObject(context, &coverage_global_class, NULL, options);
+    JS::RootedObject debugger_compartment(JS_GetRuntime(context),
+                                          JS_NewGlobalObject(context, &coverage_global_class, NULL, options));
 
     {
         JSAutoCompartment compartment(context, debugger_compartment);
@@ -1196,6 +1666,23 @@ bootstrap_coverage(GjsCoverage *coverage)
             return FALSE;
         }
 
+        JS::RootedObject wrapped_importer(JS_GetRuntime(context),
+                                          gjs_wrap_root_importer_in_compartment(context,
+                                                                                debugger_compartment));;
+
+        if (!wrapped_importer) {
+            gjs_throw(context, "Failed to wrap root importer in debugger compartment");
+            return FALSE;
+        }
+
+        /* Now copy the global root importer (which we just created,
+         * if it didn't exist) to our global object
+         */
+        if (!gjs_define_root_importer_object(context, debugger_compartment, wrapped_importer)) {
+            gjs_throw(context, "Failed to set 'imports' on debugger compartment");
+            return FALSE;
+        }
+
         if (!JS_DefineFunctions(context, debugger_compartment, &coverage_funcs[0]))
             g_error("Failed to init coverage");
 
@@ -1212,18 +1699,37 @@ bootstrap_coverage(GjsCoverage *coverage)
             return FALSE;
         }
 
+        /* Create value for holding the cache. This will be undefined if
+         * the cache does not exist, otherwise it will be an object set
+         * to the value of the cache */
+        JS::RootedValue cache_value(JS_GetRuntime(context));
+
+        if (priv->cache_path)
+            cache_bytes = read_all_bytes_from_path(priv->cache_path);
+
+        if (cache_bytes) {
+            JSString *cache_object = gjs_deserialize_cache_to_object_for_compartment(context,
+                                                                                     debugger_compartment,
+                                                                                     cache_bytes);
+            cache_value.set(JS::StringValue(cache_object));
+            g_bytes_unref(cache_bytes);
+        } else {
+            cache_value.set(JS::UndefinedValue());
+        }
+
         JSObject *coverage_statistics_constructor = JSVAL_TO_OBJECT(coverage_statistics_prototype_value);
 
         /* Now create the array to pass the desired prefixes over */
         JSObject *prefixes = gjs_build_string_array(context, -1, priv->prefixes);
 
         jsval coverage_statistics_constructor_arguments[] = {
-            OBJECT_TO_JSVAL(prefixes)
+            OBJECT_TO_JSVAL(prefixes),
+            cache_value.get()
         };
 
         JSObject *coverage_statistics = JS_New(context,
                                                coverage_statistics_constructor,
-                                               1,
+                                               2,
                                                coverage_statistics_constructor_arguments);
 
         if (!coverage_statistics) {
@@ -1279,6 +1785,9 @@ gjs_coverage_set_property(GObject      *object,
     case PROP_CONTEXT:
         priv->context = GJS_CONTEXT(g_value_dup_object(value));
         break;
+    case PROP_CACHE:
+        priv->cache_path = g_value_dup_string(value);
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
         break;
@@ -1286,18 +1795,45 @@ gjs_coverage_set_property(GObject      *object,
 }
 
 static void
-gjs_coverage_dispose(GObject *object)
+gjs_clear_js_side_statistics_from_coverage_object(GjsCoverage *coverage)
 {
-    GjsCoverage *coverage = GJS_DEBUG_COVERAGE (object);
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
-    /* Remove tracer before disposing the context */
-    JSContext *js_context = (JSContext *) gjs_context_get_native_context(priv->context);
-    JS_RemoveExtraGCRootsTracer(JS_GetRuntime(js_context),
-                                coverage_statistics_tracer,
-                                coverage);
+    if (priv->coverage_statistics) {
+        /* Remove tracer before disposing the context */
+        JSContext *js_context = (JSContext *) gjs_context_get_native_context(priv->context);
+        JSAutoRequest ar(js_context);
+        JSAutoCompartment ac(js_context, priv->coverage_statistics);
+        JS::RootedValue rval(JS_GetRuntime(js_context));
+        if (!JS_CallFunctionName(js_context,
+                                 priv->coverage_statistics,
+                                 "deactivate",
+                                 0,
+                                 NULL,
+                                 rval.address())) {
+            gjs_log_exception(js_context);
+            g_error("Failed to deactivate debugger - this is a fatal error");
+        }
 
+        /* Remove GC roots trace after we've decomissioned the object
+         * and no longer need it to be traced here. */
+        JS_RemoveExtraGCRootsTracer(JS_GetRuntime(js_context),
+                                    coverage_statistics_tracer,
+                                    coverage);
 
+        priv->coverage_statistics = NULL;
+    }
+}
+
+static void
+gjs_coverage_dispose(GObject *object)
+{
+    GjsCoverage *coverage = GJS_DEBUG_COVERAGE(object);
+    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+
+    /* Decomission objects inside of the JSContext before
+     * disposing of the context */
+    gjs_clear_js_side_statistics_from_coverage_object(coverage);
     g_clear_object(&priv->context);
 
     G_OBJECT_CLASS(gjs_coverage_parent_class)->dispose(object);
@@ -1310,6 +1846,7 @@ gjs_coverage_finalize (GObject *object)
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
     g_strfreev(priv->prefixes);
+    g_clear_pointer(&priv->cache_path, (GDestroyNotify) g_free);
 
     G_OBJECT_CLASS(gjs_coverage_parent_class)->finalize(object);
 }
@@ -1334,6 +1871,11 @@ gjs_coverage_class_init (GjsCoverageClass *klass)
                                                    "A context to gather coverage stats for",
                                                    GJS_TYPE_CONTEXT,
                                                    (GParamFlags) (G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE));
+    properties[PROP_CACHE] = g_param_spec_string("cache",
+                                                 "Cache",
+                                                 "Path to a file containing a cache to preload ASTs from",
+                                                 NULL,
+                                                 (GParamFlags) (G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE));
 
     g_object_class_install_properties(object_class,
                                       PROP_N,
@@ -1355,6 +1897,33 @@ gjs_coverage_new (const char **prefixes,
         GJS_DEBUG_COVERAGE(g_object_new(GJS_TYPE_DEBUG_COVERAGE,
                                         "prefixes", prefixes,
                                         "context", context,
+                                        NULL));
+
+    return coverage;
+}
+
+/**
+ * gjs_coverage_new_from_cache:
+ * Creates a new GjsCoverage object, but uses @cache_path to pre-fill the AST information for
+ * the specified scripts in coverage_paths, so long as the data in the cache has the same
+ * mtime as those scripts.
+ *
+ * @coverage_prefixes: (transfer none): A null-terminated strv of prefixes of files to perform coverage on
+ * @context: (transfer full): A #GjsContext object.
+ * @cache_path: A path to a file containing a serialized cache.
+ *
+ * Returns: A #GjsCoverage object
+ */
+GjsCoverage *
+gjs_coverage_new_from_cache(const char **coverage_prefixes,
+                            GjsContext *context,
+                            const char *cache_path)
+{
+    GjsCoverage *coverage =
+        GJS_DEBUG_COVERAGE(g_object_new(GJS_TYPE_DEBUG_COVERAGE,
+                                        "prefixes", coverage_prefixes,
+                                        "context", context,
+                                        "cache", cache_path,
                                         NULL));
 
     return coverage;

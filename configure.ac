@@ -81,7 +81,7 @@ gjs_cairo_packages="cairo cairo-gobject $common_packages"
 gjs_gdbus_packages="gobject-2.0 >= glib_required_version gio-2.0"
 gjs_gtk_packages="gtk+-3.0"
 # gjs-tests links against everything
-gjstests_packages="$gjstests_packages $gjs_packages"
+gjstests_packages="gio-unix-2.0 $gjs_packages"
 
 PKG_CHECK_MODULES([GOBJECT], [gobject-2.0 >= glib_required_version])
 PKG_CHECK_MODULES([GJS], [$gjs_packages])

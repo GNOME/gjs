@@ -81,6 +81,10 @@ void gjs_coverage_write_statistics(GjsCoverage *coverage,
 GjsCoverage * gjs_coverage_new(const char   **coverage_prefixes,
                                GjsContext    *coverage_context);
 
+GjsCoverage * gjs_coverage_new_from_cache(const char **coverage_prefixes,
+                                          GjsContext *context,
+                                          const char *cache_path);
+
 G_END_DECLS
 
 #endif

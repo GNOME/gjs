@@ -275,8 +275,8 @@ function testFunctionsFoundNoTrailingNewline() {
                                                  "function f2() {}\n");
     assertArrayEquals(foundFuncs,
                       [
-                          { name: "f1", line: 1, n_params: 0 },
-                          { name: "f2", line: 2, n_params: 0 }
+                          { key: "f1:1:0", line: 1, n_params: 0 },
+                          { key: "f2:2:0", line: 2, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -288,9 +288,9 @@ function testFunctionsFoundForDeclarations() {
                                     "function f3() {}\n");
     assertArrayEquals(foundFunctionDeclarations,
                       [
-                          { name: "f1", line: 1, n_params: 0 },
-                          { name: "f2", line: 2, n_params: 0 },
-                          { name: "f3", line: 3, n_params: 0 }
+                          { key: "f1:1:0", line: 1, n_params: 0 },
+                          { key: "f2:2:0", line: 2, n_params: 0 },
+                          { key: "f3:3:0", line: 3, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -305,9 +305,9 @@ function testFunctionsFoundForNestedFunctions() {
                                     "}\n");
     assertArrayEquals(foundFunctions,
                       [
-                          { name: "f1", line: 1, n_params: 0 },
-                          { name: null, line: 2, n_params: 0 },
-                          { name: null, line: 3, n_params: 0 }
+                          { key: "f1:1:0", line: 1, n_params: 0 },
+                          { key: "(anonymous):2:0", line: 2, n_params: 0 },
+                          { key: "(anonymous):3:0", line: 3, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -323,9 +323,9 @@ function testFunctionsFoundOnSameLineButDifferentiatedOnArgs() {
                                     "}");
     assertArrayEquals(foundFunctionsOnSameLine,
                       [
-                          { name: "f1", line: 1, n_params: 0 },
-                          { name: null, line: 1, n_params: 1 },
-                          { name: null, line: 1, n_params: 2 }
+                          { key: "f1:1:0", line: 1, n_params: 0 },
+                          { key: "(anonymous):1:1", line: 1, n_params: 1 },
+                          { key: "(anonymous):1:2", line: 1, n_params: 2 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -336,7 +336,7 @@ function testFunctionsInsideArrayExpression() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 0 },
+                          { key: "(anonymous):1:0", line: 1, n_params: 0 },
                       ],
                       functionDeclarationsEqual);
 }
@@ -347,7 +347,7 @@ function testFunctionsInsideArrowExpression() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 0 }
+                          { key: "(anonymous):1:0", line: 1, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -359,8 +359,8 @@ function testFunctionsInsideSequence() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 1 },
-                          { name: null, line: 1, n_params: 2 },
+                          { key: "(anonymous):1:0", line: 1, n_params: 1 },
+                          { key: "(anonymous):1:2", line: 1, n_params: 2 },
                       ],
                       functionDeclarationsEqual);
 }
@@ -371,7 +371,7 @@ function testFunctionsInsideUnaryExpression() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 0 },
+                          { key: "(anonymous):1:0", line: 1, n_params: 0 },
                       ],
                       functionDeclarationsEqual);
 }
@@ -383,8 +383,8 @@ function testFunctionsInsideBinaryExpression() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 1 },
-                          { name: null, line: 1, n_params: 2 }
+                          { key: "(anonymous):1:1", line: 1, n_params: 1 },
+                          { key: "(anonymous):1:2", line: 1, n_params: 2 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -395,7 +395,7 @@ function testFunctionsInsideAssignmentExpression() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 0 }
+                          { key: "(anonymous):1:0", line: 1, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -407,7 +407,7 @@ function testFunctionsInsideUpdateExpression() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 2, n_params: 0 }
+                          { key: "(anonymous):2:0", line: 2, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -419,8 +419,8 @@ function testFunctionsInsideIfConditions() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 1 },
-                          { name: null, line: 1, n_params: 2 }
+                          { key: "(anonymous):1:1", line: 1, n_params: 1 },
+                          { key: "(anonymous):1:2", line: 1, n_params: 2 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -432,8 +432,8 @@ function testFunctionsInsideWhileConditions() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 1 },
-                          { name: null, line: 1, n_params: 2 }
+                          { key: "(anonymous):1:1", line: 1, n_params: 1 },
+                          { key: "(anonymous):1:2", line: 1, n_params: 2 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -444,7 +444,7 @@ function testFunctionsInsideForInitializer() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 0 }
+                          { key: "(anonymous):1:0", line: 1, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -458,7 +458,7 @@ function testFunctionsInsideForLetInitializer() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 0 }
+                          { key: "(anonymous):1:0", line: 1, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -469,7 +469,7 @@ function testFunctionsInsideForVarInitializer() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 0 }
+                          { key: "(anonymous):1:0", line: 1, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -480,7 +480,7 @@ function testFunctionsInsideForCondition() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 0 }
+                          { key: "(anonymous):1:0", line: 1, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -491,7 +491,7 @@ function testFunctionsInsideForIncrement() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 0 }
+                          { key: "(anonymous):1:0", line: 1, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -502,7 +502,7 @@ function testFunctionsInsideForInObject() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 0 }
+                          { key: "(anonymous):1:0", line: 1, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -513,7 +513,7 @@ function testFunctionsInsideForEachInObject() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 0 }
+                          { key: "(anonymous):1:0", line: 1, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -524,7 +524,7 @@ function testFunctionsInsideForOfObject() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 0 }
+                          { key: "(anonymous):1:0", line: 1, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -535,7 +535,7 @@ function testFunctionsUsedAsObjectFound() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 0 }
+                          { key: "(anonymous):1:0", line: 1, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -546,7 +546,7 @@ function testFunctionsUsedAsObjectDynamicProp() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 0 }
+                          { key: "(anonymous):1:0", line: 1, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -558,8 +558,8 @@ function testFunctionsOnEitherSideOfLogicalExpression() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 1, n_params: 1 },
-                          { name: null, line: 1, n_params: 2 }
+                          { key: "(anonymous):1:1", line: 1, n_params: 1 },
+                          { key: "(anonymous):1:2", line: 1, n_params: 2 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -572,8 +572,8 @@ function testFunctionsOnEitherSideOfConditionalExpression() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 2, n_params: 1 },
-                          { name: null, line: 2, n_params: 2 }
+                          { key: "(anonymous):2:1", line: 2, n_params: 1 },
+                          { key: "(anonymous):2:1", line: 2, n_params: 2 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -584,8 +584,8 @@ function testFunctionsYielded() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: "a", line: 1, n_params: 0 },
-                          { name: null, line: 1, n_params: 0 }
+                          { key: "a:1:0", line: 1, n_params: 0 },
+                          { key: "(anonymous):1:0", line: 1, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -597,7 +597,7 @@ function testFunctionsInArrayComprehensionBody() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 2, n_params: 0 }
+                          { key: "(anonymous):2:0", line: 2, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -609,7 +609,7 @@ function testFunctionsInArrayComprehensionBlock() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 2, n_params: 0 }
+                          { key: "(anonymous):2:0", line: 2, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -622,7 +622,7 @@ function testFunctionsInArrayComprehensionFilter() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { name: null, line: 2, n_params: 0 }
+                          { key: "(anonymous):2:0", line: 2, n_params: 0 }
                       ],
                       functionDeclarationsEqual);
 }
@@ -908,9 +908,17 @@ function testHitIsAlwaysInitiallyFalse() {
 function testFunctionForKeyFromFunctionWithNameMatchesSchema() {
     let expectedFunctionKey = 'f:1:2';
     let functionKeyForFunctionName =
-        Coverage._getFunctionKeyFromReflectedFunction({ name: 'f',
-                                                        line: 1,
-                                                        n_params: 2 });
+        Coverage._getFunctionKeyFromReflectedFunction({
+            id: {
+                name: 'f'
+            },
+            loc: {
+              start: {
+                  line: 1
+              }
+            },
+            params: ['a', 'b']
+        });
 
     JSUnit.assertEquals(expectedFunctionKey, functionKeyForFunctionName);
 }
@@ -918,9 +926,15 @@ function testFunctionForKeyFromFunctionWithNameMatchesSchema() {
 function testFunctionKeyFromFunctionWithoutNameIsAnonymous() {
     let expectedFunctionKey = '(anonymous):2:3';
     let functionKeyForAnonymousFunction =
-        Coverage._getFunctionKeyFromReflectedFunction({ name: null,
-                                                        line: 2,
-                                                        n_params: 3 });
+        Coverage._getFunctionKeyFromReflectedFunction({
+            id: null,
+            loc: {
+              start: {
+                  line: 2
+              }
+            },
+            params: ['a', 'b', 'c']
+        });
 
     JSUnit.assertEquals(expectedFunctionKey, functionKeyForAnonymousFunction);
 }
@@ -928,14 +942,28 @@ function testFunctionKeyFromFunctionWithoutNameIsAnonymous() {
 
 
 function testFunctionCounterMapReturnedForFunctionKeys() {
-    let func = {
-        name: 'name',
-        line: 1,
-        n_params: 0
+    let ast = {
+        body: [{
+            type: 'FunctionDeclaration',
+            id: {
+                name: 'name'
+            },
+            loc: {
+              start: {
+                  line: 1
+              }
+            },
+            params: [],
+            body: {
+                type: 'BlockStatement',
+                body: []
+            }
+        }]
     };
 
-    let functionKey = Coverage._getFunctionKeyFromReflectedFunction(func);
-    let functionCounters = Coverage._functionsToFunctionCounters([func]);
+    let detectedFunctions = Coverage.functionsForAST(ast);
+    let functionKey = Coverage._getFunctionKeyFromReflectedFunction(ast.body[0]);
+    let functionCounters = Coverage._functionsToFunctionCounters(detectedFunctions);
 
     JSUnit.assertEquals(0, functionCounters[functionKey].hitCount);
 }
@@ -965,16 +993,29 @@ function testIncrementFunctionCountersForFunctionOnSameExecutionStartLine() {
 }
 
 function testIncrementFunctionCountersForFunctionOnEarlierStartLine() {
-    let functions = [
-        {
-            name: 'name',
-            line: 1,
-            n_params: 0
-        }
-    ];
-    let functionKey = Coverage._getFunctionKeyFromReflectedFunction(functions[0]);
-    let knownFunctionsArray = Coverage._populateKnownFunctions(functions, 3);
-    let functionCounters = Coverage._functionsToFunctionCounters(functions);
+    let ast = {
+        body: [{
+            type: 'FunctionDeclaration',
+            id: {
+                name: 'name'
+            },
+            loc: {
+              start: {
+                  line: 1
+              }
+            },
+            params: [],
+            body: {
+                type: 'BlockStatement',
+                body: []
+            }
+        }]
+    };
+
+    let detectedFunctions = Coverage.functionsForAST(ast);
+    let functionKey = Coverage._getFunctionKeyFromReflectedFunction(ast.body[0]);
+    let knownFunctionsArray = Coverage._populateKnownFunctions(detectedFunctions, 3);
+    let functionCounters = Coverage._functionsToFunctionCounters(detectedFunctions);
 
     /* We're entering at line two, but the function definition was actually
      * at line one */
@@ -984,16 +1025,28 @@ function testIncrementFunctionCountersForFunctionOnEarlierStartLine() {
 }
 
 function testIncrementFunctionCountersThrowsErrorOnUnexpectedFunction() {
-    let functions = [
-        {
-            name: 'name',
-            line: 1,
-            n_params: 0
-        }
-    ];
-    let functionKey = Coverage._getFunctionKeyFromReflectedFunction(functions[0]);
-    let knownFunctionsArray = Coverage._populateKnownFunctions(functions, 3);
-    let functionCounters = Coverage._functionsToFunctionCounters(functions);
+    let ast = {
+        body: [{
+            type: 'FunctionDeclaration',
+            id: {
+                name: 'name'
+            },
+            loc: {
+              start: {
+                  line: 1
+              }
+            },
+            params: [],
+            body: {
+                type: 'BlockStatement',
+                body: []
+            }
+        }]
+    };
+    let detectedFunctions = Coverage.functionsForAST(ast);
+    let functionKey = Coverage._getFunctionKeyFromReflectedFunction(ast.body[0]);
+    let knownFunctionsArray = Coverage._populateKnownFunctions(detectedFunctions, 3);
+    let functionCounters = Coverage._functionsToFunctionCounters(detectedFunctions);
 
     /* We're entering at line two, but the function definition was actually
      * at line one */
@@ -1120,16 +1173,36 @@ function testConvertFunctionCountersToArrayIsSorted() {
 }
 
 const MockFiles = {
-    'filename': "let f = function() { return 1; };"
+    'filename': "function f() {\n" +
+                "    return 1;\n" +
+                "}\n" +
+                "if (f())\n" +
+                "    f = 0;\n" +
+                "\n",
+    'uncached': "function f() {\n" +
+                "    return 1;\n" +
+                "}\n"
 };
 
-const MockFilenames = Object.keys(MockFiles);
+const MockFilenames = (function() {
+    let keys = Object.keys(MockFiles);
+    keys.push('nonexistent');
+    return keys;
+})();
 
 Coverage.getFileContents = function(filename) {
     if (MockFiles[filename])
         return MockFiles[filename];
-    throw new Error("Non existent");
+    return undefined;
 };
+
+Coverage.getFileChecksum = function(filename) {
+    return "abcd";
+}
+
+Coverage.getFileModificationTime = function(filename) {
+    return [1, 2];
+}
 
 function testCoverageStatisticsContainerFetchesValidStatisticsForFile() {
     let container = new Coverage.CoverageStatisticsContainer(MockFilenames);
@@ -1147,6 +1220,131 @@ function testCoverageStatisticsContainerThrowsForNonExistingFile() {
     JSUnit.assertRaises(function() {
         container.fetchStatistics('nonexistent');
     });
+}
+
+const MockCache = '{ \
+    "filename": { \
+        "mtime": [1, 2], \
+        "checksum": null, \
+        "lines": [2, 4, 5], \
+        "branches": [ \
+            { \
+                "point": 4, \
+                "exits": [5] \
+            } \
+        ], \
+        "functions": [ \
+            { \
+                "key": "f:1:0", \
+                "line": 1 \
+            } \
+        ] \
+    } \
+}';
+
+/* A simple wrapper to monkey-patch object[functionProperty] with
+ * a wrapper that checks to see if it was called. Returns true
+ * if the function was called at all */
+function _checkIfCalledWhilst(object, functionProperty, clientCode) {
+    let original = object[functionProperty];
+    let called = false;
+
+    object[functionProperty] = function() {
+        called = true;
+        return original.apply(this, arguments);
+    };
+
+    clientCode();
+
+    object[functionProperty] = original;
+    return called;
+}
+
+function testCoverageCountersFetchedFromCache() {
+    let called = _checkIfCalledWhilst(Coverage,
+                                      '_fetchCountersFromReflection',
+                                      function() {
+                                          let container = new Coverage.CoverageStatisticsContainer(MockFilenames,
+                                                                                                   MockCache);
+                                          let statistics = container.fetchStatistics('filename');
+                                      });
+    JSUnit.assertFalse(called);
+}
+
+function testCoverageCountersFetchedFromReflectionIfMissed() {
+    let called = _checkIfCalledWhilst(Coverage,
+                                      '_fetchCountersFromReflection',
+                                      function() {
+                                          let container = new Coverage.CoverageStatisticsContainer(MockFilenames,
+                                                                                                   MockCache);
+                                          let statistics = container.fetchStatistics('uncached');
+                                      });
+    JSUnit.assertTrue(called);
+}
+
+function testCoverageContainerCacheNotStaleIfAllHit() {
+    let container = new Coverage.CoverageStatisticsContainer(MockFilenames,
+                                                             MockCache);
+    let statistics = container.fetchStatistics('filename');
+    JSUnit.assertFalse(container.staleCache());
+}
+
+function testCoverageContainerCacheStaleIfMiss() {
+    let container = new Coverage.CoverageStatisticsContainer(MockFilenames,
+                                                             MockCache);
+    let statistics = container.fetchStatistics('uncached');
+    JSUnit.assertTrue(container.staleCache());
+}
+
+function testCoverageCountersFromCacheHaveSameExecutableLinesAsReflection() {
+    let container = new Coverage.CoverageStatisticsContainer(MockFilenames,
+                                                             MockCache);
+    let statistics = container.fetchStatistics('filename');
+
+    let containerWithNoCaching = new Coverage.CoverageStatisticsContainer(MockFilenames);
+    let statisticsWithNoCaching = containerWithNoCaching.fetchStatistics('filename');
+
+    assertArrayEquals(statisticsWithNoCaching.expressionCounters,
+                      statistics.expressionCounters,
+                      JSUnit.assertEquals);
+}
+
+function testCoverageCountersFromCacheHaveSameBranchExitsAsReflection() {
+    let container = new Coverage.CoverageStatisticsContainer(MockFilenames,
+                                                             MockCache);
+    let statistics = container.fetchStatistics('filename');
+
+    let containerWithNoCaching = new Coverage.CoverageStatisticsContainer(MockFilenames);
+    let statisticsWithNoCaching = containerWithNoCaching.fetchStatistics('filename');
+
+    /* Branch starts on line 4 */
+    JSUnit.assertEquals(statisticsWithNoCaching.branchCounters[4].exits[0].line,
+                        statistics.branchCounters[4].exits[0].line);
+}
+
+function testCoverageCountersFromCacheHaveSameBranchPointsAsReflection() {
+    let container = new Coverage.CoverageStatisticsContainer(MockFilenames,
+                                                             MockCache);
+    let statistics = container.fetchStatistics('filename');
+
+    let containerWithNoCaching = new Coverage.CoverageStatisticsContainer(MockFilenames);
+    let statisticsWithNoCaching = containerWithNoCaching.fetchStatistics('filename');
+    JSUnit.assertEquals(statisticsWithNoCaching.branchCounters[4].point,
+                        statistics.branchCounters[4].point);
+}
+
+function testCoverageCountersFromCacheHaveSameFunctionKeysAsReflection() {
+    let container = new Coverage.CoverageStatisticsContainer(MockFilenames,
+                                                             MockCache);
+    let statistics = container.fetchStatistics('filename');
+
+    let containerWithNoCaching = new Coverage.CoverageStatisticsContainer(MockFilenames);
+    let statisticsWithNoCaching = containerWithNoCaching.fetchStatistics('filename');
+
+    /* Functions start on line 1 */
+    assertArrayEquals(Object.keys(statisticsWithNoCaching.functionCounters),
+                      Object.keys(statistics.functionCounters),
+                      JSUnit.assertEquals);
 }
 
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);

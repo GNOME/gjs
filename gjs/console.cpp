@@ -34,6 +34,8 @@ static char **coverage_prefixes = NULL;
 static char *coverage_output_path = NULL;
 static char *command = NULL;
 
+static const char *GJS_COVERAGE_CACHE_FILE_NAME = ".internal-gjs-coverage-cache";
+
 static GOptionEntry entries[] = {
     { "command", 'c', 0, G_OPTION_ARG_STRING, &command, "Program passed in as a string", "COMMAND" },
     { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &coverage_prefixes, "Add the prefix PREFIX to the list of files to generate coverage info for", "PREFIX" },
@@ -121,8 +123,13 @@ main(int argc, char **argv)
         if (!coverage_output_path)
             g_error("--coverage-output is required when taking coverage statistics");
 
-        coverage = gjs_coverage_new((const gchar **) coverage_prefixes,
-                                    js_context);
+        char *path_to_cache_file = g_build_filename(coverage_output_path,
+                                                    GJS_COVERAGE_CACHE_FILE_NAME,
+                                                    NULL);
+        coverage = gjs_coverage_new_from_cache((const gchar **) coverage_prefixes,
+                                               js_context,
+                                               path_to_cache_file);
+        g_free(path_to_cache_file);
     }
 
     /* prepare command line arguments */

@@ -30,8 +30,11 @@
 
 #include <glib.h>
 #include <gio/gio.h>
+#include <gio/gunixoutputstream.h>
 #include <gjs/gjs.h>
 #include <gjs/coverage.h>
+#include <gjs/coverage-internal.h>
+#include <gjs/gjs-module.h>
 
 typedef struct _GjsCoverageFixture {
     GjsContext    *context;
@@ -334,6 +337,36 @@ coverage_data_matches_values_for_key(const char            *data,
     return FALSE;
 }
 
+/* A simple wrapper around gjs_coverage_new */
+GjsCoverage *
+create_coverage_for_script(GjsContext *context,
+                           const char *script)
+{
+    const char *coverage_scripts[] = {
+        script,
+        NULL
+    };
+
+    return gjs_coverage_new(coverage_scripts,
+                            context);
+}
+
+GjsCoverage *
+create_coverage_for_script_and_cache(GjsContext *context,
+                                     const char *cache,
+                                     const char *script)
+{
+    const char *coverage_scripts[] = {
+        script,
+        NULL
+    };
+
+
+    return gjs_coverage_new_from_cache(coverage_scripts,
+                                       context,
+                                       cache);
+}
+
 static void
 test_covered_file_is_duplicated_into_output_if_resource(gpointer      fixture_data,
                                                         gconstpointer user_data)
@@ -371,11 +404,7 @@ test_covered_file_is_duplicated_into_output_if_resource(gpointer      fixture_da
                          "org/gnome/gjs/mock/test/gjs-test-coverage/loadedJSFromResource.js",
                          NULL);
 
-    GFile *file_for_expected_path = g_file_new_for_path(expected_temporary_js_script_file_path);
-
-    g_assert(g_file_query_exists(file_for_expected_path, NULL) == TRUE);
-
-    g_object_unref(file_for_expected_path);
+    g_assert_true(g_file_test(expected_temporary_js_script_file_path, G_FILE_TEST_EXISTS));
     g_free(expected_temporary_js_script_file_path);
 }
 
@@ -401,11 +430,8 @@ test_covered_file_is_duplicated_into_output_if_path(gpointer      fixture_data,
                          temporary_js_script_basename,
                          NULL);
 
-    GFile *file_for_expected_path = g_file_new_for_path(expected_temporary_js_script_file_path);
+    g_assert_true(g_file_test(expected_temporary_js_script_file_path, G_FILE_TEST_EXISTS));
 
-    g_assert(g_file_query_exists(file_for_expected_path, NULL) == TRUE);
-
-    g_object_unref(file_for_expected_path);
     g_free(expected_temporary_js_script_file_path);
     g_free(temporary_js_script_basename);
 }
@@ -523,6 +549,7 @@ test_expected_entry_not_written_for_nonexistent_file(gpointer      fixture_data,
                                                     "SF:",
                                                     temporary_js_script_basename)));
 
+    g_free(coverage_data_contents);
     g_free(temporary_js_script_basename);
 }
 
@@ -1231,7 +1258,6 @@ test_no_hits_to_coverage_data_for_unexecuted(gpointer      fixture_data,
 
     /* No files were executed, so the coverage data is empty. */
     g_assert_cmpstr(coverage_data_contents, ==, "");
-
     g_free(coverage_data_contents);
 }
 
@@ -1379,6 +1405,18 @@ check_coverage_data_for_source_file(ExpectedSourceFileCoverageData *expected,
     return FALSE;
 }
 
+static char *
+get_output_path_for_script_on_disk(const char *path_to_script,
+                                   const char *path_to_output_dir)
+
+{
+    char *base = g_filename_display_basename(path_to_script);
+    char *output_path = g_build_filename(path_to_output_dir, base, NULL);
+
+    g_free(base);
+    return output_path;
+}
+
 static void
 test_correct_line_coverage_data_written_for_both_source_file_sectons(gpointer      fixture_data,
                                                                      gconstpointer user_data)
@@ -1454,6 +1492,678 @@ test_correct_line_coverage_data_written_for_both_source_file_sectons(gpointer   
     g_free(coverage_data_contents);
 }
 
+typedef GjsCoverageToSingleOutputFileFixture GjsCoverageCacheFixture;
+
+static void
+gjs_coverage_cache_fixture_set_up(gpointer      fixture_data,
+                                  gconstpointer user_data)
+{
+    gjs_coverage_to_single_output_file_fixture_set_up(fixture_data, user_data);
+}
+
+static void
+gjs_coverage_cache_fixture_tear_down(gpointer      fixture_data,
+                                     gconstpointer user_data)
+{
+    gjs_coverage_to_single_output_file_fixture_tear_down(fixture_data, user_data);
+}
+
+static GString *
+append_tuples_to_array_in_object_notation(GString    *string,
+                                          const char  *tuple_contents_strv)
+{
+    char *original_ptr = (char *) tuple_contents_strv;
+    char *expected_tuple_contents = NULL;
+    while ((expected_tuple_contents = strsep((char **) &tuple_contents_strv, ";")) != NULL) {
+       if (!strlen(expected_tuple_contents))
+           continue;
+
+       if (expected_tuple_contents != original_ptr)
+           g_string_append_printf(string, ",");
+        g_string_append_printf(string, "{%s}", expected_tuple_contents);
+    }
+
+    return string;
+}
+
+static GString *
+format_expected_cache_object_notation(const char *mtimes,
+                                      const char *hash,
+                                      const char *script_name,
+                                      const char *expected_executable_lines_array,
+                                      const char *expected_branches,
+                                      const char *expected_functions)
+{
+    GString *string = g_string_new("");
+    g_string_append_printf(string,
+                           "{\"%s\":{\"mtime\":%s,\"checksum\":%s,\"lines\":[%s],\"branches\":[",
+                           script_name,
+                           mtimes,
+                           hash,
+                           expected_executable_lines_array);
+    append_tuples_to_array_in_object_notation(string, expected_branches);
+    g_string_append_printf(string, "],\"functions\":[");
+    append_tuples_to_array_in_object_notation(string, expected_functions);
+    g_string_append_printf(string, "]}}");
+    return string;
+}
+
+typedef struct _GjsCoverageCacheObjectNotationTestTableData {
+    const char *test_name;
+    const char *script;
+    const char *resource_path;
+    const char *expected_executable_lines;
+    const char *expected_branches;
+    const char *expected_functions;
+} GjsCoverageCacheObjectNotationTableTestData;
+
+static GBytes *
+serialize_ast_to_bytes(GjsCoverage *coverage,
+                       const char **coverage_paths)
+{
+    return gjs_serialize_statistics(coverage);
+}
+
+static char *
+serialize_ast_to_object_notation(GjsCoverage *coverage,
+                                 const char **coverage_paths)
+{
+    /* Unfortunately, we need to pass in this paramater here since
+     * the len parameter is not allow-none.
+     *
+     * The caller doesn't need to know about the length of the
+     * data since it is only used for strcmp and the data is
+     * NUL-terminated anyway. */
+    gsize len = 0;
+    return (char *)g_bytes_unref_to_data(serialize_ast_to_bytes(coverage, coverage_paths),
+                                         &len);
+}
+
+static char *
+eval_file_for_ast_in_object_notation(GjsContext  *context,
+                                     GjsCoverage *coverage,
+                                     const char  *filename)
+{
+    gboolean success = gjs_context_eval_file(context,
+                                             filename,
+                                             NULL,
+                                             NULL);
+    g_assert_true(success);
+    
+    const gchar *coverage_paths[] = {
+        filename,
+        NULL
+    };
+
+    return serialize_ast_to_object_notation(coverage, coverage_paths);
+}
+
+static void
+test_coverage_cache_data_in_expected_format(gpointer      fixture_data,
+                                            gconstpointer user_data)
+{
+    GjsCoverageCacheFixture                     *fixture = (GjsCoverageCacheFixture *) fixture_data;
+    GjsCoverageCacheObjectNotationTableTestData *table_data = (GjsCoverageCacheObjectNotationTableTestData *) user_data;
+
+    GTimeVal mtime;
+    gboolean successfully_got_mtime = gjs_get_path_mtime(fixture->base_fixture.temporary_js_script_filename,
+                                                         &mtime);
+    g_assert_true(successfully_got_mtime);
+
+    char    *mtime_string = g_strdup_printf("[%lli,%lli]", (gint64) mtime.tv_sec, (gint64) mtime.tv_usec);
+    GString *expected_cache_object_notation = format_expected_cache_object_notation(mtime_string,
+                                                                                    "null",
+                                                                                    fixture->base_fixture.temporary_js_script_filename,
+                                                                                    table_data->expected_executable_lines,
+                                                                                    table_data->expected_branches,
+                                                                                    table_data->expected_functions);
+
+    write_to_file_at_beginning(fixture->base_fixture.temporary_js_script_open_handle, table_data->script);
+    char *cache_in_object_notation = eval_file_for_ast_in_object_notation(fixture->base_fixture.context,
+                                                                          fixture->base_fixture.coverage,
+                                                                          fixture->base_fixture.temporary_js_script_filename);
+    g_assert(cache_in_object_notation != NULL);
+
+    g_assert_cmpstr(cache_in_object_notation, ==, expected_cache_object_notation->str);
+
+    g_string_free(expected_cache_object_notation, TRUE);
+    g_free(cache_in_object_notation);
+    g_free(mtime_string);
+}
+
+static void
+test_coverage_cache_data_in_expected_format_resource(gpointer      fixture_data,
+                                                     gconstpointer user_data)
+{
+    GjsCoverageCacheFixture                     *fixture = (GjsCoverageCacheFixture *) fixture_data;
+    GjsCoverageCacheObjectNotationTableTestData *table_data = (GjsCoverageCacheObjectNotationTableTestData *) user_data;
+
+    char *hash_string_no_quotes = gjs_get_path_checksum(table_data->resource_path);
+    char *hash_string = g_strdup_printf("\"%s\"", hash_string_no_quotes);
+    g_free(hash_string_no_quotes);
+
+    GString *expected_cache_object_notation = format_expected_cache_object_notation("null",
+                                                                                    hash_string,
+                                                                                    table_data->resource_path,
+                                                                                    table_data->expected_executable_lines,
+                                                                                    table_data->expected_branches,
+                                                                                    table_data->expected_functions);
+
+    g_clear_object(&fixture->base_fixture.coverage);
+    fixture->base_fixture.coverage = create_coverage_for_script(fixture->base_fixture.context,
+                                                                             table_data->resource_path);
+    char *cache_in_object_notation = eval_file_for_ast_in_object_notation(fixture->base_fixture.context,
+                                                                          fixture->base_fixture.coverage,
+                                                                          table_data->resource_path);
+
+    g_assert_cmpstr(cache_in_object_notation, ==, expected_cache_object_notation->str);
+
+    g_string_free(expected_cache_object_notation, TRUE);
+    g_free(cache_in_object_notation);
+    g_free(hash_string);
+}
+
+static char *
+generate_coverage_compartment_verify_script(const char *coverage_script_filename,
+                                            const char *user_script)
+{
+    return g_strdup_printf("const JSUnit = imports.jsUnit;\n"
+                           "const covered_script_filename = '%s';\n"
+                           "function assertArrayEquals(lhs, rhs) {\n"
+                           "    JSUnit.assertEquals(lhs.length, rhs.length);\n"
+                           "    for (let i = 0; i < lhs.length; i++)\n"
+                           "        JSUnit.assertEquals(lhs[i], rhs[i]);\n"
+                           "}\n"
+                           "\n"
+                           "%s", coverage_script_filename, user_script);
+}
+
+typedef struct _GjsCoverageCacheJSObjectTableTestData {
+    const char *test_name;
+    const char *script;
+    const char *verify_js_script;
+} GjsCoverageCacheJSObjectTableTestData;
+
+static void
+test_coverage_cache_as_js_object_has_expected_properties(gpointer      fixture_data,
+                                                         gconstpointer user_data)
+{
+    GjsCoverageCacheFixture               *fixture = (GjsCoverageCacheFixture *) fixture_data;
+    GjsCoverageCacheJSObjectTableTestData *table_data = (GjsCoverageCacheJSObjectTableTestData *) user_data;
+
+    write_to_file_at_beginning(fixture->base_fixture.temporary_js_script_open_handle, table_data->script);
+    gjs_context_eval_file(fixture->base_fixture.context,
+                          fixture->base_fixture.temporary_js_script_filename,
+                          NULL,
+                          NULL);
+
+    const gchar *coverage_paths[] = {
+        fixture->base_fixture.temporary_js_script_filename,
+        NULL
+    };
+
+    GBytes *cache = serialize_ast_to_bytes(fixture->base_fixture.coverage,
+                                           coverage_paths);
+    JS::RootedString cache_results(JS_GetRuntime((JSContext *) gjs_context_get_native_context(fixture->base_fixture.context)),
+                                   gjs_deserialize_cache_to_object(fixture->base_fixture.coverage, cache));
+    JS::RootedValue cache_result_value(JS_GetRuntime((JSContext *) gjs_context_get_native_context(fixture->base_fixture.context)),
+                                       STRING_TO_JSVAL(cache_results));
+    gjs_inject_value_into_coverage_compartment(fixture->base_fixture.coverage,
+                                               cache_result_value,
+                                               "coverage_cache");
+
+    gchar *verify_script_complete = generate_coverage_compartment_verify_script(fixture->base_fixture.temporary_js_script_filename,
+                                                                                table_data->verify_js_script);
+    gjs_run_script_in_coverage_compartment(fixture->base_fixture.coverage,
+                                           verify_script_complete);
+    g_free(verify_script_complete);
+
+    g_bytes_unref(cache);
+}
+
+typedef struct _GjsCoverageCacheEqualResultsTableTestData {
+    const char *test_name;
+    const char *script;
+} GjsCoverageCacheEqualResultsTableTestData;
+
+static char *
+write_cache_to_temporary_file(const char *temp_dir,
+                              GBytes     *cache)
+{
+    /* Just need a temporary file, don't care about its fd */
+    char *temporary_file = g_build_filename(temp_dir, "gjs_coverage_cache_XXXXXX", NULL);
+    close(mkstemps(temporary_file, 0));
+
+    if (!gjs_write_cache_to_path(temporary_file, cache)) {
+        g_free(temporary_file);
+        return NULL;
+    }
+
+    return temporary_file;
+}
+
+static char *
+serialize_ast_to_cache_in_temporary_file(GjsCoverage *coverage,
+                                         const char  *output_directory,
+                                         const char  **coverage_paths)
+{
+    GBytes   *cache = serialize_ast_to_bytes(coverage, coverage_paths);
+    char   *cache_path = write_cache_to_temporary_file(output_directory, cache);
+
+    g_bytes_unref(cache);
+
+    return cache_path;
+}
+
+static void
+test_coverage_cache_equal_results_to_reflect_parse(gpointer      fixture_data,
+                                                   gconstpointer user_data)
+{
+    GjsCoverageCacheFixture                   *fixture = (GjsCoverageCacheFixture *) fixture_data;
+    GjsCoverageCacheEqualResultsTableTestData *equal_results_data = (GjsCoverageCacheEqualResultsTableTestData *) user_data;
+
+    write_to_file_at_beginning(fixture->base_fixture.temporary_js_script_open_handle,
+                               equal_results_data->script);
+
+    const gchar *coverage_paths[] = {
+        fixture->base_fixture.temporary_js_script_filename,
+        NULL
+    };
+
+    char *coverage_data_contents_no_cache =
+        eval_script_and_get_coverage_data(fixture->base_fixture.context,
+                                          fixture->base_fixture.coverage,
+                                          fixture->base_fixture.temporary_js_script_filename,
+                                          fixture->output_file_directory,
+                                          NULL);
+    char *cache_path = serialize_ast_to_cache_in_temporary_file(fixture->base_fixture.coverage,
+                                                                fixture->output_file_directory,
+                                                                coverage_paths);
+    g_assert(cache_path != NULL);
+
+    g_clear_object(&fixture->base_fixture.coverage);
+    fixture->base_fixture.coverage = create_coverage_for_script_and_cache(fixture->base_fixture.context,
+                                                                          cache_path,
+                                                                          fixture->base_fixture.temporary_js_script_filename);
+    g_free(cache_path);
+
+    /* Overwrite tracefile with nothing and start over */
+    write_to_file_at_beginning(fixture->output_file_handle, "");
+
+    char *coverage_data_contents_cached =
+        eval_script_and_get_coverage_data(fixture->base_fixture.context,
+                                          fixture->base_fixture.coverage,
+                                          fixture->base_fixture.temporary_js_script_filename,
+                                          fixture->output_file_directory,
+                                          NULL);
+
+    g_assert_cmpstr(coverage_data_contents_cached, ==, coverage_data_contents_no_cache);
+
+    g_free(coverage_data_contents_cached);
+    g_free(coverage_data_contents_no_cache);
+}
+
+static char *
+eval_file_for_ast_cache_path(GjsContext  *context,
+                             GjsCoverage *coverage,
+                             const char  *filename,
+                             const char  *output_directory)
+{
+    gboolean success = gjs_context_eval_file(context,
+                                             filename,
+                                             NULL,
+                                             NULL);
+    g_assert_true(success);
+
+    const gchar *coverage_paths[] = {
+        filename,
+        NULL
+    };
+
+    return serialize_ast_to_cache_in_temporary_file(coverage,
+                                                    output_directory,
+                                                    coverage_paths);
+}
+
+/* Effectively, the results should be what we expect even though
+ * we overwrote the original script after getting coverage and
+ * fetching the cache */
+static void
+test_coverage_cache_invalidation(gpointer      fixture_data,
+                                 gconstpointer user_data)
+{
+    GjsCoverageCacheFixture *fixture = (GjsCoverageCacheFixture *) fixture_data;
+
+    char *cache_path = eval_file_for_ast_cache_path(fixture->base_fixture.context,
+                                                    fixture->base_fixture.coverage,
+                                                    fixture->base_fixture.temporary_js_script_filename,
+                                                    fixture->output_file_directory);
+
+    /* Sleep for a little while to make sure that the new file has a
+     * different mtime */
+    sleep(1);
+
+    /* Overwrite tracefile with nothing */
+    write_to_file_at_beginning(fixture->output_file_handle, "");
+
+    /* Write a new script into the temporary js file, which will be
+     * completely different to the original script that was there */
+    write_to_file_at_beginning(fixture->base_fixture.temporary_js_script_open_handle,
+                               "let i = 0;\n"
+                               "let j = 0;\n");
+
+    g_clear_object(&fixture->base_fixture.coverage);
+    fixture->base_fixture.coverage = create_coverage_for_script_and_cache(fixture->base_fixture.context,
+                                                                          cache_path,
+                                                                          fixture->base_fixture.temporary_js_script_filename);
+    g_free(cache_path);
+
+    gsize coverage_data_len = 0;
+    char *coverage_data_contents =
+        eval_script_and_get_coverage_data(fixture->base_fixture.context,
+                                          fixture->base_fixture.coverage,
+                                          fixture->base_fixture.temporary_js_script_filename,
+                                          fixture->output_file_directory,
+                                          &coverage_data_len);
+
+    LineCountIsMoreThanData matchers[] =
+    {
+        {
+            1,
+            0
+        },
+        {
+            2,
+            0
+        }
+    };
+
+    char *script_output_path = get_output_path_for_script_on_disk(fixture->base_fixture.temporary_js_script_filename,
+                                                                  fixture->output_file_directory);
+
+    ExpectedSourceFileCoverageData expected[] = {
+        {
+            script_output_path,
+            matchers,
+            2,
+            '2',
+            '2'
+        }
+    };
+
+    const gsize expected_len = G_N_ELEMENTS(expected);
+    const char *record = line_starting_with(coverage_data_contents, "SF:");
+    g_assert(check_coverage_data_for_source_file(expected, expected_len, record));
+
+    g_free(script_output_path);
+    g_free(coverage_data_contents);
+}
+
+static void
+unload_resource(GResource *resource)
+{
+    g_resources_unregister(resource);
+    g_resource_unref(resource);
+}
+
+static GResource *
+load_resource_from_builddir(const char *name)
+{
+    char *resource_path = g_build_filename(GJS_TOP_BUILDDIR,
+                                           name,
+                                           NULL);
+
+    GError    *error = NULL;
+    GResource *resource = g_resource_load(resource_path,
+                                          &error);
+
+    g_assert_no_error(error);
+    g_resources_register(resource);
+
+    g_free(resource_path);
+
+    return resource;
+}
+
+/* Load first resource, then unload and load second resource. Both have
+ * the same path, but different contents */
+static void
+test_coverage_cache_invalidation_resource(gpointer      fixture_data,
+                                          gconstpointer user_data)
+{
+    GjsCoverageCacheFixture *fixture = (GjsCoverageCacheFixture *) fixture_data;
+
+    const char *mock_resource_filename = "resource:///org/gnome/gjs/mock/cache/resource.js";
+
+    /* Load the resource archive and register it */
+    GResource *first_resource = load_resource_from_builddir("mock-cache-invalidation-before.gresource");
+
+    g_clear_object(&fixture->base_fixture.coverage);
+    fixture->base_fixture.coverage = create_coverage_for_script(fixture->base_fixture.context,
+                                                                mock_resource_filename);
+
+    char *cache_path = eval_file_for_ast_cache_path(fixture->base_fixture.context,
+                                                    fixture->base_fixture.coverage,
+                                                    mock_resource_filename,
+                                                    fixture->output_file_directory);
+
+    /* Load the "after" resource, but have the exact same coverage paths */
+    unload_resource(first_resource);
+    GResource *second_resource = load_resource_from_builddir("mock-cache-invalidation-after.gresource");
+
+    /* Overwrite tracefile with nothing */
+    write_to_file_at_beginning(fixture->output_file_handle, "");
+
+    g_clear_object(&fixture->base_fixture.coverage);
+    fixture->base_fixture.coverage = create_coverage_for_script_and_cache(fixture->base_fixture.context,
+                                                                          cache_path,
+                                                                          mock_resource_filename);
+    g_free(cache_path);
+
+    char *coverage_data_contents =
+        eval_script_and_get_coverage_data(fixture->base_fixture.context,
+                                          fixture->base_fixture.coverage,
+                                          mock_resource_filename,
+                                          fixture->output_file_directory,
+                                          NULL);
+
+    /* Don't need this anymore */
+    unload_resource(second_resource);
+
+    /* Now assert that the coverage file has executable lines in
+     * the places that we expect them to be */
+    LineCountIsMoreThanData matchers[] = {
+        {
+            1,
+            0
+        },
+        {
+            2,
+            0
+        }
+    };
+
+    char *script_output_path =
+        g_build_filename(fixture->output_file_directory,
+                         "org/gnome/gjs/mock/cache/resource.js",
+                         NULL);
+
+    ExpectedSourceFileCoverageData expected[] = {
+        {
+            script_output_path,
+            matchers,
+            2,
+            '2',
+            '2'
+        }
+    };
+
+    const gsize expected_len = G_N_ELEMENTS(expected);
+    const char *record = line_starting_with(coverage_data_contents, "SF:");
+    g_assert(check_coverage_data_for_source_file(expected, expected_len, record));
+
+    g_free(script_output_path);
+    g_free(coverage_data_contents);
+}
+
+static char *
+get_coverage_cache_path(const char *output_directory)
+{
+    char *cache_path = g_build_filename(output_directory,
+                                        "coverage-cache-XXXXXX",
+                                        NULL);
+    close(mkstemp(cache_path));
+    unlink(cache_path);
+
+    return cache_path;
+}
+
+static void
+test_coverage_cache_file_written_when_no_cache_exists(gpointer      fixture_data,
+                                                      gconstpointer user_data)
+{
+    GjsCoverageCacheFixture *fixture = (GjsCoverageCacheFixture *) fixture_data;
+    char *cache_path = get_coverage_cache_path(fixture->output_file_directory);
+
+    g_clear_object(&fixture->base_fixture.coverage);
+    fixture->base_fixture.coverage = create_coverage_for_script_and_cache(fixture->base_fixture.context,
+                                                                          cache_path,
+                                                                          fixture->base_fixture.temporary_js_script_filename);
+
+    /* We need to execute the script now in order for a cache entry
+     * to be created, since unexecuted scripts are not counted as
+     * part of the coverage report. */
+    gboolean success = gjs_context_eval_file(fixture->base_fixture.context,
+                                             fixture->base_fixture.temporary_js_script_filename,
+                                             NULL,
+                                             NULL);
+    g_assert_true(success);
+
+    gjs_coverage_write_statistics(fixture->base_fixture.coverage,
+                                  fixture->output_file_directory);
+
+    g_assert_true(g_file_test(cache_path, G_FILE_TEST_EXISTS));
+    g_free(cache_path);
+}
+
+static GTimeVal
+eval_script_for_cache_mtime(GjsContext  *context,
+                            GjsCoverage *coverage,
+                            const char  *cache_path,
+                            const char  *script,
+                            const char  *output_directory)
+{
+    gboolean success = gjs_context_eval_file(context,
+                                             script,
+                                             NULL,
+                                             NULL);
+    g_assert_true(success);
+
+    gjs_coverage_write_statistics(coverage,
+                                  output_directory);
+
+    GTimeVal mtime;
+    gboolean successfully_got_mtime = gjs_get_path_mtime(cache_path, &mtime);
+    g_assert_true(successfully_got_mtime);
+
+    return mtime;
+}
+
+static void
+test_coverage_cache_updated_when_cache_stale(gpointer      fixture_data,
+                                             gconstpointer user_data)
+{
+    GjsCoverageCacheFixture *fixture = (GjsCoverageCacheFixture *) fixture_data;
+
+    char *cache_path = get_coverage_cache_path(fixture->output_file_directory);
+    g_clear_object(&fixture->base_fixture.coverage);
+    fixture->base_fixture.coverage = create_coverage_for_script_and_cache(fixture->base_fixture.context,
+                                                                          cache_path,
+                                                                          fixture->base_fixture.temporary_js_script_filename);
+
+    GTimeVal first_cache_mtime = eval_script_for_cache_mtime(fixture->base_fixture.context,
+                                                             fixture->base_fixture.coverage,
+                                                             cache_path,
+                                                             fixture->base_fixture.temporary_js_script_filename,
+                                                             fixture->output_file_directory);
+
+    /* Sleep for a little while to make sure that the new file has a
+     * different mtime */
+    sleep(1);
+
+    /* Write a new script into the temporary js file, which will be
+     * completely different to the original script that was there */
+    write_to_file_at_beginning(fixture->base_fixture.temporary_js_script_open_handle,
+                               "let i = 0;\n"
+                               "let j = 0;\n");
+
+    /* Re-create coverage object, covering new script */
+    g_clear_object(&fixture->base_fixture.coverage);
+    fixture->base_fixture.coverage = create_coverage_for_script_and_cache(fixture->base_fixture.context,
+                                                                          cache_path,
+                                                                          fixture->base_fixture.temporary_js_script_filename);
+
+
+    /* Run the script again, which will cause an attempt
+     * to look up the AST data. Upon writing the statistics
+     * again, the cache should have been missed some of the time
+     * so the second mtime will be greater than the first */
+    GTimeVal second_cache_mtime = eval_script_for_cache_mtime(fixture->base_fixture.context,
+                                                              fixture->base_fixture.coverage,
+                                                              cache_path,
+                                                              fixture->base_fixture.temporary_js_script_filename,
+                                                              fixture->output_file_directory);
+
+
+    const gboolean seconds_different = (first_cache_mtime.tv_sec != second_cache_mtime.tv_sec);
+    const gboolean microseconds_different (first_cache_mtime.tv_usec != second_cache_mtime.tv_usec);
+
+    g_assert_true(seconds_different || microseconds_different);
+
+    g_free(cache_path);
+}
+
+static void
+test_coverage_cache_not_updated_on_full_hits(gpointer      fixture_data,
+                                             gconstpointer user_data)
+{
+    GjsCoverageCacheFixture *fixture = (GjsCoverageCacheFixture *) fixture_data;
+
+    char *cache_path = get_coverage_cache_path(fixture->output_file_directory);
+    g_clear_object(&fixture->base_fixture.coverage);
+    fixture->base_fixture.coverage = create_coverage_for_script_and_cache(fixture->base_fixture.context,
+                                                                          cache_path,
+                                                                          fixture->base_fixture.temporary_js_script_filename);
+
+    GTimeVal first_cache_mtime = eval_script_for_cache_mtime(fixture->base_fixture.context,
+                                                             fixture->base_fixture.coverage,
+                                                             cache_path,
+                                                             fixture->base_fixture.temporary_js_script_filename,
+                                                             fixture->output_file_directory);
+
+    /* Re-create coverage object, covering same script */
+    g_clear_object(&fixture->base_fixture.coverage);
+    fixture->base_fixture.coverage = create_coverage_for_script_and_cache(fixture->base_fixture.context,
+                                                                          cache_path,
+                                                                          fixture->base_fixture.temporary_js_script_filename);
+
+
+    /* Run the script again, which will cause an attempt
+     * to look up the AST data. Upon writing the statistics
+     * again, the cache should have been hit of the time
+     * so the second mtime will be the same as the first */
+    GTimeVal second_cache_mtime = eval_script_for_cache_mtime(fixture->base_fixture.context,
+                                                              fixture->base_fixture.coverage,
+                                                              cache_path,
+                                                              fixture->base_fixture.temporary_js_script_filename,
+                                                              fixture->output_file_directory);
+
+    g_assert_cmpint(first_cache_mtime.tv_sec, ==, second_cache_mtime.tv_sec);
+    g_assert_cmpint(first_cache_mtime.tv_usec, ==, second_cache_mtime.tv_usec);
+
+    g_free(cache_path);
+}
+
 typedef struct _FixturedTest {
     gsize            fixture_size;
     GTestFixtureFunc set_up;
@@ -1472,6 +2182,40 @@ add_test_for_fixture(const char      *name,
                       fixture->set_up,
                       test_func,
                       fixture->tear_down);
+}
+
+/* All table driven tests must be binary compatible with at
+ * least this header */
+typedef struct _TestTableDataHeader {
+    const char *test_name;
+} TestTableDataHeader;
+
+static void
+add_table_driven_test_for_fixture(const char                *name,
+                                  FixturedTest              *fixture,
+                                  GTestFixtureFunc          test_func,
+                                  gsize                     table_entry_size,
+                                  gsize                     n_table_entries,
+                                  const TestTableDataHeader *test_table)
+{
+    const char  *test_table_ptr = (const char *)test_table;
+    gsize test_table_index;
+
+    for (test_table_index = 0;
+         test_table_index < n_table_entries;
+         ++test_table_index, test_table_ptr += table_entry_size) {
+        TestTableDataHeader *header = (TestTableDataHeader *) test_table_ptr;
+        gchar *test_name_for_table_index = g_strdup_printf("%s/%s",
+                                                           name,
+                                                           header->test_name);
+        g_test_add_vtable(test_name_for_table_index,
+                          fixture->fixture_size,
+                          test_table_ptr,
+                          fixture->set_up,
+                          test_func,
+                          fixture->tear_down);
+        g_free(test_name_for_table_index);
+    }
 }
 
 void gjs_test_add_tests_for_coverage()
@@ -1580,5 +2324,145 @@ void gjs_test_add_tests_for_coverage()
     add_test_for_fixture("/gjs/coverage/correct_line_coverage_data_written_for_both_sections",
                          &coverage_for_multiple_files_to_single_output_fixture,
                          test_correct_line_coverage_data_written_for_both_source_file_sectons,
+                         NULL);
+
+    FixturedTest coverage_cache_fixture = {
+        sizeof(GjsCoverageCacheFixture),
+        gjs_coverage_cache_fixture_set_up,
+        gjs_coverage_cache_fixture_tear_down
+    };
+
+    /* This must be static, because g_test_add_vtable does not copy it */
+    static GjsCoverageCacheObjectNotationTableTestData data_in_expected_format_table[] = {
+        {
+            "simple_executable_lines",
+            "let i = 0;\n",
+            "resource://org/gnome/gjs/mock/test/gjs-test-coverage/cache_notation/simple_executable_lines.js",
+            "1",
+            "",
+            ""
+        },
+        {
+            "simple_branch",
+            "let i = 0;\n"
+            "if (i) {\n"
+            "    i = 1;\n"
+            "} else {\n"
+            "    i = 2;\n"
+            "}\n",
+            "resource://org/gnome/gjs/mock/test/gjs-test-coverage/cache_notation/simple_branch.js",
+            "1,2,3,5",
+            "\"point\":2,\"exits\":[3,5]",
+            ""
+        },
+        {
+            "simple_function",
+            "function f() {\n"
+            "}\n",
+            "resource://org/gnome/gjs/mock/test/gjs-test-coverage/cache_notation/simple_function.js",
+            "1,2",
+            "",
+            "\"key\":\"f:1:0\",\"line\":1"
+        }
+    };
+
+    add_table_driven_test_for_fixture("/gjs/coverage/cache/data_format",
+                                      &coverage_cache_fixture,
+                                      test_coverage_cache_data_in_expected_format,
+                                      sizeof(GjsCoverageCacheObjectNotationTableTestData),
+                                      G_N_ELEMENTS(data_in_expected_format_table),
+                                      (const TestTableDataHeader *) data_in_expected_format_table);
+
+    add_table_driven_test_for_fixture("/gjs/coverage/cache/data_format_resource",
+                                      &coverage_cache_fixture,
+                                      test_coverage_cache_data_in_expected_format_resource,
+                                      sizeof(GjsCoverageCacheObjectNotationTableTestData),
+                                      G_N_ELEMENTS(data_in_expected_format_table),
+                                      (const TestTableDataHeader *) data_in_expected_format_table);
+
+    static GjsCoverageCacheJSObjectTableTestData object_has_expected_properties_table[] = {
+        {
+            "simple_executable_lines",
+            "let i = 0;\n",
+            "assertArrayEquals(JSON.parse(coverage_cache)[covered_script_filename].lines, [1]);\n"
+        },
+        {
+            "simple_branch",
+            "let i = 0;\n"
+            "if (i) {\n"
+            "    i = 1;\n"
+            "} else {\n"
+            "    i = 2;\n"
+            "}\n",
+            "JSUnit.assertEquals(2, JSON.parse(coverage_cache)[covered_script_filename].branches[0].point);\n"
+            "assertArrayEquals([3, 5], JSON.parse(coverage_cache)[covered_script_filename].branches[0].exits);\n"
+        },
+        {
+            "simple_function",
+            "function f() {\n"
+            "}\n",
+            "JSUnit.assertEquals('f:1:0', JSON.parse(coverage_cache)[covered_script_filename].functions[0].key);\n"
+        }
+    };
+
+    add_table_driven_test_for_fixture("/gjs/coverage/cache/object_props",
+                                      &coverage_cache_fixture,
+                                      test_coverage_cache_as_js_object_has_expected_properties,
+                                      sizeof(GjsCoverageCacheJSObjectTableTestData),
+                                      G_N_ELEMENTS(object_has_expected_properties_table),
+                                      (const TestTableDataHeader *) object_has_expected_properties_table);
+
+    static GjsCoverageCacheEqualResultsTableTestData equal_results_table[] = {
+        {
+            "simple_executable_lines",
+            "let i = 0;\n"
+            "let j = 1;\n"
+        },
+        {
+            "simple_branch",
+            "let i = 0;\n"
+            "if (i) {\n"
+            "    i = 1;\n"
+            "} else {\n"
+            "    i = 2;\n"
+            "}\n"
+        },
+        {
+            "simple_function",
+            "function f() {\n"
+            "}\n"
+        }
+    };
+
+    add_table_driven_test_for_fixture("/gjs/coverage/cache/equal/executable_lines",
+                                      &coverage_cache_fixture,
+                                      test_coverage_cache_equal_results_to_reflect_parse,
+                                      sizeof(GjsCoverageCacheEqualResultsTableTestData),
+                                      G_N_ELEMENTS(equal_results_table),
+                                      (const TestTableDataHeader *) equal_results_table);
+
+    add_test_for_fixture("/gjs/coverage/cache/invalidation",
+                         &coverage_cache_fixture,
+                         test_coverage_cache_invalidation,
+                         NULL);
+
+    add_test_for_fixture("/gjs/coverage/cache/invalidation_resource",
+                         &coverage_cache_fixture,
+                         test_coverage_cache_invalidation_resource,
+                         NULL);
+
+    add_test_for_fixture("/gjs/coverage/cache/file_written",
+                         &coverage_cache_fixture,
+                         test_coverage_cache_file_written_when_no_cache_exists,
+                         NULL);
+
+    add_test_for_fixture("/gjs/coverage/cache/no_update_on_full_hits",
+                         &coverage_cache_fixture,
+                         test_coverage_cache_not_updated_on_full_hits,
+                         NULL);
+
+    add_test_for_fixture("/gjs/coverage/cache/update_on_misses",
+                         &coverage_cache_fixture,
+                         test_coverage_cache_updated_when_cache_stale,
                          NULL);
 }
