@@ -1065,6 +1065,15 @@ static JSFunctionSpec coverage_funcs[] = {
     { NULL },
 };
 
+static void
+coverage_statistics_tracer(JSTracer *trc, void *data)
+{
+    GjsCoverage *coverage = (GjsCoverage *) data;
+    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+
+    JS_CallObjectTracer(trc, &priv->coverage_statistics, "coverage_statistics");
+}
+
 static gboolean
 bootstrap_coverage(GjsCoverage *coverage)
 {
@@ -1144,6 +1153,11 @@ bootstrap_coverage(GjsCoverage *coverage)
             return FALSE;
         }
 
+        /* Add a tracer, as suggested by jdm on #jsapi */
+        JS_AddExtraGCRootsTracer(JS_GetRuntime(context),
+                                 coverage_statistics_tracer,
+                                 coverage);
+
         priv->coverage_statistics = coverage_statistics;
     }
 
@@ -1198,6 +1212,13 @@ gjs_coverage_dispose(GObject *object)
 {
     GjsCoverage *coverage = GJS_DEBUG_COVERAGE (object);
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+
+    /* Remove tracer before disposing the context */
+    JSContext *js_context = (JSContext *) gjs_context_get_native_context(priv->context);
+    JS_RemoveExtraGCRootsTracer(JS_GetRuntime(js_context),
+                                coverage_statistics_tracer,
+                                coverage);
+
 
     g_clear_object(&priv->context);
 
