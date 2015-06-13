@@ -845,6 +845,8 @@ get_covered_files(GjsCoverage *coverage)
 {
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
     JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
+    JSAutoRequest ar(context);
+    JSAutoCompartment ac(context, priv->coverage_statistics);
     jsval rval;
     JSObject *files_obj;
 
