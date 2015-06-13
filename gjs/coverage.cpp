@@ -27,9 +27,6 @@
 
 #include "util/error.h"
 
-typedef struct _GjsDebugHooks GjsDebugHooks;
-typedef struct _GjsCoverageBranchData GjsCoverageBranchData;
-
 struct _GjsCoveragePrivate {
     gchar **prefixes;
     GjsContext *context;
@@ -51,14 +48,6 @@ enum {
 };
 
 static GParamSpec *properties[PROP_N] = { NULL, };
-
-struct _GjsCoverageBranchData {
-    GArray       *branch_alternatives;
-    GArray       *branch_alternatives_taken;
-    unsigned int branch_point;
-    unsigned int last_branch_exit;
-    gboolean     branch_hit;
-};
 
 typedef struct _GjsCoverageBranchExit {
     unsigned int line;
