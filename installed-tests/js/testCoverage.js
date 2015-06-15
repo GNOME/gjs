@@ -157,6 +157,22 @@ function testExpressionLinesFoundForCaseStatements() {
                       JSUnit.assertEquals);
 }
 
+function testExpressionLinesFoundForCaseStatementsCharacters() {
+    let foundLinesInsideCaseStatements =
+        parseScriptForExpressionLines("var a = 'a';\n" +
+                                      "switch (a) {\n" +
+                                      "case 'a':\n" +
+                                      "    a++;\n" +
+                                      "    break;\n" +
+                                      "case 'b':\n" +
+                                      "    a++;\n" +
+                                      "    break;\n" +
+                                      "}\n");
+    assertArrayEquals(foundLinesInsideCaseStatements,
+                      [1, 2, 4, 5, 7, 8],
+                      JSUnit.assertEquals);
+}
+
 function testExpressionLinesFoundForLoop() {
     let foundLinesInsideLoop =
         parseScriptForExpressionLines("for (let i = 0; i < 1; i++) {\n" +
