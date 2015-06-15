@@ -2441,6 +2441,59 @@ gjs_object_set_gproperty (GObject      *object,
     g_free (underscore_name);
 }
 
+static JSBool
+gjs_override_property(JSContext *cx,
+                      unsigned   argc,
+                      jsval     *vp)
+{
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    gchar *name = NULL;
+    JSObject *type;
+    GParamSpec *pspec;
+    GParamSpec *new_pspec;
+    GType gtype;
+    GTypeInterface *interface_type;
+
+    if (!gjs_parse_call_args(cx, "override_property", "so", args,
+                             "name", &name,
+                             "type", &type))
+        return JS_FALSE;
+
+    if ((gtype = gjs_gtype_get_actual_gtype(cx, type)) == G_TYPE_INVALID) {
+        gjs_throw(cx, "Invalid parameter type was not a GType");
+        g_clear_pointer(&name, g_free);
+        return JS_FALSE;
+    }
+
+    if (g_type_is_a(gtype, G_TYPE_INTERFACE)) {
+        GTypeInterface *interface_type =
+            (GTypeInterface *) g_type_default_interface_ref(gtype);
+        pspec = g_object_interface_find_property(interface_type, name);
+        g_type_default_interface_unref(interface_type);
+    } else {
+        GTypeClass *class_type = (GTypeClass *) g_type_class_ref(gtype);
+        pspec = g_object_class_find_property(G_OBJECT_CLASS(class_type), name);
+        g_type_class_unref(class_type);
+    }
+
+    if (pspec == NULL) {
+        gjs_throw(cx, "No such property '%s' to override on type '%s'", name,
+                  g_type_name(gtype));
+        g_clear_pointer(&name, g_free);
+        return JS_FALSE;
+    }
+
+    new_pspec = g_param_spec_override(name, pspec);
+    g_clear_pointer(&name, g_free);
+
+    g_param_spec_set_qdata(new_pspec, gjs_is_custom_property_quark(), GINT_TO_POINTER(1));
+
+    args.rval().setObject(*gjs_param_from_g_param(cx, new_pspec));
+    g_param_spec_unref(new_pspec);
+
+    return JS_TRUE;
+}
+
 static void
 gjs_interface_init(GTypeInterface *g_iface,
                    gpointer        iface_data)
@@ -2925,6 +2978,7 @@ gjs_signal_new(JSContext *cx,
 }
 
 static JSFunctionSpec module_funcs[] = {
+    { "override_property", JSOP_WRAPPER((JSNative) gjs_override_property), 2, GJS_MODULE_PROP_FLAGS },
     { "register_interface", JSOP_WRAPPER((JSNative) gjs_register_interface), 3, GJS_MODULE_PROP_FLAGS },
     { "register_type", JSOP_WRAPPER ((JSNative) gjs_register_type), 4, GJS_MODULE_PROP_FLAGS },
     { "add_interface", JSOP_WRAPPER ((JSNative) gjs_add_interface), 2, GJS_MODULE_PROP_FLAGS },

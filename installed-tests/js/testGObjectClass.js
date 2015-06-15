@@ -308,4 +308,33 @@ function testClassCanHaveInterfaceProperty() {
     let obj = new InterfacePropObject({ file: Gio.File.new_for_path('dummy') });
 }
 
+function testClassCanOverrideParentClassProperty() {
+    const OverrideObject = new Lang.Class({
+        Name: 'OverrideObject',
+        Extends: MyObject,
+        Properties: {
+            'readwrite': GObject.ParamSpec.override('readwrite', MyObject)
+        },
+        get readwrite() {
+            return this._subclass_readwrite;
+        },
+        set readwrite(val) {
+            this._subclass_readwrite = 'subclass' + val;
+        }
+    });
+    let obj = new OverrideObject();
+    obj.readwrite = 'foo';
+    JSUnit.assertEquals(obj.readwrite, 'subclassfoo');
+}
+
+function testClassCannotOverrideNonexistentProperty() {
+    JSUnit.assertRaises(() => new Lang.Class({
+        Name: 'BadOverride',
+        Extends: GObject.Object,
+        Properties: {
+            'nonexistent': GObject.ParamSpec.override('nonexistent', GObject.Object)
+        }
+    }));
+}
+
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);

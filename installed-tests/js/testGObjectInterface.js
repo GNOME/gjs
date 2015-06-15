@@ -56,8 +56,8 @@ const GObjectImplementingGObjectInterface = new Lang.Class({
     Extends: GObject.Object,
     Implements: [ AGObjectInterface ],
     Properties: {
-        'interface-prop': GObject.ParamSpec.string('interface-prop', 'override',
-            'override', GObject.ParamFlags.READABLE, 'foobar'),
+        'interface-prop': GObject.ParamSpec.override('interface-prop',
+            AGObjectInterface),
         'class-prop': GObject.ParamSpec.string('class-prop', 'Class property',
             'A property that is not on the interface',
             GObject.ParamFlags.READABLE, 'meh')
@@ -88,8 +88,8 @@ const MinimalImplementationOfAGObjectInterface = new Lang.Class({
     Extends: GObject.Object,
     Implements: [ AGObjectInterface ],
     Properties: {
-        'interface-prop': GObject.ParamSpec.string('interface-prop', 'override',
-            'override', GObject.ParamFlags.READABLE, 'foobar')
+        'interface-prop': GObject.ParamSpec.override('interface-prop',
+            AGObjectInterface)
     },
 
     _init: function (props={}) {
@@ -103,8 +103,8 @@ const ImplementationOfTwoInterfaces = new Lang.Class({
     Extends: GObject.Object,
     Implements: [ AGObjectInterface, InterfaceRequiringGObjectInterface ],
     Properties: {
-        'interface-prop': GObject.ParamSpec.string('interface-prop', 'override',
-            'override', GObject.ParamFlags.READABLE, 'foobar')
+        'interface-prop': GObject.ParamSpec.override('interface-prop',
+            AGObjectInterface)
     },
 
     _init: function (props={}) {
@@ -172,8 +172,8 @@ function testGObjectCanImplementBothGObjectAndNonGObjectInterfaces() {
         Extends: GObject.Object,
         Implements: [ AnInterface, AGObjectInterface ],
         Properties: {
-            'interface-prop': GObject.ParamSpec.string('interface-prop',
-                'override', 'override', GObject.ParamFlags.READABLE, 'foobar')
+            'interface-prop': GObject.ParamSpec.override('interface-prop',
+                AGObjectInterface)
         },
 
         _init: function (props={}) {
@@ -199,8 +199,8 @@ function testGObjectMustImplementRequiredFunction () {
         Extends: GObject.Object,
         Implements: [ AGObjectInterface ],
         Properties: {
-            'interface-prop': GObject.ParamSpec.string('interface-prop',
-                'override', 'override', GObject.ParamFlags.READABLE, 'foobar')
+            'interface-prop': GObject.ParamSpec.override('interface-prop',
+                AGObjectInterface)
         }
     }));
 }
@@ -240,8 +240,8 @@ function testGObjectDefersToLastInterfaceOptionalFunction() {
         Extends: GObject.Object,
         Implements: [ AGObjectInterface, InterfaceRequiringGObjectInterface ],
         Properties: {
-            'interface-prop': GObject.ParamSpec.string('interface-prop',
-                'override', 'override', GObject.ParamFlags.READABLE, 'foobar')
+            'interface-prop': GObject.ParamSpec.override('interface-prop',
+                AGObjectInterface)
         },
 
         _init: function (props={}) {

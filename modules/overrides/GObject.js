@@ -351,6 +351,8 @@ function _init() {
         return GObject.param_spec_param(name, nick, blurb, param_type, flags);
     };
 
+    this.ParamSpec.override = Gi.override_property;
+
     Object.defineProperties(this.ParamSpec.prototype, {
         'name': { configurable: false,
                   enumerable: false,
