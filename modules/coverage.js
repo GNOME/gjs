@@ -529,7 +529,7 @@ function _incrementFunctionCounters(functionCounters,
             --line;
             functionKey = name + ':' + line + ':' + nArgs;
             functionCountersForKey = functionCounters[functionKey];
-        } while (linesWithKnownFunctions[line] !== true);
+        } while (linesWithKnownFunctions[line] !== true && line > 0);
     }
 
     if (functionCountersForKey !== undefined) {
