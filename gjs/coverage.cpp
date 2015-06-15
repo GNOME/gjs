@@ -1672,9 +1672,11 @@ bootstrap_coverage(GjsCoverage *coverage)
         /* Now create the array to pass the desired prefixes over */
         JSObject *prefixes = gjs_build_string_array(context, -1, priv->prefixes);
 
-        JS::AutoValueArray<2> coverage_statistics_constructor_args(context);
+        JS::AutoValueArray<3> coverage_statistics_constructor_args(context);
         coverage_statistics_constructor_args[0].setObject(*prefixes);
         coverage_statistics_constructor_args[1].set(cache_value);
+        coverage_statistics_constructor_args[2]
+            .setBoolean(g_getenv("GJS_DEBUG_COVERAGE_EXECUTED_LINES"));
 
         JSObject *coverage_statistics = JS_New(context,
                                                coverage_statistics_constructor,

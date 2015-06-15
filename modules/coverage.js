@@ -618,10 +618,12 @@ function _incrementFunctionCounters(functionCounters,
  * expressonCounters: An array of either a hit count for a found
  * executable line or undefined for a known non-executable line.
  * line: an executed line
+ * @shouldWarn: if true, print a mostly harmless warning about executing a line
+ * that was thought non-executable.
  */
 function _incrementExpressionCounters(expressionCounters,
                                       script,
-                                      offsetLine) {
+                                      offsetLine, shouldWarn) {
     let expressionCountersLen = expressionCounters.length;
 
     if (offsetLine >= expressionCountersLen)
@@ -646,8 +648,9 @@ function _incrementExpressionCounters(expressionCounters,
      * and BlockStatement, neither of which would ordinarily be
      * executed */
     if (expressionCounters[offsetLine] === undefined) {
-        log(script + ':' + offsetLine + ' Executed line previously marked ' +
-            'non-executable by Reflect');
+        if (shouldWarn)
+            log(script + ':' + offsetLine + ' Executed line previously marked ' +
+                'non-executable by Reflect');
         expressionCounters[offsetLine] = 0;
     }
 
@@ -868,7 +871,7 @@ function CoverageStatisticsContainer(prefixes, cache) {
  *
  * It isn't poissible to unit test this class because it depends on running
  * Debugger which in turn depends on objects injected in from another compartment */
-function CoverageStatistics(prefixes, cache) {
+function CoverageStatistics(prefixes, cache, shouldWarn) {
     this.container = new CoverageStatisticsContainer(prefixes, cache);
     let fetchStatistics = this.container.fetchStatistics.bind(this.container);
     let deleteStatistics = this.container.deleteStatistics.bind(this.container);
@@ -954,7 +957,7 @@ function CoverageStatistics(prefixes, cache) {
             try {
                 _incrementExpressionCounters(statistics.expressionCounters,
                                              frame.script.url,
-                                             offsetLine);
+                                             offsetLine, shouldWarn);
                 this._branchTracker.incrementBranchCounters(offsetLine);
             } catch (e) {
                 /* Something bad happened. Log the exception and delete

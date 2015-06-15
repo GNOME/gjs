@@ -1023,7 +1023,8 @@ describe('Coverage.incrementFunctionCounters', function () {
             undefined
         ];
 
-        Coverage._incrementExpressionCounters(expressionCounters, 'script', 2);
+        Coverage._incrementExpressionCounters(expressionCounters, 'script', 2,
+            true);
 
         expect(window.log).toHaveBeenCalledWith("script:2 Executed line " +
             "previously marked non-executable by Reflect");
