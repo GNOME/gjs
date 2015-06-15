@@ -24,6 +24,45 @@ const GjsPrivate = imports.gi.GjsPrivate;
 
 let GObject;
 
+// Some common functions between GObject.Class and GObject.Interface
+
+function _createSignals(gtype, signals) {
+    for (let signalName in signals) {
+        let obj = signals[signalName];
+        let flags = (obj.flags !== undefined) ? obj.flags : GObject.SignalFlags.RUN_FIRST;
+        let accumulator = (obj.accumulator !== undefined) ? obj.accumulator : GObject.AccumulatorType.NONE;
+        let rtype = (obj.return_type !== undefined) ? obj.return_type : GObject.TYPE_NONE;
+        let paramtypes = (obj.param_types !== undefined) ? obj.param_types : [];
+
+        try {
+            obj.signal_id = Gi.signal_new(gtype, signalName, flags, accumulator, rtype, paramtypes);
+        } catch (e) {
+            throw new TypeError('Invalid signal ' + signalName + ': ' + e.message);
+        }
+    }
+}
+
+function _createGTypeName(name, gtypename) {
+    if (gtypename)
+        return gtypename;
+    else
+        return 'Gjs_' + name;
+}
+
+function _getGObjectInterfaces(interfaces) {
+    return interfaces.filter((iface) => iface.hasOwnProperty('$gtype'));
+}
+
+function _propertiesAsArray(propertyObj) {
+    let propertiesArray = [];
+    if (propertyObj) {
+        for (let prop in propertyObj) {
+            propertiesArray.push(propertyObj[prop]);
+        }
+    }
+    return propertiesArray;
+}
+
 const GObjectMeta = new Lang.Class({
     Name: 'GObjectClass',
     Extends: Lang.Class,
@@ -35,21 +74,8 @@ const GObjectMeta = new Lang.Class({
 
         this.parent(params);
 
-        if (signals) {
-            for (let signalName in signals) {
-                let obj = signals[signalName];
-                let flags = (obj.flags !== undefined) ? obj.flags : GObject.SignalFlags.RUN_FIRST;
-                let accumulator = (obj.accumulator !== undefined) ? obj.accumulator : GObject.AccumulatorType.NONE;
-                let rtype = (obj.return_type !== undefined) ? obj.return_type : GObject.TYPE_NONE;
-                let paramtypes = (obj.param_types !== undefined) ? obj.param_types : [];
-
-                try {
-                    obj.signal_id = Gi.signal_new(this.$gtype, signalName, flags, accumulator, rtype, paramtypes);
-                } catch(e) {
-                    throw new TypeError('Invalid signal ' + signalName + ': ' + e.message);
-                }
-            }
-        }
+        if (signals)
+            _createSignals(this.$gtype, signals);
 
 	let propertyObj = { };
 	Object.getOwnPropertyNames(params).forEach(function(name) {
@@ -98,11 +124,7 @@ const GObjectMeta = new Lang.Class({
             throw new TypeError("Classes require an explicit 'Name' parameter.");
         let name = params.Name;
 
-        let gtypename;
-        if (params.GTypeName)
-            gtypename = params.GTypeName;
-        else
-            gtypename = 'Gjs_' + params.Name;
+        let gtypename = _createGTypeName(params.Name, params.GTypeName);
 
         if (!params.Extends)
             params.Extends = GObject.Object;
@@ -112,18 +134,11 @@ const GObjectMeta = new Lang.Class({
             throw new TypeError('GObject.Class used with invalid base class (is ' + parent + ')');
 
         let interfaces = params.Implements || [];
-        delete params.Implements;
-        let gobjectInterfaces = interfaces.filter((iface) => iface.hasOwnProperty('$gtype'));
+        let gobjectInterfaces = _getGObjectInterfaces(interfaces);
 
-        let properties = params.Properties;
+        let propertiesArray = _propertiesAsArray(params.Properties);
         delete params.Properties;
 
-	let propertiesArray = [];
-        if (properties) {
-            for (let prop in properties) {
-		propertiesArray.push(properties[prop]);
-            }
-        }
         let newClass = Gi.register_type(parent.prototype, gtypename,
             gobjectInterfaces, propertiesArray);
 
@@ -153,6 +168,61 @@ const GObjectMeta = new Lang.Class({
         return newClass;
     }
 });
+
+function GObjectInterface(params) {
+    return this._construct.apply(this, arguments);
+}
+
+GObjectMeta.MetaInterface = GObjectInterface;
+
+GObjectInterface.__super__ = Lang.Interface;
+GObjectInterface.prototype = Object.create(Lang.Interface.prototype);
+GObjectInterface.prototype.constructor = GObjectInterface;
+GObjectInterface.prototype.__name__ = 'GObjectInterface';
+
+GObjectInterface.prototype._construct = function (params) {
+    if (!params.Name) {
+        throw new TypeError("Interfaces require an explicit 'Name' parameter.");
+    }
+
+    let gtypename = _createGTypeName(params.Name, params.GTypeName);
+    delete params.GTypeName;
+
+    let interfaces = params.Requires || [];
+    let gobjectInterfaces = _getGObjectInterfaces(interfaces);
+
+    let properties = _propertiesAsArray(params.Properties);
+    delete params.Properties;
+
+    let newInterface = Gi.register_interface(gtypename, gobjectInterfaces,
+        properties);
+
+    // See Class.prototype._construct in lang.js for the reasoning
+    // behind this direct __proto__ set.
+    newInterface.__proto__ = this.constructor.prototype;
+    newInterface.__super__ = GObjectInterface;
+    newInterface.prototype.constructor = newInterface;
+
+    newInterface._init.apply(newInterface, arguments);
+
+    Object.defineProperty(newInterface.prototype, '__metaclass__', {
+        writable: false,
+        configurable: false,
+        enumerable: false,
+        value: this.constructor
+    });
+
+    return newInterface;
+};
+
+GObjectInterface.prototype._init = function (params) {
+    let signals = params.Signals;
+    delete params.Signals;
+
+    Lang.Interface.prototype._init.call(this, params);
+
+    _createSignals(this.$gtype, signals);
+};
 
 function _init() {
 
@@ -302,6 +372,7 @@ function _init() {
 
 
     this.Class = GObjectMeta;
+    this.Interface = GObjectInterface;
     this.Object.prototype.__metaclass__ = this.Class;
 
     // For compatibility with Lang.Class... we need a _construct

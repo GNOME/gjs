@@ -28,6 +28,7 @@
 #include <gjs/gi.h>
 #include "object.h"
 #include "gtype.h"
+#include "interface.h"
 #include "arg.h"
 #include "repo.h"
 #include "gtype.h"
@@ -1997,16 +1998,8 @@ gjs_define_object_class(JSContext      *context,
     if (parent_type != G_TYPE_INVALID)
        parent_proto = gjs_lookup_object_prototype(context, parent_type);
 
-    /* ns is only used to set the JSClass->name field (exposed by Object.prototype.toString).
-     * We can safely set "unknown" if there is no info, as in that case
-     * the name is globally unique (it's a GType name). */
-    if (info) {
-        ns = g_base_info_get_namespace((GIBaseInfo*) info);
-        constructor_name = g_base_info_get_name((GIBaseInfo*) info);
-    } else {
-        ns = "unknown";
-        constructor_name = g_type_name(gtype);
-    }
+    ns = gjs_get_names_from_gtype_and_gi_info(gtype, (GIBaseInfo *) info,
+                                              &constructor_name);
 
     if (!gjs_init_class_dynamic(context, in_object,
                                 parent_proto,
@@ -2449,6 +2442,29 @@ gjs_object_set_gproperty (GObject      *object,
 }
 
 static void
+gjs_interface_init(GTypeInterface *g_iface,
+                   gpointer        iface_data)
+{
+    GPtrArray *properties;
+    GType gtype;
+    guint i;
+
+    gtype = G_TYPE_FROM_INTERFACE (g_iface);
+
+    properties = (GPtrArray *) gjs_hash_table_for_gsize_lookup(class_init_properties, gtype);
+    if (properties == NULL)
+        return;
+
+    for (i = 0; i < properties->len; i++) {
+        GParamSpec *pspec = (GParamSpec *) properties->pdata[i];
+        g_param_spec_set_qdata(pspec, gjs_is_custom_property_quark(), GINT_TO_POINTER(1));
+        g_object_interface_install_property(g_iface, pspec);
+    }
+
+    gjs_hash_table_for_gsize_remove(class_init_properties, gtype);
+}
+
+static void
 gjs_object_class_init(GObjectClass *klass,
                       gpointer      user_data)
 {
@@ -2528,6 +2544,187 @@ gjs_add_interface(GType instance_type,
                                 &interface_vtable);
 }
 
+static gboolean
+validate_interfaces_and_properties_args(JSContext *cx,
+                                        JSObject  *interfaces,
+                                        JSObject  *properties,
+                                        guint32   *n_interfaces,
+                                        guint32   *n_properties)
+{
+    guint32 n_int, n_prop;
+
+    if (!JS_IsArrayObject(cx, interfaces)) {
+        gjs_throw(cx, "Invalid parameter interfaces (expected Array)");
+        return FALSE;
+    }
+
+    if (!JS_GetArrayLength(cx, interfaces, &n_int))
+        return FALSE;
+
+    if (!JS_IsArrayObject(cx, properties)) {
+        gjs_throw(cx, "Invalid parameter properties (expected Array)");
+        return FALSE;
+    }
+
+    if (!JS_GetArrayLength(cx, properties, &n_prop))
+        return FALSE;
+
+    if (n_interfaces != NULL)
+        *n_interfaces = n_int;
+    if (n_properties != NULL)
+        *n_properties = n_prop;
+    return TRUE;
+}
+
+static gboolean
+get_interface_gtypes(JSContext *cx,
+                     JSObject  *interfaces,
+                     guint32   n_interfaces,
+                     GType    *iface_types)
+{
+    guint32 i;
+
+    for (i = 0; i < n_interfaces; i++) {
+        JS::RootedValue iface_val(cx);
+        GType iface_type;
+
+        if (!JS_GetElement(cx, interfaces, i, &iface_val.get()))
+            return FALSE;
+
+        if (!iface_val.isObject()) {
+            gjs_throw (cx, "Invalid parameter interfaces (element %d was not a GType)", i);
+            return FALSE;
+        }
+
+        iface_type = gjs_gtype_get_actual_gtype(cx, &iface_val.toObject());
+        if (iface_type == G_TYPE_INVALID) {
+            gjs_throw (cx, "Invalid parameter interfaces (element %d was not a GType)", i);
+            return FALSE;
+        }
+
+        iface_types[i] = iface_type;
+    }
+    return TRUE;
+}
+
+static gboolean
+save_properties_for_class_init(JSContext *cx,
+                               JSObject  *properties,
+                               guint32    n_properties,
+                               GType      gtype)
+{
+    GPtrArray *properties_native = NULL;
+    guint32 i;
+
+    if (!class_init_properties)
+        class_init_properties = gjs_hash_table_new_for_gsize((GDestroyNotify) g_ptr_array_unref);
+    properties_native = g_ptr_array_new_with_free_func((GDestroyNotify) g_param_spec_unref);
+    for (i = 0; i < n_properties; i++) {
+        JS::RootedValue prop_val(cx);
+
+        if (!JS_GetElement(cx, properties, i, &prop_val.get())) {
+            g_clear_pointer(&properties_native, g_ptr_array_unref);
+            return FALSE;
+        }
+        if (!prop_val.isObject()) {
+            g_clear_pointer(&properties_native, g_ptr_array_unref);
+            gjs_throw(cx, "Invalid parameter, expected object");
+            return FALSE;
+        }
+
+        JS::RootedObject prop_obj(cx, &prop_val.toObject());
+        if (!gjs_typecheck_param(cx, prop_obj, G_TYPE_NONE, JS_TRUE)) {
+            g_clear_pointer(&properties_native, g_ptr_array_unref);
+            return FALSE;
+        }
+        g_ptr_array_add(properties_native, g_param_spec_ref(gjs_g_param_from_param(cx, prop_obj)));
+    }
+    gjs_hash_table_for_gsize_insert(class_init_properties, (gsize) gtype,
+                                    g_ptr_array_ref(properties_native));
+
+    g_clear_pointer(&properties_native, g_ptr_array_unref);
+    return TRUE;
+}
+
+static JSBool
+gjs_register_interface(JSContext *cx,
+                       unsigned   argc,
+                       jsval     *vp)
+{
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    char *name = NULL;
+    JSObject *constructor, *interfaces, *properties, *module;
+    guint32 i, n_interfaces, n_properties;
+    GType *iface_types;
+    GType interface_type;
+    GTypeModule *type_module;
+    GTypeInfo type_info = {
+        sizeof (GTypeInterface), /* class_size */
+
+        (GBaseInitFunc) NULL,
+        (GBaseFinalizeFunc) NULL,
+
+        (GClassInitFunc) gjs_interface_init,
+        (GClassFinalizeFunc) NULL,
+        NULL, /* class_data */
+
+        0,    /* instance_size */
+        0,    /* n_preallocs */
+        NULL, /* instance_init */
+    };
+
+    if (!gjs_parse_call_args(cx, "register_interface", "soo", args,
+                             "name", &name,
+                             "interfaces", &interfaces,
+                             "properties", &properties))
+        return JS_FALSE;
+
+    if (!validate_interfaces_and_properties_args(cx, interfaces, properties,
+                                                 &n_interfaces, &n_properties)) {
+        g_clear_pointer(&name, g_free);
+        return JS_FALSE;
+    }
+
+    iface_types = (GType *) g_alloca(sizeof(GType) * n_interfaces);
+
+    /* We do interface addition in two passes so that any failure
+       is caught early, before registering the GType (which we can't undo) */
+    if (!get_interface_gtypes(cx, interfaces, n_interfaces, iface_types)) {
+        g_clear_pointer(&name, g_free);
+        return JS_FALSE;
+    }
+
+    if (g_type_from_name(name) != G_TYPE_INVALID) {
+        gjs_throw(cx, "Type name %s is already registered", name);
+        g_clear_pointer(&name, g_free);
+        return JS_FALSE;
+    }
+
+    type_module = G_TYPE_MODULE(gjs_type_module_get());
+    interface_type = g_type_module_register_type(type_module,
+                                                 G_TYPE_INTERFACE,
+                                                 name,
+                                                 &type_info,
+                                                 (GTypeFlags) 0);
+    g_clear_pointer(&name, g_free);
+
+    g_type_set_qdata(interface_type, gjs_is_custom_type_quark(), GINT_TO_POINTER(1));
+
+    if (!save_properties_for_class_init(cx, properties, n_properties, interface_type))
+        return JS_FALSE;
+
+    for (i = 0; i < n_interfaces; i++)
+        g_type_interface_add_prerequisite(interface_type, iface_types[i]);
+
+    /* create a custom JSClass */
+    if ((module = gjs_lookup_private_namespace(cx)) == NULL)
+        return JS_FALSE;  /* error will have been thrown already */
+    gjs_define_interface_class(cx, module, NULL, interface_type, &constructor);
+
+    args.rval().setObject(*constructor);
+    return JS_TRUE;
+}
+
 static JSBool
 gjs_register_type(JSContext *cx,
                   unsigned   argc,
@@ -2555,7 +2752,6 @@ gjs_register_type(JSContext *cx,
 	gjs_object_custom_init,
     };
     guint32 i, n_interfaces, n_properties;
-    GPtrArray *properties_native = NULL;
     GType *iface_types;
     JSBool retval = JS_FALSE;
 
@@ -2575,42 +2771,16 @@ gjs_register_type(JSContext *cx,
     if (!do_base_typecheck(cx, parent, JS_TRUE))
         goto out;
 
-    if (!JS_IsArrayObject(cx, interfaces)) {
-        gjs_throw(cx, "Invalid parameter interfaces (expected Array)");
-        goto out;
-    }
-
-    if (!JS_GetArrayLength(cx, interfaces, &n_interfaces))
-        goto out;
-
-    if (!JS_IsArrayObject(cx, properties)) {
-        gjs_throw(cx, "Invalid parameter properties (expected Array)");
-        goto out;
-    }
-
-    if (!JS_GetArrayLength(cx, properties, &n_properties))
+    if (!validate_interfaces_and_properties_args(cx, interfaces, properties,
+                                                 &n_interfaces, &n_properties))
         goto out;
 
     iface_types = (GType*) g_alloca(sizeof(GType) * n_interfaces);
 
     /* We do interface addition in two passes so that any failure
        is caught early, before registering the GType (which we can't undo) */
-    for (i = 0; i < n_interfaces; i++) {
-        jsval iface_val;
-        GType iface_type;
-
-        if (!JS_GetElement(cx, interfaces, i, &iface_val))
-            goto out;
-
-        if (!JSVAL_IS_OBJECT(iface_val) ||
-            ((iface_type = gjs_gtype_get_actual_gtype(cx, JSVAL_TO_OBJECT(iface_val)))
-             == G_TYPE_INVALID)) {
-            gjs_throw(cx, "Invalid parameter interfaces (element %d was not a GType)", i);
-            goto out;
-        }
-
-        iface_types[i] = iface_type;
-    }
+    if (!get_interface_gtypes(cx, interfaces, n_interfaces, iface_types))
+        goto out;
 
     if (g_type_from_name(name) != G_TYPE_INVALID) {
         gjs_throw (cx, "Type name %s is already registered", name);
@@ -2644,27 +2814,8 @@ gjs_register_type(JSContext *cx,
 
     g_type_set_qdata (instance_type, gjs_is_custom_type_quark(), GINT_TO_POINTER (1));
 
-    if (!class_init_properties)
-        class_init_properties = gjs_hash_table_new_for_gsize ((GDestroyNotify)g_ptr_array_unref);
-    properties_native = g_ptr_array_new_with_free_func ((GDestroyNotify)g_param_spec_unref);
-    for (i = 0; i < n_properties; i++) {
-        jsval prop_val;
-        JSObject *prop_obj;
-
-        if (!JS_GetElement(cx, properties, i, &prop_val))
-            goto out;
-
-        if (!JSVAL_IS_OBJECT(prop_val)) {
-            gjs_throw (cx, "Invalid parameter, expected object");
-            goto out;
-        }
-        prop_obj = JSVAL_TO_OBJECT(prop_val);
-        if (!gjs_typecheck_param(cx, prop_obj, G_TYPE_NONE, JS_TRUE))
-            goto out;
-        g_ptr_array_add (properties_native, g_param_spec_ref (gjs_g_param_from_param (cx, prop_obj)));
-    }
-    gjs_hash_table_for_gsize_insert (class_init_properties, (gsize)instance_type,
-                                     g_ptr_array_ref (properties_native));
+    if (!save_properties_for_class_init(cx, properties, n_properties, instance_type))
+        goto out;
 
     for (i = 0; i < n_interfaces; i++)
         gjs_add_interface(instance_type, iface_types[i]);
@@ -2678,7 +2829,6 @@ gjs_register_type(JSContext *cx,
     retval = JS_TRUE;
 
 out:
-    g_clear_pointer(&properties_native, g_ptr_array_unref);
     JS_EndRequest(cx);
 
     return retval;
@@ -2775,6 +2925,7 @@ gjs_signal_new(JSContext *cx,
 }
 
 static JSFunctionSpec module_funcs[] = {
+    { "register_interface", JSOP_WRAPPER((JSNative) gjs_register_interface), 3, GJS_MODULE_PROP_FLAGS },
     { "register_type", JSOP_WRAPPER ((JSNative) gjs_register_type), 4, GJS_MODULE_PROP_FLAGS },
     { "add_interface", JSOP_WRAPPER ((JSNative) gjs_add_interface), 2, GJS_MODULE_PROP_FLAGS },
     { "hook_up_vfunc", JSOP_WRAPPER ((JSNative) gjs_hook_up_vfunc), 3, GJS_MODULE_PROP_FLAGS },

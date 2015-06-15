@@ -46,6 +46,10 @@ JSBool    gjs_typecheck_gtype         (JSContext             *context,
                                        JSObject              *obj,
                                        JSBool                 throw_error);
 
+const char *gjs_get_names_from_gtype_and_gi_info(GType        gtype,
+                                                 GIBaseInfo  *info,
+                                                 const char **constructor_name);
+
 G_END_DECLS
 
 #endif  /* __GJS_INTERFACE_H__ */

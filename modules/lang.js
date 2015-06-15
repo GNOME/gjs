@@ -293,9 +293,62 @@ Class.prototype._init = function(params) {
                     value: _parent }});
 };
 
+// This introduces the concept of a "meta-interface" which is given by the
+// MetaInterface property on an object's metaclass. For objects whose metaclass
+// is Lang.Class, the meta-interface is Lang.Interface. Subclasses of Lang.Class
+// such as GObject.Class supply their own meta-interface.
+// This is in order to enable creating GObject interfaces with Lang.Interface,
+// much as you can create GObject classes with Lang.Class.
+function _getMetaInterface(params) {
+    if (!params.Requires || params.Requires.length === 0)
+        return null;
+
+    let metaInterface = params.Requires.map((req) => {
+        if (req instanceof Interface)
+            return req.__super__;
+        for (let metaclass = req.prototype.__metaclass__; metaclass;
+            metaclass = metaclass.__super__) {
+            if (metaclass.hasOwnProperty('MetaInterface'))
+                return metaclass.MetaInterface;
+        }
+        return null;
+    })
+    .reduce((best, candidate) => {
+        // This function reduces to the "most derived" meta interface in the list.
+        if (best === null)
+            return candidate;
+        if (candidate === null)
+            return best;
+        for (let sup = candidate; sup; sup = sup.__super__) {
+            if (sup === best)
+                return candidate;
+        }
+        return best;
+    }, null);
+
+    // If we reach this point and we don't know the meta-interface, then it's
+    // most likely because there were only pure-C interfaces listed in Requires
+    // (and those don't have our magic properties.) However, all pure-C
+    // interfaces should require GObject.Object anyway.
+    if (metaInterface === null)
+        throw new Error('Did you forget to include GObject.Object in Requires?');
+
+    return metaInterface;
+}
+
 function Interface(params) {
+    let metaInterface = _getMetaInterface(params);
+    if (metaInterface && metaInterface !== this.constructor) {
+        // Trick to apply variadic arguments to constructors --
+        // bind the arguments into the constructor function.
+        let args = Array.prototype.slice.call(arguments);
+        let curried = Function.prototype.bind.apply(metaInterface, [,].concat(args));
+        return new curried();
+    }
     return this._construct.apply(this, arguments);
 }
+
+Class.MetaInterface = Interface;
 
 /**
  * Use this to signify a function that must be overridden in an implementation

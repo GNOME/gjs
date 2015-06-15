@@ -33,7 +33,9 @@ G_BEGIN_DECLS
 
 JSBool gjs_define_interface_class (JSContext       *context,
                                    JSObject        *in_object,
-                                   GIInterfaceInfo *info);
+                                   GIInterfaceInfo *info,
+                                   GType            gtype,
+                                   JSObject       **constructor_p);
 
 JSBool gjs_lookup_interface_constructor (JSContext     *context,
                                          GType          gtype,

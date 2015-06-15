@@ -295,4 +295,17 @@ function testInstanceInit() {
     new MyCustomInit();
 }
 
+function testClassCanHaveInterfaceProperty() {
+    const InterfacePropObject = new Lang.Class({
+        Name: 'InterfacePropObject',
+        Extends: GObject.Object,
+        Properties: {
+            'file': GObject.ParamSpec.object('file', 'File', 'File',
+                GObject.ParamFlags.READABLE | GObject.ParamFlags.WRITABLE | GObject.ParamFlags.CONSTRUCT_ONLY,
+                Gio.File.$gtype)
+        }
+    });
+    let obj = new InterfacePropObject({ file: Gio.File.new_for_path('dummy') });
+}
+
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);

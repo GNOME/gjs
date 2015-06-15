@@ -211,3 +211,25 @@ gjs_typecheck_gtype (JSContext             *context,
 {
     return do_base_typecheck(context, obj, throw_error);
 }
+
+const char *
+gjs_get_names_from_gtype_and_gi_info(GType        gtype,
+                                     GIBaseInfo  *info,
+                                     const char **constructor_name)
+{
+    const char *ns;
+    /* ns is only used to set the JSClass->name field (exposed by
+     * Object.prototype.toString).
+     * We can safely set "unknown" if there is no info, as in that case
+     * the name is globally unique (it's a GType name). */
+    if (info) {
+        ns = g_base_info_get_namespace((GIBaseInfo*) info);
+        if (constructor_name)
+            *constructor_name = g_base_info_get_name((GIBaseInfo*) info);
+    } else {
+        ns = "unknown";
+        if (constructor_name)
+            *constructor_name = g_type_name(gtype);
+    }
+    return ns;
+}
