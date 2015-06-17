@@ -28,8 +28,6 @@
 #include "jsapi-util.h"
 #include "coverage.h"
 
-<<<<<<< HEAD
-=======
 GArray * gjs_fetch_statistics_from_js(GjsCoverage *coverage,
                                       char        **covered_paths);
 GBytes * gjs_serialize_statistics(GjsCoverage *coverage);
@@ -37,15 +35,12 @@ GBytes * gjs_serialize_statistics(GjsCoverage *coverage);
 JSString * gjs_deserialize_cache_to_object(GjsCoverage *coverage,
                                            GBytes      *cache_bytes);
 
->>>>>>> be464c0... coverage: Serialize statistics to cache-path on cache misses
 gboolean gjs_run_script_in_coverage_compartment(GjsCoverage *coverage,
                                                 const char  *script);
 gboolean gjs_inject_value_into_coverage_compartment(GjsCoverage     *coverage,
                                                     JS::HandleValue value,
                                                     const char      *property);
 
-<<<<<<< HEAD
-=======
 gboolean gjs_get_path_mtime(const char *path,
                             GTimeVal   *mtime);
 gchar * gjs_get_path_checksum(const char *path);
@@ -53,7 +48,6 @@ gchar * gjs_get_path_checksum(const char *path);
 gboolean gjs_write_cache_to_path(const char *path,
                                  GBytes     *cache_bytes);
 
->>>>>>> be464c0... coverage: Serialize statistics to cache-path on cache misses
 extern const char *GJS_COVERAGE_CACHE_FILE_NAME;
 
 #endif
