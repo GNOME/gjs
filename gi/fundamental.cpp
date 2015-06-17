@@ -24,25 +24,19 @@
 
 #include <config.h>
 
-#include <string.h>
-
-#include <gjs/gi.h>
-
 #include "fundamental.h"
+
 #include "arg.h"
 #include "object.h"
 #include "boxed.h"
-#include "repo.h"
 #include "function.h"
 #include "gtype.h"
 #include "proxyutils.h"
+#include "repo.h"
 
-#include <gjs/gjs.h>
-
+#include <gjs/gjs-module.h>
+#include <gjs/compat.h>
 #include <util/log.h>
-
-#include <jsapi.h>
-
 #include <girepository.h>
 
 /*
