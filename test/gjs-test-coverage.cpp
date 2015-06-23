@@ -1605,6 +1605,16 @@ test_coverage_cache_data_in_expected_format(gpointer      fixture_data,
     GjsCoverageCacheFixture                     *fixture = (GjsCoverageCacheFixture *) fixture_data;
     GjsCoverageCacheObjectNotationTableTestData *table_data = (GjsCoverageCacheObjectNotationTableTestData *) user_data;
 
+    write_to_file_at_beginning(fixture->base_fixture.temporary_js_script_open_handle, table_data->script);
+    char *cache_in_object_notation = eval_file_for_ast_in_object_notation(fixture->base_fixture.context,
+                                                                          fixture->base_fixture.coverage,
+                                                                          fixture->base_fixture.temporary_js_script_filename);
+    g_assert(cache_in_object_notation != NULL);
+
+    /* Sleep for a little while to make sure that the new file has a
+     * different mtime */
+    sleep(1);
+
     GTimeVal mtime;
     gboolean successfully_got_mtime = gjs_get_path_mtime(fixture->base_fixture.temporary_js_script_filename,
                                                          &mtime);
@@ -1617,12 +1627,6 @@ test_coverage_cache_data_in_expected_format(gpointer      fixture_data,
                                                                                     table_data->expected_executable_lines,
                                                                                     table_data->expected_branches,
                                                                                     table_data->expected_functions);
-
-    write_to_file_at_beginning(fixture->base_fixture.temporary_js_script_open_handle, table_data->script);
-    char *cache_in_object_notation = eval_file_for_ast_in_object_notation(fixture->base_fixture.context,
-                                                                          fixture->base_fixture.coverage,
-                                                                          fixture->base_fixture.temporary_js_script_filename);
-    g_assert(cache_in_object_notation != NULL);
 
     g_assert_cmpstr(cache_in_object_notation, ==, expected_cache_object_notation->str);
 
