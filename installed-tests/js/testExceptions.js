@@ -37,6 +37,9 @@ function testExceptionInPropertySetter() {
     } catch (e) {
 	logError(e);
     }
+
+    GLib.test_assert_expected_messages_internal('Gjs', 'testExceptions.js', 0,
+                                                'testExceptionInPropertySetter');
 }
 
 function testExceptionInPropertyGetter() {
@@ -49,6 +52,9 @@ function testExceptionInPropertyGetter() {
     } catch (e) {
 	logError(e);
     }
+
+    GLib.test_assert_expected_messages_internal('Gjs', 'testExceptions.js', 0,
+                                                'testExceptionInPropertyGetter');
 }
 
 function testExceptionInPropertySetterFromConstructor() {
@@ -60,6 +66,9 @@ function testExceptionInPropertySetterFromConstructor() {
     } catch (e) {
 	logError(e);
     }
+
+    GLib.test_assert_expected_messages_internal('Gjs', 'testExceptions.js', 0,
+                                                'testExceptionInPropertySetterFromConstructor');
 }
 
 function testExceptionInPropertySetterWithBinding() {
@@ -78,6 +87,9 @@ function testExceptionInPropertySetterWithBinding() {
     } catch (e) {
 	logError(e);
     }
+
+    GLib.test_assert_expected_messages_internal('Gjs', 'testExceptions.js', 0,
+                                                'testExceptionInPropertySetterWithBinding');
 }
 
 function testExceptionInPropertyGetterWithBinding() {
@@ -96,6 +108,9 @@ function testExceptionInPropertyGetterWithBinding() {
     } catch (e) {
 	logError(e);
     }
+
+    GLib.test_assert_expected_messages_internal('Gjs', 'testExceptions.js', 0,
+                                                'testExceptionInPropertyGetterWithBinding');
 }
 
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
