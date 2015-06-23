@@ -9,7 +9,7 @@ m4_define(pkg_int_version, (pkg_major_version * 100 + pkg_minor_version) * 100 +
 
 AC_PREREQ(2.61)
 AC_INIT([gjs], pkg_version, [http://bugzilla.gnome.org/enter_bug.cgi?product=gjs])
-AM_INIT_AUTOMAKE([dist-xz no-dist-gzip])
+AM_INIT_AUTOMAKE([dist-xz no-dist-gzip tar-ustar])
 AC_CONFIG_SRCDIR([gjs/console.cpp])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([config.h])
