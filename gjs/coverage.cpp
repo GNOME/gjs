@@ -415,14 +415,14 @@ get_array_from_js_value(JSContext             *context,
      * we have some profiling data that suggests a good size to
      * preallocate to. */
     GArray *c_side_array = g_array_new(true, true, array_element_size);
-    u_int32_t js_array_len;
+    uint32_t js_array_len;
     JS::RootedObject js_array(context, &value.toObject());
 
     if (element_clear_func)
         g_array_set_clear_func(c_side_array, element_clear_func);
 
     if (JS_GetArrayLength(context, js_array, &js_array_len)) {
-        u_int32_t i = 0;
+        uint32_t i = 0;
         JS::RootedValue element(context);
         for (; i < js_array_len; ++i) {
             if (!JS_GetElement(context, js_array, i, &element)) {
