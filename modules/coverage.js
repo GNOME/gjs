@@ -689,7 +689,7 @@ function _fetchCountersFromReflection(contents, nLines) {
 function CoverageStatisticsContainer(prefixes, cache) {
     /* Copy the files array, so that it can be re-used in the tests */
     let cachedASTs = cache !== undefined ? JSON.parse(cache) : null;
-    let coveredFiles = {}
+    let coveredFiles = {};
     let cacheMisses = 0;
 
     function wantsStatisticsFor(filename) {
@@ -727,7 +727,7 @@ function CoverageStatisticsContainer(prefixes, cache) {
     }
 
     this.stringify = function() {
-        let cache_data = {}
+        let cache_data = {};
         Object.keys(coveredFiles).forEach(function(filename) {
             let statisticsForFilename = coveredFiles[filename];
             let mtime = getFileModificationTime(filename);
@@ -754,7 +754,7 @@ function CoverageStatisticsContainer(prefixes, cache) {
                      cacheDataForFilename.lines.push(line_index);
 
                  if (statisticsForFilename.branchCounters[line_index] !== undefined) {
-                     let branchCounters = statisticsForFilename.branchCounters[line_index]
+                     let branchCounters = statisticsForFilename.branchCounters[line_index];
                      cacheDataForFilename.branches.push({
                          point: statisticsForFilename.branchCounters[line_index].point,
                          exits: statisticsForFilename.branchCounters[line_index].exits.map(function(exit) {
@@ -766,7 +766,7 @@ function CoverageStatisticsContainer(prefixes, cache) {
             cache_data[filename] = cacheDataForFilename;
         });
         return JSON.stringify(cache_data);
-    }
+    };
 
     this.getCoveredFiles = function() {
         return Object.keys(coveredFiles);
