@@ -1211,11 +1211,11 @@ Coverage.getFileContents = function(filename) {
 
 Coverage.getFileChecksum = function(filename) {
     return "abcd";
-}
+};
 
 Coverage.getFileModificationTime = function(filename) {
     return [1, 2];
-}
+};
 
 function testCoverageStatisticsContainerFetchesValidStatisticsForFile() {
     let container = new Coverage.CoverageStatisticsContainer(MockFilenames);
