@@ -763,12 +763,6 @@ function CoverageStatisticsContainer(prefixes, cache) {
                      });
                  }
             }
-            cacheDataForFilename.functions = Object.keys(statisticsForFilename.functionCounters).map(function(key) {
-                return {
-                    key: key,
-                    line: Number(key.split(':')[1])
-                };
-            });
             cache_data[filename] = cacheDataForFilename;
         });
         return JSON.stringify(cache_data);
