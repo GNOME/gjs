@@ -954,8 +954,6 @@ function testFunctionKeyFromFunctionWithoutNameIsAnonymous() {
     JSUnit.assertEquals(expectedFunctionKey, functionKeyForAnonymousFunction);
 }
 
-
-
 function testFunctionCounterMapReturnedForFunctionKeys() {
     let ast = {
         body: [{
