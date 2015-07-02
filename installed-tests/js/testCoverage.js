@@ -1210,7 +1210,7 @@ function testIncrementExpressionCountersThrowsIfLineOutOfRange() {
     ];
 
     JSUnit.assertRaises(function() {
-        Coverage._incrementExpressionCounters(expressionCounters, 2);
+        Coverage._incrementExpressionCounters(expressionCounters, 'script', 2);
     });
 }
 
@@ -1220,7 +1220,7 @@ function testIncrementExpressionCountersIncrementsIfInRange() {
         0
     ];
 
-    Coverage._incrementExpressionCounters(expressionCounters, 1);
+    Coverage._incrementExpressionCounters(expressionCounters, 'script', 1);
     JSUnit.assertEquals(1, expressionCounters[1]);
 }
 
@@ -1231,16 +1231,13 @@ function testWarnsIfWeHitANonExecutableLine() {
         undefined
     ];
 
-    let wasCalledContainer = { calledWith: undefined };
-    let reporter = function(cont) {
-        let container = cont;
-        return function(line) {
-            container.calledWith = line;
-        };
-    } (wasCalledContainer);
+    let messages = _fetchLogMessagesFrom(function() {
+        Coverage._incrementExpressionCounters(expressionCounters, 'script', 2);
+    });
 
-    Coverage._incrementExpressionCounters(expressionCounters, 2, reporter);
-    JSUnit.assertEquals(wasCalledContainer.calledWith, 2);
+    JSUnit.assertEquals(messages[0],
+                        "script:2 Executed line previously marked " +
+                        "non-executable by Reflect");
     JSUnit.assertEquals(expressionCounters[2], 1);
 }
 

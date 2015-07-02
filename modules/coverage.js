@@ -618,12 +618,10 @@ function _incrementFunctionCounters(functionCounters,
  * expressonCounters: An array of either a hit count for a found
  * executable line or undefined for a known non-executable line.
  * line: an executed line
- * reporter: A function a single integer to report back when
- * we executed lines that we didn't expect
  */
 function _incrementExpressionCounters(expressionCounters,
-                                      offsetLine,
-                                      reporter) {
+                                      script,
+                                      offsetLine) {
     let expressionCountersLen = expressionCounters.length;
 
     if (offsetLine >= expressionCountersLen)
@@ -648,7 +646,8 @@ function _incrementExpressionCounters(expressionCounters,
      * and BlockStatement, neither of which would ordinarily be
      * executed */
     if (expressionCounters[offsetLine] === undefined) {
-        reporter(offsetLine);
+        log(script + ':' + offsetLine + ' Executed line previously marked ' +
+            'non-executable by Reflect');
         expressionCounters[offsetLine] = 0;
     }
 
@@ -954,15 +953,8 @@ function CoverageStatistics(prefixes, cache) {
 
             try {
                 _incrementExpressionCounters(statistics.expressionCounters,
-                                             offsetLine,
-                                             function(line) {
-                                                 log("executed " +
-                                                     frame.script.url +
-                                                     ":" +
-                                                     line +
-                                                     " which we thought" +
-                                                     " wasn't executable");
-                                             });
+                                             frame.script.url,
+                                             offsetLine);
                 this._branchTracker.incrementBranchCounters(offsetLine);
             } catch (e) {
                 /* Something bad happened. Log the exception and delete
