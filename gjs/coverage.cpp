@@ -300,14 +300,6 @@ copy_source_file_to_coverage_output(const char *source,
     g_object_unref(source_file);
 }
 
-typedef struct _StatisticsPrintUserData {
-    GjsContext        *reflection_context;
-    GFileOutputStream *ostream;
-    const gchar       *output_directory;
-    JSContext         *context;
-    JSObject          *object;
-} StatisticsPrintUserData;
-
 /* This function will strip a URI scheme and return
  * the string with the URI scheme stripped or NULL
  * if the path was not a valid URI
