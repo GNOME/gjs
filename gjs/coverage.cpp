@@ -1345,9 +1345,9 @@ gjs_context_eval_file_in_compartment(GjsContext *context,
 }
 
 static JSBool
-coverage_warning(JSContext *context,
-                 unsigned   argc,
-                 jsval     *vp)
+coverage_log(JSContext *context,
+             unsigned   argc,
+             jsval     *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     char *s;
@@ -1355,7 +1355,7 @@ coverage_warning(JSContext *context,
     JSString *jstr;
 
     if (argc != 1) {
-        gjs_throw(context, "Must pass a single argument to warning()");
+        gjs_throw(context, "Must pass a single argument to log()");
         return JS_FALSE;
     }
 
@@ -1380,7 +1380,7 @@ coverage_warning(JSContext *context,
         return JS_FALSE;
     }
 
-    g_message("JS COVERAGE WARNING: %s", s);
+    g_message("JS COVERAGE MESSAGE: %s", s);
     g_free(s);
 
     JS_EndRequest(context);
@@ -1522,7 +1522,7 @@ coverage_get_file_contents(JSContext *context,
 }
 
 static JSFunctionSpec coverage_funcs[] = {
-    { "warning", JSOP_WRAPPER(coverage_warning), 1, GJS_MODULE_PROP_FLAGS },
+    { "log", JSOP_WRAPPER(coverage_log), 1, GJS_MODULE_PROP_FLAGS },
     { "getFileContents", JSOP_WRAPPER(coverage_get_file_contents), 1, GJS_MODULE_PROP_FLAGS },
     { "getFileModificationTime", JSOP_WRAPPER(coverage_get_file_modification_time), 1, GJS_MODULE_PROP_FLAGS },
     { "getFileChecksum", JSOP_WRAPPER(coverage_get_file_checksum), 1, GJS_MODULE_PROP_FLAGS },

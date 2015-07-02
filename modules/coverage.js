@@ -561,7 +561,7 @@ function _incrementExpressionCounters(expressionCounters,
      * mean that the reflection machinery is not doing its job, so we should
      * print a debug message about it in case someone is interested.
      *
-     * The reason why we don't have a proper warning is because it
+     * The reason why we don't have a proper log is because it
      * is difficult to determine what the SpiderMonkey program counter
      * will actually pass over, especially function declarations for some
      * reason:
@@ -576,9 +576,7 @@ function _incrementExpressionCounters(expressionCounters,
      * and BlockStatement, neither of which would ordinarily be
      * executed */
     if (expressionCounters[offsetLine] === undefined) {
-        if (reporter !== undefined)
-            reporter(offsetLine);
-
+        reporter(offsetLine);
         expressionCounters[offsetLine] = 0;
     }
 
@@ -831,15 +829,15 @@ function CoverageStatistics(prefixes, cache) {
             }
         } catch (e) {
             /* We don't care about this frame, return */
-            warning(e.message + " " + e.stack);
+            log(e.message + " " + e.stack);
             return undefined;
         }
 
         function _logExceptionAndReset(exception, callee, line) {
-            warning(exception.fileName + ":" + exception.lineNumber + " (processing " +
-                    frame.script.url + ":" + callee + ":" + line + ") - " +
-                    exception.message);
-            warning("Will not log statistics for this file");
+            log(exception.fileName + ":" + exception.lineNumber +
+                " (processing " + frame.script.url + ":" + callee + ":" +
+                line + ") - " + exception.message);
+            log("Will not log statistics for this file");
             frame.onStep = undefined;
             frame._branchTracker = undefined;
             deleteStatistics(frame.script.url);
@@ -878,12 +876,12 @@ function CoverageStatistics(prefixes, cache) {
                 _incrementExpressionCounters(statistics.expressionCounters,
                                              offsetLine,
                                              function(line) {
-                                                 warning("executed " +
-                                                         frame.script.url +
-                                                         ":" +
-                                                         line +
-                                                         " which we thought" +
-                                                         " wasn't executable");
+                                                 log("executed " +
+                                                     frame.script.url +
+                                                     ":" +
+                                                     line +
+                                                     " which we thought" +
+                                                     " wasn't executable");
                                              });
                 this._branchTracker.incrementBranchCounters(offsetLine);
             } catch (e) {
