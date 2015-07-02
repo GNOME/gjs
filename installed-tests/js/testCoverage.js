@@ -362,6 +362,7 @@ function testFunctionsInsideArrowExpression() {
 
     assertArrayEquals(foundFunctions,
                       [
+                          { key: "(anonymous):1:1", line: 1, n_params: 1 },
                           { key: "(anonymous):1:0", line: 1, n_params: 0 }
                       ],
                       functionDeclarationsEqual);

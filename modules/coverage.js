@@ -219,6 +219,7 @@ function functionsForNode(node) {
     switch (node.type) {
     case 'FunctionDeclaration':
     case 'FunctionExpression':
+    case 'ArrowExpression':
         functionNames.push({ key: _getFunctionKeyFromReflectedFunction(node),
                              line: node.loc.start.line,
                              n_params: node.params.length });
