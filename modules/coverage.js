@@ -774,11 +774,7 @@ function CoverageStatisticsContainer(prefixes, cache) {
     };
 
     this.fetchStatistics = function(filename) {
-        let statistics = ensureStatisticsFor(filename);
-
-        if (statistics === undefined)
-            throw new Error('Not tracking statistics for ' + filename);
-        return statistics;
+        return ensureStatisticsFor(filename);
     };
 
     this.staleCache = function() {
@@ -830,8 +826,12 @@ function CoverageStatistics(prefixes, cache) {
 
         try {
             statistics = fetchStatistics(frame.script.url);
+            if (!statistics) {
+                return undefined;
+            }
         } catch (e) {
             /* We don't care about this frame, return */
+            warning(e.message + " " + e.stack);
             return undefined;
         }
 
