@@ -1217,6 +1217,8 @@ coverage_statistics_has_stale_cache(GjsCoverage *coverage)
     return JSVAL_TO_BOOLEAN(stale_cache_value);
 }
 
+static unsigned int _suppressed_coverage_messages_count = 0;
+
 void
 gjs_coverage_write_statistics(GjsCoverage *coverage,
                               const char  *output_directory)
@@ -1235,7 +1237,6 @@ gjs_coverage_write_statistics(GjsCoverage *coverage,
                                                "coverage.lcov",
                                                NULL);
     GFile *output_file = g_file_new_for_commandline_arg(output_file_path);
-    g_free(output_file_path);
 
     GOutputStream *ostream =
         G_OUTPUT_STREAM(g_file_append_to(output_file,
@@ -1273,6 +1274,15 @@ gjs_coverage_write_statistics(GjsCoverage *coverage,
         g_bytes_unref(cache_data);
     }
 
+    g_message("Wrote coverage statistics to %s", output_file_path);
+    if (_suppressed_coverage_messages_count) {
+        g_message("There were %i suppressed message(s) when collecting "
+                  "coverage, set GJS_SHOW_COVERAGE_MESSAGES to see them.",
+                  _suppressed_coverage_messages_count);
+        _suppressed_coverage_messages_count = 0;
+    }
+
+    g_free(output_file_path);
     g_array_unref(file_statistics_array);
     g_object_unref(ostream);
     g_object_unref(output_file);
@@ -1352,6 +1362,12 @@ coverage_log(JSContext *context,
     }
 
     JS_BeginRequest(context);
+
+    if (!g_getenv("GJS_SHOW_COVERAGE_MESSAGES")) {
+        _suppressed_coverage_messages_count++;
+        argv.rval().set(JSVAL_VOID);
+        return JS_TRUE;
+    }
 
     /* JS_ValueToString might throw, in which we will only
      *log that the value could be converted to string */
