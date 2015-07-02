@@ -122,6 +122,14 @@ function testGObjectClassCanImplementInterface() {
     JSUnit.assertTrue(obj.constructor.implements(AnInterface));
 }
 
+function testRaisesWhenInterfaceRequiresGObjectInterfaceButNotGObject() {
+    JSUnit.assertRaises(() => new Lang.Interface({
+        Name: 'GObjectInterfaceNotRequiringGObject',
+        GTypeName: 'GTypeNameNotRequiringGObject',
+        Requires: [ Gio.Initable ]
+    }));
+}
+
 function testGObjectCanImplementInterfacesFromJSAndC() {
     // Test will fail if the constructor throws an exception
     const ObjectImplementingLangInterfaceAndCInterface = new Lang.Class({

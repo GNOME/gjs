@@ -109,6 +109,15 @@ function testObjectCanImplementInterface() {
     JSUnit.assertTrue(obj.constructor.implements(AnInterface));
 }
 
+function testSuperclassCanImplementInterface() {
+    const ChildWhoseParentImplementsAnInterface = new Lang.Class({
+        Name: "ChildWhoseParentImplementsAnInterface",
+        Extends: ObjectImplementingAnInterface
+    });
+    let obj = new ChildWhoseParentImplementsAnInterface();
+    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
+}
+
 function testObjectImplementingInterfaceHasCorrectConstructor() {
     let obj = new ObjectImplementingAnInterface();
     JSUnit.assertEquals(ObjectImplementingAnInterface, obj.constructor);
@@ -118,6 +127,14 @@ function testObjectCanImplementRequiredFunction() {
     // Test considered passing if no exception thrown
     let implementer = new ObjectImplementingAnInterface();
     implementer.required();
+}
+
+function testInterfaceMustHaveName() {
+    JSUnit.assertRaises(function () {
+        const AnInterfaceWithoutAName = new Lang.Interface({
+            required: Lang.Interface.UNIMPLEMENTED
+        });
+    });
 }
 
 function testClassMustImplementRequiredFunction() {
@@ -298,6 +315,11 @@ function testSubclassCanReimplementTheSameInterfaceAsItsParent() {
     });
     let obj = new SubImplementer();
     JSUnit.assertTrue(obj.constructor.implements(AnInterface));
+}
+
+function testToString() {
+    JSUnit.assertEquals('[interface Interface for AnInterface]',
+                        AnInterface.toString());
 }
 
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
