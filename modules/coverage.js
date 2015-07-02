@@ -477,13 +477,27 @@ function _branchesToBranchCounters(branches, nLines) {
     return counters;
 }
 
-function _functionsToFunctionCounters(functions) {
+function _functionsToFunctionCounters(script, functions) {
     let functionCounters = {};
 
     functions.forEach(function(func) {
-        functionCounters[func.key] = {
-            hitCount: 0
-        };
+        let [name, line, args] = func.key.split(':');
+
+        if (functionCounters[name] === undefined) {
+            functionCounters[name] = {};
+        }
+
+        if (functionCounters[name][line] === undefined) {
+            functionCounters[name][line] = {};
+        }
+
+        if (functionCounters[name][line][args] === undefined) {
+            functionCounters[name][line][args] = { hitCount: 0 };
+        } else {
+            log(script + ':' + line + ' Function identified as ' +
+                func.key + ' already seen in this file. Function coverage ' +
+                'will be incomplete.');
+        }
     });
 
     return functionCounters;
@@ -497,6 +511,59 @@ function _populateKnownFunctions(functions, nLines) {
     });
 
     return knownFunctions;
+}
+
+function _identifyFunctionCounterInLinePartForDescription(linePart,
+                                                          nArgs) {
+    /* There is only one potential option for this line. We might have been
+     * called with the wrong number of arguments, but it doesn't matter. */
+    if (Object.getOwnPropertyNames(linePart).length === 1)
+        return linePart[Object.getOwnPropertyNames(linePart)[0]];
+
+    /* Have to disambiguate using nArgs and we have an exact match. */
+    if (linePart[nArgs] !== undefined)
+        return linePart[nArgs];
+
+    /* There are multiple options on this line. Pick the one where
+     * we satisfy the number of arguments exactly, or failing that,
+     * go through each and pick the closest. */
+    let allNArgsOptions = Object.keys(linePart).map(function(key) {
+        return parseInt(key);
+    });
+
+    let closest = allNArgsOptions.reduce(function(prev, current, index, array) {
+        let nArgsOption = array[index];
+        if (Math.abs(nArgsOption - nArgs) < Math.abs(current - nArgs)) {
+            return nArgsOption;
+        }
+
+        return current;
+    });
+
+    return linePart[String(closest)];
+}
+
+function _identifyFunctionCounterForDescription(functionCounters,
+                                                name,
+                                                line,
+                                                nArgs) {
+    let candidateCounter = functionCounters[name];
+
+    if (candidateCounter === undefined)
+        return null;
+
+    if (Object.getOwnPropertyNames(candidateCounter).length === 1) {
+        let linePart = candidateCounter[Object.getOwnPropertyNames(candidateCounter)[0]];
+        return _identifyFunctionCounterInLinePartForDescription(linePart, nArgs);
+    }
+
+    let linePart = functionCounters[name][line];
+
+    if (linePart === undefined) {
+        return null;
+    }
+
+    return _identifyFunctionCounterInLinePartForDescription(linePart, nArgs);
 }
 
 /**
@@ -517,25 +584,30 @@ function _incrementFunctionCounters(functionCounters,
                                     name,
                                     line,
                                     nArgs) {
-    let functionKey = name + ':' + line + ':' + nArgs;
-    let functionCountersForKey = functionCounters[functionKey];
+    let functionCountersForKey = _identifyFunctionCounterForDescription(functionCounters,
+                                                                        name,
+                                                                        line,
+                                                                        nArgs);
 
     /* Its possible that the JS Engine might enter a funciton
      * at an executable line which is a little bit past the
      * actual definition. Roll backwards until we reach the
      * last known function definition line which we kept
      * track of earlier to see if we can find this function first */
-    if (functionCountersForKey === undefined) {
+    if (functionCountersForKey === null) {
         do {
             --line;
-            functionKey = name + ':' + line + ':' + nArgs;
-            functionCountersForKey = functionCounters[functionKey];
+            functionCountersForKey = _identifyFunctionCounterForDescription(functionCounters,
+                                                                            name,
+                                                                            line,
+                                                                            nArgs);
         } while (linesWithKnownFunctions[line] !== true && line > 0);
     }
 
-    if (functionCountersForKey !== undefined) {
+    if (functionCountersForKey !== null) {
         functionCountersForKey.hitCount++;
     } else {
+        let functionKey = [name, line, nArgs].join(':');
         throw new Error("expected Reflect to find function " + functionKey);
     }
 }
@@ -615,16 +687,24 @@ function _BranchTracker(branchCounters) {
 
 function _convertFunctionCountersToArray(functionCounters) {
     let arrayReturn = [];
-    /* functionCounters is an object so convert it to
+    /* functionCounters is an object so explore it to create a
+     * set of function keys and then convert it to
      * an array-of-object using the key as a property
      * of that object */
-    for (let key of Object.getOwnPropertyNames(functionCounters)) {
-        let func = functionCounters[key];
-        /* The name of the function contains its line, after the first
-         * colon. Split the name and retrieve it here */
-        arrayReturn.push({ name: key,
-                           line: Number(key.split(':')[1]),
-                           hitCount: func.hitCount });
+    for (let name of Object.getOwnPropertyNames(functionCounters)) {
+        let namePart = functionCounters[name];
+
+        for (let line of Object.getOwnPropertyNames(namePart)) {
+            let linePart = functionCounters[name][line];
+
+            for (let nArgs of Object.getOwnPropertyNames(linePart)) {
+                let functionKey = [name, line, nArgs].join(':');
+                arrayReturn.push({ name: functionKey,
+                                   line: Number(line),
+                                   nArgs: nArgs,
+                                   hitCount: linePart[nArgs].hitCount });
+            }
+        }
     }
 
     arrayReturn.sort(function(left, right) {
@@ -663,7 +743,7 @@ function _fetchCountersFromCache(filename, cache, nLines) {
         return {
             expressionCounters: _expressionLinesToCounters(cache_for_file.lines, nLines),
             branchCounters: _branchesToBranchCounters(cache_for_file.branches, nLines),
-            functionCounters: _functionsToFunctionCounters(functions),
+            functionCounters: _functionsToFunctionCounters(filename, functions),
             linesWithKnownFunctions: _populateKnownFunctions(functions, nLines),
             nLines: nLines
         };
@@ -672,14 +752,14 @@ function _fetchCountersFromCache(filename, cache, nLines) {
     return null;
 }
 
-function _fetchCountersFromReflection(contents, nLines) {
+function _fetchCountersFromReflection(filename, contents, nLines) {
     let reflection = Reflect.parse(contents);
     let functions = functionsForAST(reflection);
 
     return {
         expressionCounters: _expressionLinesToCounters(expressionLinesForAST(reflection), nLines),
         branchCounters: _branchesToBranchCounters(branchesForAST(reflection), nLines),
-        functionCounters: _functionsToFunctionCounters(functions),
+        functionCounters: _functionsToFunctionCounters(filename, functions),
         linesWithKnownFunctions: _populateKnownFunctions(functions, nLines),
         nLines: nLines
     };
@@ -704,7 +784,7 @@ function CoverageStatisticsContainer(prefixes, cache) {
         let counters = _fetchCountersFromCache(filename, cachedASTs, nLines);
         if (counters === null) {
             cacheMisses++;
-            counters = _fetchCountersFromReflection(contents, nLines);
+            counters = _fetchCountersFromReflection(filename, contents, nLines);
         }
 
         if (counters === null)
@@ -735,10 +815,10 @@ function CoverageStatisticsContainer(prefixes, cache) {
                 checksum: mtime === null ? getFileChecksum(filename) : null,
                 lines: [],
                 branches: [],
-                functions: Object.keys(statisticsForFilename.functionCounters).map(function(key) {
+                functions: _convertFunctionCountersToArray(statisticsForFilename.functionCounters).map(function(func) {
                     return {
-                        key: key,
-                        line: Number(key.split(':')[1])
+                        key: func.name,
+                        line: func.line
                     };
                 })
             };
