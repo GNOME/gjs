@@ -1361,7 +1361,7 @@ coverage_log(JSContext *context,
         return JS_FALSE;
     }
 
-    JS_BeginRequest(context);
+    JSAutoRequest ar(context);
 
     if (!g_getenv("GJS_SHOW_COVERAGE_MESSAGES")) {
         _suppressed_coverage_messages_count++;
@@ -1379,19 +1379,16 @@ coverage_log(JSContext *context,
 
     if (jstr == NULL) {
         g_message("JS LOG: <cannot convert value to string>");
-        JS_EndRequest(context);
         return JS_TRUE;
     }
 
     if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(jstr), &s)) {
-        JS_EndRequest(context);
         return JS_FALSE;
     }
 
     g_message("JS COVERAGE MESSAGE: %s", s);
     g_free(s);
 
-    JS_EndRequest(context);
     argv.rval().set(JSVAL_VOID);
     return JS_TRUE;
 }
