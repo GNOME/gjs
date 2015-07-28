@@ -16,6 +16,10 @@ const AnInterface = new Lang.Interface({
         return 'AnInterface.optionalGeneric()';
     },
 
+    argumentGeneric: function (arg) {
+        return 'AnInterface.argumentGeneric(' + arg + ')';
+    },
+
     usesThis: function () {
         return this._interfacePrivateMethod();
     },
@@ -64,6 +68,10 @@ const ObjectImplementingAnInterface = new Lang.Class({
 
     optionalGeneric: function () {
         return AnInterface.optionalGeneric(this);
+    },
+
+    argumentGeneric: function (arg) {
+        return AnInterface.argumentGeneric(this, arg + ' (hello from class)');
     }
 });
 
@@ -158,6 +166,12 @@ function testObjectCanDeferToInterfaceOptionalFunction() {
 function testObjectCanChainUpToInterface() {
     let obj = new ObjectImplementingAnInterface();
     JSUnit.assertEquals('AnInterface.optional()', obj.optional());
+}
+
+function testObjectCanChainUpToInterfaceWithArguments() {
+    let obj = new ObjectImplementingAnInterface();
+    JSUnit.assertEquals('AnInterface.argumentGeneric(arg (hello from class))',
+        obj.argumentGeneric('arg'));
 }
 
 function testObjectCanDeferToInterfaceGetter() {

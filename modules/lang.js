@@ -463,7 +463,7 @@ Interface.prototype._init = function (params) {
         if (typeof descriptor.value === 'function') {
             let interfaceProto = this.prototype;  // capture in closure
             this[name] = function () {
-                return interfaceProto[name].apply.apply(interfaceProto[name],
+                return interfaceProto[name].call.apply(interfaceProto[name],
                     arguments);
             };
         }
