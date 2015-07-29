@@ -130,6 +130,7 @@ dist_jstests_DATA += \
 	installed-tests/js/testEverythingEncapsulated.js	\
 	installed-tests/js/testFormat.js		\
 	installed-tests/js/testFundamental.js			\
+	installed-tests/js/testGettext.js			\
 	installed-tests/js/testGIMarshalling.js		\
 	installed-tests/js/testGObjectClass.js		\
 	installed-tests/js/testGObjectInterface.js		\

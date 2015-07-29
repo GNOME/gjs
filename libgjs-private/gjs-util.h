@@ -23,6 +23,7 @@
 #ifndef __GJS_PRIVATE_UTIL_H__
 #define __GJS_PRIVATE_UTIL_H__
 
+#include <locale.h>
 #include <glib.h>
 #include <glib-object.h>
 
@@ -32,9 +33,29 @@ G_BEGIN_DECLS
 char * gjs_format_int_alternative_output (int n);
 
 /* For imports.gettext */
-void gjs_textdomain     (const char *domain);
-void gjs_bindtextdomain (const char *domain,
-                         const char *location);
+typedef enum
+{
+  GJS_LOCALE_CATEGORY_ALL = LC_ALL,
+  GJS_LOCALE_CATEGORY_ADDRESS = LC_ADDRESS,
+  GJS_LOCALE_CATEGORY_COLLATE = LC_COLLATE,
+  GJS_LOCALE_CATEGORY_CTYPE = LC_CTYPE,
+  GJS_LOCALE_CATEGORY_IDENTIFICATION = LC_IDENTIFICATION,
+  GJS_LOCALE_CATEGORY_MEASUREMENT = LC_MEASUREMENT,
+  GJS_LOCALE_CATEGORY_MESSAGES = LC_MESSAGES,
+  GJS_LOCALE_CATEGORY_MONETARY = LC_MONETARY,
+  GJS_LOCALE_CATEGORY_NAME = LC_NAME,
+  GJS_LOCALE_CATEGORY_NUMERIC = LC_NUMERIC,
+  GJS_LOCALE_CATEGORY_PAPER = LC_PAPER,
+  GJS_LOCALE_CATEGORY_TELEPHONE = LC_TELEPHONE,
+  GJS_LOCALE_CATEGORY_TIME = LC_TIME
+} GjsLocaleCategory;
+
+const char *gjs_setlocale                (GjsLocaleCategory category,
+                                          const char       *locale);
+void        gjs_textdomain               (const char *domain);
+void        gjs_bindtextdomain           (const char *domain,
+                                          const char *location);
+GType       gjs_locale_category_get_type (void) G_GNUC_CONST;
 
 /* For imports.overrides.GObject */
 GParamFlags gjs_param_spec_get_flags (GParamSpec *pspec);
