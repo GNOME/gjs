@@ -41,17 +41,11 @@ gjs_locale_category_get_type(void)
   if (g_once_init_enter(&g_define_type_id__volatile)) {
       static const GEnumValue v[] = {
           { GJS_LOCALE_CATEGORY_ALL, "GJS_LOCALE_CATEGORY_ALL", "all" },
-          { GJS_LOCALE_CATEGORY_ADDRESS, "GJS_LOCALE_CATEGORY_ADDRESS", "address" },
           { GJS_LOCALE_CATEGORY_COLLATE, "GJS_LOCALE_CATEGORY_COLLATE", "collate" },
           { GJS_LOCALE_CATEGORY_CTYPE, "GJS_LOCALE_CATEGORY_CTYPE", "ctype" },
-          { GJS_LOCALE_CATEGORY_IDENTIFICATION, "GJS_LOCALE_CATEGORY_IDENTIFICATION", "identification" },
-          { GJS_LOCALE_CATEGORY_MEASUREMENT, "GJS_LOCALE_CATEGORY_MEASUREMENT", "measurement" },
           { GJS_LOCALE_CATEGORY_MESSAGES, "GJS_LOCALE_CATEGORY_MESSAGES", "messages" },
           { GJS_LOCALE_CATEGORY_MONETARY, "GJS_LOCALE_CATEGORY_MONETARY", "monetary" },
-          { GJS_LOCALE_CATEGORY_NAME, "GJS_LOCALE_CATEGORY_NAME", "name" },
           { GJS_LOCALE_CATEGORY_NUMERIC, "GJS_LOCALE_CATEGORY_NUMERIC", "numeric" },
-          { GJS_LOCALE_CATEGORY_PAPER, "GJS_LOCALE_CATEGORY_PAPER", "paper" },
-          { GJS_LOCALE_CATEGORY_TELEPHONE, "GJS_LOCALE_CATEGORY_TELEPHONE", "telephone" },
           { GJS_LOCALE_CATEGORY_TIME, "GJS_LOCALE_CATEGORY_TIME", "time" },
           { 0, NULL, NULL }
       };
