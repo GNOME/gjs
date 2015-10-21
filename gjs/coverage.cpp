@@ -1182,7 +1182,7 @@ gjs_write_cache_to_path(const char *path,
             g_assert(error != NULL);
             g_critical("Deleting %s failed because %s! You will need to "
                        "delete it manually before running the coverage "
-                       "mode again.");
+                       "mode again.", path, error->message);
             g_clear_error(&error);
         }
 
