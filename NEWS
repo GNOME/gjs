@@ -1,3 +1,19 @@
+Version 1.44.0
+--------------
+
+- Add Lang.Interface and GObject.Interface [Philip Chimento, Roberto Goizueta,
+  #751343, #752984]
+- Support callbacks with (transfer full) return types [Debarshi Ray, #750286]
+- Add binding for setlocale() [Philip Chimento, #753072]
+- Improve support to generate code coverage reports [Sam Spilsbury, #743009,
+  #743007, #742362, #742535, #742797, #742466, #751732]
+- Report errors from JS property getters/setters [Matt Watson, #730101]
+- Fix crash when garbage collection triggers while inside an init function
+  [Sam Spilsbury, #742517]
+- Port to CallReceiver/CallArgs [Tim Lunn, #742249]
+- Misc bug fixes [Ting-Wei Lan, #736979, #753072] [Iain Lane, #750688]
+  [Jasper St. Pierre] [Philip Chimento] [Colin Walters]
+
 Version 1.43.3
 --------------
 
