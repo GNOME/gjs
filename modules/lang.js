@@ -98,7 +98,7 @@ function bind(obj, callback) {
 
 // Class magic
 // Adapted from MooTools, MIT license
-// https://github.com/mootools/moootools-core
+// https://github.com/mootools/mootools-core
 
 function _Base() {
     throw new TypeError('Cannot instantiate abstract class _Base');
