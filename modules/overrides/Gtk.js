@@ -40,6 +40,9 @@ const GtkWidgetClass = new Lang.Class({
         let internalChildren = params.InternalChildren;
         delete params.InternalChildren;
 
+        let cssName = params.CssName;
+        delete params.CssName;
+
         if (template) {
             params._instance_init = function() {
                 this.init_template();
@@ -47,6 +50,9 @@ const GtkWidgetClass = new Lang.Class({
         }
 
         this.parent(params);
+
+        if (cssName)
+            Gtk.Widget.set_css_name.call(this, cssName);
 
         if (template) {
             if (typeof template == 'string' &&
