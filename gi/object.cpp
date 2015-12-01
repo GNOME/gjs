@@ -2416,6 +2416,94 @@ gjs_object_get_gproperty (GObject    *object,
 }
 
 static void
+jsobj_set_gproperty (JSContext    *context,
+                     JSObject     *object,
+                     const GValue *value,
+                     GParamSpec   *pspec)
+{
+    jsval jsvalue;
+    gchar *underscore_name;
+
+    if (!gjs_value_from_g_value(context, &jsvalue, value))
+        return;
+
+    underscore_name = hyphen_to_underscore((gchar *)pspec->name);
+    if (!JS_SetProperty(context, object, underscore_name, &jsvalue))
+        gjs_log_exception(context);
+    g_free (underscore_name);
+}
+
+static GObject *
+gjs_object_constructor (GType                  type,
+                        guint                  n_construct_properties,
+                        GObjectConstructParam *construct_properties)
+{
+    GObject *gobj = NULL;
+
+    if (object_init_list) {
+        GType parent_type = g_type_parent(type);
+
+        /* The object is being constructed from JS:
+         * Simply chain up to the first non-gjs constructor
+         */
+        while (G_OBJECT_CLASS(g_type_class_peek(parent_type))->constructor == gjs_object_constructor)
+            parent_type = g_type_parent(parent_type);
+
+        gobj = G_OBJECT_CLASS(g_type_class_peek(parent_type))->constructor(type, n_construct_properties, construct_properties);
+    } else {
+        GjsContext *gjs_context;
+        JSContext *context;
+        JSObject *object, *constructor;
+        ObjectInstance *priv;
+
+        /* The object is being constructed from native code (e.g. GtkBuilder):
+         * Construct the JS object from the constructor, then use the GObject
+         * that was associated in gjs_object_custom_init()
+         */
+        gjs_context = gjs_context_get_current();
+        context = (JSContext*) gjs_context_get_native_context(gjs_context);
+
+        JS_BeginRequest(context);
+
+        constructor = gjs_lookup_object_constructor_from_info(context, NULL, type);
+        if (!constructor)
+          goto out;
+
+        if (n_construct_properties) {
+            JSObject *args;
+            jsval argv;
+            guint i;
+
+            args = JS_NewObject(context, NULL, NULL, NULL);
+
+            for (i = 0; i < n_construct_properties; i++)
+                jsobj_set_gproperty(context, args,
+                                    construct_properties[i].value,
+                                    construct_properties[i].pspec);
+
+            argv = OBJECT_TO_JSVAL(args);
+            object = JS_New(context, constructor, 1, &argv);
+        } else {
+            object = JS_New(context, constructor, 0, NULL);
+        }
+
+        if (!object)
+          goto out;
+
+        priv = (ObjectInstance*) JS_GetPrivate(object);
+        /* We only hold a toggle ref at this point, add back a ref that the
+         * native code can own.
+         */
+        gobj = G_OBJECT(g_object_ref(priv->gobj));
+
+out:
+        JS_EndRequest(context);
+    }
+
+    return gobj;
+}
+
+static void
 gjs_object_set_gproperty (GObject      *object,
                           guint         property_id,
                           const GValue *value,
@@ -2424,21 +2512,12 @@ gjs_object_set_gproperty (GObject      *object,
     GjsContext *gjs_context;
     JSContext *context;
     JSObject *js_obj;
-    jsval jsvalue;
-    gchar *underscore_name;
 
     gjs_context = gjs_context_get_current();
     context = (JSContext*) gjs_context_get_native_context(gjs_context);
 
     js_obj = peek_js_obj(object);
-
-    if (!gjs_value_from_g_value(context, &jsvalue, value))
-        return;
-
-    underscore_name = hyphen_to_underscore((gchar *)pspec->name);
-    if (!JS_SetProperty(context, js_obj, underscore_name, &jsvalue))
-        gjs_log_exception(context);
-    g_free (underscore_name);
+    jsobj_set_gproperty(context, js_obj, value, pspec);
 }
 
 static JSBool
@@ -2527,6 +2606,7 @@ gjs_object_class_init(GObjectClass *klass,
 
     gtype = G_OBJECT_CLASS_TYPE (klass);
 
+    klass->constructor = gjs_object_constructor;
     klass->set_property = gjs_object_set_gproperty;
     klass->get_property = gjs_object_get_gproperty;
 
@@ -2553,6 +2633,9 @@ gjs_object_custom_init(GTypeInstance *instance,
     JSObject *object;
     ObjectInstance *priv;
     jsval v, r;
+
+    if (!object_init_list)
+      return;
 
     object = (JSObject*) object_init_list->data;
     priv = (ObjectInstance*) JS_GetPrivate(object);
