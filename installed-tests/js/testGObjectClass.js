@@ -4,6 +4,7 @@ const JSUnit = imports.jsUnit;
 const Lang = imports.lang;
 const GObject = imports.gi.GObject;
 const Gio = imports.gi.Gio;
+const Gtk = imports.gi.Gtk;
 
 const MyObject = new GObject.Class({
     Name: 'MyObject',
@@ -187,6 +188,18 @@ function testGObjectClass() {
     JSUnit.assertEquals('baz', myInstance2.readwrite);
     JSUnit.assertEquals('bar', myInstance2.readonly);
     JSUnit.assertEquals('asdf', myInstance2.construct);
+
+    let ui = '<interface> \
+                <object class="Gjs_MyObject" id="MyObject"> \
+                  <property name="readwrite">baz</property> \
+                  <property name="construct">quz</property> \
+                </object> \
+              </interface>';
+    let builder = Gtk.Builder.new_from_string(ui, -1);
+    let myInstance3 = builder.get_object('MyObject');
+    JSUnit.assertEquals('baz', myInstance3.readwrite);
+    JSUnit.assertEquals('bar', myInstance3.readonly);
+    JSUnit.assertEquals('quz', myInstance3.construct);
 
     // the following would (should) cause a CRITICAL:
     // myInstance.readonly = 'val';
