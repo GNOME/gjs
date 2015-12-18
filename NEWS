@@ -1,3 +1,19 @@
+Version 1.45.3
+--------------
+
+- Support external construction of gjs-defined GObjects [Florian Müllner,
+  #681254]
+- Add new format.printf() API [Colin Walters, #689664]
+- Add new API to get the name of a repository [Jasper St. Pierre, #685413]
+- Add C to JS support for arrays of flat structures [Giovanni Campagna,
+  #704842]
+- Add API to specify CSS node name [Florian Müllner, #758349]
+- Return value of default signal handler for "on_signal_name" methods
+  [Philip Chimento, #729288]
+- Fix multiple emissions of onOverwrite in Tweener [Tommi Komulainen, #597927]
+- Misc bug fixes [Philip Chimento, #727370] [Owen Taylor, #623330]
+  [Juan RP, #667908] [Ben Iofel, #757763]
+
 Version 1.44.0
 --------------
 
