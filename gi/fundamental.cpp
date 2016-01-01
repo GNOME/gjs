@@ -619,8 +619,15 @@ gjs_lookup_fundamental_prototype_from_gtype(JSContext *context,
     GIObjectInfo *info;
     JSObject *proto;
 
-    info = (GIObjectInfo *) g_irepository_find_by_gtype(g_irepository_get_default(),
-                                                        gtype);
+    /* A given gtype might not have any definition in the introspection
+     * data. If that's the case, try to look for a definition of any of the
+     * parent type. */
+    while ((info = (GIObjectInfo *)
+            g_irepository_find_by_gtype(g_irepository_get_default(),
+                                        gtype)) == NULL &&
+           gtype != G_TYPE_INVALID)
+        gtype = g_type_parent(gtype);
+
     proto = gjs_lookup_fundamental_prototype(context, info, gtype);
     if (info)
         g_base_info_unref((GIBaseInfo*)info);
@@ -747,6 +754,9 @@ gjs_object_from_g_fundamental(JSContext    *context,
     JS::RootedObject proto(context,
         gjs_lookup_fundamental_prototype_from_gtype(context,
                                                     G_TYPE_FROM_INSTANCE(gfundamental)));
+    if (!proto)
+        return NULL;
+
     JS::RootedObject global(context, gjs_get_import_global(context));
     object = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto,
                                         global);
