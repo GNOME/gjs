@@ -71,6 +71,8 @@ main(int argc, char **argv)
     gsize len;
     int code;
 
+    setlocale(LC_ALL, "");
+
     context = g_option_context_new(NULL);
 
     /* pass unknown through to the JS script */
@@ -89,8 +91,6 @@ main(int argc, char **argv)
     }
 
     g_option_context_free (context);
-
-    setlocale(LC_ALL, "");
 
     if (command != NULL) {
         script = command;
