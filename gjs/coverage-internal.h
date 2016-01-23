@@ -28,6 +28,8 @@
 #include "jsapi-util.h"
 #include "coverage.h"
 
+G_BEGIN_DECLS
+
 GArray * gjs_fetch_statistics_from_js(GjsCoverage *coverage,
                                       char        **covered_paths);
 GBytes * gjs_serialize_statistics(GjsCoverage *coverage);
@@ -49,5 +51,7 @@ gboolean gjs_write_cache_to_path(const char *path,
                                  GBytes     *cache_bytes);
 
 extern const char *GJS_COVERAGE_CACHE_FILE_NAME;
+
+G_END_DECLS
 
 #endif
