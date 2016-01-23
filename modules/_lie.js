@@ -1,3 +1,29 @@
+// jscs:disable validateIndentation
+(function () {
+const GLib = imports.gi.GLib;
+
+var reqs = {
+  immediate: function () {
+    return function (func, priority=GLib.PRIORITY_DEFAULT_IDLE) {
+      GLib.idle_add(priority, function () {
+        func();
+        return GLib.SOURCE_REMOVE;
+      });
+    };
+  },
+};
+function require(req) {
+  return reqs[req]();
+}
+
+var process = {
+  emit: function (event, error) {
+    if (event === 'unhandledRejection')
+      log('Unhandled rejection');
+      throw error;
+  },
+};
+
 // Copyright (c) 2014 Calvin Metcalf
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -38,7 +64,7 @@ if (!process.browser) {
   var UNHANDLED = ['UNHANDLED'];
 }
 
-module.exports = Promise;
+// module.exports = Promise;  // removed for GJS
 
 function Promise(resolver) {
   if (typeof resolver !== 'function') {
@@ -301,3 +327,6 @@ function race(iterable) {
 }
 
 // END CODE FROM lie/lib/index.js
+
+return Promise;
+})();
