@@ -1,5 +1,6 @@
 // jscs:disable validateIndentation
 (function () {
+'use strict';
 const GLib = imports.gi.GLib;
 
 var reqs = {
@@ -47,7 +48,7 @@ var process = {
 // BEGIN CODE FROM lie/lib/index.js
 // https://raw.githubusercontent.com/calvinmetcalf/lie/master/lib/index.js
 
-'use strict';
+// 'use strict';  // Moved for GJS
 var immediate = require('immediate');
 
 /* istanbul ignore next */
@@ -136,7 +137,8 @@ function unwrap(promise, func, value) {
     try {
       returnValue = func(value);
     } catch (e) {
-      return handlers.reject(promise, e);
+      handlers.reject(promise, e); // Changed for GJS
+      return; // Added for GJS
     }
     if (returnValue === promise) {
       handlers.reject(promise, new TypeError('Cannot resolve promise with itself'));
@@ -195,6 +197,7 @@ function getThen(obj) {
       then.apply(obj, arguments);
     };
   }
+  return undefined; // added for GJS
 }
 
 function safelyResolveThenable(self, thenable) {
@@ -273,7 +276,7 @@ function all(iterable) {
   while (++i < len) {
     allResolver(iterable[i], i);
   }
-  return promise;
+  // return promise; // moved for GJS
   function allResolver(value, i) {
     self.resolve(value).then(resolveFromAll, function (error) {
       if (!called) {
@@ -289,6 +292,7 @@ function all(iterable) {
       }
     }
   }
+  return promise; // Added for GJS
 }
 
 Promise.race = race;
@@ -310,7 +314,7 @@ function race(iterable) {
   while (++i < len) {
     resolver(iterable[i]);
   }
-  return promise;
+  // return promise; // Moved for GJS
   function resolver(value) {
     self.resolve(value).then(function (response) {
       if (!called) {
@@ -324,6 +328,7 @@ function race(iterable) {
       }
     });
   }
+  return promise; // Added for GJS
 }
 
 // END CODE FROM lie/lib/index.js
