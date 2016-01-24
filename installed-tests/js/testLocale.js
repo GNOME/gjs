@@ -29,9 +29,9 @@ function testToLocaleCompare() {
     // GLib calls out to libc for collation, so we can't really
     // assume anything - we could even be running in the
     // C locale. The below is pretty safe.
-    JSUnit.assertEquals(-1, "a".localeCompare("b"));
+    JSUnit.assertTrue("a".localeCompare("b") < 0);
     JSUnit.assertEquals( 0, "a".localeCompare("a"));
-    JSUnit.assertEquals( 1, "b".localeCompare("a"));
+    JSUnit.assertTrue("b".localeCompare("a") > 0);
 
     // Again test error handling when conversion fails
     //assertRaises(function() { "\ud800".localeCompare("a"); });
