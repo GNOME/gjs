@@ -2,6 +2,8 @@ EXTRA_DIST += \
 	test/run-with-dbus \
 	test/test-bus.conf
 
+TEST_PROGS_OPTIONS =
+
 XVFB = Xvfb -ac -noreset -screen 0 1024x768x16
 XIDS = 101 102 103 104 105 106 107 197 199 211 223 227 293 307 308 309 310 311 \
    491 492 493 494 495 496 497 498 499 500 501 502 503 504 505 506 507 508 509 \
@@ -17,7 +19,13 @@ ${XVFB} -help 2>/dev/null 1>&2 \
     || { echo "Gtk+Tests:ERROR: Failed to start Xvfb environment for X11 target tests."; exit 1; } \
     && DISPLAY=:$$XID && export DISPLAY
 
+if DBUS_TESTS
 RUN_WITH_DBUS = ${top_srcdir}/test/run-with-dbus --session --system
+else
+RUN_WITH_DBUS =
+TEST_PROGS_OPTIONS += -s /js/GDBus
+endif
+
 GTESTER = ${XVFB_START} && ${TESTS_ENVIRONMENT} ${RUN_WITH_DBUS} gtester
 CLEANFILES += uninstalled-system-test-bus.conf uninstalled-test-bus.conf
 clean-local: test-user-data-clean

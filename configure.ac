@@ -223,6 +223,21 @@ fi
 
 AC_SUBST(EXTRA_LINK_FLAGS)
 
+AC_ARG_WITH([dbus-tests],
+  [AS_HELP_STRING([--without-dbus-tests],
+    [Don't try to use DBus during make check @<:@default=use@:>@])])
+AS_IF([test "x$with_dbus_tests" != "xno"], [
+  AC_PATH_PROG([UUIDGEN], [uuidgen])
+  AS_IF([test -z "$UUIDGEN"],
+    [AC_MSG_ERROR([uuidgen is required for --with-dbus-tests])])
+  AC_MSG_CHECKING([whether $UUIDGEN supports the -r flag])
+  AS_IF([$UUIDGEN -r >/dev/null 2>&1], [
+    AC_MSG_RESULT([yes])
+    UUIDGEN="$UUIDGEN -r"
+  ], [AC_MSG_RESULT([no])])
+])
+AM_CONDITIONAL([DBUS_TESTS], [test "x$with_dbus_tests" != "xno"])
+
 gjsjsdir="\${datadir}/gjs-1.0"
 AC_SUBST([gjsjsdir])
 
@@ -231,6 +246,8 @@ AC_SUBST([pkglibexecdir], ["${libexecdir}/${PACKAGE}"])
 
 AC_CONFIG_FILES([Makefile gjs-1.0.pc gjs-internals-1.0.pc])
 AC_OUTPUT
+
+AM_COND_IF([DBUS_TESTS], [TEST_MSG="dbus"], [TEST_MSG="nothing special"])
 
 AC_MSG_RESULT([
         $PACKAGE_NAME $VERSION
@@ -243,4 +260,5 @@ AC_MSG_RESULT([
 	readline:		${have_readline}
 	dtrace:			${ENABLE_DTRACE}
 	systemtap:		${ENABLE_SYSTEMTAP}
+	Run tests under:	${TEST_MSG}
 ])
