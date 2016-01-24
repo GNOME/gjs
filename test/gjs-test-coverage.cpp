@@ -570,14 +570,19 @@ branch_at_line_should_be_taken(const char *line,
                                gpointer user_data)
 {
     BranchLineData *branch_data = (BranchLineData *) user_data;
-    int line_no, branch_id, block_no, hit_count_num;
-    char *hit_count = NULL;
+    int line_no, branch_id, block_no, hit_count_num, nmatches;
+    char hit_count[20];  /* can hold maxint64 (19 digits) + nul terminator */
 
     /* Advance past "BRDA:" */
     line += 5;
 
-    if (sscanf(line, "%i,%i,%i,%as", &line_no, &block_no, &branch_id, &hit_count) != 4)
-        g_error("sscanf: %s", strerror(errno));
+    nmatches = sscanf(line, "%i,%i,%i,%19s", &line_no, &block_no, &branch_id, &hit_count);
+    if (nmatches != 4) {
+        if (errno != 0)
+            g_error("sscanf: %s", strerror(errno));
+        else
+            g_error("sscanf: only matched %i", nmatches);
+    }
 
     /* Determine the branch hit count. It will be either:
      * > -1 if the line containing the branch was never executed, or
@@ -589,10 +594,6 @@ branch_at_line_should_be_taken(const char *line,
         hit_count_num = -1;
     else
         hit_count_num = atoi(hit_count);
-
-    /* The glibc extension to sscanf dynamically allocates hit_count, so
-     * we need to free it here */
-    free(hit_count);
 
     const gboolean hit_correct_branch_line =
         branch_data->expected_branch_line == line_no;
@@ -938,19 +939,26 @@ hit_count_is_more_than_for_function(const char *line,
     FunctionHitCountData *data = (FunctionHitCountData *) user_data;
     char                 *detected_function = NULL;
     unsigned int         hit_count;
-
+    size_t max_buf_size;
+    int nmatches;
 
     /* Advance past "FNDA:" */
     line += 5;
 
-    if (sscanf(line, "%i,%as", &hit_count, &detected_function) != 2)
-        g_error("sscanf: %s", strerror(errno));
+    max_buf_size = strcspn(line, "\n");
+    detected_function = g_new(char, max_buf_size + 1);
+    nmatches = sscanf(line, "%i,%s", &hit_count, detected_function);
+    if (nmatches != 2) {
+        if (errno != 0)
+            g_error("sscanf: %s", strerror(errno));
+        else
+            g_error("sscanf: only matched %d", nmatches);
+    }
 
     const gboolean function_name_match = g_strcmp0(data->function, detected_function) == 0;
     const gboolean hit_count_more_than = hit_count >= data->hit_count_minimum;
 
-    /* See above, we must free detected_functon */
-    free(detected_function);
+    g_free(detected_function);
 
     return function_name_match &&
            hit_count_more_than;
