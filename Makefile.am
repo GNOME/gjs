@@ -15,8 +15,9 @@ TEST_PROGS =
 check_PROGRAMS = $(TEST_PROGS)
 INTROSPECTION_GIRS =
 ACLOCAL_AMFLAGS = -I m4
-AM_CFLAGS = $(WARN_CFLAGS) -DG_LOG_DOMAIN=\"Gjs\"
-AM_CPPFLAGS = $(WARN_CXXFLAGS) -DG_LOG_DOMAIN=\"Gjs\"
+AM_CFLAGS = $(WARN_CFLAGS)
+AM_CXXFLAGS = $(WARN_CXXFLAGS)
+AM_CPPFLAGS = -DG_LOG_DOMAIN=\"Gjs\"
 
 gjsjsdir = @gjsjsdir@
 gjsoverridedir = $(gjsjsdir)/overrides
@@ -93,8 +94,6 @@ libgjs_la_CPPFLAGS =		\
 	$(gjs_directory_defines)\
 	-I$(top_srcdir)/gi	\
 	-DGJS_COMPILATION
-libgjs_la_CFLAGS = 		\
-	$(AM_CFLAGS)
 libgjs_la_LDFLAGS = 		\
 	$(EXTRA_LINK_FLAGS)	\
 	-export-symbols-regex "^[^_]" -version-info 0:0:0	\

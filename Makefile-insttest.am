@@ -24,8 +24,12 @@ TEST_PROGS += jsunit
 
 TEST_INTROSPECTION_GIRS =
 
-jsunit_CPPFLAGS = $(AM_CPPFLAGS) $(GJS_CFLAGS) -DPKGLIBDIR=\"$(pkglibdir)\" -DINSTTESTDIR=\"$(gjsinsttestdir)\" 
-jsunit_CFLAGS = $(AM_CFLAGS) $(GJS_CFLAGS) -I$(top_srcdir)
+jsunit_CPPFLAGS =				\
+	$(AM_CPPFLAGS)				\
+	$(GJS_CFLAGS)				\
+	-DPKGLIBDIR=\"$(pkglibdir)\"		\
+	-DINSTTESTDIR=\"$(gjsinsttestdir)\"	\
+	-I$(top_srcdir)
 jsunit_LDADD = $(GJS_LIBS) libgjs.la
 jsunit_LDFLAGS = -rpath $(pkglibdir)
 jsunit_SOURCES = \
@@ -59,24 +63,23 @@ common_test_ldflags += -rpath /nowhere
 endif
 
 nodist_libregress_la_SOURCES = $(GI_DATADIR)/tests/regress.c $(GI_DATADIR)/tests/regress.h
-libregress_la_CPPFLAGS = $(AM_CPPFLAGS)
-libregress_la_CFLAGS = $(GJS_CFLAGS) $(GJS_GDBUS_CFLAGS)
+libregress_la_CPPFLAGS = $(AM_CPPFLAGS) $(GJS_CFLAGS) $(GJS_GDBUS_CFLAGS)
 libregress_la_LDFLAGS = $(common_test_ldflags) $(GJS_GDBUS_LIBS)
 libregress_la_LIBADD = $(common_test_libadd)
 libregress_scannerflags_includes = --include=Gio-2.0
 if ENABLE_CAIRO
-libregress_la_CFLAGS += $(GJS_CAIRO_CFLAGS)
+libregress_la_CPPFLAGS += $(GJS_CAIRO_CFLAGS)
 libregress_la_LDFLAGS +=  $(GJS_CAIRO_LIBS)
 libregress_scannerflags_includes += --include=cairo-1.0
 else
 libregress_la_CPPFLAGS += -D_GI_DISABLE_CAIRO
 endif
 nodist_libwarnlib_la_SOURCES = $(GI_DATADIR)/tests/warnlib.c $(GI_DATADIR)/tests/warnlib.h
-libwarnlib_la_CFLAGS = $(GJS_CFLAGS)
+libwarnlib_la_CPPFLAGS = $(AM_CPPFLAGS) $(GJS_CFLAGS)
 libwarnlib_la_LDFLAGS = $(common_test_ldflags)
 libwarnlib_la_LIBADD = $(common_test_libadd)
 nodist_libgimarshallingtests_la_SOURCES = $(GI_DATADIR)/tests/gimarshallingtests.c $(GI_DATADIR)/tests/gimarshallingtests.h
-libgimarshallingtests_la_CFLAGS = $(GJS_CFLAGS)
+libgimarshallingtests_la_CPPFLAGS = $(AM_CPPFLAGS) $(GJS_CFLAGS)
 libgimarshallingtests_la_LDFLAGS = $(common_test_ldflags)
 libgimarshallingtests_la_LIBADD = $(common_test_libadd)
 

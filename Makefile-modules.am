@@ -8,7 +8,7 @@ endif
 noinst_LTLIBRARIES += $(NATIVE_MODULES)
 libgjs_la_LIBADD += $(NATIVE_MODULES)
 
-JS_NATIVE_MODULE_CFLAGS =	\
+JS_NATIVE_MODULE_CPPFLAGS =	\
         $(AM_CPPFLAGS)		\
 	-DGJS_COMPILATION	\
         $(GJS_CFLAGS)
@@ -25,10 +25,10 @@ EXTRA_DIST += $(modules_resource_files) $(srcdir)/modules/modules.gresource.xml
 
 nodist_libmodules_resources_la_SOURCES = modules-resources.c modules-resources.h
 CLEANFILES += $(nodist_libmodules_resources_la_SOURCES)
-libmodules_resources_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
+libmodules_resources_la_CPPFLAGS = $(JS_NATIVE_MODULE_CPPFLAGS)
 libmodules_resources_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD)
 
-libcairoNative_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS) $(GJS_CAIRO_CFLAGS) $(GJS_CAIRO_XLIB_CFLAGS)
+libcairoNative_la_CPPFLAGS = $(JS_NATIVE_MODULE_CPPFLAGS) $(GJS_CAIRO_CFLAGS) $(GJS_CAIRO_XLIB_CFLAGS)
 libcairoNative_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD) $(GJS_CAIRO_LIBS) $(GJS_CAIRO_XLIB_LIBS)
 libcairoNative_la_SOURCES =                       \
 	modules/cairo-private.h                   \
@@ -49,10 +49,10 @@ libcairoNative_la_SOURCES =                       \
 	modules/cairo-solid-pattern.cpp           \
 	modules/cairo.cpp
 
-libsystem_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
+libsystem_la_CPPFLAGS = $(JS_NATIVE_MODULE_CPPFLAGS)
 libsystem_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD)
 libsystem_la_SOURCES = modules/system.h modules/system.cpp
 
-libconsole_la_CPPFLAGS = $(JS_NATIVE_MODULE_CFLAGS)
+libconsole_la_CPPFLAGS = $(JS_NATIVE_MODULE_CPPFLAGS)
 libconsole_la_LIBADD = $(JS_NATIVE_MODULE_LIBADD) $(READLINE_LIBS)
 libconsole_la_SOURCES = modules/console.h modules/console.cpp
