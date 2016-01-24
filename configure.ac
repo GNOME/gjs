@@ -223,6 +223,13 @@ fi
 
 AC_SUBST(EXTRA_LINK_FLAGS)
 
+AC_PATH_PROG([UUIDGEN], [uuidgen])
+AC_MSG_CHECKING([whether $UUIDGEN supports the -r flag])
+AS_IF([$UUIDGEN -r >/dev/null 2>&1], [
+  AC_MSG_RESULT([yes])
+  UUIDGEN="$UUIDGEN -r"
+], [AC_MSG_RESULT([no])])
+
 AC_ARG_WITH([xvfb-tests],
   [AS_HELP_STRING([--with-xvfb-tests],
     [Run all tests under an XVFB server @<:@default=no@:>@])])
