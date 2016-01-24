@@ -223,6 +223,16 @@ fi
 
 AC_SUBST(EXTRA_LINK_FLAGS)
 
+AC_ARG_WITH([xvfb-tests],
+  [AS_HELP_STRING([--with-xvfb-tests],
+    [Run all tests under an XVFB server @<:@default=no@:>@])])
+AS_IF([test "x$with_xvfb_tests" = "xyes"], [
+  AC_PATH_PROG([XVFB], [Xvfb])
+  AS_IF([test -z "$XVFB"],
+    [AC_MSG_ERROR([Xvfb is required for --with-xvfb-tests])])
+])
+AM_CONDITIONAL([XVFB_TESTS], [test "x$with_xvfb_tests" = "xyes"])
+
 AC_ARG_WITH([dbus-tests],
   [AS_HELP_STRING([--without-dbus-tests],
     [Don't try to use DBus during make check @<:@default=use@:>@])])
@@ -247,7 +257,10 @@ AC_SUBST([pkglibexecdir], ["${libexecdir}/${PACKAGE}"])
 AC_CONFIG_FILES([Makefile gjs-1.0.pc gjs-internals-1.0.pc])
 AC_OUTPUT
 
-AM_COND_IF([DBUS_TESTS], [TEST_MSG="dbus"], [TEST_MSG="nothing special"])
+TEST_MSG=
+AM_COND_IF([XVFB_TESTS], [TEST_MSG="xvfb "])
+AM_COND_IF([DBUS_TESTS], [TEST_MSG="${TEST_MSG}dbus"])
+AS_IF([test -z "$TEST_MSG"], [TEST_MSG="nothing special"])
 
 AC_MSG_RESULT([
         $PACKAGE_NAME $VERSION
