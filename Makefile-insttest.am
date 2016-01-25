@@ -42,6 +42,9 @@ jsunit-resources.c: $(srcdir)/installed-tests/js/jsunit.gresources.xml $(jsunit_
 BUILT_SOURCES += jsunit-resources.h jsunit-resources.c
 CLEANFILES += jsunit-resources.h jsunit-resources.c
 
+common_test_ldflags = -avoid-version
+common_test_libadd = $(GJS_LIBS)
+
 privlibdir = $(pkglibdir)
 privlib_LTLIBRARIES =
 check_LTLIBRARIES =
@@ -49,13 +52,11 @@ if BUILDOPT_INSTALL_TESTS
 privlib_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
 else
 check_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
-endif
-
 # This rpath /nowhere thing is the libtool upstream recommended way to
 # force generation of shared libraries, which we need in order for the
 # tests to work uninstalled.
-common_test_ldflags = -avoid-version -rpath /nowhere
-common_test_libadd = $(GJS_LIBS)
+common_test_ldflags += -rpath /nowhere
+endif
 
 nodist_libregress_la_SOURCES = $(GI_DATADIR)/tests/regress.c $(GI_DATADIR)/tests/regress.h
 libregress_la_CPPFLAGS = $(AM_CPPFLAGS)
