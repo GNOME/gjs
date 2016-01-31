@@ -131,7 +131,8 @@ boxed_new_resolve(JSContext *context,
         return JS_TRUE; /* not resolved, but no error */
 
     priv = priv_from_js(context, obj);
-    gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook obj %p priv %p", name, *obj, priv);
+    gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook obj %p priv %p",
+                     name, (void *)obj, priv);
 
     if (priv == NULL)
         goto out; /* wrong class */

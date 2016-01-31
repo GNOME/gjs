@@ -499,8 +499,8 @@ gjs_error_from_gerror(JSContext             *context,
     }
 
     gjs_debug_marshal(GJS_DEBUG_GBOXED,
-                      "Wrapping struct %s %p with JSObject",
-                      g_base_info_get_name((GIBaseInfo *)info), gboxed);
+                      "Wrapping struct %s with JSObject",
+                      g_base_info_get_name((GIBaseInfo *)info));
 
     proto = gjs_lookup_generic_prototype(context, info);
     proto_priv = priv_from_js(context, proto);

@@ -1311,9 +1311,10 @@ function_call(JSContext *context,
     jsval retval;
 
     priv = priv_from_js(context, callee);
-    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Call callee %p priv %p this obj %p %s", callee, priv,
-                      obj, JS_GetTypeName(context,
-                                          JS_TypeOfValue(context, OBJECT_TO_JSVAL(object))));
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Call callee %p priv %p this obj %p %s", callee, priv,
+                      object,
+                      JS_GetTypeName(context, JS_TypeOfValue(context, OBJECT_TO_JSVAL(object))));
 
     if (priv == NULL)
         return JS_TRUE; /* we are the prototype, or have the wrong class */

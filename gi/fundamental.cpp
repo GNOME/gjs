@@ -154,8 +154,8 @@ init_fundamental_instance(JSContext *context,
     JS_SetPrivate(object, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GFUNDAMENTAL,
-                        "fundamental instance constructor, obj %p priv %p proto %p ",
-                        object, priv, JS_GetPrototype (object));
+                        "fundamental instance constructor, obj %p priv %p",
+                        object, priv);
 
     proto_priv = proto_priv_from_js(context, object);
     g_assert(proto_priv != NULL);
@@ -307,7 +307,9 @@ fundamental_instance_new_resolve(JSContext  *context,
         return JS_TRUE; /* not resolved, but no error */
 
     priv = priv_from_js(context, obj);
-    gjs_debug_jsprop(GJS_DEBUG_GFUNDAMENTAL, "Resolve prop '%s' hook obj %p priv %p", name, *obj, priv);
+    gjs_debug_jsprop(GJS_DEBUG_GFUNDAMENTAL,
+                     "Resolve prop '%s' hook obj %p priv %p",
+                     name, (void *)obj, priv);
 
     if (priv == NULL)
         goto out; /* wrong class */
