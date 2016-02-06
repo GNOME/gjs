@@ -48,6 +48,62 @@ static JSBool gjs_value_from_g_value_internal(JSContext    *context,
                                               GSignalQuery *signal_query,
                                               gint          arg_n);
 
+/*
+ * Gets signal introspection info about closure, or NULL if not found. Currently
+ * only works for signals on introspected GObjects, not signals on GJS-defined
+ * GObjects nor standalone closures. The return value must be unreffed.
+ */
+static GISignalInfo *
+get_signal_info_if_available(GSignalQuery *signal_query)
+{
+    GIBaseInfo *obj;
+    GISignalInfo *signal_info;
+
+    if (!signal_query->itype)
+        return NULL;
+
+    obj = g_irepository_find_by_gtype(NULL, signal_query->itype);
+    if (!obj)
+        return NULL;
+
+    signal_info = g_object_info_find_signal((GIObjectInfo*)obj,
+                                            signal_query->signal_name);
+    g_base_info_unref((GIBaseInfo*)obj);
+
+    return signal_info;
+}
+
+/*
+ * Fill in value_p with a JS array, converted from a C array stored as a pointer
+ * in array_value, with its length stored in array_length_value.
+ */
+static JSBool
+gjs_value_from_array_and_length_values(JSContext    *context,
+                                       jsval        *value_p,
+                                       GITypeInfo   *array_type_info,
+                                       const GValue *array_value,
+                                       const GValue *array_length_value,
+                                       gboolean      no_copy,
+                                       GSignalQuery *signal_query,
+                                       int           array_length_arg_n)
+{
+    jsval array_length;
+    GArgument array_arg;
+
+    g_assert(G_VALUE_HOLDS_POINTER(array_value));
+    g_assert(G_VALUE_HOLDS_INT(array_length_value));
+
+    if (!gjs_value_from_g_value_internal(context, &array_length,
+                                         array_length_value, no_copy,
+                                         signal_query, array_length_arg_n))
+        return JS_FALSE;
+
+    array_arg.v_pointer = g_value_get_pointer(array_value);
+
+    return gjs_value_from_explicit_array(context, value_p, array_type_info,
+                                         &array_arg, JSVAL_TO_INT(array_length));
+}
+
 static void
 closure_marshal(GClosure        *closure,
                 GValue          *return_value,
@@ -64,6 +120,11 @@ closure_marshal(GClosure        *closure,
     jsval rval;
     int i;
     GSignalQuery signal_query = { 0, };
+    GISignalInfo *signal_info;
+    gboolean *skip;
+    int *array_len_indices_for;
+    GITypeInfo **type_info_for;
+    int argv_index;
 
     gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
                       "Marshal closure %p",
@@ -138,9 +199,48 @@ closure_marshal(GClosure        *closure,
         }
     }
 
+    /* Check if any parameters, such as array lengths, need to be eliminated
+     * before we invoke the closure.
+     */
+    skip = g_newa(gboolean, argc);
+    memset(skip, 0, sizeof (gboolean) * argc);
+    array_len_indices_for = g_newa(int, argc);
+    for(i = 0; i < argc; i++)
+        array_len_indices_for[i] = -1;
+    type_info_for = g_newa(GITypeInfo *, argc);
+    memset(type_info_for, 0, sizeof (gpointer) * argc);
+
+    signal_info = get_signal_info_if_available(&signal_query);
+    if (signal_info) {
+        /* Start at argument 1, skip the instance parameter */
+        for (i = 1; i < argc; ++i) {
+            GIArgInfo *arg_info;
+            int array_len_pos;
+
+            arg_info = g_callable_info_get_arg(signal_info, i - 1);
+            type_info_for[i] = g_arg_info_get_type(arg_info);
+
+            array_len_pos = g_type_info_get_array_length(type_info_for[i]);
+            if (array_len_pos != -1) {
+                skip[array_len_pos + 1] = TRUE;
+                array_len_indices_for[i] = array_len_pos + 1;
+            }
+
+            g_base_info_unref((GIBaseInfo *)arg_info);
+        }
+
+        g_base_info_unref((GIBaseInfo *)signal_info);
+    }
+
+    argv_index = 0;
     for (i = 0; i < argc; ++i) {
         const GValue *gval = &param_values[i];
         gboolean no_copy;
+        int array_len_index;
+        JSBool res;
+
+        if (skip[i])
+            continue;
 
         no_copy = FALSE;
 
@@ -148,16 +248,37 @@ closure_marshal(GClosure        *closure,
             no_copy = (signal_query.param_types[i - 1] & G_SIGNAL_TYPE_STATIC_SCOPE) != 0;
         }
 
-        if (!gjs_value_from_g_value_internal(context, &argv[i], gval, no_copy, &signal_query, i)) {
+        array_len_index = array_len_indices_for[i];
+        if (array_len_index != -1) {
+            const GValue *array_len_gval = &param_values[array_len_index];
+            res = gjs_value_from_array_and_length_values(context,
+                                                         &argv[argv_index],
+                                                         type_info_for[i],
+                                                         gval, array_len_gval,
+                                                         no_copy, &signal_query,
+                                                         array_len_index);
+        } else {
+            res = gjs_value_from_g_value_internal(context, &argv[argv_index],
+                                                  gval, no_copy, &signal_query,
+                                                  i);
+        }
+
+        if (!res) {
             gjs_debug(GJS_DEBUG_GCLOSURE,
                       "Unable to convert arg %d in order to invoke closure",
                       i);
             gjs_log_exception(context);
             goto cleanup;
         }
+
+        argv_index++;
     }
 
-    gjs_closure_invoke(closure, argc, argv, &rval);
+    for (i = 1; i < argc; i++)
+        if (type_info_for[i])
+            g_base_info_unref((GIBaseInfo *)type_info_for[i]);
+
+    gjs_closure_invoke(closure, argv_index, argv, &rval);
 
     if (return_value != NULL) {
         if (JSVAL_IS_VOID(rval)) {
@@ -849,6 +970,10 @@ gjs_value_from_g_value_internal(JSContext    *context,
         }
         arg_info = g_callable_info_get_arg(signal_info, arg_n - 1);
         g_arg_info_load_type(arg_info, &type_info);
+
+        g_assert(("Check gjs_value_from_array_and_length_values() before calling"
+                  " gjs_value_from_g_value_internal()",
+                  g_type_info_get_array_length(&type_info) == -1));
 
         arg.v_pointer = g_value_get_pointer(gvalue);
 

@@ -342,6 +342,9 @@ function testArrayOut() {
             JSUnit.assertEquals(ref[i], res[i]);
     }
 
+    let array = Everything.test_array_int_out();
+    arrayEqual([0, 1, 2, 3, 4], array);
+
     let array =  Everything.test_array_fixed_size_int_out();
     JSUnit.assertEquals(0, array[0]);
     JSUnit.assertEquals(4, array[4]);
@@ -471,6 +474,28 @@ function testSignalWithStaticScopeArg() {
 
     o.emit('test-with-static-scope-arg', b);
     JSUnit.assertEquals('signal handler was passed arg as reference', 44, b.some_int);
+}
+
+function testSignalWithArrayLenParam() {
+    let o = new Everything.TestObj();
+    let array;
+    o.connect('sig-with-array-len-prop', function(signalObj, signalArray, shouldBeUndefined) {
+        array = signalArray;
+        JSUnit.assertUndefined('no extra length arg', shouldBeUndefined);
+    });
+
+    o.emit_sig_with_array_len_prop();
+    JSUnit.assertEquals('handler was passed array with length', array.length, 5);
+    for (let i = 0; i < 5; i++)
+        JSUnit.assertEquals('handler was passed correct array', array[i], i);
+
+    // FIXME not yet implemented:
+    // o.emit('sig-with-array-len-prop', [0, 1, 2, 3, 4]);
+    // JSUnit.assertEquals('handler was passed array with length', array.length, 5);
+    // for (let i = 0; i < 5; i++)
+    //     JSUnit.assertEquals('handler was passed correct array', array[i], i);
+    // o.emit('sig-with-array-len-prop', null);
+    // JSUnit.assertNull('handler was passed null array', array);
 }
 
 function testTortureSignature0() {
