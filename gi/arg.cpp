@@ -2180,7 +2180,7 @@ gjs_array_from_carray_internal (JSContext  *context,
                   struct_size = g_struct_info_get_size ((GIStructInfo*)interface_info);
 
               for (i = 0; i < length; i++) {
-                  arg.v_pointer = ((char*)array) + struct_size;
+                  arg.v_pointer = ((char*)array) + (struct_size * i);
 
                   if (!gjs_value_from_g_argument(context, &elem, param_info, &arg, TRUE))
                       goto finally;

@@ -361,6 +361,14 @@ function testArrayOut() {
     Everything.test_array_int_null_in(null);
 }
 
+function testArrayOfStructsOut() {
+   let array = Everything.test_array_struct_out();
+   let ints = array.map(struct => struct.some_int);
+   JSUnit.assertEquals(22, ints[0]);
+   JSUnit.assertEquals(33, ints[1]);
+   JSUnit.assertEquals(44, ints[2]);
+}
+
 /* GHash type */
 
 // Convert an object to a predictable (not-hash-order-dependent) string

@@ -93,12 +93,4 @@ function testGtk() {
     validateTemplate(new MyComplexGtkSubclassFromResource());
 }
 
-// https://bugzilla.gnome.org/show_bug.cgi?id=704842
-function testGdkKeymap() {
-    Gtk.init(null);
-
-    let keymap = Gdk.Keymap.get_default();
-    JSUnit.assertNotEquals(keymap.get_entries_for_keyval(Gdk.KEY_a), null);
-}
-
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
