@@ -57,7 +57,8 @@ static GISignalInfo *
 get_signal_info_if_available(GSignalQuery *signal_query)
 {
     GIBaseInfo *obj;
-    GISignalInfo *signal_info;
+    GIInfoType info_type;
+    GISignalInfo *signal_info = NULL;
 
     if (!signal_query->itype)
         return NULL;
@@ -66,8 +67,13 @@ get_signal_info_if_available(GSignalQuery *signal_query)
     if (!obj)
         return NULL;
 
-    signal_info = g_object_info_find_signal((GIObjectInfo*)obj,
-                                            signal_query->signal_name);
+    info_type = g_base_info_get_type (obj);
+    if (info_type == GI_INFO_TYPE_OBJECT)
+      signal_info = g_object_info_find_signal((GIObjectInfo*)obj,
+                                              signal_query->signal_name);
+    else if (info_type == GI_INFO_TYPE_INTERFACE)
+      signal_info = g_interface_info_find_signal((GIInterfaceInfo*)obj,
+                                                 signal_query->signal_name);
     g_base_info_unref((GIBaseInfo*)obj);
 
     return signal_info;
