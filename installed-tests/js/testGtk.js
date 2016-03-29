@@ -45,6 +45,7 @@ const MyComplexGtkSubclass = new Lang.Class({
     Template: ByteArray.fromString(template),
     Children: ['label-child', 'label-child2'],
     InternalChildren: ['internal-label-child'],
+    CssName: 'complex-subclass',
 
     _init: function(params) {
         this.parent(params);
@@ -54,6 +55,9 @@ const MyComplexGtkSubclass = new Lang.Class({
 
         JSUnit.assertNotEquals(this.label_child2, null);
         JSUnit.assertNotEquals(this._internal_label_child, null);
+
+        JSUnit.assertEquals(Gtk.Widget.get_css_name.call(MyComplexGtkSubclass),
+                            'complex-subclass');
     }
 });
 
