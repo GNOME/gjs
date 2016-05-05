@@ -147,6 +147,7 @@ main(int argc, char **argv)
     char *js_test_dir;
     GSList *all_tests, *iter;
     GSList *all_registered_test_data = NULL;
+    gpointer context_class;
     int retval;
 
     /* The tests are known to fail in the presence of the JIT;
@@ -160,8 +161,13 @@ main(int argc, char **argv)
     setlocale(LC_ALL, "");
     g_test_init(&argc, &argv, NULL);
 
+    /* Make sure to create the GjsContext class first, so we
+     * can override the GjsPrivate lookup path.
+     */
+    context_class = g_type_class_ref (gjs_context_get_type ());
+
     if (g_getenv ("GJS_USE_UNINSTALLED_FILES") != NULL) {
-        /* typelib path is handled by the environment */
+        g_irepository_prepend_search_path(g_getenv ("TOP_BUILDDIR"));
         js_test_dir = g_build_filename(g_getenv ("TOP_SRCDIR"), "installed-tests", "js", NULL);
     } else {
         g_irepository_prepend_search_path(INSTTESTDIR);
@@ -206,6 +212,8 @@ main(int argc, char **argv)
                     (GFunc)gjs_unit_test_data_free,
                     all_registered_test_data);
     g_slist_free(all_registered_test_data);
+
+    g_type_class_unref (context_class);
 
     return retval;
 }

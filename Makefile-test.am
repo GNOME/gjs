@@ -110,6 +110,7 @@ check-local: gjs-tests
 # resources
 TESTS_ENVIRONMENT =							\
 	TOP_SRCDIR=$(abs_top_srcdir)					\
+	TOP_BUILDDIR=$(abs_top_builddir)				\
 	DBUS_SESSION_BUS_ADDRESS=''					\
 	XDG_DATA_HOME=test_user_data					\
 	GJS_DEBUG_OUTPUT=test_user_data/logs/gjs.log			\
@@ -117,7 +118,6 @@ TESTS_ENVIRONMENT =							\
 	GJS_USE_UNINSTALLED_FILES=1					\
 	GJS_TEST_TIMEOUT=420						\
 	GJS_PATH= \
-	GI_TYPELIB_PATH=$(builddir):$(GI_TYPELIB_PATH)					\
 	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)"	\
 	G_FILENAME_ENCODING=latin1	# ensure filenames are not utf8	\
 	UUIDGEN="$(UUIDGEN)"
