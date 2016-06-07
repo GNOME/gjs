@@ -237,14 +237,9 @@ AC_ARG_WITH([dbus-tests],
   [AS_HELP_STRING([--without-dbus-tests],
     [Don't try to use DBus during make check @<:@default=use@:>@])])
 AS_IF([test "x$with_dbus_tests" != "xno"], [
-  AC_PATH_PROG([UUIDGEN], [uuidgen])
-  AS_IF([test -z "$UUIDGEN"],
-    [AC_MSG_ERROR([uuidgen is required for --with-dbus-tests])])
-  AC_MSG_CHECKING([whether $UUIDGEN supports the -r flag])
-  AS_IF([$UUIDGEN -r >/dev/null 2>&1], [
-    AC_MSG_RESULT([yes])
-    UUIDGEN="$UUIDGEN -r"
-  ], [AC_MSG_RESULT([no])])
+  AC_PATH_PROG([DBUS_UUIDGEN], [dbus-uuidgen])
+  AS_IF([test -z "$DBUS_UUIDGEN"],
+    [AC_MSG_ERROR([dbus-uuidgen is required for --with-dbus-tests])])
 ])
 AM_CONDITIONAL([DBUS_TESTS], [test "x$with_dbus_tests" != "xno"])
 

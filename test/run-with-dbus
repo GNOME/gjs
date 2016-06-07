@@ -73,7 +73,7 @@ if test -z "$BUILDDIR" ; then
     die "Must set BUILDDIR"
 fi
 
-RANDOM=`${UUIDGEN:-uuidgen -r} | cut -d '-' -f 3`
+RANDOM=`${DBUS_UUIDGEN:-dbus-uuidgen}`
 
 ## this has to be set BEFORE we start session bus,
 ## or stuff the session bus starts won't get it
