@@ -1201,6 +1201,23 @@ release:
             if (arg_failed)
                 postinvoke_release_failed = TRUE;
 
+            /* Free GArgument, the jsval should have ref'd or copied it */
+            transfer = g_arg_info_get_ownership_transfer(&arg_info);
+            if (!arg_failed) {
+                if (array_length_pos >= 0) {
+                    gjs_g_argument_release_out_array(context,
+                                                     transfer,
+                                                     &arg_type_info,
+                                                     JSVAL_TO_INT(array_length),
+                                                     arg);
+                } else {
+                    gjs_g_argument_release(context,
+                                           transfer,
+                                           &arg_type_info,
+                                           arg);
+                }
+            }
+
             /* For caller-allocates, what happens here is we allocate
              * a structure above, then gjs_value_from_g_argument calls
              * g_boxed_copy on it, and takes ownership of that.  So
@@ -1230,23 +1247,6 @@ release:
 
                 g_slice_free1(size, out_arg_cvalues[c_arg_pos].v_pointer);
                 g_base_info_unref((GIBaseInfo*)interface_info);
-            }
-
-            /* Free GArgument, the jsval should have ref'd or copied it */
-            transfer = g_arg_info_get_ownership_transfer(&arg_info);
-            if (!arg_failed) {
-                if (array_length_pos >= 0) {
-                    gjs_g_argument_release_out_array(context,
-                                                     transfer,
-                                                     &arg_type_info,
-                                                     JSVAL_TO_INT(array_length),
-                                                     arg);
-                } else {
-                    gjs_g_argument_release(context,
-                                           transfer,
-                                           &arg_type_info,
-                                           arg);
-                }
             }
 
             ++next_rval;
