@@ -591,7 +591,7 @@ get_functions_for(JSContext        *context,
 static void
 init_covered_branch(GjsCoverageBranch *branch,
                     unsigned int       point,
-                    JSBool             was_hit,
+                    bool               was_hit,
                     GArray            *exits)
 {
     branch->point = point;
@@ -674,7 +674,7 @@ convert_and_insert_branch_info(GArray    *array,
         branch_point = branch_point_value.toInt32();
 
         JS::Value was_hit_value;
-        JSBool was_hit;
+        bool was_hit;
 
         if (!JS_GetProperty(context, object, "hit", &was_hit_value) ||
             !was_hit_value.isBoolean()) {
@@ -1179,7 +1179,7 @@ gjs_write_cache_to_path(const char *path,
     return TRUE;
 }
 
-static JSBool
+static bool
 coverage_statistics_has_stale_cache(GjsCoverage *coverage)
 {
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
@@ -1343,7 +1343,7 @@ coverage_log(JSContext *context,
 
     if (argc != 1) {
         gjs_throw(context, "Must pass a single argument to log()");
-        return JS_FALSE;
+        return false;
     }
 
     JSAutoRequest ar(context);
@@ -1351,7 +1351,7 @@ coverage_log(JSContext *context,
     if (!g_getenv("GJS_SHOW_COVERAGE_MESSAGES")) {
         _suppressed_coverage_messages_count++;
         argv.rval().setUndefined();
-        return JS_TRUE;
+        return true;
     }
 
     /* JS_ValueToString might throw, in which we will only
@@ -1364,18 +1364,18 @@ coverage_log(JSContext *context,
 
     if (jstr == NULL) {
         g_message("JS LOG: <cannot convert value to string>");
-        return JS_TRUE;
+        return true;
     }
 
     if (!gjs_string_to_utf8(context, JS::StringValue(jstr), &s)) {
-        return JS_FALSE;
+        return false;
     }
 
     g_message("JS COVERAGE MESSAGE: %s", s);
     g_free(s);
 
     argv.rval().setUndefined();
-    return JS_TRUE;
+    return true;
 }
 
 static char *
@@ -1414,7 +1414,7 @@ coverage_get_file_modification_time(JSContext *context,
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JSRuntime    *runtime = JS_GetRuntime(context);
     GTimeVal mtime;
-    JSBool ret = JS_FALSE;
+    bool ret = false;
     char *filename = get_filename_from_filename_as_js_string(context, args);
 
     if (!filename)
@@ -1432,7 +1432,7 @@ coverage_get_file_modification_time(JSContext *context,
         args.rval().setNull();
     }
 
-    ret = JS_TRUE;
+    ret = true;
 
 out:
     g_free(filename);
@@ -1447,17 +1447,16 @@ coverage_get_file_checksum(JSContext *context,
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JSRuntime    *runtime = JS_GetRuntime(context);
     GTimeVal mtime;
-    JSBool ret = JS_FALSE;
     char *filename = get_filename_from_filename_as_js_string(context, args);
 
     if (!filename)
-        return JS_FALSE;
+        return false;
 
     char *checksum = gjs_get_path_checksum(filename);
 
     if (!checksum) {
         gjs_throw(context, "Failed to read %s and get its checksum", filename);
-        return JS_FALSE;
+        return false;
     }
 
     JS::RootedString rooted_checksum(runtime, JS_NewStringCopyZ(context,
@@ -1466,7 +1465,7 @@ coverage_get_file_checksum(JSContext *context,
 
     g_free(filename);
     g_free(checksum);
-    return JS_TRUE;
+    return true;
 }
 
 static JSBool
@@ -1474,7 +1473,7 @@ coverage_get_file_contents(JSContext *context,
                            unsigned   argc,
                            JS::Value *vp)
 {
-    JSBool ret = JS_FALSE;
+    bool ret = false;
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     char *filename = NULL;
     GFile *file = NULL;
@@ -1500,7 +1499,7 @@ coverage_get_file_contents(JSContext *context,
     }
 
     args.rval().setString(JS_NewStringCopyN(context, script, script_len));
-    ret = JS_TRUE;
+    ret = true;
 
  out:
     g_clear_error(&error);

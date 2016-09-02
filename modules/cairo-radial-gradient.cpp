@@ -44,19 +44,19 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_radial_gradient)
                         "cx1", &cx1,
                         "cy1", &cy1,
                         "radius1", &radius1))
-        return JS_FALSE;
+        return false;
 
     pattern = cairo_pattern_create_radial(cx0, cy0, radius0, cx1, cy1, radius1);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
-        return JS_FALSE;
+        return false;
 
     gjs_cairo_pattern_construct(context, object, pattern);
     cairo_pattern_destroy(pattern);
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_radial_gradient);
 
-    return JS_TRUE;
+    return true;
 }
 
 static void

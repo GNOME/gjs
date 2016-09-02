@@ -28,13 +28,14 @@
 #error "Only <gjs/gjs-module.h> can be included directly."
 #endif
 
+#include <stdbool.h>
 #include <glib.h>
 #include "gjs/jsapi-util.h"
 
 G_BEGIN_DECLS
 
-typedef JSBool (* GjsDefineModuleFunc) (JSContext  *context,
-                                        JSObject  **module_out);
+typedef bool (* GjsDefineModuleFunc) (JSContext  *context,
+                                      JSObject  **module_out);
 
 /* called on context init */
 void   gjs_register_native_module (const char            *module_id,
@@ -46,9 +47,9 @@ gboolean gjs_is_registered_native_module(JSContext  *context,
                                          const char *name);
 
 /* called by importer.c to load a statically linked native module */
-JSBool gjs_import_native_module (JSContext  *context,
-                                 const char *name,
-                                 JSObject   **module_out);
+bool     gjs_import_native_module (JSContext  *context,
+                                   const char *name,
+                                   JSObject   **module_out);
 
 G_END_DECLS
 

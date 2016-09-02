@@ -24,18 +24,19 @@
 #ifndef __GJS_VALUE_H__
 #define __GJS_VALUE_H__
 
+#include <stdbool.h>
 #include <glib-object.h>
 #include "gjs/jsapi-util.h"
 
 G_BEGIN_DECLS
 
-JSBool     gjs_value_to_g_value         (JSContext    *context,
+bool       gjs_value_to_g_value         (JSContext    *context,
                                          JS::Value     value,
                                          GValue       *gvalue);
-JSBool     gjs_value_to_g_value_no_copy (JSContext    *context,
+bool       gjs_value_to_g_value_no_copy (JSContext    *context,
                                          JS::Value     value,
                                          GValue       *gvalue);
-JSBool     gjs_value_from_g_value       (JSContext    *context,
+bool       gjs_value_from_g_value       (JSContext    *context,
                                          JS::Value    *value_p,
                                          const GValue *gvalue);
 GClosure*  gjs_closure_new_marshaled    (JSContext    *context,

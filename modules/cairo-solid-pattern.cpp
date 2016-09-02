@@ -40,7 +40,7 @@ JSPropertySpec gjs_cairo_solid_pattern_proto_props[] = {
     { NULL }
 };
 
-static JSBool
+static bool
 createRGB_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -54,21 +54,21 @@ createRGB_func(JSContext *context,
                         "red", &red,
                         "green", &green,
                         "blue", &blue))
-        return JS_FALSE;
+        return false;
 
     pattern = cairo_pattern_create_rgb(red, green, blue);
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
-        return JS_FALSE;
+        return false;
 
     pattern_wrapper = gjs_cairo_solid_pattern_from_pattern(context, pattern);
     cairo_pattern_destroy(pattern);
 
     argv.rval().setObjectOrNull(pattern_wrapper);
 
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 createRGBA_func(JSContext *context,
                 unsigned   argc,
                 JS::Value *vp)
@@ -83,18 +83,18 @@ createRGBA_func(JSContext *context,
                         "green", &green,
                         "blue", &blue,
                         "alpha", &alpha))
-        return JS_FALSE;
+        return false;
 
     pattern = cairo_pattern_create_rgba(red, green, blue, alpha);
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
-        return JS_FALSE;
+        return false;
 
     pattern_wrapper = gjs_cairo_solid_pattern_from_pattern(context, pattern);
     cairo_pattern_destroy(pattern);
 
     argv.rval().setObjectOrNull(pattern_wrapper);
 
-    return JS_TRUE;
+    return true;
 }
 
 JSFunctionSpec gjs_cairo_solid_pattern_proto_funcs[] = {

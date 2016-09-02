@@ -29,13 +29,13 @@
 
 G_BEGIN_DECLS
 
-JSBool _gjs_proxy_to_string_func(JSContext  *context,
-                                 JSObject   *this_obj,
-                                 const char *objtype,
-                                 GIBaseInfo *info,
-                                 GType       gtype,
-                                 gpointer    native_address,
-                                 JS::Value  *ret);
+bool _gjs_proxy_to_string_func (JSContext  *context,
+                                JSObject   *this_obj,
+                                const char *objtype,
+                                GIBaseInfo *info,
+                                GType       gtype,
+                                gpointer    native_address,
+                                JS::Value  *ret);
 
 G_END_DECLS
 

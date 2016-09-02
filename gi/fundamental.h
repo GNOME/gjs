@@ -25,13 +25,14 @@
 #ifndef __GJS_FUNDAMENTAL_H__
 #define __GJS_FUNDAMENTAL_H__
 
+#include <stdbool.h>
 #include <glib.h>
 #include <girepository.h>
 #include "gjs/jsapi-util.h"
 
 G_BEGIN_DECLS
 
-JSBool gjs_define_fundamental_class          (JSContext     *context,
+bool      gjs_define_fundamental_class       (JSContext     *context,
                                               JSObject      *in_object,
                                               GIObjectInfo  *info,
                                               JSObject     **constructor_p,
@@ -44,13 +45,13 @@ void*     gjs_g_fundamental_from_object      (JSContext     *context,
 JSObject *gjs_fundamental_from_g_value       (JSContext     *context,
                                               const GValue  *value,
                                               GType          gtype);
-JSBool    gjs_typecheck_fundamental          (JSContext     *context,
+bool      gjs_typecheck_fundamental          (JSContext     *context,
                                               JSObject      *object,
                                               GType          expected_gtype,
-                                              JSBool         throw_error);
-JSBool    gjs_typecheck_is_fundamental       (JSContext     *context,
+                                              bool           throw_error);
+bool      gjs_typecheck_is_fundamental       (JSContext     *context,
                                               JSObject      *object,
-                                              JSBool         throw_error);
+                                              bool           throw_error);
 void*     gjs_fundamental_ref                (JSContext     *context,
                                               void          *fobj);
 void      gjs_fundamental_unref              (JSContext     *context,

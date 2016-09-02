@@ -47,7 +47,7 @@
 #include "compat.h"
 #include "jsapi-util.h"
 
-JSBool
+bool
 gjs_context_get_frame_info (JSContext  *context,
                             JS::Value  *stack,
                             JS::Value  *fileName,
@@ -56,7 +56,7 @@ gjs_context_get_frame_info (JSContext  *context,
     JS::Value v_constructor;
     JSObject *err_obj;
     JSObject *global;
-    JSBool ret = JS_FALSE;
+    bool ret = false;
 
     JS_BeginRequest(context);
     global = JS_GetGlobalForScopeChain(context);
@@ -88,7 +88,7 @@ gjs_context_get_frame_info (JSContext  *context,
             goto out;
     }
 
-    ret = JS_TRUE;
+    ret = true;
 
  out:
     JS_EndRequest(context);

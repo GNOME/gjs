@@ -31,7 +31,7 @@
 #include "gjs/compat.h"
 #include "gi/repo.h"
 
-JSBool
+bool
 gjs_define_gi_stuff(JSContext      *context,
                     JSObject      **module_out)
 {

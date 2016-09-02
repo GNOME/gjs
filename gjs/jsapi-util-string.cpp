@@ -43,7 +43,7 @@ gjs_string_to_utf8 (JSContext      *context,
         gjs_throw(context,
                   "Value is not a string, cannot convert to UTF-8");
         JS_EndRequest(context);
-        return JS_FALSE;
+        return false;
     }
 
     str = value.toString();
@@ -51,7 +51,7 @@ gjs_string_to_utf8 (JSContext      *context,
     len = JS_GetStringEncodingLength(context, str);
     if (len == (gsize)(-1)) {
         JS_EndRequest(context);
-        return JS_FALSE;
+        return false;
     }
 
     if (utf8_string_p) {
@@ -61,10 +61,10 @@ gjs_string_to_utf8 (JSContext      *context,
 
     JS_EndRequest(context);
 
-    return JS_TRUE;
+    return true;
 }
 
-JSBool
+bool
 gjs_string_from_utf8(JSContext  *context,
                      const char *utf8_string,
                      gssize      n_bytes,
@@ -91,7 +91,7 @@ gjs_string_from_utf8(JSContext  *context,
                   "JS string: %s",
                   error->message);
                   g_error_free(error);
-        return JS_FALSE;
+        return false;
     }
 
     JS_BeginRequest(context);
@@ -118,7 +118,7 @@ gjs_string_to_filename(JSContext      *context,
 
     if (!gjs_string_to_utf8(context, filename_val, &tmp)) {
         /* exception already set */
-        return JS_FALSE;
+        return false;
     }
 
     error = NULL;
@@ -134,7 +134,7 @@ gjs_string_to_filename(JSContext      *context,
     return TRUE;
 }
 
-JSBool
+bool
 gjs_string_from_filename(JSContext  *context,
                          const char *filename_string,
                          gssize      n_bytes,
@@ -154,15 +154,15 @@ gjs_string_from_filename(JSContext  *context,
                   error->message);
         g_error_free(error);
         g_free(utf8_string);
-        return JS_FALSE;
+        return false;
     }
 
     if (!gjs_string_from_utf8(context, utf8_string, written, value_p))
-        return JS_FALSE;
+        return false;
 
     g_free(utf8_string);
 
-    return JS_TRUE;
+    return true;
 }
 
 /**
@@ -176,16 +176,16 @@ gjs_string_from_filename(JSContext  *context,
  * contained in @value.
  * Throws a JS exception if value is not a string.
  *
- * Returns: JS_FALSE if exception thrown
+ * Returns: false if exception thrown
  **/
-JSBool
+bool
 gjs_string_get_uint16_data(JSContext       *context,
                            JS::Value        value,
                            guint16        **data_p,
                            gsize           *len_p)
 {
     const jschar *js_data;
-    JSBool retval = JS_FALSE;
+    bool retval = false;
 
     JS_BeginRequest(context);
 
@@ -201,7 +201,7 @@ gjs_string_get_uint16_data(JSContext       *context,
 
     *data_p = (guint16*) g_memdup(js_data, sizeof(*js_data)*(*len_p));
 
-    retval = JS_TRUE;
+    retval = true;
 out:
     JS_EndRequest(context);
     return retval;
@@ -218,7 +218,7 @@ out:
  *
  * Returns: true if *name_p is non-%NULL
  **/
-JSBool
+bool
 gjs_get_string_id (JSContext       *context,
                    jsid             id,
                    char           **name_p)
@@ -226,13 +226,13 @@ gjs_get_string_id (JSContext       *context,
     JS::Value id_val;
 
     if (!JS_IdToValue(context, id, &id_val))
-        return JS_FALSE;
+        return false;
 
     if (id_val.isString()) {
         return gjs_string_to_utf8(context, id_val, name_p);
     } else {
         *name_p = NULL;
-        return JS_FALSE;
+        return false;
     }
 }
 

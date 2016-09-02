@@ -61,7 +61,7 @@ gjs_lookup_enumeration(JSContext    *context,
     return &value.toObject();
 }
 
-static JSBool
+static bool
 gjs_define_enum_value(JSContext    *context,
                       JSObject     *in_object,
                       GIValueInfo  *info)
@@ -99,14 +99,14 @@ gjs_define_enum_value(JSContext    *context,
         gjs_throw(context, "Unable to define enumeration value %s %" G_GINT64_FORMAT " (no memory most likely)",
                   fixed_name, value_val);
         g_free(fixed_name);
-        return JS_FALSE;
+        return false;
     }
     g_free(fixed_name);
 
-    return JS_TRUE;
+    return true;
 }
 
-JSBool
+bool
 gjs_define_enum_values(JSContext    *context,
                        JSObject     *in_object,
                        GIEnumInfo   *info)
@@ -128,7 +128,7 @@ gjs_define_enum_values(JSContext    *context,
         g_base_info_unref( (GIBaseInfo*) value_info);
 
         if (failed) {
-            return JS_FALSE;
+            return false;
         }
     }
 
@@ -137,10 +137,10 @@ gjs_define_enum_values(JSContext    *context,
     JS_DefineProperty(context, in_object, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 
-    return JS_TRUE;
+    return true;
 }
 
-JSBool
+bool
 gjs_define_enum_static_methods(JSContext    *context,
                                JSObject     *constructor,
                                GIEnumInfo   *enum_info)
@@ -172,10 +172,10 @@ gjs_define_enum_static_methods(JSContext    *context,
         g_base_info_unref((GIBaseInfo*) meth_info);
     }
 
-    return JS_TRUE;
+    return true;
 }
 
-JSBool
+bool
 gjs_define_enumeration(JSContext    *context,
                        JSObject     *in_object,
                        GIEnumInfo   *info)
@@ -206,7 +206,7 @@ gjs_define_enumeration(JSContext    *context,
                  gjs_get_import_global (context));
 
     if (!gjs_define_enum_values(context, enum_obj, info))
-        return JS_FALSE;
+        return false;
     gjs_define_enum_static_methods (context, enum_obj, info);
 
     gjs_debug(GJS_DEBUG_GENUM,
@@ -219,8 +219,8 @@ gjs_define_enumeration(JSContext    *context,
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS)) {
         gjs_throw(context, "Unable to define enumeration property (no memory most likely)");
-        return JS_FALSE;
+        return false;
     }
 
-    return JS_TRUE;
+    return true;
 }

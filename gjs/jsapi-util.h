@@ -28,6 +28,8 @@
 #error "Only <gjs/gjs-module.h> can be included directly."
 #endif
 
+#include <stdbool.h>
+
 #include <gjs/compat.h>
 #include <gjs/runtime.h>
 #include <glib-object.h>
@@ -77,10 +79,10 @@ typedef struct GjsRootedArray GjsRootedArray;
  *                              do_base_typecheck and priv_from_js
  */
 #define GJS_DEFINE_PRIV_FROM_JS(type, klass)                          \
-    __attribute__((unused)) static inline JSBool                        \
+    __attribute__((unused)) static inline bool                          \
     do_base_typecheck(JSContext *context,                               \
                       JSObject  *object,                                \
-                      JSBool     throw_error)                           \
+                      bool       throw_error)                           \
     {                                                                   \
         return gjs_typecheck_instance(context, object, &klass, throw_error);  \
     }                                                                   \
@@ -94,15 +96,15 @@ typedef struct GjsRootedArray GjsRootedArray;
         JS_EndRequest(context);                                         \
         return priv;                                                    \
     }                                                                   \
-    __attribute__((unused)) static JSBool                               \
+    __attribute__((unused)) static bool                                 \
     priv_from_js_with_typecheck(JSContext *context,                     \
                                 JSObject  *object,                      \
                                 type      **out)                        \
     {                                                                   \
-        if (!do_base_typecheck(context, object, JS_FALSE))              \
-            return JS_FALSE;                                            \
+        if (!do_base_typecheck(context, object, false))                 \
+            return false;                                               \
         *out = priv_from_js(context, object);                           \
-        return JS_TRUE;                                                 \
+        return true;                                                    \
     }
 
 /**
@@ -140,13 +142,13 @@ _GJS_DEFINE_PROTO_FULL(tn, cn, NULL, gtype, flags)
 extern JSPropertySpec gjs_##cname##_proto_props[]; \
 extern JSFunctionSpec gjs_##cname##_proto_funcs[]; \
 static void gjs_##cname##_finalize(JSFreeOp *fop, JSObject *obj); \
-static JSBool gjs_##cname##_new_resolve(JSContext *context, \
-                                        JSObject  *obj, \
-                                        JS::Value  id, \
-                                        unsigned   flags, \
-                                        JSObject **objp) \
+static bool gjs_##cname##_new_resolve(JSContext *context, \
+                                      JSObject  *obj, \
+                                      JS::Value  id, \
+                                      unsigned   flags, \
+                                      JSObject **objp) \
 { \
-    return JS_TRUE; \
+    return true; \
 } \
 static struct JSClass gjs_##cname##_class = { \
     type_name, \
@@ -225,15 +227,15 @@ gjs_##name##_constructor(JSContext  *context,           \
  * GJS_NATIVE_CONSTRUCTOR_PRELUDE:
  * Call after the initial variable declaration.
  */
-#define GJS_NATIVE_CONSTRUCTOR_PRELUDE(name)                            \
-    {                                                                   \
-        if (!JS_IsConstructing(context, vp)) {                          \
-            gjs_throw_constructor_error(context);                       \
-            return JS_FALSE;                                            \
-        }                                                               \
+#define GJS_NATIVE_CONSTRUCTOR_PRELUDE(name)                                   \
+    {                                                                          \
+        if (!JS_IsConstructing(context, vp)) {                                 \
+            gjs_throw_constructor_error(context);                              \
+            return false;                                                      \
+        }                                                                      \
         object = JS_NewObjectForConstructor(context, &gjs_##name##_class, vp); \
-        if (object == NULL)                                             \
-            return JS_FALSE;                                            \
+        if (object == NULL)                                                    \
+            return false;                                                      \
     }
 
 /**
@@ -254,7 +256,7 @@ gjs_##name##_constructor(JSContext  *context,           \
     GJS_NATIVE_CONSTRUCTOR_DECLARE(name)                        \
     {                                                           \
         gjs_throw_abstract_constructor_error(context, vp);      \
-        return JS_FALSE;                                        \
+        return false;                                           \
     }
 
 gboolean    gjs_init_context_standard        (JSContext       *context,
@@ -279,7 +281,7 @@ JSObject   *gjs_new_object_for_constructor   (JSContext       *context,
                                               JS::Value       *vp)
 G_GNUC_DEPRECATED_FOR(JS_NewObjectForConstructor);
 
-JSBool      gjs_init_class_dynamic           (JSContext       *context,
+bool        gjs_init_class_dynamic           (JSContext       *context,
                                               JSObject        *in_object,
                                               JSObject        *parent_proto,
                                               const char      *ns_name,
@@ -297,10 +299,10 @@ void gjs_throw_constructor_error             (JSContext       *context);
 void gjs_throw_abstract_constructor_error    (JSContext       *context,
                                               JS::Value       *vp);
 
-JSBool gjs_typecheck_instance                 (JSContext  *context,
+bool        gjs_typecheck_instance            (JSContext  *context,
                                                JSObject   *obj,
                                                JSClass    *static_clasp,
-                                               JSBool      _throw);
+                                               bool        _throw);
 
 JSObject*   gjs_construct_object_dynamic     (JSContext       *context,
                                               JSObject        *proto,
@@ -327,11 +329,11 @@ void        gjs_throw_literal                (JSContext       *context,
 void        gjs_throw_g_error                (JSContext       *context,
                                               GError          *error);
 
-JSBool      gjs_log_exception                (JSContext       *context);
-JSBool      gjs_log_and_keep_exception       (JSContext       *context);
-JSBool      gjs_move_exception               (JSContext       *src_context,
+bool        gjs_log_exception                (JSContext       *context);
+bool        gjs_log_and_keep_exception       (JSContext       *context);
+bool        gjs_move_exception               (JSContext       *src_context,
                                               JSContext       *dest_context);
-JSBool      gjs_log_exception_full           (JSContext       *context,
+bool        gjs_log_exception_full           (JSContext       *context,
                                               JS::Value        exc,
                                               JSString        *message);
 
@@ -345,7 +347,7 @@ char*       gjs_value_debug_string           (JSContext       *context,
                                               JS::Value        value);
 void        gjs_explain_scope                (JSContext       *context,
                                               const char      *title);
-JSBool      gjs_call_function_value          (JSContext       *context,
+bool        gjs_call_function_value          (JSContext       *context,
                                               JSObject        *obj,
                                               JS::Value        fval,
                                               unsigned         argc,
@@ -355,19 +357,19 @@ void        gjs_error_reporter               (JSContext       *context,
                                               const char      *message,
                                               JSErrorReport   *report);
 JSObject*   gjs_get_global_object            (JSContext *cx);
-JSBool      gjs_get_prop_verbose_stub        (JSContext       *context,
+bool        gjs_get_prop_verbose_stub        (JSContext       *context,
                                               JSObject        *obj,
                                               JS::Value        id,
                                               JS::Value       *value_p);
-JSBool      gjs_set_prop_verbose_stub        (JSContext       *context,
+bool        gjs_set_prop_verbose_stub        (JSContext       *context,
                                               JSObject        *obj,
                                               JS::Value        id,
                                               JS::Value       *value_p);
-JSBool      gjs_add_prop_verbose_stub        (JSContext       *context,
+bool        gjs_add_prop_verbose_stub        (JSContext       *context,
                                               JSObject        *obj,
                                               JS::Value        id,
                                               JS::Value       *value_p);
-JSBool      gjs_delete_prop_verbose_stub     (JSContext       *context,
+bool        gjs_delete_prop_verbose_stub     (JSContext       *context,
                                               JSObject        *obj,
                                               JS::Value        id,
                                               JS::Value       *value_p);
@@ -375,22 +377,22 @@ JSBool      gjs_delete_prop_verbose_stub     (JSContext       *context,
 JSBool      gjs_string_to_utf8               (JSContext       *context,
                                               const JS::Value  string_val,
                                               char           **utf8_string_p);
-JSBool      gjs_string_from_utf8             (JSContext       *context,
+bool        gjs_string_from_utf8             (JSContext       *context,
                                               const char      *utf8_string,
                                               gssize           n_bytes,
                                               JS::Value       *value_p);
 JSBool      gjs_string_to_filename           (JSContext       *context,
                                               const JS::Value  string_val,
                                               char           **filename_string_p);
-JSBool      gjs_string_from_filename         (JSContext       *context,
+bool        gjs_string_from_filename         (JSContext       *context,
                                               const char      *filename_string,
                                               gssize           n_bytes,
                                               JS::Value       *value_p);
-JSBool      gjs_string_get_uint16_data       (JSContext       *context,
+bool        gjs_string_get_uint16_data       (JSContext       *context,
                                               JS::Value        value,
                                               guint16        **data_p,
                                               gsize           *len_p);
-JSBool      gjs_get_string_id                (JSContext       *context,
+bool        gjs_get_string_id                (JSContext       *context,
                                               jsid             id,
                                               char           **name_p);
 jsid        gjs_intern_string_to_id          (JSContext       *context,
@@ -402,18 +404,18 @@ gboolean    gjs_unichar_from_string          (JSContext       *context,
 
 const char* gjs_get_type_name                (JS::Value        value);
 
-JSBool      gjs_value_to_int64               (JSContext       *context,
+bool        gjs_value_to_int64               (JSContext       *context,
                                               const JS::Value  val,
                                               gint64          *result);
 
-JSBool      gjs_parse_args                   (JSContext  *context,
+bool        gjs_parse_args                   (JSContext  *context,
                                               const char *function_name,
                                               const char *format,
                                               unsigned   argc,
                                               JS::Value  *argv,
                                               ...);
 
-JSBool      gjs_parse_call_args              (JSContext    *context,
+bool        gjs_parse_call_args              (JSContext    *context,
                                               const char   *function_name,
                                               const char   *format,
                                               JS::CallArgs &args,
@@ -448,12 +450,12 @@ void              gjs_unroot_value_locations  (JSContext        *context,
 
 void gjs_maybe_gc (JSContext *context);
 
-JSBool            gjs_context_get_frame_info (JSContext  *context,
+bool              gjs_context_get_frame_info (JSContext  *context,
                                               JS::Value  *stack,
                                               JS::Value  *fileName,
                                               JS::Value  *lineNumber);
 
-JSBool            gjs_eval_with_scope        (JSContext    *context,
+bool              gjs_eval_with_scope        (JSContext    *context,
                                               JSObject     *object,
                                               const char   *script,
                                               gssize        script_len,

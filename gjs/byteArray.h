@@ -28,16 +28,17 @@
 #error "Only <gjs/gjs.h> can be included directly."
 #endif
 
+#include <stdbool.h>
 #include <glib.h>
 #include "gjs/jsapi-util.h"
 
 G_BEGIN_DECLS
 
-JSBool    gjs_typecheck_bytearray        (JSContext     *context,
+bool          gjs_typecheck_bytearray    (JSContext     *context,
                                           JSObject      *obj,
-                                          JSBool         throw_error);
+                                          bool           throw_error);
 
-JSBool        gjs_define_byte_array_stuff    (JSContext  *context,
+bool          gjs_define_byte_array_stuff    (JSContext  *context,
                                               JSObject  **module_out);
 
 JSObject *    gjs_byte_array_from_byte_array (JSContext  *context,

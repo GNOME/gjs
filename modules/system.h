@@ -31,8 +31,8 @@
 
 G_BEGIN_DECLS
 
-JSBool        gjs_js_define_system_stuff     (JSContext      *context,
-                                              JSObject      **module_out);
+bool        gjs_js_define_system_stuff     (JSContext      *context,
+                                            JSObject      **module_out);
 
 G_END_DECLS
 

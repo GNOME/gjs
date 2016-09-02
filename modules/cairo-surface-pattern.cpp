@@ -40,25 +40,25 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_surface_pattern)
 
     if (!gjs_parse_call_args(context, "SurfacePattern", "o", argv,
                         "surface", &surface_wrapper))
-        return JS_FALSE;
+        return false;
 
     surface = gjs_cairo_surface_get_surface(context, surface_wrapper);
     if (!surface) {
         gjs_throw(context, "first argument to SurfacePattern() should be a surface");
-        return JS_FALSE;
+        return false;
     }
 
     pattern = cairo_pattern_create_for_surface(surface);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
-        return JS_FALSE;
+        return false;
 
     gjs_cairo_pattern_construct(context, object, pattern);
     cairo_pattern_destroy(pattern);
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_surface_pattern);
 
-    return JS_TRUE;
+    return true;
 }
 
 
@@ -74,7 +74,7 @@ JSPropertySpec gjs_cairo_surface_pattern_proto_props[] = {
 };
 
 
-static JSBool
+static bool
 setExtend_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -87,19 +87,19 @@ setExtend_func(JSContext *context,
 
     if (!gjs_parse_call_args(context, "setExtend", "i", argv,
                         "extend", &extend))
-        return JS_FALSE;
+        return false;
 
     pattern = gjs_cairo_pattern_get_pattern(context, obj);
     cairo_pattern_set_extend(pattern, extend);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
-        return JS_FALSE;
+        return false;
 
     argv.rval().setUndefined();
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 getExtend_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -112,21 +112,21 @@ getExtend_func(JSContext *context,
 
     if (argc > 0) {
         gjs_throw(context, "SurfacePattern.getExtend() requires no arguments");
-        return JS_FALSE;
+        return false;
     }
 
     pattern = gjs_cairo_pattern_get_pattern(context, obj);
     extend = cairo_pattern_get_extend(pattern);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
-        return JS_FALSE;
+        return false;
 
     rec.rval().setInt32(extend);
 
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 setFilter_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -139,19 +139,19 @@ setFilter_func(JSContext *context,
 
     if (!gjs_parse_call_args(context, "setFilter", "i", argv,
                         "filter", &filter))
-        return JS_FALSE;
+        return false;
 
     pattern = gjs_cairo_pattern_get_pattern(context, obj);
     cairo_pattern_set_filter(pattern, filter);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
-        return JS_FALSE;
+        return false;
 
     argv.rval().setUndefined();
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 getFilter_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -164,18 +164,18 @@ getFilter_func(JSContext *context,
 
     if (argc > 0) {
         gjs_throw(context, "SurfacePattern.getFilter() requires no arguments");
-        return JS_FALSE;
+        return false;
     }
 
     pattern = gjs_cairo_pattern_get_pattern(context, obj);
     filter = cairo_pattern_get_filter(pattern);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
-        return JS_FALSE;
+        return false;
 
     rec.rval().setInt32(filter);
 
-    return JS_TRUE;
+    return true;
 }
 
 JSFunctionSpec gjs_cairo_surface_pattern_proto_funcs[] = {

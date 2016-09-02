@@ -62,7 +62,7 @@ GJS_DEFINE_PRIV_FROM_JS(Union, gjs_union_class)
  * was not resolved; and non-null, referring to obj or one of its prototypes,
  * if id was resolved.
  */
-static JSBool
+static bool
 union_new_resolve(JSContext *context,
                   JS::HandleObject obj,
                   JS::HandleId id,
@@ -71,17 +71,17 @@ union_new_resolve(JSContext *context,
 {
     Union *priv;
     char *name;
-    JSBool ret = JS_TRUE;
+    bool ret = true;
 
     if (!gjs_get_string_id(context, id, &name))
-        return JS_TRUE; /* not resolved, but no error */
+        return true; /* not resolved, but no error */
 
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook obj %p priv %p",
                      name, (void *)obj, priv);
 
     if (priv == NULL) {
-        ret = JS_FALSE; /* wrong class */
+        ret = false; /* wrong class */
         goto out;
     }
 
@@ -114,7 +114,7 @@ union_new_resolve(JSContext *context,
                                         g_registered_type_info_get_g_type(priv->info),
                                         method_info) == NULL) {
                     g_base_info_unref( (GIBaseInfo*) method_info);
-                    ret = JS_FALSE;
+                    ret = false;
                     goto out;
                 }
 
@@ -219,7 +219,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
     if (proto_priv == NULL) {
         gjs_debug(GJS_DEBUG_GBOXED,
                   "Bad prototype set on union? Must match JSClass of object. JS error should have been reported.");
-        return JS_FALSE;
+        return false;
     }
 
     priv->info = proto_priv->info;
@@ -234,7 +234,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
     gboxed = union_new(context, object, priv->info);
 
     if (gboxed == NULL) {
-        return JS_FALSE;
+        return false;
     }
 
     /* Because "gboxed" is owned by a JS::Value and will
@@ -249,7 +249,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(union);
 
-    return JS_TRUE;
+    return true;
 }
 
 static void
@@ -279,7 +279,7 @@ union_finalize(JSFreeOp *fop,
     g_slice_free(Union, priv);
 }
 
-static JSBool
+static bool
 to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -288,7 +288,7 @@ to_string_func(JSContext *context,
     JSObject *obj = rec.thisv().toObjectOrNull();
 
     Union *priv;
-    JSBool ret = JS_FALSE;
+    bool ret = false;
     JS::Value retval;
 
     if (!priv_from_js_with_typecheck(context, obj, &priv))
@@ -298,7 +298,7 @@ to_string_func(JSContext *context,
                                    priv->gtype, priv->gboxed, &retval))
         goto out;
 
-    ret = JS_TRUE;
+    ret = true;
     rec.rval().set(retval);
  out:
     return ret;
@@ -334,7 +334,7 @@ JSFunctionSpec gjs_union_proto_funcs[] = {
     { NULL }
 };
 
-JSBool
+bool
 gjs_define_union_class(JSContext    *context,
                        JSObject     *in_object,
                        GIUnionInfo  *info)
@@ -352,7 +352,7 @@ gjs_define_union_class(JSContext    *context,
     gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) info);
     if (gtype == G_TYPE_NONE) {
         gjs_throw(context, "Unions must currently be registered as boxed types");
-        return JS_FALSE;
+        return false;
     }
 
     /* See the comment in gjs_define_object_class() for an
@@ -395,7 +395,7 @@ gjs_define_union_class(JSContext    *context,
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 
-    return JS_TRUE;
+    return true;
 }
 
 JSObject*
@@ -455,18 +455,18 @@ gjs_c_union_from_union(JSContext    *context,
     return priv->gboxed;
 }
 
-JSBool
+bool
 gjs_typecheck_union(JSContext     *context,
                     JSObject      *object,
                     GIStructInfo  *expected_info,
                     GType          expected_type,
-                    JSBool         throw_error)
+                    bool           throw_error)
 {
     Union *priv;
-    JSBool result;
+    bool result;
 
     if (!do_base_typecheck(context, object, throw_error))
-        return JS_FALSE;
+        return false;
 
     priv = priv_from_js(context, object);
 
@@ -478,7 +478,7 @@ gjs_typecheck_union(JSContext     *context,
                              g_base_info_get_name( (GIBaseInfo*) priv->info));
         }
 
-        return JS_FALSE;
+        return false;
     }
 
     if (expected_type != G_TYPE_NONE)
@@ -486,7 +486,7 @@ gjs_typecheck_union(JSContext     *context,
     else if (expected_info != NULL)
         result = g_base_info_equal((GIBaseInfo*) priv->info, (GIBaseInfo*) expected_info);
     else
-        result = JS_TRUE;
+        result = true;
 
     if (!result && throw_error) {
         if (expected_info != NULL) {

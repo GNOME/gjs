@@ -40,7 +40,7 @@ class XLibConstructor {
 static XLibConstructor constructor;
 #endif
 
-JSBool
+bool
 gjs_cairo_check_status(JSContext      *context,
                        cairo_status_t  status,
                        const char     *name)
@@ -50,13 +50,13 @@ gjs_cairo_check_status(JSContext      *context,
                   name,
                   cairo_status_to_string(status),
                   status);
-        return JS_FALSE;
+        return false;
     }
 
-    return JS_TRUE;
+    return true;
 }
 
-JSBool
+bool
 gjs_js_define_cairo_stuff(JSContext *context,
                           JSObject **module_out)
 {
@@ -69,82 +69,82 @@ gjs_js_define_cairo_stuff(JSContext *context,
     obj = gjs_cairo_region_create_proto(context, module,
                                         "Region", NULL);
     if (obj.isNull())
-        return JS_FALSE;
+        return false;
     gjs_cairo_region_init(context);
 
     obj = gjs_cairo_context_create_proto(context, module,
                                          "Context", NULL);
     if (obj.isNull())
-        return JS_FALSE;
+        return false;
     gjs_cairo_context_init(context);
     gjs_cairo_surface_init(context);
 
     obj = gjs_cairo_surface_create_proto(context, module,
                                          "Surface", NULL);
     if (obj.isNull())
-        return JS_FALSE;
+        return false;
     surface_proto = &obj.toObject();
 
     obj = gjs_cairo_image_surface_create_proto(context, module,
                                                "ImageSurface", surface_proto);
     if (obj.isNull())
-        return JS_FALSE;
+        return false;
     gjs_cairo_image_surface_init(context, &obj.toObject());
 
 #if CAIRO_HAS_PS_SURFACE
     obj = gjs_cairo_ps_surface_create_proto(context, module,
                                             "PSSurface", surface_proto);
     if (obj.isNull())
-        return JS_FALSE;
+        return false;
 #endif
 
 #if CAIRO_HAS_PDF_SURFACE
     obj = gjs_cairo_pdf_surface_create_proto(context, module,
                                              "PDFSurface", surface_proto);
     if (obj.isNull())
-        return JS_FALSE;
+        return false;
 #endif
 
 #if CAIRO_HAS_SVG_SURFACE
     obj = gjs_cairo_svg_surface_create_proto(context, module,
                                              "SVGSurface", surface_proto);
     if (obj.isNull())
-        return JS_FALSE;
+        return false;
 #endif
 
     obj = gjs_cairo_pattern_create_proto(context, module,
                                          "Pattern", NULL);
     if (obj.isNull())
-        return JS_FALSE;
+        return false;
     pattern_proto = &obj.toObject();
 
     obj = gjs_cairo_gradient_create_proto(context, module,
                                          "Gradient", pattern_proto);
     if (obj.isNull())
-        return JS_FALSE;
+        return false;
     gradient_proto = &obj.toObject();
 
     obj = gjs_cairo_linear_gradient_create_proto(context, module,
                                                  "LinearGradient", gradient_proto);
     if (obj.isNull())
-        return JS_FALSE;
+        return false;
 
     obj = gjs_cairo_radial_gradient_create_proto(context, module,
                                                  "RadialGradient", gradient_proto);
     if (obj.isNull())
-        return JS_FALSE;
+        return false;
 
     obj = gjs_cairo_surface_pattern_create_proto(context, module,
                                                  "SurfacePattern", pattern_proto);
     if (obj.isNull())
-        return JS_FALSE;
+        return false;
 
     obj = gjs_cairo_solid_pattern_create_proto(context, module,
                                                "SolidPattern", pattern_proto);
     if (obj.isNull())
-        return JS_FALSE;
+        return false;
 
     *module_out = module;
 
-    return JS_TRUE;
+    return true;
 }

@@ -24,6 +24,7 @@
 #ifndef __GJS_OBJECT_H__
 #define __GJS_OBJECT_H__
 
+#include <stdbool.h>
 #include <glib.h>
 #include <girepository.h>
 #include "gjs/jsapi-util.h"
@@ -35,24 +36,24 @@ void      gjs_define_object_class       (JSContext     *context,
                                          GIObjectInfo  *info,
                                          GType          gtype,
                                          JSObject     **constructor_p);
-JSBool    gjs_lookup_object_constructor (JSContext     *context,
+bool      gjs_lookup_object_constructor (JSContext     *context,
                                          GType          gtype,
                                          JS::Value     *value_p);
 JSObject* gjs_object_from_g_object      (JSContext     *context,
                                          GObject       *gobj);
 GObject*  gjs_g_object_from_object      (JSContext     *context,
                                          JSObject      *obj);
-JSBool    gjs_typecheck_object          (JSContext     *context,
+bool      gjs_typecheck_object          (JSContext     *context,
                                          JSObject      *obj,
                                          GType          expected_type,
-                                         JSBool         throw_error);
-JSBool    gjs_typecheck_is_object       (JSContext     *context,
+                                         bool           throw_error);
+bool      gjs_typecheck_is_object       (JSContext     *context,
                                          JSObject      *obj,
-                                         JSBool         throw_error);
+                                         bool           throw_error);
 
 void      gjs_object_prepare_shutdown   (JSContext     *context);
 
-JSBool    gjs_object_define_static_methods(JSContext    *context,
+bool      gjs_object_define_static_methods(JSContext    *context,
                                            JSObject     *constructor,
                                            GType         gtype,
                                            GIObjectInfo *object_info);

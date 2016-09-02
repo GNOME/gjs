@@ -536,7 +536,7 @@ get_length_from_arg (GArgument *arg, GITypeTag tag)
     }
 }
 
-static JSBool
+static bool
 gjs_fill_method_instance (JSContext  *context,
                           JSObject   *obj,
                           Function   *function,
@@ -552,8 +552,8 @@ gjs_fill_method_instance (JSContext  *context,
     case GI_INFO_TYPE_BOXED:
         /* GError must be special cased */
         if (g_type_is_a(gtype, G_TYPE_ERROR)) {
-            if (!gjs_typecheck_gerror(context, obj, JS_TRUE))
-                return JS_FALSE;
+            if (!gjs_typecheck_gerror(context, obj, true))
+                return false;
 
             out_arg->v_pointer = gjs_gerror_from_error(context, obj);
             if (transfer == GI_TRANSFER_EVERYTHING)
@@ -568,7 +568,7 @@ gjs_fill_method_instance (JSContext  *context,
 
             if (actual_gtype == G_TYPE_NONE) {
                 gjs_throw(context, "Invalid GType class passed for instance parameter");
-                return JS_FALSE;
+                return false;
             }
 
             /* We use peek here to simplify reference counting (we just ignore
@@ -584,10 +584,8 @@ gjs_fill_method_instance (JSContext  *context,
 
             out_arg->v_pointer = klass;
         } else {
-            if (!gjs_typecheck_boxed(context, obj,
-                                     container, gtype,
-                                     JS_TRUE))
-                return JS_FALSE;
+            if (!gjs_typecheck_boxed(context, obj, container, gtype, true))
+                return false;
 
             out_arg->v_pointer = gjs_c_struct_from_boxed(context, obj);
             if (transfer == GI_TRANSFER_EVERYTHING) {
@@ -595,16 +593,15 @@ gjs_fill_method_instance (JSContext  *context,
                     out_arg->v_pointer = g_boxed_copy (gtype, out_arg->v_pointer);
                 else {
                     gjs_throw (context, "Cannot transfer ownership of instance argument for non boxed structure");
-                    return JS_FALSE;
+                    return false;
                 }
             }
         }
         break;
 
     case GI_INFO_TYPE_UNION:
-        if (!gjs_typecheck_union(context, obj,
-                                 container, gtype, JS_TRUE))
-            return JS_FALSE;
+        if (!gjs_typecheck_union(context, obj, container, gtype, true))
+            return false;
 
         out_arg->v_pointer = gjs_c_union_from_union(context, obj);
         if (transfer == GI_TRANSFER_EVERYTHING)
@@ -614,34 +611,34 @@ gjs_fill_method_instance (JSContext  *context,
     case GI_INFO_TYPE_OBJECT:
     case GI_INFO_TYPE_INTERFACE:
         if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
-            if (!gjs_typecheck_object(context, obj, gtype, JS_TRUE))
-                return JS_FALSE;
+            if (!gjs_typecheck_object(context, obj, gtype, true))
+                return false;
             out_arg->v_pointer = gjs_g_object_from_object(context, obj);
             if (transfer == GI_TRANSFER_EVERYTHING)
                 g_object_ref (out_arg->v_pointer);
         } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-            if (!gjs_typecheck_param(context, obj, G_TYPE_PARAM, JS_TRUE))
-                return JS_FALSE;
+            if (!gjs_typecheck_param(context, obj, G_TYPE_PARAM, true))
+                return false;
             out_arg->v_pointer = gjs_g_param_from_param(context, obj);
             if (transfer == GI_TRANSFER_EVERYTHING)
                 g_param_spec_ref ((GParamSpec*) out_arg->v_pointer);
         } else if (G_TYPE_IS_INTERFACE(gtype)) {
-            if (gjs_typecheck_is_object(context, obj, JS_FALSE)) {
-                if (!gjs_typecheck_object(context, obj, gtype, JS_TRUE))
-                    return JS_FALSE;
+            if (gjs_typecheck_is_object(context, obj, false)) {
+                if (!gjs_typecheck_object(context, obj, gtype, true))
+                    return false;
                 out_arg->v_pointer = gjs_g_object_from_object(context, obj);
                 if (transfer == GI_TRANSFER_EVERYTHING)
                     g_object_ref (out_arg->v_pointer);
             } else {
-                if (!gjs_typecheck_fundamental(context, obj, gtype, JS_TRUE))
-                    return JS_FALSE;
+                if (!gjs_typecheck_fundamental(context, obj, gtype, true))
+                    return false;
                 out_arg->v_pointer = gjs_g_fundamental_from_object(context, obj);
                 if (transfer == GI_TRANSFER_EVERYTHING)
                     gjs_fundamental_ref (context, out_arg->v_pointer);
             }
         } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-            if (!gjs_typecheck_fundamental(context, obj, gtype, JS_TRUE))
-                return JS_FALSE;
+            if (!gjs_typecheck_fundamental(context, obj, gtype, true))
+                return false;
             out_arg->v_pointer = gjs_g_fundamental_from_object(context, obj);
             if (transfer == GI_TRANSFER_EVERYTHING)
                 gjs_fundamental_ref (context, out_arg->v_pointer);
@@ -650,7 +647,7 @@ gjs_fill_method_instance (JSContext  *context,
                              "%s.%s is not an object instance neither a fundamental instance of a supported type",
                              g_base_info_get_namespace(container),
                              g_base_info_get_name(container));
-            return JS_FALSE;
+            return false;
         }
         break;
 
@@ -658,7 +655,7 @@ gjs_fill_method_instance (JSContext  *context,
         g_assert_not_reached();
     }
 
-    return JS_TRUE;
+    return true;
 }
 
 /*
@@ -667,7 +664,7 @@ gjs_fill_method_instance (JSContext  *context,
  * you can decide to keep the return values in #GArgument format by
  * providing a @r_value argument.
  */
-static JSBool
+static bool
 gjs_invoke_c_function(JSContext      *context,
                       Function       *function,
                       JSObject       *obj, /* "this" object */
@@ -750,7 +747,7 @@ gjs_invoke_c_function(JSContext      *context,
                   g_base_info_get_name( (GIBaseInfo*) function->info),
                   function->expected_js_argc,
                   js_argc);
-        return JS_FALSE;
+        return false;
     }
 
     g_callable_info_load_return_type( (GICallableInfo*) function->info, &return_info);
@@ -768,7 +765,7 @@ gjs_invoke_c_function(JSContext      *context,
     if (is_method) {
         if (!gjs_fill_method_instance(context, obj,
                                       function, &in_arg_cvalues[0]))
-            return JS_FALSE;
+            return false;
         ffi_arg_pointers[0] = &in_arg_cvalues[0];
         ++c_arg_pos;
     }
@@ -1289,11 +1286,11 @@ release:
 
     if (!failed && did_throw_gerror) {
         gjs_throw_g_error(context, local_error);
-        return JS_FALSE;
+        return false;
     } else if (failed) {
-        return JS_FALSE;
+        return false;
     } else {
-        return JS_TRUE;
+        return true;
     }
 }
 
@@ -1306,7 +1303,7 @@ function_call(JSContext *context,
     JSObject *object = js_argv.thisv().toObjectOrNull();
     JSObject *callee = &js_argv.callee();
 
-    JSBool success;
+    bool success;
     Function *priv;
     JS::Value retval;
 
@@ -1317,7 +1314,7 @@ function_call(JSContext *context,
                       JS_GetTypeName(context, JS_TypeOfValue(context, JS::ObjectOrNullValue(object))));
 
     if (priv == NULL)
-        return JS_TRUE; /* we are the prototype, or have the wrong class */
+        return true; /* we are the prototype, or have the wrong class */
 
 
     success = gjs_invoke_c_function(context, priv, object, js_argc, js_argv.array(), &retval, NULL);
@@ -1361,7 +1358,7 @@ function_finalize(JSFreeOp *fop,
     g_slice_free(Function, priv);
 }
 
-static JSBool
+static bool
 get_num_arguments (JSContext *context,
                    JS::HandleObject obj,
                    JS::HandleId id,
@@ -1376,7 +1373,7 @@ get_num_arguments (JSContext *context,
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
-        return JS_FALSE;
+        return false;
 
     n_args = g_callable_info_get_n_args(priv->info);
     n_jsargs = 0;
@@ -1393,7 +1390,7 @@ get_num_arguments (JSContext *context,
     }
 
     rec.rval().setInt32(n_jsargs);
-    return JS_TRUE;
+    return true;
 }
 
 static JSBool
@@ -1406,7 +1403,7 @@ function_to_string (JSContext *context,
     gboolean free;
     JSObject *self;
     JS::Value retval;
-    JSBool ret = JS_FALSE;
+    bool ret = false;
     int i, n_args, n_jsargs;
     GString *arg_names_str;
     gchar *arg_names;
@@ -1415,7 +1412,7 @@ function_to_string (JSContext *context,
 
     if (rec.thisv().isNull()) {
         gjs_throw(context, "this cannot be null");
-        return JS_FALSE;
+        return false;
     }
     self = &rec.thisv().toObject();
 
@@ -1466,7 +1463,7 @@ function_to_string (JSContext *context,
  out:
     if (gjs_string_from_utf8(context, string, -1, &retval)) {
         rec.rval().set(retval);
-        ret = JS_TRUE;
+        ret = true;
     }
 
     if (free)
@@ -1609,7 +1606,7 @@ init_cached_function_data (JSContext      *context,
                                   g_base_info_get_namespace( (GIBaseInfo*) info),
                                   g_base_info_get_name( (GIBaseInfo*) info));
                         g_base_info_unref(interface_info);
-                        return JS_FALSE;
+                        return false;
                     }
                 }
             }
@@ -1626,7 +1623,7 @@ init_cached_function_data (JSContext      *context,
                         gjs_throw(context, "Function %s.%s has an array with different-direction length arg, not supported",
                                   g_base_info_get_namespace( (GIBaseInfo*) info),
                                   g_base_info_get_name( (GIBaseInfo*) info));
-                        return JS_FALSE;
+                        return false;
                     }
 
                     function->param_types[array_length_pos] = PARAM_SKIPPED;
@@ -1656,7 +1653,7 @@ init_cached_function_data (JSContext      *context,
 
     g_base_info_ref((GIBaseInfo*) function->info);
 
-    return JS_TRUE;
+    return true;
 }
 
 static JSObject*
@@ -1783,7 +1780,7 @@ gjs_define_function(JSContext      *context,
 }
 
 
-JSBool
+bool
 gjs_invoke_c_function_uncached (JSContext      *context,
                                 GIFunctionInfo *info,
                                 JSObject       *obj,
@@ -1792,18 +1789,18 @@ gjs_invoke_c_function_uncached (JSContext      *context,
                                 JS::Value      *rval)
 {
   Function function;
-  JSBool result;
+  bool result;
 
   memset (&function, 0, sizeof (Function));
   if (!init_cached_function_data (context, &function, 0, info))
-    return JS_FALSE;
+      return false;
 
   result = gjs_invoke_c_function (context, &function, obj, argc, argv, rval, NULL);
   uninit_cached_function_data (&function);
   return result;
 }
 
-JSBool
+bool
 gjs_invoke_constructor_from_c (JSContext      *context,
                                JSObject       *constructor,
                                JSObject       *obj,

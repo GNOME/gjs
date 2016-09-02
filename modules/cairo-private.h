@@ -26,7 +26,7 @@
 #include "cairo-module.h"
 #include <cairo.h>
 
-JSBool           gjs_cairo_check_status                 (JSContext       *context,
+bool             gjs_cairo_check_status                 (JSContext       *context,
                                                          cairo_status_t   status,
                                                          const char      *name);
 

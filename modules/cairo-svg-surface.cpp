@@ -45,14 +45,14 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_svg_surface)
                         "filename", &filename,
                         "width", &width,
                         "height", &height))
-        return JS_FALSE;
+        return false;
 
     surface = cairo_svg_surface_create(filename, width, height);
 
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface),
                                 "surface")) {
         g_free(filename);
-        return JS_FALSE;
+        return false;
     }
 
     gjs_cairo_surface_construct(context, object, surface);
@@ -61,7 +61,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_svg_surface)
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_svg_surface);
 
-    return JS_TRUE;
+    return true;
 }
 
 static void

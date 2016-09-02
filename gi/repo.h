@@ -24,6 +24,7 @@
 #ifndef __GJS_REPO_H__
 #define __GJS_REPO_H__
 
+#include <stdbool.h>
 #include <glib.h>
 
 #include <girepository.h>
@@ -33,7 +34,7 @@
 
 G_BEGIN_DECLS
 
-JSBool      gjs_define_repo                     (JSContext      *context,
+bool        gjs_define_repo                     (JSContext      *context,
                                                  JSObject      **module_out,
                                                  const char     *name);
 const char* gjs_info_type_name                  (GIInfoType      type);
@@ -48,7 +49,7 @@ JSObject *  gjs_lookup_generic_constructor      (JSContext      *context,
                                                  GIBaseInfo     *info);
 JSObject *  gjs_lookup_generic_prototype        (JSContext      *context,
                                                  GIBaseInfo     *info);
-JSBool      gjs_define_info                     (JSContext      *context,
+bool        gjs_define_info                     (JSContext      *context,
                                                  JSObject       *in_object,
                                                  GIBaseInfo     *info,
                                                  gboolean       *defined);

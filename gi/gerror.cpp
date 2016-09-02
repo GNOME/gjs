@@ -68,7 +68,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     /* Check early to avoid allocating memory for nothing */
     if (argc != 1 || !argv[0].isObject()) {
         gjs_throw(context, "Invalid parameters passed to GError constructor, expected one object");
-        return JS_FALSE;
+        return false;
     }
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(error);
@@ -95,7 +95,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     if (proto_priv == NULL) {
         gjs_debug(GJS_DEBUG_GERROR,
                   "Bad prototype set on GError? Must match JSClass of object. JS error should have been reported.");
-        return JS_FALSE;
+        return false;
     }
 
     priv->info = proto_priv->info;
@@ -106,12 +106,12 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     code_name = gjs_context_get_const_string(context, GJS_STRING_CODE);
     if (!gjs_object_require_property(context, &argv[0].toObject(),
                                      "GError constructor", message_name, &v_message))
-        return JS_FALSE;
+        return false;
     if (!gjs_object_require_property(context, &argv[0].toObject(),
                                      "GError constructor", code_name, &v_code))
-        return JS_FALSE;
+        return false;
     if (!gjs_string_to_utf8 (context, v_message, &message))
-        return JS_FALSE;
+        return false;
 
     priv->gerror = g_error_new_literal(priv->domain, v_code.toInt32(),
                                        message);
@@ -123,7 +123,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
 
-    return JS_TRUE;
+    return true;
 }
 
 static void
@@ -149,7 +149,7 @@ error_finalize(JSFreeOp *fop,
     g_slice_free(Error, priv);
 }
 
-static JSBool
+static bool
 error_get_domain(JSContext *context, JS::HandleObject obj,
                  JS::HandleId id, JS::MutableHandleValue vp)
 {
@@ -158,13 +158,13 @@ error_get_domain(JSContext *context, JS::HandleObject obj,
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
-        return JS_FALSE;
+        return false;
 
     vp.setInt32(priv->domain);
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 error_get_message(JSContext *context, JS::HandleObject obj,
                   JS::HandleId id, JS::MutableHandleValue vp)
 {
@@ -173,18 +173,18 @@ error_get_message(JSContext *context, JS::HandleObject obj,
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
-        return JS_FALSE;
+        return false;
 
     if (priv->gerror == NULL) {
         /* Object is prototype, not instance */
         gjs_throw(context, "Can't get a field from a GError prototype");
-        return JS_FALSE;
+        return false;
     }
 
     return gjs_string_from_utf8(context, priv->gerror->message, -1, vp.address());
 }
 
-static JSBool
+static bool
 error_get_code(JSContext *context, JS::HandleObject obj,
                JS::HandleId id, JS::MutableHandleValue vp)
 {
@@ -193,19 +193,19 @@ error_get_code(JSContext *context, JS::HandleObject obj,
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
-        return JS_FALSE;
+        return false;
 
     if (priv->gerror == NULL) {
         /* Object is prototype, not instance */
         gjs_throw(context, "Can't get a field from a GError prototype");
-        return JS_FALSE;
+        return false;
     }
 
     vp.setInt32(priv->gerror->code);
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 error_to_string(JSContext *context,
                 unsigned   argc,
                 JS::Value *vp)
@@ -215,24 +215,24 @@ error_to_string(JSContext *context,
     Error *priv;
     JS::Value v_out;
     gchar *descr;
-    JSBool retval;
+    bool retval;
 
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     v_self = rec.thisv();
     if (!v_self.isObject()) {
         /* Lie a bit here... */
         gjs_throw(context, "GLib.Error.prototype.toString() called on a non object");
-        return JS_FALSE;
+        return false;
     }
 
     self = &v_self.toObject();
     priv = priv_from_js(context, self);
 
     if (priv == NULL)
-        return JS_FALSE;
+        return false;
 
     v_out = JS::UndefinedValue();
-    retval = JS_FALSE;
+    retval = false;
 
     /* We follow the same pattern as standard JS errors, at the expense of
        hiding some useful information */
@@ -255,14 +255,14 @@ error_to_string(JSContext *context,
     }
 
     rec.rval().set(v_out);
-    retval = JS_TRUE;
+    retval = true;
 
  out:
     g_free(descr);
     return retval;
 }
 
-static JSBool
+static bool
 error_constructor_value_of(JSContext *context,
                            unsigned   argc,
                            JS::Value *vp)
@@ -276,27 +276,27 @@ error_constructor_value_of(JSContext *context,
     if (!v_self.isObject()) {
         /* Lie a bit here... */
         gjs_throw(context, "GLib.Error.valueOf() called on a non object");
-        return JS_FALSE;
+        return false;
     }
 
     prototype_name = gjs_context_get_const_string(context, GJS_STRING_PROTOTYPE);
     if (!gjs_object_require_property(context, &v_self.toObject(), "constructor",
                                      prototype_name, &v_prototype))
-        return JS_FALSE;
+        return false;
 
     if (!v_prototype.isObject()) {
         gjs_throw(context, "GLib.Error.valueOf() called on something that is not"
                   " a constructor");
-        return JS_FALSE;
+        return false;
     }
 
     priv = priv_from_js(context, &v_prototype.toObject());
 
     if (priv == NULL)
-        return JS_FALSE;
+        return false;
 
     rec.rval().setInt32(priv->domain);
-    return JS_TRUE;
+    return true;
 }
 
 
@@ -533,7 +533,7 @@ gjs_gerror_from_error(JSContext    *context,
     /* If this is a plain GBoxed (i.e. a GError without metadata),
        delegate marshalling.
     */
-    if (gjs_typecheck_boxed (context, obj, NULL, G_TYPE_ERROR, JS_FALSE))
+    if (gjs_typecheck_boxed (context, obj, NULL, G_TYPE_ERROR, false))
         return (GError*) gjs_c_struct_from_boxed (context, obj);
 
     priv = priv_from_js(context, obj);
@@ -552,12 +552,12 @@ gjs_gerror_from_error(JSContext    *context,
     return priv->gerror;
 }
 
-JSBool
+bool
 gjs_typecheck_gerror (JSContext *context,
                       JSObject  *obj,
-                      JSBool     throw_error)
+                      bool       throw_error)
 {
-    if (gjs_typecheck_boxed (context, obj, NULL, G_TYPE_ERROR, JS_FALSE))
+    if (gjs_typecheck_boxed (context, obj, NULL, G_TYPE_ERROR, false))
         return TRUE;
 
     return do_base_typecheck(context, obj, throw_error);

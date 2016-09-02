@@ -24,6 +24,7 @@
 #ifndef __GJS_BOXED_H__
 #define __GJS_BOXED_H__
 
+#include <stdbool.h>
 #include <glib.h>
 
 #include "gjs/jsapi-util.h"
@@ -51,11 +52,11 @@ JSObject* gjs_boxed_from_c_struct      (JSContext             *context,
                                         GIStructInfo          *info,
                                         void                  *gboxed,
                                         GjsBoxedCreationFlags  flags);
-JSBool    gjs_typecheck_boxed          (JSContext             *context,
+bool      gjs_typecheck_boxed          (JSContext             *context,
                                         JSObject              *obj,
                                         GIStructInfo          *expected_info,
                                         GType                  expected_type,
-                                        JSBool                 throw_error);
+                                        bool                   throw_error);
 
 G_END_DECLS
 

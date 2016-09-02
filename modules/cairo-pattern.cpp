@@ -57,7 +57,7 @@ JSPropertySpec gjs_cairo_pattern_proto_props[] = {
 
 /* Methods */
 
-static JSBool
+static bool
 getType_func(JSContext *context,
              unsigned   argc,
              JS::Value *vp)
@@ -70,17 +70,17 @@ getType_func(JSContext *context,
 
     if (argc > 1) {
         gjs_throw(context, "Pattern.getType() takes no arguments");
-        return JS_FALSE;
+        return false;
     }
 
     pattern = gjs_cairo_pattern_get_pattern(context, obj);
     type = cairo_pattern_get_type(pattern);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
-        return JS_FALSE;
+        return false;
 
     rec.rval().setInt32(type);
-    return JS_TRUE;
+    return true;
 }
 
 JSFunctionSpec gjs_cairo_pattern_proto_funcs[] = {

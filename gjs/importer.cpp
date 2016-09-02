@@ -51,7 +51,7 @@ extern struct JSClass gjs_importer_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Importer, gjs_importer_class)
 
-static JSBool
+static bool
 define_meta_properties(JSContext  *context,
                        JSObject   *module_obj,
                        const char *full_path,
@@ -77,7 +77,7 @@ define_meta_properties(JSContext  *context,
                                 * this symbol to any other object for example.
                                 */
                                JSPROP_READONLY | JSPROP_PERMANENT))
-            return JS_FALSE;
+            return false;
     }
 
     if (!JS_DefineProperty(context, module_obj,
@@ -90,7 +90,7 @@ define_meta_properties(JSContext  *context,
                             * this symbol to any other object for example.
                             */
                            JSPROP_READONLY | JSPROP_PERMANENT))
-        return JS_FALSE;
+        return false;
 
     if (!JS_DefineProperty(context, module_obj,
                            "__parentModule__",
@@ -100,12 +100,12 @@ define_meta_properties(JSContext  *context,
                             * this symbol to any other object for example.
                             */
                            JSPROP_READONLY | JSPROP_PERMANENT))
-        return JS_FALSE;
+        return false;
 
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 import_directory(JSContext   *context,
                  JSObject    *obj,
                  const char  *name,
@@ -122,13 +122,10 @@ import_directory(JSContext   *context,
      * this always succeeds.
      */
     importer = gjs_define_importer(context, obj, name, full_paths, FALSE);
-    if (importer == NULL)
-        return JS_FALSE;
-
-    return JS_TRUE;
+    return importer != NULL;
 }
 
-static JSBool
+static bool
 define_import(JSContext  *context,
               JSObject   *obj,
               JSObject   *module_obj,
@@ -141,16 +138,16 @@ define_import(JSContext  *context,
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to define '%s' in importer",
                   name);
-        return JS_FALSE;
+        return false;
     }
 
-    return JS_TRUE;
+    return true;
 }
 
 /* Make the property we set in define_import permament;
  * we do this after the import succesfully completes.
  */
-static JSBool
+static bool
 seal_import(JSContext  *context,
             JSObject   *obj,
             const char *name)
@@ -163,7 +160,7 @@ seal_import(JSContext  *context,
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to get attributes to seal '%s' in importer",
                   name);
-        return JS_FALSE;
+        return false;
     }
 
     attrs |= JSPROP_PERMANENT;
@@ -173,10 +170,10 @@ seal_import(JSContext  *context,
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to set attributes to seal '%s' in importer",
                   name);
-        return JS_FALSE;
+        return false;
     }
 
-    return JS_TRUE;
+    return true;
 }
 
 /* An import failed. Delete the property pointing to the import
@@ -213,13 +210,13 @@ cancel_import(JSContext  *context,
     }
 }
 
-static JSBool
+static bool
 import_native_file(JSContext  *context,
                    JSObject   *obj,
                    const char *name)
 {
     JSObject *module_obj;
-    JSBool retval = JS_FALSE;
+    bool retval = false;
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Importing '%s'", name);
 
@@ -243,7 +240,7 @@ import_native_file(JSContext  *context,
                            NULL, NULL, GJS_MODULE_PROP_FLAGS))
         goto out;
 
-    retval = JS_TRUE;
+    retval = true;
 
  out:
     return retval;
@@ -255,13 +252,13 @@ create_module_object(JSContext *context)
     return JS_NewObject(context, NULL, NULL, NULL);
 }
 
-static JSBool
+static bool
 import_file(JSContext  *context,
             const char *name,
             GFile      *file,
             JSObject   *module_obj)
 {
-    JSBool ret = JS_FALSE;
+    bool ret = false;
     char *script = NULL;
     char *full_path = NULL;
     gsize script_len = 0;
@@ -288,7 +285,7 @@ import_file(JSContext  *context,
                              full_path, NULL))
         goto out;
 
-    ret = JS_TRUE;
+    ret = true;
 
  out:
     g_free(script);
@@ -375,14 +372,14 @@ load_module_elements(JSContext *context,
     }
 }
 
-static JSBool
+static bool
 import_file_on_module(JSContext  *context,
                       JSObject   *obj,
                       const char *name,
                       GFile      *file)
 {
     JSObject *module_obj;
-    JSBool retval = JS_FALSE;
+    bool retval = false;
     char *full_path = NULL;
 
     module_obj = create_module_object (context);
@@ -400,7 +397,7 @@ import_file_on_module(JSContext  *context,
     if (!seal_import(context, obj, name))
         goto out;
 
-    retval = JS_TRUE;
+    retval = true;
 
  out:
     if (!retval)
@@ -410,7 +407,7 @@ import_file_on_module(JSContext  *context,
     return retval;
 }
 
-static JSBool
+static bool
 do_import(JSContext  *context,
           JSObject   *obj,
           Importer   *priv,
@@ -424,7 +421,7 @@ do_import(JSContext  *context,
     JSObject *module_obj = NULL;
     guint32 search_path_len;
     guint32 i;
-    JSBool result;
+    bool result;
     GPtrArray *directories;
     jsid search_path_name;
     GFile *gfile;
@@ -432,27 +429,27 @@ do_import(JSContext  *context,
 
     search_path_name = gjs_context_get_const_string(context, GJS_STRING_SEARCH_PATH);
     if (!gjs_object_require_property(context, obj, "importer", search_path_name, &search_path_val)) {
-        return JS_FALSE;
+        return false;
     }
 
     if (!search_path_val.isObject()) {
         gjs_throw(context, "searchPath property on importer is not an object");
-        return JS_FALSE;
+        return false;
     }
 
     search_path = &search_path_val.toObject();
 
     if (!JS_IsArrayObject(context, search_path)) {
         gjs_throw(context, "searchPath property on importer is not an array");
-        return JS_FALSE;
+        return false;
     }
 
     if (!JS_GetArrayLength(context, search_path, &search_path_len)) {
         gjs_throw(context, "searchPath array has no length");
-        return JS_FALSE;
+        return false;
     }
 
-    result = JS_FALSE;
+    result = false;
 
     filename = g_strdup_printf("%s.js", name);
     full_path = NULL;
@@ -464,7 +461,7 @@ do_import(JSContext  *context,
         import_native_file(context, obj, name)) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "successfully imported module '%s'", name);
-        result = JS_TRUE;
+        result = true;
         goto out;
     }
 
@@ -516,7 +513,7 @@ do_import(JSContext  *context,
                                       name, obj_val,
                                       NULL, NULL,
                                       GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT)) {
-                    result = JS_TRUE;
+                    result = true;
                     goto out;
                 }
             }
@@ -572,7 +569,7 @@ do_import(JSContext  *context,
         if (import_file_on_module (context, obj, name, gfile)) {
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "successfully imported module '%s'", name);
-            result = JS_TRUE;
+            result = true;
         }
 
         g_object_unref(gfile);
@@ -592,7 +589,7 @@ do_import(JSContext  *context,
                              (const char**) directories->pdata)) {
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "successfully imported directory '%s'", name);
-            result = JS_TRUE;
+            result = true;
         }
     }
 
@@ -659,7 +656,7 @@ importer_iterator_free(ImporterIterator *iter)
  * then on its prototype.
  *
  */
-static JSBool
+static bool
 importer_new_enumerate(JSContext  *context,
                        JS::HandleObject object,
                        JSIterateOp enum_op,
@@ -686,27 +683,27 @@ importer_new_enumerate(JSContext  *context,
 
         if (!priv)
             /* we are enumerating the prototype properties */
-            return JS_TRUE;
+            return true;
 
         search_path_name = gjs_context_get_const_string(context, GJS_STRING_SEARCH_PATH);
         if (!gjs_object_require_property(context, object, "importer", search_path_name, &search_path_val))
-            return JS_FALSE;
+            return false;
 
         if (!search_path_val.isObject()) {
             gjs_throw(context, "searchPath property on importer is not an object");
-            return JS_FALSE;
+            return false;
         }
 
         search_path = &search_path_val.toObject();
 
         if (!JS_IsArrayObject(context, search_path)) {
             gjs_throw(context, "searchPath property on importer is not an array");
-            return JS_FALSE;
+            return false;
         }
 
         if (!JS_GetArrayLength(context, search_path, &search_path_len)) {
             gjs_throw(context, "searchPath array has no length");
-            return JS_FALSE;
+            return false;
         }
 
         iter = importer_iterator_new();
@@ -724,7 +721,7 @@ importer_new_enumerate(JSContext  *context,
                  * means no element found
                  */
                 importer_iterator_free(iter);
-                return JS_FALSE;
+                return false;
             }
 
             if (elem.isUndefined())
@@ -733,12 +730,12 @@ importer_new_enumerate(JSContext  *context,
             if (!elem.isString()) {
                 gjs_throw(context, "importer searchPath contains non-string");
                 importer_iterator_free(iter);
-                return JS_FALSE;
+                return false;
             }
 
             if (!gjs_string_to_utf8(context, elem, &dirname)) {
                 importer_iterator_free(iter);
-                return JS_FALSE; /* Error message already set */
+                return false; /* Error message already set */
             }
 
             init_path = g_build_filename(dirname, MODULE_INIT_FILENAME,
@@ -796,7 +793,7 @@ importer_new_enumerate(JSContext  *context,
         JS::Value element_val;
 
         if (statep.isNull()) /* Iterating prototype */
-            return JS_TRUE;
+            return true;
 
         iter = (ImporterIterator*) statep.get().toPrivate();
 
@@ -806,11 +803,11 @@ importer_new_enumerate(JSContext  *context,
                                                            iter->index++),
                                          -1,
                                          &element_val))
-                return JS_FALSE;
+                return false;
 
             jsid id;
             if (!JS_ValueToId(context, element_val, &id))
-                return JS_FALSE;
+                return false;
             idp.set(id);
 
             break;
@@ -829,7 +826,7 @@ importer_new_enumerate(JSContext  *context,
     }
     }
 
-    return JS_TRUE;
+    return true;
 }
 
 /*
@@ -845,7 +842,7 @@ importer_new_enumerate(JSContext  *context,
  * was not resolved; and non-null, referring to obj or one of its prototypes,
  * if id was resolved.
  */
-static JSBool
+static bool
 importer_new_resolve(JSContext *context,
                      JS::HandleObject obj,
                      JS::HandleId id,
@@ -854,15 +851,15 @@ importer_new_resolve(JSContext *context,
 {
     Importer *priv;
     char *name;
-    JSBool ret = JS_TRUE;
+    bool ret = true;
     jsid module_init_name;
 
     module_init_name = gjs_context_get_const_string(context, GJS_STRING_MODULE_INIT);
     if (id == module_init_name)
-        return JS_TRUE;
+        return true;
 
     if (!gjs_get_string_id(context, id, &name))
-        return JS_FALSE;
+        return false;
 
     /* let Object.prototype resolve these */
     if (strcmp(name, "valueOf") == 0 ||
@@ -880,7 +877,7 @@ importer_new_resolve(JSContext *context,
     if (do_import(context, obj, priv, name)) {
         objp.set(obj);
     } else {
-        ret = JS_FALSE;
+        ret = false;
     }
     JS_EndRequest(context);
 
@@ -1116,7 +1113,7 @@ gjs_define_importer(JSContext    *context,
  * would basically be a bug, but checking for that is a lot of code so
  * we just ignore all calls after the first and hope the args are the same.
  */
-JSBool
+bool
 gjs_create_root_importer(JSContext   *context,
                          const char **initial_search_path,
                          gboolean     add_standard_search_path)
@@ -1132,7 +1129,7 @@ gjs_create_root_importer(JSContext   *context,
                   "Someone else already created root importer, ignoring second request");
 
         JS_EndRequest(context);
-        return JS_TRUE;
+        return true;
     }
 
     importer = JS::ObjectValue(*gjs_create_importer(context, "imports",
@@ -1142,18 +1139,18 @@ gjs_create_root_importer(JSContext   *context,
     gjs_set_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS, importer);
 
     JS_EndRequest(context);
-    return JS_TRUE;
+    return true;
 }
 
-JSBool
+bool
 gjs_define_root_importer_object(JSContext        *context,
                                 JS::HandleObject  in_object,
                                 JS::HandleObject  root_importer)
 {
-    JSBool success;
+    bool success;
     jsid imports_name;
 
-    success = JS_FALSE;
+    success = false;
     JS_BeginRequest(context);
 
     JS::RootedValue importer (JS_GetRuntime(context),
@@ -1168,13 +1165,13 @@ gjs_define_root_importer_object(JSContext        *context,
         goto fail;
     }
 
-    success = JS_TRUE;
+    success = true;
  fail:
     JS_EndRequest(context);
     return success;
 }
 
-JSBool
+bool
 gjs_define_root_importer(JSContext   *context,
                          JSObject    *in_object)
 {

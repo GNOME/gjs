@@ -24,6 +24,7 @@
 #ifndef __GJS_ERROR_H__
 #define __GJS_ERROR_H__
 
+#include <stdbool.h>
 #include <glib.h>
 #include <girepository.h>
 
@@ -39,9 +40,9 @@ GError*   gjs_gerror_from_error        (JSContext             *context,
 JSObject* gjs_error_from_gerror        (JSContext             *context,
                                         GError                *gerror,
                                         gboolean               add_stack);
-JSBool    gjs_typecheck_gerror         (JSContext             *context,
+bool      gjs_typecheck_gerror         (JSContext             *context,
                                         JSObject              *obj,
-                                        JSBool                 throw_error);
+                                        bool                   throw_error);
 
 G_END_DECLS
 

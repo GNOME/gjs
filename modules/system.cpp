@@ -39,12 +39,12 @@ gjs_address_of(JSContext *context,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *target_obj;
-    JSBool ret;
+    bool ret;
     char *pointer_string;
     JS::Value retval;
 
     if (!gjs_parse_call_args(context, "addressOf", "o", argv, "object", &target_obj))
-        return JS_FALSE;
+        return false;
 
     pointer_string = g_strdup_printf("%p", target_obj);
 
@@ -67,18 +67,17 @@ gjs_refcount(JSContext *context,
     GObject *obj;
 
     if (!gjs_parse_call_args(context, "refcount", "o", argv, "object", &target_obj))
-        return JS_FALSE;
+        return false;
 
-    if (!gjs_typecheck_object(context, target_obj,
-                              G_TYPE_OBJECT, JS_TRUE))
-        return JS_FALSE;
+    if (!gjs_typecheck_object(context, target_obj, G_TYPE_OBJECT, true))
+        return false;
 
     obj = gjs_g_object_from_object(context, target_obj);
     if (obj == NULL)
-        return JS_FALSE;
+        return false;
 
     argv.rval().setInt32(obj->ref_count);
-    return JS_TRUE;
+    return true;
 }
 
 static JSBool
@@ -88,10 +87,10 @@ gjs_breakpoint(JSContext *context,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     if (!gjs_parse_call_args(context, "breakpoint", "", argv))
-        return JS_FALSE;
+        return false;
     G_BREAKPOINT();
     argv.rval().setUndefined();
-    return JS_TRUE;
+    return true;
 }
 
 static JSBool
@@ -101,10 +100,10 @@ gjs_gc(JSContext *context,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     if (!gjs_parse_call_args(context, "gc", "", argv))
-        return JS_FALSE;
+        return false;
     JS_GC(JS_GetRuntime(context));
     argv.rval().setUndefined();
-    return JS_TRUE;
+    return true;
 }
 
 static JSBool
@@ -115,9 +114,9 @@ gjs_exit(JSContext *context,
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     gint32 ecode;
     if (!gjs_parse_call_args(context, "exit", "i", argv, "ecode", &ecode))
-        return JS_FALSE;
+        return false;
     exit(ecode);
-    return JS_TRUE;
+    return true;
 }
 
 static JSBool
@@ -136,7 +135,7 @@ gjs_clear_date_caches(JSContext *context,
     JS_EndRequest(context);
 
     rec.rval().setUndefined();
-    return JS_TRUE;
+    return true;
 }
 
 static JSFunctionSpec module_funcs[] = {
@@ -149,22 +148,22 @@ static JSFunctionSpec module_funcs[] = {
     { NULL },
 };
 
-JSBool
+bool
 gjs_js_define_system_stuff(JSContext  *context,
                            JSObject  **module_out)
 {
     GjsContext *gjs_context;
     char *program_name;
     JS::Value value;
-    JSBool retval;
+    bool retval;
     JSObject *module;
 
     module = JS_NewObject (context, NULL, NULL, NULL);
 
     if (!JS_DefineFunctions(context, module, &module_funcs[0]))
-        return JS_FALSE;
+        return false;
 
-    retval = JS_FALSE;
+    retval = false;
 
     gjs_context = (GjsContext*) JS_GetContextPrivate(context);
     g_object_get(gjs_context,
@@ -193,7 +192,7 @@ gjs_js_define_system_stuff(JSContext  *context,
                            GJS_MODULE_PROP_FLAGS | JSPROP_READONLY))
         goto out;
 
-    retval = JS_TRUE;
+    retval = true;
 
  out:
     g_free(program_name);

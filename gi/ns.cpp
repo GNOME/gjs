@@ -55,7 +55,7 @@ GJS_DEFINE_PRIV_FROM_JS(Ns, gjs_ns_class)
  * was not resolved; and non-null, referring to obj or one of its prototypes,
  * if id was resolved.
  */
-static JSBool
+static bool
 ns_new_resolve(JSContext *context,
                JS::HandleObject obj,
                JS::HandleId id,
@@ -66,16 +66,16 @@ ns_new_resolve(JSContext *context,
     char *name;
     GIRepository *repo;
     GIBaseInfo *info;
-    JSBool ret = JS_FALSE;
+    bool ret = false;
     gboolean defined;
 
     if (!gjs_get_string_id(context, id, &name))
-        return JS_TRUE; /* not resolved, but no error */
+        return true; /* not resolved, but no error */
 
     /* let Object.prototype resolve these */
     if (strcmp(name, "valueOf") == 0 ||
         strcmp(name, "toString") == 0) {
-        ret = JS_TRUE;
+        ret = true;
         goto out;
     }
 
@@ -85,7 +85,7 @@ ns_new_resolve(JSContext *context,
                      name, (void *)obj, priv);
 
     if (priv == NULL) {
-        ret = JS_TRUE; /* we are the prototype, or have the wrong class */
+        ret = true; /* we are the prototype, or have the wrong class */
         goto out;
     }
 
@@ -97,7 +97,7 @@ ns_new_resolve(JSContext *context,
     if (info == NULL) {
         /* No property defined, but no error either, so return TRUE */
         JS_EndRequest(context);
-        ret = JS_TRUE;
+        ret = true;
         goto out;
     }
 
@@ -111,7 +111,7 @@ ns_new_resolve(JSContext *context,
         g_base_info_unref(info);
         if (defined)
             objp.set(obj); /* we defined the property in this object */
-        ret = JS_TRUE;
+        ret = true;
     } else {
         gjs_debug(GJS_DEBUG_GNAMESPACE,
                   "Failed to define info '%s'",
@@ -126,7 +126,7 @@ ns_new_resolve(JSContext *context,
     return ret;
 }
 
-static JSBool
+static bool
 get_name (JSContext *context,
           JS::HandleObject obj,
           JS::HandleId id,
@@ -134,7 +134,7 @@ get_name (JSContext *context,
 {
     Ns *priv;
     JS::Value retval;
-    JSBool ret = JS_FALSE;
+    bool ret = false;
 
     priv = priv_from_js(context, obj);
 
@@ -143,7 +143,7 @@ get_name (JSContext *context,
 
     if (gjs_string_from_utf8(context, priv->gi_namespace, -1, &retval)) {
         *vp = retval;
-        ret = JS_TRUE;
+        ret = true;
     }
 
  out:

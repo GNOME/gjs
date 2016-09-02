@@ -24,6 +24,7 @@
 #ifndef __GJS_ARG_H__
 #define __GJS_ARG_H__
 
+#include <stdbool.h>
 #include <glib.h>
 
 #include "gjs/jsapi-util.h"
@@ -42,79 +43,79 @@ typedef enum {
     GJS_ARGUMENT_ARRAY_ELEMENT
 } GjsArgumentType;
 
-JSBool gjs_value_to_arg   (JSContext  *context,
-                           JS::Value   value,
-                           GIArgInfo  *arg_info,
-                           GArgument  *arg);
+bool gjs_value_to_arg (JSContext *context,
+                       JS::Value  value,
+                       GIArgInfo *arg_info,
+                       GArgument *arg);
 
-JSBool gjs_value_to_explicit_array (JSContext  *context,
-                                    JS::Value   value,
-                                    GIArgInfo  *arg_info,
-                                    GArgument  *arg,
-                                    gsize      *length_p);
+bool gjs_value_to_explicit_array (JSContext *context,
+                                  JS::Value  value,
+                                  GIArgInfo *arg_info,
+                                  GArgument *arg,
+                                  gsize     *length_p);
 
 void gjs_g_argument_init_default (JSContext      *context,
                                   GITypeInfo     *type_info,
                                   GArgument      *arg);
 
-JSBool gjs_value_to_g_argument (JSContext      *context,
-                                JS::Value       value,
-                                GITypeInfo     *type_info,
-                                const char     *arg_name,
-                                GjsArgumentType argument_type,
-                                GITransfer      transfer,
-                                gboolean        may_be_null,
-                                GArgument      *arg);
+bool gjs_value_to_g_argument (JSContext      *context,
+                              JS::Value       value,
+                              GITypeInfo     *type_info,
+                              const char     *arg_name,
+                              GjsArgumentType argument_type,
+                              GITransfer      transfer,
+                              gboolean        may_be_null,
+                              GArgument      *arg);
 
-JSBool gjs_value_from_g_argument (JSContext  *context,
-                                  JS::Value  *value_p,
-                                  GITypeInfo *type_info,
-                                  GArgument  *arg,
-                                  gboolean    copy_structs);
-JSBool gjs_value_from_explicit_array (JSContext  *context,
-                                      JS::Value  *value_p,
-                                      GITypeInfo *type_info,
-                                      GArgument  *arg,
-                                      int         length);
+bool gjs_value_from_g_argument (JSContext  *context,
+                                JS::Value  *value_p,
+                                GITypeInfo *type_info,
+                                GArgument  *arg,
+                                gboolean    copy_structs);
+bool gjs_value_from_explicit_array (JSContext  *context,
+                                    JS::Value  *value_p,
+                                    GITypeInfo *type_info,
+                                    GArgument  *arg,
+                                    int         length);
 
-JSBool gjs_g_argument_release    (JSContext  *context,
-                                  GITransfer  transfer,
-                                  GITypeInfo *type_info,
-                                  GArgument  *arg);
-JSBool gjs_g_argument_release_out_array (JSContext  *context,
-                                         GITransfer  transfer,
-                                         GITypeInfo *type_info,
-                                         guint       length,
-                                         GArgument  *arg);
-JSBool gjs_g_argument_release_in_array (JSContext  *context,
-                                        GITransfer  transfer,
-                                        GITypeInfo *type_info,
-                                        guint       length,
-                                        GArgument  *arg);
-JSBool gjs_g_argument_release_in_arg (JSContext  *context,
+bool gjs_g_argument_release    (JSContext  *context,
+                                GITransfer  transfer,
+                                GITypeInfo *type_info,
+                                GArgument  *arg);
+bool gjs_g_argument_release_out_array (JSContext  *context,
+                                       GITransfer  transfer,
+                                       GITypeInfo *type_info,
+                                       guint       length,
+                                       GArgument  *arg);
+bool gjs_g_argument_release_in_array (JSContext  *context,
                                       GITransfer  transfer,
                                       GITypeInfo *type_info,
+                                      guint       length,
                                       GArgument  *arg);
+bool gjs_g_argument_release_in_arg (JSContext  *context,
+                                    GITransfer  transfer,
+                                    GITypeInfo *type_info,
+                                    GArgument  *arg);
 
-JSBool _gjs_flags_value_is_valid (JSContext   *context,
-                                  GType        gtype,
-                                  gint64       value);
+bool _gjs_flags_value_is_valid (JSContext   *context,
+                                GType        gtype,
+                                gint64       value);
 
-JSBool _gjs_enum_value_is_valid (JSContext  *context,
-                                 GIEnumInfo *enum_info,
-                                 gint64      value);
+bool _gjs_enum_value_is_valid (JSContext  *context,
+                               GIEnumInfo *enum_info,
+                               gint64      value);
 
 gint64 _gjs_enum_from_int (GIEnumInfo *enum_info,
                            int         int_value);
 
-JSBool gjs_array_from_strv (JSContext   *context,
-                            JS::Value   *value_p,
-                            const char **strv);
+bool gjs_array_from_strv (JSContext   *context,
+                          JS::Value   *value_p,
+                          const char **strv);
 
-JSBool gjs_array_to_strv (JSContext   *context,
-                          JS::Value    array_value,
-                          unsigned int length,
-                          void       **arr_p);
+bool gjs_array_to_strv (JSContext   *context,
+                        JS::Value    array_value,
+                        unsigned int length,
+                        void       **arr_p);
 
 G_END_DECLS
 

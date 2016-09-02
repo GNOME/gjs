@@ -24,6 +24,7 @@
 #ifndef __GJS_FUNCTION_H__
 #define __GJS_FUNCTION_H__
 
+#include <stdbool.h>
 #include <glib.h>
 
 #include "gjs/jsapi-util.h"
@@ -66,14 +67,14 @@ JSObject* gjs_define_function   (JSContext      *context,
                                  GType           gtype,
                                  GICallableInfo *info);
 
-JSBool    gjs_invoke_c_function_uncached (JSContext      *context,
+bool      gjs_invoke_c_function_uncached (JSContext      *context,
                                           GIFunctionInfo *info,
                                           JSObject       *obj,
                                           unsigned        argc,
                                           JS::Value      *argv,
                                           JS::Value      *rval);
 
-JSBool    gjs_invoke_constructor_from_c (JSContext      *context,
+bool      gjs_invoke_constructor_from_c (JSContext      *context,
                                          JSObject       *constructor,
                                          JSObject       *obj,
                                          unsigned        argc,

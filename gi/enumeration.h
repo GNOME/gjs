@@ -24,6 +24,7 @@
 #ifndef __GJS_ENUMERATION_H__
 #define __GJS_ENUMERATION_H__
 
+#include <stdbool.h>
 #include <glib.h>
 
 #include "gjs/jsapi-util.h"
@@ -32,13 +33,13 @@
 
 G_BEGIN_DECLS
 
-JSBool    gjs_define_enum_values       (JSContext    *context,
+bool    gjs_define_enum_values         (JSContext    *context,
                                         JSObject     *in_object,
                                         GIEnumInfo   *info);
-JSBool    gjs_define_enum_static_methods(JSContext    *context,
-                                         JSObject     *constructor,
-                                         GIEnumInfo   *enum_info);
-JSBool    gjs_define_enumeration       (JSContext    *context,
+bool    gjs_define_enum_static_methods (JSContext    *context,
+                                        JSObject     *constructor,
+                                        GIEnumInfo   *enum_info);
+bool    gjs_define_enumeration         (JSContext    *context,
                                         JSObject     *in_object,
                                         GIEnumInfo   *info);
 JSObject* gjs_lookup_enumeration       (JSContext    *context,

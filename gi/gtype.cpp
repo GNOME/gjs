@@ -61,7 +61,7 @@ gjs_gtype_finalize(JSFreeOp *fop,
     g_type_set_qdata(gtype, gjs_get_gtype_wrapper_quark(), NULL);
 }
 
-static JSBool
+static bool
 to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -71,7 +71,7 @@ to_string_func(JSContext *context,
 
     GType gtype;
     gchar *strval;
-    JSBool ret;
+    bool ret;
     JS::Value retval;
 
     gtype = GPOINTER_TO_SIZE(priv_from_js(context, obj));
@@ -88,14 +88,14 @@ to_string_func(JSContext *context,
     return ret;
 }
 
-static JSBool
+static bool
 get_name_func (JSContext *context,
                JS::HandleObject obj,
                JS::HandleId id,
                JS::MutableHandleValue vp)
 {
     GType gtype;
-    JSBool ret;
+    bool ret;
     JS::Value retval;
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp.address());
 
@@ -204,10 +204,10 @@ gjs_gtype_get_actual_gtype (JSContext *context,
     return _gjs_gtype_get_actual_gtype(context, object, 2);
 }
 
-JSBool
+bool
 gjs_typecheck_gtype (JSContext             *context,
                      JSObject              *obj,
-                     JSBool                 throw_error)
+                     bool                   throw_error)
 {
     return do_base_typecheck(context, obj, throw_error);
 }

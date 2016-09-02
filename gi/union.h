@@ -24,13 +24,14 @@
 #ifndef __GJS_UNION_H__
 #define __GJS_UNION_H__
 
+#include <stdbool.h>
 #include <glib.h>
 #include <girepository.h>
 #include "gjs/jsapi-util.h"
 
 G_BEGIN_DECLS
 
-JSBool    gjs_define_union_class       (JSContext    *context,
+bool      gjs_define_union_class       (JSContext    *context,
                                         JSObject     *in_object,
                                         GIUnionInfo  *info);
 void*     gjs_c_union_from_union       (JSContext    *context,
@@ -38,11 +39,11 @@ void*     gjs_c_union_from_union       (JSContext    *context,
 JSObject* gjs_union_from_c_union       (JSContext    *context,
                                         GIUnionInfo  *info,
                                         void         *gboxed);
-JSBool    gjs_typecheck_union          (JSContext             *context,
+bool      gjs_typecheck_union          (JSContext             *context,
                                         JSObject              *obj,
                                         GIStructInfo          *expected_info,
                                         GType                  expected_type,
-                                        JSBool                 throw_error);
+                                        bool                   throw_error);
 
 G_END_DECLS
 

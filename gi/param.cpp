@@ -57,7 +57,7 @@ GJS_DEFINE_PRIV_FROM_JS(Param, gjs_param_class)
  * was not resolved; and non-null, referring to obj or one of its prototypes,
  * if id was resolved.
  */
-static JSBool
+static bool
 param_new_resolve(JSContext *context,
                   JS::HandleObject obj,
                   JS::HandleId id,
@@ -68,16 +68,16 @@ param_new_resolve(JSContext *context,
     GIFunctionInfo *method_info;
     Param *priv;
     char *name;
-    JSBool ret = JS_FALSE;
+    bool ret = false;
 
     if (!gjs_get_string_id(context, id, &name))
-        return JS_TRUE; /* not resolved, but no error */
+        return true; /* not resolved, but no error */
 
     priv = priv_from_js(context, obj);
 
     if (priv != NULL) {
         /* instance, not prototype */
-        ret = JS_TRUE;
+        ret = true;
         goto out;
     }
 
@@ -85,7 +85,7 @@ param_new_resolve(JSContext *context,
     method_info = g_object_info_find_method(info, name);
 
     if (method_info == NULL) {
-        ret = JS_TRUE;
+        ret = true;
         goto out;
     }
 #if GJS_VERBOSE_ENABLE_GI_USAGE
@@ -107,7 +107,7 @@ param_new_resolve(JSContext *context,
 
     g_base_info_unref( (GIBaseInfo*) method_info);
 
-    ret = JS_TRUE;
+    ret = true;
  out:
     g_free(name);
     if (info != NULL)
@@ -122,7 +122,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(param)
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(param);
     GJS_INC_COUNTER(param);
     GJS_NATIVE_CONSTRUCTOR_FINISH(param);
-    return JS_TRUE;
+    return true;
 }
 
 static void
@@ -307,17 +307,17 @@ gjs_g_param_from_param(JSContext    *context,
     return priv->gparam;
 }
 
-JSBool
+bool
 gjs_typecheck_param(JSContext     *context,
                     JSObject      *object,
                     GType          expected_type,
-                    JSBool         throw_error)
+                    bool           throw_error)
 {
     Param *priv;
-    JSBool result;
+    bool result;
 
     if (!do_base_typecheck(context, object, throw_error))
-        return JS_FALSE;
+        return false;
 
     priv = priv_from_js(context, object);
 
@@ -328,13 +328,13 @@ gjs_typecheck_param(JSContext     *context,
                              "cannot convert to a GObject.ParamSpec instance");
         }
 
-        return JS_FALSE;
+        return false;
     }
 
     if (expected_type != G_TYPE_NONE)
         result = g_type_is_a (G_TYPE_FROM_INSTANCE (priv->gparam), expected_type);
     else
-        result = JS_TRUE;
+        result = true;
 
     if (!result && throw_error) {
         gjs_throw_custom(context, "TypeError",

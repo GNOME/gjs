@@ -31,7 +31,7 @@
  * with something that gives us both the introspection name
  * and a memory address.
  */
-JSBool
+bool
 _gjs_proxy_to_string_func(JSContext  *context,
                           JSObject   *this_obj,
                           const char *objtype,
@@ -41,7 +41,7 @@ _gjs_proxy_to_string_func(JSContext  *context,
                           JS::Value  *rval)
 {
     GString *buf;
-    JSBool ret = JS_FALSE;
+    bool ret = false;
 
     buf = g_string_new("");
     g_string_append_c(buf, '[');
@@ -69,7 +69,7 @@ _gjs_proxy_to_string_func(JSContext  *context,
     if (!gjs_string_from_utf8 (context, buf->str, -1, rval))
         goto out;
 
-    ret = JS_TRUE;
+    ret = true;
  out:
     g_string_free (buf, TRUE);
     return ret;

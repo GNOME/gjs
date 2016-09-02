@@ -128,33 +128,33 @@ gjs_console_error_reporter(JSContext *cx, const char *message, JSErrorReport *re
 }
 
 #ifdef HAVE_LIBREADLINE
-static JSBool
+static bool
 gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
 {
     char *line;
     line = readline(prompt);
     if (!line)
-        return JS_FALSE;
+        return false;
     if (line[0] != '\0')
         add_history(line);
     *bufp = line;
-    return JS_TRUE;
+    return true;
 }
 #else
-static JSBool
+static bool
 gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
 {
     char line[256];
     fprintf(stdout, "%s", prompt);
     fflush(stdout);
     if (!fgets(line, sizeof line, file))
-        return JS_FALSE;
+        return false;
     *bufp = g_strdup(line);
-    return JS_TRUE;
+    return true;
 }
 #endif
 
-JSBool
+bool
 gjs_console_interact(JSContext *context,
                      unsigned   argc,
                      JS::Value *vp)
@@ -186,7 +186,7 @@ gjs_console_interact(JSContext *context,
         do {
             if (!gjs_console_readline(context, &temp_buf, file,
                                       startline == lineno ? "gjs> " : ".... ")) {
-                eof = JS_TRUE;
+                eof = true;
                 break;
             }
             g_string_append(buffer, temp_buf);
@@ -229,10 +229,10 @@ gjs_console_interact(JSContext *context,
     if (file != stdin)
         fclose(file);
 
-    return JS_TRUE;
+    return true;
 }
 
-JSBool
+bool
 gjs_define_console_stuff(JSContext  *context,
                          JSObject  **module_out)
 {
@@ -244,8 +244,8 @@ gjs_define_console_stuff(JSContext  *context,
                            "interact",
                            (JSNative) gjs_console_interact,
                            1, GJS_MODULE_PROP_FLAGS))
-        return JS_FALSE;
+        return false;
 
     *module_out = module;
-    return JS_TRUE;
+    return true;
 }

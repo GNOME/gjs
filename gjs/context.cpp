@@ -114,7 +114,7 @@ gjs_log(JSContext *context,
 
     if (argc != 1) {
         gjs_throw(context, "Must pass a single argument to log()");
-        return JS_FALSE;
+        return false;
     }
 
     JS_BeginRequest(context);
@@ -130,12 +130,12 @@ gjs_log(JSContext *context,
     if (jstr == NULL) {
         g_message("JS LOG: <cannot convert value to string>");
         JS_EndRequest(context);
-        return JS_TRUE;
+        return true;
     }
 
     if (!gjs_string_to_utf8(context, JS::StringValue(jstr), &s)) {
         JS_EndRequest(context);
-        return JS_FALSE;
+        return false;
     }
 
     g_message("JS LOG: %s", s);
@@ -143,7 +143,7 @@ gjs_log(JSContext *context,
 
     JS_EndRequest(context);
     argv.rval().setUndefined();
-    return JS_TRUE;
+    return true;
 }
 
 static JSBool
@@ -157,7 +157,7 @@ gjs_log_error(JSContext *context,
 
     if ((argc != 1 && argc != 2) || !argv[0].isObject()) {
         gjs_throw(context, "Must pass an exception and optionally a message to logError()");
-        return JS_FALSE;
+        return false;
     }
 
     JS_BeginRequest(context);
@@ -178,10 +178,10 @@ gjs_log_error(JSContext *context,
 
     JS_EndRequest(context);
     argv.rval().setUndefined();
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 gjs_print_parse_args(JSContext *context,
                      JS::CallArgs &argv,
                      char     **buffer)
@@ -211,7 +211,7 @@ gjs_print_parse_args(JSContext *context,
             if (!gjs_string_to_utf8(context, JS::StringValue(jstr), &s)) {
                 JS_EndRequest(context);
                 g_string_free(str, TRUE);
-                return JS_FALSE;
+                return false;
             }
 
             g_string_append(str, s);
@@ -223,14 +223,14 @@ gjs_print_parse_args(JSContext *context,
             *buffer = g_string_free(str, TRUE);
             if (!*buffer)
                 *buffer = g_strdup("<invalid string>");
-            return JS_TRUE;
+            return true;
         }
 
     }
     *buffer = g_string_free(str, FALSE);
 
     JS_EndRequest(context);
-    return JS_TRUE;
+    return true;
 }
 
 static JSBool
@@ -249,7 +249,7 @@ gjs_print(JSContext *context,
     g_free(buffer);
 
     argv.rval().setUndefined();
-    return JS_TRUE;
+    return true;
 }
 
 static JSBool
@@ -268,7 +268,7 @@ gjs_printerr(JSContext *context,
     g_free(buffer);
 
     argv.rval().setUndefined();
-    return JS_TRUE;
+    return true;
 }
 
 static void

@@ -24,8 +24,10 @@
 #ifndef __GJS_RUNTIME_H__
 #define __GJS_RUNTIME_H__
 
+#include <stdbool.h>
+
 JSRuntime * gjs_runtime_for_current_thread (void);
 
-JSBool      gjs_runtime_is_sweeping        (JSRuntime *runtime);
+bool        gjs_runtime_is_sweeping        (JSRuntime *runtime);
 
 #endif /* __GJS_RUNTIME_H__ */

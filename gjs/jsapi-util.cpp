@@ -155,12 +155,12 @@ gjs_object_require_property(JSContext       *context,
         *value_p = value;
 
     if (G_UNLIKELY (!JS_GetPropertyById(context, obj, property_name, &value)))
-        return JS_FALSE;
+        return false;
 
     if (G_LIKELY (!value.isUndefined())) {
         if (value_p)
             *value_p = value;
-        return JS_TRUE;
+        return true;
     }
 
     /* remember gjs_throw() is a no-op if JS_GetProperty()
@@ -179,7 +179,7 @@ gjs_object_require_property(JSContext       *context,
                   name, obj);
 
     g_free(name);
-    return JS_FALSE;
+    return false;
 }
 
 void
@@ -473,7 +473,7 @@ gjs_explain_scope(JSContext  *context,
     JS_EndRequest(context);
 }
 
-JSBool
+bool
 gjs_log_exception_full(JSContext *context,
                        JS::Value  exc,
                        JSString  *message)
@@ -582,15 +582,15 @@ gjs_log_exception_full(JSContext *context,
 
     JS_EndRequest(context);
 
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 log_and_maybe_keep_exception(JSContext  *context,
                              gboolean    keep)
 {
     JS::Value exc = JS::UndefinedValue();
-    JSBool retval = JS_FALSE;
+    bool retval = false;
 
     JS_BeginRequest(context);
 
@@ -608,7 +608,7 @@ log_and_maybe_keep_exception(JSContext  *context,
     if (keep)
         JS_SetPendingException(context, exc);
 
-    retval = JS_TRUE;
+    retval = true;
 
  out:
     JS_RemoveValueRoot(context, &exc);
@@ -618,13 +618,13 @@ log_and_maybe_keep_exception(JSContext  *context,
     return retval;
 }
 
-JSBool
+bool
 gjs_log_exception(JSContext  *context)
 {
     return log_and_maybe_keep_exception(context, FALSE);
 }
 
-JSBool
+bool
 gjs_log_and_keep_exception(JSContext *context)
 {
     return log_and_maybe_keep_exception(context, TRUE);
@@ -676,11 +676,11 @@ try_to_chain_stack_trace(JSContext *src_context,
     JS_EndRequest(src_context);
 }
 
-JSBool
+bool
 gjs_move_exception(JSContext      *src_context,
                    JSContext      *dest_context)
 {
-    JSBool success;
+    bool success;
 
     JS_BeginRequest(src_context);
     JS_BeginRequest(dest_context);
@@ -696,9 +696,9 @@ gjs_move_exception(JSContext      *src_context,
             JS_SetPendingException(dest_context, exc);
             JS_ClearPendingException(src_context);
         }
-        success = JS_TRUE;
+        success = true;
     } else {
-        success = JS_FALSE;
+        success = false;
     }
 
     JS_EndRequest(dest_context);
@@ -707,7 +707,7 @@ gjs_move_exception(JSContext      *src_context,
     return success;
 }
 
-JSBool
+bool
 gjs_call_function_value(JSContext      *context,
                         JSObject       *obj,
                         JS::Value       fval,
@@ -715,7 +715,7 @@ gjs_call_function_value(JSContext      *context,
                         JS::Value      *argv,
                         JS::Value      *rval)
 {
-    JSBool result;
+    bool result;
 
     JS_BeginRequest(context);
 
@@ -729,7 +729,7 @@ gjs_call_function_value(JSContext      *context,
     return result;
 }
 
-static JSBool
+static bool
 log_prop(JSContext  *context,
          JSObject   *obj,
          JS::Value   id,
@@ -754,10 +754,10 @@ log_prop(JSContext  *context,
                   what);
     }
 
-    return JS_TRUE;
+    return true;
 }
 
-JSBool
+bool
 gjs_get_prop_verbose_stub(JSContext *context,
                           JSObject  *obj,
                           JS::Value  id,
@@ -766,7 +766,7 @@ gjs_get_prop_verbose_stub(JSContext *context,
     return log_prop(context, obj, id, value_p, "get");
 }
 
-JSBool
+bool
 gjs_set_prop_verbose_stub(JSContext *context,
                           JSObject  *obj,
                           JS::Value  id,
@@ -775,7 +775,7 @@ gjs_set_prop_verbose_stub(JSContext *context,
     return log_prop(context, obj, id, value_p, "set");
 }
 
-JSBool
+bool
 gjs_add_prop_verbose_stub(JSContext *context,
                           JSObject  *obj,
                           JS::Value  id,
@@ -784,7 +784,7 @@ gjs_add_prop_verbose_stub(JSContext *context,
     return log_prop(context, obj, id, value_p, "add");
 }
 
-JSBool
+bool
 gjs_delete_prop_verbose_stub(JSContext *context,
                              JSObject  *obj,
                              JS::Value  id,
@@ -835,18 +835,18 @@ gjs_get_type_name(JS::Value value)
  *   rounded to the nearest 64-bit integer. Like JS_ValueToInt32(),
  *   undefined throws, but null => 0, false => 0, true => 1.
  */
-JSBool
+bool
 gjs_value_to_int64(JSContext      *context,
                    const JS::Value val,
                    gint64         *result)
 {
     if (val.isInt32()) {
         *result = val.toInt32();
-        return JS_TRUE;
+        return true;
     } else {
         double value_double;
         if (!JS_ValueToNumber(context, val, &value_double))
-            return JS_FALSE;
+            return false;
 
         if (isnan(value_double) ||
             value_double < G_MININT64 ||
@@ -854,15 +854,15 @@ gjs_value_to_int64(JSContext      *context,
 
             gjs_throw(context,
                       "Value is not a valid 64-bit integer");
-            return JS_FALSE;
+            return false;
         }
 
         *result = (gint64)(value_double + 0.5);
-        return JS_TRUE;
+        return true;
     }
 }
 
-static JSBool
+static bool
 gjs_parse_args_valist (JSContext  *context,
                        const char *function_name,
                        const char *format,
@@ -938,8 +938,8 @@ gjs_parse_args_valist (JSContext  *context,
         argname = va_arg (args, char *);
         arg_location = va_arg (args, gpointer);
 
-        g_return_val_if_fail (argname != NULL, JS_FALSE);
-        g_return_val_if_fail (arg_location != NULL, JS_FALSE);
+        g_return_val_if_fail (argname != NULL, false);
+        g_return_val_if_fail (arg_location != NULL, false);
 
         js_value = argv[consumed_args];
 
@@ -1053,7 +1053,7 @@ gjs_parse_args_valist (JSContext  *context,
     }
 
     JS_EndRequest(context);
-    return JS_TRUE;
+    return true;
 
  error_unwind:
     /* We still own the strings in the error case, free any we converted */
@@ -1061,7 +1061,7 @@ gjs_parse_args_valist (JSContext  *context,
         g_free (unwind_strings[i]);
     }
     JS_EndRequest(context);
-    return JS_FALSE;
+    return false;
 }
 
 /**
@@ -1098,7 +1098,7 @@ gjs_parse_args_valist (JSContext  *context,
  * A prefix character '?' means that the next value may be null, in
  * which case the C value %NULL is returned.
  */
-JSBool
+bool
 gjs_parse_args (JSContext  *context,
                 const char *function_name,
                 const char *format,
@@ -1107,14 +1107,14 @@ gjs_parse_args (JSContext  *context,
                 ...)
 {
     va_list args;
-    JSBool ret;
+    bool ret;
     va_start (args, argv);
     ret = gjs_parse_args_valist (context, function_name, format, argc, argv, args);
     va_end (args);
     return ret;
 }
 
-JSBool
+bool
 gjs_parse_call_args (JSContext    *context,
                      const char   *function_name,
                      const char   *format,
@@ -1122,7 +1122,7 @@ gjs_parse_call_args (JSContext    *context,
                      ...)
 {
     va_list args;
-    JSBool ret;
+    bool ret;
     va_start (args, call_args);
     ret = gjs_parse_args_valist (context, function_name, format, call_args.length(), call_args.array(), args);
     va_end (args);
@@ -1286,7 +1286,7 @@ gjs_strip_unix_shebang(const char  *script,
     return script;
 }
 
-JSBool
+bool
 gjs_eval_with_scope(JSContext    *context,
                     JSObject     *object,
                     const char   *script,
@@ -1308,7 +1308,7 @@ gjs_eval_with_scope(JSContext    *context,
     /* log and clear exception if it's set (should not be, normally...) */
     if (JS_IsExceptionPending(context)) {
         g_warning("gjs_eval_in_scope called with a pending exception");
-        return JS_FALSE;
+        return false;
     }
 
     if (!object)
@@ -1322,14 +1322,14 @@ gjs_eval_with_scope(JSContext    *context,
     js::RootedObject rootedObj(context, object);
 
     if (!JS::Evaluate(context, rootedObj, options, script, script_len, &retval))
-        return JS_FALSE;
+        return false;
 
     gjs_schedule_gc_if_needed(context);
 
     if (JS_IsExceptionPending(context)) {
-        g_warning("EvaluateScript returned JS_TRUE but exception was pending; "
-                  "did somebody call gjs_throw() without returning JS_FALSE?");
-        return JS_FALSE;
+        g_warning("EvaluateScript returned true but exception was pending; "
+                  "did somebody call gjs_throw() without returning false?");
+        return false;
     }
 
     gjs_debug(GJS_DEBUG_CONTEXT,
@@ -1338,5 +1338,5 @@ gjs_eval_with_scope(JSContext    *context,
     if (retval_p)
         *retval_p = retval;
 
-    return JS_TRUE;
+    return true;
 }

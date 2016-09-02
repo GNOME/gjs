@@ -43,7 +43,7 @@ JSPropertySpec gjs_cairo_gradient_proto_props[] = {
 
 /* Methods */
 
-static JSBool
+static bool
 addColorStopRGB_func(JSContext *context,
                      unsigned   argc,
                      JS::Value *vp)
@@ -59,20 +59,20 @@ addColorStopRGB_func(JSContext *context,
                         "red", &red,
                         "green", &green,
                         "blue", &blue))
-        return JS_FALSE;
+        return false;
 
     pattern = gjs_cairo_pattern_get_pattern(context, obj);
 
     cairo_pattern_add_color_stop_rgb(pattern, offset, red, green, blue);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
-        return JS_FALSE;
+        return false;
 
     argv.rval().setUndefined();
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 addColorStopRGBA_func(JSContext *context,
                       unsigned   argc,
                       JS::Value *vp)
@@ -89,16 +89,16 @@ addColorStopRGBA_func(JSContext *context,
                         "green", &green,
                         "blue", &blue,
                         "alpha", &alpha))
-        return JS_FALSE;
+        return false;
 
     pattern = gjs_cairo_pattern_get_pattern(context, obj);
     cairo_pattern_add_color_stop_rgba(pattern, offset, red, green, blue, alpha);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
-        return JS_FALSE;
+        return false;
 
     argv.rval().setUndefined();
-    return JS_TRUE;
+    return true;
 }
 
 JSFunctionSpec gjs_cairo_gradient_proto_funcs[] = {

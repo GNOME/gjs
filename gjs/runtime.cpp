@@ -27,10 +27,10 @@
 #include "runtime.h"
 
 struct RuntimeData {
-  JSBool in_gc_sweep;
+  bool in_gc_sweep;
 };
 
-JSBool
+bool
 gjs_runtime_is_sweeping (JSRuntime *runtime)
 {
   RuntimeData *data = (RuntimeData*) JS_GetRuntimePrivate(runtime);
@@ -49,7 +49,7 @@ gjs_locale_to_upper_case (JSContext *context,
                           JS::HandleString src,
                           JS::MutableHandleValue retval)
 {
-    JSBool success = JS_FALSE;
+    bool success = false;
     char *utf8 = NULL;
     char *upper_case_utf8 = NULL;
 
@@ -61,7 +61,7 @@ gjs_locale_to_upper_case (JSContext *context,
     if (!gjs_string_from_utf8(context, upper_case_utf8, -1, retval.address()))
         goto out;
 
-    success = JS_TRUE;
+    success = true;
 
 out:
     g_free(utf8);
@@ -75,7 +75,7 @@ gjs_locale_to_lower_case (JSContext *context,
                           JS::HandleString src,
                           JS::MutableHandleValue retval)
 {
-    JSBool success = JS_FALSE;
+    bool success = false;
     char *utf8 = NULL;
     char *lower_case_utf8 = NULL;
 
@@ -87,7 +87,7 @@ gjs_locale_to_lower_case (JSContext *context,
     if (!gjs_string_from_utf8(context, lower_case_utf8, -1, retval.address()))
         goto out;
 
-    success = JS_TRUE;
+    success = true;
 
 out:
     g_free(utf8);
@@ -102,7 +102,7 @@ gjs_locale_compare (JSContext *context,
                     JS::HandleString src_2,
                     JS::MutableHandleValue retval)
 {
-    JSBool success = JS_FALSE;
+    bool success = false;
     char *utf8_1 = NULL, *utf8_2 = NULL;
 
     if (!gjs_string_to_utf8(context, JS::StringValue(src_1), &utf8_1) ||
@@ -111,7 +111,7 @@ gjs_locale_compare (JSContext *context,
 
     retval.setInt32(g_utf8_collate(utf8_1, utf8_2));
 
-    success = JS_TRUE;
+    success = true;
 
 out:
     g_free(utf8_1);
@@ -125,7 +125,7 @@ gjs_locale_to_unicode (JSContext  *context,
                        const char *src,
                        JS::MutableHandleValue retval)
 {
-    JSBool success;
+    bool success;
     char *utf8;
     GError *error = NULL;
 
@@ -135,7 +135,7 @@ gjs_locale_to_unicode (JSContext  *context,
                   "Failed to convert locale string to UTF8: %s",
                   error->message);
         g_error_free(error);
-        return JS_FALSE;
+        return false;
     }
 
     success = gjs_string_from_utf8(context, utf8, -1, retval.address());
@@ -216,9 +216,9 @@ gjs_finalize_callback(JSFreeOp         *fop,
   */
 
   if (status == JSFINALIZE_GROUP_START)
-    data->in_gc_sweep = JS_TRUE;
+    data->in_gc_sweep = true;
   else if (status == JSFINALIZE_GROUP_END)
-    data->in_gc_sweep = JS_FALSE;
+    data->in_gc_sweep = false;
 }
 
 JSRuntime *

@@ -69,7 +69,7 @@ interface_finalize(JSFreeOp *fop,
     g_slice_free(Interface, priv);
 }
 
-static JSBool
+static bool
 gjs_define_static_methods(JSContext       *context,
                           JSObject        *constructor,
                           GType            gtype,
@@ -101,10 +101,10 @@ gjs_define_static_methods(JSContext       *context,
 
         g_base_info_unref((GIBaseInfo*) meth_info);
     }
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 interface_new_resolve(JSContext *context,
                       JS::HandleObject obj,
                       JS::HandleId id,
@@ -113,11 +113,11 @@ interface_new_resolve(JSContext *context,
 {
     Interface *priv;
     char *name;
-    JSBool ret = JS_FALSE;
+    bool ret = false;
     GIFunctionInfo *method_info;
 
     if (!gjs_get_string_id(context, id, &name))
-        return JS_TRUE;
+        return true;
 
     priv = priv_from_js(context, obj);
 
@@ -128,7 +128,7 @@ interface_new_resolve(JSContext *context,
      * from within GJS. In that case, it has no properties that need to be
      * resolved from within C code, as interfaces cannot inherit. */
     if (priv->info == NULL) {
-        ret = JS_TRUE;
+        ret = true;
         goto out;
     }
 
@@ -149,7 +149,7 @@ interface_new_resolve(JSContext *context,
         g_base_info_unref((GIBaseInfo*)method_info);
     }
 
-    ret = JS_TRUE;
+    ret = true;
 
  out:
     g_free (name);
@@ -182,7 +182,7 @@ JSFunctionSpec gjs_interface_proto_funcs[] = {
     { NULL }
 };
 
-JSBool
+bool
 gjs_define_interface_class(JSContext       *context,
                            JSObject        *in_object,
                            GIInterfaceInfo *info,
@@ -237,10 +237,10 @@ gjs_define_interface_class(JSContext       *context,
     if (constructor_p)
         *constructor_p = constructor;
 
-    return JS_TRUE;
+    return true;
 }
 
-JSBool
+bool
 gjs_lookup_interface_constructor(JSContext *context,
                                  GType      gtype,
                                  JS::Value *value_p)
@@ -253,7 +253,7 @@ gjs_lookup_interface_constructor(JSContext *context,
     if (interface_info == NULL) {
         gjs_throw(context, "Cannot expose non introspectable interface %s",
                   g_type_name(gtype));
-        return JS_FALSE;
+        return false;
     }
 
     g_assert(g_base_info_get_type(interface_info) ==
@@ -261,10 +261,10 @@ gjs_lookup_interface_constructor(JSContext *context,
 
     constructor = gjs_lookup_generic_constructor(context, interface_info);
     if (G_UNLIKELY (constructor == NULL))
-        return JS_FALSE;
+        return false;
 
     g_base_info_unref(interface_info);
 
     *value_p = JS::ObjectValue(*constructor);
-    return JS_TRUE;
+    return true;
 }

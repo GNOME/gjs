@@ -42,19 +42,19 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_image_surface)
                         "format", &format,
                         "width", &width,
                         "height", &height))
-        return JS_FALSE;
+        return false;
 
     surface = cairo_image_surface_create((cairo_format_t) format, width, height);
 
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
-        return JS_FALSE;
+        return false;
 
     gjs_cairo_surface_construct(context, object, surface);
     cairo_surface_destroy(surface);
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_image_surface);
 
-    return JS_TRUE;
+    return true;
 }
 
 static void
@@ -68,7 +68,7 @@ JSPropertySpec gjs_cairo_image_surface_proto_props[] = {
     { NULL }
 };
 
-static JSBool
+static bool
 createFromPNG_func(JSContext *context,
                    unsigned   argc,
                    JS::Value *vp)
@@ -80,26 +80,26 @@ createFromPNG_func(JSContext *context,
 
     if (!gjs_parse_call_args(context, "createFromPNG", "s", argv,
                         "filename", &filename))
-        return JS_FALSE;
+        return false;
 
     surface = cairo_image_surface_create_from_png(filename);
 
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
-        return JS_FALSE;
+        return false;
 
     surface_wrapper = JS_NewObject(context, &gjs_cairo_image_surface_class, NULL, NULL);
     if (!surface_wrapper) {
         gjs_throw(context, "failed to create surface");
-        return JS_FALSE;
+        return false;
     }
     gjs_cairo_surface_construct(context, surface_wrapper, surface);
     cairo_surface_destroy(surface);
 
     argv.rval().setObject(*surface_wrapper);
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 getFormat_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -112,20 +112,20 @@ getFormat_func(JSContext *context,
 
     if (argc > 1) {
         gjs_throw(context, "ImageSurface.getFormat() takes no arguments");
-        return JS_FALSE;
+        return false;
     }
 
     surface = gjs_cairo_surface_get_surface(context, obj);
     format = cairo_image_surface_get_format(surface);
 
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
-        return JS_FALSE;
+        return false;
 
     rec.rval().setInt32(format);
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 getWidth_func(JSContext *context,
               unsigned   argc,
               JS::Value *vp)
@@ -138,20 +138,20 @@ getWidth_func(JSContext *context,
 
     if (argc > 1) {
         gjs_throw(context, "ImageSurface.getWidth() takes no arguments");
-        return JS_FALSE;
+        return false;
     }
 
     surface = gjs_cairo_surface_get_surface(context, obj);
     width = cairo_image_surface_get_width(surface);
 
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
-        return JS_FALSE;
+        return false;
 
     rec.rval().setInt32(width);
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 getHeight_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -164,20 +164,20 @@ getHeight_func(JSContext *context,
 
     if (argc > 1) {
         gjs_throw(context, "ImageSurface.getHeight() takes no arguments");
-        return JS_FALSE;
+        return false;
     }
 
     surface = gjs_cairo_surface_get_surface(context, obj);
     height = cairo_image_surface_get_height(surface);
 
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
-        return JS_FALSE;
+        return false;
 
     rec.rval().setInt32(height);
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 getStride_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -190,17 +190,17 @@ getStride_func(JSContext *context,
 
     if (argc > 1) {
         gjs_throw(context, "ImageSurface.getStride() takes no arguments");
-        return JS_FALSE;
+        return false;
     }
 
     surface = gjs_cairo_surface_get_surface(context, obj);
     stride = cairo_image_surface_get_stride(surface);
 
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
-        return JS_FALSE;
+        return false;
 
     rec.rval().setInt32(stride);
-    return JS_TRUE;
+    return true;
 }
 
 JSFunctionSpec gjs_cairo_image_surface_proto_funcs[] = {

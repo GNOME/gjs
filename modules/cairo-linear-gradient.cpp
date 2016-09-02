@@ -42,19 +42,19 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_linear_gradient)
                         "y0", &y0,
                         "x1", &x1,
                         "y1", &y1))
-        return JS_FALSE;
+        return false;
 
     pattern = cairo_pattern_create_linear(x0, y0, x1, y1);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
-        return JS_FALSE;
+        return false;
 
     gjs_cairo_pattern_construct(context, object, pattern);
     cairo_pattern_destroy(pattern);
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_linear_gradient);
 
-    return JS_TRUE;
+    return true;
 }
 
 static void

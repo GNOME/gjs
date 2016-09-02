@@ -56,7 +56,7 @@ GJS_DEFINE_PRIV_FROM_JS(Repo, gjs_repo_class)
 
 static JSObject * lookup_override_function(JSContext *, jsid);
 
-static JSBool
+static bool
 get_version_for_ns (JSContext *context,
                     JSObject  *repo_obj,
                     jsid       ns_id,
@@ -71,7 +71,7 @@ get_version_for_ns (JSContext *context,
     if (!gjs_object_require_property(context, repo_obj, "GI repository object", versions_name, &versions_val) ||
         !versions_val.isObject()) {
         gjs_throw(context, "No 'versions' property in GI repository object");
-        return JS_FALSE;
+        return false;
     }
 
     versions = &versions_val.toObject();
@@ -82,10 +82,10 @@ get_version_for_ns (JSContext *context,
         gjs_string_to_utf8(context, version_val, version);
     }
 
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 resolve_namespace_object(JSContext  *context,
                          JSObject   *repo_obj,
                          jsid        ns_id,
@@ -97,7 +97,7 @@ resolve_namespace_object(JSContext  *context,
     JSObject *override;
     JS::Value result;
     JSObject *gi_namespace = NULL;
-    JSBool ret = JS_FALSE;
+    bool ret = false;
 
     JS_BeginRequest(context);
 
@@ -147,7 +147,7 @@ resolve_namespace_object(JSContext  *context,
     gjs_debug(GJS_DEBUG_GNAMESPACE,
               "Defined namespace '%s' %p in GIRepository %p", ns_name, gi_namespace, repo_obj);
 
-    ret = JS_TRUE;
+    ret = true;
     gjs_schedule_gc_if_needed(context);
 
  out:
@@ -170,7 +170,7 @@ resolve_namespace_object(JSContext  *context,
  * was not resolved; and non-null, referring to obj or one of its prototypes,
  * if id was resolved.
  */
-static JSBool
+static bool
 repo_new_resolve(JSContext *context,
                  JS::HandleObject obj,
                  JS::HandleId id,
@@ -179,10 +179,10 @@ repo_new_resolve(JSContext *context,
 {
     Repo *priv;
     char *name;
-    JSBool ret = JS_TRUE;
+    bool ret = true;
 
     if (!gjs_get_string_id(context, id, &name))
-        return JS_TRUE; /* not resolved, but no error */
+        return true; /* not resolved, but no error */
 
     /* let Object.prototype resolve these */
     if (strcmp(name, "valueOf") == 0 ||
@@ -197,7 +197,7 @@ repo_new_resolve(JSContext *context,
         goto out;
 
     if (!resolve_namespace_object(context, obj, id, name)) {
-        ret = JS_FALSE;
+        ret = false;
     } else {
         objp.set(obj); /* store the object we defined the prop in */
     }
@@ -340,7 +340,7 @@ repo_new(JSContext *context)
     return repo;
 }
 
-JSBool
+bool
 gjs_define_repo(JSContext  *context,
                 JSObject  **module_out,
                 const char *name)
@@ -350,10 +350,10 @@ gjs_define_repo(JSContext  *context,
     repo = repo_new(context);
     *module_out = repo;
 
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 gjs_define_constant(JSContext      *context,
                     JSObject       *in_object,
                     GIConstantInfo *info)
@@ -362,7 +362,7 @@ gjs_define_constant(JSContext      *context,
     GArgument garg = { 0, };
     GITypeInfo *type_info;
     const char *name;
-    JSBool ret = JS_FALSE;
+    bool ret = false;
 
     type_info = g_constant_info_get_type(info);
     g_constant_info_get_value(info, &garg);
@@ -376,7 +376,7 @@ gjs_define_constant(JSContext      *context,
                           name, value,
                           NULL, NULL,
                           GJS_MODULE_PROP_FLAGS))
-        ret = JS_TRUE;
+        ret = true;
 
  out:
     g_constant_info_free_value (info, &garg);
@@ -450,7 +450,7 @@ _gjs_log_info_usage(GIBaseInfo *info)
 }
 #endif /* GJS_VERBOSE_ENABLE_GI_USAGE */
 
-JSBool
+bool
 gjs_define_info(JSContext  *context,
                 JSObject   *in_object,
                 GIBaseInfo *info,
@@ -468,7 +468,7 @@ gjs_define_info(JSContext  *context,
             JSObject *f;
             f = gjs_define_function(context, in_object, 0, (GICallableInfo*) info);
             if (f == NULL)
-                return JS_FALSE;
+                return false;
         }
         break;
     case GI_INFO_TYPE_OBJECT:
@@ -485,13 +485,13 @@ gjs_define_info(JSContext  *context,
                     gjs_throw (context,
                                "Unsupported fundamental class creation for type %s",
                                g_type_name(gtype));
-                    return JS_FALSE;
+                    return false;
                 }
             } else {
                 gjs_throw (context,
                            "Unsupported type %s, deriving from fundamental %s",
                            g_type_name(gtype), g_type_name(g_type_fundamental(gtype)));
-                return JS_FALSE;
+                return false;
             }
         }
         break;
@@ -511,7 +511,7 @@ gjs_define_info(JSContext  *context,
         break;
     case GI_INFO_TYPE_UNION:
         if (!gjs_define_union_class(context, in_object, (GIUnionInfo*) info))
-            return JS_FALSE;
+            return false;
         break;
     case GI_INFO_TYPE_ENUM:
         if (g_enum_info_get_error_domain((GIEnumInfo*) info)) {
@@ -523,11 +523,11 @@ gjs_define_info(JSContext  *context,
 
     case GI_INFO_TYPE_FLAGS:
         if (!gjs_define_enumeration(context, in_object, (GIEnumInfo*) info))
-            return JS_FALSE;
+            return false;
         break;
     case GI_INFO_TYPE_CONSTANT:
         if (!gjs_define_constant(context, in_object, (GIConstantInfo*) info))
-            return JS_FALSE;
+            return false;
         break;
     case GI_INFO_TYPE_INTERFACE:
         gjs_define_interface_class(context, in_object, (GIInterfaceInfo *) info,
@@ -539,10 +539,10 @@ gjs_define_info(JSContext  *context,
                   gjs_info_type_name(g_base_info_get_type(info)),
                   g_base_info_get_namespace(info),
                   g_base_info_get_name(info));
-        return JS_FALSE;
+        return false;
     }
 
-    return JS_TRUE;
+    return true;
 }
 
 /* Get the "unknown namespace", which should be used for unnamespaced types */

@@ -28,17 +28,18 @@
 #error "Only <gjs/gjs-module.h> can be included directly."
 #endif
 
+#include <stdbool.h>
 #include <glib.h>
 #include "gjs/jsapi-util.h"
 
 G_BEGIN_DECLS
 
-JSBool    gjs_create_root_importer (JSContext   *context,
+bool      gjs_create_root_importer (JSContext   *context,
                                     const char **initial_search_path,
                                     gboolean     add_standard_search_path);
-JSBool    gjs_define_root_importer (JSContext   *context,
+bool      gjs_define_root_importer (JSContext   *context,
                                     JSObject    *in_object);
-JSBool    gjs_define_root_importer_object(JSContext        *context,
+bool      gjs_define_root_importer_object(JSContext        *context,
                                           JS::HandleObject  in_object,
                                           JS::HandleObject  root_importer);
 JSObject* gjs_define_importer      (JSContext   *context,

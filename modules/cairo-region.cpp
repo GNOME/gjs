@@ -49,7 +49,7 @@ get_region(JSContext *context,
         return priv->region;
 }
 
-static JSBool
+static bool
 fill_rectangle(JSContext *context, JSObject *obj,
                cairo_rectangle_int_t *rect);
 
@@ -62,7 +62,7 @@ fill_rectangle(JSContext *context, JSObject *obj,
     return gjs_cairo_check_status(context, cairo_region_status(this_region), "region");
 
 #define REGION_DEFINE_REGION_FUNC(method)                       \
-    static JSBool                                               \
+    static bool                                                 \
     method##_func(JSContext *context,                           \
                   unsigned argc,                                \
                   JS::Value *vp)                                \
@@ -72,7 +72,7 @@ fill_rectangle(JSContext *context, JSObject *obj,
         cairo_region_t *other_region;                           \
         if (!gjs_parse_call_args(context, #method, "o", argv,   \
                             "other_region", &other_obj))        \
-            return JS_FALSE;                                    \
+            return false;                                       \
                                                                 \
         this_region = get_region(context, obj);                 \
         other_region = get_region(context, other_obj);          \
@@ -83,7 +83,7 @@ fill_rectangle(JSContext *context, JSObject *obj,
     }
 
 #define REGION_DEFINE_RECT_FUNC(method)                         \
-    static JSBool                                               \
+    static bool                                                 \
     method##_rectangle_func(JSContext *context,                 \
                             unsigned argc,                      \
                             JS::Value *vp)                      \
@@ -93,10 +93,10 @@ fill_rectangle(JSContext *context, JSObject *obj,
         cairo_rectangle_int_t rect;                             \
         if (!gjs_parse_call_args(context, #method, "o", argv,   \
                             "rect", &rect_obj))                 \
-            return JS_FALSE;                                    \
+            return false;                                       \
                                                                 \
         if (!fill_rectangle(context, rect_obj, &rect))          \
-            return JS_FALSE;                                    \
+            return false;                                       \
                                                                 \
         cairo_region_##method##_rectangle(this_region, &rect);  \
             argv.rval().setUndefined();                         \
@@ -113,33 +113,33 @@ REGION_DEFINE_RECT_FUNC(subtract)
 REGION_DEFINE_RECT_FUNC(intersect)
 REGION_DEFINE_RECT_FUNC(xor)
 
-static JSBool
+static bool
 fill_rectangle(JSContext *context, JSObject *obj,
                cairo_rectangle_int_t *rect)
 {
     JS::Value val;
 
     if (!gjs_object_get_property_const(context, obj, GJS_STRING_X, &val))
-        return JS_FALSE;
+        return false;
     if (!JS_ValueToInt32(context, val, &rect->x))
-        return JS_FALSE;
+        return false;
 
     if (!gjs_object_get_property_const(context, obj, GJS_STRING_Y, &val))
-        return JS_FALSE;
+        return false;
     if (!JS_ValueToInt32(context, val, &rect->y))
-        return JS_FALSE;
+        return false;
 
     if (!gjs_object_get_property_const(context, obj, GJS_STRING_WIDTH, &val))
-        return JS_FALSE;
+        return false;
     if (!JS_ValueToInt32(context, val, &rect->width))
-        return JS_FALSE;
+        return false;
 
     if (!gjs_object_get_property_const(context, obj, GJS_STRING_HEIGHT, &val))
-        return JS_FALSE;
+        return false;
     if (!JS_ValueToInt32(context, val, &rect->height))
-        return JS_FALSE;
+        return false;
 
-    return JS_TRUE;
+    return true;
 }
 
 static JSObject *
@@ -164,7 +164,7 @@ make_rectangle(JSContext *context,
     return rect_obj;
 }
 
-static JSBool
+static bool
 num_rectangles_func(JSContext *context,
                     unsigned argc,
                     JS::Value *vp)
@@ -173,14 +173,14 @@ num_rectangles_func(JSContext *context,
     int n_rects;
 
     if (!gjs_parse_call_args(context, "num_rectangles", "", argv))
-        return JS_FALSE;
+        return false;
 
     n_rects = cairo_region_num_rectangles(this_region);
     argv.rval().setInt32(n_rects);
     RETURN_STATUS;
 }
 
-static JSBool
+static bool
 get_rectangle_func(JSContext *context,
                    unsigned argc,
                    JS::Value *vp)
@@ -191,7 +191,7 @@ get_rectangle_func(JSContext *context,
     cairo_rectangle_int_t rect;
 
     if (!gjs_parse_call_args(context, "get_rectangle", "i", argv, "rect", &i))
-        return JS_FALSE;
+        return false;
 
     cairo_region_get_rectangle(this_region, i, &rect);
     rect_obj = make_rectangle(context, &rect);
@@ -245,7 +245,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_region)
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_region);
 
     if (!gjs_parse_call_args(context, "Region", "", argv))
-        return JS_FALSE;
+        return false;
 
     region = cairo_region_create();
 
@@ -254,7 +254,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_region)
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_region);
 
-    return JS_TRUE;
+    return true;
 }
 
 static void
@@ -285,7 +285,7 @@ gjs_cairo_region_from_region(JSContext *context,
     return object;
 }
 
-static JSBool
+static bool
 region_to_g_argument(JSContext      *context,
                      JS::Value       value,
                      const char     *arg_name,
@@ -300,15 +300,15 @@ region_to_g_argument(JSContext      *context,
     obj = &value.toObject();
     region = get_region(context, obj);
     if (!region)
-        return JS_FALSE;
+        return false;
     if (transfer == GI_TRANSFER_EVERYTHING)
         cairo_region_destroy(region);
 
     arg->v_pointer = region;
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 region_from_g_argument(JSContext  *context,
                        JS::Value  *value_p,
                        GArgument  *arg)
@@ -317,19 +317,19 @@ region_from_g_argument(JSContext  *context,
 
     obj = gjs_cairo_region_from_region(context, (cairo_region_t*)arg->v_pointer);
     if (!obj)
-        return JS_FALSE;
+        return false;
 
     *value_p = JS::ObjectValue(*obj);
-    return JS_TRUE;
+    return true;
 }
 
-static JSBool
+static bool
 region_release_argument(JSContext  *context,
                         GITransfer  transfer,
                         GArgument  *arg)
 {
     cairo_region_destroy((cairo_region_t*)arg->v_pointer);
-    return JS_TRUE;
+    return true;
 }
 
 static GjsForeignInfo foreign_info = {

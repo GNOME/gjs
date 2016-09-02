@@ -30,11 +30,11 @@
 
 G_BEGIN_DECLS
 
-JSBool        gjs_define_console_stuff     (JSContext      *context,
-                                            JSObject      **module_out);
-JSBool        gjs_console_interact         (JSContext      *context,
-                                            unsigned        argc,
-                                            JS::Value      *vp);
+bool        gjs_define_console_stuff     (JSContext      *context,
+                                          JSObject      **module_out);
+bool        gjs_console_interact         (JSContext      *context,
+                                          unsigned        argc,
+                                          JS::Value      *vp);
 
 G_END_DECLS
 

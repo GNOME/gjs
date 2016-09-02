@@ -49,7 +49,7 @@ gjs_new_object_for_constructor(JSContext *context,
     return JS_NewObjectForConstructor(context, clasp, vp);
 }
 
-JSBool
+bool
 gjs_init_class_dynamic(JSContext       *context,
                        JSObject        *in_object,
                        JSObject        *parent_proto,
@@ -72,7 +72,7 @@ gjs_init_class_dynamic(JSContext       *context,
     JSObject * volatile constructor;
     JSFunction * volatile constructor_fun;
     char *full_function_name = NULL;
-    JSBool res = JS_FALSE;
+    bool res = false;
 
     /* Without a name, JS_NewObject fails */
     g_assert (clasp->name != NULL);
@@ -141,7 +141,7 @@ gjs_init_class_dynamic(JSContext       *context,
     if (prototype_p)
         *prototype_p = prototype;
 
-    res = JS_TRUE;
+    res = true;
 
     prototype = NULL;
     constructor_fun = NULL;
@@ -163,11 +163,11 @@ format_dynamic_class_name (const char *name)
         return name;
 }
 
-JSBool
+bool
 gjs_typecheck_instance(JSContext *context,
                        JSObject  *obj,
                        JSClass   *static_clasp,
-                       JSBool     throw_error)
+                       bool       throw_error)
 {
     if (!JS_InstanceOf(context, obj, static_clasp, NULL)) {
         if (throw_error) {
@@ -178,10 +178,10 @@ gjs_typecheck_instance(JSContext *context,
                              obj, static_clasp->name, format_dynamic_class_name (obj_class->name));
         }
 
-        return JS_FALSE;
+        return false;
     }
 
-    return JS_TRUE;
+    return true;
 }
 
 JSObject*

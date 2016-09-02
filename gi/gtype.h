@@ -25,6 +25,7 @@
 #ifndef __GJS_GTYPE_H__
 #define __GJS_GTYPE_H__
 
+#include <stdbool.h>
 #include <glib.h>
 #include <girepository.h>
 #include "gjs/jsapi-util.h"
@@ -42,9 +43,9 @@ JSObject * gjs_gtype_create_gtype_wrapper (JSContext *context,
 GType      gjs_gtype_get_actual_gtype (JSContext *context,
                                        JSObject  *object);
 
-JSBool    gjs_typecheck_gtype         (JSContext             *context,
-                                       JSObject              *obj,
-                                       JSBool                 throw_error);
+bool        gjs_typecheck_gtype         (JSContext             *context,
+                                         JSObject              *obj,
+                                         bool                   throw_error);
 
 const char *gjs_get_names_from_gtype_and_gi_info(GType        gtype,
                                                  GIBaseInfo  *info,

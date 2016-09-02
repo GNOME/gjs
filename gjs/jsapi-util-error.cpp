@@ -48,7 +48,7 @@ gjs_throw_valist(JSContext       *context,
                  va_list          args)
 {
     char *s;
-    JSBool result;
+    bool result;
     JS::Value v_constructor, v_message;
     JSObject *err_obj;
 
@@ -75,7 +75,7 @@ gjs_throw_valist(JSContext       *context,
         return;
     }
 
-    result = JS_FALSE;
+    result = false;
 
     if (!gjs_string_from_utf8(context, s, -1, &v_message)) {
         JS_ReportError(context, "Failed to copy exception string");
@@ -92,7 +92,7 @@ gjs_throw_valist(JSContext       *context,
     err_obj = JS_New(context, &v_constructor.toObject(), 1, &v_message);
     JS_SetPendingException(context, JS::ObjectOrNullValue(err_obj));
 
-    result = JS_TRUE;
+    result = true;
 
  out:
 

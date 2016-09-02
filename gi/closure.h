@@ -24,6 +24,7 @@
 #ifndef __GJS_CLOSURE_H__
 #define __GJS_CLOSURE_H__
 
+#include <stdbool.h>
 #include <glib-object.h>
 
 #include "gjs/jsapi-util.h"

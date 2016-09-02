@@ -25,21 +25,22 @@
 #ifndef __GJS_INTERFACE_H__
 #define __GJS_INTERFACE_H__
 
+#include <stdbool.h>
 #include <glib.h>
 #include <girepository.h>
 #include "gjs/jsapi-util.h"
 
 G_BEGIN_DECLS
 
-JSBool gjs_define_interface_class (JSContext       *context,
-                                   JSObject        *in_object,
-                                   GIInterfaceInfo *info,
-                                   GType            gtype,
-                                   JSObject       **constructor_p);
+bool gjs_define_interface_class (JSContext       *context,
+                                 JSObject        *in_object,
+                                 GIInterfaceInfo *info,
+                                 GType            gtype,
+                                 JSObject       **constructor_p);
 
-JSBool gjs_lookup_interface_constructor (JSContext     *context,
-                                         GType          gtype,
-                                         JS::Value     *value_p);
+bool gjs_lookup_interface_constructor (JSContext     *context,
+                                       GType          gtype,
+                                       JS::Value     *value_p);
 
 G_END_DECLS
 

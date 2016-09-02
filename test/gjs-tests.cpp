@@ -150,9 +150,9 @@ gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(void)
     global = gjs_get_global_object(context);
     JSCompartment *oldCompartment = JS_EnterCompartment(context, global);
 
-    g_assert(gjs_string_from_utf8(context, utf8_string, -1, &js_string) == JS_TRUE);
+    g_assert(gjs_string_from_utf8(context, utf8_string, -1, &js_string));
     g_assert(js_string.isString());
-    g_assert(gjs_string_to_utf8(context, js_string, &utf8_result) == JS_TRUE);
+    g_assert(gjs_string_to_utf8(context, js_string, &utf8_result));
 
     JS_LeaveCompartment(context, oldCompartment);
     _gjs_unit_test_fixture_finish(&fixture);

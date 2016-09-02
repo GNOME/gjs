@@ -225,7 +225,7 @@ find_fundamental_constructor(JSContext    *context,
 
 /**/
 
-static JSBool
+static bool
 fundamental_instance_new_resolve_interface(JSContext    *context,
                                            JS::HandleObject obj,
                                            JS::MutableHandleObject objp,
@@ -233,12 +233,12 @@ fundamental_instance_new_resolve_interface(JSContext    *context,
                                            char         *name)
 {
     GIFunctionInfo *method_info;
-    JSBool ret;
+    bool ret;
     GType *interfaces;
     guint n_interfaces;
     guint i;
 
-    ret = JS_TRUE;
+    ret = true;
     interfaces = g_type_interfaces(proto_priv->gtype, &n_interfaces);
     for (i = 0; i < n_interfaces; i++) {
         GIBaseInfo *base_info;
@@ -267,7 +267,7 @@ fundamental_instance_new_resolve_interface(JSContext    *context,
                                         (GICallableInfo *) method_info)) {
                     objp.set(obj);
                 } else {
-                    ret = JS_FALSE;
+                    ret = false;
                 }
             }
 
@@ -292,7 +292,7 @@ fundamental_instance_new_resolve_interface(JSContext    *context,
  * was not resolved; and non-null, referring to obj or one of its prototypes,
  * if id was resolved.
  */
-static JSBool
+static bool
 fundamental_instance_new_resolve(JSContext  *context,
                                  JS::HandleObject obj,
                                  JS::HandleId id,
@@ -301,10 +301,10 @@ fundamental_instance_new_resolve(JSContext  *context,
 {
     FundamentalInstance *priv;
     char *name;
-    JSBool ret = JS_FALSE;
+    bool ret = false;
 
     if (!gjs_get_string_id(context, id, &name))
-        return JS_TRUE; /* not resolved, but no error */
+        return true; /* not resolved, but no error */
 
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GFUNDAMENTAL,
@@ -339,7 +339,7 @@ fundamental_instance_new_resolve(JSContext  *context,
                               g_base_info_get_namespace((GIBaseInfo *) proto_priv->info),
                               g_base_info_get_name((GIBaseInfo *) proto_priv->info));
                     g_base_info_unref((GIBaseInfo *) method_info);
-                    ret = JS_TRUE;
+                    ret = true;
                     goto out;
                 }
 
@@ -373,13 +373,13 @@ fundamental_instance_new_resolve(JSContext  *context,
          */
     }
 
-    ret = JS_TRUE;
+    ret = true;
  out:
     g_free(name);
     return ret;
 }
 
-static JSBool
+static bool
 fundamental_invoke_constructor(FundamentalInstance *priv,
                                JSContext           *context,
                                JSObject            *obj,
@@ -389,7 +389,7 @@ fundamental_invoke_constructor(FundamentalInstance *priv,
 {
     JS::Value js_constructor, js_constructor_func;
     jsid constructor_const;
-    JSBool ret = JS_FALSE;
+    bool ret = false;
 
     constructor_const = gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR);
     if (!gjs_object_require_property(context, obj, NULL,
@@ -441,7 +441,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(fundamental_instance)
                         object, priv);
 
     if (!fundamental_invoke_constructor(priv, context, object, argc, argv.array(), &ret_value))
-        return JS_FALSE;
+        return false;
 
     associate_js_instance_to_fundamental(context, object, ret_value.v_pointer, FALSE);
 
@@ -451,11 +451,11 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(fundamental_instance)
                                  g_callable_info_get_caller_owns((GICallableInfo*) priv->prototype->constructor_info),
                                  &return_info,
                                  &ret_value))
-        return JS_FALSE;
+        return false;
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(fundamental_instance);
 
-    return JS_TRUE;
+    return true;
 }
 
 static void
@@ -495,7 +495,7 @@ fundamental_finalize(JSFreeOp  *fop,
     }
 }
 
-static JSBool
+static bool
 to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -504,7 +504,7 @@ to_string_func(JSContext *context,
     JSObject *obj = rec.thisv().toObjectOrNull();
 
     FundamentalInstance *priv;
-    JSBool ret = JS_FALSE;
+    bool ret = false;
     JS::Value retval;
 
     if (!priv_from_js_with_typecheck(context, obj, &priv))
@@ -528,7 +528,7 @@ to_string_func(JSContext *context,
             goto out;
     }
 
-    ret = JS_TRUE;
+    ret = true;
     rec.rval().set(retval);
  out:
     return ret;
@@ -640,7 +640,7 @@ gjs_lookup_fundamental_prototype_from_gtype(JSContext *context,
     return proto;
 }
 
-JSBool
+bool
 gjs_define_fundamental_class(JSContext     *context,
                              JSObject      *in_object,
                              GIObjectInfo  *info,
@@ -744,7 +744,7 @@ gjs_define_fundamental_class(JSContext     *context,
     if (prototype_p)
         *prototype_p = prototype;
 
-    return JS_TRUE;
+    return true;
 }
 
 JSObject*
@@ -839,25 +839,25 @@ gjs_g_fundamental_from_object(JSContext *context,
     return priv->gfundamental;
 }
 
-JSBool
+bool
 gjs_typecheck_is_fundamental(JSContext     *context,
                              JSObject      *object,
-                             JSBool         throw_error)
+                             bool           throw_error)
 {
     return do_base_typecheck(context, object, throw_error);
 }
 
-JSBool
+bool
 gjs_typecheck_fundamental(JSContext *context,
                           JSObject  *object,
                           GType      expected_gtype,
-                          JSBool     throw_error)
+                          bool       throw_error)
 {
     FundamentalInstance *priv;
-    JSBool result;
+    bool result;
 
     if (!do_base_typecheck(context, object, throw_error))
-        return JS_FALSE;
+        return false;
 
     priv = priv_from_js(context, object);
     g_assert(priv != NULL);
@@ -871,13 +871,13 @@ gjs_typecheck_fundamental(JSContext *context,
                       proto_priv->info ? g_base_info_get_name((GIBaseInfo *) proto_priv->info) : g_type_name(proto_priv->gtype));
         }
 
-        return JS_FALSE;
+        return false;
     }
 
     if (expected_gtype != G_TYPE_NONE)
         result = g_type_is_a(priv->prototype->gtype, expected_gtype);
     else
-        result = JS_TRUE;
+        result = true;
 
     if (!result && throw_error) {
         if (priv->prototype->info) {

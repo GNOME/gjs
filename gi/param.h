@@ -24,6 +24,7 @@
 #ifndef __GJS_PARAM_H__
 #define __GJS_PARAM_H__
 
+#include <stdbool.h>
 #include <glib.h>
 #include <girepository.h>
 #include "gjs/jsapi-util.h"
@@ -36,10 +37,10 @@ GParamSpec* gjs_g_param_from_param     (JSContext  *context,
                                         JSObject   *obj);
 JSObject*   gjs_param_from_g_param     (JSContext  *context,
                                         GParamSpec *param);
-JSBool      gjs_typecheck_param        (JSContext  *context,
+bool        gjs_typecheck_param        (JSContext  *context,
                                         JSObject   *obj,
                                         GType       expected_type,
-                                        JSBool      throw_error);
+                                        bool        throw_error);
 
 G_END_DECLS
 
