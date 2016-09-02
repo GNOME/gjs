@@ -27,6 +27,7 @@
 #include <stdbool.h>
 
 #include <glib-object.h>
+#include <mozilla/Maybe.h>
 
 #include "jsapi-wrapper.h"
 #include "gjs/runtime.h"

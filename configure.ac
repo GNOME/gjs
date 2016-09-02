@@ -57,7 +57,7 @@ m4_define(glib_required_version, 2.50.0)
 GOBJECT_INTROSPECTION_REQUIRE([1.41.4])
 
 GOBJECT_REQUIREMENT="gobject-2.0 >= glib_required_version"
-common_packages="gthread-2.0 gio-2.0 >= glib_required_version mozjs-24"
+common_packages="gthread-2.0 gio-2.0 >= glib_required_version mozjs-31"
 gjs_packages="gobject-introspection-1.0 libffi $common_packages"
 gjs_cairo_packages="cairo cairo-gobject $common_packages"
 gjs_gdbus_packages="$GOBJECT_REQUIREMENT gio-2.0"
