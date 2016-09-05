@@ -34,9 +34,9 @@
 static struct {
     char *gi_namespace;
     char *module; // relative to "imports."
-    gboolean loaded;
+    bool loaded;
 } foreign_modules[] = {
-    { (char*)"cairo", (char*)"cairo", FALSE },
+    { (char*)"cairo", (char*)"cairo", false },
     { NULL }
 };
 
@@ -84,7 +84,7 @@ gjs_foreign_load_foreign_module(JSContext *context,
             return false;
         }
         g_free(script);
-        foreign_modules[i].loaded = TRUE;
+        foreign_modules[i].loaded = true;
         return true;
     }
 
@@ -144,7 +144,7 @@ gjs_struct_foreign_convert_to_g_argument(JSContext      *context,
                                          const char     *arg_name,
                                          GjsArgumentType argument_type,
                                          GITransfer      transfer,
-                                         gboolean        may_be_null,
+                                         bool            may_be_null,
                                          GArgument      *arg)
 {
     GjsForeignInfo *foreign;

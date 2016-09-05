@@ -67,7 +67,7 @@ ns_new_resolve(JSContext *context,
     GIRepository *repo;
     GIBaseInfo *info;
     bool ret = false;
-    gboolean defined;
+    bool defined;
 
     if (!gjs_get_string_id(context, id, &name))
         return true; /* not resolved, but no error */
@@ -95,7 +95,7 @@ ns_new_resolve(JSContext *context,
 
     info = g_irepository_find_by_name(repo, priv->gi_namespace, name);
     if (info == NULL) {
-        /* No property defined, but no error either, so return TRUE */
+        /* No property defined, but no error either, so return true */
         JS_EndRequest(context);
         ret = true;
         goto out;

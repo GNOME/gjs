@@ -36,7 +36,7 @@ G_BEGIN_DECLS
 
 bool      gjs_create_root_importer (JSContext   *context,
                                     const char **initial_search_path,
-                                    gboolean     add_standard_search_path);
+                                    bool         add_standard_search_path);
 bool      gjs_define_root_importer (JSContext   *context,
                                     JSObject    *in_object);
 bool      gjs_define_root_importer_object(JSContext        *context,
@@ -46,7 +46,7 @@ JSObject* gjs_define_importer      (JSContext   *context,
                                     JSObject    *in_object,
                                     const char  *importer_name,
                                     const char **initial_search_path,
-                                    gboolean     add_standard_search_path);
+                                    bool         add_standard_search_path);
 
 G_END_DECLS
 

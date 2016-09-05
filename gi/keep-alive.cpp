@@ -96,7 +96,7 @@ keep_alive_finalize(JSFreeOp *fop,
     if (priv == NULL)
         return; /* we are the prototype, not a real instance */
 
-    priv->inside_finalize = TRUE;
+    priv->inside_finalize = true;
 
     while (gjs_g_hash_table_steal_one(priv->children,
                                       &key, &value)) {
@@ -139,9 +139,9 @@ keep_alive_trace(JSTracer *tracer,
         return;
 
     g_assert(!priv->inside_trace);
-    priv->inside_trace = TRUE;
+    priv->inside_trace = true;
     g_hash_table_foreach(priv->children, trace_foreach, tracer);
-    priv->inside_trace = FALSE;
+    priv->inside_trace = false;
 }
 
 /* The bizarre thing about this vtable is that it applies to both
@@ -406,7 +406,7 @@ gjs_keep_alive_iterator_init (GjsKeepAliveIter *iter,
     g_hash_table_iter_init(&real->hashiter, priv->children);
 }
 
-gboolean
+bool
 gjs_keep_alive_iterator_next (GjsKeepAliveIter  *iter,
                               GjsUnrootedFunc    notify_func,
                               JSObject         **out_child,
@@ -414,7 +414,7 @@ gjs_keep_alive_iterator_next (GjsKeepAliveIter  *iter,
 {
     GjsRealKeepAliveIter *real = (GjsRealKeepAliveIter*)iter;
     gpointer k, v;
-    gboolean ret = FALSE;
+    bool ret = false;
 
     while (g_hash_table_iter_next(&real->hashiter, &k, &v)) {
         Child *child = (Child*)k;
@@ -422,7 +422,7 @@ gjs_keep_alive_iterator_next (GjsKeepAliveIter  *iter,
         if (child->notify != notify_func)
             continue;
 
-        ret = TRUE;
+        ret = true;
         *out_child = child->child;
         *out_data = child->data;
         break;

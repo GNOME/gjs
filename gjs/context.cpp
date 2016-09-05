@@ -67,7 +67,7 @@ struct _GjsContext {
 
     char **search_path;
 
-    gboolean destroying;
+    bool destroying;
 
     guint    auto_gc_id;
 
@@ -210,7 +210,7 @@ gjs_print_parse_args(JSContext *context,
         if (jstr != NULL) {
             if (!gjs_string_to_utf8(context, JS::StringValue(jstr), &s)) {
                 JS_EndRequest(context);
-                g_string_free(str, TRUE);
+                g_string_free(str, true);
                 return false;
             }
 
@@ -220,14 +220,14 @@ gjs_print_parse_args(JSContext *context,
                 g_string_append_c(str, ' ');
         } else {
             JS_EndRequest(context);
-            *buffer = g_string_free(str, TRUE);
+            *buffer = g_string_free(str, true);
             if (!*buffer)
                 *buffer = g_strdup("<invalid string>");
             return true;
         }
 
     }
-    *buffer = g_string_free(str, FALSE);
+    *buffer = g_string_free(str, false);
 
     JS_EndRequest(context);
     return true;
@@ -242,7 +242,7 @@ gjs_print(JSContext *context,
     char *buffer;
 
     if (!gjs_print_parse_args(context, argv, &buffer)) {
-        return FALSE;
+        return false;
     }
 
     g_print("%s\n", buffer);
@@ -261,7 +261,7 @@ gjs_printerr(JSContext *context,
     char *buffer;
 
     if (!gjs_print_parse_args(context, argv, &buffer)) {
-        return FALSE;
+        return false;
     }
 
     g_printerr("%s\n", buffer);
@@ -348,7 +348,7 @@ gjs_context_dispose(GObject *object)
         JS_GC(js_context->runtime);
         JS_EndRequest(js_context->context);
 
-        js_context->destroying = TRUE;
+        js_context->destroying = true;
 
         /* Now, release all native objects, to avoid recursion between
          * the JS teardown and the C teardown.  The JSObject proxies
@@ -449,7 +449,7 @@ gjs_context_constructed(GObject *object)
                                   js_context->search_path ?
                                   (const char**) js_context->search_path :
                                   NULL,
-                                  TRUE))
+                                  true))
         g_error("Failed to create root importer");
 
     /* Now copy the global root importer (which we just created,
@@ -524,7 +524,7 @@ gjs_context_new_with_search_path(char** search_path)
                          NULL);
 }
 
-gboolean
+bool
 _gjs_context_destroying (GjsContext *context)
 {
     return context->destroying;
@@ -536,7 +536,7 @@ trigger_gc_if_needed (gpointer user_data)
     GjsContext *js_context = GJS_CONTEXT(user_data);
     js_context->auto_gc_id = 0;
     gjs_gc_if_needed(js_context->context);
-    return FALSE;
+    return G_SOURCE_REMOVE;
 }
 
 void
@@ -625,7 +625,7 @@ gjs_context_get_native_context (GjsContext *js_context)
     return js_context->context;
 }
 
-gboolean
+bool
 gjs_context_eval(GjsContext   *js_context,
                  const char   *script,
                  gssize        script_len,
@@ -633,7 +633,7 @@ gjs_context_eval(GjsContext   *js_context,
                  int          *exit_status_p,
                  GError      **error)
 {
-    gboolean ret = FALSE;
+    bool ret = false;
     JS::Value retval;
 
     JSAutoCompartment ac(js_context->context, js_context->global);
@@ -664,14 +664,14 @@ gjs_context_eval(GjsContext   *js_context,
         }
     }
 
-    ret = TRUE;
+    ret = true;
 
  out:
     g_object_unref(G_OBJECT(js_context));
     return ret;
 }
 
-gboolean
+bool
 gjs_context_eval_file(GjsContext    *js_context,
                       const char    *filename,
                       int           *exit_status_p,
@@ -679,22 +679,22 @@ gjs_context_eval_file(GjsContext    *js_context,
 {
     char     *script = NULL;
     gsize    script_len;
-    gboolean ret = TRUE;
+    bool ret = true;
 
     GFile *file = g_file_new_for_commandline_arg(filename);
 
     if (!g_file_query_exists(file, NULL)) {
-        ret = FALSE;
+        ret = false;
         goto out;
     }
 
     if (!g_file_load_contents(file, NULL, &script, &script_len, NULL, error)) {
-        ret = FALSE;
+        ret = false;
         goto out;
     }
 
     if (!gjs_context_eval(js_context, script, script_len, filename, exit_status_p, error)) {
-        ret = FALSE;
+        ret = false;
         goto out;
     }
 
@@ -704,7 +704,7 @@ out:
     return ret;
 }
 
-gboolean
+bool
 gjs_context_define_string_array(GjsContext  *js_context,
                                 const char    *array_name,
                                 gssize         array_length,
@@ -721,10 +721,10 @@ gjs_context_define_string_array(GjsContext  *js_context,
                     GJS_ERROR,
                     GJS_ERROR_FAILED,
                     "gjs_define_string_array() failed");
-        return FALSE;
+        return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 static GjsContext *current_context;
@@ -751,7 +751,7 @@ gjs_context_get_const_string(JSContext      *context,
     return gjs_context->const_strings[name];
 }
 
-gboolean
+bool
 gjs_object_get_property_const(JSContext      *context,
                               JSObject       *obj,
                               GjsConstString  property_name,

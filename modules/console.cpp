@@ -161,7 +161,7 @@ gjs_console_interact(JSContext *context,
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *object = rec.thisv().toObjectOrNull();
-    gboolean eof = FALSE;
+    bool eof = false;
     JS::Value result;
     JSString *str;
     GString *buffer = NULL;
@@ -221,7 +221,7 @@ gjs_console_interact(JSContext *context,
         }
 
  next:
-        g_string_free(buffer, TRUE);
+        g_string_free(buffer, true);
     } while (!eof);
 
     g_fprintf(stdout, "\n");

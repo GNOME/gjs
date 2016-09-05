@@ -126,7 +126,7 @@ gjstest_test_func_gjs_jsapi_util_array(void)
         g_free(ascii);
     }
 
-    gjs_rooted_array_free(context, array, TRUE);
+    gjs_rooted_array_free(context, array, true);
 
     JS_LeaveCompartment(context, oldCompartment);
     _gjs_unit_test_fixture_finish(&fixture);

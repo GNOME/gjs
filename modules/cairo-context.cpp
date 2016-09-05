@@ -588,7 +588,7 @@ setDash_func(JSContext *context,
         goto out;
     }
 
-    dashes_c = g_array_sized_new (FALSE, FALSE, sizeof(double), len);
+    dashes_c = g_array_sized_new (false, false, sizeof(double), len);
     for (i = 0; i < len; ++i) {
         JS::Value elem;
         double b;
@@ -616,7 +616,7 @@ setDash_func(JSContext *context,
     retval = true;
  out:
     if (dashes_c != NULL)
-        g_array_free (dashes_c, TRUE);
+        g_array_free (dashes_c, true);
     JS_RemoveObjectRoot(context, &dashes);
     return retval;
 }
@@ -1021,7 +1021,7 @@ context_to_g_argument(JSContext      *context,
                       const char     *arg_name,
                       GjsArgumentType argument_type,
                       GITransfer      transfer,
-                      gboolean        may_be_null,
+                      bool            may_be_null,
                       GArgument      *arg)
 {
     JSObject *obj;

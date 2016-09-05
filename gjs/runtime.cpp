@@ -204,7 +204,7 @@ gjs_finalize_callback(JSFreeOp         *fop,
        JSAPI call
      - therefore, if there is a finalizer frame somewhere
        in the stack, gjs_runtime_is_sweeping() will return
-       TRUE.
+       true.
 
      Comments in mozjs24 imply that this behavior might
      change in the future, but it hasn't changed in

@@ -36,30 +36,30 @@
 /* prefix is allowed if it's in the ;-delimited environment variable
  * GJS_DEBUG_TOPICS or if that variable is not set.
  */
-static gboolean
+static bool
 is_allowed_prefix (const char *prefix)
 {
     static const char *topics = NULL;
     static char **prefixes = NULL;
-    gboolean found = FALSE;
+    bool found = false;
     int i;
 
     if (topics == NULL) {
         topics = g_getenv("GJS_DEBUG_TOPICS");
 
         if (!topics)
-            return TRUE;
+            return true;
 
         /* We never really free this, should be gone when the process exits */
         prefixes = g_strsplit(topics, ";", -1);
     }
 
     if (!prefixes)
-        return TRUE;
+        return true;
 
     for (i = 0; prefixes[i] != NULL; i++) {
         if (!strcmp(prefixes[i], prefix)) {
-            found = TRUE;
+            found = true;
             break;
         }
     }
@@ -89,10 +89,10 @@ gjs_debug(GjsDebugTopic topic,
           ...)
 {
     static FILE *logfp = NULL;
-    static gboolean debug_log_enabled = FALSE;
-    static gboolean strace_timestamps = FALSE;
-    static gboolean checked_for_timestamp = FALSE;
-    static gboolean print_timestamp = FALSE;
+    static bool debug_log_enabled = false;
+    static bool strace_timestamps = false;
+    static bool checked_for_timestamp = false;
+    static bool print_timestamp = false;
     static GTimer *timer = NULL;
     const char *prefix;
     va_list args;
@@ -100,7 +100,7 @@ gjs_debug(GjsDebugTopic topic,
 
     if (!checked_for_timestamp) {
         print_timestamp = gjs_environment_variable_is_set("GJS_DEBUG_TIMESTAMP");
-        checked_for_timestamp = TRUE;
+        checked_for_timestamp = true;
     }
 
     if (print_timestamp && !timer) {
@@ -111,7 +111,7 @@ gjs_debug(GjsDebugTopic topic,
         const char *debug_output = g_getenv("GJS_DEBUG_OUTPUT");
         if (debug_output != NULL &&
             strcmp(debug_output, "stderr") == 0) {
-            debug_log_enabled = TRUE;
+            debug_log_enabled = true;
         } else if (debug_output != NULL) {
             const char *log_file;
             char *free_me;
@@ -140,7 +140,7 @@ gjs_debug(GjsDebugTopic topic,
 
             g_free(free_me);
 
-            debug_log_enabled = TRUE;
+            debug_log_enabled = true;
         }
 
         if (logfp == NULL)

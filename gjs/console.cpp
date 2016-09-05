@@ -47,7 +47,7 @@ static GOptionEntry entries[] = {
 G_GNUC_NORETURN
 static void
 print_help (GOptionContext *context,
-            gboolean        main_help)
+            bool            main_help)
 {
   gchar *help;
 
@@ -76,8 +76,8 @@ main(int argc, char **argv)
     context = g_option_context_new(NULL);
 
     /* pass unknown through to the JS script */
-    g_option_context_set_ignore_unknown_options(context, TRUE);
-    g_option_context_set_help_enabled(context, FALSE);
+    g_option_context_set_ignore_unknown_options(context, true);
+    g_option_context_set_help_enabled(context, false);
 
     g_option_context_add_main_entries(context, entries, NULL);
     if (!g_option_context_parse(context, &argc, &argv, &error))
@@ -85,9 +85,9 @@ main(int argc, char **argv)
 
     if (argc >= 2) {
         if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
-            print_help(context, TRUE);
+            print_help(context, true);
         else if (strcmp(argv[1], "--help-all") == 0)
-            print_help(context, FALSE);
+            print_help(context, false);
     }
 
     g_option_context_free (context);

@@ -58,7 +58,7 @@ typedef struct {
                                     the reference to the C gboxed */
 } Boxed;
 
-static gboolean struct_is_simple(GIStructInfo *info);
+static bool struct_is_simple(GIStructInfo *info);
 
 static bool boxed_set_field_from_value(JSContext   *context,
                                        Boxed       *priv,
@@ -221,7 +221,7 @@ boxed_new_direct(Boxed       *priv)
     g_assert(priv->can_allocate_directly);
 
     priv->gboxed = g_slice_alloc0(g_struct_info_get_size (priv->info));
-    priv->allocated_directly = TRUE;
+    priv->allocated_directly = true;
 
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                         "JSObject created by directly allocating %s",
@@ -264,9 +264,7 @@ boxed_init_from_props(JSContext   *context,
     JSObject *props;
     JSObject *iter;
     jsid prop_id;
-    gboolean success;
-
-    success = FALSE;
+    bool success = false;
 
     if (!props_value.isObject()) {
         gjs_throw(context, "argument should be a hash with fields to set");
@@ -318,7 +316,7 @@ boxed_init_from_props(JSContext   *context,
             goto out;
     }
 
-    success = TRUE;
+    success = true;
 
  out:
 
@@ -620,7 +618,7 @@ get_nested_interface_object (JSContext   *context,
 
     /* A structure nested inside a parent object; doesn't have an independent allocation */
     priv->gboxed = ((char *)parent_priv->gboxed) + offset;
-    priv->not_owning_gboxed = TRUE;
+    priv->not_owning_gboxed = true;
 
     /* We never actually read the reserved slot, but we put the parent object
      * into it to hold onto the parent object.
@@ -641,7 +639,7 @@ boxed_field_getter (JSContext              *context,
     GIFieldInfo *field_info;
     GITypeInfo *type_info;
     GArgument arg;
-    gboolean success = FALSE;
+    bool success = false;
 
     priv = priv_from_js(context, obj);
     if (!priv)
@@ -690,10 +688,10 @@ boxed_field_getter (JSContext              *context,
     if (!gjs_value_from_g_argument (context, value.address(),
                                     type_info,
                                     &arg,
-                                    TRUE))
+                                    true))
         goto out;
 
-    success = TRUE;
+    success = true;
 
 out:
     g_base_info_unref ((GIBaseInfo *)type_info);
@@ -754,8 +752,8 @@ boxed_set_field_from_value(JSContext   *context,
 {
     GITypeInfo *type_info;
     GArgument arg;
-    gboolean success = FALSE;
-    gboolean need_release = FALSE;
+    bool success = false;
+    bool need_release = false;
 
     type_info = g_field_info_get_type (field_info);
 
@@ -785,10 +783,10 @@ boxed_set_field_from_value(JSContext   *context,
                                  g_base_info_get_name ((GIBaseInfo *)field_info),
                                  GJS_ARGUMENT_FIELD,
                                  GI_TRANSFER_NOTHING,
-                                 TRUE, &arg))
+                                 true, &arg))
         goto out;
 
-    need_release = TRUE;
+    need_release = true;
 
     if (!g_field_info_set_field (field_info, priv->gboxed, &arg)) {
         gjs_throw(context, "Writing field %s.%s is not supported",
@@ -797,7 +795,7 @@ boxed_set_field_from_value(JSContext   *context,
         goto out;
     }
 
-    success = TRUE;
+    success = true;
 
 out:
     if (need_release)
@@ -819,7 +817,7 @@ boxed_field_setter (JSContext              *context,
 {
     Boxed *priv;
     GIFieldInfo *field_info;
-    gboolean success = FALSE;
+    bool success = false;
 
     priv = priv_from_js(context, obj);
     if (!priv)
@@ -874,7 +872,7 @@ define_boxed_class_fields (JSContext *context,
     for (i = 0; i < n_fields; i++) {
         GIFieldInfo *field = g_struct_info_get_field (priv->info, i);
         const char *field_name = g_base_info_get_name ((GIBaseInfo *)field);
-        gboolean result;
+        bool result;
 
         result = JS_DefineProperty(context, proto, field_name, JS::NullValue(),
                                    boxed_field_getter, boxed_field_setter,
@@ -950,10 +948,10 @@ JSFunctionSpec gjs_boxed_proto_funcs[] = {
     { NULL }
 };
 
-static gboolean
+static bool
 type_can_be_allocated_directly(GITypeInfo *type_info)
 {
-    gboolean is_simple = TRUE;
+    bool is_simple = true;
 
     if (g_type_info_is_pointer(type_info)) {
         if (g_type_info_get_tag(type_info) == GI_TYPE_TAG_ARRAY &&
@@ -965,7 +963,7 @@ type_can_be_allocated_directly(GITypeInfo *type_info)
 
             g_base_info_unref((GIBaseInfo*)param_info);
         } else {
-            is_simple = FALSE;
+            is_simple = false;
         }
     } else {
         switch (g_type_info_get_tag(type_info)) {
@@ -999,11 +997,11 @@ type_can_be_allocated_directly(GITypeInfo *type_info)
                 case GI_INFO_TYPE_BOXED:
                 case GI_INFO_TYPE_STRUCT:
                     if (!struct_is_simple((GIStructInfo *)interface))
-                        is_simple = FALSE;
+                        is_simple = false;
                     break;
                 case GI_INFO_TYPE_UNION:
                     /* FIXME: Need to implement */
-                    is_simple = FALSE;
+                    is_simple = false;
                     break;
                 case GI_INFO_TYPE_ENUM:
                 case GI_INFO_TYPE_FLAGS:
@@ -1022,7 +1020,7 @@ type_can_be_allocated_directly(GITypeInfo *type_info)
                 case GI_INFO_TYPE_ARG:
                 case GI_INFO_TYPE_TYPE:
                 case GI_INFO_TYPE_UNRESOLVED:
-                    is_simple = FALSE;
+                    is_simple = false;
                     break;
                 case GI_INFO_TYPE_INVALID_0:
                     g_assert_not_reached();
@@ -1041,16 +1039,16 @@ type_can_be_allocated_directly(GITypeInfo *type_info)
  * type that we know how to assign to. If so, then we can allocate and free
  * instances without needing a constructor.
  */
-static gboolean
+static bool
 struct_is_simple(GIStructInfo *info)
 {
     int n_fields = g_struct_info_get_n_fields(info);
-    gboolean is_simple = TRUE;
+    bool is_simple = true;
     int i;
 
     /* If it's opaque, it's not simple */
     if (n_fields == 0)
-        return FALSE;
+        return false;
 
     for (i = 0; i < n_fields && is_simple; i++) {
         GIFieldInfo *field_info = g_struct_info_get_field(info, i);
@@ -1230,7 +1228,7 @@ gjs_boxed_from_c_struct(JSContext             *context,
          * G_SIGNAL_TYPE_STATIC_SCOPE
          */
         priv->gboxed = gboxed;
-        priv->not_owning_gboxed = TRUE;
+        priv->not_owning_gboxed = true;
     } else {
         if (priv->gtype != G_TYPE_NONE && g_type_is_a (priv->gtype, G_TYPE_BOXED)) {
             priv->gboxed = g_boxed_copy(priv->gtype, gboxed);

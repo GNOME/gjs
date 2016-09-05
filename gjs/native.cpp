@@ -63,13 +63,13 @@ gjs_register_native_module (const char          *module_id,
  * been registered. This is used to check to see if a name is a
  * builtin module without starting to try and load it.
  */
-gboolean
+bool
 gjs_is_registered_native_module(JSContext  *context,
                                 JSObject   *parent,
                                 const char *name)
 {
     if (modules == NULL)
-        return FALSE;
+        return false;
 
     return g_hash_table_lookup(modules, name) != NULL;
 }

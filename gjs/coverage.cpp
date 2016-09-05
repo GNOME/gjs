@@ -57,7 +57,7 @@ typedef struct _GjsCoverageBranchExit {
 typedef struct _GjsCoverageBranch {
     GArray       *exits;
     unsigned int point;
-    gboolean     hit;
+    bool         hit;
 } GjsCoverageBranch;
 
 typedef struct _GjsCoverageFunction {
@@ -156,7 +156,7 @@ typedef struct _WriteAlternativeData {
     unsigned int  *n_branch_alternatives_hit;
     GOutputStream *output_stream;
     gpointer      *all_alternatives;
-    gboolean      branch_point_was_hit;
+    bool           branch_point_was_hit;
 } WriteAlternativeData;
 
 typedef struct _WriteBranchInfoData {
@@ -389,11 +389,11 @@ get_absolute_path(const char *path)
     return absolute_path;
 }
 
-typedef gboolean (*ConvertAndInsertJSVal) (GArray    *array,
-                                           JSContext *context,
-                                           JS::Value *element);
+typedef bool (*ConvertAndInsertJSVal) (GArray    *array,
+                                       JSContext *context,
+                                       JS::Value *element);
 
-static gboolean
+static bool
 get_array_from_js_value(JSContext             *context,
                         JS::Value             *value,
                         size_t                 array_element_size,
@@ -401,20 +401,20 @@ get_array_from_js_value(JSContext             *context,
                         ConvertAndInsertJSVal  inserter,
                         GArray                **out_array)
 {
-    g_return_val_if_fail(out_array != NULL, FALSE);
-    g_return_val_if_fail(*out_array == NULL, FALSE);
+    g_return_val_if_fail(out_array != NULL, false);
+    g_return_val_if_fail(*out_array == NULL, false);
 
     JSObject *js_array = &value->toObject();
 
     if (!JS_IsArrayObject(context, js_array)) {
         g_critical("Returned object from is not an array");
-        return FALSE;
+        return false;
     }
 
     /* We're not preallocating any space here at the moment until
      * we have some profiling data that suggests a good size to
      * preallocate to. */
-    GArray *c_side_array = g_array_new(TRUE, TRUE, array_element_size);
+    GArray *c_side_array = g_array_new(true, true, array_element_size);
     u_int32_t js_array_len;
 
     if (element_clear_func)
@@ -427,30 +427,30 @@ get_array_from_js_value(JSContext             *context,
             if (!JS_GetElement(context, js_array, i, &element)) {
                 g_array_unref(c_side_array);
                 gjs_throw(context, "Failed to get function names array element %d", i);
-                return FALSE;
+                return false;
             }
 
             if (!(inserter(c_side_array, context, &element))) {
                 g_array_unref(c_side_array);
                 gjs_throw(context, "Failed to convert array element %d", i);
-                return FALSE;
+                return false;
             }
         }
     }
 
     *out_array = c_side_array;
 
-    return TRUE;
+    return true;
 }
 
-static gboolean
+static bool
 convert_and_insert_unsigned_int(GArray    *array,
                                 JSContext *context,
                                 JS::Value *element)
 {
     if (!element->isInt32() && !element->isUndefined() && !element->isNull()) {
         g_critical("Array element is not an integer or undefined or null");
-        return FALSE;
+        return false;
     }
 
     if (element->isInt32()) {
@@ -461,7 +461,7 @@ convert_and_insert_unsigned_int(GArray    *array,
         g_array_append_val(array, not_executable);
     }
 
-    return TRUE;
+    return true;
 }
 
 static GArray *
@@ -503,7 +503,7 @@ clear_coverage_function(gpointer info_location)
     g_free(info->key);
 }
 
-static gboolean
+static bool
 convert_and_insert_function_decl(GArray    *array,
                                  JSContext *context,
                                  JS::Value *element)
@@ -512,7 +512,7 @@ convert_and_insert_function_decl(GArray    *array,
 
     if (!element->isObject()) {
         gjs_throw(context, "Function element is not an object");
-        return FALSE;
+        return false;
     }
     object = &element->toObject();
 
@@ -520,7 +520,7 @@ convert_and_insert_function_decl(GArray    *array,
 
     if (!JS_GetProperty(context, object, "name", &function_name_property_value)) {
         gjs_throw(context, "Failed to get name property for function object");
-        return FALSE;
+        return false;
     }
 
     char *utf8_string;
@@ -530,27 +530,27 @@ convert_and_insert_function_decl(GArray    *array,
                                 function_name_property_value,
                                 &utf8_string)) {
             gjs_throw(context, "Failed to convert function_name to string");
-            return FALSE;
+            return false;
         }
     } else if (function_name_property_value.isNull()) {
         utf8_string = NULL;
     } else {
         gjs_throw(context, "Unexpected type for function_name");
-        return FALSE;
+        return false;
     }
 
     JS::Value hit_count_property_value;
     if (!JS_GetProperty(context, object, "hitCount", &hit_count_property_value) ||
         !hit_count_property_value.isInt32()) {
         gjs_throw(context, "Failed to get hitCount property for function object");
-        return FALSE;
+        return false;
     }
 
     JS::Value line_number_property_value;
     if (!JS_GetProperty(context, object, "line", &line_number_property_value) ||
         !line_number_property_value.isInt32()) {
         gjs_throw(context, "Failed to get line property for function object");
-        return FALSE;
+        return false;
     }
 
     unsigned int line_number = line_number_property_value.toInt32();
@@ -564,7 +564,7 @@ convert_and_insert_function_decl(GArray    *array,
 
     g_array_append_val(array, info);
 
-    return TRUE;
+    return true;
 }
 
 static GArray *
@@ -606,14 +606,14 @@ clear_coverage_branch(gpointer branch_location)
     g_array_unref(branch->exits);
 }
 
-static gboolean
+static bool
 convert_and_insert_branch_exit(GArray    *array,
                                JSContext *context,
                                JS::Value *element)
 {
     if (!element->isObject()) {
         gjs_throw(context, "Branch exit array element is not an object");
-        return FALSE;
+        return false;
     }
 
     JSObject *object = &element->toObject();
@@ -624,7 +624,7 @@ convert_and_insert_branch_exit(GArray    *array,
     if (!JS_GetProperty(context, object, "line", &line_value) ||
         !line_value.isInt32()) {
         gjs_throw(context, "Failed to get line property from element");
-        return FALSE;
+        return false;
     }
 
     line = line_value.toInt32();
@@ -635,7 +635,7 @@ convert_and_insert_branch_exit(GArray    *array,
     if (!JS_GetProperty(context, object, "hitCount", &hit_count_value) ||
         !hit_count_value.isInt32()) {
         gjs_throw(context, "Failed to get hitCount property from element");
-        return FALSE;
+        return false;
     }
 
     hit_count = hit_count_value.toInt32();
@@ -647,17 +647,17 @@ convert_and_insert_branch_exit(GArray    *array,
 
     g_array_append_val(array, exit);
 
-    return TRUE;
+    return true;
 }
 
-static gboolean
+static bool
 convert_and_insert_branch_info(GArray    *array,
                                JSContext *context,
                                JS::Value *element)
 {
     if (!element->isObject() && !element->isUndefined()) {
         gjs_throw(context, "Branch array element is not an object or undefined");
-        return FALSE;
+        return false;
     }
 
     if (element->isObject()) {
@@ -668,7 +668,7 @@ convert_and_insert_branch_info(GArray    *array,
         if (!JS_GetProperty(context, object, "point", &branch_point_value) ||
             !branch_point_value.isInt32()) {
             gjs_throw(context, "Failed to get point property from element");
-            return FALSE;
+            return false;
         }
 
         branch_point = branch_point_value.toInt32();
@@ -679,7 +679,7 @@ convert_and_insert_branch_info(GArray    *array,
         if (!JS_GetProperty(context, object, "hit", &was_hit_value) ||
             !was_hit_value.isBoolean()) {
             gjs_throw(context, "Failed to get point property from element");
-            return FALSE;
+            return false;
         }
 
         was_hit = was_hit_value.toBoolean();
@@ -690,7 +690,7 @@ convert_and_insert_branch_info(GArray    *array,
         if (!JS_GetProperty(context, object, "exits", &branch_exits_value) ||
             !branch_exits_value.isObject()) {
             gjs_throw(context, "Failed to get exits property from element");
-            return FALSE;
+            return false;
         }
 
         if (!get_array_from_js_value(context,
@@ -700,7 +700,7 @@ convert_and_insert_branch_info(GArray    *array,
                                      convert_and_insert_branch_exit,
                                      &branch_exits_array)) {
             /* Already logged the exception, no need to do anything here */
-            return FALSE;
+            return false;
         }
 
         GjsCoverageBranch branch;
@@ -712,7 +712,7 @@ convert_and_insert_branch_info(GArray    *array,
         g_array_append_val(array, branch);
     }
 
-    return TRUE;
+    return true;
 }
 
 static GArray *
@@ -743,7 +743,7 @@ typedef struct _GjsCoverageFileStatistics {
     GArray     *branches;
 } GjsCoverageFileStatistics;
 
-static gboolean
+static bool
 fetch_coverage_file_statistics_from_js(JSContext                 *context,
                                        JS::HandleObject           coverage_statistics,
                                        const char                *filename,
@@ -764,7 +764,7 @@ fetch_coverage_file_statistics_from_js(JSContext                 *context,
         g_clear_pointer(&lines, g_array_unref);
         g_clear_pointer(&functions, g_array_unref);
         g_clear_pointer(&branches, g_array_unref);
-        return FALSE;
+        return false;
     }
 
     statistics->filename = g_strdup(filename);
@@ -772,7 +772,7 @@ fetch_coverage_file_statistics_from_js(JSContext                 *context,
     statistics->functions = functions;
     statistics->branches = branches;
 
-    return TRUE;
+    return true;
 }
 
 static void
@@ -888,7 +888,7 @@ get_covered_files(GjsCoverage *coverage)
     return NULL;
 }
 
-gboolean
+bool
 gjs_get_path_mtime(const char *path, GTimeVal *mtime)
 {
     /* path could be a resource path, as the callers don't check
@@ -910,7 +910,7 @@ gjs_get_path_mtime(const char *path, GTimeVal *mtime)
                   "falling back to checksum method for caching. Reason was: %s",
                   path, error->message);
         g_clear_object(&info);
-        return FALSE;
+        return false;
     }
 
     g_file_info_get_modification_time(info, mtime);
@@ -919,8 +919,8 @@ gjs_get_path_mtime(const char *path, GTimeVal *mtime)
     /* For some URI types, eg, resources, the operation getting
      * the mtime might succeed, but by default zero is returned.
      *
-     * Check if that is the case for boht tv_sec and tv_usec and if
-     * so return FALSE. */
+     * Check if that is the case for both tv_sec and tv_usec and if
+     * so return false. */
     return !(mtime->tv_sec == 0 && mtime->tv_usec == 0);
 }
 
@@ -1112,8 +1112,8 @@ gjs_fetch_statistics_from_js(GjsCoverage *coverage,
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
     JSContext          *js_context = (JSContext *) gjs_context_get_native_context(priv->context);
 
-    GArray *file_statistics_array = g_array_new(FALSE,
-                                                FALSE,
+    GArray *file_statistics_array = g_array_new(false,
+                                                false,
                                                 sizeof(GjsCoverageFileStatistics));
     g_array_set_clear_func(file_statistics_array,
                            gjs_coverage_statistics_file_statistics_clear);
@@ -1139,7 +1139,7 @@ gjs_fetch_statistics_from_js(GjsCoverage *coverage,
     return file_statistics_array;
 }
 
-gboolean
+bool
 gjs_write_cache_to_path(const char *path,
                         GBytes     *cache)
 {
@@ -1152,7 +1152,7 @@ gjs_write_cache_to_path(const char *path,
                                  cache_data,
                                  cache_len,
                                  NULL,
-                                 FALSE,
+                                 false,
                                  G_FILE_CREATE_NONE,
                                  NULL,
                                  NULL,
@@ -1171,12 +1171,12 @@ gjs_write_cache_to_path(const char *path,
             g_clear_error(&error);
         }
 
-        return FALSE;
+        return false;
     }
 
     g_object_unref(file);
 
-    return TRUE;
+    return true;
 }
 
 static bool
@@ -1250,8 +1250,8 @@ gjs_coverage_write_statistics(GjsCoverage *coverage,
 
     g_strfreev(executed_coverage_files);
 
-    const gboolean has_cache_path = priv->cache_path != NULL;
-    const gboolean cache_is_stale = coverage_statistics_has_stale_cache(coverage);
+    const bool has_cache_path = priv->cache_path != NULL;
+    const bool cache_is_stale = coverage_statistics_has_stale_cache(coverage);
 
     if (has_cache_path && cache_is_stale) {
         GBytes *cache_data = gjs_serialize_statistics(coverage);
@@ -1286,7 +1286,7 @@ static JSClass coverage_global_class = {
     { NULL }
 };
 
-static gboolean
+static bool
 gjs_context_eval_file_in_compartment(GjsContext *context,
                                      const char *filename,
                                      JSObject   *compartment_object,
@@ -1304,7 +1304,7 @@ gjs_context_eval_file_in_compartment(GjsContext *context,
                               NULL,
                               error)) {
         g_object_unref(file);
-        return FALSE;
+        return false;
     }
 
     g_object_unref(file);
@@ -1323,12 +1323,12 @@ gjs_context_eval_file_in_compartment(GjsContext *context,
         gjs_log_exception(js_context);
         g_free(script);
         g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED, "Failed to evaluate %s", filename);
-        return FALSE;
+        return false;
     }
 
     g_free(script);
 
-    return TRUE;
+    return true;
 }
 
 static JSBool
@@ -1530,7 +1530,7 @@ coverage_statistics_tracer(JSTracer *trc, void *data)
 /* This function is mainly used in the tests in order to fiddle with
  * the internals of the coverage statisics collector on the coverage
  * compartment side */
-gboolean
+bool
 gjs_run_script_in_coverage_compartment(GjsCoverage *coverage,
                                        const char  *script)
 {
@@ -1546,13 +1546,13 @@ gjs_run_script_in_coverage_compartment(GjsCoverage *coverage,
                              &rval)) {
         gjs_log_exception(js_context);
         g_warning("Failed to evaluate <coverage_modifier>");
-        return FALSE;
+        return false;
     }
 
-    return TRUE;
+    return true;
 }
 
-gboolean
+bool
 gjs_inject_value_into_coverage_compartment(GjsCoverage     *coverage,
                                            JS::HandleValue handle_value,
                                            const char      *property)
@@ -1569,10 +1569,10 @@ gjs_inject_value_into_coverage_compartment(GjsCoverage     *coverage,
     JS::Value value = handle_value;
     if (!JS_SetProperty(js_context, coverage_global_scope, property, &value)) {
         g_warning("Failed to set property %s to requested value", property);
-        return FALSE;
+        return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 /* Gets the root import and wraps it into a cross-compartment
@@ -1598,7 +1598,7 @@ gjs_wrap_root_importer_in_compartment(JSContext *context,
     return wrapped_importer;
 }
 
-static gboolean
+static bool
 bootstrap_coverage(GjsCoverage *coverage)
 {
     static const char  *coverage_script = "resource:///org/gnome/gjs/modules/coverage.js";
@@ -1619,28 +1619,28 @@ bootstrap_coverage(GjsCoverage *coverage)
         JS::RootedObject debuggeeWrapper(context, debuggee);
         if (!JS_WrapObject(context, debuggeeWrapper.address())) {
             gjs_throw(context, "Failed to wrap debugeee");
-            return FALSE;
+            return false;
         }
 
         JS::RootedValue debuggeeWrapperValue(context, JS::ObjectValue(*debuggeeWrapper));
         if (!JS_SetProperty(context, debugger_compartment, "debuggee", debuggeeWrapperValue.address())) {
             gjs_throw(context, "Failed to set debuggee property");
-            return FALSE;
+            return false;
         }
 
         if (!JS_InitStandardClasses(context, debugger_compartment)) {
             gjs_throw(context, "Failed to init standard classes");
-            return FALSE;
+            return false;
         }
 
         if (!JS_InitReflect(context, debugger_compartment)) {
             gjs_throw(context, "Failed to init Reflect");
-            return FALSE;
+            return false;
         }
 
         if (!JS_DefineDebuggerObject(context, debugger_compartment)) {
             gjs_throw(context, "Failed to init Debugger");
-            return FALSE;
+            return false;
         }
 
         JS::RootedObject wrapped_importer(JS_GetRuntime(context),
@@ -1649,7 +1649,7 @@ bootstrap_coverage(GjsCoverage *coverage)
 
         if (!wrapped_importer) {
             gjs_throw(context, "Failed to wrap root importer in debugger compartment");
-            return FALSE;
+            return false;
         }
 
         /* Now copy the global root importer (which we just created,
@@ -1657,7 +1657,7 @@ bootstrap_coverage(GjsCoverage *coverage)
          */
         if (!gjs_define_root_importer_object(context, debugger_compartment, wrapped_importer)) {
             gjs_throw(context, "Failed to set 'imports' on debugger compartment");
-            return FALSE;
+            return false;
         }
 
         if (!JS_DefineFunctions(context, debugger_compartment, &coverage_funcs[0]))
@@ -1673,7 +1673,7 @@ bootstrap_coverage(GjsCoverage *coverage)
         if (!JS_GetProperty(context, debugger_compartment, "CoverageStatistics", &coverage_statistics_prototype_value) ||
             !coverage_statistics_prototype_value.isObject()) {
             gjs_throw(context, "Failed to get CoverageStatistics prototype");
-            return FALSE;
+            return false;
         }
 
         /* Create value for holding the cache. This will be undefined if
@@ -1711,7 +1711,7 @@ bootstrap_coverage(GjsCoverage *coverage)
 
         if (!coverage_statistics) {
             gjs_throw(context, "Failed to create coverage_statitiscs object");
-            return FALSE;
+            return false;
         }
 
         /* Add a tracer, as suggested by jdm on #jsapi */
@@ -1722,7 +1722,7 @@ bootstrap_coverage(GjsCoverage *coverage)
         priv->coverage_statistics = coverage_statistics;
     }
 
-    return TRUE;
+    return true;
 }
 
 static void

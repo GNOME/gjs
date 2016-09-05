@@ -47,8 +47,8 @@ gjs_rooted_array_new()
     GArray *array;
 
     /* we prealloc ARRAY_MAX_LEN to avoid realloc */
-    array = g_array_sized_new(FALSE,             /* zero-terminated */
-                              FALSE,             /* clear */
+    array = g_array_sized_new(false,             /* zero-terminated */
+                              false,             /* clear */
                               sizeof(JS::Value), /* element size */
                               ARRAY_MAX_LEN);    /* reserved size */
 
@@ -266,7 +266,7 @@ gjs_set_values(JSContext        *context,
  * @free_segment: whether or not to free and unroot the internal JS::Value array
  *
  * Frees the memory allocated for the #GjsRootedArray. If @free_segment is
- * %TRUE the internal memory block allocated for the JS::Value array will
+ * true the internal memory block allocated for the JS::Value array will
  * be freed and unrooted also.
  *
  * Returns: the JS::Value array if it was not freed
@@ -274,7 +274,7 @@ gjs_set_values(JSContext        *context,
 JS::Value *
 gjs_rooted_array_free(JSContext        *context,
                       GjsRootedArray *array,
-                      gboolean          free_segment)
+                      bool            free_segment)
 {
     GArray *garray;
 

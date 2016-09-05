@@ -30,10 +30,10 @@ G_BEGIN_DECLS
 
 gchar * _gjs_g_utf8_make_valid (const gchar *name);
 
-gboolean gjs_g_hash_table_remove_one (GHashTable  *hash,
+bool     gjs_g_hash_table_remove_one (GHashTable  *hash,
                                       void       **key_p,
                                       void       **value_p);
-gboolean gjs_g_hash_table_steal_one  (GHashTable  *hash,
+bool     gjs_g_hash_table_steal_one  (GHashTable  *hash,
                                       void       **key_p,
                                       void       **value_p);
 char**   gjs_g_strv_concat           (char      ***strv_array,

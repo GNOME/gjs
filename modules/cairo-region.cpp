@@ -291,7 +291,7 @@ region_to_g_argument(JSContext      *context,
                      const char     *arg_name,
                      GjsArgumentType argument_type,
                      GITransfer      transfer,
-                     gboolean        may_be_null,
+                     bool            may_be_null,
                      GArgument      *arg)
 {
     JSObject *obj;

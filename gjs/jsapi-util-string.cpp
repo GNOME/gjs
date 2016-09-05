@@ -28,7 +28,7 @@
 #include "jsapi-util.h"
 #include "compat.h"
 
-gboolean
+JSBool
 gjs_string_to_utf8 (JSContext      *context,
                     const JS::Value value,
                     char          **utf8_string_p)
@@ -106,7 +106,7 @@ gjs_string_from_utf8(JSContext  *context,
     return str != NULL;
 }
 
-gboolean
+JSBool
 gjs_string_to_filename(JSContext      *context,
                        const JS::Value filename_val,
                        char          **filename_string_p)
@@ -126,12 +126,12 @@ gjs_string_to_filename(JSContext      *context,
     if (!filename_string) {
         gjs_throw_g_error(context, error);
         g_free(tmp);
-        return FALSE;
+        return false;
     }
 
     *filename_string_p = filename_string;
     g_free(tmp);
-    return TRUE;
+    return true;
 }
 
 bool
@@ -248,7 +248,7 @@ gjs_get_string_id (JSContext       *context,
  * If @string is empty, @result will be 0.  An exception will
  * be thrown if @string can not be represented as UTF-8.
  */
-gboolean
+bool
 gjs_unichar_from_string (JSContext *context,
                          JS::Value  value,
                          gunichar  *result)
@@ -257,9 +257,9 @@ gjs_unichar_from_string (JSContext *context,
     if (gjs_string_to_utf8(context, value, &utf8_str)) {
         *result = g_utf8_get_char(utf8_str);
         g_free(utf8_str);
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
 jsid

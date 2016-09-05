@@ -7,14 +7,14 @@ function hello(widget) {
 }
 
 function onDeleteEvent(widget, event) {
-    // If you return FALSE in the "delete_event" signal handler,
-    // GTK will emit the "destroy" signal. Returning TRUE means
+    // If you return false in the "delete_event" signal handler,
+    // GTK will emit the "destroy" signal. Returning true means
     // you don't want the window to be destroyed.
     // This is useful for popping up 'are you sure you want to quit?'
     // type dialogs.
     log("delete event occurred");
 
-    // Change FALSE to TRUE and the main window will not be destroyed
+    // Change false to true and the main window will not be destroyed
     // with a "delete_event".
     return false;
 }
@@ -37,7 +37,7 @@ win.connect("delete-event", onDeleteEvent);
 
 // Here we connect the "destroy" event to a signal handler.
 // This event occurs when we call gtk_widget_destroy() on the window,
-// or if we return FALSE in the "onDeleteEvent" callback.
+// or if we return false in the "onDeleteEvent" callback.
 win.connect("destroy", onDestroy);
 
 // Sets the border width of the window.

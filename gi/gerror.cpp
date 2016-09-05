@@ -470,7 +470,7 @@ define_error_properties(JSContext *context,
 JSObject*
 gjs_error_from_gerror(JSContext             *context,
                       GError                *gerror,
-                      gboolean               add_stack)
+                      bool                   add_stack)
 {
     JSObject *obj;
     JSObject *proto;
@@ -558,7 +558,7 @@ gjs_typecheck_gerror (JSContext *context,
                       bool       throw_error)
 {
     if (gjs_typecheck_boxed (context, obj, NULL, G_TYPE_ERROR, false))
-        return TRUE;
+        return true;
 
     return do_base_typecheck(context, obj, throw_error);
 }

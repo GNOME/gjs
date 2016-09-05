@@ -259,7 +259,7 @@ gjs_##name##_constructor(JSContext  *context,           \
         return false;                                           \
     }
 
-gboolean    gjs_init_context_standard        (JSContext       *context,
+bool        gjs_init_context_standard        (JSContext       *context,
                                               JSObject       **global_out);
 
 JSObject*   gjs_get_import_global            (JSContext       *context);
@@ -270,7 +270,7 @@ void        gjs_set_global_slot              (JSContext       *context,
                                               GjsGlobalSlot    slot,
                                               JS::Value        value);
 
-gboolean    gjs_object_require_property      (JSContext       *context,
+bool        gjs_object_require_property      (JSContext       *context,
                                               JSObject        *obj,
                                               const char      *obj_description,
                                               jsid             property_name,
@@ -398,7 +398,7 @@ bool        gjs_get_string_id                (JSContext       *context,
 jsid        gjs_intern_string_to_id          (JSContext       *context,
                                               const char      *string);
 
-gboolean    gjs_unichar_from_string          (JSContext       *context,
+bool        gjs_unichar_from_string          (JSContext       *context,
                                               JS::Value        string,
                                               gunichar        *result);
 
@@ -434,7 +434,7 @@ int               gjs_rooted_array_get_length (JSContext        *context,
                                                GjsRootedArray *array);
 JS::Value        *gjs_rooted_array_free       (JSContext        *context,
                                                GjsRootedArray *array,
-                                               gboolean          free_segment);
+                                               bool              free_segment);
 void              gjs_set_values              (JSContext        *context,
                                                JS::Value        *locations,
                                                int               n_locations,
@@ -494,7 +494,7 @@ typedef enum {
 
 jsid              gjs_context_get_const_string  (JSContext       *context,
                                                  GjsConstString   string);
-gboolean          gjs_object_get_property_const (JSContext       *context,
+bool              gjs_object_get_property_const (JSContext       *context,
                                                  JSObject        *obj,
                                                  GjsConstString   property_name,
                                                  JS::Value       *value_p);

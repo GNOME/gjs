@@ -49,7 +49,7 @@ typedef struct {
     ffi_cif cif;
     ffi_closure *closure;
     GIScopeType scope;
-    gboolean is_vfunc;
+    bool is_vfunc;
     GjsParamType *param_types;
 } GjsCallbackTrampoline;
 
@@ -57,7 +57,7 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(JSContext      *context,
                                                    JS::Value       function,
                                                    GICallableInfo *callable_info,
                                                    GIScopeType     scope,
-                                                   gboolean        is_vfunc);
+                                                   bool            is_vfunc);
 
 void gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline);
 void gjs_callback_trampoline_ref(GjsCallbackTrampoline *trampoline);

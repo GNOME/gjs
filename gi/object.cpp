@@ -188,7 +188,7 @@ init_g_param_from_property(JSContext  *context,
                            JS::Value   js_value,
                            GType       gtype,
                            GParameter *parameter,
-                           gboolean    constructing)
+                           bool        constructing)
 {
     char *gname;
     GParamSpec *param_spec;
@@ -351,7 +351,7 @@ object_instance_set_prop(JSContext              *context,
                                        value_p,
                                        G_TYPE_FROM_INSTANCE(priv->gobj),
                                        &param,
-                                       FALSE /* constructing */)) {
+                                       false /* constructing */)) {
     case SOME_ERROR_OCCURRED:
         ret = false;
     case NO_SUCH_G_PROPERTY:
@@ -376,7 +376,7 @@ object_instance_set_prop(JSContext              *context,
     return ret;
 }
 
-static gboolean
+static bool
 is_vfunc_unchanged(GIVFuncInfo *info,
                    GType        gtype)
 {
@@ -387,13 +387,13 @@ is_vfunc_unchanged(GIVFuncInfo *info,
     addr1 = g_vfunc_info_get_address(info, gtype, &error);
     if (error) {
         g_clear_error(&error);
-        return FALSE;
+        return false;
     }
 
     addr2 = g_vfunc_info_get_address(info, ptype, &error);
     if (error) {
         g_clear_error(&error);
-        return FALSE;
+        return false;
     }
 
     return addr1 == addr2;
@@ -402,11 +402,11 @@ is_vfunc_unchanged(GIVFuncInfo *info,
 static GIVFuncInfo *
 find_vfunc_on_parents(GIObjectInfo *info,
                       gchar        *name,
-                      gboolean     *out_defined_by_parent)
+                      bool         *out_defined_by_parent)
 {
     GIVFuncInfo *vfunc = NULL;
     GIObjectInfo *parent;
-    gboolean defined_by_parent = FALSE;
+    bool defined_by_parent = false;
 
     /* ref the first info so that we don't destroy
      * it when unrefing parents later */
@@ -424,7 +424,7 @@ find_vfunc_on_parents(GIObjectInfo *info,
         if (parent)
             vfunc = g_object_info_find_vfunc(parent, name);
 
-        defined_by_parent = TRUE;
+        defined_by_parent = true;
     }
 
     if (parent)
@@ -572,7 +572,7 @@ object_instance_new_resolve(JSContext *context,
 
         gchar *name_without_vfunc_ = &name[6];
         GIVFuncInfo *vfunc;
-        gboolean defined_by_parent;
+        bool defined_by_parent;
 
         vfunc = find_vfunc_on_parents(priv->info, name_without_vfunc_, &defined_by_parent);
         if (vfunc != NULL) {
@@ -683,7 +683,7 @@ object_instance_props_to_g_parameters(JSContext   *context,
     if (n_gparams_p)
         *n_gparams_p = 0;
 
-    gparams = g_array_new(/* nul term */ FALSE, /* clear */ TRUE,
+    gparams = g_array_new(/* nul term */ false, /* clear */ true,
                           sizeof(GParameter));
 
     if (argc == 0 || argv[0].isUndefined())
@@ -722,7 +722,7 @@ object_instance_props_to_g_parameters(JSContext   *context,
                                            value,
                                            gtype,
                                            &gparam,
-                                           TRUE /* constructing */)) {
+                                           true /* constructing */)) {
         case NO_SUCH_G_PROPERTY:
             gjs_throw(context, "No property %s on this GObject %s",
                          name, g_type_name(gtype));
@@ -746,7 +746,7 @@ object_instance_props_to_g_parameters(JSContext   *context,
     if (n_gparams_p)
         *n_gparams_p = gparams->len;
     if (gparams_p)
-        *gparams_p = (GParameter*) g_array_free(gparams, FALSE);
+        *gparams_p = (GParameter*) g_array_free(gparams, false);
 
     return true;
 
@@ -755,7 +755,7 @@ object_instance_props_to_g_parameters(JSContext   *context,
         GParameter *to_free;
         int count;
         count = gparams->len;
-        to_free = (GParameter*) g_array_free(gparams, FALSE);
+        to_free = (GParameter*) g_array_free(gparams, false);
         free_g_params(to_free, count);
     }
     return false;
@@ -805,7 +805,7 @@ get_qdata_key_for_toggle_direction(ToggleDirection direction)
     return quark;
 }
 
-static gboolean
+static bool
 clear_toggle_idle_source(GObject          *gobj,
                          ToggleDirection   direction)
 {
@@ -816,7 +816,7 @@ clear_toggle_idle_source(GObject          *gobj,
     return g_object_steal_qdata(gobj, qdata_key) != NULL;
 }
 
-static gboolean
+static bool
 toggle_idle_source_is_queued(GObject          *gobj,
                              ToggleDirection   direction)
 {
@@ -827,7 +827,7 @@ toggle_idle_source_is_queued(GObject          *gobj,
     return g_object_get_qdata(gobj, qdata_key) != NULL;
 }
 
-static gboolean
+static bool
 cancel_toggle_idle(GObject         *gobj,
                    ToggleDirection  direction)
 {
@@ -855,7 +855,7 @@ handle_toggle_down(GObject *gobj)
     priv = (ObjectInstance *) JS_GetPrivate(obj);
 
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                        "Toggle notify gobj %p obj %p is_last_ref TRUE keep-alive %p",
+                        "Toggle notify gobj %p obj %p is_last_ref true keep-alive %p",
                         gobj, obj, priv->keep_alive);
 
     /* Change to weak ref so the wrapper-wrappee pair can be
@@ -889,7 +889,7 @@ handle_toggle_up(GObject   *gobj)
     priv = (ObjectInstance *) JS_GetPrivate(obj);
 
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                        "Toggle notify gobj %p obj %p is_last_ref FALSEd keep-alive %p",
+                        "Toggle notify gobj %p obj %p is_last_ref false keep-alive %p",
                         gobj, obj, priv->keep_alive);
 
     /* Change to strong ref so the wrappee keeps the wrapper alive
@@ -930,7 +930,7 @@ idle_handle_toggle(gpointer data)
     }
 
 out:
-    return FALSE;
+    return G_SOURCE_REMOVE;
 }
 
 static void
@@ -961,7 +961,7 @@ queue_toggle_idle(GObject         *gobj,
              * (either only up, or down-up)
              */
             operation->gobj = (GObject*) g_object_ref(gobj);
-            operation->needs_unref = TRUE;
+            operation->needs_unref = true;
             break;
         case TOGGLE_DOWN:
             /* If we're toggling down, we don't need to take a reference since
@@ -1000,8 +1000,8 @@ wrapped_gobj_toggle_notify(gpointer      data,
                            GObject      *gobj,
                            gboolean      is_last_ref)
 {
-    gboolean is_main_thread, is_sweeping;
-    gboolean toggle_up_queued, toggle_down_queued;
+    bool is_main_thread, is_sweeping;
+    bool toggle_up_queued, toggle_down_queued;
     GjsContext *context;
     JSContext *js_context;
 
@@ -1050,7 +1050,7 @@ wrapped_gobj_toggle_notify(gpointer      data,
         js_context = (JSContext*) gjs_context_get_native_context(context);
         is_sweeping = gjs_runtime_is_sweeping(JS_GetRuntime(js_context));
     } else {
-        is_sweeping = FALSE;
+        is_sweeping = false;
     }
 
     toggle_up_queued = toggle_idle_source_is_queued(gobj, TOGGLE_UP);
@@ -1128,7 +1128,7 @@ gjs_object_prepare_shutdown (JSContext *context)
     /* First, get rid of anything left over on the main context */
     while (g_main_context_pending(NULL) &&
            g_atomic_int_get(&pending_idle_toggles) > 0) {
-        g_main_context_iteration(NULL, FALSE);
+        g_main_context_iteration(NULL, false);
     }
 
     /* Now, we iterate over all of the objects, breaking the JS <-> C
@@ -1413,8 +1413,8 @@ object_instance_finalize(JSFreeOp  *fop,
                                     priv->info ? g_base_info_get_name((GIBaseInfo*) priv->info) : g_type_name(priv->gtype)));
 
     if (priv->gobj) {
-        gboolean had_toggle_up;
-        gboolean had_toggle_down;
+        bool had_toggle_up;
+        bool had_toggle_down;
 
         invalidate_all_signals (priv);
 
@@ -1561,7 +1561,7 @@ static bool
 real_connect_func(JSContext *context,
                   unsigned   argc,
                   JS::Value *vp,
-                  gboolean  after)
+                  bool       after)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = argv.thisv().toObjectOrNull();
@@ -1611,7 +1611,7 @@ real_connect_func(JSContext *context,
                              G_OBJECT_TYPE(priv->gobj),
                              &signal_id,
                              &signal_detail,
-                             TRUE)) {
+                             true)) {
         gjs_throw(context, "No signal '%s' on object '%s'",
                      signal_name,
                      g_type_name(G_OBJECT_TYPE(priv->gobj)));
@@ -1649,7 +1649,7 @@ connect_after_func(JSContext *context,
                    unsigned   argc,
                    JS::Value *vp)
 {
-    return real_connect_func(context, argc, vp, TRUE);
+    return real_connect_func(context, argc, vp, true);
 }
 
 static bool
@@ -1657,7 +1657,7 @@ connect_func(JSContext *context,
              unsigned   argc,
              JS::Value *vp)
 {
-    return real_connect_func(context, argc, vp, FALSE);
+    return real_connect_func(context, argc, vp, false);
 }
 
 static bool
@@ -1676,7 +1676,7 @@ emit_func(JSContext *context,
     GValue *instance_and_args;
     GValue rvalue = G_VALUE_INIT;
     unsigned int i;
-    gboolean failed;
+    bool failed;
     JS::Value retval;
     bool ret = false;
 
@@ -1711,7 +1711,7 @@ emit_func(JSContext *context,
                              G_OBJECT_TYPE(priv->gobj),
                              &signal_id,
                              &signal_detail,
-                             FALSE)) {
+                             false)) {
         gjs_throw(context, "No signal '%s' on object '%s'",
                      signal_name,
                      g_type_name(G_OBJECT_TYPE(priv->gobj)));
@@ -1739,7 +1739,7 @@ emit_func(JSContext *context,
     g_value_init(&instance_and_args[0], G_TYPE_FROM_INSTANCE(priv->gobj));
     g_value_set_instance(&instance_and_args[0], priv->gobj);
 
-    failed = FALSE;
+    failed = false;
     for (i = 0; i < signal_query.n_params; ++i) {
         GValue *value;
         value = &instance_and_args[i + 1];
@@ -1763,7 +1763,7 @@ emit_func(JSContext *context,
         if (!gjs_value_from_g_value(context,
                                     &retval,
                                     &rvalue))
-            failed = TRUE;
+            failed = true;
 
         g_value_unset(&rvalue);
     } else {
@@ -1845,8 +1845,8 @@ init_func (JSContext *context,
 
     bool ret;
 
-    if (!do_base_typecheck(context, obj, TRUE))
-        return FALSE;
+    if (!do_base_typecheck(context, obj, true))
+        return false;
 
     ret = object_instance_init(context, &obj, argc, argv.array());
 
@@ -2198,7 +2198,7 @@ find_vfunc_info (JSContext *context,
     GIBaseInfo *ancestor_info;
     GIStructInfo *struct_info;
     gpointer implementor_class;
-    gboolean is_interface;
+    bool is_interface;
 
     *field_info_ret = NULL;
     *implementor_vtable_ret = NULL;
@@ -2358,7 +2358,7 @@ gjs_hook_up_vfunc(JSContext *cx,
 
         trampoline = gjs_callback_trampoline_new(cx, JS::ObjectValue(*function),
                                                  callback_info,
-                                                 GI_SCOPE_TYPE_NOTIFIED, TRUE);
+                                                 GI_SCOPE_TYPE_NOTIFIED, true);
 
         *((ffi_closure **)method_ptr) = trampoline->closure;
 
@@ -2672,7 +2672,7 @@ gjs_add_interface(GType instance_type,
                                 &interface_vtable);
 }
 
-static gboolean
+static bool
 validate_interfaces_and_properties_args(JSContext *cx,
                                         JSObject  *interfaces,
                                         JSObject  *properties,
@@ -2683,28 +2683,28 @@ validate_interfaces_and_properties_args(JSContext *cx,
 
     if (!JS_IsArrayObject(cx, interfaces)) {
         gjs_throw(cx, "Invalid parameter interfaces (expected Array)");
-        return FALSE;
+        return false;
     }
 
     if (!JS_GetArrayLength(cx, interfaces, &n_int))
-        return FALSE;
+        return false;
 
     if (!JS_IsArrayObject(cx, properties)) {
         gjs_throw(cx, "Invalid parameter properties (expected Array)");
-        return FALSE;
+        return false;
     }
 
     if (!JS_GetArrayLength(cx, properties, &n_prop))
-        return FALSE;
+        return false;
 
     if (n_interfaces != NULL)
         *n_interfaces = n_int;
     if (n_properties != NULL)
         *n_properties = n_prop;
-    return TRUE;
+    return true;
 }
 
-static gboolean
+static bool
 get_interface_gtypes(JSContext *cx,
                      JSObject  *interfaces,
                      guint32   n_interfaces,
@@ -2717,25 +2717,25 @@ get_interface_gtypes(JSContext *cx,
         GType iface_type;
 
         if (!JS_GetElement(cx, interfaces, i, &iface_val.get()))
-            return FALSE;
+            return false;
 
         if (!iface_val.isObject()) {
             gjs_throw (cx, "Invalid parameter interfaces (element %d was not a GType)", i);
-            return FALSE;
+            return false;
         }
 
         iface_type = gjs_gtype_get_actual_gtype(cx, &iface_val.toObject());
         if (iface_type == G_TYPE_INVALID) {
             gjs_throw (cx, "Invalid parameter interfaces (element %d was not a GType)", i);
-            return FALSE;
+            return false;
         }
 
         iface_types[i] = iface_type;
     }
-    return TRUE;
+    return true;
 }
 
-static gboolean
+static bool
 save_properties_for_class_init(JSContext *cx,
                                JSObject  *properties,
                                guint32    n_properties,
@@ -2752,18 +2752,18 @@ save_properties_for_class_init(JSContext *cx,
 
         if (!JS_GetElement(cx, properties, i, &prop_val.get())) {
             g_clear_pointer(&properties_native, g_ptr_array_unref);
-            return FALSE;
+            return false;
         }
         if (!prop_val.isObject()) {
             g_clear_pointer(&properties_native, g_ptr_array_unref);
             gjs_throw(cx, "Invalid parameter, expected object");
-            return FALSE;
+            return false;
         }
 
         JS::RootedObject prop_obj(cx, &prop_val.toObject());
         if (!gjs_typecheck_param(cx, prop_obj, G_TYPE_NONE, true)) {
             g_clear_pointer(&properties_native, g_ptr_array_unref);
-            return FALSE;
+            return false;
         }
         g_ptr_array_add(properties_native, g_param_spec_ref(gjs_g_param_from_param(cx, prop_obj)));
     }
@@ -2771,7 +2771,7 @@ save_properties_for_class_init(JSContext *cx,
                                     g_ptr_array_ref(properties_native));
 
     g_clear_pointer(&properties_native, g_ptr_array_unref);
-    return TRUE;
+    return true;
 }
 
 static bool

@@ -103,7 +103,7 @@ get_name_func (JSContext *context,
 
     if (gtype == 0) {
         rec.rval().setNull();
-        return TRUE;
+        return true;
     } else {
         ret = gjs_string_from_utf8(context, g_type_name(gtype), -1, &retval);
         if (ret)

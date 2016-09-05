@@ -95,7 +95,7 @@ global_context_finalized(JSObject *obj,
                          void     *data)
 {
     Closure *c;
-    gboolean need_unref;
+    bool need_unref;
 
     c = (Closure *) data;
 
@@ -107,7 +107,7 @@ global_context_finalized(JSObject *obj,
      * invalid memory access
      */
     need_unref = c->unref_on_global_object_finalized;
-    c->unref_on_global_object_finalized = FALSE;
+    c->unref_on_global_object_finalized = false;
 
     if (c->obj != NULL) {
         g_assert(c->obj == obj);
@@ -207,7 +207,7 @@ closure_invalidated(gpointer data,
                           "until global object finalize)",
                           closure);
 
-        c->unref_on_global_object_finalized = TRUE;
+        c->unref_on_global_object_finalized = true;
         g_closure_ref(&c->base);
     } else {
         /* If the context still exists, then remove our destroy
@@ -299,7 +299,7 @@ gjs_closure_invoke(GClosure  *closure,
     JS_EndRequest(context);
 }
 
-gboolean
+bool
 gjs_closure_is_valid(GClosure *closure)
 {
     Closure *c;
@@ -347,7 +347,7 @@ GClosure*
 gjs_closure_new(JSContext  *context,
                 JSObject   *callable,
                 const char *description,
-                gboolean    root_function)
+                bool        root_function)
 {
     Closure *c;
 
@@ -362,7 +362,7 @@ gjs_closure_new(JSContext  *context,
     JS_BeginRequest(context);
 
     c->obj = callable;
-    c->unref_on_global_object_finalized = FALSE;
+    c->unref_on_global_object_finalized = false;
 
     GJS_INC_COUNTER(closure);
 

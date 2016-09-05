@@ -155,7 +155,7 @@ gjs_crash_after_timeout(int seconds)
     FD_ZERO(&read_fds);
     FD_SET(pipe_fds[0], &read_fds);
 
-    while (TRUE) {
+    while (true) {
         remaining.tv_sec = term_time.tv_sec - now.tv_sec;
         remaining.tv_usec = term_time.tv_usec - now.tv_usec;
         if (remaining.tv_usec < 0) {

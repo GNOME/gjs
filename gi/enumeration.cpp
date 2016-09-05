@@ -121,7 +121,7 @@ gjs_define_enum_values(JSContext    *context,
     n_values = g_enum_info_get_n_values(info);
     for (i = 0; i < n_values; ++i) {
         GIValueInfo *value_info = g_enum_info_get_value(info, i);
-        gboolean failed;
+        bool failed;
 
         failed = !gjs_define_enum_value(context, in_object, value_info);
 

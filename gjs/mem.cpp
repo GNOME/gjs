@@ -72,7 +72,7 @@ static GjsMemCounter* counters[] = {
 
 void
 gjs_memory_report(const char *where,
-                  gboolean    die_if_leaks)
+                  bool        die_if_leaks)
 {
     int i;
     int n_counters;

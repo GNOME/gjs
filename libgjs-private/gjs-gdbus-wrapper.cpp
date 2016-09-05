@@ -84,7 +84,7 @@ gjs_dbus_implementation_property_set(GDBusConnection       *connection,
 
     g_signal_emit(self, signals[SIGNAL_HANDLE_PROPERTY_SET], 0, property_name, value);
 
-    return TRUE;
+    return true;
 }
 
 static void
@@ -269,7 +269,7 @@ idle_cb (gpointer data) {
     GDBusInterfaceSkeleton *skeleton = G_DBUS_INTERFACE_SKELETON (data);
 
     g_dbus_interface_skeleton_flush(skeleton);
-    return FALSE;
+    return G_SOURCE_REMOVE;
 }
 
 /**

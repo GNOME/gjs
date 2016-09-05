@@ -34,13 +34,13 @@ G_BEGIN_DECLS
 GClosure*  gjs_closure_new           (JSContext    *context,
                                       JSObject     *callable,
                                       const char   *description,
-                                      gboolean      root_function);
+                                      bool          root_function);
 void       gjs_closure_invoke        (GClosure     *closure,
                                       int           argc,
                                       JS::Value    *argv,
                                       JS::Value    *retval);
 JSContext* gjs_closure_get_context   (GClosure     *closure);
-gboolean   gjs_closure_is_valid      (GClosure     *closure);
+bool       gjs_closure_is_valid      (GClosure     *closure);
 JSObject*  gjs_closure_get_callable  (GClosure     *closure);
 
 void       gjs_closure_trace         (GClosure     *closure,

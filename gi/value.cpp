@@ -44,7 +44,7 @@
 static bool gjs_value_from_g_value_internal(JSContext    *context,
                                             JS::Value    *value_p,
                                             const GValue *gvalue,
-                                            gboolean      no_copy,
+                                            bool          no_copy,
                                             GSignalQuery *signal_query,
                                             gint          arg_n);
 
@@ -89,7 +89,7 @@ gjs_value_from_array_and_length_values(JSContext    *context,
                                        GITypeInfo   *array_type_info,
                                        const GValue *array_value,
                                        const GValue *array_length_value,
-                                       gboolean      no_copy,
+                                       bool          no_copy,
                                        GSignalQuery *signal_query,
                                        int           array_length_arg_n)
 {
@@ -127,7 +127,7 @@ closure_marshal(GClosure        *closure,
     int i;
     GSignalQuery signal_query = { 0, };
     GISignalInfo *signal_info;
-    gboolean *skip;
+    bool *skip;
     int *array_len_indices_for;
     GITypeInfo **type_info_for;
     int argv_index;
@@ -208,8 +208,8 @@ closure_marshal(GClosure        *closure,
     /* Check if any parameters, such as array lengths, need to be eliminated
      * before we invoke the closure.
      */
-    skip = g_newa(gboolean, argc);
-    memset(skip, 0, sizeof (gboolean) * argc);
+    skip = g_newa(bool, argc);
+    memset(skip, 0, sizeof (bool) * argc);
     array_len_indices_for = g_newa(int, argc);
     for(i = 0; i < argc; i++)
         array_len_indices_for[i] = -1;
@@ -228,7 +228,7 @@ closure_marshal(GClosure        *closure,
 
             array_len_pos = g_type_info_get_array_length(type_info_for[i]);
             if (array_len_pos != -1) {
-                skip[array_len_pos + 1] = TRUE;
+                skip[array_len_pos + 1] = true;
                 array_len_indices_for[i] = array_len_pos + 1;
             }
 
@@ -241,14 +241,14 @@ closure_marshal(GClosure        *closure,
     argv_index = 0;
     for (i = 0; i < argc; ++i) {
         const GValue *gval = &param_values[i];
-        gboolean no_copy;
+        bool no_copy;
         int array_len_index;
         bool res;
 
         if (skip[i])
             continue;
 
-        no_copy = FALSE;
+        no_copy = false;
 
         if (i >= 1 && signal_query.signal_id) {
             no_copy = (signal_query.param_types[i - 1] & G_SIGNAL_TYPE_STATIC_SCOPE) != 0;
@@ -315,7 +315,7 @@ gjs_closure_new_for_signal(JSContext  *context,
 {
     GClosure *closure;
 
-    closure = gjs_closure_new(context, callable, description, FALSE);
+    closure = gjs_closure_new(context, callable, description, false);
 
     g_closure_set_meta_marshal(closure, GUINT_TO_POINTER(signal_id), closure_marshal);
 
@@ -329,7 +329,7 @@ gjs_closure_new_marshaled (JSContext    *context,
 {
     GClosure *closure;
 
-    closure = gjs_closure_new(context, callable, description, TRUE);
+    closure = gjs_closure_new(context, callable, description, true);
 
     g_closure_set_marshal(closure, closure_marshal);
 
@@ -365,7 +365,7 @@ static bool
 gjs_value_to_g_value_internal(JSContext    *context,
                               JS::Value     value,
                               GValue       *gvalue,
-                              gboolean      no_copy)
+                              bool          no_copy)
 {
     GType gtype;
 
@@ -580,8 +580,8 @@ gjs_value_to_g_value_internal(JSContext    *context,
                                                                        NULL,
                                                                        GJS_ARGUMENT_ARGUMENT,
                                                                        GI_TRANSFER_NOTHING,
-                                                                       TRUE, &arg))
-                            return FALSE;
+                                                                       true, &arg))
+                            return false;
 
                         gboxed = arg.v_pointer;
                     }
@@ -761,7 +761,7 @@ gjs_value_to_g_value(JSContext    *context,
                      JS::Value     value,
                      GValue       *gvalue)
 {
-    return gjs_value_to_g_value_internal(context, value, gvalue, FALSE);
+    return gjs_value_to_g_value_internal(context, value, gvalue, false);
 }
 
 bool
@@ -769,7 +769,7 @@ gjs_value_to_g_value_no_copy(JSContext    *context,
                              JS::Value     value,
                              GValue       *gvalue)
 {
-    return gjs_value_to_g_value_internal(context, value, gvalue, TRUE);
+    return gjs_value_to_g_value_internal(context, value, gvalue, true);
 }
 
 static JS::Value
@@ -800,7 +800,7 @@ static bool
 gjs_value_from_g_value_internal(JSContext    *context,
                                 JS::Value    *value_p,
                                 const GValue *gvalue,
-                                gboolean      no_copy,
+                                bool          no_copy,
                                 GSignalQuery *signal_query,
                                 gint          arg_n)
 {
@@ -848,7 +848,7 @@ gjs_value_from_g_value_internal(JSContext    *context,
         d = g_value_get_float(gvalue);
         *value_p = JS::NumberValue(d);
     } else if (gtype == G_TYPE_BOOLEAN) {
-        gboolean v;
+        bool v;
         v = g_value_get_boolean(gvalue);
         *value_p = JS::BooleanValue(!!v);
     } else if (g_type_is_a(gtype, G_TYPE_OBJECT) || g_type_is_a(gtype, G_TYPE_INTERFACE)) {
@@ -888,10 +888,10 @@ gjs_value_from_g_value_internal(JSContext    *context,
 
         /* special case GError */
         if (g_type_is_a(gtype, G_TYPE_ERROR)) {
-            obj = gjs_error_from_gerror(context, (GError*) gboxed, FALSE);
+            obj = gjs_error_from_gerror(context, (GError*) gboxed, false);
             *value_p = JS::ObjectOrNullValue(obj);
 
-            return TRUE;
+            return true;
         }
 
         /* The only way to differentiate unions and structs is from
@@ -977,7 +977,7 @@ gjs_value_from_g_value_internal(JSContext    *context,
 
         arg.v_pointer = g_value_get_pointer(gvalue);
 
-        res = gjs_value_from_g_argument(context, value_p, &type_info, &arg, TRUE);
+        res = gjs_value_from_g_argument(context, value_p, &type_info, &arg, true);
 
         g_base_info_unref((GIBaseInfo*)arg_info);
         g_base_info_unref((GIBaseInfo*)signal_info);
@@ -1033,5 +1033,5 @@ gjs_value_from_g_value(JSContext    *context,
                        JS::Value    *value_p,
                        const GValue *gvalue)
 {
-    return gjs_value_from_g_value_internal(context, value_p, gvalue, FALSE, NULL, 0);
+    return gjs_value_from_g_value_internal(context, value_p, gvalue, false, NULL, 0);
 }

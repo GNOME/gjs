@@ -171,7 +171,7 @@ static void
 associate_js_instance_to_fundamental(JSContext *context,
                                      JSObject  *object,
                                      void      *gfundamental,
-                                     gboolean   owned_ref)
+                                     bool       owned_ref)
 {
     FundamentalInstance *priv;
 
@@ -443,7 +443,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(fundamental_instance)
     if (!fundamental_invoke_constructor(priv, context, object, argc, argv.array(), &ret_value))
         return false;
 
-    associate_js_instance_to_fundamental(context, object, ret_value.v_pointer, FALSE);
+    associate_js_instance_to_fundamental(context, object, ret_value.v_pointer, false);
 
     g_callable_info_load_return_type((GICallableInfo*) priv->prototype->constructor_info, &return_info);
 
@@ -780,7 +780,7 @@ gjs_object_from_g_fundamental(JSContext    *context,
 
     init_fundamental_instance(context, object);
 
-    associate_js_instance_to_fundamental(context, object, gfundamental, FALSE);
+    associate_js_instance_to_fundamental(context, object, gfundamental, false);
 
  out:
     return object;

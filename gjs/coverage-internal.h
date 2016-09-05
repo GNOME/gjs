@@ -37,18 +37,18 @@ GBytes * gjs_serialize_statistics(GjsCoverage *coverage);
 JSString * gjs_deserialize_cache_to_object(GjsCoverage *coverage,
                                            GBytes      *cache_bytes);
 
-gboolean gjs_run_script_in_coverage_compartment(GjsCoverage *coverage,
-                                                const char  *script);
-gboolean gjs_inject_value_into_coverage_compartment(GjsCoverage     *coverage,
-                                                    JS::HandleValue value,
-                                                    const char      *property);
+bool gjs_run_script_in_coverage_compartment(GjsCoverage *coverage,
+                                            const char  *script);
+bool gjs_inject_value_into_coverage_compartment(GjsCoverage     *coverage,
+                                                JS::HandleValue  value,
+                                                const char      *property);
 
-gboolean gjs_get_path_mtime(const char *path,
-                            GTimeVal   *mtime);
+bool gjs_get_path_mtime(const char *path,
+                        GTimeVal   *mtime);
 gchar * gjs_get_path_checksum(const char *path);
 
-gboolean gjs_write_cache_to_path(const char *path,
-                                 GBytes     *cache_bytes);
+bool gjs_write_cache_to_path(const char *path,
+                             GBytes     *cache_bytes);
 
 extern const char *GJS_COVERAGE_CACHE_FILE_NAME;
 

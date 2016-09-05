@@ -367,7 +367,7 @@ gjs_define_constant(JSContext      *context,
     type_info = g_constant_info_get_type(info);
     g_constant_info_get_value(info, &garg);
 
-    if (!gjs_value_from_g_argument(context, &value, type_info, &garg, TRUE))
+    if (!gjs_value_from_g_argument(context, &value, type_info, &garg, true))
         goto out;
 
     name = g_base_info_get_name((GIBaseInfo*) info);
@@ -432,7 +432,7 @@ _gjs_log_info_usage(GIBaseInfo *info)
 
             details = g_strdup_printf(".details = { .func = { .retval_transfer = GI_TRANSFER_%s, .n_args = %d, .args = %s } }",
                                       TRANSFER_STRING(retval_transfer), n_args, args->str);
-            g_string_free(args, TRUE);
+            g_string_free(args, true);
         } else {
             details = g_strdup_printf(".details = { .nothing = {} }");
         }
@@ -454,13 +454,13 @@ bool
 gjs_define_info(JSContext  *context,
                 JSObject   *in_object,
                 GIBaseInfo *info,
-                gboolean   *defined)
+                bool       *defined)
 {
 #if GJS_VERBOSE_ENABLE_GI_USAGE
     _gjs_log_info_usage(info);
 #endif
 
-    *defined = TRUE;
+    *defined = true;
 
     switch (g_base_info_get_type(info)) {
     case GI_INFO_TYPE_FUNCTION:
@@ -501,7 +501,7 @@ gjs_define_info(JSContext  *context,
            as static methods
         */
         if (g_struct_info_is_gtype_struct((GIStructInfo*) info)) {
-            *defined = FALSE;
+            *defined = false;
             break;
         }
         /* Fall through */
@@ -722,25 +722,25 @@ gjs_camel_from_hyphen(const char *hyphen_name)
 {
     GString *s;
     const char *p;
-    gboolean next_upper;
+    bool next_upper;
 
     s = g_string_sized_new(strlen(hyphen_name) + 1);
 
-    next_upper = FALSE;
+    next_upper = false;
     for (p = hyphen_name; *p; ++p) {
         if (*p == '-' || *p == '_') {
-            next_upper = TRUE;
+            next_upper = true;
         } else {
             if (next_upper) {
                 g_string_append_c(s, g_ascii_toupper(*p));
-                next_upper = FALSE;
+                next_upper = false;
             } else {
                 g_string_append_c(s, *p);
             }
         }
     }
 
-    return g_string_free(s, FALSE);
+    return g_string_free(s, false);
 }
 
 char*
@@ -761,7 +761,7 @@ gjs_hyphen_from_camel(const char *camel_name)
         }
     }
 
-    return g_string_free(s, FALSE);
+    return g_string_free(s, false);
 }
 
 JSObject *

@@ -29,7 +29,7 @@
 
 G_BEGIN_DECLS
 
-gboolean     _gjs_context_destroying                  (GjsContext *js_context);
+bool         _gjs_context_destroying                  (GjsContext *js_context);
 
 void         _gjs_context_schedule_gc_if_needed       (GjsContext *js_context);
 

@@ -39,7 +39,7 @@
 static char **gjs_search_path = NULL;
 
 typedef struct {
-    gboolean is_root;
+    bool is_root;
 } Importer;
 
 typedef struct {
@@ -58,7 +58,7 @@ define_meta_properties(JSContext  *context,
                        const char *module_name,
                        JSObject   *parent)
 {
-    gboolean parent_is_module;
+    bool parent_is_module;
 
     /* We define both __moduleName__ and __parentModule__ to null
      * on the root importer
@@ -121,7 +121,7 @@ import_directory(JSContext   *context,
      * its search path. gjs_define_importer() exits if it fails, so
      * this always succeeds.
      */
-    importer = gjs_define_importer(context, obj, name, full_paths, FALSE);
+    importer = gjs_define_importer(context, obj, name, full_paths, false);
     return importer != NULL;
 }
 
@@ -230,7 +230,7 @@ import_native_file(JSContext  *context,
         /* I am not sure whether this can happen, but if it does we want to trap it.
          */
         gjs_debug(GJS_DEBUG_IMPORTER,
-                  "Module '%s' reported an exception but gjs_import_native_module() returned TRUE",
+                  "Module '%s' reported an exception but gjs_import_native_module() returned true",
                   name);
         goto out;
     }
@@ -425,7 +425,7 @@ do_import(JSContext  *context,
     GPtrArray *directories;
     jsid search_path_name;
     GFile *gfile;
-    gboolean exists;
+    bool exists;
 
     search_path_name = gjs_context_get_const_string(context, GJS_STRING_SEARCH_PATH);
     if (!gjs_object_require_property(context, obj, "importer", search_path_name, &search_path_val)) {
@@ -603,7 +603,7 @@ do_import(JSContext  *context,
         g_ptr_array_add(directories, NULL);
 
         str_array = (char**) directories->pdata;
-        g_ptr_array_free(directories, FALSE);
+        g_ptr_array_free(directories, false);
         g_strfreev(str_array);
     }
 
@@ -639,7 +639,7 @@ static void
 importer_iterator_free(ImporterIterator *iter)
 {
     g_ptr_array_foreach(iter->elements, (GFunc)g_free, NULL);
-    g_ptr_array_free(iter->elements, TRUE);
+    g_ptr_array_free(iter->elements, true);
     g_slice_free(ImporterIterator, iter);
 }
 
@@ -934,7 +934,7 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
 
 static JSObject*
 importer_new(JSContext *context,
-             gboolean   is_root)
+             bool       is_root)
 {
     JSObject *importer;
     Importer *priv;
@@ -1038,7 +1038,7 @@ gjs_get_search_path(void)
 
         g_ptr_array_add(path, NULL);
 
-        search_path = (char**)g_ptr_array_free(path, FALSE);
+        search_path = (char**)g_ptr_array_free(path, false);
 
         gjs_search_path = search_path;
     } else {
@@ -1052,8 +1052,8 @@ static JSObject*
 gjs_create_importer(JSContext    *context,
                     const char   *importer_name,
                     const char  **initial_search_path,
-                    gboolean      add_standard_search_path,
-                    gboolean      is_root,
+                    bool          add_standard_search_path,
+                    bool          is_root,
                     JSObject     *in_object)
 {
     JSObject *importer;
@@ -1090,12 +1090,13 @@ gjs_define_importer(JSContext    *context,
                     JSObject     *in_object,
                     const char   *importer_name,
                     const char  **initial_search_path,
-                    gboolean      add_standard_search_path)
+                    bool          add_standard_search_path)
 
 {
     JSObject *importer;
 
-    importer = gjs_create_importer(context, importer_name, initial_search_path, add_standard_search_path, FALSE, in_object);
+    importer = gjs_create_importer(context, importer_name, initial_search_path,
+                                   add_standard_search_path, false, in_object);
 
     if (!JS_DefineProperty(context, in_object,
                            importer_name, JS::ObjectValue(*importer),
@@ -1116,7 +1117,7 @@ gjs_define_importer(JSContext    *context,
 bool
 gjs_create_root_importer(JSContext   *context,
                          const char **initial_search_path,
-                         gboolean     add_standard_search_path)
+                         bool         add_standard_search_path)
 {
     JS::Value importer;
 
@@ -1135,7 +1136,7 @@ gjs_create_root_importer(JSContext   *context,
     importer = JS::ObjectValue(*gjs_create_importer(context, "imports",
                                                     initial_search_path,
                                                     add_standard_search_path,
-                                                    TRUE, NULL));
+                                                    true, NULL));
     gjs_set_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS, importer);
 
     JS_EndRequest(context);

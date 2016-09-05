@@ -249,7 +249,7 @@ eval_script_and_get_coverage_data(GjsContext  *context,
                                                   coverage_data_length_return);
 }
 
-static gboolean
+static bool
 coverage_data_contains_value_for_key(const char *data,
                                      const char *key,
                                      const char *value)
@@ -257,17 +257,17 @@ coverage_data_contains_value_for_key(const char *data,
     const char *sf_line = line_starting_with(data, key);
 
     if (!sf_line)
-        return FALSE;
+        return false;
 
     return strncmp(&sf_line[strlen(key)],
                    value,
                    strlen(value)) == 0;
 }
 
-typedef gboolean (*CoverageDataMatchFunc) (const char *value,
-                                           gpointer    user_data);
+typedef bool (*CoverageDataMatchFunc) (const char *value,
+                                       gpointer    user_data);
 
-static gboolean
+static bool
 coverage_data_matches_value_for_key_internal(const char            *line,
                                              const char            *key,
                                              CoverageDataMatchFunc  match,
@@ -276,7 +276,7 @@ coverage_data_matches_value_for_key_internal(const char            *line,
     return (*match)(line, user_data);
 }
 
-static gboolean
+static bool
 coverage_data_matches_value_for_key(const char            *data,
                                     const char            *key,
                                     CoverageDataMatchFunc  match,
@@ -285,12 +285,12 @@ coverage_data_matches_value_for_key(const char            *data,
     const char *line = line_starting_with(data, key);
 
     if (!line)
-        return FALSE;
+        return false;
 
     return coverage_data_matches_value_for_key_internal(line, key, match, user_data);
 }
 
-static gboolean
+static bool
 coverage_data_matches_any_value_for_key(const char            *data,
                                         const char            *key,
                                         CoverageDataMatchFunc  match,
@@ -300,15 +300,15 @@ coverage_data_matches_any_value_for_key(const char            *data,
 
     while (data) {
         if (coverage_data_matches_value_for_key_internal(data, key, match, user_data))
-            return TRUE;
+            return true;
 
         data = line_starting_with(data + 1, key);
     }
 
-    return FALSE;
+    return false;
 }
 
-static gboolean
+static bool
 coverage_data_matches_values_for_key(const char            *data,
                                      const char            *key,
                                      gsize                  n,
@@ -323,7 +323,7 @@ coverage_data_matches_values_for_key(const char            *data,
 
     while (line && n > 0) {
         if (!coverage_data_matches_value_for_key_internal(line, key, match, (gpointer) data_iterator))
-            return FALSE;
+            return false;
 
         line = line_starting_with(line + 1, key);
         --n;
@@ -332,9 +332,9 @@ coverage_data_matches_values_for_key(const char            *data,
 
     /* If n is zero then we've found all available matches */
     if (n == 0)
-        return TRUE;
+        return true;
 
-    return FALSE;
+    return false;
 }
 
 /* A simple wrapper around gjs_coverage_new */
@@ -565,7 +565,7 @@ typedef struct _BranchLineData {
     BranchTaken taken;
 } BranchLineData;
 
-static gboolean
+static bool
 branch_at_line_should_be_taken(const char *line,
                                gpointer user_data)
 {
@@ -595,11 +595,11 @@ branch_at_line_should_be_taken(const char *line,
     else
         hit_count_num = atoi(hit_count);
 
-    const gboolean hit_correct_branch_line =
+    const bool hit_correct_branch_line =
         branch_data->expected_branch_line == line_no;
-    const gboolean hit_correct_branch_id =
+    const bool hit_correct_branch_id =
         branch_data->expected_id == branch_id;
-    gboolean branch_correctly_taken_or_not_taken;
+    bool branch_correctly_taken_or_not_taken;
 
     switch (branch_data->taken) {
     case NOT_EXECUTED:
@@ -820,7 +820,7 @@ test_branch_not_hit_written_to_coverage_data(gpointer      fixture_data,
     g_free(coverage_data_contents);
 }
 
-static gboolean
+static bool
 has_function_name(const char *line,
                   gpointer    user_data)
 {
@@ -877,7 +877,7 @@ test_function_names_written_to_coverage_data(gpointer      fixture_data,
     g_free(coverage_data_contents);
 }
 
-static gboolean
+static bool
 has_function_line(const char *line,
                   gpointer    user_data)
 {
@@ -932,7 +932,7 @@ typedef struct _FunctionHitCountData {
     unsigned int hit_count_minimum;
 } FunctionHitCountData;
 
-static gboolean
+static bool
 hit_count_is_more_than_for_function(const char *line,
                                     gpointer   user_data)
 {
@@ -955,8 +955,8 @@ hit_count_is_more_than_for_function(const char *line,
             g_error("sscanf: only matched %d", nmatches);
     }
 
-    const gboolean function_name_match = g_strcmp0(data->function, detected_function) == 0;
-    const gboolean hit_count_more_than = hit_count >= data->hit_count_minimum;
+    const bool function_name_match = g_strcmp0(data->function, detected_function) == 0;
+    const bool hit_count_more_than = hit_count >= data->hit_count_minimum;
 
     g_free(detected_function);
 
@@ -1142,7 +1142,7 @@ typedef struct _LineCountIsMoreThanData {
     unsigned int expected_to_be_more_than;
 } LineCountIsMoreThanData;
 
-static gboolean
+static bool
 line_hit_count_is_more_than(const char *line,
                             gpointer    user_data)
 {
@@ -1383,7 +1383,7 @@ typedef struct _ExpectedSourceFileCoverageData {
     const char              expected_lines_found_character;
 } ExpectedSourceFileCoverageData;
 
-static gboolean
+static bool
 check_coverage_data_for_source_file(ExpectedSourceFileCoverageData *expected,
                                     const gsize                     expected_size,
                                     const char                     *section_start)
@@ -1393,16 +1393,16 @@ check_coverage_data_for_source_file(ExpectedSourceFileCoverageData *expected,
         if (strncmp(&section_start[3],
                     expected[i].source_file_path,
                     strlen (expected[i].source_file_path)) == 0) {
-            const gboolean line_hits_match = coverage_data_matches_values_for_key(section_start,
-                                                                                  "DA:",
-                                                                                  expected[i].n_more_than_matchers,
-                                                                                  line_hit_count_is_more_than,
-                                                                                  expected[i].more_than,
-                                                                                  sizeof (LineCountIsMoreThanData));
+            const bool line_hits_match = coverage_data_matches_values_for_key(section_start,
+                                                                              "DA:",
+                                                                              expected[i].n_more_than_matchers,
+                                                                              line_hit_count_is_more_than,
+                                                                              expected[i].more_than,
+                                                                              sizeof (LineCountIsMoreThanData));
             const char *total_hits_record = line_starting_with(section_start, "LH:");
-            const gboolean total_hits_match = total_hits_record[3] == expected[i].expected_lines_hit_character;
+            const bool total_hits_match = total_hits_record[3] == expected[i].expected_lines_hit_character;
             const char *total_found_record = line_starting_with(section_start, "LF:");
-            const gboolean total_found_match = total_found_record[3] == expected[i].expected_lines_found_character;
+            const bool total_found_match = total_found_record[3] == expected[i].expected_lines_found_character;
 
             return line_hits_match &&
                    total_hits_match &&
@@ -1410,7 +1410,7 @@ check_coverage_data_for_source_file(ExpectedSourceFileCoverageData *expected,
         }
     }
 
-    return FALSE;
+    return false;
 }
 
 static char *
@@ -1592,10 +1592,7 @@ eval_file_for_ast_in_object_notation(GjsContext  *context,
                                      GjsCoverage *coverage,
                                      const char  *filename)
 {
-    gboolean success = gjs_context_eval_file(context,
-                                             filename,
-                                             NULL,
-                                             NULL);
+    bool success = gjs_context_eval_file(context, filename, NULL, NULL);
     g_assert_true(success);
     
     const gchar *coverage_paths[] = {
@@ -1624,8 +1621,8 @@ test_coverage_cache_data_in_expected_format(gpointer      fixture_data,
     sleep(1);
 
     GTimeVal mtime;
-    gboolean successfully_got_mtime = gjs_get_path_mtime(fixture->base_fixture.temporary_js_script_filename,
-                                                         &mtime);
+    bool successfully_got_mtime = gjs_get_path_mtime(fixture->base_fixture.temporary_js_script_filename,
+                                                     &mtime);
     g_assert_true(successfully_got_mtime);
 
     char    *mtime_string = g_strdup_printf("[%lli,%lli]", (gint64) mtime.tv_sec, (gint64) mtime.tv_usec);
@@ -1638,7 +1635,7 @@ test_coverage_cache_data_in_expected_format(gpointer      fixture_data,
 
     g_assert_cmpstr(cache_in_object_notation, ==, expected_cache_object_notation->str);
 
-    g_string_free(expected_cache_object_notation, TRUE);
+    g_string_free(expected_cache_object_notation, true);
     g_free(cache_in_object_notation);
     g_free(mtime_string);
 }
@@ -1670,7 +1667,7 @@ test_coverage_cache_data_in_expected_format_resource(gpointer      fixture_data,
 
     g_assert_cmpstr(cache_in_object_notation, ==, expected_cache_object_notation->str);
 
-    g_string_free(expected_cache_object_notation, TRUE);
+    g_string_free(expected_cache_object_notation, true);
     g_free(cache_in_object_notation);
     g_free(hash_string);
 }
@@ -1821,10 +1818,7 @@ eval_file_for_ast_cache_path(GjsContext  *context,
                              const char  *filename,
                              const char  *output_directory)
 {
-    gboolean success = gjs_context_eval_file(context,
-                                             filename,
-                                             NULL,
-                                             NULL);
+    bool success = gjs_context_eval_file(context, filename, NULL, NULL);
     g_assert_true(success);
 
     const gchar *coverage_paths[] = {
@@ -2045,10 +2039,10 @@ test_coverage_cache_file_written_when_no_cache_exists(gpointer      fixture_data
     /* We need to execute the script now in order for a cache entry
      * to be created, since unexecuted scripts are not counted as
      * part of the coverage report. */
-    gboolean success = gjs_context_eval_file(fixture->base_fixture.context,
-                                             fixture->base_fixture.temporary_js_script_filename,
-                                             NULL,
-                                             NULL);
+    bool success = gjs_context_eval_file(fixture->base_fixture.context,
+                                         fixture->base_fixture.temporary_js_script_filename,
+                                         NULL,
+                                         NULL);
     g_assert_true(success);
 
     gjs_coverage_write_statistics(fixture->base_fixture.coverage,
@@ -2065,17 +2059,14 @@ eval_script_for_cache_mtime(GjsContext  *context,
                             const char  *script,
                             const char  *output_directory)
 {
-    gboolean success = gjs_context_eval_file(context,
-                                             script,
-                                             NULL,
-                                             NULL);
+    bool success = gjs_context_eval_file(context, script, NULL, NULL);
     g_assert_true(success);
 
     gjs_coverage_write_statistics(coverage,
                                   output_directory);
 
     GTimeVal mtime;
-    gboolean successfully_got_mtime = gjs_get_path_mtime(cache_path, &mtime);
+    bool successfully_got_mtime = gjs_get_path_mtime(cache_path, &mtime);
     g_assert_true(successfully_got_mtime);
 
     return mtime;
@@ -2127,8 +2118,8 @@ test_coverage_cache_updated_when_cache_stale(gpointer      fixture_data,
                                                               fixture->output_file_directory);
 
 
-    const gboolean seconds_different = (first_cache_mtime.tv_sec != second_cache_mtime.tv_sec);
-    const gboolean microseconds_different (first_cache_mtime.tv_usec != second_cache_mtime.tv_usec);
+    const bool seconds_different = (first_cache_mtime.tv_sec != second_cache_mtime.tv_sec);
+    const bool microseconds_different = (first_cache_mtime.tv_usec != second_cache_mtime.tv_usec);
 
     g_assert_true(seconds_different || microseconds_different);
 

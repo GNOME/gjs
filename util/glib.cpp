@@ -43,14 +43,14 @@ get_first_one_predicate(void  *key,
     sod->value = value;
 
     /* found it! */
-    return TRUE;
+    return true;
 }
 
-static gboolean
+static bool
 remove_or_steal_one(GHashTable *hash,
                     void      **key_p,
                     void      **value_p,
-                    gboolean    steal)
+                    bool        steal)
 {
     StoreOneData sod;
 
@@ -59,7 +59,7 @@ remove_or_steal_one(GHashTable *hash,
     g_hash_table_find(hash, get_first_one_predicate, &sod);
 
     if (sod.key == NULL)
-        return FALSE;
+        return false;
 
     if (key_p)
         *key_p = sod.key;
@@ -74,20 +74,20 @@ remove_or_steal_one(GHashTable *hash,
     return sod.value != NULL;
 }
 
-gboolean
+bool
 gjs_g_hash_table_remove_one(GHashTable *hash,
                             void      **key_p,
                             void      **value_p)
 {
-    return remove_or_steal_one(hash, key_p, value_p, FALSE);
+    return remove_or_steal_one(hash, key_p, value_p, false);
 }
 
-gboolean
+bool
 gjs_g_hash_table_steal_one(GHashTable *hash,
                            void      **key_p,
                            void      **value_p)
 {
-    return remove_or_steal_one(hash, key_p, value_p, TRUE);
+    return remove_or_steal_one(hash, key_p, value_p, true);
 }
 
 /** gjs_g_strv_concat:
@@ -124,7 +124,7 @@ gjs_g_strv_concat(char ***strv_array, int len)
 
     g_ptr_array_add(array, NULL);
 
-    return (char**)g_ptr_array_free(array, FALSE);
+    return (char**)g_ptr_array_free(array, false);
 }
 
 gchar *
@@ -164,5 +164,5 @@ _gjs_g_utf8_make_valid (const gchar *name)
 
   g_assert (g_utf8_validate (string->str, -1, NULL));
 
-  return g_string_free (string, FALSE);
+  return g_string_free (string, false);
 }

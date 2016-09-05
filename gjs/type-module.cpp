@@ -48,7 +48,7 @@ gjs_type_module_get ()
 static gboolean
 gjs_type_module_load (GTypeModule *self)
 {
-    return TRUE;
+    return true;
 }
 
 static void

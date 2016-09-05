@@ -60,9 +60,9 @@ static JSClass global_class = {
  * This function creates a global object given the context,
  * and initializes it with the default API.
  *
- * Returns: %TRUE on success, %FALSE otherwise
+ * Returns: true on success, false otherwise
  */
-gboolean
+bool
 gjs_init_context_standard (JSContext  *context,
                            JSObject  **global_out)
 {
@@ -94,23 +94,23 @@ gjs_init_context_standard (JSContext  *context,
     options.setVersion(JSVERSION_LATEST);
     global = JS_NewGlobalObject(context, &global_class, NULL, options);
     if (global == NULL)
-        return FALSE;
+        return false;
 
     /* Set the context's global */
     JSAutoCompartment ac(context, global);
 
     if (!JS_InitStandardClasses(context, global))
-        return FALSE;
+        return false;
 
     if (!JS_InitReflect(context, global))
-        return FALSE;
+        return false;
 
     if (!JS_DefineDebuggerObject(context, global))
-        return FALSE;
+        return false;
 
     *global_out = global;
 
-    return TRUE;
+    return true;
 }
 
 void
@@ -140,7 +140,7 @@ gjs_get_global_slot (JSContext     *context,
  *
  * Requires request.
  */
-gboolean
+bool
 gjs_object_require_property(JSContext       *context,
                             JSObject        *obj,
                             const char      *obj_description,
@@ -223,7 +223,7 @@ gjs_build_string_array(JSContext   *context,
     if (array_length == -1)
         array_length = g_strv_length(array_values);
 
-    elems = g_array_sized_new(FALSE, FALSE, sizeof(JS::Value), array_length);
+    elems = g_array_sized_new(false, false, sizeof(JS::Value), array_length);
 
     for (i = 0; i < array_length; ++i) {
         JS::Value element;
@@ -232,7 +232,7 @@ gjs_build_string_array(JSContext   *context,
     }
 
     array = JS_NewArrayObject(context, elems->len, (JS::Value *) elems->data);
-    g_array_free(elems, TRUE);
+    g_array_free(elems, true);
 
     return array;
 }
@@ -303,7 +303,7 @@ gjs_string_readable (JSContext   *context,
 
     JS_EndRequest(context);
 
-    return g_string_free(buf, FALSE);
+    return g_string_free(buf, false);
 }
 
 /**
@@ -468,7 +468,7 @@ gjs_explain_scope(JSContext  *context,
     gjs_debug(GJS_DEBUG_SCOPE,
               "  Chain: %s",
               chain->str);
-    g_string_free(chain, TRUE);
+    g_string_free(chain, true);
 
     JS_EndRequest(context);
 }
@@ -481,14 +481,14 @@ gjs_log_exception_full(JSContext *context,
     JS::Value stack;
     JSString *exc_str;
     char *utf8_exception, *utf8_message;
-    gboolean is_syntax;
+    bool is_syntax;
 
     JS_BeginRequest(context);
 
-    is_syntax = FALSE;
+    is_syntax = false;
 
     if (exc.isObject() &&
-        gjs_typecheck_boxed(context, &exc.toObject(), NULL, G_TYPE_ERROR, FALSE)) {
+        gjs_typecheck_boxed(context, &exc.toObject(), NULL, G_TYPE_ERROR, false)) {
         GError *gerror;
 
         gerror = (GError*) gjs_c_struct_from_boxed(context, &exc.toObject());
@@ -587,7 +587,7 @@ gjs_log_exception_full(JSContext *context,
 
 static bool
 log_and_maybe_keep_exception(JSContext  *context,
-                             gboolean    keep)
+                             bool        keep)
 {
     JS::Value exc = JS::UndefinedValue();
     bool retval = false;
@@ -621,13 +621,13 @@ log_and_maybe_keep_exception(JSContext  *context,
 bool
 gjs_log_exception(JSContext  *context)
 {
-    return log_and_maybe_keep_exception(context, FALSE);
+    return log_and_maybe_keep_exception(context, false);
 }
 
 bool
 gjs_log_and_keep_exception(JSContext *context)
 {
-    return log_and_maybe_keep_exception(context, TRUE);
+    return log_and_maybe_keep_exception(context, true);
 }
 
 static void
@@ -875,7 +875,7 @@ gjs_parse_args_valist (JSContext  *context,
     guint n_unwind = 0;
 #define MAX_UNWIND_STRINGS 16
     gpointer unwind_strings[MAX_UNWIND_STRINGS];
-    gboolean ignore_trailing_args = FALSE;
+    bool ignore_trailing_args = false;
     guint n_required = 0;
     guint n_total = 0;
     guint consumed_args;
@@ -883,7 +883,7 @@ gjs_parse_args_valist (JSContext  *context,
     JS_BeginRequest(context);
 
     if (*format == '!') {
-        ignore_trailing_args = TRUE;
+        ignore_trailing_args = true;
         format++;
     }
 
@@ -958,7 +958,7 @@ gjs_parse_args_valist (JSContext  *context,
             if (!js_value.isBoolean()) {
                 arg_error_message = "Not a boolean";
             } else {
-                gboolean *arg = (gboolean*) arg_location;
+                bool *arg = (bool *) arg_location;
                 *arg = js_value.toBoolean();
             }
         }

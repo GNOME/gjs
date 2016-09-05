@@ -64,14 +64,14 @@ bool gjs_value_to_g_argument (JSContext      *context,
                               const char     *arg_name,
                               GjsArgumentType argument_type,
                               GITransfer      transfer,
-                              gboolean        may_be_null,
+                              bool            may_be_null,
                               GArgument      *arg);
 
 bool gjs_value_from_g_argument (JSContext  *context,
                                 JS::Value  *value_p,
                                 GITypeInfo *type_info,
                                 GArgument  *arg,
-                                gboolean    copy_structs);
+                                bool        copy_structs);
 bool gjs_value_from_explicit_array (JSContext  *context,
                                     JS::Value  *value_p,
                                     GITypeInfo *type_info,

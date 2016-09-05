@@ -28,6 +28,7 @@
 #error "Only <gjs/gjs-module.h> can be included directly."
 #endif
 
+#include <stdbool.h>
 #include <glib.h>
 #include "gjs/jsapi-util.h"
 
@@ -74,7 +75,7 @@ GJS_DECLARE_COUNTER(interface)
     g_atomic_int_get(&gjs_counter_ ## name .value)
 
 void gjs_memory_report(const char *where,
-                       gboolean    die_if_leaks);
+                       bool        die_if_leaks);
 
 G_END_DECLS
 

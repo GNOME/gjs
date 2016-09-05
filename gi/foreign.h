@@ -34,7 +34,7 @@ typedef bool (*GjsArgOverrideToGArgumentFunc) (JSContext      *context,
                                                const char     *arg_name,
                                                GjsArgumentType argument_type,
                                                GITransfer      transfer,
-                                               gboolean        may_be_null,
+                                               bool            may_be_null,
                                                GArgument      *arg);
 
 typedef bool (*GjsArgOverrideFromGArgumentFunc)    (JSContext *context,
@@ -60,7 +60,7 @@ bool  gjs_struct_foreign_convert_to_g_argument   (JSContext      *context,
                                                   const char     *arg_name,
                                                   GjsArgumentType argument_type,
                                                   GITransfer      transfer,
-                                                  gboolean        may_be_null,
+                                                  bool            may_be_null,
                                                   GArgument      *arg);
 bool  gjs_struct_foreign_convert_from_g_argument (JSContext      *context,
                                                   JS::Value      *value_p,

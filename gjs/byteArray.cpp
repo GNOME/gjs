@@ -345,8 +345,8 @@ gjs_g_byte_array_new(int preallocated_length)
      * We nul-terminate too for ease of toString() and for security
      * paranoia.
      */
-    array =  (GByteArray*) g_array_sized_new (TRUE, /* nul-terminated */
-                                              TRUE, /* clear to zero */
+    array =  (GByteArray*) g_array_sized_new (true, /* nul-terminated */
+                                              true, /* clear to zero */
                                               1, /* element size */
                                               preallocated_length);
    if (preallocated_length > 0) {
@@ -398,7 +398,7 @@ byte_array_finalize(JSFreeOp *fop,
         return; /* prototype, not instance */
 
     if (priv->array) {
-        g_byte_array_free(priv->array, TRUE);
+        g_byte_array_free(priv->array, true);
         priv->array = NULL;
     } else if (priv->bytes) {
         g_clear_pointer(&priv->bytes, g_bytes_unref);
@@ -417,7 +417,7 @@ to_string_func(JSContext *context,
     JSObject *object = argv.thisv().toObjectOrNull();
     ByteArrayInstance *priv;
     char *encoding;
-    gboolean encoding_is_utf8;
+    bool encoding_is_utf8;
     gchar *data;
 
     priv = priv_from_js(context, object);
@@ -436,14 +436,14 @@ to_string_func(JSContext *context,
          * just an optimization anyway.
          */
         if (strcmp(encoding, "UTF-8") == 0) {
-            encoding_is_utf8 = TRUE;
+            encoding_is_utf8 = true;
             g_free(encoding);
             encoding = NULL;
         } else {
-            encoding_is_utf8 = FALSE;
+            encoding_is_utf8 = false;
         }
     } else {
-        encoding_is_utf8 = TRUE;
+        encoding_is_utf8 = true;
     }
 
     if (priv->array->len == 0)
@@ -577,7 +577,7 @@ from_string_func(JSContext *context,
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     ByteArrayInstance *priv;
     char *encoding;
-    gboolean encoding_is_utf8;
+    bool encoding_is_utf8;
     JSObject *obj;
     bool retval = false;
 
@@ -609,14 +609,14 @@ from_string_func(JSContext *context,
          * just an optimization anyway.
          */
         if (strcmp(encoding, "UTF-8") == 0) {
-            encoding_is_utf8 = TRUE;
+            encoding_is_utf8 = true;
             g_free(encoding);
             encoding = NULL;
         } else {
-            encoding_is_utf8 = FALSE;
+            encoding_is_utf8 = false;
         }
     } else {
-        encoding_is_utf8 = TRUE;
+        encoding_is_utf8 = true;
     }
 
     if (encoding_is_utf8) {
@@ -756,7 +756,7 @@ from_gbytes_func(JSContext *context,
                         "bytes", &bytes_obj))
         return false;
 
-    if (!gjs_typecheck_boxed(context, bytes_obj, NULL, G_TYPE_BYTES, TRUE))
+    if (!gjs_typecheck_boxed(context, bytes_obj, NULL, G_TYPE_BYTES, true))
         return false;
 
     gbytes = (GBytes*) gjs_c_struct_from_boxed(context, bytes_obj);

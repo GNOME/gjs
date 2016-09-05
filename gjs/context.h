@@ -28,6 +28,7 @@
 #error "Only <gjs/gjs.h> can be included directly."
 #endif
 
+#include <stdbool.h>
 #include <glib-object.h>
 
 G_BEGIN_DECLS
@@ -46,17 +47,17 @@ GType           gjs_context_get_type             (void) G_GNUC_CONST;
 
 GjsContext*     gjs_context_new                  (void);
 GjsContext*     gjs_context_new_with_search_path (char         **search_path);
-gboolean        gjs_context_eval_file            (GjsContext  *js_context,
+bool            gjs_context_eval_file            (GjsContext  *js_context,
                                                   const char    *filename,
                                                   int           *exit_status_p,
                                                   GError       **error);
-gboolean        gjs_context_eval                 (GjsContext  *js_context,
+bool            gjs_context_eval                 (GjsContext  *js_context,
                                                   const char    *script,
                                                   gssize         script_len,
                                                   const char    *filename,
                                                   int           *exit_status_p,
                                                   GError       **error);
-gboolean        gjs_context_define_string_array  (GjsContext  *js_context,
+bool            gjs_context_define_string_array  (GjsContext  *js_context,
                                                   const char    *array_name,
                                                   gssize         array_length,
                                                   const char   **array_values,

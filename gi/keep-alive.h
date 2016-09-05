@@ -24,6 +24,7 @@
 #ifndef __GJS_KEEP_ALIVE_H__
 #define __GJS_KEEP_ALIVE_H__
 
+#include <stdbool.h>
 #include <glib.h>
 #include "gjs/jsapi-util.h"
 
@@ -82,10 +83,10 @@ struct GjsKeepAliveIter {
 
 void gjs_keep_alive_iterator_init (GjsKeepAliveIter *iter, JSObject *keep_alive);
 
-gboolean gjs_keep_alive_iterator_next (GjsKeepAliveIter  *iter,
-                                       GjsUnrootedFunc    notify_func,
-                                       JSObject         **out_child,
-                                       void             **out_data);
+bool gjs_keep_alive_iterator_next (GjsKeepAliveIter  *iter,
+                                   GjsUnrootedFunc    notify_func,
+                                   JSObject         **out_child,
+                                   void             **out_data);
 
 G_END_DECLS
 

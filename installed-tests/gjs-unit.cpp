@@ -100,9 +100,9 @@ teardown(GjsTestJSFixture *fix,
         g_clear_object(&fix->coverage);
     }
 
-    gjs_memory_report("before destroying context", FALSE);
+    gjs_memory_report("before destroying context", false);
     g_object_unref(fix->context);
-    gjs_memory_report("after destroying context", TRUE);
+    gjs_memory_report("after destroying context", true);
 }
 
 static void
@@ -110,7 +110,7 @@ test(GjsTestJSFixture *fix,
      gconstpointer     test_data)
 {
     GError *error = NULL;
-    gboolean success;
+    bool success;
     int code;
 
     GjsTestData *data = (GjsTestData *) test_data;
@@ -154,9 +154,9 @@ main(int argc, char **argv)
      * we leak objects.
      * https://bugzilla.gnome.org/show_bug.cgi?id=616193
      */
-    g_setenv("GJS_DISABLE_JIT", "1", FALSE);
+    g_setenv("GJS_DISABLE_JIT", "1", false);
     /* The fact that this isn't the default is kind of lame... */
-    g_setenv("GJS_DEBUG_OUTPUT", "stderr", FALSE);
+    g_setenv("GJS_DEBUG_OUTPUT", "stderr", false);
 
     setlocale(LC_ALL, "");
     g_test_init(&argc, &argv, NULL);
