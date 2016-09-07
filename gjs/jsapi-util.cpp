@@ -116,14 +116,14 @@ gjs_init_context_standard (JSContext  *context,
 void
 gjs_set_global_slot (JSContext     *context,
                      GjsGlobalSlot  slot,
-                     jsval          value)
+                     JS::Value      value)
 {
     JSObject *global;
     global = JS_GetGlobalObject(context);
     JS_SetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot, value);
 }
 
-jsval
+JS::Value
 gjs_get_global_slot (JSContext     *context,
                      GjsGlobalSlot  slot)
 {
@@ -145,9 +145,9 @@ gjs_object_require_property(JSContext       *context,
                             JSObject        *obj,
                             const char      *obj_description,
                             jsid             property_name,
-                            jsval           *value_p)
+                            JS::Value       *value_p)
 {
-    jsval value;
+    JS::Value value;
     char *name;
 
     value = JSVAL_VOID;
@@ -191,10 +191,10 @@ gjs_throw_constructor_error(JSContext *context)
 
 void
 gjs_throw_abstract_constructor_error(JSContext *context,
-                                     jsval     *vp)
+                                     JS::Value *vp)
 {
-    jsval callee;
-    jsval prototype;
+    JS::Value callee;
+    JS::Value prototype;
     JSClass *proto_class;
     const char *name = "anonymous";
 
@@ -223,15 +223,15 @@ gjs_build_string_array(JSContext   *context,
     if (array_length == -1)
         array_length = g_strv_length(array_values);
 
-    elems = g_array_sized_new(FALSE, FALSE, sizeof(jsval), array_length);
+    elems = g_array_sized_new(FALSE, FALSE, sizeof(JS::Value), array_length);
 
     for (i = 0; i < array_length; ++i) {
-        jsval element;
+        JS::Value element;
         element = STRING_TO_JSVAL(JS_NewStringCopyZ(context, array_values[i]));
         g_array_append_val(elems, element);
     }
 
-    array = JS_NewArrayObject(context, elems->len, (jsval*) elems->data);
+    array = JS_NewArrayObject(context, elems->len, (JS::Value *) elems->data);
     g_array_free(elems, TRUE);
 
     return array;
@@ -315,7 +315,7 @@ gjs_string_readable (JSContext   *context,
  */
 char*
 gjs_value_debug_string(JSContext      *context,
-                       jsval           value)
+                       JS::Value       value)
 {
     JSString *str;
     char *bytes;
@@ -396,7 +396,7 @@ gjs_log_object_props(JSContext      *context,
         goto done;
 
     while (!JSID_IS_VOID(prop_id)) {
-        jsval propval;
+        JS::Value propval;
         char *debugstr;
         char *name = NULL;
 
@@ -475,10 +475,10 @@ gjs_explain_scope(JSContext  *context,
 
 JSBool
 gjs_log_exception_full(JSContext *context,
-                       jsval      exc,
+                       JS::Value  exc,
                        JSString  *message)
 {
-    jsval stack;
+    JS::Value stack;
     JSString *exc_str;
     char *utf8_exception, *utf8_message;
     gboolean is_syntax;
@@ -497,7 +497,7 @@ gjs_log_exception_full(JSContext *context,
                                          gerror->message);
     } else {
         if (JSVAL_IS_OBJECT(exc)) {
-            jsval js_name;
+            JS::Value js_name;
             char *utf8_name;
 
             if (gjs_object_get_property_const(context, JSVAL_TO_OBJECT(exc),
@@ -526,7 +526,7 @@ gjs_log_exception_full(JSContext *context,
     */
 
     if (is_syntax) {
-        jsval js_lineNumber, js_fileName;
+        JS::Value js_lineNumber, js_fileName;
         unsigned lineNumber;
         char *utf8_fileName;
 
@@ -589,7 +589,7 @@ static JSBool
 log_and_maybe_keep_exception(JSContext  *context,
                              gboolean    keep)
 {
-    jsval exc = JSVAL_VOID;
+    JS::Value exc = JSVAL_VOID;
     JSBool retval = JS_FALSE;
 
     JS_BeginRequest(context);
@@ -631,12 +631,14 @@ gjs_log_and_keep_exception(JSContext *context)
 }
 
 static void
-try_to_chain_stack_trace(JSContext *src_context, JSContext *dst_context,
-                         jsval src_exc) {
+try_to_chain_stack_trace(JSContext *src_context,
+                         JSContext *dst_context,
+                         JS::Value  src_exc)
+{
     /* append current stack of dst_context to stack trace for src_exc.
      * we bail if anything goes wrong, just using the src_exc unmodified
      * in that case. */
-    jsval chained, src_stack, dst_stack, new_stack;
+    JS::Value chained, src_stack, dst_stack, new_stack;
     JSString *new_stack_str;
 
     JS_BeginRequest(src_context);
@@ -685,7 +687,7 @@ gjs_move_exception(JSContext      *src_context,
     JS_BeginRequest(dest_context);
 
     /* NOTE: src and dest could be the same. */
-    jsval exc;
+    JS::Value exc;
     if (JS_GetPendingException(src_context, &exc)) {
         if (src_context != dest_context) {
             /* try to add the current stack of dest_context to the
@@ -709,10 +711,10 @@ gjs_move_exception(JSContext      *src_context,
 JSBool
 gjs_call_function_value(JSContext      *context,
                         JSObject       *obj,
-                        jsval           fval,
+                        JS::Value       fval,
                         unsigned        argc,
-                        jsval          *argv,
-                        jsval          *rval)
+                        JS::Value      *argv,
+                        JS::Value      *rval)
 {
     JSBool result;
 
@@ -731,8 +733,8 @@ gjs_call_function_value(JSContext      *context,
 static JSBool
 log_prop(JSContext  *context,
          JSObject   *obj,
-         jsval       id,
-         jsval      *value_p,
+         JS::Value   id,
+         JS::Value  *value_p,
          const char *what)
 {
     if (JSVAL_IS_STRING(id)) {
@@ -759,8 +761,8 @@ log_prop(JSContext  *context,
 JSBool
 gjs_get_prop_verbose_stub(JSContext *context,
                           JSObject  *obj,
-                          jsval      id,
-                          jsval     *value_p)
+                          JS::Value  id,
+                          JS::Value *value_p)
 {
     return log_prop(context, obj, id, value_p, "get");
 }
@@ -768,8 +770,8 @@ gjs_get_prop_verbose_stub(JSContext *context,
 JSBool
 gjs_set_prop_verbose_stub(JSContext *context,
                           JSObject  *obj,
-                          jsval      id,
-                          jsval     *value_p)
+                          JS::Value  id,
+                          JS::Value *value_p)
 {
     return log_prop(context, obj, id, value_p, "set");
 }
@@ -777,8 +779,8 @@ gjs_set_prop_verbose_stub(JSContext *context,
 JSBool
 gjs_add_prop_verbose_stub(JSContext *context,
                           JSObject  *obj,
-                          jsval      id,
-                          jsval     *value_p)
+                          JS::Value  id,
+                          JS::Value *value_p)
 {
     return log_prop(context, obj, id, value_p, "add");
 }
@@ -786,15 +788,15 @@ gjs_add_prop_verbose_stub(JSContext *context,
 JSBool
 gjs_delete_prop_verbose_stub(JSContext *context,
                              JSObject  *obj,
-                             jsval      id,
-                             jsval     *value_p)
+                             JS::Value  id,
+                             JS::Value *value_p)
 {
     return log_prop(context, obj, id, value_p, "delete");
 }
 
-/* get a debug string for type tag in jsval */
+/* get a debug string for type tag in JS::Value */
 const char*
-gjs_get_type_name(jsval value)
+gjs_get_type_name(JS::Value value)
 {
     if (JSVAL_IS_NULL(value)) {
         return "null";
@@ -835,9 +837,9 @@ gjs_get_type_name(jsval value)
  *   undefined throws, but null => 0, false => 0, true => 1.
  */
 JSBool
-gjs_value_to_int64  (JSContext  *context,
-                     const jsval val,
-                     gint64     *result)
+gjs_value_to_int64(JSContext      *context,
+                   const JS::Value val,
+                   gint64         *result)
 {
     if (JSVAL_IS_INT (val)) {
         *result = JSVAL_TO_INT (val);
@@ -866,7 +868,7 @@ gjs_parse_args_valist (JSContext  *context,
                        const char *function_name,
                        const char *format,
                        unsigned    argc,
-                       jsval      *argv,
+                       JS::Value  *argv,
                        va_list     args)
 {
     guint i;
@@ -924,7 +926,7 @@ gjs_parse_args_valist (JSContext  *context,
     for (i = 0, consumed_args = 0, fmt_iter = format; *fmt_iter; fmt_iter++, i++) {
         const char *argname;
         gpointer arg_location;
-        jsval js_value;
+        JS::Value js_value;
         const char *arg_error_message = NULL;
 
         if (*fmt_iter == '|')
@@ -1102,7 +1104,7 @@ gjs_parse_args (JSContext  *context,
                 const char *function_name,
                 const char *format,
                 unsigned    argc,
-                jsval      *argv,
+                JS::Value  *argv,
                 ...)
 {
     va_list args;
@@ -1291,10 +1293,10 @@ gjs_eval_with_scope(JSContext    *context,
                     const char   *script,
                     gssize        script_len,
                     const char   *filename,
-                    jsval        *retval_p)
+                    JS::Value    *retval_p)
 {
     int start_line_number = 1;
-    jsval retval = JSVAL_VOID;
+    JS::Value retval = JSVAL_VOID;
     JSAutoRequest ar(context);
 
     if (script_len < 0)

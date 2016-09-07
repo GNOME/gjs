@@ -120,7 +120,7 @@ trace_foreach(void *key,
     JSTracer *tracer = (JSTracer *) data;
 
     if (child->child != NULL) {
-        jsval val;
+        JS::Value val;
         JS_SET_TRACING_DETAILS(tracer, NULL, "keep-alive", 0);
         val = OBJECT_TO_JSVAL(child->child);
         g_assert (JSVAL_TO_TRACEABLE (val));
@@ -334,7 +334,7 @@ gjs_keep_alive_create(JSContext *context)
 JSObject*
 gjs_keep_alive_get_global_if_exists (JSContext *context)
 {
-    jsval keep_alive;
+    JS::Value keep_alive;
 
     keep_alive = gjs_get_global_slot(context, GJS_GLOBAL_SLOT_KEEP_ALIVE);
 

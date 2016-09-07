@@ -194,7 +194,7 @@ gjs_define_interface_class(JSContext       *context,
     const char *ns;
     JSObject *constructor;
     JSObject *prototype;
-    jsval value;
+    JS::Value value;
 
     ns = gjs_get_names_from_gtype_and_gi_info(gtype, (GIBaseInfo *) info,
                                               &constructor_name);
@@ -243,7 +243,7 @@ gjs_define_interface_class(JSContext       *context,
 JSBool
 gjs_lookup_interface_constructor(JSContext *context,
                                  GType      gtype,
-                                 jsval     *value_p)
+                                 JS::Value *value_p)
 {
     JSObject *constructor;
     GIBaseInfo *interface_info;

@@ -60,7 +60,7 @@ JSBool
 gjs_js_define_cairo_stuff(JSContext *context,
                           JSObject **module_out)
 {
-    jsval obj;
+    JS::Value obj;
     JSObject *module;
     JSObject *surface_proto, *pattern_proto, *gradient_proto;
 

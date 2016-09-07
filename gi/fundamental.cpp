@@ -384,10 +384,10 @@ fundamental_invoke_constructor(FundamentalInstance *priv,
                                JSContext           *context,
                                JSObject            *obj,
                                unsigned             argc,
-                               jsval               *argv,
+                               JS::Value           *argv,
                                GArgument           *rvalue)
 {
-    jsval js_constructor, js_constructor_func;
+    JS::Value js_constructor, js_constructor_func;
     jsid constructor_const;
     JSBool ret = JS_FALSE;
 
@@ -498,14 +498,14 @@ fundamental_finalize(JSFreeOp  *fop,
 static JSBool
 to_string_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
 
     FundamentalInstance *priv;
     JSBool ret = JS_FALSE;
-    jsval retval;
+    JS::Value retval;
 
     if (!priv_from_js_with_typecheck(context, obj, &priv))
         goto out;
@@ -584,7 +584,7 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
     JSObject *in_object;
     JSObject *constructor;
     const char *constructor_name;
-    jsval value;
+    JS::Value value;
 
     if (info) {
         in_object = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
@@ -649,7 +649,7 @@ gjs_define_fundamental_class(JSContext     *context,
 {
     const char *constructor_name;
     JSObject *prototype;
-    jsval value;
+    JS::Value value;
     jsid js_constructor_name = JSID_VOID;
     JSObject *parent_proto;
     Fundamental *priv;

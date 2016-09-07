@@ -44,7 +44,7 @@ typedef struct {
     gint ref_count;
     JSContext *context;
     GICallableInfo *info;
-    jsval js_function;
+    JS::Value js_function;
     ffi_cif cif;
     ffi_closure *closure;
     GIScopeType scope;
@@ -53,7 +53,7 @@ typedef struct {
 } GjsCallbackTrampoline;
 
 GjsCallbackTrampoline* gjs_callback_trampoline_new(JSContext      *context,
-                                                   jsval           function,
+                                                   JS::Value       function,
                                                    GICallableInfo *callable_info,
                                                    GIScopeType     scope,
                                                    gboolean        is_vfunc);
@@ -70,14 +70,14 @@ JSBool    gjs_invoke_c_function_uncached (JSContext      *context,
                                           GIFunctionInfo *info,
                                           JSObject       *obj,
                                           unsigned        argc,
-                                          jsval          *argv,
-                                          jsval          *rval);
+                                          JS::Value      *argv,
+                                          JS::Value      *rval);
 
 JSBool    gjs_invoke_constructor_from_c (JSContext      *context,
                                          JSObject       *constructor,
                                          JSObject       *obj,
                                          unsigned        argc,
-                                         jsval          *argv,
+                                         JS::Value      *argv,
                                          GArgument      *rvalue);
 
 void     gjs_init_cinvoke_profiling (void);

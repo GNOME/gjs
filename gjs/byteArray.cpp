@@ -115,7 +115,7 @@ byte_array_ensure_gbytes (ByteArrayInstance  *priv)
 
 static JSBool
 gjs_value_to_gsize(JSContext         *context,
-                   jsval              value,
+                   JS::Value          value,
                    gsize             *v_p)
 {
     guint32 val32;
@@ -149,7 +149,7 @@ gjs_value_to_gsize(JSContext         *context,
 
 static JSBool
 gjs_value_to_byte(JSContext         *context,
-                  jsval              value,
+                  JS::Value          value,
                   guint8            *v_p)
 {
     gsize v;
@@ -203,7 +203,7 @@ byte_array_get_prop(JSContext *context,
                     JS::MutableHandleValue value_p)
 {
     ByteArrayInstance *priv;
-    jsval id_value;
+    JS::Value id_value;
 
     priv = priv_from_js(context, obj);
 
@@ -315,7 +315,7 @@ byte_array_set_prop(JSContext *context,
                     JS::MutableHandleValue value_p)
 {
     ByteArrayInstance *priv;
-    jsval id_value;
+    JS::Value id_value;
 
     priv = priv_from_js(context, obj);
 
@@ -414,7 +414,7 @@ byte_array_finalize(JSFreeOp *fop,
 static JSBool
 to_string_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *object = JSVAL_TO_OBJECT(argv.thisv());
@@ -460,7 +460,7 @@ to_string_func(JSContext *context,
         /* optimization, avoids iconv overhead and runs
          * libmozjs hardwired utf8-to-utf16
          */
-        jsval retval;
+        JS::Value retval;
         JSBool ok;
 
         ok = gjs_string_from_utf8(context,
@@ -513,7 +513,7 @@ to_string_func(JSContext *context,
 static JSBool
 to_gbytes_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *object = JSVAL_TO_OBJECT(rec.thisv());
@@ -540,7 +540,7 @@ to_gbytes_func(JSContext *context,
 static JSObject *
 byte_array_get_prototype(JSContext *context)
 {
-    jsval retval;
+    JS::Value retval;
     JSObject *prototype;
 
     retval = gjs_get_global_slot (context, GJS_GLOBAL_SLOT_BYTE_ARRAY_PROTOTYPE);
@@ -576,7 +576,7 @@ byte_array_new(JSContext *context)
 static JSBool
 from_string_func(JSContext *context,
                  unsigned   argc,
-                 jsval     *vp)
+                 JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     ByteArrayInstance *priv;
@@ -681,7 +681,7 @@ from_string_func(JSContext *context,
 static JSBool
 from_array_func(JSContext *context,
                 unsigned   argc,
-                jsval     *vp)
+                JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     ByteArrayInstance *priv;
@@ -718,7 +718,7 @@ from_array_func(JSContext *context,
     g_byte_array_set_size(priv->array, len);
 
     for (i = 0; i < len; ++i) {
-        jsval elem;
+        JS::Value elem;
         guint8 b;
 
         elem = JSVAL_VOID;
@@ -748,7 +748,7 @@ from_array_func(JSContext *context,
 static JSBool
 from_gbytes_func(JSContext *context,
                  unsigned   argc,
-                 jsval     *vp)
+                 JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *bytes_obj;

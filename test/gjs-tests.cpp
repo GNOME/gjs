@@ -99,7 +99,7 @@ gjstest_test_func_gjs_jsapi_util_array(void)
     JSObject *global;
     GjsRootedArray *array;
     int i;
-    jsval value;
+    JS::Value value;
 
     _gjs_unit_test_fixture_begin(&fixture);
     context = fixture.context;
@@ -143,7 +143,7 @@ gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(void)
 
     const char *utf8_string = "\303\211\303\226 foobar \343\203\237";
     char *utf8_result;
-    jsval js_string;
+    JS::Value js_string;
 
     _gjs_unit_test_fixture_begin(&fixture);
     context = fixture.context;
@@ -168,7 +168,7 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
     GjsUnitTestFixture fixture;
     JSContext *context;
     JSObject *global;
-    jsval exc, value, previous;
+    JS::Value exc, value, previous;
     char *s = NULL;
     int strcmp_result;
 

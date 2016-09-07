@@ -35,7 +35,7 @@ JSBool _gjs_proxy_to_string_func(JSContext  *context,
                                  GIBaseInfo *info,
                                  GType       gtype,
                                  gpointer    native_address,
-                                 jsval      *ret);
+                                 JS::Value  *ret);
 
 G_END_DECLS
 

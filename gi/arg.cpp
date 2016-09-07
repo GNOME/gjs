@@ -275,7 +275,7 @@ type_needs_out_release(GITypeInfo *type_info,
 
 static JSBool
 gjs_array_to_g_list(JSContext   *context,
-                    jsval        array_value,
+                    JS::Value    array_value,
                     unsigned int length,
                     GITypeInfo  *param_info,
                     GITransfer   transfer,
@@ -286,7 +286,7 @@ gjs_array_to_g_list(JSContext   *context,
     guint32 i;
     GList *list;
     GSList *slist;
-    jsval elem;
+    JS::Value elem;
 
     list = NULL;
     slist = NULL;
@@ -352,7 +352,7 @@ gjs_array_to_g_list(JSContext   *context,
 
 static JSBool
 gjs_object_to_g_hash(JSContext   *context,
-                     jsval        hash_value,
+                     JS::Value    hash_value,
                      GITypeInfo  *key_param_info,
                      GITypeInfo  *val_param_info,
                      GITransfer   transfer,
@@ -395,7 +395,7 @@ gjs_object_to_g_hash(JSContext   *context,
    result = g_hash_table_new(g_str_hash, g_str_equal);
 
    while (!JSID_IS_VOID(prop_id)) {
-        jsval key_js, val_js;
+        JS::Value key_js, val_js;
         GArgument key_arg = { 0 }, val_arg = { 0 };
 
         if (!JS_IdToValue(context, prop_id, &key_js))
@@ -437,11 +437,11 @@ gjs_object_to_g_hash(JSContext   *context,
 
 JSBool
 gjs_array_from_strv(JSContext   *context,
-                    jsval       *value_p,
+                    JS::Value   *value_p,
                     const char **strv)
 {
     JSObject *obj;
-    jsval elem;
+    JS::Value elem;
     guint i;
     JSBool result = JS_FALSE;
 
@@ -474,7 +474,7 @@ out:
 
 JSBool
 gjs_array_to_strv(JSContext   *context,
-                  jsval        array_value,
+                  JS::Value    array_value,
                   unsigned int length,
                   void       **arr_p)
 {
@@ -484,7 +484,7 @@ gjs_array_to_strv(JSContext   *context,
     result = g_new0(char *, length+1);
 
     for (i = 0; i < length; ++i) {
-        jsval elem;
+        JS::Value elem;
 
         elem = JSVAL_VOID;
         if (!JS_GetElement(context, JSVAL_TO_OBJECT(array_value),
@@ -515,7 +515,7 @@ gjs_array_to_strv(JSContext   *context,
 
 static JSBool
 gjs_string_to_intarray(JSContext   *context,
-                       jsval        string_val,
+                       JS::Value    string_val,
                        GITypeInfo  *param_info,
                        void       **arr_p,
                        gsize       *length)
@@ -553,7 +553,7 @@ gjs_string_to_intarray(JSContext   *context,
 
 static JSBool
 gjs_array_to_intarray(JSContext   *context,
-                      jsval        array_value,
+                      JS::Value    array_value,
                       unsigned int length,
                       void       **arr_p,
                       unsigned intsize,
@@ -568,7 +568,7 @@ gjs_array_to_intarray(JSContext   *context,
     result = g_malloc0((length+1) * intsize);
 
     for (i = 0; i < length; ++i) {
-        jsval elem;
+        JS::Value elem;
         JSBool success;
 
         elem = JSVAL_VOID;
@@ -612,7 +612,7 @@ gjs_array_to_intarray(JSContext   *context,
 
 static JSBool
 gjs_gtypearray_to_array(JSContext   *context,
-                        jsval        array_value,
+                        JS::Value    array_value,
                         unsigned int length,
                         void       **arr_p)
 {
@@ -623,7 +623,7 @@ gjs_gtypearray_to_array(JSContext   *context,
     result = (GType *) g_malloc0((length+1) * sizeof(GType));
 
     for (i = 0; i < length; ++i) {
-        jsval elem;
+        JS::Value elem;
         GType gtype;
 
         elem = JSVAL_VOID;
@@ -656,7 +656,7 @@ gjs_gtypearray_to_array(JSContext   *context,
 
 static JSBool
 gjs_array_to_floatarray(JSContext   *context,
-                        jsval        array_value,
+                        JS::Value    array_value,
                         unsigned int length,
                         void       **arr_p,
                         gboolean     is_double)
@@ -668,7 +668,7 @@ gjs_array_to_floatarray(JSContext   *context,
     result = g_malloc0((length+1) * (is_double ? sizeof(double) : sizeof(float)));
 
     for (i = 0; i < length; ++i) {
-        jsval elem;
+        JS::Value elem;
         double val;
         JSBool success;
 
@@ -709,7 +709,7 @@ gjs_array_to_floatarray(JSContext   *context,
 
 static JSBool
 gjs_array_to_ptrarray(JSContext   *context,
-                      jsval        array_value,
+                      JS::Value    array_value,
                       unsigned int length,
                       GITransfer   transfer,
                       GITypeInfo  *param_info,
@@ -722,7 +722,7 @@ gjs_array_to_ptrarray(JSContext   *context,
     array[length] = NULL;
 
     for (i = 0; i < length; i++) {
-        jsval elem;
+        JS::Value elem;
         GIArgument arg;
         arg.v_pointer = NULL;
 
@@ -763,7 +763,7 @@ gjs_array_to_ptrarray(JSContext   *context,
 
 static JSBool
 gjs_array_to_flat_gvalue_array(JSContext   *context,
-                               jsval        array_value,
+                               JS::Value    array_value,
                                unsigned int length,
                                void       **arr_p)
 {
@@ -772,7 +772,7 @@ gjs_array_to_flat_gvalue_array(JSContext   *context,
     JSBool result = JS_TRUE;
 
     for (i = 0; i < length; i ++) {
-        jsval elem;
+        JS::Value elem;
         elem = JSVAL_VOID;
 
         if (!JS_GetElement(context, JSVAL_TO_OBJECT(array_value),
@@ -800,11 +800,11 @@ static JSBool
 gjs_array_from_flat_gvalue_array(JSContext   *context,
                                  gpointer     array,
                                  unsigned int length,
-                                 jsval       *value)
+                                 JS::Value   *value)
 {
     GValue *values = (GValue *)array;
     unsigned int i;
-    jsval *elems = g_newa(jsval, length);
+    JS::Value *elems = g_newa(JS::Value, length);
     JSBool result = JS_TRUE;
 
     for (i = 0; i < length; i ++) {
@@ -875,7 +875,7 @@ is_gvalue_flat_array(GITypeInfo *param_info,
 
 static JSBool
 gjs_array_to_array(JSContext   *context,
-                   jsval        array_value,
+                   JS::Value    array_value,
                    gsize        length,
                    GITransfer   transfer,
                    GITypeInfo  *param_info,
@@ -1061,7 +1061,7 @@ type_tag_to_human_string(GITypeInfo *type_info)
 
 static void
 throw_invalid_argument(JSContext      *context,
-                       jsval           value,
+                       JS::Value       value,
                        GITypeInfo     *arginfo,
                        const char     *arg_name,
                        GjsArgumentType arg_type)
@@ -1077,7 +1077,7 @@ throw_invalid_argument(JSContext      *context,
 
 static JSBool
 gjs_array_to_explicit_array_internal(JSContext       *context,
-                                     jsval            value,
+                                     JS::Value        value,
                                      GITypeInfo      *type_info,
                                      const char      *arg_name,
                                      GjsArgumentType  arg_type,
@@ -1111,7 +1111,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
             goto out;
     } else if (JS_HasPropertyById(context, JSVAL_TO_OBJECT(value), length_name, &found_length) &&
                found_length) {
-        jsval length_value;
+        JS::Value length_value;
         guint32 length;
 
         if (!gjs_object_require_property(context,
@@ -1145,7 +1145,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
 
 JSBool
 gjs_value_to_g_argument(JSContext      *context,
-                        jsval           value,
+                        JS::Value       value,
                         GITypeInfo     *type_info,
                         const char     *arg_name,
                         GjsArgumentType arg_type,
@@ -1162,7 +1162,7 @@ gjs_value_to_g_argument(JSContext      *context,
     type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Converting jsval to GArgument %s",
+                      "Converting JS::Value to GArgument %s",
                       g_type_tag_to_string(type_tag));
 
     nullable_type = FALSE;
@@ -1656,7 +1656,7 @@ gjs_value_to_g_argument(JSContext      *context,
             JSVAL_IS_OBJECT(value) &&
             JS_HasPropertyById(context, JSVAL_TO_OBJECT(value), length_name, &found_length) &&
             found_length) {
-            jsval length_value;
+            JS::Value length_value;
             guint32 length;
 
             if (!gjs_object_require_property(context,
@@ -1967,7 +1967,7 @@ gjs_g_argument_init_default(JSContext      *context,
 
 JSBool
 gjs_value_to_arg(JSContext  *context,
-                 jsval       value,
+                 JS::Value   value,
                  GIArgInfo  *arg_info,
                  GArgument  *arg)
 {
@@ -1987,7 +1987,7 @@ gjs_value_to_arg(JSContext  *context,
 
 JSBool
 gjs_value_to_explicit_array (JSContext  *context,
-                             jsval       value,
+                             JS::Value   value,
                              GIArgInfo  *arg_info,
                              GArgument  *arg,
                              gsize      *length_p)
@@ -2009,7 +2009,7 @@ gjs_value_to_explicit_array (JSContext  *context,
 
 static JSBool
 gjs_array_from_g_list (JSContext  *context,
-                       jsval      *value_p,
+                       JS::Value  *value_p,
                        GITypeTag   list_tag,
                        GITypeInfo *param_info,
                        GList      *list,
@@ -2017,7 +2017,7 @@ gjs_array_from_g_list (JSContext  *context,
 {
     JSObject *obj;
     unsigned int i;
-    jsval elem;
+    JS::Value elem;
     GArgument arg;
     JSBool result;
 
@@ -2077,13 +2077,13 @@ gjs_array_from_g_list (JSContext  *context,
 
 static JSBool
 gjs_array_from_carray_internal (JSContext  *context,
-                                jsval      *value_p,
+                                JS::Value  *value_p,
                                 GITypeInfo *param_info,
                                 guint       length,
                                 gpointer    array)
 {
     JSObject *obj;
-    jsval elem;
+    JS::Value elem;
     GArgument arg;
     JSBool result;
     GITypeTag element_type;
@@ -2219,7 +2219,7 @@ finally:
 
 static JSBool
 gjs_array_from_fixed_size_array (JSContext  *context,
-                                 jsval      *value_p,
+                                 JS::Value  *value_p,
                                  GITypeInfo *type_info,
                                  gpointer    array)
 {
@@ -2242,7 +2242,7 @@ gjs_array_from_fixed_size_array (JSContext  *context,
 
 JSBool
 gjs_value_from_explicit_array(JSContext  *context,
-                              jsval      *value_p,
+                              JS::Value  *value_p,
                               GITypeInfo *type_info,
                               GArgument  *arg,
                               int         length)
@@ -2261,7 +2261,7 @@ gjs_value_from_explicit_array(JSContext  *context,
 
 static JSBool
 gjs_array_from_boxed_array (JSContext   *context,
-                            jsval       *value_p,
+                            JS::Value   *value_p,
                             GIArrayType  array_type,
                             GITypeInfo  *param_info,
                             GArgument   *arg)
@@ -2298,12 +2298,12 @@ gjs_array_from_boxed_array (JSContext   *context,
 
 static JSBool
 gjs_array_from_zero_terminated_c_array (JSContext  *context,
-                                        jsval      *value_p,
+                                        JS::Value  *value_p,
                                         GITypeInfo *param_info,
                                         gpointer    c_array)
 {
     JSObject *obj;
-    jsval elem;
+    JS::Value elem;
     GArgument arg;
     JSBool result;
     GITypeTag element_type;
@@ -2407,7 +2407,7 @@ finally:
 
 static JSBool
 gjs_object_from_g_hash (JSContext  *context,
-                        jsval      *value_p,
+                        JS::Value  *value_p,
                         GITypeInfo *key_param_info,
                         GITypeInfo *val_param_info,
                         GHashTable *hash)
@@ -2416,7 +2416,7 @@ gjs_object_from_g_hash (JSContext  *context,
     JSObject *obj;
     JSString *keystr;
     char     *keyutf8 = NULL;
-    jsval     keyjs,  valjs;
+    JS::Value keyjs, valjs;
     GArgument keyarg, valarg;
     JSBool result;
 
@@ -2486,7 +2486,7 @@ gjs_object_from_g_hash (JSContext  *context,
 
 JSBool
 gjs_value_from_g_argument (JSContext  *context,
-                           jsval      *value_p,
+                           JS::Value  *value_p,
                            GITypeInfo *type_info,
                            GArgument  *arg,
                            gboolean    copy_structs)
@@ -2496,7 +2496,7 @@ gjs_value_from_g_argument (JSContext  *context,
     type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Converting GArgument %s to jsval",
+                      "Converting GArgument %s to JS::Value",
                       g_type_tag_to_string(type_tag));
 
     *value_p = JSVAL_NULL;
@@ -2602,7 +2602,7 @@ gjs_value_from_g_argument (JSContext  *context,
 
     case GI_TYPE_TAG_INTERFACE:
         {
-            jsval value;
+            JS::Value value;
             GIBaseInfo* interface_info;
             GIInfoType interface_type;
             GType gtype;
@@ -2626,7 +2626,7 @@ gjs_value_from_g_argument (JSContext  *context,
                 gint64 value_int64 = _gjs_enum_from_int ((GIEnumInfo *)interface_info, arg->v_int);
 
                 if (_gjs_enum_value_is_valid(context, (GIEnumInfo *)interface_info, value_int64)) {
-                    jsval tmp;
+                    JS::Value tmp;
                     if (JS_NewNumberValue(context, value_int64, &tmp))
                         value = tmp;
                 }
@@ -2637,7 +2637,7 @@ gjs_value_from_g_argument (JSContext  *context,
 
                 gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
                 if (_gjs_flags_value_is_valid(context, gtype, value_int64)) {
-                    jsval tmp;
+                    JS::Value tmp;
                     if (JS_NewNumberValue(context, value_int64, &tmp))
                         value = tmp;
                 }
@@ -2753,14 +2753,14 @@ gjs_value_from_g_argument (JSContext  *context,
                 if (obj)
                     value = OBJECT_TO_JSVAL(obj);
             } else if (gtype == G_TYPE_NONE) {
-                gjs_throw(context, "Unexpected unregistered type packing GArgument into jsval");
+                gjs_throw(context, "Unexpected unregistered type packing GArgument into JS::Value");
             } else if (G_TYPE_IS_INSTANTIATABLE(gtype) || G_TYPE_IS_INTERFACE(gtype)) {
                 JSObject *obj;
                 obj = gjs_object_from_g_fundamental(context, (GIObjectInfo *)interface_info, arg->v_pointer);
                 if (obj)
                     value = OBJECT_TO_JSVAL(obj);
             } else {
-                gjs_throw(context, "Unhandled GType %s packing GArgument into jsval",
+                gjs_throw(context, "Unhandled GType %s packing GArgument into JS::Value",
                           g_type_name(gtype));
             }
 

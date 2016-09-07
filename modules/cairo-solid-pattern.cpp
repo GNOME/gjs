@@ -43,7 +43,7 @@ JSPropertySpec gjs_cairo_solid_pattern_proto_props[] = {
 static JSBool
 createRGB_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     double red, green, blue;
@@ -71,7 +71,7 @@ createRGB_func(JSContext *context,
 static JSBool
 createRGBA_func(JSContext *context,
                 unsigned   argc,
-                jsval     *vp)
+                JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     double red, green, blue, alpha;

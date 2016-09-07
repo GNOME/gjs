@@ -49,11 +49,11 @@
 
 JSBool
 gjs_context_get_frame_info (JSContext  *context,
-                            jsval      *stack,
-                            jsval      *fileName,
-                            jsval      *lineNumber)
+                            JS::Value  *stack,
+                            JS::Value  *fileName,
+                            JS::Value  *lineNumber)
 {
-    jsval v_constructor;
+    JS::Value v_constructor;
     JSObject *err_obj;
     JSObject *global;
     JSBool ret = JS_FALSE;
@@ -99,7 +99,7 @@ void
 gjs_context_print_stack_stderr(GjsContext *context)
 {
     JSContext *cx = (JSContext*) gjs_context_get_native_context(context);
-    jsval v_stack;
+    JS::Value v_stack;
     char *stack;
 
     g_printerr("== Stack trace for context %p ==\n", context);

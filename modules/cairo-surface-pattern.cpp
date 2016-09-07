@@ -77,7 +77,7 @@ JSPropertySpec gjs_cairo_surface_pattern_proto_props[] = {
 static JSBool
 setExtend_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
@@ -102,7 +102,7 @@ setExtend_func(JSContext *context,
 static JSBool
 getExtend_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
@@ -129,7 +129,7 @@ getExtend_func(JSContext *context,
 static JSBool
 setFilter_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
@@ -154,7 +154,7 @@ setFilter_func(JSContext *context,
 static JSBool
 getFilter_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());

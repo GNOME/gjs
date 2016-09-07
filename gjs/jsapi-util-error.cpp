@@ -49,7 +49,7 @@ gjs_throw_valist(JSContext       *context,
 {
     char *s;
     JSBool result;
-    jsval v_constructor, v_message;
+    JS::Value v_constructor, v_message;
     JSObject *err_obj;
 
     s = g_strdup_vprintf(format, args);

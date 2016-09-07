@@ -265,7 +265,6 @@ import_file(JSContext  *context,
     char *script = NULL;
     char *full_path = NULL;
     gsize script_len = 0;
-    jsval script_retval;
     GError *error = NULL;
 
     JS::CompileOptions options(context);
@@ -310,7 +309,7 @@ load_module_init(JSContext  *context,
     /* First we check if js module has already been loaded  */
     module_init_name = gjs_context_get_const_string(context, GJS_STRING_MODULE_INIT);
     if (JS_HasPropertyById(context, in_object, module_init_name, &found) && found) {
-        jsval module_obj_val;
+        JS::Value module_obj_val;
 
         if (JS_GetPropertyById(context,
                                in_object,
@@ -420,7 +419,7 @@ do_import(JSContext  *context,
     char *filename;
     char *full_path;
     char *dirname = NULL;
-    jsval search_path_val;
+    JS::Value search_path_val;
     JSObject *search_path;
     JSObject *module_obj = NULL;
     guint32 search_path_len;
@@ -470,7 +469,7 @@ do_import(JSContext  *context,
     }
 
     for (i = 0; i < search_path_len; ++i) {
-        jsval elem;
+        JS::Value elem;
 
         elem = JSVAL_VOID;
         if (!JS_GetElement(context, search_path, i, &elem)) {
@@ -506,7 +505,7 @@ do_import(JSContext  *context,
 
         module_obj = load_module_init(context, obj, full_path);
         if (module_obj != NULL) {
-            jsval obj_val;
+            JS::Value obj_val;
 
             if (JS_GetProperty(context,
                                module_obj,
@@ -674,7 +673,7 @@ importer_new_enumerate(JSContext  *context,
     case JSENUMERATE_INIT: {
         Importer *priv;
         JSObject *search_path;
-        jsval search_path_val;
+        JS::Value search_path_val;
         guint32 search_path_len;
         guint32 i;
         jsid search_path_name;
@@ -716,7 +715,7 @@ importer_new_enumerate(JSContext  *context,
             char *dirname = NULL;
             char *init_path;
             const char *filename;
-            jsval elem;
+            JS::Value elem;
             GDir *dir = NULL;
 
             elem = JSVAL_VOID;
@@ -794,7 +793,7 @@ importer_new_enumerate(JSContext  *context,
     }
 
     case JSENUMERATE_NEXT: {
-        jsval element_val;
+        JS::Value element_val;
 
         if (JSVAL_IS_NULL(statep)) /* Iterating prototype */
             return JS_TRUE;
@@ -1122,7 +1121,7 @@ gjs_create_root_importer(JSContext   *context,
                          const char **initial_search_path,
                          gboolean     add_standard_search_path)
 {
-    jsval importer;
+    JS::Value importer;
 
     JS_BeginRequest(context);
 

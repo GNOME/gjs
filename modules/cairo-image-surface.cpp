@@ -71,7 +71,7 @@ JSPropertySpec gjs_cairo_image_surface_proto_props[] = {
 static JSBool
 createFromPNG_func(JSContext *context,
                    unsigned   argc,
-                   jsval     *vp)
+                   JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     char *filename;
@@ -102,7 +102,7 @@ createFromPNG_func(JSContext *context,
 static JSBool
 getFormat_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
@@ -128,7 +128,7 @@ getFormat_func(JSContext *context,
 static JSBool
 getWidth_func(JSContext *context,
               unsigned   argc,
-              jsval     *vp)
+              JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
@@ -154,7 +154,7 @@ getWidth_func(JSContext *context,
 static JSBool
 getHeight_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
@@ -180,7 +180,7 @@ getHeight_func(JSContext *context,
 static JSBool
 getStride_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());

@@ -142,7 +142,7 @@ extern JSFunctionSpec gjs_##cname##_proto_funcs[]; \
 static void gjs_##cname##_finalize(JSFreeOp *fop, JSObject *obj); \
 static JSBool gjs_##cname##_new_resolve(JSContext *context, \
                                         JSObject  *obj, \
-                                        jsval      id, \
+                                        JS::Value  id, \
                                         unsigned   flags, \
                                         JSObject **objp) \
 { \
@@ -164,15 +164,15 @@ static struct JSClass gjs_##cname##_class = { \
     NULL, \
     NULL, NULL, NULL \
 }; \
-jsval gjs_##cname##_create_proto(JSContext *context, JSObject *module, const char *proto_name, JSObject *parent) \
+JS::Value gjs_##cname##_create_proto(JSContext *context, JSObject *module, const char *proto_name, JSObject *parent) \
 { \
-    jsval rval; \
+    JS::Value rval; \
     JSObject *global = gjs_get_import_global(context); \
     jsid class_name = gjs_intern_string_to_id(context, gjs_##cname##_class.name); \
     if (!JS_GetPropertyById(context, global, class_name, &rval))                       \
         return JSVAL_NULL; \
     if (JSVAL_IS_VOID(rval)) { \
-        jsval value; \
+        JS::Value value; \
         JSObject *prototype = JS_InitClass(context, global,     \
                                  parent, \
                                  &gjs_##cname##_class, \
@@ -207,21 +207,21 @@ gboolean    gjs_init_context_standard        (JSContext       *context,
 
 JSObject*   gjs_get_import_global            (JSContext       *context);
 
-jsval       gjs_get_global_slot              (JSContext       *context,
+JS::Value   gjs_get_global_slot              (JSContext       *context,
                                               GjsGlobalSlot    slot);
 void        gjs_set_global_slot              (JSContext       *context,
                                               GjsGlobalSlot    slot,
-                                              jsval            value);
+                                              JS::Value        value);
 
 gboolean    gjs_object_require_property      (JSContext       *context,
                                               JSObject        *obj,
                                               const char      *obj_description,
                                               jsid             property_name,
-                                              jsval           *value_p);
+                                              JS::Value       *value_p);
 
 JSObject   *gjs_new_object_for_constructor   (JSContext       *context,
                                               JSClass         *clasp,
-                                              jsval           *vp);
+                                              JS::Value       *vp);
 JSBool      gjs_init_class_dynamic           (JSContext       *context,
                                               JSObject        *in_object,
                                               JSObject        *parent_proto,
@@ -238,7 +238,7 @@ JSBool      gjs_init_class_dynamic           (JSContext       *context,
                                               JSObject       **prototype_p);
 void gjs_throw_constructor_error             (JSContext       *context);
 void gjs_throw_abstract_constructor_error    (JSContext       *context,
-                                              jsval           *vp);
+                                              JS::Value       *vp);
 
 JSBool gjs_typecheck_instance                 (JSContext  *context,
                                                JSObject   *obj,
@@ -248,7 +248,7 @@ JSBool gjs_typecheck_instance                 (JSContext  *context,
 JSObject*   gjs_construct_object_dynamic     (JSContext       *context,
                                               JSObject        *proto,
                                               unsigned         argc,
-                                              jsval           *argv);
+                                              JS::Value       *argv);
 JSObject*   gjs_build_string_array           (JSContext       *context,
                                               gssize           array_length,
                                               char           **array_values);
@@ -275,7 +275,7 @@ JSBool      gjs_log_and_keep_exception       (JSContext       *context);
 JSBool      gjs_move_exception               (JSContext       *src_context,
                                               JSContext       *dest_context);
 JSBool      gjs_log_exception_full           (JSContext       *context,
-                                              jsval            exc,
+                                              JS::Value        exc,
                                               JSString        *message);
 
 #ifdef __GJS_UTIL_LOG_H__
@@ -285,52 +285,52 @@ void        gjs_log_object_props             (JSContext       *context,
                                               const char      *prefix);
 #endif
 char*       gjs_value_debug_string           (JSContext       *context,
-                                              jsval            value);
+                                              JS::Value        value);
 void        gjs_explain_scope                (JSContext       *context,
                                               const char      *title);
 JSBool      gjs_call_function_value          (JSContext       *context,
                                               JSObject        *obj,
-                                              jsval            fval,
+                                              JS::Value        fval,
                                               unsigned         argc,
-                                              jsval           *argv,
-                                              jsval           *rval);
+                                              JS::Value       *argv,
+                                              JS::Value       *rval);
 void        gjs_error_reporter               (JSContext       *context,
                                               const char      *message,
                                               JSErrorReport   *report);
 JSObject*   gjs_get_global_object            (JSContext *cx);
 JSBool      gjs_get_prop_verbose_stub        (JSContext       *context,
                                               JSObject        *obj,
-                                              jsval            id,
-                                              jsval           *value_p);
+                                              JS::Value        id,
+                                              JS::Value       *value_p);
 JSBool      gjs_set_prop_verbose_stub        (JSContext       *context,
                                               JSObject        *obj,
-                                              jsval            id,
-                                              jsval           *value_p);
+                                              JS::Value        id,
+                                              JS::Value       *value_p);
 JSBool      gjs_add_prop_verbose_stub        (JSContext       *context,
                                               JSObject        *obj,
-                                              jsval            id,
-                                              jsval           *value_p);
+                                              JS::Value        id,
+                                              JS::Value       *value_p);
 JSBool      gjs_delete_prop_verbose_stub     (JSContext       *context,
                                               JSObject        *obj,
-                                              jsval            id,
-                                              jsval           *value_p);
+                                              JS::Value        id,
+                                              JS::Value       *value_p);
 
 JSBool      gjs_string_to_utf8               (JSContext       *context,
-                                              const            jsval string_val,
+                                              const JS::Value  string_val,
                                               char           **utf8_string_p);
 JSBool      gjs_string_from_utf8             (JSContext       *context,
                                               const char      *utf8_string,
                                               gssize           n_bytes,
-                                              jsval           *value_p);
+                                              JS::Value       *value_p);
 JSBool      gjs_string_to_filename           (JSContext       *context,
-                                              const jsval      string_val,
+                                              const JS::Value  string_val,
                                               char           **filename_string_p);
 JSBool      gjs_string_from_filename         (JSContext       *context,
                                               const char      *filename_string,
                                               gssize           n_bytes,
-                                              jsval           *value_p);
+                                              JS::Value       *value_p);
 JSBool      gjs_string_get_uint16_data       (JSContext       *context,
-                                              jsval            value,
+                                              JS::Value        value,
                                               guint16        **data_p,
                                               gsize           *len_p);
 JSBool      gjs_get_string_id                (JSContext       *context,
@@ -340,20 +340,20 @@ jsid        gjs_intern_string_to_id          (JSContext       *context,
                                               const char      *string);
 
 gboolean    gjs_unichar_from_string          (JSContext       *context,
-                                              jsval            string,
+                                              JS::Value        string,
                                               gunichar        *result);
 
-const char* gjs_get_type_name                (jsval            value);
+const char* gjs_get_type_name                (JS::Value        value);
 
 JSBool      gjs_value_to_int64               (JSContext       *context,
-                                              const jsval      val,
+                                              const JS::Value  val,
                                               gint64          *result);
 
 JSBool      gjs_parse_args                   (JSContext  *context,
                                               const char *function_name,
                                               const char *format,
                                               unsigned   argc,
-                                              jsval     *argv,
+                                              JS::Value  *argv,
                                               ...);
 
 JSBool      gjs_parse_call_args              (JSContext    *context,
@@ -365,26 +365,26 @@ JSBool      gjs_parse_call_args              (JSContext    *context,
 GjsRootedArray*   gjs_rooted_array_new        (void);
 void              gjs_rooted_array_append     (JSContext        *context,
                                                GjsRootedArray *array,
-                                               jsval             value);
-jsval             gjs_rooted_array_get        (JSContext        *context,
+                                               JS::Value       value);
+JS::Value         gjs_rooted_array_get        (JSContext      *context,
                                                GjsRootedArray *array,
                                                int               i);
-jsval*            gjs_rooted_array_get_data   (JSContext        *context,
+JS::Value        *gjs_rooted_array_get_data   (JSContext        *context,
                                                GjsRootedArray *array);
 int               gjs_rooted_array_get_length (JSContext        *context,
                                                GjsRootedArray *array);
-jsval*            gjs_rooted_array_free       (JSContext        *context,
+JS::Value        *gjs_rooted_array_free       (JSContext        *context,
                                                GjsRootedArray *array,
                                                gboolean          free_segment);
 void              gjs_set_values              (JSContext        *context,
-                                               jsval            *locations,
+                                               JS::Value        *locations,
                                                int               n_locations,
-                                               jsval             initializer);
+                                               JS::Value         initializer);
 void              gjs_root_value_locations    (JSContext        *context,
-                                               jsval            *locations,
+                                               JS::Value        *locations,
                                                int               n_locations);
 void              gjs_unroot_value_locations  (JSContext        *context,
-                                               jsval            *locations,
+                                               JS::Value        *locations,
                                                int               n_locations);
 
 /* Functions intended for more "internal" use */
@@ -392,16 +392,16 @@ void              gjs_unroot_value_locations  (JSContext        *context,
 void gjs_maybe_gc (JSContext *context);
 
 JSBool            gjs_context_get_frame_info (JSContext  *context,
-                                              jsval      *stack,
-                                              jsval      *fileName,
-                                              jsval      *lineNumber);
+                                              JS::Value  *stack,
+                                              JS::Value  *fileName,
+                                              JS::Value  *lineNumber);
 
 JSBool            gjs_eval_with_scope        (JSContext    *context,
                                               JSObject     *object,
                                               const char   *script,
                                               gssize        script_len,
                                               const char   *filename,
-                                              jsval        *retval_p);
+                                              JS::Value    *retval_p);
 
 typedef enum {
   GJS_STRING_CONSTRUCTOR,
@@ -438,7 +438,7 @@ jsid              gjs_context_get_const_string  (JSContext       *context,
 gboolean          gjs_object_get_property_const (JSContext       *context,
                                                  JSObject        *obj,
                                                  GjsConstString   property_name,
-                                                 jsval           *value_p);
+                                                 JS::Value       *value_p);
 
 const char * gjs_strip_unix_shebang(const char *script,
                                     gssize     *script_len,

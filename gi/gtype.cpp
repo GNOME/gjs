@@ -64,7 +64,7 @@ gjs_gtype_finalize(JSFreeOp *fop,
 static JSBool
 to_string_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
@@ -72,8 +72,8 @@ to_string_func(JSContext *context,
     GType gtype;
     gchar *strval;
     JSBool ret;
-    jsval retval;
-    
+    JS::Value retval;
+
     gtype = GPOINTER_TO_SIZE(priv_from_js(context, obj));
 
     if (gtype == 0)
@@ -96,7 +96,7 @@ get_name_func (JSContext *context,
 {
     GType gtype;
     JSBool ret;
-    jsval retval;
+    JS::Value retval;
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp.address());
 
     gtype = GPOINTER_TO_SIZE(priv_from_js(context, obj));
@@ -162,7 +162,7 @@ _gjs_gtype_get_actual_gtype (JSContext *context,
                              int        recurse)
 {
     GType gtype = G_TYPE_INVALID;
-    jsval gtype_val = JSVAL_VOID;
+    JS::Value gtype_val = JSVAL_VOID;
 
     JS_BeginRequest(context);
     if (JS_InstanceOf(context, object, &gjs_gtype_class, NULL)) {

@@ -63,9 +63,9 @@ get_version_for_ns (JSContext *context,
                     char     **version)
 {
     jsid versions_name;
-    jsval versions_val;
+    JS::Value versions_val;
     JSObject *versions;
-    jsval version_val;
+    JS::Value version_val;
 
     versions_name = gjs_context_get_const_string(context, GJS_STRING_GI_VERSIONS);
     if (!gjs_object_require_property(context, repo_obj, "GI repository object", versions_name, &versions_val) ||
@@ -95,7 +95,7 @@ resolve_namespace_object(JSContext  *context,
     GError *error;
     char *version;
     JSObject *override;
-    jsval result;
+    JS::Value result;
     JSObject *gi_namespace = NULL;
     JSBool ret = JS_FALSE;
 
@@ -333,7 +333,7 @@ repo_new(JSContext *context)
      * gobject-introspection does not yet search a path properly.
      */
     {
-        jsval value;
+        JS::Value value;
         JS_GetProperty(context, repo, "GLib", &value);
     }
 
@@ -358,7 +358,7 @@ gjs_define_constant(JSContext      *context,
                     JSObject       *in_object,
                     GIConstantInfo *info)
 {
-    jsval value;
+    JS::Value value;
     GArgument garg = { 0, };
     GITypeInfo *type_info;
     const char *name;
@@ -580,10 +580,10 @@ static JSObject*
 lookup_override_function(JSContext  *context,
                          jsid        ns_name)
 {
-    jsval importer;
-    jsval overridespkg;
-    jsval module;
-    jsval function;
+    JS::Value importer;
+    JS::Value overridespkg;
+    JS::Value module;
+    JS::Value function;
     jsid overrides_name, object_init_name;
 
     JS_BeginRequest(context);
@@ -623,9 +623,9 @@ gjs_lookup_namespace_object_by_name(JSContext      *context,
                                     jsid            ns_name)
 {
     JSObject *repo_obj;
-    jsval importer;
-    jsval girepository;
-    jsval ns_obj;
+    JS::Value importer;
+    JS::Value girepository;
+    JS::Value ns_obj;
     jsid gi_name;
 
     JS_BeginRequest(context);
@@ -771,7 +771,7 @@ gjs_lookup_generic_constructor(JSContext  *context,
     JSObject *in_object;
     JSObject *constructor;
     const char *constructor_name;
-    jsval value;
+    JS::Value value;
 
     in_object = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
     constructor_name = g_base_info_get_name((GIBaseInfo*) info);
@@ -796,7 +796,7 @@ gjs_lookup_generic_prototype(JSContext  *context,
                              GIBaseInfo *info)
 {
     JSObject *constructor;
-    jsval value;
+    JS::Value value;
 
     constructor = gjs_lookup_generic_constructor(context, info);
     if (G_UNLIKELY (constructor == NULL))

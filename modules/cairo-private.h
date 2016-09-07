@@ -30,14 +30,14 @@ JSBool           gjs_cairo_check_status                 (JSContext       *contex
                                                          cairo_status_t   status,
                                                          const char      *name);
 
-jsval            gjs_cairo_region_create_proto          (JSContext       *context,
+JS::Value        gjs_cairo_region_create_proto          (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
 void             gjs_cairo_region_init                  (JSContext       *context);
 
 
-jsval            gjs_cairo_context_create_proto         (JSContext       *context,
+JS::Value        gjs_cairo_context_create_proto         (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
@@ -50,7 +50,7 @@ void             gjs_cairo_surface_init                 (JSContext       *contex
 
 
 /* cairo_path_t */
-jsval            gjs_cairo_path_create_proto            (JSContext       *context,
+JS::Value        gjs_cairo_path_create_proto            (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
@@ -60,7 +60,7 @@ cairo_path_t *   gjs_cairo_path_get_path                (JSContext       *contex
                                                          JSObject        *path_wrapper);
 
 /* surface */
-jsval            gjs_cairo_surface_create_proto         (JSContext       *context,
+JS::Value        gjs_cairo_surface_create_proto         (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
@@ -75,7 +75,7 @@ cairo_surface_t* gjs_cairo_surface_get_surface          (JSContext       *contex
                                                          JSObject        *object);
 
 /* image surface */
-jsval            gjs_cairo_image_surface_create_proto   (JSContext       *context,
+JS::Value        gjs_cairo_image_surface_create_proto   (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
@@ -86,7 +86,7 @@ JSObject *       gjs_cairo_image_surface_from_surface   (JSContext       *contex
 
 /* postscript surface */
 #ifdef CAIRO_HAS_PS_SURFACE
-jsval            gjs_cairo_ps_surface_create_proto      (JSContext       *context,
+JS::Value        gjs_cairo_ps_surface_create_proto      (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
@@ -96,7 +96,7 @@ JSObject *       gjs_cairo_ps_surface_from_surface       (JSContext       *conte
 
 /* pdf surface */
 #ifdef CAIRO_HAS_PDF_SURFACE
-jsval            gjs_cairo_pdf_surface_create_proto     (JSContext       *context,
+JS::Value        gjs_cairo_pdf_surface_create_proto     (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
@@ -106,7 +106,7 @@ JSObject *       gjs_cairo_pdf_surface_from_surface     (JSContext       *contex
 
 /* svg surface */
 #ifdef CAIRO_HAS_SVG_SURFACE
-jsval            gjs_cairo_svg_surface_create_proto     (JSContext       *context,
+JS::Value        gjs_cairo_svg_surface_create_proto     (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
@@ -115,7 +115,7 @@ JSObject *       gjs_cairo_svg_surface_from_surface     (JSContext       *contex
                                                          cairo_surface_t *surface);
 
 /* pattern */
-jsval            gjs_cairo_pattern_create_proto         (JSContext       *context,
+JS::Value        gjs_cairo_pattern_create_proto         (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
@@ -130,13 +130,13 @@ cairo_pattern_t* gjs_cairo_pattern_get_pattern          (JSContext       *contex
                                                          JSObject        *object);
 
 /* gradient */
-jsval            gjs_cairo_gradient_create_proto        (JSContext       *context,
+JS::Value        gjs_cairo_gradient_create_proto        (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
 
 /* linear gradient */
-jsval            gjs_cairo_linear_gradient_create_proto (JSContext       *context,
+JS::Value        gjs_cairo_linear_gradient_create_proto (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
@@ -144,7 +144,7 @@ JSObject *       gjs_cairo_linear_gradient_from_pattern (JSContext       *contex
                                                          cairo_pattern_t *pattern);
 
 /* radial gradient */
-jsval            gjs_cairo_radial_gradient_create_proto (JSContext       *context,
+JS::Value        gjs_cairo_radial_gradient_create_proto (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
@@ -152,7 +152,7 @@ JSObject *       gjs_cairo_radial_gradient_from_pattern (JSContext       *contex
                                                          cairo_pattern_t *pattern);
 
 /* surface pattern */
-jsval            gjs_cairo_surface_pattern_create_proto (JSContext       *context,
+JS::Value        gjs_cairo_surface_pattern_create_proto (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);
@@ -160,7 +160,7 @@ JSObject *       gjs_cairo_surface_pattern_from_pattern (JSContext       *contex
                                                          cairo_pattern_t *pattern);
 
 /* solid pattern */
-jsval            gjs_cairo_solid_pattern_create_proto   (JSContext       *context,
+JS::Value        gjs_cairo_solid_pattern_create_proto   (JSContext       *context,
                                                          JSObject        *module,
                                                          const char      *proto_name,
                                                          JSObject        *parent);

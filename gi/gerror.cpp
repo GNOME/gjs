@@ -62,7 +62,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     Error *proto_priv;
     JSObject *proto;
     jsid message_name, code_name;
-    jsval v_message, v_code;
+    JS::Value v_message, v_code;
     gchar *message;
 
     /* Check early to avoid allocating memory for nothing */
@@ -206,12 +206,14 @@ error_get_code(JSContext *context, JS::HandleObject obj,
 }
 
 static JSBool
-error_to_string(JSContext *context, unsigned argc, jsval *vp)
+error_to_string(JSContext *context,
+                unsigned   argc,
+                JS::Value *vp)
 {
-    jsval v_self;
+    JS::Value v_self;
     JSObject *self;
     Error *priv;
-    jsval v_out;
+    JS::Value v_out;
     gchar *descr;
     JSBool retval;
 
@@ -261,11 +263,13 @@ error_to_string(JSContext *context, unsigned argc, jsval *vp)
 }
 
 static JSBool
-error_constructor_value_of(JSContext *context, unsigned argc, jsval *vp)
+error_constructor_value_of(JSContext *context,
+                           unsigned   argc,
+                           JS::Value *vp)
 {
-    jsval v_self, v_prototype;
+    JS::Value v_self, v_prototype;
     Error *priv;
-    jsval v_out;
+    JS::Value v_out;
     jsid prototype_name;
 
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
@@ -447,7 +451,7 @@ define_error_properties(JSContext *context,
                         JSObject  *obj)
 {
     jsid stack_name, filename_name, linenumber_name;
-    jsval stack, fileName, lineNumber;
+    JS::Value stack, fileName, lineNumber;
 
     if (!gjs_context_get_frame_info (context,
                                      &stack,

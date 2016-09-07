@@ -139,7 +139,7 @@ gjs_struct_foreign_lookup(JSContext  *context,
 
 JSBool
 gjs_struct_foreign_convert_to_g_argument(JSContext      *context,
-                                         jsval           value,
+                                         JS::Value       value,
                                          GIBaseInfo     *interface_info,
                                          const char     *arg_name,
                                          GjsArgumentType argument_type,
@@ -162,7 +162,7 @@ gjs_struct_foreign_convert_to_g_argument(JSContext      *context,
 
 JSBool
 gjs_struct_foreign_convert_from_g_argument(JSContext  *context,
-                                           jsval      *value_p,
+                                           JS::Value  *value_p,
                                            GIBaseInfo *interface_info,
                                            GArgument  *arg)
 {

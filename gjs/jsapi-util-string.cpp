@@ -29,9 +29,9 @@
 #include "compat.h"
 
 gboolean
-gjs_string_to_utf8 (JSContext  *context,
-                    const jsval value,
-                    char      **utf8_string_p)
+gjs_string_to_utf8 (JSContext      *context,
+                    const JS::Value value,
+                    char          **utf8_string_p)
 {
     JSString *str;
     gsize len;
@@ -68,7 +68,7 @@ JSBool
 gjs_string_from_utf8(JSContext  *context,
                      const char *utf8_string,
                      gssize      n_bytes,
-                     jsval      *value_p)
+                     JS::Value  *value_p)
 {
     jschar *u16_string;
     glong u16_string_length;
@@ -107,9 +107,9 @@ gjs_string_from_utf8(JSContext  *context,
 }
 
 gboolean
-gjs_string_to_filename(JSContext    *context,
-                       const jsval   filename_val,
-                       char        **filename_string_p)
+gjs_string_to_filename(JSContext      *context,
+                       const JS::Value filename_val,
+                       char          **filename_string_p)
 {
     GError *error;
     gchar *tmp, *filename_string;
@@ -138,7 +138,7 @@ JSBool
 gjs_string_from_filename(JSContext  *context,
                          const char *filename_string,
                          gssize      n_bytes,
-                         jsval      *value_p)
+                         JS::Value  *value_p)
 {
     gsize written;
     GError *error;
@@ -168,7 +168,7 @@ gjs_string_from_filename(JSContext  *context,
 /**
  * gjs_string_get_uint16_data:
  * @context: js context
- * @value: a jsval
+ * @value: a JS::Value
  * @data_p: address to return allocated data buffer
  * @len_p: address to return length of data (number of 16-bit integers)
  *
@@ -180,7 +180,7 @@ gjs_string_from_filename(JSContext  *context,
  **/
 JSBool
 gjs_string_get_uint16_data(JSContext       *context,
-                           jsval            value,
+                           JS::Value        value,
                            guint16        **data_p,
                            gsize           *len_p)
 {
@@ -223,7 +223,7 @@ gjs_get_string_id (JSContext       *context,
                    jsid             id,
                    char           **name_p)
 {
-    jsval id_val;
+    JS::Value id_val;
 
     if (!JS_IdToValue(context, id, &id_val))
         return JS_FALSE;
@@ -250,7 +250,7 @@ gjs_get_string_id (JSContext       *context,
  */
 gboolean
 gjs_unichar_from_string (JSContext *context,
-                         jsval      value,
+                         JS::Value  value,
                          gunichar  *result)
 {
     char *utf8_str;

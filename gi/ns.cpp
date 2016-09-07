@@ -130,10 +130,10 @@ static JSBool
 get_name (JSContext *context,
           JS::HandleObject obj,
           JS::HandleId id,
-          jsval *vp)
+          JS::Value       *vp)
 {
     Ns *priv;
-    jsval retval;
+    JS::Value retval;
     JSBool ret = JS_FALSE;
 
     priv = priv_from_js(context, obj);

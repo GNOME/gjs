@@ -26,7 +26,7 @@
 #include "jsapi-util.h"
 #include "compat.h"
 
-/* Maximum number of elements allowed in a GArray of rooted jsvals.
+/* Maximum number of elements allowed in a GArray of rooted JS::Values.
  * We pre-alloc that amount and then never allow the array to grow,
  * or we'd have invalid memory rooted if the internals of GArray decide
  * to move the contents to a new memory area
@@ -36,7 +36,7 @@
 /**
  * gjs_rooted_array_new:
  *
- * Creates an opaque data type that holds jsvals and keeps
+ * Creates an opaque data type that holds JS::Values and keeps
  * their location (NOT their value) GC-rooted.
  *
  * Returns: an opaque object prepared to hold GC root locations.
@@ -47,10 +47,10 @@ gjs_rooted_array_new()
     GArray *array;
 
     /* we prealloc ARRAY_MAX_LEN to avoid realloc */
-    array = g_array_sized_new(FALSE,         /* zero-terminated */
-                              FALSE,         /* clear */
-                              sizeof(jsval), /* element size */
-                              ARRAY_MAX_LEN); /* reserved size */
+    array = g_array_sized_new(FALSE,             /* zero-terminated */
+                              FALSE,             /* clear */
+                              sizeof(JS::Value), /* element size */
+                              ARRAY_MAX_LEN);    /* reserved size */
 
     return (GjsRootedArray*) array;
 }
@@ -58,7 +58,7 @@ gjs_rooted_array_new()
 /* typesafe wrapper */
 static void
 add_root_jsval(JSContext *context,
-               jsval     *value_p)
+               JS::Value *value_p)
 {
     JS_BeginRequest(context);
     JS_AddValueRoot(context, value_p);
@@ -68,7 +68,7 @@ add_root_jsval(JSContext *context,
 /* typesafe wrapper */
 static void
 remove_root_jsval(JSContext *context,
-                  jsval     *value_p)
+                  JS::Value *value_p)
 {
     JS_BeginRequest(context);
     JS_RemoveValueRoot(context, value_p);
@@ -79,15 +79,16 @@ remove_root_jsval(JSContext *context,
  * gjs_rooted_array_append:
  * @context: a #JSContext
  * @array: a #GjsRootedArray created by gjs_rooted_array_new()
- * @value: a jsval
+ * @value: a JS::Value
  *
- * Appends @jsval to @array, calling JS_AddValueRoot on the location where it's stored.
+ * Appends @value to @array, calling JS_AddValueRoot on the location where it's
+ * stored.
  *
  **/
 void
 gjs_rooted_array_append(JSContext        *context,
                         GjsRootedArray *array,
-                        jsval             value)
+                        JS::Value       value)
 {
     GArray *garray;
 
@@ -103,7 +104,7 @@ gjs_rooted_array_append(JSContext        *context,
     }
 
     g_array_append_val(garray, value);
-    add_root_jsval(context, & g_array_index(garray, jsval, garray->len - 1));
+    add_root_jsval(context, & g_array_index(garray, JS::Value, garray->len - 1));
 }
 
 /**
@@ -113,7 +114,7 @@ gjs_rooted_array_append(JSContext        *context,
  * @i: element to return
  * Returns: value of an element
  */
-jsval
+JS::Value
 gjs_rooted_array_get(JSContext        *context,
                      GjsRootedArray *array,
                      int               i)
@@ -130,7 +131,7 @@ gjs_rooted_array_get(JSContext        *context,
         return JSVAL_VOID;
     }
 
-    return g_array_index(garray, jsval, i);
+    return g_array_index(garray, JS::Value, i);
 }
 
 /**
@@ -138,9 +139,9 @@ gjs_rooted_array_get(JSContext        *context,
  *
  * @context: a #JSContext
  * @array: an array
- * Returns: the rooted jsval locations in the array
+ * Returns: the rooted JS::Value locations in the array
  */
-jsval*
+JS::Value *
 gjs_rooted_array_get_data(JSContext      *context,
                           GjsRootedArray *array)
 {
@@ -151,7 +152,7 @@ gjs_rooted_array_get_data(JSContext      *context,
 
     garray = (GArray*) array;
 
-    return (jsval*) garray->data;
+    return (JS::Value *) garray->data;
 }
 
 /**
@@ -159,7 +160,7 @@ gjs_rooted_array_get_data(JSContext      *context,
  *
  * @context: a #JSContext
  * @array: an array
- * Returns: number of jsval in the rooted array
+ * Returns: number of JS::Value in the rooted array
  */
 int
 gjs_rooted_array_get_length (JSContext        *context,
@@ -178,7 +179,8 @@ gjs_rooted_array_get_length (JSContext        *context,
 /**
  * gjs_root_value_locations:
  * @context: a #JSContext
- * @locations: contiguous locations in memory that store jsvals (must be initialized)
+ * @locations: contiguous locations in memory that store JS::Values (must be
+ *   initialized)
  * @n_locations: the number of locations to root
  *
  * Calls JS_AddValueRoot() on each address in @locations.
@@ -186,7 +188,7 @@ gjs_rooted_array_get_length (JSContext        *context,
  **/
 void
 gjs_root_value_locations(JSContext        *context,
-                         jsval            *locations,
+                         JS::Value        *locations,
                          int               n_locations)
 {
     int i;
@@ -197,7 +199,7 @@ gjs_root_value_locations(JSContext        *context,
 
     JS_BeginRequest(context);
     for (i = 0; i < n_locations; i++) {
-        add_root_jsval(context, ((jsval*)locations) + i);
+        add_root_jsval(context, ((JS::Value *)locations) + i);
     }
     JS_EndRequest(context);
 }
@@ -205,7 +207,8 @@ gjs_root_value_locations(JSContext        *context,
 /**
  * gjs_unroot_value_locations:
  * @context: a #JSContext
- * @locations: contiguous locations in memory that store jsvals and have been added as GC roots
+ * @locations: contiguous locations in memory that store JS::Values and have
+ *   been added as GC roots
  * @n_locations: the number of locations to unroot
  *
  * Calls JS_RemoveValueRoot() on each address in @locations.
@@ -213,7 +216,7 @@ gjs_root_value_locations(JSContext        *context,
  **/
 void
 gjs_unroot_value_locations(JSContext *context,
-                           jsval     *locations,
+                           JS::Value *locations,
                            int        n_locations)
 {
     int i;
@@ -224,7 +227,7 @@ gjs_unroot_value_locations(JSContext *context,
 
     JS_BeginRequest(context);
     for (i = 0; i < n_locations; i++) {
-        remove_root_jsval(context, ((jsval*)locations) + i);
+        remove_root_jsval(context, ((JS::Value *)locations) + i);
     }
     JS_EndRequest(context);
 }
@@ -232,7 +235,7 @@ gjs_unroot_value_locations(JSContext *context,
 /**
  * gjs_set_values:
  * @context: a #JSContext
- * @locations: array of jsval
+ * @locations: array of JS::Value
  * @n_locations: the number of elements to set
  * @initializer: what to set each element to
  *
@@ -241,9 +244,9 @@ gjs_unroot_value_locations(JSContext *context,
  **/
 void
 gjs_set_values(JSContext        *context,
-               jsval            *locations,
+               JS::Value        *locations,
                int               n_locations,
-               jsval             initializer)
+               JS::Value         initializer)
 {
     int i;
 
@@ -260,15 +263,15 @@ gjs_set_values(JSContext        *context,
  * gjs_rooted_array_free:
  * @context: a #JSContext
  * @array: a #GjsRootedArray created with gjs_rooted_array_new()
- * @free_segment: whether or not to free and unroot the internal jsval array
+ * @free_segment: whether or not to free and unroot the internal JS::Value array
  *
  * Frees the memory allocated for the #GjsRootedArray. If @free_segment is
- * %TRUE the internal memory block allocated for the jsval array will
+ * %TRUE the internal memory block allocated for the JS::Value array will
  * be freed and unrooted also.
  *
- * Returns: the jsval array if it was not freed
+ * Returns: the JS::Value array if it was not freed
  **/
-jsval*
+JS::Value *
 gjs_rooted_array_free(JSContext        *context,
                       GjsRootedArray *array,
                       gboolean          free_segment)
@@ -281,7 +284,7 @@ gjs_rooted_array_free(JSContext        *context,
     garray = (GArray*) array;
 
     if (free_segment)
-        gjs_unroot_value_locations(context, (jsval*) garray->data, garray->len);
+        gjs_unroot_value_locations(context, (JS::Value *) garray->data, garray->len);
 
-    return (jsval*) g_array_free(garray, free_segment);
+    return (JS::Value *) g_array_free(garray, free_segment);
 }

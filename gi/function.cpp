@@ -175,7 +175,7 @@ gjs_callback_closure(ffi_cif *cif,
     JSObject *func_obj;
     GjsCallbackTrampoline *trampoline;
     int i, n_args, n_jsargs, n_outargs;
-    jsval *jsargs, rval;
+    JS::Value *jsargs, rval;
     JSObject *this_object;
     GITypeInfo ret_type;
     gboolean success = FALSE;
@@ -211,7 +211,7 @@ gjs_callback_closure(ffi_cif *cif,
     g_assert(n_args >= 0);
 
     n_outargs = 0;
-    jsargs = (jsval*)g_newa(jsval, n_args);
+    jsargs = (JS::Value *)g_newa(JS::Value, n_args);
     for (i = 0, n_jsargs = 0; i < n_args; i++) {
         GIArgInfo arg_info;
         GITypeInfo type_info;
@@ -241,7 +241,7 @@ gjs_callback_closure(ffi_cif *cif,
                 gint array_length_pos = g_type_info_get_array_length(&type_info);
                 GIArgInfo array_length_arg;
                 GITypeInfo arg_type_info;
-                jsval length;
+                JS::Value length;
 
                 g_callable_info_load_arg(trampoline->info, array_length_pos, &array_length_arg);
                 g_arg_info_load_type(&array_length_arg, &arg_type_info);
@@ -332,7 +332,7 @@ gjs_callback_closure(ffi_cif *cif,
             break;
         }
     } else {
-        jsval elem;
+        JS::Value elem;
         gsize elem_idx = 0;
         /* more than one of a return value or an out argument.
          * Should be an array of output values. */
@@ -420,7 +420,7 @@ gjs_destroy_notify_callback(gpointer data)
 
 GjsCallbackTrampoline*
 gjs_callback_trampoline_new(JSContext      *context,
-                            jsval           function,
+                            JS::Value       function,
                             GICallableInfo *callable_info,
                             GIScopeType     scope,
                             gboolean        is_vfunc)
@@ -672,8 +672,8 @@ gjs_invoke_c_function(JSContext      *context,
                       Function       *function,
                       JSObject       *obj, /* "this" object */
                       unsigned        js_argc,
-                      jsval          *js_argv,
-                      jsval          *js_rval,
+                      JS::Value      *js_argv,
+                      JS::Value      *js_rval,
                       GArgument      *r_value)
 {
     /* These first four are arrays which hold argument pointers.
@@ -707,7 +707,7 @@ gjs_invoke_c_function(JSContext      *context,
     gboolean is_method;
     GITypeInfo return_info;
     GITypeTag return_tag;
-    jsval *return_values = NULL;
+    JS::Value *return_values = NULL;
     guint8 next_rval = 0; /* index into return_values */
     GSList *iter;
 
@@ -849,7 +849,7 @@ gjs_invoke_c_function(JSContext      *context,
                 GIScopeType scope = g_arg_info_get_scope(&arg_info);
                 GjsCallbackTrampoline *trampoline;
                 ffi_closure *closure;
-                jsval value = js_argv[js_arg_pos];
+                JS::Value value = js_argv[js_arg_pos];
 
                 if (JSVAL_IS_NULL(value) && g_arg_info_may_be_null(&arg_info)) {
                     closure = NULL;
@@ -1012,7 +1012,7 @@ gjs_invoke_c_function(JSContext      *context,
 
     /* Only process return values if the function didn't throw */
     if (function->js_out_argc > 0 && !did_throw_gerror) {
-        return_values = g_newa(jsval, function->js_out_argc);
+        return_values = g_newa(JS::Value, function->js_out_argc);
         gjs_set_values(context, return_values, function->js_out_argc, JSVAL_VOID);
         gjs_root_value_locations(context, return_values, function->js_out_argc);
 
@@ -1029,7 +1029,7 @@ gjs_invoke_c_function(JSContext      *context,
             if (array_length_pos >= 0) {
                 GIArgInfo array_length_arg;
                 GITypeInfo arg_type_info;
-                jsval length;
+                JS::Value length;
 
                 g_callable_info_load_arg(function->info, array_length_pos, &array_length_arg);
                 g_arg_info_load_type(&array_length_arg, &arg_type_info);
@@ -1058,7 +1058,7 @@ gjs_invoke_c_function(JSContext      *context,
                     arg_failed = !gjs_value_from_g_argument(context, &return_values[next_rval],
                                                             &return_info, &return_gargument,
                                                             TRUE);
-                /* Free GArgument, the jsval should have ref'd or copied it */
+                /* Free GArgument, the JS::Value should have ref'd or copied it */
                 if (!arg_failed &&
                     !r_value &&
                     !gjs_g_argument_release(context,
@@ -1161,7 +1161,7 @@ release:
             GArgument *arg;
             gboolean arg_failed = FALSE;
             gint array_length_pos;
-            jsval array_length;
+            JS::Value array_length;
             GITransfer transfer;
 
             g_assert(next_rval < function->js_out_argc);
@@ -1201,7 +1201,7 @@ release:
             if (arg_failed)
                 postinvoke_release_failed = TRUE;
 
-            /* Free GArgument, the jsval should have ref'd or copied it */
+            /* Free GArgument, the JS::Value should have ref'd or copied it */
             transfer = g_arg_info_get_ownership_transfer(&arg_info);
             if (!arg_failed) {
                 if (array_length_pos >= 0) {
@@ -1300,7 +1300,7 @@ release:
 static JSBool
 function_call(JSContext *context,
               unsigned   js_argc,
-              jsval     *vp)
+              JS::Value *vp)
 {
     JS::CallArgs js_argv = JS::CallArgsFromVp (js_argc, vp);
     JSObject *object = JSVAL_TO_OBJECT(js_argv.thisv());
@@ -1308,7 +1308,7 @@ function_call(JSContext *context,
 
     JSBool success;
     Function *priv;
-    jsval retval;
+    JS::Value retval;
 
     priv = priv_from_js(context, callee);
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
@@ -1368,7 +1368,7 @@ get_num_arguments (JSContext *context,
                    JS::MutableHandleValue vp)
 {
     int n_args, n_jsargs, i;
-    jsval retval;
+    JS::Value retval;
     Function *priv;
 
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp.address());
@@ -1400,13 +1400,13 @@ get_num_arguments (JSContext *context,
 static JSBool
 function_to_string (JSContext *context,
                     guint      argc,
-                    jsval     *vp)
+                    JS::Value *vp)
 {
     Function *priv;
     gchar *string;
     gboolean free;
     JSObject *self;
-    jsval retval;
+    JS::Value retval;
     JSBool ret = JS_FALSE;
     int i, n_args, n_jsargs;
     GString *arg_names_str;
@@ -1678,7 +1678,7 @@ function_new(JSContext      *context,
     if (!found) {
         JSObject *prototype;
         JSObject *parent_proto;
-        jsval native_function;
+        JS::Value native_function;
 
         JS_GetProperty(context, global, "Function", &native_function);
         /* We take advantage from that fact that Function.__proto__ is Function.prototype */
@@ -1789,8 +1789,8 @@ gjs_invoke_c_function_uncached (JSContext      *context,
                                 GIFunctionInfo *info,
                                 JSObject       *obj,
                                 unsigned        argc,
-                                jsval          *argv,
-                                jsval          *rval)
+                                JS::Value      *argv,
+                                JS::Value      *rval)
 {
   Function function;
   JSBool result;
@@ -1809,7 +1809,7 @@ gjs_invoke_constructor_from_c (JSContext      *context,
                                JSObject       *constructor,
                                JSObject       *obj,
                                unsigned        argc,
-                               jsval          *argv,
+                               JS::Value      *argv,
                                GArgument      *rvalue)
 {
     Function *priv;

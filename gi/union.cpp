@@ -160,7 +160,7 @@ union_new(JSContext   *context,
         if ((flags & GI_FUNCTION_IS_CONSTRUCTOR) != 0 &&
             g_callable_info_get_n_args((GICallableInfo*) func_info) == 0) {
 
-            jsval rval;
+            JS::Value rval;
 
             rval = JSVAL_NULL;
             gjs_invoke_c_function_uncached(context, func_info, obj,
@@ -227,8 +227,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
     priv->gtype = proto_priv->gtype;
 
     /* union_new happens to be implemented by calling
-     * gjs_invoke_c_function(), which returns a jsval.
-     * The returned "gboxed" here is owned by that jsval,
+     * gjs_invoke_c_function(), which returns a JS::Value.
+     * The returned "gboxed" here is owned by that JS::Value,
      * not by us.
      */
     gboxed = union_new(context, object, priv->info);
@@ -237,7 +237,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
         return JS_FALSE;
     }
 
-    /* Because "gboxed" is owned by a jsval and will
+    /* Because "gboxed" is owned by a JS::Value and will
      * be garbage collected, we make a copy here to be
      * owned by us.
      */
@@ -282,14 +282,14 @@ union_finalize(JSFreeOp *fop,
 static JSBool
 to_string_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
 
     Union *priv;
     JSBool ret = JS_FALSE;
-    jsval retval;
+    JS::Value retval;
 
     if (!priv_from_js_with_typecheck(context, obj, &priv))
         goto out;
@@ -341,7 +341,7 @@ gjs_define_union_class(JSContext    *context,
 {
     const char *constructor_name;
     JSObject *prototype;
-    jsval value;
+    JS::Value value;
     Union *priv;
     GType gtype;
     JSObject *constructor;

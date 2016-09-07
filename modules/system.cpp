@@ -35,13 +35,13 @@
 static JSBool
 gjs_address_of(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *target_obj;
     JSBool ret;
     char *pointer_string;
-    jsval retval;
+    JS::Value retval;
 
     if (!gjs_parse_call_args(context, "addressOf", "o", argv, "object", &target_obj))
         return JS_FALSE;
@@ -60,10 +60,10 @@ gjs_address_of(JSContext *context,
 static JSBool
 gjs_refcount(JSContext *context,
              unsigned   argc,
-             jsval     *vp)
+             JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    jsval retval;
+    JS::Value retval;
     JSObject *target_obj;
     GObject *obj;
 
@@ -86,7 +86,7 @@ gjs_refcount(JSContext *context,
 static JSBool
 gjs_breakpoint(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     if (!gjs_parse_call_args(context, "breakpoint", "", argv))
@@ -99,7 +99,7 @@ gjs_breakpoint(JSContext *context,
 static JSBool
 gjs_gc(JSContext *context,
        unsigned   argc,
-       jsval     *vp)
+       JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     if (!gjs_parse_call_args(context, "gc", "", argv))
@@ -112,7 +112,7 @@ gjs_gc(JSContext *context,
 static JSBool
 gjs_exit(JSContext *context,
          unsigned   argc,
-         jsval     *vp)
+         JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     gint32 ecode;
@@ -124,8 +124,8 @@ gjs_exit(JSContext *context,
 
 static JSBool
 gjs_clear_date_caches(JSContext *context,
-             unsigned   argc,
-             jsval     *vp)
+                      unsigned   argc,
+                      JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JS_BeginRequest(context);
@@ -157,7 +157,7 @@ gjs_js_define_system_stuff(JSContext  *context,
 {
     GjsContext *gjs_context;
     char *program_name;
-    jsval value;
+    JS::Value value;
     JSBool retval;
     JSObject *module;
 

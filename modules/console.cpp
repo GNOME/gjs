@@ -157,12 +157,12 @@ gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
 JSBool
 gjs_console_interact(JSContext *context,
                      unsigned   argc,
-                     jsval     *vp)
+                     JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *object = JSVAL_TO_OBJECT(rec.thisv());
     gboolean eof = FALSE;
-    jsval result;
+    JS::Value result;
     JSString *str;
     GString *buffer = NULL;
     char *temp_buf = NULL;

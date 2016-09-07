@@ -46,7 +46,7 @@ JSPropertySpec gjs_cairo_gradient_proto_props[] = {
 static JSBool
 addColorStopRGB_func(JSContext *context,
                      unsigned   argc,
-                     jsval     *vp)
+                     JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
@@ -75,7 +75,7 @@ addColorStopRGB_func(JSContext *context,
 static JSBool
 addColorStopRGBA_func(JSContext *context,
                       unsigned   argc,
-                      jsval     *vp)
+                      JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());

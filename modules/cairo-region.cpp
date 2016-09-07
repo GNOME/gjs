@@ -65,7 +65,7 @@ fill_rectangle(JSContext *context, JSObject *obj,
     static JSBool                                               \
     method##_func(JSContext *context,                           \
                   unsigned argc,                                \
-                  jsval *vp)                                    \
+                  JS::Value *vp)                                \
     {                                                           \
         PRELUDE;                                                \
         JSObject *other_obj;                                    \
@@ -86,7 +86,7 @@ fill_rectangle(JSContext *context, JSObject *obj,
     static JSBool                                               \
     method##_rectangle_func(JSContext *context,                 \
                             unsigned argc,                      \
-                            jsval *vp)                          \
+                            JS::Value *vp)                      \
     {                                                           \
         PRELUDE;                                                \
         JSObject *rect_obj;                                     \
@@ -117,7 +117,7 @@ static JSBool
 fill_rectangle(JSContext *context, JSObject *obj,
                cairo_rectangle_int_t *rect)
 {
-    jsval val;
+    JS::Value val;
 
     if (!gjs_object_get_property_const(context, obj, GJS_STRING_X, &val))
         return JS_FALSE;
@@ -147,7 +147,7 @@ make_rectangle(JSContext *context,
                cairo_rectangle_int_t *rect)
 {
     JSObject *rect_obj = JS_NewObject(context, NULL, NULL, NULL);
-    jsval val;
+    JS::Value val;
 
     val = INT_TO_JSVAL(rect->x);
     JS_SetProperty(context, rect_obj, "x", &val);
@@ -167,11 +167,11 @@ make_rectangle(JSContext *context,
 static JSBool
 num_rectangles_func(JSContext *context,
                     unsigned argc,
-                    jsval *vp)
+                    JS::Value *vp)
 {
     PRELUDE;
     int n_rects;
-    jsval retval;
+    JS::Value retval;
 
     if (!gjs_parse_call_args(context, "num_rectangles", "", argv))
         return JS_FALSE;
@@ -185,13 +185,13 @@ num_rectangles_func(JSContext *context,
 static JSBool
 get_rectangle_func(JSContext *context,
                    unsigned argc,
-                   jsval *vp)
+                   JS::Value *vp)
 {
     PRELUDE;
     int i;
     JSObject *rect_obj;
     cairo_rectangle_int_t rect;
-    jsval retval;
+    JS::Value retval;
 
     if (!gjs_parse_call_args(context, "get_rectangle", "i", argv, "rect", &i))
         return JS_FALSE;
@@ -291,7 +291,7 @@ gjs_cairo_region_from_region(JSContext *context,
 
 static JSBool
 region_to_g_argument(JSContext      *context,
-                     jsval           value,
+                     JS::Value       value,
                      const char     *arg_name,
                      GjsArgumentType argument_type,
                      GITransfer      transfer,
@@ -314,7 +314,7 @@ region_to_g_argument(JSContext      *context,
 
 static JSBool
 region_from_g_argument(JSContext  *context,
-                       jsval      *value_p,
+                       JS::Value  *value_p,
                        GArgument  *arg)
 {
     JSObject *obj;

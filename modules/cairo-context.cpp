@@ -34,7 +34,7 @@
 static JSBool                                       \
 mname##_func(JSContext *context,                    \
               unsigned   argc,                      \
-              jsval     *vp)                    \
+              JS::Value *vp)                        \
 {                                                   \
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);             \
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());                  \
@@ -89,7 +89,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
       JSObject *array = JS_NewArrayObject(context, 0, NULL);               \
       if (!array)                                                          \
         return JS_FALSE;                                                   \
-      jsval r;                                                             \
+      JS::Value r;                                                         \
       if (!JS_NewNumberValue(context, arg1, &r)) return JS_FALSE;          \
       if (!JS_SetElement(context, array, 0, &r)) return JS_FALSE;          \
       if (!JS_NewNumberValue(context, arg2, &r)) return JS_FALSE;          \
@@ -108,7 +108,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
       JSObject *array = JS_NewArrayObject(context, 0, NULL);               \
       if (!array)                                                          \
         return JS_FALSE;                                                   \
-      jsval r;                                                             \
+      JS::Value r;                                                         \
       if (!JS_NewNumberValue(context, arg1, &r)) return JS_FALSE;          \
       if (!JS_SetElement(context, array, 0, &r)) return JS_FALSE;          \
       if (!JS_NewNumberValue(context, arg2, &r)) return JS_FALSE;          \
@@ -127,7 +127,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
       JSObject *array = JS_NewArrayObject(context, 0, NULL);               \
       if (!array)                                                          \
         return JS_FALSE;                                                   \
-      jsval r;                                                             \
+      JS::Value r;                                                         \
       if (!JS_NewNumberValue(context, arg1, &r)) return JS_FALSE;          \
       if (!JS_SetElement(context, array, 0, &r)) return JS_FALSE;          \
       if (!JS_NewNumberValue(context, arg2, &r)) return JS_FALSE;          \
@@ -143,7 +143,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0F(method, cfunc)                    \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     double ret;                                                            \
-    jsval retval;                                                          \
+    JS::Value retval;                                                      \
    _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                                \
     cr = gjs_cairo_context_get_context(context, obj);                      \
     ret = cfunc(cr);                                                       \
@@ -409,7 +409,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDeviceDistance, cairo_user_to_device_
 static JSBool
 dispose_func(JSContext *context,
              unsigned   argc,
-             jsval     *vp)
+             JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
@@ -428,7 +428,7 @@ dispose_func(JSContext *context,
 static JSBool
 appendPath_func(JSContext *context,
                 unsigned   argc,
-                jsval     *vp)
+                JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
@@ -456,7 +456,7 @@ appendPath_func(JSContext *context,
 static JSBool
 copyPath_func(JSContext *context,
               unsigned   argc,
-              jsval     *vp)
+              JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
@@ -477,7 +477,7 @@ copyPath_func(JSContext *context,
 static JSBool
 copyPathFlat_func(JSContext *context,
                   unsigned   argc,
-                  jsval     *vp)
+                  JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
@@ -497,7 +497,7 @@ copyPathFlat_func(JSContext *context,
 static JSBool
 mask_func(JSContext *context,
           unsigned   argc,
-          jsval     *vp)
+          JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
@@ -529,7 +529,7 @@ mask_func(JSContext *context,
 static JSBool
 maskSurface_func(JSContext *context,
                  unsigned   argc,
-                 jsval     *vp)
+                 JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
@@ -565,7 +565,7 @@ maskSurface_func(JSContext *context,
 static JSBool
 setDash_func(JSContext *context,
              unsigned   argc,
-             jsval     *vp)
+             JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
@@ -596,7 +596,7 @@ setDash_func(JSContext *context,
 
     dashes_c = g_array_sized_new (FALSE, FALSE, sizeof(double), len);
     for (i = 0; i < len; ++i) {
-        jsval elem;
+        JS::Value elem;
         double b;
 
         elem = JSVAL_VOID;
@@ -630,7 +630,7 @@ setDash_func(JSContext *context,
 static JSBool
 setSource_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
@@ -664,7 +664,7 @@ setSource_func(JSContext *context,
 static JSBool
 setSourceSurface_func(JSContext *context,
                       unsigned   argc,
-                      jsval     *vp)
+                      JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
@@ -701,7 +701,7 @@ setSourceSurface_func(JSContext *context,
 static JSBool
 showText_func(JSContext *context,
               unsigned   argc,
-              jsval     *vp)
+              JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
@@ -729,7 +729,7 @@ showText_func(JSContext *context,
 static JSBool
 selectFontFace_func(JSContext *context,
                     unsigned   argc,
-                    jsval     *vp)
+                    JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
@@ -760,7 +760,7 @@ selectFontFace_func(JSContext *context,
 static JSBool
 popGroup_func(JSContext *context,
               unsigned   argc,
-              jsval     *vp)
+              JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
@@ -793,7 +793,7 @@ popGroup_func(JSContext *context,
 static JSBool
 getSource_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
@@ -827,7 +827,7 @@ getSource_func(JSContext *context,
 static JSBool
 getTarget_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
@@ -861,7 +861,7 @@ getTarget_func(JSContext *context,
 static JSBool
 getGroupTarget_func(JSContext *context,
                     unsigned   argc,
-                    jsval     *vp)
+                    JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
@@ -1023,7 +1023,7 @@ gjs_cairo_context_get_context(JSContext *context,
 
 static JSBool
 context_to_g_argument(JSContext      *context,
-                      jsval           value,
+                      JS::Value       value,
                       const char     *arg_name,
                       GjsArgumentType argument_type,
                       GITransfer      transfer,
@@ -1046,7 +1046,7 @@ context_to_g_argument(JSContext      *context,
 
 static JSBool
 context_from_g_argument(JSContext  *context,
-                        jsval      *value_p,
+                        JS::Value  *value_p,
                         GArgument  *arg)
 {
     JSObject *obj;

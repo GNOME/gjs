@@ -36,8 +36,8 @@ GClosure*  gjs_closure_new           (JSContext    *context,
                                       gboolean      root_function);
 void       gjs_closure_invoke        (GClosure     *closure,
                                       int           argc,
-                                      jsval        *argv,
-                                      jsval        *retval);
+                                      JS::Value    *argv,
+                                      JS::Value    *retval);
 JSContext* gjs_closure_get_context   (GClosure     *closure);
 gboolean   gjs_closure_is_valid      (GClosure     *closure);
 JSObject*  gjs_closure_get_callable  (GClosure     *closure);

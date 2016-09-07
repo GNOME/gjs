@@ -30,13 +30,13 @@
 G_BEGIN_DECLS
 
 JSBool     gjs_value_to_g_value         (JSContext    *context,
-                                         jsval         value,
+                                         JS::Value     value,
                                          GValue       *gvalue);
 JSBool     gjs_value_to_g_value_no_copy (JSContext    *context,
-                                         jsval         value,
+                                         JS::Value     value,
                                          GValue       *gvalue);
 JSBool     gjs_value_from_g_value       (JSContext    *context,
-                                         jsval        *value_p,
+                                         JS::Value    *value_p,
                                          const GValue *gvalue);
 GClosure*  gjs_closure_new_marshaled    (JSContext    *context,
                                          JSObject     *callable,

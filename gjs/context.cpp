@@ -105,7 +105,7 @@ static GList *all_contexts = NULL;
 static JSBool
 gjs_log(JSContext *context,
         unsigned   argc,
-        jsval     *vp)
+        JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     char *s;
@@ -149,7 +149,7 @@ gjs_log(JSContext *context,
 static JSBool
 gjs_log_error(JSContext *context,
               unsigned   argc,
-              jsval     *vp)
+              JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSExceptionState *exc_state;
@@ -237,7 +237,7 @@ gjs_print_parse_args(JSContext *context,
 static JSBool
 gjs_print(JSContext *context,
           unsigned   argc,
-          jsval     *vp)
+          JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     char *buffer;
@@ -256,7 +256,7 @@ gjs_print(JSContext *context,
 static JSBool
 gjs_printerr(JSContext *context,
              unsigned   argc,
-             jsval     *vp)
+             JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     char *buffer;
@@ -635,7 +635,7 @@ gjs_context_eval(GjsContext   *js_context,
                  GError      **error)
 {
     gboolean ret = FALSE;
-    jsval retval;
+    JS::Value retval;
 
     JSAutoCompartment ac(js_context->context, js_context->global);
     JSAutoRequest ar(js_context->context);
@@ -756,7 +756,7 @@ gboolean
 gjs_object_get_property_const(JSContext      *context,
                               JSObject       *obj,
                               GjsConstString  property_name,
-                              jsval          *value_p)
+                              JS::Value      *value_p)
 {
     jsid pname;
     pname = gjs_context_get_const_string(context, property_name);

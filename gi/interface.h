@@ -39,7 +39,7 @@ JSBool gjs_define_interface_class (JSContext       *context,
 
 JSBool gjs_lookup_interface_constructor (JSContext     *context,
                                          GType          gtype,
-                                         jsval         *value_p);
+                                         JS::Value     *value_p);
 
 G_END_DECLS
 

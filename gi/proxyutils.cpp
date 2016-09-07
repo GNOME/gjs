@@ -38,7 +38,7 @@ _gjs_proxy_to_string_func(JSContext  *context,
                           GIBaseInfo *info,
                           GType       gtype,
                           gpointer    native_address,
-                          jsval      *rval)
+                          JS::Value  *rval)
 {
     GString *buf;
     JSBool ret = JS_FALSE;

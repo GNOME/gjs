@@ -60,7 +60,7 @@ JSPropertySpec gjs_cairo_surface_proto_props[] = {
 static JSBool
 writeToPNG_func(JSContext *context,
                 unsigned   argc,
-                jsval     *vp)
+                JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
@@ -89,7 +89,7 @@ writeToPNG_func(JSContext *context,
 static JSBool
 getType_func(JSContext *context,
              unsigned   argc,
-             jsval     *vp)
+             JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
@@ -250,7 +250,7 @@ gjs_cairo_surface_get_surface(JSContext *context,
 
 static JSBool
 surface_to_g_argument(JSContext      *context,
-                      jsval           value,
+                      JS::Value       value,
                       const char     *arg_name,
                       GjsArgumentType argument_type,
                       GITransfer      transfer,
@@ -273,7 +273,7 @@ surface_to_g_argument(JSContext      *context,
 
 static JSBool
 surface_from_g_argument(JSContext  *context,
-                        jsval      *value_p,
+                        JS::Value  *value_p,
                         GArgument  *arg)
 {
     JSObject *obj;

@@ -43,12 +43,12 @@ typedef enum {
 } GjsArgumentType;
 
 JSBool gjs_value_to_arg   (JSContext  *context,
-                           jsval       value,
+                           JS::Value   value,
                            GIArgInfo  *arg_info,
                            GArgument  *arg);
 
 JSBool gjs_value_to_explicit_array (JSContext  *context,
-                                    jsval       value,
+                                    JS::Value   value,
                                     GIArgInfo  *arg_info,
                                     GArgument  *arg,
                                     gsize      *length_p);
@@ -58,7 +58,7 @@ void gjs_g_argument_init_default (JSContext      *context,
                                   GArgument      *arg);
 
 JSBool gjs_value_to_g_argument (JSContext      *context,
-                                jsval           value,
+                                JS::Value       value,
                                 GITypeInfo     *type_info,
                                 const char     *arg_name,
                                 GjsArgumentType argument_type,
@@ -67,12 +67,12 @@ JSBool gjs_value_to_g_argument (JSContext      *context,
                                 GArgument      *arg);
 
 JSBool gjs_value_from_g_argument (JSContext  *context,
-                                  jsval      *value_p,
+                                  JS::Value  *value_p,
                                   GITypeInfo *type_info,
                                   GArgument  *arg,
                                   gboolean    copy_structs);
 JSBool gjs_value_from_explicit_array (JSContext  *context,
-                                      jsval      *value_p,
+                                      JS::Value  *value_p,
                                       GITypeInfo *type_info,
                                       GArgument  *arg,
                                       int         length);
@@ -108,11 +108,11 @@ gint64 _gjs_enum_from_int (GIEnumInfo *enum_info,
                            int         int_value);
 
 JSBool gjs_array_from_strv (JSContext   *context,
-                            jsval       *value_p,
+                            JS::Value   *value_p,
                             const char **strv);
 
 JSBool gjs_array_to_strv (JSContext   *context,
-                          jsval        array_value,
+                          JS::Value    array_value,
                           unsigned int length,
                           void       **arr_p);
 

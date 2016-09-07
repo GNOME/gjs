@@ -42,7 +42,7 @@
 #include <girepository.h>
 
 static JSBool gjs_value_from_g_value_internal(JSContext    *context,
-                                              jsval        *value_p,
+                                              JS::Value    *value_p,
                                               const GValue *gvalue,
                                               gboolean      no_copy,
                                               GSignalQuery *signal_query,
@@ -85,7 +85,7 @@ get_signal_info_if_available(GSignalQuery *signal_query)
  */
 static JSBool
 gjs_value_from_array_and_length_values(JSContext    *context,
-                                       jsval        *value_p,
+                                       JS::Value    *value_p,
                                        GITypeInfo   *array_type_info,
                                        const GValue *array_value,
                                        const GValue *array_length_value,
@@ -93,7 +93,7 @@ gjs_value_from_array_and_length_values(JSContext    *context,
                                        GSignalQuery *signal_query,
                                        int           array_length_arg_n)
 {
-    jsval array_length;
+    JS::Value array_length;
     GArgument array_arg;
 
     g_assert(G_VALUE_HOLDS_POINTER(array_value));
@@ -122,8 +122,8 @@ closure_marshal(GClosure        *closure,
     JSRuntime *runtime;
     JSObject *obj;
     int argc;
-    jsval *argv;
-    jsval rval;
+    JS::Value *argv;
+    JS::Value rval;
     int i;
     GSignalQuery signal_query = { 0, };
     GISignalInfo *signal_info;
@@ -174,7 +174,7 @@ closure_marshal(GClosure        *closure,
     argc = n_param_values;
     rval = JSVAL_VOID;
     if (argc > 0) {
-        argv = g_newa(jsval, n_param_values);
+        argv = g_newa(JS::Value, n_param_values);
 
         gjs_set_values(context, argv, argc, JSVAL_VOID);
         gjs_root_value_locations(context, argv, argc);
@@ -338,7 +338,7 @@ gjs_closure_new_marshaled (JSContext    *context,
 
 static GType
 gjs_value_guess_g_type(JSContext *context,
-                       jsval      value)
+                       JS::Value  value)
 {
     if (JSVAL_IS_NULL(value))
         return G_TYPE_POINTER;
@@ -363,7 +363,7 @@ gjs_value_guess_g_type(JSContext *context,
 
 static JSBool
 gjs_value_to_g_value_internal(JSContext    *context,
-                              jsval         value,
+                              JS::Value     value,
                               GValue       *gvalue,
                               gboolean      no_copy)
 {
@@ -387,7 +387,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
     }
 
     gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
-                      "Converting jsval to gtype %s",
+                      "Converting JS::Value to gtype %s",
                       g_type_name(gtype));
 
 
@@ -518,7 +518,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
             /* do nothing */
         } else if (JS_HasPropertyById(context, JSVAL_TO_OBJECT(value), length_name, &found_length) &&
                    found_length) {
-            jsval length_value;
+            JS::Value length_value;
             guint32 length;
 
             if (!gjs_object_require_property(context,
@@ -745,7 +745,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
             return JS_FALSE;
         }
     } else {
-        gjs_debug(GJS_DEBUG_GCLOSURE, "jsval is number %d gtype fundamental %d transformable to int %d from int %d",
+        gjs_debug(GJS_DEBUG_GCLOSURE, "JS::Value is number %d gtype fundamental %d transformable to int %d from int %d",
                   JSVAL_IS_NUMBER(value),
                   G_TYPE_IS_FUNDAMENTAL(gtype),
                   g_value_type_transformable(gtype, G_TYPE_INT),
@@ -762,7 +762,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
 
 JSBool
 gjs_value_to_g_value(JSContext    *context,
-                     jsval         value,
+                     JS::Value     value,
                      GValue       *gvalue)
 {
     return gjs_value_to_g_value_internal(context, value, gvalue, FALSE);
@@ -770,7 +770,7 @@ gjs_value_to_g_value(JSContext    *context,
 
 JSBool
 gjs_value_to_g_value_no_copy(JSContext    *context,
-                             jsval         value,
+                             JS::Value     value,
                              GValue       *gvalue)
 {
     return gjs_value_to_g_value_internal(context, value, gvalue, TRUE);
@@ -778,7 +778,7 @@ gjs_value_to_g_value_no_copy(JSContext    *context,
 
 static JSBool
 convert_int_to_enum (JSContext *context,
-                     jsval     *value_p,
+                     JS::Value *value_p,
                      GType      gtype,
                      int        v)
 {
@@ -804,7 +804,7 @@ convert_int_to_enum (JSContext *context,
 
 static JSBool
 gjs_value_from_g_value_internal(JSContext    *context,
-                                jsval        *value_p,
+                                JS::Value    *value_p,
                                 const GValue *gvalue,
                                 gboolean      no_copy,
                                 GSignalQuery *signal_query,
@@ -815,7 +815,7 @@ gjs_value_from_g_value_internal(JSContext    *context,
     gtype = G_VALUE_TYPE(gvalue);
 
     gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
-                      "Converting gtype %s to jsval",
+                      "Converting gtype %s to JS::Value",
                       g_type_name(gtype));
 
     if (gtype == G_TYPE_STRING) {
@@ -1036,7 +1036,7 @@ gjs_value_from_g_value_internal(JSContext    *context,
 
 JSBool
 gjs_value_from_g_value(JSContext    *context,
-                       jsval        *value_p,
+                       JS::Value    *value_p,
                        const GValue *gvalue)
 {
     return gjs_value_from_g_value_internal(context, value_p, gvalue, FALSE, NULL, 0);

@@ -60,7 +60,7 @@ JSPropertySpec gjs_cairo_pattern_proto_props[] = {
 static JSBool
 getType_func(JSContext *context,
              unsigned   argc,
-             jsval     *vp)
+             JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());

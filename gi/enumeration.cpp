@@ -43,7 +43,7 @@ gjs_lookup_enumeration(JSContext    *context,
 {
     JSObject *in_object;
     const char *enum_name;
-    jsval value;
+    JS::Value value;
 
     in_object = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
 
@@ -70,7 +70,7 @@ gjs_define_enum_value(JSContext    *context,
     char *fixed_name;
     gsize i;
     gint64 value_val;
-    jsval value_js;
+    JS::Value value_js;
 
     value_name = g_base_info_get_name( (GIBaseInfo*) info);
     value_val = g_value_info_get_value(info);
@@ -113,7 +113,7 @@ gjs_define_enum_values(JSContext    *context,
 {
     GType gtype;
     int i, n_values;
-    jsval value;
+    JS::Value value;
 
     /* Fill in enum values first, so we don't define the enum itself until we're
      * sure we can finish successfully.

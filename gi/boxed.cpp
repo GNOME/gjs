@@ -63,7 +63,7 @@ static gboolean struct_is_simple(GIStructInfo *info);
 static JSBool boxed_set_field_from_value(JSContext   *context,
                                          Boxed       *priv,
                                          GIFieldInfo *field_info,
-                                         jsval        value);
+                                         JS::Value    value);
 
 extern struct JSClass gjs_boxed_class;
 
@@ -190,13 +190,13 @@ boxed_new_resolve(JSContext *context,
     return ret;
 }
 
-/* Check to see if jsval passed in is another Boxed object of the same,
+/* Check to see if JS::Value passed in is another Boxed object of the same,
  * and if so, retrieves the Boxed private structure for it.
  */
 static JSBool
 boxed_get_copy_source(JSContext *context,
                       Boxed     *priv,
-                      jsval      value,
+                      JS::Value  value,
                       Boxed    **source_priv_out)
 {
     Boxed *source_priv;
@@ -259,7 +259,7 @@ static JSBool
 boxed_init_from_props(JSContext   *context,
                       JSObject    *obj,
                       Boxed       *priv,
-                      jsval        props_value)
+                      JS::Value    props_value)
 {
     JSObject *props;
     JSObject *iter;
@@ -291,7 +291,7 @@ boxed_init_from_props(JSContext   *context,
     while (!JSID_IS_VOID(prop_id)) {
         GIFieldInfo *field_info;
         char *name;
-        jsval value;
+        JS::Value value;
 
         if (!gjs_get_string_id(context, prop_id, &name))
             goto out;
@@ -330,10 +330,10 @@ boxed_invoke_constructor(JSContext   *context,
                          JSObject    *obj,
                          jsid         constructor_name,
                          unsigned     argc,
-                         jsval       *argv,
-                         jsval       *rval)
+                         JS::Value   *argv,
+                         JS::Value   *rval)
 {
-    jsval js_constructor, js_constructor_func;
+    JS::Value js_constructor, js_constructor_func;
     jsid constructor_const;
 
     constructor_const = gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR);
@@ -352,8 +352,8 @@ boxed_new(JSContext   *context,
           JSObject    *obj, /* "this" for constructor */
           Boxed       *priv,
           unsigned     argc,
-          jsval       *argv,
-          jsval       *rval)
+          JS::Value   *argv,
+          JS::Value   *rval)
 {
     if (priv->gtype == G_TYPE_VARIANT) {
         jsid constructor_name;
@@ -431,7 +431,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
     Boxed *proto_priv;
     JSObject *proto;
     Boxed *source_priv;
-    jsval actual_rval;
+    JS::Value actual_rval;
     JSBool retval;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(boxed);
@@ -551,7 +551,7 @@ get_field_info (JSContext *context,
 {
     GIFieldInfo *field_info;
     char *name;
-    jsval value;
+    JS::Value value;
 
     if (!priv->field_map)
         priv->field_map = get_field_map(priv->info);
@@ -582,7 +582,7 @@ get_nested_interface_object (JSContext   *context,
                              GIFieldInfo *field_info,
                              GITypeInfo  *type_info,
                              GIBaseInfo  *interface_info,
-                             jsval       *value)
+                             JS::Value   *value)
 {
     JSObject *obj;
     JSObject *proto;
@@ -708,7 +708,7 @@ set_nested_interface_object (JSContext   *context,
                              GIFieldInfo *field_info,
                              GITypeInfo  *type_info,
                              GIBaseInfo  *interface_info,
-                             jsval        value)
+                             JS::Value    value)
 {
     JSObject *proto;
     int offset;
@@ -751,7 +751,7 @@ static JSBool
 boxed_set_field_from_value(JSContext   *context,
                            Boxed       *priv,
                            GIFieldInfo *field_info,
-                           jsval        value)
+                           JS::Value    value)
 {
     GITypeInfo *type_info;
     GArgument arg;
@@ -893,14 +893,14 @@ define_boxed_class_fields (JSContext *context,
 static JSBool
 to_string_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
 
     Boxed *priv;
     JSBool ret = JS_FALSE;
-    jsval retval;
+    JS::Value retval;
 
     if (!priv_from_js_with_typecheck(context, obj, &priv))
         goto out;
@@ -1140,7 +1140,7 @@ gjs_define_boxed_class(JSContext    *context,
     const char *constructor_name;
     JSObject *prototype;
     JSObject *constructor;
-    jsval value;
+    JS::Value value;
     Boxed *priv;
 
     /* See the comment in gjs_define_object_class() for an

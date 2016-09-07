@@ -31,10 +31,10 @@
 
 G_BEGIN_DECLS
 
-jsval      gjs_gtype_create_proto         (JSContext       *context,
-                                           JSObject        *module,
-                                           const char      *proto_name,
-                                           JSObject        *parent);
+JS::Value   gjs_gtype_create_proto         (JSContext       *context,
+                                            JSObject        *module,
+                                            const char      *proto_name,
+                                            JSObject        *parent);
 
 JSObject * gjs_gtype_create_gtype_wrapper (JSContext *context,
                                            GType      gtype);

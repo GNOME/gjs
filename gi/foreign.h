@@ -29,7 +29,7 @@
 #include "arg.h"
 
 typedef JSBool (*GjsArgOverrideToGArgumentFunc) (JSContext      *context,
-                                                 jsval           value,
+                                                 JS::Value       value,
                                                  const char     *arg_name,
                                                  GjsArgumentType argument_type,
                                                  GITransfer      transfer,
@@ -37,7 +37,7 @@ typedef JSBool (*GjsArgOverrideToGArgumentFunc) (JSContext      *context,
                                                  GArgument      *arg);
 
 typedef JSBool (*GjsArgOverrideFromGArgumentFunc) (JSContext  *context,
-                                                   jsval      *value_p,
+                                                   JS::Value  *value_p,
                                                    GArgument  *arg);
 typedef JSBool (*GjsArgOverrideReleaseGArgumentFunc) (JSContext  *context,
                                                       GITransfer  transfer,
@@ -54,7 +54,7 @@ JSBool  gjs_struct_foreign_register                (const char         *gi_names
                                                     GjsForeignInfo *info);
 
 JSBool  gjs_struct_foreign_convert_to_g_argument   (JSContext          *context,
-                                                    jsval               value,
+                                                    JS::Value           value,
                                                     GIBaseInfo         *interface_info,
                                                     const char         *arg_name,
                                                     GjsArgumentType     argument_type,
@@ -62,7 +62,7 @@ JSBool  gjs_struct_foreign_convert_to_g_argument   (JSContext          *context,
                                                     gboolean            may_be_null,
                                                     GArgument          *arg);
 JSBool  gjs_struct_foreign_convert_from_g_argument (JSContext          *context,
-                                                    jsval              *value_p,
+                                                    JS::Value          *value_p,
                                                     GIBaseInfo         *interface_info,
                                                     GArgument          *arg);
 JSBool  gjs_struct_foreign_release_g_argument      (JSContext          *context,

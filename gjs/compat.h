@@ -59,7 +59,10 @@ G_BEGIN_DECLS
 
 #define JS_GetGlobalObject(cx) gjs_get_global_object(cx)
 
-static JSBool G_GNUC_UNUSED JS_NewNumberValue(JSContext *cx, double d, jsval *rval)
+static JSBool G_GNUC_UNUSED
+JS_NewNumberValue(JSContext *cx,
+                  double     d,
+                  JS::Value *rval)
     {
         *rval = JS_NumberValue(d);
         if (JSVAL_IS_NUMBER(*rval))
@@ -75,7 +78,7 @@ static JSBool G_GNUC_UNUSED JS_NewNumberValue(JSContext *cx, double d, jsval *rv
 static JSBool                                           \
 gjs_##name##_constructor(JSContext  *context,           \
                          unsigned    argc,              \
-                         jsval      *vp)
+                         JS::Value  *vp)
 
 /**
  * GJS_NATIVE_CONSTRUCTOR_VARIABLES:

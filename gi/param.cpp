@@ -187,7 +187,7 @@ gjs_lookup_param_prototype(JSContext    *context)
     JSObject *in_object;
     JSObject *constructor;
     jsid gobject_name;
-    jsval value;
+    JS::Value value;
 
     gobject_name = gjs_intern_string_to_id(context, "GObject");
     in_object = gjs_lookup_namespace_object_by_name(context, gobject_name);
@@ -220,7 +220,7 @@ gjs_define_param_class(JSContext    *context,
 {
     const char *constructor_name;
     JSObject *prototype;
-    jsval value;
+    JS::Value value;
     JSObject *constructor;
     GIObjectInfo *info;
 

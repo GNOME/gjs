@@ -45,11 +45,11 @@
 JSObject *
 gjs_new_object_for_constructor(JSContext *context,
                                JSClass   *clasp,
-                               jsval     *vp)
+                               JS::Value *vp)
 {
-    jsval     callee;
+    JS::Value callee;
     JSObject *parent;
-    jsval     prototype;
+    JS::Value prototype;
 
     callee = JS_CALLEE(context, vp);
     parent = JS_GetParent(JSVAL_TO_OBJECT (callee));
@@ -200,11 +200,11 @@ JSObject*
 gjs_construct_object_dynamic(JSContext      *context,
                              JSObject       *proto,
                              unsigned        argc,
-                             jsval          *argv)
+                             JS::Value      *argv)
 {
     JSObject *constructor;
     JSObject *result = NULL;
-    jsval value;
+    JS::Value value;
     jsid constructor_name;
 
     JS_BeginRequest(context);

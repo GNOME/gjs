@@ -391,11 +391,11 @@ get_absolute_path(const char *path)
 
 typedef gboolean (*ConvertAndInsertJSVal) (GArray    *array,
                                            JSContext *context,
-                                           jsval     *element);
+                                           JS::Value *element);
 
 static gboolean
 get_array_from_js_value(JSContext             *context,
-                        jsval                 *value,
+                        JS::Value             *value,
                         size_t                 array_element_size,
                         GDestroyNotify         element_clear_func,
                         ConvertAndInsertJSVal  inserter,
@@ -423,7 +423,7 @@ get_array_from_js_value(JSContext             *context,
     if (JS_GetArrayLength(context, js_array, &js_array_len)) {
         u_int32_t i = 0;
         for (; i < js_array_len; ++i) {
-            jsval element;
+            JS::Value element;
             if (!JS_GetElement(context, js_array, i, &element)) {
                 g_array_unref(c_side_array);
                 gjs_throw(context, "Failed to get function names array element %d", i);
@@ -446,7 +446,7 @@ get_array_from_js_value(JSContext             *context,
 static gboolean
 convert_and_insert_unsigned_int(GArray    *array,
                                 JSContext *context,
-                                jsval     *element)
+                                JS::Value *element)
 {
     if (!JSVAL_IS_INT(*element) &&
         !JSVAL_IS_VOID(*element) &&
@@ -469,10 +469,10 @@ convert_and_insert_unsigned_int(GArray    *array,
 static GArray *
 get_executed_lines_for(JSContext        *context,
                        JS::HandleObject  coverage_statistics,
-                       jsval            *filename_value)
+                       JS::Value        *filename_value)
 {
     GArray *array = NULL;
-    jsval rval;
+    JS::Value rval;
 
     if (!JS_CallFunctionName(context, coverage_statistics, "getExecutedLinesFor", 1, filename_value, &rval)) {
         gjs_log_exception(context);
@@ -508,7 +508,7 @@ clear_coverage_function(gpointer info_location)
 static gboolean
 convert_and_insert_function_decl(GArray    *array,
                                  JSContext *context,
-                                 jsval     *element)
+                                 JS::Value *element)
 {
     JSObject *object = JSVAL_TO_OBJECT(*element);
 
@@ -517,7 +517,7 @@ convert_and_insert_function_decl(GArray    *array,
         return FALSE;
     }
 
-    jsval    function_name_property_value;
+    JS::Value function_name_property_value;
 
     if (!JS_GetProperty(context, object, "name", &function_name_property_value)) {
         gjs_throw(context, "Failed to get name property for function object");
@@ -540,14 +540,14 @@ convert_and_insert_function_decl(GArray    *array,
         return FALSE;
     }
 
-    jsval hit_count_property_value;
+    JS::Value hit_count_property_value;
     if (!JS_GetProperty(context, object, "hitCount", &hit_count_property_value) ||
         !JSVAL_IS_INT(hit_count_property_value)) {
         gjs_throw(context, "Failed to get hitCount property for function object");
         return FALSE;
     }
 
-    jsval line_number_property_value;
+    JS::Value line_number_property_value;
     if (!JS_GetProperty(context, object, "line", &line_number_property_value) ||
         !JSVAL_IS_INT(line_number_property_value)) {
         gjs_throw(context, "Failed to get line property for function object");
@@ -571,10 +571,10 @@ convert_and_insert_function_decl(GArray    *array,
 static GArray *
 get_functions_for(JSContext        *context,
                   JS::HandleObject  coverage_statistics,
-                  jsval            *filename_value)
+                  JS::Value        *filename_value)
 {
     GArray *array = NULL;
-    jsval rval;
+    JS::Value rval;
 
     if (!JS_CallFunctionName(context, coverage_statistics, "getFunctionsFor", 1, filename_value, &rval)) {
         gjs_log_exception(context);
@@ -610,7 +610,7 @@ clear_coverage_branch(gpointer branch_location)
 static gboolean
 convert_and_insert_branch_exit(GArray    *array,
                                JSContext *context,
-                               jsval     *element)
+                               JS::Value *element)
 {
     if (!JSVAL_IS_OBJECT(*element)) {
         gjs_throw(context, "Branch exit array element is not an object");
@@ -624,7 +624,7 @@ convert_and_insert_branch_exit(GArray    *array,
         return FALSE;
     }
 
-    jsval   line_value;
+    JS::Value line_value;
     int32_t line;
 
     if (!JS_GetProperty(context, object, "line", &line_value) ||
@@ -635,7 +635,7 @@ convert_and_insert_branch_exit(GArray    *array,
 
     line = JSVAL_TO_INT(line_value);
 
-    jsval   hit_count_value;
+    JS::Value hit_count_value;
     int32_t hit_count;
 
     if (!JS_GetProperty(context, object, "hitCount", &hit_count_value) ||
@@ -659,7 +659,7 @@ convert_and_insert_branch_exit(GArray    *array,
 static gboolean
 convert_and_insert_branch_info(GArray    *array,
                                JSContext *context,
-                               jsval     *element)
+                               JS::Value *element)
 {
     if (!JSVAL_IS_OBJECT(*element) &&
         !JSVAL_IS_VOID(*element)) {
@@ -675,7 +675,7 @@ convert_and_insert_branch_info(GArray    *array,
             return FALSE;
         }
 
-        jsval   branch_point_value;
+        JS::Value branch_point_value;
         int32_t branch_point;
 
         if (!JS_GetProperty(context, object, "point", &branch_point_value) ||
@@ -686,7 +686,7 @@ convert_and_insert_branch_info(GArray    *array,
 
         branch_point = JSVAL_TO_INT(branch_point_value);
 
-        jsval  was_hit_value;
+        JS::Value was_hit_value;
         JSBool was_hit;
 
         if (!JS_GetProperty(context, object, "hit", &was_hit_value) ||
@@ -697,7 +697,7 @@ convert_and_insert_branch_info(GArray    *array,
 
         was_hit = JSVAL_TO_BOOLEAN(was_hit_value);
 
-        jsval  branch_exits_value;
+        JS::Value branch_exits_value;
         GArray *branch_exits_array = NULL;
 
         if (!JS_GetProperty(context, object, "exits", &branch_exits_value) ||
@@ -731,10 +731,10 @@ convert_and_insert_branch_info(GArray    *array,
 static GArray *
 get_branches_for(JSContext        *context,
                  JS::HandleObject  coverage_statistics,
-                 jsval            *filename_value)
+                 JS::Value        *filename_value)
 {
     GArray *array = NULL;
-    jsval rval;
+    JS::Value rval;
 
     if (!JS_CallFunctionName(context, coverage_statistics, "getBranchesFor", 1, filename_value, &rval)) {
         gjs_log_exception(context);
@@ -766,7 +766,7 @@ fetch_coverage_file_statistics_from_js(JSContext                 *context,
     JSAutoRequest ar(context);
 
     JSString *filename_jsstr = JS_NewStringCopyZ(context, filename);
-    jsval    filename_jsval = STRING_TO_JSVAL(filename_jsstr);
+    JS::Value filename_jsval = STRING_TO_JSVAL(filename_jsstr);
 
     GArray *lines = get_executed_lines_for(context, coverage_statistics, &filename_jsval);
     GArray *functions = get_functions_for(context, coverage_statistics, &filename_jsval);
@@ -862,7 +862,7 @@ get_covered_files(GjsCoverage *coverage)
     JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
     JSAutoRequest ar(context);
     JSAutoCompartment ac(context, priv->coverage_statistics);
-    jsval rval;
+    JS::Value rval;
     JSObject *files_obj;
 
     char **files = NULL;
@@ -882,7 +882,7 @@ get_covered_files(GjsCoverage *coverage)
 
     files = g_new0(char *, n_files + 1);
     for (uint32_t i = 0; i < n_files; i++) {
-        jsval element;
+        JS::Value element;
         char *file;
         if (!JS_GetElement(context, files_obj, i, &element))
             goto error;
@@ -1064,7 +1064,7 @@ gjs_get_generic_object_constructor(JSContext        *context,
     JSAutoRequest ar(context);
     JSAutoCompartment ac(context, global_object);
 
-    jsval object_constructor_value;
+    JS::Value object_constructor_value;
     if (!JS_GetProperty(context, global_object, "Object", &object_constructor_value) ||
         !JSVAL_IS_OBJECT(object_constructor_value))
         g_assert_not_reached();
@@ -1203,7 +1203,7 @@ coverage_statistics_has_stale_cache(GjsCoverage *coverage)
     JSAutoRequest ar(js_context);
     JSAutoCompartment ac(js_context, priv->coverage_statistics);
 
-    jsval stale_cache_value;
+    JS::Value stale_cache_value;
     if (!JS_CallFunctionName(js_context,
                              priv->coverage_statistics,
                              "staleCache",
@@ -1324,7 +1324,7 @@ gjs_context_eval_file_in_compartment(GjsContext *context,
 
     g_object_unref(file);
 
-    jsval return_value;
+    JS::Value return_value;
 
     JSContext *js_context = (JSContext *) gjs_context_get_native_context(context);
 
@@ -1349,7 +1349,7 @@ gjs_context_eval_file_in_compartment(GjsContext *context,
 static JSBool
 coverage_log(JSContext *context,
              unsigned   argc,
-             jsval     *vp)
+             JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     char *s;
@@ -1424,7 +1424,7 @@ get_file_from_filename_as_js_string(JSContext    *context,
 static JSBool
 coverage_get_file_modification_time(JSContext *context,
                                     unsigned  argc,
-                                    jsval     *vp)
+                                    JS::Value *vp)
 {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JSRuntime    *runtime = JS_GetRuntime(context);
@@ -1457,7 +1457,7 @@ out:
 static JSBool
 coverage_get_file_checksum(JSContext *context,
                            unsigned  argc,
-                           jsval     *vp)
+                           JS::Value *vp)
 {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JSRuntime    *runtime = JS_GetRuntime(context);
@@ -1487,7 +1487,7 @@ coverage_get_file_checksum(JSContext *context,
 static JSBool
 coverage_get_file_contents(JSContext *context,
                            unsigned   argc,
-                           jsval     *vp)
+                           JS::Value *vp)
 {
     JSBool ret = JS_FALSE;
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
@@ -1553,7 +1553,7 @@ gjs_run_script_in_coverage_compartment(GjsCoverage *coverage,
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
     JSContext          *js_context = (JSContext *) gjs_context_get_native_context(priv->context);
     JSAutoCompartment ac(js_context, priv->coverage_statistics);
-    jsval rval;
+    JS::Value rval;
     if (!gjs_eval_with_scope(js_context,
                              priv->coverage_statistics,
                              script,
@@ -1582,7 +1582,7 @@ gjs_inject_value_into_coverage_compartment(GjsCoverage     *coverage,
     JS::RootedObject coverage_global_scope(JS_GetRuntime(js_context),
                                            JS_GetGlobalForObject(js_context, priv->coverage_statistics));
 
-    jsval value = handle_value;
+    JS::Value value = handle_value;
     if (!JS_SetProperty(js_context, coverage_global_scope, property, &value)) {
         g_warning("Failed to set property %s to requested value", property);
         return FALSE;
@@ -1685,7 +1685,7 @@ bootstrap_coverage(GjsCoverage *coverage)
                                                   &error))
             g_error("Failed to eval coverage script: %s\n", error->message);
 
-        jsval coverage_statistics_prototype_value;
+        JS::Value coverage_statistics_prototype_value;
         if (!JS_GetProperty(context, debugger_compartment, "CoverageStatistics", &coverage_statistics_prototype_value) ||
             !JSVAL_IS_OBJECT(coverage_statistics_prototype_value)) {
             gjs_throw(context, "Failed to get CoverageStatistics prototype");
@@ -1715,7 +1715,7 @@ bootstrap_coverage(GjsCoverage *coverage)
         /* Now create the array to pass the desired prefixes over */
         JSObject *prefixes = gjs_build_string_array(context, -1, priv->prefixes);
 
-        jsval coverage_statistics_constructor_arguments[] = {
+        JS::Value coverage_statistics_constructor_arguments[] = {
             OBJECT_TO_JSVAL(prefixes),
             cache_value.get()
         };

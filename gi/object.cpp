@@ -185,7 +185,7 @@ throw_priv_is_null_error(JSContext *context)
 static ValueFromPropertyResult
 init_g_param_from_property(JSContext  *context,
                            const char *js_prop_name,
-                           jsval       js_value,
+                           JS::Value   js_value,
                            GType       gtype,
                            GParameter *parameter,
                            gboolean    constructing)
@@ -668,7 +668,7 @@ static JSBool
 object_instance_props_to_g_parameters(JSContext   *context,
                                       JSObject    *obj,
                                       unsigned     argc,
-                                      jsval       *argv,
+                                      JS::Value   *argv,
                                       GType        gtype,
                                       GParameter **gparams_p,
                                       int         *n_gparams_p)
@@ -708,7 +708,7 @@ object_instance_props_to_g_parameters(JSContext   *context,
 
     while (!JSID_IS_VOID(prop_id)) {
         char *name = NULL;
-        jsval value;
+        JS::Value value;
         GParameter gparam = { NULL, { 0, }};
 
         if (!gjs_object_require_property(context, props, "property list", prop_id, &value)) {
@@ -1243,7 +1243,7 @@ static JSBool
 object_instance_init (JSContext *context,
                       JSObject **object,
                       unsigned   argc,
-                      jsval     *argv)
+                      JS::Value *argv)
 {
     ObjectInstance *priv;
     GType gtype;
@@ -1335,8 +1335,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(object_instance)
     JSBool ret;
-    jsval initer;
-    jsval rval;
+    JS::Value initer;
+    JS::Value rval;
     jsid object_init_name;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(object_instance);
@@ -1475,7 +1475,7 @@ gjs_lookup_object_constructor_from_info(JSContext    *context,
     JSObject *in_object;
     JSObject *constructor;
     const char *constructor_name;
-    jsval value;
+    JS::Value value;
 
     if (info) {
         in_object = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
@@ -1514,7 +1514,7 @@ gjs_lookup_object_prototype_from_info(JSContext    *context,
                                       GType         gtype)
 {
     JSObject *constructor;
-    jsval value;
+    JS::Value value;
 
     constructor = gjs_lookup_object_constructor_from_info(context, info, gtype);
 
@@ -1560,7 +1560,7 @@ signal_connection_invalidated (gpointer  user_data,
 static JSBool
 real_connect_func(JSContext *context,
                   unsigned   argc,
-                  jsval     *vp,
+                  JS::Value *vp,
                   gboolean  after)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
@@ -1572,7 +1572,7 @@ real_connect_func(JSContext *context,
     guint signal_id;
     char *signal_name;
     GQuark signal_detail;
-    jsval retval;
+    JS::Value retval;
     ConnectData *connect_data;
     JSBool ret = JS_FALSE;
 
@@ -1655,7 +1655,7 @@ real_connect_func(JSContext *context,
 static JSBool
 connect_after_func(JSContext *context,
                    unsigned   argc,
-                   jsval     *vp)
+                   JS::Value *vp)
 {
     return real_connect_func(context, argc, vp, TRUE);
 }
@@ -1663,7 +1663,7 @@ connect_after_func(JSContext *context,
 static JSBool
 connect_func(JSContext *context,
              unsigned   argc,
-             jsval     *vp)
+             JS::Value *vp)
 {
     return real_connect_func(context, argc, vp, FALSE);
 }
@@ -1671,7 +1671,7 @@ connect_func(JSContext *context,
 static JSBool
 emit_func(JSContext *context,
           unsigned   argc,
-          jsval     *vp)
+          JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
@@ -1685,7 +1685,7 @@ emit_func(JSContext *context,
     GValue rvalue = G_VALUE_INIT;
     unsigned int i;
     gboolean failed;
-    jsval retval;
+    JS::Value retval;
     JSBool ret = JS_FALSE;
 
     if (!do_base_typecheck(context, obj, JS_TRUE))
@@ -1795,14 +1795,14 @@ emit_func(JSContext *context,
 static JSBool
 to_string_func(JSContext *context,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
 
     ObjectInstance *priv;
     JSBool ret = JS_FALSE;
-    jsval retval;
+    JS::Value retval;
 
     if (!do_base_typecheck(context, obj, JS_TRUE))
         goto out;
@@ -1847,7 +1847,7 @@ struct JSClass gjs_object_instance_class = {
 static JSBool
 init_func (JSContext *context,
            unsigned   argc,
-           jsval     *vp)
+           JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
@@ -1947,7 +1947,7 @@ gjs_define_object_class(JSContext      *context,
     JSObject *parent_proto;
     JSObject *global;
 
-    jsval value;
+    JS::Value value;
     ObjectInstance *priv;
     const char *ns;
     GType parent_type;
@@ -2272,7 +2272,7 @@ find_vfunc_info (JSContext *context,
 static JSBool
 gjs_hook_up_vfunc(JSContext *cx,
                   unsigned   argc,
-                  jsval     *vp)
+                  JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     gchar *name;
@@ -2401,7 +2401,7 @@ gjs_object_get_gproperty (GObject    *object,
     GjsContext *gjs_context;
     JSContext *context;
     JSObject *js_obj;
-    jsval jsvalue;
+    JS::Value jsvalue;
     gchar *underscore_name;
 
     gjs_context = gjs_context_get_current();
@@ -2423,7 +2423,7 @@ jsobj_set_gproperty (JSContext    *context,
                      const GValue *value,
                      GParamSpec   *pspec)
 {
-    jsval jsvalue;
+    JS::Value jsvalue;
     gchar *underscore_name;
 
     if (!gjs_value_from_g_value(context, &jsvalue, value))
@@ -2473,7 +2473,7 @@ gjs_object_constructor (GType                  type,
 
         if (n_construct_properties) {
             JSObject *args;
-            jsval argv;
+            JS::Value argv;
             guint i;
 
             args = JS_NewObject(context, NULL, NULL, NULL);
@@ -2525,7 +2525,7 @@ gjs_object_set_gproperty (GObject      *object,
 static JSBool
 gjs_override_property(JSContext *cx,
                       unsigned   argc,
-                      jsval     *vp)
+                      JS::Value *vp)
 {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     gchar *name = NULL;
@@ -2633,7 +2633,7 @@ gjs_object_custom_init(GTypeInstance *instance,
     JSContext *context;
     JSObject *object;
     ObjectInstance *priv;
-    jsval v, r;
+    JS::Value v, r;
 
     if (!object_init_list)
       return;
@@ -2786,7 +2786,7 @@ save_properties_for_class_init(JSContext *cx,
 static JSBool
 gjs_register_interface(JSContext *cx,
                        unsigned   argc,
-                       jsval     *vp)
+                       JS::Value *vp)
 {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     char *name = NULL;
@@ -2865,7 +2865,7 @@ gjs_register_interface(JSContext *cx,
 static JSBool
 gjs_register_type(JSContext *cx,
                   unsigned   argc,
-                  jsval     *vp)
+                  JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     gchar *name;
@@ -2974,7 +2974,7 @@ out:
 static JSBool
 gjs_signal_new(JSContext *cx,
                unsigned   argc,
-               jsval     *vp)
+               JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSObject *obj;
@@ -3027,7 +3027,7 @@ gjs_signal_new(JSContext *cx,
     }
     params = g_newa(GType, n_parameters);
     for (i = 0; i < n_parameters; i++) {
-        jsval gtype_val;
+        JS::Value gtype_val;
         if (!JS_GetElement(cx, JSVAL_TO_OBJECT(argv[5]), i, &gtype_val) ||
             !JSVAL_IS_OBJECT(gtype_val)) {
             gjs_throw(cx, "Invalid signal parameter number %d", i);
@@ -3090,7 +3090,7 @@ gjs_define_private_gi_stuff(JSContext *context,
 JSBool
 gjs_lookup_object_constructor(JSContext *context,
                               GType      gtype,
-                              jsval     *value_p)
+                              JS::Value *value_p)
 {
     JSObject *constructor;
     GIObjectInfo *object_info;
