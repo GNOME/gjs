@@ -144,7 +144,7 @@ error_finalize(JSFreeOp *fop,
     g_slice_free(Error, priv);
 }
 
-static JSBool
+static bool
 error_get_domain(JSContext *context,
                  unsigned   argc,
                  JS::Value *vp)
@@ -158,7 +158,7 @@ error_get_domain(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 error_get_message(JSContext *context,
                   unsigned   argc,
                   JS::Value *vp)
@@ -177,7 +177,7 @@ error_get_message(JSContext *context,
     return gjs_string_from_utf8(context, priv->gerror->message, -1, args.rval());
 }
 
-static JSBool
+static bool
 error_get_code(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -197,7 +197,7 @@ error_get_code(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 error_to_string(JSContext *context,
                 unsigned   argc,
                 JS::Value *vp)
@@ -239,7 +239,7 @@ error_to_string(JSContext *context,
     return retval;
 }
 
-static JSBool
+static bool
 error_constructor_value_of(JSContext *context,
                            unsigned   argc,
                            JS::Value *vp)

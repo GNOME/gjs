@@ -253,7 +253,7 @@ proto_priv_from_js(JSContext       *context,
 /* a hook on getting a property; set value_p to override property's value.
  * Return value is false on OOM/exception.
  */
-static JSBool
+static bool
 object_instance_get_prop(JSContext              *context,
                          JS::HandleObject        obj,
                          JS::HandleId            id,
@@ -323,11 +323,11 @@ object_instance_get_prop(JSContext              *context,
 /* a hook on setting a property; set value_p to override property value to
  * be set. Return value is false on OOM/exception.
  */
-static JSBool
+static bool
 object_instance_set_prop(JSContext              *context,
                          JS::HandleObject        obj,
                          JS::HandleId            id,
-                         JSBool                  strict,
+                         bool                    strict,
                          JS::MutableHandleValue  value_p)
 {
     ObjectInstance *priv;
@@ -1619,7 +1619,7 @@ real_connect_func(JSContext *context,
     return ret;
 }
 
-static JSBool
+static bool
 connect_after_func(JSContext *context,
                    unsigned   argc,
                    JS::Value *vp)
@@ -1627,7 +1627,7 @@ connect_after_func(JSContext *context,
     return real_connect_func(context, argc, vp, true);
 }
 
-static JSBool
+static bool
 connect_func(JSContext *context,
              unsigned   argc,
              JS::Value *vp)
@@ -1635,7 +1635,7 @@ connect_func(JSContext *context,
     return real_connect_func(context, argc, vp, false);
 }
 
-static JSBool
+static bool
 emit_func(JSContext *context,
           unsigned   argc,
           JS::Value *vp)
@@ -1745,7 +1745,7 @@ emit_func(JSContext *context,
     return ret;
 }
 
-static JSBool
+static bool
 to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -1782,7 +1782,7 @@ struct JSClass gjs_object_instance_class = {
     
 };
 
-static JSBool
+static bool
 init_func (JSContext *context,
            unsigned   argc,
            JS::Value *vp)
@@ -2223,7 +2223,7 @@ find_vfunc_info (JSContext *context,
     g_base_info_unref(struct_info);
 }
 
-static JSBool
+static bool
 gjs_hook_up_vfunc(JSContext *cx,
                   unsigned   argc,
                   JS::Value *vp)
@@ -2472,7 +2472,7 @@ gjs_object_set_gproperty (GObject      *object,
     jsobj_set_gproperty(context, js_obj, value, pspec);
 }
 
-static JSBool
+static bool
 gjs_override_property(JSContext *cx,
                       unsigned   argc,
                       JS::Value *vp)
@@ -2735,7 +2735,7 @@ save_properties_for_class_init(JSContext       *cx,
     return true;
 }
 
-static JSBool
+static bool
 gjs_register_interface(JSContext *cx,
                        unsigned   argc,
                        JS::Value *vp)
@@ -2817,7 +2817,7 @@ gjs_register_interface(JSContext *cx,
     return true;
 }
 
-static JSBool
+static bool
 gjs_register_type(JSContext *cx,
                   unsigned   argc,
                   JS::Value *vp)
@@ -2919,7 +2919,7 @@ gjs_register_type(JSContext *cx,
     return true;
 }
 
-static JSBool
+static bool
 gjs_signal_new(JSContext *cx,
                unsigned   argc,
                JS::Value *vp)

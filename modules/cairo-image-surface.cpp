@@ -69,7 +69,7 @@ JSPropertySpec gjs_cairo_image_surface_proto_props[] = {
     JS_PS_END
 };
 
-static JSBool
+static bool
 createFromPNG_func(JSContext *context,
                    unsigned   argc,
                    JS::Value *vp)
@@ -100,7 +100,7 @@ createFromPNG_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 getFormat_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -124,7 +124,7 @@ getFormat_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 getWidth_func(JSContext *context,
               unsigned   argc,
               JS::Value *vp)
@@ -148,7 +148,7 @@ getWidth_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 getHeight_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -172,7 +172,7 @@ getHeight_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 getStride_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)

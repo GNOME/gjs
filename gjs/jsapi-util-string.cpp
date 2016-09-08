@@ -28,7 +28,7 @@
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 
-JSBool
+bool
 gjs_string_to_utf8 (JSContext      *context,
                     const JS::Value value,
                     char          **utf8_string_p)
@@ -104,7 +104,7 @@ gjs_string_from_utf8(JSContext             *context,
     return str != NULL;
 }
 
-JSBool
+bool
 gjs_string_to_filename(JSContext      *context,
                        const JS::Value filename_val,
                        char          **filename_string_p)

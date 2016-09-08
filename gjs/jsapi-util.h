@@ -244,7 +244,7 @@ gjs_##cname##_create_proto(JSContext *context,                                 \
  * Prototype a constructor.
  */
 #define GJS_NATIVE_CONSTRUCTOR_DECLARE(name)            \
-static JSBool                                           \
+static bool                                             \
 gjs_##name##_constructor(JSContext  *context,           \
                          unsigned    argc,              \
                          JS::Value  *vp)
@@ -392,7 +392,7 @@ void        gjs_error_reporter               (JSContext       *context,
                                               const char      *message,
                                               JSErrorReport   *report);
 
-JSBool      gjs_string_to_utf8               (JSContext       *context,
+bool        gjs_string_to_utf8               (JSContext       *context,
                                               const JS::Value  string_val,
                                               char           **utf8_string_p);
 bool gjs_string_from_utf8(JSContext             *context,
@@ -400,7 +400,7 @@ bool gjs_string_from_utf8(JSContext             *context,
                           ssize_t                n_bytes,
                           JS::MutableHandleValue value_p);
 
-JSBool      gjs_string_to_filename           (JSContext       *context,
+bool        gjs_string_to_filename           (JSContext       *context,
                                               const JS::Value  string_val,
                                               char           **filename_string_p);
 bool gjs_string_from_filename(JSContext             *context,

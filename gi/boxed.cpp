@@ -615,7 +615,7 @@ get_nested_interface_object (JSContext   *context,
     return true;
 }
 
-static JSBool
+static bool
 boxed_field_getter (JSContext              *context,
                     JS::HandleObject        obj,
                     JS::HandleId            id,
@@ -793,11 +793,11 @@ out:
     return success;
 }
 
-static JSBool
+static bool
 boxed_field_setter (JSContext              *context,
                     JS::HandleObject        obj,
                     JS::HandleId            id,
-                    JSBool                  strict,
+                    bool                    strict,
                     JS::MutableHandleValue  value)
 {
     Boxed *priv;
@@ -872,7 +872,7 @@ define_boxed_class_fields (JSContext       *context,
     return true;
 }
 
-static JSBool
+static bool
 to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)

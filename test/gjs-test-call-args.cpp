@@ -30,7 +30,7 @@ typedef enum _test_signed_enum {
 } test_signed_enum_t;
 
 #define JSNATIVE_TEST_FUNC_BEGIN(name)                      \
-    static JSBool                                           \
+    static bool                                             \
     name(JSContext *cx,                                     \
          unsigned   argc,                                   \
          JS::Value *vp)                                     \

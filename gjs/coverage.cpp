@@ -1306,7 +1306,7 @@ gjs_context_eval_file_in_compartment(GjsContext      *context,
     return true;
 }
 
-static JSBool
+static bool
 coverage_log(JSContext *context,
              unsigned   argc,
              JS::Value *vp)
@@ -1364,7 +1364,7 @@ get_filename_from_filename_as_js_string(JSContext    *context,
     return filename;
 }
 
-static JSBool
+static bool
 coverage_get_file_modification_time(JSContext *context,
                                     unsigned  argc,
                                     JS::Value *vp)
@@ -1397,7 +1397,7 @@ out:
     return ret;
 }
 
-static JSBool
+static bool
 coverage_get_file_checksum(JSContext *context,
                            unsigned  argc,
                            JS::Value *vp)
@@ -1425,7 +1425,7 @@ coverage_get_file_checksum(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 coverage_get_file_contents(JSContext *context,
                            unsigned   argc,
                            JS::Value *vp)

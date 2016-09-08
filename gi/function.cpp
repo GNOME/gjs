@@ -1307,7 +1307,7 @@ release:
     }
 }
 
-static JSBool
+static bool
 function_call(JSContext *context,
               unsigned   js_argc,
               JS::Value *vp)
@@ -1373,7 +1373,7 @@ function_finalize(JSFreeOp *fop,
     g_slice_free(Function, priv);
 }
 
-static JSBool
+static bool
 get_num_arguments (JSContext *context,
                    unsigned   argc,
                    JS::Value *vp)
@@ -1402,7 +1402,7 @@ get_num_arguments (JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 function_to_string (JSContext *context,
                     guint      argc,
                     JS::Value *vp)
@@ -1654,7 +1654,7 @@ function_new(JSContext      *context,
              GICallableInfo *info)
 {
     Function *priv;
-    JSBool found;
+    bool found;
 
     /* put constructor for GIRepositoryFunction() in the global namespace */
     JS::RootedObject global(context, gjs_get_import_global(context));

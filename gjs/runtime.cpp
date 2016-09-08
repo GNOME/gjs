@@ -45,7 +45,7 @@ gjs_runtime_is_sweeping (JSRuntime *runtime)
  * to UTF-8, using the appropriate GLib functions, and converting
  * back if necessary.
  */
-static JSBool
+static bool
 gjs_locale_to_upper_case (JSContext *context,
                           JS::HandleString src,
                           JS::MutableHandleValue retval)
@@ -71,7 +71,7 @@ out:
     return success;
 }
 
-static JSBool
+static bool
 gjs_locale_to_lower_case (JSContext *context,
                           JS::HandleString src,
                           JS::MutableHandleValue retval)
@@ -97,7 +97,7 @@ out:
     return success;
 }
 
-static JSBool
+static bool
 gjs_locale_compare (JSContext *context,
                     JS::HandleString src_1,
                     JS::HandleString src_2,
@@ -121,7 +121,7 @@ out:
     return success;
 }
 
-static JSBool
+static bool
 gjs_locale_to_unicode (JSContext  *context,
                        const char *src,
                        JS::MutableHandleValue retval)
@@ -168,7 +168,7 @@ static JSLocaleCallbacks gjs_locale_callbacks =
 static void
 gjs_finalize_callback(JSFreeOp         *fop,
                       JSFinalizeStatus  status,
-                      JSBool            isCompartment)
+                      bool              isCompartment)
 {
   JSRuntime *runtime;
   RuntimeData *data;

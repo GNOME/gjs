@@ -246,7 +246,7 @@ repo_new(JSContext *context)
     Repo *priv;
     JSObject *versions;
     JSObject *private_ns;
-    JSBool found;
+    bool found;
     jsid versions_name, private_ns_name;
 
     JS::RootedObject global(context, gjs_get_import_global(context));

@@ -33,7 +33,7 @@
 #include "cairo-private.h"
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(mname) \
-static JSBool                                       \
+static bool                                         \
 mname##_func(JSContext *context,                    \
               unsigned   argc,                      \
               JS::Value *vp)                        \
@@ -389,7 +389,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDevice, cairo_user_to_device, "x", "y
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDeviceDistance, cairo_user_to_device_distance, "x", "y")
 
 
-static JSBool
+static bool
 dispose_func(JSContext *context,
              unsigned   argc,
              JS::Value *vp)
@@ -404,7 +404,7 @@ dispose_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 appendPath_func(JSContext *context,
                 unsigned   argc,
                 JS::Value *vp)
@@ -429,7 +429,7 @@ appendPath_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 copyPath_func(JSContext *context,
               unsigned   argc,
               JS::Value *vp)
@@ -446,7 +446,7 @@ copyPath_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 copyPathFlat_func(JSContext *context,
                   unsigned   argc,
                   JS::Value *vp)
@@ -463,7 +463,7 @@ copyPathFlat_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 mask_func(JSContext *context,
           unsigned   argc,
           JS::Value *vp)
@@ -492,7 +492,7 @@ mask_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 maskSurface_func(JSContext *context,
                  unsigned   argc,
                  JS::Value *vp)
@@ -524,7 +524,7 @@ maskSurface_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 setDash_func(JSContext *context,
              unsigned   argc,
              JS::Value *vp)
@@ -579,7 +579,7 @@ setDash_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 setSource_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -609,7 +609,7 @@ setSource_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 setSourceSurface_func(JSContext *context,
                       unsigned   argc,
                       JS::Value *vp)
@@ -642,7 +642,7 @@ setSourceSurface_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 showText_func(JSContext *context,
               unsigned   argc,
               JS::Value *vp)
@@ -666,7 +666,7 @@ showText_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 selectFontFace_func(JSContext *context,
                     unsigned   argc,
                     JS::Value *vp)
@@ -693,7 +693,7 @@ selectFontFace_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 popGroup_func(JSContext *context,
               unsigned   argc,
               JS::Value *vp)
@@ -723,7 +723,7 @@ popGroup_func(JSContext *context,
 
     return true;
 }
-static JSBool
+static bool
 getSource_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -754,7 +754,7 @@ getSource_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 getTarget_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -785,7 +785,7 @@ getTarget_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 getGroupTarget_func(JSContext *context,
                     unsigned   argc,
                     JS::Value *vp)

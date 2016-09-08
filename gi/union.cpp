@@ -279,7 +279,7 @@ union_finalize(JSFreeOp *fop,
     g_slice_free(Union, priv);
 }
 
-static JSBool
+static bool
 to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)

@@ -65,7 +65,7 @@ gjs_gtype_finalize(JSFreeOp *fop,
     g_type_set_qdata(gtype, gjs_get_gtype_wrapper_quark(), NULL);
 }
 
-static JSBool
+static bool
 to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -87,7 +87,7 @@ to_string_func(JSContext *context,
     return ret;
 }
 
-static JSBool
+static bool
 get_name_func (JSContext *context,
                unsigned   argc,
                JS::Value *vp)

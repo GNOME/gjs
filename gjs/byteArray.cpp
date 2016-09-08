@@ -219,7 +219,7 @@ byte_array_get_prop(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 byte_array_length_getter(JSContext *context,
                          unsigned   argc,
                          JS::Value *vp)
@@ -238,7 +238,7 @@ byte_array_length_getter(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 byte_array_length_setter(JSContext *context,
                          unsigned   argc,
                          JS::Value *vp)
@@ -401,7 +401,7 @@ byte_array_finalize(JSFreeOp *fop,
 }
 
 /* implement toString() with an optional encoding arg */
-static JSBool
+static bool
 to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -489,7 +489,7 @@ to_string_func(JSContext *context,
     }
 }
 
-static JSBool
+static bool
 to_gbytes_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -547,7 +547,7 @@ byte_array_new(JSContext *context)
 }
 
 /* fromString() function implementation */
-static JSBool
+static bool
 from_string_func(JSContext *context,
                  unsigned   argc,
                  JS::Value *vp)
@@ -643,7 +643,7 @@ from_string_func(JSContext *context,
 }
 
 /* fromArray() function implementation */
-static JSBool
+static bool
 from_array_func(JSContext *context,
                 unsigned   argc,
                 JS::Value *vp)
@@ -704,7 +704,7 @@ from_array_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 from_gbytes_func(JSContext *context,
                  unsigned   argc,
                  JS::Value *vp)

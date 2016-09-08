@@ -126,7 +126,7 @@ ns_new_resolve(JSContext *context,
     return ret;
 }
 
-static JSBool
+static bool
 get_name (JSContext *context,
           unsigned   argc,
           JS::Value *vp)
@@ -193,7 +193,7 @@ ns_new(JSContext    *context,
        const char   *ns_name)
 {
     Ns *priv;
-    JSBool found;
+    bool found;
 
     /* put constructor in the global namespace */
     JS::RootedObject global(context, gjs_get_import_global(context));

@@ -74,7 +74,7 @@ JSPropertySpec gjs_cairo_surface_pattern_proto_props[] = {
 };
 
 
-static JSBool
+static bool
 setExtend_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -97,7 +97,7 @@ setExtend_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 getExtend_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -122,7 +122,7 @@ getExtend_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 setFilter_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -145,7 +145,7 @@ setFilter_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 getFilter_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)

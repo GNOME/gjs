@@ -487,7 +487,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
 
         g_value_set_object(gvalue, gobj);
     } else if (gtype == G_TYPE_STRV) {
-        JSBool found_length;
+        bool found_length;
         JS::RootedId length_name(context,
             gjs_context_get_const_string(context, GJS_STRING_LENGTH));
 

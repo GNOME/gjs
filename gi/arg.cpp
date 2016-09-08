@@ -1252,7 +1252,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
 {
     bool ret = false;
     GITypeInfo *param_info;
-    JSBool found_length;
+    bool found_length;
 
     param_info = g_type_info_get_param_type(type_info, 0);
 
@@ -1798,7 +1798,7 @@ gjs_value_to_g_argument(JSContext      *context,
          * JavaScript.
          */
         if (value.isObject()) {
-            JSBool found_length;
+            bool found_length;
             JS::RootedObject array_obj(context, &value.toObject());
             JS::RootedId length_name(context,
                 gjs_context_get_const_string(context, GJS_STRING_LENGTH));

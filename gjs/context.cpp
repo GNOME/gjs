@@ -102,7 +102,7 @@ enum {
 static GMutex contexts_lock;
 static GList *all_contexts = NULL;
 
-static JSBool
+static bool
 gjs_log(JSContext *context,
         unsigned   argc,
         JS::Value *vp)
@@ -145,7 +145,7 @@ gjs_log(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 gjs_log_error(JSContext *context,
               unsigned   argc,
               JS::Value *vp)
@@ -231,7 +231,7 @@ gjs_print_parse_args(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 gjs_print(JSContext *context,
           unsigned   argc,
           JS::Value *vp)
@@ -250,7 +250,7 @@ gjs_print(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 gjs_printerr(JSContext *context,
              unsigned   argc,
              JS::Value *vp)

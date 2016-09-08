@@ -57,7 +57,7 @@ JSPropertySpec gjs_cairo_pattern_proto_props[] = {
 
 /* Methods */
 
-static JSBool
+static bool
 getType_func(JSContext *context,
              unsigned   argc,
              JS::Value *vp)

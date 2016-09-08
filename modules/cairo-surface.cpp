@@ -57,7 +57,7 @@ JSPropertySpec gjs_cairo_surface_proto_props[] = {
 };
 
 /* Methods */
-static JSBool
+static bool
 writeToPNG_func(JSContext *context,
                 unsigned   argc,
                 JS::Value *vp)
@@ -84,7 +84,7 @@ writeToPNG_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 getType_func(JSContext *context,
              unsigned   argc,
              JS::Value *vp)

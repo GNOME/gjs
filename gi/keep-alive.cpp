@@ -176,7 +176,7 @@ static JSObject *
 gjs_keep_alive_new(JSContext *context)
 {
     KeepAlive *priv;
-    JSBool found;
+    bool found;
 
     /* This function creates an unattached KeepAlive object; following our
      * general strategy, we have a single KeepAlive class with a constructor

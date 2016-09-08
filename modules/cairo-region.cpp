@@ -63,7 +63,7 @@ fill_rectangle(JSContext             *context,
     return gjs_cairo_check_status(context, cairo_region_status(this_region), "region");
 
 #define REGION_DEFINE_REGION_FUNC(method)                       \
-    static JSBool                                               \
+    static bool                                                 \
     method##_func(JSContext *context,                           \
                   unsigned argc,                                \
                   JS::Value *vp)                                \
@@ -83,7 +83,7 @@ fill_rectangle(JSContext             *context,
     }
 
 #define REGION_DEFINE_RECT_FUNC(method)                         \
-    static JSBool                                               \
+    static bool                                                 \
     method##_rectangle_func(JSContext *context,                 \
                             unsigned argc,                      \
                             JS::Value *vp)                      \
@@ -166,7 +166,7 @@ make_rectangle(JSContext *context,
     return rect_obj;
 }
 
-static JSBool
+static bool
 num_rectangles_func(JSContext *context,
                     unsigned argc,
                     JS::Value *vp)
@@ -182,7 +182,7 @@ num_rectangles_func(JSContext *context,
     RETURN_STATUS;
 }
 
-static JSBool
+static bool
 get_rectangle_func(JSContext *context,
                    unsigned argc,
                    JS::Value *vp)

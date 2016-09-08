@@ -491,7 +491,7 @@ fundamental_finalize(JSFreeOp  *fop,
     }
 }
 
-static JSBool
+static bool
 to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)

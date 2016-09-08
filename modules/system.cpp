@@ -34,7 +34,7 @@
 #include "gjs/jsapi-util-args.h"
 #include "system.h"
 
-static JSBool
+static bool
 gjs_address_of(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -56,7 +56,7 @@ gjs_address_of(JSContext *context,
     return ret;
 }
 
-static JSBool
+static bool
 gjs_refcount(JSContext *context,
              unsigned   argc,
              JS::Value *vp)
@@ -80,7 +80,7 @@ gjs_refcount(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 gjs_breakpoint(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -93,7 +93,7 @@ gjs_breakpoint(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 gjs_gc(JSContext *context,
        unsigned   argc,
        JS::Value *vp)
@@ -106,7 +106,7 @@ gjs_gc(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 gjs_exit(JSContext *context,
          unsigned   argc,
          JS::Value *vp)
@@ -120,7 +120,7 @@ gjs_exit(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 gjs_clear_date_caches(JSContext *context,
                       unsigned   argc,
                       JS::Value *vp)

@@ -43,7 +43,7 @@ JSPropertySpec gjs_cairo_gradient_proto_props[] = {
 
 /* Methods */
 
-static JSBool
+static bool
 addColorStopRGB_func(JSContext *context,
                      unsigned   argc,
                      JS::Value *vp)
@@ -70,7 +70,7 @@ addColorStopRGB_func(JSContext *context,
     return true;
 }
 
-static JSBool
+static bool
 addColorStopRGBA_func(JSContext *context,
                       unsigned   argc,
                       JS::Value *vp)

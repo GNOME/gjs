@@ -304,7 +304,7 @@ load_module_init(JSContext       *context,
                  JS::HandleObject in_object,
                  const char      *full_path)
 {
-    JSBool found;
+    bool found;
     GFile *file;
 
     /* First we check if js module has already been loaded  */
@@ -925,7 +925,7 @@ importer_new(JSContext *context,
              bool       is_root)
 {
     Importer *priv;
-    JSBool found;
+    bool found;
 
     JS::RootedObject global(context, gjs_get_import_global(context));
 
