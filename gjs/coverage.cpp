@@ -404,7 +404,7 @@ get_array_from_js_value(JSContext             *context,
     g_return_val_if_fail(out_array != NULL, FALSE);
     g_return_val_if_fail(*out_array == NULL, FALSE);
 
-    JSObject *js_array = JSVAL_TO_OBJECT(*value);
+    JSObject *js_array = &value->toObject();
 
     if (!JS_IsArrayObject(context, js_array)) {
         g_critical("Returned object from is not an array");
@@ -448,15 +448,13 @@ convert_and_insert_unsigned_int(GArray    *array,
                                 JSContext *context,
                                 JS::Value *element)
 {
-    if (!JSVAL_IS_INT(*element) &&
-        !JSVAL_IS_VOID(*element) &&
-        !JSVAL_IS_NULL(*element)) {
+    if (!element->isInt32() && !element->isUndefined() && !element->isNull()) {
         g_critical("Array element is not an integer or undefined or null");
         return FALSE;
     }
 
-    if (JSVAL_IS_INT(*element)) {
-        unsigned int element_integer = JSVAL_TO_INT(*element);
+    if (element->isInt32()) {
+        unsigned int element_integer = element->toInt32();
         g_array_append_val(array, element_integer);
     } else {
         int not_executable = -1;
@@ -510,12 +508,13 @@ convert_and_insert_function_decl(GArray    *array,
                                  JSContext *context,
                                  JS::Value *element)
 {
-    JSObject *object = JSVAL_TO_OBJECT(*element);
+    JSObject *object;
 
-    if (!object) {
-        gjs_throw(context, "Converting element to object failed");
+    if (!element->isObject()) {
+        gjs_throw(context, "Function element is not an object");
         return FALSE;
     }
+    object = &element->toObject();
 
     JS::Value function_name_property_value;
 
@@ -526,14 +525,14 @@ convert_and_insert_function_decl(GArray    *array,
 
     char *utf8_string;
 
-    if (JSVAL_IS_STRING(function_name_property_value)) {
+    if (function_name_property_value.isString()) {
         if (!gjs_string_to_utf8(context,
                                 function_name_property_value,
                                 &utf8_string)) {
             gjs_throw(context, "Failed to convert function_name to string");
             return FALSE;
         }
-    } else if (JSVAL_IS_NULL(function_name_property_value)) {
+    } else if (function_name_property_value.isNull()) {
         utf8_string = NULL;
     } else {
         gjs_throw(context, "Unexpected type for function_name");
@@ -542,20 +541,20 @@ convert_and_insert_function_decl(GArray    *array,
 
     JS::Value hit_count_property_value;
     if (!JS_GetProperty(context, object, "hitCount", &hit_count_property_value) ||
-        !JSVAL_IS_INT(hit_count_property_value)) {
+        !hit_count_property_value.isInt32()) {
         gjs_throw(context, "Failed to get hitCount property for function object");
         return FALSE;
     }
 
     JS::Value line_number_property_value;
     if (!JS_GetProperty(context, object, "line", &line_number_property_value) ||
-        !JSVAL_IS_INT(line_number_property_value)) {
+        !line_number_property_value.isInt32()) {
         gjs_throw(context, "Failed to get line property for function object");
         return FALSE;
     }
 
-    unsigned int line_number = JSVAL_TO_INT(line_number_property_value);
-    unsigned int hit_count = JSVAL_TO_INT(hit_count_property_value);
+    unsigned int line_number = line_number_property_value.toInt32();
+    unsigned int hit_count = hit_count_property_value.toInt32();
 
     GjsCoverageFunction info;
     init_covered_function(&info,
@@ -612,39 +611,34 @@ convert_and_insert_branch_exit(GArray    *array,
                                JSContext *context,
                                JS::Value *element)
 {
-    if (!JSVAL_IS_OBJECT(*element)) {
+    if (!element->isObject()) {
         gjs_throw(context, "Branch exit array element is not an object");
         return FALSE;
     }
 
-    JSObject *object = JSVAL_TO_OBJECT(*element);
-
-    if (!object) {
-        gjs_throw(context, "Converting element to object failed");
-        return FALSE;
-    }
+    JSObject *object = &element->toObject();
 
     JS::Value line_value;
     int32_t line;
 
     if (!JS_GetProperty(context, object, "line", &line_value) ||
-        !JSVAL_IS_INT(line_value)) {
+        !line_value.isInt32()) {
         gjs_throw(context, "Failed to get line property from element");
         return FALSE;
     }
 
-    line = JSVAL_TO_INT(line_value);
+    line = line_value.toInt32();
 
     JS::Value hit_count_value;
     int32_t hit_count;
 
     if (!JS_GetProperty(context, object, "hitCount", &hit_count_value) ||
-        !JSVAL_IS_INT(hit_count_value)) {
+        !hit_count_value.isInt32()) {
         gjs_throw(context, "Failed to get hitCount property from element");
         return FALSE;
     }
 
-    hit_count = JSVAL_TO_INT(hit_count_value);
+    hit_count = hit_count_value.toInt32();
 
     GjsCoverageBranchExit exit = {
         (unsigned int) line,
@@ -661,47 +655,40 @@ convert_and_insert_branch_info(GArray    *array,
                                JSContext *context,
                                JS::Value *element)
 {
-    if (!JSVAL_IS_OBJECT(*element) &&
-        !JSVAL_IS_VOID(*element)) {
+    if (!element->isObject() && !element->isUndefined()) {
         gjs_throw(context, "Branch array element is not an object or undefined");
         return FALSE;
     }
 
-    if (JSVAL_IS_OBJECT(*element)) {
-        JSObject *object = JSVAL_TO_OBJECT(*element);
-
-        if (!object) {
-            gjs_throw(context, "Converting element to object failed");
-            return FALSE;
-        }
-
+    if (element->isObject()) {
+        JSObject *object = &element->toObject();
         JS::Value branch_point_value;
         int32_t branch_point;
 
         if (!JS_GetProperty(context, object, "point", &branch_point_value) ||
-            !JSVAL_IS_INT(branch_point_value)) {
+            !branch_point_value.isInt32()) {
             gjs_throw(context, "Failed to get point property from element");
             return FALSE;
         }
 
-        branch_point = JSVAL_TO_INT(branch_point_value);
+        branch_point = branch_point_value.toInt32();
 
         JS::Value was_hit_value;
         JSBool was_hit;
 
         if (!JS_GetProperty(context, object, "hit", &was_hit_value) ||
-            !JSVAL_IS_BOOLEAN(was_hit_value)) {
+            !was_hit_value.isBoolean()) {
             gjs_throw(context, "Failed to get point property from element");
             return FALSE;
         }
 
-        was_hit = JSVAL_TO_BOOLEAN(was_hit_value);
+        was_hit = was_hit_value.toBoolean();
 
         JS::Value branch_exits_value;
         GArray *branch_exits_array = NULL;
 
         if (!JS_GetProperty(context, object, "exits", &branch_exits_value) ||
-            !JSVAL_IS_OBJECT(branch_exits_value)) {
+            !branch_exits_value.isObject()) {
             gjs_throw(context, "Failed to get exits property from element");
             return FALSE;
         }
@@ -766,7 +753,7 @@ fetch_coverage_file_statistics_from_js(JSContext                 *context,
     JSAutoRequest ar(context);
 
     JSString *filename_jsstr = JS_NewStringCopyZ(context, filename);
-    JS::Value filename_jsval = STRING_TO_JSVAL(filename_jsstr);
+    JS::Value filename_jsval = JS::StringValue(filename_jsstr);
 
     GArray *lines = get_executed_lines_for(context, coverage_statistics, &filename_jsval);
     GArray *functions = get_functions_for(context, coverage_statistics, &filename_jsval);
@@ -1066,10 +1053,10 @@ gjs_get_generic_object_constructor(JSContext        *context,
 
     JS::Value object_constructor_value;
     if (!JS_GetProperty(context, global_object, "Object", &object_constructor_value) ||
-        !JSVAL_IS_OBJECT(object_constructor_value))
+        !object_constructor_value.isObject())
         g_assert_not_reached();
 
-    return JSVAL_TO_OBJECT(object_constructor_value);
+    return &object_constructor_value.toObject();
 }
 
 static JSString *
@@ -1214,7 +1201,7 @@ coverage_statistics_has_stale_cache(GjsCoverage *coverage)
         g_error("Failed to call into javascript to get stale cache value. This is a bug");
     }
 
-    return JSVAL_TO_BOOLEAN(stale_cache_value);
+    return stale_cache_value.toBoolean();
 }
 
 static unsigned int _suppressed_coverage_messages_count = 0;
@@ -1365,7 +1352,7 @@ coverage_log(JSContext *context,
 
     if (!g_getenv("GJS_SHOW_COVERAGE_MESSAGES")) {
         _suppressed_coverage_messages_count++;
-        argv.rval().set(JSVAL_VOID);
+        argv.rval().setUndefined();
         return JS_TRUE;
     }
 
@@ -1374,7 +1361,7 @@ coverage_log(JSContext *context,
     exc_state = JS_SaveExceptionState(context);
     jstr = JS_ValueToString(context, argv[0]);
     if (jstr != NULL)
-        argv[0] = STRING_TO_JSVAL(jstr);    // GC root
+        argv[0] = JS::StringValue(jstr);    // GC root
     JS_RestoreExceptionState(context, exc_state);
 
     if (jstr == NULL) {
@@ -1382,14 +1369,14 @@ coverage_log(JSContext *context,
         return JS_TRUE;
     }
 
-    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(jstr), &s)) {
+    if (!gjs_string_to_utf8(context, JS::StringValue(jstr), &s)) {
         return JS_FALSE;
     }
 
     g_message("JS COVERAGE MESSAGE: %s", s);
     g_free(s);
 
-    argv.rval().set(JSVAL_VOID);
+    argv.rval().setUndefined();
     return JS_TRUE;
 }
 
@@ -1603,10 +1590,10 @@ gjs_wrap_root_importer_in_compartment(JSContext *context,
                               gjs_get_global_slot(context,
                                                   GJS_GLOBAL_SLOT_IMPORTS));
 
-    g_assert (!JSVAL_IS_VOID(importer));
+    g_assert (!importer.isUndefined());
 
     JS::RootedObject wrapped_importer(JS_GetRuntime(context),
-                                      JSVAL_TO_OBJECT(importer));
+                                      importer.toObjectOrNull());
     if (!JS_WrapObject(context, wrapped_importer.address())) {
         return NULL;
     }
@@ -1687,7 +1674,7 @@ bootstrap_coverage(GjsCoverage *coverage)
 
         JS::Value coverage_statistics_prototype_value;
         if (!JS_GetProperty(context, debugger_compartment, "CoverageStatistics", &coverage_statistics_prototype_value) ||
-            !JSVAL_IS_OBJECT(coverage_statistics_prototype_value)) {
+            !coverage_statistics_prototype_value.isObject()) {
             gjs_throw(context, "Failed to get CoverageStatistics prototype");
             return FALSE;
         }
@@ -1710,13 +1697,13 @@ bootstrap_coverage(GjsCoverage *coverage)
             cache_value.set(JS::UndefinedValue());
         }
 
-        JSObject *coverage_statistics_constructor = JSVAL_TO_OBJECT(coverage_statistics_prototype_value);
+        JSObject *coverage_statistics_constructor = &coverage_statistics_prototype_value.toObject();
 
         /* Now create the array to pass the desired prefixes over */
         JSObject *prefixes = gjs_build_string_array(context, -1, priv->prefixes);
 
         JS::Value coverage_statistics_constructor_arguments[] = {
-            OBJECT_TO_JSVAL(prefixes),
+            JS::ObjectValue(*prefixes),
             cache_value.get()
         };
 

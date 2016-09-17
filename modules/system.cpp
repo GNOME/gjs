@@ -63,7 +63,6 @@ gjs_refcount(JSContext *context,
              JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JS::Value retval;
     JSObject *target_obj;
     GObject *obj;
 
@@ -78,8 +77,7 @@ gjs_refcount(JSContext *context,
     if (obj == NULL)
         return JS_FALSE;
 
-    retval = INT_TO_JSVAL(obj->ref_count);
-    argv.rval().set(retval);
+    argv.rval().setInt32(obj->ref_count);
     return JS_TRUE;
 }
 
@@ -92,7 +90,7 @@ gjs_breakpoint(JSContext *context,
     if (!gjs_parse_call_args(context, "breakpoint", "", argv))
         return JS_FALSE;
     G_BREAKPOINT();
-    argv.rval().set(JSVAL_VOID);
+    argv.rval().setUndefined();
     return JS_TRUE;
 }
 
@@ -105,7 +103,7 @@ gjs_gc(JSContext *context,
     if (!gjs_parse_call_args(context, "gc", "", argv))
         return JS_FALSE;
     JS_GC(JS_GetRuntime(context));
-    argv.rval().set(JSVAL_VOID);
+    argv.rval().setUndefined();
     return JS_TRUE;
 }
 
@@ -137,7 +135,7 @@ gjs_clear_date_caches(JSContext *context,
     JS_ClearDateCaches(context);
     JS_EndRequest(context);
 
-    rec.rval().set(JSVAL_VOID);
+    rec.rval().setUndefined();
     return JS_TRUE;
 }
 
@@ -189,7 +187,7 @@ gjs_js_define_system_stuff(JSContext  *context,
 
     if (!JS_DefineProperty(context, module,
                            "version",
-                           INT_TO_JSVAL(GJS_VERSION),
+                           JS::Int32Value(GJS_VERSION),
                            JS_PropertyStub,
                            JS_StrictPropertyStub,
                            GJS_MODULE_PROP_FLAGS | JSPROP_READONLY))

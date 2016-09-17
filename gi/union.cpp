@@ -162,7 +162,7 @@ union_new(JSContext   *context,
 
             JS::Value rval;
 
-            rval = JSVAL_NULL;
+            rval = JS::NullValue();
             gjs_invoke_c_function_uncached(context, func_info, obj,
                                            0, NULL, &rval);
 
@@ -172,10 +172,10 @@ union_new(JSContext   *context,
              * creates a JSObject wrapper for the union that we immediately
              * discard.
              */
-            if (JSVAL_IS_NULL(rval))
+            if (rval.isNull())
                 return NULL;
             else
-                return gjs_c_union_from_union(context, JSVAL_TO_OBJECT(rval));
+                return gjs_c_union_from_union(context, &rval.toObject());
         }
 
         g_base_info_unref((GIBaseInfo*) func_info);
@@ -285,7 +285,7 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+    JSObject *obj = rec.thisv().toObjectOrNull();
 
     Union *priv;
     JSBool ret = JS_FALSE;
@@ -391,7 +391,7 @@ gjs_define_union_class(JSContext    *context,
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
               constructor_name, prototype, JS_GetClass(prototype), in_object);
 
-    value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));
+    value = JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 

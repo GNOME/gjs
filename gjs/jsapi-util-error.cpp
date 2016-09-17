@@ -83,14 +83,14 @@ gjs_throw_valist(JSContext       *context,
     }
 
     if (!JS_GetProperty(context, JS_GetGlobalForScopeChain(context), error_class, &v_constructor) ||
-        !JSVAL_IS_OBJECT(v_constructor)) {
+        !v_constructor.isObject()) {
         JS_ReportError(context, "??? Missing Error constructor in global object?");
         goto out;
     }
 
     /* throw new Error(message) */
-    err_obj = JS_New(context, JSVAL_TO_OBJECT(v_constructor), 1, &v_message);
-    JS_SetPendingException(context, OBJECT_TO_JSVAL(err_obj));
+    err_obj = JS_New(context, &v_constructor.toObject(), 1, &v_message);
+    JS_SetPendingException(context, JS::ObjectOrNullValue(err_obj));
 
     result = JS_TRUE;
 
@@ -181,7 +181,7 @@ gjs_throw_g_error (JSContext       *context,
     err_obj = gjs_error_from_gerror(context, error, TRUE);
     g_error_free (error);
     if (err_obj)
-        JS_SetPendingException(context, OBJECT_TO_JSVAL(err_obj));
+        JS_SetPendingException(context, JS::ObjectValue(*err_obj));
 
     JS_EndRequest(context);
 }

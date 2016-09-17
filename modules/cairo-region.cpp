@@ -55,7 +55,7 @@ fill_rectangle(JSContext *context, JSObject *obj,
 
 #define PRELUDE                                                 \
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);          \
-    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());              \
+    JSObject *obj = argv.thisv().toObjectOrNull();              \
     cairo_region_t *this_region = get_region(context, obj);
 
 #define RETURN_STATUS                                           \
@@ -78,7 +78,7 @@ fill_rectangle(JSContext *context, JSObject *obj,
         other_region = get_region(context, other_obj);          \
                                                                 \
         cairo_region_##method(this_region, other_region);       \
-            argv.rval().set(JSVAL_VOID);               \
+            argv.rval().setUndefined();                         \
             RETURN_STATUS;                                      \
     }
 
@@ -99,7 +99,7 @@ fill_rectangle(JSContext *context, JSObject *obj,
             return JS_FALSE;                                    \
                                                                 \
         cairo_region_##method##_rectangle(this_region, &rect);  \
-            argv.rval().set(JSVAL_VOID);               \
+            argv.rval().setUndefined();                         \
             RETURN_STATUS;                                      \
     }
 
@@ -149,16 +149,16 @@ make_rectangle(JSContext *context,
     JSObject *rect_obj = JS_NewObject(context, NULL, NULL, NULL);
     JS::Value val;
 
-    val = INT_TO_JSVAL(rect->x);
+    val = JS::Int32Value(rect->x);
     JS_SetProperty(context, rect_obj, "x", &val);
 
-    val = INT_TO_JSVAL(rect->y);
+    val = JS::Int32Value(rect->y);
     JS_SetProperty(context, rect_obj, "y", &val);
 
-    val = INT_TO_JSVAL(rect->width);
+    val = JS::Int32Value(rect->width);
     JS_SetProperty(context, rect_obj, "width", &val);
 
-    val = INT_TO_JSVAL(rect->height);
+    val = JS::Int32Value(rect->height);
     JS_SetProperty(context, rect_obj, "height", &val);
 
     return rect_obj;
@@ -171,14 +171,12 @@ num_rectangles_func(JSContext *context,
 {
     PRELUDE;
     int n_rects;
-    JS::Value retval;
 
     if (!gjs_parse_call_args(context, "num_rectangles", "", argv))
         return JS_FALSE;
 
     n_rects = cairo_region_num_rectangles(this_region);
-    retval = INT_TO_JSVAL(n_rects);
-    argv.rval().set(retval);
+    argv.rval().setInt32(n_rects);
     RETURN_STATUS;
 }
 
@@ -191,7 +189,6 @@ get_rectangle_func(JSContext *context,
     int i;
     JSObject *rect_obj;
     cairo_rectangle_int_t rect;
-    JS::Value retval;
 
     if (!gjs_parse_call_args(context, "get_rectangle", "i", argv, "rect", &i))
         return JS_FALSE;
@@ -199,8 +196,7 @@ get_rectangle_func(JSContext *context,
     cairo_region_get_rectangle(this_region, i, &rect);
     rect_obj = make_rectangle(context, &rect);
 
-    retval = OBJECT_TO_JSVAL(rect_obj);
-    argv.rval().set(retval);
+    argv.rval().setObjectOrNull(rect_obj);
     RETURN_STATUS;
 }
 
@@ -301,7 +297,7 @@ region_to_g_argument(JSContext      *context,
     JSObject *obj;
     cairo_region_t *region;
 
-    obj = JSVAL_TO_OBJECT(value);
+    obj = &value.toObject();
     region = get_region(context, obj);
     if (!region)
         return JS_FALSE;
@@ -323,7 +319,7 @@ region_from_g_argument(JSContext  *context,
     if (!obj)
         return JS_FALSE;
 
-    *value_p = OBJECT_TO_JSVAL(obj);
+    *value_p = JS::ObjectValue(*obj);
     return JS_TRUE;
 }
 

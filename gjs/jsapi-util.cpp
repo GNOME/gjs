@@ -134,8 +134,8 @@ gjs_get_global_slot (JSContext     *context,
 
 /* Returns whether the object had the property; if the object did
  * not have the property, always sets an exception. Treats
- * "the property's value is JSVAL_VOID" the same as "no such property,".
- * Guarantees that *value_p is set to something, if only JSVAL_VOID,
+ * "the property's value is undefined" the same as "no such property,".
+ * Guarantees that *value_p is set to something, if only JS::UndefinedValue(),
  * even if an exception is set and false is returned.
  *
  * Requires request.
@@ -150,14 +150,14 @@ gjs_object_require_property(JSContext       *context,
     JS::Value value;
     char *name;
 
-    value = JSVAL_VOID;
+    value = JS::UndefinedValue();
     if (value_p)
         *value_p = value;
 
     if (G_UNLIKELY (!JS_GetPropertyById(context, obj, property_name, &value)))
         return JS_FALSE;
 
-    if (G_LIKELY (!JSVAL_IS_VOID(value))) {
+    if (G_LIKELY (!value.isUndefined())) {
         if (value_p)
             *value_p = value;
         return JS_TRUE;
@@ -200,10 +200,10 @@ gjs_throw_abstract_constructor_error(JSContext *context,
 
     callee = JS_CALLEE(context, vp);
 
-    if (JSVAL_IS_OBJECT(callee)) {
-        if (gjs_object_get_property_const(context, JSVAL_TO_OBJECT(callee),
+    if (callee.isObject()) {
+        if (gjs_object_get_property_const(context, &callee.toObject(),
                                           GJS_STRING_PROTOTYPE, &prototype)) {
-            proto_class = JS_GetClass(JSVAL_TO_OBJECT(prototype));
+            proto_class = JS_GetClass(&prototype.toObject());
             name = proto_class->name;
         }
     }
@@ -227,7 +227,7 @@ gjs_build_string_array(JSContext   *context,
 
     for (i = 0; i < array_length; ++i) {
         JS::Value element;
-        element = STRING_TO_JSVAL(JS_NewStringCopyZ(context, array_values[i]));
+        element = JS::StringValue(JS_NewStringCopyZ(context, array_values[i]));
         g_array_append_val(elems, element);
     }
 
@@ -253,7 +253,7 @@ gjs_define_string_array(JSContext   *context,
 
     if (array != NULL) {
         if (!JS_DefineProperty(context, in_object,
-                               array_name, OBJECT_TO_JSVAL(array),
+                               array_name, JS::ObjectValue(*array),
                                NULL, NULL, attrs))
             array = NULL;
     }
@@ -281,7 +281,7 @@ gjs_string_readable (JSContext   *context,
 
     g_string_append_c(buf, '"');
 
-    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(string), &chars)) {
+    if (!gjs_string_to_utf8(context, JS::StringValue(string), &chars)) {
         size_t i, len;
         const jschar *uchars;
 
@@ -322,8 +322,8 @@ gjs_value_debug_string(JSContext      *context,
     char *debugstr;
 
     /* Special case debug strings for strings */
-    if (JSVAL_IS_STRING(value)) {
-        return gjs_string_readable(context, JSVAL_TO_STRING(value));
+    if (value.isString()) {
+        return gjs_string_readable(context, value.toString());
     }
 
     JS_BeginRequest(context);
@@ -331,13 +331,13 @@ gjs_value_debug_string(JSContext      *context,
     str = JS_ValueToString(context, value);
 
     if (str == NULL) {
-        if (JSVAL_IS_OBJECT(value)) {
+        if (value.isObject()) {
             /* Specifically the Call object (see jsfun.c in spidermonkey)
              * does not have a toString; there may be others also.
              */
             JSClass *klass;
 
-            klass = JS_GetClass(JSVAL_TO_OBJECT(value));
+            klass = JS_GetClass(&value.toObject());
             if (klass != NULL) {
                 str = JS_NewStringCopyZ(context, klass->name);
                 JS_ClearPendingException(context);
@@ -445,7 +445,7 @@ gjs_explain_scope(JSContext  *context,
               "");
 
     global = JS_GetGlobalObject(context);
-    debugstr = gjs_value_debug_string(context, OBJECT_TO_JSVAL(global));
+    debugstr = gjs_value_debug_string(context, JS::ObjectOrNullValue(global));
     gjs_debug(GJS_DEBUG_SCOPE,
               "  Global: %p %s",
               global, debugstr);
@@ -455,7 +455,7 @@ gjs_explain_scope(JSContext  *context,
     chain = g_string_new(NULL);
     while (parent != NULL) {
         char *debug;
-        debug = gjs_value_debug_string(context, OBJECT_TO_JSVAL(parent));
+        debug = gjs_value_debug_string(context, JS::ObjectOrNullValue(parent));
 
         if (chain->len > 0)
             g_string_append(chain, ", ");
@@ -487,22 +487,22 @@ gjs_log_exception_full(JSContext *context,
 
     is_syntax = FALSE;
 
-    if (JSVAL_IS_OBJECT(exc) &&
-        gjs_typecheck_boxed(context, JSVAL_TO_OBJECT(exc), NULL, G_TYPE_ERROR, FALSE)) {
+    if (exc.isObject() &&
+        gjs_typecheck_boxed(context, &exc.toObject(), NULL, G_TYPE_ERROR, FALSE)) {
         GError *gerror;
 
-        gerror = (GError*) gjs_c_struct_from_boxed(context, JSVAL_TO_OBJECT(exc));
+        gerror = (GError*) gjs_c_struct_from_boxed(context, &exc.toObject());
         utf8_exception = g_strdup_printf("GLib.Error %s: %s",
                                          g_quark_to_string(gerror->domain),
                                          gerror->message);
     } else {
-        if (JSVAL_IS_OBJECT(exc)) {
+        if (exc.isObject()) {
             JS::Value js_name;
             char *utf8_name;
 
-            if (gjs_object_get_property_const(context, JSVAL_TO_OBJECT(exc),
+            if (gjs_object_get_property_const(context, &exc.toObject(),
                                               GJS_STRING_NAME, &js_name) &&
-                JSVAL_IS_STRING(js_name) &&
+                js_name.isString() &&
                 gjs_string_to_utf8(context, js_name, &utf8_name)) {
                 is_syntax = strcmp("SyntaxError", utf8_name) == 0;
             }
@@ -510,13 +510,13 @@ gjs_log_exception_full(JSContext *context,
 
         exc_str = JS_ValueToString(context, exc);
         if (exc_str != NULL)
-            gjs_string_to_utf8(context, STRING_TO_JSVAL(exc_str), &utf8_exception);
+            gjs_string_to_utf8(context, JS::StringValue(exc_str), &utf8_exception);
         else
             utf8_exception = NULL;
     }
 
     if (message != NULL)
-        gjs_string_to_utf8(context, STRING_TO_JSVAL(message), &utf8_message);
+        gjs_string_to_utf8(context, JS::StringValue(message), &utf8_message);
     else
         utf8_message = NULL;
 
@@ -530,17 +530,17 @@ gjs_log_exception_full(JSContext *context,
         unsigned lineNumber;
         char *utf8_fileName;
 
-        gjs_object_get_property_const(context, JSVAL_TO_OBJECT(exc),
+        gjs_object_get_property_const(context, &exc.toObject(),
                                       GJS_STRING_LINE_NUMBER, &js_lineNumber);
-        gjs_object_get_property_const(context, JSVAL_TO_OBJECT(exc),
+        gjs_object_get_property_const(context, &exc.toObject(),
                                       GJS_STRING_FILENAME, &js_fileName);
 
-        if (JSVAL_IS_STRING(js_fileName))
+        if (js_fileName.isString())
             gjs_string_to_utf8(context, js_fileName, &utf8_fileName);
         else
             utf8_fileName = g_strdup("unknown");
 
-        lineNumber = JSVAL_TO_INT(js_lineNumber);
+        lineNumber = js_lineNumber.toInt32();
 
         if (utf8_message) {
             g_critical("JS ERROR: %s: %s @ %s:%u", utf8_message, utf8_exception,
@@ -554,10 +554,10 @@ gjs_log_exception_full(JSContext *context,
     } else {
         char *utf8_stack;
 
-        if (JSVAL_IS_OBJECT(exc) &&
-            gjs_object_get_property_const(context, JSVAL_TO_OBJECT(exc),
+        if (exc.isObject() &&
+            gjs_object_get_property_const(context, &exc.toObject(),
                                           GJS_STRING_STACK, &stack) &&
-            JSVAL_IS_STRING(stack))
+            stack.isString())
             gjs_string_to_utf8(context, stack, &utf8_stack);
         else
             utf8_stack = NULL;
@@ -589,7 +589,7 @@ static JSBool
 log_and_maybe_keep_exception(JSContext  *context,
                              gboolean    keep)
 {
-    JS::Value exc = JSVAL_VOID;
+    JS::Value exc = JS::UndefinedValue();
     JSBool retval = JS_FALSE;
 
     JS_BeginRequest(context);
@@ -644,33 +644,32 @@ try_to_chain_stack_trace(JSContext *src_context,
     JS_BeginRequest(src_context);
     JS_BeginRequest(dst_context);
 
-    if (!JSVAL_IS_OBJECT(src_exc))
+    if (!src_exc.isObject())
         goto out; // src_exc doesn't have a stack trace
 
     /* create a new exception in dst_context to get a stack trace */
     gjs_throw_literal(dst_context, "Chained exception");
-    if (!(JS_GetPendingException(dst_context, &chained) &&
-          JSVAL_IS_OBJECT(chained)))
+    if (!(JS_GetPendingException(dst_context, &chained) && chained.isObject()))
         goto out; // gjs_throw_literal didn't work?!
     JS_ClearPendingException(dst_context);
 
     /* get stack trace for src_exc and chained */
-    if (!(JS_GetProperty(dst_context, JSVAL_TO_OBJECT(chained),
+    if (!(JS_GetProperty(dst_context, &chained.toObject(),
                          "stack", &dst_stack) &&
-          JSVAL_IS_STRING(dst_stack)))
+          dst_stack.isString()))
         goto out; // couldn't get chained stack
-    if (!(JS_GetProperty(src_context, JSVAL_TO_OBJECT(src_exc),
+    if (!(JS_GetProperty(src_context, &src_exc.toObject(),
                          "stack", &src_stack) &&
-          JSVAL_IS_STRING(src_stack)))
+          src_stack.isString()))
         goto out; // couldn't get source stack
 
     /* add chained exception's stack trace to src_exc */
-    new_stack_str = JS_ConcatStrings
-        (dst_context, JSVAL_TO_STRING(src_stack), JSVAL_TO_STRING(dst_stack));
+    new_stack_str = JS_ConcatStrings(dst_context, src_stack.toString(),
+        dst_stack.toString());
     if (new_stack_str==NULL)
         goto out; // couldn't concatenate src and dst stacks?!
-    new_stack = STRING_TO_JSVAL(new_stack_str);
-    JS_SetProperty(dst_context, JSVAL_TO_OBJECT(src_exc), "stack", &new_stack);
+    new_stack = JS::StringValue(new_stack_str);
+    JS_SetProperty(dst_context, &src_exc.toObject(), "stack", &new_stack);
 
  out:
     JS_EndRequest(dst_context);
@@ -737,7 +736,7 @@ log_prop(JSContext  *context,
          JS::Value  *value_p,
          const char *what)
 {
-    if (JSVAL_IS_STRING(id)) {
+    if (id.isString()) {
         char *name;
 
         gjs_string_to_utf8(context, id, &name);
@@ -745,10 +744,10 @@ log_prop(JSContext  *context,
                   "prop %s: %s",
                   name, what);
         g_free(name);
-    } else if (JSVAL_IS_INT(id)) {
+    } else if (id.isInt32()) {
         gjs_debug(GJS_DEBUG_PROPS,
                   "prop %d: %s",
-                  JSVAL_TO_INT(id), what);
+                  id.toInt32(), what);
     } else {
         gjs_debug(GJS_DEBUG_PROPS,
                   "prop not-sure-what: %s",
@@ -798,19 +797,19 @@ gjs_delete_prop_verbose_stub(JSContext *context,
 const char*
 gjs_get_type_name(JS::Value value)
 {
-    if (JSVAL_IS_NULL(value)) {
+    if (value.isNull()) {
         return "null";
-    } else if (JSVAL_IS_VOID(value)) {
+    } else if (value.isUndefined()) {
         return "undefined";
-    } else if (JSVAL_IS_INT(value)) {
+    } else if (value.isInt32()) {
         return "integer";
-    } else if (JSVAL_IS_DOUBLE(value)) {
+    } else if (value.isDouble()) {
         return "double";
-    } else if (JSVAL_IS_BOOLEAN(value)) {
+    } else if (value.isBoolean()) {
         return "boolean";
-    } else if (JSVAL_IS_STRING(value)) {
+    } else if (value.isString()) {
         return "string";
-    } else if (JSVAL_IS_OBJECT(value)) {
+    } else if (value.isObject()) {
         return "object";
     } else {
         return "<unknown>";
@@ -841,8 +840,8 @@ gjs_value_to_int64(JSContext      *context,
                    const JS::Value val,
                    gint64         *result)
 {
-    if (JSVAL_IS_INT (val)) {
-        *result = JSVAL_TO_INT (val);
+    if (val.isInt32()) {
+        *result = val.toInt32();
         return JS_TRUE;
     } else {
         double value_double;
@@ -947,7 +946,7 @@ gjs_parse_args_valist (JSContext  *context,
         if (*fmt_iter == '?') {
             fmt_iter++;
 
-            if (JSVAL_IS_NULL (js_value)) {
+            if (js_value.isNull()) {
                 gpointer *arg = (gpointer*) arg_location;
                 *arg = NULL;
                 goto got_value;
@@ -956,20 +955,20 @@ gjs_parse_args_valist (JSContext  *context,
 
         switch (*fmt_iter) {
         case 'b': {
-            if (!JSVAL_IS_BOOLEAN(js_value)) {
+            if (!js_value.isBoolean()) {
                 arg_error_message = "Not a boolean";
             } else {
                 gboolean *arg = (gboolean*) arg_location;
-                *arg = JSVAL_TO_BOOLEAN(js_value);
+                *arg = js_value.toBoolean();
             }
         }
             break;
         case 'o': {
-            if (!JSVAL_IS_OBJECT(js_value)) {
+            if (!js_value.isObject()) {
                 arg_error_message = "Not an object";
             } else {
                 JSObject **arg = (JSObject**) arg_location;
-                *arg = JSVAL_TO_OBJECT(js_value);
+                *arg = &js_value.toObject();
             }
         }
             break;
@@ -1009,7 +1008,7 @@ gjs_parse_args_valist (JSContext  *context,
             break;
         case 'u': {
             gdouble num;
-            if (!JSVAL_IS_NUMBER(js_value) || !JS_ValueToNumber(context, js_value, &num)) {
+            if (!js_value.isNumber() || !JS_ValueToNumber(context, js_value, &num)) {
                 /* Our error message is going to be more useful */
                 JS_ClearPendingException(context);
                 arg_error_message = "Couldn't convert to unsigned integer";
@@ -1296,7 +1295,7 @@ gjs_eval_with_scope(JSContext    *context,
                     JS::Value    *retval_p)
 {
     int start_line_number = 1;
-    JS::Value retval = JSVAL_VOID;
+    JS::Value retval = JS::UndefinedValue();
     JSAutoRequest ar(context);
 
     if (script_len < 0)

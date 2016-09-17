@@ -63,7 +63,7 @@ writeToPNG_func(JSContext *context,
                 JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+    JSObject *obj = argv.thisv().toObjectOrNull();
 
     char *filename;
     cairo_surface_t *surface;
@@ -82,7 +82,7 @@ writeToPNG_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface),
                                 "surface"))
         return JS_FALSE;
-    argv.rval().set(JSVAL_VOID);
+    argv.rval().setUndefined();
     return JS_TRUE;
 }
 
@@ -92,7 +92,7 @@ getType_func(JSContext *context,
              JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+    JSObject *obj = rec.thisv().toObjectOrNull();
 
     cairo_surface_t *surface;
     cairo_surface_type_t type;
@@ -260,7 +260,7 @@ surface_to_g_argument(JSContext      *context,
     JSObject *obj;
     cairo_surface_t *s;
 
-    obj = JSVAL_TO_OBJECT(value);
+    obj = &value.toObject();
     s = gjs_cairo_surface_get_surface(context, obj);
     if (!s)
         return JS_FALSE;
@@ -282,7 +282,7 @@ surface_from_g_argument(JSContext  *context,
     if (!obj)
         return JS_FALSE;
 
-    *value_p = OBJECT_TO_JSVAL(obj);
+    *value_p = JS::ObjectValue(*obj);
     return JS_TRUE;
 }
 

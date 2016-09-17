@@ -1719,7 +1719,7 @@ test_coverage_cache_as_js_object_has_expected_properties(gpointer      fixture_d
     JS::RootedString cache_results(JS_GetRuntime((JSContext *) gjs_context_get_native_context(fixture->base_fixture.context)),
                                    gjs_deserialize_cache_to_object(fixture->base_fixture.coverage, cache));
     JS::RootedValue cache_result_value(JS_GetRuntime((JSContext *) gjs_context_get_native_context(fixture->base_fixture.context)),
-                                       STRING_TO_JSVAL(cache_results));
+                                       JS::StringValue(cache_results));
     gjs_inject_value_into_coverage_compartment(fixture->base_fixture.coverage,
                                                cache_result_value,
                                                "coverage_cache");

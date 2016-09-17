@@ -53,7 +53,7 @@ gjs_locale_to_upper_case (JSContext *context,
     char *utf8 = NULL;
     char *upper_case_utf8 = NULL;
 
-    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(src), &utf8))
+    if (!gjs_string_to_utf8(context, JS::StringValue(src), &utf8))
         goto out;
 
     upper_case_utf8 = g_utf8_strup (utf8, -1);
@@ -79,7 +79,7 @@ gjs_locale_to_lower_case (JSContext *context,
     char *utf8 = NULL;
     char *lower_case_utf8 = NULL;
 
-    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(src), &utf8))
+    if (!gjs_string_to_utf8(context, JS::StringValue(src), &utf8))
         goto out;
 
     lower_case_utf8 = g_utf8_strdown (utf8, -1);
@@ -104,14 +104,12 @@ gjs_locale_compare (JSContext *context,
 {
     JSBool success = JS_FALSE;
     char *utf8_1 = NULL, *utf8_2 = NULL;
-    int result;
 
-    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(src_1), &utf8_1) ||
-        !gjs_string_to_utf8(context, STRING_TO_JSVAL(src_2), &utf8_2))
+    if (!gjs_string_to_utf8(context, JS::StringValue(src_1), &utf8_1) ||
+        !gjs_string_to_utf8(context, JS::StringValue(src_2), &utf8_2))
         goto out;
 
-    result = g_utf8_collate (utf8_1, utf8_2);
-    retval.set(INT_TO_JSVAL(result));
+    retval.setInt32(g_utf8_collate(utf8_1, utf8_2));
 
     success = JS_TRUE;
 

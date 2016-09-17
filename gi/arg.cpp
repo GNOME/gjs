@@ -308,9 +308,8 @@ gjs_array_to_g_list(JSContext   *context,
     for (i = 0; i < length; ++i) {
         GArgument elem_arg = { 0 };
 
-        elem = JSVAL_VOID;
-        if (!JS_GetElement(context, JSVAL_TO_OBJECT(array_value),
-                           i, &elem)) {
+        elem = JS::UndefinedValue();
+        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, &elem)) {
             gjs_throw(context,
                       "Missing array element %u",
                       i);
@@ -363,8 +362,8 @@ gjs_object_to_g_hash(JSContext   *context,
     JSObject *iter;
     jsid prop_id;
 
-    g_assert(JSVAL_IS_OBJECT(hash_value));
-    props = JSVAL_TO_OBJECT(hash_value);
+    g_assert(hash_value.isObjectOrNull());
+    props = hash_value.toObjectOrNull();
 
     if (transfer == GI_TRANSFER_CONTAINER) {
         if (type_needs_release (key_param_info, g_type_info_get_tag(key_param_info)) ||
@@ -449,9 +448,9 @@ gjs_array_from_strv(JSContext   *context,
     if (obj == NULL)
         return JS_FALSE;
 
-    *value_p = OBJECT_TO_JSVAL(obj);
+    *value_p = JS::ObjectValue(*obj);
 
-    elem = JSVAL_VOID;
+    elem = JS::UndefinedValue();
     JS_AddValueRoot(context, &elem);
 
     for (i = 0; strv[i] != NULL; i++) {
@@ -486,9 +485,8 @@ gjs_array_to_strv(JSContext   *context,
     for (i = 0; i < length; ++i) {
         JS::Value elem;
 
-        elem = JSVAL_VOID;
-        if (!JS_GetElement(context, JSVAL_TO_OBJECT(array_value),
-                           i, &elem)) {
+        elem = JS::UndefinedValue();
+        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, &elem)) {
             g_free(result);
             gjs_throw(context,
                       "Missing array element %u",
@@ -496,7 +494,7 @@ gjs_array_to_strv(JSContext   *context,
             return JS_FALSE;
         }
 
-        if (!JSVAL_IS_STRING(elem)) {
+        if (!elem.isString()) {
             gjs_throw(context,
                       "Invalid element in string array");
             g_strfreev(result);
@@ -571,9 +569,8 @@ gjs_array_to_intarray(JSContext   *context,
         JS::Value elem;
         JSBool success;
 
-        elem = JSVAL_VOID;
-        if (!JS_GetElement(context, JSVAL_TO_OBJECT(array_value),
-                           i, &elem)) {
+        elem = JS::UndefinedValue();
+        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, &elem)) {
             g_free(result);
             gjs_throw(context,
                       "Missing array element %u",
@@ -626,18 +623,17 @@ gjs_gtypearray_to_array(JSContext   *context,
         JS::Value elem;
         GType gtype;
 
-        elem = JSVAL_VOID;
-        if (!JS_GetElement(context, JSVAL_TO_OBJECT(array_value),
-                           i, &elem)) {
+        elem = JS::UndefinedValue();
+        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, &elem)) {
             g_free(result);
             gjs_throw(context, "Missing array element %u", i);
             return JS_FALSE;
         }
 
-        if (!JSVAL_IS_OBJECT(elem))
+        if (!elem.isObjectOrNull())
             goto err;
 
-        gtype = gjs_gtype_get_actual_gtype(context, JSVAL_TO_OBJECT(elem));
+        gtype = gjs_gtype_get_actual_gtype(context, elem.toObjectOrNull());
         if (gtype == G_TYPE_INVALID)
             goto err;
 
@@ -672,9 +668,8 @@ gjs_array_to_floatarray(JSContext   *context,
         double val;
         JSBool success;
 
-        elem = JSVAL_VOID;
-        if (!JS_GetElement(context, JSVAL_TO_OBJECT(array_value),
-                           i, &elem)) {
+        elem = JS::UndefinedValue();
+        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, &elem)) {
             g_free(result);
             gjs_throw(context,
                       "Missing array element %u",
@@ -728,9 +723,8 @@ gjs_array_to_ptrarray(JSContext   *context,
 
         JSBool success;
 
-        elem = JSVAL_VOID;
-        if (!JS_GetElement(context, JSVAL_TO_OBJECT(array_value),
-                           i, &elem)) {
+        elem = JS::UndefinedValue();
+        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, &elem)) {
             g_free(array);
             gjs_throw(context,
                       "Missing array element %u",
@@ -773,10 +767,9 @@ gjs_array_to_flat_gvalue_array(JSContext   *context,
 
     for (i = 0; i < length; i ++) {
         JS::Value elem;
-        elem = JSVAL_VOID;
+        elem = JS::UndefinedValue();
 
-        if (!JS_GetElement(context, JSVAL_TO_OBJECT(array_value),
-                           i, &elem)) {
+        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, &elem)) {
             g_free(values);
             gjs_throw(context,
                       "Missing array element %u",
@@ -817,7 +810,7 @@ gjs_array_from_flat_gvalue_array(JSContext   *context,
     if (result) {
         JSObject *jsarray;
         jsarray = JS_NewArrayObject(context, length, elems);
-        *value = OBJECT_TO_JSVAL(jsarray);
+        *value = JS::ObjectOrNullValue(jsarray);
     }
 
     return result;
@@ -1093,29 +1086,29 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
 
     param_info = g_type_info_get_param_type(type_info, 0);
 
-    if ((JSVAL_IS_NULL(value) && !may_be_null) ||
-        (!JSVAL_IS_STRING(value) && !JSVAL_IS_OBJECT(value) && !JSVAL_IS_NULL(value))) {
+    if ((value.isNull() && !may_be_null) ||
+        (!value.isString() && !value.isObjectOrNull())) {
         throw_invalid_argument(context, value, param_info, arg_name, arg_type);
         goto out;
     }
 
     length_name = gjs_context_get_const_string(context, GJS_STRING_LENGTH);
 
-    if (JSVAL_IS_NULL(value)) {
+    if (value.isNull()) {
         *contents = NULL;
         *length_p = 0;
-    } else if (JSVAL_IS_STRING(value)) {
+    } else if (value.isString()) {
         /* Allow strings as int8/uint8/int16/uint16 arrays */
         if (!gjs_string_to_intarray(context, value, param_info,
                                     contents, length_p))
             goto out;
-    } else if (JS_HasPropertyById(context, JSVAL_TO_OBJECT(value), length_name, &found_length) &&
+    } else if (JS_HasPropertyById(context, &value.toObject(), length_name, &found_length) &&
                found_length) {
         JS::Value length_value;
         guint32 length;
 
         if (!gjs_object_require_property(context,
-                                         JSVAL_TO_OBJECT(value), NULL,
+                                         &value.toObject(), NULL,
                                          length_name,
                                          &length_value) ||
             !JS_ValueToECMAUint32(context, length_value, &length)) {
@@ -1271,7 +1264,7 @@ gjs_value_to_g_argument(JSContext      *context,
         break;
 
     case GI_TYPE_TAG_UNICHAR:
-        if (JSVAL_IS_STRING(value)) {
+        if (value.isString()) {
             if (!gjs_unichar_from_string(context, value, &arg->v_uint32))
                 wrong = TRUE;
         } else {
@@ -1281,9 +1274,9 @@ gjs_value_to_g_argument(JSContext      *context,
         break;
 
     case GI_TYPE_TAG_GTYPE:
-        if (JSVAL_IS_OBJECT(value)) {
+        if (value.isObjectOrNull()) {
             GType gtype;
-            gtype = gjs_gtype_get_actual_gtype(context, JSVAL_TO_OBJECT(value));
+            gtype = gjs_gtype_get_actual_gtype(context, value.toObjectOrNull());
             if (gtype == G_TYPE_INVALID)
                 wrong = TRUE;
             arg->v_ssize = gtype;
@@ -1295,9 +1288,9 @@ gjs_value_to_g_argument(JSContext      *context,
 
     case GI_TYPE_TAG_FILENAME:
         nullable_type = TRUE;
-        if (JSVAL_IS_NULL(value)) {
+        if (value.isNull()) {
             arg->v_pointer = NULL;
-        } else if (JSVAL_IS_STRING(value)) {
+        } else if (value.isString()) {
             char *filename_str;
             if (gjs_string_to_filename(context, value, &filename_str))
                 // doing this as a separate step to avoid type-punning
@@ -1311,9 +1304,9 @@ gjs_value_to_g_argument(JSContext      *context,
         break;
     case GI_TYPE_TAG_UTF8:
         nullable_type = TRUE;
-        if (JSVAL_IS_NULL(value)) {
+        if (value.isNull()) {
             arg->v_pointer = NULL;
-        } else if (JSVAL_IS_STRING(value)) {
+        } else if (value.isString()) {
             char *utf8_str;
             if (gjs_string_to_utf8(context, value, &utf8_str))
                 // doing this as a separate step to avoid type-punning
@@ -1328,13 +1321,11 @@ gjs_value_to_g_argument(JSContext      *context,
 
     case GI_TYPE_TAG_ERROR:
         nullable_type = TRUE;
-        if (JSVAL_IS_NULL(value)) {
+        if (value.isNull()) {
             arg->v_pointer = NULL;
-        } else if (JSVAL_IS_OBJECT(value)) {
-            if (gjs_typecheck_gerror(context, JSVAL_TO_OBJECT(value),
-                                      JS_TRUE)) {
-                arg->v_pointer = gjs_gerror_from_error(context,
-                                                       JSVAL_TO_OBJECT(value));
+        } else if (value.isObject()) {
+            if (gjs_typecheck_gerror(context, &value.toObject(), JS_TRUE)) {
+                arg->v_pointer = gjs_gerror_from_error(context, &value.toObject());
 
                 if (transfer != GI_TRANSFER_NOTHING)
                     arg->v_pointer = g_error_copy ((const GError *) arg->v_pointer);
@@ -1415,20 +1406,19 @@ gjs_value_to_g_argument(JSContext      *context,
                     arg->v_pointer = NULL;
                     wrong = TRUE;
                 }
-            } else if (expect_object != JSVAL_IS_OBJECT(value)) {
-                /* JSVAL_IS_OBJECT handles null too */
+            } else if (expect_object != value.isObjectOrNull()) {
                 wrong = TRUE;
                 report_type_mismatch = TRUE;
                 break;
-            } else if (JSVAL_IS_NULL(value)) {
+            } else if (value.isNull()) {
                 arg->v_pointer = NULL;
-            } else if (JSVAL_IS_OBJECT(value)) {
+            } else if (value.isObject()) {
                 if (interface_type == GI_INFO_TYPE_STRUCT &&
                     g_struct_info_is_gtype_struct((GIStructInfo*)interface_info)) {
                     GType actual_gtype;
                     gpointer klass;
 
-                    actual_gtype = gjs_gtype_get_actual_gtype(context, JSVAL_TO_OBJECT(value));
+                    actual_gtype = gjs_gtype_get_actual_gtype(context, &value.toObject());
 
                     if (actual_gtype == G_TYPE_NONE) {
                         wrong = TRUE;
@@ -1452,28 +1442,28 @@ gjs_value_to_g_argument(JSContext      *context,
                     /* Handle Struct/Union first since we don't necessarily need a GType for them */
                     /* We special case Closures later, so skip them here */
                     !g_type_is_a(gtype, G_TYPE_CLOSURE)) {
-                    JSObject *obj = JSVAL_TO_OBJECT(value);
+                    JSObject *obj = &value.toObject();
 
                     if (g_type_is_a(gtype, G_TYPE_BYTES)
                         && gjs_typecheck_bytearray(context, obj, FALSE)) {
                         arg->v_pointer = gjs_byte_array_get_bytes(context, obj);
                     } else if (g_type_is_a(gtype, G_TYPE_ERROR)) {
-                        if (!gjs_typecheck_gerror(context, JSVAL_TO_OBJECT(value), JS_TRUE)) {
+                        if (!gjs_typecheck_gerror(context, &value.toObject(), JS_TRUE)) {
                             arg->v_pointer = NULL;
                             wrong = TRUE;
                         } else {
                             arg->v_pointer = gjs_gerror_from_error(context,
-                                                                   JSVAL_TO_OBJECT(value));
+                                                                   &value.toObject());
                         }
                     } else {
-                        if (!gjs_typecheck_boxed(context, JSVAL_TO_OBJECT(value),
+                        if (!gjs_typecheck_boxed(context, &value.toObject(),
                                                  interface_info, gtype,
                                                  JS_TRUE)) {
                             arg->v_pointer = NULL;
                             wrong = TRUE;
                         } else {
                             arg->v_pointer = gjs_c_struct_from_boxed(context,
-                                                                     JSVAL_TO_OBJECT(value));
+                                                                     &value.toObject());
                         }
                     }
 
@@ -1491,10 +1481,10 @@ gjs_value_to_g_argument(JSContext      *context,
                     }
 
                 } else if (interface_type == GI_INFO_TYPE_UNION) {
-                    if (gjs_typecheck_union(context, JSVAL_TO_OBJECT(value),
+                    if (gjs_typecheck_union(context, &value.toObject(),
                                             interface_info, gtype, JS_TRUE)) {
                         arg->v_pointer = gjs_c_union_from_union(context,
-                                                                JSVAL_TO_OBJECT(value));
+                                                                &value.toObject());
 
                         if (transfer != GI_TRANSFER_NOTHING) {
                             if (g_type_is_a(gtype, G_TYPE_BOXED))
@@ -1514,9 +1504,9 @@ gjs_value_to_g_argument(JSContext      *context,
 
                 } else if (gtype != G_TYPE_NONE) {
                     if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
-                        if (gjs_typecheck_object(context, JSVAL_TO_OBJECT(value), gtype, JS_TRUE)) {
+                        if (gjs_typecheck_object(context, &value.toObject(), gtype, JS_TRUE)) {
                             arg->v_pointer = gjs_g_object_from_object(context,
-                                                                      JSVAL_TO_OBJECT(value));
+                                                                      &value.toObject());
 
                             if (transfer != GI_TRANSFER_NOTHING)
                                 g_object_ref(G_OBJECT(arg->v_pointer));
@@ -1525,8 +1515,8 @@ gjs_value_to_g_argument(JSContext      *context,
                             wrong = TRUE;
                         }
                     } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-                        if (gjs_typecheck_param(context, JSVAL_TO_OBJECT(value), gtype, JS_TRUE)) {
-                            arg->v_pointer = gjs_g_param_from_param(context, JSVAL_TO_OBJECT(value));
+                        if (gjs_typecheck_param(context, &value.toObject(), gtype, JS_TRUE)) {
+                            arg->v_pointer = gjs_g_param_from_param(context, &value.toObject());
                             if (transfer != GI_TRANSFER_NOTHING)
                                 g_param_spec_ref(G_PARAM_SPEC(arg->v_pointer));
                         } else {
@@ -1536,7 +1526,7 @@ gjs_value_to_g_argument(JSContext      *context,
                     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                         if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
                             arg->v_pointer = gjs_closure_new_marshaled(context,
-                                                                       JSVAL_TO_OBJECT(value),
+                                                                       &value.toObject(),
                                                                        "boxed");
                             g_closure_ref((GClosure *) arg->v_pointer);
                             g_closure_sink((GClosure *) arg->v_pointer);
@@ -1548,9 +1538,9 @@ gjs_value_to_g_argument(JSContext      *context,
                                       interface_type);
                         }
                     } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-                        if (gjs_typecheck_fundamental(context, JSVAL_TO_OBJECT(value), gtype, JS_TRUE)) {
+                        if (gjs_typecheck_fundamental(context, &value.toObject(), gtype, JS_TRUE)) {
                             arg->v_pointer = gjs_g_fundamental_from_object(context,
-                                                                           JSVAL_TO_OBJECT(value));
+                                                                           &value.toObject());
 
                             if (transfer != GI_TRANSFER_NOTHING)
                                 gjs_fundamental_ref(context, arg->v_pointer);
@@ -1561,19 +1551,19 @@ gjs_value_to_g_argument(JSContext      *context,
                     } else if (G_TYPE_IS_INTERFACE(gtype)) {
                         /* Could be a GObject interface that's missing a prerequisite, or could
                            be a fundamental */
-                        if (gjs_typecheck_object(context, JSVAL_TO_OBJECT(value), gtype, JS_FALSE)) {
-                            arg->v_pointer = gjs_g_object_from_object(context, JSVAL_TO_OBJECT(value));
+                        if (gjs_typecheck_object(context, &value.toObject(), gtype, JS_FALSE)) {
+                            arg->v_pointer = gjs_g_object_from_object(context, &value.toObject());
 
                             if (transfer != GI_TRANSFER_NOTHING)
                                 g_object_ref(arg->v_pointer);
-                        } else if (gjs_typecheck_fundamental(context, JSVAL_TO_OBJECT(value), gtype, JS_FALSE)) {
-                            arg->v_pointer = gjs_g_fundamental_from_object(context, JSVAL_TO_OBJECT(value));
+                        } else if (gjs_typecheck_fundamental(context, &value.toObject(), gtype, JS_FALSE)) {
+                            arg->v_pointer = gjs_g_fundamental_from_object(context, &value.toObject());
 
                             if (transfer != GI_TRANSFER_NOTHING)
                                 gjs_fundamental_ref(context, arg->v_pointer);
                         } else {
                             /* Call again with throw=TRUE to set the exception */
-                            gjs_typecheck_object(context, JSVAL_TO_OBJECT(value), gtype, JS_TRUE);
+                            gjs_typecheck_object(context, &value.toObject(), gtype, JS_TRUE);
                             arg->v_pointer = NULL;
                             wrong = TRUE;
                         }
@@ -1590,7 +1580,7 @@ gjs_value_to_g_argument(JSContext      *context,
                 if (arg->v_pointer == NULL) {
                     gjs_debug(GJS_DEBUG_GFUNCTION,
                               "conversion of JSObject %p type %s to type %s failed",
-                              JSVAL_TO_OBJECT(value),
+                              &value.toObject(),
                               JS_GetTypeName(context,
                                              JS_TypeOfValue(context, value)),
                               g_base_info_get_name ((GIBaseInfo *)interface_info));
@@ -1599,7 +1589,7 @@ gjs_value_to_g_argument(JSContext      *context,
                     wrong = TRUE;
                 }
 
-            } else if (JSVAL_IS_NUMBER(value)) {
+            } else if (value.isNumber()) {
                 if (interface_type == GI_INFO_TYPE_ENUM) {
                     gint64 value_int64;
 
@@ -1652,15 +1642,14 @@ gjs_value_to_g_argument(JSContext      *context,
          * means empty array in JavaScript, it doesn't mean null in
          * JavaScript.
          */
-        if (!JSVAL_IS_NULL(value) &&
-            JSVAL_IS_OBJECT(value) &&
-            JS_HasPropertyById(context, JSVAL_TO_OBJECT(value), length_name, &found_length) &&
+        if (value.isObject() &&
+            JS_HasPropertyById(context, &value.toObject(), length_name, &found_length) &&
             found_length) {
             JS::Value length_value;
             guint32 length;
 
             if (!gjs_object_require_property(context,
-                                             JSVAL_TO_OBJECT(value), NULL,
+                                             &value.toObject(), NULL,
                                              length_name,
                                              &length_value) ||
                 !JS_ValueToECMAUint32(context, length_value, &length)) {
@@ -1702,13 +1691,13 @@ gjs_value_to_g_argument(JSContext      *context,
     }
 
     case GI_TYPE_TAG_GHASH:
-        if (JSVAL_IS_NULL(value)) {
+        if (value.isNull()) {
             arg->v_pointer = NULL;
             if (!may_be_null) {
                 wrong = TRUE;
                 report_type_mismatch = TRUE;
             }
-        } else if (!JSVAL_IS_OBJECT(value)) {
+        } else if (!value.isObject()) {
             wrong = TRUE;
             report_type_mismatch = TRUE;
         } else {
@@ -1749,12 +1738,10 @@ gjs_value_to_g_argument(JSContext      *context,
         /* First, let's handle the case where we're passed an instance
          * of our own byteArray class.
          */
-        if (JSVAL_IS_OBJECT(value) &&
-            gjs_typecheck_bytearray(context,
-                                    JSVAL_TO_OBJECT(value),
-                                    FALSE))
+        if (value.isObjectOrNull() &&
+            gjs_typecheck_bytearray(context, value.toObjectOrNull(), FALSE))
             {
-                JSObject *bytearray_obj = JSVAL_TO_OBJECT(value);
+                JSObject *bytearray_obj = value.toObjectOrNull();
                 if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
                     arg->v_pointer = gjs_byte_array_get_byte_array(context, bytearray_obj);
                     break;
@@ -2025,9 +2012,9 @@ gjs_array_from_g_list (JSContext  *context,
     if (obj == NULL)
         return JS_FALSE;
 
-    *value_p = OBJECT_TO_JSVAL(obj);
+    *value_p = JS::ObjectValue(*obj);
 
-    elem = JSVAL_VOID;
+    elem = JS::UndefinedValue();
     JS_AddValueRoot(context, &elem);
 
     result = JS_FALSE;
@@ -2106,7 +2093,7 @@ gjs_array_from_carray_internal (JSContext  *context,
         obj = gjs_byte_array_from_byte_array (context, &gbytearray);
         if (obj == NULL)
             return JS_FALSE;
-        *value_p = OBJECT_TO_JSVAL(obj);
+        *value_p = JS::ObjectValue(*obj);
         return JS_TRUE;
     } 
 
@@ -2114,9 +2101,9 @@ gjs_array_from_carray_internal (JSContext  *context,
     if (obj == NULL)
       return JS_FALSE;
 
-    *value_p = OBJECT_TO_JSVAL(obj);
+    *value_p = JS::ObjectValue(*obj);
 
-    elem = JSVAL_VOID;
+    elem = JS::UndefinedValue();
     JS_AddValueRoot(context, &elem);
 
 #define ITERATE(type) \
@@ -2272,7 +2259,7 @@ gjs_array_from_boxed_array (JSContext   *context,
     gsize length = 0;
 
     if (arg->v_pointer == NULL) {
-        *value_p = JSVAL_NULL;
+        *value_p = JS::NullValue();
         return TRUE;
     }
 
@@ -2323,7 +2310,7 @@ gjs_array_from_zero_terminated_c_array (JSContext  *context,
         obj = gjs_byte_array_from_byte_array (context, &gbytearray);
         if (obj == NULL)
             return JS_FALSE;
-        *value_p = OBJECT_TO_JSVAL(obj);
+        *value_p = JS::ObjectValue(*obj);
         return JS_TRUE;
     } 
 
@@ -2331,9 +2318,9 @@ gjs_array_from_zero_terminated_c_array (JSContext  *context,
     if (obj == NULL)
       return JS_FALSE;
 
-    *value_p = OBJECT_TO_JSVAL(obj);
+    *value_p = JS::ObjectValue(*obj);
 
-    elem = JSVAL_VOID;
+    elem = JS::UndefinedValue();
     JS_AddValueRoot(context, &elem);
 
 #define ITERATE(type) \
@@ -2422,7 +2409,7 @@ gjs_object_from_g_hash (JSContext  *context,
 
     // a NULL hash table becomes a null JS value
     if (hash==NULL) {
-        *value_p = JSVAL_NULL;
+        *value_p = JS::NullValue();
         return JS_TRUE;
     }
 
@@ -2430,13 +2417,13 @@ gjs_object_from_g_hash (JSContext  *context,
     if (obj == NULL)
         return JS_FALSE;
 
-    *value_p = OBJECT_TO_JSVAL(obj);
+    *value_p = JS::ObjectValue(*obj);
     JS_AddObjectRoot(context, &obj);
 
-    keyjs = JSVAL_VOID;
+    keyjs = JS::UndefinedValue();
     JS_AddValueRoot(context, &keyjs);
 
-    valjs = JSVAL_VOID;
+    valjs = JS::UndefinedValue();
     JS_AddValueRoot(context, &valjs);
 
     keystr = NULL;
@@ -2456,7 +2443,7 @@ gjs_object_from_g_hash (JSContext  *context,
         if (!keystr)
             goto out;
 
-        if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(keystr), &keyutf8))
+        if (!gjs_string_to_utf8(context, JS::StringValue(keystr), &keyutf8))
             goto out;
 
         if (!gjs_value_from_g_argument(context, &valjs,
@@ -2499,15 +2486,15 @@ gjs_value_from_g_argument (JSContext  *context,
                       "Converting GArgument %s to JS::Value",
                       g_type_tag_to_string(type_tag));
 
-    *value_p = JSVAL_NULL;
+    *value_p = JS::NullValue();
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
-        *value_p = JSVAL_VOID; /* or JSVAL_NULL ? */
+        *value_p = JS::UndefinedValue(); /* or JS::NullValue() ? */
         break;
 
     case GI_TYPE_TAG_BOOLEAN:
-        *value_p = BOOLEAN_TO_JSVAL(!!arg->v_int);
+        *value_p = JS::BooleanValue(!!arg->v_int);
         break;
 
     case GI_TYPE_TAG_INT32:
@@ -2544,7 +2531,7 @@ gjs_value_from_g_argument (JSContext  *context,
         {
             JSObject *obj;
             obj = gjs_gtype_create_gtype_wrapper(context, arg->v_ssize);
-            *value_p = OBJECT_TO_JSVAL(obj);
+            *value_p = JS::ObjectOrNullValue(obj);
         }
         break;
 
@@ -2571,7 +2558,7 @@ gjs_value_from_g_argument (JSContext  *context,
         if (arg->v_pointer)
             return gjs_string_from_filename(context, (const char *) arg->v_pointer, -1, value_p);
         else {
-            /* For NULL we'll return JSVAL_NULL, which is already set
+            /* For NULL we'll return JS::NullValue(), which is already set
              * in *value_p
              */
             return JS_TRUE;
@@ -2580,7 +2567,7 @@ gjs_value_from_g_argument (JSContext  *context,
         if (arg->v_pointer)
             return gjs_string_from_utf8(context, (const char *) arg->v_pointer, -1, value_p);
         else {
-            /* For NULL we'll return JSVAL_NULL, which is already set
+            /* For NULL we'll return JS::NullValue(), which is already set
              * in *value_p
              */
             return JS_TRUE;
@@ -2591,7 +2578,7 @@ gjs_value_from_g_argument (JSContext  *context,
             if (arg->v_pointer) {
                 JSObject *obj = gjs_error_from_gerror(context, (GError *) arg->v_pointer, FALSE);
                 if (obj) {
-                    *value_p = OBJECT_TO_JSVAL(obj);
+                    *value_p = JS::ObjectValue(*obj);
                     return JS_TRUE;
                 }
 
@@ -2610,7 +2597,7 @@ gjs_value_from_g_argument (JSContext  *context,
             interface_info = g_type_info_get_interface(type_info);
             g_assert(interface_info != NULL);
 
-            value = JSVAL_VOID;
+            value = JS::UndefinedValue();
 
             interface_type = g_base_info_get_type(interface_info);
 
@@ -2653,7 +2640,7 @@ gjs_value_from_g_argument (JSContext  *context,
 
             /* Everything else is a pointer type, NULL is the easy case */
             if (arg->v_pointer == NULL) {
-                value = JSVAL_NULL;
+                value = JS::NullValue();
                 goto out;
             }
 
@@ -2688,7 +2675,7 @@ gjs_value_from_g_argument (JSContext  *context,
             /* Test GValue and GError before Struct, or it will be handled as the latter */
             if (g_type_is_a(gtype, G_TYPE_VALUE)) {
                 if (!gjs_value_from_g_value(context, &value, (const GValue *) arg->v_pointer))
-                    value = JSVAL_VOID; /* Make sure error is flagged */
+                    value = JS::UndefinedValue(); /* Make sure error is flagged */
 
                 goto out;
             }
@@ -2697,9 +2684,9 @@ gjs_value_from_g_argument (JSContext  *context,
 
                 obj = gjs_error_from_gerror(context, (GError *) arg->v_pointer, FALSE);
                 if (obj)
-                    value = OBJECT_TO_JSVAL(obj);
+                    value = JS::ObjectValue(*obj);
                 else
-                    value = JSVAL_VOID;
+                    value = JS::UndefinedValue();
 
                 goto out;
             }
@@ -2721,14 +2708,14 @@ gjs_value_from_g_argument (JSContext  *context,
                                               flags);
 
                 if (obj)
-                    value = OBJECT_TO_JSVAL(obj);
+                    value = JS::ObjectValue(*obj);
 
                 goto out;
             } else if (interface_type == GI_INFO_TYPE_UNION) {
                 JSObject *obj;
                 obj = gjs_union_from_c_union(context, (GIUnionInfo *)interface_info, arg->v_pointer);
                 if (obj)
-                        value = OBJECT_TO_JSVAL(obj);
+                        value = JS::ObjectValue(*obj);
 
                 goto out;
             }
@@ -2737,7 +2724,7 @@ gjs_value_from_g_argument (JSContext  *context,
                 JSObject *obj;
                 obj = gjs_object_from_g_object(context, G_OBJECT(arg->v_pointer));
                 if (obj)
-                    value = OBJECT_TO_JSVAL(obj);
+                    value = JS::ObjectValue(*obj);
             } else if (g_type_is_a(gtype, G_TYPE_BOXED) ||
                        g_type_is_a(gtype, G_TYPE_ENUM) ||
                        g_type_is_a(gtype, G_TYPE_FLAGS)) {
@@ -2751,14 +2738,14 @@ gjs_value_from_g_argument (JSContext  *context,
                 JSObject *obj;
                 obj = gjs_param_from_g_param(context, G_PARAM_SPEC(arg->v_pointer));
                 if (obj)
-                    value = OBJECT_TO_JSVAL(obj);
+                    value = JS::ObjectValue(*obj);
             } else if (gtype == G_TYPE_NONE) {
                 gjs_throw(context, "Unexpected unregistered type packing GArgument into JS::Value");
             } else if (G_TYPE_IS_INSTANTIATABLE(gtype) || G_TYPE_IS_INTERFACE(gtype)) {
                 JSObject *obj;
                 obj = gjs_object_from_g_fundamental(context, (GIObjectInfo *)interface_info, arg->v_pointer);
                 if (obj)
-                    value = OBJECT_TO_JSVAL(obj);
+                    value = JS::ObjectValue(*obj);
             } else {
                 gjs_throw(context, "Unhandled GType %s packing GArgument into JS::Value",
                           g_type_name(gtype));
@@ -2767,7 +2754,7 @@ gjs_value_from_g_argument (JSContext  *context,
          out:
             g_base_info_unref( (GIBaseInfo*) interface_info);
 
-            if (JSVAL_IS_VOID(value))
+            if (value.isUndefined())
                 return JS_FALSE;
 
             *value_p = value;
@@ -2807,7 +2794,7 @@ gjs_value_from_g_argument (JSContext  *context,
                 gjs_throw(context, "Couldn't convert GByteArray to a ByteArray");
                 return JS_FALSE;
             }
-            *value_p = OBJECT_TO_JSVAL(array);
+            *value_p = JS::ObjectValue(*array);
         } else {
             /* this assumes the array type is one of GArray, GPtrArray or
              * GByteArray */

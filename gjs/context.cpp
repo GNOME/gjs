@@ -124,7 +124,7 @@ gjs_log(JSContext *context,
     exc_state = JS_SaveExceptionState(context);
     jstr = JS_ValueToString(context, argv[0]);
     if (jstr != NULL)
-        argv[0] = STRING_TO_JSVAL(jstr);    // GC root
+        argv[0] = JS::StringValue(jstr);    // GC root
     JS_RestoreExceptionState(context, exc_state);
 
     if (jstr == NULL) {
@@ -133,7 +133,7 @@ gjs_log(JSContext *context,
         return JS_TRUE;
     }
 
-    if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(jstr), &s)) {
+    if (!gjs_string_to_utf8(context, JS::StringValue(jstr), &s)) {
         JS_EndRequest(context);
         return JS_FALSE;
     }
@@ -142,7 +142,7 @@ gjs_log(JSContext *context,
     g_free(s);
 
     JS_EndRequest(context);
-    argv.rval().set(JSVAL_VOID);
+    argv.rval().setUndefined();
     return JS_TRUE;
 }
 
@@ -155,8 +155,7 @@ gjs_log_error(JSContext *context,
     JSExceptionState *exc_state;
     JSString *jstr;
 
-    if ((argc != 1 && argc != 2) ||
-        !JSVAL_IS_OBJECT (argv[0])) {
+    if ((argc != 1 && argc != 2) || !argv[0].isObject()) {
         gjs_throw(context, "Must pass an exception and optionally a message to logError()");
         return JS_FALSE;
     }
@@ -169,7 +168,7 @@ gjs_log_error(JSContext *context,
         exc_state = JS_SaveExceptionState(context);
         jstr = JS_ValueToString(context, argv[1]);
         if (jstr != NULL)
-            argv[1] = STRING_TO_JSVAL(jstr);    // GC root
+            argv[1] = JS::StringValue(jstr);    // GC root
         JS_RestoreExceptionState(context, exc_state);
     } else {
         jstr = NULL;
@@ -178,7 +177,7 @@ gjs_log_error(JSContext *context,
     gjs_log_exception_full(context, argv[0], jstr);
 
     JS_EndRequest(context);
-    argv.rval().set(JSVAL_VOID);
+    argv.rval().setUndefined();
     return JS_TRUE;
 }
 
@@ -204,12 +203,12 @@ gjs_print_parse_args(JSContext *context,
 
         jstr = JS_ValueToString(context, argv[n]);
         if (jstr != NULL)
-            argv[n] = STRING_TO_JSVAL(jstr); // GC root
+            argv[n] = JS::StringValue(jstr); // GC root
 
         JS_RestoreExceptionState(context, exc_state);
 
         if (jstr != NULL) {
-            if (!gjs_string_to_utf8(context, STRING_TO_JSVAL(jstr), &s)) {
+            if (!gjs_string_to_utf8(context, JS::StringValue(jstr), &s)) {
                 JS_EndRequest(context);
                 g_string_free(str, TRUE);
                 return JS_FALSE;
@@ -249,7 +248,7 @@ gjs_print(JSContext *context,
     g_print("%s\n", buffer);
     g_free(buffer);
 
-    argv.rval().set(JSVAL_VOID);
+    argv.rval().setUndefined();
     return JS_TRUE;
 }
 
@@ -268,7 +267,7 @@ gjs_printerr(JSContext *context,
     g_printerr("%s\n", buffer);
     g_free(buffer);
 
-    argv.rval().set(JSVAL_VOID);
+    argv.rval().setUndefined();
     return JS_TRUE;
 }
 
@@ -434,7 +433,7 @@ gjs_context_constructed(GObject *object)
     JSAutoCompartment ac(js_context->context, js_context->global);
 
     if (!JS_DefineProperty(js_context->context, js_context->global,
-                           "window", OBJECT_TO_JSVAL(js_context->global),
+                           "window", JS::ObjectValue(*js_context->global),
                            NULL, NULL,
                            JSPROP_READONLY | JSPROP_PERMANENT))
         g_error("No memory to export global object as 'window'");
@@ -652,7 +651,7 @@ gjs_context_eval(GjsContext   *js_context,
     }
 
     if (exit_status_p) {
-        if (JSVAL_IS_INT(retval)) {
+        if (retval.isInt32()) {
             int code;
             if (JS_ValueToInt32(js_context->context, retval, &code)) {
                 gjs_debug(GJS_DEBUG_CONTEXT,

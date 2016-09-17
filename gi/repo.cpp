@@ -69,16 +69,16 @@ get_version_for_ns (JSContext *context,
 
     versions_name = gjs_context_get_const_string(context, GJS_STRING_GI_VERSIONS);
     if (!gjs_object_require_property(context, repo_obj, "GI repository object", versions_name, &versions_val) ||
-        !JSVAL_IS_OBJECT(versions_val)) {
+        !versions_val.isObject()) {
         gjs_throw(context, "No 'versions' property in GI repository object");
         return JS_FALSE;
     }
 
-    versions = JSVAL_TO_OBJECT(versions_val);
+    versions = &versions_val.toObject();
 
     *version = NULL;
     if (JS_GetPropertyById(context, versions, ns_id, &version_val) &&
-        JSVAL_IS_STRING(version_val)) {
+        version_val.isString()) {
         gjs_string_to_utf8(context, version_val, version);
     }
 
@@ -130,7 +130,7 @@ resolve_namespace_object(JSContext  *context,
     /* Define the property early, to avoid reentrancy issues if
        the override module looks for namespaces that import this */
     if (!JS_DefineProperty(context, repo_obj,
-                           ns_name, OBJECT_TO_JSVAL(gi_namespace),
+                           ns_name, JS::ObjectValue(*gi_namespace),
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS))
         g_error("no memory to define ns property");
@@ -138,7 +138,7 @@ resolve_namespace_object(JSContext  *context,
     override = lookup_override_function(context, ns_id);
     if (override && !JS_CallFunctionValue (context,
                                            gi_namespace, /* thisp */
-                                           OBJECT_TO_JSVAL(override), /* callee */
+                                           JS::ObjectValue(*override), /* callee */
                                            0, /* argc */
                                            NULL, /* argv */
                                            &result))
@@ -318,7 +318,7 @@ repo_new(JSContext *context)
     versions_name = gjs_context_get_const_string(context, GJS_STRING_GI_VERSIONS);
     JS_DefinePropertyById(context, repo,
                           versions_name,
-                          OBJECT_TO_JSVAL(versions),
+                          JS::ObjectValue(*versions),
                           NULL, NULL,
                           JSPROP_PERMANENT);
 
@@ -326,7 +326,7 @@ repo_new(JSContext *context)
     private_ns_name = gjs_context_get_const_string(context, GJS_STRING_PRIVATE_NS_MARKER);
     JS_DefinePropertyById(context, repo,
                           private_ns_name,
-                          OBJECT_TO_JSVAL(private_ns),
+                          JS::ObjectValue(*private_ns),
                           NULL, NULL, JSPROP_PERMANENT);
 
     /* FIXME - hack to make namespaces load, since
@@ -589,28 +589,28 @@ lookup_override_function(JSContext  *context,
     JS_BeginRequest(context);
 
     importer = gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS);
-    g_assert(JSVAL_IS_OBJECT(importer));
+    g_assert(importer.isObject());
 
-    overridespkg = JSVAL_VOID;
+    overridespkg = JS::UndefinedValue();
     overrides_name = gjs_context_get_const_string(context, GJS_STRING_GI_OVERRIDES);
-    if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(importer), "importer",
+    if (!gjs_object_require_property(context, &importer.toObject(), "importer",
                                      overrides_name, &overridespkg) ||
-        !JSVAL_IS_OBJECT(overridespkg))
+        !overridespkg.isObject())
         goto fail;
 
-    module = JSVAL_VOID;
-    if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(overridespkg), "GI repository object", ns_name, &module)
-        || !JSVAL_IS_OBJECT(module))
+    module = JS::UndefinedValue();
+    if (!gjs_object_require_property(context, &overridespkg.toObject(), "GI repository object", ns_name, &module)
+        || !module.isObject())
         goto fail;
 
     object_init_name = gjs_context_get_const_string(context, GJS_STRING_GOBJECT_INIT);
-    if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(module), "override module",
+    if (!gjs_object_require_property(context, &module.toObject(), "override module",
                                      object_init_name, &function) ||
-        !JSVAL_IS_OBJECT(function))
+        !function.isObjectOrNull())
         goto fail;
 
     JS_EndRequest(context);
-    return JSVAL_TO_OBJECT(function);
+    return function.toObjectOrNull();
 
  fail:
     JS_ClearPendingException(context);
@@ -631,25 +631,25 @@ gjs_lookup_namespace_object_by_name(JSContext      *context,
     JS_BeginRequest(context);
 
     importer = gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS);
-    g_assert(JSVAL_IS_OBJECT(importer));
+    g_assert(importer.isObject());
 
-    girepository = JSVAL_VOID;
+    girepository = JS::UndefinedValue();
     gi_name = gjs_context_get_const_string(context, GJS_STRING_GI_MODULE);
-    if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(importer), "importer",
+    if (!gjs_object_require_property(context, &importer.toObject(), "importer",
                                      gi_name, &girepository) ||
-        !JSVAL_IS_OBJECT(girepository)) {
+        !girepository.isObject()) {
         gjs_log_exception(context);
         gjs_throw(context, "No gi property in importer");
         goto fail;
     }
 
-    repo_obj = JSVAL_TO_OBJECT(girepository);
+    repo_obj = &girepository.toObject();
 
     if (!gjs_object_require_property(context, repo_obj, "GI repository object", ns_name, &ns_obj)) {
         goto fail;
     }
 
-    if (!JSVAL_IS_OBJECT(ns_obj)) {
+    if (!ns_obj.isObject()) {
         char *name;
 
         gjs_get_string_id(context, ns_name, &name);
@@ -660,7 +660,7 @@ gjs_lookup_namespace_object_by_name(JSContext      *context,
     }
 
     JS_EndRequest(context);
-    return JSVAL_TO_OBJECT(ns_obj);
+    return &ns_obj.toObject();
 
  fail:
     JS_EndRequest(context);
@@ -782,13 +782,10 @@ gjs_lookup_generic_constructor(JSContext  *context,
     if (!JS_GetProperty(context, in_object, constructor_name, &value))
         return NULL;
 
-    if (G_UNLIKELY (!JSVAL_IS_OBJECT(value) || JSVAL_IS_NULL(value)))
+    if (G_UNLIKELY (!value.isObject()))
         return NULL;
 
-    constructor = JSVAL_TO_OBJECT(value);
-    g_assert(constructor != NULL);
-
-    return constructor;
+    return &value.toObject();
 }
 
 JSObject *
@@ -806,8 +803,8 @@ gjs_lookup_generic_prototype(JSContext  *context,
                                        GJS_STRING_PROTOTYPE, &value))
         return NULL;
 
-    if (G_UNLIKELY (!JSVAL_IS_OBJECT(value)))
+    if (G_UNLIKELY (!value.isObjectOrNull()))
         return NULL;
 
-    return JSVAL_TO_OBJECT(value);
+    return value.toObjectOrNull();
 }

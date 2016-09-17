@@ -110,7 +110,7 @@ gjstest_test_func_gjs_jsapi_util_array(void)
     JSCompartment *oldCompartment = JS_EnterCompartment(context, global);
 
     for (i = 0; i < N_ELEMS; i++) {
-        value = STRING_TO_JSVAL(JS_NewStringCopyZ(context, "abcdefghijk"));
+        value = JS::StringValue(JS_NewStringCopyZ(context, "abcdefghijk"));
         gjs_rooted_array_append(context, array, value);
     }
 
@@ -120,7 +120,7 @@ gjstest_test_func_gjs_jsapi_util_array(void)
         char *ascii;
 
         value = gjs_rooted_array_get(context, array, i);
-        g_assert(JSVAL_IS_STRING(value));
+        g_assert(value.isString());
         gjs_string_to_utf8(context, value, &ascii);
         g_assert(strcmp(ascii, "abcdefghijk") == 0);
         g_free(ascii);
@@ -151,7 +151,7 @@ gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(void)
     JSCompartment *oldCompartment = JS_EnterCompartment(context, global);
 
     g_assert(gjs_string_from_utf8(context, utf8_string, -1, &js_string) == JS_TRUE);
-    g_assert(JSVAL_IS_STRING(js_string));
+    g_assert(js_string.isString());
     g_assert(gjs_string_to_utf8(context, js_string, &utf8_result) == JS_TRUE);
 
     JS_LeaveCompartment(context, oldCompartment);
@@ -182,15 +182,15 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
 
     g_assert(JS_IsExceptionPending(context));
 
-    exc = JSVAL_VOID;
+    exc = JS::UndefinedValue();
     JS_GetPendingException(context, &exc);
-    g_assert(!JSVAL_IS_VOID(exc));
+    g_assert(!exc.isUndefined());
 
-    value = JSVAL_VOID;
-    JS_GetProperty(context, JSVAL_TO_OBJECT(exc), "message",
+    value = JS::UndefinedValue();
+    JS_GetProperty(context, &exc.toObject(), "message",
                    &value);
 
-    g_assert(JSVAL_IS_STRING(value));
+    g_assert(value.isString());
 
     gjs_string_to_utf8(context, value, &s);
     g_assert(s != NULL);
@@ -216,10 +216,10 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
 
     g_assert(JS_IsExceptionPending(context));
 
-    exc = JSVAL_VOID;
+    exc = JS::UndefinedValue();
     JS_GetPendingException(context, &exc);
-    g_assert(!JSVAL_IS_VOID(exc));
-    g_assert(JSVAL_TO_OBJECT(exc) == JSVAL_TO_OBJECT(previous));
+    g_assert(!exc.isUndefined());
+    g_assert(&exc.toObject() == &previous.toObject());
 
     JS_RemoveValueRoot(context, &previous);
 

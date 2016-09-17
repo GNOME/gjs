@@ -52,13 +52,13 @@ gjs_new_object_for_constructor(JSContext *context,
     JS::Value prototype;
 
     callee = JS_CALLEE(context, vp);
-    parent = JS_GetParent(JSVAL_TO_OBJECT (callee));
+    parent = JS_GetParent(&callee.toObject());
 
-    if (!gjs_object_get_property_const(context, JSVAL_TO_OBJECT(callee), GJS_STRING_PROTOTYPE, &prototype))
+    if (!gjs_object_get_property_const(context, &callee.toObject(), GJS_STRING_PROTOTYPE, &prototype))
         return NULL;
 
     return JS_NewObjectWithGivenProto(context, clasp,
-                                      JSVAL_TO_OBJECT(prototype), parent);
+                                      &prototype.toObject(), parent);
 }
 
 JSBool
@@ -135,16 +135,16 @@ gjs_init_class_dynamic(JSContext       *context,
     if (static_fs && !JS_DefineFunctions(context, constructor, static_fs))
         goto out;
 
-    if (!JS_DefineProperty(context, constructor, "prototype", OBJECT_TO_JSVAL(prototype),
+    if (!JS_DefineProperty(context, constructor, "prototype", JS::ObjectValue(*prototype),
                            JS_PropertyStub, JS_StrictPropertyStub, JSPROP_PERMANENT | JSPROP_READONLY))
         goto out;
-    if (!JS_DefineProperty(context, prototype, "constructor", OBJECT_TO_JSVAL(constructor),
+    if (!JS_DefineProperty(context, prototype, "constructor", JS::ObjectValue(*constructor),
                            JS_PropertyStub, JS_StrictPropertyStub, 0))
         goto out;
 
     /* The constructor defined by JS_InitClass has no property attributes, but this
        is a more useful default for gjs */
-    if (!JS_DefineProperty(context, in_object, class_name, OBJECT_TO_JSVAL(constructor),
+    if (!JS_DefineProperty(context, in_object, class_name, JS::ObjectValue(*constructor),
                            JS_PropertyStub, JS_StrictPropertyStub, GJS_MODULE_PROP_FLAGS))
         goto out;
 
@@ -214,7 +214,7 @@ gjs_construct_object_dynamic(JSContext      *context,
                                      constructor_name, &value))
         goto out;
 
-    constructor = JSVAL_TO_OBJECT(value);
+    constructor = &value.toObject();
     result = JS_New(context, constructor, argc, argv);
 
  out:

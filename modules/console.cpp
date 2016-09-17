@@ -160,7 +160,7 @@ gjs_console_interact(JSContext *context,
                      JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *object = JSVAL_TO_OBJECT(rec.thisv());
+    JSObject *object = rec.thisv().toObjectOrNull();
     gboolean eof = FALSE;
     JS::Value result;
     JSString *str;
@@ -205,7 +205,7 @@ gjs_console_interact(JSContext *context,
         if (JS_GetPendingException(context, &result)) {
             str = JS_ValueToString(context, result);
             JS_ClearPendingException(context);
-        } else if (JSVAL_IS_VOID(result)) {
+        } else if (result.isUndefined()) {
             goto next;
         } else {
             str = JS_ValueToString(context, result);

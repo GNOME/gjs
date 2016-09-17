@@ -39,14 +39,14 @@ gjs_string_to_utf8 (JSContext      *context,
 
     JS_BeginRequest(context);
 
-    if (!JSVAL_IS_STRING(value)) {
+    if (!value.isString()) {
         gjs_throw(context,
                   "Value is not a string, cannot convert to UTF-8");
         JS_EndRequest(context);
         return JS_FALSE;
     }
 
-    str = JSVAL_TO_STRING(value);
+    str = value.toString();
 
     len = JS_GetStringEncodingLength(context, str);
     if (len == (gsize)(-1)) {
@@ -100,7 +100,7 @@ gjs_string_from_utf8(JSContext  *context,
     str = JS_NewUCString(context, u16_string, u16_string_length);
 
     if (str && value_p)
-        *value_p = STRING_TO_JSVAL(str);
+        *value_p = JS::StringValue(str);
 
     JS_EndRequest(context);
     return str != NULL;
@@ -189,13 +189,13 @@ gjs_string_get_uint16_data(JSContext       *context,
 
     JS_BeginRequest(context);
 
-    if (!JSVAL_IS_STRING(value)) {
+    if (!value.isString()) {
         gjs_throw(context,
                   "Value is not a string, can't return binary data from it");
         goto out;
     }
 
-    js_data = JS_GetStringCharsAndLength(context, JSVAL_TO_STRING(value), len_p);
+    js_data = JS_GetStringCharsAndLength(context, value.toString(), len_p);
     if (js_data == NULL)
         goto out;
 
@@ -228,7 +228,7 @@ gjs_get_string_id (JSContext       *context,
     if (!JS_IdToValue(context, id, &id_val))
         return JS_FALSE;
 
-    if (JSVAL_IS_STRING(id_val)) {
+    if (id_val.isString()) {
         return gjs_string_to_utf8(context, id_val, name_p);
     } else {
         *name_p = NULL;

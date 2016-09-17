@@ -55,7 +55,9 @@ G_BEGIN_DECLS
  * See https://bugzilla.gnome.org/show_bug.cgi?id=622896 for some initial discussion.
  */
 
-#define JSVAL_IS_OBJECT(obj) (JSVAL_IS_NULL(obj) || !JSVAL_IS_PRIMITIVE(obj))
+#define JSVAL_IS_OBJECT(obj) \
+    _Pragma("GCC warning \"JSVAL_IS_OBJECT is deprecated. Use JS::Value::isObjectOrNull() instead.\"") \
+    ((obj).isObjectOrNull())
 
 #define JS_GetGlobalObject(cx) gjs_get_global_object(cx)
 
@@ -65,9 +67,7 @@ JS_NewNumberValue(JSContext *cx,
                   JS::Value *rval)
     {
         *rval = JS_NumberValue(d);
-        if (JSVAL_IS_NUMBER(*rval))
-            return JS_TRUE;
-        return JS_FALSE;
+        return rval->isNumber();
     }
 
 /**
@@ -110,7 +110,7 @@ gjs_##name##_constructor(JSContext  *context,           \
  * successfully.
  */
 #define GJS_NATIVE_CONSTRUCTOR_FINISH(name)             \
-    argv.rval().set(OBJECT_TO_JSVAL(object));
+    argv.rval().setObject(*object);
 
 /**
  * GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT:

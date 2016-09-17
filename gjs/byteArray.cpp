@@ -84,7 +84,7 @@ gjs_value_from_gsize(JSContext         *context,
                      JS::MutableHandleValue value_p)
 {
     if (v <= (gsize) JSVAL_INT_MAX) {
-        value_p.set(INT_TO_JSVAL(v));
+        value_p.setInt32(v);
         return JS_TRUE;
     } else {
         return JS_NewNumberValue(context, v, value_p.address());
@@ -125,8 +125,8 @@ gjs_value_to_gsize(JSContext         *context,
      *  - JS_ValueToECMAUint32() always goes via a double which is slow
      *  - nicer error message on negative indices
      */
-    if (JSVAL_IS_INT(value)) {
-        int i = JSVAL_TO_INT(value);
+    if (value.isInt32()) {
+        int i = value.toInt32();
         if (i < 0) {
             gjs_throw(context, "Negative length or index %d is not allowed for ByteArray",
                       i);
@@ -188,7 +188,7 @@ byte_array_get_index(JSContext         *context,
         return JS_FALSE;
     }
 
-    value_p.set(INT_TO_JSVAL(data[idx]));
+    value_p.setInt32(data[idx]);
 
     return JS_TRUE;
 }
@@ -214,7 +214,7 @@ byte_array_get_prop(JSContext *context,
         return JS_FALSE;
 
     /* First handle array indexing */
-    if (JSVAL_IS_NUMBER(id_value)) {
+    if (id_value.isNumber()) {
         gsize idx;
         if (!gjs_value_to_gsize(context, id_value, &idx))
             return JS_FALSE;
@@ -299,7 +299,7 @@ byte_array_set_index(JSContext         *context,
     g_array_index(priv->array, guint8, idx) = v;
 
     /* Stop JS from storing a copy of the value */
-    value_p.set(JSVAL_VOID);
+    value_p.setUndefined();
 
     return JS_TRUE;
 }
@@ -326,7 +326,7 @@ byte_array_set_prop(JSContext *context,
         return JS_FALSE;
 
     /* First handle array indexing */
-    if (JSVAL_IS_NUMBER(id_value)) {
+    if (id_value.isNumber()) {
         gsize idx;
         if (!gjs_value_to_gsize(context, id_value, &idx))
             return JS_FALSE;
@@ -417,7 +417,7 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *object = JSVAL_TO_OBJECT(argv.thisv());
+    JSObject *object = argv.thisv().toObjectOrNull();
     ByteArrayInstance *priv;
     char *encoding;
     gboolean encoding_is_utf8;
@@ -430,8 +430,7 @@ to_string_func(JSContext *context,
 
     byte_array_ensure_array(priv);
 
-    if (argc >= 1 &&
-        JSVAL_IS_STRING(argv[0])) {
+    if (argc >= 1 && argv[0].isString()) {
         if (!gjs_string_to_utf8(context, argv[0], &encoding))
             return JS_FALSE;
 
@@ -502,7 +501,7 @@ to_string_func(JSContext *context,
                                 bytes_written / 2);
         if (s != NULL) {
             ok = JS_TRUE;
-            argv.rval().set(STRING_TO_JSVAL(s));
+            argv.rval().setString(s);
         }
 
         g_free(u16_str);
@@ -516,7 +515,7 @@ to_gbytes_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *object = JSVAL_TO_OBJECT(rec.thisv());
+    JSObject *object = rec.thisv().toObjectOrNull();
     ByteArrayInstance *priv;
     JSObject *ret_bytes_obj;
     GIBaseInfo *gbytes_info;
@@ -531,7 +530,7 @@ to_gbytes_func(JSContext *context,
     ret_bytes_obj = gjs_boxed_from_c_struct(context, (GIStructInfo*)gbytes_info,
                                             priv->bytes, GJS_BOXED_CREATION_NONE);
 
-    rec.rval().set(OBJECT_TO_JSVAL(ret_bytes_obj));
+    rec.rval().setObjectOrNull(ret_bytes_obj);
     return JS_TRUE;
 }
 
@@ -545,14 +544,14 @@ byte_array_get_prototype(JSContext *context)
 
     retval = gjs_get_global_slot (context, GJS_GLOBAL_SLOT_BYTE_ARRAY_PROTOTYPE);
 
-    if (!JSVAL_IS_OBJECT (retval)) {
+    if (!retval.isObject()) {
         if (!gjs_eval_with_scope(context, NULL,
                                  "imports.byteArray.ByteArray.prototype;", -1,
                                  "<internal>", &retval))
             g_error ("Could not import byte array prototype\n");
     }
 
-    return JSVAL_TO_OBJECT(retval);
+    return &retval.toObject();
 }
 
 static JSObject*
@@ -598,14 +597,13 @@ from_string_func(JSContext *context,
 
     priv->array = gjs_g_byte_array_new(0);
 
-    if (!JSVAL_IS_STRING(argv[0])) {
+    if (!argv[0].isString()) {
         gjs_throw(context,
                   "byteArray.fromString() called with non-string as first arg");
         goto out;
     }
 
-    if (argc > 1 &&
-        JSVAL_IS_STRING(argv[1])) {
+    if (argc > 1 && argv[1].isString()) {
         if (!gjs_string_to_utf8(context, argv[1], &encoding))
             goto out;
 
@@ -644,7 +642,7 @@ from_string_func(JSContext *context,
         const jschar *u16_chars;
         gsize u16_len;
 
-        u16_chars = JS_GetStringCharsAndLength(context, JSVAL_TO_STRING(argv[0]), &u16_len);
+        u16_chars = JS_GetStringCharsAndLength(context, argv[0].toString(), &u16_len);
         if (u16_chars == NULL)
             goto out;
 
@@ -669,7 +667,7 @@ from_string_func(JSContext *context,
         g_free(encoded);
     }
 
-    argv.rval().set(OBJECT_TO_JSVAL(obj));
+    argv.rval().setObject(*obj);
 
     retval = JS_TRUE;
  out:
@@ -703,13 +701,13 @@ from_array_func(JSContext *context,
 
     priv->array = gjs_g_byte_array_new(0);
 
-    if (!JS_IsArrayObject(context, JSVAL_TO_OBJECT(argv[0]))) {
+    if (!JS_IsArrayObject(context, &argv[0].toObject())) {
         gjs_throw(context,
                   "byteArray.fromArray() called with non-array as first arg");
         goto out;
     }
 
-    if (!JS_GetArrayLength(context, JSVAL_TO_OBJECT(argv[0]), &len)) {
+    if (!JS_GetArrayLength(context, &argv[0].toObject(), &len)) {
         gjs_throw(context,
                   "byteArray.fromArray() can't get length of first array arg");
         goto out;
@@ -721,15 +719,15 @@ from_array_func(JSContext *context,
         JS::Value elem;
         guint8 b;
 
-        elem = JSVAL_VOID;
-        if (!JS_GetElement(context, JSVAL_TO_OBJECT(argv[0]), i, &elem)) {
-            /* this means there was an exception, while elem == JSVAL_VOID
+        elem = JS::UndefinedValue();
+        if (!JS_GetElement(context, &argv[0].toObject(), i, &elem)) {
+            /* this means there was an exception, while elem.isUndefined()
              * means no element found
              */
             goto out;
         }
 
-        if (JSVAL_IS_VOID(elem))
+        if (elem.isUndefined())
             continue;
 
         if (!gjs_value_to_byte(context, elem, &b))
@@ -739,7 +737,7 @@ from_array_func(JSContext *context,
     }
 
     ret = JS_TRUE;
-    argv.rval().set(OBJECT_TO_JSVAL(obj));
+    argv.rval().setObject(*obj);
  out:
     JS_RemoveObjectRoot(context, &obj);
     return ret;
@@ -775,7 +773,7 @@ from_gbytes_func(JSContext *context,
     priv->bytes = g_bytes_ref(gbytes);
 
     ret = JS_TRUE;
-    argv.rval().set(OBJECT_TO_JSVAL(obj));
+    argv.rval().setObject(*obj);
     return ret;
 }
 
@@ -921,9 +919,9 @@ gjs_define_byte_array_stuff(JSContext  *context,
     if (!JS_DefineFunctions(context, module, &gjs_byte_array_module_funcs[0]))
         return JS_FALSE;
 
-    g_assert(JSVAL_IS_VOID(gjs_get_global_slot(context, GJS_GLOBAL_SLOT_BYTE_ARRAY_PROTOTYPE)));
+    g_assert(gjs_get_global_slot(context, GJS_GLOBAL_SLOT_BYTE_ARRAY_PROTOTYPE).isUndefined());
     gjs_set_global_slot(context, GJS_GLOBAL_SLOT_BYTE_ARRAY_PROTOTYPE,
-                        OBJECT_TO_JSVAL(prototype));
+                        JS::ObjectOrNullValue(prototype));
 
     *module_out = module;
     return JS_TRUE;

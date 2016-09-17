@@ -170,8 +170,8 @@ JS::Value gjs_##cname##_create_proto(JSContext *context, JSObject *module, const
     JSObject *global = gjs_get_import_global(context); \
     jsid class_name = gjs_intern_string_to_id(context, gjs_##cname##_class.name); \
     if (!JS_GetPropertyById(context, global, class_name, &rval))                       \
-        return JSVAL_NULL; \
-    if (JSVAL_IS_VOID(rval)) { \
+        return JS::NullValue(); \
+    if (rval.isUndefined()) { \
         JS::Value value; \
         JSObject *prototype = JS_InitClass(context, global,     \
                                  parent, \
@@ -183,19 +183,19 @@ JS::Value gjs_##cname##_create_proto(JSContext *context, JSObject *module, const
                                  NULL, \
                                  NULL); \
         if (prototype == NULL) { \
-            return JSVAL_NULL; \
+            return JS::NullValue(); \
         } \
         if (!gjs_object_require_property( \
                 context, global, NULL, \
                 class_name, &rval)) { \
-            return JSVAL_NULL; \
+            return JS::NullValue(); \
         } \
         if (!JS_DefineProperty(context, module, proto_name, \
                                rval, NULL, NULL, GJS_MODULE_PROP_FLAGS)) \
-            return JSVAL_NULL; \
+            return JS::NullValue(); \
         if (gtype != G_TYPE_NONE) { \
-            value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype)); \
-            JS_DefineProperty(context, JSVAL_TO_OBJECT(rval), "$gtype", value, \
+            value = JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, gtype)); \
+            JS_DefineProperty(context, &rval.toObject(), "$gtype", value, \
                               NULL, NULL, JSPROP_PERMANENT);            \
         } \
     } \

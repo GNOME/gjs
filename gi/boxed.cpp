@@ -201,10 +201,10 @@ boxed_get_copy_source(JSContext *context,
 {
     Boxed *source_priv;
 
-    if (!JSVAL_IS_OBJECT(value))
+    if (!value.isObject())
         return JS_FALSE;
 
-    if (!priv_from_js_with_typecheck(context, JSVAL_TO_OBJECT(value), &source_priv))
+    if (!priv_from_js_with_typecheck(context, &value.toObject(), &source_priv))
         return JS_FALSE;
 
     if (!g_base_info_equal((GIBaseInfo*) priv->info, (GIBaseInfo*) source_priv->info))
@@ -268,12 +268,12 @@ boxed_init_from_props(JSContext   *context,
 
     success = FALSE;
 
-    if (!JSVAL_IS_OBJECT(props_value)) {
+    if (!props_value.isObject()) {
         gjs_throw(context, "argument should be a hash with fields to set");
         return JS_FALSE;
     }
 
-    props = JSVAL_TO_OBJECT(props_value);
+    props = &props_value.toObject();
 
     iter = JS_NewPropertyIterator(context, props);
     if (iter == NULL) {
@@ -340,7 +340,7 @@ boxed_invoke_constructor(JSContext   *context,
     if (!gjs_object_require_property(context, obj, NULL, constructor_const, &js_constructor))
         return JS_FALSE;
 
-    if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(js_constructor), NULL,
+    if (!gjs_object_require_property(context, &js_constructor.toObject(), NULL,
                                      constructor_name, &js_constructor_func))
         return JS_FALSE;
 
@@ -487,13 +487,13 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
        prepare the location for that
     */
 
-    actual_rval = JSVAL_VOID;
+    actual_rval = JS::UndefinedValue();
     JS_AddValueRoot(context, &actual_rval);
 
     retval = boxed_new(context, object, priv, argc, argv.array(), &actual_rval);
 
     if (retval) {
-        if (!JSVAL_IS_VOID (actual_rval))
+        if (!actual_rval.isUndefined())
             argv.rval().set(actual_rval);
         else
             GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
@@ -625,10 +625,9 @@ get_nested_interface_object (JSContext   *context,
     /* We never actually read the reserved slot, but we put the parent object
      * into it to hold onto the parent object.
      */
-    JS_SetReservedSlot(obj, 0,
-                       OBJECT_TO_JSVAL (parent_obj));
+    JS_SetReservedSlot(obj, 0, JS::ObjectValue(*parent_obj));
 
-    *value = OBJECT_TO_JSVAL(obj);
+    *value = JS::ObjectValue(*obj);
     return JS_TRUE;
 }
 
@@ -877,7 +876,7 @@ define_boxed_class_fields (JSContext *context,
         const char *field_name = g_base_info_get_name ((GIBaseInfo *)field);
         gboolean result;
 
-        result = JS_DefineProperty(context, proto, field_name, JSVAL_NULL,
+        result = JS_DefineProperty(context, proto, field_name, JS::NullValue(),
                                    boxed_field_getter, boxed_field_setter,
                                    JSPROP_PERMANENT | JSPROP_SHARED);
 
@@ -896,7 +895,7 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+    JSObject *obj = rec.thisv().toObjectOrNull();
 
     Boxed *priv;
     JSBool ret = JS_FALSE;
@@ -1187,7 +1186,7 @@ gjs_define_boxed_class(JSContext    *context,
     define_boxed_class_fields (context, priv, prototype);
     gjs_define_static_methods (context, constructor, priv->gtype, priv->info);
 
-    value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, priv->gtype));
+    value = JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, priv->gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 }

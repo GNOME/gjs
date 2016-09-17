@@ -67,7 +67,7 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+    JSObject *obj = rec.thisv().toObjectOrNull();
 
     GType gtype;
     gchar *strval;
@@ -102,7 +102,7 @@ get_name_func (JSContext *context,
     gtype = GPOINTER_TO_SIZE(priv_from_js(context, obj));
 
     if (gtype == 0) {
-        rec.rval().set(JSVAL_NULL);
+        rec.rval().setNull();
         return TRUE;
     } else {
         ret = gjs_string_from_utf8(context, g_type_name(gtype), -1, &retval);
@@ -162,7 +162,7 @@ _gjs_gtype_get_actual_gtype (JSContext *context,
                              int        recurse)
 {
     GType gtype = G_TYPE_INVALID;
-    JS::Value gtype_val = JSVAL_VOID;
+    JS::Value gtype_val = JS::UndefinedValue();
 
     JS_BeginRequest(context);
     if (JS_InstanceOf(context, object, &gjs_gtype_class, NULL)) {
@@ -173,7 +173,7 @@ _gjs_gtype_get_actual_gtype (JSContext *context,
     /* OK, we don't have a GType wrapper object -- grab the "$gtype"
      * property on that and hope it's a GType wrapper object */
     if (!JS_GetProperty(context, object, "$gtype", &gtype_val) ||
-        !JSVAL_IS_OBJECT(gtype_val)) {
+        !gtype_val.isObject()) {
 
         /* OK, so we're not a class. But maybe we're an instance. Check
            for "constructor" and recurse on that. */
@@ -181,8 +181,8 @@ _gjs_gtype_get_actual_gtype (JSContext *context,
             goto out;
     }
 
-    if (recurse > 0 && JSVAL_IS_OBJECT(gtype_val))
-        gtype = _gjs_gtype_get_actual_gtype(context, JSVAL_TO_OBJECT(gtype_val), recurse - 1);
+    if (recurse > 0 && gtype_val.isObject())
+        gtype = _gjs_gtype_get_actual_gtype(context, &gtype_val.toObject(), recurse - 1);
 
  out:
     JS_EndRequest(context);

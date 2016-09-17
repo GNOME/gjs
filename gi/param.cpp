@@ -198,20 +198,20 @@ gjs_lookup_param_prototype(JSContext    *context)
     if (!JS_GetProperty(context, in_object, "ParamSpec", &value))
         return NULL;
 
-    if (G_UNLIKELY (!JSVAL_IS_OBJECT(value) || JSVAL_IS_NULL(value)))
+    if (G_UNLIKELY (!value.isObject()))
         return NULL;
 
-    constructor = JSVAL_TO_OBJECT(value);
+    constructor = &value.toObject();
     g_assert(constructor != NULL);
 
     if (!gjs_object_get_property_const(context, constructor,
                                        GJS_STRING_PROTOTYPE, &value))
         return NULL;
 
-    if (G_UNLIKELY (!JSVAL_IS_OBJECT(value)))
+    if (G_UNLIKELY (!value.isObjectOrNull()))
         return NULL;
 
-    return JSVAL_TO_OBJECT(value);
+    return value.toObjectOrNull();
 }
 
 void
@@ -245,7 +245,7 @@ gjs_define_param_class(JSContext    *context,
         g_error("Can't init class %s", constructor_name);
     }
 
-    value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM));
+    value = JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 

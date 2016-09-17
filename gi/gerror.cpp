@@ -66,7 +66,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     gchar *message;
 
     /* Check early to avoid allocating memory for nothing */
-    if (argc != 1 || !JSVAL_IS_OBJECT(argv[0])) {
+    if (argc != 1 || !argv[0].isObject()) {
         gjs_throw(context, "Invalid parameters passed to GError constructor, expected one object");
         return JS_FALSE;
     }
@@ -104,16 +104,16 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
 
     message_name = gjs_context_get_const_string(context, GJS_STRING_MESSAGE);
     code_name = gjs_context_get_const_string(context, GJS_STRING_CODE);
-    if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(argv[0]),
+    if (!gjs_object_require_property(context, &argv[0].toObject(),
                                      "GError constructor", message_name, &v_message))
         return JS_FALSE;
-    if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(argv[0]),
+    if (!gjs_object_require_property(context, &argv[0].toObject(),
                                      "GError constructor", code_name, &v_code))
         return JS_FALSE;
     if (!gjs_string_to_utf8 (context, v_message, &message))
         return JS_FALSE;
 
-    priv->gerror = g_error_new_literal(priv->domain, JSVAL_TO_INT(v_code),
+    priv->gerror = g_error_new_literal(priv->domain, v_code.toInt32(),
                                        message);
 
     g_free (message);
@@ -160,7 +160,7 @@ error_get_domain(JSContext *context, JS::HandleObject obj,
     if (priv == NULL)
         return JS_FALSE;
 
-    vp.set(INT_TO_JSVAL(priv->domain));
+    vp.setInt32(priv->domain);
     return JS_TRUE;
 }
 
@@ -201,7 +201,7 @@ error_get_code(JSContext *context, JS::HandleObject obj,
         return JS_FALSE;
     }
 
-    vp.set(INT_TO_JSVAL(priv->gerror->code));
+    vp.setInt32(priv->gerror->code);
     return JS_TRUE;
 }
 
@@ -219,19 +219,19 @@ error_to_string(JSContext *context,
 
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     v_self = rec.thisv();
-    if (!JSVAL_IS_OBJECT(v_self)) {
+    if (!v_self.isObject()) {
         /* Lie a bit here... */
         gjs_throw(context, "GLib.Error.prototype.toString() called on a non object");
         return JS_FALSE;
     }
 
-    self = JSVAL_TO_OBJECT(v_self);
+    self = &v_self.toObject();
     priv = priv_from_js(context, self);
 
     if (priv == NULL)
         return JS_FALSE;
 
-    v_out = JSVAL_VOID;
+    v_out = JS::UndefinedValue();
     retval = JS_FALSE;
 
     /* We follow the same pattern as standard JS errors, at the expense of
@@ -269,40 +269,34 @@ error_constructor_value_of(JSContext *context,
 {
     JS::Value v_self, v_prototype;
     Error *priv;
-    JS::Value v_out;
     jsid prototype_name;
 
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
     v_self = rec.thisv();
-    if (!JSVAL_IS_OBJECT(v_self)) {
+    if (!v_self.isObject()) {
         /* Lie a bit here... */
         gjs_throw(context, "GLib.Error.valueOf() called on a non object");
         return JS_FALSE;
     }
 
     prototype_name = gjs_context_get_const_string(context, GJS_STRING_PROTOTYPE);
-    if (!gjs_object_require_property(context,
-                                     JSVAL_TO_OBJECT(v_self),
-                                     "constructor",
-                                     prototype_name,
-                                     &v_prototype))
+    if (!gjs_object_require_property(context, &v_self.toObject(), "constructor",
+                                     prototype_name, &v_prototype))
         return JS_FALSE;
 
-    if (!JSVAL_IS_OBJECT(v_prototype)) {
+    if (!v_prototype.isObject()) {
         gjs_throw(context, "GLib.Error.valueOf() called on something that is not"
                   " a constructor");
         return JS_FALSE;
     }
 
-    priv = priv_from_js(context, JSVAL_TO_OBJECT(v_prototype));
+    priv = priv_from_js(context, &v_prototype.toObject());
 
     if (priv == NULL)
         return JS_FALSE;
 
-    v_out = INT_TO_JSVAL(priv->domain);
-
-    rec.rval().set(v_out);
-    return TRUE;
+    rec.rval().setInt32(priv->domain);
+    return JS_TRUE;
 }
 
 

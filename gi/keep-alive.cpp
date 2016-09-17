@@ -122,8 +122,7 @@ trace_foreach(void *key,
     if (child->child != NULL) {
         JS::Value val;
         JS_SET_TRACING_DETAILS(tracer, NULL, "keep-alive", 0);
-        val = OBJECT_TO_JSVAL(child->child);
-        g_assert (JSVAL_TO_TRACEABLE (val));
+        val = JS::ObjectValue(*(child->child));
         JS_CallValueTracer(tracer, &val, "keep-alive::val");
     }
 }
@@ -325,7 +324,7 @@ gjs_keep_alive_create(JSContext *context)
     if (!keep_alive)
         g_error("could not create keep_alive on global object, no memory?");
 
-    gjs_set_global_slot(context, GJS_GLOBAL_SLOT_KEEP_ALIVE, OBJECT_TO_JSVAL(keep_alive));
+    gjs_set_global_slot(context, GJS_GLOBAL_SLOT_KEEP_ALIVE, JS::ObjectValue(*keep_alive));
 
     JS_EndRequest(context);
     return keep_alive;
@@ -338,9 +337,9 @@ gjs_keep_alive_get_global_if_exists (JSContext *context)
 
     keep_alive = gjs_get_global_slot(context, GJS_GLOBAL_SLOT_KEEP_ALIVE);
 
-    if (G_LIKELY (JSVAL_IS_OBJECT(keep_alive)))
-        return JSVAL_TO_OBJECT(keep_alive);
-    
+    if (G_LIKELY (keep_alive.isObject()))
+        return &keep_alive.toObject();
+
     return NULL;
 }
 

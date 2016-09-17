@@ -63,7 +63,7 @@ createRGB_func(JSContext *context,
     pattern_wrapper = gjs_cairo_solid_pattern_from_pattern(context, pattern);
     cairo_pattern_destroy(pattern);
 
-    argv.rval().set(OBJECT_TO_JSVAL(pattern_wrapper));
+    argv.rval().setObjectOrNull(pattern_wrapper);
 
     return JS_TRUE;
 }
@@ -92,7 +92,7 @@ createRGBA_func(JSContext *context,
     pattern_wrapper = gjs_cairo_solid_pattern_from_pattern(context, pattern);
     cairo_pattern_destroy(pattern);
 
-    argv.rval().set(OBJECT_TO_JSVAL(pattern_wrapper));
+    argv.rval().setObjectOrNull(pattern_wrapper);
 
     return JS_TRUE;
 }

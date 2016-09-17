@@ -49,7 +49,7 @@ addColorStopRGB_func(JSContext *context,
                      JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+    JSObject *obj = argv.thisv().toObjectOrNull();
 
     double offset, red, green, blue;
     cairo_pattern_t *pattern;
@@ -68,7 +68,7 @@ addColorStopRGB_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
-    argv.rval().set(JSVAL_VOID);
+    argv.rval().setUndefined();
     return JS_TRUE;
 }
 
@@ -78,7 +78,7 @@ addColorStopRGBA_func(JSContext *context,
                       JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+    JSObject *obj = argv.thisv().toObjectOrNull();
 
     double offset, red, green, blue, alpha;
     cairo_pattern_t *pattern;
@@ -97,7 +97,7 @@ addColorStopRGBA_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
-    argv.rval().set(JSVAL_VOID);
+    argv.rval().setUndefined();
     return JS_TRUE;
 }
 

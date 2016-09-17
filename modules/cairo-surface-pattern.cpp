@@ -80,7 +80,7 @@ setExtend_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+    JSObject *obj = argv.thisv().toObjectOrNull();
 
     cairo_extend_t extend;
     cairo_pattern_t *pattern;
@@ -95,7 +95,7 @@ setExtend_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
-    argv.rval().set(JSVAL_VOID);
+    argv.rval().setUndefined();
     return JS_TRUE;
 }
 
@@ -105,7 +105,7 @@ getExtend_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+    JSObject *obj = rec.thisv().toObjectOrNull();
 
     cairo_extend_t extend;
     cairo_pattern_t *pattern;
@@ -132,7 +132,7 @@ setFilter_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+    JSObject *obj = argv.thisv().toObjectOrNull();
 
     cairo_filter_t filter;
     cairo_pattern_t *pattern;
@@ -147,7 +147,7 @@ setFilter_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return JS_FALSE;
 
-    argv.rval().set(JSVAL_VOID);
+    argv.rval().setUndefined();
     return JS_TRUE;
 }
 
@@ -157,7 +157,7 @@ getFilter_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+    JSObject *obj = rec.thisv().toObjectOrNull();
 
     cairo_filter_t filter;
     cairo_pattern_t *pattern;

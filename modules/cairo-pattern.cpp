@@ -63,7 +63,7 @@ getType_func(JSContext *context,
              JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+    JSObject *obj = rec.thisv().toObjectOrNull();
 
     cairo_pattern_t *pattern;
     cairo_pattern_type_t type;

@@ -402,7 +402,7 @@ fundamental_invoke_constructor(FundamentalInstance *priv,
         goto end;
     }
 
-    if (!gjs_object_require_property(context, JSVAL_TO_OBJECT(js_constructor), NULL,
+    if (!gjs_object_require_property(context, js_constructor.toObjectOrNull(), NULL,
                                      priv->prototype->constructor_name, &js_constructor_func)) {
         gjs_throw (context,
                    "Couldn't find a constructor for type %s.%s",
@@ -411,7 +411,7 @@ fundamental_invoke_constructor(FundamentalInstance *priv,
         goto end;
     }
 
-    ret = gjs_invoke_constructor_from_c(context, JSVAL_TO_OBJECT(js_constructor_func), obj, argc, argv, rvalue);
+    ret = gjs_invoke_constructor_from_c(context, js_constructor_func.toObjectOrNull(), obj, argc, argv, rvalue);
 
  end:
     return ret;
@@ -501,7 +501,7 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+    JSObject *obj = rec.thisv().toObjectOrNull();
 
     FundamentalInstance *priv;
     JSBool ret = JS_FALSE;
@@ -600,16 +600,16 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
     if (!JS_GetProperty(context, in_object, constructor_name, &value))
         return NULL;
 
-    if (JSVAL_IS_VOID(value)) {
+    if (value.isUndefined()) {
         /* In case we're looking for a private type, and we don't find it,
            we need to define it first.
         */
         gjs_define_fundamental_class(context, in_object, info, &constructor, NULL);
     } else {
-        if (G_UNLIKELY (!JSVAL_IS_OBJECT(value) || JSVAL_IS_NULL(value)))
+        if (G_UNLIKELY (!value.isObject()))
             return NULL;
 
-        constructor = JSVAL_TO_OBJECT(value);
+        constructor = &value.toObject();
     }
 
     g_assert(constructor != NULL);
@@ -618,10 +618,10 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
                                        GJS_STRING_PROTOTYPE, &value))
         return NULL;
 
-    if (G_UNLIKELY (!JSVAL_IS_OBJECT(value)))
+    if (G_UNLIKELY (!value.isObjectOrNull()))
         return NULL;
 
-    return JSVAL_TO_OBJECT(value);
+    return value.toObjectOrNull();
 }
 
 static JSObject*
@@ -735,7 +735,7 @@ gjs_define_fundamental_class(JSContext     *context,
 
     gjs_object_define_static_methods(context, constructor, gtype, info);
 
-    value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));
+    value = JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 

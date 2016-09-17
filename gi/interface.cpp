@@ -230,7 +230,7 @@ gjs_define_interface_class(JSContext       *context,
     if (priv->info)
         gjs_define_static_methods(context, constructor, priv->gtype, priv->info);
 
-    value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, priv->gtype));
+    value = JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, priv->gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 
@@ -265,6 +265,6 @@ gjs_lookup_interface_constructor(JSContext *context,
 
     g_base_info_unref(interface_info);
 
-    *value_p = OBJECT_TO_JSVAL(constructor);
+    *value_p = JS::ObjectValue(*constructor);
     return JS_TRUE;
 }

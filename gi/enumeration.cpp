@@ -55,10 +55,10 @@ gjs_lookup_enumeration(JSContext    *context,
     if (!JS_GetProperty(context, in_object, enum_name, &value))
         return NULL;
 
-    if (G_UNLIKELY (!JSVAL_IS_OBJECT(value)))
+    if (G_UNLIKELY (!value.isObject()))
         return NULL;
 
-    return JSVAL_TO_OBJECT(value);
+    return &value.toObject();
 }
 
 static JSBool
@@ -133,7 +133,7 @@ gjs_define_enum_values(JSContext    *context,
     }
 
     gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
-    value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));
+    value = JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, in_object, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 
@@ -215,7 +215,7 @@ gjs_define_enumeration(JSContext    *context,
               enum_name, enum_obj);
 
     if (!JS_DefineProperty(context, in_object,
-                           enum_name, OBJECT_TO_JSVAL(enum_obj),
+                           enum_name, JS::ObjectValue(*enum_obj),
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS)) {
         gjs_throw(context, "Unable to define enumeration property (no memory most likely)");

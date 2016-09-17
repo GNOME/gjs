@@ -686,15 +686,15 @@ object_instance_props_to_g_parameters(JSContext   *context,
     gparams = g_array_new(/* nul term */ FALSE, /* clear */ TRUE,
                           sizeof(GParameter));
 
-    if (argc == 0 || JSVAL_IS_VOID(argv[0]))
+    if (argc == 0 || argv[0].isUndefined())
         goto out;
 
-    if (!JSVAL_IS_OBJECT(argv[0])) {
+    if (!argv[0].isObject()) {
         gjs_throw(context, "argument should be a hash with props to set");
         goto free_array_and_fail;
     }
 
-    props = JSVAL_TO_OBJECT(argv[0]);
+    props = &argv[0].toObject();
 
     iter = JS_NewPropertyIterator(context, props);
     if (iter == NULL) {
@@ -1350,11 +1350,11 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
     if (!gjs_object_require_property(context, object, "GObject instance", object_init_name, &initer))
         return JS_FALSE;
 
-    rval = JSVAL_VOID;
+    rval.setUndefined();
     ret = gjs_call_function_value(context, object, initer, argc, argv.array(), &rval);
 
-    if (JSVAL_IS_VOID(rval))
-        rval = OBJECT_TO_JSVAL(object);
+    if (rval.isUndefined())
+        rval.setObject(*object);
 
     argv.rval().set(rval);
     return ret;
@@ -1491,16 +1491,16 @@ gjs_lookup_object_constructor_from_info(JSContext    *context,
     if (!JS_GetProperty(context, in_object, constructor_name, &value))
         return NULL;
 
-    if (JSVAL_IS_VOID(value)) {
+    if (value.isUndefined()) {
         /* In case we're looking for a private type, and we don't find it,
            we need to define it first.
         */
         gjs_define_object_class(context, in_object, NULL, gtype, &constructor);
     } else {
-        if (G_UNLIKELY (!JSVAL_IS_OBJECT(value) || JSVAL_IS_NULL(value)))
+        if (G_UNLIKELY (!value.isObject()))
             return NULL;
 
-        constructor = JSVAL_TO_OBJECT(value);
+        constructor = &value.toObject();
     }
 
     g_assert(constructor != NULL);
@@ -1525,10 +1525,10 @@ gjs_lookup_object_prototype_from_info(JSContext    *context,
                                        GJS_STRING_PROTOTYPE, &value))
         return NULL;
 
-    if (G_UNLIKELY (!JSVAL_IS_OBJECT(value)))
+    if (G_UNLIKELY (!value.isObjectOrNull()))
         return NULL;
 
-    return JSVAL_TO_OBJECT(value);
+    return value.toObjectOrNull();
 }
 
 static JSObject *
@@ -1564,7 +1564,7 @@ real_connect_func(JSContext *context,
                   gboolean  after)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+    JSObject *obj = argv.thisv().toObjectOrNull();
 
     ObjectInstance *priv;
     GClosure *closure;
@@ -1599,9 +1599,7 @@ real_connect_func(JSContext *context,
      * JSClass::call, for example.
      */
 
-    if (argc != 2 ||
-        !JSVAL_IS_STRING(argv[0]) ||
-        !JSVAL_IS_OBJECT(argv[1])) {
+    if (argc != 2 || !argv[0].isString() || !argv[1].isObject()) {
         gjs_throw(context, "connect() takes two args, the signal name and the callback");
         return JS_FALSE;
     }
@@ -1621,7 +1619,7 @@ real_connect_func(JSContext *context,
         goto out;
     }
 
-    closure = gjs_closure_new_for_signal(context, JSVAL_TO_OBJECT(argv[1]), "signal callback", signal_id);
+    closure = gjs_closure_new_for_signal(context, &argv[1].toObject(), "signal callback", signal_id);
     if (closure == NULL)
         goto out;
 
@@ -1674,7 +1672,7 @@ emit_func(JSContext *context,
           JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+    JSObject *obj = argv.thisv().toObjectOrNull();
 
     ObjectInstance *priv;
     guint signal_id;
@@ -1707,8 +1705,7 @@ emit_func(JSContext *context,
         return JS_FALSE;
     }
 
-    if (argc < 1 ||
-        !JSVAL_IS_STRING(argv[0])) {
+    if (argc < 1 || !argv[0].isString()) {
         gjs_throw(context, "emit() first arg is the signal name");
         return JS_FALSE;
     }
@@ -1776,7 +1773,7 @@ emit_func(JSContext *context,
 
         g_value_unset(&rvalue);
     } else {
-        retval = JSVAL_VOID;
+        retval.setUndefined();
     }
 
     for (i = 0; i < (signal_query.n_params + 1); ++i) {
@@ -1798,7 +1795,7 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = JSVAL_TO_OBJECT(rec.thisv());
+    JSObject *obj = rec.thisv().toObjectOrNull();
 
     ObjectInstance *priv;
     JSBool ret = JS_FALSE;
@@ -1850,7 +1847,7 @@ init_func (JSContext *context,
            JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = JSVAL_TO_OBJECT(argv.thisv());
+    JSObject *obj = argv.thisv().toObjectOrNull();
 
     JSBool ret;
 
@@ -1860,7 +1857,7 @@ init_func (JSContext *context,
     ret = object_instance_init(context, &obj, argc, argv.array());
 
     if (ret)
-        argv.rval().set(OBJECT_TO_JSVAL(obj));
+        argv.rval().setObject(*obj);
 
     return ret;
 }
@@ -2036,7 +2033,7 @@ gjs_define_object_class(JSContext      *context,
     if (info)
         gjs_object_define_static_methods(context, constructor, gtype, info);
 
-    value = OBJECT_TO_JSVAL(gjs_gtype_create_gtype_wrapper(context, gtype));
+    value = JS::ObjectValue(*gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 
@@ -2311,7 +2308,7 @@ gjs_hook_up_vfunc(JSContext *cx,
      * This is awful, so abort now. */
     g_assert(info != NULL);
 
-    argv.rval().set(JSVAL_VOID);
+    argv.rval().setUndefined();
 
     vfunc = find_vfunc_on_parents(info, name, NULL);
 
@@ -2365,7 +2362,8 @@ gjs_hook_up_vfunc(JSContext *cx,
         offset = g_field_info_get_offset(field_info);
         method_ptr = G_STRUCT_MEMBER_P(implementor_vtable, offset);
 
-        trampoline = gjs_callback_trampoline_new(cx, OBJECT_TO_JSVAL(function), callback_info,
+        trampoline = gjs_callback_trampoline_new(cx, JS::ObjectValue(*function),
+                                                 callback_info,
                                                  GI_SCOPE_TYPE_NOTIFIED, TRUE);
 
         *((ffi_closure **)method_ptr) = trampoline->closure;
@@ -2483,7 +2481,7 @@ gjs_object_constructor (GType                  type,
                                     construct_properties[i].value,
                                     construct_properties[i].pspec);
 
-            argv = OBJECT_TO_JSVAL(args);
+            argv = JS::ObjectValue(*args);
             object = JS_New(context, constructor, 1, &argv);
         } else {
             object = JS_New(context, constructor, 0, NULL);
@@ -2662,7 +2660,7 @@ gjs_object_custom_init(GTypeInstance *instance,
         return;
     }
 
-    if (!JSVAL_IS_OBJECT(v) || JSVAL_IS_NULL(v))
+    if (!v.isObject())
         return;
 
     if (!JS_CallFunctionValue(context, object, v,
@@ -2961,7 +2959,7 @@ gjs_register_type(JSContext *cx,
     module = gjs_lookup_private_namespace(cx);
     gjs_define_object_class(cx, module, NULL, instance_type, &constructor);
 
-    argv.rval().set(OBJECT_TO_JSVAL(constructor));
+    argv.rval().setObject(*constructor);
 
     retval = JS_TRUE;
 
@@ -2996,12 +2994,12 @@ gjs_signal_new(JSContext *cx,
         goto out;
     }
 
-    obj = JSVAL_TO_OBJECT(argv[0]);
+    obj = &argv[0].toObject();
     if (!gjs_typecheck_gtype(cx, obj, JS_TRUE))
         return JS_FALSE;
 
     /* we only support standard accumulators for now */
-    switch (JSVAL_TO_INT(argv[3])) {
+    switch (argv[3].toInt32()) {
     case 1:
         accumulator = g_signal_accumulator_first_wins;
         break;
@@ -3013,7 +3011,7 @@ gjs_signal_new(JSContext *cx,
         accumulator = NULL;
     }
 
-    return_type = gjs_gtype_get_actual_gtype(cx, JSVAL_TO_OBJECT(argv[4]));
+    return_type = gjs_gtype_get_actual_gtype(cx, &argv[4].toObject());
 
     if (accumulator == g_signal_accumulator_true_handled && return_type != G_TYPE_BOOLEAN) {
         gjs_throw (cx, "GObject.SignalAccumulator.TRUE_HANDLED can only be used with boolean signals");
@@ -3021,28 +3019,28 @@ gjs_signal_new(JSContext *cx,
         goto out;
     }
 
-    if (!JS_GetArrayLength(cx, JSVAL_TO_OBJECT(argv[5]), &n_parameters)) {
+    if (!JS_GetArrayLength(cx, &argv[5].toObject(), &n_parameters)) {
         ret = JS_FALSE;
         goto out;
     }
     params = g_newa(GType, n_parameters);
     for (i = 0; i < n_parameters; i++) {
         JS::Value gtype_val;
-        if (!JS_GetElement(cx, JSVAL_TO_OBJECT(argv[5]), i, &gtype_val) ||
-            !JSVAL_IS_OBJECT(gtype_val)) {
+        if (!JS_GetElement(cx, &argv[5].toObject(), i, &gtype_val) ||
+            !gtype_val.isObject()) {
             gjs_throw(cx, "Invalid signal parameter number %d", i);
             ret = JS_FALSE;
             goto out;
         }
 
-        params[i] = gjs_gtype_get_actual_gtype(cx, JSVAL_TO_OBJECT(gtype_val));
+        params[i] = gjs_gtype_get_actual_gtype(cx, &gtype_val.toObject());
     }
 
     gtype = gjs_gtype_get_actual_gtype(cx, obj);
 
     signal_id = g_signal_newv(signal_name,
                               gtype,
-                              (GSignalFlags) JSVAL_TO_INT(argv[2]), /* signal_flags */
+                              (GSignalFlags) argv[2].toInt32(), /* signal_flags */
                               NULL, /* class closure */
                               accumulator,
                               NULL, /* accu_data */
@@ -3051,7 +3049,7 @@ gjs_signal_new(JSContext *cx,
                               n_parameters,
                               params);
 
-    argv.rval().set(INT_TO_JSVAL(signal_id));
+    argv.rval().setInt32(signal_id);
     ret = JS_TRUE;
 
  out:
@@ -3109,6 +3107,6 @@ gjs_lookup_object_constructor(JSContext *context,
     if (object_info)
         g_base_info_unref((GIBaseInfo*)object_info);
 
-    *value_p = OBJECT_TO_JSVAL(constructor);
+    *value_p = JS::ObjectValue(*constructor);
     return JS_TRUE;
 }

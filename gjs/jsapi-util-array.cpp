@@ -121,14 +121,14 @@ gjs_rooted_array_get(JSContext        *context,
 {
     GArray *garray;
 
-    g_return_val_if_fail(context != NULL, JSVAL_VOID);
-    g_return_val_if_fail(array != NULL, JSVAL_VOID);
+    g_return_val_if_fail(context != NULL, JS::UndefinedValue());
+    g_return_val_if_fail(array != NULL, JS::UndefinedValue());
 
     garray = (GArray*) array;
 
     if (i < 0 || i >= (int) garray->len) {
         gjs_throw(context, "Index %d is out of range", i);
-        return JSVAL_VOID;
+        return JS::UndefinedValue();
     }
 
     return g_array_index(garray, JS::Value, i);

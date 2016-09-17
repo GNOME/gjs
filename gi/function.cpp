@@ -251,7 +251,7 @@ gjs_callback_closure(ffi_cif *cif,
                     goto out;
 
                 if (!gjs_value_from_explicit_array(context, &jsargs[n_jsargs++],
-                                                   &type_info, (GArgument*) args[i], JSVAL_TO_INT(length)))
+                                                   &type_info, (GArgument*) args[i], length.toInt32()))
                     goto out;
                 break;
             }
@@ -269,7 +269,7 @@ gjs_callback_closure(ffi_cif *cif,
 
     if (trampoline->is_vfunc) {
         g_assert(n_args > 0);
-        this_object = JSVAL_TO_OBJECT(jsargs[0]);
+        this_object = jsargs[0].toObjectOrNull();
         jsargs++;
         n_jsargs--;
     } else {
@@ -340,7 +340,7 @@ gjs_callback_closure(ffi_cif *cif,
         if (!ret_type_is_void) {
             GIArgument argument;
 
-            if (!JS_GetElement(context, JSVAL_TO_OBJECT(rval), elem_idx, &elem))
+            if (!JS_GetElement(context, rval.toObjectOrNull(), elem_idx, &elem))
                 goto out;
 
             if (!gjs_value_to_g_argument(context,
@@ -368,7 +368,7 @@ gjs_callback_closure(ffi_cif *cif,
                 continue;
 
             g_arg_info_load_type(&arg_info, &type_info);
-            if (!JS_GetElement(context, JSVAL_TO_OBJECT(rval), elem_idx, &elem))
+            if (!JS_GetElement(context, rval.toObjectOrNull(), elem_idx, &elem))
                 goto out;
 
             if (!gjs_value_to_g_argument(context,
@@ -428,7 +428,7 @@ gjs_callback_trampoline_new(JSContext      *context,
     GjsCallbackTrampoline *trampoline;
     int n_args, i;
 
-    if (JSVAL_IS_NULL(function)) {
+    if (function.isNull()) {
         return NULL;
     }
 
@@ -851,7 +851,7 @@ gjs_invoke_c_function(JSContext      *context,
                 ffi_closure *closure;
                 JS::Value value = js_argv[js_arg_pos];
 
-                if (JSVAL_IS_NULL(value) && g_arg_info_may_be_null(&arg_info)) {
+                if (value.isNull() && g_arg_info_may_be_null(&arg_info)) {
                     closure = NULL;
                     trampoline = NULL;
                 } else {
@@ -915,7 +915,7 @@ gjs_invoke_c_function(JSContext      *context,
                 g_callable_info_load_arg(function->info, array_length_pos, &array_length_arg);
 
                 array_length_pos += is_method ? 1 : 0;
-                if (!gjs_value_to_arg(context, INT_TO_JSVAL(length), &array_length_arg,
+                if (!gjs_value_to_arg(context, JS::Int32Value(length), &array_length_arg,
                                       in_arg_cvalues + array_length_pos)) {
                     failed = TRUE;
                     break;
@@ -1008,12 +1008,12 @@ gjs_invoke_c_function(JSContext      *context,
     }
 
     if (js_rval)
-        *js_rval = JSVAL_VOID;
+        *js_rval = JS::UndefinedValue();
 
     /* Only process return values if the function didn't throw */
     if (function->js_out_argc > 0 && !did_throw_gerror) {
         return_values = g_newa(JS::Value, function->js_out_argc);
-        gjs_set_values(context, return_values, function->js_out_argc, JSVAL_VOID);
+        gjs_set_values(context, return_values, function->js_out_argc, JS::UndefinedValue());
         gjs_root_value_locations(context, return_values, function->js_out_argc);
 
         if (return_tag != GI_TYPE_TAG_VOID) {
@@ -1043,14 +1043,14 @@ gjs_invoke_c_function(JSContext      *context,
                                                                 &return_values[next_rval],
                                                                 &return_info,
                                                                 &return_gargument,
-                                                                JSVAL_TO_INT(length));
+                                                                length.toInt32());
                 }
                 if (!arg_failed &&
                     !r_value &&
                     !gjs_g_argument_release_out_array(context,
                                                       transfer,
                                                       &return_info,
-                                                      JSVAL_TO_INT(length),
+                                                      length.toInt32(),
                                                       &return_gargument))
                     failed = TRUE;
             } else {
@@ -1187,7 +1187,7 @@ release:
                                                                     &return_values[next_rval],
                                                                     &arg_type_info,
                                                                     arg,
-                                                                    JSVAL_TO_INT(array_length));
+                                                                    array_length.toInt32());
                     }
                 } else {
                     arg_failed = !gjs_value_from_g_argument(context,
@@ -1208,7 +1208,7 @@ release:
                     gjs_g_argument_release_out_array(context,
                                                      transfer,
                                                      &arg_type_info,
-                                                     JSVAL_TO_INT(array_length),
+                                                     array_length.toInt32(),
                                                      arg);
                 } else {
                     gjs_g_argument_release(context,
@@ -1275,7 +1275,7 @@ release:
                 if (array == NULL) {
                     failed = TRUE;
                 } else {
-                    *js_rval = OBJECT_TO_JSVAL(array);
+                    *js_rval = JS::ObjectValue(*array);
                 }
             }
         }
@@ -1303,7 +1303,7 @@ function_call(JSContext *context,
               JS::Value *vp)
 {
     JS::CallArgs js_argv = JS::CallArgsFromVp (js_argc, vp);
-    JSObject *object = JSVAL_TO_OBJECT(js_argv.thisv());
+    JSObject *object = js_argv.thisv().toObjectOrNull();
     JSObject *callee = &js_argv.callee();
 
     JSBool success;
@@ -1314,7 +1314,7 @@ function_call(JSContext *context,
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Call callee %p priv %p this obj %p %s", callee, priv,
                       object,
-                      JS_GetTypeName(context, JS_TypeOfValue(context, OBJECT_TO_JSVAL(object))));
+                      JS_GetTypeName(context, JS_TypeOfValue(context, JS::ObjectOrNullValue(object))));
 
     if (priv == NULL)
         return JS_TRUE; /* we are the prototype, or have the wrong class */
@@ -1392,8 +1392,7 @@ get_num_arguments (JSContext *context,
             continue;
     }
 
-    retval = INT_TO_JSVAL(n_jsargs);
-    rec.rval().set(retval);
+    rec.rval().setInt32(n_jsargs);
     return JS_TRUE;
 }
 
@@ -1413,12 +1412,12 @@ function_to_string (JSContext *context,
     gchar *arg_names;
 
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    self = JSVAL_TO_OBJECT(rec.thisv());
 
-    if (!self) {
+    if (rec.thisv().isNull()) {
         gjs_throw(context, "this cannot be null");
         return JS_FALSE;
     }
+    self = &rec.thisv().toObject();
 
     priv = priv_from_js (context, self);
     if (priv == NULL) {
@@ -1682,7 +1681,7 @@ function_new(JSContext      *context,
 
         JS_GetProperty(context, global, "Function", &native_function);
         /* We take advantage from that fact that Function.__proto__ is Function.prototype */
-        JS_GetPrototype(context, JSVAL_TO_OBJECT(native_function), &parent_proto);
+        JS_GetPrototype(context, &native_function.toObject(), &parent_proto);
 
         prototype = JS_InitClass(context, global,
                                  /* parent prototype JSObject* for
@@ -1768,7 +1767,7 @@ gjs_define_function(JSContext      *context,
     }
 
     if (!JS_DefineProperty(context, in_object, name,
-                           OBJECT_TO_JSVAL(function),
+                           JS::ObjectValue(*function),
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS)) {
         gjs_debug(GJS_DEBUG_GFUNCTION, "Failed to define function");

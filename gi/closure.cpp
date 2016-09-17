@@ -276,7 +276,7 @@ gjs_closure_invoke(GClosure  *closure,
 
     if (!gjs_call_function_value(context,
                                  NULL, /* "this" object; NULL is some kind of default presumably */
-                                 OBJECT_TO_JSVAL(c->obj),
+                                 JS::ObjectValue(*c->obj),
                                  argc,
                                  argv,
                                  retval)) {
