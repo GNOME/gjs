@@ -202,6 +202,61 @@ JS::Value gjs_##cname##_create_proto(JSContext *context, JSObject *module, const
     return rval; \
 }
 
+/**
+ * GJS_NATIVE_CONSTRUCTOR_DECLARE:
+ * Prototype a constructor.
+ */
+#define GJS_NATIVE_CONSTRUCTOR_DECLARE(name)            \
+static JSBool                                           \
+gjs_##name##_constructor(JSContext  *context,           \
+                         unsigned    argc,              \
+                         JS::Value  *vp)
+
+/**
+ * GJS_NATIVE_CONSTRUCTOR_VARIABLES:
+ * Declare variables necessary for the constructor; should
+ * be at the very top.
+ */
+#define GJS_NATIVE_CONSTRUCTOR_VARIABLES(name)          \
+    JSObject *object = NULL;                                            \
+    JS::CallArgs argv G_GNUC_UNUSED = JS::CallArgsFromVp(argc, vp);
+
+/**
+ * GJS_NATIVE_CONSTRUCTOR_PRELUDE:
+ * Call after the initial variable declaration.
+ */
+#define GJS_NATIVE_CONSTRUCTOR_PRELUDE(name)                            \
+    {                                                                   \
+        if (!JS_IsConstructing(context, vp)) {                          \
+            gjs_throw_constructor_error(context);                       \
+            return JS_FALSE;                                            \
+        }                                                               \
+        object = gjs_new_object_for_constructor(context, &gjs_##name##_class, vp); \
+        if (object == NULL)                                             \
+            return JS_FALSE;                                            \
+    }
+
+/**
+ * GJS_NATIVE_CONSTRUCTOR_FINISH:
+ * Call this at the end of a constructor when it's completed
+ * successfully.
+ */
+#define GJS_NATIVE_CONSTRUCTOR_FINISH(name)             \
+    argv.rval().setObject(*object);
+
+/**
+ * GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT:
+ * Defines a constructor whose only purpose is to throw an error
+ * and fail. To be used with classes that require a constructor (because they have
+ * instances), but whose constructor cannot be used from JS code.
+ */
+#define GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(name)            \
+    GJS_NATIVE_CONSTRUCTOR_DECLARE(name)                        \
+    {                                                           \
+        gjs_throw_abstract_constructor_error(context, vp);      \
+        return JS_FALSE;                                        \
+    }
+
 gboolean    gjs_init_context_standard        (JSContext       *context,
                                               JSObject       **global_out);
 
