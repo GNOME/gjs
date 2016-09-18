@@ -262,7 +262,7 @@ gjs_##name##_constructor(JSContext  *context,           \
  */
 #define GJS_NATIVE_CONSTRUCTOR_PRELUDE(name)                                   \
     {                                                                          \
-        if (!JS_IsConstructing(context, vp)) {                                 \
+        if (!argv.isConstructing()) {                                          \
             gjs_throw_constructor_error(context);                              \
             return false;                                                      \
         }                                                                      \
