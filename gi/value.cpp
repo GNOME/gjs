@@ -776,11 +776,9 @@ gjs_value_to_g_value_no_copy(JSContext    *context,
     return gjs_value_to_g_value_internal(context, value, gvalue, TRUE);
 }
 
-static JSBool
-convert_int_to_enum (JSContext *context,
-                     JS::Value *value_p,
-                     GType      gtype,
-                     int        v)
+static JS::Value
+convert_int_to_enum (GType  gtype,
+                     int    v)
 {
     double v_double;
 
@@ -799,7 +797,7 @@ convert_int_to_enum (JSContext *context,
         g_base_info_unref(info);
     }
 
-    return JS_NewNumberValue(context, v_double, value_p);
+    return JS::NumberValue(v_double);
 }
 
 static JSBool
@@ -840,19 +838,19 @@ gjs_value_from_g_value_internal(JSContext    *context,
     } else if (gtype == G_TYPE_INT) {
         int v;
         v = g_value_get_int(gvalue);
-        return JS_NewNumberValue(context, v, value_p);
+        *value_p = JS::NumberValue(v);
     } else if (gtype == G_TYPE_UINT) {
         guint v;
         v = g_value_get_uint(gvalue);
-        return JS_NewNumberValue(context, v, value_p);
+        *value_p = JS::NumberValue(v);
     } else if (gtype == G_TYPE_DOUBLE) {
         double d;
         d = g_value_get_double(gvalue);
-        return JS_NewNumberValue(context, d, value_p);
+        *value_p = JS::NumberValue(d);
     } else if (gtype == G_TYPE_FLOAT) {
         double d;
         d = g_value_get_float(gvalue);
-        return JS_NewNumberValue(context, d, value_p);
+        *value_p = JS::NumberValue(d);
     } else if (gtype == G_TYPE_BOOLEAN) {
         gboolean v;
         v = g_value_get_boolean(gvalue);
@@ -943,7 +941,7 @@ gjs_value_from_g_value_internal(JSContext    *context,
         *value_p = JS::ObjectOrNullValue(obj);
         g_base_info_unref(info);
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {
-        return convert_int_to_enum(context, value_p, gtype, g_value_get_enum(gvalue));
+        *value_p = convert_int_to_enum(gtype, g_value_get_enum(gvalue));
     } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
         GParamSpec *gparam;
         JSObject *obj;
@@ -1007,14 +1005,14 @@ gjs_value_from_g_value_internal(JSContext    *context,
         g_value_init(&double_value, G_TYPE_DOUBLE);
         g_value_transform(gvalue, &double_value);
         v = g_value_get_double(&double_value);
-        return JS_NewNumberValue(context, v, value_p);
+        *value_p = JS::NumberValue(v);
     } else if (g_value_type_transformable(gtype, G_TYPE_INT)) {
         GValue int_value = { 0, };
         int v;
         g_value_init(&int_value, G_TYPE_INT);
         g_value_transform(gvalue, &int_value);
         v = g_value_get_int(&int_value);
-        return JS_NewNumberValue(context, v, value_p);
+        *value_p = JS::NumberValue(v);
     } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
         /* The gtype is none of the above, it should be a custom
            fundamental type. */

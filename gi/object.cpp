@@ -1572,7 +1572,6 @@ real_connect_func(JSContext *context,
     guint signal_id;
     char *signal_name;
     GQuark signal_detail;
-    JS::Value retval;
     ConnectData *connect_data;
     JSBool ret = JS_FALSE;
 
@@ -1637,12 +1636,7 @@ real_connect_func(JSContext *context,
                                         closure,
                                         after);
 
-    if (!JS_NewNumberValue(context, id, &retval)) {
-        g_signal_handler_disconnect(priv->gobj, id);
-        goto out;
-    }
-    
-    argv.rval().set(retval);
+    argv.rval().setDouble(id);
 
     ret = JS_TRUE;
  out:

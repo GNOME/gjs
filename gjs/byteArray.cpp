@@ -78,17 +78,13 @@ gjs_typecheck_bytearray(JSContext     *context,
     return do_base_typecheck(context, object, throw_error);
 }
 
-static JSBool
-gjs_value_from_gsize(JSContext         *context,
-                     gsize              v,
-                     JS::MutableHandleValue value_p)
+static JS::Value
+gjs_value_from_gsize(gsize v)
 {
     if (v <= (gsize) JSVAL_INT_MAX) {
-        value_p.setInt32(v);
-        return JS_TRUE;
-    } else {
-        return JS_NewNumberValue(context, v, value_p.address());
+        return JS::Int32Value(v);
     }
+    return JS::NumberValue(v);
 }
 
 static void
@@ -246,7 +242,8 @@ byte_array_length_getter(JSContext *context,
         len = priv->array->len;
     else if (priv->bytes != NULL)
         len = g_bytes_get_size (priv->bytes);
-    return gjs_value_from_gsize(context, len, value_p);
+    value_p.set(gjs_value_from_gsize(len));
+    return true;
 }
 
 static JSBool

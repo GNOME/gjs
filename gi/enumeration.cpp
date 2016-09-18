@@ -91,8 +91,8 @@ gjs_define_enum_value(JSContext    *context,
               "Defining enum value %s (fixed from %s) %" G_GINT64_MODIFIER "d",
               fixed_name, value_name, value_val);
 
-    if (!JS_NewNumberValue(context, value_val, &value_js) ||
-        !JS_DefineProperty(context, in_object,
+    value_js = JS::NumberValue(value_val);
+    if (!JS_DefineProperty(context, in_object,
                            fixed_name, value_js,
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS)) {

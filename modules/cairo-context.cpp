@@ -90,9 +90,9 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
       if (!array)                                                          \
         return JS_FALSE;                                                   \
       JS::Value r;                                                         \
-      if (!JS_NewNumberValue(context, arg1, &r)) return JS_FALSE;          \
+      r = JS::NumberValue(arg1);                                           \
       if (!JS_SetElement(context, array, 0, &r)) return JS_FALSE;          \
-      if (!JS_NewNumberValue(context, arg2, &r)) return JS_FALSE;          \
+      r = JS::NumberValue(arg2);                                           \
       if (!JS_SetElement(context, array, 1, &r)) return JS_FALSE;          \
       argv.rval().setObject(*array);                                       \
     }                                                                      \
@@ -109,9 +109,9 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
       if (!array)                                                          \
         return JS_FALSE;                                                   \
       JS::Value r;                                                         \
-      if (!JS_NewNumberValue(context, arg1, &r)) return JS_FALSE;          \
+      r = JS::NumberValue(arg1);                                           \
       if (!JS_SetElement(context, array, 0, &r)) return JS_FALSE;          \
-      if (!JS_NewNumberValue(context, arg2, &r)) return JS_FALSE;          \
+      r = JS::NumberValue(arg2);                                           \
       if (!JS_SetElement(context, array, 1, &r)) return JS_FALSE;          \
       argv.rval().setObject(*array);                                       \
     }                                                                      \
@@ -128,13 +128,13 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
       if (!array)                                                          \
         return JS_FALSE;                                                   \
       JS::Value r;                                                         \
-      if (!JS_NewNumberValue(context, arg1, &r)) return JS_FALSE;          \
+      r = JS::NumberValue(arg1);                                           \
       if (!JS_SetElement(context, array, 0, &r)) return JS_FALSE;          \
-      if (!JS_NewNumberValue(context, arg2, &r)) return JS_FALSE;          \
+      r = JS::NumberValue(arg2);                                           \
       if (!JS_SetElement(context, array, 1, &r)) return JS_FALSE;          \
-      if (!JS_NewNumberValue(context, arg3, &r)) return JS_FALSE;          \
+      r = JS::NumberValue(arg3);                                           \
       if (!JS_SetElement(context, array, 2, &r)) return JS_FALSE;          \
-      if (!JS_NewNumberValue(context, arg4, &r)) return JS_FALSE;          \
+      r = JS::NumberValue(arg4);                                           \
       if (!JS_SetElement(context, array, 3, &r)) return JS_FALSE;          \
       argv.rval().setObject(*array);                                       \
     }                                                                      \
@@ -143,13 +143,10 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0F(method, cfunc)                    \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     double ret;                                                            \
-    JS::Value retval;                                                      \
    _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                                \
     cr = gjs_cairo_context_get_context(context, obj);                      \
     ret = cfunc(cr);                                                       \
-    if (!JS_NewNumberValue(context, ret, &retval))                         \
-        return JS_FALSE;                                                   \
-    argv.rval().set(retval);                                      \
+    argv.rval().setNumber(ret);                                            \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC1(method, cfunc, fmt, t1, n1)        \

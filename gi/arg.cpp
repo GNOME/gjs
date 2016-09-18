@@ -2498,34 +2498,44 @@ gjs_value_from_g_argument (JSContext  *context,
         break;
 
     case GI_TYPE_TAG_INT32:
-        return JS_NewNumberValue(context, arg->v_int, value_p);
+        *value_p = JS::NumberValue(arg->v_int);
+        break;
 
     case GI_TYPE_TAG_UINT32:
-        return JS_NewNumberValue(context, arg->v_uint, value_p);
+        *value_p = JS::NumberValue(arg->v_uint);
+        break;
 
     case GI_TYPE_TAG_INT64:
-        return JS_NewNumberValue(context, arg->v_int64, value_p);
+        *value_p = JS::NumberValue(arg->v_int64);
+        break;
 
     case GI_TYPE_TAG_UINT64:
-        return JS_NewNumberValue(context, arg->v_uint64, value_p);
+        *value_p = JS::NumberValue(arg->v_uint64);
+        break;
 
     case GI_TYPE_TAG_UINT16:
-        return JS_NewNumberValue(context, arg->v_uint16, value_p);
+        *value_p = JS::NumberValue(arg->v_uint16);
+        break;
 
     case GI_TYPE_TAG_INT16:
-        return JS_NewNumberValue(context, arg->v_int16, value_p);
+        *value_p = JS::NumberValue(arg->v_int16);
+        break;
 
     case GI_TYPE_TAG_UINT8:
-        return JS_NewNumberValue(context, arg->v_uint8, value_p);
+        *value_p = JS::NumberValue(arg->v_uint8);
+        break;
 
     case GI_TYPE_TAG_INT8:
-        return JS_NewNumberValue(context, arg->v_int8, value_p);
+        *value_p = JS::NumberValue(arg->v_int8);
+        break;
 
     case GI_TYPE_TAG_FLOAT:
-        return JS_NewNumberValue(context, arg->v_float, value_p);
+        *value_p = JS::NumberValue(arg->v_float);
+        break;
 
     case GI_TYPE_TAG_DOUBLE:
-        return JS_NewNumberValue(context, arg->v_double, value_p);
+        *value_p = JS::NumberValue(arg->v_double);
+        break;
 
     case GI_TYPE_TAG_GTYPE:
         {
@@ -2613,9 +2623,7 @@ gjs_value_from_g_argument (JSContext  *context,
                 gint64 value_int64 = _gjs_enum_from_int ((GIEnumInfo *)interface_info, arg->v_int);
 
                 if (_gjs_enum_value_is_valid(context, (GIEnumInfo *)interface_info, value_int64)) {
-                    JS::Value tmp;
-                    if (JS_NewNumberValue(context, value_int64, &tmp))
-                        value = tmp;
+                    value = JS::NumberValue(value_int64);
                 }
 
                 goto out;
@@ -2624,9 +2632,7 @@ gjs_value_from_g_argument (JSContext  *context,
 
                 gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
                 if (_gjs_flags_value_is_valid(context, gtype, value_int64)) {
-                    JS::Value tmp;
-                    if (JS_NewNumberValue(context, value_int64, &tmp))
-                        value = tmp;
+                    value = JS::NumberValue(value_int64);
                 }
 
                 goto out;

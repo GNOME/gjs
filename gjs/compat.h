@@ -59,7 +59,7 @@ G_BEGIN_DECLS
     _Pragma("GCC warning \"JS_GetGlobalObject is deprecated. Use JS_GetGlobalForObject() or JS_GetGlobalForScopeChain() instead.\"") \
     gjs_get_global_object(cx)
 
-static JSBool G_GNUC_UNUSED
+static JSBool G_GNUC_UNUSED G_GNUC_DEPRECATED_FOR(JS::NumberValue)
 JS_NewNumberValue(JSContext *cx,
                   double     d,
                   JS::Value *rval)
