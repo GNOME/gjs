@@ -231,7 +231,7 @@ gjs_##name##_constructor(JSContext  *context,           \
             gjs_throw_constructor_error(context);                       \
             return JS_FALSE;                                            \
         }                                                               \
-        object = gjs_new_object_for_constructor(context, &gjs_##name##_class, vp); \
+        object = JS_NewObjectForConstructor(context, &gjs_##name##_class, vp); \
         if (object == NULL)                                             \
             return JS_FALSE;                                            \
     }
@@ -276,7 +276,9 @@ gboolean    gjs_object_require_property      (JSContext       *context,
 
 JSObject   *gjs_new_object_for_constructor   (JSContext       *context,
                                               JSClass         *clasp,
-                                              JS::Value       *vp);
+                                              JS::Value       *vp)
+G_GNUC_DEPRECATED_FOR(JS_NewObjectForConstructor);
+
 JSBool      gjs_init_class_dynamic           (JSContext       *context,
                                               JSObject        *in_object,
                                               JSObject        *parent_proto,

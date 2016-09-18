@@ -36,29 +36,17 @@
 #include <math.h>
 
 /*
- * JS 1.8.5 has JS_NewObjectForConstructor, but it attempts
- * to retrieve the JSClass from private fields in the constructor function,
- * which fails for our "dynamic classes".
- * This is the version included in SpiderMonkey 1.9 and later, to be
- * used until we rebase on a newer libmozjs.
+ * This shim was because of a bug in JS_NewObjectForConstructor in JS 1.8.5. It
+ * attempted to retrieve the JSClass from private fields in the constructor
+ * function, which failed for our "dynamic classes".
+ * This function is deprecated.
  */
 JSObject *
 gjs_new_object_for_constructor(JSContext *context,
                                JSClass   *clasp,
                                JS::Value *vp)
 {
-    JS::Value callee;
-    JSObject *parent;
-    JS::Value prototype;
-
-    callee = JS_CALLEE(context, vp);
-    parent = JS_GetParent(&callee.toObject());
-
-    if (!gjs_object_get_property_const(context, &callee.toObject(), GJS_STRING_PROTOTYPE, &prototype))
-        return NULL;
-
-    return JS_NewObjectWithGivenProto(context, clasp,
-                                      &prototype.toObject(), parent);
+    return JS_NewObjectForConstructor(context, clasp, vp);
 }
 
 JSBool
