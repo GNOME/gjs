@@ -119,7 +119,7 @@ gjs_set_global_slot (JSContext     *context,
                      JS::Value      value)
 {
     JSObject *global;
-    global = JS_GetGlobalObject(context);
+    global = gjs_get_global_object(context);
     JS_SetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot, value);
 }
 
@@ -128,7 +128,7 @@ gjs_get_global_slot (JSContext     *context,
                      GjsGlobalSlot  slot)
 {
     JSObject *global;
-    global = JS_GetGlobalObject(context);
+    global = gjs_get_global_object(context);
     return JS_GetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot);
 }
 
@@ -444,7 +444,7 @@ gjs_explain_scope(JSContext  *context,
               context,
               "");
 
-    global = JS_GetGlobalObject(context);
+    global = gjs_get_global_object(context);
     debugstr = gjs_value_debug_string(context, JS::ObjectOrNullValue(global));
     gjs_debug(GJS_DEBUG_SCOPE,
               "  Global: %p %s",

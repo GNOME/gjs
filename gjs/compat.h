@@ -55,7 +55,9 @@ G_BEGIN_DECLS
     _Pragma("GCC warning \"JSVAL_IS_OBJECT is deprecated. Use JS::Value::isObjectOrNull() instead.\"") \
     ((obj).isObjectOrNull())
 
-#define JS_GetGlobalObject(cx) gjs_get_global_object(cx)
+#define JS_GetGlobalObject(cx) \
+    _Pragma("GCC warning \"JS_GetGlobalObject is deprecated. Use JS_GetGlobalForObject() or JS_GetGlobalForScopeChain() instead.\"") \
+    gjs_get_global_object(cx)
 
 static JSBool G_GNUC_UNUSED
 JS_NewNumberValue(JSContext *cx,

@@ -1612,7 +1612,7 @@ bootstrap_coverage(GjsCoverage *coverage)
     JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
     JSAutoRequest ar(context);
 
-    JSObject *debuggee = JS_GetGlobalObject(context);
+    JSObject *debuggee = gjs_get_global_object(context);
     JS::CompartmentOptions options;
     options.setVersion(JSVERSION_LATEST);
     JS::RootedObject debugger_compartment(JS_GetRuntime(context),
@@ -1743,7 +1743,7 @@ gjs_coverage_constructed(GObject *object)
     JS_SetOptions(context, options_flags);
 
     if (!bootstrap_coverage(coverage)) {
-        JSAutoCompartment compartment(context, JS_GetGlobalObject(context));
+        JSAutoCompartment compartment(context, gjs_get_global_object(context));
         gjs_log_exception(context);
     }
 }

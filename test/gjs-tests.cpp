@@ -106,7 +106,7 @@ gjstest_test_func_gjs_jsapi_util_array(void)
 
     array = gjs_rooted_array_new();
 
-    global = JS_GetGlobalObject(context);
+    global = gjs_get_global_object(context);
     JSCompartment *oldCompartment = JS_EnterCompartment(context, global);
 
     for (i = 0; i < N_ELEMS; i++) {
@@ -147,7 +147,7 @@ gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(void)
 
     _gjs_unit_test_fixture_begin(&fixture);
     context = fixture.context;
-    global = JS_GetGlobalObject(context);
+    global = gjs_get_global_object(context);
     JSCompartment *oldCompartment = JS_EnterCompartment(context, global);
 
     g_assert(gjs_string_from_utf8(context, utf8_string, -1, &js_string) == JS_TRUE);
@@ -174,7 +174,7 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
 
     _gjs_unit_test_fixture_begin(&fixture);
     context = fixture.context;
-    global = JS_GetGlobalObject(context);
+    global = gjs_get_global_object(context);
     JSCompartment *oldCompartment = JS_EnterCompartment(context, global);
     /* Test that we can throw */
 
