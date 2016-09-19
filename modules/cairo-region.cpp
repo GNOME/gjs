@@ -209,18 +209,18 @@ JSPropertySpec gjs_cairo_region_proto_props[] = {
 };
 
 JSFunctionSpec gjs_cairo_region_proto_funcs[] = {
-    { "union", (JSNative)union_func, 0, 0 },
-    { "subtract", (JSNative)subtract_func, 0, 0 },
-    { "intersect", (JSNative)intersect_func, 0, 0 },
-    { "xor", (JSNative)xor_func, 0, 0 },
+    { "union", { (JSNative)union_func, 0 }, 0 },
+    { "subtract", { (JSNative)subtract_func, 0 }, 0 },
+    { "intersect", { (JSNative)intersect_func, 0 }, 0 },
+    { "xor", { (JSNative)xor_func, 0 }, 0 },
 
-    { "unionRectangle", (JSNative)union_rectangle_func, 0, 0 },
-    { "subtractRectangle", (JSNative)subtract_rectangle_func, 0, 0 },
-    { "intersectRectangle", (JSNative)intersect_rectangle_func, 0, 0 },
-    { "xorRectangle", (JSNative)xor_rectangle_func, 0, 0 },
+    { "unionRectangle", { (JSNative)union_rectangle_func, 0 }, 0 },
+    { "subtractRectangle", { (JSNative)subtract_rectangle_func, 0 }, 0 },
+    { "intersectRectangle", { (JSNative)intersect_rectangle_func, 0 }, 0 },
+    { "xorRectangle", { (JSNative)xor_rectangle_func, 0 }, 0 },
 
-    { "numRectangles", (JSNative)num_rectangles_func, 0, 0 },
-    { "getRectangle", (JSNative)get_rectangle_func, 0, 0 },
+    { "numRectangles", { (JSNative)num_rectangles_func, 0 }, 0 },
+    { "getRectangle", { (JSNative)get_rectangle_func, 0 }, 0 },
     { NULL }
 };
 

@@ -561,12 +561,12 @@ gjs_fill_method_instance (JSContext  *context,
         } else if (type == GI_INFO_TYPE_STRUCT &&
                    g_struct_info_is_gtype_struct((GIStructInfo*) container)) {
             /* And so do GType structures */
-            GType gtype;
+            GType actual_gtype;
             gpointer klass;
 
-            gtype = gjs_gtype_get_actual_gtype(context, obj);
+            actual_gtype = gjs_gtype_get_actual_gtype(context, obj);
 
-            if (gtype == G_TYPE_NONE) {
+            if (actual_gtype == G_TYPE_NONE) {
                 gjs_throw(context, "Invalid GType class passed for instance parameter");
                 return JS_FALSE;
             }
@@ -577,10 +577,10 @@ gjs_fill_method_instance (JSContext  *context,
                the JS constructor is initialized.
             */
 
-            if (g_type_is_a(gtype, G_TYPE_INTERFACE))
-                klass = g_type_default_interface_peek(gtype);
+            if (g_type_is_a(actual_gtype, G_TYPE_INTERFACE))
+                klass = g_type_default_interface_peek(actual_gtype);
             else
-                klass = g_type_class_peek(gtype);
+                klass = g_type_class_peek(actual_gtype);
 
             out_arg->v_pointer = klass;
         } else {

@@ -2533,7 +2533,6 @@ gjs_override_property(JSContext *cx,
     GParamSpec *pspec;
     GParamSpec *new_pspec;
     GType gtype;
-    GTypeInterface *interface_type;
 
     if (!gjs_parse_call_args(cx, "override_property", "so", args,
                              "name", &name,

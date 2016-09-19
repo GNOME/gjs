@@ -376,10 +376,10 @@ boxed_new(JSContext   *context,
     if (priv->zero_args_constructor >= 0) {
         GIFunctionInfo *func_info = g_struct_info_get_method (priv->info, priv->zero_args_constructor);
 
-        GIArgument rval;
+        GIArgument rval_arg;
         GError *error = NULL;
 
-        if (!g_function_info_invoke(func_info, NULL, 0, NULL, 0, &rval, &error)) {
+        if (!g_function_info_invoke(func_info, NULL, 0, NULL, 0, &rval_arg, &error)) {
             gjs_throw(context, "Failed to invoke boxed constructor: %s", error->message);
             g_clear_error(&error);
             g_base_info_unref((GIBaseInfo*) func_info);
@@ -388,7 +388,7 @@ boxed_new(JSContext   *context,
 
         g_base_info_unref((GIBaseInfo*) func_info);
 
-        priv->gboxed = rval.v_pointer;
+        priv->gboxed = rval_arg.v_pointer;
 
         gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                             "JSObject created with boxed instance %p type %s",

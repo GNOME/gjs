@@ -808,8 +808,8 @@ gjs_array_from_flat_gvalue_array(JSContext   *context,
     JSBool result = JS_TRUE;
 
     for (i = 0; i < length; i ++) {
-        GValue *value = &values[i];
-        result = gjs_value_from_g_value(context, &elems[i], value);
+        GValue *gvalue = &values[i];
+        result = gjs_value_from_g_value(context, &elems[i], gvalue);
         if (!result)
             break;
     }
@@ -1425,12 +1425,12 @@ gjs_value_to_g_argument(JSContext      *context,
             } else if (JSVAL_IS_OBJECT(value)) {
                 if (interface_type == GI_INFO_TYPE_STRUCT &&
                     g_struct_info_is_gtype_struct((GIStructInfo*)interface_info)) {
-                    GType gtype;
+                    GType actual_gtype;
                     gpointer klass;
 
-                    gtype = gjs_gtype_get_actual_gtype(context, JSVAL_TO_OBJECT(value));
+                    actual_gtype = gjs_gtype_get_actual_gtype(context, JSVAL_TO_OBJECT(value));
 
-                    if (gtype == G_TYPE_NONE) {
+                    if (actual_gtype == G_TYPE_NONE) {
                         wrong = TRUE;
                         report_type_mismatch = TRUE;
                         break;
@@ -1442,10 +1442,10 @@ gjs_value_to_g_argument(JSContext      *context,
                        the JS constructor is initialized.
                     */
 
-                    if (g_type_is_a(gtype, G_TYPE_INTERFACE))
-                        klass = g_type_default_interface_peek(gtype);
+                    if (g_type_is_a(actual_gtype, G_TYPE_INTERFACE))
+                        klass = g_type_default_interface_peek(actual_gtype);
                     else
-                        klass = g_type_class_peek(gtype);
+                        klass = g_type_class_peek(actual_gtype);
 
                     arg->v_pointer = klass;
                 } else if ((interface_type == GI_INFO_TYPE_STRUCT || interface_type == GI_INFO_TYPE_BOXED) &&
@@ -1745,7 +1745,6 @@ gjs_value_to_g_argument(JSContext      *context,
 
         param_info = g_type_info_get_param_type(type_info, 0);
         element_type = g_type_info_get_tag(param_info);
-        g_base_info_unref(param_info);
 
         /* First, let's handle the case where we're passed an instance
          * of our own byteArray class.
@@ -1780,7 +1779,6 @@ gjs_value_to_g_argument(JSContext      *context,
         if (array_type == GI_ARRAY_TYPE_C) {
             arg->v_pointer = data;
         } else if (array_type == GI_ARRAY_TYPE_ARRAY) {
-            GITypeInfo *param_info = g_type_info_get_param_type(type_info, 0);
             GArray *array = gjs_g_array_new_for_type(context, length, param_info);
 
             if (!array)
@@ -1791,7 +1789,6 @@ gjs_value_to_g_argument(JSContext      *context,
             }
 
             g_free(data);
-            g_base_info_unref((GIBaseInfo*) param_info);
         } else if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
             GByteArray *byte_array = g_byte_array_sized_new(length);
 
@@ -1808,6 +1805,7 @@ gjs_value_to_g_argument(JSContext      *context,
 
             g_free(data);
         }
+        g_base_info_unref((GIBaseInfo*) param_info);
         break;
     }
     default:
@@ -3214,14 +3212,14 @@ gjs_g_arg_release_internal(JSContext  *context,
                     guint i;
 
                     for (i = 0; i < array->len; i++) {
-                        GArgument arg;
+                        GArgument arg_iter;
 
-                        arg.v_pointer = g_array_index (array, gpointer, i);
+                        arg_iter.v_pointer = g_array_index (array, gpointer, i);
                         gjs_g_arg_release_internal(context,
                                                    transfer,
                                                    param_info,
                                                    element_type,
-                                                   &arg);
+                                                   &arg_iter);
                     }
 
                     g_array_free (array, TRUE);
@@ -3250,13 +3248,13 @@ gjs_g_arg_release_internal(JSContext  *context,
                 guint i;
 
                 for (i = 0; i < array->len; i++) {
-                    GArgument arg;
+                    GArgument arg_iter;
 
-                    arg.v_pointer = g_ptr_array_index (array, i);
+                    arg_iter.v_pointer = g_ptr_array_index (array, i);
                     gjs_g_argument_release(context,
                                            transfer,
                                            param_info,
-                                           &arg);
+                                           &arg_iter);
                 }
             }
 

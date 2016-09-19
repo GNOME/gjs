@@ -1756,7 +1756,6 @@ gjs_coverage_constructed(GObject *object)
     JS_SetOptions(context, options_flags);
 
     if (!bootstrap_coverage(coverage)) {
-        JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
         JSAutoCompartment compartment(context, JS_GetGlobalObject(context));
         gjs_log_exception(context);
     }
