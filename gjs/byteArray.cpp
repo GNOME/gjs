@@ -877,15 +877,8 @@ gjs_byte_array_peek_data (JSContext  *context,
     }
 }
 
-/* no idea what this is used for. examples in
- * spidermonkey use -1, -2, -3, etc. for tinyids.
- */
-enum ByteArrayTinyId {
-    BYTE_ARRAY_TINY_ID_LENGTH = -1
-};
-
 JSPropertySpec gjs_byte_array_proto_props[] = {
-    { "length", BYTE_ARRAY_TINY_ID_LENGTH,
+    { "length", 0,
       JSPROP_PERMANENT,
       JSOP_WRAPPER ((JSPropertyOp) byte_array_length_getter),
       JSOP_WRAPPER ((JSStrictPropertyOp) byte_array_length_setter),
