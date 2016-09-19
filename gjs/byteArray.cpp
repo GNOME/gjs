@@ -83,7 +83,7 @@ gjs_value_from_gsize(JSContext         *context,
                      gsize              v,
                      JS::MutableHandleValue value_p)
 {
-    if (v > (gsize) JSVAL_INT_MAX) {
+    if (v <= (gsize) JSVAL_INT_MAX) {
         value_p.set(INT_TO_JSVAL(v));
         return JS_TRUE;
     } else {
