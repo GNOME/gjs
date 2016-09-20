@@ -271,11 +271,6 @@ bool        gjs_object_require_property      (JSContext       *context,
                                               jsid             property_name,
                                               JS::Value       *value_p);
 
-JSObject   *gjs_new_object_for_constructor   (JSContext       *context,
-                                              JSClass         *clasp,
-                                              JS::Value       *vp)
-G_GNUC_DEPRECATED_FOR(JS_NewObjectForConstructor);
-
 bool        gjs_init_class_dynamic           (JSContext       *context,
                                               JSObject        *in_object,
                                               JSObject        *parent_proto,
@@ -399,11 +394,6 @@ bool        gjs_unichar_from_string          (JSContext       *context,
 
 const char* gjs_get_type_name                (JS::Value        value);
 
-bool        gjs_value_to_int64               (JSContext       *context,
-                                              const JS::Value  val,
-                                              gint64          *result)
-G_GNUC_DEPRECATED_FOR(JS::ToInt64);
-
 bool        gjs_parse_args                   (JSContext  *context,
                                               const char *function_name,
                                               const char *format,
@@ -416,40 +406,6 @@ bool        gjs_parse_call_args              (JSContext    *context,
                                               const char   *format,
                                               JS::CallArgs &args,
                                               ...);
-
-GjsRootedArray*   gjs_rooted_array_new        (void)
-G_GNUC_DEPRECATED_FOR(JS::AutoValueVector);
-void              gjs_rooted_array_append     (JSContext        *context,
-                                               GjsRootedArray *array,
-                                               JS::Value       value)
-G_GNUC_DEPRECATED_FOR(JS::AutoValueVector::append);
-JS::Value         gjs_rooted_array_get        (JSContext      *context,
-                                               GjsRootedArray *array,
-                                               int             i)
-G_GNUC_DEPRECATED_FOR(JS::AutoValueVector::operator[]);
-JS::Value        *gjs_rooted_array_get_data   (JSContext        *context,
-                                               GjsRootedArray *array)
-G_GNUC_DEPRECATED_FOR(JS::AutoValueVector::operator[]);
-int               gjs_rooted_array_get_length (JSContext        *context,
-                                               GjsRootedArray *array)
-G_GNUC_DEPRECATED_FOR(JS::AutoValueVector::length);
-JS::Value        *gjs_rooted_array_free       (JSContext        *context,
-                                               GjsRootedArray *array,
-                                               bool              free_segment)
-G_GNUC_DEPRECATED_FOR(JS::AutoValueVector);
-void              gjs_set_values              (JSContext        *context,
-                                               JS::Value        *locations,
-                                               int               n_locations,
-                                               JS::Value         initializer)
-G_GNUC_DEPRECATED_FOR(JS::AutoValueVector);
-void              gjs_root_value_locations    (JSContext        *context,
-                                               JS::Value        *locations,
-                                               int               n_locations)
-G_GNUC_DEPRECATED_FOR(JS::AutoValueVector);
-void              gjs_unroot_value_locations  (JSContext        *context,
-                                               JS::Value        *locations,
-                                               int               n_locations)
-G_GNUC_DEPRECATED_FOR(JS::AutoValueVector);
 
 /* Functions intended for more "internal" use */
 

@@ -35,20 +35,6 @@
 #include <string.h>
 #include <math.h>
 
-/*
- * This shim was because of a bug in JS_NewObjectForConstructor in JS 1.8.5. It
- * attempted to retrieve the JSClass from private fields in the constructor
- * function, which failed for our "dynamic classes".
- * This function is deprecated.
- */
-JSObject *
-gjs_new_object_for_constructor(JSContext *context,
-                               JSClass   *clasp,
-                               JS::Value *vp)
-{
-    return JS_NewObjectForConstructor(context, clasp, vp);
-}
-
 bool
 gjs_init_class_dynamic(JSContext       *context,
                        JSObject        *in_object,

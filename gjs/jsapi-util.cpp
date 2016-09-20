@@ -814,24 +814,6 @@ gjs_get_type_name(JS::Value value)
     }
 }
 
-/**
- * gjs_value_to_int64:
- * @context: the Javascript context object
- * @val: Javascript value to convert
- * @result: location to store the return value
- *
- * Converts a Javascript value into the nearest 64 bit signed value.
- *
- * Deprecated: Use JS::ToInt64() instead.
- */
-bool
-gjs_value_to_int64(JSContext      *context,
-                   const JS::Value val,
-                   gint64         *result)
-{
-    return JS::ToInt64(context, val, (int64_t *) result);
-}
-
 static bool
 gjs_parse_args_valist (JSContext  *context,
                        const char *function_name,

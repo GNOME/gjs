@@ -41,30 +41,7 @@ _Pragma("clang diagnostic pop")
 #elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
 _Pragma("GCC diagnostic pop")
 #endif
-#include <stdbool.h>
-#include <glib.h>
 
 #include "jsapi-util.h"
-
-G_BEGIN_DECLS
-
-#define JSVAL_IS_OBJECT(obj) \
-    _Pragma("GCC warning \"JSVAL_IS_OBJECT is deprecated. Use JS::Value::isObjectOrNull() instead.\"") \
-    ((obj).isObjectOrNull())
-
-#define JS_GetGlobalObject(cx) \
-    _Pragma("GCC warning \"JS_GetGlobalObject is deprecated. Use JS_GetGlobalForObject() or JS_GetGlobalForScopeChain() instead.\"") \
-    gjs_get_global_object(cx)
-
-static bool G_GNUC_UNUSED G_GNUC_DEPRECATED_FOR(JS::NumberValue)
-JS_NewNumberValue(JSContext *cx,
-                  double     d,
-                  JS::Value *rval)
-    {
-        *rval = JS_NumberValue(d);
-        return rval->isNumber();
-    }
-
-G_END_DECLS
 
 #endif  /* __GJS_COMPAT_H__ */
