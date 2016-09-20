@@ -1,3 +1,9 @@
+Version 1.46.0
+--------------
+
+- Be future proof against Format fixes in SpiderMonkey [Giovanni Campagna,
+  #770111]
+
 Version 1.45.4
 --------------
 - Release out args before freeing caller-allocated structs [Florian Müllner,
