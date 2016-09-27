@@ -13,7 +13,7 @@ AM_INIT_AUTOMAKE([1.11.1 dist-xz no-dist-gzip tar-ustar -Wno-portability])
 AX_IS_RELEASE([git-directory])
 AC_CONFIG_SRCDIR([gjs/console.cpp])
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 AC_DEFINE([GJS_VERSION], pkg_int_version, [The gjs version as an integer])
 
