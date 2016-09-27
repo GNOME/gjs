@@ -134,18 +134,13 @@ done
 if test $gjs_cv_lib_readline = no; then
   AC_MSG_RESULT([none])
   READLINE_LIBS=""
+  ac_cv_header_readline_readline_h=no
 else
   AC_MSG_RESULT([$READLINE_LIBS])
-  AC_DEFINE(HAVE_LIBREADLINE, 1,
-    [Define if you have the readline library (-lreadline).])
+  AC_CHECK_HEADERS([readline/readline.h])
 fi
 
-AC_TRY_CPP([#include <readline/readline.h>],
-have_readline=yes, have_readline=no)
-
-AM_CONDITIONAL([HAVE_READLINE], [test x$have_readline = xyes])
 AC_SUBST([READLINE_LIBS])
-AC_SUBST([HAVE_READLINE])
 
 # End of readline checks: restore LIBS
 LIBS=$LIBS_no_readline
@@ -241,7 +236,7 @@ AC_MSG_RESULT([
 
 	cairo:			${have_cairo}
 	GTK+:			${have_gtk}
-	readline:		${have_readline}
+	readline:		${ac_cv_header_readline_readline_h}
 	dtrace:			${ENABLE_DTRACE}
 	systemtap:		${ENABLE_SYSTEMTAP}
 	Run tests under:	${TEST_MSG}

@@ -43,7 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_LIBREADLINE
+#ifdef HAVE_READLINE_READLINE_H
 #include <stdio.h>
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -127,7 +127,7 @@ gjs_console_error_reporter(JSContext *cx, const char *message, JSErrorReport *re
     g_free(prefix);
 }
 
-#ifdef HAVE_LIBREADLINE
+#ifdef HAVE_READLINE_READLINE_H
 static bool
 gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
 {
