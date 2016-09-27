@@ -1010,9 +1010,7 @@ gjs_serialize_statistics(GjsCoverage *coverage)
     JSRuntime *js_runtime = JS_GetRuntime(js_context);
 
     JSAutoRequest ar(js_context);
-    JSAutoCompartment ac(js_context,
-                         JS_GetGlobalForObject(js_context,
-                                               priv->coverage_statistics));
+    JSAutoCompartment ac(js_context, priv->coverage_statistics);
 
     JS::RootedValue string_value_return(js_runtime);
 
