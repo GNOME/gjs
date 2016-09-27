@@ -94,7 +94,6 @@ libgjs_la_CPPFLAGS =		\
 	-I$(top_srcdir)/gi	\
 	-DGJS_COMPILATION
 libgjs_la_LDFLAGS = 		\
-	$(EXTRA_LINK_FLAGS)	\
 	-export-symbols-regex "^[^_]" -version-info 0:0:0	\
 	-no-undefined \
 	-rdynamic

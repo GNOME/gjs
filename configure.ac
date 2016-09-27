@@ -194,24 +194,10 @@ dnl
 dnl Check for -Bsymbolic-functions linker flag used to avoid
 dnl intra-library PLT jumps, if available.
 dnl
-AC_ARG_ENABLE(Bsymbolic,
-              [AS_HELP_STRING([--disable-Bsymbolic],
-                              [avoid linking with -Bsymbolic])],,
-              [SAVED_LDFLAGS="${LDFLAGS}"
-               AC_MSG_CHECKING([for -Bsymbolic-functions linker flag])
-               LDFLAGS=-Wl,-Bsymbolic-functions
-               AC_TRY_LINK([], [int main (void) { return 0; }],
-                           AC_MSG_RESULT(yes)
-                           enable_Bsymbolic=yes,
-                           AC_MSG_RESULT(no)
-                           enable_Bsymbolic=no)
-               LDFLAGS="${SAVED_LDFLAGS}"])
-
-if test "x${enable_Bsymbolic}" = "xyes"; then
-  EXTRA_LINK_FLAGS=-Wl,-Bsymbolic-functions
-fi
-
-AC_SUBST(EXTRA_LINK_FLAGS)
+AC_ARG_ENABLE([Bsymbolic],
+  [AS_HELP_STRING([--disable-Bsymbolic], [avoid linking with -Bsymbolic])])
+AS_IF([test "x$enable_Bsymbolic" != "xno"],
+  [AX_APPEND_LINK_FLAGS([-Bsymbolic-functions])])
 
 AC_ARG_WITH([xvfb-tests],
   [AS_HELP_STRING([--with-xvfb-tests],
