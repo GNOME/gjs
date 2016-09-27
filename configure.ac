@@ -27,19 +27,13 @@ AM_SILENT_RULES([yes])
 # our first pkg-config invocation is conditional, ensure macros still work
 PKG_PROG_PKG_CONFIG
 
-AC_PROG_CC
-AM_PROG_CC_C_O
 AC_PROG_CXX
 AX_CXX_COMPILE_STDCXX_11
 AC_ISC_POSIX
-AC_HEADER_STDC
 
 LT_PREREQ([2.2.0])
 # no stupid static libraries
 LT_INIT([disable-static])
-
-# Checks for typedefs, structures, and compiler characteristics.
-AC_C_CONST
 
 GNOME_CXX_WARNINGS([maximum])
 
@@ -195,9 +189,6 @@ if test "x${ENABLE_DTRACE}" = xyes -o "x${ENABLE_SYSTEMTAP}" = xyes; then
                    AC_MSG_ERROR([tracing support needs sys/sdt.h header])])
   AC_DEFINE([HAVE_DTRACE], [1], [Define to 1 if using dtrace probes.])
 fi
-
-# Checks for typedefs, structures, and compiler characteristics.
-AC_C_CONST
 
 dnl
 dnl Check for -Bsymbolic-functions linker flag used to avoid
