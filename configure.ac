@@ -34,11 +34,9 @@ AX_CXX_COMPILE_STDCXX_11
 AC_ISC_POSIX
 AC_HEADER_STDC
 
+LT_PREREQ([2.2.0])
 # no stupid static libraries
-AM_DISABLE_STATIC
-# avoid libtool for LTCOMPILE, use it only to link
-AC_PROG_LIBTOOL
-dnl DOLT
+LT_INIT([disable-static])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
