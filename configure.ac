@@ -44,7 +44,6 @@ dnl DOLT
 AC_C_CONST
 
 GNOME_CXX_WARNINGS([maximum])
-GNOME_MAINTAINER_MODE_DEFINES
 
 # coverage
 AC_ARG_ENABLE([coverage],
