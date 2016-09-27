@@ -23,7 +23,8 @@ const Bar = new Lang.Class({
     Name: 'Bar',
     Extends: GObject.Object,
     Properties: {
-        'prop': GObject.ParamSpec.string('prop', '', '', GObject.ParamFlags.READWRITE, '')
+        'prop': GObject.ParamSpec.string('prop', '', '',
+            GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT, ''),
     }
 });
 
