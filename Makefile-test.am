@@ -30,6 +30,10 @@ RUN_WITH_DBUS =
 TEST_PROGS_OPTIONS += -s /js/GDBus
 endif
 
+if !ENABLE_GTK
+TEST_PROGS_OPTIONS += -s /js/Gtk
+endif
+
 GTESTER = ${XVFB_START} ${TESTS_ENVIRONMENT} ${RUN_WITH_DBUS} gtester
 CLEANFILES += uninstalled-system-test-bus.conf uninstalled-test-bus.conf
 clean-local: test-user-data-clean
