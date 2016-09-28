@@ -41,28 +41,12 @@ AC_PROG_SED
 
 GNOME_CXX_WARNINGS([maximum])
 
-# coverage
-AC_ARG_ENABLE([coverage],
-              [AS_HELP_STRING([--enable-coverage],
-                              [enable code coverage])],
-              , [enable_coverage=no])
-if test x$enable_coverage = xyes; then
-    if test x$GCC != xyes; then
-        AC_MSG_ERROR([GCC is required for --enable-coverage])
-    fi
-
-    AC_PATH_TOOL([LCOV], [lcov])
-    AC_PATH_TOOL([GENHTML], [genhtml])
-
-    if test x$LCOV = x || test x$GENHTML = x; then
-        AC_MSG_ERROR([lcov and genhtml are required for --enable-coverage])
-    fi
-
-    CFLAGS="$CFLAGS -g -O0 --coverage"
-    CXXFLAGS="$CXXFLAGS -g -O0 --coverage"
-    LIBS="$LIBS -lgcov"
-fi
-AM_CONDITIONAL([ENABLE_COVERAGE], [test x$enable_coverage = xyes])
+AX_CODE_COVERAGE
+dnl Clang does not need to link with -lgcov
+AX_CHECK_LINK_FLAG([-lgcov],, [
+	CODE_COVERAGE_LIBS=
+	CODE_COVERAGE_LDFLAGS=
+])
 
 # Checks for libraries.
 m4_define(glib_required_version, 2.42.0)
@@ -243,4 +227,5 @@ AC_MSG_RESULT([
 	dtrace:			${enable_dtrace:-no}
 	systemtap:		${enable_systemtap:-no}
 	Run tests under:	${TEST_MSG}
+	Code coverage:		${enable_code_coverage}
 ])

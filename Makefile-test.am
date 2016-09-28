@@ -126,35 +126,16 @@ TESTS_ENVIRONMENT =							\
 	G_FILENAME_ENCODING=latin1	# ensure filenames are not utf8	\
 	DBUS_UUIDGEN="$(DBUS_UUIDGEN)"
 
-if ENABLE_COVERAGE
+if CODE_COVERAGE_ENABLED
 TESTS_ENVIRONMENT += \
 	GJS_UNIT_COVERAGE_OUTPUT=lcov \
 	GJS_UNIT_COVERAGE_PREFIX=resource:///org/gnome/gjs/
 endif
 
-########################################################################
-if ENABLE_COVERAGE
-lcov:
-	test -d lcov || mkdir lcov
-	$(LCOV) --compat-libtool --directory . --capture -o lcov/lcov_tmp.info
-	$(LCOV) --extract lcov/lcov_tmp.info "$(PWD)/*" -o lcov/lcov.info
-	rm -f lcov/lcov_tmp.info
-	$(GENHTML) --legend -o lcov lcov/lcov.info lcov/coverage.lcov
-
-lcov-clean:
-	find . -name '*.gcda' -delete
-	rm -rf lcov
-
-lcov-realclean: lcov-clean
-	find . -name '*.gcno' -delete
-
-clean-local: lcov-realclean
-
-.PHONY: lcov lcov-clean lcov-realclean
-else
-lcov:
-	@echo >&1 "*** ERROR: 'configure --enable-coverage' required"
-	@exit 1
-
-.PHONY: lcov
-endif
+CODE_COVERAGE_IGNORE_PATTERN = */include/*
+CODE_COVERAGE_GENHTML_OPTIONS = 			\
+	lcov/coverage.lcov 				\
+	--prefix $(abs_top_builddir)/lcov/org/gnome/gjs	\
+	--prefix $(abs_top_builddir) 			\
+	$(NULL)
+@CODE_COVERAGE_RULES@
