@@ -29,7 +29,6 @@ PKG_PROG_PKG_CONFIG
 
 AC_PROG_CXX
 AX_CXX_COMPILE_STDCXX_11
-AC_ISC_POSIX
 
 LT_PREREQ([2.2.0])
 # no stupid static libraries
