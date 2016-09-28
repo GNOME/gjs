@@ -63,9 +63,6 @@ AM_CONDITIONAL([ENABLE_COVERAGE], [test x$enable_coverage = xyes])
 # Checks for libraries.
 m4_define(glib_required_version, 2.42.0)
 
-AC_CHECK_HEADERS([malloc.h])
-AC_CHECK_FUNCS(mallinfo)
-
 GOBJECT_INTROSPECTION_REQUIRE([1.41.4])
 
 common_packages="gmodule-2.0 gthread-2.0 gio-2.0 >= glib_required_version mozjs-24"
