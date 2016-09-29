@@ -1901,7 +1901,6 @@ gjs_define_object_class(JSContext              *context,
     const char *constructor_name;
     JSObject *prototype;
     JSObject *parent_proto;
-    JSObject *global;
 
     JS::Value value;
     ObjectInstance *priv;
@@ -2023,8 +2022,6 @@ JSObject*
 gjs_object_from_g_object(JSContext    *context,
                          GObject      *gobj)
 {
-    JSObject *global;
-
     if (gobj == NULL)
         return NULL;
 

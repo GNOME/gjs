@@ -515,7 +515,6 @@ static JSObject *
 byte_array_get_prototype(JSContext *context)
 {
     JS::Value retval;
-    JSObject *prototype;
 
     retval = gjs_get_global_slot (context, GJS_GLOBAL_SLOT_BYTE_ARRAY_PROTOTYPE);
 

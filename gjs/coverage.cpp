@@ -975,8 +975,6 @@ gjs_get_path_checksum(const char *path)
     return checksum;
 }
 
-static unsigned int COVERAGE_STATISTICS_CACHE_MAGIC = 0xC0432463;
-
 /* The binary data for the cache has the following structure:
  *
  * {
@@ -1043,22 +1041,6 @@ gjs_serialize_statistics(GjsCoverage *coverage)
                             strlen(statistics_as_json_string));
 }
 
-static JSObject *
-gjs_get_generic_object_constructor(JSContext        *context,
-                                   JSRuntime        *runtime,
-                                   JS::HandleObject  global_object)
-{
-    JSAutoRequest ar(context);
-    JSAutoCompartment ac(context, global_object);
-
-    JS::Value object_constructor_value;
-    if (!JS_GetProperty(context, global_object, "Object", &object_constructor_value) ||
-        !object_constructor_value.isObject())
-        g_assert_not_reached();
-
-    return &object_constructor_value.toObject();
-}
-
 static JSString *
 gjs_deserialize_cache_to_object_for_compartment(JSContext        *context,
                                                 JS::HandleObject global_object,
@@ -1123,8 +1105,7 @@ gjs_fetch_statistics_from_js(GjsCoverage *coverage,
     JS::RootedObject rooted_coverage_statistics(JS_GetRuntime(js_context),
                                                 priv->coverage_statistics);
 
-    char                      **file_iter = coverage_files;
-    GjsCoverageFileStatistics *statistics_iter = (GjsCoverageFileStatistics *) file_statistics_array->data;
+    char **file_iter = coverage_files;
     while (*file_iter) {
         GjsCoverageFileStatistics statistics;
         if (fetch_coverage_file_statistics_from_js(js_context,
@@ -1391,22 +1372,6 @@ get_filename_from_filename_as_js_string(JSContext    *context,
     return filename;
 }
 
-static GFile *
-get_file_from_filename_as_js_string(JSContext    *context,
-                                    JS::CallArgs &args) {
-    char *filename = get_filename_from_filename_as_js_string(context, args);
-
-    if (!filename) {
-        gjs_throw(context, "Failed to parse arguments for filename");
-        return NULL;
-    }
-
-    GFile *file = g_file_new_for_commandline_arg(filename);
-
-    g_free(filename);
-    return file;
-}
-
 static JSBool
 coverage_get_file_modification_time(JSContext *context,
                                     unsigned  argc,
@@ -1446,8 +1411,7 @@ coverage_get_file_checksum(JSContext *context,
                            JS::Value *vp)
 {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    JSRuntime    *runtime = JS_GetRuntime(context);
-    GTimeVal mtime;
+    JSRuntime *runtime = JS_GetRuntime(context);
     char *filename = get_filename_from_filename_as_js_string(context, args);
 
     if (!filename)
@@ -1480,7 +1444,6 @@ coverage_get_file_contents(JSContext *context,
     GFile *file = NULL;
     char *script = NULL;
     gsize script_len;
-    JSString *script_jsstr;
     GError *error = NULL;
 
     if (!gjs_parse_call_args(context, "getFileContents", args, "s",

@@ -1770,11 +1770,9 @@ gjs_value_to_g_argument(JSContext      *context,
         gpointer data;
         gsize length;
         GIArrayType array_type = g_type_info_get_array_type(type_info);
-        GITypeTag element_type;
         GITypeInfo *param_info;
 
         param_info = g_type_info_get_param_type(type_info, 0);
-        element_type = g_type_info_get_tag(param_info);
 
         /* First, let's handle the case where we're passed an instance
          * of our own byteArray class.

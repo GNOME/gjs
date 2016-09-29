@@ -763,7 +763,6 @@ gjs_lookup_generic_constructor(JSContext  *context,
                                GIBaseInfo *info)
 {
     JSObject *in_object;
-    JSObject *constructor;
     const char *constructor_name;
     JS::Value value;
 

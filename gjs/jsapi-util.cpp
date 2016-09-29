@@ -646,34 +646,6 @@ gjs_call_function_value(JSContext             *context,
     return result;
 }
 
-static bool
-log_prop(JSContext  *context,
-         JSObject   *obj,
-         JS::Value   id,
-         JS::Value  *value_p,
-         const char *what)
-{
-    if (id.isString()) {
-        char *name;
-
-        gjs_string_to_utf8(context, id, &name);
-        gjs_debug(GJS_DEBUG_PROPS,
-                  "prop %s: %s",
-                  name, what);
-        g_free(name);
-    } else if (id.isInt32()) {
-        gjs_debug(GJS_DEBUG_PROPS,
-                  "prop %d: %s",
-                  id.toInt32(), what);
-    } else {
-        gjs_debug(GJS_DEBUG_PROPS,
-                  "prop not-sure-what: %s",
-                  what);
-    }
-
-    return true;
-}
-
 /* get a debug string for type tag in JS::Value */
 const char*
 gjs_get_type_name(JS::Value value)

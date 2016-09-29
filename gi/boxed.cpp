@@ -539,7 +539,6 @@ get_field_info (JSContext *context,
 {
     GIFieldInfo *field_info;
     char *name;
-    JS::Value value;
 
     if (!priv->field_map)
         priv->field_map = get_field_map(priv->info);
