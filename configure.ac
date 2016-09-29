@@ -36,6 +36,8 @@ LT_INIT([disable-static])
 
 # Other programs
 AC_PROG_MKDIR_P
+AC_PROG_LN_S
+AC_PROG_SED
 
 GNOME_CXX_WARNINGS([maximum])
 

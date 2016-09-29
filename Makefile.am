@@ -198,7 +198,7 @@ EXTRA_DIST += $(tapset_in_files)
 if ENABLE_SYSTEMTAP
 gjs/gjs.stp: gjs/gjs.stp.in Makefile
 	$(AM_V_GEN)$(MKDIR_P) $(@D) && \
-	sed -e s,@EXPANDED_LIBDIR@,$(libdir), < $< > $@.tmp && mv $@.tmp $@
+	$(SED) -e s,@EXPANDED_LIBDIR@,$(libdir), < $< > $@.tmp && mv $@.tmp $@
 tapsetdir   = $(DESTDIR)$(datadir)/systemtap/tapset
 tapset_DATA = $(tapset_in_files:.stp.in=.stp)
 endif
@@ -224,7 +224,7 @@ gjs_console_LDFLAGS = -rdynamic
 gjs_console_SOURCES = gjs/console.cpp
 
 install-exec-hook:
-	(cd $(DESTDIR)$(bindir) && ln -sf gjs-console$(EXEEXT) gjs$(EXEEXT))
+	(cd $(DESTDIR)$(bindir) && $(LN_S) -f gjs-console$(EXEEXT) gjs$(EXEEXT))
 
 include Makefile-test.am
 include Makefile-insttest.am
@@ -249,7 +249,7 @@ COMPRESSION=.bz2
 PACKAGE=@PACKAGE@
 VERSION=@VERSION@
 DISTNAME=$(PACKAGE)-$(VERSION).tar$(COMPRESSION)
-TAG_VERSION := $(shell echo $(VERSION) |sed s/\\\./_/g)
+TAG_VERSION := $(shell echo $(VERSION) | $(SED) s/\\\./_/g)
 
 prepare-release-tag: Makefile
 	git tag -m "Tag $(TAG_VERSION)" -a $(TAG_PREFIX)$(TAG_VERSION)

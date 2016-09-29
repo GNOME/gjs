@@ -13,7 +13,7 @@ endif
 
 jsunit.test: installed-tests/jsunit.test.in Makefile
 	$(AM_V_GEN)$(MKDIR_P) $(@D) && \
-	sed -e s,@pkglibexecdir\@,$(pkglibexecdir), < $< > $@.tmp && mv $@.tmp $@
+	$(SED) -e s,@pkglibexecdir\@,$(pkglibexecdir), < $< > $@.tmp && mv $@.tmp $@
 
 gjsinsttestdir = $(pkglibexecdir)/installed-tests
 gjsinsttest_PROGRAMS = 
@@ -186,7 +186,7 @@ endif
 
 %.test: installed-tests/scripts/%.js installed-tests/script.test.in Makefile
 	$(AM_V_GEN)$(MKDIR_P) $(@D) && \
-	sed -e s,@pkglibexecdir\@,$(pkglibexecdir), \
+	$(SED) -e s,@pkglibexecdir\@,$(pkglibexecdir), \
 		-e s,@name\@,$(notdir $<), \
 		< $(srcdir)/installed-tests/script.test.in > $@.tmp && \
 	mv $@.tmp $@
