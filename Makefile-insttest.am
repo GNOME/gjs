@@ -62,7 +62,10 @@ check_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
 common_test_ldflags += -rpath /nowhere
 endif
 
-nodist_libregress_la_SOURCES = $(GI_DATADIR)/tests/regress.c $(GI_DATADIR)/tests/regress.h
+nodist_libregress_la_SOURCES =		\
+	installed-tests/regress.c	\
+	installed-tests/regress.h	\
+	$(NULL)
 libregress_la_CPPFLAGS = $(AM_CPPFLAGS) $(GJS_CFLAGS) $(GJS_GDBUS_CFLAGS)
 libregress_la_LDFLAGS = $(common_test_ldflags) $(GJS_GDBUS_LIBS)
 libregress_la_LIBADD = $(common_test_libadd)
@@ -74,11 +77,17 @@ libregress_scannerflags_includes += --include=cairo-1.0
 else
 libregress_la_CPPFLAGS += -D_GI_DISABLE_CAIRO
 endif
-nodist_libwarnlib_la_SOURCES = $(GI_DATADIR)/tests/warnlib.c $(GI_DATADIR)/tests/warnlib.h
+nodist_libwarnlib_la_SOURCES =		\
+	installed-tests/warnlib.c	\
+	installed-tests/warnlib.h	\
+	$(NULL)
 libwarnlib_la_CPPFLAGS = $(AM_CPPFLAGS) $(GJS_CFLAGS)
 libwarnlib_la_LDFLAGS = $(common_test_ldflags)
 libwarnlib_la_LIBADD = $(common_test_libadd)
-nodist_libgimarshallingtests_la_SOURCES = $(GI_DATADIR)/tests/gimarshallingtests.c $(GI_DATADIR)/tests/gimarshallingtests.h
+nodist_libgimarshallingtests_la_SOURCES =	\
+	installed-tests/gimarshallingtests.c	\
+	installed-tests/gimarshallingtests.h	\
+	$(NULL)
 libgimarshallingtests_la_CPPFLAGS = $(AM_CPPFLAGS) $(GJS_CFLAGS)
 libgimarshallingtests_la_LDFLAGS = $(common_test_ldflags)
 libgimarshallingtests_la_LIBADD = $(common_test_libadd)

@@ -6,6 +6,7 @@
 *~
 .deps/
 .libs/
+.dirstamp
 INSTALL
 Makefile
 Makefile.in
@@ -41,6 +42,13 @@ valgrind.gjs-tests.log
 valgrind.gjs-unit.log
 installed-tests/gjs-installed-tests
 installed-tests/gjs-installed-tests.testmeta
+installed-tests/gimarshallingtests.c
+installed-tests/gimarshallingtests.h
+installed-tests/gitestmacros.h
+installed-tests/regress.c
+installed-tests/regress.h
+installed-tests/warnlib.c
+installed-tests/warnlib.h
 jsunit
 jsunit.test
 jsunit-resources.[ch]

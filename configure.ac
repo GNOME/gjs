@@ -9,7 +9,7 @@ m4_define(pkg_int_version, (pkg_major_version * 100 + pkg_minor_version) * 100 +
 
 AC_PREREQ([2.64])
 AC_INIT([gjs],[pkg_version],[http://bugzilla.gnome.org/enter_bug.cgi?product=gjs],[gjs],[https://wiki.gnome.org/Projects/Gjs])
-AM_INIT_AUTOMAKE([1.11.1 dist-xz no-dist-gzip tar-ustar -Wno-portability])
+AM_INIT_AUTOMAKE([1.11.1 subdir-objects dist-xz no-dist-gzip tar-ustar -Wno-portability])
 AX_IS_RELEASE([git-directory])
 AC_CONFIG_SRCDIR([gjs/console.cpp])
 AC_CONFIG_MACRO_DIR([m4])
@@ -208,6 +208,17 @@ dnl automake 1.11/1.12 defines this but does not substitute it
 AC_SUBST([pkglibexecdir], ["${libexecdir}/${PACKAGE}"])
 
 AC_CONFIG_FILES([Makefile gjs-1.0.pc gjs-internals-1.0.pc])
+dnl Symlink the files from gobject-introspection's test libraries into the tree;
+dnl Automake plans to drop support for compiling them in-place.
+AC_CONFIG_LINKS([
+  installed-tests/gitestmacros.h:$GI_DATADIR/tests/gitestmacros.h
+  installed-tests/regress.c:$GI_DATADIR/tests/regress.c
+  installed-tests/regress.h:$GI_DATADIR/tests/regress.h
+  installed-tests/warnlib.c:$GI_DATADIR/tests/warnlib.c
+  installed-tests/warnlib.h:$GI_DATADIR/tests/warnlib.h
+  installed-tests/gimarshallingtests.c:$GI_DATADIR/tests/gimarshallingtests.c
+  installed-tests/gimarshallingtests.h:$GI_DATADIR/tests/gimarshallingtests.h
+])
 AC_OUTPUT
 
 TEST_MSG=
