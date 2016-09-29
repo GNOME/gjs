@@ -249,7 +249,7 @@ COMPRESSION=.bz2
 PACKAGE=@PACKAGE@
 VERSION=@VERSION@
 DISTNAME=$(PACKAGE)-$(VERSION).tar$(COMPRESSION)
-TAG_VERSION=$(shell echo $(VERSION) |sed s/\\\./_/g)
+TAG_VERSION := $(shell echo $(VERSION) |sed s/\\\./_/g)
 
 prepare-release-tag: Makefile
 	git tag -m "Tag $(TAG_VERSION)" -a $(TAG_PREFIX)$(TAG_VERSION)

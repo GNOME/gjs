@@ -51,7 +51,7 @@ gjs_tests_CPPFLAGS =				\
 	$(gjs_directory_defines)		\
 	-I$(top_srcdir)/test
 
-mock_js_resources_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/test/mock-js-resources.gresource.xml)
+mock_js_resources_files := $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/test/mock-js-resources.gresource.xml)
 mock-js-resources.h: $(srcdir)/test/mock-js-resources.gresource.xml $(modules_resource_files)
 	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --sourcedir=$(builddir) --generate --c-name mock_js_resources $<
 mock-js-resources.c: $(srcdir)/test/mock-js-resources.gresource.xml $(modules_resource_files)
