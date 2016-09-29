@@ -217,7 +217,6 @@ gjs_console_CPPFLAGS = 		\
 	$(AM_CPPFLAGS)		\
         $(GOBJECT_CFLAGS)
 gjs_console_LDADD =		\
-	$(JS_LIBS)		\
 	$(GOBJECT_LIBS)		\
 	libgjs.la
 gjs_console_LDFLAGS = -rdynamic
