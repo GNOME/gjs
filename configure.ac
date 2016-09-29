@@ -17,8 +17,7 @@ AC_CONFIG_HEADERS([config.h])
 
 AC_DEFINE([GJS_VERSION], pkg_int_version, [The gjs version as an integer])
 
-GETTEXT_PACKAGE=gjs
-AC_SUBST([GETTEXT_PACKAGE])
+AC_SUBST([GETTEXT_PACKAGE], [gjs])
 AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], ["$GETTEXT_PACKAGE"], [The name of the gettext domain])
 
 AM_MAINTAINER_MODE([enable])
@@ -203,8 +202,7 @@ AS_IF([test "x$with_dbus_tests" != "xno"], [
 ])
 AM_CONDITIONAL([DBUS_TESTS], [test "x$with_dbus_tests" != "xno"])
 
-gjsjsdir="\${datadir}/gjs-1.0"
-AC_SUBST([gjsjsdir])
+AC_SUBST([gjsjsdir], [\${datadir}/gjs-1.0])
 
 dnl automake 1.11/1.12 defines this but does not substitute it
 AC_SUBST([pkglibexecdir], ["${libexecdir}/${PACKAGE}"])
