@@ -126,10 +126,7 @@ noinst_DATA += $(TEST_INTROSPECTION_GIRS:.gir=.typelib)
 endif
 CLEANFILES += $(TEST_INTROSPECTION_GIRS) $(TEST_INTROSPECTION_GIRS:.gir=.typelib)
 
-jstestsdir = $(gjsinsttestdir)/js
-dist_jstests_DATA =
-if BUILDOPT_INSTALL_TESTS
-dist_jstests_DATA += \
+common_jstests_files =						\
 	installed-tests/js/test0010basic.js		\
 	installed-tests/js/test0020importer.js		\
 	installed-tests/js/test0030basicBoxed.js		\
@@ -138,7 +135,6 @@ dist_jstests_DATA += \
 	installed-tests/js/testByteArray.js		\
 	installed-tests/js/testClass.js			\
 	installed-tests/js/testCoverage.js \
-	installed-tests/js/testGDBus.js			\
 	installed-tests/js/testExceptions.js		\
 	installed-tests/js/testEverythingBasic.js		\
 	installed-tests/js/testEverythingEncapsulated.js	\
@@ -148,7 +144,6 @@ dist_jstests_DATA += \
 	installed-tests/js/testGIMarshalling.js		\
 	installed-tests/js/testGObjectClass.js		\
 	installed-tests/js/testGObjectInterface.js		\
-	installed-tests/js/testGtk.js			\
 	installed-tests/js/testGTypeClass.js		\
 	installed-tests/js/testInterface.js			\
 	installed-tests/js/testJS1_8.js			\
@@ -164,8 +159,29 @@ dist_jstests_DATA += \
 	installed-tests/js/testTweener.js			\
 	installed-tests/js/testUnicode.js
 
+EXTRA_DIST +=						\
+	$(common_jstests_files)				\
+	installed-tests/js/testCairo.js			\
+	installed-tests/js/testGtk.js			\
+	installed-tests/js/testGDBus.js			\
+	installed-tests/scripts/testSystemExit.js	\
+	$(NULL)
+
+if BUILDOPT_INSTALL_TESTS
+
+jstestsdir = $(gjsinsttestdir)/js
+jstests_DATA = $(common_jstests_files)
+
 if ENABLE_CAIRO
-dist_jstests_DATA += installed-tests/js/testCairo.js
+jstests_DATA += installed-tests/js/testCairo.js
+endif
+
+if ENABLE_GTK
+jstests_DATA += installed-tests/js/testGtk.js
+endif
+
+if DBUS_TESTS
+jstests_DATA += installed-tests/js/testGDBus.js
 endif
 
 %.test: installed-tests/scripts/%.js installed-tests/script.test.in Makefile
@@ -176,6 +192,6 @@ endif
 	mv $@.tmp $@
 
 jsscripttestsdir = $(gjsinsttestdir)/scripts
-dist_jsscripttests_DATA = installed-tests/scripts/testSystemExit.js
+jsscripttests_DATA = installed-tests/scripts/testSystemExit.js
 installedtestmeta_DATA += testSystemExit.test
 endif
