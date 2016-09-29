@@ -26,6 +26,7 @@ AM_SILENT_RULES([yes])
 
 # our first pkg-config invocation is conditional, ensure macros still work
 PKG_PROG_PKG_CONFIG
+PKG_INSTALLDIR
 
 AC_PROG_CXX
 AX_CXX_COMPILE_STDCXX_11
@@ -105,8 +106,7 @@ AS_IF([test x$have_gtk = xyes], [
 ], [AS_IF([test "x$with_gtk" = "xyes"],
   [AC_MSG_ERROR([GTK requested but not found])])])
 
-GI_DATADIR=$($PKG_CONFIG --variable=gidatadir gobject-introspection-1.0)
-AC_SUBST(GI_DATADIR)
+PKG_CHECK_VAR([GI_DATADIR], [gobject-introspection-1.0], [gidatadir])
 
 # readline
 LIBS_no_readline=$LIBS

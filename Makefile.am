@@ -71,7 +71,6 @@ noinst_HEADERS +=		\
 	util/misc.h
 
 ########################################################################
-pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = gjs-1.0.pc gjs-internals-1.0.pc
 
 EXTRA_DIST += 			\
