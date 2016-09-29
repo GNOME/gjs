@@ -79,29 +79,31 @@ PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
 
 # Optional cairo dep (enabled by default)
 AC_ARG_WITH(cairo,
-	    AS_HELP_STRING([--without-cairo], [Use cairo @<:@default=yes@:>@]),
-	    [], [with_cairo=yes])
-AS_IF([test x$with_cairo = xyes], [
-  PKG_CHECK_MODULES([GJS_CAIRO], [$gjs_cairo_packages], have_cairo=yes, have_cairo=no)
-  ])
+  [AS_HELP_STRING([--without-cairo], [Don't build cairo module])])
+AS_IF([test "x$with_cairo" != "xno"],
+  [PKG_CHECK_MODULES([GJS_CAIRO], [$gjs_cairo_packages],
+    [have_cairo=yes], [have_cairo=no])],
+  [have_cairo=no])
 AM_CONDITIONAL(ENABLE_CAIRO, test x$have_cairo = xyes)
 AS_IF([test x$have_cairo = xyes], [
   AC_DEFINE([ENABLE_CAIRO],[1],[Define if you want to build with cairo support])
-])
-PKG_CHECK_MODULES([GJS_CAIRO_XLIB], [cairo-xlib], [],
-  [AC_MSG_WARN([Cairo-xlib support not found])])
+  PKG_CHECK_MODULES([GJS_CAIRO_XLIB], [cairo-xlib], [],
+    [AC_MSG_WARN([Cairo-xlib support not found])])
+], [AS_IF([test "x$with_cairo" = "xyes"],
+  [AC_MSG_ERROR([Cairo requested but not found])])])
 
 # Optional GTK+ dep (enabled by default)
 AC_ARG_WITH(gtk,
-            AS_HELP_STRING([--without-gtk], [Use GTK+ @<:@default=yes@:>@]),
-            [], [with_gtk=yes])
-AS_IF([test x$with_gtk = xyes], [
-  PKG_CHECK_MODULES([GJS_GTK], [$gjs_gtk_packages], have_gtk=yes, have_gtk=no)
-  ], [have_gtk=no])
+  [AS_HELP_STRING([--without-gtk], [Don't build GTK-related code])])
+AS_IF([test "x$with_gtk" != "xno"],
+  [PKG_CHECK_MODULES([GJS_GTK], [$gjs_gtk_packages],
+    [have_gtk=yes], [have_gtk=no])],
+  [have_gtk=no])
 AM_CONDITIONAL(ENABLE_GTK, test x$have_gtk = xyes)
 AS_IF([test x$have_gtk = xyes], [
   AC_DEFINE([ENABLE_GTK],[1],[Define if you want to build with GTK+ support])
-])
+], [AS_IF([test "x$with_gtk" = "xyes"],
+  [AC_MSG_ERROR([GTK requested but not found])])])
 
 GI_DATADIR=$($PKG_CONFIG --variable=gidatadir gobject-introspection-1.0)
 AC_SUBST(GI_DATADIR)
@@ -144,42 +146,33 @@ LIBS=$LIBS_no_readline
 AC_CHECK_FUNCS([backtrace])
 
 AC_ARG_ENABLE(installed_tests,
-              AS_HELP_STRING([--enable-installed-tests],
-                             [Install test programs (default: no)]),,
-              [enable_installed_tests=no])
+  [AS_HELP_STRING([--enable-installed-tests],
+    [Install test programs @<:@default: no@:>@])])
 AM_CONDITIONAL(BUILDOPT_INSTALL_TESTS, test x$enable_installed_tests = xyes)
 
 dnl
 dnl Tracing
 dnl
 
-AC_MSG_CHECKING([whether to include systemtap tracing support])
-AC_ARG_ENABLE([systemtap],
-             [AS_HELP_STRING([--enable-systemtap],
-                              [Enable inclusion of systemtap trace support])],
-              [ENABLE_SYSTEMTAP="${enableval}"], [ENABLE_SYSTEMTAP='no'])
-AC_MSG_RESULT(${ENABLE_SYSTEMTAP})
-
-AC_MSG_CHECKING([whether to include dtrace tracing support])
 AC_ARG_ENABLE([dtrace],
-             [AS_HELP_STRING([--enable-dtrace],
-                              [Enable inclusion of dtrace trace support])],
-              [ENABLE_DTRACE="${enableval}"], [ENABLE_DTRACE='no'])
-AC_MSG_RESULT(${ENABLE_DTRACE})
+  [AS_HELP_STRING([--enable-dtrace],
+    [Include dtrace trace support @<:@default: no@:>@])])
 
-AM_CONDITIONAL([ENABLE_SYSTEMTAP], [test x$ENABLE_SYSTEMTAP = xyes])
-AM_CONDITIONAL([ENABLE_DTRACE], [test x$ENABLE_DTRACE = xyes -o x$ENABLE_SYSTEMTAP = xyes])
+AC_ARG_ENABLE([systemtap],
+  [AS_HELP_STRING([--enable-systemtap],
+    [Include systemtap trace support (implies --enable-dtrace) @<:@default: no@:>@])])
+AS_IF([test "x$enable_systemtap" = "xyes"], [enable_dtrace=yes])
+AM_CONDITIONAL([ENABLE_SYSTEMTAP], [test "x$enable_systemtap" = "xyes"])
 
-if test "x${ENABLE_DTRACE}" = xyes -o "x${ENABLE_SYSTEMTAP}" = xyes; then
-  AC_CHECK_PROGS(DTRACE, dtrace)
-  if test -z "$DTRACE"; then
-    AC_MSG_ERROR([dtrace not found])
-  fi
-  AC_CHECK_HEADER([sys/sdt.h], [SDT_H_FOUND='yes'],
-                  [SDT_H_FOUND='no';
-                   AC_MSG_ERROR([tracing support needs sys/sdt.h header])])
+AS_IF([test "x$enable_dtrace" = "xyes"], [
+  AC_PATH_PROG([DTRACE], [dtrace])
+  AS_IF([test -z "$DTRACE"],
+    [AC_MSG_ERROR([dtrace is required for --enable-dtrace or --enable-systemtap])])
+  AC_CHECK_HEADER([sys/sdt.h],,
+    [AC_MSG_ERROR([sys/sdt.h header is required for --enable-dtrace or --enable-systemtap])])
   AC_DEFINE([HAVE_DTRACE], [1], [Define to 1 if using dtrace probes.])
-fi
+])
+AM_CONDITIONAL([ENABLE_DTRACE], [test "x$enable_dtrace" = "xyes"])
 
 dnl
 dnl Check for -Bsymbolic-functions linker flag used to avoid
@@ -233,7 +226,7 @@ AC_MSG_RESULT([
 	cairo:			${have_cairo}
 	GTK+:			${have_gtk}
 	readline:		${ac_cv_header_readline_readline_h}
-	dtrace:			${ENABLE_DTRACE}
-	systemtap:		${ENABLE_SYSTEMTAP}
+	dtrace:			${enable_dtrace:-no}
+	systemtap:		${enable_systemtap:-no}
 	Run tests under:	${TEST_MSG}
 ])
