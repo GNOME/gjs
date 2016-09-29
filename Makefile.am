@@ -197,6 +197,7 @@ tapset_in_files = gjs/gjs.stp.in
 EXTRA_DIST += $(tapset_in_files)
 if ENABLE_SYSTEMTAP
 gjs/gjs.stp: gjs/gjs.stp.in Makefile
+	$(AM_V_GEN)$(MKDIR_P) $(@D) && \
 	sed -e s,@EXPANDED_LIBDIR@,$(libdir), < $< > $@.tmp && mv $@.tmp $@
 tapsetdir   = $(DESTDIR)$(datadir)/systemtap/tapset
 tapset_DATA = $(tapset_in_files:.stp.in=.stp)

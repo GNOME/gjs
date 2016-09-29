@@ -34,6 +34,9 @@ LT_PREREQ([2.2.0])
 # no stupid static libraries
 LT_INIT([disable-static])
 
+# Other programs
+AC_PROG_MKDIR_P
+
 GNOME_CXX_WARNINGS([maximum])
 
 # coverage

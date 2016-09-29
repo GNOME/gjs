@@ -12,6 +12,7 @@ installedtestmeta_DATA += jsunit.test
 endif
 
 jsunit.test: installed-tests/jsunit.test.in Makefile
+	$(AM_V_GEN)$(MKDIR_P) $(@D) && \
 	sed -e s,@pkglibexecdir\@,$(pkglibexecdir), < $< > $@.tmp && mv $@.tmp $@
 
 gjsinsttestdir = $(pkglibexecdir)/installed-tests
@@ -168,7 +169,11 @@ dist_jstests_DATA += installed-tests/js/testCairo.js
 endif
 
 %.test: installed-tests/scripts/%.js installed-tests/script.test.in Makefile
-	sed -e s,@pkglibexecdir\@,$(pkglibexecdir), -e s,@name\@,$(notdir $<), < $(srcdir)/installed-tests/script.test.in > $@.tmp && mv $@.tmp $@
+	$(AM_V_GEN)$(MKDIR_P) $(@D) && \
+	sed -e s,@pkglibexecdir\@,$(pkglibexecdir), \
+		-e s,@name\@,$(notdir $<), \
+		< $(srcdir)/installed-tests/script.test.in > $@.tmp && \
+	mv $@.tmp $@
 
 jsscripttestsdir = $(gjsinsttestdir)/scripts
 dist_jsscripttests_DATA = installed-tests/scripts/testSystemExit.js
