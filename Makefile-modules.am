@@ -9,11 +9,11 @@ noinst_LTLIBRARIES += $(NATIVE_MODULES)
 libgjs_la_LIBADD += $(NATIVE_MODULES)
 
 JS_NATIVE_MODULE_CPPFLAGS =	\
-        $(AM_CPPFLAGS)		\
+	$(AM_CPPFLAGS)		\
 	-DGJS_COMPILATION	\
-        $(GJS_CFLAGS)
+	$(GJS_CFLAGS)
 JS_NATIVE_MODULE_LIBADD =	\
-        $(GJS_LIBS)
+	$(GJS_LIBS)
 
 modules_resource_files := $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/modules/modules.gresource.xml)
 modules-resources.h: $(srcdir)/modules/modules.gresource.xml $(modules_resource_files)

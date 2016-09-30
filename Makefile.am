@@ -69,14 +69,14 @@ nobase_gjs_module_include_HEADERS =	\
 pkgconfig_DATA = gjs-1.0.pc gjs-internals-1.0.pc
 
 EXTRA_DIST += 			\
-	gjs-1.0.pc.in           \
+	gjs-1.0.pc.in		\
 	gjs-internals-1.0.pc.in
 
 ########################################################################
 gjs_directory_defines = 				\
 	-DGJS_TOP_SRCDIR=\"$(top_srcdir)\"		\
 	-DGJS_TOP_BUILDDIR=\"$(top_builddir)\"		\
-	-DGJS_JS_DIR=\"$(gjsjsdir)\"                    \
+	-DGJS_JS_DIR=\"$(gjsjsdir)\"			\
 	-DPKGLIBDIR=\"$(pkglibdir)\"
 
 ########################################################################
@@ -153,9 +153,9 @@ libgjs_la_SOURCES += \
 	gi/param.cpp	\
 	gi/proxyutils.cpp	\
 	gi/proxyutils.h		\
-        gi/repo.cpp	\
+	gi/repo.cpp	\
 	gi/union.cpp	\
-        gi/value.cpp	\
+	gi/value.cpp	\
 	gi/interface.cpp	\
 	gi/gtype.cpp	\
 	gi/gerror.cpp
@@ -221,7 +221,7 @@ bin_PROGRAMS += gjs-console
 
 gjs_console_CPPFLAGS = 		\
 	$(AM_CPPFLAGS)		\
-        $(GOBJECT_CFLAGS)
+	$(GOBJECT_CFLAGS)
 gjs_console_LDADD =		\
 	$(GOBJECT_LIBS)		\
 	libgjs.la
