@@ -65,17 +65,6 @@ nobase_gjs_module_include_HEADERS =	\
 	gi/gtype.h	\
 	gi/gerror.h
 
-noinst_HEADERS +=		\
-	gjs/jsapi-private.h	\
-	gjs/context-private.h	\
-	gi/proxyutils.h		\
-	util/crash.h		\
-	util/hash-x32.h		\
-	util/error.h		\
-	util/glib.h		\
-	util/log.h		\
-	util/misc.h
-
 ########################################################################
 pkgconfig_DATA = gjs-1.0.pc gjs-internals-1.0.pc
 
@@ -114,12 +103,14 @@ endif
 libgjs_la_SOURCES =		\
 	gjs/byteArray.cpp		\
 	gjs/context.cpp		\
+	gjs/context-private.h		\
 	gjs/importer.cpp		\
 	gjs/gi.h		\
 	gjs/gi.cpp		\
 	gjs/coverage-internal.h	\
 	gjs/coverage.cpp \
 	gjs/jsapi-private.cpp	\
+	gjs/jsapi-private.h		\
 	gjs/jsapi-util.cpp	\
 	gjs/jsapi-dynamic-class.cpp \
 	gjs/jsapi-util-array.cpp	\
@@ -133,11 +124,18 @@ libgjs_la_SOURCES =		\
 	modules/modules.cpp	\
 	modules/modules.h	\
 	util/error.cpp		\
+	util/error.h			\
 	util/hash-x32.cpp		\
+	util/hash-x32.h			\
 	util/glib.cpp		\
+	util/glib.h			\
 	util/crash.cpp		\
+	util/crash.h			\
 	util/log.cpp		\
-	util/misc.cpp
+	util/log.h			\
+	util/misc.cpp			\
+	util/misc.h			\
+	$(NULL)
 
 # For historical reasons, some files live in gi/
 libgjs_la_SOURCES += \
@@ -154,6 +152,7 @@ libgjs_la_SOURCES += \
 	gi/fundamental.cpp	\
 	gi/param.cpp	\
 	gi/proxyutils.cpp	\
+	gi/proxyutils.h		\
         gi/repo.cpp	\
 	gi/union.cpp	\
         gi/value.cpp	\
