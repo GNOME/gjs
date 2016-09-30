@@ -870,7 +870,7 @@ importer_new_resolve(JSContext *context,
 
     gjs_debug_jsprop(GJS_DEBUG_IMPORTER,
                      "Resolve prop '%s' hook obj %p priv %p",
-                     name, (void *)obj, priv);
+                     name, obj.get(), priv);
     if (priv == NULL) /* we are the prototype, or have the wrong class */
         goto out;
     JS_BeginRequest(context);
@@ -1162,7 +1162,7 @@ gjs_define_root_importer_object(JSContext        *context,
                                NULL, NULL,
                                GJS_MODULE_PROP_FLAGS)) {
         gjs_debug(GJS_DEBUG_IMPORTER, "DefineProperty imports on %p failed",
-                  (JSObject *) in_object);
+                  in_object.get());
         goto fail;
     }
 

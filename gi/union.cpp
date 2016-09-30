@@ -78,7 +78,7 @@ union_new_resolve(JSContext *context,
 
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook obj %p priv %p",
-                     name, (void *)obj, priv);
+                     name, obj.get(), priv);
 
     if (priv == NULL) {
         ret = false; /* wrong class */
