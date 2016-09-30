@@ -580,8 +580,8 @@ gjs_array_to_intarray(JSContext   *context,
 
         /* do whatever sign extension is appropriate */
         success = (is_signed) ?
-            JS_ValueToECMAInt32(context, elem, &(intval.i)) :
-            JS_ValueToECMAUint32(context, elem, &(intval.u));
+            JS::ToInt32(context, elem, &(intval.i)) :
+            JS::ToUint32(context, elem, &(intval.u));
 
         if (!success) {
             g_free(result);
@@ -678,7 +678,7 @@ gjs_array_to_floatarray(JSContext   *context,
         }
 
         /* do whatever sign extension is appropriate */
-        success = JS_ValueToNumber(context, elem, &val);
+        success = JS::ToNumber(context, elem, &val);
 
         if (!success) {
             g_free(result);
@@ -1111,7 +1111,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
                                          &value.toObject(), NULL,
                                          length_name,
                                          &length_value) ||
-            !JS_ValueToECMAUint32(context, length_value, &length)) {
+            !JS::ToUint32(context, length_value, &length)) {
             goto out;
         } else {
             if (!gjs_array_to_array(context,
@@ -1180,7 +1180,7 @@ gjs_value_to_g_argument(JSContext      *context,
     }
     case GI_TYPE_TAG_UINT8: {
         guint32 i;
-        if (!JS_ValueToECMAUint32(context, value, &i))
+        if (!JS::ToUint32(context, value, &i))
             wrong = true;
         if (i > G_MAXUINT8)
             out_of_range = true;
@@ -1199,7 +1199,7 @@ gjs_value_to_g_argument(JSContext      *context,
 
     case GI_TYPE_TAG_UINT16: {
         guint32 i;
-        if (!JS_ValueToECMAUint32(context, value, &i))
+        if (!JS::ToUint32(context, value, &i))
             wrong = true;
         if (i > G_MAXUINT16)
             out_of_range = true;
@@ -1214,7 +1214,7 @@ gjs_value_to_g_argument(JSContext      *context,
 
     case GI_TYPE_TAG_UINT32: {
         gdouble i;
-        if (!JS_ValueToNumber(context, value, &i))
+        if (!JS::ToNumber(context, value, &i))
             wrong = true;
         if (i > G_MAXUINT32 || i < 0)
             out_of_range = true;
@@ -1224,7 +1224,7 @@ gjs_value_to_g_argument(JSContext      *context,
 
     case GI_TYPE_TAG_INT64: {
         double v;
-        if (!JS_ValueToNumber(context, value, &v))
+        if (!JS::ToNumber(context, value, &v))
             wrong = true;
         if (v > G_MAXINT64 || v < G_MININT64)
             out_of_range = true;
@@ -1234,7 +1234,7 @@ gjs_value_to_g_argument(JSContext      *context,
 
     case GI_TYPE_TAG_UINT64: {
         double v;
-        if (!JS_ValueToNumber(context, value, &v))
+        if (!JS::ToNumber(context, value, &v))
             wrong = true;
         if (v < 0)
             out_of_range = true;
@@ -1244,13 +1244,12 @@ gjs_value_to_g_argument(JSContext      *context,
         break;
 
     case GI_TYPE_TAG_BOOLEAN:
-        if (!JS_ValueToBoolean(context, value, &arg->v_boolean))
-            wrong = true;
+        arg->v_boolean = JS::ToBoolean(value);
         break;
 
     case GI_TYPE_TAG_FLOAT: {
         double v;
-        if (!JS_ValueToNumber(context, value, &v))
+        if (!JS::ToNumber(context, value, &v))
             wrong = true;
         if (v > G_MAXFLOAT || v < - G_MAXFLOAT)
             out_of_range = true;
@@ -1259,7 +1258,7 @@ gjs_value_to_g_argument(JSContext      *context,
         break;
 
     case GI_TYPE_TAG_DOUBLE:
-        if (!JS_ValueToNumber(context, value, &arg->v_double))
+        if (!JS::ToNumber(context, value, &arg->v_double))
             wrong = true;
         break;
 
@@ -1645,7 +1644,7 @@ gjs_value_to_g_argument(JSContext      *context,
                                              &value.toObject(), NULL,
                                              length_name,
                                              &length_value) ||
-                !JS_ValueToECMAUint32(context, length_value, &length)) {
+                !JS::ToUint32(context, length_value, &length)) {
                 wrong = true;
             } else {
                 GList *list;

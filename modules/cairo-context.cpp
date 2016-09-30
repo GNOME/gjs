@@ -599,7 +599,7 @@ setDash_func(JSContext *context,
         if (elem.isUndefined())
             continue;
 
-        if (!JS_ValueToNumber(context, elem, &b))
+        if (!JS::ToNumber(context, elem, &b))
             goto out;
         if (b <= 0) {
             gjs_throw(context, "Dash value must be positive");

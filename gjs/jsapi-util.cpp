@@ -821,16 +821,16 @@ gjs_get_type_name(JS::Value value)
  *
  * Converts a Javascript value into the nearest 64 bit signed value.
  *
- * This function behaves indentically for rounding to JSValToInt32(), which
+ * This function behaves indentically for rounding to JS_ValueToInt32(), which
  * means that it rounds (0.5 toward positive infinity) rather than doing
- * a C-style truncation to 0. If we change to using JSValToEcmaInt32() then
- * this should be changed to match.
+ * a C-style truncation to 0. If we change to using JS::ToInt32() then this
+ * should be changed to match.
  *
  * Return value: If the javascript value converted to a number (see
- *   JS_ValueToNumber()) is NaN, or outside the range of 64-bit signed
- *   numbers, fails and sets an exception. Otherwise returns the value
- *   rounded to the nearest 64-bit integer. Like JS_ValueToInt32(),
- *   undefined throws, but null => 0, false => 0, true => 1.
+ *   JS::ToNumber()) is NaN, or outside the range of 64-bit signed numbers,
+ *   fails and sets an exception. Otherwise returns the value rounded to the
+ *   nearest 64-bit integer. Like JS::ToInt32(), undefined throws, but
+ *   null => 0, false => 0, true => 1.
  */
 bool
 gjs_value_to_int64(JSContext      *context,
@@ -842,7 +842,7 @@ gjs_value_to_int64(JSContext      *context,
         return true;
     } else {
         double value_double;
-        if (!JS_ValueToNumber(context, val, &value_double))
+        if (!JS::ToNumber(context, val, &value_double))
             return false;
 
         if (isnan(value_double) ||
@@ -1005,7 +1005,7 @@ gjs_parse_args_valist (JSContext  *context,
             break;
         case 'u': {
             gdouble num;
-            if (!js_value.isNumber() || !JS_ValueToNumber(context, js_value, &num)) {
+            if (!js_value.isNumber() || !JS::ToNumber(context, js_value, &num)) {
                 /* Our error message is going to be more useful */
                 JS_ClearPendingException(context);
                 arg_error_message = "Couldn't convert to unsigned integer";
@@ -1026,7 +1026,7 @@ gjs_parse_args_valist (JSContext  *context,
             break;
         case 'f': {
             double num;
-            if (!JS_ValueToNumber(context, js_value, &num)) {
+            if (!JS::ToNumber(context, js_value, &num)) {
                 /* Our error message is going to be more useful */
                 JS_ClearPendingException(context);
                 arg_error_message = "Couldn't convert to double";

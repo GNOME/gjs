@@ -116,10 +116,8 @@ gjs_value_to_gsize(JSContext         *context,
 {
     guint32 val32;
 
-    /* Just JS_ValueToECMAUint32() would work. However,
-     * we special case ints for two reasons:
-     *  - JS_ValueToECMAUint32() always goes via a double which is slow
-     *  - nicer error message on negative indices
+    /* Just JS::ToUint32() would work. However, we special case ints for a nicer
+     * error message on negative indices.
      */
     if (value.isInt32()) {
         int i = value.toInt32();
@@ -136,8 +134,7 @@ gjs_value_to_gsize(JSContext         *context,
          * a number) but it's what we use elsewhere in gjs too.
          */
 
-        ret = JS_ValueToECMAUint32(context, value,
-                                   &val32);
+        ret = JS::ToUint32(context, value, &val32);
         *v_p = val32;
         return ret;
     }

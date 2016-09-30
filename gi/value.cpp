@@ -422,7 +422,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
         }
     } else if (gtype == G_TYPE_UCHAR) {
         guint16 i;
-        if (JS_ValueToUint16(context, value, &i) && i <= UCHAR_MAX) {
+        if (JS::ToUint16(context, value, &i) && i <= UCHAR_MAX) {
             g_value_set_uchar(gvalue, (unsigned char)i);
         } else {
             gjs_throw(context,
@@ -442,7 +442,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
         }
     } else if (gtype == G_TYPE_DOUBLE) {
         gdouble d;
-        if (JS_ValueToNumber(context, value, &d)) {
+        if (JS::ToNumber(context, value, &d)) {
             g_value_set_double(gvalue, d);
         } else {
             gjs_throw(context,
@@ -452,7 +452,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
         }
     } else if (gtype == G_TYPE_FLOAT) {
         gdouble d;
-        if (JS_ValueToNumber(context, value, &d)) {
+        if (JS::ToNumber(context, value, &d)) {
             g_value_set_float(gvalue, d);
         } else {
             gjs_throw(context,
@@ -462,7 +462,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
         }
     } else if (gtype == G_TYPE_UINT) {
         guint32 i;
-        if (JS_ValueToECMAUint32(context, value, &i)) {
+        if (JS::ToUint32(context, value, &i)) {
             g_value_set_uint(gvalue, i);
         } else {
             gjs_throw(context,
@@ -471,20 +471,8 @@ gjs_value_to_g_value_internal(JSContext    *context,
             return false;
         }
     } else if (gtype == G_TYPE_BOOLEAN) {
-        JSBool b;
-
-        /* JS_ValueToBoolean() pretty much always succeeds,
-         * which is maybe surprising sometimes, but could
-         * be handy also...
-         */
-        if (JS_ValueToBoolean(context, value, &b)) {
-            g_value_set_boolean(gvalue, b);
-        } else {
-            gjs_throw(context,
-                      "Wrong type %s; boolean expected",
-                      gjs_get_type_name(value));
-            return false;
-        }
+        /* JS::ToBoolean() can't fail */
+        g_value_set_boolean(gvalue, JS::ToBoolean(value));
     } else if (g_type_is_a(gtype, G_TYPE_OBJECT) || g_type_is_a(gtype, G_TYPE_INTERFACE)) {
         GObject *gobj;
 
@@ -524,7 +512,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
                                              &value.toObject(), NULL,
                                              length_name,
                                              &length_value) ||
-                !JS_ValueToECMAUint32(context, length_value, &length)) {
+                !JS::ToUint32(context, length_value, &length)) {
                 gjs_throw(context,
                           "Wrong type %s; strv expected",
                           gjs_get_type_name(value));
