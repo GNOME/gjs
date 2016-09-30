@@ -42,7 +42,7 @@ JS::Value        gjs_cairo_context_create_proto         (JSContext       *contex
                                                          const char      *proto_name,
                                                          JSObject        *parent);
 cairo_t *        gjs_cairo_context_get_context          (JSContext       *context,
-                                                         JSObject        *object);
+                                                         JS::HandleObject object);
 JSObject *       gjs_cairo_context_from_context         (JSContext       *context,
                                                          cairo_t         *cr);
 void             gjs_cairo_context_init                 (JSContext       *context);
@@ -65,7 +65,7 @@ JS::Value        gjs_cairo_surface_create_proto         (JSContext       *contex
                                                          const char      *proto_name,
                                                          JSObject        *parent);
 void             gjs_cairo_surface_construct            (JSContext       *context,
-                                                         JSObject        *object,
+                                                         JS::HandleObject object,
                                                          cairo_surface_t *surface);
 void             gjs_cairo_surface_finalize_surface     (JSFreeOp        *fop,
                                                          JSObject        *object);
@@ -120,7 +120,7 @@ JS::Value        gjs_cairo_pattern_create_proto         (JSContext       *contex
                                                          const char      *proto_name,
                                                          JSObject        *parent);
 void             gjs_cairo_pattern_construct            (JSContext       *context,
-                                                         JSObject        *object,
+                                                         JS::HandleObject object,
                                                          cairo_pattern_t *pattern);
 void             gjs_cairo_pattern_finalize_pattern     (JSFreeOp        *fop,
                                                          JSObject        *object);

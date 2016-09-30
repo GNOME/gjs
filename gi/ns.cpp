@@ -203,7 +203,6 @@ static JSObject*
 ns_new(JSContext    *context,
        const char   *ns_name)
 {
-    JSObject *ns;
     JSObject *global;
     Ns *priv;
     JSBool found;
@@ -244,7 +243,7 @@ ns_new(JSContext    *context,
                   gjs_ns_class.name, prototype);
     }
 
-    ns = JS_NewObject(context, &gjs_ns_class, NULL, global);
+    JS::RootedObject ns(context, JS_NewObject(context, &gjs_ns_class, NULL, global));
     if (ns == NULL)
         g_error("No memory to create ns object");
 
@@ -255,7 +254,8 @@ ns_new(JSContext    *context,
     g_assert(priv_from_js(context, ns) == NULL);
     JS_SetPrivate(ns, priv);
 
-    gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE, "ns constructor, obj %p priv %p", ns, priv);
+    gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE, "ns constructor, obj %p priv %p",
+                        ns.get(), priv);
 
     priv = priv_from_js(context, ns);
     priv->gi_namespace = g_strdup(ns_name);

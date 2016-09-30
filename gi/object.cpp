@@ -23,6 +23,7 @@
 
 #include <config.h>
 
+#include <memory>
 #include <string.h>
 
 #include <gjs/gi.h>
@@ -242,8 +243,8 @@ static inline ObjectInstance *
 proto_priv_from_js(JSContext *context,
                    JSObject  *obj)
 {
-    JSObject *proto;
-    JS_GetPrototype(context, obj, &proto);
+    JS::RootedObject proto(context);
+    JS_GetPrototype(context, obj, proto.address());
     return priv_from_js(context, proto);
 }
 
@@ -1147,8 +1148,8 @@ gjs_object_prepare_shutdown (JSContext *context)
 }
 
 static ObjectInstance *
-init_object_private (JSContext *context,
-                     JSObject  *object)
+init_object_private (JSContext       *context,
+                     JS::HandleObject object)
 {
     ObjectInstance *proto_priv;
     ObjectInstance *priv;
@@ -1163,7 +1164,8 @@ init_object_private (JSContext *context,
     JS_SetPrivate(object, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                        "obj instance constructor, obj %p priv %p", object, priv);
+                        "obj instance constructor, obj %p priv %p",
+                        object.get(), priv);
 
     proto_priv = proto_priv_from_js(context, object);
     g_assert(proto_priv != NULL);
@@ -1178,9 +1180,9 @@ init_object_private (JSContext *context,
 }
 
 static void
-associate_js_gobject (JSContext      *context,
-                      JSObject       *object,
-                      GObject        *gobj)
+associate_js_gobject (JSContext       *context,
+                      JS::HandleObject object,
+                      GObject         *gobj)
 {
     ObjectInstance *priv;
 
@@ -1240,25 +1242,24 @@ disassociate_js_gobject (GObject   *gobj)
 }
 
 static bool
-object_instance_init (JSContext *context,
-                      JSObject **object,
-                      unsigned   argc,
-                      JS::Value *argv)
+object_instance_init (JSContext              *context,
+                      JS::MutableHandleObject object,
+                      unsigned                argc,
+                      JS::Value              *argv)
 {
     ObjectInstance *priv;
     GType gtype;
     GParameter *params;
     int n_params;
     GTypeQuery query;
-    JSObject *old_jsobj;
     GObject *gobj;
 
-    priv = (ObjectInstance *) JS_GetPrivate(*object);
+    priv = (ObjectInstance *) JS_GetPrivate(object);
 
     gtype = priv->gtype;
     g_assert(gtype != G_TYPE_NONE);
 
-    if (!object_instance_props_to_g_parameters(context, *object, argc, argv,
+    if (!object_instance_props_to_g_parameters(context, object, argc, argv,
                                                gtype,
                                                &params, &n_params)) {
         return false;
@@ -1268,15 +1269,19 @@ object_instance_init (JSContext *context,
        will be popped in gjs_object_custom_init() later
        down.
     */
-    if (g_type_get_qdata(gtype, gjs_is_custom_type_quark()))
-        object_init_list = g_slist_prepend(object_init_list, *object);
+    if (g_type_get_qdata(gtype, gjs_is_custom_type_quark())) {
+        // COMPAT: Replace with JS::PersistentRootedObject in mozjs31
+        object_init_list = g_slist_prepend(object_init_list, object.get());
+        JS_AddNamedObjectRoot(context, (JSObject **) &object_init_list->data,
+                              "object_init_list");
+    }
 
     gobj = (GObject*) g_object_newv(gtype, n_params, params);
 
     free_g_params(params, n_params);
 
-    old_jsobj = peek_js_obj(gobj);
-    if (old_jsobj != NULL && old_jsobj != *object) {
+    JS::RootedObject old_jsobj(context, peek_js_obj(gobj));
+    if (old_jsobj != NULL && old_jsobj != object) {
         /* g_object_newv returned an object that's already tracked by a JS
          * object. Let's assume this is a singleton like IBus.IBus and return
          * the existing JS wrapper object.
@@ -1286,7 +1291,7 @@ object_instance_init (JSContext *context,
          * we're not actually using it, so just let it get collected. Avoiding
          * this would require a non-trivial amount of work.
          * */
-        *object = old_jsobj;
+        object.set(old_jsobj);
         g_object_unref(gobj); /* We already own a reference */
         gobj = NULL;
         goto out;
@@ -1312,7 +1317,7 @@ object_instance_init (JSContext *context,
     }
 
     if (priv->gobj == NULL)
-        associate_js_gobject(context, *object, gobj);
+        associate_js_gobject(context, object, gobj);
     /* We now have both a ref and a toggle ref, we only want the
      * toggle ref. This may immediately remove the GC root
      * we just added, since refcount may drop to 1.
@@ -1564,7 +1569,7 @@ real_connect_func(JSContext *context,
                   bool       after)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());
 
     ObjectInstance *priv;
     GClosure *closure;
@@ -1579,7 +1584,7 @@ real_connect_func(JSContext *context,
         return false;
 
     priv = priv_from_js(context, obj);
-    gjs_debug_gsignal("connect obj %p priv %p argc %d", obj, priv, argc);
+    gjs_debug_gsignal("connect obj %p priv %p argc %d", obj.get(), priv, argc);
     if (priv == NULL) {
         throw_priv_is_null_error(context);
         return false; /* wrong class passed in */
@@ -1666,7 +1671,7 @@ emit_func(JSContext *context,
           JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());
 
     ObjectInstance *priv;
     guint signal_id;
@@ -1684,7 +1689,7 @@ emit_func(JSContext *context,
         return false;
 
     priv = priv_from_js(context, obj);
-    gjs_debug_gsignal("emit obj %p priv %p argc %d", obj, priv, argc);
+    gjs_debug_gsignal("emit obj %p priv %p argc %d", obj.get(), priv, argc);
 
     if (priv == NULL) {
         throw_priv_is_null_error(context);
@@ -1789,7 +1794,7 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, rec.thisv().toObjectOrNull());
 
     ObjectInstance *priv;
     bool ret = false;
@@ -1841,7 +1846,7 @@ init_func (JSContext *context,
            JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());
 
     bool ret;
 
@@ -2061,13 +2066,12 @@ JSObject*
 gjs_object_from_g_object(JSContext    *context,
                          GObject      *gobj)
 {
-    JSObject *obj;
     JSObject *global;
 
     if (gobj == NULL)
         return NULL;
 
-    obj = peek_js_obj(gobj);
+    JS::RootedObject obj(context, peek_js_obj(gobj));
 
     if (obj == NULL) {
         /* We have to create a wrapper */
@@ -2104,8 +2108,8 @@ gjs_object_from_g_object(JSContext    *context,
 }
 
 GObject*
-gjs_g_object_from_object(JSContext    *context,
-                         JSObject     *obj)
+gjs_g_object_from_object(JSContext       *context,
+                         JS::HandleObject obj)
 {
     ObjectInstance *priv;
 
@@ -2117,18 +2121,18 @@ gjs_g_object_from_object(JSContext    *context,
 }
 
 bool
-gjs_typecheck_is_object(JSContext     *context,
-                        JSObject      *object,
-                        bool           throw_error)
+gjs_typecheck_is_object(JSContext       *context,
+                        JS::HandleObject object,
+                        bool             throw_error)
 {
     return do_base_typecheck(context, object, throw_error);
 }
 
 bool
-gjs_typecheck_object(JSContext     *context,
-                     JSObject      *object,
-                     GType          expected_type,
-                     bool           throw_error)
+gjs_typecheck_object(JSContext       *context,
+                     JS::HandleObject object,
+                     GType            expected_type,
+                     bool             throw_error)
 {
     ObjectInstance *priv;
     bool result;
@@ -2267,7 +2271,7 @@ gjs_hook_up_vfunc(JSContext *cx,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     gchar *name;
-    JSObject *object;
+    JS::RootedObject object(cx);
     JSObject *function;
     ObjectInstance *priv;
     GType gtype, info_gtype;
@@ -2278,7 +2282,7 @@ gjs_hook_up_vfunc(JSContext *cx,
 
     if (!gjs_parse_call_args(cx, "hook_up_vfunc",
                         "oso", argv,
-                        "object", &object,
+                        "object", object.address(),
                         "name", &name,
                         "function", &function))
         return false;
@@ -2520,14 +2524,14 @@ gjs_override_property(JSContext *cx,
 {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     gchar *name = NULL;
-    JSObject *type;
+    JS::RootedObject type(cx);
     GParamSpec *pspec;
     GParamSpec *new_pspec;
     GType gtype;
 
     if (!gjs_parse_call_args(cx, "override_property", "so", args,
                              "name", &name,
-                             "type", &type))
+                             "type", type.address()))
         return false;
 
     if ((gtype = gjs_gtype_get_actual_gtype(cx, type)) == G_TYPE_INVALID) {
@@ -2622,14 +2626,16 @@ gjs_object_custom_init(GTypeInstance *instance,
 {
     GjsContext *gjs_context;
     JSContext *context;
-    JSObject *object;
     ObjectInstance *priv;
     JS::Value v, r;
 
     if (!object_init_list)
       return;
 
-    object = (JSObject*) object_init_list->data;
+    gjs_context = gjs_context_get_current();
+    context = (JSContext*) gjs_context_get_native_context(gjs_context);
+
+    JS::RootedObject object(context, (JSObject*) object_init_list->data);
     priv = (ObjectInstance*) JS_GetPrivate(object);
 
     if (priv->gtype != G_TYPE_FROM_INSTANCE (instance)) {
@@ -2639,11 +2645,9 @@ gjs_object_custom_init(GTypeInstance *instance,
         return;
     }
 
+    JS_RemoveObjectRoot(context, (JSObject **) &object_init_list->data);
     object_init_list = g_slist_delete_link(object_init_list,
                                            object_init_list);
-
-    gjs_context = gjs_context_get_current();
-    context = (JSContext*) gjs_context_get_native_context(gjs_context);
 
     associate_js_gobject(context, object, G_OBJECT (instance));
 
@@ -2724,7 +2728,8 @@ get_interface_gtypes(JSContext *cx,
             return false;
         }
 
-        iface_type = gjs_gtype_get_actual_gtype(cx, &iface_val.toObject());
+        JS::RootedObject iface(cx, &iface_val.toObject());
+        iface_type = gjs_gtype_get_actual_gtype(cx, iface);
         if (iface_type == G_TYPE_INVALID) {
             gjs_throw (cx, "Invalid parameter interfaces (element %d was not a GType)", i);
             return false;
@@ -2860,7 +2865,8 @@ gjs_register_type(JSContext *cx,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     gchar *name;
-    JSObject *parent, *constructor, *interfaces, *properties, *module;
+    JS::RootedObject parent(cx);
+    JSObject *constructor, *interfaces, *properties, *module;
     GType instance_type, parent_type;
     GTypeQuery query;
     GTypeModule *type_module;
@@ -2887,7 +2893,7 @@ gjs_register_type(JSContext *cx,
 
     if (!gjs_parse_call_args(cx, "register_type",
                         "osoo", argv,
-                        "parent", &parent,
+                        "parent", parent.address(),
                         "name", &name,
                         "interfaces", &interfaces,
                         "properties", &properties))
@@ -2968,26 +2974,23 @@ gjs_signal_new(JSContext *cx,
                JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj;
     GType gtype;
-    gchar *signal_name = NULL;
+    char *signal_name_tmp = NULL;
     GSignalAccumulator accumulator;
     gint signal_id;
     guint i, n_parameters;
     GType *params, return_type;
-    bool ret;
 
     if (argc != 6)
         return false;
 
-    JS_BeginRequest(cx);
+    JSAutoRequest ar(cx);
 
-    if (!gjs_string_to_utf8(cx, argv[1], &signal_name)) {
-        ret = false;
-        goto out;
-    }
+    if (!gjs_string_to_utf8(cx, argv[1], &signal_name_tmp))
+        return false;
+    std::unique_ptr<char, decltype(&g_free)> signal_name(signal_name_tmp, g_free);
 
-    obj = &argv[0].toObject();
+    JS::RootedObject obj(cx, &argv[0].toObject());
     if (!gjs_typecheck_gtype(cx, obj, true))
         return false;
 
@@ -3004,34 +3007,33 @@ gjs_signal_new(JSContext *cx,
         accumulator = NULL;
     }
 
-    return_type = gjs_gtype_get_actual_gtype(cx, &argv[4].toObject());
+    JS::RootedObject gtype_obj(cx, &argv[4].toObject());
+    return_type = gjs_gtype_get_actual_gtype(cx, gtype_obj);
 
     if (accumulator == g_signal_accumulator_true_handled && return_type != G_TYPE_BOOLEAN) {
         gjs_throw (cx, "GObject.SignalAccumulator.TRUE_HANDLED can only be used with boolean signals");
-        ret = false;
-        goto out;
+        return false;
     }
 
-    if (!JS_GetArrayLength(cx, &argv[5].toObject(), &n_parameters)) {
-        ret = false;
-        goto out;
-    }
+    if (!JS_GetArrayLength(cx, &argv[5].toObject(), &n_parameters))
+        return false;
+
     params = g_newa(GType, n_parameters);
     for (i = 0; i < n_parameters; i++) {
         JS::Value gtype_val;
         if (!JS_GetElement(cx, &argv[5].toObject(), i, &gtype_val) ||
             !gtype_val.isObject()) {
             gjs_throw(cx, "Invalid signal parameter number %d", i);
-            ret = false;
-            goto out;
+            return false;
         }
 
-        params[i] = gjs_gtype_get_actual_gtype(cx, &gtype_val.toObject());
+        JS::RootedObject gtype(cx, &gtype_val.toObject());
+        params[i] = gjs_gtype_get_actual_gtype(cx, gtype);
     }
 
     gtype = gjs_gtype_get_actual_gtype(cx, obj);
 
-    signal_id = g_signal_newv(signal_name,
+    signal_id = g_signal_newv(signal_name.get(),
                               gtype,
                               (GSignalFlags) argv[2].toInt32(), /* signal_flags */
                               NULL, /* class closure */
@@ -3043,13 +3045,7 @@ gjs_signal_new(JSContext *cx,
                               params);
 
     argv.rval().setInt32(signal_id);
-    ret = true;
-
- out:
-    JS_EndRequest(cx);
-
-    free (signal_name);
-    return ret;
+    return true;
 }
 
 static JSFunctionSpec module_funcs[] = {

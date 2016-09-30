@@ -76,7 +76,6 @@ createFromPNG_func(JSContext *context,
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     char *filename;
     cairo_surface_t *surface;
-    JSObject *surface_wrapper;
 
     if (!gjs_parse_call_args(context, "createFromPNG", "s", argv,
                         "filename", &filename))
@@ -87,7 +86,8 @@ createFromPNG_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
         return false;
 
-    surface_wrapper = JS_NewObject(context, &gjs_cairo_image_surface_class, NULL, NULL);
+    JS::RootedObject surface_wrapper(context,
+                                     JS_NewObject(context, &gjs_cairo_image_surface_class, NULL, NULL));
     if (!surface_wrapper) {
         gjs_throw(context, "failed to create surface");
         return false;
@@ -217,13 +217,12 @@ JSObject *
 gjs_cairo_image_surface_from_surface(JSContext       *context,
                                      cairo_surface_t *surface)
 {
-    JSObject *object;
-
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(surface != NULL, NULL);
     g_return_val_if_fail(cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_IMAGE, NULL);
 
-    object = JS_NewObject(context, &gjs_cairo_image_surface_class, NULL, NULL);
+    JS::RootedObject object(context,
+                            JS_NewObject(context, &gjs_cairo_image_surface_class, NULL, NULL));
     if (!object) {
         gjs_throw(context, "failed to create image surface");
         return NULL;

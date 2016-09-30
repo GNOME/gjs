@@ -67,7 +67,7 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, rec.thisv().toObjectOrNull());
 
     GType gtype;
     gchar *strval;
@@ -157,9 +157,9 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
 }
 
 static GType
-_gjs_gtype_get_actual_gtype (JSContext *context,
-                             JSObject  *object,
-                             int        recurse)
+_gjs_gtype_get_actual_gtype(JSContext       *context,
+                            JS::HandleObject object,
+                            int              recurse)
 {
     GType gtype = G_TYPE_INVALID;
     JS::Value gtype_val = JS::UndefinedValue();
@@ -181,8 +181,10 @@ _gjs_gtype_get_actual_gtype (JSContext *context,
             goto out;
     }
 
-    if (recurse > 0 && gtype_val.isObject())
-        gtype = _gjs_gtype_get_actual_gtype(context, &gtype_val.toObject(), recurse - 1);
+    if (recurse > 0 && gtype_val.isObject()) {
+        JS::RootedObject gtype_obj(context, &gtype_val.toObject());
+        gtype = _gjs_gtype_get_actual_gtype(context, gtype_obj, recurse - 1);
+    }
 
  out:
     JS_EndRequest(context);
@@ -190,8 +192,8 @@ _gjs_gtype_get_actual_gtype (JSContext *context,
 }
 
 GType
-gjs_gtype_get_actual_gtype (JSContext *context,
-                            JSObject  *object)
+gjs_gtype_get_actual_gtype(JSContext       *context,
+                           JS::HandleObject object)
 {
     /* 2 means: recurse at most three times (including this
        call).
@@ -206,7 +208,7 @@ gjs_gtype_get_actual_gtype (JSContext *context,
 
 bool
 gjs_typecheck_gtype (JSContext             *context,
-                     JSObject              *obj,
+                     JS::HandleObject       obj,
                      bool                   throw_error)
 {
     return do_base_typecheck(context, obj, throw_error);

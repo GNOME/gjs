@@ -936,7 +936,6 @@ static JSObject*
 importer_new(JSContext *context,
              bool       is_root)
 {
-    JSObject *importer;
     Importer *priv;
     JSObject *global;
     JSBool found;
@@ -977,7 +976,8 @@ importer_new(JSContext *context,
                   gjs_importer_class.name, prototype);
     }
 
-    importer = JS_NewObject(context, &gjs_importer_class, NULL, global);
+    JS::RootedObject importer(context,
+                              JS_NewObject(context, &gjs_importer_class, NULL, global));
     if (importer == NULL)
         g_error("No memory to create importer importer");
 
@@ -990,7 +990,8 @@ importer_new(JSContext *context,
     JS_SetPrivate(importer, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_IMPORTER,
-                        "importer constructor, obj %p priv %p", importer, priv);
+                        "importer constructor, obj %p priv %p", importer.get(),
+                        priv);
 
     return importer;
 }

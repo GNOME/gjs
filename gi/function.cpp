@@ -537,10 +537,10 @@ get_length_from_arg (GArgument *arg, GITypeTag tag)
 }
 
 static bool
-gjs_fill_method_instance (JSContext  *context,
-                          JSObject   *obj,
-                          Function   *function,
-                          GIArgument *out_arg)
+gjs_fill_method_instance(JSContext       *context,
+                         JS::HandleObject obj,
+                         Function        *function,
+                         GIArgument      *out_arg)
 {
     GIBaseInfo *container = g_base_info_get_container((GIBaseInfo *) function->info);
     GIInfoType type = g_base_info_get_type(container);
@@ -665,13 +665,13 @@ gjs_fill_method_instance (JSContext  *context,
  * providing a @r_value argument.
  */
 static bool
-gjs_invoke_c_function(JSContext      *context,
-                      Function       *function,
-                      JSObject       *obj, /* "this" object */
-                      unsigned        js_argc,
-                      JS::Value      *js_argv,
-                      JS::Value      *js_rval,
-                      GArgument      *r_value)
+gjs_invoke_c_function(JSContext       *context,
+                      Function        *function,
+                      JS::HandleObject obj, /* "this" object */
+                      unsigned         js_argc,
+                      JS::Value       *js_argv,
+                      JS::Value       *js_rval,
+                      GArgument       *r_value)
 {
     /* These first four are arrays which hold argument pointers.
      * @in_arg_cvalues: C values which are passed on input (in or inout)
@@ -1300,8 +1300,8 @@ function_call(JSContext *context,
               JS::Value *vp)
 {
     JS::CallArgs js_argv = JS::CallArgsFromVp (js_argc, vp);
-    JSObject *object = js_argv.thisv().toObjectOrNull();
-    JSObject *callee = &js_argv.callee();
+    JS::RootedObject object(context, js_argv.thisv().toObjectOrNull()),
+        callee(context, &js_argv.callee());
 
     bool success;
     Function *priv;
@@ -1309,8 +1309,8 @@ function_call(JSContext *context,
 
     priv = priv_from_js(context, callee);
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Call callee %p priv %p this obj %p %s", callee, priv,
-                      object,
+                      "Call callee %p priv %p this obj %p %s", callee.get(),
+                      priv, object.get(),
                       JS_GetTypeName(context, JS_TypeOfValue(context, JS::ObjectOrNullValue(object))));
 
     if (priv == NULL)
@@ -1401,7 +1401,6 @@ function_to_string (JSContext *context,
     Function *priv;
     gchar *string;
     bool free;
-    JSObject *self;
     JS::Value retval;
     bool ret = false;
     int i, n_args, n_jsargs;
@@ -1414,7 +1413,7 @@ function_to_string (JSContext *context,
         gjs_throw(context, "this cannot be null");
         return false;
     }
-    self = &rec.thisv().toObject();
+    JS::RootedObject self(context, &rec.thisv().toObject());
 
     priv = priv_from_js (context, self);
     if (priv == NULL) {
@@ -1661,7 +1660,6 @@ function_new(JSContext      *context,
              GType           gtype,
              GICallableInfo *info)
 {
-    JSObject *function;
     JSObject *global;
     Function *priv;
     JSBool found;
@@ -1709,7 +1707,8 @@ function_new(JSContext      *context,
                   gjs_function_class.name, prototype);
     }
 
-    function = JS_NewObject(context, &gjs_function_class, NULL, global);
+    JS::RootedObject function(context,
+                              JS_NewObject(context, &gjs_function_class, NULL, global));
     if (function == NULL) {
         gjs_debug(GJS_DEBUG_GFUNCTION, "Failed to construct function");
         return NULL;
@@ -1724,7 +1723,8 @@ function_new(JSContext      *context,
     JS_SetPrivate(function, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GFUNCTION,
-                        "function constructor, obj %p priv %p", function, priv);
+                        "function constructor, obj %p priv %p", function.get(),
+                        priv);
 
     if (!init_cached_function_data(context, priv, gtype, (GICallableInfo *)info))
       return NULL;
@@ -1781,12 +1781,12 @@ gjs_define_function(JSContext      *context,
 
 
 bool
-gjs_invoke_c_function_uncached (JSContext      *context,
-                                GIFunctionInfo *info,
-                                JSObject       *obj,
-                                unsigned        argc,
-                                JS::Value      *argv,
-                                JS::Value      *rval)
+gjs_invoke_c_function_uncached(JSContext       *context,
+                               GIFunctionInfo  *info,
+                               JS::HandleObject obj,
+                               unsigned         argc,
+                               JS::Value       *argv,
+                               JS::Value       *rval)
 {
   Function function;
   bool result;
@@ -1801,12 +1801,12 @@ gjs_invoke_c_function_uncached (JSContext      *context,
 }
 
 bool
-gjs_invoke_constructor_from_c (JSContext      *context,
-                               JSObject       *constructor,
-                               JSObject       *obj,
-                               unsigned        argc,
-                               JS::Value      *argv,
-                               GArgument      *rvalue)
+gjs_invoke_constructor_from_c(JSContext       *context,
+                              JS::HandleObject constructor,
+                              JS::HandleObject obj,
+                              unsigned         argc,
+                              JS::Value       *argv,
+                              GArgument       *rvalue)
 {
     Function *priv;
 

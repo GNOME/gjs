@@ -67,19 +67,19 @@ JSObject* gjs_define_function   (JSContext      *context,
                                  GType           gtype,
                                  GICallableInfo *info);
 
-bool      gjs_invoke_c_function_uncached (JSContext      *context,
-                                          GIFunctionInfo *info,
-                                          JSObject       *obj,
-                                          unsigned        argc,
-                                          JS::Value      *argv,
-                                          JS::Value      *rval);
+bool      gjs_invoke_c_function_uncached(JSContext       *context,
+                                         GIFunctionInfo  *info,
+                                         JS::HandleObject obj,
+                                         unsigned         argc,
+                                         JS::Value       *argv,
+                                         JS::Value       *rval);
 
-bool      gjs_invoke_constructor_from_c (JSContext      *context,
-                                         JSObject       *constructor,
-                                         JSObject       *obj,
-                                         unsigned        argc,
-                                         JS::Value      *argv,
-                                         GArgument      *rvalue);
+bool      gjs_invoke_constructor_from_c(JSContext       *context,
+                                        JS::HandleObject constructor,
+                                        JS::HandleObject obj,
+                                        unsigned         argc,
+                                        JS::Value       *argv,
+                                        GArgument       *rvalue);
 
 void     gjs_init_cinvoke_profiling (void);
 

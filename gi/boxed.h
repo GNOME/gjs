@@ -47,13 +47,13 @@ void      gjs_define_boxed_class       (JSContext             *context,
 JSObject* gjs_lookup_boxed_prototype   (JSContext             *context,
                                         GIBoxedInfo           *info);
 void*     gjs_c_struct_from_boxed      (JSContext             *context,
-                                        JSObject              *obj);
+                                        JS::HandleObject       obj);
 JSObject* gjs_boxed_from_c_struct      (JSContext             *context,
                                         GIStructInfo          *info,
                                         void                  *gboxed,
                                         GjsBoxedCreationFlags  flags);
 bool      gjs_typecheck_boxed          (JSContext             *context,
-                                        JSObject              *obj,
+                                        JS::HandleObject       obj,
                                         GIStructInfo          *expected_info,
                                         GType                  expected_type,
                                         bool                   throw_error);

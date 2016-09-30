@@ -69,13 +69,13 @@ JSObject *
 gjs_cairo_path_from_path(JSContext    *context,
                          cairo_path_t *path)
 {
-    JSObject *object;
     GjsCairoPath *priv;
 
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(path != NULL, NULL);
 
-    object = JS_NewObject(context, &gjs_cairo_path_class, NULL, NULL);
+    JS::RootedObject object(context,
+                            JS_NewObject(context, &gjs_cairo_path_class, NULL, NULL));
     if (!object) {
         gjs_throw(context, "failed to create path");
         return NULL;

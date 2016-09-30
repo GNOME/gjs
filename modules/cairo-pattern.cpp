@@ -105,7 +105,7 @@ JSFunctionSpec gjs_cairo_pattern_proto_funcs[] = {
  */
 void
 gjs_cairo_pattern_construct(JSContext       *context,
-                            JSObject        *object,
+                            JS::HandleObject object,
                             cairo_pattern_t *pattern)
 {
     GjsCairoPattern *priv;

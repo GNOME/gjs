@@ -619,6 +619,7 @@ gjs_gtypearray_to_array(JSContext   *context,
     /* add one so we're always zero terminated */
     result = (GType *) g_malloc0((length+1) * sizeof(GType));
 
+    JS::RootedObject elem_obj(context);
     for (i = 0; i < length; ++i) {
         JS::Value elem;
         GType gtype;
@@ -633,7 +634,8 @@ gjs_gtypearray_to_array(JSContext   *context,
         if (!elem.isObjectOrNull())
             goto err;
 
-        gtype = gjs_gtype_get_actual_gtype(context, elem.toObjectOrNull());
+        elem_obj = elem.toObjectOrNull();
+        gtype = gjs_gtype_get_actual_gtype(context, elem_obj);
         if (gtype == G_TYPE_INVALID)
             goto err;
 
@@ -1275,7 +1277,8 @@ gjs_value_to_g_argument(JSContext      *context,
     case GI_TYPE_TAG_GTYPE:
         if (value.isObjectOrNull()) {
             GType gtype;
-            gtype = gjs_gtype_get_actual_gtype(context, value.toObjectOrNull());
+            JS::RootedObject obj(context, value.toObjectOrNull());
+            gtype = gjs_gtype_get_actual_gtype(context, obj);
             if (gtype == G_TYPE_INVALID)
                 wrong = true;
             arg->v_ssize = gtype;
@@ -1323,8 +1326,9 @@ gjs_value_to_g_argument(JSContext      *context,
         if (value.isNull()) {
             arg->v_pointer = NULL;
         } else if (value.isObject()) {
-            if (gjs_typecheck_gerror(context, &value.toObject(), true)) {
-                arg->v_pointer = gjs_gerror_from_error(context, &value.toObject());
+            JS::RootedObject obj(context, &value.toObject());
+            if (gjs_typecheck_gerror(context, obj, true)) {
+                arg->v_pointer = gjs_gerror_from_error(context, obj);
 
                 if (transfer != GI_TRANSFER_NOTHING)
                     arg->v_pointer = g_error_copy ((const GError *) arg->v_pointer);
@@ -1412,7 +1416,7 @@ gjs_value_to_g_argument(JSContext      *context,
             } else if (value.isNull()) {
                 arg->v_pointer = NULL;
             } else if (value.isObject()) {
-                JSObject *obj = &value.toObject();
+                JS::RootedObject obj(context, &value.toObject());
                 if (interface_type == GI_INFO_TYPE_STRUCT &&
                     g_struct_info_is_gtype_struct((GIStructInfo*)interface_info)) {
                     GType actual_gtype;
@@ -1730,17 +1734,16 @@ gjs_value_to_g_argument(JSContext      *context,
         /* First, let's handle the case where we're passed an instance
          * of our own byteArray class.
          */
-        if (value.isObjectOrNull() &&
-            gjs_typecheck_bytearray(context, value.toObjectOrNull(), false))
-            {
-                JSObject *bytearray_obj = value.toObjectOrNull();
-                if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
-                    arg->v_pointer = gjs_byte_array_get_byte_array(context, bytearray_obj);
-                    break;
-                } else {
-                    /* Fall through, !handled */
-                }
+        if (value.isObjectOrNull()) {
+            JS::RootedObject bytearray_obj(context, value.toObjectOrNull());
+            if (gjs_typecheck_bytearray(context, bytearray_obj, false)
+                && array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
+                arg->v_pointer = gjs_byte_array_get_byte_array(context, bytearray_obj);
+                break;
+            } else {
+                /* Fall through, !handled */
             }
+        }
 
         if (!gjs_array_to_explicit_array_internal(context,
                                                   value,

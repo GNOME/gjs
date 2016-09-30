@@ -60,7 +60,6 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(error)
     Error *priv;
     Error *proto_priv;
-    JSObject *proto;
     jsid message_name, code_name;
     JS::Value v_message, v_code;
     gchar *message;
@@ -82,10 +81,12 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
 
     gjs_debug_lifecycle(GJS_DEBUG_GERROR,
                         "GError constructor, obj %p priv %p",
-                        object, priv);
+                        object.get(), priv);
 
-    JS_GetPrototype(context, object, &proto);
-    gjs_debug_lifecycle(GJS_DEBUG_GERROR, "GError instance __proto__ is %p", proto);
+    JS::RootedObject proto(context);
+    JS_GetPrototype(context, object, proto.address());
+    gjs_debug_lifecycle(GJS_DEBUG_GERROR, "GError instance __proto__ is %p",
+                        proto.get());
 
     /* If we're the prototype, then post-construct we'll fill in priv->info.
      * If we are not the prototype, though, then we'll get ->info from the
@@ -211,7 +212,6 @@ error_to_string(JSContext *context,
                 JS::Value *vp)
 {
     JS::Value v_self;
-    JSObject *self;
     Error *priv;
     JS::Value v_out;
     gchar *descr;
@@ -225,7 +225,7 @@ error_to_string(JSContext *context,
         return false;
     }
 
-    self = &v_self.toObject();
+    JS::RootedObject self(context, &v_self.toObject());
     priv = priv_from_js(context, self);
 
     if (priv == NULL)
@@ -290,7 +290,8 @@ error_constructor_value_of(JSContext *context,
         return false;
     }
 
-    priv = priv_from_js(context, &v_prototype.toObject());
+    JS::RootedObject prototype(context, &v_prototype.toObject());
+    priv = priv_from_js(context, prototype);
 
     if (priv == NULL)
         return false;
@@ -473,7 +474,6 @@ gjs_error_from_gerror(JSContext             *context,
                       bool                   add_stack)
 {
     JSObject *obj;
-    JSObject *proto;
     Error *priv;
     Error *proto_priv;
     GIEnumInfo *info;
@@ -500,7 +500,7 @@ gjs_error_from_gerror(JSContext             *context,
                       "Wrapping struct %s with JSObject",
                       g_base_info_get_name((GIBaseInfo *)info));
 
-    proto = gjs_lookup_generic_prototype(context, info);
+    JS::RootedObject proto(context, gjs_lookup_generic_prototype(context, info));
     proto_priv = priv_from_js(context, proto);
 
     obj = JS_NewObjectWithGivenProto(context,
@@ -522,8 +522,8 @@ gjs_error_from_gerror(JSContext             *context,
 }
 
 GError*
-gjs_gerror_from_error(JSContext    *context,
-                      JSObject     *obj)
+gjs_gerror_from_error(JSContext       *context,
+                      JS::HandleObject obj)
 {
     Error *priv;
 
@@ -553,9 +553,9 @@ gjs_gerror_from_error(JSContext    *context,
 }
 
 bool
-gjs_typecheck_gerror (JSContext *context,
-                      JSObject  *obj,
-                      bool       throw_error)
+gjs_typecheck_gerror (JSContext       *context,
+                      JS::HandleObject obj,
+                      bool             throw_error)
 {
     if (gjs_typecheck_boxed (context, obj, NULL, G_TYPE_ERROR, false))
         return true;

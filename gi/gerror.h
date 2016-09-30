@@ -36,12 +36,12 @@ void      gjs_define_error_class       (JSContext             *context,
                                         JSObject              *in_object,
                                         GIEnumInfo            *info);
 GError*   gjs_gerror_from_error        (JSContext             *context,
-                                        JSObject              *obj);
+                                        JS::HandleObject       obj);
 JSObject* gjs_error_from_gerror        (JSContext             *context,
                                         GError                *gerror,
                                         bool                   add_stack);
 bool      gjs_typecheck_gerror         (JSContext             *context,
-                                        JSObject              *obj,
+                                        JS::HandleObject       obj,
                                         bool                   throw_error);
 
 G_END_DECLS

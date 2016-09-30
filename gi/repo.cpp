@@ -248,7 +248,6 @@ static JSObject*
 repo_new(JSContext *context)
 {
     Repo *priv;
-    JSObject *repo;
     JSObject *global;
     JSObject *versions;
     JSObject *private_ns;
@@ -290,7 +289,7 @@ repo_new(JSContext *context)
                   gjs_repo_class.name, prototype);
     }
 
-    repo = JS_NewObject(context, &gjs_repo_class, NULL, global);
+    JS::RootedObject repo(context, JS_NewObject(context, &gjs_repo_class, NULL, global));
     if (repo == NULL) {
         gjs_throw(context, "No memory to create repo object");
         return NULL;
@@ -304,7 +303,7 @@ repo_new(JSContext *context)
     JS_SetPrivate(repo, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GREPO,
-                        "repo constructor, obj %p priv %p", repo, priv);
+                        "repo constructor, obj %p priv %p", repo.get(), priv);
 
     versions = JS_NewObject(context, NULL, NULL, global);
     versions_name = gjs_context_get_const_string(context, GJS_STRING_GI_VERSIONS);

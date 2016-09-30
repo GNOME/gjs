@@ -37,7 +37,7 @@ mname##_func(JSContext *context,                    \
               JS::Value *vp)                        \
 {                                                   \
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);             \
-    JSObject *obj = argv.thisv().toObjectOrNull();  \
+    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());  \
     cairo_t *cr;
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END                               \
@@ -253,9 +253,9 @@ GJS_DEFINE_PROTO_WITH_GTYPE("CairoContext", cairo_context, CAIRO_GOBJECT_TYPE_CO
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoContext, gjs_cairo_context_class);
 
 static void
-_gjs_cairo_context_construct_internal(JSContext *context,
-                                      JSObject *obj,
-                                      cairo_t *cr)
+_gjs_cairo_context_construct_internal(JSContext       *context,
+                                      JS::HandleObject obj,
+                                      cairo_t         *cr)
 {
     GjsCairoContext *priv;
 
@@ -407,7 +407,7 @@ dispose_func(JSContext *context,
              JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, rec.thisv().toObjectOrNull());
 
     GjsCairoContext *priv;
 
@@ -426,7 +426,7 @@ appendPath_func(JSContext *context,
                 JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());
 
     JSObject *path_wrapper;
     cairo_path_t *path;
@@ -454,7 +454,7 @@ copyPath_func(JSContext *context,
               JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());
 
     cairo_path_t *path;
     cairo_t *cr;
@@ -474,7 +474,7 @@ copyPathFlat_func(JSContext *context,
                   JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());
 
     cairo_path_t *path;
     cairo_t *cr;
@@ -494,7 +494,7 @@ mask_func(JSContext *context,
           JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());
 
     JSObject *pattern_wrapper;
     cairo_pattern_t *pattern;
@@ -526,7 +526,7 @@ maskSurface_func(JSContext *context,
                  JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());
 
     JSObject *surface_wrapper;
     double x, y;
@@ -562,7 +562,7 @@ setDash_func(JSContext *context,
              JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());
 
     guint i;
     cairo_t *cr;
@@ -625,7 +625,7 @@ setSource_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());
 
     JSObject *pattern_wrapper;
     cairo_pattern_t *pattern;
@@ -659,7 +659,7 @@ setSourceSurface_func(JSContext *context,
                       JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());
 
     JSObject *surface_wrapper;
     double x, y;
@@ -696,7 +696,7 @@ showText_func(JSContext *context,
               JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());
 
     char *utf8;
     cairo_t *cr;
@@ -724,7 +724,7 @@ selectFontFace_func(JSContext *context,
                     JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());
 
     char *family;
     cairo_font_slant_t slant;
@@ -755,7 +755,7 @@ popGroup_func(JSContext *context,
               JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, rec.thisv().toObjectOrNull());
 
     cairo_t *cr;
     cairo_pattern_t *pattern;
@@ -788,7 +788,7 @@ getSource_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, rec.thisv().toObjectOrNull());
 
     cairo_t *cr;
     cairo_pattern_t *pattern;
@@ -822,7 +822,7 @@ getTarget_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, rec.thisv().toObjectOrNull());
 
     cairo_t *cr;
     cairo_surface_t *surface;
@@ -856,7 +856,7 @@ getGroupTarget_func(JSContext *context,
                     JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, rec.thisv().toObjectOrNull());
 
     cairo_t *cr;
     cairo_surface_t *surface;
@@ -990,9 +990,8 @@ JSObject *
 gjs_cairo_context_from_context(JSContext *context,
                                cairo_t *cr)
 {
-    JSObject *object;
-
-    object = JS_NewObject(context, &gjs_cairo_context_class, NULL, NULL);
+    JS::RootedObject object(context,
+                            JS_NewObject(context, &gjs_cairo_context_class, NULL, NULL));
     if (!object)
         return NULL;
 
@@ -1002,8 +1001,8 @@ gjs_cairo_context_from_context(JSContext *context,
 }
 
 cairo_t *
-gjs_cairo_context_get_context(JSContext *context,
-                              JSObject *object)
+gjs_cairo_context_get_context(JSContext       *context,
+                              JS::HandleObject object)
 {
     GjsCairoContext *priv;
     priv = priv_from_js(context, object);
@@ -1022,10 +1021,9 @@ context_to_g_argument(JSContext      *context,
                       bool            may_be_null,
                       GArgument      *arg)
 {
-    JSObject *obj;
+    JS::RootedObject obj(context, value.toObjectOrNull());
     cairo_t *cr;
 
-    obj = value.toObjectOrNull();
     cr = gjs_cairo_context_get_context(context, obj);
     if (!cr)
         return false;

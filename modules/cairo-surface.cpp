@@ -145,7 +145,7 @@ JSFunctionSpec gjs_cairo_surface_proto_funcs[] = {
  */
 void
 gjs_cairo_surface_construct(JSContext       *context,
-                            JSObject        *object,
+                            JS::HandleObject object,
                             cairo_surface_t *surface)
 {
     GjsCairoSurface *priv;
@@ -196,8 +196,6 @@ JSObject *
 gjs_cairo_surface_from_surface(JSContext       *context,
                                cairo_surface_t *surface)
 {
-    JSObject *object;
-
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(surface != NULL, NULL);
 
@@ -214,7 +212,8 @@ gjs_cairo_surface_from_surface(JSContext       *context,
             break;
     }
 
-    object = JS_NewObject(context, &gjs_cairo_surface_class, NULL, NULL);
+    JS::RootedObject object(context,
+                            JS_NewObject(context, &gjs_cairo_surface_class, NULL, NULL));
     if (!object) {
         gjs_throw(context, "failed to create surface");
         return NULL;

@@ -132,14 +132,14 @@ static inline Fundamental *
 proto_priv_from_js(JSContext *context,
                    JSObject  *obj)
 {
-    JSObject *proto;
-    JS_GetPrototype(context, obj, &proto);
+    JS::RootedObject proto(context);
+    JS_GetPrototype(context, obj, proto.address());
     return (Fundamental*) priv_from_js(context, proto);
 }
 
 static FundamentalInstance *
-init_fundamental_instance(JSContext *context,
-                          JSObject  *object)
+init_fundamental_instance(JSContext       *context,
+                          JS::HandleObject object)
 {
     Fundamental *proto_priv;
     FundamentalInstance *priv;
@@ -155,7 +155,7 @@ init_fundamental_instance(JSContext *context,
 
     gjs_debug_lifecycle(GJS_DEBUG_GFUNDAMENTAL,
                         "fundamental instance constructor, obj %p priv %p",
-                        object, priv);
+                        object.get(), priv);
 
     proto_priv = proto_priv_from_js(context, object);
     g_assert(proto_priv != NULL);
@@ -168,10 +168,10 @@ init_fundamental_instance(JSContext *context,
 }
 
 static void
-associate_js_instance_to_fundamental(JSContext *context,
-                                     JSObject  *object,
-                                     void      *gfundamental,
-                                     bool       owned_ref)
+associate_js_instance_to_fundamental(JSContext       *context,
+                                     JS::HandleObject object,
+                                     void            *gfundamental,
+                                     bool             owned_ref)
 {
     FundamentalInstance *priv;
 
@@ -183,7 +183,7 @@ associate_js_instance_to_fundamental(JSContext *context,
 
     gjs_debug_lifecycle(GJS_DEBUG_GFUNDAMENTAL,
                         "associated JSObject %p with fundamental %p",
-                        object, gfundamental);
+                        object.get(), gfundamental);
 
     if (!owned_ref)
         priv->prototype->ref_function(gfundamental);
@@ -382,14 +382,13 @@ fundamental_instance_new_resolve(JSContext  *context,
 static bool
 fundamental_invoke_constructor(FundamentalInstance *priv,
                                JSContext           *context,
-                               JSObject            *obj,
+                               JS::HandleObject     obj,
                                unsigned             argc,
                                JS::Value           *argv,
                                GArgument           *rvalue)
 {
     JS::Value js_constructor, js_constructor_func;
     jsid constructor_const;
-    bool ret = false;
 
     constructor_const = gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR);
     if (!gjs_object_require_property(context, obj, NULL,
@@ -399,7 +398,7 @@ fundamental_invoke_constructor(FundamentalInstance *priv,
                    "Couldn't find a constructor for type %s.%s",
                    g_base_info_get_namespace((GIBaseInfo*) priv->prototype->info),
                    g_base_info_get_name((GIBaseInfo*) priv->prototype->info));
-        goto end;
+        return false;
     }
 
     if (!gjs_object_require_property(context, js_constructor.toObjectOrNull(), NULL,
@@ -408,13 +407,11 @@ fundamental_invoke_constructor(FundamentalInstance *priv,
                    "Couldn't find a constructor for type %s.%s",
                    g_base_info_get_namespace((GIBaseInfo*) priv->prototype->info),
                    g_base_info_get_name((GIBaseInfo*) priv->prototype->info));
-        goto end;
+        return false;
     }
 
-    ret = gjs_invoke_constructor_from_c(context, js_constructor_func.toObjectOrNull(), obj, argc, argv, rvalue);
-
- end:
-    return ret;
+    JS::RootedObject constructor(context, js_constructor_func.toObjectOrNull());
+    return gjs_invoke_constructor_from_c(context, constructor, obj, argc, argv, rvalue);
 }
 
 /* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on
@@ -438,7 +435,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(fundamental_instance)
 
     gjs_debug_lifecycle(GJS_DEBUG_GFUNDAMENTAL,
                         "fundamental constructor, obj %p priv %p",
-                        object, priv);
+                        object.get(), priv);
 
     if (!fundamental_invoke_constructor(priv, context, object, argc, argv.array(), &ret_value))
         return false;
@@ -501,7 +498,7 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, rec.thisv().toObjectOrNull());
 
     FundamentalInstance *priv;
     bool ret = false;
@@ -753,12 +750,11 @@ gjs_object_from_g_fundamental(JSContext    *context,
                               void         *gfundamental)
 {
     JSObject *proto;
-    JSObject *object;
 
     if (gfundamental == NULL)
         return NULL;
 
-    object = _fundamental_lookup_object(gfundamental);
+    JS::RootedObject object(context, _fundamental_lookup_object(gfundamental));
     if (object)
         return object;
 
@@ -791,11 +787,11 @@ gjs_fundamental_from_g_value(JSContext    *context,
                              const GValue *value,
                              GType         gtype)
 {
-    JSObject *proto;
     Fundamental *proto_priv;
     void *fobj;
 
-    proto = gjs_lookup_fundamental_prototype_from_gtype(context, gtype);
+    JS::RootedObject proto(context,
+                           gjs_lookup_fundamental_prototype_from_gtype(context, gtype));
     if (!proto)
         return NULL;
 
@@ -812,8 +808,8 @@ gjs_fundamental_from_g_value(JSContext    *context,
 }
 
 void*
-gjs_g_fundamental_from_object(JSContext *context,
-                              JSObject  *obj)
+gjs_g_fundamental_from_object(JSContext       *context,
+                              JS::HandleObject obj)
 {
     FundamentalInstance *priv;
 
@@ -824,7 +820,7 @@ gjs_g_fundamental_from_object(JSContext *context,
 
     if (priv == NULL) {
         gjs_throw(context,
-                  "No introspection information for %p", obj);
+                  "No introspection information for %p", obj.get());
         return NULL;
     }
 
@@ -840,18 +836,18 @@ gjs_g_fundamental_from_object(JSContext *context,
 }
 
 bool
-gjs_typecheck_is_fundamental(JSContext     *context,
-                             JSObject      *object,
-                             bool           throw_error)
+gjs_typecheck_is_fundamental(JSContext       *context,
+                             JS::HandleObject object,
+                             bool             throw_error)
 {
     return do_base_typecheck(context, object, throw_error);
 }
 
 bool
-gjs_typecheck_fundamental(JSContext *context,
-                          JSObject  *object,
-                          GType      expected_gtype,
-                          bool       throw_error)
+gjs_typecheck_fundamental(JSContext       *context,
+                          JS::HandleObject object,
+                          GType            expected_gtype,
+                          bool             throw_error)
 {
     FundamentalInstance *priv;
     bool result;
@@ -901,11 +897,9 @@ void *
 gjs_fundamental_ref(JSContext     *context,
                     void          *gfundamental)
 {
-    JSObject *proto;
     Fundamental *proto_priv;
-
-    proto = gjs_lookup_fundamental_prototype_from_gtype(context,
-                                                        G_TYPE_FROM_INSTANCE(gfundamental));
+    JS::RootedObject proto(context,
+        gjs_lookup_fundamental_prototype_from_gtype(context, G_TYPE_FROM_INSTANCE(gfundamental)));
 
     proto_priv = (Fundamental *) priv_from_js(context, proto);
 
@@ -916,11 +910,9 @@ void
 gjs_fundamental_unref(JSContext    *context,
                       void         *gfundamental)
 {
-    JSObject *proto;
     Fundamental *proto_priv;
-
-    proto = gjs_lookup_fundamental_prototype_from_gtype(context,
-                                                        G_TYPE_FROM_INSTANCE(gfundamental));
+    JS::RootedObject proto(context,
+        gjs_lookup_fundamental_prototype_from_gtype(context, G_TYPE_FROM_INSTANCE(gfundamental)));
 
     proto_priv = (Fundamental *) priv_from_js(context, proto);
 

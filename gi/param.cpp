@@ -294,8 +294,8 @@ gjs_param_from_g_param(JSContext    *context,
 }
 
 GParamSpec*
-gjs_g_param_from_param(JSContext    *context,
-                       JSObject     *obj)
+gjs_g_param_from_param(JSContext       *context,
+                       JS::HandleObject obj)
 {
     Param *priv;
 
@@ -308,10 +308,10 @@ gjs_g_param_from_param(JSContext    *context,
 }
 
 bool
-gjs_typecheck_param(JSContext     *context,
-                    JSObject      *object,
-                    GType          expected_type,
-                    bool           throw_error)
+gjs_typecheck_param(JSContext       *context,
+                    JS::HandleObject object,
+                    GType            expected_type,
+                    bool             throw_error)
 {
     Param *priv;
     bool result;

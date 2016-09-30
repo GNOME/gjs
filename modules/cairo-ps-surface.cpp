@@ -92,13 +92,12 @@ JSObject *
 gjs_cairo_ps_surface_from_surface(JSContext       *context,
                                   cairo_surface_t *surface)
 {
-    JSObject *object;
-
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(surface != NULL, NULL);
     g_return_val_if_fail(cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_PS, NULL);
 
-    object = JS_NewObject(context, &gjs_cairo_ps_surface_class, NULL, NULL);
+    JS::RootedObject object(context,
+                            JS_NewObject(context, &gjs_cairo_ps_surface_class, NULL, NULL));
     if (!object) {
         gjs_throw(context, "failed to create ps surface");
         return NULL;

@@ -71,9 +71,9 @@ struct JSClass gjs_byte_array_class = {
 };
 
 bool
-gjs_typecheck_bytearray(JSContext     *context,
-                        JSObject      *object,
-                        bool           throw_error)
+gjs_typecheck_bytearray(JSContext       *context,
+                        JS::HandleObject object,
+                        bool             throw_error)
 {
     return do_base_typecheck(context, object, throw_error);
 }
@@ -411,7 +411,7 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *object = argv.thisv().toObjectOrNull();
+    JS::RootedObject object(context, argv.thisv().toObjectOrNull());
     ByteArrayInstance *priv;
     char *encoding;
     bool encoding_is_utf8;
@@ -509,7 +509,7 @@ to_gbytes_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *object = rec.thisv().toObjectOrNull();
+    JS::RootedObject object(context, rec.thisv().toObjectOrNull());
     ByteArrayInstance *priv;
     JSObject *ret_bytes_obj;
     GIBaseInfo *gbytes_info;
@@ -551,11 +551,11 @@ byte_array_get_prototype(JSContext *context)
 static JSObject*
 byte_array_new(JSContext *context)
 {
-    JSObject *array;
     ByteArrayInstance *priv;
 
-    array = JS_NewObject(context, &gjs_byte_array_class,
-                         byte_array_get_prototype(context), NULL);
+    JS::RootedObject array(context,
+                           JS_NewObject(context, &gjs_byte_array_class,
+                                        byte_array_get_prototype(context), NULL));
 
     priv = g_slice_new0(ByteArrayInstance);
 
@@ -728,14 +728,12 @@ from_gbytes_func(JSContext *context,
                  JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *bytes_obj;
+    JS::RootedObject bytes_obj(context);
     GBytes *gbytes;
     ByteArrayInstance *priv;
-    JSObject *obj;
-    bool ret = false;
 
     if (!gjs_parse_call_args(context, "overrides_gbytes_to_array", "o", argv,
-                        "bytes", &bytes_obj))
+                             "bytes", bytes_obj.address()))
         return false;
 
     if (!gjs_typecheck_boxed(context, bytes_obj, NULL, G_TYPE_BYTES, true))
@@ -743,7 +741,7 @@ from_gbytes_func(JSContext *context,
 
     gbytes = (GBytes*) gjs_c_struct_from_boxed(context, bytes_obj);
 
-    obj = byte_array_new(context);
+    JS::RootedObject obj(context, byte_array_new(context));
     if (obj == NULL)
         return false;
     priv = priv_from_js(context, obj);
@@ -751,23 +749,22 @@ from_gbytes_func(JSContext *context,
 
     priv->bytes = g_bytes_ref(gbytes);
 
-    ret = true;
     argv.rval().setObject(*obj);
-    return ret;
+    return true;
 }
 
 JSObject *
 gjs_byte_array_from_byte_array (JSContext *context,
                                 GByteArray *array)
 {
-    JSObject *object;
     ByteArrayInstance *priv;
 
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(array != NULL, NULL);
 
-    object = JS_NewObject(context, &gjs_byte_array_class,
-                          byte_array_get_prototype(context), NULL);
+    JS::RootedObject object(context,
+                            JS_NewObject(context, &gjs_byte_array_class,
+                                         byte_array_get_prototype(context), NULL));
     if (!object) {
         gjs_throw(context, "failed to create byte array");
         return NULL;
@@ -787,14 +784,14 @@ JSObject *
 gjs_byte_array_from_bytes (JSContext *context,
                            GBytes    *bytes)
 {
-    JSObject *object;
     ByteArrayInstance *priv;
 
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(bytes != NULL, NULL);
 
-    object = JS_NewObject(context, &gjs_byte_array_class,
-                          byte_array_get_prototype(context), NULL);
+    JS::RootedObject object(context,
+                            JS_NewObject(context, &gjs_byte_array_class,
+                                         byte_array_get_prototype(context), NULL));
     if (!object) {
         gjs_throw(context, "failed to create byte array");
         return NULL;
@@ -809,8 +806,8 @@ gjs_byte_array_from_bytes (JSContext *context,
 }
 
 GBytes *
-gjs_byte_array_get_bytes (JSContext  *context,
-                          JSObject   *object)
+gjs_byte_array_get_bytes (JSContext       *context,
+                          JS::HandleObject object)
 {
     ByteArrayInstance *priv;
     priv = priv_from_js(context, object);
@@ -822,8 +819,8 @@ gjs_byte_array_get_bytes (JSContext  *context,
 }
 
 GByteArray *
-gjs_byte_array_get_byte_array (JSContext   *context,
-                               JSObject    *obj)
+gjs_byte_array_get_byte_array (JSContext       *context,
+                               JS::HandleObject obj)
 {
     ByteArrayInstance *priv;
     priv = priv_from_js(context, obj);
@@ -835,10 +832,10 @@ gjs_byte_array_get_byte_array (JSContext   *context,
 }
 
 void
-gjs_byte_array_peek_data (JSContext  *context,
-                          JSObject   *obj,
-                          guint8    **out_data,
-                          gsize      *out_len)
+gjs_byte_array_peek_data (JSContext       *context,
+                          JS::HandleObject obj,
+                          guint8         **out_data,
+                          gsize           *out_len)
 {
     ByteArrayInstance *priv;
     priv = priv_from_js(context, obj);

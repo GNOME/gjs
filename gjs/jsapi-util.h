@@ -80,15 +80,15 @@ typedef struct GjsRootedArray GjsRootedArray;
  */
 #define GJS_DEFINE_PRIV_FROM_JS(type, klass)                          \
     __attribute__((unused)) static inline bool                          \
-    do_base_typecheck(JSContext *context,                               \
-                      JSObject  *object,                                \
-                      bool       throw_error)                           \
+    do_base_typecheck(JSContext       *context,                         \
+                      JS::HandleObject object,                          \
+                      bool             throw_error)                     \
     {                                                                   \
         return gjs_typecheck_instance(context, object, &klass, throw_error);  \
     }                                                                   \
     static inline type *                                                \
-    priv_from_js(JSContext *context,                                    \
-                 JSObject  *object)                                     \
+    priv_from_js(JSContext       *context,                              \
+                 JS::HandleObject object)                               \
     {                                                                   \
         type *priv;                                                     \
         JS_BeginRequest(context);                                       \
@@ -97,9 +97,9 @@ typedef struct GjsRootedArray GjsRootedArray;
         return priv;                                                    \
     }                                                                   \
     __attribute__((unused)) static bool                                 \
-    priv_from_js_with_typecheck(JSContext *context,                     \
-                                JSObject  *object,                      \
-                                type      **out)                        \
+    priv_from_js_with_typecheck(JSContext       *context,               \
+                                JS::HandleObject object,                \
+                                type           **out)                   \
     {                                                                   \
         if (!do_base_typecheck(context, object, false))                 \
             return false;                                               \
@@ -220,7 +220,7 @@ gjs_##name##_constructor(JSContext  *context,           \
  * be at the very top.
  */
 #define GJS_NATIVE_CONSTRUCTOR_VARIABLES(name)          \
-    JSObject *object = NULL;                                            \
+    JS::RootedObject object(context, NULL);                         \
     JS::CallArgs argv G_GNUC_UNUSED = JS::CallArgsFromVp(argc, vp);
 
 /**

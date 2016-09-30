@@ -34,13 +34,15 @@ G_BEGIN_DECLS
 bool      gjs_define_union_class       (JSContext    *context,
                                         JSObject     *in_object,
                                         GIUnionInfo  *info);
-void*     gjs_c_union_from_union       (JSContext    *context,
-                                        JSObject     *obj);
+
+void     *gjs_c_union_from_union(JSContext       *context,
+                                 JS::HandleObject obj);
+
 JSObject* gjs_union_from_c_union       (JSContext    *context,
                                         GIUnionInfo  *info,
                                         void         *gboxed);
 bool      gjs_typecheck_union          (JSContext             *context,
-                                        JSObject              *obj,
+                                        JS::HandleObject       obj,
                                         GIStructInfo          *expected_info,
                                         GType                  expected_type,
                                         bool                   throw_error);

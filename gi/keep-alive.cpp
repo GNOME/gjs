@@ -178,7 +178,6 @@ JSObject*
 gjs_keep_alive_new(JSContext *context)
 {
     KeepAlive *priv;
-    JSObject *keep_alive = NULL;
     JSObject *global;
     JSBool found;
 
@@ -190,14 +189,14 @@ gjs_keep_alive_new(JSContext *context)
 
     g_assert(context != NULL);
 
-    JS_BeginRequest(context);
+    JSAutoRequest ar(context);
 
     global = gjs_get_import_global(context);
 
     g_assert(global != NULL);
 
     if (!JS_HasProperty(context, global, gjs_keep_alive_class.name, &found))
-        goto out;
+        return NULL;
 
     if (!found) {
         JSObject *prototype;
@@ -239,7 +238,8 @@ gjs_keep_alive_new(JSContext *context)
               "Creating new keep-alive object for context %p global %p",
               context, global);
 
-    keep_alive = JS_NewObject(context, &gjs_keep_alive_class, NULL, global);
+    JS::RootedObject keep_alive(context,
+                                JS_NewObject(context, &gjs_keep_alive_class, NULL, global));
     if (keep_alive == NULL) {
         gjs_log_exception(context);
         g_error("Failed to create keep_alive object");
@@ -252,10 +252,8 @@ gjs_keep_alive_new(JSContext *context)
     JS_SetPrivate(keep_alive, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE,
-                        "keep_alive constructor, obj %p priv %p", keep_alive, priv);
-
- out:
-    JS_EndRequest(context);
+                        "keep_alive constructor, obj %p priv %p",
+                        keep_alive.get(), priv);
 
     return keep_alive;
 }

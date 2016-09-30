@@ -40,15 +40,19 @@ bool      gjs_define_fundamental_class       (JSContext     *context,
 JSObject* gjs_object_from_g_fundamental      (JSContext     *context,
                                               GIObjectInfo  *info,
                                               void          *fobj);
-void*     gjs_g_fundamental_from_object      (JSContext     *context,
-                                              JSObject      *obj);
+
+void     *gjs_g_fundamental_from_object(JSContext       *context,
+                                        JS::HandleObject obj);
+
 JSObject *gjs_fundamental_from_g_value       (JSContext     *context,
                                               const GValue  *value,
                                               GType          gtype);
-bool      gjs_typecheck_fundamental          (JSContext     *context,
-                                              JSObject      *object,
-                                              GType          expected_gtype,
-                                              bool           throw_error);
+
+bool      gjs_typecheck_fundamental(JSContext       *context,
+                                    JS::HandleObject object,
+                                    GType            expected_gtype,
+                                    bool             throw_error);
+
 bool      gjs_typecheck_is_fundamental       (JSContext     *context,
                                               JSObject      *object,
                                               bool           throw_error);

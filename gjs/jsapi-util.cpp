@@ -473,13 +473,23 @@ gjs_explain_scope(JSContext  *context,
     JS_EndRequest(context);
 }
 
+static char *
+utf8_exception_from_non_gerror_value(JSContext *cx,
+                                     JS::Value  exc)
+{
+    char *utf8_exception = NULL;
+    JSString *exc_str = JS_ValueToString(cx, exc);
+    if (exc_str != NULL)
+        gjs_string_to_utf8(cx, JS::StringValue(exc_str), &utf8_exception);
+    return utf8_exception;
+}
+
 bool
 gjs_log_exception_full(JSContext *context,
                        JS::Value  exc,
                        JSString  *message)
 {
     JS::Value stack;
-    JSString *exc_str;
     char *utf8_exception, *utf8_message;
     bool is_syntax;
 
@@ -487,32 +497,28 @@ gjs_log_exception_full(JSContext *context,
 
     is_syntax = false;
 
-    if (exc.isObject() &&
-        gjs_typecheck_boxed(context, &exc.toObject(), NULL, G_TYPE_ERROR, false)) {
-        GError *gerror;
-
-        gerror = (GError*) gjs_c_struct_from_boxed(context, &exc.toObject());
-        utf8_exception = g_strdup_printf("GLib.Error %s: %s",
-                                         g_quark_to_string(gerror->domain),
-                                         gerror->message);
+    if (!exc.isObject()) {
+        utf8_exception = utf8_exception_from_non_gerror_value(context, exc);
     } else {
-        if (exc.isObject()) {
+        JS::RootedObject exc_obj(context, &exc.toObject());
+        if (gjs_typecheck_boxed(context, exc_obj, NULL, G_TYPE_ERROR, false)) {
+            GError *gerror = (GError *) gjs_c_struct_from_boxed(context, exc_obj);
+            utf8_exception = g_strdup_printf("GLib.Error %s: %s",
+                                             g_quark_to_string(gerror->domain),
+                                             gerror->message);
+        } else {
             JS::Value js_name;
             char *utf8_name;
 
-            if (gjs_object_get_property_const(context, &exc.toObject(),
+            if (gjs_object_get_property_const(context, exc_obj,
                                               GJS_STRING_NAME, &js_name) &&
                 js_name.isString() &&
                 gjs_string_to_utf8(context, js_name, &utf8_name)) {
                 is_syntax = strcmp("SyntaxError", utf8_name) == 0;
             }
-        }
 
-        exc_str = JS_ValueToString(context, exc);
-        if (exc_str != NULL)
-            gjs_string_to_utf8(context, JS::StringValue(exc_str), &utf8_exception);
-        else
-            utf8_exception = NULL;
+            utf8_exception = utf8_exception_from_non_gerror_value(context, exc);
+        }
     }
 
     if (message != NULL)

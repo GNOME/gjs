@@ -41,15 +41,18 @@ bool      gjs_lookup_object_constructor (JSContext     *context,
                                          JS::Value     *value_p);
 JSObject* gjs_object_from_g_object      (JSContext     *context,
                                          GObject       *gobj);
-GObject*  gjs_g_object_from_object      (JSContext     *context,
-                                         JSObject      *obj);
-bool      gjs_typecheck_object          (JSContext     *context,
-                                         JSObject      *obj,
-                                         GType          expected_type,
-                                         bool           throw_error);
-bool      gjs_typecheck_is_object       (JSContext     *context,
-                                         JSObject      *obj,
-                                         bool           throw_error);
+
+GObject  *gjs_g_object_from_object(JSContext       *context,
+                                   JS::HandleObject obj);
+
+bool      gjs_typecheck_object(JSContext       *context,
+                               JS::HandleObject obj,
+                               GType            expected_type,
+                               bool             throw_error);
+
+bool      gjs_typecheck_is_object(JSContext       *context,
+                                  JS::HandleObject obj,
+                                  bool             throw_error);
 
 void      gjs_object_prepare_shutdown   (JSContext     *context);
 

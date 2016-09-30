@@ -204,7 +204,8 @@ boxed_get_copy_source(JSContext *context,
     if (!value.isObject())
         return false;
 
-    if (!priv_from_js_with_typecheck(context, &value.toObject(), &source_priv))
+    JS::RootedObject object(context, &value.toObject());
+    if (!priv_from_js_with_typecheck(context, object, &source_priv))
         return false;
 
     if (!g_base_info_equal((GIBaseInfo*) priv->info, (GIBaseInfo*) source_priv->info))
@@ -427,7 +428,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(boxed)
     Boxed *priv;
     Boxed *proto_priv;
-    JSObject *proto;
+    JS::RootedObject proto(context);
     Boxed *source_priv;
     JS::Value actual_rval;
     bool retval;
@@ -443,10 +444,11 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
 
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                         "boxed constructor, obj %p priv %p",
-                        object, priv);
+                        object.get(), priv);
 
-    JS_GetPrototype(context, object, &proto);
-    gjs_debug_lifecycle(GJS_DEBUG_GBOXED, "boxed instance __proto__ is %p", proto);
+    JS_GetPrototype(context, object, proto.address());
+    gjs_debug_lifecycle(GJS_DEBUG_GBOXED, "boxed instance __proto__ is %p",
+                        proto.get());
     /* If we're the prototype, then post-construct we'll fill in priv->info.
      * If we are not the prototype, though, then we'll get ->info from the
      * prototype and then create a GObject if we don't have one already.
@@ -583,7 +585,6 @@ get_nested_interface_object (JSContext   *context,
                              JS::Value   *value)
 {
     JSObject *obj;
-    JSObject *proto;
     int offset;
     Boxed *priv;
     Boxed *proto_priv;
@@ -596,7 +597,9 @@ get_nested_interface_object (JSContext   *context,
         return false;
     }
 
-    proto = gjs_lookup_generic_prototype(context, (GIBoxedInfo*) interface_info);
+    JS::RootedObject proto(context,
+                           gjs_lookup_generic_prototype(context,
+                                                        (GIBoxedInfo*) interface_info));
     proto_priv = priv_from_js(context, proto);
 
     offset = g_field_info_get_offset (field_info);
@@ -707,7 +710,6 @@ set_nested_interface_object (JSContext   *context,
                              GIBaseInfo  *interface_info,
                              JS::Value    value)
 {
-    JSObject *proto;
     int offset;
     Boxed *proto_priv;
     Boxed *source_priv;
@@ -720,14 +722,17 @@ set_nested_interface_object (JSContext   *context,
         return false;
     }
 
-    proto = gjs_lookup_generic_prototype(context, (GIBoxedInfo*) interface_info);
+    JS::RootedObject proto(context,
+                           gjs_lookup_generic_prototype(context,
+                                                        (GIBoxedInfo*) interface_info));
     proto_priv = priv_from_js(context, proto);
 
     /* If we can't directly copy from the source object we need
      * to construct a new temporary object.
      */
     if (!boxed_get_copy_source(context, proto_priv, value, &source_priv)) {
-        JSObject *tmp_object = gjs_construct_object_dynamic(context, proto, 1, &value);
+        JS::RootedObject tmp_object(context,
+                                    gjs_construct_object_dynamic(context, proto, 1, &value));
         if (!tmp_object)
             return false;
 
@@ -893,7 +898,7 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, rec.thisv().toObjectOrNull());
 
     Boxed *priv;
     bool ret = false;
@@ -1196,7 +1201,6 @@ gjs_boxed_from_c_struct(JSContext             *context,
                         GjsBoxedCreationFlags  flags)
 {
     JSObject *obj;
-    JSObject *proto;
     Boxed *priv;
     Boxed *proto_priv;
 
@@ -1207,7 +1211,7 @@ gjs_boxed_from_c_struct(JSContext             *context,
                       "Wrapping struct %s %p with JSObject",
                       g_base_info_get_name((GIBaseInfo *)info), gboxed);
 
-    proto = gjs_lookup_generic_prototype(context, info);
+    JS::RootedObject proto(context, gjs_lookup_generic_prototype(context, info));
     proto_priv = priv_from_js(context, proto);
 
     obj = JS_NewObjectWithGivenProto(context,
@@ -1248,8 +1252,8 @@ gjs_boxed_from_c_struct(JSContext             *context,
 }
 
 void*
-gjs_c_struct_from_boxed(JSContext    *context,
-                        JSObject     *obj)
+gjs_c_struct_from_boxed(JSContext       *context,
+                        JS::HandleObject obj)
 {
     Boxed *priv;
 
@@ -1264,11 +1268,11 @@ gjs_c_struct_from_boxed(JSContext    *context,
 }
 
 bool
-gjs_typecheck_boxed(JSContext     *context,
-                    JSObject      *object,
-                    GIStructInfo  *expected_info,
-                    GType          expected_type,
-                    bool           throw_error)
+gjs_typecheck_boxed(JSContext       *context,
+                    JS::HandleObject object,
+                    GIStructInfo    *expected_info,
+                    GType            expected_type,
+                    bool             throw_error)
 {
     Boxed *priv;
     bool result;

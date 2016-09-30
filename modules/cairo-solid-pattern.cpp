@@ -107,13 +107,12 @@ JSObject *
 gjs_cairo_solid_pattern_from_pattern(JSContext       *context,
                                      cairo_pattern_t *pattern)
 {
-    JSObject *object;
-
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(pattern != NULL, NULL);
     g_return_val_if_fail(cairo_pattern_get_type(pattern) == CAIRO_PATTERN_TYPE_SOLID, NULL);
 
-    object = JS_NewObject(context, &gjs_cairo_solid_pattern_class, NULL, NULL);
+    JS::RootedObject object(context,
+                            JS_NewObject(context, &gjs_cairo_solid_pattern_class, NULL, NULL));
     if (!object) {
         gjs_throw(context, "failed to create solid pattern");
         return NULL;

@@ -63,10 +63,11 @@ gjs_refcount(JSContext *context,
              JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *target_obj;
+    JS::RootedObject target_obj(context);
     GObject *obj;
 
-    if (!gjs_parse_call_args(context, "refcount", "o", argv, "object", &target_obj))
+    if (!gjs_parse_call_args(context, "refcount", "o", argv,
+                             "object", target_obj.address()))
         return false;
 
     if (!gjs_typecheck_object(context, target_obj, G_TYPE_OBJECT, true))

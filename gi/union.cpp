@@ -139,9 +139,9 @@ union_new_resolve(JSContext *context,
 }
 
 static void*
-union_new(JSContext   *context,
-          JSObject    *obj, /* "this" for constructor */
-          GIUnionInfo *info)
+union_new(JSContext       *context,
+          JS::HandleObject obj, /* "this" for constructor */
+          GIUnionInfo     *info)
 {
     int n_methods;
     int i;
@@ -172,10 +172,12 @@ union_new(JSContext   *context,
              * creates a JSObject wrapper for the union that we immediately
              * discard.
              */
-            if (rval.isNull())
+            if (rval.isNull()) {
                 return NULL;
-            else
-                return gjs_c_union_from_union(context, &rval.toObject());
+            } else {
+                JS::RootedObject rval_obj(context, &rval.toObject());
+                return gjs_c_union_from_union(context, rval_obj);
+            }
         }
 
         g_base_info_unref((GIBaseInfo*) func_info);
@@ -192,7 +194,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(union)
     Union *priv;
     Union *proto_priv;
-    JSObject *proto;
+    JS::RootedObject proto(context);
     void *gboxed;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(union);
@@ -206,10 +208,11 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
 
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                         "union constructor, obj %p priv %p",
-                        object, priv);
+                        object.get(), priv);
 
-    JS_GetPrototype(context, object, &proto);
-    gjs_debug_lifecycle(GJS_DEBUG_GBOXED, "union instance __proto__ is %p", proto);
+    JS_GetPrototype(context, object, proto.address());
+    gjs_debug_lifecycle(GJS_DEBUG_GBOXED, "union instance __proto__ is %p",
+                        proto.get());
 
     /* If we're the prototype, then post-construct we'll fill in priv->info.
      * If we are not the prototype, though, then we'll get ->info from the
@@ -285,7 +288,7 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
+    JS::RootedObject obj(context, rec.thisv().toObjectOrNull());
 
     Union *priv;
     bool ret = false;
@@ -442,8 +445,8 @@ gjs_union_from_c_union(JSContext    *context,
 }
 
 void*
-gjs_c_union_from_union(JSContext    *context,
-                       JSObject     *obj)
+gjs_c_union_from_union(JSContext       *context,
+                       JS::HandleObject obj)
 {
     Union *priv;
 
@@ -456,11 +459,11 @@ gjs_c_union_from_union(JSContext    *context,
 }
 
 bool
-gjs_typecheck_union(JSContext     *context,
-                    JSObject      *object,
-                    GIStructInfo  *expected_info,
-                    GType          expected_type,
-                    bool           throw_error)
+gjs_typecheck_union(JSContext       *context,
+                    JS::HandleObject object,
+                    GIStructInfo    *expected_info,
+                    GType            expected_type,
+                    bool             throw_error)
 {
     Union *priv;
     bool result;

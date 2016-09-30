@@ -355,8 +355,10 @@ gjs_value_guess_g_type(JSContext *context,
     if (value.isBoolean())
         return G_TYPE_BOOLEAN;
 
-    if (value.isObject())
-        return gjs_gtype_get_actual_gtype(context, &value.toObject());
+    if (value.isObject()) {
+        JS::RootedObject obj(context, &value.toObject());
+        return gjs_gtype_get_actual_gtype(context, obj);
+    }
 
     return G_TYPE_INVALID;
 }
@@ -480,8 +482,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
         if (value.isNull()) {
             /* nothing to do */
         } else if (value.isObject()) {
-            JSObject *obj;
-            obj = &value.toObject();
+            JS::RootedObject obj(context, &value.toObject());
 
             if (!gjs_typecheck_object(context, obj, gtype, true))
                 return false;
@@ -542,8 +543,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
         if (value.isNull()) {
             /* nothing to do */
         } else if (value.isObject()) {
-            JSObject *obj;
-            obj = &value.toObject();
+            JS::RootedObject obj(context, &value.toObject());
 
             if (g_type_is_a(gtype, G_TYPE_ERROR)) {
                 /* special case GError */
@@ -611,7 +611,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
         if (value.isNull()) {
             /* nothing to do */
         } else if (value.isObject()) {
-            JSObject *obj = &value.toObject();
+            JS::RootedObject obj(context, &value.toObject());
 
             if (!gjs_typecheck_boxed(context, obj, NULL, G_TYPE_VARIANT, true))
                 return false;
@@ -675,8 +675,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
         if (value.isNull()) {
             /* nothing to do */
         } else if (value.isObject()) {
-            JSObject *obj;
-            obj = &value.toObject();
+            JS::RootedObject obj(context, &value.toObject());
 
             if (!gjs_typecheck_param(context, obj, gtype, true))
                 return false;
@@ -700,7 +699,8 @@ gjs_value_to_g_value_internal(JSContext    *context,
             return false;
         }
 
-        type = gjs_gtype_get_actual_gtype(context, &value.toObject());
+        JS::RootedObject obj(context, &value.toObject());
+        type = gjs_gtype_get_actual_gtype(context, obj);
         g_value_set_gtype(gvalue, type);
     } else if (g_type_is_a(gtype, G_TYPE_POINTER)) {
         if (value.isNull()) {

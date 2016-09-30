@@ -33,14 +33,17 @@ G_BEGIN_DECLS
 
 void        gjs_define_param_class     (JSContext  *context,
                                         JSObject   *in_object);
-GParamSpec* gjs_g_param_from_param     (JSContext  *context,
-                                        JSObject   *obj);
+
+GParamSpec *gjs_g_param_from_param (JSContext       *context,
+                                    JS::HandleObject obj);
+
 JSObject*   gjs_param_from_g_param     (JSContext  *context,
                                         GParamSpec *param);
-bool        gjs_typecheck_param        (JSContext  *context,
-                                        JSObject   *obj,
-                                        GType       expected_type,
-                                        bool        throw_error);
+
+bool        gjs_typecheck_param(JSContext       *context,
+                                JS::HandleObject obj,
+                                GType            expected_type,
+                                bool             throw_error);
 
 G_END_DECLS
 
