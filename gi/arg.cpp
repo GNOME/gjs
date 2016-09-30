@@ -1413,12 +1413,13 @@ gjs_value_to_g_argument(JSContext      *context,
             } else if (value.isNull()) {
                 arg->v_pointer = NULL;
             } else if (value.isObject()) {
+                JSObject *obj = &value.toObject();
                 if (interface_type == GI_INFO_TYPE_STRUCT &&
                     g_struct_info_is_gtype_struct((GIStructInfo*)interface_info)) {
                     GType actual_gtype;
                     gpointer klass;
 
-                    actual_gtype = gjs_gtype_get_actual_gtype(context, &value.toObject());
+                    actual_gtype = gjs_gtype_get_actual_gtype(context, obj);
 
                     if (actual_gtype == G_TYPE_NONE) {
                         wrong = true;
@@ -1442,27 +1443,24 @@ gjs_value_to_g_argument(JSContext      *context,
                     /* Handle Struct/Union first since we don't necessarily need a GType for them */
                     /* We special case Closures later, so skip them here */
                     !g_type_is_a(gtype, G_TYPE_CLOSURE)) {
-                    JSObject *obj = &value.toObject();
 
                     if (g_type_is_a(gtype, G_TYPE_BYTES)
                         && gjs_typecheck_bytearray(context, obj, false)) {
                         arg->v_pointer = gjs_byte_array_get_bytes(context, obj);
                     } else if (g_type_is_a(gtype, G_TYPE_ERROR)) {
-                        if (!gjs_typecheck_gerror(context, &value.toObject(), true)) {
+                        if (!gjs_typecheck_gerror(context, obj, true)) {
                             arg->v_pointer = NULL;
                             wrong = true;
                         } else {
-                            arg->v_pointer = gjs_gerror_from_error(context,
-                                                                   &value.toObject());
+                            arg->v_pointer = gjs_gerror_from_error(context, obj);
                         }
                     } else {
-                        if (!gjs_typecheck_boxed(context, &value.toObject(),
-                                                 interface_info, gtype, true)) {
+                        if (!gjs_typecheck_boxed(context, obj, interface_info,
+                                                 gtype, true)) {
                             arg->v_pointer = NULL;
                             wrong = true;
                         } else {
-                            arg->v_pointer = gjs_c_struct_from_boxed(context,
-                                                                     &value.toObject());
+                            arg->v_pointer = gjs_c_struct_from_boxed(context, obj);
                         }
                     }
 
@@ -1480,10 +1478,8 @@ gjs_value_to_g_argument(JSContext      *context,
                     }
 
                 } else if (interface_type == GI_INFO_TYPE_UNION) {
-                    if (gjs_typecheck_union(context, &value.toObject(),
-                                            interface_info, gtype, true)) {
-                        arg->v_pointer = gjs_c_union_from_union(context,
-                                                                &value.toObject());
+                    if (gjs_typecheck_union(context, obj, interface_info, gtype, true)) {
+                        arg->v_pointer = gjs_c_union_from_union(context, obj);
 
                         if (transfer != GI_TRANSFER_NOTHING) {
                             if (g_type_is_a(gtype, G_TYPE_BOXED))
@@ -1503,9 +1499,8 @@ gjs_value_to_g_argument(JSContext      *context,
 
                 } else if (gtype != G_TYPE_NONE) {
                     if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
-                        if (gjs_typecheck_object(context, &value.toObject(), gtype, true)) {
-                            arg->v_pointer = gjs_g_object_from_object(context,
-                                                                      &value.toObject());
+                        if (gjs_typecheck_object(context, obj, gtype, true)) {
+                            arg->v_pointer = gjs_g_object_from_object(context, obj);
 
                             if (transfer != GI_TRANSFER_NOTHING)
                                 g_object_ref(G_OBJECT(arg->v_pointer));
@@ -1514,8 +1509,8 @@ gjs_value_to_g_argument(JSContext      *context,
                             wrong = true;
                         }
                     } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-                        if (gjs_typecheck_param(context, &value.toObject(), gtype, true)) {
-                            arg->v_pointer = gjs_g_param_from_param(context, &value.toObject());
+                        if (gjs_typecheck_param(context, obj, gtype, true)) {
+                            arg->v_pointer = gjs_g_param_from_param(context, obj);
                             if (transfer != GI_TRANSFER_NOTHING)
                                 g_param_spec_ref(G_PARAM_SPEC(arg->v_pointer));
                         } else {
@@ -1537,9 +1532,8 @@ gjs_value_to_g_argument(JSContext      *context,
                                       interface_type);
                         }
                     } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-                        if (gjs_typecheck_fundamental(context, &value.toObject(), gtype, true)) {
-                            arg->v_pointer = gjs_g_fundamental_from_object(context,
-                                                                           &value.toObject());
+                        if (gjs_typecheck_fundamental(context, obj, gtype, true)) {
+                            arg->v_pointer = gjs_g_fundamental_from_object(context, obj);
 
                             if (transfer != GI_TRANSFER_NOTHING)
                                 gjs_fundamental_ref(context, arg->v_pointer);
@@ -1550,19 +1544,19 @@ gjs_value_to_g_argument(JSContext      *context,
                     } else if (G_TYPE_IS_INTERFACE(gtype)) {
                         /* Could be a GObject interface that's missing a prerequisite, or could
                            be a fundamental */
-                        if (gjs_typecheck_object(context, &value.toObject(), gtype, false)) {
-                            arg->v_pointer = gjs_g_object_from_object(context, &value.toObject());
+                        if (gjs_typecheck_object(context, obj, gtype, false)) {
+                            arg->v_pointer = gjs_g_object_from_object(context, obj);
 
                             if (transfer != GI_TRANSFER_NOTHING)
                                 g_object_ref(arg->v_pointer);
-                        } else if (gjs_typecheck_fundamental(context, &value.toObject(), gtype, false)) {
-                            arg->v_pointer = gjs_g_fundamental_from_object(context, &value.toObject());
+                        } else if (gjs_typecheck_fundamental(context, obj, gtype, false)) {
+                            arg->v_pointer = gjs_g_fundamental_from_object(context, obj);
 
                             if (transfer != GI_TRANSFER_NOTHING)
                                 gjs_fundamental_ref(context, arg->v_pointer);
                         } else {
                             /* Call again with throw=true to set the exception */
-                            gjs_typecheck_object(context, &value.toObject(), gtype, true);
+                            gjs_typecheck_object(context, obj, gtype, true);
                             arg->v_pointer = NULL;
                             wrong = true;
                         }
