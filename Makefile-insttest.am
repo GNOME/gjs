@@ -14,6 +14,7 @@ endif
 jsunit.test: installed-tests/jsunit.test.in Makefile
 	$(AM_V_GEN)$(MKDIR_P) $(@D) && \
 	$(SED) -e s,@pkglibexecdir\@,$(pkglibexecdir), < $< > $@.tmp && mv $@.tmp $@
+MAINTAINERCLEANFILES += jsunit.test
 
 gjsinsttestdir = $(pkglibexecdir)/installed-tests
 gjsinsttest_PROGRAMS = 
@@ -195,3 +196,5 @@ jsscripttestsdir = $(gjsinsttestdir)/scripts
 jsscripttests_DATA = installed-tests/scripts/testSystemExit.js
 installedtestmeta_DATA += testSystemExit.test
 endif
+
+MAINTAINERCLEANFILES += testSystemExit.test

@@ -18,6 +18,12 @@ INTROSPECTION_GIRS =
 ACLOCAL_AMFLAGS = -I m4
 AM_CXXFLAGS = $(WARN_CXXFLAGS)
 AM_CPPFLAGS = -DG_LOG_DOMAIN=\"Gjs\"
+MAINTAINERCLEANFILES =					\
+	$(GITIGNORE_MAINTAINERCLEANFILES_TOPLEVEL)	\
+	$(GITIGNORE_MAINTAINERCLEANFILES_MAKEFILE_IN)	\
+	$(GITIGNORE_MAINTAINERCLEANFILES_M4_LIBTOOL)	\
+	$(NULL)
+GITIGNOREFILES = INSTALL m4
 
 gjsjsdir = @gjsjsdir@
 gjsoverridedir = $(gjsjsdir)/overrides
@@ -263,3 +269,5 @@ upload-release: $(DISTNAME) Makefile
 	git push --tags origin master:master
 	scp $(DISTNAME) master.gnome.org:
 	ssh master.gnome.org install-module $(DISTNAME)
+
+-include $(top_srcdir)/git.mk
