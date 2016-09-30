@@ -578,14 +578,10 @@ from_string_func(JSContext *context,
     ByteArrayInstance *priv;
     char *encoding;
     bool encoding_is_utf8;
-    JSObject *obj;
-    bool retval = false;
+    JS::RootedObject obj(context, byte_array_new(context));
 
-    obj = byte_array_new(context);
     if (obj == NULL)
         return false;
-
-    JS_AddObjectRoot(context, &obj);
 
     priv = priv_from_js(context, obj);
     g_assert (priv != NULL);
@@ -597,12 +593,12 @@ from_string_func(JSContext *context,
     if (!argv[0].isString()) {
         gjs_throw(context,
                   "byteArray.fromString() called with non-string as first arg");
-        goto out;
+        return false;
     }
 
     if (argc > 1 && argv[1].isString()) {
         if (!gjs_string_to_utf8(context, argv[1], &encoding))
-            goto out;
+            return false;
 
         /* maybe we should be smarter about utf8 synonyms here.
          * doesn't matter much though. encoding_is_utf8 is
@@ -627,7 +623,7 @@ from_string_func(JSContext *context,
         if (!gjs_string_to_utf8(context,
                                 argv[0],
                                 &utf8))
-            goto out;
+            return false;
 
         g_byte_array_set_size(priv->array, 0);
         g_byte_array_append(priv->array, (guint8*) utf8, strlen(utf8));
@@ -641,7 +637,7 @@ from_string_func(JSContext *context,
 
         u16_chars = JS_GetStringCharsAndLength(context, argv[0].toString(), &u16_len);
         if (u16_chars == NULL)
-            goto out;
+            return false;
 
         error = NULL;
         encoded = g_convert((char*) u16_chars,
@@ -655,7 +651,7 @@ from_string_func(JSContext *context,
         if (encoded == NULL) {
             /* frees the GError */
             gjs_throw_g_error(context, error);
-            goto out;
+            return false;
         }
 
         g_byte_array_set_size(priv->array, 0);
@@ -665,11 +661,7 @@ from_string_func(JSContext *context,
     }
 
     argv.rval().setObject(*obj);
-
-    retval = true;
- out:
-    JS_RemoveObjectRoot(context, &obj);
-    return retval;
+    return true;
 }
 
 /* fromArray() function implementation */
@@ -682,14 +674,10 @@ from_array_func(JSContext *context,
     ByteArrayInstance *priv;
     guint32 len;
     guint32 i;
-    JSObject *obj;
-    bool ret = false;
+    JS::RootedObject obj(context, byte_array_new(context));
 
-    obj = byte_array_new(context);
     if (obj == NULL)
         return false;
-
-    JS_AddObjectRoot(context, &obj);
 
     priv = priv_from_js(context, obj);
     g_assert (priv != NULL);
@@ -701,13 +689,13 @@ from_array_func(JSContext *context,
     if (!JS_IsArrayObject(context, &argv[0].toObject())) {
         gjs_throw(context,
                   "byteArray.fromArray() called with non-array as first arg");
-        goto out;
+        return false;
     }
 
     if (!JS_GetArrayLength(context, &argv[0].toObject(), &len)) {
         gjs_throw(context,
                   "byteArray.fromArray() can't get length of first array arg");
-        goto out;
+        return false;
     }
 
     g_byte_array_set_size(priv->array, len);
@@ -721,23 +709,20 @@ from_array_func(JSContext *context,
             /* this means there was an exception, while elem.isUndefined()
              * means no element found
              */
-            goto out;
+            return false;
         }
 
         if (elem.isUndefined())
             continue;
 
         if (!gjs_value_to_byte(context, elem, &b))
-            goto out;
+            return false;
 
         g_array_index(priv->array, guint8, i) = b;
     }
 
-    ret = true;
     argv.rval().setObject(*obj);
- out:
-    JS_RemoveObjectRoot(context, &obj);
-    return ret;
+    return true;
 }
 
 static JSBool

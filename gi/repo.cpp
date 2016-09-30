@@ -96,13 +96,11 @@ resolve_namespace_object(JSContext  *context,
     char *version;
     JSObject *override;
     JS::Value result;
-    JSObject *gi_namespace = NULL;
-    bool ret = false;
 
-    JS_BeginRequest(context);
+    JSAutoRequest ar(context);
 
     if (!get_version_for_ns(context, repo_obj, ns_id, &version))
-        goto out;
+        return false;
 
     repo = g_irepository_get_default();
 
@@ -115,7 +113,7 @@ resolve_namespace_object(JSContext  *context,
 
         g_error_free(error);
         g_free(version);
-        goto out;
+        return false;
     }
 
     g_free(version);
@@ -124,8 +122,7 @@ resolve_namespace_object(JSContext  *context,
      * with the given namespace name, pointing to that namespace
      * in the repo.
      */
-    gi_namespace = gjs_create_ns(context, ns_name);
-    JS_AddObjectRoot(context, &gi_namespace);
+    JS::RootedObject gi_namespace(context, gjs_create_ns(context, ns_name));
 
     /* Define the property early, to avoid reentrancy issues if
        the override module looks for namespaces that import this */
@@ -142,19 +139,14 @@ resolve_namespace_object(JSContext  *context,
                                            0, /* argc */
                                            NULL, /* argv */
                                            &result))
-        goto out;
+        return false;
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
-              "Defined namespace '%s' %p in GIRepository %p", ns_name, gi_namespace, repo_obj);
+              "Defined namespace '%s' %p in GIRepository %p", ns_name,
+              gi_namespace.get(), repo_obj);
 
-    ret = true;
     gjs_schedule_gc_if_needed(context);
-
- out:
-    if (gi_namespace)
-        JS_RemoveObjectRoot(context, &gi_namespace);
-    JS_EndRequest(context);
-    return ret;
+    return true;
 }
 
 /*

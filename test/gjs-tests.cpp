@@ -168,7 +168,7 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
     GjsUnitTestFixture fixture;
     JSContext *context;
     JSObject *global;
-    JS::Value exc, value, previous;
+    JS::Value exc, value;
     char *s = NULL;
     int strcmp_result;
 
@@ -200,8 +200,7 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
         g_error("Exception has wrong message '%s'", s);
 
     /* keep this around before we clear it */
-    previous = exc;
-    JS_AddValueRoot(context, &previous);
+    JS::RootedValue previous(context, exc);
 
     JS_ClearPendingException(context);
 
@@ -220,8 +219,6 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
     JS_GetPendingException(context, &exc);
     g_assert(!exc.isUndefined());
     g_assert(&exc.toObject() == &previous.toObject());
-
-    JS_RemoveValueRoot(context, &previous);
 
     JS_LeaveCompartment(context, oldCompartment);
     _gjs_unit_test_fixture_finish(&fixture);

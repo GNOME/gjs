@@ -566,17 +566,16 @@ setDash_func(JSContext *context,
 
     guint i;
     cairo_t *cr;
-    JSObject *dashes;
+    JS::RootedObject dashes(context);
     double offset;
     bool retval = false;
     guint len;
     GArray *dashes_c = NULL;
 
     if (!gjs_parse_call_args(context, "setDash", "of", argv,
-                        "dashes", &dashes, "offset", &offset))
+                        "dashes", dashes.address(), "offset", &offset))
         return false;
 
-    JS_AddObjectRoot(context, &dashes);
 
     if (!JS_IsArrayObject(context, dashes)) {
         gjs_throw(context, "dashes must be an array");
@@ -617,7 +616,6 @@ setDash_func(JSContext *context,
  out:
     if (dashes_c != NULL)
         g_array_free (dashes_c, true);
-    JS_RemoveObjectRoot(context, &dashes);
     return retval;
 }
 

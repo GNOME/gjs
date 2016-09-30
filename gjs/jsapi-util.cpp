@@ -589,13 +589,12 @@ static bool
 log_and_maybe_keep_exception(JSContext  *context,
                              bool        keep)
 {
-    JS::Value exc = JS::UndefinedValue();
     bool retval = false;
 
     JS_BeginRequest(context);
 
-    JS_AddValueRoot(context, &exc);
-    if (!JS_GetPendingException(context, &exc))
+    JS::RootedValue exc(context, JS::UndefinedValue());
+    if (!JS_GetPendingException(context, exc.address()))
         goto out;
 
     JS_ClearPendingException(context);
@@ -611,8 +610,6 @@ log_and_maybe_keep_exception(JSContext  *context,
     retval = true;
 
  out:
-    JS_RemoveValueRoot(context, &exc);
-
     JS_EndRequest(context);
 
     return retval;
