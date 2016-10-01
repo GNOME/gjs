@@ -1171,7 +1171,7 @@ gjs_value_to_g_argument(JSContext      *context,
 
     case GI_TYPE_TAG_INT8: {
         gint32 i;
-        if (!JS_ValueToInt32(context, value, &i))
+        if (!JS::ToInt32(context, value, &i))
             wrong = true;
         if (i > G_MAXINT8 || i < G_MININT8)
             out_of_range = true;
@@ -1189,7 +1189,7 @@ gjs_value_to_g_argument(JSContext      *context,
     }
     case GI_TYPE_TAG_INT16: {
         gint32 i;
-        if (!JS_ValueToInt32(context, value, &i))
+        if (!JS::ToInt32(context, value, &i))
             wrong = true;
         if (i > G_MAXINT16 || i < G_MININT16)
             out_of_range = true;
@@ -1208,7 +1208,7 @@ gjs_value_to_g_argument(JSContext      *context,
     }
 
     case GI_TYPE_TAG_INT32:
-        if (!JS_ValueToInt32(context, value, &arg->v_int))
+        if (!JS::ToInt32(context, value, &arg->v_int))
             wrong = true;
         break;
 
@@ -1583,9 +1583,9 @@ gjs_value_to_g_argument(JSContext      *context,
 
             } else if (value.isNumber()) {
                 if (interface_type == GI_INFO_TYPE_ENUM) {
-                    gint64 value_int64;
+                    int64_t value_int64;
 
-                    if (!gjs_value_to_int64 (context, value, &value_int64))
+                    if (!JS::ToInt64(context, value, &value_int64))
                         wrong = true;
                     else if (!_gjs_enum_value_is_valid(context, (GIEnumInfo *)interface_info, value_int64))
                         wrong = true;
@@ -1593,9 +1593,9 @@ gjs_value_to_g_argument(JSContext      *context,
                         arg->v_int = _gjs_enum_to_int ((GIEnumInfo *)interface_info, value_int64);
 
                 } else if (interface_type == GI_INFO_TYPE_FLAGS) {
-                    gint64 value_int64;
+                    int64_t value_int64;
 
-                    if (!gjs_value_to_int64 (context, value, &value_int64))
+                    if (!JS::ToInt64(context, value, &value_int64))
                         wrong = true;
                     else if (!_gjs_flags_value_is_valid(context, gtype, value_int64))
                         wrong = true;

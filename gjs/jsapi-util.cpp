@@ -817,46 +817,18 @@ gjs_get_type_name(JS::Value value)
  * gjs_value_to_int64:
  * @context: the Javascript context object
  * @val: Javascript value to convert
- * @gint64: location to store the return value
+ * @result: location to store the return value
  *
  * Converts a Javascript value into the nearest 64 bit signed value.
  *
- * This function behaves indentically for rounding to JS_ValueToInt32(), which
- * means that it rounds (0.5 toward positive infinity) rather than doing
- * a C-style truncation to 0. If we change to using JS::ToInt32() then this
- * should be changed to match.
- *
- * Return value: If the javascript value converted to a number (see
- *   JS::ToNumber()) is NaN, or outside the range of 64-bit signed numbers,
- *   fails and sets an exception. Otherwise returns the value rounded to the
- *   nearest 64-bit integer. Like JS::ToInt32(), undefined throws, but
- *   null => 0, false => 0, true => 1.
+ * Deprecated: Use JS::ToInt64() instead.
  */
 bool
 gjs_value_to_int64(JSContext      *context,
                    const JS::Value val,
                    gint64         *result)
 {
-    if (val.isInt32()) {
-        *result = val.toInt32();
-        return true;
-    } else {
-        double value_double;
-        if (!JS::ToNumber(context, val, &value_double))
-            return false;
-
-        if (isnan(value_double) ||
-            value_double < G_MININT64 ||
-            value_double > G_MAXINT64) {
-
-            gjs_throw(context,
-                      "Value is not a valid 64-bit integer");
-            return false;
-        }
-
-        *result = (gint64)(value_double + 0.5);
-        return true;
-    }
+    return JS::ToInt64(context, val, (int64_t *) result);
 }
 
 static bool
@@ -996,7 +968,7 @@ gjs_parse_args_valist (JSContext  *context,
         }
             break;
         case 'i': {
-            if (!JS_ValueToInt32(context, js_value, (gint32*) arg_location)) {
+            if (!JS::ToInt32(context, js_value, (int32_t *) arg_location)) {
                 /* Our error message is going to be more useful */
                 JS_ClearPendingException(context);
                 arg_error_message = "Couldn't convert to integer";
@@ -1017,7 +989,7 @@ gjs_parse_args_valist (JSContext  *context,
         }
             break;
         case 't': {
-            if (!gjs_value_to_int64(context, js_value, (gint64*) arg_location)) {
+            if (!JS::ToInt64(context, js_value, (int64_t *) arg_location)) {
                 /* Our error message is going to be more useful */
                 JS_ClearPendingException(context);
                 arg_error_message = "Couldn't convert to 64-bit integer";
@@ -1082,7 +1054,7 @@ gjs_parse_args_valist (JSContext  *context,
  * F: A string, converted into "filename encoding" (i.e. active locale)
  * i: A number, will be converted to a C "gint32"
  * u: A number, converted into a C "guint32"
- * t: A 64-bit number, converted into a C "gint64" by way of gjs_value_to_int64()
+ * t: A 64-bit number, converted into a C "gint64"
  * o: A JavaScript object, as a "JSObject *"
  *
  * If the first character in the format string is a '!', then JS is allowed

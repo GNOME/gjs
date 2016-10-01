@@ -121,22 +121,22 @@ fill_rectangle(JSContext *context, JSObject *obj,
 
     if (!gjs_object_get_property_const(context, obj, GJS_STRING_X, &val))
         return false;
-    if (!JS_ValueToInt32(context, val, &rect->x))
+    if (!JS::ToInt32(context, val, &rect->x))
         return false;
 
     if (!gjs_object_get_property_const(context, obj, GJS_STRING_Y, &val))
         return false;
-    if (!JS_ValueToInt32(context, val, &rect->y))
+    if (!JS::ToInt32(context, val, &rect->y))
         return false;
 
     if (!gjs_object_get_property_const(context, obj, GJS_STRING_WIDTH, &val))
         return false;
-    if (!JS_ValueToInt32(context, val, &rect->width))
+    if (!JS::ToInt32(context, val, &rect->width))
         return false;
 
     if (!gjs_object_get_property_const(context, obj, GJS_STRING_HEIGHT, &val))
         return false;
-    if (!JS_ValueToInt32(context, val, &rect->height))
+    if (!JS::ToInt32(context, val, &rect->height))
         return false;
 
     return true;

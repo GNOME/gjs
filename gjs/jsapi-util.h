@@ -406,7 +406,8 @@ const char* gjs_get_type_name                (JS::Value        value);
 
 bool        gjs_value_to_int64               (JSContext       *context,
                                               const JS::Value  val,
-                                              gint64          *result);
+                                              gint64          *result)
+G_GNUC_DEPRECATED_FOR(JS::ToInt64);
 
 bool        gjs_parse_args                   (JSContext  *context,
                                               const char *function_name,

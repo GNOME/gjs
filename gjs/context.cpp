@@ -652,12 +652,10 @@ gjs_context_eval(GjsContext   *js_context,
 
     if (exit_status_p) {
         if (retval.isInt32()) {
-            int code;
-            if (JS_ValueToInt32(js_context->context, retval, &code)) {
-                gjs_debug(GJS_DEBUG_CONTEXT,
-                          "Script returned integer code %d", code);
-                *exit_status_p = code;
-            }
+            int code = retval.toInt32();
+            gjs_debug(GJS_DEBUG_CONTEXT,
+                      "Script returned integer code %d", code);
+            *exit_status_p = code;
         } else {
             /* Assume success if no integer was returned */
             *exit_status_p = 0;

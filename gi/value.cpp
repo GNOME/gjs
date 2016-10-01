@@ -412,7 +412,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
         }
     } else if (gtype == G_TYPE_CHAR) {
         gint32 i;
-        if (JS_ValueToInt32(context, value, &i) && i >= SCHAR_MIN && i <= SCHAR_MAX) {
+        if (JS::ToInt32(context, value, &i) && i >= SCHAR_MIN && i <= SCHAR_MAX) {
             g_value_set_schar(gvalue, (signed char)i);
         } else {
             gjs_throw(context,
@@ -432,7 +432,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
         }
     } else if (gtype == G_TYPE_INT) {
         gint32 i;
-        if (JS_ValueToInt32(context, value, &i)) {
+        if (JS::ToInt32(context, value, &i)) {
             g_value_set_int(gvalue, i);
         } else {
             gjs_throw(context,
@@ -627,9 +627,9 @@ gjs_value_to_g_value_internal(JSContext    *context,
 
         g_value_set_variant (gvalue, variant);
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {
-        gint64 value_int64;
+        int64_t value_int64;
 
-        if (gjs_value_to_int64 (context, value, &value_int64)) {
+        if (JS::ToInt64(context, value, &value_int64)) {
             GEnumValue *v;
             gpointer gtype_class = g_type_class_ref(gtype);
 
@@ -653,9 +653,9 @@ gjs_value_to_g_value_internal(JSContext    *context,
             return false;
         }
     } else if (g_type_is_a(gtype, G_TYPE_FLAGS)) {
-        gint64 value_int64;
+        int64_t value_int64;
 
-        if (gjs_value_to_int64 (context, value, &value_int64)) {
+        if (JS::ToInt64(context, value, &value_int64)) {
             if (!_gjs_flags_value_is_valid(context, gtype, value_int64))
                 return false;
 
@@ -717,7 +717,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
          * e.g. ClutterUnit.
          */
         gint32 i;
-        if (JS_ValueToInt32(context, value, &i)) {
+        if (JS::ToInt32(context, value, &i)) {
             GValue int_value = { 0, };
             g_value_init(&int_value, G_TYPE_INT);
             g_value_set_int(&int_value, i);

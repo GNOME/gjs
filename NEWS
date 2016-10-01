@@ -1,3 +1,37 @@
+NEXT
+----
+- Backwards-incompatible change: we have changed the way certain JavaScript
+  values are marshalled into GObject introspection 32 or 64-bit signed integer
+  values, to match the ECMA standard. Here is the relevant section of the
+  standard:
+  http://www.ecma-international.org/ecma-262/7.0/index.html#sec-toint32
+  Notable differences between the old and new behaviour are:
+
+  * Floating-point numbers ending in 0.5 are rounded differently when
+    marshalled into 32 or 64-bit signed integers. Previously they were
+    rounded to floor(x + 0.5), now they are rounded to
+    signum(x) * floor(abs(x)) as per the ECMA standard:
+    http://www.ecma-international.org/ecma-262/7.0/index.html#sec-toint32
+    Note that previously, GJS rounded according to the standard when
+    converting to *unsigned* integers!
+
+  * Objects whose number value is NaN (e.g, arrays of strings), would
+    previously fail to convert, throwing a TypeError. Now they convert to
+    0 when marshalled into 32 or 64-bit signed integers.
+
+  Note that the new behaviour is the behaviour you got all along when using
+  pure JavaScript, without any GObject introspection:
+
+  gjs> let a = new Int32Array(2);
+  gjs> a[0] = 10.5;
+  10.5
+  gjs> a[1] = ['this', 'is', 'fine'];
+  this,is,fine
+  gjs> a[0]
+  10
+  gjs> a[1]
+  0
+
 Version 1.46.0
 --------------
 
