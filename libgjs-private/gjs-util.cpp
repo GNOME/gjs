@@ -31,7 +31,11 @@
 char *
 gjs_format_int_alternative_output(int n)
 {
+#ifdef HAVE_PRINTF_ALTERNATIVE_INT
     return g_strdup_printf("%Id", n);
+#else
+    return g_strdup_printf("%d", n);
+#endif
 }
 
 GType

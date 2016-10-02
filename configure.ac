@@ -27,6 +27,7 @@ AM_SILENT_RULES([yes])
 PKG_PROG_PKG_CONFIG
 PKG_INSTALLDIR
 
+AC_LANG([C++])
 AC_PROG_CXX
 AX_CXX_COMPILE_STDCXX_11
 
@@ -132,6 +133,18 @@ AC_SUBST([READLINE_LIBS])
 
 # End of readline checks: restore LIBS
 LIBS=$LIBS_no_readline
+
+AC_MSG_CHECKING([whether printf() accepts '%Id' for alternative integer output])
+CXXFLAGS_save="$CXXFLAGS"
+CXXFLAGS="-Werror -Wformat -pedantic-errors"
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdio.h>]],
+  [[printf("%Id", (int)0);]])], [
+    AC_MSG_RESULT([yes])
+    AC_DEFINE([HAVE_PRINTF_ALTERNATIVE_INT], [1],
+      [Define to 1 if printf() accepts '%Id' for alternative integer output])
+  ],
+  [AC_MSG_RESULT([no])])
+CXXFLAGS="$CXXFLAGS_save"
 
 AC_ARG_ENABLE(installed_tests,
   [AS_HELP_STRING([--enable-installed-tests],
