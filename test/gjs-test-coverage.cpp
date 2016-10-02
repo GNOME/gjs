@@ -576,7 +576,7 @@ branch_at_line_should_be_taken(const char *line,
     /* Advance past "BRDA:" */
     line += 5;
 
-    nmatches = sscanf(line, "%i,%i,%i,%19s", &line_no, &block_no, &branch_id, &hit_count);
+    nmatches = sscanf(line, "%i,%i,%i,%19s", &line_no, &block_no, &branch_id, hit_count);
     if (nmatches != 4) {
         if (errno != 0)
             g_error("sscanf: %s", strerror(errno));
@@ -1625,7 +1625,7 @@ test_coverage_cache_data_in_expected_format(gpointer      fixture_data,
                                                      &mtime);
     g_assert_true(successfully_got_mtime);
 
-    char    *mtime_string = g_strdup_printf("[%lli,%lli]", (gint64) mtime.tv_sec, (gint64) mtime.tv_usec);
+    char *mtime_string = g_strdup_printf("[%li,%li]", mtime.tv_sec, mtime.tv_usec);
     GString *expected_cache_object_notation = format_expected_cache_object_notation(mtime_string,
                                                                                     "null",
                                                                                     fixture->base_fixture.temporary_js_script_filename,
