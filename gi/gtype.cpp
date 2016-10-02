@@ -29,6 +29,12 @@
 #include <util/log.h>
 #include <girepository.h>
 
+static JS::Value
+gjs_gtype_create_proto(JSContext  *context,
+                       JSObject   *module,
+                       const char *proto_name,
+                       JSObject   *parent);
+
 GJS_DEFINE_PROTO_ABSTRACT("GIRepositoryGType", gtype, 0);
 
 /* priv_from_js adds a "*", so this returns "void *" */

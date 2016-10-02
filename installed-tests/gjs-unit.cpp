@@ -41,7 +41,7 @@ typedef struct {
     char       *filename;
 } GjsTestData;
 
-GjsTestData *
+static GjsTestData *
 gjs_unit_test_data_new(const char *coverage_prefix,
                        const char *coverage_output_path,
                        char       *filename)
@@ -53,7 +53,7 @@ gjs_unit_test_data_new(const char *coverage_prefix,
     return data;
 }
 
-void
+static void
 gjs_unit_test_data_free(gpointer test_data, gpointer user_data)
 {
     GjsTestData *data = (GjsTestData *) test_data;

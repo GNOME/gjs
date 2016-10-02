@@ -125,7 +125,14 @@ gjs_debug(GjsDebugTopic topic,
              */
             c = strchr((char *) debug_output, '%');
             if (c && c[1] == 'u' && !strchr(c+1, '%')) {
+#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+_Pragma("GCC diagnostic push")
+_Pragma("GCC diagnostic ignored \"-Wformat-nonliteral\"")
+#endif
                 free_me = g_strdup_printf(debug_output, (guint)getpid());
+#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+_Pragma("GCC diagnostic pop")
+#endif
                 log_file = free_me;
             } else {
                 log_file = debug_output;

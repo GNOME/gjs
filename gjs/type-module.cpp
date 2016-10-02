@@ -51,6 +51,7 @@ gjs_type_module_load (GTypeModule *self)
     return true;
 }
 
+G_GNUC_NORETURN
 static void
 gjs_type_module_unload (GTypeModule *self)
 {

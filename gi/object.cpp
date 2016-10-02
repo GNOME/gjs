@@ -2958,8 +2958,8 @@ gjs_signal_new(JSContext *cx,
             return false;
         }
 
-        JS::RootedObject gtype(cx, &gtype_val.toObject());
-        params[i] = gjs_gtype_get_actual_gtype(cx, gtype);
+        JS::RootedObject gjs_gtype(cx, &gtype_val.toObject());
+        params[i] = gjs_gtype_get_actual_gtype(cx, gjs_gtype);
     }
 
     gtype = gjs_gtype_get_actual_gtype(cx, obj);

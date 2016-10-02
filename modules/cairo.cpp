@@ -26,7 +26,7 @@
 #include "gjs/jsapi-wrapper.h"
 #include "cairo-private.h"
 
-#if CAIRO_HAS_XLIB_SURFACE
+#ifdef CAIRO_HAS_XLIB_SURFACE
 #include "cairo-xlib.h"
 
 class XLibConstructor {

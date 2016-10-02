@@ -943,8 +943,8 @@ gjs_value_from_g_value_internal(JSContext             *context,
         arg_info = g_callable_info_get_arg(signal_info, arg_n - 1);
         g_arg_info_load_type(arg_info, &type_info);
 
-        g_assert(("Check gjs_value_from_array_and_length_values() before calling"
-                  " gjs_value_from_g_value_internal()",
+        g_assert(((void) "Check gjs_value_from_array_and_length_values() before"
+                  " calling gjs_value_from_g_value_internal()",
                   g_type_info_get_array_length(&type_info) == -1));
 
         arg.v_pointer = g_value_get_pointer(gvalue);

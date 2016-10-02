@@ -42,6 +42,7 @@
  * http://egachine.berlios.de/embedding-sm-best-practice/embedding-sm-best-practice.html#error-handling
  */
 static void
+G_GNUC_PRINTF(3, 0)
 gjs_throw_valist(JSContext       *context,
                  const char      *error_class,
                  const char      *format,

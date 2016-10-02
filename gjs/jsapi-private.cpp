@@ -35,6 +35,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-prototypes"
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
+#pragma GCC diagnostic ignored "-Wredundant-decls"
 #include <jsfriendapi.h>
 #pragma GCC diagnostic pop
 

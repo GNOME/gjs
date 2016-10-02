@@ -36,6 +36,8 @@
 #include "gjs/coverage.h"
 #include "gjs/coverage-internal.h"
 
+#include "gjs-test-utils.h"
+
 typedef struct _GjsCoverageFixture {
     GjsContext    *context;
     GjsCoverage   *coverage;
@@ -338,7 +340,7 @@ coverage_data_matches_values_for_key(const char            *data,
 }
 
 /* A simple wrapper around gjs_coverage_new */
-GjsCoverage *
+static GjsCoverage *
 create_coverage_for_script(GjsContext *context,
                            const char *script)
 {
@@ -351,7 +353,7 @@ create_coverage_for_script(GjsContext *context,
                             context);
 }
 
-GjsCoverage *
+static GjsCoverage *
 create_coverage_for_script_and_cache(GjsContext *context,
                                      const char *cache,
                                      const char *script)
@@ -2207,7 +2209,8 @@ add_table_driven_test_for_fixture(const char                *name,
     for (test_table_index = 0;
          test_table_index < n_table_entries;
          ++test_table_index, test_table_ptr += table_entry_size) {
-        TestTableDataHeader *header = (TestTableDataHeader *) test_table_ptr;
+        const TestTableDataHeader *header =
+            reinterpret_cast<const TestTableDataHeader *>(test_table_ptr);
         gchar *test_name_for_table_index = g_strdup_printf("%s/%s",
                                                            name,
                                                            header->test_name);

@@ -2762,7 +2762,8 @@ gjs_value_from_g_argument (JSContext             *context,
                 return result;
             } else {
                 /* arrays with length are handled outside of this function */
-                g_assert(("Use gjs_value_from_explicit_array() for arrays with length param",
+                g_assert(((void) "Use gjs_value_from_explicit_array() for "
+                          "arrays with length param",
                           g_type_info_get_array_length(type_info) == -1));
                 return gjs_array_from_fixed_size_array(context, value_p, type_info, arg->v_pointer);
             }

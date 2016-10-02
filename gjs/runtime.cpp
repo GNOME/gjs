@@ -165,7 +165,7 @@ static JSLocaleCallbacks gjs_locale_callbacks =
     gjs_locale_to_unicode
 };
 
-void
+static void
 gjs_finalize_callback(JSFreeOp         *fop,
                       JSFinalizeStatus  status,
                       JSBool            isCompartment)
