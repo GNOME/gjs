@@ -453,6 +453,7 @@ to_string_func(JSContext *context,
         GError *error;
         JSString *s;
         char *u16_str;
+        jschar *u16_out;
 
         error = NULL;
         u16_str = g_convert(data,
@@ -474,15 +475,16 @@ to_string_func(JSContext *context,
          */
         g_assert((bytes_written % 2) == 0);
 
-        s = JS_NewUCStringCopyN(context,
-                                (jschar*) u16_str,
-                                bytes_written / 2);
+        u16_out = g_new(jschar, bytes_written / 2);
+        memcpy(u16_out, u16_str, bytes_written);
+        s = JS_NewUCStringCopyN(context, u16_out, bytes_written / 2);
         if (s != NULL) {
             ok = true;
             argv.rval().setString(s);
         }
 
         g_free(u16_str);
+        g_free(u16_out);
         return ok;
     }
 }
