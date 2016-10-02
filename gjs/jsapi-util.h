@@ -422,30 +422,39 @@ bool        gjs_parse_call_args              (JSContext    *context,
                                               JS::CallArgs &args,
                                               ...);
 
-GjsRootedArray*   gjs_rooted_array_new        (void);
+GjsRootedArray*   gjs_rooted_array_new        (void)
+G_GNUC_DEPRECATED_FOR(JS::AutoValueVector);
 void              gjs_rooted_array_append     (JSContext        *context,
                                                GjsRootedArray *array,
-                                               JS::Value       value);
+                                               JS::Value       value)
+G_GNUC_DEPRECATED_FOR(JS::AutoValueVector::append);
 JS::Value         gjs_rooted_array_get        (JSContext      *context,
                                                GjsRootedArray *array,
-                                               int               i);
+                                               int             i)
+G_GNUC_DEPRECATED_FOR(JS::AutoValueVector::operator[]);
 JS::Value        *gjs_rooted_array_get_data   (JSContext        *context,
-                                               GjsRootedArray *array);
+                                               GjsRootedArray *array)
+G_GNUC_DEPRECATED_FOR(JS::AutoValueVector::operator[]);
 int               gjs_rooted_array_get_length (JSContext        *context,
-                                               GjsRootedArray *array);
+                                               GjsRootedArray *array)
+G_GNUC_DEPRECATED_FOR(JS::AutoValueVector::length);
 JS::Value        *gjs_rooted_array_free       (JSContext        *context,
                                                GjsRootedArray *array,
-                                               bool              free_segment);
+                                               bool              free_segment)
+G_GNUC_DEPRECATED_FOR(JS::AutoValueVector);
 void              gjs_set_values              (JSContext        *context,
                                                JS::Value        *locations,
                                                int               n_locations,
-                                               JS::Value         initializer);
+                                               JS::Value         initializer)
+G_GNUC_DEPRECATED_FOR(JS::AutoValueVector);
 void              gjs_root_value_locations    (JSContext        *context,
                                                JS::Value        *locations,
-                                               int               n_locations);
+                                               int               n_locations)
+G_GNUC_DEPRECATED_FOR(JS::AutoValueVector);
 void              gjs_unroot_value_locations  (JSContext        *context,
                                                JS::Value        *locations,
-                                               int               n_locations);
+                                               int               n_locations)
+G_GNUC_DEPRECATED_FOR(JS::AutoValueVector);
 
 /* Functions intended for more "internal" use */
 

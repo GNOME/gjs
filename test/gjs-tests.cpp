@@ -89,51 +89,6 @@ gjstest_test_func_gjs_context_construct_eval(void)
     g_object_unref (context);
 }
 
-#define N_ELEMS 15
-
-static void
-gjstest_test_func_gjs_jsapi_util_array(void)
-{
-    GjsUnitTestFixture fixture;
-    JSContext *context;
-    JSObject *global;
-    GjsRootedArray *array;
-    int i;
-    JS::Value value;
-
-    _gjs_unit_test_fixture_begin(&fixture);
-    context = fixture.context;
-
-    array = gjs_rooted_array_new();
-
-    global = gjs_get_global_object(context);
-    JSCompartment *oldCompartment = JS_EnterCompartment(context, global);
-
-    for (i = 0; i < N_ELEMS; i++) {
-        value = JS::StringValue(JS_NewStringCopyZ(context, "abcdefghijk"));
-        gjs_rooted_array_append(context, array, value);
-    }
-
-    JS_GC(JS_GetRuntime(context));
-
-    for (i = 0; i < N_ELEMS; i++) {
-        char *ascii;
-
-        value = gjs_rooted_array_get(context, array, i);
-        g_assert(value.isString());
-        gjs_string_to_utf8(context, value, &ascii);
-        g_assert(strcmp(ascii, "abcdefghijk") == 0);
-        g_free(ascii);
-    }
-
-    gjs_rooted_array_free(context, array, true);
-
-    JS_LeaveCompartment(context, oldCompartment);
-    _gjs_unit_test_fixture_finish(&fixture);
-}
-
-#undef N_ELEMS
-
 static void
 gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(void)
 {
@@ -323,7 +278,6 @@ main(int    argc,
 
     g_test_add_func("/gjs/context/construct/destroy", gjstest_test_func_gjs_context_construct_destroy);
     g_test_add_func("/gjs/context/construct/eval", gjstest_test_func_gjs_context_construct_eval);
-    g_test_add_func("/gjs/jsapi/util/array", gjstest_test_func_gjs_jsapi_util_array);
     g_test_add_func("/gjs/jsapi/util/error/throw", gjstest_test_func_gjs_jsapi_util_error_throw);
     g_test_add_func("/gjs/jsapi/util/string/js/string/utf8", gjstest_test_func_gjs_jsapi_util_string_js_string_utf8);
     g_test_add_func("/gjs/jsutil/strip_shebang/no_shebang", gjstest_test_strip_shebang_no_advance_for_no_shebang);

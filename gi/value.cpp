@@ -122,7 +122,6 @@ closure_marshal(GClosure        *closure,
     JSRuntime *runtime;
     JSObject *obj;
     int argc;
-    JS::Value *argv;
     JS::Value rval;
     int i;
     GSignalQuery signal_query = { 0, };
@@ -173,15 +172,10 @@ closure_marshal(GClosure        *closure,
 
     argc = n_param_values;
     rval = JS::UndefinedValue();
-    if (argc > 0) {
-        argv = g_newa(JS::Value, n_param_values);
+    JS::AutoValueVector argv(context);
+    for (i = 0; i < argc; i++)
+        argv.append(JS::UndefinedValue());
 
-        gjs_set_values(context, argv, argc, JS::UndefinedValue());
-        gjs_root_value_locations(context, argv, argc);
-    } else {
-        /* squash a compiler warning */
-        argv = NULL;
-    }
     JS_AddValueRoot(context, &rval);
 
     if (marshal_data) {
@@ -284,7 +278,7 @@ closure_marshal(GClosure        *closure,
         if (type_info_for[i])
             g_base_info_unref((GIBaseInfo *)type_info_for[i]);
 
-    gjs_closure_invoke(closure, argv_index, argv, &rval);
+    gjs_closure_invoke(closure, argv_index, &argv[0], &rval);
 
     if (return_value != NULL) {
         if (rval.isUndefined()) {
@@ -301,8 +295,6 @@ closure_marshal(GClosure        *closure,
     }
 
  cleanup:
-    if (argc > 0)
-        gjs_unroot_value_locations(context, argv, argc);
     JS_RemoveValueRoot(context, &rval);
     JS_EndRequest(context);
 }

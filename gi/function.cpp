@@ -704,7 +704,7 @@ gjs_invoke_c_function(JSContext       *context,
     bool is_method;
     GITypeInfo return_info;
     GITypeTag return_tag;
-    JS::Value *return_values = NULL;
+    JS::AutoValueVector return_values(context);
     guint8 next_rval = 0; /* index into return_values */
     GSList *iter;
 
@@ -1009,9 +1009,8 @@ gjs_invoke_c_function(JSContext       *context,
 
     /* Only process return values if the function didn't throw */
     if (function->js_out_argc > 0 && !did_throw_gerror) {
-        return_values = g_newa(JS::Value, function->js_out_argc);
-        gjs_set_values(context, return_values, function->js_out_argc, JS::UndefinedValue());
-        gjs_root_value_locations(context, return_values, function->js_out_argc);
+        for (size_t i = 0; i < function->js_out_argc; i++)
+            return_values.append(JS::UndefinedValue());
 
         if (return_tag != GI_TYPE_TAG_VOID) {
             GITransfer transfer = g_callable_info_get_caller_owns((GICallableInfo*) function->info);
@@ -1268,7 +1267,7 @@ release:
                 JSObject *array;
                 array = JS_NewArrayObject(context,
                                           function->js_out_argc,
-                                          return_values);
+                                          &return_values[0]);
                 if (array == NULL) {
                     failed = true;
                 } else {
@@ -1276,8 +1275,6 @@ release:
                 }
             }
         }
-
-        gjs_unroot_value_locations(context, return_values, function->js_out_argc);
 
         if (r_value) {
             *r_value = return_gargument;

@@ -39,6 +39,8 @@
  * Creates an opaque data type that holds JS::Values and keeps
  * their location (NOT their value) GC-rooted.
  *
+ * Deprecated: Use JS::AutoValueVector instead.
+ *
  * Returns: an opaque object prepared to hold GC root locations.
  **/
 GjsRootedArray*
@@ -84,6 +86,7 @@ remove_root_jsval(JSContext *context,
  * Appends @value to @array, calling JS_AddValueRoot on the location where it's
  * stored.
  *
+ * Deprecated: Use JS::AutoValueVector instead.
  **/
 void
 gjs_rooted_array_append(JSContext        *context,
@@ -112,6 +115,9 @@ gjs_rooted_array_append(JSContext        *context,
  * @context: a #JSContext
  * @array: an array
  * @i: element to return
+ *
+ * Deprecated: Use JS::AutoValueVector instead.
+ *
  * Returns: value of an element
  */
 JS::Value
@@ -136,9 +142,11 @@ gjs_rooted_array_get(JSContext        *context,
 
 /**
  * gjs_rooted_array_get_data:
- *
  * @context: a #JSContext
  * @array: an array
+ *
+ * Deprecated: Use JS::AutoValueVector instead.
+ *
  * Returns: the rooted JS::Value locations in the array
  */
 JS::Value *
@@ -157,9 +165,11 @@ gjs_rooted_array_get_data(JSContext      *context,
 
 /**
  * gjs_rooted_array_get_length:
- *
  * @context: a #JSContext
  * @array: an array
+ *
+ * Deprecated: Use JS::AutoValueVector instead.
+ *
  * Returns: number of JS::Value in the rooted array
  */
 int
@@ -185,6 +195,7 @@ gjs_rooted_array_get_length (JSContext        *context,
  *
  * Calls JS_AddValueRoot() on each address in @locations.
  *
+ * Deprecated: Use JS::AutoValueArray or JS::AutoValueVector instead.
  **/
 void
 gjs_root_value_locations(JSContext        *context,
@@ -213,6 +224,7 @@ gjs_root_value_locations(JSContext        *context,
  *
  * Calls JS_RemoveValueRoot() on each address in @locations.
  *
+ * Deprecated: Use JS::AutoValueArray or JS::AutoValueVector instead.
  **/
 void
 gjs_unroot_value_locations(JSContext *context,
@@ -241,6 +253,7 @@ gjs_unroot_value_locations(JSContext *context,
  *
  * Assigns initializer to each member of the given array.
  *
+ * Deprecated: Use JS::AutoValueArray or JS::AutoValueVector instead.
  **/
 void
 gjs_set_values(JSContext        *context,
@@ -268,6 +281,8 @@ gjs_set_values(JSContext        *context,
  * Frees the memory allocated for the #GjsRootedArray. If @free_segment is
  * true the internal memory block allocated for the JS::Value array will
  * be freed and unrooted also.
+ *
+ * Deprecated: Use JS::AutoValueVector instead.
  *
  * Returns: the JS::Value array if it was not freed
  **/
