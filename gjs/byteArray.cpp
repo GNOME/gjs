@@ -111,7 +111,7 @@ byte_array_ensure_gbytes (ByteArrayInstance  *priv)
 
 static bool
 gjs_value_to_gsize(JSContext         *context,
-                   JS::Value          value,
+                   JS::HandleValue    value,
                    gsize             *v_p)
 {
     guint32 val32;
@@ -142,7 +142,7 @@ gjs_value_to_gsize(JSContext         *context,
 
 static bool
 gjs_value_to_byte(JSContext         *context,
-                  JS::Value          value,
+                  JS::HandleValue    value,
                   guint8            *v_p)
 {
     gsize v;
@@ -196,14 +196,14 @@ byte_array_get_prop(JSContext *context,
                     JS::MutableHandleValue value_p)
 {
     ByteArrayInstance *priv;
-    JS::Value id_value;
 
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         return true; /* prototype, not an instance. */
 
-    if (!JS_IdToValue(context, id, &id_value))
+    JS::RootedValue id_value(context);
+    if (!JS_IdToValue(context, id, id_value.address()))
         return false;
 
     /* First handle array indexing */
@@ -309,14 +309,14 @@ byte_array_set_prop(JSContext *context,
                     JS::MutableHandleValue value_p)
 {
     ByteArrayInstance *priv;
-    JS::Value id_value;
 
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         return true; /* prototype, not an instance. */
 
-    if (!JS_IdToValue(context, id, &id_value))
+    JS::RootedValue id_value(context);
+    if (!JS_IdToValue(context, id, id_value.address()))
         return false;
 
     /* First handle array indexing */
@@ -366,7 +366,9 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array)
 
     preallocated_length = 0;
     if (argc >= 1) {
-        if (!gjs_value_to_gsize(context, argv[0], &preallocated_length)) {
+        // COMPAT: in mozjs31 indexing CallArgs will already yield a rooted value
+        JS::RootedValue val(context, argv[0]);
+        if (!gjs_value_to_gsize(context, val, &preallocated_length)) {
             gjs_throw(context,
                       "Argument to ByteArray constructor should be a positive number for array length");
             return false;
@@ -697,12 +699,12 @@ from_array_func(JSContext *context,
 
     g_byte_array_set_size(priv->array, len);
 
+    JS::RootedValue elem(context);
     for (i = 0; i < len; ++i) {
-        JS::Value elem;
         guint8 b;
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, &argv[0].toObject(), i, &elem)) {
+        if (!JS_GetElement(context, &argv[0].toObject(), i, elem.address())) {
             /* this means there was an exception, while elem.isUndefined()
              * means no element found
              */
