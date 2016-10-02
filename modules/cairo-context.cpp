@@ -22,6 +22,8 @@
 
 #include <config.h>
 
+#include <vector>
+
 #include "gi/foreign.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-wrapper.h"
@@ -532,55 +534,49 @@ setDash_func(JSContext *context,
     cairo_t *cr = priv ? priv->cr : NULL;
     JS::RootedObject dashes(context);
     double offset;
-    bool retval = false;
     guint len;
-    GArray *dashes_c = NULL;
 
     if (!gjs_parse_call_args(context, "setDash", argv, "of",
                              "dashes", &dashes,
                              "offset", &offset))
         return false;
 
-
     if (!JS_IsArrayObject(context, dashes)) {
         gjs_throw(context, "dashes must be an array");
-        goto out;
+        return false;
     }
 
     if (!JS_GetArrayLength(context, dashes, &len)) {
         gjs_throw(context, "Can't get length of dashes");
-        goto out;
+        return false;
     }
 
-    dashes_c = g_array_sized_new (false, false, sizeof(double), len);
+    std::vector<double> dashes_c;
+    dashes_c.reserve(len);
     for (i = 0; i < len; ++i) {
         JS::Value elem;
         double b;
 
         elem = JS::UndefinedValue();
         if (!JS_GetElement(context, dashes, i, &elem)) {
-            goto out;
+            return false;
         }
         if (elem.isUndefined())
             continue;
 
         if (!JS::ToNumber(context, elem, &b))
-            goto out;
+            return false;
         if (b <= 0) {
             gjs_throw(context, "Dash value must be positive");
-            goto out;
+            return false;
         }
 
-        g_array_append_val(dashes_c, b);
+        dashes_c.push_back(b);
     }
 
-    cairo_set_dash(cr, (double*)dashes_c->data, dashes_c->len, offset);
+    cairo_set_dash(cr, &dashes_c[0], dashes_c.size(), offset);
     argv.rval().setUndefined();
-    retval = true;
- out:
-    if (dashes_c != NULL)
-        g_array_free (dashes_c, true);
-    return retval;
+    return true;
 }
 
 static JSBool

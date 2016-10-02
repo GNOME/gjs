@@ -25,6 +25,7 @@
 
 #include <memory>
 #include <string.h>
+#include <vector>
 
 #include "gjs/gi.h"
 #include "object.h"
@@ -659,36 +660,25 @@ free_g_params(GParameter *params,
     for (i = 0; i < n_params; ++i) {
         g_value_unset(&params[i].value);
     }
-    g_free(params);
 }
 
 /* Set properties from args to constructor (argv[0] is supposed to be
  * a hash)
  */
 static bool
-object_instance_props_to_g_parameters(JSContext   *context,
-                                      JSObject    *obj,
-                                      unsigned     argc,
-                                      JS::Value   *argv,
-                                      GType        gtype,
-                                      GParameter **gparams_p,
-                                      int         *n_gparams_p)
+object_instance_props_to_g_parameters(JSContext               *context,
+                                      JSObject                *obj,
+                                      unsigned                 argc,
+                                      JS::Value               *argv,
+                                      GType                    gtype,
+                                      std::vector<GParameter>& gparams)
 {
     JSObject *props;
     JSObject *iter;
     jsid prop_id;
-    GArray *gparams;
-
-    if (gparams_p)
-        *gparams_p = NULL;
-    if (n_gparams_p)
-        *n_gparams_p = 0;
-
-    gparams = g_array_new(/* nul term */ false, /* clear */ true,
-                          sizeof(GParameter));
 
     if (argc == 0 || argv[0].isUndefined())
-        goto out;
+        return true;
 
     if (!argv[0].isObject()) {
         gjs_throw(context, "argument should be a hash with props to set");
@@ -736,29 +726,17 @@ object_instance_props_to_g_parameters(JSContext   *context,
 
         g_free(name);
 
-        g_array_append_val(gparams, gparam);
+        gparams.push_back(gparam);
 
         prop_id = JSID_VOID;
         if (!JS_NextProperty(context, iter, &prop_id))
             goto free_array_and_fail;
     }
 
- out:
-    if (n_gparams_p)
-        *n_gparams_p = gparams->len;
-    if (gparams_p)
-        *gparams_p = (GParameter*) g_array_free(gparams, false);
-
     return true;
 
  free_array_and_fail:
-    {
-        GParameter *to_free;
-        int count;
-        count = gparams->len;
-        to_free = (GParameter*) g_array_free(gparams, false);
-        free_g_params(to_free, count);
-    }
+    free_g_params(&gparams[0], gparams.size());
     return false;
 }
 
@@ -1249,8 +1227,7 @@ object_instance_init (JSContext              *context,
 {
     ObjectInstance *priv;
     GType gtype;
-    GParameter *params;
-    int n_params;
+    std::vector<GParameter> params;
     GTypeQuery query;
     GObject *gobj;
 
@@ -1260,8 +1237,7 @@ object_instance_init (JSContext              *context,
     g_assert(gtype != G_TYPE_NONE);
 
     if (!object_instance_props_to_g_parameters(context, object, argc, argv,
-                                               gtype,
-                                               &params, &n_params)) {
+                                               gtype, params)) {
         return false;
     }
 
@@ -1276,9 +1252,9 @@ object_instance_init (JSContext              *context,
                               "object_init_list");
     }
 
-    gobj = (GObject*) g_object_newv(gtype, n_params, params);
+    gobj = (GObject*) g_object_newv(gtype, params.size(), &params[0]);
 
-    free_g_params(params, n_params);
+    free_g_params(&params[0], params.size());
 
     JS::RootedObject old_jsobj(context, peek_js_obj(gobj));
     if (old_jsobj != NULL && old_jsobj != object) {
