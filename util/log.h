@@ -114,42 +114,42 @@ typedef enum {
 #define gjs_debug_jsprop(topic, format...) \
     do { gjs_debug(topic, format); } while(0)
 #else
-#define gjs_debug_jsprop(topic, format...)
+#define gjs_debug_jsprop(topic, format...) ((void)0)
 #endif
 
 #if GJS_VERBOSE_ENABLE_MARSHAL
 #define gjs_debug_marshal(topic, format...) \
     do { gjs_debug(topic, format); } while(0)
 #else
-#define gjs_debug_marshal(topic, format...)
+#define gjs_debug_marshal(topic, format...) ((void)0)
 #endif
 
 #if GJS_VERBOSE_ENABLE_LIFECYCLE
 #define gjs_debug_lifecycle(topic, format...) \
     do { gjs_debug(topic, format); } while(0)
 #else
-#define gjs_debug_lifecycle(topic, format...)
+#define gjs_debug_lifecycle(topic, format...) ((void)0)
 #endif
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
 #define gjs_debug_gi_usage(format...) \
     do { gjs_debug(GJS_DEBUG_GI_USAGE, format); } while(0)
 #else
-#define gjs_debug_gi_usage(format...)
+#define gjs_debug_gi_usage(format...) ((void)0)
 #endif
 
 #if GJS_VERBOSE_ENABLE_GCLOSURE
 #define gjs_debug_closure(format...) \
     do { gjs_debug(GJS_DEBUG_GCLOSURE, format); } while(0)
 #else
-#define gjs_debug_closure(format, ...)
+#define gjs_debug_closure(format, ...) ((void)0)
 #endif
 
 #if GJS_VERBOSE_ENABLE_GSIGNAL
 #define gjs_debug_gsignal(format...) \
     do { gjs_debug(GJS_DEBUG_GOBJECT, format); } while(0)
 #else
-#define gjs_debug_gsignal(format...)
+#define gjs_debug_gsignal(format...) ((void)0)
 #endif
 
 void gjs_debug(GjsDebugTopic topic,
