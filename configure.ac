@@ -49,7 +49,7 @@ AX_CHECK_LINK_FLAG([-lgcov],, [
 ])
 
 # Checks for libraries.
-m4_define(glib_required_version, 2.42.0)
+m4_define(glib_required_version, 2.50.0)
 
 GOBJECT_INTROSPECTION_REQUIRE([1.41.4])
 

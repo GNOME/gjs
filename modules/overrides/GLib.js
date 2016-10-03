@@ -282,4 +282,14 @@ function _init() {
     this.Bytes.prototype.toArray = function() {
 	return imports.byteArray.fromGBytes(this);
     };
+
+    this.log_structured = function(logDomain, logLevel, stringFields) {
+        let fields = {};
+        for (let key in stringFields) {
+            fields[key] = new GLib.Variant('s', stringFields[key]);
+        }
+
+        GLib.log_variant(logDomain, logLevel, new GLib.Variant('a{sv}', fields));
+    };
+
 }
