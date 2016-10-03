@@ -813,6 +813,9 @@ importer_new_enumerate(JSContext  *context,
             statep.setNull();
         }
     }
+
+    default:
+        ;
     }
 
     return true;

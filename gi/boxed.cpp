@@ -940,29 +940,6 @@ type_can_be_allocated_directly(GITypeInfo *type_info)
         }
     } else {
         switch (g_type_info_get_tag(type_info)) {
-        case GI_TYPE_TAG_BOOLEAN:
-        case GI_TYPE_TAG_INT8:
-        case GI_TYPE_TAG_UINT8:
-        case GI_TYPE_TAG_INT16:
-        case GI_TYPE_TAG_UINT16:
-        case GI_TYPE_TAG_INT32:
-        case GI_TYPE_TAG_UINT32:
-        case GI_TYPE_TAG_INT64:
-        case GI_TYPE_TAG_UINT64:
-        case GI_TYPE_TAG_FLOAT:
-        case GI_TYPE_TAG_DOUBLE:
-        case GI_TYPE_TAG_UNICHAR:
-            break;
-        case GI_TYPE_TAG_VOID:
-        case GI_TYPE_TAG_GTYPE:
-        case GI_TYPE_TAG_ERROR:
-        case GI_TYPE_TAG_UTF8:
-        case GI_TYPE_TAG_FILENAME:
-        case GI_TYPE_TAG_ARRAY:
-        case GI_TYPE_TAG_GLIST:
-        case GI_TYPE_TAG_GSLIST:
-        case GI_TYPE_TAG_GHASH:
-            break;
         case GI_TYPE_TAG_INTERFACE:
             {
                 GIBaseInfo *interface = g_type_info_get_interface(type_info);
@@ -975,9 +952,6 @@ type_can_be_allocated_directly(GITypeInfo *type_info)
                 case GI_INFO_TYPE_UNION:
                     /* FIXME: Need to implement */
                     is_simple = false;
-                    break;
-                case GI_INFO_TYPE_ENUM:
-                case GI_INFO_TYPE_FLAGS:
                     break;
                 case GI_INFO_TYPE_OBJECT:
                 case GI_INFO_TYPE_VFUNC:
@@ -998,11 +972,38 @@ type_can_be_allocated_directly(GITypeInfo *type_info)
                 case GI_INFO_TYPE_INVALID_0:
                     g_assert_not_reached();
                     break;
+                case GI_INFO_TYPE_ENUM:
+                case GI_INFO_TYPE_FLAGS:
+                default:
+                    break;
                 }
 
                 g_base_info_unref(interface);
                 break;
             }
+        case GI_TYPE_TAG_BOOLEAN:
+        case GI_TYPE_TAG_INT8:
+        case GI_TYPE_TAG_UINT8:
+        case GI_TYPE_TAG_INT16:
+        case GI_TYPE_TAG_UINT16:
+        case GI_TYPE_TAG_INT32:
+        case GI_TYPE_TAG_UINT32:
+        case GI_TYPE_TAG_INT64:
+        case GI_TYPE_TAG_UINT64:
+        case GI_TYPE_TAG_FLOAT:
+        case GI_TYPE_TAG_DOUBLE:
+        case GI_TYPE_TAG_UNICHAR:
+        case GI_TYPE_TAG_VOID:
+        case GI_TYPE_TAG_GTYPE:
+        case GI_TYPE_TAG_ERROR:
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_GHASH:
+        default:
+            break;
         }
     }
     return is_simple;

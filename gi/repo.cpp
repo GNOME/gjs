@@ -528,6 +528,17 @@ gjs_define_info(JSContext  *context,
                                        &ignored);
         }
         break;
+    case GI_INFO_TYPE_INVALID:
+    case GI_INFO_TYPE_INVALID_0:
+    case GI_INFO_TYPE_CALLBACK:
+    case GI_INFO_TYPE_VALUE:
+    case GI_INFO_TYPE_SIGNAL:
+    case GI_INFO_TYPE_VFUNC:
+    case GI_INFO_TYPE_PROPERTY:
+    case GI_INFO_TYPE_FIELD:
+    case GI_INFO_TYPE_ARG:
+    case GI_INFO_TYPE_TYPE:
+    case GI_INFO_TYPE_UNRESOLVED:
     default:
         gjs_throw(context, "API of type %s not implemented, cannot define %s.%s",
                   gjs_info_type_name(g_base_info_get_type(info)),
@@ -706,9 +717,9 @@ gjs_info_type_name(GIInfoType type)
     case GI_INFO_TYPE_INVALID_0:
         g_assert_not_reached();
         break;
+    default:
+      return "???";
     }
-
-    return "???";
 }
 
 char*

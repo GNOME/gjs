@@ -116,15 +116,11 @@ _gjs_enum_value_is_valid(JSContext  *context,
 static bool
 _gjs_enum_uses_signed_type (GIEnumInfo *enum_info)
 {
-    switch (g_enum_info_get_storage_type (enum_info)) {
-    case GI_TYPE_TAG_INT8:
-    case GI_TYPE_TAG_INT16:
-    case GI_TYPE_TAG_INT32:
-    case GI_TYPE_TAG_INT64:
-        return true;
-    default:
-        return false;
-    }
+    GITypeTag storage = g_enum_info_get_storage_type(enum_info);
+    return (storage == GI_TYPE_TAG_INT8 ||
+        storage == GI_TYPE_TAG_INT16 ||
+        storage == GI_TYPE_TAG_INT32 ||
+        storage == GI_TYPE_TAG_INT64);
 }
 
 /* This is hacky - g_function_info_invoke() and g_field_info_get/set_field() expect
@@ -159,16 +155,16 @@ static bool
 type_needs_release (GITypeInfo *type_info,
                     GITypeTag   type_tag)
 {
-    switch (type_tag) {
-    case GI_TYPE_TAG_UTF8:
-    case GI_TYPE_TAG_FILENAME:
-    case GI_TYPE_TAG_ARRAY:
-    case GI_TYPE_TAG_GLIST:
-    case GI_TYPE_TAG_GSLIST:
-    case GI_TYPE_TAG_GHASH:
-    case GI_TYPE_TAG_ERROR:
+    if (type_tag == GI_TYPE_TAG_UTF8 ||
+        type_tag == GI_TYPE_TAG_FILENAME ||
+        type_tag == GI_TYPE_TAG_ARRAY ||
+        type_tag == GI_TYPE_TAG_GLIST ||
+        type_tag == GI_TYPE_TAG_GSLIST ||
+        type_tag == GI_TYPE_TAG_GHASH ||
+        type_tag == GI_TYPE_TAG_ERROR)
         return true;
-    case GI_TYPE_TAG_INTERFACE: {
+
+    if (type_tag == GI_TYPE_TAG_INTERFACE) {
         GIBaseInfo* interface_info;
         GIInfoType interface_type;
         GType gtype;
@@ -179,30 +175,23 @@ type_needs_release (GITypeInfo *type_info,
 
         interface_type = g_base_info_get_type(interface_info);
 
-        switch(interface_type) {
-
-        case GI_INFO_TYPE_STRUCT:
-        case GI_INFO_TYPE_ENUM:
-        case GI_INFO_TYPE_FLAGS:
-        case GI_INFO_TYPE_OBJECT:
-        case GI_INFO_TYPE_INTERFACE:
-        case GI_INFO_TYPE_UNION:
-        case GI_INFO_TYPE_BOXED:
+        if (interface_type == GI_INFO_TYPE_STRUCT ||
+            interface_type == GI_INFO_TYPE_ENUM ||
+            interface_type == GI_INFO_TYPE_FLAGS ||
+            interface_type == GI_INFO_TYPE_OBJECT ||
+            interface_type == GI_INFO_TYPE_INTERFACE ||
+            interface_type == GI_INFO_TYPE_UNION ||
+            interface_type == GI_INFO_TYPE_BOXED) {
             /* These are subtypes of GIRegisteredTypeInfo for which the
              * cast is safe */
             gtype = g_registered_type_info_get_g_type
                 ((GIRegisteredTypeInfo*)interface_info);
-            break;
-
-        case GI_INFO_TYPE_VALUE:
+        } else if (interface_type == GI_INFO_TYPE_VALUE) {
             /* Special case for GValues */
             gtype = G_TYPE_VALUE;
-            break;
-
-        default:
+        } else {
             /* Everything else */
             gtype = G_TYPE_NONE;
-            break;
         }
 
         if (g_type_is_a(gtype, G_TYPE_CLOSURE))
@@ -216,9 +205,8 @@ type_needs_release (GITypeInfo *type_info,
 
         return needs_release;
     }
-    default:
-        return false;
-    }
+
+    return false;
 }
 
 /* Check if an argument of the given needs to be released if we obtained it
@@ -228,47 +216,38 @@ static bool
 type_needs_out_release(GITypeInfo *type_info,
                        GITypeTag   type_tag)
 {
-    switch (type_tag) {
-    case GI_TYPE_TAG_UTF8:
-    case GI_TYPE_TAG_FILENAME:
-    case GI_TYPE_TAG_ARRAY:
-    case GI_TYPE_TAG_GLIST:
-    case GI_TYPE_TAG_GSLIST:
-    case GI_TYPE_TAG_GHASH:
-    case GI_TYPE_TAG_ERROR:
+    if (type_tag == GI_TYPE_TAG_UTF8 ||
+        type_tag == GI_TYPE_TAG_FILENAME ||
+        type_tag == GI_TYPE_TAG_ARRAY ||
+        type_tag == GI_TYPE_TAG_GLIST ||
+        type_tag == GI_TYPE_TAG_GSLIST ||
+        type_tag == GI_TYPE_TAG_GHASH ||
+        type_tag == GI_TYPE_TAG_ERROR)
         return true;
-    case GI_TYPE_TAG_INTERFACE: {
+
+    if (type_tag == GI_TYPE_TAG_INTERFACE) {
         GIBaseInfo* interface_info;
         GIInfoType interface_type;
-        bool needs_release;
+        bool needs_release = true;
 
         interface_info = g_type_info_get_interface(type_info);
         g_assert(interface_info != NULL);
 
         interface_type = g_base_info_get_type(interface_info);
 
-        switch(interface_type) {
-        case GI_INFO_TYPE_ENUM:
-        case GI_INFO_TYPE_FLAGS:
+        if (interface_type == GI_INFO_TYPE_ENUM ||
+            interface_type == GI_INFO_TYPE_FLAGS)
             needs_release = false;
-            break;
-
-        case GI_INFO_TYPE_STRUCT:
-        case GI_INFO_TYPE_UNION:
-            needs_release = g_type_info_is_pointer (type_info);
-            break;
-
-        default:
-            needs_release = true;
-        }
+        else if (interface_type == GI_INFO_TYPE_STRUCT ||
+            interface_type == GI_INFO_TYPE_UNION)
+            needs_release = g_type_info_is_pointer(type_info);
 
         g_base_info_unref(interface_info);
 
         return needs_release;
     }
-    default:
-        return false;
-    }
+
+    return false;
 }
 
 static bool
@@ -514,25 +493,23 @@ gjs_string_to_intarray(JSContext   *context,
 
     element_type = g_type_info_get_tag(param_info);
 
-    switch (element_type) {
-    case GI_TYPE_TAG_INT8:
-    case GI_TYPE_TAG_UINT8:
+    if (element_type == GI_TYPE_TAG_INT8 || element_type == GI_TYPE_TAG_UINT8) {
         if (!gjs_string_to_utf8(context, string_val, &result))
             return false;
         *arr_p = result;
         *length = strlen(result);
         return true;
+    }
 
-    case GI_TYPE_TAG_INT16:
-    case GI_TYPE_TAG_UINT16:
+    if (element_type == GI_TYPE_TAG_INT16 || element_type == GI_TYPE_TAG_UINT16) {
         if (!gjs_string_get_uint16_data(context, string_val,
                                         &result16, length))
             return false;
         *arr_p = result16;
         return true;
+    }
 
-    case GI_TYPE_TAG_UNICHAR:
-    {
+    if (element_type == GI_TYPE_TAG_UNICHAR) {
         gunichar *result_ucs4;
         JS::RootedValue root(context, string_val);
         if (!gjs_string_to_ucs4(context, root, &result_ucs4, length))
@@ -541,12 +518,10 @@ gjs_string_to_intarray(JSContext   *context,
         return true;
     }
 
-    default:
-        /* can't convert a string to this type */
-        gjs_throw(context, "Cannot convert string to array of '%s'",
-                  g_type_tag_to_string (element_type));
-        return false;
-    }
+    /* can't convert a string to this type */
+    gjs_throw(context, "Cannot convert string to array of '%s'",
+              g_type_tag_to_string (element_type));
+    return false;
 }
 
 static bool
@@ -850,28 +825,18 @@ static bool
 is_gvalue(GIBaseInfo *info,
           GIInfoType  info_type)
 {
-    bool result = false;
+    if (info_type == GI_INFO_TYPE_VALUE)
+        return true;
 
-    switch(info_type) {
-    case GI_INFO_TYPE_VALUE:
-        result = true;
-        break;
-    case GI_INFO_TYPE_STRUCT:
-    case GI_INFO_TYPE_OBJECT:
-    case GI_INFO_TYPE_INTERFACE:
-    case GI_INFO_TYPE_BOXED:
-        {
-            GType gtype;
-            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo *) info);
-
-            result = g_type_is_a(gtype, G_TYPE_VALUE);
-        }
-        break;
-    default:
-        break;
+    if (info_type == GI_INFO_TYPE_STRUCT ||
+        info_type == GI_INFO_TYPE_OBJECT ||
+        info_type == GI_INFO_TYPE_INTERFACE ||
+        info_type == GI_INFO_TYPE_BOXED) {
+        GType gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo *) info);
+        return g_type_is_a(gtype, G_TYPE_VALUE);
     }
 
-    return result;
+    return false;
 }
 
 static bool
@@ -977,6 +942,7 @@ gjs_array_to_array(JSContext   *context,
                                      transfer == GI_TRANSFER_CONTAINER ? GI_TRANSFER_NOTHING : transfer,
                                      param_info,
                                      arr_p);
+    case GI_TYPE_TAG_VOID:
     default:
         gjs_throw(context,
                   "Unhandled array element type %d", element_type);
@@ -1047,6 +1013,7 @@ gjs_g_array_new_for_type(JSContext    *context,
     case GI_TYPE_TAG_ERROR:
       element_size = sizeof(gpointer);
       break;
+    case GI_TYPE_TAG_VOID:
     default:
         gjs_throw(context,
                   "Unhandled GArray element-type %d", element_type);
@@ -1073,9 +1040,9 @@ get_argument_display_name(const char     *arg_name,
         return g_strdup("Hash element");
     case GJS_ARGUMENT_ARRAY_ELEMENT:
         return g_strdup("Array element");
+    default:
+        g_assert_not_reached ();
     }
-
-    g_assert_not_reached ();
 }
 
 static const char *
@@ -1407,37 +1374,32 @@ gjs_value_to_g_argument(JSContext      *context,
                 expect_object = true;
             }
 
-            switch(interface_type) {
-            case GI_INFO_TYPE_STRUCT:
-                if (g_struct_info_is_foreign((GIStructInfo*)interface_info)) {
-                    bool ret;
-                    ret = gjs_struct_foreign_convert_to_g_argument(
-                            context, value, interface_info, arg_name,
-                            arg_type, transfer, may_be_null, arg);
-                    g_base_info_unref(interface_info);
-                    return ret;
-                }
-                /* fall through */
-            case GI_INFO_TYPE_ENUM:
-            case GI_INFO_TYPE_FLAGS:
-            case GI_INFO_TYPE_OBJECT:
-            case GI_INFO_TYPE_INTERFACE:
-            case GI_INFO_TYPE_UNION:
-            case GI_INFO_TYPE_BOXED:
+            if (interface_type == GI_INFO_TYPE_STRUCT &&
+                g_struct_info_is_foreign((GIStructInfo*)interface_info)) {
+                bool ret;
+                ret = gjs_struct_foreign_convert_to_g_argument(
+                        context, value, interface_info, arg_name,
+                        arg_type, transfer, may_be_null, arg);
+                g_base_info_unref(interface_info);
+                return ret;
+            }
+
+            if (interface_type == GI_INFO_TYPE_STRUCT ||
+                interface_type == GI_INFO_TYPE_ENUM ||
+                interface_type == GI_INFO_TYPE_FLAGS ||
+                interface_type == GI_INFO_TYPE_OBJECT ||
+                interface_type == GI_INFO_TYPE_INTERFACE ||
+                interface_type == GI_INFO_TYPE_UNION ||
+                interface_type == GI_INFO_TYPE_BOXED) {
                 /* These are subtypes of GIRegisteredTypeInfo for which the
                  * cast is safe */
                 gtype = g_registered_type_info_get_g_type
                     ((GIRegisteredTypeInfo*)interface_info);
-                break;
-            case GI_INFO_TYPE_VALUE:
+            } else if (interface_type == GI_INFO_TYPE_VALUE) {
                 /* Special case for GValues */
                 gtype = G_TYPE_VALUE;
-                break;
-
-            default:
-                /* Everything else */
+            } else {
                 gtype = G_TYPE_NONE;
-                break;
             }
 
             if (gtype != G_TYPE_NONE)
@@ -1956,19 +1918,14 @@ gjs_g_argument_init_default(JSContext      *context,
 
             interface_type = g_base_info_get_type(interface_info);
 
-            switch(interface_type) {
-            case GI_INFO_TYPE_ENUM:
-            case GI_INFO_TYPE_FLAGS:
+            if (interface_type == GI_INFO_TYPE_ENUM ||
+                interface_type == GI_INFO_TYPE_FLAGS)
                 arg->v_int = 0;
-                break;
-            case GI_INFO_TYPE_VALUE:
+            else if (interface_type == GI_INFO_TYPE_VALUE)
                 /* Better to use a non-NULL value holding NULL? */
                 arg->v_pointer = NULL;
-                break;
-            default:
+            else
                 arg->v_pointer = NULL;
-                break;
-            }
 
             g_base_info_unref( (GIBaseInfo*) interface_info);
         }
@@ -2220,6 +2177,7 @@ gjs_array_from_carray_internal (JSContext             *context,
         case GI_TYPE_TAG_ERROR:
           ITERATE(pointer);
           break;
+        case GI_TYPE_TAG_VOID:
         default:
           gjs_throw(context, "Unknown Array element-type %d", element_type);
           return false;
@@ -2302,6 +2260,7 @@ gjs_array_from_boxed_array (JSContext             *context,
         data = ptr_array->pdata;
         length = ptr_array->len;
         break;
+    case GI_ARRAY_TYPE_C: /* already checked in gjs_value_from_g_argument() */
     default:
         g_assert_not_reached();
     }
@@ -2409,6 +2368,7 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
         case GI_TYPE_TAG_BOOLEAN:
             gjs_throw(context, "Boolean zero-terminated array not supported");
             return false;
+        case GI_TYPE_TAG_VOID:
         default:
           gjs_throw(context, "Unknown element-type %d", element_type);
           return false;
@@ -3181,6 +3141,7 @@ gjs_g_arg_release_internal(JSContext  *context,
                 g_free (arg->v_pointer);
                 break;
 
+            case GI_TYPE_TAG_VOID:
             default:
                 gjs_throw(context,
                           "Releasing a C array with explicit length, that was nested"
@@ -3243,6 +3204,7 @@ gjs_g_arg_release_internal(JSContext  *context,
 
                 break;
 
+            case GI_TYPE_TAG_VOID:
             default:
                 gjs_throw(context,
                           "Don't know how to release GArray element-type %d",

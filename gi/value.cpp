@@ -890,17 +890,14 @@ gjs_value_from_g_value_internal(JSContext             *context,
             return ret;
         }
 
-        switch (g_base_info_get_type(info)) {
-        case GI_INFO_TYPE_BOXED:
-        case GI_INFO_TYPE_STRUCT:
+        GIInfoType type = g_base_info_get_type(info);
+        if (type == GI_INFO_TYPE_BOXED || type == GI_INFO_TYPE_STRUCT) {
             if (no_copy)
                 boxed_flags = (GjsBoxedCreationFlags) (boxed_flags | GJS_BOXED_CREATION_NO_COPY);
             obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)info, gboxed, boxed_flags);
-            break;
-        case GI_INFO_TYPE_UNION:
+        } else if (type == GI_INFO_TYPE_UNION) {
             obj = gjs_union_from_c_union(context, (GIUnionInfo *)info, gboxed);
-            break;
-        default:
+        } else {
             gjs_throw(context,
                       "Unexpected introspection type %d for %s",
                       g_base_info_get_type(info),

@@ -59,13 +59,12 @@ gjs_error_reporter(JSContext     *context,
         level = G_LOG_LEVEL_MESSAGE;
 
         /* suppress bogus warnings. See mozilla/js/src/js.msg */
-        switch (report->errorNumber) {
+        if (report->errorNumber == 162) {
             /* 162, JSMSG_UNDEFINED_PROP: warns every time a lazy property
              * is resolved, since the property starts out
              * undefined. When this is a real bug it should usually
              * fail somewhere else anyhow.
              */
-        case 162:
             return;
         }
     } else {

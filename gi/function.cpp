@@ -104,6 +104,8 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
                                     GIArgument  *return_value)
 {
     switch (g_type_info_get_tag(ret_type)) {
+    case GI_TYPE_TAG_VOID:
+        g_assert_not_reached();
     case GI_TYPE_TAG_INT8:
         *(ffi_sarg *) result = return_value->v_int8;
         break;
@@ -128,9 +130,6 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
     case GI_TYPE_TAG_INT64:
         *(ffi_sarg *) result = return_value->v_int64;
         break;
-    case GI_TYPE_TAG_UINT64:
-        *(ffi_arg *) result = return_value->v_uint64;
-        break;
     case GI_TYPE_TAG_INTERFACE:
         {
             GIBaseInfo* interface_info;
@@ -139,18 +138,26 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
             interface_info = g_type_info_get_interface(ret_type);
             interface_type = g_base_info_get_type(interface_info);
 
-            switch (interface_type) {
-            case GI_INFO_TYPE_ENUM:
-            case GI_INFO_TYPE_FLAGS:
+            if (interface_type == GI_INFO_TYPE_ENUM ||
+                interface_type == GI_INFO_TYPE_FLAGS)
                 *(ffi_sarg *) result = return_value->v_long;
-                break;
-            default:
+            else
                 *(ffi_arg *) result = (ffi_arg) return_value->v_pointer;
-                break;
-            }
 
             g_base_info_unref(interface_info);
         }
+    case GI_TYPE_TAG_UINT64:
+    /* Other primitive and pointer types need to squeeze into 64-bit ffi_arg too */
+    case GI_TYPE_TAG_FLOAT:
+    case GI_TYPE_TAG_DOUBLE:
+    case GI_TYPE_TAG_GTYPE:
+    case GI_TYPE_TAG_UTF8:
+    case GI_TYPE_TAG_FILENAME:
+    case GI_TYPE_TAG_ARRAY:
+    case GI_TYPE_TAG_GLIST:
+    case GI_TYPE_TAG_GSLIST:
+    case GI_TYPE_TAG_GHASH:
+    case GI_TYPE_TAG_ERROR:
     default:
         *(ffi_arg *) result = (ffi_arg) return_value->v_uint64;
         break;
@@ -265,6 +272,9 @@ gjs_callback_closure(ffi_cif *cif,
                                                (GArgument *) args[i], false))
                     goto out;
                 break;
+            case PARAM_CALLBACK:
+                /* Callbacks that accept another callback as a parameter are not
+                 * supported, see gjs_callback_trampoline_new() */
             default:
                 g_assert_not_reached();
         }
@@ -517,26 +527,23 @@ gjs_callback_trampoline_new(JSContext      *context,
 static unsigned long
 get_length_from_arg (GArgument *arg, GITypeTag tag)
 {
-    switch (tag) {
-    case GI_TYPE_TAG_INT8:
+    if (tag == GI_TYPE_TAG_INT8)
         return arg->v_int8;
-    case GI_TYPE_TAG_UINT8:
+    if (tag == GI_TYPE_TAG_UINT8)
         return arg->v_uint8;
-    case GI_TYPE_TAG_INT16:
+    if (tag == GI_TYPE_TAG_INT16)
         return arg->v_int16;
-    case GI_TYPE_TAG_UINT16:
+    if (tag == GI_TYPE_TAG_UINT16)
         return arg->v_uint16;
-    case GI_TYPE_TAG_INT32:
+    if (tag == GI_TYPE_TAG_INT32)
         return arg->v_int32;
-    case GI_TYPE_TAG_UINT32:
+    if (tag == GI_TYPE_TAG_UINT32)
         return arg->v_uint32;
-    case GI_TYPE_TAG_INT64:
+    if (tag == GI_TYPE_TAG_INT64)
         return arg->v_int64;
-    case GI_TYPE_TAG_UINT64:
+    if (tag == GI_TYPE_TAG_UINT64)
         return arg->v_uint64;
-    default:
-        g_assert_not_reached ();
-    }
+    g_assert_not_reached();
 }
 
 static bool
@@ -550,9 +557,7 @@ gjs_fill_method_instance(JSContext       *context,
     GType gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo *)container);
     GITransfer transfer = g_callable_info_get_instance_ownership_transfer (function->info);
 
-    switch (type) {
-    case GI_INFO_TYPE_STRUCT:
-    case GI_INFO_TYPE_BOXED:
+    if (type == GI_INFO_TYPE_STRUCT || type == GI_INFO_TYPE_BOXED) {
         /* GError must be special cased */
         if (g_type_is_a(gtype, G_TYPE_ERROR)) {
             if (!gjs_typecheck_gerror(context, obj, true))
@@ -600,19 +605,16 @@ gjs_fill_method_instance(JSContext       *context,
                 }
             }
         }
-        break;
 
-    case GI_INFO_TYPE_UNION:
+    } else if (type == GI_INFO_TYPE_UNION) {
         if (!gjs_typecheck_union(context, obj, container, gtype, true))
             return false;
 
         out_arg->v_pointer = gjs_c_union_from_union(context, obj);
         if (transfer == GI_TRANSFER_EVERYTHING)
             out_arg->v_pointer = g_boxed_copy (gtype, out_arg->v_pointer);
-        break;
 
-    case GI_INFO_TYPE_OBJECT:
-    case GI_INFO_TYPE_INTERFACE:
+    } else if (type == GI_INFO_TYPE_OBJECT || type == GI_INFO_TYPE_INTERFACE) {
         if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
             if (!gjs_typecheck_object(context, obj, gtype, true))
                 return false;
@@ -652,9 +654,8 @@ gjs_fill_method_instance(JSContext       *context,
                              g_base_info_get_name(container));
             return false;
         }
-        break;
 
-    default:
+    } else {
         g_assert_not_reached();
     }
 
@@ -795,35 +796,31 @@ gjs_invoke_c_function(JSContext       *context,
                 g_arg_info_load_type(&arg_info, &ainfo);
                 type_tag = g_type_info_get_tag(&ainfo);
 
-                switch (type_tag) {
-                case GI_TYPE_TAG_INTERFACE:
-                    {
-                        GIBaseInfo* interface_info;
-                        GIInfoType interface_type;
-                        gsize size;
+                if (type_tag == GI_TYPE_TAG_INTERFACE) {
+                    GIBaseInfo* interface_info;
+                    GIInfoType interface_type;
+                    gsize size;
 
-                        interface_info = g_type_info_get_interface(&ainfo);
-                        g_assert(interface_info != NULL);
+                    interface_info = g_type_info_get_interface(&ainfo);
+                    g_assert(interface_info != NULL);
 
-                        interface_type = g_base_info_get_type(interface_info);
+                    interface_type = g_base_info_get_type(interface_info);
 
-                        if (interface_type == GI_INFO_TYPE_STRUCT) {
-                            size = g_struct_info_get_size((GIStructInfo*)interface_info);
-                        } else if (interface_type == GI_INFO_TYPE_UNION) {
-                            size = g_union_info_get_size((GIUnionInfo*)interface_info);
-                        } else {
-                            failed = true;
-                        }
-
-                        g_base_info_unref((GIBaseInfo*)interface_info);
-
-                        if (!failed) {
-                            in_arg_cvalues[c_arg_pos].v_pointer = g_slice_alloc0(size);
-                            out_arg_cvalues[c_arg_pos].v_pointer = in_arg_cvalues[c_arg_pos].v_pointer;
-                        }
-                        break;
+                    if (interface_type == GI_INFO_TYPE_STRUCT) {
+                        size = g_struct_info_get_size((GIStructInfo*)interface_info);
+                    } else if (interface_type == GI_INFO_TYPE_UNION) {
+                        size = g_union_info_get_size((GIUnionInfo*)interface_info);
+                    } else {
+                        failed = true;
                     }
-                default:
+
+                    g_base_info_unref((GIBaseInfo*)interface_info);
+
+                    if (!failed) {
+                        in_arg_cvalues[c_arg_pos].v_pointer = g_slice_alloc0(size);
+                        out_arg_cvalues[c_arg_pos].v_pointer = in_arg_cvalues[c_arg_pos].v_pointer;
+                    }
+                } else {
                     failed = true;
                 }
                 if (failed)
@@ -945,6 +942,9 @@ gjs_invoke_c_function(JSContext       *context,
                     failed = true;
                     break;
                 }
+
+            default:
+                ;
             }
 
             if (direction == GI_DIRECTION_INOUT && !arg_removed && !failed) {

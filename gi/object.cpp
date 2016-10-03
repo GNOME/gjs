@@ -359,6 +359,7 @@ object_instance_set_prop(JSContext              *context,
     case NO_SUCH_G_PROPERTY:
         goto out;
     case VALUE_WAS_SET:
+    default:
         break;
     }
 
@@ -721,6 +722,7 @@ object_instance_props_to_g_parameters(JSContext               *context,
             g_free(name);
             goto free_array_and_fail;
         case VALUE_WAS_SET:
+        default:
             break;
         }
 

@@ -167,13 +167,14 @@ gjs_cairo_pattern_from_pattern(JSContext       *context,
             return gjs_cairo_linear_gradient_from_pattern(context, pattern);
         case CAIRO_PATTERN_TYPE_RADIAL:
             return gjs_cairo_radial_gradient_from_pattern(context, pattern);
+        case CAIRO_PATTERN_TYPE_MESH:
+        case CAIRO_PATTERN_TYPE_RASTER_SOURCE:
         default:
-            break;
+            gjs_throw(context,
+                      "failed to create pattern, unsupported pattern type %d",
+                      cairo_pattern_get_type(pattern));
+            return NULL;
     }
-
-    gjs_throw(context, "failed to create pattern, unsupported pattern type %d",
-              cairo_pattern_get_type(pattern));
-    return NULL;
 }
 
 /**

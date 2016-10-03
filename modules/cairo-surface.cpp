@@ -195,18 +195,15 @@ gjs_cairo_surface_from_surface(JSContext       *context,
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(surface != NULL, NULL);
 
-    switch (cairo_surface_get_type(surface)) {
-        case CAIRO_SURFACE_TYPE_IMAGE:
-            return gjs_cairo_image_surface_from_surface(context, surface);
-        case CAIRO_SURFACE_TYPE_PDF:
-            return gjs_cairo_pdf_surface_from_surface(context, surface);
-        case CAIRO_SURFACE_TYPE_PS:
-            return gjs_cairo_ps_surface_from_surface(context, surface);
-        case CAIRO_SURFACE_TYPE_SVG:
-            return gjs_cairo_svg_surface_from_surface(context, surface);
-        default:
-            break;
-    }
+    cairo_surface_type_t type = cairo_surface_get_type(surface);
+    if (type == CAIRO_SURFACE_TYPE_IMAGE)
+        return gjs_cairo_image_surface_from_surface(context, surface);
+    if (type == CAIRO_SURFACE_TYPE_PDF)
+        return gjs_cairo_pdf_surface_from_surface(context, surface);
+    if (type == CAIRO_SURFACE_TYPE_PS)
+        return gjs_cairo_ps_surface_from_surface(context, surface);
+    if (type == CAIRO_SURFACE_TYPE_SVG)
+        return gjs_cairo_svg_surface_from_surface(context, surface);
 
     JS::RootedObject object(context,
                             JS_NewObject(context, &gjs_cairo_surface_class, NULL, NULL));
