@@ -216,25 +216,21 @@ gjs_build_string_array(JSContext   *context,
                        gssize       array_length,
                        char       **array_values)
 {
-    GArray *elems;
-    JSObject *array;
     int i;
 
     if (array_length == -1)
         array_length = g_strv_length(array_values);
 
-    elems = g_array_sized_new(false, false, sizeof(JS::Value), array_length);
+    JS::AutoValueVector elems(context);
+    elems.reserve(array_length);
 
     for (i = 0; i < array_length; ++i) {
-        JS::Value element;
-        element = JS::StringValue(JS_NewStringCopyZ(context, array_values[i]));
-        g_array_append_val(elems, element);
+        JS::RootedValue element(context,
+            JS::StringValue(JS_NewStringCopyZ(context, array_values[i])));
+        elems.append(element);
     }
 
-    array = JS_NewArrayObject(context, elems->len, (JS::Value *) elems->data);
-    g_array_free(elems, true);
-
-    return array;
+    return JS_NewArrayObject(context, elems.length(), &elems[0]);
 }
 
 JSObject*
