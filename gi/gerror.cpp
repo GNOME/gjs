@@ -25,10 +25,10 @@
 
 #include <string.h>
 
-#include <gjs/gjs-module.h>
-#include <gjs/compat.h>
 #include "boxed.h"
 #include "enumeration.h"
+#include "gjs/compat.h"
+#include "gjs/mem.h"
 #include "repo.h"
 #include "gerror.h"
 

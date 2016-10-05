@@ -30,48 +30,16 @@ gjsjsdir = @gjsjsdir@
 gjsoverridedir = $(gjsjsdir)/overrides
 
 gjs_public_includedir = $(includedir)/gjs-1.0
-gjs_module_includedir = $(includedir)/gjs-1.0
 
 ########################################################################
 nobase_gjs_public_include_HEADERS =	\
 	gjs/context.h		\
 	gjs/gjs.h
 
-nobase_gjs_module_include_HEADERS =	\
-	gjs/gjs-module.h	\
-	gjs/compat.h		\
-	gjs/coverage.h \
-	gjs/byteArray.h		\
-	gjs/importer.h		\
-	gjs/jsapi-util.h	\
-	gjs/runtime.h		\
-	gjs/type-module.h	\
-	gjs/mem.h		\
-	gjs/native.h	\
-	gi/ns.h	        \
-	gi/object.h	\
-	gi/foreign.h	\
-	gi/fundamental.h	\
-	gi/param.h	\
-	gi/repo.h	\
-	gi/union.h	\
-	gi/value.h	\
-	gi/arg.h	\
-	gi/boxed.h	\
-	gi/closure.h	\
-	gi/enumeration.h	\
-	gi/function.h	\
-	gi/keep-alive.h	\
-	gi/interface.h	\
-	gi/gtype.h	\
-	gi/gerror.h
-
 ########################################################################
-pkgconfig_DATA = gjs-1.0.pc gjs-internals-1.0.pc
+pkgconfig_DATA = gjs-1.0.pc
 
-EXTRA_DIST += 			\
-	gjs-1.0.pc.in		\
-	gjs-internals-1.0.pc.in
+EXTRA_DIST += gjs-1.0.pc.in
 
 ########################################################################
 gjs_directory_defines = 				\
@@ -176,6 +144,36 @@ libgjs_private_source_files += 			\
 endif
 
 libgjs_la_SOURCES += $(libgjs_private_source_files)
+
+# These used to be public headers for external modules
+libgjs_la_SOURCES +=		\
+	gjs/compat.h		\
+	gjs/coverage.h		\
+	gjs/byteArray.h		\
+	gjs/importer.h		\
+	gjs/jsapi-util.h	\
+	gjs/runtime.h		\
+	gjs/type-module.h	\
+	gjs/mem.h		\
+	gjs/native.h		\
+	gi/ns.h	        	\
+	gi/object.h		\
+	gi/foreign.h		\
+	gi/fundamental.h	\
+	gi/param.h		\
+	gi/repo.h		\
+	gi/union.h		\
+	gi/value.h		\
+	gi/arg.h		\
+	gi/boxed.h		\
+	gi/closure.h		\
+	gi/enumeration.h	\
+	gi/function.h		\
+	gi/keep-alive.h		\
+	gi/interface.h		\
+	gi/gtype.h		\
+	gi/gerror.h		\
+	$(NULL)
 
 GjsPrivate-1.0.gir: libgjs.la
 GjsPrivate_1_0_gir_LIBS = libgjs.la

@@ -23,10 +23,8 @@
 
 #include <config.h>
 
+#include "gjs/compat.h"
 #include "keep-alive.h"
-
-#include <gjs/gjs-module.h>
-#include <gjs/compat.h>
 
 #include <util/log.h>
 #include <util/glib.h>

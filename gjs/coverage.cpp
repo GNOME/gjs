@@ -21,10 +21,11 @@
 #include <sys/stat.h>
 #include <gio/gio.h>
 
-#include "gjs-module.h"
+#include <gjs/context.h>
+
 #include "coverage.h"
 #include "coverage-internal.h"
-
+#include "importer.h"
 #include "util/error.h"
 
 struct _GjsCoveragePrivate {

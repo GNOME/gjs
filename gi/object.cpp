@@ -26,7 +26,7 @@
 #include <memory>
 #include <string.h>
 
-#include <gjs/gi.h>
+#include "gjs/gi.h"
 #include "object.h"
 #include "gtype.h"
 #include "interface.h"
@@ -40,11 +40,10 @@
 #include "keep-alive.h"
 #include "closure.h"
 #include "gjs_gi_trace.h"
-
-#include <gjs/gjs-module.h>
-#include <gjs/compat.h>
-#include <gjs/type-module.h>
-#include <gjs/context-private.h>
+#include "gjs/compat.h"
+#include "gjs/context-private.h"
+#include "gjs/mem.h"
+#include "gjs/type-module.h"
 
 #include <util/log.h>
 #include <util/hash-x32.h>

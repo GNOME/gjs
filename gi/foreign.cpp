@@ -24,12 +24,11 @@
 #include <config.h>
 
 #include <string.h>
-#include <gjs/gjs-module.h>
-#include <gjs/compat.h>
 #include <girepository.h>
 
 #include "arg.h"
 #include "foreign.h"
+#include "gjs/compat.h"
 
 static struct {
     char *gi_namespace;

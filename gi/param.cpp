@@ -31,8 +31,8 @@
 #include "repo.h"
 #include "gtype.h"
 #include "function.h"
-#include <gjs/gjs-module.h>
-#include <gjs/compat.h>
+#include "gjs/compat.h"
+#include "gjs/mem.h"
 
 #include <util/log.h>
 

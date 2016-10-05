@@ -28,9 +28,9 @@
 #include "gtype.h"
 #include "interface.h"
 #include "repo.h"
+#include "gjs/compat.h"
+#include "gjs/mem.h"
 
-#include <gjs/gjs-module.h>
-#include <gjs/compat.h>
 #include <util/log.h>
 
 #include <girepository.h>

@@ -21,10 +21,6 @@
 #ifndef _GJS_COVERAGE_INTERNAL_H
 #define _GJS_COVERAGE_INTERNAL_H
 
-#ifndef GJS_COMPILATION
-#error This file is for internal use and use in the tests only
-#endif
-
 #include "jsapi-util.h"
 #include "coverage.h"
 

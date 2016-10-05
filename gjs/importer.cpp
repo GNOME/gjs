@@ -26,9 +26,10 @@
 #include <util/log.h>
 #include <util/glib.h>
 
-#include <gjs/gjs-module.h>
-#include <gjs/importer.h>
-#include <gjs/compat.h>
+#include "compat.h"
+#include "importer.h"
+#include "mem.h"
+#include "native.h"
 
 #include <gio/gio.h>
 

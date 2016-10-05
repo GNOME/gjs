@@ -24,10 +24,6 @@
 #ifndef __GJS_IMPORTER_H__
 #define __GJS_IMPORTER_H__
 
-#if !defined (__GJS_GJS_MODULE_H__) && !defined (GJS_COMPILATION)
-#error "Only <gjs/gjs-module.h> can be included directly."
-#endif
-
 #include <stdbool.h>
 #include <glib.h>
 #include "gjs/jsapi-util.h"

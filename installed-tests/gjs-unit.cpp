@@ -26,11 +26,14 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <girepository.h>
-#include <gjs/gjs-module.h>
-#include <gjs/coverage.h>
 #include <locale.h>
 
 #include <string.h>
+
+#include <gjs/gjs.h>
+
+#include "gjs/coverage.h"
+#include "gjs/mem.h"
 
 typedef struct {
     const char *coverage_prefix;

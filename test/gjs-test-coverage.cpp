@@ -32,9 +32,9 @@
 #include <gio/gio.h>
 #include <gio/gunixoutputstream.h>
 #include <gjs/gjs.h>
-#include <gjs/coverage.h>
-#include <gjs/coverage-internal.h>
-#include <gjs/gjs-module.h>
+
+#include "gjs/coverage.h"
+#include "gjs/coverage-internal.h"
 
 typedef struct _GjsCoverageFixture {
     GjsContext    *context;

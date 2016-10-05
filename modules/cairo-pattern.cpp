@@ -22,8 +22,7 @@
 
 #include <config.h>
 
-#include <gjs/gjs-module.h>
-#include <gjs/compat.h>
+#include "gjs/compat.h"
 #include <cairo.h>
 #include <cairo-gobject.h>
 #include "cairo-private.h"

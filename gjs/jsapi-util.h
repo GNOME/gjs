@@ -24,16 +24,13 @@
 #ifndef __GJS_JSAPI_UTIL_H__
 #define __GJS_JSAPI_UTIL_H__
 
-#if !defined (__GJS_GJS_MODULE_H__) && !defined (GJS_COMPILATION)
-#error "Only <gjs/gjs-module.h> can be included directly."
-#endif
-
 #include <stdbool.h>
 
-#include <gjs/compat.h>
-#include <gjs/runtime.h>
 #include <glib-object.h>
-#include <gi/gtype.h>
+
+#include "gjs/compat.h"
+#include "gjs/runtime.h"
+#include "gi/gtype.h"
 
 G_BEGIN_DECLS
 

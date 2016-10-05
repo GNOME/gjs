@@ -28,8 +28,9 @@
 #include <unistd.h>
 #include <time.h>
 
-#include <gjs/gjs-module.h>
-#include <gi/object.h>
+#include <gjs/context.h>
+
+#include "gi/object.h"
 #include "system.h"
 
 static JSBool

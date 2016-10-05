@@ -24,10 +24,12 @@
 #include <config.h>
 #include <glib.h>
 #include <glib-object.h>
-#include <gjs/gjs-module.h>
 #include <util/glib.h>
 #include <util/crash.h>
 
+#include <gjs/context.h>
+
+#include "gjs/compat.h"
 #include "gjs-tests-add-funcs.h"
 
 typedef struct _GjsUnitTestFixture GjsUnitTestFixture;

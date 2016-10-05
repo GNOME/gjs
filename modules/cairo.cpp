@@ -22,9 +22,7 @@
 
 #include <config.h>
 
-#include <gjs/gjs-module.h>
-#include <gjs/compat.h>
-
+#include "gjs/compat.h"
 #include "cairo-private.h"
 
 #if CAIRO_HAS_XLIB_SURFACE

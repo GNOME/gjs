@@ -22,10 +22,6 @@
  * IN THE SOFTWARE.
  */
 
-#if !defined (__GJS_GJS_MODULE_H__) && !defined (GJS_COMPILATION)
-#error "Only <gjs/gjs-module.h> can be included directly."
-#endif
-
 #ifndef __GJS_COMPAT_H__
 #define __GJS_COMPAT_H__
 
@@ -48,7 +44,7 @@ _Pragma("GCC diagnostic pop")
 #include <stdbool.h>
 #include <glib.h>
 
-#include <gjs/jsapi-util.h>
+#include "jsapi-util.h"
 
 G_BEGIN_DECLS
 

@@ -28,9 +28,9 @@
 #include <util/log.h>
 
 #include "closure.h"
+#include "gjs/compat.h"
+#include "gjs/mem.h"
 #include "keep-alive.h"
-#include <gjs/gjs-module.h>
-#include <gjs/compat.h>
 
 typedef struct {
     GClosure base;

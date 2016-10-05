@@ -26,8 +26,7 @@
 
 #include "gtype.h"
 
-#include <gjs/gjs-module.h>
-#include <gjs/compat.h>
+#include "gjs/compat.h"
 #include <util/log.h>
 #include <girepository.h>
 

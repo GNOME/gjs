@@ -25,8 +25,7 @@
 
 #include <string.h>
 
-#include <gjs/gjs-module.h>
-#include <gjs/compat.h>
+#include "gjs/compat.h"
 #include "repo.h"
 #include "gtype.h"
 #include "function.h"

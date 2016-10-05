@@ -26,8 +26,8 @@
 #include "ns.h"
 #include "repo.h"
 #include "param.h"
-#include <gjs/gjs-module.h>
-#include <gjs/compat.h>
+#include "gjs/compat.h"
+#include "gjs/mem.h"
 
 #include <util/log.h>
 #include <girepository.h>

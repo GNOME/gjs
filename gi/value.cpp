@@ -36,8 +36,7 @@
 #include "union.h"
 #include "gtype.h"
 #include "gerror.h"
-#include <gjs/gjs-module.h>
-#include <gjs/compat.h>
+#include "gjs/compat.h"
 
 #include <girepository.h>
 
