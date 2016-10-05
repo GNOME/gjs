@@ -81,8 +81,6 @@ bool      gjs_invoke_constructor_from_c(JSContext       *context,
                                         JS::Value       *argv,
                                         GArgument       *rvalue);
 
-void     gjs_init_cinvoke_profiling (void);
-
 G_END_DECLS
 
 #endif  /* __GJS_FUNCTION_H__ */

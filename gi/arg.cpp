@@ -79,7 +79,7 @@ _gjs_flags_value_is_valid(JSContext   *context,
     return true;
 }
 
-bool
+static bool
 _gjs_enum_value_is_valid(JSContext  *context,
                          GIEnumInfo *enum_info,
                          gint64      value)

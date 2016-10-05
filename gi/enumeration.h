@@ -42,8 +42,6 @@ bool    gjs_define_enum_static_methods (JSContext    *context,
 bool    gjs_define_enumeration         (JSContext    *context,
                                         JSObject     *in_object,
                                         GIEnumInfo   *info);
-JSObject* gjs_lookup_enumeration       (JSContext    *context,
-                                        GIEnumInfo   *info);
 
 G_END_DECLS
 

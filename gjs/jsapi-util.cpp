@@ -301,6 +301,45 @@ gjs_string_readable (JSContext   *context,
     return g_string_free(buf, false);
 }
 
+static char *
+_gjs_g_utf8_make_valid (const char *name)
+{
+    GString *string;
+    const char *remainder, *invalid;
+    int remaining_bytes, valid_bytes;
+
+    g_return_val_if_fail (name != NULL, NULL);
+
+    string = NULL;
+    remainder = name;
+    remaining_bytes = strlen (name);
+
+    while (remaining_bytes != 0) {
+        if (g_utf8_validate (remainder, remaining_bytes, &invalid))
+            break;
+        valid_bytes = invalid - remainder;
+
+        if (string == NULL)
+            string = g_string_sized_new (remaining_bytes);
+
+        g_string_append_len (string, remainder, valid_bytes);
+        /* append U+FFFD REPLACEMENT CHARACTER */
+        g_string_append (string, "\357\277\275");
+
+        remaining_bytes -= valid_bytes + 1;
+        remainder = invalid + 1;
+    }
+
+    if (string == NULL)
+        return g_strdup (name);
+
+    g_string_append (string, remainder);
+
+    g_assert (g_utf8_validate (string->str, -1, NULL));
+
+    return g_string_free (string, false);
+}
+
 /**
  * gjs_value_debug_string:
  * @context:
@@ -367,105 +406,6 @@ gjs_value_debug_string(JSContext      *context,
     g_free(bytes);
 
     return debugstr;
-}
-
-void
-gjs_log_object_props(JSContext      *context,
-                     JSObject       *obj,
-                     GjsDebugTopic   topic,
-                     const char     *prefix)
-{
-    JSObject *props_iter;
-    jsid prop_id;
-
-    JS_BeginRequest(context);
-
-    props_iter = JS_NewPropertyIterator(context, obj);
-    if (props_iter == NULL) {
-        gjs_log_exception(context);
-        goto done;
-    }
-
-    prop_id = JSID_VOID;
-    if (!JS_NextProperty(context, props_iter, &prop_id))
-        goto done;
-
-    while (!JSID_IS_VOID(prop_id)) {
-        JS::Value propval;
-        char *debugstr;
-        char *name = NULL;
-
-        if (!JS_GetPropertyById(context, obj, prop_id, &propval))
-            goto next;
-
-        if (!gjs_get_string_id(context, prop_id, &name))
-            goto next;
-
-        debugstr = gjs_value_debug_string(context, propval);
-        gjs_debug(topic,
-                  "%s%s = '%s'",
-                  prefix, name,
-                  debugstr);
-        g_free(debugstr);
-
-    next:
-        g_free(name);
-        prop_id = JSID_VOID;
-        if (!JS_NextProperty(context, props_iter, &prop_id))
-            break;
-    }
-
- done:
-    JS_EndRequest(context);
-}
-
-void
-gjs_explain_scope(JSContext  *context,
-                  const char *title)
-{
-    JSObject *global;
-    JSObject *parent;
-    GString *chain;
-    char *debugstr;
-
-    gjs_debug(GJS_DEBUG_SCOPE,
-              "=== %s ===",
-              title);
-
-    JS_BeginRequest(context);
-
-    gjs_debug(GJS_DEBUG_SCOPE,
-              "  Context: %p %s",
-              context,
-              "");
-
-    global = gjs_get_global_object(context);
-    debugstr = gjs_value_debug_string(context, JS::ObjectOrNullValue(global));
-    gjs_debug(GJS_DEBUG_SCOPE,
-              "  Global: %p %s",
-              global, debugstr);
-    g_free(debugstr);
-
-    parent = JS_GetGlobalForScopeChain(context);
-    chain = g_string_new(NULL);
-    while (parent != NULL) {
-        char *debug;
-        debug = gjs_value_debug_string(context, JS::ObjectOrNullValue(parent));
-
-        if (chain->len > 0)
-            g_string_append(chain, ", ");
-
-        g_string_append_printf(chain, "%p %s",
-                               parent, debug);
-        g_free(debug);
-        parent = JS_GetParent(parent);
-    }
-    gjs_debug(GJS_DEBUG_SCOPE,
-              "  Chain: %s",
-              chain->str);
-    g_string_free(chain, true);
-
-    JS_EndRequest(context);
 }
 
 static char *
@@ -586,9 +526,8 @@ gjs_log_exception_full(JSContext *context,
     return true;
 }
 
-static bool
-log_and_maybe_keep_exception(JSContext  *context,
-                             bool        keep)
+bool
+gjs_log_exception(JSContext  *context)
 {
     bool retval = false;
 
@@ -602,30 +541,12 @@ log_and_maybe_keep_exception(JSContext  *context,
 
     gjs_log_exception_full(context, exc, NULL);
 
-    /* We clear above and then set it back so any exceptions
-     * from the logging process don't overwrite the original
-     */
-    if (keep)
-        JS_SetPendingException(context, exc);
-
     retval = true;
 
  out:
     JS_EndRequest(context);
 
     return retval;
-}
-
-bool
-gjs_log_exception(JSContext  *context)
-{
-    return log_and_maybe_keep_exception(context, false);
-}
-
-bool
-gjs_log_and_keep_exception(JSContext *context)
-{
-    return log_and_maybe_keep_exception(context, true);
 }
 
 static void
@@ -753,42 +674,6 @@ log_prop(JSContext  *context,
     }
 
     return true;
-}
-
-bool
-gjs_get_prop_verbose_stub(JSContext *context,
-                          JSObject  *obj,
-                          JS::Value  id,
-                          JS::Value *value_p)
-{
-    return log_prop(context, obj, id, value_p, "get");
-}
-
-bool
-gjs_set_prop_verbose_stub(JSContext *context,
-                          JSObject  *obj,
-                          JS::Value  id,
-                          JS::Value *value_p)
-{
-    return log_prop(context, obj, id, value_p, "set");
-}
-
-bool
-gjs_add_prop_verbose_stub(JSContext *context,
-                          JSObject  *obj,
-                          JS::Value  id,
-                          JS::Value *value_p)
-{
-    return log_prop(context, obj, id, value_p, "add");
-}
-
-bool
-gjs_delete_prop_verbose_stub(JSContext *context,
-                             JSObject  *obj,
-                             JS::Value  id,
-                             JS::Value *value_p)
-{
-    return log_prop(context, obj, id, value_p, "delete");
 }
 
 /* get a debug string for type tag in JS::Value */

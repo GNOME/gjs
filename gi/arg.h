@@ -102,10 +102,6 @@ bool _gjs_flags_value_is_valid (JSContext   *context,
                                 GType        gtype,
                                 gint64       value);
 
-bool _gjs_enum_value_is_valid (JSContext  *context,
-                               GIEnumInfo *enum_info,
-                               gint64      value);
-
 gint64 _gjs_enum_from_int (GIEnumInfo *enum_info,
                            int         int_value);
 

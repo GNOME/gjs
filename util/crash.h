@@ -27,7 +27,6 @@
 
 G_BEGIN_DECLS
 
-void gjs_print_backtrace     (void);
 void gjs_crash_after_timeout (int seconds);
 
 G_END_DECLS

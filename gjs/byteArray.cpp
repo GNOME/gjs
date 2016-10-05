@@ -761,31 +761,6 @@ gjs_byte_array_from_byte_array (JSContext *context,
     return object;
 }
 
-JSObject *
-gjs_byte_array_from_bytes (JSContext *context,
-                           GBytes    *bytes)
-{
-    ByteArrayInstance *priv;
-
-    g_return_val_if_fail(context != NULL, NULL);
-    g_return_val_if_fail(bytes != NULL, NULL);
-
-    JS::RootedObject object(context,
-                            JS_NewObject(context, &gjs_byte_array_class,
-                                         byte_array_get_prototype(context), NULL));
-    if (!object) {
-        gjs_throw(context, "failed to create byte array");
-        return NULL;
-    }
-
-    priv = g_slice_new0(ByteArrayInstance);
-    g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(object, priv);
-    priv->bytes = g_bytes_ref (bytes);
-
-    return object;
-}
-
 GBytes *
 gjs_byte_array_get_bytes (JSContext       *context,
                           JS::HandleObject object)

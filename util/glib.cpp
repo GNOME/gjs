@@ -46,11 +46,10 @@ get_first_one_predicate(void  *key,
     return true;
 }
 
-static bool
-remove_or_steal_one(GHashTable *hash,
-                    void      **key_p,
-                    void      **value_p,
-                    bool        steal)
+bool
+gjs_g_hash_table_steal_one(GHashTable *hash,
+                           void      **key_p,
+                           void      **value_p)
 {
     StoreOneData sod;
 
@@ -66,28 +65,9 @@ remove_or_steal_one(GHashTable *hash,
     if (value_p)
         *value_p = sod.value;
 
-    if (steal)
-        g_hash_table_steal(hash, sod.key);
-    else
-        g_hash_table_remove(hash, sod.key);
+    g_hash_table_steal(hash, sod.key);
 
     return sod.value != NULL;
-}
-
-bool
-gjs_g_hash_table_remove_one(GHashTable *hash,
-                            void      **key_p,
-                            void      **value_p)
-{
-    return remove_or_steal_one(hash, key_p, value_p, false);
-}
-
-bool
-gjs_g_hash_table_steal_one(GHashTable *hash,
-                           void      **key_p,
-                           void      **value_p)
-{
-    return remove_or_steal_one(hash, key_p, value_p, true);
 }
 
 /** gjs_g_strv_concat:
@@ -125,44 +105,4 @@ gjs_g_strv_concat(char ***strv_array, int len)
     g_ptr_array_add(array, NULL);
 
     return (char**)g_ptr_array_free(array, false);
-}
-
-gchar *
-_gjs_g_utf8_make_valid (const gchar *name)
-{
-  GString *string;
-  const gchar *remainder, *invalid;
-  gint remaining_bytes, valid_bytes;
-
-  g_return_val_if_fail (name != NULL, NULL);
-
-  string = NULL;
-  remainder = name;
-  remaining_bytes = strlen (name);
-
-  while (remaining_bytes != 0)
-    {
-      if (g_utf8_validate (remainder, remaining_bytes, &invalid))
-	break;
-      valid_bytes = invalid - remainder;
-
-      if (string == NULL)
-	string = g_string_sized_new (remaining_bytes);
-
-      g_string_append_len (string, remainder, valid_bytes);
-      /* append U+FFFD REPLACEMENT CHARACTER */
-      g_string_append (string, "\357\277\275");
-
-      remaining_bytes -= valid_bytes + 1;
-      remainder = invalid + 1;
-    }
-
-  if (string == NULL)
-    return g_strdup (name);
-
-  g_string_append (string, remainder);
-
-  g_assert (g_utf8_validate (string->str, -1, NULL));
-
-  return g_string_free (string, false);
 }

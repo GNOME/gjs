@@ -153,7 +153,7 @@ gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
 }
 #endif
 
-bool
+static bool
 gjs_console_interact(JSContext *context,
                      unsigned   argc,
                      JS::Value *vp)

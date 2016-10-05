@@ -36,30 +36,6 @@
 
 #include "enumeration.h"
 
-JSObject*
-gjs_lookup_enumeration(JSContext    *context,
-                       GIEnumInfo   *info)
-{
-    JSObject *in_object;
-    const char *enum_name;
-    JS::Value value;
-
-    in_object = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
-
-    if (G_UNLIKELY (!in_object))
-        return NULL;
-
-    enum_name = g_base_info_get_name((GIBaseInfo*) info);
-
-    if (!JS_GetProperty(context, in_object, enum_name, &value))
-        return NULL;
-
-    if (G_UNLIKELY (!value.isObject()))
-        return NULL;
-
-    return &value.toObject();
-}
-
 static bool
 gjs_define_enum_value(JSContext    *context,
                       JSObject     *in_object,

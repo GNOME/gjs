@@ -83,8 +83,6 @@ EXTRA_DIST += 							\
 	$(srcdir)/test/gjs-test-coverage/loadedJSFromResource.js \
 	$(NULL)
 
-## -rdynamic makes backtraces work
-gjs_tests_LDFLAGS = -rdynamic
 gjs_tests_LDADD =		\
 	libgjs.la		\
 	$(GJSTESTS_LIBS)

@@ -53,9 +53,6 @@ bool      gjs_typecheck_fundamental(JSContext       *context,
                                     GType            expected_gtype,
                                     bool             throw_error);
 
-bool      gjs_typecheck_is_fundamental       (JSContext     *context,
-                                              JSObject      *object,
-                                              bool           throw_error);
 void*     gjs_fundamental_ref                (JSContext     *context,
                                               void          *fobj);
 void      gjs_fundamental_unref              (JSContext     *context,

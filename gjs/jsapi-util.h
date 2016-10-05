@@ -356,23 +356,14 @@ void        gjs_throw_g_error                (JSContext       *context,
                                               GError          *error);
 
 bool        gjs_log_exception                (JSContext       *context);
-bool        gjs_log_and_keep_exception       (JSContext       *context);
 bool        gjs_move_exception               (JSContext       *src_context,
                                               JSContext       *dest_context);
 bool        gjs_log_exception_full           (JSContext       *context,
                                               JS::Value        exc,
                                               JSString        *message);
 
-#ifdef __GJS_UTIL_LOG_H__
-void        gjs_log_object_props             (JSContext       *context,
-                                              JSObject        *obj,
-                                              GjsDebugTopic    topic,
-                                              const char      *prefix);
-#endif
 char*       gjs_value_debug_string           (JSContext       *context,
                                               JS::Value        value);
-void        gjs_explain_scope                (JSContext       *context,
-                                              const char      *title);
 
 bool gjs_call_function_value(JSContext             *context,
                              JSObject              *obj,
@@ -385,22 +376,6 @@ void        gjs_error_reporter               (JSContext       *context,
                                               const char      *message,
                                               JSErrorReport   *report);
 JSObject*   gjs_get_global_object            (JSContext *cx);
-bool        gjs_get_prop_verbose_stub        (JSContext       *context,
-                                              JSObject        *obj,
-                                              JS::Value        id,
-                                              JS::Value       *value_p);
-bool        gjs_set_prop_verbose_stub        (JSContext       *context,
-                                              JSObject        *obj,
-                                              JS::Value        id,
-                                              JS::Value       *value_p);
-bool        gjs_add_prop_verbose_stub        (JSContext       *context,
-                                              JSObject        *obj,
-                                              JS::Value        id,
-                                              JS::Value       *value_p);
-bool        gjs_delete_prop_verbose_stub     (JSContext       *context,
-                                              JSObject        *obj,
-                                              JS::Value        id,
-                                              JS::Value       *value_p);
 
 JSBool      gjs_string_to_utf8               (JSContext       *context,
                                               const JS::Value  string_val,

@@ -822,14 +822,6 @@ gjs_g_fundamental_from_object(JSContext       *context,
 }
 
 bool
-gjs_typecheck_is_fundamental(JSContext       *context,
-                             JS::HandleObject object,
-                             bool             throw_error)
-{
-    return do_base_typecheck(context, object, throw_error);
-}
-
-bool
 gjs_typecheck_fundamental(JSContext       *context,
                           JS::HandleObject object,
                           GType            expected_gtype,

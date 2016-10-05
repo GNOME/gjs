@@ -32,9 +32,6 @@ G_BEGIN_DECLS
 
 bool        gjs_define_console_stuff     (JSContext      *context,
                                           JSObject      **module_out);
-bool        gjs_console_interact         (JSContext      *context,
-                                          unsigned        argc,
-                                          JS::Value      *vp);
 
 G_END_DECLS
 

@@ -172,7 +172,7 @@ JSFunctionSpec gjs_keep_alive_proto_funcs[] = {
     JS_FS_END
 };
 
-JSObject*
+static JSObject *
 gjs_keep_alive_new(JSContext *context)
 {
     KeepAlive *priv;

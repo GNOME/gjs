@@ -26,8 +26,6 @@
 
 G_BEGIN_DECLS
 
-GArray * gjs_fetch_statistics_from_js(GjsCoverage *coverage,
-                                      char        **covered_paths);
 GBytes * gjs_serialize_statistics(GjsCoverage *coverage);
 
 JSString * gjs_deserialize_cache_to_object(GjsCoverage *coverage,

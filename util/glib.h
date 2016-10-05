@@ -28,11 +28,6 @@
 
 G_BEGIN_DECLS
 
-gchar * _gjs_g_utf8_make_valid (const gchar *name);
-
-bool     gjs_g_hash_table_remove_one (GHashTable  *hash,
-                                      void       **key_p,
-                                      void       **value_p);
 bool     gjs_g_hash_table_steal_one  (GHashTable  *hash,
                                       void       **key_p,
                                       void       **value_p);

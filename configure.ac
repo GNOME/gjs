@@ -133,8 +133,6 @@ AC_SUBST([READLINE_LIBS])
 # End of readline checks: restore LIBS
 LIBS=$LIBS_no_readline
 
-AC_CHECK_FUNCS([backtrace])
-
 AC_ARG_ENABLE(installed_tests,
   [AS_HELP_STRING([--enable-installed-tests],
     [Install test programs @<:@default: no@:>@])])

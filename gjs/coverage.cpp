@@ -1107,7 +1107,7 @@ gjs_deserialize_cache_to_object(GjsCoverage *coverage,
     return gjs_deserialize_cache_to_object_for_compartment(context, global_object, cache_data);
 }
 
-GArray *
+static GArray *
 gjs_fetch_statistics_from_js(GjsCoverage *coverage,
                              gchar       **coverage_files)
 {

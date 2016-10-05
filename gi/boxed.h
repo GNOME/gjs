@@ -44,8 +44,7 @@ typedef GIStructInfo GIBoxedInfo;
 void      gjs_define_boxed_class       (JSContext             *context,
                                         JSObject              *in_object,
                                         GIBoxedInfo           *info);
-JSObject* gjs_lookup_boxed_prototype   (JSContext             *context,
-                                        GIBoxedInfo           *info);
+
 void*     gjs_c_struct_from_boxed      (JSContext             *context,
                                         JS::HandleObject       obj);
 JSObject* gjs_boxed_from_c_struct      (JSContext             *context,

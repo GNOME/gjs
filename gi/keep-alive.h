@@ -54,7 +54,6 @@ typedef void (* GjsUnrootedFunc) (JSObject *obj,
                                   void     *data);
 
 
-JSObject* gjs_keep_alive_new                       (JSContext         *context);
 void      gjs_keep_alive_add_child                 (JSObject          *keep_alive,
                                                     GjsUnrootedFunc    notify,
                                                     JSObject          *child,
