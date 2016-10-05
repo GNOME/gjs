@@ -53,30 +53,32 @@ m4_define(glib_required_version, 2.50.0)
 
 GOBJECT_INTROSPECTION_REQUIRE([1.41.4])
 
-common_packages="gmodule-2.0 gthread-2.0 gio-2.0 >= glib_required_version mozjs-24"
+GOBJECT_REQUIREMENT="gobject-2.0 >= glib_required_version"
+common_packages="gthread-2.0 gio-2.0 >= glib_required_version mozjs-24"
 gjs_packages="gobject-introspection-1.0 libffi $common_packages"
 gjs_cairo_packages="cairo cairo-gobject $common_packages"
-gjs_gdbus_packages="gobject-2.0 >= glib_required_version gio-2.0"
+gjs_gdbus_packages="$GOBJECT_REQUIREMENT gio-2.0"
 gjs_gtk_packages="gtk+-3.0 >= 3.20"
 # gjs-tests links against everything
 gjstests_packages="gio-unix-2.0 $gjs_packages"
 
-PKG_CHECK_MODULES([GOBJECT], [gobject-2.0 >= glib_required_version])
-PKG_CHECK_MODULES([GJS], [$gjs_packages])
+AX_PKG_CHECK_MODULES([GJS], [$GOBJECT_REQUIREMENT], [$gjs_packages])
+dnl These don't need to be put in the .pc file so use regular PKG_CHECK_MODULES
 PKG_CHECK_MODULES([GJS_GDBUS], [$gjs_gdbus_packages])
+PKG_CHECK_MODULES([GJS_CONSOLE], [$GOBJECT_REQUIREMENT])
 PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
 
 # Optional cairo dep (enabled by default)
 AC_ARG_WITH(cairo,
   [AS_HELP_STRING([--without-cairo], [Don't build cairo module])])
 AS_IF([test "x$with_cairo" != "xno"],
-  [PKG_CHECK_MODULES([GJS_CAIRO], [$gjs_cairo_packages],
+  [AX_PKG_CHECK_MODULES([GJS_CAIRO], [], [$gjs_cairo_packages],
     [have_cairo=yes], [have_cairo=no])],
   [have_cairo=no])
 AM_CONDITIONAL(ENABLE_CAIRO, test x$have_cairo = xyes)
 AS_IF([test x$have_cairo = xyes], [
   AC_DEFINE([ENABLE_CAIRO],[1],[Define if you want to build with cairo support])
-  PKG_CHECK_MODULES([GJS_CAIRO_XLIB], [cairo-xlib], [],
+  AX_PKG_CHECK_MODULES([GJS_CAIRO_XLIB], [], [cairo-xlib], [],
     [AC_MSG_WARN([Cairo-xlib support not found])])
 ], [AS_IF([test "x$with_cairo" = "xyes"],
   [AC_MSG_ERROR([Cairo requested but not found])])])
@@ -85,7 +87,7 @@ AS_IF([test x$have_cairo = xyes], [
 AC_ARG_WITH(gtk,
   [AS_HELP_STRING([--without-gtk], [Don't build GTK-related code])])
 AS_IF([test "x$with_gtk" != "xno"],
-  [PKG_CHECK_MODULES([GJS_GTK], [$gjs_gtk_packages],
+  [AX_PKG_CHECK_MODULES([GJS_GTK], [], [$gjs_gtk_packages],
     [have_gtk=yes], [have_gtk=no])],
   [have_gtk=no])
 AM_CONDITIONAL(ENABLE_GTK, test x$have_gtk = xyes)

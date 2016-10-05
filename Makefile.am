@@ -220,9 +220,10 @@ bin_PROGRAMS += gjs-console
 
 gjs_console_CPPFLAGS = 		\
 	$(AM_CPPFLAGS)		\
-	$(GOBJECT_CFLAGS)
+	$(GJS_CONSOLE_CFLAGS)	\
+	$(NULL)
 gjs_console_LDADD =		\
-	$(GOBJECT_LIBS)		\
+	$(GJS_CONSOLE_LIBS)	\
 	libgjs.la
 gjs_console_LDFLAGS = -rdynamic
 gjs_console_SOURCES = gjs/console.cpp
