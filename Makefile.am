@@ -18,7 +18,7 @@ INTROSPECTION_GIRS =
 ACLOCAL_AMFLAGS = -I m4
 AM_CXXFLAGS = $(WARN_CXXFLAGS) $(CODE_COVERAGE_CFLAGS)
 AM_CPPFLAGS = -DG_LOG_DOMAIN=\"Gjs\" $(CODE_COVERAGE_CPPFLAGS)
-AM_LDFLAGS = $(CODE_COVERAGE_LDFLAGS)
+AM_LDFLAGS = $(WARN_LDFLAGS) $(CODE_COVERAGE_LDFLAGS)
 MAINTAINERCLEANFILES =					\
 	$(GITIGNORE_MAINTAINERCLEANFILES_TOPLEVEL)	\
 	$(GITIGNORE_MAINTAINERCLEANFILES_MAKEFILE_IN)	\
@@ -177,7 +177,12 @@ GjsPrivate-1.0.gir: libgjs.la
 GjsPrivate_1_0_gir_LIBS = libgjs.la
 GjsPrivate_1_0_gir_INCLUDES = GObject-2.0 Gio-2.0
 GjsPrivate_1_0_gir_FILES = $(libgjs_private_source_files)
-GjsPrivate_1_0_gir_SCANNERFLAGS = --identifier-prefix=Gjs --symbol-prefix=gjs_ --warn-all
+GjsPrivate_1_0_gir_SCANNERFLAGS =	\
+	--identifier-prefix=Gjs		\
+	--symbol-prefix=gjs_		\
+	--warn-all			\
+	$(WARN_SCANNERFLAGS)		\
+	$(NULL)
 
 if ENABLE_GTK
 GjsPrivate_1_0_gir_INCLUDES += Gtk-3.0

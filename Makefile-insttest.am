@@ -97,7 +97,11 @@ libgimarshallingtests_la_LIBADD = $(common_test_libadd)
 Regress-1.0.gir: libregress.la
 Regress_1_0_gir_LIBS = libregress.la
 Regress_1_0_gir_FILES = $(nodist_libregress_la_SOURCES)
-Regress_1_0_gir_SCANNERFLAGS = --warn-all --warn-error $(libregress_scannerflags_includes)
+Regress_1_0_gir_SCANNERFLAGS =			\
+	--warn-all --warn-error			\
+	$(libregress_scannerflags_includes)	\
+	$(WARN_SCANNERFLAGS)			\
+	$(NULL)
 if !ENABLE_CAIRO
 Regress_1_0_gir_CFLAGS = -D_GI_DISABLE_CAIRO
 endif
@@ -107,14 +111,22 @@ WarnLib-1.0.gir: libwarnlib.la
 WarnLib_1_0_gir_LIBS = libwarnlib.la
 WarnLib_1_0_gir_INCLUDES = Gio-2.0
 WarnLib_1_0_gir_FILES = $(nodist_libwarnlib_la_SOURCES)
-WarnLib_1_0_gir_SCANNERFLAGS = --c-include="warnlib.h" --symbol-prefix=warnlib_
+WarnLib_1_0_gir_SCANNERFLAGS =		\
+	--c-include="warnlib.h"		\
+	--symbol-prefix=warnlib_	\
+	$(WARN_SCANNERFLAGS)		\
+	$(NULL)
 TEST_INTROSPECTION_GIRS += WarnLib-1.0.gir
 
 GIMarshallingTests-1.0.gir: libgimarshallingtests.la
 GIMarshallingTests_1_0_gir_LIBS = libgimarshallingtests.la
 GIMarshallingTests_1_0_gir_INCLUDES = Gio-2.0
 GIMarshallingTests_1_0_gir_FILES = $(nodist_libgimarshallingtests_la_SOURCES)
-GIMarshallingTests_1_0_gir_SCANNERFLAGS = --symbol-prefix=gi_marshalling_tests --warn-all --warn-error
+GIMarshallingTests_1_0_gir_SCANNERFLAGS =	\
+	--symbol-prefix=gi_marshalling_tests	\
+	--warn-all --warn-error			\
+	$(WARN_SCANNERFLAGS)			\
+	$(NULL)
 TEST_INTROSPECTION_GIRS += GIMarshallingTests-1.0.gir
 
 $(foreach gir,$(TEST_INTROSPECTION_GIRS),$(eval $(call introspection-scanner,$(gir))))

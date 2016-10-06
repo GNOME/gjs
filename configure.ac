@@ -40,7 +40,7 @@ AC_PROG_MKDIR_P
 AC_PROG_LN_S
 AC_PROG_SED
 
-GNOME_CXX_WARNINGS([maximum])
+AX_COMPILER_FLAGS
 
 AX_CODE_COVERAGE
 dnl Clang does not need to link with -lgcov
