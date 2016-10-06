@@ -557,11 +557,7 @@ struct JSClass gjs_fundamental_instance_class = {
     (JSResolveOp) fundamental_instance_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,
     fundamental_finalize,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL
+    JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
 static JSPropertySpec gjs_fundamental_instance_proto_props[] = {

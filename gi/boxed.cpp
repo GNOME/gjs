@@ -939,9 +939,7 @@ struct JSClass gjs_boxed_class = {
     (JSResolveOp) boxed_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,
     boxed_finalize,
-    NULL,
-    NULL,
-    NULL, NULL, NULL
+    JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
 JSPropertySpec gjs_boxed_proto_props[] = {

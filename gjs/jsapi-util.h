@@ -162,9 +162,7 @@ static struct JSClass gjs_##cname##_class = { \
     (JSResolveOp) gjs_##cname##_new_resolve, \
     JS_ConvertStub, \
     gjs_##cname##_finalize, \
-    NULL, \
-    NULL, \
-    NULL, NULL, NULL \
+    JSCLASS_NO_OPTIONAL_MEMBERS \
 }; \
 JS::Value gjs_##cname##_create_proto(JSContext *context, JSObject *module, const char *proto_name, JSObject *parent) \
 { \

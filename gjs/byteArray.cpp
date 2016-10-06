@@ -65,9 +65,7 @@ struct JSClass gjs_byte_array_class = {
     JS_ResolveStub,
     JS_ConvertStub,
     byte_array_finalize,
-    NULL,
-    NULL,
-    NULL, NULL, NULL
+    JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
 bool

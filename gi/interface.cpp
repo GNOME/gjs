@@ -169,9 +169,7 @@ struct JSClass gjs_interface_class = {
     (JSResolveOp) interface_new_resolve,
     JS_ConvertStub,
     interface_finalize,
-    NULL,
-    NULL,
-    NULL, NULL, NULL
+    JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
 JSPropertySpec gjs_interface_proto_props[] = {

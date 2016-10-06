@@ -323,9 +323,7 @@ struct JSClass gjs_union_class = {
     (JSResolveOp) union_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,
     union_finalize,
-    NULL,
-    NULL,
-    NULL, NULL, NULL
+    JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
 JSPropertySpec gjs_union_proto_props[] = {
