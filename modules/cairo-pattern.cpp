@@ -61,9 +61,7 @@ getType_func(JSContext *context,
              unsigned   argc,
              JS::Value *vp)
 {
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
-
+    GJS_GET_THIS(context, argc, vp, rec, obj);
     cairo_pattern_t *pattern;
     cairo_pattern_type_t type;
 

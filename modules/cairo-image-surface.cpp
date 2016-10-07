@@ -103,9 +103,7 @@ getFormat_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
-
+    GJS_GET_THIS(context, argc, vp, rec, obj);
     cairo_surface_t *surface;
     cairo_format_t format;
 
@@ -129,9 +127,7 @@ getWidth_func(JSContext *context,
               unsigned   argc,
               JS::Value *vp)
 {
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
-
+    GJS_GET_THIS(context, argc, vp, rec, obj);
     cairo_surface_t *surface;
     int width;
 
@@ -155,9 +151,7 @@ getHeight_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
-
+    GJS_GET_THIS(context, argc, vp, rec, obj);
     cairo_surface_t *surface;
     int height;
 
@@ -181,9 +175,7 @@ getStride_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
-
+    GJS_GET_THIS(context, argc, vp, rec, obj);
     cairo_surface_t *surface;
     int stride;
 

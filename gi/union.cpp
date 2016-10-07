@@ -287,16 +287,10 @@ to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JS::RootedObject obj(context, rec.thisv().toObjectOrNull());
-
-    Union *priv;
+    GJS_GET_PRIV(context, argc, vp, rec, obj, Union, priv);
     bool ret = false;
     JS::Value retval;
 
-    if (!priv_from_js_with_typecheck(context, obj, &priv))
-        goto out;
-    
     if (!_gjs_proxy_to_string_func(context, obj, "union", (GIBaseInfo*)priv->info,
                                    priv->gtype, priv->gboxed, &retval))
         goto out;

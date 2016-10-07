@@ -53,10 +53,9 @@ static bool
 fill_rectangle(JSContext *context, JSObject *obj,
                cairo_rectangle_int_t *rect);
 
-#define PRELUDE                                                 \
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);          \
-    JS::RootedObject obj(context, argv.thisv().toObjectOrNull()); \
-    cairo_region_t *this_region = get_region(context, obj);
+#define PRELUDE                                                       \
+    GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoRegion, priv); \
+    cairo_region_t *this_region = priv ? priv->region : NULL;
 
 #define RETURN_STATUS                                           \
     return gjs_cairo_check_status(context, cairo_region_status(this_region), "region");
@@ -74,7 +73,6 @@ fill_rectangle(JSContext *context, JSObject *obj,
                                  "other_region", other_obj.address())) \
             return false;                                       \
                                                                 \
-        this_region = get_region(context, obj);                 \
         other_region = get_region(context, other_obj);          \
                                                                 \
         cairo_region_##method(this_region, other_region);       \

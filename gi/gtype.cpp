@@ -65,15 +65,13 @@ to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JS::RootedObject obj(context, rec.thisv().toObjectOrNull());
-
+    GJS_GET_PRIV(context, argc, vp, rec, obj, void, priv);
     GType gtype;
     gchar *strval;
     bool ret;
     JS::Value retval;
 
-    gtype = GPOINTER_TO_SIZE(priv_from_js(context, obj));
+    gtype = GPOINTER_TO_SIZE(priv);
 
     if (gtype == 0)
         strval = g_strdup("[object GType prototype]");

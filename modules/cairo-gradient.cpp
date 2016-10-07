@@ -47,9 +47,7 @@ addColorStopRGB_func(JSContext *context,
                      unsigned   argc,
                      JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
-
+    GJS_GET_THIS(context, argc, vp, argv, obj);
     double offset, red, green, blue;
     cairo_pattern_t *pattern;
 
@@ -76,9 +74,7 @@ addColorStopRGBA_func(JSContext *context,
                       unsigned   argc,
                       JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
-
+    GJS_GET_THIS(context, argc, vp, argv, obj);
     double offset, red, green, blue, alpha;
     cairo_pattern_t *pattern;
 

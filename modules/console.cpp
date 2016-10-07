@@ -158,8 +158,7 @@ gjs_console_interact(JSContext *context,
                      unsigned   argc,
                      JS::Value *vp)
 {
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *object = rec.thisv().toObjectOrNull();
+    GJS_GET_THIS(context, argc, vp, argv, object);
     bool eof = false;
     JS::Value result;
     JSString *str;

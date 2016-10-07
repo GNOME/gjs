@@ -498,15 +498,9 @@ to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JS::RootedObject obj(context, rec.thisv().toObjectOrNull());
-
-    FundamentalInstance *priv;
+    GJS_GET_PRIV(context, argc, vp, rec, obj, FundamentalInstance, priv);
     bool ret = false;
     JS::Value retval;
-
-    if (!priv_from_js_with_typecheck(context, obj, &priv))
-        goto out;
 
     if (!priv->prototype) {
         Fundamental *proto_priv = (Fundamental *) priv;

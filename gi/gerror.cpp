@@ -211,22 +211,10 @@ error_to_string(JSContext *context,
                 unsigned   argc,
                 JS::Value *vp)
 {
-    JS::Value v_self;
-    Error *priv;
+    GJS_GET_PRIV(context, argc, vp, rec, self, Error, priv);
     JS::Value v_out;
     gchar *descr;
     bool retval;
-
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    v_self = rec.thisv();
-    if (!v_self.isObject()) {
-        /* Lie a bit here... */
-        gjs_throw(context, "GLib.Error.prototype.toString() called on a non object");
-        return false;
-    }
-
-    JS::RootedObject self(context, &v_self.toObject());
-    priv = priv_from_js(context, self);
 
     if (priv == NULL)
         return false;
@@ -267,20 +255,13 @@ error_constructor_value_of(JSContext *context,
                            unsigned   argc,
                            JS::Value *vp)
 {
-    JS::Value v_self, v_prototype;
+    GJS_GET_THIS(context, argc, vp, rec, self);
+    JS::Value v_prototype;
     Error *priv;
     jsid prototype_name;
 
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    v_self = rec.thisv();
-    if (!v_self.isObject()) {
-        /* Lie a bit here... */
-        gjs_throw(context, "GLib.Error.valueOf() called on a non object");
-        return false;
-    }
-
     prototype_name = gjs_context_get_const_string(context, GJS_STRING_PROTOTYPE);
-    if (!gjs_object_require_property(context, &v_self.toObject(), "constructor",
+    if (!gjs_object_require_property(context, self, "constructor",
                                      prototype_name, &v_prototype))
         return false;
 

@@ -409,14 +409,10 @@ to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JS::RootedObject object(context, argv.thisv().toObjectOrNull());
-    ByteArrayInstance *priv;
+    GJS_GET_PRIV(context, argc, vp, argv, to, ByteArrayInstance, priv);
     char *encoding;
     bool encoding_is_utf8;
     gchar *data;
-
-    priv = priv_from_js(context, object);
 
     if (priv == NULL)
         return true; /* prototype, not instance */
@@ -507,13 +503,10 @@ to_gbytes_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JS::RootedObject object(context, rec.thisv().toObjectOrNull());
-    ByteArrayInstance *priv;
+    GJS_GET_PRIV(context, argc, vp, rec, to, ByteArrayInstance, priv);
     JSObject *ret_bytes_obj;
     GIBaseInfo *gbytes_info;
 
-    priv = priv_from_js(context, object);
     if (priv == NULL)
         return true; /* prototype, not instance */
 

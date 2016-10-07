@@ -1296,9 +1296,8 @@ function_call(JSContext *context,
               unsigned   js_argc,
               JS::Value *vp)
 {
-    JS::CallArgs js_argv = JS::CallArgsFromVp (js_argc, vp);
-    JS::RootedObject object(context, js_argv.thisv().toObjectOrNull()),
-        callee(context, &js_argv.callee());
+    GJS_GET_THIS(context, js_argc, vp, js_argv, object);
+    JS::RootedObject callee(context, &js_argv.callee());
 
     bool success;
     Function *priv;
@@ -1395,7 +1394,7 @@ function_to_string (JSContext *context,
                     guint      argc,
                     JS::Value *vp)
 {
-    Function *priv;
+    GJS_GET_PRIV(context, argc, vp, rec, to, Function, priv);
     gchar *string;
     bool free;
     JS::Value retval;
@@ -1404,15 +1403,6 @@ function_to_string (JSContext *context,
     GString *arg_names_str;
     gchar *arg_names;
 
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-
-    if (rec.thisv().isNull()) {
-        gjs_throw(context, "this cannot be null");
-        return false;
-    }
-    JS::RootedObject self(context, &rec.thisv().toObject());
-
-    priv = priv_from_js (context, self);
     if (priv == NULL) {
         string = (gchar *) "function () {\n}";
         free = false;

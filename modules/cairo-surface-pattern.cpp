@@ -78,9 +78,7 @@ setExtend_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
-
+    GJS_GET_THIS(context, argc, vp, argv, obj);
     cairo_extend_t extend;
     cairo_pattern_t *pattern;
 
@@ -103,9 +101,7 @@ getExtend_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
-
+    GJS_GET_THIS(context, argc, vp, rec, obj);
     cairo_extend_t extend;
     cairo_pattern_t *pattern;
 
@@ -130,9 +126,7 @@ setFilter_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *obj = argv.thisv().toObjectOrNull();
-
+    GJS_GET_THIS(context, argc, vp, argv, obj);
     cairo_filter_t filter;
     cairo_pattern_t *pattern;
 
@@ -155,9 +149,7 @@ getFilter_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JSObject *obj = rec.thisv().toObjectOrNull();
-
+    GJS_GET_THIS(context, argc, vp, rec, obj);
     cairo_filter_t filter;
     cairo_pattern_t *pattern;
 

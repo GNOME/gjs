@@ -1567,10 +1567,7 @@ real_connect_func(JSContext *context,
                   JS::Value *vp,
                   bool       after)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());
-
-    ObjectInstance *priv;
+    GJS_GET_PRIV(context, argc, vp, argv, obj, ObjectInstance, priv);
     GClosure *closure;
     gulong id;
     guint signal_id;
@@ -1579,10 +1576,6 @@ real_connect_func(JSContext *context,
     ConnectData *connect_data;
     bool ret = false;
 
-    if (!do_base_typecheck(context, obj, true))
-        return false;
-
-    priv = priv_from_js(context, obj);
     gjs_debug_gsignal("connect obj %p priv %p argc %d", obj.get(), priv, argc);
     if (priv == NULL) {
         throw_priv_is_null_error(context);
@@ -1669,10 +1662,7 @@ emit_func(JSContext *context,
           unsigned   argc,
           JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());
-
-    ObjectInstance *priv;
+    GJS_GET_PRIV(context, argc, vp, argv, obj, ObjectInstance, priv);
     guint signal_id;
     GQuark signal_detail;
     GSignalQuery signal_query;
@@ -1684,10 +1674,6 @@ emit_func(JSContext *context,
     JS::Value retval;
     bool ret = false;
 
-    if (!do_base_typecheck(context, obj, true))
-        return false;
-
-    priv = priv_from_js(context, obj);
     gjs_debug_gsignal("emit obj %p priv %p argc %d", obj.get(), priv, argc);
 
     if (priv == NULL) {
@@ -1792,17 +1778,9 @@ to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
-    JS::RootedObject obj(context, rec.thisv().toObjectOrNull());
-
-    ObjectInstance *priv;
+    GJS_GET_PRIV(context, argc, vp, rec, obj, ObjectInstance, priv);
     bool ret = false;
     JS::Value retval;
-
-    if (!do_base_typecheck(context, obj, true))
-        goto out;
-
-    priv = priv_from_js(context, obj);
 
     if (priv == NULL) {
         throw_priv_is_null_error(context);
@@ -1844,9 +1822,7 @@ init_func (JSContext *context,
            unsigned   argc,
            JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JS::RootedObject obj(context, argv.thisv().toObjectOrNull());
-
+    GJS_GET_THIS(context, argc, vp, argv, obj);
     bool ret;
 
     if (!do_base_typecheck(context, obj, true))

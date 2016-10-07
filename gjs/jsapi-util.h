@@ -104,6 +104,42 @@ typedef struct GjsRootedArray GjsRootedArray;
         return true;                                                    \
     }
 
+/*
+ * GJS_GET_THIS:
+ * @cx: JSContext pointer passed into JSNative function
+ * @argc: Number of arguments passed into JSNative function
+ * @vp: Argument value array passed into JSNative function
+ * @args: Name for JS::CallArgs variable defined by this code snippet
+ * @to: Name for JS::RootedObject variable referring to function's this
+ *
+ * A convenience macro for getting the 'this' object a function was called with.
+ * Use in any JSNative function.
+ */
+#define GJS_GET_THIS(cx, argc, vp, args, to)                   \
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);          \
+    JS::RootedObject to(cx, &args.computeThis(cx).toObject())
+
+/*
+ * GJS_GET_PRIV:
+ * @cx: JSContext pointer passed into JSNative function
+ * @argc: Number of arguments passed into JSNative function
+ * @vp: Argument value array passed into JSNative function
+ * @args: Name for JS::CallArgs variable defined by this code snippet
+ * @to: Name for JS::RootedObject variable referring to function's this
+ * @type: Type of private data
+ * @priv: Name for private data variable defined by this code snippet
+ *
+ * A convenience macro for getting the private data from GJS classes using
+ * priv_from_js().
+ * Throws an error if the 'this' object is not the right type.
+ * Use in any JSNative function.
+ */
+#define GJS_GET_PRIV(cx, argc, vp, args, to, type, priv)  \
+    GJS_GET_THIS(cx, argc, vp, args, to);                 \
+    if (!do_base_typecheck(cx, to, true))                 \
+        return false;                                     \
+    type *priv = priv_from_js(cx, to)
+
 /**
  * GJS_DEFINE_PROTO:
  * @tn: The name of the prototype, as a string
