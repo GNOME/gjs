@@ -925,11 +925,11 @@ struct JSClass gjs_importer_class = {
 };
 
 JSPropertySpec gjs_importer_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 JSFunctionSpec gjs_importer_proto_funcs[] = {
-    { NULL }
+    JS_FS_END
 };
 
 static JSObject*

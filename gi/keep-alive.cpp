@@ -167,11 +167,11 @@ struct JSClass gjs_keep_alive_class = {
 };
 
 JSPropertySpec gjs_keep_alive_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 JSFunctionSpec gjs_keep_alive_proto_funcs[] = {
-    { NULL }
+    JS_FS_END
 };
 
 JSObject*

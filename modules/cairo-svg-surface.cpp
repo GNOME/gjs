@@ -72,11 +72,11 @@ gjs_cairo_svg_surface_finalize(JSFreeOp *fop,
 }
 
 JSPropertySpec gjs_cairo_svg_surface_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 JSFunctionSpec gjs_cairo_svg_surface_proto_funcs[] = {
-    { NULL }
+    JS_FS_END
 };
 
 JSObject *

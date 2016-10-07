@@ -1494,7 +1494,7 @@ JSPropertySpec gjs_function_proto_props[] = {
       JSOP_WRAPPER((JSPropertyOp)get_num_arguments),
       JSOP_WRAPPER(JS_StrictPropertyStub)
     },
-    { NULL }
+    JS_PS_END
 };
 
 /* The original Function.prototype.toString complains when

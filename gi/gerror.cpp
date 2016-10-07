@@ -206,7 +206,7 @@ error_get_code(JSContext *context, JS::HandleObject obj,
     return true;
 }
 
-static bool
+static JSBool
 error_to_string(JSContext *context,
                 unsigned   argc,
                 JS::Value *vp)
@@ -262,7 +262,7 @@ error_to_string(JSContext *context,
     return retval;
 }
 
-static bool
+static JSBool
 error_constructor_value_of(JSContext *context,
                            unsigned   argc,
                            JS::Value *vp)
@@ -339,16 +339,16 @@ JSPropertySpec gjs_error_proto_props[] = {
       JSOP_WRAPPER((JSPropertyOp)error_get_message),
       JSOP_WRAPPER(JS_StrictPropertyStub)
     },
-    { NULL }
+    JS_PS_END
 };
 
 JSFunctionSpec gjs_error_proto_funcs[] = {
-    { "toString", JSOP_WRAPPER((JSNative)error_to_string), 0, GJS_MODULE_PROP_FLAGS },
+    JS_FS("toString", error_to_string, 0, GJS_MODULE_PROP_FLAGS),
     JS_FS_END
 };
 
 static JSFunctionSpec gjs_error_constructor_funcs[] = {
-    { "valueOf", JSOP_WRAPPER((JSNative)error_constructor_value_of), 0, GJS_MODULE_PROP_FLAGS },
+    JS_FS("valueOf", error_constructor_value_of, 0, GJS_MODULE_PROP_FLAGS),
     JS_FS_END
 };
 

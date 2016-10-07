@@ -53,11 +53,11 @@ gjs_cairo_surface_finalize(JSFreeOp *fop,
 
 /* Properties */
 JSPropertySpec gjs_cairo_surface_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 /* Methods */
-static bool
+static JSBool
 writeToPNG_func(JSContext *context,
                 unsigned   argc,
                 JS::Value *vp)
@@ -86,7 +86,7 @@ writeToPNG_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 getType_func(JSContext *context,
              unsigned   argc,
              JS::Value *vp)
@@ -116,7 +116,7 @@ JSFunctionSpec gjs_cairo_surface_proto_funcs[] = {
     // flush
     // getContent
     // getFontOptions
-    { "getType", JSOP_WRAPPER((JSNative)getType_func), 0, 0},
+    JS_FS("getType", getType_func, 0, 0),
     // markDirty
     // markDirtyRectangle
     // setDeviceOffset
@@ -126,8 +126,8 @@ JSFunctionSpec gjs_cairo_surface_proto_funcs[] = {
     // copyPage
     // showPage
     // hasShowTextGlyphs
-    { "writeToPNG", JSOP_WRAPPER((JSNative)writeToPNG_func), 0, 0 },
-    { NULL }
+    JS_FS("writeToPNG", writeToPNG_func, 0, 0),
+    JS_FS_END
 };
 
 /* Public API */

@@ -282,7 +282,7 @@ union_finalize(JSFreeOp *fop,
     g_slice_free(Union, priv);
 }
 
-static bool
+static JSBool
 to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -327,12 +327,12 @@ struct JSClass gjs_union_class = {
 };
 
 JSPropertySpec gjs_union_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 JSFunctionSpec gjs_union_proto_funcs[] = {
-    { "toString", JSOP_WRAPPER((JSNative)to_string_func), 0, 0 },
-    { NULL }
+    JS_FS("toString", to_string_func, 0, 0),
+    JS_FS_END
 };
 
 bool

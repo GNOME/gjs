@@ -50,11 +50,11 @@ gjs_cairo_path_finalize(JSFreeOp *fop,
 
 /* Properties */
 JSPropertySpec gjs_cairo_path_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 JSFunctionSpec gjs_cairo_path_proto_funcs[] = {
-    { NULL }
+    JS_FS_END
 };
 
 /**

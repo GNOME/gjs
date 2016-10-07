@@ -37,10 +37,10 @@ gjs_cairo_solid_pattern_finalize(JSFreeOp *fop,
 }
 
 JSPropertySpec gjs_cairo_solid_pattern_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
-static bool
+static JSBool
 createRGB_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -68,7 +68,7 @@ createRGB_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 createRGBA_func(JSContext *context,
                 unsigned   argc,
                 JS::Value *vp)
@@ -98,9 +98,9 @@ createRGBA_func(JSContext *context,
 }
 
 JSFunctionSpec gjs_cairo_solid_pattern_proto_funcs[] = {
-    { "createRGB", JSOP_WRAPPER((JSNative)createRGB_func), 0, 0 },
-    { "createRGBA", JSOP_WRAPPER((JSNative)createRGBA_func), 0, 0 },
-    { NULL }
+    JS_FS("createRGB", createRGB_func, 0, 0),
+    JS_FS("createRGBA", createRGBA_func, 0, 0),
+    JS_FS_END
 };
 
 JSObject *

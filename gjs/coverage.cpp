@@ -1510,11 +1510,11 @@ coverage_get_file_contents(JSContext *context,
 }
 
 static JSFunctionSpec coverage_funcs[] = {
-    { "log", JSOP_WRAPPER(coverage_log), 1, GJS_MODULE_PROP_FLAGS },
-    { "getFileContents", JSOP_WRAPPER(coverage_get_file_contents), 1, GJS_MODULE_PROP_FLAGS },
-    { "getFileModificationTime", JSOP_WRAPPER(coverage_get_file_modification_time), 1, GJS_MODULE_PROP_FLAGS },
-    { "getFileChecksum", JSOP_WRAPPER(coverage_get_file_checksum), 1, GJS_MODULE_PROP_FLAGS },
-    { NULL }
+    JS_FS("log", coverage_log, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FS("getFileContents", coverage_get_file_contents, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FS("getFileModificationTime", coverage_get_file_modification_time, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FS("getFileChecksum", coverage_get_file_checksum, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FS_END
 };
 
 static void

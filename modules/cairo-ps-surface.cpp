@@ -72,7 +72,7 @@ gjs_cairo_ps_surface_finalize(JSFreeOp *fop,
 }
 
 JSPropertySpec gjs_cairo_ps_surface_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 JSFunctionSpec gjs_cairo_ps_surface_proto_funcs[] = {
@@ -85,7 +85,7 @@ JSFunctionSpec gjs_cairo_ps_surface_proto_funcs[] = {
     // dscBeginSetup
     // dscBeginPageSetup
     // dscComment
-    { NULL }
+    JS_FS_END
 };
 
 JSObject *

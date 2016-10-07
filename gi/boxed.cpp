@@ -892,7 +892,7 @@ define_boxed_class_fields (JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -943,12 +943,12 @@ struct JSClass gjs_boxed_class = {
 };
 
 JSPropertySpec gjs_boxed_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 JSFunctionSpec gjs_boxed_proto_funcs[] = {
-    { "toString", JSOP_WRAPPER((JSNative)to_string_func), 0, 0 },
-    { NULL }
+    JS_FS("toString", to_string_func, 0, 0),
+    JS_FS_END
 };
 
 static bool

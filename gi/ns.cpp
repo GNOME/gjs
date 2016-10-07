@@ -192,11 +192,11 @@ struct JSClass gjs_ns_class = {
 
 JSPropertySpec gjs_ns_proto_props[] = {
     { "__name__", 0, GJS_MODULE_PROP_FLAGS | JSPROP_READONLY, { (JSPropertyOp)get_name, NULL } },
-    { NULL }
+    JS_PS_END
 };
 
 JSFunctionSpec gjs_ns_proto_funcs[] = {
-    { NULL }
+    JS_FS_END
 };
 
 static JSObject*

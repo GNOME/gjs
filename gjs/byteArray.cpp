@@ -405,7 +405,7 @@ byte_array_finalize(JSFreeOp *fop,
 }
 
 /* implement toString() with an optional encoding arg */
-static bool
+static JSBool
 to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -503,7 +503,7 @@ to_string_func(JSContext *context,
     }
 }
 
-static bool
+static JSBool
 to_gbytes_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -857,20 +857,20 @@ JSPropertySpec gjs_byte_array_proto_props[] = {
       JSOP_WRAPPER ((JSPropertyOp) byte_array_length_getter),
       JSOP_WRAPPER ((JSStrictPropertyOp) byte_array_length_setter),
     },
-    { NULL }
+    JS_PS_END
 };
 
 JSFunctionSpec gjs_byte_array_proto_funcs[] = {
-    { "toString", JSOP_WRAPPER ((JSNative) to_string_func), 0, 0 },
-    { "toGBytes", JSOP_WRAPPER ((JSNative) to_gbytes_func), 0, 0 },
-    { NULL }
+    JS_FS("toString", to_string_func, 0, 0),
+    JS_FS("toGBytes", to_gbytes_func, 0, 0),
+    JS_FS_END
 };
 
 static JSFunctionSpec gjs_byte_array_module_funcs[] = {
-    { "fromString", JSOP_WRAPPER (from_string_func), 1, 0 },
-    { "fromArray", JSOP_WRAPPER (from_array_func), 1, 0 },
-    { "fromGBytes", JSOP_WRAPPER (from_gbytes_func), 1, 0 },
-    { NULL }
+    JS_FS("fromString", from_string_func, 1, 0),
+    JS_FS("fromArray", from_array_func, 1, 0),
+    JS_FS("fromGBytes", from_gbytes_func, 1, 0),
+    JS_FS_END
 };
 
 bool

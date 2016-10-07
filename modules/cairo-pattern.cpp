@@ -52,12 +52,12 @@ gjs_cairo_pattern_finalize(JSFreeOp *fop,
 
 /* Properties */
 JSPropertySpec gjs_cairo_pattern_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 /* Methods */
 
-static bool
+static JSBool
 getType_func(JSContext *context,
              unsigned   argc,
              JS::Value *vp)
@@ -85,9 +85,9 @@ getType_func(JSContext *context,
 
 JSFunctionSpec gjs_cairo_pattern_proto_funcs[] = {
     // getMatrix
-    { "getType", JSOP_WRAPPER((JSNative)getType_func), 0, 0 },
+    JS_FS("getType", getType_func, 0, 0),
     // setMatrix
-    { NULL }
+    JS_FS_END
 };
 
 /* Public API */

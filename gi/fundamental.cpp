@@ -492,7 +492,7 @@ fundamental_finalize(JSFreeOp  *fop,
     }
 }
 
-static bool
+static JSBool
 to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -561,12 +561,12 @@ struct JSClass gjs_fundamental_instance_class = {
 };
 
 static JSPropertySpec gjs_fundamental_instance_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 static JSFunctionSpec gjs_fundamental_instance_proto_funcs[] = {
-    { "toString", JSOP_WRAPPER((JSNative)to_string_func), 0, 0 },
-    { NULL }
+    JS_FS("toString", to_string_func, 0, 0),
+    JS_FS_END
 };
 
 static JSObject *

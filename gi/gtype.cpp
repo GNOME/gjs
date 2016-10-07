@@ -61,7 +61,7 @@ gjs_gtype_finalize(JSFreeOp *fop,
     g_type_set_qdata(gtype, gjs_get_gtype_wrapper_quark(), NULL);
 }
 
-static bool
+static JSBool
 to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -118,13 +118,13 @@ JSPropertySpec gjs_gtype_proto_props[] = {
       JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_SHARED,
       JSOP_WRAPPER((JSPropertyOp)get_name_func),
       JSOP_WRAPPER(JS_StrictPropertyStub) },
-    { NULL },
+    JS_PS_END,
 };
 
 /* Functions */
 JSFunctionSpec gjs_gtype_proto_funcs[] = {
-    { "toString", JSOP_WRAPPER((JSNative)to_string_func), 0, 0 },
-    { NULL }
+    JS_FS("toString", to_string_func, 0, 0),
+    JS_FS_END
 };
 
 JSObject *

@@ -63,7 +63,7 @@ fill_rectangle(JSContext *context, JSObject *obj,
     return gjs_cairo_check_status(context, cairo_region_status(this_region), "region");
 
 #define REGION_DEFINE_REGION_FUNC(method)                       \
-    static bool                                                 \
+    static JSBool                                               \
     method##_func(JSContext *context,                           \
                   unsigned argc,                                \
                   JS::Value *vp)                                \
@@ -84,7 +84,7 @@ fill_rectangle(JSContext *context, JSObject *obj,
     }
 
 #define REGION_DEFINE_RECT_FUNC(method)                         \
-    static bool                                                 \
+    static JSBool                                               \
     method##_rectangle_func(JSContext *context,                 \
                             unsigned argc,                      \
                             JS::Value *vp)                      \
@@ -165,7 +165,7 @@ make_rectangle(JSContext *context,
     return rect_obj;
 }
 
-static bool
+static JSBool
 num_rectangles_func(JSContext *context,
                     unsigned argc,
                     JS::Value *vp)
@@ -181,7 +181,7 @@ num_rectangles_func(JSContext *context,
     RETURN_STATUS;
 }
 
-static bool
+static JSBool
 get_rectangle_func(JSContext *context,
                    unsigned argc,
                    JS::Value *vp)
@@ -202,23 +202,23 @@ get_rectangle_func(JSContext *context,
 }
 
 JSPropertySpec gjs_cairo_region_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 JSFunctionSpec gjs_cairo_region_proto_funcs[] = {
-    { "union", { (JSNative)union_func, 0 }, 0 },
-    { "subtract", { (JSNative)subtract_func, 0 }, 0 },
-    { "intersect", { (JSNative)intersect_func, 0 }, 0 },
-    { "xor", { (JSNative)xor_func, 0 }, 0 },
+    JS_FS("union", union_func, 0, 0),
+    JS_FS("subtract", subtract_func, 0, 0),
+    JS_FS("intersect", intersect_func, 0, 0),
+    JS_FS("xor", xor_func, 0, 0),
 
-    { "unionRectangle", { (JSNative)union_rectangle_func, 0 }, 0 },
-    { "subtractRectangle", { (JSNative)subtract_rectangle_func, 0 }, 0 },
-    { "intersectRectangle", { (JSNative)intersect_rectangle_func, 0 }, 0 },
-    { "xorRectangle", { (JSNative)xor_rectangle_func, 0 }, 0 },
+    JS_FS("unionRectangle", union_rectangle_func, 0, 0),
+    JS_FS("subtractRectangle", subtract_rectangle_func, 0, 0),
+    JS_FS("intersectRectangle", intersect_rectangle_func, 0, 0),
+    JS_FS("xorRectangle", xor_rectangle_func, 0, 0),
 
-    { "numRectangles", { (JSNative)num_rectangles_func, 0 }, 0 },
-    { "getRectangle", { (JSNative)get_rectangle_func, 0 }, 0 },
-    { NULL }
+    JS_FS("numRectangles", num_rectangles_func, 0, 0),
+    JS_FS("getRectangle", get_rectangle_func, 0, 0),
+    JS_FS_END
 };
 
 static void

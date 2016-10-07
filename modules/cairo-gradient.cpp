@@ -38,12 +38,12 @@ gjs_cairo_gradient_finalize(JSFreeOp *fop,
 
 /* Properties */
 JSPropertySpec gjs_cairo_gradient_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 /* Methods */
 
-static bool
+static JSBool
 addColorStopRGB_func(JSContext *context,
                      unsigned   argc,
                      JS::Value *vp)
@@ -72,7 +72,7 @@ addColorStopRGB_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 addColorStopRGBA_func(JSContext *context,
                       unsigned   argc,
                       JS::Value *vp)
@@ -102,9 +102,9 @@ addColorStopRGBA_func(JSContext *context,
 }
 
 JSFunctionSpec gjs_cairo_gradient_proto_funcs[] = {
-    { "addColorStopRGB", JSOP_WRAPPER((JSNative)addColorStopRGB_func), 0, 0 },
-    { "addColorStopRGBA", JSOP_WRAPPER((JSNative)addColorStopRGBA_func), 0, 0 },
+    JS_FS("addColorStopRGB", addColorStopRGB_func, 0, 0),
+    JS_FS("addColorStopRGBA", addColorStopRGBA_func, 0, 0),
     // getColorStopRGB
     // getColorStopRGBA
-    { NULL }
+    JS_FS_END
 };

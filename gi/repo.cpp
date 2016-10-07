@@ -237,11 +237,11 @@ struct JSClass gjs_repo_class = {
 };
 
 JSPropertySpec gjs_repo_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 JSFunctionSpec gjs_repo_proto_funcs[] = {
-    { NULL }
+    JS_FS_END
 };
 
 static JSObject*

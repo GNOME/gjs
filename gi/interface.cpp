@@ -173,11 +173,11 @@ struct JSClass gjs_interface_class = {
 };
 
 JSPropertySpec gjs_interface_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 JSFunctionSpec gjs_interface_proto_funcs[] = {
-    { NULL }
+    JS_FS_END
 };
 
 bool

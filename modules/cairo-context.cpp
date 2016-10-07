@@ -31,7 +31,7 @@
 #include "cairo-private.h"
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(mname) \
-static bool                                         \
+static JSBool                                       \
 mname##_func(JSContext *context,                    \
               unsigned   argc,                      \
               JS::Value *vp)                        \
@@ -318,7 +318,7 @@ gjs_cairo_context_finalize(JSFreeOp *fop,
 
 /* Properties */
 JSPropertySpec gjs_cairo_context_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 /* Methods */
@@ -401,7 +401,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDevice, cairo_user_to_device, "x", "y
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDeviceDistance, cairo_user_to_device_distance, "x", "y")
 
 
-static bool
+static JSBool
 dispose_func(JSContext *context,
              unsigned   argc,
              JS::Value *vp)
@@ -420,7 +420,7 @@ dispose_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 appendPath_func(JSContext *context,
                 unsigned   argc,
                 JS::Value *vp)
@@ -448,7 +448,7 @@ appendPath_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 copyPath_func(JSContext *context,
               unsigned   argc,
               JS::Value *vp)
@@ -468,7 +468,7 @@ copyPath_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 copyPathFlat_func(JSContext *context,
                   unsigned   argc,
                   JS::Value *vp)
@@ -488,7 +488,7 @@ copyPathFlat_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 mask_func(JSContext *context,
           unsigned   argc,
           JS::Value *vp)
@@ -520,7 +520,7 @@ mask_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 maskSurface_func(JSContext *context,
                  unsigned   argc,
                  JS::Value *vp)
@@ -556,7 +556,7 @@ maskSurface_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 setDash_func(JSContext *context,
              unsigned   argc,
              JS::Value *vp)
@@ -619,7 +619,7 @@ setDash_func(JSContext *context,
     return retval;
 }
 
-static bool
+static JSBool
 setSource_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -653,7 +653,7 @@ setSource_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 setSourceSurface_func(JSContext *context,
                       unsigned   argc,
                       JS::Value *vp)
@@ -690,7 +690,7 @@ setSourceSurface_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 showText_func(JSContext *context,
               unsigned   argc,
               JS::Value *vp)
@@ -718,7 +718,7 @@ showText_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 selectFontFace_func(JSContext *context,
                     unsigned   argc,
                     JS::Value *vp)
@@ -749,7 +749,7 @@ selectFontFace_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 popGroup_func(JSContext *context,
               unsigned   argc,
               JS::Value *vp)
@@ -782,7 +782,7 @@ popGroup_func(JSContext *context,
 
     return true;
 }
-static bool
+static JSBool
 getSource_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -816,7 +816,7 @@ getSource_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 getTarget_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -850,7 +850,7 @@ getTarget_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 getGroupTarget_func(JSContext *context,
                     unsigned   argc,
                     JS::Value *vp)
@@ -885,105 +885,105 @@ getGroupTarget_func(JSContext *context,
 }
 
 JSFunctionSpec gjs_cairo_context_proto_funcs[] = {
-    { "$dispose", JSOP_WRAPPER((JSNative)dispose_func), 0, 0 },
-    { "appendPath", JSOP_WRAPPER((JSNative)appendPath_func), 0, 0},
-    { "arc", JSOP_WRAPPER((JSNative)arc_func), 0, 0 },
-    { "arcNegative", JSOP_WRAPPER((JSNative)arcNegative_func), 0, 0 },
-    { "clip", JSOP_WRAPPER((JSNative)clip_func), 0, 0 },
-    { "clipExtents", JSOP_WRAPPER((JSNative)clipExtents_func), 0, 0 },
-    { "clipPreserve", JSOP_WRAPPER((JSNative)clipPreserve_func), 0, 0 },
-    { "closePath", JSOP_WRAPPER((JSNative)closePath_func), 0, 0 },
-    { "copyPage", JSOP_WRAPPER((JSNative)copyPage_func), 0, 0 },
-    { "copyPath", JSOP_WRAPPER((JSNative)copyPath_func), 0, 0 },
-    { "copyPathFlat", JSOP_WRAPPER((JSNative)copyPathFlat_func), 0, 0 },
-    { "curveTo", JSOP_WRAPPER((JSNative)curveTo_func), 0, 0 },
-    { "deviceToUser", JSOP_WRAPPER((JSNative)deviceToUser_func), 0, 0 },
-    { "deviceToUserDistance",JSOP_WRAPPER((JSNative)deviceToUserDistance_func), 0, 0 },
-    { "fill", JSOP_WRAPPER((JSNative)fill_func), 0, 0 },
-    { "fillPreserve", JSOP_WRAPPER((JSNative)fillPreserve_func), 0, 0 },
-    { "fillExtents", JSOP_WRAPPER((JSNative)fillExtents_func), 0, 0 },
+    JS_FS("$dispose", dispose_func, 0, 0),
+    JS_FS("appendPath", appendPath_func, 0, 0),
+    JS_FS("arc", arc_func, 0, 0),
+    JS_FS("arcNegative", arcNegative_func, 0, 0),
+    JS_FS("clip", clip_func, 0, 0),
+    JS_FS("clipExtents", clipExtents_func, 0, 0),
+    JS_FS("clipPreserve", clipPreserve_func, 0, 0),
+    JS_FS("closePath", closePath_func, 0, 0),
+    JS_FS("copyPage", copyPage_func, 0, 0),
+    JS_FS("copyPath", copyPath_func, 0, 0),
+    JS_FS("copyPathFlat", copyPathFlat_func, 0, 0),
+    JS_FS("curveTo", curveTo_func, 0, 0),
+    JS_FS("deviceToUser", deviceToUser_func, 0, 0),
+    JS_FS("deviceToUserDistance", deviceToUserDistance_func, 0, 0),
+    JS_FS("fill", fill_func, 0, 0),
+    JS_FS("fillPreserve", fillPreserve_func, 0, 0),
+    JS_FS("fillExtents", fillExtents_func, 0, 0),
     // fontExtents
-    { "getAntialias", JSOP_WRAPPER((JSNative)getAntialias_func), 0, 0 },
-    { "getCurrentPoint", JSOP_WRAPPER((JSNative)getCurrentPoint_func), 0, 0 },
+    JS_FS("getAntialias", getAntialias_func, 0, 0),
+    JS_FS("getCurrentPoint", getCurrentPoint_func, 0, 0),
     // getDash
-    { "getDashCount", JSOP_WRAPPER((JSNative)getDashCount_func), 0, 0 },
-    { "getFillRule", JSOP_WRAPPER((JSNative)getFillRule_func), 0, 0 },
+    JS_FS("getDashCount", getDashCount_func, 0, 0),
+    JS_FS("getFillRule", getFillRule_func, 0, 0),
     // getFontFace
     // getFontMatrix
     // getFontOptions
-    { "getGroupTarget", JSOP_WRAPPER((JSNative)getGroupTarget_func), 0, 0 },
-    { "getLineCap", JSOP_WRAPPER((JSNative)getLineCap_func), 0, 0 },
-    { "getLineJoin", JSOP_WRAPPER((JSNative)getLineJoin_func), 0, 0 },
-    { "getLineWidth", JSOP_WRAPPER((JSNative)getLineWidth_func), 0, 0 },
+    JS_FS("getGroupTarget", getGroupTarget_func, 0, 0),
+    JS_FS("getLineCap", getLineCap_func, 0, 0),
+    JS_FS("getLineJoin", getLineJoin_func, 0, 0),
+    JS_FS("getLineWidth", getLineWidth_func, 0, 0),
     // getMatrix
-    { "getMiterLimit", JSOP_WRAPPER((JSNative)getMiterLimit_func), 0, 0 },
-    { "getOperator", JSOP_WRAPPER((JSNative)getOperator_func), 0, 0 },
+    JS_FS("getMiterLimit", getMiterLimit_func, 0, 0),
+    JS_FS("getOperator", getOperator_func, 0, 0),
     // getScaledFont
-    { "getSource", JSOP_WRAPPER((JSNative)getSource_func), 0, 0 },
-    { "getTarget", JSOP_WRAPPER((JSNative)getTarget_func), 0, 0 },
-    { "getTolerance", JSOP_WRAPPER((JSNative)getTolerance_func), 0, 0 },
+    JS_FS("getSource", getSource_func, 0, 0),
+    JS_FS("getTarget", getTarget_func, 0, 0),
+    JS_FS("getTolerance", getTolerance_func, 0, 0),
     // glyphPath
     // glyphExtents
-    { "hasCurrentPoint", JSOP_WRAPPER((JSNative)hasCurrentPoint_func), 0, 0 },
-    { "identityMatrix", JSOP_WRAPPER((JSNative)identityMatrix_func), 0, 0 },
-    { "inFill", JSOP_WRAPPER((JSNative)inFill_func), 0, 0 },
-    { "inStroke", JSOP_WRAPPER((JSNative)inStroke_func), 0, 0 },
-    { "lineTo", JSOP_WRAPPER((JSNative)lineTo_func), 0, 0 },
-    { "mask", JSOP_WRAPPER((JSNative)mask_func), 0, 0 },
-    { "maskSurface", JSOP_WRAPPER((JSNative)maskSurface_func), 0, 0 },
-    { "moveTo", JSOP_WRAPPER((JSNative)moveTo_func), 0, 0 },
-    { "newPath", JSOP_WRAPPER((JSNative)newPath_func), 0, 0 },
-    { "newSubPath", JSOP_WRAPPER((JSNative)newSubPath_func), 0, 0 },
-    { "paint", JSOP_WRAPPER((JSNative)paint_func), 0, 0 },
-    { "paintWithAlpha", JSOP_WRAPPER((JSNative)paintWithAlpha_func), 0, 0 },
-    { "pathExtents", JSOP_WRAPPER((JSNative)pathExtents_func), 0, 0 },
-    { "popGroup", JSOP_WRAPPER((JSNative)popGroup_func), 0, 0 },
-    { "popGroupToSource", JSOP_WRAPPER((JSNative)popGroupToSource_func), 0, 0 },
-    { "pushGroup", JSOP_WRAPPER((JSNative)pushGroup_func), 0, 0 },
-    { "pushGroupWithContent", JSOP_WRAPPER((JSNative)pushGroupWithContent_func), 0, 0 },
-    { "rectangle", JSOP_WRAPPER((JSNative)rectangle_func), 0, 0 },
-    { "relCurveTo", JSOP_WRAPPER((JSNative)relCurveTo_func), 0, 0 },
-    { "relLineTo", JSOP_WRAPPER((JSNative)relLineTo_func), 0, 0 },
-    { "relMoveTo", JSOP_WRAPPER((JSNative)relMoveTo_func), 0, 0 },
-    { "resetClip", JSOP_WRAPPER((JSNative)resetClip_func), 0, 0 },
-    { "restore", JSOP_WRAPPER((JSNative)restore_func), 0, 0 },
-    { "rotate", JSOP_WRAPPER((JSNative)rotate_func), 0, 0 },
-    { "save", JSOP_WRAPPER((JSNative)save_func), 0, 0 },
-    { "scale", JSOP_WRAPPER((JSNative)scale_func), 0, 0 },
-    { "selectFontFace", JSOP_WRAPPER((JSNative)selectFontFace_func), 0, 0 },
-    { "setAntialias", JSOP_WRAPPER((JSNative)setAntialias_func), 0, 0 },
-    { "setDash", JSOP_WRAPPER((JSNative)setDash_func), 0, 0 },
+    JS_FS("hasCurrentPoint", hasCurrentPoint_func, 0, 0),
+    JS_FS("identityMatrix", identityMatrix_func, 0, 0),
+    JS_FS("inFill", inFill_func, 0, 0),
+    JS_FS("inStroke", inStroke_func, 0, 0),
+    JS_FS("lineTo", lineTo_func, 0, 0),
+    JS_FS("mask", mask_func, 0, 0),
+    JS_FS("maskSurface", maskSurface_func, 0, 0),
+    JS_FS("moveTo", moveTo_func, 0, 0),
+    JS_FS("newPath", newPath_func, 0, 0),
+    JS_FS("newSubPath", newSubPath_func, 0, 0),
+    JS_FS("paint", paint_func, 0, 0),
+    JS_FS("paintWithAlpha", paintWithAlpha_func, 0, 0),
+    JS_FS("pathExtents", pathExtents_func, 0, 0),
+    JS_FS("popGroup", popGroup_func, 0, 0),
+    JS_FS("popGroupToSource", popGroupToSource_func, 0, 0),
+    JS_FS("pushGroup", pushGroup_func, 0, 0),
+    JS_FS("pushGroupWithContent", pushGroupWithContent_func, 0, 0),
+    JS_FS("rectangle", rectangle_func, 0, 0),
+    JS_FS("relCurveTo", relCurveTo_func, 0, 0),
+    JS_FS("relLineTo", relLineTo_func, 0, 0),
+    JS_FS("relMoveTo", relMoveTo_func, 0, 0),
+    JS_FS("resetClip", resetClip_func, 0, 0),
+    JS_FS("restore", restore_func, 0, 0),
+    JS_FS("rotate", rotate_func, 0, 0),
+    JS_FS("save", save_func, 0, 0),
+    JS_FS("scale", scale_func, 0, 0),
+    JS_FS("selectFontFace", selectFontFace_func, 0, 0),
+    JS_FS("setAntialias", setAntialias_func, 0, 0),
+    JS_FS("setDash", setDash_func, 0, 0),
     // setFontFace
     // setFontMatrix
     // setFontOptions
-    { "setFontSize", JSOP_WRAPPER((JSNative)setFontSize_func), 0, 0 },
-    { "setFillRule", JSOP_WRAPPER((JSNative)setFillRule_func), 0, 0 },
-    { "setLineCap", JSOP_WRAPPER((JSNative)setLineCap_func), 0, 0 },
-    { "setLineJoin", JSOP_WRAPPER((JSNative)setLineJoin_func), 0, 0 },
-    { "setLineWidth", JSOP_WRAPPER((JSNative)setLineWidth_func), 0, 0 },
+    JS_FS("setFontSize", setFontSize_func, 0, 0),
+    JS_FS("setFillRule", setFillRule_func, 0, 0),
+    JS_FS("setLineCap", setLineCap_func, 0, 0),
+    JS_FS("setLineJoin", setLineJoin_func, 0, 0),
+    JS_FS("setLineWidth", setLineWidth_func, 0, 0),
     // setMatrix
-    { "setMiterLimit", JSOP_WRAPPER((JSNative)setMiterLimit_func), 0, 0 },
-    { "setOperator", JSOP_WRAPPER((JSNative)setOperator_func), 0, 0 },
+    JS_FS("setMiterLimit", setMiterLimit_func, 0, 0),
+    JS_FS("setOperator", setOperator_func, 0, 0),
     // setScaledFont
-    { "setSource", JSOP_WRAPPER((JSNative)setSource_func), 0, 0 },
-    { "setSourceRGB", JSOP_WRAPPER((JSNative)setSourceRGB_func), 0, 0 },
-    { "setSourceRGBA", JSOP_WRAPPER((JSNative)setSourceRGBA_func), 0, 0 },
-    { "setSourceSurface", JSOP_WRAPPER((JSNative)setSourceSurface_func), 0, 0 },
-    { "setTolerance", JSOP_WRAPPER((JSNative)setTolerance_func), 0, 0 },
+    JS_FS("setSource", setSource_func, 0, 0),
+    JS_FS("setSourceRGB", setSourceRGB_func, 0, 0),
+    JS_FS("setSourceRGBA", setSourceRGBA_func, 0, 0),
+    JS_FS("setSourceSurface", setSourceSurface_func, 0, 0),
+    JS_FS("setTolerance", setTolerance_func, 0, 0),
     // showGlyphs
-    { "showPage", JSOP_WRAPPER((JSNative)showPage_func), 0, 0 },
-    { "showText", JSOP_WRAPPER((JSNative)showText_func), 0, 0 },
+    JS_FS("showPage", showPage_func, 0, 0),
+    JS_FS("showText", showText_func, 0, 0),
     // showTextGlyphs
-    { "stroke", JSOP_WRAPPER((JSNative)stroke_func), 0, 0 },
-    { "strokeExtents", JSOP_WRAPPER((JSNative)strokeExtents_func), 0, 0 },
-    { "strokePreserve", JSOP_WRAPPER((JSNative)strokePreserve_func), 0, 0 },
+    JS_FS("stroke", stroke_func, 0, 0),
+    JS_FS("strokeExtents", strokeExtents_func, 0, 0),
+    JS_FS("strokePreserve", strokePreserve_func, 0, 0),
     // textPath
     // textExtends
     // transform
-    { "translate", JSOP_WRAPPER((JSNative)translate_func), 0, 0 },
-    { "userToDevice", JSOP_WRAPPER((JSNative)userToDevice_func), 0, 0 },
-    { "userToDeviceDistance", JSOP_WRAPPER((JSNative)userToDeviceDistance_func), 0, 0 },
-    { NULL }
+    JS_FS("translate", translate_func, 0, 0),
+    JS_FS("userToDevice", userToDevice_func, 0, 0),
+    JS_FS("userToDeviceDistance", userToDeviceDistance_func, 0, 0),
+    JS_FS_END
 };
 
 JSObject *

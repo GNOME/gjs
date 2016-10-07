@@ -70,11 +70,11 @@ gjs_cairo_surface_pattern_finalize(JSFreeOp *fop,
 }
 
 JSPropertySpec gjs_cairo_surface_pattern_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 
-static bool
+static JSBool
 setExtend_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -99,7 +99,7 @@ setExtend_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 getExtend_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -126,7 +126,7 @@ getExtend_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 setFilter_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -151,7 +151,7 @@ setFilter_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 getFilter_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -179,11 +179,11 @@ getFilter_func(JSContext *context,
 }
 
 JSFunctionSpec gjs_cairo_surface_pattern_proto_funcs[] = {
-    { "setExtend", JSOP_WRAPPER((JSNative)setExtend_func), 0, 0 },
-    { "getExtend", JSOP_WRAPPER((JSNative)getExtend_func), 0, 0 },
-    { "setFilter", JSOP_WRAPPER((JSNative)setFilter_func), 0, 0 },
-    { "getFilter", JSOP_WRAPPER((JSNative)getFilter_func), 0, 0 },
-    { NULL }
+    JS_FS("setExtend", setExtend_func, 0, 0),
+    JS_FS("getExtend", getExtend_func, 0, 0),
+    JS_FS("setFilter", setFilter_func, 0, 0),
+    JS_FS("getFilter", getFilter_func, 0, 0),
+    JS_FS_END
 };
 
 JSObject *

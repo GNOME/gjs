@@ -168,15 +168,15 @@ struct JSClass gjs_param_class = {
 };
 
 JSPropertySpec gjs_param_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 JSFunctionSpec gjs_param_proto_funcs[] = {
-    { NULL }
+    JS_FS_END
 };
 
 static JSFunctionSpec gjs_param_constructor_funcs[] = {
-    { NULL }
+    JS_FS_END
 };
 
 static JSObject*

@@ -1649,7 +1649,7 @@ real_connect_func(JSContext *context,
     return ret;
 }
 
-static bool
+static JSBool
 connect_after_func(JSContext *context,
                    unsigned   argc,
                    JS::Value *vp)
@@ -1657,7 +1657,7 @@ connect_after_func(JSContext *context,
     return real_connect_func(context, argc, vp, true);
 }
 
-static bool
+static JSBool
 connect_func(JSContext *context,
              unsigned   argc,
              JS::Value *vp)
@@ -1665,7 +1665,7 @@ connect_func(JSContext *context,
     return real_connect_func(context, argc, vp, false);
 }
 
-static bool
+static JSBool
 emit_func(JSContext *context,
           unsigned   argc,
           JS::Value *vp)
@@ -1788,7 +1788,7 @@ emit_func(JSContext *context,
     return ret;
 }
 
-static bool
+static JSBool
 to_string_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -1840,7 +1840,7 @@ struct JSClass gjs_object_instance_class = {
     
 };
 
-static bool
+static JSBool
 init_func (JSContext *context,
            unsigned   argc,
            JS::Value *vp)
@@ -1862,16 +1862,16 @@ init_func (JSContext *context,
 }
 
 JSPropertySpec gjs_object_instance_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 JSFunctionSpec gjs_object_instance_proto_funcs[] = {
-    { "_init", JSOP_WRAPPER((JSNative)init_func), 0, 0 },
-    { "connect", JSOP_WRAPPER((JSNative)connect_func), 0, 0 },
-    { "connect_after", JSOP_WRAPPER((JSNative)connect_after_func), 0, 0 },
-    { "emit", JSOP_WRAPPER((JSNative)emit_func), 0, 0 },
-    { "toString", JSOP_WRAPPER((JSNative)to_string_func), 0, 0 },
-    { NULL }
+    JS_FS("_init", init_func, 0, 0),
+    JS_FS("connect", connect_func, 0, 0),
+    JS_FS("connect_after", connect_after_func, 0, 0),
+    JS_FS("emit", emit_func, 0, 0),
+    JS_FS("toString", to_string_func, 0, 0),
+    JS_FS_END
 };
 
 bool
@@ -2264,7 +2264,7 @@ find_vfunc_info (JSContext *context,
     g_base_info_unref(struct_info);
 }
 
-static bool
+static JSBool
 gjs_hook_up_vfunc(JSContext *cx,
                   unsigned   argc,
                   JS::Value *vp)
@@ -2517,7 +2517,7 @@ gjs_object_set_gproperty (GObject      *object,
     jsobj_set_gproperty(context, js_obj, value, pspec);
 }
 
-static bool
+static JSBool
 gjs_override_property(JSContext *cx,
                       unsigned   argc,
                       JS::Value *vp)
@@ -2779,7 +2779,7 @@ save_properties_for_class_init(JSContext *cx,
     return true;
 }
 
-static bool
+static JSBool
 gjs_register_interface(JSContext *cx,
                        unsigned   argc,
                        JS::Value *vp)
@@ -2858,7 +2858,7 @@ gjs_register_interface(JSContext *cx,
     return true;
 }
 
-static bool
+static JSBool
 gjs_register_type(JSContext *cx,
                   unsigned   argc,
                   JS::Value *vp)
@@ -2968,7 +2968,7 @@ out:
     return retval;
 }
 
-static bool
+static JSBool
 gjs_signal_new(JSContext *cx,
                unsigned   argc,
                JS::Value *vp)
@@ -3049,13 +3049,14 @@ gjs_signal_new(JSContext *cx,
 }
 
 static JSFunctionSpec module_funcs[] = {
-    { "override_property", JSOP_WRAPPER((JSNative) gjs_override_property), 2, GJS_MODULE_PROP_FLAGS },
-    { "register_interface", JSOP_WRAPPER((JSNative) gjs_register_interface), 3, GJS_MODULE_PROP_FLAGS },
-    { "register_type", JSOP_WRAPPER ((JSNative) gjs_register_type), 4, GJS_MODULE_PROP_FLAGS },
-    { "add_interface", JSOP_WRAPPER ((JSNative) gjs_add_interface), 2, GJS_MODULE_PROP_FLAGS },
-    { "hook_up_vfunc", JSOP_WRAPPER ((JSNative) gjs_hook_up_vfunc), 3, GJS_MODULE_PROP_FLAGS },
-    { "signal_new", JSOP_WRAPPER ((JSNative) gjs_signal_new), 6, GJS_MODULE_PROP_FLAGS },
-    { NULL },
+    JS_FS("override_property", gjs_override_property, 2, GJS_MODULE_PROP_FLAGS),
+    JS_FS("register_interface", gjs_register_interface, 3, GJS_MODULE_PROP_FLAGS),
+    JS_FS("register_type", gjs_register_type, 4, GJS_MODULE_PROP_FLAGS),
+    // FIXME this function will be totally broken if you try to use it from JS
+    JS_FS("add_interface", (JSNative)gjs_add_interface, 2, GJS_MODULE_PROP_FLAGS),
+    JS_FS("hook_up_vfunc", gjs_hook_up_vfunc, 3, GJS_MODULE_PROP_FLAGS),
+    JS_FS("signal_new", gjs_signal_new, 6, GJS_MODULE_PROP_FLAGS),
+    JS_FS_END,
 };
 
 bool

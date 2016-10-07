@@ -67,12 +67,12 @@ gjs_cairo_radial_gradient_finalize(JSFreeOp *fop,
 }
 
 JSPropertySpec gjs_cairo_radial_gradient_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
 JSFunctionSpec gjs_cairo_radial_gradient_proto_funcs[] = {
     // getRadialCircles
-    { NULL }
+    JS_FS_END
 };
 
 JSObject *

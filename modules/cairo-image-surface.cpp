@@ -65,10 +65,10 @@ gjs_cairo_image_surface_finalize(JSFreeOp *fop,
 }
 
 JSPropertySpec gjs_cairo_image_surface_proto_props[] = {
-    { NULL }
+    JS_PS_END
 };
 
-static bool
+static JSBool
 createFromPNG_func(JSContext *context,
                    unsigned   argc,
                    JS::Value *vp)
@@ -99,7 +99,7 @@ createFromPNG_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 getFormat_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -125,7 +125,7 @@ getFormat_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 getWidth_func(JSContext *context,
               unsigned   argc,
               JS::Value *vp)
@@ -151,7 +151,7 @@ getWidth_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 getHeight_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -177,7 +177,7 @@ getHeight_func(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 getStride_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
@@ -204,13 +204,13 @@ getStride_func(JSContext *context,
 }
 
 JSFunctionSpec gjs_cairo_image_surface_proto_funcs[] = {
-    { "createFromPNG", JSOP_WRAPPER((JSNative)createFromPNG_func), 0, 0},
+    JS_FS("createFromPNG", createFromPNG_func, 0, 0),
     // getData
-    { "getFormat", JSOP_WRAPPER((JSNative)getFormat_func), 0, 0 },
-    { "getWidth", JSOP_WRAPPER((JSNative)getWidth_func), 0, 0 },
-    { "getHeight", JSOP_WRAPPER((JSNative)getHeight_func), 0, 0 },
-    { "getStride", JSOP_WRAPPER((JSNative)getStride_func), 0, 0 },
-    { NULL }
+    JS_FS("getFormat", getFormat_func, 0, 0),
+    JS_FS("getWidth", getWidth_func, 0, 0),
+    JS_FS("getHeight", getHeight_func, 0, 0),
+    JS_FS("getStride", getStride_func, 0, 0),
+    JS_FS_END
 };
 
 JSObject *

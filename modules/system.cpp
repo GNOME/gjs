@@ -140,13 +140,13 @@ gjs_clear_date_caches(JSContext *context,
 }
 
 static JSFunctionSpec module_funcs[] = {
-    { "addressOf", JSOP_WRAPPER (gjs_address_of), 1, GJS_MODULE_PROP_FLAGS },
-    { "refcount", JSOP_WRAPPER (gjs_refcount), 1, GJS_MODULE_PROP_FLAGS },
-    { "breakpoint", JSOP_WRAPPER (gjs_breakpoint), 0, GJS_MODULE_PROP_FLAGS },
-    { "gc", JSOP_WRAPPER (gjs_gc), 0, GJS_MODULE_PROP_FLAGS },
-    { "exit", JSOP_WRAPPER (gjs_exit), 0, GJS_MODULE_PROP_FLAGS },
-    { "clearDateCaches", JSOP_WRAPPER (gjs_clear_date_caches), 0, GJS_MODULE_PROP_FLAGS },
-    { NULL },
+    JS_FS("addressOf", gjs_address_of, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FS("refcount", gjs_refcount, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FS("breakpoint", gjs_breakpoint, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FS("gc", gjs_gc, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FS("exit", gjs_exit, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FS("clearDateCaches", gjs_clear_date_caches, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FS_END
 };
 
 bool
