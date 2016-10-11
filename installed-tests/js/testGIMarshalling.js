@@ -69,6 +69,13 @@ function testCArray() {
     assertEquals(1, array[2]);
     assertEquals(5, array[3]);
 
+    array = GIMarshallingTests.array_bool_out();
+    assertEquals(4, array.length);
+    assertEquals(true, array[0]);
+    assertEquals(false, array[1]);
+    assertEquals(true, array[2]);
+    assertEquals(true, array[3]);
+
     array = GIMarshallingTests.array_inout([-1, 0, 1, 2]);
     assertEquals(5, array.length);
     assertEquals(-2, array[0]);
@@ -113,6 +120,7 @@ function testCArray() {
     GIMarshallingTests.array_in_guint8_len(array);
     GIMarshallingTests.array_int64_in(array);
     GIMarshallingTests.array_uint64_in(array);
+    GIMarshallingTests.array_bool_in(array);
 }
 
 function testGArray() {
@@ -137,6 +145,7 @@ function testGArray() {
 
     GIMarshallingTests.garray_int_none_in([-1, 0, 1, 2]);
     GIMarshallingTests.garray_utf8_none_in(["0", "1", "2"]);
+    GIMarshallingTests.garray_bool_none_in([-1, 0, 1, 2]);
 
     array = GIMarshallingTests.garray_utf8_none_out();
     assertEquals("0", array[0]);

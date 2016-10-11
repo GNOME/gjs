@@ -549,6 +549,31 @@ gjs_string_to_intarray(JSContext   *context,
 }
 
 static bool
+gjs_array_to_gboolean_array(JSContext      *cx,
+                            JS::Value       array_value,
+                            unsigned        length,
+                            void          **arr_p)
+{
+    unsigned i;
+
+    gboolean *result = g_new0(gboolean, length);
+
+    for (i = 0; i < length; i++) {
+        JS::RootedValue elem(cx);
+        if (!JS_GetElement(cx, array_value.toObjectOrNull(), i, elem.address())) {
+            g_free(result);
+            gjs_throw(cx, "Missing array element %u", i);
+            return false;
+        }
+        bool val = JS::ToBoolean(elem);
+        result[i] = val;
+    }
+
+    *arr_p = result;
+    return true;
+}
+
+static bool
 gjs_array_to_intarray(JSContext   *context,
                       JS::Value    array_value,
                       unsigned int length,
@@ -897,6 +922,8 @@ gjs_array_to_array(JSContext   *context,
     switch (element_type) {
     case GI_TYPE_TAG_UTF8:
         return gjs_array_to_strv (context, array_value, length, arr_p);
+    case GI_TYPE_TAG_BOOLEAN:
+        return gjs_array_to_gboolean_array(context, array_value, length, arr_p);
     case GI_TYPE_TAG_UINT8:
         return gjs_array_to_intarray
             (context, array_value, length, arr_p, 1, UNSIGNED);
@@ -974,6 +1001,9 @@ gjs_g_array_new_for_type(JSContext    *context,
     }
 
     switch (element_type) {
+    case GI_TYPE_TAG_BOOLEAN:
+        element_size = sizeof(gboolean);
+        break;
     case GI_TYPE_TAG_UINT8:
     case GI_TYPE_TAG_INT8:
       element_size = sizeof(guint8);
@@ -2122,6 +2152,9 @@ gjs_array_from_carray_internal (JSContext  *context,
         case GI_TYPE_TAG_UINT8:
           ITERATE(uint8);
           break;
+        case GI_TYPE_TAG_BOOLEAN:
+            ITERATE(boolean);
+            break;
         case GI_TYPE_TAG_INT8:
           ITERATE(int8);
           break;
@@ -2378,6 +2411,11 @@ gjs_array_from_zero_terminated_c_array (JSContext  *context,
         case GI_TYPE_TAG_ERROR:
           ITERATE(pointer);
           break;
+        /* Boolean zero-terminated array makes no sense, because FALSE is also
+         * zero */
+        case GI_TYPE_TAG_BOOLEAN:
+            gjs_throw(context, "Boolean zero-terminated array not supported");
+            goto finally;
         default:
           gjs_throw(context, "Unknown element-type %d", element_type);
           goto finally;
@@ -3110,6 +3148,7 @@ gjs_g_arg_release_internal(JSContext  *context,
                     g_strfreev ((gchar **) arg->v_pointer);
                 break;
 
+            case GI_TYPE_TAG_BOOLEAN:
             case GI_TYPE_TAG_UINT8:
             case GI_TYPE_TAG_UINT16:
             case GI_TYPE_TAG_UINT32:
@@ -3184,6 +3223,7 @@ gjs_g_arg_release_internal(JSContext  *context,
             element_type = g_type_info_get_tag(param_info);
 
             switch (element_type) {
+            case GI_TYPE_TAG_BOOLEAN:
             case GI_TYPE_TAG_UINT8:
             case GI_TYPE_TAG_UINT16:
             case GI_TYPE_TAG_UINT32:
