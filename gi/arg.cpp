@@ -3109,6 +3109,8 @@ gjs_g_arg_release_internal(JSContext  *context,
             case GI_TYPE_TAG_INT8:
             case GI_TYPE_TAG_INT16:
             case GI_TYPE_TAG_INT32:
+            case GI_TYPE_TAG_FLOAT:
+            case GI_TYPE_TAG_DOUBLE:
             case GI_TYPE_TAG_GTYPE:
                 g_free (arg->v_pointer);
                 break;
@@ -3181,6 +3183,8 @@ gjs_g_arg_release_internal(JSContext  *context,
             case GI_TYPE_TAG_INT16:
             case GI_TYPE_TAG_INT32:
             case GI_TYPE_TAG_INT64:
+            case GI_TYPE_TAG_FLOAT:
+            case GI_TYPE_TAG_DOUBLE:
             case GI_TYPE_TAG_GTYPE:
                 g_array_free((GArray*) arg->v_pointer, true);
                 break;
