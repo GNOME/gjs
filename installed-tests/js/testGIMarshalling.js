@@ -111,6 +111,8 @@ function testCArray() {
     GIMarshallingTests.array_in_len_zero_terminated(array);
     GIMarshallingTests.array_in_guint64_len(array);
     GIMarshallingTests.array_in_guint8_len(array);
+    GIMarshallingTests.array_int64_in(array);
+    GIMarshallingTests.array_uint64_in(array);
 }
 
 function testGArray() {

@@ -558,7 +558,7 @@ gjs_array_to_intarray(JSContext   *context,
                       bool         is_signed)
 {
     /* nasty union types in an attempt to unify the various int types */
-    union { guint32 u; gint32 i; } intval;
+    union { uint64_t u; int64_t i; } intval;
     void *result;
     unsigned i;
 
@@ -580,8 +580,8 @@ gjs_array_to_intarray(JSContext   *context,
 
         /* do whatever sign extension is appropriate */
         success = (is_signed) ?
-            JS::ToInt32(context, elem, &(intval.i)) :
-            JS::ToUint32(context, elem, &(intval.u));
+            JS::ToInt64(context, elem, &(intval.i)) :
+            JS::ToUint64(context, elem, &(intval.u));
 
         if (!success) {
             g_free(result);
@@ -597,6 +597,8 @@ gjs_array_to_intarray(JSContext   *context,
             ((guint16*)result)[i] = (gint16) intval.u; break;
         case 4:
             ((guint32*)result)[i] = (gint32) intval.u; break;
+        case 8:
+            ((uint64_t *)result)[i] = (int64_t) intval.u; break;
         default:
             g_assert_not_reached();
         }
@@ -914,6 +916,12 @@ gjs_array_to_array(JSContext   *context,
     case GI_TYPE_TAG_INT32:
         return gjs_array_to_intarray
             (context, array_value, length, arr_p, 4, SIGNED);
+    case GI_TYPE_TAG_INT64:
+        return gjs_array_to_intarray(context, array_value, length, arr_p, 8,
+            SIGNED);
+    case GI_TYPE_TAG_UINT64:
+        return gjs_array_to_intarray(context, array_value, length, arr_p, 8,
+            UNSIGNED);
     case GI_TYPE_TAG_FLOAT:
         return gjs_array_to_floatarray
             (context, array_value, length, arr_p, false);
@@ -3106,9 +3114,11 @@ gjs_g_arg_release_internal(JSContext  *context,
             case GI_TYPE_TAG_UINT8:
             case GI_TYPE_TAG_UINT16:
             case GI_TYPE_TAG_UINT32:
+            case GI_TYPE_TAG_UINT64:
             case GI_TYPE_TAG_INT8:
             case GI_TYPE_TAG_INT16:
             case GI_TYPE_TAG_INT32:
+            case GI_TYPE_TAG_INT64:
             case GI_TYPE_TAG_FLOAT:
             case GI_TYPE_TAG_DOUBLE:
             case GI_TYPE_TAG_GTYPE:
