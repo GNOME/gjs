@@ -208,6 +208,97 @@ out:
 }
 
 /**
+ * gjs_string_to_ucs4:
+ * @cx: a #JSContext
+ * @value: JS::Value containing a string
+ * @ucs4_string_p: return location for a #gunichar array
+ * @len_p: return location for @ucs4_string_p length
+ *
+ * Returns: true on success, false otherwise in which case a JS error is thrown
+ */
+bool
+gjs_string_to_ucs4(JSContext      *cx,
+                   JS::HandleValue value,
+                   gunichar      **ucs4_string_p,
+                   size_t         *len_p)
+{
+    if (ucs4_string_p == NULL)
+        return true;
+
+    if (!value.isString()) {
+        gjs_throw(cx, "Value is not a string, cannot convert to UCS-4");
+        return false;
+    }
+
+    JSAutoRequest ar(cx);
+    JS::RootedString str(cx, value.toString());
+    size_t utf16_len;
+    GError *error = NULL;
+
+    const jschar *utf16 = JS_GetStringCharsAndLength(cx, str, &utf16_len);
+    if (utf16 == NULL) {
+        gjs_throw(cx, "Failed to get UTF-16 string data");
+        return false;
+    }
+
+    if (ucs4_string_p != NULL) {
+        long length;
+        *ucs4_string_p = g_utf16_to_ucs4(utf16, utf16_len, NULL, &length, &error);
+        if (*ucs4_string_p == NULL) {
+            gjs_throw(cx, "Failed to convert UTF-16 string to UCS-4: %s",
+                      error->message);
+            g_clear_error(&error);
+            return false;
+        }
+        if (len_p != NULL)
+            *len_p = (size_t) length;
+    }
+
+    return true;
+}
+
+/**
+ * gjs_string_from_ucs4:
+ * @cx: a #JSContext
+ * @ucs4_string: string of #gunichar
+ * @n_chars: number of characters in @ucs4_string or -1 for zero-terminated
+ * @value_p: JS::Value that will be filled with a string
+ *
+ * Returns: true on success, false otherwise in which case a JS error is thrown
+ */
+bool
+gjs_string_from_ucs4(JSContext             *cx,
+                     const gunichar        *ucs4_string,
+                     ssize_t                n_chars,
+                     JS::MutableHandleValue value_p)
+{
+    uint16_t *u16_string;
+    long u16_string_length;
+    GError *error = NULL;
+
+    u16_string = g_ucs4_to_utf16(ucs4_string, n_chars, NULL,
+                                 &u16_string_length, &error);
+    if (!u16_string) {
+        gjs_throw(cx, "Failed to convert UCS-4 string to UTF-16: %s",
+                  error->message);
+        g_error_free(error);
+        return false;
+    }
+
+    JSAutoRequest ar(cx);
+    /* Avoid a copy - assumes that g_malloc == js_malloc == malloc */
+    JS::RootedString str(cx, JS_NewUCString(cx, u16_string, u16_string_length));
+
+    if (str == NULL) {
+        gjs_throw(cx, "Failed to convert UCS-4 string to UTF-16");
+        return false;
+    }
+
+    value_p.setString(str);
+    return true;
+}
+
+/**
  * gjs_get_string_id:
  * @context: a #JSContext
  * @id: a jsid that is an object hash key (could be an int or string)

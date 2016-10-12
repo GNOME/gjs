@@ -76,6 +76,10 @@ function testCArray() {
     assertEquals(true, array[2]);
     assertEquals(true, array[3]);
 
+    assertEquals('const \u2665 utf8', GIMarshallingTests.array_unichar_out());
+    assertEquals('const \u2665 utf8',
+        GIMarshallingTests.array_zero_terminated_return_unichar());
+
     array = GIMarshallingTests.array_inout([-1, 0, 1, 2]);
     assertEquals(5, array.length);
     assertEquals(-2, array[0]);
@@ -108,6 +112,9 @@ function testCArray() {
     GIMarshallingTests.array_struct_take_in(array);
 
     GIMarshallingTests.array_uint8_in ("abcd");
+    GIMarshallingTests.array_unichar_in('const \u2665 utf8');
+    GIMarshallingTests.array_unichar_in([0x63, 0x6f, 0x6e, 0x73, 0x74, 0x20,
+        0x2665, 0x20, 0x75, 0x74, 0x66, 0x38]);
     GIMarshallingTests.array_enum_in([GIMarshallingTests.Enum.VALUE1,
 				      GIMarshallingTests.Enum.VALUE2,
 				      GIMarshallingTests.Enum.VALUE3]);
@@ -146,6 +153,9 @@ function testGArray() {
     GIMarshallingTests.garray_int_none_in([-1, 0, 1, 2]);
     GIMarshallingTests.garray_utf8_none_in(["0", "1", "2"]);
     GIMarshallingTests.garray_bool_none_in([-1, 0, 1, 2]);
+    GIMarshallingTests.garray_unichar_none_in('const \u2665 utf8');
+    GIMarshallingTests.garray_unichar_none_in([0x63, 0x6f, 0x6e, 0x73, 0x74,
+        0x20, 0x2665, 0x20, 0x75, 0x74, 0x66, 0x38]);
 
     array = GIMarshallingTests.garray_utf8_none_out();
     assertEquals("0", array[0]);

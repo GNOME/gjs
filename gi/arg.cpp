@@ -540,6 +540,16 @@ gjs_string_to_intarray(JSContext   *context,
         *arr_p = result16;
         return true;
 
+    case GI_TYPE_TAG_UNICHAR:
+    {
+        gunichar *result_ucs4;
+        JS::RootedValue root(context, string_val);
+        if (!gjs_string_to_ucs4(context, root, &result_ucs4, length))
+            return false;
+        *arr_p = result_ucs4;
+        return true;
+    }
+
     default:
         /* can't convert a string to this type */
         gjs_throw(context, "Cannot convert string to array of '%s'",
@@ -924,6 +934,9 @@ gjs_array_to_array(JSContext   *context,
         return gjs_array_to_strv (context, array_value, length, arr_p);
     case GI_TYPE_TAG_BOOLEAN:
         return gjs_array_to_gboolean_array(context, array_value, length, arr_p);
+    case GI_TYPE_TAG_UNICHAR:
+        return gjs_array_to_intarray(context, array_value, length, arr_p,
+            sizeof(gunichar), UNSIGNED);
     case GI_TYPE_TAG_UINT8:
         return gjs_array_to_intarray
             (context, array_value, length, arr_p, 1, UNSIGNED);
@@ -1003,6 +1016,9 @@ gjs_g_array_new_for_type(JSContext    *context,
     switch (element_type) {
     case GI_TYPE_TAG_BOOLEAN:
         element_size = sizeof(gboolean);
+        break;
+    case GI_TYPE_TAG_UNICHAR:
+        element_size = sizeof(gunichar);
         break;
     case GI_TYPE_TAG_UINT8:
     case GI_TYPE_TAG_INT8:
@@ -2127,7 +2143,16 @@ gjs_array_from_carray_internal (JSContext  *context,
             return false;
         *value_p = JS::ObjectValue(*obj);
         return true;
-    } 
+    }
+
+    /* Special case array(unichar) to be a string in JS */
+    if (element_type == GI_TYPE_TAG_UNICHAR) {
+        JS::RootedValue value_out(context);
+        if (!gjs_string_from_ucs4(context, (gunichar *) array, length, &value_out))
+            return false;
+        *value_p = value_out.get();
+        return true;
+    }
 
     obj = JS_NewArrayObject(context, 0, NULL);
     if (obj == NULL)
@@ -2149,9 +2174,10 @@ gjs_array_from_carray_internal (JSContext  *context,
     }
 
     switch (element_type) {
+        /* Special cases handled above */
         case GI_TYPE_TAG_UINT8:
-          ITERATE(uint8);
-          break;
+        case GI_TYPE_TAG_UNICHAR:
+            g_assert_not_reached();
         case GI_TYPE_TAG_BOOLEAN:
             ITERATE(boolean);
             break;
@@ -2347,7 +2373,17 @@ gjs_array_from_zero_terminated_c_array (JSContext  *context,
             return false;
         *value_p = JS::ObjectValue(*obj);
         return true;
-    } 
+    }
+
+    /* Special case array(gunichar) to JS string */
+    if (element_type == GI_TYPE_TAG_UNICHAR) {
+        JS::RootedValue value_out(context);
+
+        if (!gjs_string_from_ucs4(context, (gunichar *) c_array, -1, &value_out))
+            return false;
+        *value_p = value_out.get();
+        return true;
+    }
 
     obj = JS_NewArrayObject(context, 0, NULL);
     if (obj == NULL)
@@ -2372,7 +2408,10 @@ gjs_array_from_zero_terminated_c_array (JSContext  *context,
     } while(0);
 
     switch (element_type) {
-        /* We handle GI_TYPE_TAG_UINT8 above. */
+        /* Special cases handled above. */
+        case GI_TYPE_TAG_UINT8:
+        case GI_TYPE_TAG_UNICHAR:
+            g_assert_not_reached();
         case GI_TYPE_TAG_INT8:
           ITERATE(int8);
           break;
@@ -3159,6 +3198,7 @@ gjs_g_arg_release_internal(JSContext  *context,
             case GI_TYPE_TAG_INT64:
             case GI_TYPE_TAG_FLOAT:
             case GI_TYPE_TAG_DOUBLE:
+            case GI_TYPE_TAG_UNICHAR:
             case GI_TYPE_TAG_GTYPE:
                 g_free (arg->v_pointer);
                 break;
@@ -3224,6 +3264,7 @@ gjs_g_arg_release_internal(JSContext  *context,
 
             switch (element_type) {
             case GI_TYPE_TAG_BOOLEAN:
+            case GI_TYPE_TAG_UNICHAR:
             case GI_TYPE_TAG_UINT8:
             case GI_TYPE_TAG_UINT16:
             case GI_TYPE_TAG_UINT32:
