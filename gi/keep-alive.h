@@ -30,7 +30,7 @@
 
 G_BEGIN_DECLS
 
-/* This is an alternative to JS_AddRoot().
+/* This is an alternative to JS::PersistentRooted<T>.
  *
  * This "keep alive" object holds a collection of child objects and
  * traces them when GC occurs. If the keep alive object is collected,
@@ -41,8 +41,8 @@ G_BEGIN_DECLS
  * blown away (or its global object replaced, I suppose, but that
  * won't happen afaik).
  *
- * The problem with JS_AddRoot() is that it has no notification when the
- * JSContext is destroyed. Also, it can be annoying to wrap a C type purely
+ * The problem with JS::PersistentRooted<T> is that it has no notification when
+ * the JSContext is destroyed. Also, it can be annoying to wrap a C type purely
  * to put a finalizer on it, this lets you avoid that.
  *
  * All three fields (notify, child, and data) are optional, so you can have

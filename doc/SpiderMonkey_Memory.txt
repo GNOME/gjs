@@ -40,35 +40,36 @@ The API refers to these allocated types as "GC things." The macro val.toGCThing(
 
 The general rule is that SpiderMonkey has a set of GC roots. To do the garbage collection, it finds all objects accessible from those roots, and finalizes all objects that are not.
 
-So if you store a JS::Value or JSObject*/JSString*/JSFunction* somewhere that SpiderMonkey does not know about - say, in the private data of an object - that will not be found. SpiderMonkey may try to finalize this object even though you have a reference to it.
+So if you have a JS::Value or JSObject*/JSString*/JSFunction* somewhere that is not reachable from one of SpiderMonkey's GC roots - say, declared on the stack or in the private data of an object - that will not be found. SpiderMonkey may try to finalize this object even though you have a reference to it.
 
-If you reference JavaScript objects from your custom object, you have to set the JSCLASS_MARK_IS_TRACE flag in your JSClass, and define a trace function in the class struct. A trace function just invokes JS_CallTracer() to tell SpiderMonkey about any objects you reference. See [http://developer.mozilla.org/en/docs/JSTraceOp JSTraceOp docs].
+If you reference JavaScript objects from your custom object, you have to use JS::Heap<T> and set the JSCLASS_MARK_IS_TRACE flag in your JSClass, and define a trace function in the class struct. A trace function just invokes JS_CallTracer() to tell SpiderMonkey about any objects you reference. See [http://developer.mozilla.org/en/docs/JSTraceOp JSTraceOp docs].
 
 == Global roots == 
 
-The GC roots would generally include any stack variables SpiderMonkey knows about and the global object set on each JSContext*.
-You can also manually add roots with [http://developer.mozilla.org/en/docs/JS_AddRoot JS_AddRoot()]. Anything reachable from any of these root objects will not be collected.
+The GC roots include anything you have declared with JS::Rooted<T> and the global object set on each JSContext*.
+You can also manually add roots with [https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/JSAPI_reference/JS::PersistentRooted JS::PersistentRooted<T>()]. Anything reachable from any of these root objects will not be collected.
 
-JS_AddRoot() pins an object in memory forever until you call JS_RemoveRoot(), so be careful of leaks. Basically JS_AddRoot() changes memory management of an object to manual mode.
+JS::PersistentRooted<T> pins an object in memory forever until it is destructed, so be careful of leaks. Basically JS::PersistentRooted<T> changes memory management of an object to manual mode.
 
-Note that the argument to JS_AddRoot() is the location of your value, not the value itself. That is, a "JSObject**" or "JS::Value*". Some implications are:
-* the location can't go away (don't use a stack address that will vanish before you JS_RemoveRoot(), for example)
+Note that the wrapped T in JS::PersistentRooted<T> is the location of your value, not the value itself. That is, a "JSObject**" or "JS::Value*". Some implications are:
+* the location can't go away (don't use a stack address that will vanish before the JS::PersistentRooted<T> is destructed, for example)
 * the root is keeping "whatever is at the location" from being collected, not "whatever was originally at the location"
 
 == Local roots==
 
 Here is the trickier part. If you create an object, say:
 
- JSObject *obj = JS_ConstructObject(NULL, NULL, whatever, ...);
+ JSObject *obj = JS_New(cx, whatever, ...);
 
 "obj" is NOT now referenced by any other object. If the GC ran right away, "obj" would be collected.
 
-As a partial solution, SpiderMonkey keeps the last-created object of each type as a GC root. This "newborn roots" feature avoids the problem in the simple case where you create an object then immediately reference it somehow. For example, if you create an object then use it as the value in JS_DefineProperty(), now the object is referenced by the object you defined it in, and should not vanish.
+This is what JS::Rooted<T> is for, and its specializations JS::RootedValue, JS::RootedObject, etc. JS::Rooted<T> adds its wrapped T to the GC root set, and removes it when the JS::Rooted<T> goes out of scope.
 
-If you do not immediately add the object to some other object so it's referenced, you have to arrange to hold onto it in some way. There are three basic ways.
+Any SpiderMonkey APIs that can cause a garbage collection will force you to use JS:Rooted<T> by taking a JS::Handle<T> instead of a bare GC thing. JS::Handle<T> can only be created from JS::Rooted<T>.
 
-# call JS_AddRoot() on its location (and JS_RemoveRoot() when done)
-# when defining a [http://developer.mozilla.org/en/docs/JSFunctionSpec JSFunctionSpec], ask for argv to have "extra local roots"
+So instead of the above code, you would write
+
+ JS::RootedObject obj(cx, JS_New(cx, whatever, ...));
 
 === JSFunctionSpec and extra local roots ===
 
@@ -76,9 +77,6 @@ When SpiderMonkey is calling a native function, it will pass in an argv of JS::V
 
 This is kind of a confusing and unreadable hack IMO, though it is probably efficient and thus justified in certain cases. I don't know really.
 
-Note that newborn roots are tracked as *values* while JS_AddRoot() tracks *locations*.
-
 == More tips ==
 
-For another attempt to explain all this, see [http://developer.mozilla.org/en/docs/SpiderMonkey_Garbage_Collection_Tips GC tips from Mozilla.org].
-
+For another attempt to explain all this, see [https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/GC_Rooting_Guide GC Rooting Guide from Mozilla.org].
