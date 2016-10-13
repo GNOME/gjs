@@ -126,23 +126,20 @@ ns_new_resolve(JSContext *context,
     return ret;
 }
 
-static bool
+static JSBool
 get_name (JSContext *context,
-          JS::HandleObject obj,
-          JS::HandleId id,
-          JS::Value       *vp)
+          unsigned   argc,
+          JS::Value *vp)
 {
-    Ns *priv;
+    GJS_GET_PRIV(context, argc, vp, args, obj, Ns, priv);
     JS::Value retval;
     bool ret = false;
-
-    priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         goto out;
 
     if (gjs_string_from_utf8(context, priv->gi_namespace, -1, &retval)) {
-        *vp = retval;
+        args.rval().set(retval);
         ret = true;
     }
 
@@ -191,7 +188,7 @@ struct JSClass gjs_ns_class = {
 };
 
 JSPropertySpec gjs_ns_proto_props[] = {
-    { "__name__", 0, GJS_MODULE_PROP_FLAGS | JSPROP_READONLY, { (JSPropertyOp)get_name, NULL } },
+    JS_PSG("__name__", get_name, GJS_MODULE_PROP_FLAGS | JSPROP_READONLY),
     JS_PS_END
 };
 

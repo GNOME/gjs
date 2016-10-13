@@ -85,18 +85,17 @@ to_string_func(JSContext *context,
     return ret;
 }
 
-static bool
+static JSBool
 get_name_func (JSContext *context,
-               JS::HandleObject obj,
-               JS::HandleId id,
-               JS::MutableHandleValue vp)
+               unsigned   argc,
+               JS::Value *vp)
 {
+    GJS_GET_PRIV(context, argc, vp, rec, obj, void, priv);
     GType gtype;
     bool ret;
     JS::Value retval;
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp.address());
 
-    gtype = GPOINTER_TO_SIZE(priv_from_js(context, obj));
+    gtype = GPOINTER_TO_SIZE(priv);
 
     if (gtype == 0) {
         rec.rval().setNull();
@@ -111,10 +110,7 @@ get_name_func (JSContext *context,
 
 /* Properties */
 JSPropertySpec gjs_gtype_proto_props[] = {
-    { "name", 0,
-      JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_SHARED,
-      JSOP_WRAPPER((JSPropertyOp)get_name_func),
-      JSOP_WRAPPER(JS_StrictPropertyStub) },
+    JS_PSG("name", get_name_func, JSPROP_READONLY | JSPROP_PERMANENT),
     JS_PS_END,
 };
 

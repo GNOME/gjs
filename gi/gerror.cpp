@@ -42,13 +42,6 @@ typedef struct {
     GError *gerror; /* NULL if we are the prototype and not an instance */
 } Error;
 
-enum {
-    PROP_0,
-    PROP_DOMAIN,
-    PROP_CODE,
-    PROP_MESSAGE
-};
-
 extern struct JSClass gjs_error_class;
 
 static void define_error_properties(JSContext *, JSObject *);
@@ -150,28 +143,28 @@ error_finalize(JSFreeOp *fop,
     g_slice_free(Error, priv);
 }
 
-static bool
-error_get_domain(JSContext *context, JS::HandleObject obj,
-                 JS::HandleId id, JS::MutableHandleValue vp)
+static JSBool
+error_get_domain(JSContext *context,
+                 unsigned   argc,
+                 JS::Value *vp)
 {
-    Error *priv;
-
-    priv = priv_from_js(context, obj);
+    GJS_GET_PRIV(context, argc, vp, args, obj, Error, priv);
 
     if (priv == NULL)
         return false;
 
-    vp.setInt32(priv->domain);
+    args.rval().setInt32(priv->domain);
     return true;
 }
 
-static bool
-error_get_message(JSContext *context, JS::HandleObject obj,
-                  JS::HandleId id, JS::MutableHandleValue vp)
+static JSBool
+error_get_message(JSContext *context,
+                  unsigned   argc,
+                  JS::Value *vp)
 {
-    Error *priv;
-
-    priv = priv_from_js(context, obj);
+    GJS_GET_PRIV(context, argc, vp, args, obj, Error, priv);
+    JS::Value retval;
+    bool ret = false;
 
     if (priv == NULL)
         return false;
@@ -182,16 +175,19 @@ error_get_message(JSContext *context, JS::HandleObject obj,
         return false;
     }
 
-    return gjs_string_from_utf8(context, priv->gerror->message, -1, vp.address());
+    // FIXME: root gjs_string_from_utf8()
+    ret = gjs_string_from_utf8(context, priv->gerror->message, -1, &retval);
+    if (ret)
+        args.rval().set(retval);
+    return ret;
 }
 
-static bool
-error_get_code(JSContext *context, JS::HandleObject obj,
-               JS::HandleId id, JS::MutableHandleValue vp)
+static JSBool
+error_get_code(JSContext *context,
+               unsigned   argc,
+               JS::Value *vp)
 {
-    Error *priv;
-
-    priv = priv_from_js(context, obj);
+    GJS_GET_PRIV(context, argc, vp, args, obj, Error, priv);
 
     if (priv == NULL)
         return false;
@@ -202,7 +198,7 @@ error_get_code(JSContext *context, JS::HandleObject obj,
         return false;
     }
 
-    vp.setInt32(priv->gerror->code);
+    args.rval().setInt32(priv->gerror->code);
     return true;
 }
 
@@ -305,21 +301,9 @@ struct JSClass gjs_error_class = {
 /* We need to shadow all fields of GError, to prevent calling the getter from GBoxed
    (which would trash memory accessing the instance private data) */
 JSPropertySpec gjs_error_proto_props[] = {
-    { "domain", PROP_DOMAIN,
-      GJS_MODULE_PROP_FLAGS | JSPROP_READONLY,
-      JSOP_WRAPPER((JSPropertyOp)error_get_domain),
-      JSOP_WRAPPER(JS_StrictPropertyStub)
-    },
-    { "code", PROP_CODE,
-      GJS_MODULE_PROP_FLAGS | JSPROP_READONLY,
-      JSOP_WRAPPER((JSPropertyOp)error_get_code),
-      JSOP_WRAPPER(JS_StrictPropertyStub)
-    },
-    { "message", PROP_MESSAGE,
-      GJS_MODULE_PROP_FLAGS | JSPROP_READONLY,
-      JSOP_WRAPPER((JSPropertyOp)error_get_message),
-      JSOP_WRAPPER(JS_StrictPropertyStub)
-    },
+    JS_PSG("domain", error_get_domain, GJS_MODULE_PROP_FLAGS | JSPROP_READONLY),
+    JS_PSG("code", error_get_code, GJS_MODULE_PROP_FLAGS | JSPROP_READONLY),
+    JS_PSG("message", error_get_message, GJS_MODULE_PROP_FLAGS | JSPROP_READONLY),
     JS_PS_END
 };
 

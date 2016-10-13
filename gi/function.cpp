@@ -1354,19 +1354,13 @@ function_finalize(JSFreeOp *fop,
     g_slice_free(Function, priv);
 }
 
-static bool
+static JSBool
 get_num_arguments (JSContext *context,
-                   JS::HandleObject obj,
-                   JS::HandleId id,
-                   JS::MutableHandleValue vp)
+                   unsigned   argc,
+                   JS::Value *vp)
 {
+    GJS_GET_PRIV(context, argc, vp, rec, to, Function, priv);
     int n_args, n_jsargs, i;
-    JS::Value retval;
-    Function *priv;
-
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp.address());
-
-    priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         return false;
@@ -1479,11 +1473,7 @@ struct JSClass gjs_function_class = {
 };
 
 JSPropertySpec gjs_function_proto_props[] = {
-    { "length", 0,
-      (JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_SHARED),
-      JSOP_WRAPPER((JSPropertyOp)get_num_arguments),
-      JSOP_WRAPPER(JS_StrictPropertyStub)
-    },
+    JS_PSG("length", get_num_arguments, JSPROP_READONLY | JSPROP_PERMANENT),
     JS_PS_END
 };
 

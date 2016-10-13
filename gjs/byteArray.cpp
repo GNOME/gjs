@@ -218,16 +218,13 @@ byte_array_get_prop(JSContext *context,
     return true;
 }
 
-static bool
+static JSBool
 byte_array_length_getter(JSContext *context,
-                         JS::HandleObject obj,
-                         JS::HandleId id,
-                         JS::MutableHandleValue value_p)
+                         unsigned   argc,
+                         JS::Value *vp)
 {
-    ByteArrayInstance *priv;
+    GJS_GET_PRIV(context, argc, vp, args, to, ByteArrayInstance, priv);
     gsize len = 0;
-
-    priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         return true; /* prototype, not an instance. */
@@ -236,33 +233,32 @@ byte_array_length_getter(JSContext *context,
         len = priv->array->len;
     else if (priv->bytes != NULL)
         len = g_bytes_get_size (priv->bytes);
-    value_p.set(gjs_value_from_gsize(len));
+    args.rval().set(gjs_value_from_gsize(len));
     return true;
 }
 
-static bool
+static JSBool
 byte_array_length_setter(JSContext *context,
-                         JS::HandleObject obj,
-                         JS::HandleId id,
-                         bool strict,
-                         JS::MutableHandleValue value_p)
+                         unsigned   argc,
+                         JS::Value *vp)
 {
-    ByteArrayInstance *priv;
+    GJS_GET_PRIV(context, argc, vp, args, to, ByteArrayInstance, priv);
     gsize len = 0;
-
-    priv = priv_from_js(context, obj);
 
     if (priv == NULL)
         return true; /* prototype, not instance */
 
     byte_array_ensure_array(priv);
 
-    if (!gjs_value_to_gsize(context, value_p, &len)) {
+    // COMPAT: Indexing JS::CallArgs should provide a handle in mozjs31
+    JS::RootedValue arg(context, args[0]);
+    if (!gjs_value_to_gsize(context, arg, &len)) {
         gjs_throw(context,
                   "Can't set ByteArray length to non-integer");
         return false;
     }
     g_byte_array_set_size(priv->array, len);
+    args.rval().setUndefined();
     return true;
 }
 
@@ -844,11 +840,8 @@ gjs_byte_array_peek_data (JSContext       *context,
 }
 
 JSPropertySpec gjs_byte_array_proto_props[] = {
-    { "length", 0,
-      JSPROP_PERMANENT,
-      JSOP_WRAPPER ((JSPropertyOp) byte_array_length_getter),
-      JSOP_WRAPPER ((JSStrictPropertyOp) byte_array_length_setter),
-    },
+    JS_PSGS("length", byte_array_length_getter, byte_array_length_setter,
+            JSPROP_PERMANENT),
     JS_PS_END
 };
 
