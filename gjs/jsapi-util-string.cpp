@@ -65,14 +65,13 @@ gjs_string_to_utf8 (JSContext      *context,
 }
 
 bool
-gjs_string_from_utf8(JSContext  *context,
-                     const char *utf8_string,
-                     gssize      n_bytes,
-                     JS::Value  *value_p)
+gjs_string_from_utf8(JSContext             *context,
+                     const char            *utf8_string,
+                     ssize_t                n_bytes,
+                     JS::MutableHandleValue value_p)
 {
     jschar *u16_string;
     glong u16_string_length;
-    JSString *str;
     GError *error;
 
     /* intentionally using n_bytes even though glib api suggests n_chars; with
@@ -97,10 +96,10 @@ gjs_string_from_utf8(JSContext  *context,
     JS_BeginRequest(context);
 
     /* Avoid a copy - assumes that g_malloc == js_malloc == malloc */
-    str = JS_NewUCString(context, u16_string, u16_string_length);
-
-    if (str && value_p)
-        *value_p = JS::StringValue(str);
+    JS::RootedString str(context,
+                         JS_NewUCString(context, u16_string, u16_string_length));
+    if (str)
+        value_p.setString(str);
 
     JS_EndRequest(context);
     return str != NULL;
@@ -135,10 +134,10 @@ gjs_string_to_filename(JSContext      *context,
 }
 
 bool
-gjs_string_from_filename(JSContext  *context,
-                         const char *filename_string,
-                         gssize      n_bytes,
-                         JS::Value  *value_p)
+gjs_string_from_filename(JSContext             *context,
+                         const char            *filename_string,
+                         ssize_t                n_bytes,
+                         JS::MutableHandleValue value_p)
 {
     gsize written;
     GError *error;

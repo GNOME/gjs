@@ -305,9 +305,9 @@ region_to_g_argument(JSContext      *context,
 }
 
 static bool
-region_from_g_argument(JSContext  *context,
-                       JS::Value  *value_p,
-                       GArgument  *arg)
+region_from_g_argument(JSContext             *context,
+                       JS::MutableHandleValue value_p,
+                       GIArgument            *arg)
 {
     JSObject *obj;
 
@@ -315,7 +315,7 @@ region_from_g_argument(JSContext  *context,
     if (!obj)
         return false;
 
-    *value_p = JS::ObjectValue(*obj);
+    value_p.setObject(*obj);
     return true;
 }
 

@@ -100,10 +100,10 @@ gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(void)
 
     const char *utf8_string = "\303\211\303\226 foobar \343\203\237";
     char *utf8_result;
-    JS::Value js_string;
 
     _gjs_unit_test_fixture_begin(&fixture);
     context = fixture.context;
+    JS::RootedValue js_string(context);
     global = gjs_get_global_object(context);
     JSCompartment *oldCompartment = JS_EnterCompartment(context, global);
 

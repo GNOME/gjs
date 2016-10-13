@@ -350,7 +350,7 @@ gjs_define_constant(JSContext      *context,
                     JSObject       *in_object,
                     GIConstantInfo *info)
 {
-    JS::Value value;
+    JS::RootedValue value(context);
     GArgument garg = { 0, };
     GITypeInfo *type_info;
     const char *name;

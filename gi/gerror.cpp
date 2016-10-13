@@ -163,8 +163,6 @@ error_get_message(JSContext *context,
                   JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, args, obj, Error, priv);
-    JS::Value retval;
-    bool ret = false;
 
     if (priv == NULL)
         return false;
@@ -175,11 +173,7 @@ error_get_message(JSContext *context,
         return false;
     }
 
-    // FIXME: root gjs_string_from_utf8()
-    ret = gjs_string_from_utf8(context, priv->gerror->message, -1, &retval);
-    if (ret)
-        args.rval().set(retval);
-    return ret;
+    return gjs_string_from_utf8(context, priv->gerror->message, -1, args.rval());
 }
 
 static JSBool
@@ -208,14 +202,13 @@ error_to_string(JSContext *context,
                 JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, rec, self, Error, priv);
-    JS::Value v_out;
     gchar *descr;
     bool retval;
 
     if (priv == NULL)
         return false;
 
-    v_out = JS::UndefinedValue();
+    rec.rval().setUndefined();
     retval = false;
 
     /* We follow the same pattern as standard JS errors, at the expense of
@@ -226,7 +219,7 @@ error_to_string(JSContext *context,
                                 g_base_info_get_namespace(priv->info),
                                 g_base_info_get_name(priv->info));
 
-        if (!gjs_string_from_utf8(context, descr, -1, &v_out))
+        if (!gjs_string_from_utf8(context, descr, -1, rec.rval()))
             goto out;
     } else {
         descr = g_strdup_printf("%s.%s: %s",
@@ -234,11 +227,10 @@ error_to_string(JSContext *context,
                                 g_base_info_get_name(priv->info),
                                 priv->gerror->message);
 
-        if (!gjs_string_from_utf8(context, descr, -1, &v_out))
+        if (!gjs_string_from_utf8(context, descr, -1, rec.rval()))
             goto out;
     }
 
-    rec.rval().set(v_out);
     retval = true;
 
  out:

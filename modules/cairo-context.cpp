@@ -968,9 +968,9 @@ context_to_g_argument(JSContext      *context,
 }
 
 static bool
-context_from_g_argument(JSContext  *context,
-                        JS::Value  *value_p,
-                        GArgument  *arg)
+context_from_g_argument(JSContext             *context,
+                        JS::MutableHandleValue value_p,
+                        GIArgument            *arg)
 {
     JSObject *obj;
 
@@ -978,7 +978,7 @@ context_from_g_argument(JSContext  *context,
     if (!obj)
         return false;
 
-    *value_p = JS::ObjectValue(*obj);
+    value_p.setObject(*obj);
     return true;
 }
 

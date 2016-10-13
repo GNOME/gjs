@@ -132,19 +132,11 @@ get_name (JSContext *context,
           JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, args, obj, Ns, priv);
-    JS::Value retval;
-    bool ret = false;
 
     if (priv == NULL)
-        goto out;
+        return false;
 
-    if (gjs_string_from_utf8(context, priv->gi_namespace, -1, &retval)) {
-        args.rval().set(retval);
-        ret = true;
-    }
-
- out:
-    return ret;
+    return gjs_string_from_utf8(context, priv->gi_namespace, -1, args.rval());
 }
 
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(ns)

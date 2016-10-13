@@ -69,7 +69,6 @@ to_string_func(JSContext *context,
     GType gtype;
     gchar *strval;
     bool ret;
-    JS::Value retval;
 
     gtype = GPOINTER_TO_SIZE(priv);
 
@@ -78,9 +77,7 @@ to_string_func(JSContext *context,
     else
         strval = g_strdup_printf("[object GType for '%s']",
                                  g_type_name(gtype));
-    ret = gjs_string_from_utf8(context, strval, -1, &retval);
-    if (ret)
-        rec.rval().set(retval);
+    ret = gjs_string_from_utf8(context, strval, -1, rec.rval());
     g_free(strval);
     return ret;
 }
@@ -92,20 +89,14 @@ get_name_func (JSContext *context,
 {
     GJS_GET_PRIV(context, argc, vp, rec, obj, void, priv);
     GType gtype;
-    bool ret;
-    JS::Value retval;
 
     gtype = GPOINTER_TO_SIZE(priv);
 
     if (gtype == 0) {
         rec.rval().setNull();
         return true;
-    } else {
-        ret = gjs_string_from_utf8(context, g_type_name(gtype), -1, &retval);
-        if (ret)
-            rec.rval().set(retval);
-        return ret;
     }
+    return gjs_string_from_utf8(context, g_type_name(gtype), -1, rec.rval());
 }
 
 /* Properties */

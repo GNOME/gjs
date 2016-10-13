@@ -175,7 +175,7 @@ gjs_callback_closure(ffi_cif *cif,
     JSObject *func_obj;
     GjsCallbackTrampoline *trampoline;
     int i, n_args, n_jsargs, n_outargs;
-    JS::Value *jsargs, rval;
+    JS::Value rval;
     JSObject *this_object;
     GITypeInfo ret_type;
     bool success = false;
@@ -211,7 +211,10 @@ gjs_callback_closure(ffi_cif *cif,
     g_assert(n_args >= 0);
 
     n_outargs = 0;
-    jsargs = (JS::Value *)g_newa(JS::Value, n_args);
+    JS::AutoValueVector jsargs(context);
+    jsargs.resize(n_args);
+    JS::Value *args_ptr = jsargs.begin();
+
     for (i = 0, n_jsargs = 0; i < n_args; i++) {
         GIArgInfo arg_info;
         GITypeInfo type_info;
@@ -241,7 +244,7 @@ gjs_callback_closure(ffi_cif *cif,
                 gint array_length_pos = g_type_info_get_array_length(&type_info);
                 GIArgInfo array_length_arg;
                 GITypeInfo arg_type_info;
-                JS::Value length;
+                JS::RootedValue length(context);
 
                 g_callable_info_load_arg(trampoline->info, array_length_pos, &array_length_arg);
                 g_arg_info_load_type(&array_length_arg, &arg_type_info);
@@ -250,14 +253,14 @@ gjs_callback_closure(ffi_cif *cif,
                                                (GArgument *) args[array_length_pos], true))
                     goto out;
 
-                if (!gjs_value_from_explicit_array(context, &jsargs[n_jsargs++],
+                if (!gjs_value_from_explicit_array(context, jsargs.handleAt(n_jsargs++),
                                                    &type_info, (GArgument*) args[i], length.toInt32()))
                     goto out;
                 break;
             }
             case PARAM_NORMAL:
                 if (!gjs_value_from_g_argument(context,
-                                               &jsargs[n_jsargs++],
+                                               jsargs.handleAt(n_jsargs++),
                                                &type_info,
                                                (GArgument *) args[i], false))
                     goto out;
@@ -270,7 +273,7 @@ gjs_callback_closure(ffi_cif *cif,
     if (trampoline->is_vfunc) {
         g_assert(n_args > 0);
         this_object = jsargs[0].toObjectOrNull();
-        jsargs++;
+        args_ptr++;
         n_jsargs--;
     } else {
         this_object = NULL;
@@ -280,7 +283,7 @@ gjs_callback_closure(ffi_cif *cif,
                               this_object,
                               trampoline->js_function,
                               n_jsargs,
-                              jsargs,
+                              args_ptr,
                               &rval)) {
         goto out;
     }
@@ -1025,7 +1028,7 @@ gjs_invoke_c_function(JSContext       *context,
             if (array_length_pos >= 0) {
                 GIArgInfo array_length_arg;
                 GITypeInfo arg_type_info;
-                JS::Value length;
+                JS::RootedValue length(context);
 
                 g_callable_info_load_arg(function->info, array_length_pos, &array_length_arg);
                 g_arg_info_load_type(&array_length_arg, &arg_type_info);
@@ -1036,7 +1039,7 @@ gjs_invoke_c_function(JSContext       *context,
                                                         true);
                 if (!arg_failed && js_rval) {
                     arg_failed = !gjs_value_from_explicit_array(context,
-                                                                &return_values[next_rval],
+                                                                return_values.handleAt(next_rval),
                                                                 &return_info,
                                                                 &return_gargument,
                                                                 length.toInt32());
@@ -1051,7 +1054,8 @@ gjs_invoke_c_function(JSContext       *context,
                     failed = true;
             } else {
                 if (js_rval)
-                    arg_failed = !gjs_value_from_g_argument(context, &return_values[next_rval],
+                    arg_failed = !gjs_value_from_g_argument(context,
+                                                            return_values.handleAt(next_rval),
                                                             &return_info, &return_gargument,
                                                             true);
                 /* Free GArgument, the JS::Value should have ref'd or copied it */
@@ -1157,7 +1161,7 @@ release:
             GArgument *arg;
             bool arg_failed = false;
             gint array_length_pos;
-            JS::Value array_length;
+            JS::RootedValue array_length(context, JS::Int32Value(0));
             GITransfer transfer;
 
             g_assert(next_rval < function->js_out_argc);
@@ -1180,14 +1184,14 @@ release:
                                                             true);
                     if (!arg_failed) {
                         arg_failed = !gjs_value_from_explicit_array(context,
-                                                                    &return_values[next_rval],
+                                                                    return_values.handleAt(next_rval),
                                                                     &arg_type_info,
                                                                     arg,
                                                                     array_length.toInt32());
                     }
                 } else {
                     arg_failed = !gjs_value_from_g_argument(context,
-                                                            &return_values[next_rval],
+                                                            return_values.handleAt(next_rval),
                                                             &arg_type_info,
                                                             arg,
                                                             true);
@@ -1391,7 +1395,6 @@ function_to_string (JSContext *context,
     GJS_GET_PRIV(context, argc, vp, rec, to, Function, priv);
     gchar *string;
     bool free;
-    JS::Value retval;
     bool ret = false;
     int i, n_args, n_jsargs;
     GString *arg_names_str;
@@ -1441,10 +1444,8 @@ function_to_string (JSContext *context,
     g_free(arg_names);
 
  out:
-    if (gjs_string_from_utf8(context, string, -1, &retval)) {
-        rec.rval().set(retval);
+    if (gjs_string_from_utf8(context, string, -1, rec.rval()))
         ret = true;
-    }
 
     if (free)
         g_free(string);

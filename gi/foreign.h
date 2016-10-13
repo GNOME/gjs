@@ -37,9 +37,10 @@ typedef bool (*GjsArgOverrideToGArgumentFunc) (JSContext      *context,
                                                bool            may_be_null,
                                                GArgument      *arg);
 
-typedef bool (*GjsArgOverrideFromGArgumentFunc)    (JSContext *context,
-                                                    JS::Value *value_p,
-                                                    GArgument *arg);
+typedef bool (*GjsArgOverrideFromGArgumentFunc) (JSContext             *context,
+                                                 JS::MutableHandleValue value_p,
+                                                 GIArgument            *arg);
+
 typedef bool (*GjsArgOverrideReleaseGArgumentFunc) (JSContext *context,
                                                     GITransfer transfer,
                                                     GArgument *arg);
@@ -62,10 +63,11 @@ bool  gjs_struct_foreign_convert_to_g_argument   (JSContext      *context,
                                                   GITransfer      transfer,
                                                   bool            may_be_null,
                                                   GArgument      *arg);
-bool  gjs_struct_foreign_convert_from_g_argument (JSContext      *context,
-                                                  JS::Value      *value_p,
-                                                  GIBaseInfo     *interface_info,
-                                                  GArgument      *arg);
+bool gjs_struct_foreign_convert_from_g_argument(JSContext             *context,
+                                                JS::MutableHandleValue value_p,
+                                                GIBaseInfo            *interface_info,
+                                                GIArgument            *arg);
+
 bool  gjs_struct_foreign_release_g_argument      (JSContext      *context,
                                                   GITransfer      transfer,
                                                   GIBaseInfo     *interface_info,

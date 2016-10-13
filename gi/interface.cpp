@@ -239,9 +239,9 @@ gjs_define_interface_class(JSContext       *context,
 }
 
 bool
-gjs_lookup_interface_constructor(JSContext *context,
-                                 GType      gtype,
-                                 JS::Value *value_p)
+gjs_lookup_interface_constructor(JSContext             *context,
+                                 GType                  gtype,
+                                 JS::MutableHandleValue value_p)
 {
     JSObject *constructor;
     GIBaseInfo *interface_info;
@@ -263,6 +263,6 @@ gjs_lookup_interface_constructor(JSContext *context,
 
     g_base_info_unref(interface_info);
 
-    *value_p = JS::ObjectValue(*constructor);
+    value_p.setObject(*constructor);
     return true;
 }

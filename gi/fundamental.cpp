@@ -499,8 +499,6 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, rec, obj, FundamentalInstance, priv);
-    bool ret = false;
-    JS::Value retval;
 
     if (!priv->prototype) {
         Fundamental *proto_priv = (Fundamental *) priv;
@@ -509,21 +507,18 @@ to_string_func(JSContext *context,
                                        (GIBaseInfo *) proto_priv->info,
                                        proto_priv->gtype,
                                        proto_priv->gfundamental,
-                                       &retval))
-            goto out;
+                                       rec.rval()))
+            return false;
     } else {
         if (!_gjs_proxy_to_string_func(context, obj, "fundamental",
                                        (GIBaseInfo *) priv->prototype->info,
                                        priv->prototype->gtype,
                                        priv->gfundamental,
-                                       &retval))
-            goto out;
+                                       rec.rval()))
+            return false;
     }
 
-    ret = true;
-    rec.rval().set(retval);
- out:
-    return ret;
+    return true;
 }
 
 /* The bizarre thing about this vtable is that it applies to both

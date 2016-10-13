@@ -266,9 +266,9 @@ surface_to_g_argument(JSContext      *context,
 }
 
 static bool
-surface_from_g_argument(JSContext  *context,
-                        JS::Value  *value_p,
-                        GArgument  *arg)
+surface_from_g_argument(JSContext             *context,
+                        JS::MutableHandleValue value_p,
+                        GIArgument            *arg)
 {
     JSObject *obj;
 
@@ -276,7 +276,7 @@ surface_from_g_argument(JSContext  *context,
     if (!obj)
         return false;
 
-    *value_p = JS::ObjectValue(*obj);
+    value_p.setObject(*obj);
     return true;
 }
 

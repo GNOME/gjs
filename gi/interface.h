@@ -38,9 +38,9 @@ bool gjs_define_interface_class (JSContext       *context,
                                  GType            gtype,
                                  JSObject       **constructor_p);
 
-bool gjs_lookup_interface_constructor (JSContext     *context,
-                                       GType          gtype,
-                                       JS::Value     *value_p);
+bool gjs_lookup_interface_constructor(JSContext             *context,
+                                      GType                  gtype,
+                                      JS::MutableHandleValue value_p);
 
 G_END_DECLS
 

@@ -32,13 +32,13 @@
  * and a memory address.
  */
 bool
-_gjs_proxy_to_string_func(JSContext  *context,
-                          JSObject   *this_obj,
-                          const char *objtype,
-                          GIBaseInfo *info,
-                          GType       gtype,
-                          gpointer    native_address,
-                          JS::Value  *rval)
+_gjs_proxy_to_string_func(JSContext             *context,
+                          JSObject              *this_obj,
+                          const char            *objtype,
+                          GIBaseInfo            *info,
+                          GType                  gtype,
+                          gpointer               native_address,
+                          JS::MutableHandleValue rval)
 {
     GString *buf;
     bool ret = false;

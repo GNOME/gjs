@@ -49,7 +49,7 @@ gjs_throw_valist(JSContext       *context,
 {
     char *s;
     bool result;
-    JS::Value v_constructor, v_message;
+    JS::Value v_constructor;
     JSObject *err_obj;
 
     s = g_strdup_vprintf(format, args);
@@ -75,6 +75,7 @@ gjs_throw_valist(JSContext       *context,
         return;
     }
 
+    JS::RootedValue v_message(context);
     result = false;
 
     if (!gjs_string_from_utf8(context, s, -1, &v_message)) {
@@ -89,7 +90,7 @@ gjs_throw_valist(JSContext       *context,
     }
 
     /* throw new Error(message) */
-    err_obj = JS_New(context, &v_constructor.toObject(), 1, &v_message);
+    err_obj = JS_New(context, &v_constructor.toObject(), 1, v_message.address());
     JS_SetPendingException(context, JS::ObjectOrNullValue(err_obj));
 
     result = true;

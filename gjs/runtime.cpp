@@ -58,7 +58,7 @@ gjs_locale_to_upper_case (JSContext *context,
 
     upper_case_utf8 = g_utf8_strup (utf8, -1);
 
-    if (!gjs_string_from_utf8(context, upper_case_utf8, -1, retval.address()))
+    if (!gjs_string_from_utf8(context, upper_case_utf8, -1, retval))
         goto out;
 
     success = true;
@@ -84,7 +84,7 @@ gjs_locale_to_lower_case (JSContext *context,
 
     lower_case_utf8 = g_utf8_strdown (utf8, -1);
 
-    if (!gjs_string_from_utf8(context, lower_case_utf8, -1, retval.address()))
+    if (!gjs_string_from_utf8(context, lower_case_utf8, -1, retval))
         goto out;
 
     success = true;
@@ -138,7 +138,7 @@ gjs_locale_to_unicode (JSContext  *context,
         return false;
     }
 
-    success = gjs_string_from_utf8(context, utf8, -1, retval.address());
+    success = gjs_string_from_utf8(context, utf8, -1, retval);
     g_free (utf8);
 
     return success;

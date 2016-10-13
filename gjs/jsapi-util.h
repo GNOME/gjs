@@ -403,17 +403,19 @@ bool        gjs_delete_prop_verbose_stub     (JSContext       *context,
 JSBool      gjs_string_to_utf8               (JSContext       *context,
                                               const JS::Value  string_val,
                                               char           **utf8_string_p);
-bool        gjs_string_from_utf8             (JSContext       *context,
-                                              const char      *utf8_string,
-                                              gssize           n_bytes,
-                                              JS::Value       *value_p);
+bool gjs_string_from_utf8(JSContext             *context,
+                          const char            *utf8_string,
+                          ssize_t                n_bytes,
+                          JS::MutableHandleValue value_p);
+
 JSBool      gjs_string_to_filename           (JSContext       *context,
                                               const JS::Value  string_val,
                                               char           **filename_string_p);
-bool        gjs_string_from_filename         (JSContext       *context,
-                                              const char      *filename_string,
-                                              gssize           n_bytes,
-                                              JS::Value       *value_p);
+bool gjs_string_from_filename(JSContext             *context,
+                              const char            *filename_string,
+                              ssize_t                n_bytes,
+                              JS::MutableHandleValue value_p);
+
 bool        gjs_string_get_uint16_data       (JSContext       *context,
                                               JS::Value        value,
                                               guint16        **data_p,

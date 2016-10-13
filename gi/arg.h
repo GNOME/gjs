@@ -67,16 +67,17 @@ bool gjs_value_to_g_argument (JSContext      *context,
                               bool            may_be_null,
                               GArgument      *arg);
 
-bool gjs_value_from_g_argument (JSContext  *context,
-                                JS::Value  *value_p,
-                                GITypeInfo *type_info,
-                                GArgument  *arg,
-                                bool        copy_structs);
-bool gjs_value_from_explicit_array (JSContext  *context,
-                                    JS::Value  *value_p,
-                                    GITypeInfo *type_info,
-                                    GArgument  *arg,
-                                    int         length);
+bool gjs_value_from_g_argument(JSContext             *context,
+                               JS::MutableHandleValue value_p,
+                               GITypeInfo            *type_info,
+                               GIArgument            *arg,
+                               bool                   copy_structs);
+
+bool gjs_value_from_explicit_array(JSContext             *context,
+                                   JS::MutableHandleValue value_p,
+                                   GITypeInfo            *type_info,
+                                   GIArgument            *arg,
+                                   int                    length);
 
 bool gjs_g_argument_release    (JSContext  *context,
                                 GITransfer  transfer,
@@ -108,9 +109,9 @@ bool _gjs_enum_value_is_valid (JSContext  *context,
 gint64 _gjs_enum_from_int (GIEnumInfo *enum_info,
                            int         int_value);
 
-bool gjs_array_from_strv (JSContext   *context,
-                          JS::Value   *value_p,
-                          const char **strv);
+bool gjs_array_from_strv(JSContext             *context,
+                         JS::MutableHandleValue value_p,
+                         const char           **strv);
 
 bool gjs_array_to_strv (JSContext   *context,
                         JS::Value    array_value,

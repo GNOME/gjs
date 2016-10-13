@@ -791,14 +791,13 @@ importer_new_enumerate(JSContext  *context,
     }
 
     case JSENUMERATE_NEXT: {
-        JS::Value element_val;
-
         if (statep.isNull()) /* Iterating prototype */
             return true;
 
         iter = (ImporterIterator*) statep.get().toPrivate();
 
         if (iter->index < iter->elements->len) {
+            JS::RootedValue element_val(context);
             if (!gjs_string_from_utf8(context,
                                          (const char*) g_ptr_array_index(iter->elements,
                                                            iter->index++),

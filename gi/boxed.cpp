@@ -688,10 +688,7 @@ boxed_field_getter (JSContext              *context,
         goto out;
     }
 
-    if (!gjs_value_from_g_argument (context, value.address(),
-                                    type_info,
-                                    &arg,
-                                    true))
+    if (!gjs_value_from_g_argument(context, value, type_info, &arg, true))
         goto out;
 
     success = true;
@@ -898,18 +895,9 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, rec, obj, Boxed, priv);
-
-    bool ret = false;
-    JS::Value retval;
-
-    if (!_gjs_proxy_to_string_func(context, obj, "boxed", (GIBaseInfo*)priv->info,
-                                   priv->gtype, priv->gboxed, &retval))
-        goto out;
-
-    ret = true;
-    rec.rval().set(retval);
- out:
-    return ret;
+    return _gjs_proxy_to_string_func(context, obj, "boxed",
+                                     (GIBaseInfo*)priv->info, priv->gtype,
+                                     priv->gboxed, rec.rval());
 }
 
 /* The bizarre thing about this vtable is that it applies to both

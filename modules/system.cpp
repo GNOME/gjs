@@ -42,19 +42,15 @@ gjs_address_of(JSContext *context,
     JSObject *target_obj;
     bool ret;
     char *pointer_string;
-    JS::Value retval;
 
     if (!gjs_parse_call_args(context, "addressOf", "o", argv, "object", &target_obj))
         return false;
 
     pointer_string = g_strdup_printf("%p", target_obj);
 
-    ret = gjs_string_from_utf8(context, pointer_string, -1, &retval);
+    ret = gjs_string_from_utf8(context, pointer_string, -1, argv.rval());
+
     g_free(pointer_string);
-
-    if (ret)
-        argv.rval().set(retval);
-
     return ret;
 }
 
@@ -156,7 +152,6 @@ gjs_js_define_system_stuff(JSContext  *context,
 {
     GjsContext *gjs_context;
     char *program_name;
-    JS::Value value;
     bool retval;
     JSObject *module;
 
@@ -172,6 +167,7 @@ gjs_js_define_system_stuff(JSContext  *context,
                  "program-name", &program_name,
                  NULL);
 
+    JS::RootedValue value(context);
     if (!gjs_string_from_utf8(context, program_name,
                               -1, &value))
         goto out;

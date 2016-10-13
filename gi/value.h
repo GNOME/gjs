@@ -36,9 +36,11 @@ bool       gjs_value_to_g_value         (JSContext    *context,
 bool       gjs_value_to_g_value_no_copy (JSContext    *context,
                                          JS::Value     value,
                                          GValue       *gvalue);
-bool       gjs_value_from_g_value       (JSContext    *context,
-                                         JS::Value    *value_p,
-                                         const GValue *gvalue);
+
+bool gjs_value_from_g_value(JSContext             *context,
+                            JS::MutableHandleValue value_p,
+                            const GValue          *gvalue);
+
 GClosure*  gjs_closure_new_marshaled    (JSContext    *context,
                                          JSObject     *callable,
                                          const char   *description);

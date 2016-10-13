@@ -160,10 +160,10 @@ gjs_struct_foreign_convert_to_g_argument(JSContext      *context,
 }
 
 bool
-gjs_struct_foreign_convert_from_g_argument(JSContext  *context,
-                                           JS::Value  *value_p,
-                                           GIBaseInfo *interface_info,
-                                           GArgument  *arg)
+gjs_struct_foreign_convert_from_g_argument(JSContext             *context,
+                                           JS::MutableHandleValue value_p,
+                                           GIBaseInfo            *interface_info,
+                                           GIArgument            *arg)
 {
     GjsForeignInfo *foreign;
 

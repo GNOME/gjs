@@ -305,7 +305,7 @@ object_instance_get_prop(JSContext              *context,
     g_value_init(&gvalue, G_PARAM_SPEC_VALUE_TYPE(param));
     g_object_get_property(priv->gobj, param->name,
                           &gvalue);
-    if (!gjs_value_from_g_value(context, value_p.address(), &gvalue)) {
+    if (!gjs_value_from_g_value(context, value_p, &gvalue)) {
         g_value_unset(&gvalue);
         ret = false;
         goto out;
@@ -1671,7 +1671,6 @@ emit_func(JSContext *context,
     GValue rvalue = G_VALUE_INIT;
     unsigned int i;
     bool failed;
-    JS::Value retval;
     bool ret = false;
 
     gjs_debug_gsignal("emit obj %p priv %p argc %d", obj.get(), priv, argc);
@@ -1750,22 +1749,17 @@ emit_func(JSContext *context,
     }
 
     if (signal_query.return_type != G_TYPE_NONE) {
-        if (!gjs_value_from_g_value(context,
-                                    &retval,
-                                    &rvalue))
+        if (!gjs_value_from_g_value(context, argv.rval(), &rvalue))
             failed = true;
 
         g_value_unset(&rvalue);
     } else {
-        retval.setUndefined();
+        argv.rval().setUndefined();
     }
 
     for (i = 0; i < (signal_query.n_params + 1); ++i) {
         g_value_unset(&instance_and_args[i]);
     }
-
-    if (!failed)
-        argv.rval().set(retval);
 
     ret = !failed;
  out:
@@ -1779,22 +1773,15 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, rec, obj, ObjectInstance, priv);
-    bool ret = false;
-    JS::Value retval;
 
     if (priv == NULL) {
         throw_priv_is_null_error(context);
-        goto out;  /* wrong class passed in */
+        return false;  /* wrong class passed in */
     }
-    
-    if (!_gjs_proxy_to_string_func(context, obj, "object", (GIBaseInfo*)priv->info,
-                                   priv->gtype, priv->gobj, &retval))
-        goto out;
 
-    ret = true;
-    rec.rval().set(retval);
- out:
-    return ret;
+    return _gjs_proxy_to_string_func(context, obj, "object",
+                                     (GIBaseInfo*)priv->info, priv->gtype,
+                                     priv->gobj, rec.rval());
 }
 
 struct JSClass gjs_object_instance_class = {
@@ -2393,14 +2380,14 @@ jsobj_set_gproperty (JSContext    *context,
                      const GValue *value,
                      GParamSpec   *pspec)
 {
-    JS::Value jsvalue;
+    JS::RootedValue jsvalue(context);
     gchar *underscore_name;
 
     if (!gjs_value_from_g_value(context, &jsvalue, value))
         return;
 
     underscore_name = hyphen_to_underscore((gchar *)pspec->name);
-    if (!JS_SetProperty(context, object, underscore_name, &jsvalue))
+    if (!JS_SetProperty(context, object, underscore_name, jsvalue.address()))
         gjs_log_exception(context);
     g_free (underscore_name);
 }
@@ -3051,9 +3038,9 @@ gjs_define_private_gi_stuff(JSContext *context,
 }
 
 bool
-gjs_lookup_object_constructor(JSContext *context,
-                              GType      gtype,
-                              JS::Value *value_p)
+gjs_lookup_object_constructor(JSContext             *context,
+                              GType                  gtype,
+                              JS::MutableHandleValue value_p)
 {
     JSObject *constructor;
     GIObjectInfo *object_info;
@@ -3072,6 +3059,6 @@ gjs_lookup_object_constructor(JSContext *context,
     if (object_info)
         g_base_info_unref((GIBaseInfo*)object_info);
 
-    *value_p = JS::ObjectValue(*constructor);
+    value_p.setObject(*constructor);
     return true;
 }
