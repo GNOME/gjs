@@ -121,7 +121,6 @@ closure_marshal(GClosure        *closure,
     JSRuntime *runtime;
     JSObject *obj;
     int argc;
-    JS::Value rval;
     int i;
     GSignalQuery signal_query = { 0, };
     GISignalInfo *signal_info;
@@ -170,11 +169,9 @@ closure_marshal(GClosure        *closure,
     JSAutoCompartment ac(context, obj);
 
     argc = n_param_values;
-    rval = JS::UndefinedValue();
+    JS::RootedValue rval(context);
     JS::AutoValueVector argv(context);
     argv.resize(argc);
-
-    JS_AddValueRoot(context, &rval);
 
     if (marshal_data) {
         /* we are used for a signal handler */
@@ -294,7 +291,6 @@ closure_marshal(GClosure        *closure,
     }
 
  cleanup:
-    JS_RemoveValueRoot(context, &rval);
     JS_EndRequest(context);
 }
 

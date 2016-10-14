@@ -325,12 +325,10 @@ boxed_init_from_props(JSContext   *context,
 }
 
 static bool
-boxed_invoke_constructor(JSContext   *context,
-                         JSObject    *obj,
-                         jsid         constructor_name,
-                         unsigned     argc,
-                         JS::Value   *argv,
-                         JS::Value   *rval)
+boxed_invoke_constructor(JSContext             *context,
+                         JSObject              *obj,
+                         jsid                   constructor_name,
+                         JS::CallArgs&          args)
 {
     JS::Value js_constructor, js_constructor_func;
     jsid constructor_const;
@@ -343,16 +341,15 @@ boxed_invoke_constructor(JSContext   *context,
                                      constructor_name, &js_constructor_func))
         return false;
 
-    return gjs_call_function_value(context, NULL, js_constructor_func, argc, argv, rval);
+    return gjs_call_function_value(context, NULL, js_constructor_func,
+                                   args.length(), args.array(), args.rval());
 }
 
 static bool
-boxed_new(JSContext   *context,
-          JSObject    *obj, /* "this" for constructor */
-          Boxed       *priv,
-          unsigned     argc,
-          JS::Value   *argv,
-          JS::Value   *rval)
+boxed_new(JSContext             *context,
+          JSObject              *obj, /* "this" for constructor */
+          Boxed                 *priv,
+          JS::CallArgs&          args)
 {
     if (priv->gtype == G_TYPE_VARIANT) {
         jsid constructor_name;
@@ -360,7 +357,7 @@ boxed_new(JSContext   *context,
         /* Short-circuit construction for GVariants by calling into the JS packing
            function */
         constructor_name = gjs_context_get_const_string(context, GJS_STRING_NEW_INTERNAL);
-        return boxed_invoke_constructor (context, obj, constructor_name, argc, argv, rval);
+        return boxed_invoke_constructor(context, obj, constructor_name, args);
     }
 
     /* If the structure is registered as a boxed, we can create a new instance by
@@ -401,7 +398,8 @@ boxed_new(JSContext   *context,
         /* for simplicity, we simply delegate all the work to the actual JS constructor
            function (which we retrieve from the JS constructor, that is, Namespace.BoxedType,
            or object.constructor, given that object was created with the right prototype */
-        retval = boxed_invoke_constructor(context, obj, priv->default_constructor_name, argc, argv, rval);
+        retval = boxed_invoke_constructor(context, obj,
+                                          priv->default_constructor_name, args);
         return retval;
     } else {
         gjs_throw(context, "Unable to construct struct type %s since it has no default constructor and cannot be allocated directly",
@@ -411,16 +409,16 @@ boxed_new(JSContext   *context,
 
     /* If we reach this code, we need to init from a map of fields */
 
-    if (argc == 0)
+    if (args.length() == 0)
         return true;
 
-    if (argc > 1) {
+    if (args.length() > 1) {
         gjs_throw(context, "Constructor with multiple arguments not supported for %s",
                   g_base_info_get_name((GIBaseInfo *)priv->info));
         return false;
     }
 
-    return boxed_init_from_props (context, obj, priv, argv[0]);
+    return boxed_init_from_props(context, obj, priv, args[0]);
 }
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
@@ -430,7 +428,6 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
     Boxed *proto_priv;
     JS::RootedObject proto(context);
     Boxed *source_priv;
-    JS::Value actual_rval;
     bool retval;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(boxed);
@@ -484,22 +481,13 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
 
     /* we may need to return a value different from object
        (for example because we delegate to another constructor)
-       prepare the location for that
     */
 
-    actual_rval = JS::UndefinedValue();
-    JS_AddValueRoot(context, &actual_rval);
+    argv.rval().setUndefined();
+    retval = boxed_new(context, object, priv, argv);
 
-    retval = boxed_new(context, object, priv, argc, argv.array(), &actual_rval);
-
-    if (retval) {
-        if (!actual_rval.isUndefined())
-            argv.rval().set(actual_rval);
-        else
-            GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
-    }
-
-    JS_RemoveValueRoot(context, &actual_rval);
+    if (argv.rval().isUndefined())
+        GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
 
     return retval;
 }

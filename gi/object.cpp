@@ -1340,7 +1340,6 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(object_instance)
     bool ret;
     JS::Value initer;
-    JS::Value rval;
     jsid object_init_name;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(object_instance);
@@ -1354,13 +1353,13 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
     if (!gjs_object_require_property(context, object, "GObject instance", object_init_name, &initer))
         return false;
 
-    rval.setUndefined();
-    ret = gjs_call_function_value(context, object, initer, argc, argv.array(), &rval);
+    argv.rval().setUndefined();
+    ret = gjs_call_function_value(context, object, initer,
+                                  argc, argv.array(), argv.rval());
 
-    if (rval.isUndefined())
-        rval.setObject(*object);
+    if (argv.rval().isUndefined())
+        argv.rval().setObject(*object);
 
-    argv.rval().set(rval);
     return ret;
 }
 

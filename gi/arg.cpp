@@ -2432,7 +2432,6 @@ gjs_object_from_g_hash (JSContext             *context,
 {
     GHashTableIter iter;
     JSObject *obj;
-    JSString *keystr;
     char     *keyutf8 = NULL;
     GArgument keyarg, valarg;
     bool result;
@@ -2450,9 +2449,7 @@ gjs_object_from_g_hash (JSContext             *context,
     value_p.setObject(*obj);
 
     JS::RootedValue keyjs(context), valjs(context);
-
-    keystr = NULL;
-    JS_AddStringRoot(context, &keystr);
+    JS::RootedString keystr(context);
 
     result = false;
 
@@ -2488,7 +2485,6 @@ gjs_object_from_g_hash (JSContext             *context,
 
  out:
     if (keyutf8) g_free(keyutf8);
-    JS_RemoveStringRoot(context, &keystr);
 
     return result;
 }

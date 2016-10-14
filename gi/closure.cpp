@@ -246,10 +246,10 @@ closure_set_invalid(gpointer  data,
 }
 
 void
-gjs_closure_invoke(GClosure  *closure,
-                   int        argc,
-                   JS::Value *argv,
-                   JS::Value *retval)
+gjs_closure_invoke(GClosure              *closure,
+                   int                    argc,
+                   JS::Value             *argv,
+                   JS::MutableHandleValue retval)
 {
     Closure *c;
     JSContext *context;

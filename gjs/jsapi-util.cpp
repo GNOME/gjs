@@ -706,19 +706,19 @@ gjs_move_exception(JSContext      *src_context,
 }
 
 bool
-gjs_call_function_value(JSContext      *context,
-                        JSObject       *obj,
-                        JS::Value       fval,
-                        unsigned        argc,
-                        JS::Value      *argv,
-                        JS::Value      *rval)
+gjs_call_function_value(JSContext             *context,
+                        JSObject              *obj,
+                        JS::Value              fval,
+                        unsigned               argc,
+                        JS::Value             *argv,
+                        JS::MutableHandleValue rval)
 {
     bool result;
 
     JS_BeginRequest(context);
 
     result = JS_CallFunctionValue(context, obj, fval,
-                                  argc, argv, rval);
+                                  argc, argv, rval.address());
 
     if (result)
         gjs_schedule_gc_if_needed(context);

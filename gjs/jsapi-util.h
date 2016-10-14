@@ -373,12 +373,14 @@ char*       gjs_value_debug_string           (JSContext       *context,
                                               JS::Value        value);
 void        gjs_explain_scope                (JSContext       *context,
                                               const char      *title);
-bool        gjs_call_function_value          (JSContext       *context,
-                                              JSObject        *obj,
-                                              JS::Value        fval,
-                                              unsigned         argc,
-                                              JS::Value       *argv,
-                                              JS::Value       *rval);
+
+bool gjs_call_function_value(JSContext             *context,
+                             JSObject              *obj,
+                             JS::Value              fval,
+                             unsigned               argc,
+                             JS::Value             *argv,
+                             JS::MutableHandleValue rval);
+
 void        gjs_error_reporter               (JSContext       *context,
                                               const char      *message,
                                               JSErrorReport   *report);
