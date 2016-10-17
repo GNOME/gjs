@@ -127,7 +127,6 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
     JSObject *global;
     JS::Value exc, value;
     char *s = NULL;
-    int strcmp_result;
 
     _gjs_unit_test_fixture_begin(&fixture);
     context = fixture.context;
@@ -150,11 +149,9 @@ gjstest_test_func_gjs_jsapi_util_error_throw(void)
     g_assert(value.isString());
 
     gjs_string_to_utf8(context, value, &s);
-    g_assert(s != NULL);
-    strcmp_result = strcmp(s, "This is an exception 42");
-    free(s);
-    if (strcmp_result != 0)
-        g_error("Exception has wrong message '%s'", s);
+    g_assert_nonnull(s);
+    g_assert_cmpstr(s, ==, "This is an exception 42");
+    JS_free(context, s);
 
     /* keep this around before we clear it */
     JS::RootedValue previous(context, exc);
