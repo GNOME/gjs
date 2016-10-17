@@ -24,6 +24,7 @@
 
 #include "gjs/compat.h"
 #include "gi/foreign.h"
+#include "gjs/jsapi-util-args.h"
 
 #include <cairo.h>
 #include <cairo-gobject.h>
@@ -69,8 +70,8 @@ fill_rectangle(JSContext *context, JSObject *obj,
         PRELUDE;                                                \
         JS::RootedObject other_obj(context);                    \
         cairo_region_t *other_region;                           \
-        if (!gjs_parse_call_args(context, #method, "o", argv,   \
-                                 "other_region", other_obj.address())) \
+        if (!gjs_parse_call_args(context, #method, argv, "o",   \
+                                 "other_region", &other_obj))   \
             return false;                                       \
                                                                 \
         other_region = get_region(context, other_obj);          \
@@ -87,10 +88,10 @@ fill_rectangle(JSContext *context, JSObject *obj,
                             JS::Value *vp)                      \
     {                                                           \
         PRELUDE;                                                \
-        JSObject *rect_obj;                                     \
+        JS::RootedObject rect_obj(context);                     \
         cairo_rectangle_int_t rect;                             \
-        if (!gjs_parse_call_args(context, #method, "o", argv,   \
-                            "rect", &rect_obj))                 \
+        if (!gjs_parse_call_args(context, #method, argv, "o",   \
+                                 "rect", &rect_obj))            \
             return false;                                       \
                                                                 \
         if (!fill_rectangle(context, rect_obj, &rect))          \
@@ -170,7 +171,7 @@ num_rectangles_func(JSContext *context,
     PRELUDE;
     int n_rects;
 
-    if (!gjs_parse_call_args(context, "num_rectangles", "", argv))
+    if (!gjs_parse_call_args(context, "num_rectangles", argv, ""))
         return false;
 
     n_rects = cairo_region_num_rectangles(this_region);
@@ -188,7 +189,8 @@ get_rectangle_func(JSContext *context,
     JSObject *rect_obj;
     cairo_rectangle_int_t rect;
 
-    if (!gjs_parse_call_args(context, "get_rectangle", "i", argv, "rect", &i))
+    if (!gjs_parse_call_args(context, "get_rectangle", argv, "i",
+                             "rect", &i))
         return false;
 
     cairo_region_get_rectangle(this_region, i, &rect);
@@ -242,7 +244,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_region)
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_region);
 
-    if (!gjs_parse_call_args(context, "Region", "", argv))
+    if (!gjs_parse_call_args(context, "Region", argv, ""))
         return false;
 
     region = cairo_region_create();

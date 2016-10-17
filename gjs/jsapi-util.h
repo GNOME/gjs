@@ -444,19 +444,6 @@ bool        gjs_unichar_from_string          (JSContext       *context,
 
 const char* gjs_get_type_name                (JS::Value        value);
 
-bool        gjs_parse_args                   (JSContext  *context,
-                                              const char *function_name,
-                                              const char *format,
-                                              unsigned   argc,
-                                              JS::Value  *argv,
-                                              ...);
-
-bool        gjs_parse_call_args              (JSContext    *context,
-                                              const char   *function_name,
-                                              const char   *format,
-                                              JS::CallArgs &args,
-                                              ...);
-
 /* Functions intended for more "internal" use */
 
 void gjs_maybe_gc (JSContext *context);

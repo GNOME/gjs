@@ -82,6 +82,7 @@ libgjs_la_SOURCES =		\
 	gjs/jsapi-private.h		\
 	gjs/jsapi-util.cpp	\
 	gjs/jsapi-dynamic-class.cpp \
+	gjs/jsapi-util-args.h		\
 	gjs/jsapi-util-error.cpp	\
 	gjs/jsapi-util-string.cpp	\
 	gjs/mem.cpp		\

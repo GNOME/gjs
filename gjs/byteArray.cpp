@@ -27,6 +27,7 @@
 #include "byteArray.h"
 #include "gi/boxed.h"
 #include "compat.h"
+#include "jsapi-util-args.h"
 #include <girepository.h>
 #include <util/log.h>
 
@@ -712,8 +713,8 @@ from_gbytes_func(JSContext *context,
     GBytes *gbytes;
     ByteArrayInstance *priv;
 
-    if (!gjs_parse_call_args(context, "overrides_gbytes_to_array", "o", argv,
-                             "bytes", bytes_obj.address()))
+    if (!gjs_parse_call_args(context, "overrides_gbytes_to_array", argv, "o",
+                             "bytes", &bytes_obj))
         return false;
 
     if (!gjs_typecheck_boxed(context, bytes_obj, NULL, G_TYPE_BYTES, true))

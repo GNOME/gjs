@@ -23,6 +23,7 @@
 #include <config.h>
 
 #include "gjs/compat.h"
+#include "gjs/jsapi-util-args.h"
 #include <cairo.h>
 #include "cairo-private.h"
 
@@ -37,10 +38,10 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_image_surface)
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_image_surface);
 
     // create_for_data optional parameter
-    if (!gjs_parse_call_args(context, "ImageSurface", "iii", argv,
-                        "format", &format,
-                        "width", &width,
-                        "height", &height))
+    if (!gjs_parse_call_args(context, "ImageSurface", argv, "iii",
+                             "format", &format,
+                             "width", &width,
+                             "height", &height))
         return false;
 
     surface = cairo_image_surface_create((cairo_format_t) format, width, height);
@@ -76,8 +77,8 @@ createFromPNG_func(JSContext *context,
     char *filename;
     cairo_surface_t *surface;
 
-    if (!gjs_parse_call_args(context, "createFromPNG", "s", argv,
-                        "filename", &filename))
+    if (!gjs_parse_call_args(context, "createFromPNG", argv, "s",
+                             "filename", &filename))
         return false;
 
     surface = cairo_image_surface_create_from_png(filename);

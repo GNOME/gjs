@@ -23,6 +23,7 @@
 #include <config.h>
 
 #include "gjs/compat.h"
+#include "gjs/jsapi-util-args.h"
 #include <cairo.h>
 #include "cairo-private.h"
 
@@ -51,11 +52,11 @@ addColorStopRGB_func(JSContext *context,
     double offset, red, green, blue;
     cairo_pattern_t *pattern;
 
-    if (!gjs_parse_call_args(context, "addColorStopRGB", "ffff", argv,
-                        "offset", &offset,
-                        "red", &red,
-                        "green", &green,
-                        "blue", &blue))
+    if (!gjs_parse_call_args(context, "addColorStopRGB", argv, "ffff",
+                             "offset", &offset,
+                             "red", &red,
+                             "green", &green,
+                             "blue", &blue))
         return false;
 
     pattern = gjs_cairo_pattern_get_pattern(context, obj);
@@ -78,12 +79,12 @@ addColorStopRGBA_func(JSContext *context,
     double offset, red, green, blue, alpha;
     cairo_pattern_t *pattern;
 
-    if (!gjs_parse_call_args(context, "addColorStopRGBA", "fffff", argv,
-                        "offset", &offset,
-                        "red", &red,
-                        "green", &green,
-                        "blue", &blue,
-                        "alpha", &alpha))
+    if (!gjs_parse_call_args(context, "addColorStopRGBA", argv, "fffff",
+                             "offset", &offset,
+                             "red", &red,
+                             "green", &green,
+                             "blue", &blue,
+                             "alpha", &alpha))
         return false;
 
     pattern = gjs_cairo_pattern_get_pattern(context, obj);

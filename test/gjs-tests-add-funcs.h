@@ -22,4 +22,6 @@
 
 void gjs_test_add_tests_for_coverage ();
 
+void gjs_test_add_tests_for_parse_call_args(void);
+
 #endif

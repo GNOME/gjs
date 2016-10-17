@@ -23,6 +23,7 @@
 #include <config.h>
 
 #include "gjs/compat.h"
+#include "gjs/jsapi-util-args.h"
 #include <cairo.h>
 #include "cairo-private.h"
 
@@ -40,10 +41,10 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_svg_surface)
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_svg_surface);
 
-    if (!gjs_parse_call_args(context, "SVGSurface", "sff", argv,
-                        "filename", &filename,
-                        "width", &width,
-                        "height", &height))
+    if (!gjs_parse_call_args(context, "SVGSurface", argv, "Fff",
+                             "filename", &filename,
+                             "width", &width,
+                             "height", &height))
         return false;
 
     surface = cairo_svg_surface_create(filename, width, height);

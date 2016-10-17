@@ -30,6 +30,7 @@
 #include "object.h"
 #include "gtype.h"
 #include "interface.h"
+#include "gjs/jsapi-util-args.h"
 #include "arg.h"
 #include "repo.h"
 #include "gtype.h"
@@ -2232,8 +2233,7 @@ gjs_hook_up_vfunc(JSContext *cx,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     gchar *name;
-    JS::RootedObject object(cx);
-    JSObject *function;
+    JS::RootedObject object(cx), function(cx);
     ObjectInstance *priv;
     GType gtype, info_gtype;
     GIObjectInfo *info;
@@ -2241,11 +2241,10 @@ gjs_hook_up_vfunc(JSContext *cx,
     gpointer implementor_vtable;
     GIFieldInfo *field_info;
 
-    if (!gjs_parse_call_args(cx, "hook_up_vfunc",
-                        "oso", argv,
-                        "object", object.address(),
-                        "name", &name,
-                        "function", &function))
+    if (!gjs_parse_call_args(cx, "hook_up_vfunc", argv, "oso",
+                             "object", &object,
+                             "name", &name,
+                             "function", &function))
         return false;
 
     if (!do_base_typecheck(cx, object, true))
@@ -2490,9 +2489,9 @@ gjs_override_property(JSContext *cx,
     GParamSpec *new_pspec;
     GType gtype;
 
-    if (!gjs_parse_call_args(cx, "override_property", "so", args,
+    if (!gjs_parse_call_args(cx, "override_property", args, "so",
                              "name", &name,
-                             "type", type.address()))
+                             "type", &type))
         return false;
 
     if ((gtype = gjs_gtype_get_actual_gtype(cx, type)) == G_TYPE_INVALID) {
@@ -2747,7 +2746,8 @@ gjs_register_interface(JSContext *cx,
 {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     char *name = NULL;
-    JSObject *constructor, *interfaces, *properties, *module;
+    JS::RootedObject interfaces(cx), properties(cx);
+    JSObject *constructor, *module;
     guint32 i, n_interfaces, n_properties;
     GType *iface_types;
     GType interface_type;
@@ -2767,7 +2767,7 @@ gjs_register_interface(JSContext *cx,
         NULL, /* instance_init */
     };
 
-    if (!gjs_parse_call_args(cx, "register_interface", "soo", args,
+    if (!gjs_parse_call_args(cx, "register_interface", args, "soo",
                              "name", &name,
                              "interfaces", &interfaces,
                              "properties", &properties))
@@ -2826,8 +2826,8 @@ gjs_register_type(JSContext *cx,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     gchar *name;
-    JS::RootedObject parent(cx);
-    JSObject *constructor, *interfaces, *properties, *module;
+    JS::RootedObject parent(cx), interfaces(cx), properties(cx);
+    JSObject *constructor, *module;
     GType instance_type, parent_type;
     GTypeQuery query;
     GTypeModule *type_module;
@@ -2852,12 +2852,11 @@ gjs_register_type(JSContext *cx,
 
     JS_BeginRequest(cx);
 
-    if (!gjs_parse_call_args(cx, "register_type",
-                        "osoo", argv,
-                        "parent", parent.address(),
-                        "name", &name,
-                        "interfaces", &interfaces,
-                        "properties", &properties))
+    if (!gjs_parse_call_args(cx, "register_type", argv, "osoo",
+                             "parent", &parent,
+                             "name", &name,
+                             "interfaces", &interfaces,
+                             "properties", &properties))
         goto out;
 
     if (!parent)

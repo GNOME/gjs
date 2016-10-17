@@ -31,6 +31,7 @@
 #include <gjs/context.h>
 
 #include "gi/object.h"
+#include "gjs/jsapi-util-args.h"
 #include "system.h"
 
 static JSBool
@@ -39,14 +40,15 @@ gjs_address_of(JSContext *context,
                JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSObject *target_obj;
+    JS::RootedObject target_obj(context);
     bool ret;
     char *pointer_string;
 
-    if (!gjs_parse_call_args(context, "addressOf", "o", argv, "object", &target_obj))
+    if (!gjs_parse_call_args(context, "addressOf", argv, "o",
+                             "object", &target_obj))
         return false;
 
-    pointer_string = g_strdup_printf("%p", target_obj);
+    pointer_string = g_strdup_printf("%p", target_obj.get());
 
     ret = gjs_string_from_utf8(context, pointer_string, -1, argv.rval());
 
@@ -63,8 +65,8 @@ gjs_refcount(JSContext *context,
     JS::RootedObject target_obj(context);
     GObject *obj;
 
-    if (!gjs_parse_call_args(context, "refcount", "o", argv,
-                             "object", target_obj.address()))
+    if (!gjs_parse_call_args(context, "refcount", argv, "o",
+                             "object", &target_obj))
         return false;
 
     if (!gjs_typecheck_object(context, target_obj, G_TYPE_OBJECT, true))
@@ -84,7 +86,7 @@ gjs_breakpoint(JSContext *context,
                JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    if (!gjs_parse_call_args(context, "breakpoint", "", argv))
+    if (!gjs_parse_call_args(context, "breakpoint", argv, ""))
         return false;
     G_BREAKPOINT();
     argv.rval().setUndefined();
@@ -97,7 +99,7 @@ gjs_gc(JSContext *context,
        JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    if (!gjs_parse_call_args(context, "gc", "", argv))
+    if (!gjs_parse_call_args(context, "gc", argv, ""))
         return false;
     JS_GC(JS_GetRuntime(context));
     argv.rval().setUndefined();
@@ -111,7 +113,8 @@ gjs_exit(JSContext *context,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     gint32 ecode;
-    if (!gjs_parse_call_args(context, "exit", "i", argv, "ecode", &ecode))
+    if (!gjs_parse_call_args(context, "exit", argv, "i",
+                             "ecode", &ecode))
         return false;
     exit(ecode);
     return true;

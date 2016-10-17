@@ -23,6 +23,7 @@
 #include <config.h>
 
 #include "gjs/compat.h"
+#include "gjs/jsapi-util-args.h"
 #include <cairo.h>
 #include "cairo-private.h"
 
@@ -36,11 +37,11 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_linear_gradient)
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_linear_gradient);
 
-    if (!gjs_parse_call_args(context, "LinearGradient", "ffff", argv,
-                        "x0", &x0,
-                        "y0", &y0,
-                        "x1", &x1,
-                        "y1", &y1))
+    if (!gjs_parse_call_args(context, "LinearGradient", argv, "ffff",
+                             "x0", &x0,
+                             "y0", &y0,
+                             "x1", &x1,
+                             "y1", &y1))
         return false;
 
     pattern = cairo_pattern_create_linear(x0, y0, x1, y1);

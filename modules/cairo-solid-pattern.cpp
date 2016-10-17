@@ -23,6 +23,7 @@
 #include <config.h>
 
 #include "gjs/compat.h"
+#include "gjs/jsapi-util-args.h"
 #include <cairo.h>
 #include "cairo-private.h"
 
@@ -49,10 +50,10 @@ createRGB_func(JSContext *context,
     cairo_pattern_t *pattern;
     JSObject *pattern_wrapper;
 
-    if (!gjs_parse_call_args(context, "createRGB", "fff", argv,
-                        "red", &red,
-                        "green", &green,
-                        "blue", &blue))
+    if (!gjs_parse_call_args(context, "createRGB", argv, "fff",
+                             "red", &red,
+                             "green", &green,
+                             "blue", &blue))
         return false;
 
     pattern = cairo_pattern_create_rgb(red, green, blue);
@@ -77,11 +78,11 @@ createRGBA_func(JSContext *context,
     cairo_pattern_t *pattern;
     JSObject *pattern_wrapper;
 
-    if (!gjs_parse_call_args(context, "createRGBA", "ffff", argv,
-                        "red", &red,
-                        "green", &green,
-                        "blue", &blue,
-                        "alpha", &alpha))
+    if (!gjs_parse_call_args(context, "createRGBA", argv, "ffff",
+                             "red", &red,
+                             "green", &green,
+                             "blue", &blue,
+                             "alpha", &alpha))
         return false;
 
     pattern = cairo_pattern_create_rgba(red, green, blue, alpha);

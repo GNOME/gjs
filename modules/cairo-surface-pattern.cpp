@@ -23,6 +23,7 @@
 #include <config.h>
 
 #include "gjs/compat.h"
+#include "gjs/jsapi-util-args.h"
 #include <cairo.h>
 #include "cairo-private.h"
 
@@ -31,14 +32,14 @@ GJS_DEFINE_PROTO("CairoSurfacePattern", cairo_surface_pattern, JSCLASS_BACKGROUN
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_surface_pattern)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_surface_pattern)
-    JSObject *surface_wrapper;
     cairo_surface_t *surface;
     cairo_pattern_t *pattern;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_surface_pattern);
 
-    if (!gjs_parse_call_args(context, "SurfacePattern", "o", argv,
-                        "surface", &surface_wrapper))
+    JS::RootedObject surface_wrapper(context);
+    if (!gjs_parse_call_args(context, "SurfacePattern", argv, "o",
+                             "surface", &surface_wrapper))
         return false;
 
     surface = gjs_cairo_surface_get_surface(context, surface_wrapper);
@@ -82,8 +83,8 @@ setExtend_func(JSContext *context,
     cairo_extend_t extend;
     cairo_pattern_t *pattern;
 
-    if (!gjs_parse_call_args(context, "setExtend", "i", argv,
-                        "extend", &extend))
+    if (!gjs_parse_call_args(context, "setExtend", argv, "i",
+                             "extend", &extend))
         return false;
 
     pattern = gjs_cairo_pattern_get_pattern(context, obj);
@@ -130,8 +131,8 @@ setFilter_func(JSContext *context,
     cairo_filter_t filter;
     cairo_pattern_t *pattern;
 
-    if (!gjs_parse_call_args(context, "setFilter", "i", argv,
-                        "filter", &filter))
+    if (!gjs_parse_call_args(context, "setFilter", argv, "i",
+                             "filter", &filter))
         return false;
 
     pattern = gjs_cairo_pattern_get_pattern(context, obj);

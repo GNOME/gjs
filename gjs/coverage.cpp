@@ -26,6 +26,7 @@
 #include "coverage.h"
 #include "coverage-internal.h"
 #include "importer.h"
+#include "jsapi-util-args.h"
 #include "util/error.h"
 
 struct _GjsCoveragePrivate {
@@ -1383,7 +1384,7 @@ get_filename_from_filename_as_js_string(JSContext    *context,
                                         JS::CallArgs &args) {
     char *filename = NULL;
 
-    if (!gjs_parse_call_args(context, "getFileContents", "s", args,
+    if (!gjs_parse_call_args(context, "getFileContents", args, "s",
                              "filename", &filename))
         return NULL;
 
@@ -1482,7 +1483,7 @@ coverage_get_file_contents(JSContext *context,
     JSString *script_jsstr;
     GError *error = NULL;
 
-    if (!gjs_parse_call_args(context, "getFileContents", "s", args,
+    if (!gjs_parse_call_args(context, "getFileContents", args, "s",
                              "filename", &filename))
         goto out;
 

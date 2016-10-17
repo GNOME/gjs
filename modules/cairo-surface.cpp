@@ -24,6 +24,7 @@
 
 #include "gjs/compat.h"
 #include "gi/foreign.h"
+#include "gjs/jsapi-util-args.h"
 #include <cairo.h>
 #include <cairo-gobject.h>
 #include "cairo-private.h"
@@ -65,8 +66,8 @@ writeToPNG_func(JSContext *context,
     char *filename;
     cairo_surface_t *surface;
 
-    if (!gjs_parse_call_args(context, "writeToPNG", "s", argv,
-                        "filename", &filename))
+    if (!gjs_parse_call_args(context, "writeToPNG", argv, "F",
+                             "filename", &filename))
         return false;
 
     surface = gjs_cairo_surface_get_surface(context, obj);
