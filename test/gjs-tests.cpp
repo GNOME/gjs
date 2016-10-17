@@ -30,38 +30,7 @@
 #include <gjs/context.h>
 
 #include "gjs/compat.h"
-#include "gjs-tests-add-funcs.h"
-
-typedef struct _GjsUnitTestFixture GjsUnitTestFixture;
-
-struct _GjsUnitTestFixture {
-    JSContext *context;
-    GjsContext *gjs_context;
-};
-
-static void
-test_error_reporter(JSContext     *context,
-                    const char    *message,
-                    JSErrorReport *report)
-{
-    g_printerr("error reported by test: %s\n", message);
-}
-
-static void
-_gjs_unit_test_fixture_begin (GjsUnitTestFixture *fixture)
-{
-    fixture->gjs_context = gjs_context_new ();
-    fixture->context = (JSContext *) gjs_context_get_native_context (fixture->gjs_context);
-    JS_BeginRequest(fixture->context);
-    JS_SetErrorReporter(fixture->context, test_error_reporter);
-}
-
-static void
-_gjs_unit_test_fixture_finish (GjsUnitTestFixture *fixture)
-{
-    JS_EndRequest(fixture->context);
-    g_object_unref(fixture->gjs_context);
-}
+#include "gjs-test-utils.h"
 
 static void
 gjstest_test_func_gjs_context_construct_destroy(void)
@@ -92,90 +61,68 @@ gjstest_test_func_gjs_context_construct_eval(void)
 }
 
 static void
-gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(void)
+gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(GjsUnitTestFixture *fx,
+                                                       gconstpointer       unused)
 {
-    GjsUnitTestFixture fixture;
-    JSContext *context;
-    JSObject *global;
-
     const char *utf8_string = "\303\211\303\226 foobar \343\203\237";
     char *utf8_result;
+    JS::RootedValue js_string(fx->cx);
 
-    _gjs_unit_test_fixture_begin(&fixture);
-    context = fixture.context;
-    JS::RootedValue js_string(context);
-    global = gjs_get_global_object(context);
-    JSCompartment *oldCompartment = JS_EnterCompartment(context, global);
-
-    g_assert(gjs_string_from_utf8(context, utf8_string, -1, &js_string));
+    g_assert(gjs_string_from_utf8(fx->cx, utf8_string, -1, &js_string));
     g_assert(js_string.isString());
-    g_assert(gjs_string_to_utf8(context, js_string, &utf8_result));
-
-    JS_LeaveCompartment(context, oldCompartment);
-    _gjs_unit_test_fixture_finish(&fixture);
-
+    g_assert(gjs_string_to_utf8(fx->cx, js_string, &utf8_result));
     g_assert(g_str_equal(utf8_string, utf8_result));
-
     g_free(utf8_result);
 }
 
 static void
-gjstest_test_func_gjs_jsapi_util_error_throw(void)
+gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture *fx,
+                                             gconstpointer       unused)
 {
-    GjsUnitTestFixture fixture;
-    JSContext *context;
-    JSObject *global;
     JS::Value exc, value;
     char *s = NULL;
 
-    _gjs_unit_test_fixture_begin(&fixture);
-    context = fixture.context;
-    global = gjs_get_global_object(context);
-    JSCompartment *oldCompartment = JS_EnterCompartment(context, global);
     /* Test that we can throw */
 
-    gjs_throw(context, "This is an exception %d", 42);
+    gjs_throw(fx->cx, "This is an exception %d", 42);
 
-    g_assert(JS_IsExceptionPending(context));
+    g_assert(JS_IsExceptionPending(fx->cx));
 
     exc = JS::UndefinedValue();
-    JS_GetPendingException(context, &exc);
+    JS_GetPendingException(fx->cx, &exc);
     g_assert(!exc.isUndefined());
 
     value = JS::UndefinedValue();
-    JS_GetProperty(context, &exc.toObject(), "message",
+    JS_GetProperty(fx->cx, &exc.toObject(), "message",
                    &value);
 
     g_assert(value.isString());
 
-    gjs_string_to_utf8(context, value, &s);
+    gjs_string_to_utf8(fx->cx, value, &s);
     g_assert_nonnull(s);
     g_assert_cmpstr(s, ==, "This is an exception 42");
-    JS_free(context, s);
+    JS_free(fx->cx, s);
 
     /* keep this around before we clear it */
-    JS::RootedValue previous(context, exc);
+    JS::RootedValue previous(fx->cx, exc);
 
-    JS_ClearPendingException(context);
+    JS_ClearPendingException(fx->cx);
 
-    g_assert(!JS_IsExceptionPending(context));
+    g_assert(!JS_IsExceptionPending(fx->cx));
 
     /* Check that we don't overwrite a pending exception */
-    JS_SetPendingException(context, previous);
+    JS_SetPendingException(fx->cx, previous);
 
-    g_assert(JS_IsExceptionPending(context));
+    g_assert(JS_IsExceptionPending(fx->cx));
 
-    gjs_throw(context, "Second different exception %s", "foo");
+    gjs_throw(fx->cx, "Second different exception %s", "foo");
 
-    g_assert(JS_IsExceptionPending(context));
+    g_assert(JS_IsExceptionPending(fx->cx));
 
     exc = JS::UndefinedValue();
-    JS_GetPendingException(context, &exc);
+    JS_GetPendingException(fx->cx, &exc);
     g_assert(!exc.isUndefined());
     g_assert(&exc.toObject() == &previous.toObject());
-
-    JS_LeaveCompartment(context, oldCompartment);
-    _gjs_unit_test_fixture_finish(&fixture);
 }
 
 static void
@@ -277,13 +224,23 @@ main(int    argc,
 
     g_test_add_func("/gjs/context/construct/destroy", gjstest_test_func_gjs_context_construct_destroy);
     g_test_add_func("/gjs/context/construct/eval", gjstest_test_func_gjs_context_construct_eval);
-    g_test_add_func("/gjs/jsapi/util/error/throw", gjstest_test_func_gjs_jsapi_util_error_throw);
-    g_test_add_func("/gjs/jsapi/util/string/js/string/utf8", gjstest_test_func_gjs_jsapi_util_string_js_string_utf8);
     g_test_add_func("/gjs/jsutil/strip_shebang/no_shebang", gjstest_test_strip_shebang_no_advance_for_no_shebang);
     g_test_add_func("/gjs/jsutil/strip_shebang/have_shebang", gjstest_test_strip_shebang_advance_for_shebang);
     g_test_add_func("/gjs/jsutil/strip_shebang/only_shebang", gjstest_test_strip_shebang_return_null_for_just_shebang);
     g_test_add_func("/util/glib/strv/concat/null", gjstest_test_func_util_glib_strv_concat_null);
     g_test_add_func("/util/glib/strv/concat/pointers", gjstest_test_func_util_glib_strv_concat_pointers);
+
+#define ADD_JSAPI_UTIL_TEST(path, func)                            \
+    g_test_add("/gjs/jsapi/util/" path, GjsUnitTestFixture, NULL,  \
+               gjs_unit_test_fixture_setup, func,                  \
+               gjs_unit_test_fixture_teardown)
+
+    ADD_JSAPI_UTIL_TEST("error/throw",
+                        gjstest_test_func_gjs_jsapi_util_error_throw);
+    ADD_JSAPI_UTIL_TEST("string/js/string/utf8",
+                        gjstest_test_func_gjs_jsapi_util_string_js_string_utf8);
+
+#undef ADD_JSAPI_UTIL_TEST
 
     gjs_test_add_tests_for_coverage ();
     gjs_test_add_tests_for_parse_call_args();

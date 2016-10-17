@@ -5,6 +5,7 @@
 #include "gjs/compat.h"
 #include "gjs/context.h"
 #include "gjs/jsapi-util-args.h"
+#include "test/gjs-test-utils.h"
 
 #define assert_match(str, pattern)                                            \
     G_STMT_START {                                                            \
@@ -14,13 +15,6 @@
             g_assert_not_reached();                                           \
         }                                                                     \
     } G_STMT_END
-
-typedef struct {
-    GjsContext *gjs_context;
-    JSContext *cx;
-    JSCompartment *compartment;
-    char *message;  /* Thrown exception message */
-} GjsUnitTestFixture;
 
 typedef enum _test_enum {
     ZERO,
@@ -249,50 +243,14 @@ static JSFunctionSpec native_test_funcs[] = {
 };
 
 static void
-unit_test_error_reporter(JSContext     *cx,
-                         const char    *message,
-                         JSErrorReport *report)
-{
-    GjsContext *gjs_context = gjs_context_get_current();
-    GjsUnitTestFixture *fx =
-        (GjsUnitTestFixture *) g_object_get_data(G_OBJECT(gjs_context),
-                                                 "test fixture");
-    g_free(fx->message);
-    fx->message = g_strdup(message);
-}
-
-static void
 setup(GjsUnitTestFixture *fx,
       gconstpointer       unused)
 {
-    fx->gjs_context = gjs_context_new();
-    fx->cx = (JSContext *) gjs_context_get_native_context(fx->gjs_context);
-
-    /* This is for shoving private data into the error reporter callback */
-    g_object_set_data(G_OBJECT(fx->gjs_context), "test fixture", fx);
-    JS_SetErrorReporter(fx->cx, unit_test_error_reporter);
-
-    JS_BeginRequest(fx->cx);
+    gjs_unit_test_fixture_setup(fx, unused);
 
     JS::RootedObject global(fx->cx, gjs_get_global_object(fx->cx));
-    fx->compartment = JS_EnterCompartment(fx->cx, global);
-
     bool success = JS_DefineFunctions(fx->cx, global, native_test_funcs);
     g_assert_true(success);
-}
-
-static void
-teardown(GjsUnitTestFixture *fx,
-         gconstpointer       unused)
-{
-    JS_LeaveCompartment(fx->cx, fx->compartment);
-    JS_EndRequest(fx->cx);
-
-    g_object_unref(fx->gjs_context);
-
-    if (fx->message != NULL)
-        g_printerr("**\n%s\n", fx->message);
-    g_free(fx->message);
 }
 
 static void
@@ -334,13 +292,15 @@ run_code_expect_exception(GjsUnitTestFixture *fx,
         expected_msg += 2;
         assert_match(fx->message, expected_msg);
     }
+    g_clear_pointer(&fx->message, g_free);
 }
 
 void
 gjs_test_add_tests_for_parse_call_args(void)
 {
-#define ADD_CALL_ARGS_TEST_BASE(path, code, f) \
-    g_test_add("/callargs/" path, GjsUnitTestFixture, code, setup, f, teardown)
+#define ADD_CALL_ARGS_TEST_BASE(path, code, f)                         \
+    g_test_add("/callargs/" path, GjsUnitTestFixture, code, setup, f,  \
+               gjs_unit_test_fixture_teardown)
 #define ADD_CALL_ARGS_TEST(path, code) \
     ADD_CALL_ARGS_TEST_BASE(path, code, run_code)
 #define ADD_CALL_ARGS_TEST_XFAIL(path, code) \

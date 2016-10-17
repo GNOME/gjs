@@ -91,7 +91,8 @@ gjs_tests_LDADD =		\
 
 gjs_tests_SOURCES =					\
 	test/gjs-tests.cpp				\
-	test/gjs-tests-add-funcs.h			\
+	test/gjs-test-utils.cpp				\
+	test/gjs-test-utils.h				\
 	test/gjs-test-call-args.cpp			\
 	test/gjs-test-coverage.cpp			\
 	mock-js-resources.c				\

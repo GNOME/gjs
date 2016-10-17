@@ -17,8 +17,22 @@
  *
  * Authored By: Sam Spilsbury <sam@endlessm.com>
  */
-#ifndef GJS_TESTS_ADD_FUNCS_H
-#define GJS_TESTS_ADD_FUNCS_H
+#ifndef GJS_TEST_UTILS_H
+#define GJS_TEST_UTILS_H
+
+typedef struct _GjsUnitTestFixture GjsUnitTestFixture;
+struct _GjsUnitTestFixture {
+    GjsContext *gjs_context;
+    JSContext *cx;
+    JSCompartment *compartment;
+    char *message;  /* Thrown exception message */
+};
+
+void gjs_unit_test_fixture_setup(GjsUnitTestFixture *fx,
+                                 gconstpointer       unused);
+
+void gjs_unit_test_fixture_teardown(GjsUnitTestFixture *fx,
+                                    gconstpointer      unused);
 
 void gjs_test_add_tests_for_coverage ();
 
