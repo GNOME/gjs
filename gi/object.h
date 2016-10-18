@@ -31,11 +31,11 @@
 
 G_BEGIN_DECLS
 
-void      gjs_define_object_class       (JSContext     *context,
-                                         JSObject      *in_object,
-                                         GIObjectInfo  *info,
-                                         GType          gtype,
-                                         JSObject     **constructor_p);
+void gjs_define_object_class(JSContext              *context,
+                             JSObject               *in_object,
+                             GIObjectInfo           *info,
+                             GType                   gtype,
+                             JS::MutableHandleObject constructor);
 
 bool gjs_lookup_object_constructor(JSContext             *context,
                                    GType                  gtype,

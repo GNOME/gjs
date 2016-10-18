@@ -750,14 +750,13 @@ gjs_context_get_const_string(JSContext      *context,
 }
 
 bool
-gjs_object_get_property_const(JSContext      *context,
-                              JSObject       *obj,
-                              GjsConstString  property_name,
-                              JS::Value      *value_p)
+gjs_object_get_property_const(JSContext             *cx,
+                              JS::HandleObject       obj,
+                              GjsConstString         property_name,
+                              JS::MutableHandleValue value_p)
 {
-    jsid pname;
-    pname = gjs_context_get_const_string(context, property_name);
-    return JS_GetPropertyById(context, obj, pname, value_p);
+    JS::RootedId pname(cx, gjs_context_get_const_string(cx, property_name));
+    return JS_GetPropertyById(cx, obj, pname, value_p.address());
 }
 
 /**

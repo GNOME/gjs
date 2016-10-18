@@ -48,64 +48,59 @@
 #include "jsapi-util.h"
 
 bool
-gjs_context_get_frame_info (JSContext  *context,
-                            JS::Value  *stack,
-                            JS::Value  *fileName,
-                            JS::Value  *lineNumber)
+gjs_context_get_frame_info(JSContext                              *context,
+                           mozilla::Maybe<JS::MutableHandleValue>& stack,
+                           mozilla::Maybe<JS::MutableHandleValue>& fileName,
+                           mozilla::Maybe<JS::MutableHandleValue>& lineNumber)
 {
     JS::Value v_constructor;
-    JSObject *err_obj;
     JSObject *global;
-    bool ret = false;
 
-    JS_BeginRequest(context);
+    JSAutoRequest ar(context);
     global = JS_GetGlobalForScopeChain(context);
     JSAutoCompartment ac(context, global);
 
     if (!JS_GetProperty(context, global, "Error", &v_constructor) ||
         !v_constructor.isObject()) {
         g_error("??? Missing Error constructor in global object?");
-        goto out;
+        return false;
     }
 
-    err_obj = JS_New(context, &v_constructor.toObject(), 0, NULL);
+    JS::RootedObject err_obj(context,
+                             JS_New(context, &v_constructor.toObject(), 0, NULL));
 
-    if (stack != NULL) {
-        if (!gjs_object_get_property_const(context, err_obj,
-                                           GJS_STRING_STACK, stack))
-            goto out;
-    }
+    if (!stack.empty() &&
+        !gjs_object_get_property_const(context, err_obj, GJS_STRING_STACK,
+                                       stack.ref()))
+        return false;
 
-    if (fileName != NULL) {
-        if (!gjs_object_get_property_const(context, err_obj,
-                                           GJS_STRING_FILENAME, fileName))
-            goto out;
-    }
+    if (!fileName.empty() &&
+        !gjs_object_get_property_const(context, err_obj, GJS_STRING_FILENAME,
+                                       fileName.ref()))
+        return false;
 
-    if (lineNumber != NULL) {
-        if (!gjs_object_get_property_const(context, err_obj,
-                                           GJS_STRING_LINE_NUMBER, lineNumber))
-            goto out;
-    }
+    if (!lineNumber.empty() &&
+        !gjs_object_get_property_const(context, err_obj, GJS_STRING_LINE_NUMBER,
+                                       lineNumber.ref()))
+        return false;
 
-    ret = true;
-
- out:
-    JS_EndRequest(context);
-    return ret;
+    return true;
 }
 
 void
 gjs_context_print_stack_stderr(GjsContext *context)
 {
     JSContext *cx = (JSContext*) gjs_context_get_native_context(context);
-    JS::Value v_stack;
+    JS::RootedValue v_stack(cx);
     char *stack;
 
     g_printerr("== Stack trace for context %p ==\n", context);
 
     /* Stderr is locale encoding, so we use string_to_filename here */
-    if (!gjs_context_get_frame_info(cx, &v_stack, NULL, NULL) ||
+    /* COMPAT: mozilla::Maybe gains a much more usable API in future versions */
+    mozilla::Maybe<JS::MutableHandleValue> m_stack, m_file, m_line;
+    m_stack.construct(&v_stack);
+    if (!gjs_context_get_frame_info(cx, m_stack, m_file, m_line) ||
         !gjs_string_to_filename(cx, v_stack, &stack)) {
         g_printerr("No stack trace available\n");
         return;

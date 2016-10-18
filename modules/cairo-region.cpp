@@ -51,7 +51,8 @@ get_region(JSContext       *context,
 }
 
 static bool
-fill_rectangle(JSContext *context, JSObject *obj,
+fill_rectangle(JSContext             *context,
+               JS::HandleObject       obj,
                cairo_rectangle_int_t *rect);
 
 #define PRELUDE                                                       \
@@ -113,10 +114,11 @@ REGION_DEFINE_RECT_FUNC(intersect)
 REGION_DEFINE_RECT_FUNC(xor)
 
 static bool
-fill_rectangle(JSContext *context, JSObject *obj,
+fill_rectangle(JSContext             *context,
+               JS::HandleObject       obj,
                cairo_rectangle_int_t *rect)
 {
-    JS::Value val;
+    JS::RootedValue val(context);
 
     if (!gjs_object_get_property_const(context, obj, GJS_STRING_X, &val))
         return false;

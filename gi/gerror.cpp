@@ -317,7 +317,7 @@ gjs_define_error_class(JSContext    *context,
     const char *constructor_name;
     GIBoxedInfo *glib_error_info;
     JSObject *prototype, *parent_proto;
-    JSObject *constructor;
+    JS::RootedObject constructor(context);
     Error *priv;
 
     /* See the comment in gjs_define_boxed_class() for an
@@ -401,12 +401,14 @@ define_error_properties(JSContext *context,
                         JSObject  *obj)
 {
     jsid stack_name, filename_name, linenumber_name;
-    JS::Value stack, fileName, lineNumber;
+    JS::RootedValue stack(context), fileName(context), lineNumber(context);
+    /* COMPAT: mozilla::Maybe gains a much more usable API in future versions */
+    mozilla::Maybe<JS::MutableHandleValue> m_stack, m_file, m_line;
+    m_stack.construct(&stack);
+    m_file.construct(&fileName);
+    m_line.construct(&lineNumber);
 
-    if (!gjs_context_get_frame_info (context,
-                                     &stack,
-                                     &fileName,
-                                     &lineNumber))
+    if (!gjs_context_get_frame_info(context, m_stack, m_file, m_line))
         return;
 
     stack_name = gjs_context_get_const_string(context, GJS_STRING_STACK);

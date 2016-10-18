@@ -1477,7 +1477,6 @@ gjs_lookup_object_constructor_from_info(JSContext    *context,
                                         GType         gtype)
 {
     JSObject *in_object;
-    JSObject *constructor;
     const char *constructor_name;
     JS::Value value;
 
@@ -1495,6 +1494,7 @@ gjs_lookup_object_constructor_from_info(JSContext    *context,
     if (!JS_GetProperty(context, in_object, constructor_name, &value))
         return NULL;
 
+    JS::RootedObject constructor(context);
     if (value.isUndefined()) {
         /* In case we're looking for a private type, and we don't find it,
            we need to define it first.
@@ -1517,14 +1517,13 @@ gjs_lookup_object_prototype_from_info(JSContext    *context,
                                       GIObjectInfo *info,
                                       GType         gtype)
 {
-    JSObject *constructor;
-    JS::Value value;
-
-    constructor = gjs_lookup_object_constructor_from_info(context, info, gtype);
+    JS::RootedObject constructor(context,
+        gjs_lookup_object_constructor_from_info(context, info, gtype));
 
     if (G_UNLIKELY (constructor == NULL))
         return NULL;
 
+    JS::RootedValue value(context);
     if (!gjs_object_get_property_const(context, constructor,
                                        GJS_STRING_PROTOTYPE, &value))
         return NULL;
@@ -1893,15 +1892,14 @@ gjs_object_define_static_methods(JSContext    *context,
 }
 
 void
-gjs_define_object_class(JSContext      *context,
-                        JSObject       *in_object,
-                        GIObjectInfo   *info,
-                        GType           gtype,
-                        JSObject      **constructor_p)
+gjs_define_object_class(JSContext              *context,
+                        JSObject               *in_object,
+                        GIObjectInfo           *info,
+                        GType                   gtype,
+                        JS::MutableHandleObject constructor)
 {
     const char *constructor_name;
     JSObject *prototype;
-    JSObject *constructor;
     JSObject *parent_proto;
     JSObject *global;
 
@@ -1975,7 +1973,7 @@ gjs_define_object_class(JSContext      *context,
                                 /* funcs of constructor, MyConstructor.myfunc() */
                                 NULL,
                                 &prototype,
-                                &constructor)) {
+                                constructor)) {
         g_error("Can't init class %s", constructor_name);
     }
 
@@ -1997,9 +1995,6 @@ gjs_define_object_class(JSContext      *context,
     value = JS::ObjectValue(*gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
-
-    if (constructor_p)
-        *constructor_p = constructor;
 }
 
 static JSObject*
@@ -2587,7 +2582,7 @@ gjs_object_custom_init(GTypeInstance *instance,
     GjsContext *gjs_context;
     JSContext *context;
     ObjectInstance *priv;
-    JS::Value v, r;
+    JS::Value r;
 
     if (!object_init_list)
       return;
@@ -2611,6 +2606,7 @@ gjs_object_custom_init(GTypeInstance *instance,
 
     associate_js_gobject(context, object, G_OBJECT (instance));
 
+    JS::RootedValue v(context);
     if (!gjs_object_get_property_const(context, object,
                                        GJS_STRING_INSTANCE_INIT, &v)) {
         gjs_log_exception(context);
@@ -2746,8 +2742,8 @@ gjs_register_interface(JSContext *cx,
 {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     char *name = NULL;
-    JS::RootedObject interfaces(cx), properties(cx);
-    JSObject *constructor, *module;
+    JS::RootedObject interfaces(cx), properties(cx), constructor(cx);
+    JSObject *module;
     guint32 i, n_interfaces, n_properties;
     GType *iface_types;
     GType interface_type;
@@ -2826,8 +2822,8 @@ gjs_register_type(JSContext *cx,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     gchar *name;
-    JS::RootedObject parent(cx), interfaces(cx), properties(cx);
-    JSObject *constructor, *module;
+    JS::RootedObject parent(cx), interfaces(cx), properties(cx), constructor(cx);
+    JSObject *module;
     GType instance_type, parent_type;
     GTypeQuery query;
     GTypeModule *type_module;

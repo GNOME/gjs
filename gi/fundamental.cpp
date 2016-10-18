@@ -565,9 +565,7 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
                                  GType         gtype)
 {
     JSObject *in_object;
-    JSObject *constructor;
     const char *constructor_name;
-    JS::Value value;
 
     if (info) {
         in_object = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
@@ -580,9 +578,11 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
     if (G_UNLIKELY (!in_object))
         return NULL;
 
-    if (!JS_GetProperty(context, in_object, constructor_name, &value))
+    JS::RootedValue value(context);
+    if (!JS_GetProperty(context, in_object, constructor_name, value.address()))
         return NULL;
 
+    JS::RootedObject constructor(context);
     if (value.isUndefined()) {
         /* In case we're looking for a private type, and we don't find it,
            we need to define it first.
@@ -624,11 +624,11 @@ gjs_lookup_fundamental_prototype_from_gtype(JSContext *context,
 }
 
 bool
-gjs_define_fundamental_class(JSContext     *context,
-                             JSObject      *in_object,
-                             GIObjectInfo  *info,
-                             JSObject     **constructor_p,
-                             JSObject     **prototype_p)
+gjs_define_fundamental_class(JSContext              *context,
+                             JSObject               *in_object,
+                             GIObjectInfo           *info,
+                             JS::MutableHandleObject constructor,
+                             JSObject              **prototype_p)
 {
     const char *constructor_name;
     JSObject *prototype;
@@ -636,7 +636,6 @@ gjs_define_fundamental_class(JSContext     *context,
     jsid js_constructor_name = JSID_VOID;
     JSObject *parent_proto;
     Fundamental *priv;
-    JSObject *constructor;
     GType parent_gtype;
     GType gtype;
     GIFunctionInfo *constructor_info;
@@ -677,7 +676,7 @@ gjs_define_fundamental_class(JSContext     *context,
                                 /* funcs of constructor, MyConstructor.myfunc() */
                                 NULL,
                                 &prototype,
-                                &constructor)) {
+                                constructor)) {
         gjs_log_exception(context);
         g_error("Can't init class %s", constructor_name);
     }
@@ -722,8 +721,6 @@ gjs_define_fundamental_class(JSContext     *context,
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 
-    if (constructor_p)
-        *constructor_p = constructor;
     if (prototype_p)
         *prototype_p = prototype;
 

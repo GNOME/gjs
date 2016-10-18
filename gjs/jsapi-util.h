@@ -307,20 +307,21 @@ bool        gjs_object_require_property      (JSContext       *context,
                                               jsid             property_name,
                                               JS::Value       *value_p);
 
-bool        gjs_init_class_dynamic           (JSContext       *context,
-                                              JSObject        *in_object,
-                                              JSObject        *parent_proto,
-                                              const char      *ns_name,
-                                              const char      *class_name,
-                                              JSClass         *clasp,
-                                              JSNative         constructor,
-                                              unsigned         nargs,
-                                              JSPropertySpec  *ps,
-                                              JSFunctionSpec  *fs,
-                                              JSPropertySpec  *static_ps,
-                                              JSFunctionSpec  *static_fs,
-                                              JSObject       **constructor_p,
-                                              JSObject       **prototype_p);
+bool gjs_init_class_dynamic(JSContext              *context,
+                            JSObject               *in_object,
+                            JSObject               *parent_proto,
+                            const char             *ns_name,
+                            const char             *class_name,
+                            JSClass                *clasp,
+                            JSNative                constructor_native,
+                            unsigned                nargs,
+                            JSPropertySpec         *ps,
+                            JSFunctionSpec         *fs,
+                            JSPropertySpec         *static_ps,
+                            JSFunctionSpec         *static_fs,
+                            JSObject              **prototype_p,
+                            JS::MutableHandleObject constructor);
+
 void gjs_throw_constructor_error             (JSContext       *context);
 void gjs_throw_abstract_constructor_error    (JSContext       *context,
                                               JS::Value       *vp);
@@ -423,10 +424,10 @@ const char* gjs_get_type_name                (JS::Value        value);
 
 void gjs_maybe_gc (JSContext *context);
 
-bool              gjs_context_get_frame_info (JSContext  *context,
-                                              JS::Value  *stack,
-                                              JS::Value  *fileName,
-                                              JS::Value  *lineNumber);
+bool gjs_context_get_frame_info(JSContext                              *context,
+                                mozilla::Maybe<JS::MutableHandleValue>& stack,
+                                mozilla::Maybe<JS::MutableHandleValue>& fileName,
+                                mozilla::Maybe<JS::MutableHandleValue>& lineNumber);
 
 bool              gjs_eval_with_scope        (JSContext    *context,
                                               JSObject     *object,
@@ -467,10 +468,11 @@ typedef enum {
 
 jsid              gjs_context_get_const_string  (JSContext       *context,
                                                  GjsConstString   string);
-bool              gjs_object_get_property_const (JSContext       *context,
-                                                 JSObject        *obj,
-                                                 GjsConstString   property_name,
-                                                 JS::Value       *value_p);
+
+bool gjs_object_get_property_const(JSContext             *cx,
+                                   JS::HandleObject       obj,
+                                   GjsConstString         property_name,
+                                   JS::MutableHandleValue value_p);
 
 const char * gjs_strip_unix_shebang(const char *script,
                                     gssize     *script_len,

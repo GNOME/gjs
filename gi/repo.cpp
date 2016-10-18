@@ -471,9 +471,12 @@ gjs_define_info(JSContext  *context,
             if (g_type_is_a (gtype, G_TYPE_PARAM)) {
                 gjs_define_param_class(context, in_object);
             } else if (g_type_is_a (gtype, G_TYPE_OBJECT)) {
-                gjs_define_object_class(context, in_object, (GIObjectInfo*) info, gtype, NULL);
+                JS::RootedObject ignored(context);
+                gjs_define_object_class(context, in_object,
+                                        (GIObjectInfo *) info, gtype, &ignored);
             } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-                if (!gjs_define_fundamental_class(context, in_object, (GIObjectInfo*)info, NULL, NULL)) {
+                JS::RootedObject ignored(context);
+                if (!gjs_define_fundamental_class(context, in_object, (GIObjectInfo*)info, &ignored, NULL)) {
                     gjs_throw (context,
                                "Unsupported fundamental class creation for type %s",
                                g_type_name(gtype));
@@ -522,9 +525,13 @@ gjs_define_info(JSContext  *context,
             return false;
         break;
     case GI_INFO_TYPE_INTERFACE:
-        gjs_define_interface_class(context, in_object, (GIInterfaceInfo *) info,
-                                   g_registered_type_info_get_g_type((GIRegisteredTypeInfo *) info),
-                                   NULL);
+        {
+            JS::RootedObject ignored(context);
+            gjs_define_interface_class(context, in_object,
+                                       (GIInterfaceInfo *) info,
+                                       g_registered_type_info_get_g_type((GIRegisteredTypeInfo *) info),
+                                       &ignored);
+        }
         break;
     default:
         gjs_throw(context, "API of type %s not implemented, cannot define %s.%s",
@@ -784,13 +791,12 @@ JSObject *
 gjs_lookup_generic_prototype(JSContext  *context,
                              GIBaseInfo *info)
 {
-    JSObject *constructor;
-    JS::Value value;
-
-    constructor = gjs_lookup_generic_constructor(context, info);
+    JS::RootedObject constructor(context,
+                                 gjs_lookup_generic_constructor(context, info));
     if (G_UNLIKELY (constructor == NULL))
         return NULL;
 
+    JS::RootedValue value(context);
     if (!gjs_object_get_property_const(context, constructor,
                                        GJS_STRING_PROTOTYPE, &value))
         return NULL;

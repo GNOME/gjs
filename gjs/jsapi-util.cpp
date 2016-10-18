@@ -193,14 +193,15 @@ gjs_throw_abstract_constructor_error(JSContext *context,
                                      JS::Value *vp)
 {
     JS::Value callee;
-    JS::Value prototype;
     JSClass *proto_class;
     const char *name = "anonymous";
 
     callee = JS_CALLEE(context, vp);
 
     if (callee.isObject()) {
-        if (gjs_object_get_property_const(context, &callee.toObject(),
+        JS::RootedObject callee_obj(context, &callee.toObject());
+        JS::RootedValue prototype(context);
+        if (gjs_object_get_property_const(context, callee_obj,
                                           GJS_STRING_PROTOTYPE, &prototype)) {
             proto_class = JS_GetClass(&prototype.toObject());
             name = proto_class->name;
@@ -424,25 +425,25 @@ gjs_log_exception_full(JSContext *context,
                        JS::Value  exc,
                        JSString  *message)
 {
-    JS::Value stack;
     char *utf8_exception, *utf8_message;
     bool is_syntax;
 
     JS_BeginRequest(context);
+    JS::RootedObject exc_obj(context);
 
     is_syntax = false;
 
     if (!exc.isObject()) {
         utf8_exception = utf8_exception_from_non_gerror_value(context, exc);
     } else {
-        JS::RootedObject exc_obj(context, &exc.toObject());
+        exc_obj = &exc.toObject();
         if (gjs_typecheck_boxed(context, exc_obj, NULL, G_TYPE_ERROR, false)) {
             GError *gerror = (GError *) gjs_c_struct_from_boxed(context, exc_obj);
             utf8_exception = g_strdup_printf("GLib.Error %s: %s",
                                              g_quark_to_string(gerror->domain),
                                              gerror->message);
         } else {
-            JS::Value js_name;
+            JS::RootedValue js_name(context);
             char *utf8_name;
 
             if (gjs_object_get_property_const(context, exc_obj,
@@ -467,14 +468,14 @@ gjs_log_exception_full(JSContext *context,
     */
 
     if (is_syntax) {
-        JS::Value js_lineNumber, js_fileName;
+        JS::RootedValue js_lineNumber(context), js_fileName(context);
         unsigned lineNumber;
         char *utf8_fileName;
 
-        gjs_object_get_property_const(context, &exc.toObject(),
-                                      GJS_STRING_LINE_NUMBER, &js_lineNumber);
-        gjs_object_get_property_const(context, &exc.toObject(),
-                                      GJS_STRING_FILENAME, &js_fileName);
+        gjs_object_get_property_const(context, exc_obj, GJS_STRING_LINE_NUMBER,
+                                      &js_lineNumber);
+        gjs_object_get_property_const(context, exc_obj, GJS_STRING_FILENAME,
+                                      &js_fileName);
 
         if (js_fileName.isString())
             gjs_string_to_utf8(context, js_fileName, &utf8_fileName);
@@ -494,10 +495,10 @@ gjs_log_exception_full(JSContext *context,
         g_free(utf8_fileName);
     } else {
         char *utf8_stack;
+        JS::RootedValue stack(context);
 
         if (exc.isObject() &&
-            gjs_object_get_property_const(context, &exc.toObject(),
-                                          GJS_STRING_STACK, &stack) &&
+            gjs_object_get_property_const(context, exc_obj, GJS_STRING_STACK, &stack) &&
             stack.isString())
             gjs_string_to_utf8(context, stack, &utf8_stack);
         else

@@ -183,9 +183,7 @@ static JSObject*
 gjs_lookup_param_prototype(JSContext    *context)
 {
     JSObject *in_object;
-    JSObject *constructor;
     jsid gobject_name;
-    JS::Value value;
 
     gobject_name = gjs_intern_string_to_id(context, "GObject");
     in_object = gjs_lookup_namespace_object_by_name(context, gobject_name);
@@ -193,13 +191,14 @@ gjs_lookup_param_prototype(JSContext    *context)
     if (G_UNLIKELY (!in_object))
         return NULL;
 
-    if (!JS_GetProperty(context, in_object, "ParamSpec", &value))
+    JS::RootedValue value(context);
+    if (!JS_GetProperty(context, in_object, "ParamSpec", value.address()))
         return NULL;
 
     if (G_UNLIKELY (!value.isObject()))
         return NULL;
 
-    constructor = &value.toObject();
+    JS::RootedObject constructor(context, &value.toObject());
     g_assert(constructor != NULL);
 
     if (!gjs_object_get_property_const(context, constructor,
@@ -219,7 +218,7 @@ gjs_define_param_class(JSContext    *context,
     const char *constructor_name;
     JSObject *prototype;
     JS::Value value;
-    JSObject *constructor;
+    JS::RootedObject constructor(context);
     GIObjectInfo *info;
 
     constructor_name = "ParamSpec";

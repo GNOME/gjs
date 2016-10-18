@@ -36,26 +36,25 @@
 #include <math.h>
 
 bool
-gjs_init_class_dynamic(JSContext       *context,
-                       JSObject        *in_object,
-                       JSObject        *parent_proto,
-                       const char      *ns_name,
-                       const char      *class_name,
-                       JSClass         *clasp,
-                       JSNative         constructor_native,
-                       unsigned         nargs,
-                       JSPropertySpec  *proto_ps,
-                       JSFunctionSpec  *proto_fs,
-                       JSPropertySpec  *static_ps,
-                       JSFunctionSpec  *static_fs,
-                       JSObject       **prototype_p,
-                       JSObject       **constructor_p)
+gjs_init_class_dynamic(JSContext              *context,
+                       JSObject               *in_object,
+                       JSObject               *parent_proto,
+                       const char             *ns_name,
+                       const char             *class_name,
+                       JSClass                *clasp,
+                       JSNative                constructor_native,
+                       unsigned                nargs,
+                       JSPropertySpec         *proto_ps,
+                       JSFunctionSpec         *proto_fs,
+                       JSPropertySpec         *static_ps,
+                       JSFunctionSpec         *static_fs,
+                       JSObject              **prototype_p,
+                       JS::MutableHandleObject constructor)
 {
     JSObject *global;
     /* Force these variables on the stack, so the conservative GC will
        find them */
     JSObject * volatile prototype;
-    JSObject * volatile constructor;
     JSFunction * volatile constructor_fun;
     char *full_function_name = NULL;
     bool res = false;
@@ -102,7 +101,7 @@ gjs_init_class_dynamic(JSContext       *context,
     if (!constructor_fun)
         goto out;
 
-    constructor = JS_GetFunctionObject(constructor_fun);
+    constructor.set(JS_GetFunctionObject(constructor_fun));
 
     if (static_ps && !JS_DefineProperties(context, constructor, static_ps))
         goto out;
@@ -122,8 +121,6 @@ gjs_init_class_dynamic(JSContext       *context,
                            JS_PropertyStub, JS_StrictPropertyStub, GJS_MODULE_PROP_FLAGS))
         goto out;
 
-    if (constructor_p)
-        *constructor_p = constructor;
     if (prototype_p)
         *prototype_p = prototype;
 
@@ -131,7 +128,6 @@ gjs_init_class_dynamic(JSContext       *context,
 
     prototype = NULL;
     constructor_fun = NULL;
-    constructor = NULL;
 
  out:
     JS_EndRequest(context);

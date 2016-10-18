@@ -331,7 +331,7 @@ gjs_define_union_class(JSContext    *context,
     JS::Value value;
     Union *priv;
     GType gtype;
-    JSObject *constructor;
+    JS::RootedObject constructor(context);
 
     /* For certain unions, we may be able to relax this in the future by
      * directly allocating union memory, as we do for structures in boxed.c

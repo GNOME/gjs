@@ -1110,7 +1110,7 @@ gjs_define_boxed_class(JSContext    *context,
 {
     const char *constructor_name;
     JSObject *prototype;
-    JSObject *constructor;
+    JS::RootedObject constructor(context);
     JS::Value value;
     Boxed *priv;
 

@@ -181,16 +181,15 @@ JSFunctionSpec gjs_interface_proto_funcs[] = {
 };
 
 bool
-gjs_define_interface_class(JSContext       *context,
-                           JSObject        *in_object,
-                           GIInterfaceInfo *info,
-                           GType            gtype,
-                           JSObject       **constructor_p)
+gjs_define_interface_class(JSContext              *context,
+                           JSObject               *in_object,
+                           GIInterfaceInfo        *info,
+                           GType                   gtype,
+                           JS::MutableHandleObject constructor)
 {
     Interface *priv;
     const char *constructor_name;
     const char *ns;
-    JSObject *constructor;
     JSObject *prototype;
     JS::Value value;
 
@@ -212,7 +211,7 @@ gjs_define_interface_class(JSContext       *context,
                                 /* funcs of constructor, MyConstructor.myfunc() */
                                 NULL,
                                 &prototype,
-                                &constructor)) {
+                                constructor)) {
         g_error("Can't init class %s", constructor_name);
     }
 
@@ -231,9 +230,6 @@ gjs_define_interface_class(JSContext       *context,
     value = JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, priv->gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
-
-    if (constructor_p)
-        *constructor_p = constructor;
 
     return true;
 }
