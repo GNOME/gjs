@@ -416,7 +416,7 @@ value_to_ghashtable_key(JSContext      *cx,
         char *cstr;                                                   \
         JS::RootedValue str_val(cx, value);                           \
         if (!str_val.isString()) {                                    \
-            JS::RootedString str(cx, JS_ValueToString(cx, str_val));  \
+            JS::RootedString str(cx, JS::ToString(cx, str_val));      \
             str_val.setString(str);                                   \
         }                                                             \
         if (!gjs_string_to_##lctype(cx, str_val, &cstr))              \
@@ -2555,7 +2555,7 @@ gjs_object_from_g_hash (JSContext             *context,
                                        true))
             goto out;
 
-        keystr = JS_ValueToString(context, keyjs);
+        keystr = JS::ToString(context, keyjs);
         if (!keystr)
             goto out;
 

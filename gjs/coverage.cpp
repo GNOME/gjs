@@ -1333,10 +1333,10 @@ coverage_log(JSContext *context,
         return true;
     }
 
-    /* JS_ValueToString might throw, in which we will only
-     *log that the value could be converted to string */
+    /* JS::ToString might throw, in which case we will only log that the value
+     * could not be converted to string */
     exc_state = JS_SaveExceptionState(context);
-    JS::RootedString jstr(context, JS_ValueToString(context, argv[0]));
+    JS::RootedString jstr(context, JS::ToString(context, argv[0]));
     if (jstr != NULL)
         argv[0].setString(jstr);  // GC root
     JS_RestoreExceptionState(context, exc_state);
