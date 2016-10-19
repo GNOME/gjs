@@ -827,13 +827,12 @@ static JSFunctionSpec gjs_byte_array_module_funcs[] = {
 };
 
 bool
-gjs_define_byte_array_stuff(JSContext  *context,
-                            JSObject  **module_out)
+gjs_define_byte_array_stuff(JSContext              *context,
+                            JS::MutableHandleObject module)
 {
-    JSObject *module;
     JSObject *prototype;
 
-    module = JS_NewObject (context, NULL, NULL, NULL);
+    module.set(JS_NewObject(context, NULL, NULL, NULL));
 
     prototype = JS_InitClass(context, module,
                              NULL,
@@ -852,6 +851,5 @@ gjs_define_byte_array_stuff(JSContext  *context,
     gjs_set_global_slot(context, GJS_GLOBAL_SLOT_BYTE_ARRAY_PROTOTYPE,
                         JS::ObjectOrNullValue(prototype));
 
-    *module_out = module;
     return true;
 }

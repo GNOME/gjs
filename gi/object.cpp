@@ -3016,19 +3016,11 @@ static JSFunctionSpec module_funcs[] = {
 };
 
 bool
-gjs_define_private_gi_stuff(JSContext *context,
-                            JSObject **module_out)
+gjs_define_private_gi_stuff(JSContext              *cx,
+                            JS::MutableHandleObject module)
 {
-    JSObject *module;
-
-    module = JS_NewObject (context, NULL, NULL, NULL);
-
-    if (!JS_DefineFunctions(context, module, &module_funcs[0]))
-        return false;
-
-    *module_out = module;
-
-    return true;
+    module.set(JS_NewObject(cx, NULL, NULL, NULL));
+    return JS_DefineFunctions(cx, module, &module_funcs[0]);
 }
 
 bool

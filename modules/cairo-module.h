@@ -23,7 +23,7 @@
 #ifndef __CAIRO_MODULE_H__
 #define __CAIRO_MODULE_H__
 
-bool  gjs_js_define_cairo_stuff (JSContext  *context,
-                                 JSObject  **module_out);
+bool gjs_js_define_cairo_stuff(JSContext              *context,
+                               JS::MutableHandleObject module);
 
 #endif /* __CAIRO_MODULE_H__ */

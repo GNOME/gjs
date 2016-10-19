@@ -53,11 +53,11 @@ extern struct JSClass gjs_importer_class;
 GJS_DEFINE_PRIV_FROM_JS(Importer, gjs_importer_class)
 
 static bool
-define_meta_properties(JSContext  *context,
-                       JSObject   *module_obj,
-                       const char *full_path,
-                       const char *module_name,
-                       JSObject   *parent)
+define_meta_properties(JSContext       *context,
+                       JS::HandleObject module_obj,
+                       const char      *full_path,
+                       const char      *module_name,
+                       JS::HandleObject parent)
 {
     bool parent_is_module;
 
@@ -67,12 +67,13 @@ define_meta_properties(JSContext  *context,
     parent_is_module = parent && JS_InstanceOf(context, parent, &gjs_importer_class, NULL);
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Defining parent %p of %p '%s' is mod %d",
-              parent, module_obj, module_name ? module_name : "<root>", parent_is_module);
+              parent.get(), module_obj.get(),
+              module_name ? module_name : "<root>", parent_is_module);
 
     if (full_path != NULL) {
-        if (!JS_DefineProperty(context, module_obj,
-                               "__file__",
-                               JS::StringValue(JS_NewStringCopyZ(context, full_path)),
+        JS::RootedValue file_val(context,
+            JS::StringValue(JS_NewStringCopyZ(context, full_path)));
+        if (!JS_DefineProperty(context, module_obj, "__file__", file_val,
                                NULL, NULL,
                                /* don't set ENUMERATE since we wouldn't want to copy
                                 * this symbol to any other object for example.
@@ -81,11 +82,15 @@ define_meta_properties(JSContext  *context,
             return false;
     }
 
+    JS::RootedValue module_name_val(context, JS::NullValue());
+    JS::RootedValue parent_module_val(context, JS::NullValue());
+    if (parent_is_module) {
+        module_name_val.setString(JS_NewStringCopyZ(context, module_name));
+        parent_module_val.setObject(*parent);
+    }
+
     if (!JS_DefineProperty(context, module_obj,
-                           "__moduleName__",
-                           parent_is_module ?
-                           JS::StringValue(JS_NewStringCopyZ(context, module_name)) :
-                           JS::NullValue(),
+                           "__moduleName__", module_name_val,
                            NULL, NULL,
                            /* don't set ENUMERATE since we wouldn't want to copy
                             * this symbol to any other object for example.
@@ -94,8 +99,7 @@ define_meta_properties(JSContext  *context,
         return false;
 
     if (!JS_DefineProperty(context, module_obj,
-                           "__parentModule__",
-                           parent_is_module ? JS::ObjectValue(*parent) : JS::NullValue(),
+                           "__parentModule__", parent_module_val,
                            NULL, NULL,
                            /* don't set ENUMERATE since we wouldn't want to copy
                             * this symbol to any other object for example.
@@ -107,10 +111,10 @@ define_meta_properties(JSContext  *context,
 }
 
 static bool
-import_directory(JSContext   *context,
-                 JSObject    *obj,
-                 const char  *name,
-                 const char **full_paths)
+import_directory(JSContext       *context,
+                 JS::HandleObject obj,
+                 const char      *name,
+                 const char     **full_paths)
 {
     JSObject *importer;
 
@@ -127,13 +131,13 @@ import_directory(JSContext   *context,
 }
 
 static bool
-define_import(JSContext  *context,
-              JSObject   *obj,
-              JSObject   *module_obj,
-              const char *name)
+define_import(JSContext       *context,
+              JS::HandleObject obj,
+              JS::HandleObject module_obj,
+              const char      *name)
 {
-    if (!JS_DefineProperty(context, obj,
-                           name, JS::ObjectValue(*module_obj),
+    JS::RootedValue module_val(context, JS::ObjectValue(*module_obj));
+    if (!JS_DefineProperty(context, obj, name, module_val,
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT)) {
         gjs_debug(GJS_DEBUG_IMPORTER,
@@ -212,11 +216,11 @@ cancel_import(JSContext  *context,
 }
 
 static bool
-import_native_file(JSContext  *context,
-                   JSObject   *obj,
-                   const char *name)
+import_native_file(JSContext       *context,
+                   JS::HandleObject obj,
+                   const char      *name)
 {
-    JSObject *module_obj;
+    JS::RootedObject module_obj(context);
     bool retval = false;
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Importing '%s'", name);
@@ -374,16 +378,15 @@ load_module_elements(JSContext *context,
 }
 
 static bool
-import_file_on_module(JSContext  *context,
-                      JSObject   *obj,
-                      const char *name,
-                      GFile      *file)
+import_file_on_module(JSContext       *context,
+                      JS::HandleObject obj,
+                      const char      *name,
+                      GFile           *file)
 {
-    JSObject *module_obj;
     bool retval = false;
     char *full_path = NULL;
 
-    module_obj = create_module_object (context);
+    JS::RootedObject module_obj(context, create_module_object(context));
 
     if (!define_import(context, obj, module_obj, name))
         goto out;
@@ -409,10 +412,10 @@ import_file_on_module(JSContext  *context,
 }
 
 static bool
-do_import(JSContext  *context,
-          JSObject   *obj,
-          Importer   *priv,
-          const char *name)
+do_import(JSContext       *context,
+          JS::HandleObject obj,
+          Importer        *priv,
+          const char      *name)
 {
     char *filename;
     char *full_path;
@@ -1050,14 +1053,13 @@ gjs_get_search_path(void)
 }
 
 static JSObject*
-gjs_create_importer(JSContext    *context,
-                    const char   *importer_name,
-                    const char  **initial_search_path,
-                    bool          add_standard_search_path,
-                    bool          is_root,
-                    JSObject     *in_object)
+gjs_create_importer(JSContext       *context,
+                    const char      *importer_name,
+                    const char     **initial_search_path,
+                    bool             add_standard_search_path,
+                    bool             is_root,
+                    JS::HandleObject in_object)
 {
-    JSObject *importer;
     char **paths[2] = {0};
     char **search_path;
 
@@ -1069,7 +1071,7 @@ gjs_create_importer(JSContext    *context,
 
     search_path = gjs_g_strv_concat(paths, 2);
 
-    importer = importer_new(context, is_root);
+    JS::RootedObject importer(context, importer_new(context, is_root));
 
     /* API users can replace this property from JS, is the idea */
     if (!gjs_define_string_array(context, importer,
@@ -1087,11 +1089,11 @@ gjs_create_importer(JSContext    *context,
 }
 
 JSObject*
-gjs_define_importer(JSContext    *context,
-                    JSObject     *in_object,
-                    const char   *importer_name,
-                    const char  **initial_search_path,
-                    bool          add_standard_search_path)
+gjs_define_importer(JSContext       *context,
+                    JS::HandleObject in_object,
+                    const char      *importer_name,
+                    const char     **initial_search_path,
+                    bool             add_standard_search_path)
 
 {
     JSObject *importer;
@@ -1106,7 +1108,8 @@ gjs_define_importer(JSContext    *context,
         g_error("no memory to define importer property");
 
     gjs_debug(GJS_DEBUG_IMPORTER,
-              "Defined importer '%s' %p in %p", importer_name, importer, in_object);
+              "Defined importer '%s' %p in %p", importer_name, importer,
+              in_object.get());
 
     return importer;
 }
@@ -1137,7 +1140,7 @@ gjs_create_root_importer(JSContext   *context,
     importer = JS::ObjectValue(*gjs_create_importer(context, "imports",
                                                     initial_search_path,
                                                     add_standard_search_path,
-                                                    true, NULL));
+                                                    true, JS::NullPtr()));
     gjs_set_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS, importer);
 
     JS_EndRequest(context);

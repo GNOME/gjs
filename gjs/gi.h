@@ -30,10 +30,11 @@
 
 G_BEGIN_DECLS
 
-bool          gjs_define_gi_stuff     (JSContext      *context,
-                                       JSObject      **module_out);
-bool          gjs_define_private_gi_stuff   (JSContext     *context,
-                                             JSObject     **module_out);
+bool gjs_define_gi_stuff(JSContext              *cx,
+                         JS::MutableHandleObject module);
+
+bool gjs_define_private_gi_stuff(JSContext              *cx,
+                                 JS::MutableHandleObject module);
 
 G_END_DECLS
 

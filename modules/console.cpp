@@ -153,7 +153,7 @@ gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
 }
 #endif
 
-static bool
+static JSBool
 gjs_console_interact(JSContext *context,
                      unsigned   argc,
                      JS::Value *vp)
@@ -231,19 +231,10 @@ gjs_console_interact(JSContext *context,
 }
 
 bool
-gjs_define_console_stuff(JSContext  *context,
-                         JSObject  **module_out)
+gjs_define_console_stuff(JSContext              *context,
+                         JS::MutableHandleObject module)
 {
-    JSObject *module;
-
-    module = JS_NewObject (context, NULL, NULL, NULL);
-
-    if (!JS_DefineFunction(context, module,
-                           "interact",
-                           (JSNative) gjs_console_interact,
-                           1, GJS_MODULE_PROP_FLAGS))
-        return false;
-
-    *module_out = module;
-    return true;
+    module.set(JS_NewObject(context, NULL, NULL, NULL));
+    return JS_DefineFunction(context, module, "interact", gjs_console_interact,
+                             1, GJS_MODULE_PROP_FLAGS);
 }

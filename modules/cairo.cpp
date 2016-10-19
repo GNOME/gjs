@@ -55,14 +55,13 @@ gjs_cairo_check_status(JSContext      *context,
 }
 
 bool
-gjs_js_define_cairo_stuff(JSContext *context,
-                          JSObject **module_out)
+gjs_js_define_cairo_stuff(JSContext              *context,
+                          JS::MutableHandleObject module)
 {
     JS::Value obj;
-    JSObject *module;
     JSObject *surface_proto, *pattern_proto, *gradient_proto;
 
-    module = JS_NewObject (context, NULL, NULL, NULL);
+    module.set(JS_NewObject(context, NULL, NULL, NULL));
 
     obj = gjs_cairo_region_create_proto(context, module,
                                         "Region", NULL);
@@ -141,8 +140,6 @@ gjs_js_define_cairo_stuff(JSContext *context,
                                                "SolidPattern", pattern_proto);
     if (obj.isNull())
         return false;
-
-    *module_out = module;
 
     return true;
 }

@@ -82,9 +82,9 @@ gjs_is_registered_native_module(JSContext  *context,
  * Return a native module that's been preloaded.
  */
 bool
-gjs_import_native_module(JSContext   *context,
-                         const char  *name,
-                         JSObject   **module_out)
+gjs_import_native_module(JSContext              *context,
+                         const char             *name,
+                         JS::MutableHandleObject module_out)
 {
     GjsDefineModuleFunc func;
 

@@ -333,15 +333,11 @@ repo_new(JSContext *context)
 }
 
 bool
-gjs_define_repo(JSContext  *context,
-                JSObject  **module_out,
-                const char *name)
+gjs_define_repo(JSContext              *cx,
+                JS::MutableHandleObject repo,
+                const char             *name)
 {
-    JSObject *repo;
-
-    repo = repo_new(context);
-    *module_out = repo;
-
+    repo.set(repo_new(cx));
     return true;
 }
 

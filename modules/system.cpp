@@ -150,15 +150,14 @@ static JSFunctionSpec module_funcs[] = {
 };
 
 bool
-gjs_js_define_system_stuff(JSContext  *context,
-                           JSObject  **module_out)
+gjs_js_define_system_stuff(JSContext              *context,
+                           JS::MutableHandleObject module)
 {
     GjsContext *gjs_context;
     char *program_name;
     bool retval;
-    JSObject *module;
 
-    module = JS_NewObject (context, NULL, NULL, NULL);
+    module.set(JS_NewObject(context, NULL, NULL, NULL));
 
     if (!JS_DefineFunctions(context, module, &module_funcs[0]))
         return false;
@@ -197,7 +196,5 @@ gjs_js_define_system_stuff(JSContext  *context,
 
  out:
     g_free(program_name);
-    *module_out = module;
-
     return retval;
 }

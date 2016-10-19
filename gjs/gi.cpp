@@ -32,8 +32,8 @@
 #include "gi/repo.h"
 
 bool
-gjs_define_gi_stuff(JSContext      *context,
-                    JSObject      **module_out)
+gjs_define_gi_stuff(JSContext              *cx,
+                    JS::MutableHandleObject module)
 {
-    return gjs_define_repo(context, module_out, "gi");
+    return gjs_define_repo(cx, module, "gi");
 }

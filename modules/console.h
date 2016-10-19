@@ -30,8 +30,8 @@
 
 G_BEGIN_DECLS
 
-bool        gjs_define_console_stuff     (JSContext      *context,
-                                          JSObject      **module_out);
+bool gjs_define_console_stuff(JSContext              *context,
+                              JS::MutableHandleObject module);
 
 G_END_DECLS
 
