@@ -62,10 +62,9 @@ static JSClass global_class = {
  * Returns: true on success, false otherwise
  */
 bool
-gjs_init_context_standard (JSContext  *context,
-                           JSObject  **global_out)
+gjs_init_context_standard (JSContext              *context,
+                           JS::MutableHandleObject global)
 {
-    JSObject *global;
     JS::CompartmentOptions options;
     guint32 options_flags;
 
@@ -91,7 +90,7 @@ gjs_init_context_standard (JSContext  *context,
     JS_SetErrorReporter(context, gjs_error_reporter);
 
     options.setVersion(JSVERSION_LATEST);
-    global = JS_NewGlobalObject(context, &global_class, NULL, options);
+    global.set(JS_NewGlobalObject(context, &global_class, NULL, options));
     if (global == NULL)
         return false;
 
@@ -106,8 +105,6 @@ gjs_init_context_standard (JSContext  *context,
 
     if (!JS_DefineDebuggerObject(context, global))
         return false;
-
-    *global_out = global;
 
     return true;
 }

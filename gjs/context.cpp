@@ -61,7 +61,7 @@ struct _GjsContext {
 
     JSRuntime *runtime;
     JSContext *context;
-    JSObject *global;
+    JS::Heap<JSObject*> global;
 
     char *program_name;
 
@@ -341,6 +341,10 @@ gjs_context_dispose(GObject *object)
                   "Destroying JS context");
 
         JS_BeginRequest(js_context->context);
+
+        JS_RemoveObjectRoot(js_context->context, js_context->global.unsafeGet());
+        js_context->global.set(NULL);
+
         /* Do a full GC here before tearing down, since once we do
          * that we may not have the JS_GetPrivate() to access the
          * context
@@ -426,20 +430,26 @@ gjs_context_constructed(GObject *object)
 
     /* set ourselves as the private data */
     JS_SetContextPrivate(js_context->context, js_context);
+    JS::RootedObject global(js_context->context);
 
-    if (!gjs_init_context_standard(js_context->context, &js_context->global))
+    if (!gjs_init_context_standard(js_context->context, &global))
         g_error("Failed to initialize context");
 
-    JSAutoCompartment ac(js_context->context, js_context->global);
+    JSAutoCompartment ac(js_context->context, global);
 
-    if (!JS_DefineProperty(js_context->context, js_context->global,
-                           "window", JS::ObjectValue(*js_context->global),
+    JS::RootedValue v_global(js_context->context, JS::ObjectValue(*global));
+    if (!JS_DefineProperty(js_context->context, global,
+                           "window", v_global,
                            NULL, NULL,
                            JSPROP_READONLY | JSPROP_PERMANENT))
         g_error("No memory to export global object as 'window'");
 
-    if (!JS_DefineFunctions(js_context->context, js_context->global, &global_funcs[0]))
+    if (!JS_DefineFunctions(js_context->context, global, &global_funcs[0]))
         g_error("Failed to define properties on the global object");
+
+    js_context->global.set(global);
+    JS_AddNamedObjectRoot(js_context->context, js_context->global.unsafeGet(),
+                          "global object");
 
     /* We create the global-to-runtime root importer with the
      * passed-in search path. If someone else already created

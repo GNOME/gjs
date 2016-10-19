@@ -290,8 +290,8 @@ gjs_##name##_constructor(JSContext  *context,           \
         return false;                                           \
     }
 
-bool        gjs_init_context_standard        (JSContext       *context,
-                                              JSObject       **global_out);
+bool gjs_init_context_standard(JSContext              *context,
+                               JS::MutableHandleObject global);
 
 JSObject*   gjs_get_import_global            (JSContext       *context);
 
