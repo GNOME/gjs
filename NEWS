@@ -32,6 +32,24 @@ NEXT
   gjs> a[1]
   0
 
+- Backwards-incompatible change: we have changed the way gjs-console interprets
+  command-line arguments. Previously there was a heuristic to try to decide
+  whether "--help" given on the command line was meant for GJS itself or for a
+  script being launched. This did not work in some cases, for example:
+
+  $ gjs -c 'if (ARGV.indexOf("--help") == -1) throw "ugh"' --help
+
+  would print the GJS help.
+
+  Now, all arguments meant for GJS itself must come _before_ the name of the
+  script to execute or any script given with a "-c" argument. Any arguments
+  _after_ the filename or script are passed on to the script. This is the way
+  that Python handles its command line arguments as well.
+
+  If you previously relied on any -I arguments after your script being added to
+  the search path, then you should either reorder those arguments, or handle -I
+  inside your script, adding paths to imports.searchPath manually.
+
 Version 1.46.0
 --------------
 

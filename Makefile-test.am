@@ -128,6 +128,10 @@ TESTS_ENVIRONMENT =							\
 	G_FILENAME_ENCODING=latin1	# ensure filenames are not utf8	\
 	DBUS_UUIDGEN="$(DBUS_UUIDGEN)"
 
+simple_tests = test/testCommandLine.sh
+EXTRA_DIST += $(simple_tests)
+TESTS = $(simple_tests)
+
 if CODE_COVERAGE_ENABLED
 TESTS_ENVIRONMENT += \
 	GJS_UNIT_COVERAGE_OUTPUT=lcov \

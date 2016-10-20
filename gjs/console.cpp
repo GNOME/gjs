@@ -45,18 +45,17 @@ static GOptionEntry entries[] = {
     { NULL }
 };
 
-G_GNUC_NORETURN
-static void
-print_help (GOptionContext *context,
-            bool            main_help)
+static char **
+strndupv(int n, char **strv)
 {
-  gchar *help;
-
-  help = g_option_context_get_help (context, main_help, NULL);
-  g_print ("%s", help);
-  g_free (help);
-
-  exit (0);
+    int ix;
+    if (n == 0)
+        return NULL;
+    char **retval = g_new(char *, n + 1);
+    for (ix = 0; ix < n; ix++)
+        retval[ix] = g_strdup(strv[ix]);
+    retval[n] = NULL;
+    return retval;
 }
 
 int
@@ -70,26 +69,52 @@ main(int argc, char **argv)
     const char *filename;
     const char *program_name;
     gsize len;
-    int code;
+    int code, argc_copy = argc, gjs_argc = argc, script_argc, ix;
+    char **argv_copy = g_strdupv(argv), **argv_copy_addr = argv_copy;
+    char **gjs_argv, **gjs_argv_addr;
+    char * const *script_argv;
 
     setlocale(LC_ALL, "");
 
     context = g_option_context_new(NULL);
 
-    /* pass unknown through to the JS script */
     g_option_context_set_ignore_unknown_options(context, true);
     g_option_context_set_help_enabled(context, false);
 
     g_option_context_add_main_entries(context, entries, NULL);
-    if (!g_option_context_parse(context, &argc, &argv, &error))
+    if (!g_option_context_parse(context, &argc_copy, &argv_copy, &error))
         g_error("option parsing failed: %s", error->message);
 
-    if (argc >= 2) {
-        if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
-            print_help(context, true);
-        else if (strcmp(argv[1], "--help-all") == 0)
-            print_help(context, false);
+    /* Split options so we pass unknown ones through to the JS script */
+    for (ix = 1; ix < argc; ix++) {
+        /* Check if a file was given and split after it */
+        if (argc_copy >= 2 && strcmp(argv[ix], argv_copy[1]) == 0) {
+            /* Filename given; split after this argument */
+            gjs_argc = ix + 1;
+            break;
+        }
+
+        /* Check if -c or --command was given and split after following arg */
+        if (command != NULL &&
+            (strcmp(argv[ix], "-c") == 0 || strcmp(argv[ix], "--command") == 0)) {
+            gjs_argc = ix + 2;
+            break;
+        }
     }
+    gjs_argv_addr = gjs_argv = strndupv(gjs_argc, argv);
+    script_argc = argc - gjs_argc;
+    script_argv = argv + gjs_argc;
+    g_strfreev(argv_copy_addr);
+
+    /* Parse again, only the GJS options this time */
+    include_path = NULL;
+    coverage_prefixes = NULL;
+    coverage_output_path = NULL;
+    command = NULL;
+    g_option_context_set_ignore_unknown_options(context, false);
+    g_option_context_set_help_enabled(context, true);
+    if (!g_option_context_parse(context, &gjs_argc, &gjs_argv, &error))
+        g_error("option parsing failed: %s", error->message);
 
     g_option_context_free (context);
 
@@ -97,22 +122,22 @@ main(int argc, char **argv)
         script = command;
         len = strlen(script);
         filename = "<command line>";
-        program_name = argv[0];
-    } else if (argc <= 1) {
+        program_name = gjs_argv[0];
+    } else if (gjs_argc == 1) {
         script = g_strdup("const Console = imports.console; Console.interact();");
         len = strlen(script);
         filename = "<stdin>";
-        program_name = argv[0];
-    } else /*if (argc >= 2)*/ {
+        program_name = gjs_argv[0];
+    } else {
+        /* All unprocessed options should be in script_argv */
+        g_assert(gjs_argc == 2);
         error = NULL;
-        if (!g_file_get_contents(argv[1], &script, &len, &error)) {
+        if (!g_file_get_contents(gjs_argv[1], &script, &len, &error)) {
             g_printerr("%s\n", error->message);
             exit(1);
         }
-        filename = argv[1];
-        program_name = argv[1];
-        argc--;
-        argv++;
+        filename = gjs_argv[1];
+        program_name = gjs_argv[1];
     }
 
     js_context = (GjsContext*) g_object_new(GJS_TYPE_CONTEXT,
@@ -135,7 +160,7 @@ main(int argc, char **argv)
 
     /* prepare command line arguments */
     if (!gjs_context_define_string_array(js_context, "ARGV",
-                                         argc - 1, (const char**)argv + 1,
+                                         script_argc, (const char **) script_argv,
                                          &error)) {
         code = 1;
         g_printerr("Failed to defined ARGV: %s", error->message);
@@ -153,6 +178,7 @@ main(int argc, char **argv)
     }
 
  out:
+    g_strfreev(gjs_argv_addr);
 
     /* Probably doesn't make sense to write statistics on failure */
     if (coverage && code == 0)
