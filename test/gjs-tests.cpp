@@ -25,7 +25,6 @@
 #include <glib.h>
 #include <glib-object.h>
 #include <util/glib.h>
-#include <util/crash.h>
 
 #include <gjs/context.h>
 

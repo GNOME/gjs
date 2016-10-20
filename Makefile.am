@@ -98,8 +98,6 @@ libgjs_la_SOURCES =		\
 	util/hash-x32.h			\
 	util/glib.cpp		\
 	util/glib.h			\
-	util/crash.cpp		\
-	util/crash.h			\
 	util/log.cpp		\
 	util/log.h			\
 	util/misc.cpp			\
