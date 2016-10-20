@@ -61,4 +61,17 @@ if "$gjs" help.js --help -I sentinel; then
     fail "-I after script file should not be added to search path"
 fi
 
+# --version works
+"$gjs" --version >/dev/null || \
+    fail "--version should work"
+test -n "`"$gjs" --version`" || \
+    fail "--version should print something"
+
+# --version after a script goes to the script
+script='if(ARGV[0] !== "--version") imports.system.exit(1)'
+"$gjs" -c "$script" --version || \
+    fail "--version after -c should be passed to script"
+test -z "`"$gjs" -c "$script" --version`" || \
+    fail "--version after -c should not print anything"
+
 rm -f help.js

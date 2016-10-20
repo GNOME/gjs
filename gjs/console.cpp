@@ -34,10 +34,12 @@ static char **include_path = NULL;
 static char **coverage_prefixes = NULL;
 static char *coverage_output_path = NULL;
 static char *command = NULL;
+static gboolean print_version = false;
 
 static const char *GJS_COVERAGE_CACHE_FILE_NAME = ".internal-gjs-coverage-cache";
 
 static GOptionEntry entries[] = {
+    { "version", 0, 0, G_OPTION_ARG_NONE, &print_version, "Print GJS version and exit" },
     { "command", 'c', 0, G_OPTION_ARG_STRING, &command, "Program passed in as a string", "COMMAND" },
     { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &coverage_prefixes, "Add the prefix PREFIX to the list of files to generate coverage info for", "PREFIX" },
     { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &coverage_output_path, "Write coverage output to a directory DIR. This option is mandatory when using --coverage-path", "DIR", },
@@ -111,12 +113,18 @@ main(int argc, char **argv)
     coverage_prefixes = NULL;
     coverage_output_path = NULL;
     command = NULL;
+    print_version = false;
     g_option_context_set_ignore_unknown_options(context, false);
     g_option_context_set_help_enabled(context, true);
     if (!g_option_context_parse(context, &gjs_argc, &gjs_argv, &error))
         g_error("option parsing failed: %s", error->message);
 
     g_option_context_free (context);
+
+    if (print_version) {
+        g_print("%s\n", PACKAGE_STRING);
+        exit(0);
+    }
 
     if (command != NULL) {
         script = command;
