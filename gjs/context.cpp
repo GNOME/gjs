@@ -29,9 +29,9 @@
 #include "importer.h"
 #include "jsapi-private.h"
 #include "jsapi-util.h"
+#include "jsapi-wrapper.h"
 #include "native.h"
 #include "byteArray.h"
-#include "compat.h"
 #include "runtime.h"
 
 #include "gi.h"

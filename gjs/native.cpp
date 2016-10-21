@@ -28,7 +28,7 @@
 #include <util/log.h>
 
 #include "native.h"
-#include "compat.h"
+#include "jsapi-wrapper.h"
 #include "jsapi-util.h"
 
 static GHashTable *modules = NULL;

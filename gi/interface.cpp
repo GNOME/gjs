@@ -28,7 +28,7 @@
 #include "gtype.h"
 #include "interface.h"
 #include "repo.h"
-#include "gjs/compat.h"
+#include "gjs/jsapi-wrapper.h"
 #include "gjs/mem.h"
 
 #include <util/log.h>

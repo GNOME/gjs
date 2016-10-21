@@ -23,7 +23,8 @@
 
 #include <config.h>
 
-#include "compat.h"
+#include "jsapi-util.h"
+#include "jsapi-wrapper.h"
 #include "runtime.h"
 
 struct RuntimeData {

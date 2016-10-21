@@ -33,7 +33,7 @@
 #include "gtype.h"
 #include "proxyutils.h"
 #include "repo.h"
-#include "gjs/compat.h"
+#include "gjs/jsapi-wrapper.h"
 #include "gjs/mem.h"
 
 #include <gjs/context.h>

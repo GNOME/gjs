@@ -28,7 +28,7 @@
 
 #include "arg.h"
 #include "foreign.h"
-#include "gjs/compat.h"
+#include "gjs/jsapi-wrapper.h"
 
 static struct {
     char *gi_namespace;

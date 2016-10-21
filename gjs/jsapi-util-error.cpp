@@ -24,7 +24,7 @@
 #include <config.h>
 
 #include "jsapi-util.h"
-#include "compat.h"
+#include "jsapi-wrapper.h"
 #include "gi/gerror.h"
 
 #include <util/log.h>

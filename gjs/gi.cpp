@@ -28,7 +28,7 @@
 #include <string.h>
 
 #include "gjs/native.h"
-#include "gjs/compat.h"
+#include "gjs/jsapi-wrapper.h"
 #include "gi/repo.h"
 
 bool

@@ -23,7 +23,7 @@
 
 #include <config.h>
 
-#include "gjs/compat.h"
+#include "gjs/jsapi-wrapper.h"
 #include "keep-alive.h"
 
 #include <util/log.h>

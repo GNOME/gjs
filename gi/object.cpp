@@ -41,7 +41,7 @@
 #include "keep-alive.h"
 #include "closure.h"
 #include "gjs_gi_trace.h"
-#include "gjs/compat.h"
+#include "gjs/jsapi-wrapper.h"
 #include "gjs/context-private.h"
 #include "gjs/mem.h"
 #include "gjs/type-module.h"

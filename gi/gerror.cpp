@@ -27,7 +27,7 @@
 
 #include "boxed.h"
 #include "enumeration.h"
-#include "gjs/compat.h"
+#include "gjs/jsapi-wrapper.h"
 #include "gjs/mem.h"
 #include "repo.h"
 #include "gerror.h"

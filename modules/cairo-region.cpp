@@ -22,9 +22,9 @@
 
 #include <config.h>
 
-#include "gjs/compat.h"
 #include "gi/foreign.h"
 #include "gjs/jsapi-util-args.h"
+#include "gjs/jsapi-wrapper.h"
 
 #include <cairo.h>
 #include <cairo-gobject.h>

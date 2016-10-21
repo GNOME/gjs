@@ -25,7 +25,6 @@
 #define __GJS_CONTEXT_PRIVATE_H__
 
 #include "context.h"
-#include "compat.h"
 
 G_BEGIN_DECLS
 

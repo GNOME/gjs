@@ -27,7 +27,8 @@
 
 #include <glib.h>
 
-#include "compat.h"
+#include "jsapi-util.h"
+#include "jsapi-wrapper.h"
 
 static inline bool
 check_nullable(const char*& fchar,

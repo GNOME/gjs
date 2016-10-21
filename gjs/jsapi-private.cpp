@@ -29,7 +29,7 @@
 
 #include "jsapi-util.h"
 #include "jsapi-private.h"
-#include "compat.h"
+#include "jsapi-wrapper.h"
 
 #include <string.h>
 #pragma GCC diagnostic push

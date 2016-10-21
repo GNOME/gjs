@@ -53,8 +53,8 @@
 #include <glib/gprintf.h>
 
 #include "console.h"
-#include "gjs/compat.h"
 #include "gjs/jsapi-private.h"
+#include "gjs/jsapi-wrapper.h"
 
 static void
 gjs_console_error_reporter(JSContext *cx, const char *message, JSErrorReport *report)

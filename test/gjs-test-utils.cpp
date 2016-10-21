@@ -31,8 +31,9 @@
 
 #include <glib.h>
 
-#include "gjs/compat.h"
 #include "gjs/context.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/jsapi-wrapper.h"
 #include "gjs-test-utils.h"
 
 static void

@@ -28,7 +28,7 @@
 
 #include <glib-object.h>
 
-#include "gjs/compat.h"
+#include "jsapi-wrapper.h"
 #include "gjs/runtime.h"
 #include "gi/gtype.h"
 

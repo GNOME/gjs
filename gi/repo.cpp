@@ -36,8 +36,7 @@
 #include "fundamental.h"
 #include "interface.h"
 #include "gerror.h"
-
-#include "gjs/compat.h"
+#include "gjs/jsapi-wrapper.h"
 #include "gjs/jsapi-private.h"
 #include "gjs/mem.h"
 

@@ -22,26 +22,13 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_COMPAT_H__
-#define __GJS_COMPAT_H__
+#ifndef GJS_JSAPI_WRAPPER_H
+#define GJS_JSAPI_WRAPPER_H
 
-#if defined(__clang__)
-_Pragma("clang diagnostic push")
-_Pragma("clang diagnostic ignored \"-Wuninitialized\"")
-_Pragma("clang diagnostic ignored \"-Winvalid-offsetof\"")
-#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-_Pragma("GCC diagnostic push")
-_Pragma("GCC diagnostic ignored \"-Wstrict-prototypes\"")
-_Pragma("GCC diagnostic ignored \"-Winvalid-offsetof\"")
+#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+#pragma GCC system_header
 #endif
 #include <jsapi.h>
 #include <jsdbgapi.h> // Needed by some bits
-#if defined(__clang__)
-_Pragma("clang diagnostic pop")
-#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-_Pragma("GCC diagnostic pop")
-#endif
 
-#include "jsapi-util.h"
-
-#endif  /* __GJS_COMPAT_H__ */
+#endif  /* GJS_JSAPI_WRAPPER_H */

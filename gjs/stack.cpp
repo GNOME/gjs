@@ -44,8 +44,8 @@
 #include <glib.h>
 #include <string.h>
 #include "context.h"
-#include "compat.h"
 #include "jsapi-util.h"
+#include "jsapi-wrapper.h"
 
 bool
 gjs_context_get_frame_info(JSContext                              *context,

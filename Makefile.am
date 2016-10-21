@@ -145,11 +145,11 @@ libgjs_la_SOURCES += $(libgjs_private_source_files)
 
 # These used to be public headers for external modules
 libgjs_la_SOURCES +=		\
-	gjs/compat.h		\
 	gjs/coverage.h		\
 	gjs/byteArray.h		\
 	gjs/importer.h		\
 	gjs/jsapi-util.h	\
+	gjs/jsapi-wrapper.h	\
 	gjs/runtime.h		\
 	gjs/type-module.h	\
 	gjs/mem.h		\

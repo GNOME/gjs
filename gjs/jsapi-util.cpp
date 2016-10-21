@@ -30,7 +30,7 @@
 #include <util/error.h>
 
 #include "jsapi-util.h"
-#include "compat.h"
+#include "jsapi-wrapper.h"
 #include "context-private.h"
 #include "jsapi-private.h"
 #include <gi/boxed.h>

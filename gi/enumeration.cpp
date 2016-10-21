@@ -25,7 +25,7 @@
 
 #include <string.h>
 
-#include "gjs/compat.h"
+#include "gjs/jsapi-wrapper.h"
 #include "repo.h"
 #include "gtype.h"
 #include "function.h"

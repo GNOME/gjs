@@ -26,7 +26,7 @@
 #include <string.h>
 
 #include "jsapi-util.h"
-#include "compat.h"
+#include "jsapi-wrapper.h"
 
 JSBool
 gjs_string_to_utf8 (JSContext      *context,

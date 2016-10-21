@@ -26,8 +26,8 @@
 #include <util/log.h>
 #include <util/glib.h>
 
-#include "compat.h"
 #include "importer.h"
+#include "jsapi-wrapper.h"
 #include "mem.h"
 #include "native.h"
 
