@@ -197,24 +197,24 @@ static struct JSClass gjs_##cname##_class = { \
     gjs_##cname##_finalize, \
     JSCLASS_NO_OPTIONAL_MEMBERS \
 }; \
-JS::Value gjs_##cname##_create_proto(JSContext *context, JSObject *module, const char *proto_name, JSObject *parent) \
+JS::Value                                                                      \
+gjs_##cname##_create_proto(JSContext *context,                                 \
+                           JS::HandleObject module,                            \
+                           const char      *proto_name,                        \
+                           JS::HandleObject parent)                            \
 { \
-    JS::Value rval; \
-    JSObject *global = gjs_get_import_global(context); \
-    jsid class_name = gjs_intern_string_to_id(context, gjs_##cname##_class.name); \
-    if (!JS_GetPropertyById(context, global, class_name, &rval))                       \
+    JS::RootedValue rval(context);                                             \
+    JS::RootedObject global(context, gjs_get_import_global(context));          \
+    JS::RootedId class_name(context,                                           \
+        gjs_intern_string_to_id(context, gjs_##cname##_class.name));           \
+    if (!JS_GetPropertyById(context, global, class_name, rval.address()))      \
         return JS::NullValue(); \
     if (rval.isUndefined()) { \
-        JS::Value value; \
-        JSObject *prototype = JS_InitClass(context, global,     \
-                                 parent, \
-                                 &gjs_##cname##_class, \
-                                 ctor, \
-                                 0, \
-                                 &gjs_##cname##_proto_props[0], \
-                                 &gjs_##cname##_proto_funcs[0], \
-                                 NULL, \
-                                 NULL); \
+        JS::RootedObject prototype(context,                                    \
+            JS_InitClass(context, global, parent, &gjs_##cname##_class, ctor,  \
+                         0, &gjs_##cname##_proto_props[0],                     \
+                         &gjs_##cname##_proto_funcs[0],                        \
+                         NULL, NULL));                                         \
         if (prototype == NULL) { \
             return JS::NullValue(); \
         } \
@@ -227,7 +227,9 @@ JS::Value gjs_##cname##_create_proto(JSContext *context, JSObject *module, const
                                rval, NULL, NULL, GJS_MODULE_PROP_FLAGS)) \
             return JS::NullValue(); \
         if (gtype != G_TYPE_NONE) { \
-            value = JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, gtype)); \
+            JS::RootedValue value(context,                                     \
+                JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context,  \
+                                                                     gtype))); \
             JS_DefineProperty(context, &rval.toObject(), "$gtype", value, \
                               NULL, NULL, JSPROP_PERMANENT);            \
         } \
@@ -301,11 +303,11 @@ void        gjs_set_global_slot              (JSContext       *context,
                                               GjsGlobalSlot    slot,
                                               JS::Value        value);
 
-bool        gjs_object_require_property      (JSContext       *context,
-                                              JSObject        *obj,
-                                              const char      *obj_description,
-                                              jsid             property_name,
-                                              JS::Value       *value_p);
+bool gjs_object_require_property(JSContext             *context,
+                                 JSObject              *obj,
+                                 const char            *obj_description,
+                                 jsid                   property_name,
+                                 JS::MutableHandleValue value);
 
 bool gjs_init_class_dynamic(JSContext              *context,
                             JSObject               *in_object,

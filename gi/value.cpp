@@ -493,7 +493,7 @@ gjs_value_to_g_value_internal(JSContext    *context,
             /* do nothing */
         } else if (JS_HasPropertyById(context, &value.toObject(), length_name, &found_length) &&
                    found_length) {
-            JS::Value length_value;
+            JS::RootedValue length_value(context);
             guint32 length;
 
             if (!gjs_object_require_property(context,

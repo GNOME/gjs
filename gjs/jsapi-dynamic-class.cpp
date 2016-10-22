@@ -174,7 +174,7 @@ gjs_construct_object_dynamic(JSContext      *context,
 {
     JSObject *constructor;
     JSObject *result = NULL;
-    JS::Value value;
+    JS::RootedValue value(context);
     jsid constructor_name;
 
     JS_BeginRequest(context);

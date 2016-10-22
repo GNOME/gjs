@@ -411,7 +411,7 @@ do_import(JSContext       *context,
     char *filename;
     char *full_path;
     char *dirname = NULL;
-    JS::Value search_path_val;
+    JS::RootedValue search_path_val(context);
     guint32 search_path_len;
     guint32 i;
     bool result;
@@ -662,7 +662,7 @@ importer_new_enumerate(JSContext  *context,
     case JSENUMERATE_INIT_ALL:
     case JSENUMERATE_INIT: {
         Importer *priv;
-        JS::Value search_path_val;
+        JS::RootedValue search_path_val(context);
         guint32 search_path_len;
         guint32 i;
         jsid search_path_name;

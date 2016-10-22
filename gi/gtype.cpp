@@ -30,10 +30,10 @@
 #include <girepository.h>
 
 static JS::Value
-gjs_gtype_create_proto(JSContext  *context,
-                       JSObject   *module,
-                       const char *proto_name,
-                       JSObject   *parent);
+gjs_gtype_create_proto(JSContext       *context,
+                       JS::HandleObject module,
+                       const char      *proto_name,
+                       JS::HandleObject parent);
 
 GJS_DEFINE_PROTO_ABSTRACT("GIRepositoryGType", gtype, 0);
 
@@ -121,13 +121,12 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
                                 GType      gtype)
 {
     JSObject *object;
-    JSObject *global;
 
     JS_BeginRequest(context);
 
     /* put constructor for GIRepositoryGType() in the global namespace */
-    global = gjs_get_import_global(context);
-    gjs_gtype_create_proto(context, global, "GIRepositoryGType", NULL);
+    JS::RootedObject global(context, gjs_get_import_global(context));
+    gjs_gtype_create_proto(context, global, "GIRepositoryGType", JS::NullPtr());
 
     object = (JSObject*) g_type_get_qdata(gtype, gjs_get_gtype_wrapper_quark());
     if (object != NULL)

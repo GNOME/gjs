@@ -60,25 +60,26 @@ gjs_js_define_cairo_stuff(JSContext              *context,
                           JS::MutableHandleObject module)
 {
     JS::Value obj;
-    JSObject *surface_proto, *pattern_proto, *gradient_proto;
+    JS::RootedObject surface_proto(context), pattern_proto(context),
+        gradient_proto(context);
 
     module.set(JS_NewObject(context, NULL, NULL, NULL));
 
     obj = gjs_cairo_region_create_proto(context, module,
-                                        "Region", NULL);
+                                        "Region", JS::NullPtr());
     if (obj.isNull())
         return false;
     gjs_cairo_region_init(context);
 
     obj = gjs_cairo_context_create_proto(context, module,
-                                         "Context", NULL);
+                                         "Context", JS::NullPtr());
     if (obj.isNull())
         return false;
     gjs_cairo_context_init(context);
     gjs_cairo_surface_init(context);
 
     obj = gjs_cairo_surface_create_proto(context, module,
-                                         "Surface", NULL);
+                                         "Surface", JS::NullPtr());
     if (obj.isNull())
         return false;
     surface_proto = &obj.toObject();
@@ -111,7 +112,7 @@ gjs_js_define_cairo_stuff(JSContext              *context,
 #endif
 
     obj = gjs_cairo_pattern_create_proto(context, module,
-                                         "Pattern", NULL);
+                                         "Pattern", JS::NullPtr());
     if (obj.isNull())
         return false;
     pattern_proto = &obj.toObject();

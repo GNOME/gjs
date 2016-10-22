@@ -54,7 +54,6 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     Error *priv;
     Error *proto_priv;
     jsid message_name, code_name;
-    JS::Value v_message, v_code;
     gchar *message;
 
     /* Check early to avoid allocating memory for nothing */
@@ -96,6 +95,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     g_base_info_ref( (GIBaseInfo*) priv->info);
     priv->domain = proto_priv->domain;
 
+    JS::RootedValue v_message(context), v_code(context);
     message_name = gjs_context_get_const_string(context, GJS_STRING_MESSAGE);
     code_name = gjs_context_get_const_string(context, GJS_STRING_CODE);
     if (!gjs_object_require_property(context, &argv[0].toObject(),
@@ -244,7 +244,7 @@ error_constructor_value_of(JSContext *context,
                            JS::Value *vp)
 {
     GJS_GET_THIS(context, argc, vp, rec, self);
-    JS::Value v_prototype;
+    JS::RootedValue v_prototype(context);
     Error *priv;
     jsid prototype_name;
 

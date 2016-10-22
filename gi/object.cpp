@@ -700,7 +700,7 @@ object_instance_props_to_g_parameters(JSContext               *context,
 
     while (!JSID_IS_VOID(prop_id)) {
         char *name = NULL;
-        JS::Value value;
+        JS::RootedValue value(context);
         GParameter gparam = { NULL, { 0, }};
 
         if (!gjs_object_require_property(context, props, "property list", prop_id, &value)) {
@@ -1318,7 +1318,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(object_instance)
     bool ret;
-    JS::Value initer;
+    JS::RootedValue initer(context);
     jsid object_init_name;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(object_instance);

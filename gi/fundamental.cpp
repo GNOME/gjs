@@ -388,7 +388,7 @@ fundamental_invoke_constructor(FundamentalInstance *priv,
                                JS::Value           *argv,
                                GArgument           *rvalue)
 {
-    JS::Value js_constructor, js_constructor_func;
+    JS::RootedValue js_constructor(context), js_constructor_func(context);
     jsid constructor_const;
 
     constructor_const = gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR);

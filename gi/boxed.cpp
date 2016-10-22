@@ -290,7 +290,7 @@ boxed_init_from_props(JSContext   *context,
     while (!JSID_IS_VOID(prop_id)) {
         GIFieldInfo *field_info;
         char *name;
-        JS::Value value;
+        JS::RootedValue value(context);
 
         if (!gjs_get_string_id(context, prop_id, &name))
             goto out;
@@ -330,7 +330,7 @@ boxed_invoke_constructor(JSContext             *context,
                          jsid                   constructor_name,
                          JS::CallArgs&          args)
 {
-    JS::Value js_constructor, js_constructor_func;
+    JS::RootedValue js_constructor(context), js_constructor_func(context);
     jsid constructor_const;
 
     constructor_const = gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR);

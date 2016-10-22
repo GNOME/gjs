@@ -141,23 +141,17 @@ gjs_object_require_property(JSContext       *context,
                             JSObject        *obj,
                             const char      *obj_description,
                             jsid             property_name,
-                            JS::Value       *value_p)
+                            JS::MutableHandleValue value)
 {
-    JS::Value value;
     char *name;
 
-    value = JS::UndefinedValue();
-    if (value_p)
-        *value_p = value;
+    value.setUndefined();
 
-    if (G_UNLIKELY (!JS_GetPropertyById(context, obj, property_name, &value)))
+    if (G_UNLIKELY(!JS_GetPropertyById(context, obj, property_name, value.address())))
         return false;
 
-    if (G_LIKELY (!value.isUndefined())) {
-        if (value_p)
-            *value_p = value;
+    if (G_LIKELY(!value.isUndefined()))
         return true;
-    }
 
     /* remember gjs_throw() is a no-op if JS_GetProperty()
      * already set an exception

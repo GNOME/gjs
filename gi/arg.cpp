@@ -1118,7 +1118,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
             goto out;
     } else if (JS_HasPropertyById(context, &value.toObject(), length_name, &found_length) &&
                found_length) {
-        JS::Value length_value;
+        JS::RootedValue length_value(context);
         guint32 length;
 
         if (!gjs_object_require_property(context,
@@ -1648,7 +1648,7 @@ gjs_value_to_g_argument(JSContext      *context,
         if (value.isObject() &&
             JS_HasPropertyById(context, &value.toObject(), length_name, &found_length) &&
             found_length) {
-            JS::Value length_value;
+            JS::RootedValue length_value(context);
             guint32 length;
 
             if (!gjs_object_require_property(context,
