@@ -2,5 +2,13 @@
 <gresources>
   <gresource prefix="/org/gjs/jsunit">
     <file preprocess="xml-stripblanks">complex.ui</file>
+    <file>modules/alwaysThrows.js</file>
+    <file>modules/foobar.js</file>
+    <file>modules/modunicode.js</file>
+    <file>modules/mutualImport/a.js</file>
+    <file>modules/mutualImport/b.js</file>
+    <file>modules/subA/subB/__init__.js</file>
+    <file>modules/subA/subB/baz.js</file>
+    <file>modules/subA/subB/foobar.js</file>
   </gresource>
 </gresources>
