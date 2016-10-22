@@ -152,13 +152,8 @@ seal_import(JSContext       *cx,
             const char      *name)
 {
     JS::Rooted<JSPropertyDescriptor> descr(cx);
-    JS::RootedId prop_id(cx, gjs_intern_string_to_id(cx, name));
 
-    /* COMPAT: To be replaced with JS_GetOwnPropertyDescriptor() in mozjs31.
-     * This also looks for properties higher up the prototype chain, but in
-     * practice this will always be an own property because we defined it in
-     * define_import(). */
-    if (!JS_GetPropertyDescriptorById(cx, obj, prop_id, &descr) ||
+    if (!JS_GetOwnPropertyDescriptor(cx, obj, name, &descr) ||
         descr.object() == NULL) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to get attributes to seal '%s' in importer",
