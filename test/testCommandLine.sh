@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh
 
 gjs="$TOP_BUILDDIR"/gjs-console
 
@@ -13,72 +13,91 @@ if (ARGV.indexOf('--help') == -1)
 System.exit(0);
 EOF
 
-fail () {
-    >&2 echo "FAIL: $1"
-    exit 1
+total=0
+
+report () {
+    exit_code=$?
+    total=`expr $total + 1`
+    if test $exit_code -eq 0; then
+        echo "ok $total - $1"
+    else
+        echo "not ok $total - $1"
+    fi
+}
+
+report_xfail () {
+    exit_code=$?
+    total=`expr $total + 1`
+    if test $exit_code -ne 0; then
+        echo "ok $total - $1"
+    else
+        echo "not ok $total - $1"
+    fi
 }
 
 # gjs --help prints GJS help
-"$gjs" --help >/dev/null || \
-    fail "--help should succeed"
-test -n "`"$gjs" --help`" || \
-    fail "--help should print something"
+"$gjs" --help >/dev/null
+report "--help should succeed"
+test -n "`"$gjs" --help`"
+report "--help should print something"
 
 # print GJS help even if it's not the first argument
-"$gjs" -I . --help >/dev/null || \
-    fail "should succeed when --help is not first arg"
-test -n "`"$gjs" -I . --help`" || \
-    fail "should print something when --help is not first arg"
+"$gjs" -I . --help >/dev/null
+report "should succeed when --help is not first arg"
+test -n "`"$gjs" -I . --help`"
+report "should print something when --help is not first arg"
 
 # --help before a script file name prints GJS help
-"$gjs" --help help.js >/dev/null || \
-    fail "--help should succeed before a script file"
-test -n "`"$gjs" --help help.js`" || \
-    fail "--help should print something before a script file"
+"$gjs" --help help.js >/dev/null
+report "--help should succeed before a script file"
+test -n "`"$gjs" --help help.js`"
+report "--help should print something before a script file"
 
 # --help before a -c argument prints GJS help
 script='imports.system.exit(1)'
-"$gjs" --help -c "$script" >/dev/null || \
-    fail "--help should succeed before -c"
-test -n "`"$gjs" --help -c "$script"`" || \
-    fail "--help should print something before -c"
+"$gjs" --help -c "$script" >/dev/null
+report "--help should succeed before -c"
+test -n "`"$gjs" --help -c "$script"`"
+report "--help should print something before -c"
 
 # --help after a script file name is passed to the script
-"$gjs" -I sentinel help.js --help || \
-    fail "--help after script file should be passed to script"
-test -z "`"$gjs" -I sentinel help.js --help`" || \
-    fail "--help after script file should not print anything"
+"$gjs" -I sentinel help.js --help
+report "--help after script file should be passed to script"
+test -z "`"$gjs" -I sentinel help.js --help`"
+report "--help after script file should not print anything"
 
 # --help after a -c argument is passed to the script
 script='if(ARGV[0] !== "--help") imports.system.exit(1)'
-"$gjs" -c "$script" --help || \
-    fail "--help after -c should be passed to script"
-test -z "`"$gjs" -c "$script" --help`" || \
-    fail "--help after -c should not print anything"
+"$gjs" -c "$script" --help
+report "--help after -c should be passed to script"
+test -z "`"$gjs" -c "$script" --help`"
+report "--help after -c should not print anything"
 
 # -I after a program is not consumed by GJS
 # Temporary behaviour: still consume the argument, but give a warning
-# if "$gjs" help.js --help -I sentinel; then
-#     fail "-I after script file should not be added to search path"
+# "$gjs" help.js --help -I sentinel
+# report_xfail "-I after script file should not be added to search path"
 # fi
-"$gjs" help.js --help -I sentinel 2>&1 | grep -q 'Gjs-WARNING.*--include-path' || \
-    fail "-I after script should succeed but give a warning"
-"$gjs" -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-prefix' || \
-    fail "--coverage-prefix after script should succeed but give a warning"
-"$gjs" -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-output' || \
-    fail "--coverage-output after script should succeed but give a warning"
+"$gjs" help.js --help -I sentinel 2>&1 | grep -q 'Gjs-WARNING.*--include-path'
+report "-I after script should succeed but give a warning"
+"$gjs" -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-prefix'
+report "--coverage-prefix after script should succeed but give a warning"
+"$gjs" -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-output'
+report "--coverage-output after script should succeed but give a warning"
 
 # --version works
-"$gjs" --version >/dev/null || \
-    fail "--version should work"
-test -n "`"$gjs" --version`" || \
-    fail "--version should print something"
+"$gjs" --version >/dev/null
+report "--version should work"
+test -n "`"$gjs" --version`"
+report "--version should print something"
 
 # --version after a script goes to the script
 script='if(ARGV[0] !== "--version") imports.system.exit(1)'
-"$gjs" -c "$script" --version || \
-    fail "--version after -c should be passed to script"
-test -z "`"$gjs" -c "$script" --version`" || \
-    fail "--version after -c should not print anything"
+"$gjs" -c "$script" --version
+report "--version after -c should be passed to script"
+test -z "`"$gjs" -c "$script" --version`"
+report "--version after -c should not print anything"
 
 rm -f help.js
+
+echo "1..$total"

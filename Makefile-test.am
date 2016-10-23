@@ -128,9 +128,6 @@ LOG_COMPILER = $(top_srcdir)/test/run-test
 AM_LOG_FLAGS =
 endif !DBUS_TESTS
 
-TEST_EXTENSIONS = .sh
-SH_LOG_COMPILER = sh
-
 if CODE_COVERAGE_ENABLED
 AM_TESTS_ENVIRONMENT += 						\
 	export GJS_UNIT_COVERAGE_OUTPUT=lcov;				\
