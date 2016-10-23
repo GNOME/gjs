@@ -21,7 +21,7 @@ if BUILDOPT_INSTALL_TESTS
 gjsinsttest_PROGRAMS += jsunit
 endif
 
-TEST_PROGS += jsunit
+check_PROGRAMS += jsunit
 
 TEST_INTROSPECTION_GIRS =
 

@@ -14,6 +14,7 @@ AX_IS_RELEASE([git-directory])
 AC_CONFIG_SRCDIR([gjs/console.cpp])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
+AC_REQUIRE_AUX_FILE([tap-driver.sh])
 
 AC_DEFINE([GJS_VERSION], pkg_int_version, [The gjs version as an integer])
 
@@ -39,6 +40,7 @@ LT_INIT([disable-static])
 AC_PROG_MKDIR_P
 AC_PROG_LN_S
 AC_PROG_SED
+AC_PROG_AWK
 
 AX_COMPILER_FLAGS
 

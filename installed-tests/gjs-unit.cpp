@@ -35,21 +35,26 @@
 #include "gjs/coverage.h"
 #include "gjs/mem.h"
 
+static const char *skip;
+
 typedef struct {
     const char *coverage_prefix;
     const char *coverage_output_path;
     char       *filename;
+    char       *test_name;
 } GjsTestData;
 
 static GjsTestData *
 gjs_unit_test_data_new(const char *coverage_prefix,
                        const char *coverage_output_path,
-                       char       *filename)
+                       char       *filename,
+                       char       *test_name)
 {
     GjsTestData *data = (GjsTestData *) g_new0(GjsTestData, 1);
     data->coverage_prefix = coverage_prefix;
     data->coverage_output_path = coverage_output_path;
     data->filename = filename;
+    data->test_name = test_name;
     return data;
 }
 
@@ -58,6 +63,7 @@ gjs_unit_test_data_free(gpointer test_data, gpointer user_data)
 {
     GjsTestData *data = (GjsTestData *) test_data;
     g_free(data->filename);
+    g_free(data->test_name);
     g_free(data);
 }
 
@@ -117,6 +123,12 @@ test(GjsTestJSFixture *fix,
     int code;
 
     GjsTestData *data = (GjsTestData *) test_data;
+
+    if (skip && strstr(skip, data->test_name)) {
+        g_test_message("Skipping %s", data->test_name);
+        g_test_skip("due to GJS_TEST_SKIP environment variable");
+        return;
+    }
 
     success = gjs_context_eval_file(fix->context, data->filename, &code, &error);
     if (!success)
@@ -179,6 +191,7 @@ main(int argc, char **argv)
 
     const char *coverage_prefix = g_getenv("GJS_UNIT_COVERAGE_PREFIX");
     const char *coverage_output_directory = g_getenv("GJS_UNIT_COVERAGE_OUTPUT");
+    skip = g_getenv("GJS_TEST_SKIP");
 
     all_tests = read_all_dir_sorted(js_test_dir);
     for (iter = all_tests; iter; iter = iter->next) {
@@ -192,20 +205,20 @@ main(int argc, char **argv)
             g_free(name);
             continue;
         }
-        if (g_str_has_prefix (name, "testCairo") && g_getenv ("GJS_TEST_SKIP_CAIRO"))
-            continue;
 
         /* pretty print, drop 'test' prefix and '.js' suffix from test name */
         test_name = g_strconcat("/js/", name + 4, NULL);
         test_name[strlen(test_name)-3] = '\0';
 
         file_name = g_build_filename(js_test_dir, name, NULL);
-        test_data = gjs_unit_test_data_new(coverage_prefix, coverage_output_directory, file_name);
+        test_data = gjs_unit_test_data_new(coverage_prefix,
+                                           coverage_output_directory, file_name,
+                                           test_name);
         g_test_add(test_name, GjsTestJSFixture, test_data, setup, test, teardown);
         g_free(name);
-        g_free(test_name);
         all_registered_test_data = g_slist_prepend(all_registered_test_data, test_data);
-        /* not freeing file_name or test_data yet as it's needed while running the test */
+        /* not freeing file_name, test_name, or test_data yet as it's needed
+         * while running the test */
     }
     g_free(js_test_dir);
     g_slist_free(all_tests);

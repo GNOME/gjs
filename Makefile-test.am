@@ -1,6 +1,9 @@
-EXTRA_DIST += test/test-bus.conf
+EXTRA_DIST += 			\
+	test/test-bus.conf	\
+	test/run-test		\
+	$(NULL)
 
-TEST_PROGS_OPTIONS = 2>test_user_data/logs/stderr.log
+SKIPPED_TESTS =
 
 if XVFB_TESTS
 XVFB_INVOCATION = $(XVFB) -ac -noreset -screen 0 1024x768x16
@@ -16,32 +19,25 @@ ${XVFB_INVOCATION} -help 2>/dev/null 1>&2 \
 	&& { ${XVFB} :$$XID -nolisten tcp -auth /dev/null >/dev/null 2>&1 & \
 		trap "kill -15 $$! " 0 HUP INT QUIT TRAP USR1 PIPE TERM ; } \
 	|| { echo "Gtk+Tests:ERROR: Failed to start Xvfb environment for X11 target tests."; exit 1; } \
-	&& DISPLAY=:$$XID && export DISPLAY &&
+	&& export DISPLAY=:$$XID;
 else
 XVFB_START =
 endif
 
-if DBUS_TESTS
-LOG_COMPILER = $(DBUS_RUN_SESSION)
-AM_LOG_FLAGS = --config-file=$(srcdir)/test/test-bus.conf --
-RUN_WITH_DBUS = $(LOG_COMPILER) $(AM_LOG_FLAGS)
-else
-RUN_WITH_DBUS =
-TEST_PROGS_OPTIONS += -s /js/GDBus
+if !DBUS_TESTS
+SKIPPED_TESTS += /js/GDBus
 endif
 
 if !ENABLE_GTK
-TEST_PROGS_OPTIONS += -s /js/Gtk
+SKIPPED_TESTS += /js/Gtk
 endif
 
-GTESTER = ${XVFB_START} ${TESTS_ENVIRONMENT} ${RUN_WITH_DBUS} gtester
-clean-local: test-user-data-clean
-
-test-user-data-clean:
-	-rm -fr $(builddir)/test_user_data
+if !ENABLE_CAIRO
+SKIPPED_TESTS += /js/Cairo
+endif
 
 ########################################################################
-TEST_PROGS += gjs-tests
+check_PROGRAMS += gjs-tests
 
 gjs_tests_CPPFLAGS =				\
 	$(AM_CPPFLAGS)				\
@@ -106,32 +102,40 @@ CLEANFILES +=						\
 	mock-js-resources.c				\
 	$(NULL)
 
-check-local: gjs-tests
-	$(MKDIR_P) test_user_data/logs
-	@test -z "${TEST_PROGS}" || ${GTESTER} --verbose ${TEST_PROGS} ${TEST_PROGS_OPTIONS}
-
 # GJS_PATH is empty here since we want to force the use of our own
-# resources
-TESTS_ENVIRONMENT =							\
-	TOP_SRCDIR=$(abs_top_srcdir)					\
-	TOP_BUILDDIR=$(abs_top_builddir)				\
-	XDG_DATA_HOME=test_user_data					\
-	GJS_DEBUG_OUTPUT=test_user_data/logs/gjs.log			\
-	GJS_USE_UNINSTALLED_FILES=1					\
-	GJS_TEST_TIMEOUT=420						\
-	GJS_PATH= \
-	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)"	\
-	G_FILENAME_ENCODING=latin1	# ensure filenames are not utf8	\
+# resources. G_FILENAME_ENCODING ensures filenames are not UTF-8.
+AM_TESTS_ENVIRONMENT =					\
+	export TOP_SRCDIR="$(abs_top_srcdir)";		\
+	export TOP_BUILDDIR="$(abs_top_builddir)";	\
+	export GJS_USE_UNINSTALLED_FILES=1;		\
+	export GJS_TEST_SKIP="$(SKIPPED_TESTS)";	\
+	export GJS_PATH=;				\
+	export G_FILENAME_ENCODING=latin1;		\
+	$(XVFB_START)					\
 	$(NULL)
 
 simple_tests = test/testCommandLine.sh
 EXTRA_DIST += $(simple_tests)
-TESTS = $(simple_tests)
+TESTS += $(simple_tests)
+
+LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/tap-driver.sh
+
+if DBUS_TESTS
+LOG_COMPILER = $(DBUS_RUN_SESSION)
+AM_LOG_FLAGS = --config-file=$(srcdir)/test/test-bus.conf -- $(top_srcdir)/test/run-test
+else
+LOG_COMPILER = $(top_srcdir)/test/run-test
+AM_LOG_FLAGS =
+endif !DBUS_TESTS
+
+TEST_EXTENSIONS = .sh
+SH_LOG_COMPILER = sh
 
 if CODE_COVERAGE_ENABLED
-TESTS_ENVIRONMENT += \
-	GJS_UNIT_COVERAGE_OUTPUT=lcov \
-	GJS_UNIT_COVERAGE_PREFIX=resource:///org/gnome/gjs/
+AM_TESTS_ENVIRONMENT += 						\
+	export GJS_UNIT_COVERAGE_OUTPUT=lcov;				\
+	export GJS_UNIT_COVERAGE_PREFIX=resource:///org/gnome/gjs/;	\
+	$(NULL)
 endif
 
 CODE_COVERAGE_IGNORE_PATTERN = */include/*
