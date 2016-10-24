@@ -51,11 +51,10 @@ EXTRA_DIST += $(jsunit_resources_files)
 common_test_ldflags = -avoid-version
 common_test_libadd = $(GJS_LIBS)
 
-privlibdir = $(pkglibdir)
-privlib_LTLIBRARIES =
+pkglib_LTLIBRARIES =
 check_LTLIBRARIES =
 if BUILDOPT_INSTALL_TESTS
-privlib_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
+pkglib_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
 else
 check_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
 # This rpath /nowhere thing is the libtool upstream recommended way to
