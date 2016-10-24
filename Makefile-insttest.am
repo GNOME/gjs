@@ -4,185 +4,28 @@ EXTRA_DIST += \
 	installed-tests/js/jsunit.gresources.xml	\
 	$(NULL)
 
-installedtestmetadir = $(datadir)/installed-tests/gjs
-installedtestmeta_DATA = 
-if BUILDOPT_INSTALL_TESTS
-installedtestmeta_DATA += jsunit.test
-endif
-
-jsunit.test: installed-tests/jsunit.test.in Makefile
-	$(AM_V_GEN)$(MKDIR_P) $(@D) && \
-	$(SED) -e s,@pkglibexecdir\@,$(pkglibexecdir), < $< > $@.tmp && mv $@.tmp $@
-MAINTAINERCLEANFILES += jsunit.test
+MAINTAINERCLEANFILES += jsunit.test testSystemExit.test
 
 gjsinsttestdir = $(pkglibexecdir)/installed-tests
-gjsinsttest_PROGRAMS = 
-if BUILDOPT_INSTALL_TESTS
-gjsinsttest_PROGRAMS += jsunit
-endif
-
-check_PROGRAMS += jsunit
-
-TEST_INTROSPECTION_GIRS =
-
-jsunit_CPPFLAGS =				\
-	$(AM_CPPFLAGS)				\
-	$(GJS_CFLAGS)				\
-	-DPKGLIBDIR=\"$(pkglibdir)\"		\
-	-DINSTTESTDIR=\"$(gjsinsttestdir)\"	\
-	-I$(top_srcdir)
-jsunit_LDADD = $(GJS_LIBS) libgjs.la
-jsunit_LDFLAGS = -rpath $(pkglibdir)
-jsunit_SOURCES = \
-	installed-tests/gjs-unit.cpp	\
-	jsunit-resources.c		\
-	jsunit-resources.h
-
-jsunit_resources_files := $(shell glib-compile-resources --sourcedir=$(srcdir)/installed-tests/js --generate-dependencies $(srcdir)/installed-tests/js/jsunit.gresources.xml)
-jsunit-resources.h: $(srcdir)/installed-tests/js/jsunit.gresources.xml $(jsunit_resources_files)
-	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir)/installed-tests/js --sourcedir=$(builddir) --generate --c-name jsunit_resources $<
-jsunit-resources.c: $(srcdir)/installed-tests/js/jsunit.gresources.xml $(jsunit_resources_files)
-	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir)/installed-tests/js --sourcedir=$(builddir) --generate --c-name jsunit_resources $<
-
-BUILT_SOURCES += jsunit-resources.h jsunit-resources.c
-CLEANFILES += jsunit-resources.h jsunit-resources.c
-EXTRA_DIST += $(jsunit_resources_files)
-
-common_test_ldflags = -avoid-version
-common_test_libadd = $(GJS_LIBS)
-
-pkglib_LTLIBRARIES =
-check_LTLIBRARIES =
-if BUILDOPT_INSTALL_TESTS
-pkglib_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
-else
-check_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
-# This rpath /nowhere thing is the libtool upstream recommended way to
-# force generation of shared libraries, which we need in order for the
-# tests to work uninstalled.
-common_test_ldflags += -rpath /nowhere
-endif
-
-nodist_libregress_la_SOURCES =		\
-	installed-tests/regress.c	\
-	installed-tests/regress.h	\
-	$(NULL)
-libregress_la_CPPFLAGS = $(AM_CPPFLAGS) $(GJS_CFLAGS) $(GJS_GDBUS_CFLAGS)
-libregress_la_LDFLAGS = $(common_test_ldflags) $(GJS_GDBUS_LIBS)
-libregress_la_LIBADD = $(common_test_libadd)
-libregress_scannerflags_includes = --include=Gio-2.0
-if ENABLE_CAIRO
-libregress_la_CPPFLAGS += $(GJS_CAIRO_CFLAGS)
-libregress_la_LDFLAGS +=  $(GJS_CAIRO_LIBS)
-libregress_scannerflags_includes += --include=cairo-1.0
-else
-libregress_la_CPPFLAGS += -D_GI_DISABLE_CAIRO
-endif
-nodist_libwarnlib_la_SOURCES =		\
-	installed-tests/warnlib.c	\
-	installed-tests/warnlib.h	\
-	$(NULL)
-libwarnlib_la_CPPFLAGS = $(AM_CPPFLAGS) $(GJS_CFLAGS)
-libwarnlib_la_LDFLAGS = $(common_test_ldflags)
-libwarnlib_la_LIBADD = $(common_test_libadd)
-nodist_libgimarshallingtests_la_SOURCES =	\
-	installed-tests/gimarshallingtests.c	\
-	installed-tests/gimarshallingtests.h	\
-	$(NULL)
-libgimarshallingtests_la_CPPFLAGS = $(AM_CPPFLAGS) $(GJS_CFLAGS)
-libgimarshallingtests_la_LDFLAGS = $(common_test_ldflags)
-libgimarshallingtests_la_LIBADD = $(common_test_libadd)
-
-Regress-1.0.gir: libregress.la
-Regress_1_0_gir_LIBS = libregress.la
-Regress_1_0_gir_FILES = $(nodist_libregress_la_SOURCES)
-Regress_1_0_gir_SCANNERFLAGS =			\
-	--warn-all --warn-error			\
-	$(libregress_scannerflags_includes)	\
-	$(WARN_SCANNERFLAGS)			\
-	$(NULL)
-if !ENABLE_CAIRO
-Regress_1_0_gir_CFLAGS = -D_GI_DISABLE_CAIRO
-endif
-TEST_INTROSPECTION_GIRS += Regress-1.0.gir
-
-WarnLib-1.0.gir: libwarnlib.la
-WarnLib_1_0_gir_LIBS = libwarnlib.la
-WarnLib_1_0_gir_INCLUDES = Gio-2.0
-WarnLib_1_0_gir_FILES = $(nodist_libwarnlib_la_SOURCES)
-WarnLib_1_0_gir_SCANNERFLAGS =		\
-	--c-include="warnlib.h"		\
-	--symbol-prefix=warnlib_	\
-	$(NULL)
-TEST_INTROSPECTION_GIRS += WarnLib-1.0.gir
-
-GIMarshallingTests-1.0.gir: libgimarshallingtests.la
-GIMarshallingTests_1_0_gir_LIBS = libgimarshallingtests.la
-GIMarshallingTests_1_0_gir_INCLUDES = Gio-2.0
-GIMarshallingTests_1_0_gir_FILES = $(nodist_libgimarshallingtests_la_SOURCES)
-GIMarshallingTests_1_0_gir_SCANNERFLAGS =	\
-	--symbol-prefix=gi_marshalling_tests	\
-	--warn-all --warn-error			\
-	$(WARN_SCANNERFLAGS)			\
-	$(NULL)
-TEST_INTROSPECTION_GIRS += GIMarshallingTests-1.0.gir
-
-$(foreach gir,$(TEST_INTROSPECTION_GIRS),$(eval $(call introspection-scanner,$(gir))))
-gjsinsttest_DATA =
-noinst_DATA =
-if BUILDOPT_INSTALL_TESTS
-gjsinsttest_DATA += $(TEST_INTROSPECTION_GIRS:.gir=.typelib)
-else
-noinst_DATA += $(TEST_INTROSPECTION_GIRS:.gir=.typelib)
-endif
-CLEANFILES += $(TEST_INTROSPECTION_GIRS) $(TEST_INTROSPECTION_GIRS:.gir=.typelib)
-
-common_jstests_files =						\
-	installed-tests/js/test0010basic.js		\
-	installed-tests/js/test0020importer.js		\
-	installed-tests/js/test0030basicBoxed.js		\
-	installed-tests/js/test0040mainloop.js		\
-	installed-tests/js/testself.js			\
-	installed-tests/js/testByteArray.js		\
-	installed-tests/js/testClass.js			\
-	installed-tests/js/testCoverage.js \
-	installed-tests/js/testExceptions.js		\
-	installed-tests/js/testEverythingBasic.js		\
-	installed-tests/js/testEverythingEncapsulated.js	\
-	installed-tests/js/testFormat.js		\
-	installed-tests/js/testFundamental.js			\
-	installed-tests/js/testGettext.js			\
-	installed-tests/js/testGIMarshalling.js		\
-	installed-tests/js/testGObjectClass.js		\
-	installed-tests/js/testGObjectInterface.js		\
-	installed-tests/js/testGTypeClass.js		\
-	installed-tests/js/testImporter.js			\
-	installed-tests/js/testInterface.js			\
-	installed-tests/js/testJS1_8.js			\
-	installed-tests/js/testLang.js			\
-	installed-tests/js/testLocale.js			\
-	installed-tests/js/testMainloop.js			\
-	installed-tests/js/testMetaClass.js			\
-	installed-tests/js/testNamespace.js			\
-	installed-tests/js/testParamSpec.js			\
-	installed-tests/js/testReflectObject.js			\
-	installed-tests/js/testSignals.js			\
-	installed-tests/js/testSystem.js			\
-	installed-tests/js/testTweener.js			\
-	installed-tests/js/testUnicode.js
-
-EXTRA_DIST +=						\
-	$(common_jstests_files)				\
-	installed-tests/js/testCairo.js			\
-	installed-tests/js/testGtk.js			\
-	installed-tests/js/testGDBus.js			\
-	installed-tests/scripts/testSystemExit.js	\
-	$(NULL)
-
-if BUILDOPT_INSTALL_TESTS
-
+installedtestmetadir = $(datadir)/installed-tests/gjs
 jstestsdir = $(gjsinsttestdir)/js
-jstests_DATA = $(common_jstests_files)
+jsscripttestsdir = $(gjsinsttestdir)/scripts
+
+gjsinsttest_PROGRAMS = 
+gjsinsttest_DATA =
+installedtestmeta_DATA = 
+jstests_DATA =
+jsscripttests_DATA =
+pkglib_LTLIBRARIES =
+
+if BUILDOPT_INSTALL_TESTS
+
+gjsinsttest_PROGRAMS += jsunit
+gjsinsttest_DATA += $(TEST_INTROSPECTION_TYPELIBS)
+installedtestmeta_DATA += jsunit.test testSystemExit.test
+jstests_DATA += $(common_jstests_files)
+jsscripttests_DATA += installed-tests/scripts/testSystemExit.js
+pkglib_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
 
 if ENABLE_CAIRO
 jstests_DATA += installed-tests/js/testCairo.js
@@ -196,6 +39,10 @@ if DBUS_TESTS
 jstests_DATA += installed-tests/js/testGDBus.js
 endif
 
+jsunit.test: installed-tests/jsunit.test.in Makefile
+	$(AM_V_GEN)$(MKDIR_P) $(@D) && \
+	$(SED) -e s,@pkglibexecdir\@,$(pkglibexecdir), < $< > $@.tmp && mv $@.tmp $@
+
 %.test: installed-tests/scripts/%.js installed-tests/script.test.in Makefile
 	$(AM_V_GEN)$(MKDIR_P) $(@D) && \
 	$(SED) -e s,@pkglibexecdir\@,$(pkglibexecdir), \
@@ -203,9 +50,4 @@ endif
 		< $(srcdir)/installed-tests/script.test.in > $@.tmp && \
 	mv $@.tmp $@
 
-jsscripttestsdir = $(gjsinsttestdir)/scripts
-jsscripttests_DATA = installed-tests/scripts/testSystemExit.js
-installedtestmeta_DATA += testSystemExit.test
-endif
-
-MAINTAINERCLEANFILES += testSystemExit.test
+endif BUILDOPT_INSTALL_TESTS

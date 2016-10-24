@@ -7,11 +7,13 @@ bin_PROGRAMS =
 lib_LTLIBRARIES =
 noinst_HEADERS =
 noinst_LTLIBRARIES =
+noinst_DATA =
 dist_gjsjs_DATA =
 BUILT_SOURCES =
 CLEANFILES =
 EXTRA_DIST =
 check_PROGRAMS =
+check_LTLIBRARIES =
 TESTS = $(check_PROGRAMS)
 INTROSPECTION_GIRS =
 ## ACLOCAL_AMFLAGS can be removed for Automake 1.13
