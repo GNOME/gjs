@@ -32,7 +32,7 @@
 struct _GjsCoveragePrivate {
     gchar **prefixes;
     GjsContext *context;
-    JSObject *coverage_statistics;
+    JS::Heap<JSObject *> coverage_statistics;
 
     char *cache_path;
 };
@@ -391,13 +391,13 @@ get_absolute_path(const char *path)
     return absolute_path;
 }
 
-typedef bool (*ConvertAndInsertJSVal) (GArray    *array,
-                                       JSContext *context,
-                                       JS::Value *element);
+typedef bool (*ConvertAndInsertJSVal) (GArray         *array,
+                                       JSContext      *context,
+                                       JS::HandleValue element);
 
 static bool
 get_array_from_js_value(JSContext             *context,
-                        JS::Value             *value,
+                        JS::HandleValue        value,
                         size_t                 array_element_size,
                         GDestroyNotify         element_clear_func,
                         ConvertAndInsertJSVal  inserter,
@@ -406,8 +406,7 @@ get_array_from_js_value(JSContext             *context,
     g_return_val_if_fail(out_array != NULL, false);
     g_return_val_if_fail(*out_array == NULL, false);
 
-    JSObject *js_array = &value->toObject();
-
+    JS::RootedObject js_array(context, &value.toObject());
     if (!JS_IsArrayObject(context, js_array)) {
         g_critical("Returned object from is not an array");
         return false;
@@ -424,15 +423,15 @@ get_array_from_js_value(JSContext             *context,
 
     if (JS_GetArrayLength(context, js_array, &js_array_len)) {
         u_int32_t i = 0;
+        JS::RootedValue element(context);
         for (; i < js_array_len; ++i) {
-            JS::Value element;
-            if (!JS_GetElement(context, js_array, i, &element)) {
+            if (!JS_GetElement(context, js_array, i, element.address())) {
                 g_array_unref(c_side_array);
                 gjs_throw(context, "Failed to get function names array element %d", i);
                 return false;
             }
 
-            if (!(inserter(c_side_array, context, &element))) {
+            if (!(inserter(c_side_array, context, element))) {
                 g_array_unref(c_side_array);
                 gjs_throw(context, "Failed to convert array element %d", i);
                 return false;
@@ -446,17 +445,17 @@ get_array_from_js_value(JSContext             *context,
 }
 
 static bool
-convert_and_insert_unsigned_int(GArray    *array,
-                                JSContext *context,
-                                JS::Value *element)
+convert_and_insert_unsigned_int(GArray         *array,
+                                JSContext      *context,
+                                JS::HandleValue element)
 {
-    if (!element->isInt32() && !element->isUndefined() && !element->isNull()) {
+    if (!element.isInt32() && !element.isUndefined() && !element.isNull()) {
         g_critical("Array element is not an integer or undefined or null");
         return false;
     }
 
-    if (element->isInt32()) {
-        unsigned int element_integer = element->toInt32();
+    if (element.isInt32()) {
+        unsigned int element_integer = element.toInt32();
         g_array_append_val(array, element_integer);
     } else {
         int not_executable = -1;
@@ -469,17 +468,22 @@ convert_and_insert_unsigned_int(GArray    *array,
 static GArray *
 get_executed_lines_for(JSContext        *context,
                        JS::HandleObject  coverage_statistics,
-                       JS::Value        *filename_value)
+                       JS::HandleValue   filename_value)
 {
     GArray *array = NULL;
-    JS::Value rval;
+    JS::RootedValue rval(context);
 
-    if (!JS_CallFunctionName(context, coverage_statistics, "getExecutedLinesFor", 1, filename_value, &rval)) {
+    /* Removing const with cast is OK because the function arguments are not
+     * mutated in JS_CallFunction */
+    if (!JS_CallFunctionName(context, coverage_statistics, "getExecutedLinesFor",
+                             1, (JS::Value *) filename_value.address(),
+                             rval.address())) {
         gjs_log_exception(context);
         return NULL;
     }
 
-    if (!get_array_from_js_value(context, &rval, sizeof(unsigned int), NULL, convert_and_insert_unsigned_int, &array)) {
+    if (!get_array_from_js_value(context, rval, sizeof(unsigned int), NULL,
+        convert_and_insert_unsigned_int, &array)) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -523,16 +527,16 @@ get_hit_count_and_line_data(JSContext       *cx,
 }
 
 static bool
-convert_and_insert_function_decl(GArray    *array,
-                                 JSContext *context,
-                                 JS::Value *element)
+convert_and_insert_function_decl(GArray         *array,
+                                 JSContext      *context,
+                                 JS::HandleValue element)
 {
-    if (!element->isObject()) {
+    if (!element.isObject()) {
         gjs_throw(context, "Function element is not an object");
         return false;
     }
 
-    JS::RootedObject object(context, &element->toObject());
+    JS::RootedObject object(context, &element.toObject());
     JS::RootedValue function_name_property_value(context);
     JS::RootedId function_name(context,
         gjs_context_get_const_string(context, GJS_STRING_NAME));
@@ -577,17 +581,22 @@ convert_and_insert_function_decl(GArray    *array,
 static GArray *
 get_functions_for(JSContext        *context,
                   JS::HandleObject  coverage_statistics,
-                  JS::Value        *filename_value)
+                  JS::HandleValue   filename_value)
 {
     GArray *array = NULL;
-    JS::Value rval;
+    JS::RootedValue rval(context);
 
-    if (!JS_CallFunctionName(context, coverage_statistics, "getFunctionsFor", 1, filename_value, &rval)) {
+    /* Removing const with cast is OK because the function arguments are not
+     * mutated in JS_CallFunction */
+    if (!JS_CallFunctionName(context, coverage_statistics, "getFunctionsFor",
+                             1, (JS::Value *) filename_value.address(),
+                             rval.address())) {
         gjs_log_exception(context);
         return NULL;
     }
 
-    if (!get_array_from_js_value(context, &rval, sizeof(GjsCoverageFunction), clear_coverage_function, convert_and_insert_function_decl, &array)) {
+    if (!get_array_from_js_value(context, rval, sizeof(GjsCoverageFunction),
+        clear_coverage_function, convert_and_insert_function_decl, &array)) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -614,16 +623,16 @@ clear_coverage_branch(gpointer branch_location)
 }
 
 static bool
-convert_and_insert_branch_exit(GArray    *array,
-                               JSContext *context,
-                               JS::Value *element)
+convert_and_insert_branch_exit(GArray         *array,
+                               JSContext      *context,
+                               JS::HandleValue element)
 {
-    if (!element->isObject()) {
+    if (!element.isObject()) {
         gjs_throw(context, "Branch exit array element is not an object");
         return false;
     }
 
-    JS::RootedObject object(context, &element->toObject());
+    JS::RootedObject object(context, &element.toObject());
 
     int32_t hit_count;
     int32_t line;
@@ -642,17 +651,17 @@ convert_and_insert_branch_exit(GArray    *array,
 }
 
 static bool
-convert_and_insert_branch_info(GArray    *array,
-                               JSContext *context,
-                               JS::Value *element)
+convert_and_insert_branch_info(GArray         *array,
+                               JSContext      *context,
+                               JS::HandleValue element)
 {
-    if (!element->isObject() && !element->isUndefined()) {
+    if (!element.isObject() && !element.isUndefined()) {
         gjs_throw(context, "Branch array element is not an object or undefined");
         return false;
     }
 
-    if (element->isObject()) {
-        JS::RootedObject object(context, &element->toObject());
+    if (element.isObject()) {
+        JS::RootedObject object(context, &element.toObject());
 
         int32_t branch_point;
         JS::RootedId point_name(context, gjs_intern_string_to_id(context, "point"));
@@ -668,17 +677,17 @@ convert_and_insert_branch_info(GArray    *array,
                                                hit_name, &was_hit))
             return false;
 
-        JS::Value branch_exits_value;
+        JS::RootedValue branch_exits_value(context);
         GArray *branch_exits_array = NULL;
 
-        if (!JS_GetProperty(context, object, "exits", &branch_exits_value) ||
+        if (!JS_GetProperty(context, object, "exits", branch_exits_value.address()) ||
             !branch_exits_value.isObject()) {
             gjs_throw(context, "Failed to get exits property from element");
             return false;
         }
 
         if (!get_array_from_js_value(context,
-                                     &branch_exits_value,
+                                     branch_exits_value,
                                      sizeof(GjsCoverageBranchExit),
                                      NULL,
                                      convert_and_insert_branch_exit,
@@ -702,17 +711,23 @@ convert_and_insert_branch_info(GArray    *array,
 static GArray *
 get_branches_for(JSContext        *context,
                  JS::HandleObject  coverage_statistics,
-                 JS::Value        *filename_value)
+                 JS::HandleValue   filename_value)
 {
     GArray *array = NULL;
-    JS::Value rval;
+    JS::RootedValue rval(context);
 
-    if (!JS_CallFunctionName(context, coverage_statistics, "getBranchesFor", 1, filename_value, &rval)) {
+    /* Removing const with cast is OK because the function arguments are not
+     * mutated in JS_CallFunction */
+    if (!JS_CallFunctionName(context, coverage_statistics, "getBranchesFor",
+                             1, (JS::Value *) filename_value.address(),
+                             rval.address())) {
         gjs_log_exception(context);
         return NULL;
     }
 
-    if (!get_array_from_js_value(context, &rval, sizeof(GjsCoverageBranch), clear_coverage_branch, convert_and_insert_branch_info, &array)) {
+    if (!get_array_from_js_value(context, rval, sizeof(GjsCoverageBranch),
+                                 clear_coverage_branch,
+                                 convert_and_insert_branch_info, &array)) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -737,11 +752,11 @@ fetch_coverage_file_statistics_from_js(JSContext                 *context,
     JSAutoRequest ar(context);
 
     JSString *filename_jsstr = JS_NewStringCopyZ(context, filename);
-    JS::Value filename_jsval = JS::StringValue(filename_jsstr);
+    JS::RootedValue filename_jsval(context, JS::StringValue(filename_jsstr));
 
-    GArray *lines = get_executed_lines_for(context, coverage_statistics, &filename_jsval);
-    GArray *functions = get_functions_for(context, coverage_statistics, &filename_jsval);
-    GArray *branches = get_branches_for(context, coverage_statistics, &filename_jsval);
+    GArray *lines = get_executed_lines_for(context, coverage_statistics, filename_jsval);
+    GArray *functions = get_functions_for(context, coverage_statistics, filename_jsval);
+    GArray *branches = get_branches_for(context, coverage_statistics, filename_jsval);
 
     if (!lines || !functions || !branches)
     {
@@ -833,29 +848,30 @@ get_covered_files(GjsCoverage *coverage)
     JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
     JSAutoRequest ar(context);
     JSAutoCompartment ac(context, priv->coverage_statistics);
-    JS::Value rval;
-    JSObject *files_obj;
+    JS::RootedObject rooted_priv(context, priv->coverage_statistics);
+    JS::RootedValue rval(context);
 
     char **files = NULL;
     uint32_t n_files;
 
-    if (!JS_CallFunctionName(context, priv->coverage_statistics, "getCoveredFiles", 0, NULL, &rval)) {
+    if (!JS_CallFunctionName(context, rooted_priv, "getCoveredFiles",
+                             0, NULL, rval.address())) {
         gjs_log_exception(context);
-        goto error;
+        return NULL;
     }
 
     if (!rval.isObject())
-        goto error;
+        return NULL;
 
-    files_obj = &rval.toObject();
+    JS::RootedObject files_obj(context, &rval.toObject());
     if (!JS_GetArrayLength(context, files_obj, &n_files))
-        goto error;
+        return NULL;
 
     files = g_new0(char *, n_files + 1);
+    JS::RootedValue element(context);
     for (uint32_t i = 0; i < n_files; i++) {
-        JS::Value element;
         char *file;
-        if (!JS_GetElement(context, files_obj, i, &element))
+        if (!JS_GetElement(context, files_obj, i, element.address()))
             goto error;
 
         if (!gjs_string_to_utf8(context, element, &file))
@@ -993,15 +1009,13 @@ gjs_serialize_statistics(GjsCoverage *coverage)
 
     JSAutoRequest ar(js_context);
     JSAutoCompartment ac(js_context, priv->coverage_statistics);
-
+    JS::RootedObject rooted_priv(js_context, priv->coverage_statistics);
     JS::RootedValue string_value_return(js_runtime);
 
-    if (!JS_CallFunctionName(js_context,
-                             priv->coverage_statistics,
-                             "stringify",
+    if (!JS_CallFunctionName(js_context, rooted_priv, "stringify",
                              0,
                              NULL,
-                             &(string_value_return.get()))) {
+                             string_value_return.address())) {
         gjs_log_exception(js_context);
         return NULL;
     }
@@ -1152,14 +1166,12 @@ coverage_statistics_has_stale_cache(GjsCoverage *coverage)
 
     JSAutoRequest ar(js_context);
     JSAutoCompartment ac(js_context, priv->coverage_statistics);
-
-    JS::Value stale_cache_value;
-    if (!JS_CallFunctionName(js_context,
-                             priv->coverage_statistics,
-                             "staleCache",
+    JS::RootedObject rooted_priv(js_context, priv->coverage_statistics);
+    JS::RootedValue stale_cache_value(js_context);
+    if (!JS_CallFunctionName(js_context, rooted_priv, "staleCache",
                              0,
                              NULL,
-                             &stale_cache_value)) {
+                             stale_cache_value.address())) {
         gjs_log_exception(js_context);
         g_error("Failed to call into javascript to get stale cache value. This is a bug");
     }
@@ -1470,7 +1482,7 @@ coverage_statistics_tracer(JSTracer *trc, void *data)
     GjsCoverage *coverage = (GjsCoverage *) data;
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
-    JS_CallObjectTracer(trc, &priv->coverage_statistics, "coverage_statistics");
+    JS_CallHeapObjectTracer(trc, &priv->coverage_statistics, "coverage_statistics");
 }
 
 /* This function is mainly used in the tests in order to fiddle with
@@ -1500,7 +1512,7 @@ gjs_run_script_in_coverage_compartment(GjsCoverage *coverage,
 
 bool
 gjs_inject_value_into_coverage_compartment(GjsCoverage     *coverage,
-                                           JS::HandleValue handle_value,
+                                           JS::HandleValue  value,
                                            const char      *property)
 {
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
@@ -1512,8 +1524,10 @@ gjs_inject_value_into_coverage_compartment(GjsCoverage     *coverage,
     JS::RootedObject coverage_global_scope(JS_GetRuntime(js_context),
                                            JS_GetGlobalForObject(js_context, priv->coverage_statistics));
 
-    JS::Value value = handle_value;
-    if (!JS_SetProperty(js_context, coverage_global_scope, property, &value)) {
+    /* Removing const with cast is OK because the property value is not
+     * mutated in JS_SetProperty */
+    if (!JS_SetProperty(js_context, coverage_global_scope, property,
+                        (JS::Value *) value.address())) {
         g_warning("Failed to set property %s to requested value", property);
         return false;
     }
@@ -1569,7 +1583,10 @@ bootstrap_coverage(GjsCoverage *coverage)
         }
 
         JS::RootedValue debuggeeWrapperValue(context, JS::ObjectValue(*debuggeeWrapper));
-        if (!JS_SetProperty(context, debugger_compartment, "debuggee", debuggeeWrapperValue.address())) {
+        /* Removing const with cast is OK because the property value is not
+         * mutated in JS_SetProperty */
+        if (!JS_SetProperty(context, debugger_compartment, "debuggee",
+                            (JS::Value *) debuggeeWrapperValue.address())) {
             gjs_throw(context, "Failed to set debuggee property");
             return false;
         }
@@ -1726,10 +1743,9 @@ gjs_clear_js_side_statistics_from_coverage_object(GjsCoverage *coverage)
         JSContext *js_context = (JSContext *) gjs_context_get_native_context(priv->context);
         JSAutoRequest ar(js_context);
         JSAutoCompartment ac(js_context, priv->coverage_statistics);
+        JS::RootedObject rooted_priv(js_context, priv->coverage_statistics);
         JS::RootedValue rval(JS_GetRuntime(js_context));
-        if (!JS_CallFunctionName(js_context,
-                                 priv->coverage_statistics,
-                                 "deactivate",
+        if (!JS_CallFunctionName(js_context, rooted_priv, "deactivate",
                                  0,
                                  NULL,
                                  rval.address())) {
