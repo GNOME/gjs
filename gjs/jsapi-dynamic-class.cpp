@@ -167,19 +167,19 @@ gjs_typecheck_instance(JSContext *context,
 }
 
 JSObject*
-gjs_construct_object_dynamic(JSContext      *context,
-                             JSObject       *proto,
-                             unsigned        argc,
-                             JS::Value      *argv)
+gjs_construct_object_dynamic(JSContext       *context,
+                             JS::HandleObject proto,
+                             unsigned         argc,
+                             JS::Value       *argv)
 {
     JSObject *constructor;
     JSObject *result = NULL;
     JS::RootedValue value(context);
-    jsid constructor_name;
 
     JS_BeginRequest(context);
 
-    constructor_name = gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR);
+    JS::RootedId constructor_name(context,
+        gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR));
     if (!gjs_object_require_property(context, proto, "prototype",
                                      constructor_name, &value))
         goto out;

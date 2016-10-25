@@ -1095,7 +1095,6 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
 {
     bool ret = false;
     GITypeInfo *param_info;
-    jsid length_name;
     JSBool found_length;
 
     param_info = g_type_info_get_param_type(type_info, 0);
@@ -1103,10 +1102,12 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
     if ((value.isNull() && !may_be_null) ||
         (!value.isString() && !value.isObjectOrNull())) {
         throw_invalid_argument(context, value, param_info, arg_name, arg_type);
-        goto out;
+        g_base_info_unref((GIBaseInfo*) param_info);
+        return false;
     }
 
-    length_name = gjs_context_get_const_string(context, GJS_STRING_LENGTH);
+    JS::RootedId length_name(context,
+        gjs_context_get_const_string(context, GJS_STRING_LENGTH));
 
     if (value.isNull()) {
         *contents = NULL;
@@ -1119,11 +1120,10 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
     } else if (JS_HasPropertyById(context, &value.toObject(), length_name, &found_length) &&
                found_length) {
         JS::RootedValue length_value(context);
+        JS::RootedObject array_obj(context, &value.toObject());
         guint32 length;
 
-        if (!gjs_object_require_property(context,
-                                         &value.toObject(), NULL,
-                                         length_name,
+        if (!gjs_object_require_property(context, array_obj, NULL, length_name,
                                          &length_value) ||
             !JS::ToUint32(context, length_value, &length)) {
             goto out;
@@ -1636,10 +1636,10 @@ gjs_value_to_g_argument(JSContext      *context,
 
     case GI_TYPE_TAG_GLIST:
     case GI_TYPE_TAG_GSLIST: {
-        jsid length_name;
         JSBool found_length;
 
-        length_name = gjs_context_get_const_string(context, GJS_STRING_LENGTH);
+        JS::RootedId length_name(context,
+            gjs_context_get_const_string(context, GJS_STRING_LENGTH));
 
         /* nullable_type=false; while a list can be NULL in C, that
          * means empty array in JavaScript, it doesn't mean null in
@@ -1649,10 +1649,10 @@ gjs_value_to_g_argument(JSContext      *context,
             JS_HasPropertyById(context, &value.toObject(), length_name, &found_length) &&
             found_length) {
             JS::RootedValue length_value(context);
+            JS::RootedObject array_obj(context, &value.toObject());
             guint32 length;
 
-            if (!gjs_object_require_property(context,
-                                             &value.toObject(), NULL,
+            if (!gjs_object_require_property(context, array_obj, NULL,
                                              length_name,
                                              &length_value) ||
                 !JS::ToUint32(context, length_value, &length)) {

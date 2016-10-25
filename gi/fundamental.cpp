@@ -56,7 +56,7 @@ typedef struct _Fundamental {
     GIObjectInfoGetValueFunction  get_value_function;
     GIObjectInfoSetValueFunction  set_value_function;
 
-    jsid                          constructor_name;
+    JS::Heap<jsid>                constructor_name;
     GICallableInfo               *constructor_info;
 } Fundamental;
 
@@ -389,9 +389,9 @@ fundamental_invoke_constructor(FundamentalInstance *priv,
                                GArgument           *rvalue)
 {
     JS::RootedValue js_constructor(context), js_constructor_func(context);
-    jsid constructor_const;
+    JS::RootedId constructor_const(context,
+        gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR));
 
-    constructor_const = gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR);
     if (!gjs_object_require_property(context, obj, NULL,
                                      constructor_const, &js_constructor) ||
         priv->prototype->constructor_name == JSID_VOID) {
@@ -402,7 +402,8 @@ fundamental_invoke_constructor(FundamentalInstance *priv,
         return false;
     }
 
-    if (!gjs_object_require_property(context, js_constructor.toObjectOrNull(), NULL,
+    JS::RootedObject js_constructor_obj(context, js_constructor.toObjectOrNull());
+    if (!gjs_object_require_property(context, js_constructor_obj, NULL,
                                      priv->prototype->constructor_name, &js_constructor_func)) {
         gjs_throw (context,
                    "Couldn't find a constructor for type %s.%s",
@@ -521,6 +522,16 @@ to_string_func(JSContext *context,
     return true;
 }
 
+static void
+fundamental_trace(JSTracer *tracer,
+                  JSObject *obj)
+{
+    Fundamental *priv = reinterpret_cast<Fundamental *>(JS_GetPrivate(obj));
+
+    JS_CallHeapIdTracer(tracer, &priv->constructor_name,
+                        "Fundamental::constructor_name");
+}
+
 /* The bizarre thing about this vtable is that it applies to both
  * instances of the object, and to the prototype that instances of the
  * class have.
@@ -547,7 +558,11 @@ struct JSClass gjs_fundamental_instance_class = {
     (JSResolveOp) fundamental_instance_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,
     fundamental_finalize,
-    JSCLASS_NO_OPTIONAL_MEMBERS
+    NULL,  /* checkAccess */
+    NULL,  /* call */
+    NULL,  /* hasInstance */
+    NULL,  /* construct */
+    fundamental_trace
 };
 
 static JSPropertySpec gjs_fundamental_instance_proto_props[] = {

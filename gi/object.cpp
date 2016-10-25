@@ -674,12 +674,13 @@ object_instance_props_to_g_parameters(JSContext               *context,
                                       GType                    gtype,
                                       std::vector<GParameter>& gparams)
 {
-    JSObject *props;
     JSObject *iter;
-    jsid prop_id;
 
     if (argc == 0 || argv[0].isUndefined())
         return true;
+
+    JS::RootedObject props(context);
+    JS::RootedId prop_id(context);
 
     if (!argv[0].isObject()) {
         gjs_throw(context, "argument should be a hash with props to set");
@@ -694,8 +695,7 @@ object_instance_props_to_g_parameters(JSContext               *context,
         goto free_array_and_fail;
     }
 
-    prop_id = JSID_VOID;
-    if (!JS_NextProperty(context, iter, &prop_id))
+    if (!JS_NextProperty(context, iter, prop_id.address()))
         goto free_array_and_fail;
 
     while (!JSID_IS_VOID(prop_id)) {
@@ -731,7 +731,7 @@ object_instance_props_to_g_parameters(JSContext               *context,
         gparams.push_back(gparam);
 
         prop_id = JSID_VOID;
-        if (!JS_NextProperty(context, iter, &prop_id))
+        if (!JS_NextProperty(context, iter, prop_id.address()))
             goto free_array_and_fail;
     }
 
@@ -1319,7 +1319,6 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(object_instance)
     bool ret;
     JS::RootedValue initer(context);
-    jsid object_init_name;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(object_instance);
 
@@ -1328,7 +1327,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
      * might be traced and we will end up dereferencing a null pointer */
     init_object_private(context, object);
 
-    object_init_name = gjs_context_get_const_string(context, GJS_STRING_GOBJECT_INIT);
+    JS::RootedId object_init_name(context,
+        gjs_context_get_const_string(context, GJS_STRING_GOBJECT_INIT));
     if (!gjs_object_require_property(context, object, "GObject instance", object_init_name, &initer))
         return false;
 

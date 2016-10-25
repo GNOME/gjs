@@ -44,9 +44,9 @@ typedef struct {
     GIBoxedInfo *info;
     GType gtype;
     gint zero_args_constructor; /* -1 if none */
-    jsid zero_args_constructor_name;
+    JS::Heap<jsid> zero_args_constructor_name;
     gint default_constructor; /* -1 if none */
-    jsid default_constructor_name;
+    JS::Heap<jsid> default_constructor_name;
 
     /* instance info */
     void *gboxed; /* NULL if we are the prototype and not an instance */
@@ -262,9 +262,7 @@ boxed_init_from_props(JSContext   *context,
                       Boxed       *priv,
                       JS::Value    props_value)
 {
-    JSObject *props;
     JSObject *iter;
-    jsid prop_id;
     bool success = false;
 
     if (!props_value.isObject()) {
@@ -272,7 +270,7 @@ boxed_init_from_props(JSContext   *context,
         return false;
     }
 
-    props = &props_value.toObject();
+    JS::RootedObject props(context, &props_value.toObject());
 
     iter = JS_NewPropertyIterator(context, props);
     if (iter == NULL) {
@@ -283,8 +281,8 @@ boxed_init_from_props(JSContext   *context,
     if (!priv->field_map)
         priv->field_map = get_field_map(priv->info);
 
-    prop_id = JSID_VOID;
-    if (!JS_NextProperty(context, iter, &prop_id))
+    JS::RootedId prop_id(context, JSID_VOID);
+    if (!JS_NextProperty(context, iter, prop_id.address()))
         goto out;
 
     while (!JSID_IS_VOID(prop_id)) {
@@ -313,7 +311,7 @@ boxed_init_from_props(JSContext   *context,
             goto out;
 
         prop_id = JSID_VOID;
-        if (!JS_NextProperty(context, iter, &prop_id))
+        if (!JS_NextProperty(context, iter, prop_id.address()))
             goto out;
     }
 
@@ -326,18 +324,19 @@ boxed_init_from_props(JSContext   *context,
 
 static bool
 boxed_invoke_constructor(JSContext             *context,
-                         JSObject              *obj,
-                         jsid                   constructor_name,
+                         JS::HandleObject       obj,
+                         JS::HandleId           constructor_name,
                          JS::CallArgs&          args)
 {
     JS::RootedValue js_constructor(context), js_constructor_func(context);
-    jsid constructor_const;
+    JS::RootedId constructor_const(context,
+        gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR));
 
-    constructor_const = gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR);
     if (!gjs_object_require_property(context, obj, NULL, constructor_const, &js_constructor))
         return false;
 
-    if (!gjs_object_require_property(context, &js_constructor.toObject(), NULL,
+    JS::RootedObject js_constructor_obj(context, &js_constructor.toObject());
+    if (!gjs_object_require_property(context, js_constructor_obj, NULL,
                                      constructor_name, &js_constructor_func))
         return false;
 
@@ -347,16 +346,15 @@ boxed_invoke_constructor(JSContext             *context,
 
 static bool
 boxed_new(JSContext             *context,
-          JSObject              *obj, /* "this" for constructor */
+          JS::HandleObject       obj, /* "this" for constructor */
           Boxed                 *priv,
           JS::CallArgs&          args)
 {
     if (priv->gtype == G_TYPE_VARIANT) {
-        jsid constructor_name;
-
         /* Short-circuit construction for GVariants by calling into the JS packing
            function */
-        constructor_name = gjs_context_get_const_string(context, GJS_STRING_NEW_INTERNAL);
+        JS::RootedId constructor_name(context,
+            gjs_context_get_const_string(context, GJS_STRING_NEW_INTERNAL));
         return boxed_invoke_constructor(context, obj, constructor_name, args);
     }
 
@@ -887,6 +885,18 @@ to_string_func(JSContext *context,
                                      priv->gboxed, rec.rval());
 }
 
+static void
+boxed_trace(JSTracer *tracer,
+            JSObject *obj)
+{
+    Boxed *priv = reinterpret_cast<Boxed *>(JS_GetPrivate(obj));
+
+    JS_CallHeapIdTracer(tracer, &priv->zero_args_constructor_name,
+                        "Boxed::zero_args_constructor_name");
+    JS_CallHeapIdTracer(tracer, &priv->default_constructor_name,
+                        "Boxed::default_constructor_name");
+}
+
 /* The bizarre thing about this vtable is that it applies to both
  * instances of the object, and to the prototype that instances of the
  * class have.
@@ -909,7 +919,11 @@ struct JSClass gjs_boxed_class = {
     (JSResolveOp) boxed_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,
     boxed_finalize,
-    JSCLASS_NO_OPTIONAL_MEMBERS
+    NULL,  /* checkAccess */
+    NULL,  /* call */
+    NULL,  /* hasInstance */
+    NULL,  /* construct */
+    boxed_trace
 };
 
 JSPropertySpec gjs_boxed_proto_props[] = {
@@ -1047,7 +1061,9 @@ boxed_fill_prototype_info(JSContext *context,
 
     priv->gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
     priv->zero_args_constructor = -1;
+    priv->zero_args_constructor_name = JSID_VOID;
     priv->default_constructor = -1;
+    priv->default_constructor_name = JSID_VOID;
 
     if (priv->gtype != G_TYPE_NONE) {
         /* If the structure is registered as a boxed, we can create a new instance by

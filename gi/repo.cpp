@@ -54,20 +54,20 @@ extern struct JSClass gjs_repo_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Repo, gjs_repo_class)
 
-static JSObject * lookup_override_function(JSContext *, jsid);
+static JSObject *lookup_override_function(JSContext *, JS::HandleId);
 
 static bool
-get_version_for_ns (JSContext *context,
-                    JSObject  *repo_obj,
-                    jsid       ns_id,
-                    char     **version)
+get_version_for_ns (JSContext       *context,
+                    JS::HandleObject repo_obj,
+                    jsid             ns_id,
+                    char           **version)
 {
-    jsid versions_name;
     JS::RootedValue versions_val(context);
     JSObject *versions;
-    JS::Value version_val;
+    JS::RootedValue version_val(context);
+    JS::RootedId versions_name(context,
+        gjs_context_get_const_string(context, GJS_STRING_GI_VERSIONS));
 
-    versions_name = gjs_context_get_const_string(context, GJS_STRING_GI_VERSIONS);
     if (!gjs_object_require_property(context, repo_obj, "GI repository object", versions_name, &versions_val) ||
         !versions_val.isObject()) {
         gjs_throw(context, "No 'versions' property in GI repository object");
@@ -77,7 +77,7 @@ get_version_for_ns (JSContext *context,
     versions = &versions_val.toObject();
 
     *version = NULL;
-    if (JS_GetPropertyById(context, versions, ns_id, &version_val) &&
+    if (JS_GetPropertyById(context, versions, ns_id, version_val.address()) &&
         version_val.isString()) {
         gjs_string_to_utf8(context, version_val, version);
     }
@@ -86,10 +86,10 @@ get_version_for_ns (JSContext *context,
 }
 
 static bool
-resolve_namespace_object(JSContext  *context,
-                         JSObject   *repo_obj,
-                         jsid        ns_id,
-                         const char *ns_name)
+resolve_namespace_object(JSContext       *context,
+                         JS::HandleObject repo_obj,
+                         JS::HandleId     ns_id,
+                         const char      *ns_name)
 {
     GIRepository *repo;
     GError *error;
@@ -143,7 +143,7 @@ resolve_namespace_object(JSContext  *context,
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
               "Defined namespace '%s' %p in GIRepository %p", ns_name,
-              gi_namespace.get(), repo_obj);
+              gi_namespace.get(), repo_obj.get());
 
     gjs_schedule_gc_if_needed(context);
     return true;
@@ -554,9 +554,8 @@ gjs_define_info(JSContext  *context,
 JSObject*
 gjs_lookup_private_namespace(JSContext *context)
 {
-    jsid ns_name;
-
-    ns_name = gjs_context_get_const_string(context, GJS_STRING_PRIVATE_NS_MARKER);
+    JS::RootedId ns_name(context,
+        gjs_context_get_const_string(context, GJS_STRING_PRIVATE_NS_MARKER));
     return gjs_lookup_namespace_object_by_name(context, ns_name);
 }
 
@@ -566,7 +565,6 @@ gjs_lookup_namespace_object(JSContext  *context,
                             GIBaseInfo *info)
 {
     const char *ns;
-    jsid ns_name;
 
     ns = g_base_info_get_namespace(info);
     if (ns == NULL) {
@@ -577,76 +575,78 @@ gjs_lookup_namespace_object(JSContext  *context,
         return NULL;
     }
 
-    ns_name = gjs_intern_string_to_id(context, ns);
+    JS::RootedId ns_name(context, gjs_intern_string_to_id(context, ns));
     return gjs_lookup_namespace_object_by_name(context, ns_name);
 }
 
 static JSObject*
-lookup_override_function(JSContext  *context,
-                         jsid        ns_name)
+lookup_override_function(JSContext   *cx,
+                         JS::HandleId ns_name)
 {
-    JS::Value importer;
-    JS::RootedValue overridespkg(context), module(context), function(context);
-    jsid overrides_name, object_init_name;
+    JSAutoRequest ar(cx);
 
-    JS_BeginRequest(context);
-
-    importer = gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS);
+    JS::RootedValue importer(cx, gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS));
     g_assert(importer.isObject());
 
-    overrides_name = gjs_context_get_const_string(context, GJS_STRING_GI_OVERRIDES);
-    if (!gjs_object_require_property(context, &importer.toObject(), "importer",
+    JS::RootedValue overridespkg(cx), module(cx), function(cx);
+    JS::RootedId overrides_name(cx,
+        gjs_context_get_const_string(cx, GJS_STRING_GI_OVERRIDES));
+    JS::RootedId object_init_name(cx,
+        gjs_context_get_const_string(cx, GJS_STRING_GOBJECT_INIT));
+    JS::RootedObject overridespkg_obj(cx), module_obj(cx);
+    JS::RootedObject importer_obj(cx, &importer.toObject());
+
+    if (!gjs_object_require_property(cx, importer_obj, "importer",
                                      overrides_name, &overridespkg) ||
         !overridespkg.isObject())
         goto fail;
 
-    module = JS::UndefinedValue();
-    if (!gjs_object_require_property(context, &overridespkg.toObject(), "GI repository object", ns_name, &module)
+    overridespkg_obj = &overridespkg.toObject();
+    if (!gjs_object_require_property(cx, overridespkg_obj,
+                                     "GI repository object", ns_name, &module)
         || !module.isObject())
         goto fail;
 
-    object_init_name = gjs_context_get_const_string(context, GJS_STRING_GOBJECT_INIT);
-    if (!gjs_object_require_property(context, &module.toObject(), "override module",
+    module_obj = &module.toObject();
+    if (!gjs_object_require_property(cx, module_obj, "override module",
                                      object_init_name, &function) ||
         !function.isObjectOrNull())
         goto fail;
 
-    JS_EndRequest(context);
     return function.toObjectOrNull();
 
  fail:
-    JS_ClearPendingException(context);
-    JS_EndRequest(context);
+    /* COMPAT: Use JS::AutoSaveExceptionState and move rooting to be late */
+    JS_ClearPendingException(cx);
     return NULL;
 }
 
 JSObject*
 gjs_lookup_namespace_object_by_name(JSContext      *context,
-                                    jsid            ns_name)
+                                    JS::HandleId    ns_name)
 {
-    JSObject *repo_obj;
-    JS::Value importer;
-    JS::RootedValue girepository(context), ns_obj(context);
-    jsid gi_name;
+    JSAutoRequest ar(context);
 
-    JS_BeginRequest(context);
-
-    importer = gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS);
+    JS::RootedValue importer(context,
+        gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS));
     g_assert(importer.isObject());
 
-    gi_name = gjs_context_get_const_string(context, GJS_STRING_GI_MODULE);
-    if (!gjs_object_require_property(context, &importer.toObject(), "importer",
+    JS::RootedId gi_name(context,
+        gjs_context_get_const_string(context, GJS_STRING_GI_MODULE));
+    JS::RootedObject importer_obj(context, &importer.toObject());
+    JS::RootedValue girepository(context);
+    if (!gjs_object_require_property(context, importer_obj, "importer",
                                      gi_name, &girepository) ||
         !girepository.isObject()) {
         gjs_log_exception(context);
         gjs_throw(context, "No gi property in importer");
-        goto fail;
+        return NULL;
     }
 
-    repo_obj = &girepository.toObject();
-
+    JS::RootedObject repo_obj(context, &girepository.toObject());
+    JS::RootedValue ns_obj(context);
     if (!gjs_object_require_property(context, repo_obj, "GI repository object", ns_name, &ns_obj)) {
-        goto fail;
+        return NULL;
     }
 
     if (!ns_obj.isObject()) {
@@ -656,15 +656,10 @@ gjs_lookup_namespace_object_by_name(JSContext      *context,
         gjs_throw(context, "Namespace '%s' is not an object?", name);
 
         g_free(name);
-        goto fail;
+        return NULL;
     }
 
-    JS_EndRequest(context);
     return &ns_obj.toObject();
-
- fail:
-    JS_EndRequest(context);
-    return NULL;
 }
 
 const char*

@@ -183,9 +183,8 @@ static JSObject*
 gjs_lookup_param_prototype(JSContext    *context)
 {
     JSObject *in_object;
-    jsid gobject_name;
 
-    gobject_name = gjs_intern_string_to_id(context, "GObject");
+    JS::RootedId gobject_name(context, gjs_intern_string_to_id(context, "GObject"));
     in_object = gjs_lookup_namespace_object_by_name(context, gobject_name);
 
     if (G_UNLIKELY (!in_object))

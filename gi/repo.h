@@ -42,8 +42,9 @@ const char* gjs_info_type_name                  (GIInfoType      type);
 JSObject*   gjs_lookup_private_namespace        (JSContext      *context);
 JSObject*   gjs_lookup_namespace_object         (JSContext      *context,
                                                  GIBaseInfo     *info);
-JSObject*   gjs_lookup_namespace_object_by_name (JSContext      *context,
-                                                 jsid            name);
+
+JSObject *gjs_lookup_namespace_object_by_name(JSContext   *context,
+                                              JS::HandleId name);
 
 JSObject *  gjs_lookup_generic_constructor      (JSContext      *context,
                                                  GIBaseInfo     *info);

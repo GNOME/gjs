@@ -53,7 +53,6 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(error)
     Error *priv;
     Error *proto_priv;
-    jsid message_name, code_name;
     gchar *message;
 
     /* Check early to avoid allocating memory for nothing */
@@ -96,12 +95,15 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     priv->domain = proto_priv->domain;
 
     JS::RootedValue v_message(context), v_code(context);
-    message_name = gjs_context_get_const_string(context, GJS_STRING_MESSAGE);
-    code_name = gjs_context_get_const_string(context, GJS_STRING_CODE);
-    if (!gjs_object_require_property(context, &argv[0].toObject(),
+    JS::RootedObject params_obj(context, &argv[0].toObject());
+    JS::RootedId message_name(context,
+        gjs_context_get_const_string(context, GJS_STRING_MESSAGE));
+    JS::RootedId code_name(context,
+        gjs_context_get_const_string(context, GJS_STRING_CODE));
+    if (!gjs_object_require_property(context, params_obj,
                                      "GError constructor", message_name, &v_message))
         return false;
-    if (!gjs_object_require_property(context, &argv[0].toObject(),
+    if (!gjs_object_require_property(context, params_obj,
                                      "GError constructor", code_name, &v_code))
         return false;
     if (!gjs_string_to_utf8 (context, v_message, &message))
@@ -246,9 +248,9 @@ error_constructor_value_of(JSContext *context,
     GJS_GET_THIS(context, argc, vp, rec, self);
     JS::RootedValue v_prototype(context);
     Error *priv;
-    jsid prototype_name;
+    JS::RootedId prototype_name(context,
+        gjs_context_get_const_string(context, GJS_STRING_PROTOTYPE));
 
-    prototype_name = gjs_context_get_const_string(context, GJS_STRING_PROTOTYPE);
     if (!gjs_object_require_property(context, self, "constructor",
                                      prototype_name, &v_prototype))
         return false;

@@ -416,11 +416,11 @@ do_import(JSContext       *context,
     guint32 i;
     bool result;
     GPtrArray *directories;
-    jsid search_path_name;
     GFile *gfile;
     bool exists;
 
-    search_path_name = gjs_context_get_const_string(context, GJS_STRING_SEARCH_PATH);
+    JS::RootedId search_path_name(context,
+        gjs_context_get_const_string(context, GJS_STRING_SEARCH_PATH));
     if (!gjs_object_require_property(context, obj, "importer", search_path_name, &search_path_val)) {
         return false;
     }
@@ -665,7 +665,6 @@ importer_new_enumerate(JSContext  *context,
         JS::RootedValue search_path_val(context);
         guint32 search_path_len;
         guint32 i;
-        jsid search_path_name;
 
         statep.setNull();
 
@@ -677,7 +676,8 @@ importer_new_enumerate(JSContext  *context,
             /* we are enumerating the prototype properties */
             return true;
 
-        search_path_name = gjs_context_get_const_string(context, GJS_STRING_SEARCH_PATH);
+        JS::RootedId search_path_name(context,
+            gjs_context_get_const_string(context, GJS_STRING_SEARCH_PATH));
         if (!gjs_object_require_property(context, object, "importer", search_path_name, &search_path_val))
             return false;
 

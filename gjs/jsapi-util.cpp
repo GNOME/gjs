@@ -137,10 +137,10 @@ gjs_get_global_slot (JSContext     *context,
  * Requires request.
  */
 bool
-gjs_object_require_property(JSContext       *context,
-                            JSObject        *obj,
-                            const char      *obj_description,
-                            jsid             property_name,
+gjs_object_require_property(JSContext             *context,
+                            JS::HandleObject       obj,
+                            const char            *obj_description,
+                            JS::HandleId           property_name,
                             JS::MutableHandleValue value)
 {
     char *name;
@@ -166,7 +166,7 @@ gjs_object_require_property(JSContext       *context,
     else
         gjs_throw(context,
                   "No property '%s' in object %p (or its value was undefined)",
-                  name, obj);
+                  name, obj.address());
 
     g_free(name);
     return false;

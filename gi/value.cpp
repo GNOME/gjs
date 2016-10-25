@@ -485,19 +485,19 @@ gjs_value_to_g_value_internal(JSContext    *context,
 
         g_value_set_object(gvalue, gobj);
     } else if (gtype == G_TYPE_STRV) {
-        jsid length_name;
         JSBool found_length;
+        JS::RootedId length_name(context,
+            gjs_context_get_const_string(context, GJS_STRING_LENGTH));
 
-        length_name = gjs_context_get_const_string(context, GJS_STRING_LENGTH);
         if (value.isNull()) {
             /* do nothing */
         } else if (JS_HasPropertyById(context, &value.toObject(), length_name, &found_length) &&
                    found_length) {
             JS::RootedValue length_value(context);
+            JS::RootedObject array_obj(context, &value.toObject());
             guint32 length;
 
-            if (!gjs_object_require_property(context,
-                                             &value.toObject(), NULL,
+            if (!gjs_object_require_property(context, array_obj, NULL,
                                              length_name,
                                              &length_value) ||
                 !JS::ToUint32(context, length_value, &length)) {

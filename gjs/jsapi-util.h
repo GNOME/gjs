@@ -304,9 +304,9 @@ void        gjs_set_global_slot              (JSContext       *context,
                                               JS::Value        value);
 
 bool gjs_object_require_property(JSContext             *context,
-                                 JSObject              *obj,
+                                 JS::HandleObject       obj,
                                  const char            *obj_description,
-                                 jsid                   property_name,
+                                 JS::HandleId           property_name,
                                  JS::MutableHandleValue value);
 
 bool gjs_init_class_dynamic(JSContext              *context,
@@ -333,10 +333,11 @@ bool        gjs_typecheck_instance            (JSContext  *context,
                                                JSClass    *static_clasp,
                                                bool        _throw);
 
-JSObject*   gjs_construct_object_dynamic     (JSContext       *context,
-                                              JSObject        *proto,
-                                              unsigned         argc,
-                                              JS::Value       *argv);
+JSObject *gjs_construct_object_dynamic(JSContext       *context,
+                                       JS::HandleObject proto,
+                                       unsigned         argc,
+                                       JS::Value       *argv);
+
 JSObject*   gjs_build_string_array           (JSContext       *context,
                                               gssize           array_length,
                                               char           **array_values);
