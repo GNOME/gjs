@@ -252,11 +252,11 @@ function testExpressionLinesFoundForObjectPropertyArrayExpression() {
 
 function testExpressionLinesFoundForObjectArgsToReturn() {
     let foundLinesInsideObjectArgsToReturn =
-        parseScriptForExpressionLines("var a = {\n" +
-                                      "    Name: {},\n" +
-                                      "};\n");
+        parseScriptForExpressionLines("function f() {\n" +
+                                      "    return {};\n" +
+                                      "}\n");
     assertArrayEquals(foundLinesInsideObjectArgsToReturn,
-                      [1, 2],
+                      [2],
                       JSUnit.assertEquals);
 }
 
@@ -287,7 +287,7 @@ function functionDeclarationsEqual(actual, expected) {
 
 function testFunctionsFoundNoTrailingNewline() {
     let foundFuncs = parseScriptForFunctionNames("function f1() {}\n" +
-                                                 "function f2() {}\n");
+                                                 "function f2() {}");
     assertArrayEquals(foundFuncs,
                       [
                           { key: "f1:1:0", line: 1, n_params: 0 },
