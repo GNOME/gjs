@@ -309,6 +309,13 @@ bool gjs_object_require_property(JSContext             *context,
                                  JS::HandleId           property_name,
                                  JS::MutableHandleValue value);
 
+/* This is intended to be overloaded with more types as the opportunity arises */
+bool gjs_object_require_converted_property_value(JSContext       *context,
+                                                 JS::HandleObject obj,
+                                                 const char      *description,
+                                                 JS::HandleId     property_name,
+                                                 uint32_t        *value);
+
 bool gjs_init_class_dynamic(JSContext              *context,
                             JSObject               *in_object,
                             JSObject               *parent_proto,
@@ -482,5 +489,32 @@ const char * gjs_strip_unix_shebang(const char *script,
                                     int        *new_start_line_number);
 
 G_END_DECLS
+
+/* Overloaded functions, must be outside G_DECLS. More types are intended to be
+ * added as the opportunity arises. */
+
+bool gjs_object_require_property_value(JSContext       *cx,
+                                       JS::HandleObject obj,
+                                       const char      *description,
+                                       JS::HandleId     property_name,
+                                       bool            *value);
+
+bool gjs_object_require_property_value(JSContext       *cx,
+                                       JS::HandleObject obj,
+                                       const char      *description,
+                                       JS::HandleId     property_name,
+                                       int32_t         *value);
+
+bool gjs_object_require_property_value(JSContext       *cx,
+                                       JS::HandleObject obj,
+                                       const char      *description,
+                                       JS::HandleId     property_name,
+                                       char           **value);
+
+bool gjs_object_require_property_value(JSContext              *cx,
+                                       JS::HandleObject        obj,
+                                       const char             *description,
+                                       JS::HandleId            property_name,
+                                       JS::MutableHandleObject value);
 
 #endif  /* __GJS_JSAPI_UTIL_H__ */

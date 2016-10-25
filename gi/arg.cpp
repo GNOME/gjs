@@ -1119,13 +1119,11 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
             goto out;
     } else if (JS_HasPropertyById(context, &value.toObject(), length_name, &found_length) &&
                found_length) {
-        JS::RootedValue length_value(context);
         JS::RootedObject array_obj(context, &value.toObject());
         guint32 length;
 
-        if (!gjs_object_require_property(context, array_obj, NULL, length_name,
-                                         &length_value) ||
-            !JS::ToUint32(context, length_value, &length)) {
+        if (!gjs_object_require_converted_property_value(context, array_obj, NULL,
+                                                         length_name, &length)) {
             goto out;
         } else {
             if (!gjs_array_to_array(context,
@@ -1648,14 +1646,12 @@ gjs_value_to_g_argument(JSContext      *context,
         if (value.isObject() &&
             JS_HasPropertyById(context, &value.toObject(), length_name, &found_length) &&
             found_length) {
-            JS::RootedValue length_value(context);
             JS::RootedObject array_obj(context, &value.toObject());
             guint32 length;
 
-            if (!gjs_object_require_property(context, array_obj, NULL,
-                                             length_name,
-                                             &length_value) ||
-                !JS::ToUint32(context, length_value, &length)) {
+            if (!gjs_object_require_converted_property_value(context, array_obj,
+                                                             NULL, length_name,
+                                                             &length)) {
                 wrong = true;
             } else {
                 GList *list;

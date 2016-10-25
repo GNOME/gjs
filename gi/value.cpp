@@ -493,14 +493,13 @@ gjs_value_to_g_value_internal(JSContext    *context,
             /* do nothing */
         } else if (JS_HasPropertyById(context, &value.toObject(), length_name, &found_length) &&
                    found_length) {
-            JS::RootedValue length_value(context);
             JS::RootedObject array_obj(context, &value.toObject());
             guint32 length;
 
-            if (!gjs_object_require_property(context, array_obj, NULL,
-                                             length_name,
-                                             &length_value) ||
-                !JS::ToUint32(context, length_value, &length)) {
+            if (!gjs_object_require_converted_property_value(context, array_obj,
+                                                             NULL, length_name,
+                                                             &length)) {
+                JS_ClearPendingException(context);
                 gjs_throw(context,
                           "Wrong type %s; strv expected",
                           gjs_get_type_name(value));

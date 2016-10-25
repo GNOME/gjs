@@ -172,22 +172,15 @@ gjs_construct_object_dynamic(JSContext       *context,
                              unsigned         argc,
                              JS::Value       *argv)
 {
-    JSObject *constructor;
-    JSObject *result = NULL;
-    JS::RootedValue value(context);
-
-    JS_BeginRequest(context);
+    JSAutoRequest ar(context);
 
     JS::RootedId constructor_name(context,
         gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR));
-    if (!gjs_object_require_property(context, proto, "prototype",
-                                     constructor_name, &value))
-        goto out;
+    JS::RootedObject constructor(context);
 
-    constructor = &value.toObject();
-    result = JS_New(context, constructor, argc, argv);
+    if (!gjs_object_require_property_value(context, proto, "prototype",
+                                           constructor_name, &constructor))
+        return NULL;
 
- out:
-    JS_EndRequest(context);
-    return result;
+    return JS_New(context, constructor, argc, argv);
 }

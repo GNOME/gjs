@@ -59,27 +59,23 @@ static JSObject *lookup_override_function(JSContext *, JS::HandleId);
 static bool
 get_version_for_ns (JSContext       *context,
                     JS::HandleObject repo_obj,
-                    jsid             ns_id,
+                    JS::HandleId     ns_id,
                     char           **version)
 {
-    JS::RootedValue versions_val(context);
-    JSObject *versions;
+    JS::RootedObject versions(context);
     JS::RootedValue version_val(context);
     JS::RootedId versions_name(context,
         gjs_context_get_const_string(context, GJS_STRING_GI_VERSIONS));
 
-    if (!gjs_object_require_property(context, repo_obj, "GI repository object", versions_name, &versions_val) ||
-        !versions_val.isObject()) {
-        gjs_throw(context, "No 'versions' property in GI repository object");
+    if (!gjs_object_require_property_value(context, repo_obj,
+                                           "GI repository object", versions_name,
+                                           &versions))
         return false;
-    }
 
-    versions = &versions_val.toObject();
-
-    *version = NULL;
-    if (JS_GetPropertyById(context, versions, ns_id, version_val.address()) &&
-        version_val.isString()) {
-        gjs_string_to_utf8(context, version_val, version);
+    if (!gjs_object_require_property_value(context, versions, NULL, ns_id, version)) {
+        /* Property not actually required, so clear an exception */
+        JS_ClearPendingException(context);
+        *version = NULL;
     }
 
     return true;
@@ -588,27 +584,23 @@ lookup_override_function(JSContext   *cx,
     JS::RootedValue importer(cx, gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS));
     g_assert(importer.isObject());
 
-    JS::RootedValue overridespkg(cx), module(cx), function(cx);
+    JS::RootedValue function(cx);
     JS::RootedId overrides_name(cx,
         gjs_context_get_const_string(cx, GJS_STRING_GI_OVERRIDES));
     JS::RootedId object_init_name(cx,
         gjs_context_get_const_string(cx, GJS_STRING_GOBJECT_INIT));
-    JS::RootedObject overridespkg_obj(cx), module_obj(cx);
+    JS::RootedObject overridespkg(cx), module(cx);
     JS::RootedObject importer_obj(cx, &importer.toObject());
 
-    if (!gjs_object_require_property(cx, importer_obj, "importer",
-                                     overrides_name, &overridespkg) ||
-        !overridespkg.isObject())
+    if (!gjs_object_require_property_value(cx, importer_obj, "importer",
+                                           overrides_name, &overridespkg))
         goto fail;
 
-    overridespkg_obj = &overridespkg.toObject();
-    if (!gjs_object_require_property(cx, overridespkg_obj,
-                                     "GI repository object", ns_name, &module)
-        || !module.isObject())
+    if (!gjs_object_require_property_value(cx, overridespkg, "GI repository object",
+                                           ns_name, &module))
         goto fail;
 
-    module_obj = &module.toObject();
-    if (!gjs_object_require_property(cx, module_obj, "override module",
+    if (!gjs_object_require_property(cx, module, "override module",
                                      object_init_name, &function) ||
         !function.isObjectOrNull())
         goto fail;
@@ -633,33 +625,21 @@ gjs_lookup_namespace_object_by_name(JSContext      *context,
 
     JS::RootedId gi_name(context,
         gjs_context_get_const_string(context, GJS_STRING_GI_MODULE));
-    JS::RootedObject importer_obj(context, &importer.toObject());
-    JS::RootedValue girepository(context);
-    if (!gjs_object_require_property(context, importer_obj, "importer",
-                                     gi_name, &girepository) ||
-        !girepository.isObject()) {
+    JS::RootedObject repo(context), importer_obj(context, &importer.toObject());
+
+    if (!gjs_object_require_property_value(context, importer_obj, "importer",
+                                           gi_name, &repo)) {
         gjs_log_exception(context);
         gjs_throw(context, "No gi property in importer");
         return NULL;
     }
 
-    JS::RootedObject repo_obj(context, &girepository.toObject());
-    JS::RootedValue ns_obj(context);
-    if (!gjs_object_require_property(context, repo_obj, "GI repository object", ns_name, &ns_obj)) {
+    JS::RootedObject retval(context);
+    if (!gjs_object_require_property_value(context, repo, "GI repository object",
+                                           ns_name, &retval))
         return NULL;
-    }
 
-    if (!ns_obj.isObject()) {
-        char *name;
-
-        gjs_get_string_id(context, ns_name, &name);
-        gjs_throw(context, "Namespace '%s' is not an object?", name);
-
-        g_free(name);
-        return NULL;
-    }
-
-    return &ns_obj.toObject();
+    return retval;
 }
 
 const char*

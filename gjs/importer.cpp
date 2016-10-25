@@ -411,7 +411,7 @@ do_import(JSContext       *context,
     char *filename;
     char *full_path;
     char *dirname = NULL;
-    JS::RootedValue search_path_val(context);
+    JS::RootedObject search_path(context);
     guint32 search_path_len;
     guint32 i;
     bool result;
@@ -421,16 +421,11 @@ do_import(JSContext       *context,
 
     JS::RootedId search_path_name(context,
         gjs_context_get_const_string(context, GJS_STRING_SEARCH_PATH));
-    if (!gjs_object_require_property(context, obj, "importer", search_path_name, &search_path_val)) {
+
+    if (!gjs_object_require_property_value(context, obj, "importer",
+                                           search_path_name, &search_path)) {
         return false;
     }
-
-    if (!search_path_val.isObject()) {
-        gjs_throw(context, "searchPath property on importer is not an object");
-        return false;
-    }
-
-    JS::RootedObject search_path(context, &search_path_val.toObject());
 
     if (!JS_IsArrayObject(context, search_path)) {
         gjs_throw(context, "searchPath property on importer is not an array");
@@ -662,7 +657,7 @@ importer_new_enumerate(JSContext  *context,
     case JSENUMERATE_INIT_ALL:
     case JSENUMERATE_INIT: {
         Importer *priv;
-        JS::RootedValue search_path_val(context);
+        JS::RootedObject search_path(context);
         guint32 search_path_len;
         guint32 i;
 
@@ -678,15 +673,9 @@ importer_new_enumerate(JSContext  *context,
 
         JS::RootedId search_path_name(context,
             gjs_context_get_const_string(context, GJS_STRING_SEARCH_PATH));
-        if (!gjs_object_require_property(context, object, "importer", search_path_name, &search_path_val))
+        if (!gjs_object_require_property_value(context, object, "importer",
+                                               search_path_name, &search_path))
             return false;
-
-        if (!search_path_val.isObject()) {
-            gjs_throw(context, "searchPath property on importer is not an object");
-            return false;
-        }
-
-        JS::RootedObject search_path(context, &search_path_val.toObject());
 
         if (!JS_IsArrayObject(context, search_path)) {
             gjs_throw(context, "searchPath property on importer is not an array");

@@ -128,6 +128,29 @@ gjs_get_global_slot (JSContext     *context,
     return JS_GetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot);
 }
 
+static void
+throw_property_lookup_error(JSContext       *cx,
+                            JS::HandleObject obj,
+                            const char      *description,
+                            JS::HandleId     property_name,
+                            const char      *reason)
+{
+    /* remember gjs_throw() is a no-op if JS_GetProperty()
+     * already set an exception
+     */
+    char *name;
+    gjs_get_string_id(cx, property_name, &name);
+
+    if (description)
+        gjs_throw(cx, "No property '%s' in %s (or %s)", name, description,
+                  reason);
+    else
+        gjs_throw(cx, "No property '%s' in object %p (or %s)", name,
+                  obj.address(), reason);
+
+    g_free(name);
+}
+
 /* Returns whether the object had the property; if the object did
  * not have the property, always sets an exception. Treats
  * "the property's value is undefined" the same as "no such property,".
@@ -143,8 +166,6 @@ gjs_object_require_property(JSContext             *context,
                             JS::HandleId           property_name,
                             JS::MutableHandleValue value)
 {
-    char *name;
-
     value.setUndefined();
 
     if (G_UNLIKELY(!JS_GetPropertyById(context, obj, property_name, value.address())))
@@ -153,22 +174,102 @@ gjs_object_require_property(JSContext             *context,
     if (G_LIKELY(!value.isUndefined()))
         return true;
 
-    /* remember gjs_throw() is a no-op if JS_GetProperty()
-     * already set an exception
-     */
+    throw_property_lookup_error(context, obj, obj_description, property_name,
+                                "its value was undefined");
+    return false;
+}
 
-    gjs_get_string_id(context, property_name, &name);
+bool
+gjs_object_require_property_value(JSContext       *cx,
+                                  JS::HandleObject obj,
+                                  const char      *description,
+                                  JS::HandleId     property_name,
+                                  bool            *value)
+{
+    JS::RootedValue prop_value(cx);
+    if (JS_GetPropertyById(cx, obj, property_name, prop_value.address()) &&
+        prop_value.isBoolean()) {
+        *value = prop_value.toBoolean();
+        return true;
+    }
 
-    if (obj_description)
-        gjs_throw(context,
-                  "No property '%s' in %s (or its value was undefined)",
-                  name, obj_description);
-    else
-        gjs_throw(context,
-                  "No property '%s' in object %p (or its value was undefined)",
-                  name, obj.address());
+    throw_property_lookup_error(cx, obj, description, property_name,
+                                "it was not a boolean");
+    return false;
+}
 
-    g_free(name);
+bool
+gjs_object_require_property_value(JSContext       *cx,
+                                  JS::HandleObject obj,
+                                  const char      *description,
+                                  JS::HandleId     property_name,
+                                  int32_t         *value)
+{
+    JS::RootedValue prop_value(cx);
+    if (JS_GetPropertyById(cx, obj, property_name, prop_value.address()) &&
+        prop_value.isInt32()) {
+        *value = prop_value.toInt32();
+        return true;
+    }
+
+    throw_property_lookup_error(cx, obj, description, property_name,
+                                "it was not a 32-bit integer");
+    return false;
+}
+
+/* Converts JS string value to UTF-8 string. value must be freed with JS_free. */
+bool
+gjs_object_require_property_value(JSContext       *cx,
+                                  JS::HandleObject obj,
+                                  const char      *description,
+                                  JS::HandleId     property_name,
+                                  char           **value)
+{
+    JS::RootedValue prop_value(cx);
+    if (JS_GetPropertyById(cx, obj, property_name, prop_value.address()) &&
+        gjs_string_to_utf8(cx, prop_value, value)) {
+        return true;
+    }
+
+    throw_property_lookup_error(cx, obj, description, property_name,
+                                "it was not a valid string");
+    return false;
+}
+
+bool
+gjs_object_require_property_value(JSContext              *cx,
+                                  JS::HandleObject        obj,
+                                  const char             *description,
+                                  JS::HandleId            property_name,
+                                  JS::MutableHandleObject value)
+{
+    JS::RootedValue prop_value(cx);
+    if (JS_GetPropertyById(cx, obj, property_name, prop_value.address()) &&
+        prop_value.isObject()) {
+        value.set(&prop_value.toObject());
+        return true;
+    }
+
+    throw_property_lookup_error(cx, obj, description, property_name,
+                                "it was not an object");
+    return false;
+}
+
+bool
+gjs_object_require_converted_property_value(JSContext       *cx,
+                                            JS::HandleObject obj,
+                                            const char      *description,
+                                            JS::HandleId     property_name,
+                                            uint32_t        *value)
+{
+    JS::RootedValue prop_value(cx);
+    if (JS_GetPropertyById(cx, obj, property_name, prop_value.address()) &&
+        JS::ToUint32(cx, prop_value, value)) {
+        return true;
+    }
+
+    throw_property_lookup_error(cx, obj, description, property_name,
+                                "it couldn't be converted to uint32");
     return false;
 }
 

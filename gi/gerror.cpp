@@ -54,6 +54,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     Error *priv;
     Error *proto_priv;
     gchar *message;
+    int32_t code;
 
     /* Check early to avoid allocating memory for nothing */
     if (argc != 1 || !argv[0].isObject()) {
@@ -94,25 +95,23 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     g_base_info_ref( (GIBaseInfo*) priv->info);
     priv->domain = proto_priv->domain;
 
-    JS::RootedValue v_message(context), v_code(context);
     JS::RootedObject params_obj(context, &argv[0].toObject());
     JS::RootedId message_name(context,
         gjs_context_get_const_string(context, GJS_STRING_MESSAGE));
     JS::RootedId code_name(context,
         gjs_context_get_const_string(context, GJS_STRING_CODE));
-    if (!gjs_object_require_property(context, params_obj,
-                                     "GError constructor", message_name, &v_message))
+    if (!gjs_object_require_property_value(context, params_obj,
+                                           "GError constructor", message_name,
+                                           &message))
         return false;
-    if (!gjs_object_require_property(context, params_obj,
-                                     "GError constructor", code_name, &v_code))
-        return false;
-    if (!gjs_string_to_utf8 (context, v_message, &message))
+    if (!gjs_object_require_property_value(context, params_obj,
+                                           "GError constructor", code_name,
+                                           &code))
         return false;
 
-    priv->gerror = g_error_new_literal(priv->domain, v_code.toInt32(),
-                                       message);
+    priv->gerror = g_error_new_literal(priv->domain, code, message);
 
-    g_free (message);
+    JS_free(context, message);
 
     /* We assume this error will be thrown in the same line as the constructor */
     define_error_properties(context, object);
@@ -246,22 +245,20 @@ error_constructor_value_of(JSContext *context,
                            JS::Value *vp)
 {
     GJS_GET_THIS(context, argc, vp, rec, self);
-    JS::RootedValue v_prototype(context);
     Error *priv;
     JS::RootedId prototype_name(context,
         gjs_context_get_const_string(context, GJS_STRING_PROTOTYPE));
+    JS::RootedObject prototype(context);
 
-    if (!gjs_object_require_property(context, self, "constructor",
-                                     prototype_name, &v_prototype))
-        return false;
-
-    if (!v_prototype.isObject()) {
+    if (!gjs_object_require_property_value(context, self, "constructor",
+                                           prototype_name, &prototype)) {
+        /* This error message will be more informative */
+        JS_ClearPendingException(context);
         gjs_throw(context, "GLib.Error.valueOf() called on something that is not"
                   " a constructor");
         return false;
     }
 
-    JS::RootedObject prototype(context, &v_prototype.toObject());
     priv = priv_from_js(context, prototype);
 
     if (priv == NULL)
