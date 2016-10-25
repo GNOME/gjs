@@ -64,32 +64,36 @@ bool
 gjs_init_context_standard (JSContext              *context,
                            JS::MutableHandleObject global)
 {
-    JS::CompartmentOptions options;
-    guint32 options_flags;
+    JS::CompartmentOptions compartment_options;
 
-    /* JSOPTION_DONT_REPORT_UNCAUGHT: Don't send exceptions to our
-     * error report handler; instead leave them set.  This allows us
-     * to get at the exception object.
+    bool extra_warnings = false;
+    if (!g_getenv("GJS_DISABLE_EXTRA_WARNINGS")) {
+        gjs_debug(GJS_DEBUG_CONTEXT, "Enabling extra warnings");
+        extra_warnings = true;
+    }
+
+    /* setDontReportUncaught: Don't send exceptions to our error report handler;
+     * instead leave them set. This allows us to get at the exception object.
      *
-     * JSOPTION_STRICT: Report warnings to error reporter function.
+     * setExtraWarnings: Report warnings to error reporter function.
      */
-    options_flags = JSOPTION_DONT_REPORT_UNCAUGHT;
+    JS::ContextOptionsRef(context)
+        .setDontReportUncaught(true)
+        .setExtraWarnings(extra_warnings);
 
     if (!g_getenv("GJS_DISABLE_JIT")) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
-        options_flags |= JSOPTION_TYPE_INFERENCE | JSOPTION_ION | JSOPTION_BASELINE | JSOPTION_ASMJS;
+        JS::RuntimeOptionsRef(context)
+            .setIon(true)
+            .setBaseline(true)
+            .setAsmJS(true);
     }
 
-    if (!g_getenv("GJS_DISABLE_EXTRA_WARNINGS")) {
-        gjs_debug(GJS_DEBUG_CONTEXT, "Enabling extra warnings");
-        options_flags |= JSOPTION_EXTRA_WARNINGS;
-    }
-
-    JS_SetOptions(context, JS_GetOptions(context) | options_flags);
     JS_SetErrorReporter(context, gjs_error_reporter);
 
-    options.setVersion(JSVERSION_LATEST);
-    global.set(JS_NewGlobalObject(context, &global_class, NULL, options));
+    compartment_options.setVersion(JSVERSION_LATEST);
+    global.set(JS_NewGlobalObject(context, &global_class, NULL,
+                                  compartment_options));
     if (global == NULL)
         return false;
 

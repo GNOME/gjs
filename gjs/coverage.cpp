@@ -1696,8 +1696,10 @@ gjs_coverage_constructed(GObject *object)
     JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
 
     /* Before bootstrapping, turn off the JIT on the context */
-    guint32 options_flags = JS_GetOptions(context) & ~(JSOPTION_ION | JSOPTION_BASELINE | JSOPTION_ASMJS);
-    JS_SetOptions(context, options_flags);
+    JS::RuntimeOptionsRef(context)
+        .setIon(false)
+        .setBaseline(false)
+        .setAsmJS(false);
 
     if (!bootstrap_coverage(coverage)) {
         JSAutoCompartment compartment(context, gjs_get_import_global(context));
