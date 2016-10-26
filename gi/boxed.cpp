@@ -339,7 +339,7 @@ boxed_invoke_constructor(JSContext             *context,
         return false;
 
     return gjs_call_function_value(context, JS::NullPtr(), js_constructor_func,
-                                   args.length(), args.array(), args.rval());
+                                   args, args.rval());
 }
 
 static bool
@@ -683,12 +683,12 @@ out:
 }
 
 static bool
-set_nested_interface_object (JSContext   *context,
-                             Boxed       *parent_priv,
-                             GIFieldInfo *field_info,
-                             GITypeInfo  *type_info,
-                             GIBaseInfo  *interface_info,
-                             JS::Value    value)
+set_nested_interface_object (JSContext      *context,
+                             Boxed          *parent_priv,
+                             GIFieldInfo    *field_info,
+                             GITypeInfo     *type_info,
+                             GIBaseInfo     *interface_info,
+                             JS::HandleValue value)
 {
     int offset;
     Boxed *proto_priv;
@@ -711,8 +711,10 @@ set_nested_interface_object (JSContext   *context,
      * to construct a new temporary object.
      */
     if (!boxed_get_copy_source(context, proto_priv, value, &source_priv)) {
+        JS::AutoValueArray<1> args(context);
+        args[0].set(value);
         JS::RootedObject tmp_object(context,
-                                    gjs_construct_object_dynamic(context, proto, 1, &value));
+            gjs_construct_object_dynamic(context, proto, args));
         if (!tmp_object)
             return false;
 

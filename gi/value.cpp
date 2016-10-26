@@ -120,14 +120,12 @@ closure_marshal(GClosure        *closure,
     JSContext *context;
     JSRuntime *runtime;
     JSObject *obj;
-    int argc;
-    int i;
+    unsigned i;
     GSignalQuery signal_query = { 0, };
     GISignalInfo *signal_info;
     bool *skip;
     int *array_len_indices_for;
     GITypeInfo **type_info_for;
-    int argv_index;
 
     gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
                       "Marshal closure %p",
@@ -165,13 +163,8 @@ closure_marshal(GClosure        *closure,
     }
 
     obj = gjs_closure_get_callable(closure);
-    JS_BeginRequest(context);
+    JSAutoRequest ar(context);
     JSAutoCompartment ac(context, obj);
-
-    argc = n_param_values;
-    JS::RootedValue rval(context);
-    JS::AutoValueVector argv(context);
-    argv.resize(argc);
 
     if (marshal_data) {
         /* we are used for a signal handler */
@@ -184,31 +177,31 @@ closure_marshal(GClosure        *closure,
         if (!signal_query.signal_id) {
             gjs_debug(GJS_DEBUG_GCLOSURE,
                       "Signal handler being called on invalid signal");
-            goto cleanup;
+            return;
         }
 
         if (signal_query.n_params + 1 != n_param_values) {
             gjs_debug(GJS_DEBUG_GCLOSURE,
                       "Signal handler being called with wrong number of parameters");
-            goto cleanup;
+            return;
         }
     }
 
     /* Check if any parameters, such as array lengths, need to be eliminated
      * before we invoke the closure.
      */
-    skip = g_newa(bool, argc);
-    memset(skip, 0, sizeof (bool) * argc);
-    array_len_indices_for = g_newa(int, argc);
-    for(i = 0; i < argc; i++)
+    skip = g_newa(bool, n_param_values);
+    memset(skip, 0, sizeof (bool) * n_param_values);
+    array_len_indices_for = g_newa(int, n_param_values);
+    for(i = 0; i < n_param_values; i++)
         array_len_indices_for[i] = -1;
-    type_info_for = g_newa(GITypeInfo *, argc);
-    memset(type_info_for, 0, sizeof (gpointer) * argc);
+    type_info_for = g_newa(GITypeInfo *, n_param_values);
+    memset(type_info_for, 0, sizeof (gpointer) * n_param_values);
 
     signal_info = get_signal_info_if_available(&signal_query);
     if (signal_info) {
         /* Start at argument 1, skip the instance parameter */
-        for (i = 1; i < argc; ++i) {
+        for (i = 1; i < n_param_values; ++i) {
             GIArgInfo *arg_info;
             int array_len_pos;
 
@@ -227,8 +220,10 @@ closure_marshal(GClosure        *closure,
         g_base_info_unref((GIBaseInfo *)signal_info);
     }
 
-    argv_index = 0;
-    for (i = 0; i < argc; ++i) {
+    JS::AutoValueVector argv(context);
+    argv.reserve(n_param_values);  /* May end up being less */
+    JS::RootedValue argv_to_append(context);
+    for (i = 0; i < n_param_values; ++i) {
         const GValue *gval = &param_values[i];
         bool no_copy;
         int array_len_index;
@@ -247,14 +242,14 @@ closure_marshal(GClosure        *closure,
         if (array_len_index != -1) {
             const GValue *array_len_gval = &param_values[array_len_index];
             res = gjs_value_from_array_and_length_values(context,
-                                                         argv.handleAt(argv_index),
+                                                         &argv_to_append,
                                                          type_info_for[i],
                                                          gval, array_len_gval,
                                                          no_copy, &signal_query,
                                                          array_len_index);
         } else {
             res = gjs_value_from_g_value_internal(context,
-                                                  argv.handleAt(argv_index),
+                                                  &argv_to_append,
                                                   gval, no_copy, &signal_query,
                                                   i);
         }
@@ -264,36 +259,32 @@ closure_marshal(GClosure        *closure,
                       "Unable to convert arg %d in order to invoke closure",
                       i);
             gjs_log_exception(context);
-            goto cleanup;
+            return;
         }
 
-        argv_index++;
+        argv.append(argv_to_append);
     }
 
-    for (i = 1; i < argc; i++)
+    for (i = 1; i < n_param_values; i++)
         if (type_info_for[i])
             g_base_info_unref((GIBaseInfo *)type_info_for[i]);
 
-    gjs_closure_invoke(closure, argv_index,
-                       argv_index > 0 ? &argv[0] : NULL,
-                       &rval);
+    JS::RootedValue rval(context);
+    gjs_closure_invoke(closure, argv, &rval);
 
     if (return_value != NULL) {
         if (rval.isUndefined()) {
             /* something went wrong invoking, error should be set already */
-            goto cleanup;
+            return;
         }
 
         if (!gjs_value_to_g_value(context, rval, return_value)) {
             gjs_debug(GJS_DEBUG_GCLOSURE,
                       "Unable to convert return value when invoking closure");
             gjs_log_exception(context);
-            goto cleanup;
+            return;
         }
     }
-
- cleanup:
-    JS_EndRequest(context);
 }
 
 GClosure*

@@ -668,25 +668,24 @@ free_g_params(GParameter *params,
  * a hash)
  */
 static bool
-object_instance_props_to_g_parameters(JSContext               *context,
-                                      JSObject                *obj,
-                                      unsigned                 argc,
-                                      JS::Value               *argv,
-                                      GType                    gtype,
-                                      std::vector<GParameter>& gparams)
+object_instance_props_to_g_parameters(JSContext                  *context,
+                                      JSObject                   *obj,
+                                      const JS::HandleValueArray& args,
+                                      GType                       gtype,
+                                      std::vector<GParameter>&    gparams)
 {
-    if (argc == 0 || argv[0].isUndefined())
+    if (args.length() == 0 || args[0].isUndefined())
         return true;
 
     JS::RootedObject props(context), iter(context);
     JS::RootedId prop_id(context);
 
-    if (!argv[0].isObject()) {
+    if (!args[0].isObject()) {
         gjs_throw(context, "argument should be a hash with props to set");
         goto free_array_and_fail;
     }
 
-    props = &argv[0].toObject();
+    props = &args[0].toObject();
 
     iter = JS_NewPropertyIterator(context, props);
     if (iter == NULL) {
@@ -1221,10 +1220,9 @@ disassociate_js_gobject (GObject   *gobj)
 }
 
 static bool
-object_instance_init (JSContext              *context,
-                      JS::MutableHandleObject object,
-                      unsigned                argc,
-                      JS::Value              *argv)
+object_instance_init (JSContext                  *context,
+                      JS::MutableHandleObject     object,
+                      const JS::HandleValueArray& args)
 {
     ObjectInstance *priv;
     GType gtype;
@@ -1237,7 +1235,7 @@ object_instance_init (JSContext              *context,
     gtype = priv->gtype;
     g_assert(gtype != G_TYPE_NONE);
 
-    if (!object_instance_props_to_g_parameters(context, object, argc, argv,
+    if (!object_instance_props_to_g_parameters(context, object, args,
                                                gtype, params)) {
         return false;
     }
@@ -1332,8 +1330,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
         return false;
 
     argv.rval().setUndefined();
-    ret = gjs_call_function_value(context, object, initer,
-                                  argc, argv.array(), argv.rval());
+    ret = gjs_call_function_value(context, object, initer, argv, argv.rval());
 
     if (argv.rval().isUndefined())
         argv.rval().setObject(*object);
@@ -1793,7 +1790,7 @@ init_func (JSContext *context,
     if (!do_base_typecheck(context, obj, true))
         return false;
 
-    ret = object_instance_init(context, &obj, argc, argv.array());
+    ret = object_instance_init(context, &obj, argv);
 
     if (ret)
         argv.rval().setObject(*obj);

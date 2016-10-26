@@ -344,10 +344,9 @@ bool gjs_typecheck_instance(JSContext       *context,
                             JSClass         *static_clasp,
                             bool             throw_error);
 
-JSObject *gjs_construct_object_dynamic(JSContext       *context,
-                                       JS::HandleObject proto,
-                                       unsigned         argc,
-                                       JS::Value       *argv);
+JSObject *gjs_construct_object_dynamic(JSContext                  *context,
+                                       JS::HandleObject            proto,
+                                       const JS::HandleValueArray& args);
 
 JSObject*   gjs_build_string_array           (JSContext       *context,
                                               gssize           array_length,
@@ -381,12 +380,11 @@ bool gjs_log_exception_full(JSContext       *context,
 char *gjs_value_debug_string(JSContext      *context,
                              JS::HandleValue value);
 
-bool gjs_call_function_value(JSContext             *context,
-                             JS::HandleObject       obj,
-                             JS::HandleValue        fval,
-                             unsigned               argc,
-                             JS::Value             *argv,
-                             JS::MutableHandleValue rval);
+bool gjs_call_function_value(JSContext                  *context,
+                             JS::HandleObject            obj,
+                             JS::HandleValue             fval,
+                             const JS::HandleValueArray& args,
+                             JS::MutableHandleValue      rval);
 
 void        gjs_error_reporter               (JSContext       *context,
                                               const char      *message,

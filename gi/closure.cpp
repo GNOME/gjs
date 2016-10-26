@@ -246,10 +246,9 @@ closure_set_invalid(gpointer  data,
 }
 
 void
-gjs_closure_invoke(GClosure              *closure,
-                   int                    argc,
-                   JS::Value             *argv,
-                   JS::MutableHandleValue retval)
+gjs_closure_invoke(GClosure                   *closure,
+                   const JS::HandleValueArray& args,
+                   JS::MutableHandleValue      retval)
 {
     Closure *c;
     JSContext *context;
@@ -278,7 +277,7 @@ gjs_closure_invoke(GClosure              *closure,
     if (!gjs_call_function_value(context,
                                  /* "this" object; null is some kind of default presumably */
                                  JS::NullPtr(),
-                                 v_closure, argc, argv, retval)) {
+                                 v_closure, args, retval)) {
         /* Exception thrown... */
         gjs_debug_closure("Closure invocation failed (exception should "
                           "have been thrown) closure %p callable %p",

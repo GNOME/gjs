@@ -378,12 +378,11 @@ fundamental_instance_new_resolve(JSContext  *context,
 }
 
 static bool
-fundamental_invoke_constructor(FundamentalInstance *priv,
-                               JSContext           *context,
-                               JS::HandleObject     obj,
-                               unsigned             argc,
-                               JS::Value           *argv,
-                               GArgument           *rvalue)
+fundamental_invoke_constructor(FundamentalInstance        *priv,
+                               JSContext                  *context,
+                               JS::HandleObject            obj,
+                               const JS::HandleValueArray& args,
+                               GIArgument                 *rvalue)
 {
     JS::RootedId constructor_const(context,
         gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR));
@@ -410,7 +409,7 @@ fundamental_invoke_constructor(FundamentalInstance *priv,
         return false;
     }
 
-    return gjs_invoke_constructor_from_c(context, constructor, obj, argc, argv, rvalue);
+    return gjs_invoke_constructor_from_c(context, constructor, obj, args, rvalue);
 }
 
 /* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on
@@ -436,7 +435,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(fundamental_instance)
                         "fundamental constructor, obj %p priv %p",
                         object.get(), priv);
 
-    if (!fundamental_invoke_constructor(priv, context, object, argc, argv.array(), &ret_value))
+    if (!fundamental_invoke_constructor(priv, context, object, argv, &ret_value))
         return false;
 
     associate_js_instance_to_fundamental(context, object, ret_value.v_pointer, false);

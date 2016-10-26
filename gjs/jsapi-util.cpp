@@ -634,19 +634,17 @@ gjs_log_exception(JSContext  *context)
 }
 
 bool
-gjs_call_function_value(JSContext             *context,
-                        JS::HandleObject       obj,
-                        JS::HandleValue        fval,
-                        unsigned               argc,
-                        JS::Value             *argv,
-                        JS::MutableHandleValue rval)
+gjs_call_function_value(JSContext                  *context,
+                        JS::HandleObject            obj,
+                        JS::HandleValue             fval,
+                        const JS::HandleValueArray& args,
+                        JS::MutableHandleValue      rval)
 {
     bool result;
 
     JS_BeginRequest(context);
 
-    result = JS_CallFunctionValue(context, obj, fval,
-                                  argc, argv, rval.address());
+    result = JS_CallFunctionValue(context, obj, fval, args, rval);
 
     if (result)
         gjs_schedule_gc_if_needed(context);

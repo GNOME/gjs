@@ -675,8 +675,7 @@ static bool
 gjs_invoke_c_function(JSContext                              *context,
                       Function                               *function,
                       JS::HandleObject                        obj, /* "this" object */
-                      unsigned                                js_argc,
-                      JS::Value                              *js_argv,
+                      const JS::HandleValueArray&             args,
                       mozilla::Maybe<JS::MutableHandleValue>& js_rval,
                       GIArgument                             *r_value)
 {
@@ -747,13 +746,14 @@ gjs_invoke_c_function(JSContext                              *context,
      * don't allow too few args, since that would break.
      */
 
-    if (js_argc < function->expected_js_argc) {
-        gjs_throw(context, "Too few arguments to %s %s.%s expected %d got %d",
+    if (args.length() < function->expected_js_argc) {
+        gjs_throw(context,
+                  "Too few arguments to %s %s.%s expected %d got %" G_GSIZE_FORMAT,
                   is_method ? "method" : "function",
                   g_base_info_get_namespace( (GIBaseInfo*) function->info),
                   g_base_info_get_name( (GIBaseInfo*) function->info),
                   function->expected_js_argc,
-                  js_argc);
+                  args.length());
         return false;
     }
 
@@ -849,28 +849,26 @@ gjs_invoke_c_function(JSContext                              *context,
                 GIScopeType scope = g_arg_info_get_scope(&arg_info);
                 GjsCallbackTrampoline *trampoline;
                 ffi_closure *closure;
-                /* COMPAT: Avoid this extra root by changing the function's
-                 * in parameter to JS::HandleValueArray in mozjs31 */
-                JS::RootedValue value(context, js_argv[js_arg_pos]);
+                JS::HandleValue current_arg = args[js_arg_pos];
 
-                if (value.isNull() && g_arg_info_may_be_null(&arg_info)) {
+                if (current_arg.isNull() && g_arg_info_may_be_null(&arg_info)) {
                     closure = NULL;
                     trampoline = NULL;
                 } else {
-                    if (!(JS_TypeOfValue(context, value) == JSTYPE_FUNCTION)) {
+                    if (!(JS_TypeOfValue(context, current_arg) == JSTYPE_FUNCTION)) {
                         gjs_throw(context, "Error invoking %s.%s: Expected function for callback argument %s, got %s",
                                   g_base_info_get_namespace( (GIBaseInfo*) function->info),
                                   g_base_info_get_name( (GIBaseInfo*) function->info),
                                   g_base_info_get_name( (GIBaseInfo*) &arg_info),
                                   JS_GetTypeName(context,
-                                                 JS_TypeOfValue(context, value)));
+                                                 JS_TypeOfValue(context, current_arg)));
                         failed = true;
                         break;
                     }
 
                     callable_info = (GICallableInfo*) g_type_info_get_interface(&ainfo);
                     trampoline = gjs_callback_trampoline_new(context,
-                                                             value,
+                                                             current_arg,
                                                              callable_info,
                                                              scope,
                                                              false);
@@ -908,11 +906,8 @@ gjs_invoke_c_function(JSContext                              *context,
                 gint array_length_pos = g_type_info_get_array_length(&ainfo);
                 gsize length;
 
-                /* COMPAT: Avoid this extra root by changing the function's
-                 * in parameter to JS::HandleValueArray in mozjs31 */
-                JS::RootedValue v_arg(context, js_argv[js_arg_pos]);
-                if (!gjs_value_to_explicit_array(context, v_arg, &arg_info,
-                                                 in_value, &length)) {
+                if (!gjs_value_to_explicit_array(context, args[js_arg_pos],
+                                                 &arg_info, in_value, &length)) {
                     failed = true;
                     break;
                 }
@@ -945,11 +940,9 @@ gjs_invoke_c_function(JSContext                              *context,
             }
             case PARAM_NORMAL: {
                 /* Ok, now just convert argument normally */
-                g_assert_cmpuint(js_arg_pos, <, js_argc);
-                /* COMPAT: Avoid this extra root by changing the function's
-                 * in parameter to JS::HandleValueArray in mozjs31 */
-                JS::RootedValue v_arg(context, js_argv[js_arg_pos]);
-                if (!gjs_value_to_arg(context, v_arg, &arg_info, in_value))
+                g_assert_cmpuint(js_arg_pos, <, args.length());
+                if (!gjs_value_to_arg(context, args[js_arg_pos], &arg_info,
+                                      in_value))
                     failed = true;
 
                 break;
@@ -1331,8 +1324,8 @@ function_call(JSContext *context,
     /* COMPAT: mozilla::Maybe gains a much more usable API in future versions */
     mozilla::Maybe<JS::MutableHandleValue> m_retval;
     m_retval.construct(&retval);
-    success = gjs_invoke_c_function(context, priv, object, js_argc,
-                                    js_argv.array(), m_retval, NULL);
+    success = gjs_invoke_c_function(context, priv, object, js_argv, m_retval,
+                                    NULL);
     if (success)
         js_argv.rval().set(retval);
 
@@ -1770,12 +1763,11 @@ gjs_define_function(JSContext       *context,
 
 
 bool
-gjs_invoke_c_function_uncached(JSContext             *context,
-                               GIFunctionInfo        *info,
-                               JS::HandleObject       obj,
-                               unsigned               argc,
-                               JS::Value             *argv,
-                               JS::MutableHandleValue rval)
+gjs_invoke_c_function_uncached(JSContext                  *context,
+                               GIFunctionInfo             *info,
+                               JS::HandleObject            obj,
+                               const JS::HandleValueArray& args,
+                               JS::MutableHandleValue      rval)
 {
   Function function;
   bool result;
@@ -1787,23 +1779,22 @@ gjs_invoke_c_function_uncached(JSContext             *context,
   /* COMPAT: mozilla::Maybe gains a much more usable API in future versions */
   mozilla::Maybe<JS::MutableHandleValue> m_rval;
   m_rval.construct(rval);
-  result = gjs_invoke_c_function(context, &function, obj, argc, argv, m_rval, NULL);
+  result = gjs_invoke_c_function(context, &function, obj, args, m_rval, NULL);
   uninit_cached_function_data (&function);
   return result;
 }
 
 bool
-gjs_invoke_constructor_from_c(JSContext       *context,
-                              JS::HandleObject constructor,
-                              JS::HandleObject obj,
-                              unsigned         argc,
-                              JS::Value       *argv,
-                              GArgument       *rvalue)
+gjs_invoke_constructor_from_c(JSContext                  *context,
+                              JS::HandleObject            constructor,
+                              JS::HandleObject            obj,
+                              const JS::HandleValueArray& args,
+                              GIArgument                 *rvalue)
 {
     Function *priv;
 
     priv = priv_from_js(context, constructor);
 
     mozilla::Maybe<JS::MutableHandleValue> m_jsrval;
-    return gjs_invoke_c_function(context, priv, obj, argc, argv, m_jsrval, rvalue);
+    return gjs_invoke_c_function(context, priv, obj, args, m_jsrval, rvalue);
 }

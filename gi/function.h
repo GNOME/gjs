@@ -67,19 +67,17 @@ JSObject *gjs_define_function(JSContext       *context,
                               GType            gtype,
                               GICallableInfo  *info);
 
-bool gjs_invoke_c_function_uncached(JSContext             *context,
-                                    GIFunctionInfo        *info,
-                                    JS::HandleObject       obj,
-                                    unsigned               argc,
-                                    JS::Value             *argv,
-                                    JS::MutableHandleValue rval);
+bool gjs_invoke_c_function_uncached(JSContext                  *context,
+                                    GIFunctionInfo             *info,
+                                    JS::HandleObject            obj,
+                                    const JS::HandleValueArray& args,
+                                    JS::MutableHandleValue      rval);
 
-bool      gjs_invoke_constructor_from_c(JSContext       *context,
-                                        JS::HandleObject constructor,
-                                        JS::HandleObject obj,
-                                        unsigned         argc,
-                                        JS::Value       *argv,
-                                        GArgument       *rvalue);
+bool gjs_invoke_constructor_from_c(JSContext                  *context,
+                                   JS::HandleObject            constructor,
+                                   JS::HandleObject            obj,
+                                   const JS::HandleValueArray& args,
+                                   GIArgument                 *rvalue);
 
 G_END_DECLS
 

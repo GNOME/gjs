@@ -162,10 +162,9 @@ gjs_typecheck_instance(JSContext       *context,
 }
 
 JSObject*
-gjs_construct_object_dynamic(JSContext       *context,
-                             JS::HandleObject proto,
-                             unsigned         argc,
-                             JS::Value       *argv)
+gjs_construct_object_dynamic(JSContext                  *context,
+                             JS::HandleObject            proto,
+                             const JS::HandleValueArray& args)
 {
     JSAutoRequest ar(context);
 
@@ -177,5 +176,5 @@ gjs_construct_object_dynamic(JSContext       *context,
                                            constructor_name, &constructor))
         return NULL;
 
-    return JS_New(context, constructor, argc, argv);
+    return JS_New(context, constructor, args);
 }

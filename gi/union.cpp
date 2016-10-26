@@ -161,7 +161,7 @@ union_new(JSContext       *context,
             JS::RootedValue rval(context, JS::NullValue());
 
             gjs_invoke_c_function_uncached(context, func_info, obj,
-                                           0, NULL, &rval);
+                                           JS::HandleValueArray::empty(), &rval);
 
             g_base_info_unref((GIBaseInfo*) func_info);
 

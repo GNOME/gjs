@@ -36,10 +36,9 @@ GClosure*  gjs_closure_new           (JSContext    *context,
                                       const char   *description,
                                       bool          root_function);
 
-void gjs_closure_invoke(GClosure              *closure,
-                        int                    argc,
-                        JS::Value             *argv,
-                        JS::MutableHandleValue retval);
+void gjs_closure_invoke(GClosure                   *closure,
+                        const JS::HandleValueArray& args,
+                        JS::MutableHandleValue      retval);
 
 JSContext* gjs_closure_get_context   (GClosure     *closure);
 bool       gjs_closure_is_valid      (GClosure     *closure);
