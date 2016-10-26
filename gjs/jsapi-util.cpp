@@ -327,15 +327,14 @@ gjs_define_string_array(JSContext       *context,
                         const char     **array_values,
                         unsigned         attrs)
 {
-    JSObject *array;
-
     JSAutoRequest ar(context);
 
-    array = gjs_build_string_array(context, array_length, (char **) array_values);
+    JS::RootedObject array(context,
+        gjs_build_string_array(context, array_length, (char **) array_values));
 
     if (array != NULL) {
-        if (!JS_DefineProperty(context, in_object,
-                               array_name, JS::ObjectValue(*array),
+        JS::RootedValue v_array(context, JS::ObjectValue(*array));
+        if (!JS_DefineProperty(context, in_object, array_name, v_array,
                                NULL, NULL, attrs))
             array = NULL;
     }
@@ -456,9 +455,7 @@ gjs_value_debug_string(JSContext      *context,
             /* Specifically the Call object (see jsfun.c in spidermonkey)
              * does not have a toString; there may be others also.
              */
-            JSClass *klass;
-
-            klass = JS_GetClass(&value.toObject());
+            const JSClass *klass = JS_GetClass(&value.toObject());
             if (klass != NULL) {
                 str = JS_NewStringCopyZ(context, klass->name);
                 JS_ClearPendingException(context);
@@ -496,8 +493,8 @@ gjs_value_debug_string(JSContext      *context,
 }
 
 static char *
-utf8_exception_from_non_gerror_value(JSContext *cx,
-                                     JS::Value  exc)
+utf8_exception_from_non_gerror_value(JSContext      *cx,
+                                     JS::HandleValue exc)
 {
     char *utf8_exception = NULL;
     JSString *exc_str = JS_ValueToString(cx, exc);
