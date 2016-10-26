@@ -369,8 +369,7 @@ void        gjs_throw_g_error                (JSContext       *context,
                                               GError          *error);
 
 bool        gjs_log_exception                (JSContext       *context);
-bool        gjs_move_exception               (JSContext       *src_context,
-                                              JSContext       *dest_context);
+
 bool        gjs_log_exception_full           (JSContext       *context,
                                               JS::Value        exc,
                                               JSString        *message);

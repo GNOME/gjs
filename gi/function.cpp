@@ -1726,10 +1726,8 @@ gjs_define_function(JSContext      *context,
     JS_BeginRequest(context);
 
     function = function_new(context, gtype, info);
-    if (function == NULL) {
-        gjs_move_exception(context, context);
+    if (function == NULL)
         goto out;
-    }
 
     if (info_type == GI_INFO_TYPE_FUNCTION) {
         name = (gchar *) g_base_info_get_name((GIBaseInfo*) info);
