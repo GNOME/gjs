@@ -280,23 +280,18 @@ gjs_throw_constructor_error(JSContext *context)
 }
 
 void
-gjs_throw_abstract_constructor_error(JSContext *context,
-                                     JS::Value *vp)
+gjs_throw_abstract_constructor_error(JSContext    *context,
+                                     JS::CallArgs& args)
 {
-    JS::Value callee;
-    JSClass *proto_class;
+    const JSClass *proto_class;
     const char *name = "anonymous";
 
-    callee = JS_CALLEE(context, vp);
-
-    if (callee.isObject()) {
-        JS::RootedObject callee_obj(context, &callee.toObject());
-        JS::RootedValue prototype(context);
-        if (gjs_object_get_property_const(context, callee_obj,
-                                          GJS_STRING_PROTOTYPE, &prototype)) {
-            proto_class = JS_GetClass(&prototype.toObject());
-            name = proto_class->name;
-        }
+    JS::RootedObject callee(context, &args.callee());
+    JS::RootedValue prototype(context);
+    if (gjs_object_get_property_const(context, callee,
+                                      GJS_STRING_PROTOTYPE, &prototype)) {
+        proto_class = JS_GetClass(&prototype.toObject());
+        name = proto_class->name;
     }
 
     gjs_throw(context, "You cannot construct new instances of '%s'", name);

@@ -288,7 +288,8 @@ gjs_##name##_constructor(JSContext  *context,           \
 #define GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(name)            \
     GJS_NATIVE_CONSTRUCTOR_DECLARE(name)                        \
     {                                                           \
-        gjs_throw_abstract_constructor_error(context, vp);      \
+        JS::CallArgs args = JS::CallArgsFromVp(argc, vp);       \
+        gjs_throw_abstract_constructor_error(context, args);    \
         return false;                                           \
     }
 
@@ -332,8 +333,9 @@ bool gjs_init_class_dynamic(JSContext              *context,
                             JS::MutableHandleObject constructor);
 
 void gjs_throw_constructor_error             (JSContext       *context);
-void gjs_throw_abstract_constructor_error    (JSContext       *context,
-                                              JS::Value       *vp);
+
+void gjs_throw_abstract_constructor_error(JSContext    *context,
+                                          JS::CallArgs& args);
 
 bool        gjs_typecheck_instance            (JSContext  *context,
                                                JSObject   *obj,
