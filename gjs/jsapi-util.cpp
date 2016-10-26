@@ -320,12 +320,12 @@ gjs_build_string_array(JSContext   *context,
 }
 
 JSObject*
-gjs_define_string_array(JSContext   *context,
-                        JSObject    *in_object,
-                        const char  *array_name,
-                        gssize       array_length,
-                        const char **array_values,
-                        unsigned     attrs)
+gjs_define_string_array(JSContext       *context,
+                        JS::HandleObject in_object,
+                        const char      *array_name,
+                        ssize_t          array_length,
+                        const char     **array_values,
+                        unsigned         attrs)
 {
     JSObject *array;
 
@@ -436,7 +436,7 @@ _gjs_g_utf8_make_valid (const char *name)
  */
 char*
 gjs_value_debug_string(JSContext      *context,
-                       JS::Value       value)
+                       JS::HandleValue value)
 {
     JSString *str;
     char *bytes;
@@ -507,9 +507,9 @@ utf8_exception_from_non_gerror_value(JSContext *cx,
 }
 
 bool
-gjs_log_exception_full(JSContext *context,
-                       JS::Value  exc,
-                       JSString  *message)
+gjs_log_exception_full(JSContext       *context,
+                       JS::HandleValue  exc,
+                       JS::HandleString message)
 {
     char *utf8_exception, *utf8_message;
     bool is_syntax;
@@ -620,13 +620,13 @@ gjs_log_exception(JSContext  *context)
 
     JS_BeginRequest(context);
 
-    JS::RootedValue exc(context, JS::UndefinedValue());
+    JS::RootedValue exc(context);
     if (!JS_GetPendingException(context, exc.address()))
         goto out;
 
     JS_ClearPendingException(context);
 
-    gjs_log_exception_full(context, exc, NULL);
+    gjs_log_exception_full(context, exc, JS::NullPtr());
 
     retval = true;
 
@@ -638,8 +638,8 @@ gjs_log_exception(JSContext  *context)
 
 bool
 gjs_call_function_value(JSContext             *context,
-                        JSObject              *obj,
-                        JS::Value              fval,
+                        JS::HandleObject       obj,
+                        JS::HandleValue        fval,
                         unsigned               argc,
                         JS::Value             *argv,
                         JS::MutableHandleValue rval)
@@ -839,15 +839,14 @@ gjs_strip_unix_shebang(const char  *script,
 }
 
 bool
-gjs_eval_with_scope(JSContext    *context,
-                    JSObject     *object,
-                    const char   *script,
-                    gssize        script_len,
-                    const char   *filename,
-                    JS::Value    *retval_p)
+gjs_eval_with_scope(JSContext             *context,
+                    JS::HandleObject       object,
+                    const char            *script,
+                    ssize_t                script_len,
+                    const char            *filename,
+                    JS::MutableHandleValue retval)
 {
     int start_line_number = 1;
-    JS::Value retval = JS::UndefinedValue();
     JSAutoRequest ar(context);
 
     if (script_len < 0)
@@ -863,17 +862,16 @@ gjs_eval_with_scope(JSContext    *context,
         return false;
     }
 
-    if (!object)
-        object = JS_NewObject(context, NULL, NULL, NULL);
+    JS::RootedObject eval_obj(context, object);
+    if (!eval_obj)
+        eval_obj = JS_NewObject(context, NULL, NULL, NULL);
 
     JS::CompileOptions options(context);
     options.setUTF8(true)
            .setFileAndLine(filename, start_line_number)
            .setSourcePolicy(JS::CompileOptions::LAZY_SOURCE);
 
-    js::RootedObject rootedObj(context, object);
-
-    if (!JS::Evaluate(context, rootedObj, options, script, script_len, &retval))
+    if (!JS::Evaluate(context, eval_obj, options, script, script_len, retval.address()))
         return false;
 
     gjs_schedule_gc_if_needed(context);
@@ -886,9 +884,6 @@ gjs_eval_with_scope(JSContext    *context,
 
     gjs_debug(GJS_DEBUG_CONTEXT,
               "Script evaluation succeeded");
-
-    if (retval_p)
-        *retval_p = retval;
 
     return true;
 }

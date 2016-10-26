@@ -251,10 +251,10 @@ create_module_object(JSContext *context)
 }
 
 static bool
-import_file(JSContext  *context,
-            const char *name,
-            GFile      *file,
-            JSObject   *module_obj)
+import_file(JSContext       *context,
+            const char      *name,
+            GFile           *file,
+            JS::HandleObject module_obj)
 {
     bool ret = false;
     char *script = NULL;
@@ -296,7 +296,6 @@ load_module_init(JSContext       *context,
                  JS::HandleObject in_object,
                  const char      *full_path)
 {
-    JSObject *module_obj;
     JSBool found;
     GFile *file;
 
@@ -313,7 +312,7 @@ load_module_init(JSContext       *context,
         }
     }
 
-    module_obj = create_module_object (context);
+    JS::RootedObject module_obj(context, create_module_object(context));
     file = g_file_new_for_commandline_arg(full_path);
     if (!import_file (context, "__init__", file, module_obj))
         goto out;

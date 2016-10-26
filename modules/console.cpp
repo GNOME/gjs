@@ -160,7 +160,7 @@ gjs_console_interact(JSContext *context,
 {
     GJS_GET_THIS(context, argc, vp, argv, object);
     bool eof = false;
-    JS::Value result;
+    JS::RootedValue result(context);
     JSString *str;
     GString *buffer = NULL;
     char *temp_buf = NULL;
@@ -195,12 +195,11 @@ gjs_console_interact(JSContext *context,
         JS::CompileOptions options(context);
         options.setUTF8(true)
                .setFileAndLine("typein", startline);
-        js::RootedObject rootedObj(context, object);
-        JS::Evaluate(context, rootedObj, options, buffer->str, buffer->len,  &result);
+        JS::Evaluate(context, object, options, buffer->str, buffer->len, result.address());
 
         gjs_schedule_gc_if_needed(context);
 
-        if (JS_GetPendingException(context, &result)) {
+        if (JS_GetPendingException(context, result.address())) {
             str = JS_ValueToString(context, result);
             JS_ClearPendingException(context);
         } else if (result.isUndefined()) {

@@ -274,12 +274,11 @@ gjs_closure_invoke(GClosure              *closure,
         gjs_log_exception(context);
     }
 
+    JS::RootedValue v_closure(context, JS::ObjectValue(*c->obj));
     if (!gjs_call_function_value(context,
-                                 NULL, /* "this" object; NULL is some kind of default presumably */
-                                 JS::ObjectValue(*c->obj),
-                                 argc,
-                                 argv,
-                                 retval)) {
+                                 /* "this" object; null is some kind of default presumably */
+                                 JS::NullPtr(),
+                                 v_closure, argc, argv, retval)) {
         /* Exception thrown... */
         gjs_debug_closure("Closure invocation failed (exception should "
                           "have been thrown) closure %p callable %p",

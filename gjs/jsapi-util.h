@@ -350,12 +350,14 @@ JSObject *gjs_construct_object_dynamic(JSContext       *context,
 JSObject*   gjs_build_string_array           (JSContext       *context,
                                               gssize           array_length,
                                               char           **array_values);
-JSObject*   gjs_define_string_array          (JSContext       *context,
-                                              JSObject        *obj,
-                                              const char      *array_name,
-                                              gssize           array_length,
-                                              const char     **array_values,
-                                              unsigned         attrs);
+
+JSObject *gjs_define_string_array(JSContext       *context,
+                                  JS::HandleObject obj,
+                                  const char      *array_name,
+                                  ssize_t          array_length,
+                                  const char     **array_values,
+                                  unsigned         attrs);
+
 void        gjs_throw                        (JSContext       *context,
                                               const char      *format,
                                               ...)  G_GNUC_PRINTF (2, 3);
@@ -370,16 +372,16 @@ void        gjs_throw_g_error                (JSContext       *context,
 
 bool        gjs_log_exception                (JSContext       *context);
 
-bool        gjs_log_exception_full           (JSContext       *context,
-                                              JS::Value        exc,
-                                              JSString        *message);
+bool gjs_log_exception_full(JSContext       *context,
+                            JS::HandleValue  exc,
+                            JS::HandleString message);
 
-char*       gjs_value_debug_string           (JSContext       *context,
-                                              JS::Value        value);
+char *gjs_value_debug_string(JSContext      *context,
+                             JS::HandleValue value);
 
 bool gjs_call_function_value(JSContext             *context,
-                             JSObject              *obj,
-                             JS::Value              fval,
+                             JS::HandleObject       obj,
+                             JS::HandleValue        fval,
                              unsigned               argc,
                              JS::Value             *argv,
                              JS::MutableHandleValue rval);
@@ -439,12 +441,12 @@ bool gjs_context_get_frame_info(JSContext                              *context,
                                 mozilla::Maybe<JS::MutableHandleValue>& fileName,
                                 mozilla::Maybe<JS::MutableHandleValue>& lineNumber);
 
-bool              gjs_eval_with_scope        (JSContext    *context,
-                                              JSObject     *object,
-                                              const char   *script,
-                                              gssize        script_len,
-                                              const char   *filename,
-                                              JS::Value    *retval_p);
+bool gjs_eval_with_scope(JSContext             *context,
+                         JS::HandleObject       object,
+                         const char            *script,
+                         ssize_t                script_len,
+                         const char            *filename,
+                         JS::MutableHandleValue retval);
 
 typedef enum {
   GJS_STRING_CONSTRUCTOR,

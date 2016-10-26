@@ -516,12 +516,11 @@ to_gbytes_func(JSContext *context,
 static JSObject *
 byte_array_get_prototype(JSContext *context)
 {
-    JS::Value retval;
-
-    retval = gjs_get_global_slot (context, GJS_GLOBAL_SLOT_BYTE_ARRAY_PROTOTYPE);
+    JS::RootedValue retval(context,
+        gjs_get_global_slot(context, GJS_GLOBAL_SLOT_BYTE_ARRAY_PROTOTYPE));
 
     if (!retval.isObject()) {
-        if (!gjs_eval_with_scope(context, NULL,
+        if (!gjs_eval_with_scope(context, JS::NullPtr(),
                                  "imports.byteArray.ByteArray.prototype;", -1,
                                  "<internal>", &retval))
             g_error ("Could not import byte array prototype\n");

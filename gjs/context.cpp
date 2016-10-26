@@ -153,7 +153,6 @@ gjs_log_error(JSContext *context,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JSExceptionState *exc_state;
-    JSString *jstr;
 
     if ((argc != 1 && argc != 2) || !argv[0].isObject()) {
         gjs_throw(context, "Must pass an exception and optionally a message to logError()");
@@ -161,6 +160,8 @@ gjs_log_error(JSContext *context,
     }
 
     JS_BeginRequest(context);
+
+    JS::RootedString jstr(context);
 
     if (argc == 2) {
         /* JS_ValueToString might throw, in which we will only
@@ -170,11 +171,10 @@ gjs_log_error(JSContext *context,
         if (jstr != NULL)
             argv[1] = JS::StringValue(jstr);    // GC root
         JS_RestoreExceptionState(context, exc_state);
-    } else {
-        jstr = NULL;
     }
 
-    gjs_log_exception_full(context, argv[0], jstr);
+    /* COMPAT: JS::CallArgs::operator[] will yield Handle in mozjs31 */
+    gjs_log_exception_full(context, argv.handleOrUndefinedAt(0), jstr);
 
     JS_EndRequest(context);
     argv.rval().setUndefined();
@@ -646,14 +646,15 @@ gjs_context_eval(GjsContext   *js_context,
                  GError      **error)
 {
     bool ret = false;
-    JS::Value retval;
 
     JSAutoCompartment ac(js_context->context, js_context->global);
     JSAutoRequest ar(js_context->context);
 
     g_object_ref(G_OBJECT(js_context));
 
-    if (!gjs_eval_with_scope(js_context->context, NULL, script, script_len, filename, &retval)) {
+    JS::RootedValue retval(js_context->context);
+    if (!gjs_eval_with_scope(js_context->context, JS::NullPtr(), script,
+                             script_len, filename, &retval)) {
         gjs_log_exception(js_context->context);
         g_set_error(error,
                     GJS_ERROR,

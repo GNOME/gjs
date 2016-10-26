@@ -1263,10 +1263,10 @@ static JSClass coverage_global_class = {
 };
 
 static bool
-gjs_context_eval_file_in_compartment(GjsContext *context,
-                                     const char *filename,
-                                     JSObject   *compartment_object,
-                                     GError     **error)
+gjs_context_eval_file_in_compartment(GjsContext      *context,
+                                     const char      *filename,
+                                     JS::HandleObject compartment_object,
+                                     GError         **error)
 {
     char  *script = NULL;
     gsize script_len = 0;
@@ -1285,12 +1285,11 @@ gjs_context_eval_file_in_compartment(GjsContext *context,
 
     g_object_unref(file);
 
-    JS::Value return_value;
-
     JSContext *js_context = (JSContext *) gjs_context_get_native_context(context);
 
     JSAutoCompartment compartment(js_context, compartment_object);
 
+    JS::RootedValue return_value(js_context);
     if (!gjs_eval_with_scope(js_context,
                              compartment_object,
                              script, script_len, filename,
@@ -1495,7 +1494,7 @@ gjs_run_script_in_coverage_compartment(GjsCoverage *coverage,
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
     JSContext          *js_context = (JSContext *) gjs_context_get_native_context(priv->context);
     JSAutoCompartment ac(js_context, priv->coverage_statistics);
-    JS::Value rval;
+    JS::RootedValue rval(js_context);
     if (!gjs_eval_with_scope(js_context,
                              priv->coverage_statistics,
                              script,

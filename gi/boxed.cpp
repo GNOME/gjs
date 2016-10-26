@@ -341,7 +341,7 @@ boxed_invoke_constructor(JSContext             *context,
                                      constructor_name, &js_constructor_func))
         return false;
 
-    return gjs_call_function_value(context, NULL, js_constructor_func,
+    return gjs_call_function_value(context, JS::NullPtr(), js_constructor_func,
                                    args.length(), args.array(), args.rval());
 }
 
