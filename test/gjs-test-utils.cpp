@@ -62,7 +62,7 @@ gjs_unit_test_fixture_setup(GjsUnitTestFixture *fx,
 
     JS_BeginRequest(fx->cx);
 
-    JS::RootedObject global(fx->cx, gjs_get_global_object(fx->cx));
+    JS::RootedObject global(fx->cx, gjs_get_import_global(fx->cx));
     fx->compartment = JS_EnterCompartment(fx->cx, global);
 }
 

@@ -248,7 +248,7 @@ setup(GjsUnitTestFixture *fx,
 {
     gjs_unit_test_fixture_setup(fx, unused);
 
-    JS::RootedObject global(fx->cx, gjs_get_global_object(fx->cx));
+    JS::RootedObject global(fx->cx, gjs_get_import_global(fx->cx));
     bool success = JS_DefineFunctions(fx->cx, global, native_test_funcs);
     g_assert_true(success);
 }
@@ -262,7 +262,7 @@ run_code(GjsUnitTestFixture *fx,
     JS::CompileOptions options(fx->cx, JSVERSION_UNKNOWN);
     options.setFileAndLine("unit test", 1);
 
-    JS::RootedObject global(fx->cx, gjs_get_global_object(fx->cx));
+    JS::RootedObject global(fx->cx, gjs_get_import_global(fx->cx));
     bool ok = JS::Evaluate(fx->cx, global, options, script, strlen(script), NULL);
     JS_ReportPendingException(fx->cx);
 
@@ -279,7 +279,7 @@ run_code_expect_exception(GjsUnitTestFixture *fx,
     JS::CompileOptions options(fx->cx, JSVERSION_UNKNOWN);
     options.setFileAndLine("unit test", 1);
 
-    JS::RootedObject global(fx->cx, gjs_get_global_object(fx->cx));
+    JS::RootedObject global(fx->cx, gjs_get_import_global(fx->cx));
     bool ok = JS::Evaluate(fx->cx, global, options, script, strlen(script), NULL);
     g_assert_false(ok);
     g_assert_true(JS_IsExceptionPending(fx->cx));

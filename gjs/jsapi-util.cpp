@@ -94,7 +94,6 @@ gjs_init_context_standard (JSContext              *context,
     if (global == NULL)
         return false;
 
-    /* Set the context's global */
     JSAutoCompartment ac(context, global);
 
     if (!JS_InitStandardClasses(context, global))
@@ -115,7 +114,7 @@ gjs_set_global_slot (JSContext     *context,
                      JS::Value      value)
 {
     JSObject *global;
-    global = gjs_get_global_object(context);
+    global = gjs_get_import_global(context);
     JS_SetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot, value);
 }
 
@@ -124,7 +123,7 @@ gjs_get_global_slot (JSContext     *context,
                      GjsGlobalSlot  slot)
 {
     JSObject *global;
-    global = gjs_get_global_object(context);
+    global = gjs_get_import_global(context);
     return JS_GetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot);
 }
 

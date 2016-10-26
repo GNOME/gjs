@@ -325,15 +325,18 @@ gjs_context_class_init(GjsContextClass *klass)
 }
 
 static void
+gjs_context_tracer(JSTracer *trc, void *data)
+{
+    GjsContext *gjs_context = reinterpret_cast<GjsContext *>(data);
+    JS_CallHeapObjectTracer(trc, &gjs_context->global, "GJS global object");
+}
+
+static void
 gjs_context_dispose(GObject *object)
 {
     GjsContext *js_context;
 
     js_context = GJS_CONTEXT(object);
-
-    if (js_context->global != NULL) {
-        js_context->global = NULL;
-    }
 
     if (js_context->context != NULL) {
 
@@ -341,9 +344,6 @@ gjs_context_dispose(GObject *object)
                   "Destroying JS context");
 
         JS_BeginRequest(js_context->context);
-
-        JS_RemoveObjectRoot(js_context->context, js_context->global.unsafeGet());
-        js_context->global.set(NULL);
 
         /* Do a full GC here before tearing down, since once we do
          * that we may not have the JS_GetPrivate() to access the
@@ -364,6 +364,9 @@ gjs_context_dispose(GObject *object)
             g_source_remove (js_context->auto_gc_id);
             js_context->auto_gc_id = 0;
         }
+
+        JS_RemoveExtraGCRootsTracer(js_context->runtime, gjs_context_tracer,
+                                    js_context);
 
         /* Tear down JS */
         JS_DestroyContext(js_context->context);
@@ -448,8 +451,7 @@ gjs_context_constructed(GObject *object)
         g_error("Failed to define properties on the global object");
 
     js_context->global.set(global);
-    JS_AddNamedObjectRoot(js_context->context, js_context->global.unsafeGet(),
-                          "global object");
+    JS_AddExtraGCRootsTracer(js_context->runtime, gjs_context_tracer, js_context);
 
     /* We create the global-to-runtime root importer with the
      * passed-in search path. If someone else already created

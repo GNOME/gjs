@@ -386,7 +386,6 @@ bool gjs_call_function_value(JSContext             *context,
 void        gjs_error_reporter               (JSContext       *context,
                                               const char      *message,
                                               JSErrorReport   *report);
-JSObject*   gjs_get_global_object            (JSContext *cx);
 
 JSBool      gjs_string_to_utf8               (JSContext       *context,
                                               const JS::Value  string_val,
