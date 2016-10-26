@@ -280,7 +280,7 @@ function parseScriptForFunctionNames(script) {
 }
 
 function functionDeclarationsEqual(actual, expected) {
-    JSUnit.assertEquals(expected.name, actual.name);
+    JSUnit.assertEquals(expected.key, actual.key);
     JSUnit.assertEquals(expected.line, actual.line);
     JSUnit.assertEquals(expected.n_params, actual.n_params);
 }
@@ -375,7 +375,7 @@ function testFunctionsInsideSequence() {
 
     assertArrayEquals(foundFunctions,
                       [
-                          { key: "(anonymous):1:0", line: 1, n_params: 1 },
+                          { key: "(anonymous):1:1", line: 1, n_params: 1 },
                           { key: "(anonymous):1:2", line: 1, n_params: 2 },
                       ],
                       functionDeclarationsEqual);
@@ -589,7 +589,7 @@ function testFunctionsOnEitherSideOfConditionalExpression() {
     assertArrayEquals(foundFunctions,
                       [
                           { key: "(anonymous):2:1", line: 2, n_params: 1 },
-                          { key: "(anonymous):2:1", line: 2, n_params: 2 }
+                          { key: "(anonymous):2:2", line: 2, n_params: 2 }
                       ],
                       functionDeclarationsEqual);
 }
