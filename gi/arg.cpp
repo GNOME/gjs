@@ -263,7 +263,6 @@ gjs_array_to_g_list(JSContext   *context,
     guint32 i;
     GList *list;
     GSList *slist;
-    JS::Value elem;
 
     list = NULL;
     slist = NULL;
@@ -282,11 +281,12 @@ gjs_array_to_g_list(JSContext   *context,
         transfer = GI_TRANSFER_NOTHING;
     }
 
+    JS::RootedValue elem(context);
     for (i = 0; i < length; ++i) {
         GArgument elem_arg = { 0 };
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, &elem)) {
+        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, elem.address())) {
             gjs_throw(context,
                       "Missing array element %u",
                       i);
@@ -368,13 +368,13 @@ gjs_object_to_g_hash(JSContext   *context,
     /* Don't use key/value destructor functions here, because we can't
      * construct correct ones in general if the value type is complex.
      * Rely on the type-aware g_argument_release functions. */
-   result = g_hash_table_new(g_str_hash, g_str_equal);
+    result = g_hash_table_new(g_str_hash, g_str_equal);
 
-   while (!JSID_IS_VOID(prop_id)) {
-        JS::Value key_js, val_js;
+    JS::RootedValue key_js(context), val_js(context);
+    while (!JSID_IS_VOID(prop_id)) {
         GArgument key_arg = { 0 }, val_arg = { 0 };
 
-        if (!JS_IdToValue(context, prop_id, &key_js))
+        if (!JS_IdToValue(context, prop_id, key_js.address()))
             goto free_hash_and_fail;
 
         /* Type check key type. */
@@ -385,7 +385,7 @@ gjs_object_to_g_hash(JSContext   *context,
                                      &key_arg))
             goto free_hash_and_fail;
 
-        if (!JS_GetPropertyById(context, props, prop_id, &val_js))
+        if (!JS_GetPropertyById(context, props, prop_id, val_js.address()))
             goto free_hash_and_fail;
 
         /* Type check and convert value to a c type */
@@ -715,20 +715,20 @@ gjs_array_to_ptrarray(JSContext   *context,
                       void       **arr_p)
 {
     unsigned int i;
+    JS::RootedValue elem(context);
 
     /* Always one extra element, to cater for null terminated arrays */
     void **array = (void **) g_malloc((length + 1) * sizeof(gpointer));
     array[length] = NULL;
 
     for (i = 0; i < length; i++) {
-        JS::Value elem;
         GIArgument arg;
         arg.v_pointer = NULL;
 
         bool success;
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, &elem)) {
+        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, elem.address())) {
             g_free(array);
             gjs_throw(context,
                       "Missing array element %u",
@@ -1068,7 +1068,7 @@ type_tag_to_human_string(GITypeInfo *type_info)
 
 static void
 throw_invalid_argument(JSContext      *context,
-                       JS::Value       value,
+                       JS::HandleValue value,
                        GITypeInfo     *arginfo,
                        const char     *arg_name,
                        GjsArgumentType arg_type)
@@ -1084,7 +1084,7 @@ throw_invalid_argument(JSContext      *context,
 
 static bool
 gjs_array_to_explicit_array_internal(JSContext       *context,
-                                     JS::Value        value,
+                                     JS::HandleValue  value,
                                      GITypeInfo      *type_info,
                                      const char      *arg_name,
                                      GjsArgumentType  arg_type,
@@ -1150,7 +1150,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
 
 bool
 gjs_value_to_g_argument(JSContext      *context,
-                        JS::Value       value,
+                        JS::HandleValue value,
                         GITypeInfo     *type_info,
                         const char     *arg_name,
                         GjsArgumentType arg_type,
@@ -1944,10 +1944,10 @@ gjs_g_argument_init_default(JSContext      *context,
 }
 
 bool
-gjs_value_to_arg(JSContext  *context,
-                 JS::Value   value,
-                 GIArgInfo  *arg_info,
-                 GArgument  *arg)
+gjs_value_to_arg(JSContext      *context,
+                 JS::HandleValue value,
+                 GIArgInfo      *arg_info,
+                 GIArgument     *arg)
 {
     GITypeInfo type_info;
 
@@ -1964,11 +1964,11 @@ gjs_value_to_arg(JSContext  *context,
 }
 
 bool
-gjs_value_to_explicit_array (JSContext  *context,
-                             JS::Value   value,
-                             GIArgInfo  *arg_info,
-                             GArgument  *arg,
-                             gsize      *length_p)
+gjs_value_to_explicit_array (JSContext      *context,
+                             JS::HandleValue value,
+                             GIArgInfo      *arg_info,
+                             GIArgument     *arg,
+                             size_t         *length_p)
 {
     GITypeInfo type_info;
 

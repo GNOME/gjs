@@ -182,7 +182,6 @@ gjs_callback_closure(ffi_cif *cif,
     JSObject *func_obj;
     GjsCallbackTrampoline *trampoline;
     int i, n_args, n_jsargs, n_outargs;
-    JS::Value rval;
     JSObject *this_object;
     GITypeInfo ret_type;
     bool success = false;
@@ -221,6 +220,7 @@ gjs_callback_closure(ffi_cif *cif,
     JS::AutoValueVector jsargs(context);
     jsargs.resize(n_args);
     JS::Value *args_ptr = jsargs.begin();
+    JS::RootedValue rval(context);
 
     for (i = 0, n_jsargs = 0; i < n_args; i++) {
         GIArgInfo arg_info;
@@ -294,7 +294,7 @@ gjs_callback_closure(ffi_cif *cif,
                               trampoline->js_function,
                               n_jsargs,
                               args_ptr,
-                              &rval)) {
+                              rval.address())) {
         goto out;
     }
 
@@ -345,7 +345,7 @@ gjs_callback_closure(ffi_cif *cif,
             break;
         }
     } else {
-        JS::Value elem;
+        JS::RootedValue elem(context);
         gsize elem_idx = 0;
         /* more than one of a return value or an out argument.
          * Should be an array of output values. */
@@ -353,7 +353,7 @@ gjs_callback_closure(ffi_cif *cif,
         if (!ret_type_is_void) {
             GIArgument argument;
 
-            if (!JS_GetElement(context, rval.toObjectOrNull(), elem_idx, &elem))
+            if (!JS_GetElement(context, rval.toObjectOrNull(), elem_idx, elem.address()))
                 goto out;
 
             if (!gjs_value_to_g_argument(context,
@@ -381,7 +381,7 @@ gjs_callback_closure(ffi_cif *cif,
                 continue;
 
             g_arg_info_load_type(&arg_info, &type_info);
-            if (!JS_GetElement(context, rval.toObjectOrNull(), elem_idx, &elem))
+            if (!JS_GetElement(context, rval.toObjectOrNull(), elem_idx, elem.address()))
                 goto out;
 
             if (!gjs_value_to_g_argument(context,
@@ -903,7 +903,10 @@ gjs_invoke_c_function(JSContext       *context,
                 gint array_length_pos = g_type_info_get_array_length(&ainfo);
                 gsize length;
 
-                if (!gjs_value_to_explicit_array(context, js_argv[js_arg_pos], &arg_info,
+                /* COMPAT: Avoid this extra root by changing the function's
+                 * in parameter to JS::HandleValueArray in mozjs31 */
+                JS::RootedValue v_arg(context, js_argv[js_arg_pos]);
+                if (!gjs_value_to_explicit_array(context, v_arg, &arg_info,
                                                  in_value, &length)) {
                     failed = true;
                     break;
@@ -912,7 +915,8 @@ gjs_invoke_c_function(JSContext       *context,
                 g_callable_info_load_arg(function->info, array_length_pos, &array_length_arg);
 
                 array_length_pos += is_method ? 1 : 0;
-                if (!gjs_value_to_arg(context, JS::Int32Value(length), &array_length_arg,
+                JS::RootedValue v_length(context, JS::Int32Value(length));
+                if (!gjs_value_to_arg(context, v_length, &array_length_arg,
                                       in_arg_cvalues + array_length_pos)) {
                     failed = true;
                     break;
@@ -934,14 +938,17 @@ gjs_invoke_c_function(JSContext       *context,
                 }
                 break;
             }
-            case PARAM_NORMAL:
+            case PARAM_NORMAL: {
                 /* Ok, now just convert argument normally */
                 g_assert_cmpuint(js_arg_pos, <, js_argc);
-                if (!gjs_value_to_arg(context, js_argv[js_arg_pos], &arg_info,
-                                      in_value)) {
+                /* COMPAT: Avoid this extra root by changing the function's
+                 * in parameter to JS::HandleValueArray in mozjs31 */
+                JS::RootedValue v_arg(context, js_argv[js_arg_pos]);
+                if (!gjs_value_to_arg(context, v_arg, &arg_info, in_value))
                     failed = true;
-                    break;
-                }
+
+                break;
+            }
 
             default:
                 ;

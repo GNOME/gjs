@@ -60,10 +60,10 @@ typedef struct {
 
 static bool struct_is_simple(GIStructInfo *info);
 
-static bool boxed_set_field_from_value(JSContext   *context,
-                                       Boxed       *priv,
-                                       GIFieldInfo *field_info,
-                                       JS::Value    value);
+static bool boxed_set_field_from_value(JSContext      *context,
+                                       Boxed          *priv,
+                                       GIFieldInfo    *field_info,
+                                       JS::HandleValue value);
 
 extern struct JSClass gjs_boxed_class;
 
@@ -733,10 +733,10 @@ set_nested_interface_object (JSContext   *context,
 }
 
 static bool
-boxed_set_field_from_value(JSContext   *context,
-                           Boxed       *priv,
-                           GIFieldInfo *field_info,
-                           JS::Value    value)
+boxed_set_field_from_value(JSContext      *context,
+                           Boxed          *priv,
+                           GIFieldInfo    *field_info,
+                           JS::HandleValue value)
 {
     GITypeInfo *type_info;
     GArgument arg;

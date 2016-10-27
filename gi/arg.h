@@ -43,23 +43,23 @@ typedef enum {
     GJS_ARGUMENT_ARRAY_ELEMENT
 } GjsArgumentType;
 
-bool gjs_value_to_arg (JSContext *context,
-                       JS::Value  value,
-                       GIArgInfo *arg_info,
-                       GArgument *arg);
+bool gjs_value_to_arg(JSContext      *context,
+                      JS::HandleValue value,
+                      GIArgInfo      *arg_info,
+                      GIArgument     *arg);
 
-bool gjs_value_to_explicit_array (JSContext *context,
-                                  JS::Value  value,
-                                  GIArgInfo *arg_info,
-                                  GArgument *arg,
-                                  gsize     *length_p);
+bool gjs_value_to_explicit_array(JSContext       *context,
+                                 JS::HandleValue  value,
+                                 GIArgInfo       *arg_info,
+                                 GIArgument      *arg,
+                                 size_t          *length_p);
 
 void gjs_g_argument_init_default (JSContext      *context,
                                   GITypeInfo     *type_info,
                                   GArgument      *arg);
 
 bool gjs_value_to_g_argument (JSContext      *context,
-                              JS::Value       value,
+                              JS::HandleValue value,
                               GITypeInfo     *type_info,
                               const char     *arg_name,
                               GjsArgumentType argument_type,
