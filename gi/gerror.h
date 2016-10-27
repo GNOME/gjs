@@ -33,7 +33,7 @@
 G_BEGIN_DECLS
 
 void      gjs_define_error_class       (JSContext             *context,
-                                        JSObject              *in_object,
+                                        JS::HandleObject       in_object,
                                         GIEnumInfo            *info);
 GError*   gjs_gerror_from_error        (JSContext             *context,
                                         JS::HandleObject       obj);

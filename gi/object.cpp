@@ -1454,7 +1454,7 @@ gjs_lookup_object_constructor_from_info(JSContext    *context,
                                         GIObjectInfo *info,
                                         GType         gtype)
 {
-    JSObject *in_object;
+    JS::RootedObject in_object(context);
     const char *constructor_name;
     JS::Value value;
 
@@ -1871,14 +1871,13 @@ gjs_object_define_static_methods(JSContext    *context,
 
 void
 gjs_define_object_class(JSContext              *context,
-                        JSObject               *in_object,
+                        JS::HandleObject        in_object,
                         GIObjectInfo           *info,
                         GType                   gtype,
                         JS::MutableHandleObject constructor)
 {
     const char *constructor_name;
-    JSObject *prototype;
-    JSObject *parent_proto;
+    JS::RootedObject prototype(context), parent_proto(context);
 
     JS::Value value;
     ObjectInstance *priv;
@@ -1928,7 +1927,6 @@ gjs_define_object_class(JSContext              *context,
      * JavaScript is SO AWESOME
      */
 
-    parent_proto = NULL;
     parent_type = g_type_parent(gtype);
     if (parent_type != G_TYPE_INVALID)
        parent_proto = gjs_lookup_object_prototype(context, parent_type);
@@ -1964,7 +1962,8 @@ gjs_define_object_class(JSContext              *context,
     JS_SetPrivate(prototype, priv);
 
     gjs_debug(GJS_DEBUG_GOBJECT, "Defined class %s prototype %p class %p in object %p",
-              constructor_name, prototype, JS_GetClass(prototype), in_object);
+              constructor_name, prototype.get(), JS_GetClass(prototype),
+              in_object.get());
 
     if (info)
         gjs_object_define_static_methods(context, constructor, gtype, info);
@@ -2717,8 +2716,6 @@ gjs_register_interface(JSContext *cx,
 {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     char *name = NULL;
-    JS::RootedObject interfaces(cx), properties(cx), constructor(cx);
-    JSObject *module;
     guint32 i, n_interfaces, n_properties;
     GType *iface_types;
     GType interface_type;
@@ -2738,6 +2735,7 @@ gjs_register_interface(JSContext *cx,
         NULL, /* instance_init */
     };
 
+    JS::RootedObject interfaces(cx), properties(cx);
     if (!gjs_parse_call_args(cx, "register_interface", args, "soo",
                              "name", &name,
                              "interfaces", &interfaces,
@@ -2782,8 +2780,11 @@ gjs_register_interface(JSContext *cx,
         g_type_interface_add_prerequisite(interface_type, iface_types[i]);
 
     /* create a custom JSClass */
-    if ((module = gjs_lookup_private_namespace(cx)) == NULL)
+    JS::RootedObject module(cx, gjs_lookup_private_namespace(cx));
+    if (module == NULL)
         return false;  /* error will have been thrown already */
+
+    JS::RootedObject constructor(cx);
     gjs_define_interface_class(cx, module, NULL, interface_type, &constructor);
 
     args.rval().setObject(*constructor);
@@ -2797,8 +2798,6 @@ gjs_register_type(JSContext *cx,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     gchar *name;
-    JS::RootedObject parent(cx), interfaces(cx), properties(cx), constructor(cx);
-    JSObject *module;
     GType instance_type, parent_type;
     GTypeQuery query;
     GTypeModule *type_module;
@@ -2819,37 +2818,37 @@ gjs_register_type(JSContext *cx,
     };
     guint32 i, n_interfaces, n_properties;
     GType *iface_types;
-    bool retval = false;
 
-    JS_BeginRequest(cx);
+    JSAutoRequest ar(cx);
 
+    JS::RootedObject parent(cx), interfaces(cx), properties(cx);
     if (!gjs_parse_call_args(cx, "register_type", argv, "osoo",
                              "parent", &parent,
                              "name", &name,
                              "interfaces", &interfaces,
                              "properties", &properties))
-        goto out;
+        return false;
 
     if (!parent)
-        goto out;
+        return false;
 
     if (!do_base_typecheck(cx, parent, true))
-        goto out;
+        return false;
 
     if (!validate_interfaces_and_properties_args(cx, interfaces, properties,
                                                  &n_interfaces, &n_properties))
-        goto out;
+        return false;
 
     iface_types = (GType*) g_alloca(sizeof(GType) * n_interfaces);
 
     /* We do interface addition in two passes so that any failure
        is caught early, before registering the GType (which we can't undo) */
     if (!get_interface_gtypes(cx, interfaces, n_interfaces, iface_types))
-        goto out;
+        return false;
 
     if (g_type_from_name(name) != G_TYPE_INVALID) {
         gjs_throw (cx, "Type name %s is already registered", name);
-        goto out;
+        return false;
     }
 
     parent_priv = priv_from_js(cx, parent);
@@ -2862,7 +2861,7 @@ gjs_register_type(JSContext *cx,
     g_type_query_dynamic_safe(parent_type, &query);
     if (G_UNLIKELY (query.type == 0)) {
         gjs_throw (cx, "Cannot inherit from a non-gjs dynamic type [bug 687184]");
-        goto out;
+        return false;
     }
 
     type_info.class_size = query.class_size;
@@ -2880,23 +2879,18 @@ gjs_register_type(JSContext *cx,
     g_type_set_qdata (instance_type, gjs_is_custom_type_quark(), GINT_TO_POINTER (1));
 
     if (!save_properties_for_class_init(cx, properties, n_properties, instance_type))
-        goto out;
+        return false;
 
     for (i = 0; i < n_interfaces; i++)
         gjs_add_interface(instance_type, iface_types[i]);
 
     /* create a custom JSClass */
-    module = gjs_lookup_private_namespace(cx);
+    JS::RootedObject module(cx, gjs_lookup_private_namespace(cx)), constructor(cx);
     gjs_define_object_class(cx, module, NULL, instance_type, &constructor);
 
     argv.rval().setObject(*constructor);
 
-    retval = true;
-
-out:
-    JS_EndRequest(cx);
-
-    return retval;
+    return true;
 }
 
 static JSBool

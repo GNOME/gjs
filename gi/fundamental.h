@@ -33,10 +33,10 @@
 G_BEGIN_DECLS
 
 bool gjs_define_fundamental_class(JSContext              *context,
-                                  JSObject               *in_object,
+                                  JS::HandleObject        in_object,
                                   GIObjectInfo           *info,
                                   JS::MutableHandleObject constructor,
-                                  JSObject              **prototype_p);
+                                  JS::MutableHandleObject prototype);
 
 JSObject* gjs_object_from_g_fundamental      (JSContext     *context,
                                               GIObjectInfo  *info,

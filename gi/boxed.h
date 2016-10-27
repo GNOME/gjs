@@ -42,7 +42,7 @@ typedef enum {
 typedef GIStructInfo GIBoxedInfo;
 
 void      gjs_define_boxed_class       (JSContext             *context,
-                                        JSObject              *in_object,
+                                        JS::HandleObject       in_object,
                                         GIBoxedInfo           *info);
 
 void*     gjs_c_struct_from_boxed      (JSContext             *context,

@@ -37,8 +37,8 @@
 
 bool
 gjs_init_class_dynamic(JSContext              *context,
-                       JSObject               *in_object,
-                       JSObject               *parent_proto,
+                       JS::HandleObject        in_object,
+                       JS::HandleObject        parent_proto,
                        const char             *ns_name,
                        const char             *class_name,
                        JSClass                *clasp,
@@ -48,13 +48,11 @@ gjs_init_class_dynamic(JSContext              *context,
                        JSFunctionSpec         *proto_fs,
                        JSPropertySpec         *static_ps,
                        JSFunctionSpec         *static_fs,
-                       JSObject              **prototype_p,
+                       JS::MutableHandleObject prototype,
                        JS::MutableHandleObject constructor)
 {
-    JSObject *global;
     /* Force these variables on the stack, so the conservative GC will
        find them */
-    JSObject * volatile prototype;
     JSFunction * volatile constructor_fun;
     char *full_function_name = NULL;
     bool res = false;
@@ -68,7 +66,7 @@ gjs_init_class_dynamic(JSContext              *context,
 
     JS_BeginRequest(context);
 
-    global = gjs_get_import_global(context);
+    JS::RootedObject global(context, gjs_get_import_global(context));
 
     /* Class initalization consists of three parts:
        - building a prototype
@@ -86,7 +84,7 @@ gjs_init_class_dynamic(JSContext              *context,
      * constructor is not found (and it won't be found, because we never call
      * JS_InitClass).
      */
-    prototype = JS_NewObject(context, clasp, parent_proto, global);
+    prototype.set(JS_NewObject(context, clasp, parent_proto, global));
     if (!prototype)
         goto out;
 
@@ -121,12 +119,8 @@ gjs_init_class_dynamic(JSContext              *context,
                            JS_PropertyStub, JS_StrictPropertyStub, GJS_MODULE_PROP_FLAGS))
         goto out;
 
-    if (prototype_p)
-        *prototype_p = prototype;
-
     res = true;
 
-    prototype = NULL;
     constructor_fun = NULL;
 
  out:
@@ -146,18 +140,19 @@ format_dynamic_class_name (const char *name)
 }
 
 bool
-gjs_typecheck_instance(JSContext *context,
-                       JSObject  *obj,
-                       JSClass   *static_clasp,
-                       bool       throw_error)
+gjs_typecheck_instance(JSContext       *context,
+                       JS::HandleObject obj,
+                       JSClass         *static_clasp,
+                       bool             throw_error)
 {
     if (!JS_InstanceOf(context, obj, static_clasp, NULL)) {
         if (throw_error) {
-            JSClass *obj_class = JS_GetClass(obj);
+            const JSClass *obj_class = JS_GetClass(obj);
 
             gjs_throw_custom(context, "TypeError",
                              "Object %p is not a subclass of %s, it's a %s",
-                             obj, static_clasp->name, format_dynamic_class_name (obj_class->name));
+                             obj.get(), static_clasp->name,
+                             format_dynamic_class_name(obj_class->name));
         }
 
         return false;

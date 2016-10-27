@@ -33,7 +33,7 @@
 G_BEGIN_DECLS
 
 bool gjs_define_interface_class(JSContext              *context,
-                                JSObject               *in_object,
+                                JS::HandleObject        in_object,
                                 GIInterfaceInfo        *info,
                                 GType                   gtype,
                                 JS::MutableHandleObject constructor);

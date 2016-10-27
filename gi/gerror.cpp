@@ -309,14 +309,13 @@ static JSFunctionSpec gjs_error_constructor_funcs[] = {
 };
 
 void
-gjs_define_error_class(JSContext    *context,
-                       JSObject     *in_object,
-                       GIEnumInfo   *info)
+gjs_define_error_class(JSContext       *context,
+                       JS::HandleObject in_object,
+                       GIEnumInfo      *info)
 {
     const char *constructor_name;
     GIBoxedInfo *glib_error_info;
-    JSObject *prototype, *parent_proto;
-    JS::RootedObject constructor(context);
+    JS::RootedObject prototype(context), constructor(context);
     Error *priv;
 
     /* See the comment in gjs_define_boxed_class() for an
@@ -328,7 +327,8 @@ gjs_define_error_class(JSContext    *context,
 
     g_irepository_require(NULL, "GLib", "2.0", (GIRepositoryLoadFlags) 0, NULL);
     glib_error_info = (GIBoxedInfo*) g_irepository_find_by_name(NULL, "GLib", "Error");
-    parent_proto = gjs_lookup_generic_prototype(context, glib_error_info);
+    JS::RootedObject parent_proto(context,
+        gjs_lookup_generic_prototype(context, glib_error_info));
     g_base_info_unref((GIBaseInfo*)glib_error_info);
 
     if (!gjs_init_class_dynamic(context, in_object,
@@ -360,7 +360,8 @@ gjs_define_error_class(JSContext    *context,
     JS_SetPrivate(prototype, priv);
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
-              constructor_name, prototype, JS_GetClass(prototype), in_object);
+              constructor_name, prototype.get(), JS_GetClass(prototype),
+              in_object.get());
 
     gjs_define_enum_values(context, constructor, priv->info);
     gjs_define_enum_static_methods(context, constructor, priv->info);

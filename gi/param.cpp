@@ -211,19 +211,18 @@ gjs_lookup_param_prototype(JSContext    *context)
 }
 
 void
-gjs_define_param_class(JSContext    *context,
-                       JSObject     *in_object)
+gjs_define_param_class(JSContext       *context,
+                       JS::HandleObject in_object)
 {
     const char *constructor_name;
-    JSObject *prototype;
     JS::Value value;
-    JS::RootedObject constructor(context);
+    JS::RootedObject prototype(context), constructor(context);
     GIObjectInfo *info;
 
     constructor_name = "ParamSpec";
 
     if (!gjs_init_class_dynamic(context, in_object,
-                                NULL,
+                                JS::NullPtr(),
                                 "GObject",
                                 constructor_name,
                                 &gjs_param_class,
@@ -250,7 +249,8 @@ gjs_define_param_class(JSContext    *context,
     g_base_info_unref( (GIBaseInfo*) info);
 
     gjs_debug(GJS_DEBUG_GPARAM, "Defined class %s prototype is %p class %p in object %p",
-              constructor_name, prototype, JS_GetClass(prototype), in_object);
+              constructor_name, prototype.get(), JS_GetClass(prototype),
+              in_object.get());
 }
 
 JSObject*

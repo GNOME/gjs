@@ -32,7 +32,7 @@
 G_BEGIN_DECLS
 
 void gjs_define_object_class(JSContext              *context,
-                             JSObject               *in_object,
+                             JS::HandleObject        in_object,
                              GIObjectInfo           *info,
                              GType                   gtype,
                              JS::MutableHandleObject constructor);

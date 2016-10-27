@@ -31,8 +31,8 @@
 
 G_BEGIN_DECLS
 
-void        gjs_define_param_class     (JSContext  *context,
-                                        JSObject   *in_object);
+void gjs_define_param_class(JSContext       *context,
+                            JS::HandleObject in_object);
 
 GParamSpec *gjs_g_param_from_param (JSContext       *context,
                                     JS::HandleObject obj);

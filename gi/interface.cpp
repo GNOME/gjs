@@ -182,7 +182,7 @@ JSFunctionSpec gjs_interface_proto_funcs[] = {
 
 bool
 gjs_define_interface_class(JSContext              *context,
-                           JSObject               *in_object,
+                           JS::HandleObject        in_object,
                            GIInterfaceInfo        *info,
                            GType                   gtype,
                            JS::MutableHandleObject constructor)
@@ -190,14 +190,14 @@ gjs_define_interface_class(JSContext              *context,
     Interface *priv;
     const char *constructor_name;
     const char *ns;
-    JSObject *prototype;
+    JS::RootedObject prototype(context);
     JS::Value value;
 
     ns = gjs_get_names_from_gtype_and_gi_info(gtype, (GIBaseInfo *) info,
                                               &constructor_name);
 
     if (!gjs_init_class_dynamic(context, in_object,
-                                NULL,
+                                JS::NullPtr(),
                                 ns,
                                 constructor_name,
                                 &gjs_interface_class,

@@ -322,16 +322,15 @@ JSFunctionSpec gjs_union_proto_funcs[] = {
 };
 
 bool
-gjs_define_union_class(JSContext    *context,
-                       JSObject     *in_object,
-                       GIUnionInfo  *info)
+gjs_define_union_class(JSContext       *context,
+                       JS::HandleObject in_object,
+                       GIUnionInfo     *info)
 {
     const char *constructor_name;
-    JSObject *prototype;
     JS::Value value;
     Union *priv;
     GType gtype;
-    JS::RootedObject constructor(context);
+    JS::RootedObject prototype(context), constructor(context);
 
     /* For certain unions, we may be able to relax this in the future by
      * directly allocating union memory, as we do for structures in boxed.c
@@ -350,7 +349,7 @@ gjs_define_union_class(JSContext    *context,
     constructor_name = g_base_info_get_name( (GIBaseInfo*) info);
 
     if (!gjs_init_class_dynamic(context, in_object,
-                                NULL,
+                                JS::NullPtr(),
                                 g_base_info_get_namespace( (GIBaseInfo*) info),
                                 constructor_name,
                                 &gjs_union_class,
@@ -376,7 +375,8 @@ gjs_define_union_class(JSContext    *context,
     JS_SetPrivate(prototype, priv);
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
-              constructor_name, prototype, JS_GetClass(prototype), in_object);
+              constructor_name, prototype.get(), JS_GetClass(prototype),
+              in_object.get());
 
     value = JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,

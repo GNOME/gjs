@@ -434,10 +434,10 @@ _gjs_log_info_usage(GIBaseInfo *info)
 #endif /* GJS_VERBOSE_ENABLE_GI_USAGE */
 
 bool
-gjs_define_info(JSContext  *context,
-                JSObject   *in_object,
-                GIBaseInfo *info,
-                bool       *defined)
+gjs_define_info(JSContext       *context,
+                JS::HandleObject in_object,
+                GIBaseInfo      *info,
+                bool            *defined)
 {
 #if GJS_VERBOSE_ENABLE_GI_USAGE
     _gjs_log_info_usage(info);
@@ -466,8 +466,10 @@ gjs_define_info(JSContext  *context,
                 gjs_define_object_class(context, in_object,
                                         (GIObjectInfo *) info, gtype, &ignored);
             } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-                JS::RootedObject ignored(context);
-                if (!gjs_define_fundamental_class(context, in_object, (GIObjectInfo*)info, &ignored, NULL)) {
+                JS::RootedObject ignored1(context), ignored2(context);
+                if (!gjs_define_fundamental_class(context, in_object,
+                                                  (GIObjectInfo*)info,
+                                                  &ignored1, &ignored2)) {
                     gjs_throw (context,
                                "Unsupported fundamental class creation for type %s",
                                g_type_name(gtype));

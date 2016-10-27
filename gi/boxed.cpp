@@ -1121,13 +1121,12 @@ boxed_fill_prototype_info(JSContext *context,
 }
 
 void
-gjs_define_boxed_class(JSContext    *context,
-                       JSObject     *in_object,
-                       GIBoxedInfo  *info)
+gjs_define_boxed_class(JSContext       *context,
+                       JS::HandleObject in_object,
+                       GIBoxedInfo     *info)
 {
     const char *constructor_name;
-    JSObject *prototype;
-    JS::RootedObject constructor(context);
+    JS::RootedObject prototype(context), constructor(context);
     JS::Value value;
     Boxed *priv;
 
@@ -1139,7 +1138,7 @@ gjs_define_boxed_class(JSContext    *context,
     constructor_name = g_base_info_get_name( (GIBaseInfo*) info);
 
     if (!gjs_init_class_dynamic(context, in_object,
-                                NULL, /* parent prototype */
+                                JS::NullPtr(), /* parent prototype */
                                 g_base_info_get_namespace( (GIBaseInfo*) info),
                                 constructor_name,
                                 &gjs_boxed_class,
@@ -1168,7 +1167,8 @@ gjs_define_boxed_class(JSContext    *context,
     JS_SetPrivate(prototype, priv);
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
-              constructor_name, prototype, JS_GetClass(prototype), in_object);
+              constructor_name, prototype.get(), JS_GetClass(prototype),
+              in_object.get());
 
     priv->can_allocate_directly = struct_is_simple (priv->info);
 

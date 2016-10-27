@@ -579,7 +579,7 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
                                  GIObjectInfo *info,
                                  GType         gtype)
 {
-    JSObject *in_object;
+    JS::RootedObject in_object(context);
     const char *constructor_name;
 
     if (info) {
@@ -640,16 +640,15 @@ gjs_lookup_fundamental_prototype_from_gtype(JSContext *context,
 
 bool
 gjs_define_fundamental_class(JSContext              *context,
-                             JSObject               *in_object,
+                             JS::HandleObject        in_object,
                              GIObjectInfo           *info,
                              JS::MutableHandleObject constructor,
-                             JSObject              **prototype_p)
+                             JS::MutableHandleObject prototype)
 {
     const char *constructor_name;
-    JSObject *prototype;
     JS::Value value;
     jsid js_constructor_name = JSID_VOID;
-    JSObject *parent_proto;
+    JS::RootedObject parent_proto(context);
     Fundamental *priv;
     GType parent_gtype;
     GType gtype;
@@ -665,7 +664,6 @@ gjs_define_fundamental_class(JSContext              *context,
 
     gtype = g_registered_type_info_get_g_type (info);
     parent_gtype = g_type_parent(gtype);
-    parent_proto = NULL;
     if (parent_gtype != G_TYPE_INVALID)
         parent_proto = gjs_lookup_fundamental_prototype_from_gtype(context,
                                                                    parent_gtype);
@@ -690,7 +688,7 @@ gjs_define_fundamental_class(JSContext              *context,
                                 NULL,
                                 /* funcs of constructor, MyConstructor.myfunc() */
                                 NULL,
-                                &prototype,
+                                prototype,
                                 constructor)) {
         gjs_log_exception(context);
         g_error("Can't init class %s", constructor_name);
@@ -716,8 +714,8 @@ gjs_define_fundamental_class(JSContext              *context,
 
     gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
               "Defined class %s prototype is %p class %p in object %p constructor %s.%s.%s",
-              constructor_name, prototype, JS_GetClass(prototype),
-              in_object,
+              constructor_name, prototype.get(), JS_GetClass(prototype),
+              in_object.get(),
               constructor_info != NULL ? g_base_info_get_namespace(constructor_info) : "unknown",
               constructor_info != NULL ? g_base_info_get_name(g_base_info_get_container(constructor_info)) : "unknown",
               constructor_info != NULL ? g_base_info_get_name(constructor_info) : "unknown");
@@ -735,9 +733,6 @@ gjs_define_fundamental_class(JSContext              *context,
     value = JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
-
-    if (prototype_p)
-        *prototype_p = prototype;
 
     return true;
 }

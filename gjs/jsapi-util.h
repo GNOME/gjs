@@ -318,8 +318,8 @@ bool gjs_object_require_converted_property_value(JSContext       *context,
                                                  uint32_t        *value);
 
 bool gjs_init_class_dynamic(JSContext              *context,
-                            JSObject               *in_object,
-                            JSObject               *parent_proto,
+                            JS::HandleObject        in_object,
+                            JS::HandleObject        parent_proto,
                             const char             *ns_name,
                             const char             *class_name,
                             JSClass                *clasp,
@@ -329,7 +329,7 @@ bool gjs_init_class_dynamic(JSContext              *context,
                             JSFunctionSpec         *fs,
                             JSPropertySpec         *static_ps,
                             JSFunctionSpec         *static_fs,
-                            JSObject              **prototype_p,
+                            JS::MutableHandleObject prototype,
                             JS::MutableHandleObject constructor);
 
 void gjs_throw_constructor_error             (JSContext       *context);
@@ -337,10 +337,10 @@ void gjs_throw_constructor_error             (JSContext       *context);
 void gjs_throw_abstract_constructor_error(JSContext    *context,
                                           JS::CallArgs& args);
 
-bool        gjs_typecheck_instance            (JSContext  *context,
-                                               JSObject   *obj,
-                                               JSClass    *static_clasp,
-                                               bool        _throw);
+bool gjs_typecheck_instance(JSContext       *context,
+                            JS::HandleObject obj,
+                            JSClass         *static_clasp,
+                            bool             throw_error);
 
 JSObject *gjs_construct_object_dynamic(JSContext       *context,
                                        JS::HandleObject proto,
