@@ -404,10 +404,10 @@ bool gjs_string_from_filename(JSContext             *context,
                               ssize_t                n_bytes,
                               JS::MutableHandleValue value_p);
 
-bool        gjs_string_get_uint16_data       (JSContext       *context,
-                                              JS::Value        value,
-                                              guint16        **data_p,
-                                              gsize           *len_p);
+bool gjs_string_get_char16_data(JSContext *context,
+                                JS::Value  value,
+                                char16_t **data_p,
+                                size_t    *len_p);
 
 bool gjs_string_to_ucs4(JSContext      *cx,
                         JS::HandleValue value,

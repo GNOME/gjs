@@ -367,12 +367,12 @@ gjs_string_readable (JSContext   *context,
 
     if (!gjs_string_to_utf8(context, JS::StringValue(string), &chars)) {
         size_t i, len;
-        const jschar *uchars;
+        const char16_t *uchars;
 
         uchars = JS_GetStringCharsAndLength(context, string, &len);
 
         for (i = 0; i < len; i++) {
-            jschar c = uchars[i];
+            char16_t c = uchars[i];
             if (c >> 8 == 0 && g_ascii_isprint(c & 0xFF))
                 g_string_append_c(buf, c & 0xFF);
             else

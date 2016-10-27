@@ -452,7 +452,7 @@ to_string_func(JSContext *context,
         GError *error;
         JSString *s;
         char *u16_str;
-        jschar *u16_out;
+        char16_t *u16_out;
 
         error = NULL;
         u16_str = g_convert(data,
@@ -474,7 +474,7 @@ to_string_func(JSContext *context,
          */
         g_assert((bytes_written % 2) == 0);
 
-        u16_out = g_new(jschar, bytes_written / 2);
+        u16_out = g_new(char16_t, bytes_written / 2);
         memcpy(u16_out, u16_str, bytes_written);
         s = JS_NewUCStringCopyN(context, u16_out, bytes_written / 2);
         if (s != NULL) {
@@ -609,7 +609,7 @@ from_string_func(JSContext *context,
         char *encoded;
         gsize bytes_written;
         GError *error;
-        const jschar *u16_chars;
+        const char16_t *u16_chars;
         gsize u16_len;
 
         u16_chars = JS_GetStringCharsAndLength(context, argv[0].toString(), &u16_len);

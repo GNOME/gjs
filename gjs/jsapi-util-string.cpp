@@ -69,7 +69,7 @@ gjs_string_from_utf8(JSContext             *context,
                      ssize_t                n_bytes,
                      JS::MutableHandleValue value_p)
 {
-    jschar *u16_string;
+    char16_t *u16_string;
     glong u16_string_length;
     GError *error;
 
@@ -78,11 +78,9 @@ gjs_string_from_utf8(JSContext             *context,
     */
 
     error = NULL;
-    u16_string = g_utf8_to_utf16(utf8_string,
-                                 n_bytes,
-                                 NULL,
-                                 &u16_string_length,
-                                 &error);
+    u16_string =
+        reinterpret_cast<char16_t *>(g_utf8_to_utf16(utf8_string, n_bytes, NULL,
+                                                     &u16_string_length, &error));
     if (!u16_string) {
         gjs_throw(context,
                   "Failed to convert UTF-8 string to "
@@ -164,25 +162,25 @@ gjs_string_from_filename(JSContext             *context,
 }
 
 /**
- * gjs_string_get_uint16_data:
+ * gjs_string_get_char16_data:
  * @context: js context
  * @value: a JS::Value
  * @data_p: address to return allocated data buffer
- * @len_p: address to return length of data (number of 16-bit integers)
+ * @len_p: address to return length of data (number of 16-bit characters)
  *
- * Get the binary data (as a sequence of 16-bit integers) in the JSString
+ * Get the binary data (as a sequence of 16-bit characters) in the JSString
  * contained in @value.
  * Throws a JS exception if value is not a string.
  *
  * Returns: false if exception thrown
  **/
 bool
-gjs_string_get_uint16_data(JSContext       *context,
+gjs_string_get_char16_data(JSContext       *context,
                            JS::Value        value,
-                           guint16        **data_p,
-                           gsize           *len_p)
+                           char16_t       **data_p,
+                           size_t          *len_p)
 {
-    const jschar *js_data;
+    const char16_t *js_data;
     bool retval = false;
 
     JS_BeginRequest(context);
@@ -197,7 +195,7 @@ gjs_string_get_uint16_data(JSContext       *context,
     if (js_data == NULL)
         goto out;
 
-    *data_p = (guint16*) g_memdup(js_data, sizeof(*js_data)*(*len_p));
+    *data_p = (char16_t *) g_memdup(js_data, sizeof(*js_data) * (*len_p));
 
     retval = true;
 out:
@@ -233,7 +231,7 @@ gjs_string_to_ucs4(JSContext      *cx,
     size_t utf16_len;
     GError *error = NULL;
 
-    const jschar *utf16 = JS_GetStringCharsAndLength(cx, str, &utf16_len);
+    const char16_t *utf16 = JS_GetStringCharsAndLength(cx, str, &utf16_len);
     if (utf16 == NULL) {
         gjs_throw(cx, "Failed to get UTF-16 string data");
         return false;
@@ -271,12 +269,12 @@ gjs_string_from_ucs4(JSContext             *cx,
                      ssize_t                n_chars,
                      JS::MutableHandleValue value_p)
 {
-    uint16_t *u16_string;
     long u16_string_length;
     GError *error = NULL;
 
-    u16_string = g_ucs4_to_utf16(ucs4_string, n_chars, NULL,
-                                 &u16_string_length, &error);
+    char16_t *u16_string =
+        reinterpret_cast<char16_t *>(g_ucs4_to_utf16(ucs4_string, n_chars, NULL,
+                                                     &u16_string_length, &error));
     if (!u16_string) {
         gjs_throw(cx, "Failed to convert UCS-4 string to UTF-16: %s",
                   error->message);

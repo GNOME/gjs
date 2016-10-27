@@ -641,7 +641,7 @@ gjs_string_to_intarray(JSContext   *context,
 {
     GITypeTag element_type;
     char *result;
-    guint16 *result16;
+    char16_t *result16;
 
     element_type = g_type_info_get_tag(param_info);
 
@@ -654,7 +654,7 @@ gjs_string_to_intarray(JSContext   *context,
     }
 
     if (element_type == GI_TYPE_TAG_INT16 || element_type == GI_TYPE_TAG_UINT16) {
-        if (!gjs_string_get_uint16_data(context, string_val,
+        if (!gjs_string_get_char16_data(context, string_val,
                                         &result16, length))
             return false;
         *arr_p = result16;
