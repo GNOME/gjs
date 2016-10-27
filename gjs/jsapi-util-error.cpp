@@ -50,8 +50,6 @@ gjs_throw_valist(JSContext       *context,
 {
     char *s;
     bool result;
-    JS::Value v_constructor;
-    JSObject *err_obj;
 
     s = g_strdup_vprintf(format, args);
 
@@ -76,7 +74,9 @@ gjs_throw_valist(JSContext       *context,
         return;
     }
 
-    JS::RootedValue v_message(context);
+    JS::RootedObject constructor(context);
+    JS::RootedObject global(context, JS_GetGlobalForScopeChain(context));
+    JS::RootedValue v_constructor(context), v_message(context), new_exc(context);
     result = false;
 
     if (!gjs_string_from_utf8(context, s, -1, &v_message)) {
@@ -84,15 +84,16 @@ gjs_throw_valist(JSContext       *context,
         goto out;
     }
 
-    if (!JS_GetProperty(context, JS_GetGlobalForScopeChain(context), error_class, &v_constructor) ||
+    if (!JS_GetProperty(context, global, error_class, v_constructor.address()) ||
         !v_constructor.isObject()) {
         JS_ReportError(context, "??? Missing Error constructor in global object?");
         goto out;
     }
 
     /* throw new Error(message) */
-    err_obj = JS_New(context, &v_constructor.toObject(), 1, v_message.address());
-    JS_SetPendingException(context, JS::ObjectOrNullValue(err_obj));
+    constructor = &v_constructor.toObject();
+    new_exc.setObjectOrNull(JS_New(context, constructor, 1, v_message.address()));
+    JS_SetPendingException(context, new_exc);
 
     result = true;
 
@@ -173,17 +174,16 @@ void
 gjs_throw_g_error (JSContext       *context,
                    GError          *error)
 {
-    JSObject *err_obj;
-
     if (error == NULL)
         return;
 
     JS_BeginRequest(context);
 
-    err_obj = gjs_error_from_gerror(context, error, true);
+    JS::RootedValue err(context,
+        JS::ObjectOrNullValue(gjs_error_from_gerror(context, error, true)));
     g_error_free (error);
-    if (err_obj)
-        JS_SetPendingException(context, JS::ObjectValue(*err_obj));
+    if (!err.isNull())
+        JS_SetPendingException(context, err);
 
     JS_EndRequest(context);
 }
