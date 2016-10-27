@@ -54,7 +54,7 @@ gjs_context_get_frame_info(JSContext                              *context,
                            mozilla::Maybe<JS::MutableHandleValue>& lineNumber)
 {
     JSAutoRequest ar(context);
-    JS::RootedObject global(context, JS_GetGlobalForScopeChain(context)),
+    JS::RootedObject global(context, JS::CurrentGlobalOrNull(context)),
         constructor(context);
     JSAutoCompartment ac(context, global);
 
