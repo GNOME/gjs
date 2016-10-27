@@ -53,21 +53,17 @@ gjs_context_get_frame_info(JSContext                              *context,
                            mozilla::Maybe<JS::MutableHandleValue>& fileName,
                            mozilla::Maybe<JS::MutableHandleValue>& lineNumber)
 {
-    JS::Value v_constructor;
-    JSObject *global;
-
     JSAutoRequest ar(context);
-    global = JS_GetGlobalForScopeChain(context);
+    JS::RootedObject global(context, JS_GetGlobalForScopeChain(context)),
+        constructor(context);
     JSAutoCompartment ac(context, global);
 
-    if (!JS_GetProperty(context, global, "Error", &v_constructor) ||
-        !v_constructor.isObject()) {
-        g_error("??? Missing Error constructor in global object?");
+    JS::RootedId error_id(context, gjs_intern_string_to_id(context, "Error"));
+    if (!gjs_object_require_property_value(context, global, "global object",
+                                           error_id, &constructor))
         return false;
-    }
 
-    JS::RootedObject err_obj(context,
-                             JS_New(context, &v_constructor.toObject(), 0, NULL));
+    JS::RootedObject err_obj(context, JS_New(context, constructor, 0, NULL));
 
     if (!stack.empty() &&
         !gjs_object_get_property_const(context, err_obj, GJS_STRING_STACK,
