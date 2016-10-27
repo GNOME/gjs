@@ -33,7 +33,6 @@ gjs_string_to_utf8 (JSContext      *context,
                     const JS::Value value,
                     char          **utf8_string_p)
 {
-    JSString *str;
     gsize len;
     char *bytes;
 
@@ -46,7 +45,7 @@ gjs_string_to_utf8 (JSContext      *context,
         return false;
     }
 
-    str = value.toString();
+    JS::RootedString str(context, value.toString());
 
     len = JS_GetStringEncodingLength(context, str);
     if (len == (gsize)(-1)) {
@@ -242,7 +241,8 @@ gjs_string_to_ucs4(JSContext      *cx,
 
     if (ucs4_string_p != NULL) {
         long length;
-        *ucs4_string_p = g_utf16_to_ucs4(utf16, utf16_len, NULL, &length, &error);
+        *ucs4_string_p = g_utf16_to_ucs4(reinterpret_cast<const gunichar2 *>(utf16),
+                                         utf16_len, NULL, &length, &error);
         if (*ucs4_string_p == NULL) {
             gjs_throw(cx, "Failed to convert UTF-16 string to UCS-4: %s",
                       error->message);
@@ -313,9 +313,9 @@ gjs_get_string_id (JSContext       *context,
                    jsid             id,
                    char           **name_p)
 {
-    JS::Value id_val;
+    JS::RootedValue id_val(context);
 
-    if (!JS_IdToValue(context, id, &id_val))
+    if (!JS_IdToValue(context, id, id_val.address()))
         return false;
 
     if (id_val.isString()) {
