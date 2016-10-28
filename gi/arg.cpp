@@ -281,12 +281,13 @@ gjs_array_to_g_list(JSContext   *context,
         transfer = GI_TRANSFER_NOTHING;
     }
 
+    JS::RootedObject array(context, array_value.toObjectOrNull());
     JS::RootedValue elem(context);
     for (i = 0; i < length; ++i) {
         GArgument elem_arg = { 0 };
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, elem.address())) {
+        if (!JS_GetElement(context, array, i, elem.address())) {
             gjs_throw(context,
                       "Missing array element %u",
                       i);
@@ -335,12 +336,9 @@ gjs_object_to_g_hash(JSContext   *context,
                      GHashTable **hash_p)
 {
     GHashTable *result = NULL;
-    JSObject *props;
-    JSObject *iter;
-    jsid prop_id;
 
     g_assert(hash_value.isObjectOrNull());
-    props = hash_value.toObjectOrNull();
+    JS::RootedObject props(context, hash_value.toObjectOrNull());
 
     if (transfer == GI_TRANSFER_CONTAINER) {
         if (type_needs_release (key_param_info, g_type_info_get_tag(key_param_info)) ||
@@ -357,12 +355,12 @@ gjs_object_to_g_hash(JSContext   *context,
         transfer = GI_TRANSFER_NOTHING;
     }
 
-    iter = JS_NewPropertyIterator(context, props);
+    JS::RootedObject iter(context, JS_NewPropertyIterator(context, props));
     if (iter == NULL)
         return false;
 
-    prop_id = JSID_VOID;
-    if (!JS_NextProperty(context, iter, &prop_id))
+    JS::RootedId prop_id(context);
+    if (!JS_NextProperty(context, iter, prop_id.address()))
         return false;
 
     /* Don't use key/value destructor functions here, because we can't
@@ -399,7 +397,7 @@ gjs_object_to_g_hash(JSContext   *context,
         g_hash_table_insert(result, key_arg.v_pointer, val_arg.v_pointer);
 
         prop_id = JSID_VOID;
-        if (!JS_NextProperty(context, iter, &prop_id))
+        if (!JS_NextProperty(context, iter, prop_id.address()))
             goto free_hash_and_fail;
     }
 
@@ -416,10 +414,9 @@ gjs_array_from_strv(JSContext             *context,
                     JS::MutableHandleValue value_p,
                     const char           **strv)
 {
-    JSObject *obj;
+    JS::RootedObject obj(context, JS_NewArrayObject(context, 0, NULL));
     guint i;
 
-    obj = JS_NewArrayObject(context, 0, NULL);
     if (obj == NULL)
         return false;
 
@@ -448,14 +445,14 @@ gjs_array_to_strv(JSContext   *context,
 {
     char **result;
     guint32 i;
+    JS::RootedObject array(context, array_value.toObjectOrNull());
+    JS::RootedValue elem(context);
 
     result = g_new0(char *, length+1);
 
     for (i = 0; i < length; ++i) {
-        JS::Value elem;
-
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, &elem)) {
+        if (!JS_GetElement(context, array, i, elem.address())) {
             g_free(result);
             gjs_throw(context,
                       "Missing array element %u",
@@ -531,12 +528,13 @@ gjs_array_to_gboolean_array(JSContext      *cx,
                             void          **arr_p)
 {
     unsigned i;
+    JS::RootedObject array(cx, array_value.toObjectOrNull());
+    JS::RootedValue elem(cx);
 
     gboolean *result = g_new0(gboolean, length);
 
     for (i = 0; i < length; i++) {
-        JS::RootedValue elem(cx);
-        if (!JS_GetElement(cx, array_value.toObjectOrNull(), i, elem.address())) {
+        if (!JS_GetElement(cx, array, i, elem.address())) {
             g_free(result);
             gjs_throw(cx, "Missing array element %u", i);
             return false;
@@ -561,16 +559,17 @@ gjs_array_to_intarray(JSContext   *context,
     union { uint64_t u; int64_t i; } intval;
     void *result;
     unsigned i;
+    JS::RootedObject array(context, array_value.toObjectOrNull());
+    JS::RootedValue elem(context);
 
     /* add one so we're always zero terminated */
     result = g_malloc0((length+1) * intsize);
 
     for (i = 0; i < length; ++i) {
-        JS::Value elem;
         bool success;
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, &elem)) {
+        if (!JS_GetElement(context, array, i, elem.address())) {
             g_free(result);
             gjs_throw(context,
                       "Missing array element %u",
@@ -621,13 +620,13 @@ gjs_gtypearray_to_array(JSContext   *context,
     /* add one so we're always zero terminated */
     result = (GType *) g_malloc0((length+1) * sizeof(GType));
 
-    JS::RootedObject elem_obj(context);
+    JS::RootedObject elem_obj(context), array(context, array_value.toObjectOrNull());
+    JS::RootedValue elem(context);
     for (i = 0; i < length; ++i) {
-        JS::Value elem;
         GType gtype;
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, &elem)) {
+        if (!JS_GetElement(context, array, i, elem.address())) {
             g_free(result);
             gjs_throw(context, "Missing array element %u", i);
             return false;
@@ -663,17 +662,18 @@ gjs_array_to_floatarray(JSContext   *context,
 {
     unsigned int i;
     void *result;
+    JS::RootedObject array(context, array_value.toObjectOrNull());
+    JS::RootedValue elem(context);
 
     /* add one so we're always zero terminated */
     result = g_malloc0((length+1) * (is_double ? sizeof(double) : sizeof(float)));
 
     for (i = 0; i < length; ++i) {
-        JS::Value elem;
         double val;
         bool success;
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, &elem)) {
+        if (!JS_GetElement(context, array, i, elem.address())) {
             g_free(result);
             gjs_throw(context,
                       "Missing array element %u",
@@ -715,6 +715,7 @@ gjs_array_to_ptrarray(JSContext   *context,
                       void       **arr_p)
 {
     unsigned int i;
+    JS::RootedObject array_obj(context, array_value.toObjectOrNull());
     JS::RootedValue elem(context);
 
     /* Always one extra element, to cater for null terminated arrays */
@@ -728,7 +729,7 @@ gjs_array_to_ptrarray(JSContext   *context,
         bool success;
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, elem.address())) {
+        if (!JS_GetElement(context, array_obj, i, elem.address())) {
             g_free(array);
             gjs_throw(context,
                       "Missing array element %u",
@@ -768,12 +769,13 @@ gjs_array_to_flat_gvalue_array(JSContext   *context,
     GValue *values = g_new0(GValue, length);
     unsigned int i;
     bool result = true;
+    JS::RootedObject array(context, array_value.toObjectOrNull());
+    JS::RootedValue elem(context);
 
     for (i = 0; i < length; i ++) {
-        JS::Value elem;
         elem = JS::UndefinedValue();
 
-        if (!JS_GetElement(context, array_value.toObjectOrNull(), i, &elem)) {
+        if (!JS_GetElement(context, array, i, elem.address())) {
             g_free(values);
             gjs_throw(context,
                       "Missing array element %u",
@@ -1117,28 +1119,30 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
         if (!gjs_string_to_intarray(context, value, param_info,
                                     contents, length_p))
             goto out;
-    } else if (JS_HasPropertyById(context, &value.toObject(), length_name, &found_length) &&
-               found_length) {
-        JS::RootedObject array_obj(context, &value.toObject());
-        guint32 length;
-
-        if (!gjs_object_require_converted_property_value(context, array_obj, NULL,
-                                                         length_name, &length)) {
-            goto out;
-        } else {
-            if (!gjs_array_to_array(context,
-                                    value,
-                                    length,
-                                    transfer,
-                                    param_info,
-                                    contents))
-                goto out;
-
-            *length_p = length;
-        }
     } else {
-        throw_invalid_argument(context, value, param_info, arg_name, arg_type);
-        goto out;
+        JS::RootedObject array_obj(context, &value.toObject());
+        if (JS_HasPropertyById(context, array_obj, length_name, &found_length) &&
+            found_length) {
+            guint32 length;
+
+            if (!gjs_object_require_converted_property_value(context, array_obj, NULL,
+                                                             length_name, &length)) {
+                goto out;
+            } else {
+                if (!gjs_array_to_array(context,
+                                        value,
+                                        length,
+                                        transfer,
+                                        param_info,
+                                        contents))
+                    goto out;
+
+                *length_p = length;
+            }
+        } else {
+            throw_invalid_argument(context, value, param_info, arg_name, arg_type);
+            goto out;
+        }
     }
 
     ret = true;
@@ -1634,58 +1638,61 @@ gjs_value_to_g_argument(JSContext      *context,
 
     case GI_TYPE_TAG_GLIST:
     case GI_TYPE_TAG_GSLIST: {
-        JSBool found_length;
-
-        JS::RootedId length_name(context,
-            gjs_context_get_const_string(context, GJS_STRING_LENGTH));
-
         /* nullable_type=false; while a list can be NULL in C, that
          * means empty array in JavaScript, it doesn't mean null in
          * JavaScript.
          */
-        if (value.isObject() &&
-            JS_HasPropertyById(context, &value.toObject(), length_name, &found_length) &&
-            found_length) {
+        if (value.isObject()) {
+            JSBool found_length;
             JS::RootedObject array_obj(context, &value.toObject());
-            guint32 length;
+            JS::RootedId length_name(context,
+                gjs_context_get_const_string(context, GJS_STRING_LENGTH));
 
-            if (!gjs_object_require_converted_property_value(context, array_obj,
-                                                             NULL, length_name,
-                                                             &length)) {
-                wrong = true;
-            } else {
-                GList *list;
-                GSList *slist;
-                GITypeInfo *param_info;
+            if (JS_HasPropertyById(context, array_obj, length_name, &found_length) &&
+                found_length) {
+                guint32 length;
 
-                param_info = g_type_info_get_param_type(type_info, 0);
-                g_assert(param_info != NULL);
-
-                list = NULL;
-                slist = NULL;
-
-                if (!gjs_array_to_g_list(context,
-                                         value,
-                                         length,
-                                         param_info,
-                                         transfer,
-                                         type_tag,
-                                         &list, &slist)) {
+                if (!gjs_object_require_converted_property_value(context, array_obj,
+                                                                 NULL, length_name,
+                                                                 &length)) {
                     wrong = true;
-                }
-
-                if (type_tag == GI_TYPE_TAG_GLIST) {
-                    arg->v_pointer = list;
                 } else {
-                    arg->v_pointer = slist;
-                }
+                    GList *list;
+                    GSList *slist;
+                    GITypeInfo *param_info;
 
-                g_base_info_unref((GIBaseInfo*) param_info);
+                    param_info = g_type_info_get_param_type(type_info, 0);
+                    g_assert(param_info != NULL);
+
+                    list = NULL;
+                    slist = NULL;
+
+                    if (!gjs_array_to_g_list(context,
+                                             value,
+                                             length,
+                                             param_info,
+                                             transfer,
+                                             type_tag,
+                                             &list, &slist)) {
+                        wrong = true;
+                    }
+
+                    if (type_tag == GI_TYPE_TAG_GLIST) {
+                        arg->v_pointer = list;
+                    } else {
+                        arg->v_pointer = slist;
+                    }
+
+                    g_base_info_unref((GIBaseInfo*) param_info);
+                }
+                break;
             }
-        } else {
-            wrong = true;
-            report_type_mismatch = true;
         }
+
+        /* At this point we should have broken out already if the value was an
+         * object and had a length property */
+        wrong = true;
+        report_type_mismatch = true;
         break;
     }
 
@@ -1993,11 +2000,10 @@ gjs_array_from_g_list (JSContext             *context,
                        GList                 *list,
                        GSList                *slist)
 {
-    JSObject *obj;
     unsigned int i;
     GArgument arg;
 
-    obj = JS_NewArrayObject(context, 0, NULL);
+    JS::RootedObject obj(context, JS_NewArrayObject(context, 0, NULL));
     if (obj == NULL)
         return false;
 
@@ -2050,7 +2056,6 @@ gjs_array_from_carray_internal (JSContext             *context,
                                 guint                  length,
                                 gpointer               array)
 {
-    JSObject *obj;
     GArgument arg;
     GITypeTag element_type;
     guint i;
@@ -2066,8 +2071,9 @@ gjs_array_from_carray_internal (JSContext             *context,
 
         gbytearray.data = (guint8 *) array;
         gbytearray.len = length;
-        
-        obj = gjs_byte_array_from_byte_array (context, &gbytearray);
+
+        JS::RootedObject obj(context,
+            gjs_byte_array_from_byte_array(context, &gbytearray));
         if (obj == NULL)
             return false;
         value_p.setObject(*obj);
@@ -2078,7 +2084,7 @@ gjs_array_from_carray_internal (JSContext             *context,
     if (element_type == GI_TYPE_TAG_UNICHAR)
         return gjs_string_from_ucs4(context, (gunichar *) array, length, value_p);
 
-    obj = JS_NewArrayObject(context, 0, NULL);
+    JS::RootedObject obj(context, JS_NewArrayObject(context, 0, NULL));
     if (obj == NULL)
         return false;
 
@@ -2270,7 +2276,6 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
                                         GITypeInfo            *param_info,
                                         gpointer               c_array)
 {
-    JSObject *obj;
     GArgument arg;
     GITypeTag element_type;
     guint i;
@@ -2284,7 +2289,8 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
         gbytearray.data = (guint8 *) c_array;
         gbytearray.len = strlen((const char *) c_array);
 
-        obj = gjs_byte_array_from_byte_array (context, &gbytearray);
+        JS::RootedObject obj(context,
+            gjs_byte_array_from_byte_array(context, &gbytearray));
         if (obj == NULL)
             return false;
         value_p.setObject(*obj);
@@ -2295,7 +2301,7 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
     if (element_type == GI_TYPE_TAG_UNICHAR)
         return gjs_string_from_ucs4(context, (gunichar *) c_array, -1, value_p);
 
-    obj = JS_NewArrayObject(context, 0, NULL);
+    JS::RootedObject obj(context, JS_NewArrayObject(context, 0, NULL));
     if (obj == NULL)
         return false;
 
@@ -2384,7 +2390,6 @@ gjs_object_from_g_hash (JSContext             *context,
                         GHashTable            *hash)
 {
     GHashTableIter iter;
-    JSObject *obj;
     char     *keyutf8 = NULL;
     GArgument keyarg, valarg;
     bool result;
@@ -2395,7 +2400,7 @@ gjs_object_from_g_hash (JSContext             *context,
         return true;
     }
 
-    obj = JS_NewObject(context, NULL, NULL, NULL);
+    JS::RootedObject obj(context, JS_NewObject(context, NULL, NULL, NULL));
     if (obj == NULL)
         return false;
 
