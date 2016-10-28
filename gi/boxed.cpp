@@ -262,7 +262,6 @@ boxed_init_from_props(JSContext   *context,
                       Boxed       *priv,
                       JS::Value    props_value)
 {
-    JSObject *iter;
     bool success = false;
 
     if (!props_value.isObject()) {
@@ -271,8 +270,8 @@ boxed_init_from_props(JSContext   *context,
     }
 
     JS::RootedObject props(context, &props_value.toObject());
+    JS::RootedObject iter(context, JS_NewPropertyIterator(context, props));
 
-    iter = JS_NewPropertyIterator(context, props);
     if (iter == NULL) {
         gjs_throw(context, "Failed to create property iterator for fields hash");
         return false;
@@ -397,8 +396,9 @@ boxed_new(JSContext             *context,
         /* for simplicity, we simply delegate all the work to the actual JS constructor
            function (which we retrieve from the JS constructor, that is, Namespace.BoxedType,
            or object.constructor, given that object was created with the right prototype */
+        JS::RootedId default_constructor_name(context, priv->default_constructor_name);
         retval = boxed_invoke_constructor(context, obj,
-                                          priv->default_constructor_name, args);
+                                          default_constructor_name, args);
         return retval;
     } else {
         gjs_throw(context, "Unable to construct struct type %s since it has no default constructor and cannot be allocated directly",
@@ -583,6 +583,7 @@ get_nested_interface_object (JSContext   *context,
         return false;
     }
 
+    JS::RootedObject global(context, gjs_get_import_global(context));
     JS::RootedObject proto(context,
                            gjs_lookup_generic_prototype(context,
                                                         (GIBoxedInfo*) interface_info));
@@ -590,9 +591,7 @@ get_nested_interface_object (JSContext   *context,
 
     offset = g_field_info_get_offset (field_info);
 
-    obj = JS_NewObjectWithGivenProto(context,
-                                     JS_GetClass(proto), proto,
-                                     gjs_get_import_global (context));
+    obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto, global);
 
     if (obj == NULL)
         return false;
@@ -829,9 +828,9 @@ out:
 }
 
 static bool
-define_boxed_class_fields (JSContext *context,
-                           Boxed     *priv,
-                           JSObject  *proto)
+define_boxed_class_fields (JSContext       *context,
+                           Boxed           *priv,
+                           JS::HandleObject proto)
 {
     int n_fields = g_struct_info_get_n_fields (priv->info);
     int i;
@@ -862,7 +861,7 @@ define_boxed_class_fields (JSContext *context,
         const char *field_name = g_base_info_get_name ((GIBaseInfo *)field);
         bool result;
 
-        result = JS_DefineProperty(context, proto, field_name, JS::NullValue(),
+        result = JS_DefineProperty(context, proto, field_name, JS::NullHandleValue,
                                    boxed_field_getter, boxed_field_setter,
                                    JSPROP_PERMANENT | JSPROP_SHARED);
 
@@ -1127,7 +1126,6 @@ gjs_define_boxed_class(JSContext       *context,
 {
     const char *constructor_name;
     JS::RootedObject prototype(context), constructor(context);
-    JS::Value value;
     Boxed *priv;
 
     /* See the comment in gjs_define_object_class() for an
@@ -1175,7 +1173,8 @@ gjs_define_boxed_class(JSContext       *context,
     define_boxed_class_fields (context, priv, prototype);
     gjs_define_static_methods (context, constructor, priv->gtype, priv->info);
 
-    value = JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, priv->gtype));
+    JS::RootedValue value(context,
+        JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, priv->gtype)));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 }
@@ -1197,12 +1196,11 @@ gjs_boxed_from_c_struct(JSContext             *context,
                       "Wrapping struct %s %p with JSObject",
                       g_base_info_get_name((GIBaseInfo *)info), gboxed);
 
+    JS::RootedObject global(context, gjs_get_import_global(context));
     JS::RootedObject proto(context, gjs_lookup_generic_prototype(context, info));
     proto_priv = priv_from_js(context, proto);
 
-    obj = JS_NewObjectWithGivenProto(context,
-                                     JS_GetClass(proto), proto,
-                                     gjs_get_import_global (context));
+    obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto, global);
 
     GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Boxed);
