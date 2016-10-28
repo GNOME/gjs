@@ -182,7 +182,6 @@ gjs_callback_closure(ffi_cif *cif,
     JSObject *func_obj;
     GjsCallbackTrampoline *trampoline;
     int i, n_args, n_jsargs, n_outargs;
-    JSObject *this_object;
     GITypeInfo ret_type;
     bool success = false;
     bool ret_type_is_void;
@@ -221,6 +220,7 @@ gjs_callback_closure(ffi_cif *cif,
     jsargs.resize(n_args);
     JS::Value *args_ptr = jsargs.begin();
     JS::RootedValue rval(context);
+    JS::RootedObject this_object(context);
 
     for (i = 0, n_jsargs = 0; i < n_args; i++) {
         GIArgInfo arg_info;
@@ -285,8 +285,6 @@ gjs_callback_closure(ffi_cif *cif,
         this_object = jsargs[0].toObjectOrNull();
         args_ptr++;
         n_jsargs--;
-    } else {
-        this_object = NULL;
     }
 
     if (!JS_CallFunctionValue(context,
@@ -346,6 +344,7 @@ gjs_callback_closure(ffi_cif *cif,
         }
     } else {
         JS::RootedValue elem(context);
+        JS::RootedObject out_array(context, rval.toObjectOrNull());
         gsize elem_idx = 0;
         /* more than one of a return value or an out argument.
          * Should be an array of output values. */
@@ -353,7 +352,7 @@ gjs_callback_closure(ffi_cif *cif,
         if (!ret_type_is_void) {
             GIArgument argument;
 
-            if (!JS_GetElement(context, rval.toObjectOrNull(), elem_idx, elem.address()))
+            if (!JS_GetElement(context, out_array, elem_idx, elem.address()))
                 goto out;
 
             if (!gjs_value_to_g_argument(context,
@@ -381,7 +380,7 @@ gjs_callback_closure(ffi_cif *cif,
                 continue;
 
             g_arg_info_load_type(&arg_info, &type_info);
-            if (!JS_GetElement(context, rval.toObjectOrNull(), elem_idx, elem.address()))
+            if (!JS_GetElement(context, out_array, elem_idx, elem.address()))
                 goto out;
 
             if (!gjs_value_to_g_argument(context,
@@ -1647,23 +1646,23 @@ function_new(JSContext      *context,
              GType           gtype,
              GICallableInfo *info)
 {
-    JSObject *global;
     Function *priv;
     JSBool found;
 
     /* put constructor for GIRepositoryFunction() in the global namespace */
-    global = gjs_get_import_global(context);
+    JS::RootedObject global(context, gjs_get_import_global(context));
 
     if (!JS_HasProperty(context, global, gjs_function_class.name, &found))
         return NULL;
     if (!found) {
         JSObject *prototype;
-        JSObject *parent_proto;
-        JS::Value native_function;
+        JS::RootedObject parent_proto(context);
+        JS::RootedValue v_native_function(context);
 
-        JS_GetProperty(context, global, "Function", &native_function);
+        JS_GetProperty(context, global, "Function", v_native_function.address());
+        JS::RootedObject native_function(context, &v_native_function.toObject());
         /* We take advantage from that fact that Function.__proto__ is Function.prototype */
-        JS_GetPrototype(context, &native_function.toObject(), &parent_proto);
+        JS_GetPrototype(context, native_function, parent_proto.address());
 
         prototype = JS_InitClass(context, global,
                                  /* parent prototype JSObject* for
