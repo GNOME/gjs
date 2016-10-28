@@ -330,8 +330,7 @@ gjs_build_string_array(JSContext   *context,
         elems.append(element);
     }
 
-    return JS_NewArrayObject(context, elems.length(),
-                             elems.length() ? &elems[0] : NULL);
+    return JS_NewArrayObject(context, elems);
 }
 
 JSObject*

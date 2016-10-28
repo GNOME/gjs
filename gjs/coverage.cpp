@@ -472,12 +472,11 @@ get_executed_lines_for(JSContext        *context,
 {
     GArray *array = NULL;
     JS::RootedValue rval(context);
+    JS::AutoValueArray<1> args(context);
+    args[0].set(filename_value);
 
-    /* Removing const with cast is OK because the function arguments are not
-     * mutated in JS_CallFunction */
     if (!JS_CallFunctionName(context, coverage_statistics, "getExecutedLinesFor",
-                             1, (JS::Value *) filename_value.address(),
-                             rval.address())) {
+                             args, rval.address())) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -585,12 +584,11 @@ get_functions_for(JSContext        *context,
 {
     GArray *array = NULL;
     JS::RootedValue rval(context);
+    JS::AutoValueArray<1> args(context);
+    args[0].set(filename_value);
 
-    /* Removing const with cast is OK because the function arguments are not
-     * mutated in JS_CallFunction */
     if (!JS_CallFunctionName(context, coverage_statistics, "getFunctionsFor",
-                             1, (JS::Value *) filename_value.address(),
-                             rval.address())) {
+                             args, rval.address())) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -714,13 +712,12 @@ get_branches_for(JSContext        *context,
                  JS::HandleValue   filename_value)
 {
     GArray *array = NULL;
+    JS::AutoValueArray<1> args(context);
+    args[0].set(filename_value);
     JS::RootedValue rval(context);
 
-    /* Removing const with cast is OK because the function arguments are not
-     * mutated in JS_CallFunction */
     if (!JS_CallFunctionName(context, coverage_statistics, "getBranchesFor",
-                             1, (JS::Value *) filename_value.address(),
-                             rval.address())) {
+                             args, rval.address())) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -855,7 +852,7 @@ get_covered_files(GjsCoverage *coverage)
     uint32_t n_files;
 
     if (!JS_CallFunctionName(context, rooted_priv, "getCoveredFiles",
-                             0, NULL, rval.address())) {
+                             JS::HandleValueArray::empty(), rval.address())) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -1013,8 +1010,7 @@ gjs_serialize_statistics(GjsCoverage *coverage)
     JS::RootedValue string_value_return(js_runtime);
 
     if (!JS_CallFunctionName(js_context, rooted_priv, "stringify",
-                             0,
-                             NULL,
+                             JS::HandleValueArray::empty(),
                              string_value_return.address())) {
         gjs_log_exception(js_context);
         return NULL;
@@ -1169,8 +1165,7 @@ coverage_statistics_has_stale_cache(GjsCoverage *coverage)
     JS::RootedObject rooted_priv(js_context, priv->coverage_statistics);
     JS::RootedValue stale_cache_value(js_context);
     if (!JS_CallFunctionName(js_context, rooted_priv, "staleCache",
-                             0,
-                             NULL,
+                             JS::HandleValueArray::empty(),
                              stale_cache_value.address())) {
         gjs_log_exception(js_context);
         g_error("Failed to call into javascript to get stale cache value. This is a bug");
@@ -1380,7 +1375,6 @@ coverage_get_file_modification_time(JSContext *context,
                                     JS::Value *vp)
 {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    JSRuntime    *runtime = JS_GetRuntime(context);
     GTimeVal mtime;
     bool ret = false;
     char *filename = get_filename_from_filename_as_js_string(context, args);
@@ -1389,13 +1383,14 @@ coverage_get_file_modification_time(JSContext *context,
         goto out;
 
     if (gjs_get_path_mtime(filename, &mtime)) {
-        JS::RootedObject mtime_values_array(runtime,
-                                            JS_NewArrayObject(context, 0, NULL));
-        if (!JS_DefineElement(context, mtime_values_array, 0, JS::Int32Value(mtime.tv_sec), NULL, NULL, 0))
+        JS::AutoValueArray<2> mtime_values_array(context);
+        mtime_values_array[0].setInt32(mtime.tv_sec);
+        mtime_values_array[1].setInt32(mtime.tv_usec);
+        JS::RootedObject array_obj(context,
+            JS_NewArrayObject(context, mtime_values_array));
+        if (array_obj == NULL)
             goto out;
-        if (!JS_DefineElement(context, mtime_values_array, 1, JS::Int32Value(mtime.tv_usec), NULL, NULL, 0))
-            goto out;
-        args.rval().setObject(*(mtime_values_array.get()));
+        args.rval().setObject(*array_obj);
     } else {
         args.rval().setNull();
     }
@@ -1670,15 +1665,13 @@ bootstrap_coverage(GjsCoverage *coverage)
         /* Now create the array to pass the desired prefixes over */
         JSObject *prefixes = gjs_build_string_array(context, -1, priv->prefixes);
 
-        JS::Value coverage_statistics_constructor_arguments[] = {
-            JS::ObjectValue(*prefixes),
-            cache_value.get()
-        };
+        JS::AutoValueArray<2> coverage_statistics_constructor_args(context);
+        coverage_statistics_constructor_args[0].setObject(*prefixes);
+        coverage_statistics_constructor_args[1].set(cache_value);
 
         JSObject *coverage_statistics = JS_New(context,
                                                coverage_statistics_constructor,
-                                               2,
-                                               coverage_statistics_constructor_arguments);
+                                               coverage_statistics_constructor_args);
 
         if (!coverage_statistics) {
             gjs_throw(context, "Failed to create coverage_statitiscs object");
@@ -1756,9 +1749,7 @@ gjs_clear_js_side_statistics_from_coverage_object(GjsCoverage *coverage)
         JS::RootedObject rooted_priv(js_context, priv->coverage_statistics);
         JS::RootedValue rval(JS_GetRuntime(js_context));
         if (!JS_CallFunctionName(js_context, rooted_priv, "deactivate",
-                                 0,
-                                 NULL,
-                                 rval.address())) {
+                                 JS::HandleValueArray::empty(), rval.address())) {
             gjs_log_exception(js_context);
             g_error("Failed to deactivate debugger - this is a fatal error");
         }

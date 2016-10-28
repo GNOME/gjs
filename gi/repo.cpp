@@ -130,8 +130,7 @@ resolve_namespace_object(JSContext       *context,
     if (!override.isNull() &&
         !JS_CallFunctionValue (context, gi_namespace, /* thisp */
                                override, /* callee */
-                               0, /* argc */
-                               NULL, /* argv */
+                               JS::HandleValueArray::empty(),
                                result.address()))
         return false;
 

@@ -76,10 +76,11 @@ gjs_throw_valist(JSContext       *context,
 
     JS::RootedObject constructor(context);
     JS::RootedObject global(context, JS_GetGlobalForScopeChain(context));
-    JS::RootedValue v_constructor(context), v_message(context), new_exc(context);
+    JS::RootedValue v_constructor(context), new_exc(context);
+    JS::AutoValueArray<1> error_args(context);
     result = false;
 
-    if (!gjs_string_from_utf8(context, s, -1, &v_message)) {
+    if (!gjs_string_from_utf8(context, s, -1, error_args[0])) {
         JS_ReportError(context, "Failed to copy exception string");
         goto out;
     }
@@ -92,7 +93,7 @@ gjs_throw_valist(JSContext       *context,
 
     /* throw new Error(message) */
     constructor = &v_constructor.toObject();
-    new_exc.setObjectOrNull(JS_New(context, constructor, 1, v_message.address()));
+    new_exc.setObjectOrNull(JS_New(context, constructor, error_args));
     JS_SetPendingException(context, new_exc);
 
     result = true;

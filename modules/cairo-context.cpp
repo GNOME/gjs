@@ -82,7 +82,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     cfunc(cr, &arg1, &arg2);                                               \
     if (cairo_status(cr) == CAIRO_STATUS_SUCCESS) {                        \
       JS::RootedObject array(context,                                      \
-          JS_NewArrayObject(context, 0, NULL));                            \
+          JS_NewArrayObject(context, JS::HandleValueArray::empty()));      \
       if (!array)                                                          \
         return false;                                                      \
       JS::RootedValue r(context, JS::NumberValue(arg1));                   \
@@ -100,7 +100,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     cfunc(cr, &arg1, &arg2);                                               \
     if (cairo_status(cr) == CAIRO_STATUS_SUCCESS) {                        \
       JS::RootedObject array(context,                                      \
-          JS_NewArrayObject(context, 0, NULL));                            \
+          JS_NewArrayObject(context, JS::HandleValueArray::empty()));      \
       if (!array)                                                          \
         return false;                                                      \
       JS::RootedValue r(context, JS::NumberValue(arg1));                   \
@@ -118,7 +118,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     cfunc(cr, &arg1, &arg2, &arg3, &arg4);                                 \
     {                                                                      \
       JS::RootedObject array(context,                                      \
-          JS_NewArrayObject(context, 0, NULL));                            \
+          JS_NewArrayObject(context, JS::HandleValueArray::empty()));      \
       if (!array)                                                          \
         return false;                                                      \
       JS::RootedValue r(context, JS::NumberValue(arg1));                   \

@@ -172,8 +172,7 @@ gjs_log_error(JSContext *context,
         JS_RestoreExceptionState(context, exc_state);
     }
 
-    /* COMPAT: JS::CallArgs::operator[] will yield Handle in mozjs31 */
-    gjs_log_exception_full(context, argv.handleOrUndefinedAt(0), jstr);
+    gjs_log_exception_full(context, argv[0], jstr);
 
     JS_EndRequest(context);
     argv.rval().setUndefined();

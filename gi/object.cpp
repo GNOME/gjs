@@ -1699,9 +1699,9 @@ emit_func(JSContext *context,
 
         g_value_init(value, signal_query.param_types[i] & ~G_SIGNAL_TYPE_STATIC_SCOPE);
         if ((signal_query.param_types[i] & G_SIGNAL_TYPE_STATIC_SCOPE) != 0)
-            failed = !gjs_value_to_g_value_no_copy(context, argv.handleOrUndefinedAt(i + 1), value);
+            failed = !gjs_value_to_g_value_no_copy(context, argv[i + 1], value);
         else
-            failed = !gjs_value_to_g_value(context, argv.handleOrUndefinedAt(i + 1), value);
+            failed = !gjs_value_to_g_value(context, argv[i + 1], value);
 
         if (failed)
             break;
@@ -2419,10 +2419,11 @@ gjs_object_constructor (GType                  type,
                                     construct_properties[i].value,
                                     construct_properties[i].pspec);
 
-            JS::RootedValue argv(context, JS::ObjectValue(*props_hash));
-            object = JS_New(context, constructor, 1, argv.address());
+            JS::AutoValueArray<1> args(context);
+            args[0].set(JS::ObjectValue(*props_hash));
+            object = JS_New(context, constructor, args);
         } else {
-            object = JS_New(context, constructor, 0, NULL);
+            object = JS_New(context, constructor, JS::HandleValueArray::empty());
         }
 
         if (!object)
@@ -2600,7 +2601,7 @@ gjs_object_custom_init(GTypeInstance *instance,
 
     JS::RootedValue r(context);
     if (!JS_CallFunctionValue(context, object, v,
-                              0, NULL, r.address()))
+                              JS::HandleValueArray::empty(), r.address()))
         gjs_log_exception(context);
 }
 

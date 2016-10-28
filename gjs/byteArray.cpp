@@ -250,9 +250,7 @@ byte_array_length_setter(JSContext *context,
 
     byte_array_ensure_array(priv);
 
-    // COMPAT: Indexing JS::CallArgs should provide a handle in mozjs31
-    JS::RootedValue arg(context, args[0]);
-    if (!gjs_value_to_gsize(context, arg, &len)) {
+    if (!gjs_value_to_gsize(context, args[0], &len)) {
         gjs_throw(context,
                   "Can't set ByteArray length to non-integer");
         return false;
@@ -359,9 +357,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array)
 
     preallocated_length = 0;
     if (argc >= 1) {
-        // COMPAT: in mozjs31 indexing CallArgs will already yield a rooted value
-        JS::RootedValue val(context, argv[0]);
-        if (!gjs_value_to_gsize(context, val, &preallocated_length)) {
+        if (!gjs_value_to_gsize(context, argv[0], &preallocated_length)) {
             gjs_throw(context,
                       "Argument to ByteArray constructor should be a positive number for array length");
             return false;

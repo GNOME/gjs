@@ -246,8 +246,7 @@ parse_call_args_helper(JSContext    *cx,
     }
 
     try {
-        /* COMPAT: JS::CallArgs::operator[] will yield Handle in mozjs31 */
-        assign(cx, *fchar, nullable, args.handleOrUndefinedAt(param_ix), param_ref);
+        assign(cx, *fchar, nullable, args[param_ix], param_ref);
     } catch (char *message) {
         /* Our error messages are going to be more useful than whatever was
          * thrown by the various conversion functions */

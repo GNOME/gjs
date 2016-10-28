@@ -265,7 +265,7 @@ gjs_##name##_constructor(JSContext  *context,           \
             gjs_throw_constructor_error(context);                              \
             return false;                                                      \
         }                                                                      \
-        object = JS_NewObjectForConstructor(context, &gjs_##name##_class, vp); \
+        object = JS_NewObjectForConstructor(context, &gjs_##name##_class, argv); \
         if (object == NULL)                                                    \
             return false;                                                      \
     }

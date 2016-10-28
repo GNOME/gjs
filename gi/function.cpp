@@ -292,8 +292,7 @@ gjs_callback_closure(ffi_cif *cif,
     if (!JS_CallFunctionValue(context,
                               this_object,
                               rooted_function,
-                              n_jsargs,
-                              jsargs.begin(),
+                              jsargs,
                               rval.address())) {
         goto out;
     }
@@ -1274,9 +1273,7 @@ release:
                 js_rval.ref().set(return_values[0]);
             } else {
                 JSObject *array;
-                array = JS_NewArrayObject(context,
-                                          function->js_out_argc,
-                                          &return_values[0]);
+                array = JS_NewArrayObject(context, return_values);
                 if (array == NULL) {
                     failed = true;
                 } else {

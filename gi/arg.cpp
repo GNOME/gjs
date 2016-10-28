@@ -569,25 +569,20 @@ gjs_array_from_strv(JSContext             *context,
                     JS::MutableHandleValue value_p,
                     const char           **strv)
 {
-    JS::RootedObject obj(context, JS_NewArrayObject(context, 0, NULL));
     guint i;
+    JS::AutoValueVector elems(context);
 
+    for (i = 0; strv[i] != NULL; i++) {
+        elems.growBy(1);
+        if (!gjs_string_from_utf8(context, strv[i], -1, elems.handleAt(i)))
+            return false;
+    }
+
+    JS::RootedObject obj(context, JS_NewArrayObject(context, elems));
     if (obj == NULL)
         return false;
 
     value_p.setObject(*obj);
-
-    JS::RootedValue elem(context);
-
-    for (i = 0; strv[i] != NULL; i++) {
-        if (!gjs_string_from_utf8 (context, strv[i], -1, &elem))
-            return false;
-
-        if (!JS_DefineElement(context, obj, i, elem,
-                              NULL, NULL, JSPROP_ENUMERATE)) {
-            return false;
-        }
-    }
 
     return true;
 }
@@ -971,7 +966,7 @@ gjs_array_from_flat_gvalue_array(JSContext             *context,
 
     if (result) {
         JSObject *jsarray;
-        jsarray = JS_NewArrayObject(context, length, elems.begin());
+        jsarray = JS_NewArrayObject(context, elems);
         value.setObjectOrNull(jsarray);
     }
 
@@ -2157,49 +2152,38 @@ gjs_array_from_g_list (JSContext             *context,
 {
     unsigned int i;
     GArgument arg;
-
-    JS::RootedObject obj(context, JS_NewArrayObject(context, 0, NULL));
-    if (obj == NULL)
-        return false;
-
-    value_p.setObject(*obj);
-
-    JS::RootedValue elem(context);
+    JS::AutoValueVector elems(context);
 
     i = 0;
     if (list_tag == GI_TYPE_TAG_GLIST) {
         for ( ; list != NULL; list = list->next) {
             arg.v_pointer = list->data;
+            elems.growBy(1);
 
-            if (!gjs_value_from_g_argument(context, &elem,
+            if (!gjs_value_from_g_argument(context, elems.handleAt(i),
                                            param_info, &arg,
                                            true))
                 return false;
-
-            if (!JS_DefineElement(context, obj,
-                                  i, elem,
-                                  NULL, NULL, JSPROP_ENUMERATE)) {
-                return false;
-            }
             ++i;
         }
     } else {
         for ( ; slist != NULL; slist = slist->next) {
             arg.v_pointer = slist->data;
+            elems.growBy(1);
 
-            if (!gjs_value_from_g_argument(context, &elem,
+            if (!gjs_value_from_g_argument(context, elems.handleAt(i),
                                            param_info, &arg,
                                            true))
                 return false;
-
-            if (!JS_DefineElement(context, obj,
-                                  i, elem,
-                                  NULL, NULL, JSPROP_ENUMERATE)) {
-                return false;
-            }
             ++i;
         }
     }
+
+    JS::RootedObject obj(context, JS_NewArrayObject(context, elems));
+    if (obj == NULL)
+        return false;
+
+    value_p.setObject(*obj);
 
     return true;
 }
@@ -2239,21 +2223,14 @@ gjs_array_from_carray_internal (JSContext             *context,
     if (element_type == GI_TYPE_TAG_UNICHAR)
         return gjs_string_from_ucs4(context, (gunichar *) array, length, value_p);
 
-    JS::RootedObject obj(context, JS_NewArrayObject(context, 0, NULL));
-    if (obj == NULL)
-        return false;
-
-    value_p.setObject(*obj);
-
-    JS::RootedValue elem(context);
+    JS::AutoValueVector elems(context);
+    elems.resize(length);
 
 #define ITERATE(type) \
     for (i = 0; i < length; i++) { \
         arg.v_##type = *(((g##type*)array) + i);                         \
-        if (!gjs_value_from_g_argument(context, &elem, param_info, &arg, true)) \
-            return false; \
-        if (!JS_DefineElement(context, obj, i, elem, NULL, NULL, \
-              JSPROP_ENUMERATE)) \
+        if (!gjs_value_from_g_argument(context, elems.handleAt(i),       \
+                                       param_info, &arg, true))          \
             return false; \
     }
 
@@ -2312,10 +2289,8 @@ gjs_array_from_carray_internal (JSContext             *context,
               for (i = 0; i < length; i++) {
                   arg.v_pointer = ((char*)array) + (struct_size * i);
 
-                  if (!gjs_value_from_g_argument(context, &elem, param_info, &arg, true))
-                      return false;
-                  if (!JS_DefineElement(context, obj, i, elem, NULL, NULL,
-                                        JSPROP_ENUMERATE))
+                  if (!gjs_value_from_g_argument(context, elems.handleAt(i),
+                                                 param_info, &arg, true))
                       return false;
               }
 
@@ -2341,6 +2316,12 @@ gjs_array_from_carray_internal (JSContext             *context,
     }
 
 #undef ITERATE
+
+    JS::RootedObject obj(context, JS_NewArrayObject(context, elems));
+    if (obj == NULL)
+        return false;
+
+    value_p.setObject(*obj);
 
     return true;
 }
@@ -2456,23 +2437,16 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
     if (element_type == GI_TYPE_TAG_UNICHAR)
         return gjs_string_from_ucs4(context, (gunichar *) c_array, -1, value_p);
 
-    JS::RootedObject obj(context, JS_NewArrayObject(context, 0, NULL));
-    if (obj == NULL)
-        return false;
-
-    value_p.setObject(*obj);
-
-    JS::RootedValue elem(context);
+    JS::AutoValueVector elems(context);
 
 #define ITERATE(type) \
     do { \
         g##type *array = (g##type *) c_array; \
         for (i = 0; array[i]; i++) { \
             arg.v_##type = array[i]; \
-            if (!gjs_value_from_g_argument(context, &elem, param_info, &arg, true)) \
-                return false; \
-            if (!JS_DefineElement(context, obj, i, elem, NULL, NULL, \
-                                  JSPROP_ENUMERATE)) \
+            elems.growBy(1);                                            \
+            if (!gjs_value_from_g_argument(context, elems.handleAt(i),  \
+                                           param_info, &arg, true))     \
                 return false; \
         } \
     } while(0);
@@ -2532,6 +2506,12 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
     }
 
 #undef ITERATE
+
+    JS::RootedObject obj(context, JS_NewArrayObject(context, elems));
+    if (obj == NULL)
+        return false;
+
+    value_p.setObject(*obj);
 
     return true;
 }

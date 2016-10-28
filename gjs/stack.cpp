@@ -63,7 +63,8 @@ gjs_context_get_frame_info(JSContext                              *context,
                                            error_id, &constructor))
         return false;
 
-    JS::RootedObject err_obj(context, JS_New(context, constructor, 0, NULL));
+    JS::RootedObject err_obj(context, JS_New(context, constructor,
+                                             JS::HandleValueArray::empty()));
 
     if (!stack.empty() &&
         !gjs_object_get_property_const(context, err_obj, GJS_STRING_STACK,
