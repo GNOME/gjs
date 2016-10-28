@@ -71,7 +71,7 @@ interface_finalize(JSFreeOp *fop,
 
 static bool
 gjs_define_static_methods(JSContext       *context,
-                          JSObject        *constructor,
+                          JS::HandleObject constructor,
                           GType            gtype,
                           GIInterfaceInfo *info)
 {

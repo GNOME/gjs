@@ -115,9 +115,9 @@ gjs_define_enum_values(JSContext       *context,
 }
 
 bool
-gjs_define_enum_static_methods(JSContext    *context,
-                               JSObject     *constructor,
-                               GIEnumInfo   *enum_info)
+gjs_define_enum_static_methods(JSContext       *context,
+                               JS::HandleObject constructor,
+                               GIEnumInfo      *enum_info)
 {
     int i, n_methods;
 

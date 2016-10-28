@@ -1814,10 +1814,10 @@ JSFunctionSpec gjs_object_instance_proto_funcs[] = {
 };
 
 bool
-gjs_object_define_static_methods(JSContext    *context,
-                                 JSObject     *constructor,
-                                 GType         gtype,
-                                 GIObjectInfo *object_info)
+gjs_object_define_static_methods(JSContext       *context,
+                                 JS::HandleObject constructor,
+                                 GType            gtype,
+                                 GIObjectInfo    *object_info)
 {
     GIStructInfo *gtype_struct;
     int i;

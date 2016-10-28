@@ -93,7 +93,6 @@ union_new_resolve(JSContext *context,
                                                name);
 
         if (method_info != NULL) {
-            JSObject *union_proto;
             const char *method_name;
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
@@ -108,9 +107,8 @@ union_new_resolve(JSContext *context,
                           g_base_info_get_namespace( (GIBaseInfo*) priv->info),
                           g_base_info_get_name( (GIBaseInfo*) priv->info));
 
-                union_proto = obj;
-
-                if (gjs_define_function(context, union_proto,
+                /* obj is union proto */
+                if (gjs_define_function(context, obj,
                                         g_registered_type_info_get_g_type(priv->info),
                                         method_info) == NULL) {
                     g_base_info_unref( (GIBaseInfo*) method_info);
@@ -118,7 +116,7 @@ union_new_resolve(JSContext *context,
                     goto out;
                 }
 
-                objp.set(union_proto); /* we defined the prop in object_proto */
+                objp.set(obj); /* we defined the prop in object_proto */
             }
 
             g_base_info_unref( (GIBaseInfo*) method_info);

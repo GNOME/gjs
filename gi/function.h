@@ -62,10 +62,10 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(JSContext      *context,
 void gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline);
 void gjs_callback_trampoline_ref(GjsCallbackTrampoline *trampoline);
 
-JSObject* gjs_define_function   (JSContext      *context,
-                                 JSObject       *in_object,
-                                 GType           gtype,
-                                 GICallableInfo *info);
+JSObject *gjs_define_function(JSContext       *context,
+                              JS::HandleObject in_object,
+                              GType            gtype,
+                              GICallableInfo  *info);
 
 bool      gjs_invoke_c_function_uncached(JSContext       *context,
                                          GIFunctionInfo  *info,

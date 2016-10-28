@@ -70,10 +70,10 @@ extern struct JSClass gjs_boxed_class;
 GJS_DEFINE_PRIV_FROM_JS(Boxed, gjs_boxed_class)
 
 static bool
-gjs_define_static_methods(JSContext    *context,
-                          JSObject     *constructor,
-                          GType         gtype,
-                          GIStructInfo *boxed_info)
+gjs_define_static_methods(JSContext       *context,
+                          JS::HandleObject constructor,
+                          GType            gtype,
+                          GIStructInfo    *boxed_info)
 {
     int i;
     int n_methods;
@@ -146,7 +146,6 @@ boxed_new_resolve(JSContext *context,
                                                 name);
 
         if (method_info != NULL) {
-            JSObject *boxed_proto;
             const char *method_name;
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
@@ -161,15 +160,14 @@ boxed_new_resolve(JSContext *context,
                           g_base_info_get_namespace( (GIBaseInfo*) priv->info),
                           g_base_info_get_name( (GIBaseInfo*) priv->info));
 
-                boxed_proto = obj;
-
-                if (gjs_define_function(context, boxed_proto, priv->gtype,
+                /* obj is the Boxed prototype */
+                if (gjs_define_function(context, obj, priv->gtype,
                                         (GICallableInfo *)method_info) == NULL) {
                     g_base_info_unref( (GIBaseInfo*) method_info);
                     goto out;
                 }
 
-                objp.set(boxed_proto); /* we defined the prop in object_proto */
+                objp.set(obj); /* we defined the prop in object_proto */
             }
 
             g_base_info_unref( (GIBaseInfo*) method_info);

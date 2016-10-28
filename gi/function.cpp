@@ -1718,23 +1718,22 @@ function_new(JSContext      *context,
 }
 
 JSObject*
-gjs_define_function(JSContext      *context,
-                    JSObject       *in_object,
-                    GType           gtype,
-                    GICallableInfo *info)
+gjs_define_function(JSContext       *context,
+                    JS::HandleObject in_object,
+                    GType            gtype,
+                    GICallableInfo  *info)
 {
-    JSObject *function = NULL;
     GIInfoType info_type;
     gchar *name;
     bool free_name;
 
     info_type = g_base_info_get_type((GIBaseInfo *)info);
 
-    JS_BeginRequest(context);
+    JSAutoRequest ar(context);
 
-    function = function_new(context, gtype, info);
+    JS::RootedObject function(context, function_new(context, gtype, info));
     if (function == NULL)
-        goto out;
+        return NULL;
 
     if (info_type == GI_INFO_TYPE_FUNCTION) {
         name = (gchar *) g_base_info_get_name((GIBaseInfo*) info);
@@ -1746,8 +1745,9 @@ gjs_define_function(JSContext      *context,
         g_assert_not_reached ();
     }
 
-    if (!JS_DefineProperty(context, in_object, name,
-                           JS::ObjectValue(*function),
+    /* COMPAT: JS_DefineProperty is overloaded to take JS::HandleObject in 31 */
+    JS::RootedValue v_function(context, JS::ObjectValue(*function));
+    if (!JS_DefineProperty(context, in_object, name, v_function,
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS)) {
         gjs_debug(GJS_DEBUG_GFUNCTION, "Failed to define function");
@@ -1757,8 +1757,6 @@ gjs_define_function(JSContext      *context,
     if (free_name)
         g_free(name);
 
- out:
-    JS_EndRequest(context);
     return function;
 }
 
