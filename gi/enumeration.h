@@ -33,15 +33,17 @@
 
 G_BEGIN_DECLS
 
-bool    gjs_define_enum_values         (JSContext    *context,
-                                        JSObject     *in_object,
-                                        GIEnumInfo   *info);
+bool gjs_define_enum_values(JSContext       *context,
+                            JS::HandleObject in_object,
+                            GIEnumInfo      *info);
+
 bool    gjs_define_enum_static_methods (JSContext    *context,
                                         JSObject     *constructor,
                                         GIEnumInfo   *enum_info);
-bool    gjs_define_enumeration         (JSContext    *context,
-                                        JSObject     *in_object,
-                                        GIEnumInfo   *info);
+
+bool gjs_define_enumeration(JSContext       *context,
+                            JS::HandleObject in_object,
+                            GIEnumInfo      *info);
 
 G_END_DECLS
 
