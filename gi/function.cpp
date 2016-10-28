@@ -87,7 +87,7 @@ gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline)
 
         if (!trampoline->is_vfunc) {
             JS_BeginRequest(context);
-            JS_RemoveValueRoot(context, &trampoline->js_function);
+            JS_RemoveValueRoot(context, trampoline->js_function.unsafeGet());
             JS_EndRequest(context);
         }
 
@@ -433,7 +433,7 @@ gjs_destroy_notify_callback(gpointer data)
 
 GjsCallbackTrampoline*
 gjs_callback_trampoline_new(JSContext      *context,
-                            JS::Value       function,
+                            JS::HandleValue function,
                             GICallableInfo *callable_info,
                             GIScopeType     scope,
                             bool            is_vfunc)
@@ -454,7 +454,7 @@ gjs_callback_trampoline_new(JSContext      *context,
     g_base_info_ref((GIBaseInfo*)trampoline->info);
     trampoline->js_function = function;
     if (!is_vfunc)
-        JS_AddValueRoot(context, &trampoline->js_function);
+        JS_AddValueRoot(context, trampoline->js_function.unsafeGet());
 
     /* Analyze param types and directions, similarly to init_cached_function_data */
     n_args = g_callable_info_get_n_args(trampoline->info);
@@ -846,7 +846,9 @@ gjs_invoke_c_function(JSContext       *context,
                 GIScopeType scope = g_arg_info_get_scope(&arg_info);
                 GjsCallbackTrampoline *trampoline;
                 ffi_closure *closure;
-                JS::Value value = js_argv[js_arg_pos];
+                /* COMPAT: Avoid this extra root by changing the function's
+                 * in parameter to JS::HandleValueArray in mozjs31 */
+                JS::RootedValue value(context, js_argv[js_arg_pos]);
 
                 if (value.isNull() && g_arg_info_may_be_null(&arg_info)) {
                     closure = NULL;

@@ -2289,8 +2289,8 @@ gjs_hook_up_vfunc(JSContext *cx,
         offset = g_field_info_get_offset(field_info);
         method_ptr = G_STRUCT_MEMBER_P(implementor_vtable, offset);
 
-        trampoline = gjs_callback_trampoline_new(cx, JS::ObjectValue(*function),
-                                                 callback_info,
+        JS::RootedValue v_function(cx, JS::ObjectValue(*function));
+        trampoline = gjs_callback_trampoline_new(cx, v_function, callback_info,
                                                  GI_SCOPE_TYPE_NOTIFIED, true);
 
         *((ffi_closure **)method_ptr) = trampoline->closure;

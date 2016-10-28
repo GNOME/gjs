@@ -45,7 +45,7 @@ typedef struct {
     gint ref_count;
     JSContext *context;
     GICallableInfo *info;
-    JS::Value js_function;
+    JS::Heap<JS::Value> js_function;
     ffi_cif cif;
     ffi_closure *closure;
     GIScopeType scope;
@@ -54,7 +54,7 @@ typedef struct {
 } GjsCallbackTrampoline;
 
 GjsCallbackTrampoline* gjs_callback_trampoline_new(JSContext      *context,
-                                                   JS::Value       function,
+                                                   JS::HandleValue function,
                                                    GICallableInfo *callable_info,
                                                    GIScopeType     scope,
                                                    bool            is_vfunc);
