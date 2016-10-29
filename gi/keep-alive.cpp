@@ -119,7 +119,6 @@ trace_foreach(void *key,
 
     if (child->child != NULL) {
         JS::Value val;
-        JS_SET_TRACING_DETAILS(tracer, NULL, "keep-alive", 0);
         val = JS::ObjectValue(*(child->child));
         JS_CallValueTracer(tracer, &val, "keep-alive::val");
     }
