@@ -219,6 +219,7 @@ gjs_callback_closure(ffi_cif *cif,
     JS::AutoValueVector jsargs(context);
     jsargs.reserve(n_args);
     JS::RootedValue rval(context);
+    JS::RootedValue rooted_function(context, trampoline->js_function);
     JS::RootedObject this_object(context);
 
     for (i = 0, n_jsargs = 0; i < n_args; i++) {
@@ -290,7 +291,7 @@ gjs_callback_closure(ffi_cif *cif,
 
     if (!JS_CallFunctionValue(context,
                               this_object,
-                              trampoline->js_function,
+                              rooted_function,
                               n_jsargs,
                               jsargs.begin(),
                               rval.address())) {

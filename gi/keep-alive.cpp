@@ -176,7 +176,6 @@ static JSObject *
 gjs_keep_alive_new(JSContext *context)
 {
     KeepAlive *priv;
-    JSObject *global;
     JSBool found;
 
     /* This function creates an unattached KeepAlive object; following our
@@ -189,7 +188,7 @@ gjs_keep_alive_new(JSContext *context)
 
     JSAutoRequest ar(context);
 
-    global = gjs_get_import_global(context);
+    JS::RootedObject global(context, gjs_get_import_global(context));
 
     g_assert(global != NULL);
 
@@ -201,7 +200,7 @@ gjs_keep_alive_new(JSContext *context)
 
         gjs_debug(GJS_DEBUG_KEEP_ALIVE,
                   "Initializing keep-alive class in context %p global %p",
-                  context, global);
+                  context, global.get());
 
         prototype = JS_InitClass(context, global,
                                  /* parent prototype JSObject* for
@@ -234,7 +233,7 @@ gjs_keep_alive_new(JSContext *context)
 
     gjs_debug(GJS_DEBUG_KEEP_ALIVE,
               "Creating new keep-alive object for context %p global %p",
-              context, global);
+              context, global.get());
 
     JS::RootedObject keep_alive(context,
                                 JS_NewObject(context, &gjs_keep_alive_class, NULL, global));

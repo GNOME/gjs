@@ -192,12 +192,11 @@ static JSObject*
 ns_new(JSContext    *context,
        const char   *ns_name)
 {
-    JSObject *global;
     Ns *priv;
     JSBool found;
 
     /* put constructor in the global namespace */
-    global = gjs_get_import_global(context);
+    JS::RootedObject global(context, gjs_get_import_global(context));
 
     if (!JS_HasProperty(context, global, gjs_ns_class.name, &found))
         return NULL;
