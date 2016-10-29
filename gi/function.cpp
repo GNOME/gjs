@@ -217,8 +217,7 @@ gjs_callback_closure(ffi_cif *cif,
 
     n_outargs = 0;
     JS::AutoValueVector jsargs(context);
-    jsargs.resize(n_args);
-    JS::Value *args_ptr = jsargs.begin();
+    jsargs.reserve(n_args);
     JS::RootedValue rval(context);
     JS::RootedObject this_object(context);
 
@@ -260,12 +259,14 @@ gjs_callback_closure(ffi_cif *cif,
                                                (GArgument *) args[array_length_pos], true))
                     goto out;
 
+                jsargs.growBy(1);
                 if (!gjs_value_from_explicit_array(context, jsargs.handleAt(n_jsargs++),
                                                    &type_info, (GArgument*) args[i], length.toInt32()))
                     goto out;
                 break;
             }
             case PARAM_NORMAL:
+                jsargs.growBy(1);
                 if (!gjs_value_from_g_argument(context,
                                                jsargs.handleAt(n_jsargs++),
                                                &type_info,
@@ -278,20 +279,20 @@ gjs_callback_closure(ffi_cif *cif,
             default:
                 g_assert_not_reached();
         }
-    }
 
-    if (trampoline->is_vfunc) {
-        g_assert(n_args > 0);
-        this_object = jsargs[0].toObjectOrNull();
-        args_ptr++;
-        n_jsargs--;
+        if (trampoline->is_vfunc && i == 0) {
+            g_assert(n_jsargs > 0);
+            this_object = jsargs[0].toObjectOrNull();
+            jsargs.popBack();
+            n_jsargs--;
+        }
     }
 
     if (!JS_CallFunctionValue(context,
                               this_object,
                               trampoline->js_function,
                               n_jsargs,
-                              args_ptr,
+                              jsargs.begin(),
                               rval.address())) {
         goto out;
     }
