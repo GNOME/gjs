@@ -47,8 +47,12 @@ NEXT
   that Python handles its command line arguments as well.
 
   If you previously relied on any -I arguments after your script being added to
-  the search path, then you should either reorder those arguments, or handle -I
-  inside your script, adding paths to imports.searchPath manually.
+  the search path, then you should either reorder those arguments, use GJS_PATH,
+  or handle -I inside your script, adding paths to imports.searchPath manually.
+
+  In order to ease the pain of migration, GJS will continue to take those
+  arguments into account for the time being, while still passing them on to the
+  script. A warning will be logged if you are using the deprecated behaviour.
 
 Version 1.46.0
 --------------

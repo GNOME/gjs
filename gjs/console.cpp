@@ -48,7 +48,8 @@ static GOptionEntry entries[] = {
 };
 
 static char **
-strndupv(int n, char **strv)
+strndupv(int           n,
+         char * const *strv)
 {
     int ix;
     if (n == 0)
@@ -58,6 +59,92 @@ strndupv(int n, char **strv)
         retval[ix] = g_strdup(strv[ix]);
     retval[n] = NULL;
     return retval;
+}
+
+static char **
+strcatv(char **strv1,
+        char **strv2)
+{
+    if (strv1 == NULL && strv2 == NULL)
+        return NULL;
+    if (strv1 == NULL)
+        return g_strdupv(strv2);
+    if (strv2 == NULL)
+        return g_strdupv(strv1);
+
+    unsigned len1 = g_strv_length(strv1);
+    unsigned len2 = g_strv_length(strv2);
+    char **retval = g_new(char *, len1 + len2 + 1);
+    unsigned ix;
+
+    for (ix = 0; ix < len1; ix++)
+        retval[ix] = g_strdup(strv1[ix]);
+    for (ix = 0; ix < len2; ix++)
+        retval[len1 + ix] = g_strdup(strv2[ix]);
+    retval[len1 + len2] = NULL;
+
+    return retval;
+}
+
+static void
+check_script_args_for_stray_gjs_args(int           argc,
+                                     char * const *argv)
+{
+    GError *error = NULL;
+    char **new_coverage_prefixes = NULL;
+    char *new_coverage_output_path = NULL;
+    char **new_include_paths = NULL;
+    static GOptionEntry script_check_entries[] = {
+        { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &new_coverage_prefixes },
+        { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &new_coverage_output_path },
+        { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &new_include_paths },
+        { NULL }
+    };
+    char **argv_copy = g_new(char *, argc + 2);
+    int ix, argc_copy = argc + 1;
+
+    argv_copy[0] = g_strdup("dummy"); /* Fake argv[0] for GOptionContext */
+    for (ix = 0; ix < argc; ix++)
+        argv_copy[ix + 1] = g_strdup(argv[ix]);
+    argv_copy[argc + 1] = NULL;
+
+    GOptionContext *script_options = g_option_context_new(NULL);
+    g_option_context_set_ignore_unknown_options(script_options, true);
+    g_option_context_set_help_enabled(script_options, false);
+    g_option_context_add_main_entries(script_options, script_check_entries, NULL);
+    if (!g_option_context_parse(script_options, &argc_copy, &argv_copy, &error)) {
+        g_warning("Scanning script arguments failed: %s", error->message);
+        g_error_free(error);
+        return;
+    }
+
+    if (new_coverage_prefixes != NULL) {
+        g_warning("You used the --coverage-prefix option after the script on "
+                  "the GJS command line. Support for this will be removed in a "
+                  "future version. Place the option before the script.");
+        char **old_coverage_prefixes = coverage_prefixes;
+        coverage_prefixes = strcatv(old_coverage_prefixes, new_coverage_prefixes);
+        g_strfreev(old_coverage_prefixes);
+    }
+    if (new_include_paths != NULL) {
+        g_warning("You used the --include-path option after the script on the "
+                  "GJS command line. Support for this will be removed in a "
+                  "future version. Place the option before the script or use "
+                  "the GJS_PATH environment variable.");
+        char **old_include_paths = include_path;
+        include_path = strcatv(old_include_paths, new_include_paths);
+        g_strfreev(old_include_paths);
+    }
+    if (new_coverage_output_path != NULL) {
+        g_warning("You used the --coverage-output option after the script on "
+                  "the GJS command line. Support for this will be removed in a "
+                  "future version. Place the option before the script.");
+        g_free(coverage_output_path);
+        coverage_output_path = new_coverage_output_path;
+    }
+
+    g_option_context_free(script_options);
+    g_strfreev(argv_copy);
 }
 
 int
@@ -147,6 +234,9 @@ main(int argc, char **argv)
         filename = gjs_argv[1];
         program_name = gjs_argv[1];
     }
+
+    /* This should be removed after a suitable time has passed */
+    check_script_args_for_stray_gjs_args(script_argc, script_argv);
 
     js_context = (GjsContext*) g_object_new(GJS_TYPE_CONTEXT,
                                             "search-path", include_path,

@@ -57,9 +57,16 @@ test -z "`"$gjs" -c "$script" --help`" || \
     fail "--help after -c should not print anything"
 
 # -I after a program is not consumed by GJS
-if "$gjs" help.js --help -I sentinel; then
-    fail "-I after script file should not be added to search path"
-fi
+# Temporary behaviour: still consume the argument, but give a warning
+# if "$gjs" help.js --help -I sentinel; then
+#     fail "-I after script file should not be added to search path"
+# fi
+"$gjs" help.js --help -I sentinel 2>&1 | grep -q 'Gjs-WARNING.*--include-path' || \
+    fail "-I after script should succeed but give a warning"
+"$gjs" -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-prefix' || \
+    fail "--coverage-prefix after script should succeed but give a warning"
+"$gjs" -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-output' || \
+    fail "--coverage-output after script should succeed but give a warning"
 
 # --version works
 "$gjs" --version >/dev/null || \
