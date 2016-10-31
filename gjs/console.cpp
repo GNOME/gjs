@@ -121,7 +121,8 @@ check_script_args_for_stray_gjs_args(int           argc,
     if (new_coverage_prefixes != NULL) {
         g_warning("You used the --coverage-prefix option after the script on "
                   "the GJS command line. Support for this will be removed in a "
-                  "future version. Place the option before the script.");
+                  "future version. Place the option before the script or use "
+                  "the GJS_COVERAGE_PREFIXES environment variable.");
         char **old_coverage_prefixes = coverage_prefixes;
         coverage_prefixes = strcatv(old_coverage_prefixes, new_coverage_prefixes);
         g_strfreev(old_coverage_prefixes);
@@ -138,7 +139,8 @@ check_script_args_for_stray_gjs_args(int           argc,
     if (new_coverage_output_path != NULL) {
         g_warning("You used the --coverage-output option after the script on "
                   "the GJS command line. Support for this will be removed in a "
-                  "future version. Place the option before the script.");
+                  "future version. Place the option before the script or use "
+                  "the GJS_COVERAGE_OUTPUT environment variable.");
         g_free(coverage_output_path);
         coverage_output_path = new_coverage_output_path;
     }
@@ -162,6 +164,8 @@ main(int argc, char **argv)
     char **argv_copy = g_strdupv(argv), **argv_copy_addr = argv_copy;
     char **gjs_argv, **gjs_argv_addr;
     char * const *script_argv;
+    const char *env_coverage_output_path;
+    const char *env_coverage_prefixes;
 
     setlocale(LC_ALL, "");
 
@@ -243,6 +247,23 @@ main(int argc, char **argv)
                                             "program-name", program_name,
                                             NULL);
 
+    env_coverage_output_path = g_getenv("GJS_COVERAGE_OUTPUT");
+    if (env_coverage_output_path != NULL) {
+        g_free(coverage_output_path);
+        coverage_output_path = g_strdup(env_coverage_output_path);
+    }
+
+    env_coverage_prefixes = g_getenv("GJS_COVERAGE_PREFIXES");
+    if (env_coverage_prefixes != NULL) {
+        if (coverage_prefixes == NULL) {
+            coverage_prefixes = g_strdupv((char **) env_coverage_prefixes);
+        } else {
+            char **env_prefixes = g_strsplit(env_coverage_prefixes, ":", -1);
+            g_strfreev(coverage_prefixes);
+            coverage_prefixes = env_prefixes;
+        }
+    }
+
     if (coverage_prefixes) {
         if (!coverage_output_path)
             g_error("--coverage-output is required when taking coverage statistics");
@@ -282,7 +303,9 @@ main(int argc, char **argv)
     if (coverage && code == 0)
         gjs_coverage_write_statistics(coverage,
                                       coverage_output_path);
- 
+
+    g_free(coverage_output_path);
+    g_strfreev(coverage_prefixes);
     g_object_unref(js_context);
     g_free(script);
     exit(code);
