@@ -243,6 +243,56 @@ function testPtrArray() {
     assertArrayEquals(refArray, GIMarshallingTests.gptrarray_utf8_full_out());
 }
 
+function testGHashTable() {
+    function dictEquals(dict, ref) {
+        let dict_keys = Object.keys(dict);
+        let ref_keys = Object.keys(ref);
+        assertEquals(ref_keys.length, dict_keys.length);
+        ref_keys.forEach((key, ix) => {
+            assertEquals(key, dict_keys[ix]);
+            assertEquals(ref[key], dict[key]);
+        });
+    }
+
+    let INT_DICT = {
+        '-1': 1,
+        0: 0,
+        1: -1,
+        2: -2,
+    };
+    const STRING_DICT = {
+        '-1': '1',
+        0: '0',
+        1: '-1',
+        2: '-2',
+    };
+    const STRING_DICT_OUT = {
+        '-1': '1',
+        0: '0',
+        1: '1',
+    };
+
+    dictEquals(GIMarshallingTests.ghashtable_int_none_return(), INT_DICT);
+    dictEquals(GIMarshallingTests.ghashtable_utf8_none_return(), STRING_DICT);
+    dictEquals(GIMarshallingTests.ghashtable_utf8_container_return(), STRING_DICT);
+    dictEquals(GIMarshallingTests.ghashtable_utf8_full_return(), STRING_DICT);
+
+    // FIXME: Broken
+    //GIMarshallingTests.ghashtable_int_none_in(INT_DICT);
+    //GIMarshallingTests.ghashtable_utf8_none_in(STRING_DICT);
+
+    dictEquals(GIMarshallingTests.ghashtable_utf8_none_out(), STRING_DICT);
+    dictEquals(GIMarshallingTests.ghashtable_utf8_container_out(), STRING_DICT);
+    dictEquals(GIMarshallingTests.ghashtable_utf8_full_out(), STRING_DICT);
+
+    // FIXME: Broken
+    //dictEquals(GIMarshallingTests.ghashtable_utf8_none_inout(STRING_DICT), STRING_DICT_OUT);
+    // FIXME: Container transfer for in parameters not supported
+    //dictEquals(GIMarshallingTests.ghashtable_utf8_container_inout(STRING_DICT), STRING_DICT_OUT);
+    // FIXME: Broken
+    //dictEquals(GIMarshallingTests.ghashtable_utf8_full_inout(STRING_DICT), STRING_DICT_OUT);
+}
+
 function testGValue() {
     assertEquals(42, GIMarshallingTests.gvalue_return());
     assertEquals(42, GIMarshallingTests.gvalue_out());
