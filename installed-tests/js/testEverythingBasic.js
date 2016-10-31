@@ -314,8 +314,7 @@ function testArrayIn() {
     JSUnit.assertEquals(10, Everything.test_array_gint8_in([1,2,3,4]));
     JSUnit.assertEquals(10, Everything.test_array_gint16_in([1,2,3,4]));
     JSUnit.assertEquals(10, Everything.test_array_gint32_in([1,2,3,4]));
-    // FIXME: arrays of int64 are unimplemented
-    //assertEquals(10, Everything.test_array_gint64_in([1,2,3,4]));
+    JSUnit.assertEquals(10, Everything.test_array_gint64_in([1,2,3,4]));
 
     // implicit conversions from strings to int arrays
     JSUnit.assertEquals(10, Everything.test_array_gint8_in("\x01\x02\x03\x04"));
