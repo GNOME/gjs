@@ -277,16 +277,14 @@ function testGHashTable() {
     dictEquals(GIMarshallingTests.ghashtable_utf8_container_return(), STRING_DICT);
     dictEquals(GIMarshallingTests.ghashtable_utf8_full_return(), STRING_DICT);
 
-    // FIXME: Broken
-    //GIMarshallingTests.ghashtable_int_none_in(INT_DICT);
-    //GIMarshallingTests.ghashtable_utf8_none_in(STRING_DICT);
+    GIMarshallingTests.ghashtable_int_none_in(INT_DICT);
+    GIMarshallingTests.ghashtable_utf8_none_in(STRING_DICT);
 
     dictEquals(GIMarshallingTests.ghashtable_utf8_none_out(), STRING_DICT);
     dictEquals(GIMarshallingTests.ghashtable_utf8_container_out(), STRING_DICT);
     dictEquals(GIMarshallingTests.ghashtable_utf8_full_out(), STRING_DICT);
 
-    // FIXME: Broken
-    //dictEquals(GIMarshallingTests.ghashtable_utf8_none_inout(STRING_DICT), STRING_DICT_OUT);
+    dictEquals(GIMarshallingTests.ghashtable_utf8_none_inout(STRING_DICT), STRING_DICT_OUT);
     // FIXME: Container transfer for in parameters not supported
     //dictEquals(GIMarshallingTests.ghashtable_utf8_container_inout(STRING_DICT), STRING_DICT_OUT);
     // FIXME: Broken

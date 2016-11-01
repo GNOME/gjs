@@ -341,6 +341,135 @@ create_hash_table_for_key_type(GITypeInfo  *key_param_info)
     return g_hash_table_new(g_direct_hash, g_direct_equal);
 }
 
+/* Converts a JS::Value to a GHashTable key, stuffing it into @pointer_out if
+ * possible, otherwise giving the location of an allocated key in @pointer_out.
+ */
+static bool
+value_to_ghashtable_key(JSContext      *cx,
+                        JS::HandleValue value,
+                        GITypeInfo     *type_info,
+                        gpointer       *pointer_out)
+{
+    GITypeTag type_tag = g_type_info_get_tag((GITypeInfo*) type_info);
+    bool out_of_range = false;
+    bool unsupported = false;
+
+    g_return_val_if_fail(value.isString() || value.isInt32(), false);
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Converting JS::Value to GHashTable key %s",
+                      g_type_tag_to_string(type_tag));
+
+    switch (type_tag) {
+    case GI_TYPE_TAG_BOOLEAN:
+        /* This doesn't seem particularly useful, but it's easy */
+        *pointer_out = GUINT_TO_POINTER(JS::ToBoolean(value));
+        break;
+
+    case GI_TYPE_TAG_UNICHAR:
+        if (value.isInt32()) {
+            *pointer_out = GINT_TO_POINTER(value.toInt32());
+        } else {
+            uint32_t ch;
+            if (!gjs_unichar_from_string(cx, value, &ch))
+                return false;
+            *pointer_out = GUINT_TO_POINTER(ch);
+        }
+        break;
+
+#define HANDLE_SIGNED_INT(bits)                        \
+    case GI_TYPE_TAG_INT##bits: {                      \
+        int32_t i;                                     \
+        if (!JS::ToInt32(cx, value, &i))               \
+            return false;                              \
+        if (i > G_MAXINT##bits || i < G_MININT##bits)  \
+            out_of_range = true;                       \
+        *pointer_out = GINT_TO_POINTER(i);             \
+        break;                                         \
+    }
+
+    HANDLE_SIGNED_INT(8);
+    HANDLE_SIGNED_INT(16);
+    HANDLE_SIGNED_INT(32);
+
+#undef HANDLE_SIGNED_INT
+
+#define HANDLE_UNSIGNED_INT(bits)                      \
+    case GI_TYPE_TAG_UINT##bits: {                     \
+        uint32_t i;                                    \
+        if (!JS::ToUint32(cx, value, &i))              \
+            return false;                              \
+        if (i > G_MAXUINT##bits)                       \
+            out_of_range = true;                       \
+        *pointer_out = GUINT_TO_POINTER(i);            \
+        break;                                         \
+    }
+
+    HANDLE_UNSIGNED_INT(8);
+    HANDLE_UNSIGNED_INT(16);
+    HANDLE_UNSIGNED_INT(32);
+
+#undef HANDLE_UNSIGNED_INT
+
+#define HANDLE_STRING(type, lctype)                                   \
+    case GI_TYPE_TAG_##type: {                                        \
+        char *cstr;                                                   \
+        JS::RootedValue str_val(cx, value);                           \
+        if (!str_val.isString()) {                                    \
+            JS::RootedString str(cx, JS_ValueToString(cx, str_val));  \
+            str_val.setString(str);                                   \
+        }                                                             \
+        if (!gjs_string_to_##lctype(cx, str_val, &cstr))              \
+            return false;                                             \
+        *pointer_out = cstr;                                          \
+        break;                                                        \
+    }
+
+    HANDLE_STRING(FILENAME, filename);
+    HANDLE_STRING(UTF8, utf8);
+
+#undef HANDLE_STRING
+
+    case GI_TYPE_TAG_FLOAT:
+    case GI_TYPE_TAG_DOUBLE:
+    case GI_TYPE_TAG_INT64:
+    case GI_TYPE_TAG_UINT64:
+    /* FIXME: The above four could be supported, but are currently not. The ones
+     * below cannot be key types in a regular JS object; we would need to allow
+     * marshalling Map objects into GHashTables to support those. */
+    case GI_TYPE_TAG_VOID:
+    case GI_TYPE_TAG_GTYPE:
+    case GI_TYPE_TAG_ERROR:
+    case GI_TYPE_TAG_INTERFACE:
+    case GI_TYPE_TAG_GLIST:
+    case GI_TYPE_TAG_GSLIST:
+    case GI_TYPE_TAG_GHASH:
+    case GI_TYPE_TAG_ARRAY:
+        unsupported = true;
+        break;
+
+    default:
+        g_warning("Unhandled type %s for GHashTable key conversion",
+                  g_type_tag_to_string(type_tag));
+        unsupported = true;
+        break;
+    }
+
+    if (G_UNLIKELY(unsupported)) {
+        gjs_throw(cx, "Type %s not supported for hash table keys",
+                  g_type_tag_to_string(type_tag));
+        return false;
+    }
+
+    if (G_UNLIKELY(out_of_range)) {
+        gjs_throw(cx, "value is out of range for hash table key of type %s",
+                  g_type_tag_to_string(type_tag));
+        return false;
+    }
+
+    return true;
+}
+
 static bool
 gjs_object_to_g_hash(JSContext   *context,
                      JS::Value    hash_value,
@@ -378,17 +507,14 @@ gjs_object_to_g_hash(JSContext   *context,
 
     JS::RootedValue key_js(context), val_js(context);
     for (id_ix = 0, id_len = ids.length(); id_ix < id_len; id_ix++) {
-        GArgument key_arg = { 0 }, val_arg = { 0 };
+        gpointer key_ptr;
+        GIArgument val_arg = { 0 };
 
         if (!JS_IdToValue(context, ids[id_ix], key_js.address()))
             goto free_hash_and_fail;
 
         /* Type check key type. */
-        if (!gjs_value_to_g_argument(context, key_js, key_param_info, NULL,
-                                     GJS_ARGUMENT_HASH_ELEMENT,
-                                     transfer,
-                                     false /* don't allow null */,
-                                     &key_arg))
+        if (!value_to_ghashtable_key(context, key_js, key_param_info, &key_ptr))
             goto free_hash_and_fail;
 
         if (!JS_GetPropertyById(context, props, ids[id_ix], val_js.address()))
@@ -402,7 +528,7 @@ gjs_object_to_g_hash(JSContext   *context,
                                      &val_arg))
             goto free_hash_and_fail;
 
-        g_hash_table_insert(result, key_arg.v_pointer, val_arg.v_pointer);
+        g_hash_table_insert(result, key_ptr, val_arg.v_pointer);
     }
 
     *hash_p = result;
