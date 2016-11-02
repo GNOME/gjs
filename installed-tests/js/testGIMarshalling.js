@@ -266,6 +266,12 @@ function testGHashTable() {
         1: '-1',
         2: '-2',
     };
+    const NUMBER_DICT = {
+        '-1': -0.1,
+        0: 0,
+        1: 0.1,
+        2: 0.2,
+    };
     const STRING_DICT_OUT = {
         '-1': '1',
         0: '0',
@@ -279,6 +285,20 @@ function testGHashTable() {
 
     GIMarshallingTests.ghashtable_int_none_in(INT_DICT);
     GIMarshallingTests.ghashtable_utf8_none_in(STRING_DICT);
+    GIMarshallingTests.ghashtable_double_in(NUMBER_DICT);
+    GIMarshallingTests.ghashtable_float_in(NUMBER_DICT);
+    GIMarshallingTests.ghashtable_int64_in({
+        '-1': -1,
+        0: 0,
+        1: 1,
+        2: 0x100000000,
+    });
+    GIMarshallingTests.ghashtable_uint64_in({
+        '-1': 0x100000000,
+        0: 0,
+        1: 1,
+        2: 2,
+    });
 
     dictEquals(GIMarshallingTests.ghashtable_utf8_none_out(), STRING_DICT);
     dictEquals(GIMarshallingTests.ghashtable_utf8_container_out(), STRING_DICT);

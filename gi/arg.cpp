@@ -507,7 +507,7 @@ gjs_object_to_g_hash(JSContext   *context,
 
     JS::RootedValue key_js(context), val_js(context);
     for (id_ix = 0, id_len = ids.length(); id_ix < id_len; id_ix++) {
-        gpointer key_ptr;
+        gpointer key_ptr, val_ptr;
         GIArgument val_arg = { 0 };
 
         if (!JS_IdToValue(context, ids[id_ix], key_js.address()))
@@ -528,7 +528,30 @@ gjs_object_to_g_hash(JSContext   *context,
                                      &val_arg))
             goto free_hash_and_fail;
 
-        g_hash_table_insert(result, key_ptr, val_arg.v_pointer);
+        GITypeTag val_type = g_type_info_get_tag(val_param_info);
+        /* Use heap-allocated values for types that don't fit in a pointer */
+        if (val_type == GI_TYPE_TAG_INT64) {
+            int64_t *heap_val = g_new(int64_t, 1);
+            *heap_val = val_arg.v_int64;
+            val_ptr = heap_val;
+        } else if (val_type == GI_TYPE_TAG_UINT64) {
+            uint64_t *heap_val = g_new(uint64_t, 1);
+            *heap_val = val_arg.v_uint64;
+            val_ptr = heap_val;
+        } else if (val_type == GI_TYPE_TAG_FLOAT) {
+            float *heap_val = g_new(float, 1);
+            *heap_val = val_arg.v_float;
+            val_ptr = heap_val;
+        } else if (val_type == GI_TYPE_TAG_DOUBLE) {
+            double *heap_val = g_new(double, 1);
+            *heap_val = val_arg.v_double;
+            val_ptr = heap_val;
+        } else {
+            /* Other types are simply stuffed inside v_pointer */
+            val_ptr = val_arg.v_pointer;
+        }
+
+        g_hash_table_insert(result, key_ptr, val_ptr);
     }
 
     *hash_p = result;
@@ -3008,11 +3031,17 @@ gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
                                     &key_arg))
         c->failed = true;
 
-    if (!gjs_g_arg_release_internal(c->context, c->transfer,
-                                    c->val_param_info,
-                                    g_type_info_get_tag(c->val_param_info),
-                                    &val_arg))
+    GITypeTag val_type = g_type_info_get_tag(c->val_param_info);
+    if (val_type == GI_TYPE_TAG_INT64 ||
+        val_type == GI_TYPE_TAG_UINT64 ||
+        val_type == GI_TYPE_TAG_FLOAT ||
+        val_type == GI_TYPE_TAG_DOUBLE) {
+        g_free(val_arg.v_pointer);
+    } else if (!gjs_g_arg_release_internal(c->context, c->transfer,
+                                           c->val_param_info, val_type,
+                                           &val_arg)) {
         c->failed = true;
+    }
     return true;
 }
 
