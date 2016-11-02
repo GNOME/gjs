@@ -506,18 +506,20 @@ gjs_object_to_g_hash(JSContext   *context,
     result = create_hash_table_for_key_type(key_param_info);
 
     JS::RootedValue key_js(context), val_js(context);
-    for (id_ix = 0, id_len = ids.length(); id_ix < id_len; id_ix++) {
+    JS::RootedId cur_id(context);
+    for (id_ix = 0, id_len = ids.length(); id_ix < id_len; ++id_ix) {
+        cur_id = ids[id_ix];
         gpointer key_ptr, val_ptr;
         GIArgument val_arg = { 0 };
 
-        if (!JS_IdToValue(context, ids[id_ix], key_js.address()))
+        if (!JS_IdToValue(context, cur_id, key_js.address()))
             goto free_hash_and_fail;
 
         /* Type check key type. */
         if (!value_to_ghashtable_key(context, key_js, key_param_info, &key_ptr))
             goto free_hash_and_fail;
 
-        if (!JS_GetPropertyById(context, props, ids[id_ix], val_js.address()))
+        if (!JS_GetPropertyById(context, props, cur_id, val_js.address()))
             goto free_hash_and_fail;
 
         /* Type check and convert value to a c type */
