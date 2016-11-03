@@ -101,6 +101,7 @@ GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 static JSObject*       peek_js_obj  (GObject   *gobj);
 static void            set_js_obj   (GObject   *gobj,
                                      JSObject  *obj);
+static void            poison_js_obj(GObject   *gobj);
 
 static void            disassociate_js_gobject (GObject *gobj);
 static void            invalidate_all_signals (ObjectInstance *priv);
@@ -1211,8 +1212,8 @@ disassociate_js_gobject (GObject   *gobj)
     invalidate_all_signals(priv);
     release_native_object(priv);
 
-    /* Use -1 to mark that a JS object once existed, but it doesn't any more */
-    set_js_obj(gobj, (JSObject*)(-1));
+    /* Mark that a JS object once existed, but it doesn't any more */
+    poison_js_obj(gobj);
 
 #if DEBUG_DISPOSE
     g_object_weak_unref(gobj, wrapped_gobj_dispose_notify, object);
@@ -1971,26 +1972,52 @@ gjs_define_object_class(JSContext              *context,
                       NULL, NULL, JSPROP_PERMANENT);
 }
 
+static void
+release_heap_wrapper(gpointer data)
+{
+    delete static_cast<JS::Heap<JSObject *> *>(data);
+}
+
+static JS::Heap<JSObject *> *
+ensure_heap_wrapper(GObject *gobj)
+{
+    gpointer data = g_object_get_qdata(gobj, gjs_object_priv_quark());
+    if (data == NULL) {
+        auto heap_object = new JS::Heap<JSObject *>();
+        g_object_set_qdata_full(gobj, gjs_object_priv_quark(), heap_object,
+                                release_heap_wrapper);
+        return heap_object;
+    }
+    return static_cast<JS::Heap<JSObject *> *>(data);
+}
+
 static JSObject*
 peek_js_obj(GObject *gobj)
 {
-    JSObject *object = (JSObject*) g_object_get_qdata(gobj, gjs_object_priv_quark());
+    auto heap_object = ensure_heap_wrapper(gobj);
 
-    if (G_UNLIKELY (object == (JSObject*)(-1))) {
+    if (G_UNLIKELY ((gpointer) heap_object == (gpointer) 1)) {
         g_critical ("Object %p (a %s) resurfaced after the JS wrapper was finalized. "
                     "This is some library doing dubious memory management inside dispose()",
-                    gobj, g_type_name(G_TYPE_FROM_INSTANCE(object)));
+                    gobj, g_type_name(G_TYPE_FROM_INSTANCE(gobj)));
+        g_object_set_qdata(gobj, gjs_object_priv_quark(), NULL);
         return NULL; /* return null to associate again with a new wrapper */
     }
 
-    return object;
+    return heap_object->get();
 }
 
 static void
 set_js_obj(GObject  *gobj,
            JSObject *obj)
 {
-    g_object_set_qdata(gobj, gjs_object_priv_quark(), obj);
+    ensure_heap_wrapper(gobj)->set(obj);
+}
+
+static void
+poison_js_obj(GObject *gobj)
+{
+    g_object_set_qdata(gobj, gjs_object_priv_quark(), (gpointer) 1);
 }
 
 JSObject*
