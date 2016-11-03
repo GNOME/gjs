@@ -24,6 +24,7 @@
 #include <config.h>
 
 #include <memory>
+#include <stack>
 #include <string.h>
 #include <vector>
 
@@ -89,7 +90,7 @@ enum {
     PROP_JS_HANDLED,
 };
 
-static GSList *object_init_list;
+static std::stack<JS::PersistentRootedObject> object_init_list;
 static GHashTable *class_init_properties;
 
 extern struct JSClass gjs_object_instance_class;
@@ -1245,10 +1246,7 @@ object_instance_init (JSContext                  *context,
        down.
     */
     if (g_type_get_qdata(gtype, gjs_is_custom_type_quark())) {
-        // COMPAT: Replace with JS::PersistentRootedObject in mozjs31
-        object_init_list = g_slist_prepend(object_init_list, object.get());
-        JS_AddNamedObjectRoot(context, (JSObject **) &object_init_list->data,
-                              "object_init_list");
+        object_init_list.emplace(context, object);
     }
 
     gobj = (GObject*) g_object_newv(gtype, params.size(), &params[0]);
@@ -2389,7 +2387,7 @@ gjs_object_constructor (GType                  type,
 {
     GObject *gobj = NULL;
 
-    if (object_init_list) {
+    if (!object_init_list.empty()) {
         GType parent_type = g_type_parent(type);
 
         /* The object is being constructed from JS:
@@ -2579,13 +2577,13 @@ gjs_object_custom_init(GTypeInstance *instance,
     JSContext *context;
     ObjectInstance *priv;
 
-    if (!object_init_list)
+    if (object_init_list.empty())
       return;
 
     gjs_context = gjs_context_get_current();
     context = (JSContext*) gjs_context_get_native_context(gjs_context);
 
-    JS::RootedObject object(context, (JSObject*) object_init_list->data);
+    JS::RootedObject object(context, object_init_list.top().get());
     priv = (ObjectInstance*) JS_GetPrivate(object);
 
     if (priv->gtype != G_TYPE_FROM_INSTANCE (instance)) {
@@ -2595,9 +2593,7 @@ gjs_object_custom_init(GTypeInstance *instance,
         return;
     }
 
-    JS_RemoveObjectRoot(context, (JSObject **) &object_init_list->data);
-    object_init_list = g_slist_delete_link(object_init_list,
-                                           object_init_list);
+    object_init_list.pop();
 
     associate_js_gobject(context, object, G_OBJECT (instance));
 
