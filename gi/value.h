@@ -30,12 +30,12 @@
 
 G_BEGIN_DECLS
 
-bool       gjs_value_to_g_value         (JSContext    *context,
-                                         JS::Value     value,
-                                         GValue       *gvalue);
-bool       gjs_value_to_g_value_no_copy (JSContext    *context,
-                                         JS::Value     value,
-                                         GValue       *gvalue);
+bool       gjs_value_to_g_value         (JSContext      *context,
+                                         JS::HandleValue value,
+                                         GValue         *gvalue);
+bool       gjs_value_to_g_value_no_copy (JSContext      *context,
+                                         JS::HandleValue value,
+                                         GValue         *gvalue);
 
 bool gjs_value_from_g_value(JSContext             *context,
                             JS::MutableHandleValue value_p,

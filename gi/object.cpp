@@ -185,12 +185,12 @@ throw_priv_is_null_error(JSContext *context)
 }
 
 static ValueFromPropertyResult
-init_g_param_from_property(JSContext  *context,
-                           const char *js_prop_name,
-                           JS::Value   js_value,
-                           GType       gtype,
-                           GParameter *parameter,
-                           bool        constructing)
+init_g_param_from_property(JSContext      *context,
+                           const char     *js_prop_name,
+                           JS::HandleValue value,
+                           GType           gtype,
+                           GParameter     *parameter,
+                           bool            constructing)
 {
     char *gname;
     GParamSpec *param_spec;
@@ -230,7 +230,7 @@ init_g_param_from_property(JSContext  *context,
                      js_prop_name, param_spec->name);
 
     g_value_init(&parameter->value, G_PARAM_SPEC_VALUE_TYPE(param_spec));
-    if (!gjs_value_to_g_value(context, js_value, &parameter->value)) {
+    if (!gjs_value_to_g_value(context, value, &parameter->value)) {
         g_value_unset(&parameter->value);
         return SOME_ERROR_OCCURRED;
     }
@@ -1710,9 +1710,9 @@ emit_func(JSContext *context,
 
         g_value_init(value, signal_query.param_types[i] & ~G_SIGNAL_TYPE_STATIC_SCOPE);
         if ((signal_query.param_types[i] & G_SIGNAL_TYPE_STATIC_SCOPE) != 0)
-            failed = !gjs_value_to_g_value_no_copy(context, argv[i+1], value);
+            failed = !gjs_value_to_g_value_no_copy(context, argv.handleOrUndefinedAt(i + 1), value);
         else
-            failed = !gjs_value_to_g_value(context, argv[i+1], value);
+            failed = !gjs_value_to_g_value(context, argv.handleOrUndefinedAt(i + 1), value);
 
         if (failed)
             break;

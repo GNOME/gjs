@@ -351,10 +351,10 @@ gjs_value_guess_g_type(JSContext *context,
 }
 
 static bool
-gjs_value_to_g_value_internal(JSContext    *context,
-                              JS::Value     value,
-                              GValue       *gvalue,
-                              bool          no_copy)
+gjs_value_to_g_value_internal(JSContext      *context,
+                              JS::HandleValue value,
+                              GValue         *gvalue,
+                              bool            no_copy)
 {
     GType gtype;
 
@@ -491,36 +491,38 @@ gjs_value_to_g_value_internal(JSContext    *context,
 
         if (value.isNull()) {
             /* do nothing */
-        } else if (JS_HasPropertyById(context, &value.toObject(), length_name, &found_length) &&
-                   found_length) {
+        } else {
             JS::RootedObject array_obj(context, &value.toObject());
-            guint32 length;
+            if (JS_HasPropertyById(context, array_obj, length_name, &found_length) &&
+                found_length) {
+                guint32 length;
 
-            if (!gjs_object_require_converted_property_value(context, array_obj,
-                                                             NULL, length_name,
-                                                             &length)) {
-                JS_ClearPendingException(context);
+                if (!gjs_object_require_converted_property_value(context, array_obj,
+                                                                 NULL, length_name,
+                                                                 &length)) {
+                    JS_ClearPendingException(context);
+                    gjs_throw(context,
+                              "Wrong type %s; strv expected",
+                              gjs_get_type_name(value));
+                    return false;
+                } else {
+                    void *result;
+                    char **strv;
+
+                    if (!gjs_array_to_strv (context,
+                                            value,
+                                            length, &result))
+                        return false;
+                    /* cast to strv in a separate step to avoid type-punning */
+                    strv = (char**) result;
+                    g_value_take_boxed (gvalue, strv);
+                }
+            } else {
                 gjs_throw(context,
                           "Wrong type %s; strv expected",
                           gjs_get_type_name(value));
                 return false;
-            } else {
-                void *result;
-                char **strv;
-
-                if (!gjs_array_to_strv (context,
-                                        value,
-                                        length, &result))
-                    return false;
-                /* cast to strv in a separate step to avoid type-punning */
-                strv = (char**) result;
-                g_value_take_boxed (gvalue, strv);
             }
-        } else {
-            gjs_throw(context,
-                      "Wrong type %s; strv expected",
-                      gjs_get_type_name(value));
-            return false;
         }
     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
         void *gboxed;
@@ -731,17 +733,17 @@ gjs_value_to_g_value_internal(JSContext    *context,
 }
 
 bool
-gjs_value_to_g_value(JSContext    *context,
-                     JS::Value     value,
-                     GValue       *gvalue)
+gjs_value_to_g_value(JSContext      *context,
+                     JS::HandleValue value,
+                     GValue         *gvalue)
 {
     return gjs_value_to_g_value_internal(context, value, gvalue, false);
 }
 
 bool
-gjs_value_to_g_value_no_copy(JSContext    *context,
-                             JS::Value     value,
-                             GValue       *gvalue)
+gjs_value_to_g_value_no_copy(JSContext      *context,
+                             JS::HandleValue value,
+                             GValue         *gvalue)
 {
     return gjs_value_to_g_value_internal(context, value, gvalue, true);
 }
