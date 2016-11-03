@@ -88,7 +88,9 @@ gjs_js_define_cairo_stuff(JSContext              *context,
                                                "ImageSurface", surface_proto);
     if (obj.isNull())
         return false;
-    gjs_cairo_image_surface_init(context, &obj.toObject());
+
+    JS::RootedObject image_surface_proto(context, &obj.toObject());
+    gjs_cairo_image_surface_init(context, image_surface_proto);
 
 #if CAIRO_HAS_PS_SURFACE
     obj = gjs_cairo_ps_surface_create_proto(context, module,

@@ -84,7 +84,8 @@ JS::Value gjs_cairo_image_surface_create_proto(JSContext       *context,
                                                JS::HandleObject parent);
 
 void             gjs_cairo_image_surface_init           (JSContext       *context,
-                                                         JSObject        *object);
+                                                         JS::HandleObject proto);
+
 JSObject *       gjs_cairo_image_surface_from_surface   (JSContext       *context,
                                                          cairo_surface_t *surface);
 

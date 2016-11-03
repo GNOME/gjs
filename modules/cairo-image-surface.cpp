@@ -227,12 +227,11 @@ gjs_cairo_image_surface_from_surface(JSContext       *context,
 }
 
 void
-gjs_cairo_image_surface_init(JSContext *context, JSObject *module_obj)
+gjs_cairo_image_surface_init(JSContext       *cx,
+                             JS::HandleObject proto)
 {
 
-    if (!JS_DefineFunction(context, module_obj,
-                           "createFromPNG",
-                           (JSNative)createFromPNG_func,
+    if (!JS_DefineFunction(cx, proto, "createFromPNG", createFromPNG_func,
                            1, GJS_MODULE_PROP_FLAGS))
         return;
 }
