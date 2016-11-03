@@ -182,10 +182,9 @@ static JSFunctionSpec gjs_param_constructor_funcs[] = {
 static JSObject*
 gjs_lookup_param_prototype(JSContext    *context)
 {
-    JSObject *in_object;
-
     JS::RootedId gobject_name(context, gjs_intern_string_to_id(context, "GObject"));
-    in_object = gjs_lookup_namespace_object_by_name(context, gobject_name);
+    JS::RootedObject in_object(context,
+        gjs_lookup_namespace_object_by_name(context, gobject_name));
 
     if (G_UNLIKELY (!in_object))
         return NULL;
@@ -215,7 +214,6 @@ gjs_define_param_class(JSContext       *context,
                        JS::HandleObject in_object)
 {
     const char *constructor_name;
-    JS::Value value;
     JS::RootedObject prototype(context), constructor(context);
     GIObjectInfo *info;
 
@@ -240,7 +238,8 @@ gjs_define_param_class(JSContext       *context,
         g_error("Can't init class %s", constructor_name);
     }
 
-    value = JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM));
+    JS::RootedValue value(context,
+        JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM)));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 
@@ -258,7 +257,6 @@ gjs_param_from_g_param(JSContext    *context,
                        GParamSpec   *gparam)
 {
     JSObject *obj;
-    JSObject *proto;
     Param *priv;
 
     if (gparam == NULL)
@@ -270,11 +268,10 @@ gjs_param_from_g_param(JSContext    *context,
               gparam->name,
               g_type_name(gparam->owner_type));
 
-    proto = gjs_lookup_param_prototype(context);
+    JS::RootedObject proto(context, gjs_lookup_param_prototype(context));
+    JS::RootedObject global(context, gjs_get_import_global(context));
 
-    obj = JS_NewObjectWithGivenProto(context,
-                                     JS_GetClass(proto), proto,
-                                     gjs_get_import_global (context));
+    obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto, global);
 
     GJS_INC_COUNTER(param);
     priv = g_slice_new0(Param);

@@ -130,8 +130,8 @@ _fundamental_lookup_object(void *native_object)
 /**/
 
 static inline Fundamental *
-proto_priv_from_js(JSContext *context,
-                   JSObject  *obj)
+proto_priv_from_js(JSContext       *context,
+                   JS::HandleObject obj)
 {
     JS::RootedObject proto(context);
     JS_GetPrototype(context, obj, proto.address());
@@ -403,9 +403,9 @@ fundamental_invoke_constructor(FundamentalInstance *priv,
     }
 
     JS::RootedObject constructor(context);
+    JS::RootedId constructor_name(context, priv->prototype->constructor_name);
     if (!gjs_object_require_property_value(context, js_constructor, NULL,
-                                           priv->prototype->constructor_name,
-                                           &constructor)) {
+                                           constructor_name, &constructor)) {
         gjs_throw (context,
                    "Couldn't find a constructor for type %s.%s",
                    g_base_info_get_namespace((GIBaseInfo*) priv->prototype->info),
@@ -602,7 +602,9 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
         /* In case we're looking for a private type, and we don't find it,
            we need to define it first.
         */
-        gjs_define_fundamental_class(context, in_object, info, &constructor, NULL);
+        JS::RootedObject ignored(context);
+        gjs_define_fundamental_class(context, in_object, info, &constructor,
+                                     &ignored);
     } else {
         if (G_UNLIKELY (!value.isObject()))
             return NULL;
@@ -646,7 +648,6 @@ gjs_define_fundamental_class(JSContext              *context,
                              JS::MutableHandleObject prototype)
 {
     const char *constructor_name;
-    JS::Value value;
     jsid js_constructor_name = JSID_VOID;
     JS::RootedObject parent_proto(context);
     Fundamental *priv;
@@ -730,7 +731,8 @@ gjs_define_fundamental_class(JSContext              *context,
 
     gjs_object_define_static_methods(context, constructor, gtype, info);
 
-    value = JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, gtype));
+    JS::RootedValue value(context,
+        JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, gtype)));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 
@@ -742,8 +744,6 @@ gjs_object_from_g_fundamental(JSContext    *context,
                               GIObjectInfo *info,
                               void         *gfundamental)
 {
-    JSObject *proto;
-
     if (gfundamental == NULL)
         return NULL;
 
@@ -757,12 +757,12 @@ gjs_object_from_g_fundamental(JSContext    *context,
                       g_base_info_get_name((GIBaseInfo *) info),
                       gfundamental);
 
-    proto = gjs_lookup_fundamental_prototype_from_gtype(context,
-                                                        G_TYPE_FROM_INSTANCE(gfundamental));
-
-    object = JS_NewObjectWithGivenProto(context,
-                                        JS_GetClass(proto), proto,
-                                        gjs_get_import_global(context));
+    JS::RootedObject proto(context,
+        gjs_lookup_fundamental_prototype_from_gtype(context,
+                                                    G_TYPE_FROM_INSTANCE(gfundamental)));
+    JS::RootedObject global(context, gjs_get_import_global(context));
+    object = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto,
+                                        global);
 
     if (object == NULL)
         goto out;

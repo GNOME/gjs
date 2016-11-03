@@ -325,7 +325,6 @@ gjs_define_union_class(JSContext       *context,
                        GIUnionInfo     *info)
 {
     const char *constructor_name;
-    JS::Value value;
     Union *priv;
     GType gtype;
     JS::RootedObject prototype(context), constructor(context);
@@ -376,7 +375,8 @@ gjs_define_union_class(JSContext       *context,
               constructor_name, prototype.get(), JS_GetClass(prototype),
               in_object.get());
 
-    value = JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, gtype));
+    JS::RootedValue value(context,
+        JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, gtype)));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 
@@ -389,7 +389,6 @@ gjs_union_from_c_union(JSContext    *context,
                        void         *gboxed)
 {
     JSObject *obj;
-    JSObject *proto;
     Union *priv;
     GType gtype;
 
@@ -409,11 +408,11 @@ gjs_union_from_c_union(JSContext    *context,
                       "Wrapping union %s %p with JSObject",
                       g_base_info_get_name((GIBaseInfo *)info), gboxed);
 
-    proto = gjs_lookup_generic_prototype(context, (GIUnionInfo*) info);
+    JS::RootedObject proto(context,
+        gjs_lookup_generic_prototype(context, (GIUnionInfo*) info));
+    JS::RootedObject global(context, gjs_get_import_global(context));
 
-    obj = JS_NewObjectWithGivenProto(context,
-                                     JS_GetClass(proto), proto,
-                                     gjs_get_import_global (context));
+    obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto, global);
 
     GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Union);

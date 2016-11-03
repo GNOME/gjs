@@ -90,8 +90,6 @@ resolve_namespace_object(JSContext       *context,
     GIRepository *repo;
     GError *error;
     char *version;
-    JSObject *override;
-    JS::Value result;
 
     JSAutoRequest ar(context);
 
@@ -122,19 +120,21 @@ resolve_namespace_object(JSContext       *context,
 
     /* Define the property early, to avoid reentrancy issues if
        the override module looks for namespaces that import this */
-    if (!JS_DefineProperty(context, repo_obj,
-                           ns_name, JS::ObjectValue(*gi_namespace),
+    JS::RootedValue v_namespace(context, JS::ObjectValue(*gi_namespace));
+    if (!JS_DefineProperty(context, repo_obj, ns_name, v_namespace,
                            NULL, NULL,
                            GJS_MODULE_PROP_FLAGS))
         g_error("no memory to define ns property");
 
-    override = lookup_override_function(context, ns_id);
-    if (override && !JS_CallFunctionValue (context,
-                                           gi_namespace, /* thisp */
-                                           JS::ObjectValue(*override), /* callee */
-                                           0, /* argc */
-                                           NULL, /* argv */
-                                           &result))
+    JS::RootedValue override(context,
+        JS::ObjectOrNullValue(lookup_override_function(context, ns_id)));
+    JS::RootedValue result(context);
+    if (!override.isNull() &&
+        !JS_CallFunctionValue (context, gi_namespace, /* thisp */
+                               override, /* callee */
+                               0, /* argc */
+                               NULL, /* argv */
+                               result.address()))
         return false;
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
@@ -244,13 +244,12 @@ static JSObject*
 repo_new(JSContext *context)
 {
     Repo *priv;
-    JSObject *global;
     JSObject *versions;
     JSObject *private_ns;
     JSBool found;
     jsid versions_name, private_ns_name;
 
-    global = gjs_get_import_global(context);
+    JS::RootedObject global(context, gjs_get_import_global(context));
 
     if (!JS_HasProperty(context, global, gjs_repo_class.name, &found))
         return NULL;
@@ -320,8 +319,8 @@ repo_new(JSContext *context)
      * gobject-introspection does not yet search a path properly.
      */
     {
-        JS::Value value;
-        JS_GetProperty(context, repo, "GLib", &value);
+        JS::RootedValue value(context);
+        JS_GetProperty(context, repo, "GLib", value.address());
     }
 
     return repo;
@@ -337,9 +336,9 @@ gjs_define_repo(JSContext              *cx,
 }
 
 static bool
-gjs_define_constant(JSContext      *context,
-                    JSObject       *in_object,
-                    GIConstantInfo *info)
+gjs_define_constant(JSContext       *context,
+                    JS::HandleObject in_object,
+                    GIConstantInfo  *info)
 {
     JS::RootedValue value(context);
     GArgument garg = { 0, };
@@ -745,17 +744,17 @@ JSObject *
 gjs_lookup_generic_constructor(JSContext  *context,
                                GIBaseInfo *info)
 {
-    JSObject *in_object;
     const char *constructor_name;
-    JS::Value value;
 
-    in_object = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
+    JS::RootedObject in_object(context,
+        gjs_lookup_namespace_object(context, (GIBaseInfo*) info));
     constructor_name = g_base_info_get_name((GIBaseInfo*) info);
 
     if (G_UNLIKELY (!in_object))
         return NULL;
 
-    if (!JS_GetProperty(context, in_object, constructor_name, &value))
+    JS::RootedValue value(context);
+    if (!JS_GetProperty(context, in_object, constructor_name, value.address()))
         return NULL;
 
     if (G_UNLIKELY (!value.isObject()))
