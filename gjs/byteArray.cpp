@@ -534,9 +534,9 @@ byte_array_new(JSContext *context)
 {
     ByteArrayInstance *priv;
 
+    JS::RootedObject proto(context, byte_array_get_prototype(context));
     JS::RootedObject array(context,
-                           JS_NewObject(context, &gjs_byte_array_class,
-                                        byte_array_get_prototype(context), NULL));
+        JS_NewObject(context, &gjs_byte_array_class, proto, NULL));
 
     priv = g_slice_new0(ByteArrayInstance);
 
@@ -664,13 +664,14 @@ from_array_func(JSContext *context,
 
     priv->array = gjs_g_byte_array_new(0);
 
-    if (!JS_IsArrayObject(context, &argv[0].toObject())) {
+    JS::RootedObject array_obj(context, &argv[0].toObject());
+    if (!JS_IsArrayObject(context, array_obj)) {
         gjs_throw(context,
                   "byteArray.fromArray() called with non-array as first arg");
         return false;
     }
 
-    if (!JS_GetArrayLength(context, &argv[0].toObject(), &len)) {
+    if (!JS_GetArrayLength(context, array_obj, &len)) {
         gjs_throw(context,
                   "byteArray.fromArray() can't get length of first array arg");
         return false;
@@ -683,7 +684,7 @@ from_array_func(JSContext *context,
         guint8 b;
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, &argv[0].toObject(), i, elem.address())) {
+        if (!JS_GetElement(context, array_obj, i, elem.address())) {
             /* this means there was an exception, while elem.isUndefined()
              * means no element found
              */
@@ -743,9 +744,10 @@ gjs_byte_array_from_byte_array (JSContext *context,
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(array != NULL, NULL);
 
+    JS::RootedObject proto(context, byte_array_get_prototype(context));
     JS::RootedObject object(context,
-                            JS_NewObject(context, &gjs_byte_array_class,
-                                         byte_array_get_prototype(context), NULL));
+        JS_NewObject(context, &gjs_byte_array_class, proto, NULL));
+
     if (!object) {
         gjs_throw(context, "failed to create byte array");
         return NULL;

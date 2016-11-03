@@ -170,6 +170,7 @@ gjs_js_define_system_stuff(JSContext              *context,
                  NULL);
 
     JS::RootedValue value(context);
+    JS::RootedValue gjs_version(context, JS::Int32Value(GJS_VERSION));
     if (!gjs_string_from_utf8(context, program_name,
                               -1, &value))
         goto out;
@@ -185,8 +186,7 @@ gjs_js_define_system_stuff(JSContext              *context,
         goto out;
 
     if (!JS_DefineProperty(context, module,
-                           "version",
-                           JS::Int32Value(GJS_VERSION),
+                           "version", gjs_version,
                            JS_PropertyStub,
                            JS_StrictPropertyStub,
                            GJS_MODULE_PROP_FLAGS | JSPROP_READONLY))

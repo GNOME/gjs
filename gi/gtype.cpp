@@ -149,34 +149,30 @@ _gjs_gtype_get_actual_gtype(JSContext       *context,
                             JS::HandleObject object,
                             int              recurse)
 {
-    GType gtype = G_TYPE_INVALID;
-    JS::Value gtype_val = JS::UndefinedValue();
+    JSAutoRequest ar(context);
 
-    JS_BeginRequest(context);
-    if (JS_InstanceOf(context, object, &gjs_gtype_class, NULL)) {
-        gtype = GPOINTER_TO_SIZE(priv_from_js(context, object));
-        goto out;
-    }
+    if (JS_InstanceOf(context, object, &gjs_gtype_class, NULL))
+        return GPOINTER_TO_SIZE(priv_from_js(context, object));
+
+    JS::RootedValue gtype_val(context);
 
     /* OK, we don't have a GType wrapper object -- grab the "$gtype"
      * property on that and hope it's a GType wrapper object */
-    if (!JS_GetProperty(context, object, "$gtype", &gtype_val) ||
+    if (!JS_GetProperty(context, object, "$gtype", gtype_val.address()) ||
         !gtype_val.isObject()) {
 
         /* OK, so we're not a class. But maybe we're an instance. Check
            for "constructor" and recurse on that. */
-        if (!JS_GetProperty(context, object, "constructor", &gtype_val))
-            goto out;
+        if (!JS_GetProperty(context, object, "constructor", gtype_val.address()))
+            return G_TYPE_INVALID;
     }
 
     if (recurse > 0 && gtype_val.isObject()) {
         JS::RootedObject gtype_obj(context, &gtype_val.toObject());
-        gtype = _gjs_gtype_get_actual_gtype(context, gtype_obj, recurse - 1);
+        return _gjs_gtype_get_actual_gtype(context, gtype_obj, recurse - 1);
     }
 
- out:
-    JS_EndRequest(context);
-    return gtype;
+    return G_TYPE_INVALID;
 }
 
 GType

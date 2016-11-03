@@ -723,8 +723,9 @@ gjs_context_define_string_array(GjsContext  *js_context,
                                 GError       **error)
 {
     JSAutoCompartment ac(js_context->context, js_context->global);
+    JS::RootedObject global_root(js_context->context, js_context->global);
     if (!gjs_define_string_array(js_context->context,
-                                 js_context->global,
+                                 global_root,
                                  array_name, array_length, array_values,
                                  JSPROP_READONLY | JSPROP_PERMANENT)) {
         gjs_log_exception(js_context->context);

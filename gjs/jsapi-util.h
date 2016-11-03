@@ -227,10 +227,11 @@ gjs_##cname##_create_proto(JSContext *context,                                 \
                                rval, NULL, NULL, GJS_MODULE_PROP_FLAGS)) \
             return JS::NullValue(); \
         if (gtype != G_TYPE_NONE) { \
+            JS::RootedObject rval_obj(context, &rval.toObject());              \
             JS::RootedValue value(context,                                     \
                 JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context,  \
                                                                      gtype))); \
-            JS_DefineProperty(context, &rval.toObject(), "$gtype", value, \
+            JS_DefineProperty(context, rval_obj, "$gtype", value,              \
                               NULL, NULL, JSPROP_PERMANENT);            \
         } \
     } \

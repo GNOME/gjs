@@ -191,7 +191,6 @@ gjs_define_interface_class(JSContext              *context,
     const char *constructor_name;
     const char *ns;
     JS::RootedObject prototype(context);
-    JS::Value value;
 
     ns = gjs_get_names_from_gtype_and_gi_info(gtype, (GIBaseInfo *) info,
                                               &constructor_name);
@@ -227,7 +226,8 @@ gjs_define_interface_class(JSContext              *context,
     if (priv->info)
         gjs_define_static_methods(context, constructor, priv->gtype, priv->info);
 
-    value = JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, priv->gtype));
+    JS::RootedValue value(context,
+        JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, priv->gtype)));
     JS_DefineProperty(context, constructor, "$gtype", value,
                       NULL, NULL, JSPROP_PERMANENT);
 

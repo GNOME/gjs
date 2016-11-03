@@ -1495,10 +1495,8 @@ gjs_run_script_in_coverage_compartment(GjsCoverage *coverage,
     JSContext          *js_context = (JSContext *) gjs_context_get_native_context(priv->context);
     JSAutoCompartment ac(js_context, priv->coverage_statistics);
     JS::RootedValue rval(js_context);
-    if (!gjs_eval_with_scope(js_context,
-                             priv->coverage_statistics,
-                             script,
-                             strlen(script),
+    JS::RootedObject rooted_priv(js_context, priv->coverage_statistics);
+    if (!gjs_eval_with_scope(js_context, rooted_priv, script, strlen(script),
                              "<coverage_modifier>",
                              &rval)) {
         gjs_log_exception(js_context);

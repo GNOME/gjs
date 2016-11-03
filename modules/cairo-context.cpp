@@ -81,14 +81,14 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
         return false;                                                      \
     cfunc(cr, &arg1, &arg2);                                               \
     if (cairo_status(cr) == CAIRO_STATUS_SUCCESS) {                        \
-      JSObject *array = JS_NewArrayObject(context, 0, NULL);               \
+      JS::RootedObject array(context,                                      \
+          JS_NewArrayObject(context, 0, NULL));                            \
       if (!array)                                                          \
         return false;                                                      \
-      JS::Value r;                                                         \
-      r = JS::NumberValue(arg1);                                           \
-      if (!JS_SetElement(context, array, 0, &r)) return false;             \
-      r = JS::NumberValue(arg2);                                           \
-      if (!JS_SetElement(context, array, 1, &r)) return false;             \
+      JS::RootedValue r(context, JS::NumberValue(arg1));                   \
+      if (!JS_SetElement(context, array, 0, r.address())) return false;    \
+      r.setNumber(arg2);                                                   \
+      if (!JS_SetElement(context, array, 1, r.address())) return false;    \
       argv.rval().setObject(*array);                                       \
     }                                                                      \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
@@ -99,14 +99,14 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
    _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                                \
     cfunc(cr, &arg1, &arg2);                                               \
     if (cairo_status(cr) == CAIRO_STATUS_SUCCESS) {                        \
-      JSObject *array = JS_NewArrayObject(context, 0, NULL);               \
+      JS::RootedObject array(context,                                      \
+          JS_NewArrayObject(context, 0, NULL));                            \
       if (!array)                                                          \
         return false;                                                      \
-      JS::Value r;                                                         \
-      r = JS::NumberValue(arg1);                                           \
-      if (!JS_SetElement(context, array, 0, &r)) return false;             \
-      r = JS::NumberValue(arg2);                                           \
-      if (!JS_SetElement(context, array, 1, &r)) return false;             \
+      JS::RootedValue r(context, JS::NumberValue(arg1));                   \
+      if (!JS_SetElement(context, array, 0, r.address())) return false;    \
+      r.setNumber(arg2);                                                   \
+      if (!JS_SetElement(context, array, 1, r.address())) return false;    \
       argv.rval().setObject(*array);                                       \
     }                                                                      \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
@@ -117,18 +117,18 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
    _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                                \
     cfunc(cr, &arg1, &arg2, &arg3, &arg4);                                 \
     {                                                                      \
-      JSObject *array = JS_NewArrayObject(context, 0, NULL);               \
+      JS::RootedObject array(context,                                      \
+          JS_NewArrayObject(context, 0, NULL));                            \
       if (!array)                                                          \
         return false;                                                      \
-      JS::Value r;                                                         \
-      r = JS::NumberValue(arg1);                                           \
-      if (!JS_SetElement(context, array, 0, &r)) return false;             \
-      r = JS::NumberValue(arg2);                                           \
-      if (!JS_SetElement(context, array, 1, &r)) return false;             \
-      r = JS::NumberValue(arg3);                                           \
-      if (!JS_SetElement(context, array, 2, &r)) return false;             \
-      r = JS::NumberValue(arg4);                                           \
-      if (!JS_SetElement(context, array, 3, &r)) return false;             \
+      JS::RootedValue r(context, JS::NumberValue(arg1));                   \
+      if (!JS_SetElement(context, array, 0, r.address())) return false;    \
+      r.setNumber(arg2);                                                   \
+      if (!JS_SetElement(context, array, 1, r.address())) return false;    \
+      r.setNumber(arg3);                                                   \
+      if (!JS_SetElement(context, array, 2, r.address())) return false;    \
+      r.setNumber(arg4);                                                   \
+      if (!JS_SetElement(context, array, 3, r.address())) return false;    \
       argv.rval().setObject(*array);                                       \
     }                                                                      \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
@@ -553,12 +553,12 @@ setDash_func(JSContext *context,
 
     std::vector<double> dashes_c;
     dashes_c.reserve(len);
+    JS::RootedValue elem(context);
     for (i = 0; i < len; ++i) {
-        JS::Value elem;
         double b;
 
-        elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, dashes, i, &elem)) {
+        elem.setUndefined();
+        if (!JS_GetElement(context, dashes, i, elem.address())) {
             return false;
         }
         if (elem.isUndefined())

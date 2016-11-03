@@ -263,6 +263,7 @@ import_file(JSContext       *context,
     GError *error = NULL;
 
     JS::CompileOptions options(context);
+    JS::RootedValue ignored(context);
 
     if (!(g_file_load_contents(file, NULL, &script, &script_len, NULL, &error))) {
         if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_IS_DIRECTORY) &&
@@ -280,7 +281,7 @@ import_file(JSContext       *context,
     full_path = g_file_get_parse_name (file);
 
     if (!gjs_eval_with_scope(context, module_obj, script, script_len,
-                             full_path, NULL))
+                             full_path, &ignored))
         goto out;
 
     ret = true;
@@ -762,7 +763,7 @@ importer_new_enumerate(JSContext  *context,
             g_free(dirname);
         }
 
-        statep.get().setPrivate(iter);
+        statep.set(JS::PrivateValue(context));
 
         idp.set(INT_TO_JSID(iter->elements->len));
 
