@@ -1484,7 +1484,7 @@ struct JSClass gjs_function_class = {
 };
 
 JSPropertySpec gjs_function_proto_props[] = {
-    JS_PSG("length", get_num_arguments, JSPROP_READONLY | JSPROP_PERMANENT),
+    JS_PSG("length", get_num_arguments, JSPROP_PERMANENT),
     JS_PS_END
 };
 
