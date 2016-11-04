@@ -425,7 +425,7 @@ get_array_from_js_value(JSContext             *context,
         u_int32_t i = 0;
         JS::RootedValue element(context);
         for (; i < js_array_len; ++i) {
-            if (!JS_GetElement(context, js_array, i, element.address())) {
+            if (!JS_GetElement(context, js_array, i, &element)) {
                 g_array_unref(c_side_array);
                 gjs_throw(context, "Failed to get function names array element %d", i);
                 return false;
@@ -476,7 +476,7 @@ get_executed_lines_for(JSContext        *context,
     args[0].set(filename_value);
 
     if (!JS_CallFunctionName(context, coverage_statistics, "getExecutedLinesFor",
-                             args, rval.address())) {
+                             args, &rval)) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -588,7 +588,7 @@ get_functions_for(JSContext        *context,
     args[0].set(filename_value);
 
     if (!JS_CallFunctionName(context, coverage_statistics, "getFunctionsFor",
-                             args, rval.address())) {
+                             args, &rval)) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -678,7 +678,7 @@ convert_and_insert_branch_info(GArray         *array,
         JS::RootedValue branch_exits_value(context);
         GArray *branch_exits_array = NULL;
 
-        if (!JS_GetProperty(context, object, "exits", branch_exits_value.address()) ||
+        if (!JS_GetProperty(context, object, "exits", &branch_exits_value) ||
             !branch_exits_value.isObject()) {
             gjs_throw(context, "Failed to get exits property from element");
             return false;
@@ -717,7 +717,7 @@ get_branches_for(JSContext        *context,
     JS::RootedValue rval(context);
 
     if (!JS_CallFunctionName(context, coverage_statistics, "getBranchesFor",
-                             args, rval.address())) {
+                             args, &rval)) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -852,7 +852,7 @@ get_covered_files(GjsCoverage *coverage)
     uint32_t n_files;
 
     if (!JS_CallFunctionName(context, rooted_priv, "getCoveredFiles",
-                             JS::HandleValueArray::empty(), rval.address())) {
+                             JS::HandleValueArray::empty(), &rval)) {
         gjs_log_exception(context);
         return NULL;
     }
@@ -868,7 +868,7 @@ get_covered_files(GjsCoverage *coverage)
     JS::RootedValue element(context);
     for (uint32_t i = 0; i < n_files; i++) {
         char *file;
-        if (!JS_GetElement(context, files_obj, i, element.address()))
+        if (!JS_GetElement(context, files_obj, i, &element))
             goto error;
 
         if (!gjs_string_to_utf8(context, element, &file))
@@ -1011,7 +1011,7 @@ gjs_serialize_statistics(GjsCoverage *coverage)
 
     if (!JS_CallFunctionName(js_context, rooted_priv, "stringify",
                              JS::HandleValueArray::empty(),
-                             string_value_return.address())) {
+                             &string_value_return)) {
         gjs_log_exception(js_context);
         return NULL;
     }
@@ -1166,7 +1166,7 @@ coverage_statistics_has_stale_cache(GjsCoverage *coverage)
     JS::RootedValue stale_cache_value(js_context);
     if (!JS_CallFunctionName(js_context, rooted_priv, "staleCache",
                              JS::HandleValueArray::empty(),
-                             stale_cache_value.address())) {
+                             &stale_cache_value)) {
         gjs_log_exception(js_context);
         g_error("Failed to call into javascript to get stale cache value. This is a bug");
     }
@@ -1527,10 +1527,8 @@ gjs_inject_value_into_coverage_compartment(GjsCoverage     *coverage,
     JS::RootedObject coverage_global_scope(JS_GetRuntime(js_context),
                                            JS_GetGlobalForObject(js_context, priv->coverage_statistics));
 
-    /* Removing const with cast is OK because the property value is not
-     * mutated in JS_SetProperty */
     if (!JS_SetProperty(js_context, coverage_global_scope, property,
-                        (JS::Value *) value.address())) {
+                        value)) {
         g_warning("Failed to set property %s to requested value", property);
         return false;
     }
@@ -1554,7 +1552,7 @@ gjs_wrap_root_importer_in_compartment(JSContext *context,
 
     JS::RootedObject wrapped_importer(JS_GetRuntime(context),
                                       importer.toObjectOrNull());
-    if (!JS_WrapObject(context, wrapped_importer.address())) {
+    if (!JS_WrapObject(context, &wrapped_importer)) {
         return NULL;
     }
 
@@ -1580,16 +1578,14 @@ bootstrap_coverage(GjsCoverage *coverage)
     {
         JSAutoCompartment compartment(context, debugger_compartment);
         JS::RootedObject debuggeeWrapper(context, debuggee);
-        if (!JS_WrapObject(context, debuggeeWrapper.address())) {
+        if (!JS_WrapObject(context, &debuggeeWrapper)) {
             gjs_throw(context, "Failed to wrap debugeee");
             return false;
         }
 
         JS::RootedValue debuggeeWrapperValue(context, JS::ObjectValue(*debuggeeWrapper));
-        /* Removing const with cast is OK because the property value is not
-         * mutated in JS_SetProperty */
         if (!JS_SetProperty(context, debugger_compartment, "debuggee",
-                            (JS::Value *) debuggeeWrapperValue.address())) {
+                            debuggeeWrapperValue)) {
             gjs_throw(context, "Failed to set debuggee property");
             return false;
         }
@@ -1749,7 +1745,7 @@ gjs_clear_js_side_statistics_from_coverage_object(GjsCoverage *coverage)
         JS::RootedObject rooted_priv(js_context, priv->coverage_statistics);
         JS::RootedValue rval(JS_GetRuntime(js_context));
         if (!JS_CallFunctionName(js_context, rooted_priv, "deactivate",
-                                 JS::HandleValueArray::empty(), rval.address())) {
+                                 JS::HandleValueArray::empty(), &rval)) {
             gjs_log_exception(js_context);
             g_error("Failed to deactivate debugger - this is a fatal error");
         }

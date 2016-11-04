@@ -293,7 +293,7 @@ gjs_callback_closure(ffi_cif *cif,
                               this_object,
                               rooted_function,
                               jsargs,
-                              rval.address())) {
+                              &rval)) {
         goto out;
     }
 
@@ -355,7 +355,7 @@ gjs_callback_closure(ffi_cif *cif,
         if (!ret_type_is_void) {
             GIArgument argument;
 
-            if (!JS_GetElement(context, out_array, elem_idx, elem.address()))
+            if (!JS_GetElement(context, out_array, elem_idx, &elem))
                 goto out;
 
             if (!gjs_value_to_g_argument(context,
@@ -383,7 +383,7 @@ gjs_callback_closure(ffi_cif *cif,
                 continue;
 
             g_arg_info_load_type(&arg_info, &type_info);
-            if (!JS_GetElement(context, out_array, elem_idx, elem.address()))
+            if (!JS_GetElement(context, out_array, elem_idx, &elem))
                 goto out;
 
             if (!gjs_value_to_g_argument(context,
@@ -1654,10 +1654,10 @@ function_new(JSContext      *context,
         JS::RootedObject parent_proto(context);
         JS::RootedValue v_native_function(context);
 
-        JS_GetProperty(context, global, "Function", v_native_function.address());
+        JS_GetProperty(context, global, "Function", &v_native_function);
         JS::RootedObject native_function(context, &v_native_function.toObject());
         /* We take advantage from that fact that Function.__proto__ is Function.prototype */
-        JS_GetPrototype(context, native_function, parent_proto.address());
+        JS_GetPrototype(context, native_function, &parent_proto);
 
         prototype = JS_InitClass(context, global,
                                  /* parent prototype JSObject* for

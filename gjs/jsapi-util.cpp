@@ -181,7 +181,7 @@ gjs_object_require_property(JSContext             *context,
 {
     value.setUndefined();
 
-    if (G_UNLIKELY(!JS_GetPropertyById(context, obj, property_name, value.address())))
+    if (G_UNLIKELY(!JS_GetPropertyById(context, obj, property_name, value)))
         return false;
 
     if (G_LIKELY(!value.isUndefined()))
@@ -200,7 +200,7 @@ gjs_object_require_property_value(JSContext       *cx,
                                   bool            *value)
 {
     JS::RootedValue prop_value(cx);
-    if (JS_GetPropertyById(cx, obj, property_name, prop_value.address()) &&
+    if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
         prop_value.isBoolean()) {
         *value = prop_value.toBoolean();
         return true;
@@ -219,7 +219,7 @@ gjs_object_require_property_value(JSContext       *cx,
                                   int32_t         *value)
 {
     JS::RootedValue prop_value(cx);
-    if (JS_GetPropertyById(cx, obj, property_name, prop_value.address()) &&
+    if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
         prop_value.isInt32()) {
         *value = prop_value.toInt32();
         return true;
@@ -239,7 +239,7 @@ gjs_object_require_property_value(JSContext       *cx,
                                   char           **value)
 {
     JS::RootedValue prop_value(cx);
-    if (JS_GetPropertyById(cx, obj, property_name, prop_value.address()) &&
+    if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
         gjs_string_to_utf8(cx, prop_value, value)) {
         return true;
     }
@@ -257,7 +257,7 @@ gjs_object_require_property_value(JSContext              *cx,
                                   JS::MutableHandleObject value)
 {
     JS::RootedValue prop_value(cx);
-    if (JS_GetPropertyById(cx, obj, property_name, prop_value.address()) &&
+    if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
         prop_value.isObject()) {
         value.set(&prop_value.toObject());
         return true;
@@ -276,7 +276,7 @@ gjs_object_require_converted_property_value(JSContext       *cx,
                                             uint32_t        *value)
 {
     JS::RootedValue prop_value(cx);
-    if (JS_GetPropertyById(cx, obj, property_name, prop_value.address()) &&
+    if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
         JS::ToUint32(cx, prop_value, value)) {
         return true;
     }
@@ -630,7 +630,7 @@ gjs_log_exception(JSContext  *context)
     JS_BeginRequest(context);
 
     JS::RootedValue exc(context);
-    if (!JS_GetPendingException(context, exc.address()))
+    if (!JS_GetPendingException(context, &exc))
         goto out;
 
     JS_ClearPendingException(context);
@@ -878,7 +878,7 @@ gjs_eval_with_scope(JSContext             *context,
            .setFileAndLine(filename, start_line_number)
            .setSourcePolicy(JS::CompileOptions::LAZY_SOURCE);
 
-    if (!JS::Evaluate(context, eval_obj, options, script, script_len, retval.address()))
+    if (!JS::Evaluate(context, eval_obj, options, script, script_len, retval))
         return false;
 
     gjs_schedule_gc_if_needed(context);

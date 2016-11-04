@@ -86,9 +86,9 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
       if (!array)                                                          \
         return false;                                                      \
       JS::RootedValue r(context, JS::NumberValue(arg1));                   \
-      if (!JS_SetElement(context, array, 0, r.address())) return false;    \
+      if (!JS_SetElement(context, array, 0, r)) return false;              \
       r.setNumber(arg2);                                                   \
-      if (!JS_SetElement(context, array, 1, r.address())) return false;    \
+      if (!JS_SetElement(context, array, 1, r)) return false;              \
       argv.rval().setObject(*array);                                       \
     }                                                                      \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
@@ -104,9 +104,9 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
       if (!array)                                                          \
         return false;                                                      \
       JS::RootedValue r(context, JS::NumberValue(arg1));                   \
-      if (!JS_SetElement(context, array, 0, r.address())) return false;    \
+      if (!JS_SetElement(context, array, 0, r)) return false;              \
       r.setNumber(arg2);                                                   \
-      if (!JS_SetElement(context, array, 1, r.address())) return false;    \
+      if (!JS_SetElement(context, array, 1, r)) return false;              \
       argv.rval().setObject(*array);                                       \
     }                                                                      \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
@@ -122,13 +122,13 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
       if (!array)                                                          \
         return false;                                                      \
       JS::RootedValue r(context, JS::NumberValue(arg1));                   \
-      if (!JS_SetElement(context, array, 0, r.address())) return false;    \
+      if (!JS_SetElement(context, array, 0, r)) return false;              \
       r.setNumber(arg2);                                                   \
-      if (!JS_SetElement(context, array, 1, r.address())) return false;    \
+      if (!JS_SetElement(context, array, 1, r)) return false;              \
       r.setNumber(arg3);                                                   \
-      if (!JS_SetElement(context, array, 2, r.address())) return false;    \
+      if (!JS_SetElement(context, array, 2, r)) return false;              \
       r.setNumber(arg4);                                                   \
-      if (!JS_SetElement(context, array, 3, r.address())) return false;    \
+      if (!JS_SetElement(context, array, 3, r)) return false;              \
       argv.rval().setObject(*array);                                       \
     }                                                                      \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
@@ -558,7 +558,7 @@ setDash_func(JSContext *context,
         double b;
 
         elem.setUndefined();
-        if (!JS_GetElement(context, dashes, i, elem.address())) {
+        if (!JS_GetElement(context, dashes, i, &elem)) {
             return false;
         }
         if (elem.isUndefined())

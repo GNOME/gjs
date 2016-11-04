@@ -85,7 +85,7 @@ gjs_throw_valist(JSContext       *context,
         goto out;
     }
 
-    if (!JS_GetProperty(context, global, error_class, v_constructor.address()) ||
+    if (!JS_GetProperty(context, global, error_class, &v_constructor) ||
         !v_constructor.isObject()) {
         JS_ReportError(context, "??? Missing Error constructor in global object?");
         goto out;

@@ -287,7 +287,7 @@ gjs_array_to_g_list(JSContext   *context,
         GArgument elem_arg = { 0 };
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array, i, elem.address())) {
+        if (!JS_GetElement(context, array, i, &elem)) {
             gjs_throw(context,
                       "Missing array element %u",
                       i);
@@ -512,14 +512,14 @@ gjs_object_to_g_hash(JSContext   *context,
         gpointer key_ptr, val_ptr;
         GIArgument val_arg = { 0 };
 
-        if (!JS_IdToValue(context, cur_id, key_js.address()))
+        if (!JS_IdToValue(context, cur_id, &key_js))
             goto free_hash_and_fail;
 
         /* Type check key type. */
         if (!value_to_ghashtable_key(context, key_js, key_param_info, &key_ptr))
             goto free_hash_and_fail;
 
-        if (!JS_GetPropertyById(context, props, cur_id, val_js.address()))
+        if (!JS_GetPropertyById(context, props, cur_id, &val_js))
             goto free_hash_and_fail;
 
         /* Type check and convert value to a c type */
@@ -602,7 +602,7 @@ gjs_array_to_strv(JSContext   *context,
 
     for (i = 0; i < length; ++i) {
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array, i, elem.address())) {
+        if (!JS_GetElement(context, array, i, &elem)) {
             g_free(result);
             gjs_throw(context,
                       "Missing array element %u",
@@ -684,7 +684,7 @@ gjs_array_to_gboolean_array(JSContext      *cx,
     gboolean *result = g_new0(gboolean, length);
 
     for (i = 0; i < length; i++) {
-        if (!JS_GetElement(cx, array, i, elem.address())) {
+        if (!JS_GetElement(cx, array, i, &elem)) {
             g_free(result);
             gjs_throw(cx, "Missing array element %u", i);
             return false;
@@ -719,7 +719,7 @@ gjs_array_to_intarray(JSContext   *context,
         bool success;
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array, i, elem.address())) {
+        if (!JS_GetElement(context, array, i, &elem)) {
             g_free(result);
             gjs_throw(context,
                       "Missing array element %u",
@@ -776,7 +776,7 @@ gjs_gtypearray_to_array(JSContext   *context,
         GType gtype;
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array, i, elem.address())) {
+        if (!JS_GetElement(context, array, i, &elem)) {
             g_free(result);
             gjs_throw(context, "Missing array element %u", i);
             return false;
@@ -823,7 +823,7 @@ gjs_array_to_floatarray(JSContext   *context,
         bool success;
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array, i, elem.address())) {
+        if (!JS_GetElement(context, array, i, &elem)) {
             g_free(result);
             gjs_throw(context,
                       "Missing array element %u",
@@ -879,7 +879,7 @@ gjs_array_to_ptrarray(JSContext   *context,
         bool success;
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array_obj, i, elem.address())) {
+        if (!JS_GetElement(context, array_obj, i, &elem)) {
             g_free(array);
             gjs_throw(context,
                       "Missing array element %u",
@@ -925,7 +925,7 @@ gjs_array_to_flat_gvalue_array(JSContext   *context,
     for (i = 0; i < length; i ++) {
         elem = JS::UndefinedValue();
 
-        if (!JS_GetElement(context, array, i, elem.address())) {
+        if (!JS_GetElement(context, array, i, &elem)) {
             g_free(values);
             gjs_throw(context,
                       "Missing array element %u",

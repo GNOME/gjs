@@ -431,7 +431,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
                         "boxed constructor, obj %p priv %p",
                         object.get(), priv);
 
-    JS_GetPrototype(context, object, proto.address());
+    JS_GetPrototype(context, object, &proto);
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED, "boxed instance __proto__ is %p",
                         proto.get());
     /* If we're the prototype, then post-construct we'll fill in priv->info.

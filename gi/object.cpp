@@ -247,7 +247,7 @@ proto_priv_from_js(JSContext       *context,
                    JS::HandleObject obj)
 {
     JS::RootedObject proto(context);
-    JS_GetPrototype(context, obj, proto.address());
+    JS_GetPrototype(context, obj, &proto);
     return priv_from_js(context, proto);
 }
 
@@ -1456,7 +1456,7 @@ gjs_lookup_object_constructor_from_info(JSContext    *context,
         return NULL;
 
     JS::RootedValue value(context);
-    if (!JS_GetProperty(context, in_object, constructor_name, value.address()))
+    if (!JS_GetProperty(context, in_object, constructor_name, &value))
         return NULL;
 
     JS::RootedObject constructor(context);
@@ -2347,7 +2347,7 @@ gjs_object_get_gproperty (GObject    *object,
     JS::RootedValue jsvalue(context);
 
     underscore_name = hyphen_to_underscore((gchar *)pspec->name);
-    if (!JS_GetProperty(context, js_obj, underscore_name, jsvalue.address()) ||
+    if (!JS_GetProperty(context, js_obj, underscore_name, &jsvalue) ||
         !gjs_value_to_g_value(context, jsvalue, value))
         gjs_log_exception(context);
     g_free (underscore_name);
@@ -2366,7 +2366,7 @@ jsobj_set_gproperty(JSContext       *context,
         return;
 
     underscore_name = hyphen_to_underscore((gchar *)pspec->name);
-    if (!JS_SetProperty(context, object, underscore_name, jsvalue.address()))
+    if (!JS_SetProperty(context, object, underscore_name, jsvalue))
         gjs_log_exception(context);
     g_free (underscore_name);
 }
@@ -2601,7 +2601,7 @@ gjs_object_custom_init(GTypeInstance *instance,
 
     JS::RootedValue r(context);
     if (!JS_CallFunctionValue(context, object, v,
-                              JS::HandleValueArray::empty(), r.address()))
+                              JS::HandleValueArray::empty(), &r))
         gjs_log_exception(context);
 }
 
@@ -2660,7 +2660,7 @@ get_interface_gtypes(JSContext       *cx,
         JS::RootedValue iface_val(cx);
         GType iface_type;
 
-        if (!JS_GetElement(cx, interfaces, i, &iface_val.get()))
+        if (!JS_GetElement(cx, interfaces, i, &iface_val))
             return false;
 
         if (!iface_val.isObject()) {
@@ -2695,7 +2695,7 @@ save_properties_for_class_init(JSContext       *cx,
     for (i = 0; i < n_properties; i++) {
         JS::RootedValue prop_val(cx);
 
-        if (!JS_GetElement(cx, properties, i, &prop_val.get())) {
+        if (!JS_GetElement(cx, properties, i, &prop_val)) {
             g_clear_pointer(&properties_native, g_ptr_array_unref);
             return false;
         }
@@ -2957,7 +2957,7 @@ gjs_signal_new(JSContext *cx,
     params = g_newa(GType, n_parameters);
     JS::RootedValue gtype_val(cx);
     for (i = 0; i < n_parameters; i++) {
-        if (!JS_GetElement(cx, params_obj, i, gtype_val.address()) ||
+        if (!JS_GetElement(cx, params_obj, i, &gtype_val) ||
             !gtype_val.isObject()) {
             gjs_throw(cx, "Invalid signal parameter number %d", i);
             return false;

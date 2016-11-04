@@ -766,7 +766,7 @@ gjs_object_get_property_const(JSContext             *cx,
                               JS::MutableHandleValue value_p)
 {
     JS::RootedId pname(cx, gjs_context_get_const_string(cx, property_name));
-    return JS_GetPropertyById(cx, obj, pname, value_p.address());
+    return JS_GetPropertyById(cx, obj, pname, value_p);
 }
 
 /**

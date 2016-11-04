@@ -198,7 +198,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
                         "union constructor, obj %p priv %p",
                         object.get(), priv);
 
-    JS_GetPrototype(context, object, proto.address());
+    JS_GetPrototype(context, object, &proto);
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED, "union instance __proto__ is %p",
                         proto.get());
 

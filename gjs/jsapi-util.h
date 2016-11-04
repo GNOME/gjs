@@ -206,7 +206,7 @@ gjs_##cname##_create_proto(JSContext *context,                                 \
     JS::RootedObject global(context, gjs_get_import_global(context));          \
     JS::RootedId class_name(context,                                           \
         gjs_intern_string_to_id(context, gjs_##cname##_class.name));           \
-    if (!JS_GetPropertyById(context, global, class_name, rval.address()))      \
+    if (!JS_GetPropertyById(context, global, class_name, &rval))               \
         return JS::NullValue(); \
     if (rval.isUndefined()) { \
         JS::RootedObject prototype(context,                                    \

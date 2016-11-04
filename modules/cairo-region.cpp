@@ -152,16 +152,16 @@ make_rectangle(JSContext *context,
     JS::RootedValue val(context);
 
     val = JS::Int32Value(rect->x);
-    JS_SetProperty(context, rect_obj, "x", val.address());
+    JS_SetProperty(context, rect_obj, "x", val);
 
     val = JS::Int32Value(rect->y);
-    JS_SetProperty(context, rect_obj, "y", val.address());
+    JS_SetProperty(context, rect_obj, "y", val);
 
     val = JS::Int32Value(rect->width);
-    JS_SetProperty(context, rect_obj, "width", val.address());
+    JS_SetProperty(context, rect_obj, "width", val);
 
     val = JS::Int32Value(rect->height);
-    JS_SetProperty(context, rect_obj, "height", val.address());
+    JS_SetProperty(context, rect_obj, "height", val);
 
     return rect_obj;
 }

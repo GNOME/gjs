@@ -160,12 +160,12 @@ _gjs_gtype_get_actual_gtype(JSContext       *context,
 
     /* OK, we don't have a GType wrapper object -- grab the "$gtype"
      * property on that and hope it's a GType wrapper object */
-    if (!JS_GetProperty(context, object, "$gtype", gtype_val.address()) ||
+    if (!JS_GetProperty(context, object, "$gtype", &gtype_val) ||
         !gtype_val.isObject()) {
 
         /* OK, so we're not a class. But maybe we're an instance. Check
            for "constructor" and recurse on that. */
-        if (!JS_GetProperty(context, object, "constructor", gtype_val.address()))
+        if (!JS_GetProperty(context, object, "constructor", &gtype_val))
             return G_TYPE_INVALID;
     }
 

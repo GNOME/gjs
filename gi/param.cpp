@@ -180,7 +180,7 @@ gjs_lookup_param_prototype(JSContext    *context)
         return NULL;
 
     JS::RootedValue value(context);
-    if (!JS_GetProperty(context, in_object, "ParamSpec", value.address()))
+    if (!JS_GetProperty(context, in_object, "ParamSpec", &value))
         return NULL;
 
     if (G_UNLIKELY (!value.isObject()))

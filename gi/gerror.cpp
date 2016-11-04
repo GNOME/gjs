@@ -76,7 +76,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
                         object.get(), priv);
 
     JS::RootedObject proto(context);
-    JS_GetPrototype(context, object, proto.address());
+    JS_GetPrototype(context, object, &proto);
     gjs_debug_lifecycle(GJS_DEBUG_GERROR, "GError instance __proto__ is %p",
                         proto.get());
 

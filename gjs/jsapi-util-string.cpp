@@ -313,7 +313,7 @@ gjs_get_string_id (JSContext       *context,
 {
     JS::RootedValue id_val(context);
 
-    if (!JS_IdToValue(context, id, id_val.address()))
+    if (!JS_IdToValue(context, id, &id_val))
         return false;
 
     if (id_val.isString()) {

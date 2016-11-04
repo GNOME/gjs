@@ -200,7 +200,7 @@ byte_array_get_prop(JSContext *context,
         return true; /* prototype, not an instance. */
 
     JS::RootedValue id_value(context);
-    if (!JS_IdToValue(context, id, id_value.address()))
+    if (!JS_IdToValue(context, id, &id_value))
         return false;
 
     /* First handle array indexing */
@@ -307,7 +307,7 @@ byte_array_set_prop(JSContext *context,
         return true; /* prototype, not an instance. */
 
     JS::RootedValue id_value(context);
-    if (!JS_IdToValue(context, id, id_value.address()))
+    if (!JS_IdToValue(context, id, &id_value))
         return false;
 
     /* First handle array indexing */
@@ -679,7 +679,7 @@ from_array_func(JSContext *context,
         guint8 b;
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array_obj, i, elem.address())) {
+        if (!JS_GetElement(context, array_obj, i, &elem)) {
             /* this means there was an exception, while elem.isUndefined()
              * means no element found
              */

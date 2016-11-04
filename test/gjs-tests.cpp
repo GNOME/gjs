@@ -87,11 +87,11 @@ gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture *fx,
 
     g_assert(JS_IsExceptionPending(fx->cx));
 
-    JS_GetPendingException(fx->cx, exc.address());
+    JS_GetPendingException(fx->cx, &exc);
     g_assert(!exc.isUndefined());
 
     JS::RootedObject exc_obj(fx->cx, &exc.toObject());
-    JS_GetProperty(fx->cx, exc_obj, "message", value.address());
+    JS_GetProperty(fx->cx, exc_obj, "message", &value);
 
     g_assert(value.isString());
 
@@ -117,7 +117,7 @@ gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture *fx,
     g_assert(JS_IsExceptionPending(fx->cx));
 
     exc = JS::UndefinedValue();
-    JS_GetPendingException(fx->cx, exc.address());
+    JS_GetPendingException(fx->cx, &exc);
     g_assert(!exc.isUndefined());
     g_assert(&exc.toObject() == &previous.toObject());
 }

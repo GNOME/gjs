@@ -131,7 +131,7 @@ proto_priv_from_js(JSContext       *context,
                    JS::HandleObject obj)
 {
     JS::RootedObject proto(context);
-    JS_GetPrototype(context, obj, proto.address());
+    JS_GetPrototype(context, obj, &proto);
     return (Fundamental*) priv_from_js(context, proto);
 }
 
@@ -582,7 +582,7 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
         return NULL;
 
     JS::RootedValue value(context);
-    if (!JS_GetProperty(context, in_object, constructor_name, value.address()))
+    if (!JS_GetProperty(context, in_object, constructor_name, &value))
         return NULL;
 
     JS::RootedObject constructor(context);

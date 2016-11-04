@@ -159,7 +159,7 @@ seal_import(JSContext       *cx,
      * practice this will always be an own property because we defined it in
      * define_import(). */
     if (!JS_GetPropertyDescriptorById(cx, obj, prop_id, 0 /* flags */,
-                                      descr.address()) ||
+                                      &descr) ||
         descr.object() == NULL) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to get attributes to seal '%s' in importer",
@@ -306,10 +306,8 @@ load_module_init(JSContext       *context,
         gjs_context_get_const_string(context, GJS_STRING_MODULE_INIT));
     if (JS_HasPropertyById(context, in_object, module_init_name, &found) && found) {
         JS::RootedValue module_obj_val(context);
-        if (JS_GetPropertyById(context,
-                               in_object,
-                               module_init_name,
-                               module_obj_val.address())) {
+        if (JS_GetPropertyById(context, in_object,
+                               module_init_name, &module_obj_val)) {
             return &module_obj_val.toObject();
         }
     }
@@ -459,7 +457,7 @@ do_import(JSContext       *context,
 
     for (i = 0; i < search_path_len; ++i) {
         elem.setUndefined();
-        if (!JS_GetElement(context, search_path, i, elem.address())) {
+        if (!JS_GetElement(context, search_path, i, &elem)) {
             /* this means there was an exception, while elem.isUndefined()
              * means no element found
              */
@@ -493,10 +491,7 @@ do_import(JSContext       *context,
         module_obj.set(load_module_init(context, obj, full_path));
         if (module_obj != NULL) {
             JS::RootedValue obj_val(context);
-            if (JS_GetProperty(context,
-                               module_obj,
-                               name,
-                               obj_val.address())) {
+            if (JS_GetProperty(context, module_obj, name, &obj_val)) {
                 if (!obj_val.isUndefined() &&
                     JS_DefineProperty(context, obj, name, obj_val,
                                       GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT)) {
@@ -696,7 +691,7 @@ importer_new_enumerate(JSContext  *context,
             GDir *dir = NULL;
 
             elem = JS::UndefinedValue();
-            if (!JS_GetElement(context, search_path, i, elem.address())) {
+            if (!JS_GetElement(context, search_path, i, &elem)) {
                 /* this means there was an exception, while elem.isUndefined()
                  * means no element found
                  */
@@ -784,7 +779,7 @@ importer_new_enumerate(JSContext  *context,
                                          &element_val))
                 return false;
 
-            if (!JS_ValueToId(context, element_val, idp.address()))
+            if (!JS_ValueToId(context, element_val, idp))
                 return false;
 
             break;

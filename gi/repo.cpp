@@ -130,8 +130,7 @@ resolve_namespace_object(JSContext       *context,
     if (!override.isNull() &&
         !JS_CallFunctionValue (context, gi_namespace, /* thisp */
                                override, /* callee */
-                               JS::HandleValueArray::empty(),
-                               result.address()))
+                               JS::HandleValueArray::empty(), &result))
         return false;
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
@@ -308,7 +307,7 @@ repo_new(JSContext *context)
      */
     {
         JS::RootedValue value(context);
-        JS_GetProperty(context, repo, "GLib", value.address());
+        JS_GetProperty(context, repo, "GLib", &value);
     }
 
     return repo;
@@ -740,7 +739,7 @@ gjs_lookup_generic_constructor(JSContext  *context,
         return NULL;
 
     JS::RootedValue value(context);
-    if (!JS_GetProperty(context, in_object, constructor_name, value.address()))
+    if (!JS_GetProperty(context, in_object, constructor_name, &value))
         return NULL;
 
     if (G_UNLIKELY (!value.isObject()))

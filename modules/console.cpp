@@ -195,11 +195,11 @@ gjs_console_interact(JSContext *context,
         JS::CompileOptions options(context);
         options.setUTF8(true)
                .setFileAndLine("typein", startline);
-        JS::Evaluate(context, object, options, buffer->str, buffer->len, result.address());
+        JS::Evaluate(context, object, options, buffer->str, buffer->len, &result);
 
         gjs_schedule_gc_if_needed(context);
 
-        if (JS_GetPendingException(context, result.address())) {
+        if (JS_GetPendingException(context, &result)) {
             str = JS_ValueToString(context, result);
             JS_ClearPendingException(context);
         } else if (result.isUndefined()) {
