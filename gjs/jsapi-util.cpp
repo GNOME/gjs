@@ -859,7 +859,7 @@ gjs_eval_with_scope(JSContext             *context,
 
     JS::RootedObject eval_obj(context, object);
     if (!eval_obj)
-        eval_obj = JS_NewObject(context, NULL, NULL, NULL);
+        eval_obj = JS_NewObject(context, NULL, JS::NullPtr(), JS::NullPtr());
 
     JS::CompileOptions options(context);
     options.setUTF8(true)

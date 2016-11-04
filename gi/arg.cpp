@@ -2555,7 +2555,8 @@ gjs_object_from_g_hash (JSContext             *context,
         return true;
     }
 
-    JS::RootedObject obj(context, JS_NewObject(context, NULL, NULL, NULL));
+    JS::RootedObject obj(context,
+        JS_NewObject(context, NULL, JS::NullPtr(), JS::NullPtr()));
     if (obj == NULL)
         return false;
 

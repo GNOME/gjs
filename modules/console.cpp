@@ -233,7 +233,7 @@ bool
 gjs_define_console_stuff(JSContext              *context,
                          JS::MutableHandleObject module)
 {
-    module.set(JS_NewObject(context, NULL, NULL, NULL));
+    module.set(JS_NewObject(context, NULL, JS::NullPtr(), JS::NullPtr()));
     return JS_DefineFunction(context, module, "interact", gjs_console_interact,
                              1, GJS_MODULE_PROP_FLAGS);
 }

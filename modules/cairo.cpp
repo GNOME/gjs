@@ -63,7 +63,7 @@ gjs_js_define_cairo_stuff(JSContext              *context,
     JS::RootedObject surface_proto(context), pattern_proto(context),
         gradient_proto(context);
 
-    module.set(JS_NewObject(context, NULL, NULL, NULL));
+    module.set(JS_NewObject(context, NULL, JS::NullPtr(), JS::NullPtr()));
 
     obj = gjs_cairo_region_create_proto(context, module,
                                         "Region", JS::NullPtr());

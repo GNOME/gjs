@@ -207,7 +207,7 @@ ns_new(JSContext    *context,
                                   * prototype; NULL for
                                   * Object.prototype
                                   */
-                                 NULL,
+                                 JS::NullPtr(),
                                  &gjs_ns_class,
                                  /* constructor for instances (NULL for
                                   * none - just name the prototype like
@@ -231,7 +231,8 @@ ns_new(JSContext    *context,
                   gjs_ns_class.name, prototype);
     }
 
-    JS::RootedObject ns(context, JS_NewObject(context, &gjs_ns_class, NULL, global));
+    JS::RootedObject ns(context, JS_NewObject(context, &gjs_ns_class,
+                                              JS::NullPtr(), global));
     if (ns == NULL)
         g_error("No memory to create ns object");
 

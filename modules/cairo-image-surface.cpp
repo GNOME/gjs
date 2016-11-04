@@ -88,7 +88,7 @@ createFromPNG_func(JSContext *context,
         return false;
 
     JS::RootedObject surface_wrapper(context,
-                                     JS_NewObject(context, &gjs_cairo_image_surface_class, NULL, NULL));
+        JS_NewObject(context, &gjs_cairo_image_surface_class, JS::NullPtr(), JS::NullPtr()));
     if (!surface_wrapper) {
         gjs_throw(context, "failed to create surface");
         return false;
@@ -215,7 +215,7 @@ gjs_cairo_image_surface_from_surface(JSContext       *context,
     g_return_val_if_fail(cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_IMAGE, NULL);
 
     JS::RootedObject object(context,
-                            JS_NewObject(context, &gjs_cairo_image_surface_class, NULL, NULL));
+        JS_NewObject(context, &gjs_cairo_image_surface_class, JS::NullPtr(), JS::NullPtr()));
     if (!object) {
         gjs_throw(context, "failed to create image surface");
         return NULL;

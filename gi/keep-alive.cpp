@@ -207,7 +207,7 @@ gjs_keep_alive_new(JSContext *context)
                                   * prototype; NULL for
                                   * Object.prototype
                                   */
-                                 NULL,
+                                 JS::NullPtr(),
                                  &gjs_keep_alive_class,
                                  /* constructor for instances (NULL for
                                   * none - just name the prototype like
@@ -236,7 +236,7 @@ gjs_keep_alive_new(JSContext *context)
               context, global.get());
 
     JS::RootedObject keep_alive(context,
-                                JS_NewObject(context, &gjs_keep_alive_class, NULL, global));
+        JS_NewObject(context, &gjs_keep_alive_class, JS::NullPtr(), global));
     if (keep_alive == NULL) {
         gjs_log_exception(context);
         g_error("Failed to create keep_alive object");

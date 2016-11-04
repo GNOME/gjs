@@ -248,13 +248,13 @@ import_native_file(JSContext       *context,
 
     JS::RootedValue v_module(context, JS::ObjectValue(*module_obj));
     return JS_DefineProperty(context, obj, name, v_module,
-                             NULL, NULL, GJS_MODULE_PROP_FLAGS);
+                             GJS_MODULE_PROP_FLAGS);
 }
 
 static JSObject *
 create_module_object(JSContext *context)
 {
-    return JS_NewObject(context, NULL, NULL, NULL);
+    return JS_NewObject(context, NULL, JS::NullPtr(), JS::NullPtr());
 }
 
 static bool
@@ -939,7 +939,7 @@ importer_new(JSContext *context,
                                   * prototype; NULL for
                                   * Object.prototype
                                   */
-                                 NULL,
+                                 JS::NullPtr(),
                                  &gjs_importer_class,
                                  /* constructor for instances (NULL for
                                   * none - just name the prototype like
@@ -964,7 +964,7 @@ importer_new(JSContext *context,
     }
 
     JS::RootedObject importer(context,
-        JS_NewObject(context, &gjs_importer_class, NULL, global));
+        JS_NewObject(context, &gjs_importer_class, JS::NullPtr(), global));
     if (importer == NULL)
         g_error("No memory to create importer importer");
 

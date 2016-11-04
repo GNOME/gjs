@@ -133,7 +133,8 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
     if (object != NULL)
         goto out;
 
-    object = JS_NewObjectWithGivenProto(context, &gjs_gtype_class, proto, NULL);
+    object = JS_NewObjectWithGivenProto(context, &gjs_gtype_class, proto,
+                                        JS::NullPtr());
     if (object == NULL)
         goto out;
 

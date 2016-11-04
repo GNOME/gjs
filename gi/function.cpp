@@ -1694,7 +1694,7 @@ function_new(JSContext      *context,
     }
 
     JS::RootedObject function(context,
-                              JS_NewObject(context, &gjs_function_class, NULL, global));
+        JS_NewObject(context, &gjs_function_class, JS::NullPtr(), global));
     if (function == NULL) {
         gjs_debug(GJS_DEBUG_GFUNCTION, "Failed to construct function");
         return NULL;
