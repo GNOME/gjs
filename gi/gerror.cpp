@@ -285,8 +285,7 @@ struct JSClass gjs_error_class = {
     JS_EnumerateStub,
     JS_ResolveStub,
     JS_ConvertStub,
-    error_finalize,
-    JSCLASS_NO_OPTIONAL_MEMBERS
+    error_finalize
 };
 
 /* We need to shadow all fields of GError, to prevent calling the getter from GBoxed

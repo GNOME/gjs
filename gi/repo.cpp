@@ -228,8 +228,7 @@ struct JSClass gjs_repo_class = {
     JS_EnumerateStub,
     (JSResolveOp) repo_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,
-    repo_finalize,
-    JSCLASS_NO_OPTIONAL_MEMBERS
+    repo_finalize
 };
 
 JSPropertySpec gjs_repo_proto_props[] = {

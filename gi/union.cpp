@@ -305,8 +305,7 @@ struct JSClass gjs_union_class = {
     JS_EnumerateStub,
     (JSResolveOp) union_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,
-    union_finalize,
-    JSCLASS_NO_OPTIONAL_MEMBERS
+    union_finalize
 };
 
 JSPropertySpec gjs_union_proto_props[] = {

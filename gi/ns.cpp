@@ -175,8 +175,7 @@ struct JSClass gjs_ns_class = {
     JS_EnumerateStub,
     (JSResolveOp) ns_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,
-    ns_finalize,
-    JSCLASS_NO_OPTIONAL_MEMBERS
+    ns_finalize
 };
 
 JSPropertySpec gjs_ns_proto_props[] = {

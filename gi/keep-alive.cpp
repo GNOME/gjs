@@ -160,7 +160,6 @@ struct JSClass gjs_keep_alive_class = {
     NULL,
     NULL,
     NULL,
-    NULL,
     keep_alive_trace,
 };
 

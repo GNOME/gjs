@@ -163,8 +163,7 @@ struct JSClass gjs_param_class = {
     JS_EnumerateStub,
     (JSResolveOp) param_new_resolve,
     JS_ConvertStub,
-    param_finalize,
-    JSCLASS_NO_OPTIONAL_MEMBERS
+    param_finalize
 };
 
 JSPropertySpec gjs_param_proto_props[] = {

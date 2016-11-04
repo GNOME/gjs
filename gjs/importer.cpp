@@ -908,8 +908,7 @@ struct JSClass gjs_importer_class = {
     (JSEnumerateOp) importer_new_enumerate, /* needs cast since it's the new enumerate signature */
     (JSResolveOp) importer_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,
-    importer_finalize,
-    JSCLASS_NO_OPTIONAL_MEMBERS
+    importer_finalize
 };
 
 JSPropertySpec gjs_importer_proto_props[] = {

@@ -921,7 +921,6 @@ struct JSClass gjs_boxed_class = {
     (JSResolveOp) boxed_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,
     boxed_finalize,
-    NULL,  /* checkAccess */
     NULL,  /* call */
     NULL,  /* hasInstance */
     NULL,  /* construct */

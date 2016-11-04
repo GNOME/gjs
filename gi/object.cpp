@@ -1774,7 +1774,6 @@ struct JSClass gjs_object_instance_class = {
     NULL,
     NULL,
     NULL,
-    NULL,
     object_instance_trace,
     
 };

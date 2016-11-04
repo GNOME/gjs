@@ -195,8 +195,7 @@ static struct JSClass gjs_##cname##_class = { \
     JS_EnumerateStub,\
     (JSResolveOp) gjs_##cname##_new_resolve, \
     JS_ConvertStub, \
-    gjs_##cname##_finalize, \
-    JSCLASS_NO_OPTIONAL_MEMBERS \
+    gjs_##cname##_finalize                                                     \
 }; \
 JS::Value                                                                      \
 gjs_##cname##_create_proto(JSContext *context,                                 \

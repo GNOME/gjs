@@ -556,7 +556,6 @@ struct JSClass gjs_fundamental_instance_class = {
     (JSResolveOp) fundamental_instance_new_resolve, /* needs cast since it's the new resolve signature */
     JS_ConvertStub,
     fundamental_finalize,
-    NULL,  /* checkAccess */
     NULL,  /* call */
     NULL,  /* hasInstance */
     NULL,  /* construct */

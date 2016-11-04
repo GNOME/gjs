@@ -1476,9 +1476,7 @@ struct JSClass gjs_function_class = {
     JS_ResolveStub,
     JS_ConvertStub,
     function_finalize,
-    NULL,
-    function_call,
-    NULL, NULL, NULL
+    function_call
 };
 
 JSPropertySpec gjs_function_proto_props[] = {
