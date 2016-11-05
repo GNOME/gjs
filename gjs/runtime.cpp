@@ -222,6 +222,24 @@ gjs_finalize_callback(JSFreeOp         *fop,
     data->in_gc_sweep = false;
 }
 
+class GjsInit {
+public:
+    GjsInit() {
+        if (!JS_Init())
+            g_error("Could not initialize Javascript");
+    }
+
+    ~GjsInit() {
+        JS_ShutDown();
+    }
+
+    operator bool() {
+        return true;
+    }
+};
+
+static GjsInit gjs_is_inited;
+
 JSRuntime *
 gjs_runtime_for_current_thread(void)
 {
@@ -229,6 +247,7 @@ gjs_runtime_for_current_thread(void)
     RuntimeData *data;
 
     if (!runtime) {
+        g_assert(gjs_is_inited);
         runtime = JS_NewRuntime(32*1024*1024 /* max bytes */, JS_USE_HELPER_THREADS);
         if (runtime == NULL)
             g_error("Failed to create javascript runtime");

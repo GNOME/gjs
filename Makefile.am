@@ -37,7 +37,9 @@ gjs_public_includedir = $(includedir)/gjs-1.0
 ########################################################################
 nobase_gjs_public_include_HEADERS =	\
 	gjs/context.h		\
-	gjs/gjs.h
+	gjs/gjs.h			\
+	util/error.h			\
+	$(NULL)
 
 ########################################################################
 pkgconfig_DATA = gjs-1.0.pc
@@ -96,7 +98,6 @@ libgjs_la_SOURCES =		\
 	modules/modules.cpp	\
 	modules/modules.h	\
 	util/error.cpp		\
-	util/error.h			\
 	util/hash-x32.cpp		\
 	util/hash-x32.h			\
 	util/glib.cpp		\

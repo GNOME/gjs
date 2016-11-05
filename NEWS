@@ -103,6 +103,23 @@ NEXT
   arguments into account for the time being, while still passing them on to the
   script. A warning will be logged if you are using the deprecated behaviour.
 
+- News for GJS embedders such as gnome-shell:
+
+  * New API: gjs_error_quark() is now exposed, and the error domain GJS_ERROR
+    and codes GJS_ERROR_FAILED and GJS_ERROR_SYSTEM_EXIT.
+
+  * Backwards-incompatible change: Calling System.exit() from JS code will now
+    not abort the program immediately, but instead will return immediately from
+    gjs_context_eval() so that you can unref your GjsContext before internal
+    resources are released on exit.
+
+    If gjs_context_eval() or gjs_context_eval_file() returns an error with code
+    GJS_ERROR_SYSTEM_EXIT, it means that the JS code called System.exit(). The
+    exit code will be found in the 'exit_status_p' out parameter to
+    gjs_context_eval() or gjs_context_eval_file(). If you receive this error,
+    you should do any cleanup needed and exit your program with the given exit
+    code.
+
 Version 1.46.0
 --------------
 

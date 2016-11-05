@@ -269,7 +269,6 @@ EXTRA_DIST +=						\
 	installed-tests/js/testCairo.js			\
 	installed-tests/js/testGtk.js			\
 	installed-tests/js/testGDBus.js			\
-	installed-tests/scripts/testSystemExit.js	\
 	$(NULL)
 
 ### TEST EXECUTION #####################################################

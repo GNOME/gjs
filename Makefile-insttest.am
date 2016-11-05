@@ -4,7 +4,7 @@ EXTRA_DIST += \
 	installed-tests/js/jsunit.gresources.xml	\
 	$(NULL)
 
-MAINTAINERCLEANFILES += jsunit.test testSystemExit.test
+MAINTAINERCLEANFILES += jsunit.test
 
 gjsinsttestdir = $(pkglibexecdir)/installed-tests
 installedtestmetadir = $(datadir)/installed-tests/gjs
@@ -22,9 +22,8 @@ if BUILDOPT_INSTALL_TESTS
 
 gjsinsttest_PROGRAMS += jsunit
 gjsinsttest_DATA += $(TEST_INTROSPECTION_TYPELIBS)
-installedtestmeta_DATA += jsunit.test testSystemExit.test
+installedtestmeta_DATA += jsunit.test
 jstests_DATA += $(common_jstests_files)
-jsscripttests_DATA += installed-tests/scripts/testSystemExit.js
 pkglib_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
 
 if ENABLE_CAIRO

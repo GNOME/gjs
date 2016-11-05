@@ -286,8 +286,8 @@ main(int argc, char **argv)
     /* evaluate the script */
     if (!gjs_context_eval(js_context, script, len,
                           filename, &code, &error)) {
-        code = 1;
-        g_printerr("%s\n", error->message);
+        if (!g_error_matches(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT))
+            g_printerr("%s\n", error->message);
         g_clear_error(&error);
         goto out;
     }

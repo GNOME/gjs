@@ -568,13 +568,20 @@ _gjs_context_exit(GjsContext *js_context,
     js_context->exit_code = exit_code;
 }
 
-bool
-_gjs_context_should_exit(GjsContext *js_context,
-                         uint8_t    *exit_code_p)
+static bool
+context_should_exit(GjsContext *js_context,
+                    uint8_t    *exit_code_p)
 {
     if (exit_code_p != NULL)
         *exit_code_p = js_context->exit_code;
     return js_context->should_exit;
+}
+
+static void
+context_reset_exit(GjsContext *js_context)
+{
+    js_context->should_exit = false;
+    js_context->exit_code = 0;
 }
 
 /**
@@ -671,14 +678,22 @@ gjs_context_eval(GjsContext   *js_context,
     if (!gjs_eval_with_scope(js_context->context, JS::NullPtr(), script,
                              script_len, filename, &retval)) {
         uint8_t code;
-        if (_gjs_context_should_exit(js_context, &code))
-            exit(code);
+        if (context_should_exit(js_context, &code)) {
+            /* exit_status_p is public API so can't be changed, but should be
+             * uint8_t, not int */
+            *exit_status_p = code;
+            g_set_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
+                        "Exit with code %d", code);
+            goto out;  /* Don't log anything */
+        }
 
         gjs_log_exception(js_context->context);
         g_set_error(error,
                     GJS_ERROR,
                     GJS_ERROR_FAILED,
                     "JS_EvaluateScript() failed");
+        /* No exit code from script, but we don't want to exit(0) */
+        *exit_status_p = 1;
         goto out;
     }
 
@@ -698,6 +713,7 @@ gjs_context_eval(GjsContext   *js_context,
 
  out:
     g_object_unref(G_OBJECT(js_context));
+    context_reset_exit(js_context);
     return ret;
 }
 

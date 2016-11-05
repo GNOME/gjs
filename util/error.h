@@ -32,7 +32,8 @@ GQuark gjs_error_quark(void);
 #define GJS_ERROR gjs_error_quark()
 
 typedef enum {
-    GJS_ERROR_FAILED
+    GJS_ERROR_FAILED,
+    GJS_ERROR_SYSTEM_EXIT,
 } GjsError;
 
 G_END_DECLS

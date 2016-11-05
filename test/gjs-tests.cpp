@@ -30,6 +30,7 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/jsapi-wrapper.h"
 #include "gjs-test-utils.h"
+#include "util/error.h"
 
 static void
 gjstest_test_func_gjs_context_construct_destroy(void)
@@ -57,6 +58,31 @@ gjstest_test_func_gjs_context_construct_eval(void)
     if (!gjs_context_eval (context, "1+1", -1, "<input>", &estatus, &error))
         g_error ("%s", error->message);
     g_object_unref (context);
+}
+
+static void
+gjstest_test_func_gjs_context_exit(void)
+{
+    GjsContext *context = gjs_context_new();
+    GError *error = NULL;
+    int status;
+
+    bool ok = gjs_context_eval(context, "imports.system.exit(0);", -1,
+                               "<input>", &status, &error);
+    g_assert_false(ok);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT);
+    g_assert_cmpuint(status, ==, 0);
+
+    g_clear_error(&error);
+
+    ok = gjs_context_eval(context, "imports.system.exit(42);", -1, "<input>",
+                          &status, &error);
+    g_assert_false(ok);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT);
+    g_assert_cmpuint(status, ==, 42);
+
+    g_clear_error(&error);
+    g_object_unref(context);
 }
 
 #define JS_CLASS "\
@@ -254,6 +280,7 @@ main(int    argc,
 
     g_test_add_func("/gjs/context/construct/destroy", gjstest_test_func_gjs_context_construct_destroy);
     g_test_add_func("/gjs/context/construct/eval", gjstest_test_func_gjs_context_construct_eval);
+    g_test_add_func("/gjs/context/exit", gjstest_test_func_gjs_context_exit);
     g_test_add_func("/gjs/gobject/js_defined_type", gjstest_test_func_gjs_gobject_js_defined_type);
     g_test_add_func("/gjs/jsutil/strip_shebang/no_shebang", gjstest_test_strip_shebang_no_advance_for_no_shebang);
     g_test_add_func("/gjs/jsutil/strip_shebang/have_shebang", gjstest_test_strip_shebang_advance_for_shebang);

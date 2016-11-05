@@ -53,6 +53,7 @@
 #include <glib/gprintf.h>
 
 #include "console.h"
+#include "gjs/context.h"
 #include "gjs/jsapi-private.h"
 #include "gjs/jsapi-wrapper.h"
 
@@ -195,7 +196,18 @@ gjs_console_interact(JSContext *context,
         JS::CompileOptions options(context);
         options.setUTF8(true)
                .setFileAndLine("typein", startline);
-        JS::Evaluate(context, object, options, buffer->str, buffer->len, &result);
+        if (!JS::Evaluate(context, object, options, buffer->str, buffer->len,
+                          &result)) {
+            /* If this was an uncatchable exception, throw another uncatchable
+             * exception on up to the surrounding JS::Evaluate() in main(). This
+             * happens when you run gjs-console and type imports.system.exit(0);
+             * at the prompt. If we don't throw another uncatchable exception
+             * here, then it's swallowed and main() won't exit. */
+            if (!JS_IsExceptionPending(context)) {
+                argv.rval().set(result);
+                return false;
+            }
+        }
 
         gjs_schedule_gc_if_needed(context);
 
