@@ -225,10 +225,9 @@ gjs_define_interface_class(JSContext              *context,
     if (priv->info)
         gjs_define_static_methods(context, constructor, priv->gtype, priv->info);
 
-    JS::RootedValue value(context,
-        JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, priv->gtype)));
-    JS_DefineProperty(context, constructor, "$gtype", value,
-                      NULL, NULL, JSPROP_PERMANENT);
+    JS::RootedObject gtype_obj(context,
+        gjs_gtype_create_gtype_wrapper(context, priv->gtype));
+    JS_DefineProperty(context, constructor, "$gtype", gtype_obj, JSPROP_PERMANENT);
 
     return true;
 }

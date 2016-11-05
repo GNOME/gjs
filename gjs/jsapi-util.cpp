@@ -332,12 +332,11 @@ gjs_define_string_array(JSContext       *context,
     JS::RootedObject array(context,
         gjs_build_string_array(context, array_length, (char **) array_values));
 
-    if (array != NULL) {
-        JS::RootedValue v_array(context, JS::ObjectValue(*array));
-        if (!JS_DefineProperty(context, in_object, array_name, v_array,
-                               NULL, NULL, attrs))
-            array = NULL;
-    }
+    if (array == NULL)
+        return NULL;
+
+    if (!JS_DefineProperty(context, in_object, array_name, array, attrs))
+        return NULL;
 
     return array;
 }

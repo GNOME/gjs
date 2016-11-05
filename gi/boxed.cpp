@@ -862,8 +862,8 @@ define_boxed_class_fields (JSContext       *context,
         bool result;
 
         result = JS_DefineProperty(context, proto, field_name, JS::NullHandleValue,
-                                   boxed_field_getter, boxed_field_setter,
-                                   JSPROP_PERMANENT | JSPROP_SHARED);
+                                   JSPROP_PERMANENT | JSPROP_SHARED,
+                                   boxed_field_getter, boxed_field_setter);
 
         g_base_info_unref ((GIBaseInfo *)field);
 
@@ -1174,10 +1174,10 @@ gjs_define_boxed_class(JSContext       *context,
     define_boxed_class_fields (context, priv, prototype);
     gjs_define_static_methods (context, constructor, priv->gtype, priv->info);
 
-    JS::RootedValue value(context,
-        JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, priv->gtype)));
-    JS_DefineProperty(context, constructor, "$gtype", value,
-                      NULL, NULL, JSPROP_PERMANENT);
+    JS::RootedObject gtype_obj(context,
+        gjs_gtype_create_gtype_wrapper(context, priv->gtype));
+    JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
+                      JSPROP_PERMANENT);
 }
 
 JSObject*

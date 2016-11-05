@@ -438,10 +438,7 @@ gjs_context_constructed(GObject *object)
 
     JSAutoCompartment ac(js_context->context, global);
 
-    JS::RootedValue v_global(js_context->context, JS::ObjectValue(*global));
-    if (!JS_DefineProperty(js_context->context, global,
-                           "window", v_global,
-                           NULL, NULL,
+    if (!JS_DefineProperty(js_context->context, global, "window", global,
                            JSPROP_READONLY | JSPROP_PERMANENT))
         g_error("No memory to export global object as 'window'");
 

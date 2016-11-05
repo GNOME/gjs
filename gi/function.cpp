@@ -1744,10 +1744,7 @@ gjs_define_function(JSContext       *context,
         g_assert_not_reached ();
     }
 
-    /* COMPAT: JS_DefineProperty is overloaded to take JS::HandleObject in 31 */
-    JS::RootedValue v_function(context, JS::ObjectValue(*function));
-    if (!JS_DefineProperty(context, in_object, name, v_function,
-                           NULL, NULL,
+    if (!JS_DefineProperty(context, in_object, name, function,
                            GJS_MODULE_PROP_FLAGS)) {
         gjs_debug(GJS_DEBUG_GFUNCTION, "Failed to define function");
         function = NULL;

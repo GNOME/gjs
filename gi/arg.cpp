@@ -2587,8 +2587,7 @@ gjs_object_from_g_hash (JSContext             *context,
                                        true))
             goto out;
 
-        if (!JS_DefineProperty(context, obj, keyutf8, valjs,
-                               NULL, NULL, JSPROP_ENUMERATE))
+        if (!JS_DefineProperty(context, obj, keyutf8, valjs, JSPROP_ENUMERATE))
             goto out;
 
         g_free(keyutf8);

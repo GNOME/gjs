@@ -120,9 +120,7 @@ resolve_namespace_object(JSContext       *context,
 
     /* Define the property early, to avoid reentrancy issues if
        the override module looks for namespaces that import this */
-    JS::RootedValue v_namespace(context, JS::ObjectValue(*gi_namespace));
-    if (!JS_DefineProperty(context, repo_obj, ns_name, v_namespace,
-                           NULL, NULL,
+    if (!JS_DefineProperty(context, repo_obj, ns_name, gi_namespace,
                            GJS_MODULE_PROP_FLAGS))
         g_error("no memory to define ns property");
 
@@ -356,7 +354,6 @@ gjs_define_constant(JSContext       *context,
 
     if (JS_DefineProperty(context, in_object,
                           name, value,
-                          NULL, NULL,
                           GJS_MODULE_PROP_FLAGS))
         ret = true;
 

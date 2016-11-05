@@ -71,10 +71,8 @@ define_meta_properties(JSContext       *context,
               module_name ? module_name : "<root>", parent_is_module);
 
     if (full_path != NULL) {
-        JS::RootedValue file_val(context,
-            JS::StringValue(JS_NewStringCopyZ(context, full_path)));
-        if (!JS_DefineProperty(context, module_obj, "__file__", file_val,
-                               NULL, NULL,
+        JS::RootedString file(context, JS_NewStringCopyZ(context, full_path));
+        if (!JS_DefineProperty(context, module_obj, "__file__", file,
                                /* don't set ENUMERATE since we wouldn't want to copy
                                 * this symbol to any other object for example.
                                 */
@@ -91,7 +89,6 @@ define_meta_properties(JSContext       *context,
 
     if (!JS_DefineProperty(context, module_obj,
                            "__moduleName__", module_name_val,
-                           NULL, NULL,
                            /* don't set ENUMERATE since we wouldn't want to copy
                             * this symbol to any other object for example.
                             */
@@ -100,7 +97,6 @@ define_meta_properties(JSContext       *context,
 
     if (!JS_DefineProperty(context, module_obj,
                            "__parentModule__", parent_module_val,
-                           NULL, NULL,
                            /* don't set ENUMERATE since we wouldn't want to copy
                             * this symbol to any other object for example.
                             */
@@ -136,9 +132,7 @@ define_import(JSContext       *context,
               JS::HandleObject module_obj,
               const char      *name)
 {
-    JS::RootedValue module_val(context, JS::ObjectValue(*module_obj));
-    if (!JS_DefineProperty(context, obj, name, module_val,
-                           NULL, NULL,
+    if (!JS_DefineProperty(context, obj, name, module_obj,
                            GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT)) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to define '%s' in importer",
@@ -177,8 +171,8 @@ seal_import(JSContext       *cx,
      * JS_DefineProperty that takes the JSPropertyDescriptor directly */
 
     if (!JS_DefineProperty(cx, descr.object(), name, descr.value(),
-                           descr.getter(), descr.setter(),
-                           descr.attributes() | JSPROP_PERMANENT)) {
+                           descr.attributes() | JSPROP_PERMANENT,
+                           descr.getter(), descr.setter())) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to redefine attributes to seal '%s' in importer",
                   name);
@@ -504,9 +498,7 @@ do_import(JSContext       *context,
                                name,
                                obj_val.address())) {
                 if (!obj_val.isUndefined() &&
-                    JS_DefineProperty(context, obj,
-                                      name, obj_val,
-                                      NULL, NULL,
+                    JS_DefineProperty(context, obj, name, obj_val,
                                       GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT)) {
                     result = true;
                     goto out;
@@ -1079,19 +1071,16 @@ gjs_define_importer(JSContext       *context,
                     bool             add_standard_search_path)
 
 {
-    JSObject *importer;
+    JS::RootedObject importer(context,
+        gjs_create_importer(context, importer_name, initial_search_path,
+                            add_standard_search_path, false, in_object));
 
-    importer = gjs_create_importer(context, importer_name, initial_search_path,
-                                   add_standard_search_path, false, in_object);
-
-    JS::RootedValue v_importer(context, JS::ObjectValue(*importer));
-    if (!JS_DefineProperty(context, in_object, importer_name, v_importer,
-                           NULL, NULL,
+    if (!JS_DefineProperty(context, in_object, importer_name, importer,
                            GJS_MODULE_PROP_FLAGS))
         g_error("no memory to define importer property");
 
     gjs_debug(GJS_DEBUG_IMPORTER,
-              "Defined importer '%s' %p in %p", importer_name, importer,
+              "Defined importer '%s' %p in %p", importer_name, importer.get(),
               in_object.get());
 
     return importer;

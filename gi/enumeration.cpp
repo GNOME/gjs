@@ -65,10 +65,8 @@ gjs_define_enum_value(JSContext       *context,
               "Defining enum value %s (fixed from %s) %" G_GINT64_MODIFIER "d",
               fixed_name, value_name, value_val);
 
-    JS::RootedValue value_js(context, JS::NumberValue(value_val));
     if (!JS_DefineProperty(context, in_object,
-                           fixed_name, value_js,
-                           NULL, NULL,
+                           fixed_name, (double) value_val,
                            GJS_MODULE_PROP_FLAGS)) {
         gjs_throw(context, "Unable to define enumeration value %s %" G_GINT64_FORMAT " (no memory most likely)",
                   fixed_name, value_val);
@@ -106,10 +104,9 @@ gjs_define_enum_values(JSContext       *context,
     }
 
     gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
-    JS::RootedValue value(context,
-        JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, gtype)));
-    JS_DefineProperty(context, in_object, "$gtype", value,
-                      NULL, NULL, JSPROP_PERMANENT);
+    JS::RootedObject gtype_obj(context,
+        gjs_gtype_create_gtype_wrapper(context, gtype));
+    JS_DefineProperty(context, in_object, "$gtype", gtype_obj, JSPROP_PERMANENT);
 
     return true;
 }
@@ -189,9 +186,7 @@ gjs_define_enumeration(JSContext       *context,
               g_base_info_get_namespace( (GIBaseInfo*) info),
               enum_name, enum_obj.get());
 
-    JS::RootedValue v_enum(context, JS::ObjectValue(*enum_obj));
-    if (!JS_DefineProperty(context, in_object, enum_name, v_enum,
-                           NULL, NULL,
+    if (!JS_DefineProperty(context, in_object, enum_name, enum_obj,
                            GJS_MODULE_PROP_FLAGS)) {
         gjs_throw(context, "Unable to define enumeration property (no memory most likely)");
         return false;

@@ -237,10 +237,9 @@ gjs_define_param_class(JSContext       *context,
         g_error("Can't init class %s", constructor_name);
     }
 
-    JS::RootedValue value(context,
-        JS::ObjectOrNullValue(gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM)));
-    JS_DefineProperty(context, constructor, "$gtype", value,
-                      NULL, NULL, JSPROP_PERMANENT);
+    JS::RootedObject gtype_obj(context,
+        gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM));
+    JS_DefineProperty(context, constructor, "$gtype", gtype_obj, JSPROP_PERMANENT);
 
     info = (GIObjectInfo*)g_irepository_find_by_gtype(g_irepository_get_default(), G_TYPE_PARAM);
     gjs_object_define_static_methods(context, constructor, G_TYPE_PARAM, info);
