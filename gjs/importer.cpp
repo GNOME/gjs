@@ -158,8 +158,7 @@ seal_import(JSContext       *cx,
      * This also looks for properties higher up the prototype chain, but in
      * practice this will always be an own property because we defined it in
      * define_import(). */
-    if (!JS_GetPropertyDescriptorById(cx, obj, prop_id, 0 /* flags */,
-                                      &descr) ||
+    if (!JS_GetPropertyDescriptorById(cx, obj, prop_id, &descr) ||
         descr.object() == NULL) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to get attributes to seal '%s' in importer",

@@ -104,7 +104,7 @@ gjs_init_context_standard (JSContext              *context,
 
     compartment_options.setVersion(JSVERSION_LATEST);
     global.set(JS_NewGlobalObject(context, &global_class, NULL,
-                                  compartment_options));
+                                  JS::FireOnNewGlobalHook, compartment_options));
     if (global == NULL)
         return false;
 
@@ -876,7 +876,7 @@ gjs_eval_with_scope(JSContext             *context,
     JS::CompileOptions options(context);
     options.setUTF8(true)
            .setFileAndLine(filename, start_line_number)
-           .setSourcePolicy(JS::CompileOptions::LAZY_SOURCE);
+           .setSourceIsLazy(true);
 
     if (!JS::Evaluate(context, eval_obj, options, script, script_len, retval))
         return false;

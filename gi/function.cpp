@@ -87,7 +87,7 @@ gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline)
 
         if (!trampoline->is_vfunc) {
             JS_BeginRequest(context);
-            JS_RemoveValueRoot(context, trampoline->js_function.unsafeGet());
+            JS::RemoveValueRoot(context, &trampoline->js_function);
             JS_EndRequest(context);
         }
 
@@ -456,7 +456,7 @@ gjs_callback_trampoline_new(JSContext      *context,
     g_base_info_ref((GIBaseInfo*)trampoline->info);
     trampoline->js_function = function;
     if (!is_vfunc)
-        JS_AddValueRoot(context, trampoline->js_function.unsafeGet());
+        JS::AddValueRoot(context, &trampoline->js_function);
 
     /* Analyze param types and directions, similarly to init_cached_function_data */
     n_args = g_callable_info_get_n_args(trampoline->info);

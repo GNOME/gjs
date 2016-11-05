@@ -99,6 +99,8 @@ static volatile gint pending_idle_toggles;
 
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 
+static JS::Heap<JSObject *> *ensure_heap_wrapper(GObject *gobj);
+
 static JSObject*       peek_js_obj  (GObject   *gobj);
 static void            set_js_obj   (GObject   *gobj,
                                      JSObject  *obj);
@@ -1056,10 +1058,7 @@ wrapped_gobj_toggle_notify(gpointer      data,
                         G_OBJECT_TYPE_NAME(gobj));
             }
             if (is_sweeping) {
-                JSObject *object;
-
-                object = peek_js_obj(gobj);
-                if (JS_IsAboutToBeFinalized(&object)) {
+                if (JS_IsAboutToBeFinalized(ensure_heap_wrapper(gobj))) {
                     /* Ouch, the JS object is dead already. Disassociate the GObject
                      * and hope the GObject dies too.
                      */

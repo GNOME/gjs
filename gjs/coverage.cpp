@@ -406,8 +406,7 @@ get_array_from_js_value(JSContext             *context,
     g_return_val_if_fail(out_array != NULL, false);
     g_return_val_if_fail(*out_array == NULL, false);
 
-    JS::RootedObject js_array(context, &value.toObject());
-    if (!JS_IsArrayObject(context, js_array)) {
+    if (!JS_IsArrayObject(context, value)) {
         g_critical("Returned object from is not an array");
         return false;
     }
@@ -417,6 +416,7 @@ get_array_from_js_value(JSContext             *context,
      * preallocate to. */
     GArray *c_side_array = g_array_new(true, true, array_element_size);
     u_int32_t js_array_len;
+    JS::RootedObject js_array(context, &value.toObject());
 
     if (element_clear_func)
         g_array_set_clear_func(c_side_array, element_clear_func);
@@ -1574,7 +1574,8 @@ bootstrap_coverage(GjsCoverage *coverage)
     JS::CompartmentOptions options;
     options.setVersion(JSVERSION_LATEST);
     JS::RootedObject debugger_compartment(JS_GetRuntime(context),
-                                          JS_NewGlobalObject(context, &coverage_global_class, NULL, options));
+        JS_NewGlobalObject(context, &coverage_global_class, NULL,
+                           JS::FireOnNewGlobalHook, options));
     {
         JSAutoCompartment compartment(context, debugger_compartment);
         JS::RootedObject debuggeeWrapper(context, debuggee);
