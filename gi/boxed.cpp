@@ -105,14 +105,6 @@ gjs_define_static_methods(JSContext       *context,
 }
 
 /*
- * Like JSResolveOp, but flags provide contextual information as follows:
- *
- *  JSRESOLVE_QUALIFIED   a qualified property id: obj.id or obj[id], not id
- *  JSRESOLVE_ASSIGNING   obj[id] is on the left-hand side of an assignment
- *  JSRESOLVE_DETECTING   'if (o.p)...' or similar detection opcode sequence
- *  JSRESOLVE_DECLARING   var, const, or boxed prolog declaration opcode
- *  JSRESOLVE_CLASSNAME   class name used when constructing
- *
  * The *objp out parameter, on success, should be null to indicate that id
  * was not resolved; and non-null, referring to obj or one of its prototypes,
  * if id was resolved.
@@ -121,7 +113,6 @@ static bool
 boxed_new_resolve(JSContext *context,
                   JS::HandleObject obj,
                   JS::HandleId id,
-                  unsigned flags,
                   JS::MutableHandleObject objp)
 {
     Boxed *priv;

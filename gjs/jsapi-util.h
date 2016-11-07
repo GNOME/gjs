@@ -179,7 +179,6 @@ static void gjs_##cname##_finalize(JSFreeOp *fop, JSObject *obj); \
 static bool gjs_##cname##_new_resolve(JSContext *context, \
                                       JSObject  *obj, \
                                       JS::Value  id, \
-                                      unsigned   flags, \
                                       JSObject **objp) \
 { \
     return true; \

@@ -108,7 +108,6 @@ static bool
 interface_new_resolve(JSContext *context,
                       JS::HandleObject obj,
                       JS::HandleId id,
-                      unsigned flags,
                       JS::MutableHandleObject objp)
 {
     Interface *priv;
