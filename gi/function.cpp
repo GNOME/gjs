@@ -670,13 +670,13 @@ gjs_fill_method_instance(JSContext       *context,
  * providing a @r_value argument.
  */
 static bool
-gjs_invoke_c_function(JSContext       *context,
-                      Function        *function,
-                      JS::HandleObject obj, /* "this" object */
-                      unsigned         js_argc,
-                      JS::Value       *js_argv,
-                      JS::Value       *js_rval,
-                      GArgument       *r_value)
+gjs_invoke_c_function(JSContext                              *context,
+                      Function                               *function,
+                      JS::HandleObject                        obj, /* "this" object */
+                      unsigned                                js_argc,
+                      JS::Value                              *js_argv,
+                      mozilla::Maybe<JS::MutableHandleValue>& js_rval,
+                      GIArgument                             *r_value)
 {
     /* These first four are arrays which hold argument pointers.
      * @in_arg_cvalues: C values which are passed on input (in or inout)
@@ -1017,8 +1017,8 @@ gjs_invoke_c_function(JSContext       *context,
         did_throw_gerror = false;
     }
 
-    if (js_rval)
-        *js_rval = JS::UndefinedValue();
+    if (!js_rval.empty())
+        js_rval.ref().setUndefined();
 
     /* Only process return values if the function didn't throw */
     if (function->js_out_argc > 0 && !did_throw_gerror) {
@@ -1047,7 +1047,7 @@ gjs_invoke_c_function(JSContext       *context,
                                                         &arg_type_info,
                                                         &out_arg_cvalues[array_length_pos],
                                                         true);
-                if (!arg_failed && js_rval) {
+                if (!arg_failed && !js_rval.empty()) {
                     arg_failed = !gjs_value_from_explicit_array(context,
                                                                 return_values.handleAt(next_rval),
                                                                 &return_info,
@@ -1063,7 +1063,7 @@ gjs_invoke_c_function(JSContext       *context,
                                                       &return_gargument))
                     failed = true;
             } else {
-                if (js_rval)
+                if (!js_rval.empty())
                     arg_failed = !gjs_value_from_g_argument(context,
                                                             return_values.handleAt(next_rval),
                                                             &return_info, &return_gargument,
@@ -1180,7 +1180,7 @@ release:
 
             array_length_pos = g_type_info_get_array_length(&arg_type_info);
 
-            if (js_rval) {
+            if (!js_rval.empty()) {
                 if (array_length_pos >= 0) {
                     GIArgInfo array_length_arg;
                     GITypeInfo array_length_type_info;
@@ -1274,9 +1274,9 @@ release:
          * on its own, otherwise return a JavaScript array with
          * [return value, out arg 1, out arg 2, ...]
          */
-        if (js_rval) {
+        if (!js_rval.empty()) {
             if (function->js_out_argc == 1) {
-                *js_rval = return_values[0];
+                js_rval.ref().set(return_values[0]);
             } else {
                 JSObject *array;
                 array = JS_NewArrayObject(context,
@@ -1285,7 +1285,7 @@ release:
                 if (array == NULL) {
                     failed = true;
                 } else {
-                    *js_rval = JS::ObjectValue(*array);
+                    js_rval.ref().setObject(*array);
                 }
             }
         }
@@ -1315,7 +1315,7 @@ function_call(JSContext *context,
 
     bool success;
     Function *priv;
-    JS::Value retval;
+    JS::RootedValue retval(context);
 
     priv = priv_from_js(context, callee);
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
@@ -1326,8 +1326,11 @@ function_call(JSContext *context,
     if (priv == NULL)
         return true; /* we are the prototype, or have the wrong class */
 
-
-    success = gjs_invoke_c_function(context, priv, object, js_argc, js_argv.array(), &retval, NULL);
+    /* COMPAT: mozilla::Maybe gains a much more usable API in future versions */
+    mozilla::Maybe<JS::MutableHandleValue> m_retval;
+    m_retval.construct(&retval);
+    success = gjs_invoke_c_function(context, priv, object, js_argc,
+                                    js_argv.array(), m_retval, NULL);
     if (success)
         js_argv.rval().set(retval);
 
@@ -1765,12 +1768,12 @@ gjs_define_function(JSContext       *context,
 
 
 bool
-gjs_invoke_c_function_uncached(JSContext       *context,
-                               GIFunctionInfo  *info,
-                               JS::HandleObject obj,
-                               unsigned         argc,
-                               JS::Value       *argv,
-                               JS::Value       *rval)
+gjs_invoke_c_function_uncached(JSContext             *context,
+                               GIFunctionInfo        *info,
+                               JS::HandleObject       obj,
+                               unsigned               argc,
+                               JS::Value             *argv,
+                               JS::MutableHandleValue rval)
 {
   Function function;
   bool result;
@@ -1779,7 +1782,10 @@ gjs_invoke_c_function_uncached(JSContext       *context,
   if (!init_cached_function_data (context, &function, 0, info))
       return false;
 
-  result = gjs_invoke_c_function (context, &function, obj, argc, argv, rval, NULL);
+  /* COMPAT: mozilla::Maybe gains a much more usable API in future versions */
+  mozilla::Maybe<JS::MutableHandleValue> m_rval;
+  m_rval.construct(rval);
+  result = gjs_invoke_c_function(context, &function, obj, argc, argv, m_rval, NULL);
   uninit_cached_function_data (&function);
   return result;
 }
@@ -1796,5 +1802,6 @@ gjs_invoke_constructor_from_c(JSContext       *context,
 
     priv = priv_from_js(context, constructor);
 
-    return gjs_invoke_c_function(context, priv, obj, argc, argv, NULL, rvalue);
+    mozilla::Maybe<JS::MutableHandleValue> m_jsrval;
+    return gjs_invoke_c_function(context, priv, obj, argc, argv, m_jsrval, rvalue);
 }

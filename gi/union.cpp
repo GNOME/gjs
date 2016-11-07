@@ -158,9 +158,8 @@ union_new(JSContext       *context,
         if ((flags & GI_FUNCTION_IS_CONSTRUCTOR) != 0 &&
             g_callable_info_get_n_args((GICallableInfo*) func_info) == 0) {
 
-            JS::Value rval;
+            JS::RootedValue rval(context, JS::NullValue());
 
-            rval = JS::NullValue();
             gjs_invoke_c_function_uncached(context, func_info, obj,
                                            0, NULL, &rval);
 
