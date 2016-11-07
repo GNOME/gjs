@@ -153,27 +153,34 @@ define_import(JSContext       *context,
  * we do this after the import succesfully completes.
  */
 static bool
-seal_import(JSContext       *context,
+seal_import(JSContext       *cx,
             JS::HandleObject obj,
             const char      *name)
 {
-    JSBool found;
-    unsigned attrs;
+    JS::Rooted<JSPropertyDescriptor> descr(cx);
+    JS::RootedId prop_id(cx, gjs_intern_string_to_id(cx, name));
 
-    if (!JS_GetPropertyAttributes(context, obj, name,
-                                  &attrs, &found) || !found) {
+    /* COMPAT: To be replaced with JS_GetOwnPropertyDescriptor() in mozjs31.
+     * This also looks for properties higher up the prototype chain, but in
+     * practice this will always be an own property because we defined it in
+     * define_import(). */
+    if (!JS_GetPropertyDescriptorById(cx, obj, prop_id, 0 /* flags */,
+                                      descr.address()) ||
+        descr.object() == NULL) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to get attributes to seal '%s' in importer",
                   name);
         return false;
     }
 
-    attrs |= JSPROP_PERMANENT;
+    /* COMPAT: in mozjs45 use .setConfigurable(false) and the form of
+     * JS_DefineProperty that takes the JSPropertyDescriptor directly */
 
-    if (!JS_SetPropertyAttributes(context, obj, name,
-                                  attrs, &found) || !found) {
+    if (!JS_DefineProperty(cx, descr.object(), name, descr.value(),
+                           descr.getter(), descr.setter(),
+                           descr.attributes() | JSPROP_PERMANENT)) {
         gjs_debug(GJS_DEBUG_IMPORTER,
-                  "Failed to set attributes to seal '%s' in importer",
+                  "Failed to redefine attributes to seal '%s' in importer",
                   name);
         return false;
     }
