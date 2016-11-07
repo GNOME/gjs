@@ -110,7 +110,6 @@ gjs_log(JSContext *context,
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     char *s;
     JSExceptionState *exc_state;
-    JSString *jstr;
 
     if (argc != 1) {
         gjs_throw(context, "Must pass a single argument to log()");
@@ -122,9 +121,9 @@ gjs_log(JSContext *context,
     /* JS_ValueToString might throw, in which we will only
      *log that the value could be converted to string */
     exc_state = JS_SaveExceptionState(context);
-    jstr = JS_ValueToString(context, argv[0]);
+    JS::RootedString jstr(context, JS_ValueToString(context, argv[0]));
     if (jstr != NULL)
-        argv[0] = JS::StringValue(jstr);    // GC root
+        argv[0].setString(jstr);  // GC root
     JS_RestoreExceptionState(context, exc_state);
 
     if (jstr == NULL) {
@@ -169,7 +168,7 @@ gjs_log_error(JSContext *context,
         exc_state = JS_SaveExceptionState(context);
         jstr = JS_ValueToString(context, argv[1]);
         if (jstr != NULL)
-            argv[1] = JS::StringValue(jstr);    // GC root
+            argv[1].setString(jstr);  // GC root
         JS_RestoreExceptionState(context, exc_state);
     }
 
@@ -195,15 +194,14 @@ gjs_print_parse_args(JSContext *context,
     str = g_string_new("");
     for (n = 0; n < argv.length(); ++n) {
         JSExceptionState *exc_state;
-        JSString *jstr;
 
         /* JS_ValueToString might throw, in which we will only
          * log that the value could be converted to string */
         exc_state = JS_SaveExceptionState(context);
 
-        jstr = JS_ValueToString(context, argv[n]);
+        JS::RootedString jstr(context, JS_ValueToString(context, argv[n]));
         if (jstr != NULL)
-            argv[n] = JS::StringValue(jstr); // GC root
+            argv[n].setString(jstr); // GC root
 
         JS_RestoreExceptionState(context, exc_state);
 

@@ -161,7 +161,7 @@ gjs_console_interact(JSContext *context,
     GJS_GET_THIS(context, argc, vp, argv, object);
     bool eof = false;
     JS::RootedValue result(context);
-    JSString *str;
+    JS::RootedString str(context);
     GString *buffer = NULL;
     char *temp_buf = NULL;
     int lineno;

@@ -437,7 +437,6 @@ char*
 gjs_value_debug_string(JSContext      *context,
                        JS::HandleValue value)
 {
-    JSString *str;
     char *bytes;
     char *debugstr;
 
@@ -448,7 +447,7 @@ gjs_value_debug_string(JSContext      *context,
 
     JS_BeginRequest(context);
 
-    str = JS_ValueToString(context, value);
+    JS::RootedString str(context, JS_ValueToString(context, value));
 
     if (str == NULL) {
         if (value.isObject()) {
@@ -497,7 +496,7 @@ utf8_exception_from_non_gerror_value(JSContext      *cx,
                                      JS::HandleValue exc)
 {
     char *utf8_exception = NULL;
-    JSString *exc_str = JS_ValueToString(cx, exc);
+    JS::RootedString exc_str(cx, JS_ValueToString(cx, exc));
     if (exc_str != NULL)
         gjs_string_to_utf8(cx, JS::StringValue(exc_str), &utf8_exception);
     return utf8_exception;

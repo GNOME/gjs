@@ -1314,7 +1314,6 @@ coverage_log(JSContext *context,
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     char *s;
     JSExceptionState *exc_state;
-    JSString *jstr;
 
     if (argc != 1) {
         gjs_throw(context, "Must pass a single argument to log()");
@@ -1332,9 +1331,9 @@ coverage_log(JSContext *context,
     /* JS_ValueToString might throw, in which we will only
      *log that the value could be converted to string */
     exc_state = JS_SaveExceptionState(context);
-    jstr = JS_ValueToString(context, argv[0]);
+    JS::RootedString jstr(context, JS_ValueToString(context, argv[0]));
     if (jstr != NULL)
-        argv[0] = JS::StringValue(jstr);    // GC root
+        argv[0].setString(jstr);  // GC root
     JS_RestoreExceptionState(context, exc_state);
 
     if (jstr == NULL) {

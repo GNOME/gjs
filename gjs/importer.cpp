@@ -153,9 +153,9 @@ define_import(JSContext       *context,
  * we do this after the import succesfully completes.
  */
 static bool
-seal_import(JSContext  *context,
-            JSObject   *obj,
-            const char *name)
+seal_import(JSContext       *context,
+            JS::HandleObject obj,
+            const char      *name)
 {
     JSBool found;
     unsigned attrs;
