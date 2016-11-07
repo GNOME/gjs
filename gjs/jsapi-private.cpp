@@ -31,14 +31,6 @@
 #include "jsapi-private.h"
 #include "jsapi-wrapper.h"
 
-#include <string.h>
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstrict-prototypes"
-#pragma GCC diagnostic ignored "-Winvalid-offsetof"
-#pragma GCC diagnostic ignored "-Wredundant-decls"
-#include <jsfriendapi.h>
-#pragma GCC diagnostic pop
-
 void
 gjs_error_reporter(JSContext     *context,
                    const char    *message,
@@ -49,7 +41,8 @@ gjs_error_reporter(JSContext     *context,
 
     if (gjs_environment_variable_is_set("GJS_ABORT_ON_OOM") &&
         report->flags == JSREPORT_ERROR &&
-        report->errorNumber == JSMSG_OUT_OF_MEMORY) {
+        report->errorNumber == 137) {
+        /* 137, JSMSG_OUT_OF_MEMORY */
         g_error("GJS ran out of memory at %s: %i.",
                 report->filename,
                 report->lineno);
