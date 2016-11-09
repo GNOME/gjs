@@ -45,9 +45,20 @@ gjs_util_error_quark (void)
 }
 
 static JSClass global_class = {
-    "GjsGlobal", JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST),
-    JS_PropertyStub, JS_DeletePropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
-    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, NULL
+    "GjsGlobal",
+    JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST),
+    JS_PropertyStub,
+    JS_DeletePropertyStub,
+    JS_PropertyStub,
+    JS_StrictPropertyStub,
+    JS_EnumerateStub,
+    JS_ResolveStub,
+    JS_ConvertStub,
+    NULL,  /* finalize */
+    NULL,  /* call */
+    NULL,  /* hasInstance */
+    NULL,  /* construct */
+    JS_GlobalObjectTraceHook
 };
 
 /**

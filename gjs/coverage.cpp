@@ -1256,9 +1256,20 @@ gjs_coverage_init(GjsCoverage *self)
 }
 
 static JSClass coverage_global_class = {
-    "GjsCoverageGlobal", JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST),
-    JS_PropertyStub, JS_DeletePropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
-    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, NULL
+    "GjsCoverageGlobal",
+    JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST),
+    JS_PropertyStub,
+    JS_DeletePropertyStub,
+    JS_PropertyStub,
+    JS_StrictPropertyStub,
+    JS_EnumerateStub,
+    JS_ResolveStub,
+    JS_ConvertStub,
+    NULL,  /* finalize */
+    NULL,  /* call */
+    NULL,  /* hasInstance */
+    NULL,  /* construct */
+    JS_GlobalObjectTraceHook
 };
 
 static bool
