@@ -90,10 +90,7 @@ _ensure_mapping_table(GjsContext *context)
                                            gjs_fundamental_table_quark());
 
     if (G_UNLIKELY(table == NULL)) {
-        table = g_hash_table_new_full(g_direct_hash,
-                                      g_direct_equal,
-                                      NULL,
-                                      NULL);
+        table = g_hash_table_new(NULL, NULL);
         g_object_set_qdata_full((GObject *) context,
                                 gjs_fundamental_table_quark(),
                                 table,
