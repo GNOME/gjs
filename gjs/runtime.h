@@ -26,7 +26,8 @@
 
 #include <stdbool.h>
 
-JSRuntime * gjs_runtime_for_current_thread (void);
+JSRuntime *gjs_runtime_ref(void);
+void gjs_runtime_unref(void);
 
 bool        gjs_runtime_is_sweeping        (JSRuntime *runtime);
 

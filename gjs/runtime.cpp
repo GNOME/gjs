@@ -28,6 +28,7 @@
 #include "runtime.h"
 
 struct RuntimeData {
+  unsigned refcount;
   bool in_gc_sweep;
 };
 
@@ -151,8 +152,8 @@ destroy_runtime(gpointer data)
     JSRuntime *runtime = (JSRuntime *) data;
     RuntimeData *rtdata = (RuntimeData *) JS_GetRuntimePrivate(runtime);
 
-    g_free(rtdata);
     JS_DestroyRuntime(runtime);
+    g_free(rtdata);
 }
 
 static GPrivate thread_runtime = G_PRIVATE_INIT(destroy_runtime);
@@ -222,6 +223,14 @@ gjs_finalize_callback(JSFreeOp         *fop,
     data->in_gc_sweep = false;
 }
 
+/* Destroys the current thread's runtime regardless of refcount. No-op if there
+ * is no runtime */
+static void
+gjs_destroy_runtime_for_current_thread(void)
+{
+    g_private_replace(&thread_runtime, NULL);
+}
+
 class GjsInit {
 public:
     GjsInit() {
@@ -230,6 +239,8 @@ public:
     }
 
     ~GjsInit() {
+        /* No-op if the runtime was already destroyed */
+        gjs_destroy_runtime_for_current_thread();
         JS_ShutDown();
     }
 
@@ -240,7 +251,7 @@ public:
 
 static GjsInit gjs_is_inited;
 
-JSRuntime *
+static JSRuntime *
 gjs_runtime_for_current_thread(void)
 {
     JSRuntime *runtime = (JSRuntime *) g_private_get(&thread_runtime);
@@ -264,4 +275,30 @@ gjs_runtime_for_current_thread(void)
     }
 
     return runtime;
+}
+
+/* These two act on the current thread's runtime. In the future they will go
+ * away because SpiderMonkey is going to merge JSContext and JSRuntime.
+ */
+
+/* Creates a new runtime with one reference if there is no runtime yet */
+JSRuntime *
+gjs_runtime_ref(void)
+{
+    JSRuntime *rt = static_cast<JSRuntime *>(gjs_runtime_for_current_thread());
+    RuntimeData *data = static_cast<RuntimeData *>(JS_GetRuntimePrivate(rt));
+    g_atomic_int_inc(&data->refcount);
+    return rt;
+}
+
+/* No-op if there is no runtime */
+void
+gjs_runtime_unref(void)
+{
+    JSRuntime *rt = static_cast<JSRuntime *>(g_private_get(&thread_runtime));
+    if (rt == NULL)
+        return;
+    RuntimeData *data = static_cast<RuntimeData *>(JS_GetRuntimePrivate(rt));
+    if (g_atomic_int_dec_and_test(&data->refcount))
+        gjs_destroy_runtime_for_current_thread();
 }

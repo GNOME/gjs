@@ -371,7 +371,7 @@ gjs_context_dispose(GObject *object)
         /* Tear down JS */
         JS_DestroyContext(js_context->context);
         js_context->context = NULL;
-        js_context->runtime = NULL;
+        g_clear_pointer(&js_context->runtime, gjs_runtime_unref);
     }
 
     G_OBJECT_CLASS(gjs_context_parent_class)->dispose(object);
@@ -420,7 +420,7 @@ gjs_context_constructed(GObject *object)
 
     G_OBJECT_CLASS(gjs_context_parent_class)->constructed(object);
 
-    js_context->runtime = gjs_runtime_for_current_thread();
+    js_context->runtime = gjs_runtime_ref();
 
     js_context->context = JS_NewContext(js_context->runtime, 8192 /* stack chunk size */);
     if (js_context->context == NULL)
