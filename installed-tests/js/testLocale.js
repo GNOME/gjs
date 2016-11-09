@@ -2,12 +2,10 @@
 const JSUnit = imports.jsUnit;
 
 function testToLocaleDateString() {
-    let date = new Date();
-    // %A is the weekday name, this tests locale_to_unicode
-    // we're basically just testing for a non-crash, since
-    // we'd have to run in a specific locale to have any
-    // idea about the result.
-    date.toLocaleDateString("%A");
+    let date = new Date('12/15/1981');
+    // Requesting the weekday name tests locale_to_unicode
+    let datestr = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+    JSUnit.assertEquals('terça-feira', datestr);
 }
 
 function testToLocaleLowerCase() {
