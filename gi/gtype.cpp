@@ -126,13 +126,14 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
 
     /* put constructor for GIRepositoryGType() in the global namespace */
     JS::RootedObject global(context, gjs_get_import_global(context));
-    gjs_gtype_create_proto(context, global, "GIRepositoryGType", JS::NullPtr());
+    JS::RootedObject proto(context,
+        gjs_gtype_create_proto(context, global, "GIRepositoryGType", JS::NullPtr()).toObjectOrNull());
 
     object = (JSObject*) g_type_get_qdata(gtype, gjs_get_gtype_wrapper_quark());
     if (object != NULL)
         goto out;
 
-    object = JS_NewObject(context, &gjs_gtype_class, NULL, NULL);
+    object = JS_NewObjectWithGivenProto(context, &gjs_gtype_class, proto, NULL);
     if (object == NULL)
         goto out;
 
