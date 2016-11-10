@@ -274,7 +274,9 @@ closure_marshal(GClosure        *closure,
         if (type_info_for[i])
             g_base_info_unref((GIBaseInfo *)type_info_for[i]);
 
-    gjs_closure_invoke(closure, argv_index, &argv[0], &rval);
+    gjs_closure_invoke(closure, argv_index,
+                       argv_index > 0 ? &argv[0] : NULL,
+                       &rval);
 
     if (return_value != NULL) {
         if (rval.isUndefined()) {
