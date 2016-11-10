@@ -25,6 +25,12 @@
 #ifndef GJS_JSAPI_WRAPPER_H
 #define GJS_JSAPI_WRAPPER_H
 
+#include <js-config.h>  /* SpiderMonkey's #defines that affect public API */
+/* COMPAT: SpiderMonkey headers in some places use DEBUG instead of JS_DEBUG */
+#if defined(JS_DEBUG) && JS_DEBUG
+#define DEBUG 1
+#endif
+
 #if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
 #pragma GCC system_header
 #endif
