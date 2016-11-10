@@ -301,7 +301,9 @@ gjs_callback_closure(ffi_cif *cif,
     g_callable_info_load_return_type(trampoline->info, &ret_type);
     ret_type_is_void = g_type_info_get_tag (&ret_type) == GI_TYPE_TAG_VOID;
 
-    if (n_outargs == 0 && !ret_type_is_void) {
+    if (n_outargs == 0 && ret_type_is_void) {
+        /* void return value, no out args, nothing to do */
+    } else if (n_outargs == 0) {
         GIArgument argument;
         GITransfer transfer;
 
