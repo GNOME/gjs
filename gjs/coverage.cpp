@@ -1493,6 +1493,8 @@ gjs_run_script_in_coverage_compartment(GjsCoverage *coverage,
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
     JSContext          *js_context = (JSContext *) gjs_context_get_native_context(priv->context);
     JSAutoCompartment ac(js_context, priv->coverage_statistics);
+    JSAutoRequest ar(js_context);
+
     JS::RootedValue rval(js_context);
     JS::RootedObject rooted_priv(js_context, priv->coverage_statistics);
     if (!gjs_eval_with_scope(js_context, rooted_priv, script, strlen(script),
