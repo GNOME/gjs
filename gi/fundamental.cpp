@@ -524,6 +524,8 @@ fundamental_trace(JSTracer *tracer,
                   JSObject *obj)
 {
     Fundamental *priv = reinterpret_cast<Fundamental *>(JS_GetPrivate(obj));
+    if (priv == NULL)
+        return;
 
     JS_CallHeapIdTracer(tracer, &priv->constructor_name,
                         "Fundamental::constructor_name");

@@ -888,6 +888,8 @@ boxed_trace(JSTracer *tracer,
             JSObject *obj)
 {
     Boxed *priv = reinterpret_cast<Boxed *>(JS_GetPrivate(obj));
+    if (priv == NULL)
+        return;
 
     JS_CallHeapIdTracer(tracer, &priv->zero_args_constructor_name,
                         "Boxed::zero_args_constructor_name");
