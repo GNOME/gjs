@@ -25,6 +25,15 @@
 
   <maintainer>
     <foaf:Person>
+      <foaf:name>Philip Chimento</foaf:name>
+      <foaf:mbox rdf:resource="mailto:philip.chimento@gmail.com"/>
+      <foaf:nick>ptomato</foaf:nick>
+      <gnome:userid>pchimento</gnome:userid>
+    </foaf:Person>
+  </maintainer>
+
+  <maintainer>
+    <foaf:Person>
       <foaf:name>Colin Walters</foaf:name>
       <foaf:mbox rdf:resource="mailto:walters@verbum.org"/>
       <gnome:userid>walters</gnome:userid>
