@@ -609,7 +609,6 @@ lookup_override_function(JSContext   *cx,
     return function.toObjectOrNull();
 
  fail:
-    /* COMPAT: Use JS::AutoSaveExceptionState and move rooting to be late */
     JS_ClearPendingException(cx);
     return NULL;
 }
