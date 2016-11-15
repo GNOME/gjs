@@ -255,13 +255,9 @@ main(int argc, char **argv)
 
     env_coverage_prefixes = g_getenv("GJS_COVERAGE_PREFIXES");
     if (env_coverage_prefixes != NULL) {
-        if (coverage_prefixes == NULL) {
-            coverage_prefixes = g_strdupv((char **) env_coverage_prefixes);
-        } else {
-            char **env_prefixes = g_strsplit(env_coverage_prefixes, ":", -1);
+        if (coverage_prefixes != NULL)
             g_strfreev(coverage_prefixes);
-            coverage_prefixes = env_prefixes;
-        }
+        coverage_prefixes = g_strsplit(env_coverage_prefixes, ":", -1);
     }
 
     if (coverage_prefixes) {
