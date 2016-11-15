@@ -69,6 +69,9 @@ struct _GjsContext {
 
     bool destroying;
 
+    bool should_exit;
+    uint8_t exit_code;
+
     guint    auto_gc_id;
 
     jsid const_strings[GJS_STRING_LAST];
@@ -556,6 +559,24 @@ _gjs_context_schedule_gc_if_needed (GjsContext *js_context)
                                              js_context, NULL);
 }
 
+void
+_gjs_context_exit(GjsContext *js_context,
+                  uint8_t     exit_code)
+{
+    g_assert(!js_context->should_exit);
+    js_context->should_exit = true;
+    js_context->exit_code = exit_code;
+}
+
+bool
+_gjs_context_should_exit(GjsContext *js_context,
+                         uint8_t    *exit_code_p)
+{
+    if (exit_code_p != NULL)
+        *exit_code_p = js_context->exit_code;
+    return js_context->should_exit;
+}
+
 /**
  * gjs_context_maybe_gc:
  * @context: a #GjsContext
@@ -649,6 +670,10 @@ gjs_context_eval(GjsContext   *js_context,
     JS::RootedValue retval(js_context->context);
     if (!gjs_eval_with_scope(js_context->context, JS::NullPtr(), script,
                              script_len, filename, &retval)) {
+        uint8_t code;
+        if (_gjs_context_should_exit(js_context, &code))
+            exit(code);
+
         gjs_log_exception(js_context->context);
         g_set_error(error,
                     GJS_ERROR,

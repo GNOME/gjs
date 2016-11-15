@@ -31,6 +31,7 @@
 #include <gjs/context.h>
 
 #include "gi/object.h"
+#include "gjs/context-private.h"
 #include "gjs/jsapi-util-args.h"
 #include "system.h"
 
@@ -116,8 +117,10 @@ gjs_exit(JSContext *context,
     if (!gjs_parse_call_args(context, "exit", argv, "i",
                              "ecode", &ecode))
         return false;
-    exit(ecode);
-    return true;
+
+    GjsContext *gjs_context = static_cast<GjsContext *>(JS_GetContextPrivate(context));
+    _gjs_context_exit(gjs_context, ecode);
+    return false;  /* without gjs_throw() == "throw uncatchable exception" */
 }
 
 static bool
