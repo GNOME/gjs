@@ -2375,8 +2375,6 @@ gjs_object_constructor (GType                  type,
                         guint                  n_construct_properties,
                         GObjectConstructParam *construct_properties)
 {
-    GObject *gobj = NULL;
-
     if (!object_init_list.empty()) {
         GType parent_type = g_type_parent(type);
 
@@ -2386,59 +2384,55 @@ gjs_object_constructor (GType                  type,
         while (G_OBJECT_CLASS(g_type_class_peek(parent_type))->constructor == gjs_object_constructor)
             parent_type = g_type_parent(parent_type);
 
-        gobj = G_OBJECT_CLASS(g_type_class_peek(parent_type))->constructor(type, n_construct_properties, construct_properties);
-    } else {
-        GjsContext *gjs_context;
-        JSContext *context;
-        JSObject *object;
-        ObjectInstance *priv;
-
-        /* The object is being constructed from native code (e.g. GtkBuilder):
-         * Construct the JS object from the constructor, then use the GObject
-         * that was associated in gjs_object_custom_init()
-         */
-        gjs_context = gjs_context_get_current();
-        context = (JSContext*) gjs_context_get_native_context(gjs_context);
-
-        JS_BeginRequest(context);
-
-        JS::RootedObject constructor(context,
-            gjs_lookup_object_constructor_from_info(context, NULL, type));
-        if (!constructor)
-          goto out;
-
-        if (n_construct_properties) {
-            guint i;
-
-            JS::RootedObject props_hash(context,
-                JS_NewObject(context, NULL, JS::NullPtr(), JS::NullPtr()));
-
-            for (i = 0; i < n_construct_properties; i++)
-                jsobj_set_gproperty(context, props_hash,
-                                    construct_properties[i].value,
-                                    construct_properties[i].pspec);
-
-            JS::AutoValueArray<1> args(context);
-            args[0].set(JS::ObjectValue(*props_hash));
-            object = JS_New(context, constructor, args);
-        } else {
-            object = JS_New(context, constructor, JS::HandleValueArray::empty());
-        }
-
-        if (!object)
-          goto out;
-
-        priv = (ObjectInstance*) JS_GetPrivate(object);
-        /* We only hold a toggle ref at this point, add back a ref that the
-         * native code can own.
-         */
-        gobj = G_OBJECT(g_object_ref(priv->gobj));
-
-out:
-        JS_EndRequest(context);
+        return G_OBJECT_CLASS(g_type_class_peek(parent_type))->constructor(type, n_construct_properties, construct_properties);
     }
 
-    return gobj;
+    GjsContext *gjs_context;
+    JSContext *context;
+    JSObject *object;
+    ObjectInstance *priv;
+
+    /* The object is being constructed from native code (e.g. GtkBuilder):
+     * Construct the JS object from the constructor, then use the GObject
+     * that was associated in gjs_object_custom_init()
+     */
+    gjs_context = gjs_context_get_current();
+    context = (JSContext*) gjs_context_get_native_context(gjs_context);
+
+    JSAutoRequest ar(context);
+    JSAutoCompartment ac(context, gjs_get_import_global(context));
+
+    JS::RootedObject constructor(context,
+        gjs_lookup_object_constructor_from_info(context, NULL, type));
+    if (!constructor)
+        return NULL;
+
+    if (n_construct_properties) {
+        guint i;
+
+        JS::RootedObject props_hash(context,
+            JS_NewObject(context, NULL, JS::NullPtr(), JS::NullPtr()));
+
+        for (i = 0; i < n_construct_properties; i++)
+            jsobj_set_gproperty(context, props_hash,
+                                construct_properties[i].value,
+                                construct_properties[i].pspec);
+
+        JS::AutoValueArray<1> args(context);
+        args[0].set(JS::ObjectValue(*props_hash));
+        object = JS_New(context, constructor, args);
+    } else {
+        object = JS_New(context, constructor, JS::HandleValueArray::empty());
+    }
+
+    if (!object)
+        return NULL;
+
+    priv = (ObjectInstance*) JS_GetPrivate(object);
+    /* We only hold a toggle ref at this point, add back a ref that the
+     * native code can own.
+     */
+    return G_OBJECT(g_object_ref(priv->gobj));
 }
 
 static void

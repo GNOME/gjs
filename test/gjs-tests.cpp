@@ -59,6 +59,36 @@ gjstest_test_func_gjs_context_construct_eval(void)
     g_object_unref (context);
 }
 
+#define JS_CLASS "\
+const Lang    = imports.lang; \
+const GObject = imports.gi.GObject; \
+\
+const FooBar = new Lang.Class({ \
+    Name: 'FooBar', \
+    Extends: GObject.Object, \
+}); \
+"
+
+static void
+gjstest_test_func_gjs_gobject_js_defined_type(void)
+{
+    GjsContext *context = gjs_context_new();
+    GError *error = NULL;
+    int status;
+    bool ok = gjs_context_eval(context, JS_CLASS, -1, "<input>", &status, &error);
+    g_assert_no_error(error);
+    g_assert_true(ok);
+
+    GType foo_type = g_type_from_name("Gjs_FooBar");
+    g_assert_cmpuint(foo_type, !=, G_TYPE_INVALID);
+
+    gpointer foo = g_object_new(foo_type, NULL);
+    g_assert(G_IS_OBJECT(foo));
+
+    g_object_unref(foo);
+    g_object_unref(context);
+}
+
 static void
 gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(GjsUnitTestFixture *fx,
                                                        gconstpointer       unused)
@@ -224,6 +254,7 @@ main(int    argc,
 
     g_test_add_func("/gjs/context/construct/destroy", gjstest_test_func_gjs_context_construct_destroy);
     g_test_add_func("/gjs/context/construct/eval", gjstest_test_func_gjs_context_construct_eval);
+    g_test_add_func("/gjs/gobject/js_defined_type", gjstest_test_func_gjs_gobject_js_defined_type);
     g_test_add_func("/gjs/jsutil/strip_shebang/no_shebang", gjstest_test_strip_shebang_no_advance_for_no_shebang);
     g_test_add_func("/gjs/jsutil/strip_shebang/have_shebang", gjstest_test_strip_shebang_advance_for_shebang);
     g_test_add_func("/gjs/jsutil/strip_shebang/only_shebang", gjstest_test_strip_shebang_return_null_for_just_shebang);
