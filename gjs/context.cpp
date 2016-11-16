@@ -272,6 +272,44 @@ gjs_printerr(JSContext *context,
     return true;
 }
 
+/* Requires request, does not throw error */
+static bool
+gjs_define_promise_object(JSContext       *cx,
+                          JS::HandleObject global)
+{
+    /* This is not a regular import, we just load the module's code from the
+     * GResource and evaluate it */
+
+    GError *error = NULL;
+    GBytes *lie_bytes = g_resources_lookup_data("/org/gnome/gjs/modules/_lie.js",
+                                                G_RESOURCE_LOOKUP_FLAGS_NONE,
+                                                &error);
+    if (lie_bytes == NULL) {
+        g_critical("Failed to load Promise resource: %s", error->message);
+        g_clear_error(&error);
+        return false;
+    }
+
+    /* It should be OK to cast these bytes to const char *, since the module is
+     * a text file and we setUTF8(true) below */
+    size_t lie_length;
+    const char *lie_code = static_cast<const char *>(g_bytes_get_data(lie_bytes,
+                                                                      &lie_length));
+    JS::CompileOptions options(cx);
+    options.setUTF8(true)
+        .setFile("<Promise>");
+
+    JS::RootedValue promise(cx);
+    if (!JS::Evaluate(cx, global, options, lie_code, lie_length, &promise)) {
+        g_bytes_unref(lie_bytes);
+        return false;
+    }
+    g_bytes_unref(lie_bytes);
+
+    return JS_DefineProperty(cx, global, "Promise", promise,
+                             JSPROP_READONLY | JSPROP_PERMANENT);
+}
+
 static void
 gjs_context_init(GjsContext *js_context)
 {
@@ -470,6 +508,12 @@ gjs_context_constructed(GObject *object)
     if (!gjs_define_root_importer(js_context->context,
                                   js_context->global))
         g_error("Failed to point 'imports' property at root importer");
+
+    /* FIXME: We should define the Promise object before any imports, in case
+     * the imports want to use it. Currently that's not possible as it needs to
+     * import GLib */
+    if(!gjs_define_promise_object(js_context->context, global))
+        g_error("Failed to define global Promise object");
 
     JS_EndRequest(js_context->context);
 
