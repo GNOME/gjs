@@ -1,8 +1,6 @@
-EXTRA_DIST += \
-	test/run-with-dbus \
-	test/test-bus.conf
+EXTRA_DIST += test/test-bus.conf
 
-TEST_PROGS_OPTIONS =
+TEST_PROGS_OPTIONS = 2>test_user_data/logs/stderr.log
 
 if XVFB_TESTS
 XVFB_INVOCATION = $(XVFB) -ac -noreset -screen 0 1024x768x16
@@ -24,7 +22,9 @@ XVFB_START =
 endif
 
 if DBUS_TESTS
-RUN_WITH_DBUS = ${top_srcdir}/test/run-with-dbus --session --system
+LOG_COMPILER = $(DBUS_RUN_SESSION)
+AM_LOG_FLAGS = --config-file=$(srcdir)/test/test-bus.conf --
+RUN_WITH_DBUS = $(LOG_COMPILER) $(AM_LOG_FLAGS)
 else
 RUN_WITH_DBUS =
 TEST_PROGS_OPTIONS += -s /js/GDBus
@@ -35,7 +35,6 @@ TEST_PROGS_OPTIONS += -s /js/Gtk
 endif
 
 GTESTER = ${XVFB_START} ${TESTS_ENVIRONMENT} ${RUN_WITH_DBUS} gtester
-CLEANFILES += uninstalled-system-test-bus.conf uninstalled-test-bus.conf
 clean-local: test-user-data-clean
 
 test-user-data-clean:
@@ -108,6 +107,7 @@ CLEANFILES +=						\
 	$(NULL)
 
 check-local: gjs-tests
+	$(MKDIR_P) test_user_data/logs
 	@test -z "${TEST_PROGS}" || ${GTESTER} --verbose ${TEST_PROGS} ${TEST_PROGS_OPTIONS}
 
 # GJS_PATH is empty here since we want to force the use of our own
@@ -115,16 +115,14 @@ check-local: gjs-tests
 TESTS_ENVIRONMENT =							\
 	TOP_SRCDIR=$(abs_top_srcdir)					\
 	TOP_BUILDDIR=$(abs_top_builddir)				\
-	DBUS_SESSION_BUS_ADDRESS=''					\
 	XDG_DATA_HOME=test_user_data					\
 	GJS_DEBUG_OUTPUT=test_user_data/logs/gjs.log			\
-	BUILDDIR=.							\
 	GJS_USE_UNINSTALLED_FILES=1					\
 	GJS_TEST_TIMEOUT=420						\
 	GJS_PATH= \
 	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH):$(FIREFOX_JS_LIBDIR)"	\
 	G_FILENAME_ENCODING=latin1	# ensure filenames are not utf8	\
-	DBUS_UUIDGEN="$(DBUS_UUIDGEN)"
+	$(NULL)
 
 simple_tests = test/testCommandLine.sh
 EXTRA_DIST += $(simple_tests)

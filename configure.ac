@@ -198,9 +198,9 @@ AC_ARG_WITH([dbus-tests],
   [AS_HELP_STRING([--without-dbus-tests],
     [Don't try to use DBus during make check @<:@default=use@:>@])])
 AS_IF([test "x$with_dbus_tests" != "xno"], [
-  AC_PATH_PROG([DBUS_UUIDGEN], [dbus-uuidgen])
-  AS_IF([test -z "$DBUS_UUIDGEN"],
-    [AC_MSG_ERROR([dbus-uuidgen is required for --with-dbus-tests])])
+  AC_PATH_PROG([DBUS_RUN_SESSION], [dbus-run-session])
+  AS_IF([test -z "$DBUS_RUN_SESSION"],
+    [AC_MSG_ERROR([dbus-run-session is required for --with-dbus-tests])])
 ])
 AM_CONDITIONAL([DBUS_TESTS], [test "x$with_dbus_tests" != "xno"])
 
