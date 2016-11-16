@@ -1,5 +1,54 @@
 NEXT
 ----
+- New JavaScript features! This version of GJS is based on SpiderMonkey 31, an
+  upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 24.
+  Our plans are to continue upgrading to subsequent ESRs as maintainer
+  availability allows. Here are the highlights of the new JavaScript features.
+  For more information, look them up on MDN or devdocs.io.
+
+  * New syntax
+    + Spread operator in function calls: someFunction(arg1, arg2, ...iterableObj)
+    + Generator functions: yield, function*, yield*
+    + Binary and octal numeric literals: 0b10011100, 0o377
+    + Function arguments without defaults can now come after those with
+      defaults: function f(x=1, y) {}
+
+  * New standard library module
+    + Intl - Locale-sensitive formatting and string comparison
+
+  * New APIs
+    + Iterator protocol - any object implementing certain methods is an
+      "iterator"
+    + New Array functionality: fill(), find(), findIndex(), of()
+    + New String functionality for working with Unicode: codePointAt(),
+      fromCodePoint(), normalize()
+    + New Array methods for correspondence with Object: entries(), keys()
+    + ES6 Generator methods to replace the old Firefox-specific generator API:
+      next(), throw()
+    + forEach() methods for Map and Set, for correspondence with Array
+    + A bunch of new Math functions: acosh(), asinh(), atanh(), cbrt(), clz32(),
+      cosh(), expm1(), fround(), hypot(), log10(), log1p(), log2(), sign(),
+      sinh(), tanh(), trunc()
+    + Some constants to tell information about float support on the platform:
+      Number.EPSILON, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER
+    + New Number.parseInt() and Number.parseFloat() which are now preferred over
+      those in the global namespace
+    + New Object.setPrototypeOf() which now is preferred over setting
+      obj.prototype.__proto__
+    + New locales and options extra arguments to all toLocaleString() and
+      related methods
+    + Misc new functionality: ArrayBuffer.isView(), Proxy.handler.isExtensible,
+      Proxy.revocable()
+
+  * New behaviour
+    + -0 and +0 are now considered equal as Map keys and Set values
+    + On typed arrays, numerical indexed properties ignore the prototype object:
+      Int8Array.prototype[20] = 'foo'; (new Int8Array(32))[20] == 0
+
+  * New non-standard Mozilla extensions
+    + Array comprehensions
+    + Generator comprehensions; both were originally proposed for ES6 but removed
+
 - Backwards-incompatible change: we have changed the way certain JavaScript
   values are marshalled into GObject introspection 32 or 64-bit signed integer
   values, to match the ECMA standard. Here is the relevant section of the
