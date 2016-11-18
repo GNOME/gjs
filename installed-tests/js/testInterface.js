@@ -329,6 +329,7 @@ function testSubclassCanReimplementTheSameInterfaceAsItsParent() {
     });
     let obj = new SubImplementer();
     JSUnit.assertTrue(obj.constructor.implements(AnInterface));
+    obj.required();  // should not throw NotImplemented
 }
 
 function testToString() {

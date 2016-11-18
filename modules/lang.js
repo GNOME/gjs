@@ -272,6 +272,7 @@ Class.prototype._init = function(params) {
     interfaces.forEach((iface) => {
         Object.getOwnPropertyNames(iface.prototype)
         .filter((name) => !name.startsWith('__') && name !== 'constructor')
+        .filter((name) => !(name in this.prototype))
         .forEach((name) => {
             let descriptor = Object.getOwnPropertyDescriptor(iface.prototype,
                 name);
@@ -372,7 +373,7 @@ Class.MetaInterface = Interface;
  * of the interface. Creating a class that doesn't override the function will
  * throw an error.
  */
-Interface.UNIMPLEMENTED = function () {
+Interface.UNIMPLEMENTED = function UNIMPLEMENTED () {
     throw new Error('Not implemented');
 };
 
