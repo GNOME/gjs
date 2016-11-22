@@ -54,6 +54,7 @@ GJS_DECLARE_COUNTER(repo)
 GJS_DECLARE_COUNTER(resultset)
 GJS_DECLARE_COUNTER(weakhash)
 GJS_DECLARE_COUNTER(interface)
+GJS_DECLARE_COUNTER(constructor_proxy)
 
 #define GJS_INC_COUNTER(name)                \
     do {                                        \

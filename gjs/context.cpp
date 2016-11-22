@@ -27,6 +27,7 @@
 
 #include "context-private.h"
 #include "importer.h"
+#include "jsapi-constructor-proxy.h"
 #include "jsapi-private.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
@@ -449,6 +450,8 @@ gjs_context_constructed(GObject *object)
 
     js_context->global.set(global);
     JS_AddExtraGCRootsTracer(js_context->runtime, gjs_context_tracer, js_context);
+
+    gjs_define_constructor_proxy_factory(js_context->context);
 
     /* We create the global-to-runtime root importer with the
      * passed-in search path. If someone else already created

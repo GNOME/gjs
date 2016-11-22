@@ -83,6 +83,8 @@ libgjs_la_SOURCES =		\
 	gjs/gi.cpp		\
 	gjs/coverage-internal.h	\
 	gjs/coverage.cpp \
+	gjs/jsapi-constructor-proxy.cpp	\
+	gjs/jsapi-constructor-proxy.h	\
 	gjs/jsapi-private.cpp	\
 	gjs/jsapi-private.h		\
 	gjs/jsapi-util.cpp	\

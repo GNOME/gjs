@@ -141,13 +141,14 @@ const GObjectMeta = new Lang.Class({
         let propertiesArray = _propertiesAsArray(params.Properties);
         delete params.Properties;
 
-        let newClass = Gi.register_type(parent.prototype, gtypename,
+        let newClassConstructor = Gi.register_type(parent.prototype, gtypename,
             gobjectInterfaces, propertiesArray);
 
-        // See Class.prototype._construct in lang.js for the reasoning
-        // behind this direct __proto__ set.
-        newClass.__proto__ = this.constructor.prototype;
+        let newClass = __private_GjsConstructorProxy(newClassConstructor,
+            this.constructor.prototype);
+
         newClass.__super__ = parent;
+        newClass.prototype.constructor = newClass;
 
         newClass._init.apply(newClass, arguments);
 
@@ -205,12 +206,11 @@ GObjectInterface.prototype._construct = function (params) {
     let properties = _propertiesAsArray(params.Properties);
     delete params.Properties;
 
-    let newInterface = Gi.register_interface(gtypename, gobjectInterfaces,
-        properties);
+    let newInterfaceConstructor = Gi.register_interface(gtypename,
+        gobjectInterfaces, properties);
 
-    // See Class.prototype._construct in lang.js for the reasoning
-    // behind this direct __proto__ set.
-    newInterface.__proto__ = this.constructor.prototype;
+    let newInterface = __private_GjsConstructorProxy(newInterfaceConstructor,
+       this.constructor.prototype);
     newInterface.__super__ = GObjectInterface;
     newInterface.prototype.constructor = newInterface;
 
