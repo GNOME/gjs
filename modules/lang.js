@@ -385,19 +385,13 @@ Interface.prototype.__name__ = 'Interface';
 Interface.prototype._construct = function (params) {
     if (!params.Name)
         throw new TypeError("Interfaces require an explicit 'Name' parameter.");
-    let name = params.Name;
 
-    let newInterface = function () {
-        throw new TypeError('Cannot instantiate interface ' + name);
-    };
-
-    // See note in Class._construct(); this makes "newInterface instanceof
-    // Interface" work, and allows inheritance.
-    newInterface.__proto__ = this.constructor.prototype;
+    let newInterface = Object.create(this.constructor.prototype);
 
     newInterface.__super__ = Interface;
     newInterface.prototype = Object.create(Interface.prototype);
     newInterface.prototype.constructor = newInterface;
+    newInterface.prototype.__name__ = params.Name;
 
     newInterface._init.apply(newInterface, arguments);
 
