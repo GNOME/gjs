@@ -572,7 +572,13 @@ gjs_array_from_strv(JSContext             *context,
     guint i;
     JS::AutoValueVector elems(context);
 
-    for (i = 0; strv[i] != NULL; i++) {
+    /* We treat a NULL strv as an empty array, since this function should always
+     * set an array value when returning true.
+     * Another alternative would be to set value_p to JS::NullValue, but clients
+     * would need to always check for both an empty array and null if that was
+     * the case.
+     */
+    for (i = 0; strv != NULL && strv[i] != NULL; i++) {
         elems.growBy(1);
         if (!gjs_string_from_utf8(context, strv[i], -1, elems[i]))
             return false;
