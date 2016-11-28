@@ -601,6 +601,11 @@ describe('Life, the Universe and Everything', function () {
         }
     });
 
+    it('correctly converts a NULL strv in a GValue to an empty array', function() {
+        let v = Regress.test_null_strv_in_gvalue();
+        expect(v.length).toEqual(0);
+    });
+
     describe('wrong type for GObject', function () {
         let wrongObject, wrongBoxed, subclassObject;
         beforeEach(function () {
