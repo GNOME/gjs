@@ -114,7 +114,6 @@ WarnLib_1_0_gir_FILES = $(nodist_libwarnlib_la_SOURCES)
 WarnLib_1_0_gir_SCANNERFLAGS =		\
 	--c-include="warnlib.h"		\
 	--symbol-prefix=warnlib_	\
-	$(WARN_SCANNERFLAGS)		\
 	$(NULL)
 TEST_INTROSPECTION_GIRS += WarnLib-1.0.gir
 
