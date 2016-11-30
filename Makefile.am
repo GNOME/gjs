@@ -240,7 +240,15 @@ install-exec-hook:
 include Makefile-test.am
 include Makefile-insttest.am
 
-EXTRA_DIST += autogen.sh COPYING.LGPL
+EXTRA_DIST +=				\
+	autogen.sh			\
+	COPYING.LGPL			\
+	doc/ByteArray.md		\
+	doc/cairo.md			\
+	doc/Class_Framework.md		\
+	doc/SpiderMonkey_Memory.md	\
+	doc/Style_Guide.md		\
+	$(NULL)
 
 # Colin's handy Makefile bits for:
 # 1) stuffing tarballs with pre-generated scripts from your workstation
