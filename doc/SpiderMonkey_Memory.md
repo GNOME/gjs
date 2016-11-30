@@ -1,8 +1,8 @@
 # Memory management in SpiderMonkey #
 
-When writing JavaScript extensions in C, we have to understand and be careful about memory management.
+When writing JavaScript extensions in C++, we have to understand and be careful about memory management.
 
-This document only applies to C code using the jsapi.h API. If you simply write a GObject-style library and describe it via gobject-introspection typelib, there is no need to understand garbage collection details.
+This document only applies to C++ code using the jsapi.h API. If you simply write a GObject-style library and describe it via gobject-introspection typelib, there is no need to understand garbage collection details.
 
 ## Mark-and-sweep collector ##
 
@@ -42,7 +42,10 @@ The general rule is that SpiderMonkey has a set of GC roots. To do the garbage c
 
 So if you have a `JS::Value` or `JSObject*`/`JSString*`/`JSFunction*` somewhere that is not reachable from one of SpiderMonkey's GC roots - say, declared on the stack or in the private data of an object - that will not be found. SpiderMonkey may try to finalize this object even though you have a reference to it.
 
-If you reference JavaScript objects from your custom object, you have to use `JS::Heap<T>` and set the `JSCLASS_MARK_IS_TRACE` flag in your JSClass, and define a trace function in the class struct. A trace function just invokes `JS_CallTracer()` to tell SpiderMonkey about any objects you reference. See [JSTraceOp docs][2].
+If you reference JavaScript objects from your custom object, you have to use `JS::Heap<T>` and set the `JSCLASS_MARK_IS_TRACE` flag in your JSClass, and define a trace function in the class struct. A trace function just invokes `JS_CallHeapValueTracer()`, `JS_CallHeapObjectTracer()`, etc. to tell SpiderMonkey about any objects you reference. See [JSTraceOp docs][2].
+
+Tracing doesn't add a GC thing to the GC root set!
+It just notifies the interpreter that a thing is reachable from another thing.
 
 ## Global roots ##
 
@@ -66,6 +69,9 @@ JSObject *obj = JS_New(cx, whatever, ...);
 `obj` is NOT now referenced by any other object. If the GC ran right away, `obj` would be collected.
 
 This is what `JS::Rooted<T>` is for, and its specializations `JS::RootedValue`, `JS::RootedObject`, etc. `JS::Rooted<T>` adds its wrapped `T` to the GC root set, and removes it when the `JS::Rooted<T>` goes out of scope.
+
+Note that `JS::Rooted` can only be used on the stack.
+For optimization reasons, roots that are added with `JS::Rooted` must be removed in LIFO order, and the stack scoping ensures that.
 
 Any SpiderMonkey APIs that can cause a garbage collection will force you to use `JS:Rooted<T>` by taking a `JS::Handle<T>` instead of a bare GC thing. `JS::Handle<T>` can only be created from `JS::Rooted<T`>.
 
