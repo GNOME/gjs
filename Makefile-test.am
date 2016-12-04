@@ -245,6 +245,7 @@ common_jstests_files =						\
 	installed-tests/js/testFundamental.js			\
 	installed-tests/js/testGettext.js			\
 	installed-tests/js/testGIMarshalling.js			\
+	installed-tests/js/testGLib.js				\
 	installed-tests/js/testGObjectClass.js			\
 	installed-tests/js/testGObjectInterface.js		\
 	installed-tests/js/testGTypeClass.js			\
