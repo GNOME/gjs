@@ -24,4 +24,32 @@ function testGObjectClass() {
     JSUnit.assertEquals(true, p2.default_value);
 }
 
+function testGType() {
+    JSUnit.assertEquals("void", GObject.TYPE_NONE.name);
+    JSUnit.assertEquals("gchararray", GObject.TYPE_STRING.name);
+
+    // Make sure "name" is readonly
+    try {
+        GObject.TYPE_STRING.name = "foo";
+    } catch(e) {
+    }
+    JSUnit.assertEquals("gchararray", GObject.TYPE_STRING.name);
+
+    // Make sure "name" is permanent
+    try {
+        delete GObject.TYPE_STRING.name;
+    } catch(e) {
+    }
+    JSUnit.assertEquals("gchararray", GObject.TYPE_STRING.name);
+
+    // Make sure "toString" works
+    JSUnit.assertEquals("[object GType for 'void']", GObject.TYPE_NONE.toString());
+    JSUnit.assertEquals("[object GType for 'gchararray']", GObject.TYPE_STRING.toString());
+}
+
+function testGTypePrototype() {
+    JSUnit.assertNull(GIRepositoryGType.name);
+    JSUnit.assertEquals("[object GType prototype]", GIRepositoryGType.toString());
+}
+
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);

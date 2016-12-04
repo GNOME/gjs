@@ -327,28 +327,6 @@ function testGValue() {
 }
 
 function testGType() {
-    assertEquals("void", GObject.TYPE_NONE.name);
-    assertEquals("gchararray", GObject.TYPE_STRING.name);
-
-    // Make sure "name" is readonly
-    try {
-        GObject.TYPE_STRING.name = "foo";
-    } catch(e) {
-    }
-    assertEquals("gchararray", GObject.TYPE_STRING.name);
-
-    // Make sure "name" is permanent
-    try {
-        delete GObject.TYPE_STRING.name;
-    } catch(e) {
-    }
-    assertEquals("gchararray", GObject.TYPE_STRING.name);
-
-    // Make sure "toString" works
-    assertEquals("[object GType for 'void']", GObject.TYPE_NONE.toString());
-    assertEquals("[object GType for 'gchararray']", GObject.TYPE_STRING.toString());
-
-    // Marshalling tests
     assertEquals(GObject.TYPE_NONE, GIMarshallingTests.gtype_return());
     assertEquals(GObject.TYPE_STRING, GIMarshallingTests.gtype_string_return());
 
@@ -362,11 +340,6 @@ function testGType() {
     assertEquals(GObject.TYPE_STRING, GIMarshallingTests.gtype_string_out());
 
     assertEquals(GObject.TYPE_INT, GIMarshallingTests.gtype_inout(GObject.TYPE_NONE));
-}
-
-function testGTypePrototype() {
-    assertNull(GIRepositoryGType.name);
-    assertEquals("[object GType prototype]", GIRepositoryGType.toString());
 }
 
 function testGValueGType() {
