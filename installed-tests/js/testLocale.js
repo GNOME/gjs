@@ -30,10 +30,6 @@ function testToLocaleCompare() {
     JSUnit.assertTrue("a".localeCompare("b") < 0);
     JSUnit.assertEquals( 0, "a".localeCompare("a"));
     JSUnit.assertTrue("b".localeCompare("a") > 0);
-
-    // Again test error handling when conversion fails
-    //assertRaises(function() { "\ud800".localeCompare("a"); });
-    //assertRaises(function() { "a".localeCompare("\ud800"); });
 }
 
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
