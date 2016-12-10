@@ -30,8 +30,6 @@
 
 #include <gjs/gjs.h>
 
-#include "coverage.h"
-
 static char **include_path = NULL;
 static char **coverage_prefixes = NULL;
 static char *coverage_output_path = NULL;

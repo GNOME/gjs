@@ -25,6 +25,7 @@
 #define __GJS_GJS_H__
 
 #include <gjs/context.h>
+#include <gjs/coverage.h>
 #include <util/error.h>
 
 #endif /* __GJS_GJS_H__ */

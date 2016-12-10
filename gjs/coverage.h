@@ -21,57 +21,16 @@
 #define _GJS_COVERAGE_H
 
 #include <glib-object.h>
+#include <gio/gio.h>
+
+#include "context.h"
 
 G_BEGIN_DECLS
 
 #define GJS_TYPE_COVERAGE gjs_coverage_get_type()
 
-#define GJS_COVERAGE(obj) \
-    (G_TYPE_CHECK_INSTANCE_CAST((obj), \
-     GJS_TYPE_COVERAGE, GjsCoverage))
+G_DECLARE_FINAL_TYPE(GjsCoverage, gjs_coverage, GJS, COVERAGE, GObject);
 
-#define GJS_COVERAGE_CLASS(klass) \
-    (G_TYPE_CHECK_CLASS_CAST((klass), \
-     GJS_TYPE_COVERAGE, GjsCoverageClass))
-
-#define GJS_IS_COVERAGE(obj) \
-    (G_TYPE_CHECK_INSTANCE_TYPE((obj), \
-     GJS_TYPE_COVERAGE))
-
-#define GJS_IS_COVERAGE_CLASS(klass) \
-    (G_TYPE_CHECK_CLASS_TYPE ((klass), \
-     GJS_TYPE_COVERAGE))
-
-#define GJS_COVERAGE_GET_CLASS(obj) \
-    (G_TYPE_INSTANCE_GET_CLASS ((obj), \
-     GJS_TYPE_COVERAGE, GjsCoverageClass))
-
-typedef struct _GFile GFile;
-typedef struct _GjsContext GjsContext;
-
-typedef struct _GjsCoverage GjsCoverage;
-typedef struct _GjsCoverageClass GjsCoverageClass;
-typedef struct _GjsCoveragePrivate GjsCoveragePrivate;
-
-struct _GjsCoverage {
-    GObject parent;
-};
-
-struct _GjsCoverageClass {
-    GObjectClass parent_class;
-};
-
-GType gjs_coverage_get_type(void);
-
-/**
- * gjs_coverage_write_statistics:
- * @self: A #GjsCoverage
- *
- * This function takes all available statistics and writes them out to either the file provided
- * or to files of the pattern (filename).info in the same directory as the scanned files. It will
- * provide coverage data for all files ending with ".js" in the coverage directories, even if they
- * were never actually executed.
- */
 void gjs_coverage_write_statistics(GjsCoverage *self);
 
 GjsCoverage * gjs_coverage_new(const char * const *coverage_prefixes,

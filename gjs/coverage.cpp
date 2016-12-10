@@ -29,7 +29,11 @@
 #include "jsapi-util-args.h"
 #include "util/error.h"
 
-struct _GjsCoveragePrivate {
+struct _GjsCoverage {
+    GObject parent;
+};
+
+typedef struct {
     gchar **prefixes;
     GjsContext *context;
     JS::Heap<JSObject *> coverage_statistics;
@@ -38,7 +42,7 @@ struct _GjsCoveragePrivate {
     GFile *cache;
     /* tells whether priv->cache == NULL means no cache, or not specified */
     bool cache_specified;
-};
+} GjsCoveragePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE(GjsCoverage,
                            gjs_coverage,
@@ -1163,6 +1167,19 @@ coverage_statistics_has_stale_cache(GjsCoverage *coverage)
 
 static unsigned int _suppressed_coverage_messages_count = 0;
 
+/**
+ * gjs_coverage_write_statistics:
+ * @coverage: A #GjsCoverage
+ * @output_directory: A directory to write coverage information to. Scripts
+ * which were provided as part of the coverage-paths construction property will be written
+ * out to output_directory, in the same directory structure relative to the source dir where
+ * the tests were run.
+ *
+ * This function takes all available statistics and writes them out to either the file provided
+ * or to files of the pattern (filename).info in the same directory as the scanned files. It will
+ * provide coverage data for all files ending with ".js" in the coverage directories, even if they
+ * were never actually executed.
+ */
 void
 gjs_coverage_write_statistics(GjsCoverage *coverage)
 {

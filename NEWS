@@ -9,6 +9,11 @@ NEXT
   [1] https://github.com/calvinmetcalf/lie
   [2] https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
 
+- News for GJS embedders such as gnome-shell:
+
+  * New API: The GjsCoverage type and its methods are now exposed. Use this if
+    you are embedding GJS and need to output code coverage statistics.
+
 Version 1.47.3
 --------------
 

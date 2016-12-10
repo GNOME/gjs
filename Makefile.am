@@ -37,6 +37,7 @@ gjs_public_includedir = $(includedir)/gjs-1.0
 ########################################################################
 nobase_gjs_public_include_HEADERS =	\
 	gjs/context.h		\
+	gjs/coverage.h			\
 	gjs/gjs.h			\
 	util/error.h			\
 	$(NULL)
@@ -151,7 +152,6 @@ libgjs_la_SOURCES += $(libgjs_private_source_files)
 
 # These used to be public headers for external modules
 libgjs_la_SOURCES +=		\
-	gjs/coverage.h		\
 	gjs/byteArray.h		\
 	gjs/importer.h		\
 	gjs/jsapi-util.h	\
