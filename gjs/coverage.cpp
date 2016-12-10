@@ -34,7 +34,7 @@ struct _GjsCoveragePrivate {
     GjsContext *context;
     JS::Heap<JSObject *> coverage_statistics;
 
-    char *cache_path;
+    GFile *cache;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE(GjsCoverage,
@@ -67,6 +67,14 @@ typedef struct _GjsCoverageFunction {
     unsigned int line_number;
     unsigned int hit_count;
 } GjsCoverageFunction;
+
+static char *
+get_file_identifier(GFile *source_file) {
+    char *path = g_file_get_path(source_file);
+    if (!path)
+        path = g_file_get_uri(source_file);
+    return path;
+}
 
 static void
 write_source_file_header(GOutputStream *stream,
@@ -886,23 +894,18 @@ get_covered_files(GjsCoverage *coverage)
 }
 
 bool
-gjs_get_path_mtime(const char *path, GTimeVal *mtime)
+gjs_get_file_mtime(GFile    *file,
+                   GTimeVal *mtime)
 {
-    /* path could be a resource path, as the callers don't check
-     * if the path is a resource path, but rather if the mtime fetch
-     * operation succeeded. Use g_file_new_for_commandline_arg to handle
-     * that case. */
     GError *error = NULL;
-    GFile *file = g_file_new_for_commandline_arg(path);
     GFileInfo *info = g_file_query_info(file,
                                         "time::modified,time::modified-usec",
                                         G_FILE_QUERY_INFO_NONE,
                                         NULL,
                                         &error);
 
-    g_clear_object(&file);
-
     if (!info) {
+        char *path = get_file_identifier(file);
         g_warning("Failed to get modification time of %s, "
                   "falling back to checksum method for caching. Reason was: %s",
                   path, error->message);
@@ -922,18 +925,13 @@ gjs_get_path_mtime(const char *path, GTimeVal *mtime)
 }
 
 static GBytes *
-read_all_bytes_from_path(const char *path)
+read_all_bytes_from_file(GFile *file)
 {
-    /* path could be a resource, so use g_file_new_for_commandline_arg. */
-    GFile *file = g_file_new_for_commandline_arg(path);
-
     /* We have to use g_file_query_exists here since
      * g_file_test(path, G_FILE_TEST_EXISTS) is implemented in terms
      * of access(), which doesn't work with resource paths. */
-    if (!g_file_query_exists(file, NULL)) {
-        g_object_unref(file);
+    if (!g_file_query_exists(file, NULL))
         return NULL;
-    }
 
     gsize len = 0;
     gchar *data = NULL;
@@ -946,10 +944,11 @@ read_all_bytes_from_path(const char *path)
                               &len,
                               NULL,
                               &error)) {
-        g_printerr("Unable to read bytes from: %s, reason was: %s\n",
+        char *path = get_file_identifier(file);
+        g_critical("Unable to read bytes from: %s, reason was: %s\n",
                    path, error->message);
         g_clear_error(&error);
-        g_object_unref(file);
+        g_free(path);
         return NULL;
     }
 
@@ -957,9 +956,9 @@ read_all_bytes_from_path(const char *path)
 }
 
 gchar *
-gjs_get_path_checksum(const char *path)
+gjs_get_file_checksum(GFile *file)
 {
-    GBytes *data = read_all_bytes_from_path(path);
+    GBytes *data = read_all_bytes_from_file(file);
 
     if (!data)
         return NULL;
@@ -1115,10 +1114,9 @@ gjs_fetch_statistics_from_js(GjsCoverage *coverage,
 }
 
 bool
-gjs_write_cache_to_path(const char *path,
-                        GBytes     *cache)
+gjs_write_cache_file(GFile  *file,
+                     GBytes *cache)
 {
-    GFile *file = g_file_new_for_commandline_arg(path);
     gsize cache_len = 0;
     char *cache_data = (char *) g_bytes_get_data(cache, &cache_len);
     GError *error = NULL;
@@ -1132,7 +1130,7 @@ gjs_write_cache_to_path(const char *path,
                                  NULL,
                                  NULL,
                                  &error)) {
-        g_object_unref(file);
+        char *path = get_file_identifier(file);
         g_warning("Failed to write all bytes to %s, reason was: %s\n",
                   path, error->message);
         g_warning("Will remove this file to prevent inconsistent cache "
@@ -1145,11 +1143,10 @@ gjs_write_cache_to_path(const char *path,
                        "mode again.", path, error->message);
             g_clear_error(&error);
         }
+        g_free(path);
 
         return false;
     }
-
-    g_object_unref(file);
 
     return true;
 }
@@ -1222,12 +1219,12 @@ gjs_coverage_write_statistics(GjsCoverage *coverage,
 
     g_strfreev(executed_coverage_files);
 
-    const bool has_cache_path = priv->cache_path != NULL;
+    const bool has_cache_path = priv->cache != NULL;
     const bool cache_is_stale = coverage_statistics_has_stale_cache(coverage);
 
     if (has_cache_path && cache_is_stale) {
         GBytes *cache_data = gjs_serialize_statistics(coverage);
-        gjs_write_cache_to_path(priv->cache_path, cache_data);
+        gjs_write_cache_file(priv->cache, cache_data);
         g_bytes_unref(cache_data);
     }
 
@@ -1357,16 +1354,20 @@ coverage_log(JSContext *context,
     return true;
 }
 
-static char *
-get_filename_from_filename_as_js_string(JSContext    *context,
-                                        JS::CallArgs &args) {
+static GFile *
+get_file_from_call_args_filename(JSContext    *context,
+                                 JS::CallArgs &args) {
     char *filename = NULL;
 
     if (!gjs_parse_call_args(context, "getFileContents", args, "s",
                              "filename", &filename))
         return NULL;
 
-    return filename;
+    /* path could be a resource, so use g_file_new_for_commandline_arg. */
+    GFile *file = g_file_new_for_commandline_arg(filename);
+
+    g_free(filename);
+    return file;
 }
 
 static bool
@@ -1377,12 +1378,12 @@ coverage_get_file_modification_time(JSContext *context,
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     GTimeVal mtime;
     bool ret = false;
-    char *filename = get_filename_from_filename_as_js_string(context, args);
+    GFile *file = get_file_from_call_args_filename(context, args);
 
-    if (!filename)
-        goto out;
+    if (!file)
+        return false;
 
-    if (gjs_get_path_mtime(filename, &mtime)) {
+    if (gjs_get_file_mtime(file, &mtime)) {
         JS::AutoValueArray<2> mtime_values_array(context);
         mtime_values_array[0].setInt32(mtime.tv_sec);
         mtime_values_array[1].setInt32(mtime.tv_usec);
@@ -1398,7 +1399,7 @@ coverage_get_file_modification_time(JSContext *context,
     ret = true;
 
 out:
-    g_free(filename);
+    g_object_unref(file);
     return ret;
 }
 
@@ -1409,15 +1410,18 @@ coverage_get_file_checksum(JSContext *context,
 {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JSRuntime *runtime = JS_GetRuntime(context);
-    char *filename = get_filename_from_filename_as_js_string(context, args);
+    GFile *file = get_file_from_call_args_filename(context, args);
 
-    if (!filename)
+    if (!file)
         return false;
 
-    char *checksum = gjs_get_path_checksum(filename);
+    char *checksum = gjs_get_file_checksum(file);
 
     if (!checksum) {
+        char *filename = get_file_identifier(file);
         gjs_throw(context, "Failed to read %s and get its checksum", filename);
+        g_free(filename);
+        g_object_unref(file);
         return false;
     }
 
@@ -1425,7 +1429,7 @@ coverage_get_file_checksum(JSContext *context,
                                                                 checksum));
     args.rval().setString(rooted_checksum);
 
-    g_free(filename);
+    g_object_unref(file);
     g_free(checksum);
     return true;
 }
@@ -1437,17 +1441,14 @@ coverage_get_file_contents(JSContext *context,
 {
     bool ret = false;
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    char *filename = NULL;
     GFile *file = NULL;
     char *script = NULL;
     gsize script_len;
     GError *error = NULL;
 
-    if (!gjs_parse_call_args(context, "getFileContents", args, "s",
-                             "filename", &filename))
-        goto out;
-
-    file = g_file_new_for_commandline_arg(filename);
+    file = get_file_from_call_args_filename(context, args);
+    if (!file)
+        return false;
 
     if (!g_file_load_contents(file,
                               NULL,
@@ -1455,7 +1456,9 @@ coverage_get_file_contents(JSContext *context,
                               &script_len,
                               NULL,
                               &error)) {
+        char *filename = get_file_identifier(file);
         gjs_throw(context, "Failed to load contents for filename %s: %s", filename, error->message);
+        g_free(filename);
         goto out;
     }
 
@@ -1464,9 +1467,7 @@ coverage_get_file_contents(JSContext *context,
 
  out:
     g_clear_error(&error);
-    if (file)
-        g_object_unref(file);
-    g_free(filename);
+    g_object_unref(file);
     g_free(script);
     return ret;
 }
@@ -1644,19 +1645,17 @@ bootstrap_coverage(GjsCoverage *coverage)
         /* Create value for holding the cache. This will be undefined if
          * the cache does not exist, otherwise it will be an object set
          * to the value of the cache */
-        JS::RootedValue cache_value(JS_GetRuntime(context));
+        JS::RootedValue cache_value(context);
 
-        if (priv->cache_path)
-            cache_bytes = read_all_bytes_from_path(priv->cache_path);
+        if (priv->cache)
+            cache_bytes = read_all_bytes_from_file(priv->cache);
 
         if (cache_bytes) {
             JSString *cache_object = gjs_deserialize_cache_to_object_for_compartment(context,
                                                                                      debugger_compartment,
                                                                                      cache_bytes);
-            cache_value.set(JS::StringValue(cache_object));
+            cache_value.setString(cache_object);
             g_bytes_unref(cache_bytes);
-        } else {
-            cache_value.set(JS::UndefinedValue());
         }
 
         /* Now create the array to pass the desired prefixes over */
@@ -1725,7 +1724,8 @@ gjs_coverage_set_property(GObject      *object,
         priv->context = GJS_CONTEXT(g_value_dup_object(value));
         break;
     case PROP_CACHE:
-        priv->cache_path = g_value_dup_string(value);
+        /* g_value_dup_object() adds a reference if not NULL */
+        priv->cache = static_cast<GFile *>(g_value_dup_object(value));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -1782,7 +1782,7 @@ gjs_coverage_finalize (GObject *object)
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
     g_strfreev(priv->prefixes);
-    g_clear_pointer(&priv->cache_path, (GDestroyNotify) g_free);
+    g_clear_object(&priv->cache);
 
     G_OBJECT_CLASS(gjs_coverage_parent_class)->finalize(object);
 }
@@ -1807,10 +1807,10 @@ gjs_coverage_class_init (GjsCoverageClass *klass)
                                                    "A context to gather coverage stats for",
                                                    GJS_TYPE_CONTEXT,
                                                    (GParamFlags) (G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE));
-    properties[PROP_CACHE] = g_param_spec_string("cache",
+    properties[PROP_CACHE] = g_param_spec_object("cache",
                                                  "Cache",
-                                                 "Path to a file containing a cache to preload ASTs from",
-                                                 NULL,
+                                                 "File containing a cache to preload ASTs from",
+                                                 G_TYPE_FILE,
                                                  (GParamFlags) (G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE));
 
     g_object_class_install_properties(object_class,
@@ -1846,20 +1846,20 @@ gjs_coverage_new (const char **prefixes,
  *
  * @coverage_prefixes: (transfer none): A null-terminated strv of prefixes of files to perform coverage on
  * @context: (transfer full): A #GjsContext object.
- * @cache_path: A path to a file containing a serialized cache.
+ * @cache: A #GFile containing a serialized cache.
  *
  * Returns: A #GjsCoverage object
  */
 GjsCoverage *
 gjs_coverage_new_from_cache(const char **coverage_prefixes,
                             GjsContext *context,
-                            const char *cache_path)
+                            GFile      *cache)
 {
     GjsCoverage *coverage =
         GJS_COVERAGE(g_object_new(GJS_TYPE_COVERAGE,
                                   "prefixes", coverage_prefixes,
                                   "context", context,
-                                  "cache", cache_path,
+                                  "cache", cache,
                                   NULL));
 
     return coverage;

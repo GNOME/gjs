@@ -766,7 +766,7 @@ function _fetchCountersFromReflection(filename, contents, nLines) {
 
 function CoverageStatisticsContainer(prefixes, cache) {
     /* Copy the files array, so that it can be re-used in the tests */
-    let cachedASTs = cache !== undefined ? JSON.parse(cache) : null;
+    let cachedASTs = cache ? JSON.parse(cache) : null;
     let coveredFiles = {};
     let cacheMisses = 0;
 

@@ -30,6 +30,8 @@
 
 #include <string.h>
 
+#include <gio/gio.h>
+
 #include <gjs/gjs.h>
 
 #include "gjs/coverage.h"
@@ -89,10 +91,12 @@ setup(GjsTestJSFixture *fix,
         char *path_to_cache_file = g_build_filename(data->coverage_output_path,
                                                     ".internal-coverage-cache",
                                                     NULL);
+        GFile *cache_file = g_file_new_for_path(path_to_cache_file);
+        g_free(path_to_cache_file);
         fix->coverage = gjs_coverage_new_from_cache((const char **) coverage_prefixes,
                                                     fix->context,
-                                                    path_to_cache_file);
-        g_free(path_to_cache_file);
+                                                    cache_file);
+        g_object_unref(cache_file);
     }
 }
 

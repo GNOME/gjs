@@ -37,12 +37,13 @@ bool gjs_inject_value_into_coverage_compartment(GjsCoverage     *coverage,
                                                 JS::HandleValue  value,
                                                 const char      *property);
 
-bool gjs_get_path_mtime(const char *path,
-                        GTimeVal   *mtime);
-gchar * gjs_get_path_checksum(const char *path);
+bool gjs_get_file_mtime(GFile    *file,
+                        GTimeVal *mtime);
 
-bool gjs_write_cache_to_path(const char *path,
-                             GBytes     *cache_bytes);
+char *gjs_get_file_checksum(GFile *file);
+
+bool gjs_write_cache_file(GFile  *file,
+                          GBytes *cache_bytes);
 
 extern const char *GJS_COVERAGE_CACHE_FILE_NAME;
 

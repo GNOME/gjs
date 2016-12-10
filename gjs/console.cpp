@@ -26,6 +26,8 @@
 #include <stdlib.h>
 #include <locale.h>
 
+#include <gio/gio.h>
+
 #include <gjs/gjs.h>
 
 #include "coverage.h"
@@ -267,10 +269,12 @@ main(int argc, char **argv)
         char *path_to_cache_file = g_build_filename(coverage_output_path,
                                                     GJS_COVERAGE_CACHE_FILE_NAME,
                                                     NULL);
+        GFile *cache_file = g_file_new_for_path(path_to_cache_file);
+        g_free(path_to_cache_file);
         coverage = gjs_coverage_new_from_cache((const gchar **) coverage_prefixes,
                                                js_context,
-                                               path_to_cache_file);
-        g_free(path_to_cache_file);
+                                               cache_file);
+        g_object_unref(cache_file);
     }
 
     /* prepare command line arguments */
