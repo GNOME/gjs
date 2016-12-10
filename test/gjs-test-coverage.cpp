@@ -118,8 +118,9 @@ gjs_coverage_fixture_set_up(gpointer      fixture_data,
     };
 
     fixture->context = gjs_context_new_with_search_path((char **) search_paths);
-    fixture->coverage = gjs_coverage_new((const char **)coverage_paths, fixture->context,
-                                         fixture->lcov_output_dir);
+    fixture->coverage =
+        _gjs_coverage_new_internal_without_cache(coverage_paths, fixture->context,
+                                                 fixture->lcov_output_dir);
 
     replace_file(fixture->tmp_js_script, js_script);
     g_free(tmp_output_dir_name);
@@ -309,8 +310,9 @@ create_coverage_for_script(GjsContext *context,
         NULL
     };
 
-    GjsCoverage *retval = gjs_coverage_new((const char **) coverage_scripts,
-                                           context, output_dir);
+    GjsCoverage *retval =
+        _gjs_coverage_new_internal_without_cache(coverage_scripts, context,
+                                                 output_dir);
     g_free(script_path);
     return retval;
 }
@@ -327,8 +329,9 @@ create_coverage_for_script_and_cache(GjsContext *context,
         NULL
     };
 
-    GjsCoverage *retval = gjs_coverage_new_from_cache((const char **) coverage_scripts,
-                                                      context, output_dir, cache);
+    GjsCoverage *retval =
+        _gjs_coverage_new_internal_with_cache(coverage_scripts, context,
+                                              output_dir, cache);
     g_free(script_path);
     return retval;
 }
@@ -355,8 +358,9 @@ test_covered_file_is_duplicated_into_output_if_resource(gpointer      fixture_da
 
     fixture->context = gjs_context_new_with_search_path(search_paths);
     fixture->coverage =
-        gjs_coverage_new(coverage_scripts, fixture->context,
-                         fixture->lcov_output_dir);
+        _gjs_coverage_new_internal_without_cache(coverage_scripts,
+                                                 fixture->context,
+                                                 fixture->lcov_output_dir);
 
     gjs_context_eval_file(fixture->context,
                           mock_resource_filename,
@@ -499,9 +503,10 @@ test_expected_entry_not_written_for_nonexistent_file(gpointer      fixture_data,
     };
 
     g_object_unref(fixture->coverage);
-    fixture->coverage = gjs_coverage_new(coverage_paths,
-                                         fixture->context,
-                                         fixture->lcov_output_dir);
+    fixture->coverage =
+        _gjs_coverage_new_internal_without_cache(coverage_paths,
+                                                 fixture->context,
+                                                 fixture->lcov_output_dir);
 
     /* Temporarily disable fatal mask and silence warnings */
     GLogLevelFlags old_flags = g_log_set_always_fatal((GLogLevelFlags) G_LOG_LEVEL_ERROR);
@@ -1265,9 +1270,10 @@ gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(gpointer fixt
     };
 
     fixture->base_fixture.context = gjs_context_new_with_search_path(search_paths);
-    fixture->base_fixture.coverage = gjs_coverage_new((const char **) coverage_paths,
-                                                      fixture->base_fixture.context,
-                                                      fixture->base_fixture.lcov_output_dir);
+    fixture->base_fixture.coverage =
+        _gjs_coverage_new_internal_without_cache(coverage_paths,
+                                                 fixture->base_fixture.context,
+                                                 fixture->base_fixture.lcov_output_dir);
 
     g_free(output_path);
     g_free(first_js_script_path);

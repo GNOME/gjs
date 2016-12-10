@@ -38,8 +38,6 @@ static char *coverage_output_path = NULL;
 static char *command = NULL;
 static gboolean print_version = false;
 
-static const char *GJS_COVERAGE_CACHE_FILE_NAME = ".internal-gjs-coverage-cache";
-
 static GOptionEntry entries[] = {
     { "version", 0, 0, G_OPTION_ARG_NONE, &print_version, "Print GJS version and exit" },
     { "command", 'c', 0, G_OPTION_ARG_STRING, &command, "Program passed in as a string", "COMMAND" },
@@ -267,11 +265,9 @@ main(int argc, char **argv)
             g_error("--coverage-output is required when taking coverage statistics");
 
         GFile *output = g_file_new_for_commandline_arg(coverage_output_path);
-        GFile *cache_file = g_file_get_child(output, GJS_COVERAGE_CACHE_FILE_NAME);
-        coverage = gjs_coverage_new_from_cache((const gchar **) coverage_prefixes,
-                                               js_context, output, cache_file);
+        coverage = gjs_coverage_new((const char **) coverage_prefixes, js_context,
+                                    output);
         g_object_unref(output);
-        g_object_unref(cache_file);
     }
 
     /* prepare command line arguments */

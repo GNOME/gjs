@@ -36,6 +36,8 @@ struct _GjsCoveragePrivate {
 
     GFile *output_dir;
     GFile *cache;
+    /* tells whether priv->cache == NULL means no cache, or not specified */
+    bool cache_specified;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE(GjsCoverage,
@@ -1687,6 +1689,11 @@ gjs_coverage_constructed(GObject *object)
 
     JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
 
+    if (!priv->cache_specified) {
+        g_message("Cache path was not given, picking default one");
+        priv->cache = g_file_new_for_path(".internal-gjs-coverage-cache");
+    }
+
     /* Before bootstrapping, turn off the JIT on the context */
     JS::RuntimeOptionsRef(context)
         .setIon(false)
@@ -1716,6 +1723,7 @@ gjs_coverage_set_property(GObject      *object,
         priv->context = GJS_CONTEXT(g_value_dup_object(value));
         break;
     case PROP_CACHE:
+        priv->cache_specified = true;
         /* g_value_dup_object() adds a reference if not NULL */
         priv->cache = static_cast<GFile *>(g_value_dup_object(value));
         break;
@@ -1821,9 +1829,15 @@ gjs_coverage_class_init (GjsCoverageClass *klass)
 
 /**
  * gjs_coverage_new:
- * @coverage_prefixes: (transfer none): A null-terminated strv of prefixes of files to perform coverage on
+ * @prefixes: A null-terminated strv of prefixes of files on which to record
+ * code coverage
+ * @context: A #GjsContext object
  * @output_dir: A #GFile handle to a directory in which to write coverage
  * information
+ *
+ * Creates a new #GjsCoverage object, using a cache in a temporary file to
+ * pre-fill the AST information for the specified scripts in @prefixes, so long
+ * as the data in the cache has the same mtime as those scripts.
  *
  * Scripts which were provided as part of @prefixes will be written out to
  * @output_dir, in the same directory structure relative to the source dir where
@@ -1846,28 +1860,11 @@ gjs_coverage_new (const char **prefixes,
     return coverage;
 }
 
-/**
- * gjs_coverage_new_from_cache:
- * Creates a new GjsCoverage object, but uses @cache_path to pre-fill the AST information for
- * the specified scripts in coverage_paths, so long as the data in the cache has the same
- * mtime as those scripts.
- *
- * @coverage_prefixes: (transfer none): A null-terminated strv of prefixes of files to perform coverage on
- * @context: (transfer full): A #GjsContext object.
- * @output_dir: #GFile for directory write coverage information to.
- * @cache: A #GFile containing a serialized cache.
- *
- * Scripts which were provided as part of @coverage_prefixes will be written out
- * to @output_dir, in the same directory structure relative to the source dir
- * where the tests were run.
- *
- * Returns: A #GjsCoverage object
- */
 GjsCoverage *
-gjs_coverage_new_from_cache(const char **coverage_prefixes,
-                            GjsContext *context,
-                            GFile       *output_dir,
-                            GFile      *cache)
+_gjs_coverage_new_internal_with_cache(const char * const *coverage_prefixes,
+                                      GjsContext         *context,
+                                      GFile              *output_dir,
+                                      GFile              *cache)
 {
     GjsCoverage *coverage =
         GJS_COVERAGE(g_object_new(GJS_TYPE_COVERAGE,
@@ -1878,4 +1875,12 @@ gjs_coverage_new_from_cache(const char **coverage_prefixes,
                                   NULL));
 
     return coverage;
+}
+
+GjsCoverage *
+_gjs_coverage_new_internal_without_cache(const char * const *prefixes,
+                                         GjsContext         *cx,
+                                         GFile              *output_dir)
+{
+    return _gjs_coverage_new_internal_with_cache(prefixes, cx, output_dir, NULL);
 }

@@ -78,11 +78,6 @@ GjsCoverage * gjs_coverage_new(const char   **coverage_prefixes,
                                GjsContext    *coverage_context,
                                GFile         *output_dir);
 
-GjsCoverage * gjs_coverage_new_from_cache(const char **coverage_prefixes,
-                                          GjsContext *context,
-                                          GFile       *output_dir,
-                                          GFile       *cache);
-
 G_END_DECLS
 
 #endif

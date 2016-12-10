@@ -89,12 +89,8 @@ setup(GjsTestJSFixture *fix,
         }
 
         GFile *output = g_file_new_for_commandline_arg(data->coverage_output_path);
-        GFile *cache_file = g_file_get_child(output, ".internal-coverage-cache");
-        fix->coverage = gjs_coverage_new_from_cache((const char **) coverage_prefixes,
-                                                    fix->context, output,
-                                                    cache_file);
+        fix->coverage = gjs_coverage_new(coverage_prefixes, fix->context, output);
         g_object_unref(output);
-        g_object_unref(cache_file);
     }
 }
 
