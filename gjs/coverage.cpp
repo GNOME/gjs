@@ -1846,9 +1846,9 @@ gjs_coverage_class_init (GjsCoverageClass *klass)
  * Returns: A #GjsCoverage object
  */
 GjsCoverage *
-gjs_coverage_new (const char **prefixes,
-                  GjsContext  *context,
-                  GFile       *output_dir)
+gjs_coverage_new (const char * const *prefixes,
+                  GjsContext         *context,
+                  GFile              *output_dir)
 {
     GjsCoverage *coverage =
         GJS_COVERAGE(g_object_new(GJS_TYPE_COVERAGE,

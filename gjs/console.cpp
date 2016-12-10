@@ -265,8 +265,7 @@ main(int argc, char **argv)
             g_error("--coverage-output is required when taking coverage statistics");
 
         GFile *output = g_file_new_for_commandline_arg(coverage_output_path);
-        coverage = gjs_coverage_new((const char **) coverage_prefixes, js_context,
-                                    output);
+        coverage = gjs_coverage_new(coverage_prefixes, js_context, output);
         g_object_unref(output);
     }
 

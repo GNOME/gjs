@@ -74,9 +74,9 @@ GType gjs_coverage_get_type(void);
  */
 void gjs_coverage_write_statistics(GjsCoverage *self);
 
-GjsCoverage * gjs_coverage_new(const char   **coverage_prefixes,
-                               GjsContext    *coverage_context,
-                               GFile         *output_dir);
+GjsCoverage * gjs_coverage_new(const char * const *coverage_prefixes,
+                               GjsContext         *coverage_context,
+                               GFile              *output_dir);
 
 G_END_DECLS
 
