@@ -302,6 +302,8 @@ main(int argc, char **argv)
 
     g_free(coverage_output_path);
     g_strfreev(coverage_prefixes);
+    if (coverage)
+        g_object_unref(coverage);
     g_object_unref(js_context);
     g_free(script);
     exit(code);
