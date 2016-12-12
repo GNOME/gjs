@@ -1,5 +1,6 @@
-NEXT
-----
+Version 1.47.3
+--------------
+
 - New JavaScript features! This version of GJS is based on SpiderMonkey 31, an
   upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 24.
   Our plans are to continue upgrading to subsequent ESRs as maintainer
@@ -81,6 +82,49 @@ NEXT
   gjs> a[1]
   0
 
+- News for GJS embedders such as gnome-shell:
+
+  * New API: gjs_error_quark() is now exposed, and the error domain GJS_ERROR
+    and codes GJS_ERROR_FAILED and GJS_ERROR_SYSTEM_EXIT.
+
+  * Backwards-incompatible change: Calling System.exit() from JS code will now
+    not abort the program immediately, but instead will return immediately from
+    gjs_context_eval() so that you can unref your GjsContext before internal
+    resources are released on exit.
+
+    If gjs_context_eval() or gjs_context_eval_file() returns an error with code
+    GJS_ERROR_SYSTEM_EXIT, it means that the JS code called System.exit(). The
+    exit code will be found in the 'exit_status_p' out parameter to
+    gjs_context_eval() or gjs_context_eval_file(). If you receive this error,
+    you should do any cleanup needed and exit your program with the given exit
+    code.
+
+- Closed bugs:
+
+  * spidermonkey 31 prep [Philip Chimento, Tim Lunn, #742249]
+  * Please use dbus-run-session to run dbus related tests [Philip Chimento,
+    #771745]
+  * don't abort gdb'd tests [Philip Chimento, Havoc Pennington, #605972]
+  * Use Automake test suite runner [Philip Chimento, #775205]
+  * please add doc/ directory to make dist tar file [Philip Chimento, #595439]
+  * support new mozjs 31.5 [Philip Chimento, #751252]
+  * SEGFAULT in js::NewObjectWithClassProtoCommon when instantiating a dynamic
+    type defined in JS [Philip Chimento, Juan Pablo Ugarte, #770244]
+
+- Misc bug fixes [Philip Chimento, Alexander Larsson]
+
+Version 1.47.0
+--------------
+
+- New API: GLib.log_structured() is a convenience wrapper for the C function
+  g_log_variant(), allowing you to do structured logging without creating
+  GVariants by hand. For example:
+
+  GLib.log_structured('test', GLib.LogLevelFlags.LEVEL_WARNING, {
+      'MESSAGE': 'Just a test',
+      'A_FIELD': 'A value',
+  });
+
 - Backwards-incompatible change: we have changed the way gjs-console interprets
   command-line arguments. Previously there was a heuristic to try to decide
   whether "--help" given on the command line was meant for GJS itself or for a
@@ -105,20 +149,24 @@ NEXT
 
 - News for GJS embedders such as gnome-shell:
 
-  * New API: gjs_error_quark() is now exposed, and the error domain GJS_ERROR
-    and codes GJS_ERROR_FAILED and GJS_ERROR_SYSTEM_EXIT.
+  * Removed API: The gjs-internals-1.0 API is now discontinued. Since
+    gnome-shell was the only known user of this API, its pkg-config file has
+    been removed completely and gnome-shell has been patched not to use it.
 
-  * Backwards-incompatible change: Calling System.exit() from JS code will now
-    not abort the program immediately, but instead will return immediately from
-    gjs_context_eval() so that you can unref your GjsContext before internal
-    resources are released on exit.
+- Closed bugs:
 
-    If gjs_context_eval() or gjs_context_eval_file() returns an error with code
-    GJS_ERROR_SYSTEM_EXIT, it means that the JS code called System.exit(). The
-    exit code will be found in the 'exit_status_p' out parameter to
-    gjs_context_eval() or gjs_context_eval_file(). If you receive this error,
-    you should do any cleanup needed and exit your program with the given exit
-    code.
+  * make check fails with --enable-debug / -DDEBUG spidermonkey [Philip
+    Chimento, #573335]
+  * Modernize autotools configuration [Philip Chimento, #772027]
+  * overrides/GLib: Add log_structured() - wrapper for g_log_variant() [Jonh
+    Wendell, #771598]
+  * Remove gjs-internals-1.0 API [Philip Chimento, #772386]
+  * Add support for boolean, gunichar, and 64-bit int arrays [Philip Chimento,
+    #772790]
+  * add a --version flag [Philip Chimento, #772033]
+  * Switch to AX_COMPILER_FLAGS and compile warning-free [Philip Chimento,
+    #773297]
+  * Reinstate importer test [Philip Chimento, #773335]
 
 Version 1.46.0
 --------------
