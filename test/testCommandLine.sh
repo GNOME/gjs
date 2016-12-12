@@ -91,6 +91,7 @@ report "-I after script should succeed but give a warning"
 report "--coverage-prefix after script should succeed but give a warning"
 "$gjs" -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-output'
 report "--coverage-output after script should succeed but give a warning"
+rm -f foo/coverage.lcov
 
 # --version works
 "$gjs" --version >/dev/null
