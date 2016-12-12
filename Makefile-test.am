@@ -281,7 +281,8 @@ AM_TESTS_ENVIRONMENT =					\
 	export GJS_USE_UNINSTALLED_FILES=1;		\
 	export GJS_TEST_SKIP="$(SKIPPED_TESTS)";	\
 	export GJS_PATH=;				\
-	export GI_TYPELIB_PATH="$(builddir)";		\
+	export GI_TYPELIB_PATH="$(builddir):$${GI_TYPELIB_PATH:+:$$GI_TYPELIB_PATH}"; \
+	export LD_LIBRARY_PATH="$(builddir)/.libs:$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}"; \
 	export G_FILENAME_ENCODING=latin1;		\
 	$(XVFB_START)					\
 	$(NULL)
