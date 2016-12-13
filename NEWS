@@ -1,3 +1,14 @@
+NEXT
+----
+
+- New JavaScript feature: ES6 Promises. This release includes Lie [1], a small,
+  self-contained Promise implementation, which is imported automatically to
+  form the Promise global object [2]. In the future, Promises will be built into
+  the SpiderMonkey engine and Lie will be removed, but any code using Promises
+  will continue to work as before.
+  [1] https://github.com/calvinmetcalf/lie
+  [2] https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
+
 Version 1.47.3
 --------------
 
