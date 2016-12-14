@@ -1,5 +1,10 @@
 const JSUnit = imports.jsUnit;
 
+function testImporterGI() {
+    var GLib = imports.gi.GLib;
+    JSUnit.assertEquals(GLib.MAJOR_VERSION, 2);
+}
+
 function testImporter() {
     JSUnit.assertNotUndefined(imports);
 

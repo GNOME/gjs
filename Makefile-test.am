@@ -231,7 +231,6 @@ CLEANFILES += $(TEST_INTROSPECTION_GIRS) $(TEST_INTROSPECTION_TYPELIBS)
 
 common_jstests_files =						\
 	installed-tests/js/test0010basic.js			\
-	installed-tests/js/test0020importer.js			\
 	installed-tests/js/test0030basicBoxed.js		\
 	installed-tests/js/test0040mainloop.js			\
 	installed-tests/js/testself.js				\
