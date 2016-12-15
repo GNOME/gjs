@@ -19,9 +19,10 @@ function require(req) {
 
 var process = {
   emit: function (event, error) {
-    if (event === 'unhandledRejection')
+    if (event === 'unhandledRejection') {
       log('Unhandled rejection');
       throw error;
+    }
   },
 };
 
