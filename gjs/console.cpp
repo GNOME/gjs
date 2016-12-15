@@ -266,14 +266,11 @@ main(int argc, char **argv)
         if (!coverage_output_path)
             g_error("--coverage-output is required when taking coverage statistics");
 
-        char *path_to_cache_file = g_build_filename(coverage_output_path,
-                                                    GJS_COVERAGE_CACHE_FILE_NAME,
-                                                    NULL);
-        GFile *cache_file = g_file_new_for_path(path_to_cache_file);
-        g_free(path_to_cache_file);
+        GFile *output = g_file_new_for_commandline_arg(coverage_output_path);
+        GFile *cache_file = g_file_get_child(output, GJS_COVERAGE_CACHE_FILE_NAME);
         coverage = gjs_coverage_new_from_cache((const gchar **) coverage_prefixes,
-                                               js_context,
-                                               cache_file);
+                                               js_context, output, cache_file);
+        g_object_unref(output);
         g_object_unref(cache_file);
     }
 
@@ -301,8 +298,7 @@ main(int argc, char **argv)
 
     /* Probably doesn't make sense to write statistics on failure */
     if (coverage && code == 0)
-        gjs_coverage_write_statistics(coverage,
-                                      coverage_output_path);
+        gjs_coverage_write_statistics(coverage);
 
     g_free(coverage_output_path);
     g_strfreev(coverage_prefixes);

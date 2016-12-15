@@ -34,6 +34,7 @@ struct _GjsCoveragePrivate {
     GjsContext *context;
     JS::Heap<JSObject *> coverage_statistics;
 
+    GFile *output_dir;
     GFile *cache;
 };
 
@@ -46,6 +47,7 @@ enum {
     PROP_PREFIXES,
     PROP_CONTEXT,
     PROP_CACHE,
+    PROP_OUTPUT_DIRECTORY,
     PROP_N
 };
 
@@ -78,9 +80,11 @@ get_file_identifier(GFile *source_file) {
 
 static void
 write_source_file_header(GOutputStream *stream,
-                         const gchar   *source_file_path)
+                         GFile         *source_file)
 {
-    g_output_stream_printf(stream, NULL, NULL, NULL, "SF:%s\n", source_file_path);
+    char *path = get_file_identifier(source_file);
+    g_output_stream_printf(stream, NULL, NULL, NULL, "SF:%s\n", path);
+    g_free(path);
 }
 
 typedef struct _FunctionHitCountData {
@@ -275,20 +279,19 @@ write_end_of_record(GOutputStream *stream)
 }
 
 static void
-copy_source_file_to_coverage_output(const char *source,
-                                    const char *destination)
+copy_source_file_to_coverage_output(GFile *source_file,
+                                    GFile *destination_file)
 {
-    /* Either source_file or destination_file could be a resource,
-     * so we must use g_file_new_for_commandline_arg to disambiguate
-     * between URI paths and filesystem paths. */
-    GFile *source_file = g_file_new_for_commandline_arg(source);
-    GFile *destination_file = g_file_new_for_commandline_arg(destination);
     GError *error = NULL;
 
-    /* We also need to recursively make the directory we
+    /* We need to recursively make the directory we
      * want to copy to, as g_file_copy doesn't do that */
-    gchar *destination_dirname = g_path_get_dirname(destination);
-    g_mkdir_with_parents(destination_dirname, S_IRWXU);
+    GFile *destination_dir = g_file_get_parent(destination_file);
+    if (!g_file_make_directory_with_parents(destination_dir, NULL, &error)) {
+        if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_EXISTS))
+            goto fail;
+        g_clear_error(&error);
+    }
 
     if (!g_file_copy(source_file,
                      destination_file,
@@ -297,24 +300,26 @@ copy_source_file_to_coverage_output(const char *source,
                      NULL,
                      NULL,
                      &error)) {
-        g_critical("Failed to copy source file %s to destination %s: %s\n",
-                   source,
-                   destination,
-                   error->message);
+        goto fail;
     }
 
-    g_clear_error(&error);
+    return;
 
-    g_free(destination_dirname);
-    g_object_unref(destination_file);
-    g_object_unref(source_file);
+fail:
+    char *source_uri = get_file_identifier(source_file);
+    char *dest_uri = get_file_identifier(destination_file);
+    g_critical("Failed to copy source file %s to destination %s: %s\n",
+               source_uri, dest_uri, error->message);
+    g_free(source_uri);
+    g_free(dest_uri);
+    g_clear_error(&error);
 }
 
 /* This function will strip a URI scheme and return
  * the string with the URI scheme stripped or NULL
  * if the path was not a valid URI
  */
-static const char *
+static char *
 strip_uri_scheme(const char *potential_uri)
 {
     char *uri_header = g_uri_parse_scheme(potential_uri);
@@ -325,8 +330,8 @@ strip_uri_scheme(const char *potential_uri)
 
         /* g_uri_parse_scheme only parses the name
          * of the scheme, we also need to strip the
-         * characters '://' */
-        return potential_uri + offset + 3;
+         * characters ':///' */
+        return g_strdup(potential_uri + offset + 4);
     }
 
     return NULL;
@@ -336,8 +341,8 @@ strip_uri_scheme(const char *potential_uri)
  * components from the first directory indicating
  * where two directories diverge. For instance:
  *
- * child_path: /a/b/c/d/e
- * parent_path: /a/b/d/
+ * child: /a/b/c/d/e
+ * parent: /a/b/d/
  *
  * Will return: c/d/e
  *
@@ -347,56 +352,38 @@ strip_uri_scheme(const char *potential_uri)
  *
  * As a special case, child paths that are a URI
  * automatically return the full URI path with
- * the URI scheme stripped out.
+ * the URI scheme and leading slash stripped out.
  */
 static char *
-find_diverging_child_components(const char *child_path,
-                                const char *parent_path)
+find_diverging_child_components(GFile *child,
+                                GFile *parent)
 {
-    const char *stripped_uri = strip_uri_scheme(child_path);
-
-    if (stripped_uri)
-        return g_strdup(stripped_uri);
-
-    char **child_path_components = g_strsplit(child_path, "/", -1);
-    char **parent_path_components = g_strsplit(parent_path, "/", -1);
-    char **child_path_component_iterator = child_path_components;
-    char **parent_path_component_iterator = parent_path_components;
-
-    for (; *child_path_component_iterator != NULL &&
-           *parent_path_component_iterator != NULL;
-           ++child_path_component_iterator,
-           ++parent_path_component_iterator) {
-        if (g_strcmp0(*child_path_component_iterator,
-                      *parent_path_component_iterator))
-            break;
+    g_object_ref(parent);
+    GFile *ancestor = parent;
+    while (ancestor != NULL) {
+        char *relpath = g_file_get_relative_path(ancestor, child);
+        if (relpath) {
+            g_object_unref(ancestor);
+            return relpath;
+        }
+        GFile *new_ancestor = g_file_get_parent(ancestor);
+        g_object_unref(ancestor);
+        ancestor = new_ancestor;
     }
 
-    /* Paste the child path components back together */
-    char *diverged = g_strjoinv("/", child_path_component_iterator);
+    /* This is a special case of getting the URI below. The difference is that
+     * this gives you a regular path name; getting it through the URI would
+     * give a URI-encoded path (%20 for spaces, etc.) */
+    GFile *root = g_file_new_for_path("/");
+    char *child_path = g_file_get_relative_path(root, child);
+    g_object_unref(root);
+    if (child_path)
+        return child_path;
 
-    g_strfreev(child_path_components);
-    g_strfreev(parent_path_components);
-
-    return diverged;
-}
-
-/* The coverage output directory could be a relative path
- * so we need to get an absolute path */
-static char *
-get_absolute_path(const char *path)
-{
-    char *absolute_path = NULL;
-
-    if (!g_path_is_absolute(path)) {
-        char *current_dir = g_get_current_dir();
-        absolute_path = g_build_filename(current_dir, path, NULL);
-        g_free(current_dir);
-    } else {
-        absolute_path = g_strdup(path);
-    }
-
-    return absolute_path;
+    char *child_uri = g_file_get_uri(child);
+    char *stripped_uri = strip_uri_scheme(child_uri);
+    g_free(child_uri);
+    return stripped_uri;
 }
 
 typedef bool (*ConvertAndInsertJSVal) (GArray         *array,
@@ -791,20 +778,23 @@ gjs_coverage_statistics_file_statistics_clear(gpointer data)
 
 static void
 print_statistics_for_file(GjsCoverageFileStatistics *file_statistics,
-                          const char                *output_directory,
+                          GFile                     *output_dir,
                           GOutputStream             *ostream)
 {
-    char *absolute_output_directory = get_absolute_path(output_directory);
-    char *diverged_paths =
-        find_diverging_child_components(file_statistics->filename,
-                                        absolute_output_directory);
-    char *destination_filename = g_build_filename(absolute_output_directory,
-                                                  diverged_paths,
-                                                  NULL);
+    /* The source file could be a resource, so we must use
+     * g_file_new_for_commandline_arg() to disambiguate between URIs and
+     * filesystem paths. */
+    GFile *source = g_file_new_for_commandline_arg(file_statistics->filename);
 
-    copy_source_file_to_coverage_output(file_statistics->filename, destination_filename);
+    char *diverged_paths = find_diverging_child_components(source, output_dir);
+    GFile *dest = g_file_resolve_relative_path(output_dir, diverged_paths);
 
-    write_source_file_header(ostream, (const char *) destination_filename);
+    copy_source_file_to_coverage_output(source, dest);
+    g_object_unref(source);
+
+    write_source_file_header(ostream, dest);
+    g_object_unref(dest);
+
     write_functions(ostream, file_statistics->functions);
 
     unsigned int functions_hit_count = 0;
@@ -842,8 +832,6 @@ print_statistics_for_file(GjsCoverageFileStatistics *file_statistics,
     write_end_of_record(ostream);
 
     g_free(diverged_paths);
-    g_free(destination_filename);
-    g_free(absolute_output_directory);
 }
 
 static char **
@@ -1174,8 +1162,7 @@ coverage_statistics_has_stale_cache(GjsCoverage *coverage)
 static unsigned int _suppressed_coverage_messages_count = 0;
 
 void
-gjs_coverage_write_statistics(GjsCoverage *coverage,
-                              const char  *output_directory)
+gjs_coverage_write_statistics(GjsCoverage *coverage)
 {
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
     GError *error = NULL;
@@ -1184,13 +1171,17 @@ gjs_coverage_write_statistics(GjsCoverage *coverage,
     JSAutoCompartment compartment(context, priv->coverage_statistics);
     JSAutoRequest ar(context);
 
-    /* Create output_directory if it doesn't exist */
-    g_mkdir_with_parents(output_directory, 0755);
+    /* Create output directory if it doesn't exist */
+    if (!g_file_make_directory_with_parents(priv->output_dir, NULL, &error)) {
+        if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_EXISTS)) {
+            g_critical("Could not create coverage output: %s", error->message);
+            g_clear_error(&error);
+            return;
+        }
+        g_clear_error(&error);
+    }
 
-    char  *output_file_path = g_build_filename(output_directory,
-                                               "coverage.lcov",
-                                               NULL);
-    GFile *output_file = g_file_new_for_commandline_arg(output_file_path);
+    GFile *output_file = g_file_get_child(priv->output_dir, "coverage.lcov");
 
     GOutputStream *ostream =
         G_OUTPUT_STREAM(g_file_append_to(output_file,
@@ -1209,7 +1200,7 @@ gjs_coverage_write_statistics(GjsCoverage *coverage,
         /* Only print statistics if the file was actually executed */
         for (char **iter = executed_coverage_files; *iter; ++iter) {
             if (g_strcmp0(*iter, statistics->filename) == 0) {
-                print_statistics_for_file(statistics, output_directory, ostream);
+                print_statistics_for_file(statistics, priv->output_dir, ostream);
 
                 /* Inner loop */
                 break;
@@ -1228,6 +1219,7 @@ gjs_coverage_write_statistics(GjsCoverage *coverage,
         g_bytes_unref(cache_data);
     }
 
+    char *output_file_path = g_file_get_path(priv->output_dir);
     g_message("Wrote coverage statistics to %s", output_file_path);
     if (_suppressed_coverage_messages_count) {
         g_message("There were %i suppressed message(s) when collecting "
@@ -1727,6 +1719,9 @@ gjs_coverage_set_property(GObject      *object,
         /* g_value_dup_object() adds a reference if not NULL */
         priv->cache = static_cast<GFile *>(g_value_dup_object(value));
         break;
+    case PROP_OUTPUT_DIRECTORY:
+        priv->output_dir = G_FILE(g_value_dup_object(value));
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
         break;
@@ -1782,6 +1777,7 @@ gjs_coverage_finalize (GObject *object)
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
     g_strfreev(priv->prefixes);
+    g_clear_object(&priv->output_dir);
     g_clear_object(&priv->cache);
 
     G_OBJECT_CLASS(gjs_coverage_parent_class)->finalize(object);
@@ -1812,6 +1808,11 @@ gjs_coverage_class_init (GjsCoverageClass *klass)
                                                  "File containing a cache to preload ASTs from",
                                                  G_TYPE_FILE,
                                                  (GParamFlags) (G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE));
+    properties[PROP_OUTPUT_DIRECTORY] =
+        g_param_spec_object("output-directory", "Output directory",
+                            "Directory handle at which to output coverage statistics",
+                            G_TYPE_FILE,
+                            (GParamFlags) (G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE | G_PARAM_STATIC_STRINGS));
 
     g_object_class_install_properties(object_class,
                                       PROP_N,
@@ -1821,18 +1822,25 @@ gjs_coverage_class_init (GjsCoverageClass *klass)
 /**
  * gjs_coverage_new:
  * @coverage_prefixes: (transfer none): A null-terminated strv of prefixes of files to perform coverage on
- * coverage_data for
+ * @output_dir: A #GFile handle to a directory in which to write coverage
+ * information
+ *
+ * Scripts which were provided as part of @prefixes will be written out to
+ * @output_dir, in the same directory structure relative to the source dir where
+ * the tests were run.
  *
  * Returns: A #GjsCoverage object
  */
 GjsCoverage *
 gjs_coverage_new (const char **prefixes,
-                  GjsContext  *context)
+                  GjsContext  *context,
+                  GFile       *output_dir)
 {
     GjsCoverage *coverage =
         GJS_COVERAGE(g_object_new(GJS_TYPE_COVERAGE,
                                   "prefixes", prefixes,
                                   "context", context,
+                                  "output-directory", output_dir,
                                   NULL));
 
     return coverage;
@@ -1846,13 +1854,19 @@ gjs_coverage_new (const char **prefixes,
  *
  * @coverage_prefixes: (transfer none): A null-terminated strv of prefixes of files to perform coverage on
  * @context: (transfer full): A #GjsContext object.
+ * @output_dir: #GFile for directory write coverage information to.
  * @cache: A #GFile containing a serialized cache.
+ *
+ * Scripts which were provided as part of @coverage_prefixes will be written out
+ * to @output_dir, in the same directory structure relative to the source dir
+ * where the tests were run.
  *
  * Returns: A #GjsCoverage object
  */
 GjsCoverage *
 gjs_coverage_new_from_cache(const char **coverage_prefixes,
                             GjsContext *context,
+                            GFile       *output_dir,
                             GFile      *cache)
 {
     GjsCoverage *coverage =
@@ -1860,6 +1874,7 @@ gjs_coverage_new_from_cache(const char **coverage_prefixes,
                                   "prefixes", coverage_prefixes,
                                   "context", context,
                                   "cache", cache,
+                                  "output-directory", output_dir,
                                   NULL));
 
     return coverage;

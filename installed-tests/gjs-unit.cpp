@@ -88,27 +88,22 @@ setup(GjsTestJSFixture *fix,
             g_error("GJS_UNIT_COVERAGE_OUTPUT is required when using GJS_UNIT_COVERAGE_PREFIX");
         }
 
-        char *path_to_cache_file = g_build_filename(data->coverage_output_path,
-                                                    ".internal-coverage-cache",
-                                                    NULL);
-        GFile *cache_file = g_file_new_for_path(path_to_cache_file);
-        g_free(path_to_cache_file);
+        GFile *output = g_file_new_for_commandline_arg(data->coverage_output_path);
+        GFile *cache_file = g_file_get_child(output, ".internal-coverage-cache");
         fix->coverage = gjs_coverage_new_from_cache((const char **) coverage_prefixes,
-                                                    fix->context,
+                                                    fix->context, output,
                                                     cache_file);
+        g_object_unref(output);
         g_object_unref(cache_file);
     }
 }
 
 static void
 teardown(GjsTestJSFixture *fix,
-         gconstpointer     test_data)
+         gconstpointer     unused)
 {
-    GjsTestData *data = (GjsTestData *) test_data;
-
     if (fix->coverage) {
-        gjs_coverage_write_statistics(fix->coverage,
-                                      data->coverage_output_path);
+        gjs_coverage_write_statistics(fix->coverage);
 
         g_clear_object(&fix->coverage);
     }
