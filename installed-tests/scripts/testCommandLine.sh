@@ -1,6 +1,10 @@
 #!/bin/sh
 
-gjs="$TOP_BUILDDIR"/gjs-console
+if test $GJS_USE_UNINSTALLED_FILES -eq 1; then
+    gjs="$TOP_BUILDDIR"/gjs-console
+else
+    gjs=gjs-console
+fi
 
 # this JS script fails if either 1) --help is not passed to it, or 2) the string
 # "sentinel" is not in its search path

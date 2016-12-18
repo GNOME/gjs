@@ -20,8 +20,12 @@ if BUILDOPT_INSTALL_TESTS
 
 gjsinsttest_PROGRAMS += minijasmine
 gjsinsttest_DATA += $(TEST_INTROSPECTION_TYPELIBS)
-installedtestmeta_DATA += $(jasmine_tests:.js=.test)
+installedtestmeta_DATA += 		\
+	$(jasmine_tests:.js=.test)	\
+	$(simple_tests:%=%.test)	\
+	$(NULL)
 jstests_DATA += $(jasmine_tests)
+jsscripttests_DATA += $(simple_tests)
 pkglib_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
 
 %.test: %.js installed-tests/minijasmine.test.in Makefile
@@ -31,7 +35,7 @@ pkglib_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
 		< $(srcdir)/installed-tests/minijasmine.test.in > $@.tmp && \
 	mv $@.tmp $@
 
-%.test: installed-tests/scripts/%.js installed-tests/script.test.in Makefile
+%.test: % installed-tests/script.test.in Makefile
 	$(AM_V_GEN)$(MKDIR_P) $(@D) && \
 	$(SED) -e s,@pkglibexecdir\@,$(pkglibexecdir), \
 		-e s,@name\@,$(notdir $<), \

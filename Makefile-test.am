@@ -276,7 +276,7 @@ AM_TESTS_ENVIRONMENT =					\
 	$(XVFB_START)					\
 	$(NULL)
 
-simple_tests = test/testCommandLine.sh
+simple_tests = installed-tests/scripts/testCommandLine.sh
 EXTRA_DIST += $(simple_tests)
 
 TESTS =				\
