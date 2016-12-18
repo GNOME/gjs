@@ -1,121 +1,113 @@
-// tests for imports.lang module
-
-const JSUnit = imports.jsUnit;
 const ByteArray = imports.byteArray;
-const Gio = imports.gi.Gio;
 
-function testEmptyByteArray() {
-    let a = new ByteArray.ByteArray();
-    JSUnit.assertEquals("length is 0 for empty array", 0, a.length);
-}
+describe('Byte array', function () {
+    it('has length 0 for empty array', function () {
+        let a = new ByteArray.ByteArray();
+        expect(a.length).toEqual(0);
+    });
 
-function testInitialSizeByteArray() {
-    let a = new ByteArray.ByteArray(10);
-    JSUnit.assertEquals("length is 10 for initially-sized-10 array", 10, a.length);
+    describe('initially sized to 10', function () {
+        let a;
+        beforeEach(function () {
+            a = new ByteArray.ByteArray(10);
+        });
 
-    let i;
+        it('has length 10', function () {
+            expect(a.length).toEqual(10);
+        });
 
-    for (i = 0; i < a.length; ++i) {
-        JSUnit.assertEquals("new array initialized to zeroes", 0, a[i]);
-    }
+        it('is initialized to zeroes', function () {
+            for (let i = 0; i < a.length; ++i) {
+                expect(a[i]).toEqual(0);
+            }
+        });
+    });
 
-    JSUnit.assertEquals("array had proper number of elements post-construct (counting for)",
-                 10, i);
-}
+    it('assigns values correctly', function () {
+        let a = new ByteArray.ByteArray(256);
 
-function testAssignment() {
-    let a = new ByteArray.ByteArray(256);
-    JSUnit.assertEquals("length is 256 for initially-sized-256 array", 256, a.length);
+        for (let i = 0; i < a.length; ++i) {
+            a[i] = 255 - i;
+        }
 
-    let i;
-    let count;
+        for (let i = 0; i < a.length; ++i) {
+            expect(a[i]).toEqual(255 - i);
+        }
+    });
 
-    count = 0;
-    for (i = 0; i < a.length; ++i) {
-        JSUnit.assertEquals("new array initialized to zeroes", 0, a[i]);
-        a[i] = 255 - i;
-        count += 1;
-    }
+    describe('assignment past end', function () {
+        let a;
+        beforeEach(function () {
+            a = new ByteArray.ByteArray();
+            a[2] = 5;
+        });
 
-    JSUnit.assertEquals("set proper number of values", 256, count);
+        it('implicitly lengthens the array', function () {
+            expect(a.length).toEqual(3);
+            expect(a[2]).toEqual(5);
+        });
 
-    count = 0;
-    for (i = 0; i < a.length; ++i) {
-        JSUnit.assertEquals("assignment set expected value", 255 - i, a[i]);
-        count += 1;
-    }
+        it('implicitly creates zero bytes', function () {
+            expect(a[0]).toEqual(0);
+            expect(a[1]).toEqual(0);
+        });
+    });
 
-    JSUnit.assertEquals("checked proper number of values", 256, count);
-}
+    it('changes the length when assigning to length property', function () {
+        let a = new ByteArray.ByteArray(20);
+        expect(a.length).toEqual(20);
+        a.length = 5;
+        expect(a.length).toEqual(5);
+    });
 
-function testAssignmentPastEnd() {
-    let a = new ByteArray.ByteArray();
-    JSUnit.assertEquals("length is 0 for empty array", 0, a.length);
+    describe('conversions', function () {
+        let a;
+        beforeEach(function () {
+            a = new ByteArray.ByteArray();
+            a[0] = 255;
+        });
 
-    a[2] = 5;
-    JSUnit.assertEquals("implicitly made length 3", 3, a.length);
-    JSUnit.assertEquals("implicitly-created zero byte", 0, a[0]);
-    JSUnit.assertEquals("implicitly-created zero byte", 0, a[1]);
-    JSUnit.assertEquals("stored 5 in autocreated position", 5, a[2]);
-}
+        it('gives a byte 5 when assigning 5', function () {
+            a[0] = 5;
+            expect(a[0]).toEqual(5);
+        });
 
-function testAssignmentToLength() {
-    let a = new ByteArray.ByteArray(20);
-    JSUnit.assertEquals("length is 20 for new array", 20, a.length);
+        it('gives a byte 0 when assigning null', function () {
+            a[0] = null;
+            expect(a[0]).toEqual(0);
+        });
 
-    a.length = 5;
+        it('gives a byte 0 when assigning undefined', function () {
+            a[0] = undefined;
+            expect(a[0]).toEqual(0);
+        });
 
-    JSUnit.assertEquals("length is 5 after setting it to 5", 5, a.length);
-}
+        it('rounds off when assigning a double', function () {
+            a[0] = 3.14;
+            expect(a[0]).toEqual(3);
+        });
+    });
 
-function testNonIntegerAssignment() {
-    let a = new ByteArray.ByteArray();
+    it('can be created from a string', function () {
+        let a = ByteArray.fromString('abcd');
+        expect(a.length).toEqual(4);
+        [97, 98, 99, 100].forEach((val, ix) => expect(a[ix]).toEqual(val));
+    });
 
-    a[0] = 5;
-    JSUnit.assertEquals("assigning 5 gives a byte 5", 5, a[0]);
+    it('can be created from an array', function () {
+        let a = ByteArray.fromArray([ 1, 2, 3, 4 ]);
+        expect(a.length).toEqual(4);
+        [1, 2, 3, 4].forEach((val, ix) => expect(a[ix]).toEqual(val));
+    });
 
-    a[0] = null;
-    JSUnit.assertEquals("assigning null gives a zero byte", 0, a[0]);
-
-    a[0] = 5;
-    JSUnit.assertEquals("assigning 5 gives a byte 5", 5, a[0]);
-
-    a[0] = undefined;
-    JSUnit.assertEquals("assigning undefined gives a zero byte", 0, a[0]);
-
-    a[0] = 3.14;
-    JSUnit.assertEquals("assigning a double rounds off", 3, a[0]);
-}
-
-function testFromString() {
-    let a = ByteArray.fromString('abcd');
-    JSUnit.assertEquals("from string 'abcd' gives length 4", 4, a.length);
-    JSUnit.assertEquals("'a' results in 97", 97, a[0]);
-    JSUnit.assertEquals("'b' results in 98", 98, a[1]);
-    JSUnit.assertEquals("'c' results in 99", 99, a[2]);
-    JSUnit.assertEquals("'d' results in 100", 100, a[3]);
-}
-
-function testFromArray() {
-    let a = ByteArray.fromArray([ 1, 2, 3, 4 ]);
-    JSUnit.assertEquals("from array [1,2,3,4] gives length 4", 4, a.length);
-    JSUnit.assertEquals("a[0] == 1", 1, a[0]);
-    JSUnit.assertEquals("a[1] == 2", 2, a[1]);
-    JSUnit.assertEquals("a[2] == 3", 3, a[2]);
-    JSUnit.assertEquals("a[3] == 4", 4, a[3]);
-}
-
-function testToString() {
-    let a = new ByteArray.ByteArray();
-    a[0] = 97;
-    a[1] = 98;
-    a[2] = 99;
-    a[3] = 100;
-
-    let s = a.toString();
-    JSUnit.assertEquals("toString() on 4 ascii bytes gives length 4", 4, s.length);
-    JSUnit.assertEquals("toString() gives 'abcd'", "abcd", s);
-}
-
-JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
-
+    it('can be converted to a string of ASCII characters', function () {
+        let a = new ByteArray.ByteArray();
+        a[0] = 97;
+        a[1] = 98;
+        a[2] = 99;
+        a[3] = 100;
+        let s = a.toString();
+        expect(s.length).toEqual(4);
+        expect(s).toEqual('abcd');
+    });
+});

@@ -1,0 +1,4 @@
+[Test]
+Type=session
+Exec=@pkglibexecdir@/installed-tests/minijasmine @pkglibexecdir@/installed-tests/js/@name@
+Output=TAP

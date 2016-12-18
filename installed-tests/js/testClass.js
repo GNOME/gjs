@@ -1,14 +1,6 @@
 // -*- mode: js; indent-tabs-mode: nil -*-
 
-const JSUnit = imports.jsUnit;
 const Lang = imports.lang;
-
-function assertArrayEquals(expected, got) {
-    JSUnit.assertEquals(expected.length, got.length);
-    for (let i = 0; i < expected.length; i ++) {
-        JSUnit.assertEquals(expected[i], got[i]);
-    }
-}
 
 const MagicBase = new Lang.Class({
     Name: 'MagicBase',
@@ -51,15 +43,6 @@ const Magic = new Lang.Class({
     }
 });
 
-const ToStringOverride = new Lang.Class({
-    Name: 'ToStringOverride',
-
-    toString: function() {
-        let oldToString = this.parent();
-        return oldToString + '; hello';
-    }
-});
-
 const Accessor = new Lang.Class({
     Name: 'AccessorMagic',
 
@@ -87,120 +70,126 @@ const AbstractBase = new Lang.Class({
     }
 });
 
-const AbstractImpl = new Lang.Class({
-    Name: 'AbstractImpl',
-    Extends: AbstractBase,
-
-    _init: function() {
-        this.parent();
-        this.bar = 42;
-    }
-});
-
-const AbstractImpl2 = new Lang.Class({
-    Name: 'AbstractImpl2',
-    Extends: AbstractBase,
-
-    // no _init here, we inherit the parent one
-});
-
-const CustomConstruct = new Lang.Class({
-    Name: 'CustomConstruct',
-
-    _construct: function(one, two) {
-        return [one, two];
-    }
-});
-
-function testClassFramework() {
-    let newMagic = new MagicBase('A');
-    JSUnit.assertEquals('A',  newMagic.a);
-}
-
-function testInheritance() {
-    let buffer = [];
-
-    let newMagic = new Magic('a', 'b', buffer);
-    assertArrayEquals(['a', 'b'], buffer);
-
-    buffer = [];
-    let val = newMagic.foo(10, 20, buffer);
-    assertArrayEquals([10, 20], buffer);
-    JSUnit.assertEquals(10*6, val);
-}
-
-function testConstructor() {
-    JSUnit.assertEquals(Magic, Magic.prototype.constructor);
-
-    let newMagic = new Magic();
-    JSUnit.assertEquals(Magic, newMagic.constructor);
-}
-
-function testInstanceOf() {
-    let newMagic = new Magic();
-
-    JSUnit.assertTrue(newMagic instanceof Magic);
-    JSUnit.assertTrue(newMagic instanceof MagicBase);
-}
-
-function testToString() {
-    let newMagic = new MagicBase();
-    JSUnit.assertEquals('[object MagicBase]', newMagic.toString());
-
-    let override = new ToStringOverride();
-    JSUnit.assertEquals('[object ToStringOverride]; hello', override.toString());
-}
-
-function testConfigurable() {
-    let newMagic = new MagicBase();
-
-    delete newMagic.foo;
-    JSUnit.assertNotUndefined(newMagic.foo);
-}
-
-function testAccessor() {
-    let newAccessor = new Accessor(11);
-
-    JSUnit.assertEquals(11, newAccessor.value);
-    JSUnit.assertRaises(function() {
-        newAccessor.value = 12;
+describe('Class framework', function () {
+    it('calls _init constructors', function () {
+        let newMagic = new MagicBase('A');
+        expect(newMagic.a).toEqual('A');
     });
 
-    newAccessor.value = 42;
-    JSUnit.assertEquals(42, newAccessor.value);
-}
+    it('calls parent constructors', function () {
+        let buffer = [];
 
-function testAbstract() {
-    JSUnit.assertRaises(function() {
-        let newAbstract = new AbstractBase();
+        let newMagic = new Magic('a', 'b', buffer);
+        expect(buffer).toEqual(['a', 'b']);
+
+        buffer = [];
+        let val = newMagic.foo(10, 20, buffer);
+        expect(buffer).toEqual([10, 20]);
+        expect(val).toEqual(10 * 6);
     });
 
-    let newAbstract = new AbstractImpl();
-    JSUnit.assertEquals(42, newAbstract.foo);
-    JSUnit.assertEquals(42, newAbstract.bar);
+    it('sets the right constructor properties', function () {
+        expect(Magic.prototype.constructor).toBe(Magic);
 
-    newAbstract = new AbstractImpl2();
-    JSUnit.assertEquals(42, newAbstract.foo);
-}
+        let newMagic = new Magic();
+        expect(newMagic.constructor).toBe(Magic);
+    });
 
-function testCrossCall() {
-    // test that a method can call another without clobbering
-    // __caller__
-    let newMagic = new Magic();
-    let buffer = [];
+    it('sets up instanceof correctly', function () {
+        let newMagic = new Magic();
 
-    let res = newMagic.bar(10, buffer);
-    assertArrayEquals([10, 20], buffer);
-    JSUnit.assertEquals(50, res);
-}
+        expect(newMagic instanceof Magic).toBeTruthy();
+        expect(newMagic instanceof MagicBase).toBeTruthy();
+    });
 
-function testConstruct() {
-    let instance = new CustomConstruct(1, 2);
+    it('reports a sensible value for toString()', function () {
+        let newMagic = new MagicBase();
+        expect(newMagic.toString()).toEqual('[object MagicBase]');
+    });
 
-    JSUnit.assertTrue(instance instanceof Array);
-    JSUnit.assertTrue(!(instance instanceof CustomConstruct));
+    it('allows overriding toString()', function () {
+        const ToStringOverride = new Lang.Class({
+            Name: 'ToStringOverride',
 
-    assertArrayEquals([1, 2], instance);
-}
+            toString: function() {
+                let oldToString = this.parent();
+                return oldToString + '; hello';
+            }
+        });
 
-JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
+        let override = new ToStringOverride();
+        expect(override.toString()).toEqual('[object ToStringOverride]; hello');
+    });
+
+    it('is not configurable', function () {
+        let newMagic = new MagicBase();
+
+        delete newMagic.foo;
+        expect(newMagic.foo).toBeDefined();
+    });
+
+    it('allows accessors for properties', function () {
+        let newAccessor = new Accessor(11);
+
+        expect(newAccessor.value).toEqual(11);
+        expect(() => newAccessor.value = 12).toThrow();
+
+        newAccessor.value = 42;
+        expect(newAccessor.value).toEqual(42);
+    });
+
+    it('raises an exception when creating an abstract class', function () {
+        expect(() => new AbstractBase()).toThrow();
+    });
+
+    it('inherits properties from abstract base classes', function () {
+        const AbstractImpl = new Lang.Class({
+            Name: 'AbstractImpl',
+            Extends: AbstractBase,
+
+            _init: function() {
+                this.parent();
+                this.bar = 42;
+            }
+        });
+
+        let newAbstract = new AbstractImpl();
+        expect(newAbstract.foo).toEqual(42);
+        expect(newAbstract.bar).toEqual(42);
+    });
+
+    it('inherits constructors from abstract base classes', function () {
+        const AbstractImpl = new Lang.Class({
+            Name: 'AbstractImpl',
+            Extends: AbstractBase,
+        });
+
+        let newAbstract = new AbstractImpl();
+        expect(newAbstract.foo).toEqual(42);
+    });
+
+    it('lets methods call other methods without clobbering __caller__', function () {
+        let newMagic = new Magic();
+        let buffer = [];
+
+        let res = newMagic.bar(10, buffer);
+        expect(buffer).toEqual([10, 20]);
+        expect(res).toEqual(50);
+    });
+
+    it('allows custom return values from constructors', function () {
+        const CustomConstruct = new Lang.Class({
+            Name: 'CustomConstruct',
+
+            _construct: function(one, two) {
+                return [one, two];
+            }
+        });
+
+        let instance = new CustomConstruct(1, 2);
+
+        expect(instance instanceof Array).toBeTruthy();
+        expect(instance instanceof CustomConstruct).toBeFalsy();
+        expect(instance).toEqual([1, 2]);
+    });
+});

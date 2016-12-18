@@ -3,8 +3,6 @@ EXTRA_DIST += 			\
 	test/run-test		\
 	$(NULL)
 
-SKIPPED_TESTS =
-
 if XVFB_TESTS
 XVFB_INVOCATION = $(XVFB) -ac -noreset -screen 0 1024x768x16
 XIDS = 101 102 103 104 105 106 107 197 199 211 223 227 293 307 308 309 310 311 \
@@ -22,18 +20,6 @@ ${XVFB_INVOCATION} -help 2>/dev/null 1>&2 \
 	&& export DISPLAY=:$$XID;
 else
 XVFB_START =
-endif
-
-if !DBUS_TESTS
-SKIPPED_TESTS += /js/GDBus
-endif
-
-if !ENABLE_GTK
-SKIPPED_TESTS += /js/Gtk
-endif
-
-if !ENABLE_CAIRO
-SKIPPED_TESTS += /js/Cairo
 endif
 
 ### TEST RESOURCES #####################################################
@@ -95,7 +81,7 @@ CLEANFILES +=						\
 # as well as installed if --enable-installed-tests is given at configure time.
 # See Makefile-insttest.am for the build rules installing the tests.
 
-check_PROGRAMS += gjs-tests jsunit
+check_PROGRAMS += gjs-tests minijasmine
 
 gjs_tests_CPPFLAGS =				\
 	$(AM_CPPFLAGS)				\
@@ -122,23 +108,20 @@ gjs_tests_DEPENDENCIES =				\
 	mock-cache-invalidation-after.gresource		\
 	$(NULL)
 
-jsunit_CPPFLAGS =				\
-	$(AM_CPPFLAGS)				\
-	$(GJS_CFLAGS)				\
-	-DPKGLIBDIR=\"$(pkglibdir)\"		\
-	-DINSTTESTDIR=\"$(gjsinsttestdir)\"	\
-	-I$(top_srcdir)				\
-	$(NULL)
-
-jsunit_LDADD = $(GJS_LIBS) libgjs.la
-
-jsunit_LDFLAGS = -rpath $(pkglibdir)
-
-jsunit_SOURCES = \
-	installed-tests/gjs-unit.cpp	\
+minijasmine_SOURCES =			\
+	installed-tests/minijasmine.cpp	\
 	jsunit-resources.c		\
 	jsunit-resources.h		\
 	$(NULL)
+
+minijasmine_CPPFLAGS =				\
+	$(AM_CPPFLAGS)				\
+	$(GJS_CFLAGS)				\
+	-I$(top_srcdir)				\
+	-DINSTTESTDIR=\"$(gjsinsttestdir)\"	\
+	$(NULL)
+
+minijasmine_LDADD = $(GJS_LIBS) libgjs.la
 
 ### TEST GIRS ##########################################################
 
@@ -258,6 +241,20 @@ common_jstests_files =						\
 	installed-tests/js/testTweener.js			\
 	$(NULL)
 
+jasmine_tests = $(common_jstests_files)
+
+if DBUS_TESTS
+jasmine_tests += installed-tests/js/testGDBus.js
+endif
+
+if ENABLE_GTK
+jasmine_tests += installed-tests/js/testGtk.js
+endif
+
+if ENABLE_CAIRO
+jasmine_tests += installed-tests/js/testCairo.js
+endif
+
 EXTRA_DIST +=						\
 	$(common_jstests_files)				\
 	installed-tests/js/testCairo.js			\
@@ -270,10 +267,8 @@ EXTRA_DIST +=						\
 # GJS_PATH is empty here since we want to force the use of our own
 # resources. G_FILENAME_ENCODING ensures filenames are not UTF-8.
 AM_TESTS_ENVIRONMENT =					\
-	export TOP_SRCDIR="$(abs_top_srcdir)";		\
 	export TOP_BUILDDIR="$(abs_top_builddir)";	\
 	export GJS_USE_UNINSTALLED_FILES=1;		\
-	export GJS_TEST_SKIP="$(SKIPPED_TESTS)";	\
 	export GJS_PATH=;				\
 	export GI_TYPELIB_PATH="$(builddir):$${GI_TYPELIB_PATH:+:$$GI_TYPELIB_PATH}"; \
 	export LD_LIBRARY_PATH="$(builddir)/.libs:$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}"; \
@@ -283,16 +278,28 @@ AM_TESTS_ENVIRONMENT =					\
 
 simple_tests = test/testCommandLine.sh
 EXTRA_DIST += $(simple_tests)
-TESTS += $(simple_tests)
+
+TESTS =				\
+	gjs-tests		\
+	$(simple_tests)		\
+	$(jasmine_tests)	\
+	$(NULL)
+
+TEST_EXTENSIONS = .js
 
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/tap-driver.sh
+JS_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/tap-driver.sh
 
 if DBUS_TESTS
 LOG_COMPILER = $(DBUS_RUN_SESSION)
 AM_LOG_FLAGS = --config-file=$(srcdir)/test/test-bus.conf -- $(top_srcdir)/test/run-test
+JS_LOG_COMPILER = $(DBUS_RUN_SESSION)
+AM_JS_LOG_FLAGS = --config-file=$(srcdir)/test/test-bus.conf -- $(top_builddir)/minijasmine
 else
 LOG_COMPILER = $(top_srcdir)/test/run-test
 AM_LOG_FLAGS =
+JS_LOG_COMPILER = $(top_builddir)/minijasmine
+AM_JS_LOG_FLAGS =
 endif !DBUS_TESTS
 
 if CODE_COVERAGE_ENABLED

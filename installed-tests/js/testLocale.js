@@ -1,36 +1,37 @@
-// tests for JS_SetLocaleCallbacks().
-const JSUnit = imports.jsUnit;
-
-function testToLocaleDateString() {
-    let date = new Date('12/15/1981');
+describe('JS_SetLocaleCallbacks', function () {
     // Requesting the weekday name tests locale_to_unicode
-    let datestr = date.toLocaleDateString('pt-BR', { weekday: 'long' });
-    JSUnit.assertEquals('terça-feira', datestr);
-}
+    it('toLocaleDateString() works', function () {
+        let date = new Date('12/15/1981');
+        let datestr = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+        expect(datestr).toEqual('terça-feira');
+    });
 
-function testToLocaleLowerCase() {
-    JSUnit.assertEquals("aaa", "AAA".toLocaleLowerCase());
+    it('toLocaleLowerCase() works', function () {
+        expect('AAA'.toLocaleLowerCase()).toEqual('aaa');
+    });
 
     // String conversion is implemented internally to GLib,
     // and is more-or-less independent of locale. (A few
     // characters are handled specially for a few locales,
     // like i in Turkish. But not A WITH ACUTE)
-    JSUnit.assertEquals("\u00e1", "\u00c1".toLocaleLowerCase());
-}
+    it('toLocaleLowerCase() works for Unicode', function () {
+        expect('\u00c1'.toLocaleLowerCase()).toEqual('\u00e1');
+    });
 
-function testToLocaleUpperCase() {
-    JSUnit.assertEquals("AAA", "aaa".toLocaleUpperCase());
-    JSUnit.assertEquals("\u00c1", "\u00e1".toLocaleUpperCase());
-}
+    it('toLocaleUpperCase() works', function () {
+        expect('aaa'.toLocaleUpperCase()).toEqual('AAA');
+    });
 
-function testToLocaleCompare() {
+    it('toLocaleUpperCase() works for Unicode', function () {
+        expect('\u00e1'.toLocaleUpperCase()).toEqual('\u00c1');
+    });
+
     // GLib calls out to libc for collation, so we can't really
     // assume anything - we could even be running in the
     // C locale. The below is pretty safe.
-    JSUnit.assertTrue("a".localeCompare("b") < 0);
-    JSUnit.assertEquals( 0, "a".localeCompare("a"));
-    JSUnit.assertTrue("b".localeCompare("a") > 0);
-}
-
-JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
-
+    it('localeCompare() works', function () {
+        expect('a'.localeCompare('b')).toBeLessThan(0);
+        expect('a'.localeCompare('a')).toEqual(0);
+        expect('b'.localeCompare('a')).toBeGreaterThan(0);
+    });
+});

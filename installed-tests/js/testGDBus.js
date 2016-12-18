@@ -1,8 +1,5 @@
-
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
-
-const JSUnit = imports.jsUnit;
 
 /* The methods list with their signatures.
  *
@@ -210,406 +207,249 @@ Test.prototype = {
     }
 };
 
-var own_name_id;
-var test;
-
-function testExportStuff() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    test = new Test();
-
-    own_name_id = Gio.DBus.session.own_name('org.gnome.gjs.Test',
-                                            Gio.BusNameOwnerFlags.NONE,
-                                            function(name) {
-                                                log("Acquired name " + name);
-                                                
-                                                loop.quit();
-                                            },
-                                            function(name) {
-                                                log("Lost name " + name);
-                                            });
-
-    loop.run();
-}
-
 const ProxyClass = Gio.DBusProxy.makeProxyWrapper(TestIface);
-var proxy;
 
-function testInitStuff() {
-    let loop = GLib.MainLoop.new(null, false);
+describe('Exported DBus object', function () {
+    var own_name_id;
+    var test;
+    var proxy;
+    let loop;
 
-    var theError;
-    proxy = new ProxyClass(Gio.DBus.session,
-                           'org.gnome.gjs.Test',
-                           '/org/gnome/gjs/Test',
-                           function (obj, error) {
-                               theError = error;
-                               proxy = obj;
+    beforeAll(function () {
+        loop = new GLib.MainLoop(null, false);
 
-                               loop.quit();
-                           });
-
-    loop.run();
-
-    JSUnit.assertNotNull(proxy);
-    JSUnit.assertNull(theError);
-}
-
-function testFrobateStuff() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    let theResult, theExcp;
-    proxy.frobateStuffRemote({}, function(result, excp) {
-        JSUnit.assertNull(excp);
-        [theResult] = result;
-        theExcp = excp;
-        loop.quit();
+        test = new Test();
+        own_name_id = Gio.DBus.session.own_name('org.gnome.gjs.Test',
+            Gio.BusNameOwnerFlags.NONE,
+            name => {
+                log("Acquired name " + name);
+                loop.quit();
+            },
+            name => {
+                log("Lost name " + name);
+            });
+        loop.run();
+        new ProxyClass(Gio.DBus.session, 'org.gnome.gjs.Test',
+            '/org/gnome/gjs/Test',
+            (obj, error) => {
+                expect(error).toBeNull();
+                proxy = obj;
+                expect(proxy).not.toBeNull();
+                loop.quit();
+            });
+        loop.run();
     });
 
-    loop.run();
-
-    JSUnit.assertEquals("world", theResult.hello.deep_unpack());
-}
-
-/* excp must be exactly the exception thrown by the remote method
-   (more or less) */
-function testThrowException() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-                             'JS ERROR: Exception in method call: alwaysThrowException: *');
-
-    let theResult, theExcp;
-    proxy.alwaysThrowExceptionRemote({}, function(result, excp) {
-        theResult = result;
-        theExcp = excp;
-        loop.quit();
+    afterAll(function () {
+        // Not really needed, but if we don't cleanup
+        // memory checking will complain
+        Gio.DBus.session.unown_name(own_name_id);
     });
 
-    loop.run();
-
-    JSUnit.assertNull(theResult);
-    JSUnit.assertNotNull(theExcp);
-}
-
-/* We check that the exception in the answer is not null when we try to call
- * a method that does not exist */
-function testDoesNotExist() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    let theResult, theExcp;
-
-    /* First remove the method from the object! */
-    delete Test.prototype.thisDoesNotExist;
-
-    proxy.thisDoesNotExistRemote(function (result, excp) {
-        theResult = result;
-        theExcp = excp;
-        loop.quit();
+    beforeEach(function () {
+        loop = new GLib.MainLoop(null, false);
     });
 
-    loop.run();
-
-    JSUnit.assertNotNull(theExcp);
-    JSUnit.assertNull(theResult);
-}
-
-function testNonJsonFrobateStuff() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    let theResult, theExcp;
-    proxy.nonJsonFrobateStuffRemote(42, function(result, excp) {
-        [theResult] = result;
-        theExcp = excp;
-        loop.quit();
-    });
-
-    loop.run();
-
-    JSUnit.assertEquals("42 it is!", theResult);
-    JSUnit.assertNull(theExcp);
-}
-
-function testNoInParameter() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    let theResult, theExcp;
-    proxy.noInParameterRemote(function(result, excp) {
-        [theResult] = result;
-        theExcp = excp;
-        loop.quit();
-    });
-
-    loop.run();
-
-    JSUnit.assertEquals("Yes!", theResult);
-    JSUnit.assertNull(theExcp);
-}
-
-function testMultipleInArgs() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    let theResult, theExcp;
-    proxy.multipleInArgsRemote(1, 2, 3, 4, 5, function(result, excp) {
-        [theResult] = result;
-        theExcp = excp;
-        loop.quit();
-    });
-
-    loop.run();
-
-    JSUnit.assertEquals("1 2 3 4 5", theResult);
-    JSUnit.assertNull(theExcp);
-}
-
-function testNoReturnValue() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    let theResult, theExcp;
-    proxy.noReturnValueRemote(function(result, excp) {
-        [theResult] = result;
-        theExcp = excp;
-        loop.quit();
-    });
-
-    loop.run();
-
-    JSUnit.assertEquals(undefined, theResult);
-    JSUnit.assertNull(theExcp);
-}
-
-function testEmitSignal() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    let theResult, theExcp;
-    let signalReceived = 0;
-    let signalArgument = null;
-    let id = proxy.connectSignal('signalFoo',
-                                 function(emitter, senderName, parameters) {
-                                     signalReceived ++;
-                                     [signalArgument] = parameters;
-
-                                     proxy.disconnectSignal(id);
-                                 });
-    proxy.emitSignalRemote(function(result, excp) {
-        [theResult] = result;
-        theExcp = excp;
-        if (excp)
-            log("Signal emission exception: " + excp);
-        loop.quit();
-    });
-
-    loop.run();
-
-    JSUnit.assertUndefined('result should be undefined', theResult);
-    JSUnit.assertNull('no exception set', theExcp);
-    JSUnit.assertEquals('number of signals received', signalReceived, 1);
-    JSUnit.assertEquals('signal argument', signalArgument, "foobar");
-
-}
-
-function testMultipleOutValues() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    let theResult, theExcp;
-    proxy.multipleOutValuesRemote(function(result, excp) {
-        theResult = result;
-        theExcp = excp;
-        loop.quit();
-    });
-
-    loop.run();
-
-    JSUnit.assertEquals("Hello", theResult[0]);
-    JSUnit.assertEquals("World", theResult[1]);
-    JSUnit.assertEquals("!", theResult[2]);
-    JSUnit.assertNull(theExcp);
-}
-
-function testOneArrayOut() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    let theResult, theExcp;
-    proxy.oneArrayOutRemote(function(result, excp) {
-        [theResult] = result;
-        theExcp = excp;
-        loop.quit();
-    });
-
-    loop.run();
-
-    JSUnit.assertEquals("Hello", theResult[0]);
-    JSUnit.assertEquals("World", theResult[1]);
-    JSUnit.assertEquals("!", theResult[2]);
-    JSUnit.assertNull(theExcp);
-}
-
-function testArrayOfArrayOut() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    let theResult, theExcp;
-    proxy.arrayOfArrayOutRemote(function(result, excp) {
-        [theResult] = result;
-        theExcp = excp;
-        loop.quit();
-    });
-
-    loop.run();
-
-    let a1 = theResult[0];
-    let a2 = theResult[1];
-
-    JSUnit.assertEquals("Hello", a1[0]);
-    JSUnit.assertEquals("World", a1[1]);
-
-    JSUnit.assertEquals("World", a2[0]);
-    JSUnit.assertEquals("Hello", a2[1]);;
-
-    JSUnit.assertNull(theExcp);
-}
-
-function testMultipleArrayOut() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    let theResult, theExcp;
-    proxy.multipleArrayOutRemote(function(result, excp) {
-        theResult = result;
-        theExcp = excp;
-        loop.quit();
-    });
-
-    loop.run();
-
-    let a1 = theResult[0];
-    let a2 = theResult[1];
-
-    JSUnit.assertEquals("Hello", a1[0]);
-    JSUnit.assertEquals("World", a1[1]);
-
-    JSUnit.assertEquals("World", a2[0]);
-    JSUnit.assertEquals("Hello", a2[1]);;
-
-    JSUnit.assertNull(theExcp);
-}
-
-/* COMPAT: This test should test what happens when a TypeError is thrown during
- * argument marshalling, but conversions don't throw TypeErrors anymore, so we
- * can't test that ... until we upgrade to mozjs38 which has Symbols. Converting
- * a Symbol to an int32 or string will throw a TypeError.
- */
-function testArrayOutBadSig() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    let theResult, theExcp;
-    proxy.arrayOutBadSigRemote(function(result, excp) {
-        theResult = result;
-        theExcp = excp;
-        loop.quit();
-    });
-
-    loop.run();
-    // JSUnit.assertNull(theResult);
-    // JSUnit.assertNotNull(theExcp);
-}
-
-function testAsyncImplementation() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    let someString = "Hello world!";
-    let someInt = 42;
-    let theResult, theExcp;
-    proxy.echoRemote(someString, someInt,
-                     function(result, excp) {
-                         theResult = result;
-                         theExcp = excp;
-                         loop.quit();
-                     });
-
-    loop.run();
-    JSUnit.assertNull(theExcp);
-    JSUnit.assertNotNull(theResult);
-    JSUnit.assertEquals(theResult[0], someString);
-    JSUnit.assertEquals(theResult[1], someInt);
-}
-
-function testBytes() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    let someBytes = [ 0, 63, 234 ];
-    let theResult, theExcp;
-    for (let i = 0; i < someBytes.length; ++i) {
-        theResult = null;
-        theExcp = null;
-        proxy.byteEchoRemote(someBytes[i], function(result, excp) {
-            [theResult] = result;
-            theExcp = excp;
+    it('can call a remote method', function () {
+        proxy.frobateStuffRemote({}, ([result], excp) => {
+            expect(excp).toBeNull();
+            expect(result.hello.deep_unpack()).toEqual('world');
             loop.quit();
         });
-
         loop.run();
-        JSUnit.assertNull(theExcp);
-        JSUnit.assertNotNull(theResult);
-        JSUnit.assertEquals(someBytes[i], theResult);
-    }
-}
-
-function testStructArray() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    let theResult, theExcp;
-    proxy.structArrayRemote(function(result, excp) {
-        [theResult] = result;
-        theExcp = excp;
-        loop.quit();
-    });
-    loop.run();
-    JSUnit.assertNull(theExcp);
-    JSUnit.assertNotNull(theResult);
-    JSUnit.assertEquals(theResult[0][0], 128);
-    JSUnit.assertEquals(theResult[0][1], 123456);
-    JSUnit.assertEquals(theResult[1][0], 42);
-    JSUnit.assertEquals(theResult[1][1], 654321);
-}
-
-function testDictSignatures() {
-    let loop = GLib.MainLoop.new(null, false);
-
-    let someDict = {
-        aDouble: new GLib.Variant('d', 10),
-        // should be an integer after round trip
-        anInteger: new GLib.Variant('i', 10.5),
-        // should remain a double
-        aDoubleBeforeAndAfter: new GLib.Variant('d', 10.5),
-    };
-    let theResult, theExcp;
-    proxy.dictEchoRemote(someDict, function(result, excp) {
-        [theResult] = result;
-        theExcp = excp;
-        loop.quit();
     });
 
-    loop.run();
-    JSUnit.assertNull(theExcp);
-    JSUnit.assertNotNull(theResult);
+    /* excp must be exactly the exception thrown by the remote method
+       (more or less) */
+    it('can handle an exception thrown by a remote method', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: alwaysThrowException: *');
 
-    // verify the fractional part was dropped off int
-    JSUnit.assertEquals(10, theResult['anInteger'].deep_unpack());
+        proxy.alwaysThrowExceptionRemote({}, function(result, excp) {
+            expect(result).toBeNull();
+            expect(excp).not.toBeNull();
+            loop.quit();
+        });
+        loop.run();
+    });
 
-    // and not dropped off a double
-    JSUnit.assertEquals(10.5, theResult['aDoubleBeforeAndAfter'].deep_unpack());
+    it('throws an exception when trying to call a method that does not exist', function () {
+        /* First remove the method from the object! */
+        delete Test.prototype.thisDoesNotExist;
 
-    // this JSUnit.assertion is useless, it will work
-    // anyway if the result is really an int,
-    // but it at least checks we didn't lose data
-    JSUnit.assertEquals(10.0, theResult['aDouble'].deep_unpack());
-}
+        proxy.thisDoesNotExistRemote(function (result, excp) {
+            expect(excp).not.toBeNull();
+            expect(result).toBeNull();
+            loop.quit();
+        });
+        loop.run();
+    });
 
-function testFinalize() {
-    // Not really needed, but if we don't cleanup
-    // memory checking will complain
+    it('can pass a parameter to a remote method that is not a JSON object', function () {
+        proxy.nonJsonFrobateStuffRemote(42, ([result], excp) => {
+            expect(result).toEqual('42 it is!');
+            expect(excp).toBeNull();
+            loop.quit();
+        });
+        loop.run();
+    });
 
-    Gio.DBus.session.unown_name(own_name_id);
-}
+    it('can call a remote method with no in parameter', function () {
+        proxy.noInParameterRemote(([result], excp) => {
+            expect(result).toEqual('Yes!');
+            expect(excp).toBeNull();
+            loop.quit();
+        });
+        loop.run();
+    });
 
-JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
+    it('can call a remote method with multiple in parameters', function () {
+        proxy.multipleInArgsRemote(1, 2, 3, 4, 5, ([result], excp) => {
+            expect(result).toEqual('1 2 3 4 5');
+            expect(excp).toBeNull();
+            loop.quit();
+        });
+        loop.run();
+    });
 
+    it('can call a remote method with no return value', function () {
+        proxy.noReturnValueRemote(([result], excp) => {
+            expect(result).not.toBeDefined();
+            expect(excp).toBeNull();
+            loop.quit();
+        });
+        loop.run();
+    });
+
+    it('can emit a DBus signal', function () {
+        let handler = jasmine.createSpy('signalFoo');
+        let id = proxy.connectSignal('signalFoo', handler);
+        handler.and.callFake(() => proxy.disconnectSignal(id));
+
+        proxy.emitSignalRemote(([result], excp) => {
+            expect(result).not.toBeDefined();
+            expect(excp).toBeNull();
+            expect(handler).toHaveBeenCalledTimes(1);
+            expect(handler).toHaveBeenCalledWith(jasmine.anything(),
+                jasmine.anything(), ['foobar']);
+            loop.quit();
+        });
+        loop.run();
+    });
+
+    it('can call a remote method with multiple return values', function () {
+        proxy.multipleOutValuesRemote(function(result, excp) {
+            expect(result).toEqual(['Hello', 'World', '!']);
+            expect(excp).toBeNull();
+            loop.quit();
+        });
+        loop.run();
+    });
+
+    it('does not coalesce one array into the array of return values', function () {
+        proxy.oneArrayOutRemote(([result], excp) => {
+            expect(result).toEqual(['Hello', 'World', '!']);
+            expect(excp).toBeNull();
+            loop.quit();
+        });
+        loop.run();
+    });
+
+    it('does not coalesce an array of arrays into the array of return values', function () {
+        proxy.arrayOfArrayOutRemote(([[a1, a2]], excp) => {
+            expect(a1).toEqual(['Hello', 'World']);
+            expect(a2).toEqual(['World', 'Hello']);
+            expect(excp).toBeNull();
+            loop.quit();
+        });
+        loop.run();
+    });
+
+    it('can return multiple arrays from a remote method', function () {
+        proxy.multipleArrayOutRemote(([a1, a2], excp) => {
+            expect(a1).toEqual(['Hello', 'World']);
+            expect(a2).toEqual(['World', 'Hello']);
+            expect(excp).toBeNull();
+            loop.quit();
+        });
+        loop.run();
+    });
+
+    /* COMPAT: This test should test what happens when a TypeError is thrown
+     * during argument marshalling, but conversions don't throw TypeErrors
+     * anymore, so we can't test that ... until we upgrade to mozjs38 which has
+     * Symbols. Converting a Symbol to an int32 or string will throw a TypeError.
+     */
+    xit('handles a bad signature by throwing an exception', function () {
+        proxy.arrayOutBadSigRemote(function(result, excp) {
+            expect(result).toBeNull();
+            expect(excp).not.toBeNull();
+            loop.quit();
+        });
+        loop.run();
+    }).pend('currently cannot throw TypeError during conversion');
+
+    it('can call a remote method that is implemented asynchronously', function () {
+        let someString = "Hello world!";
+        let someInt = 42;
+
+        proxy.echoRemote(someString, someInt,
+            function(result, excp) {
+                expect(excp).toBeNull();
+                expect(result).toEqual([someString, someInt]);
+                loop.quit();
+            });
+        loop.run();
+    });
+
+    it('can send and receive bytes from a remote method', function () {
+        let loop = GLib.MainLoop.new(null, false);
+
+        let someBytes = [ 0, 63, 234 ];
+        someBytes.forEach(b => {
+            proxy.byteEchoRemote(b, ([result], excp) => {
+                expect(excp).toBeNull();
+                expect(result).toEqual(b);
+                loop.quit();
+            });
+
+            loop.run();
+        });
+    });
+
+    it('can call a remote method that returns an array of structs', function () {
+        proxy.structArrayRemote(([result], excp) => {
+            expect(excp).toBeNull();
+            expect(result).toEqual([[128, 123456], [42, 654321]]);
+            loop.quit();
+        });
+        loop.run();
+    });
+
+    it('can send and receive dicts from a remote method', function () {
+        let someDict = {
+            aDouble: new GLib.Variant('d', 10),
+            // should be an integer after round trip
+            anInteger: new GLib.Variant('i', 10.5),
+            // should remain a double
+            aDoubleBeforeAndAfter: new GLib.Variant('d', 10.5),
+        };
+
+        proxy.dictEchoRemote(someDict, ([result], excp) => {
+            expect(excp).toBeNull();
+            expect(result).not.toBeNull();
+
+            // verify the fractional part was dropped off int
+            expect(result['anInteger'].deep_unpack()).toEqual(10);
+
+            // and not dropped off a double
+            expect(result['aDoubleBeforeAndAfter'].deep_unpack()).toEqual(10.5);
+
+            // check without type conversion
+            expect(result['aDouble'].deep_unpack()).toBe(10.0);
+
+            loop.quit();
+        });
+        loop.run();
+    });
+});

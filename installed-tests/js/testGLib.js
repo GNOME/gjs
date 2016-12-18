@@ -1,37 +1,43 @@
 const GLib = imports.gi.GLib;
-const JSUnit = imports.jsUnit;
 
-function testVariantConstructor() {
-    let str_variant = new GLib.Variant('s', 'mystring');
-    JSUnit.assertEquals('mystring', str_variant.get_string()[0]);
-    JSUnit.assertEquals('mystring', str_variant.deep_unpack());
+describe('GVariant constructor', function () {
+    it('constructs a string variant', function () {
+        let str_variant = new GLib.Variant('s', 'mystring');
+        expect(str_variant.get_string()[0]).toEqual('mystring');
+        expect(str_variant.deep_unpack()).toEqual('mystring');
+    });
 
-    let str_variant_old = GLib.Variant.new('s', 'mystring');
-    JSUnit.assertTrue(str_variant.equal(str_variant_old));
+    it('constructs a string variant (backwards compatible API)', function () {
+        let str_variant = new GLib.Variant('s', 'mystring');
+        let str_variant_old = GLib.Variant.new('s', 'mystring');
+        expect(str_variant.equal(str_variant_old)).toBeTruthy();
+    });
 
-    let struct_variant = new GLib.Variant('(sogvau)', [
-        'a string',
-        '/a/object/path',
-        'asig', //nature
-        new GLib.Variant('s', 'variant'),
-        [ 7, 3 ]
-    ]);
-    JSUnit.assertEquals(5, struct_variant.n_children());
+    it('constructs a struct variant', function () {
+        let struct_variant = new GLib.Variant('(sogvau)', [
+            'a string',
+            '/a/object/path',
+            'asig', //nature
+            new GLib.Variant('s', 'variant'),
+            [ 7, 3 ]
+        ]);
+        expect(struct_variant.n_children()).toEqual(5);
 
-    let unpacked = struct_variant.deep_unpack();
-    JSUnit.assertEquals('a string', unpacked[0]);
-    JSUnit.assertEquals('/a/object/path', unpacked[1]);
-    JSUnit.assertEquals('asig', unpacked[2]);
-    JSUnit.assertTrue(unpacked[3] instanceof GLib.Variant);
-    JSUnit.assertEquals('variant', unpacked[3].deep_unpack());
-    JSUnit.assertTrue(unpacked[4] instanceof Array);
-    JSUnit.assertEquals(2, unpacked[4].length);
+        let unpacked = struct_variant.deep_unpack();
+        expect(unpacked[0]).toEqual('a string');
+        expect(unpacked[1]).toEqual('/a/object/path');
+        expect(unpacked[2]).toEqual('asig');
+        expect(unpacked[3] instanceof GLib.Variant).toBeTruthy();
+        expect(unpacked[3].deep_unpack()).toEqual('variant');
+        expect(unpacked[4] instanceof Array).toBeTruthy();
+        expect(unpacked[4].length).toEqual(2);
+    });
 
-    let maybe_variant = new GLib.Variant('ms', null);
-    JSUnit.assertEquals(null, maybe_variant.deep_unpack());
+    it('constructs a maybe variant', function () {
+        let maybe_variant = new GLib.Variant('ms', null);
+        expect(maybe_variant.deep_unpack()).toBeNull();
 
-    maybe_variant = new GLib.Variant('ms', 'string');
-    JSUnit.assertEquals('string', maybe_variant.deep_unpack());
-}
-
-JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
+        maybe_variant = new GLib.Variant('ms', 'string');
+        expect(maybe_variant.deep_unpack()).toEqual('string');
+    });
+});

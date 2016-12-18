@@ -1,6 +1,5 @@
 // -*- mode: js; indent-tabs-mode: nil -*-
 
-const JSUnit = imports.jsUnit;
 const Lang = imports.lang;
 
 const AnInterface = new Lang.Interface({
@@ -102,239 +101,237 @@ const ImplementationOfTwoInterfaces = new Lang.Class({
     }
 });
 
-function testInterfaceIsInstanceOfLangInterface() {
-    JSUnit.assertTrue(AnInterface instanceof Lang.Interface);
-    JSUnit.assertTrue(InterfaceRequiringOtherInterface instanceof Lang.Interface);
-}
-
-function testInterfaceCannotBeInstantiated() {
-    JSUnit.assertRaises(() => new AnInterface());
-}
-
-function testObjectCanImplementInterface() {
-    // Test will fail if the constructor throws an exception
-    let obj = new ObjectImplementingAnInterface();
-    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
-}
-
-function testSuperclassCanImplementInterface() {
-    const ChildWhoseParentImplementsAnInterface = new Lang.Class({
-        Name: "ChildWhoseParentImplementsAnInterface",
-        Extends: ObjectImplementingAnInterface
+describe('An interface', function () {
+    it('is an instance of Lang.Interface', function () {
+        expect(AnInterface instanceof Lang.Interface).toBeTruthy();
+        expect(InterfaceRequiringOtherInterface instanceof Lang.Interface).toBeTruthy();
     });
-    let obj = new ChildWhoseParentImplementsAnInterface();
-    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
-}
 
-function testObjectImplementingInterfaceHasCorrectConstructor() {
-    let obj = new ObjectImplementingAnInterface();
-    JSUnit.assertEquals(ObjectImplementingAnInterface, obj.constructor);
-}
+    it('cannot be instantiated', function () {
+        expect(() => new AnInterface()).toThrow();
+    });
 
-function testObjectCanImplementRequiredFunction() {
-    // Test considered passing if no exception thrown
-    let implementer = new ObjectImplementingAnInterface();
-    implementer.required();
-}
+    it('can be implemented by a class', function () {
+        let obj;
+        expect(() => { obj = new ObjectImplementingAnInterface(); }).not.toThrow();
+        expect(obj.constructor.implements(AnInterface)).toBeTruthy();
+    });
 
-function testInterfaceMustHaveName() {
-    JSUnit.assertRaises(function () {
-        const AnInterfaceWithoutAName = new Lang.Interface({
-            required: Lang.Interface.UNIMPLEMENTED
+    it("can be implemented by a class's superclass", function () {
+        const ChildWhoseParentImplementsAnInterface = new Lang.Class({
+            Name: "ChildWhoseParentImplementsAnInterface",
+            Extends: ObjectImplementingAnInterface
         });
+        let obj = new ChildWhoseParentImplementsAnInterface();
+        expect(obj.constructor.implements(AnInterface)).toBeTruthy();
     });
-}
 
-function testClassMustImplementRequiredFunction() {
-    JSUnit.assertRaises(() => new Lang.Class({
-        Name: 'MyBadObject',
-        Implements: [ AnInterface ]
-    }));
-}
-
-function testClassDoesntHaveToImplementOptionalFunction() {
-    // Test will fail if the constructor throws an exception
-    let obj = new MinimalImplementationOfAnInterface();
-    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
-}
-
-function testObjectCanDeferToInterfaceOptionalFunction() {
-    let obj = new MinimalImplementationOfAnInterface();
-    JSUnit.assertEquals('AnInterface.optional()', obj.optional());
-}
-
-function testObjectCanChainUpToInterface() {
-    let obj = new ObjectImplementingAnInterface();
-    JSUnit.assertEquals('AnInterface.optional()', obj.optional());
-}
-
-function testObjectCanChainUpToInterfaceWithArguments() {
-    let obj = new ObjectImplementingAnInterface();
-    JSUnit.assertEquals('AnInterface.argumentGeneric(arg (hello from class))',
-        obj.argumentGeneric('arg'));
-}
-
-function testObjectCanDeferToInterfaceGetter() {
-    let obj = new ObjectImplementingAnInterface();
-    JSUnit.assertEquals('AnInterface.some_prop getter', obj.some_prop);
-}
-
-function testObjectCanDeferToInterfaceSetter() {
-    let obj = new ObjectImplementingAnInterface();
-    obj.some_prop = 'foobar';
-    JSUnit.assertTrue(obj.some_prop_setter_called);
-}
-
-function testObjectCanOverrideInterfaceGetter() {
-    const ObjectWithGetter = new Lang.Class({
-        Name: 'ObjectWithGetter',
-        Implements: [ AnInterface ],
-        required: function () {},
-        get some_prop() {
-            return 'ObjectWithGetter.some_prop getter';
-        }
+    it("doesn't disturb a class's constructor", function () {
+        let obj = new ObjectImplementingAnInterface();
+        expect(obj.constructor).toEqual(ObjectImplementingAnInterface);
     });
-    let obj = new ObjectWithGetter();
-    JSUnit.assertEquals('ObjectWithGetter.some_prop getter', obj.some_prop);
-}
 
-function testObjectCanOverrideInterfaceSetter() {
-    const ObjectWithSetter = new Lang.Class({
-        Name: 'ObjectWithSetter',
-        Implements: [ AnInterface ],
-        required: function () {},
-        set some_prop(value) {  /* setter without getter */// jshint ignore:line
-            this.overridden_some_prop_setter_called = true;
-        }
+    it('can have its required method implemented', function () {
+        let implementer = new ObjectImplementingAnInterface();
+        expect(() => implementer.required()).not.toThrow();
     });
-    let obj = new ObjectWithSetter();
-    obj.some_prop = 'foobar';
-    JSUnit.assertTrue(obj.overridden_some_prop_setter_called);
-    JSUnit.assertUndefined(obj.some_prop_setter_called);
-}
 
-function testInterfaceCanRequireOtherInterface() {
-    // Test will fail if the constructor throws an exception
-    let obj = new ImplementationOfTwoInterfaces();
-    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
-    JSUnit.assertTrue(obj.constructor.implements(InterfaceRequiringOtherInterface));
-}
-
-function testRequiresCanBeEmpty() {
-    // Test considered passing if no exception thrown
-    const InterfaceWithEmptyRequires = new Lang.Interface({
-        Name: 'InterfaceWithEmptyRequires',
-        Requires: []
+    it('must have a name', function () {
+        expect(() => new Lang.Interface({
+            required: Lang.Interface.UNIMPLEMENTED,
+        })).toThrow();
     });
-}
 
-function testInterfaceCanChainUpToOtherInterface() {
-    let obj = new ImplementationOfTwoInterfaces();
-    JSUnit.assertEquals('InterfaceRequiringOtherInterface.optional()\nAnInterface.optional()',
-        obj.optional());
-}
-
-function testObjectCanChainUpToInterfaceWithGeneric() {
-    let obj = new ObjectImplementingAnInterface();
-    JSUnit.assertEquals('AnInterface.optionalGeneric()',
-        obj.optionalGeneric());
-}
-
-function testInterfaceCanChainUpToOtherInterfaceWithGeneric() {
-    let obj = new ImplementationOfTwoInterfaces();
-    JSUnit.assertEquals('InterfaceRequiringOtherInterface.optionalGeneric()\nAnInterface.optionalGeneric()',
-        obj.optionalGeneric());
-}
-
-function testObjectDefersToLastInterfaceOptionalFunction() {
-    const MinimalImplementationOfTwoInterfaces = new Lang.Class({
-        Name: 'MinimalImplementationOfTwoInterfaces',
-        Implements: [ AnInterface, InterfaceRequiringOtherInterface ],
-
-        required: function () {}
+    it('must have its required methods implemented', function () {
+        expect(() => new Lang.Class({
+            Name: 'MyBadObject',
+            Implements: [AnInterface],
+        })).toThrow();
     });
-    let obj = new MinimalImplementationOfTwoInterfaces();
-    JSUnit.assertEquals('InterfaceRequiringOtherInterface.optionalGeneric()\nAnInterface.optionalGeneric()',
-        obj.optionalGeneric());
-}
 
-function testClassMustImplementAllRequiredInterfaces() {
-    JSUnit.assertRaises(() => new Lang.Class({
-        Name: 'ObjectWithNotEnoughInterfaces',
-        Implements: [ InterfaceRequiringOtherInterface ],
-        required: function () {}
-    }));
-}
-
-function testClassMustImplementRequiredInterfacesInCorrectOrder() {
-    JSUnit.assertRaises(() => new Lang.Class({
-        Name: 'ObjectWithInterfacesInWrongOrder',
-        Implements: [ InterfaceRequiringOtherInterface, AnInterface ],
-        required: function () {}
-    }));
-}
-
-function testInterfacesCanBeImplementedOnAParentClass() {
-    // Test will fail if the constructor throws an exception
-    const ObjectInheritingFromInterfaceImplementation = new Lang.Class({
-        Name: 'ObjectInheritingFromInterfaceImplementation',
-        Extends: ObjectImplementingAnInterface,
-        Implements: [ InterfaceRequiringOtherInterface ],
+    it('does not have to have its optional methods implemented', function () {
+        let obj;
+        expect(() => obj = new MinimalImplementationOfAnInterface()).not.toThrow();
+        expect(obj.constructor.implements(AnInterface)).toBeTruthy();
     });
-    let obj = new ObjectInheritingFromInterfaceImplementation();
-    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
-    JSUnit.assertTrue(obj.constructor.implements(InterfaceRequiringOtherInterface));
-}
 
-function testInterfacesCanRequireBeingImplementedOnASubclass() {
-    // Test will fail if the constructor throws an exception
-    const ObjectImplementingInterfaceRequiringParentObject = new Lang.Class({
-        Name: 'ObjectImplementingInterfaceRequiringParentObject',
-        Extends: ObjectImplementingAnInterface,
-        Implements: [ InterfaceRequiringOtherInterface, InterfaceRequiringClassAndInterface ]
+    it('can have its optional method deferred to by the implementation', function () {
+        let obj = new MinimalImplementationOfAnInterface();
+        expect(obj.optional()).toEqual('AnInterface.optional()');
     });
-    let obj = new ObjectImplementingInterfaceRequiringParentObject();
-    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
-    JSUnit.assertTrue(obj.constructor.implements(InterfaceRequiringOtherInterface));
-    JSUnit.assertTrue(obj.constructor.implements(InterfaceRequiringClassAndInterface));
-}
 
-function testObjectsMustSubclassIfRequired() {
-    JSUnit.assertRaises(() => new Lang.Class({
-        Name: 'ObjectWithoutRequiredParent',
-        Implements: [ AnInterface, InterfaceRequiringOtherInterface, InterfaceRequiringClassAndInterface ],
-        required: function () {},
-    }));
-}
-
-function testInterfaceMethodsCanCallOtherInterfaceMethods() {
-    let obj = new ObjectImplementingAnInterface();
-    JSUnit.assertEquals('interface private method', obj.usesThis());
-}
-
-function testSubclassImplementsTheSameInterfaceAsItsParent() {
-    const SubObject = new Lang.Class({
-        Name: 'SubObject',
-        Extends: ObjectImplementingAnInterface
+    it('can be chained up to by a class', function () {
+        let obj = new ObjectImplementingAnInterface();
+        expect(obj.optional()).toEqual('AnInterface.optional()');
     });
-    let obj = new SubObject();
-    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
-}
 
-function testSubclassCanReimplementTheSameInterfaceAsItsParent() {
-    const SubImplementer = new Lang.Class({
-        Name: 'SubImplementer',
-        Extends: ObjectImplementingAnInterface,
-        Implements: [ AnInterface ]
+    it('can include arguments when being chained up to by a class', function () {
+        let obj = new ObjectImplementingAnInterface();
+        expect(obj.argumentGeneric('arg'))
+            .toEqual('AnInterface.argumentGeneric(arg (hello from class))');
     });
-    let obj = new SubImplementer();
-    JSUnit.assertTrue(obj.constructor.implements(AnInterface));
-    obj.required();  // should not throw NotImplemented
-}
 
-function testToString() {
-    JSUnit.assertEquals('[interface Interface for AnInterface]',
-                        AnInterface.toString());
-}
+    it('can have its property getter deferred to', function () {
+        let obj = new ObjectImplementingAnInterface();
+        expect(obj.some_prop).toEqual('AnInterface.some_prop getter');
+    });
 
-JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
+    it('can have its property setter deferred to', function () {
+        let obj = new ObjectImplementingAnInterface();
+        obj.some_prop = 'foobar';
+        expect(obj.some_prop_setter_called).toBeTruthy();
+    });
+
+    it('can have its property getter overridden', function () {
+        const ObjectWithGetter = new Lang.Class({
+            Name: 'ObjectWithGetter',
+            Implements: [ AnInterface ],
+            required: function () {},
+            get some_prop() {
+                return 'ObjectWithGetter.some_prop getter';
+            }
+        });
+        let obj = new ObjectWithGetter();
+        expect(obj.some_prop).toEqual('ObjectWithGetter.some_prop getter');
+    });
+
+    it('can have its property setter overridden', function () {
+        const ObjectWithSetter = new Lang.Class({
+            Name: 'ObjectWithSetter',
+            Implements: [ AnInterface ],
+            required: function () {},
+            set some_prop(value) {  /* setter without getter */// jshint ignore:line
+                this.overridden_some_prop_setter_called = true;
+            }
+        });
+        let obj = new ObjectWithSetter();
+        obj.some_prop = 'foobar';
+        expect(obj.overridden_some_prop_setter_called).toBeTruthy();
+        expect(obj.some_prop_setter_called).not.toBeDefined();
+    });
+
+    it('can require another interface', function () {
+        let obj;
+        expect(() => { obj = new ImplementationOfTwoInterfaces(); }).not.toThrow();
+        expect(obj.constructor.implements(AnInterface)).toBeTruthy();
+        expect(obj.constructor.implements(InterfaceRequiringOtherInterface)).toBeTruthy();
+    });
+
+    it('can have empty requires', function () {
+        expect(() => new Lang.Interface({
+            Name: 'InterfaceWithEmptyRequires',
+            Requires: []
+        })).not.toThrow();
+    });
+
+    it('can chain up to another interface', function () {
+        let obj = new ImplementationOfTwoInterfaces();
+        expect(obj.optional())
+            .toEqual('InterfaceRequiringOtherInterface.optional()\nAnInterface.optional()');
+    });
+
+    it('can be chained up to with a generic', function () {
+        let obj = new ObjectImplementingAnInterface();
+        expect(obj.optionalGeneric()).toEqual('AnInterface.optionalGeneric()');
+    });
+
+    it('can chain up to another interface with a generic', function () {
+        let obj = new ImplementationOfTwoInterfaces();
+        expect(obj.optionalGeneric())
+            .toEqual('InterfaceRequiringOtherInterface.optionalGeneric()\nAnInterface.optionalGeneric()');
+    });
+
+    it('has its optional function defer to that of the last interface', function () {
+        const MinimalImplementationOfTwoInterfaces = new Lang.Class({
+            Name: 'MinimalImplementationOfTwoInterfaces',
+            Implements: [ AnInterface, InterfaceRequiringOtherInterface ],
+
+            required: function () {}
+        });
+        let obj = new MinimalImplementationOfTwoInterfaces();
+        expect(obj.optionalGeneric())
+            .toEqual('InterfaceRequiringOtherInterface.optionalGeneric()\nAnInterface.optionalGeneric()');
+    });
+
+    it('must have all its required interfaces implemented', function () {
+        expect(() => new Lang.Class({
+            Name: 'ObjectWithNotEnoughInterfaces',
+            Implements: [ InterfaceRequiringOtherInterface ],
+            required: function () {}
+        })).toThrow();
+    });
+
+    it('must have all its required interfaces implemented in the correct order', function () {
+        expect(() => new Lang.Class({
+            Name: 'ObjectWithInterfacesInWrongOrder',
+            Implements: [ InterfaceRequiringOtherInterface, AnInterface ],
+            required: function () {}
+        })).toThrow();
+    });
+
+    it('can have its implementation on a parent class', function () {
+        let obj;
+        expect(() => {
+            const ObjectInheritingFromInterfaceImplementation = new Lang.Class({
+                Name: 'ObjectInheritingFromInterfaceImplementation',
+                Extends: ObjectImplementingAnInterface,
+                Implements: [ InterfaceRequiringOtherInterface ],
+            });
+            obj = new ObjectInheritingFromInterfaceImplementation();
+        }).not.toThrow();
+        expect(obj.constructor.implements(AnInterface)).toBeTruthy();
+        expect(obj.constructor.implements(InterfaceRequiringOtherInterface)).toBeTruthy();
+    });
+
+    it('can require its implementor to be a subclass of some class', function () {
+        let obj;
+        expect(() => {
+            const ObjectImplementingInterfaceRequiringParentObject = new Lang.Class({
+                Name: 'ObjectImplementingInterfaceRequiringParentObject',
+                Extends: ObjectImplementingAnInterface,
+                Implements: [ InterfaceRequiringOtherInterface, InterfaceRequiringClassAndInterface ]
+            });
+            obj = new ObjectImplementingInterfaceRequiringParentObject();
+        }).not.toThrow();
+        expect(obj.constructor.implements(AnInterface)).toBeTruthy();
+        expect(obj.constructor.implements(InterfaceRequiringOtherInterface)).toBeTruthy();
+        expect(obj.constructor.implements(InterfaceRequiringClassAndInterface)).toBeTruthy();
+    });
+
+    it('must be implemented by an object which subclasses the required class', function () {
+        expect(() => new Lang.Class({
+            Name: 'ObjectWithoutRequiredParent',
+            Implements: [ AnInterface, InterfaceRequiringOtherInterface, InterfaceRequiringClassAndInterface ],
+            required: function () {},
+        })).toThrow();
+    });
+
+    it('can have methods that call others of its methods', function () {
+        let obj = new ObjectImplementingAnInterface();
+        expect(obj.usesThis()).toEqual('interface private method');
+    });
+
+    it('is implemented by a subclass of a class that implements it', function () {
+        const SubObject = new Lang.Class({
+            Name: 'SubObject',
+            Extends: ObjectImplementingAnInterface
+        });
+        let obj = new SubObject();
+        expect(obj.constructor.implements(AnInterface)).toBeTruthy();
+    });
+
+    it('can be reimplemented by a subclass of a class that implements it', function () {
+        const SubImplementer = new Lang.Class({
+            Name: 'SubImplementer',
+            Extends: ObjectImplementingAnInterface,
+            Implements: [ AnInterface ]
+        });
+        let obj = new SubImplementer();
+        expect(obj.constructor.implements(AnInterface)).toBeTruthy();
+        expect(() => obj.required()).not.toThrow();
+    });
+
+    it('tells what it is with toString()', function () {
+        expect(AnInterface.toString()).toEqual('[interface Interface for AnInterface]');
+    });
+});

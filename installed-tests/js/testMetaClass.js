@@ -1,19 +1,6 @@
 // -*- mode: js; indent-tabs-mode: nil -*-
-const JSUnit = imports.jsUnit;
-
-if (!('assertEquals' in this)) { /* allow running this test standalone */
-    imports.lang.copyPublicProperties(imports.jsUnit, this);
-    gjstestRun = function() { return imports.jsUnit.gjstestRun(window); };
-}
 
 const Lang = imports.lang;
-
-function assertArrayEquals(expected, got) {
-    JSUnit.assertEquals(expected.length, got.length);
-    for (let i = 0; i < expected.length; i ++) {
-        JSUnit.assertEquals(expected[i], got[i]);
-    }
-}
 
 const NormalClass = new Lang.Class({
     Name: 'NormalClass',
@@ -80,49 +67,51 @@ const CustomMetaSubclass = new Lang.Class({
     }
 });
 
-function testMetaClass() {
-    assertArrayEquals(['CustomMetaOne',
-                       'CustomMetaTwo',
-                       'CustomMetaSubclass'], Subclassed);
-
-    JSUnit.assertTrue(NormalClass instanceof Lang.Class);
-    JSUnit.assertTrue(MetaClass instanceof Lang.Class);
-
-    JSUnit.assertTrue(CustomMetaOne instanceof Lang.Class);
-    JSUnit.assertTrue(CustomMetaOne instanceof MetaClass);
-
-    JSUnit.assertEquals(2, CustomMetaTwo.DYNAMIC_CONSTANT);
-    JSUnit.assertUndefined(CustomMetaOne.DYNAMIC_CONSTANT);
-}
-
-function testMetaInstance() {
-    let instanceOne = new CustomMetaOne();
-
-    JSUnit.assertEquals(1, instanceOne.one);
-    JSUnit.assertEquals(2, instanceOne.two);
-
-    JSUnit.assertRaises(function() {
-        instanceOne.dynamic_method();
+describe('A metaclass', function () {
+    it('has its constructor called each time a class is created with it', function () {
+        expect(Subclassed).toEqual(['CustomMetaOne', 'CustomMetaTwo',
+            'CustomMetaSubclass']);
     });
 
-    let instanceTwo = new CustomMetaTwo();
-    JSUnit.assertEquals(1, instanceTwo.one);
-    JSUnit.assertEquals(2, instanceTwo.two);
-    JSUnit.assertEquals(73, instanceTwo.dynamic_method());
-}
+    it('is an instance of Lang.Class', function () {
+        expect(NormalClass instanceof Lang.Class).toBeTruthy();
+        expect(MetaClass instanceof Lang.Class).toBeTruthy();
+    });
 
-function testMetaSubclass() {
-    JSUnit.assertTrue(CustomMetaSubclass instanceof MetaClass);
+    it('produces instances that are instances of itself and Lang.Class', function () {
+        expect(CustomMetaOne instanceof Lang.Class).toBeTruthy();
+        expect(CustomMetaOne instanceof MetaClass).toBeTruthy();
+    });
 
-    let instance = new CustomMetaSubclass();
+    it('can dynamically define properties in its constructor', function () {
+        expect(CustomMetaTwo.DYNAMIC_CONSTANT).toEqual(2);
+        expect(CustomMetaOne.DYNAMIC_CONSTANT).not.toBeDefined();
+    });
 
-    JSUnit.assertEquals(1, instance.one);
-    JSUnit.assertEquals(2, instance.two);
-    JSUnit.assertEquals(3, instance.three);
+    describe('instance', function () {
+        let instanceOne, instanceTwo;
+        beforeEach(function () {
+            instanceOne = new CustomMetaOne();
+            instanceTwo = new CustomMetaTwo();
+        });
 
-    JSUnit.assertEquals(73, instance.dynamic_method());
-    JSUnit.assertEquals(2, CustomMetaSubclass.DYNAMIC_CONSTANT);
-}
+        it('gets all the properties from its class and metaclass', function () {
+            expect(instanceOne).toEqual(jasmine.objectContaining({ one: 1, two: 2 }));
+            expect(instanceTwo).toEqual(jasmine.objectContaining({ one: 1, two: 2 }));
+        });
 
-JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
+        it('gets dynamically defined properties from metaclass', function () {
+            expect(() => instanceOne.dynamic_method()).toThrow();
+            expect(instanceTwo.dynamic_method()).toEqual(73);
+        });
+    });
 
+    it('can be instantiated with Lang.Class but still get the appropriate metaclass', function () {
+        expect(CustomMetaSubclass instanceof MetaClass).toBeTruthy();
+        expect(CustomMetaSubclass.DYNAMIC_CONSTANT).toEqual(2);
+
+        let instance = new CustomMetaSubclass();
+        expect(instance).toEqual(jasmine.objectContaining({ one: 1, two: 2, three: 3 }));
+        expect(instance.dynamic_method()).toEqual(73);
+    });
+});

@@ -1,6 +1,5 @@
 // -*- mode: js; indent-tabs-mode: nil -*-
 
-const JSUnit = imports.jsUnit;
 const Lang = imports.lang;
 const GObject = imports.gi.GObject;
 const Gio = imports.gi.Gio;
@@ -144,7 +143,8 @@ const MyInitable = new Lang.Class({
     },
 
     vfunc_init: function(cancellable) { // error?
-        JSUnit.assertTrue(cancellable instanceof Gio.Cancellable);
+        if (!(cancellable instanceof Gio.Cancellable))
+            throw 'Bad argument';
 
         this.inited = true;
     }
@@ -167,8 +167,6 @@ const MyCustomInit = new Lang.Class({
         this.foo = false;
 
         this.parent();
-
-        JSUnit.assert(this.foo);
     },
 
     _instance_init: function() {
@@ -176,192 +174,184 @@ const MyCustomInit = new Lang.Class({
     }
 });
 
-function testGObjectClass() {
-    let myInstance = new MyObject();
+describe('GObject class', function () {
+    let myInstance;
+    beforeEach(function () {
+        myInstance = new MyObject();
+    });
 
-    JSUnit.assertEquals('foo', myInstance.readwrite);
-    JSUnit.assertEquals('bar', myInstance.readonly);
-    JSUnit.assertEquals('default', myInstance.construct);
+    it('constructs with default values for properties', function () {
+        expect(myInstance.readwrite).toEqual('foo');
+        expect(myInstance.readonly).toEqual('bar');
+        expect(myInstance.construct).toEqual('default');
+    });
 
-    let myInstance2 = new MyObject({ readwrite: 'baz', construct: 'asdf' });
+    it('constructs with a hash of property values', function () {
+        let myInstance2 = new MyObject({ readwrite: 'baz', construct: 'asdf' });
+        expect(myInstance2.readwrite).toEqual('baz');
+        expect(myInstance2.readonly).toEqual('bar');
+        expect(myInstance2.construct).toEqual('asdf');
+    });
 
-    JSUnit.assertEquals('baz', myInstance2.readwrite);
-    JSUnit.assertEquals('bar', myInstance2.readonly);
-    JSUnit.assertEquals('asdf', myInstance2.construct);
-
-    let ui = '<interface> \
+    const ui = '<interface> \
                 <object class="Gjs_MyObject" id="MyObject"> \
                   <property name="readwrite">baz</property> \
                   <property name="construct">quz</property> \
                 </object> \
               </interface>';
-    let builder = Gtk.Builder.new_from_string(ui, -1);
-    let myInstance3 = builder.get_object('MyObject');
-    JSUnit.assertEquals('baz', myInstance3.readwrite);
-    JSUnit.assertEquals('bar', myInstance3.readonly);
-    JSUnit.assertEquals('quz', myInstance3.construct);
+
+    it('constructs with property values from Gtk.Builder', function () {
+        let builder = Gtk.Builder.new_from_string(ui, -1);
+        let myInstance3 = builder.get_object('MyObject');
+        expect(myInstance3.readwrite).toEqual('baz');
+        expect(myInstance3.readonly).toEqual('bar');
+        expect(myInstance3.construct).toEqual('quz');
+    });
 
     // the following would (should) cause a CRITICAL:
     // myInstance.readonly = 'val';
     // myInstance.construct = 'val';
-}
 
-function testNotify() {
-    let myInstance = new MyObject();
-    let counter = 0;
+    it('has a notify signal', function () {
+        let notifySpy = jasmine.createSpy('notifySpy');
+        myInstance.connect('notify::readonly', notifySpy);
 
-    myInstance.connect('notify::readonly', function(obj) {
-        if (obj.readonly == 'changed')
-            counter++;
+        myInstance.notify_prop();
+        myInstance.notify_prop();
+
+        expect(notifySpy).toHaveBeenCalledTimes(2);
     });
 
-    myInstance.notify_prop();
-    myInstance.notify_prop();
+    it('can define its own signals', function () {
+        let emptySpy = jasmine.createSpy('emptySpy');
+        myInstance.connect('empty', emptySpy);
+        myInstance.emit_empty();
 
-    JSUnit.assertEquals(2, counter);
-}
-
-function testSignals() {
-    let myInstance = new MyObject();
-    let ok = false;
-
-    myInstance.connect('empty', function() {
-        ok = true;
-    });
-    myInstance.emit_empty();
-
-    JSUnit.assertEquals(true, ok);
-    JSUnit.assertEquals(true, myInstance.empty_called);
-
-    let args = [ ];
-    myInstance.connect('minimal', function(emitter, one, two) {
-        args.push(one);
-        args.push(two);
-
-        return true;
-    });
-    myInstance.emit_minimal(7, 5);
-
-    JSUnit.assertEquals(7, args[0]);
-    JSUnit.assertEquals(5, args[1]);
-
-    ok = true;
-    myInstance.connect('full', function() {
-        ok = true;
-
-        return 42;
-    });
-    myInstance.connect('full', function() {
-        // this should never be called
-        ok = false;
-
-        return -1;
-    });
-    let result = myInstance.emit_full();
-
-    JSUnit.assertEquals(true, ok);
-    JSUnit.assertUndefined(myInstance.full_default_handler_called);
-    JSUnit.assertEquals(42, result);
-
-    let stack = [ ];
-    myInstance.connect('run-last', function() {
-        stack.push(1);
-    });
-    myInstance.emit_run_last(function() {
-        stack.push(2);
+        expect(emptySpy).toHaveBeenCalled();
+        expect(myInstance.empty_called).toBeTruthy();
     });
 
-    JSUnit.assertEquals(1, stack[0]);
-    JSUnit.assertEquals(2, stack[1]);
-}
+    it('passes emitted arguments to signal handlers', function () {
+        let minimalSpy = jasmine.createSpy('minimalSpy');
+        myInstance.connect('minimal', minimalSpy);
+        myInstance.emit_minimal(7, 5);
 
-function testSubclass() {
-    // test that we can inherit from something that's not
-    // GObject.Object and still get all the goodies of
-    // GObject.Class
-
-    let instance = new MyApplication({ application_id: 'org.gjs.Application' });
-    let v;
-
-    instance.connect('custom', function(app, num) {
-        v = num;
+        expect(minimalSpy).toHaveBeenCalledWith(myInstance, 7, 5);
     });
 
-    instance.emit_custom(73);
-    JSUnit.assertEquals(73, v);
-}
+    it('can return values from signals', function () {
+        let fullSpy = jasmine.createSpy('fullSpy').and.returnValue(42);
+        myInstance.connect('full', fullSpy);
+        let result = myInstance.emit_full();
 
-function testInterface() {
-    let instance = new MyInitable();
-    JSUnit.assertEquals(false, instance.inited);
-
-    instance.init(new Gio.Cancellable);
-    JSUnit.assertEquals(true, instance.inited);
-
-    JSUnit.assertTrue(instance.constructor.implements(Gio.Initable));
-}
-
-function testDerived() {
-    let derived = new Derived();
-
-    JSUnit.assertTrue(derived instanceof Derived);
-    JSUnit.assertTrue(derived instanceof MyObject);
-
-    JSUnit.assertEquals('yes', derived.readwrite);
-}
-
-function testInstanceInit() {
-    new MyCustomInit();
-}
-
-function testClassCanHaveInterfaceProperty() {
-    const InterfacePropObject = new Lang.Class({
-        Name: 'InterfacePropObject',
-        Extends: GObject.Object,
-        Properties: {
-            'file': GObject.ParamSpec.object('file', 'File', 'File',
-                GObject.ParamFlags.READABLE | GObject.ParamFlags.WRITABLE | GObject.ParamFlags.CONSTRUCT_ONLY,
-                Gio.File.$gtype)
-        }
+        expect(fullSpy).toHaveBeenCalled();
+        expect(result).toEqual(42);
     });
-    let obj = new InterfacePropObject({ file: Gio.File.new_for_path('dummy') });
-}
 
-function testClassCanOverrideParentClassProperty() {
-    const OverrideObject = new Lang.Class({
-        Name: 'OverrideObject',
-        Extends: MyObject,
-        Properties: {
-            'readwrite': GObject.ParamSpec.override('readwrite', MyObject)
-        },
-        get readwrite() {
-            return this._subclass_readwrite;
-        },
-        set readwrite(val) {
-            this._subclass_readwrite = 'subclass' + val;
-        }
+    it('does not call first-wins signal handlers after one returns a value', function () {
+        let neverCalledSpy = jasmine.createSpy('neverCalledSpy');
+        myInstance.connect('full', () => 42);
+        myInstance.connect('full', neverCalledSpy);
+        myInstance.emit_full();
+
+        expect(neverCalledSpy).not.toHaveBeenCalled();
+        expect(myInstance.full_default_handler_called).toBeFalsy();
     });
-    let obj = new OverrideObject();
-    obj.readwrite = 'foo';
-    JSUnit.assertEquals(obj.readwrite, 'subclassfoo');
-}
 
-function testClassCannotOverrideNonexistentProperty() {
-    JSUnit.assertRaises(() => new Lang.Class({
-        Name: 'BadOverride',
-        Extends: GObject.Object,
-        Properties: {
-            'nonexistent': GObject.ParamSpec.override('nonexistent', GObject.Object)
-        }
-    }));
-}
+    it('gets the return value of the default handler', function () {
+        let result = myInstance.emit_full();
 
-function testDefaultHandler() {
-    let myInstance = new MyObject();
-    let result = myInstance.emit_full();
+        expect(myInstance.full_default_handler_called).toBeTruthy();
+        expect(result).toEqual(79);
+    });
 
-    JSUnit.assertEquals(true, myInstance.full_default_handler_called);
-    JSUnit.assertEquals(79, result);
-}
+    it('calls run-last default handler last', function () {
+        let stack = [ ];
+        let runLastSpy = jasmine.createSpy('runLastSpy')
+            .and.callFake(() => { stack.push(1); });
+        myInstance.connect('run-last', runLastSpy);
+        myInstance.emit_run_last(() => { stack.push(2); });
 
-JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
+        expect(stack).toEqual([1, 2]);
+    });
+
+    it("can inherit from something that's not GObject.Object", function () {
+        // ...and still get all the goodies of GObject.Class
+        let instance = new MyApplication({ application_id: 'org.gjs.Application' });
+        let customSpy = jasmine.createSpy('customSpy');
+        instance.connect('custom', customSpy);
+
+        instance.emit_custom(73);
+        expect(customSpy).toHaveBeenCalledWith(instance, 73);
+    });
+
+    it('can implement an interface', function () {
+        let instance = new MyInitable();
+        expect(instance.constructor.implements(Gio.Initable)).toBeTruthy();
+    });
+
+    it('can implement interface vfuncs', function () {
+        let instance = new MyInitable();
+        expect(instance.inited).toBeFalsy();
+
+        instance.init(new Gio.Cancellable());
+        expect(instance.inited).toBeTruthy();
+    });
+
+    it('can be a subclass', function () {
+        let derived = new Derived();
+
+        expect(derived instanceof Derived).toBeTruthy();
+        expect(derived instanceof MyObject).toBeTruthy();
+
+        expect(derived.readwrite).toEqual('yes');
+    });
+
+    it('calls its _instance_init() function while chaining up in constructor', function () {
+        let instance = new MyCustomInit();
+        expect(instance.foo).toBeTruthy();
+    });
+
+    it('can have an interface-valued property', function () {
+        const InterfacePropObject = new Lang.Class({
+            Name: 'InterfacePropObject',
+            Extends: GObject.Object,
+            Properties: {
+                'file': GObject.ParamSpec.object('file', 'File', 'File',
+                    GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY,
+                    Gio.File.$gtype)
+            },
+        });
+        let file = Gio.File.new_for_path('dummy');
+        expect(() => new InterfacePropObject({ file: file })).not.toThrow();
+    });
+
+    it('can override a property from the parent class', function () {
+        const OverrideObject = new Lang.Class({
+            Name: 'OverrideObject',
+            Extends: MyObject,
+            Properties: {
+                'readwrite': GObject.ParamSpec.override('readwrite', MyObject),
+            },
+            get readwrite() {
+                return this._subclass_readwrite;
+            },
+            set readwrite(val) {
+                this._subclass_readwrite = 'subclass' + val;
+            },
+        });
+        let obj = new OverrideObject();
+        obj.readwrite = 'foo';
+        expect(obj.readwrite).toEqual('subclassfoo');
+    });
+
+    it('cannot override a non-existent property', function () {
+        expect(() => new Lang.Class({
+            Name: 'BadOverride',
+            Extends: GObject.Object,
+            Properties: {
+                'nonexistent': GObject.ParamSpec.override('nonexistent', GObject.Object),
+            },
+        })).toThrow();
+    });
+});

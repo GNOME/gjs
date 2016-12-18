@@ -1,18 +1,18 @@
-
-const JSUnit = imports.jsUnit;
 const System = imports.system;
 
-function testAddressOf() {
-    let o1 = new Object();
-    let o2 = new Object();
+describe('System.addressOf()', function () {
+    it('gives the same result for the same object', function () {
+        let o = {};
+        expect(System.addressOf(o)).toEqual(System.addressOf(o));
+    });
 
-    JSUnit.assert(System.addressOf(o1) == System.addressOf(o1));
-    JSUnit.assert(System.addressOf(o1) != System.addressOf(o2));
-}
+    it('gives different results for different objects', function () {
+        expect(System.addressOf({})).not.toEqual(System.addressOf({}));
+    });
+});
 
-function testVersion() {
-    JSUnit.assert(System.version >= 13600);
-}
-
-JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
-
+describe('System.version', function () {
+    it('gives a plausible number', function () {
+        expect(System.version).not.toBeLessThan(13600);
+    });
+});

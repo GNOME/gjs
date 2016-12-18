@@ -1,4 +1,3 @@
-const JSUnit = imports.jsUnit;
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
@@ -29,157 +28,147 @@ const Bar = new Lang.Class({
     }
 });
 
-function testExceptionInPropertySetter() {
-    let foo = new Foo();
-    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-                             'JS ERROR: Error: set*');
+describe('Exceptions', function () {
+    it('are thrown from property setter', function () {
+        let foo = new Foo();
+        expect(() => foo.prop = 'bar').toThrowError(/set/);
+    });
 
-    try {
-	foo.prop = 'bar';
-    } catch (e) {
-	logError(e);
-    }
+    it('are thrown from property getter', function () {
+        let foo = new Foo();
+        expect(() => foo.prop).toThrowError(/get/);
+    });
 
-    GLib.test_assert_expected_messages_internal('Gjs', 'testExceptions.js', 0,
-                                                'testExceptionInPropertySetter');
-}
+    // FIXME: In the next cases the errors aren't thrown but logged
 
-function testExceptionInPropertyGetter() {
-    let foo = new Foo();
-    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-                             'JS ERROR: Error: get*');
+    it('are logged from constructor', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Error: set*');
 
-    try {
-	let bar = foo.prop;
-    } catch (e) {
-	logError(e);
-    }
+        new Foo({ prop: 'bar' });
 
-    GLib.test_assert_expected_messages_internal('Gjs', 'testExceptions.js', 0,
-                                                'testExceptionInPropertyGetter');
-}
+        GLib.test_assert_expected_messages_internal('Gjs', 'testExceptions.js', 0,
+            'testExceptionInPropertySetterFromConstructor');
+    });
 
-function testExceptionInPropertySetterFromConstructor() {
-    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-                             'JS ERROR: Error: set*');
+    it('are logged from property setter with binding', function () {
+        let foo = new Foo();
+        let bar = new Bar();
 
-    try {
-	let foo = new Foo({ prop: 'bar' });
-    } catch (e) {
-	logError(e);
-    }
+        bar.bind_property('prop',
+            foo, 'prop',
+            GObject.BindingFlags.DEFAULT);
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Error: set*');
 
-    GLib.test_assert_expected_messages_internal('Gjs', 'testExceptions.js', 0,
-                                                'testExceptionInPropertySetterFromConstructor');
-}
+        // wake up the binding so that g_object_set() is called on foo
+        bar.notify('prop');
 
-function testExceptionInPropertySetterWithBinding() {
-    let foo = new Foo();
-    let bar = new Bar();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testExceptions.js', 0,
+            'testExceptionInPropertySetterWithBinding');
+    });
 
-    bar.bind_property('prop',
-		      foo, 'prop',
-		      GObject.BindingFlags.DEFAULT);
-    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-                             'JS ERROR: Error: set*');
+    it('are logged from property getter with binding', function () {
+        let foo = new Foo();
+        let bar = new Bar();
 
-    try {
-	// wake up the binding so that g_object_set() is called on foo
-	bar.notify('prop');
-    } catch (e) {
-	logError(e);
-    }
+        foo.bind_property('prop',
+            bar, 'prop',
+            GObject.BindingFlags.DEFAULT);
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Error: get*');
 
-    GLib.test_assert_expected_messages_internal('Gjs', 'testExceptions.js', 0,
-                                                'testExceptionInPropertySetterWithBinding');
-}
+        // wake up the binding so that g_object_get() is called on foo
+        foo.notify('prop');
 
-function testExceptionInPropertyGetterWithBinding() {
-    let foo = new Foo();
-    let bar = new Bar();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testExceptions.js', 0,
+            'testExceptionInPropertyGetterWithBinding');
+    });
+});
 
-    foo.bind_property('prop',
-		      bar, 'prop',
-		      GObject.BindingFlags.DEFAULT);
-    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-                             'JS ERROR: Error: get*');
+describe('logError', function () {
+    afterEach(function () {
+        GLib.test_assert_expected_messages_internal('Gjs', 'testExceptions.js',
+            0, 'testGErrorMessages');
+    });
 
-    try {
-	// wake up the binding so that g_object_get() is called on foo
-	foo.notify('prop');
-    } catch (e) {
-	logError(e);
-    }
+    it('logs a warning for a GError', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Gio.IOErrorEnum: *');
+        try {
+            let file = Gio.file_new_for_path("\\/,.^!@&$_don't exist");
+            file.read(null);
+        } catch(e) {
+            logError(e);
+        }
+    });
 
-    GLib.test_assert_expected_messages_internal('Gjs', 'testExceptions.js', 0,
-                                                'testExceptionInPropertyGetterWithBinding');
-}
+    it('logs a warning with a message if given', function marker() {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Gio.IOErrorEnum: a message\nmarker@*');
+        try {
+            throw new Gio.IOErrorEnum({ message: 'a message', code: 0 });
+        } catch(e) {
+            logError(e);
+        }
+    });
 
-function testGErrorMessages() {
-    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-        'JS ERROR: Gio.IOErrorEnum: *');
-    try {
-        let file = Gio.file_new_for_path("\\/,.^!@&$_don't exist");
-        file.read(null);
-    } catch(e) {
-        logError(e);
-    }
+    it('also logs an error for a created GError that is not thrown', function marker() {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Gio.IOErrorEnum: a message\nmarker@*');
+        logError(new Gio.IOErrorEnum({ message: 'a message', code: 0 }));
+    });
 
-    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-        'JS ERROR: Gio.IOErrorEnum: a message\ntestGErrorMessages@*');
-    try {
-        throw new Gio.IOErrorEnum({ message: 'a message', code: 0 });
-    } catch(e) {
-        logError(e);
-    }
+    it('logs an error with no stack trace for an error created with the GLib.Error constructor', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Gio.IOErrorEnum: a message');
+        logError(new GLib.Error(Gio.IOErrorEnum, 0, 'a message'));
+    });
 
-    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-        'JS ERROR: Gio.IOErrorEnum: a message\ntestGErrorMessages@*');
-    logError(new Gio.IOErrorEnum({ message: 'a message', code: 0 }));
-
-    // No stack for GLib.Error constructor
-    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-        'JS ERROR: Gio.IOErrorEnum: a message');
-    logError(new GLib.Error(Gio.IOErrorEnum, 0, 'a message'));
-
-    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-        'JS ERROR: GLib.Error my-error: a message');
-    logError(new GLib.Error(GLib.quark_from_string('my-error'), 0, 'a message'));
+    it('logs the quark for a JS-created GError type', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: GLib.Error my-error: a message');
+        logError(new GLib.Error(GLib.quark_from_string('my-error'), 0, 'a message'));
+    });
 
     // Now with prefix
 
-    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-        'JS ERROR: prefix: Gio.IOErrorEnum: *');
-    try {
-        let file = Gio.file_new_for_path("\\/,.^!@&$_don't exist");
-        file.read(null);
-    } catch(e) {
-        logError(e, 'prefix');
-    }
+    it('logs an error with a prefix if given', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: prefix: Gio.IOErrorEnum: *');
+        try {
+            let file = Gio.file_new_for_path("\\/,.^!@&$_don't exist");
+            file.read(null);
+        } catch(e) {
+            logError(e, 'prefix');
+        }
+    });
 
-    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-        'JS ERROR: prefix: Gio.IOErrorEnum: a message\ntestGErrorMessages@*');
-    try {
-        throw new Gio.IOErrorEnum({ message: 'a message', code: 0 });
-    } catch(e) {
-        logError(e, 'prefix');
-    }
+    it('logs an error with prefix and message', function marker() {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: prefix: Gio.IOErrorEnum: a message\nmarker@*');
+        try {
+            throw new Gio.IOErrorEnum({ message: 'a message', code: 0 });
+        } catch(e) {
+            logError(e, 'prefix');
+        }
+    });
 
-    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-        'JS ERROR: prefix: Gio.IOErrorEnum: a message\ntestGErrorMessages@*');
-    logError(new Gio.IOErrorEnum({ message: 'a message', code: 0 }), 'prefix');
+    it('logs a non-thrown error with prefix', function marker() {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: prefix: Gio.IOErrorEnum: a message\nmarker@*');
+        logError(new Gio.IOErrorEnum({ message: 'a message', code: 0 }), 'prefix');
+    });
 
-    // No stack for GLib.Error constructor
-    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-        'JS ERROR: prefix: Gio.IOErrorEnum: a message');
-    logError(new GLib.Error(Gio.IOErrorEnum, 0, 'a message'), 'prefix');
+    it('logs a GLib.Error with prefix', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: prefix: Gio.IOErrorEnum: a message');
+        logError(new GLib.Error(Gio.IOErrorEnum, 0, 'a message'), 'prefix');
+    });
 
-    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-        'JS ERROR: prefix: GLib.Error my-error: a message');
-    logError(new GLib.Error(GLib.quark_from_string('my-error'), 0, 'a message'), 'prefix');
-
-    GLib.test_assert_expected_messages_internal('Gjs', 'testExceptions.js', 0,
-        'testGErrorMessages');
-}
-
-JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
+    it('logs a JS-created GLib.Error with prefix', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: prefix: GLib.Error my-error: a message');
+        logError(new GLib.Error(GLib.quark_from_string('my-error'), 0, 'a message'), 'prefix');
+    });
+});

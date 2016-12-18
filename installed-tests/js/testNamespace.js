@@ -1,8 +1,7 @@
-const JSUnit = imports.jsUnit;
-const Everything = imports.gi.Regress;
+const Regress = imports.gi.Regress;
 
-function testName() {
-    JSUnit.assertEquals(Everything.__name__, "Regress");
-}
-
-JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
+describe('GI repository namespace', function () {
+    it('supplies a name', function () {
+        expect(Regress.__name__).toEqual('Regress');
+    });
+});

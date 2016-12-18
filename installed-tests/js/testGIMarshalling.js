@@ -1,15 +1,4 @@
-if (!('assertEquals' in this)) { /* allow running this test standalone */
-    imports.lang.copyPublicProperties(imports.jsUnit, this);
-    gjstestRun = function() { return imports.jsUnit.gjstestRun(this); };
-}
-
-function assertArrayEquals(expected, got) {
-    assertEquals(expected.length, got.length);
-    for (let i = 0; i < expected.length; i ++) {
-        assertEquals(expected[i], got[i]);
-    }
-}
-
+const ByteArray = imports.byteArray;
 const GIMarshallingTests = imports.gi.GIMarshallingTests;
 
 // We use Gio and GLib to have some objects that we know exist
@@ -18,243 +7,296 @@ const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
 const Lang = imports.lang;
 
-function testCArray() {
-    var array, sum;
-
-    var result = GIMarshallingTests.init_function(null);
-    assertEquals(result.length, 2);
-    var success = result[0];
-    var newArray = result[1];
-    assertEquals(newArray.length, 0);
-
-    array = GIMarshallingTests.array_zero_terminated_return();
-    assertEquals("0", array[0]);
-    assertEquals("1", array[1]);
-    assertEquals("2", array[2]);
-    assertEquals(3, array.length);
-
-    array = GIMarshallingTests.array_zero_terminated_return_struct();
-    assertEquals(3, array.length);
-    assertEquals(42, array[0].long_);
-    assertEquals(43, array[1].long_);
-    assertEquals(44, array[2].long_);
-
-    array = GIMarshallingTests.array_return();
-    assertEquals(4, array.length);
-    assertEquals(-1, array[0]);
-    assertEquals(0, array[1]);
-    assertEquals(1, array[2]);
-    assertEquals(2, array[3]);
-
-    [array, sum] = GIMarshallingTests.array_return_etc(9, 5);
-    assertEquals(14, sum);
-    assertEquals(4, array.length);
-    assertEquals(9, array[0]);
-    assertEquals(0, array[1]);
-    assertEquals(1, array[2]);
-    assertEquals(5, array[3]);
-
-    array = GIMarshallingTests.array_out();
-    assertEquals(4, array.length);
-    assertEquals(-1, array[0]);
-    assertEquals(0, array[1]);
-    assertEquals(1, array[2]);
-    assertEquals(2, array[3]);
-
-    [array, sum] = GIMarshallingTests.array_out_etc(9, 5);
-    assertEquals(14, sum);
-    assertEquals(4, array.length);
-    assertEquals(9, array[0]);
-    assertEquals(0, array[1]);
-    assertEquals(1, array[2]);
-    assertEquals(5, array[3]);
-
-    array = GIMarshallingTests.array_bool_out();
-    assertEquals(4, array.length);
-    assertEquals(true, array[0]);
-    assertEquals(false, array[1]);
-    assertEquals(true, array[2]);
-    assertEquals(true, array[3]);
-
-    assertEquals('const \u2665 utf8', GIMarshallingTests.array_unichar_out());
-    assertEquals('const \u2665 utf8',
-        GIMarshallingTests.array_zero_terminated_return_unichar());
-
-    array = GIMarshallingTests.array_inout([-1, 0, 1, 2]);
-    assertEquals(5, array.length);
-    assertEquals(-2, array[0]);
-    assertEquals(-1, array[1]);
-    assertEquals(0, array[2]);
-    assertEquals(1, array[3]);
-    assertEquals(2, array[4]);
-
-    [array, sum] = GIMarshallingTests.array_inout_etc(9, [-1, 0, 1, 2], 5);
-    assertEquals(14, sum);
-    assertEquals(5, array.length);
-    assertEquals(9, array[0]);
-    assertEquals(-1, array[1]);
-    assertEquals(0, array[2]);
-    assertEquals(1, array[3]);
-    assertEquals(5, array[4]);
-
-    GIMarshallingTests.array_string_in(["foo", "bar"]);
-
-    array = [];
-    for (var i = 0; i < 3; i++) {
-	array[i] = new GIMarshallingTests.BoxedStruct();
-	array[i].long_ = i + 1;
-    }
-
-    GIMarshallingTests.array_struct_in(array);
-
-    // Run twice to ensure that copies are correctly made for (transfer full)
-    GIMarshallingTests.array_struct_take_in(array);
-    GIMarshallingTests.array_struct_take_in(array);
-
-    GIMarshallingTests.array_uint8_in ("abcd");
-    GIMarshallingTests.array_unichar_in('const \u2665 utf8');
-    GIMarshallingTests.array_unichar_in([0x63, 0x6f, 0x6e, 0x73, 0x74, 0x20,
-        0x2665, 0x20, 0x75, 0x74, 0x66, 0x38]);
-    GIMarshallingTests.array_enum_in([GIMarshallingTests.Enum.VALUE1,
-				      GIMarshallingTests.Enum.VALUE2,
-				      GIMarshallingTests.Enum.VALUE3]);
-
-    array = [-1, 0, 1, 2];
-    GIMarshallingTests.array_in(array);
-    GIMarshallingTests.array_in_len_before(array);
-    GIMarshallingTests.array_in_len_zero_terminated(array);
-    GIMarshallingTests.array_in_guint64_len(array);
-    GIMarshallingTests.array_in_guint8_len(array);
-    GIMarshallingTests.array_int64_in(array);
-    GIMarshallingTests.array_uint64_in(array);
-    GIMarshallingTests.array_bool_in(array);
-}
-
-function testGArray() {
-    var array;
-    array = GIMarshallingTests.garray_int_none_return();
-    assertEquals(-1, array[0]);
-    assertEquals(0, array[1]);
-    assertEquals(1, array[2]);
-    assertEquals(2, array[3]);
-    array = GIMarshallingTests.garray_utf8_none_return()
-    assertEquals("0", array[0]);
-    assertEquals("1", array[1]);
-    assertEquals("2", array[2]);
-    array = GIMarshallingTests.garray_utf8_container_return()
-    assertEquals("0", array[0]);
-    assertEquals("1", array[1]);
-    assertEquals("2", array[2]);
-    array = GIMarshallingTests.garray_utf8_full_return()
-    assertEquals("0", array[0]);
-    assertEquals("1", array[1]);
-    assertEquals("2", array[2]);
-
-    GIMarshallingTests.garray_int_none_in([-1, 0, 1, 2]);
-    GIMarshallingTests.garray_utf8_none_in(["0", "1", "2"]);
-    GIMarshallingTests.garray_bool_none_in([-1, 0, 1, 2]);
-    GIMarshallingTests.garray_unichar_none_in('const \u2665 utf8');
-    GIMarshallingTests.garray_unichar_none_in([0x63, 0x6f, 0x6e, 0x73, 0x74,
-        0x20, 0x2665, 0x20, 0x75, 0x74, 0x66, 0x38]);
-
-    array = GIMarshallingTests.garray_utf8_none_out();
-    assertEquals("0", array[0]);
-    assertEquals("1", array[1]);
-    assertEquals("2", array[2]);
-    array = GIMarshallingTests.garray_utf8_container_out();
-    assertEquals("0", array[0]);
-    assertEquals("1", array[1]);
-    assertEquals("2", array[2]);
-    array = GIMarshallingTests.garray_utf8_full_out();
-    assertEquals("0", array[0]);
-    assertEquals("1", array[1]);
-    assertEquals("2", array[2]);
-}
-
-function testByteArray() {
-    var i = 0;
-    var refByteArray = new imports.byteArray.ByteArray();
-    refByteArray[i++] = 0;
-    refByteArray[i++] = 49;
-    refByteArray[i++] = 0xFF;
-    refByteArray[i++] = 51;
-    var byteArray = GIMarshallingTests.bytearray_full_return();
-    assertEquals(refByteArray.length, byteArray.length);
-    for (i = 0; i < refByteArray.length; i++)
-	assertEquals(refByteArray[i], byteArray[i]);
-    GIMarshallingTests.bytearray_none_in(refByteArray);
-
-    // Another test, with a normal array, to test conversion
-    GIMarshallingTests.bytearray_none_in([0, 49, 0xFF, 51]);
-}
-
-function testGBytes() {
-    var i = 0;
-    var refByteArray = new imports.byteArray.ByteArray();
-    refByteArray[i++] = 0;
-    refByteArray[i++] = 49;
-    refByteArray[i++] = 0xFF;
-    refByteArray[i++] = 51;
-    GIMarshallingTests.gbytes_none_in(refByteArray);
-
-    var bytes = GIMarshallingTests.gbytes_full_return();
-    GIMarshallingTests.gbytes_none_in(bytes);
-
-    var array = bytes.toArray();
-    assertEquals(array[0], 0);
-    assertEquals(array[1], 49);
-    assertEquals(array[2], 0xFF);
-    assertEquals(array[3], 51); 
-    
-    bytes = GLib.Bytes.new([0, 49, 0xFF, 51]);
-    GIMarshallingTests.gbytes_none_in(bytes);
-
-    bytes = GLib.Bytes.new("const \u2665 utf8");
-    GIMarshallingTests.utf8_as_uint8array_in(bytes.toArray());
-
-    bytes = GIMarshallingTests.gbytes_full_return();    
-    array = bytes.toArray(); // Array should just be holding a ref, not a copy
-    assertEquals(array[1], 49);
-    array[1] = 42;  // Assignment should force to GByteArray
-    assertEquals(array[1], 42);
-    array[1] = 49;  // Flip the value back
-    GIMarshallingTests.gbytes_none_in(array.toGBytes()); // Now convert back to GBytes
-
-    bytes = GLib.Bytes.new([97, 98, 99, 100]);
-    GIMarshallingTests.array_uint8_in(bytes.toArray());
-    assertRaises(function() {
-	GIMarshallingTests.array_uint8_in(bytes);
-    });
-}
-
-function testPtrArray() {
-    var array;
-
-    GIMarshallingTests.gptrarray_utf8_none_in(["0", "1", "2"]);
-
-    var refArray = ["0", "1", "2"];
-
-    assertArrayEquals(refArray, GIMarshallingTests.gptrarray_utf8_none_return());
-    assertArrayEquals(refArray, GIMarshallingTests.gptrarray_utf8_container_return());
-    assertArrayEquals(refArray, GIMarshallingTests.gptrarray_utf8_full_return());
-
-    assertArrayEquals(refArray, GIMarshallingTests.gptrarray_utf8_none_out());
-    assertArrayEquals(refArray, GIMarshallingTests.gptrarray_utf8_container_out());
-    assertArrayEquals(refArray, GIMarshallingTests.gptrarray_utf8_full_out());
-}
-
-function testGHashTable() {
-    function dictEquals(dict, ref) {
-        let dict_keys = Object.keys(dict);
-        let ref_keys = Object.keys(ref);
-        assertEquals(ref_keys.length, dict_keys.length);
-        ref_keys.forEach((key, ix) => {
-            assertEquals(key, dict_keys[ix]);
-            assertEquals(ref[key], dict[key]);
+describe('C array', function () {
+    function createStructArray() {
+        return [1, 2, 3].map(num => {
+            let struct = new GIMarshallingTests.BoxedStruct();
+            struct.long_ = num;
+            return struct;
         });
     }
 
-    let INT_DICT = {
+    it('can be passed to a function', function () {
+        expect(() => GIMarshallingTests.array_in([-1, 0, 1, 2])).not.toThrow();
+    });
+
+    it('can be passed to a function with its length parameter before it', function () {
+        expect(() => GIMarshallingTests.array_in_len_before([-1, 0, 1, 2]))
+            .not.toThrow();
+    });
+
+    it('can be passed to a function with zero terminator', function () {
+        expect(() => GIMarshallingTests.array_in_len_zero_terminated([-1, 0, 1, 2]))
+            .not.toThrow();
+    });
+
+    it('can be passed to a function in the style of gtk_init()', function () {
+        let [, newArray] = GIMarshallingTests.init_function(null);
+        expect(newArray).toEqual([]);
+    });
+
+    it('can be returned with zero terminator', function () {
+        expect(GIMarshallingTests.array_zero_terminated_return())
+            .toEqual(['0', '1', '2']);
+    });
+
+    it('can be returned', function () {
+        expect(GIMarshallingTests.array_return()).toEqual([-1, 0, 1, 2]);
+    });
+
+    it('can be returned along with other arguments', function () {
+        let [array, sum] = GIMarshallingTests.array_return_etc(9, 5);
+        expect(sum).toEqual(14);
+        expect(array).toEqual([9, 0, 1, 5]);
+    });
+
+    it('can be an out argument', function () {
+        expect(GIMarshallingTests.array_out()).toEqual([-1, 0, 1, 2]);
+    });
+
+    it('can be an out argument along with other arguments', function () {
+        let [array, sum] = GIMarshallingTests.array_out_etc(9, 5);
+        expect(sum).toEqual(14);
+        expect(array).toEqual([9, 0, 1, 5]);
+    });
+
+    it('can be an in-out argument', function () {
+        expect(GIMarshallingTests.array_inout([-1, 0, 1, 2]))
+            .toEqual([-2, -1, 0, 1, 2]);
+    });
+
+    it('can be an in-out argument along with other arguments', function () {
+        let [array, sum] = GIMarshallingTests.array_inout_etc(9, [-1, 0, 1, 2], 5);
+        expect(sum).toEqual(14);
+        expect(array).toEqual([9, -1, 0, 1, 5]);
+    });
+
+    // Run twice to ensure that copies are correctly made for (transfer full)
+    it('copies correctly on transfer full', function () {
+        let array = createStructArray();
+        expect(() => {
+            GIMarshallingTests.array_struct_take_in(array);
+            GIMarshallingTests.array_struct_take_in(array);
+        }).not.toThrow();
+    });
+
+    describe('of structs', function () {
+        it('can be passed to a function', function () {
+            expect(() => GIMarshallingTests.array_struct_in(createStructArray()))
+                .not.toThrow();
+        });
+
+        it('can be returned with zero terminator', function () {
+            let structArray = GIMarshallingTests.array_zero_terminated_return_struct();
+            expect(structArray.map(e => e.long_)).toEqual([42, 43, 44]);
+        });
+    });
+
+    describe('of booleans', function () {
+        it('is coerced to true/false when passed to a function', function () {
+            expect(() => GIMarshallingTests.array_bool_in([-1, 0, 1, 2]))
+                .not.toThrow();
+        });
+
+        it('can be an out argument', function () {
+            expect(GIMarshallingTests.array_bool_out())
+                .toEqual([true, false, true, true]);
+        });
+    });
+
+    describe('of unichars', function () {
+        it('can be passed to a function', function () {
+            expect(() => GIMarshallingTests.array_unichar_in('const \u2665 utf8'))
+                .not.toThrow();
+        });
+
+        it('can be an out argument', function () {
+            expect(GIMarshallingTests.array_unichar_out())
+                .toEqual('const \u2665 utf8');
+        });
+
+        it('can be returned with zero terminator', function () {
+            expect(GIMarshallingTests.array_zero_terminated_return_unichar())
+                .toEqual('const \u2665 utf8');
+        });
+
+        it('can be implicitly converted from a number array', function () {
+            expect(() => GIMarshallingTests.array_unichar_in([0x63, 0x6f, 0x6e, 0x73,
+                0x74, 0x20, 0x2665, 0x20, 0x75, 0x74, 0x66, 0x38])).not.toThrow();
+        });
+    });
+
+    describe('of strings', function () {
+        it('can be passed to a function', function () {
+            expect(() => GIMarshallingTests.array_string_in(['foo', 'bar']))
+                .not.toThrow();
+        });
+    });
+
+    describe('of enums', function () {
+        it('can be passed to a function', function () {
+            expect(() => GIMarshallingTests.array_enum_in([GIMarshallingTests.Enum.VALUE1,
+                GIMarshallingTests.Enum.VALUE2, GIMarshallingTests.Enum.VALUE3])).not.toThrow();
+        });
+    });
+
+    describe('of bytes', function () {
+        it('can be an in argument with length', function () {
+            expect(() => GIMarshallingTests.array_in_guint8_len([-1, 0, 1, 2]))
+                .not.toThrow();
+        });
+
+        it('can be implicitly converted from a string', function () {
+            expect(() => GIMarshallingTests.array_uint8_in('abcd')).not.toThrow();
+        });
+    });
+
+    describe('of 64-bit ints', function () {
+        it('can be passed to a function', function () {
+            expect(() => GIMarshallingTests.array_int64_in([-1, 0, 1, 2]))
+                .not.toThrow();
+            expect(() => GIMarshallingTests.array_uint64_in([-1, 0, 1, 2]))
+                .not.toThrow();
+        });
+
+        it('can be an in argument with length', function () {
+            expect(() => GIMarshallingTests.array_in_guint64_len([-1, 0, 1, 2]))
+                .not.toThrow();
+        });
+    });
+});
+
+describe('GArray', function () {
+    describe('of integers', function () {
+        it('can be passed in with transfer none', function () {
+            expect(() => GIMarshallingTests.garray_int_none_in([-1, 0, 1, 2]))
+                .not.toThrow();
+        });
+
+        it('can be returned with transfer none', function () {
+            expect(GIMarshallingTests.garray_int_none_return())
+                .toEqual([-1, 0, 1, 2]);
+        });
+    });
+
+    describe('of strings', function () {
+        it('can be passed in with transfer none', function () {
+            expect(() => GIMarshallingTests.garray_utf8_none_in(['0', '1', '2']))
+                .not.toThrow();
+        });
+
+        ['return', 'out'].forEach(method => {
+            ['none', 'container', 'full'].forEach(transfer => {
+                it('can be passed as ' + method + ' with transfer ' + transfer, function () {
+                    expect(GIMarshallingTests['garray_utf8_' + transfer + '_' + method]())
+                        .toEqual(['0', '1', '2']);
+                });
+            });
+        });
+    });
+
+    describe('of booleans', function () {
+        it('can be passed in with transfer none', function () {
+            expect(() => GIMarshallingTests.garray_bool_none_in([-1, 0, 1, 2]))
+                .not.toThrow();
+        });
+    });
+
+    describe('of unichars', function () {
+        it('can be passed in with transfer none', function () {
+            expect(() => GIMarshallingTests.garray_unichar_none_in('const \u2665 utf8'))
+                .not.toThrow();
+        });
+
+        it('can be implicitly converted from a number array', function () {
+            expect(() => GIMarshallingTests.garray_unichar_none_in([0x63, 0x6f, 0x6e,
+                0x73, 0x74, 0x20, 0x2665, 0x20, 0x75, 0x74, 0x66, 0x38])).not.toThrow();
+        });
+    });
+});
+
+describe('GByteArray', function () {
+    const refByteArray = ByteArray.fromArray([0, 49, 0xFF, 51]);
+
+    it('can be passed in with transfer none', function () {
+        expect(() => GIMarshallingTests.bytearray_none_in(refByteArray))
+            .not.toThrow();
+    });
+
+    it('can be returned with transfer full', function () {
+        expect(GIMarshallingTests.bytearray_full_return()).toEqual(refByteArray);
+    });
+
+    it('can be implicitly converted from a normal array', function () {
+        expect(() => GIMarshallingTests.bytearray_none_in([0, 49, 0xFF, 51]))
+            .not.toThrow();
+    });
+});
+
+describe('GBytes', function () {
+    const refByteArray = ByteArray.fromArray([0, 49, 0xFF, 51]);
+
+    it('can be created from an array and passed in', function () {
+        let bytes = GLib.Bytes.new([0, 49, 0xFF, 51]);
+        expect(() => GIMarshallingTests.gbytes_none_in(bytes)).not.toThrow();
+    });
+
+    it('can be created by returning from a function and passed in', function () {
+        var bytes = GIMarshallingTests.gbytes_full_return();
+        expect(() => GIMarshallingTests.gbytes_none_in(bytes)).not.toThrow();
+        expect(bytes.toArray()).toEqual(refByteArray);
+    });
+
+    it('can be implicitly converted from a ByteArray', function () {
+        expect(() => GIMarshallingTests.gbytes_none_in(refByteArray))
+            .not.toThrow();
+    });
+
+    it('can be created from a string and is encoded in UTF-8', function () {
+        let bytes = GLib.Bytes.new("const \u2665 utf8");
+        expect(() => GIMarshallingTests.utf8_as_uint8array_in(bytes.toArray()))
+            .not.toThrow();
+    });
+
+    it('turns into a GByteArray on assignment', function () {
+        let bytes = GIMarshallingTests.gbytes_full_return();
+        let array = bytes.toArray();  // Array should just be holding a ref, not a copy
+        expect(array[1]).toEqual(49);
+        array[1] = 42;  // Assignment should force to GByteArray
+        expect(array[1]).toEqual(42);
+        array[1] = 49;  // Flip the value back
+        // Now convert back to GBytes
+        expect(() => GIMarshallingTests.gbytes_none_in(array.toGBytes()))
+            .not.toThrow();
+    });
+
+    it('cannot be passed to a function expecting a byte array', function () {
+        let bytes = GLib.Bytes.new([97, 98, 99, 100]);
+        expect(() => GIMarshallingTests.array_uint8_in(bytes.toArray())).not.toThrow();
+        expect(() => GIMarshallingTests.array_uint8_in(bytes)).toThrow();
+    });
+});
+
+describe('GPtrArray', function () {
+    const refArray = ['0', '1', '2'];
+
+    it('can be passed to a function with transfer none', function () {
+        expect(() => GIMarshallingTests.gptrarray_utf8_none_in(refArray))
+            .not.toThrow();
+    });
+
+    ['return', 'out'].forEach(method => {
+        ['none', 'container', 'full'].forEach(transfer => {
+            it('can be passed as ' + method + ' with transfer ' + transfer, function () {
+                expect(GIMarshallingTests['gptrarray_utf8_' + transfer + '_' + method]())
+                    .toEqual(refArray);
+            });
+        });
+    });
+});
+
+describe('GHashTable', function () {
+    const INT_DICT = {
         '-1': 1,
         0: 0,
         1: -1,
@@ -278,114 +320,221 @@ function testGHashTable() {
         1: '1',
     };
 
-    dictEquals(GIMarshallingTests.ghashtable_int_none_return(), INT_DICT);
-    dictEquals(GIMarshallingTests.ghashtable_utf8_none_return(), STRING_DICT);
-    dictEquals(GIMarshallingTests.ghashtable_utf8_container_return(), STRING_DICT);
-    dictEquals(GIMarshallingTests.ghashtable_utf8_full_return(), STRING_DICT);
-
-    GIMarshallingTests.ghashtable_int_none_in(INT_DICT);
-    GIMarshallingTests.ghashtable_utf8_none_in(STRING_DICT);
-    GIMarshallingTests.ghashtable_double_in(NUMBER_DICT);
-    GIMarshallingTests.ghashtable_float_in(NUMBER_DICT);
-    GIMarshallingTests.ghashtable_int64_in({
-        '-1': -1,
-        0: 0,
-        1: 1,
-        2: 0x100000000,
-    });
-    GIMarshallingTests.ghashtable_uint64_in({
-        '-1': 0x100000000,
-        0: 0,
-        1: 1,
-        2: 2,
+    it('can be passed in with integer value type', function () {
+        expect(() => GIMarshallingTests.ghashtable_int_none_in(INT_DICT))
+            .not.toThrow();
     });
 
-    dictEquals(GIMarshallingTests.ghashtable_utf8_none_out(), STRING_DICT);
-    dictEquals(GIMarshallingTests.ghashtable_utf8_container_out(), STRING_DICT);
-    dictEquals(GIMarshallingTests.ghashtable_utf8_full_out(), STRING_DICT);
+    it('can be passed in with string value type', function () {
+        expect(() => GIMarshallingTests.ghashtable_utf8_none_in(STRING_DICT))
+            .not.toThrow();
+    });
 
-    dictEquals(GIMarshallingTests.ghashtable_utf8_none_inout(STRING_DICT), STRING_DICT_OUT);
-    // FIXME: Container transfer for in parameters not supported
-    //dictEquals(GIMarshallingTests.ghashtable_utf8_container_inout(STRING_DICT), STRING_DICT_OUT);
-    // FIXME: Broken
-    //dictEquals(GIMarshallingTests.ghashtable_utf8_full_inout(STRING_DICT), STRING_DICT_OUT);
-}
+    it('can be passed in with float value type', function () {
+        expect(() => GIMarshallingTests.ghashtable_float_in(NUMBER_DICT))
+            .not.toThrow();
+    });
 
-function testGValue() {
-    assertEquals(42, GIMarshallingTests.gvalue_return());
-    assertEquals(42, GIMarshallingTests.gvalue_out());
+    it('can be passed in with double value type', function () {
+        expect(() => GIMarshallingTests.ghashtable_double_in(NUMBER_DICT))
+            .not.toThrow();
+    });
 
-    GIMarshallingTests.gvalue_in(42);
-    GIMarshallingTests.gvalue_flat_array([42, "42", true]);
+    it('can be passed in with int64 value type', function () {
+        const int64Dict = {
+            '-1': -1,
+            0: 0,
+            1: 1,
+            2: 0x100000000,
+        };
+        expect(() => GIMarshallingTests.ghashtable_int64_in(int64Dict))
+            .not.toThrow();
+    });
 
-    // gjs doesn't support native enum types
-    // GIMarshallingTests.gvalue_in_enum(GIMarshallingTests.Enum.VALUE_3);
+    it('can be passed in with uint64 value type', function () {
+        const uint64Dict = {
+            '-1': 0x100000000,
+            0: 0,
+            1: 1,
+            2: 2,
+        };
+        expect(() => GIMarshallingTests.ghashtable_uint64_in(uint64Dict))
+            .not.toThrow();
+    });
 
-    // Test a flat GValue round-trip return
-    let thing = GIMarshallingTests.return_gvalue_flat_array();
-    assertArrayEquals([42, "42", true], thing);
-}
+    it('can be returned with integer value type', function () {
+        expect(GIMarshallingTests.ghashtable_int_none_return()).toEqual(INT_DICT);
+    });
 
-function testGType() {
-    assertEquals(GObject.TYPE_NONE, GIMarshallingTests.gtype_return());
-    assertEquals(GObject.TYPE_STRING, GIMarshallingTests.gtype_string_return());
+    ['return', 'out'].forEach(method => {
+        ['none', 'container', 'full'].forEach(transfer => {
+            it('can be passed as ' + method + ' with transfer ' + transfer, function () {
+                expect(GIMarshallingTests['ghashtable_utf8_' + transfer + '_' + method]())
+                    .toEqual(STRING_DICT);
+            });
+        });
+    });
 
-    GIMarshallingTests.gtype_in(GObject.TYPE_NONE);
-    GIMarshallingTests.gtype_in(GObject.VoidType);
-    GIMarshallingTests.gtype_string_in(GObject.TYPE_STRING);
-    GIMarshallingTests.gtype_string_in(GObject.String);
-    GIMarshallingTests.gtype_string_in(String);
+    it('can be passed as inout with transfer none', function () {
+        expect(GIMarshallingTests.ghashtable_utf8_none_inout(STRING_DICT))
+            .toEqual(STRING_DICT_OUT);
+    });
 
-    assertEquals(GObject.TYPE_NONE, GIMarshallingTests.gtype_out());
-    assertEquals(GObject.TYPE_STRING, GIMarshallingTests.gtype_string_out());
+    xit('can be passed as inout with transfer container', function () {
+        expect(GIMarshallingTests.ghashtable_utf8_container_inout(STRING_DICT))
+            .toEqual(STRING_DICT_OUT);
+    }).pend('Container transfer for in parameters not supported');
 
-    assertEquals(GObject.TYPE_INT, GIMarshallingTests.gtype_inout(GObject.TYPE_NONE));
-}
+    xit('can be passed as inout with transfer full', function () {
+        expect(GIMarshallingTests.ghashtable_utf8_full_inout(STRING_DICT))
+            .toEqual(STRING_DICT_OUT);
+    }).pend('https://bugzilla.gnome.org/show_bug.cgi?id=773763');
+});
 
-function testGValueGType() {
-    // test that inferring the GType for a primitive value or an object works
+describe('GValue', function () {
+    it('can be passed into a function and packed', function () {
+        expect(() => GIMarshallingTests.gvalue_in(42)).not.toThrow();
+    });
 
-    // Primitives (and primitive like)
-    GIMarshallingTests.gvalue_in_with_type(42, GObject.TYPE_INT);
-    GIMarshallingTests.gvalue_in_with_type(42.5, GObject.TYPE_DOUBLE);
-    GIMarshallingTests.gvalue_in_with_type('42', GObject.TYPE_STRING);
-    GIMarshallingTests.gvalue_in_with_type(GObject.TYPE_GTYPE, GObject.TYPE_GTYPE);
+    it('array can be passed into a function and packed', function () {
+        expect(() => GIMarshallingTests.gvalue_flat_array([42, '42', true]))
+            .not.toThrow();
+    });
 
-    GIMarshallingTests.gvalue_in_with_type(42, GObject.Int);
-    GIMarshallingTests.gvalue_in_with_type(42.5, GObject.Double);
-    GIMarshallingTests.gvalue_in_with_type(42.5, Number);
+    xit('enum can be passed into a function and packed', function () {
+        expect(() => GIMarshallingTests.gvalue_in_enum(GIMarshallingTests.Enum.VALUE_3))
+            .not.toThrow();
+    }).pend("GJS doesn't support native enum types");
 
-    // Object and interface
-    GIMarshallingTests.gvalue_in_with_type(new Gio.SimpleAction, Gio.SimpleAction);
-    GIMarshallingTests.gvalue_in_with_type(new Gio.SimpleAction, GObject.Object);
-    GIMarshallingTests.gvalue_in_with_type(new Gio.SimpleAction, GObject.TYPE_OBJECT);
-    GIMarshallingTests.gvalue_in_with_type(new Gio.SimpleAction, Gio.SimpleAction);
+    it('can be returned and unpacked', function () {
+        expect(GIMarshallingTests.gvalue_return()).toEqual(42);
+    });
 
-    // Boxed and union
-    GIMarshallingTests.gvalue_in_with_type(new GLib.KeyFile, GLib.KeyFile);
-    GIMarshallingTests.gvalue_in_with_type(new GLib.KeyFile, GObject.TYPE_BOXED);
-    GIMarshallingTests.gvalue_in_with_type(GLib.Variant.new('u', 42), GLib.Variant);
-    GIMarshallingTests.gvalue_in_with_type(GLib.Variant.new('u', 42), GObject.TYPE_VARIANT);
-    GIMarshallingTests.gvalue_in_with_type(new GIMarshallingTests.BoxedStruct, GIMarshallingTests.BoxedStruct);
-    GIMarshallingTests.gvalue_in_with_type(GIMarshallingTests.union_returnv(), GIMarshallingTests.Union);
+    it('can be passed as an out argument and unpacked', function () {
+        expect(GIMarshallingTests.gvalue_out()).toEqual(42);
+    });
 
-    // Other
-    GIMarshallingTests.gvalue_in_with_type(GObject.ParamSpec.string('my-param', '', '', GObject.ParamFlags.READABLE, ''),
-					   GObject.TYPE_PARAM);
+    it('array can be passed as an out argument and unpacked', function () {
+        expect(GIMarshallingTests.return_gvalue_flat_array())
+            .toEqual([42, '42', true]);
+    });
 
-    // // Foreign
-    // let Cairo;
-    // try {
-    //     Cairo = imports.cairo;
-    // } catch(e) {
-    //     return;
-    // }
+    it('can have its type inferred from primitive values', function () {
+        expect(() => GIMarshallingTests.gvalue_in_with_type(42, GObject.TYPE_INT))
+            .not.toThrow();
+        expect(() => GIMarshallingTests.gvalue_in_with_type(42.5, GObject.TYPE_DOUBLE))
+            .not.toThrow();
+        expect(() => GIMarshallingTests.gvalue_in_with_type('42', GObject.TYPE_STRING))
+            .not.toThrow();
+        expect(() => GIMarshallingTests.gvalue_in_with_type(GObject.TYPE_GTYPE, GObject.TYPE_GTYPE))
+            .not.toThrow();
+    });
 
-    // let surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, 2, 2);
-    // let cr = new Cairo.Context(surface);
-    // GIMarshallingTests.gvalue_in_with_type(cr, Cairo.Context);
-    // GIMarshallingTests.gvalue_in_with_type(surface, Cairo.Surface);
-}
+    it('type objects can be converted from primitive-like types', function () {
+        expect(() => GIMarshallingTests.gvalue_in_with_type(42, GObject.Int))
+            .not.toThrow();
+        expect(() => GIMarshallingTests.gvalue_in_with_type(42.5, GObject.Double))
+            .not.toThrow();
+        expect(() => GIMarshallingTests.gvalue_in_with_type(42.5, Number))
+            .not.toThrow();
+    });
+
+    it('can have its type inferred as a GObject type', function () {
+        expect(() => GIMarshallingTests.gvalue_in_with_type(new Gio.SimpleAction(), Gio.SimpleAction))
+            .not.toThrow();
+    });
+
+    it('can have its type inferred as a superclass', function () {
+        let action = new Gio.SimpleAction();
+        expect(() => GIMarshallingTests.gvalue_in_with_type(action, GObject.Object))
+            .not.toThrow();
+        expect(() => GIMarshallingTests.gvalue_in_with_type(action, GObject.TYPE_OBJECT))
+            .not.toThrow();
+    });
+
+    it('can have its type inferred as an interface that it implements', function () {
+        expect(() => GIMarshallingTests.gvalue_in_with_type(new Gio.SimpleAction(), Gio.SimpleAction))
+            .not.toThrow();
+    });
+
+    it('can have its type inferred as a boxed type', function () {
+        let keyfile = new GLib.KeyFile();
+        expect(() => GIMarshallingTests.gvalue_in_with_type(keyfile, GLib.KeyFile))
+            .not.toThrow();
+        expect(() => GIMarshallingTests.gvalue_in_with_type(keyfile, GObject.TYPE_BOXED))
+            .not.toThrow();
+        let struct = new GIMarshallingTests.BoxedStruct();
+        expect(() => GIMarshallingTests.gvalue_in_with_type(struct, GIMarshallingTests.BoxedStruct))
+            .not.toThrow();
+    });
+
+    it('can have its type inferred as GVariant', function () {
+        let variant = GLib.Variant.new('u', 42);
+        expect(() => GIMarshallingTests.gvalue_in_with_type(variant, GLib.Variant))
+            .not.toThrow();
+        expect(() => GIMarshallingTests.gvalue_in_with_type(variant, GObject.TYPE_VARIANT))
+            .not.toThrow();
+    });
+
+    it('can have its type inferred as a union type', function () {
+        let union = GIMarshallingTests.union_returnv();
+        expect(() => GIMarshallingTests.gvalue_in_with_type(union, GIMarshallingTests.Union))
+            .not.toThrow();
+    });
+
+    it('can have its type inferred as a GParamSpec', function () {
+        let paramSpec = GObject.ParamSpec.string('my-param', '', '',
+            GObject.ParamFlags.READABLE, '');
+        expect(() => GIMarshallingTests.gvalue_in_with_type(paramSpec, GObject.TYPE_PARAM))
+            .not.toThrow();
+    });
+
+    xit('can have its type inferred as a foreign struct', function () {
+        let Cairo;
+        try {
+            Cairo = imports.cairo;
+        } catch(e) {
+            pending('Compiled without Cairo support');
+            return;
+        }
+
+        let surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, 2, 2);
+        let cr = new Cairo.Context(surface);
+        expect(() => GIMarshallingTests.gvalue_in_with_type(cr, Cairo.Context))
+            .not.toThrow();
+        expect(() => GIMarshallingTests.gvalue_in_with_type(surface, Cairo.Surface))
+            .not.toThrow();
+    }).pend('Errors out with "not a subclass of GObject_Boxed"');
+});
+
+describe('GType', function () {
+    it('can be passed into a function', function () {
+        expect(() => GIMarshallingTests.gtype_in(GObject.TYPE_NONE)).not.toThrow();
+        expect(() => GIMarshallingTests.gtype_in(GObject.VoidType)).not.toThrow();
+        expect(() => GIMarshallingTests.gtype_string_in(GObject.TYPE_STRING)).not.toThrow();
+        expect(() => GIMarshallingTests.gtype_string_in(GObject.String)).not.toThrow();
+    });
+
+    it('can be returned', function () {
+        expect(GIMarshallingTests.gtype_return()).toEqual(GObject.TYPE_NONE);
+        expect(GIMarshallingTests.gtype_string_return())
+            .toEqual(GObject.TYPE_STRING);
+    });
+
+    it('can be passed as an out argument', function () {
+        expect(GIMarshallingTests.gtype_out()).toEqual(GObject.TYPE_NONE);
+        expect(GIMarshallingTests.gtype_string_out()).toEqual(GObject.TYPE_STRING);
+    });
+
+    it('can be passed as an inout argument', function () {
+        expect(GIMarshallingTests.gtype_inout(GObject.TYPE_NONE))
+            .toEqual(GObject.TYPE_INT);
+    });
+
+    it('can be implicitly converted from a JS type', function () {
+        expect(() => GIMarshallingTests.gtype_string_in(String)).not.toThrow();
+    });
+});
 
 function callback_return_value_only() {
     return 42;
@@ -407,27 +556,32 @@ function callback_return_value_and_multiple_out_parameters() {
     return [48, 49, 50];
 }
 
-function testCallbacks() {
-    let a, b, c;
-    a = GIMarshallingTests.callback_return_value_only(callback_return_value_only);
-    assertEquals(42, a);
+describe('Callback', function () {
+    it('marshals a return value', function () {
+        expect(GIMarshallingTests.callback_return_value_only(callback_return_value_only))
+            .toEqual(42);
+    });
 
-    a = GIMarshallingTests.callback_one_out_parameter(callback_one_out_parameter);
-    assertEquals(43, a);
+    it('marshals one out parameter', function () {
+        expect(GIMarshallingTests.callback_one_out_parameter(callback_one_out_parameter))
+            .toEqual(43);
+    });
 
-    [a, b] = GIMarshallingTests.callback_multiple_out_parameters(callback_multiple_out_parameters);
-    assertEquals(44, a);
-    assertEquals(45, b);
+    it('marshals multiple out parameters', function () {
+        expect(GIMarshallingTests.callback_multiple_out_parameters(callback_multiple_out_parameters))
+            .toEqual([44, 45]);
+    });
 
-    [a, b] = GIMarshallingTests.callback_return_value_and_one_out_parameter(callback_return_value_and_one_out_parameter);
-    assertEquals(46, a);
-    assertEquals(47, b);
+    it('marshals a return value and one out parameter', function () {
+        expect(GIMarshallingTests.callback_return_value_and_one_out_parameter(callback_return_value_and_one_out_parameter))
+            .toEqual([46, 47]);
+    });
 
-    [a, b, c] = GIMarshallingTests.callback_return_value_and_multiple_out_parameters(callback_return_value_and_multiple_out_parameters);
-    assertEquals(48, a);
-    assertEquals(49, b);
-    assertEquals(50, c);
-}
+    it('marshals a return value and multiple out parameters', function () {
+        expect(GIMarshallingTests.callback_return_value_and_multiple_out_parameters(callback_return_value_and_multiple_out_parameters))
+            .toEqual([48, 49, 50]);
+    });
+});
 
 const VFuncTester = new Lang.Class({
     Name: 'VFuncTester',
@@ -440,34 +594,39 @@ const VFuncTester = new Lang.Class({
     vfunc_vfunc_return_value_and_multiple_out_parameters: callback_return_value_and_multiple_out_parameters
 });
 
-function testVFuncs() {
-    let tester = new VFuncTester();
-    let a, b, c;
-    a = tester.vfunc_return_value_only();
-    assertEquals(42, a);
+describe('Virtual function', function () {
+    let tester;
+    beforeEach(function () {
+        tester = new VFuncTester();
+    });
 
-    a = tester.vfunc_one_out_parameter();
-    assertEquals(43, a);
+    it('marshals a return value', function () {
+        expect(tester.vfunc_return_value_only()).toEqual(42);
+    });
 
-    [a, b] = tester.vfunc_multiple_out_parameters();
-    assertEquals(44, a);
-    assertEquals(45, b);
+    it('marshals one out parameter', function () {
+        expect(tester.vfunc_one_out_parameter()).toEqual(43);
+    });
 
-    [a, b] = tester.vfunc_return_value_and_one_out_parameter();
-    assertEquals(46, a);
-    assertEquals(47, b);
+    it('marshals multiple out parameters', function () {
+        expect(tester.vfunc_multiple_out_parameters()).toEqual([44, 45]);
+    });
 
-    [a, b, c] = tester.vfunc_return_value_and_multiple_out_parameters();
-    assertEquals(48, a);
-    assertEquals(49, b);
-    assertEquals(50, c);
-}
+    it('marshals a return value and one out parameter', function () {
+        expect(tester.vfunc_return_value_and_one_out_parameter())
+            .toEqual([46, 47]);
+    });
 
-function testInterfaces() {
-    let ifaceImpl = new GIMarshallingTests.InterfaceImpl();
-    let itself = ifaceImpl.get_as_interface();
+    it('marshals a return value and multiple out parameters', function () {
+        expect(tester.vfunc_return_value_and_multiple_out_parameters())
+            .toEqual([48, 49, 50]);
+    });
+});
 
-    assertEquals(ifaceImpl, itself);
-}
-
-gjstestRun();
+describe('Interface', function () {
+    it('can be returned', function () {
+        let ifaceImpl = new GIMarshallingTests.InterfaceImpl();
+        let itself = ifaceImpl.get_as_interface();
+        expect(ifaceImpl).toEqual(itself);
+    });
+});

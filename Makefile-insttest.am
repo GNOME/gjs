@@ -1,10 +1,8 @@
 EXTRA_DIST += \
-	installed-tests/jsunit.test.in			\
+	installed-tests/minijasmine.test.in		\
 	installed-tests/script.test.in			\
 	installed-tests/js/jsunit.gresources.xml	\
 	$(NULL)
-
-MAINTAINERCLEANFILES += jsunit.test
 
 gjsinsttestdir = $(pkglibexecdir)/installed-tests
 installedtestmetadir = $(datadir)/installed-tests/gjs
@@ -20,27 +18,18 @@ pkglib_LTLIBRARIES =
 
 if BUILDOPT_INSTALL_TESTS
 
-gjsinsttest_PROGRAMS += jsunit
+gjsinsttest_PROGRAMS += minijasmine
 gjsinsttest_DATA += $(TEST_INTROSPECTION_TYPELIBS)
-installedtestmeta_DATA += jsunit.test
-jstests_DATA += $(common_jstests_files)
+installedtestmeta_DATA += $(jasmine_tests:.js=.test)
+jstests_DATA += $(jasmine_tests)
 pkglib_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
 
-if ENABLE_CAIRO
-jstests_DATA += installed-tests/js/testCairo.js
-endif
-
-if ENABLE_GTK
-jstests_DATA += installed-tests/js/testGtk.js
-endif
-
-if DBUS_TESTS
-jstests_DATA += installed-tests/js/testGDBus.js
-endif
-
-jsunit.test: installed-tests/jsunit.test.in Makefile
+%.test: %.js installed-tests/minijasmine.test.in Makefile
 	$(AM_V_GEN)$(MKDIR_P) $(@D) && \
-	$(SED) -e s,@pkglibexecdir\@,$(pkglibexecdir), < $< > $@.tmp && mv $@.tmp $@
+	$(SED) -e s,@pkglibexecdir\@,$(pkglibexecdir),g \
+		-e s,@name\@,$(notdir $<), \
+		< $(srcdir)/installed-tests/minijasmine.test.in > $@.tmp && \
+	mv $@.tmp $@
 
 %.test: installed-tests/scripts/%.js installed-tests/script.test.in Makefile
 	$(AM_V_GEN)$(MKDIR_P) $(@D) && \

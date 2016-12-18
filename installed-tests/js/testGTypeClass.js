@@ -1,55 +1,64 @@
-// application/javascript;version=1.8
-
-const JSUnit = imports.jsUnit;
-const Everything = imports.gi.Regress;
-const WarnLib = imports.gi.WarnLib;
-
 // We use Gio to have some objects that we know exist
-const GLib = imports.gi.GLib;
 const Gio = imports.gi.Gio;
 const GObject = imports.gi.GObject;
 
-function testGObjectClass() {
-    let find_property = GObject.Object.find_property;
+describe('Looking up param specs', function () {
+    let p1, p2;
+    beforeEach(function () {
+        let find_property = GObject.Object.find_property;
+        p1 = find_property.call(Gio.ThemedIcon, 'name');
+        p2 = find_property.call(Gio.SimpleAction, 'enabled');
+    });
 
-    let p1 = find_property.call(Gio.ThemedIcon, 'name');
+    it('works', function () {
+        expect(p1 instanceof GObject.ParamSpec).toBeTruthy();
+        expect(p2 instanceof GObject.ParamSpec).toBeTruthy();
+    });
 
-    JSUnit.assert(p1 instanceof GObject.ParamSpec);
-    JSUnit.assertEquals('name', p1.name);
+    it('gives the correct name', function () {
+        expect(p1.name).toEqual('name');
+        expect(p2.name).toEqual('enabled');
+    });
 
-    let p2 = find_property.call(Gio.SimpleAction, 'enabled');
+    it('gives the default value if present', function () {
+        expect(p2.default_value).toBeTruthy();
+    });
+});
 
-    JSUnit.assert(p2 instanceof GObject.ParamSpec);
-    JSUnit.assertEquals('enabled', p2.name);
-    JSUnit.assertEquals(true, p2.default_value);
-}
+describe('GType object', function () {
+    it('has a name', function () {
+        expect(GObject.TYPE_NONE.name).toEqual('void');
+        expect(GObject.TYPE_STRING.name).toEqual('gchararray');
+    });
 
-function testGType() {
-    JSUnit.assertEquals("void", GObject.TYPE_NONE.name);
-    JSUnit.assertEquals("gchararray", GObject.TYPE_STRING.name);
+    it('has a read-only name', function () {
+        try {
+            GObject.TYPE_STRING.name = 'foo';
+        } catch (e) {
+        }
+        expect(GObject.TYPE_STRING.name).toEqual('gchararray');
+    });
 
-    // Make sure "name" is readonly
-    try {
-        GObject.TYPE_STRING.name = "foo";
-    } catch(e) {
-    }
-    JSUnit.assertEquals("gchararray", GObject.TYPE_STRING.name);
+    it('has an undeletable name', function () {
+        try {
+            delete GObject.TYPE_STRING.name;
+        } catch (e) {
+        }
+        expect(GObject.TYPE_STRING.name).toEqual('gchararray');
+    });
 
-    // Make sure "name" is permanent
-    try {
-        delete GObject.TYPE_STRING.name;
-    } catch(e) {
-    }
-    JSUnit.assertEquals("gchararray", GObject.TYPE_STRING.name);
+    it('has a string representation', function () {
+        expect(GObject.TYPE_NONE.toString()).toEqual("[object GType for 'void']");
+        expect(GObject.TYPE_STRING.toString()).toEqual("[object GType for 'gchararray']");
+    });
+});
 
-    // Make sure "toString" works
-    JSUnit.assertEquals("[object GType for 'void']", GObject.TYPE_NONE.toString());
-    JSUnit.assertEquals("[object GType for 'gchararray']", GObject.TYPE_STRING.toString());
-}
+describe('GType prototype object', function () {
+    it('has no name', function () {
+        expect(GIRepositoryGType.name).toBeNull();
+    });
 
-function testGTypePrototype() {
-    JSUnit.assertNull(GIRepositoryGType.name);
-    JSUnit.assertEquals("[object GType prototype]", GIRepositoryGType.toString());
-}
-
-JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
+    it('has a string representation', function () {
+        expect(GIRepositoryGType.toString()).toEqual('[object GType prototype]');
+    });
+});

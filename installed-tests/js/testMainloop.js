@@ -1,106 +1,91 @@
-const JSUnit = imports.jsUnit;
 const Mainloop = imports.mainloop;
 
-function testTimeout() {
-    var trackTimeout = {
-        runTenTimes : 0,
-        runOnlyOnce: 0,
-        neverRun: 0
-    };
+describe('Mainloop.timeout_add()', function () {
+    let runTenTimes, runOnlyOnce, neverRun;
+    beforeAll(function (done) {
+        let count = 0;
+        runTenTimes = jasmine.createSpy('runTenTimes').and.callFake(() => {
+            if (count === 10) {
+                done();
+                return false;
+            }
+            count += 1;
+            return true;
+        });
+        runOnlyOnce = jasmine.createSpy('runOnlyOnce').and.returnValue(false);
+        neverRun = jasmine.createSpy('neverRun').and.throwError();
 
-    Mainloop.timeout_add(10,
-                         function() {
-                             if (trackTimeout.runTenTimes == 10) {
-                                 Mainloop.quit('testtimeout');
-                                 return false;
-                             }
+        Mainloop.timeout_add(10, runTenTimes);
+        Mainloop.timeout_add(10, runOnlyOnce);
+        Mainloop.timeout_add(15000, neverRun);
+    });
 
-                             trackTimeout.runTenTimes += 1;
-                             return true;
-                         });
+    it('runs a timeout function', function () {
+        expect(runOnlyOnce).toHaveBeenCalledTimes(1);
+    });
 
-    Mainloop.timeout_add(10,
-                         function () {
-                             trackTimeout.runOnlyOnce += 1;
-                             return false;
-                         });
+    it('runs a timeout function until it returns false', function () {
+        expect(runTenTimes).toHaveBeenCalledTimes(11);
+    });
 
-    Mainloop.timeout_add(15000,
-                       function() {
-                           trackTimeout.neverRun += 1;
-                           return false;
-                       });
+    it('runs a timeout function after an initial timeout', function () {
+        expect(neverRun).not.toHaveBeenCalled();
+    });
+});
 
-    Mainloop.run('testtimeout');
+describe('Mainloop.idle_add()', function () {
+    let runOnce, runTwice, neverRuns, quitAfterManyRuns;
+    beforeAll(function (done) {
+        runOnce = jasmine.createSpy('runOnce').and.returnValue(false);
+        runTwice = jasmine.createSpy('runTwice').and.returnValues([true, false]);
+        neverRuns = jasmine.createSpy('neverRuns').and.throwError();
+        let count = 0;
+        quitAfterManyRuns = jasmine.createSpy('quitAfterManyRuns').and.callFake(() => {
+            count += 1;
+            if (count > 10) {
+                done();
+                return false;
+            }
+            return true;
+        });
 
-    with (trackTimeout) {
-        JSUnit.assertEquals("run ten times", 10, runTenTimes);
-        JSUnit.assertEquals("run only once", 1, runOnlyOnce);
-        JSUnit.assertEquals("never run", 0, neverRun);
-    }
-}
+        Mainloop.idle_add(runOnce);
+        Mainloop.idle_add(runTwice);
+        let neverRunsId = Mainloop.idle_add(neverRuns);
+        Mainloop.idle_add(quitAfterManyRuns);
 
-function testIdle() {
-    var trackIdles = {
-        runTwiceCount : 0,
-        runOnceCount : 0,
-        neverRunsCount : 0,
-        quitAfterManyRunsCount : 0
-    };
-    Mainloop.idle_add(function() {
-                          trackIdles.runTwiceCount += 1;
-                          if (trackIdles.runTwiceCount == 2)
-                              return false;
-                          else
-                              return true;
-                      });
-    Mainloop.idle_add(function() {
-                          trackIdles.runOnceCount += 1;
-                          return false;
-                      });
-    var neverRunsId =
-        Mainloop.idle_add(function() {
-                              trackIdles.neverRunsCount += 1;
-                              return false;
-                          });
-    Mainloop.idle_add(function() {
-                          trackIdles.quitAfterManyRunsCount += 1;
-                          if (trackIdles.quitAfterManyRunsCount > 10) {
-                              Mainloop.quit('foobar');
-                              return false;
-                          } else {
-                              return true;
-                          }
-                      });
+        Mainloop.source_remove(neverRunsId);
+    });
 
-    Mainloop.source_remove(neverRunsId);
+    it('runs an idle function', function () {
+        expect(runOnce).toHaveBeenCalledTimes(1);
+    });
 
-    Mainloop.run('foobar');
+    it('continues to run idle functions that return true', function () {
+        expect(runTwice).toHaveBeenCalledTimes(2);
+        expect(quitAfterManyRuns).toHaveBeenCalledTimes(11);
+    });
 
-    JSUnit.assertEquals("one-shot ran once", 1, trackIdles.runOnceCount);
-    JSUnit.assertEquals("two-shot ran twice", 2, trackIdles.runTwiceCount);
-    JSUnit.assertEquals("removed never ran", 0, trackIdles.neverRunsCount);
-    JSUnit.assertEquals("quit after many ran 11", 11, trackIdles.quitAfterManyRunsCount);
+    it('does not run idle functions if removed', function () {
+        expect(neverRuns).not.toHaveBeenCalled();
+    });
 
-    // check re-entrancy of removing closures while they
-    // are being invoked
-
-    trackIdles.removeId = Mainloop.idle_add(function() {
-                                                Mainloop.source_remove(trackIdles.removeId);
-                                                Mainloop.quit('foobar');
-                                                return false;
-                                            });
-    Mainloop.run('foobar');
+    it('can remove idle functions while they are being invoked', function (done) {
+        let removeId = Mainloop.idle_add(() => {
+            Mainloop.source_remove(removeId);
+            done();
+            return false;
+        });
+    });
 
     // Add an idle before exit, then never run main loop again.
     // This is to test that we remove idle callbacks when the associated
-    // JSContext is blown away. The leak check in gjs-unit will
+    // JSContext is blown away. The leak check in minijasmine will
     // fail if the idle function is not garbage collected.
-    Mainloop.idle_add(function() {
-                          fail("This should never have been called");
-                          return true;
-                      });
-}
-
-JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
-
+    it('does not leak idle callbacks', function () {
+        Mainloop.idle_add(() => {
+            fail('This should never have been called');
+            return true;
+        });
+    });
+});
