@@ -297,6 +297,7 @@ gjs_define_promise_object(JSContext       *cx,
                                                                       &lie_length));
     JS::CompileOptions options(cx);
     options.setUTF8(true)
+        .setSourceIsLazy(true)
         .setFile("<Promise>");
 
     JS::RootedValue promise(cx);
