@@ -298,6 +298,25 @@ get_prop_from_g_param(JSContext             *context,
     return true;
 }
 
+static GIFieldInfo *
+lookup_field_info(GIObjectInfo *info,
+                  const char   *name)
+{
+    int n_fields = g_object_info_get_n_fields(info);
+    int ix;
+    GIFieldInfo *retval = NULL;
+
+    for (ix = 0; ix < n_fields; ix++) {
+        retval = g_object_info_get_field(info, ix);
+        const char *field_name = g_base_info_get_name((GIBaseInfo *) retval);
+        if (strcmp(name, field_name) == 0)
+            break;
+        g_clear_pointer(&retval, g_base_info_unref);
+    }
+
+    return retval;
+}
+
 static bool
 get_prop_from_field(JSContext             *cx,
                     JS::HandleObject       obj,
@@ -308,16 +327,7 @@ get_prop_from_field(JSContext             *cx,
     if (priv->info == NULL)
         return true;  /* Not resolved, but no error; leave value_p untouched */
 
-    int n_fields = g_object_info_get_n_fields(priv->info);
-    int ix;
-    GIFieldInfo *field = NULL;
-    for (ix = 0; ix < n_fields; ix++) {
-        field = g_object_info_get_field(priv->info, ix);
-        const char *field_name = g_base_info_get_name((GIBaseInfo *) field);
-        if (strcmp(name, field_name) == 0)
-            break;
-        g_clear_pointer(&field, g_base_info_unref);
-    }
+    GIFieldInfo *field = lookup_field_info(priv->info, name);
 
     if (field == NULL)
         return true;
@@ -414,9 +424,11 @@ static bool
 set_g_param_from_prop(JSContext      *context,
                       ObjectInstance *priv,
                       const char     *name,
+                      bool&           was_set,
                       JS::HandleValue value_p)
 {
     GParameter param = { NULL, { 0, }};
+    was_set = false;
 
     switch (init_g_param_from_property(context, name,
                                        value_p,
@@ -436,7 +448,49 @@ set_g_param_from_prop(JSContext      *context,
                           &param.value);
 
     g_value_unset(&param.value);
+    was_set = true;
     return true;
+}
+
+static bool
+check_set_field_from_prop(JSContext             *cx,
+                          ObjectInstance        *priv,
+                          const char            *name,
+                          bool                   strict,
+                          JS::MutableHandleValue value_p)
+{
+    if (priv->info == NULL)
+        return true;
+
+    GIFieldInfo *field = lookup_field_info(priv->info, name);
+    if (field == NULL)
+        return true;
+
+    bool retval = true;
+
+    /* As far as I know, GI never exposes GObject instance struct fields as
+     * writable, so no need to implement this for the time being */
+    if (g_field_info_get_flags(field) & GI_FIELD_IS_WRITABLE) {
+        g_message("Field %s of a GObject is writable, but setting it is not "
+                  "implemented", name);
+        goto out;
+    }
+
+    if (strict) {
+        gjs_throw(cx, "Tried to set read-only field %s in strict mode", name);
+        retval = false;
+        goto out;
+    }
+
+    /* We have to update value_p because JS caches it as the property's "stored
+     * value" (https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/JSAPI_reference/Stored_value)
+     * and so subsequent gets would get the stored value instead of accessing
+     * the field */
+    value_p.setUndefined();
+
+out:
+    g_base_info_unref((GIBaseInfo *) field);
+    return retval;
 }
 
 /* a hook on setting a property; set value_p to override property value to
@@ -452,6 +506,7 @@ object_instance_set_prop(JSContext              *context,
     ObjectInstance *priv;
     char *name;
     bool ret = true;
+    bool g_param_was_set = false;
 
     if (!gjs_get_string_id(context, id, &name))
         return true; /* not resolved, but no error */
@@ -468,7 +523,11 @@ object_instance_set_prop(JSContext              *context,
     if (priv->gobj == NULL) /* prototype, not an instance. */
         goto out;
 
-    ret = set_g_param_from_prop(context, priv, name, value_p);
+    ret = set_g_param_from_prop(context, priv, name, g_param_was_set, value_p);
+    if (g_param_was_set || !ret)
+        goto out;
+
+    ret = check_set_field_from_prop(context, priv, name, strict, value_p);
 
     /* note that the prop will also have been set in JS, which I think
      * is OK, since we hook get and set so will always override that
