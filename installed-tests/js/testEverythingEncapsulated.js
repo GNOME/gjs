@@ -189,3 +189,28 @@ describe('Introspected boxed types', function () {
         expect(boxed.some_long).toEqual(5);
     });
 });
+
+describe('Introspected GObject', function () {
+    let obj;
+    beforeEach(function () {
+        obj = new Regress.TestObj({
+            // These properties have backing public fields with different names
+            int: 42,
+            float: 3.1416,
+            double: 2.71828,
+        });
+    });
+
+    it('can access fields with simple types', function () {
+        // Compare the values gotten through the GObject property getters to the
+        // values of the backing fields
+        expect(obj.some_int8).toEqual(obj.int);
+        expect(obj.some_float).toEqual(obj.float);
+        expect(obj.some_double).toEqual(obj.double);
+    });
+
+    it('cannot access fields with complex types (GI limitation)', function () {
+        expect(() => obj.parent_instance).toThrow();
+        expect(() => obj.function_ptr).toThrow();
+    });
+});

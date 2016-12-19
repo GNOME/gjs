@@ -298,6 +298,73 @@ get_prop_from_g_param(JSContext             *context,
     return true;
 }
 
+static bool
+get_prop_from_field(JSContext             *cx,
+                    JS::HandleObject       obj,
+                    ObjectInstance        *priv,
+                    const char            *name,
+                    JS::MutableHandleValue value_p)
+{
+    if (priv->info == NULL)
+        return true;  /* Not resolved, but no error; leave value_p untouched */
+
+    int n_fields = g_object_info_get_n_fields(priv->info);
+    int ix;
+    GIFieldInfo *field = NULL;
+    for (ix = 0; ix < n_fields; ix++) {
+        field = g_object_info_get_field(priv->info, ix);
+        const char *field_name = g_base_info_get_name((GIBaseInfo *) field);
+        if (strcmp(name, field_name) == 0)
+            break;
+        g_clear_pointer(&field, g_base_info_unref);
+    }
+
+    if (field == NULL)
+        return true;
+
+    bool retval = true;
+    GITypeInfo *type = NULL;
+    GITypeTag tag;
+    GIArgument arg = { 0 };
+
+    if (!(g_field_info_get_flags(field) & GI_FIELD_IS_READABLE))
+        goto out;
+
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Overriding %s with GObject field",
+                     name);
+
+    type = g_field_info_get_type(field);
+    tag = g_type_info_get_tag(type);
+    if (tag == GI_TYPE_TAG_ARRAY ||
+        tag == GI_TYPE_TAG_INTERFACE ||
+        tag == GI_TYPE_TAG_GLIST ||
+        tag == GI_TYPE_TAG_GSLIST ||
+        tag == GI_TYPE_TAG_GHASH ||
+        tag == GI_TYPE_TAG_ERROR) {
+        gjs_throw(cx, "Can't get field %s; GObject introspection supports only "
+                  "fields with simple types, not %s", name,
+                  g_type_tag_to_string(tag));
+        retval = false;
+        goto out;
+    }
+
+    retval = g_field_info_get_field(field, priv->gobj, &arg);
+    if (!retval) {
+        gjs_throw(cx, "Error getting field %s from object", name);
+        goto out;
+    }
+
+    retval = gjs_value_from_g_argument(cx, value_p, type, &arg, true);
+    /* copy_structs is irrelevant because g_field_info_get_field() doesn't
+     * handle boxed types */
+
+out:
+    if (type != NULL)
+        g_base_info_unref((GIBaseInfo *) type);
+    g_base_info_unref((GIBaseInfo *) field);
+    return retval;
+}
+
 /* a hook on getting a property; set value_p to override property's value.
  * Return value is false on OOM/exception.
  */
@@ -329,6 +396,14 @@ object_instance_get_prop(JSContext              *context,
         goto out;
 
     ret = get_prop_from_g_param(context, obj, priv, name, value_p);
+    if (!ret)
+        goto out;
+
+    if (!value_p.isUndefined())
+        goto out;
+
+    /* Fall back to fields */
+    ret = get_prop_from_field(context, obj, priv, name, value_p);
 
  out:
     g_free(name);
