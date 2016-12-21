@@ -31,8 +31,10 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
-#pragma GCC diagnostic ignored "-Wmismatched-tags"
-#pragma GCC diagnostic ignored "-Winconsistent-missing-override"
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wmismatched-tags"
+#pragma clang diagnostic ignored "-Winconsistent-missing-override"
+#endif /* __clang__ */
 #include "jsproxy.h"
 #pragma GCC diagnostic pop
 
