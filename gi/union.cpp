@@ -444,7 +444,7 @@ gjs_typecheck_union(JSContext       *context,
 
     if (priv->gboxed == NULL) {
         if (throw_error) {
-            gjs_throw_custom(context, "TypeError",
+            gjs_throw_custom(context, "TypeError", NULL,
                              "Object is %s.%s.prototype, not an object instance - cannot convert to a union instance",
                              g_base_info_get_namespace( (GIBaseInfo*) priv->info),
                              g_base_info_get_name( (GIBaseInfo*) priv->info));
@@ -462,14 +462,14 @@ gjs_typecheck_union(JSContext       *context,
 
     if (!result && throw_error) {
         if (expected_info != NULL) {
-            gjs_throw_custom(context, "TypeError",
+            gjs_throw_custom(context, "TypeError", NULL,
                              "Object is of type %s.%s - cannot convert to %s.%s",
                              g_base_info_get_namespace((GIBaseInfo*) priv->info),
                              g_base_info_get_name((GIBaseInfo*) priv->info),
                              g_base_info_get_namespace((GIBaseInfo*) expected_info),
                              g_base_info_get_name((GIBaseInfo*) expected_info));
         } else {
-            gjs_throw_custom(context, "TypeError",
+            gjs_throw_custom(context, "TypeError", NULL,
                              "Object is of type %s.%s - cannot convert to %s",
                              g_base_info_get_namespace((GIBaseInfo*) priv->info),
                              g_base_info_get_name((GIBaseInfo*) priv->info),

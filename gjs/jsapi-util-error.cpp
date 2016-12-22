@@ -42,9 +42,10 @@
  * http://egachine.berlios.de/embedding-sm-best-practice/embedding-sm-best-practice.html#error-handling
  */
 static void
-G_GNUC_PRINTF(3, 0)
+G_GNUC_PRINTF(4, 0)
 gjs_throw_valist(JSContext       *context,
                  const char      *error_class,
+                 const char      *error_name,
                  const char      *format,
                  va_list          args)
 {
@@ -76,7 +77,8 @@ gjs_throw_valist(JSContext       *context,
 
     JS::RootedObject constructor(context);
     JS::RootedObject global(context, JS::CurrentGlobalOrNull(context));
-    JS::RootedValue v_constructor(context), new_exc(context);
+    JS::RootedValue v_constructor(context), exc_val(context);
+    JS::RootedObject new_exc(context);
     JS::AutoValueArray<1> error_args(context);
     result = false;
 
@@ -93,8 +95,22 @@ gjs_throw_valist(JSContext       *context,
 
     /* throw new Error(message) */
     constructor = &v_constructor.toObject();
-    new_exc.setObjectOrNull(JS_New(context, constructor, error_args));
-    JS_SetPendingException(context, new_exc);
+    new_exc = JS_New(context, constructor, error_args);
+
+    if (new_exc == NULL)
+        goto out;
+
+    if (error_name != NULL) {
+        JS::RootedId name_id(context,
+            gjs_context_get_const_string(context, GJS_STRING_NAME));
+        JS::RootedValue name_value(context);
+        if (!gjs_string_from_utf8(context, error_name, -1, &name_value) ||
+            !JS_SetPropertyById(context, new_exc, name_id, name_value))
+            goto out;
+    }
+
+    exc_val.setObject(*new_exc);
+    JS_SetPendingException(context, exc_val);
 
     result = true;
 
@@ -128,25 +144,26 @@ gjs_throw(JSContext       *context,
     va_list args;
 
     va_start(args, format);
-    gjs_throw_valist(context, "Error", format, args);
+    gjs_throw_valist(context, "Error", NULL, format, args);
     va_end(args);
 }
 
 /*
  * Like gjs_throw, but allows to customize the error
- * class. Mainly used for throwing TypeError instead of
+ * class and 'name' property. Mainly used for throwing TypeError instead of
  * error.
  */
 void
 gjs_throw_custom(JSContext       *context,
                  const char      *error_class,
+                 const char      *error_name,
                  const char      *format,
                  ...)
 {
     va_list args;
 
     va_start(args, format);
-    gjs_throw_valist(context, error_class, format, args);
+    gjs_throw_valist(context, error_class, error_name, format, args);
     va_end(args);
 }
 

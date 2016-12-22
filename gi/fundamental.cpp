@@ -849,13 +849,13 @@ gjs_typecheck_fundamental(JSContext       *context,
 
     if (!result && throw_error) {
         if (priv->prototype->info) {
-            gjs_throw_custom(context, "TypeError",
+            gjs_throw_custom(context, "TypeError", NULL,
                              "Object is of type %s.%s - cannot convert to %s",
                              g_base_info_get_namespace((GIBaseInfo *) priv->prototype->info),
                              g_base_info_get_name((GIBaseInfo *) priv->prototype->info),
                              g_type_name(expected_gtype));
         } else {
-            gjs_throw_custom(context, "TypeError",
+            gjs_throw_custom(context, "TypeError", NULL,
                              "Object is of type %s - cannot convert to %s",
                              g_type_name(priv->prototype->gtype),
                              g_type_name(expected_gtype));

@@ -361,8 +361,9 @@ void        gjs_throw                        (JSContext       *context,
                                               ...)  G_GNUC_PRINTF (2, 3);
 void        gjs_throw_custom                 (JSContext       *context,
                                               const char      *error_class,
+                                              const char      *error_name,
                                               const char      *format,
-                                              ...)  G_GNUC_PRINTF (3, 4);
+                                              ...)  G_GNUC_PRINTF (4, 5);
 void        gjs_throw_literal                (JSContext       *context,
                                               const char      *string);
 void        gjs_throw_g_error                (JSContext       *context,
