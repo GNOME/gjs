@@ -1,0 +1,22 @@
+language: c
+dist: trusty
+
+matrix:
+  include:
+  - env: DISTRO=ubuntu IMAGE=ubuntu:xenial
+
+  - env: DISTRO=ubuntu IMAGE=ubuntu:16.10
+
+before_install:
+  - docker pull "$IMAGE"
+  - cd ..
+  - git clone git://git.sv.gnu.org/autoconf-archive.git autoconf
+  - git clone https://github.com/GNOME/glib.git
+  - git clone https://github.com/GNOME/gobject-introspection.git
+
+script:
+  - mkdir -p gjs/m4
+  - cp autoconf/m4/ax_*.m4 gjs/m4/
+  - cp gobject-introspection/m4/*.m4 gjs/m4/
+  - docker run -v $(pwd):/cwd -v $(pwd)/gjs/continuous-integration/check.sh:/check.sh -e "DISTRO=$DISTRO" -e "OS=$IMAGE" "$IMAGE" bash -e /check.sh
+  
