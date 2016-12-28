@@ -1878,10 +1878,10 @@ gjs_coverage_new (const char * const *prefixes,
 }
 
 GjsCoverage *
-_gjs_coverage_new_internal_with_cache(const char * const *coverage_prefixes,
-                                      GjsContext         *context,
-                                      GFile              *output_dir,
-                                      GFile              *cache)
+gjs_coverage_new_internal_with_cache(const char * const *coverage_prefixes,
+                                     GjsContext         *context,
+                                     GFile              *output_dir,
+                                     GFile              *cache)
 {
     GjsCoverage *coverage =
         GJS_COVERAGE(g_object_new(GJS_TYPE_COVERAGE,
@@ -1895,9 +1895,9 @@ _gjs_coverage_new_internal_with_cache(const char * const *coverage_prefixes,
 }
 
 GjsCoverage *
-_gjs_coverage_new_internal_without_cache(const char * const *prefixes,
-                                         GjsContext         *cx,
-                                         GFile              *output_dir)
+gjs_coverage_new_internal_without_cache(const char * const *prefixes,
+                                        GjsContext         *cx,
+                                        GFile              *output_dir)
 {
-    return _gjs_coverage_new_internal_with_cache(prefixes, cx, output_dir, NULL);
+    return gjs_coverage_new_internal_with_cache(prefixes, cx, output_dir, NULL);
 }

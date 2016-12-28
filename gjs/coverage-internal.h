@@ -28,14 +28,14 @@
 
 G_BEGIN_DECLS
 
-GjsCoverage *_gjs_coverage_new_internal_with_cache(const char * const *coverage_prefixes,
-                                                   GjsContext         *context,
-                                                   GFile              *output_dir,
-                                                   GFile              *cache_path);
+GjsCoverage *gjs_coverage_new_internal_with_cache(const char * const *coverage_prefixes,
+                                                  GjsContext         *context,
+                                                  GFile              *output_dir,
+                                                  GFile              *cache_path);
 
-GjsCoverage *_gjs_coverage_new_internal_without_cache(const char * const *prefixes,
-                                                      GjsContext         *cx,
-                                                      GFile              *output_dir);
+GjsCoverage *gjs_coverage_new_internal_without_cache(const char * const *prefixes,
+                                                     GjsContext         *cx,
+                                                     GFile              *output_dir);
 
 GBytes * gjs_serialize_statistics(GjsCoverage *coverage);
 
