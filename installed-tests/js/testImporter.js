@@ -3,6 +3,36 @@ describe('GI importer', function () {
         var GLib = imports.gi.GLib;
         expect(GLib.MAJOR_VERSION).toEqual(2);
     });
+
+    describe('on failure', function () {
+        // For these tests, we provide special overrides files to sabotage the
+        // import, at the path resource:///org/gjs/jsunit/modules/overrides.
+        let oldSearchPath;
+        beforeAll(function () {
+            oldSearchPath = imports.overrides.searchPath.slice();
+            imports.overrides.searchPath = ['resource:///org/gjs/jsunit/modules/overrides'];
+        });
+
+        afterAll(function () {
+            imports.overrides.searchPath = oldSearchPath;
+        });
+
+        it("throws an exception when the overrides file can't be imported", function () {
+            expect(() => imports.gi.WarnLib).toThrowError(SyntaxError);
+        });
+
+        it('throws an exception when the overrides import throws one', function () {
+            expect(() => imports.gi.GIMarshallingTests).toThrow('💩');
+        });
+
+        it('throws an exception when the overrides _init throws one', function () {
+            expect(() => imports.gi.Regress).toThrow('💩');
+        });
+
+        it("throws an exception when the overrides _init isn't a function", function () {
+            expect(() => imports.gi.Gio).toThrowError(/_init/);
+        });
+    });
 });
 
 describe('Importer', function () {

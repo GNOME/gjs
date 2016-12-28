@@ -54,7 +54,8 @@ extern struct JSClass gjs_repo_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Repo, gjs_repo_class)
 
-static JSObject *lookup_override_function(JSContext *, JS::HandleId);
+static bool lookup_override_function(JSContext *, JS::HandleId,
+                                     JS::MutableHandleValue);
 
 static bool
 get_version_for_ns (JSContext       *context,
@@ -124,10 +125,12 @@ resolve_namespace_object(JSContext       *context,
                            GJS_MODULE_PROP_FLAGS))
         g_error("no memory to define ns property");
 
-    JS::RootedValue override(context,
-        JS::ObjectOrNullValue(lookup_override_function(context, ns_id)));
+    JS::RootedValue override(context);
+    if (!lookup_override_function(context, ns_id, &override))
+        return false;
+
     JS::RootedValue result(context);
-    if (!override.isNull() &&
+    if (!override.isUndefined() &&
         !JS_CallFunctionValue (context, gi_namespace, /* thisp */
                                override, /* callee */
                                JS::HandleValueArray::empty(), &result))
@@ -562,16 +565,48 @@ gjs_lookup_namespace_object(JSContext  *context,
     return gjs_lookup_namespace_object_by_name(context, ns_name);
 }
 
-static JSObject*
-lookup_override_function(JSContext   *cx,
-                         JS::HandleId ns_name)
+/* Check if an exception's 'name' property is equal to compare_name. Ignores
+ * all errors that might arise. Requires request. */
+static bool
+error_has_name(JSContext       *cx,
+               JS::HandleValue  thrown_value,
+               JSString        *compare_name)
+{
+    if (!thrown_value.isObject())
+        return false;
+
+    JS::AutoSaveExceptionState saved_exc(cx);
+    JS::RootedId name_id(cx, gjs_context_get_const_string(cx, GJS_STRING_NAME));
+    JS::RootedObject exc(cx, &thrown_value.toObject());
+    JS::RootedValue exc_name(cx);
+    bool retval = false;
+
+    if (!JS_GetPropertyById(cx, exc, name_id, &exc_name))
+        goto out;
+
+    int32_t cmp_result;
+    if (!JS_CompareStrings(cx, exc_name.toString(), compare_name, &cmp_result))
+        goto out;
+
+    if (cmp_result == 0)
+        retval = true;
+
+out:
+    saved_exc.restore();
+    return retval;
+}
+
+static bool
+lookup_override_function(JSContext             *cx,
+                         JS::HandleId           ns_name,
+                         JS::MutableHandleValue function)
 {
     JSAutoRequest ar(cx);
+    JS::AutoSaveExceptionState saved_exc(cx);
 
     JS::RootedValue importer(cx, gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS));
     g_assert(importer.isObject());
 
-    JS::RootedValue function(cx);
     JS::RootedId overrides_name(cx,
         gjs_context_get_const_string(cx, GJS_STRING_GI_OVERRIDES));
     JS::RootedId object_init_name(cx,
@@ -584,19 +619,30 @@ lookup_override_function(JSContext   *cx,
         goto fail;
 
     if (!gjs_object_require_property_value(cx, overridespkg, "GI repository object",
-                                           ns_name, &module))
+                                           ns_name, &module)) {
+        JS::RootedValue exc(cx);
+        JS_GetPendingException(cx, &exc);
+
+        /* If the exception was an ImportError (i.e., module not found) then
+         * we simply didn't have an override, don't throw an exception */
+        if (error_has_name(cx, exc, JS_InternString(cx, "ImportError"))) {
+            saved_exc.restore();
+            return true;
+        }
+
         goto fail;
+    }
 
     if (!gjs_object_require_property(cx, module, "override module",
-                                     object_init_name, &function) ||
-        !function.isObjectOrNull())
+                                     object_init_name, function) ||
+        !function.isObjectOrNull()) {
+        gjs_throw(cx, "Unexpected value for _init in overrides module");
         goto fail;
-
-    return function.toObjectOrNull();
+    }
 
  fail:
-    JS_ClearPendingException(cx);
-    return NULL;
+    saved_exc.drop();
+    return false;
 }
 
 JSObject*
