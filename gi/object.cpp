@@ -2272,13 +2272,13 @@ gjs_typecheck_object(JSContext       *context,
 
     if (!result && throw_error) {
         if (priv->info) {
-            gjs_throw_custom(context, "TypeError",
+            gjs_throw_custom(context, "TypeError", NULL,
                              "Object is of type %s.%s - cannot convert to %s",
                              g_base_info_get_namespace((GIBaseInfo*) priv->info),
                              g_base_info_get_name((GIBaseInfo*) priv->info),
                              g_type_name(expected_type));
         } else {
-            gjs_throw_custom(context, "TypeError",
+            gjs_throw_custom(context, "TypeError", NULL,
                              "Object is of type %s - cannot convert to %s",
                              g_type_name(priv->gtype),
                              g_type_name(expected_type));

@@ -650,7 +650,7 @@ gjs_fill_method_instance(JSContext       *context,
             if (transfer == GI_TRANSFER_EVERYTHING)
                 gjs_fundamental_ref (context, out_arg->v_pointer);
         } else {
-            gjs_throw_custom(context, "TypeError",
+            gjs_throw_custom(context, "TypeError", NULL,
                              "%s.%s is not an object instance neither a fundamental instance of a supported type",
                              g_base_info_get_namespace(container),
                              g_base_info_get_name(container));
