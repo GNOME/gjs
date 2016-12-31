@@ -1955,7 +1955,7 @@ JSFunctionSpec gjs_object_instance_proto_funcs[] = {
     JS_FS_END
 };
 
-bool
+void
 gjs_object_define_static_methods(JSContext       *context,
                                  JS::HandleObject constructor,
                                  GType            gtype,
@@ -1982,8 +1982,9 @@ gjs_object_define_static_methods(JSContext       *context,
          * like in the near future.
          */
         if (!(flags & GI_FUNCTION_IS_METHOD)) {
-            gjs_define_function(context, constructor, gtype,
-                                (GICallableInfo *)meth_info);
+            if (!gjs_define_function(context, constructor, gtype,
+                                     (GICallableInfo *) meth_info))
+                gjs_log_exception(context);
         }
 
         g_base_info_unref((GIBaseInfo*) meth_info);
@@ -1992,7 +1993,7 @@ gjs_object_define_static_methods(JSContext       *context,
     gtype_struct = g_object_info_get_class_struct(object_info);
 
     if (gtype_struct == NULL)
-        return true;
+        return;
 
     n_methods = g_struct_info_get_n_methods(gtype_struct);
 
@@ -2001,14 +2002,14 @@ gjs_object_define_static_methods(JSContext       *context,
 
         meth_info = g_struct_info_get_method(gtype_struct, i);
 
-        gjs_define_function(context, constructor, gtype,
-                            (GICallableInfo*)meth_info);
+        if (!gjs_define_function(context, constructor, gtype,
+                                 (GICallableInfo *) meth_info))
+            gjs_log_exception(context);
 
         g_base_info_unref((GIBaseInfo*) meth_info);
     }
 
     g_base_info_unref((GIBaseInfo*) gtype_struct);
-    return true;
 }
 
 void
