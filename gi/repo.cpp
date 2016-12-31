@@ -639,6 +639,7 @@ lookup_override_function(JSContext             *cx,
         gjs_throw(cx, "Unexpected value for _init in overrides module");
         goto fail;
     }
+    return true;
 
  fail:
     saved_exc.drop();
