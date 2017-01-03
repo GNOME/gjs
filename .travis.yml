@@ -3,9 +3,11 @@ dist: trusty
 
 matrix:
   include:
-  - env: DISTRO=ubuntu IMAGE=ubuntu:xenial
+  - env: BASE=ubuntu IMAGE=ubuntu:16.04 CCO=gcc
 
-  - env: DISTRO=ubuntu IMAGE=ubuntu:16.10
+  - env: BASE=ubuntu IMAGE=ubuntu:16.04 CCO=clang
+
+  - env: BASE=ubuntu IMAGE=ubuntu:16.10 CCO=gcc
 
 before_install:
   - docker pull "$IMAGE"
@@ -18,5 +20,5 @@ script:
   - mkdir -p gjs/m4
   - cp autoconf/m4/ax_*.m4 gjs/m4/
   - cp gobject-introspection/m4/*.m4 gjs/m4/
-  - docker run -v $(pwd):/cwd -v $(pwd)/gjs/continuous-integration/check.sh:/check.sh -e "DISTRO=$DISTRO" -e "OS=$IMAGE" "$IMAGE" bash -e /check.sh
+  - docker run -v $(pwd):/cwd -v $(pwd)/gjs/continuous-integration/check.sh:/check.sh -e "BASE=$BASE" -e "OS=$IMAGE" -e "CC=$CCO" "$IMAGE" bash -e /check.sh
   
