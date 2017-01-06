@@ -26,6 +26,8 @@
 // 3) the expectation is that a given object will have a very small number of
 //    connections, but they may be to different signal names
 
+const Lang = imports.lang;
+
 function _connect(name, callback) {
     // be paranoid about callback arg since we'd start to throw from emit()
     // if it was messed up
@@ -153,3 +155,11 @@ function addSignalMethods(proto) {
     // this one is not in GObject, but useful
     _addSignalMethod(proto, "disconnectAll", _disconnectAll);
 }
+
+const WithSignals = new Lang.Interface({
+    Name: 'WithSignals',
+    connect: _connect,
+    disconnect: _disconnect,
+    emit: _emit,
+    disconnectAll: _disconnectAll,
+});

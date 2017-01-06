@@ -4,14 +4,28 @@ const Signals = imports.signals;
 
 const Foo = new Lang.Class({
     Name: 'Foo',
+    Implements: [Signals.WithSignals],
     _init: function () {},
 });
-Signals.addSignalMethods(Foo.prototype);
 
 describe('Object with signals', function () {
+    testSignals(Foo);
+});
+
+const FooWithoutSignals = new Lang.Class({
+    Name: 'FooWithoutSignals',
+    _init: function () {},
+});
+Signals.addSignalMethods(FooWithoutSignals.prototype);
+
+describe('Object with signals added', function () {
+    testSignals(FooWithoutSignals);
+});
+
+function testSignals(klass) {
     let foo, bar;
     beforeEach(function () {
-        foo = new Foo();
+        foo = new klass();
         bar = jasmine.createSpy('bar');
     });
 
@@ -106,4 +120,4 @@ describe('Object with signals', function () {
             expect(bar2).toHaveBeenCalledTimes(2);
         });
     });
-});
+}
