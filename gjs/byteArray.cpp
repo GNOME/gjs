@@ -531,7 +531,7 @@ byte_array_new(JSContext *context)
 
     JS::RootedObject proto(context, byte_array_get_prototype(context));
     JS::RootedObject array(context,
-        JS_NewObject(context, &gjs_byte_array_class, proto, JS::NullPtr()));
+        JS_NewObjectWithGivenProto(context, &gjs_byte_array_class, proto, JS::NullPtr()));
 
     priv = g_slice_new0(ByteArrayInstance);
 
@@ -741,7 +741,7 @@ gjs_byte_array_from_byte_array (JSContext *context,
 
     JS::RootedObject proto(context, byte_array_get_prototype(context));
     JS::RootedObject object(context,
-        JS_NewObject(context, &gjs_byte_array_class, proto, JS::NullPtr()));
+        JS_NewObjectWithGivenProto(context, &gjs_byte_array_class, proto, JS::NullPtr()));
 
     if (!object) {
         gjs_throw(context, "failed to create byte array");

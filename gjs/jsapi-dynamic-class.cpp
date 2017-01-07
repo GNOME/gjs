@@ -84,7 +84,7 @@ gjs_init_class_dynamic(JSContext              *context,
      * constructor is not found (and it won't be found, because we never call
      * JS_InitClass).
      */
-    prototype.set(JS_NewObject(context, clasp, parent_proto, global));
+    prototype.set(JS_NewObjectWithGivenProto(context, clasp, parent_proto, global));
     if (!prototype)
         goto out;
 
