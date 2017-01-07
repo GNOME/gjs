@@ -1184,28 +1184,22 @@ gjs_define_root_importer_object(JSContext        *context,
                                 JS::HandleObject  in_object,
                                 JS::HandleObject  root_importer)
 {
-    bool success;
-    jsid imports_name;
-
-    success = false;
-    JS_BeginRequest(context);
+    JSAutoRequest ar(context);
 
     JS::RootedValue importer (JS_GetRuntime(context),
                               JS::ObjectValue(*root_importer));
-    imports_name = gjs_context_get_const_string(context, GJS_STRING_IMPORTS);
+    JS::RootedId imports_name(context,
+        gjs_context_get_const_string(context, GJS_STRING_IMPORTS));
     if (!JS_DefinePropertyById(context, in_object,
                                imports_name, importer,
                                NULL, NULL,
                                GJS_MODULE_PROP_FLAGS)) {
         gjs_debug(GJS_DEBUG_IMPORTER, "DefineProperty imports on %p failed",
                   in_object.get());
-        goto fail;
+        return false;
     }
 
-    success = true;
- fail:
-    JS_EndRequest(context);
-    return success;
+    return true;
 }
 
 bool

@@ -399,7 +399,6 @@ static void
 define_error_properties(JSContext *context,
                         JSObject  *obj)
 {
-    jsid stack_name, filename_name, linenumber_name;
     JS::RootedValue stack(context), fileName(context), lineNumber(context);
     /* COMPAT: mozilla::Maybe gains a much more usable API in future versions */
     mozilla::Maybe<JS::MutableHandleValue> m_stack, m_file, m_line;
@@ -410,9 +409,12 @@ define_error_properties(JSContext *context,
     if (!gjs_context_get_frame_info(context, m_stack, m_file, m_line))
         return;
 
-    stack_name = gjs_context_get_const_string(context, GJS_STRING_STACK);
-    filename_name = gjs_context_get_const_string(context, GJS_STRING_FILENAME);
-    linenumber_name = gjs_context_get_const_string(context, GJS_STRING_LINE_NUMBER);
+    JS::RootedId stack_name(context,
+        gjs_context_get_const_string(context, GJS_STRING_STACK));
+    JS::RootedId filename_name(context,
+        gjs_context_get_const_string(context, GJS_STRING_FILENAME));
+    JS::RootedId linenumber_name(context,
+        gjs_context_get_const_string(context, GJS_STRING_LINE_NUMBER));
 
     JS_DefinePropertyById(context, obj, stack_name, stack,
                           NULL, NULL, JSPROP_ENUMERATE);

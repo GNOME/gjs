@@ -236,7 +236,6 @@ repo_new(JSContext *context)
     JSObject *versions;
     JSObject *private_ns;
     bool found;
-    jsid versions_name, private_ns_name;
 
     JS::RootedObject global(context, gjs_get_import_global(context));
 
@@ -291,7 +290,8 @@ repo_new(JSContext *context)
                         "repo constructor, obj %p priv %p", repo.get(), priv);
 
     versions = JS_NewObject(context, NULL, JS::NullPtr(), global);
-    versions_name = gjs_context_get_const_string(context, GJS_STRING_GI_VERSIONS);
+    JS::RootedId versions_name(context,
+        gjs_context_get_const_string(context, GJS_STRING_GI_VERSIONS));
     JS_DefinePropertyById(context, repo,
                           versions_name,
                           JS::ObjectValue(*versions),
@@ -299,7 +299,8 @@ repo_new(JSContext *context)
                           JSPROP_PERMANENT);
 
     private_ns = JS_NewObject(context, NULL, JS::NullPtr(), global);
-    private_ns_name = gjs_context_get_const_string(context, GJS_STRING_PRIVATE_NS_MARKER);
+    JS::RootedId private_ns_name(context,
+        gjs_context_get_const_string(context, GJS_STRING_PRIVATE_NS_MARKER));
     JS_DefinePropertyById(context, repo,
                           private_ns_name,
                           JS::ObjectValue(*private_ns),
