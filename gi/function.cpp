@@ -859,8 +859,7 @@ gjs_invoke_c_function(JSContext                              *context,
                                   g_base_info_get_namespace( (GIBaseInfo*) function->info),
                                   g_base_info_get_name( (GIBaseInfo*) function->info),
                                   g_base_info_get_name( (GIBaseInfo*) &arg_info),
-                                  JS_GetTypeName(context,
-                                                 JS_TypeOfValue(context, current_arg)));
+                                  gjs_get_type_name(current_arg));
                         failed = true;
                         break;
                     }
@@ -1311,9 +1310,8 @@ function_call(JSContext *context,
 
     priv = priv_from_js(context, callee);
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Call callee %p priv %p this obj %p %s", callee.get(),
-                      priv, object.get(),
-                      JS_GetTypeName(context, JS_TypeOfValue(context, JS::ObjectOrNullValue(object))));
+                      "Call callee %p priv %p this obj %p", callee.get(),
+                      priv, object.get());
 
     if (priv == NULL)
         return true; /* we are the prototype, or have the wrong class */
