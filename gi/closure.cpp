@@ -36,7 +36,7 @@ typedef struct {
     GClosure base;
     JSRuntime *runtime;
     JSContext *context;
-    JSObject *obj;
+    JS::Heap<JSObject *> obj;
     guint unref_on_global_object_finalized : 1;
 } Closure;
 
@@ -338,7 +338,7 @@ gjs_closure_trace(GClosure *closure,
     if (c->obj == NULL)
         return;
 
-    JS_CallObjectTracer(tracer, &c->obj, "signal connection");
+    JS_CallHeapObjectTracer(tracer, &c->obj, "signal connection");
 }
 
 GClosure*
