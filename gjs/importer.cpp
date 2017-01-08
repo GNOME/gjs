@@ -397,41 +397,28 @@ load_module_init(JSContext       *context,
 }
 
 static void
-load_module_elements(JSContext        *context,
+load_module_elements(JSContext        *cx,
                      JS::HandleObject  in_object,
                      ImporterIterator *iter,
                      const char       *init_path)
 {
-    JS::RootedObject jsiter(context),
-        module_obj(context, load_module_init(context, in_object, init_path));
+    size_t ix, length;
+    JS::RootedObject module_obj(cx, load_module_init(cx, in_object, init_path));
 
-    if (module_obj != NULL) {
-        jsid idp;
+    if (module_obj == NULL)
+        return;
 
-        jsiter = JS_NewPropertyIterator(context, module_obj);
+    JS::AutoIdArray ids(cx, JS_Enumerate(cx, module_obj));
+    if (!ids)
+        return;
 
-        if (jsiter == NULL) {
-            return;
-        }
+    for (ix = 0, length = ids.length(); ix < length; ix++) {
+        char *name;
+        if (!gjs_get_string_id(cx, ids[ix], &name))
+            continue;
 
-        if (!JS_NextProperty(context, jsiter, &idp)) {
-            return;
-        }
-
-        while (!JSID_IS_VOID(idp)) {
-            char *name;
-
-            if (!gjs_get_string_id(context, idp, &name)) {
-                continue;
-            }
-
-            /* Pass ownership of name */
-            g_ptr_array_add(iter->elements, name);
-
-            if (!JS_NextProperty(context, jsiter, &idp)) {
-                break;
-            }
-        }
+        /* Pass ownership of name */
+        g_ptr_array_add(iter->elements, name);
     }
 }
 

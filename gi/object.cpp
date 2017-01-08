@@ -825,32 +825,33 @@ object_instance_props_to_g_parameters(JSContext                  *context,
                                       GType                       gtype,
                                       std::vector<GParameter>&    gparams)
 {
+    size_t ix, length;
+
     if (args.length() == 0 || args[0].isUndefined())
         return true;
 
-    JS::RootedObject props(context), iter(context);
-    JS::RootedId prop_id(context);
-
     if (!args[0].isObject()) {
         gjs_throw(context, "argument should be a hash with props to set");
-        goto free_array_and_fail;
+        free_g_params(&gparams[0], gparams.size());
+        return false;
     }
 
-    props = &args[0].toObject();
-
-    iter = JS_NewPropertyIterator(context, props);
-    if (iter == NULL) {
+    JS::RootedObject props(context, &args[0].toObject());
+    JS::RootedId prop_id(context);
+    JS::AutoIdArray ids(context, JS_Enumerate(context, props));
+    JS::RootedValue value(context);
+    if (!ids) {
         gjs_throw(context, "Failed to create property iterator for object props hash");
         goto free_array_and_fail;
     }
 
-    if (!JS_NextProperty(context, iter, prop_id.address()))
-        goto free_array_and_fail;
-
-    while (!JSID_IS_VOID(prop_id)) {
+    for (ix = 0, length = ids.length(); ix < length; ix++) {
         char *name = NULL;
-        JS::RootedValue value(context);
         GParameter gparam = { NULL, { 0, }};
+
+        /* ids[ix] is reachable because props is rooted, but require_property
+         * doesn't know that */
+        prop_id = ids[ix];
 
         if (!gjs_object_require_property(context, props, "property list", prop_id, &value)) {
             goto free_array_and_fail;
@@ -878,10 +879,6 @@ object_instance_props_to_g_parameters(JSContext                  *context,
         g_free(name);
 
         gparams.push_back(gparam);
-
-        prop_id = JSID_VOID;
-        if (!JS_NextProperty(context, iter, prop_id.address()))
-            goto free_array_and_fail;
     }
 
     return true;

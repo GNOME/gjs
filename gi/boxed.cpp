@@ -251,7 +251,7 @@ boxed_init_from_props(JSContext   *context,
                       Boxed       *priv,
                       JS::Value    props_value)
 {
-    bool success = false;
+    size_t ix, length;
 
     if (!props_value.isObject()) {
         gjs_throw(context, "argument should be a hash with fields to set");
@@ -259,55 +259,44 @@ boxed_init_from_props(JSContext   *context,
     }
 
     JS::RootedObject props(context, &props_value.toObject());
-    JS::RootedObject iter(context, JS_NewPropertyIterator(context, props));
+    JS::AutoIdArray ids(context, JS_Enumerate(context, props));
 
-    if (iter == NULL) {
-        gjs_throw(context, "Failed to create property iterator for fields hash");
+    if (!ids) {
+        gjs_throw(context, "Failed to enumerate fields hash");
         return false;
     }
 
     if (!priv->field_map)
         priv->field_map = get_field_map(priv->info);
 
-    JS::RootedId prop_id(context, JSID_VOID);
-    if (!JS_NextProperty(context, iter, prop_id.address()))
-        goto out;
-
-    while (!JSID_IS_VOID(prop_id)) {
+    JS::RootedValue value(context);
+    JS::RootedId prop_id(context);
+    for (ix = 0, length = ids.length(); ix < length; ix++) {
         GIFieldInfo *field_info;
-        char *name;
-        JS::RootedValue value(context);
+        g_autofree char *name = NULL;
 
-        if (!gjs_get_string_id(context, prop_id, &name))
-            goto out;
+        if (!gjs_get_string_id(context, ids[ix], &name))
+            return false;
 
         field_info = (GIFieldInfo *) g_hash_table_lookup(priv->field_map, name);
         if (field_info == NULL) {
             gjs_throw(context, "No field %s on boxed type %s",
                       name, g_base_info_get_name((GIBaseInfo *)priv->info));
-            g_free(name);
-            goto out;
+            return false;
         }
 
-        if (!gjs_object_require_property(context, props, "property list", prop_id, &value)) {
-            g_free(name);
-            goto out;
-        }
-        g_free(name);
+        /* ids[ix] is reachable because props is rooted, but require_property
+         * doesn't know that */
+        prop_id = ids[ix];
+        if (!gjs_object_require_property(context, props, "property list",
+                                         prop_id, &value))
+            return false;
 
         if (!boxed_set_field_from_value(context, priv, field_info, value))
-            goto out;
-
-        prop_id = JSID_VOID;
-        if (!JS_NextProperty(context, iter, prop_id.address()))
-            goto out;
+            return false;
     }
 
-    success = true;
-
- out:
-
-    return success;
+    return true;
 }
 
 static bool
