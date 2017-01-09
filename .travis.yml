@@ -1,6 +1,10 @@
 language: c
 dist: trusty
 
+cache:
+  directories:
+    - ~/docker
+
 matrix:
   include:
   - env: BASE=ubuntu IMAGE=ubuntu:16.04 CCO=gcc
@@ -9,16 +13,30 @@ matrix:
 
   - env: BASE=ubuntu IMAGE=ubuntu:16.10 CCO=gcc
 
+  - env: BASE=fedora IMAGE=fedora:25    CCO=gcc
+
 before_install:
-  - docker pull "$IMAGE"
   - cd ..
-  - git clone git://git.sv.gnu.org/autoconf-archive.git autoconf
-  - git clone https://github.com/GNOME/glib.git
-  - git clone https://github.com/GNOME/gobject-introspection.git
+  - git clone --depth 1 https://github.com/GNOME/jhbuild.git
+
+before_script:
+  - export NAME=$(echo $IMAGE | sed "s/:/_/g")
+
+  # Check if there is a saved base image
+  - if [[ -f ~/docker/$NAME.tar.gz ]]; then cat ~/docker/$NAME.tar.gz | docker import - local/$NAME; fi
+
+  ## Shrink images saving only the files needed. Still missing some files/directories
+  #    docker run -v $(pwd):/cwd -v $(pwd)/gjs/continuous-integration/check.sh:/check.sh -e "BASE=$BASE" -e "OS=$IMAGE" -e "CC=gcc" "$IMAGE" bash -e -c "/check.sh BUILD_MOZ";
+  #    docker run --name $NAME -v $(pwd):/cwd -v $(pwd)/gjs/continuous-integration/check.sh:/check.sh -e "BASE=$BASE" -e "OS=$IMAGE" -e "CC=$CCO" "$IMAGE" bash -e -c "/check.sh SAVE_MOZ";
+
+  # Build the base image, if necessary
+  - 'if [[ ! -f ~/docker/$NAME.tar.gz ]]; then
+      docker run --name $NAME -v $(pwd):/cwd -v $(pwd)/gjs/continuous-integration/check.sh:/check.sh -e "BASE=$BASE" -e "OS=$IMAGE" -e "CC=gcc" "$IMAGE" bash -e -c "/check.sh BUILD_MOZ";
+      docker commit $NAME local/$NAME;
+      mkdir -p ~/docker; docker export $NAME | gzip > ~/docker/$NAME.tar.gz;
+    fi'
 
 script:
-  - mkdir -p gjs/m4
-  - cp autoconf/m4/ax_*.m4 gjs/m4/
-  - cp gobject-introspection/m4/*.m4 gjs/m4/
-  - docker run -v $(pwd):/cwd -v $(pwd)/gjs/continuous-integration/check.sh:/check.sh -e "BASE=$BASE" -e "OS=$IMAGE" -e "CC=$CCO" "$IMAGE" bash -e /check.sh
-  
+  - docker run -v $(pwd):/cwd -v $(pwd)/gjs/continuous-integration/check.sh:/check.sh -e "BASE=$BASE" -e "OS=$IMAGE" -e "CC=$CCO" local/$NAME bash -e -c "/check.sh GJS"
+  - ls -lah ~/docker
+
