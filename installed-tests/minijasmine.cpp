@@ -34,7 +34,7 @@
 #include "gjs/mem.h"
 
 G_GNUC_NORETURN
-void
+static void
 bail_out(const char *msg)
 {
     g_print("Bail out! %s\n", msg);
