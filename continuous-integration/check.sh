@@ -131,15 +131,18 @@ function do_Save_Files(){
     echo
     echo '-- Saving build files --'
     mkdir -p /cwd/SAVED/$OS
-    cp -r /root/jhbuild/install /cwd/SAVED/$OS
+
+    cp -r ~/jhbuild /cwd/SAVED/$OS/jhbuild
+    cp -r ~/.local  /cwd/SAVED/$OS/.local
     echo '-- Done --'
 }
 
 function do_Get_Files(){
     echo
     echo '-- Restoring build files --'
-    mkdir -p /root/jhbuild/install
-    cp -r /cwd/SAVED/$OS /root/jhbuild/install
+
+    cp -r /cwd/SAVED/$OS/jhbuild ~/jhbuild
+    cp -r /cwd/SAVED/$OS/.local  ~/.local
     echo '-- Done --'
 }
 
@@ -183,7 +186,6 @@ function do_Clean_Image(){
 }
 
 # ----------- GJS -----------
-# Get and install dependencies
 cd /cwd
 
 # Show some environment info
@@ -204,7 +206,6 @@ if [[ $1 == "BUILD_MOZ" ]]; then
     do_Build_JHBuild
     do_Build_Mozilla
     do_Save_Files
-    do_Clean_Image ######TODO
 
 elif [[ $1 == "SAVE_MOZ" ]]; then
     do_Get_Files
@@ -228,8 +229,7 @@ elif [[ $1 == "GJS" ]]; then
     cd ../gjs
     git log --pretty=format:"%h %cd %s" -1
     echo
-    #jhbuild run ./autogen.sh --prefix /root/jhbuild/install --enable-compile-warnings=error --enable-installed-tests --with-xvfb-tests ######TODO
-    jhbuild run ./autogen.sh --prefix /root/jhbuild/install --enable-installed-tests --with-xvfb-tests
+    jhbuild run ./autogen.sh --prefix /root/jhbuild/install --enable-compile-warnings=error --enable-installed-tests --with-xvfb-tests
     jhbuild run make -sj2
     jhbuild run make install
 
