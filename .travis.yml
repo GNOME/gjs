@@ -21,7 +21,6 @@ before_install:
 
 before_script:
   - export NAME=$(echo $IMAGE | sed "s/:/_/g")
-  - ls -lah ~/docker
 
   # Check if there is a saved base image
   - if [[ -f ~/docker/$NAME.tar.gz ]]; then cat ~/docker/$NAME.tar.gz | docker import - local/$NAME; fi
@@ -36,5 +35,4 @@ before_script:
 
 script:
   - docker run -v $(pwd):/cwd -v $(pwd)/gjs/continuous-integration/check.sh:/check.sh -e "BASE=$BASE" -e "OS=$IMAGE" -e "CC=$CCO" local/$NAME bash -e -c "/check.sh GJS"
-  - ls -lah ~/docker
 
