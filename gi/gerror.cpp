@@ -44,7 +44,7 @@ typedef struct {
 
 extern struct JSClass gjs_error_class;
 
-static void define_error_properties(JSContext *, JSObject *);
+static void define_error_properties(JSContext *, JS::HandleObject);
 
 GJS_DEFINE_PRIV_FROM_JS(Error, gjs_error_class)
 
@@ -397,8 +397,8 @@ find_error_domain_info(GQuark domain)
    fileName, lineNumber and stack
 */
 static void
-define_error_properties(JSContext *context,
-                        JSObject  *obj)
+define_error_properties(JSContext       *context,
+                        JS::HandleObject obj)
 {
     JS::RootedValue stack(context), fileName(context), lineNumber(context);
     /* COMPAT: mozilla::Maybe gains a much more usable API in future versions */
@@ -432,7 +432,6 @@ gjs_error_from_gerror(JSContext             *context,
                       GError                *gerror,
                       bool                   add_stack)
 {
-    JSObject *obj;
     Error *priv;
     Error *proto_priv;
     GIEnumInfo *info;
@@ -463,7 +462,8 @@ gjs_error_from_gerror(JSContext             *context,
     JS::RootedObject global(context, gjs_get_import_global(context));
     proto_priv = priv_from_js(context, proto);
 
-    obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto, global);
+    JS::RootedObject obj(context,
+        JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto, global));
 
     GJS_INC_COUNTER(gerror);
     priv = g_slice_new0(Error);
