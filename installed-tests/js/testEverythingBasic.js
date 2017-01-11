@@ -292,7 +292,7 @@ describe('Life, the Universe and Everything', function () {
         let array = Regress.test_array_fixed_size_int_out();
         expect(array[0]).toEqual(0);
         expect(array[4]).toEqual(4);
-        let array = Regress.test_array_fixed_size_int_return();
+        array = Regress.test_array_fixed_size_int_return();
         expect(array[0]).toEqual(0);
         expect(array[4]).toEqual(4);
 
