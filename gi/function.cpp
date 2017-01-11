@@ -93,6 +93,7 @@ gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline)
         g_callable_info_free_closure(trampoline->info, trampoline->closure);
         g_base_info_unref( (GIBaseInfo*) trampoline->info);
         g_free (trampoline->param_types);
+        trampoline->~GjsCallbackTrampoline();
         g_slice_free(GjsCallbackTrampoline, trampoline);
     }
 }
@@ -449,6 +450,7 @@ gjs_callback_trampoline_new(JSContext      *context,
     g_assert(JS_TypeOfValue(context, function) == JSTYPE_FUNCTION);
 
     trampoline = g_slice_new(GjsCallbackTrampoline);
+    new (trampoline) GjsCallbackTrampoline();
     trampoline->ref_count = 1;
     trampoline->context = context;
     trampoline->info = callable_info;

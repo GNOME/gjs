@@ -39,7 +39,7 @@
 
 #include <girepository.h>
 
-typedef struct {
+struct Boxed {
     /* prototype info */
     GIBoxedInfo *info;
     GType gtype;
@@ -56,7 +56,7 @@ typedef struct {
     guint allocated_directly : 1;
     guint not_owning_gboxed : 1; /* if set, the JS wrapper does not own
                                     the reference to the C gboxed */
-} Boxed;
+};
 
 static bool struct_is_simple(GIStructInfo *info);
 
@@ -410,6 +410,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(boxed);
 
     priv = g_slice_new0(Boxed);
+    new (priv) Boxed();
 
     GJS_INC_COUNTER(boxed);
 
@@ -506,6 +507,7 @@ boxed_finalize(JSFreeOp *fop,
     }
 
     GJS_DEC_COUNTER(boxed);
+    priv->~Boxed();
     g_slice_free(Boxed, priv);
 }
 
@@ -576,6 +578,7 @@ get_nested_interface_object (JSContext   *context,
 
     GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Boxed);
+    new (priv) Boxed();
     JS_SetPrivate(obj, priv);
     priv->info = (GIBoxedInfo*) interface_info;
     g_base_info_ref( (GIBaseInfo*) priv->info);
@@ -1139,6 +1142,7 @@ gjs_define_boxed_class(JSContext       *context,
 
     GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Boxed);
+    new (priv) Boxed();
     priv->info = info;
     boxed_fill_prototype_info(context, priv);
 
@@ -1186,6 +1190,7 @@ gjs_boxed_from_c_struct(JSContext             *context,
 
     GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Boxed);
+    new (priv) Boxed();
 
     *priv = *proto_priv;
     g_base_info_ref( (GIBaseInfo*) priv->info);

@@ -1706,6 +1706,7 @@ gjs_coverage_constructed(GObject *object)
 
     GjsCoverage *coverage = GJS_COVERAGE(object);
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    new (&priv->coverage_statistics) JS::Heap<JSObject *>();
 
     if (!priv->cache_specified) {
         g_message("Cache path was not given, picking default one");
@@ -1805,6 +1806,7 @@ gjs_coverage_finalize (GObject *object)
     g_strfreev(priv->prefixes);
     g_clear_object(&priv->output_dir);
     g_clear_object(&priv->cache);
+    priv->coverage_statistics.~Heap();
 
     G_OBJECT_CLASS(gjs_coverage_parent_class)->finalize(object);
 }

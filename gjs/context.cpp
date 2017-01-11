@@ -453,6 +453,7 @@ gjs_context_finalize(GObject *object)
     all_contexts = g_list_remove(all_contexts, object);
     g_mutex_unlock(&contexts_lock);
 
+    js_context->global.~Heap();
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
 
@@ -499,7 +500,7 @@ gjs_context_constructed(GObject *object)
     if (!JS_DefineFunctions(js_context->context, global, &global_funcs[0]))
         g_error("Failed to define properties on the global object");
 
-    js_context->global = global;
+    new (&js_context->global) JS::Heap<JSObject *>(global);
     JS_AddExtraGCRootsTracer(js_context->runtime, gjs_context_tracer, js_context);
 
     gjs_define_constructor_proxy_factory(js_context->context);

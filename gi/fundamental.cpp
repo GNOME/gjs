@@ -43,10 +43,10 @@
 /*
  * Structure allocated for prototypes.
  */
-typedef struct _Fundamental {
+struct Fundamental {
     /* instance info */
     void                         *gfundamental;
-    struct _Fundamental          *prototype;    /* NULL if prototype */
+    Fundamental                  *prototype;    /* NULL if prototype */
 
     /* prototype info */
     GIObjectInfo                 *info;
@@ -58,14 +58,14 @@ typedef struct _Fundamental {
 
     JS::Heap<jsid>                constructor_name;
     GICallableInfo               *constructor_info;
-} Fundamental;
+};
 
 /*
  * Structure allocated for instances.
  */
 typedef struct {
     void                         *gfundamental;
-    struct _Fundamental          *prototype;
+    Fundamental                  *prototype;
 } FundamentalInstance;
 
 extern struct JSClass gjs_fundamental_instance_class;
@@ -477,6 +477,7 @@ fundamental_finalize(JSFreeOp  *fop,
             g_base_info_unref((GIBaseInfo *) proto_priv->info);
         proto_priv->info = NULL;
 
+        proto_priv->~Fundamental();
         g_slice_free(Fundamental, proto_priv);
     }
 }
@@ -538,6 +539,7 @@ fundamental_trace(JSTracer *tracer,
 struct JSClass gjs_fundamental_instance_class = {
     "GFundamental_Object",
     JSCLASS_HAS_PRIVATE |
+    JSCLASS_IMPLEMENTS_BARRIERS |
     JSCLASS_NEW_RESOLVE,
     JS_PropertyStub,
     JS_DeletePropertyStub,
@@ -692,6 +694,7 @@ gjs_define_fundamental_class(JSContext              *context,
 
     /* Put the info in the prototype */
     priv = g_slice_new0(Fundamental);
+    new (priv) Fundamental();
     g_assert(priv != NULL);
     g_assert(priv->info == NULL);
     priv->info = g_base_info_ref((GIBaseInfo *) info);

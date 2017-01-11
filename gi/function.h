@@ -41,7 +41,7 @@ typedef enum {
     PARAM_CALLBACK
 } GjsParamType;
 
-typedef struct {
+struct GjsCallbackTrampoline {
     gint ref_count;
     JSContext *context;
     GICallableInfo *info;
@@ -51,7 +51,7 @@ typedef struct {
     GIScopeType scope;
     bool is_vfunc;
     GjsParamType *param_types;
-} GjsCallbackTrampoline;
+};
 
 GjsCallbackTrampoline* gjs_callback_trampoline_new(JSContext      *context,
                                                    JS::HandleValue function,
