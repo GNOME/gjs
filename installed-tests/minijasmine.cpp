@@ -35,8 +35,10 @@
 
 G_GNUC_NORETURN
 static void
-bail_out(const char *msg)
+bail_out(GjsContext *gjs_context,
+         const char *msg)
 {
+    g_object_unref(gjs_context);
     g_print("Bail out! %s\n", msg);
     exit(1);
 }
@@ -77,7 +79,7 @@ main(int argc, char **argv)
         const char *coverage_prefixes[2] = { coverage_prefix, NULL };
 
         if (!coverage_output_path) {
-            bail_out("GJS_UNIT_COVERAGE_OUTPUT is required when using GJS_UNIT_COVERAGE_PREFIX");
+            bail_out(cx, "GJS_UNIT_COVERAGE_OUTPUT is required when using GJS_UNIT_COVERAGE_PREFIX");
         }
 
         GFile *output = g_file_new_for_commandline_arg(coverage_output_path);
@@ -92,11 +94,11 @@ main(int argc, char **argv)
     success = gjs_context_eval(cx, "imports.minijasmine;", -1,
                                "<jasmine>", &code, &error);
     if (!success)
-        bail_out(error->message);
+        bail_out(cx, error->message);
 
     success = gjs_context_eval_file(cx, argv[1], &code, &error);
     if (!success)
-        bail_out(error->message);
+        bail_out(cx, error->message);
 
     /* jasmineEnv.execute() queues up all the tests and runs them
      * asynchronously. This should start after the main loop starts, otherwise
@@ -120,7 +122,7 @@ main(int argc, char **argv)
     success = gjs_context_eval(cx, start_suite_script, -1, "<jasmine-start>",
                                &code, &error);
     if (!success)
-        bail_out(error->message);
+        bail_out(cx, error->message);
 
     if (code != 0)
         g_print("# Test script failed; see test log for assertions\n");
