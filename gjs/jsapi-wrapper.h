@@ -27,6 +27,7 @@
 
 #include <js-config.h>  /* SpiderMonkey's #defines that affect public API */
 /* COMPAT: SpiderMonkey headers in some places use DEBUG instead of JS_DEBUG */
+/* https://bugzilla.mozilla.org/show_bug.cgi?id=1261161 */
 #if defined(JS_DEBUG) && JS_DEBUG
 #define DEBUG 1
 #endif
@@ -34,7 +35,9 @@
 #if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
 #pragma GCC system_header
 #endif
+#include <mozilla/Maybe.h>
 #include <jsapi.h>
 #include <js/OldDebugAPI.h>  /* Needed by some bits */
+#include <jsproxy.h>  /* For jsapi-constructor-proxy */
 
 #endif  /* GJS_JSAPI_WRAPPER_H */

@@ -29,15 +29,6 @@
 #include "mem.h"
 #include "util/log.h"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Winvalid-offsetof"
-#ifdef __clang__
-#pragma clang diagnostic ignored "-Wmismatched-tags"
-#pragma clang diagnostic ignored "-Winconsistent-missing-override"
-#endif /* __clang__ */
-#include "jsproxy.h"
-#pragma GCC diagnostic pop
-
 /* This code exposes a __private_GjsConstructorProxy function to JS, which is
  * approximately equivalent to
  *
