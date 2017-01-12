@@ -876,19 +876,20 @@ importer_new_enumerate(JSContext  *context,
  * if id was resolved.
  */
 static bool
-importer_new_resolve(JSContext *context,
-                     JS::HandleObject obj,
-                     JS::HandleId id,
-                     JS::MutableHandleObject objp)
+importer_resolve(JSContext        *context,
+                 JS::HandleObject  obj,
+                 JS::HandleId      id,
+                 bool             *resolved)
 {
     Importer *priv;
-    char *name;
-    bool ret = true;
+    g_autofree char *name = NULL;
     jsid module_init_name;
 
     module_init_name = gjs_context_get_const_string(context, GJS_STRING_MODULE_INIT);
-    if (id == module_init_name)
+    if (id == module_init_name) {
+        *resolved = false;
         return true;
+    }
 
     if (!gjs_get_string_id(context, id, &name))
         return false;
@@ -896,26 +897,27 @@ importer_new_resolve(JSContext *context,
     /* let Object.prototype resolve these */
     if (strcmp(name, "valueOf") == 0 ||
         strcmp(name, "toString") == 0 ||
-        strcmp(name, "__iterator__") == 0)
-        goto out;
+        strcmp(name, "__iterator__") == 0) {
+        *resolved = false;
+        return true;
+    }
     priv = priv_from_js(context, obj);
 
     gjs_debug_jsprop(GJS_DEBUG_IMPORTER,
                      "Resolve prop '%s' hook obj %p priv %p",
                      name, obj.get(), priv);
-    if (priv == NULL) /* we are the prototype, or have the wrong class */
-        goto out;
-    JS_BeginRequest(context);
-    if (do_import(context, obj, priv, name)) {
-        objp.set(obj);
-    } else {
-        ret = false;
+    if (priv == NULL) {
+        /* we are the prototype, or have the wrong class */
+        *resolved = false;
+        return true;
     }
-    JS_EndRequest(context);
 
- out:
-    g_free(name);
-    return ret;
+    JSAutoRequest ar(context);
+    if (!do_import(context, obj, priv, name))
+        return false;
+
+    *resolved = true;
+    return true;
 }
 
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(importer)
@@ -943,7 +945,6 @@ importer_finalize(JSFreeOp *fop,
 struct JSClass gjs_importer_class = {
     "GjsFileImporter",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_NEW_RESOLVE |
     JSCLASS_NEW_ENUMERATE |
     JSCLASS_IMPLEMENTS_BARRIERS,
     NULL,  /* addProperty */
@@ -951,7 +952,7 @@ struct JSClass gjs_importer_class = {
     NULL,  /* getProperty */
     NULL,  /* setProperty */
     (JSEnumerateOp) importer_new_enumerate, /* needs cast since it's the new enumerate signature */
-    (JSResolveOp) importer_new_resolve, /* needs cast since it's the new resolve signature */
+    importer_resolve,
     NULL,  /* convert */
     importer_finalize
 };

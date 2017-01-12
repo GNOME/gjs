@@ -640,20 +640,17 @@ find_vfunc_on_parents(GIObjectInfo *info,
 }
 
 static bool
-object_instance_new_resolve_no_info(JSContext       *context,
-                                    JS::HandleObject obj,
-                                    JS::MutableHandleObject objp,
-                                    ObjectInstance  *priv,
-                                    char            *name)
+object_instance_resolve_no_info(JSContext       *context,
+                                JS::HandleObject obj,
+                                bool            *resolved,
+                                ObjectInstance  *priv,
+                                char            *name)
 {
     GIFunctionInfo *method_info;
-    bool ret;
-    GType *interfaces;
     guint n_interfaces;
     guint i;
 
-    ret = true;
-    interfaces = g_type_interfaces(priv->gtype, &n_interfaces);
+    g_autofree GType *interfaces = g_type_interfaces(priv->gtype, &n_interfaces);
     for (i = 0; i < n_interfaces; i++) {
         GIBaseInfo *base_info;
         GIInterfaceInfo *iface_info;
@@ -676,22 +673,23 @@ object_instance_new_resolve_no_info(JSContext       *context,
 
         if (method_info != NULL) {
             if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-                if (gjs_define_function(context, obj, priv->gtype,
+                if (!gjs_define_function(context, obj, priv->gtype,
                                         (GICallableInfo *)method_info)) {
-                    objp.set(obj);
-                } else {
-                    ret = false;
+                    g_base_info_unref((GIBaseInfo*) method_info);
+                    return false;
                 }
+
                 g_base_info_unref((GIBaseInfo*) method_info);
-                break;
+                *resolved = true;
+                return true;
             }
 
             g_base_info_unref( (GIBaseInfo*) method_info);
         }
     }
 
-    g_free(interfaces);
-    return ret;
+    *resolved = false;
+    return true;
 }
 
 /*
@@ -700,18 +698,19 @@ object_instance_new_resolve_no_info(JSContext       *context,
  * if id was resolved.
  */
 static bool
-object_instance_new_resolve(JSContext *context,
-                            JS::HandleObject obj,
-                            JS::HandleId id,
-                            JS::MutableHandleObject objp)
+object_instance_resolve(JSContext       *context,
+                        JS::HandleObject obj,
+                        JS::HandleId     id,
+                        bool            *resolved)
 {
     GIFunctionInfo *method_info;
     ObjectInstance *priv;
-    char *name;
-    bool ret = false;
+    g_autofree char *name = NULL;
 
-    if (!gjs_get_string_id(context, id, &name))
+    if (!gjs_get_string_id(context, id, &name)) {
+        *resolved = false;
         return true; /* not resolved, but no error */
+    }
 
     priv = priv_from_js(context, obj);
 
@@ -734,21 +733,20 @@ object_instance_new_resolve(JSContext *context,
          * will run afterwards will fail because of the "priv == NULL"
          * check there.
          */
-        ret = true;
-        goto out;
+        *resolved = false;
+        return true;
     }
 
     if (priv->gobj != NULL) {
-        ret = true;
-        goto out;
+        *resolved = false;
+        return true;
     }
 
     /* If we have no GIRepository information (we're a JS GObject subclass),
      * we need to look at exposing interfaces. Look up our interfaces through
      * GType data, and then hope that *those* are introspectable. */
     if (priv->info == NULL) {
-        ret = object_instance_new_resolve_no_info(context, obj, objp, priv, name);
-        goto out;
+        return object_instance_resolve_no_info(context, obj, resolved, priv, name);
     }
 
     if (g_str_has_prefix (name, "vfunc_")) {
@@ -776,15 +774,14 @@ object_instance_new_resolve(JSContext *context,
              * prototypal inheritance take over. */
             if (defined_by_parent && is_vfunc_unchanged(vfunc, priv->gtype)) {
                 g_base_info_unref((GIBaseInfo *)vfunc);
-                ret = true;
-                goto out;
+                *resolved = false;
+                return true;
             }
 
             gjs_define_function(context, obj, priv->gtype, vfunc);
-            objp.set(obj);
+            *resolved = true;
             g_base_info_unref((GIBaseInfo *)vfunc);
-            ret = true;
-            goto out;
+            return true;
         }
 
         /* If the vfunc wasn't found, fall through, back to normal
@@ -811,38 +808,33 @@ object_instance_new_resolve(JSContext *context,
      * this could be done better.  See
      * https://bugzilla.gnome.org/show_bug.cgi?id=632922
      */
-    if (method_info == NULL) {
-        ret = object_instance_new_resolve_no_info(context, obj, objp,
-                                                  priv, name);
-        goto out;
-    } else {
+    if (method_info == NULL)
+        return object_instance_resolve_no_info(context, obj, resolved, priv, name);
+
 #if GJS_VERBOSE_ENABLE_GI_USAGE
-        _gjs_log_info_usage((GIBaseInfo*) method_info);
+    _gjs_log_info_usage((GIBaseInfo*) method_info);
 #endif
 
-        if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-            gjs_debug(GJS_DEBUG_GOBJECT,
-                      "Defining method %s in prototype for %s (%s.%s)",
-                      g_base_info_get_name( (GIBaseInfo*) method_info),
-                      g_type_name(priv->gtype),
-                      g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                      g_base_info_get_name( (GIBaseInfo*) priv->info));
+    if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+        gjs_debug(GJS_DEBUG_GOBJECT,
+                  "Defining method %s in prototype for %s (%s.%s)",
+                  g_base_info_get_name( (GIBaseInfo*) method_info),
+                  g_type_name(priv->gtype),
+                  g_base_info_get_namespace( (GIBaseInfo*) priv->info),
+                  g_base_info_get_name( (GIBaseInfo*) priv->info));
 
-            if (gjs_define_function(context, obj, priv->gtype, method_info) == NULL) {
-                g_base_info_unref( (GIBaseInfo*) method_info);
-                goto out;
-            }
-
-            objp.set(obj); /* we defined the prop in obj */
+        if (gjs_define_function(context, obj, priv->gtype, method_info) == NULL) {
+            g_base_info_unref( (GIBaseInfo*) method_info);
+            return false;
         }
 
-        g_base_info_unref( (GIBaseInfo*) method_info);
+        *resolved = true; /* we defined the prop in obj */
+    } else {
+        *resolved = false;
     }
 
-    ret = true;
- out:
-    g_free(name);
-    return ret;
+    g_base_info_unref( (GIBaseInfo*) method_info);
+    return true;
 }
 
 static void
@@ -1939,14 +1931,13 @@ to_string_func(JSContext *context,
 struct JSClass gjs_object_instance_class = {
     "GObject_Object",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_NEW_RESOLVE |
     JSCLASS_IMPLEMENTS_BARRIERS,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     object_instance_get_prop,
     object_instance_set_prop,
     NULL,  /* enumerate */
-    (JSResolveOp) object_instance_new_resolve, /* needs cast since it's the new resolve signature */
+    object_instance_resolve,
     NULL,  /* convert */
     object_instance_finalize,
     NULL,

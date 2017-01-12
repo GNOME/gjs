@@ -45,20 +45,19 @@ extern struct JSClass gjs_param_class;
 GJS_DEFINE_PRIV_FROM_JS(Param, gjs_param_class)
 
 /*
- * The *objp out parameter, on success, should be null to indicate that id
- * was not resolved; and non-null, referring to obj or one of its prototypes,
- * if id was resolved.
+ * The *resolved out parameter, on success, should be false to indicate that id
+ * was not resolved; and true if id was resolved.
  */
 static bool
-param_new_resolve(JSContext *context,
-                  JS::HandleObject obj,
-                  JS::HandleId id,
-                  JS::MutableHandleObject objp)
+param_resolve(JSContext       *context,
+              JS::HandleObject obj,
+              JS::HandleId     id,
+              bool            *resolved)
 {
     GIObjectInfo *info = NULL;
     GIFunctionInfo *method_info;
     Param *priv;
-    char *name;
+    g_autofree char *name = NULL;
     bool ret = false;
 
     if (!gjs_get_string_id(context, id, &name))
@@ -68,14 +67,15 @@ param_new_resolve(JSContext *context,
 
     if (priv != NULL) {
         /* instance, not prototype */
-        ret = true;
-        goto out;
+        *resolved = false;
+        return true;
     }
 
     info = (GIObjectInfo*)g_irepository_find_by_gtype(g_irepository_get_default(), G_TYPE_PARAM);
     method_info = g_object_info_find_method(info, name);
 
     if (method_info == NULL) {
+        *resolved = false;
         ret = true;
         goto out;
     }
@@ -93,14 +93,13 @@ param_new_resolve(JSContext *context,
             goto out;
         }
 
-        objp.set(obj); /* we defined the prop in obj */
+        *resolved = true; /* we defined the prop in obj */
     }
 
     g_base_info_unref( (GIBaseInfo*) method_info);
 
     ret = true;
  out:
-    g_free(name);
     if (info != NULL)
         g_base_info_unref( (GIBaseInfo*)info);
 
@@ -145,7 +144,6 @@ param_finalize(JSFreeOp *fop,
 struct JSClass gjs_param_class = {
     "GObject_ParamSpec",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_NEW_RESOLVE |
     JSCLASS_BACKGROUND_FINALIZE |
     JSCLASS_IMPLEMENTS_BARRIERS,
     NULL,  /* addProperty */
@@ -153,7 +151,7 @@ struct JSClass gjs_param_class = {
     NULL,  /* getProperty */
     NULL,  /* setProperty */
     NULL,  /* enumerate */
-    (JSResolveOp) param_new_resolve,
+    param_resolve,
     NULL,  /* convert */
     param_finalize
 };

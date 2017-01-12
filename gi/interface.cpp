@@ -105,30 +105,31 @@ gjs_define_static_methods(JSContext       *context,
 }
 
 static bool
-interface_new_resolve(JSContext *context,
-                      JS::HandleObject obj,
-                      JS::HandleId id,
-                      JS::MutableHandleObject objp)
+interface_resolve(JSContext       *context,
+                  JS::HandleObject obj,
+                  JS::HandleId     id,
+                  bool            *resolved)
 {
     Interface *priv;
-    char *name;
-    bool ret = false;
+    g_autofree char *name = NULL;
     GIFunctionInfo *method_info;
 
-    if (!gjs_get_string_id(context, id, &name))
+    if (!gjs_get_string_id(context, id, &name)) {
+        *resolved = false;
         return true;
+    }
 
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
-        goto out;
+        return false;
 
     /* If we have no GIRepository information then this interface was defined
      * from within GJS. In that case, it has no properties that need to be
      * resolved from within C code, as interfaces cannot inherit. */
     if (priv->info == NULL) {
-        ret = true;
-        goto out;
+        *resolved = false;
+        return true;
     }
 
     method_info = g_interface_info_find_method((GIInterfaceInfo*) priv->info, name);
@@ -139,26 +140,25 @@ interface_new_resolve(JSContext *context,
                                     priv->gtype,
                                     (GICallableInfo*)method_info) == NULL) {
                 g_base_info_unref((GIBaseInfo*)method_info);
-                goto out;
+                return false;
             }
 
-            objp.set(obj);
+            *resolved = true;
+        } else {
+            *resolved = false;
         }
 
         g_base_info_unref((GIBaseInfo*)method_info);
+    } else {
+        *resolved = false;
     }
 
-    ret = true;
-
- out:
-    g_free (name);
-    return ret;
+    return true;
 }
 
 struct JSClass gjs_interface_class = {
     "GObject_Interface",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_NEW_RESOLVE |
     JSCLASS_BACKGROUND_FINALIZE |
     JSCLASS_IMPLEMENTS_BARRIERS,
     NULL,  /* addProperty */
@@ -166,7 +166,7 @@ struct JSClass gjs_interface_class = {
     NULL,  /* getProperty */
     NULL,  /* setProperty */
     NULL,  /* enumerate */
-    (JSResolveOp) interface_new_resolve,
+    interface_resolve,
     NULL,  /* convert */
     interface_finalize
 };

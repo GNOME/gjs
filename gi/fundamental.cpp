@@ -236,11 +236,11 @@ find_fundamental_constructor(JSContext    *context,
 /**/
 
 static bool
-fundamental_instance_new_resolve_interface(JSContext    *context,
-                                           JS::HandleObject obj,
-                                           JS::MutableHandleObject objp,
-                                           Fundamental  *proto_priv,
-                                           char         *name)
+fundamental_instance_resolve_interface(JSContext       *context,
+                                       JS::HandleObject obj,
+                                       bool            *resolved,
+                                       Fundamental     *proto_priv,
+                                       char            *name)
 {
     GIFunctionInfo *method_info;
     bool ret;
@@ -275,7 +275,7 @@ fundamental_instance_new_resolve_interface(JSContext    *context,
                 if (gjs_define_function(context, obj,
                                         proto_priv->gtype,
                                         (GICallableInfo *) method_info)) {
-                    objp.set(obj);
+                    *resolved = true;
                 } else {
                     ret = false;
                 }
@@ -290,22 +290,22 @@ fundamental_instance_new_resolve_interface(JSContext    *context,
 }
 
 /*
- * The *objp out parameter, on success, should be null to indicate that id
- * was not resolved; and non-null, referring to obj or one of its prototypes,
- * if id was resolved.
+ * The *resolved out parameter, on success, should be false to indicate that id
+ * was not resolved; and true if id was resolved.
  */
 static bool
-fundamental_instance_new_resolve(JSContext  *context,
-                                 JS::HandleObject obj,
-                                 JS::HandleId id,
-                                 JS::MutableHandleObject objp)
+fundamental_instance_resolve(JSContext       *context,
+                             JS::HandleObject obj,
+                             JS::HandleId     id,
+                             bool            *resolved)
 {
     FundamentalInstance *priv;
-    char *name;
-    bool ret = false;
+    g_autofree char *name = NULL;
 
-    if (!gjs_get_string_id(context, id, &name))
+    if (!gjs_get_string_id(context, id, &name)) {
+        *resolved = false;
         return true; /* not resolved, but no error */
+    }
 
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GFUNDAMENTAL,
@@ -313,58 +313,9 @@ fundamental_instance_new_resolve(JSContext  *context,
                      name, obj.get(), priv);
 
     if (priv == NULL)
-        goto out; /* wrong class */
+        return false; /* wrong class */
 
-    if (fundamental_is_prototype(priv)) {
-        /* We are the prototype, so look for methods and other class properties */
-        Fundamental *proto_priv = (Fundamental *) priv;
-        GIFunctionInfo *method_info;
-
-        method_info = g_object_info_find_method((GIStructInfo*) proto_priv->info,
-                                                name);
-
-        if (method_info != NULL) {
-            const char *method_name;
-
-#if GJS_VERBOSE_ENABLE_GI_USAGE
-            _gjs_log_info_usage((GIBaseInfo *) method_info);
-#endif
-            if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-                method_name = g_base_info_get_name((GIBaseInfo *) method_info);
-
-                /* we do not define deprecated methods in the prototype */
-                if (g_base_info_is_deprecated((GIBaseInfo *) method_info)) {
-                    gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
-                              "Ignoring definition of deprecated method %s in prototype %s.%s",
-                              method_name,
-                              g_base_info_get_namespace((GIBaseInfo *) proto_priv->info),
-                              g_base_info_get_name((GIBaseInfo *) proto_priv->info));
-                    g_base_info_unref((GIBaseInfo *) method_info);
-                    ret = true;
-                    goto out;
-                }
-
-                gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
-                          "Defining method %s in prototype for %s.%s",
-                          method_name,
-                          g_base_info_get_namespace((GIBaseInfo *) proto_priv->info),
-                          g_base_info_get_name((GIBaseInfo *) proto_priv->info));
-
-                if (gjs_define_function(context, obj, proto_priv->gtype,
-                                        method_info) == NULL) {
-                    g_base_info_unref((GIBaseInfo *) method_info);
-                    goto out;
-                }
-
-                objp.set(obj);
-            }
-
-            g_base_info_unref((GIBaseInfo *) method_info);
-        }
-
-        ret = fundamental_instance_new_resolve_interface(context, obj, objp,
-                                                         proto_priv, name);
-    } else {
+    if (!fundamental_is_prototype(priv)) {
         /* We are an instance, not a prototype, so look for
          * per-instance props that we want to define on the
          * JSObject. Generally we do not want to cache these in JS, we
@@ -372,12 +323,60 @@ fundamental_instance_new_resolve(JSContext  *context,
          * see any changes made from C. So we use the get/set prop
          * hooks, not this resolve hook.
          */
+        *resolved = false;
+        return true;
     }
 
-    ret = true;
- out:
-    g_free(name);
-    return ret;
+    /* We are the prototype, so look for methods and other class properties */
+    Fundamental *proto_priv = (Fundamental *) priv;
+    GIFunctionInfo *method_info;
+
+    method_info = g_object_info_find_method((GIStructInfo*) proto_priv->info,
+                                            name);
+
+    if (method_info != NULL) {
+        const char *method_name;
+
+#if GJS_VERBOSE_ENABLE_GI_USAGE
+        _gjs_log_info_usage((GIBaseInfo *) method_info);
+#endif
+        if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+            method_name = g_base_info_get_name((GIBaseInfo *) method_info);
+
+            /* we do not define deprecated methods in the prototype */
+            if (g_base_info_is_deprecated((GIBaseInfo *) method_info)) {
+                gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
+                          "Ignoring definition of deprecated method %s in prototype %s.%s",
+                          method_name,
+                          g_base_info_get_namespace((GIBaseInfo *) proto_priv->info),
+                          g_base_info_get_name((GIBaseInfo *) proto_priv->info));
+                g_base_info_unref((GIBaseInfo *) method_info);
+                *resolved = false;
+                return true;
+            }
+
+            gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
+                      "Defining method %s in prototype for %s.%s",
+                      method_name,
+                      g_base_info_get_namespace((GIBaseInfo *) proto_priv->info),
+                      g_base_info_get_name((GIBaseInfo *) proto_priv->info));
+
+            if (gjs_define_function(context, obj, proto_priv->gtype,
+                                    method_info) == NULL) {
+                g_base_info_unref((GIBaseInfo *) method_info);
+                return false;
+            }
+
+            *resolved = true;
+        }
+
+        g_base_info_unref((GIBaseInfo *) method_info);
+    } else {
+        *resolved = false;
+    }
+
+    return fundamental_instance_resolve_interface(context, obj, resolved,
+                                                  proto_priv, name);
 }
 
 static bool
@@ -550,14 +549,13 @@ fundamental_trace(JSTracer *tracer,
 struct JSClass gjs_fundamental_instance_class = {
     "GFundamental_Object",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_IMPLEMENTS_BARRIERS |
-    JSCLASS_NEW_RESOLVE,
+    JSCLASS_IMPLEMENTS_BARRIERS,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
     NULL,  /* setProperty */
     NULL,  /* enumerate */
-    (JSResolveOp) fundamental_instance_new_resolve, /* needs cast since it's the new resolve signature */
+    fundamental_instance_resolve,
     NULL,  /* convert */
     fundamental_finalize,
     NULL,  /* call */

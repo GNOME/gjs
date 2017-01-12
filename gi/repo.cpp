@@ -145,44 +145,45 @@ resolve_namespace_object(JSContext       *context,
 }
 
 /*
- * The *objp out parameter, on success, should be null to indicate that id
- * was not resolved; and non-null, referring to obj or one of its prototypes,
- * if id was resolved.
+ * The *resolved out parameter, on success, should be false to indicate that id
+ * was not resolved; and true if id was resolved.
  */
 static bool
-repo_new_resolve(JSContext *context,
-                 JS::HandleObject obj,
-                 JS::HandleId id,
-                 JS::MutableHandleObject objp)
+repo_resolve(JSContext       *context,
+             JS::HandleObject obj,
+             JS::HandleId     id,
+             bool            *resolved)
 {
     Repo *priv;
-    char *name;
-    bool ret = true;
+    g_autofree char *name = NULL;
 
-    if (!gjs_get_string_id(context, id, &name))
+    if (!gjs_get_string_id(context, id, &name)) {
+        *resolved = false;
         return true; /* not resolved, but no error */
+    }
 
     /* let Object.prototype resolve these */
     if (strcmp(name, "valueOf") == 0 ||
-        strcmp(name, "toString") == 0)
-        goto out;
+        strcmp(name, "toString") == 0) {
+        *resolved = false;
+        return true;
+    }
 
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GREPO, "Resolve prop '%s' hook obj %p priv %p",
                      name, obj.get(), priv);
 
-    if (priv == NULL) /* we are the prototype, or have the wrong class */
-        goto out;
-
-    if (!resolve_namespace_object(context, obj, id, name)) {
-        ret = false;
-    } else {
-        objp.set(obj); /* store the object we defined the prop in */
+    if (priv == NULL) {
+        /* we are the prototype, or have the wrong class */
+        *resolved = false;
+        return true;
     }
 
- out:
-    g_free(name);
-    return ret;
+    if (!resolve_namespace_object(context, obj, id, name))
+        return false;
+
+    *resolved = true;
+    return true;
 }
 
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(repo)
@@ -210,14 +211,13 @@ repo_finalize(JSFreeOp *fop,
 struct JSClass gjs_repo_class = {
     "GIRepository", /* means "new GIRepository()" works */
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_NEW_RESOLVE |
     JSCLASS_IMPLEMENTS_BARRIERS,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
     NULL,  /* setProperty */
     NULL,  /* enumerate */
-    (JSResolveOp) repo_new_resolve, /* needs cast since it's the new resolve signature */
+    repo_resolve,
     NULL,  /* convert */
     repo_finalize
 };

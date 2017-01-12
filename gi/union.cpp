@@ -50,69 +50,31 @@ extern struct JSClass gjs_union_class;
 GJS_DEFINE_PRIV_FROM_JS(Union, gjs_union_class)
 
 /*
- * The *objp out parameter, on success, should be null to indicate that id
- * was not resolved; and non-null, referring to obj or one of its prototypes,
- * if id was resolved.
+ * The *resolved out parameter, on success, should be false to indicate that id
+ * was not resolved; and true if id was resolved.
  */
 static bool
-union_new_resolve(JSContext *context,
-                  JS::HandleObject obj,
-                  JS::HandleId id,
-                  JS::MutableHandleObject objp)
+union_resolve(JSContext       *context,
+              JS::HandleObject obj,
+              JS::HandleId     id,
+              bool            *resolved)
 {
     Union *priv;
-    char *name;
-    bool ret = true;
+    g_autofree char *name = NULL;
 
-    if (!gjs_get_string_id(context, id, &name))
+    if (!gjs_get_string_id(context, id, &name)) {
+        *resolved = false;
         return true; /* not resolved, but no error */
+    }
 
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook obj %p priv %p",
                      name, obj.get(), priv);
 
-    if (priv == NULL) {
-        ret = false; /* wrong class */
-        goto out;
-    }
+    if (priv == NULL)
+        return false; /* wrong class */
 
-    if (priv->gboxed == NULL) {
-        /* We are the prototype, so look for methods and other class properties */
-        GIFunctionInfo *method_info;
-
-        method_info = g_union_info_find_method((GIUnionInfo*) priv->info,
-                                               name);
-
-        if (method_info != NULL) {
-            const char *method_name;
-
-#if GJS_VERBOSE_ENABLE_GI_USAGE
-            _gjs_log_info_usage((GIBaseInfo*) method_info);
-#endif
-            if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-                method_name = g_base_info_get_name( (GIBaseInfo*) method_info);
-
-                gjs_debug(GJS_DEBUG_GBOXED,
-                          "Defining method %s in prototype for %s.%s",
-                          method_name,
-                          g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                          g_base_info_get_name( (GIBaseInfo*) priv->info));
-
-                /* obj is union proto */
-                if (gjs_define_function(context, obj,
-                                        g_registered_type_info_get_g_type(priv->info),
-                                        method_info) == NULL) {
-                    g_base_info_unref( (GIBaseInfo*) method_info);
-                    ret = false;
-                    goto out;
-                }
-
-                objp.set(obj); /* we defined the prop in object_proto */
-            }
-
-            g_base_info_unref( (GIBaseInfo*) method_info);
-        }
-    } else {
+    if (priv->gboxed != NULL) {
         /* We are an instance, not a prototype, so look for
          * per-instance props that we want to define on the
          * JSObject. Generally we do not want to cache these in JS, we
@@ -120,11 +82,50 @@ union_new_resolve(JSContext *context,
          * see any changes made from C. So we use the get/set prop
          * hooks, not this resolve hook.
          */
+        *resolved = false;
+        return true;
     }
 
- out:
-    g_free(name);
-    return ret;
+    /* We are the prototype, so look for methods and other class properties */
+    GIFunctionInfo *method_info;
+
+    method_info = g_union_info_find_method((GIUnionInfo*) priv->info,
+                                           name);
+
+    if (method_info != NULL) {
+        const char *method_name;
+
+#if GJS_VERBOSE_ENABLE_GI_USAGE
+        _gjs_log_info_usage((GIBaseInfo*) method_info);
+#endif
+        if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+            method_name = g_base_info_get_name( (GIBaseInfo*) method_info);
+
+            gjs_debug(GJS_DEBUG_GBOXED,
+                      "Defining method %s in prototype for %s.%s",
+                      method_name,
+                      g_base_info_get_namespace( (GIBaseInfo*) priv->info),
+                      g_base_info_get_name( (GIBaseInfo*) priv->info));
+
+            /* obj is union proto */
+            if (gjs_define_function(context, obj,
+                                    g_registered_type_info_get_g_type(priv->info),
+                                    method_info) == NULL) {
+                g_base_info_unref( (GIBaseInfo*) method_info);
+                return false;
+            }
+
+            *resolved = true; /* we defined the prop in object_proto */
+        } else {
+            *resolved = false;
+        }
+
+        g_base_info_unref( (GIBaseInfo*) method_info);
+    } else {
+        *resolved = false;
+    }
+
+    return true;
 }
 
 static void*
@@ -288,14 +289,13 @@ to_string_func(JSContext *context,
 struct JSClass gjs_union_class = {
     "GObject_Union",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_NEW_RESOLVE |
     JSCLASS_IMPLEMENTS_BARRIERS,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
     NULL,  /* setProperty */
     NULL,  /* enumerate */
-    (JSResolveOp) union_new_resolve, /* needs cast since it's the new resolve signature */
+    union_resolve,
     NULL,  /* convert */
     union_finalize
 };

@@ -48,26 +48,27 @@ GJS_DEFINE_PRIV_FROM_JS(Ns, gjs_ns_class)
  * if id was resolved.
  */
 static bool
-ns_new_resolve(JSContext *context,
-               JS::HandleObject obj,
-               JS::HandleId id,
-               JS::MutableHandleObject objp)
+ns_resolve(JSContext       *context,
+           JS::HandleObject obj,
+           JS::HandleId     id,
+           bool            *resolved)
 {
     Ns *priv;
-    char *name;
+    g_autofree char *name = NULL;
     GIRepository *repo;
     GIBaseInfo *info;
-    bool ret = false;
     bool defined;
 
-    if (!gjs_get_string_id(context, id, &name))
+    if (!gjs_get_string_id(context, id, &name)) {
+        *resolved = false;
         return true; /* not resolved, but no error */
+    }
 
     /* let Object.prototype resolve these */
     if (strcmp(name, "valueOf") == 0 ||
         strcmp(name, "toString") == 0) {
-        ret = true;
-        goto out;
+        *resolved = false;
+        return true;
     }
 
     priv = priv_from_js(context, obj);
@@ -76,20 +77,16 @@ ns_new_resolve(JSContext *context,
                      name, obj.get(), priv);
 
     if (priv == NULL) {
-        ret = true; /* we are the prototype, or have the wrong class */
-        goto out;
+        *resolved = false;  /* we are the prototype, or have the wrong class */
+        return true;
     }
-
-    JS_BeginRequest(context);
 
     repo = g_irepository_get_default();
 
     info = g_irepository_find_by_name(repo, priv->gi_namespace, name);
     if (info == NULL) {
-        /* No property defined, but no error either, so return true */
-        JS_EndRequest(context);
-        ret = true;
-        goto out;
+        *resolved = false; /* No property defined, but no error either */
+        return true;
     }
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
@@ -98,23 +95,21 @@ ns_new_resolve(JSContext *context,
               g_base_info_get_name(info),
               g_base_info_get_namespace(info));
 
-    if (gjs_define_info(context, obj, info, &defined)) {
-        g_base_info_unref(info);
-        if (defined)
-            objp.set(obj); /* we defined the property in this object */
-        ret = true;
-    } else {
+    JSAutoRequest ar(context);
+
+    if (!gjs_define_info(context, obj, info, &defined)) {
         gjs_debug(GJS_DEBUG_GNAMESPACE,
                   "Failed to define info '%s'",
                   g_base_info_get_name(info));
 
         g_base_info_unref(info);
+        return false;
     }
-    JS_EndRequest(context);
 
- out:
-    g_free(name);
-    return ret;
+    /* we defined the property in this object? */
+    g_base_info_unref(info);
+    *resolved = defined;
+    return true;
 }
 
 static bool
@@ -158,14 +153,13 @@ ns_finalize(JSFreeOp *fop,
 struct JSClass gjs_ns_class = {
     "GIRepositoryNamespace",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_NEW_RESOLVE |
     JSCLASS_IMPLEMENTS_BARRIERS,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
     NULL,  /* setProperty */
     NULL,  /* enumerate */
-    (JSResolveOp) ns_new_resolve, /* needs cast since it's the new resolve signature */
+    ns_resolve,
     NULL,  /* convert */
     ns_finalize
 };

@@ -115,24 +115,25 @@ gjs_define_static_methods(JSContext       *context,
  * if id was resolved.
  */
 static bool
-boxed_new_resolve(JSContext *context,
-                  JS::HandleObject obj,
-                  JS::HandleId id,
-                  JS::MutableHandleObject objp)
+boxed_resolve(JSContext       *context,
+              JS::HandleObject obj,
+              JS::HandleId     id,
+              bool            *resolved)
 {
     Boxed *priv;
-    char *name;
-    bool ret = false;
+    g_autofree char *name = NULL;
 
-    if (!gjs_get_string_id(context, id, &name))
-        return true; /* not resolved, but no error */
+    if (!gjs_get_string_id(context, id, &name)) {
+        *resolved = false;
+        return true;
+    }
 
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook obj %p priv %p",
                      name, obj.get(), priv);
 
     if (priv == NULL)
-        goto out; /* wrong class */
+        return false; /* wrong class */
 
     if (priv->gboxed == NULL) {
         /* We are the prototype, so look for methods and other class properties */
@@ -160,10 +161,12 @@ boxed_new_resolve(JSContext *context,
                 if (gjs_define_function(context, obj, priv->gtype,
                                         (GICallableInfo *)method_info) == NULL) {
                     g_base_info_unref( (GIBaseInfo*) method_info);
-                    goto out;
+                    return false;
                 }
 
-                objp.set(obj); /* we defined the prop in object_proto */
+                *resolved = true;
+            } else {
+                *resolved = false;
             }
 
             g_base_info_unref( (GIBaseInfo*) method_info);
@@ -176,12 +179,9 @@ boxed_new_resolve(JSContext *context,
          * see any changes made from C. So we use the get/set prop
          * hooks, not this resolve hook.
          */
+        *resolved = false;
     }
-    ret = true;
-
- out:
-    g_free(name);
-    return ret;
+    return true;
 }
 
 /* Check to see if JS::Value passed in is another Boxed object of the same,
@@ -916,7 +916,6 @@ boxed_trace(JSTracer *tracer,
 struct JSClass gjs_boxed_class = {
     "GObject_Boxed",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_NEW_RESOLVE |
     JSCLASS_HAS_RESERVED_SLOTS(1) |
     JSCLASS_IMPLEMENTS_BARRIERS,
     NULL,  /* addProperty */
@@ -924,7 +923,7 @@ struct JSClass gjs_boxed_class = {
     NULL,  /* getProperty */
     NULL,  /* setProperty */
     NULL,  /* enumerate */
-    (JSResolveOp) boxed_new_resolve, /* needs cast since it's the new resolve signature */
+    boxed_resolve,
     NULL,  /* convert */
     boxed_finalize,
     NULL,  /* call */
