@@ -290,13 +290,13 @@ struct JSClass gjs_union_class = {
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
     JSCLASS_IMPLEMENTS_BARRIERS,
-    JS_PropertyStub,
-    JS_DeletePropertyStub,
-    JS_PropertyStub,
-    JS_StrictPropertyStub,
-    JS_EnumerateStub,
+    NULL,  /* addProperty */
+    NULL,  /* deleteProperty */
+    NULL,  /* getProperty */
+    NULL,  /* setProperty */
+    NULL,  /* enumerate */
     (JSResolveOp) union_new_resolve, /* needs cast since it's the new resolve signature */
-    JS_ConvertStub,
+    NULL,  /* convert */
     union_finalize
 };
 

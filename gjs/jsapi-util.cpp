@@ -48,13 +48,13 @@ static JSClass global_class = {
     "GjsGlobal",
     JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST) |
     JSCLASS_IMPLEMENTS_BARRIERS,
-    JS_PropertyStub,
-    JS_DeletePropertyStub,
-    JS_PropertyStub,
-    JS_StrictPropertyStub,
-    JS_EnumerateStub,
-    JS_ResolveStub,
-    JS_ConvertStub,
+    NULL,  /* addProperty */
+    NULL,  /* deleteProperty */
+    NULL,  /* getProperty */
+    NULL,  /* setProperty */
+    NULL,  /* enumerate */
+    NULL,  /* resolve */
+    NULL,  /* convert */
     NULL,  /* finalize */
     NULL,  /* call */
     NULL,  /* hasInstance */

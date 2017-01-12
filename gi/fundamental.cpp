@@ -552,13 +552,13 @@ struct JSClass gjs_fundamental_instance_class = {
     JSCLASS_HAS_PRIVATE |
     JSCLASS_IMPLEMENTS_BARRIERS |
     JSCLASS_NEW_RESOLVE,
-    JS_PropertyStub,
-    JS_DeletePropertyStub,
-    JS_PropertyStub,
-    JS_StrictPropertyStub,
-    JS_EnumerateStub,
+    NULL,  /* addProperty */
+    NULL,  /* deleteProperty */
+    NULL,  /* getProperty */
+    NULL,  /* setProperty */
+    NULL,  /* enumerate */
     (JSResolveOp) fundamental_instance_new_resolve, /* needs cast since it's the new resolve signature */
-    JS_ConvertStub,
+    NULL,  /* convert */
     fundamental_finalize,
     NULL,  /* call */
     NULL,  /* hasInstance */

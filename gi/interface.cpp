@@ -161,13 +161,13 @@ struct JSClass gjs_interface_class = {
     JSCLASS_NEW_RESOLVE |
     JSCLASS_BACKGROUND_FINALIZE |
     JSCLASS_IMPLEMENTS_BARRIERS,
-    JS_PropertyStub,
-    JS_DeletePropertyStub,
-    JS_PropertyStub,
-    JS_StrictPropertyStub,
-    JS_EnumerateStub,
+    NULL,  /* addProperty */
+    NULL,  /* deleteProperty */
+    NULL,  /* getProperty */
+    NULL,  /* setProperty */
+    NULL,  /* enumerate */
     (JSResolveOp) interface_new_resolve,
-    JS_ConvertStub,
+    NULL,  /* convert */
     interface_finalize
 };
 

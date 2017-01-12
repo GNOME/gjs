@@ -27,13 +27,13 @@ test_obj_finalize(JSFreeOp *fop,
 static JSClass test_obj_class = {
     "TestObj",
     JSCLASS_HAS_PRIVATE,
-    JS_PropertyStub,
-    JS_DeletePropertyStub,
-    JS_PropertyStub,
-    JS_StrictPropertyStub,
-    JS_EnumerateStub,
-    JS_ResolveStub,
-    JS_ConvertStub,
+    NULL,  /* addProperty */
+    NULL,  /* deleteProperty */
+    NULL,  /* getProperty */
+    NULL,  /* setProperty */
+    NULL,  /* enumerate */
+    NULL,  /* resolve */
+    NULL,  /* convert */
     test_obj_finalize
 };
 

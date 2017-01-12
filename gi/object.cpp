@@ -1941,13 +1941,13 @@ struct JSClass gjs_object_instance_class = {
     JSCLASS_HAS_PRIVATE |
     JSCLASS_NEW_RESOLVE |
     JSCLASS_IMPLEMENTS_BARRIERS,
-    JS_PropertyStub,
-    JS_DeletePropertyStub,
+    NULL,  /* addProperty */
+    NULL,  /* deleteProperty */
     object_instance_get_prop,
     object_instance_set_prop,
-    JS_EnumerateStub,
+    NULL,  /* enumerate */
     (JSResolveOp) object_instance_new_resolve, /* needs cast since it's the new resolve signature */
-    JS_ConvertStub,
+    NULL,  /* convert */
     object_instance_finalize,
     NULL,
     NULL,

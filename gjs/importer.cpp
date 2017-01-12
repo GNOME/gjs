@@ -946,13 +946,13 @@ struct JSClass gjs_importer_class = {
     JSCLASS_NEW_RESOLVE |
     JSCLASS_NEW_ENUMERATE |
     JSCLASS_IMPLEMENTS_BARRIERS,
-    JS_PropertyStub,
-    JS_DeletePropertyStub,
-    JS_PropertyStub,
-    JS_StrictPropertyStub,
+    NULL,  /* addProperty */
+    NULL,  /* deleteProperty */
+    NULL,  /* getProperty */
+    NULL,  /* setProperty */
     (JSEnumerateOp) importer_new_enumerate, /* needs cast since it's the new enumerate signature */
     (JSResolveOp) importer_new_resolve, /* needs cast since it's the new resolve signature */
-    JS_ConvertStub,
+    NULL,  /* convert */
     importer_finalize
 };
 

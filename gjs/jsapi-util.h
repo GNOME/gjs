@@ -206,13 +206,13 @@ static void gjs_##cname##_finalize(JSFreeOp *fop, JSObject *obj); \
 static struct JSClass gjs_##cname##_class = { \
     type_name, \
     JSCLASS_HAS_PRIVATE | jsclass_flags,                                       \
-    JS_PropertyStub, \
-    JS_DeletePropertyStub, \
-    JS_PropertyStub, \
-    JS_StrictPropertyStub, \
-    JS_EnumerateStub,\
-    JS_ResolveStub,                                                            \
-    JS_ConvertStub, \
+    NULL,  /* addProperty */                                                   \
+    NULL,  /* deleteProperty */                                                \
+    NULL,  /* getProperty */                                                   \
+    NULL,  /* setProperty */                                                   \
+    NULL,  /* enumerate */                                                     \
+    NULL,  /* resolve */                                                       \
+    NULL,  /* convert */                                                       \
     gjs_##cname##_finalize                                                     \
 }; \
 JS::Value                                                                      \

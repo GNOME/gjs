@@ -58,13 +58,13 @@ struct JSClass gjs_byte_array_class = {
     JSCLASS_HAS_PRIVATE |
     JSCLASS_BACKGROUND_FINALIZE |
     JSCLASS_IMPLEMENTS_BARRIERS,
-    JS_PropertyStub,
-    JS_DeletePropertyStub,
+    NULL,  /* addProperty */
+    NULL,  /* deleteProperty */
     (JSPropertyOp)byte_array_get_prop,
     (JSStrictPropertyOp)byte_array_set_prop,
-    JS_EnumerateStub,
-    JS_ResolveStub,
-    JS_ConvertStub,
+    NULL,  /* enumerate */
+    NULL,  /* resolve */
+    NULL,  /* convert */
     byte_array_finalize
 };
 

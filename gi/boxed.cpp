@@ -919,13 +919,13 @@ struct JSClass gjs_boxed_class = {
     JSCLASS_NEW_RESOLVE |
     JSCLASS_HAS_RESERVED_SLOTS(1) |
     JSCLASS_IMPLEMENTS_BARRIERS,
-    JS_PropertyStub,
-    JS_DeletePropertyStub,
-    JS_PropertyStub,
-    JS_StrictPropertyStub,
-    JS_EnumerateStub,
+    NULL,  /* addProperty */
+    NULL,  /* deleteProperty */
+    NULL,  /* getProperty */
+    NULL,  /* setProperty */
+    NULL,  /* enumerate */
     (JSResolveOp) boxed_new_resolve, /* needs cast since it's the new resolve signature */
-    JS_ConvertStub,
+    NULL,  /* convert */
     boxed_finalize,
     NULL,  /* call */
     NULL,  /* hasInstance */

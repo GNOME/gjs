@@ -1469,13 +1469,13 @@ struct JSClass gjs_function_class = {
     JSCLASS_HAS_PRIVATE |
     JSCLASS_BACKGROUND_FINALIZE |
     JSCLASS_IMPLEMENTS_BARRIERS,
-    JS_PropertyStub,
-    JS_DeletePropertyStub,
-    JS_PropertyStub,
-    JS_StrictPropertyStub,
-    JS_EnumerateStub,
-    JS_ResolveStub,
-    JS_ConvertStub,
+    NULL,  /* addProperty */
+    NULL,  /* deleteProperty */
+    NULL,  /* getProperty */
+    NULL,  /* setProperty */
+    NULL,  /* enumerate */
+    NULL,  /* resolve */
+    NULL,  /* convert */
     function_finalize,
     function_call
 };
