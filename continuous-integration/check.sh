@@ -8,26 +8,23 @@ function do_Install_Base_Dependencies(){
         apt-get update -qq
 
         # Base dependencies
-        apt-get -y -qq install build-essential git clang patch > /dev/null
-        apt-get -y -qq install autotools-dev autoconf gettext pkgconf autopoint yelp-tools > /dev/null
-        apt-get -y -qq install docbook docbook-xsl libtext-csv-perl > /dev/null
-        apt-get -y -qq install zlib1g-dev > /dev/null
-        apt-get -y -qq install libtool libicu-dev libnspr4-dev > /dev/null
-
-        # JHBuild dependencies management
-        apt-get -y -qq install policykit-1 > /dev/null
-        apt-get -y -qq install apt-file > /dev/null
+        apt-get -y -qq install build-essential git clang patch \
+                               autotools-dev autoconf gettext pkgconf autopoint yelp-tools \
+                               docbook docbook-xsl libtext-csv-perl \
+                               zlib1g-dev \
+                               libtool libicu-dev libnspr4-dev \
+                               policykit-1 \
+                               apt-file > /dev/null
         apt-file update
 
     elif [[ $BASE == "fedora" ]]; then
         dnf -y -q upgrade
 
         # Base dependencies
-        dnf -y -q install @c-development @development-tools redhat-rpm-config gnome-common
-        dnf -y -q install pygobject2 dbus-python perl-Text-CSV perl-XML-Parser gettext-devel gtk-doc ninja-build
-        dnf -y -q install zlib-devel libffi-devel
-        dnf -y -q install libtool libicu-devel nspr-devel
-        dnf -y -q install which
+        dnf -y -q install @c-development @development-tools redhat-rpm-config gnome-common \
+                          pygobject2 dbus-python perl-Text-CSV perl-XML-Parser gettext-devel gtk-doc ninja-build \
+                          zlib-devel libffi-devel \
+                          libtool libicu-devel nspr-devel
     else
         echo
         echo '-- Error: invalid BASE code --'
@@ -45,11 +42,9 @@ function do_Install_Dependencies(){
 
     elif [[ $BASE == "fedora" ]]; then
         # Testing dependencies
-        dnf -y install gtk3 gobject-introspection Xvfb gnome-desktop-testing
-
-        # jhbuild sysdeps: Don't know how to install packages on this system
-        dnf -y -q install cairo intltool libxslt bison nspr zlib python3-devel dbus-glib libicu libffi pcre libxml2 libxslt libtool flex
-        dnf -y -q install cairo-devel zlib-devel libffi-devel pcre-devel libxml2-devel libxslt-devel
+        dnf -y -q install gtk3 gobject-introspection Xvfb gnome-desktop-testing \
+                          cairo intltool libxslt bison nspr zlib python3-devel dbus-glib libicu libffi pcre libxml2 libxslt libtool flex \
+                          cairo-devel zlib-devel libffi-devel pcre-devel libxml2-devel libxslt-devel
     fi
 }
 
@@ -59,34 +54,50 @@ function do_Patch_JHBuild(){
 
     # Create and apply a patch
     cd jhbuild
-    echo "diff --git a/jhbuild/main.py b/jhbuild/main.py"                                                      > what.patch
-    echo "index a5cf99b..93410b6 100644"                                                                      >> what.patch
-    echo "--- a/jhbuild/main.py"                                                                              >> what.patch
-    echo "+++ b/jhbuild/main.py"                                                                              >> what.patch
-    echo "@@ -96,7 +96,6 @@ def main(args):"                                                                  >> what.patch
-    echo " "                                                                                                  >> what.patch
-    echo "     if hasattr(os, 'getuid') and os.getuid() == 0:"                                                >> what.patch
-    echo "         sys.stderr.write(_('You should not run jhbuild as root.\n').encode(_encoding, 'replace'))" >> what.patch
-    echo "-        sys.exit(1)"                                                                               >> what.patch
-    echo " "                                                                                                  >> what.patch
-    echo "     logging.getLogger().setLevel(logging.INFO)"                                                    >> what.patch
-    echo "     logging_handler = logging.StreamHandler()"                                                     >> what.patch
+    patch -p1 <<ENDPATCH
+diff --git a/jhbuild/main.py b/jhbuild/main.py
+index a5cf99b..93410b6 100644
+--- a/jhbuild/main.py
++++ b/jhbuild/main.py
+@@ -96,7 +96,6 @@ def main(args):
 
-    echo "diff --git a/jhbuild/utils/systeminstall.py b/jhbuild/utils/systeminstall.py"                       >> what.patch
-    echo "index 75b0849..d5d45f0 100644"                                                                      >> what.patch
-    echo "--- a/jhbuild/utils/systeminstall.py"                                                               >> what.patch
-    echo "+++ b/jhbuild/utils/systeminstall.py"                                                               >> what.patch
-    echo "@@ -428,7 +428,7 @@ class AptSystemInstall(SystemInstall):"                                         >> what.patch
-    echo " "                                                                                                  >> what.patch
-    echo "     def _install_packages(self, native_packages):"                                                 >> what.patch
-    echo "         logging.info(_('Installing: %(pkgs)s') % {'pkgs': ' '.join(native_packages)})"             >> what.patch
-    echo "-        args = self._root_command_prefix_args + ['apt-get', 'install']"                            >> what.patch
-    echo "+        args = ['apt-get', '-y', 'install']"                                                       >> what.patch
-    echo "         args.extend(native_packages)"                                                              >> what.patch
-    echo "         subprocess.check_call(args)"                                                               >> what.patch
+     if hasattr(os, 'getuid') and os.getuid() == 0:
+         sys.stderr.write(_('You should not run jhbuild as root.\n').encode(_encoding, 'replace'))
+-        sys.exit(1)
 
-    patch -p1 < what.patch
+         logging.getLogger().setLevel(logging.INFO)
+         logging_handler = logging.StreamHandler()
+
+diff --git a/jhbuild/utils/systeminstall.py b/jhbuild/utils/systeminstall.py
+index 75b0849..d5d45f0 100644
+--- a/jhbuild/utils/systeminstall.py
++++ b/jhbuild/utils/systeminstall.py
+@@ -428,7 +428,7 @@ class AptSystemInstall(SystemInstall):
+
+     def _install_packages(self, native_packages):
+         logging.info(_('Installing: %(pkgs)s') % {'pkgs': ' '.join(native_packages)})
+-        args = self._root_command_prefix_args + ['apt-get', 'install']
++        args = ['apt-get', '-y', 'install']
+         args.extend(native_packages)
+         subprocess.check_call(args)
+ENDPATCH
+
+    echo '-- Done --'
     cd -
+}
+
+function do_Configure_JHBuild(){
+    echo
+    echo '-- Set JHBuild Configuration --'
+
+    mkdir -p ~/.config
+
+    cat <<EOFILE >> ~/.config/jhbuildrc
+module_autogenargs['gjs'] = '--enable-compile-warnings=error --enable-installed-tests --with-xvfb-tests'
+module_makeargs['gjs'] = '-sj2'
+EOFILE
+
+    echo '-- Done --'
 }
 
 function do_Build_JHBuild(){
@@ -146,43 +157,13 @@ function do_Get_Files(){
     echo '-- Done --'
 }
 
-function do_Clean_Image(){
-    echo
-    echo '-- Cleaning image --'
+function do_Show_Compiler(){
 
-    # Clean the environment
-    rm -f /root/jhbuild/install/lib/libmozjs-31.a
-    jhbuild clean
-
-    if [[ $BASE == "ubuntu" ]]; then
-        # Base dependencies
-        apt-get -y -qq remove --purge build-essential git clang patch
-        apt-get -y -qq remove --purge autotools-dev autoconf gettext pkgconf autopoint yelp-tools
-        apt-get -y -qq remove --purge docbook docbook-xsl libtext-csv-perl
-        apt-get -y -qq remove --purge zlib1g-dev
-        apt-get -y -qq remove --purge libtool libicu-dev libnspr4-dev
-
-        # JHBuild dependencies management
-        apt-get -y -qq remove --purge policykit-1
-        apt-get -y -qq remove --purge apt-file
-
-        apt-get -y autoremove
-        apt-get -y clean
-        rm -rf /var/lib/apt/lists/*
-
-    elif [[ $BASE == "fedora" ]]; then
-        # Base dependencies
-        dnf -y remove @c-development @development-tools redhat-rpm-config gnome-common
-        dnf -y remove pygobject2 dbus-python perl-Text-CSV perl-XML-Parser gettext-devel gtk-doc ninja-build
-        dnf -y remove zlib-devel libffi-devel
-        dnf -y remove libtool libicu-devel nspr-devel
-        dnf -y remove which || true
-
-        dnf -y autoremove
-        dnf -y clean all
+    if [[ ! -z $CC ]]; then
+        echo
+        echo '-- Compiler in use --'
+        $CC --version
     fi
-    echo
-    echo '-- Image done --'
 }
 
 # ----------- GJS -----------
@@ -197,11 +178,7 @@ echo "Doing: $1"
 if [[ $1 == "BUILD_MOZ" ]]; then
     do_Install_Base_Dependencies
 
-    # Compiler to be used
-    echo
-    echo '-- Compiler in use --'
-    $CC --version
-
+    do_Show_Compiler
     do_Patch_JHBuild
     do_Build_JHBuild
     do_Build_Mozilla
@@ -214,31 +191,24 @@ elif [[ $1 == "GJS" ]]; then
     do_Install_Base_Dependencies
     do_Install_Dependencies
 
-    # Compiler to be used
-    echo
-    echo '-- Compiler in use --'
-    $CC --version
-
+    do_Show_Compiler
     do_Patch_JHBuild
     do_Build_JHBuild
+    do_Configure_JHBuild
     do_Build_Package_Dependencies gjs
 
-    # Build the latest commit (merged or from a PR) of Javascript Bindings for GNOME
+    # Build and test the latest commit (merged or from a PR) of Javascript Bindings for GNOME
     echo
     echo '-- gjs build --'
     cd ../gjs
     git log --pretty=format:"%h %cd %s" -1
     echo
-    jhbuild run ./autogen.sh --prefix /root/jhbuild/install --enable-compile-warnings=error --enable-installed-tests --with-xvfb-tests
-    jhbuild run make -sj2
-    jhbuild run make install
+    jhbuild make --check
 
     # Test the build
     echo
-    echo '-- Testing GJS --'
+    echo '-- Extra GJS testing --'
     gnome-desktop-testing-runner gjs
-    echo
-    jhbuild run make check
 
 else
     echo
