@@ -234,8 +234,6 @@ static JSObject*
 repo_new(JSContext *context)
 {
     Repo *priv;
-    JSObject *versions;
-    JSObject *private_ns;
     bool found;
 
     JS::RootedObject global(context, gjs_get_import_global(context));
@@ -290,15 +288,13 @@ repo_new(JSContext *context)
     gjs_debug_lifecycle(GJS_DEBUG_GREPO,
                         "repo constructor, obj %p priv %p", repo.get(), priv);
 
-    versions = JS_NewObject(context, NULL, global);
-    JS::RootedValue v_versions(context, JS::ObjectValue(*versions));
+    JS::RootedObject versions(context, JS_NewObject(context, NULL, global));
     gjs_object_define_property(context, repo, GJS_STRING_GI_VERSIONS,
-                               v_versions, JSPROP_PERMANENT);
+                               versions, JSPROP_PERMANENT);
 
-    private_ns = JS_NewObject(context, NULL, global);
-    JS::RootedValue v_ns(context, JS::ObjectValue(*private_ns));
+    JS::RootedObject private_ns(context, JS_NewObject(context, NULL, global));
     gjs_object_define_property(context, repo,
-                               GJS_STRING_PRIVATE_NS_MARKER, v_ns,
+                               GJS_STRING_PRIVATE_NS_MARKER, private_ns,
                                JSPROP_PERMANENT);
 
     /* FIXME - hack to make namespaces load, since

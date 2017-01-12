@@ -383,9 +383,8 @@ load_module_init(JSContext       *context,
     if (!import_file (context, "__init__", file, module_obj))
         return module_obj;
 
-    JS::RootedValue v_module(context, JS::ObjectValue(*module_obj));
     gjs_object_define_property(context, in_object,
-                               GJS_STRING_MODULE_INIT, v_module,
+                               GJS_STRING_MODULE_INIT, module_obj,
                                GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT);
 
     return module_obj;
@@ -1190,10 +1189,8 @@ gjs_define_root_importer_object(JSContext        *context,
 {
     JSAutoRequest ar(context);
 
-    JS::RootedValue importer (JS_GetRuntime(context),
-                              JS::ObjectValue(*root_importer));
     if (!gjs_object_define_property(context, in_object,
-                                    GJS_STRING_IMPORTS, importer,
+                                    GJS_STRING_IMPORTS, root_importer,
                                     GJS_MODULE_PROP_FLAGS)) {
         gjs_debug(GJS_DEBUG_IMPORTER, "DefineProperty imports on %p failed",
                   in_object.get());

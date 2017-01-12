@@ -509,15 +509,23 @@ bool gjs_object_has_property(JSContext       *cx,
                              GjsConstString   property_name,
                              bool            *found);
 
-bool gjs_object_define_property(JSContext         *cx,
-                                JS::HandleObject   obj,
-                                GjsConstString     property_name,
-                                JS::HandleValue    value,
-                                unsigned           flags,
-                                JSPropertyOp       getter = nullptr,
-                                JSStrictPropertyOp setter = nullptr);
-
 G_END_DECLS
+
+bool gjs_object_define_property(JSContext       *cx,
+                                JS::HandleObject obj,
+                                GjsConstString   property_name,
+                                JS::HandleValue  value,
+                                unsigned         flags,
+                                JSNative         getter = nullptr,
+                                JSNative         setter = nullptr);
+
+bool gjs_object_define_property(JSContext       *cx,
+                                JS::HandleObject obj,
+                                GjsConstString   property_name,
+                                JS::HandleObject value,
+                                unsigned         flags,
+                                JSNative         getter = nullptr,
+                                JSNative         setter = nullptr);
 
 JS::HandleId gjs_context_get_const_string(JSContext     *cx,
                                           GjsConstString string);

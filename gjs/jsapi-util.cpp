@@ -175,17 +175,32 @@ gjs_object_has_property(JSContext       *cx,
                               found);
 }
 
-bool gjs_object_define_property(JSContext         *cx,
-                                JS::HandleObject   obj,
-                                GjsConstString     property_name,
-                                JS::HandleValue    value,
-                                unsigned           flags,
-                                JSPropertyOp       getter,
-                                JSStrictPropertyOp setter)
+bool
+gjs_object_define_property(JSContext       *cx,
+                           JS::HandleObject obj,
+                           GjsConstString   property_name,
+                           JS::HandleValue  value,
+                           unsigned         flags,
+                           JSNative         getter,
+                           JSNative         setter)
 {
     return JS_DefinePropertyById(cx, obj,
                                  gjs_context_get_const_string(cx, property_name),
-                                 value, getter, setter, flags);
+                                 value, flags, getter, setter);
+}
+
+bool
+gjs_object_define_property(JSContext       *cx,
+                           JS::HandleObject obj,
+                           GjsConstString   property_name,
+                           JS::HandleObject value,
+                           unsigned         flags,
+                           JSNative         getter,
+                           JSNative         setter)
+{
+    return JS_DefinePropertyById(cx, obj,
+                                 gjs_context_get_const_string(cx, property_name),
+                                 value, flags, getter, setter);
 }
 
 static void
