@@ -82,16 +82,15 @@ class GjsConstructorHandler : public js::DirectProxyHandler {
     }
 
 public:
-    GjsConstructorHandler() : js::DirectProxyHandler(&constructor_proxy_family)
-    {
-        setHasPrototype(true);
-    }
+    GjsConstructorHandler()
+    : js::DirectProxyHandler(&constructor_proxy_family, true /* hasPrototype */)
+    { }
 
     bool
     getPrototypeOf(JSContext              *cx,
                    JS::HandleObject        proxy,
                    JS::MutableHandleObject proto_p)
-    override
+    const override
     {
         proto_p.set(proto(proxy));
         return true;
@@ -102,11 +101,25 @@ public:
     void
     finalize(JSFreeOp *fop,
              JSObject *proxy)
-    override
+    const override
     {
         GJS_DEC_COUNTER(constructor_proxy);
         gjs_debug_lifecycle(GJS_DEBUG_PROXY,
                             "constructor proxy %p destroyed", proxy);
+    }
+
+    bool
+    isCallable(JSObject *obj)
+    const override
+    {
+        return true;
+    }
+
+    bool
+    isConstructor(JSObject *obj)
+    const override
+    {
+        return true;
     }
 
     static GjsConstructorHandler&
@@ -141,14 +154,9 @@ create_gjs_constructor_proxy(JSContext *cx,
         return false;
     }
 
-    js::ProxyOptions options;
-    /* "true" makes the proxy callable, otherwise the "call" and "construct"
-     * traps are ignored */
-    options.selectDefaultClass(true);
-
     JS::RootedObject proxy(cx,
         js::NewProxyObject(cx, &GjsConstructorHandler::singleton(), args[0],
-                           &args[1].toObject(), nullptr, options));
+                           &args[1].toObject(), nullptr));
     /* We stick this extra object into one of the proxy object's "extra slots",
      * even though it is private data of the proxy handler. This is because
      * proxy handlers cannot have trace callbacks. The proxy object does have a
