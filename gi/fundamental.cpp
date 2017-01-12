@@ -381,7 +381,7 @@ fundamental_invoke_constructor(FundamentalInstance        *priv,
 
     if (!gjs_object_require_property_value(context, obj, NULL,
                                            constructor_const, &js_constructor) ||
-        priv->prototype->constructor_name == JSID_VOID) {
+        priv->prototype->constructor_name.get() == JSID_VOID) {
         gjs_throw (context,
                    "Couldn't find a constructor for type %s.%s",
                    g_base_info_get_namespace((GIBaseInfo*) priv->prototype->info),

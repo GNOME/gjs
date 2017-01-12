@@ -487,7 +487,7 @@ gjs_context_constructed(GObject *object)
     if (!JS_DefineFunctions(js_context->context, global, &global_funcs[0]))
         g_error("Failed to define properties on the global object");
 
-    js_context->global.set(global);
+    js_context->global = global;
     JS_AddExtraGCRootsTracer(js_context->runtime, gjs_context_tracer, js_context);
 
     gjs_define_constructor_proxy_factory(js_context->context);
