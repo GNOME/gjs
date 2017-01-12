@@ -396,10 +396,9 @@ define_error_properties(JSContext       *context,
 {
     JS::RootedValue stack(context), fileName(context), lineNumber(context);
     /* COMPAT: mozilla::Maybe gains a much more usable API in future versions */
-    mozilla::Maybe<JS::MutableHandleValue> m_stack, m_file, m_line;
-    m_stack.construct(&stack);
-    m_file.construct(&fileName);
-    m_line.construct(&lineNumber);
+    auto m_stack = mozilla::Some<JS::MutableHandleValue>(&stack);
+    auto m_file = mozilla::Some<JS::MutableHandleValue>(&fileName);
+    auto m_line = mozilla::Some<JS::MutableHandleValue>(&lineNumber);
 
     if (!gjs_context_get_frame_info(context, m_stack, m_file, m_line))
         return;

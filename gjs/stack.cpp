@@ -66,17 +66,17 @@ gjs_context_get_frame_info(JSContext                              *context,
     JS::RootedObject err_obj(context, JS_New(context, constructor,
                                              JS::HandleValueArray::empty()));
 
-    if (!stack.empty() &&
+    if (stack &&
         !gjs_object_get_property(context, err_obj, GJS_STRING_STACK,
                                  stack.ref()))
         return false;
 
-    if (!fileName.empty() &&
+    if (fileName &&
         !gjs_object_get_property(context, err_obj, GJS_STRING_FILENAME,
                                  fileName.ref()))
         return false;
 
-    if (!lineNumber.empty() &&
+    if (lineNumber &&
         !gjs_object_get_property(context, err_obj, GJS_STRING_LINE_NUMBER,
                                  lineNumber.ref()))
         return false;
@@ -95,9 +95,9 @@ gjs_context_print_stack_stderr(GjsContext *context)
 
     /* Stderr is locale encoding, so we use string_to_filename here */
     /* COMPAT: mozilla::Maybe gains a much more usable API in future versions */
-    mozilla::Maybe<JS::MutableHandleValue> m_stack, m_file, m_line;
-    m_stack.construct(&v_stack);
-    if (!gjs_context_get_frame_info(cx, m_stack, m_file, m_line) ||
+    mozilla::Maybe<JS::MutableHandleValue> none,
+        m_stack = mozilla::Some<JS::MutableHandleValue>(&v_stack);
+    if (!gjs_context_get_frame_info(cx, m_stack, none, none) ||
         !gjs_string_to_filename(cx, v_stack, &stack)) {
         g_printerr("No stack trace available\n");
         return;
