@@ -200,7 +200,8 @@ elif [[ $1 == "GJS" ]]; then
     # Build and test the latest commit (merged or from a PR) of Javascript Bindings for GNOME
     echo
     echo '-- gjs build --'
-    cd ../gjs
+    cp -r ../gjs ~/jhbuild/checkout/gjs
+    cd ~/jhbuild/checkout/gjs
     git log --pretty=format:"%h %cd %s" -1
     echo
     jhbuild make --check
