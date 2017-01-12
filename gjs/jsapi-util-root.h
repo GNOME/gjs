@@ -80,7 +80,7 @@ struct GjsHeapOperation<JSObject *> {
           JS::Heap<JSObject *> *thing,
           const char           *name)
     {
-        JS_CallHeapObjectTracer(tracer, thing, name);
+        JS_CallObjectTracer(tracer, thing, name);
     }
 
     static bool
@@ -97,7 +97,7 @@ struct GjsHeapOperation<JS::Value> {
           JS::Heap<JS::Value> *thing,
           const char          *name)
     {
-        JS_CallHeapValueTracer(tracer, thing, name);
+        JS_CallValueTracer(tracer, thing, name);
     }
 };
 

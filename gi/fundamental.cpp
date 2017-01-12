@@ -529,8 +529,8 @@ fundamental_trace(JSTracer *tracer,
     if (priv == nullptr || !fundamental_is_prototype(priv))
         return;  /* Only prototypes need tracing */
 
-    JS_CallHeapIdTracer(tracer, &priv->constructor_name,
-                        "Fundamental::constructor_name");
+    JS_CallIdTracer(tracer, &priv->constructor_name,
+                    "Fundamental::constructor_name");
 }
 
 /* The bizarre thing about this vtable is that it applies to both

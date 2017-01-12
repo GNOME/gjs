@@ -1498,7 +1498,7 @@ coverage_statistics_tracer(JSTracer *trc, void *data)
     GjsCoverage *coverage = (GjsCoverage *) data;
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
-    JS_CallHeapObjectTracer(trc, &priv->coverage_statistics, "coverage_statistics");
+    JS_CallObjectTracer(trc, &priv->coverage_statistics, "coverage_statistics");
 }
 
 /* This function is mainly used in the tests in order to fiddle with

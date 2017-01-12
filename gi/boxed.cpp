@@ -898,10 +898,10 @@ boxed_trace(JSTracer *tracer,
     if (priv == NULL)
         return;
 
-    JS_CallHeapIdTracer(tracer, &priv->zero_args_constructor_name,
-                        "Boxed::zero_args_constructor_name");
-    JS_CallHeapIdTracer(tracer, &priv->default_constructor_name,
-                        "Boxed::default_constructor_name");
+    JS_CallIdTracer(tracer, &priv->zero_args_constructor_name,
+                    "Boxed::zero_args_constructor_name");
+    JS_CallIdTracer(tracer, &priv->default_constructor_name,
+                    "Boxed::default_constructor_name");
 }
 
 /* The bizarre thing about this vtable is that it applies to both
