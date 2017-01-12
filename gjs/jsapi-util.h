@@ -175,23 +175,15 @@ _GJS_DEFINE_PROTO_FULL(tn, cn, NULL, gtype, flags)
 extern JSPropertySpec gjs_##cname##_proto_props[]; \
 extern JSFunctionSpec gjs_##cname##_proto_funcs[]; \
 static void gjs_##cname##_finalize(JSFreeOp *fop, JSObject *obj); \
-static bool gjs_##cname##_new_resolve(JSContext *context, \
-                                      JSObject  *obj, \
-                                      JS::Value  id, \
-                                      JSObject **objp) \
-{ \
-    return true; \
-} \
 static struct JSClass gjs_##cname##_class = { \
     type_name, \
-    JSCLASS_HAS_PRIVATE | \
-    JSCLASS_NEW_RESOLVE | jsclass_flags, \
+    JSCLASS_HAS_PRIVATE | jsclass_flags,                                       \
     JS_PropertyStub, \
     JS_DeletePropertyStub, \
     JS_PropertyStub, \
     JS_StrictPropertyStub, \
     JS_EnumerateStub,\
-    (JSResolveOp) gjs_##cname##_new_resolve, \
+    JS_ResolveStub,                                                            \
     JS_ConvertStub, \
     gjs_##cname##_finalize                                                     \
 }; \
