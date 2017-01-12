@@ -348,7 +348,7 @@ void gjs_throw_abstract_constructor_error(JSContext    *context,
 
 bool gjs_typecheck_instance(JSContext       *context,
                             JS::HandleObject obj,
-                            JSClass         *static_clasp,
+                            const JSClass   *static_clasp,
                             bool             throw_error);
 
 JSObject *gjs_construct_object_dynamic(JSContext                  *context,

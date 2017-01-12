@@ -147,7 +147,7 @@ format_dynamic_class_name (const char *name)
 bool
 gjs_typecheck_instance(JSContext       *context,
                        JS::HandleObject obj,
-                       JSClass         *static_clasp,
+                       const JSClass   *static_clasp,
                        bool             throw_error)
 {
     if (!JS_InstanceOf(context, obj, static_clasp, NULL)) {

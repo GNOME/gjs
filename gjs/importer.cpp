@@ -53,9 +53,11 @@ typedef struct {
     unsigned int index;
 } ImporterIterator;
 
-extern struct JSClass gjs_importer_class;
+extern const js::Class gjs_importer_class;
 
-GJS_DEFINE_PRIV_FROM_JS(Importer, gjs_importer_class)
+/* Bizarrely, the API for safely casting const js::Class * to const JSClass *
+ * is called "js::Jsvalify" */
+GJS_DEFINE_PRIV_FROM_JS(Importer, (*js::Jsvalify(&gjs_importer_class)))
 
 static bool
 importer_to_string(JSContext *cx,
@@ -97,7 +99,8 @@ define_meta_properties(JSContext       *context,
     /* We define both __moduleName__ and __parentModule__ to null
      * on the root importer
      */
-    parent_is_module = parent && JS_InstanceOf(context, parent, &gjs_importer_class, NULL);
+    parent_is_module = parent && JS_InstanceOf(context, parent,
+        js::Jsvalify(&gjs_importer_class), NULL);
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Defining parent %p of %p '%s' is mod %d",
               parent.get(), module_obj.get(),
@@ -674,8 +677,9 @@ do_import(JSContext       *context,
  * then on its prototype.
  */
 static bool
-importer_enumerate(JSContext       *context,
-                   JS::HandleObject object)
+importer_enumerate(JSContext        *context,
+                   JS::HandleObject  object,
+                   JS::AutoIdVector& properties)
 {
     Importer *priv;
     guint32 search_path_len;
@@ -729,19 +733,9 @@ importer_enumerate(JSContext       *context,
 
         init_path = g_build_filename(dirname, MODULE_INIT_FILENAME, NULL);
 
-        JS::AutoIdVector module_props(context);
-        JS::RootedValue v_prop_name(context);
-        load_module_elements(context, object, module_props, init_path);
+        load_module_elements(context, object, properties, init_path);
 
         g_free(init_path);
-
-        for (const jsid *id = module_props.begin(); id != module_props.end(); id++) {
-            v_prop_name.setString(JSID_TO_STRING(*id));
-            g_autofree char *prop_name = NULL;
-            if (!gjs_string_to_filename(context, v_prop_name, &prop_name) ||
-                !do_import(context, object, priv, prop_name))
-                return false;
-        }
 
         /* new_for_commandline_arg handles resource:/// paths */
         GjsAutoUnref<GFile> dir = g_file_new_for_commandline_arg(dirname);
@@ -769,14 +763,12 @@ importer_enumerate(JSContext       *context,
                 continue;
 
             if (g_file_info_get_file_type(info) == G_FILE_TYPE_DIRECTORY) {
-                if (!do_import(context, object, priv, filename))
-                    return false;
+                properties.append(gjs_intern_string_to_id(context, filename));
             } else if (g_str_has_suffix(filename, "." G_MODULE_SUFFIX) ||
                        g_str_has_suffix(filename, ".js")) {
                 GjsAutoChar filename_noext =
                     g_strndup(filename, strlen(filename) - 3);
-                if (!do_import(context, object, priv, filename_noext))
-                    return false;
+                properties.append(gjs_intern_string_to_id(context, filename_noext));
             }
         }
     }
@@ -836,8 +828,8 @@ importer_resolve(JSContext        *context,
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(importer)
 
 static void
-importer_finalize(JSFreeOp *fop,
-                  JSObject *obj)
+importer_finalize(js::FreeOp *fop,
+                  JSObject   *obj)
 {
     Importer *priv;
 
@@ -855,7 +847,7 @@ importer_finalize(JSFreeOp *fop,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
-struct JSClass gjs_importer_class = {
+const js::Class gjs_importer_class = {
     "GjsFileImporter",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_IMPLEMENTS_BARRIERS,
@@ -863,10 +855,30 @@ struct JSClass gjs_importer_class = {
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
     NULL,  /* setProperty */
-    importer_enumerate,
+    NULL,  /* enumerate (see below) */
     importer_resolve,
     NULL,  /* convert */
-    importer_finalize
+    importer_finalize,
+    NULL,  /* call */
+    NULL,  /* hasInstance */
+    NULL,  /* construct */
+    NULL,  /* trace */
+    JS_NULL_CLASS_SPEC,
+    JS_NULL_CLASS_EXT,
+    {
+        NULL,  /* lookupProperty */
+        NULL,  /* defineProperty */
+        NULL,  /* hasProperty */
+        NULL,  /* getProperty */
+        NULL,  /* setProperty */
+        NULL,  /* getOwnPropertyDescriptor */
+        NULL,  /* deleteProperty */
+        NULL,  /* watch */
+        NULL,  /* unwatch */
+        NULL,  /* getElements */
+        importer_enumerate,
+        NULL,  /* thisObject */
+    }
 };
 
 JSPropertySpec gjs_importer_proto_props[] = {
@@ -898,7 +910,7 @@ importer_new(JSContext *context,
                                   * Object.prototype
                                   */
                                  JS::NullPtr(),
-                                 &gjs_importer_class,
+                                 js::Jsvalify(&gjs_importer_class),
                                  /* constructor for instances (NULL for
                                   * none - just name the prototype like
                                   * Math - rarely correct)
@@ -922,7 +934,7 @@ importer_new(JSContext *context,
     }
 
     JS::RootedObject importer(context,
-        JS_NewObject(context, &gjs_importer_class, global));
+        JS_NewObject(context, js::Jsvalify(&gjs_importer_class), global));
     if (importer == NULL)
         g_error("No memory to create importer importer");
 
