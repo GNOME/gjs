@@ -82,14 +82,6 @@ gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline)
 
     trampoline->ref_count--;
     if (trampoline->ref_count == 0) {
-        JSContext *context = trampoline->context;
-
-        if (!trampoline->is_vfunc) {
-            JS_BeginRequest(context);
-            JS::RemoveValueRoot(context, &trampoline->js_function);
-            JS_EndRequest(context);
-        }
-
         g_callable_info_free_closure(trampoline->info, trampoline->closure);
         g_base_info_unref( (GIBaseInfo*) trampoline->info);
         g_free (trampoline->param_types);
@@ -208,7 +200,7 @@ gjs_callback_closure(ffi_cif *cif,
     }
 
     JS_BeginRequest(context);
-    func_obj = &trampoline->js_function.toObject();
+    func_obj = &trampoline->js_function.get().toObject();
     JSAutoCompartment ac(context, func_obj);
 
     n_args = g_callable_info_get_n_args(trampoline->info);
@@ -455,9 +447,10 @@ gjs_callback_trampoline_new(JSContext      *context,
     trampoline->context = context;
     trampoline->info = callable_info;
     g_base_info_ref((GIBaseInfo*)trampoline->info);
-    trampoline->js_function = function;
-    if (!is_vfunc)
-        JS::AddValueRoot(context, &trampoline->js_function);
+    if (is_vfunc)
+        trampoline->js_function = function;
+    else
+        trampoline->js_function.root(context, function);
 
     /* Analyze param types and directions, similarly to init_cached_function_data */
     n_args = g_callable_info_get_n_args(trampoline->info);

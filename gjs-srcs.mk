@@ -65,6 +65,7 @@ gjs_srcs =				\
 	gjs/jsapi-util.h		\
 	gjs/jsapi-util-args.h		\
 	gjs/jsapi-util-error.cpp	\
+	gjs/jsapi-util-root.h		\
 	gjs/jsapi-util-string.cpp	\
 	gjs/jsapi-wrapper.h		\
 	gjs/mem.h			\

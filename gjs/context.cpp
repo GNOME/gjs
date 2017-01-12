@@ -391,6 +391,10 @@ gjs_context_dispose(GObject *object)
 
     js_context = GJS_CONTEXT(object);
 
+    /* Run dispose notifications first, so that anything releasing
+     * references in response to this can still get garbage collected */
+    G_OBJECT_CLASS(gjs_context_parent_class)->dispose(object);
+
     if (js_context->context != NULL) {
 
         gjs_debug(GJS_DEBUG_CONTEXT,
@@ -430,8 +434,6 @@ gjs_context_dispose(GObject *object)
         js_context->context = NULL;
         g_clear_pointer(&js_context->runtime, gjs_runtime_unref);
     }
-
-    G_OBJECT_CLASS(gjs_context_parent_class)->dispose(object);
 }
 
 static void

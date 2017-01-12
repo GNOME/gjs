@@ -100,6 +100,7 @@ gjs_tests_SOURCES =					\
 	test/gjs-test-utils.h				\
 	test/gjs-test-call-args.cpp			\
 	test/gjs-test-coverage.cpp			\
+	test/gjs-test-rooting.cpp			\
 	mock-js-resources.c				\
 	$(NULL)
 

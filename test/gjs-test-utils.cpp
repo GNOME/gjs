@@ -67,17 +67,28 @@ gjs_unit_test_fixture_setup(GjsUnitTestFixture *fx,
 }
 
 void
-gjs_unit_test_fixture_teardown(GjsUnitTestFixture *fx,
-                               gconstpointer      unused)
+gjs_unit_test_destroy_context(GjsUnitTestFixture *fx)
 {
     JS_LeaveCompartment(fx->cx, fx->compartment);
     JS_EndRequest(fx->cx);
 
     g_object_unref(fx->gjs_context);
+}
 
+void
+gjs_unit_test_teardown_context_already_destroyed(GjsUnitTestFixture *fx)
+{
     if (fx->message != NULL)
         g_printerr("**\n%s\n", fx->message);
     g_free(fx->message);
+}
+
+void
+gjs_unit_test_fixture_teardown(GjsUnitTestFixture *fx,
+                               gconstpointer      unused)
+{
+    gjs_unit_test_destroy_context(fx);
+    gjs_unit_test_teardown_context_already_destroyed(fx);
 }
 
 /* Fork a process that waits the given time then

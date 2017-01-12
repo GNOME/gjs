@@ -28,6 +28,7 @@
 #include <glib.h>
 
 #include "gjs/jsapi-util.h"
+#include "gjs/jsapi-util-root.h"
 
 #include <girepository.h>
 #include <girffi.h>
@@ -45,7 +46,9 @@ struct GjsCallbackTrampoline {
     gint ref_count;
     JSContext *context;
     GICallableInfo *info;
-    JS::Heap<JS::Value> js_function;
+
+    GjsMaybeOwned<JS::Value> js_function;
+
     ffi_cif cif;
     ffi_closure *closure;
     GIScopeType scope;

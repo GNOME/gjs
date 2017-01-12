@@ -20,6 +20,9 @@
 #ifndef GJS_TEST_UTILS_H
 #define GJS_TEST_UTILS_H
 
+#include "gjs/context.h"
+#include "gjs/jsapi-wrapper.h"
+
 typedef struct _GjsUnitTestFixture GjsUnitTestFixture;
 struct _GjsUnitTestFixture {
     GjsContext *gjs_context;
@@ -31,6 +34,10 @@ struct _GjsUnitTestFixture {
 void gjs_unit_test_fixture_setup(GjsUnitTestFixture *fx,
                                  gconstpointer       unused);
 
+void gjs_unit_test_destroy_context(GjsUnitTestFixture *fx);
+
+void gjs_unit_test_teardown_context_already_destroyed(GjsUnitTestFixture *fx);
+
 void gjs_unit_test_fixture_teardown(GjsUnitTestFixture *fx,
                                     gconstpointer      unused);
 
@@ -39,5 +46,7 @@ void gjs_crash_after_timeout(int seconds);
 void gjs_test_add_tests_for_coverage ();
 
 void gjs_test_add_tests_for_parse_call_args(void);
+
+void gjs_test_add_tests_for_rooting(void);
 
 #endif
