@@ -2557,8 +2557,7 @@ gjs_object_constructor (GType                  type,
     if (n_construct_properties) {
         guint i;
 
-        JS::RootedObject props_hash(context,
-            JS_NewObject(context, NULL, JS::NullPtr(), JS::NullPtr()));
+        JS::RootedObject props_hash(context, JS_NewObject(context, NULL));
 
         for (i = 0; i < n_construct_properties; i++)
             jsobj_set_gproperty(context, props_hash,
@@ -3138,7 +3137,7 @@ bool
 gjs_define_private_gi_stuff(JSContext              *cx,
                             JS::MutableHandleObject module)
 {
-    module.set(JS_NewObject(cx, NULL, JS::NullPtr(), JS::NullPtr()));
+    module.set(JS_NewObject(cx, NULL));
     return JS_DefineFunctions(cx, module, &module_funcs[0]);
 }
 

@@ -923,7 +923,7 @@ gjs_cairo_context_from_context(JSContext *context,
                                cairo_t *cr)
 {
     JS::RootedObject object(context,
-        JS_NewObject(context, &gjs_cairo_context_class, JS::NullPtr(), JS::NullPtr()));
+        JS_NewObject(context, &gjs_cairo_context_class));
     if (!object)
         return NULL;
 

@@ -187,7 +187,7 @@ gjs_cairo_surface_pattern_from_pattern(JSContext       *context,
     g_return_val_if_fail(cairo_pattern_get_type(pattern) == CAIRO_PATTERN_TYPE_SURFACE, NULL);
 
     JS::RootedObject object(context,
-        JS_NewObject(context, &gjs_cairo_surface_pattern_class, JS::NullPtr(), JS::NullPtr()));
+        JS_NewObject(context, &gjs_cairo_surface_pattern_class));
     if (!object) {
         gjs_throw(context, "failed to create surface pattern");
         return NULL;

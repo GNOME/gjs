@@ -162,7 +162,7 @@ gjs_js_define_system_stuff(JSContext              *context,
     char *program_name;
     bool retval;
 
-    module.set(JS_NewObject(context, NULL, JS::NullPtr(), JS::NullPtr()));
+    module.set(JS_NewObject(context, NULL));
 
     if (!JS_DefineFunctions(context, module, &module_funcs[0]))
         return false;

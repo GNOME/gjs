@@ -319,12 +319,6 @@ import_native_file(JSContext       *context,
                              GJS_MODULE_PROP_FLAGS);
 }
 
-static JSObject *
-create_module_object(JSContext *context)
-{
-    return JS_NewObject(context, NULL, JS::NullPtr(), JS::NullPtr());
-}
-
 static bool
 import_file(JSContext       *context,
             const char      *name,
@@ -384,7 +378,7 @@ load_module_init(JSContext       *context,
         }
     }
 
-    JS::RootedObject module_obj(context, create_module_object(context));
+    JS::RootedObject module_obj(context, JS_NewObject(context, NULL));
     GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(full_path);
     if (!import_file (context, "__init__", file, module_obj))
         return module_obj;
@@ -468,7 +462,7 @@ import_file_on_module(JSContext       *context,
     bool retval = false;
     char *full_path = NULL;
 
-    JS::RootedObject module_obj(context, create_module_object(context));
+    JS::RootedObject module_obj(context, JS_NewObject(context, NULL));
 
     if (!define_import(context, obj, module_obj, name))
         goto out;
@@ -1016,7 +1010,7 @@ importer_new(JSContext *context,
     }
 
     JS::RootedObject importer(context,
-        JS_NewObject(context, &gjs_importer_class, JS::NullPtr(), global));
+        JS_NewObject(context, &gjs_importer_class, global));
     if (importer == NULL)
         g_error("No memory to create importer importer");
 

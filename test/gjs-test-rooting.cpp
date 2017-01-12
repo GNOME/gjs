@@ -40,8 +40,7 @@ static JSClass test_obj_class = {
 static JSObject *
 test_obj_new(GjsRootingFixture *fx)
 {
-    JSObject *retval = JS_NewObject(PARENT(fx)->cx, &test_obj_class,
-                                    JS::NullPtr(), JS::NullPtr());
+    JSObject *retval = JS_NewObject(PARENT(fx)->cx, &test_obj_class);
     JS_SetPrivate(retval, &fx->finalized);
     return retval;
 }

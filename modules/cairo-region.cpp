@@ -147,8 +147,7 @@ static JSObject *
 make_rectangle(JSContext *context,
                cairo_rectangle_int_t *rect)
 {
-    JS::RootedObject rect_obj(context,
-        JS_NewObject(context, NULL, JS::NullPtr(), JS::NullPtr()));
+    JS::RootedObject rect_obj(context, JS_NewObject(context, NULL));
     JS::RootedValue val(context);
 
     val = JS::Int32Value(rect->x);
@@ -278,7 +277,7 @@ gjs_cairo_region_from_region(JSContext *context,
                              cairo_region_t *region)
 {
     JS::RootedObject object(context,
-        JS_NewObject(context, &gjs_cairo_region_class, JS::NullPtr(), JS::NullPtr()));
+        JS_NewObject(context, &gjs_cairo_region_class));
     if (!object)
         return NULL;
 

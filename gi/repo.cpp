@@ -274,7 +274,7 @@ repo_new(JSContext *context)
     }
 
     JS::RootedObject repo(context,
-        JS_NewObject(context, &gjs_repo_class, JS::NullPtr(), global));
+        JS_NewObject(context, &gjs_repo_class, global));
     if (repo == NULL) {
         gjs_throw(context, "No memory to create repo object");
         return NULL;
@@ -290,12 +290,12 @@ repo_new(JSContext *context)
     gjs_debug_lifecycle(GJS_DEBUG_GREPO,
                         "repo constructor, obj %p priv %p", repo.get(), priv);
 
-    versions = JS_NewObject(context, NULL, JS::NullPtr(), global);
+    versions = JS_NewObject(context, NULL, global);
     JS::RootedValue v_versions(context, JS::ObjectValue(*versions));
     gjs_object_define_property(context, repo, GJS_STRING_GI_VERSIONS,
                                v_versions, JSPROP_PERMANENT);
 
-    private_ns = JS_NewObject(context, NULL, JS::NullPtr(), global);
+    private_ns = JS_NewObject(context, NULL, global);
     JS::RootedValue v_ns(context, JS::ObjectValue(*private_ns));
     gjs_object_define_property(context, repo,
                                GJS_STRING_PRIVATE_NS_MARKER, v_ns,
