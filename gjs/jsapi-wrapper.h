@@ -37,7 +37,7 @@
 #endif
 #include <mozilla/Maybe.h>
 #include <jsapi.h>
-#include <js/OldDebugAPI.h>  /* Needed by some bits */
-#include <jsproxy.h>  /* For jsapi-constructor-proxy */
+#include <js/Conversions.h>
+#include <js/Proxy.h>  /* For jsapi-constructor-proxy */
 
 #endif  /* GJS_JSAPI_WRAPPER_H */
