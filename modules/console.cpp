@@ -169,7 +169,7 @@ gjs_console_interact(JSContext *context,
     int startline;
     FILE *file = stdin;
 
-    JS_SetErrorReporter(context, gjs_console_error_reporter);
+    JS_SetErrorReporter(JS_GetRuntime(context), gjs_console_error_reporter);
 
         /* It's an interactive filehandle; drop into read-eval-print loop. */
     lineno = 1;

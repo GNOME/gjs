@@ -58,7 +58,7 @@ gjs_unit_test_fixture_setup(GjsUnitTestFixture *fx,
 
     /* This is for shoving private data into the error reporter callback */
     g_object_set_data(G_OBJECT(fx->gjs_context), "test fixture", fx);
-    JS_SetErrorReporter(fx->cx, test_error_reporter);
+    JS_SetErrorReporter(JS_GetRuntime(fx->cx), test_error_reporter);
 
     JS_BeginRequest(fx->cx);
 

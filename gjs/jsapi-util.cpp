@@ -101,8 +101,6 @@ gjs_init_context_standard (JSContext              *context,
             .setAsmJS(true);
     }
 
-    JS_SetErrorReporter(context, gjs_error_reporter);
-
     compartment_options.setVersion(JSVERSION_LATEST);
     global.set(JS_NewGlobalObject(context, &global_class, NULL,
                                   JS::FireOnNewGlobalHook, compartment_options));
