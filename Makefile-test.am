@@ -119,6 +119,7 @@ minijasmine_CPPFLAGS =				\
 	$(GJS_CFLAGS)				\
 	-I$(top_srcdir)				\
 	-DINSTTESTDIR=\"$(gjsinsttestdir)\"	\
+	-DPKGLIBDIR=\"$(pkglibdir)\"		\
 	$(NULL)
 
 minijasmine_LDADD = $(GJS_LIBS) libgjs.la

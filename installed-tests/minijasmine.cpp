@@ -63,6 +63,7 @@ main(int argc, char **argv)
         g_irepository_prepend_search_path(g_getenv("TOP_BUILDDIR"));
     } else {
         g_irepository_prepend_search_path(INSTTESTDIR);
+        g_irepository_prepend_library_path(PKGLIBDIR);
     }
 
     const char *coverage_prefix = g_getenv("GJS_UNIT_COVERAGE_PREFIX");
