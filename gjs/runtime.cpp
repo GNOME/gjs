@@ -174,13 +174,10 @@ static JSLocaleCallbacks gjs_locale_callbacks =
 static void
 gjs_finalize_callback(JSFreeOp         *fop,
                       JSFinalizeStatus  status,
-                      bool              isCompartment)
+                      bool              isCompartment,
+                      void             *user_data)
 {
-  JSRuntime *runtime;
-  RuntimeData *data;
-
-  runtime = fop->runtime();
-  data = (RuntimeData*) JS_GetRuntimePrivate(runtime);
+  RuntimeData *data = static_cast<RuntimeData *>(user_data);
 
   /* Implementation note for mozjs 24:
      sweeping happens in two phases, in the first phase all
@@ -309,7 +306,7 @@ gjs_runtime_for_current_thread(void)
         JS_SetNativeStackQuota(runtime, 1024*1024);
         JS_SetGCParameter(runtime, JSGC_MAX_BYTES, 0xffffffff);
         JS_SetLocaleCallbacks(runtime, &gjs_locale_callbacks);
-        JS_SetFinalizeCallback(runtime, gjs_finalize_callback);
+        JS_AddFinalizeCallback(runtime, gjs_finalize_callback, data);
         JS_SetErrorReporter(runtime, gjs_error_reporter);
 
         g_private_set(&thread_runtime, runtime);
