@@ -253,15 +253,14 @@ gjs_callback_closure(ffi_cif *cif,
                     goto out;
 
                 jsargs.growBy(1);
-                if (!gjs_value_from_explicit_array(context, jsargs.handleAt(n_jsargs++),
+                if (!gjs_value_from_explicit_array(context, jsargs[n_jsargs++],
                                                    &type_info, (GArgument*) args[i], length.toInt32()))
                     goto out;
                 break;
             }
             case PARAM_NORMAL:
                 jsargs.growBy(1);
-                if (!gjs_value_from_g_argument(context,
-                                               jsargs.handleAt(n_jsargs++),
+                if (!gjs_value_from_g_argument(context, jsargs[n_jsargs++],
                                                &type_info,
                                                (GArgument *) args[i], false))
                     goto out;
@@ -1046,7 +1045,7 @@ gjs_invoke_c_function(JSContext                              *context,
                                                         true);
                 if (!arg_failed && !js_rval.empty()) {
                     arg_failed = !gjs_value_from_explicit_array(context,
-                                                                return_values.handleAt(next_rval),
+                                                                return_values[next_rval],
                                                                 &return_info,
                                                                 &return_gargument,
                                                                 length.toInt32());
@@ -1062,7 +1061,7 @@ gjs_invoke_c_function(JSContext                              *context,
             } else {
                 if (!js_rval.empty())
                     arg_failed = !gjs_value_from_g_argument(context,
-                                                            return_values.handleAt(next_rval),
+                                                            return_values[next_rval],
                                                             &return_info, &return_gargument,
                                                             true);
                 /* Free GArgument, the JS::Value should have ref'd or copied it */
@@ -1191,14 +1190,14 @@ release:
                                                             true);
                     if (!arg_failed) {
                         arg_failed = !gjs_value_from_explicit_array(context,
-                                                                    return_values.handleAt(next_rval),
+                                                                    return_values[next_rval],
                                                                     &arg_type_info,
                                                                     arg,
                                                                     array_length.toInt32());
                     }
                 } else {
                     arg_failed = !gjs_value_from_g_argument(context,
-                                                            return_values.handleAt(next_rval),
+                                                            return_values[next_rval],
                                                             &arg_type_info,
                                                             arg,
                                                             true);

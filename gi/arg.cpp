@@ -574,7 +574,7 @@ gjs_array_from_strv(JSContext             *context,
 
     for (i = 0; strv[i] != NULL; i++) {
         elems.growBy(1);
-        if (!gjs_string_from_utf8(context, strv[i], -1, elems.handleAt(i)))
+        if (!gjs_string_from_utf8(context, strv[i], -1, elems[i]))
             return false;
     }
 
@@ -959,7 +959,7 @@ gjs_array_from_flat_gvalue_array(JSContext             *context,
 
     for (i = 0; i < length; i ++) {
         GValue *gvalue = &values[i];
-        result = gjs_value_from_g_value(context, elems.handleAt(i), gvalue);
+        result = gjs_value_from_g_value(context, elems[i], gvalue);
         if (!result)
             break;
     }
@@ -2153,8 +2153,7 @@ gjs_array_from_g_list (JSContext             *context,
             arg.v_pointer = list->data;
             elems.growBy(1);
 
-            if (!gjs_value_from_g_argument(context, elems.handleAt(i),
-                                           param_info, &arg,
+            if (!gjs_value_from_g_argument(context, elems[i], param_info, &arg,
                                            true))
                 return false;
             ++i;
@@ -2164,8 +2163,7 @@ gjs_array_from_g_list (JSContext             *context,
             arg.v_pointer = slist->data;
             elems.growBy(1);
 
-            if (!gjs_value_from_g_argument(context, elems.handleAt(i),
-                                           param_info, &arg,
+            if (!gjs_value_from_g_argument(context, elems[i], param_info, &arg,
                                            true))
                 return false;
             ++i;
@@ -2222,8 +2220,8 @@ gjs_array_from_carray_internal (JSContext             *context,
 #define ITERATE(type) \
     for (i = 0; i < length; i++) { \
         arg.v_##type = *(((g##type*)array) + i);                         \
-        if (!gjs_value_from_g_argument(context, elems.handleAt(i),       \
-                                       param_info, &arg, true))          \
+        if (!gjs_value_from_g_argument(context, elems[i], param_info,    \
+                                       &arg, true))                      \
             return false; \
     }
 
@@ -2282,8 +2280,8 @@ gjs_array_from_carray_internal (JSContext             *context,
               for (i = 0; i < length; i++) {
                   arg.v_pointer = ((char*)array) + (struct_size * i);
 
-                  if (!gjs_value_from_g_argument(context, elems.handleAt(i),
-                                                 param_info, &arg, true))
+                  if (!gjs_value_from_g_argument(context, elems[i], param_info,
+                                                 &arg, true))
                       return false;
               }
 
@@ -2438,7 +2436,7 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
         for (i = 0; array[i]; i++) { \
             arg.v_##type = array[i]; \
             elems.growBy(1);                                            \
-            if (!gjs_value_from_g_argument(context, elems.handleAt(i),  \
+            if (!gjs_value_from_g_argument(context, elems[i],           \
                                            param_info, &arg, true))     \
                 return false; \
         } \
