@@ -745,13 +745,23 @@ gjs_invoke_c_function(JSContext                              *context,
      */
 
     if (args.length() < function->expected_js_argc) {
-        gjs_throw(context,
-                  "Too few arguments to %s %s.%s expected %d got %" G_GSIZE_FORMAT,
-                  is_method ? "method" : "function",
-                  g_base_info_get_namespace( (GIBaseInfo*) function->info),
-                  g_base_info_get_name( (GIBaseInfo*) function->info),
-                  function->expected_js_argc,
-                  args.length());
+        auto baseinfo = static_cast<GIBaseInfo *>(function->info);
+        if (is_method) {
+            gjs_throw(context, "Too few arguments to method %s.%s.%s: "
+                      "expected %d, got %" G_GSIZE_FORMAT,
+                      g_base_info_get_namespace(baseinfo),
+                      g_base_info_get_name(g_base_info_get_container(baseinfo)),
+                      g_base_info_get_name(baseinfo),
+                      function->expected_js_argc,
+                      args.length());
+        } else {
+            gjs_throw(context, "Too few arguments to function %s.%s: "
+                      "expected %d, got %" G_GSIZE_FORMAT,
+                      g_base_info_get_namespace(baseinfo),
+                      g_base_info_get_name(baseinfo),
+                      function->expected_js_argc,
+                      args.length());
+        }
         return false;
     }
 

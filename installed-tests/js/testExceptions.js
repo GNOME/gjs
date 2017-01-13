@@ -172,3 +172,15 @@ describe('logError', function () {
         logError(new GLib.Error(GLib.quark_from_string('my-error'), 0, 'a message'), 'prefix');
     });
 });
+
+describe('Exception from function with too few arguments', function () {
+    it('contains the full function name', function () {
+        expect(() => GLib.get_locale_variants())
+            .toThrowError(/GLib\.get_locale_variants/);
+    });
+
+    it('contains the full method name', function () {
+        let file = Gio.File.new_for_path('foo');
+        expect(() => file.read()).toThrowError(/Gio\.File\.read/);
+    });
+});
