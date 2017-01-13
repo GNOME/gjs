@@ -3136,8 +3136,6 @@ static JSFunctionSpec module_funcs[] = {
     JS_FS("override_property", gjs_override_property, 2, GJS_MODULE_PROP_FLAGS),
     JS_FS("register_interface", gjs_register_interface, 3, GJS_MODULE_PROP_FLAGS),
     JS_FS("register_type", gjs_register_type, 4, GJS_MODULE_PROP_FLAGS),
-    // FIXME this function will be totally broken if you try to use it from JS
-    JS_FS("add_interface", (JSNative)gjs_add_interface, 2, GJS_MODULE_PROP_FLAGS),
     JS_FS("hook_up_vfunc", gjs_hook_up_vfunc, 3, GJS_MODULE_PROP_FLAGS),
     JS_FS("signal_new", gjs_signal_new, 6, GJS_MODULE_PROP_FLAGS),
     JS_FS_END,
