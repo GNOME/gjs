@@ -643,6 +643,8 @@ object_instance_new_resolve_no_info(JSContext       *context,
                 } else {
                     ret = false;
                 }
+                g_base_info_unref((GIBaseInfo*) method_info);
+                break;
             }
 
             g_base_info_unref( (GIBaseInfo*) method_info);
