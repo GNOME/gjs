@@ -1395,6 +1395,8 @@ get_num_arguments (JSContext *context,
 
         if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_OUT)
             continue;
+
+        n_jsargs++;
     }
 
     rec.rval().setInt32(n_jsargs);

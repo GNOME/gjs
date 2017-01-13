@@ -230,3 +230,34 @@ describe('Introspected GObject', function () {
         expect(obj.hasOwnProperty('ownprop')).toBeTruthy();
     });
 });
+
+describe('Introspected function length', function () {
+    let obj;
+    beforeEach(function () {
+        obj = new Regress.TestObj();
+    });
+
+    it('skips over instance parameters of methods', function () {
+        expect(obj.set_bare.length).toEqual(1);
+    });
+
+    it('skips over out and GError parameters', function () {
+        expect(obj.torture_signature_1.length).toEqual(3);
+    });
+
+    it('does not skip over inout parameters', function () {
+        expect(obj.skip_return_val.length).toEqual(5);
+    });
+
+    xit('skips over parameters annotated with skip', function () {
+        expect(obj.skip_param.length).toEqual(4);
+    }).pend('Not implemented yet');
+
+    it('gives number of arguments for static methods', function () {
+        expect(Regress.TestObj.new_from_file.length).toEqual(1);
+    });
+
+    it('skips over destroy-notify and user-data parameters', function () {
+        expect(Regress.TestObj.new_callback.length).toEqual(1);
+    });
+});
