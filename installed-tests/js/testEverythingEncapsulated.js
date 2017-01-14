@@ -224,4 +224,9 @@ describe('Introspected GObject', function () {
         'use strict';
         expect(() => obj.some_int8 = 41).toThrow();
     });
+
+    it('has normal Object methods', function () {
+        obj.ownprop = 'foo';
+        expect(obj.hasOwnProperty('ownprop')).toBeTruthy();
+    });
 });
