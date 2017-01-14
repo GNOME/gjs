@@ -313,7 +313,7 @@ AM_TESTS_ENVIRONMENT += 						\
 	$(NULL)
 endif
 
-CODE_COVERAGE_IGNORE_PATTERN = */include/*
+CODE_COVERAGE_IGNORE_PATTERN = */{include,mfbt,gjs/test,gjs/installed-tests}/*
 CODE_COVERAGE_GENHTML_OPTIONS = 			\
 	lcov/coverage.lcov 				\
 	--prefix $(abs_top_builddir)/lcov/org/gnome/gjs	\
