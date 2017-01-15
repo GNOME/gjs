@@ -1,5 +1,5 @@
-NEXT
-----
+Version 1.47.4
+--------------
 
 - New JavaScript feature: ES6 Promises. This release includes Lie [1], a small,
   self-contained Promise implementation, which is imported automatically to
@@ -13,6 +13,31 @@ NEXT
 
   * New API: The GjsCoverage type and its methods are now exposed. Use this if
     you are embedding GJS and need to output code coverage statistics.
+
+- Closed bugs:
+
+  * Add GjsCoverage to gjs-1.0 public API [#775776, Philip Chimento]
+  * Should use uint32_t instead of u_int32_t in coverage.cpp [#776193, Shawn
+    Walker, Alan Coopersmith]
+  * Port tests to use an embedded copy of Jasmine [#775444, Philip Chimento]
+  * support fields in GObject [#563391, Havoc Pennington, Philip Chimento]
+  * Javascript errors in property getters and setter not always reported
+    [#730101, Matt Watson, Philip Chimento]
+  * Exception swallowed while importing Gom [#737607, Philip Chimento]
+  * log a warning if addSignalMethods() replaces existing methods [#619710, Joe
+    Shaw, Philip Chimento]
+  * Provide a useful toString for importer and module objects [#636283, Jasper
+    St. Pierre, Philip Chimento]
+  * Fails to marshal out arrays [#697020, Paolo Borelli]
+  * coverage: Don't warn about executing odd lines by default anymore [#751146,
+    Sam Spilsbury, Philip Chimento]
+  * coverage: Crash in EnterBaseline on SpiderMonkey when Ion is enabled during
+    coverage mode. [#742852, Sam Spilsbury, Philip Chimento]
+  * installed tests cannot load libregress.so [#776938, Philip Chimento]
+  * Crash with subclassed fundamental with no introspection [#760057, Lionel
+    Landwerlin]
+
+- Misc bug fixes [Philip Chimento, Claudio André]
 
 Version 1.47.3
 --------------
