@@ -9,6 +9,9 @@ function _removeNewlines(str) {
 }
 
 function _filterStack(stack) {
+    if (typeof stack === 'undefined')
+        return "STACK is undefined";
+
     return stack.split('\n')
         .filter(stackLine => stackLine.indexOf('resource:///org/gjs/jsunit') === -1)
         .filter(stackLine => stackLine.indexOf('<jasmine-start>') === -1)
