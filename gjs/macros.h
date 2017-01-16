@@ -1,6 +1,6 @@
 /* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
- * Copyright (c) 2008  litl, LLC
+ * Copyright (c) 2017 Chun-wei Fan
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,12 +21,19 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_GJS_H__
-#define __GJS_GJS_H__
+#ifndef GJS_MACROS_H
+#define GJS_MACROS_H
 
-#include <gjs/macros.h>
-#include <gjs/context.h>
-#include <gjs/coverage.h>
-#include <util/error.h>
+#include <glib.h>
 
-#endif /* __GJS_GJS_H__ */
+#ifdef G_OS_WIN32
+# ifdef GJS_COMPILATION
+#  define GJS_EXPORT __declspec(dllexport)
+# else
+#  define GJS_EXPORT __declspec(dllimport)
+# endif
+#else
+# define GJS_EXPORT
+#endif
+
+#endif /* GJS_MACROS_H */

@@ -31,6 +31,8 @@
 #include <stdbool.h>
 #include <glib-object.h>
 
+#include <gjs/macros.h>
+
 G_BEGIN_DECLS
 
 typedef struct _GjsContext      GjsContext;
@@ -43,39 +45,53 @@ typedef struct _GjsContextClass GjsContextClass;
 #define GJS_IS_CONTEXT_CLASS(klass)   (G_TYPE_CHECK_CLASS_TYPE ((klass), GJS_TYPE_CONTEXT))
 #define GJS_CONTEXT_GET_CLASS(obj)    (G_TYPE_INSTANCE_GET_CLASS ((obj), GJS_TYPE_CONTEXT, GjsContextClass))
 
+GJS_EXPORT
 GType           gjs_context_get_type             (void) G_GNUC_CONST;
 
+GJS_EXPORT
 GjsContext*     gjs_context_new                  (void);
+GJS_EXPORT
 GjsContext*     gjs_context_new_with_search_path (char         **search_path);
+GJS_EXPORT
 bool            gjs_context_eval_file            (GjsContext  *js_context,
                                                   const char    *filename,
                                                   int           *exit_status_p,
                                                   GError       **error);
+GJS_EXPORT
 bool            gjs_context_eval                 (GjsContext  *js_context,
                                                   const char    *script,
                                                   gssize         script_len,
                                                   const char    *filename,
                                                   int           *exit_status_p,
                                                   GError       **error);
+GJS_EXPORT
 bool            gjs_context_define_string_array  (GjsContext  *js_context,
                                                   const char    *array_name,
                                                   gssize         array_length,
                                                   const char   **array_values,
                                                   GError       **error);
 
+GJS_EXPORT
 GList*          gjs_context_get_all              (void);
 
+GJS_EXPORT
 GjsContext     *gjs_context_get_current          (void);
+GJS_EXPORT
 void            gjs_context_make_current         (GjsContext *js_context);
 
+GJS_EXPORT
 void*           gjs_context_get_native_context   (GjsContext *js_context);
 
+GJS_EXPORT
 void            gjs_context_print_stack_stderr    (GjsContext *js_context);
 
+GJS_EXPORT
 void            gjs_context_maybe_gc              (GjsContext  *context);
 
+GJS_EXPORT
 void            gjs_context_gc                    (GjsContext  *context);
 
+GJS_EXPORT
 void            gjs_dumpstack                     (void);
 
 G_END_DECLS

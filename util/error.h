@@ -26,8 +26,11 @@
 
 #include <glib.h>
 
+#include <gjs/macros.h>
+
 G_BEGIN_DECLS
 
+GJS_EXPORT
 GQuark gjs_error_quark(void);
 #define GJS_ERROR gjs_error_quark()
 

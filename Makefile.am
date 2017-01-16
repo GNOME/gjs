@@ -38,6 +38,7 @@ nobase_gjs_public_include_HEADERS =	\
 	gjs/context.h		\
 	gjs/coverage.h			\
 	gjs/gjs.h			\
+	gjs/macros.h			\
 	util/error.h			\
 	$(NULL)
 
