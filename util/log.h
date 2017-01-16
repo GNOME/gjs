@@ -112,45 +112,45 @@ typedef enum {
 #endif
 
 #if GJS_VERBOSE_ENABLE_PROPS
-#define gjs_debug_jsprop(topic, format...) \
-    do { gjs_debug(topic, format); } while(0)
+#define gjs_debug_jsprop(topic, ...) \
+    do { gjs_debug(topic, __VA_ARGS__); } while(0)
 #else
-#define gjs_debug_jsprop(topic, format...) ((void)0)
+#define gjs_debug_jsprop(topic, ...) ((void)0)
 #endif
 
 #if GJS_VERBOSE_ENABLE_MARSHAL
-#define gjs_debug_marshal(topic, format...) \
-    do { gjs_debug(topic, format); } while(0)
+#define gjs_debug_marshal(topic, ...) \
+    do { gjs_debug(topic, __VA_ARGS__); } while(0)
 #else
-#define gjs_debug_marshal(topic, format...) ((void)0)
+#define gjs_debug_marshal(topic, ...) ((void)0)
 #endif
 
 #if GJS_VERBOSE_ENABLE_LIFECYCLE
-#define gjs_debug_lifecycle(topic, format...) \
-    do { gjs_debug(topic, format); } while(0)
+#define gjs_debug_lifecycle(topic, ...) \
+    do { gjs_debug(topic, __VA_ARGS__); } while(0)
 #else
-#define gjs_debug_lifecycle(topic, format...) ((void)0)
+#define gjs_debug_lifecycle(topic, ...) ((void)0)
 #endif
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
-#define gjs_debug_gi_usage(format...) \
-    do { gjs_debug(GJS_DEBUG_GI_USAGE, format); } while(0)
+#define gjs_debug_gi_usage(...) \
+    do { gjs_debug(GJS_DEBUG_GI_USAGE, __VA_ARGS__); } while(0)
 #else
-#define gjs_debug_gi_usage(format...) ((void)0)
+#define gjs_debug_gi_usage(...) ((void)0)
 #endif
 
 #if GJS_VERBOSE_ENABLE_GCLOSURE
-#define gjs_debug_closure(format...) \
-    do { gjs_debug(GJS_DEBUG_GCLOSURE, format); } while(0)
+#define gjs_debug_closure(...) \
+    do { gjs_debug(GJS_DEBUG_GCLOSURE, __VA_ARGS__); } while(0)
 #else
-#define gjs_debug_closure(format, ...) ((void)0)
+#define gjs_debug_closure(...) ((void)0)
 #endif
 
 #if GJS_VERBOSE_ENABLE_GSIGNAL
-#define gjs_debug_gsignal(format...) \
-    do { gjs_debug(GJS_DEBUG_GOBJECT, format); } while(0)
+#define gjs_debug_gsignal(...) \
+    do { gjs_debug(GJS_DEBUG_GOBJECT, __VA_ARGS__); } while(0)
 #else
-#define gjs_debug_gsignal(format...) ((void)0)
+#define gjs_debug_gsignal(...) ((void)0)
 #endif
 
 void gjs_debug(GjsDebugTopic topic,

@@ -76,7 +76,7 @@ typedef struct GjsRootedArray GjsRootedArray;
  *                              do_base_typecheck and priv_from_js
  */
 #define GJS_DEFINE_PRIV_FROM_JS(type, klass)                          \
-    __attribute__((unused)) static inline bool                          \
+    G_GNUC_UNUSED static inline bool                                    \
     do_base_typecheck(JSContext       *context,                         \
                       JS::HandleObject object,                          \
                       bool             throw_error)                     \
@@ -93,7 +93,7 @@ typedef struct GjsRootedArray GjsRootedArray;
         JS_EndRequest(context);                                         \
         return priv;                                                    \
     }                                                                   \
-    __attribute__((unused)) static bool                                 \
+    G_GNUC_UNUSED static bool                                           \
     priv_from_js_with_typecheck(JSContext       *context,               \
                                 JS::HandleObject object,                \
                                 type           **out)                   \
