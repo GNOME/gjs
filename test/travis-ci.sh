@@ -38,11 +38,11 @@ function do_Install_Dependencies(){
 
     if [[ $BASE == "ubuntu" ]]; then
         # Testing dependencies
-        apt-get -y -qq install gir1.2-gtk-3.0 xvfb gnome-desktop-testing > /dev/null
+        apt-get -y -qq install gir1.2-gtk-3.0 xvfb gnome-desktop-testing dbus-x11 > /dev/null
 
     elif [[ $BASE == "fedora" ]]; then
         # Testing dependencies
-        dnf -y -q install gtk3 gobject-introspection Xvfb gnome-desktop-testing \
+        dnf -y -q install gtk3 gobject-introspection Xvfb gnome-desktop-testing dbus-x11 \
                           cairo intltool libxslt bison nspr zlib python3-devel dbus-glib libicu libffi pcre libxml2 libxslt libtool flex \
                           cairo-devel zlib-devel libffi-devel pcre-devel libxml2-devel libxslt-devel
     fi
