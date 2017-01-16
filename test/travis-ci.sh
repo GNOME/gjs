@@ -48,6 +48,17 @@ function do_Install_Dependencies(){
     fi
 }
 
+function do_Set_Env(){
+    echo
+    echo '-- Set Environment --'
+
+    if [[ -z $DISPLAY ]]; then
+        export DISPLAY=":0"
+    fi
+
+    echo '-- Done --'
+}
+
 function do_Patch_JHBuild(){
     echo
     echo '-- Patching JHBuild --'
@@ -184,12 +195,13 @@ if [[ $1 == "BUILD_MOZ" ]]; then
     do_Build_Mozilla
     do_Save_Files
 
-elif [[ $1 == "SAVE_MOZ" ]]; then
+elif [[ $1 == "GET_FILES" ]]; then
     do_Get_Files
 
 elif [[ $1 == "GJS" ]]; then
     do_Install_Base_Dependencies
     do_Install_Dependencies
+    do_Set_Env
 
     do_Show_Compiler
     do_Patch_JHBuild
@@ -206,14 +218,17 @@ elif [[ $1 == "GJS" ]]; then
     echo
     jhbuild make --check
 
-    # Test the build
+    # Extra testing
     echo
     echo '-- Extra GJS testing --'
-    gnome-desktop-testing-runner gjs
+    jhbuild run gnome-desktop-testing-runner gjs || true
 
 else
     echo
     echo '-- NOTHING TO DO --'
     exit 1
 fi
+# Done
+echo
+echo '-- DONE --'
 

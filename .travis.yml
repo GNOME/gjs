@@ -28,7 +28,7 @@ before_script:
   # Build the base image, if necessary
   - 'if [[ ! -f ~/docker/$NAME.tar.gz ]]; then
       docker run -v $(pwd):/cwd -v $(pwd)/gjs/test/travis-ci.sh:/travis-ci.sh -e "BASE=$BASE" -e "OS=$IMAGE" -e "CC=gcc" "$IMAGE" bash -e -c "/travis-ci.sh BUILD_MOZ";
-      docker run --name $NAME -v $(pwd):/cwd -v $(pwd)/gjs/test/travis-ci.sh:/travis-ci.sh -e "BASE=$BASE" -e "OS=$IMAGE" -e "CC=$CCO" "$IMAGE" bash -e -c "/travis-ci.sh SAVE_MOZ";
+      docker run --name $NAME -v $(pwd):/cwd -v $(pwd)/gjs/test/travis-ci.sh:/travis-ci.sh -e "BASE=$BASE" -e "OS=$IMAGE" -e "CC=$CCO" "$IMAGE" bash -e -c "/travis-ci.sh GET_FILES";
       docker commit $NAME local/$NAME;
       mkdir -p ~/docker; docker export $NAME | gzip > ~/docker/$NAME.tar.gz;
     fi'
