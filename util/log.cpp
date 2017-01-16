@@ -31,7 +31,16 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <unistd.h>
+
+#ifdef G_OS_WIN32
+# include <io.h>
+# include <process.h>
+# ifndef F_OK
+#  define F_OK 0
+# endif
+#else
+# include <unistd.h>
+#endif
 
 /* prefix is allowed if it's in the ;-delimited environment variable
  * GJS_DEBUG_TOPICS or if that variable is not set.
