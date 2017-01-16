@@ -94,7 +94,7 @@ function do_Configure_JHBuild(){
 
     cat <<EOFILE >> ~/.config/jhbuildrc
 module_autogenargs['gjs'] = '--enable-compile-warnings=error --enable-installed-tests --with-xvfb-tests'
-module_makeargs['gjs'] = '-sj2'
+module_makeargs['gjs'] = '-s'
 EOFILE
 
     echo '-- Done --'
