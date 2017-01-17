@@ -67,24 +67,28 @@ function do_Patch_JHBuild(){
     cd jhbuild
     patch -p1 <<ENDPATCH
 diff --git a/jhbuild/main.py b/jhbuild/main.py
-index a5cf99b..93410b6 100644
+index a5cf99b..28c31d6 100644
 --- a/jhbuild/main.py
 +++ b/jhbuild/main.py
-@@ -96,7 +96,6 @@ def main(args):
-
-     if hasattr(os, 'getuid') and os.getuid() == 0:
-         sys.stderr.write(_('You should not run jhbuild as root.\n').encode(_encoding, 'replace'))
+@@ -94,9 +94,9 @@ def main(args):
+         localedir = None
+     gettext.install('jhbuild', localedir=localedir, unicode=True)
+ 
+-    if hasattr(os, 'getuid') and os.getuid() == 0:
+-        sys.stderr.write(_('You should not run jhbuild as root.\n').encode(_encoding, 'replace'))
 -        sys.exit(1)
-
-         logging.getLogger().setLevel(logging.INFO)
-         logging_handler = logging.StreamHandler()
-
++    # if hasattr(os, 'getuid') and os.getuid() == 0:
++    #    sys.stderr.write(_('You should not run jhbuild as root.\n').encode(_encoding, 'replace'))
++    #    sys.exit(1)
+ 
+     logging.getLogger().setLevel(logging.INFO)
+     logging_handler = logging.StreamHandler()
 diff --git a/jhbuild/utils/systeminstall.py b/jhbuild/utils/systeminstall.py
-index 75b0849..d5d45f0 100644
+index 75b0849..08965fa 100644
 --- a/jhbuild/utils/systeminstall.py
 +++ b/jhbuild/utils/systeminstall.py
 @@ -428,7 +428,7 @@ class AptSystemInstall(SystemInstall):
-
+ 
      def _install_packages(self, native_packages):
          logging.info(_('Installing: %(pkgs)s') % {'pkgs': ' '.join(native_packages)})
 -        args = self._root_command_prefix_args + ['apt-get', 'install']
