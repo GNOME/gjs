@@ -69,8 +69,14 @@ if (!process.browser) {
 // module.exports = Promise;  // removed for GJS
 
 function Promise(resolver) {
+  if (typeof this !== 'object') {
+    throw new TypeError('this must be an object');
+  }
   if (typeof resolver !== 'function') {
     throw new TypeError('resolver must be a function');
+  }
+  if (this instanceof Promise && typeof this.state !== 'undefined') {
+    throw new TypeError('this must not be an already-constructed promise');
   }
   this.state = PENDING;
   this.queue = [];
