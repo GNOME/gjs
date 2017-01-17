@@ -38,11 +38,11 @@ function do_Install_Dependencies(){
 
     if [[ $BASE == "ubuntu" ]]; then
         # Testing dependencies
-        apt-get -y -qq install gir1.2-gtk-3.0 xvfb gnome-desktop-testing dbus-x11 > /dev/null
+        apt-get -y -qq install gir1.2-gtk-3.0 xvfb gnome-desktop-testing dbus-x11 dbus > /dev/null
 
     elif [[ $BASE == "fedora" ]]; then
         # Testing dependencies
-        dnf -y -q install gtk3 gobject-introspection Xvfb gnome-desktop-testing dbus-x11 \
+        dnf -y -q install gtk3 gobject-introspection Xvfb gnome-desktop-testing dbus-x11 dbus \
                           cairo intltool libxslt bison nspr zlib python3-devel dbus-glib libicu libffi pcre libxml2 libxslt libtool flex \
                           cairo-devel zlib-devel libffi-devel pcre-devel libxml2-devel libxslt-devel
     fi
@@ -225,7 +225,7 @@ elif [[ $1 == "GJS" ]]; then
     # Extra testing
     echo
     echo '-- Installed GJS tests --'
-    jhbuild run gnome-desktop-testing-runner gjs || true
+    jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
 
 else
     echo
