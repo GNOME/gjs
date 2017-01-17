@@ -224,7 +224,7 @@ elif [[ $1 == "GJS" ]]; then
 
     # Extra testing
     echo
-    echo '-- Extra GJS testing --'
+    echo '-- Installed GJS tests --'
     jhbuild run gnome-desktop-testing-runner gjs || true
 
 else
