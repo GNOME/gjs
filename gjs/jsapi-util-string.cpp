@@ -23,6 +23,7 @@
 
 #include <config.h>
 
+#include <algorithm>
 #include <string.h>
 
 #include "jsapi-util.h"
@@ -161,6 +162,35 @@ gjs_string_from_filename(JSContext             *context,
     return true;
 }
 
+/* Converts a JSString's array of Latin-1 chars to an array of a wider integer
+ * type, by what the compiler believes is the most efficient method possible */
+template<typename T>
+static bool
+from_latin1(JSContext *cx,
+            JSString  *str,
+            T        **data_p,
+            size_t    *len_p)
+{
+    /* No garbage collection should be triggered while we are using the string's
+     * chars. Crash if that happens. */
+    JS::AutoCheckCannotGC nogc;
+
+    const JS::Latin1Char *js_data =
+        JS_GetLatin1StringCharsAndLength(cx, nogc, str, len_p);
+    if (js_data == NULL)
+        return false;
+
+    /* Unicode codepoints 0x00-0xFF are the same as Latin-1
+     * codepoints, so we can preserve the string length and simply
+     * copy the codepoints to an array of different-sized ints */
+
+    *data_p = g_new(T, *len_p);
+
+    /* This will probably use a loop, unfortunately */
+    std::copy(js_data, js_data + *len_p, *data_p);
+    return true;
+}
+
 /**
  * gjs_string_get_char16_data:
  * @context: js context
@@ -180,27 +210,31 @@ gjs_string_get_char16_data(JSContext       *context,
                            char16_t       **data_p,
                            size_t          *len_p)
 {
-    const char16_t *js_data;
-    bool retval = false;
-
-    JS_BeginRequest(context);
+    JSAutoRequest ar(context);
 
     if (!value.isString()) {
         gjs_throw(context,
                   "Value is not a string, can't return binary data from it");
-        goto out;
+        return false;
     }
 
-    js_data = JS_GetStringCharsAndLength(context, value.toString(), len_p);
+    if (JS_StringHasLatin1Chars(value.toString()))
+        return from_latin1(context, value.toString(), data_p, len_p);
+
+    /* From this point on, crash if a GC is triggered while we are using
+     * the string's chars */
+    JS::AutoCheckCannotGC nogc;
+
+    const char16_t *js_data =
+        JS_GetTwoByteStringCharsAndLength(context, nogc,
+                                          value.toString(), len_p);
+
     if (js_data == NULL)
-        goto out;
+        return false;
 
     *data_p = (char16_t *) g_memdup(js_data, sizeof(*js_data) * (*len_p));
 
-    retval = true;
-out:
-    JS_EndRequest(context);
-    return retval;
+    return true;
 }
 
 /**
@@ -228,10 +262,19 @@ gjs_string_to_ucs4(JSContext      *cx,
 
     JSAutoRequest ar(cx);
     JS::RootedString str(cx, value.toString());
-    size_t utf16_len;
+    size_t len;
     GError *error = NULL;
 
-    const char16_t *utf16 = JS_GetStringCharsAndLength(cx, str, &utf16_len);
+    if (JS_StringHasLatin1Chars(str))
+        return from_latin1(cx, value.toString(), ucs4_string_p, len_p);
+
+    /* From this point on, crash if a GC is triggered while we are using
+     * the string's chars */
+    JS::AutoCheckCannotGC nogc;
+
+    const char16_t *utf16 =
+        JS_GetTwoByteStringCharsAndLength(cx, nogc, str, &len);
+
     if (utf16 == NULL) {
         gjs_throw(cx, "Failed to get UTF-16 string data");
         return false;
@@ -240,7 +283,7 @@ gjs_string_to_ucs4(JSContext      *cx,
     if (ucs4_string_p != NULL) {
         long length;
         *ucs4_string_p = g_utf16_to_ucs4(reinterpret_cast<const gunichar2 *>(utf16),
-                                         utf16_len, NULL, &length, &error);
+                                         len, NULL, &length, &error);
         if (*ucs4_string_p == NULL) {
             gjs_throw(cx, "Failed to convert UTF-16 string to UCS-4: %s",
                       error->message);

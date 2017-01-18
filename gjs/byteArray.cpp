@@ -603,24 +603,42 @@ from_string_func(JSContext *context,
         g_byte_array_append(priv->array, (guint8*) utf8, strlen(utf8));
         g_free(utf8);
     } else {
-        char *encoded;
+        JSString *str = argv[0].toString();  /* Rooted by argv */
+        GError *error = NULL;
+        char *encoded = NULL;
         gsize bytes_written;
-        GError *error;
-        const char16_t *u16_chars;
-        gsize u16_len;
 
-        u16_chars = JS_GetStringCharsAndLength(context, argv[0].toString(), &u16_len);
-        if (u16_chars == NULL)
-            return false;
+        /* Scope for AutoCheckCannotGC, will crash if a GC is triggered
+         * while we are using the string's chars */
+        {
+            JS::AutoCheckCannotGC nogc;
+            size_t len;
 
-        error = NULL;
-        encoded = g_convert((char*) u16_chars,
-                            u16_len * 2,
-                            encoding, /* to_encoding */
-                            "UTF-16", /* from_encoding */
-                            NULL, /* bytes read */
-                            &bytes_written,
-                            &error);
+            if (JS_StringHasLatin1Chars(str)) {
+                const JS::Latin1Char *chars =
+                    JS_GetLatin1StringCharsAndLength(context, nogc, str, &len);
+                if (chars == NULL)
+                    return false;
+
+                encoded = g_convert((char *) chars, len,
+                                    encoding,  /* to_encoding */
+                                    "LATIN1",  /* from_encoding */
+                                    NULL,  /* bytes read */
+                                    &bytes_written, &error);
+            } else {
+                const char16_t *chars =
+                    JS_GetTwoByteStringCharsAndLength(context, nogc, str, &len);
+                if (chars == NULL)
+                    return false;
+
+                encoded = g_convert((char *) chars, len * 2,
+                                    encoding,  /* to_encoding */
+                                    "UTF-16",  /* from_encoding */
+                                    NULL,  /* bytes read */
+                                    &bytes_written, &error);
+            }
+        }
+
         g_free(encoding);
         if (encoded == NULL) {
             /* frees the GError */

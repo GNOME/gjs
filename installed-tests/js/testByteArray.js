@@ -94,6 +94,24 @@ describe('Byte array', function () {
         [97, 98, 99, 100].forEach((val, ix) => expect(a[ix]).toEqual(val));
     });
 
+    it('can be encoded from a string', function () {
+        // Pick a string likely to be stored internally as Latin1
+        let a = ByteArray.fromString('äbcd', 'LATIN1');
+        expect(a.length).toEqual(4);
+        [228, 98, 99, 100].forEach((val, ix) => expect(a[ix]).toEqual(val));
+
+        // Try again with a string not likely to be Latin1 internally
+        a = ByteArray.fromString('⅜', 'UTF-8');
+        expect(a.length).toEqual(3);
+        [0xe2, 0x85, 0x9c].forEach((val, ix) => expect(a[ix]).toEqual(val));
+    });
+
+    it('encodes as UTF-8 by default', function () {
+        let a = ByteArray.fromString('⅜');
+        expect(a.length).toEqual(3);
+        [0xe2, 0x85, 0x9c].forEach((val, ix) => expect(a[ix]).toEqual(val));
+    });
+
     it('can be created from an array', function () {
         let a = ByteArray.fromArray([ 1, 2, 3, 4 ]);
         expect(a.length).toEqual(4);

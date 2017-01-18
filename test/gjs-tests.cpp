@@ -22,6 +22,9 @@
  */
 
 #include <config.h>
+
+#include <string>
+
 #include <glib.h>
 #include <glib-object.h>
 #include <util/glib.h>
@@ -180,11 +183,63 @@ gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture *fx,
 }
 
 static void
-gjstest_test_func_gjs_jsapi_util_debug_string_valid_utf8(GjsUnitTestFixture *fx,
-                                                         gconstpointer       unused)
+test_jsapi_util_string_char16_data(GjsUnitTestFixture *fx,
+                                   gconstpointer       unused)
+{
+    char16_t *chars;
+    size_t len;
+    JS::RootedValue v_string(fx->cx);
+
+    g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, -1,
+                                       &v_string));
+    g_assert_true(gjs_string_get_char16_data(fx->cx, v_string, &chars,
+                                             &len));
+    std::u16string result(chars, len);
+    g_assert_true(result == u"\xc9\xd6 foobar \u30df");
+    g_free(chars);
+
+    /* Try with a string that is likely to be stored as Latin-1 */
+    v_string.setString(JS_NewStringCopyZ(fx->cx, "abcd"));
+    g_assert_true(gjs_string_get_char16_data(fx->cx, v_string, &chars,
+                                             &len));
+
+    result.assign(chars, len);
+    g_assert_true(result == u"abcd");
+    g_free(chars);
+}
+
+static void
+test_jsapi_util_string_to_ucs4(GjsUnitTestFixture *fx,
+                               gconstpointer       unused)
+{
+    gunichar *chars;
+    size_t len;
+    JS::RootedValue v_string(fx->cx);
+
+    g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, -1,
+                                       &v_string));
+    g_assert_true(gjs_string_to_ucs4(fx->cx, v_string, &chars, &len));
+
+    std::u32string result(chars, chars + len);
+    g_assert_true(result == U"\xc9\xd6 foobar \u30df");
+    g_free(chars);
+
+    /* Try with a string that is likely to be stored as Latin-1 */
+    v_string.setString(JS_NewStringCopyZ(fx->cx, "abcd"));
+    g_assert_true(gjs_string_to_ucs4(fx->cx, v_string, &chars, &len));
+
+    result.assign(chars, chars + len);
+    g_assert_true(result == U"abcd");
+    g_free(chars);
+}
+
+static void
+test_jsapi_util_debug_string_valid_utf8(GjsUnitTestFixture *fx,
+                                        gconstpointer       unused)
 {
     JS::RootedValue v_string(fx->cx);
-    g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, -1, &v_string));
+    g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, -1,
+                                       &v_string));
 
     char *debug_output = gjs_value_debug_string(fx->cx, v_string);
 
@@ -195,8 +250,8 @@ gjstest_test_func_gjs_jsapi_util_debug_string_valid_utf8(GjsUnitTestFixture *fx,
 }
 
 static void
-gjstest_test_func_gjs_jsapi_util_debug_string_invalid_utf8(GjsUnitTestFixture *fx,
-                                                           gconstpointer       unused)
+test_jsapi_util_debug_string_invalid_utf8(GjsUnitTestFixture *fx,
+                                          gconstpointer       unused)
 {
     g_test_skip("SpiderMonkey doesn't validate UTF-8 after encoding it");
 
@@ -207,7 +262,7 @@ gjstest_test_func_gjs_jsapi_util_debug_string_invalid_utf8(GjsUnitTestFixture *f
     char *debug_output = gjs_value_debug_string(fx->cx, v_string);
 
     g_assert_nonnull(debug_output);
-    /* g_assert_cmpstr("\"\\xf5\\xf6\"", ==, debug_output); */
+    /* g_assert_cmpstr("\"\\xff\\xff\\xff\\xff\"", ==, debug_output); */
 
     g_free(debug_output);
 }
@@ -331,10 +386,14 @@ main(int    argc,
                         gjstest_test_func_gjs_jsapi_util_error_throw);
     ADD_JSAPI_UTIL_TEST("string/js/string/utf8",
                         gjstest_test_func_gjs_jsapi_util_string_js_string_utf8);
+    ADD_JSAPI_UTIL_TEST("string/char16_data",
+                        test_jsapi_util_string_char16_data);
+    ADD_JSAPI_UTIL_TEST("string/to_ucs4",
+                        test_jsapi_util_string_to_ucs4);
     ADD_JSAPI_UTIL_TEST("debug_string/valid-utf8",
-                        gjstest_test_func_gjs_jsapi_util_debug_string_valid_utf8);
+                        test_jsapi_util_debug_string_valid_utf8);
     ADD_JSAPI_UTIL_TEST("debug_string/invalid-utf8",
-                        gjstest_test_func_gjs_jsapi_util_debug_string_invalid_utf8);
+                        test_jsapi_util_debug_string_invalid_utf8);
 
 #undef ADD_JSAPI_UTIL_TEST
 
