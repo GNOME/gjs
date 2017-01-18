@@ -27,6 +27,11 @@
 #include "jsapi-wrapper.h"
 #include "runtime.h"
 
+#ifdef G_OS_WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 struct RuntimeData {
   unsigned refcount;
   bool in_gc_sweep;
@@ -231,6 +236,40 @@ gjs_destroy_runtime_for_current_thread(void)
     g_private_replace(&thread_runtime, NULL);
 }
 
+#ifdef G_OS_WIN32
+HMODULE gjs_dll;
+static bool gjs_is_inited = false;
+
+BOOL WINAPI
+DllMain (HINSTANCE hinstDLL,
+DWORD     fdwReason,
+LPVOID    lpvReserved)
+{
+  switch (fdwReason)
+  {
+  case DLL_PROCESS_ATTACH:
+    gjs_dll = hinstDLL;
+    g_assert(JS_Init());
+    gjs_is_inited = true;
+    break;
+
+  case DLL_THREAD_DETACH:
+    gjs_destroy_runtime_for_current_thread();
+    break;
+
+  case DLL_PROCESS_DETACH:
+    JS_ShutDown ();
+    break;
+
+  default:
+    /* do nothing */
+    ;
+    }
+
+  return TRUE;
+}
+
+#else
 class GjsInit {
 public:
     GjsInit() {
@@ -250,6 +289,7 @@ public:
 };
 
 static GjsInit gjs_is_inited;
+#endif
 
 static JSRuntime *
 gjs_runtime_for_current_thread(void)

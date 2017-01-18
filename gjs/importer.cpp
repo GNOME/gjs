@@ -33,6 +33,11 @@
 
 #include <gio/gio.h>
 
+#ifdef G_OS_WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #include <string.h>
 
 #define MODULE_INIT_FILENAME "__init__.js"
@@ -1061,7 +1066,16 @@ gjs_get_search_path(void)
         }
 
         /* ${datadir}/share/gjs-1.0 */
+#ifdef G_OS_WIN32
+        extern HMODULE gjs_dll;
+        char *basedir = g_win32_get_package_installation_directory_of_module (gjs_dll);
+        char *gjs_data_dir = g_build_filename (basedir, "share", "gjs-1.0", NULL);
+        g_ptr_array_add(path, g_strdup(gjs_data_dir));
+        g_free (gjs_data_dir);
+        g_free (basedir);
+#else
         g_ptr_array_add(path, g_strdup(GJS_JS_DIR));
+#endif
 
         g_ptr_array_add(path, NULL);
 
