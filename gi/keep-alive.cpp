@@ -113,16 +113,10 @@ keep_alive_finalize(JSFreeOp *fop,
 }
 
 static void
-trace_foreach(void *key,
-              void *value,
-              void *data)
+reinsert(Child      *child,
+         GHashTable *children)
 {
-    Child *child = (Child *) value;
-    JSTracer *tracer = (JSTracer *) data;
-
-    if (child->child != NULL) {
-        JS_CallHeapObjectTracer(tracer, &child->child, "keep-alive::val");
-    }
+    g_hash_table_replace(children, child, child);
 }
 
 static void
@@ -138,7 +132,28 @@ keep_alive_trace(JSTracer *tracer,
 
     g_assert(!priv->inside_trace);
     priv->inside_trace = true;
-    g_hash_table_foreach(priv->children, trace_foreach, tracer);
+
+    GHashTableIter iter;
+    void *key;
+    GSList *children_to_reinsert = NULL;
+    g_hash_table_iter_init(&iter, priv->children);
+    while (g_hash_table_iter_next(&iter, &key, NULL)) {
+        Child *child = static_cast<Child *>(key);
+        JSObject *old_key = child->child.get();
+        JS_CallHeapObjectTracer(tracer, &child->child, "keep-alive::val");
+
+        /* Remove and reinsert if the pointer's location was updated,
+         * because that means the hash value is different */
+        if (child->child.get() != old_key) {
+            g_hash_table_iter_steal(&iter);
+            children_to_reinsert = g_slist_prepend(children_to_reinsert,
+                                                   child);
+        }
+    }
+    g_slist_foreach(children_to_reinsert, (GFunc) reinsert,
+                    priv->children);
+    g_slist_free(children_to_reinsert);
+
     priv->inside_trace = false;
 }
 
