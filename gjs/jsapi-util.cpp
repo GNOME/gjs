@@ -377,18 +377,19 @@ gjs_string_readable (JSContext   *context,
     g_string_append_c(buf, '"');
 
     if (!gjs_string_to_utf8(context, JS::StringValue(string), &chars)) {
-        size_t i, len;
-        const char16_t *uchars;
+        /* I'm not sure this code will actually ever be reached, since
+         * JS_EncodeStringToUTF8(), called internally by
+         * gjs_string_to_utf8(), seems to happily output non-valid UTF-8
+         * bytes. However, let's leave this in, since SpiderMonkey may
+         * decide to do this in the future. */
 
-        uchars = JS_GetStringCharsAndLength(context, string, &len);
+        /* Find out size of buffer to allocate, not counting 0-terminator */
+        size_t len = JS_PutEscapedString(context, NULL, 0, string, '"');
+        char *escaped = g_new(char, len + 1);
 
-        for (i = 0; i < len; i++) {
-            char16_t c = uchars[i];
-            if (c >> 8 == 0 && g_ascii_isprint(c & 0xFF))
-                g_string_append_c(buf, c & 0xFF);
-            else
-                g_string_append_printf(buf, "\\u%04X", c);
-        }
+        JS_PutEscapedString(context, escaped, len, string, '"');
+        g_string_append(buf, escaped);
+        g_free(escaped);
     } else {
         g_string_append(buf, chars);
         g_free(chars);
