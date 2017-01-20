@@ -419,6 +419,7 @@ gjs_context_dispose(GObject *object)
 
         JS_RemoveExtraGCRootsTracer(js_context->runtime, gjs_context_tracer,
                                     js_context);
+        js_context->global = NULL;
 
         /* Tear down JS */
         JS_DestroyContext(js_context->context);
