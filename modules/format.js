@@ -6,10 +6,12 @@ function vprintf(str, args) {
     let i = 0;
     let usePos = false;
     return str.replace(/%(?:([1-9][0-9]*)\$)?(I+)?([0-9]+)?(?:\.([0-9]+))?(.)/g, function (str, posGroup, flagsGroup, widthGroup, precisionGroup, genericGroup) {
-        if (precisionGroup != '' && genericGroup != 'f')
+        if (precisionGroup !== '' && precisionGroup !== undefined &&
+            genericGroup != 'f')
             throw new Error("Precision can only be specified for 'f'");
 
-        let hasAlternativeIntFlag = (flagsGroup.indexOf('I') != -1);
+        let hasAlternativeIntFlag = (flagsGroup &&
+            flagsGroup.indexOf('I') != -1);
         if (hasAlternativeIntFlag && genericGroup != 'd')
             throw new Error("Alternative output digits can only be specfied for 'd'");
 
@@ -19,7 +21,7 @@ function vprintf(str, args) {
         if (usePos && pos == 0 || !usePos && pos > 0)
             throw new Error("Numbered and unnumbered conversion specifications cannot be mixed");
 
-        let fillChar = (widthGroup[0] == '0') ? '0' : ' ';
+        let fillChar = (widthGroup && widthGroup[0] == '0') ? '0' : ' ';
         let width = parseInt(widthGroup, 10) || 0;
 
         function fillWidth(s, c, w) {
