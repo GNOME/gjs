@@ -219,7 +219,8 @@ seal_import(JSContext       *cx,
 
     if (!JS_DefineProperty(cx, descr.object(), name, descr.value(),
                            descr.attributes() | JSPROP_PERMANENT,
-                           descr.getter(), descr.setter())) {
+                           JS_PROPERTYOP_GETTER(descr.getter()),
+                           JS_PROPERTYOP_SETTER(descr.setter()))) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to redefine attributes to seal '%s' in importer",
                   name);

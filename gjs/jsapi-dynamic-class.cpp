@@ -112,17 +112,16 @@ gjs_init_class_dynamic(JSContext              *context,
 
     if (!JS_DefineProperty(context, constructor, "prototype", prototype,
                            JSPROP_PERMANENT | JSPROP_READONLY,
-                           JS_PropertyStub, JS_StrictPropertyStub))
+                           JS_STUBGETTER, JS_STUBSETTER))
         goto out;
     if (!JS_DefineProperty(context, prototype, "constructor", constructor,
-                           0, JS_PropertyStub, JS_StrictPropertyStub))
+                           0, JS_STUBGETTER, JS_STUBSETTER))
         goto out;
 
     /* The constructor defined by JS_InitClass has no property attributes, but this
        is a more useful default for gjs */
     if (!JS_DefineProperty(context, in_object, class_name, constructor,
-                           GJS_MODULE_PROP_FLAGS,
-                           JS_PropertyStub, JS_StrictPropertyStub))
+                           GJS_MODULE_PROP_FLAGS, JS_STUBGETTER, JS_STUBSETTER))
         goto out;
 
     res = true;
