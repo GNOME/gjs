@@ -39,6 +39,11 @@
 
 #include <girepository.h>
 
+/* Reserved slots of JSNative accessor wrappers */
+enum {
+    SLOT_PROP_NAME,
+};
+
 struct Boxed {
     /* prototype info */
     GIBoxedInfo *info;
@@ -512,43 +517,28 @@ boxed_finalize(JSFreeOp *fop,
 }
 
 static GIFieldInfo *
-get_field_info (JSContext *context,
-                Boxed     *priv,
-                jsid       id)
+get_field_info(JSContext *cx,
+               Boxed     *priv,
+               uint32_t   id)
 {
-    GIFieldInfo *field_info;
-    char *name;
-
-    if (!priv->field_map)
-        priv->field_map = get_field_map(priv->info);
-
-    if (!gjs_get_string_id(context, id, &name))
-        goto out;
-
-    field_info = (GIFieldInfo *) g_hash_table_lookup(priv->field_map, name);
+    GIFieldInfo *field_info = g_struct_info_get_field(priv->info, id);
     if (field_info == NULL) {
-        gjs_throw(context, "No field %s on boxed type %s",
-                  name, g_base_info_get_name((GIBaseInfo *)priv->info));
-        g_free(name);
-        goto out;
+        gjs_throw(cx, "No field %d on boxed type %s",
+                  id, g_base_info_get_name((GIBaseInfo *)priv->info));
+        return NULL;
     }
 
-    g_free(name);
-
     return field_info;
-
- out:
-    return NULL;
 }
 
 static bool
-get_nested_interface_object (JSContext   *context,
-                             JSObject    *parent_obj,
-                             Boxed       *parent_priv,
-                             GIFieldInfo *field_info,
-                             GITypeInfo  *type_info,
-                             GIBaseInfo  *interface_info,
-                             JS::Value   *value)
+get_nested_interface_object(JSContext             *context,
+                            JSObject              *parent_obj,
+                            Boxed                 *parent_priv,
+                            GIFieldInfo           *field_info,
+                            GITypeInfo            *type_info,
+                            GIBaseInfo            *interface_info,
+                            JS::MutableHandleValue value)
 {
     JSObject *obj;
     int offset;
@@ -594,27 +584,48 @@ get_nested_interface_object (JSContext   *context,
      */
     JS_SetReservedSlot(obj, 0, JS::ObjectValue(*parent_obj));
 
-    *value = JS::ObjectValue(*obj);
+    value.setObject(*obj);
     return true;
 }
 
-static bool
-boxed_field_getter (JSContext              *context,
-                    JS::HandleObject        obj,
-                    JS::HandleId            id,
-                    JS::MutableHandleValue  value)
+static JSObject *
+define_native_accessor_wrapper(JSContext  *cx,
+                               JSNative    call,
+                               unsigned    nargs,
+                               const char *func_name,
+                               uint32_t    id)
 {
-    Boxed *priv;
+    JSFunction *func = js::NewFunctionWithReserved(cx, call, nargs, 0,
+                                                   NULL, func_name);
+    if (!func)
+        return NULL;
+
+    JSObject *func_obj = JS_GetFunctionObject(func);
+    js::SetFunctionNativeReserved(func_obj, SLOT_PROP_NAME,
+                                  JS::PrivateUint32Value(id));
+    return func_obj;
+}
+
+static uint32_t
+native_accessor_slot(JSObject *func_obj)
+{
+    return js::GetFunctionNativeReserved(func_obj, SLOT_PROP_NAME)
+        .toPrivateUint32();
+}
+
+static bool
+boxed_field_getter(JSContext *context,
+                   unsigned   argc,
+                   JS::Value *vp)
+{
+    GJS_GET_PRIV(context, argc, vp, args, obj, Boxed, priv);
     GIFieldInfo *field_info;
     GITypeInfo *type_info;
     GArgument arg;
     bool success = false;
 
-    priv = priv_from_js(context, obj);
-    if (!priv)
-        return false;
-
-    field_info = get_field_info(context, priv, id);
+    field_info = get_field_info(context, priv,
+                                native_accessor_slot(&args.callee()));
     if (!field_info)
         return false;
 
@@ -637,7 +648,7 @@ boxed_field_getter (JSContext              *context,
 
             success = get_nested_interface_object (context, obj, priv,
                                                    field_info, type_info, interface_info,
-                                                   value.address());
+                                                   args.rval());
 
             g_base_info_unref ((GIBaseInfo *)interface_info);
 
@@ -654,7 +665,8 @@ boxed_field_getter (JSContext              *context,
         goto out;
     }
 
-    if (!gjs_value_from_g_argument(context, value, type_info, &arg, true))
+    if (!gjs_value_from_g_argument(context, args.rval(), type_info,
+                                   &arg, true))
         goto out;
 
     success = true;
@@ -779,41 +791,36 @@ out:
 }
 
 static bool
-boxed_field_setter (JSContext              *context,
-                    JS::HandleObject        obj,
-                    JS::HandleId            id,
-                    bool                    strict,
-                    JS::MutableHandleValue  value)
+boxed_field_setter(JSContext *cx,
+                   unsigned   argc,
+                   JS::Value *vp)
 {
-    Boxed *priv;
+    GJS_GET_PRIV(cx, argc, vp, args, obj, Boxed, priv);
     GIFieldInfo *field_info;
-    bool success = false;
 
-    priv = priv_from_js(context, obj);
-    if (!priv)
-        return false;
-    field_info = get_field_info(context, priv, id);
+    field_info = get_field_info(cx, priv,
+                                native_accessor_slot(&args.callee()));
     if (!field_info)
         return false;
 
     if (priv->gboxed == NULL) { /* direct access to proto field */
-        gjs_throw(context, "Can't set field %s.%s on prototype",
+        gjs_throw(cx, "Can't set field %s.%s on prototype",
                   g_base_info_get_name ((GIBaseInfo *)priv->info),
                   g_base_info_get_name ((GIBaseInfo *)field_info));
-        goto out;
+        return false;
     }
 
-    success = boxed_set_field_from_value (context, priv, field_info, value);
+    if (!boxed_set_field_from_value(cx, priv, field_info, args[0]))
+        return false;
 
-out:
-
-    return success;
+    args.rval().setUndefined();  /* No stored value */
+    return true;
 }
 
 static bool
-define_boxed_class_fields (JSContext       *context,
-                           Boxed           *priv,
-                           JS::HandleObject proto)
+define_boxed_class_fields(JSContext       *cx,
+                          Boxed           *priv,
+                          JS::HandleObject proto)
 {
     int n_fields = g_struct_info_get_n_fields (priv->info);
     int i;
@@ -842,15 +849,31 @@ define_boxed_class_fields (JSContext       *context,
     for (i = 0; i < n_fields; i++) {
         GIFieldInfo *field = g_struct_info_get_field (priv->info, i);
         const char *field_name = g_base_info_get_name ((GIBaseInfo *)field);
-        bool result;
-
-        result = JS_DefineProperty(context, proto, field_name, JS::NullHandleValue,
-                                   JSPROP_PERMANENT | JSPROP_SHARED,
-                                   boxed_field_getter, boxed_field_setter);
-
+        g_autofree char *getter_name = g_strconcat("boxed_field_get::",
+                                                   field_name, NULL);
+        g_autofree char *setter_name = g_strconcat("boxed_field_set::",
+                                                   field_name, NULL);
         g_base_info_unref ((GIBaseInfo *)field);
 
-        if (!result)
+        /* In order to have one getter and setter for all the properties
+         * we define, we must provide the property index in a "reserved
+         * slot" for which we must unfortunately use the jsfriendapi. */
+        JS::RootedObject getter(cx,
+            define_native_accessor_wrapper(cx, boxed_field_getter, 0,
+                                           getter_name, i));
+        if (!getter)
+            return false;
+
+        JS::RootedObject setter(cx,
+            define_native_accessor_wrapper(cx, boxed_field_setter, 1,
+                                           setter_name, i));
+        if (!setter)
+            return false;
+
+        if (!JS_DefineProperty(cx, proto, field_name, JS::NullHandleValue,
+                               JSPROP_PERMANENT | JSPROP_SHARED | JSPROP_GETTER | JSPROP_SETTER,
+                               JS_DATA_TO_FUNC_PTR(JSPropertyOp, getter.get()),
+                               JS_DATA_TO_FUNC_PTR(JSStrictPropertyOp, setter.get())))
             return false;
     }
 
