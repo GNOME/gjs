@@ -296,7 +296,7 @@ gjs_runtime_for_current_thread(void)
 
     if (!runtime) {
         g_assert(gjs_is_inited);
-        runtime = JS_NewRuntime(32*1024*1024 /* max bytes */, JS_USE_HELPER_THREADS);
+        runtime = JS_NewRuntime(32 * 1024 * 1024 /* max bytes */);
         if (runtime == NULL)
             g_error("Failed to create javascript runtime");
 

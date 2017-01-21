@@ -89,9 +89,8 @@ gjs_init_context_standard (JSContext              *context,
      *
      * setExtraWarnings: Report warnings to error reporter function.
      */
-    JS::ContextOptionsRef(context)
-        .setDontReportUncaught(true)
-        .setExtraWarnings(extra_warnings);
+    JS::ContextOptionsRef(context).setDontReportUncaught(true);
+    JS::RuntimeOptionsRef(context).setExtraWarnings(extra_warnings);
 
     if (!g_getenv("GJS_DISABLE_JIT")) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
