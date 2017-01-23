@@ -148,8 +148,9 @@ gjs_object_get_property(JSContext             *cx,
                         GjsConstString         property_name,
                         JS::MutableHandleValue value_p)
 {
-    JS::RootedId id(cx, gjs_context_get_const_string(cx, property_name));
-    return JS_GetPropertyById(cx, obj, id, value_p);
+    return JS_GetPropertyById(cx, obj,
+                              gjs_context_get_const_string(cx, property_name),
+                              value_p);
 }
 
 bool
@@ -158,8 +159,9 @@ gjs_object_set_property(JSContext       *cx,
                         GjsConstString   property_name,
                         JS::HandleValue  value)
 {
-    JS::RootedId id(cx, gjs_context_get_const_string(cx, property_name));
-    return JS_SetPropertyById(cx, obj, id, value);
+    return JS_SetPropertyById(cx, obj,
+                              gjs_context_get_const_string(cx, property_name),
+                              value);
 }
 
 bool
@@ -168,8 +170,9 @@ gjs_object_has_property(JSContext       *cx,
                         GjsConstString   property_name,
                         bool            *found)
 {
-    JS::RootedId id(cx, gjs_context_get_const_string(cx, property_name));
-    return JS_HasPropertyById(cx, obj, id, found);
+    return JS_HasPropertyById(cx, obj,
+                              gjs_context_get_const_string(cx, property_name),
+                              found);
 }
 
 bool gjs_object_define_property(JSContext         *cx,

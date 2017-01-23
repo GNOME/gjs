@@ -335,8 +335,8 @@ boxed_new(JSContext             *context,
     if (priv->gtype == G_TYPE_VARIANT) {
         /* Short-circuit construction for GVariants by calling into the JS packing
            function */
-        JS::RootedId constructor_name(context,
-            gjs_context_get_const_string(context, GJS_STRING_NEW_INTERNAL));
+        JS::HandleId constructor_name =
+            gjs_context_get_const_string(context, GJS_STRING_NEW_INTERNAL);
         return boxed_invoke_constructor(context, obj, constructor_name, args);
     }
 

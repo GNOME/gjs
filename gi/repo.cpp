@@ -533,8 +533,8 @@ gjs_define_info(JSContext       *context,
 JSObject*
 gjs_lookup_private_namespace(JSContext *context)
 {
-    JS::RootedId ns_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_PRIVATE_NS_MARKER));
+    JS::HandleId ns_name =
+        gjs_context_get_const_string(context, GJS_STRING_PRIVATE_NS_MARKER);
     return gjs_lookup_namespace_object_by_name(context, ns_name);
 }
 

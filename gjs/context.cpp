@@ -23,6 +23,8 @@
 
 #include <config.h>
 
+#include <array>
+
 #include <gio/gio.h>
 
 #include "context-private.h"
@@ -80,7 +82,7 @@ struct _GjsContext {
 
     guint    auto_gc_id;
 
-    jsid const_strings[GJS_STRING_LAST];
+    std::array<JS::PersistentRootedId*, GJS_STRING_LAST> const_strings;
 };
 
 /* Keep this consistent with GjsConstString */
@@ -421,6 +423,9 @@ gjs_context_dispose(GObject *object)
                                     js_context);
         js_context->global = NULL;
 
+        for (auto& root : js_context->const_strings)
+            delete root;
+
         /* Tear down JS */
         JS_DestroyContext(js_context->context);
         js_context->context = NULL;
@@ -480,8 +485,11 @@ gjs_context_constructed(GObject *object)
     if (js_context->context == NULL)
         g_error("Failed to create javascript context");
 
-    for (i = 0; i < GJS_STRING_LAST; i++)
-        js_context->const_strings[i] = gjs_intern_string_to_id(js_context->context, const_strings[i]);
+    for (i = 0; i < GJS_STRING_LAST; i++) {
+        js_context->const_strings[i] =
+            new JS::PersistentRootedId(js_context->context,
+                gjs_intern_string_to_id(js_context->context, const_strings[i]));
+    }
 
     JS_BeginRequest(js_context->context);
 
@@ -854,12 +862,15 @@ gjs_context_make_current (GjsContext *context)
     current_context = context;
 }
 
-jsid
+/* It's OK to return JS::HandleId here, to avoid an extra root, with the
+ * caveat that you should not use this value after the GjsContext has
+ * been destroyed. */
+JS::HandleId
 gjs_context_get_const_string(JSContext      *context,
                              GjsConstString  name)
 {
     GjsContext *gjs_context = (GjsContext *) JS_GetContextPrivate(context);
-    return gjs_context->const_strings[name];
+    return *gjs_context->const_strings[name];
 }
 
 /**

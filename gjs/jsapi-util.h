@@ -455,9 +455,6 @@ typedef enum {
   GJS_STRING_LAST
 } GjsConstString;
 
-jsid              gjs_context_get_const_string  (JSContext       *context,
-                                                 GjsConstString   string);
-
 const char * gjs_strip_unix_shebang(const char *script,
                                     gssize     *script_len,
                                     int        *new_start_line_number);
@@ -489,6 +486,9 @@ bool gjs_object_define_property(JSContext         *cx,
                                 JSStrictPropertyOp setter = nullptr);
 
 G_END_DECLS
+
+JS::HandleId gjs_context_get_const_string(JSContext     *cx,
+                                          GjsConstString string);
 
 /* Overloaded functions, must be outside G_DECLS. More types are intended to be
  * added as the opportunity arises. */
@@ -538,8 +538,9 @@ bool gjs_object_require_property(JSContext        *cx,
                                  GjsConstString    property_name,
                                  T                 value)
 {
-    JS::RootedId id(cx, gjs_context_get_const_string(cx, property_name));
-    return gjs_object_require_property(cx, obj, description, id, value);
+    return gjs_object_require_property(cx, obj, description,
+                                       gjs_context_get_const_string(cx, property_name),
+                                       value);
 }
 
 template<typename T>
@@ -549,9 +550,9 @@ bool gjs_object_require_converted_property(JSContext       *cx,
                                            GjsConstString   property_name,
                                            T                value)
 {
-    JS::RootedId id(cx, gjs_context_get_const_string(cx, property_name));
     return gjs_object_require_converted_property(cx, obj, description,
-                                                 id, value);
+                                                 gjs_context_get_const_string(cx, property_name),
+                                                 value);
 }
 
 #endif  /* __GJS_JSAPI_UTIL_H__ */
