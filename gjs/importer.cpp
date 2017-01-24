@@ -66,8 +66,8 @@ importer_to_string(JSContext *cx,
     const JSClass *klass = JS_GetClass(importer);
 
     JS::RootedValue module_path(cx);
-    if (!gjs_object_get_property_const(cx, importer, GJS_STRING_MODULE_PATH,
-                                       &module_path))
+    if (!gjs_object_get_property(cx, importer, GJS_STRING_MODULE_PATH,
+                                 &module_path))
         return false;
 
     g_autofree char *path = NULL;
@@ -122,9 +122,9 @@ define_meta_properties(JSContext       *context,
         parent_module_val.setObject(*parent);
 
         JS::RootedValue parent_module_path(context);
-        if (!gjs_object_get_property_const(context, parent,
-                                           GJS_STRING_MODULE_PATH,
-                                           &parent_module_path))
+        if (!gjs_object_get_property(context, parent,
+                                     GJS_STRING_MODULE_PATH,
+                                     &parent_module_path))
             return false;
 
         g_autofree char *module_path_buf = NULL;
@@ -270,8 +270,8 @@ module_to_string(JSContext *cx,
     GJS_GET_THIS(cx, argc, vp, args, module);
 
     JS::RootedValue module_path(cx);
-    if (!gjs_object_get_property_const(cx, module, GJS_STRING_MODULE_PATH,
-                                       &module_path))
+    if (!gjs_object_get_property(cx, module, GJS_STRING_MODULE_PATH,
+                                 &module_path))
         return false;
 
     g_assert(!module_path.isNull());
@@ -372,15 +372,15 @@ load_module_init(JSContext       *context,
                  const char      *full_path)
 {
     bool found;
-    GFile *file;
+    g_autoptr(GFile) file = NULL;
 
     /* First we check if js module has already been loaded  */
-    JS::RootedId module_init_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_MODULE_INIT));
-    if (JS_HasPropertyById(context, in_object, module_init_name, &found) && found) {
+    if (gjs_object_has_property(context, in_object, GJS_STRING_MODULE_INIT,
+                                &found) && found) {
         JS::RootedValue module_obj_val(context);
-        if (JS_GetPropertyById(context, in_object,
-                               module_init_name, &module_obj_val)) {
+        if (gjs_object_get_property(context, in_object,
+                                    GJS_STRING_MODULE_INIT,
+                                    &module_obj_val)) {
             return &module_obj_val.toObject();
         }
     }
@@ -388,16 +388,13 @@ load_module_init(JSContext       *context,
     JS::RootedObject module_obj(context, create_module_object(context));
     file = g_file_new_for_commandline_arg(full_path);
     if (!import_file (context, "__init__", file, module_obj))
-        goto out;
+        return module_obj;
 
-    if (!JS_DefinePropertyById(context, in_object,
-                               module_init_name, JS::ObjectValue(*module_obj),
-                               NULL, NULL,
-                               GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT))
-        goto out;
+    JS::RootedValue v_module(context, JS::ObjectValue(*module_obj));
+    gjs_object_define_property(context, in_object,
+                               GJS_STRING_MODULE_INIT, v_module,
+                               GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT);
 
- out:
-    g_object_unref (file);
     return module_obj;
 }
 
@@ -482,13 +479,9 @@ do_import(JSContext       *context,
     GFile *gfile;
     bool exists;
 
-    JS::RootedId search_path_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_SEARCH_PATH));
-
-    if (!gjs_object_require_property_value(context, obj, "importer",
-                                           search_path_name, &search_path)) {
+    if (!gjs_object_require_property(context, obj, "importer",
+                                     GJS_STRING_SEARCH_PATH, &search_path))
         return false;
-    }
 
     if (!JS_IsArrayObject(context, search_path)) {
         gjs_throw(context, "searchPath property on importer is not an array");
@@ -730,10 +723,9 @@ importer_new_enumerate(JSContext  *context,
             /* we are enumerating the prototype properties */
             return true;
 
-        JS::RootedId search_path_name(context,
-            gjs_context_get_const_string(context, GJS_STRING_SEARCH_PATH));
-        if (!gjs_object_require_property_value(context, object, "importer",
-                                               search_path_name, &search_path))
+        if (!gjs_object_require_property(context, object, "importer",
+                                         GJS_STRING_SEARCH_PATH,
+                                         &search_path))
             return false;
 
         if (!JS_IsArrayObject(context, search_path)) {
@@ -1190,12 +1182,9 @@ gjs_define_root_importer_object(JSContext        *context,
 
     JS::RootedValue importer (JS_GetRuntime(context),
                               JS::ObjectValue(*root_importer));
-    JS::RootedId imports_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_IMPORTS));
-    if (!JS_DefinePropertyById(context, in_object,
-                               imports_name, importer,
-                               NULL, NULL,
-                               GJS_MODULE_PROP_FLAGS)) {
+    if (!gjs_object_define_property(context, in_object,
+                                    GJS_STRING_IMPORTS, importer,
+                                    GJS_MODULE_PROP_FLAGS)) {
         gjs_debug(GJS_DEBUG_IMPORTER, "DefineProperty imports on %p failed",
                   in_object.get());
         return false;

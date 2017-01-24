@@ -294,19 +294,6 @@ void        gjs_set_global_slot              (JSContext       *context,
                                               GjsGlobalSlot    slot,
                                               JS::Value        value);
 
-bool gjs_object_require_property(JSContext             *context,
-                                 JS::HandleObject       obj,
-                                 const char            *obj_description,
-                                 JS::HandleId           property_name,
-                                 JS::MutableHandleValue value);
-
-/* This is intended to be overloaded with more types as the opportunity arises */
-bool gjs_object_require_converted_property_value(JSContext       *context,
-                                                 JS::HandleObject obj,
-                                                 const char      *description,
-                                                 JS::HandleId     property_name,
-                                                 uint32_t        *value);
-
 bool gjs_init_class_dynamic(JSContext              *context,
                             JS::HandleObject        in_object,
                             JS::HandleObject        parent_proto,
@@ -471,42 +458,100 @@ typedef enum {
 jsid              gjs_context_get_const_string  (JSContext       *context,
                                                  GjsConstString   string);
 
-bool gjs_object_get_property_const(JSContext             *cx,
-                                   JS::HandleObject       obj,
-                                   GjsConstString         property_name,
-                                   JS::MutableHandleValue value_p);
-
 const char * gjs_strip_unix_shebang(const char *script,
                                     gssize     *script_len,
                                     int        *new_start_line_number);
+
+/* These four functions wrap JS_GetPropertyById(), etc., but with a
+ * GjsConstString constant instead of a jsid. */
+
+bool gjs_object_get_property(JSContext             *cx,
+                             JS::HandleObject       obj,
+                             GjsConstString         property_name,
+                             JS::MutableHandleValue value_p);
+
+bool gjs_object_set_property(JSContext       *cx,
+                             JS::HandleObject obj,
+                             GjsConstString   property_name,
+                             JS::HandleValue  value);
+
+bool gjs_object_has_property(JSContext       *cx,
+                             JS::HandleObject obj,
+                             GjsConstString   property_name,
+                             bool            *found);
+
+bool gjs_object_define_property(JSContext         *cx,
+                                JS::HandleObject   obj,
+                                GjsConstString     property_name,
+                                JS::HandleValue    value,
+                                unsigned           flags,
+                                JSPropertyOp       getter = nullptr,
+                                JSStrictPropertyOp setter = nullptr);
 
 G_END_DECLS
 
 /* Overloaded functions, must be outside G_DECLS. More types are intended to be
  * added as the opportunity arises. */
 
-bool gjs_object_require_property_value(JSContext       *cx,
-                                       JS::HandleObject obj,
-                                       const char      *description,
-                                       JS::HandleId     property_name,
-                                       bool            *value);
+bool gjs_object_require_property(JSContext             *context,
+                                 JS::HandleObject       obj,
+                                 const char            *obj_description,
+                                 JS::HandleId           property_name,
+                                 JS::MutableHandleValue value);
 
-bool gjs_object_require_property_value(JSContext       *cx,
-                                       JS::HandleObject obj,
-                                       const char      *description,
-                                       JS::HandleId     property_name,
-                                       int32_t         *value);
+bool gjs_object_require_property(JSContext       *cx,
+                                 JS::HandleObject obj,
+                                 const char      *description,
+                                 JS::HandleId     property_name,
+                                 bool            *value);
 
-bool gjs_object_require_property_value(JSContext       *cx,
-                                       JS::HandleObject obj,
-                                       const char      *description,
-                                       JS::HandleId     property_name,
-                                       char           **value);
+bool gjs_object_require_property(JSContext       *cx,
+                                 JS::HandleObject obj,
+                                 const char      *description,
+                                 JS::HandleId     property_name,
+                                 int32_t         *value);
 
-bool gjs_object_require_property_value(JSContext              *cx,
-                                       JS::HandleObject        obj,
-                                       const char             *description,
-                                       JS::HandleId            property_name,
-                                       JS::MutableHandleObject value);
+bool gjs_object_require_property(JSContext       *cx,
+                                 JS::HandleObject obj,
+                                 const char      *description,
+                                 JS::HandleId     property_name,
+                                 char           **value);
+
+bool gjs_object_require_property(JSContext              *cx,
+                                 JS::HandleObject        obj,
+                                 const char             *description,
+                                 JS::HandleId            property_name,
+                                 JS::MutableHandleObject value);
+
+bool gjs_object_require_converted_property(JSContext       *context,
+                                           JS::HandleObject obj,
+                                           const char      *description,
+                                           JS::HandleId     property_name,
+                                           uint32_t        *value);
+
+/* Here, too, we have wrappers that take a GjsConstString. */
+
+template<typename T>
+bool gjs_object_require_property(JSContext        *cx,
+                                 JS::HandleObject  obj,
+                                 const char       *description,
+                                 GjsConstString    property_name,
+                                 T                 value)
+{
+    JS::RootedId id(cx, gjs_context_get_const_string(cx, property_name));
+    return gjs_object_require_property(cx, obj, description, id, value);
+}
+
+template<typename T>
+bool gjs_object_require_converted_property(JSContext       *cx,
+                                           JS::HandleObject obj,
+                                           const char      *description,
+                                           GjsConstString   property_name,
+                                           T                value)
+{
+    JS::RootedId id(cx, gjs_context_get_const_string(cx, property_name));
+    return gjs_object_require_converted_property(cx, obj, description,
+                                                 id, value);
+}
 
 #endif  /* __GJS_JSAPI_UTIL_H__ */

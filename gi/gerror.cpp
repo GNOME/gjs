@@ -96,17 +96,14 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     priv->domain = proto_priv->domain;
 
     JS::RootedObject params_obj(context, &argv[0].toObject());
-    JS::RootedId message_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_MESSAGE));
-    JS::RootedId code_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_CODE));
-    if (!gjs_object_require_property_value(context, params_obj,
-                                           "GError constructor", message_name,
-                                           &message))
+    if (!gjs_object_require_property(context, params_obj,
+                                     "GError constructor",
+                                     GJS_STRING_MESSAGE, &message))
         return false;
-    if (!gjs_object_require_property_value(context, params_obj,
-                                           "GError constructor", code_name,
-                                           &code))
+
+    if (!gjs_object_require_property(context, params_obj,
+                                     "GError constructor",
+                                     GJS_STRING_CODE, &code))
         return false;
 
     priv->gerror = g_error_new_literal(priv->domain, code, message);
@@ -246,12 +243,10 @@ error_constructor_value_of(JSContext *context,
 {
     GJS_GET_THIS(context, argc, vp, rec, self);
     Error *priv;
-    JS::RootedId prototype_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_PROTOTYPE));
     JS::RootedObject prototype(context);
 
-    if (!gjs_object_require_property_value(context, self, "constructor",
-                                           prototype_name, &prototype)) {
+    if (!gjs_object_require_property(context, self, "constructor",
+                                     GJS_STRING_PROTOTYPE, &prototype)) {
         /* This error message will be more informative */
         JS_ClearPendingException(context);
         gjs_throw(context, "GLib.Error.valueOf() called on something that is not"
@@ -409,21 +404,14 @@ define_error_properties(JSContext       *context,
     if (!gjs_context_get_frame_info(context, m_stack, m_file, m_line))
         return;
 
-    JS::RootedId stack_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_STACK));
-    JS::RootedId filename_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_FILENAME));
-    JS::RootedId linenumber_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_LINE_NUMBER));
+    gjs_object_define_property(context, obj, GJS_STRING_STACK, stack,
+                               JSPROP_ENUMERATE);
 
-    JS_DefinePropertyById(context, obj, stack_name, stack,
-                          NULL, NULL, JSPROP_ENUMERATE);
+    gjs_object_define_property(context, obj, GJS_STRING_FILENAME,
+                               fileName, JSPROP_ENUMERATE);
 
-    JS_DefinePropertyById(context, obj, filename_name, fileName,
-                          NULL, NULL, JSPROP_ENUMERATE);
-
-    JS_DefinePropertyById(context, obj, linenumber_name, lineNumber,
-                          NULL, NULL, JSPROP_ENUMERATE);
+    gjs_object_define_property(context, obj, GJS_STRING_LINE_NUMBER,
+                               lineNumber, JSPROP_ENUMERATE);
 }
 
 JSObject*

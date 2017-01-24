@@ -190,8 +190,8 @@ gjs_lookup_param_prototype(JSContext    *context)
     JS::RootedObject constructor(context, &value.toObject());
     g_assert(constructor != NULL);
 
-    if (!gjs_object_get_property_const(context, constructor,
-                                       GJS_STRING_PROTOTYPE, &value))
+    if (!gjs_object_get_property(context, constructor,
+                                 GJS_STRING_PROTOTYPE, &value))
         return NULL;
 
     if (G_UNLIKELY (!value.isObjectOrNull()))

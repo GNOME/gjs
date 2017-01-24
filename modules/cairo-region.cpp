@@ -120,22 +120,22 @@ fill_rectangle(JSContext             *context,
 {
     JS::RootedValue val(context);
 
-    if (!gjs_object_get_property_const(context, obj, GJS_STRING_X, &val))
+    if (!gjs_object_get_property(context, obj, GJS_STRING_X, &val))
         return false;
     if (!JS::ToInt32(context, val, &rect->x))
         return false;
 
-    if (!gjs_object_get_property_const(context, obj, GJS_STRING_Y, &val))
+    if (!gjs_object_get_property(context, obj, GJS_STRING_Y, &val))
         return false;
     if (!JS::ToInt32(context, val, &rect->y))
         return false;
 
-    if (!gjs_object_get_property_const(context, obj, GJS_STRING_WIDTH, &val))
+    if (!gjs_object_get_property(context, obj, GJS_STRING_WIDTH, &val))
         return false;
     if (!JS::ToInt32(context, val, &rect->width))
         return false;
 
-    if (!gjs_object_get_property_const(context, obj, GJS_STRING_HEIGHT, &val))
+    if (!gjs_object_get_property(context, obj, GJS_STRING_HEIGHT, &val))
         return false;
     if (!JS::ToInt32(context, val, &rect->height))
         return false;

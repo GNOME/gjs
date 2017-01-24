@@ -64,16 +64,13 @@ get_version_for_ns (JSContext       *context,
                     char           **version)
 {
     JS::RootedObject versions(context);
-    JS::RootedValue version_val(context);
-    JS::RootedId versions_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_GI_VERSIONS));
 
-    if (!gjs_object_require_property_value(context, repo_obj,
-                                           "GI repository object", versions_name,
-                                           &versions))
+    if (!gjs_object_require_property(context, repo_obj,
+                                     "GI repository object",
+                                     GJS_STRING_GI_VERSIONS, &versions))
         return false;
 
-    if (!gjs_object_require_property_value(context, versions, NULL, ns_id, version)) {
+    if (!gjs_object_require_property(context, versions, NULL, ns_id, version)) {
         /* Property not actually required, so clear an exception */
         JS_ClearPendingException(context);
         *version = NULL;
@@ -291,21 +288,15 @@ repo_new(JSContext *context)
                         "repo constructor, obj %p priv %p", repo.get(), priv);
 
     versions = JS_NewObject(context, NULL, JS::NullPtr(), global);
-    JS::RootedId versions_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_GI_VERSIONS));
-    JS_DefinePropertyById(context, repo,
-                          versions_name,
-                          JS::ObjectValue(*versions),
-                          NULL, NULL,
-                          JSPROP_PERMANENT);
+    JS::RootedValue v_versions(context, JS::ObjectValue(*versions));
+    gjs_object_define_property(context, repo, GJS_STRING_GI_VERSIONS,
+                               v_versions, JSPROP_PERMANENT);
 
     private_ns = JS_NewObject(context, NULL, JS::NullPtr(), global);
-    JS::RootedId private_ns_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_PRIVATE_NS_MARKER));
-    JS_DefinePropertyById(context, repo,
-                          private_ns_name,
-                          JS::ObjectValue(*private_ns),
-                          NULL, NULL, JSPROP_PERMANENT);
+    JS::RootedValue v_ns(context, JS::ObjectValue(*private_ns));
+    gjs_object_define_property(context, repo,
+                               GJS_STRING_PRIVATE_NS_MARKER, v_ns,
+                               JSPROP_PERMANENT);
 
     /* FIXME - hack to make namespaces load, since
      * gobject-introspection does not yet search a path properly.
@@ -578,12 +569,11 @@ error_has_name(JSContext       *cx,
         return false;
 
     JS::AutoSaveExceptionState saved_exc(cx);
-    JS::RootedId name_id(cx, gjs_context_get_const_string(cx, GJS_STRING_NAME));
     JS::RootedObject exc(cx, &thrown_value.toObject());
     JS::RootedValue exc_name(cx);
     bool retval = false;
 
-    if (!JS_GetPropertyById(cx, exc, name_id, &exc_name))
+    if (!gjs_object_get_property(cx, exc, GJS_STRING_NAME, &exc_name))
         goto out;
 
     int32_t cmp_result;
@@ -609,19 +599,17 @@ lookup_override_function(JSContext             *cx,
     JS::RootedValue importer(cx, gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS));
     g_assert(importer.isObject());
 
-    JS::RootedId overrides_name(cx,
-        gjs_context_get_const_string(cx, GJS_STRING_GI_OVERRIDES));
-    JS::RootedId object_init_name(cx,
-        gjs_context_get_const_string(cx, GJS_STRING_GOBJECT_INIT));
     JS::RootedObject overridespkg(cx), module(cx);
     JS::RootedObject importer_obj(cx, &importer.toObject());
 
-    if (!gjs_object_require_property_value(cx, importer_obj, "importer",
-                                           overrides_name, &overridespkg))
+    if (!gjs_object_require_property(cx, importer_obj, "importer",
+                                     GJS_STRING_GI_OVERRIDES,
+                                     &overridespkg))
         goto fail;
 
-    if (!gjs_object_require_property_value(cx, overridespkg, "GI repository object",
-                                           ns_name, &module)) {
+    if (!gjs_object_require_property(cx, overridespkg,
+                                     "GI repository object", ns_name,
+                                     &module)) {
         JS::RootedValue exc(cx);
         JS_GetPendingException(cx, &exc);
 
@@ -636,7 +624,7 @@ lookup_override_function(JSContext             *cx,
     }
 
     if (!gjs_object_require_property(cx, module, "override module",
-                                     object_init_name, function) ||
+                                     GJS_STRING_GOBJECT_INIT, function) ||
         !function.isObjectOrNull()) {
         gjs_throw(cx, "Unexpected value for _init in overrides module");
         goto fail;
@@ -658,20 +646,18 @@ gjs_lookup_namespace_object_by_name(JSContext      *context,
         gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS));
     g_assert(importer.isObject());
 
-    JS::RootedId gi_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_GI_MODULE));
     JS::RootedObject repo(context), importer_obj(context, &importer.toObject());
 
-    if (!gjs_object_require_property_value(context, importer_obj, "importer",
-                                           gi_name, &repo)) {
+    if (!gjs_object_require_property(context, importer_obj, "importer",
+                                     GJS_STRING_GI_MODULE, &repo)) {
         gjs_log_exception(context);
         gjs_throw(context, "No gi property in importer");
         return NULL;
     }
 
     JS::RootedObject retval(context);
-    if (!gjs_object_require_property_value(context, repo, "GI repository object",
-                                           ns_name, &retval))
+    if (!gjs_object_require_property(context, repo, "GI repository object",
+                                     ns_name, &retval))
         return NULL;
 
     return retval;
@@ -807,8 +793,8 @@ gjs_lookup_generic_prototype(JSContext  *context,
         return NULL;
 
     JS::RootedValue value(context);
-    if (!gjs_object_get_property_const(context, constructor,
-                                       GJS_STRING_PROTOTYPE, &value))
+    if (!gjs_object_get_property(context, constructor,
+                                 GJS_STRING_PROTOTYPE, &value))
         return NULL;
 
     if (G_UNLIKELY (!value.isObjectOrNull()))

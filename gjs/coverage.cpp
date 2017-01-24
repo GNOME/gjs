@@ -517,13 +517,13 @@ get_hit_count_and_line_data(JSContext       *cx,
                             int32_t         *line)
 {
     JS::RootedId hit_count_name(cx, gjs_intern_string_to_id(cx, "hitCount"));
-    if (!gjs_object_require_property_value(cx, obj, "function element",
-                                           hit_count_name, hit_count))
+    if (!gjs_object_require_property(cx, obj, "function element",
+                                     hit_count_name, hit_count))
         return false;
 
     JS::RootedId line_number_name(cx, gjs_intern_string_to_id(cx, "line"));
-    return gjs_object_require_property_value(cx, obj, "function_element",
-                                             line_number_name, line);
+    return gjs_object_require_property(cx, obj, "function_element",
+                                       line_number_name, line);
 }
 
 static bool
@@ -538,10 +538,8 @@ convert_and_insert_function_decl(GArray         *array,
 
     JS::RootedObject object(context, &element.toObject());
     JS::RootedValue function_name_property_value(context);
-    JS::RootedId function_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_NAME));
 
-    if (!gjs_object_require_property(context, object, NULL, function_name,
+    if (!gjs_object_require_property(context, object, NULL, GJS_STRING_NAME,
                                      &function_name_property_value))
         return false;
 
@@ -665,15 +663,17 @@ convert_and_insert_branch_info(GArray         *array,
         int32_t branch_point;
         JS::RootedId point_name(context, gjs_intern_string_to_id(context, "point"));
 
-        if (!gjs_object_require_property_value(context, object, "branch array element",
-                                               point_name, &branch_point))
+        if (!gjs_object_require_property(context, object,
+                                         "branch array element",
+                                         point_name, &branch_point))
             return false;
 
         bool was_hit;
         JS::RootedId hit_name(context, gjs_intern_string_to_id(context, "hit"));
 
-        if (!gjs_object_require_property_value(context, object, "branch array element",
-                                               hit_name, &was_hit))
+        if (!gjs_object_require_property(context, object,
+                                         "branch array element",
+                                         hit_name, &was_hit))
             return false;
 
         JS::RootedValue branch_exits_value(context);
@@ -1648,10 +1648,10 @@ bootstrap_coverage(GjsCoverage *coverage)
         JS::RootedObject coverage_statistics_constructor(context);
         JS::RootedId coverage_statistics_name(context,
             gjs_intern_string_to_id(context, "CoverageStatistics"));
-        if (!gjs_object_require_property_value(context, debugger_compartment,
-                                               "debugger compartment",
-                                               coverage_statistics_name,
-                                               &coverage_statistics_constructor))
+        if (!gjs_object_require_property(context, debugger_compartment,
+                                         "debugger compartment",
+                                         coverage_statistics_name,
+                                         &coverage_statistics_constructor))
             return false;
 
         /* Create value for holding the cache. This will be undefined if

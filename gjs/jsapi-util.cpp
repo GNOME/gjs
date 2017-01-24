@@ -142,6 +142,49 @@ gjs_get_global_slot (JSContext     *context,
     return JS_GetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot);
 }
 
+bool
+gjs_object_get_property(JSContext             *cx,
+                        JS::HandleObject       obj,
+                        GjsConstString         property_name,
+                        JS::MutableHandleValue value_p)
+{
+    JS::RootedId id(cx, gjs_context_get_const_string(cx, property_name));
+    return JS_GetPropertyById(cx, obj, id, value_p);
+}
+
+bool
+gjs_object_set_property(JSContext       *cx,
+                        JS::HandleObject obj,
+                        GjsConstString   property_name,
+                        JS::HandleValue  value)
+{
+    JS::RootedId id(cx, gjs_context_get_const_string(cx, property_name));
+    return JS_SetPropertyById(cx, obj, id, value);
+}
+
+bool
+gjs_object_has_property(JSContext       *cx,
+                        JS::HandleObject obj,
+                        GjsConstString   property_name,
+                        bool            *found)
+{
+    JS::RootedId id(cx, gjs_context_get_const_string(cx, property_name));
+    return JS_HasPropertyById(cx, obj, id, found);
+}
+
+bool gjs_object_define_property(JSContext         *cx,
+                                JS::HandleObject   obj,
+                                GjsConstString     property_name,
+                                JS::HandleValue    value,
+                                unsigned           flags,
+                                JSPropertyOp       getter,
+                                JSStrictPropertyOp setter)
+{
+    return JS_DefinePropertyById(cx, obj,
+                                 gjs_context_get_const_string(cx, property_name),
+                                 value, getter, setter, flags);
+}
+
 static void
 throw_property_lookup_error(JSContext       *cx,
                             JS::HandleObject obj,
@@ -194,11 +237,11 @@ gjs_object_require_property(JSContext             *context,
 }
 
 bool
-gjs_object_require_property_value(JSContext       *cx,
-                                  JS::HandleObject obj,
-                                  const char      *description,
-                                  JS::HandleId     property_name,
-                                  bool            *value)
+gjs_object_require_property(JSContext       *cx,
+                            JS::HandleObject obj,
+                            const char      *description,
+                            JS::HandleId     property_name,
+                            bool            *value)
 {
     JS::RootedValue prop_value(cx);
     if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
@@ -213,11 +256,11 @@ gjs_object_require_property_value(JSContext       *cx,
 }
 
 bool
-gjs_object_require_property_value(JSContext       *cx,
-                                  JS::HandleObject obj,
-                                  const char      *description,
-                                  JS::HandleId     property_name,
-                                  int32_t         *value)
+gjs_object_require_property(JSContext       *cx,
+                            JS::HandleObject obj,
+                            const char      *description,
+                            JS::HandleId     property_name,
+                            int32_t         *value)
 {
     JS::RootedValue prop_value(cx);
     if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
@@ -233,11 +276,11 @@ gjs_object_require_property_value(JSContext       *cx,
 
 /* Converts JS string value to UTF-8 string. value must be freed with JS_free. */
 bool
-gjs_object_require_property_value(JSContext       *cx,
-                                  JS::HandleObject obj,
-                                  const char      *description,
-                                  JS::HandleId     property_name,
-                                  char           **value)
+gjs_object_require_property(JSContext       *cx,
+                            JS::HandleObject obj,
+                            const char      *description,
+                            JS::HandleId     property_name,
+                            char           **value)
 {
     JS::RootedValue prop_value(cx);
     if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
@@ -251,11 +294,11 @@ gjs_object_require_property_value(JSContext       *cx,
 }
 
 bool
-gjs_object_require_property_value(JSContext              *cx,
-                                  JS::HandleObject        obj,
-                                  const char             *description,
-                                  JS::HandleId            property_name,
-                                  JS::MutableHandleObject value)
+gjs_object_require_property(JSContext              *cx,
+                            JS::HandleObject        obj,
+                            const char             *description,
+                            JS::HandleId            property_name,
+                            JS::MutableHandleObject value)
 {
     JS::RootedValue prop_value(cx);
     if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
@@ -270,11 +313,11 @@ gjs_object_require_property_value(JSContext              *cx,
 }
 
 bool
-gjs_object_require_converted_property_value(JSContext       *cx,
-                                            JS::HandleObject obj,
-                                            const char      *description,
-                                            JS::HandleId     property_name,
-                                            uint32_t        *value)
+gjs_object_require_converted_property(JSContext       *cx,
+                                      JS::HandleObject obj,
+                                      const char      *description,
+                                      JS::HandleId     property_name,
+                                      uint32_t        *value)
 {
     JS::RootedValue prop_value(cx);
     if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
@@ -303,8 +346,8 @@ gjs_throw_abstract_constructor_error(JSContext    *context,
 
     JS::RootedObject callee(context, &args.callee());
     JS::RootedValue prototype(context);
-    if (gjs_object_get_property_const(context, callee,
-                                      GJS_STRING_PROTOTYPE, &prototype)) {
+    if (gjs_object_get_property(context, callee, GJS_STRING_PROTOTYPE,
+                                &prototype)) {
         proto_class = JS_GetClass(&prototype.toObject());
         name = proto_class->name;
     }
@@ -543,8 +586,8 @@ gjs_log_exception_full(JSContext       *context,
             JS::RootedValue js_name(context);
             char *utf8_name;
 
-            if (gjs_object_get_property_const(context, exc_obj,
-                                              GJS_STRING_NAME, &js_name) &&
+            if (gjs_object_get_property(context, exc_obj,
+                                        GJS_STRING_NAME, &js_name) &&
                 js_name.isString() &&
                 gjs_string_to_utf8(context, js_name, &utf8_name)) {
                 is_syntax = strcmp("SyntaxError", utf8_name) == 0;
@@ -569,10 +612,10 @@ gjs_log_exception_full(JSContext       *context,
         unsigned lineNumber;
         char *utf8_fileName;
 
-        gjs_object_get_property_const(context, exc_obj, GJS_STRING_LINE_NUMBER,
-                                      &js_lineNumber);
-        gjs_object_get_property_const(context, exc_obj, GJS_STRING_FILENAME,
-                                      &js_fileName);
+        gjs_object_get_property(context, exc_obj, GJS_STRING_LINE_NUMBER,
+                                &js_lineNumber);
+        gjs_object_get_property(context, exc_obj, GJS_STRING_FILENAME,
+                                &js_fileName);
 
         if (js_fileName.isString())
             gjs_string_to_utf8(context, js_fileName, &utf8_fileName);
@@ -595,7 +638,8 @@ gjs_log_exception_full(JSContext       *context,
         JS::RootedValue stack(context);
 
         if (exc.isObject() &&
-            gjs_object_get_property_const(context, exc_obj, GJS_STRING_STACK, &stack) &&
+            gjs_object_get_property(context, exc_obj, GJS_STRING_STACK,
+                                    &stack) &&
             stack.isString())
             gjs_string_to_utf8(context, stack, &utf8_stack);
         else

@@ -59,26 +59,26 @@ gjs_context_get_frame_info(JSContext                              *context,
     JSAutoCompartment ac(context, global);
 
     JS::RootedId error_id(context, gjs_intern_string_to_id(context, "Error"));
-    if (!gjs_object_require_property_value(context, global, "global object",
-                                           error_id, &constructor))
+    if (!gjs_object_require_property(context, global, "global object",
+                                     error_id, &constructor))
         return false;
 
     JS::RootedObject err_obj(context, JS_New(context, constructor,
                                              JS::HandleValueArray::empty()));
 
     if (!stack.empty() &&
-        !gjs_object_get_property_const(context, err_obj, GJS_STRING_STACK,
-                                       stack.ref()))
+        !gjs_object_get_property(context, err_obj, GJS_STRING_STACK,
+                                 stack.ref()))
         return false;
 
     if (!fileName.empty() &&
-        !gjs_object_get_property_const(context, err_obj, GJS_STRING_FILENAME,
-                                       fileName.ref()))
+        !gjs_object_get_property(context, err_obj, GJS_STRING_FILENAME,
+                                 fileName.ref()))
         return false;
 
     if (!lineNumber.empty() &&
-        !gjs_object_get_property_const(context, err_obj, GJS_STRING_LINE_NUMBER,
-                                       lineNumber.ref()))
+        !gjs_object_get_property(context, err_obj, GJS_STRING_LINE_NUMBER,
+                                 lineNumber.ref()))
         return false;
 
     return true;

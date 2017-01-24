@@ -862,16 +862,6 @@ gjs_context_get_const_string(JSContext      *context,
     return gjs_context->const_strings[name];
 }
 
-bool
-gjs_object_get_property_const(JSContext             *cx,
-                              JS::HandleObject       obj,
-                              GjsConstString         property_name,
-                              JS::MutableHandleValue value_p)
-{
-    JS::RootedId pname(cx, gjs_context_get_const_string(cx, property_name));
-    return JS_GetPropertyById(cx, obj, pname, value_p);
-}
-
 /**
  * gjs_get_import_global:
  * @context: a #JSContext

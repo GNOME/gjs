@@ -375,12 +375,11 @@ fundamental_invoke_constructor(FundamentalInstance        *priv,
                                const JS::HandleValueArray& args,
                                GIArgument                 *rvalue)
 {
-    JS::RootedId constructor_const(context,
-        gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR));
     JS::RootedObject js_constructor(context);
 
-    if (!gjs_object_require_property_value(context, obj, NULL,
-                                           constructor_const, &js_constructor) ||
+    if (!gjs_object_require_property(context, obj, NULL,
+                                     GJS_STRING_CONSTRUCTOR,
+                                     &js_constructor) ||
         priv->prototype->constructor_name.get() == JSID_VOID) {
         gjs_throw (context,
                    "Couldn't find a constructor for type %s.%s",
@@ -391,8 +390,8 @@ fundamental_invoke_constructor(FundamentalInstance        *priv,
 
     JS::RootedObject constructor(context);
     JS::RootedId constructor_name(context, priv->prototype->constructor_name);
-    if (!gjs_object_require_property_value(context, js_constructor, NULL,
-                                           constructor_name, &constructor)) {
+    if (!gjs_object_require_property(context, js_constructor, NULL,
+                                     constructor_name, &constructor)) {
         gjs_throw (context,
                    "Couldn't find a constructor for type %s.%s",
                    g_base_info_get_namespace((GIBaseInfo*) priv->prototype->info),
@@ -604,8 +603,8 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
 
     g_assert(constructor != NULL);
 
-    if (!gjs_object_get_property_const(context, constructor,
-                                       GJS_STRING_PROTOTYPE, &value))
+    if (!gjs_object_get_property(context, constructor,
+                                 GJS_STRING_PROTOTYPE, &value))
         return NULL;
 
     if (G_UNLIKELY (!value.isObjectOrNull()))

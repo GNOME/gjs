@@ -479,20 +479,20 @@ gjs_value_to_g_value_internal(JSContext      *context,
         g_value_set_object(gvalue, gobj);
     } else if (gtype == G_TYPE_STRV) {
         bool found_length;
-        JS::RootedId length_name(context,
-            gjs_context_get_const_string(context, GJS_STRING_LENGTH));
 
         if (value.isNull()) {
             /* do nothing */
         } else {
             JS::RootedObject array_obj(context, &value.toObject());
-            if (JS_HasPropertyById(context, array_obj, length_name, &found_length) &&
+            if (gjs_object_has_property(context, array_obj,
+                                        GJS_STRING_LENGTH, &found_length) &&
                 found_length) {
                 guint32 length;
 
-                if (!gjs_object_require_converted_property_value(context, array_obj,
-                                                                 NULL, length_name,
-                                                                 &length)) {
+                if (!gjs_object_require_converted_property(context, array_obj,
+                                                           NULL,
+                                                           GJS_STRING_LENGTH,
+                                                           &length)) {
                     JS_ClearPendingException(context);
                     gjs_throw(context,
                               "Wrong type %s; strv expected",

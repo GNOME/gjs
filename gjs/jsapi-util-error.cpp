@@ -101,11 +101,10 @@ gjs_throw_valist(JSContext       *context,
         goto out;
 
     if (error_name != NULL) {
-        JS::RootedId name_id(context,
-            gjs_context_get_const_string(context, GJS_STRING_NAME));
         JS::RootedValue name_value(context);
         if (!gjs_string_from_utf8(context, error_name, -1, &name_value) ||
-            !JS_SetPropertyById(context, new_exc, name_id, name_value))
+            !gjs_object_set_property(context, new_exc, GJS_STRING_NAME,
+                                     name_value))
             goto out;
     }
 

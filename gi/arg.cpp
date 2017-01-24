@@ -1257,9 +1257,6 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
         return false;
     }
 
-    JS::RootedId length_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_LENGTH));
-
     if (value.isNull()) {
         *contents = NULL;
         *length_p = 0;
@@ -1270,12 +1267,13 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
             goto out;
     } else {
         JS::RootedObject array_obj(context, &value.toObject());
-        if (JS_HasPropertyById(context, array_obj, length_name, &found_length) &&
+        if (gjs_object_has_property(context, array_obj, GJS_STRING_LENGTH,
+                                    &found_length) &&
             found_length) {
             guint32 length;
 
-            if (!gjs_object_require_converted_property_value(context, array_obj, NULL,
-                                                             length_name, &length)) {
+            if (!gjs_object_require_converted_property(context, array_obj, NULL,
+                                                       GJS_STRING_LENGTH, &length)) {
                 goto out;
             } else {
                 if (!gjs_array_to_array(context,
@@ -1791,16 +1789,15 @@ gjs_value_to_g_argument(JSContext      *context,
         if (value.isObject()) {
             bool found_length;
             JS::RootedObject array_obj(context, &value.toObject());
-            JS::RootedId length_name(context,
-                gjs_context_get_const_string(context, GJS_STRING_LENGTH));
 
-            if (JS_HasPropertyById(context, array_obj, length_name, &found_length) &&
+            if (gjs_object_has_property(context, array_obj,
+                                        GJS_STRING_LENGTH, &found_length) &&
                 found_length) {
                 guint32 length;
 
-                if (!gjs_object_require_converted_property_value(context, array_obj,
-                                                                 NULL, length_name,
-                                                                 &length)) {
+                if (!gjs_object_require_converted_property(context, array_obj,
+                                                           NULL, GJS_STRING_LENGTH,
+                                                           &length)) {
                     wrong = true;
                 } else {
                     GList *list;

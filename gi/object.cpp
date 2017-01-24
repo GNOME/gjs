@@ -1466,9 +1466,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
      * might be traced and we will end up dereferencing a null pointer */
     init_object_private(context, object);
 
-    JS::RootedId object_init_name(context,
-        gjs_context_get_const_string(context, GJS_STRING_GOBJECT_INIT));
-    if (!gjs_object_require_property(context, object, "GObject instance", object_init_name, &initer))
+    if (!gjs_object_require_property(context, object, "GObject instance",
+                                     GJS_STRING_GOBJECT_INIT, &initer))
         return false;
 
     argv.rval().setUndefined();
@@ -1642,8 +1641,8 @@ gjs_lookup_object_prototype_from_info(JSContext    *context,
         return NULL;
 
     JS::RootedValue value(context);
-    if (!gjs_object_get_property_const(context, constructor,
-                                       GJS_STRING_PROTOTYPE, &value))
+    if (!gjs_object_get_property(context, constructor,
+                                 GJS_STRING_PROTOTYPE, &value))
         return NULL;
 
     if (G_UNLIKELY (!value.isObjectOrNull()))
@@ -2739,8 +2738,8 @@ gjs_object_custom_init(GTypeInstance *instance,
     associate_js_gobject(context, object, G_OBJECT (instance));
 
     JS::RootedValue v(context);
-    if (!gjs_object_get_property_const(context, object,
-                                       GJS_STRING_INSTANCE_INIT, &v)) {
+    if (!gjs_object_get_property(context, object,
+                                 GJS_STRING_INSTANCE_INIT, &v)) {
         gjs_log_exception(context);
         return;
     }

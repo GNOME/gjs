@@ -310,12 +310,11 @@ boxed_invoke_constructor(JSContext             *context,
                          JS::HandleId           constructor_name,
                          JS::CallArgs&          args)
 {
-    JS::RootedId constructor_const(context,
-        gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR));
     JS::RootedObject js_constructor(context);
 
-    if (!gjs_object_require_property_value(context, obj, NULL, constructor_const,
-                                           &js_constructor))
+    if (!gjs_object_require_property(context, obj, NULL,
+                                     GJS_STRING_CONSTRUCTOR,
+                                     &js_constructor))
         return false;
 
     JS::RootedValue js_constructor_func(context);
