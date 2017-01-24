@@ -1194,16 +1194,10 @@ gjs_define_root_importer_object(JSContext        *context,
 }
 
 bool
-gjs_define_root_importer(JSContext   *context,
-                         JSObject    *in_object)
+gjs_define_root_importer(JSContext       *cx,
+                         JS::HandleObject in_object)
 {
-    JS::RootedValue importer(JS_GetRuntime(context),
-                             gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS));
-    JS::RootedObject rooted_in_object(JS_GetRuntime(context),
-                                      in_object);
-    JS::RootedObject rooted_importer(JS_GetRuntime(context),
-                                     &importer.toObject());
-    return gjs_define_root_importer_object(context,
-                                           rooted_in_object,
-                                           rooted_importer);
+    JS::Value importer = gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS);
+    JS::RootedObject rooted_importer(cx, &importer.toObject());
+    return gjs_define_root_importer_object(cx, in_object, rooted_importer);
 }

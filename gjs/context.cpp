@@ -528,8 +528,7 @@ gjs_context_constructed(GObject *object)
     /* Now copy the global root importer (which we just created,
      * if it didn't exist) to our global object
      */
-    if (!gjs_define_root_importer(js_context->context,
-                                  js_context->global))
+    if (!gjs_define_root_importer(js_context->context, global))
         g_error("Failed to point 'imports' property at root importer");
 
     /* FIXME: We should define the Promise object before any imports, in case
