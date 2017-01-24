@@ -28,9 +28,6 @@
 
 G_BEGIN_DECLS
 
-bool     gjs_g_hash_table_steal_one  (GHashTable  *hash,
-                                      void       **key_p,
-                                      void       **value_p);
 char**   gjs_g_strv_concat           (char      ***strv_array,
                                       int          len);
 

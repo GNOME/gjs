@@ -87,7 +87,6 @@ keep_alive_finalize(JSFreeOp *fop,
 {
     KeepAlive *priv;
     void *key;
-    void *value;
 
     priv = (KeepAlive *) JS_GetPrivate(obj);
 
@@ -99,9 +98,11 @@ keep_alive_finalize(JSFreeOp *fop,
 
     priv->inside_finalize = true;
 
-    while (gjs_g_hash_table_steal_one(priv->children,
-                                      &key, &value)) {
-        Child *child = (Child *) value;
+    GHashTableIter iter;
+    g_hash_table_iter_init(&iter, priv->children);
+    while (g_hash_table_iter_next(&iter, &key, NULL)) {
+        g_hash_table_iter_steal(&iter);
+        Child *child = static_cast<Child *>(key);
         if (child->notify)
             (* child->notify) (child->child, child->data);
 

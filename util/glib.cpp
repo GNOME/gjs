@@ -21,54 +21,9 @@
  * IN THE SOFTWARE.
  */
 
-#include <string.h>
+#include <glib.h>
 
-#include "glib.h"
-
-#include <config.h>
-
-typedef struct {
-    void *key;
-    void *value;
-} StoreOneData;
-
-static gboolean
-get_first_one_predicate(void  *key,
-                        void  *value,
-                        void  *data)
-{
-    StoreOneData *sod = (StoreOneData *) data;
-
-    sod->key = key;
-    sod->value = value;
-
-    /* found it! */
-    return true;
-}
-
-bool
-gjs_g_hash_table_steal_one(GHashTable *hash,
-                           void      **key_p,
-                           void      **value_p)
-{
-    StoreOneData sod;
-
-    sod.key = NULL;
-    sod.value = NULL;
-    g_hash_table_find(hash, get_first_one_predicate, &sod);
-
-    if (sod.key == NULL)
-        return false;
-
-    if (key_p)
-        *key_p = sod.key;
-    if (value_p)
-        *value_p = sod.value;
-
-    g_hash_table_steal(hash, sod.key);
-
-    return sod.value != NULL;
-}
+#include "util/glib.h"
 
 /** gjs_g_strv_concat:
  *
