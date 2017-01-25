@@ -110,6 +110,7 @@ function do_Configure_JHBuild(){
     cat <<EOFILE >> ~/.config/jhbuildrc
 module_autogenargs['gjs'] = '--enable-compile-warnings=error --enable-installed-tests --with-xvfb-tests'
 module_makeargs['gjs'] = '-s'
+skip = ['gettext', 'yelp-xsl', 'yelp-tools', 'gtk-doc']
 EOFILE
 
     echo '-- Done --'
