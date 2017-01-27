@@ -38,13 +38,15 @@ function do_Install_Dependencies(){
 
     if [[ $BASE == "ubuntu" ]]; then
         # Testing dependencies
-        apt-get -y -qq install gir1.2-gtk-3.0 xvfb gnome-desktop-testing dbus-x11 dbus > /dev/null
+        apt-get -y -qq install libgtk-3-dev gir1.2-gtk-3.0 xvfb gnome-desktop-testing dbus-x11 dbus \
+                               libreadline6 libreadline6-dev > /dev/null
 
     elif [[ $BASE == "fedora" ]]; then
         # Testing dependencies
-        dnf -y -q install gtk3 gobject-introspection Xvfb gnome-desktop-testing dbus-x11 dbus \
+        dnf -y -q install gtk3 gtk3-devel gobject-introspection Xvfb gnome-desktop-testing dbus-x11 dbus \
                           cairo intltool libxslt bison nspr zlib python3-devel dbus-glib libicu libffi pcre libxml2 libxslt libtool flex \
-                          cairo-devel zlib-devel libffi-devel pcre-devel libxml2-devel libxslt-devel
+                          cairo-devel zlib-devel libffi-devel pcre-devel libxml2-devel libxslt-devel \
+                          libedit libedit-devel
     fi
 }
 
@@ -106,9 +108,10 @@ function do_Configure_JHBuild(){
     echo '-- Set JHBuild Configuration --'
 
     mkdir -p ~/.config
+    autogenargs="--enable-compile-warnings=error --enable-installed-tests --with-xvfb-tests"
 
     cat <<EOFILE >> ~/.config/jhbuildrc
-module_autogenargs['gjs'] = '--enable-compile-warnings=error --enable-installed-tests --with-xvfb-tests'
+module_autogenargs['gjs'] = "$autogenargs"
 module_makeargs['gjs'] = '-s'
 skip = ['gettext', 'yelp-xsl', 'yelp-tools', 'gtk-doc']
 EOFILE
@@ -226,7 +229,7 @@ elif [[ $1 == "GJS" ]]; then
     # Extra testing
     echo
     echo '-- Installed GJS tests --'
-    jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
+    xvfb-run jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
 
 else
     echo
