@@ -36,7 +36,6 @@ struct Closure {
     JSRuntime *runtime;
     JSContext *context;
     GjsMaybeOwned<JSObject *> obj;
-    guint unref_on_global_object_finalized : 1;
 };
 
 struct GjsClosure {
@@ -106,56 +105,17 @@ global_context_finalized(JS::HandleObject obj,
                          void            *data)
 {
     GjsClosure *gc = (GjsClosure*) data;
-    Closure *c;
-    bool need_unref;
-
-    c = &gc->priv;
+    Closure *c = &gc->priv;
 
     gjs_debug_closure("Context global object destroy notifier on closure %p "
                       "which calls object %p",
                       c, c->obj.get());
-
-    /* invalidate_js_pointers() could free us so check flag now to avoid
-     * invalid memory access
-     */
-    need_unref = c->unref_on_global_object_finalized;
-    c->unref_on_global_object_finalized = false;
 
     if (c->obj != NULL) {
         g_assert(c->obj == obj);
 
         invalidate_js_pointers(gc);
     }
-
-    if (need_unref) {
-        g_closure_unref(&gc->base);
-    }
-}
-
-static void
-check_context_valid(GjsClosure *gc)
-{
-    Closure *c = &gc->priv;
-    JSContext *a_context;
-    JSContext *iter;
-
-    if (c->runtime == NULL)
-        return;
-
-    iter = NULL;
-    while ((a_context = JS_ContextIterator(c->runtime,
-                                           &iter)) != NULL) {
-        if (a_context == c->context) {
-            return;
-        }
-    }
-
-    gjs_debug_closure("Context %p no longer exists, invalidating "
-                      "closure %p which calls object %p",
-                      c->context, c, c->obj.get());
-
-    /* Did not find the context. */
-    invalidate_js_pointers(gc);
 }
 
 /* Invalidation is like "dispose" - it is guaranteed to happen at
@@ -187,58 +147,20 @@ closure_invalidated(gpointer data,
         return;
     }
 
-    /* this will set c->obj to null if the context is dead
+    /* The context still exists, remove our destroy notifier. Otherwise we
+     * would call the destroy notifier on an already-freed closure.
+     *
+     * This happens in the normal case, when the closure is
+     * invalidated for some reason other than destruction of the
+     * JSContext.
      */
-    check_context_valid((GjsClosure*)closure);
+    gjs_debug_closure("   (closure %p's context was alive, "
+                      "removing our destroy notifier on global object)",
+                      closure);
 
-    if (c->obj == NULL) {
-        /* Context is dead here. This happens if, as a side effect of
-         * tearing down the context, the closure was invalidated,
-         * say be some other finalized object that had a ref to
-         * the closure dropping said ref.
-         *
-         * Because c->obj was not NULL at the start of
-         * closure_invalidated, we know that
-         * global_context_finalized() has not been called.  So we know
-         * we are not being invalidated from inside
-         * global_context_finalized().
-         *
-         * That means global_context_finalized() has yet to be called,
-         * but we know it will be called, because the context is dead
-         * and thus its global object should be finalized.
-         *
-         * We can't call gjs_keep_alive_remove_global_child() because
-         * the context is invalid memory and we can't get to the
-         * global object that stores the keep alive.
-         *
-         * So global_context_finalized() could be called on an
-         * already-finalized closure. To avoid this, we temporarily
-         * ref ourselves, and set a flag to remove this ref
-         * in global_context_finalized().
-         */
-        gjs_debug_closure("   (closure %p's context was dead, holding ref "
-                          "until global object finalize)",
-                          closure);
-
-        c->unref_on_global_object_finalized = true;
-        g_closure_ref(closure);
-    } else {
-        /* If the context still exists, then remove our destroy
-         * notifier.  Otherwise we would call the destroy notifier on
-         * an already-freed closure.
-         *
-         * This happens in the normal case, when the closure is
-         * invalidated for some reason other than destruction of the
-         * JSContext.
-         */
-        gjs_debug_closure("   (closure %p's context was alive, "
-                          "removing our destroy notifier on global object)",
-                          closure);
-
-        c->obj.reset();
-        c->context = NULL;
-        c->runtime = NULL;
-    }
+    c->obj.reset();
+    c->context = NULL;
+    c->runtime = NULL;
 }
 
 static void
@@ -272,8 +194,6 @@ gjs_closure_invoke(GClosure                   *closure,
     JSContext *context;
 
     c = &((GjsClosure*) closure)->priv;
-
-    check_context_valid((GjsClosure*)closure);
 
     if (c->obj == NULL) {
         /* We were destroyed; become a no-op */
@@ -379,8 +299,6 @@ gjs_closure_new(JSContext  *context,
      */
     c->context = context;
     JS_BeginRequest(context);
-
-    c->unref_on_global_object_finalized = false;
 
     GJS_INC_COUNTER(closure);
 
