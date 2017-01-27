@@ -34,13 +34,9 @@ gjsoverridedir = $(gjsjsdir)/overrides
 gjs_public_includedir = $(includedir)/gjs-1.0
 
 ########################################################################
-nobase_gjs_public_include_HEADERS =	\
-	gjs/context.h		\
-	gjs/coverage.h			\
-	gjs/gjs.h			\
-	gjs/macros.h			\
-	util/error.h			\
-	$(NULL)
+include gjs-srcs.mk
+########################################################################
+nobase_gjs_public_include_HEADERS = $(gjs_public_headers)
 
 ########################################################################
 pkgconfig_DATA = gjs-1.0.pc
@@ -75,107 +71,19 @@ libgjs_la_CPPFLAGS += $(GJS_GTK_CFLAGS)
 libgjs_la_LIBADD += $(GJS_GTK_LIBS)
 endif
 
-libgjs_la_SOURCES =		\
-	gjs/byteArray.cpp		\
-	gjs/context.cpp		\
-	gjs/context-private.h		\
-	gjs/importer.cpp		\
-	gjs/coverage-internal.h	\
-	gjs/coverage.cpp \
-	gjs/jsapi-constructor-proxy.cpp	\
-	gjs/jsapi-constructor-proxy.h	\
-	gjs/jsapi-private.cpp	\
-	gjs/jsapi-private.h		\
-	gjs/jsapi-util.cpp	\
-	gjs/jsapi-dynamic-class.cpp \
-	gjs/jsapi-util-args.h		\
-	gjs/jsapi-util-error.cpp	\
-	gjs/jsapi-util-string.cpp	\
-	gjs/mem.cpp		\
-	gjs/native.cpp		\
-	gjs/runtime.cpp		\
-	gjs/stack.cpp		\
-	gjs/type-module.cpp	\
-	modules/modules.cpp	\
-	modules/modules.h	\
-	util/error.cpp		\
-	util/hash-x32.cpp		\
-	util/hash-x32.h			\
-	util/glib.cpp		\
-	util/glib.h			\
-	util/log.cpp		\
-	util/log.h			\
-	util/misc.cpp			\
-	util/misc.h			\
-	$(NULL)
-
-# For historical reasons, some files live in gi/
-libgjs_la_SOURCES += \
-	gi/gjs_gi_trace.h \
-	gi/arg.cpp	\
-	gi/boxed.cpp	\
-	gi/closure.cpp	\
-	gi/enumeration.cpp	\
-	gi/function.cpp	\
-	gi/keep-alive.cpp	\
-	gi/ns.cpp	\
-	gi/object.cpp	\
-	gi/foreign.cpp	\
-	gi/fundamental.cpp	\
-	gi/param.cpp	\
-	gi/proxyutils.cpp	\
-	gi/proxyutils.h		\
-	gi/repo.cpp	\
-	gi/union.cpp	\
-	gi/value.cpp	\
-	gi/interface.cpp	\
-	gi/gtype.cpp	\
-	gi/gerror.cpp
+# Please see gjs-srcs.mk for brief expanations
+# of the layout of the sources due to historical
+# reasons
+libgjs_la_SOURCES = $(gjs_srcs)
 
 # Also, these files used to be a separate library
-libgjs_private_source_files = \
-	libgjs-private/gjs-gdbus-wrapper.cpp	\
-	libgjs-private/gjs-gdbus-wrapper.h	\
-	libgjs-private/gjs-util.cpp		\
-	libgjs-private/gjs-util.h		\
-	libgjs-private/gjs-gtk-util.h
+libgjs_private_source_files = $(gjs_private_srcs)
 
 if ENABLE_GTK
-libgjs_private_source_files += 			\
-	libgjs-private/gjs-gtk-util.c		\
-	$(NULL)
+libgjs_private_source_files += $(gjs_gtk_private_srcs)
 endif
 
 libgjs_la_SOURCES += $(libgjs_private_source_files)
-
-# These used to be public headers for external modules
-libgjs_la_SOURCES +=		\
-	gjs/byteArray.h		\
-	gjs/importer.h		\
-	gjs/jsapi-util.h	\
-	gjs/jsapi-wrapper.h	\
-	gjs/runtime.h		\
-	gjs/type-module.h	\
-	gjs/mem.h		\
-	gjs/native.h		\
-	gi/ns.h	        	\
-	gi/object.h		\
-	gi/foreign.h		\
-	gi/fundamental.h	\
-	gi/param.h		\
-	gi/repo.h		\
-	gi/union.h		\
-	gi/value.h		\
-	gi/arg.h		\
-	gi/boxed.h		\
-	gi/closure.h		\
-	gi/enumeration.h	\
-	gi/function.h		\
-	gi/keep-alive.h		\
-	gi/interface.h		\
-	gi/gtype.h		\
-	gi/gerror.h		\
-	$(NULL)
 
 GjsPrivate-1.0.gir: libgjs.la
 GjsPrivate_1_0_gir_LIBS = libgjs.la
@@ -234,7 +142,7 @@ gjs_console_LDADD =		\
 	$(GJS_CONSOLE_LIBS)	\
 	libgjs.la
 gjs_console_LDFLAGS = -rdynamic
-gjs_console_SOURCES = gjs/console.cpp
+gjs_console_SOURCES = $(gjs_console_srcs)
 
 install-exec-hook:
 	(cd $(DESTDIR)$(bindir) && $(LN_S) -f gjs-console$(EXEEXT) gjs$(EXEEXT))
