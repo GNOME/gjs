@@ -86,7 +86,8 @@ struct GjsHeapOperation<JSObject *> {
     static bool
     update_after_gc(JS::Heap<JSObject *> *location)
     {
-        return JS_IsAboutToBeFinalized(location);
+        JS_UpdateWeakPointerAfterGC(location);
+        return (*location == nullptr);
     }
 };
 

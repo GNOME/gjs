@@ -99,6 +99,9 @@ enum {
 static std::stack<JS::PersistentRootedObject> object_init_list;
 static GHashTable *class_init_properties;
 
+static bool weak_pointer_callback = false;
+static std::set<ObjectInstance *> weak_pointer_list;
+
 extern struct JSClass gjs_object_instance_class;
 static GThread *gjs_eval_thread;
 static volatile gint pending_idle_toggles;
@@ -922,14 +925,15 @@ object_instance_props_to_g_parameters(JSContext                  *context,
 }
 
 #define DEBUG_DISPOSE 0
-#if DEBUG_DISPOSE
 static void
 wrapped_gobj_dispose_notify(gpointer      data,
                             GObject      *where_the_object_was)
 {
-    gjs_debug(GJS_DEBUG_GOBJECT, "JSObject %p GObject %p disposed", data, where_the_object_was);
-}
+    weak_pointer_list.erase(static_cast<ObjectInstance *>(data));
+#if DEBUG_DISPOSE
+    gjs_debug(GJS_DEBUG_GOBJECT, "Wrapped GObject %p disposed", where_the_object_was);
 #endif
+}
 
 static void
 gobj_no_longer_kept_alive_func(JS::HandleObject obj,
@@ -945,6 +949,7 @@ gobj_no_longer_kept_alive_func(JS::HandleObject obj,
 
     priv->keep_alive.reset();
     dissociate_list_remove(priv);
+    weak_pointer_list.erase(priv);
 }
 
 static GQuark
@@ -1146,10 +1151,9 @@ wrapped_gobj_toggle_notify(gpointer      data,
                            GObject      *gobj,
                            gboolean      is_last_ref)
 {
-    bool is_main_thread, is_sweeping;
+    bool is_main_thread;
     bool toggle_up_queued, toggle_down_queued;
     GjsContext *context;
-    JSContext *js_context;
 
     context = gjs_context_get_current();
     if (_gjs_context_destroying(context)) {
@@ -1192,12 +1196,6 @@ wrapped_gobj_toggle_notify(gpointer      data,
      * not a big deal.
      */
     is_main_thread = (gjs_eval_thread == g_thread_self());
-    if (is_main_thread) {
-        js_context = (JSContext*) gjs_context_get_native_context(context);
-        is_sweeping = gjs_runtime_is_sweeping(JS_GetRuntime(js_context));
-    } else {
-        is_sweeping = false;
-    }
 
     toggle_up_queued = toggle_idle_source_is_queued(gobj, TOGGLE_UP);
     toggle_down_queued = toggle_idle_source_is_queued(gobj, TOGGLE_DOWN);
@@ -1230,17 +1228,7 @@ wrapped_gobj_toggle_notify(gpointer      data,
                 g_error("toggling up object %s that's already queued to toggle up\n",
                         G_OBJECT_TYPE_NAME(gobj));
             }
-            if (is_sweeping) {
-                ObjectInstance *priv = get_object_qdata(gobj);
-                if (priv->keep_alive.update_after_gc()) {
-                    /* Ouch, the JS object is dead already. Disassociate the GObject
-                     * and hope the GObject dies too.
-                     */
-                    disassociate_js_gobject(gobj);
-                }
-            } else {
-                handle_toggle_up(gobj);
-            }
+            handle_toggle_up(gobj);
         } else {
             queue_toggle_idle(gobj, TOGGLE_UP);
         }
@@ -1317,6 +1305,37 @@ init_object_private (JSContext       *context,
 }
 
 static void
+update_heap_wrapper_weak_pointers(JSRuntime *rt,
+                                  gpointer   data)
+{
+    for (auto iter = weak_pointer_list.begin(); iter != weak_pointer_list.end(); ) {
+        ObjectInstance *priv = *iter;
+        if (priv->keep_alive.rooted() || priv->keep_alive == nullptr ||
+            !priv->keep_alive.update_after_gc()) {
+            iter++;
+        } else {
+            /* Ouch, the JS object is dead already. Disassociate the
+             * GObject and hope the GObject dies too. (Remove it from
+             * the weak pointer list first, since the disassociation
+             * may also cause it to be erased.)
+             */
+            iter = weak_pointer_list.erase(iter);
+            disassociate_js_gobject(priv->gobj);
+        }
+    }
+}
+
+static void
+ensure_weak_pointer_callback(JSContext *cx)
+{
+    if (!weak_pointer_callback) {
+        JS_AddWeakPointerCallback(JS_GetRuntime(cx),
+                                  update_heap_wrapper_weak_pointers, NULL);
+        weak_pointer_callback = true;
+    }
+}
+
+static void
 associate_js_gobject (JSContext       *context,
                       JS::HandleObject object,
                       GObject         *gobj)
@@ -1330,9 +1349,10 @@ associate_js_gobject (JSContext       *context,
 
     set_object_qdata(gobj, priv);
 
-#if DEBUG_DISPOSE
-    g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, object);
-#endif
+    ensure_weak_pointer_callback(context);
+    weak_pointer_list.insert(priv);
+
+    g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, priv);
 
     /* OK, here is where things get complicated. We want the
      * wrapped gobj to keep the JSObject* wrapper alive, because
@@ -1351,9 +1371,11 @@ associate_js_gobject (JSContext       *context,
 }
 
 static void
-disassociate_js_gobject (GObject   *gobj)
+disassociate_js_gobject(GObject *gobj)
 {
     ObjectInstance *priv = get_object_qdata(gobj);
+
+    g_object_weak_unref(priv->gobj, wrapped_gobj_dispose_notify, priv);
 
     /* Idles are already checked in the only caller of this
        function, the toggle ref notify, but let's check again...
@@ -1366,10 +1388,6 @@ disassociate_js_gobject (GObject   *gobj)
 
     /* Mark that a JS object once existed, but it doesn't any more */
     priv->js_object_finalized = true;
-
-#if DEBUG_DISPOSE
-    g_object_weak_unref(gobj, wrapped_gobj_dispose_notify, object);
-#endif
 }
 
 static bool
