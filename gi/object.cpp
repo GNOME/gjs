@@ -1733,13 +1733,7 @@ real_connect_func(JSContext *context,
         return false;
     }
 
-    /* Best I can tell, there is no way to know if argv[1] is really
-     * callable other than to just try it. Checking whether it's a
-     * function will not detect native objects that provide
-     * JSClass::call, for example.
-     */
-
-    if (argc != 2 || !argv[0].isString() || !argv[1].isObject()) {
+    if (argc != 2 || !argv[0].isString() || !JS::IsCallable(&argv[1].toObject())) {
         gjs_throw(context, "connect() takes two args, the signal name and the callback");
         return false;
     }

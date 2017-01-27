@@ -158,7 +158,7 @@ Test.prototype = {
     },
 
     arrayOutBadSig: function() {
-        return [ "Hello", "World", "!" ];
+        return Symbol('Hello World!');
     },
 
     byteArrayEcho: function(binaryString) {
@@ -375,19 +375,14 @@ describe('Exported DBus object', function () {
         loop.run();
     });
 
-    /* COMPAT: This test should test what happens when a TypeError is thrown
-     * during argument marshalling, but conversions don't throw TypeErrors
-     * anymore, so we can't test that ... until we upgrade to mozjs38 which has
-     * Symbols. Converting a Symbol to an int32 or string will throw a TypeError.
-     */
-    xit('handles a bad signature by throwing an exception', function () {
+    it('handles a bad signature by throwing an exception', function () {
         proxy.arrayOutBadSigRemote(function(result, excp) {
             expect(result).toBeNull();
             expect(excp).not.toBeNull();
             loop.quit();
         });
         loop.run();
-    }).pend('currently cannot throw TypeError during conversion');
+    });
 
     it('can call a remote method that is implemented asynchronously', function () {
         let someString = "Hello world!";

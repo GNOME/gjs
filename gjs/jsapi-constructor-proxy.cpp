@@ -144,8 +144,7 @@ create_gjs_constructor_proxy(JSContext *cx,
         return false;
     }
 
-    if (!args[0].isObject() || !JS_ObjectIsFunction(cx, &args[0].toObject())) {
-        /* COMPAT: Use JS::IsConstructor() in mozjs38 */
+    if (!args[0].isObject() || !JS::IsConstructor(&args[0].toObject())) {
         gjs_throw(cx, "First argument must be a constructor");
         return false;
     }

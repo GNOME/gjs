@@ -394,7 +394,8 @@ gjs_parse_call_args(JSContext    *cx,
 
     JSAutoRequest ar(cx);
 
-    /* COMPAT: In future, use args.requireAtLeast() */
+    /* COMPAT: In future, use args.requireAtLeast()
+     * https://bugzilla.mozilla.org/show_bug.cgi?id=1334338 */
     if (args.length() < n_required ||
         (args.length() > n_total && !ignore_trailing_args)) {
         if (n_required == n_total) {
