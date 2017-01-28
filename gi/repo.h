@@ -35,8 +35,7 @@
 G_BEGIN_DECLS
 
 bool gjs_define_repo(JSContext              *cx,
-                     JS::MutableHandleObject repo,
-                     const char             *name);
+                     JS::MutableHandleObject repo);
 
 const char* gjs_info_type_name                  (GIInfoType      type);
 JSObject*   gjs_lookup_private_namespace        (JSContext      *context);

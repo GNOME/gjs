@@ -28,7 +28,6 @@
 #include <string.h>
 #include <vector>
 
-#include "gjs/gi.h"
 #include "object.h"
 #include "gtype.h"
 #include "interface.h"

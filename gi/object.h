@@ -63,6 +63,9 @@ void gjs_object_define_static_methods(JSContext       *context,
                                       GType            gtype,
                                       GIObjectInfo    *object_info);
 
+bool gjs_define_private_gi_stuff(JSContext              *cx,
+                                 JS::MutableHandleObject module);
+
 G_END_DECLS
 
 #endif  /* __GJS_OBJECT_H__ */

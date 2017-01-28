@@ -80,8 +80,6 @@ libgjs_la_SOURCES =		\
 	gjs/context.cpp		\
 	gjs/context-private.h		\
 	gjs/importer.cpp		\
-	gjs/gi.h		\
-	gjs/gi.cpp		\
 	gjs/coverage-internal.h	\
 	gjs/coverage.cpp \
 	gjs/jsapi-constructor-proxy.cpp	\

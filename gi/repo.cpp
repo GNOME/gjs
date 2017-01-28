@@ -311,8 +311,7 @@ repo_new(JSContext *context)
 
 bool
 gjs_define_repo(JSContext              *cx,
-                JS::MutableHandleObject repo,
-                const char             *name)
+                JS::MutableHandleObject repo)
 {
     repo.set(repo_new(cx));
     return true;

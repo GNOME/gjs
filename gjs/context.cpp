@@ -36,9 +36,8 @@
 #include "native.h"
 #include "byteArray.h"
 #include "runtime.h"
-
-#include "gi.h"
 #include "gi/object.h"
+#include "gi/repo.h"
 
 #include <modules/modules.h>
 
@@ -373,7 +372,7 @@ gjs_context_class_init(GjsContextClass *klass)
 
     gjs_register_native_module("byteArray", gjs_define_byte_array_stuff);
     gjs_register_native_module("_gi", gjs_define_private_gi_stuff);
-    gjs_register_native_module("gi", gjs_define_gi_stuff);
+    gjs_register_native_module("gi", gjs_define_repo);
 
     gjs_register_static_modules();
 }
