@@ -1,3 +1,63 @@
+NEXT
+----
+
+- New JavaScript features! This version of GJS is based on SpiderMonkey 38, an
+  upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 31.
+  Our plans are to continue upgrading to subsequent ESRs as maintainer
+  availability allows. Here are the highlights of the new JavaScript features.
+  For more information, look them up on MDN or devdocs.io.
+
+  * New syntax
+    + Shorthand syntax for method definitions: { foo() { return 5; } }
+    + Shorthand syntax for object literals: let b = 42; let o = {b}; o.b === 42
+    + Computed property names for the above, as well as in getter and setter
+      expressions and destructuring assignment: { ['b' + 'ar']() { return 6; } }
+    + Spread operator in destructuring assignment: let [a, ...b] = [1, 2, 3];
+    + Template literals: `Hello, ${name}` with optional tags: tag`string`
+
+  * New APIs
+    + Symbol, a new fundamental type
+    + WeakSet, a Set which does not prevent its members from being
+      garbage-collected
+    + [Symbol.iterator] properties for Array, Map, Set, String, TypedArray, and
+      the arguments object
+    + New Array and TypedArray functionality: Array.copyWithin(), Array.from()
+    + New return() method for generators
+    + New Number.isSafeInteger() method
+    + New Object.assign() method which can replace Lang.copyProperties() in many
+      cases
+    + New Object.getOwnPropertySymbols() method
+    + New RegExp flags, global, ignoreCase, multiline, sticky properties that
+      give access to the flags that the regular expression was created with
+    + String.raw, a tag for template strings similar to Python's r""
+    + New TypedArray methods for correspondence with Array: entries(), every(),
+      fill(), filter(), find(), findIndex(), forEach(), indexOf(), join(),
+      keys(), lastIndexOf(), map(), of(), reduce(), reduceRight(), reverse(),
+      slice(), some(), values()
+
+  * New behaviour
+    + Temporal dead zone: print(x); let x = 5; no longer allowed
+    + Full ES6-compliant implementation of const keyword
+    + The Set, Map, and WeakMap constructors can now take null as their argument
+    + The WeakMap constructor can now take an iterable as its argument
+    + The Function.name and Function.length properties are configurable
+    + When subclassing Map, WeakMap, and Set or using the constructors on
+      generic objects, they will look for custom set() and add() methods.
+    + RegExp.source and RegExp.toString() now deal with empty regexes, and
+      escape their output.
+    + Non-object arguments to Object.preventExtensions() now do not throw an
+      exception, simply return the original object
+
+  * Backwards-incompatible changes
+    + It is now a syntax error to declare the same variable twice with "let" or
+      "const" in the same scope. Existing code may need to be fixed, but the
+      fix is trivial.
+    + SpiderMonkey is now extra vocal about warning when you access an
+      undefined property, and this causes some false positives. You can turn
+      this warning off by setting GJS_DISABLE_EXTRA_WARNINGS=1. If it is overly
+      annoying, let me know and I will consider making it disabled by default
+      in a future release.
+
 Version 1.47.4
 --------------
 
