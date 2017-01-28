@@ -336,7 +336,6 @@ import_file(JSContext       *context,
     gsize script_len = 0;
     GError *error = NULL;
 
-    JS::CompileOptions options(context);
     JS::RootedValue ignored(context);
 
     if (!(g_file_load_contents(file, NULL, &script, &script_len, NULL, &error))) {
