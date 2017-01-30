@@ -394,7 +394,7 @@ load_module_init(JSContext       *context,
 static void
 load_module_elements(JSContext        *cx,
                      JS::HandleObject  in_object,
-                     ImporterIterator *iter,
+                     JS::AutoIdVector& prop_ids,
                      const char       *init_path)
 {
     size_t ix, length;
@@ -407,14 +407,8 @@ load_module_elements(JSContext        *cx,
     if (!ids)
         return;
 
-    for (ix = 0, length = ids.length(); ix < length; ix++) {
-        char *name;
-        if (!gjs_get_string_id(cx, ids[ix], &name))
-            continue;
-
-        /* Pass ownership of name */
-        g_ptr_array_add(iter->elements, name);
-    }
+    for (ix = 0, length = ids.length(); ix < length; ix++)
+        prop_ids.append(ids[ix]);
 }
 
 /* If error, returns false. If not found, returns true but does not touch
@@ -676,198 +670,116 @@ do_import(JSContext       *context,
     return result;
 }
 
-static ImporterIterator *
-importer_iterator_new(void)
-{
-    ImporterIterator *iter;
-
-    iter = g_slice_new0(ImporterIterator);
-
-    iter->elements = g_ptr_array_new();
-    iter->index = 0;
-
-    return iter;
-}
-
-static void
-importer_iterator_free(ImporterIterator *iter)
-{
-    g_ptr_array_foreach(iter->elements, (GFunc)g_free, NULL);
-    g_ptr_array_free(iter->elements, true);
-    g_slice_free(ImporterIterator, iter);
-}
-
-/*
- * Like JSEnumerateOp, but enum provides contextual information as follows:
- *
- * JSENUMERATE_INIT: allocate private enum struct in state_p, return number
- * of elements in *id_p
- * JSENUMERATE_NEXT: return next property id in *id_p, and if no new property
- * free state_p and set to JS::NullValue()
- * JSENUMERATE_DESTROY : destroy state_p
- *
- * Note that in a for ... in loop, this will be called first on the object,
+/* Note that in a for ... in loop, this will be called first on the object,
  * then on its prototype.
- *
  */
 static bool
-importer_new_enumerate(JSContext  *context,
-                       JS::HandleObject object,
-                       JSIterateOp enum_op,
-                       JS::MutableHandleValue statep,
-                       JS::MutableHandleId idp)
+importer_enumerate(JSContext       *context,
+                   JS::HandleObject object)
 {
-    ImporterIterator *iter;
+    Importer *priv;
+    guint32 search_path_len;
+    guint32 i;
 
-    switch (enum_op) {
-    case JSENUMERATE_INIT_ALL:
-    case JSENUMERATE_INIT: {
-        Importer *priv;
-        JS::RootedObject search_path(context);
-        guint32 search_path_len;
-        guint32 i;
+    priv = priv_from_js(context, object);
 
-        statep.setNull();
+    if (!priv)
+        /* we are enumerating the prototype properties */
+        return true;
 
-        idp.set(INT_TO_JSID(0));
+    JS::RootedObject search_path(context);
+    if (!gjs_object_require_property(context, object, "importer",
+                                     GJS_STRING_SEARCH_PATH,
+                                     &search_path))
+        return false;
 
-        priv = priv_from_js(context, object);
+    if (!JS_IsArrayObject(context, search_path)) {
+        gjs_throw(context, "searchPath property on importer is not an array");
+        return false;
+    }
 
-        if (!priv)
-            /* we are enumerating the prototype properties */
-            return true;
+    if (!JS_GetArrayLength(context, search_path, &search_path_len)) {
+        gjs_throw(context, "searchPath array has no length");
+        return false;
+    }
 
-        if (!gjs_object_require_property(context, object, "importer",
-                                         GJS_STRING_SEARCH_PATH,
-                                         &search_path))
-            return false;
+    JS::RootedValue elem(context);
+    for (i = 0; i < search_path_len; ++i) {
+        char *dirname = NULL;
+        char *init_path;
 
-        if (!JS_IsArrayObject(context, search_path)) {
-            gjs_throw(context, "searchPath property on importer is not an array");
+        elem.setUndefined();
+        if (!JS_GetElement(context, search_path, i, &elem)) {
+            /* this means there was an exception, while elem.isUndefined()
+             * means no element found
+             */
             return false;
         }
 
-        if (!JS_GetArrayLength(context, search_path, &search_path_len)) {
-            gjs_throw(context, "searchPath array has no length");
+        if (elem.isUndefined())
+            continue;
+
+        if (!elem.isString()) {
+            gjs_throw(context, "importer searchPath contains non-string");
             return false;
         }
 
-        iter = importer_iterator_new();
+        if (!gjs_string_to_utf8(context, elem, &dirname))
+            return false; /* Error message already set */
 
-        JS::RootedValue elem(context);
-        for (i = 0; i < search_path_len; ++i) {
-            char *dirname = NULL;
-            char *init_path;
+        init_path = g_build_filename(dirname, MODULE_INIT_FILENAME, NULL);
 
-            elem = JS::UndefinedValue();
-            if (!JS_GetElement(context, search_path, i, &elem)) {
-                /* this means there was an exception, while elem.isUndefined()
-                 * means no element found
-                 */
-                importer_iterator_free(iter);
+        JS::AutoIdVector module_props(context);
+        JS::RootedValue v_prop_name(context);
+        load_module_elements(context, object, module_props, init_path);
+
+        g_free(init_path);
+
+        for (const jsid *id = module_props.begin(); id != module_props.end(); id++) {
+            v_prop_name.setString(JSID_TO_STRING(*id));
+            g_autofree char *prop_name = NULL;
+            if (!gjs_string_to_filename(context, v_prop_name, &prop_name) ||
+                !do_import(context, object, priv, prop_name))
                 return false;
-            }
+        }
 
-            if (elem.isUndefined())
+        /* new_for_commandline_arg handles resource:/// paths */
+        GjsAutoUnref<GFile> dir = g_file_new_for_commandline_arg(dirname);
+        g_free(dirname);
+        GjsAutoUnref<GFileEnumerator> direnum =
+            g_file_enumerate_children(dir, G_FILE_ATTRIBUTE_STANDARD_TYPE,
+                                      G_FILE_QUERY_INFO_NONE, NULL, NULL);
+
+        while (true) {
+            GFileInfo *info;
+            GFile *file;
+            if (!g_file_enumerator_iterate(direnum, &info, &file, NULL, NULL))
+                break;
+            if (info == NULL || file == NULL)
+                break;
+
+            GjsAutoChar filename = g_file_get_basename(file);
+
+            /* skip hidden files and directories (.svn, .git, ...) */
+            if (filename[0] == '.')
                 continue;
 
-            if (!elem.isString()) {
-                gjs_throw(context, "importer searchPath contains non-string");
-                importer_iterator_free(iter);
-                return false;
-            }
+            /* skip module init file */
+            if (strcmp(filename, MODULE_INIT_FILENAME) == 0)
+                continue;
 
-            if (!gjs_string_to_utf8(context, elem, &dirname)) {
-                importer_iterator_free(iter);
-                return false; /* Error message already set */
-            }
-
-            init_path = g_build_filename(dirname, MODULE_INIT_FILENAME,
-                                         NULL);
-
-            load_module_elements(context, object, iter, init_path);
-
-            g_free(init_path);
-
-            /* new_for_commandline_arg handles resource:/// paths */
-            GjsAutoUnref<GFile> dir = g_file_new_for_commandline_arg(dirname);
-            g_free(dirname);
-            GjsAutoUnref<GFileEnumerator> direnum =
-                g_file_enumerate_children(dir, G_FILE_ATTRIBUTE_STANDARD_TYPE,
-                                          G_FILE_QUERY_INFO_NONE, NULL, NULL);
-
-            while (true) {
-                GFileInfo *info;
-                GFile *file;
-                if (!g_file_enumerator_iterate(direnum, &info, &file, NULL, NULL))
-                    break;
-                if (info == NULL || file == NULL)
-                    break;
-
-                GjsAutoChar filename = g_file_get_basename(file);
-
-                /* skip hidden files and directories (.svn, .git, ...) */
-                if (filename[0] == '.')
-                    continue;
-
-                /* skip module init file */
-                if (strcmp(filename, MODULE_INIT_FILENAME) == 0)
-                    continue;
-
-                if (g_file_info_get_file_type(info) == G_FILE_TYPE_DIRECTORY) {
-                    g_ptr_array_add(iter->elements, g_strdup(filename));
-                } else if (g_str_has_suffix(filename, "." G_MODULE_SUFFIX) ||
-                           g_str_has_suffix(filename, ".js")) {
-                    g_ptr_array_add(iter->elements,
-                                    g_strndup(filename, strlen(filename) - 3));
-                }
+            if (g_file_info_get_file_type(info) == G_FILE_TYPE_DIRECTORY) {
+                if (!do_import(context, object, priv, filename))
+                    return false;
+            } else if (g_str_has_suffix(filename, "." G_MODULE_SUFFIX) ||
+                       g_str_has_suffix(filename, ".js")) {
+                GjsAutoChar filename_noext =
+                    g_strndup(filename, strlen(filename) - 3);
+                if (!do_import(context, object, priv, filename_noext))
+                    return false;
             }
         }
-
-        statep.set(JS::PrivateValue(iter));
-
-        idp.set(INT_TO_JSID(iter->elements->len));
-
-        break;
     }
-
-    case JSENUMERATE_NEXT: {
-        if (statep.isNull()) /* Iterating prototype */
-            return true;
-
-        iter = (ImporterIterator*) statep.get().toPrivate();
-
-        if (iter->index < iter->elements->len) {
-            JS::RootedValue element_val(context);
-            if (!gjs_string_from_utf8(context,
-                                         (const char*) g_ptr_array_index(iter->elements,
-                                                           iter->index++),
-                                         -1,
-                                         &element_val))
-                return false;
-
-            if (!JS_ValueToId(context, element_val, idp))
-                return false;
-
-            break;
-        }
-        /* else fall through to destroying the iterator */
-    }
-
-    case JSENUMERATE_DESTROY: {
-        if (!statep.isNull()) {
-            iter = (ImporterIterator*) statep.get().toPrivate();
-
-            importer_iterator_free(iter);
-
-            statep.setNull();
-        }
-    }
-
-    default:
-        ;
-    }
-
     return true;
 }
 
@@ -946,13 +858,12 @@ importer_finalize(JSFreeOp *fop,
 struct JSClass gjs_importer_class = {
     "GjsFileImporter",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_NEW_ENUMERATE |
     JSCLASS_IMPLEMENTS_BARRIERS,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
     NULL,  /* setProperty */
-    (JSEnumerateOp) importer_new_enumerate, /* needs cast since it's the new enumerate signature */
+    importer_enumerate,
     importer_resolve,
     NULL,  /* convert */
     importer_finalize
@@ -1117,7 +1028,7 @@ gjs_create_importer(JSContext       *context,
     if (!gjs_define_string_array(context, importer,
                                  "searchPath", -1, (const char **)search_path,
                                  /* settable (no READONLY) but not deleteable (PERMANENT) */
-                                 JSPROP_PERMANENT | JSPROP_ENUMERATE))
+                                 JSPROP_PERMANENT))
         g_error("no memory to define importer search path prop");
 
     g_strfreev(search_path);
