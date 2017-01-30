@@ -423,6 +423,42 @@ load_module_elements(JSContext        *cx,
     }
 }
 
+/* If error, returns false. If not found, returns true but does not touch
+ * the value at *result. If found, returns true and sets *result = true.
+ */
+static bool
+import_symbol_from_init_js(JSContext       *cx,
+                           JS::HandleObject importer,
+                           const char      *dirname,
+                           const char      *name,
+                           bool            *result)
+{
+    bool found;
+    g_autofree char *full_path = g_build_filename(dirname, MODULE_INIT_FILENAME,
+                                                  NULL);
+
+    JS::RootedObject module_obj(cx, load_module_init(cx, importer, full_path));
+    if (!module_obj || !JS_AlreadyHasOwnProperty(cx, module_obj, name, &found))
+        return false;
+
+    if (!found)
+        return true;
+
+    JS::RootedValue obj_val(cx);
+    if (!JS_GetProperty(cx, module_obj, name, &obj_val))
+        return false;
+
+    if (obj_val.isUndefined())
+        return true;
+
+    if (!JS_DefineProperty(cx, importer, name, obj_val,
+                           GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT))
+        return false;
+
+    *result = true;
+    return true;
+}
+
 static bool
 import_file_on_module(JSContext       *context,
                       JS::HandleObject obj,
@@ -499,7 +535,6 @@ do_import(JSContext       *context,
     directories = NULL;
 
     JS::RootedValue elem(context);
-    JS::RootedObject module_obj(context);
 
     /* First try importing an internal module like byteArray */
     if (priv->is_root &&
@@ -539,23 +574,9 @@ do_import(JSContext       *context,
             continue;
 
         /* Try importing __init__.js and loading the symbol from it */
-        if (full_path)
-            g_free(full_path);
-        full_path = g_build_filename(dirname, MODULE_INIT_FILENAME,
-                                     NULL);
-
-        module_obj.set(load_module_init(context, obj, full_path));
-        if (module_obj != NULL) {
-            JS::RootedValue obj_val(context);
-            if (JS_GetProperty(context, module_obj, name, &obj_val)) {
-                if (!obj_val.isUndefined() &&
-                    JS_DefineProperty(context, obj, name, obj_val,
-                                      GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT)) {
-                    result = true;
-                    goto out;
-                }
-            }
-        }
+        import_symbol_from_init_js(context, obj, dirname, name, &result);
+        if (result)
+            goto out;
 
         /* Second try importing a directory (a sub-importer) */
         if (full_path)

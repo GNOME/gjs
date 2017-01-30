@@ -417,6 +417,8 @@ function _expressionLinesToCounters(expressionLines, nLines) {
         return counters;
 
     for (let i = 1; i < counters.length; i++) {
+        if (!expressionLines.hasOwnProperty(expressionLinesIndex))
+            continue;
         if (expressionLines[expressionLinesIndex] == i) {
             counters[i] = 0;
             expressionLinesIndex++;
@@ -773,12 +775,6 @@ function CoverageStatisticsContainer(prefixes, cache) {
     let coveredFiles = {};
     let cacheMisses = 0;
 
-    function wantsStatisticsFor(filename) {
-        return prefixes.some(function(prefix) {
-            return filename.startsWith(prefix);
-        });
-    }
-
     function createStatisticsFor(filename) {
         let contents = getFileContents(filename);
         let nLines = _getNumberOfLinesForScript(contents);
@@ -799,10 +795,7 @@ function CoverageStatisticsContainer(prefixes, cache) {
     }
 
     function ensureStatisticsFor(filename) {
-        let wantStatistics = wantsStatisticsFor(filename);
-        let haveStatistics = !!coveredFiles[filename];
-
-        if (wantStatistics && !haveStatistics)
+        if (!coveredFiles[filename])
             coveredFiles[filename] = createStatisticsFor(filename);
         return coveredFiles[filename];
     }

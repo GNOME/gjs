@@ -217,6 +217,9 @@ throw_property_lookup_error(JSContext       *cx,
  * Guarantees that *value_p is set to something, if only JS::UndefinedValue(),
  * even if an exception is set and false is returned.
  *
+ * SpiderMonkey will emit a warning if the property is not present, so don't
+ * use this if you expect the property not to be present some of the time.
+ *
  * Requires request.
  */
 bool

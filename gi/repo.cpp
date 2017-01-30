@@ -64,19 +64,22 @@ get_version_for_ns (JSContext       *context,
                     char           **version)
 {
     JS::RootedObject versions(context);
+    bool found;
 
     if (!gjs_object_require_property(context, repo_obj,
                                      "GI repository object",
                                      GJS_STRING_GI_VERSIONS, &versions))
         return false;
 
-    if (!gjs_object_require_property(context, versions, NULL, ns_id, version)) {
-        /* Property not actually required, so clear an exception */
-        JS_ClearPendingException(context);
+    if (!JS_AlreadyHasOwnPropertyById(context, versions, ns_id, &found))
+        return false;
+
+    if (!found) {
         *version = NULL;
+        return true;
     }
 
-    return true;
+    return gjs_object_require_property(context, versions, NULL, ns_id, version);
 }
 
 static bool

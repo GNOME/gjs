@@ -197,32 +197,36 @@ gjs_##cname##_create_proto(JSContext *context,                                 \
     JS::RootedObject global(context, gjs_get_import_global(context));          \
     JS::RootedId class_name(context,                                           \
         gjs_intern_string_to_id(context, gjs_##cname##_class.name));           \
-    if (!JS_GetPropertyById(context, global, class_name, &rval))               \
+    bool found = false;                                                        \
+    if (!JS_AlreadyHasOwnPropertyById(context, global, class_name, &found))    \
         return JS::NullValue(); \
-    if (rval.isUndefined()) { \
-        JS::RootedObject prototype(context,                                    \
-            JS_InitClass(context, global, parent, &gjs_##cname##_class, ctor,  \
-                         0, &gjs_##cname##_proto_props[0],                     \
-                         &gjs_##cname##_proto_funcs[0],                        \
-                         NULL, NULL));                                         \
-        if (prototype == NULL) { \
-            return JS::NullValue(); \
-        } \
-        if (!gjs_object_require_property( \
-                context, global, NULL, \
-                class_name, &rval)) { \
-            return JS::NullValue(); \
-        } \
-        if (!JS_DefineProperty(context, module, proto_name, \
-                               rval, GJS_MODULE_PROP_FLAGS))                   \
-            return JS::NullValue(); \
-        if (gtype != G_TYPE_NONE) { \
-            JS::RootedObject rval_obj(context, &rval.toObject());              \
-            JS::RootedObject gtype_obj(context,                                \
-                gjs_gtype_create_gtype_wrapper(context, gtype));               \
-            JS_DefineProperty(context, rval_obj, "$gtype", gtype_obj,          \
-                              JSPROP_PERMANENT);                               \
-        } \
+    if (found) {                                                               \
+        if (!JS_GetPropertyById(context, global, class_name, &rval))           \
+            return JS::NullValue();                                            \
+        return rval;                                                           \
+    }                                                                          \
+    JS::RootedObject prototype(context,                                        \
+        JS_InitClass(context, global, parent, &gjs_##cname##_class, ctor,      \
+                     0, &gjs_##cname##_proto_props[0],                         \
+                     &gjs_##cname##_proto_funcs[0],                            \
+                     NULL, NULL));                                             \
+    if (prototype == NULL) { \
+        return JS::NullValue(); \
+    } \
+    if (!gjs_object_require_property( \
+            context, global, NULL, \
+            class_name, &rval)) { \
+        return JS::NullValue(); \
+    } \
+    if (!JS_DefineProperty(context, module, proto_name, \
+                           rval, GJS_MODULE_PROP_FLAGS))                       \
+        return JS::NullValue(); \
+    if (gtype != G_TYPE_NONE) { \
+        JS::RootedObject rval_obj(context, &rval.toObject());                  \
+        JS::RootedObject gtype_obj(context,                                    \
+            gjs_gtype_create_gtype_wrapper(context, gtype));                   \
+        JS_DefineProperty(context, rval_obj, "$gtype", gtype_obj,              \
+                          JSPROP_PERMANENT);                                   \
     } \
     return rval; \
 }

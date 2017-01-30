@@ -42,22 +42,22 @@ function _createSignals(gtype, signals) {
     }
 }
 
-function _createGTypeName(name, gtypename) {
-    if (gtypename)
-        return gtypename;
+function _createGTypeName(params) {
+    if (params.GTypeName)
+        return params.GTypeName;
     else
-        return 'Gjs_' + name;
+        return 'Gjs_' + params.Name;
 }
 
 function _getGObjectInterfaces(interfaces) {
     return interfaces.filter((iface) => iface.hasOwnProperty('$gtype'));
 }
 
-function _propertiesAsArray(propertyObj) {
+function _propertiesAsArray(params) {
     let propertiesArray = [];
-    if (propertyObj) {
-        for (let prop in propertyObj) {
-            propertiesArray.push(propertyObj[prop]);
+    if (params.Properties) {
+        for (let prop in params.Properties) {
+            propertiesArray.push(params.Properties[prop]);
         }
     }
     return propertiesArray;
@@ -124,7 +124,7 @@ const GObjectMeta = new Lang.Class({
             throw new TypeError("Classes require an explicit 'Name' parameter.");
         let name = params.Name;
 
-        let gtypename = _createGTypeName(params.Name, params.GTypeName);
+        let gtypename = _createGTypeName(params);
 
         if (!params.Extends)
             params.Extends = GObject.Object;
@@ -138,7 +138,7 @@ const GObjectMeta = new Lang.Class({
             interfaces = interfaces.filter((iface) => !parent.implements(iface));
         let gobjectInterfaces = _getGObjectInterfaces(interfaces);
 
-        let propertiesArray = _propertiesAsArray(params.Properties);
+        let propertiesArray = _propertiesAsArray(params);
         delete params.Properties;
 
         let newClassConstructor = Gi.register_type(parent.prototype, gtypename,
@@ -197,13 +197,13 @@ GObjectInterface.prototype._construct = function (params) {
         throw new TypeError("Interfaces require an explicit 'Name' parameter.");
     }
 
-    let gtypename = _createGTypeName(params.Name, params.GTypeName);
+    let gtypename = _createGTypeName(params);
     delete params.GTypeName;
 
     let interfaces = params.Requires || [];
     let gobjectInterfaces = _getGObjectInterfaces(interfaces);
 
-    let properties = _propertiesAsArray(params.Properties);
+    let properties = _propertiesAsArray(params);
     delete params.Properties;
 
     let newInterfaceConstructor = Gi.register_interface(gtypename,
