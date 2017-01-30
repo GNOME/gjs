@@ -1602,12 +1602,15 @@ generate_coverage_compartment_verify_script(GFile      *coverage_script,
 {
     char *coverage_script_filename = g_file_get_path(coverage_script);
     char *retval =
-        g_strdup_printf("const JSUnit = imports.jsUnit;\n"
-                        "const covered_script_filename = '%s';\n"
+        g_strdup_printf("const covered_script_filename = '%s';\n"
+                        "function assertEquals(lhs, rhs) {\n"
+                        "    if (lhs !== rhs)\n"
+                        "        throw new Error('Assertion failure');\n"
+                        "}\n"
                         "function assertArrayEquals(lhs, rhs) {\n"
-                        "    JSUnit.assertEquals(lhs.length, rhs.length);\n"
+                        "    assertEquals(lhs.length, rhs.length);\n"
                         "    for (let i = 0; i < lhs.length; i++)\n"
-                        "        JSUnit.assertEquals(lhs[i], rhs[i]);\n"
+                        "        assertEquals(lhs[i], rhs[i]);\n"
                         "}\n"
                         "\n"
                         "%s", coverage_script_filename, user_script);
@@ -2313,14 +2316,14 @@ void gjs_test_add_tests_for_coverage()
             "} else {\n"
             "    i = 2;\n"
             "}\n",
-            "JSUnit.assertEquals(2, JSON.parse(coverage_cache)[covered_script_filename].branches[0].point);\n"
+            "assertEquals(2, JSON.parse(coverage_cache)[covered_script_filename].branches[0].point);\n"
             "assertArrayEquals([3, 5], JSON.parse(coverage_cache)[covered_script_filename].branches[0].exits);\n"
         },
         {
             "simple_function",
             "function f() {\n"
             "}\n",
-            "JSUnit.assertEquals('f:1:0', JSON.parse(coverage_cache)[covered_script_filename].functions[0].key);\n"
+            "assertEquals('f:1:0', JSON.parse(coverage_cache)[covered_script_filename].functions[0].key);\n"
         }
     };
 
