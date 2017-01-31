@@ -764,8 +764,6 @@ importer_new_enumerate(JSContext  *context,
         for (i = 0; i < search_path_len; ++i) {
             char *dirname = NULL;
             char *init_path;
-            const char *filename;
-            GDir *dir = NULL;
 
             elem = JS::UndefinedValue();
             if (!JS_GetElement(context, search_path, i, &elem)) {
@@ -797,15 +795,22 @@ importer_new_enumerate(JSContext  *context,
 
             g_free(init_path);
 
-            dir = g_dir_open(dirname, 0, NULL);
+            /* new_for_commandline_arg handles resource:/// paths */
+            g_autoptr(GFile) dir = g_file_new_for_commandline_arg(dirname);
+            g_free(dirname);
+            g_autoptr(GFileEnumerator) direnum =
+                g_file_enumerate_children(dir, G_FILE_ATTRIBUTE_STANDARD_TYPE,
+                                          G_FILE_QUERY_INFO_NONE, NULL, NULL);
 
-            if (!dir) {
-                g_free(dirname);
-                continue;
-            }
+            while (true) {
+                GFileInfo *info;
+                GFile *file;
+                if (!g_file_enumerator_iterate(direnum, &info, &file, NULL, NULL))
+                    break;
+                if (info == NULL || file == NULL)
+                    break;
 
-            while ((filename = g_dir_read_name(dir))) {
-                char *full_path;
+                g_autofree char *filename = g_file_get_basename(file);
 
                 /* skip hidden files and directories (.svn, .git, ...) */
                 if (filename[0] == '.')
@@ -815,26 +820,17 @@ importer_new_enumerate(JSContext  *context,
                 if (strcmp(filename, MODULE_INIT_FILENAME) == 0)
                     continue;
 
-                full_path = g_build_filename(dirname, filename, NULL);
-
-                if (g_file_test(full_path, G_FILE_TEST_IS_DIR)) {
+                if (g_file_info_get_file_type(info) == G_FILE_TYPE_DIRECTORY) {
                     g_ptr_array_add(iter->elements, g_strdup(filename));
-                } else {
-                    if (g_str_has_suffix(filename, "." G_MODULE_SUFFIX) ||
-                        g_str_has_suffix(filename, ".js")) {
-                        g_ptr_array_add(iter->elements,
-                                        g_strndup(filename, strlen(filename) - 3));
-                    }
+                } else if (g_str_has_suffix(filename, "." G_MODULE_SUFFIX) ||
+                           g_str_has_suffix(filename, ".js")) {
+                    g_ptr_array_add(iter->elements,
+                                    g_strndup(filename, strlen(filename) - 3));
                 }
-
-                g_free(full_path);
             }
-            g_dir_close(dir);
-
-            g_free(dirname);
         }
 
-        statep.set(JS::PrivateValue(context));
+        statep.set(JS::PrivateValue(iter));
 
         idp.set(INT_TO_JSID(iter->elements->len));
 

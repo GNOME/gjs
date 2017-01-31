@@ -155,4 +155,27 @@ describe('Importer', function () {
         const ModUnicode = imports.modunicode;
         expect(ModUnicode.uval).toEqual('const \u2665 utf8');
     });
+
+    describe('enumerating modules', function () {
+        let keys;
+        beforeEach(function () {
+            keys = [];
+            for (let key in imports)
+                keys.push(key);
+        });
+
+        it('gets all of them', function () {
+            expect(keys).toContain('foobar', 'subA', 'mutualImport', 'modunicode');
+        });
+
+        it('includes modules that throw on import', function () {
+            expect(keys).toContain('alwaysThrows');
+        });
+
+        it('does not include meta properties', function () {
+            expect(keys).not.toContain('__parentModule__');
+            expect(keys).not.toContain('__moduleName__');
+            expect(keys).not.toContain('searchPath');
+        });
+    });
 });
