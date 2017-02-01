@@ -27,6 +27,8 @@
 #include <glib.h>
 #include <glib-object.h>
 
+#include <gjs/macros.h>
+
 G_BEGIN_DECLS
 
 /* For imports.format */
@@ -49,6 +51,7 @@ const char *gjs_setlocale                (GjsLocaleCategory category,
 void        gjs_textdomain               (const char *domain);
 void        gjs_bindtextdomain           (const char *domain,
                                           const char *location);
+GJS_EXPORT
 GType       gjs_locale_category_get_type (void) G_GNUC_CONST;
 
 /* For imports.overrides.GObject */

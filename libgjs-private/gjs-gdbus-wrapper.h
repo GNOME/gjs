@@ -27,6 +27,8 @@
 #include <glib-object.h>
 #include <gio/gio.h>
 
+#include <gjs/macros.h>
+
 G_BEGIN_DECLS
 
 typedef struct _GjsDBusImplementation        GjsDBusImplementation;
@@ -50,6 +52,7 @@ struct _GjsDBusImplementationClass {
     GDBusInterfaceSkeletonClass parent_class;
 };
 
+GJS_EXPORT
 GType                  gjs_dbus_implementation_get_type (void);
 
 void                   gjs_dbus_implementation_emit_property_changed (GjsDBusImplementation *self, gchar *property, GVariant *newvalue);
