@@ -69,6 +69,8 @@ struct GjsHeapOperation {
     static void trace(JSTracer    *tracer,
                       JS::Heap<T> *thing,
                       const char  *name);
+
+    static bool update_after_gc(JS::Heap<T> *location);
 };
 
 template<>
@@ -79,6 +81,12 @@ struct GjsHeapOperation<JSObject *> {
           const char           *name)
     {
         JS_CallHeapObjectTracer(tracer, thing, name);
+    }
+
+    static bool
+    update_after_gc(JS::Heap<JSObject *> *location)
+    {
+        return JS_IsAboutToBeFinalized(location);
     }
 };
 
@@ -253,6 +261,40 @@ public:
         m_data = nullptr;
     }
 
+    void
+    switch_to_rooted(JSContext    *cx,
+                     DestroyNotify notify = nullptr,
+                     void         *data   = nullptr)
+    {
+        debug("switch to rooted");
+        g_assert(!m_rooted);
+
+        /* Prevent the thing from being garbage collected while it is in neither
+         * m_heap nor m_root */
+        JSAutoRequest ar(cx);
+        JS::Rooted<T> thing(cx, m_heap);
+
+        reset();
+        root(cx, thing, notify, data);
+        g_assert(m_rooted);
+    }
+
+    void
+    switch_to_unrooted(void)
+    {
+        debug("switch to unrooted");
+        g_assert(m_rooted);
+
+        /* Prevent the thing from being garbage collected while it is in neither
+         * m_heap nor m_root */
+        JSAutoRequest ar(m_cx);
+        JS::Rooted<T> thing(m_cx, *m_root);
+
+        reset();
+        m_heap = thing;
+        g_assert(!m_rooted);
+    }
+
     /* Tracing makes no sense in the rooted case, because JS::PersistentRooted
      * already takes care of that. */
     void
@@ -262,6 +304,17 @@ public:
         debug("trace()");
         g_assert(!m_rooted);
         GjsHeapOperation<T>::trace(tracer, &m_heap, name);
+    }
+
+    /* If not tracing, then you must call this method during GC in order to
+     * update the object's location if it was moved, or null it out if it was
+     * finalized. If the object was finalized, returns true. */
+    bool
+    update_after_gc(void)
+    {
+        debug("update_after_gc()");
+        g_assert(!m_rooted);
+        return GjsHeapOperation<T>::update_after_gc(&m_heap);
     }
 
     bool rooted(void) { return m_rooted; }

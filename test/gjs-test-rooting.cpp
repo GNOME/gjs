@@ -165,6 +165,60 @@ test_maybe_owned_heap_rooted_keeps_alive_across_gc(GjsRootingFixture *fx,
 }
 
 static void
+test_maybe_owned_switching_mode_keeps_same_value(GjsRootingFixture *fx,
+                                                 gconstpointer      unused)
+{
+    JSObject *test_obj = test_obj_new(fx);
+    auto obj = new GjsMaybeOwned<JSObject *>();
+
+    *obj = test_obj;
+    g_assert_true(*obj == test_obj);
+
+    obj->switch_to_rooted(PARENT(fx)->cx);
+    g_assert_true(obj->rooted());
+    g_assert_true(*obj == test_obj);
+
+    obj->switch_to_unrooted();
+    g_assert_false(obj->rooted());
+    g_assert_true(*obj == test_obj);
+
+    delete obj;
+}
+
+static void
+test_maybe_owned_switch_to_rooted_prevents_collection(GjsRootingFixture *fx,
+                                                      gconstpointer      unused)
+{
+    auto obj = new GjsMaybeOwned<JSObject *>();
+    *obj = test_obj_new(fx);
+
+    obj->switch_to_rooted(PARENT(fx)->cx);
+    wait_for_gc(fx);
+    g_assert_false(fx->finalized);
+
+    delete obj;
+}
+
+static void
+test_maybe_owned_switch_to_unrooted_allows_collection(GjsRootingFixture *fx,
+                                                      gconstpointer      unused)
+{
+    g_test_skip("mozjs31 garbage collector is not smart enough");
+    return;
+
+    /*
+    auto obj = new GjsMaybeOwned<JSObject *>();
+    obj->root(PARENT(fx)->cx, test_obj_new(fx));
+
+    obj->switch_to_unrooted();
+    wait_for_gc(fx);
+    g_assert_true(fx->finalized);
+
+    delete obj;
+    */
+}
+
+static void
 context_destroyed(JS::HandleObject obj,
                   void            *data)
 {
@@ -223,6 +277,12 @@ gjs_test_add_tests_for_rooting(void)
                      test_maybe_owned_weak_pointer_is_collected_by_gc);
     ADD_ROOTING_TEST("maybe-owned/heap-rooted-keeps-alive-across-gc",
                      test_maybe_owned_heap_rooted_keeps_alive_across_gc);
+    ADD_ROOTING_TEST("maybe-owned/switching-mode-keeps-same-value",
+                     test_maybe_owned_switching_mode_keeps_same_value);
+    ADD_ROOTING_TEST("maybe-owned/switch-to-rooted-prevents-collection",
+                     test_maybe_owned_switch_to_rooted_prevents_collection);
+    ADD_ROOTING_TEST("maybe-owned/switch-to-unrooted-allows-collection",
+                     test_maybe_owned_switch_to_unrooted_allows_collection);
 
 #undef ADD_ROOTING_TEST
 

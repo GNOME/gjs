@@ -64,6 +64,8 @@ struct ObjectInstance {
     /* the GObjectClass wrapped by this JS Object (only used for
        prototypes) */
     GTypeClass *klass;
+
+    unsigned js_object_finalized : 1;
 };
 
 typedef struct {
@@ -99,13 +101,6 @@ static volatile gint pending_idle_toggles;
 static std::set<ObjectInstance *> dissociate_list;
 
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
-
-static JS::Heap<JSObject *> *ensure_heap_wrapper(GObject *gobj);
-
-static JSObject*       peek_js_obj  (GObject   *gobj);
-static void            set_js_obj   (GObject   *gobj,
-                                     JSObject  *obj);
-static void            poison_js_obj(GObject   *gobj);
 
 static void            disassociate_js_gobject (GObject *gobj);
 static void            invalidate_all_signals (ObjectInstance *priv);
@@ -202,6 +197,30 @@ dissociate_list_remove(ObjectInstance *priv)
 {
     size_t erased = dissociate_list.erase(priv);
     g_assert(erased > 0);
+}
+
+static ObjectInstance *
+get_object_qdata(GObject *gobj)
+{
+    auto priv = static_cast<ObjectInstance *>(g_object_get_qdata(gobj,
+                                                                 gjs_object_priv_quark()));
+
+    if (priv && G_UNLIKELY(priv->js_object_finalized)) {
+        g_critical("Object %p (a %s) resurfaced after the JS wrapper was finalized. "
+                   "This is some library doing dubious memory management inside dispose()",
+                   gobj, g_type_name(G_TYPE_FROM_INSTANCE(gobj)));
+        priv->js_object_finalized = false;
+        g_assert(!priv->keep_alive);  /* should associate again with a new wrapper */
+    }
+
+    return priv;
+}
+
+static void
+set_object_qdata(GObject        *gobj,
+                 ObjectInstance *priv)
+{
+    g_object_set_qdata(gobj, gjs_object_priv_quark(), priv);
 }
 
 static ValueFromPropertyResult
@@ -993,23 +1012,18 @@ cancel_toggle_idle(GObject         *gobj,
 static void
 handle_toggle_down(GObject *gobj)
 {
-    ObjectInstance *priv;
-    JSObject *obj;
-
-    obj = peek_js_obj(gobj);
-
-    priv = (ObjectInstance *) JS_GetPrivate(obj);
+    ObjectInstance *priv = get_object_qdata(gobj);
 
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                        "Toggle notify gobj %p obj %p is_last_ref true keep-alive %p",
-                        gobj, obj, priv->keep_alive.get());
+                        "Toggle notify gobj %p obj %p is_last_ref true",
+                        gobj, priv->keep_alive.get());
 
     /* Change to weak ref so the wrapper-wrappee pair can be
      * collected by the GC
      */
     if (priv->keep_alive.rooted()) {
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Removing object from keep alive");
-        priv->keep_alive.reset();
+        priv->keep_alive.switch_to_unrooted();
         dissociate_list_remove(priv);
     }
 }
@@ -1017,35 +1031,29 @@ handle_toggle_down(GObject *gobj)
 static void
 handle_toggle_up(GObject   *gobj)
 {
-    ObjectInstance *priv;
-    JSObject *obj;
+    ObjectInstance *priv = get_object_qdata(gobj);
 
     /* We need to root the JSObject associated with the passed in GObject so it
      * doesn't get garbage collected (and lose any associated javascript state
      * such as custom properties).
      */
-    obj = peek_js_obj(gobj);
-
-    if (!obj) /* Object already GC'd */
+    if (!priv->keep_alive) /* Object already GC'd */
         return;
 
-    priv = (ObjectInstance *) JS_GetPrivate(obj);
-
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                        "Toggle notify gobj %p obj %p is_last_ref false keep-alive %p",
-                        gobj, obj, priv->keep_alive.get());
+                        "Toggle notify gobj %p obj %p is_last_ref false",
+                        gobj, priv->keep_alive.get());
 
     /* Change to strong ref so the wrappee keeps the wrapper alive
      * in case the wrapper has data in it that the app cares about
      */
     if (!priv->keep_alive.rooted()) {
-        priv->keep_alive.reset();
         /* FIXME: thread the context through somehow. Maybe by looking up
          * the compartment that obj belongs to. */
         GjsContext *context = gjs_context_get_current();
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Adding object to keep alive");
         auto cx = static_cast<JSContext *>(gjs_context_get_native_context(context));
-        priv->keep_alive.root(cx, obj, gobj_no_longer_kept_alive_func, priv);
+        priv->keep_alive.switch_to_rooted(cx, gobj_no_longer_kept_alive_func, priv);
         dissociate_list_add(priv);
     }
 }
@@ -1227,7 +1235,8 @@ wrapped_gobj_toggle_notify(gpointer      data,
                         G_OBJECT_TYPE_NAME(gobj));
             }
             if (is_sweeping) {
-                if (JS_IsAboutToBeFinalized(ensure_heap_wrapper(gobj))) {
+                ObjectInstance *priv = get_object_qdata(gobj);
+                if (priv->keep_alive.update_after_gc()) {
                     /* Ouch, the JS object is dead already. Disassociate the GObject
                      * and hope the GObject dies too.
                      */
@@ -1245,7 +1254,7 @@ wrapped_gobj_toggle_notify(gpointer      data,
 static void
 release_native_object (ObjectInstance *priv)
 {
-    set_js_obj(priv->gobj, NULL);
+    priv->keep_alive.reset();
     g_object_remove_toggle_ref(priv->gobj, wrapped_gobj_toggle_notify, NULL);
     priv->gobj = NULL;
 }
@@ -1321,8 +1330,9 @@ associate_js_gobject (JSContext       *context,
     priv = priv_from_js(context, object);
     priv->gobj = gobj;
 
-    g_assert(peek_js_obj(gobj) == NULL);
-    set_js_obj(gobj, object);
+    g_assert(!priv->keep_alive.rooted());
+
+    set_object_qdata(gobj, priv);
 
 #if DEBUG_DISPOSE
     g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, object);
@@ -1347,11 +1357,8 @@ associate_js_gobject (JSContext       *context,
 static void
 disassociate_js_gobject (GObject   *gobj)
 {
-    JSObject *object;
-    ObjectInstance *priv;
+    ObjectInstance *priv = get_object_qdata(gobj);
 
-    object = peek_js_obj(gobj);
-    priv = (ObjectInstance*) JS_GetPrivate(object);
     /* Idles are already checked in the only caller of this
        function, the toggle ref notify, but let's check again...
     */
@@ -1362,7 +1369,7 @@ disassociate_js_gobject (GObject   *gobj)
     release_native_object(priv);
 
     /* Mark that a JS object once existed, but it doesn't any more */
-    poison_js_obj(gobj);
+    priv->js_object_finalized = true;
 
 #if DEBUG_DISPOSE
     g_object_weak_unref(gobj, wrapped_gobj_dispose_notify, object);
@@ -1402,8 +1409,8 @@ object_instance_init (JSContext                  *context,
 
     free_g_params(&params[0], params.size());
 
-    JS::RootedObject old_jsobj(context, peek_js_obj(gobj));
-    if (old_jsobj != NULL && old_jsobj != object) {
+    ObjectInstance *other_priv = get_object_qdata(gobj);
+    if (other_priv && other_priv->keep_alive != object) {
         /* g_object_newv returned an object that's already tracked by a JS
          * object. Let's assume this is a singleton like IBus.IBus and return
          * the existing JS wrapper object.
@@ -1413,7 +1420,7 @@ object_instance_init (JSContext                  *context,
          * we're not actually using it, so just let it get collected. Avoiding
          * this would require a non-trivial amount of work.
          * */
-        object.set(old_jsobj);
+        object.set(other_priv->keep_alive);
         g_object_unref(gobj); /* We already own a reference */
         gobj = NULL;
         goto out;
@@ -2130,54 +2137,6 @@ gjs_define_object_class(JSContext              *context,
                       JSPROP_PERMANENT);
 }
 
-static void
-release_heap_wrapper(gpointer data)
-{
-    delete static_cast<JS::Heap<JSObject *> *>(data);
-}
-
-static JS::Heap<JSObject *> *
-ensure_heap_wrapper(GObject *gobj)
-{
-    gpointer data = g_object_get_qdata(gobj, gjs_object_priv_quark());
-    if (data == NULL) {
-        auto heap_object = new JS::Heap<JSObject *>();
-        g_object_set_qdata_full(gobj, gjs_object_priv_quark(), heap_object,
-                                release_heap_wrapper);
-        return heap_object;
-    }
-    return static_cast<JS::Heap<JSObject *> *>(data);
-}
-
-static JSObject*
-peek_js_obj(GObject *gobj)
-{
-    auto heap_object = ensure_heap_wrapper(gobj);
-
-    if (G_UNLIKELY ((gpointer) heap_object == (gpointer) 1)) {
-        g_critical ("Object %p (a %s) resurfaced after the JS wrapper was finalized. "
-                    "This is some library doing dubious memory management inside dispose()",
-                    gobj, g_type_name(G_TYPE_FROM_INSTANCE(gobj)));
-        g_object_set_qdata(gobj, gjs_object_priv_quark(), NULL);
-        return NULL; /* return null to associate again with a new wrapper */
-    }
-
-    return heap_object->get();
-}
-
-static void
-set_js_obj(GObject  *gobj,
-           JSObject *obj)
-{
-    ensure_heap_wrapper(gobj)->set(obj);
-}
-
-static void
-poison_js_obj(GObject *gobj)
-{
-    g_object_set_qdata(gobj, gjs_object_priv_quark(), (gpointer) 1);
-}
-
 JSObject*
 gjs_object_from_g_object(JSContext    *context,
                          GObject      *gobj)
@@ -2185,9 +2144,9 @@ gjs_object_from_g_object(JSContext    *context,
     if (gobj == NULL)
         return NULL;
 
-    JS::RootedObject obj(context, peek_js_obj(gobj));
+    ObjectInstance *priv = get_object_qdata(gobj);
 
-    if (obj == NULL) {
+    if (!priv) {
         /* We have to create a wrapper */
         GType gtype;
 
@@ -2201,13 +2160,14 @@ gjs_object_from_g_object(JSContext    *context,
             gjs_lookup_object_prototype(context, gtype));
         JS::RootedObject global(context, gjs_get_import_global(context));
 
-        obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto,
-                                         global);
+        JS::RootedObject obj(context,
+            JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto,
+                                       global));
 
         if (obj == NULL)
             goto out;
 
-        init_object_private(context, obj);
+        priv = init_object_private(context, obj);
 
         g_object_ref_sink(gobj);
         associate_js_gobject(context, obj, gobj);
@@ -2215,11 +2175,11 @@ gjs_object_from_g_object(JSContext    *context,
         /* see the comment in init_object_instance() for this */
         g_object_unref(gobj);
 
-        g_assert(peek_js_obj(gobj) == obj);
+        g_assert(priv->keep_alive == obj);
     }
 
  out:
-    return obj;
+    return priv->keep_alive;
 }
 
 GObject*
@@ -2510,11 +2470,12 @@ gjs_object_get_gproperty (GObject    *object,
     GjsContext *gjs_context;
     JSContext *context;
     gchar *underscore_name;
+    ObjectInstance *priv = get_object_qdata(object);
 
     gjs_context = gjs_context_get_current();
     context = (JSContext*) gjs_context_get_native_context(gjs_context);
 
-    JS::RootedObject js_obj(context, peek_js_obj(object));
+    JS::RootedObject js_obj(context, priv->keep_alive);
     JS::RootedValue jsvalue(context);
 
     underscore_name = hyphen_to_underscore((gchar *)pspec->name);
@@ -2615,11 +2576,12 @@ gjs_object_set_gproperty (GObject      *object,
 {
     GjsContext *gjs_context;
     JSContext *context;
+    ObjectInstance *priv = get_object_qdata(object);
 
     gjs_context = gjs_context_get_current();
     context = (JSContext*) gjs_context_get_native_context(gjs_context);
 
-    JS::RootedObject js_obj(context, peek_js_obj(object));
+    JS::RootedObject js_obj(context, priv->keep_alive);
     jsobj_set_gproperty(context, js_obj, value, pspec);
 }
 
