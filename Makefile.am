@@ -158,6 +158,7 @@ EXTRA_DIST +=				\
 	doc/Class_Framework.md		\
 	doc/SpiderMonkey_Memory.md	\
 	doc/Style_Guide.md		\
+	win32/config.h.win32		\
 	$(NULL)
 
 # Colin's handy Makefile bits for:

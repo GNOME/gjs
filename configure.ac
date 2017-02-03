@@ -16,6 +16,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 AC_REQUIRE_AUX_FILE([tap-driver.sh])
 
+AC_SUBST(GJS_VERSION, m4_eval(pkg_int_version))
 AC_DEFINE([GJS_VERSION], pkg_int_version, [The gjs version as an integer])
 
 AC_SUBST([GETTEXT_PACKAGE], [gjs])
@@ -221,7 +222,7 @@ AC_SUBST([gjsjsdir], [\${datadir}/gjs-1.0])
 dnl automake 1.11/1.12 defines this but does not substitute it
 AC_SUBST([pkglibexecdir], ["${libexecdir}/${PACKAGE}"])
 
-AC_CONFIG_FILES([Makefile gjs-1.0.pc])
+AC_CONFIG_FILES([Makefile gjs-1.0.pc win32/config.h.win32])
 dnl Symlink the files from gobject-introspection's test libraries into the tree;
 dnl Automake plans to drop support for compiling them in-place.
 AC_CONFIG_LINKS([
