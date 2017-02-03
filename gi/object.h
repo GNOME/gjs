@@ -58,6 +58,8 @@ bool      gjs_typecheck_is_object(JSContext       *context,
 
 void      gjs_object_prepare_shutdown   (JSContext     *context);
 
+void gjs_object_clear_toggles(void);
+
 void gjs_object_define_static_methods(JSContext       *context,
                                       JS::HandleObject constructor,
                                       GType            gtype,

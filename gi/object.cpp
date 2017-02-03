@@ -1240,6 +1240,15 @@ release_native_object (ObjectInstance *priv)
  * pending toggle references.
  */
 void
+gjs_object_clear_toggles(void)
+{
+    while (g_main_context_pending(NULL) &&
+           g_atomic_int_get(&pending_idle_toggles) > 0) {
+        g_main_context_iteration(NULL, false);
+    }
+}
+
+void
 gjs_object_prepare_shutdown (JSContext *context)
 {
     JSObject *keep_alive = gjs_keep_alive_get_global_if_exists (context);
@@ -1251,13 +1260,10 @@ gjs_object_prepare_shutdown (JSContext *context)
         return;
 
     /* First, get rid of anything left over on the main context */
-    while (g_main_context_pending(NULL) &&
-           g_atomic_int_get(&pending_idle_toggles) > 0) {
-        g_main_context_iteration(NULL, false);
-    }
+    gjs_object_clear_toggles();
 
     /* Now, we iterate over all of the objects, breaking the JS <-> C
-     * associaton.  We avoid the potential recursion implied in:
+     * association.  We avoid the potential recursion implied in:
      *   toggle ref removal -> gobj dispose -> toggle ref notify
      * by simply ignoring toggle ref notifications during this process.
      */
