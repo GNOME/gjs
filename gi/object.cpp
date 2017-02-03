@@ -51,7 +51,7 @@
 #include <util/hash-x32.h>
 #include <girepository.h>
 
-typedef struct {
+struct ObjectInstance {
     GIObjectInfo *info;
     GObject *gobj; /* NULL if we are the prototype and not an instance */
     JSObject *keep_alive; /* NULL if we are not added to it */
@@ -63,7 +63,7 @@ typedef struct {
     /* the GObjectClass wrapped by this JS Object (only used for
        prototypes) */
     GTypeClass *klass;
-} ObjectInstance;
+};
 
 typedef struct {
     ObjectInstance *obj;
@@ -1287,6 +1287,7 @@ init_object_private (JSContext       *context,
     JS_BeginRequest(context);
 
     priv = g_slice_new0(ObjectInstance);
+    new (priv) ObjectInstance();
 
     GJS_INC_COUNTER(object);
 
@@ -1592,6 +1593,7 @@ object_instance_finalize(JSFreeOp  *fop,
     }
 
     GJS_DEC_COUNTER(object);
+    priv->~ObjectInstance();
     g_slice_free(ObjectInstance, priv);
 }
 
@@ -2100,6 +2102,7 @@ gjs_define_object_class(JSContext              *context,
 
     GJS_INC_COUNTER(object);
     priv = g_slice_new0(ObjectInstance);
+    new (priv) ObjectInstance();
     priv->info = info;
     if (info)
         g_base_info_ref((GIBaseInfo*) info);
