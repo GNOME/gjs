@@ -90,6 +90,26 @@ wait_for_gc(GjsRootingFixture *fx)
 }
 
 static void
+test_maybe_owned_rooted_flag_set_when_rooted(GjsRootingFixture *fx,
+                                             gconstpointer      unused)
+{
+    auto obj = new GjsMaybeOwned<JS::Value>();
+    obj->root(PARENT(fx)->cx, JS::TrueValue());
+    g_assert_true(obj->rooted());
+    delete obj;
+}
+
+static void
+test_maybe_owned_rooted_flag_not_set_when_not_rooted(GjsRootingFixture *fx,
+                                                     gconstpointer      unused)
+{
+    auto obj = new GjsMaybeOwned<JS::Value>();
+    *obj = JS::TrueValue();
+    g_assert_false(obj->rooted());
+    delete obj;
+}
+
+static void
 test_maybe_owned_rooted_keeps_alive_across_gc(GjsRootingFixture *fx,
                                               gconstpointer      unused)
 {
@@ -191,6 +211,10 @@ gjs_test_add_tests_for_rooting(void)
 #define ADD_ROOTING_TEST(path, f) \
     g_test_add("/rooting/" path, GjsRootingFixture, NULL, setup, f,  teardown);
 
+    ADD_ROOTING_TEST("maybe-owned/rooted-flag-set-when-rooted",
+                     test_maybe_owned_rooted_flag_set_when_rooted);
+    ADD_ROOTING_TEST("maybe-owned/rooted-flag-not-set-when-not-rooted",
+                     test_maybe_owned_rooted_flag_not_set_when_not_rooted);
     ADD_ROOTING_TEST("maybe-owned/rooted-keeps-alive-across-gc",
                      test_maybe_owned_rooted_keeps_alive_across_gc);
     ADD_ROOTING_TEST("maybe-owned/rooted-is-collected-after-reset",

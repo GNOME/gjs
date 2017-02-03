@@ -263,6 +263,8 @@ public:
         g_assert(!m_rooted);
         GjsHeapOperation<T>::trace(tracer, &m_heap, name);
     }
+
+    bool rooted(void) { return m_rooted; }
 };
 
 #endif /* GJS_JSAPI_UTIL_ROOT_H */

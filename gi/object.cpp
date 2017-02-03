@@ -24,6 +24,7 @@
 #include <config.h>
 
 #include <memory>
+#include <set>
 #include <stack>
 #include <string.h>
 #include <vector>
@@ -39,9 +40,9 @@
 #include "proxyutils.h"
 #include "param.h"
 #include "value.h"
-#include "keep-alive.h"
 #include "closure.h"
 #include "gjs_gi_trace.h"
+#include "gjs/jsapi-util-root.h"
 #include "gjs/jsapi-wrapper.h"
 #include "gjs/context-private.h"
 #include "gjs/mem.h"
@@ -54,7 +55,7 @@
 struct ObjectInstance {
     GIObjectInfo *info;
     GObject *gobj; /* NULL if we are the prototype and not an instance */
-    JSObject *keep_alive; /* NULL if we are not added to it */
+    GjsMaybeOwned<JSObject *> keep_alive;
     GType gtype;
 
     /* a list of all signal connections, used when tracing */
@@ -95,6 +96,7 @@ static GHashTable *class_init_properties;
 extern struct JSClass gjs_object_instance_class;
 static GThread *gjs_eval_thread;
 static volatile gint pending_idle_toggles;
+static std::set<ObjectInstance *> dissociate_list;
 
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 
@@ -185,6 +187,21 @@ throw_priv_is_null_error(JSContext *context)
               "This JS object wrapper isn't wrapping a GObject."
               " If this is a custom subclass, are you sure you chained"
               " up to the parent _init properly?");
+}
+
+static void
+dissociate_list_add(ObjectInstance *priv)
+{
+    bool inserted;
+    std::tie(std::ignore, inserted) = dissociate_list.insert(priv);
+    g_assert(inserted);
+}
+
+static void
+dissociate_list_remove(ObjectInstance *priv)
+{
+    size_t erased = dissociate_list.erase(priv);
+    g_assert(erased > 0);
 }
 
 static ValueFromPropertyResult
@@ -900,8 +917,8 @@ wrapped_gobj_dispose_notify(gpointer      data,
 #endif
 
 static void
-gobj_no_longer_kept_alive_func(JSObject *obj,
-                               void     *data)
+gobj_no_longer_kept_alive_func(JS::HandleObject obj,
+                               void            *data)
 {
     ObjectInstance *priv;
 
@@ -909,9 +926,10 @@ gobj_no_longer_kept_alive_func(JSObject *obj,
 
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
                         "GObject wrapper %p will no longer be kept alive, eligible for collection",
-                        obj);
+                        obj.get());
 
-    priv->keep_alive = NULL;
+    priv->keep_alive.reset();
+    dissociate_list_remove(priv);
 }
 
 static GQuark
@@ -984,18 +1002,15 @@ handle_toggle_down(GObject *gobj)
 
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
                         "Toggle notify gobj %p obj %p is_last_ref true keep-alive %p",
-                        gobj, obj, priv->keep_alive);
+                        gobj, obj, priv->keep_alive.get());
 
     /* Change to weak ref so the wrapper-wrappee pair can be
      * collected by the GC
      */
-    if (priv->keep_alive != NULL) {
+    if (priv->keep_alive.rooted()) {
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Removing object from keep alive");
-        gjs_keep_alive_remove_child(priv->keep_alive,
-                                    gobj_no_longer_kept_alive_func,
-                                    obj,
-                                    priv);
-        priv->keep_alive = NULL;
+        priv->keep_alive.reset();
+        dissociate_list_remove(priv);
     }
 }
 
@@ -1018,21 +1033,20 @@ handle_toggle_up(GObject   *gobj)
 
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
                         "Toggle notify gobj %p obj %p is_last_ref false keep-alive %p",
-                        gobj, obj, priv->keep_alive);
+                        gobj, obj, priv->keep_alive.get());
 
     /* Change to strong ref so the wrappee keeps the wrapper alive
      * in case the wrapper has data in it that the app cares about
      */
-    if (priv->keep_alive == NULL) {
+    if (!priv->keep_alive.rooted()) {
+        priv->keep_alive.reset();
         /* FIXME: thread the context through somehow. Maybe by looking up
          * the compartment that obj belongs to. */
         GjsContext *context = gjs_context_get_current();
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Adding object to keep alive");
-        priv->keep_alive = gjs_keep_alive_get_global((JSContext*) gjs_context_get_native_context(context));
-        gjs_keep_alive_add_child(priv->keep_alive,
-                                 gobj_no_longer_kept_alive_func,
-                                 obj,
-                                 priv);
+        auto cx = static_cast<JSContext *>(gjs_context_get_native_context(context));
+        priv->keep_alive.root(cx, obj, gobj_no_longer_kept_alive_func, priv);
+        dissociate_list_add(priv);
     }
 }
 
@@ -1251,14 +1265,6 @@ gjs_object_clear_toggles(void)
 void
 gjs_object_prepare_shutdown (JSContext *context)
 {
-    JSObject *keep_alive = gjs_keep_alive_get_global_if_exists (context);
-    GjsKeepAliveIter kiter;
-    JSObject *child;
-    void *data;
-
-    if (!keep_alive)
-        return;
-
     /* First, get rid of anything left over on the main context */
     gjs_object_clear_toggles();
 
@@ -1267,14 +1273,9 @@ gjs_object_prepare_shutdown (JSContext *context)
      *   toggle ref removal -> gobj dispose -> toggle ref notify
      * by simply ignoring toggle ref notifications during this process.
      */
-    gjs_keep_alive_iterator_init(&kiter, keep_alive);
-    while (gjs_keep_alive_iterator_next(&kiter,
-                                        gobj_no_longer_kept_alive_func,
-                                        &child, &data)) {
-        ObjectInstance *priv = (ObjectInstance*)data;
-
-        release_native_object(priv);
-    }
+    for (auto iter : dissociate_list)
+        release_native_object(iter);
+    dissociate_list.clear();
 }
 
 static ObjectInstance *
@@ -1338,12 +1339,8 @@ associate_js_gobject (JSContext       *context,
      * the wrapper to be garbage collected (and thus unref the
      * wrappee).
      */
-    priv->keep_alive = gjs_keep_alive_get_global(context);
-    gjs_keep_alive_add_child(priv->keep_alive,
-                             gobj_no_longer_kept_alive_func,
-                             object,
-                             priv);
-
+    priv->keep_alive.root(context, object, gobj_no_longer_kept_alive_func, priv);
+    dissociate_list_add(priv);
     g_object_add_toggle_ref(gobj, wrapped_gobj_toggle_notify, NULL);
 }
 
@@ -1565,7 +1562,7 @@ object_instance_finalize(JSFreeOp  *fop,
         release_native_object(priv);
     }
 
-    if (priv->keep_alive != NULL) {
+    if (priv->keep_alive.rooted()) {
         /* This happens when the refcount on the object is still >1,
          * for example with global objects GDK never frees like GdkDisplay,
          * when we close down the JS runtime.
@@ -1576,10 +1573,8 @@ object_instance_finalize(JSFreeOp  *fop,
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
                             "Removing from keep alive");
 
-        gjs_keep_alive_remove_child(priv->keep_alive,
-                                    gobj_no_longer_kept_alive_func,
-                                    obj,
-                                    priv);
+        priv->keep_alive.reset();
+        dissociate_list_remove(priv);
     }
 
     if (priv->info) {

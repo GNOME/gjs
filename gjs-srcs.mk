@@ -32,8 +32,6 @@ gjs_srcs =				\
 	gi/gtype.h			\
 	gi/interface.cpp		\
 	gi/interface.h			\
-	gi/keep-alive.cpp		\
-	gi/keep-alive.h			\
 	gi/ns.cpp			\
 	gi/ns.h	        		\
 	gi/object.cpp			\
