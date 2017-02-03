@@ -150,15 +150,27 @@ install-exec-hook:
 include Makefile-test.am
 include Makefile-insttest.am
 
-EXTRA_DIST +=				\
-	autogen.sh			\
-	COPYING.LGPL			\
-	doc/ByteArray.md		\
-	doc/cairo.md			\
-	doc/Class_Framework.md		\
-	doc/SpiderMonkey_Memory.md	\
-	doc/Style_Guide.md		\
-	win32/config.h.win32		\
+EXTRA_DIST +=					\
+	autogen.sh				\
+	COPYING.LGPL				\
+	doc/ByteArray.md			\
+	doc/cairo.md				\
+	doc/Class_Framework.md			\
+	doc/SpiderMonkey_Memory.md		\
+	doc/Style_Guide.md			\
+	win32/build-rules-msvc.mak		\
+	win32/config-msvc.mak			\
+	win32/config.h.win32			\
+	win32/create-lists-msvc.mak		\
+	win32/create-lists.bat			\
+	win32/detectenv-msvc.mak		\
+	win32/generate-msvc.mak			\
+	win32/gjs-introspection-msvc.mak	\
+	win32/info-msvc.mak			\
+	win32/install.mak			\
+	win32/introspection-msvc.mak		\
+	win32/Makefile.vc			\
+	win32/README.txt			\
 	$(NULL)
 
 # Colin's handy Makefile bits for:
