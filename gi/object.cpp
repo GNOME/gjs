@@ -1675,15 +1675,27 @@ gjs_lookup_object_prototype(JSContext *context,
     return proto;
 }
 
-static void
-signal_connection_invalidated (gpointer  user_data,
-                               GClosure *closure)
+/* Removing the signal connection data from the list means that the object stops
+ * tracing the JS function objects belonging to the closures. Incremental GC
+ * does not allow that in the middle of a garbage collection. Therefore, we must
+ * do it in an idle handler.
+ */
+static gboolean
+signal_connection_invalidate_idle(void *user_data)
 {
     ConnectData *connect_data = (ConnectData *) user_data;
 
     connect_data->obj->signals = g_list_delete_link(connect_data->obj->signals,
                                                     connect_data->link);
     g_slice_free(ConnectData, connect_data);
+    return G_SOURCE_REMOVE;
+}
+
+static void
+signal_connection_invalidated(void     *data,
+                              GClosure *closure)
+{
+    g_idle_add(signal_connection_invalidate_idle, data);
 }
 
 static bool
