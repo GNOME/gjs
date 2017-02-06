@@ -180,6 +180,7 @@ libgjs_la_SOURCES +=		\
 GjsPrivate-1.0.gir: libgjs.la
 GjsPrivate_1_0_gir_LIBS = libgjs.la
 GjsPrivate_1_0_gir_INCLUDES = GObject-2.0 Gio-2.0
+GjsPrivate_1_0_gir_CFLAGS = -I$(top_srcdir)
 GjsPrivate_1_0_gir_FILES = $(libgjs_private_source_files)
 GjsPrivate_1_0_gir_SCANNERFLAGS =	\
 	--identifier-prefix=Gjs		\
