@@ -126,6 +126,18 @@ _fundamental_lookup_object(void *native_object)
 
 /**/
 
+static inline bool
+fundamental_is_prototype(Fundamental *priv)
+{
+    return (priv->prototype == nullptr);
+}
+
+static inline bool
+fundamental_is_prototype(FundamentalInstance *priv)
+{
+    return (priv->prototype == nullptr);
+}
+
 static inline Fundamental *
 proto_priv_from_js(JSContext       *context,
                    JS::HandleObject obj)
@@ -303,7 +315,7 @@ fundamental_instance_new_resolve(JSContext  *context,
     if (priv == NULL)
         goto out; /* wrong class */
 
-    if (priv->prototype == NULL) {
+    if (fundamental_is_prototype(priv)) {
         /* We are the prototype, so look for methods and other class properties */
         Fundamental *proto_priv = (Fundamental *) priv;
         GIFunctionInfo *method_info;
@@ -456,7 +468,7 @@ fundamental_finalize(JSFreeOp  *fop,
     if (priv == NULL)
         return; /* wrong class? */
 
-    if (priv->prototype) {
+    if (!fundamental_is_prototype(priv)) {
         if (priv->gfundamental) {
             _fundamental_remove_object(priv->gfundamental);
             priv->prototype->unref_function(priv->gfundamental);
@@ -488,7 +500,7 @@ to_string_func(JSContext *context,
 {
     GJS_GET_PRIV(context, argc, vp, rec, obj, FundamentalInstance, priv);
 
-    if (!priv->prototype) {
+    if (fundamental_is_prototype(priv)) {
         Fundamental *proto_priv = (Fundamental *) priv;
 
         if (!_gjs_proxy_to_string_func(context, obj, "fundamental",
@@ -513,9 +525,9 @@ static void
 fundamental_trace(JSTracer *tracer,
                   JSObject *obj)
 {
-    Fundamental *priv = reinterpret_cast<Fundamental *>(JS_GetPrivate(obj));
-    if (priv == NULL)
-        return;
+    auto priv = static_cast<Fundamental *>(JS_GetPrivate(obj));
+    if (priv == nullptr || !fundamental_is_prototype(priv))
+        return;  /* Only prototypes need tracing */
 
     JS_CallHeapIdTracer(tracer, &priv->constructor_name,
                         "Fundamental::constructor_name");
@@ -842,7 +854,7 @@ gjs_typecheck_fundamental(JSContext       *context,
     priv = priv_from_js(context, object);
     g_assert(priv != NULL);
 
-    if (priv->gfundamental == NULL) {
+    if (fundamental_is_prototype(priv)) {
         if (throw_error) {
             Fundamental *proto_priv = (Fundamental *) priv;
             gjs_throw(context,
