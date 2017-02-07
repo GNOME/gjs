@@ -90,6 +90,17 @@ struct GjsHeapOperation<JSObject *> {
     }
 };
 
+template<>
+struct GjsHeapOperation<JS::Value> {
+    static void
+    trace(JSTracer            *tracer,
+          JS::Heap<JS::Value> *thing,
+          const char          *name)
+    {
+        JS_CallHeapValueTracer(tracer, thing, name);
+    }
+};
+
 /* GjsMaybeOwned is intended only for use in heap allocation. Do not allocate it
  * on the stack, and do not allocate any instances of structures that have it as
  * a member on the stack either. Unfortunately we cannot enforce this at compile

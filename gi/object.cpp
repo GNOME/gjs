@@ -23,6 +23,7 @@
 
 #include <config.h>
 
+#include <deque>
 #include <memory>
 #include <set>
 #include <stack>
@@ -64,6 +65,9 @@ struct ObjectInstance {
     /* the GObjectClass wrapped by this JS Object (only used for
        prototypes) */
     GTypeClass *klass;
+
+    /* A list of all vfunc trampolines, used when tracing */
+    std::deque<GjsCallbackTrampoline *> vfuncs;
 
     unsigned js_object_finalized : 1;
 };
@@ -1524,6 +1528,9 @@ object_instance_trace(JSTracer *tracer,
 
         gjs_closure_trace(cd->closure, tracer);
     }
+
+    for (auto vfunc : priv->vfuncs)
+        vfunc->js_function.trace(tracer, "ObjectInstance::vfunc");
 }
 
 static void
@@ -1568,6 +1575,12 @@ object_instance_finalize(JSFreeOp  *fop,
         
         release_native_object(priv);
     }
+
+    /* We have to leak the trampolines, since the GType's vtable still refers
+     * to them */
+    for (auto iter : priv->vfuncs)
+        iter->js_function.reset();
+    priv->vfuncs.clear();
 
     if (priv->keep_alive.rooted()) {
         /* This happens when the refcount on the object is still >1,
@@ -2438,6 +2451,7 @@ gjs_hook_up_vfunc(JSContext *cx,
                                                  GI_SCOPE_TYPE_NOTIFIED, true);
 
         *((ffi_closure **)method_ptr) = trampoline->closure;
+        priv->vfuncs.push_back(trampoline);
 
         g_base_info_unref(interface_info);
         g_base_info_unref(type_info);
