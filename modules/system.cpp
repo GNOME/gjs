@@ -34,6 +34,9 @@
 #include "gjs/jsapi-util-args.h"
 #include "system.h"
 
+/* Note that this cannot be relied on to test whether two objects are the same!
+ * SpiderMonkey can move objects around in memory during garbage collection,
+ * and it can also deduplicate identical instances of objects in memory. */
 static bool
 gjs_address_of(JSContext *context,
                unsigned   argc,

@@ -1,13 +1,10 @@
 const System = imports.system;
 
 describe('System.addressOf()', function () {
-    it('gives the same result for the same object', function () {
-        let o = {};
-        expect(System.addressOf(o)).toEqual(System.addressOf(o));
-    });
-
     it('gives different results for different objects', function () {
-        expect(System.addressOf({})).not.toEqual(System.addressOf({}));
+        let a = {some: 'object'};
+        let b = {different: 'object'};
+        expect(System.addressOf(a)).not.toEqual(System.addressOf(b));
     });
 });
 
