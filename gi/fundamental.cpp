@@ -203,9 +203,9 @@ associate_js_instance_to_fundamental(JSContext       *context,
 
 /* Find the first constructor */
 static GIFunctionInfo *
-find_fundamental_constructor(JSContext    *context,
-                             GIObjectInfo *info,
-                             jsid         *constructor_name)
+find_fundamental_constructor(JSContext          *context,
+                             GIObjectInfo       *info,
+                             JS::MutableHandleId constructor_name)
 {
     int i, n_methods;
 
@@ -222,7 +222,7 @@ find_fundamental_constructor(JSContext    *context,
             const char *name;
 
             name = g_base_info_get_name((GIBaseInfo *) func_info);
-            *constructor_name = gjs_intern_string_to_id(context, name);
+            constructor_name.set(gjs_intern_string_to_id(context, name));
 
             return func_info;
         }
@@ -662,7 +662,7 @@ gjs_define_fundamental_class(JSContext              *context,
                              JS::MutableHandleObject prototype)
 {
     const char *constructor_name;
-    jsid js_constructor_name = JSID_VOID;
+    JS::RootedId js_constructor_name(context);
     JS::RootedObject parent_proto(context);
     Fundamental *priv;
     GType parent_gtype;

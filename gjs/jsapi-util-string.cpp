@@ -394,14 +394,11 @@ gjs_unichar_from_string (JSContext *context,
 }
 
 jsid
-gjs_intern_string_to_id (JSContext  *context,
-                         const char *string)
+gjs_intern_string_to_id(JSContext  *cx,
+                        const char *string)
 {
-    JSString *str;
-    jsid id;
-    JS_BeginRequest(context);
-    str = JS_InternString(context, string);
-    id = INTERNED_STRING_TO_JSID(context, str);
-    JS_EndRequest(context);
+    JSAutoRequest ar(cx);
+    JS::RootedString str(cx, JS_InternString(cx, string));
+    JS::RootedId id(cx, INTERNED_STRING_TO_JSID(cx, str));
     return id;
 }
