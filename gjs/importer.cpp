@@ -71,14 +71,15 @@ importer_to_string(JSContext *cx,
         return false;
 
     g_autofree char *path = NULL;
+    GjsAutoChar output;
+
     if (module_path.isNull()) {
-        path = g_strdup("root");
+        output = g_strdup_printf("[%s root]", klass->name);
     } else {
         if (!gjs_string_to_utf8(cx, module_path, &path))
             return false;
+        output = g_strdup_printf("[%s %s]", klass->name, path);
     }
-
-    g_autofree char *output = g_strdup_printf("[%s %s]", klass->name, path);
 
     args.rval().setString(JS_NewStringCopyZ(cx, output));
     return true;
@@ -127,7 +128,7 @@ define_meta_properties(JSContext       *context,
                                      &parent_module_path))
             return false;
 
-        g_autofree char *module_path_buf = NULL;
+        GjsAutoChar module_path_buf;
         if (parent_module_path.isNull()) {
             module_path_buf = g_strdup(module_name);
         } else {
@@ -279,7 +280,7 @@ module_to_string(JSContext *cx,
     g_autofree char *path = NULL;
     if (!gjs_string_to_utf8(cx, module_path, &path))
         return false;
-    g_autofree char *output = g_strdup_printf("[GjsModule %s]", path);
+    GjsAutoChar output = g_strdup_printf("[GjsModule %s]", path);
 
     args.rval().setString(JS_NewStringCopyZ(cx, output));
     return true;
@@ -371,7 +372,6 @@ load_module_init(JSContext       *context,
                  const char      *full_path)
 {
     bool found;
-    g_autoptr(GFile) file = NULL;
 
     /* First we check if js module has already been loaded  */
     if (gjs_object_has_property(context, in_object, GJS_STRING_MODULE_INIT,
@@ -385,7 +385,7 @@ load_module_init(JSContext       *context,
     }
 
     JS::RootedObject module_obj(context, create_module_object(context));
-    file = g_file_new_for_commandline_arg(full_path);
+    GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(full_path);
     if (!import_file (context, "__init__", file, module_obj))
         return module_obj;
 
@@ -434,8 +434,8 @@ import_symbol_from_init_js(JSContext       *cx,
                            bool            *result)
 {
     bool found;
-    g_autofree char *full_path = g_build_filename(dirname, MODULE_INIT_FILENAME,
-                                                  NULL);
+    GjsAutoChar full_path = g_build_filename(dirname, MODULE_INIT_FILENAME,
+                                             NULL);
 
     JS::RootedObject module_obj(cx, load_module_init(cx, importer, full_path));
     if (!module_obj || !JS_AlreadyHasOwnProperty(cx, module_obj, name, &found))
@@ -796,9 +796,9 @@ importer_new_enumerate(JSContext  *context,
             g_free(init_path);
 
             /* new_for_commandline_arg handles resource:/// paths */
-            g_autoptr(GFile) dir = g_file_new_for_commandline_arg(dirname);
+            GjsAutoUnref<GFile> dir = g_file_new_for_commandline_arg(dirname);
             g_free(dirname);
-            g_autoptr(GFileEnumerator) direnum =
+            GjsAutoUnref<GFileEnumerator> direnum =
                 g_file_enumerate_children(dir, G_FILE_ATTRIBUTE_STANDARD_TYPE,
                                           G_FILE_QUERY_INFO_NONE, NULL, NULL);
 
@@ -810,7 +810,7 @@ importer_new_enumerate(JSContext  *context,
                 if (info == NULL || file == NULL)
                     break;
 
-                g_autofree char *filename = g_file_get_basename(file);
+                GjsAutoChar filename = g_file_get_basename(file);
 
                 /* skip hidden files and directories (.svn, .git, ...) */
                 if (filename[0] == '.')

@@ -24,6 +24,7 @@
 #ifndef __GJS_JSAPI_UTIL_H__
 #define __GJS_JSAPI_UTIL_H__
 
+#include <memory>
 #include <stdbool.h>
 
 #include <glib-object.h>
@@ -31,6 +32,33 @@
 #include "jsapi-wrapper.h"
 #include "gjs/runtime.h"
 #include "gi/gtype.h"
+
+class GjsAutoChar : public std::unique_ptr<char, decltype(&g_free)> {
+public:
+    typedef std::unique_ptr<char, decltype(&g_free)> U;
+
+    GjsAutoChar(char *str = nullptr) : U(str, g_free) {}
+
+    operator const char *() {
+        return get();
+    }
+
+    void operator= (const char* str) {
+        reset(const_cast<char*>(str));
+    }
+};
+
+template <typename T>
+class GjsAutoUnref : public std::unique_ptr<T, decltype(&g_object_unref)> {
+public:
+    typedef std::unique_ptr<T, decltype(&g_object_unref)> U;
+
+    GjsAutoUnref(T *ptr = nullptr) : U(ptr, g_object_unref) {}
+
+    operator T *() {
+        return U::get();
+    }
+};
 
 G_BEGIN_DECLS
 

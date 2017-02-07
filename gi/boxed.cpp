@@ -848,10 +848,10 @@ define_boxed_class_fields(JSContext       *cx,
     for (i = 0; i < n_fields; i++) {
         GIFieldInfo *field = g_struct_info_get_field (priv->info, i);
         const char *field_name = g_base_info_get_name ((GIBaseInfo *)field);
-        g_autofree char *getter_name = g_strconcat("boxed_field_get::",
-                                                   field_name, NULL);
-        g_autofree char *setter_name = g_strconcat("boxed_field_set::",
-                                                   field_name, NULL);
+        GjsAutoChar getter_name = g_strconcat("boxed_field_get::",
+                                              field_name, NULL);
+        GjsAutoChar setter_name = g_strconcat("boxed_field_set::",
+                                              field_name, NULL);
         g_base_info_unref ((GIBaseInfo *)field);
 
         /* In order to have one getter and setter for all the properties
