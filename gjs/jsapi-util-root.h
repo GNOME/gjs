@@ -150,14 +150,9 @@ private:
          * to remove it. */
         m_has_weakref = false;
 
-        /* The object is still live across this callback. Re-entry into the
-         * destructor from the callback should also be safe. */
+        /* The object is still live across this callback. */
         if (m_notify)
             m_notify(handle(), m_data);
-
-        /* If the callback destroyed this wrapper already, we're done. */
-        if (!m_rooted)
-            return;
 
         reset();
     }

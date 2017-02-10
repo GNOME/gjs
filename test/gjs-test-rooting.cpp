@@ -185,26 +185,6 @@ test_maybe_owned_object_destroyed_after_notify(GjsRootingFixture *fx,
     delete obj;
 }
 
-static void
-delete_obj_callback(JS::HandleObject obj,
-                    void            *data)
-{
-    auto wrapper = static_cast<GjsMaybeOwned<JSObject *> *>(data);
-    delete wrapper;
-}
-
-static void
-test_maybe_owned_can_destroy_object_in_notify_callback(GjsRootingFixture *fx,
-                                                       gconstpointer      unused)
-{
-    auto obj = new GjsMaybeOwned<JSObject *>();
-    obj->root(PARENT(fx)->cx, test_obj_new(fx), delete_obj_callback, obj);
-
-    gjs_unit_test_destroy_context(PARENT(fx));
-    g_assert_true(fx->finalized);
-    /* obj already deleted */
-}
-
 void
 gjs_test_add_tests_for_rooting(void)
 {
@@ -230,8 +210,6 @@ gjs_test_add_tests_for_rooting(void)
                              test_maybe_owned_notify_callback_called_on_context_destroy);
     ADD_CONTEXT_DESTROY_TEST("maybe-owned/object-destroyed-after-notify",
                              test_maybe_owned_object_destroyed_after_notify);
-    ADD_CONTEXT_DESTROY_TEST("maybe-owned/can-destroy-object-in-notify-callback",
-                             test_maybe_owned_can_destroy_object_in_notify_callback);
 
 #undef ADD_CONTEXT_DESTROY_TEST
 }
