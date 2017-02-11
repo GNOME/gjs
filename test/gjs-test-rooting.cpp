@@ -202,10 +202,6 @@ static void
 test_maybe_owned_switch_to_unrooted_allows_collection(GjsRootingFixture *fx,
                                                       gconstpointer      unused)
 {
-    g_test_skip("mozjs31 garbage collector is not smart enough");
-    return;
-
-    /*
     auto obj = new GjsMaybeOwned<JSObject *>();
     obj->root(PARENT(fx)->cx, test_obj_new(fx));
 
@@ -214,7 +210,6 @@ test_maybe_owned_switch_to_unrooted_allows_collection(GjsRootingFixture *fx,
     g_assert_true(fx->finalized);
 
     delete obj;
-    */
 }
 
 static void
