@@ -8,7 +8,7 @@ function do_Install_Base_Dependencies(){
         apt-get update -qq
 
         # Base dependencies
-        apt-get -y -qq install build-essential git clang patch \
+        apt-get -y -qq install build-essential git clang patch python-dev \
                                autotools-dev autoconf gettext pkgconf autopoint yelp-tools \
                                docbook docbook-xsl libtext-csv-perl \
                                zlib1g-dev \
@@ -21,7 +21,7 @@ function do_Install_Base_Dependencies(){
         dnf -y -q upgrade
 
         # Base dependencies
-        dnf -y -q install @c-development @development-tools redhat-rpm-config gnome-common \
+        dnf -y -q install @c-development @development-tools redhat-rpm-config gnome-common python-devel \
                           pygobject2 dbus-python perl-Text-CSV perl-XML-Parser gettext-devel gtk-doc ninja-build \
                           zlib-devel libffi-devel \
                           libtool libicu-devel nspr-devel
@@ -118,6 +118,7 @@ function do_Configure_JHBuild(){
 module_autogenargs['gjs'] = "$autogenargs"
 module_makeargs['gjs'] = '-s'
 skip = ['gettext', 'yelp-xsl', 'yelp-tools', 'gtk-doc']
+use_local_modulesets = True
 EOFILE
 
     echo '-- Done --'
@@ -135,18 +136,26 @@ function do_Build_JHBuild(){
     make -sj2
     make install
     PATH=$PATH:~/.local/bin
-    git reset --hard HEAD
+
+    if [[ $1 == "RESET" ]]; then
+        git reset --hard HEAD
+    fi
 }
 
 function do_Build_Mozilla(){
     echo
-    echo '-- Building Mozilla 31 --'
+    echo '-- Building Mozilla SpiderMonkey --'
 
     # Build Mozilla Stuff
     if [[ -n "$SHELL" ]]; then
         export SHELL=/bin/bash
     fi
-    jhbuild build mozjs31
+
+    #TODO Fix this upstream
+    #STOP!  /root/jhbuild/checkout/mozjs-38.0.0/js/src/configure.in has changed, and your configure is out of date.
+    jhbuild update mozjs38
+    touch ~/jhbuild/checkout/mozjs-38.0.0/js/src/configure
+    jhbuild build mozjs38
 }
 
 function do_Build_Package_Dependencies(){
@@ -203,7 +212,7 @@ if [[ $1 == "BUILD_MOZ" ]]; then
 
     do_Show_Compiler
     do_Patch_JHBuild
-    do_Build_JHBuild
+    do_Build_JHBuild RESET
     do_Build_Mozilla
     do_Save_Files
 
