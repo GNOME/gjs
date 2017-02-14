@@ -54,6 +54,10 @@ function do_Set_Env(){
     echo
     echo '-- Set Environment --'
 
+    #Save cache on host
+    mkdir -p /cwd/.cache
+    export XDG_CACHE_HOME=/cwd/.cache
+
     if [[ -z $DISPLAY ]]; then
         export DISPLAY=":0"
     fi
