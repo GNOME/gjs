@@ -1,5 +1,5 @@
-NEXT
-----
+Version 1.47.90
+---------------
 
 - New JavaScript features! This version of GJS is based on SpiderMonkey 38, an
   upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 31.
@@ -57,6 +57,21 @@ NEXT
       this warning off by setting GJS_DISABLE_EXTRA_WARNINGS=1. If it is overly
       annoying, let me know and I will consider making it disabled by default
       in a future release.
+    + When enumerating the importer object (i.e.,
+      "for (let i in imports) {...}") you will now get the names of any built-in
+      modules that have previously been imported. (But don't do this, anyway.)
+
+- Closed bugs:
+
+  * SpiderMonkey 38 prep [#776966, Philip Chimento]
+  * Misc fixes [#777205, Philip Chimento]
+  * missing class name in error message [#642506, Philip Chimento]
+  * Add continuous integration to GJS [#776549, Claudio André]
+  * Switch to SpiderMonkey 38 [#777962, Philip Chimento]
+
+- Progress towards a build of GJS on Windows [Chun-wei Fan]
+- Progress towards increasing test coverage [Claudio André]
+- Misc bug fixes [Philip Chimento]
 
 Version 1.47.4
 --------------
