@@ -23,7 +23,9 @@ directory might not be what one may expect, which is likely due to bugs in its b
 scripts.  If this is the case, rename mozjs-.lib to mozjs-38.lib, and the
 include directory from mozjs- to mozjs-38 (but please do *not* rename mozjs-.dll
 and mozjs-.pdb, as they will be searched for when gjs-console.exe/gjs.exe runs,
-along with any program that uses the GJS DLL).
+along with any program that uses the GJS DLL).  Otherwise, do (or redo) the
+SpiderMonkey build process (including running configure) after applying the patch
+from https://git.gnome.org/browse/jhbuild/tree/patches/mozjs38-release-number.patch
 
 The following are instructions for performing such a build, as there is a
 number of build configurations supported for the build.  Note that the default
