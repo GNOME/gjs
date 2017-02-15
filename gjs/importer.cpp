@@ -72,7 +72,7 @@ importer_to_string(JSContext *cx,
                                  &module_path))
         return false;
 
-    g_autofree char *path = NULL;
+    char *path = NULL;
     GjsAutoChar output;
 
     if (module_path.isNull()) {
@@ -84,6 +84,7 @@ importer_to_string(JSContext *cx,
     }
 
     args.rval().setString(JS_NewStringCopyZ(cx, output));
+    g_free(path);
     return true;
 }
 
@@ -135,10 +136,11 @@ define_meta_properties(JSContext       *context,
         if (parent_module_path.isNull()) {
             module_path_buf = g_strdup(module_name);
         } else {
-            g_autofree char *parent_path = NULL;
+            char *parent_path = NULL;
             if (!gjs_string_to_utf8(context, parent_module_path, &parent_path))
                 return false;
             module_path_buf = g_strdup_printf("%s.%s", parent_path, module_name);
+            g_free(parent_path);
         }
         module_path.setString(JS_NewStringCopyZ(context, module_path_buf));
     }
@@ -281,12 +283,13 @@ module_to_string(JSContext *cx,
 
     g_assert(!module_path.isNull());
 
-    g_autofree char *path = NULL;
+    char *path = NULL;
     if (!gjs_string_to_utf8(cx, module_path, &path))
         return false;
     GjsAutoChar output = g_strdup_printf("[GjsModule %s]", path);
 
     args.rval().setString(JS_NewStringCopyZ(cx, output));
+    g_free(path);
     return true;
 }
 
@@ -787,7 +790,7 @@ importer_resolve(JSContext        *context,
                  bool             *resolved)
 {
     Importer *priv;
-    g_autofree char *name = NULL;
+    char *name = NULL;
     jsid module_init_name;
 
     module_init_name = gjs_context_get_const_string(context, GJS_STRING_MODULE_INIT);
@@ -804,6 +807,7 @@ importer_resolve(JSContext        *context,
         strcmp(name, "toString") == 0 ||
         strcmp(name, "__iterator__") == 0) {
         *resolved = false;
+        g_free(name);
         return true;
     }
     priv = priv_from_js(context, obj);
@@ -814,14 +818,18 @@ importer_resolve(JSContext        *context,
     if (priv == NULL) {
         /* we are the prototype, or have the wrong class */
         *resolved = false;
+        g_free(name);
         return true;
     }
 
     JSAutoRequest ar(context);
-    if (!do_import(context, obj, priv, name))
+    if (!do_import(context, obj, priv, name)) {
+        g_free(name);
         return false;
+    }
 
     *resolved = true;
+    g_free(name);
     return true;
 }
 

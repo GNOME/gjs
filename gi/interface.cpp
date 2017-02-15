@@ -111,7 +111,7 @@ interface_resolve(JSContext       *context,
                   bool            *resolved)
 {
     Interface *priv;
-    g_autofree char *name = NULL;
+    char *name = NULL;
     GIFunctionInfo *method_info;
 
     if (!gjs_get_string_id(context, id, &name)) {
@@ -121,14 +121,17 @@ interface_resolve(JSContext       *context,
 
     priv = priv_from_js(context, obj);
 
-    if (priv == NULL)
+    if (priv == NULL) {
+        g_free(name);
         return false;
+    }
 
     /* If we have no GIRepository information then this interface was defined
      * from within GJS. In that case, it has no properties that need to be
      * resolved from within C code, as interfaces cannot inherit. */
     if (priv->info == NULL) {
         *resolved = false;
+        g_free(name);
         return true;
     }
 
@@ -140,6 +143,7 @@ interface_resolve(JSContext       *context,
                                     priv->gtype,
                                     (GICallableInfo*)method_info) == NULL) {
                 g_base_info_unref((GIBaseInfo*)method_info);
+                g_free(name);
                 return false;
             }
 
@@ -153,6 +157,7 @@ interface_resolve(JSContext       *context,
         *resolved = false;
     }
 
+    g_free(name);
     return true;
 }
 

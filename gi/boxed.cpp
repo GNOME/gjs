@@ -121,7 +121,7 @@ boxed_resolve(JSContext       *context,
               bool            *resolved)
 {
     Boxed *priv;
-    g_autofree char *name = NULL;
+    char *name = NULL;
 
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
@@ -132,8 +132,10 @@ boxed_resolve(JSContext       *context,
     gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook obj %p priv %p",
                      name, obj.get(), priv);
 
-    if (priv == NULL)
+    if (priv == NULL) {
+        g_free(name);
         return false; /* wrong class */
+    }
 
     if (priv->gboxed == NULL) {
         /* We are the prototype, so look for methods and other class properties */
@@ -161,6 +163,7 @@ boxed_resolve(JSContext       *context,
                 if (gjs_define_function(context, obj, priv->gtype,
                                         (GICallableInfo *)method_info) == NULL) {
                     g_base_info_unref( (GIBaseInfo*) method_info);
+                    g_free(name);
                     return false;
                 }
 
@@ -181,6 +184,7 @@ boxed_resolve(JSContext       *context,
          */
         *resolved = false;
     }
+    g_free(name);
     return true;
 }
 
@@ -278,7 +282,7 @@ boxed_init_from_props(JSContext   *context,
     JS::RootedId prop_id(context);
     for (ix = 0, length = ids.length(); ix < length; ix++) {
         GIFieldInfo *field_info;
-        g_autofree char *name = NULL;
+        char *name = NULL;
 
         if (!gjs_get_string_id(context, ids[ix], &name))
             return false;
@@ -287,6 +291,7 @@ boxed_init_from_props(JSContext   *context,
         if (field_info == NULL) {
             gjs_throw(context, "No field %s on boxed type %s",
                       name, g_base_info_get_name((GIBaseInfo *)priv->info));
+            g_free(name);
             return false;
         }
 
@@ -294,11 +299,17 @@ boxed_init_from_props(JSContext   *context,
          * doesn't know that */
         prop_id = ids[ix];
         if (!gjs_object_require_property(context, props, "property list",
-                                         prop_id, &value))
+                                         prop_id, &value)) {
+            g_free(name);
             return false;
+        }
 
-        if (!boxed_set_field_from_value(context, priv, field_info, value))
+        if (!boxed_set_field_from_value(context, priv, field_info, value)) {
+            g_free(name);
             return false;
+        }
+
+        g_free(name);
     }
 
     return true;

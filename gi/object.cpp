@@ -28,6 +28,7 @@
 #include <set>
 #include <stack>
 #include <string.h>
+#include <tuple>
 #include <vector>
 
 #include "object.h"
@@ -653,7 +654,7 @@ object_instance_resolve_no_info(JSContext       *context,
     guint n_interfaces;
     guint i;
 
-    g_autofree GType *interfaces = g_type_interfaces(priv->gtype, &n_interfaces);
+    GType *interfaces = g_type_interfaces(priv->gtype, &n_interfaces);
     for (i = 0; i < n_interfaces; i++) {
         GIBaseInfo *base_info;
         GIInterfaceInfo *iface_info;
@@ -679,11 +680,13 @@ object_instance_resolve_no_info(JSContext       *context,
                 if (!gjs_define_function(context, obj, priv->gtype,
                                         (GICallableInfo *)method_info)) {
                     g_base_info_unref((GIBaseInfo*) method_info);
+                    g_free(interfaces);
                     return false;
                 }
 
                 g_base_info_unref((GIBaseInfo*) method_info);
                 *resolved = true;
+                g_free(interfaces);
                 return true;
             }
 
@@ -692,6 +695,7 @@ object_instance_resolve_no_info(JSContext       *context,
     }
 
     *resolved = false;
+    g_free(interfaces);
     return true;
 }
 
@@ -708,7 +712,7 @@ object_instance_resolve(JSContext       *context,
 {
     GIFunctionInfo *method_info;
     ObjectInstance *priv;
-    g_autofree char *name = NULL;
+    char *name = NULL;
 
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
@@ -737,11 +741,13 @@ object_instance_resolve(JSContext       *context,
          * check there.
          */
         *resolved = false;
+        g_free(name);
         return true;
     }
 
     if (priv->gobj != NULL) {
         *resolved = false;
+        g_free(name);
         return true;
     }
 
@@ -749,7 +755,9 @@ object_instance_resolve(JSContext       *context,
      * we need to look at exposing interfaces. Look up our interfaces through
      * GType data, and then hope that *those* are introspectable. */
     if (priv->info == NULL) {
-        return object_instance_resolve_no_info(context, obj, resolved, priv, name);
+        bool status = object_instance_resolve_no_info(context, obj, resolved, priv, name);
+        g_free(name);
+        return status;
     }
 
     if (g_str_has_prefix (name, "vfunc_")) {
