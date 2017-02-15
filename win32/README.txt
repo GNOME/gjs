@@ -6,7 +6,7 @@ via NMake Makefiles.  Due to C++-11 usage, Visual Studio 2012 or
 earlier is not supported.
 
 You will need the following items to build GJS using Visual Studio:
--SpiderMonkey 31 (mozjs-31)
+-SpiderMonkey 38 (mozjs-38)
 -GObject-Introspection (G-I) 1.41.4 or later
 -GLib 2.50.x or later, (which includes GIO, GObject, and the associated tools)
 -Cairo including Cairo-GObject support, unless NO_CAIRO=1 is specified.
@@ -16,6 +16,14 @@ You will need the following items to build GJS using Visual Studio:
 Note that SpiderMonkey must be built with Visual Studio, and the rest
 should preferably be built with Visual Studio as well.  The Visual Studio
 version used should preferably be the one that is used here to build GJS.
+
+If you built SpiderMonkey 38 using the normal build instructions as described
+on Mozilla's website, you may notice that the output library, DLLs and include
+directory might not be what one may expect, which is likely due to bugs in its build
+scripts.  If this is the case, rename mozjs-.lib to mozjs-38.lib, and the
+include directory from mozjs- to mozjs-38 (but please do *not* rename mozjs-.dll
+and mozjs-.pdb, as they will be searched for when gjs-console.exe/gjs.exe runs,
+along with any program that uses the GJS DLL).
 
 The following are instructions for performing such a build, as there is a
 number of build configurations supported for the build.  Note that the default
