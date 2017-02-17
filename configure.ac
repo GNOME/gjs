@@ -249,6 +249,12 @@ AC_CONFIG_LINKS([
 ])
 AC_OUTPUT
 
+# Warn about conditions that affect runtime
+PKG_CHECK_EXISTS([gobject-introspection-1.0 >= 1.51.2], [], [
+    AC_MSG_WARN([You do not have a new enough version of
+gobject-introspection to run the tests. You can still build GJS, but some
+tests will fail.])])
+
 TEST_MSG=
 AM_COND_IF([XVFB_TESTS], [TEST_MSG="xvfb "])
 AM_COND_IF([DBUS_TESTS], [TEST_MSG="${TEST_MSG}dbus"])
