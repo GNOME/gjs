@@ -57,9 +57,10 @@ m4_define(glib_required_version, 2.50.0)
 
 GOBJECT_INTROSPECTION_REQUIRE([1.41.4])
 
+ESR=38
 GOBJECT_REQUIREMENT="gobject-2.0 >= glib_required_version"
 gjs_base_packages="$GOBJECT_REQUIREMENT gio-2.0"
-common_packages="gthread-2.0 gio-2.0 >= glib_required_version mozjs-38"
+common_packages="gthread-2.0 gio-2.0 >= glib_required_version mozjs-$ESR"
 gjs_packages="gobject-introspection-1.0 libffi $common_packages"
 gjs_cairo_packages="cairo cairo-gobject $common_packages"
 gjs_gtk_packages="gtk+-3.0 >= 3.20"
@@ -71,6 +72,16 @@ dnl These don't need to be put in the .pc file so use regular PKG_CHECK_MODULES
 PKG_CHECK_MODULES([GJS_GDBUS], [$gjs_base_packages])
 PKG_CHECK_MODULES([GJS_CONSOLE], [$gjs_base_packages])
 PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
+
+# Check that SpiderMonkey was compiled --with-intl-api. Easiest way to do
+# this is to check and see if the JS source "Intl" executes correctly.
+AC_PATH_PROG([JS_INTERP], ["js$ESR" js])
+AC_MSG_CHECKING([for SpiderMonkey with ES6 Intl API])
+"$JS_INTERP" -e Intl >>config.log 2>&1
+AS_IF([test $? -eq 0], [AC_MSG_RESULT([found])], [AC_MSG_ERROR([not found
+The detected SpiderMonkey executable, $JS_INTERP,
+does not have the ECMAScript Internationalization API compiled in. Make
+sure to add the --with-intl-api configure flag to SpiderMonkey.])])
 
 # Optional cairo dep (enabled by default)
 AC_ARG_WITH(cairo,
