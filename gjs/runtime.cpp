@@ -246,15 +246,11 @@ LPVOID    lpvReserved)
   {
   case DLL_PROCESS_ATTACH:
     gjs_dll = hinstDLL;
-    g_assert(JS_Init());
-    gjs_is_inited = true;
+    gjs_is_inited = JS_Init();
     break;
 
   case DLL_THREAD_DETACH:
     gjs_destroy_runtime_for_current_thread();
-    break;
-
-  case DLL_PROCESS_DETACH:
     JS_ShutDown ();
     break;
 
