@@ -682,6 +682,7 @@ boxed_field_getter(JSContext *context,
     success = true;
 
 out:
+    g_base_info_unref ((GIBaseInfo *)field_info);
     g_base_info_unref ((GIBaseInfo *)type_info);
 
     return success;
@@ -807,6 +808,7 @@ boxed_field_setter(JSContext *cx,
 {
     GJS_GET_PRIV(cx, argc, vp, args, obj, Boxed, priv);
     GIFieldInfo *field_info;
+    bool success = false;
 
     field_info = get_field_info(cx, priv,
                                 native_accessor_slot(&args.callee()));
@@ -817,14 +819,19 @@ boxed_field_setter(JSContext *cx,
         gjs_throw(cx, "Can't set field %s.%s on prototype",
                   g_base_info_get_name ((GIBaseInfo *)priv->info),
                   g_base_info_get_name ((GIBaseInfo *)field_info));
-        return false;
+        goto out;
     }
 
     if (!boxed_set_field_from_value(cx, priv, field_info, args[0]))
-        return false;
+        goto out;
 
     args.rval().setUndefined();  /* No stored value */
-    return true;
+    success = true;
+
+out:
+    g_base_info_unref ((GIBaseInfo *)field_info);
+
+    return success;
 }
 
 static bool
