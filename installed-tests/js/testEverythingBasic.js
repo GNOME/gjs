@@ -101,6 +101,18 @@ describe('Life, the Universe and Everything', function () {
                 run_test(bytes, 'MAX', 'test_int');
             });
         });
+
+        it('warns when conversion is lossy', function () {
+            GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+                "*cannot be safely stored*");
+            GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+                "*cannot be safely stored*");
+            void GLib.MAXINT64;
+            void GLib.MAXUINT64;
+            GLib.test_assert_expected_messages_internal('Gjs',
+                'testEverythingBasic.js', 0,
+                'Limits warns when conversion is lossy');
+        });
     });
 
     describe('No implicit conversion to unsigned', function () {

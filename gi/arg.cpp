@@ -2572,6 +2572,13 @@ gjs_object_from_g_hash (JSContext             *context,
     return result;
 }
 
+template<typename T>
+static bool
+is_safe_to_store_in_double(T number)
+{
+    return static_cast<T>(static_cast<double>(number)) == number;
+}
+
 bool
 gjs_value_from_g_argument (JSContext             *context,
                            JS::MutableHandleValue value_p,
@@ -2607,11 +2614,17 @@ gjs_value_from_g_argument (JSContext             *context,
         break;
 
     case GI_TYPE_TAG_INT64:
-        value_p.set(JS::NumberValue(arg->v_int64));
+        if (!is_safe_to_store_in_double(arg->v_int64))
+            g_warning("Value %" G_GINT64_FORMAT " cannot be safely stored in "
+                      "a JS Number and will be rounded", arg->v_int64);
+        value_p.setNumber(static_cast<double>(arg->v_int64));
         break;
 
     case GI_TYPE_TAG_UINT64:
-        value_p.set(JS::NumberValue(arg->v_uint64));
+        if (!is_safe_to_store_in_double(arg->v_uint64))
+            g_warning("Value %" G_GUINT64_FORMAT " cannot be safely stored in "
+                      "a JS Number and will be rounded", arg->v_uint64);
+        value_p.setNumber(static_cast<double>(arg->v_uint64));
         break;
 
     case GI_TYPE_TAG_UINT16:
