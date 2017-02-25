@@ -268,6 +268,27 @@ test_jsapi_util_debug_string_invalid_utf8(GjsUnitTestFixture *fx,
 }
 
 static void
+test_jsapi_util_debug_string_object_with_complicated_to_string(GjsUnitTestFixture *fx,
+                                                               gconstpointer       unused)
+{
+    const char16_t desserts[] = {
+        0xd83c, 0xdf6a,  /* cookie */
+        0xd83c, 0xdf69,  /* doughnut */
+    };
+    JS::AutoValueArray<2> contents(fx->cx);
+    contents[0].setString(JS_NewUCStringCopyN(fx->cx, desserts, 2));
+    contents[1].setString(JS_NewUCStringCopyN(fx->cx, desserts + 2, 2));
+    JS::RootedObject array(fx->cx, JS_NewArrayObject(fx->cx, contents));
+    JS::RootedValue v_array(fx->cx, JS::ObjectValue(*array));
+    char *debug_output = gjs_value_debug_string(fx->cx, v_array);
+
+    g_assert_nonnull(debug_output);
+    g_assert_cmpstr(u8"🍪,🍩", ==, debug_output);
+
+    g_free(debug_output);
+}
+
+static void
 gjstest_test_func_util_glib_strv_concat_null(void)
 {
     char **ret;
@@ -394,6 +415,8 @@ main(int    argc,
                         test_jsapi_util_debug_string_valid_utf8);
     ADD_JSAPI_UTIL_TEST("debug_string/invalid-utf8",
                         test_jsapi_util_debug_string_invalid_utf8);
+    ADD_JSAPI_UTIL_TEST("debug_string/object-with-complicated-to-string",
+                        test_jsapi_util_debug_string_object_with_complicated_to_string);
 
 #undef ADD_JSAPI_UTIL_TEST
 

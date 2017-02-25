@@ -551,18 +551,11 @@ gjs_value_debug_string(JSContext      *context,
 
     g_assert(str != NULL);
 
-    size_t len = JS_GetStringEncodingLength(context, str);
-    if (len != (size_t)(-1)) {
-        bytes = (char*) g_malloc((len + 1) * sizeof(char));
-        JS_EncodeStringToBuffer(context, str, bytes, len);
-        bytes[len] = '\0';
-    } else {
-        bytes = g_strdup("[invalid string]");
-    }
+    bytes = JS_EncodeStringToUTF8(context, str);
     JS_EndRequest(context);
 
     debugstr = _gjs_g_utf8_make_valid(bytes);
-    g_free(bytes);
+    JS_free(context, bytes);
 
     return debugstr;
 }
