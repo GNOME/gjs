@@ -264,6 +264,21 @@ Class.prototype.implements = function (iface) {
     return false;
 };
 
+// key can be either a string or a symbol
+Class.prototype._copyPropertyDescriptor = function(params, propertyObj, key) {
+    let descriptor = Object.getOwnPropertyDescriptor(params, key);
+
+    if (typeof descriptor.value === 'function')
+        descriptor.value = this.wrapFunction(key, descriptor.value);
+
+    // we inherit writable and enumerable from the property
+    // descriptor of params (they're both true if created from an
+    // object literal)
+    descriptor.configurable = false;
+
+    propertyObj[key] = descriptor;
+};
+
 Class.prototype._init = function(params) {
     let name = params.Name;
 
@@ -277,28 +292,17 @@ Class.prototype._init = function(params) {
         .forEach((name) => {
             let descriptor = Object.getOwnPropertyDescriptor(iface.prototype,
                 name);
-            // writable and enumerable are inherited, see note below
+            // writable and enumerable are inherited, see note above
             descriptor.configurable = false;
             propertyObj[name] = descriptor;
         });
     });
 
-    Object.getOwnPropertyNames(params).forEach(function(name) {
-        if (['Name', 'Extends', 'Abstract', 'Implements'].indexOf(name) !== -1)
-            return;
-
-        let descriptor = Object.getOwnPropertyDescriptor(params, name);
-
-        if (typeof descriptor.value === 'function')
-            descriptor.value = this.wrapFunction(name, descriptor.value);
-
-        // we inherit writable and enumerable from the property
-        // descriptor of params (they're both true if created from an
-        // object literal)
-        descriptor.configurable = false;
-
-        propertyObj[name] = descriptor;
-    }.bind(this));
+    Object.getOwnPropertyNames(params)
+        .filter(name =>
+            ['Name', 'Extends', 'Abstract', 'Implements'].indexOf(name) === -1)
+        .concat(Object.getOwnPropertySymbols(params))
+        .forEach(this._copyPropertyDescriptor.bind(this, params, propertyObj));
 
     Object.defineProperties(this.prototype, propertyObj);
     Object.defineProperties(this.prototype, {

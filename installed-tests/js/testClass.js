@@ -192,4 +192,15 @@ describe('Class framework', function () {
         expect(instance instanceof CustomConstruct).toBeFalsy();
         expect(instance).toEqual([1, 2]);
     });
+
+    it('allows symbol-named methods', function () {
+        const SymbolClass = new Lang.Class({
+            Name: 'SymbolClass',
+            *[Symbol.iterator]() {
+                yield* [1, 2, 3];
+            },
+        });
+        let instance = new SymbolClass();
+        expect([...instance]).toEqual([1, 2, 3]);
+    });
 });
