@@ -273,7 +273,7 @@ describe('Life, the Universe and Everything', function () {
 
             xit('in with transfer-container', function () {
                 Regress['test_' + list + '_container_in'](STR_LIST);
-            }).pend('Not sure why this is skipped');
+            }).pend('Function not added to gobject-introspection test suite yet');
         });
     });
 
