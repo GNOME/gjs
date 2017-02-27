@@ -1385,11 +1385,20 @@ disassociate_js_gobject(GObject *gobj)
 
     g_object_weak_unref(priv->gobj, wrapped_gobj_dispose_notify, priv);
 
-    /* Idles are already checked in the only caller of this
-       function, the toggle ref notify, but let's check again...
-    */
-    g_assert(!cancel_toggle_idle(gobj, TOGGLE_UP));
-    g_assert(!cancel_toggle_idle(gobj, TOGGLE_DOWN));
+    /* FIXME: this check fails when JS code runs after the main loop ends,
+     * because the idle functions are not dispatched without a main loop.
+     * The only situation I'm aware of where this happens is during the
+     * dbus_unregister stage in GApplication. Ideally this check should be an
+     * assertion.
+     * https://bugzilla.gnome.org/show_bug.cgi?id=778862
+     */
+    if (cancel_toggle_idle(gobj, TOGGLE_UP) ||
+        cancel_toggle_idle(gobj, TOGGLE_DOWN))
+        g_critical("JS object wrapper for GObject %p (%s) is being released "
+                   "while toggle references are still pending. This may happen "
+                   "on exit in Gio.Application.vfunc_dbus_unregister(). If you "
+                   "encounter it another situation, please report a GJS bug.",
+                   gobj, G_OBJECT_TYPE_NAME(gobj));
 
     invalidate_all_signals(priv);
     release_native_object(priv);
