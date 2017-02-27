@@ -108,6 +108,8 @@ JSNATIVE_TEST_FUNC_BEGIN(one_of_each_type)
     g_assert_cmpint(int64val, ==, 1);
     g_assert_cmpfloat(dblval, ==, 1.0);
     g_assert_nonnull(objval);
+    g_free(strval);
+    g_free(fileval);
 JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(optional_args_all)

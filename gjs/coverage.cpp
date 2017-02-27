@@ -292,7 +292,7 @@ copy_source_file_to_coverage_output(GFile *source_file,
 
     /* We need to recursively make the directory we
      * want to copy to, as g_file_copy doesn't do that */
-    GFile *destination_dir = g_file_get_parent(destination_file);
+    GjsAutoUnref<GFile> destination_dir = g_file_get_parent(destination_file);
     if (!g_file_make_directory_with_parents(destination_dir, NULL, &error)) {
         if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_EXISTS))
             goto fail;
@@ -1037,10 +1037,9 @@ gjs_deserialize_cache_to_object_for_compartment(JSContext        *context,
                                                global_object));
 
     gsize len = 0;
-    gpointer string = g_bytes_unref_to_data(g_bytes_ref(cache_data),
-                                            &len);
+    auto string = static_cast<const char *>(g_bytes_get_data(cache_data, &len));
 
-    return JS_NewStringCopyN(context, (const char *) string, len);
+    return JS_NewStringCopyN(context, string, len);
 }
 
 JSString *

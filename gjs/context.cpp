@@ -345,6 +345,7 @@ gjs_context_class_init(GjsContextClass *klass)
     g_object_class_install_property(object_class,
                                     PROP_SEARCH_PATH,
                                     pspec);
+    g_param_spec_unref(pspec);
 
     pspec = g_param_spec_string("program-name",
                                 "Program Name",
@@ -355,6 +356,7 @@ gjs_context_class_init(GjsContextClass *klass)
     g_object_class_install_property(object_class,
                                     PROP_PROGRAM_NAME,
                                     pspec);
+    g_param_spec_unref(pspec);
 
     /* For GjsPrivate */
     {
