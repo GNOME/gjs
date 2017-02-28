@@ -1,3 +1,23 @@
+Version 1.47.91
+---------------
+
+- Closed bugs:
+
+  * overrides/Gio: Provide an empty array on error, rather than null [#677513,
+    Jasper St. Pierre, Philip Chimento]
+  * WithSignals parameter for Lang.Class [#664897, Philip Chimento]
+  * add API to better support asynchronous code [#608450, Philip Chimento]
+  * 1.47.90 tests are failing [#778780, Philip Chimento]
+  * boxed: Plug a memory leak [#779036, Florian Müllner]
+  * Don't crash when marshalling an unsafe integer from introspection [#778705,
+    Philip Chimento]
+  * Lang.Class should include symbol properties [#778718, Philip Chimento]
+  * Console output of arrays should be UTF-8 aware [#778729, Philip Chimento]
+  * Various fixes for 1.47.91 [#779293, Philip Chimento]
+
+- Progress towards a Visual Studio build of GJS on Windows [Chun-wei Fan]
+- Misc bug fixes [Chun-wei Fan, Philip Chimento]
+
 Version 1.47.90
 ---------------
 
