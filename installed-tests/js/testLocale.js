@@ -1,4 +1,8 @@
 describe('JS_SetLocaleCallbacks', function () {
+    it('Intl API was compiled into SpiderMonkey', function () {
+        expect(Intl).toBeDefined();
+    });
+
     // Requesting the weekday name tests locale_to_unicode
     it('toLocaleDateString() works', function () {
         let date = new Date('12/15/1981');
