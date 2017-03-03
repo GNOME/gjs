@@ -26,6 +26,7 @@
 const GLib = imports.gi.GLib;
 const GIRepository = imports.gi.GIRepository;
 const Gio = imports.gi.Gio;
+const GObject = imports.gi.GObject;
 const System = imports.system;
 
 const Gettext = imports.gettext;
@@ -244,6 +245,62 @@ function require(libs) {
             System.exit(1);
         }
     }
+}
+
+/**
+ * checkSymbol:
+ * @lib: an external dependency to import
+ * @version: optional version of the dependency
+ * @symbol: optional symbol to check for
+ *
+ * Check whether an external GI typelib can be imported
+ * and provides @symbol.
+ *
+ * Symbols may refer to
+ *  - global functions         ('main_quit')
+ *  - classes                  ('Window')
+ *  - class / instance methods ('IconTheme.get_default' / 'IconTheme.has_icon')
+ *  - GObject properties       ('Window.default_height')
+ *
+ * Returns: %true if @lib can be imported and provides @symbol, %false otherwise
+ */
+function checkSymbol(lib, version, symbol) {
+    let Lib = null;
+
+    if (version)
+        imports.gi.versions[lib] = version;
+
+    try {
+        Lib = imports.gi[lib];
+    } catch(e) {
+        return false;
+    }
+
+    if (!symbol)
+        return true; // Done
+
+    let [klass, sym] = symbol.split('.');
+    if (klass === symbol) // global symbol
+        return (typeof Lib[symbol] !== 'undefined');
+
+    let obj = Lib[klass];
+    if (typeof obj === 'undefined')
+        return false;
+
+    if (typeof obj[sym] !== 'undefined' ||
+        (obj.prototype && typeof obj.prototype[sym] !== 'undefined'))
+        return true; // class- or object method
+
+    // GObject property
+    let pspec = null;
+    if (GObject.type_is_a(obj.$gtype, GObject.TYPE_INTERFACE)) {
+        let iface = GObject.type_default_interface_ref(obj.$gtype);
+        pspec = GObject.Object.interface_find_property(iface, sym);
+    } else if (GObject.type_is_a(obj.$gtype, GObject.TYPE_OBJECT)) {
+        pspec = GObject.Object.find_property.call(obj.$gtype, sym);
+    }
+
+    return (pspec !== null);
 }
 
 function initGettext() {
