@@ -232,18 +232,23 @@ function run(module) {
  * indicates any version.
  */
 function require(libs) {
-    for (let l in libs) {
-        let version = libs[l];
+    for (let l in libs)
+        requireSymbol(l, libs[l]);
+}
 
-        if (version != '')
-            imports.gi.versions[l] = version;
-
-        try {
-            imports.gi[l];
-        } catch(e) {
-            printerr('Unsatisfied dependency: ' + e.message);
-            System.exit(1);
-        }
+/**
+ * requireSymbol:
+ *
+ * As checkSymbol(), but exit with an error if the
+ * dependency cannot be satisfied.
+ */
+function requireSymbol(lib, version, symbol) {
+    if (!checkSymbol(lib, version, symbol)) {
+        if (symbol)
+            printerr(`Unsatisfied dependency: No ${symbol} in ${lib}`);
+        else
+            printerr(`Unsatisfied dependency: ${lib}`);
+        System.exit(1);
     }
 }
 
