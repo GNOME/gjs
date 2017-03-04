@@ -1,3 +1,5 @@
+imports.gi.versions.Gtk = '3.0';
+
 const ByteArray = imports.byteArray;
 const Gtk = imports.gi.Gtk;
 const Lang = imports.lang;
