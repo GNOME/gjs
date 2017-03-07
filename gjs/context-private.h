@@ -37,6 +37,8 @@ void         _gjs_context_schedule_gc_if_needed       (GjsContext *js_context);
 void _gjs_context_exit(GjsContext *js_context,
                        uint8_t     exit_code);
 
+bool _gjs_context_get_is_owner_thread(GjsContext *js_context);
+
 G_END_DECLS
 
 #endif  /* __GJS_CONTEXT_PRIVATE_H__ */

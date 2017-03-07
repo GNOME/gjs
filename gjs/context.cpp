@@ -69,6 +69,7 @@ struct _GjsContext {
     JSRuntime *runtime;
     JSContext *context;
     JS::Heap<JSObject*> global;
+    intptr_t owner_thread;
 
     char *program_name;
 
@@ -489,6 +490,9 @@ gjs_context_constructed(GObject *object)
 
     js_context->runtime = gjs_runtime_ref();
 
+    JS_AbortIfWrongThread(js_context->runtime);
+    js_context->owner_thread = JS_GetCurrentThread();
+
     js_context->context = JS_NewContext(js_context->runtime, 8192 /* stack chunk size */);
     if (js_context->context == NULL)
         g_error("Failed to create javascript context");
@@ -659,6 +663,12 @@ context_reset_exit(GjsContext *js_context)
 {
     js_context->should_exit = false;
     js_context->exit_code = 0;
+}
+
+bool
+_gjs_context_get_is_owner_thread(GjsContext *js_context)
+{
+    return js_context->owner_thread == JS_GetCurrentThread();
 }
 
 /**

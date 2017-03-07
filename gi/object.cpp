@@ -104,7 +104,6 @@ static bool weak_pointer_callback = false;
 static std::set<ObjectInstance *> weak_pointer_list;
 
 extern struct JSClass gjs_object_instance_class;
-static GThread *gjs_eval_thread;
 static volatile gint pending_idle_toggles;
 static std::set<ObjectInstance *> dissociate_list;
 
@@ -1203,7 +1202,7 @@ wrapped_gobj_toggle_notify(gpointer      data,
      * but there aren't many peculiar objects like that and it's
      * not a big deal.
      */
-    is_main_thread = (gjs_eval_thread == g_thread_self());
+    is_main_thread = _gjs_context_get_is_owner_thread(context);
 
     toggle_up_queued = toggle_idle_source_is_queued(gobj, TOGGLE_UP);
     toggle_down_queued = toggle_idle_source_is_queued(gobj, TOGGLE_DOWN);
@@ -2706,8 +2705,6 @@ gjs_object_class_init(GObjectClass *klass,
     klass->constructor = gjs_object_constructor;
     klass->set_property = gjs_object_set_gproperty;
     klass->get_property = gjs_object_get_gproperty;
-
-    gjs_eval_thread = g_thread_self();
 
     properties = (GPtrArray*) gjs_hash_table_for_gsize_lookup (class_init_properties, gtype);
     if (properties != NULL) {
