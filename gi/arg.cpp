@@ -2576,7 +2576,8 @@ template<typename T>
 static bool
 is_safe_to_store_in_double(T number)
 {
-    return static_cast<T>(static_cast<double>(number)) == number;
+    static T max_safe_int = T(1) << std::numeric_limits<double>::digits;
+    return (std::abs(number) <= max_safe_int);
 }
 
 bool
@@ -2616,14 +2617,14 @@ gjs_value_from_g_argument (JSContext             *context,
     case GI_TYPE_TAG_INT64:
         if (!is_safe_to_store_in_double(arg->v_int64))
             g_warning("Value %" G_GINT64_FORMAT " cannot be safely stored in "
-                      "a JS Number and will be rounded", arg->v_int64);
+                      "a JS Number and may be rounded", arg->v_int64);
         value_p.setNumber(static_cast<double>(arg->v_int64));
         break;
 
     case GI_TYPE_TAG_UINT64:
         if (!is_safe_to_store_in_double(arg->v_uint64))
             g_warning("Value %" G_GUINT64_FORMAT " cannot be safely stored in "
-                      "a JS Number and will be rounded", arg->v_uint64);
+                      "a JS Number and may be rounded", arg->v_uint64);
         value_p.setNumber(static_cast<double>(arg->v_uint64));
         break;
 
