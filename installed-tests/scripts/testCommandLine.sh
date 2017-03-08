@@ -40,11 +40,11 @@ report_xfail () {
 }
 
 # Test that System.exit() works in gjs-console
-"$gjs" -c 'imports.system.exit(0)' || \
-    fail "System.exit(0) should exit successfully"
-if "gjs" -c 'imports.system.exit(42)' -ne 42; then
-    fail "System.exit(42) should exit with the correct exit code"
-fi
+"$gjs" -c 'imports.system.exit(0)'
+report "System.exit(0) should exit successfully"
+"gjs" -c 'imports.system.exit(42)'
+test $? -eq 42
+report "System.exit(42) should exit with the correct exit code"
 
 # gjs --help prints GJS help
 "$gjs" --help >/dev/null
