@@ -2029,6 +2029,7 @@ gjs_g_argument_init_default(JSContext      *context,
 
     case GI_TYPE_TAG_UINT64:
         arg->v_uint64 = 0;
+        break;
 
     case GI_TYPE_TAG_BOOLEAN:
         arg->v_boolean = false;
