@@ -127,7 +127,7 @@ closure_clear_idle(void *data)
 {
     auto closure = static_cast<GjsClosure *>(data);
     gjs_debug_closure("Clearing closure %p which calls object %p",
-                      &closure->priv, closure->priv.object.get());
+                      &closure->priv, closure->priv.obj.get());
 
     closure->priv.obj.reset();
     closure->priv.context = nullptr;
