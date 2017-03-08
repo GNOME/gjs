@@ -649,9 +649,9 @@ _gjs_context_exit(GjsContext *js_context,
     js_context->exit_code = exit_code;
 }
 
-static bool
-context_should_exit(GjsContext *js_context,
-                    uint8_t    *exit_code_p)
+bool
+_gjs_context_should_exit(GjsContext *js_context,
+                         uint8_t    *exit_code_p)
 {
     if (exit_code_p != NULL)
         *exit_code_p = js_context->exit_code;
@@ -765,7 +765,7 @@ gjs_context_eval(GjsContext   *js_context,
     if (!gjs_eval_with_scope(js_context->context, JS::NullPtr(), script,
                              script_len, filename, &retval)) {
         uint8_t code;
-        if (context_should_exit(js_context, &code)) {
+        if (_gjs_context_should_exit(js_context, &code)) {
             /* exit_status_p is public API so can't be changed, but should be
              * uint8_t, not int */
             *exit_status_p = code;

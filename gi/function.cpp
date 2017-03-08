@@ -33,6 +33,7 @@
 #include "closure.h"
 #include "gtype.h"
 #include "param.h"
+#include "gjs/context-private.h"
 #include "gjs/jsapi-private.h"
 #include "gjs/jsapi-wrapper.h"
 #include "gjs/mem.h"
@@ -395,6 +396,20 @@ gjs_callback_closure(ffi_cif *cif,
 
 out:
     if (!success) {
+        if (!JS_IsExceptionPending(context)) {
+            /* "Uncatchable" exception thrown, we have to exit. We may be in a
+             * main loop, or maybe not, but there's no way to tell, so we have
+             * to exit here instead of propagating the exception back to the
+             * original calling JS code. */
+            auto gcx = static_cast<GjsContext *>(JS_GetContextPrivate(context));
+            uint8_t code;
+            if (_gjs_context_should_exit(gcx, &code))
+                exit(code);
+
+            /* Some other uncatchable exception, e.g. out of memory */
+            exit(1);
+        }
+
         gjs_log_exception (context);
 
         /* Fill in the result with some hopefully neutral value */

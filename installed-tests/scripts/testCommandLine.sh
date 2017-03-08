@@ -6,6 +6,16 @@ else
     gjs=gjs-console
 fi
 
+# This JS script should exit immediately with code 42. If that is not working,
+# then it will exit after 3 seconds as a fallback, with code 0.
+cat <<EOF >exit.js
+const GLib = imports.gi.GLib;
+let loop = GLib.MainLoop.new(null, false);
+GLib.idle_add(GLib.PRIORITY_LOW, () => imports.system.exit(42));
+GLib.timeout_add_seconds(GLib.PRIORITY_HIGH, 3, () => loop.quit());
+loop.run();
+EOF
+
 # this JS script fails if either 1) --help is not passed to it, or 2) the string
 # "sentinel" is not in its search path
 cat <<EOF >help.js
@@ -45,6 +55,12 @@ report "System.exit(0) should exit successfully"
 "gjs" -c 'imports.system.exit(42)'
 test $? -eq 42
 report "System.exit(42) should exit with the correct exit code"
+
+# FIXME: should check -eq 42 specifically, but in debug mode we will be
+# hitting an assertion
+"$gjs" exit.js
+test $? -ne 0
+report "System.exit() should still exit across an FFI boundary"
 
 # gjs --help prints GJS help
 "$gjs" --help >/dev/null
@@ -110,6 +126,6 @@ report "--version after -c should be passed to script"
 test -z "`"$gjs" -c "$script" --version`"
 report "--version after -c should not print anything"
 
-rm -f help.js
+rm -f exit.js help.js
 
 echo "1..$total"
