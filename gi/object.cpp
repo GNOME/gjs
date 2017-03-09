@@ -41,7 +41,6 @@
 #include "function.h"
 #include "proxyutils.h"
 #include "param.h"
-#include "toggle.h"
 #include "value.h"
 #include "closure.h"
 #include "gjs_gi_trace.h"
@@ -80,6 +79,24 @@ typedef struct {
     GClosure *closure;
 } ConnectData;
 
+typedef enum
+{
+  TOGGLE_DOWN,
+  TOGGLE_UP,
+} ToggleDirection;
+
+typedef struct
+{
+    GObject         *gobj;
+    ToggleDirection  direction;
+    guint            needs_unref : 1;
+} ToggleRefNotifyOperation;
+
+enum {
+    PROP_0,
+    PROP_JS_HANDLED,
+};
+
 static std::stack<JS::PersistentRootedObject> object_init_list;
 static GHashTable *class_init_properties;
 
@@ -87,7 +104,7 @@ static bool weak_pointer_callback = false;
 static std::set<ObjectInstance *> weak_pointer_list;
 
 extern struct JSClass gjs_object_instance_class;
-
+static volatile gint pending_idle_toggles;
 static std::set<ObjectInstance *> dissociate_list;
 
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
@@ -126,6 +143,26 @@ gjs_object_priv_quark (void)
     static GQuark val = 0;
     if (G_UNLIKELY (!val))
         val = g_quark_from_static_string ("gjs::private");
+
+    return val;
+}
+
+static GQuark
+gjs_toggle_down_quark (void)
+{
+    static GQuark val = 0;
+    if (G_UNLIKELY (!val))
+        val = g_quark_from_static_string ("gjs::toggle-down-quark");
+
+    return val;
+}
+
+static GQuark
+gjs_toggle_up_quark (void)
+{
+    static GQuark val = 0;
+    if (G_UNLIKELY (!val))
+        val = g_quark_from_static_string ("gjs::toggle-up-quark");
 
     return val;
 }
@@ -922,6 +959,64 @@ gobj_no_longer_kept_alive_func(JS::HandleObject obj,
     weak_pointer_list.erase(priv);
 }
 
+static GQuark
+get_qdata_key_for_toggle_direction(ToggleDirection direction)
+{
+    GQuark quark;
+
+    switch (direction) {
+        case TOGGLE_UP:
+            quark = gjs_toggle_up_quark();
+            break;
+        case TOGGLE_DOWN:
+            quark = gjs_toggle_down_quark();
+            break;
+        default:
+            g_assert_not_reached();
+    }
+
+    return quark;
+}
+
+static bool
+clear_toggle_idle_source(GObject          *gobj,
+                         ToggleDirection   direction)
+{
+    GQuark qdata_key;
+
+    qdata_key = get_qdata_key_for_toggle_direction(direction);
+
+    return g_object_steal_qdata(gobj, qdata_key) != NULL;
+}
+
+static bool
+toggle_idle_source_is_queued(GObject          *gobj,
+                             ToggleDirection   direction)
+{
+    GQuark qdata_key;
+
+    qdata_key = get_qdata_key_for_toggle_direction(direction);
+
+    return g_object_get_qdata(gobj, qdata_key) != NULL;
+}
+
+static bool
+cancel_toggle_idle(GObject         *gobj,
+                   ToggleDirection  direction)
+{
+    GQuark qdata_key;
+    GSource *source;
+
+    qdata_key = get_qdata_key_for_toggle_direction(direction);
+
+    source = (GSource*) g_object_steal_qdata(gobj, qdata_key);
+
+    if (source)
+        g_source_destroy(source);
+
+    return source != 0;
+}
+
 static void
 handle_toggle_down(GObject *gobj)
 {
@@ -971,20 +1066,91 @@ handle_toggle_up(GObject   *gobj)
     }
 }
 
-static void
-toggle_handler(GObject               *gobj,
-               ToggleQueue::Direction direction)
+static gboolean
+idle_handle_toggle(gpointer data)
 {
-    switch (direction) {
-        case ToggleQueue::UP:
-            handle_toggle_up(gobj);
+    ToggleRefNotifyOperation *operation = (ToggleRefNotifyOperation *) data;
+
+    if (!clear_toggle_idle_source(operation->gobj, operation->direction)) {
+        /* Already cleared, the JSObject is going away, abort mission */
+        goto out;
+    }
+
+    switch (operation->direction) {
+        case TOGGLE_UP:
+            handle_toggle_up(operation->gobj);
             break;
-        case ToggleQueue::DOWN:
-            handle_toggle_down(gobj);
+        case TOGGLE_DOWN:
+            handle_toggle_down(operation->gobj);
             break;
         default:
             g_assert_not_reached();
     }
+
+out:
+    return G_SOURCE_REMOVE;
+}
+
+static void
+toggle_ref_notify_operation_free(ToggleRefNotifyOperation *operation)
+{
+    if (operation->needs_unref)
+        g_object_unref (operation->gobj);
+    g_slice_free(ToggleRefNotifyOperation, operation);
+    g_atomic_int_add(&pending_idle_toggles, -1);
+}
+
+static void
+queue_toggle_idle(GObject         *gobj,
+                  ToggleDirection  direction)
+{
+    ToggleRefNotifyOperation *operation;
+    GQuark qdata_key;
+    GSource *source;
+
+    operation = g_slice_new0(ToggleRefNotifyOperation);
+    operation->direction = direction;
+
+    switch (direction) {
+        case TOGGLE_UP:
+            /* If we're toggling up we take a reference to the object now,
+             * so it won't toggle down before we process it. This ensures we
+             * only ever have at most two toggle notifications queued.
+             * (either only up, or down-up)
+             */
+            operation->gobj = (GObject*) g_object_ref(gobj);
+            operation->needs_unref = true;
+            break;
+        case TOGGLE_DOWN:
+            /* If we're toggling down, we don't need to take a reference since
+             * the associated JSObject already has one, and that JSObject won't
+             * get finalized until we've completed toggling (since it's rooted,
+             * until we unroot it when we dispatch the toggle down idle).
+             *
+             * Taking a reference now would be bad anyway, since it would force
+             * the object to toggle back up again.
+             */
+            operation->gobj = gobj;
+            break;
+        default:
+            g_assert_not_reached();
+    }
+
+    qdata_key = get_qdata_key_for_toggle_direction(direction);
+
+    source = g_idle_source_new();
+    g_source_set_priority(source, G_PRIORITY_HIGH);
+    g_source_set_callback(source,
+                          idle_handle_toggle,
+                          operation,
+                          (GDestroyNotify) toggle_ref_notify_operation_free);
+
+    g_atomic_int_inc(&pending_idle_toggles);
+    g_object_set_qdata (gobj, qdata_key, source);
+    g_source_attach (source, NULL);
+
+    /* object qdata is piggy-backing off the main loop's ref of the source */
+    g_source_unref (source);
 }
 
 static void
@@ -1032,11 +1198,14 @@ wrapped_gobj_toggle_notify(gpointer      data,
      * visible to the refcounted C world), but because of weird
      * weak singletons like g_bus_get_sync() objects can see toggle-ups
      * from different threads too.
+     * We could lock the keep alive structure and avoid the idle maybe,
+     * but there aren't many peculiar objects like that and it's
+     * not a big deal.
      */
     is_main_thread = _gjs_context_get_is_owner_thread(context);
 
-    auto& toggle_queue = ToggleQueue::get_default();
-    std::tie(toggle_down_queued, toggle_up_queued) = toggle_queue.is_queued(gobj);
+    toggle_up_queued = toggle_idle_source_is_queued(gobj, TOGGLE_UP);
+    toggle_down_queued = toggle_idle_source_is_queued(gobj, TOGGLE_DOWN);
 
     if (is_last_ref) {
         /* We've transitions from 2 -> 1 references,
@@ -1053,7 +1222,7 @@ wrapped_gobj_toggle_notify(gpointer      data,
 
             handle_toggle_down(gobj);
         } else {
-            toggle_queue.enqueue(gobj, ToggleQueue::DOWN, toggle_handler);
+            queue_toggle_idle(gobj, TOGGLE_DOWN);
         }
     } else {
         /* We've transitioned from 1 -> 2 references.
@@ -1068,7 +1237,7 @@ wrapped_gobj_toggle_notify(gpointer      data,
             }
             handle_toggle_up(gobj);
         } else {
-            toggle_queue.enqueue(gobj, ToggleQueue::UP, toggle_handler);
+            queue_toggle_idle(gobj, TOGGLE_UP);
         }
     }
 }
@@ -1087,9 +1256,10 @@ release_native_object (ObjectInstance *priv)
 void
 gjs_object_clear_toggles(void)
 {
-    auto& toggle_queue = ToggleQueue::get_default();
-    while (toggle_queue.handle_toggle(toggle_handler))
-        ;
+    while (g_main_context_pending(NULL) &&
+           g_atomic_int_get(&pending_idle_toggles) > 0) {
+        g_main_context_iteration(NULL, false);
+    }
 }
 
 void
@@ -1221,10 +1391,8 @@ disassociate_js_gobject(GObject *gobj)
      * assertion.
      * https://bugzilla.gnome.org/show_bug.cgi?id=778862
      */
-    auto& toggle_queue = ToggleQueue::get_default();
-    auto had_toggles = toggle_queue.cancel(gobj);
-    if (std::get<ToggleQueue::UP>(had_toggles) ||
-        std::get<ToggleQueue::DOWN>(had_toggles))
+    if (cancel_toggle_idle(gobj, TOGGLE_UP) ||
+        cancel_toggle_idle(gobj, TOGGLE_DOWN))
         g_critical("JS object wrapper for GObject %p (%s) is being released "
                    "while toggle references are still pending. This may happen "
                    "on exit in Gio.Application.vfunc_dbus_unregister(). If you "
@@ -1422,8 +1590,8 @@ object_instance_finalize(JSFreeOp  *fop,
                     priv->info ? g_base_info_get_name((GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
         }
 
-        auto& toggle_queue = ToggleQueue::get_default();
-        std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(priv->gobj);
+        had_toggle_up = cancel_toggle_idle(priv->gobj, TOGGLE_UP);
+        had_toggle_down = cancel_toggle_idle(priv->gobj, TOGGLE_DOWN);
 
         if (!had_toggle_up && had_toggle_down) {
             g_error("Finalizing proxy for an object that's scheduled to be unrooted: %s.%s\n",

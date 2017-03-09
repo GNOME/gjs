@@ -42,8 +42,6 @@ gjs_srcs =				\
 	gi/proxyutils.h			\
 	gi/repo.cpp			\
 	gi/repo.h			\
-	gi/toggle.cpp			\
-	gi/toggle.h			\
 	gi/union.cpp			\
 	gi/union.h			\
 	gi/value.cpp			\
