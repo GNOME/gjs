@@ -1007,28 +1007,13 @@ wrapped_gobj_toggle_notify(gpointer      data,
     /* We only want to touch javascript from one thread.
      * If we're not in that thread, then we need to defer processing
      * to it.
-     * In case we're toggling up (and thus rooting the JS object) we
-     * also need to take care if GC is running. The marking side
-     * of it is taken care by JS::Heap, which we use in KeepAlive,
-     * so we're safe. As for sweeping, it is too late: the JS object
-     * is dead, and attempting to keep it alive would soon crash
-     * the process. Plus, if we touch the JSAPI, libmozjs aborts in
-     * the first BeginRequest.
-     * Thus, in the toggleup+sweeping case we deassociate the object
-     * and the wrapper and let the wrapper die. Then, if the object
-     * appears again, we log a critical.
-     * In practice, a toggle up during JS finalize can only happen
-     * for temporary refs/unrefs of objects that are garbage anyway,
-     * because JS code is never invoked while the finalizers run
-     * and C code needs to clean after itself before it returns
-     * from dispose()/finalize().
-     * On the other hand, toggling down is a lot simpler, because
-     * we're creating more garbage. So we just add the object to
-     * the keep alive and wait for the next GC cycle.
+     * Toggling down is simple, because we're creating more garbage. So we
+     * just unroot the object, make it a weak pointer, and wait for the next
+     * GC cycle.
      *
-     * Note that one would think that toggling up only happens
-     * in the main thread (because toggling up is the result of
-     * the JS object, previously visible only to JS code, becoming
+     * Note that one would think that toggling up (and thus rooting the JS
+     * object) only happens in the main thread (because toggling up is the
+     * result of the JS object, previously visible only to JS code, becoming
      * visible to the refcounted C world), but because of weird
      * weak singletons like g_bus_get_sync() objects can see toggle-ups
      * from different threads too.
@@ -1145,6 +1130,20 @@ static void
 update_heap_wrapper_weak_pointers(JSRuntime *rt,
                                   gpointer   data)
 {
+    /* In case we're toggling up we also need to take care if GC is running.
+     * The marking side of it is taken care by JS::Heap, which we use in
+     * GjsMaybeOwned, so we're safe. As for sweeping, it is too late: the JS
+     * object is dead, and attempting to keep it alive would soon crash
+     * the process. Plus, if we touch the JSAPI, libmozjs aborts in
+     * the first BeginRequest.
+     * In practice, a toggle up during JS finalize can only happen
+     * for temporary refs/unrefs of objects that are garbage anyway,
+     * because JS code is never invoked while the finalizers run
+     * and C code needs to clean after itself before it returns
+     * from dispose()/finalize(). */
+    /* FIXME: Shouldn't we do this at the start of GC instead of at the end? */
+    gjs_object_clear_toggles();
+
     for (auto iter = weak_pointer_list.begin(); iter != weak_pointer_list.end(); ) {
         ObjectInstance *priv = *iter;
         if (priv->keep_alive.rooted() || priv->keep_alive == nullptr ||
@@ -1214,22 +1213,15 @@ disassociate_js_gobject(GObject *gobj)
 
     g_object_weak_unref(priv->gobj, wrapped_gobj_dispose_notify, priv);
 
-    /* FIXME: this check fails when JS code runs after the main loop ends,
-     * because the idle functions are not dispatched without a main loop.
-     * The only situation I'm aware of where this happens is during the
-     * dbus_unregister stage in GApplication. Ideally this check should be an
-     * assertion.
-     * https://bugzilla.gnome.org/show_bug.cgi?id=778862
-     */
+    /* Idles are already checked in the only caller of this
+       function, the weak pointer callback, but let's check again...
+    */
     auto& toggle_queue = ToggleQueue::get_default();
     auto had_toggles = toggle_queue.cancel(gobj);
-    if (std::get<ToggleQueue::UP>(had_toggles) ||
-        std::get<ToggleQueue::DOWN>(had_toggles))
-        g_critical("JS object wrapper for GObject %p (%s) is being released "
-                   "while toggle references are still pending. This may happen "
-                   "on exit in Gio.Application.vfunc_dbus_unregister(). If you "
-                   "encounter it another situation, please report a GJS bug.",
-                   gobj, G_OBJECT_TYPE_NAME(gobj));
+    g_assert(((void) "Object dissociated while it was queued to toggle down",
+              !std::get<ToggleQueue::DOWN>(had_toggles)));
+    g_assert(((void) "Object dissociated while it was queued to toggle up",
+              !std::get<ToggleQueue::UP>(had_toggles)));
 
     invalidate_all_signals(priv);
     release_native_object(priv);
