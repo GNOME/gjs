@@ -279,6 +279,19 @@ gjs_printerr(JSContext *context,
     return true;
 }
 
+static void
+on_garbage_collect(JSRuntime *rt,
+                   JSGCStatus status,
+                   void      *data)
+{
+    /* We finalize any pending toggle refs before doing any garbage collection,
+     * so that we can collect the JS wrapper objects, and in order to minimize
+     * the chances of objects having a pending toggle up queued when they are
+     * garbage collected. */
+    if (status == JSGC_BEGIN)
+        gjs_object_clear_toggles();
+}
+
 /* Requires request, does not throw error */
 static bool
 gjs_define_promise_object(JSContext       *cx,
@@ -403,11 +416,6 @@ gjs_context_dispose(GObject *object)
         gjs_debug(GJS_DEBUG_CONTEXT,
                   "Destroying JS context");
 
-        /* Finalize any pending toggle refs left over on the main context,
-         * before doing any garbage collection, so that we can collect the JS
-         * wrapper objects */
-        gjs_object_clear_toggles();
-
         JS_BeginRequest(js_context->context);
 
         /* Do a full GC here before tearing down, since once we do
@@ -504,6 +512,8 @@ gjs_context_constructed(GObject *object)
     }
 
     JS_BeginRequest(js_context->context);
+
+    JS_SetGCCallback(js_context->runtime, on_garbage_collect, js_context);
 
     /* set ourselves as the private data */
     JS_SetContextPrivate(js_context->context, js_context);

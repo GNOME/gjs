@@ -1021,9 +1021,8 @@ wrapped_gobj_toggle_notify(gpointer      data,
      * is dead, and attempting to keep it alive would soon crash
      * the process. Plus, if we touch the JSAPI, libmozjs aborts in
      * the first BeginRequest.
-     * Thus, in the toggleup+sweeping case we deassociate the object
-     * and the wrapper and let the wrapper die. Then, if the object
-     * appears again, we log a critical.
+     * Thus, we drain the toggle queue when GC starts, in order to
+     * prevent this from happening.
      * In practice, a toggle up during JS finalize can only happen
      * for temporary refs/unrefs of objects that are garbage anyway,
      * because JS code is never invoked while the finalizers run
