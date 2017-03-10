@@ -2289,8 +2289,8 @@ gjs_array_from_carray_internal (JSContext             *context,
               break;
           }
 
-          /* fallthrough */
         }
+        /* fallthrough */
         case GI_TYPE_TAG_GTYPE:
         case GI_TYPE_TAG_UTF8:
         case GI_TYPE_TAG_FILENAME:
