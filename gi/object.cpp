@@ -1208,6 +1208,11 @@ update_heap_wrapper_weak_pointers(JSContext     *cx,
                                   JSCompartment *compartment,
                                   gpointer       data)
 {
+    /* FIXME: We're definitely not supposed to do this, since if a JS object,
+     * previously marked for GC, is rooted here, then the GC will remove it
+     * anyway! But it seems to work just fine. */
+    gjs_object_clear_toggles();
+
     std::vector<GObject *> to_be_disassociated;
 
     for (auto iter = wrapped_gobject_list.begin(); iter != wrapped_gobject_list.end(); ) {
@@ -1298,21 +1303,13 @@ disassociate_js_gobject(GObject *gobj)
 
     g_object_weak_unref(priv->gobj, wrapped_gobj_dispose_notify, priv);
 
-    /* FIXME: this check fails when JS code runs after the main loop ends,
-     * because the idle functions are not dispatched without a main loop.
-     * The only situation I'm aware of where this happens is during the
-     * dbus_unregister stage in GApplication. Ideally this check should be an
-     * assertion.
-     * https://bugzilla.gnome.org/show_bug.cgi?id=778862
-     */
     auto& toggle_queue = ToggleQueue::get_default();
     std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(gobj);
     if (had_toggle_down != had_toggle_up) {
-        g_critical("JS object wrapper for GObject %p (%s) is being released "
-                   "while toggle references are still pending. This may happen "
-                   "on exit in Gio.Application.vfunc_dbus_unregister(). If you "
-                   "encounter it another situation, please report a GJS bug.",
-                   gobj, G_OBJECT_TYPE_NAME(gobj));
+        g_assert(((void) "Object dissociated while it was queued to toggle down",
+                  !had_toggle_down));
+        g_assert(((void) "Object dissociated while it was queued to toggle up",
+                  !had_toggle_up));
     }
 
     invalidate_all_closures(priv);
