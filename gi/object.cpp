@@ -1389,6 +1389,7 @@ static void
 disassociate_js_gobject(GObject *gobj)
 {
     ObjectInstance *priv = get_object_qdata(gobj);
+    bool had_toggle_down, had_toggle_up;
 
     g_object_weak_unref(priv->gobj, wrapped_gobj_dispose_notify, priv);
 
@@ -1399,13 +1400,15 @@ disassociate_js_gobject(GObject *gobj)
      * assertion.
      * https://bugzilla.gnome.org/show_bug.cgi?id=778862
      */
-    if (cancel_toggle_idle(gobj, TOGGLE_UP) ||
-        cancel_toggle_idle(gobj, TOGGLE_DOWN))
+    had_toggle_down = cancel_toggle_idle(gobj, TOGGLE_DOWN);
+    had_toggle_up = cancel_toggle_idle(gobj, TOGGLE_UP);
+    if (had_toggle_down != had_toggle_up) {
         g_critical("JS object wrapper for GObject %p (%s) is being released "
                    "while toggle references are still pending. This may happen "
                    "on exit in Gio.Application.vfunc_dbus_unregister(). If you "
                    "encounter it another situation, please report a GJS bug.",
                    gobj, G_OBJECT_TYPE_NAME(gobj));
+    }
 
     invalidate_all_signals(priv);
     release_native_object(priv);
