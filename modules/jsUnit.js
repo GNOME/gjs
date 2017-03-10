@@ -51,7 +51,7 @@ function jsUnitFixTop() {
   var tempTop = top;
   if (!tempTop) {
     tempTop = window;
-    while (tempTop.parent) {
+    while (typeof tempTop.parent !== 'undefined') {
       tempTop = tempTop.parent;
       if (tempTop.top && tempTop.top.jsUnitTestSuite) {
         tempTop = tempTop.top;
