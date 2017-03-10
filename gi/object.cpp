@@ -1175,7 +1175,7 @@ wrapped_gobj_toggle_notify(gpointer      data,
      * to it.
      * In case we're toggling up (and thus rooting the JS object) we
      * also need to take care if GC is running. The marking side
-     * of it is taken care by JS::Heap, which we use in KeepAlive,
+     * of it is taken care by JS::Heap, which we use in GjsMaybeOwned,
      * so we're safe. As for sweeping, it is too late: the JS object
      * is dead, and attempting to keep it alive would soon crash
      * the process. Plus, if we touch the JSAPI, libmozjs aborts in
@@ -1189,8 +1189,8 @@ wrapped_gobj_toggle_notify(gpointer      data,
      * and C code needs to clean after itself before it returns
      * from dispose()/finalize().
      * On the other hand, toggling down is a lot simpler, because
-     * we're creating more garbage. So we just add the object to
-     * the keep alive and wait for the next GC cycle.
+     * we're creating more garbage. So we just unroot the object, make it a
+     * weak pointer, and wait for the next GC cycle.
      *
      * Note that one would think that toggling up only happens
      * in the main thread (because toggling up is the result of
