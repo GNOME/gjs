@@ -2573,13 +2573,8 @@ gjs_object_from_g_hash (JSContext             *context,
     return result;
 }
 
-template<typename T>
-static bool
-is_safe_to_store_in_double(T number)
-{
-    static T max_safe_int = T(1) << std::numeric_limits<double>::digits;
-    return (std::abs(number) <= max_safe_int);
-}
+static const int64_t MAX_SAFE_INT64 =
+    int64_t(1) << std::numeric_limits<double>::digits;
 
 bool
 gjs_value_from_g_argument (JSContext             *context,
@@ -2616,14 +2611,14 @@ gjs_value_from_g_argument (JSContext             *context,
         break;
 
     case GI_TYPE_TAG_INT64:
-        if (!is_safe_to_store_in_double(arg->v_int64))
+        if (std::abs(arg->v_int64) > MAX_SAFE_INT64)
             g_warning("Value %" G_GINT64_FORMAT " cannot be safely stored in "
                       "a JS Number and may be rounded", arg->v_int64);
         value_p.setNumber(static_cast<double>(arg->v_int64));
         break;
 
     case GI_TYPE_TAG_UINT64:
-        if (!is_safe_to_store_in_double(arg->v_uint64))
+        if (arg->v_uint64 > MAX_SAFE_INT64)
             g_warning("Value %" G_GUINT64_FORMAT " cannot be safely stored in "
                       "a JS Number and may be rounded", arg->v_uint64);
         value_p.setNumber(static_cast<double>(arg->v_uint64));
