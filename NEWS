@@ -1,3 +1,20 @@
+Version 1.47.92
+---------------
+
+- Closed bugs:
+
+  * gjs 1.47.91 configure fails with Fedora's mozjs38 [#779412, Philip Chimento]
+  * tests: Don't fail when Gtk+-4.0 is available [#779594, Florian Müllner]
+  * gjs 1.47.91 test failures on non-amd64 [#779399, Philip Chimento]
+  * gjs_eval_thread should always be set [#779693, Philip Chimento]
+  * System.exit() should exit even across main loop iterations [#779692, Philip
+    Chimento]
+  * Fix a typo in testCommandLine.sh [#779772, Claudio André]
+  * arg: Fix accidental fallthrough [#779838, Florian Müllner]
+  * jsUnit: Explicitly check if tempTop.parent is defined [#779871, Iain Lane]
+
+- Misc bug fixes [Philip Chimento]
+
 Version 1.47.91
 ---------------
 
