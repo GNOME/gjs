@@ -2197,14 +2197,16 @@ gjs_object_from_g_object(JSContext    *context,
 
         JS::RootedObject proto(context,
             gjs_lookup_object_prototype(context, gtype));
+        if (!proto)
+            return nullptr;
+
         JS::RootedObject global(context, gjs_get_import_global(context));
 
         JS::RootedObject obj(context,
             JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto,
                                        global));
-
         if (obj == NULL)
-            goto out;
+            return nullptr;
 
         priv = init_object_private(context, obj);
 
@@ -2217,7 +2219,6 @@ gjs_object_from_g_object(JSContext    *context,
         g_assert(priv->keep_alive == obj);
     }
 
- out:
     return priv->keep_alive;
 }
 
