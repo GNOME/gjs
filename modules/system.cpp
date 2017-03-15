@@ -97,6 +97,30 @@ gjs_breakpoint(JSContext *context,
 }
 
 static bool
+gjs_dump_heap(JSContext *cx,
+              unsigned   argc,
+              JS::Value *vp)
+{
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    char *filename = nullptr;
+
+    if (!gjs_parse_call_args(cx, "dumpHeap", args, "|F", "filename", &filename))
+        return false;
+
+    if (filename) {
+        FILE *fp = fopen(filename, "a");
+        js::DumpHeapComplete(JS_GetRuntime(cx), fp, js::IgnoreNurseryObjects);
+        fclose(fp);
+        g_free(filename);
+    } else {
+        js::DumpHeapComplete(JS_GetRuntime(cx), stdout, js::IgnoreNurseryObjects);
+    }
+
+    args.rval().setUndefined();
+    return true;
+}
+
+static bool
 gjs_gc(JSContext *context,
        unsigned   argc,
        JS::Value *vp)
@@ -148,6 +172,7 @@ static JSFunctionSpec module_funcs[] = {
     JS_FS("addressOf", gjs_address_of, 1, GJS_MODULE_PROP_FLAGS),
     JS_FS("refcount", gjs_refcount, 1, GJS_MODULE_PROP_FLAGS),
     JS_FS("breakpoint", gjs_breakpoint, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FS("dumpHeap", gjs_dump_heap, 1, GJS_MODULE_PROP_FLAGS),
     JS_FS("gc", gjs_gc, 0, GJS_MODULE_PROP_FLAGS),
     JS_FS("exit", gjs_exit, 0, GJS_MODULE_PROP_FLAGS),
     JS_FS("clearDateCaches", gjs_clear_date_caches, 0, GJS_MODULE_PROP_FLAGS),
