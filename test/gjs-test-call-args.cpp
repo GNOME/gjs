@@ -134,6 +134,13 @@ JSNATIVE_TEST_FUNC_BEGIN(optional_args_only_required)
     g_assert_cmpint(val3, ==, false);
 JSNATIVE_TEST_FUNC_END
 
+JSNATIVE_TEST_FUNC_BEGIN(only_optional_args)
+    int val1, val2;
+    retval = gjs_parse_call_args(cx, "onlyOptionalArgs", args, "|ii",
+                                 "val1", &val1,
+                                 "val2", &val2);
+JSNATIVE_TEST_FUNC_END
+
 JSNATIVE_TEST_FUNC_BEGIN(unsigned_enum_arg)
     test_enum_t val;
     retval = gjs_parse_call_args(cx, "unsignedEnumArg", args, "i",
@@ -225,6 +232,7 @@ static JSFunctionSpec native_test_funcs[] = {
     JS_FS("oneOfEachType", one_of_each_type, 0, 0),
     JS_FS("optionalArgsAll", optional_args_all, 0, 0),
     JS_FS("optionalArgsOnlyRequired", optional_args_only_required, 0, 0),
+    JS_FS("onlyOptionalArgs", only_optional_args, 0, 0),
     JS_FS("unsignedEnumArg", unsigned_enum_arg, 0, 0),
     JS_FS("signedEnumArg", signed_enum_arg, 0, 0),
     JS_FS("oneOfEachNullableType", one_of_each_nullable_type, 0, 0),
@@ -339,6 +347,12 @@ gjs_test_add_tests_for_parse_call_args(void)
     ADD_CALL_ARGS_TEST("signed-enum-types-work", "signedEnumArg(-1)");
     ADD_CALL_ARGS_TEST("one-of-each-nullable-type-works",
                        "oneOfEachNullableType(null, null, null)");
+    ADD_CALL_ARGS_TEST("passing-no-arguments-when-all-optional",
+                       "onlyOptionalArgs()");
+    ADD_CALL_ARGS_TEST("passing-some-arguments-when-all-optional",
+                       "onlyOptionalArgs(1)");
+    ADD_CALL_ARGS_TEST("passing-all-arguments-when-all-optional",
+                       "onlyOptionalArgs(1, 1)");
     ADD_CALL_ARGS_TEST_XFAIL("allocated-args-are-freed-on-error",
                              "unwindFreeTest('', '', {}, 1, -1)"
                              "//*Value * is out of range");

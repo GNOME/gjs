@@ -366,7 +366,7 @@ gjs_parse_call_args(JSContext    *cx,
 {
     const char *fmt_iter, *fmt_required, *fmt_optional;
     unsigned n_required = 0, n_total = 0;
-    bool ignore_trailing_args = false, retval;
+    bool optional_args = false, ignore_trailing_args = false, retval;
     char **parts;
 
     if (*format == '!') {
@@ -378,6 +378,7 @@ gjs_parse_call_args(JSContext    *cx,
         switch (*fmt_iter) {
         case '|':
             n_required = n_total;
+            optional_args = true;
             continue;
         case '?':
             continue;
@@ -386,7 +387,7 @@ gjs_parse_call_args(JSContext    *cx,
         }
     }
 
-    if (n_required == 0)
+    if (!optional_args)
         n_required = n_total;
 
     g_assert(((void) "Wrong number of parameters passed to gjs_parse_call_args()",
