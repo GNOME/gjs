@@ -607,7 +607,7 @@ is_vfunc_unchanged(GIVFuncInfo *info,
 
 static GIVFuncInfo *
 find_vfunc_on_parents(GIObjectInfo *info,
-                      gchar        *name,
+                      const char   *name,
                       bool         *out_defined_by_parent)
 {
     GIVFuncInfo *vfunc = NULL;
@@ -774,12 +774,14 @@ object_instance_resolve(JSContext       *context,
          * rest.
          */
 
-        gchar *name_without_vfunc_ = &name[6];
+        const char *name_without_vfunc_ = &name[6];  /* lifetime tied to name */
         GIVFuncInfo *vfunc;
         bool defined_by_parent;
 
         vfunc = find_vfunc_on_parents(priv->info, name_without_vfunc_, &defined_by_parent);
         if (vfunc != NULL) {
+            g_free(name);
+
             /* In the event that the vfunc is unchanged, let regular
              * prototypal inheritance take over. */
             if (defined_by_parent && is_vfunc_unchanged(vfunc, priv->gtype)) {
@@ -818,8 +820,13 @@ object_instance_resolve(JSContext       *context,
      * this could be done better.  See
      * https://bugzilla.gnome.org/show_bug.cgi?id=632922
      */
-    if (method_info == NULL)
-        return object_instance_resolve_no_info(context, obj, resolved, priv, name);
+    if (method_info == NULL) {
+        bool retval = object_instance_resolve_no_info(context, obj, resolved, priv, name);
+        g_free(name);
+        return retval;
+    }
+
+    g_free(name);
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
     _gjs_log_info_usage((GIBaseInfo*) method_info);
