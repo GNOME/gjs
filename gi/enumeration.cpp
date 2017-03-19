@@ -172,10 +172,6 @@ gjs_define_enumeration(JSContext       *context,
                 enum_name);
     }
 
-    /* https://bugzilla.mozilla.org/show_bug.cgi?id=599651 means we
-     * can't just pass in the global as the parent */
-    JS_SetParent(context, enum_obj, global);
-
     if (!gjs_define_enum_values(context, enum_obj, info))
         return false;
     gjs_define_enum_static_methods (context, enum_obj, info);
