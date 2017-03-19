@@ -147,8 +147,7 @@ class GjsModule {
 
     static constexpr JSClass klass = {
         "GjsModule",
-        JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE |
-        JSCLASS_IMPLEMENTS_BARRIERS,
+        JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
         nullptr,  /* addProperty */
         nullptr,  /* deleteProperty */
         nullptr,  /* getProperty */

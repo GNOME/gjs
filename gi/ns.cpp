@@ -153,8 +153,7 @@ ns_finalize(JSFreeOp *fop,
  */
 struct JSClass gjs_ns_class = {
     "GIRepositoryNamespace",
-    JSCLASS_HAS_PRIVATE |
-    JSCLASS_IMPLEMENTS_BARRIERS,
+    JSCLASS_HAS_PRIVATE,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */

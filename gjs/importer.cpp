@@ -834,8 +834,7 @@ importer_finalize(js::FreeOp *fop,
  */
 const js::Class gjs_importer_real_class = {
     "GjsFileImporter",
-    JSCLASS_HAS_PRIVATE |
-    JSCLASS_IMPLEMENTS_BARRIERS,
+    JSCLASS_HAS_PRIVATE,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */

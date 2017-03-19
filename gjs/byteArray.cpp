@@ -58,8 +58,7 @@ static JSObject *gjs_byte_array_get_proto(JSContext *);
 struct JSClass gjs_byte_array_class = {
     "ByteArray",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_BACKGROUND_FINALIZE |
-    JSCLASS_IMPLEMENTS_BARRIERS,
+    JSCLASS_BACKGROUND_FINALIZE,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     (JSPropertyOp)byte_array_get_prop,

@@ -218,8 +218,7 @@ repo_finalize(JSFreeOp *fop,
  */
 struct JSClass gjs_repo_class = {
     "GIRepository", /* means "new GIRepository()" works */
-    JSCLASS_HAS_PRIVATE |
-    JSCLASS_IMPLEMENTS_BARRIERS,
+    JSCLASS_HAS_PRIVATE,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */

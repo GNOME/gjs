@@ -922,8 +922,7 @@ boxed_trace(JSTracer *tracer,
 struct JSClass gjs_boxed_class = {
     "GObject_Boxed",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_HAS_RESERVED_SLOTS(1) |
-    JSCLASS_IMPLEMENTS_BARRIERS,
+    JSCLASS_HAS_RESERVED_SLOTS(1),
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */

@@ -1796,8 +1796,7 @@ to_string_func(JSContext *context,
 
 struct JSClass gjs_object_instance_class = {
     "GObject_Object",
-    JSCLASS_HAS_PRIVATE |
-    JSCLASS_IMPLEMENTS_BARRIERS,
+    JSCLASS_HAS_PRIVATE,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     object_instance_get_prop,

@@ -145,8 +145,7 @@ param_finalize(JSFreeOp *fop,
 struct JSClass gjs_param_class = {
     "GObject_ParamSpec",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_BACKGROUND_FINALIZE |
-    JSCLASS_IMPLEMENTS_BARRIERS,
+    JSCLASS_BACKGROUND_FINALIZE,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */

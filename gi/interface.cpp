@@ -160,8 +160,7 @@ interface_resolve(JSContext       *context,
 struct JSClass gjs_interface_class = {
     "GObject_Interface",
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_BACKGROUND_FINALIZE |
-    JSCLASS_IMPLEMENTS_BARRIERS,
+    JSCLASS_BACKGROUND_FINALIZE,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */

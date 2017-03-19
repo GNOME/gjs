@@ -551,8 +551,7 @@ fundamental_trace(JSTracer *tracer,
  */
 struct JSClass gjs_fundamental_instance_class = {
     "GFundamental_Object",
-    JSCLASS_HAS_PRIVATE |
-    JSCLASS_IMPLEMENTS_BARRIERS,
+    JSCLASS_HAS_PRIVATE,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */

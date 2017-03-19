@@ -174,8 +174,7 @@ gjs_printerr(JSContext *context,
 class GjsGlobal {
     static constexpr JSClass klass = {
         "GjsGlobal",
-        JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST) |
-        JSCLASS_IMPLEMENTS_BARRIERS,
+        JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST),
         nullptr,  /* addProperty */
         nullptr,  /* deleteProperty */
         nullptr,  /* getProperty */

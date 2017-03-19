@@ -289,8 +289,7 @@ to_string_func(JSContext *context,
  */
 struct JSClass gjs_union_class = {
     "GObject_Union",
-    JSCLASS_HAS_PRIVATE |
-    JSCLASS_IMPLEMENTS_BARRIERS,
+    JSCLASS_HAS_PRIVATE,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */

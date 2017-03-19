@@ -1486,8 +1486,7 @@ function_to_string (JSContext *context,
 struct JSClass gjs_function_class = {
     "GIRepositoryFunction", /* means "new GIRepositoryFunction()" works */
     JSCLASS_HAS_PRIVATE |
-    JSCLASS_BACKGROUND_FINALIZE |
-    JSCLASS_IMPLEMENTS_BARRIERS,
+    JSCLASS_BACKGROUND_FINALIZE,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
