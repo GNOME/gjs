@@ -242,7 +242,7 @@ repo_new(JSContext *context)
     Repo *priv;
 
     JS::RootedObject proto(context);
-    if (!gjs_repo_define_proto(context, JS::NullPtr(), &proto))
+    if (!gjs_repo_define_proto(context, nullptr, &proto))
         return nullptr;
 
     JS::RootedObject repo(context,

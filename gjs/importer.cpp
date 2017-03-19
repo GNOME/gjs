@@ -883,7 +883,7 @@ importer_new(JSContext *context,
     Importer *priv;
 
     JS::RootedObject proto(context);
-    if (!gjs_importer_define_proto(context, JS::NullPtr(), &proto))
+    if (!gjs_importer_define_proto(context, nullptr, &proto))
         g_error("Error creating importer prototype");
 
     JS::RootedObject importer(context,
@@ -1031,6 +1031,5 @@ JSObject *
 gjs_create_root_importer(JSContext          *cx,
                          const char * const *search_path)
 {
-    return gjs_create_importer(cx, "imports", search_path, true, true,
-                               JS::NullPtr());
+    return gjs_create_importer(cx, "imports", search_path, true, true, nullptr);
 }

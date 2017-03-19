@@ -235,7 +235,7 @@ gjs_closure_invoke(GClosure                   *closure,
     JS::RootedValue v_closure(context, JS::ObjectValue(*c->obj));
     if (!gjs_call_function_value(context,
                                  /* "this" object; null is some kind of default presumably */
-                                 JS::NullPtr(),
+                                 nullptr,
                                  v_closure, args, retval)) {
         /* Exception thrown... */
         gjs_debug_closure("Closure invocation failed (exception should "

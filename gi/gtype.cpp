@@ -159,12 +159,11 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
         return *heap_wrapper;
 
     JS::RootedObject proto(context);
-    if (!gjs_gtype_define_proto(context, JS::NullPtr(), &proto))
+    if (!gjs_gtype_define_proto(context, nullptr, &proto))
         return nullptr;
 
     heap_wrapper = new JS::Heap<JSObject *>();
-    *heap_wrapper = JS_NewObjectWithGivenProto(context, &gjs_gtype_class, proto,
-                                               JS::NullPtr());
+    *heap_wrapper = JS_NewObjectWithGivenProto(context, &gjs_gtype_class, proto);
     if (*heap_wrapper == nullptr)
         return nullptr;
 

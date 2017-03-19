@@ -209,9 +209,7 @@ gjs_define_param_class(JSContext       *context,
 
     constructor_name = "ParamSpec";
 
-    if (!gjs_init_class_dynamic(context, in_object,
-                                JS::NullPtr(),
-                                "GObject",
+    if (!gjs_init_class_dynamic(context, in_object, nullptr, "GObject",
                                 constructor_name,
                                 &gjs_param_class,
                                 gjs_param_constructor, 0,

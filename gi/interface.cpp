@@ -195,9 +195,7 @@ gjs_define_interface_class(JSContext              *context,
     ns = gjs_get_names_from_gtype_and_gi_info(gtype, (GIBaseInfo *) info,
                                               &constructor_name);
 
-    if (!gjs_init_class_dynamic(context, in_object,
-                                JS::NullPtr(),
-                                ns,
+    if (!gjs_init_class_dynamic(context, in_object, nullptr, ns,
                                 constructor_name,
                                 &gjs_interface_class,
                                 gjs_interface_constructor, 0,

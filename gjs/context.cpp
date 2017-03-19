@@ -567,7 +567,7 @@ gjs_context_eval(GjsContext   *js_context,
     g_object_ref(G_OBJECT(js_context));
 
     JS::RootedValue retval(js_context->context);
-    if (!gjs_eval_with_scope(js_context->context, JS::NullPtr(), script,
+    if (!gjs_eval_with_scope(js_context->context, nullptr, script,
                              script_len, filename, &retval)) {
         uint8_t code;
         if (_gjs_context_should_exit(js_context, &code)) {

@@ -336,8 +336,7 @@ gjs_define_union_class(JSContext       *context,
 
     constructor_name = g_base_info_get_name( (GIBaseInfo*) info);
 
-    if (!gjs_init_class_dynamic(context, in_object,
-                                JS::NullPtr(),
+    if (!gjs_init_class_dynamic(context, in_object, nullptr,
                                 g_base_info_get_namespace( (GIBaseInfo*) info),
                                 constructor_name,
                                 &gjs_union_class,

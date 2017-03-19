@@ -590,7 +590,7 @@ gjs_log_exception(JSContext  *context)
 
     JS_ClearPendingException(context);
 
-    gjs_log_exception_full(context, exc, JS::NullPtr());
+    gjs_log_exception_full(context, exc, nullptr);
 
     retval = true;
 

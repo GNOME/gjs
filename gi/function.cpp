@@ -1678,7 +1678,7 @@ function_new(JSContext      *context,
     Function *priv;
 
     JS::RootedObject proto(context);
-    if (!gjs_function_define_proto(context, JS::NullPtr(), &proto))
+    if (!gjs_function_define_proto(context, nullptr, &proto))
         return nullptr;
 
     JS::RootedObject function(context,

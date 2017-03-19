@@ -182,7 +182,7 @@ ns_new(JSContext    *context,
     Ns *priv;
 
     JS::RootedObject proto(context);
-    if (!gjs_ns_define_proto(context, JS::NullPtr(), &proto))
+    if (!gjs_ns_define_proto(context, nullptr, &proto))
         return nullptr;
 
     JS::RootedObject ns(context,

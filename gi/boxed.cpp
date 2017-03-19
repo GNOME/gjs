@@ -322,7 +322,7 @@ boxed_invoke_constructor(JSContext             *context,
                                      constructor_name, &js_constructor_func))
         return false;
 
-    return gjs_call_function_value(context, JS::NullPtr(), js_constructor_func,
+    return gjs_call_function_value(context, nullptr, js_constructor_func,
                                    args, args.rval());
 }
 
@@ -1148,7 +1148,7 @@ gjs_define_boxed_class(JSContext       *context,
     constructor_name = g_base_info_get_name( (GIBaseInfo*) info);
 
     if (!gjs_init_class_dynamic(context, in_object,
-                                JS::NullPtr(), /* parent prototype */
+                                nullptr, /* parent prototype */
                                 g_base_info_get_namespace( (GIBaseInfo*) info),
                                 constructor_name,
                                 &gjs_boxed_class,
