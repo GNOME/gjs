@@ -92,8 +92,7 @@ class GjsModule {
                .setSourceIsLazy(true);
 
         JS::RootedScript compiled_script(cx);
-        if (!JS::Compile(cx, module, options, script, script_len,
-                         &compiled_script))
+        if (!JS::Compile(cx, options, script, script_len, &compiled_script))
             return false;
 
         JS::AutoObjectVector scope_chain(cx);

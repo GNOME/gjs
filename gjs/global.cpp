@@ -226,7 +226,7 @@ class GjsGlobal {
             .setFile("<Promise>");
 
         JS::RootedValue promise(cx);
-        if (!JS::Evaluate(cx, global, options, lie_code, lie_length, &promise)) {
+        if (!JS::Evaluate(cx, options, lie_code, lie_length, &promise)) {
             g_bytes_unref(lie_bytes);
             return false;
         }

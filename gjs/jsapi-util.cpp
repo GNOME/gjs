@@ -835,7 +835,7 @@ gjs_eval_with_scope(JSContext             *context,
            .setSourceIsLazy(true);
 
     JS::RootedScript compiled_script(context);
-    if (!JS::Compile(context, object, options, script, real_len, &compiled_script))
+    if (!JS::Compile(context, options, script, real_len, &compiled_script))
         return false;
 
     JS::AutoObjectVector scope_chain(context);

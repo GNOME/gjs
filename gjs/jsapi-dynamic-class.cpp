@@ -67,8 +67,6 @@ gjs_init_class_dynamic(JSContext              *context,
 
     JS_BeginRequest(context);
 
-    JS::RootedObject global(context, gjs_get_import_global(context));
-
     /* Class initalization consists of three parts:
        - building a prototype
        - defining prototype properties and functions
@@ -99,7 +97,7 @@ gjs_init_class_dynamic(JSContext              *context,
 
     full_function_name = g_strdup_printf("%s_%s", ns_name, class_name);
     constructor_fun = JS_NewFunction(context, constructor_native, nargs, JSFUN_CONSTRUCTOR,
-                                     global, full_function_name);
+                                     full_function_name);
     if (!constructor_fun)
         goto out;
 

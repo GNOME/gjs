@@ -594,7 +594,7 @@ define_native_accessor_wrapper(JSContext  *cx,
                                uint32_t    id)
 {
     JSFunction *func = js::NewFunctionWithReserved(cx, call, nargs, 0,
-                                                   NULL, func_name);
+                                                   func_name);
     if (!func)
         return NULL;
 

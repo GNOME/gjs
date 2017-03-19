@@ -190,18 +190,17 @@ gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
  * invocation of this function.)
  */
 static bool
-gjs_console_eval_and_print(JSContext       *cx,
-                           JS::HandleObject global,
-                           const char      *bytes,
-                           size_t           length,
-                           int              lineno)
+gjs_console_eval_and_print(JSContext  *cx,
+                           const char *bytes,
+                           size_t      length,
+                           int         lineno)
 {
     JS::CompileOptions options(cx);
     options.setUTF8(true)
            .setFileAndLine("typein", lineno);
 
     JS::RootedValue result(cx);
-    if (!JS::Evaluate(cx, global, options, bytes, length, &result)) {
+    if (!JS::Evaluate(cx, options, bytes, length, &result)) {
         if (!JS_IsExceptionPending(cx))
             return false;
     }
@@ -264,7 +263,7 @@ gjs_console_interact(JSContext *context,
                                             buffer->str, buffer->len));
 
         AutoReportException are(context);
-        if (!gjs_console_eval_and_print(context, global, buffer->str, buffer->len,
+        if (!gjs_console_eval_and_print(context, buffer->str, buffer->len,
                                         startline)) {
             /* If this was an uncatchable exception, throw another uncatchable
              * exception on up to the surrounding JS::Evaluate() in main(). This

@@ -272,10 +272,8 @@ run_code(GjsUnitTestFixture *fx,
     JS::CompileOptions options(fx->cx, JSVERSION_UNKNOWN);
     options.setFileAndLine("unit test", 1);
 
-    JS::RootedObject global(fx->cx, gjs_get_import_global(fx->cx));
     JS::RootedValue ignored(fx->cx);
-    bool ok = JS::Evaluate(fx->cx, global, options, script, strlen(script),
-                           &ignored);
+    bool ok = JS::Evaluate(fx->cx, options, script, strlen(script), &ignored);
     JS_ReportPendingException(fx->cx);
 
     g_assert_null(fx->message);
@@ -291,10 +289,8 @@ run_code_expect_exception(GjsUnitTestFixture *fx,
     JS::CompileOptions options(fx->cx, JSVERSION_UNKNOWN);
     options.setFileAndLine("unit test", 1);
 
-    JS::RootedObject global(fx->cx, gjs_get_import_global(fx->cx));
     JS::RootedValue ignored(fx->cx);
-    bool ok = JS::Evaluate(fx->cx, global, options, script, strlen(script),
-                           &ignored);
+    bool ok = JS::Evaluate(fx->cx, options, script, strlen(script), &ignored);
     g_assert_false(ok);
     g_assert_true(JS_IsExceptionPending(fx->cx));
     JS_ReportPendingException(fx->cx);

@@ -1295,12 +1295,11 @@ gjs_context_eval_file_in_compartment(GjsContext      *context,
            .setFileAndLine(filename, start_line_number)
            .setSourceIsLazy(true);
     JS::RootedScript compiled_script(js_context);
-    if (!JS::Compile(js_context, compartment_object, options, stripped_script,
-                     script_len, &compiled_script))
+    if (!JS::Compile(js_context, options, stripped_script, script_len,
+                     &compiled_script))
         return false;
 
-    if (!JS::CloneAndExecuteScript(js_context, compartment_object,
-                                   compiled_script)) {
+    if (!JS::CloneAndExecuteScript(js_context, compiled_script)) {
         g_free(script);
         gjs_log_exception(js_context);
         g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED, "Failed to evaluate %s", filename);
@@ -1505,10 +1504,7 @@ gjs_run_script_in_coverage_compartment(GjsCoverage *coverage,
     options.setUTF8(true);
 
     JS::RootedValue rval(js_context);
-    JS::RootedObject global(js_context,
-        JS_GetGlobalForObject(js_context, priv->coverage_statistics));
-    if (!JS::Evaluate(js_context, global, options, script, strlen(script),
-                      &rval)) {
+    if (!JS::Evaluate(js_context, options, script, strlen(script), &rval)) {
         gjs_log_exception(js_context);
         g_warning("Failed to evaluate <coverage_modifier>");
         return false;
