@@ -251,7 +251,7 @@ public:
         JSAutoCompartment ac(cx, global);
 
         if (!JS_InitStandardClasses(cx, global) ||
-            !JS_InitReflect(cx, global) ||
+            !JS_InitReflectParse(cx, global) ||
             !JS_DefineDebuggerObject(cx, global))
             return nullptr;
 

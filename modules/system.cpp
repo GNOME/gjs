@@ -27,6 +27,9 @@
 #include <sys/types.h>
 #include <time.h>
 
+#include "gjs/jsapi-wrapper.h"
+#include <js/Date.h>
+
 #include <gjs/context.h>
 
 #include "gi/object.h"
@@ -109,11 +112,11 @@ gjs_dump_heap(JSContext *cx,
 
     if (filename) {
         FILE *fp = fopen(filename, "a");
-        js::DumpHeapComplete(JS_GetRuntime(cx), fp, js::IgnoreNurseryObjects);
+        js::DumpHeap(JS_GetRuntime(cx), fp, js::IgnoreNurseryObjects);
         fclose(fp);
         g_free(filename);
     } else {
-        js::DumpHeapComplete(JS_GetRuntime(cx), stdout, js::IgnoreNurseryObjects);
+        js::DumpHeap(JS_GetRuntime(cx), stdout, js::IgnoreNurseryObjects);
     }
 
     args.rval().setUndefined();
@@ -161,7 +164,7 @@ gjs_clear_date_caches(JSContext *context,
     // localtime_r, see https://bugzilla.mozilla.org/show_bug.cgi?id=1004706
     tzset();
 
-    JS_ClearDateCaches(context);
+    JS::ResetTimeZone();
     JS_EndRequest(context);
 
     rec.rval().setUndefined();

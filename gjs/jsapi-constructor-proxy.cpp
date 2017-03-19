@@ -45,7 +45,7 @@
  * getPrototypeOf() trap, which may or may not be turned on in JS proxies,
  * I'm not sure.
  *
- * COMPAT: SpiderMonkey doesn't support the getPrototypeOf() trap in JS
+ * COMPAT: SpiderMonkey doesn't support the getPrototype() trap in JS
  * proxies yet. That has yet to be released, in the upcoming SpiderMonkey 52.
  * When that is available, then this whole file can be discontinued.
  *
@@ -87,9 +87,9 @@ public:
     { }
 
     bool
-    getPrototypeOf(JSContext              *cx,
-                   JS::HandleObject        proxy,
-                   JS::MutableHandleObject proto_p)
+    getPrototype(JSContext              *cx,
+                 JS::HandleObject        proxy,
+                 JS::MutableHandleObject proto_p)
     const override
     {
         proto_p.set(proto(proxy));
@@ -155,7 +155,7 @@ create_gjs_constructor_proxy(JSContext *cx,
 
     JS::RootedObject proxy(cx,
         js::NewProxyObject(cx, &GjsConstructorHandler::singleton(), args[0],
-                           &args[1].toObject(), nullptr));
+                           &args[1].toObject()));
     /* We stick this extra object into one of the proxy object's "extra slots",
      * even though it is private data of the proxy handler. This is because
      * proxy handlers cannot have trace callbacks. The proxy object does have a
