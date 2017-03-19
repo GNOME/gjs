@@ -2615,8 +2615,11 @@ validate_interfaces_and_properties_args(JSContext       *cx,
                                         uint32_t        *n_properties)
 {
     guint32 n_int, n_prop;
+    bool is_array;
 
-    if (!JS_IsArrayObject(cx, interfaces)) {
+    if (!JS_IsArrayObject(cx, interfaces, &is_array))
+        return false;
+    if (!is_array) {
         gjs_throw(cx, "Invalid parameter interfaces (expected Array)");
         return false;
     }
@@ -2624,7 +2627,9 @@ validate_interfaces_and_properties_args(JSContext       *cx,
     if (!JS_GetArrayLength(cx, interfaces, &n_int))
         return false;
 
-    if (!JS_IsArrayObject(cx, properties)) {
+    if (!JS_IsArrayObject(cx, properties, &is_array))
+        return false;
+    if (!is_array) {
         gjs_throw(cx, "Invalid parameter properties (expected Array)");
         return false;
     }

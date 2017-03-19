@@ -488,16 +488,17 @@ do_import(JSContext       *context,
     JS::RootedObject search_path(context);
     guint32 search_path_len;
     guint32 i;
-    bool result;
+    bool result, exists, is_array;
     GPtrArray *directories;
     GFile *gfile;
-    bool exists;
 
     if (!gjs_object_require_property(context, obj, "importer",
                                      GJS_STRING_SEARCH_PATH, &search_path))
         return false;
 
-    if (!JS_IsArrayObject(context, search_path)) {
+    if (!JS_IsArrayObject(context, search_path, &is_array))
+        return false;
+    if (!is_array) {
         gjs_throw(context, "searchPath property on importer is not an array");
         return false;
     }
@@ -670,6 +671,7 @@ importer_enumerate(JSContext        *context,
     Importer *priv;
     guint32 search_path_len;
     guint32 i;
+    bool is_array;
 
     priv = priv_from_js(context, object);
 
@@ -683,7 +685,9 @@ importer_enumerate(JSContext        *context,
                                      &search_path))
         return false;
 
-    if (!JS_IsArrayObject(context, search_path)) {
+    if (!JS_IsArrayObject(context, search_path, &is_array))
+        return false;
+    if (!is_array) {
         gjs_throw(context, "searchPath property on importer is not an array");
         return false;
     }

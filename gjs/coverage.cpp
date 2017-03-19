@@ -408,7 +408,10 @@ get_array_from_js_value(JSContext             *context,
     g_return_val_if_fail(out_array != NULL, false);
     g_return_val_if_fail(*out_array == NULL, false);
 
-    if (!JS_IsArrayObject(context, value)) {
+    bool is_array;
+    if (!JS_IsArrayObject(context, value, &is_array))
+        return false;
+    if (!is_array) {
         g_critical("Returned object from is not an array");
         return false;
     }

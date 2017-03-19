@@ -637,6 +637,7 @@ from_array_func(JSContext *context,
     ByteArrayInstance *priv;
     guint32 len;
     guint32 i;
+    bool is_array;
     JS::RootedObject obj(context, byte_array_new(context));
 
     if (obj == NULL)
@@ -650,7 +651,9 @@ from_array_func(JSContext *context,
     priv->array = gjs_g_byte_array_new(0);
 
     JS::RootedObject array_obj(context, &argv[0].toObject());
-    if (!JS_IsArrayObject(context, array_obj)) {
+    if (!JS_IsArrayObject(context, array_obj, &is_array))
+        return false;
+    if (!is_array) {
         gjs_throw(context,
                   "byteArray.fromArray() called with non-array as first arg");
         return false;

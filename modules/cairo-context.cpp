@@ -540,13 +540,16 @@ setDash_func(JSContext *context,
     JS::RootedObject dashes(context);
     double offset;
     guint len;
+    bool is_array;
 
     if (!gjs_parse_call_args(context, "setDash", argv, "of",
                              "dashes", &dashes,
                              "offset", &offset))
         return false;
 
-    if (!JS_IsArrayObject(context, dashes)) {
+    if (!JS_IsArrayObject(context, dashes, &is_array))
+        return false;
+    if (!is_array) {
         gjs_throw(context, "dashes must be an array");
         return false;
     }
