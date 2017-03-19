@@ -23,8 +23,10 @@
 
 #include <config.h>
 
-#include "jsapi-util.h"
 #include "jsapi-wrapper.h"
+#include <js/Initialization.h>
+
+#include "jsapi-util.h"
 #include "runtime.h"
 
 #ifdef G_OS_WIN32
