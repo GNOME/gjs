@@ -592,7 +592,7 @@ lookup_override_function(JSContext             *cx,
 
         /* If the exception was an ImportError (i.e., module not found) then
          * we simply didn't have an override, don't throw an exception */
-        if (error_has_name(cx, exc, JS_InternString(cx, "ImportError"))) {
+        if (error_has_name(cx, exc, JS_AtomizeAndPinString(cx, "ImportError"))) {
             saved_exc.restore();
             return true;
         }

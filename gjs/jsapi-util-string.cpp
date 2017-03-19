@@ -382,7 +382,7 @@ gjs_intern_string_to_id(JSContext  *cx,
                         const char *string)
 {
     JSAutoRequest ar(cx);
-    JS::RootedString str(cx, JS_InternString(cx, string));
+    JS::RootedString str(cx, JS_AtomizeAndPinString(cx, string));
     JS::RootedId id(cx, INTERNED_STRING_TO_JSID(cx, str));
     return id;
 }
