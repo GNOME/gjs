@@ -265,9 +265,8 @@ boxed_init_from_props(JSContext   *context,
     }
 
     JS::RootedObject props(context, &props_value.toObject());
-    JS::AutoIdArray ids(context, JS_Enumerate(context, props));
-
-    if (!ids) {
+    JS::Rooted<JS::IdVector> ids(context, context);
+    if (!JS_Enumerate(context, props, &ids)) {
         gjs_throw(context, "Failed to enumerate fields hash");
         return false;
     }

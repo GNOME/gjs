@@ -396,8 +396,8 @@ load_module_elements(JSContext        *cx,
     if (module_obj == NULL)
         return;
 
-    JS::AutoIdArray ids(cx, JS_Enumerate(cx, module_obj));
-    if (!ids)
+    JS::Rooted<JS::IdVector> ids(cx, cx);
+    if (!JS_Enumerate(cx, module_obj, &ids))
         return;
 
     for (ix = 0, length = ids.length(); ix < length; ix++)

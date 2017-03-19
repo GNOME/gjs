@@ -836,9 +836,9 @@ object_instance_props_to_g_parameters(JSContext                  *context,
 
     JS::RootedObject props(context, &args[0].toObject());
     JS::RootedId prop_id(context);
-    JS::AutoIdArray ids(context, JS_Enumerate(context, props));
     JS::RootedValue value(context);
-    if (!ids) {
+    JS::Rooted<JS::IdVector> ids(context, context);
+    if (!JS_Enumerate(context, props, &ids)) {
         gjs_throw(context, "Failed to create property iterator for object props hash");
         goto free_array_and_fail;
     }

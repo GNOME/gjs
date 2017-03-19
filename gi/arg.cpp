@@ -502,8 +502,8 @@ gjs_object_to_g_hash(JSContext   *context,
         transfer = GI_TRANSFER_NOTHING;
     }
 
-    JS::AutoIdArray ids(context, JS_Enumerate(context, props));
-    if (!ids)
+    JS::Rooted<JS::IdVector> ids(context, context);
+    if (!JS_Enumerate(context, props, &ids))
         return false;
 
     result = create_hash_table_for_key_type(key_param_info);
