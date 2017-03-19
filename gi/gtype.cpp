@@ -57,8 +57,9 @@ gjs_get_gtype_wrapper_quark(void)
 }
 
 static void
-update_gtype_weak_pointers(JSRuntime *rt,
-                           void      *data)
+update_gtype_weak_pointers(JSRuntime     *rt,
+                           JSCompartment *compartment,
+                           void          *data)
 {
     for (auto iter = weak_pointer_list.begin(); iter != weak_pointer_list.end(); ) {
         auto heap_wrapper = static_cast<JS::Heap<JSObject *> *>(g_type_get_qdata(*iter, gjs_get_gtype_wrapper_quark()));
@@ -74,8 +75,9 @@ static void
 ensure_weak_pointer_callback(JSContext *cx)
 {
     if (!weak_pointer_callback) {
-        JS_AddWeakPointerCallback(JS_GetRuntime(cx), update_gtype_weak_pointers,
-                                  nullptr);
+        JS_AddWeakPointerCompartmentCallback(JS_GetRuntime(cx),
+                                             update_gtype_weak_pointers,
+                                             nullptr);
         weak_pointer_callback = true;
     }
 }

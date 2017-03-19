@@ -1131,8 +1131,9 @@ init_object_private (JSContext       *context,
 }
 
 static void
-update_heap_wrapper_weak_pointers(JSRuntime *rt,
-                                  gpointer   data)
+update_heap_wrapper_weak_pointers(JSRuntime     *rt,
+                                  JSCompartment *compartment,
+                                  gpointer       data)
 {
     std::vector<GObject *> to_be_disassociated;
 
@@ -1160,8 +1161,9 @@ static void
 ensure_weak_pointer_callback(JSContext *cx)
 {
     if (!weak_pointer_callback) {
-        JS_AddWeakPointerCallback(JS_GetRuntime(cx),
-                                  update_heap_wrapper_weak_pointers, NULL);
+        JS_AddWeakPointerCompartmentCallback(JS_GetRuntime(cx),
+                                             update_heap_wrapper_weak_pointers,
+                                             nullptr);
         weak_pointer_callback = true;
     }
 }
