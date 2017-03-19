@@ -287,7 +287,7 @@ gjs_##name##_constructor(JSContext  *context,           \
  * be at the very top.
  */
 #define GJS_NATIVE_CONSTRUCTOR_VARIABLES(name)                      \
-    JS::RootedObject object(context, NULL);                         \
+    JS::RootedObject object(context);                               \
     JS::CallArgs argv G_GNUC_UNUSED = JS::CallArgsFromVp(argc, vp);
 
 /**
