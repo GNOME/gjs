@@ -206,13 +206,8 @@ seal_import(JSContext       *cx,
         return false;
     }
 
-    /* COMPAT: in mozjs45 use .setConfigurable(false) and the form of
-     * JS_DefineProperty that takes the JSPropertyDescriptor directly */
-
-    if (!JS_DefinePropertyById(cx, descr.object(), id, descr.value(),
-                               descr.attributes() | JSPROP_PERMANENT,
-                               JS_PROPERTYOP_GETTER(descr.getter()),
-                               JS_PROPERTYOP_SETTER(descr.setter()))) {
+    descr.setConfigurable(false);
+    if (!JS_DefinePropertyById(cx, descr.object(), id, descr)) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to redefine attributes to seal '%s' in importer",
                   name);
