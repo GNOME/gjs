@@ -47,8 +47,8 @@ static bool   byte_array_get_prop      (JSContext    *context,
 static bool   byte_array_set_prop      (JSContext    *context,
                                         JS::HandleObject obj,
                                         JS::HandleId id,
-                                        bool                   strict,
-                                        JS::MutableHandleValue value_p);
+                                        JS::MutableHandleValue value_p,
+                                        JS::ObjectOpResult&    result);
 GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array);
 static void   byte_array_finalize      (JSFreeOp     *fop,
                                         JSObject     *obj);
@@ -61,8 +61,8 @@ struct JSClass gjs_byte_array_class = {
     JSCLASS_BACKGROUND_FINALIZE,
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
-    (JSPropertyOp)byte_array_get_prop,
-    (JSStrictPropertyOp)byte_array_set_prop,
+    byte_array_get_prop,
+    byte_array_set_prop,
     NULL,  /* enumerate */
     NULL,  /* resolve */
     NULL,  /* convert */
@@ -267,7 +267,8 @@ byte_array_set_index(JSContext         *context,
                      JS::HandleObject obj,
                      ByteArrayInstance *priv,
                      gsize              idx,
-                     JS::MutableHandleValue value_p)
+                     JS::MutableHandleValue value_p,
+                     JS::ObjectOpResult&    result)
 {
     guint8 v;
 
@@ -288,7 +289,7 @@ byte_array_set_index(JSContext         *context,
     /* Stop JS from storing a copy of the value */
     value_p.setUndefined();
 
-    return true;
+    return result.succeed();
 }
 
 /* a hook on setting a property; set value_p to override property value to
@@ -298,15 +299,15 @@ static bool
 byte_array_set_prop(JSContext *context,
                     JS::HandleObject obj,
                     JS::HandleId id,
-                    bool strict,
-                    JS::MutableHandleValue value_p)
+                    JS::MutableHandleValue value_p,
+                    JS::ObjectOpResult&    result)
 {
     ByteArrayInstance *priv;
 
     priv = priv_from_js(context, obj);
 
     if (priv == NULL)
-        return true; /* prototype, not an instance. */
+        return result.succeed(); /* prototype, not an instance. */
 
     JS::RootedValue id_value(context);
     if (!JS_IdToValue(context, id, &id_value))
@@ -318,12 +319,12 @@ byte_array_set_prop(JSContext *context,
         if (!gjs_value_to_gsize(context, id_value, &idx))
             return false;
 
-        return byte_array_set_index(context, obj, priv, idx, value_p);
+        return byte_array_set_index(context, obj, priv, idx, value_p, result);
     }
 
     /* We don't special-case anything else for now */
 
-    return true;
+    return result.succeed();
 }
 
 static GByteArray *

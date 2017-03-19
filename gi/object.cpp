@@ -422,11 +422,12 @@ object_instance_get_prop(JSContext              *context,
 }
 
 static bool
-set_g_param_from_prop(JSContext      *context,
-                      ObjectInstance *priv,
-                      const char     *name,
-                      bool&           was_set,
-                      JS::HandleValue value_p)
+set_g_param_from_prop(JSContext          *context,
+                      ObjectInstance     *priv,
+                      const char         *name,
+                      bool&               was_set,
+                      JS::HandleValue     value_p,
+                      JS::ObjectOpResult& result)
 {
     GParameter param = { NULL, { 0, }};
     was_set = false;
@@ -439,7 +440,7 @@ set_g_param_from_prop(JSContext      *context,
     case SOME_ERROR_OCCURRED:
         return false;
     case NO_SUCH_G_PROPERTY:
-        return true;
+        return result.succeed();
     case VALUE_WAS_SET:
     default:
         break;
@@ -450,22 +451,22 @@ set_g_param_from_prop(JSContext      *context,
 
     g_value_unset(&param.value);
     was_set = true;
-    return true;
+    return result.succeed();
 }
 
 static bool
 check_set_field_from_prop(JSContext             *cx,
                           ObjectInstance        *priv,
                           const char            *name,
-                          bool                   strict,
-                          JS::MutableHandleValue value_p)
+                          JS::MutableHandleValue value_p,
+                          JS::ObjectOpResult&    result)
 {
     if (priv->info == NULL)
-        return true;
+        return result.succeed();
 
     GIFieldInfo *field = lookup_field_info(priv->info, name);
     if (field == NULL)
-        return true;
+        return result.succeed();
 
     bool retval = true;
 
@@ -474,21 +475,17 @@ check_set_field_from_prop(JSContext             *cx,
     if (g_field_info_get_flags(field) & GI_FIELD_IS_WRITABLE) {
         g_message("Field %s of a GObject is writable, but setting it is not "
                   "implemented", name);
+        result.succeed();
         goto out;
     }
 
-    if (strict) {
-        gjs_throw(cx, "Tried to set read-only field %s in strict mode", name);
-        retval = false;
-        goto out;
-    }
+    result.failReadOnly();  /* still return true; error only in strict mode */
 
     /* We have to update value_p because JS caches it as the property's "stored
      * value" (https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/JSAPI_reference/Stored_value)
      * and so subsequent gets would get the stored value instead of accessing
      * the field */
     value_p.setUndefined();
-
 out:
     g_base_info_unref((GIBaseInfo *) field);
     return retval;
@@ -501,8 +498,8 @@ static bool
 object_instance_set_prop(JSContext              *context,
                          JS::HandleObject        obj,
                          JS::HandleId            id,
-                         bool                    strict,
-                         JS::MutableHandleValue  value_p)
+                         JS::MutableHandleValue  value_p,
+                         JS::ObjectOpResult&     result)
 {
     ObjectInstance *priv;
     GjsAutoJSChar name(context);
@@ -510,7 +507,7 @@ object_instance_set_prop(JSContext              *context,
     bool g_param_was_set = false;
 
     if (!gjs_get_string_id(context, id, &name))
-        return true; /* not resolved, but no error */
+        return result.succeed();  /* not resolved, but no error */
 
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
@@ -519,12 +516,12 @@ object_instance_set_prop(JSContext              *context,
 
     if (priv == nullptr)
         /* see the comment in object_instance_get_prop() on this */
-        return true;
+        return result.succeed();
 
     if (priv->gobj == NULL) /* prototype, not an instance. */
-        return true;
+        return result.succeed();
 
-    ret = set_g_param_from_prop(context, priv, name, g_param_was_set, value_p);
+    ret = set_g_param_from_prop(context, priv, name, g_param_was_set, value_p, result);
     if (g_param_was_set || !ret)
         return ret;
 
@@ -533,7 +530,7 @@ object_instance_set_prop(JSContext              *context,
      * value. We could also use JS_DefineProperty though and specify a
      * getter/setter maybe, don't know if that is better.
      */
-    return check_set_field_from_prop(context, priv, name, strict, value_p);
+    return check_set_field_from_prop(context, priv, name, value_p, result);
 }
 
 static bool
