@@ -666,7 +666,8 @@ do_import(JSContext       *context,
 static bool
 importer_enumerate(JSContext        *context,
                    JS::HandleObject  object,
-                   JS::AutoIdVector& properties)
+                   JS::AutoIdVector& properties,
+                   bool              enumerable_only)
 {
     Importer *priv;
     guint32 search_path_len;
