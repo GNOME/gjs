@@ -1,3 +1,11 @@
+Version 1.48.0
+--------------
+
+- Closed bugs:
+
+  * Memory leak in object_instance_resolve() [#780171, Philip Chimento]; thanks
+    to Luke Jones and Hussam Al-Tayeb
+
 Version 1.47.92
 ---------------
 
