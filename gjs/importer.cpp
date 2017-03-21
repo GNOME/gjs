@@ -103,6 +103,12 @@ define_meta_properties(JSContext       *context,
 {
     bool parent_is_module;
 
+    /* For these meta-properties, don't set ENUMERATE since we wouldn't want to
+     * copy these symbols to any other object for example. RESOLVING is used to
+     * make sure we don't try to invoke a "resolve" operation, since this
+     * function may be called from inside one. */
+    unsigned attrs = JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_RESOLVING;
+
     /* We define both __moduleName__ and __parentModule__ to null
      * on the root importer
      */
@@ -115,16 +121,12 @@ define_meta_properties(JSContext       *context,
 
     if (full_path != NULL) {
         JS::RootedString file(context, JS_NewStringCopyZ(context, full_path));
-        if (!JS_DefineProperty(context, module_obj, "__file__", file,
-                               /* don't set ENUMERATE since we wouldn't want to copy
-                                * this symbol to any other object for example.
-                                */
-                               JSPROP_READONLY | JSPROP_PERMANENT))
+        if (!JS_DefineProperty(context, module_obj, "__file__", file, attrs))
             return false;
     }
 
-    /* Null is used instead of undefined to make sure we don't try to invoke
-     * a "resolve" operation. */
+    /* Null is used instead of undefined for backwards compatibility with code
+     * that explicitly checks for null. */
     JS::RootedValue module_name_val(context, JS::NullValue());
     JS::RootedValue parent_module_val(context, JS::NullValue());
     JS::RootedValue module_path(context, JS::NullValue());
@@ -150,20 +152,16 @@ define_meta_properties(JSContext       *context,
         module_path.setString(JS_NewStringCopyZ(context, module_path_buf));
     }
 
-    /* don't set ENUMERATE since we wouldn't want to copy these symbols to any
-     * other object for example. */
     if (!JS_DefineProperty(context, module_obj,
-                           "__moduleName__", module_name_val,
-                           JSPROP_READONLY | JSPROP_PERMANENT))
+                           "__moduleName__", module_name_val, attrs))
         return false;
 
     if (!JS_DefineProperty(context, module_obj,
-                           "__parentModule__", parent_module_val,
-                           JSPROP_READONLY | JSPROP_PERMANENT))
+                           "__parentModule__", parent_module_val, attrs))
         return false;
 
     if (!JS_DefineProperty(context, module_obj, "__modulePath__", module_path,
-                           JSPROP_READONLY | JSPROP_PERMANENT))
+                           attrs))
         return false;
 
     return true;
@@ -997,7 +995,7 @@ gjs_create_importer(JSContext          *context,
     if (!gjs_define_string_array(context, importer,
                                  "searchPath", -1, (const char **)search_path,
                                  /* settable (no READONLY) but not deleteable (PERMANENT) */
-                                 JSPROP_PERMANENT))
+                                 JSPROP_PERMANENT | JSPROP_RESOLVING))
         g_error("no memory to define importer search path prop");
 
     g_strfreev(search_path);

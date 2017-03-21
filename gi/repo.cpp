@@ -263,7 +263,7 @@ repo_new(JSContext *context)
 
     JS::RootedObject versions(context, JS_NewPlainObject(context));
     gjs_object_define_property(context, repo, GJS_STRING_GI_VERSIONS,
-                               versions, JSPROP_PERMANENT);
+                               versions, JSPROP_PERMANENT | JSPROP_RESOLVING);
 
     /* GLib/GObject/Gio are fixed at 2.0, since we depend on them
      * internally.
@@ -282,7 +282,7 @@ repo_new(JSContext *context)
     JS::RootedObject private_ns(context, JS_NewPlainObject(context));
     gjs_object_define_property(context, repo,
                                GJS_STRING_PRIVATE_NS_MARKER, private_ns,
-                               JSPROP_PERMANENT);
+                               JSPROP_PERMANENT | JSPROP_RESOLVING);
 
     return repo;
 }

@@ -90,6 +90,16 @@ gjs_init_class_dynamic(JSContext              *context,
     if (!prototype)
         goto out;
 
+    /* Bypass resolve hooks when defining the initial properties */
+    if (clasp->resolve) {
+        JSPropertySpec *ps_iter;
+        JSFunctionSpec *fs_iter;
+        for (ps_iter = proto_ps; ps_iter && ps_iter->name; ps_iter++)
+            ps_iter->flags |= JSPROP_RESOLVING;
+        for (fs_iter = proto_fs; fs_iter && fs_iter->name; fs_iter++)
+            fs_iter->flags |= JSPROP_RESOLVING;
+    }
+
     if (proto_ps && !JS_DefineProperties(context, prototype, proto_ps))
         goto out;
     if (proto_fs && !JS_DefineFunctions(context, prototype, proto_fs))
@@ -108,8 +118,20 @@ gjs_init_class_dynamic(JSContext              *context,
     if (static_fs && !JS_DefineFunctions(context, constructor, static_fs))
         goto out;
 
-    if (!JS_LinkConstructorAndPrototype(context, constructor, prototype))
-        goto out;
+    if (!clasp->resolve) {
+        if (!JS_LinkConstructorAndPrototype(context, constructor, prototype))
+            goto out;
+    } else {
+        /* Have to fake it with JSPROP_RESOLVING, otherwise it will trigger
+         * the resolve hook */
+        if (!JS_DefineProperty(context, constructor, "prototype", prototype,
+                               JSPROP_PERMANENT | JSPROP_READONLY | JSPROP_RESOLVING,
+                               JS_STUBGETTER, JS_STUBSETTER))
+            goto out;
+        if (!JS_DefineProperty(context, prototype, "constructor", constructor,
+                               JSPROP_RESOLVING, JS_STUBGETTER, JS_STUBSETTER))
+            goto out;
+    }
 
     /* The constructor defined by JS_InitClass has no property attributes, but this
        is a more useful default for gjs */
