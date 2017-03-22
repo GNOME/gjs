@@ -92,7 +92,7 @@ function getSubNodesForNode(node) {
                 subNodes.push(elem);
         });
         break;
-    case 'ArrowExpression':
+    case 'ArrowFunctionExpression':
         Array.prototype.push.apply(subNodes, node.defaults);
         subNodes.push(node.body);
         break;
@@ -222,7 +222,7 @@ function functionsForNode(node) {
     switch (node.type) {
     case 'FunctionDeclaration':
     case 'FunctionExpression':
-    case 'ArrowExpression':
+    case 'ArrowFunctionExpression':
         functionNames.push({ key: _getFunctionKeyFromReflectedFunction(node),
                              line: node.loc.start.line,
                              n_params: node.params.length });
@@ -924,19 +924,17 @@ function CoverageStatistics(prefixes, cache, shouldWarn) {
         /* Log function calls */
         if (frame.callee !== null && frame.callee.callable) {
             let name = frame.callee.name ? frame.callee.name : "(anonymous)";
-            let line = frame.script.getOffsetLine(frame.offset);
+            let {lineNumber} = frame.script.getOffsetLocation(frame.offset);
             let nArgs = frame.callee.parameterNames.length;
 
             try {
                 _incrementFunctionCounters(statistics.functionCounters,
                                            statistics.linesWithKnownFunctions,
-                                           name,
-                                           line,
-                                           nArgs);
+                                           name, lineNumber, nArgs);
             } catch (e) {
                 /* Something bad happened. Log the exception and delete
                  * statistics for this file */
-                _logExceptionAndReset(e, name, line);
+                _logExceptionAndReset(e, name, lineNumber);
                 return undefined;
             }
         }
@@ -948,17 +946,17 @@ function CoverageStatistics(prefixes, cache, shouldWarn) {
         frame.onStep = function() {
             /* Line counts */
             let offset = this.offset;
-            let offsetLine = this.script.getOffsetLine(offset);
+            let {lineNumber} = this.script.getOffsetLocation(offset);
 
             try {
                 _incrementExpressionCounters(statistics.expressionCounters,
                                              frame.script.url,
-                                             offsetLine, shouldWarn);
-                this._branchTracker.incrementBranchCounters(offsetLine);
+                                             lineNumber, shouldWarn);
+                this._branchTracker.incrementBranchCounters(lineNumber);
             } catch (e) {
                 /* Something bad happened. Log the exception and delete
                  * statistics for this file */
-                _logExceptionAndReset(e, frame.callee, offsetLine);
+                _logExceptionAndReset(e, frame.callee, lineNumber);
             }
         };
 
