@@ -888,7 +888,7 @@ define_boxed_class_fields(JSContext       *cx,
         if (!setter)
             return false;
 
-        if (!JS_DefineProperty(cx, proto, field_name, JS::NullHandleValue,
+        if (!JS_DefineProperty(cx, proto, field_name, JS::UndefinedHandleValue,
                                JSPROP_PERMANENT | JSPROP_SHARED | JSPROP_GETTER | JSPROP_SETTER,
                                JS_DATA_TO_FUNC_PTR(JSNative, getter.get()),
                                JS_DATA_TO_FUNC_PTR(JSNative, setter.get())))
