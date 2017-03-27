@@ -834,7 +834,7 @@ bool
 gjs_define_byte_array_stuff(JSContext              *cx,
                             JS::MutableHandleObject module)
 {
-    module.set(JS_NewObject(cx, NULL));
+    module.set(JS_NewPlainObject(cx));
 
     JS::RootedObject proto(cx);
     return gjs_byte_array_define_proto(cx, module, &proto) &&

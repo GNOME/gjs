@@ -59,7 +59,7 @@ bool
 gjs_js_define_cairo_stuff(JSContext              *context,
                           JS::MutableHandleObject module)
 {
-    module.set(JS_NewObject(context, NULL));
+    module.set(JS_NewPlainObject(context));
     JS::RootedObject proto(context);  /* not used */
 
     if (!gjs_cairo_region_define_proto(context, module, &proto))

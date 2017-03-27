@@ -152,7 +152,7 @@ static JSObject *
 make_rectangle(JSContext *context,
                cairo_rectangle_int_t *rect)
 {
-    JS::RootedObject rect_obj(context, JS_NewObject(context, NULL));
+    JS::RootedObject rect_obj(context, JS_NewPlainObject(context));
     JS::RootedValue val(context);
 
     val = JS::Int32Value(rect->x);

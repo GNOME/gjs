@@ -271,7 +271,7 @@ repo_new(JSContext *context)
     gjs_debug_lifecycle(GJS_DEBUG_GREPO,
                         "repo constructor, obj %p priv %p", repo.get(), priv);
 
-    JS::RootedObject versions(context, JS_NewObject(context, NULL));
+    JS::RootedObject versions(context, JS_NewPlainObject(context));
     gjs_object_define_property(context, repo, GJS_STRING_GI_VERSIONS,
                                versions, JSPROP_PERMANENT);
 
@@ -289,7 +289,7 @@ repo_new(JSContext *context)
                            JSPROP_PERMANENT))
         return nullptr;
 
-    JS::RootedObject private_ns(context, JS_NewObject(context, NULL));
+    JS::RootedObject private_ns(context, JS_NewPlainObject(context));
     gjs_object_define_property(context, repo,
                                GJS_STRING_PRIVATE_NS_MARKER, private_ns,
                                JSPROP_PERMANENT);

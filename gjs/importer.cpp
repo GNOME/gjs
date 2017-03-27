@@ -388,7 +388,7 @@ load_module_init(JSContext       *context,
         }
     }
 
-    JS::RootedObject module_obj(context, JS_NewObject(context, NULL));
+    JS::RootedObject module_obj(context, JS_NewPlainObject(context));
     GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(full_path);
     if (!import_file (context, "__init__", file, module_obj))
         return module_obj;
@@ -465,7 +465,7 @@ import_file_on_module(JSContext       *context,
     bool retval = false;
     char *full_path = NULL;
 
-    JS::RootedObject module_obj(context, JS_NewObject(context, NULL));
+    JS::RootedObject module_obj(context, JS_NewPlainObject(context));
 
     if (!define_import(context, obj, module_obj, name))
         goto out;
