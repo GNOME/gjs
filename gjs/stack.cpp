@@ -48,10 +48,10 @@
 #include "jsapi-wrapper.h"
 
 bool
-gjs_context_get_frame_info(JSContext                              *context,
-                           mozilla::Maybe<JS::MutableHandleValue>& stack,
-                           mozilla::Maybe<JS::MutableHandleValue>& fileName,
-                           mozilla::Maybe<JS::MutableHandleValue>& lineNumber)
+gjs_context_get_frame_info(JSContext                             *context,
+                           mozilla::Maybe<JS::MutableHandleValue> stack,
+                           mozilla::Maybe<JS::MutableHandleValue> fileName,
+                           mozilla::Maybe<JS::MutableHandleValue> lineNumber)
 {
     JSAutoRequest ar(context);
     JS::RootedObject global(context, JS::CurrentGlobalOrNull(context)),
@@ -94,10 +94,8 @@ gjs_context_print_stack_stderr(GjsContext *context)
     g_printerr("== Stack trace for context %p ==\n", context);
 
     /* Stderr is locale encoding, so we use string_to_filename here */
-    /* COMPAT: mozilla::Maybe gains a much more usable API in future versions */
-    mozilla::Maybe<JS::MutableHandleValue> none,
-        m_stack = mozilla::Some<JS::MutableHandleValue>(&v_stack);
-    if (!gjs_context_get_frame_info(cx, m_stack, none, none) ||
+    if (!gjs_context_get_frame_info(cx, mozilla::Some<JS::MutableHandleValue>(&v_stack),
+                                    mozilla::Nothing(), mozilla::Nothing()) ||
         !gjs_string_to_filename(cx, v_stack, &stack)) {
         g_printerr("No stack trace available\n");
         return;

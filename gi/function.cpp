@@ -697,12 +697,12 @@ format_function_name(Function *function,
  * providing a @r_value argument.
  */
 static bool
-gjs_invoke_c_function(JSContext                              *context,
-                      Function                               *function,
-                      JS::HandleObject                        obj, /* "this" object */
-                      const JS::HandleValueArray&             args,
-                      mozilla::Maybe<JS::MutableHandleValue>& js_rval,
-                      GIArgument                             *r_value)
+gjs_invoke_c_function(JSContext                             *context,
+                      Function                              *function,
+                      JS::HandleObject                       obj, /* "this" object */
+                      const JS::HandleValueArray&            args,
+                      mozilla::Maybe<JS::MutableHandleValue> js_rval,
+                      GIArgument                            *r_value)
 {
     /* These first four are arrays which hold argument pointers.
      * @in_arg_cvalues: C values which are passed on input (in or inout)
@@ -1340,9 +1340,8 @@ function_call(JSContext *context,
     if (priv == NULL)
         return true; /* we are the prototype, or have the wrong class */
 
-    /* COMPAT: mozilla::Maybe gains a much more usable API in future versions */
-    auto m_retval = mozilla::Some<JS::MutableHandleValue>(&retval);
-    success = gjs_invoke_c_function(context, priv, object, js_argv, m_retval,
+    success = gjs_invoke_c_function(context, priv, object, js_argv,
+                                    mozilla::Some<JS::MutableHandleValue>(&retval),
                                     NULL);
     if (success)
         js_argv.rval().set(retval);
@@ -1761,10 +1760,8 @@ gjs_invoke_c_function_uncached(JSContext                  *context,
   if (!init_cached_function_data (context, &function, 0, info))
       return false;
 
-  /* COMPAT: mozilla::Maybe gains a much more usable API in future versions */
-  mozilla::Maybe<JS::MutableHandleValue> m_rval;
-  m_rval.emplace(rval);
-  result = gjs_invoke_c_function(context, &function, obj, args, m_rval, NULL);
+  result = gjs_invoke_c_function(context, &function, obj, args,
+                                 mozilla::Some(rval), NULL);
   uninit_cached_function_data (&function);
   return result;
 }

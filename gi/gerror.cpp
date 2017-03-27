@@ -396,12 +396,11 @@ define_error_properties(JSContext       *context,
                         JS::HandleObject obj)
 {
     JS::RootedValue stack(context), fileName(context), lineNumber(context);
-    /* COMPAT: mozilla::Maybe gains a much more usable API in future versions */
-    auto m_stack = mozilla::Some<JS::MutableHandleValue>(&stack);
-    auto m_file = mozilla::Some<JS::MutableHandleValue>(&fileName);
-    auto m_line = mozilla::Some<JS::MutableHandleValue>(&lineNumber);
 
-    if (!gjs_context_get_frame_info(context, m_stack, m_file, m_line))
+    if (!gjs_context_get_frame_info(context,
+                                    mozilla::Some<JS::MutableHandleValue>(&stack),
+                                    mozilla::Some<JS::MutableHandleValue>(&fileName),
+                                    mozilla::Some<JS::MutableHandleValue>(&lineNumber)))
         return;
 
     gjs_object_define_property(context, obj, GJS_STRING_STACK, stack,
