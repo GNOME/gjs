@@ -139,6 +139,7 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
 
             g_base_info_unref(interface_info);
         }
+        break;
     case GI_TYPE_TAG_UINT64:
     /* Other primitive and pointer types need to squeeze into 64-bit ffi_arg too */
     case GI_TYPE_TAG_FLOAT:
