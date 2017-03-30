@@ -918,6 +918,7 @@ object_instance_props_to_g_parameters(JSContext                  *context,
         case NO_SUCH_G_PROPERTY:
             gjs_throw(context, "No property %s on this GObject %s",
                          name, g_type_name(gtype));
+            /* fallthrough */
         case SOME_ERROR_OCCURRED:
             g_free(name);
             goto free_array_and_fail;
