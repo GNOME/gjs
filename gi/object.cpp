@@ -1446,7 +1446,9 @@ object_instance_init (JSContext                  *context,
         object_init_list.emplace(context, object);
     }
 
+G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     gobj = (GObject*) g_object_newv(gtype, params.size(), &params[0]);
+G_GNUC_END_IGNORE_DEPRECATIONS
 
     free_g_params(&params[0], params.size());
 
