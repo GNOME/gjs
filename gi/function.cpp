@@ -673,6 +673,22 @@ gjs_fill_method_instance(JSContext       *context,
     return true;
 }
 
+/* Intended for error messages. Return value must be freed */
+static char *
+format_function_name(Function *function,
+                     bool      is_method)
+{
+    auto baseinfo = static_cast<GIBaseInfo *>(function->info);
+    if (is_method)
+        return g_strdup_printf("method %s.%s.%s",
+                               g_base_info_get_namespace(baseinfo),
+                               g_base_info_get_name(g_base_info_get_container(baseinfo)),
+                               g_base_info_get_name(baseinfo));
+    return g_strdup_printf("function %s.%s",
+                           g_base_info_get_namespace(baseinfo),
+                           g_base_info_get_name(baseinfo));
+}
+
 /*
  * This function can be called in 2 different ways. You can either use
  * it to create javascript objects by providing a @js_rval argument or
@@ -748,30 +764,18 @@ gjs_invoke_c_function(JSContext                              *context,
      * arguments we expect the JS function to take (which does not
      * include PARAM_SKIPPED args).
      *
-     * @js_argc is the number of arguments that were actually passed;
-     * we allow this to be larger than @expected_js_argc for
-     * convenience, and simply ignore the extra arguments. But we
-     * don't allow too few args, since that would break.
+     * @js_argc is the number of arguments that were actually passed.
      */
-
-    if (args.length() < function->expected_js_argc) {
-        auto baseinfo = static_cast<GIBaseInfo *>(function->info);
-        if (is_method) {
-            gjs_throw(context, "Too few arguments to method %s.%s.%s: "
-                      "expected %d, got %" G_GSIZE_FORMAT,
-                      g_base_info_get_namespace(baseinfo),
-                      g_base_info_get_name(g_base_info_get_container(baseinfo)),
-                      g_base_info_get_name(baseinfo),
-                      function->expected_js_argc,
-                      args.length());
-        } else {
-            gjs_throw(context, "Too few arguments to function %s.%s: "
-                      "expected %d, got %" G_GSIZE_FORMAT,
-                      g_base_info_get_namespace(baseinfo),
-                      g_base_info_get_name(baseinfo),
-                      function->expected_js_argc,
-                      args.length());
-        }
+    if (args.length() > function->expected_js_argc) {
+        GjsAutoChar name = format_function_name(function, is_method);
+        JS_ReportWarning(context, "Too many arguments to %s: expected %d, "
+                         "got %" G_GSIZE_FORMAT, name.get(),
+                         function->expected_js_argc, args.length());
+    } else if (args.length() < function->expected_js_argc) {
+        GjsAutoChar name = format_function_name(function, is_method);
+        gjs_throw(context, "Too few arguments to %s: "
+                  "expected %d, got %" G_GSIZE_FORMAT,
+                  name.get(), function->expected_js_argc, args.length());
         return false;
     }
 
