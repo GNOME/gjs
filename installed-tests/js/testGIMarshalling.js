@@ -402,7 +402,7 @@ describe('GValue', function () {
     });
 
     xit('enum can be passed into a function and packed', function () {
-        expect(() => GIMarshallingTests.gvalue_in_enum(GIMarshallingTests.Enum.VALUE_3))
+        expect(() => GIMarshallingTests.gvalue_in_enum(GIMarshallingTests.Enum.VALUE3))
             .not.toThrow();
     }).pend("GJS doesn't support native enum types");
 
