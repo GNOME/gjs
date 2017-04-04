@@ -241,12 +241,31 @@ describe('Life, the Universe and Everything', function () {
         expect(Regress.test_callback_thaw_async()).toEqual(44);
     });
 
-    it('method taking a GValue', function () {
-        expect(Regress.test_int_value_arg(42)).toEqual(42);
-    });
+    describe('GValue boxing and unboxing', function () {
+        it('integer in', function () {
+            expect(Regress.test_int_value_arg(42)).toEqual(42);
+        });
 
-    it('method returning a GValue', function () {
-        expect(Regress.test_value_return(42)).toEqual(42);
+        it('integer out', function () {
+            expect(Regress.test_value_return(42)).toEqual(42);
+        });
+
+        it('strv in', function () {
+            expect(Regress.test_strv_in_gvalue()).toEqual(['one', 'two', 'three']);
+        });
+
+        const GVALUE_HASH_TABLE = {
+            'integer': 12,
+            'boolean': true,
+            'string': 'some text',
+            'strings': ['first', 'second', 'third'],
+            'flags': Regress.TestFlags.FLAG1 | Regress.TestFlags.FLAG3,
+            'enum': Regress.TestEnum.VALUE2,
+        };
+
+        it('hashtable with GValue value type out', function () {
+            expect(Regress.test_ghash_gvalue_return()).toEqual(GVALUE_HASH_TABLE);
+        });
     });
 
     ['glist', 'gslist'].forEach(list => {
@@ -498,10 +517,6 @@ describe('Life, the Universe and Everything', function () {
             expect(z).toEqual(22);
             expect(q).toEqual(14);
         });
-    });
-
-    it('strv in GValue', function () {
-        expect(Regress.test_strv_in_gvalue()).toEqual(['one', 'two', 'three']);
     });
 
     // Cannot access the variant contents, for now
