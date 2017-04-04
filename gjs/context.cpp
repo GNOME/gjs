@@ -120,7 +120,6 @@ gjs_log(JSContext *context,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     char *s;
-    JSExceptionState *exc_state;
 
     if (argc != 1) {
         gjs_throw(context, "Must pass a single argument to log()");
@@ -131,11 +130,9 @@ gjs_log(JSContext *context,
 
     /* JS::ToString might throw, in which case we will only log that the value
      * could not be converted to string */
-    exc_state = JS_SaveExceptionState(context);
+    JS::AutoSaveExceptionState exc_state(context);
     JS::RootedString jstr(context, JS::ToString(context, argv[0]));
-    if (jstr != NULL)
-        argv[0].setString(jstr);  // GC root
-    JS_RestoreExceptionState(context, exc_state);
+    exc_state.restore();
 
     if (jstr == NULL) {
         g_message("JS LOG: <cannot convert value to string>");
@@ -162,7 +159,6 @@ gjs_log_error(JSContext *context,
               JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JSExceptionState *exc_state;
 
     if ((argc != 1 && argc != 2) || !argv[0].isObject()) {
         gjs_throw(context, "Must pass an exception and optionally a message to logError()");
@@ -176,11 +172,9 @@ gjs_log_error(JSContext *context,
     if (argc == 2) {
         /* JS::ToString might throw, in which case we will only log that the
          * value could be converted to string */
-        exc_state = JS_SaveExceptionState(context);
+        JS::AutoSaveExceptionState exc_state(context);
         jstr = JS::ToString(context, argv[1]);
-        if (jstr != NULL)
-            argv[1].setString(jstr);  // GC root
-        JS_RestoreExceptionState(context, exc_state);
+        exc_state.restore();
     }
 
     gjs_log_exception_full(context, argv[0], jstr);
@@ -203,17 +197,11 @@ gjs_print_parse_args(JSContext *context,
 
     str = g_string_new("");
     for (n = 0; n < argv.length(); ++n) {
-        JSExceptionState *exc_state;
-
         /* JS::ToString might throw, in which case we will only log that the
          * value could not be converted to string */
-        exc_state = JS_SaveExceptionState(context);
-
+        JS::AutoSaveExceptionState exc_state(context);
         JS::RootedString jstr(context, JS::ToString(context, argv[n]));
-        if (jstr != NULL)
-            argv[n].setString(jstr); // GC root
-
-        JS_RestoreExceptionState(context, exc_state);
+        exc_state.restore();
 
         if (jstr != NULL) {
             if (!gjs_string_to_utf8(context, JS::StringValue(jstr), &s)) {
