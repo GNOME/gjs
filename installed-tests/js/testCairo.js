@@ -1,4 +1,6 @@
 const Cairo = imports.cairo;
+const Gdk = imports.gi.Gdk;
+const Gtk = imports.gi.Gtk;
 const Regress = imports.gi.Regress;
 
 function _ts(obj) {
@@ -6,6 +8,10 @@ function _ts(obj) {
 }
 
 describe('Cairo', function () {
+    beforeAll(function () {
+        Gtk.init(null);
+    });
+
     let cr, surface;
     beforeEach(function () {
         surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, 1, 1);
@@ -162,6 +168,17 @@ describe('Cairo', function () {
             o.connect('sig-with-foreign-struct', foreignSpy);
             o.emit_sig_with_foreign_struct();
             expect(foreignSpy).toHaveBeenCalledWith(o, cr);
+        });
+
+        it('has methods when created from a C function', function () {
+            let win = new Gtk.OffscreenWindow();
+            let da = new Gtk.DrawingArea();
+            win.add(da);
+            da.realize();
+
+            cr = Gdk.cairo_create(da.window);
+            expect(cr.save).toBeDefined();
+            expect(_ts(cr.getTarget())).toEqual('CairoSurface');
         });
     });
 
