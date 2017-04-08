@@ -1,3 +1,13 @@
+Version 1.48.1
+--------------
+
+- Closed bugs:
+
+  * gjs crashed with SIGSEGV in gjs_object_from_g_object [#779918, Philip
+    Chimento]
+
+- Misc bug fixes [Florian Müllner, Philip Chimento, Emmanuele Bassi]
+
 Version 1.48.0
 --------------
 
