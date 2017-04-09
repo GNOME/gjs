@@ -28,8 +28,11 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
-GJS_DEFINE_PROTO_ABSTRACT("SolidPattern", cairo_solid_pattern,
-                          JSCLASS_BACKGROUND_FINALIZE)
+static JSObject *gjs_cairo_solid_pattern_get_proto(JSContext *);
+
+GJS_DEFINE_PROTO_ABSTRACT_WITH_PARENT("SolidPattern", cairo_solid_pattern,
+                                      cairo_pattern,
+                                      JSCLASS_BACKGROUND_FINALIZE)
 
 static void
 gjs_cairo_solid_pattern_finalize(JSFreeOp *fop,
@@ -113,9 +116,10 @@ gjs_cairo_solid_pattern_from_pattern(JSContext       *context,
     g_return_val_if_fail(pattern != NULL, NULL);
     g_return_val_if_fail(cairo_pattern_get_type(pattern) == CAIRO_PATTERN_TYPE_SOLID, NULL);
 
+    JS::RootedObject proto(context, gjs_cairo_solid_pattern_get_proto(context));
     JS::RootedObject object(context,
         JS_NewObjectWithGivenProto(context, &gjs_cairo_solid_pattern_class,
-                                   gjs_cairo_solid_pattern_prototype));
+                                   proto));
     if (!object) {
         gjs_throw(context, "failed to create solid pattern");
         return NULL;

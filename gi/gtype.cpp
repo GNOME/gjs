@@ -35,10 +35,9 @@
 static bool weak_pointer_callback = false;
 static std::set<GType> weak_pointer_list;
 
-static JSObject *
-gjs_gtype_create_proto(JSContext       *context,
-                       JS::HandleObject module,
-                       JS::HandleObject parent);
+static JSObject *gjs_gtype_get_proto(JSContext *) G_GNUC_UNUSED;
+static bool gjs_gtype_define_proto(JSContext *, JS::HandleObject,
+                                   JS::MutableHandleObject);
 
 GJS_DEFINE_PROTO_ABSTRACT("GIRepositoryGType", gtype, 0);
 
@@ -150,31 +149,28 @@ JSObject *
 gjs_gtype_create_gtype_wrapper (JSContext *context,
                                 GType      gtype)
 {
-    JS_BeginRequest(context);
-
-    /* put constructor for GIRepositoryGType() in the global namespace */
-    JS::RootedObject global(context, gjs_get_import_global(context));
-    JS::RootedObject proto(context,
-        gjs_gtype_create_proto(context, global, JS::NullPtr()));
+    JSAutoRequest ar(context);
 
     auto heap_wrapper =
         static_cast<JS::Heap<JSObject *> *>(g_type_get_qdata(gtype, gjs_get_gtype_wrapper_quark()));
     if (heap_wrapper != nullptr)
-        goto out;
+        return *heap_wrapper;
+
+    JS::RootedObject proto(context);
+    if (!gjs_gtype_define_proto(context, JS::NullPtr(), &proto))
+        return nullptr;
 
     heap_wrapper = new JS::Heap<JSObject *>();
     *heap_wrapper = JS_NewObjectWithGivenProto(context, &gjs_gtype_class, proto,
                                                JS::NullPtr());
     if (*heap_wrapper == nullptr)
-        goto out;
+        return nullptr;
 
     JS_SetPrivate(*heap_wrapper, GSIZE_TO_POINTER(gtype));
     ensure_weak_pointer_callback(context);
     g_type_set_qdata(gtype, gjs_get_gtype_wrapper_quark(), heap_wrapper);
     weak_pointer_list.insert(gtype);
 
- out:
-    JS_EndRequest(context);
     return *heap_wrapper;
 }
 

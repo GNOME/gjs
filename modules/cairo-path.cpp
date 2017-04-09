@@ -34,6 +34,8 @@ typedef struct {
     cairo_path_t    *path;
 } GjsCairoPath;
 
+static JSObject *gjs_cairo_path_get_proto(JSContext *);
+
 GJS_DEFINE_PROTO_ABSTRACT("Path", cairo_path, JSCLASS_BACKGROUND_FINALIZE)
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoPath, gjs_cairo_path_class)
 
@@ -75,9 +77,9 @@ gjs_cairo_path_from_path(JSContext    *context,
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(path != NULL, NULL);
 
+    JS::RootedObject proto(context, gjs_cairo_path_get_proto(context));
     JS::RootedObject object(context,
-        JS_NewObjectWithGivenProto(context, &gjs_cairo_path_class,
-                                   gjs_cairo_path_prototype));
+        JS_NewObjectWithGivenProto(context, &gjs_cairo_path_class, proto));
     if (!object) {
         gjs_throw(context, "failed to create path");
         return NULL;

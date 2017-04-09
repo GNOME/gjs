@@ -28,8 +28,10 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
-GJS_DEFINE_PROTO("SurfacePattern", cairo_surface_pattern,
-                 JSCLASS_BACKGROUND_FINALIZE)
+static JSObject *gjs_cairo_surface_pattern_get_proto(JSContext *);
+
+GJS_DEFINE_PROTO_WITH_PARENT("SurfacePattern", cairo_surface_pattern,
+                             cairo_pattern, JSCLASS_BACKGROUND_FINALIZE)
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_surface_pattern)
 {
@@ -188,9 +190,11 @@ gjs_cairo_surface_pattern_from_pattern(JSContext       *context,
     g_return_val_if_fail(pattern != NULL, NULL);
     g_return_val_if_fail(cairo_pattern_get_type(pattern) == CAIRO_PATTERN_TYPE_SURFACE, NULL);
 
+    JS::RootedObject proto(context,
+                           gjs_cairo_surface_pattern_get_proto(context));
     JS::RootedObject object(context,
         JS_NewObjectWithGivenProto(context, &gjs_cairo_surface_pattern_class,
-                                   gjs_cairo_surface_pattern_prototype));
+                                   proto));
     if (!object) {
         gjs_throw(context, "failed to create surface pattern");
         return NULL;

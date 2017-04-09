@@ -28,8 +28,10 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
-GJS_DEFINE_PROTO("LinearGradient", cairo_linear_gradient,
-                 JSCLASS_BACKGROUND_FINALIZE)
+static JSObject *gjs_cairo_linear_gradient_get_proto(JSContext *);
+
+GJS_DEFINE_PROTO_WITH_PARENT("LinearGradient", cairo_linear_gradient,
+                             cairo_gradient, JSCLASS_BACKGROUND_FINALIZE)
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_linear_gradient)
 {
@@ -83,9 +85,11 @@ gjs_cairo_linear_gradient_from_pattern(JSContext       *context,
     g_return_val_if_fail(pattern != NULL, NULL);
     g_return_val_if_fail(cairo_pattern_get_type(pattern) == CAIRO_PATTERN_TYPE_LINEAR, NULL);
 
+    JS::RootedObject proto(context,
+                           gjs_cairo_linear_gradient_get_proto(context));
     JS::RootedObject object(context,
         JS_NewObjectWithGivenProto(context, &gjs_cairo_linear_gradient_class,
-                                   gjs_cairo_linear_gradient_prototype));
+                                   proto));
     if (!object) {
         gjs_throw(context, "failed to create linear gradient pattern");
         return NULL;

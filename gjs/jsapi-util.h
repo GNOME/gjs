@@ -74,7 +74,22 @@ enum {
 
 typedef enum {
     GJS_GLOBAL_SLOT_IMPORTS,
+    GJS_GLOBAL_SLOT_PROTOTYPE_gtype,
     GJS_GLOBAL_SLOT_BYTE_ARRAY_PROTOTYPE,
+    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_context,
+    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_gradient,
+    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_image_surface,
+    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_linear_gradient,
+    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_path,
+    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_pattern,
+    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_pdf_surface,
+    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_ps_surface,
+    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_radial_gradient,
+    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_region,
+    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_solid_pattern,
+    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_surface,
+    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_surface_pattern,
+    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_svg_surface,
     GJS_GLOBAL_SLOT_LAST,
 } GjsGlobalSlot;
 

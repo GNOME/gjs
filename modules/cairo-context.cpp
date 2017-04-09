@@ -238,6 +238,8 @@ typedef struct {
     cairo_t * cr;
 } GjsCairoContext;
 
+static JSObject *gjs_cairo_context_get_proto(JSContext *);
+
 GJS_DEFINE_PROTO_WITH_GTYPE("Context", cairo_context,
                             CAIRO_GOBJECT_TYPE_CONTEXT,
                             JSCLASS_BACKGROUND_FINALIZE)
@@ -925,9 +927,9 @@ JSObject *
 gjs_cairo_context_from_context(JSContext *context,
                                cairo_t *cr)
 {
+    JS::RootedObject proto(context, gjs_cairo_context_get_proto(context));
     JS::RootedObject object(context,
-        JS_NewObjectWithGivenProto(context, &gjs_cairo_context_class,
-                                   gjs_cairo_context_prototype));
+        JS_NewObjectWithGivenProto(context, &gjs_cairo_context_class, proto));
     if (!object)
         return NULL;
 

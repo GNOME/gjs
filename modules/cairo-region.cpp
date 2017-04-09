@@ -37,6 +37,8 @@ typedef struct {
     cairo_region_t *region;
 } GjsCairoRegion;
 
+static JSObject *gjs_cairo_region_get_proto(JSContext *);
+
 GJS_DEFINE_PROTO_WITH_GTYPE("Region", cairo_region,
                             CAIRO_GOBJECT_TYPE_REGION,
                             JSCLASS_BACKGROUND_FINALIZE)
@@ -279,9 +281,9 @@ static JSObject *
 gjs_cairo_region_from_region(JSContext *context,
                              cairo_region_t *region)
 {
+    JS::RootedObject proto(context, gjs_cairo_region_get_proto(context));
     JS::RootedObject object(context,
-        JS_NewObjectWithGivenProto(context, &gjs_cairo_region_class,
-                                   gjs_cairo_region_prototype));
+        JS_NewObjectWithGivenProto(context, &gjs_cairo_region_class, proto));
     if (!object)
         return NULL;
 

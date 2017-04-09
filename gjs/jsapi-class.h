@@ -116,6 +116,13 @@ JSObject *gjs_construct_object_dynamic(JSContext                  *cx,
         return false;                                     \
     type *priv = priv_from_js(cx, to)
 
+/* Helper for GJS_DEFINE_PROTO_* macros with no parent */
+static inline JSObject *
+gjs_no_parent_get_proto(JSContext *cx)
+{
+    return nullptr;
+}
+
 /**
  * GJS_DEFINE_PROTO:
  * @tn: The name of the prototype, as a string
@@ -138,27 +145,29 @@ _GJS_DEFINE_PROTO_FULL(tn, cn, gjs_##cn##_constructor, G_TYPE_NONE, flags)
  * you won't be able to instantiate it using the new keyword
  */
 #define GJS_DEFINE_PROTO_ABSTRACT(tn, cn, flags)                 \
-_GJS_DEFINE_PROTO_FULL(tn, cn, nullptr, G_TYPE_NONE, flags)
+_GJS_DEFINE_PROTO_FULL(tn, cn, no_parent, nullptr, G_TYPE_NONE,  \
+                       flags)
 
 #define GJS_DEFINE_PROTO_WITH_GTYPE(tn, cn, gtype, flags)          \
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cn);                                \
-_GJS_DEFINE_PROTO_FULL(tn, cn, gjs_##cn##_constructor, gtype, flags)
+_GJS_DEFINE_PROTO_FULL(tn, cn, no_parent, gjs_##cn##_constructor,  \
+                       gtype, flags)
 
 #define GJS_DEFINE_PROTO_ABSTRACT_WITH_GTYPE(tn, cn, gtype, flags)  \
-_GJS_DEFINE_PROTO_FULL(tn, cn, nullptr, gtype, flags)
+_GJS_DEFINE_PROTO_FULL(tn, cn, no_parent, nullptr, gtype, flags)
 
-#define GJS_DEFINE_PROTO_WITH_PARENT(tn, cn, flags)     \
-GJS_NATIVE_CONSTRUCTOR_DECLARE(cn);                     \
-_GJS_DEFINE_PROTO_FULL(tn, cn, gjs_##cn##_constructor, G_TYPE_NONE, flags)
+#define GJS_DEFINE_PROTO_WITH_PARENT(tn, cn, parent_cn, flags)     \
+GJS_NATIVE_CONSTRUCTOR_DECLARE(cn);                                \
+_GJS_DEFINE_PROTO_FULL(tn, cn, parent_cn, gjs_##cn##_constructor,  \
+                       G_TYPE_NONE, flags)
 
-#define GJS_DEFINE_PROTO_ABSTRACT_WITH_PARENT(tn, cn, flags)  \
-_GJS_DEFINE_PROTO_FULL(tn, cn, nullptr, G_TYPE_NONE, flags)
+#define GJS_DEFINE_PROTO_ABSTRACT_WITH_PARENT(tn, cn, parent_cn, flags)  \
+_GJS_DEFINE_PROTO_FULL(tn, cn, parent_cn, nullptr, G_TYPE_NONE, flags)
 
-#define _GJS_DEFINE_PROTO_FULL(type_name, cname, ctor, gtype, jsclass_flags) \
+#define _GJS_DEFINE_PROTO_FULL(type_name, cname, parent_cname, ctor, gtype, jsclass_flags) \
 extern JSPropertySpec gjs_##cname##_proto_props[];                           \
 extern JSFunctionSpec gjs_##cname##_proto_funcs[];                           \
 static void gjs_##cname##_finalize(JSFreeOp *fop, JSObject *obj);            \
-static JS::PersistentRootedObject gjs_##cname##_prototype;                   \
 static struct JSClass gjs_##cname##_class = {                                \
     type_name,                                                               \
     JSCLASS_HAS_PRIVATE | jsclass_flags,                                     \
@@ -172,42 +181,73 @@ static struct JSClass gjs_##cname##_class = {                                \
     gjs_##cname##_finalize                                                   \
 };                                                                           \
 JSObject *                                                                   \
-gjs_##cname##_create_proto(JSContext       *cx,                              \
-                           JS::HandleObject module,                          \
-                           JS::HandleObject parent)                          \
+gjs_##cname##_get_proto(JSContext *cx)                                       \
 {                                                                            \
-    JS::RootedObject rval(cx);                                               \
-    JS::RootedObject global(cx, gjs_get_import_global(cx));                  \
+    JS::RootedValue v_proto(cx,                                              \
+        gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_PROTOTYPE_##cname));         \
+    g_assert(((void) "gjs_" #cname "_define_proto() must be called before "  \
+              "gjs_" #cname "_get_proto()", !v_proto.isUndefined()));        \
+    g_assert(((void) "Someone stored some weird value in a global slot",     \
+              v_proto.isObject()));                                          \
+    return &v_proto.toObject();                                              \
+}                                                                            \
+bool                                                                         \
+gjs_##cname##_define_proto(JSContext              *cx,                       \
+                           JS::HandleObject        module,                   \
+                           JS::MutableHandleObject proto)                    \
+{                                                                            \
+    /* If we've been here more than once, we already have the proto */       \
+    JS::RootedValue v_proto(cx,                                              \
+        gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_PROTOTYPE_##cname));         \
+    if (!v_proto.isUndefined()) {                                            \
+        g_assert(((void) "Someone stored some weird value in a global slot", \
+                  v_proto.isObject()));                                      \
+        proto.set(&v_proto.toObject());                                      \
+        return true;                                                         \
+    }                                                                        \
+                                                                             \
+    /* If module is not given, we are defining a global class */             \
+    JS::RootedObject in_obj(cx, module);                                     \
+    if (!in_obj)                                                             \
+        in_obj = gjs_get_import_global(cx);                                  \
+                                                                             \
+    /* Create the class, prototype, and constructor */                       \
+    JS::RootedObject parent_proto(cx, gjs_##parent_cname##_get_proto(cx));   \
+    proto.set(JS_InitClass(cx, in_obj, parent_proto, &gjs_##cname##_class,   \
+                           ctor, 0, gjs_##cname##_proto_props,               \
+                           gjs_##cname##_proto_funcs, nullptr, nullptr));    \
+    if (!proto)                                                              \
+        return false;                                                        \
+    gjs_set_global_slot(cx, GJS_GLOBAL_SLOT_PROTOTYPE_##cname,               \
+                        JS::ObjectValue(*proto));                            \
+                                                                             \
+    /* Look up the constructor */                                            \
+    JS::RootedObject ctor_obj(cx);                                           \
     JS::RootedId class_name(cx,                                              \
         gjs_intern_string_to_id(cx, gjs_##cname##_class.name));              \
-    bool found = false;                                                      \
-    if (!JS_AlreadyHasOwnPropertyById(cx, global, class_name, &found))       \
-        return nullptr;                                                      \
-    if (!found) {                                                            \
-        gjs_##cname##_prototype.init(cx);                                    \
-        gjs_##cname##_prototype =                                            \
-            JS_InitClass(cx, global, parent, &gjs_##cname##_class, ctor,     \
-                         0, &gjs_##cname##_proto_props[0],                   \
-                         &gjs_##cname##_proto_funcs[0],                      \
-                         nullptr, nullptr);                                  \
-        if (!gjs_##cname##_prototype)                                        \
-            return nullptr;                                                  \
+    if (!gjs_object_require_property(cx, in_obj, #cname " constructor",      \
+                                     class_name, &ctor_obj))                 \
+        return false;                                                        \
+                                                                             \
+    /* JS_InitClass defines the constructor as a property on the given       \
+     * "global" object. If it's a module and not the real global object,     \
+     * redefine it with different flags so it's enumerable; cairo copies     \
+     * properties from cairoNative, for example */                           \
+    if (module) {                                                            \
+        if (!JS_DefinePropertyById(cx, module, class_name, ctor_obj,         \
+                                   GJS_MODULE_PROP_FLAGS))                   \
+            return false;                                                    \
     }                                                                        \
-    if (!gjs_object_require_property(cx, global, nullptr,                    \
-                                     class_name, &rval))                     \
-        return nullptr;                                                      \
-    if (found)                                                               \
-        return rval;                                                         \
-    if (!JS_DefinePropertyById(cx, module, class_name,                       \
-                               rval, GJS_MODULE_PROP_FLAGS))                 \
-        return nullptr;                                                      \
+                                                                             \
+    /* Define the GType value as a "$gtype" property on the constructor */   \
     if (gtype != G_TYPE_NONE) {                                              \
         JS::RootedObject gtype_obj(cx,                                       \
             gjs_gtype_create_gtype_wrapper(cx, gtype));                      \
-        JS_DefineProperty(cx, rval, "$gtype", gtype_obj,                     \
-                          JSPROP_PERMANENT);                                 \
+        if (!JS_DefineProperty(cx, ctor_obj, "$gtype", gtype_obj,            \
+                               JSPROP_PERMANENT))                            \
+            return false;                                                    \
     }                                                                        \
-    return rval;                                                             \
+    return true;                                                             \
 }
 
 /**

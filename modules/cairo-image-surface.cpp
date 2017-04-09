@@ -29,8 +29,10 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
-GJS_DEFINE_PROTO("ImageSurface", cairo_image_surface,
-                 JSCLASS_BACKGROUND_FINALIZE)
+static JSObject *gjs_cairo_image_surface_get_proto(JSContext *);
+
+GJS_DEFINE_PROTO_WITH_PARENT("ImageSurface", cairo_image_surface,
+                             cairo_surface, JSCLASS_BACKGROUND_FINALIZE)
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_image_surface)
 {
@@ -89,9 +91,10 @@ createFromPNG_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
         return false;
 
+    JS::RootedObject proto(context, gjs_cairo_image_surface_get_proto(context));
     JS::RootedObject surface_wrapper(context,
         JS_NewObjectWithGivenProto(context, &gjs_cairo_image_surface_class,
-                                   gjs_cairo_image_surface_prototype));
+                                   proto));
     if (!surface_wrapper) {
         gjs_throw(context, "failed to create surface");
         return false;
@@ -217,9 +220,10 @@ gjs_cairo_image_surface_from_surface(JSContext       *context,
     g_return_val_if_fail(surface != NULL, NULL);
     g_return_val_if_fail(cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_IMAGE, NULL);
 
+    JS::RootedObject proto(context, gjs_cairo_image_surface_get_proto(context));
     JS::RootedObject object(context,
         JS_NewObjectWithGivenProto(context, &gjs_cairo_image_surface_class,
-                                   gjs_cairo_image_surface_prototype));
+                                   proto));
     if (!object) {
         gjs_throw(context, "failed to create image surface");
         return NULL;

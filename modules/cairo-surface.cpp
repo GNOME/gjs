@@ -208,9 +208,9 @@ gjs_cairo_surface_from_surface(JSContext       *context,
     if (type == CAIRO_SURFACE_TYPE_SVG)
         return gjs_cairo_svg_surface_from_surface(context, surface);
 
+    JS::RootedObject proto(context, gjs_cairo_surface_get_proto(context));
     JS::RootedObject object(context,
-        JS_NewObjectWithGivenProto(context, &gjs_cairo_surface_class,
-                                   gjs_cairo_surface_prototype));
+        JS_NewObjectWithGivenProto(context, &gjs_cairo_surface_class, proto));
     if (!object) {
         gjs_throw(context, "failed to create surface");
         return NULL;

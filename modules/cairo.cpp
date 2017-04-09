@@ -60,63 +60,41 @@ gjs_js_define_cairo_stuff(JSContext              *context,
                           JS::MutableHandleObject module)
 {
     module.set(JS_NewObject(context, NULL));
+    JS::RootedObject proto(context);  /* not used */
 
-    if (!gjs_cairo_region_create_proto(context, module, JS::NullPtr()))
+    if (!gjs_cairo_region_define_proto(context, module, &proto))
         return false;
     gjs_cairo_region_init(context);
 
-    if (!gjs_cairo_context_create_proto(context, module, JS::NullPtr()))
+    if (!gjs_cairo_context_define_proto(context, module, &proto))
         return false;
     gjs_cairo_context_init(context);
 
-    JS::RootedObject surface_proto(context,
-        gjs_cairo_surface_create_proto(context, module, JS::NullPtr()));
-    if (!surface_proto)
+    if (!gjs_cairo_surface_define_proto(context, module, &proto))
         return false;
     gjs_cairo_surface_init(context);
 
-    JS::RootedObject image_surface_proto(context,
-        gjs_cairo_image_surface_create_proto(context, module, surface_proto));
-    if (!image_surface_proto)
+    JS::RootedObject image_surface_proto(context);
+    if (!gjs_cairo_image_surface_define_proto(context, module,
+                                              &image_surface_proto))
         return false;
     gjs_cairo_image_surface_init(context, image_surface_proto);
 
+    return
+        gjs_cairo_path_define_proto(context, module, &proto) &&
 #if CAIRO_HAS_PS_SURFACE
-    if (!gjs_cairo_ps_surface_create_proto(context, module, surface_proto))
-        return false;
+        gjs_cairo_ps_surface_define_proto(context, module, &proto) &&
 #endif
-
 #if CAIRO_HAS_PDF_SURFACE
-    if (!gjs_cairo_pdf_surface_create_proto(context, module, surface_proto))
-        return false;
+        gjs_cairo_pdf_surface_define_proto(context, module, &proto) &&
 #endif
-
 #if CAIRO_HAS_SVG_SURFACE
-    if (!gjs_cairo_svg_surface_create_proto(context, module, surface_proto))
-        return false;
+        gjs_cairo_svg_surface_define_proto(context, module, &proto) &&
 #endif
-
-    JS::RootedObject pattern_proto(context,
-        gjs_cairo_pattern_create_proto(context, module, JS::NullPtr()));
-    if (!pattern_proto)
-        return false;
-
-    JS::RootedObject gradient_proto(context,
-        gjs_cairo_gradient_create_proto(context, module, pattern_proto));
-    if (!gradient_proto)
-        return false;
-
-    if (!gjs_cairo_linear_gradient_create_proto(context, module, gradient_proto))
-        return false;
-
-    if (!gjs_cairo_radial_gradient_create_proto(context, module, gradient_proto))
-        return false;
-
-    if (!gjs_cairo_surface_pattern_create_proto(context, module, pattern_proto))
-        return false;
-
-    if (!gjs_cairo_solid_pattern_create_proto(context, module, pattern_proto))
-        return false;
-
-    return true;
+        gjs_cairo_pattern_define_proto(context, module, &proto) &&
+        gjs_cairo_gradient_define_proto(context, module, &proto) &&
+        gjs_cairo_linear_gradient_define_proto(context, module, &proto) &&
+        gjs_cairo_radial_gradient_define_proto(context, module, &proto) &&
+        gjs_cairo_surface_pattern_define_proto(context, module, &proto) &&
+        gjs_cairo_solid_pattern_define_proto(context, module, &proto);
 }

@@ -31,8 +31,10 @@
 #if CAIRO_HAS_SVG_SURFACE
 #include <cairo-svg.h>
 
-GJS_DEFINE_PROTO("SVGSurface", cairo_svg_surface,
-                 JSCLASS_BACKGROUND_FINALIZE)
+static JSObject *gjs_cairo_svg_surface_get_proto(JSContext *);
+
+GJS_DEFINE_PROTO_WITH_PARENT("SVGSurface", cairo_svg_surface,
+                             cairo_surface, JSCLASS_BACKGROUND_FINALIZE)
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_svg_surface)
 {
@@ -89,9 +91,10 @@ gjs_cairo_svg_surface_from_surface(JSContext       *context,
     g_return_val_if_fail(surface != NULL, NULL);
     g_return_val_if_fail(cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_SVG, NULL);
 
+    JS::RootedObject proto(context, gjs_cairo_svg_surface_get_proto(context));
     JS::RootedObject object(context,
         JS_NewObjectWithGivenProto(context, &gjs_cairo_svg_surface_class,
-                                   gjs_cairo_svg_surface_prototype));
+                                   proto));
     if (!object) {
         gjs_throw(context, "failed to create svg surface");
         return NULL;
