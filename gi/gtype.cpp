@@ -34,7 +34,7 @@
 static bool weak_pointer_callback = false;
 static std::set<GType> weak_pointer_list;
 
-static JS::Value
+static JSObject *
 gjs_gtype_create_proto(JSContext       *context,
                        JS::HandleObject module,
                        const char      *proto_name,
@@ -155,7 +155,7 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
     /* put constructor for GIRepositoryGType() in the global namespace */
     JS::RootedObject global(context, gjs_get_import_global(context));
     JS::RootedObject proto(context,
-        gjs_gtype_create_proto(context, global, "GIRepositoryGType", JS::NullPtr()).toObjectOrNull());
+        gjs_gtype_create_proto(context, global, "GIRepositoryGType", JS::NullPtr()));
 
     auto heap_wrapper =
         static_cast<JS::Heap<JSObject *> *>(g_type_get_qdata(gtype, gjs_get_gtype_wrapper_quark()));
