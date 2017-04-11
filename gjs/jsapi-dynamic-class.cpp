@@ -110,12 +110,7 @@ gjs_init_class_dynamic(JSContext              *context,
     if (static_fs && !JS_DefineFunctions(context, constructor, static_fs))
         goto out;
 
-    if (!JS_DefineProperty(context, constructor, "prototype", prototype,
-                           JSPROP_PERMANENT | JSPROP_READONLY,
-                           JS_STUBGETTER, JS_STUBSETTER))
-        goto out;
-    if (!JS_DefineProperty(context, prototype, "constructor", constructor,
-                           0, JS_STUBGETTER, JS_STUBSETTER))
+    if (!JS_LinkConstructorAndPrototype(context, constructor, prototype))
         goto out;
 
     /* The constructor defined by JS_InitClass has no property attributes, but this
