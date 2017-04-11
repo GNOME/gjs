@@ -145,6 +145,8 @@ JSFunctionSpec gjs_gtype_proto_funcs[] = {
     JS_FS_END
 };
 
+JSFunctionSpec gjs_gtype_static_funcs[] = { JS_FS_END };
+
 JSObject *
 gjs_gtype_create_gtype_wrapper (JSContext *context,
                                 GType      gtype)

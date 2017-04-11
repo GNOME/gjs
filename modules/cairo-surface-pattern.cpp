@@ -182,6 +182,8 @@ JSFunctionSpec gjs_cairo_surface_pattern_proto_funcs[] = {
     JS_FS_END
 };
 
+JSFunctionSpec gjs_cairo_surface_pattern_static_funcs[] = { JS_FS_END };
+
 JSObject *
 gjs_cairo_surface_pattern_from_pattern(JSContext       *context,
                                        cairo_pattern_t *pattern)

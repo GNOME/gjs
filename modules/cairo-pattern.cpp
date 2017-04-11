@@ -91,6 +91,8 @@ JSFunctionSpec gjs_cairo_pattern_proto_funcs[] = {
     JS_FS_END
 };
 
+JSFunctionSpec gjs_cairo_pattern_static_funcs[] = { JS_FS_END };
+
 /* Public API */
 
 /**

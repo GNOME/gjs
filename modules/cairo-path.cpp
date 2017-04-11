@@ -60,6 +60,8 @@ JSFunctionSpec gjs_cairo_path_proto_funcs[] = {
     JS_FS_END
 };
 
+JSFunctionSpec gjs_cairo_path_static_funcs[] = { JS_FS_END };
+
 /**
  * gjs_cairo_path_from_path:
  * @context: the context

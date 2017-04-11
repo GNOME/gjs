@@ -79,6 +79,8 @@ JSFunctionSpec gjs_cairo_radial_gradient_proto_funcs[] = {
     JS_FS_END
 };
 
+JSFunctionSpec gjs_cairo_radial_gradient_static_funcs[] = { JS_FS_END };
+
 JSObject *
 gjs_cairo_radial_gradient_from_pattern(JSContext       *context,
                                        cairo_pattern_t *pattern)

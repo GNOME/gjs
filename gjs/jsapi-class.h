@@ -167,6 +167,7 @@ _GJS_DEFINE_PROTO_FULL(tn, cn, parent_cn, nullptr, G_TYPE_NONE, flags)
 #define _GJS_DEFINE_PROTO_FULL(type_name, cname, parent_cname, ctor, gtype, jsclass_flags) \
 extern JSPropertySpec gjs_##cname##_proto_props[];                           \
 extern JSFunctionSpec gjs_##cname##_proto_funcs[];                           \
+extern JSFunctionSpec gjs_##cname##_static_funcs[];                          \
 static void gjs_##cname##_finalize(JSFreeOp *fop, JSObject *obj);            \
 static struct JSClass gjs_##cname##_class = {                                \
     type_name,                                                               \
@@ -215,7 +216,8 @@ gjs_##cname##_define_proto(JSContext              *cx,                       \
     JS::RootedObject parent_proto(cx, gjs_##parent_cname##_get_proto(cx));   \
     proto.set(JS_InitClass(cx, in_obj, parent_proto, &gjs_##cname##_class,   \
                            ctor, 0, gjs_##cname##_proto_props,               \
-                           gjs_##cname##_proto_funcs, nullptr, nullptr));    \
+                           gjs_##cname##_proto_funcs, nullptr,               \
+                           gjs_##cname##_static_funcs));                     \
     if (!proto)                                                              \
         return false;                                                        \
     gjs_set_global_slot(cx, GJS_GLOBAL_SLOT_PROTOTYPE_##cname,               \

@@ -227,6 +227,8 @@ JSFunctionSpec gjs_cairo_region_proto_funcs[] = {
     JS_FS_END
 };
 
+JSFunctionSpec gjs_cairo_region_static_funcs[] = { JS_FS_END };
+
 static void
 _gjs_cairo_region_construct_internal(JSContext       *context,
                                      JS::HandleObject obj,

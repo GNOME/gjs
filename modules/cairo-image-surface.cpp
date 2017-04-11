@@ -212,6 +212,11 @@ JSFunctionSpec gjs_cairo_image_surface_proto_funcs[] = {
     JS_FS_END
 };
 
+JSFunctionSpec gjs_cairo_image_surface_static_funcs[] = {
+    JS_FS("createFromPNG", createFromPNG_func, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FS_END
+};
+
 JSObject *
 gjs_cairo_image_surface_from_surface(JSContext       *context,
                                      cairo_surface_t *surface)
@@ -234,12 +239,3 @@ gjs_cairo_image_surface_from_surface(JSContext       *context,
     return object;
 }
 
-void
-gjs_cairo_image_surface_init(JSContext       *cx,
-                             JS::HandleObject proto)
-{
-
-    if (!JS_DefineFunction(cx, proto, "createFromPNG", createFromPNG_func,
-                           1, GJS_MODULE_PROP_FLAGS))
-        return;
-}

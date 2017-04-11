@@ -83,6 +83,8 @@ JSFunctionSpec gjs_cairo_svg_surface_proto_funcs[] = {
     JS_FS_END
 };
 
+JSFunctionSpec gjs_cairo_svg_surface_static_funcs[] = { JS_FS_END };
+
 JSObject *
 gjs_cairo_svg_surface_from_surface(JSContext       *context,
                                    cairo_surface_t *surface)
