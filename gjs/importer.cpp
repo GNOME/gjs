@@ -892,62 +892,30 @@ const js::Class gjs_importer_real_class = {
     }
 };
 
-JSPropertySpec gjs_importer_proto_props[] = {
-    JS_PS_END
-};
+static JSPropertySpec *gjs_importer_proto_props = nullptr;
+static JSFunctionSpec *gjs_importer_static_funcs = nullptr;
 
 JSFunctionSpec gjs_importer_proto_funcs[] = {
     JS_FS("toString", importer_to_string, 0, 0),
     JS_FS_END
 };
 
+GJS_DEFINE_PROTO_FUNCS(importer)
+
 static JSObject*
 importer_new(JSContext *context,
              bool       is_root)
 {
     Importer *priv;
-    bool found;
 
-    JS::RootedObject global(context, gjs_get_import_global(context));
-
-    if (!JS_HasProperty(context, global, gjs_importer_class.name, &found))
-        g_error("HasProperty call failed creating importer class");
-
-    if (!found) {
-        JSObject *prototype;
-        prototype = JS_InitClass(context, global,
-                                 /* parent prototype JSObject* for
-                                  * prototype; NULL for
-                                  * Object.prototype
-                                  */
-                                 JS::NullPtr(),
-                                 &gjs_importer_class,
-                                 /* constructor for instances (NULL for
-                                  * none - just name the prototype like
-                                  * Math - rarely correct)
-                                  */
-                                 gjs_importer_constructor,
-                                 /* number of constructor args */
-                                 0,
-                                 /* props of prototype */
-                                 &gjs_importer_proto_props[0],
-                                 /* funcs of prototype */
-                                 &gjs_importer_proto_funcs[0],
-                                 /* props of constructor, MyConstructor.myprop */
-                                 NULL,
-                                 /* funcs of constructor, MyConstructor.myfunc() */
-                                 NULL);
-        if (prototype == NULL)
-            g_error("Can't init class %s", gjs_importer_real_class.name);
-
-        gjs_debug(GJS_DEBUG_IMPORTER, "Initialized class %s prototype %p",
-                  gjs_importer_real_class.name, prototype);
-    }
+    JS::RootedObject proto(context);
+    if (!gjs_importer_define_proto(context, JS::NullPtr(), &proto))
+        g_error("Error creating importer prototype");
 
     JS::RootedObject importer(context,
-        JS_NewObject(context, &gjs_importer_class, global));
+        JS_NewObjectWithGivenProto(context, &gjs_importer_class, proto));
     if (importer == NULL)
-        g_error("No memory to create importer importer");
+        g_error("No memory to create importer");
 
     priv = g_slice_new0(Importer);
     priv->is_root = is_root;

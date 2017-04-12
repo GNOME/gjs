@@ -239,57 +239,23 @@ struct JSClass gjs_repo_class = {
     repo_finalize
 };
 
-JSPropertySpec gjs_repo_proto_props[] = {
-    JS_PS_END
-};
+static JSPropertySpec *gjs_repo_proto_props = nullptr;
+static JSFunctionSpec *gjs_repo_proto_funcs = nullptr;
+static JSFunctionSpec *gjs_repo_static_funcs = nullptr;
 
-JSFunctionSpec gjs_repo_proto_funcs[] = {
-    JS_FS_END
-};
+GJS_DEFINE_PROTO_FUNCS(repo)
 
 static JSObject*
 repo_new(JSContext *context)
 {
     Repo *priv;
-    bool found;
 
-    JS::RootedObject global(context, gjs_get_import_global(context));
-
-    if (!JS_HasProperty(context, global, gjs_repo_class.name, &found))
-        return NULL;
-    if (!found) {
-        JSObject *prototype;
-        prototype = JS_InitClass(context, global,
-                                 /* parent prototype JSObject* for
-                                  * prototype; NULL for
-                                  * Object.prototype
-                                  */
-                                 JS::NullPtr(),
-                                 &gjs_repo_class,
-                                 /* constructor for instances (NULL for
-                                  * none - just name the prototype like
-                                  * Math - rarely correct)
-                                  */
-                                 gjs_repo_constructor,
-                                 /* number of constructor args */
-                                 0,
-                                 /* props of prototype */
-                                 &gjs_repo_proto_props[0],
-                                 /* funcs of prototype */
-                                 &gjs_repo_proto_funcs[0],
-                                 /* props of constructor, MyConstructor.myprop */
-                                 NULL,
-                                 /* funcs of constructor, MyConstructor.myfunc() */
-                                 NULL);
-        if (prototype == NULL)
-            g_error("Can't init class %s", gjs_repo_class.name);
-
-        gjs_debug(GJS_DEBUG_GREPO, "Initialized class %s prototype %p",
-                  gjs_repo_class.name, prototype);
-    }
+    JS::RootedObject proto(context);
+    if (!gjs_repo_define_proto(context, JS::NullPtr(), &proto))
+        return nullptr;
 
     JS::RootedObject repo(context,
-        JS_NewObject(context, &gjs_repo_class, global));
+        JS_NewObjectWithGivenProto(context, &gjs_repo_class, proto));
     if (repo == NULL) {
         gjs_throw(context, "No memory to create repo object");
         return NULL;
@@ -305,7 +271,7 @@ repo_new(JSContext *context)
     gjs_debug_lifecycle(GJS_DEBUG_GREPO,
                         "repo constructor, obj %p priv %p", repo.get(), priv);
 
-    JS::RootedObject versions(context, JS_NewObject(context, NULL, global));
+    JS::RootedObject versions(context, JS_NewObject(context, NULL));
     gjs_object_define_property(context, repo, GJS_STRING_GI_VERSIONS,
                                versions, JSPROP_PERMANENT);
 
@@ -323,7 +289,7 @@ repo_new(JSContext *context)
                            JSPROP_PERMANENT))
         return nullptr;
 
-    JS::RootedObject private_ns(context, JS_NewObject(context, NULL, global));
+    JS::RootedObject private_ns(context, JS_NewObject(context, NULL));
     gjs_object_define_property(context, repo,
                                GJS_STRING_PRIVATE_NS_MARKER, private_ns,
                                JSPROP_PERMANENT);

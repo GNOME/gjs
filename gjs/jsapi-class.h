@@ -26,6 +26,7 @@
 
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
+#include "util/log.h"
 
 G_BEGIN_DECLS
 
@@ -181,6 +182,20 @@ static struct JSClass gjs_##cname##_class = {                                \
     nullptr,  /* convert */                                                  \
     gjs_##cname##_finalize                                                   \
 };                                                                           \
+_GJS_DEFINE_GET_PROTO(cname)                                                 \
+_GJS_DEFINE_DEFINE_PROTO(cname, parent_cname, ctor, gtype)
+
+#define GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, parent_cname)  \
+G_GNUC_UNUSED static                                             \
+_GJS_DEFINE_GET_PROTO(cname)                                     \
+G_GNUC_UNUSED static                                             \
+_GJS_DEFINE_DEFINE_PROTO(cname, parent_cname,                    \
+                         gjs_##cname##_constructor, G_TYPE_NONE)
+
+#define GJS_DEFINE_PROTO_FUNCS(cname)  \
+GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
+
+#define _GJS_DEFINE_GET_PROTO(cname)                                         \
 JSObject *                                                                   \
 gjs_##cname##_get_proto(JSContext *cx)                                       \
 {                                                                            \
@@ -191,7 +206,9 @@ gjs_##cname##_get_proto(JSContext *cx)                                       \
     g_assert(((void) "Someone stored some weird value in a global slot",     \
               v_proto.isObject()));                                          \
     return &v_proto.toObject();                                              \
-}                                                                            \
+}
+
+#define _GJS_DEFINE_DEFINE_PROTO(cname, parent_cname, ctor, gtype)           \
 bool                                                                         \
 gjs_##cname##_define_proto(JSContext              *cx,                       \
                            JS::HandleObject        module,                   \
@@ -219,7 +236,7 @@ gjs_##cname##_define_proto(JSContext              *cx,                       \
                            gjs_##cname##_proto_funcs, nullptr,               \
                            gjs_##cname##_static_funcs));                     \
     if (!proto)                                                              \
-        return false;                                                        \
+        g_error("Can't init class %s", gjs_##cname##_class.name);            \
     gjs_set_global_slot(cx, GJS_GLOBAL_SLOT_PROTOTYPE_##cname,               \
                         JS::ObjectValue(*proto));                            \
                                                                              \
@@ -249,6 +266,8 @@ gjs_##cname##_define_proto(JSContext              *cx,                       \
                                JSPROP_PERMANENT))                            \
             return false;                                                    \
     }                                                                        \
+    gjs_debug(GJS_DEBUG_CONTEXT, "Initialized class %s prototype %p",        \
+              gjs_##cname##_class.name, proto.get());                        \
     return true;                                                             \
 }
 

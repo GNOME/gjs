@@ -53,6 +53,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array);
 static void   byte_array_finalize      (JSFreeOp     *fop,
                                         JSObject     *obj);
 
+static JSObject *gjs_byte_array_get_proto(JSContext *);
 
 struct JSClass gjs_byte_array_class = {
     "ByteArray",
@@ -508,30 +509,12 @@ to_gbytes_func(JSContext *context,
     return true;
 }
 
-/* Ensure that the module and class objects exists, and that in turn
- * ensures that JS_InitClass has been called. */
-static JSObject *
-byte_array_get_prototype(JSContext *context)
-{
-    JS::RootedValue retval(context,
-        gjs_get_global_slot(context, GJS_GLOBAL_SLOT_BYTE_ARRAY_PROTOTYPE));
-
-    if (!retval.isObject()) {
-        if (!gjs_eval_with_scope(context, JS::NullPtr(),
-                                 "imports.byteArray.ByteArray.prototype;", -1,
-                                 "<internal>", &retval))
-            g_error ("Could not import byte array prototype\n");
-    }
-
-    return &retval.toObject();
-}
-
 static JSObject*
 byte_array_new(JSContext *context)
 {
     ByteArrayInstance *priv;
 
-    JS::RootedObject proto(context, byte_array_get_prototype(context));
+    JS::RootedObject proto(context, gjs_byte_array_get_proto(context));
     JS::RootedObject array(context,
         JS_NewObjectWithGivenProto(context, &gjs_byte_array_class, proto));
 
@@ -759,7 +742,7 @@ gjs_byte_array_from_byte_array (JSContext *context,
     g_return_val_if_fail(context != NULL, NULL);
     g_return_val_if_fail(array != NULL, NULL);
 
-    JS::RootedObject proto(context, byte_array_get_prototype(context));
+    JS::RootedObject proto(context, gjs_byte_array_get_proto(context));
     JS::RootedObject object(context,
         JS_NewObjectWithGivenProto(context, &gjs_byte_array_class, proto));
 
@@ -824,17 +807,19 @@ gjs_byte_array_peek_data (JSContext       *context,
     }
 }
 
-JSPropertySpec gjs_byte_array_proto_props[] = {
+static JSPropertySpec gjs_byte_array_proto_props[] = {
     JS_PSGS("length", byte_array_length_getter, byte_array_length_setter,
             JSPROP_PERMANENT),
     JS_PS_END
 };
 
-JSFunctionSpec gjs_byte_array_proto_funcs[] = {
+static JSFunctionSpec gjs_byte_array_proto_funcs[] = {
     JS_FS("toString", to_string_func, 0, 0),
     JS_FS("toGBytes", to_gbytes_func, 0, 0),
     JS_FS_END
 };
+
+static JSFunctionSpec *gjs_byte_array_static_funcs = nullptr;
 
 static JSFunctionSpec gjs_byte_array_module_funcs[] = {
     JS_FS("fromString", from_string_func, 1, 0),
@@ -843,29 +828,15 @@ static JSFunctionSpec gjs_byte_array_module_funcs[] = {
     JS_FS_END
 };
 
+GJS_DEFINE_PROTO_FUNCS(byte_array)
+
 bool
-gjs_define_byte_array_stuff(JSContext              *context,
+gjs_define_byte_array_stuff(JSContext              *cx,
                             JS::MutableHandleObject module)
 {
-    JSObject *prototype;
+    module.set(JS_NewObject(cx, NULL));
 
-    module.set(JS_NewObject(context, NULL));
-
-    prototype = JS_InitClass(context, module, JS::NullPtr(),
-                             &gjs_byte_array_class,
-                             gjs_byte_array_constructor,
-                             0,
-                             &gjs_byte_array_proto_props[0],
-                             &gjs_byte_array_proto_funcs[0],
-                             NULL,
-                             NULL);
-
-    if (!JS_DefineFunctions(context, module, &gjs_byte_array_module_funcs[0]))
-        return false;
-
-    g_assert(gjs_get_global_slot(context, GJS_GLOBAL_SLOT_BYTE_ARRAY_PROTOTYPE).isUndefined());
-    gjs_set_global_slot(context, GJS_GLOBAL_SLOT_BYTE_ARRAY_PROTOTYPE,
-                        JS::ObjectOrNullValue(prototype));
-
-    return true;
+    JS::RootedObject proto(cx);
+    return gjs_byte_array_define_proto(cx, module, &proto) &&
+        JS_DefineFunctions(cx, module, gjs_byte_array_module_funcs);
 }

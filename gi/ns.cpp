@@ -170,59 +170,28 @@ struct JSClass gjs_ns_class = {
     ns_finalize
 };
 
-JSPropertySpec gjs_ns_proto_props[] = {
+static JSPropertySpec gjs_ns_proto_props[] = {
     JS_PSG("__name__", get_name, GJS_MODULE_PROP_FLAGS),
     JS_PS_END
 };
 
-JSFunctionSpec gjs_ns_proto_funcs[] = {
-    JS_FS_END
-};
+static JSFunctionSpec *gjs_ns_proto_funcs = nullptr;
+static JSFunctionSpec *gjs_ns_static_funcs = nullptr;
+
+GJS_DEFINE_PROTO_FUNCS(ns)
 
 static JSObject*
 ns_new(JSContext    *context,
        const char   *ns_name)
 {
     Ns *priv;
-    bool found;
 
-    /* put constructor in the global namespace */
-    JS::RootedObject global(context, gjs_get_import_global(context));
+    JS::RootedObject proto(context);
+    if (!gjs_ns_define_proto(context, JS::NullPtr(), &proto))
+        return nullptr;
 
-    if (!JS_HasProperty(context, global, gjs_ns_class.name, &found))
-        return NULL;
-    if (!found) {
-        JSObject *prototype;
-        prototype = JS_InitClass(context, global,
-                                 /* parent prototype JSObject* for
-                                  * prototype; NULL for
-                                  * Object.prototype
-                                  */
-                                 JS::NullPtr(),
-                                 &gjs_ns_class,
-                                 /* constructor for instances (NULL for
-                                  * none - just name the prototype like
-                                  * Math - rarely correct)
-                                  */
-                                 gjs_ns_constructor,
-                                 /* number of constructor args */
-                                 0,
-                                 /* props of prototype */
-                                 &gjs_ns_proto_props[0],
-                                 /* funcs of prototype */
-                                 &gjs_ns_proto_funcs[0],
-                                 /* props of constructor, MyConstructor.myprop */
-                                 NULL,
-                                 /* funcs of constructor, MyConstructor.myfunc() */
-                                 NULL);
-        if (prototype == NULL)
-            g_error("Can't init class %s", gjs_ns_class.name);
-
-        gjs_debug(GJS_DEBUG_GNAMESPACE, "Initialized class %s prototype %p",
-                  gjs_ns_class.name, prototype);
-    }
-
-    JS::RootedObject ns(context, JS_NewObject(context, &gjs_ns_class, global));
+    JS::RootedObject ns(context,
+        JS_NewObjectWithGivenProto(context, &gjs_ns_class, proto));
     if (ns == NULL)
         g_error("No memory to create ns object");
 

@@ -1500,17 +1500,19 @@ struct JSClass gjs_function_class = {
     function_call
 };
 
-JSPropertySpec gjs_function_proto_props[] = {
+static JSPropertySpec gjs_function_proto_props[] = {
     JS_PSG("length", get_num_arguments, JSPROP_PERMANENT),
     JS_PS_END
 };
 
 /* The original Function.prototype.toString complains when
    given a GIRepository function as an argument */
-JSFunctionSpec gjs_function_proto_funcs[] = {
+static JSFunctionSpec gjs_function_proto_funcs[] = {
     JS_FN("toString", function_to_string, 0, 0),
     JS_FS_END
 };
+
+static JSFunctionSpec *gjs_function_static_funcs = nullptr;
 
 static bool
 init_cached_function_data (JSContext      *context,
@@ -1660,65 +1662,32 @@ init_cached_function_data (JSContext      *context,
     return true;
 }
 
+static inline JSObject *
+gjs_builtin_function_get_proto(JSContext *cx)
+{
+    JS::RootedObject global(cx, gjs_get_import_global(cx));
+    return JS_GetFunctionPrototype(cx, global);
+}
+
+GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(function, builtin_function)
+
 static JSObject*
 function_new(JSContext      *context,
              GType           gtype,
              GICallableInfo *info)
 {
     Function *priv;
-    bool found;
 
-    /* put constructor for GIRepositoryFunction() in the global namespace */
-    JS::RootedObject global(context, gjs_get_import_global(context));
-
-    if (!JS_HasProperty(context, global, gjs_function_class.name, &found))
-        return NULL;
-    if (!found) {
-        JSObject *prototype;
-        JS::RootedObject parent_proto(context);
-        JS::RootedValue v_native_function(context);
-
-        JS_GetProperty(context, global, "Function", &v_native_function);
-        JS::RootedObject native_function(context, &v_native_function.toObject());
-        /* We take advantage from that fact that Function.__proto__ is Function.prototype */
-        JS_GetPrototype(context, native_function, &parent_proto);
-
-        prototype = JS_InitClass(context, global,
-                                 /* parent prototype JSObject* for
-                                  * prototype; NULL for
-                                  * Object.prototype
-                                  */
-                                 parent_proto,
-                                 &gjs_function_class,
-                                 /* constructor for instances (NULL for
-                                  * none - just name the prototype like
-                                  * Math - rarely correct)
-                                  */
-                                 gjs_function_constructor,
-                                 /* number of constructor args */
-                                 0,
-                                 /* props of prototype */
-                                 &gjs_function_proto_props[0],
-                                 /* funcs of prototype */
-                                 &gjs_function_proto_funcs[0],
-                                 /* props of constructor, MyConstructor.myprop */
-                                 NULL,
-                                 /* funcs of constructor, MyConstructor.myfunc() */
-                                 NULL);
-        if (prototype == NULL)
-            g_error("Can't init class %s", gjs_function_class.name);
-
-        gjs_debug(GJS_DEBUG_GFUNCTION, "Initialized class %s prototype %p",
-                  gjs_function_class.name, prototype);
-    }
+    JS::RootedObject proto(context);
+    if (!gjs_function_define_proto(context, JS::NullPtr(), &proto))
+        return nullptr;
 
     JS::RootedObject function(context,
-        JS_NewObject(context, &gjs_function_class, global));
+        JS_NewObjectWithGivenProto(context, &gjs_function_class, proto));
     if (function == NULL) {
         gjs_debug(GJS_DEBUG_GFUNCTION, "Failed to construct function");
         return NULL;
     }
-
 
     priv = g_slice_new0(Function);
 
