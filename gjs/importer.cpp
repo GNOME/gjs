@@ -53,11 +53,13 @@ typedef struct {
     unsigned int index;
 } ImporterIterator;
 
-extern const js::Class gjs_importer_class;
+extern const js::Class gjs_importer_real_class;
 
 /* Bizarrely, the API for safely casting const js::Class * to const JSClass *
  * is called "js::Jsvalify" */
-GJS_DEFINE_PRIV_FROM_JS(Importer, (*js::Jsvalify(&gjs_importer_class)))
+static const JSClass gjs_importer_class = *js::Jsvalify(&gjs_importer_real_class);
+
+GJS_DEFINE_PRIV_FROM_JS(Importer, gjs_importer_class)
 
 static bool
 importer_to_string(JSContext *cx,
@@ -101,7 +103,7 @@ define_meta_properties(JSContext       *context,
      * on the root importer
      */
     parent_is_module = parent && JS_InstanceOf(context, parent,
-        js::Jsvalify(&gjs_importer_class), NULL);
+                                               &gjs_importer_class, nullptr);
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Defining parent %p of %p '%s' is mod %d",
               parent.get(), module_obj.get(),
@@ -855,7 +857,7 @@ importer_finalize(js::FreeOp *fop,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
-const js::Class gjs_importer_class = {
+const js::Class gjs_importer_real_class = {
     "GjsFileImporter",
     JSCLASS_HAS_PRIVATE |
     JSCLASS_IMPLEMENTS_BARRIERS,
@@ -918,7 +920,7 @@ importer_new(JSContext *context,
                                   * Object.prototype
                                   */
                                  JS::NullPtr(),
-                                 js::Jsvalify(&gjs_importer_class),
+                                 &gjs_importer_class,
                                  /* constructor for instances (NULL for
                                   * none - just name the prototype like
                                   * Math - rarely correct)
@@ -935,14 +937,14 @@ importer_new(JSContext *context,
                                  /* funcs of constructor, MyConstructor.myfunc() */
                                  NULL);
         if (prototype == NULL)
-            g_error("Can't init class %s", gjs_importer_class.name);
+            g_error("Can't init class %s", gjs_importer_real_class.name);
 
         gjs_debug(GJS_DEBUG_IMPORTER, "Initialized class %s prototype %p",
-                  gjs_importer_class.name, prototype);
+                  gjs_importer_real_class.name, prototype);
     }
 
     JS::RootedObject importer(context,
-        JS_NewObject(context, js::Jsvalify(&gjs_importer_class), global));
+        JS_NewObject(context, &gjs_importer_class, global));
     if (importer == NULL)
         g_error("No memory to create importer importer");
 
