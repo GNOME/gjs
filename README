@@ -1,15 +1,9 @@
-This module contains JavaScript bindings based on gobject-introspection.
+JavaScript bindings for GNOME
+=============================
 
-Because JavaScript is pretty free-form, consistent coding style and unit tests
-are critical to give it some structure and keep it readable.
-We propose that all GNOME usage of JavaScript conform to the style guide
-in doc/Style_Guide.txt to help keep things sane.
+Available as part of your GNOME distribution. Powers GNOME Shell, Polari,
+GNOME Documents, and many other apps.
 
-= Testing =
+Wiki: https://wiki.gnome.org/action/show/Projects/Gjs
 
-This module is prototyping https://live.gnome.org/GnomeGoals/InstalledTests
-To run the tests, simply build it as normal.  Now:
-
-cd installed-tests
-./autogen.sh && ./configure --prefix=... && make && make install
-$prefix/libexec/gjs/gjs-installed-tests
+How to build and run if you want to contribute to GJS: see doc/Hacking.md
