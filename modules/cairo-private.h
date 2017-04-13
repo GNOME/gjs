@@ -32,14 +32,12 @@ bool             gjs_cairo_check_status                 (JSContext       *contex
 
 JSObject *gjs_cairo_region_create_proto(JSContext       *cx,
                                         JS::HandleObject module,
-                                        const char      *proto_name,
                                         JS::HandleObject parent);
 
 void             gjs_cairo_region_init                  (JSContext       *context);
 
 JSObject *gjs_cairo_context_create_proto(JSContext       *cx,
                                          JS::HandleObject module,
-                                         const char      *proto_name,
                                          JS::HandleObject parent);
 
 cairo_t *        gjs_cairo_context_get_context          (JSContext       *context,
@@ -53,7 +51,6 @@ void             gjs_cairo_surface_init                 (JSContext       *contex
 /* cairo_path_t */
 JSObject *gjs_cairo_path_create_proto(JSContext       *cx,
                                       JS::HandleObject module,
-                                      const char      *proto_name,
                                       JS::HandleObject parent);
 
 JSObject *       gjs_cairo_path_from_path               (JSContext       *context,
@@ -64,7 +61,6 @@ cairo_path_t *   gjs_cairo_path_get_path                (JSContext       *contex
 /* surface */
 JSObject *gjs_cairo_surface_create_proto(JSContext       *cx,
                                          JS::HandleObject module,
-                                         const char      *proto_name,
                                          JS::HandleObject parent);
 
 void             gjs_cairo_surface_construct            (JSContext       *context,
@@ -80,7 +76,6 @@ cairo_surface_t* gjs_cairo_surface_get_surface          (JSContext       *contex
 /* image surface */
 JSObject *gjs_cairo_image_surface_create_proto(JSContext       *cx,
                                                JS::HandleObject module,
-                                               const char      *proto_name,
                                                JS::HandleObject parent);
 
 void             gjs_cairo_image_surface_init           (JSContext       *context,
@@ -93,7 +88,6 @@ JSObject *       gjs_cairo_image_surface_from_surface   (JSContext       *contex
 #ifdef CAIRO_HAS_PS_SURFACE
 JSObject *gjs_cairo_ps_surface_create_proto(JSContext       *cx,
                                             JS::HandleObject module,
-                                            const char      *proto_name,
                                             JS::HandleObject parent);
 #endif
 JSObject *       gjs_cairo_ps_surface_from_surface       (JSContext       *context,
@@ -103,7 +97,6 @@ JSObject *       gjs_cairo_ps_surface_from_surface       (JSContext       *conte
 #ifdef CAIRO_HAS_PDF_SURFACE
 JSObject *gjs_cairo_pdf_surface_create_proto(JSContext       *cx,
                                              JS::HandleObject module,
-                                             const char      *proto_name,
                                              JS::HandleObject parent);
 #endif
 JSObject *       gjs_cairo_pdf_surface_from_surface     (JSContext       *context,
@@ -113,7 +106,6 @@ JSObject *       gjs_cairo_pdf_surface_from_surface     (JSContext       *contex
 #ifdef CAIRO_HAS_SVG_SURFACE
 JSObject *gjs_cairo_svg_surface_create_proto(JSContext       *cx,
                                              JS::HandleObject module,
-                                             const char      *proto_name,
                                              JS::HandleObject parent);
 #endif
 JSObject *       gjs_cairo_svg_surface_from_surface     (JSContext       *context,
@@ -122,7 +114,6 @@ JSObject *       gjs_cairo_svg_surface_from_surface     (JSContext       *contex
 /* pattern */
 JSObject *gjs_cairo_pattern_create_proto(JSContext       *cx,
                                          JS::HandleObject module,
-                                         const char      *proto_name,
                                          JS::HandleObject parent);
 
 void             gjs_cairo_pattern_construct            (JSContext       *context,
@@ -138,13 +129,11 @@ cairo_pattern_t* gjs_cairo_pattern_get_pattern          (JSContext       *contex
 /* gradient */
 JSObject *gjs_cairo_gradient_create_proto(JSContext       *cx,
                                           JS::HandleObject module,
-                                          const char      *proto_name,
                                           JS::HandleObject parent);
 
 /* linear gradient */
 JSObject *gjs_cairo_linear_gradient_create_proto(JSContext       *cx,
                                                  JS::HandleObject module,
-                                                 const char      *proto_name,
                                                  JS::HandleObject parent);
 
 JSObject *       gjs_cairo_linear_gradient_from_pattern (JSContext       *context,
@@ -153,7 +142,6 @@ JSObject *       gjs_cairo_linear_gradient_from_pattern (JSContext       *contex
 /* radial gradient */
 JSObject *gjs_cairo_radial_gradient_create_proto(JSContext       *cx,
                                                  JS::HandleObject module,
-                                                 const char      *proto_name,
                                                  JS::HandleObject parent);
 
 JSObject *       gjs_cairo_radial_gradient_from_pattern (JSContext       *context,
@@ -162,7 +150,6 @@ JSObject *       gjs_cairo_radial_gradient_from_pattern (JSContext       *contex
 /* surface pattern */
 JSObject *gjs_cairo_surface_pattern_create_proto(JSContext       *cx,
                                                  JS::HandleObject module,
-                                                 const char      *proto_name,
                                                  JS::HandleObject parent);
 
 JSObject *       gjs_cairo_surface_pattern_from_pattern (JSContext       *context,
@@ -171,7 +158,6 @@ JSObject *       gjs_cairo_surface_pattern_from_pattern (JSContext       *contex
 /* solid pattern */
 JSObject *gjs_cairo_solid_pattern_create_proto(JSContext       *cx,
                                                JS::HandleObject module,
-                                               const char      *proto_name,
                                                JS::HandleObject parent);
 
 JSObject *       gjs_cairo_solid_pattern_from_pattern   (JSContext       *context,

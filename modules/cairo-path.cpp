@@ -34,7 +34,7 @@ typedef struct {
     cairo_path_t    *path;
 } GjsCairoPath;
 
-GJS_DEFINE_PROTO_ABSTRACT("CairoPath", cairo_path, JSCLASS_BACKGROUND_FINALIZE)
+GJS_DEFINE_PROTO_ABSTRACT("Path", cairo_path, JSCLASS_BACKGROUND_FINALIZE)
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoPath, gjs_cairo_path_class)
 
 static void

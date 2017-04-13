@@ -36,7 +36,9 @@ typedef struct {
     cairo_pattern_t *pattern;
 } GjsCairoPattern;
 
-GJS_DEFINE_PROTO_ABSTRACT_WITH_GTYPE("CairoPattern", cairo_pattern, CAIRO_GOBJECT_TYPE_PATTERN, JSCLASS_BACKGROUND_FINALIZE)
+GJS_DEFINE_PROTO_ABSTRACT_WITH_GTYPE("Pattern", cairo_pattern,
+                                     CAIRO_GOBJECT_TYPE_PATTERN,
+                                     JSCLASS_BACKGROUND_FINALIZE)
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoPattern, gjs_cairo_pattern_class)
 
 static void

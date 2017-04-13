@@ -29,7 +29,8 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
-GJS_DEFINE_PROTO("CairoImageSurface", cairo_image_surface, JSCLASS_BACKGROUND_FINALIZE)
+GJS_DEFINE_PROTO("ImageSurface", cairo_image_surface,
+                 JSCLASS_BACKGROUND_FINALIZE)
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_image_surface)
 {

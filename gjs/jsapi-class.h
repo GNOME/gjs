@@ -174,7 +174,6 @@ static struct JSClass gjs_##cname##_class = {                                \
 JSObject *                                                                   \
 gjs_##cname##_create_proto(JSContext       *cx,                              \
                            JS::HandleObject module,                          \
-                           const char      *proto_name,                      \
                            JS::HandleObject parent)                          \
 {                                                                            \
     JS::RootedObject rval(cx);                                               \
@@ -199,8 +198,8 @@ gjs_##cname##_create_proto(JSContext       *cx,                              \
         return nullptr;                                                      \
     if (found)                                                               \
         return rval;                                                         \
-    if (!JS_DefineProperty(cx, module, proto_name,                           \
-                           rval, GJS_MODULE_PROP_FLAGS))                     \
+    if (!JS_DefinePropertyById(cx, module, class_name,                       \
+                               rval, GJS_MODULE_PROP_FLAGS))                 \
         return nullptr;                                                      \
     if (gtype != G_TYPE_NONE) {                                              \
         JS::RootedObject gtype_obj(cx,                                       \

@@ -28,7 +28,8 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
-GJS_DEFINE_PROTO("CairoSurfacePattern", cairo_surface_pattern, JSCLASS_BACKGROUND_FINALIZE)
+GJS_DEFINE_PROTO("SurfacePattern", cairo_surface_pattern,
+                 JSCLASS_BACKGROUND_FINALIZE)
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_surface_pattern)
 {

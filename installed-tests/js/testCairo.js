@@ -24,13 +24,13 @@ describe('Cairo', function () {
         });
 
         it('reports its target surface', function () {
-            expect(_ts(cr.getTarget())).toEqual('CairoImageSurface');
+            expect(_ts(cr.getTarget())).toEqual('ImageSurface');
         });
 
         it('can set its source to a pattern', function () {
             let pattern = Cairo.SolidPattern.createRGB(1, 2, 3);
             cr.setSource(pattern);
-            expect(_ts(cr.getSource())).toEqual('CairoSolidPattern');
+            expect(_ts(cr.getSource())).toEqual('SolidPattern');
         });
 
         it('can set its antialias', function () {
@@ -178,50 +178,50 @@ describe('Cairo', function () {
 
             cr = Gdk.cairo_create(da.window);
             expect(cr.save).toBeDefined();
-            expect(_ts(cr.getTarget())).toEqual('CairoSurface');
+            expect(_ts(cr.getTarget())).toEqual('Surface');
         });
     });
 
     describe('solid pattern', function () {
         it('can be created from RGB static method', function () {
             let p1 = Cairo.SolidPattern.createRGB(1, 2, 3);
-            expect(_ts(p1)).toEqual('CairoSolidPattern');
+            expect(_ts(p1)).toEqual('SolidPattern');
             cr.setSource(p1);
-            expect(_ts(cr.getSource())).toEqual('CairoSolidPattern');
+            expect(_ts(cr.getSource())).toEqual('SolidPattern');
         });
 
         it('can be created from RGBA static method', function () {
             let p2 = Cairo.SolidPattern.createRGBA(1, 2, 3, 4);
-            expect(_ts(p2)).toEqual('CairoSolidPattern');
+            expect(_ts(p2)).toEqual('SolidPattern');
             cr.setSource(p2);
-            expect(_ts(cr.getSource())).toEqual('CairoSolidPattern');
+            expect(_ts(cr.getSource())).toEqual('SolidPattern');
         });
     });
 
     describe('surface pattern', function () {
         it('can be created and added as a source', function () {
             let p1 = new Cairo.SurfacePattern(surface);
-            expect(_ts(p1)).toEqual('CairoSurfacePattern');
+            expect(_ts(p1)).toEqual('SurfacePattern');
             cr.setSource(p1);
-            expect(_ts(cr.getSource())).toEqual('CairoSurfacePattern');
+            expect(_ts(cr.getSource())).toEqual('SurfacePattern');
         });
     });
 
     describe('linear gradient', function () {
         it('can be created and added as a source', function () {
             let p1 = new Cairo.LinearGradient(1, 2, 3, 4);
-            expect(_ts(p1)).toEqual('CairoLinearGradient');
+            expect(_ts(p1)).toEqual('LinearGradient');
             cr.setSource(p1);
-            expect(_ts(cr.getSource())).toEqual('CairoLinearGradient');
+            expect(_ts(cr.getSource())).toEqual('LinearGradient');
         });
     });
 
     describe('radial gradient', function () {
         it('can be created and added as a source', function () {
             let p1 = new Cairo.RadialGradient(1, 2, 3, 4, 5, 6);
-            expect(_ts(p1)).toEqual('CairoRadialGradient');
+            expect(_ts(p1)).toEqual('RadialGradient');
             cr.setSource(p1);
-            expect(_ts(cr.getSource())).toEqual('CairoRadialGradient');
+            expect(_ts(cr.getSource())).toEqual('RadialGradient');
         });
     });
 });

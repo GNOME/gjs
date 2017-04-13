@@ -28,7 +28,8 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
-GJS_DEFINE_PROTO_ABSTRACT("CairoSolidPattern", cairo_solid_pattern, JSCLASS_BACKGROUND_FINALIZE)
+GJS_DEFINE_PROTO_ABSTRACT("SolidPattern", cairo_solid_pattern,
+                          JSCLASS_BACKGROUND_FINALIZE)
 
 static void
 gjs_cairo_solid_pattern_finalize(JSFreeOp *fop,
