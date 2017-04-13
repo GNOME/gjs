@@ -27,6 +27,7 @@
 #include <util/glib.h>
 
 #include "importer.h"
+#include "jsapi-class.h"
 #include "jsapi-wrapper.h"
 #include "mem.h"
 #include "native.h"

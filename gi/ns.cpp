@@ -26,6 +26,7 @@
 #include "ns.h"
 #include "repo.h"
 #include "param.h"
+#include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
 #include "gjs/mem.h"
 

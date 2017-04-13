@@ -29,6 +29,7 @@
 #include <util/misc.h>
 #include <util/error.h>
 
+#include "jsapi-class.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 #include "context-private.h"

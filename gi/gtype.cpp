@@ -27,6 +27,7 @@
 #include <set>
 
 #include "gtype.h"
+#include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
 #include <util/log.h>
 #include <girepository.h>

@@ -28,6 +28,7 @@
 #include <util/glib.h>
 #include <util/misc.h>
 
+#include "jsapi-class.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 #include "jsapi-private.h"

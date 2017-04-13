@@ -26,6 +26,7 @@
 #include <glib.h>
 #include "byteArray.h"
 #include "gi/boxed.h"
+#include "jsapi-class.h"
 #include "jsapi-wrapper.h"
 #include "jsapi-util-args.h"
 #include <girepository.h>

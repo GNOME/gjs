@@ -45,6 +45,7 @@
 #include "value.h"
 #include "closure.h"
 #include "gjs_gi_trace.h"
+#include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-root.h"
 #include "gjs/jsapi-wrapper.h"
 #include "gjs/context-private.h"

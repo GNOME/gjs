@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "gi/foreign.h"
+#include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-wrapper.h"
 
