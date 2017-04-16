@@ -1,4 +1,4 @@
-/* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
+/* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
  * Copyright (c) 2013 Giovanni Campagna <scampa.giovanni@gmail.com>
  *

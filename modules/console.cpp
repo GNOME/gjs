@@ -1,4 +1,4 @@
-/* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
+/* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /* vim: set ts=8 sw=4 et tw=78:
  *
  * ***** BEGIN LICENSE BLOCK *****
