@@ -1,4 +1,4 @@
-/* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
+/* -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil; -*- */
 /* Copyright 2008 litl, LLC. */
 /**
  * Equations
