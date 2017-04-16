@@ -929,7 +929,7 @@ struct JSClass gjs_boxed_class = {
     NULL,  /* setProperty */
     NULL,  /* enumerate */
     boxed_resolve,
-    NULL,  /* convert */
+    nullptr,  /* mayResolve */
     boxed_finalize,
     NULL,  /* call */
     NULL,  /* hasInstance */

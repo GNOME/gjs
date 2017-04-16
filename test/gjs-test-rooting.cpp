@@ -35,7 +35,7 @@ static JSClass test_obj_class = {
     NULL,  /* setProperty */
     NULL,  /* enumerate */
     NULL,  /* resolve */
-    NULL,  /* convert */
+    nullptr,  /* mayResolve */
     test_obj_finalize
 };
 

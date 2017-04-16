@@ -167,7 +167,7 @@ struct JSClass gjs_interface_class = {
     NULL,  /* setProperty */
     NULL,  /* enumerate */
     interface_resolve,
-    NULL,  /* convert */
+    nullptr,  /* mayResolve */
     interface_finalize
 };
 

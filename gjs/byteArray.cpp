@@ -65,7 +65,7 @@ struct JSClass gjs_byte_array_class = {
     byte_array_set_prop,
     NULL,  /* enumerate */
     NULL,  /* resolve */
-    NULL,  /* convert */
+    nullptr,  /* mayResolve */
     byte_array_finalize
 };
 

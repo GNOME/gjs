@@ -558,7 +558,7 @@ struct JSClass gjs_fundamental_instance_class = {
     NULL,  /* setProperty */
     NULL,  /* enumerate */
     fundamental_instance_resolve,
-    NULL,  /* convert */
+    nullptr,  /* mayResolve */
     fundamental_finalize,
     NULL,  /* call */
     NULL,  /* hasInstance */

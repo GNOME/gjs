@@ -160,7 +160,7 @@ struct JSClass gjs_ns_class = {
     NULL,  /* setProperty */
     NULL,  /* enumerate */
     ns_resolve,
-    NULL,  /* convert */
+    nullptr,  /* mayResolve */
     ns_finalize
 };
 

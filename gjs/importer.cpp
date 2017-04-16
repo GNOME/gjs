@@ -839,7 +839,7 @@ const js::Class gjs_importer_real_class = {
     NULL,  /* setProperty */
     NULL,  /* enumerate (see below) */
     importer_resolve,
-    NULL,  /* convert */
+    nullptr,  /* mayResolve */
     importer_finalize,
     NULL,  /* call */
     NULL,  /* hasInstance */

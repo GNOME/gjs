@@ -1802,7 +1802,7 @@ struct JSClass gjs_object_instance_class = {
     object_instance_set_prop,
     NULL,  /* enumerate */
     object_instance_resolve,
-    NULL,  /* convert */
+    nullptr,  /* mayResolve */
     object_instance_finalize,
     NULL,
     NULL,

@@ -180,7 +180,7 @@ static struct JSClass gjs_##cname##_class = {                                \
     nullptr,  /* setProperty */                                              \
     nullptr,  /* enumerate */                                                \
     nullptr,  /* resolve */                                                  \
-    nullptr,  /* convert */                                                  \
+    nullptr,  /* mayResolve */                                               \
     gjs_##cname##_finalize                                                   \
 };                                                                           \
 _GJS_DEFINE_GET_PROTO(cname)                                                 \

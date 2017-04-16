@@ -225,7 +225,7 @@ struct JSClass gjs_repo_class = {
     NULL,  /* setProperty */
     NULL,  /* enumerate */
     repo_resolve,
-    NULL,  /* convert */
+    nullptr,  /* mayResolve */
     repo_finalize
 };
 

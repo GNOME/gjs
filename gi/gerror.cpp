@@ -277,7 +277,7 @@ struct JSClass gjs_error_class = {
     NULL,  /* setProperty */
     NULL,  /* enumerate */
     NULL,  /* resolve */
-    NULL,  /* convert */
+    nullptr,  /* mayResolve */
     error_finalize
 };
 

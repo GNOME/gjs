@@ -296,7 +296,7 @@ struct JSClass gjs_union_class = {
     NULL,  /* setProperty */
     NULL,  /* enumerate */
     union_resolve,
-    NULL,  /* convert */
+    nullptr,  /* mayResolve */
     union_finalize
 };
 

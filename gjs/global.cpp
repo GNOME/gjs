@@ -181,7 +181,7 @@ class GjsGlobal {
         nullptr,  /* setProperty */
         nullptr,  /* enumerate */
         nullptr,  /* resolve */
-        nullptr,  /* convert */
+        nullptr,  /* mayResolve */
         nullptr,  /* finalize */
         nullptr,  /* call */
         nullptr,  /* hasInstance */

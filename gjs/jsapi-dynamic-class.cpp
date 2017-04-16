@@ -79,11 +79,8 @@ gjs_init_class_dynamic(JSContext              *context,
     if (parent_proto) {
         prototype.set(JS_NewObjectWithGivenProto(context, clasp, parent_proto));
     } else {
-        /* JS_NewObject will try to search for clasp prototype in the
-         * global object, which is wrong, but it's not a problem because
-         * it will fallback to Object.prototype if the clasp's
-         * constructor is not found (and it won't be found, because we
-         * never call JS_InitClass).
+        /* JS_NewObject will use Object.prototype as the prototype if the
+         * clasp's constructor is not a built-in class.
          */
         prototype.set(JS_NewObject(context, clasp));
     }

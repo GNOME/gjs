@@ -1493,7 +1493,7 @@ struct JSClass gjs_function_class = {
     NULL,  /* setProperty */
     NULL,  /* enumerate */
     NULL,  /* resolve */
-    NULL,  /* convert */
+    nullptr,  /* mayResolve */
     function_finalize,
     function_call
 };

@@ -152,7 +152,7 @@ struct JSClass gjs_param_class = {
     NULL,  /* setProperty */
     NULL,  /* enumerate */
     param_resolve,
-    NULL,  /* convert */
+    nullptr,  /* mayResolve */
     param_finalize
 };
 

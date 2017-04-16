@@ -1653,11 +1653,6 @@ gjs_coverage_constructed(GObject *object)
         priv->cache = g_file_new_for_path(".internal-gjs-coverage-cache");
     }
 
-    /* We now enable Ion and BaselineJIT in coverage mode. See the comment
-     * in gjs/runtime.cpp:gjs_clear_thread_runtime for some important
-     * information regarding runtime lifecycle management and garbage collection
-     * bugs in js24 */
-
     if (!bootstrap_coverage(coverage)) {
         JSContext *context = static_cast<JSContext *>(gjs_context_get_native_context(priv->context));
         JSAutoCompartment compartment(context, gjs_get_import_global(context));
