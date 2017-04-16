@@ -445,11 +445,10 @@ gjs_error_from_gerror(JSContext             *context,
                       g_base_info_get_name((GIBaseInfo *)info));
 
     JS::RootedObject proto(context, gjs_lookup_generic_prototype(context, info));
-    JS::RootedObject global(context, gjs_get_import_global(context));
     proto_priv = priv_from_js(context, proto);
 
     JS::RootedObject obj(context,
-        JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto, global));
+        JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto));
 
     GJS_INC_COUNTER(gerror);
     priv = g_slice_new0(Error);

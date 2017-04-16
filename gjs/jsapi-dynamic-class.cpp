@@ -79,8 +79,7 @@ gjs_init_class_dynamic(JSContext              *context,
     */
 
     if (parent_proto) {
-        prototype.set(JS_NewObjectWithGivenProto(context, clasp,
-                                                 parent_proto, global));
+        prototype.set(JS_NewObjectWithGivenProto(context, clasp, parent_proto));
     } else {
         /* JS_NewObject will try to search for clasp prototype in the
          * global object, which is wrong, but it's not a problem because
@@ -88,7 +87,7 @@ gjs_init_class_dynamic(JSContext              *context,
          * constructor is not found (and it won't be found, because we
          * never call JS_InitClass).
          */
-        prototype.set(JS_NewObject(context, clasp, global));
+        prototype.set(JS_NewObject(context, clasp));
     }
     if (!prototype)
         goto out;

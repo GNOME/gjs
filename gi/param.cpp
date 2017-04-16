@@ -260,9 +260,8 @@ gjs_param_from_g_param(JSContext    *context,
               g_type_name(gparam->owner_type));
 
     JS::RootedObject proto(context, gjs_lookup_param_prototype(context));
-    JS::RootedObject global(context, gjs_get_import_global(context));
 
-    obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto, global);
+    obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);
 
     GJS_INC_COUNTER(param);
     priv = g_slice_new0(Param);

@@ -564,7 +564,6 @@ get_nested_interface_object(JSContext             *context,
         return false;
     }
 
-    JS::RootedObject global(context, gjs_get_import_global(context));
     JS::RootedObject proto(context,
                            gjs_lookup_generic_prototype(context,
                                                         (GIBoxedInfo*) interface_info));
@@ -572,7 +571,7 @@ get_nested_interface_object(JSContext             *context,
 
     offset = g_field_info_get_offset (field_info);
 
-    obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto, global);
+    obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);
 
     if (obj == NULL)
         return false;
@@ -1222,11 +1221,10 @@ gjs_boxed_from_c_struct(JSContext             *context,
                       "Wrapping struct %s %p with JSObject",
                       g_base_info_get_name((GIBaseInfo *)info), gboxed);
 
-    JS::RootedObject global(context, gjs_get_import_global(context));
     JS::RootedObject proto(context, gjs_lookup_generic_prototype(context, info));
     proto_priv = priv_from_js(context, proto);
 
-    obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto, global);
+    obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);
 
     GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Boxed);

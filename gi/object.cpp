@@ -2035,11 +2035,8 @@ gjs_object_from_g_object(JSContext    *context,
         if (!proto)
             return nullptr;
 
-        JS::RootedObject global(context, gjs_get_import_global(context));
-
         JS::RootedObject obj(context,
-            JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto,
-                                       global));
+            JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto));
         if (obj == NULL)
             return nullptr;
 

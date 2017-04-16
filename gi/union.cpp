@@ -405,9 +405,8 @@ gjs_union_from_c_union(JSContext    *context,
 
     JS::RootedObject proto(context,
         gjs_lookup_generic_prototype(context, (GIUnionInfo*) info));
-    JS::RootedObject global(context, gjs_get_import_global(context));
 
-    obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto, global);
+    obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);
 
     GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Union);
