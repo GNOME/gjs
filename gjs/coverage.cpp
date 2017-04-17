@@ -1298,18 +1298,27 @@ gjs_context_eval_file_in_compartment(GjsContext      *context,
 
     g_object_unref(file);
 
+    int start_line_number = 1;
+    const char *stripped_script = gjs_strip_unix_shebang(script, &script_len,
+                                                         &start_line_number);
+
     JSContext *js_context = (JSContext *) gjs_context_get_native_context(context);
 
     JSAutoCompartment compartment(js_context, compartment_object);
 
-    JS::RootedValue return_value(js_context);
-    if (!gjs_eval_with_scope(js_context,
-                             compartment_object,
-                             script, script_len, filename,
-                             &return_value)) {
+    JS::CompileOptions options(js_context);
+    options.setUTF8(true)
+           .setFileAndLine(filename, start_line_number)
+           .setSourceIsLazy(true);
+    JS::RootedScript compiled_script(js_context);
+    if (!JS::Compile(js_context, compartment_object, options, stripped_script,
+                     script_len, &compiled_script))
+        return false;
+
+    if (!JS::CloneAndExecuteScript(js_context, compartment_object,
+                                   compiled_script)) {
         g_free(script);
         gjs_log_exception(js_context);
-        g_free(script);
         g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED, "Failed to evaluate %s", filename);
         return false;
     }

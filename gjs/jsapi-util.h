@@ -272,7 +272,7 @@ typedef enum {
 } GjsConstString;
 
 const char * gjs_strip_unix_shebang(const char *script,
-                                    gssize     *script_len,
+                                    size_t     *script_len,
                                     int        *new_start_line_number);
 
 /* These four functions wrap JS_GetPropertyById(), etc., but with a

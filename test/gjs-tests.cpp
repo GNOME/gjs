@@ -330,8 +330,8 @@ static void
 gjstest_test_strip_shebang_no_advance_for_no_shebang(void)
 {
     const char *script = "foo\nbar";
-    gssize     script_len_original = strlen(script);
-    gssize     script_len = script_len_original;
+    size_t script_len_original = strlen(script);
+    size_t script_len = script_len_original;
     int        line_number = 1;
 
     const char *stripped = gjs_strip_unix_shebang(script,
@@ -347,8 +347,8 @@ static void
 gjstest_test_strip_shebang_advance_for_shebang(void)
 {
     const char *script = "#!foo\nbar";
-    gssize     script_len_original = strlen(script);
-    gssize     script_len = script_len_original;
+    size_t script_len_original = strlen(script);
+    size_t script_len = script_len_original;
     int        line_number = 1;
 
     const char *stripped = gjs_strip_unix_shebang(script,
@@ -364,8 +364,8 @@ static void
 gjstest_test_strip_shebang_return_null_for_just_shebang(void)
 {
     const char *script = "#!foo";
-    gssize     script_len_original = strlen(script);
-    gssize     script_len = script_len_original;
+    size_t script_len_original = strlen(script);
+    size_t script_len = script_len_original;
     int        line_number = 1;
 
     const char *stripped = gjs_strip_unix_shebang(script,

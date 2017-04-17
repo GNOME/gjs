@@ -867,7 +867,7 @@ gjs_schedule_gc_if_needed (JSContext *context)
  */
 const char *
 gjs_strip_unix_shebang(const char  *script,
-                       gssize      *script_len,
+                       size_t      *script_len,
                        int         *start_line_number_out)
 {
     g_assert(script_len);
@@ -913,12 +913,13 @@ gjs_eval_with_scope(JSContext             *context,
 {
     int start_line_number = 1;
     JSAutoRequest ar(context);
+    size_t real_len = script_len;
 
     if (script_len < 0)
-        script_len = strlen(script);
+        real_len = strlen(script);
 
     script = gjs_strip_unix_shebang(script,
-                                    &script_len,
+                                    &real_len,
                                     &start_line_number);
 
     /* log and clear exception if it's set (should not be, normally...) */
@@ -936,7 +937,13 @@ gjs_eval_with_scope(JSContext             *context,
            .setFileAndLine(filename, start_line_number)
            .setSourceIsLazy(true);
 
-    if (!JS::Evaluate(context, eval_obj, options, script, script_len, retval))
+    JS::RootedScript compiled_script(context);
+    if (!JS::Compile(context, object, options, script, real_len, &compiled_script))
+        return false;
+
+    JS::AutoObjectVector scope_chain(context);
+    scope_chain.append(eval_obj);
+    if (!JS_ExecuteScript(context, scope_chain, compiled_script, retval))
         return false;
 
     gjs_schedule_gc_if_needed(context);
