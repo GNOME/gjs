@@ -35,7 +35,7 @@
 const GLib = imports.gi.GLib;
 const GjsPrivate = imports.gi.GjsPrivate;
 
-const LocaleCategory = GjsPrivate.LocaleCategory;
+var LocaleCategory = GjsPrivate.LocaleCategory;
 
 function setlocale(category, locale) {
     return GjsPrivate.setlocale(category, locale);

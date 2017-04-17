@@ -20,32 +20,32 @@
 
 const Lang = imports.lang;
 
-const Antialias = {
+var Antialias = {
     DEFAULT: 0,
     NONE: 1,
     GRAY: 2,
     SUBPIXEL: 3
 };
 
-const Content = {
+var Content = {
     COLOR : 0x1000,
     ALPHA : 0x2000,
     COLOR_ALPHA : 0x3000
 };
 
-const Extend = {
+var Extend = {
     NONE : 0,
     REPEAT : 1,
     REFLECT : 2,
     PAD : 3
 };
 
-const FillRule = {
+var FillRule = {
     WINDING: 0,
     EVEN_ODD: 1
 };
 
-const Filter = {
+var Filter = {
     FAST : 0,
     GOOD : 1,
     BEST : 2,
@@ -54,18 +54,18 @@ const Filter = {
     GAUSSIAN : 5
 };
 
-const FontSlant = {
+var FontSlant = {
     NORMAL: 0,
     ITALIC: 1,
     OBLIQUE: 2
 };
 
-const FontWeight = {
+var FontWeight = {
     NORMAL : 0,
     BOLD : 1
 };
 
-const Format = {
+var Format = {
     ARGB32 : 0,
     RGB24 : 1,
     A8 : 2,
@@ -74,19 +74,19 @@ const Format = {
     RGB16_565: 5
 };
 
-const LineCap = {
+var LineCap = {
     BUTT: 0,
     ROUND: 1,
     SQUASH: 2
 };
 
-const LineJoin = {
+var LineJoin = {
     MITER: 0,
     ROUND: 1,
     BEVEL: 2
 };
 
-const Operator = {
+var Operator = {
     CLEAR: 0,
     SOURCE: 1,
     OVER: 2,
@@ -118,14 +118,14 @@ const Operator = {
     HSL_LUMINOSITY : 28
 };
 
-const PatternType = {
+var PatternType = {
     SOLID : 0,
     SURFACE : 1,
     LINEAR : 2,
     RADIAL : 3
 };
 
-const SurfaceType = {
+var SurfaceType = {
     IMAGE : 0,
     PDF : 1,
     PS : 2,

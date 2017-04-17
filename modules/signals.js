@@ -156,7 +156,7 @@ function addSignalMethods(proto) {
     _addSignalMethod(proto, "disconnectAll", _disconnectAll);
 }
 
-const WithSignals = new Lang.Interface({
+var WithSignals = new Lang.Interface({
     Name: 'WithSignals',
     connect: _connect,
     disconnect: _disconnect,
