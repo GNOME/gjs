@@ -1521,11 +1521,14 @@ gjs_run_script_in_coverage_compartment(GjsCoverage *coverage,
     JSAutoCompartment ac(js_context, priv->coverage_statistics);
     JSAutoRequest ar(js_context);
 
+    JS::CompileOptions options(js_context);
+    options.setUTF8(true);
+
     JS::RootedValue rval(js_context);
-    JS::RootedObject rooted_priv(js_context, priv->coverage_statistics);
-    if (!gjs_eval_with_scope(js_context, rooted_priv, script, strlen(script),
-                             "<coverage_modifier>",
-                             &rval)) {
+    JS::RootedObject global(js_context,
+        JS_GetGlobalForObject(js_context, priv->coverage_statistics));
+    if (!JS::Evaluate(js_context, global, options, script, strlen(script),
+                      &rval)) {
         gjs_log_exception(js_context);
         g_warning("Failed to evaluate <coverage_modifier>");
         return false;

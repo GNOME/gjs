@@ -159,10 +159,11 @@ gjs_console_interact(JSContext *context,
                      unsigned   argc,
                      JS::Value *vp)
 {
-    GJS_GET_THIS(context, argc, vp, argv, object);
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     bool eof = false;
     JS::RootedValue result(context);
     JS::RootedString str(context);
+    JS::RootedObject global(context, gjs_get_import_global(context));
     GString *buffer = NULL;
     char *temp_buf = NULL;
     int lineno;
@@ -191,12 +192,13 @@ gjs_console_interact(JSContext *context,
             g_string_append(buffer, temp_buf);
             g_free(temp_buf);
             lineno++;
-        } while (!JS_BufferIsCompilableUnit(context, object, buffer->str, buffer->len));
+        } while (!JS_BufferIsCompilableUnit(context, global,
+                                            buffer->str, buffer->len));
 
         JS::CompileOptions options(context);
         options.setUTF8(true)
                .setFileAndLine("typein", startline);
-        if (!JS::Evaluate(context, object, options, buffer->str, buffer->len,
+        if (!JS::Evaluate(context, global, options, buffer->str, buffer->len,
                           &result)) {
             /* If this was an uncatchable exception, throw another uncatchable
              * exception on up to the surrounding JS::Evaluate() in main(). This
