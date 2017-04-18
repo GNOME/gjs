@@ -1,3 +1,6 @@
+imports.gi.versions.Gdk = '3.0';
+imports.gi.versions.Gtk = '3.0';
+
 const Cairo = imports.cairo;
 const Gdk = imports.gi.Gdk;
 const Gtk = imports.gi.Gtk;

@@ -101,7 +101,7 @@ resolve_namespace_object(JSContext       *context,
     repo = g_irepository_get_default();
     GList *versions = g_irepository_enumerate_versions(repo, ns_name);
     unsigned nversions = g_list_length(versions);
-    if (nversions != 1 && !version &&
+    if (nversions > 1 && !version &&
         !g_irepository_is_registered(repo, ns_name, NULL)) {
         GjsAutoChar warn_text = g_strdup_printf("Requiring %s but it has %u "
                                                 "versions available; use "
