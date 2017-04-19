@@ -56,6 +56,7 @@ gjs_srcs =				\
 	gjs/coverage.cpp 		\
 	gjs/importer.cpp		\
 	gjs/importer.h			\
+	gjs/jsapi-class.h		\
 	gjs/jsapi-constructor-proxy.cpp	\
 	gjs/jsapi-constructor-proxy.h	\
 	gjs/jsapi-dynamic-class.cpp	\
