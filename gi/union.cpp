@@ -61,7 +61,7 @@ union_resolve(JSContext       *context,
               bool            *resolved)
 {
     Union *priv;
-    char *name = NULL;
+    GjsAutoJSChar name(context);
 
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
@@ -72,10 +72,8 @@ union_resolve(JSContext       *context,
     gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook obj %p priv %p",
                      name, obj.get(), priv);
 
-    if (priv == NULL) {
-        g_free(name);
+    if (priv == nullptr)
         return false; /* wrong class */
-    }
 
     if (priv->gboxed != NULL) {
         /* We are an instance, not a prototype, so look for
@@ -86,7 +84,6 @@ union_resolve(JSContext       *context,
          * hooks, not this resolve hook.
          */
         *resolved = false;
-        g_free(name);
         return true;
     }
 
@@ -116,7 +113,6 @@ union_resolve(JSContext       *context,
                                     g_registered_type_info_get_g_type(priv->info),
                                     method_info) == NULL) {
                 g_base_info_unref( (GIBaseInfo*) method_info);
-                g_free(name);
                 return false;
             }
 
@@ -130,7 +126,6 @@ union_resolve(JSContext       *context,
         *resolved = false;
     }
 
-    g_free(name);
     return true;
 }
 

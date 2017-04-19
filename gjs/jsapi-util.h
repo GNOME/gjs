@@ -60,6 +60,61 @@ public:
     }
 };
 
+class GjsJSFreeArgs {
+private:
+    JSContext *m_cx;
+
+public:
+    explicit GjsJSFreeArgs(JSContext *cx) : m_cx(cx)
+    {}
+
+    void operator() (char *str) {
+        JS_free(m_cx, str);
+    }
+
+    JSContext* get_context() {
+        return m_cx;
+    }
+
+    void set_context(JSContext *cx) {
+        m_cx = cx;
+    }
+};
+
+class GjsAutoJSChar {
+private:
+    std::unique_ptr<char, GjsJSFreeArgs> m_ptr;
+
+public:
+    GjsAutoJSChar(JSContext *cx, char *str = nullptr)
+    : m_ptr (str, GjsJSFreeArgs(cx)) {
+        g_assert(cx != nullptr);
+    }
+
+    operator const char*() {
+        return m_ptr.get();
+    }
+
+    const char* get() {
+        return m_ptr.get();
+    }
+
+    char* copy() {
+        /* Strings acquired by this should be g_free()'ed */
+        return g_strdup(m_ptr.get());
+    }
+
+    char* js_copy() {
+        /* Strings acquired by this should be JS_free()'ed */
+        return JS_strdup(m_ptr.get_deleter().get_context(), m_ptr.get());
+    }
+
+    void reset(JSContext *cx, char *str) {
+        m_ptr.get_deleter().set_context(cx);
+        m_ptr.reset(str);
+    }
+};
+
 G_BEGIN_DECLS
 
 #define GJS_UTIL_ERROR gjs_util_error_quark ()
@@ -184,7 +239,7 @@ void        gjs_error_reporter               (JSContext       *context,
 
 bool        gjs_string_to_utf8               (JSContext       *context,
                                               const JS::Value  string_val,
-                                              char           **utf8_string_p);
+                                              GjsAutoJSChar   *utf8_string_p);
 bool gjs_string_from_utf8(JSContext             *context,
                           const char            *utf8_string,
                           ssize_t                n_bytes,
@@ -192,7 +247,7 @@ bool gjs_string_from_utf8(JSContext             *context,
 
 bool        gjs_string_to_filename           (JSContext       *context,
                                               const JS::Value  string_val,
-                                              char           **filename_string_p);
+                                              GjsAutoJSChar   *filename_string_p);
 bool gjs_string_from_filename(JSContext             *context,
                               const char            *filename_string,
                               ssize_t                n_bytes,
@@ -214,7 +269,7 @@ bool gjs_string_from_ucs4(JSContext             *cx,
 
 bool        gjs_get_string_id                (JSContext       *context,
                                               jsid             id,
-                                              char           **name_p);
+                                              GjsAutoJSChar   *name_p);
 jsid        gjs_intern_string_to_id          (JSContext       *context,
                                               const char      *string);
 

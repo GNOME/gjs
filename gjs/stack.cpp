@@ -89,7 +89,7 @@ gjs_context_print_stack_stderr(GjsContext *context)
 {
     JSContext *cx = (JSContext*) gjs_context_get_native_context(context);
     JS::RootedValue v_stack(cx);
-    char *stack;
+    GjsAutoJSChar stack(cx);
 
     g_printerr("== Stack trace for context %p ==\n", context);
 
@@ -101,8 +101,7 @@ gjs_context_print_stack_stderr(GjsContext *context)
         return;
     }
 
-    g_printerr("%s\n", stack);
-    g_free(stack);
+    g_printerr("%s\n", stack.get());
 }
 
 void

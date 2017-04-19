@@ -32,10 +32,9 @@
 bool
 gjs_string_to_utf8 (JSContext      *context,
                     const JS::Value value,
-                    char          **utf8_string_p)
+                    GjsAutoJSChar  *utf8_string_p)
 {
     gsize len;
-    char *bytes;
 
     JS_BeginRequest(context);
 
@@ -54,10 +53,7 @@ gjs_string_to_utf8 (JSContext      *context,
         return false;
     }
 
-    if (utf8_string_p) {
-        bytes = JS_EncodeStringToUTF8(context, str);
-        *utf8_string_p = bytes;
-    }
+    utf8_string_p->reset(context, JS_EncodeStringToUTF8(context, str));
 
     JS_EndRequest(context);
 
@@ -106,10 +102,11 @@ gjs_string_from_utf8(JSContext             *context,
 bool
 gjs_string_to_filename(JSContext      *context,
                        const JS::Value filename_val,
-                       char          **filename_string_p)
+                       GjsAutoJSChar  *filename_string_p)
 {
     GError *error;
-    gchar *tmp, *filename_string;
+    GjsAutoJSChar tmp(context);
+    char *filename_string;
 
     /* gjs_string_to_filename verifies that filename_val is a string */
 
@@ -122,12 +119,10 @@ gjs_string_to_filename(JSContext      *context,
     filename_string = g_filename_from_utf8(tmp, -1, NULL, NULL, &error);
     if (!filename_string) {
         gjs_throw_g_error(context, error);
-        g_free(tmp);
         return false;
     }
 
-    *filename_string_p = filename_string;
-    g_free(tmp);
+    filename_string_p->reset(context, filename_string);
     return true;
 }
 
@@ -352,7 +347,7 @@ gjs_string_from_ucs4(JSContext             *cx,
 bool
 gjs_get_string_id (JSContext       *context,
                    jsid             id,
-                   char           **name_p)
+                   GjsAutoJSChar   *name_p)
 {
     JS::RootedValue id_val(context);
 
@@ -362,7 +357,6 @@ gjs_get_string_id (JSContext       *context,
     if (id_val.isString()) {
         return gjs_string_to_utf8(context, id_val, name_p);
     } else {
-        *name_p = NULL;
         return false;
     }
 }
@@ -384,10 +378,9 @@ gjs_unichar_from_string (JSContext *context,
                          JS::Value  value,
                          gunichar  *result)
 {
-    char *utf8_str;
+    GjsAutoJSChar utf8_str(context);
     if (gjs_string_to_utf8(context, value, &utf8_str)) {
         *result = g_utf8_get_char(utf8_str);
-        g_free(utf8_str);
         return true;
     }
     return false;

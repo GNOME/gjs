@@ -211,17 +211,15 @@ throw_property_lookup_error(JSContext       *cx,
     /* remember gjs_throw() is a no-op if JS_GetProperty()
      * already set an exception
      */
-    char *name;
+    GjsAutoJSChar name(cx);
     gjs_get_string_id(cx, property_name, &name);
 
     if (description)
-        gjs_throw(cx, "No property '%s' in %s (or %s)", name, description,
+        gjs_throw(cx, "No property '%s' in %s (or %s)", name.get(), description,
                   reason);
     else
-        gjs_throw(cx, "No property '%s' in object %p (or %s)", name,
+        gjs_throw(cx, "No property '%s' in object %p (or %s)", name.get(),
                   obj.address(), reason);
-
-    g_free(name);
 }
 
 /* Returns whether the object had the property; if the object did
@@ -302,8 +300,10 @@ gjs_object_require_property(JSContext       *cx,
                             char           **value)
 {
     JS::RootedValue prop_value(cx);
+    GjsAutoJSChar value_tmp(cx);
     if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
-        gjs_string_to_utf8(cx, prop_value, value)) {
+        gjs_string_to_utf8(cx, prop_value, &value_tmp)) {
+        *value = value_tmp.copy();
         return true;
     }
 
@@ -432,7 +432,7 @@ gjs_string_readable (JSContext   *context,
                      JSString    *string)
 {
     GString *buf = g_string_new("");
-    char *chars;
+    GjsAutoJSChar chars(context);
 
     JS_BeginRequest(context);
 
@@ -454,7 +454,6 @@ gjs_string_readable (JSContext   *context,
         g_free(escaped);
     } else {
         g_string_append(buf, chars);
-        g_free(chars);
     }
 
     g_string_append_c(buf, '"');
@@ -565,11 +564,11 @@ static char *
 utf8_exception_from_non_gerror_value(JSContext      *cx,
                                      JS::HandleValue exc)
 {
-    char *utf8_exception = NULL;
+    GjsAutoJSChar utf8_exception(cx);
     JS::RootedString exc_str(cx, JS::ToString(cx, exc));
     if (exc_str != NULL)
         gjs_string_to_utf8(cx, JS::StringValue(exc_str), &utf8_exception);
-    return utf8_exception;
+    return utf8_exception.copy();
 }
 
 bool
@@ -577,7 +576,8 @@ gjs_log_exception_full(JSContext       *context,
                        JS::HandleValue  exc,
                        JS::HandleString message)
 {
-    char *utf8_exception, *utf8_message;
+    char *utf8_exception;
+    GjsAutoJSChar utf8_message(context);
     bool is_syntax;
 
     JS_BeginRequest(context);
@@ -596,7 +596,7 @@ gjs_log_exception_full(JSContext       *context,
                                              gerror->message);
         } else {
             JS::RootedValue js_name(context);
-            char *utf8_name;
+            GjsAutoJSChar utf8_name(context);
 
             if (gjs_object_get_property(context, exc_obj,
                                         GJS_STRING_NAME, &js_name) &&
@@ -611,8 +611,6 @@ gjs_log_exception_full(JSContext       *context,
 
     if (message != NULL)
         gjs_string_to_utf8(context, JS::StringValue(message), &utf8_message);
-    else
-        utf8_message = NULL;
 
     /* We log syntax errors differently, because the stack for those includes
        only the referencing module, but we want to print out the filename and
@@ -622,7 +620,7 @@ gjs_log_exception_full(JSContext       *context,
     if (is_syntax) {
         JS::RootedValue js_lineNumber(context), js_fileName(context);
         unsigned lineNumber;
-        char *utf8_fileName;
+        GjsAutoJSChar utf8_filename(context);
 
         gjs_object_get_property(context, exc_obj, GJS_STRING_LINE_NUMBER,
                                 &js_lineNumber);
@@ -630,50 +628,47 @@ gjs_log_exception_full(JSContext       *context,
                                 &js_fileName);
 
         if (js_fileName.isString())
-            gjs_string_to_utf8(context, js_fileName, &utf8_fileName);
+            gjs_string_to_utf8(context, js_fileName, &utf8_filename);
         else
-            utf8_fileName = g_strdup("unknown");
+            utf8_filename.reset(context, JS_strdup(context, "unknown"));
 
         lineNumber = js_lineNumber.toInt32();
 
-        if (utf8_message) {
-            g_critical("JS ERROR: %s: %s @ %s:%u", utf8_message, utf8_exception,
-                       utf8_fileName, lineNumber);
+        if (message != NULL) {
+            g_critical("JS ERROR: %s: %s @ %s:%u", utf8_message.get(), utf8_exception,
+                       utf8_filename.get(), lineNumber);
         } else {
             g_critical("JS ERROR: %s @ %s:%u", utf8_exception,
-                       utf8_fileName, lineNumber);
+                       utf8_filename.get(), lineNumber);
         }
 
-        g_free(utf8_fileName);
     } else {
-        char *utf8_stack;
+        GjsAutoJSChar utf8_stack(context);
         JS::RootedValue stack(context);
+        bool have_utf8_stack = false;
 
         if (exc.isObject() &&
             gjs_object_get_property(context, exc_obj, GJS_STRING_STACK,
                                     &stack) &&
-            stack.isString())
+            stack.isString()) {
             gjs_string_to_utf8(context, stack, &utf8_stack);
-        else
-            utf8_stack = NULL;
+            have_utf8_stack = true;
+        }
 
-        if (utf8_message) {
-            if (utf8_stack)
-                g_warning("JS ERROR: %s: %s\n%s", utf8_message, utf8_exception, utf8_stack);
+        if (message != nullptr) {
+            if (have_utf8_stack)
+                g_warning("JS ERROR: %s: %s\n%s", utf8_message.get(), utf8_exception, utf8_stack.get());
             else
-                g_warning("JS ERROR: %s: %s", utf8_message, utf8_exception);
+                g_warning("JS ERROR: %s: %s", utf8_message.get(), utf8_exception);
         } else {
-            if (utf8_stack)
-                g_warning("JS ERROR: %s\n%s", utf8_exception, utf8_stack);
+            if (have_utf8_stack)
+                g_warning("JS ERROR: %s\n%s", utf8_exception, utf8_stack.get());
             else
                 g_warning("JS ERROR: %s", utf8_exception);
         }
-
-        g_free(utf8_stack);
     }
 
     g_free(utf8_exception);
-    g_free(utf8_message);
 
     JS_EndRequest(context);
 

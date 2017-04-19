@@ -167,7 +167,7 @@ repo_resolve(JSContext       *context,
              bool            *resolved)
 {
     Repo *priv;
-    char *name = NULL;
+    GjsAutoJSChar name(context);
 
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
@@ -178,7 +178,6 @@ repo_resolve(JSContext       *context,
     if (strcmp(name, "valueOf") == 0 ||
         strcmp(name, "toString") == 0) {
         *resolved = false;
-        g_free(name);
         return true;
     }
 
@@ -189,17 +188,14 @@ repo_resolve(JSContext       *context,
     if (priv == NULL) {
         /* we are the prototype, or have the wrong class */
         *resolved = false;
-        g_free(name);
         return true;
     }
 
     if (!resolve_namespace_object(context, obj, id, name)) {
-        g_free(name);
         return false;
     }
 
     *resolved = true;
-    g_free(name);
     return true;
 }
 

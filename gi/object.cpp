@@ -390,8 +390,7 @@ object_instance_get_prop(JSContext              *context,
                          JS::MutableHandleValue  value_p)
 {
     ObjectInstance *priv;
-    char *name;
-    bool ret = true;
+    GjsAutoJSChar name(context);
 
     if (!gjs_get_string_id(context, id, &name))
         return true; /* not resolved, but no error */
@@ -401,28 +400,23 @@ object_instance_get_prop(JSContext              *context,
                      "Get prop '%s' hook obj %p priv %p",
                      name, obj.get(), priv);
 
-    if (priv == NULL) {
+    if (priv == nullptr)
         /* If we reach this point, either object_instance_new_resolve
          * did not throw (so name == "_init"), or the property actually
          * exists and it's not something we should be concerned with */
-        goto out;
-    }
-    if (priv->gobj == NULL) /* prototype, not an instance. */
-        goto out;
+        return true;
 
-    ret = get_prop_from_g_param(context, obj, priv, name, value_p);
-    if (!ret)
-        goto out;
+    if (priv->gobj == NULL) /* prototype, not an instance. */
+        return true;
+
+    if (!get_prop_from_g_param(context, obj, priv, name, value_p))
+        return false;
 
     if (!value_p.isUndefined())
-        goto out;
+        return true;
 
     /* Fall back to fields */
-    ret = get_prop_from_field(context, obj, priv, name, value_p);
-
- out:
-    g_free(name);
-    return ret;
+    return get_prop_from_field(context, obj, priv, name, value_p);
 }
 
 static bool
@@ -509,7 +503,7 @@ object_instance_set_prop(JSContext              *context,
                          JS::MutableHandleValue  value_p)
 {
     ObjectInstance *priv;
-    char *name;
+    GjsAutoJSChar name(context);
     bool ret = true;
     bool g_param_was_set = false;
 
@@ -521,28 +515,23 @@ object_instance_set_prop(JSContext              *context,
                      "Set prop '%s' hook obj %p priv %p",
                      name, obj.get(), priv);
 
-    if (priv == NULL) {
+    if (priv == nullptr)
         /* see the comment in object_instance_get_prop() on this */
-        goto out;
-    }
+        return true;
+
     if (priv->gobj == NULL) /* prototype, not an instance. */
-        goto out;
+        return true;
 
     ret = set_g_param_from_prop(context, priv, name, g_param_was_set, value_p);
     if (g_param_was_set || !ret)
-        goto out;
-
-    ret = check_set_field_from_prop(context, priv, name, strict, value_p);
+        return ret;
 
     /* note that the prop will also have been set in JS, which I think
      * is OK, since we hook get and set so will always override that
      * value. We could also use JS_DefineProperty though and specify a
      * getter/setter maybe, don't know if that is better.
      */
-
- out:
-    g_free(name);
-    return ret;
+    return check_set_field_from_prop(context, priv, name, strict, value_p);
 }
 
 static bool
@@ -610,7 +599,7 @@ object_instance_resolve_no_info(JSContext       *context,
                                 JS::HandleObject obj,
                                 bool            *resolved,
                                 ObjectInstance  *priv,
-                                char            *name)
+                                const char      *name)
 {
     GIFunctionInfo *method_info;
     guint n_interfaces;
@@ -674,7 +663,7 @@ object_instance_resolve(JSContext       *context,
 {
     GIFunctionInfo *method_info;
     ObjectInstance *priv;
-    char *name = NULL;
+    GjsAutoJSChar name(context);
 
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
@@ -703,13 +692,11 @@ object_instance_resolve(JSContext       *context,
          * check there.
          */
         *resolved = false;
-        g_free(name);
         return true;
     }
 
     if (priv->gobj != NULL) {
         *resolved = false;
-        g_free(name);
         return true;
     }
 
@@ -718,7 +705,6 @@ object_instance_resolve(JSContext       *context,
      * GType data, and then hope that *those* are introspectable. */
     if (priv->info == NULL) {
         bool status = object_instance_resolve_no_info(context, obj, resolved, priv, name);
-        g_free(name);
         return status;
     }
 
@@ -737,13 +723,12 @@ object_instance_resolve(JSContext       *context,
          * rest.
          */
 
-        const char *name_without_vfunc_ = &name[6];  /* lifetime tied to name */
+        const char *name_without_vfunc_ = &(name[6]);  /* lifetime tied to name */
         GIVFuncInfo *vfunc;
         bool defined_by_parent;
 
         vfunc = find_vfunc_on_parents(priv->info, name_without_vfunc_, &defined_by_parent);
         if (vfunc != NULL) {
-            g_free(name);
 
             /* In the event that the vfunc is unchanged, let regular
              * prototypal inheritance take over. */
@@ -785,11 +770,9 @@ object_instance_resolve(JSContext       *context,
      */
     if (method_info == NULL) {
         bool retval = object_instance_resolve_no_info(context, obj, resolved, priv, name);
-        g_free(name);
         return retval;
     }
 
-    g_free(name);
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
     _gjs_log_info_usage((GIBaseInfo*) method_info);
@@ -859,7 +842,7 @@ object_instance_props_to_g_parameters(JSContext                  *context,
     }
 
     for (ix = 0, length = ids.length(); ix < length; ix++) {
-        char *name = NULL;
+        GjsAutoJSChar name(context);
         GParameter gparam = { NULL, { 0, }};
 
         /* ids[ix] is reachable because props is rooted, but require_property
@@ -880,17 +863,14 @@ object_instance_props_to_g_parameters(JSContext                  *context,
                                            true /* constructing */)) {
         case NO_SUCH_G_PROPERTY:
             gjs_throw(context, "No property %s on this GObject %s",
-                         name, g_type_name(gtype));
+                      name.get(), g_type_name(gtype));
             /* fallthrough */
         case SOME_ERROR_OCCURRED:
-            g_free(name);
             goto free_array_and_fail;
         case VALUE_WAS_SET:
         default:
             break;
         }
-
-        g_free(name);
 
         gparams.push_back(gparam);
     }
@@ -1596,10 +1576,9 @@ real_connect_func(JSContext *context,
     GClosure *closure;
     gulong id;
     guint signal_id;
-    char *signal_name;
+    GjsAutoJSChar signal_name(context);
     GQuark signal_detail;
     ConnectData *connect_data;
-    bool ret = false;
 
     gjs_debug_gsignal("connect obj %p priv %p argc %d", obj.get(), priv, argc);
     if (priv == NULL) {
@@ -1629,14 +1608,14 @@ real_connect_func(JSContext *context,
                              &signal_detail,
                              true)) {
         gjs_throw(context, "No signal '%s' on object '%s'",
-                     signal_name,
-                     g_type_name(G_OBJECT_TYPE(priv->gobj)));
-        goto out;
+                  signal_name.get(),
+                  g_type_name(G_OBJECT_TYPE(priv->gobj)));
+        return false;
     }
 
     closure = gjs_closure_new_for_signal(context, &argv[1].toObject(), "signal callback", signal_id);
     if (closure == NULL)
-        goto out;
+        return false;
 
     connect_data = g_slice_new(ConnectData);
     priv->signals = g_list_prepend(priv->signals, connect_data);
@@ -1654,10 +1633,7 @@ real_connect_func(JSContext *context,
 
     argv.rval().setDouble(id);
 
-    ret = true;
- out:
-    g_free(signal_name);
-    return ret;
+    return true;
 }
 
 static bool
@@ -1685,12 +1661,11 @@ emit_func(JSContext *context,
     guint signal_id;
     GQuark signal_detail;
     GSignalQuery signal_query;
-    char *signal_name;
+    GjsAutoJSChar signal_name(context);
     GValue *instance_and_args;
     GValue rvalue = G_VALUE_INIT;
     unsigned int i;
     bool failed;
-    bool ret = false;
 
     gjs_debug_gsignal("emit obj %p priv %p argc %d", obj.get(), priv, argc);
 
@@ -1721,20 +1696,20 @@ emit_func(JSContext *context,
                              &signal_detail,
                              false)) {
         gjs_throw(context, "No signal '%s' on object '%s'",
-                     signal_name,
-                     g_type_name(G_OBJECT_TYPE(priv->gobj)));
-        goto out;
+                  signal_name.get(),
+                  g_type_name(G_OBJECT_TYPE(priv->gobj)));
+        return false;
     }
 
     g_signal_query(signal_id, &signal_query);
 
     if ((argc - 1) != signal_query.n_params) {
         gjs_throw(context, "Signal '%s' on %s requires %d args got %d",
-                     signal_name,
-                     g_type_name(G_OBJECT_TYPE(priv->gobj)),
-                     signal_query.n_params,
-                     argc - 1);
-        goto out;
+                  signal_name.get(),
+                  g_type_name(G_OBJECT_TYPE(priv->gobj)),
+                  signal_query.n_params,
+                  argc - 1);
+        return false;
     }
 
     if (signal_query.return_type != G_TYPE_NONE) {
@@ -1780,10 +1755,7 @@ emit_func(JSContext *context,
         g_value_unset(&instance_and_args[i]);
     }
 
-    ret = !failed;
- out:
-    g_free(signal_name);
-    return ret;
+    return !failed;
 }
 
 static bool
@@ -2902,7 +2874,7 @@ gjs_signal_new(JSContext *cx,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     GType gtype;
-    char *signal_name_tmp = NULL;
+    GjsAutoJSChar signal_name(cx);
     GSignalAccumulator accumulator;
     gint signal_id;
     guint i, n_parameters;
@@ -2913,9 +2885,8 @@ gjs_signal_new(JSContext *cx,
 
     JSAutoRequest ar(cx);
 
-    if (!gjs_string_to_utf8(cx, argv[1], &signal_name_tmp))
+    if (!gjs_string_to_utf8(cx, argv[1], &signal_name))
         return false;
-    std::unique_ptr<char, decltype(&g_free)> signal_name(signal_name_tmp, g_free);
 
     JS::RootedObject obj(cx, &argv[0].toObject());
     if (!gjs_typecheck_gtype(cx, obj, true))
@@ -2961,7 +2932,7 @@ gjs_signal_new(JSContext *cx,
 
     gtype = gjs_gtype_get_actual_gtype(cx, obj);
 
-    signal_id = g_signal_newv(signal_name.get(),
+    signal_id = g_signal_newv(signal_name,
                               gtype,
                               (GSignalFlags) argv[2].toInt32(), /* signal_flags */
                               NULL, /* class closure */

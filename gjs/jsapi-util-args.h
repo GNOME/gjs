@@ -103,15 +103,20 @@ assign(JSContext      *cx,
         *ref = NULL;
         return;
     }
+
+    GjsAutoJSChar tmp_ref(cx);
+
     if (c == 's') {
-        if (!gjs_string_to_utf8(cx, value, ref))
+        if (!gjs_string_to_utf8(cx, value, &tmp_ref))
             throw g_strdup("Couldn't convert to string");
     } else if (c == 'F') {
-        if (!gjs_string_to_filename(cx, value, ref))
+        if (!gjs_string_to_filename(cx, value, &tmp_ref))
             throw g_strdup("Couldn't convert to filename");
     } else {
         throw g_strdup_printf("Wrong type for %c, got char**", c);
     }
+
+    *ref = tmp_ref.copy();
 }
 GNUC_ALWAYS_INLINE
 static inline void

@@ -119,7 +119,6 @@ gjs_log(JSContext *context,
         JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    char *s;
 
     if (argc != 1) {
         gjs_throw(context, "Must pass a single argument to log()");
@@ -140,13 +139,12 @@ gjs_log(JSContext *context,
         return true;
     }
 
+    GjsAutoJSChar s(context);
     if (!gjs_string_to_utf8(context, JS::StringValue(jstr), &s)) {
         JS_EndRequest(context);
         return false;
     }
-
-    g_message("JS LOG: %s", s);
-    g_free(s);
+    g_message("JS LOG: %s", s.get());
 
     JS_EndRequest(context);
     argv.rval().setUndefined();
@@ -190,7 +188,6 @@ gjs_print_parse_args(JSContext *context,
                      char     **buffer)
 {
     GString *str;
-    gchar *s;
     guint n;
 
     JS_BeginRequest(context);
@@ -204,6 +201,7 @@ gjs_print_parse_args(JSContext *context,
         exc_state.restore();
 
         if (jstr != NULL) {
+            GjsAutoJSChar s(context);
             if (!gjs_string_to_utf8(context, JS::StringValue(jstr), &s)) {
                 JS_EndRequest(context);
                 g_string_free(str, true);
@@ -211,7 +209,6 @@ gjs_print_parse_args(JSContext *context,
             }
 
             g_string_append(str, s);
-            g_free(s);
             if (n < (argv.length()-1))
                 g_string_append_c(str, ' ');
         } else {

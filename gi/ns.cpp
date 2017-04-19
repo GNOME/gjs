@@ -55,7 +55,7 @@ ns_resolve(JSContext       *context,
            bool            *resolved)
 {
     Ns *priv;
-    char *name = NULL;
+    GjsAutoJSChar name(context);
     GIRepository *repo;
     GIBaseInfo *info;
     bool defined;
@@ -69,7 +69,6 @@ ns_resolve(JSContext       *context,
     if (strcmp(name, "valueOf") == 0 ||
         strcmp(name, "toString") == 0) {
         *resolved = false;
-        g_free(name);
         return true;
     }
 
@@ -80,7 +79,6 @@ ns_resolve(JSContext       *context,
 
     if (priv == NULL) {
         *resolved = false;  /* we are the prototype, or have the wrong class */
-        g_free(name);
         return true;
     }
 
@@ -89,7 +87,6 @@ ns_resolve(JSContext       *context,
     info = g_irepository_find_by_name(repo, priv->gi_namespace, name);
     if (info == NULL) {
         *resolved = false; /* No property defined, but no error either */
-        g_free(name);
         return true;
     }
 
@@ -107,14 +104,12 @@ ns_resolve(JSContext       *context,
                   g_base_info_get_name(info));
 
         g_base_info_unref(info);
-        g_free(name);
         return false;
     }
 
     /* we defined the property in this object? */
     g_base_info_unref(info);
     *resolved = defined;
-    g_free(name);
     return true;
 }
 

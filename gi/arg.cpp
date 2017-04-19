@@ -416,7 +416,7 @@ value_to_ghashtable_key(JSContext      *cx,
 
 #define HANDLE_STRING(type, lctype)                                   \
     case GI_TYPE_TAG_##type: {                                        \
-        char *cstr;                                                   \
+        GjsAutoJSChar cstr(cx);                                       \
         JS::RootedValue str_val(cx, value);                           \
         if (!str_val.isString()) {                                    \
             JS::RootedString str(cx, JS::ToString(cx, str_val));      \
@@ -424,7 +424,7 @@ value_to_ghashtable_key(JSContext      *cx,
         }                                                             \
         if (!gjs_string_to_##lctype(cx, str_val, &cstr))              \
             return false;                                             \
-        *pointer_out = cstr;                                          \
+        *pointer_out = cstr.copy();                                   \
         break;                                                        \
     }
 
@@ -610,6 +610,8 @@ gjs_array_to_strv(JSContext   *context,
     result = g_new0(char *, length+1);
 
     for (i = 0; i < length; ++i) {
+        GjsAutoJSChar tmp_result(context);
+
         elem = JS::UndefinedValue();
         if (!JS_GetElement(context, array, i, &elem)) {
             g_free(result);
@@ -625,10 +627,11 @@ gjs_array_to_strv(JSContext   *context,
             g_strfreev(result);
             return false;
         }
-        if (!gjs_string_to_utf8(context, elem, (char **)&(result[i]))) {
+        if (!gjs_string_to_utf8(context, elem, &tmp_result)) {
             g_strfreev(result);
             return false;
         }
+        result[i] = tmp_result.copy();
     }
 
     *arr_p = result;
@@ -644,16 +647,17 @@ gjs_string_to_intarray(JSContext   *context,
                        gsize       *length)
 {
     GITypeTag element_type;
-    char *result;
     char16_t *result16;
 
     element_type = g_type_info_get_tag(param_info);
 
     if (element_type == GI_TYPE_TAG_INT8 || element_type == GI_TYPE_TAG_UINT8) {
+        GjsAutoJSChar result(context);
+
         if (!gjs_string_to_utf8(context, string_val, &result))
             return false;
-        *arr_p = result;
         *length = strlen(result);
+        *arr_p = result.copy();
         return true;
     }
 
@@ -1463,10 +1467,9 @@ gjs_value_to_g_argument(JSContext      *context,
         if (value.isNull()) {
             arg->v_pointer = NULL;
         } else if (value.isString()) {
-            char *filename_str;
+            GjsAutoJSChar filename_str(context);
             if (gjs_string_to_filename(context, value, &filename_str))
-                // doing this as a separate step to avoid type-punning
-                arg->v_pointer = filename_str;
+                arg->v_pointer = filename_str.copy();
             else
                 wrong = true;
         } else {
@@ -1479,10 +1482,9 @@ gjs_value_to_g_argument(JSContext      *context,
         if (value.isNull()) {
             arg->v_pointer = NULL;
         } else if (value.isString()) {
-            char *utf8_str;
+            GjsAutoJSChar utf8_str(context);
             if (gjs_string_to_utf8(context, value, &utf8_str))
-                // doing this as a separate step to avoid type-punning
-                arg->v_pointer = utf8_str;
+                arg->v_pointer = utf8_str.copy();
             else
                 wrong = true;
         } else {
@@ -2526,9 +2528,7 @@ gjs_object_from_g_hash (JSContext             *context,
                         GHashTable            *hash)
 {
     GHashTableIter iter;
-    char     *keyutf8 = NULL;
     GArgument keyarg, valarg;
-    bool result;
 
     // a NULL hash table becomes a null JS value
     if (hash==NULL) {
@@ -2545,41 +2545,32 @@ gjs_object_from_g_hash (JSContext             *context,
     JS::RootedValue keyjs(context), valjs(context);
     JS::RootedString keystr(context);
 
-    result = false;
-
     g_hash_table_iter_init(&iter, hash);
     while (g_hash_table_iter_next
            (&iter, &keyarg.v_pointer, &valarg.v_pointer)) {
         if (!gjs_value_from_g_argument(context, &keyjs,
                                        key_param_info, &keyarg,
                                        true))
-            goto out;
+            return false;
 
         keystr = JS::ToString(context, keyjs);
         if (!keystr)
-            goto out;
+            return false;
 
+        GjsAutoJSChar keyutf8(context);
         if (!gjs_string_to_utf8(context, JS::StringValue(keystr), &keyutf8))
-            goto out;
+            return false;
 
         if (!gjs_value_from_g_argument(context, &valjs,
                                        val_param_info, &valarg,
                                        true))
-            goto out;
+            return false;
 
         if (!JS_DefineProperty(context, obj, keyutf8, valjs, JSPROP_ENUMERATE))
-            goto out;
-
-        g_free(keyutf8);
-        keyutf8 = NULL;
+            return false;
     }
 
-    result = true;
-
- out:
-    if (keyutf8) g_free(keyutf8);
-
-    return result;
+    return true;
 }
 
 static const int64_t MAX_SAFE_INT64 =

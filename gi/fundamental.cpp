@@ -241,7 +241,7 @@ fundamental_instance_resolve_interface(JSContext       *context,
                                        JS::HandleObject obj,
                                        bool            *resolved,
                                        Fundamental     *proto_priv,
-                                       char            *name)
+                                       const char      *name)
 {
     GIFunctionInfo *method_info;
     bool ret;
@@ -301,7 +301,7 @@ fundamental_instance_resolve(JSContext       *context,
                              bool            *resolved)
 {
     FundamentalInstance *priv;
-    char *name = NULL;
+    GjsAutoJSChar name(context);
 
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
@@ -313,10 +313,8 @@ fundamental_instance_resolve(JSContext       *context,
                      "Resolve prop '%s' hook obj %p priv %p",
                      name, obj.get(), priv);
 
-    if (priv == NULL) {
-        g_free(name);
+    if (priv == nullptr)
         return false; /* wrong class */
-    }
 
     if (!fundamental_is_prototype(priv)) {
         /* We are an instance, not a prototype, so look for
@@ -327,7 +325,6 @@ fundamental_instance_resolve(JSContext       *context,
          * hooks, not this resolve hook.
          */
         *resolved = false;
-        g_free(name);
         return true;
     }
 
@@ -356,7 +353,6 @@ fundamental_instance_resolve(JSContext       *context,
                           g_base_info_get_name((GIBaseInfo *) proto_priv->info));
                 g_base_info_unref((GIBaseInfo *) method_info);
                 *resolved = false;
-                g_free(name);
                 return true;
             }
 
@@ -369,7 +365,6 @@ fundamental_instance_resolve(JSContext       *context,
             if (gjs_define_function(context, obj, proto_priv->gtype,
                                     method_info) == NULL) {
                 g_base_info_unref((GIBaseInfo *) method_info);
-                g_free(name);
                 return false;
             }
 
@@ -384,7 +379,6 @@ fundamental_instance_resolve(JSContext       *context,
     bool status =
         fundamental_instance_resolve_interface(context, obj, resolved,
                                                proto_priv, name);
-    g_free(name);
     return status;
 }
 

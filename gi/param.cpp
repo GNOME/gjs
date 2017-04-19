@@ -58,7 +58,7 @@ param_resolve(JSContext       *context,
     GIObjectInfo *info = NULL;
     GIFunctionInfo *method_info;
     Param *priv;
-    char *name = NULL;
+    GjsAutoJSChar name(context);
     bool ret = false;
 
     if (!gjs_get_string_id(context, id, &name))
@@ -69,7 +69,6 @@ param_resolve(JSContext       *context,
     if (priv != NULL) {
         /* instance, not prototype */
         *resolved = false;
-        g_free(name);
         return true;
     }
 
@@ -102,7 +101,6 @@ param_resolve(JSContext       *context,
 
     ret = true;
  out:
-    g_free(name); 
     if (info != NULL)
         g_base_info_unref( (GIBaseInfo*)info);
 

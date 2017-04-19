@@ -75,7 +75,7 @@ importer_to_string(JSContext *cx,
                                  &module_path))
         return false;
 
-    char *path = NULL;
+    GjsAutoJSChar path(cx);
     GjsAutoChar output;
 
     if (module_path.isNull()) {
@@ -83,11 +83,10 @@ importer_to_string(JSContext *cx,
     } else {
         if (!gjs_string_to_utf8(cx, module_path, &path))
             return false;
-        output = g_strdup_printf("[%s %s]", klass->name, path);
+        output = g_strdup_printf("[%s %s]", klass->name, path.get());
     }
 
     args.rval().setString(JS_NewStringCopyZ(cx, output));
-    g_free(path);
     return true;
 }
 
@@ -139,11 +138,10 @@ define_meta_properties(JSContext       *context,
         if (parent_module_path.isNull()) {
             module_path_buf = g_strdup(module_name);
         } else {
-            char *parent_path = NULL;
+            GjsAutoJSChar parent_path(context);
             if (!gjs_string_to_utf8(context, parent_module_path, &parent_path))
                 return false;
-            module_path_buf = g_strdup_printf("%s.%s", parent_path, module_name);
-            g_free(parent_path);
+            module_path_buf = g_strdup_printf("%s.%s", parent_path.get(), module_name);
         }
         module_path.setString(JS_NewStringCopyZ(context, module_path_buf));
     }
@@ -286,13 +284,12 @@ module_to_string(JSContext *cx,
 
     g_assert(!module_path.isNull());
 
-    char *path = NULL;
+    GjsAutoJSChar path(cx);
     if (!gjs_string_to_utf8(cx, module_path, &path))
         return false;
-    GjsAutoChar output = g_strdup_printf("[GjsModule %s]", path);
+    GjsAutoChar output = g_strdup_printf("[GjsModule %s]", path.get());
 
     args.rval().setString(JS_NewStringCopyZ(cx, output));
-    g_free(path);
     return true;
 }
 
@@ -502,7 +499,6 @@ do_import(JSContext       *context,
 {
     char *filename;
     char *full_path;
-    char *dirname = NULL;
     JS::RootedObject search_path(context);
     guint32 search_path_len;
     guint32 i;
@@ -544,6 +540,8 @@ do_import(JSContext       *context,
     }
 
     for (i = 0; i < search_path_len; ++i) {
+        GjsAutoJSChar dirname(context);
+
         elem.setUndefined();
         if (!JS_GetElement(context, search_path, i, &elem)) {
             /* this means there was an exception, while elem.isUndefined()
@@ -559,9 +557,6 @@ do_import(JSContext       *context,
             gjs_throw(context, "importer searchPath contains non-string");
             goto out;
         }
-
-        g_free(dirname);
-        dirname = NULL;
 
         if (!gjs_string_to_utf8(context, elem, &dirname))
             goto out; /* Error message already set */
@@ -616,7 +611,7 @@ do_import(JSContext       *context,
         if (!exists) {
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "JS import '%s' not found in %s",
-                      name, dirname);
+                      name, dirname.get());
 
             g_object_unref(gfile);
             continue;
@@ -665,7 +660,6 @@ do_import(JSContext       *context,
 
     g_free(full_path);
     g_free(filename);
-    g_free(dirname);
 
     if (!result &&
         !JS_IsExceptionPending(context)) {
@@ -715,7 +709,7 @@ importer_enumerate(JSContext        *context,
 
     JS::RootedValue elem(context);
     for (i = 0; i < search_path_len; ++i) {
-        char *dirname = NULL;
+        GjsAutoJSChar dirname(context);
         char *init_path;
 
         elem.setUndefined();
@@ -745,7 +739,6 @@ importer_enumerate(JSContext        *context,
 
         /* new_for_commandline_arg handles resource:/// paths */
         GjsAutoUnref<GFile> dir = g_file_new_for_commandline_arg(dirname);
-        g_free(dirname);
         GjsAutoUnref<GFileEnumerator> direnum =
             g_file_enumerate_children(dir, G_FILE_ATTRIBUTE_STANDARD_TYPE,
                                       G_FILE_QUERY_INFO_NONE, NULL, NULL);
@@ -793,8 +786,8 @@ importer_resolve(JSContext        *context,
                  bool             *resolved)
 {
     Importer *priv;
-    char *name = NULL;
     jsid module_init_name;
+    GjsAutoJSChar name(context);
 
     module_init_name = gjs_context_get_const_string(context, GJS_STRING_MODULE_INIT);
     if (id == module_init_name) {
@@ -810,7 +803,6 @@ importer_resolve(JSContext        *context,
         strcmp(name, "toString") == 0 ||
         strcmp(name, "__iterator__") == 0) {
         *resolved = false;
-        g_free(name);
         return true;
     }
     priv = priv_from_js(context, obj);
@@ -821,18 +813,14 @@ importer_resolve(JSContext        *context,
     if (priv == NULL) {
         /* we are the prototype, or have the wrong class */
         *resolved = false;
-        g_free(name);
         return true;
     }
 
     JSAutoRequest ar(context);
-    if (!do_import(context, obj, priv, name)) {
-        g_free(name);
+    if (!do_import(context, obj, priv, name))
         return false;
-    }
 
     *resolved = true;
-    g_free(name);
     return true;
 }
 

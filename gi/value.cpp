@@ -380,12 +380,12 @@ gjs_value_to_g_value_internal(JSContext      *context,
         if (value.isNull()) {
             g_value_set_string(gvalue, NULL);
         } else if (value.isString()) {
-            gchar *utf8_string;
+            GjsAutoJSChar utf8_string(context);
 
             if (!gjs_string_to_utf8(context, value, &utf8_string))
                 return false;
 
-            g_value_take_string(gvalue, utf8_string);
+            g_value_take_string(gvalue, utf8_string.copy());
         } else {
             gjs_throw(context,
                       "Wrong type %s; string expected",

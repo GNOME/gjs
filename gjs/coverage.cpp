@@ -493,11 +493,11 @@ get_executed_lines_for(JSContext        *context,
 
 static void
 init_covered_function(GjsCoverageFunction *function,
-                      char                *key,
+                      const char          *key,
                       unsigned int        line_number,
                       unsigned int        hit_count)
 {
-    function->key = key;
+    function->key = g_strdup(key);
     function->line_number = line_number;
     function->hit_count = hit_count;
 }
@@ -543,7 +543,7 @@ convert_and_insert_function_decl(GArray         *array,
                                      &function_name_property_value))
         return false;
 
-    char *utf8_string;
+    GjsAutoJSChar utf8_string(context);
 
     if (function_name_property_value.isString()) {
         if (!gjs_string_to_utf8(context,
@@ -552,9 +552,7 @@ convert_and_insert_function_decl(GArray         *array,
             gjs_throw(context, "Failed to convert function_name to string");
             return false;
         }
-    } else if (function_name_property_value.isNull()) {
-        utf8_string = NULL;
-    } else {
+    } else if (!function_name_property_value.isNull()) {
         gjs_throw(context, "Unexpected type for function_name");
         return false;
     }
@@ -869,14 +867,14 @@ get_covered_files(GjsCoverage *coverage)
     files = g_new0(char *, n_files + 1);
     JS::RootedValue element(context);
     for (uint32_t i = 0; i < n_files; i++) {
-        char *file;
+        GjsAutoJSChar file(context);
         if (!JS_GetElement(context, files_obj, i, &element))
             goto error;
 
         if (!gjs_string_to_utf8(context, element, &file))
             goto error;
 
-        files[i] = file;
+        files[i] = file.copy();
     }
 
     files[n_files] = NULL;
@@ -1012,7 +1010,7 @@ gjs_serialize_statistics(GjsCoverage *coverage)
         return NULL;
 
     /* Free'd by g_bytes_new_take */
-    char *statistics_as_json_string = NULL;
+    GjsAutoJSChar statistics_as_json_string(js_context);
 
     if (!gjs_string_to_utf8(js_context,
                             string_value_return.get(),
@@ -1021,8 +1019,12 @@ gjs_serialize_statistics(GjsCoverage *coverage)
         return NULL;
     }
 
-    return g_bytes_new_take((guint8 *) statistics_as_json_string,
-                            strlen(statistics_as_json_string));
+    int json_string_len = strlen(statistics_as_json_string);
+    auto json_bytes =
+        reinterpret_cast<uint8_t*>(statistics_as_json_string.copy());
+
+    return g_bytes_new_take(json_bytes,
+                            json_string_len);
 }
 
 static JSString *
@@ -1333,7 +1335,7 @@ coverage_log(JSContext *context,
              JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    char *s;
+    GjsAutoJSChar s(context);
     JSExceptionState *exc_state;
 
     if (argc != 1) {
@@ -1366,8 +1368,7 @@ coverage_log(JSContext *context,
         return false;
     }
 
-    g_message("JS COVERAGE MESSAGE: %s", s);
-    g_free(s);
+    g_message("JS COVERAGE MESSAGE: %s", s.get());
 
     argv.rval().setUndefined();
     return true;

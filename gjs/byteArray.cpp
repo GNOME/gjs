@@ -405,7 +405,7 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, argv, to, ByteArrayInstance, priv);
-    char *encoding;
+    GjsAutoJSChar encoding(context);
     bool encoding_is_utf8;
     gchar *data;
 
@@ -422,13 +422,7 @@ to_string_func(JSContext *context,
          * doesn't matter much though. encoding_is_utf8 is
          * just an optimization anyway.
          */
-        if (strcmp(encoding, "UTF-8") == 0) {
-            encoding_is_utf8 = true;
-            g_free(encoding);
-            encoding = NULL;
-        } else {
-            encoding_is_utf8 = false;
-        }
+        encoding_is_utf8 = (strcmp(encoding, "UTF-8") == 0);
     } else {
         encoding_is_utf8 = true;
     }
@@ -461,7 +455,6 @@ to_string_func(JSContext *context,
                            NULL, /* bytes read */
                            &bytes_written,
                            &error);
-        g_free(encoding);
         if (u16_str == NULL) {
             /* frees the GError */
             gjs_throw_g_error(context, error);
@@ -534,7 +527,7 @@ from_string_func(JSContext *context,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     ByteArrayInstance *priv;
-    char *encoding;
+    GjsAutoJSChar encoding(context);
     bool encoding_is_utf8;
     JS::RootedObject obj(context, byte_array_new(context));
 
@@ -562,13 +555,7 @@ from_string_func(JSContext *context,
          * doesn't matter much though. encoding_is_utf8 is
          * just an optimization anyway.
          */
-        if (strcmp(encoding, "UTF-8") == 0) {
-            encoding_is_utf8 = true;
-            g_free(encoding);
-            encoding = NULL;
-        } else {
-            encoding_is_utf8 = false;
-        }
+        encoding_is_utf8 = (strcmp(encoding, "UTF-8") == 0);
     } else {
         encoding_is_utf8 = true;
     }
@@ -577,15 +564,16 @@ from_string_func(JSContext *context,
         /* optimization? avoids iconv overhead and runs
          * libmozjs hardwired utf16-to-utf8.
          */
-        char *utf8 = NULL;
+        GjsAutoJSChar utf8(context);
         if (!gjs_string_to_utf8(context,
                                 argv[0],
                                 &utf8))
             return false;
 
         g_byte_array_set_size(priv->array, 0);
-        g_byte_array_append(priv->array, (guint8*) utf8, strlen(utf8));
-        g_free(utf8);
+        g_byte_array_append(priv->array,
+                            reinterpret_cast<const guint8*>(utf8.get()),
+                            strlen(utf8));
     } else {
         JSString *str = argv[0].toString();  /* Rooted by argv */
         GError *error = NULL;
@@ -623,7 +611,6 @@ from_string_func(JSContext *context,
             }
         }
 
-        g_free(encoding);
         if (encoded == NULL) {
             /* frees the GError */
             gjs_throw_g_error(context, error);
