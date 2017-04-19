@@ -1152,6 +1152,8 @@ static void
 update_heap_wrapper_weak_pointers(JSRuntime *rt,
                                   gpointer   data)
 {
+    std::vector<GObject *> to_be_disassociated;
+
     for (auto iter = weak_pointer_list.begin(); iter != weak_pointer_list.end(); ) {
         ObjectInstance *priv = *iter;
         if (priv->keep_alive.rooted() || priv->keep_alive == nullptr ||
@@ -1163,10 +1165,13 @@ update_heap_wrapper_weak_pointers(JSRuntime *rt,
              * the weak pointer list first, since the disassociation
              * may also cause it to be erased.)
              */
+            to_be_disassociated.push_back(priv->gobj);
             iter = weak_pointer_list.erase(iter);
-            disassociate_js_gobject(priv->gobj);
         }
     }
+
+    for (GObject *gobj : to_be_disassociated)
+        disassociate_js_gobject(gobj);
 }
 
 static void
