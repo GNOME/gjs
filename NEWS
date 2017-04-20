@@ -1,3 +1,14 @@
+Version 1.48.2
+--------------
+
+- Closed bugs:
+
+  * Intermittent crash in gnome-shell, probably in weak pointer updating code
+    [#781194, Georges Basile Stavracas Neto]
+  * Add contributor's guide [#781297, Philip Chimento]
+
+- Misc fixes [Debarshi Ray, Philip Chimento]
+
 Version 1.48.1
 --------------
 
