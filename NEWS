@@ -1,3 +1,22 @@
+Version 1.49.1
+--------------
+
+- Closed bugs:
+
+  * test GObject Class failure [#693676, Stef Walter]
+  * Enable incremental GCs [#724797, Giovanni Campagna]
+  * Don't silently accept extra arguments to C functions [#680215, Jasper
+    St. Pierre, Philip Chimento]
+  * Special case GValues in signals and properties [#688128, Giovanni Campagna,
+    Philip Chimento]
+  * [cairo] Instantiate wrappers properly [#614413, Philip Chimento,
+    Johan Dahlin]
+  * Warn if we're importing an unversioned namespace [#689654, Colin Walters,
+    Philip Chimento]
+
+- Fixes in preparation for SpiderMonkey 45 [Philip Chimento]
+- Misc fixes [Philip Chimento, Chun-wei Fan, Dan Winship]
+
 Version 1.48.2
 --------------
 
