@@ -217,8 +217,6 @@ AS_IF([test "x$with_dbus_tests" != "xno"], [
 ])
 AM_CONDITIONAL([DBUS_TESTS], [test "x$with_dbus_tests" != "xno"])
 
-AX_APPEND_COMPILE_FLAGS(['--param inline-unit-growth=50'])
-
 AC_SUBST([gjsjsdir], [\${datadir}/gjs-1.0])
 
 dnl automake 1.11/1.12 defines this but does not substitute it

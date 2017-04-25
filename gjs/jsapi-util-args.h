@@ -30,6 +30,13 @@
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 
+#ifdef __GNUC__
+#define GNUC_ALWAYS_INLINE __attribute__((always_inline))
+#else
+#define GNUC_ALWAYS_INLINE
+#endif
+
+GNUC_ALWAYS_INLINE
 static inline bool
 check_nullable(const char*& fchar,
                const char*& fmt_string)
@@ -46,6 +53,7 @@ check_nullable(const char*& fchar,
 
 /* This preserves the previous behaviour of gjs_parse_args(), but maybe we want
  * to use JS::ToBoolean instead? */
+GNUC_ALWAYS_INLINE
 static inline void
 assign(JSContext      *cx,
        char            c,
@@ -64,6 +72,7 @@ assign(JSContext      *cx,
 
 /* This preserves the previous behaviour of gjs_parse_args(), but maybe we want
  * to box primitive types instead of throwing? */
+GNUC_ALWAYS_INLINE
 static inline void
 assign(JSContext              *cx,
        char                    c,
@@ -82,6 +91,7 @@ assign(JSContext              *cx,
     ref.set(&value.toObject());
 }
 
+GNUC_ALWAYS_INLINE
 static inline void
 assign(JSContext      *cx,
        char            c,
@@ -103,7 +113,7 @@ assign(JSContext      *cx,
         throw g_strdup_printf("Wrong type for %c, got char**", c);
     }
 }
-
+GNUC_ALWAYS_INLINE
 static inline void
 assign(JSContext      *cx,
        char            c,
@@ -119,6 +129,7 @@ assign(JSContext      *cx,
         throw g_strdup("Couldn't convert to integer");
 }
 
+GNUC_ALWAYS_INLINE
 static inline void
 assign(JSContext      *cx,
        char            c,
@@ -139,6 +150,7 @@ assign(JSContext      *cx,
     *ref = num;
 }
 
+GNUC_ALWAYS_INLINE
 static inline void
 assign(JSContext      *cx,
        char            c,
@@ -154,6 +166,7 @@ assign(JSContext      *cx,
         throw g_strdup("Couldn't convert to 64-bit integer");
 }
 
+GNUC_ALWAYS_INLINE
 static inline void
 assign(JSContext      *cx,
        char            c,
@@ -173,6 +186,7 @@ assign(JSContext      *cx,
  * prevent instantiation for any other types besides pointer-to-enum */
 template<typename T,
          typename std::enable_if<std::is_enum<T>::value, int>::type = 0>
+GNUC_ALWAYS_INLINE
 static inline void
 assign(JSContext      *cx,
        char            c,
@@ -198,6 +212,7 @@ template<typename T,
 static inline void
 free_if_necessary(T param_ref) {}
 
+GNUC_ALWAYS_INLINE
 static inline void
 free_if_necessary(JS::MutableHandleObject param_ref)
 {
@@ -207,6 +222,7 @@ free_if_necessary(JS::MutableHandleObject param_ref)
     param_ref.set(NULL);
 }
 
+GNUC_ALWAYS_INLINE
 static inline void
 free_if_necessary(char **param_ref)
 {
