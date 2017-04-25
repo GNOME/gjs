@@ -23,6 +23,9 @@
 
 #include <config.h>
 
+#include <cstdlib>
+#include <cmath>
+
 #include "arg.h"
 #include "gtype.h"
 #include "object.h"
