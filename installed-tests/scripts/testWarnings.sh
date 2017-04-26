@@ -1,16 +1,16 @@
 #!/bin/sh
 
 if test "$GJS_USE_UNINSTALLED_FILES" = "1"; then
-    gjs="$TOP_BUILDDIR"/gjs-console
+    gjs="$TOP_BUILDDIR/gjs-console"
 else
-    gjs=gjs-console
+    gjs="gjs-console"
 fi
 
 total=0
 
 report () {
     exit_code=$?
-    total=`expr $total + 1`
+    total=$((total + 1))
     if test $exit_code -eq 0; then
         echo "ok $total - $1"
     else
