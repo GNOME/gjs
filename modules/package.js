@@ -59,6 +59,11 @@ function _runningFromSource() {
     return binary.equal(sourceBinary);
 }
 
+function _runningFromMesonSource() {
+    return GLib.getenv('MESON_BUILD_ROOT') &&
+           GLib.getenv('MESON_SOURCE_ROOT');
+}
+
 function _makeNamePath(name) {
     return '/' + name.replace('.', '/', 'g');
 }
@@ -132,6 +137,23 @@ function init(params) {
         pkgdatadir = GLib.build_filenamev([_base, 'data']);
         localedir = GLib.build_filenamev([_base, 'po']);
         moduledir = GLib.build_filenamev([_base, 'src']);
+    } else if (_runningFromMesonSource()) {
+        log('Running from Meson, using local files');
+        let bld = GLib.getenv('MESON_BUILD_ROOT');
+        let src = GLib.getenv('MESON_SOURCE_ROOT');
+
+        pkglibdir = libpath = girpath = GLib.build_filenamev([bld, 'lib']);
+        pkgdatadir = GLib.build_filenamev([bld, 'data']);
+        localedir = GLib.build_filenamev([bld, 'po']);
+
+        try {
+            let resource = Gio.Resource.load(GLib.build_filenamev([bld, 'src',
+                                                                  name + '.src.gresource']));
+            resource._register();
+            moduledir = 'resource://' + _makeNamePath(name) + '/js';
+        } catch(e) {
+            moduledir = GLib.build_filenamev([src, 'src']);
+        }
     } else {
         _base = prefix;
         pkglibdir = GLib.build_filenamev([libdir, _pkgname]);
