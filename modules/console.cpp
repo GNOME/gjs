@@ -214,8 +214,9 @@ gjs_console_interact(JSContext *context,
         gjs_schedule_gc_if_needed(context);
 
         if (JS_GetPendingException(context, &result)) {
-            str = JS::ToString(context, result);
-            JS_ClearPendingException(context);
+            if (!JS_ReportPendingException(context))
+                return false;
+            goto next;
         } else if (result.isUndefined()) {
             goto next;
         } else {
