@@ -60,25 +60,25 @@
 static void
 gjs_console_error_reporter(JSContext *cx, const char *message, JSErrorReport *report)
 {
-    int i, j, k, n;
-    char *prefix, *tmp;
-    const char *ctmp;
+    /* Code modified from SpiderMonkey js/src/jscntxt.cpp, js::PrintError() */
 
     if (!report) {
         fprintf(stderr, "%s\n", message);
+        fflush(stderr);
         return;
     }
 
-    prefix = NULL;
+    char *prefix = nullptr;
     if (report->filename)
         prefix = g_strdup_printf("%s:", report->filename);
     if (report->lineno) {
-        tmp = prefix;
-        prefix = g_strdup_printf("%s%u: ", tmp ? tmp : "", report->lineno);
+        char *tmp = prefix;
+        prefix = g_strdup_printf("%s%u:%u ", tmp ? tmp : "", report->lineno,
+                                 report->column);
         g_free(tmp);
     }
     if (JSREPORT_IS_WARNING(report->flags)) {
-        tmp = prefix;
+        char *tmp = prefix;
         prefix = g_strdup_printf("%s%swarning: ",
                                  tmp ? tmp : "",
                                  JSREPORT_IS_STRICT(report->flags) ? "strict " : "");
@@ -86,7 +86,8 @@ gjs_console_error_reporter(JSContext *cx, const char *message, JSErrorReport *re
     }
 
     /* embedded newlines -- argh! */
-    while ((ctmp = strchr(message, '\n')) != NULL) {
+    const char *ctmp;
+    while ((ctmp = strchr(message, '\n')) != 0) {
         ctmp++;
         if (prefix)
             fputs(prefix, stderr);
@@ -99,31 +100,29 @@ gjs_console_error_reporter(JSContext *cx, const char *message, JSErrorReport *re
         fputs(prefix, stderr);
     fputs(message, stderr);
 
-    if (!report->linebuf) {
-        fputc('\n', stderr);
-        goto out;
-    }
-
-    /* report->linebuf usually ends with a newline. */
-    n = strlen(report->linebuf);
-    fprintf(stderr, ":\n%s%s%s%s",
-            prefix,
-            report->linebuf,
-            (n > 0 && report->linebuf[n-1] == '\n') ? "" : "\n",
-            prefix);
-    n = ((char*)report->tokenptr) - ((char*) report->linebuf);
-    for (i = j = 0; i < n; i++) {
-        if (report->linebuf[i] == '\t') {
-            for (k = (j + 8) & ~7; j < k; j++) {
-                fputc('.', stderr);
+    if (report->linebuf) {
+        /* report->linebuf usually ends with a newline. */
+        int n = strlen(report->linebuf);
+        fprintf(stderr, ":\n%s%s%s%s",
+                prefix,
+                report->linebuf,
+                (n > 0 && report->linebuf[n-1] == '\n') ? "" : "\n",
+                prefix);
+        n = report->tokenptr - report->linebuf;
+        for (int i = 0, j = 0; i < n; i++) {
+            if (report->linebuf[i] == '\t') {
+                for (int k = (j + 8) & ~7; j < k; j++) {
+                    fputc('.', stderr);
+                }
+                continue;
             }
-            continue;
+            fputc('.', stderr);
+            j++;
         }
-        fputc('.', stderr);
-        j++;
+        fputc('^', stderr);
     }
-    fputs("^\n", stderr);
- out:
+    fputc('\n', stderr);
+    fflush(stderr);
     g_free(prefix);
 }
 
