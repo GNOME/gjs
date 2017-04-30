@@ -100,20 +100,28 @@ gjs_console_print_error(const char *message, JSErrorReport *report)
         fputs(prefix, stderr);
     fputs(message, stderr);
 
-    if (report->linebuf) {
-        /* report->linebuf usually ends with a newline. */
-        int n = strlen(report->linebuf);
-        fprintf(stderr, ":\n%s%s%s%s",
-                prefix,
-                report->linebuf,
-                (n > 0 && report->linebuf[n-1] == '\n') ? "" : "\n",
-                prefix);
-        n = report->tokenptr - report->linebuf;
-        for (int i = 0, j = 0; i < n; i++) {
-            if (report->linebuf[i] == '\t') {
-                for (int k = (j + 8) & ~7; j < k; j++) {
+    if (const char16_t* linebuf = report->linebuf()) {
+        size_t n = report->linebufLength();
+
+        fputs(":\n", stderr);
+        if (prefix)
+            fputs(prefix, stderr);
+
+        for (size_t i = 0; i < n; i++)
+            fputc(static_cast<char>(linebuf[i]), stderr);
+
+        // linebuf usually ends with a newline. If not, add one here.
+        if (n == 0 || linebuf[n - 1] != '\n')
+            fputc('\n', stderr);
+
+        if (prefix)
+            fputs(prefix, stderr);
+
+        n = report->tokenOffset();
+        for (size_t i = 0, j = 0; i < n; i++) {
+            if (linebuf[i] == '\t') {
+                for (size_t k = (j + 8) & ~7; j < k; j++)
                     fputc('.', stderr);
-                }
                 continue;
             }
             fputc('.', stderr);
