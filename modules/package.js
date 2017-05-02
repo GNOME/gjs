@@ -44,6 +44,7 @@ var localedir;
 /*< private >*/
 let _pkgname;
 let _base;
+let _submoduledir;
 
 function _findEffectiveEntryPointName() {
     let entryPoint = System.programInvocationName;
@@ -131,6 +132,7 @@ function init(params) {
         log('Running from source tree, using local files');
         // Running from source directory
         _base = GLib.get_current_dir();
+        _submoduledir = _base;
         pkglibdir = GLib.build_filenamev([_base, 'lib']);
         libpath = GLib.build_filenamev([pkglibdir, '.libs']);
         girpath = pkglibdir;
@@ -145,6 +147,7 @@ function init(params) {
         pkglibdir = libpath = girpath = GLib.build_filenamev([bld, 'lib']);
         pkgdatadir = GLib.build_filenamev([bld, 'data']);
         localedir = GLib.build_filenamev([bld, 'po']);
+        _submoduledir = GLib.build_filenamev([bld, 'subprojects']);
 
         try {
             let resource = Gio.Resource.load(GLib.build_filenamev([bld, 'src',
@@ -259,8 +262,12 @@ function initSubmodule(name) {
     if (moduledir != pkgdatadir) {
         // Running from source tree, add './name' to search paths
 
-        let submoduledir = GLib.build_filenamev([_base, name]);
-        let libpath = GLib.build_filenamev([submoduledir, '.libs']);
+        let submoduledir = GLib.build_filenamev([_submoduledir, name]);
+        let libpath;
+        if (_runningFromMesonSource())
+            libpath = submoduledir;
+        else
+            libpath = GLib.build_filenamev([submoduledir, '.libs']);
         GIRepository.Repository.prepend_search_path(submoduledir);
         GIRepository.Repository.prepend_library_path(libpath);
     } else {
