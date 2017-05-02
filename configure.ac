@@ -187,6 +187,23 @@ AC_ARG_ENABLE([Bsymbolic],
 AS_IF([test "x$enable_Bsymbolic" != "xno"],
   [AX_APPEND_LINK_FLAGS([-Bsymbolic-functions])])
 
+dnl If SpiderMonkey was compiled with --enable-debug, then we need to define
+dnl -DDEBUG before including js-config.h.
+AC_MSG_CHECKING([whether SpiderMonkey was configured with --enable-debug])
+CPPFLAGS_save="$CPPFLAGS"
+CPPFLAGS="$GJS_CFLAGS"
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+#include <js-config.h>
+#ifdef JS_DEBUG
+#error debug yes, if we didn't already error out due to DEBUG not being defined
+#endif
+]])], [AC_MSG_RESULT([no])], [
+  AC_DEFINE([HAVE_DEBUG_SPIDERMONKEY], [1],
+    [Define to 1 if SpiderMonkey was compiled with --enable-debug])
+  AC_MSG_RESULT([yes])
+])
+CPPFLAGS="$CPPFLAGS_save"
+
 dnl If SpiderMonkey was compiled with this configure option, then GJS needs to
 dnl be compiled with it as well, because we inherit from a SpiderMonkey class in
 dnl jsapi-constructor-proxy.cpp. See build/autoconf/compiler-opts.m4 in mozjs31.
