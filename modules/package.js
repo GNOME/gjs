@@ -259,7 +259,7 @@ function initFormat() {
 }
 
 function initSubmodule(name) {
-    if (moduledir != pkgdatadir) {
+    if (_runningFromMesonSource() || _runningFromSource()) {
         // Running from source tree, add './name' to search paths
 
         let submoduledir = GLib.build_filenamev([_submoduledir, name]);
