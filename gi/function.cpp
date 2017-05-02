@@ -1483,10 +1483,7 @@ function_to_string (JSContext *context,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
-struct JSClass gjs_function_class = {
-    "GIRepositoryFunction", /* means "new GIRepositoryFunction()" works */
-    JSCLASS_HAS_PRIVATE |
-    JSCLASS_BACKGROUND_FINALIZE,
+static const struct JSClassOps gjs_function_class_ops = {
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
@@ -1496,6 +1493,12 @@ struct JSClass gjs_function_class = {
     nullptr,  /* mayResolve */
     function_finalize,
     function_call
+};
+
+struct JSClass gjs_function_class = {
+    "GIRepositoryFunction", /* means "new GIRepositoryFunction()" works */
+    JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
+    &gjs_function_class_ops
 };
 
 static JSPropertySpec gjs_function_proto_props[] = {

@@ -267,10 +267,7 @@ error_constructor_value_of(JSContext *context,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
-struct JSClass gjs_error_class = {
-    "GLib_Error",
-    JSCLASS_HAS_PRIVATE |
-    JSCLASS_BACKGROUND_FINALIZE,
+static const struct JSClassOps gjs_error_class_ops = {
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
@@ -279,6 +276,12 @@ struct JSClass gjs_error_class = {
     NULL,  /* resolve */
     nullptr,  /* mayResolve */
     error_finalize
+};
+
+struct JSClass gjs_error_class = {
+    "GLib_Error",
+    JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
+    &gjs_error_class_ops
 };
 
 /* We need to shadow all fields of GError, to prevent calling the getter from GBoxed

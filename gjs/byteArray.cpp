@@ -55,10 +55,7 @@ static void   byte_array_finalize      (JSFreeOp     *fop,
 
 static JSObject *gjs_byte_array_get_proto(JSContext *);
 
-struct JSClass gjs_byte_array_class = {
-    "ByteArray",
-    JSCLASS_HAS_PRIVATE |
-    JSCLASS_BACKGROUND_FINALIZE,
+static const struct JSClassOps gjs_byte_array_class_ops = {
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     byte_array_get_prop,
@@ -67,6 +64,12 @@ struct JSClass gjs_byte_array_class = {
     NULL,  /* resolve */
     nullptr,  /* mayResolve */
     byte_array_finalize
+};
+
+struct JSClass gjs_byte_array_class = {
+    "ByteArray",
+    JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
+    &gjs_byte_array_class_ops
 };
 
 bool

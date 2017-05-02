@@ -145,9 +145,7 @@ class GjsModule {
         delete priv(module);
     }
 
-    static constexpr JSClass klass = {
-        "GjsModule",
-        JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
+    static constexpr JSClassOps class_ops = {
         nullptr,  /* addProperty */
         nullptr,  /* deleteProperty */
         nullptr,  /* getProperty */
@@ -156,6 +154,12 @@ class GjsModule {
         nullptr,  /* resolve */
         nullptr,  /* mayResolve */
         &GjsModule::finalize,
+    };
+
+    static constexpr JSClass klass = {
+        "GjsModule",
+        JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
+        &GjsModule::class_ops,
     };
 
 public:
@@ -205,3 +209,4 @@ gjs_module_import(JSContext       *cx,
 }
 
 decltype(GjsModule::klass) constexpr GjsModule::klass;
+decltype(GjsModule::class_ops) constexpr GjsModule::class_ops;

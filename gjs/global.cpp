@@ -172,9 +172,7 @@ gjs_printerr(JSContext *context,
 }
 
 class GjsGlobal {
-    static constexpr JSClass klass = {
-        "GjsGlobal",
-        JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST),
+    static constexpr JSClassOps class_ops = {
         nullptr,  /* addProperty */
         nullptr,  /* deleteProperty */
         nullptr,  /* getProperty */
@@ -187,6 +185,12 @@ class GjsGlobal {
         nullptr,  /* hasInstance */
         nullptr,  /* construct */
         JS_GlobalObjectTraceHook
+    };
+
+    static constexpr JSClass klass = {
+        "GjsGlobal",
+        JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST),
+        &GjsGlobal::class_ops,
     };
 
     static constexpr JSFunctionSpec static_funcs[] = {
@@ -347,5 +351,6 @@ gjs_get_global_slot(JSContext    *cx,
     return JS_GetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot);
 }
 
+decltype(GjsGlobal::class_ops) constexpr GjsGlobal::class_ops;
 decltype(GjsGlobal::klass) constexpr GjsGlobal::klass;
 decltype(GjsGlobal::static_funcs) constexpr GjsGlobal::static_funcs;

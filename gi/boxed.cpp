@@ -913,16 +913,8 @@ boxed_trace(JSTracer *tracer,
 /* The bizarre thing about this vtable is that it applies to both
  * instances of the object, and to the prototype that instances of the
  * class have.
- *
- * We allocate 1 reserved slot; this is typically unused, but if the
- * boxed is for a nested structure inside a parent structure, the
- * reserved slot is used to hold onto the parent Javascript object and
- * make sure it doesn't get freed.
  */
-struct JSClass gjs_boxed_class = {
-    "GObject_Boxed",
-    JSCLASS_HAS_PRIVATE |
-    JSCLASS_HAS_RESERVED_SLOTS(1),
+static const struct JSClassOps gjs_boxed_class_ops = {
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
@@ -935,6 +927,17 @@ struct JSClass gjs_boxed_class = {
     NULL,  /* hasInstance */
     NULL,  /* construct */
     boxed_trace
+};
+
+/* We allocate 1 reserved slot; this is typically unused, but if the
+ * boxed is for a nested structure inside a parent structure, the
+ * reserved slot is used to hold onto the parent Javascript object and
+ * make sure it doesn't get freed.
+ */
+struct JSClass gjs_boxed_class = {
+    "GObject_Boxed",
+    JSCLASS_HAS_PRIVATE | JSCLASS_HAS_RESERVED_SLOTS(1),
+    &gjs_boxed_class_ops
 };
 
 JSPropertySpec gjs_boxed_proto_props[] = {

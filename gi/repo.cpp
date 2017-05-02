@@ -216,9 +216,7 @@ repo_finalize(JSFreeOp *fop,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
-struct JSClass gjs_repo_class = {
-    "GIRepository", /* means "new GIRepository()" works */
-    JSCLASS_HAS_PRIVATE,
+static const struct JSClassOps gjs_repo_class_ops = {
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
@@ -227,6 +225,12 @@ struct JSClass gjs_repo_class = {
     repo_resolve,
     nullptr,  /* mayResolve */
     repo_finalize
+};
+
+struct JSClass gjs_repo_class = {
+    "GIRepository", /* means "new GIRepository()" works */
+    JSCLASS_HAS_PRIVATE,
+    &gjs_repo_class_ops,
 };
 
 static JSPropertySpec *gjs_repo_proto_props = nullptr;

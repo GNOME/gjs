@@ -157,10 +157,7 @@ interface_resolve(JSContext       *context,
     return true;
 }
 
-struct JSClass gjs_interface_class = {
-    "GObject_Interface",
-    JSCLASS_HAS_PRIVATE |
-    JSCLASS_BACKGROUND_FINALIZE,
+static const struct JSClassOps gjs_interface_class_ops = {
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
@@ -169,6 +166,12 @@ struct JSClass gjs_interface_class = {
     interface_resolve,
     nullptr,  /* mayResolve */
     interface_finalize
+};
+
+struct JSClass gjs_interface_class = {
+    "GObject_Interface",
+    JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
+    &gjs_interface_class_ops
 };
 
 JSPropertySpec gjs_interface_proto_props[] = {

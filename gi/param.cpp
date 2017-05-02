@@ -142,10 +142,7 @@ param_finalize(JSFreeOp *fop,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
-struct JSClass gjs_param_class = {
-    "GObject_ParamSpec",
-    JSCLASS_HAS_PRIVATE |
-    JSCLASS_BACKGROUND_FINALIZE,
+static const struct JSClassOps gjs_param_class_ops = {
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
@@ -154,6 +151,12 @@ struct JSClass gjs_param_class = {
     param_resolve,
     nullptr,  /* mayResolve */
     param_finalize
+};
+
+struct JSClass gjs_param_class = {
+    "GObject_ParamSpec",
+    JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
+    &gjs_param_class_ops
 };
 
 JSPropertySpec gjs_param_proto_props[] = {

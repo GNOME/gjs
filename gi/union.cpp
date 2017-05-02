@@ -287,9 +287,7 @@ to_string_func(JSContext *context,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
-struct JSClass gjs_union_class = {
-    "GObject_Union",
-    JSCLASS_HAS_PRIVATE,
+static const struct JSClassOps gjs_union_class_ops = {
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
@@ -298,6 +296,12 @@ struct JSClass gjs_union_class = {
     union_resolve,
     nullptr,  /* mayResolve */
     union_finalize
+};
+
+struct JSClass gjs_union_class = {
+    "GObject_Union",
+    JSCLASS_HAS_PRIVATE,
+    &gjs_union_class_ops
 };
 
 JSPropertySpec gjs_union_proto_props[] = {

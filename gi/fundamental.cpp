@@ -543,15 +543,8 @@ fundamental_trace(JSTracer *tracer,
  * tell, it would only be used if no constructor were provided to
  * JS_InitClass. The constructor from JS_InitClass is not applied to
  * the prototype unless JSCLASS_CONSTRUCT_PROTOTYPE is in flags.
- *
- * We allocate 1 reserved slot; this is typically unused, but if the
- * fundamental is for a nested structure inside a parent structure, the
- * reserved slot is used to hold onto the parent Javascript object and
- * make sure it doesn't get freed.
  */
-struct JSClass gjs_fundamental_instance_class = {
-    "GFundamental_Object",
-    JSCLASS_HAS_PRIVATE,
+static const struct JSClassOps gjs_fundamental_class_ops = {
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
@@ -564,6 +557,12 @@ struct JSClass gjs_fundamental_instance_class = {
     NULL,  /* hasInstance */
     NULL,  /* construct */
     fundamental_trace
+};
+
+struct JSClass gjs_fundamental_instance_class = {
+    "GFundamental_Object",
+    JSCLASS_HAS_PRIVATE,
+    &gjs_fundamental_class_ops
 };
 
 static JSPropertySpec gjs_fundamental_instance_proto_props[] = {

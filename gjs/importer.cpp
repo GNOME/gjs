@@ -830,9 +830,7 @@ importer_finalize(js::FreeOp *fop,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
-const js::Class gjs_importer_real_class = {
-    "GjsFileImporter",
-    JSCLASS_HAS_PRIVATE,
+static const js::ClassOps gjs_importer_class_ops = {
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
@@ -840,27 +838,30 @@ const js::Class gjs_importer_real_class = {
     NULL,  /* enumerate (see below) */
     importer_resolve,
     nullptr,  /* mayResolve */
-    importer_finalize,
-    NULL,  /* call */
-    NULL,  /* hasInstance */
-    NULL,  /* construct */
-    NULL,  /* trace */
-    JS_NULL_CLASS_SPEC,
-    JS_NULL_CLASS_EXT,
-    {
-        NULL,  /* lookupProperty */
-        NULL,  /* defineProperty */
-        NULL,  /* hasProperty */
-        NULL,  /* getProperty */
-        NULL,  /* setProperty */
-        NULL,  /* getOwnPropertyDescriptor */
-        NULL,  /* deleteProperty */
-        NULL,  /* watch */
-        NULL,  /* unwatch */
-        NULL,  /* getElements */
-        importer_enumerate,
-        NULL,  /* thisObject */
-    }
+    importer_finalize
+};
+
+static const js::ObjectOps gjs_importer_object_ops = {
+    NULL,  /* lookupProperty */
+    NULL,  /* defineProperty */
+    NULL,  /* hasProperty */
+    NULL,  /* getProperty */
+    NULL,  /* setProperty */
+    NULL,  /* getOwnPropertyDescriptor */
+    NULL,  /* deleteProperty */
+    NULL,  /* watch */
+    NULL,  /* unwatch */
+    NULL,  /* getElements */
+    importer_enumerate
+};
+
+const js::Class gjs_importer_real_class = {
+    "GjsFileImporter",
+    JSCLASS_HAS_PRIVATE,
+    &gjs_importer_class_ops,
+    nullptr,
+    nullptr,
+    &gjs_importer_object_ops
 };
 
 static JSPropertySpec *gjs_importer_proto_props = nullptr;

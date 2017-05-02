@@ -26,9 +26,7 @@ test_obj_finalize(JSFreeOp *fop,
     *finalized_p = true;
 }
 
-static JSClass test_obj_class = {
-    "TestObj",
-    JSCLASS_HAS_PRIVATE,
+static const JSClassOps test_obj_class_ops = {
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     NULL,  /* getProperty */
@@ -37,6 +35,12 @@ static JSClass test_obj_class = {
     NULL,  /* resolve */
     nullptr,  /* mayResolve */
     test_obj_finalize
+};
+
+static JSClass test_obj_class = {
+    "TestObj",
+    JSCLASS_HAS_PRIVATE,
+    &test_obj_class_ops
 };
 
 static JSObject *

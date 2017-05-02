@@ -88,7 +88,7 @@ gjs_init_class_dynamic(JSContext              *context,
         goto out;
 
     /* Bypass resolve hooks when defining the initial properties */
-    if (clasp->resolve) {
+    if (clasp->cOps->resolve) {
         JSPropertySpec *ps_iter;
         JSFunctionSpec *fs_iter;
         for (ps_iter = proto_ps; ps_iter && ps_iter->name; ps_iter++)
@@ -115,7 +115,7 @@ gjs_init_class_dynamic(JSContext              *context,
     if (static_fs && !JS_DefineFunctions(context, constructor, static_fs))
         goto out;
 
-    if (!clasp->resolve) {
+    if (!clasp->cOps->resolve) {
         if (!JS_LinkConstructorAndPrototype(context, constructor, prototype))
             goto out;
     } else {
