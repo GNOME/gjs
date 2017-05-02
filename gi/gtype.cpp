@@ -39,7 +39,8 @@ static JSObject *gjs_gtype_get_proto(JSContext *) G_GNUC_UNUSED;
 static bool gjs_gtype_define_proto(JSContext *, JS::HandleObject,
                                    JS::MutableHandleObject);
 
-GJS_DEFINE_PROTO_ABSTRACT("GIRepositoryGType", gtype, 0);
+GJS_DEFINE_PROTO_ABSTRACT("GIRepositoryGType", gtype,
+                          JSCLASS_FOREGROUND_FINALIZE);
 
 /* priv_from_js adds a "*", so this returns "void *" */
 GJS_DEFINE_PRIV_FROM_JS(void, gjs_gtype_class);

@@ -164,7 +164,7 @@ static const struct JSClassOps gjs_ns_class_ops = {
 
 struct JSClass gjs_ns_class = {
     "GIRepositoryNamespace",
-    JSCLASS_HAS_PRIVATE,
+    JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE,
     &gjs_ns_class_ops
 };
 

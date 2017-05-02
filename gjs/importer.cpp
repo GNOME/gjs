@@ -857,7 +857,7 @@ static const js::ObjectOps gjs_importer_object_ops = {
 
 const js::Class gjs_importer_real_class = {
     "GjsFileImporter",
-    JSCLASS_HAS_PRIVATE,
+    JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE,
     &gjs_importer_class_ops,
     nullptr,
     nullptr,

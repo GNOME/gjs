@@ -561,7 +561,7 @@ static const struct JSClassOps gjs_fundamental_class_ops = {
 
 struct JSClass gjs_fundamental_instance_class = {
     "GFundamental_Object",
-    JSCLASS_HAS_PRIVATE,
+    JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE,
     &gjs_fundamental_class_ops
 };
 

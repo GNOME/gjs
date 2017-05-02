@@ -300,7 +300,7 @@ static const struct JSClassOps gjs_union_class_ops = {
 
 struct JSClass gjs_union_class = {
     "GObject_Union",
-    JSCLASS_HAS_PRIVATE,
+    JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE,
     &gjs_union_class_ops
 };
 

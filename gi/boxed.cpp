@@ -936,7 +936,8 @@ static const struct JSClassOps gjs_boxed_class_ops = {
  */
 struct JSClass gjs_boxed_class = {
     "GObject_Boxed",
-    JSCLASS_HAS_PRIVATE | JSCLASS_HAS_RESERVED_SLOTS(1),
+    JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE |
+        JSCLASS_HAS_RESERVED_SLOTS(1),
     &gjs_boxed_class_ops
 };
 

@@ -229,7 +229,7 @@ static const struct JSClassOps gjs_repo_class_ops = {
 
 struct JSClass gjs_repo_class = {
     "GIRepository", /* means "new GIRepository()" works */
-    JSCLASS_HAS_PRIVATE,
+    JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE,
     &gjs_repo_class_ops,
 };
 

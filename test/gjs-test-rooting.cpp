@@ -39,7 +39,7 @@ static const JSClassOps test_obj_class_ops = {
 
 static JSClass test_obj_class = {
     "TestObj",
-    JSCLASS_HAS_PRIVATE,
+    JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE,
     &test_obj_class_ops
 };
 
