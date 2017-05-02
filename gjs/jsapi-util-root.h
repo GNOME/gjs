@@ -66,23 +66,11 @@
  */
 template<typename T>
 struct GjsHeapOperation {
-    static void trace(JSTracer    *tracer,
-                      JS::Heap<T> *thing,
-                      const char  *name);
-
     static bool update_after_gc(JS::Heap<T> *location);
 };
 
 template<>
 struct GjsHeapOperation<JSObject *> {
-    static void
-    trace(JSTracer             *tracer,
-          JS::Heap<JSObject *> *thing,
-          const char           *name)
-    {
-        JS_CallObjectTracer(tracer, thing, name);
-    }
-
     static bool
     update_after_gc(JS::Heap<JSObject *> *location)
     {
@@ -92,15 +80,7 @@ struct GjsHeapOperation<JSObject *> {
 };
 
 template<>
-struct GjsHeapOperation<JS::Value> {
-    static void
-    trace(JSTracer            *tracer,
-          JS::Heap<JS::Value> *thing,
-          const char          *name)
-    {
-        JS_CallValueTracer(tracer, thing, name);
-    }
-};
+struct GjsHeapOperation<JS::Value> {};
 
 /* GjsMaybeOwned is intended only for use in heap allocation. Do not allocate it
  * on the stack, and do not allocate any instances of structures that have it as
@@ -316,7 +296,7 @@ public:
     {
         debug("trace()");
         g_assert(!m_rooted);
-        GjsHeapOperation<T>::trace(tracer, &m_heap, name);
+        JS::TraceEdge<T>(tracer, &m_heap, name);
     }
 
     /* If not tracing, then you must call this method during GC in order to

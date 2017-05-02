@@ -192,7 +192,7 @@ static void
 gjs_context_tracer(JSTracer *trc, void *data)
 {
     GjsContext *gjs_context = reinterpret_cast<GjsContext *>(data);
-    JS_CallObjectTracer(trc, &gjs_context->global, "GJS global object");
+    JS::TraceEdge<JSObject *>(trc, &gjs_context->global, "GJS global object");
 }
 
 static void
