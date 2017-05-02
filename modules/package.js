@@ -139,6 +139,8 @@ function init(params) {
         pkgdatadir = GLib.build_filenamev([_base, 'data']);
         localedir = GLib.build_filenamev([_base, 'po']);
         moduledir = GLib.build_filenamev([_base, 'src']);
+
+        GLib.setenv('GSETTINGS_SCHEMA_DIR', pkgdatadir, true);
     } else if (_runningFromMesonSource()) {
         log('Running from Meson, using local files');
         let bld = GLib.getenv('MESON_BUILD_ROOT');
@@ -149,6 +151,7 @@ function init(params) {
         localedir = GLib.build_filenamev([bld, 'po']);
         _submoduledir = GLib.build_filenamev([bld, 'subprojects']);
 
+        GLib.setenv('GSETTINGS_SCHEMA_DIR', pkgdatadir, true);
         try {
             let resource = Gio.Resource.load(GLib.build_filenamev([bld, 'src',
                                                                   name + '.src.gresource']));
