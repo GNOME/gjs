@@ -130,7 +130,7 @@ gjs_clear_date_caches(JSContext *context,
                       unsigned   argc,
                       JS::Value *vp)
 {
-    JS::CallReceiver rec = JS::CallReceiverFromVp(vp);
+    JS::CallArgs rec = JS::CallArgsFromVp(argc, vp);
     JS_BeginRequest(context);
 
     // Workaround for a bug in SpiderMonkey where tzset is not called before
