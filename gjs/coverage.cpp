@@ -995,12 +995,11 @@ gjs_serialize_statistics(GjsCoverage *coverage)
 {
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
     JSContext *js_context = (JSContext *) gjs_context_get_native_context(priv->context);
-    JSRuntime *js_runtime = JS_GetRuntime(js_context);
 
     JSAutoRequest ar(js_context);
     JSAutoCompartment ac(js_context, priv->coverage_statistics);
     JS::RootedObject rooted_priv(js_context, priv->coverage_statistics);
-    JS::RootedValue string_value_return(js_runtime);
+    JS::RootedValue string_value_return(js_context);
 
     if (!JS_CallFunctionName(js_context, rooted_priv, "stringify",
                              JS::HandleValueArray::empty(),
@@ -1068,7 +1067,7 @@ gjs_deserialize_cache_to_object(GjsCoverage *coverage,
     JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
     JSAutoRequest ar(context);
     JSAutoCompartment ac(context, priv->coverage_statistics);
-    JS::RootedObject global_object(JS_GetRuntime(context),
+    JS::RootedObject global_object(context,
                                    JS_GetGlobalForObject(context, priv->coverage_statistics));
     return gjs_deserialize_cache_to_object_for_compartment(context, global_object, cache_data);
 }
@@ -1086,7 +1085,7 @@ gjs_fetch_statistics_from_js(GjsCoverage *coverage,
     g_array_set_clear_func(file_statistics_array,
                            gjs_coverage_statistics_file_statistics_clear);
 
-    JS::RootedObject rooted_coverage_statistics(JS_GetRuntime(js_context),
+    JS::RootedObject rooted_coverage_statistics(js_context,
                                                 priv->coverage_statistics);
 
     char **file_iter = coverage_files;
@@ -1429,7 +1428,6 @@ coverage_get_file_checksum(JSContext *context,
                            JS::Value *vp)
 {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    JSRuntime *runtime = JS_GetRuntime(context);
     GFile *file = get_file_from_call_args_filename(context, args);
 
     if (!file)
@@ -1445,9 +1443,7 @@ coverage_get_file_checksum(JSContext *context,
         return false;
     }
 
-    JS::RootedString rooted_checksum(runtime, JS_NewStringCopyZ(context,
-                                                                checksum));
-    args.rval().setString(rooted_checksum);
+    args.rval().setString(JS_NewStringCopyZ(context, checksum));
 
     g_object_unref(file);
     g_free(checksum);
@@ -1548,7 +1544,7 @@ gjs_inject_value_into_coverage_compartment(GjsCoverage     *coverage,
     JSAutoRequest ar(js_context);
     JSAutoCompartment ac(js_context, priv->coverage_statistics);
 
-    JS::RootedObject coverage_global_scope(JS_GetRuntime(js_context),
+    JS::RootedObject coverage_global_scope(js_context,
                                            JS_GetGlobalForObject(js_context, priv->coverage_statistics));
 
     if (!JS_SetProperty(js_context, coverage_global_scope, property,
@@ -1568,14 +1564,12 @@ gjs_wrap_root_importer_in_compartment(JSContext *context,
 {
     JSAutoRequest ar(context);
     JSAutoCompartment ac(context, compartment);
-    JS::RootedValue importer (JS_GetRuntime(context),
-                              gjs_get_global_slot(context,
-                                                  GJS_GLOBAL_SLOT_IMPORTS));
+    JS::RootedValue importer(context,
+        gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS));
 
-    g_assert (!importer.isUndefined());
+    g_assert(importer.isObject());
 
-    JS::RootedObject wrapped_importer(JS_GetRuntime(context),
-                                      importer.toObjectOrNull());
+    JS::RootedObject wrapped_importer(context, &importer.toObject());
     if (!JS_WrapObject(context, &wrapped_importer)) {
         return NULL;
     }
@@ -1597,7 +1591,7 @@ bootstrap_coverage(GjsCoverage *coverage)
     JSObject *debuggee = gjs_get_import_global(context);
     JS::CompartmentOptions options;
     options.setVersion(JSVERSION_LATEST);
-    JS::RootedObject debugger_compartment(JS_GetRuntime(context),
+    JS::RootedObject debugger_compartment(context,
         JS_NewGlobalObject(context, &coverage_global_class, NULL,
                            JS::FireOnNewGlobalHook, options));
     {
@@ -1630,7 +1624,7 @@ bootstrap_coverage(GjsCoverage *coverage)
             return false;
         }
 
-        JS::RootedObject wrapped_importer(JS_GetRuntime(context),
+        JS::RootedObject wrapped_importer(context,
                                           gjs_wrap_root_importer_in_compartment(context,
                                                                                 debugger_compartment));;
 
@@ -1777,7 +1771,7 @@ gjs_clear_js_side_statistics_from_coverage_object(GjsCoverage *coverage)
         JSAutoRequest ar(js_context);
         JSAutoCompartment ac(js_context, priv->coverage_statistics);
         JS::RootedObject rooted_priv(js_context, priv->coverage_statistics);
-        JS::RootedValue rval(JS_GetRuntime(js_context));
+        JS::RootedValue rval(js_context);
         if (!JS_CallFunctionName(js_context, rooted_priv, "deactivate",
                                  JS::HandleValueArray::empty(), &rval)) {
             gjs_log_exception(js_context);
