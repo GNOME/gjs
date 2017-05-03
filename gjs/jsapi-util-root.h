@@ -217,7 +217,7 @@ public:
     {
         debug("root()");
         g_assert(!m_rooted);
-        g_assert(m_heap.get() == js::GCMethods<T>::initial());
+        g_assert(m_heap.get() == JS::GCPolicy<T>::initial());
         m_rooted = true;
         m_cx = cx;
         m_notify = notify;
@@ -244,7 +244,7 @@ public:
     {
         debug("reset()");
         if (!m_rooted) {
-            m_heap = js::GCMethods<T>::initial();
+            m_heap = JS::GCPolicy<T>::initial();
             return;
         }
 

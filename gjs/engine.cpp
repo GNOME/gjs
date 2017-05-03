@@ -265,6 +265,9 @@ gjs_create_js_context(GjsContext *js_context)
     if (!cx)
         return nullptr;
 
+    if (!JS::InitSelfHostedCode(cx))
+        return nullptr;
+
     // commented are defaults in moz-24
     JS_SetNativeStackQuota(cx, 1024 * 1024);
     JS_SetGCParameter(cx, JSGC_MAX_MALLOC_BYTES, 128 * 1024 * 1024);

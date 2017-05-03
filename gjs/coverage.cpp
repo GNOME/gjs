@@ -1302,7 +1302,8 @@ gjs_context_eval_file_in_compartment(GjsContext      *context,
                      &compiled_script))
         return false;
 
-    if (!JS::CloneAndExecuteScript(js_context, compiled_script)) {
+    JS::RootedValue dummy_rval(js_context);
+    if (!JS::CloneAndExecuteScript(js_context, compiled_script, &dummy_rval)) {
         g_free(script);
         gjs_log_exception(js_context);
         g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED, "Failed to evaluate %s", filename);

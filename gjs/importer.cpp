@@ -196,7 +196,7 @@ seal_import(JSContext       *cx,
             JS::HandleId     id,
             const char      *name)
 {
-    JS::Rooted<JSPropertyDescriptor> descr(cx);
+    JS::Rooted<JS::PropertyDescriptor> descr(cx);
 
     if (!JS_GetOwnPropertyDescriptorById(cx, obj, id, &descr) ||
         descr.object() == NULL) {
