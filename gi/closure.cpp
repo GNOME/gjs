@@ -33,7 +33,6 @@
 #include "gjs/mem.h"
 
 struct Closure {
-    JSRuntime *runtime;
     JSContext *context;
     GjsMaybeOwned<JSObject *> obj;
 };
@@ -92,7 +91,6 @@ invalidate_js_pointers(GjsClosure *gc)
 
     c->obj.reset();
     c->context = NULL;
-    c->runtime = NULL;
 
     /* Notify any closure reference holders they
      * may want to drop references.
@@ -131,7 +129,6 @@ closure_clear_idle(void *data)
 
     closure->priv.obj.reset();
     closure->priv.context = nullptr;
-    closure->priv.runtime = nullptr;
 
     g_closure_unref(static_cast<GClosure *>(data));
     return G_SOURCE_REMOVE;
@@ -307,7 +304,6 @@ gjs_closure_new(JSContext  *context,
     gc = (GjsClosure*) g_closure_new_simple(sizeof(GjsClosure), NULL);
     c = new (&gc->priv) Closure();
 
-    c->runtime = JS_GetRuntime(context);
     /* The saved context is used for lifetime management, so that the closure will
      * be torn down with the context that created it. The context could be attached to
      * the default context of the runtime using if we wanted the closure to survive
