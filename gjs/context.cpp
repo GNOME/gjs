@@ -69,7 +69,7 @@ struct _GjsContext {
     JSRuntime *runtime;
     JSContext *context;
     JS::Heap<JSObject*> global;
-    intptr_t owner_thread;
+    GThread *owner_thread;
 
     char *program_name;
 
@@ -487,7 +487,7 @@ gjs_context_constructed(GObject *object)
     js_context->runtime = gjs_runtime_ref();
 
     JS_AbortIfWrongThread(js_context->runtime);
-    js_context->owner_thread = JS_GetCurrentThread();
+    js_context->owner_thread = g_thread_self();
 
     js_context->context = JS_NewContext(js_context->runtime, 8192 /* stack chunk size */);
     if (js_context->context == NULL)
@@ -666,7 +666,7 @@ context_reset_exit(GjsContext *js_context)
 bool
 _gjs_context_get_is_owner_thread(GjsContext *js_context)
 {
-    return js_context->owner_thread == JS_GetCurrentThread();
+    return js_context->owner_thread == g_thread_self();
 }
 
 /**
