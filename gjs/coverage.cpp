@@ -1553,7 +1553,7 @@ bootstrap_coverage(GjsCoverage *coverage)
 
     JSObject *debuggee = gjs_get_import_global(context);
     JS::CompartmentOptions options;
-    options.setVersion(JSVERSION_LATEST);
+    options.behaviors().setVersion(JSVERSION_LATEST);
     JS::RootedObject debugger_compartment(context,
                                           gjs_create_global_object(context));
     {

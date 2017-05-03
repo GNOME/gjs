@@ -308,20 +308,16 @@ gjs_context_constructed(GObject *object)
     /* setExtraWarnings: Be extra strict about code that might hide a bug */
     if (!g_getenv("GJS_DISABLE_EXTRA_WARNINGS")) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Enabling extra warnings");
-        JS::RuntimeOptionsRef(js_context->context).setExtraWarnings(true);
+        JS::ContextOptionsRef(js_context->context).setExtraWarnings(true);
     }
 
     if (!g_getenv("GJS_DISABLE_JIT")) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
-        JS::RuntimeOptionsRef(js_context->context)
+        JS::ContextOptionsRef(js_context->context)
             .setIon(true)
             .setBaseline(true)
             .setAsmJS(true);
     }
-
-    /* setDontReportUncaught: Don't send exceptions to our error report handler;
-     * instead leave them set. This allows us to get at the exception object. */
-    JS::ContextOptionsRef(js_context->context).setDontReportUncaught(true);
 
     JS::RootedObject global(js_context->context,
         gjs_create_global_object(js_context->context));
