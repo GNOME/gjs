@@ -54,6 +54,8 @@ gjs_srcs =				\
 	gjs/context-private.h		\
 	gjs/coverage-internal.h		\
 	gjs/coverage.cpp 		\
+	gjs/engine.cpp			\
+	gjs/engine.h			\
 	gjs/global.cpp			\
 	gjs/global.h			\
 	gjs/importer.cpp		\
@@ -77,8 +79,6 @@ gjs_srcs =				\
 	gjs/module.cpp			\
 	gjs/native.cpp			\
 	gjs/native.h			\
-	gjs/runtime.cpp			\
-	gjs/runtime.h			\
 	gjs/stack.cpp			\
 	modules/modules.cpp		\
 	modules/modules.h		\

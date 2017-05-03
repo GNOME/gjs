@@ -36,6 +36,7 @@
 #include "union.h"
 #include "gtype.h"
 #include "gerror.h"
+#include "gjs/context-private.h"
 #include "gjs/jsapi-wrapper.h"
 
 #include <girepository.h>
@@ -118,7 +119,6 @@ closure_marshal(GClosure        *closure,
                 gpointer         marshal_data)
 {
     JSContext *context;
-    JSRuntime *runtime;
     JSObject *obj;
     unsigned i;
     GSignalQuery signal_query = { 0, };
@@ -137,8 +137,7 @@ closure_marshal(GClosure        *closure,
     }
 
     context = gjs_closure_get_context(closure);
-    runtime = JS_GetRuntime(context);
-    if (G_UNLIKELY (gjs_runtime_is_sweeping(runtime))) {
+    if (G_UNLIKELY(_gjs_context_is_sweeping(context))) {
         GSignalInvocationHint *hint = (GSignalInvocationHint*) invocation_hint;
 
         g_critical("Attempting to call back into JSAPI during the sweeping phase of GC. "

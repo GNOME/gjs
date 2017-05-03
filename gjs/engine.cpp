@@ -26,26 +26,16 @@
 #include "jsapi-wrapper.h"
 #include <js/Initialization.h>
 
+#include "context-private.h"
+#include "engine.h"
+#include "gi/object.h"
 #include "jsapi-util.h"
-#include "runtime.h"
+#include "util/log.h"
 
 #ifdef G_OS_WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
-
-struct RuntimeData {
-  unsigned refcount;
-  bool in_gc_sweep;
-};
-
-bool
-gjs_runtime_is_sweeping (JSRuntime *runtime)
-{
-  RuntimeData *data = (RuntimeData*) JS_GetRuntimePrivate(runtime);
-
-  return data->in_gc_sweep;
-}
 
 /* Implementations of locale-specific operations; these are used
  * in the implementation of String.localeCompare(), Date.toLocaleDateString(),
@@ -144,18 +134,6 @@ gjs_locale_to_unicode (JSContext  *context,
     return success;
 }
 
-static void
-destroy_runtime(gpointer data)
-{
-    JSRuntime *runtime = (JSRuntime *) data;
-    RuntimeData *rtdata = (RuntimeData *) JS_GetRuntimePrivate(runtime);
-
-    JS_DestroyRuntime(runtime);
-    g_free(rtdata);
-}
-
-static GPrivate thread_runtime = G_PRIVATE_INIT(destroy_runtime);
-
 static JSLocaleCallbacks gjs_locale_callbacks =
 {
     gjs_locale_to_upper_case,
@@ -168,9 +146,9 @@ static void
 gjs_finalize_callback(JSFreeOp         *fop,
                       JSFinalizeStatus  status,
                       bool              isCompartment,
-                      void             *user_data)
+                      void             *data)
 {
-  RuntimeData *data = static_cast<RuntimeData *>(user_data);
+    auto js_context = static_cast<GjsContext *>(data);
 
   /* Implementation note for mozjs 24:
      sweeping happens in two phases, in the first phase all
@@ -213,17 +191,22 @@ gjs_finalize_callback(JSFreeOp         *fop,
   */
 
   if (status == JSFINALIZE_GROUP_START)
-    data->in_gc_sweep = true;
+        _gjs_context_set_sweeping(js_context, true);
   else if (status == JSFINALIZE_GROUP_END)
-    data->in_gc_sweep = false;
+        _gjs_context_set_sweeping(js_context, false);
 }
 
-/* Destroys the current thread's runtime regardless of refcount. No-op if there
- * is no runtime */
 static void
-gjs_destroy_runtime_for_current_thread(void)
+on_garbage_collect(JSContext *cx,
+                   JSGCStatus status,
+                   void      *data)
 {
-    g_private_replace(&thread_runtime, NULL);
+    /* We finalize any pending toggle refs before doing any garbage collection,
+     * so that we can collect the JS wrapper objects, and in order to minimize
+     * the chances of objects having a pending toggle up queued when they are
+     * garbage collected. */
+    if (status == JSGC_BEGIN)
+        gjs_object_clear_toggles();
 }
 
 #ifdef G_OS_WIN32
@@ -243,7 +226,6 @@ LPVOID    lpvReserved)
     break;
 
   case DLL_THREAD_DETACH:
-    gjs_destroy_runtime_for_current_thread();
     JS_ShutDown ();
     break;
 
@@ -264,8 +246,6 @@ public:
     }
 
     ~GjsInit() {
-        /* No-op if the runtime was already destroyed */
-        gjs_destroy_runtime_for_current_thread();
         JS_ShutDown();
     }
 
@@ -277,69 +257,52 @@ public:
 static GjsInit gjs_is_inited;
 #endif
 
-static JSRuntime *
-gjs_runtime_for_current_thread(void)
+JSContext *
+gjs_create_js_context(GjsContext *js_context)
 {
-    JSRuntime *runtime = (JSRuntime *) g_private_get(&thread_runtime);
-    RuntimeData *data;
+    g_assert(gjs_is_inited);
+    JSContext *cx = JS_NewContext(32 * 1024 * 1024 /* max bytes */);
+    if (!cx)
+        return nullptr;
 
-    if (!runtime) {
-        g_assert(gjs_is_inited);
-        runtime = JS_NewRuntime(32 * 1024 * 1024 /* max bytes */);
-        if (runtime == NULL)
-            g_error("Failed to create javascript runtime");
+    // commented are defaults in moz-24
+    JS_SetNativeStackQuota(cx, 1024 * 1024);
+    JS_SetGCParameter(cx, JSGC_MAX_MALLOC_BYTES, 128 * 1024 * 1024);
+    JS_SetGCParameter(cx, JSGC_MAX_BYTES, -1);
+    JS_SetGCParameter(cx, JSGC_MODE, JSGC_MODE_INCREMENTAL);
+    JS_SetGCParameter(cx, JSGC_SLICE_TIME_BUDGET, 10); /* ms */
+    // JS_SetGCParameter(cx, JSGC_HIGH_FREQUENCY_TIME_LIMIT, 1000); /* ms */
+    JS_SetGCParameter(cx, JSGC_DYNAMIC_MARK_SLICE, true);
+    JS_SetGCParameter(cx, JSGC_DYNAMIC_HEAP_GROWTH, true);
+    // JS_SetGCParameter(cx, JSGC_LOW_FREQUENCY_HEAP_GROWTH, 150);
+    // JS_SetGCParameter(cx, JSGC_HIGH_FREQUENCY_HEAP_GROWTH_MIN, 150);
+    // JS_SetGCParameter(cx, JSGC_HIGH_FREQUENCY_HEAP_GROWTH_MAX, 300);
+    // JS_SetGCParameter(cx, JSGC_HIGH_FREQUENCY_LOW_LIMIT, 100);
+    // JS_SetGCParameter(cx, JSGC_HIGH_FREQUENCY_HIGH_LIMIT, 500);
+    // JS_SetGCParameter(cx, JSGC_ALLOCATION_THRESHOLD, 30);
+    // JS_SetGCParameter(cx, JSGC_DECOMMIT_THRESHOLD, 32);
 
-        data = g_new0(RuntimeData, 1);
-        JS_SetRuntimePrivate(runtime, data);
+    /* set ourselves as the private data */
+    JS_SetContextPrivate(cx, js_context);
 
-        // commented are defaults in moz-24
-        JS_SetNativeStackQuota(runtime, 1024*1024);
-        JS_SetGCParameter(runtime, JSGC_MAX_MALLOC_BYTES, 128*1024*1024);
-        JS_SetGCParameter(runtime, JSGC_MAX_BYTES, -1);
-        JS_SetGCParameter(runtime, JSGC_MODE, JSGC_MODE_INCREMENTAL);
-        JS_SetGCParameter(runtime, JSGC_SLICE_TIME_BUDGET, 10); /* ms */
-        // JS_SetGCParameter(runtime, JSGC_HIGH_FREQUENCY_TIME_LIMIT, 1000); /* ms */
-        JS_SetGCParameter(runtime, JSGC_DYNAMIC_MARK_SLICE, true);
-        JS_SetGCParameter(runtime, JSGC_DYNAMIC_HEAP_GROWTH, true);
-        // JS_SetGCParameter(runtime, JSGC_LOW_FREQUENCY_HEAP_GROWTH, 150);
-        // JS_SetGCParameter(runtime, JSGC_HIGH_FREQUENCY_HEAP_GROWTH_MIN, 150);
-        // JS_SetGCParameter(runtime, JSGC_HIGH_FREQUENCY_HEAP_GROWTH_MAX, 300);
-        // JS_SetGCParameter(runtime, JSGC_HIGH_FREQUENCY_LOW_LIMIT, 100);
-        // JS_SetGCParameter(runtime, JSGC_HIGH_FREQUENCY_HIGH_LIMIT, 500);
-        // JS_SetGCParameter(runtime, JSGC_ALLOCATION_THRESHOLD, 30);
-        // JS_SetGCParameter(runtime, JSGC_DECOMMIT_THRESHOLD, 32);
-        JS_SetLocaleCallbacks(runtime, &gjs_locale_callbacks);
-        JS_AddFinalizeCallback(runtime, gjs_finalize_callback, data);
-        JS::SetWarningReporter(runtime, gjs_warning_reporter);
+    JS_AddFinalizeCallback(cx, gjs_finalize_callback, js_context);
+    JS_SetGCCallback(cx, on_garbage_collect, js_context);
+    JS_SetLocaleCallbacks(cx, &gjs_locale_callbacks);
+    JS::SetWarningReporter(cx, gjs_warning_reporter);
 
-        g_private_set(&thread_runtime, runtime);
+    /* setExtraWarnings: Be extra strict about code that might hide a bug */
+    if (!g_getenv("GJS_DISABLE_EXTRA_WARNINGS")) {
+        gjs_debug(GJS_DEBUG_CONTEXT, "Enabling extra warnings");
+        JS::ContextOptionsRef(cx).setExtraWarnings(true);
     }
 
-    return runtime;
-}
+    if (!g_getenv("GJS_DISABLE_JIT")) {
+        gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
+        JS::ContextOptionsRef(cx)
+            .setIon(true)
+            .setBaseline(true)
+            .setAsmJS(true);
+    }
 
-/* These two act on the current thread's runtime. In the future they will go
- * away because SpiderMonkey is going to merge JSContext and JSRuntime.
- */
-
-/* Creates a new runtime with one reference if there is no runtime yet */
-JSRuntime *
-gjs_runtime_ref(void)
-{
-    JSRuntime *rt = static_cast<JSRuntime *>(gjs_runtime_for_current_thread());
-    RuntimeData *data = static_cast<RuntimeData *>(JS_GetRuntimePrivate(rt));
-    g_atomic_int_inc(&data->refcount);
-    return rt;
-}
-
-/* No-op if there is no runtime */
-void
-gjs_runtime_unref(void)
-{
-    JSRuntime *rt = static_cast<JSRuntime *>(g_private_get(&thread_runtime));
-    if (rt == NULL)
-        return;
-    RuntimeData *data = static_cast<RuntimeData *>(JS_GetRuntimePrivate(rt));
-    if (g_atomic_int_dec_and_test(&data->refcount))
-        gjs_destroy_runtime_for_current_thread();
+    return cx;
 }

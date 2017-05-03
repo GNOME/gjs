@@ -173,7 +173,6 @@ gjs_callback_closure(ffi_cif *cif,
                      void *data)
 {
     JSContext *context;
-    JSRuntime *runtime;
     JSObject *func_obj;
     GjsCallbackTrampoline *trampoline;
     int i, n_args, n_jsargs, n_outargs;
@@ -186,8 +185,7 @@ gjs_callback_closure(ffi_cif *cif,
     gjs_callback_trampoline_ref(trampoline);
 
     context = trampoline->context;
-    runtime = JS_GetRuntime(context);
-    if (G_UNLIKELY (gjs_runtime_is_sweeping(runtime))) {
+    if (G_UNLIKELY(_gjs_context_is_sweeping(context))) {
         g_critical("Attempting to call back into JSAPI during the sweeping phase of GC. "
                    "This is most likely caused by not destroying a Clutter actor or Gtk+ "
                    "widget with ::destroy signals connected, but can also be caused by "

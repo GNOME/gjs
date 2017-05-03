@@ -21,14 +21,12 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_RUNTIME_H__
-#define __GJS_RUNTIME_H__
+#ifndef GJS_ENGINE_H
+#define GJS_ENGINE_H
 
-#include <stdbool.h>
+#include "context.h"
+#include "jsapi-wrapper.h"
 
-JSRuntime *gjs_runtime_ref(void);
-void gjs_runtime_unref(void);
+JSContext *gjs_create_js_context(GjsContext *js_context);
 
-bool        gjs_runtime_is_sweeping        (JSRuntime *runtime);
-
-#endif /* __GJS_RUNTIME_H__ */
+#endif  /* GJS_ENGINE_H */

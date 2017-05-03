@@ -27,6 +27,7 @@
 #include <inttypes.h>
 
 #include "context.h"
+#include "jsapi-wrapper.h"
 
 G_BEGIN_DECLS
 
@@ -41,6 +42,11 @@ bool _gjs_context_get_is_owner_thread(GjsContext *js_context);
 
 bool _gjs_context_should_exit(GjsContext *js_context,
                               uint8_t    *exit_code_p);
+
+void _gjs_context_set_sweeping(GjsContext *js_context,
+                               bool        sweeping);
+
+bool _gjs_context_is_sweeping(JSContext *cx);
 
 G_END_DECLS
 

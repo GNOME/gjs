@@ -30,7 +30,6 @@
 #include <glib-object.h>
 
 #include "jsapi-wrapper.h"
-#include "gjs/runtime.h"
 #include "gi/gtype.h"
 
 class GjsAutoChar : public std::unique_ptr<char, decltype(&g_free)> {

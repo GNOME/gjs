@@ -28,6 +28,7 @@
 #include <gio/gio.h>
 
 #include "context-private.h"
+#include "engine.h"
 #include "global.h"
 #include "importer.h"
 #include "jsapi-private.h"
@@ -35,7 +36,6 @@
 #include "jsapi-wrapper.h"
 #include "native.h"
 #include "byteArray.h"
-#include "runtime.h"
 #include "gi/object.h"
 #include "gi/repo.h"
 
@@ -66,7 +66,6 @@ static void     gjs_context_set_property      (GObject               *object,
 struct _GjsContext {
     GObject parent;
 
-    JSRuntime *runtime;
     JSContext *context;
     JS::Heap<JSObject*> global;
     GThread *owner_thread;
@@ -76,6 +75,7 @@ struct _GjsContext {
     char **search_path;
 
     bool destroying;
+    bool in_gc_sweep;
 
     bool should_exit;
     uint8_t exit_code;
@@ -112,19 +112,6 @@ enum {
 
 static GMutex contexts_lock;
 static GList *all_contexts = NULL;
-
-static void
-on_garbage_collect(JSContext *cx,
-                   JSGCStatus status,
-                   void      *data)
-{
-    /* We finalize any pending toggle refs before doing any garbage collection,
-     * so that we can collect the JS wrapper objects, and in order to minimize
-     * the chances of objects having a pending toggle up queued when they are
-     * garbage collected. */
-    if (status == JSGC_BEGIN)
-        gjs_object_clear_toggles();
-}
 
 static void
 gjs_context_init(GjsContext *js_context)
@@ -243,7 +230,6 @@ gjs_context_dispose(GObject *object)
         /* Tear down JS */
         JS_DestroyContext(js_context->context);
         js_context->context = NULL;
-        g_clear_pointer(&js_context->runtime, gjs_runtime_unref);
     }
 }
 
@@ -283,74 +269,48 @@ gjs_context_constructed(GObject *object)
 
     G_OBJECT_CLASS(gjs_context_parent_class)->constructed(object);
 
-    js_context->runtime = gjs_runtime_ref();
-
     js_context->owner_thread = g_thread_self();
 
-    js_context->context = JS_NewContext(js_context->runtime, 8192 /* stack chunk size */);
-    if (js_context->context == NULL)
+    JSContext *cx = gjs_create_js_context(js_context);
+    if (!cx)
         g_error("Failed to create javascript context");
+    js_context->context = cx;
 
     for (i = 0; i < GJS_STRING_LAST; i++) {
-        js_context->const_strings[i] =
-            new JS::PersistentRootedId(js_context->context,
-                gjs_intern_string_to_id(js_context->context, const_strings[i]));
+        js_context->const_strings[i] = new JS::PersistentRootedId(cx,
+            gjs_intern_string_to_id(cx, const_strings[i]));
     }
 
-    JS_BeginRequest(js_context->context);
+    JS_BeginRequest(cx);
 
-    JS_SetGCCallback(js_context->context, on_garbage_collect, js_context);
-
-    /* set ourselves as the private data */
-    JS_SetContextPrivate(js_context->context, js_context);
-
-    /* setExtraWarnings: Be extra strict about code that might hide a bug */
-    if (!g_getenv("GJS_DISABLE_EXTRA_WARNINGS")) {
-        gjs_debug(GJS_DEBUG_CONTEXT, "Enabling extra warnings");
-        JS::ContextOptionsRef(js_context->context).setExtraWarnings(true);
-    }
-
-    if (!g_getenv("GJS_DISABLE_JIT")) {
-        gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
-        JS::ContextOptionsRef(js_context->context)
-            .setIon(true)
-            .setBaseline(true)
-            .setAsmJS(true);
-    }
-
-    JS::RootedObject global(js_context->context,
-        gjs_create_global_object(js_context->context));
+    JS::RootedObject global(cx, gjs_create_global_object(cx));
     if (!global) {
         gjs_log_exception(js_context->context);
         g_error("Failed to initialize global object");
     }
 
-    JSAutoCompartment ac(js_context->context, global);
+    JSAutoCompartment ac(cx, global);
 
     new (&js_context->global) JS::Heap<JSObject *>(global);
-    JS_AddExtraGCRootsTracer(js_context->context, gjs_context_tracer,
-                             js_context);
+    JS_AddExtraGCRootsTracer(cx, gjs_context_tracer, js_context);
 
-    JS::RootedObject importer(js_context->context,
-        gjs_create_root_importer(js_context->context, js_context->search_path ?
-                                 js_context->search_path : nullptr));
+    JS::RootedObject importer(cx, gjs_create_root_importer(cx,
+        js_context->search_path ? js_context->search_path : nullptr));
     if (!importer)
         g_error("Failed to create root importer");
 
-    JS::Value v_importer = gjs_get_global_slot(js_context->context,
-                                               GJS_GLOBAL_SLOT_IMPORTS);
+    JS::Value v_importer = gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS);
     g_assert(((void) "Someone else already created root importer",
               v_importer.isUndefined()));
 
-    gjs_set_global_slot(js_context->context, GJS_GLOBAL_SLOT_IMPORTS,
-                        JS::ObjectValue(*importer));
+    gjs_set_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS, JS::ObjectValue(*importer));
 
-    if (!gjs_define_global_properties(js_context->context, global)) {
-        gjs_log_exception(js_context->context);
+    if (!gjs_define_global_properties(cx, global)) {
+        gjs_log_exception(cx);
         g_error("Failed to define properties on global object");
     }
 
-    JS_EndRequest(js_context->context);
+    JS_EndRequest(cx);
 
     g_mutex_lock (&contexts_lock);
     all_contexts = g_list_prepend(all_contexts, object);
@@ -470,6 +430,20 @@ bool
 _gjs_context_get_is_owner_thread(GjsContext *js_context)
 {
     return js_context->owner_thread == g_thread_self();
+}
+
+void
+_gjs_context_set_sweeping(GjsContext *js_context,
+                          bool        sweeping)
+{
+    js_context->in_gc_sweep = sweeping;
+}
+
+bool
+_gjs_context_is_sweeping(JSContext *cx)
+{
+    auto js_context = static_cast<GjsContext *>(JS_GetContextPrivate(cx));
+    return js_context->in_gc_sweep;
 }
 
 /**
