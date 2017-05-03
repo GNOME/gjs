@@ -52,7 +52,7 @@ test_obj_new(GjsRootingFixture *fx)
 }
 
 static void
-on_gc(JSRuntime *rt,
+on_gc(JSContext *cx,
       JSGCStatus status,
       void      *data)
 {
@@ -70,7 +70,7 @@ setup(GjsRootingFixture *fx,
       gconstpointer      unused)
 {
     gjs_unit_test_fixture_setup(PARENT(fx), unused);
-    JS_SetGCCallback(JS_GetRuntime(PARENT(fx)->cx), on_gc, fx);
+    JS_SetGCCallback(PARENT(fx)->cx, on_gc, fx);
 }
 
 static void
@@ -85,7 +85,7 @@ wait_for_gc(GjsRootingFixture *fx)
 {
     int count = g_atomic_int_get(&gc_counter);
 
-    JS_GC(JS_GetRuntime(PARENT(fx)->cx));
+    JS_GC(PARENT(fx)->cx);
 
     g_mutex_lock(&gc_lock);
     while (count == g_atomic_int_get(&gc_counter)) {

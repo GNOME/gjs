@@ -1630,9 +1630,7 @@ bootstrap_coverage(GjsCoverage *coverage)
         }
 
         /* Add a tracer, as suggested by jdm on #jsapi */
-        JS_AddExtraGCRootsTracer(JS_GetRuntime(context),
-                                 coverage_statistics_tracer,
-                                 coverage);
+        JS_AddExtraGCRootsTracer(context, coverage_statistics_tracer, coverage);
 
         priv->coverage_statistics = coverage_statistics;
     }
@@ -1711,8 +1709,7 @@ gjs_clear_js_side_statistics_from_coverage_object(GjsCoverage *coverage)
 
         /* Remove GC roots trace after we've decomissioned the object
          * and no longer need it to be traced here. */
-        JS_RemoveExtraGCRootsTracer(JS_GetRuntime(js_context),
-                                    coverage_statistics_tracer,
+        JS_RemoveExtraGCRootsTracer(js_context, coverage_statistics_tracer,
                                     coverage);
 
         priv->coverage_statistics = NULL;

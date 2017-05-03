@@ -114,7 +114,7 @@ static GMutex contexts_lock;
 static GList *all_contexts = NULL;
 
 static void
-on_garbage_collect(JSRuntime *rt,
+on_garbage_collect(JSContext *cx,
                    JSGCStatus status,
                    void      *data)
 {
@@ -217,7 +217,7 @@ gjs_context_dispose(GObject *object)
          * that we may not have the JS_GetPrivate() to access the
          * context
          */
-        JS_GC(js_context->runtime);
+        JS_GC(js_context->context);
         JS_EndRequest(js_context->context);
 
         js_context->destroying = true;
@@ -233,7 +233,7 @@ gjs_context_dispose(GObject *object)
             js_context->auto_gc_id = 0;
         }
 
-        JS_RemoveExtraGCRootsTracer(js_context->runtime, gjs_context_tracer,
+        JS_RemoveExtraGCRootsTracer(js_context->context, gjs_context_tracer,
                                     js_context);
         js_context->global = NULL;
 
@@ -285,7 +285,6 @@ gjs_context_constructed(GObject *object)
 
     js_context->runtime = gjs_runtime_ref();
 
-    JS_AbortIfWrongThread(js_context->runtime);
     js_context->owner_thread = g_thread_self();
 
     js_context->context = JS_NewContext(js_context->runtime, 8192 /* stack chunk size */);
@@ -300,7 +299,7 @@ gjs_context_constructed(GObject *object)
 
     JS_BeginRequest(js_context->context);
 
-    JS_SetGCCallback(js_context->runtime, on_garbage_collect, js_context);
+    JS_SetGCCallback(js_context->context, on_garbage_collect, js_context);
 
     /* set ourselves as the private data */
     JS_SetContextPrivate(js_context->context, js_context);
@@ -329,7 +328,8 @@ gjs_context_constructed(GObject *object)
     JSAutoCompartment ac(js_context->context, global);
 
     new (&js_context->global) JS::Heap<JSObject *>(global);
-    JS_AddExtraGCRootsTracer(js_context->runtime, gjs_context_tracer, js_context);
+    JS_AddExtraGCRootsTracer(js_context->context, gjs_context_tracer,
+                             js_context);
 
     JS::RootedObject importer(js_context->context,
         gjs_create_root_importer(js_context->context, js_context->search_path ?
@@ -509,7 +509,7 @@ gjs_context_maybe_gc (GjsContext  *context)
 void
 gjs_context_gc (GjsContext  *context)
 {
-    JS_GC(context->runtime);
+    JS_GC(context->context);
 }
 
 /**

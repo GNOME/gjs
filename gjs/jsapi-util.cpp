@@ -709,7 +709,7 @@ gjs_gc_if_needed (JSContext *context)
          */
         if (rss_size > linux_rss_trigger) {
             linux_rss_trigger = (gulong) MIN(G_MAXULONG, rss_size * 1.25);
-            JS_GC(JS_GetRuntime(context));
+            JS_GC(context);
             last_gc_time = now;
         } else if (rss_size < (0.75 * linux_rss_trigger)) {
             /* If we've shrunk by 75%, lower the trigger */

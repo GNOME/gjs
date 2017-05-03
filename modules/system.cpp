@@ -112,11 +112,11 @@ gjs_dump_heap(JSContext *cx,
 
     if (filename) {
         FILE *fp = fopen(filename, "a");
-        js::DumpHeap(JS_GetRuntime(cx), fp, js::IgnoreNurseryObjects);
+        js::DumpHeap(cx, fp, js::IgnoreNurseryObjects);
         fclose(fp);
         g_free(filename);
     } else {
-        js::DumpHeap(JS_GetRuntime(cx), stdout, js::IgnoreNurseryObjects);
+        js::DumpHeap(cx, stdout, js::IgnoreNurseryObjects);
     }
 
     args.rval().setUndefined();
@@ -131,7 +131,7 @@ gjs_gc(JSContext *context,
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     if (!gjs_parse_call_args(context, "gc", argv, ""))
         return false;
-    JS_GC(JS_GetRuntime(context));
+    JS_GC(context);
     argv.rval().setUndefined();
     return true;
 }

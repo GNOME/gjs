@@ -58,7 +58,7 @@ gjs_get_gtype_wrapper_quark(void)
 }
 
 static void
-update_gtype_weak_pointers(JSRuntime     *rt,
+update_gtype_weak_pointers(JSContext     *cx,
                            JSCompartment *compartment,
                            void          *data)
 {
@@ -76,8 +76,7 @@ static void
 ensure_weak_pointer_callback(JSContext *cx)
 {
     if (!weak_pointer_callback) {
-        JS_AddWeakPointerCompartmentCallback(JS_GetRuntime(cx),
-                                             update_gtype_weak_pointers,
+        JS_AddWeakPointerCompartmentCallback(cx, update_gtype_weak_pointers,
                                              nullptr);
         weak_pointer_callback = true;
     }
