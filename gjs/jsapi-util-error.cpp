@@ -83,13 +83,13 @@ gjs_throw_valist(JSContext       *context,
     result = false;
 
     if (!gjs_string_from_utf8(context, s, -1, error_args[0])) {
-        JS_ReportError(context, "Failed to copy exception string");
+        JS_ReportErrorUTF8(context, "Failed to copy exception string");
         goto out;
     }
 
     if (!JS_GetProperty(context, global, error_class, &v_constructor) ||
         !v_constructor.isObject()) {
-        JS_ReportError(context, "??? Missing Error constructor in global object?");
+        JS_ReportErrorUTF8(context, "??? Missing Error constructor in global object?");
         goto out;
     }
 
@@ -119,9 +119,7 @@ gjs_throw_valist(JSContext       *context,
         /* try just reporting it to error handler? should not
          * happen though pretty much
          */
-        JS_ReportError(context,
-                       "Failed to throw exception '%s'",
-                       s);
+        JS_ReportErrorUTF8(context, "Failed to throw exception '%s'", s);
     }
     g_free(s);
 

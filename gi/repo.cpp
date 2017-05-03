@@ -105,7 +105,7 @@ resolve_namespace_object(JSContext       *context,
                                                 "versions available; use "
                                                 "imports.gi.versions to pick one",
                                                 ns_name, nversions);
-        JS_ReportWarning(context, warn_text);
+        JS_ReportWarningUTF8(context, "%s", warn_text.get());
     }
     g_list_free_full(versions, g_free);
 

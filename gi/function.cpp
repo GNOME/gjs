@@ -769,9 +769,9 @@ gjs_invoke_c_function(JSContext                             *context,
      */
     if (args.length() > function->expected_js_argc) {
         GjsAutoChar name = format_function_name(function, is_method);
-        JS_ReportWarning(context, "Too many arguments to %s: expected %d, "
-                         "got %" G_GSIZE_FORMAT, name.get(),
-                         function->expected_js_argc, args.length());
+        JS_ReportWarningUTF8(context, "Too many arguments to %s: expected %d, "
+                             "got %" G_GSIZE_FORMAT, name.get(),
+                             function->expected_js_argc, args.length());
     } else if (args.length() < function->expected_js_argc) {
         GjsAutoChar name = format_function_name(function, is_method);
         gjs_throw(context, "Too few arguments to %s: "
