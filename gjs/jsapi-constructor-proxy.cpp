@@ -23,9 +23,11 @@
  * Authored by: Philip Chimento <philip@endlessm.com>
  */
 
+#include "jsapi-wrapper.h"
+#include <jswrapper.h>
+
 #include "jsapi-constructor-proxy.h"
 #include "jsapi-util.h"
-#include "jsapi-wrapper.h"
 #include "mem.h"
 #include "util/log.h"
 
@@ -64,8 +66,6 @@
  */
 
 static const char constructor_proxy_create_name[] = "__private_GjsConstructorProxy";
-/* This char's address is an arbitrary identifier for use in debugging */
-static const char constructor_proxy_family = 'p';
 
 enum {
     SLOT_PROTO,
@@ -74,7 +74,7 @@ enum {
 /* This class is the C++ equivalent of a proxy handler object. In JS, that is
  * the second argument passed to the "new Proxy(target, handler)" constructor.
  */
-class GjsConstructorHandler : public js::DirectProxyHandler {
+class GjsConstructorHandler : public js::Wrapper {
     static inline JSObject *
     proto(JS::HandleObject proxy)
     {
@@ -83,7 +83,7 @@ class GjsConstructorHandler : public js::DirectProxyHandler {
 
 public:
     GjsConstructorHandler()
-    : js::DirectProxyHandler(&constructor_proxy_family, true /* hasPrototype */)
+    : js::Wrapper(0 /* flags */, true /* hasPrototype */)
     { }
 
     bool
