@@ -1,3 +1,14 @@
+Version 1.48.3
+--------------
+
+- Closed bugs:
+
+  * arg: don't crash when asked to convert a null strv to an array [#775679,
+    Cosimo Cecchi, Sam Spilsbury]
+  * gjs 1.48.0: does not compile on macOS with clang [#780350, Tom Schoonjans,
+    Philip Chimento]
+  * Modernize shell scripts [#781806, Claudio André]
+
 Version 1.48.2
 --------------
 
