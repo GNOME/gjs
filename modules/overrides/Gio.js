@@ -340,6 +340,14 @@ function _wrapJSObject(interfaceInfo, jsObj) {
     return impl;
 }
 
+function* _listModelIterator() {
+    let _index = 0;
+    const _len = this.get_n_items();
+    while (_index < _len) {
+        yield this.get_item(_index++);
+    }
+}
+
 function _init() {
     Gio = this;
 
@@ -391,4 +399,7 @@ function _init() {
 
     Gio.DBusExportedObject = GjsPrivate.DBusImplementation;
     Gio.DBusExportedObject.wrapJSObject = _wrapJSObject;
+
+    // ListStore
+    Gio.ListStore.prototype[Symbol.iterator] = _listModelIterator;
 }
