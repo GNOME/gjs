@@ -1,3 +1,45 @@
+Version 1.49.2
+--------------
+
+- New feature: When building an app with the Package module, using the Meson
+  build system, you can now run the app with "ninja run" and all the paths will
+  be set up correctly.
+
+- New feature: Gio.ListStore is now iterable.
+
+- New API: Package.requireSymbol(), a companion for the already existing
+  Package.require(), that not only checks for a GIR library but also for a
+  symbol defined in that library.
+
+- New API: Package.checkSymbol(), similar to Package.requireSymbol() but does
+  not exit if the symbol was not found. Use this to support older versions of
+  a GIR library with fallback functionality.
+
+- New API: System.dumpHeap(), for debugging only. Prints the state of the JS
+  engine's heap to standard output. Takes an optional filename parameter which
+  will dump to a file instead if given.
+
+- Closed bugs:
+
+  * Make gjs build on Windows/Visual Studio [#775868, Chun-wei Fan]
+  * Bring back fancy error reporter in gjs-console [#781882, Philip Chimento]
+  * Add Meson running from source support to package.js [#781882, Patrick
+    Griffis]
+  * package: Fix initSubmodule() when running from source in Meson [#782065,
+    Patrick Griffis]
+  * package: Set GSETTINGS_SCHEMA_DIR when ran from source [#782069, Patrick
+    Griffis]
+  * Add imports.gi.has() to check for symbol availability [#779593, Florian
+    Müllner]
+  * overrides: Implement Gio.ListStore[Symbol.iterator] [#782310, Patrick
+    Griffis]
+  * tweener: Explicitly check for undefined properties [#781219, Debarshi Ray,
+    Philip Chimento]
+  * Add a way to dump the heap [#780106, Juan Pablo Ugarte]
+
+- Fixes in preparation for SpiderMonkey 52 [Philip Chimento]
+- Misc fixes [Philip Chimento]
+
 Version 1.48.3
 --------------
 
