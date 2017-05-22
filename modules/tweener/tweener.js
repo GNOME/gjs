@@ -535,7 +535,7 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
                 copyProperties[istr] = new PropertyInfo(properties[istr].valueStart,
                                                         properties[istr].valueComplete,
                                                         properties[istr].valueComplete,
-                                                        properties[istr].arrayIndex,
+                                                        properties[istr].arrayIndex || 0,
                                                         {},
                                                         properties[istr].isSpecialProperty,
                                                         properties[istr].modifierFunction,
