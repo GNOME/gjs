@@ -39,7 +39,7 @@ GJS_DEFINE_PROTO_WITH_PARENT("SVGSurface", cairo_svg_surface,
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_svg_surface)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_svg_surface)
-    char *filename;
+    char *filename = nullptr;
     double width, height;
     cairo_surface_t *surface;
 

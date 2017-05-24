@@ -39,7 +39,7 @@ GJS_DEFINE_PROTO_WITH_PARENT("PSSurface", cairo_ps_surface, cairo_surface,
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_ps_surface)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_ps_surface)
-    char *filename;
+    char *filename = nullptr;
     double width, height;
     cairo_surface_t *surface;
 
