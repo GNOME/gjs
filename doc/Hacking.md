@@ -90,6 +90,16 @@ G_DEBUG=gc-friendly G_SLICE=always-malloc ./libtool --mode=execute valgrind --le
 
 (And a similar command to run each `minijasmine` test.)
 
+### Static Code Analysis ###
+
+To execute cppcheck, a static code analysis tool for the C and C++, run:
+```sh
+jhbuild make cppcheck
+```
+It is a versatile tool that can check non-standard code, including: variable 
+checking, bounds checking, leaks, etc. It can detect the types of bugs that
+the compilers normally fail to detect.
+
 ### Test Coverage ###
 
 To generate a test coverage report, put this in your JHBuild
