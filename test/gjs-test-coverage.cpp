@@ -1641,10 +1641,9 @@ test_coverage_cache_as_js_object_has_expected_properties(gpointer      fixture_d
     };
 
     GBytes *cache = serialize_ast_to_bytes(fixture->coverage, coverage_paths);
-    JS::RootedString cache_results(JS_GetRuntime((JSContext *) gjs_context_get_native_context(fixture->context)),
-                                   gjs_deserialize_cache_to_object(fixture->coverage, cache));
-    JS::RootedValue cache_result_value(JS_GetRuntime((JSContext *) gjs_context_get_native_context(fixture->context)),
-                                       JS::StringValue(cache_results));
+    auto cx = static_cast<JSContext *>(gjs_context_get_native_context(fixture->context));
+    JS::RootedValue cache_result_value(cx,
+        JS::StringValue(gjs_deserialize_cache_to_object(fixture->coverage, cache)));
     gjs_inject_value_into_coverage_compartment(fixture->coverage,
                                                cache_result_value,
                                                "coverage_cache");
