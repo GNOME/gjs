@@ -113,6 +113,9 @@ function getSubNodesForNode(node) {
     case 'ComprehensionBlock':
         subNodes.push(node.right);
         break;
+    case 'ComprehensionIf':
+        subNodes.push(node.test);
+        break;
     /* It is very possible that there might be something
      * interesting in the function arguments, so we need to
      * walk them too */

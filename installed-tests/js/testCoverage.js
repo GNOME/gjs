@@ -434,7 +434,7 @@ describe('Coverage.functionsForAST', function () {
 
         'finds functions in an array comprehension body': [
             "let a = new Array(1);\n" +
-            "let b = [function() {} for (i of a)];\n",
+            "let b = [for (i of a) function() {}];\n",
             [
                 { key: "(anonymous):2:0", line: 2, n_params: 0 }
             ],
@@ -442,7 +442,7 @@ describe('Coverage.functionsForAST', function () {
 
         'finds functions in an array comprehension block': [
             "let a = new Array(1);\n" +
-            "let b = [i for (i of function() {})];\n",
+            "let b = [for (i of function() {}) i];\n",
             [
                 { key: "(anonymous):2:0", line: 2, n_params: 0 }
             ],
@@ -450,8 +450,7 @@ describe('Coverage.functionsForAST', function () {
 
         'finds functions in an array comprehension filter': [
             "let a = new Array(1);\n" +
-            "let b = [i for (i of a)" +
-            "if (function() {}())];\n",
+            "let b = [for (i of a) if (function() {}()) i];\n",
             [
                 { key: "(anonymous):2:0", line: 2, n_params: 0 }
             ],
