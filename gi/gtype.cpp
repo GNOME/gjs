@@ -65,7 +65,10 @@ update_gtype_weak_pointers(JSContext     *cx,
     for (auto iter = weak_pointer_list.begin(); iter != weak_pointer_list.end(); ) {
         auto heap_wrapper = static_cast<JS::Heap<JSObject *> *>(g_type_get_qdata(*iter, gjs_get_gtype_wrapper_quark()));
         JS_UpdateWeakPointerAfterGC(heap_wrapper);
-        if (*heap_wrapper == nullptr)
+
+        /* No read barriers are needed if the only thing we are doing with the
+         * pointer is comparing it to nullptr. */
+        if (heap_wrapper->unbarrieredGet() == nullptr)
             iter = weak_pointer_list.erase(iter);
         else
             iter++;

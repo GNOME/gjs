@@ -75,7 +75,7 @@ struct GjsHeapOperation<JSObject *> {
     update_after_gc(JS::Heap<JSObject *> *location)
     {
         JS_UpdateWeakPointerAfterGC(location);
-        return (*location == nullptr);
+        return (location->unbarrieredGet() == nullptr);
     }
 };
 
@@ -196,6 +196,16 @@ public:
         return m_heap == other;
     }
     inline bool operator!=(const T& other) const { return !(*this == other); }
+
+    /* We can access the pointer without a read barrier if the only thing we
+     * are doing with it is comparing it to nullptr. */
+    bool
+    operator==(std::nullptr_t) const
+    {
+        if (m_rooted)
+            return m_root->get() == nullptr;
+        return m_heap.unbarrieredGet() == nullptr;
+    }
 
     /* You can get a Handle<T> if the thing is rooted, so that you can use this
      * wrapper with stack rooting. However, you must not do this if the

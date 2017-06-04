@@ -87,7 +87,7 @@ invalidate_js_pointers(GjsClosure *gc)
 
     c = &gc->priv;
 
-    if (c->obj == NULL)
+    if (c->obj == nullptr)
         return;
 
     c->obj.reset();
@@ -159,7 +159,7 @@ closure_invalidated(gpointer data,
     gjs_debug_closure("Invalidating closure %p which calls object %p",
                       closure, c->obj.get());
 
-    if (c->obj == NULL) {
+    if (c->obj == nullptr) {
         gjs_debug_closure("   (closure %p already dead, nothing to do)",
                           closure);
         return;
@@ -216,7 +216,7 @@ gjs_closure_invoke(GClosure                   *closure,
 
     c = &((GjsClosure*) closure)->priv;
 
-    if (c->obj == NULL) {
+    if (c->obj == nullptr) {
         /* We were destroyed; become a no-op */
         c->context = NULL;
         return;
@@ -296,7 +296,7 @@ gjs_closure_trace(GClosure *closure,
 
     c = &((GjsClosure*) closure)->priv;
 
-    if (c->obj == NULL)
+    if (c->obj == nullptr)
         return;
 
     c->obj.trace(tracer, "signal connection");
