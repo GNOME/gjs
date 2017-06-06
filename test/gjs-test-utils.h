@@ -28,7 +28,6 @@ struct _GjsUnitTestFixture {
     GjsContext *gjs_context;
     JSContext *cx;
     JSCompartment *compartment;
-    char *message;  /* Thrown exception message */
 };
 
 void gjs_unit_test_fixture_setup(GjsUnitTestFixture *fx,
@@ -36,10 +35,10 @@ void gjs_unit_test_fixture_setup(GjsUnitTestFixture *fx,
 
 void gjs_unit_test_destroy_context(GjsUnitTestFixture *fx);
 
-void gjs_unit_test_teardown_context_already_destroyed(GjsUnitTestFixture *fx);
-
 void gjs_unit_test_fixture_teardown(GjsUnitTestFixture *fx,
                                     gconstpointer      unused);
+
+char *gjs_unit_test_exception_message(GjsUnitTestFixture *fx);
 
 void gjs_crash_after_timeout(int seconds);
 

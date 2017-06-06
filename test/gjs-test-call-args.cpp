@@ -274,9 +274,8 @@ run_code(GjsUnitTestFixture *fx,
 
     JS::RootedValue ignored(fx->cx);
     bool ok = JS::Evaluate(fx->cx, options, script, strlen(script), &ignored);
-    JS_ReportPendingException(fx->cx);
 
-    g_assert_null(fx->message);
+    g_assert_null(gjs_unit_test_exception_message(fx));
     g_assert_true(ok);
 }
 
@@ -292,17 +291,15 @@ run_code_expect_exception(GjsUnitTestFixture *fx,
     JS::RootedValue ignored(fx->cx);
     bool ok = JS::Evaluate(fx->cx, options, script, strlen(script), &ignored);
     g_assert_false(ok);
-    g_assert_true(JS_IsExceptionPending(fx->cx));
-    JS_ReportPendingException(fx->cx);
-    g_assert_nonnull(fx->message);
+    GjsAutoChar message = gjs_unit_test_exception_message(fx);
+    g_assert_nonnull(message);
 
     /* Cheap way to shove an expected exception message into the data argument */
     const char *expected_msg = strstr((const char *) code, "//");
     if (expected_msg != NULL) {
         expected_msg += 2;
-        assert_match(fx->message, expected_msg);
+        assert_match(message, expected_msg);
     }
-    g_clear_pointer(&fx->message, g_free);
 }
 
 void

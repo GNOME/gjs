@@ -36,29 +36,12 @@
 #include "gjs/jsapi-wrapper.h"
 #include "gjs-test-utils.h"
 
-static void
-test_error_reporter(JSContext     *context,
-                    const char    *message,
-                    JSErrorReport *report)
-{
-    GjsContext *gjs_context = gjs_context_get_current();
-    GjsUnitTestFixture *fx =
-        (GjsUnitTestFixture *) g_object_get_data(G_OBJECT(gjs_context),
-                                                 "test fixture");
-    g_free(fx->message);
-    fx->message = g_strdup(message);
-}
-
 void
 gjs_unit_test_fixture_setup(GjsUnitTestFixture *fx,
                             gconstpointer       unused)
 {
     fx->gjs_context = gjs_context_new();
     fx->cx = (JSContext *) gjs_context_get_native_context(fx->gjs_context);
-
-    /* This is for shoving private data into the error reporter callback */
-    g_object_set_data(G_OBJECT(fx->gjs_context), "test fixture", fx);
-    JS_SetErrorReporter(JS_GetRuntime(fx->cx), test_error_reporter);
 
     JS_BeginRequest(fx->cx);
 
@@ -69,6 +52,10 @@ gjs_unit_test_fixture_setup(GjsUnitTestFixture *fx,
 void
 gjs_unit_test_destroy_context(GjsUnitTestFixture *fx)
 {
+    GjsAutoChar message = gjs_unit_test_exception_message(fx);
+    if (message)
+        g_printerr("**\n%s\n", message.get());
+
     JS_LeaveCompartment(fx->cx, fx->compartment);
     JS_EndRequest(fx->cx);
 
@@ -76,19 +63,30 @@ gjs_unit_test_destroy_context(GjsUnitTestFixture *fx)
 }
 
 void
-gjs_unit_test_teardown_context_already_destroyed(GjsUnitTestFixture *fx)
-{
-    if (fx->message != NULL)
-        g_printerr("**\n%s\n", fx->message);
-    g_free(fx->message);
-}
-
-void
 gjs_unit_test_fixture_teardown(GjsUnitTestFixture *fx,
                                gconstpointer      unused)
 {
     gjs_unit_test_destroy_context(fx);
-    gjs_unit_test_teardown_context_already_destroyed(fx);
+}
+
+char *
+gjs_unit_test_exception_message(GjsUnitTestFixture *fx)
+{
+    if (!JS_IsExceptionPending(fx->cx))
+        return nullptr;
+
+    JS::RootedValue v_exc(fx->cx);
+    g_assert_true(JS_GetPendingException(fx->cx, &v_exc));
+    g_assert_true(v_exc.isObject());
+
+    JS::RootedObject exc(fx->cx, &v_exc.toObject());
+    JSErrorReport *report = JS_ErrorFromException(fx->cx, exc);
+    g_assert_nonnull(report);
+
+    char *retval = g_strdup(report->message().c_str());
+    g_assert_nonnull(retval);
+    JS_ClearPendingException(fx->cx);
+    return retval;
 }
 
 /* Fork a process that waits the given time then

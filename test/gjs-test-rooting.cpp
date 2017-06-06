@@ -230,13 +230,6 @@ context_destroyed(JS::HandleObject obj,
 }
 
 static void
-teardown_context_already_destroyed(GjsRootingFixture *fx,
-                                   gconstpointer      unused)
-{
-    gjs_unit_test_teardown_context_already_destroyed(PARENT(fx));
-}
-
-static void
 test_maybe_owned_notify_callback_called_on_context_destroy(GjsRootingFixture *fx,
                                                            gconstpointer      unused)
 {
@@ -288,8 +281,7 @@ gjs_test_add_tests_for_rooting(void)
 #undef ADD_ROOTING_TEST
 
 #define ADD_CONTEXT_DESTROY_TEST(path, f) \
-    g_test_add("/rooting/" path, GjsRootingFixture, NULL, setup, f, \
-               teardown_context_already_destroyed);
+    g_test_add("/rooting/" path, GjsRootingFixture, nullptr, setup, f, nullptr);
 
     ADD_CONTEXT_DESTROY_TEST("maybe-owned/notify-callback-called-on-context-destroy",
                              test_maybe_owned_notify_callback_called_on_context_destroy);
