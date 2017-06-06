@@ -58,7 +58,7 @@
 #include "gjs/jsapi-wrapper.h"
 
 static void
-gjs_console_error_reporter(JSContext *cx, const char *message, JSErrorReport *report)
+gjs_console_print_error(const char *message, JSErrorReport *report)
 {
     /* Code modified from SpiderMonkey js/src/jscntxt.cpp, js::PrintError() */
 
@@ -126,6 +126,38 @@ gjs_console_error_reporter(JSContext *cx, const char *message, JSErrorReport *re
     g_free(prefix);
 }
 
+static void
+gjs_console_error_reporter(JSContext *cx, const char *message, JSErrorReport *report)
+{
+    gjs_console_print_error(message, report);
+}
+
+/* Based on js::shell::AutoReportException from SpiderMonkey. */
+class AutoReportException {
+    JSContext *m_cx;
+
+public:
+    explicit AutoReportException(JSContext *cx) : m_cx(cx) {}
+
+    ~AutoReportException() {
+        if (!JS_IsExceptionPending(m_cx))
+            return;
+
+        /* Get exception object before printing and clearing exception. */
+        JS::RootedValue v_exn(m_cx);
+        (void) JS_GetPendingException(m_cx, &v_exn);
+
+        JS::RootedObject exn(m_cx, &v_exn.toObject());
+        JSErrorReport *report = JS_ErrorFromException(m_cx, exn);
+        if (!report)
+            g_error("Out of memory initializing ErrorReport");
+
+        g_assert(!JSREPORT_IS_WARNING(report->flags));
+
+        JS_ReportPendingException(m_cx);
+    }
+};
+
 #ifdef HAVE_READLINE_READLINE_H
 static bool
 gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
@@ -153,6 +185,45 @@ gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
 }
 #endif
 
+/* Return value of false indicates an uncatchable exception, rather than any
+ * exception. (This is because the exception should be auto-printed around the
+ * invocation of this function.)
+ */
+static bool
+gjs_console_eval_and_print(JSContext       *cx,
+                           JS::HandleObject global,
+                           const char      *bytes,
+                           size_t           length,
+                           int              lineno)
+{
+    JS::CompileOptions options(cx);
+    options.setUTF8(true)
+           .setFileAndLine("typein", lineno);
+
+    JS::RootedValue result(cx);
+    if (!JS::Evaluate(cx, global, options, bytes, length, &result)) {
+        if (!JS_IsExceptionPending(cx))
+            return false;
+    }
+
+    gjs_schedule_gc_if_needed(cx);
+
+    if (result.isUndefined())
+        return true;
+
+    JS::RootedString str(cx, JS::ToString(cx, result));
+    if (!str)
+        return true;
+
+    char *display_str;
+    display_str = gjs_value_debug_string(cx, result);
+    if (display_str) {
+        g_fprintf(stdout, "%s\n", display_str);
+        g_free(display_str);
+    }
+    return true;
+}
+
 static bool
 gjs_console_interact(JSContext *context,
                      unsigned   argc,
@@ -160,8 +231,6 @@ gjs_console_interact(JSContext *context,
 {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     bool eof = false;
-    JS::RootedValue result(context);
-    JS::RootedString str(context);
     JS::RootedObject global(context, gjs_get_import_global(context));
     GString *buffer = NULL;
     char *temp_buf = NULL;
@@ -194,44 +263,18 @@ gjs_console_interact(JSContext *context,
         } while (!JS_BufferIsCompilableUnit(context, global,
                                             buffer->str, buffer->len));
 
-        JS::CompileOptions options(context);
-        options.setUTF8(true)
-               .setFileAndLine("typein", startline);
-        if (!JS::Evaluate(context, global, options, buffer->str, buffer->len,
-                          &result)) {
+        AutoReportException are(context);
+        if (!gjs_console_eval_and_print(context, global, buffer->str, buffer->len,
+                                        startline)) {
             /* If this was an uncatchable exception, throw another uncatchable
              * exception on up to the surrounding JS::Evaluate() in main(). This
              * happens when you run gjs-console and type imports.system.exit(0);
              * at the prompt. If we don't throw another uncatchable exception
              * here, then it's swallowed and main() won't exit. */
-            if (!JS_IsExceptionPending(context)) {
-                argv.rval().set(result);
-                return false;
-            }
+            g_string_free(buffer, true);
+            return false;
         }
 
-        gjs_schedule_gc_if_needed(context);
-
-        if (JS_GetPendingException(context, &result)) {
-            if (!JS_ReportPendingException(context))
-                return false;
-            goto next;
-        } else if (result.isUndefined()) {
-            goto next;
-        } else {
-            str = JS::ToString(context, result);
-        }
-
-        if (str) {
-            char *display_str;
-            display_str = gjs_value_debug_string(context, result);
-            if (display_str != NULL) {
-                g_fprintf(stdout, "%s\n", display_str);
-                g_free(display_str);
-            }
-        }
-
- next:
         g_string_free(buffer, true);
     } while (!eof);
 
@@ -240,6 +283,7 @@ gjs_console_interact(JSContext *context,
     if (file != stdin)
         fclose(file);
 
+    argv.rval().setUndefined();
     return true;
 }
 
