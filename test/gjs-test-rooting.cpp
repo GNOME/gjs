@@ -13,6 +13,8 @@ struct _GjsRootingFixture {
 
     bool finalized;
     bool notify_called;
+
+    GjsMaybeOwned<JSObject *> *obj;  /* only used in callback test cases */
 };
 
 static void
@@ -220,6 +222,7 @@ context_destroyed(JS::HandleObject obj,
     g_assert_false(fx->notify_called);
     g_assert_false(fx->finalized);
     fx->notify_called = true;
+    fx->obj->reset();
 }
 
 static void
@@ -233,24 +236,24 @@ static void
 test_maybe_owned_notify_callback_called_on_context_destroy(GjsRootingFixture *fx,
                                                            gconstpointer      unused)
 {
-    auto obj = new GjsMaybeOwned<JSObject *>();
-    obj->root(PARENT(fx)->cx, test_obj_new(fx), context_destroyed, fx);
+    fx->obj = new GjsMaybeOwned<JSObject *>();
+    fx->obj->root(PARENT(fx)->cx, test_obj_new(fx), context_destroyed, fx);
 
     gjs_unit_test_destroy_context(PARENT(fx));
     g_assert_true(fx->notify_called);
-    delete obj;
+    delete fx->obj;
 }
 
 static void
 test_maybe_owned_object_destroyed_after_notify(GjsRootingFixture *fx,
                                                gconstpointer      unused)
 {
-    auto obj = new GjsMaybeOwned<JSObject *>();
-    obj->root(PARENT(fx)->cx, test_obj_new(fx), context_destroyed, fx);
+    fx->obj = new GjsMaybeOwned<JSObject *>();
+    fx->obj->root(PARENT(fx)->cx, test_obj_new(fx), context_destroyed, fx);
 
     gjs_unit_test_destroy_context(PARENT(fx));
     g_assert_true(fx->finalized);
-    delete obj;
+    delete fx->obj;
 }
 
 void
