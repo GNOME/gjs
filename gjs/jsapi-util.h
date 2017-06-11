@@ -35,9 +35,7 @@
 
 class GjsAutoChar : public std::unique_ptr<char, decltype(&g_free)> {
 public:
-    typedef std::unique_ptr<char, decltype(&g_free)> U;
-
-    GjsAutoChar(char *str = nullptr) : U(str, g_free) {}
+    GjsAutoChar(char *str = nullptr) : unique_ptr(str, g_free) {}
 
     operator const char *() {
         return get();
@@ -51,12 +49,10 @@ public:
 template <typename T>
 class GjsAutoUnref : public std::unique_ptr<T, decltype(&g_object_unref)> {
 public:
-    typedef std::unique_ptr<T, decltype(&g_object_unref)> U;
-
-    GjsAutoUnref(T *ptr = nullptr) : U(ptr, g_object_unref) {}
+    GjsAutoUnref(T *ptr = nullptr) : GjsAutoUnref::unique_ptr(ptr, g_object_unref) {}
 
     operator T *() {
-        return U::get();
+        return GjsAutoUnref::unique_ptr::get();
     }
 };
 
