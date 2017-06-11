@@ -199,9 +199,8 @@ bool gjs_call_function_value(JSContext                  *context,
                              const JS::HandleValueArray& args,
                              JS::MutableHandleValue      rval);
 
-void        gjs_error_reporter               (JSContext       *context,
-                                              const char      *message,
-                                              JSErrorReport   *report);
+void gjs_warning_reporter(JSContext     *cx,
+                          JSErrorReport *report);
 
 bool        gjs_string_to_utf8               (JSContext       *context,
                                               const JS::Value  string_val,
@@ -315,6 +314,9 @@ bool gjs_object_has_property(JSContext       *cx,
                              bool            *found);
 
 G_END_DECLS
+
+GjsAutoChar gjs_format_stack_trace(JSContext       *cx,
+                                   JS::HandleObject saved_frame);
 
 bool gjs_object_define_property(JSContext       *cx,
                                 JS::HandleObject obj,

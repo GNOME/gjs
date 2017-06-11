@@ -310,7 +310,7 @@ gjs_runtime_for_current_thread(void)
         // JS_SetGCParameter(runtime, JSGC_DECOMMIT_THRESHOLD, 32);
         JS_SetLocaleCallbacks(runtime, &gjs_locale_callbacks);
         JS_AddFinalizeCallback(runtime, gjs_finalize_callback, data);
-        JS_SetErrorReporter(runtime, gjs_error_reporter);
+        JS::SetWarningReporter(runtime, gjs_warning_reporter);
 
         g_private_set(&thread_runtime, runtime);
     }

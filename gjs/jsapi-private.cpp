@@ -32,12 +32,13 @@
 #include "jsapi-wrapper.h"
 
 void
-gjs_error_reporter(JSContext     *context,
-                   const char    *message,
-                   JSErrorReport *report)
+gjs_warning_reporter(JSContext     *context,
+                     JSErrorReport *report)
 {
     const char *warning;
     GLogLevelFlags level;
+
+    g_assert(report);
 
     if (gjs_environment_variable_is_set("GJS_ABORT_ON_OOM") &&
         report->flags == JSREPORT_ERROR &&
@@ -66,5 +67,6 @@ gjs_error_reporter(JSContext     *context,
         level = G_LOG_LEVEL_WARNING;
     }
 
-    g_log(G_LOG_DOMAIN, level, "JS %s: [%s %d]: %s", warning, report->filename, report->lineno, message);
+    g_log(G_LOG_DOMAIN, level, "JS %s: [%s %d]: %s", warning, report->filename,
+          report->lineno, report->message().c_str());
 }

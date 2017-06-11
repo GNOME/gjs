@@ -58,15 +58,11 @@
 #include "gjs/jsapi-wrapper.h"
 
 static void
-gjs_console_print_error(const char *message, JSErrorReport *report)
+gjs_console_print_error(JSErrorReport *report)
 {
     /* Code modified from SpiderMonkey js/src/jscntxt.cpp, js::PrintError() */
 
-    if (!report) {
-        fprintf(stderr, "%s\n", message);
-        fflush(stderr);
-        return;
-    }
+    g_assert(report);
 
     char *prefix = nullptr;
     if (report->filename)
@@ -84,6 +80,8 @@ gjs_console_print_error(const char *message, JSErrorReport *report)
                                  JSREPORT_IS_STRICT(report->flags) ? "strict " : "");
         g_free(tmp);
     }
+
+    const char *message = report->message().c_str();
 
     /* embedded newlines -- argh! */
     const char *ctmp;
@@ -135,9 +133,9 @@ gjs_console_print_error(const char *message, JSErrorReport *report)
 }
 
 static void
-gjs_console_error_reporter(JSContext *cx, const char *message, JSErrorReport *report)
+gjs_console_warning_reporter(JSContext *cx, JSErrorReport *report)
 {
-    gjs_console_print_error(message, report);
+    gjs_console_print_error(report);
 }
 
 /* Based on js::shell::AutoReportException from SpiderMonkey. */
@@ -162,7 +160,18 @@ public:
 
         g_assert(!JSREPORT_IS_WARNING(report->flags));
 
-        JS_ReportPendingException(m_cx);
+        gjs_console_print_error(report);
+
+        JS::RootedObject stack(m_cx, ExceptionStackOrNull(exn));
+        if (stack) {
+            GjsAutoChar stack_str = gjs_format_stack_trace(m_cx, stack);
+            if (!stack_str)
+                g_printerr("(Unable to print stack trace)\n");
+            else
+                g_printerr("%s", stack_str.get());
+        }
+
+        JS_ClearPendingException(m_cx);
     }
 };
 
@@ -245,7 +254,7 @@ gjs_console_interact(JSContext *context,
     int startline;
     FILE *file = stdin;
 
-    JS_SetErrorReporter(JS_GetRuntime(context), gjs_console_error_reporter);
+    JS::SetWarningReporter(context, gjs_console_warning_reporter);
 
         /* It's an interactive filehandle; drop into read-eval-print loop. */
     lineno = 1;

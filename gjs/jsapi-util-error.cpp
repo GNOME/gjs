@@ -202,3 +202,32 @@ gjs_throw_g_error (JSContext       *context,
 
     JS_EndRequest(context);
 }
+
+/**
+ * gjs_format_stack_trace:
+ * @cx: the #JSContext
+ * @saved_frame: a SavedFrame #JSObject
+ *
+ * Formats a stack trace as a string in filename encoding, suitable for
+ * printing to stderr. Ignores any errors.
+ *
+ * Returns: unique string in filename encoding, or nullptr if no stack trace
+ */
+GjsAutoChar
+gjs_format_stack_trace(JSContext       *cx,
+                       JS::HandleObject saved_frame)
+{
+    JS::AutoSaveExceptionState saved_exc(cx);
+
+    JS::RootedString stack_trace(cx);
+    GjsAutoJSChar stack_utf8(cx);
+    if (JS::BuildStackString(cx, saved_frame, &stack_trace, 2))
+        stack_utf8.reset(cx, JS_EncodeStringToUTF8(cx, stack_trace));
+
+    saved_exc.restore();
+
+    if (!stack_utf8)
+        return nullptr;
+
+    return g_filename_from_utf8(stack_utf8, -1, nullptr, nullptr, nullptr);
+}
