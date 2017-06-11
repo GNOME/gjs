@@ -54,6 +54,8 @@
 #include <util/hash-x32.h>
 #include <girepository.h>
 
+typedef struct _ConnectData ConnectData;
+
 struct ObjectInstance {
     GIObjectInfo *info;
     GObject *gobj; /* NULL if we are the prototype and not an instance */
@@ -61,7 +63,7 @@ struct ObjectInstance {
     GType gtype;
 
     /* a list of all signal connections, used when tracing */
-    GList *signals;
+    std::set<ConnectData *> signals;
 
     /* the GObjectClass wrapped by this JS Object (only used for
        prototypes) */
@@ -73,11 +75,11 @@ struct ObjectInstance {
     unsigned js_object_finalized : 1;
 };
 
-typedef struct {
+struct _ConnectData {
     ObjectInstance *obj;
-    GList *link;
     GClosure *closure;
-} ConnectData;
+    unsigned idle_invalidate_id;
+};
 
 typedef enum
 {
@@ -110,7 +112,7 @@ static std::set<ObjectInstance *> dissociate_list;
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 
 static void            disassociate_js_gobject (GObject *gobj);
-static void            invalidate_all_signals (ObjectInstance *priv);
+
 typedef enum {
     SOME_ERROR_OCCURRED = false,
     NO_SUCH_G_PROPERTY,
@@ -1391,6 +1393,21 @@ associate_js_gobject (JSContext       *context,
 }
 
 static void
+invalidate_all_signals(ObjectInstance *priv)
+{
+    /* Can't loop directly through the items, since invalidating an item's
+     * closure might have the effect of removing the item from the set in the
+     * invalidate notifier */
+    while (!priv->signals.empty()) {
+        /* This will also free cd, through the closure invalidation mechanism */
+        ConnectData *cd = *priv->signals.begin();
+        g_closure_invalidate(cd->closure);
+        /* Erase element if not already erased */
+        priv->signals.erase(cd);
+    }
+}
+
+static void
 disassociate_js_gobject(GObject *gobj)
 {
     ObjectInstance *priv = get_object_qdata(gobj);
@@ -1540,41 +1557,42 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
 }
 
 static void
-invalidate_all_signals(ObjectInstance *priv)
-{
-    GList *iter, *next;
-
-    for (iter = priv->signals; iter; ) {
-        ConnectData *cd = (ConnectData*) iter->data;
-        next = iter->next;
-
-        /* This will also free cd and iter, through
-           the closure invalidation mechanism */
-        g_closure_invalidate(cd->closure);
-
-        iter = next;
-    }
-}
-
-static void
 object_instance_trace(JSTracer *tracer,
                       JSObject *obj)
 {
     ObjectInstance *priv;
-    GList *iter;
 
     priv = (ObjectInstance *) JS_GetPrivate(obj);
     if (priv == NULL)
         return;
 
-    for (iter = priv->signals; iter; iter = iter->next) {
-        ConnectData *cd = (ConnectData *) iter->data;
-
+    for (ConnectData *cd : priv->signals)
         gjs_closure_trace(cd->closure, tracer);
-    }
 
     for (auto vfunc : priv->vfuncs)
         vfunc->js_function.trace(tracer, "ObjectInstance::vfunc");
+}
+
+/* Removing the signal connection data from the list means that the object stops
+ * tracing the JS function objects belonging to the closures. Incremental GC
+ * does not allow that in the middle of a garbage collection. Therefore, we must
+ * do it in an idle handler.
+ */
+static gboolean
+signal_connection_invalidate_idle(void *user_data)
+{
+    auto cd = static_cast<ConnectData *>(user_data);
+    cd->obj->signals.erase(cd);
+    g_slice_free(ConnectData, cd);
+    return G_SOURCE_REMOVE;
+}
+
+static void
+signal_connection_invalidated(void     *data,
+                              GClosure *closure)
+{
+    auto cd = static_cast<ConnectData *>(data);
+    cd->idle_invalidate_id = g_idle_add(signal_connection_invalidate_idle, cd);
 }
 
 static void
@@ -1600,7 +1618,31 @@ object_instance_finalize(JSFreeOp  *fop,
         bool had_toggle_up;
         bool had_toggle_down;
 
-        invalidate_all_signals (priv);
+        /* We must invalidate all signal connections now, instead of in an idle
+         * handler, because the object will not exist anymore when we get
+         * around to the idle function. We originally needed to defer these
+         * invalidations to an idle function since the object needs to continue
+         * tracing its signal connections while GC is going on. However, once
+         * the object is finalized, it will not be tracing them any longer
+         * anyway, so it's safe to do them now.
+         *
+         * This is basically the same as invalidate_all_signals(), but does not
+         * defer the invalidation to an idle handler.
+         */
+        for (ConnectData *cd : priv->signals) {
+            /* First remove any pending invalidation, we are doing it now. */
+            if (cd->idle_invalidate_id > 0)
+                g_source_remove(cd->idle_invalidate_id);
+
+            /* We also have to remove the invalidate notifier, which would
+             * otherwise schedule a new pending invalidation. */
+            g_closure_remove_invalidate_notifier(cd->closure, cd,
+                                                 signal_connection_invalidated);
+
+            g_closure_invalidate(cd->closure);
+            g_slice_free(ConnectData, cd);
+        }
+        priv->signals.clear();
 
         if (G_UNLIKELY (priv->gobj->ref_count <= 0)) {
             g_error("Finalizing proxy for an already freed object of type: %s.%s\n",
@@ -1734,29 +1776,6 @@ gjs_lookup_object_prototype(JSContext *context,
     return proto;
 }
 
-/* Removing the signal connection data from the list means that the object stops
- * tracing the JS function objects belonging to the closures. Incremental GC
- * does not allow that in the middle of a garbage collection. Therefore, we must
- * do it in an idle handler.
- */
-static gboolean
-signal_connection_invalidate_idle(void *user_data)
-{
-    ConnectData *connect_data = (ConnectData *) user_data;
-
-    connect_data->obj->signals = g_list_delete_link(connect_data->obj->signals,
-                                                    connect_data->link);
-    g_slice_free(ConnectData, connect_data);
-    return G_SOURCE_REMOVE;
-}
-
-static void
-signal_connection_invalidated(void     *data,
-                              GClosure *closure)
-{
-    g_idle_add(signal_connection_invalidate_idle, data);
-}
-
 static bool
 real_connect_func(JSContext *context,
                   unsigned   argc,
@@ -1810,9 +1829,8 @@ real_connect_func(JSContext *context,
         goto out;
 
     connect_data = g_slice_new(ConnectData);
-    priv->signals = g_list_prepend(priv->signals, connect_data);
+    priv->signals.insert(connect_data);
     connect_data->obj = priv;
-    connect_data->link = priv->signals;
     /* This is a weak reference, and will be cleared when the closure is invalidated */
     connect_data->closure = closure;
     g_closure_add_invalidate_notifier(closure, connect_data, signal_connection_invalidated);
