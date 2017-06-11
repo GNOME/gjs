@@ -170,11 +170,12 @@ private:
          * to remove it. */
         m_has_weakref = false;
 
-        /* The object is still live across this callback. */
+        /* The object is still live entering this callback. The callback
+         * must reset() this wrapper. */
         if (m_notify)
             m_notify(handle(), m_data);
-
-        reset();
+        else
+            reset();
     }
 
 public:
