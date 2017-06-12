@@ -108,12 +108,16 @@ function _init() {
 
         if (this.constructor.Template) {
             let children = this.constructor.Children || [];
-            for (let child of children)
-                this[child.replace('-', '_', 'g')] = this.get_template_child(this.constructor, child);
+            for (let child of children) {
+                this[child.replace(/-/g, '_')] =
+                    this.get_template_child(this.constructor, child);
+            }
 
             let internalChildren = this.constructor.InternalChildren || [];
-            for (let child of internalChildren)
-                this['_' + child.replace('-', '_', 'g')] = this.get_template_child(this.constructor, child);
+            for (let child of internalChildren) {
+                this['_' + child.replace(/-/g, '_')] =
+                    this.get_template_child(this.constructor, child);
+            }
         }
     };
 }

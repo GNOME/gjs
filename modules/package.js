@@ -67,7 +67,7 @@ function _runningFromMesonSource() {
 }
 
 function _makeNamePath(name) {
-    return '/' + name.replace('.', '/', 'g');
+    return '/' + name.replace(/\./g, '/');
 }
 
 /**

@@ -48,10 +48,10 @@ const MyComplexGtkSubclass = new Lang.Class({
 
     testChildrenExist: function () {
         this._internalLabel = this.get_template_child(MyComplexGtkSubclass, 'label-child');
-        expect(this._internalLabel).not.toBeNull();
+        expect(this._internalLabel).toEqual(jasmine.anything());
 
-        expect(this.label_child2).not.toBeNull();
-        expect(this._internal_label_child).not.toBeNull();
+        expect(this.label_child2).toEqual(jasmine.anything());
+        expect(this._internal_label_child).toEqual(jasmine.anything());
     }
 });
 
@@ -68,9 +68,9 @@ const MyComplexGtkSubclassFromResource = new Lang.Class({
     // },
 
     testChildrenExist: function () {
-        expect(this.label_child).not.toBeNull();
-        expect(this.label_child2).not.toBeNull();
-        expect(this._internal_label_child).not.toBeNull();
+        expect(this.label_child).toEqual(jasmine.anything());
+        expect(this.label_child2).toEqual(jasmine.anything());
+        expect(this._internal_label_child).toEqual(jasmine.anything());
     }
 });
 
