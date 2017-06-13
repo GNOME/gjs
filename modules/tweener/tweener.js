@@ -537,9 +537,9 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
                                                         properties[istr].valueComplete,
                                                         properties[istr].arrayIndex || 0,
                                                         {},
-                                                        properties[istr].isSpecialProperty,
-                                                        properties[istr].modifierFunction,
-                                                        properties[istr].modifierParameters);
+                                                        properties[istr].isSpecialProperty || false,
+                                                        properties[istr].modifierFunction || null,
+                                                        properties[istr].modifierParameters || null);
             }
         }
 
@@ -548,7 +548,7 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
                                         _ticker.getTime() + (((delay * 1000) + (time * 1000)) / _timeScale),
                                         false,
                                         transition,
-                                        obj.transitionParams);
+                                        obj.transitionParams || null);
 
         tween.properties               =       isCaller ? null : copyProperties;
         tween.onStart                  =       obj.onStart;
