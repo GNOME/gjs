@@ -6,7 +6,7 @@ via NMake Makefiles.  Due to C++-11 usage, Visual Studio 2012 or
 earlier is not supported.
 
 You will need the following items to build GJS using Visual Studio:
--SpiderMonkey 52 (mozjs-52)
+-SpiderMonkey 38 (mozjs-38)
 -GObject-Introspection (G-I) 1.41.4 or later
 -GLib 2.50.x or later, (which includes GIO, GObject, and the associated tools)
 -Cairo including Cairo-GObject support, unless NO_CAIRO=1 is specified.
