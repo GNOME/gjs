@@ -1,7 +1,7 @@
 # NMake Makefile portion for enabling features for Windows builds
 
 # Spidermonkey release series (17, 24, 31, 38, 45 etc.)
-MOZJS_VERSION = 38
+MOZJS_VERSION = 52
 
 # Please see https://bugzilla.gnome.org/show_bug.cgi?id=775868,
 # comments 26, 27 and 28
@@ -23,7 +23,7 @@ GJS_BASE_LIBS = gio-2.0.lib gobject-2.0.lib glib-2.0.lib
 LIBGJS_BASE_DEP_LIBS =			\
 	girepository-1.0.lib		\
 	$(GJS_BASE_LIBS)		\
-	libffi.lib			\
+	ffi.lib				\
 	intl.lib			\
 	mozjs-$(MOZJS_VERSION).lib
 
@@ -123,7 +123,6 @@ LIBGJS_CFLAGS =				\
 	/DGJS_COMPILATION		\
 	/DXP_WIN			\
 	/DWIN32				\
-	/DFFI_BUILDING			\
 	$(GJS_BASE_CFLAGS)		\
 	$(LIBGJS_DEP_INCLUDES)
 
