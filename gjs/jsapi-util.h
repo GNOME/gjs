@@ -41,8 +41,8 @@ public:
         return get();
     }
 
-    void operator= (const char* str) {
-        reset(const_cast<char*>(str));
+    void operator= (char *str) {
+        reset(str);
     }
 };
 
