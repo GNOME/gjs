@@ -44,6 +44,10 @@ public:
     void operator= (char *str) {
         reset(str);
     }
+
+    void operator= (const char *str) {
+        reset(g_strdup(str));
+    }
 };
 
 template <typename T>
