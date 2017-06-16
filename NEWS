@@ -1,3 +1,11 @@
+Version 1.48.4
+--------------
+
+- Closed bugs:
+
+  * gnome-shell 3.24.1 crash on wayland [#781799, Philip Chimento]; thanks to
+    everyone who contributed clues
+
 Version 1.48.3
 --------------
 
