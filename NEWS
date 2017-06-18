@@ -1,3 +1,55 @@
+NEXT
+----
+
+- New JavaScript features! This version of GJS is based on SpiderMonkey 45, an
+  upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 38.
+  Our plans are to continue upgrading to subsequent ESRs as maintainer
+  availability allows. Here are the highlights of the new JavaScript features.
+  For more information, look them up on MDN or devdocs.io.
+
+  * New language features
+    + ES6 classes
+    + Reflect - built-in object with methods for interceptable operations
+
+  * New syntax
+    + Variable-length Unicode code point escapes: `"\u{1f369}"`
+    + Destructured default arguments: `function f([x, y]=[1, 2], {z: z}={z: 3})`
+    + `new.target` allows a constructor access to the original constructor that
+      was invoked
+
+  * New APIs
+    + New Array, String, and TypedArray method: includes()
+    + [Symbol.toPrimitive] property specifying how to convert an object to a
+      primitive value
+    + [Symbol.species] property allowing to override the default constructor
+      for objects
+    + [Symbol.match] property allowing to customize matching behaviour in RegExp
+      subclasses
+    + Date.toString() and RegExp.toString() generic methods
+
+  * New behaviour
+    + Date.prototype, WeakMap.prototype, and WeakSet.prototype are now ordinary
+      objects, not instances
+    + Full ES6-compliant implementation of let keyword
+    + RegExp.sticky ('y' flag) behaviour is ES6 standard, it used to be subject
+      to a long-standing bug in Firefox
+    + RegExp constructor with RegExp first argument and flags no longer throws
+      an exception (`new RegExp(/ab+c/, 'i')` works now)
+    + Generators are no longer constructible, as per ES6 (`function* f {}`
+      followed by `new f` will not work)
+    + It is now required to construct ArrayBuffer, TypedArray, Map, Set, and
+      WeakMap with the new operator
+
+  * Backwards-incompatible changes
+    + Non-standard "let expressions" and "let blocks" (e.g.,
+      `let (x = 5) { use(x) }`) are not supported any longer
+    + Variables declared with let and const are now 'global lexical bindings',
+      as per the ES6 standard, meaning that they will not be exported in
+      modules. If you cannot find symbols in your imported modules after the
+      upgrade, then likely you need to change "let" or "const" to "var" inside
+      your module file. For more information, read
+      https://blog.mozilla.org/addons/2015/10/14/breaking-changes-let-const-firefox-nightly-44/
+
 Version 1.49.3
 --------------
 
