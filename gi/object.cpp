@@ -1828,7 +1828,7 @@ real_connect_func(JSContext *context,
     if (closure == NULL)
         goto out;
 
-    connect_data = g_slice_new(ConnectData);
+    connect_data = g_slice_new0(ConnectData);
     priv->signals.insert(connect_data);
     connect_data->obj = priv;
     /* This is a weak reference, and will be cleared when the closure is invalidated */
