@@ -902,7 +902,7 @@ hit_count_is_more_than_for_function(const char *line,
 
     max_buf_size = strcspn(line, "\n");
     detected_function = g_new(char, max_buf_size + 1);
-    nmatches = sscanf(line, "%i,%s", &hit_count, detected_function);
+    nmatches = sscanf(line, "%u,%s", &hit_count, detected_function);
     if (nmatches != 2) {
         if (errno != 0)
             g_error("sscanf: %s", strerror(errno));
