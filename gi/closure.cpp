@@ -35,6 +35,7 @@
 struct Closure {
     JSContext *context;
     GjsMaybeOwned<JSObject *> obj;
+    unsigned idle_clear_id;
 };
 
 struct GjsClosure {
@@ -129,6 +130,7 @@ closure_clear_idle(void *data)
 
     closure->priv.obj.reset();
     closure->priv.context = nullptr;
+    closure->priv.idle_clear_id = 0;
 
     g_closure_unref(static_cast<GClosure *>(data));
     return G_SOURCE_REMOVE;
@@ -174,7 +176,7 @@ closure_invalidated(gpointer data,
                       "removing our destroy notifier on global object)",
                       closure);
 
-    g_idle_add(closure_clear_idle, closure);
+    c->idle_clear_id = g_idle_add(closure_clear_idle, closure);
     g_closure_ref(closure);
 }
 
@@ -183,7 +185,8 @@ closure_set_invalid(gpointer  data,
                     GClosure *closure)
 {
     GJS_DEC_COUNTER(closure);
-    g_idle_add(closure_clear_idle, closure);
+    Closure *c = &(reinterpret_cast<GjsClosure *>(closure))->priv;
+    c->idle_clear_id = g_idle_add(closure_clear_idle, closure);
     g_closure_ref(closure);
 }
 
@@ -192,6 +195,13 @@ closure_finalize(gpointer  data,
                  GClosure *closure)
 {
     Closure *self = &((GjsClosure*) closure)->priv;
+
+    if (self->idle_clear_id > 0) {
+        /* Remove any pending closure_clear_idle(), we are doing it
+         * immediately here. */
+        g_source_remove(self->idle_clear_id);
+        closure_clear_idle(closure);
+    }
 
     self->~Closure();
 }
