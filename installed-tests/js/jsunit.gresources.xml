@@ -6,6 +6,7 @@
     <file>minijasmine.js</file>
     <file>modules/alwaysThrows.js</file>
     <file>modules/foobar.js</file>
+    <file>modules/lexicalScope.js</file>
     <file>modules/modunicode.js</file>
     <file>modules/mutualImport/a.js</file>
     <file>modules/mutualImport/b.js</file>

@@ -30,6 +30,7 @@
 #include "jsapi-class.h"
 #include "jsapi-wrapper.h"
 #include "mem.h"
+#include "module.h"
 #include "native.h"
 
 #include <gio/gio.h>
@@ -185,34 +186,18 @@ import_directory(JSContext       *context,
     return importer != NULL;
 }
 
-static bool
-define_import(JSContext       *context,
-              JS::HandleObject obj,
-              JS::HandleObject module_obj,
-              const char      *name)
-{
-    if (!JS_DefineProperty(context, obj, name, module_obj,
-                           GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT)) {
-        gjs_debug(GJS_DEBUG_IMPORTER,
-                  "Failed to define '%s' in importer",
-                  name);
-        return false;
-    }
-
-    return true;
-}
-
-/* Make the property we set in define_import permament;
+/* Make the property we set in gjs_module_import() permanent;
  * we do this after the import succesfully completes.
  */
 static bool
 seal_import(JSContext       *cx,
             JS::HandleObject obj,
+            JS::HandleId     id,
             const char      *name)
 {
     JS::Rooted<JSPropertyDescriptor> descr(cx);
 
-    if (!JS_GetOwnPropertyDescriptor(cx, obj, name, &descr) ||
+    if (!JS_GetOwnPropertyDescriptorById(cx, obj, id, &descr) ||
         descr.object() == NULL) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to get attributes to seal '%s' in importer",
@@ -223,10 +208,10 @@ seal_import(JSContext       *cx,
     /* COMPAT: in mozjs45 use .setConfigurable(false) and the form of
      * JS_DefineProperty that takes the JSPropertyDescriptor directly */
 
-    if (!JS_DefineProperty(cx, descr.object(), name, descr.value(),
-                           descr.attributes() | JSPROP_PERMANENT,
-                           JS_PROPERTYOP_GETTER(descr.getter()),
-                           JS_PROPERTYOP_SETTER(descr.setter()))) {
+    if (!JS_DefinePropertyById(cx, descr.object(), id, descr.value(),
+                               descr.attributes() | JSPROP_PERMANENT,
+                               JS_PROPERTYOP_GETTER(descr.getter()),
+                               JS_PROPERTYOP_SETTER(descr.setter()))) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to redefine attributes to seal '%s' in importer",
                   name);
@@ -327,10 +312,9 @@ import_native_file(JSContext       *context,
 }
 
 static bool
-import_file(JSContext       *context,
-            const char      *name,
-            GFile           *file,
-            JS::HandleObject module_obj)
+import_module_init(JSContext       *context,
+                   GFile           *file,
+                   JS::HandleObject module_obj)
 {
     bool ret = false;
     char *script = NULL;
@@ -387,7 +371,7 @@ load_module_init(JSContext       *context,
 
     JS::RootedObject module_obj(context, JS_NewPlainObject(context));
     GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(full_path);
-    if (!import_file (context, "__init__", file, module_obj))
+    if (!import_module_init(context, file, module_obj))
         return module_obj;
 
     gjs_object_define_property(context, in_object,
@@ -456,18 +440,16 @@ import_symbol_from_init_js(JSContext       *cx,
 static bool
 import_file_on_module(JSContext       *context,
                       JS::HandleObject obj,
+                      JS::HandleId     id,
                       const char      *name,
                       GFile           *file)
 {
     bool retval = false;
     char *full_path = NULL;
 
-    JS::RootedObject module_obj(context, JS_NewPlainObject(context));
-
-    if (!define_import(context, obj, module_obj, name))
-        goto out;
-
-    if (!import_file(context, name, file, module_obj))
+    JS::RootedObject module_obj(context,
+        gjs_module_import(context, obj, id, name, file));
+    if (!module_obj)
         goto out;
 
     full_path = g_file_get_parse_name (file);
@@ -478,7 +460,7 @@ import_file_on_module(JSContext       *context,
                            0, 0))
         goto out;
 
-    if (!seal_import(context, obj, name))
+    if (!seal_import(context, obj, id, name))
         goto out;
 
     retval = true;
@@ -495,6 +477,7 @@ static bool
 do_import(JSContext       *context,
           JS::HandleObject obj,
           Importer        *priv,
+          JS::HandleId     id,
           const char      *name)
 {
     char *filename;
@@ -617,7 +600,7 @@ do_import(JSContext       *context,
             continue;
         }
 
-        if (import_file_on_module (context, obj, name, gfile)) {
+        if (import_file_on_module(context, obj, id, name, gfile)) {
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "successfully imported module '%s'", name);
             result = true;
@@ -817,7 +800,7 @@ importer_resolve(JSContext        *context,
     }
 
     JSAutoRequest ar(context);
-    if (!do_import(context, obj, priv, name))
+    if (!do_import(context, obj, priv, id, name))
         return false;
 
     *resolved = true;

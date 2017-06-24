@@ -156,6 +156,26 @@ describe('Importer', function () {
         expect(ModUnicode.uval).toEqual('const \u2665 utf8');
     });
 
+    describe("properties defined in the module's lexical scope", function () {
+        let LexicalScope;
+
+        beforeAll(function () {
+            window.expectMe = true;
+            LexicalScope = imports.lexicalScope;
+        });
+
+        it('can be accessed', function () {
+            expect(LexicalScope.a).toEqual(1);
+            expect(LexicalScope.b).toEqual(2);
+            expect(LexicalScope.c).toEqual(3);
+            expect(LexicalScope.d).toEqual(4);
+        });
+
+        it('does not leak module properties into the global scope', function () {
+            expect(window.d).not.toBeDefined();
+        });
+    });
+
     describe('enumerating modules', function () {
         let keys;
         beforeEach(function () {

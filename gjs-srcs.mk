@@ -71,6 +71,8 @@ gjs_srcs =				\
 	gjs/jsapi-wrapper.h		\
 	gjs/mem.h			\
 	gjs/mem.cpp			\
+	gjs/module.h			\
+	gjs/module.cpp			\
 	gjs/native.cpp			\
 	gjs/native.h			\
 	gjs/runtime.cpp			\
