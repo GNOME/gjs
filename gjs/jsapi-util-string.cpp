@@ -34,8 +34,6 @@ gjs_string_to_utf8 (JSContext      *context,
                     const JS::Value value,
                     GjsAutoJSChar  *utf8_string_p)
 {
-    gsize len;
-
     JS_BeginRequest(context);
 
     if (!value.isString()) {
@@ -46,13 +44,6 @@ gjs_string_to_utf8 (JSContext      *context,
     }
 
     JS::RootedString str(context, value.toString());
-
-    len = JS_GetStringEncodingLength(context, str);
-    if (len == (gsize)(-1)) {
-        JS_EndRequest(context);
-        return false;
-    }
-
     utf8_string_p->reset(context, JS_EncodeStringToUTF8(context, str));
 
     JS_EndRequest(context);
