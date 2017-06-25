@@ -138,6 +138,53 @@ class GjsModule {
 
     /* JSClass operations */
 
+    bool
+    resolve_impl(JSContext       *cx,
+                 JS::HandleObject module,
+                 JS::HandleId     id,
+                 bool            *resolved)
+    {
+        JS::RootedObject lexical(cx, JS_ExtensibleLexicalEnvironment(module));
+        if (!lexical) {
+            *resolved = false;
+            return true;  /* nothing imported yet */
+        }
+
+        if (!JS_HasPropertyById(cx, lexical, id, resolved))
+            return false;
+        if (!*resolved)
+            return true;
+
+        /* The property is present in the lexical environment. This should not
+         * be supported according to ES6. For compatibility with earlier GJS,
+         * we treat it as if it were a real property, but warn about it. */
+
+        GjsAutoJSChar prop_name(cx);
+        if (!gjs_get_string_id(cx, id, &prop_name))
+            return false;
+
+        g_warning("Some code accessed the property '%s' on the module '%s'. "
+                  "That property was defined with 'let' or 'const' inside the "
+                  "module. This was previously supported, but is not correct "
+                  "according to the ES6 standard. Any symbols to be exported "
+                  "from a module must be defined with 'var'. The property "
+                  "access will work as previously for the time being, but "
+                  "please fix your code anyway.", prop_name.get(), m_name);
+
+        JS::Rooted<JS::PropertyDescriptor> desc(cx);
+        return JS_GetPropertyDescriptorById(cx, lexical, id, &desc) &&
+            JS_DefinePropertyById(cx, module, id, desc);
+    }
+
+    static bool
+    resolve(JSContext       *cx,
+            JS::HandleObject module,
+            JS::HandleId     id,
+            bool            *resolved)
+    {
+        return priv(module)->resolve_impl(cx, module, id, resolved);
+    }
+
     static void
     finalize(JSFreeOp *op,
              JSObject *module)
@@ -151,7 +198,7 @@ class GjsModule {
         nullptr,  /* getProperty */
         nullptr,  /* setProperty */
         nullptr,  /* enumerate */
-        nullptr,  /* resolve */
+        &GjsModule::resolve,
         nullptr,  /* mayResolve */
         &GjsModule::finalize,
     };
