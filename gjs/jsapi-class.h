@@ -24,6 +24,7 @@
 #ifndef GJS_JSAPI_CLASS_H
 #define GJS_JSAPI_CLASS_H
 
+#include "global.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 #include "util/log.h"

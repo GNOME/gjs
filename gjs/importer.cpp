@@ -63,6 +63,9 @@ static const JSClass gjs_importer_class = *js::Jsvalify(&gjs_importer_real_class
 
 GJS_DEFINE_PRIV_FROM_JS(Importer, gjs_importer_class)
 
+static JSObject *gjs_define_importer(JSContext *, JS::HandleObject,
+    const char *, const char **, bool);
+
 static bool
 importer_to_string(JSContext *cx,
                    unsigned   argc,
@@ -966,12 +969,12 @@ gjs_get_search_path(void)
 }
 
 static JSObject*
-gjs_create_importer(JSContext       *context,
-                    const char      *importer_name,
-                    const char     **initial_search_path,
-                    bool             add_standard_search_path,
-                    bool             is_root,
-                    JS::HandleObject in_object)
+gjs_create_importer(JSContext          *context,
+                    const char         *importer_name,
+                    const char * const *initial_search_path,
+                    bool                add_standard_search_path,
+                    bool                is_root,
+                    JS::HandleObject    in_object)
 {
     char **paths[2] = {0};
     char **search_path;
@@ -1001,7 +1004,7 @@ gjs_create_importer(JSContext       *context,
     return importer;
 }
 
-JSObject*
+static JSObject *
 gjs_define_importer(JSContext       *context,
                     JS::HandleObject in_object,
                     const char      *importer_name,
@@ -1024,62 +1027,10 @@ gjs_define_importer(JSContext       *context,
     return importer;
 }
 
-/* If this were called twice for the same runtime with different args it
- * would basically be a bug, but checking for that is a lot of code so
- * we just ignore all calls after the first and hope the args are the same.
- */
-bool
-gjs_create_root_importer(JSContext   *context,
-                         const char **initial_search_path,
-                         bool         add_standard_search_path)
+JSObject *
+gjs_create_root_importer(JSContext          *cx,
+                         const char * const *search_path)
 {
-    JS::Value importer;
-
-    JS_BeginRequest(context);
-
-    importer = gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS);
-
-    if (G_UNLIKELY (!importer.isUndefined())) {
-        gjs_debug(GJS_DEBUG_IMPORTER,
-                  "Someone else already created root importer, ignoring second request");
-
-        JS_EndRequest(context);
-        return true;
-    }
-
-    importer = JS::ObjectValue(*gjs_create_importer(context, "imports",
-                                                    initial_search_path,
-                                                    add_standard_search_path,
-                                                    true, JS::NullPtr()));
-    gjs_set_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS, importer);
-
-    JS_EndRequest(context);
-    return true;
-}
-
-bool
-gjs_define_root_importer_object(JSContext        *context,
-                                JS::HandleObject  in_object,
-                                JS::HandleObject  root_importer)
-{
-    JSAutoRequest ar(context);
-
-    if (!gjs_object_define_property(context, in_object,
-                                    GJS_STRING_IMPORTS, root_importer,
-                                    GJS_MODULE_PROP_FLAGS)) {
-        gjs_debug(GJS_DEBUG_IMPORTER, "DefineProperty imports on %p failed",
-                  in_object.get());
-        return false;
-    }
-
-    return true;
-}
-
-bool
-gjs_define_root_importer(JSContext       *cx,
-                         JS::HandleObject in_object)
-{
-    JS::Value importer = gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS);
-    JS::RootedObject rooted_importer(cx, &importer.toObject());
-    return gjs_define_root_importer_object(cx, in_object, rooted_importer);
+    return gjs_create_importer(cx, "imports", search_path, true, true,
+                               JS::NullPtr());
 }

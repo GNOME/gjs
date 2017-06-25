@@ -25,6 +25,7 @@
 
 #include "coverage.h"
 #include "coverage-internal.h"
+#include "global.h"
 #include "importer.h"
 #include "jsapi-util-args.h"
 #include "util/error.h"
@@ -1258,24 +1259,6 @@ gjs_coverage_init(GjsCoverage *self)
 {
 }
 
-static JSClass coverage_global_class = {
-    "GjsCoverageGlobal",
-    JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST) |
-    JSCLASS_IMPLEMENTS_BARRIERS,
-    NULL,  /* addProperty */
-    NULL,  /* deleteProperty */
-    NULL,  /* getProperty */
-    NULL,  /* setProperty */
-    NULL,  /* enumerate */
-    NULL,  /* resolve */
-    NULL,  /* convert */
-    NULL,  /* finalize */
-    NULL,  /* call */
-    NULL,  /* hasInstance */
-    NULL,  /* construct */
-    JS_GlobalObjectTraceHook
-};
-
 static bool
 gjs_context_eval_file_in_compartment(GjsContext      *context,
                                      const char      *filename,
@@ -1557,27 +1540,6 @@ gjs_inject_value_into_coverage_compartment(GjsCoverage     *coverage,
     return true;
 }
 
-/* Gets the root import and wraps it into a cross-compartment
- * object so that it can be used in the debugger compartment */
-static JSObject *
-gjs_wrap_root_importer_in_compartment(JSContext *context,
-                                      JS::HandleObject compartment)
-{
-    JSAutoRequest ar(context);
-    JSAutoCompartment ac(context, compartment);
-    JS::RootedValue importer(context,
-        gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS));
-
-    g_assert(importer.isObject());
-
-    JS::RootedObject wrapped_importer(context, &importer.toObject());
-    if (!JS_WrapObject(context, &wrapped_importer)) {
-        return NULL;
-    }
-
-    return wrapped_importer;
-}
-
 static bool
 bootstrap_coverage(GjsCoverage *coverage)
 {
@@ -1593,8 +1555,7 @@ bootstrap_coverage(GjsCoverage *coverage)
     JS::CompartmentOptions options;
     options.setVersion(JSVERSION_LATEST);
     JS::RootedObject debugger_compartment(context,
-        JS_NewGlobalObject(context, &coverage_global_class, NULL,
-                           JS::FireOnNewGlobalHook, options));
+                                          gjs_create_global_object(context));
     {
         JSAutoCompartment compartment(context, debugger_compartment);
         JS::RootedObject debuggeeWrapper(context, debuggee);
@@ -1610,35 +1571,9 @@ bootstrap_coverage(GjsCoverage *coverage)
             return false;
         }
 
-        if (!JS_InitStandardClasses(context, debugger_compartment)) {
-            gjs_throw(context, "Failed to init standard classes");
-            return false;
-        }
-
-        if (!JS_InitReflect(context, debugger_compartment)) {
-            gjs_throw(context, "Failed to init Reflect");
-            return false;
-        }
-
-        if (!JS_DefineDebuggerObject(context, debugger_compartment)) {
-            gjs_throw(context, "Failed to init Debugger");
-            return false;
-        }
-
-        JS::RootedObject wrapped_importer(context,
-                                          gjs_wrap_root_importer_in_compartment(context,
-                                                                                debugger_compartment));;
-
-        if (!wrapped_importer) {
-            gjs_throw(context, "Failed to wrap root importer in debugger compartment");
-            return false;
-        }
-
-        /* Now copy the global root importer (which we just created,
-         * if it didn't exist) to our global object
-         */
-        if (!gjs_define_root_importer_object(context, debugger_compartment, wrapped_importer)) {
-            gjs_throw(context, "Failed to set 'imports' on debugger compartment");
+        if (!gjs_define_global_properties(context, debugger_compartment)) {
+            gjs_throw(context, "Failed to define global properties on debugger "
+                      "compartment");
             return false;
         }
 

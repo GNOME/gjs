@@ -127,31 +127,6 @@ enum {
   GJS_UTIL_ERROR_ARGUMENT_TYPE_MISMATCH
 };
 
-typedef enum {
-    GJS_GLOBAL_SLOT_IMPORTS,
-    GJS_GLOBAL_SLOT_PROTOTYPE_gtype,
-    GJS_GLOBAL_SLOT_PROTOTYPE_function,
-    GJS_GLOBAL_SLOT_PROTOTYPE_ns,
-    GJS_GLOBAL_SLOT_PROTOTYPE_repo,
-    GJS_GLOBAL_SLOT_PROTOTYPE_byte_array,
-    GJS_GLOBAL_SLOT_PROTOTYPE_importer,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_context,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_gradient,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_image_surface,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_linear_gradient,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_path,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_pattern,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_pdf_surface,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_ps_surface,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_radial_gradient,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_region,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_solid_pattern,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_surface,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_surface_pattern,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_svg_surface,
-    GJS_GLOBAL_SLOT_LAST,
-} GjsGlobalSlot;
-
 typedef struct GjsRootedArray GjsRootedArray;
 
 /* Flags that should be set on properties exported from native code modules.
@@ -178,16 +153,7 @@ typedef struct GjsRootedArray GjsRootedArray;
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);          \
     JS::RootedObject to(cx, &args.computeThis(cx).toObject())
 
-bool gjs_init_context_standard(JSContext              *context,
-                               JS::MutableHandleObject global);
-
 JSObject*   gjs_get_import_global            (JSContext       *context);
-
-JS::Value   gjs_get_global_slot              (JSContext       *context,
-                                              GjsGlobalSlot    slot);
-void        gjs_set_global_slot              (JSContext       *context,
-                                              GjsGlobalSlot    slot,
-                                              JS::Value        value);
 
 void gjs_throw_constructor_error             (JSContext       *context);
 

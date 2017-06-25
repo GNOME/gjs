@@ -173,11 +173,10 @@ create_gjs_constructor_proxy(JSContext *cx,
 }
 
 bool
-gjs_define_constructor_proxy_factory(JSContext *cx)
+gjs_define_constructor_proxy_factory(JSContext       *cx,
+                                     JS::HandleObject global)
 {
     bool found;
-    JS::RootedObject global(cx, gjs_get_import_global(cx));
-
     if (!JS_HasProperty(cx, global, constructor_proxy_create_name, &found))
         return false;
     if (found)

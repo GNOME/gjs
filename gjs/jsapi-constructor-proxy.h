@@ -30,7 +30,8 @@
 
 G_BEGIN_DECLS
 
-bool gjs_define_constructor_proxy_factory(JSContext *cx);
+bool gjs_define_constructor_proxy_factory(JSContext       *cx,
+                                          JS::HandleObject global);
 
 G_END_DECLS
 

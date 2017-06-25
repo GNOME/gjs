@@ -54,6 +54,8 @@ gjs_srcs =				\
 	gjs/context-private.h		\
 	gjs/coverage-internal.h		\
 	gjs/coverage.cpp 		\
+	gjs/global.cpp			\
+	gjs/global.h			\
 	gjs/importer.cpp		\
 	gjs/importer.h			\
 	gjs/jsapi-class.h		\

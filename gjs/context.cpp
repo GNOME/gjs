@@ -28,8 +28,8 @@
 #include <gio/gio.h>
 
 #include "context-private.h"
+#include "global.h"
 #include "importer.h"
-#include "jsapi-constructor-proxy.h"
 #include "jsapi-private.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
@@ -113,157 +113,6 @@ enum {
 static GMutex contexts_lock;
 static GList *all_contexts = NULL;
 
-static bool
-gjs_log(JSContext *context,
-        unsigned   argc,
-        JS::Value *vp)
-{
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-
-    if (argc != 1) {
-        gjs_throw(context, "Must pass a single argument to log()");
-        return false;
-    }
-
-    JS_BeginRequest(context);
-
-    /* JS::ToString might throw, in which case we will only log that the value
-     * could not be converted to string */
-    JS::AutoSaveExceptionState exc_state(context);
-    JS::RootedString jstr(context, JS::ToString(context, argv[0]));
-    exc_state.restore();
-
-    if (jstr == NULL) {
-        g_message("JS LOG: <cannot convert value to string>");
-        JS_EndRequest(context);
-        return true;
-    }
-
-    GjsAutoJSChar s(context);
-    if (!gjs_string_to_utf8(context, JS::StringValue(jstr), &s)) {
-        JS_EndRequest(context);
-        return false;
-    }
-    g_message("JS LOG: %s", s.get());
-
-    JS_EndRequest(context);
-    argv.rval().setUndefined();
-    return true;
-}
-
-static bool
-gjs_log_error(JSContext *context,
-              unsigned   argc,
-              JS::Value *vp)
-{
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-
-    if ((argc != 1 && argc != 2) || !argv[0].isObject()) {
-        gjs_throw(context, "Must pass an exception and optionally a message to logError()");
-        return false;
-    }
-
-    JS_BeginRequest(context);
-
-    JS::RootedString jstr(context);
-
-    if (argc == 2) {
-        /* JS::ToString might throw, in which case we will only log that the
-         * value could be converted to string */
-        JS::AutoSaveExceptionState exc_state(context);
-        jstr = JS::ToString(context, argv[1]);
-        exc_state.restore();
-    }
-
-    gjs_log_exception_full(context, argv[0], jstr);
-
-    JS_EndRequest(context);
-    argv.rval().setUndefined();
-    return true;
-}
-
-static bool
-gjs_print_parse_args(JSContext *context,
-                     JS::CallArgs &argv,
-                     char     **buffer)
-{
-    GString *str;
-    guint n;
-
-    JS_BeginRequest(context);
-
-    str = g_string_new("");
-    for (n = 0; n < argv.length(); ++n) {
-        /* JS::ToString might throw, in which case we will only log that the
-         * value could not be converted to string */
-        JS::AutoSaveExceptionState exc_state(context);
-        JS::RootedString jstr(context, JS::ToString(context, argv[n]));
-        exc_state.restore();
-
-        if (jstr != NULL) {
-            GjsAutoJSChar s(context);
-            if (!gjs_string_to_utf8(context, JS::StringValue(jstr), &s)) {
-                JS_EndRequest(context);
-                g_string_free(str, true);
-                return false;
-            }
-
-            g_string_append(str, s);
-            if (n < (argv.length()-1))
-                g_string_append_c(str, ' ');
-        } else {
-            JS_EndRequest(context);
-            *buffer = g_string_free(str, true);
-            if (!*buffer)
-                *buffer = g_strdup("<invalid string>");
-            return true;
-        }
-
-    }
-    *buffer = g_string_free(str, false);
-
-    JS_EndRequest(context);
-    return true;
-}
-
-static bool
-gjs_print(JSContext *context,
-          unsigned   argc,
-          JS::Value *vp)
-{
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    char *buffer;
-
-    if (!gjs_print_parse_args(context, argv, &buffer)) {
-        return false;
-    }
-
-    g_print("%s\n", buffer);
-    g_free(buffer);
-
-    argv.rval().setUndefined();
-    return true;
-}
-
-static bool
-gjs_printerr(JSContext *context,
-             unsigned   argc,
-             JS::Value *vp)
-{
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    char *buffer;
-
-    if (!gjs_print_parse_args(context, argv, &buffer)) {
-        return false;
-    }
-
-    g_printerr("%s\n", buffer);
-    g_free(buffer);
-
-    argv.rval().setUndefined();
-    return true;
-}
-
 static void
 on_garbage_collect(JSRuntime *rt,
                    JSGCStatus status,
@@ -275,45 +124,6 @@ on_garbage_collect(JSRuntime *rt,
      * garbage collected. */
     if (status == JSGC_BEGIN)
         gjs_object_clear_toggles();
-}
-
-/* Requires request, does not throw error */
-static bool
-gjs_define_promise_object(JSContext       *cx,
-                          JS::HandleObject global)
-{
-    /* This is not a regular import, we just load the module's code from the
-     * GResource and evaluate it */
-
-    GError *error = NULL;
-    GBytes *lie_bytes = g_resources_lookup_data("/org/gnome/gjs/modules/_lie.js",
-                                                G_RESOURCE_LOOKUP_FLAGS_NONE,
-                                                &error);
-    if (lie_bytes == NULL) {
-        g_critical("Failed to load Promise resource: %s", error->message);
-        g_clear_error(&error);
-        return false;
-    }
-
-    /* It should be OK to cast these bytes to const char *, since the module is
-     * a text file and we setUTF8(true) below */
-    size_t lie_length;
-    const char *lie_code = static_cast<const char *>(g_bytes_get_data(lie_bytes,
-                                                                      &lie_length));
-    JS::CompileOptions options(cx);
-    options.setUTF8(true)
-        .setSourceIsLazy(true)
-        .setFile("<Promise>");
-
-    JS::RootedValue promise(cx);
-    if (!JS::Evaluate(cx, global, options, lie_code, lie_length, &promise)) {
-        g_bytes_unref(lie_bytes);
-        return false;
-    }
-    g_bytes_unref(lie_bytes);
-
-    return JS_DefineProperty(cx, global, "Promise", promise,
-                             JSPROP_READONLY | JSPROP_PERMANENT);
 }
 
 static void
@@ -465,14 +275,6 @@ gjs_context_finalize(GObject *object)
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
 
-static JSFunctionSpec global_funcs[] = {
-    JS_FS("log", gjs_log, 1, GJS_MODULE_PROP_FLAGS),
-    JS_FS("logError", gjs_log_error, 2, GJS_MODULE_PROP_FLAGS),
-    JS_FS("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
-    JS_FS("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS),
-    JS_FS_END
-};
-
 static void
 gjs_context_constructed(GObject *object)
 {
@@ -502,47 +304,55 @@ gjs_context_constructed(GObject *object)
 
     /* set ourselves as the private data */
     JS_SetContextPrivate(js_context->context, js_context);
-    JS::RootedObject global(js_context->context);
 
-    if (!gjs_init_context_standard(js_context->context, &global))
-        g_error("Failed to initialize context");
+    /* setExtraWarnings: Be extra strict about code that might hide a bug */
+    if (!g_getenv("GJS_DISABLE_EXTRA_WARNINGS")) {
+        gjs_debug(GJS_DEBUG_CONTEXT, "Enabling extra warnings");
+        JS::RuntimeOptionsRef(js_context->context).setExtraWarnings(true);
+    }
+
+    if (!g_getenv("GJS_DISABLE_JIT")) {
+        gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
+        JS::RuntimeOptionsRef(js_context->context)
+            .setIon(true)
+            .setBaseline(true)
+            .setAsmJS(true);
+    }
+
+    /* setDontReportUncaught: Don't send exceptions to our error report handler;
+     * instead leave them set. This allows us to get at the exception object. */
+    JS::ContextOptionsRef(js_context->context).setDontReportUncaught(true);
+
+    JS::RootedObject global(js_context->context,
+        gjs_create_global_object(js_context->context));
+    if (!global) {
+        gjs_log_exception(js_context->context);
+        g_error("Failed to initialize global object");
+    }
 
     JSAutoCompartment ac(js_context->context, global);
-
-    if (!JS_DefineProperty(js_context->context, global, "window", global,
-                           JSPROP_READONLY | JSPROP_PERMANENT))
-        g_error("No memory to export global object as 'window'");
-
-    if (!JS_DefineFunctions(js_context->context, global, &global_funcs[0]))
-        g_error("Failed to define properties on the global object");
 
     new (&js_context->global) JS::Heap<JSObject *>(global);
     JS_AddExtraGCRootsTracer(js_context->runtime, gjs_context_tracer, js_context);
 
-    gjs_define_constructor_proxy_factory(js_context->context);
-
-    /* We create the global-to-runtime root importer with the
-     * passed-in search path. If someone else already created
-     * the root importer, this is a no-op.
-     */
-    if (!gjs_create_root_importer(js_context->context,
-                                  js_context->search_path ?
-                                  (const char**) js_context->search_path :
-                                  NULL,
-                                  true))
+    JS::RootedObject importer(js_context->context,
+        gjs_create_root_importer(js_context->context, js_context->search_path ?
+                                 js_context->search_path : nullptr));
+    if (!importer)
         g_error("Failed to create root importer");
 
-    /* Now copy the global root importer (which we just created,
-     * if it didn't exist) to our global object
-     */
-    if (!gjs_define_root_importer(js_context->context, global))
-        g_error("Failed to point 'imports' property at root importer");
+    JS::Value v_importer = gjs_get_global_slot(js_context->context,
+                                               GJS_GLOBAL_SLOT_IMPORTS);
+    g_assert(((void) "Someone else already created root importer",
+              v_importer.isUndefined()));
 
-    /* FIXME: We should define the Promise object before any imports, in case
-     * the imports want to use it. Currently that's not possible as it needs to
-     * import GLib */
-    if(!gjs_define_promise_object(js_context->context, global))
-        g_error("Failed to define global Promise object");
+    gjs_set_global_slot(js_context->context, GJS_GLOBAL_SLOT_IMPORTS,
+                        JS::ObjectValue(*importer));
+
+    if (!gjs_define_global_properties(js_context->context, global)) {
+        gjs_log_exception(js_context->context);
+        g_error("Failed to define properties on global object");
+    }
 
     JS_EndRequest(js_context->context);
 
