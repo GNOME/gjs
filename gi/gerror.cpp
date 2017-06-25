@@ -54,7 +54,6 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(error)
     Error *priv;
     Error *proto_priv;
-    gchar *message;
     int32_t code;
 
     /* Check early to avoid allocating memory for nothing */
@@ -97,6 +96,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     priv->domain = proto_priv->domain;
 
     JS::RootedObject params_obj(context, &argv[0].toObject());
+    GjsAutoJSChar message(context);
     if (!gjs_object_require_property(context, params_obj,
                                      "GError constructor",
                                      GJS_STRING_MESSAGE, &message))
@@ -108,8 +108,6 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
         return false;
 
     priv->gerror = g_error_new_literal(priv->domain, code, message);
-
-    JS_free(context, message);
 
     /* We assume this error will be thrown in the same line as the constructor */
     define_error_properties(context, object);

@@ -62,7 +62,7 @@ static bool
 get_version_for_ns (JSContext       *context,
                     JS::HandleObject repo_obj,
                     JS::HandleId     ns_id,
-                    char           **version)
+                    GjsAutoJSChar   *version)
 {
     JS::RootedObject versions(context);
     bool found;
@@ -75,10 +75,8 @@ get_version_for_ns (JSContext       *context,
     if (!JS_AlreadyHasOwnPropertyById(context, versions, ns_id, &found))
         return false;
 
-    if (!found) {
-        *version = NULL;
+    if (!found)
         return true;
-    }
 
     return gjs_object_require_property(context, versions, NULL, ns_id, version);
 }
@@ -91,10 +89,10 @@ resolve_namespace_object(JSContext       *context,
 {
     GIRepository *repo;
     GError *error;
-    char *version;
 
     JSAutoRequest ar(context);
 
+    GjsAutoJSChar version(context);
     if (!get_version_for_ns(context, repo_obj, ns_id, &version))
         return false;
 
@@ -119,11 +117,8 @@ resolve_namespace_object(JSContext       *context,
                   ns_name, version?version:"none", error->message);
 
         g_error_free(error);
-        g_free(version);
         return false;
     }
-
-    g_free(version);
 
     /* Defines a property on "obj" (the javascript repo object)
      * with the given namespace name, pointing to that namespace

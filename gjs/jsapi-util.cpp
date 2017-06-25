@@ -297,15 +297,12 @@ gjs_object_require_property(JSContext       *cx,
                             JS::HandleObject obj,
                             const char      *description,
                             JS::HandleId     property_name,
-                            char           **value)
+                            GjsAutoJSChar   *value)
 {
     JS::RootedValue prop_value(cx);
-    GjsAutoJSChar value_tmp(cx);
     if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
-        gjs_string_to_utf8(cx, prop_value, &value_tmp)) {
-        *value = value_tmp.copy();
+        gjs_string_to_utf8(cx, prop_value, value))
         return true;
-    }
 
     throw_property_lookup_error(cx, obj, description, property_name,
                                 "it was not a valid string");

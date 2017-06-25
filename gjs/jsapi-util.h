@@ -394,7 +394,7 @@ bool gjs_object_require_property(JSContext       *cx,
                                  JS::HandleObject obj,
                                  const char      *description,
                                  JS::HandleId     property_name,
-                                 char           **value);
+                                 GjsAutoJSChar   *value);
 
 bool gjs_object_require_property(JSContext              *cx,
                                  JS::HandleObject        obj,
