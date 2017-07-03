@@ -809,7 +809,7 @@ importer_resolve(JSContext        *context,
 
     gjs_debug_jsprop(GJS_DEBUG_IMPORTER,
                      "Resolve prop '%s' hook obj %p priv %p",
-                     name, obj.get(), priv);
+                     name.get(), obj.get(), priv);
     if (priv == NULL) {
         /* we are the prototype, or have the wrong class */
         *resolved = false;

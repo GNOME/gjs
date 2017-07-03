@@ -400,7 +400,7 @@ object_instance_get_prop(JSContext              *context,
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
                      "Get prop '%s' hook obj %p priv %p",
-                     name, obj.get(), priv);
+                     name.get(), obj.get(), priv);
 
     if (priv == nullptr)
         /* If we reach this point, either object_instance_new_resolve
@@ -515,7 +515,7 @@ object_instance_set_prop(JSContext              *context,
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
                      "Set prop '%s' hook obj %p priv %p",
-                     name, obj.get(), priv);
+                     name.get(), obj.get(), priv);
 
     if (priv == nullptr)
         /* see the comment in object_instance_get_prop() on this */
@@ -676,7 +676,7 @@ object_instance_resolve(JSContext       *context,
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
                      "Resolve prop '%s' hook obj %p priv %p (%s.%s) gobj %p %s",
-                     name,
+                     name.get(),
                      obj.get(),
                      priv,
                      priv && priv->info ? g_base_info_get_namespace (priv->info) : "",

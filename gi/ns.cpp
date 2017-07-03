@@ -75,7 +75,7 @@ ns_resolve(JSContext       *context,
     priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GNAMESPACE,
                      "Resolve prop '%s' hook obj %p priv %p",
-                     name, obj.get(), priv);
+                     name.get(), obj.get(), priv);
 
     if (priv == NULL) {
         *resolved = false;  /* we are the prototype, or have the wrong class */
