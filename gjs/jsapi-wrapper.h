@@ -40,7 +40,7 @@
 #endif
 #include <mozilla/Maybe.h>
 #include <jsapi.h>
+#include <jsfriendapi.h>
 #include <js/Conversions.h>
-#include <js/Proxy.h>  /* For jsapi-constructor-proxy */
 
 #endif  /* GJS_JSAPI_WRAPPER_H */

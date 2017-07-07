@@ -201,28 +201,27 @@ Class.prototype._construct = function(params) {
     if (!parent)
         parent = _Base;
 
-    let newClassConstructor;
+    let newClass;
     if (params.Abstract) {
-        newClassConstructor = function() {
+        newClass = function() {
             throw new TypeError('Cannot instantiate abstract class ' + name);
         };
     } else {
-        newClassConstructor = function() {
+        newClass = function() {
             this.__caller__ = null;
 
             return this._construct.apply(this, arguments);
         };
     }
 
-    // This is our workaround for creating a constructor with a custom
-    // prototype. See jsapi-constructor-proxy.cpp.
-    let newClass = __private_GjsConstructorProxy(newClassConstructor,
-        this.constructor.prototype);
+    // Since it's not possible to create a constructor with
+    // a custom [[Prototype]], we have to do this to make
+    // "newClass instanceof Class" work, and so we can inherit
+    // methods/properties of Class.prototype, like wrapFunction.
+    Object.setPrototypeOf(newClass, this.constructor.prototype);
 
     newClass.__super__ = parent;
-    // Here we have to set this property on newClassConstructor directly because
-    // otherwise the 'prototype' property on the proxy isn't configurable
-    newClassConstructor.prototype = Object.create(parent.prototype);
+    newClass.prototype = Object.create(parent.prototype);
     newClass.prototype.constructor = newClass;
 
     newClass._init.apply(newClass, arguments);

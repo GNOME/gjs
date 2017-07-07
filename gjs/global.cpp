@@ -27,7 +27,6 @@
 
 #include "global.h"
 #include "importer.h"
-#include "jsapi-constructor-proxy.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 
@@ -230,8 +229,7 @@ public:
     {
         if (!JS_DefineProperty(cx, global, "window", global,
                                JSPROP_READONLY | JSPROP_PERMANENT) ||
-            !JS_DefineFunctions(cx, global, GjsGlobal::static_funcs) ||
-            !gjs_define_constructor_proxy_factory(cx, global))
+            !JS_DefineFunctions(cx, global, GjsGlobal::static_funcs))
             return false;
 
         JS::Value v_importer = gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS);

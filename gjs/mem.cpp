@@ -48,7 +48,6 @@ GJS_DEFINE_COUNTER(repo)
 GJS_DEFINE_COUNTER(resultset)
 GJS_DEFINE_COUNTER(weakhash)
 GJS_DEFINE_COUNTER(interface)
-GJS_DEFINE_COUNTER(constructor_proxy)
 
 #define GJS_LIST_COUNTER(name) \
     & gjs_counter_ ## name
@@ -67,8 +66,7 @@ static GjsMemCounter* counters[] = {
     GJS_LIST_COUNTER(repo),
     GJS_LIST_COUNTER(resultset),
     GJS_LIST_COUNTER(weakhash),
-    GJS_LIST_COUNTER(interface),
-    GJS_LIST_COUNTER(constructor_proxy),
+    GJS_LIST_COUNTER(interface)
 };
 
 void
