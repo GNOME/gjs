@@ -63,6 +63,9 @@ static void     gjs_context_set_property      (GObject               *object,
                                                   guint                  prop_id,
                                                   const GValue          *value,
                                                   GParamSpec            *pspec);
+
+using JobQueue = JS::GCVector<JSObject *, 0, js::SystemAllocPolicy>;
+
 struct _GjsContext {
     GObject parent;
 
@@ -83,6 +86,10 @@ struct _GjsContext {
     guint    auto_gc_id;
 
     std::array<JS::PersistentRootedId*, GJS_STRING_LAST> const_strings;
+
+    JS::PersistentRooted<JobQueue> *job_queue;
+    unsigned idle_drain_handler;
+    bool draining_job_queue;
 };
 
 /* Keep this consistent with GjsConstString */
@@ -227,6 +234,8 @@ gjs_context_dispose(GObject *object)
         for (auto& root : js_context->const_strings)
             delete root;
 
+        delete js_context->job_queue;
+
         /* Tear down JS */
         JS_DestroyContext(js_context->context);
         js_context->context = NULL;
@@ -280,6 +289,10 @@ gjs_context_constructed(GObject *object)
         js_context->const_strings[i] = new JS::PersistentRootedId(cx,
             gjs_intern_string_to_id(cx, const_strings[i]));
     }
+
+    js_context->job_queue = new JS::PersistentRooted<JobQueue>(cx);
+    if (!js_context->job_queue)
+        g_error("Failed to initialize promise job queue");
 
     JS_BeginRequest(cx);
 
@@ -446,6 +459,112 @@ _gjs_context_is_sweeping(JSContext *cx)
     return js_context->in_gc_sweep;
 }
 
+static gboolean
+drain_job_queue_idle_handler(void *data)
+{
+    auto gjs_context = static_cast<GjsContext *>(data);
+    _gjs_context_run_jobs(gjs_context);
+    /* Uncatchable exceptions are swallowed here - no way to get a handle on
+     * the main loop to exit it from this idle handler */
+    g_assert(((void) "_gjs_context_run_jobs() should have emptied queue",
+              gjs_context->idle_drain_handler == 0));
+    return G_SOURCE_REMOVE;
+}
+
+/* See engine.cpp and JS::SetEnqueuePromiseJobCallback(). */
+bool
+_gjs_context_enqueue_job(GjsContext      *gjs_context,
+                         JS::HandleObject job)
+{
+    if (gjs_context->idle_drain_handler)
+        g_assert(gjs_context->job_queue->length() > 0);
+    else
+        g_assert(gjs_context->job_queue->length() == 0);
+
+    if (!gjs_context->job_queue->append(job))
+        return false;
+    if (!gjs_context->idle_drain_handler)
+        gjs_context->idle_drain_handler =
+            g_idle_add(drain_job_queue_idle_handler, gjs_context);
+
+    return true;
+}
+
+/**
+ * _gjs_context_run_jobs:
+ * @gjs_context: The #GjsContext instance
+ *
+ * Drains the queue of promise callbacks that the JS engine has reported
+ * finished, calling each one and logging any exceptions that it throws.
+ *
+ * Adapted from js::RunJobs() in SpiderMonkey's default job queue
+ * implementation.
+ *
+ * Returns: false if one of the jobs threw an uncatchable exception;
+ * otherwise true.
+ */
+bool
+_gjs_context_run_jobs(GjsContext *gjs_context)
+{
+    bool retval = true;
+    g_assert(gjs_context->job_queue);
+
+    if (gjs_context->draining_job_queue || gjs_context->should_exit)
+        return true;
+
+    auto cx = static_cast<JSContext *>(gjs_context_get_native_context(gjs_context));
+    JSAutoRequest ar(cx);
+
+    gjs_context->draining_job_queue = true;  /* Ignore reentrant calls */
+
+    JS::RootedObject job(cx);
+    JS::HandleValueArray args(JS::HandleValueArray::empty());
+    JS::RootedValue rval(cx);
+
+    /* Execute jobs in a loop until we've reached the end of the queue.
+     * Since executing a job can trigger enqueueing of additional jobs,
+     * it's crucial to recheck the queue length during each iteration. */
+    for (size_t ix = 0; ix < gjs_context->job_queue->length(); ix++) {
+        /* A previous job might have set this flag. e.g., System.exit(). */
+        if (gjs_context->should_exit)
+            break;
+
+        job = gjs_context->job_queue->get()[ix];
+
+        /* It's possible that job draining was interrupted prematurely,
+         * leaving the queue partly processed. In that case, slots for
+         * already-executed entries will contain nullptrs, which we should
+         * just skip. */
+        if (!job)
+            continue;
+
+        gjs_context->job_queue->get()[ix] = nullptr;
+        {
+            JSAutoCompartment ac(cx, job);
+            if (!JS::Call(cx, JS::UndefinedHandleValue, job, args, &rval)) {
+                /* Uncatchable exception - return false so that
+                 * System.exit() works in the interactive shell and when
+                 * exiting the interpreter. */
+                if (!JS_IsExceptionPending(cx)) {
+                    retval = false;
+                    continue;
+                }
+
+                /* There's nowhere for the exception to go at this point */
+                gjs_log_exception(cx);
+            }
+        }
+    }
+
+    gjs_context->draining_job_queue = false;
+    gjs_context->job_queue->clear();
+    if (gjs_context->idle_drain_handler) {
+        g_source_remove(gjs_context->idle_drain_handler);
+        gjs_context->idle_drain_handler = 0;
+    }
+    return retval;
+}
+
 /**
  * gjs_context_maybe_gc:
  * @context: a #GjsContext
@@ -537,8 +656,15 @@ gjs_context_eval(GjsContext   *js_context,
     g_object_ref(G_OBJECT(js_context));
 
     JS::RootedValue retval(js_context->context);
-    if (!gjs_eval_with_scope(js_context->context, nullptr, script,
-                             script_len, filename, &retval)) {
+    bool ok = gjs_eval_with_scope(js_context->context, nullptr, script,
+                                  script_len, filename, &retval);
+
+    /* The promise job queue should be drained even on error, to finish
+     * outstanding async tasks before the context is torn down. Drain after
+     * uncaught exceptions have been reported since draining runs callbacks. */
+    ok = _gjs_context_run_jobs(js_context) && ok;
+
+    if (!ok) {
         uint8_t code;
         if (_gjs_context_should_exit(js_context, &code)) {
             /* exit_status_p is public API so can't be changed, but should be

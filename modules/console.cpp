@@ -54,6 +54,7 @@
 
 #include "console.h"
 #include "gjs/context.h"
+#include "gjs/context-private.h"
 #include "gjs/jsapi-private.h"
 #include "gjs/jsapi-wrapper.h"
 
@@ -279,19 +280,25 @@ gjs_console_interact(JSContext *context,
         } while (!JS_BufferIsCompilableUnit(context, global,
                                             buffer->str, buffer->len));
 
-        AutoReportException are(context);
-        if (!gjs_console_eval_and_print(context, buffer->str, buffer->len,
-                                        startline)) {
+        bool ok;
+        {
+            AutoReportException are(context);
+            ok = gjs_console_eval_and_print(context, buffer->str, buffer->len,
+                                            startline);
+        }
+        g_string_free(buffer, true);
+
+        auto gjs_context = static_cast<GjsContext *>(JS_GetContextPrivate(context));
+        ok = _gjs_context_run_jobs(gjs_context) && ok;
+
+        if (!ok) {
             /* If this was an uncatchable exception, throw another uncatchable
              * exception on up to the surrounding JS::Evaluate() in main(). This
              * happens when you run gjs-console and type imports.system.exit(0);
              * at the prompt. If we don't throw another uncatchable exception
              * here, then it's swallowed and main() won't exit. */
-            g_string_free(buffer, true);
             return false;
         }
-
-        g_string_free(buffer, true);
     } while (!eof);
 
     g_fprintf(stdout, "\n");

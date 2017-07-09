@@ -27,6 +27,18 @@ if (ARGV.indexOf('--help') == -1)
 System.exit(0);
 EOF
 
+# this JS script should print one string (jobs are run before the interpreter
+# finishes) and should not print the other (jobs should not be run after the
+# interpreter is instructed to quit)
+cat <<EOF >promise.js
+const System = imports.system;
+Promise.resolve().then(() => {
+    print('Should be printed');
+    System.exit(42);
+});
+Promise.resolve().then(() => print('Should not be printed'));
+EOF
+
 total=0
 
 report () {
@@ -126,6 +138,15 @@ report "--version after -c should be passed to script"
 test -z "$("$gjs" -c "$script" --version)"
 report "--version after -c should not print anything"
 
-rm -f exit.js help.js
+# interpreter handles queued promise jobs correctly
+output=$("$gjs" promise.js)
+test $? -eq 42
+report "interpreter should exit with the correct exit code from a queued promise job"
+test -n "$output" -a -z "${output##*Should be printed*}"
+report "interpreter should run queued promise jobs before finishing"
+test -n "${output##*Should not be printed*}"
+report "interpreter should stop running jobs when one calls System.exit()"
+
+rm -f exit.js help.js promise.js
 
 echo "1..$total"

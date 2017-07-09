@@ -48,6 +48,11 @@ void _gjs_context_set_sweeping(GjsContext *js_context,
 
 bool _gjs_context_is_sweeping(JSContext *cx);
 
+bool _gjs_context_enqueue_job(GjsContext      *gjs_context,
+                              JS::HandleObject job);
+
+bool _gjs_context_run_jobs(GjsContext *gjs_context);
+
 G_END_DECLS
 
 #endif  /* __GJS_CONTEXT_PRIVATE_H__ */

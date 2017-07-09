@@ -209,6 +209,17 @@ on_garbage_collect(JSContext *cx,
         gjs_object_clear_toggles();
 }
 
+static bool
+on_enqueue_promise_job(JSContext       *cx,
+                       JS::HandleObject callback,
+                       JS::HandleObject allocation_site,
+                       JS::HandleObject global,
+                       void            *data)
+{
+    auto gjs_context = static_cast<GjsContext *>(data);
+    return _gjs_context_enqueue_job(gjs_context, callback);
+}
+
 #ifdef G_OS_WIN32
 HMODULE gjs_dll;
 static bool gjs_is_inited = false;
@@ -292,6 +303,8 @@ gjs_create_js_context(GjsContext *js_context)
     JS_SetGCCallback(cx, on_garbage_collect, js_context);
     JS_SetLocaleCallbacks(cx, &gjs_locale_callbacks);
     JS::SetWarningReporter(cx, gjs_warning_reporter);
+    JS::SetGetIncumbentGlobalCallback(cx, gjs_get_import_global);
+    JS::SetEnqueuePromiseJobCallback(cx, on_enqueue_promise_job, js_context);
 
     /* setExtraWarnings: Be extra strict about code that might hide a bug */
     if (!g_getenv("GJS_DISABLE_EXTRA_WARNINGS")) {
