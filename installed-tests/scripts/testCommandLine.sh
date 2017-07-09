@@ -39,6 +39,17 @@ Promise.resolve().then(() => {
 Promise.resolve().then(() => print('Should not be printed'));
 EOF
 
+# this JS script should not cause an unhandled promise rejection
+cat <<EOF >awaitcatch.js
+async function foo() { throw new Error('foo'); }
+async function bar() {
+    try {
+        await foo();
+    } catch (e) {}
+}
+bar();
+EOF
+
 total=0
 
 report () {
@@ -147,6 +158,11 @@ report "interpreter should run queued promise jobs before finishing"
 test -n "${output##*Should not be printed*}"
 report "interpreter should stop running jobs when one calls System.exit()"
 
-rm -f exit.js help.js promise.js
+"$gjs" -c "Promise.resolve().then(() => { throw new Error(); });" 2>&1 | grep -q 'Gjs-WARNING.*Unhandled promise rejection.*[sS]tack trace'
+report "unhandled promise rejection should be reported"
+test -z $("$gjs" awaitcatch.js)
+report "catching an await expression should not cause unhandled rejection"
+
+rm -f exit.js help.js promise.js awaitcatch.js
 
 echo "1..$total"

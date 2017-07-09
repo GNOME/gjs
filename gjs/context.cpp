@@ -24,6 +24,7 @@
 #include <config.h>
 
 #include <array>
+#include <unordered_map>
 
 #include <gio/gio.h>
 
@@ -90,6 +91,8 @@ struct _GjsContext {
     JS::PersistentRooted<JobQueue> *job_queue;
     unsigned idle_drain_handler;
     bool draining_job_queue;
+
+    std::unordered_map<uint64_t, GjsAutoChar> unhandled_rejection_stacks;
 };
 
 /* Keep this consistent with GjsConstString */
@@ -190,6 +193,21 @@ gjs_context_tracer(JSTracer *trc, void *data)
 }
 
 static void
+warn_about_unhandled_promise_rejections(GjsContext *gjs_context)
+{
+    for (auto& kv : gjs_context->unhandled_rejection_stacks) {
+        const char *stack = kv.second;
+        g_warning("Unhandled promise rejection. To suppress this warning, add "
+                  "an error handler to your promise chain with .catch() or a "
+                  "try-catch block around your await expression. %s%s",
+                  stack ? "Stack trace of the failed promise:\n" :
+                    "Unfortunately there is no stack trace of the failed promise.",
+                  stack ? stack : "");
+    }
+    gjs_context->unhandled_rejection_stacks.clear();
+}
+
+static void
 gjs_context_dispose(GObject *object)
 {
     GjsContext *js_context;
@@ -204,6 +222,8 @@ gjs_context_dispose(GObject *object)
 
         gjs_debug(GJS_DEBUG_CONTEXT,
                   "Destroying JS context");
+
+        warn_about_unhandled_promise_rejections(js_context);
 
         JS_BeginRequest(js_context->context);
 
@@ -267,6 +287,7 @@ gjs_context_finalize(GObject *object)
     g_mutex_unlock(&contexts_lock);
 
     js_context->global.~Heap();
+    js_context->unhandled_rejection_stacks.~unordered_map();
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
 
@@ -285,6 +306,7 @@ gjs_context_constructed(GObject *object)
         g_error("Failed to create javascript context");
     js_context->context = cx;
 
+    new (&js_context->unhandled_rejection_stacks) std::unordered_map<uint64_t, GjsAutoChar>;
     for (i = 0; i < GJS_STRING_LAST; i++) {
         js_context->const_strings[i] = new JS::PersistentRootedId(cx,
             gjs_intern_string_to_id(cx, const_strings[i]));
@@ -563,6 +585,23 @@ _gjs_context_run_jobs(GjsContext *gjs_context)
         gjs_context->idle_drain_handler = 0;
     }
     return retval;
+}
+
+void
+_gjs_context_register_unhandled_promise_rejection(GjsContext   *gjs_context,
+                                                  uint64_t      id,
+                                                  GjsAutoChar&& stack)
+{
+    gjs_context->unhandled_rejection_stacks[id] = std::move(stack);
+}
+
+void
+_gjs_context_unregister_unhandled_promise_rejection(GjsContext *gjs_context,
+                                                    uint64_t    id)
+{
+    size_t erased = gjs_context->unhandled_rejection_stacks.erase(id);
+    g_assert(((void)"Handler attached to rejected promise that wasn't "
+              "previously marked as unhandled", erased == 1));
 }
 
 /**

@@ -220,6 +220,27 @@ on_enqueue_promise_job(JSContext       *cx,
     return _gjs_context_enqueue_job(gjs_context, callback);
 }
 
+static void
+on_promise_unhandled_rejection(JSContext                    *cx,
+                               JS::HandleObject              promise,
+                               PromiseRejectionHandlingState state,
+                               void                         *data)
+{
+    auto gjs_context = static_cast<GjsContext *>(data);
+    uint64_t id = JS::GetPromiseID(promise);
+
+    if (state == PromiseRejectionHandlingState::Handled) {
+        /* This happens when catching an exception from an await expression. */
+        _gjs_context_unregister_unhandled_promise_rejection(gjs_context, id);
+        return;
+    }
+
+    JS::RootedObject allocation_site(cx, JS::GetPromiseAllocationSite(promise));
+    GjsAutoChar stack = gjs_format_stack_trace(cx, allocation_site);
+    _gjs_context_register_unhandled_promise_rejection(gjs_context, id,
+                                                      std::move(stack));
+}
+
 #ifdef G_OS_WIN32
 HMODULE gjs_dll;
 static bool gjs_is_inited = false;
@@ -305,6 +326,8 @@ gjs_create_js_context(GjsContext *js_context)
     JS::SetWarningReporter(cx, gjs_warning_reporter);
     JS::SetGetIncumbentGlobalCallback(cx, gjs_get_import_global);
     JS::SetEnqueuePromiseJobCallback(cx, on_enqueue_promise_job, js_context);
+    JS::SetPromiseRejectionTrackerCallback(cx, on_promise_unhandled_rejection,
+                                           js_context);
 
     /* setExtraWarnings: Be extra strict about code that might hide a bug */
     if (!g_getenv("GJS_DISABLE_EXTRA_WARNINGS")) {

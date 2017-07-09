@@ -27,6 +27,7 @@
 #include <inttypes.h>
 
 #include "context.h"
+#include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 
 G_BEGIN_DECLS
@@ -53,6 +54,13 @@ bool _gjs_context_enqueue_job(GjsContext      *gjs_context,
 
 bool _gjs_context_run_jobs(GjsContext *gjs_context);
 
+void _gjs_context_unregister_unhandled_promise_rejection(GjsContext *gjs_context,
+                                                         uint64_t    promise_id);
+
 G_END_DECLS
+
+void _gjs_context_register_unhandled_promise_rejection(GjsContext   *gjs_context,
+                                                       uint64_t      promise_id,
+                                                       GjsAutoChar&& stack);
 
 #endif  /* __GJS_CONTEXT_PRIVATE_H__ */
