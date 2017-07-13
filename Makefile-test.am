@@ -217,7 +217,6 @@ CLEANFILES += $(TEST_INTROSPECTION_GIRS) $(TEST_INTROSPECTION_TYPELIBS)
 common_jstests_files =						\
 	installed-tests/js/testself.js				\
 	installed-tests/js/testByteArray.js			\
-	installed-tests/js/testClass.js				\
 	installed-tests/js/testCoverage.js			\
 	installed-tests/js/testExceptions.js			\
 	installed-tests/js/testEverythingBasic.js		\
@@ -232,11 +231,10 @@ common_jstests_files =						\
 	installed-tests/js/testGTypeClass.js			\
 	installed-tests/js/testGio.js				\
 	installed-tests/js/testImporter.js			\
-	installed-tests/js/testInterface.js			\
 	installed-tests/js/testLang.js				\
+	installed-tests/js/testLegacyClass.js			\
 	installed-tests/js/testLocale.js			\
 	installed-tests/js/testMainloop.js			\
-	installed-tests/js/testMetaClass.js			\
 	installed-tests/js/testNamespace.js			\
 	installed-tests/js/testPackage.js			\
 	installed-tests/js/testParamSpec.js			\

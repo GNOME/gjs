@@ -18,9 +18,10 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-const Lang = imports.lang;
 const Gi = imports._gi;
 const GjsPrivate = imports.gi.GjsPrivate;
+const Lang = imports.lang;
+const Legacy = imports._legacy;
 
 let GObject;
 
@@ -144,7 +145,7 @@ const GObjectMeta = new Lang.Class({
         let newClass = Gi.register_type(parent.prototype, gtypename,
             gobjectInterfaces, propertiesArray);
 
-        // See Class.prototype._construct in lang.js for the reasoning
+        // See Class.prototype._construct in _legacy.js for the reasoning
         // behind this direct prototype set.
         Object.setPrototypeOf(newClass, this.constructor.prototype);
         newClass.__super__ = parent;
@@ -208,7 +209,7 @@ GObjectInterface.prototype._construct = function (params) {
     let newInterface = Gi.register_interface(gtypename, gobjectInterfaces,
         properties);
 
-    // See Class.prototype._construct in lang.js for the reasoning
+    // See Class.prototype._construct in _legacy.js for the reasoning
     // behind this direct prototype set.
     Object.setPrototypeOf(newInterface, this.constructor.prototype);
     newInterface.__super__ = GObjectInterface;

@@ -1,5 +1,5 @@
 // tests for imports.lang module
-// except for Lang.Class and Lang.Interface, which are tested in separate files
+// except for Lang.Class and Lang.Interface, which are tested in testLegacyClass
 
 const Lang = imports.lang;
 
