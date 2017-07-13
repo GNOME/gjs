@@ -39,7 +39,7 @@ GJS_DEFINE_PROTO_WITH_PARENT("PSSurface", cairo_ps_surface, cairo_surface,
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_ps_surface)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_ps_surface)
-    char *filename = nullptr;
+    GjsAutoChar filename;
     double width, height;
     cairo_surface_t *surface;
 
@@ -54,14 +54,11 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_ps_surface)
     surface = cairo_ps_surface_create(filename, width, height);
 
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface),
-                                "surface")) {
-        g_free(filename);
+                                "surface"))
         return false;
-    }
 
     gjs_cairo_surface_construct(context, object, surface);
     cairo_surface_destroy(surface);
-    g_free(filename);
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_ps_surface);
 

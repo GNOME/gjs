@@ -91,26 +91,34 @@ assign(JSContext      *cx,
        char            c,
        bool            nullable,
        JS::HandleValue value,
-       char          **ref)
+       GjsAutoJSChar  *ref)
 {
-    if (nullable && (c == 's' || c == 'F') && value.isNull()) {
-        *ref = NULL;
+    if (c != 's')
+        throw g_strdup_printf("Wrong type for %c, got GjsAutoJSChar*", c);
+    if (nullable && value.isNull()) {
+        ref->reset(cx, nullptr);
         return;
     }
+    if (!gjs_string_to_utf8(cx, value, ref))
+        throw g_strdup("Couldn't convert to string");
+}
 
-    GjsAutoJSChar tmp_ref(cx);
-
-    if (c == 's') {
-        if (!gjs_string_to_utf8(cx, value, &tmp_ref))
-            throw g_strdup("Couldn't convert to string");
-    } else if (c == 'F') {
-        if (!gjs_string_to_filename(cx, value, &tmp_ref))
-            throw g_strdup("Couldn't convert to filename");
-    } else {
-        throw g_strdup_printf("Wrong type for %c, got char**", c);
+GJS_ALWAYS_INLINE
+static inline void
+assign(JSContext      *cx,
+       char            c,
+       bool            nullable,
+       JS::HandleValue value,
+       GjsAutoChar    *ref)
+{
+    if (c != 'F')
+        throw g_strdup_printf("Wrong type for %c, got GjsAutoChar*", c);
+    if (nullable && value.isNull()) {
+        ref->release();
+        return;
     }
-
-    *ref = tmp_ref.copy();
+    if (!gjs_string_to_filename(cx, value, ref))
+        throw g_strdup("Couldn't convert to filename");
 }
 
 GJS_ALWAYS_INLINE
@@ -220,13 +228,6 @@ free_if_necessary(JS::MutableHandleObject param_ref)
      * there may have been something different inside the handle. But it has
      * already been clobbered at this point anyhow */
     param_ref.set(NULL);
-}
-
-GJS_ALWAYS_INLINE
-static inline void
-free_if_necessary(char **param_ref)
-{
-    g_free(*param_ref);
 }
 
 template<typename T>

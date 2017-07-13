@@ -66,7 +66,7 @@ writeToPNG_func(JSContext *context,
                 JS::Value *vp)
 {
     GJS_GET_THIS(context, argc, vp, argv, obj);
-    char *filename = nullptr;
+    GjsAutoChar filename;
     cairo_surface_t *surface;
 
     if (!gjs_parse_call_args(context, "writeToPNG", argv, "F",
@@ -74,12 +74,10 @@ writeToPNG_func(JSContext *context,
         return false;
 
     surface = gjs_cairo_surface_get_surface(context, obj);
-    if (!surface) {
-        g_free(filename);
+    if (!surface)
         return false;
-    }
+
     cairo_surface_write_to_png(surface, filename);
-    g_free(filename);
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface),
                                 "surface"))
         return false;

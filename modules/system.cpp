@@ -105,7 +105,7 @@ gjs_dump_heap(JSContext *cx,
               JS::Value *vp)
 {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    char *filename = nullptr;
+    GjsAutoChar filename;
 
     if (!gjs_parse_call_args(cx, "dumpHeap", args, "|F", "filename", &filename))
         return false;
@@ -114,7 +114,6 @@ gjs_dump_heap(JSContext *cx,
         FILE *fp = fopen(filename, "a");
         js::DumpHeap(cx, fp, js::IgnoreNurseryObjects);
         fclose(fp);
-        g_free(filename);
     } else {
         js::DumpHeap(cx, stdout, js::IgnoreNurseryObjects);
     }

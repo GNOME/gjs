@@ -1363,17 +1363,14 @@ coverage_log(JSContext *context,
 static GFile *
 get_file_from_call_args_filename(JSContext    *context,
                                  JS::CallArgs &args) {
-    char *filename = NULL;
+    GjsAutoJSChar filename(context);
 
     if (!gjs_parse_call_args(context, "getFileContents", args, "s",
                              "filename", &filename))
         return NULL;
 
     /* path could be a resource, so use g_file_new_for_commandline_arg. */
-    GFile *file = g_file_new_for_commandline_arg(filename);
-
-    g_free(filename);
-    return file;
+    return g_file_new_for_commandline_arg(filename);
 }
 
 static bool

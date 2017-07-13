@@ -414,24 +414,31 @@ value_to_ghashtable_key(JSContext      *cx,
 
 #undef HANDLE_UNSIGNED_INT
 
-#define HANDLE_STRING(type, lctype)                                   \
-    case GI_TYPE_TAG_##type: {                                        \
-        GjsAutoJSChar cstr(cx);                                       \
-        JS::RootedValue str_val(cx, value);                           \
-        if (!str_val.isString()) {                                    \
-            JS::RootedString str(cx, JS::ToString(cx, str_val));      \
-            str_val.setString(str);                                   \
-        }                                                             \
-        if (!gjs_string_to_##lctype(cx, str_val, &cstr))              \
-            return false;                                             \
-        *pointer_out = cstr.copy();                                   \
-        break;                                                        \
+    case GI_TYPE_TAG_FILENAME: {
+        GjsAutoChar cstr;
+        JS::RootedValue str_val(cx, value);
+        if (!str_val.isString()) {
+            JS::RootedString str(cx, JS::ToString(cx, str_val));
+            str_val.setString(str);
+        }
+        if (!gjs_string_to_filename(cx, str_val, &cstr))
+            return false;
+        *pointer_out = cstr.release();
+        break;
     }
 
-    HANDLE_STRING(FILENAME, filename);
-    HANDLE_STRING(UTF8, utf8);
-
-#undef HANDLE_STRING
+    case GI_TYPE_TAG_UTF8: {
+        GjsAutoJSChar cstr(cx);
+        JS::RootedValue str_val(cx, value);
+        if (!str_val.isString()) {
+            JS::RootedString str(cx, JS::ToString(cx, str_val));
+            str_val.setString(str);
+        }
+        if (!gjs_string_to_utf8(cx, str_val, &cstr))
+            return false;
+        *pointer_out = cstr.copy();
+        break;
+    }
 
     case GI_TYPE_TAG_FLOAT:
     case GI_TYPE_TAG_DOUBLE:
@@ -1467,9 +1474,9 @@ gjs_value_to_g_argument(JSContext      *context,
         if (value.isNull()) {
             arg->v_pointer = NULL;
         } else if (value.isString()) {
-            GjsAutoJSChar filename_str(context);
+            GjsAutoChar filename_str;
             if (gjs_string_to_filename(context, value, &filename_str))
-                arg->v_pointer = filename_str.copy();
+                arg->v_pointer = filename_str.release();
             else
                 wrong = true;
         } else {

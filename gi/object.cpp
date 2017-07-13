@@ -2137,7 +2137,7 @@ static void
 find_vfunc_info (JSContext *context,
                  GType implementor_gtype,
                  GIBaseInfo *vfunc_info,
-                 gchar *vfunc_name,
+                 const char   *vfunc_name,
                  gpointer *implementor_vtable_ret,
                  GIFieldInfo **field_info_ret)
 {
@@ -2214,7 +2214,7 @@ gjs_hook_up_vfunc(JSContext *cx,
                   JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    gchar *name;
+    GjsAutoJSChar name(cx);
     JS::RootedObject object(cx), function(cx);
     ObjectInstance *priv;
     GType gtype, info_gtype;
@@ -2279,9 +2279,8 @@ gjs_hook_up_vfunc(JSContext *cx,
     }
 
     if (!vfunc) {
-        gjs_throw(cx, "Could not find definition of virtual function %s", name);
-
-        g_free(name);
+        gjs_throw(cx, "Could not find definition of virtual function %s",
+                  name.get());
         return false;
     }
 
@@ -2315,7 +2314,6 @@ gjs_hook_up_vfunc(JSContext *cx,
     }
 
     g_base_info_unref(vfunc);
-    g_free(name);
     return true;
 }
 
@@ -2460,7 +2458,7 @@ gjs_override_property(JSContext *cx,
                       JS::Value *vp)
 {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    gchar *name = NULL;
+    GjsAutoJSChar name(cx);
     JS::RootedObject type(cx);
     GParamSpec *pspec;
     GParamSpec *new_pspec;
@@ -2473,7 +2471,6 @@ gjs_override_property(JSContext *cx,
 
     if ((gtype = gjs_gtype_get_actual_gtype(cx, type)) == G_TYPE_INVALID) {
         gjs_throw(cx, "Invalid parameter type was not a GType");
-        g_clear_pointer(&name, g_free);
         return false;
     }
 
@@ -2489,14 +2486,12 @@ gjs_override_property(JSContext *cx,
     }
 
     if (pspec == NULL) {
-        gjs_throw(cx, "No such property '%s' to override on type '%s'", name,
-                  g_type_name(gtype));
-        g_clear_pointer(&name, g_free);
+        gjs_throw(cx, "No such property '%s' to override on type '%s'",
+                  name.get(), g_type_name(gtype));
         return false;
     }
 
     new_pspec = g_param_spec_override(name, pspec);
-    g_clear_pointer(&name, g_free);
 
     g_param_spec_set_qdata(new_pspec, gjs_is_custom_property_quark(), GINT_TO_POINTER(1));
 
@@ -2724,7 +2719,7 @@ gjs_register_interface(JSContext *cx,
                        JS::Value *vp)
 {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    char *name = NULL;
+    GjsAutoJSChar name(cx);
     guint32 i, n_interfaces, n_properties;
     GType *iface_types;
     GType interface_type;
@@ -2751,29 +2746,23 @@ gjs_register_interface(JSContext *cx,
         return false;
 
     if (!validate_interfaces_and_properties_args(cx, interfaces, properties,
-                                                 &n_interfaces, &n_properties)) {
-        g_clear_pointer(&name, g_free);
+                                                 &n_interfaces, &n_properties))
         return false;
-    }
 
     iface_types = (GType *) g_alloca(sizeof(GType) * n_interfaces);
 
     /* We do interface addition in two passes so that any failure
        is caught early, before registering the GType (which we can't undo) */
-    if (!get_interface_gtypes(cx, interfaces, n_interfaces, iface_types)) {
-        g_clear_pointer(&name, g_free);
+    if (!get_interface_gtypes(cx, interfaces, n_interfaces, iface_types))
         return false;
-    }
 
     if (g_type_from_name(name) != G_TYPE_INVALID) {
-        gjs_throw(cx, "Type name %s is already registered", name);
-        g_clear_pointer(&name, g_free);
+        gjs_throw(cx, "Type name %s is already registered", name.get());
         return false;
     }
 
     interface_type = g_type_register_static(G_TYPE_INTERFACE, name, &type_info,
                                             (GTypeFlags) 0);
-    g_clear_pointer(&name, g_free);
 
     g_type_set_qdata(interface_type, gjs_is_custom_type_quark(), GINT_TO_POINTER(1));
 
@@ -2801,7 +2790,7 @@ gjs_register_type(JSContext *cx,
                   JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    gchar *name;
+    GjsAutoJSChar name(cx);
     GType instance_type, parent_type;
     GTypeQuery query;
     ObjectInstance *parent_priv;
@@ -2850,7 +2839,7 @@ gjs_register_type(JSContext *cx,
         return false;
 
     if (g_type_from_name(name) != G_TYPE_INVALID) {
-        gjs_throw (cx, "Type name %s is already registered", name);
+        gjs_throw(cx, "Type name %s is already registered", name.get());
         return false;
     }
 
@@ -2872,8 +2861,6 @@ gjs_register_type(JSContext *cx,
 
     instance_type = g_type_register_static(parent_type, name, &type_info,
                                            (GTypeFlags) 0);
-
-    g_free(name);
 
     g_type_set_qdata (instance_type, gjs_is_custom_type_quark(), GINT_TO_POINTER (1));
 

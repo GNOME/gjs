@@ -85,7 +85,8 @@ JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(one_of_each_type)
     bool boolval;
-    char *strval, *fileval;
+    GjsAutoJSChar strval(cx);
+    GjsAutoChar fileval;
     int intval;
     unsigned uintval;
     int64_t int64val;
@@ -108,8 +109,6 @@ JSNATIVE_TEST_FUNC_BEGIN(one_of_each_type)
     g_assert_cmpint(int64val, ==, 1);
     g_assert_cmpfloat(dblval, ==, 1.0);
     g_assert_nonnull(objval);
-    g_free(strval);
-    g_free(fileval);
 JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(optional_args_all)
@@ -156,7 +155,8 @@ JSNATIVE_TEST_FUNC_BEGIN(signed_enum_arg)
 JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(one_of_each_nullable_type)
-    char *strval, *fileval;
+    GjsAutoJSChar strval(cx);
+    GjsAutoChar fileval;
     JS::RootedObject objval(cx);
     retval = gjs_parse_call_args(cx, "oneOfEachNullableType", args, "?s?F?o",
                                  "strval", &strval,
@@ -168,18 +168,14 @@ JSNATIVE_TEST_FUNC_BEGIN(one_of_each_nullable_type)
 JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(unwind_free_test)
-    char *strval, *fileval;
     int intval;
     unsigned uval;
     JS::RootedObject objval(cx);
-    retval = gjs_parse_call_args(cx, "unwindFreeTest", args, "sFoiu",
-                                 "strval", &strval,
-                                 "fileval", &fileval,
+    retval = gjs_parse_call_args(cx, "unwindFreeTest", args, "oiu",
                                  "objval", &objval,
                                  "intval", &intval,
                                  "error", &uval);
     g_assert_null(objval);
-    /* Sadly, we cannot assert that strval and fileval have been freed */
 JSNATIVE_TEST_FUNC_END
 
 #define JSNATIVE_BAD_NULLABLE_TEST_FUNC(type, fmt)                 \
@@ -210,16 +206,22 @@ JSNATIVE_BAD_TYPE_TEST_FUNC(int, "u");
 JSNATIVE_BAD_TYPE_TEST_FUNC(unsigned, "t");
 JSNATIVE_BAD_TYPE_TEST_FUNC(int64_t, "f");
 JSNATIVE_BAD_TYPE_TEST_FUNC(double, "b");
-typedef char *charptr;
-JSNATIVE_BAD_TYPE_TEST_FUNC(charptr, "i");
+JSNATIVE_BAD_TYPE_TEST_FUNC(GjsAutoChar, "i");
 
 #undef JSNATIVE_BAD_TYPE_TEST_FUNC
 
-JSNATIVE_TEST_FUNC_BEGIN(object_invalid_type)
-    JS::RootedObject val(cx);
-    retval = gjs_parse_call_args(cx, "objectInvalidType", args, "i",
-                                 "val", &val);
-JSNATIVE_TEST_FUNC_END
+#define JSNATIVE_CONSTRUCTED_BAD_TYPE_TEST_FUNC(type, ch)                \
+    JSNATIVE_TEST_FUNC_BEGIN(type##_invalid_type)                        \
+        type val(cx);                                                    \
+        retval = gjs_parse_call_args(cx, #type "InvalidType", args, ch,  \
+                                     "val", &val);                       \
+    JSNATIVE_TEST_FUNC_END
+
+using JS::RootedObject;
+JSNATIVE_CONSTRUCTED_BAD_TYPE_TEST_FUNC(GjsAutoJSChar, "i");
+JSNATIVE_CONSTRUCTED_BAD_TYPE_TEST_FUNC(RootedObject, "i");
+
+#undef JSNATIVE_CONSTRUCTED_BAD_TYPE_TEST_FUNC
 
 static JSFunctionSpec native_test_funcs[] = {
     JS_FS("noArgs", no_args, 0, 0),
@@ -247,8 +249,9 @@ static JSFunctionSpec native_test_funcs[] = {
     JS_FS("unsignedInvalidType", unsigned_invalid_type, 0, 0),
     JS_FS("int64_tInvalidType", int64_t_invalid_type, 0, 0),
     JS_FS("doubleInvalidType", double_invalid_type, 0, 0),
-    JS_FS("charptrInvalidType", charptr_invalid_type, 0, 0),
-    JS_FS("objectInvalidType", object_invalid_type, 0, 0),
+    JS_FS("GjsAutoCharInvalidType", GjsAutoChar_invalid_type, 0, 0),
+    JS_FS("GjsAutoJSCharInvalidType", GjsAutoJSChar_invalid_type, 0, 0),
+    JS_FS("RootedObjectInvalidType", RootedObject_invalid_type, 0, 0),
     JS_FS_END
 };
 
@@ -347,7 +350,7 @@ gjs_test_add_tests_for_parse_call_args(void)
     ADD_CALL_ARGS_TEST("passing-all-arguments-when-all-optional",
                        "onlyOptionalArgs(1, 1)");
     ADD_CALL_ARGS_TEST_XFAIL("allocated-args-are-freed-on-error",
-                             "unwindFreeTest('', '', {}, 1, -1)"
+                             "unwindFreeTest({}, 1, -1)"
                              "//*Value * is out of range");
     ADD_CALL_ARGS_TEST_XFAIL("nullable-bool-is-invalid",
                              "boolInvalidNullable(true)"
@@ -379,11 +382,14 @@ gjs_test_add_tests_for_parse_call_args(void)
     ADD_CALL_ARGS_TEST_XFAIL("invalid-double-type",
                              "doubleInvalidType(false)"
                              "//*Wrong type for b, got double?");
-    ADD_CALL_ARGS_TEST_XFAIL("invalid-string-type",
-                             "charptrInvalidType(1)"
-                             "//*Wrong type for i, got char??");
+    ADD_CALL_ARGS_TEST_XFAIL("invalid-autochar-type",
+                             "GjsAutoCharInvalidType(1)"
+                             "//*Wrong type for i, got GjsAutoChar?");
+    ADD_CALL_ARGS_TEST_XFAIL("invalid-autojschar-type",
+                             "GjsAutoJSCharInvalidType(1)"
+                             "//*Wrong type for i, got GjsAutoJSChar?");
     ADD_CALL_ARGS_TEST_XFAIL("invalid-object-type",
-                             "objectInvalidType(1)"
+                             "RootedObjectInvalidType(1)"
                              "//*Wrong type for i, got JS::MutableHandleObject");
     ADD_CALL_ARGS_TEST_XFAIL("invalid-boolean",
                              "boolArgNoAssert({})//*Not a boolean");

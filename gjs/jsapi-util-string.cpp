@@ -93,11 +93,10 @@ gjs_string_from_utf8(JSContext             *context,
 bool
 gjs_string_to_filename(JSContext      *context,
                        const JS::Value filename_val,
-                       GjsAutoJSChar  *filename_string_p)
+                       GjsAutoChar    *filename_string)
 {
     GError *error;
     GjsAutoJSChar tmp(context);
-    char *filename_string;
 
     /* gjs_string_to_filename verifies that filename_val is a string */
 
@@ -107,13 +106,12 @@ gjs_string_to_filename(JSContext      *context,
     }
 
     error = NULL;
-    filename_string = g_filename_from_utf8(tmp, -1, NULL, NULL, &error);
-    if (!filename_string) {
+    *filename_string = g_filename_from_utf8(tmp, -1, NULL, NULL, &error);
+    if (!*filename_string) {
         gjs_throw_g_error(context, error);
         return false;
     }
 
-    filename_string_p->reset(context, filename_string);
     return true;
 }
 

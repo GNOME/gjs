@@ -79,10 +79,10 @@ createFromPNG_func(JSContext *context,
                    JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    char *filename = nullptr;
+    GjsAutoChar filename;
     cairo_surface_t *surface;
 
-    if (!gjs_parse_call_args(context, "createFromPNG", argv, "s",
+    if (!gjs_parse_call_args(context, "createFromPNG", argv, "F",
                              "filename", &filename))
         return false;
 
