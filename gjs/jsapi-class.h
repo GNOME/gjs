@@ -69,13 +69,15 @@ JSObject *gjs_construct_object_dynamic(JSContext                  *cx,
  *                              do_base_typecheck and priv_from_js
  */
 #define GJS_DEFINE_PRIV_FROM_JS(type, klass)                          \
-    G_GNUC_UNUSED static inline bool                                    \
+    GJS_ALWAYS_INLINE G_GNUC_UNUSED                                     \
+    static inline bool                                                  \
     do_base_typecheck(JSContext       *context,                         \
                       JS::HandleObject object,                          \
                       bool             throw_error)                     \
     {                                                                   \
         return gjs_typecheck_instance(context, object, &klass, throw_error);  \
     }                                                                   \
+    GJS_ALWAYS_INLINE                                                   \
     static inline type *                                                \
     priv_from_js(JSContext       *context,                              \
                  JS::HandleObject object)                               \

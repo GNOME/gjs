@@ -32,6 +32,12 @@
 #include "jsapi-wrapper.h"
 #include "gi/gtype.h"
 
+#ifdef __GNUC__
+#define GJS_ALWAYS_INLINE __attribute__((always_inline))
+#else
+#define GJS_ALWAYS_INLINE
+#endif
+
 class GjsAutoChar : public std::unique_ptr<char, decltype(&g_free)> {
 public:
     GjsAutoChar(char *str = nullptr) : unique_ptr(str, g_free) {}
