@@ -143,8 +143,9 @@ closure_marshal(GClosure        *closure,
         g_critical("Attempting to call back into JSAPI during the sweeping phase of GC. "
                    "This is most likely caused by not destroying a Clutter actor or Gtk+ "
                    "widget with ::destroy signals connected, but can also be caused by "
-                   "using the destroy() or dispose() vfuncs. Because it would crash the "
-                   "application, it has been blocked and the JS callback not invoked.");
+                   "using the destroy(), dispose(), or remove() vfuncs. "
+                   "Because it would crash the application, it has been "
+                   "blocked and the JS callback not invoked.");
         if (hint) {
             gpointer instance;
             g_signal_query(hint->signal_id, &signal_query);

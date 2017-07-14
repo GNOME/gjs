@@ -189,8 +189,14 @@ gjs_callback_closure(ffi_cif *cif,
         g_critical("Attempting to call back into JSAPI during the sweeping phase of GC. "
                    "This is most likely caused by not destroying a Clutter actor or Gtk+ "
                    "widget with ::destroy signals connected, but can also be caused by "
-                   "using the destroy() or dispose() vfuncs. Because it would crash the "
-                   "application, it has been blocked and the JS callback not invoked.");
+                   "using the destroy(), dispose(), or remove() vfuncs. "
+                   "Because it would crash the application, it has been "
+                   "blocked and the JS callback not invoked.");
+        if (trampoline->info) {
+            const char *name = g_base_info_get_name(static_cast<GIBaseInfo *>(trampoline->info));
+            g_critical("The offending callback was %s()%s.", name,
+                       trampoline->is_vfunc ? ", a vfunc" : "");
+        }
         /* A gjs_dumpstack() would be nice here, but we can't,
            because that works by creating a new Error object and
            reading the stack property, which is the worst possible
