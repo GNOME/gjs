@@ -49,11 +49,6 @@ main(int argc, char **argv)
     if (argc < 2)
         g_error("Need a test file");
 
-    /* The tests are known to fail in the presence of the JIT;
-     * we leak objects.
-     * https://bugzilla.gnome.org/show_bug.cgi?id=616193
-     */
-    g_setenv("GJS_DISABLE_JIT", "1", false);
     /* The fact that this isn't the default is kind of lame... */
     g_setenv("GJS_DEBUG_OUTPUT", "stderr", false);
     /* Jasmine library has some code style nits that trip this */
