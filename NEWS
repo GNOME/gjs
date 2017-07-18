@@ -91,6 +91,17 @@ NEXT
     + Atomics, SharedArrayBuffer, and WebAssembly are disabled by default, but
       can be enabled if you compile mozjs yourself
 
+Version 1.48.5
+--------------
+
+- Closed bugs:
+
+  * GJS crash in needsPostBarrier, possible access from wrong thread [#783935,
+    Philip Chimento]
+
+- Fix format string, caught by static analysis [Claudio André]
+- Fixes for regression in 1.48.4 [Philip Chimento]
+
 Version 1.49.3
 --------------
 
