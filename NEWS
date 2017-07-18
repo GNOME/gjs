@@ -1,5 +1,5 @@
-NEXT
-----
+Version 1.49.4
+--------------
 
 - New JavaScript features! This version of GJS is based on SpiderMonkey 52, an
   upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 38.
@@ -90,6 +90,14 @@ NEXT
     + Object.entries() method (proposed in ES2017)
     + Atomics, SharedArrayBuffer, and WebAssembly are disabled by default, but
       can be enabled if you compile mozjs yourself
+
+- Closed bugs:
+
+  * Prepare for SpiderMonkey 45 and 52 [#781429, Philip Chimento]
+  * Add a static analysis tool as a make target [#783214, Claudio André]
+  * Fix the build with debug logs enabled [#784469, Tomas Popela]
+  * Switch to SpiderMonkey 52 [#784196, Philip Chimento, Chun-wei Fan]
+  * Test suite fails when run with JIT enabled [#616193, Philip Chimento]
 
 Version 1.48.5
 --------------
