@@ -287,6 +287,7 @@ gjs_context_finalize(GObject *object)
     g_mutex_unlock(&contexts_lock);
 
     js_context->global.~Heap();
+    js_context->const_strings.~array();
     js_context->unhandled_rejection_stacks.~unordered_map();
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
@@ -307,6 +308,7 @@ gjs_context_constructed(GObject *object)
     js_context->context = cx;
 
     new (&js_context->unhandled_rejection_stacks) std::unordered_map<uint64_t, GjsAutoChar>;
+    new (&js_context->const_strings) std::array<JS::PersistentRootedId*, GJS_STRING_LAST>;
     for (i = 0; i < GJS_STRING_LAST; i++) {
         js_context->const_strings[i] = new JS::PersistentRootedId(cx,
             gjs_intern_string_to_id(cx, const_strings[i]));
