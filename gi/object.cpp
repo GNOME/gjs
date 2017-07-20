@@ -322,6 +322,14 @@ lookup_field_info(GIObjectInfo *info,
         g_clear_pointer(&retval, g_base_info_unref);
     }
 
+    if (!retval)
+        return nullptr;
+
+    if (!(g_field_info_get_flags(retval) & GI_FIELD_IS_READABLE)) {
+        g_base_info_unref(retval);
+        return nullptr;
+    }
+
     return retval;
 }
 
@@ -344,9 +352,6 @@ get_prop_from_field(JSContext             *cx,
     GITypeInfo *type = NULL;
     GITypeTag tag;
     GIArgument arg = { 0 };
-
-    if (!(g_field_info_get_flags(field) & GI_FIELD_IS_READABLE))
-        goto out;
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Overriding %s with GObject field",
                      name);
@@ -650,6 +655,65 @@ object_instance_resolve_no_info(JSContext       *context,
     return true;
 }
 
+/* Taken from GLib */
+static void
+canonicalize_key(char *key)
+{
+    for (char *p = key; *p != 0; p++) {
+        char c = *p;
+
+        if (c != '-' &&
+            (c < '0' || c > '9') &&
+            (c < 'A' || c > 'Z') &&
+            (c < 'a' || c > 'z'))
+            *p = '-';
+    }
+}
+
+static bool
+is_gobject_property_name(GIObjectInfo *info,
+                         const char   *name)
+{
+    int n_props = g_object_info_get_n_properties(info);
+    int ix;
+    GIPropertyInfo *prop_info = nullptr;
+
+    char *canonical_name = gjs_hyphen_from_camel(name);
+    canonicalize_key(canonical_name);
+
+    for (ix = 0; ix < n_props; ix++) {
+        prop_info = g_object_info_get_property(info, ix);
+        const char *prop_name = g_base_info_get_name(prop_info);
+        if (strcmp(canonical_name, prop_name) == 0)
+            break;
+        g_clear_pointer(&prop_info, g_base_info_unref);
+    }
+
+    g_free(canonical_name);
+
+    if (!prop_info)
+        return false;
+
+    if (!(g_property_info_get_flags(prop_info) & G_PARAM_READABLE)) {
+        g_base_info_unref(prop_info);
+        return false;
+    }
+
+    g_base_info_unref(prop_info);
+    return true;
+}
+
+static bool
+is_gobject_field_name(GIObjectInfo *info,
+                      const char   *name)
+{
+    GIFieldInfo *field_info = lookup_field_info(info, name);
+    if (!field_info)
+        return false;
+    g_base_info_unref(field_info);
+    return true;
+}
+
 /*
  * The *objp out parameter, on success, should be null to indicate that id
  * was not resolved; and non-null, referring to obj or one of its prototypes,
@@ -746,6 +810,18 @@ object_instance_resolve(JSContext       *context,
 
         /* If the vfunc wasn't found, fall through, back to normal
          * method resolution. */
+    }
+
+    /* If the name refers to a GObject property or field, don't resolve.
+     * Instead, let the getProperty hook handle fetching the property from
+     * GObject. */
+    if (is_gobject_property_name(priv->info, name) ||
+        is_gobject_field_name(priv->info, name)) {
+        gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
+                         "Breaking out of %p resolve, '%s' is a GObject prop",
+                         obj.get(), name.get());
+        *resolved = false;
+        return true;
     }
 
     /* find_method does not look at methods on parent classes,

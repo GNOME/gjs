@@ -231,6 +231,16 @@ describe('Introspected GObject', function () {
         obj.ownprop = 'foo';
         expect(obj.hasOwnProperty('ownprop')).toBeTruthy();
     });
+
+    // This test is not meant to be normative; a GObject behaving like this is
+    // doing something unsupported. However, we have been handling this so far
+    // in a certain way, and we don't want to break user code because of badly
+    // behaved libraries. This test ensures that any change to the behaviour
+    // must be intentional.
+    it('resolves properties when they are shadowed by methods', function () {
+        expect(obj.name_conflict).toEqual(42);
+        expect(obj.name_conflict instanceof Function).toBeFalsy();
+    });
 });
 
 describe('Introspected function length', function () {
