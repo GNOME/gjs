@@ -79,6 +79,10 @@ describe('Importer', function () {
         expect(foobar.bar).toEqual('This is bar');
     });
 
+    it('can import a module with a toString property', function () {
+        expect(foobar.testToString('foo')).toEqual('foo');
+    });
+
     it('makes deleting the import a no-op', function () {
         expect(delete imports.foobar).toBeFalsy();
         expect(imports.foobar).toBe(foobar);
@@ -98,8 +102,10 @@ describe('Importer', function () {
     });
 
     it('imports modules with a toString representation', function () {
-        expect(foobar.toString()).toEqual('[GjsModule foobar]');
-        expect(subFoobar.toString()).toEqual('[GjsModule subA.subB.foobar]');
+        expect(Object.prototype.toString.call(foobar))
+            .toEqual('[object GjsModule foobar]');
+        expect(subFoobar.toString())
+            .toEqual('[object GjsModule subA.subB.foobar]');
     });
 
     it('does not share the same object for a module on a different path', function () {
