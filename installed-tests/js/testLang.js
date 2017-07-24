@@ -53,16 +53,14 @@ describe('Lang module', function () {
 
 
     describe('bind()', function () {
-        const Obj = new Lang.Class({
-            Name: 'Obj',
-            callback: function () {
-                return true;
-            },
-        });
         let o;
 
         beforeEach(function () {
-            o = new Obj();
+            o = {
+                callback() {
+                    return true;
+                }
+            };
             spyOn(o, 'callback').and.callThrough();
         });
 

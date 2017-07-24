@@ -48,19 +48,17 @@ Lang.copyProperties(jasmineInterface, window);
 
 // Reporter that outputs according to the Test Anything Protocol
 // See http://testanything.org/tap-specification.html
-const TapReporter = new Lang.Class({
-    Name: 'TapReporter',
-
-    _init: function () {
+class TapReporter {
+    constructor() {
         this._failedSuites = [];
         this._specCount = 0;
-    },
+    }
 
-    jasmineStarted: function (info) {
+    jasmineStarted(info) {
         print('1..' + info.totalSpecsDefined);
-    },
+    }
 
-    jasmineDone: function () {
+    jasmineDone() {
         this._failedSuites.forEach(failure => {
             failure.failedExpectations.forEach(result => {
                 print('not ok - An error was thrown outside a test');
@@ -69,9 +67,9 @@ const TapReporter = new Lang.Class({
         });
 
         window._jasmineMain.quit();
-    },
+    }
 
-    suiteDone: function (result) {
+    suiteDone(result) {
         if (result.failedExpectations && result.failedExpectations.length > 0) {
             window._jasmineRetval = 1;
             this._failedSuites.push(result);
@@ -80,13 +78,13 @@ const TapReporter = new Lang.Class({
         if (result.status === 'disabled') {
             print('# Suite was disabled:', result.fullName);
         }
-    },
+    }
 
-    specStarted: function () {
+    specStarted() {
         this._specCount++;
-    },
+    }
 
-    specDone: function (result) {
+    specDone(result) {
         let tap_report;
         if (result.status === 'failed') {
             window._jasmineRetval = 1;
@@ -110,7 +108,7 @@ const TapReporter = new Lang.Class({
                 print(stackTrace.split('\n').map((str) => '#   ' + str).join('\n'));
             });
         }
-    },
-});
+    }
+}
 
 window._jasmineEnv.addReporter(new TapReporter());

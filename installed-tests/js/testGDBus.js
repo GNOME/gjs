@@ -81,131 +81,127 @@ var TestIface = '<node> \
 </interface> \
 </node>';
 
-/* Test is the actual object exporting the dbus methods */
-function Test() {
-    this._init();
-}
-
 const PROP_READ_WRITE_INITIAL_VALUE = 58;
 const PROP_WRITE_ONLY_INITIAL_VALUE = "Initial value";
 
-Test.prototype = {
-    _init: function(){
+/* Test is the actual object exporting the dbus methods */
+class Test {
+    constructor() {
         this._propWriteOnly = PROP_WRITE_ONLY_INITIAL_VALUE;
         this._propReadWrite = PROP_READ_WRITE_INITIAL_VALUE;
 
         this._impl = Gio.DBusExportedObject.wrapJSObject(TestIface, this);
         this._impl.export(Gio.DBus.session, '/org/gnome/gjs/Test');
-    },
+    }
 
-    frobateStuff: function(args) {
+    frobateStuff(args) {
         return { hello: new GLib.Variant('s', 'world') };
-    },
+    }
 
-    nonJsonFrobateStuff: function(i) {
+    nonJsonFrobateStuff(i) {
         if (i == 42) {
             return "42 it is!";
         } else {
             return "Oops";
         }
-    },
+    }
 
-    alwaysThrowException: function() {
+    alwaysThrowException() {
         throw Error("Exception!");
-    },
+    }
 
-    thisDoesNotExist: function () {
+    thisDoesNotExist() {
         /* We'll remove this later! */
-    },
+    }
 
-    noInParameter: function() {
+    noInParameter() {
         return "Yes!";
-    },
+    }
 
-    multipleInArgs: function(a, b, c, d, e) {
+    multipleInArgs(a, b, c, d, e) {
         return a + " " + b + " " + c + " " + d + " " + e;
-    },
+    }
 
-    emitSignal: function() {
+    emitSignal() {
         this._impl.emit_signal('signalFoo', GLib.Variant.new('(s)', [ "foobar" ]));
-    },
+    }
 
-    noReturnValue: function() {
+    noReturnValue() {
         /* Empty! */
-    },
+    }
 
     /* The following two functions have identical return values
      * in JS, but the bus message will be different.
      * multipleOutValues is "sss", while oneArrayOut is "as"
      */
-    multipleOutValues: function() {
+    multipleOutValues() {
         return [ "Hello", "World", "!" ];
-    },
+    }
 
-    oneArrayOut: function() {
+    oneArrayOut() {
         return [ "Hello", "World", "!" ];
-    },
+    }
 
     /* Same thing again. In this case multipleArrayOut is "asas",
      * while arrayOfArrayOut is "aas".
      */
-    multipleArrayOut: function() {
+    multipleArrayOut() {
         return [[ "Hello", "World" ], [ "World", "Hello" ]];
-    },
+    }
 
-    arrayOfArrayOut: function() {
+    arrayOfArrayOut() {
         return [[ "Hello", "World" ], [ "World", "Hello" ]];
-    },
+    }
 
-    arrayOutBadSig: function() {
+    arrayOutBadSig() {
         return Symbol('Hello World!');
-    },
+    }
 
-    byteArrayEcho: function(binaryString) {
+    byteArrayEcho(binaryString) {
         return binaryString;
-    },
+    }
 
-    byteEcho: function(aByte) {
+    byteEcho(aByte) {
         return aByte;
-    },
+    }
 
-    dictEcho: function(dict) {
+    dictEcho(dict) {
         return dict;
-    },
+    }
 
     /* This one is implemented asynchronously. Returns
      * the input arguments */
-    echoAsync: function(parameters, invocation) {
+    echoAsync(parameters, invocation) {
         var [someString, someInt] = parameters;
         GLib.idle_add(GLib.PRIORITY_DEFAULT, function() {
             invocation.return_value(new GLib.Variant('(si)', [someString, someInt]));
             return false;
         });
-    },
+    }
 
     // boolean
     get PropReadOnly() {
         return true;
-    },
+    }
 
     // string
     set PropWriteOnly(value) {
         this._propWriteOnly = value;
-    },
+    }
 
     // variant
     get PropReadWrite() {
         return new GLib.Variant('s', this._propReadWrite.toString());
-    },
+    }
 
     set PropReadWrite(value) {
         this._propReadWrite = value.deep_unpack();
-    },
+    }
 
-    structArray: function () {
+    structArray() {
         return [[128, 123456], [42, 654321]];
     }
-};
+}
 
 const ProxyClass = Gio.DBusProxy.makeProxyWrapper(TestIface);
 
