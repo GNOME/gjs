@@ -204,16 +204,6 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 ])
 CPPFLAGS="$CPPFLAGS_save"
 
-dnl If SpiderMonkey was compiled with this configure option, then GJS needs to
-dnl be compiled with it as well, because we inherit from a SpiderMonkey class in
-dnl jsapi-constructor-proxy.cpp. See build/autoconf/compiler-opts.m4 in mozjs31.
-AC_ARG_ENABLE([cpp-rtti],
-  [AS_HELP_STRING([--enable-cpp-rtti],
-    [needs to match SpiderMonkey's config option @<:@default=off@:>@])])
-AS_IF([test "x$enable_cpp_rtti" != "xyes"],
-  [AX_APPEND_COMPILE_FLAGS([-fno-rtti])],
-  [AX_APPEND_COMPILE_FLAGS([-GR-])])
-
 AC_ARG_WITH([xvfb-tests],
   [AS_HELP_STRING([--with-xvfb-tests],
     [Run all tests under an XVFB server @<:@default=no@:>@])])
