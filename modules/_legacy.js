@@ -1,5 +1,5 @@
 /* -*- mode: js; indent-tabs-mode: nil; -*- */
-/* exported Class, Interface */
+/* exported Class, Interface, defineGObjectLegacyObjects */
 // Copyright 2008  litl, LLC
 // Copyright 2011  Jasper St. Pierre
 
@@ -397,3 +397,295 @@ Interface.prototype._init = function (params) {
         },
     });
 };
+
+// GObject Lang.Class magic
+
+function defineGObjectLegacyObjects(GObject) {
+    const Gi = imports._gi;
+
+    // Some common functions between GObject.Class and GObject.Interface
+
+    function _createSignals(gtype, signals) {
+        for (let signalName in signals) {
+            let obj = signals[signalName];
+            let flags = (obj.flags !== undefined) ? obj.flags : GObject.SignalFlags.RUN_FIRST;
+            let accumulator = (obj.accumulator !== undefined) ? obj.accumulator : GObject.AccumulatorType.NONE;
+            let rtype = (obj.return_type !== undefined) ? obj.return_type : GObject.TYPE_NONE;
+            let paramtypes = (obj.param_types !== undefined) ? obj.param_types : [];
+
+            try {
+                obj.signal_id = Gi.signal_new(gtype, signalName, flags, accumulator, rtype, paramtypes);
+            } catch (e) {
+                throw new TypeError('Invalid signal ' + signalName + ': ' + e.message);
+            }
+        }
+    }
+
+    function _createGTypeName(params) {
+        if (params.GTypeName)
+            return params.GTypeName;
+        else
+            return 'Gjs_' + params.Name;
+    }
+
+    function _getGObjectInterfaces(interfaces) {
+        return interfaces.filter((iface) => iface.hasOwnProperty('$gtype'));
+    }
+
+    function _propertiesAsArray(params) {
+        let propertiesArray = [];
+        if (params.Properties) {
+            for (let prop in params.Properties) {
+                propertiesArray.push(params.Properties[prop]);
+            }
+        }
+        return propertiesArray;
+    }
+
+    const GObjectMeta = new Class({
+        Name: 'GObjectClass',
+        Extends: Class,
+
+        _init: function (params) {
+            // retrieve signals and remove them from params before chaining
+            let signals = params.Signals;
+            delete params.Signals;
+
+            this.parent(params);
+
+            if (signals)
+                _createSignals(this.$gtype, signals);
+
+            Object.getOwnPropertyNames(params).forEach(function(name) {
+                if (name == 'Name' || name == 'Extends' || name == 'Abstract')
+                    return;
+
+                let descriptor = Object.getOwnPropertyDescriptor(params, name);
+
+                if (typeof descriptor.value === 'function') {
+                    let wrapped = this.prototype[name];
+
+                    if (name.slice(0, 6) == 'vfunc_') {
+                        Gi.hook_up_vfunc(this.prototype, name.slice(6), wrapped);
+                    } else if (name.slice(0, 3) == 'on_') {
+                        let id = GObject.signal_lookup(name.slice(3).replace('_', '-'), this.$gtype);
+                        if (id !== 0) {
+                            GObject.signal_override_class_closure(id, this.$gtype, function() {
+                                let argArray = Array.prototype.slice.call(arguments);
+                                let emitter = argArray.shift();
+
+                                return wrapped.apply(emitter, argArray);
+                            });
+                        }
+                    }
+                }
+            }.bind(this));
+        },
+
+        _isValidClass: function(klass) {
+            let proto = klass.prototype;
+
+            if (!proto)
+                return false;
+
+            // If proto == GObject.Object.prototype, then
+            // proto.__proto__ is Object, so "proto instanceof GObject.Object"
+            // will return false.
+            return proto == GObject.Object.prototype ||
+                proto instanceof GObject.Object;
+        },
+
+        // If we want an object with a custom JSClass, we can't just
+        // use a function. We have to use a custom constructor here.
+        _construct: function(params) {
+            if (!params.Name)
+                throw new TypeError("Classes require an explicit 'Name' parameter.");
+            let name = params.Name;
+
+            let gtypename = _createGTypeName(params);
+
+            if (!params.Extends)
+                params.Extends = GObject.Object;
+            let parent = params.Extends;
+
+            if (!this._isValidClass(parent))
+                throw new TypeError('GObject.Class used with invalid base class (is ' + parent + ')');
+
+            let interfaces = params.Implements || [];
+            if (parent instanceof Class)
+                interfaces = interfaces.filter(iface => !parent.implements(iface));
+            let gobjectInterfaces = _getGObjectInterfaces(interfaces);
+
+            let propertiesArray = _propertiesAsArray(params);
+            delete params.Properties;
+
+            let newClass = Gi.register_type(parent.prototype, gtypename,
+                gobjectInterfaces, propertiesArray);
+
+            // See Class.prototype._construct for the reasoning
+            // behind this direct prototype set.
+            Object.setPrototypeOf(newClass, this.constructor.prototype);
+            newClass.__super__ = parent;
+
+            newClass._init.apply(newClass, arguments);
+
+            Object.defineProperties(newClass.prototype, {
+                '__metaclass__': {
+                    writable: false,
+                    configurable: false,
+                    enumerable: false,
+                    value: this.constructor,
+                },
+                '__interfaces__': {
+                    writable: false,
+                    configurable: false,
+                    enumerable: false,
+                    value: interfaces,
+                },
+            });
+
+            interfaces.forEach((iface) => {
+                if (iface instanceof Interface)
+                    iface._check(newClass.prototype);
+            });
+
+            return newClass;
+        },
+
+        // Overrides Lang.Class.implements()
+        implements: function (iface) {
+            if (iface instanceof GObject.Interface) {
+                return GObject.type_is_a(this.$gtype, iface.$gtype);
+            } else {
+                return this.parent(iface);
+            }
+        }
+    });
+
+    function GObjectInterface() {
+        return this._construct.apply(this, arguments);
+    }
+
+    GObjectMeta.MetaInterface = GObjectInterface;
+
+    GObjectInterface.__super__ = Interface;
+    GObjectInterface.prototype = Object.create(Interface.prototype);
+    GObjectInterface.prototype.constructor = GObjectInterface;
+    GObjectInterface.prototype.__name__ = 'GObjectInterface';
+
+    GObjectInterface.prototype._construct = function (params) {
+        if (!params.Name) {
+            throw new TypeError("Interfaces require an explicit 'Name' parameter.");
+        }
+
+        let gtypename = _createGTypeName(params);
+        delete params.GTypeName;
+
+        let interfaces = params.Requires || [];
+        let gobjectInterfaces = _getGObjectInterfaces(interfaces);
+
+        let properties = _propertiesAsArray(params);
+        delete params.Properties;
+
+        let newInterface = Gi.register_interface(gtypename, gobjectInterfaces,
+            properties);
+
+        // See Class.prototype._construct for the reasoning
+        // behind this direct prototype set.
+        Object.setPrototypeOf(newInterface, this.constructor.prototype);
+        newInterface.__super__ = GObjectInterface;
+        newInterface.prototype.constructor = newInterface;
+
+        newInterface._init.apply(newInterface, arguments);
+
+        Object.defineProperty(newInterface.prototype, '__metaclass__', {
+            writable: false,
+            configurable: false,
+            enumerable: false,
+            value: this.constructor,
+        });
+
+        return newInterface;
+    };
+
+    GObjectInterface.prototype._init = function (params) {
+        let signals = params.Signals;
+        delete params.Signals;
+
+        Interface.prototype._init.call(this, params);
+
+        _createSignals(this.$gtype, signals);
+    };
+
+    return {GObjectMeta, GObjectInterface};
+}
+
+function defineGtkLegacyObjects(GObject, Gtk) {
+    const GtkWidgetClass = new Class({
+        Name: 'GtkWidgetClass',
+        Extends: GObject.Class,
+
+        _init: function(params) {
+            let template = params.Template;
+            delete params.Template;
+
+            let children = params.Children;
+            delete params.Children;
+
+            let internalChildren = params.InternalChildren;
+            delete params.InternalChildren;
+
+            let cssName = params.CssName;
+            delete params.CssName;
+
+            if (template) {
+                params._instance_init = function() {
+                    this.init_template();
+                };
+            }
+
+            this.parent(params);
+
+            if (cssName)
+                Gtk.Widget.set_css_name.call(this, cssName);
+
+            if (template) {
+                if (typeof template == 'string' &&
+                    template.startsWith('resource:///'))
+                    Gtk.Widget.set_template_from_resource.call(this, template.slice(11));
+                else
+                    Gtk.Widget.set_template.call(this, template);
+            }
+
+            this.Template = template;
+            this.Children = children;
+            this.InternalChildren = internalChildren;
+
+            if (children) {
+                for (let i = 0; i < children.length; i++)
+                    Gtk.Widget.bind_template_child_full.call(this, children[i], false, 0);
+            }
+
+            if (internalChildren) {
+                for (let i = 0; i < internalChildren.length; i++)
+                    Gtk.Widget.bind_template_child_full.call(this, internalChildren[i], true, 0);
+            }
+        },
+
+        _isValidClass: function(klass) {
+            let proto = klass.prototype;
+
+            if (!proto)
+                return false;
+
+            // If proto == Gtk.Widget.prototype, then
+            // proto.__proto__ is GObject.InitiallyUnowned, so
+            // "proto instanceof Gtk.Widget"
+            // will return false.
+            return proto == Gtk.Widget.prototype ||
+                proto instanceof Gtk.Widget;
+        },
+    });
+
+    return {GtkWidgetClass};
+}

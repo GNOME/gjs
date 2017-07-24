@@ -19,83 +19,18 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-const Lang = imports.lang;
+const Legacy = imports._legacy;
 const GObject = imports.gi.GObject;
 
 var GjsPrivate = imports.gi.GjsPrivate;
 
 let Gtk;
 
-const GtkWidgetClass = new Lang.Class({
-    Name: 'GtkWidgetClass',
-    Extends: GObject.Class,
-
-    _init: function(params) {
-        let template = params.Template;
-        delete params.Template;
-
-        let children = params.Children;
-        delete params.Children;
-
-        let internalChildren = params.InternalChildren;
-        delete params.InternalChildren;
-
-        let cssName = params.CssName;
-        delete params.CssName;
-
-        if (template) {
-            params._instance_init = function() {
-                this.init_template();
-            };
-        }
-
-        this.parent(params);
-
-        if (cssName)
-            Gtk.Widget.set_css_name.call(this, cssName);
-
-        if (template) {
-            if (typeof template == 'string' &&
-                template.startsWith('resource:///'))
-                Gtk.Widget.set_template_from_resource.call(this, template.slice(11));
-            else
-                Gtk.Widget.set_template.call(this, template);
-        }
-
-        this.Template = template;
-        this.Children = children;
-        this.InternalChildren = internalChildren;
-
-        if (children) {
-            for (let i = 0; i < children.length; i++)
-                Gtk.Widget.bind_template_child_full.call(this, children[i], false, 0);
-        }
-
-        if (internalChildren) {
-            for (let i = 0; i < internalChildren.length; i++)
-                Gtk.Widget.bind_template_child_full.call(this, internalChildren[i], true, 0);
-        }
-    },
-
-    _isValidClass: function(klass) {
-        let proto = klass.prototype;
-
-        if (!proto)
-            return false;
-
-        // If proto == Gtk.Widget.prototype, then
-        // proto.__proto__ is GObject.InitiallyUnowned, so
-        // "proto instanceof Gtk.Widget"
-        // will return false.
-        return proto == Gtk.Widget.prototype ||
-            proto instanceof Gtk.Widget;
-    },
-});
-
 function _init() {
 
     Gtk = this;
 
+    let {GtkWidgetClass} = Legacy.defineGtkLegacyObjects(GObject, Gtk);
     Gtk.Widget.prototype.__metaclass__ = GtkWidgetClass;
     if (GjsPrivate.gtk_container_child_set_property) {
         Gtk.Container.prototype.child_set_property = function(child, property, value) {
