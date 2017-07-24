@@ -843,3 +843,130 @@ describe('Legacy Gtk overrides', function () {
         expect(Gtk.Widget.get_css_name.call(MyComplexGtkSubclass)).toEqual('complex-subclass');
     });
 });
+
+const LegacyInterface1 = new Lang.Interface({
+    Name: 'LegacyInterface1',
+    Requires: [GObject.Object],
+    Signals: { 'legacy-iface1-signal': {} },
+});
+
+const LegacyInterface2 = new Lang.Interface({
+    Name: 'LegacyInterface2',
+    Requires: [GObject.Object],
+    Signals: { 'legacy-iface2-signal': {} },
+});
+
+const Legacy = new Lang.Class({
+    Name: 'Legacy',
+    Extends: GObject.Object,
+    Implements: [LegacyInterface1],
+    Properties: {
+        'property': GObject.ParamSpec.int('property', 'Property',
+            'A magic property', GObject.ParamFlags.READWRITE, 0, 100, 0),
+        'override-property': GObject.ParamSpec.int('override-property',
+            'Override property', 'Another magic property',
+            GObject.ParamFlags.READWRITE, 0, 100, 0),
+    },
+    Signals: {
+        'signal': {},
+    },
+
+    _init(someval) {
+        this.constructorCalledWith = someval;
+        this.parent();
+    },
+
+    instanceMethod() {},
+    chainUpToMe() {},
+    overrideMe() {},
+
+    get property() { return this._property + 1; },
+    set property(value) { this._property = value - 2; },
+
+    get override_property() { return this._override_property + 1; },
+    set override_property(value) { this._override_property = value - 2; },
+});
+Legacy.staticMethod = function () {};
+
+const Shiny = GObject.registerClass({
+    Implements: [LegacyInterface2],
+    Properties: {
+        'override-property': GObject.ParamSpec.override('override-property',
+            Legacy),
+    },
+}, class Shiny extends Legacy {
+    chainUpToMe() {
+        super.chainUpToMe();
+    }
+
+    overrideMe() {}
+
+    get override_property() { return this._override_property + 2; }
+    set override_property(value) { this._override_property = value - 1; }
+});
+
+fdescribe('ES6 GObject class inheriting from GObject.Class', function () {
+    let instance;
+
+    beforeEach(function () {
+        spyOn(Legacy, 'staticMethod');
+        spyOn(Legacy.prototype, 'instanceMethod');
+        spyOn(Legacy.prototype, 'chainUpToMe');
+        spyOn(Legacy.prototype, 'overrideMe');
+        instance = new Shiny();
+    });
+
+    it('calls a static method on the parent class', function () {
+        Shiny.staticMethod();
+        expect(Legacy.staticMethod).toHaveBeenCalled();
+    });
+
+    it('calls a method on the parent class', function () {
+        instance.instanceMethod();
+        expect(Legacy.prototype.instanceMethod).toHaveBeenCalled();
+    });
+
+    it("passes arguments to the parent class's constructor", function () {
+        let instance = new Shiny(42);
+        expect(instance.constructorCalledWith).toEqual(42);
+    });
+
+    it('chains up to a method on the parent class', function () {
+        instance.chainUpToMe();
+        expect(Legacy.prototype.chainUpToMe).toHaveBeenCalled();
+    });
+
+    it('overrides a method on the parent class', function () {
+        instance.overrideMe();
+        expect(Legacy.prototype.overrideMe).not.toHaveBeenCalled();
+    });
+
+    it('sets and gets a property from the parent class', function () {
+        instance.property = 42;
+        expect(instance.property).toEqual(41);
+    });
+
+    it('overrides a property from the parent class', function () {
+        instance.override_property = 42;
+        expect(instance.override_property).toEqual(43);
+    });
+
+    it('inherits a signal from the parent class', function () {
+        let signalSpy = jasmine.createSpy('signalSpy');
+        expect(() => {
+            instance.connect('signal', signalSpy);
+            instance.emit('signal');
+        }).not.toThrow();
+        expect(signalSpy).toHaveBeenCalled();
+    });
+
+    it('inherits legacy interfaces from the parent', function () {
+        expect(() => instance.emit('legacy-iface1-signal')).not.toThrow();
+        expect(instance instanceof LegacyInterface1).toBeTruthy();
+    });
+
+    it('can implement a legacy interface itself', function () {
+        expect(() => instance.emit('legacy-iface2-signal')).not.toThrow();
+        expect(instance instanceof LegacyInterface2).toBeTruthy();
+    });
+});

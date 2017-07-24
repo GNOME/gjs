@@ -652,3 +652,71 @@ describe('An interface', function () {
         expect(AnInterface.toString()).toEqual('[interface Interface for AnInterface]');
     });
 });
+
+describe('ES6 class inheriting from Lang.Class', function () {
+    let Shiny, Legacy;
+
+    beforeEach(function () {
+        Legacy = new Lang.Class({
+            Name: 'Legacy',
+            _init(someval) {
+                this.constructorCalledWith = someval;
+            },
+
+            instanceMethod() {},
+            chainUpToMe() {},
+            overrideMe() {},
+
+            get property() { return this._property + 1; },
+            set property(value) { this._property = value - 2; },
+        });
+        Legacy.staticMethod = function () {};
+        spyOn(Legacy, 'staticMethod');
+        spyOn(Legacy.prototype, 'instanceMethod');
+        spyOn(Legacy.prototype, 'chainUpToMe');
+        spyOn(Legacy.prototype, 'overrideMe');
+
+        Shiny = class Shiny extends Legacy {
+            constructor(someval) {
+                super(someval);
+            }
+
+            chainUpToMe() { super.chainUpToMe(); }
+            overrideMe() {}
+        };
+    });
+
+    it('calls a static method on the parent class', function () {
+        Shiny.staticMethod();
+        expect(Legacy.staticMethod).toHaveBeenCalled();
+    });
+
+    it('calls a method on the parent class', function () {
+        let instance = new Shiny();
+        instance.instanceMethod();
+        expect(Legacy.prototype.instanceMethod).toHaveBeenCalled();
+    });
+
+    it("passes arguments to the parent class's constructor", function () {
+        let instance = new Shiny(42);
+        expect(instance.constructorCalledWith).toEqual(42);
+    });
+
+    it('chains up to a method on the parent class', function () {
+        let instance = new Shiny();
+        instance.chainUpToMe();
+        expect(Legacy.prototype.chainUpToMe).toHaveBeenCalled();
+    });
+
+    it('overrides a method on the parent class', function () {
+        let instance = new Shiny();
+        instance.overrideMe();
+        expect(Legacy.prototype.overrideMe).not.toHaveBeenCalled();
+    });
+
+    it('sets and gets a property from the parent class', function () {
+        let instance = new Shiny();
+        instance.property = 42;
+        expect(instance.property).toEqual(41);
+    });
+});
