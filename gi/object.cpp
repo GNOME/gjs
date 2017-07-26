@@ -24,6 +24,7 @@
 #include <config.h>
 
 #include <deque>
+#include <map>
 #include <memory>
 #include <set>
 #include <stack>
@@ -64,6 +65,7 @@ struct ObjectInstance {
 
     /* a list of all signal connections, used when tracing */
     std::set<ConnectData *> signals;
+    std::map<ConnectData *, unsigned> pending_invalidations;
 
     /* the GObjectClass wrapped by this JS Object (only used for
        prototypes) */
@@ -78,7 +80,6 @@ struct ObjectInstance {
 struct _ConnectData {
     ObjectInstance *obj;
     GClosure *closure;
-    unsigned idle_invalidate_id;
 };
 
 typedef enum
@@ -1582,6 +1583,7 @@ static gboolean
 signal_connection_invalidate_idle(void *user_data)
 {
     auto cd = static_cast<ConnectData *>(user_data);
+    cd->obj->pending_invalidations.erase(cd);
     cd->obj->signals.erase(cd);
     g_slice_free(ConnectData, cd);
     return G_SOURCE_REMOVE;
@@ -1592,7 +1594,41 @@ signal_connection_invalidated(void     *data,
                               GClosure *closure)
 {
     auto cd = static_cast<ConnectData *>(data);
-    cd->idle_invalidate_id = g_idle_add(signal_connection_invalidate_idle, cd);
+    std::map<ConnectData *, unsigned>& pending = cd->obj->pending_invalidations;
+    g_assert(pending.count(cd) == 0);
+    pending[cd] = g_idle_add(signal_connection_invalidate_idle, cd);
+}
+
+/* This is basically the same as invalidate_all_signals(), but does not defer
+ * the invalidation to an idle handler. */
+static void
+invalidate_all_signals_now(ObjectInstance *priv)
+{
+    for (auto& iter : priv->pending_invalidations) {
+        ConnectData *cd = iter.first;
+        g_source_remove(iter.second);
+        g_slice_free(ConnectData, cd);
+        /* Erase element if not already erased */
+        priv->signals.erase(cd);
+    }
+    priv->pending_invalidations.clear();
+
+    /* Can't loop directly through the items, since invalidating an item's
+     * closure might have the effect of removing the item from the set in the
+     * invalidate notifier. */
+    while (!priv->signals.empty()) {
+        ConnectData *cd = *priv->signals.begin();
+
+        /* We have to remove the invalidate notifier, which would
+         * otherwise schedule a new pending invalidation. */
+        g_closure_remove_invalidate_notifier(cd->closure, cd,
+                                             signal_connection_invalidated);
+        g_closure_invalidate(cd->closure);
+
+        g_slice_free(ConnectData, cd);
+        /* Erase element if not already erased */
+        priv->signals.erase(cd);
+    }
 }
 
 static void
@@ -1614,36 +1650,21 @@ object_instance_finalize(JSFreeOp  *fop,
                                     priv->info ? g_base_info_get_namespace((GIBaseInfo*) priv->info) : "_gjs_private",
                                     priv->info ? g_base_info_get_name((GIBaseInfo*) priv->info) : g_type_name(priv->gtype)));
 
+    /* We must invalidate all signal connections now, instead of in an idle
+     * handler, because the object will not exist anymore when we get around to
+     * the idle function. We originally needed to defer these invalidations to
+     * an idle function since the object needs to continue tracing its signal
+     * connections while GC is going on. However, once the object is finalized,
+     * it will not be tracing them any longer anyway, so it's safe to do them
+     * now.
+     * This applies only to instances, not prototypes, but it's possible that
+     * an instance's GObject is already freed at this point. */
+    invalidate_all_signals_now(priv);
+
+    /* Object is instance, not prototype, AND GObject is not already freed */
     if (priv->gobj) {
         bool had_toggle_up;
         bool had_toggle_down;
-
-        /* We must invalidate all signal connections now, instead of in an idle
-         * handler, because the object will not exist anymore when we get
-         * around to the idle function. We originally needed to defer these
-         * invalidations to an idle function since the object needs to continue
-         * tracing its signal connections while GC is going on. However, once
-         * the object is finalized, it will not be tracing them any longer
-         * anyway, so it's safe to do them now.
-         *
-         * This is basically the same as invalidate_all_signals(), but does not
-         * defer the invalidation to an idle handler.
-         */
-        for (ConnectData *cd : priv->signals) {
-            /* First remove any pending invalidation, we are doing it now. */
-            if (cd->idle_invalidate_id > 0) {
-                g_source_remove(cd->idle_invalidate_id);
-            } else {
-                /* We have to remove the invalidate notifier, which would
-                 * otherwise schedule a new pending invalidation. */
-                g_closure_remove_invalidate_notifier(cd->closure, cd,
-                                                     signal_connection_invalidated);
-                g_closure_invalidate(cd->closure);
-            }
-
-            g_slice_free(ConnectData, cd);
-        }
-        priv->signals.clear();
 
         if (G_UNLIKELY (priv->gobj->ref_count <= 0)) {
             g_error("Finalizing proxy for an already freed object of type: %s.%s\n",
