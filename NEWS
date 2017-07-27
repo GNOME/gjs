@@ -1,3 +1,11 @@
+Version 1.48.6
+--------------
+
+- Closed bugs:
+
+  * GJS crash in needsPostBarrier, possible access from wrong thread [#783935,
+    Philip Chimento] (again)
+
 Version 1.48.5
 --------------
 
