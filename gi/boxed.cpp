@@ -561,7 +561,7 @@ get_nested_interface_object(JSContext             *context,
 
     obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);
 
-    if (obj == NULL)
+    if (!obj)
         return false;
 
     GJS_INC_COUNTER(boxed);
@@ -1257,7 +1257,7 @@ gjs_c_struct_from_boxed(JSContext       *context,
 {
     Boxed *priv;
 
-    if (obj == NULL)
+    if (!obj)
         return NULL;
 
     priv = priv_from_js(context, obj);

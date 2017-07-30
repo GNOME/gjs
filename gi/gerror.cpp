@@ -470,7 +470,7 @@ gjs_gerror_from_error(JSContext       *context,
 {
     Error *priv;
 
-    if (obj == NULL)
+    if (!obj)
         return NULL;
 
     /* If this is a plain GBoxed (i.e. a GError without metadata),

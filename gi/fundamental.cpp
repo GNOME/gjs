@@ -612,7 +612,7 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
         constructor = &value.toObject();
     }
 
-    g_assert(constructor != NULL);
+    g_assert(constructor);
 
     if (!gjs_object_get_property(context, constructor,
                                  GJS_STRING_PROTOTYPE, &value))
@@ -772,7 +772,7 @@ gjs_object_from_g_fundamental(JSContext    *context,
 
     object = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);
 
-    if (object == NULL)
+    if (!object)
         goto out;
 
     init_fundamental_instance(context, object);
@@ -814,7 +814,7 @@ gjs_g_fundamental_from_object(JSContext       *context,
 {
     FundamentalInstance *priv;
 
-    if (obj == NULL)
+    if (!obj)
         return NULL;
 
     priv = priv_from_js(context, obj);

@@ -189,7 +189,7 @@ gjs_lookup_param_prototype(JSContext    *context)
         return NULL;
 
     JS::RootedObject constructor(context, &value.toObject());
-    g_assert(constructor != NULL);
+    g_assert(constructor);
 
     if (!gjs_object_get_property(context, constructor,
                                  GJS_STRING_PROTOTYPE, &value))
@@ -280,7 +280,7 @@ gjs_g_param_from_param(JSContext       *context,
 {
     Param *priv;
 
-    if (obj == NULL)
+    if (!obj)
         return NULL;
 
     priv = priv_from_js(context, obj);

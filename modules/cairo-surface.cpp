@@ -150,7 +150,7 @@ gjs_cairo_surface_construct(JSContext       *context,
     GjsCairoSurface *priv;
 
     g_return_if_fail(context != NULL);
-    g_return_if_fail(object != NULL);
+    g_return_if_fail(object != nullptr);
     g_return_if_fail(surface != NULL);
 
     priv = g_slice_new0(GjsCairoSurface);

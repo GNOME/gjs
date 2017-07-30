@@ -1341,11 +1341,11 @@ coverage_log(JSContext *context,
      * could not be converted to string */
     exc_state = JS_SaveExceptionState(context);
     JS::RootedString jstr(context, JS::ToString(context, argv[0]));
-    if (jstr != NULL)
+    if (jstr)
         argv[0].setString(jstr);  // GC root
     JS_RestoreExceptionState(context, exc_state);
 
-    if (jstr == NULL) {
+    if (!jstr) {
         g_message("JS LOG: <cannot convert value to string>");
         return true;
     }
@@ -1392,7 +1392,7 @@ coverage_get_file_modification_time(JSContext *context,
         mtime_values_array[1].setInt32(mtime.tv_usec);
         JS::RootedObject array_obj(context,
             JS_NewArrayObject(context, mtime_values_array));
-        if (array_obj == NULL)
+        if (!array_obj)
             goto out;
         args.rval().setObject(*array_obj);
     } else {

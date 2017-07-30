@@ -165,7 +165,7 @@ gjs_define_enumeration(JSContext       *context,
     enum_name = g_base_info_get_name( (GIBaseInfo*) info);
 
     JS::RootedObject enum_obj(context, JS_NewPlainObject(context));
-    if (enum_obj == NULL) {
+    if (!enum_obj) {
         g_error("Could not create enumeration %s.%s",
                	g_base_info_get_namespace( (GIBaseInfo*) info),
                 enum_name);

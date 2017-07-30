@@ -1360,7 +1360,7 @@ G_GNUC_END_IGNORE_DEPRECATIONS
     free_g_params(&params[0], params.size());
 
     ObjectInstance *other_priv = get_object_qdata(gobj);
-    if (other_priv && other_priv->keep_alive != object) {
+    if (other_priv && other_priv->keep_alive != object.get()) {
         /* g_object_newv returned an object that's already tracked by a JS
          * object. Let's assume this is a singleton like IBus.IBus and return
          * the existing JS wrapper object.
@@ -1640,7 +1640,7 @@ gjs_lookup_object_constructor_from_info(JSContext    *context,
         constructor = &value.toObject();
     }
 
-    g_assert(constructor != NULL);
+    g_assert(constructor);
 
     return constructor;
 }
@@ -1653,7 +1653,7 @@ gjs_lookup_object_prototype_from_info(JSContext    *context,
     JS::RootedObject constructor(context,
         gjs_lookup_object_constructor_from_info(context, info, gtype));
 
-    if (G_UNLIKELY (constructor == NULL))
+    if (G_UNLIKELY(!constructor))
         return NULL;
 
     JS::RootedValue value(context);
@@ -2014,7 +2014,7 @@ gjs_define_object_class(JSContext              *context,
     const char *ns;
     GType parent_type;
 
-    g_assert(in_object != NULL);
+    g_assert(in_object);
     g_assert(gtype != G_TYPE_INVALID);
 
     /*   http://egachine.berlios.de/embedding-sm-best-practice/apa.html
@@ -2131,7 +2131,7 @@ gjs_object_from_g_object(JSContext    *context,
 
         JS::RootedObject obj(context,
             JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto));
-        if (obj == NULL)
+        if (!obj)
             return nullptr;
 
         priv = init_object_private(context, obj);
@@ -2142,7 +2142,7 @@ gjs_object_from_g_object(JSContext    *context,
         /* see the comment in init_object_instance() for this */
         g_object_unref(gobj);
 
-        g_assert(priv->keep_alive == obj);
+        g_assert(priv->keep_alive == obj.get());
     }
 
     return priv->keep_alive;
@@ -2154,7 +2154,7 @@ gjs_g_object_from_object(JSContext       *context,
 {
     ObjectInstance *priv;
 
-    if (obj == NULL)
+    if (!obj)
         return NULL;
 
     priv = priv_from_js(context, obj);
@@ -2871,7 +2871,7 @@ gjs_register_interface(JSContext *cx,
 
     /* create a custom JSClass */
     JS::RootedObject module(cx, gjs_lookup_private_namespace(cx));
-    if (module == NULL)
+    if (!module)
         return false;  /* error will have been thrown already */
 
     JS::RootedObject constructor(cx);

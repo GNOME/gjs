@@ -311,11 +311,11 @@ gjs_define_string_array(JSContext       *context,
     JS::RootedObject array(context,
         gjs_build_string_array(context, array_length, (char **) array_values));
 
-    if (array == NULL)
-        return NULL;
+    if (!array)
+        return nullptr;
 
     if (!JS_DefineProperty(context, in_object, array_name, array, attrs))
-        return NULL;
+        return nullptr;
 
     return array;
 }
@@ -374,7 +374,7 @@ _gjs_g_utf8_make_valid (const char *name)
 
     g_return_val_if_fail (name != NULL, NULL);
 
-    string = NULL;
+    string = nullptr;
     remainder = name;
     remaining_bytes = strlen (name);
 
@@ -383,7 +383,7 @@ _gjs_g_utf8_make_valid (const char *name)
             break;
         valid_bytes = invalid - remainder;
 
-        if (string == NULL)
+        if (!string)
             string = g_string_sized_new (remaining_bytes);
 
         g_string_append_len (string, remainder, valid_bytes);
@@ -394,7 +394,7 @@ _gjs_g_utf8_make_valid (const char *name)
         remainder = invalid + 1;
     }
 
-    if (string == NULL)
+    if (!string)
         return g_strdup (name);
 
     g_string_append (string, remainder);
@@ -427,7 +427,7 @@ gjs_value_debug_string(JSContext      *context,
 
     JS::RootedString str(context, JS::ToString(context, value));
 
-    if (str == NULL) {
+    if (!str) {
         if (value.isObject()) {
             /* Specifically the Call object (see jsfun.c in spidermonkey)
              * does not have a toString; there may be others also.
@@ -436,7 +436,7 @@ gjs_value_debug_string(JSContext      *context,
             if (klass != NULL) {
                 str = JS_NewStringCopyZ(context, klass->name);
                 JS_ClearPendingException(context);
-                if (str == NULL) {
+                if (!str) {
                     JS_EndRequest(context);
                     return g_strdup("[out of memory copying class name]");
                 }
@@ -451,7 +451,7 @@ gjs_value_debug_string(JSContext      *context,
         }
     }
 
-    g_assert(str != NULL);
+    g_assert(str);
 
     bytes = JS_EncodeStringToUTF8(context, str);
     JS_EndRequest(context);
@@ -468,7 +468,7 @@ utf8_exception_from_non_gerror_value(JSContext      *cx,
 {
     GjsAutoJSChar utf8_exception(cx);
     JS::RootedString exc_str(cx, JS::ToString(cx, exc));
-    if (exc_str != NULL)
+    if (exc_str)
         gjs_string_to_utf8(cx, JS::StringValue(exc_str), &utf8_exception);
     return utf8_exception.copy();
 }
@@ -511,7 +511,7 @@ gjs_log_exception_full(JSContext       *context,
         }
     }
 
-    if (message != NULL)
+    if (message)
         gjs_string_to_utf8(context, JS::StringValue(message), &utf8_message);
 
     /* We log syntax errors differently, because the stack for those includes
@@ -536,7 +536,7 @@ gjs_log_exception_full(JSContext       *context,
 
         lineNumber = js_lineNumber.toInt32();
 
-        if (message != NULL) {
+        if (message) {
             g_critical("JS ERROR: %s: %s @ %s:%u", utf8_message.get(), utf8_exception,
                        utf8_filename.get(), lineNumber);
         } else {
@@ -557,7 +557,7 @@ gjs_log_exception_full(JSContext       *context,
             have_utf8_stack = true;
         }
 
-        if (message != nullptr) {
+        if (message) {
             if (have_utf8_stack)
                 g_warning("JS ERROR: %s: %s\n%s", utf8_message.get(), utf8_exception, utf8_stack.get());
             else

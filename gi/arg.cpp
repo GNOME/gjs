@@ -595,7 +595,7 @@ gjs_array_from_strv(JSContext             *context,
     }
 
     JS::RootedObject obj(context, JS_NewArrayObject(context, elems));
-    if (obj == NULL)
+    if (!obj)
         return false;
 
     value_p.setObject(*obj);
@@ -2190,7 +2190,7 @@ gjs_array_from_g_list (JSContext             *context,
     }
 
     JS::RootedObject obj(context, JS_NewArrayObject(context, elems));
-    if (obj == NULL)
+    if (!obj)
         return false;
 
     value_p.setObject(*obj);
@@ -2223,7 +2223,7 @@ gjs_array_from_carray_internal (JSContext             *context,
 
         JS::RootedObject obj(context,
             gjs_byte_array_from_byte_array(context, &gbytearray));
-        if (obj == NULL)
+        if (!obj)
             return false;
         value_p.setObject(*obj);
         return true;
@@ -2328,7 +2328,7 @@ gjs_array_from_carray_internal (JSContext             *context,
 #undef ITERATE
 
     JS::RootedObject obj(context, JS_NewArrayObject(context, elems));
-    if (obj == NULL)
+    if (!obj)
         return false;
 
     value_p.setObject(*obj);
@@ -2437,7 +2437,7 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
 
         JS::RootedObject obj(context,
             gjs_byte_array_from_byte_array(context, &gbytearray));
-        if (obj == NULL)
+        if (!obj)
             return false;
         value_p.setObject(*obj);
         return true;
@@ -2518,7 +2518,7 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
 #undef ITERATE
 
     JS::RootedObject obj(context, JS_NewArrayObject(context, elems));
-    if (obj == NULL)
+    if (!obj)
         return false;
 
     value_p.setObject(*obj);
@@ -2544,7 +2544,7 @@ gjs_object_from_g_hash (JSContext             *context,
     }
 
     JS::RootedObject obj(context, JS_NewPlainObject(context));
-    if (obj == NULL)
+    if (!obj)
         return false;
 
     value_p.setObject(*obj);

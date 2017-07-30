@@ -114,7 +114,7 @@ gjs_cairo_pattern_construct(JSContext       *context,
     GjsCairoPattern *priv;
 
     g_return_if_fail(context != NULL);
-    g_return_if_fail(object != NULL);
+    g_return_if_fail(object != nullptr);
     g_return_if_fail(pattern != NULL);
 
     priv = g_slice_new0(GjsCairoPattern);

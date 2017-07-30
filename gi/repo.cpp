@@ -770,7 +770,7 @@ gjs_lookup_generic_prototype(JSContext  *context,
 {
     JS::RootedObject constructor(context,
                                  gjs_lookup_generic_constructor(context, info));
-    if (G_UNLIKELY (constructor == NULL))
+    if (G_UNLIKELY(!constructor))
         return NULL;
 
     JS::RootedValue value(context);

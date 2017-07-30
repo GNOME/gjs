@@ -68,7 +68,7 @@ JSObject *gjs_construct_object_dynamic(JSContext                  *cx,
  * priv_from_js_with_typecheck: a convenience function to call
  *                              do_base_typecheck and priv_from_js
  */
-#define GJS_DEFINE_PRIV_FROM_JS(type, klass)                          \
+#define GJS_DEFINE_PRIV_FROM_JS(type, klass)                            \
     GJS_ALWAYS_INLINE G_GNUC_UNUSED                                     \
     static inline bool                                                  \
     do_base_typecheck(JSContext       *context,                         \
@@ -307,7 +307,7 @@ gjs_##name##_constructor(JSContext  *context,           \
         return false;                                                         \
     }                                                                         \
     object = JS_NewObjectForConstructor(context, &gjs_##name##_class, argv);  \
-    if (object == NULL)                                                       \
+    if (!object)                                                              \
         return false;                                                         \
 }
 

@@ -51,7 +51,7 @@ gjs_log(JSContext *cx,
     JS::RootedString jstr(cx, JS::ToString(cx, argv[0]));
     exc_state.restore();
 
-    if (jstr == NULL) {
+    if (!jstr) {
         g_message("JS LOG: <cannot convert value to string>");
         return true;
     }
@@ -114,7 +114,7 @@ gjs_print_parse_args(JSContext    *cx,
         JS::RootedString jstr(cx, JS::ToString(cx, argv[n]));
         exc_state.restore();
 
-        if (jstr != NULL) {
+        if (jstr) {
             GjsAutoJSChar s(cx);
             if (!gjs_string_to_utf8(cx, JS::StringValue(jstr), &s)) {
                 g_string_free(str, true);

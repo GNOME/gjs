@@ -190,7 +190,7 @@ ns_new(JSContext    *context,
 
     JS::RootedObject ns(context,
         JS_NewObjectWithGivenProto(context, &gjs_ns_class, proto));
-    if (ns == NULL)
+    if (!ns)
         g_error("No memory to create ns object");
 
     priv = g_slice_new0(Ns);

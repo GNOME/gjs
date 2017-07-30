@@ -1689,7 +1689,7 @@ function_new(JSContext      *context,
 
     JS::RootedObject function(context,
         JS_NewObjectWithGivenProto(context, &gjs_function_class, proto));
-    if (function == NULL) {
+    if (!function) {
         gjs_debug(GJS_DEBUG_GFUNCTION, "Failed to construct function");
         return NULL;
     }
@@ -1726,7 +1726,7 @@ gjs_define_function(JSContext       *context,
     JSAutoRequest ar(context);
 
     JS::RootedObject function(context, function_new(context, gtype, info));
-    if (function == NULL)
+    if (!function)
         return NULL;
 
     if (info_type == GI_INFO_TYPE_FUNCTION) {

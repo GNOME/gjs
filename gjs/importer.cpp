@@ -195,7 +195,7 @@ import_directory(JSContext       *context,
      * this always succeeds.
      */
     importer = gjs_define_importer(context, obj, name, full_paths, false);
-    return importer != NULL;
+    return importer != nullptr;
 }
 
 /* Make the property we set in gjs_module_import() permanent;
@@ -209,8 +209,7 @@ seal_import(JSContext       *cx,
 {
     JS::Rooted<JS::PropertyDescriptor> descr(cx);
 
-    if (!JS_GetOwnPropertyDescriptorById(cx, obj, id, &descr) ||
-        descr.object() == NULL) {
+    if (!JS_GetOwnPropertyDescriptorById(cx, obj, id, &descr) || !descr.object()) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to get attributes to seal '%s' in importer",
                   name);
@@ -370,7 +369,7 @@ load_module_elements(JSContext        *cx,
     size_t ix, length;
     JS::RootedObject module_obj(cx, load_module_init(cx, in_object, init_path));
 
-    if (module_obj == NULL)
+    if (!module_obj)
         return;
 
     JS::Rooted<JS::IdVector> ids(cx, cx);
@@ -774,7 +773,7 @@ importer_resolve(JSContext        *context,
     gjs_debug_jsprop(GJS_DEBUG_IMPORTER,
                      "Resolve prop '%s' hook obj %p priv %p",
                      name.get(), obj.get(), priv);
-    if (priv == NULL) {
+    if (!priv) {
         /* we are the prototype, or have the wrong class */
         *resolved = false;
         return true;
@@ -799,7 +798,7 @@ importer_finalize(js::FreeOp *fop,
     priv = (Importer*) JS_GetPrivate(obj);
     gjs_debug_lifecycle(GJS_DEBUG_IMPORTER,
                         "finalize, obj %p priv %p", obj, priv);
-    if (priv == NULL)
+    if (!priv)
         return; /* we are the prototype, not a real instance */
 
     GJS_DEC_COUNTER(importer);
@@ -866,7 +865,7 @@ importer_new(JSContext *context,
 
     JS::RootedObject importer(context,
         JS_NewObjectWithGivenProto(context, &gjs_importer_class, proto));
-    if (importer == NULL)
+    if (!importer)
         g_error("No memory to create importer");
 
     priv = g_slice_new0(Importer);

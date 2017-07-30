@@ -201,7 +201,7 @@ byte_array_get_prop(JSContext *context,
 
     priv = priv_from_js(context, obj);
 
-    if (priv == NULL)
+    if (!priv)
         return true; /* prototype, not an instance. */
 
     JS::RootedValue id_value(context);
@@ -231,7 +231,7 @@ byte_array_length_getter(JSContext *context,
     GJS_GET_PRIV(context, argc, vp, args, to, ByteArrayInstance, priv);
     gsize len = 0;
 
-    if (priv == NULL)
+    if (!priv)
         return true; /* prototype, not an instance. */
 
     if (priv->array != NULL)
@@ -250,7 +250,7 @@ byte_array_length_setter(JSContext *context,
     GJS_GET_PRIV(context, argc, vp, args, to, ByteArrayInstance, priv);
     gsize len = 0;
 
-    if (priv == NULL)
+    if (!priv)
         return true; /* prototype, not instance */
 
     byte_array_ensure_array(priv);
@@ -309,7 +309,7 @@ byte_array_set_prop(JSContext *context,
 
     priv = priv_from_js(context, obj);
 
-    if (priv == NULL)
+    if (!priv)
         return result.succeed(); /* prototype, not an instance. */
 
     JS::RootedValue id_value(context);
@@ -388,7 +388,7 @@ byte_array_finalize(JSFreeOp *fop,
 
     priv = (ByteArrayInstance*) JS_GetPrivate(obj);
 
-    if (priv == NULL)
+    if (!priv)
         return; /* prototype, not instance */
 
     if (priv->array) {
@@ -412,7 +412,7 @@ to_string_func(JSContext *context,
     bool encoding_is_utf8;
     gchar *data;
 
-    if (priv == NULL)
+    if (!priv)
         return true; /* prototype, not instance */
 
     byte_array_ensure_array(priv);
@@ -492,7 +492,7 @@ to_gbytes_func(JSContext *context,
     JSObject *ret_bytes_obj;
     GIBaseInfo *gbytes_info;
 
-    if (priv == NULL)
+    if (!priv)
         return true; /* prototype, not instance */
 
     byte_array_ensure_gbytes(priv);
@@ -534,7 +534,7 @@ from_string_func(JSContext *context,
     bool encoding_is_utf8;
     JS::RootedObject obj(context, byte_array_new(context));
 
-    if (obj == NULL)
+    if (!obj)
         return false;
 
     priv = priv_from_js(context, obj);
@@ -643,7 +643,7 @@ from_array_func(JSContext *context,
     bool is_array;
     JS::RootedObject obj(context, byte_array_new(context));
 
-    if (obj == NULL)
+    if (!obj)
         return false;
 
     priv = priv_from_js(context, obj);
@@ -715,7 +715,7 @@ from_gbytes_func(JSContext *context,
     gbytes = (GBytes*) gjs_c_struct_from_boxed(context, bytes_obj);
 
     JS::RootedObject obj(context, byte_array_new(context));
-    if (obj == NULL)
+    if (!obj)
         return false;
     priv = priv_from_js(context, obj);
     g_assert (priv != NULL);

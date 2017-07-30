@@ -97,7 +97,7 @@ gjs_throw_valist(JSContext       *context,
     constructor = &v_constructor.toObject();
     new_exc = JS_New(context, constructor, error_args);
 
-    if (new_exc == NULL)
+    if (!new_exc)
         goto out;
 
     if (error_name != NULL) {

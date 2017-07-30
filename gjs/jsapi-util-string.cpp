@@ -87,7 +87,7 @@ gjs_string_from_utf8(JSContext             *context,
         value_p.setString(str);
 
     JS_EndRequest(context);
-    return str != NULL;
+    return str != nullptr;
 }
 
 bool
@@ -313,7 +313,7 @@ gjs_string_from_ucs4(JSContext             *cx,
     /* Avoid a copy - assumes that g_malloc == js_malloc == malloc */
     JS::RootedString str(cx, JS_NewUCString(cx, u16_string, u16_string_length));
 
-    if (str == NULL) {
+    if (!str) {
         gjs_throw(cx, "Failed to convert UCS-4 string to UTF-16");
         return false;
     }

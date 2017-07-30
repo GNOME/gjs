@@ -422,7 +422,7 @@ gjs_c_union_from_union(JSContext       *context,
 {
     Union *priv;
 
-    if (obj == NULL)
+    if (!obj)
         return NULL;
 
     priv = priv_from_js(context, obj);
