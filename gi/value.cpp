@@ -221,7 +221,9 @@ closure_marshal(GClosure        *closure,
     }
 
     JS::AutoValueVector argv(context);
-    argv.reserve(n_param_values);  /* May end up being less */
+    /* May end up being less */
+    if (!argv.reserve(n_param_values))
+        g_error("Unable to reserve space");
     JS::RootedValue argv_to_append(context);
     for (i = 0; i < n_param_values; ++i) {
         const GValue *gval = &param_values[i];
@@ -262,7 +264,8 @@ closure_marshal(GClosure        *closure,
             return;
         }
 
-        argv.append(argv_to_append);
+        if (!argv.append(argv_to_append))
+            g_error("Unable to append to vector");
     }
 
     for (i = 1; i < n_param_values; i++)

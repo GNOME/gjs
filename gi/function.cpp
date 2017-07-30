@@ -216,7 +216,10 @@ gjs_callback_closure(ffi_cif *cif,
 
     n_outargs = 0;
     JS::AutoValueVector jsargs(context);
-    jsargs.reserve(n_args);
+
+    if (!jsargs.reserve(n_args))
+        g_error("Unable to reserve space for vector");
+
     JS::RootedValue rval(context);
     JS::RootedValue rooted_function(context, trampoline->js_function);
     JS::RootedObject this_object(context);
@@ -259,14 +262,18 @@ gjs_callback_closure(ffi_cif *cif,
                                                (GArgument *) args[array_length_pos], true))
                     goto out;
 
-                jsargs.growBy(1);
+                if (!jsargs.growBy(1))
+                    g_error("Unable to grow vector");
+
                 if (!gjs_value_from_explicit_array(context, jsargs[n_jsargs++],
                                                    &type_info, (GArgument*) args[i], length.toInt32()))
                     goto out;
                 break;
             }
             case PARAM_NORMAL:
-                jsargs.growBy(1);
+                if (!jsargs.growBy(1))
+                    g_error("Unable to grow vector");
+
                 if (!gjs_value_from_g_argument(context, jsargs[n_jsargs++],
                                                &type_info,
                                                (GArgument *) args[i], false))
@@ -1044,7 +1051,8 @@ gjs_invoke_c_function(JSContext                             *context,
     /* Only process return values if the function didn't throw */
     if (function->js_out_argc > 0 && !did_throw_gerror) {
         for (size_t i = 0; i < function->js_out_argc; i++)
-            return_values.append(JS::UndefinedValue());
+            if (!return_values.append(JS::UndefinedValue()))
+                g_error("Unable to append to vector");
 
         if (return_tag != GI_TYPE_TAG_VOID) {
             GITransfer transfer = g_callable_info_get_caller_owns((GICallableInfo*) function->info);

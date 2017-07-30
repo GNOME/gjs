@@ -287,12 +287,14 @@ gjs_build_string_array(JSContext   *context,
         array_length = g_strv_length(array_values);
 
     JS::AutoValueVector elems(context);
-    elems.reserve(array_length);
+    if (!elems.reserve(array_length))
+        g_error("Unable to reserve memory for vector");
 
     for (i = 0; i < array_length; ++i) {
         JS::RootedValue element(context,
             JS::StringValue(JS_NewStringCopyZ(context, array_values[i])));
-        elems.append(element);
+        if (!elems.append(element))
+            g_error("Unable to append to vector");
     }
 
     return JS_NewArrayObject(context, elems);
@@ -839,7 +841,9 @@ gjs_eval_with_scope(JSContext             *context,
         return false;
 
     JS::AutoObjectVector scope_chain(context);
-    scope_chain.append(eval_obj);
+    if (!scope_chain.append(eval_obj))
+        g_error("Unable to append to vector");
+
     if (!JS_ExecuteScript(context, scope_chain, compiled_script, retval))
         return false;
 

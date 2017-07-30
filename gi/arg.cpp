@@ -589,7 +589,9 @@ gjs_array_from_strv(JSContext             *context,
      * the case.
      */
     for (i = 0; strv != NULL && strv[i] != NULL; i++) {
-        elems.growBy(1);
+        if (!elems.growBy(1))
+            g_error("Unable to grow vector");
+
         if (!gjs_string_from_utf8(context, strv[i], -1, elems[i]))
             return false;
     }
@@ -974,7 +976,9 @@ gjs_array_from_flat_gvalue_array(JSContext             *context,
     GValue *values = (GValue *)array;
     unsigned int i;
     JS::AutoValueVector elems(context);
-    elems.resize(length);
+    if (!elems.resize(length))
+        g_error("Unable to resize vector");
+
     bool result = true;
 
     for (i = 0; i < length; i ++) {
@@ -2170,7 +2174,8 @@ gjs_array_from_g_list (JSContext             *context,
     if (list_tag == GI_TYPE_TAG_GLIST) {
         for ( ; list != NULL; list = list->next) {
             arg.v_pointer = list->data;
-            elems.growBy(1);
+            if (!elems.growBy(1))
+                g_error("Unable to grow vector");
 
             if (!gjs_value_from_g_argument(context, elems[i], param_info, &arg,
                                            true))
@@ -2180,7 +2185,8 @@ gjs_array_from_g_list (JSContext             *context,
     } else {
         for ( ; slist != NULL; slist = slist->next) {
             arg.v_pointer = slist->data;
-            elems.growBy(1);
+            if (!elems.growBy(1))
+                g_error("Unable to grow vector");
 
             if (!gjs_value_from_g_argument(context, elems[i], param_info, &arg,
                                            true))
@@ -2234,7 +2240,8 @@ gjs_array_from_carray_internal (JSContext             *context,
         return gjs_string_from_ucs4(context, (gunichar *) array, length, value_p);
 
     JS::AutoValueVector elems(context);
-    elems.resize(length);
+    if (!elems.resize(length))
+        g_error("Unable to resize vector");
 
 #define ITERATE(type) \
     for (i = 0; i < length; i++) { \
@@ -2454,7 +2461,8 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
         g##type *array = (g##type *) c_array; \
         for (i = 0; array[i]; i++) { \
             arg.v_##type = array[i]; \
-            elems.growBy(1);                                            \
+            if (!elems.growBy(1))                                       \
+                g_error("Unable to grow vector");                       \
             if (!gjs_value_from_g_argument(context, elems[i],           \
                                            param_info, &arg, true))     \
                 return false; \

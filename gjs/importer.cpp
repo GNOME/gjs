@@ -377,7 +377,8 @@ load_module_elements(JSContext        *cx,
         return;
 
     for (ix = 0, length = ids.length(); ix < length; ix++)
-        prop_ids.append(ids[ix]);
+        if (!prop_ids.append(ids[ix]))
+            g_error("Unable to append to vector");
 }
 
 /* If error, returns false. If not found, returns true but does not touch
@@ -725,12 +726,14 @@ importer_enumerate(JSContext        *context,
                 continue;
 
             if (g_file_info_get_file_type(info) == G_FILE_TYPE_DIRECTORY) {
-                properties.append(gjs_intern_string_to_id(context, filename));
+                if (!properties.append(gjs_intern_string_to_id(context, filename)))
+                    g_error("Unable to append to vector");
             } else if (g_str_has_suffix(filename, "." G_MODULE_SUFFIX) ||
                        g_str_has_suffix(filename, ".js")) {
                 GjsAutoChar filename_noext =
                     g_strndup(filename, strlen(filename) - 3);
-                properties.append(gjs_intern_string_to_id(context, filename_noext));
+                if (!properties.append(gjs_intern_string_to_id(context, filename_noext)))
+                    g_error("Unable to append to vector");
             }
         }
     }

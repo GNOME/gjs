@@ -96,7 +96,9 @@ class GjsModule {
             return false;
 
         JS::AutoObjectVector scope_chain(cx);
-        scope_chain.append(module);
+        if (!scope_chain.append(module))
+            g_error("Unable to append to vector");
+
         JS::RootedValue ignored_retval(cx);
         if (!JS_ExecuteScript(cx, scope_chain, compiled_script, &ignored_retval))
             return false;

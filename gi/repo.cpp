@@ -250,10 +250,8 @@ repo_new(JSContext *context)
 
     JS::RootedObject repo(context,
         JS_NewObjectWithGivenProto(context, &gjs_repo_class, proto));
-    if (repo == NULL) {
-        gjs_throw(context, "No memory to create repo object");
-        return NULL;
-    }
+    if (repo == nullptr)
+        g_error("No memory to create repo object");
 
     priv = g_slice_new0(Repo);
 
