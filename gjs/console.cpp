@@ -33,6 +33,7 @@
 static char **include_path = NULL;
 static char **coverage_prefixes = NULL;
 static char *coverage_output_path = NULL;
+static char *profile_output_path = nullptr;
 static char *command = NULL;
 static gboolean print_version = false;
 
@@ -42,6 +43,7 @@ static GOptionEntry entries[] = {
     { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &coverage_prefixes, "Add the prefix PREFIX to the list of files to generate coverage info for", "PREFIX" },
     { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &coverage_output_path, "Write coverage output to a directory DIR. This option is mandatory when using --coverage-path", "DIR", },
     { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &include_path, "Add the directory DIR to the list of directories to search for js files.", "DIR" },
+    { "profile-output", 0, 0, G_OPTION_ARG_FILENAME, &profile_output_path, "Enable the profiler and Write output to FILE", "FILE" },
     { NULL }
 };
 
@@ -154,6 +156,7 @@ main(int argc, char **argv)
     GError *error = NULL;
     GjsContext *js_context;
     GjsCoverage *coverage = NULL;
+    GjsProfiler *profiler;
     char *script;
     const char *filename;
     const char *program_name;
@@ -267,6 +270,16 @@ main(int argc, char **argv)
         g_object_unref(output);
     }
 
+    profiler = gjs_profiler_new(js_context);
+
+    /* Allow SIGUSR2 (with sigaction param) to enable/disable */
+    gjs_profiler_setup_signals();
+
+    if (profile_output_path) {
+        gjs_profiler_set_filename(profiler, profile_output_path);
+        gjs_profiler_start(profiler);
+    }
+
     /* prepare command line arguments */
     if (!gjs_context_define_string_array(js_context, "ARGV",
                                          script_argc, (const char **) script_argv,
@@ -297,6 +310,7 @@ main(int argc, char **argv)
     g_strfreev(coverage_prefixes);
     if (coverage)
         g_object_unref(coverage);
+    gjs_profiler_free(profiler);
     g_object_unref(js_context);
     g_free(script);
     exit(code);

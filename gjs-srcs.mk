@@ -79,6 +79,8 @@ gjs_srcs =				\
 	gjs/module.cpp			\
 	gjs/native.cpp			\
 	gjs/native.h			\
+	gjs/profiler.cpp		\
+	gjs/profiler.h			\
 	gjs/stack.cpp			\
 	modules/modules.cpp		\
 	modules/modules.h		\
@@ -91,6 +93,11 @@ gjs_srcs =				\
 	util/log.h			\
 	util/misc.cpp			\
 	util/misc.h			\
+	util/sp-capture-reader.c	\
+	util/sp-capture-reader.h	\
+	util/sp-capture-types.h		\
+	util/sp-capture-writer.c	\
+	util/sp-capture-writer.h	\
 	$(NULL)
 
 # These files were part of a separate library
