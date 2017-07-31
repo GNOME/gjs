@@ -1,6 +1,6 @@
-/* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
-/*
- * Copyright (c) 2008  litl, LLC
+/* profiler.h
+ *
+ * Copyright (C) 2016 Christian Hergert <christian@hergert.me>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,13 +21,50 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_GJS_H__
-#define __GJS_GJS_H__
+#ifndef GJS_PROFILER_H
+#define GJS_PROFILER_H
 
-#include <gjs/macros.h>
+#include <signal.h>
+#include <stdbool.h>
+
+#include <glib.h>
+
 #include <gjs/context.h>
-#include <gjs/coverage.h>
-#include <gjs/profiler.h>
-#include <util/error.h>
 
-#endif /* __GJS_GJS_H__ */
+G_BEGIN_DECLS
+
+#define GJS_TYPE_PROFILER (gjs_profiler_get_type())
+
+typedef struct _GjsProfiler GjsProfiler;
+
+GJS_EXPORT
+GType gjs_profiler_get_type(void);
+
+GJS_EXPORT
+GjsProfiler *gjs_profiler_new(GjsContext *context);
+
+GJS_EXPORT
+void gjs_profiler_free(GjsProfiler *self);
+
+GJS_EXPORT
+void gjs_profiler_set_filename(GjsProfiler *self,
+                               const char  *filename);
+
+GJS_EXPORT
+void gjs_profiler_start(GjsProfiler *self);
+
+GJS_EXPORT
+void gjs_profiler_stop(GjsProfiler *self);
+
+GJS_EXPORT
+bool gjs_profiler_is_running(GjsProfiler *self);
+
+GJS_EXPORT
+void gjs_profiler_setup_signals(void);
+
+GJS_EXPORT
+bool gjs_profiler_chain_signal(siginfo_t *info);
+
+G_END_DECLS
+
+#endif /* GJS_PROFILER_H */
