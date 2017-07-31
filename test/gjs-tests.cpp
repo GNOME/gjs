@@ -29,7 +29,7 @@
 #include <glib-object.h>
 #include <util/glib.h>
 
-#include <gjs/context.h>
+#include <gjs/gjs.h>
 #include "gjs/jsapi-util.h"
 #include "gjs/jsapi-wrapper.h"
 #include "gjs-test-utils.h"
@@ -376,6 +376,37 @@ gjstest_test_strip_shebang_return_null_for_just_shebang(void)
     g_assert(line_number == -1);
 }
 
+static void
+gjstest_test_profiler_start_stop(void)
+{
+    GjsContext *context;
+    GjsProfiler *profiler;
+    guint i;
+
+    context = gjs_context_new ();
+    profiler = gjs_profiler_new (context);
+
+    gjs_profiler_start(profiler);
+
+    for (i = 0; i < 100000; i++)
+      {
+        GError *error = NULL;
+        int estatus;
+
+#define TESTJS "[1,5,7,1,2,3,67,8].sort()"
+
+        if (!gjs_context_eval (context, TESTJS, -1, "<input>", &estatus, &error))
+          g_printerr ("ERROR: %s", error->message);
+
+#undef TESTJS
+      }
+
+    gjs_profiler_stop(profiler);
+    gjs_profiler_free(profiler);
+
+    g_object_unref (context);
+}
+
 int
 main(int    argc,
      char **argv)
@@ -394,6 +425,7 @@ main(int    argc,
     g_test_add_func("/gjs/jsutil/strip_shebang/no_shebang", gjstest_test_strip_shebang_no_advance_for_no_shebang);
     g_test_add_func("/gjs/jsutil/strip_shebang/have_shebang", gjstest_test_strip_shebang_advance_for_shebang);
     g_test_add_func("/gjs/jsutil/strip_shebang/only_shebang", gjstest_test_strip_shebang_return_null_for_just_shebang);
+    g_test_add_func("/gjs/profiler/start_stop", gjstest_test_profiler_start_stop);
     g_test_add_func("/util/glib/strv/concat/null", gjstest_test_func_util_glib_strv_concat_null);
     g_test_add_func("/util/glib/strv/concat/pointers", gjstest_test_func_util_glib_strv_concat_pointers);
 
