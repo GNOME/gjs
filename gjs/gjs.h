@@ -27,6 +27,7 @@
 #include <gjs/macros.h>
 #include <gjs/context.h>
 #include <gjs/coverage.h>
+#include <gjs/profiler.h>
 #include <util/error.h>
 
 #endif /* __GJS_GJS_H__ */
