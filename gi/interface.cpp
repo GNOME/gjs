@@ -27,6 +27,7 @@
 #include "function.h"
 #include "gtype.h"
 #include "interface.h"
+#include "object.h"
 #include "repo.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
@@ -157,6 +158,34 @@ interface_resolve(JSContext       *context,
     return true;
 }
 
+static bool
+interface_has_instance_func(JSContext *cx,
+                            unsigned   argc,
+                            JS::Value *vp)
+{
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    /* This method is not called directly, so no need for error messages */
+
+    JS::RootedValue interface(cx, args.computeThis(cx));
+    g_assert(interface.isObject());
+    JS::RootedObject interface_constructor(cx, &interface.toObject());
+    JS::RootedObject interface_proto(cx);
+    gjs_object_require_property(cx, interface_constructor,
+                                "interface constructor",
+                                GJS_STRING_PROTOTYPE, &interface_proto);
+
+    Interface *priv;
+    if (!priv_from_js_with_typecheck(cx, interface_proto, &priv))
+        return false;
+
+    g_assert(args.length() == 1);
+    g_assert(args[0].isObject());
+    JS::RootedObject instance(cx, &args[0].toObject());
+    bool isinstance = gjs_typecheck_object(cx, instance, priv->gtype, false);
+    args.rval().setBoolean(isinstance);
+    return true;
+}
+
 static const struct JSClassOps gjs_interface_class_ops = {
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
@@ -179,6 +208,11 @@ JSPropertySpec gjs_interface_proto_props[] = {
 };
 
 JSFunctionSpec gjs_interface_proto_funcs[] = {
+    JS_FS_END
+};
+
+JSFunctionSpec gjs_interface_static_funcs[] = {
+    JS_SYM_FN(hasInstance, interface_has_instance_func, 1, 0),
     JS_FS_END
 };
 
@@ -208,7 +242,7 @@ gjs_define_interface_class(JSContext              *context,
                                 /* props of constructor, MyConstructor.myprop */
                                 NULL,
                                 /* funcs of constructor, MyConstructor.myfunc() */
-                                NULL,
+                                gjs_interface_static_funcs,
                                 &prototype,
                                 constructor)) {
         g_error("Can't init class %s", constructor_name);

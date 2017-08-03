@@ -1,4 +1,6 @@
+/* exported _init, interfaces, properties, registerClass, requires, signals */
 // Copyright 2011 Jasper St. Pierre
+// Copyright 2017 Philip Chimento <philip.chimento@gmail.com>, <philip@endlessm.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -23,6 +25,136 @@ const GjsPrivate = imports.gi.GjsPrivate;
 const Legacy = imports._legacy;
 
 let GObject;
+
+var GTypeName = Symbol('GType name');
+var interfaces = Symbol('GObject interfaces');
+var properties = Symbol('GObject properties');
+var requires = Symbol('GObject interface requires');
+var signals = Symbol('GObject signals');
+
+function registerClass(klass) {
+    if (arguments.length == 2) {
+        // The two-argument form is the convenient syntax without ESnext
+        // decorators and class data properties. The first argument is an
+        // object with meta info such as properties and signals. The second
+        // argument is the class expression for the class itself.
+        //
+        //     var MyClass = GObject.registerClass({
+        //         Properties: { ... },
+        //         Signals: { ... },
+        //     }, class MyClass extends GObject.Object {
+        //         _init() { ... }
+        //     });
+        //
+        // When decorators and class data properties become part of the JS
+        // standard, this function can be used directly as a decorator.
+        let metaInfo = arguments[0];
+        klass = arguments[1];
+        if ('GTypeName' in metaInfo)
+            klass[GTypeName] = metaInfo.GTypeName;
+        if ('Implements' in metaInfo)
+            klass[interfaces] = metaInfo.Implements;
+        if ('Properties' in metaInfo)
+            klass[properties] = metaInfo.Properties;
+        if ('Signals' in metaInfo)
+            klass[signals] = metaInfo.Signals;
+        if ('Requires' in metaInfo)
+            klass[requires] = metaInfo.Requires;
+    }
+
+    if (!(klass.prototype instanceof GObject.Object) &&
+        !(klass.prototype instanceof GObject.Interface))
+        throw new TypeError('GObject.registerClass() used with invalid base ' +
+            `class (is ${Object.getPrototypeOf(klass).name})`);
+
+    // Find the "least derived" class with a _classInit static function; there
+    // definitely is one, since this class must inherit from GObject
+    let initclass = klass;
+    while (typeof initclass._classInit === 'undefined')
+        initclass = Object.getPrototypeOf(initclass.prototype).constructor;
+    return initclass._classInit(klass);
+}
+
+// Some common functions between GObject.Class and GObject.Interface
+
+function _createSignals(gtype, signals) {
+    for (let signalName in signals) {
+        let obj = signals[signalName];
+        let flags = (obj.flags !== undefined) ? obj.flags : GObject.SignalFlags.RUN_FIRST;
+        let accumulator = (obj.accumulator !== undefined) ? obj.accumulator : GObject.AccumulatorType.NONE;
+        let rtype = (obj.return_type !== undefined) ? obj.return_type : GObject.TYPE_NONE;
+        let paramtypes = (obj.param_types !== undefined) ? obj.param_types : [];
+
+        try {
+            obj.signal_id = Gi.signal_new(gtype, signalName, flags, accumulator, rtype, paramtypes);
+        } catch (e) {
+            throw new TypeError('Invalid signal ' + signalName + ': ' + e.message);
+        }
+    }
+}
+
+function _createGTypeName(klass) {
+    if (klass.hasOwnProperty(GTypeName))
+        return klass[GTypeName];
+    return `Gjs_${klass.name}`;
+}
+
+function _propertiesAsArray(klass) {
+    let propertiesArray = [];
+    if (klass.hasOwnProperty(properties)) {
+        for (let prop in klass[properties]) {
+            propertiesArray.push(klass[properties][prop]);
+        }
+    }
+    return propertiesArray;
+}
+
+function _copyAllDescriptors(target, source) {
+    Object.getOwnPropertyNames(source)
+    .filter(key => !['prototype', 'constructor'].includes(key))
+    .concat(Object.getOwnPropertySymbols(source))
+    .forEach(key => {
+        let descriptor = Object.getOwnPropertyDescriptor(source, key);
+        Object.defineProperty(target, key, descriptor);
+    });
+}
+
+function _interfacePresent(required, klass) {
+    if (!klass[interfaces])
+        return false;
+    if (klass[interfaces].includes(required))
+        return true;  // implemented here
+    // Might be implemented on a parent class
+    return _interfacePresent(required, Object.getPrototypeOf(klass));
+}
+
+function _checkInterface(iface, proto) {
+    // Check that proto implements all of this interface's required interfaces.
+    // "proto" refers to the object's prototype (which implements the interface)
+    // whereas "iface.prototype" is the interface's prototype (which may still
+    // contain unimplemented methods.)
+    if (typeof iface[requires] === 'undefined')
+        return;
+
+    let unfulfilledReqs = iface[requires].filter(required => {
+        // Either the interface is not present or it is not listed before the
+        // interface that requires it or the class does not inherit it. This is
+        // so that required interfaces don't copy over properties from other
+        // interfaces that require them.
+        let ifaces = proto.constructor[interfaces];
+        return ((!_interfacePresent(required, proto.constructor) ||
+            ifaces.indexOf(required) > ifaces.indexOf(iface)) &&
+            !(proto instanceof required));
+    }).map(required =>
+        // required.name will be present on JS classes, but on introspected
+        // GObjects it will be the C name. The alternative is just so that
+        // we print something if there is garbage in Requires.
+        required.name || required);
+    if (unfulfilledReqs.length > 0) {
+        throw new Error('The following interfaces must be implemented before ' +
+            `${iface.name}: ${unfulfilledReqs.join(', ')}`);
+    }
+}
 
 function _init() {
 
@@ -182,6 +314,112 @@ function _init() {
     this.Object.prototype._construct = function() {
         this._init.apply(this, arguments);
         return this;
+    };
+
+    GObject.registerClass = registerClass;
+
+    GObject.Object._classInit = function(klass) {
+        let gtypename = _createGTypeName(klass);
+        let gobjectInterfaces = klass.hasOwnProperty(interfaces) ?
+            klass[interfaces] : [];
+        let propertiesArray = _propertiesAsArray(klass);
+        let parent = Object.getPrototypeOf(klass);
+        let gobjectSignals = klass.hasOwnProperty(signals) ?
+            klass[signals] : [];
+
+        let newClass = Gi.register_type(parent.prototype, gtypename,
+            gobjectInterfaces, propertiesArray);
+        Object.setPrototypeOf(newClass, parent);
+
+        _createSignals(newClass.$gtype, gobjectSignals);
+
+        _copyAllDescriptors(newClass, klass);
+        gobjectInterfaces.forEach(iface =>
+            _copyAllDescriptors(newClass.prototype, iface.prototype));
+        _copyAllDescriptors(newClass.prototype, klass.prototype);
+
+        Object.getOwnPropertyNames(newClass.prototype)
+        .filter(name => name.startsWith('vfunc_') || name.startsWith('on_'))
+        .forEach(name => {
+            let descr = Object.getOwnPropertyDescriptor(newClass.prototype, name);
+            if (typeof descr.value !== 'function')
+                return;
+
+            let func = newClass.prototype[name];
+
+            if (name.startsWith('vfunc_')) {
+                Gi.hook_up_vfunc(newClass.prototype, name.slice(6), func);
+            } else if (name.startsWith('on_')) {
+                let id = GObject.signal_lookup(name.slice(3).replace('_', '-'),
+                    newClass.$gtype);
+                if (id !== 0) {
+                    GObject.signal_override_class_closure(id, newClass.$gtype, function() {
+                        let argArray = Array.from(arguments);
+                        let emitter = argArray.shift();
+
+                        return func.apply(emitter, argArray);
+                    });
+                }
+            }
+        });
+
+        gobjectInterfaces.forEach(iface =>
+            _checkInterface(iface, newClass.prototype));
+
+        // For backwards compatibility only. Use instanceof instead.
+        newClass.implements = function(iface) {
+            if (iface.$gtype)
+                return GObject.type_is_a(newClass.$gtype, iface.$gtype);
+            return false;
+        }
+
+        return newClass;
+    };
+
+    GObject.Interface._classInit = function(klass) {
+        let gtypename = _createGTypeName(klass);
+        let gobjectInterfaces = klass.hasOwnProperty(requires) ?
+            klass[requires] : [];
+        let properties = _propertiesAsArray(klass);
+        let gobjectSignals = klass.hasOwnProperty(signals) ?
+            klass[signals] : [];
+
+        let newInterface = Gi.register_interface(gtypename, gobjectInterfaces,
+            properties);
+
+        _createSignals(newInterface.$gtype, gobjectSignals);
+
+        _copyAllDescriptors(newInterface, klass);
+
+        Object.getOwnPropertyNames(klass.prototype)
+        .filter(key => key !== 'constructor')
+        .concat(Object.getOwnPropertySymbols(klass.prototype))
+        .forEach(key => {
+            let descr = Object.getOwnPropertyDescriptor(klass.prototype, key);
+
+            // Create wrappers on the interface object so that generics work (e.g.
+            // SomeInterface.some_function(this, blah) instead of
+            // SomeInterface.prototype.some_function.call(this, blah)
+            if (typeof descr.value === 'function') {
+                let interfaceProto = klass.prototype;  // capture in closure
+                newInterface[key] = function () {
+                    return interfaceProto[key].call.apply(interfaceProto[key],
+                        arguments);
+                };
+            }
+
+            Object.defineProperty(newInterface.prototype, key, descr);
+        });
+
+        return newInterface;
+    };
+
+    /**
+     * Use this to signify a function that must be overridden in an
+     * implementation of the interface.
+     */
+    GObject.NotImplementedError = class NotImplementedError extends Error {
+        get name() { return 'NotImplementedError'; }
     };
 
     // fake enum for signal accumulators, keep in sync with gi/object.c
