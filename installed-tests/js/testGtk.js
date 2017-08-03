@@ -1,8 +1,8 @@
 imports.gi.versions.Gtk = '3.0';
 
 const ByteArray = imports.byteArray;
+const GObject = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
-const Lang = imports.lang;
 
 // This is ugly here, but usually it would be in a resource
 const template = ' \
@@ -34,40 +34,30 @@ const template = ' \
   </template> \
 </interface>';
 
-const MyComplexGtkSubclass = new Lang.Class({
-    Name: 'MyComplexGtkSubclass',
-    Extends: Gtk.Grid,
+const MyComplexGtkSubclass = GObject.registerClass({
     Template: ByteArray.fromString(template),
     Children: ['label-child', 'label-child2'],
     InternalChildren: ['internal-label-child'],
     CssName: 'complex-subclass',
+}, class MyComplexGtkSubclass extends Gtk.Grid {});
 
-    // _init: function(params) {
-    //     this.parent(params);
-    // },
+// Sadly, putting this in the body of the class will prevent calling
+// get_template_child, since MyComplexGtkSubclass will be bound to the ES6
+// class name without the GObject goodies in it
+MyComplexGtkSubclass.prototype.testChildrenExist = function() {
+    this._internalLabel = this.get_template_child(MyComplexGtkSubclass, 'label-child');
+    expect(this._internalLabel).toEqual(jasmine.anything());
 
-    testChildrenExist: function () {
-        this._internalLabel = this.get_template_child(MyComplexGtkSubclass, 'label-child');
-        expect(this._internalLabel).toEqual(jasmine.anything());
+    expect(this.label_child2).toEqual(jasmine.anything());
+    expect(this._internal_label_child).toEqual(jasmine.anything());
+};
 
-        expect(this.label_child2).toEqual(jasmine.anything());
-        expect(this._internal_label_child).toEqual(jasmine.anything());
-    }
-});
-
-
-const MyComplexGtkSubclassFromResource = new Lang.Class({
-    Name: 'MyComplexGtkSubclassFromResource',
-    Extends: Gtk.Grid,
+const MyComplexGtkSubclassFromResource = GObject.registerClass({
     Template: 'resource:///org/gjs/jsunit/complex.ui',
     Children: ['label-child', 'label-child2'],
     InternalChildren: ['internal-label-child'],
-
-    // _init: function(params) {
-    //     this.parent(params);
-    // },
-
-    testChildrenExist: function () {
+}, class MyComplexGtkSubclassFromResource extends Gtk.Grid {
+    testChildrenExist() {
         expect(this.label_child).toEqual(jasmine.anything());
         expect(this.label_child2).toEqual(jasmine.anything());
         expect(this._internal_label_child).toEqual(jasmine.anything());

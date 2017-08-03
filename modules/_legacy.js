@@ -1,5 +1,6 @@
 /* -*- mode: js; indent-tabs-mode: nil; -*- */
-/* exported Class, Interface, defineGObjectLegacyObjects */
+/* exported Class, Interface, defineGObjectLegacyObjects,
+defineGtkLegacyObjects */
 // Copyright 2008  litl, LLC
 // Copyright 2011  Jasper St. Pierre
 
@@ -657,9 +658,9 @@ function defineGtkLegacyObjects(GObject, Gtk) {
                     Gtk.Widget.set_template.call(this, template);
             }
 
-            this.Template = template;
-            this.Children = children;
-            this.InternalChildren = internalChildren;
+            this[Gtk.template] = template;
+            this[Gtk.children] = children;
+            this[Gtk.internalChildren] = internalChildren;
 
             if (children) {
                 for (let i = 0; i < children.length; i++)

@@ -32,6 +32,12 @@ var properties = Symbol('GObject properties');
 var requires = Symbol('GObject interface requires');
 var signals = Symbol('GObject signals');
 
+// These four will be aliased to GTK
+var _children = Symbol('GTK widget template children');
+var _cssName = Symbol('GTK widget CSS name');
+var _internalChildren = Symbol('GTK widget template internal children');
+var _template = Symbol('GTK widget template');
+
 function registerClass(klass) {
     if (arguments.length == 2) {
         // The two-argument form is the convenient syntax without ESnext
@@ -60,6 +66,14 @@ function registerClass(klass) {
             klass[signals] = metaInfo.Signals;
         if ('Requires' in metaInfo)
             klass[requires] = metaInfo.Requires;
+        if ('CssName' in metaInfo)
+            klass[_cssName] = metaInfo.CssName;
+        if ('Template' in metaInfo)
+            klass[_template] = metaInfo.Template;
+        if ('Children' in metaInfo)
+            klass[_children] = metaInfo.Children;
+        if ('InternalChildren' in metaInfo)
+            klass[_internalChildren] = metaInfo.InternalChildren;
     }
 
     if (!(klass.prototype instanceof GObject.Object) &&
@@ -421,6 +435,11 @@ function _init() {
     GObject.NotImplementedError = class NotImplementedError extends Error {
         get name() { return 'NotImplementedError'; }
     };
+
+    GObject._cssName = _cssName;
+    GObject._template = _template;
+    GObject._children = _children;
+    GObject._internalChildren = _internalChildren;
 
     // fake enum for signal accumulators, keep in sync with gi/object.c
     this.AccumulatorType = {
