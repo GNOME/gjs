@@ -5,7 +5,6 @@ const GIMarshallingTests = imports.gi.GIMarshallingTests;
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
-const Lang = imports.lang;
 
 describe('C array', function () {
     function createStructArray() {
@@ -536,72 +535,45 @@ describe('GType', function () {
     });
 });
 
-function callback_return_value_only() {
-    return 42;
-}
-
-function callback_one_out_parameter() {
-    return 43;
-}
-
-function callback_multiple_out_parameters() {
-    return [44, 45];
-}
-
-function callback_return_value_and_one_out_parameter() {
-    return [46, 47];
-}
-
-function callback_return_value_and_multiple_out_parameters() {
-    return [48, 49, 50];
-}
-
-function callback_array_out_parameter() {
-    return [50, 51];
-}
-
 describe('Callback', function () {
     it('marshals a return value', function () {
-        expect(GIMarshallingTests.callback_return_value_only(callback_return_value_only))
+        expect(GIMarshallingTests.callback_return_value_only(() => 42))
             .toEqual(42);
     });
 
     it('marshals one out parameter', function () {
-        expect(GIMarshallingTests.callback_one_out_parameter(callback_one_out_parameter))
+        expect(GIMarshallingTests.callback_one_out_parameter(() => 43))
             .toEqual(43);
     });
 
     it('marshals multiple out parameters', function () {
-        expect(GIMarshallingTests.callback_multiple_out_parameters(callback_multiple_out_parameters))
+        expect(GIMarshallingTests.callback_multiple_out_parameters(() => [44, 45]))
             .toEqual([44, 45]);
     });
 
     it('marshals a return value and one out parameter', function () {
-        expect(GIMarshallingTests.callback_return_value_and_one_out_parameter(callback_return_value_and_one_out_parameter))
+        expect(GIMarshallingTests.callback_return_value_and_one_out_parameter(() => [46, 47]))
             .toEqual([46, 47]);
     });
 
     it('marshals a return value and multiple out parameters', function () {
-        expect(GIMarshallingTests.callback_return_value_and_multiple_out_parameters(callback_return_value_and_multiple_out_parameters))
+        expect(GIMarshallingTests.callback_return_value_and_multiple_out_parameters(() => [48, 49, 50]))
             .toEqual([48, 49, 50]);
     });
 
     xit('marshals an array out parameter', function () {
-        expect(GIMarshallingTests.callback_array_out_parameter(callback_array_out_parameter))
+        expect(GIMarshallingTests.callback_array_out_parameter(() => [50, 51]))
             .toEqual([50, 51]);
     }).pend('Function not added to gobject-introspection test suite yet');
 });
 
-const VFuncTester = new Lang.Class({
-    Name: 'VFuncTester',
-    Extends: GIMarshallingTests.Object,
-
-    vfunc_vfunc_return_value_only: callback_return_value_only,
-    vfunc_vfunc_one_out_parameter: callback_one_out_parameter,
-    vfunc_vfunc_multiple_out_parameters: callback_multiple_out_parameters,
-    vfunc_vfunc_return_value_and_one_out_parameter: callback_return_value_and_one_out_parameter,
-    vfunc_vfunc_return_value_and_multiple_out_parameters: callback_return_value_and_multiple_out_parameters,
-    vfunc_vfunc_array_out_parameter: callback_array_out_parameter,
+const VFuncTester = GObject.registerClass(class VFuncTester extends GIMarshallingTests.Object {
+    vfunc_vfunc_return_value_only() { return 42; }
+    vfunc_vfunc_one_out_parameter() { return 43; }
+    vfunc_vfunc_multiple_out_parameters() { return [44, 45]; }
+    vfunc_vfunc_return_value_and_one_out_parameter() { return [46, 47]; }
+    vfunc_vfunc_return_value_and_multiple_out_parameters() { return [48, 49, 50]; }
+    vfunc_vfunc_array_out_parameter() { return [50, 51]; }
 });
 
 describe('Virtual function', function () {

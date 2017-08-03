@@ -91,13 +91,8 @@ gjstest_test_func_gjs_context_exit(void)
 }
 
 #define JS_CLASS "\
-const Lang    = imports.lang; \
 const GObject = imports.gi.GObject; \
-\
-const FooBar = new Lang.Class({ \
-    Name: 'FooBar', \
-    Extends: GObject.Object, \
-}); \
+const FooBar = GObject.registerClass(class FooBar extends GObject.Object {}); \
 "
 
 static void

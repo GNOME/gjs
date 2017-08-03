@@ -1,32 +1,27 @@
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
-const Lang = imports.lang;
 
-const Foo = new Lang.Class({
-    Name: 'Foo',
-    Extends: GObject.Object,
+const Foo = GObject.registerClass({
     Properties: {
         'prop': GObject.ParamSpec.string('prop', '', '', GObject.ParamFlags.READWRITE, '')
     },
-
+}, class Foo extends GObject.Object {
     set prop(v) {
 	throw new Error('set');
-    },
+    }
 
     get prop() {
 	throw new Error('get');
     }
 });
 
-const Bar = new Lang.Class({
-    Name: 'Bar',
-    Extends: GObject.Object,
+const Bar = GObject.registerClass({
     Properties: {
         'prop': GObject.ParamSpec.string('prop', '', '',
             GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT, ''),
     }
-});
+}, class Bar extends GObject.Object {});
 
 describe('Exceptions', function () {
     it('are thrown from property setter', function () {

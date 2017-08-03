@@ -1,12 +1,9 @@
 const Gio = imports.gi.Gio;
 const GObject = imports.gi.GObject;
-const Lang = imports.lang;
 
-const Foo = new Lang.Class({
-    Name: 'Foo',
-    Extends: GObject.Object,
-    _init: function (value) {
-        this.parent();
+const Foo = GObject.registerClass(class Foo extends GObject.Object {
+    _init(value) {
+        super._init();
         this.value = value;
     }
 });
