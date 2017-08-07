@@ -1,3 +1,63 @@
+Version 1.49.90
+---------------
+
+- New API: GObject.registerClass(), intended for use with ES6 classes. When
+  defining a GObject class using ES6 syntax, you must call
+  GObject.registerClass() on the class object, with an optional metadata
+  object as the first argument. (The metadata object works exactly like the
+  meta properties from Lang.Class, except that Name and Extends are not
+  present.)
+
+  Old:
+
+      var MyClass = new Lang.Class({
+          Name: 'MyClass',
+          Extends: GObject.Object,
+          Signals: { 'event': {} },
+          _init(props={}) {
+              this._private = [];
+              this.parent(props);
+          },
+      });
+
+  New:
+
+      var MyClass = GObject.registerClass({
+          Signals: { 'event': {} },
+      }, class MyClass extends GObject.Object {
+          _init(props={}) {
+              this._private = [];
+              super._init(props);
+          }
+      });
+
+  It is forward compatible with the following syntax requiring decorators and
+  class fields, which are not in the JS standard yet:
+
+      @GObject.registerClass
+      class MyClass extends GObject.Object {
+          static [GObject.signals] = { 'event': {} }
+          _init(props={}) {
+              this._private = [];
+              super._init(props);
+          }
+      }
+
+  One limitation is that GObject ES6 classes can't have constructor()
+  methods, they must do any setup in an _init() method. This may be able to be
+  fixed in the future.
+
+- Closed bugs:
+
+  * Misc 1.49 and mozjs52 enhancements [#785040, Philip Chimento]
+  * Switch to native promises [#784713, Philip Chimento]
+  * Can't call exports using top-level variable toString [#781623, Philip
+    Chimento]
+  * Properties no longer recognized when shadowed by a method [#785091, Philip
+    Chimento, Rico Tzschichholz]
+  * Patch: backport of changes required for use with mozjs-55 [#785424, Luke
+    Jones]
+
 Version 1.48.6
 --------------
 
