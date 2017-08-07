@@ -155,7 +155,7 @@ EXTRA_DIST +=					\
 	COPYING.LGPL				\
 	doc/ByteArray.md			\
 	doc/cairo.md				\
-	doc/Class_Framework.md			\
+	doc/Hacking.md				\
 	doc/SpiderMonkey_Memory.md		\
 	doc/Style_Guide.md			\
 	win32/build-rules-msvc.mak		\
