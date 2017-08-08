@@ -216,6 +216,10 @@ describe('Class framework', function () {
         expect(newMagic instanceof MagicBase).toBeTruthy();
     });
 
+    it('has a name', function () {
+        expect(Magic.name).toEqual('Magic');
+    });
+
     it('reports a sensible value for toString()', function () {
         let newMagic = new MagicBase();
         expect(newMagic.toString()).toEqual('[object MagicBase]');
@@ -422,6 +426,10 @@ describe('An interface', function () {
     it('is an instance of Lang.Interface', function () {
         expect(AnInterface instanceof Lang.Interface).toBeTruthy();
         expect(InterfaceRequiringOtherInterface instanceof Lang.Interface).toBeTruthy();
+    });
+
+    it('has a name', function () {
+        expect(AnInterface.name).toEqual('AnInterface');
     });
 
     it('cannot be instantiated', function () {

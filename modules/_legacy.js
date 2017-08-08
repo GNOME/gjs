@@ -149,6 +149,12 @@ Class.prototype._construct = function(params) {
             value: interfaces,
         },
     });
+    Object.defineProperty(newClass, 'name', {
+        writable: false,
+        configurable: true,
+        enumerable: false,
+        value: name,
+    });
 
     interfaces.forEach((iface) => {
         iface._check(newClass.prototype);
@@ -312,6 +318,12 @@ Interface.prototype._construct = function (params) {
         configurable: false,
         enumerable: false,
         value: this.constructor,
+    });
+    Object.defineProperty(newInterface, 'name', {
+        writable: false,
+        configurable: true,
+        enumerable: false,
+        value: params.Name,
     });
 
     return newInterface;
@@ -544,6 +556,13 @@ function defineGObjectLegacyObjects(GObject) {
                     value: interfaces,
                 },
             });
+            // Overwrite the C++-set class name, as if it were an ES6 class
+            Object.defineProperty(newClass, 'name', {
+                writable: false,
+                configurable: true,
+                enumerable: false,
+                value: name,
+            });
 
             interfaces.forEach((iface) => {
                 if (iface instanceof Interface)
@@ -604,6 +623,13 @@ function defineGObjectLegacyObjects(GObject) {
             configurable: false,
             enumerable: false,
             value: this.constructor,
+        });
+        // Overwrite the C++-set class name, as if it were an ES6 class
+        Object.defineProperty(newInterface, 'name', {
+            writable: false,
+            configurable: true,
+            enumerable: false,
+            value: params.Name,
         });
 
         return newInterface;

@@ -1,3 +1,11 @@
+NEXT
+----
+
+- Deprecation: The private "__name__" property on Lang.Class instances is
+  now discouraged. Code should not have been using this anyway, but if it did
+  then it should use the "name" property on the class (this.__name__ should
+  become this.constructor.name), which is compatible with ES6 classes.
+
 Version 1.49.90
 ---------------
 
