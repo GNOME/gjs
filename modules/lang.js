@@ -23,7 +23,7 @@ countProperties */
 
 // Utilities that are "meta-language" things like manipulating object props
 
-var {Class, Interface} = imports._legacy;
+var {Class, Interface, getMetaClass} = imports._legacy;
 
 function countProperties(obj) {
     let count = 0;

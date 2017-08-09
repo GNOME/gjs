@@ -114,6 +114,12 @@ describe('A metaclass', function () {
         expect(instance).toEqual(jasmine.objectContaining({ one: 1, two: 2, three: 3 }));
         expect(instance.dynamic_method()).toEqual(73);
     });
+
+    it('can be detected with Lang.getMetaClass', function () {
+        expect(Lang.getMetaClass({
+            Extends: CustomMetaOne,
+        })).toBe(MetaClass);
+    });
 });
 
 const MagicBase = new Lang.Class({
