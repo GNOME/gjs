@@ -106,6 +106,34 @@ gjs_object_define_property(JSContext       *cx,
                                  value, flags, getter, setter);
 }
 
+bool
+gjs_object_define_property(JSContext       *cx,
+                           JS::HandleObject obj,
+                           GjsConstString   property_name,
+                           JS::HandleString value,
+                           unsigned         flags,
+                           JSNative         getter,
+                           JSNative         setter)
+{
+    return JS_DefinePropertyById(cx, obj,
+                                 gjs_context_get_const_string(cx, property_name),
+                                 value, flags, getter, setter);
+}
+
+bool
+gjs_object_define_property(JSContext       *cx,
+                           JS::HandleObject obj,
+                           GjsConstString   property_name,
+                           uint32_t         value,
+                           unsigned         flags,
+                           JSNative         getter,
+                           JSNative         setter)
+{
+    return JS_DefinePropertyById(cx, obj,
+                                 gjs_context_get_const_string(cx, property_name),
+                                 value, flags, getter, setter);
+}
+
 static void
 throw_property_lookup_error(JSContext       *cx,
                             JS::HandleObject obj,

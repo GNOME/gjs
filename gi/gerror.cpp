@@ -392,25 +392,35 @@ find_error_domain_info(GQuark domain)
    fileName, lineNumber and stack
 */
 static void
-define_error_properties(JSContext       *context,
+define_error_properties(JSContext       *cx,
                         JS::HandleObject obj)
 {
-    JS::RootedValue stack(context), fileName(context), lineNumber(context);
+    JS::RootedObject frame(cx);
+    JS::RootedString stack(cx);
+    JS::RootedString source(cx);
+    uint32_t line;
+    JS::AutoSaveExceptionState exc(cx);
 
-    if (!gjs_context_get_frame_info(context,
-                                    mozilla::Some<JS::MutableHandleValue>(&stack),
-                                    mozilla::Some<JS::MutableHandleValue>(&fileName),
-                                    mozilla::Some<JS::MutableHandleValue>(&lineNumber)))
+    if (!JS::CaptureCurrentStack(cx, &frame) ||
+        !JS::BuildStackString(cx, frame, &stack)) {
+        exc.restore();
         return;
+    }
 
-    gjs_object_define_property(context, obj, GJS_STRING_STACK, stack,
-                               JSPROP_ENUMERATE);
+    JS::SavedFrameResult result;
+    result = JS::GetSavedFrameSource(cx, frame, &source);
+    g_assert(result == JS::SavedFrameResult::Ok);
 
-    gjs_object_define_property(context, obj, GJS_STRING_FILENAME,
-                               fileName, JSPROP_ENUMERATE);
+    result = JS::GetSavedFrameLine(cx, frame, &line);
+    g_assert(result == JS::SavedFrameResult::Ok);
 
-    gjs_object_define_property(context, obj, GJS_STRING_LINE_NUMBER,
-                               lineNumber, JSPROP_ENUMERATE);
+    if (!gjs_object_define_property(cx, obj, GJS_STRING_STACK, stack,
+                                    JSPROP_ENUMERATE) ||
+        !gjs_object_define_property(cx, obj, GJS_STRING_FILENAME, source,
+                                    JSPROP_ENUMERATE) ||
+        !gjs_object_define_property(cx, obj, GJS_STRING_LINE_NUMBER, line,
+                                    JSPROP_ENUMERATE))
+        exc.restore();
 }
 
 JSObject*
