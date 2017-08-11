@@ -398,7 +398,7 @@ define_error_properties(JSContext       *cx,
     JS::RootedObject frame(cx);
     JS::RootedString stack(cx);
     JS::RootedString source(cx);
-    uint32_t line;
+    uint32_t line, column;
     JS::AutoSaveExceptionState exc(cx);
 
     if (!JS::CaptureCurrentStack(cx, &frame) ||
@@ -414,11 +414,16 @@ define_error_properties(JSContext       *cx,
     result = JS::GetSavedFrameLine(cx, frame, &line);
     g_assert(result == JS::SavedFrameResult::Ok);
 
+    result = JS::GetSavedFrameColumn(cx, frame, &column);
+    g_assert(result == JS::SavedFrameResult::Ok);
+
     if (!gjs_object_define_property(cx, obj, GJS_STRING_STACK, stack,
                                     JSPROP_ENUMERATE) ||
         !gjs_object_define_property(cx, obj, GJS_STRING_FILENAME, source,
                                     JSPROP_ENUMERATE) ||
         !gjs_object_define_property(cx, obj, GJS_STRING_LINE_NUMBER, line,
+                                    JSPROP_ENUMERATE) ||
+        !gjs_object_define_property(cx, obj, GJS_STRING_COLUMN_NUMBER, column,
                                     JSPROP_ENUMERATE))
         exc.restore();
 }
