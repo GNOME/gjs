@@ -47,57 +47,20 @@
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 
-bool
-gjs_context_get_frame_info(JSContext                             *context,
-                           mozilla::Maybe<JS::MutableHandleValue> stack,
-                           mozilla::Maybe<JS::MutableHandleValue> fileName,
-                           mozilla::Maybe<JS::MutableHandleValue> lineNumber)
-{
-    JSAutoRequest ar(context);
-    JS::RootedObject global(context, JS::CurrentGlobalOrNull(context)),
-        constructor(context);
-    JSAutoCompartment ac(context, global);
-
-    JS::RootedId error_id(context, gjs_intern_string_to_id(context, "Error"));
-    if (!gjs_object_require_property(context, global, "global object",
-                                     error_id, &constructor))
-        return false;
-
-    JS::RootedObject err_obj(context, JS_New(context, constructor,
-                                             JS::HandleValueArray::empty()));
-
-    if (stack &&
-        !gjs_object_get_property(context, err_obj, GJS_STRING_STACK,
-                                 stack.ref()))
-        return false;
-
-    if (fileName &&
-        !gjs_object_get_property(context, err_obj, GJS_STRING_FILENAME,
-                                 fileName.ref()))
-        return false;
-
-    if (lineNumber &&
-        !gjs_object_get_property(context, err_obj, GJS_STRING_LINE_NUMBER,
-                                 lineNumber.ref()))
-        return false;
-
-    return true;
-}
-
 void
 gjs_context_print_stack_stderr(GjsContext *context)
 {
     JSContext *cx = (JSContext*) gjs_context_get_native_context(context);
-    JS::RootedValue v_stack(cx);
+    JS::RootedObject frame(cx);
+    JS::AutoSaveExceptionState exc(cx);
     GjsAutoChar stack;
 
     g_printerr("== Stack trace for context %p ==\n", context);
 
-    /* Stderr is locale encoding, so we use string_to_filename here */
-    if (!gjs_context_get_frame_info(cx, mozilla::Some<JS::MutableHandleValue>(&v_stack),
-                                    mozilla::Nothing(), mozilla::Nothing()) ||
-        !gjs_string_to_filename(cx, v_stack, &stack)) {
+    if (!JS::CaptureCurrentStack(cx, &frame) ||
+        !(stack = gjs_format_stack_trace(cx, frame))) {
         g_printerr("No stack trace available\n");
+        exc.restore();
         return;
     }
 

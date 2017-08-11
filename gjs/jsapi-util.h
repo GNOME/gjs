@@ -254,11 +254,6 @@ const char* gjs_get_type_name                (JS::Value        value);
 
 void gjs_maybe_gc (JSContext *context);
 
-bool gjs_context_get_frame_info(JSContext                             *cx,
-                                mozilla::Maybe<JS::MutableHandleValue> stack,
-                                mozilla::Maybe<JS::MutableHandleValue> fileName,
-                                mozilla::Maybe<JS::MutableHandleValue> lineNumber);
-
 bool gjs_eval_with_scope(JSContext             *context,
                          JS::HandleObject       object,
                          const char            *script,
