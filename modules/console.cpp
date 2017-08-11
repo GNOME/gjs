@@ -156,12 +156,18 @@ public:
 
         JS::RootedObject exn(m_cx, &v_exn.toObject());
         JSErrorReport *report = JS_ErrorFromException(m_cx, exn);
-        if (!report)
-            g_error("Out of memory initializing ErrorReport");
-
-        g_assert(!JSREPORT_IS_WARNING(report->flags));
-
-        gjs_console_print_error(report);
+        if (report) {
+            g_assert(!JSREPORT_IS_WARNING(report->flags));
+            gjs_console_print_error(report);
+        } else {
+            JS::RootedString message(m_cx, JS::ToString(m_cx, v_exn));
+            if (!message) {
+                g_printerr("(could not convert thrown exception to string)\n");
+            } else {
+                GjsAutoJSChar message_utf8(m_cx, JS_EncodeStringToUTF8(m_cx, message));
+                g_printerr("%s\n", message_utf8.get());
+            }
+        }
 
         JS::RootedObject stack(m_cx, ExceptionStackOrNull(exn));
         if (stack) {
