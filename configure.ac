@@ -204,6 +204,40 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 ])
 CPPFLAGS="$CPPFLAGS_save"
 
+dnl
+dnl Check for -fsanitize=address and -fsanitize=undefined support
+dnl
+AC_ARG_ENABLE([asan],
+  [AS_HELP_STRING([--enable-asan], [Build with address sanitizer support @<:@default: no@:>@])])
+
+AS_IF([test "x$enable_asan" = "xyes"], [
+  AX_CHECK_COMPILE_FLAG([-fsanitize=address -fno-omit-frame-pointer -g], [
+    AX_CHECK_LINK_FLAG([-fsanitize=address], [SAN_FLAGS="-fsanitize=address"])
+  ])
+])
+
+AC_ARG_ENABLE([ubsan],
+  [AS_HELP_STRING([--enable-ubsan], [Build with undefined behavior sanitizer support @<:@default: no@:>@])])
+
+AS_IF([test "x$enable_ubsan" = "xyes"], [
+  AX_CHECK_COMPILE_FLAG([-fsanitize=undefined -fno-omit-frame-pointer -g], [
+    AX_CHECK_LINK_FLAG([-fsanitize=undefined],
+      [SAN_FLAGS="$SAN_FLAGS -fsanitize=undefined"])
+  ])
+])
+
+# According to https://github.com/google/sanitizers/issues/380, asan is not
+# compatible with -no-undefined.
+NO_UNDEFINED_FLAG=-no-undefined
+AS_IF([test -n "${SAN_FLAGS}"], [
+    GJS_CFLAGS="$GJS_CFLAGS $SAN_FLAGS -fno-omit-frame-pointer -g"
+    # We have to clobber LDFLAGS here and not use AM_LDFLAGS, or else
+    # g-ir-scanner will not pick it up.
+    LDFLAGS="$LDFLAGS $SAN_FLAGS"
+    NO_UNDEFINED_FLAG=
+])
+AC_SUBST([NO_UNDEFINED_FLAG])
+
 AC_ARG_WITH([xvfb-tests],
   [AS_HELP_STRING([--with-xvfb-tests],
     [Run all tests under an XVFB server @<:@default=no@:>@])])

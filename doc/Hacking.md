@@ -100,6 +100,22 @@ It is a versatile tool that can check non-standard code, including: variable
 checking, bounds checking, leaks, etc. It can detect the types of bugs that
 the compilers normally fail to detect.
 
+### Sanitizers ###
+
+To add instrumentation code to gjs, put this (both, or any one of them) in
+your JHBuild configuration file:
+```python
+module_autogenargs['gjs'] = '--enable-asan --enable-ubsan'
+```
+
+Sanitizers are based on compile-time instrumentation. They are available
+in gcc and clang for a range of supported operating systems and
+platforms.
+
+Please, keep in mind that instrumentation is limited by execution coverage. So,
+if your "testing" session never reaches a particular point of execution, then
+instrumentation at that point collects no data.
+
 ### Test Coverage ###
 
 To generate a test coverage report, put this in your JHBuild
