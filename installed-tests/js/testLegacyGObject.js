@@ -913,7 +913,7 @@ const Shiny = GObject.registerClass({
     set override_property(value) { this._override_property = value - 1; }
 });
 
-fdescribe('ES6 GObject class inheriting from GObject.Class', function () {
+describe('ES6 GObject class inheriting from GObject.Class', function () {
     let instance;
 
     beforeEach(function () {
