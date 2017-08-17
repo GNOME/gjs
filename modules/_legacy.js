@@ -8,6 +8,9 @@ defineGtkLegacyObjects */
 // Adapted from MooTools, MIT license
 // https://github.com/mootools/mootools-core
 
+const Gio = imports.gi.Gio;
+const GLib = imports.gi.GLib;
+
 function _Base() {
     throw new TypeError('Cannot instantiate abstract class _Base');
 }
@@ -676,6 +679,13 @@ function defineGtkLegacyObjects(GObject, Gtk) {
                 if (typeof template == 'string' &&
                     template.startsWith('resource:///'))
                     Gtk.Widget.set_template_from_resource.call(this, template.slice(11));
+                else if (typeof template === 'string' &&
+                    template.startsWith('file:///')) {
+                    let file = Gio.File.new_for_uri (template);
+                    let [s, c, l] = file.load_contents (null);
+
+                    Gtk.Widget.set_template.call (this, GLib.Bytes.new (c, l));
+                }
                 else
                     Gtk.Widget.set_template.call(this, template);
             }
