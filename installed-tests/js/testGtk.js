@@ -1,42 +1,44 @@
 imports.gi.versions.Gtk = '3.0';
 
 const ByteArray = imports.byteArray;
-const {GLib, GObject, Gtk} = imports.gi;
+const {GLib, Gio, GObject, Gtk} = imports.gi;
 const System = imports.system;
 
 // This is ugly here, but usually it would be in a resource
-const template = ' \
-<interface> \
-  <template class="Gjs_MyComplexGtkSubclass" parent="GtkGrid"> \
-    <property name="margin_top">10</property> \
-    <property name="margin_bottom">10</property> \
-    <property name="margin_start">10</property> \
-    <property name="margin_end">10</property> \
-    <property name="visible">True</property> \
-    <child> \
-      <object class="GtkLabel" id="label-child"> \
-        <property name="label">Complex!</property> \
-        <property name="visible">True</property> \
-        <signal name="grab-focus" handler="templateCallback" swapped="no"/> \
-      </object> \
-    </child> \
-    <child> \
-      <object class="GtkLabel" id="label-child2"> \
-        <property name="label">Complex as well!</property> \
-        <property name="visible">True</property> \
-      </object> \
-    </child> \
-    <child> \
-      <object class="GtkLabel" id="internal-label-child"> \
-        <property name="label">Complex and internal!</property> \
-        <property name="visible">True</property> \
-      </object> \
-    </child> \
-  </template> \
-</interface>';
+function createTemplate(className) {
+    return `
+<interface>
+  <template class="${className}" parent="GtkGrid">
+    <property name="margin_top">10</property>
+    <property name="margin_bottom">10</property>
+    <property name="margin_start">10</property>
+    <property name="margin_end">10</property>
+    <property name="visible">True</property>
+    <child>
+      <object class="GtkLabel" id="label-child">
+        <property name="label">Complex!</property>
+        <property name="visible">True</property>
+        <signal name="grab-focus" handler="templateCallback" swapped="no"/>
+      </object>
+    </child>
+    <child>
+      <object class="GtkLabel" id="label-child2">
+        <property name="label">Complex as well!</property>
+        <property name="visible">True</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkLabel" id="internal-label-child">
+        <property name="label">Complex and internal!</property>
+        <property name="visible">True</property>
+      </object>
+    </child>
+  </template>
+</interface>`;
+}
 
 const MyComplexGtkSubclass = GObject.registerClass({
-    Template: ByteArray.fromString(template),
+    Template: ByteArray.fromString(createTemplate('Gjs_MyComplexGtkSubclass')),
     Children: ['label-child', 'label-child2'],
     InternalChildren: ['internal-label-child'],
     CssName: 'complex-subclass',
@@ -62,6 +64,28 @@ const MyComplexGtkSubclassFromResource = GObject.registerClass({
     Children: ['label-child', 'label-child2'],
     InternalChildren: ['internal-label-child'],
 }, class MyComplexGtkSubclassFromResource extends Gtk.Grid {
+    testChildrenExist() {
+        expect(this.label_child).toEqual(jasmine.anything());
+        expect(this.label_child2).toEqual(jasmine.anything());
+        expect(this._internal_label_child).toEqual(jasmine.anything());
+    }
+
+    templateCallback(widget) {
+        this.callbackEmittedBy = widget;
+    }
+});
+
+const [templateFile, stream] = Gio.File.new_tmp(null);
+const base_stream = stream.get_output_stream();
+const out = new Gio.DataOutputStream({base_stream});
+out.put_string(createTemplate('Gjs_MyComplexGtkSubclassFromFile'), null);
+out.close(null);
+
+const MyComplexGtkSubclassFromFile = GObject.registerClass({
+    Template: templateFile.get_uri(),
+    Children: ['label-child', 'label-child2'],
+    InternalChildren: ['internal-label-child'],
+}, class MyComplexGtkSubclassFromFile extends Gtk.Grid {
     testChildrenExist() {
         expect(this.label_child).toEqual(jasmine.anything());
         expect(this.label_child2).toEqual(jasmine.anything());
@@ -116,8 +140,13 @@ describe('Gtk overrides', function () {
         Gtk.init(null);
     });
 
+    afterAll(function () {
+        templateFile.delete(null);
+    });
+
     validateTemplate('UI template', MyComplexGtkSubclass);
     validateTemplate('UI template from resource', MyComplexGtkSubclassFromResource);
+    validateTemplate('UI template from file', MyComplexGtkSubclassFromFile);
     validateTemplate('Class inheriting from template class', SubclassSubclass, true);
 
     it('sets CSS names on classes', function () {
