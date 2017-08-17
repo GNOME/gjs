@@ -20,9 +20,7 @@
 // IN THE SOFTWARE.
 
 const Legacy = imports._legacy;
-const GObject = imports.gi.GObject;
-
-var GjsPrivate = imports.gi.GjsPrivate;
+const {Gio, GjsPrivate, GObject} = imports.gi;
 
 let Gtk;
 
@@ -80,11 +78,16 @@ function _init() {
             Gtk.Widget.set_css_name.call(klass, cssName);
 
         if (template) {
-            if (typeof template === 'string' &&
-                template.startsWith('resource:///'))
-                Gtk.Widget.set_template_from_resource.call(klass,
-                    template.slice(11));
-            else
+            if (typeof template === 'string') {
+                if (template.startsWith('resource:///')) {
+                    Gtk.Widget.set_template_from_resource.call(klass,
+                        template.slice(11));
+                } else if (template.startsWith('file:///')) {
+                    let file = Gio.File.new_for_uri(template);
+                    let [, contents] = file.load_contents(null);
+                    Gtk.Widget.set_template.call(klass, contents);
+                }
+            } else
                 Gtk.Widget.set_template.call(klass, template);
         }
 
