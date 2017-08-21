@@ -1,10 +1,19 @@
-NEXT
-----
+1.49.91
+-------
 
 - Deprecation: The private "__name__" property on Lang.Class instances is
   now discouraged. Code should not have been using this anyway, but if it did
   then it should use the "name" property on the class (this.__name__ should
   become this.constructor.name), which is compatible with ES6 classes.
+
+- Closed bugs:
+
+  * Use ES6 classes [#785652, Philip Chimento]
+  * A few fixes for stack traces and error reporting [#786183, Philip Chimento]
+  * /proc/self/stat is read for every frame if GC was not needed [#786017,
+    Benjamin Berg]
+
+- Build fix [Philip Chimento]
 
 Version 1.49.90
 ---------------
