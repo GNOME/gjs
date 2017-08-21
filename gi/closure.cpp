@@ -35,7 +35,6 @@
 struct Closure {
     JSContext *context;
     GjsMaybeOwned<JSObject *> obj;
-    unsigned idle_clear_id;
 };
 
 struct GjsClosure {
@@ -117,25 +116,6 @@ global_context_finalized(JS::HandleObject obj,
     }
 }
 
-/* Closures have to drop their references to their JS functions in an idle
- * handler, because otherwise the closure might stop tracing the function object
- * in the middle of garbage collection. That is not allowed with incremental GC.
- */
-static gboolean
-closure_clear_idle(void *data)
-{
-    auto closure = static_cast<GjsClosure *>(data);
-    gjs_debug_closure("Clearing closure %p which calls object %p",
-                      &closure->priv, closure->priv.obj.get());
-
-    closure->priv.obj.reset();
-    closure->priv.context = nullptr;
-    closure->priv.idle_clear_id = 0;
-
-    g_closure_unref(static_cast<GClosure *>(data));
-    return G_SOURCE_REMOVE;
-}
-
 /* Invalidation is like "dispose" - it is guaranteed to happen at
  * finalize, but may happen before finalize. Normally, g_closure_invalidate()
  * is called when the "target" of the closure becomes invalid, so that the
@@ -176,18 +156,20 @@ closure_invalidated(gpointer data,
                       "removing our destroy notifier on global object)",
                       closure);
 
-    c->idle_clear_id = g_idle_add(closure_clear_idle, closure);
-    g_closure_ref(closure);
+    c->obj.reset();
+    c->context = nullptr;
 }
 
 static void
 closure_set_invalid(gpointer  data,
                     GClosure *closure)
 {
+    Closure *self = &((GjsClosure*) closure)->priv;
+
+    self->obj.reset();
+    self->context = nullptr;
+
     GJS_DEC_COUNTER(closure);
-    Closure *c = &(reinterpret_cast<GjsClosure *>(closure))->priv;
-    c->idle_clear_id = g_idle_add(closure_clear_idle, closure);
-    g_closure_ref(closure);
 }
 
 static void
@@ -195,13 +177,6 @@ closure_finalize(gpointer  data,
                  GClosure *closure)
 {
     Closure *self = &((GjsClosure*) closure)->priv;
-
-    if (self->idle_clear_id > 0) {
-        /* Remove any pending closure_clear_idle(), we are doing it
-         * immediately here. */
-        g_source_remove(self->idle_clear_id);
-        closure_clear_idle(closure);
-    }
 
     self->~Closure();
 }
