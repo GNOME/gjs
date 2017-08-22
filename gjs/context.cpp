@@ -240,7 +240,7 @@ gjs_context_dispose(GObject *object)
          * the JS teardown and the C teardown.  The JSObject proxies
          * still exist, but point to NULL.
          */
-        gjs_object_prepare_shutdown(js_context->context);
+        gjs_object_prepare_shutdown();
 
         if (js_context->auto_gc_id > 0) {
             g_source_remove (js_context->auto_gc_id);

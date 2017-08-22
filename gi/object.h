@@ -56,8 +56,7 @@ bool      gjs_typecheck_is_object(JSContext       *context,
                                   JS::HandleObject obj,
                                   bool             throw_error);
 
-void      gjs_object_prepare_shutdown   (JSContext     *context);
-
+void gjs_object_prepare_shutdown(void);
 void gjs_object_clear_toggles(void);
 
 void gjs_object_define_static_methods(JSContext       *context,

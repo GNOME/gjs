@@ -1156,7 +1156,7 @@ gjs_object_clear_toggles(void)
 }
 
 void
-gjs_object_prepare_shutdown (JSContext *context)
+gjs_object_prepare_shutdown(void)
 {
     /* First, get rid of anything left over on the main context */
     gjs_object_clear_toggles();
