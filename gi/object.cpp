@@ -55,8 +55,6 @@
 #include <util/hash-x32.h>
 #include <girepository.h>
 
-typedef struct _ConnectData ConnectData;
-
 struct ObjectInstance {
     GIObjectInfo *info;
     GObject *gobj; /* NULL if we are the prototype and not an instance */
@@ -64,7 +62,7 @@ struct ObjectInstance {
     GType gtype;
 
     /* a list of all signal connections, used when tracing */
-    std::set<ConnectData *> signals;
+    std::set<GClosure *> signals;
 
     /* the GObjectClass wrapped by this JS Object (only used for
        prototypes) */
@@ -74,11 +72,6 @@ struct ObjectInstance {
     std::deque<GjsCallbackTrampoline *> vfuncs;
 
     unsigned js_object_finalized : 1;
-};
-
-struct _ConnectData {
-    ObjectInstance *obj;
-    GClosure *closure;
 };
 
 static std::stack<JS::PersistentRootedObject> object_init_list;
@@ -1267,10 +1260,10 @@ invalidate_all_signals(ObjectInstance *priv)
      * invalidate notifier */
     while (!priv->signals.empty()) {
         /* This will also free cd, through the closure invalidation mechanism */
-        ConnectData *cd = *priv->signals.begin();
-        g_closure_invalidate(cd->closure);
+        GClosure *closure = *priv->signals.begin();
+        g_closure_invalidate(closure);
         /* Erase element if not already erased */
-        priv->signals.erase(cd);
+        priv->signals.erase(closure);
     }
 }
 
@@ -1441,8 +1434,8 @@ object_instance_trace(JSTracer *tracer,
     if (priv == NULL)
         return;
 
-    for (ConnectData *cd : priv->signals)
-        gjs_closure_trace(cd->closure, tracer);
+    for (GClosure *closure : priv->signals)
+        gjs_closure_trace(closure, tracer);
 
     for (auto vfunc : priv->vfuncs)
         vfunc->js_function.trace(tracer, "ObjectInstance::vfunc");
@@ -1452,10 +1445,8 @@ static void
 signal_connection_invalidated(void     *data,
                               GClosure *closure)
 {
-    auto cd = static_cast<ConnectData *>(data);
-
-    cd->obj->signals.erase(cd);
-    g_slice_free(ConnectData, cd);
+    auto priv = static_cast<ObjectInstance *>(data);
+    priv->signals.erase(closure);
 }
 
 static void
@@ -1630,7 +1621,6 @@ real_connect_func(JSContext *context,
     guint signal_id;
     GjsAutoJSChar signal_name(context);
     GQuark signal_detail;
-    ConnectData *connect_data;
 
     gjs_debug_gsignal("connect obj %p priv %p argc %d", obj.get(), priv, argc);
     if (priv == NULL) {
@@ -1669,12 +1659,10 @@ real_connect_func(JSContext *context,
     if (closure == NULL)
         return false;
 
-    connect_data = g_slice_new0(ConnectData);
-    priv->signals.insert(connect_data);
-    connect_data->obj = priv;
     /* This is a weak reference, and will be cleared when the closure is invalidated */
-    connect_data->closure = closure;
-    g_closure_add_invalidate_notifier(closure, connect_data, signal_connection_invalidated);
+    priv->signals.insert(closure);
+    g_closure_add_invalidate_notifier(closure, priv,
+                                      signal_connection_invalidated);
 
     id = g_signal_connect_closure_by_id(priv->gobj,
                                         signal_id,
