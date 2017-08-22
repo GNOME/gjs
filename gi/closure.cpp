@@ -166,6 +166,9 @@ closure_set_invalid(gpointer  data,
 {
     Closure *self = &((GjsClosure*) closure)->priv;
 
+    gjs_debug_closure("Invalidating signal closure %p which calls object %p",
+                      closure, self->obj.get());
+
     self->obj.reset();
     self->context = nullptr;
 
