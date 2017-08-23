@@ -166,6 +166,7 @@ closure_set_invalid(gpointer  data,
 {
     Closure *self = &((GjsClosure*) closure)->priv;
 
+    JS::ExposeObjectToActiveJS(self->obj);
     self->obj.reset();
     self->context = nullptr;
 
