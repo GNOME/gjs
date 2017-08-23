@@ -67,6 +67,7 @@
 template<typename T>
 struct GjsHeapOperation {
     static bool update_after_gc(JS::Heap<T> *location);
+    static void expose_to_js(JS::Heap<T>& thing);
 };
 
 template<>
@@ -76,6 +77,18 @@ struct GjsHeapOperation<JSObject *> {
     {
         JS_UpdateWeakPointerAfterGC(location);
         return (location->unbarrieredGet() == nullptr);
+    }
+
+    static void expose_to_js(JS::Heap<JSObject *>& thing) {
+        JSObject *obj = thing.unbarrieredGet();
+        /* If the object has been swept already, then the zone is nullptr */
+        if (!obj || !js::gc::detail::GetGCThingZone(uintptr_t(obj)))
+            return;
+        /* COMPAT: Use JS::CurrentThreadIsHeapCollecting() in mozjs59 */
+        JS::GCCellPtr ptr(obj, JS::TraceKind::Object);
+        JS::shadow::Runtime *rt = js::gc::detail::GetCellRuntime(ptr.asCell());
+        if (!rt->isHeapCollecting())
+            JS::ExposeObjectToActiveJS(obj);
     }
 };
 
@@ -247,6 +260,17 @@ public:
     {
         g_assert(!m_rooted);
         m_heap = thing;
+    }
+
+    /* Marks an object as reachable for one GC with ExposeObjectToActiveJS().
+     * Use to avoid stopping tracing an object during GC. This makes no sense
+     * in the rooted case. */
+    void
+    prevent_collection(void)
+    {
+        debug("prevent_collection()");
+        g_assert(!m_rooted);
+        GjsHeapOperation<T>::expose_to_js(m_heap);
     }
 
     void
