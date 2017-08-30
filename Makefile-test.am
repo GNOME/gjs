@@ -263,6 +263,7 @@ EXTRA_DIST +=						\
 	installed-tests/js/testCairo.js			\
 	installed-tests/js/testGtk.js			\
 	installed-tests/js/testGDBus.js			\
+	installed-tests/extra/lsan.supp			\
 	$(NULL)
 
 ### TEST EXECUTION #####################################################
@@ -276,6 +277,7 @@ AM_TESTS_ENVIRONMENT =					\
 	export GI_TYPELIB_PATH="$(builddir):$${GI_TYPELIB_PATH:+:$$GI_TYPELIB_PATH}"; \
 	export LD_LIBRARY_PATH="$(builddir)/.libs:$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}"; \
 	export G_FILENAME_ENCODING=latin1;		\
+	export LSAN_OPTIONS="suppressions=$(abs_top_srcdir)/installed-tests/extra/lsan.supp"; \
 	$(XVFB_START)					\
 	$(NULL)
 
