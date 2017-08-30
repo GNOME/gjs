@@ -1390,7 +1390,7 @@ gjs_value_to_g_argument(JSContext      *context,
             wrong = true;
         if (i > G_MAXUINT32 || i < 0)
             out_of_range = true;
-        arg->v_uint32 = (guint32)i;
+        arg->v_uint32 = CLAMP(i, 0, G_MAXUINT32);
         break;
     }
 
@@ -1411,7 +1411,7 @@ gjs_value_to_g_argument(JSContext      *context,
         if (v < 0)
             out_of_range = true;
         /* XXX we fail with values close to G_MAXUINT64 */
-        arg->v_uint64 = v;
+        arg->v_uint64 = MAX(v, 0);
     }
         break;
 
