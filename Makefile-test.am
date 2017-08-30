@@ -268,6 +268,21 @@ EXTRA_DIST +=						\
 
 ### TEST EXECUTION #####################################################
 
+if DBUS_TESTS
+DBUS_SESSION_COMMAND = $(DBUS_RUN_SESSION) --config-file=$(srcdir)/test/test-bus.conf --
+else
+DBUS_SESSION_COMMAND =
+endif
+
+if CODE_COVERAGE_ENABLED
+COVERAGE_TESTS_ENVIRONMENT = 						\
+	export GJS_UNIT_COVERAGE_OUTPUT=lcov;				\
+	export GJS_UNIT_COVERAGE_PREFIX=resource:///org/gnome/gjs/;	\
+	$(NULL)
+else
+COVERAGE_TESTS_ENVIRONMENT =
+endif
+
 # GJS_PATH is empty here since we want to force the use of our own
 # resources. G_FILENAME_ENCODING ensures filenames are not UTF-8.
 AM_TESTS_ENVIRONMENT =					\
@@ -278,7 +293,9 @@ AM_TESTS_ENVIRONMENT =					\
 	export LD_LIBRARY_PATH="$(builddir)/.libs:$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}"; \
 	export G_FILENAME_ENCODING=latin1;		\
 	export LSAN_OPTIONS="suppressions=$(abs_top_srcdir)/installed-tests/extra/lsan.supp"; \
+	$(COVERAGE_TESTS_ENVIRONMENT)			\
 	$(XVFB_START)					\
+	$(DBUS_SESSION_COMMAND)				\
 	$(NULL)
 
 simple_tests =						\
@@ -296,26 +313,12 @@ TESTS =				\
 TEST_EXTENSIONS = .js
 
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/tap-driver.sh
-JS_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/tap-driver.sh
-
-if DBUS_TESTS
-LOG_COMPILER = $(DBUS_RUN_SESSION)
-AM_LOG_FLAGS = --config-file=$(srcdir)/test/test-bus.conf -- $(top_srcdir)/test/run-test
-JS_LOG_COMPILER = $(DBUS_RUN_SESSION)
-AM_JS_LOG_FLAGS = --config-file=$(srcdir)/test/test-bus.conf -- $(top_builddir)/minijasmine
-else
 LOG_COMPILER = $(top_srcdir)/test/run-test
 AM_LOG_FLAGS =
+
+JS_LOG_DRIVER = $(LOG_DRIVER)
 JS_LOG_COMPILER = $(top_builddir)/minijasmine
 AM_JS_LOG_FLAGS =
-endif !DBUS_TESTS
-
-if CODE_COVERAGE_ENABLED
-AM_TESTS_ENVIRONMENT += 						\
-	export GJS_UNIT_COVERAGE_OUTPUT=lcov;				\
-	export GJS_UNIT_COVERAGE_PREFIX=resource:///org/gnome/gjs/;	\
-	$(NULL)
-endif
 
 CODE_COVERAGE_IGNORE_PATTERN = */{include,mfbt,gjs/test,gjs/installed-tests}/*
 CODE_COVERAGE_GENHTML_OPTIONS = 			\
