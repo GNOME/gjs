@@ -220,9 +220,9 @@ AC_ARG_ENABLE([ubsan],
   [AS_HELP_STRING([--enable-ubsan], [Build with undefined behavior sanitizer support @<:@default: no@:>@])])
 
 AS_IF([test "x$enable_ubsan" = "xyes"], [
-  AX_CHECK_COMPILE_FLAG([-fsanitize=undefined -fno-omit-frame-pointer -g], [
-    AX_CHECK_LINK_FLAG([-fsanitize=undefined],
-      [SAN_FLAGS="$SAN_FLAGS -fsanitize=undefined"])
+  AX_CHECK_COMPILE_FLAG([-fsanitize=undefined -fno-sanitize=vptr -fno-omit-frame-pointer -g], [
+    AX_CHECK_LINK_FLAG([-fsanitize=undefined -fno-sanitize=vptr],
+      [SAN_FLAGS="$SAN_FLAGS -fsanitize=undefined -fno-sanitize=vptr"])
   ])
 ])
 
