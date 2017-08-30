@@ -1,167 +1,85 @@
+# Valgrind suppressions file for GJS
+# This is intended to be used in addition to GLib's glib.supp file.
+
+# We leak a small wrapper in GJS for each registered GType.
+
 {
-   g_type_init_with_debug_flags calloc
+   gtype-wrapper-new
    Memcheck:Leak
-   fun:calloc
-   ...
-   fun:g_type_init_with_debug_flags
-   ...
+   match-leak-kinds: definite
+   fun:_Znwm
+   fun:gjs_gtype_create_gtype_wrapper
 }
 
 {
-  g_type_add_interface_static malloc
-  Memcheck:Leak
-  fun:malloc
-  ...
-  fun:g_type_add_interface_static
-  ...
-}
-
-{
-  g_type_add_interface_dynamic malloc
-  Memcheck:Leak
-  fun:malloc
-  ...
-  fun:g_type_add_interface_dynamic
-  ...
-}
-
-{
-  g_type_class_ref malloc
-  Memcheck:Leak
-  fun:malloc
-  ...
-  fun:g_type_class_ref
-  ...
-}
-
-{
-  g_type_register_dynamic malloc
-  Memcheck:Leak
-  fun:malloc
-  ...
-  fun:g_type_register_dynamic
-  ...
-}
-
-{
-   g_type_init_with_debug_flags malloc
+   gtype-wrapper-qdata
    Memcheck:Leak
-   fun:malloc
+   match-leak-kinds: possible
    ...
-   fun:g_type_init_with_debug_flags
-   ...
-}
-
-{
-   g_type_init_with_debug_flags realloc
-   Memcheck:Leak
-   fun:realloc
-   ...
-   fun:g_type_init_with_debug_flags
-   ...
-}
-
-{
-   g_test_add_vtable malloc
-   Memcheck:Leak
-   fun:malloc
-   ...
-   fun:g_test_add_vtable
-   ...
-}
-
-{
-   g_test_init
-   Memcheck:Leak
-   fun:malloc
-   ...
-   fun:g_test_init
-   ...
-}
-
-{
-   g_type_register_static malloc
-   Memcheck:Leak
-   fun:malloc
-   ...
-   fun:g_type_register_static
-   ...
-}
-
-{
-   g_type_register_static realloc
-   Memcheck:Leak
-   fun:realloc
-   ...
-   fun:g_type_register_static
-   ...
+   fun:type_set_qdata_W
+   fun:g_type_set_qdata
+   fun:gjs_gtype_create_gtype_wrapper
 }
 
 {
    g_type_register_fundamental never freed
    Memcheck:Leak
-   fun:malloc
+   fun:calloc
    ...
    fun:g_type_register_fundamental
    ...
 }
 
+# SpiderMonkey leaks
+
 {
-   g_type_class_ref never finalized
+   mozjs-thread-stack-init
    Memcheck:Leak
+   match-leak-kinds: possible
    fun:calloc
-   fun:g_malloc0
-   fun:g_type_class_ref
-   ...
+   fun:allocate_dtv
+   fun:_dl_allocate_tls
+   fun:allocate_stack
+   fun:pthread_create@@GLIBC_2.2.5
+   fun:_ZN7mozilla9TimeStamp20ComputeProcessUptimeEv
+   fun:_ZN7mozilla9TimeStamp15ProcessCreationERb
+   fun:_ZN2JS6detail25InitWithFailureDiagnosticEb
+   fun:JS_Init
 }
 
 {
-   DBusGValue qdata
+   mozjs-thread-stack-new-context
    Memcheck:Leak
-   fun:realloc
-   fun:g_realloc
-   fun:g_type_set_qdata
-   fun:_dbus_g_value_types_init
-   ...
+   match-leak-kinds: possible
+   fun:calloc
+   fun:allocate_dtv
+   fun:_dl_allocate_tls
+   fun:allocate_stack
+   fun:pthread_create@@GLIBC_2.2.5
+   fun:_ZN2js6Thread6createEPFPvS1_ES1_
+   fun:init<void (&)(void*), js::HelperThread*>
+   fun:_ZN2js23GlobalHelperThreadState17ensureInitializedEv
+   fun:_ZN9JSRuntime4initEjj
+   fun:init
+   fun:NewContext
+   fun:_Z13JS_NewContextjjP9JSContext
 }
 
 {
-   gettext conditional jump
-   Memcheck:Cond
-   fun:__GI___strcasecmp_l
-   fun:__gconv_open
-   fun:_nl_find_msg
-   fun:__dcigettext
-   ...
-}
-
-{
-   gettext uninitialized value
-   Memcheck:Value8
-   fun:__GI___strcasecmp_l
-   fun:__gconv_open
-   fun:_nl_find_msg
-   fun:__dcigettext
-   ...
-}
-
-{
-   font config invalid reads
-   Memcheck:Addr4
-   ...
-   fun:FcConfigParseAndLoad
-   ...
-}
-
-{
-   dynamic loader conditional jump
-   Memcheck:Cond
-   fun:index
-   fun:expand_dynamic_string_token
-   fun:_dl_map_object
-   fun:map_doit
-   fun:_dl_catch_error
-   fun:do_preload
-   fun:dl_main
-   ...
+   mozjs-gc-helper-thread-mutex-guard
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:js_malloc
+   fun:js_new<mozilla::Vector<const js::Mutex*> >
+   fun:_ZN2js5Mutex14heldMutexStackEv.part.293
+   fun:heldMutexStack
+   fun:_ZN2js5Mutex4lockEv
+   fun:LockGuard
+   fun:_ZN2js25AutoLockHelperThreadStateC1EON7mozilla6detail19GuardObjectNotifierE
+   fun:_ZN2js12HelperThread10threadLoopEv
+   fun:callMain<0ul>
+   fun:_ZN2js6detail16ThreadTrampolineIRFvPvEJPNS_12HelperThreadEEE5StartES2_
+   fun:start_thread
+   fun:clone
 }
