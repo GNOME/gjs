@@ -535,6 +535,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
                 return false;
 
             g_value_set_boxed(gvalue, &nested_gvalue);
+            g_value_unset(&nested_gvalue);
             return true;
         }
 
