@@ -2617,7 +2617,8 @@ gjs_value_from_g_argument (JSContext             *context,
         break;
 
     case GI_TYPE_TAG_INT64:
-        if (std::abs(arg->v_int64) > MAX_SAFE_INT64)
+        if (arg->v_int64 == G_MININT64 ||
+            std::abs(arg->v_int64) > MAX_SAFE_INT64)
             g_warning("Value %" G_GINT64_FORMAT " cannot be safely stored in "
                       "a JS Number and may be rounded", arg->v_int64);
         value_p.setNumber(static_cast<double>(arg->v_int64));
