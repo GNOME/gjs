@@ -752,31 +752,17 @@ gjs_context_eval_file(GjsContext    *js_context,
                       int           *exit_status_p,
                       GError       **error)
 {
-    char     *script = NULL;
-    gsize    script_len;
-    bool ret = true;
+    char *script;
+    size_t script_len;
+    GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(filename);
 
-    GFile *file = g_file_new_for_commandline_arg(filename);
+    if (!g_file_load_contents(file, nullptr, &script, &script_len, nullptr,
+                              error))
+        return false;
+    GjsAutoChar script_ref = script;
 
-    if (!g_file_query_exists(file, NULL)) {
-        ret = false;
-        goto out;
-    }
-
-    if (!g_file_load_contents(file, NULL, &script, &script_len, NULL, error)) {
-        ret = false;
-        goto out;
-    }
-
-    if (!gjs_context_eval(js_context, script, script_len, filename, exit_status_p, error)) {
-        ret = false;
-        goto out;
-    }
-
-out:
-    g_free(script);
-    g_object_unref(file);
-    return ret;
+    return gjs_context_eval(js_context, script, script_len, filename,
+                            exit_status_p, error);
 }
 
 bool
