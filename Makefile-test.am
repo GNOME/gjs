@@ -264,10 +264,17 @@ EXTRA_DIST +=						\
 	installed-tests/js/testCairo.js			\
 	installed-tests/js/testGtk.js			\
 	installed-tests/js/testGDBus.js			\
+	installed-tests/extra/gjs.supp			\
 	installed-tests/extra/lsan.supp			\
 	$(NULL)
 
 ### TEST EXECUTION #####################################################
+
+@VALGRIND_CHECK_RULES@
+VALGRIND_SUPPRESSIONS_FILES = 				\
+	$(datadir)/glib-2.0/valgrind/glib.supp		\
+	$(top_srcdir)/installed-tests/extra/gjs.supp	\
+	$(NULL)
 
 if DBUS_TESTS
 DBUS_SESSION_COMMAND = $(DBUS_RUN_SESSION) --config-file=$(srcdir)/test/test-bus.conf --
@@ -294,6 +301,7 @@ AM_TESTS_ENVIRONMENT =					\
 	export LD_LIBRARY_PATH="$(builddir)/.libs:$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}"; \
 	export G_FILENAME_ENCODING=latin1;		\
 	export LSAN_OPTIONS="suppressions=$(abs_top_srcdir)/installed-tests/extra/lsan.supp"; \
+	export NO_AT_BRIDGE=1;				\
 	$(COVERAGE_TESTS_ENVIRONMENT)			\
 	$(XVFB_START)					\
 	$(DBUS_SESSION_COMMAND)				\
@@ -321,7 +329,7 @@ GTESTER_LOG_COMPILER = $(top_srcdir)/test/run-test
 SH_LOG_DRIVER = $(LOG_DRIVER)
 
 JS_LOG_DRIVER = $(LOG_DRIVER)
-JS_LOG_COMPILER = $(top_builddir)/minijasmine
+JS_LOG_COMPILER = $$LOG_COMPILER $$LOG_FLAGS $(top_builddir)/minijasmine
 
 CODE_COVERAGE_IGNORE_PATTERN = */{include,mfbt,gjs/test,gjs/installed-tests}/*
 CODE_COVERAGE_GENHTML_OPTIONS = 			\

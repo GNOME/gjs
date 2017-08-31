@@ -1,9 +1,9 @@
 #!/bin/sh
 
 if test "$GJS_USE_UNINSTALLED_FILES" = "1"; then
-    gjs="$TOP_BUILDDIR/gjs-console"
+    gjs="$LOG_COMPILER $LOG_FLAGS $TOP_BUILDDIR/gjs-console"
 else
-    gjs="gjs-console"
+    gjs="$LOG_COMPILER $LOG_FLAGS gjs-console"
 fi
 
 # This JS script should exit immediately with code 42. If that is not working,
@@ -73,52 +73,52 @@ report_xfail () {
 }
 
 # Test that System.exit() works in gjs-console
-"$gjs" -c 'imports.system.exit(0)'
+$gjs -c 'imports.system.exit(0)'
 report "System.exit(0) should exit successfully"
-"$gjs" -c 'imports.system.exit(42)'
+$gjs -c 'imports.system.exit(42)'
 test $? -eq 42
 report "System.exit(42) should exit with the correct exit code"
 
 # FIXME: should check -eq 42 specifically, but in debug mode we will be
 # hitting an assertion
-"$gjs" exit.js
+$gjs exit.js
 test $? -ne 0
 report "System.exit() should still exit across an FFI boundary"
 
 # gjs --help prints GJS help
-"$gjs" --help >/dev/null
+$gjs --help >/dev/null
 report "--help should succeed"
-test -n "$("$gjs" --help)"
+test -n "$($gjs --help)"
 report "--help should print something"
 
 # print GJS help even if it's not the first argument
-"$gjs" -I . --help >/dev/null
+$gjs -I . --help >/dev/null
 report "should succeed when --help is not first arg"
-test -n "$("$gjs" -I . --help)"
+test -n "$($gjs -I . --help)"
 report "should print something when --help is not first arg"
 
 # --help before a script file name prints GJS help
-"$gjs" --help help.js >/dev/null
+$gjs --help help.js >/dev/null
 report "--help should succeed before a script file"
-test -n "$("$gjs" --help help.js)"
+test -n "$($gjs --help help.js)"
 report "--help should print something before a script file"
 
 # --help before a -c argument prints GJS help
 script='imports.system.exit(1)'
-"$gjs" --help -c "$script" >/dev/null
+$gjs --help -c "$script" >/dev/null
 report "--help should succeed before -c"
-test -n "$("$gjs" --help -c "$script")"
+test -n "$($gjs --help -c "$script")"
 report "--help should print something before -c"
 
 # --help after a script file name is passed to the script
-"$gjs" -I sentinel help.js --help
+$gjs -I sentinel help.js --help
 report "--help after script file should be passed to script"
 test -z "$("$gjs" -I sentinel help.js --help)"
 report "--help after script file should not print anything"
 
 # --help after a -c argument is passed to the script
 script='if(ARGV[0] !== "--help") imports.system.exit(1)'
-"$gjs" -c "$script" --help
+$gjs -c "$script" --help
 report "--help after -c should be passed to script"
 test -z "$("$gjs" -c "$script" --help)"
 report "--help after -c should not print anything"
@@ -128,29 +128,29 @@ report "--help after -c should not print anything"
 # "$gjs" help.js --help -I sentinel
 # report_xfail "-I after script file should not be added to search path"
 # fi
-"$gjs" help.js --help -I sentinel 2>&1 | grep -q 'Gjs-WARNING.*--include-path'
+$gjs help.js --help -I sentinel 2>&1 | grep -q 'Gjs-WARNING.*--include-path'
 report "-I after script should succeed but give a warning"
-"$gjs" -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-prefix'
+$gjs -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-prefix'
 report "--coverage-prefix after script should succeed but give a warning"
-"$gjs" -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-output'
+$gjs -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-output'
 report "--coverage-output after script should succeed but give a warning"
 rm -f foo/coverage.lcov
 
 # --version works
-"$gjs" --version >/dev/null
+$gjs --version >/dev/null
 report "--version should work"
-test -n "$("$gjs" --version)"
+test -n "$($gjs --version)"
 report "--version should print something"
 
 # --version after a script goes to the script
 script='if(ARGV[0] !== "--version") imports.system.exit(1)'
-"$gjs" -c "$script" --version
+$gjs -c "$script" --version
 report "--version after -c should be passed to script"
-test -z "$("$gjs" -c "$script" --version)"
+test -z "$($gjs -c "$script" --version)"
 report "--version after -c should not print anything"
 
 # interpreter handles queued promise jobs correctly
-output=$("$gjs" promise.js)
+output=$($gjs promise.js)
 test $? -eq 42
 report "interpreter should exit with the correct exit code from a queued promise job"
 test -n "$output" -a -z "${output##*Should be printed*}"
@@ -158,9 +158,9 @@ report "interpreter should run queued promise jobs before finishing"
 test -n "${output##*Should not be printed*}"
 report "interpreter should stop running jobs when one calls System.exit()"
 
-"$gjs" -c "Promise.resolve().then(() => { throw new Error(); });" 2>&1 | grep -q 'Gjs-WARNING.*Unhandled promise rejection.*[sS]tack trace'
+$gjs -c "Promise.resolve().then(() => { throw new Error(); });" 2>&1 | grep -q 'Gjs-WARNING.*Unhandled promise rejection.*[sS]tack trace'
 report "unhandled promise rejection should be reported"
-test -z $("$gjs" awaitcatch.js)
+test -z $($gjs awaitcatch.js)
 report "catching an await expression should not cause unhandled rejection"
 
 rm -f exit.js help.js promise.js awaitcatch.js

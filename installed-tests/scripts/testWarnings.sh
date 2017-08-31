@@ -1,9 +1,9 @@
 #!/bin/sh
 
 if test "$GJS_USE_UNINSTALLED_FILES" = "1"; then
-    gjs="$TOP_BUILDDIR/gjs-console"
+    gjs="$LOG_COMPILER $LOG_FLAGS $TOP_BUILDDIR/gjs-console"
 else
-    gjs="gjs-console"
+    gjs="$LOG_COMPILER $LOG_FLAGS gjs-console"
 fi
 
 total=0
@@ -18,11 +18,11 @@ report () {
     fi
 }
 
-"$gjs" -c 'imports.signals.addSignalMethods({connect: "foo"})' 2>&1 | \
+$gjs -c 'imports.signals.addSignalMethods({connect: "foo"})' 2>&1 | \
     grep -q 'addSignalMethods is replacing existing .* connect method'
 report "overwriting method with Signals.addSignalMethods() should warn"
 
-"$gjs" -c 'imports.gi.GLib.get_home_dir("foobar")' 2>&1 | \
+$gjs -c 'imports.gi.GLib.get_home_dir("foobar")' 2>&1 | \
     grep -q 'Too many arguments to .*: expected 0, got 1'
 report "passing too many arguments to a GI function should warn"
 

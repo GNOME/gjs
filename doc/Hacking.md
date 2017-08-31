@@ -75,22 +75,19 @@ not being updated after GC moved it.
 ### Valgrind ###
 
 Valgrind catches memory leak errors in the C++ code.
-It's a good idea to run the test suite under Valgrind every once in a
-while.
+It's a good idea to run the test suite under Valgrind before each
+release.
 
-Download the Valgrind false-positive suppression file from GLib:
+To run the test suite under a succession of Valgrind tools:
 ```sh
-wget https://git.gnome.org/browse/glib/plain/glib.supp
+jhbuild make check-valgrind
 ```
 
-Run the test suite:
-```sh
-jhbuild shell
-cd ~/.cache/jhbuild/build/gjs
-G_DEBUG=gc-friendly G_SLICE=always-malloc ./libtool --mode=execute valgrind --leak-check=yes --suppressions=/path/to/glib.supp ./gjs-tests
-```
+The logs from each run will be in `~/.cache/jhbuild/build/gjs/test-suite-<toolname>.log`, where `<toolname>` is `drd`, `helgrind`, `memcheck`, and `sgcheck`.
 
-(And a similar command to run each `minijasmine` test.)
+Note that LeakSanitizer, part of ASan (see below) can catch many, but
+not all, errors that Valgrind can catch.
+LSan executes faster than Valgrind, however.
 
 ### Static Code Analysis ###
 

@@ -6,4 +6,4 @@ if test -z "$1"; then
     exit 1
 fi
 
-"$1" --tap --keep-going --verbose
+$LOG_COMPILER $LOG_FLAGS "$1" --tap --keep-going --verbose

@@ -52,6 +52,11 @@ AX_CHECK_LINK_FLAG([-lgcov],, [
 	CODE_COVERAGE_LDFLAGS=
 ])
 
+AX_VALGRIND_DFLT([drd], [off])
+AX_VALGRIND_DFLT([sgcheck], [off])
+# DRD and sgcheck don't produce useful diagnostics at this time
+AX_VALGRIND_CHECK
+
 # Checks for libraries.
 m4_define(glib_required_version, 2.50.0)
 
