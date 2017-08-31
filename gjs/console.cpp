@@ -99,7 +99,7 @@ check_script_args_for_stray_gjs_args(int           argc,
         { NULL }
     };
     char **argv_copy = g_new(char *, argc + 2);
-    int ix, argc_copy = argc + 1;
+    int ix;
 
     argv_copy[0] = g_strdup("dummy"); /* Fake argv[0] for GOptionContext */
     for (ix = 0; ix < argc; ix++)
@@ -110,9 +110,10 @@ check_script_args_for_stray_gjs_args(int           argc,
     g_option_context_set_ignore_unknown_options(script_options, true);
     g_option_context_set_help_enabled(script_options, false);
     g_option_context_add_main_entries(script_options, script_check_entries, NULL);
-    if (!g_option_context_parse(script_options, &argc_copy, &argv_copy, &error)) {
+    if (!g_option_context_parse_strv(script_options, &argv_copy, &error)) {
         g_warning("Scanning script arguments failed: %s", error->message);
         g_error_free(error);
+        g_strfreev(argv_copy);
         return;
     }
 
@@ -158,7 +159,7 @@ main(int argc, char **argv)
     const char *filename;
     const char *program_name;
     gsize len;
-    int code, argc_copy = argc, gjs_argc = argc, script_argc, ix;
+    int code, gjs_argc = argc, script_argc, ix;
     char **argv_copy = g_strdupv(argv), **argv_copy_addr = argv_copy;
     char **gjs_argv, **gjs_argv_addr;
     char * const *script_argv;
@@ -173,10 +174,11 @@ main(int argc, char **argv)
     g_option_context_set_help_enabled(context, false);
 
     g_option_context_add_main_entries(context, entries, NULL);
-    if (!g_option_context_parse(context, &argc_copy, &argv_copy, &error))
+    if (!g_option_context_parse_strv(context, &argv_copy, &error))
         g_error("option parsing failed: %s", error->message);
 
     /* Split options so we pass unknown ones through to the JS script */
+    int argc_copy = g_strv_length(argv_copy);
     for (ix = 1; ix < argc; ix++) {
         /* Check if a file was given and split after it */
         if (argc_copy >= 2 && strcmp(argv[ix], argv_copy[1]) == 0) {
@@ -205,7 +207,7 @@ main(int argc, char **argv)
     print_version = false;
     g_option_context_set_ignore_unknown_options(context, false);
     g_option_context_set_help_enabled(context, true);
-    if (!g_option_context_parse(context, &gjs_argc, &gjs_argv, &error))
+    if (!g_option_context_parse_strv(context, &gjs_argv, &error))
         g_error("option parsing failed: %s", error->message);
 
     g_option_context_free (context);
@@ -215,6 +217,7 @@ main(int argc, char **argv)
         exit(0);
     }
 
+    gjs_argc = g_strv_length(gjs_argv);
     if (command != NULL) {
         script = command;
         len = strlen(script);
