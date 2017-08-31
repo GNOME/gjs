@@ -712,8 +712,8 @@ popGroup_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_status(cr), "context"))
         return false;
 
-    /* pattern belongs to the context, so keep the reference */
     pattern_wrapper = gjs_cairo_pattern_from_pattern(context, pattern);
+    cairo_pattern_destroy(pattern);
     if (!pattern_wrapper) {
         gjs_throw(context, "failed to create pattern");
         return false;
