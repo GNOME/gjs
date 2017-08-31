@@ -75,26 +75,27 @@ CLEANFILES +=						\
 
 ### TEST PROGRAMS ######################################################
 
-# gjs-tests checks private APIs and is run only uninstalled, on "make check".
+# gjs-tests.gtester checks private APIs and is run only uninstalled,
+# on "make check".
 #
 # jsunit checks public APIs using JS test scripts, and is run on "make check",
 # as well as installed if --enable-installed-tests is given at configure time.
 # See Makefile-insttest.am for the build rules installing the tests.
 
-check_PROGRAMS += gjs-tests minijasmine
+check_PROGRAMS += gjs-tests.gtester minijasmine
 
-gjs_tests_CPPFLAGS =				\
+gjs_tests_gtester_CPPFLAGS =			\
 	$(AM_CPPFLAGS)				\
 	-DGJS_COMPILATION			\
 	$(GJSTESTS_CFLAGS)			\
 	$(gjs_directory_defines)		\
 	-I$(top_srcdir)/test
 
-gjs_tests_LDADD =		\
+gjs_tests_gtester_LDADD =	\
 	libgjs.la		\
 	$(GJSTESTS_LIBS)
 
-gjs_tests_SOURCES =					\
+gjs_tests_gtester_SOURCES =				\
 	test/gjs-tests.cpp				\
 	test/gjs-test-utils.cpp				\
 	test/gjs-test-utils.h				\
@@ -104,7 +105,7 @@ gjs_tests_SOURCES =					\
 	mock-js-resources.c				\
 	$(NULL)
 
-gjs_tests_DEPENDENCIES =				\
+gjs_tests_gtester_DEPENDENCIES =			\
 	mock-cache-invalidation-before.gresource	\
 	mock-cache-invalidation-after.gresource		\
 	$(NULL)
@@ -305,20 +306,22 @@ simple_tests =						\
 EXTRA_DIST += $(simple_tests)
 
 TESTS =				\
-	gjs-tests		\
+	gjs-tests.gtester	\
 	$(simple_tests)		\
 	$(jasmine_tests)	\
 	$(NULL)
 
-TEST_EXTENSIONS = .js
+TEST_EXTENSIONS = .gtester .sh .js
 
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/tap-driver.sh
-LOG_COMPILER = $(top_srcdir)/test/run-test
-AM_LOG_FLAGS =
+
+GTESTER_LOG_DRIVER = $(LOG_DRIVER)
+GTESTER_LOG_COMPILER = $(top_srcdir)/test/run-test
+
+SH_LOG_DRIVER = $(LOG_DRIVER)
 
 JS_LOG_DRIVER = $(LOG_DRIVER)
 JS_LOG_COMPILER = $(top_builddir)/minijasmine
-AM_JS_LOG_FLAGS =
 
 CODE_COVERAGE_IGNORE_PATTERN = */{include,mfbt,gjs/test,gjs/installed-tests}/*
 CODE_COVERAGE_GENHTML_OPTIONS = 			\
