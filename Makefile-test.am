@@ -252,7 +252,10 @@ jasmine_tests += installed-tests/js/testGDBus.js
 endif
 
 if ENABLE_GTK
-jasmine_tests += installed-tests/js/testGtk.js
+jasmine_tests += 				\
+	installed-tests/js/testGtk.js		\
+	installed-tests/js/testLegacyGtk.js	\
+	$(NULL)
 endif
 
 if ENABLE_CAIRO
@@ -264,6 +267,7 @@ EXTRA_DIST +=						\
 	installed-tests/js/testCairo.js			\
 	installed-tests/js/testGtk.js			\
 	installed-tests/js/testGDBus.js			\
+	installed-tests/js/testLegacyGtk.js		\
 	installed-tests/extra/gjs.supp			\
 	installed-tests/extra/lsan.supp			\
 	$(NULL)
