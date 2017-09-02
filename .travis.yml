@@ -7,13 +7,17 @@ cache:
 
 matrix:
   include:
-  - env: BASE=ubuntu IMAGE=ubuntu:16.04 CCO=gcc
+  - env: BASE=ubuntu IMAGE=ubuntu:latest  CCO=gcc
 
-  - env: BASE=ubuntu IMAGE=ubuntu:16.04 CCO=clang
+  - env: BASE=ubuntu IMAGE=ubuntu:latest  CCO=clang
 
-  - env: BASE=ubuntu IMAGE=ubuntu:16.10 CCO=gcc
+  - env: BASE=ubuntu IMAGE=ubuntu:rolling CCO=gcc
 
-  - env: BASE=fedora IMAGE=fedora:25    CCO=gcc
+  - env: BASE=ubuntu IMAGE=ubuntu:rolling CCO=gcc
+
+  - env: BASE=fedora IMAGE=fedora:latest  CCO=gcc
+
+  - env: BASE=fedora IMAGE=fedora:latest  CCO=clang
 
 before_install:
   - cd ..
@@ -27,14 +31,14 @@ before_script:
 
   # Build the base image, if necessary
   - 'if [[ ! -f ~/docker/$NAME.tar.gz ]]; then
-      docker run -v $(pwd):/cwd -v $(pwd)/gjs/test/travis-ci.sh:/travis-ci.sh -e "BASE=$BASE" -e "OS=$IMAGE" -e "CC=gcc" "$IMAGE" bash -e -c "/travis-ci.sh BUILD_MOZ";
-      docker run --name $NAME -v $(pwd):/cwd -v $(pwd)/gjs/test/travis-ci.sh:/travis-ci.sh -e "BASE=$BASE" -e "OS=$IMAGE" -e "CC=$CCO" "$IMAGE" bash -e -c "/travis-ci.sh GET_FILES";
+      docker run -v $(pwd):/cwd -v $(pwd)/gjs/test/travis-ci.sh:/travis-ci.sh -e BASE="$BASE" -e OS="$IMAGE" -e CC="gcc" "$IMAGE" bash -e -c "/travis-ci.sh BUILD_MOZ";
+      docker run --name $NAME -v $(pwd):/cwd -v $(pwd)/gjs/test/travis-ci.sh:/travis-ci.sh -e BASE="$BASE" -e OS="$IMAGE" -e CC="$CCO" "$IMAGE" bash -e -c "/travis-ci.sh GET_FILES";
       docker commit $NAME local/$NAME;
       mkdir -p ~/docker; docker export $NAME | gzip > ~/docker/$NAME.tar.gz;
     fi'
 
 script:
-  - docker run -v $(pwd):/cwd -v $(pwd)/gjs/test/travis-ci.sh:/travis-ci.sh -e BASE=$BASE -e OS=$IMAGE -e CC=$CCO local/$NAME bash -e -c "/travis-ci.sh GJS"
+  - docker run -v $(pwd):/cwd -v $(pwd)/gjs/test/travis-ci.sh:/travis-ci.sh -e BASE="$BASE" -e OS="$IMAGE" -e CC="$CCO" -e BUILD_OPTS="$BUILD_OPTS" local/$NAME bash -e -c "/travis-ci.sh GJS"
 
 after_failure:
   - echo '-- FAILURE --'

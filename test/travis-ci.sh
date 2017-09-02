@@ -21,7 +21,7 @@ function do_Install_Base_Dependencies(){
         dnf -y -q upgrade
 
         # Base dependencies
-        dnf -y -q install @c-development @development-tools redhat-rpm-config gnome-common python-devel \
+        dnf -y -q install @c-development @development-tools clang redhat-rpm-config gnome-common python-devel \
                           pygobject2 dbus-python perl-Text-CSV perl-XML-Parser gettext-devel gtk-doc ninja-build \
                           zlib-devel libffi-devel \
                           libtool libicu-devel nspr-devel
@@ -46,7 +46,7 @@ function do_Install_Dependencies(){
         dnf -y -q install gtk3 gtk3-devel gobject-introspection Xvfb gnome-desktop-testing dbus-x11 dbus \
                           cairo intltool libxslt bison nspr zlib python3-devel dbus-glib libicu libffi pcre libxml2 libxslt libtool flex \
                           cairo-devel zlib-devel libffi-devel pcre-devel libxml2-devel libxslt-devel \
-                          libedit libedit-devel
+                          libedit libedit-devel libasan libubsan
     fi
 }
 
@@ -57,6 +57,7 @@ function do_Set_Env(){
     #Save cache on host
     mkdir -p /cwd/.cache
     export XDG_CACHE_HOME=/cwd/.cache
+    export JHBUILD_RUN_AS_ROOT=1
 
     if [[ -z $DISPLAY ]]; then
         export DISPLAY=":0"
@@ -72,23 +73,6 @@ function do_Patch_JHBuild(){
     # Create and apply a patch
     cd jhbuild
     patch -p1 <<ENDPATCH
-diff --git a/jhbuild/main.py b/jhbuild/main.py
-index a5cf99b..28c31d6 100644
---- a/jhbuild/main.py
-+++ b/jhbuild/main.py
-@@ -94,9 +94,9 @@ def main(args):
-         localedir = None
-     gettext.install('jhbuild', localedir=localedir, unicode=True)
- 
--    if hasattr(os, 'getuid') and os.getuid() == 0:
--        sys.stderr.write(_('You should not run jhbuild as root.\n').encode(_encoding, 'replace'))
--        sys.exit(1)
-+    # if hasattr(os, 'getuid') and os.getuid() == 0:
-+    #    sys.stderr.write(_('You should not run jhbuild as root.\n').encode(_encoding, 'replace'))
-+    #    sys.exit(1)
- 
-     logging.getLogger().setLevel(logging.INFO)
-     logging_handler = logging.StreamHandler()
 diff --git a/jhbuild/utils/systeminstall.py b/jhbuild/utils/systeminstall.py
 index 75b0849..08965fa 100644
 --- a/jhbuild/utils/systeminstall.py
@@ -113,6 +97,10 @@ function do_Configure_JHBuild(){
 
     mkdir -p ~/.config
     autogenargs="--enable-compile-warnings=error --enable-installed-tests --with-xvfb-tests"
+
+    if [[ -n "${BUILD_OPTS}" ]]; then
+        autogenargs="$autogenargs $BUILD_OPTS"
+    fi
 
     cat <<EOFILE >> ~/.config/jhbuildrc
 module_autogenargs['gjs'] = "$autogenargs"
@@ -150,12 +138,7 @@ function do_Build_Mozilla(){
     if [[ -n "$SHELL" ]]; then
         export SHELL=/bin/bash
     fi
-
-    #TODO Fix this upstream
-    #STOP!  /root/jhbuild/checkout/mozjs-38.0.0/js/src/configure.in has changed, and your configure is out of date.
-    jhbuild update mozjs38
-    touch ~/jhbuild/checkout/mozjs-38.0.0/js/src/configure
-    jhbuild build mozjs38
+    jhbuild build mozjs52
 }
 
 function do_Build_Package_Dependencies(){
@@ -209,6 +192,7 @@ echo "Doing: $1"
 
 if [[ $1 == "BUILD_MOZ" ]]; then
     do_Install_Base_Dependencies
+    do_Set_Env
 
     do_Show_Compiler
     do_Patch_JHBuild
