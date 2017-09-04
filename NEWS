@@ -1,3 +1,27 @@
+Version 1.49.92
+---------------
+
+- It's now possible to build GJS with sanitizers (ASan and UBSan) enabled; add
+  "--enable-asan" and "--enable-ubsan" to your configure flags. This has
+  already caught some memory leaks.
+
+- There's also a "make check-valgrind" target which will run GJS's test suite
+  under Valgrind to catch memory leaks and threading races.
+
+- Many of the crashes in GNOME 3.24 were caused by GJS's closure invalidation
+  code which had to change from the known-working state in 1.46 because of
+  changes to SpiderMonkey's garbage collector. This code has been refactored to
+  be less complicated, which will hopefully improve stability and debuggability.
+
+- Closed bugs:
+
+  * Clean up the idle closure invalidation mess [#786668, Philip Chimento]
+  * Add ASan and UBSan to GJS [#783220, Claudio André]
+  * Run analysis tools on GJS to prepare for release [#786995, Philip Chimento]
+  * Fix testLegacyGObject importing the GTK overrides [#787113, Philip Chimento]
+
+- Docs tweak [Philip Chimento]
+
 1.49.91
 -------
 
