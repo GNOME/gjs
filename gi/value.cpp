@@ -154,11 +154,7 @@ closure_marshal(GClosure        *closure,
             g_critical("The offending signal was %s on %s %p.", signal_query.signal_name,
                        g_type_name(G_TYPE_FROM_INSTANCE(instance)), instance);
         }
-        /* A gjs_dumpstack() would be nice here, but we can't,
-           because that works by creating a new Error object and
-           reading the stack property, which is the worst possible
-           idea during a GC session.
-        */
+        gjs_dumpstack();
         return;
     }
 

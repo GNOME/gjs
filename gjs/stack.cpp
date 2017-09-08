@@ -51,20 +51,9 @@ void
 gjs_context_print_stack_stderr(GjsContext *context)
 {
     JSContext *cx = (JSContext*) gjs_context_get_native_context(context);
-    JS::RootedObject frame(cx);
-    JS::AutoSaveExceptionState exc(cx);
-    GjsAutoChar stack;
 
     g_printerr("== Stack trace for context %p ==\n", context);
-
-    if (!JS::CaptureCurrentStack(cx, &frame) ||
-        !(stack = gjs_format_stack_trace(cx, frame))) {
-        g_printerr("No stack trace available\n");
-        exc.restore();
-        return;
-    }
-
-    g_printerr("%s\n", stack.get());
+    js::DumpBacktrace(cx, stderr);
 }
 
 void

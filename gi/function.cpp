@@ -197,11 +197,7 @@ gjs_callback_closure(ffi_cif *cif,
             g_critical("The offending callback was %s()%s.", name,
                        trampoline->is_vfunc ? ", a vfunc" : "");
         }
-        /* A gjs_dumpstack() would be nice here, but we can't,
-           because that works by creating a new Error object and
-           reading the stack property, which is the worst possible
-           idea during a GC session.
-        */
+        gjs_dumpstack();
         gjs_callback_trampoline_unref(trampoline);
         return;
     }
