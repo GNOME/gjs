@@ -1,3 +1,9 @@
+Version 1.48.7
+--------------
+
+- Backported some memory leak fixes from 1.49.92
+- Backported refactor of closure invalidation code from 1.49.92
+
 Version 1.48.6
 --------------
 
