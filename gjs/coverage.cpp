@@ -1574,7 +1574,8 @@ bootstrap_coverage(GjsCoverage *coverage)
             return false;
         }
 
-        if (!gjs_define_global_properties(context, debugger_compartment)) {
+        if (!gjs_define_global_properties(context, debugger_compartment,
+                                          "default")) {
             gjs_throw(context, "Failed to define global properties on debugger "
                       "compartment");
             return false;

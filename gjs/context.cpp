@@ -342,7 +342,7 @@ gjs_context_constructed(GObject *object)
 
     gjs_set_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS, JS::ObjectValue(*importer));
 
-    if (!gjs_define_global_properties(cx, global)) {
+    if (!gjs_define_global_properties(cx, global, "default")) {
         gjs_log_exception(cx);
         g_error("Failed to define properties on global object");
     }

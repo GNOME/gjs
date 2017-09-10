@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/gnome/gjs">
+    <file>modules/_bootstrap/default.js</file>
+
     <file>modules/tweener/equations.js</file>
     <file>modules/tweener/tweener.js</file>
     <file>modules/tweener/tweenList.js</file>

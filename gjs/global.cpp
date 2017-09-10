@@ -31,6 +31,41 @@
 #include "jsapi-wrapper.h"
 
 static bool
+run_bootstrap(JSContext       *cx,
+              const char      *bootstrap_script,
+              JS::HandleObject global)
+{
+    GjsAutoChar path = g_strdup_printf("/org/gnome/gjs/modules/_bootstrap/%s.js",
+                                       bootstrap_script);
+    GError *error = nullptr;
+    std::unique_ptr<GBytes, decltype(&g_bytes_unref)> script_bytes(
+        g_resources_lookup_data(path, G_RESOURCE_LOOKUP_FLAGS_NONE, &error),
+        g_bytes_unref);
+    if (!script_bytes) {
+        gjs_throw_g_error(cx, error);
+        return false;
+    }
+
+    JSAutoCompartment ac(cx, global);
+
+    GjsAutoChar uri = g_strconcat("resource://", path.get(), nullptr);
+    JS::CompileOptions options(cx);
+    options.setUTF8(true)
+           .setFileAndLine(uri, 1)
+           .setSourceIsLazy(true);
+
+    JS::RootedScript compiled_script(cx);
+    size_t script_len;
+    auto script = static_cast<const char *>(g_bytes_get_data(script_bytes.get(),
+                                            &script_len));
+    if (!JS::Compile(cx, options, script, script_len, &compiled_script))
+        return false;
+
+    JS::RootedValue ignored(cx);
+    return JS::CloneAndExecuteScript(cx, compiled_script, &ignored);
+}
+
+static bool
 gjs_log(JSContext *cx,
         unsigned   argc,
         JS::Value *vp)
@@ -225,7 +260,8 @@ public:
 
     static bool
     define_properties(JSContext       *cx,
-                      JS::HandleObject global)
+                      JS::HandleObject global,
+                      const char      *bootstrap_script)
     {
         if (!JS_DefineProperty(cx, global, "window", global,
                                JSPROP_READONLY | JSPROP_PERMANENT) ||
@@ -240,9 +276,17 @@ public:
 
         /* Wrapping is a no-op if the importer is already in the same
          * compartment. */
-        return JS_WrapObject(cx, &root_importer) &&
-            gjs_object_define_property(cx, global, GJS_STRING_IMPORTS,
-                                       root_importer, GJS_MODULE_PROP_FLAGS);
+        if (!JS_WrapObject(cx, &root_importer) ||
+            !gjs_object_define_property(cx, global, GJS_STRING_IMPORTS,
+                                        root_importer, GJS_MODULE_PROP_FLAGS))
+            return false;
+
+        if (bootstrap_script) {
+            if (!run_bootstrap(cx, bootstrap_script, global))
+                return false;
+        }
+
+        return true;
     }
 };
 
@@ -265,8 +309,13 @@ gjs_create_global_object(JSContext *cx)
  * gjs_define_global_properties:
  * @cx: a #JSContext
  * @global: a JS global object that has not yet been passed to this function
+ * @bootstrap_script: (nullable): name of a bootstrap script (found at
+ * resource://org/gnome/gjs/modules/_bootstrap/@bootstrap_script) or %NULL for
+ * none
  *
- * Defines properties on the global object such as 'window' and 'imports'.
+ * Defines properties on the global object such as 'window' and 'imports', and
+ * runs a bootstrap JS script on the global object to define any properties
+ * that can be defined from JS.
  * This function completes the initialization of a new global object, but it
  * is separate from gjs_create_global_object() because all globals share the
  * same root importer.
@@ -283,9 +332,10 @@ gjs_create_global_object(JSContext *cx)
  */
 bool
 gjs_define_global_properties(JSContext       *cx,
-                             JS::HandleObject global)
+                             JS::HandleObject global,
+                             const char      *bootstrap_script)
 {
-    return GjsGlobal::define_properties(cx, global);
+    return GjsGlobal::define_properties(cx, global, bootstrap_script);
 }
 
 void

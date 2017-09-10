@@ -58,7 +58,8 @@ typedef enum {
 JSObject *gjs_create_global_object(JSContext *cx);
 
 bool gjs_define_global_properties(JSContext       *cx,
-                                  JS::HandleObject global);
+                                  JS::HandleObject global,
+                                  const char      *bootstrap_script);
 
 JS::Value gjs_get_global_slot(JSContext    *cx,
                               GjsGlobalSlot slot);
