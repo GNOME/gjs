@@ -1,4 +1,4 @@
-const Coverage = imports.coverage;
+const Coverage = imports._bootstrap.coverage;
 
 describe('Coverage.expressionLinesForAST', function () {
     let testTable = {

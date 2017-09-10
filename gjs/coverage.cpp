@@ -1268,59 +1268,6 @@ gjs_coverage_init(GjsCoverage *self)
 }
 
 static bool
-gjs_context_eval_file_in_compartment(GjsContext      *context,
-                                     const char      *filename,
-                                     JS::HandleObject compartment_object,
-                                     GError         **error)
-{
-    char  *script = NULL;
-    gsize script_len = 0;
-
-    GFile *file = g_file_new_for_commandline_arg(filename);
-
-    if (!g_file_load_contents(file,
-                              NULL,
-                              &script,
-                              &script_len,
-                              NULL,
-                              error)) {
-        g_object_unref(file);
-        return false;
-    }
-
-    g_object_unref(file);
-
-    int start_line_number = 1;
-    const char *stripped_script = gjs_strip_unix_shebang(script, &script_len,
-                                                         &start_line_number);
-
-    JSContext *js_context = (JSContext *) gjs_context_get_native_context(context);
-
-    JSAutoCompartment compartment(js_context, compartment_object);
-
-    JS::CompileOptions options(js_context);
-    options.setUTF8(true)
-           .setFileAndLine(filename, start_line_number)
-           .setSourceIsLazy(true);
-    JS::RootedScript compiled_script(js_context);
-    if (!JS::Compile(js_context, options, stripped_script, script_len,
-                     &compiled_script))
-        return false;
-
-    JS::RootedValue dummy_rval(js_context);
-    if (!JS::CloneAndExecuteScript(js_context, compiled_script, &dummy_rval)) {
-        g_free(script);
-        gjs_log_exception(js_context);
-        g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED, "Failed to evaluate %s", filename);
-        return false;
-    }
-
-    g_free(script);
-
-    return true;
-}
-
-static bool
 coverage_log(JSContext *context,
              unsigned   argc,
              JS::Value *vp)
@@ -1546,10 +1493,8 @@ gjs_inject_value_into_coverage_compartment(GjsCoverage     *coverage,
 static bool
 bootstrap_coverage(GjsCoverage *coverage)
 {
-    static const char  *coverage_script = "resource:///org/gnome/gjs/modules/coverage.js";
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
     GBytes             *cache_bytes = NULL;
-    GError             *error = NULL;
 
     JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
     JSAutoRequest ar(context);
@@ -1562,33 +1507,16 @@ bootstrap_coverage(GjsCoverage *coverage)
     {
         JSAutoCompartment compartment(context, debugger_compartment);
         JS::RootedObject debuggeeWrapper(context, debuggee);
-        if (!JS_WrapObject(context, &debuggeeWrapper)) {
-            gjs_throw(context, "Failed to wrap debugeee");
+        if (!JS_WrapObject(context, &debuggeeWrapper))
             return false;
-        }
 
         JS::RootedValue debuggeeWrapperValue(context, JS::ObjectValue(*debuggeeWrapper));
         if (!JS_SetProperty(context, debugger_compartment, "debuggee",
-                            debuggeeWrapperValue)) {
-            gjs_throw(context, "Failed to set debuggee property");
+                            debuggeeWrapperValue) ||
+            !JS_DefineFunctions(context, debugger_compartment, coverage_funcs) ||
+            !gjs_define_global_properties(context, debugger_compartment,
+                                          "coverage"))
             return false;
-        }
-
-        if (!gjs_define_global_properties(context, debugger_compartment,
-                                          "default")) {
-            gjs_throw(context, "Failed to define global properties on debugger "
-                      "compartment");
-            return false;
-        }
-
-        if (!JS_DefineFunctions(context, debugger_compartment, &coverage_funcs[0]))
-            g_error("Failed to init coverage");
-
-        if (!gjs_context_eval_file_in_compartment(priv->context,
-                                                  coverage_script,
-                                                  debugger_compartment,
-                                                  &error))
-            g_error("Failed to eval coverage script: %s\n", error->message);
 
         JS::RootedObject coverage_statistics_constructor(context);
         JS::RootedId coverage_statistics_name(context,
@@ -1629,7 +1557,7 @@ bootstrap_coverage(GjsCoverage *coverage)
                                                coverage_statistics_constructor_args);
 
         if (!coverage_statistics) {
-            gjs_throw(context, "Failed to create coverage_statitiscs object");
+            gjs_throw(context, "Failed to create coverage_statistics object");
             return false;
         }
 
