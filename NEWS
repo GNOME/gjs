@@ -1,3 +1,12 @@
+Version 1.50.0
+--------------
+
+- Closed bugs:
+
+  * Relicense coverage.cpp and coverage.h to the same license as the rest of
+    GJS [#787263, Philip Chimento; thanks to Dominique Leuenberger for pointing
+    out the mistake]
+
 Version 1.49.92
 ---------------
 
