@@ -600,7 +600,8 @@ _gjs_context_enqueue_job(GjsContext      *gjs_context,
         return false;
     if (!gjs_context->idle_drain_handler)
         gjs_context->idle_drain_handler =
-            g_idle_add(drain_job_queue_idle_handler, gjs_context);
+            g_idle_add_full(G_PRIORITY_DEFAULT, drain_job_queue_idle_handler,
+                            gjs_context, nullptr);
 
     return true;
 }
