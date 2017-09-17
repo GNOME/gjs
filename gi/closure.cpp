@@ -185,8 +185,9 @@ closure_finalize(gpointer  data,
     self->~Closure();
 }
 
-void
+bool
 gjs_closure_invoke(GClosure                   *closure,
+                   JS::HandleObject            this_obj,
                    const JS::HandleValueArray& args,
                    JS::MutableHandleValue      retval)
 {
@@ -198,11 +199,11 @@ gjs_closure_invoke(GClosure                   *closure,
     if (c->obj == nullptr) {
         /* We were destroyed; become a no-op */
         c->context = NULL;
-        return;
+        return false;
     }
 
     context = c->context;
-    JS_BeginRequest(context);
+    JSAutoRequest ar(context);
     JSAutoCompartment ac(context, c->obj);
 
     if (JS_IsExceptionPending(context)) {
@@ -212,10 +213,7 @@ gjs_closure_invoke(GClosure                   *closure,
     }
 
     JS::RootedValue v_closure(context, JS::ObjectValue(*c->obj));
-    if (!gjs_call_function_value(context,
-                                 /* "this" object; null is some kind of default presumably */
-                                 nullptr,
-                                 v_closure, args, retval)) {
+    if (!gjs_call_function_value(context, this_obj, v_closure, args, retval)) {
         /* Exception thrown... */
         gjs_debug_closure("Closure invocation failed (exception should "
                           "have been thrown) closure %p callable %p",
@@ -223,7 +221,7 @@ gjs_closure_invoke(GClosure                   *closure,
         if (!gjs_log_exception(context))
             gjs_debug_closure("Closure invocation failed but no exception was set?"
                               "closure %p", closure);
-        goto out;
+        return false;
     }
 
     if (gjs_log_exception(context)) {
@@ -232,9 +230,7 @@ gjs_closure_invoke(GClosure                   *closure,
     }
 
     JS_MaybeGC(context);
-
- out:
-    JS_EndRequest(context);
+    return true;
 }
 
 bool

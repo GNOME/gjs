@@ -28,7 +28,6 @@
 #include <glib.h>
 
 #include "gjs/jsapi-util.h"
-#include "gjs/jsapi-util-root.h"
 
 #include <girepository.h>
 #include <girffi.h>
@@ -44,10 +43,9 @@ typedef enum {
 
 struct GjsCallbackTrampoline {
     gint ref_count;
-    JSContext *context;
     GICallableInfo *info;
 
-    GjsMaybeOwned<JS::Value> js_function;
+    GClosure *js_function;
 
     ffi_cif cif;
     ffi_closure *closure;
@@ -56,11 +54,12 @@ struct GjsCallbackTrampoline {
     GjsParamType *param_types;
 };
 
-GjsCallbackTrampoline* gjs_callback_trampoline_new(JSContext      *context,
-                                                   JS::HandleValue function,
-                                                   GICallableInfo *callable_info,
-                                                   GIScopeType     scope,
-                                                   bool            is_vfunc);
+GjsCallbackTrampoline* gjs_callback_trampoline_new(JSContext       *context,
+                                                   JS::HandleValue  function,
+                                                   GICallableInfo  *callable_info,
+                                                   GIScopeType      scope,
+                                                   JS::HandleObject scope_object,
+                                                   bool             is_vfunc);
 
 void gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline);
 void gjs_callback_trampoline_ref(GjsCallbackTrampoline *trampoline);

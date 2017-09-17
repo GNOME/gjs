@@ -422,9 +422,9 @@ gjs_define_info(JSContext       *context,
             if (g_type_is_a (gtype, G_TYPE_PARAM)) {
                 gjs_define_param_class(context, in_object);
             } else if (g_type_is_a (gtype, G_TYPE_OBJECT)) {
-                JS::RootedObject ignored(context);
-                gjs_define_object_class(context, in_object,
-                                        (GIObjectInfo *) info, gtype, &ignored);
+                JS::RootedObject ignored1(context), ignored2(context);
+                gjs_define_object_class(context, in_object, info, gtype,
+                                        &ignored1, &ignored2);
             } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
                 JS::RootedObject ignored1(context), ignored2(context);
                 if (!gjs_define_fundamental_class(context, in_object,

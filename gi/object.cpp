@@ -61,8 +61,9 @@ struct ObjectInstance {
     GjsMaybeOwned<JSObject *> keep_alive;
     GType gtype;
 
-    /* a list of all signal connections, used when tracing */
-    std::set<GClosure *> signals;
+    /* a list of all GClosures installed on this object (from
+     * signals, trampolines and explicit GClosures), used when tracing */
+    std::set<GClosure *> closures;
 
     /* the GObjectClass wrapped by this JS Object (only used for
        prototypes) */
@@ -1253,17 +1254,17 @@ associate_js_gobject (JSContext       *context,
 }
 
 static void
-invalidate_all_signals(ObjectInstance *priv)
+invalidate_all_closures(ObjectInstance *priv)
 {
     /* Can't loop directly through the items, since invalidating an item's
      * closure might have the effect of removing the item from the set in the
      * invalidate notifier */
-    while (!priv->signals.empty()) {
+    while (!priv->closures.empty()) {
         /* This will also free cd, through the closure invalidation mechanism */
-        GClosure *closure = *priv->signals.begin();
+        GClosure *closure = *priv->closures.begin();
         g_closure_invalidate(closure);
         /* Erase element if not already erased */
-        priv->signals.erase(closure);
+        priv->closures.erase(closure);
     }
 }
 
@@ -1292,7 +1293,7 @@ disassociate_js_gobject(GObject *gobj)
                    gobj, G_OBJECT_TYPE_NAME(gobj));
     }
 
-    invalidate_all_signals(priv);
+    invalidate_all_closures(priv);
     release_native_object(priv);
 
     /* Mark that a JS object once existed, but it doesn't any more */
@@ -1434,19 +1435,19 @@ object_instance_trace(JSTracer *tracer,
     if (priv == NULL)
         return;
 
-    for (GClosure *closure : priv->signals)
+    for (GClosure *closure : priv->closures)
         gjs_closure_trace(closure, tracer);
 
     for (auto vfunc : priv->vfuncs)
-        vfunc->js_function.trace(tracer, "ObjectInstance::vfunc");
+        gjs_closure_trace(vfunc->js_function, tracer);
 }
 
 static void
-signal_connection_invalidated(void     *data,
-                              GClosure *closure)
+closure_invalidated(void     *data,
+                    GClosure *closure)
 {
     auto priv = static_cast<ObjectInstance *>(data);
-    priv->signals.erase(closure);
+    priv->closures.erase(closure);
 }
 
 static void
@@ -1470,7 +1471,7 @@ object_instance_finalize(JSFreeOp  *fop,
 
     /* This applies only to instances, not prototypes, but it's possible that
      * an instance's GObject is already freed at this point. */
-    invalidate_all_signals(priv);
+    invalidate_all_closures(priv);
 
     /* Object is instance, not prototype, AND GObject is not already freed */
     if (priv->gobj) {
@@ -1497,8 +1498,6 @@ object_instance_finalize(JSFreeOp  *fop,
 
     /* We have to leak the trampolines, since the GType's vtable still refers
      * to them */
-    for (auto iter : priv->vfuncs)
-        iter->js_function.reset();
     priv->vfuncs.clear();
 
     if (priv->keep_alive.rooted()) {
@@ -1559,7 +1558,9 @@ gjs_lookup_object_constructor_from_info(JSContext    *context,
         /* In case we're looking for a private type, and we don't find it,
            we need to define it first.
         */
-        gjs_define_object_class(context, in_object, NULL, gtype, &constructor);
+        JS::RootedObject ignored(context);
+        gjs_define_object_class(context, in_object, NULL, gtype, &constructor,
+                                &ignored);
     } else {
         if (G_UNLIKELY (!value.isObject()))
             return NULL;
@@ -1607,6 +1608,16 @@ gjs_lookup_object_prototype(JSContext *context,
         g_base_info_unref((GIBaseInfo*)info);
 
     return proto;
+}
+
+static void
+do_associate_closure(ObjectInstance *priv,
+                     GClosure       *closure)
+{
+    /* This is a weak reference, and will be cleared when the closure is
+     * invalidated */
+    priv->closures.insert(closure);
+    g_closure_add_invalidate_notifier(closure, priv, closure_invalidated);
 }
 
 static bool
@@ -1658,11 +1669,7 @@ real_connect_func(JSContext *context,
     closure = gjs_closure_new_for_signal(context, &argv[1].toObject(), "signal callback", signal_id);
     if (closure == NULL)
         return false;
-
-    /* This is a weak reference, and will be cleared when the closure is invalidated */
-    priv->signals.insert(closure);
-    g_closure_add_invalidate_notifier(closure, priv,
-                                      signal_connection_invalidated);
+    do_associate_closure(priv, closure);
 
     id = g_signal_connect_closure_by_id(priv->gobj,
                                         signal_id,
@@ -1929,10 +1936,11 @@ gjs_define_object_class(JSContext              *context,
                         JS::HandleObject        in_object,
                         GIObjectInfo           *info,
                         GType                   gtype,
-                        JS::MutableHandleObject constructor)
+                        JS::MutableHandleObject constructor,
+                        JS::MutableHandleObject prototype)
 {
     const char *constructor_name;
-    JS::RootedObject prototype(context), parent_proto(context);
+    JS::RootedObject parent_proto(context);
 
     ObjectInstance *priv;
     const char *ns;
@@ -2001,7 +2009,7 @@ gjs_define_object_class(JSContext              *context,
                                 NULL,
                                 /* funcs of constructor, MyConstructor.myfunc() */
                                 NULL,
-                                &prototype,
+                                prototype,
                                 constructor)) {
         g_error("Can't init class %s", constructor_name);
     }
@@ -2324,7 +2332,8 @@ gjs_hook_up_vfunc(JSContext *cx,
 
         JS::RootedValue v_function(cx, JS::ObjectValue(*function));
         trampoline = gjs_callback_trampoline_new(cx, v_function, callback_info,
-                                                 GI_SCOPE_TYPE_NOTIFIED, true);
+                                                 GI_SCOPE_TYPE_NOTIFIED,
+                                                 object, true);
 
         *((ffi_closure **)method_ptr) = trampoline->closure;
         priv->vfuncs.push_back(trampoline);
@@ -2805,6 +2814,30 @@ gjs_register_interface(JSContext *cx,
     return true;
 }
 
+static void
+gjs_object_base_init(void *klass)
+{
+    auto priv = static_cast<ObjectInstance *>(g_type_get_qdata(G_OBJECT_CLASS_TYPE(klass),
+                                              gjs_object_priv_quark()));
+
+    if (priv) {
+        for (GClosure *closure : priv->closures)
+            g_closure_ref(closure);
+    }
+}
+
+static void
+gjs_object_base_finalize(void *klass)
+{
+    auto priv = static_cast<ObjectInstance *>(g_type_get_qdata(G_OBJECT_CLASS_TYPE(klass),
+                                              gjs_object_priv_quark()));
+
+    if (priv) {
+        for (GClosure *closure : priv->closures)
+            g_closure_unref(closure);
+    }
+}
+
 static bool
 gjs_register_type(JSContext *cx,
                   unsigned   argc,
@@ -2818,8 +2851,8 @@ gjs_register_type(JSContext *cx,
     GTypeInfo type_info = {
         0, /* class_size */
 
-	(GBaseInitFunc) NULL,
-	(GBaseFinalizeFunc) NULL,
+        gjs_object_base_init,
+        gjs_object_base_finalize,
 
 	(GClassInitFunc) gjs_object_class_init,
 	(GClassFinalizeFunc) NULL,
@@ -2892,8 +2925,13 @@ gjs_register_type(JSContext *cx,
         gjs_add_interface(instance_type, iface_types[i]);
 
     /* create a custom JSClass */
-    JS::RootedObject module(cx, gjs_lookup_private_namespace(cx)), constructor(cx);
-    gjs_define_object_class(cx, module, NULL, instance_type, &constructor);
+    JS::RootedObject module(cx, gjs_lookup_private_namespace(cx));
+    JS::RootedObject constructor(cx), prototype(cx);
+    gjs_define_object_class(cx, module, nullptr, instance_type, &constructor,
+                            &prototype);
+
+    ObjectInstance *priv = priv_from_js(cx, prototype);
+    g_type_set_qdata(instance_type, gjs_object_priv_quark(), priv);
 
     argv.rval().setObject(*constructor);
 
@@ -3020,5 +3058,18 @@ gjs_lookup_object_constructor(JSContext             *context,
         g_base_info_unref((GIBaseInfo*)object_info);
 
     value_p.setObject(*constructor);
+    return true;
+}
+
+bool
+gjs_object_associate_closure(JSContext       *cx,
+                             JS::HandleObject object,
+                             GClosure        *closure)
+{
+    ObjectInstance *priv = priv_from_js(cx, object);
+    if (!priv)
+        return false;
+
+    do_associate_closure(priv, closure);
     return true;
 }
