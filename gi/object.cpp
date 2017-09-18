@@ -29,6 +29,7 @@
 #include <stack>
 #include <string.h>
 #include <tuple>
+#include <unordered_map>
 #include <vector>
 
 #include "object.h"
@@ -52,7 +53,6 @@
 #include "gjs/mem.h"
 
 #include <util/log.h>
-#include <util/hash-x32.h>
 #include <girepository.h>
 
 struct ObjectInstance {
@@ -76,7 +76,10 @@ struct ObjectInstance {
 };
 
 static std::stack<JS::PersistentRootedObject> object_init_list;
-static GHashTable *class_init_properties;
+
+using ParamRef = std::unique_ptr<GParamSpec, decltype(&g_param_spec_unref)>;
+using ParamRefArray = std::vector<ParamRef>;
+static std::unordered_map<GType, ParamRefArray> class_init_properties;
 
 static bool weak_pointer_callback = false;
 static std::set<ObjectInstance *> weak_pointer_list;
@@ -2525,49 +2528,45 @@ static void
 gjs_interface_init(GTypeInterface *g_iface,
                    gpointer        iface_data)
 {
-    GPtrArray *properties;
-    GType gtype;
-    guint i;
+    GType gtype = G_TYPE_FROM_INTERFACE(g_iface);
 
-    gtype = G_TYPE_FROM_INTERFACE (g_iface);
-
-    properties = (GPtrArray *) gjs_hash_table_for_gsize_lookup(class_init_properties, gtype);
-    if (properties == NULL)
+    auto found = class_init_properties.find(gtype);
+    if (found == class_init_properties.end())
         return;
 
-    for (i = 0; i < properties->len; i++) {
-        GParamSpec *pspec = (GParamSpec *) properties->pdata[i];
-        g_param_spec_set_qdata(pspec, gjs_is_custom_property_quark(), GINT_TO_POINTER(1));
-        g_object_interface_install_property(g_iface, pspec);
+    ParamRefArray& properties = found->second;
+    for (ParamRef& pspec : properties) {
+        g_param_spec_set_qdata(pspec.get(), gjs_is_custom_property_quark(),
+                               GINT_TO_POINTER(1));
+        g_object_interface_install_property(g_iface, pspec.get());
     }
 
-    gjs_hash_table_for_gsize_remove(class_init_properties, gtype);
+    class_init_properties.erase(found);
 }
 
 static void
 gjs_object_class_init(GObjectClass *klass,
                       gpointer      user_data)
 {
-    GPtrArray *properties;
-    GType gtype;
-    guint i;
-
-    gtype = G_OBJECT_CLASS_TYPE (klass);
+    GType gtype = G_OBJECT_CLASS_TYPE(klass);
 
     klass->constructor = gjs_object_constructor;
     klass->set_property = gjs_object_set_gproperty;
     klass->get_property = gjs_object_get_gproperty;
 
-    properties = (GPtrArray*) gjs_hash_table_for_gsize_lookup (class_init_properties, gtype);
-    if (properties != NULL) {
-        for (i = 0; i < properties->len; i++) {
-            GParamSpec *pspec = (GParamSpec*) properties->pdata[i];
-            g_param_spec_set_qdata(pspec, gjs_is_custom_property_quark(), GINT_TO_POINTER(1));
-            g_object_class_install_property (klass, i+1, pspec);
-        }
-        
-        gjs_hash_table_for_gsize_remove (class_init_properties, gtype);
+    auto found = class_init_properties.find(gtype);
+    if (found == class_init_properties.end())
+        return;
+
+    ParamRefArray& properties = found->second;
+    unsigned i = 0;
+    for (ParamRef& pspec : properties) {
+        g_param_spec_set_qdata(pspec.get(), gjs_is_custom_property_quark(),
+                               GINT_TO_POINTER(1));
+        g_object_class_install_property(klass, ++i, pspec.get());
     }
+
+    class_init_properties.erase(found);
 }
 
 static void
@@ -2700,36 +2699,26 @@ save_properties_for_class_init(JSContext       *cx,
                                uint32_t         n_properties,
                                GType            gtype)
 {
-    GPtrArray *properties_native = NULL;
-    guint32 i;
-
-    if (!class_init_properties)
-        class_init_properties = gjs_hash_table_new_for_gsize((GDestroyNotify) g_ptr_array_unref);
-    properties_native = g_ptr_array_new_with_free_func((GDestroyNotify) g_param_spec_unref);
-    for (i = 0; i < n_properties; i++) {
-        JS::RootedValue prop_val(cx);
-
-        if (!JS_GetElement(cx, properties, i, &prop_val)) {
-            g_clear_pointer(&properties_native, g_ptr_array_unref);
+    ParamRefArray properties_native;
+    JS::RootedValue prop_val(cx);
+    JS::RootedObject prop_obj(cx);
+    for (uint32_t i = 0; i < n_properties; i++) {
+        if (!JS_GetElement(cx, properties, i, &prop_val))
             return false;
-        }
+
         if (!prop_val.isObject()) {
-            g_clear_pointer(&properties_native, g_ptr_array_unref);
             gjs_throw(cx, "Invalid parameter, expected object");
             return false;
         }
 
-        JS::RootedObject prop_obj(cx, &prop_val.toObject());
-        if (!gjs_typecheck_param(cx, prop_obj, G_TYPE_NONE, true)) {
-            g_clear_pointer(&properties_native, g_ptr_array_unref);
+        prop_obj = &prop_val.toObject();
+        if (!gjs_typecheck_param(cx, prop_obj, G_TYPE_NONE, true))
             return false;
-        }
-        g_ptr_array_add(properties_native, g_param_spec_ref(gjs_g_param_from_param(cx, prop_obj)));
-    }
-    gjs_hash_table_for_gsize_insert(class_init_properties, (gsize) gtype,
-                                    g_ptr_array_ref(properties_native));
 
-    g_clear_pointer(&properties_native, g_ptr_array_unref);
+        properties_native.emplace_back(g_param_spec_ref(gjs_g_param_from_param(cx, prop_obj)),
+                                       g_param_spec_unref);
+    }
+    class_init_properties[gtype] = std::move(properties_native);
     return true;
 }
 

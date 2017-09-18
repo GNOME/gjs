@@ -83,8 +83,6 @@ gjs_srcs =				\
 	util/error.cpp			\
 	util/glib.cpp			\
 	util/glib.h			\
-	util/hash-x32.cpp		\
-	util/hash-x32.h			\
 	util/log.cpp			\
 	util/log.h			\
 	util/misc.cpp			\
