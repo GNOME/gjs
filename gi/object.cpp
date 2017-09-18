@@ -82,12 +82,9 @@ using ParamRefArray = std::vector<ParamRef>;
 static std::unordered_map<GType, ParamRefArray> class_init_properties;
 
 static bool weak_pointer_callback = false;
-static std::set<ObjectInstance *> weak_pointer_list;
+static std::set<ObjectInstance *> wrapped_gobject_list;
 
 extern struct JSClass gjs_object_instance_class;
-
-static std::set<ObjectInstance *> dissociate_list;
-
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 
 static void            disassociate_js_gobject (GObject *gobj);
@@ -150,21 +147,6 @@ throw_priv_is_null_error(JSContext *context)
               "This JS object wrapper isn't wrapping a GObject."
               " If this is a custom subclass, are you sure you chained"
               " up to the parent _init properly?");
-}
-
-static void
-dissociate_list_add(ObjectInstance *priv)
-{
-    bool inserted;
-    std::tie(std::ignore, inserted) = dissociate_list.insert(priv);
-    g_assert(inserted);
-}
-
-static void
-dissociate_list_remove(ObjectInstance *priv)
-{
-    size_t erased = dissociate_list.erase(priv);
-    g_assert(erased > 0);
 }
 
 static ObjectInstance *
@@ -942,7 +924,7 @@ static void
 wrapped_gobj_dispose_notify(gpointer      data,
                             GObject      *where_the_object_was)
 {
-    weak_pointer_list.erase(static_cast<ObjectInstance *>(data));
+    wrapped_gobject_list.erase(static_cast<ObjectInstance *>(data));
 #if DEBUG_DISPOSE
     gjs_debug(GJS_DEBUG_GOBJECT, "Wrapped GObject %p disposed", where_the_object_was);
 #endif
@@ -961,8 +943,7 @@ gobj_no_longer_kept_alive_func(JS::HandleObject obj,
                         obj.get());
 
     priv->keep_alive.reset();
-    dissociate_list_remove(priv);
-    weak_pointer_list.erase(priv);
+    wrapped_gobject_list.erase(priv);
 }
 
 static void
@@ -980,7 +961,6 @@ handle_toggle_down(GObject *gobj)
     if (priv->keep_alive.rooted()) {
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Removing object from keep alive");
         priv->keep_alive.switch_to_unrooted();
-        dissociate_list_remove(priv);
     }
 }
 
@@ -1010,7 +990,6 @@ handle_toggle_up(GObject   *gobj)
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Adding object to keep alive");
         auto cx = static_cast<JSContext *>(gjs_context_get_native_context(context));
         priv->keep_alive.switch_to_rooted(cx, gobj_no_longer_kept_alive_func, priv);
-        dissociate_list_add(priv);
     }
 }
 
@@ -1145,9 +1124,18 @@ gjs_object_prepare_shutdown(void)
      *   toggle ref removal -> gobj dispose -> toggle ref notify
      * by simply ignoring toggle ref notifications during this process.
      */
-    for (auto iter : dissociate_list)
-        release_native_object(iter);
-    dissociate_list.clear();
+    std::vector<ObjectInstance *> to_be_released;
+    for (auto iter = wrapped_gobject_list.begin(); iter != wrapped_gobject_list.end(); ) {
+        ObjectInstance *priv = *iter;
+        if (priv->keep_alive.rooted()) {
+            to_be_released.push_back(priv);
+            iter = wrapped_gobject_list.erase(iter);
+        } else {
+            iter++;
+        }
+    }
+    for (ObjectInstance *priv : to_be_released)
+        release_native_object(priv);
 }
 
 static ObjectInstance *
@@ -1190,7 +1178,7 @@ update_heap_wrapper_weak_pointers(JSContext     *cx,
 {
     std::vector<GObject *> to_be_disassociated;
 
-    for (auto iter = weak_pointer_list.begin(); iter != weak_pointer_list.end(); ) {
+    for (auto iter = wrapped_gobject_list.begin(); iter != wrapped_gobject_list.end(); ) {
         ObjectInstance *priv = *iter;
         if (priv->keep_alive.rooted() || priv->keep_alive == nullptr ||
             !priv->keep_alive.update_after_gc()) {
@@ -1202,7 +1190,7 @@ update_heap_wrapper_weak_pointers(JSContext     *cx,
              * may also cause it to be erased.)
              */
             to_be_disassociated.push_back(priv->gobj);
-            iter = weak_pointer_list.erase(iter);
+            iter = wrapped_gobject_list.erase(iter);
         }
     }
 
@@ -1236,7 +1224,7 @@ associate_js_gobject (JSContext       *context,
     set_object_qdata(gobj, priv);
 
     ensure_weak_pointer_callback(context);
-    weak_pointer_list.insert(priv);
+    wrapped_gobject_list.insert(priv);
 
     g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, priv);
 
@@ -1252,7 +1240,6 @@ associate_js_gobject (JSContext       *context,
      * wrappee).
      */
     priv->keep_alive.root(context, object, gobj_no_longer_kept_alive_func, priv);
-    dissociate_list_add(priv);
     g_object_add_toggle_ref(gobj, wrapped_gobj_toggle_notify, NULL);
 }
 
@@ -1515,8 +1502,8 @@ object_instance_finalize(JSFreeOp  *fop,
                             "Removing from keep alive");
 
         priv->keep_alive.reset();
-        dissociate_list_remove(priv);
     }
+    wrapped_gobject_list.erase(priv);
 
     if (priv->info) {
         g_base_info_unref( (GIBaseInfo*) priv->info);
