@@ -180,7 +180,7 @@ void        gjs_throw                        (JSContext       *context,
                                               const char      *format,
                                               ...)  G_GNUC_PRINTF (2, 3);
 void        gjs_throw_custom                 (JSContext       *context,
-                                              const char      *error_class,
+                                              JSProtoKey       error_kind,
                                               const char      *error_name,
                                               const char      *format,
                                               ...)  G_GNUC_PRINTF (4, 5);

@@ -44,7 +44,7 @@
 static void
 G_GNUC_PRINTF(4, 0)
 gjs_throw_valist(JSContext       *context,
-                 const char      *error_class,
+                 JSProtoKey       error_kind,
                  const char      *error_name,
                  const char      *format,
                  va_list          args)
@@ -87,14 +87,10 @@ gjs_throw_valist(JSContext       *context,
         goto out;
     }
 
-    if (!JS_GetProperty(context, global, error_class, &v_constructor) ||
-        !v_constructor.isObject()) {
-        JS_ReportErrorUTF8(context, "??? Missing Error constructor in global object?");
+    if (!JS_GetClassObject(context, error_kind, &constructor))
         goto out;
-    }
 
     /* throw new Error(message) */
-    constructor = &v_constructor.toObject();
     new_exc = JS_New(context, constructor, error_args);
 
     if (!new_exc)
@@ -141,7 +137,7 @@ gjs_throw(JSContext       *context,
     va_list args;
 
     va_start(args, format);
-    gjs_throw_valist(context, "Error", NULL, format, args);
+    gjs_throw_valist(context, JSProto_Error, nullptr, format, args);
     va_end(args);
 }
 
@@ -151,16 +147,21 @@ gjs_throw(JSContext       *context,
  * error.
  */
 void
-gjs_throw_custom(JSContext       *context,
-                 const char      *error_class,
-                 const char      *error_name,
-                 const char      *format,
+gjs_throw_custom(JSContext  *cx,
+                 JSProtoKey  kind,
+                 const char *error_name,
+                 const char *format,
                  ...)
 {
     va_list args;
+    g_return_if_fail(kind == JSProto_Error || kind == JSProto_InternalError ||
+        kind == JSProto_EvalError || kind == JSProto_RangeError ||
+        kind == JSProto_ReferenceError || kind == JSProto_SyntaxError ||
+        kind == JSProto_TypeError || kind == JSProto_URIError ||
+        kind == JSProto_StopIteration);
 
     va_start(args, format);
-    gjs_throw_valist(context, error_class, error_name, format, args);
+    gjs_throw_valist(cx, kind, error_name, format, args);
     va_end(args);
 }
 

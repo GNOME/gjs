@@ -304,7 +304,7 @@ gjs_typecheck_param(JSContext       *context,
 
     if (priv->gparam == NULL) {
         if (throw_error) {
-            gjs_throw_custom(context, "TypeError", NULL,
+            gjs_throw_custom(context, JSProto_TypeError, nullptr,
                              "Object is GObject.ParamSpec.prototype, not an object instance - "
                              "cannot convert to a GObject.ParamSpec instance");
         }
@@ -318,7 +318,7 @@ gjs_typecheck_param(JSContext       *context,
         result = true;
 
     if (!result && throw_error) {
-        gjs_throw_custom(context, "TypeError", NULL,
+        gjs_throw_custom(context, JSProto_TypeError, nullptr,
                          "Object is of type %s - cannot convert to %s",
                          g_type_name(G_TYPE_FROM_INSTANCE (priv->gparam)),
                          g_type_name(expected_type));
