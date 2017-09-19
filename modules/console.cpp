@@ -55,7 +55,6 @@
 #include "console.h"
 #include "gjs/context.h"
 #include "gjs/context-private.h"
-#include "gjs/jsapi-private.h"
 #include "gjs/jsapi-wrapper.h"
 
 static void

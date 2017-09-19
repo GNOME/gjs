@@ -32,7 +32,6 @@
 #include "engine.h"
 #include "global.h"
 #include "importer.h"
-#include "jsapi-private.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 #include "native.h"

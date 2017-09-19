@@ -31,7 +31,6 @@
 #include "jsapi-class.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
-#include "jsapi-private.h"
 
 #include <string.h>
 #include <math.h>

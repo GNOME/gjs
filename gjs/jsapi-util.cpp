@@ -33,7 +33,6 @@
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 #include "context-private.h"
-#include "jsapi-private.h"
 #include <gi/boxed.h>
 
 #include <string.h>

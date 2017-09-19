@@ -38,7 +38,6 @@
 #include "gerror.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
-#include "gjs/jsapi-private.h"
 #include "gjs/mem.h"
 
 #include <util/misc.h>

@@ -253,6 +253,8 @@ const char* gjs_get_type_name                (JS::Value        value);
 /* Functions intended for more "internal" use */
 
 void gjs_maybe_gc (JSContext *context);
+void gjs_schedule_gc_if_needed(JSContext *cx);
+void gjs_gc_if_needed(JSContext *cx);
 
 bool gjs_eval_with_scope(JSContext             *context,
                          JS::HandleObject       object,

@@ -26,6 +26,7 @@
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 #include "gi/gerror.h"
+#include "util/misc.h"
 
 #include <util/log.h>
 
@@ -231,4 +232,44 @@ gjs_format_stack_trace(JSContext       *cx,
         return nullptr;
 
     return g_filename_from_utf8(stack_utf8, -1, nullptr, nullptr, nullptr);
+}
+
+void
+gjs_warning_reporter(JSContext     *context,
+                     JSErrorReport *report)
+{
+    const char *warning;
+    GLogLevelFlags level;
+
+    g_assert(report);
+
+    if (gjs_environment_variable_is_set("GJS_ABORT_ON_OOM") &&
+        report->flags == JSREPORT_ERROR &&
+        report->errorNumber == 137) {
+        /* 137, JSMSG_OUT_OF_MEMORY */
+        g_error("GJS ran out of memory at %s: %i.",
+                report->filename,
+                report->lineno);
+    }
+
+    if ((report->flags & JSREPORT_WARNING) != 0) {
+        warning = "WARNING";
+        level = G_LOG_LEVEL_MESSAGE;
+
+        /* suppress bogus warnings. See mozilla/js/src/js.msg */
+        if (report->errorNumber == 162) {
+            /* 162, JSMSG_UNDEFINED_PROP: warns every time a lazy property
+             * is resolved, since the property starts out
+             * undefined. When this is a real bug it should usually
+             * fail somewhere else anyhow.
+             */
+            return;
+        }
+    } else {
+        warning = "REPORTED";
+        level = G_LOG_LEVEL_WARNING;
+    }
+
+    g_log(G_LOG_DOMAIN, level, "JS %s: [%s %d]: %s", warning, report->filename,
+          report->lineno, report->message().c_str());
 }

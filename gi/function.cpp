@@ -35,7 +35,6 @@
 #include "param.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
-#include "gjs/jsapi-private.h"
 #include "gjs/jsapi-wrapper.h"
 #include "gjs/mem.h"
 
