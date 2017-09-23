@@ -455,6 +455,78 @@ describe('Coverage.functionsForAST', function () {
                 { key: "(anonymous):2:0", line: 2, n_params: 0 }
             ],
         ],
+
+        'finds class methods': [
+            `class Foo {
+                bar() {}
+            }`,
+            [
+                { key: 'bar:2:0', line: 2, n_params: 0 },
+            ],
+        ],
+
+        'finds class property setters': [
+            `class Foo {
+                set bar(value) {}
+            }`,
+            [
+                { key: 'set bar:2:1', line: 2, n_params: 1 },
+            ],
+        ],
+
+        'finds class property getters': [
+            `class Foo {
+                get bar() {}
+            }`,
+            [
+                { key: 'get bar:2:0', line: 2, n_params: 0 },
+            ],
+        ],
+
+        'finds class constructors': [
+            `class Foo {
+                constructor(baz) {}
+            }`,
+            [
+                { key: 'Foo:2:1', line: 2, n_params: 1 },
+            ],
+        ],
+
+        'finds class expression methods': [
+            `void class {
+                baz() {}
+            }`,
+            [
+                { key: 'baz:2:0', line: 2, n_params: 0 },
+            ],
+        ],
+
+        'finds class expression property setters': [
+            `void class {
+                set baz(value) {}
+            }`,
+            [
+                { key: 'set baz:2:1', line: 2, n_params: 1 },
+            ],
+        ],
+
+        'finds class expression property getters': [
+            `void class {
+                get baz() {}
+            }`,
+            [
+                { key: 'get baz:2:0', line: 2, n_params: 0 },
+            ],
+        ],
+
+        'finds class expression constructors': [
+            `void class {
+                constructor(baz) {}
+            }`,
+            [
+                { key: '(anonymous):2:1', line: 2, n_params: 1 },
+            ],
+        ],
     };
 
     Object.keys(testTable).forEach(testcase => {
