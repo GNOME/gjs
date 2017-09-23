@@ -28,8 +28,6 @@ function getSubNodesForNode(node) {
     /* These statements have a single body */
     case 'LabeledStatement':
     case 'WithStatement':
-    case 'FunctionDeclaration':
-    case 'FunctionExpression':
     case 'CatchClause':
     case 'ClassMethod':
         subNodes.push(node.body);
@@ -95,8 +93,10 @@ function getSubNodesForNode(node) {
                 subNodes.push(elem);
         });
         break;
+    case 'FunctionDeclaration':
+    case 'FunctionExpression':
     case 'ArrowFunctionExpression':
-        Array.prototype.push.apply(subNodes, node.defaults);
+        subNodes.push(...node.defaults);
         subNodes.push(node.body);
         break;
     case 'SequenceExpression':
@@ -142,6 +142,7 @@ function getSubNodesForNode(node) {
             subNodes.push(node.finalizer);
         break;
     case 'SwitchStatement':
+        subNodes.push(node.discriminant);
         for (let caseClause of node.cases) {
             caseClause.consequent.forEach(function(expression) {
                 subNodes.push(expression);
