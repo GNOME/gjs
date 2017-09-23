@@ -826,55 +826,21 @@ describe('Coverage', function () {
     });
 
     it('function key from function with name matches schema', function () {
+        let ast = Reflect.parse('function f(a, b) {}').body[0];
         let functionKeyForFunctionName =
-            Coverage._getFunctionKeyFromReflectedFunction({
-                id: {
-                    name: 'f'
-                },
-                loc: {
-                  start: {
-                      line: 1
-                  }
-                },
-                params: ['a', 'b']
-            });
+            Coverage._getFunctionKeyFromReflectedFunction(ast);
         expect(functionKeyForFunctionName).toEqual('f:1:2');
     });
 
     it('function key from function without name is anonymous', function () {
+        let ast = Reflect.parse('\nvoid function (a, b, c) {}').body[0].expression.argument;
         let functionKeyForAnonymousFunction =
-            Coverage._getFunctionKeyFromReflectedFunction({
-                id: null,
-                loc: {
-                  start: {
-                      line: 2
-                  }
-                },
-                params: ['a', 'b', 'c']
-            });
+            Coverage._getFunctionKeyFromReflectedFunction(ast);
         expect(functionKeyForAnonymousFunction).toEqual('(anonymous):2:3');
     });
 
     it('returns a function counter map for function keys', function () {
-        let ast = {
-            body: [{
-                type: 'FunctionDeclaration',
-                id: {
-                    name: 'name'
-                },
-                loc: {
-                  start: {
-                      line: 1
-                  }
-                },
-                params: [],
-                body: {
-                    type: 'BlockStatement',
-                    body: []
-                }
-            }]
-        };
-
+        let ast = Reflect.parse('function name() {}');
         let detectedFunctions = Coverage.functionsForAST(ast);
         let functionCounters =
             Coverage._functionsToFunctionCounters('script', detectedFunctions);
@@ -883,40 +849,7 @@ describe('Coverage', function () {
 
     it('reports an error when two indistinguishable functions are present', function () {
         spyOn(window, 'log');
-        let ast = {
-            body: [{
-                type: 'FunctionDeclaration',
-                id: {
-                    name: '(anonymous)'
-                },
-                loc: {
-                  start: {
-                      line: 1
-                  }
-                },
-                params: [],
-                body: {
-                    type: 'BlockStatement',
-                    body: []
-                }
-            }, {
-                type: 'FunctionDeclaration',
-                id: {
-                    name: '(anonymous)'
-                },
-                loc: {
-                  start: {
-                      line: 1
-                  }
-                },
-                params: [],
-                body: {
-                    type: 'BlockStatement',
-                    body: []
-                }
-            }]
-        };
-
+        let ast = Reflect.parse('() => {}; () => {}');
         let detectedFunctions = Coverage.functionsForAST(ast);
         Coverage._functionsToFunctionCounters('script', detectedFunctions);
 
@@ -1030,25 +963,7 @@ describe('Coverage.incrementFunctionCounters', function () {
     });
 
     it('increments for function on earlier start line', function () {
-        let ast = {
-            body: [{
-                type: 'FunctionDeclaration',
-                id: {
-                    name: 'name'
-                },
-                loc: {
-                  start: {
-                      line: 1
-                  }
-                },
-                params: [],
-                body: {
-                    type: 'BlockStatement',
-                    body: []
-                }
-            }]
-        };
-
+        let ast = Reflect.parse('function name() {}');
         let detectedFunctions = Coverage.functionsForAST(ast);
         let knownFunctionsArray = Coverage._populateKnownFunctions(detectedFunctions, 3);
         let functionCounters = Coverage._functionsToFunctionCounters('script',
@@ -1062,24 +977,7 @@ describe('Coverage.incrementFunctionCounters', function () {
     });
 
     it('throws an error on unexpected function', function () {
-        let ast = {
-            body: [{
-                type: 'FunctionDeclaration',
-                id: {
-                    name: 'name'
-                },
-                loc: {
-                  start: {
-                      line: 1
-                  }
-                },
-                params: [],
-                body: {
-                    type: 'BlockStatement',
-                    body: []
-                }
-            }]
-        };
+        let ast = Reflect.parse('function name() {}');
         let detectedFunctions = Coverage.functionsForAST(ast);
         let knownFunctionsArray = Coverage._populateKnownFunctions(detectedFunctions, 3);
         let functionCounters = Coverage._functionsToFunctionCounters('script',
