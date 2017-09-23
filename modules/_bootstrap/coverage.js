@@ -26,7 +26,7 @@ function getSubNodesForNode(node) {
     let subNodes = [];
     switch (node.type) {
     /* These statements have a single body */
-    case 'LabelledStatement':
+    case 'LabeledStatement':
     case 'WithStatement':
     case 'FunctionDeclaration':
     case 'FunctionExpression':
@@ -285,7 +285,7 @@ function getBranchExitStartLine(branchBodyNode) {
         return -1;
     /* These types of statements are never executable */
     case 'EmptyStatement':
-    case 'LabelledStatement':
+    case 'LabeledStatement':
         return -1;
     default:
         break;
