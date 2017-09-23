@@ -354,7 +354,7 @@ function expressionLinesForNode(statement) {
         /* These expressions aren't executable on their own */
         switch (statement.type) {
         case 'FunctionDeclaration':
-        case 'LiteralExpression':
+        case 'Literal':
             break;
         /* Perplexingly, an empty block statement is actually executable,
          * push it if it is */
