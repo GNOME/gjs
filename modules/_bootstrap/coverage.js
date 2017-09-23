@@ -31,6 +31,7 @@ function getSubNodesForNode(node) {
     case 'FunctionDeclaration':
     case 'FunctionExpression':
     case 'CatchClause':
+    case 'ClassMethod':
         subNodes.push(node.body);
         break;
     case 'LetStatement':
@@ -62,7 +63,9 @@ function getSubNodesForNode(node) {
         subNodes.push(node.left, node.right, node.body);
         break;
     case 'BlockStatement':
-        Array.prototype.push.apply(subNodes, node.body);
+    case 'ClassStatement':
+    case 'ClassExpression':
+        subNodes.push(...node.body);
         break;
     case 'ThrowStatement':
     case 'ReturnStatement':
