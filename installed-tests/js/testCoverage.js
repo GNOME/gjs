@@ -1041,10 +1041,15 @@ describe('Coverage statistics container', function () {
                     "\n",
         'uncached': "function f() {\n" +
                     "    return 1;\n" +
-                    "}\n"
+                    '}\n',
+        'shebang': `#!/usr/bin/env gjs
+            function f() {}
+            `,
     };
 
     const MockFilenames = Object.keys(MockFiles).concat(['nonexistent']);
+
+    let container;
 
     beforeEach(function () {
         Coverage.getFileContents =
@@ -1053,11 +1058,10 @@ describe('Coverage statistics container', function () {
             jasmine.createSpy('getFileChecksum').and.returnValue('abcd');
         Coverage.getFileModificationTime =
             jasmine.createSpy('getFileModificationTime').and.returnValue([1, 2]);
+        container = new Coverage.CoverageStatisticsContainer(MockFilenames);
     });
 
     it('fetches valid statistics for file', function () {
-        let container = new Coverage.CoverageStatisticsContainer(MockFilenames);
-
         let statistics = container.fetchStatistics('filename');
         expect(statistics).toBeDefined();
 
@@ -1066,8 +1070,15 @@ describe('Coverage statistics container', function () {
     });
 
     it('throws for nonexisting file', function () {
-        let container = new Coverage.CoverageStatisticsContainer(MockFilenames);
         expect(() => container.fetchStatistics('nonexistent')).toThrow();
+    });
+
+    it('handles a shebang on line 1', function () {
+        expect(() => container.fetchStatistics('shebang')).not.toThrow();
+    });
+
+    it('ignores a file in angle brackets (our convention for programmatic scripts)', function () {
+        expect(() => container.fetchStatistics('<script>')).not.toThrow();
     });
 
     const MockCache = '{ \
