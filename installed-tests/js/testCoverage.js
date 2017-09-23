@@ -527,6 +527,14 @@ describe('Coverage.functionsForAST', function () {
                 { key: '(anonymous):2:1', line: 2, n_params: 1 },
             ],
         ],
+
+        'finds functions inside labeled statement': [
+            `loop:
+            for (function () {}; ; ) {}`,
+            [
+                { key: '(anonymous):2:0', line: 2, n_params: 0 },
+            ],
+        ],
     };
 
     Object.keys(testTable).forEach(testcase => {
