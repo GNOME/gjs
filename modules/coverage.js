@@ -760,6 +760,9 @@ function _fetchCountersFromCache(filename, cache, nLines) {
 }
 
 function _fetchCountersFromReflection(filename, contents, nLines) {
+    // Shebang is illegal character sequence to JS parser
+    if (contents.startsWith('#!'))
+        contents = '//' + contents;
     let reflection = Reflect.parse(contents);
     let functions = functionsForAST(reflection);
 
@@ -798,6 +801,9 @@ function CoverageStatisticsContainer(prefixes, cache) {
     }
 
     function ensureStatisticsFor(filename) {
+        // Skip scripts fed to JS engine programmatically.
+        if (filename.startsWith('<') && filename.endsWith('>'))
+            return undefined;
         if (!coveredFiles[filename])
             coveredFiles[filename] = createStatisticsFor(filename);
         return coveredFiles[filename];
