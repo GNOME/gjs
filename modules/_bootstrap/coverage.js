@@ -1,3 +1,4 @@
+/* exported CoverageStatistics */
 /*
  * Copyright (c) 2014 Endless Mobile, Inc.
  *
@@ -677,15 +678,16 @@ function _incrementExpressionCounters(expressionCounters,
     expressionCounters[offsetLine]++;
 }
 
-function _BranchTracker(branchCounters) {
-    this._branchCounters = branchCounters;
-    this._activeBranch = undefined;
+var _BranchTracker = class {
+    constructor(branchCounters) {
+        this._branchCounters = branchCounters;
+        this._activeBranch = undefined;
+    }
 
-    this.incrementBranchCounters = function(offsetLine) {
+    incrementBranchCounters(offsetLine) {
         /* Set branch exits or find a new active branch */
-        let activeBranch = this._activeBranch;
-        if (activeBranch !== undefined) {
-            activeBranch.exits.forEach(function(exit) {
+        if (this._activeBranch) {
+            this._activeBranch.exits.forEach(function(exit) {
                 if (exit.line === offsetLine) {
                     exit.hitCount++;
                 }
@@ -695,17 +697,17 @@ function _BranchTracker(branchCounters) {
              * completely outside of it, since we might be in a case statement where
              * we need to check every possible option before jumping to an
              * exit */
-            if (offsetLine >= activeBranch.lastExit)
+            if (offsetLine >= this._activeBranch.lastExit)
                 this._activeBranch = undefined;
         }
 
-        let nextActiveBranch = branchCounters[offsetLine];
+        let nextActiveBranch = this._branchCounters[offsetLine];
         if (nextActiveBranch !== undefined) {
             this._activeBranch = nextActiveBranch;
             this._activeBranch.hit = true;
         }
-    };
-}
+    }
+};
 
 function _convertFunctionCountersToArray(functionCounters) {
     let arrayReturn = [];
@@ -790,19 +792,22 @@ function _fetchCountersFromReflection(filename, contents, nLines) {
     };
 }
 
-function CoverageStatisticsContainer(prefixes, cache) {
-    /* Copy the files array, so that it can be re-used in the tests */
-    let cachedASTs = cache ? JSON.parse(cache) : null;
-    let coveredFiles = {};
-    let cacheMisses = 0;
+var CoverageStatisticsContainer = class {
+    constructor(prefixes, cache) {
+        /* Copy the files array, so that it can be re-used in the tests */
+        this._cachedASTs = cache ? JSON.parse(cache) : null;
+        this._coveredFiles = {};
+        this._cacheMisses = 0;
+    }
 
-    function createStatisticsFor(filename) {
+    _createStatisticsFor(filename) {
         let contents = getFileContents(filename);
         let nLines = _getNumberOfLinesForScript(contents);
 
-        let counters = _fetchCountersFromCache(filename, cachedASTs, nLines);
+        let counters = _fetchCountersFromCache(filename, this._cachedASTs,
+            nLines);
         if (counters === null) {
-            cacheMisses++;
+            this._cacheMisses++;
             counters = _fetchCountersFromReflection(filename, contents, nLines);
         }
 
@@ -815,19 +820,19 @@ function CoverageStatisticsContainer(prefixes, cache) {
         return counters;
     }
 
-    function ensureStatisticsFor(filename) {
+    _ensureStatisticsFor(filename) {
         // Skip scripts fed to JS engine programmatically.
         if (filename.startsWith('<') && filename.endsWith('>'))
             return undefined;
-        if (!coveredFiles[filename])
-            coveredFiles[filename] = createStatisticsFor(filename);
-        return coveredFiles[filename];
+        if (!this._coveredFiles[filename])
+            this._coveredFiles[filename] = this._createStatisticsFor(filename);
+        return this._coveredFiles[filename];
     }
 
-    this.stringify = function() {
+    stringify() {
         let cache_data = {};
-        Object.keys(coveredFiles).forEach(function(filename) {
-            let statisticsForFilename = coveredFiles[filename];
+        Object.keys(this._coveredFiles).forEach(filename => {
+            let statisticsForFilename = this._coveredFiles[filename];
             let mtime = getFileModificationTime(filename);
             let cacheDataForFilename = {
                 mtime: mtime,
@@ -864,133 +869,137 @@ function CoverageStatisticsContainer(prefixes, cache) {
             cache_data[filename] = cacheDataForFilename;
         });
         return JSON.stringify(cache_data);
-    };
+    }
 
-    this.getCoveredFiles = function() {
-        return Object.keys(coveredFiles);
-    };
+    getCoveredFiles() {
+        return Object.keys(this._coveredFiles);
+    }
 
-    this.fetchStatistics = function(filename) {
-        return ensureStatisticsFor(filename);
-    };
+    fetchStatistics(filename) {
+        return this._ensureStatisticsFor(filename);
+    }
 
-    this.staleCache = function() {
-        return cacheMisses > 0;
-    };
+    staleCache() {
+        return this._cacheMisses > 0;
+    }
 
-    this.deleteStatistics = function(filename) {
-        coveredFiles[filename] = undefined;
-    };
-}
+    deleteStatistics(filename) {
+        this._coveredFiles[filename] = undefined;
+    }
+};
 
 /**
  * Main class tying together the Debugger object and CoverageStatisticsContainer.
  *
- * It isn't poissible to unit test this class because it depends on running
+ * It isn't possible to unit test this class because it depends on running
  * Debugger which in turn depends on objects injected in from another compartment */
-function CoverageStatistics(prefixes, cache, shouldWarn) {
-    this.container = new CoverageStatisticsContainer(prefixes, cache);
-    let fetchStatistics = this.container.fetchStatistics.bind(this.container);
-    let deleteStatistics = this.container.deleteStatistics.bind(this.container);
+var CoverageStatistics = class {
+    constructor(prefixes, cache, shouldWarn) {
+        let _shouldWarn = shouldWarn;  // capture in closure
+        let container = new CoverageStatisticsContainer(prefixes, cache);
+        this.container = container;
 
-    /* 'debuggee' comes from the invocation from
-     * a separate compartment inside of coverage.cpp */
-    this.dbg = new Debugger(debuggee);
+        /* 'debuggee' comes from the invocation from
+         * a separate compartment inside of coverage.cpp */
+        this.dbg = new Debugger(debuggee);
+        this.dbg.onEnterFrame = function (frame) {
+            let statistics;
 
-    this.getCoveredFiles = function() {
-        return this.container.getCoveredFiles();
-    };
-
-    this.getNumberOfLinesFor = function(filename) {
-        return fetchStatistics(filename).nLines;
-    };
-
-    this.getExecutedLinesFor = function(filename) {
-        return fetchStatistics(filename).expressionCounters;
-    };
-
-    this.getBranchesFor = function(filename) {
-        return fetchStatistics(filename).branchCounters;
-    };
-
-    this.getFunctionsFor = function(filename) {
-        let functionCounters = fetchStatistics(filename).functionCounters;
-        return _convertFunctionCountersToArray(functionCounters);
-    };
-
-    this.dbg.onEnterFrame = function(frame) {
-        let statistics;
-
-        try {
-            statistics = fetchStatistics(frame.script.url);
-            if (!statistics) {
+            try {
+                statistics = container.fetchStatistics(frame.script.url);
+                if (!statistics) {
+                    return undefined;
+                }
+            } catch (e) {
+                /* We don't care about this frame, return */
+                log(`${e.message} ${e.stack}`);
                 return undefined;
             }
-        } catch (e) {
-            /* We don't care about this frame, return */
-            log(e.message + " " + e.stack);
+
+            function _logExceptionAndReset(exception, callee, line) {
+                log(`${exception.fileName}:${exception.lineNumber} (processing ` +
+                    `${frame.script.url}:${callee}:${line}) - ${exception.message}`);
+                log('Will not log statistics for this file');
+                frame.onStep = undefined;
+                frame._branchTracker = undefined;
+                container.deleteStatistics(frame.script.url);
+            }
+
+            /* Log function calls */
+            if (frame.callee !== null && frame.callee.callable) {
+                let name = frame.callee.name || '(anonymous)';
+                let {lineNumber} = frame.script.getOffsetLocation(frame.offset);
+                let nArgs = frame.callee.parameterNames.length;
+
+                try {
+                    _incrementFunctionCounters(statistics.functionCounters,
+                        statistics.linesWithKnownFunctions, name, lineNumber,
+                        nArgs);
+                } catch (e) {
+                    /* Something bad happened. Log the exception and delete
+                     * statistics for this file */
+                    _logExceptionAndReset(e, name, lineNumber);
+                    return undefined;
+                }
+            }
+
+            /* Upon entering the frame, the active branch is always inactive */
+            frame._branchTracker = new _BranchTracker(statistics.branchCounters);
+
+            /* Set single-step hook */
+            frame.onStep = function() {
+                /* Line counts */
+                let {offset} = this;
+                let {lineNumber} = this.script.getOffsetLocation(offset);
+
+                try {
+                    _incrementExpressionCounters(statistics.expressionCounters,
+                        frame.script.url, lineNumber, _shouldWarn);
+                    this._branchTracker.incrementBranchCounters(lineNumber);
+                } catch (e) {
+                    /* Something bad happened. Log the exception and delete
+                     * statistics for this file */
+                    _logExceptionAndReset(e, frame.callee, lineNumber);
+                }
+            };
+
             return undefined;
-        }
-
-        function _logExceptionAndReset(exception, callee, line) {
-            log(exception.fileName + ":" + exception.lineNumber +
-                " (processing " + frame.script.url + ":" + callee + ":" +
-                line + ") - " + exception.message);
-            log("Will not log statistics for this file");
-            frame.onStep = undefined;
-            frame._branchTracker = undefined;
-            deleteStatistics(frame.script.url);
-        }
-
-        /* Log function calls */
-        if (frame.callee !== null && frame.callee.callable) {
-            let name = frame.callee.name ? frame.callee.name : "(anonymous)";
-            let {lineNumber} = frame.script.getOffsetLocation(frame.offset);
-            let nArgs = frame.callee.parameterNames.length;
-
-            try {
-                _incrementFunctionCounters(statistics.functionCounters,
-                                           statistics.linesWithKnownFunctions,
-                                           name, lineNumber, nArgs);
-            } catch (e) {
-                /* Something bad happened. Log the exception and delete
-                 * statistics for this file */
-                _logExceptionAndReset(e, name, lineNumber);
-                return undefined;
-            }
-        }
-
-        /* Upon entering the frame, the active branch is always inactive */
-        frame._branchTracker = new _BranchTracker(statistics.branchCounters);
-
-        /* Set single-step hook */
-        frame.onStep = function() {
-            /* Line counts */
-            let offset = this.offset;
-            let {lineNumber} = this.script.getOffsetLocation(offset);
-
-            try {
-                _incrementExpressionCounters(statistics.expressionCounters,
-                                             frame.script.url,
-                                             lineNumber, shouldWarn);
-                this._branchTracker.incrementBranchCounters(lineNumber);
-            } catch (e) {
-                /* Something bad happened. Log the exception and delete
-                 * statistics for this file */
-                _logExceptionAndReset(e, frame.callee, lineNumber);
-            }
         };
+    }
 
-        return undefined;
-    };
+    getCoveredFiles() {
+        return this.container.getCoveredFiles();
+    }
 
-    this.deactivate = function() {
+    staleCache() {
+        return this.container.staleCache();
+    }
+
+    stringify() {
+        return this.container.stringify();
+    }
+
+    getNumberOfLinesFor(filename) {
+        return this.container.fetchStatistics(filename).nLines;
+    }
+
+    getExecutedLinesFor(filename) {
+        return this.container.fetchStatistics(filename).expressionCounters;
+    }
+
+    getBranchesFor(filename) {
+        return this.container.fetchStatistics(filename).branchCounters;
+    }
+
+    getFunctionsFor(filename) {
+        let {functionCounters} = this.container.fetchStatistics(filename);
+        return _convertFunctionCountersToArray(functionCounters);
+    }
+
+    deactivate() {
         /* This property is designed to be a one-stop-shop to
-         * disable the debugger for this debugee, without having
+         * disable the debugger for this debuggee, without having
          * to traverse all its scripts or frames */
         this.dbg.enabled = false;
-    };
-
-    this.staleCache = this.container.staleCache.bind(this.container);
-    this.stringify = this.container.stringify.bind(this.container);
-}
+    }
+};
