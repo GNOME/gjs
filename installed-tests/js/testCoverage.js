@@ -57,23 +57,23 @@ describe('Coverage.expressionLinesForAST', function () {
         ],
 
         'finds lines inside multiline function arguments': [
-            "function f(a, b, c) {\n" +
-            "}\n" +
-            "f(1,\n" +
-            "  2,\n" +
-            "  3);\n",
+            `function f(a, b, c) {
+            }
+            f(1,
+                2 + 3,
+                3 + 4);`,
             [1, 3, 4, 5],
         ],
 
         'finds lines inside function argument that is an object': [
-            "function f(o) {\n" +
-            "}\n" +
-            "let obj = {\n" +
-            "    Name: new f({ a: 1,\n" +
-            "                  b: 2,\n" +
-            "                  c: 3\n" +
-            "                })\n" +
-            "}\n",
+            `function f(o) {
+            }
+            let obj = {
+                Name: new f({ a: 1,
+                    b: 2 + 3,
+                    c: 3 + 4,
+                })
+            } `,
             [1, 3, 4, 5, 6],
         ],
 
@@ -154,10 +154,10 @@ describe('Coverage.expressionLinesForAST', function () {
         ],
 
         'finds lines for object property literals': [
-            "var a = {\n" +
-            "    Name: 'foo',\n" +
-            "    Ex: 'bar'\n" +
-            "};\n",
+            `var a = {
+                Name: 'foo' + 'bar',
+                Ex: 'bar' + 'foo',
+            }`,
             [1, 2, 3],
         ],
 
@@ -190,12 +190,12 @@ describe('Coverage.expressionLinesForAST', function () {
         ],
 
         'finds lines inside object-valued argument to throw statement': [
-            "function f() {\n" +
-            "    throw {\n" +
-            "        a: 1,\n" +
-            "        b: 2\n" +
-            "    }\n" +
-            "}\n",
+            `function f() {
+                throw {
+                    a: 1 + 2,
+                    b: 2 + 3,
+                }
+            }`,
             [2, 3, 4],
         ],
     };
