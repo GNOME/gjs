@@ -13,7 +13,7 @@ describe('Coverage.expressionLinesForAST', function () {
             "x = (function() {\n" +
             "    return 10;\n" +
             "})();\n",
-            [1, 2, 3],
+            [2, 3],
         ],
 
         'finds lines inside functions': [
@@ -197,6 +197,16 @@ describe('Coverage.expressionLinesForAST', function () {
                 }
             }`,
             [2, 3, 4],
+        ],
+
+        'does not find lines in empty var declarations': [
+            'var foo;',
+            [],
+        ],
+
+        'finds lines in empty let declarations': [
+            'let foo;',
+            [1],
         ],
     };
 

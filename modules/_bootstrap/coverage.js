@@ -363,6 +363,17 @@ function expressionLinesForNode(statement) {
                 break;
             expressionLines.push(statement.loc.start.line);
             break;
+        case 'VariableDeclaration':
+            if (statement.kind === 'var') {
+                /* empty 'var foo;' declarations are not executable */
+                let nonEmpty = statement.declarations.filter(decl =>
+                    decl.init !== null);
+                nonEmpty.forEach(decl => {
+                    expressionLines.push(decl.loc.start.line);
+                });
+                break;
+            }
+            /* fall through */
         default:
             expressionLines.push(statement.loc.start.line);
             break;
