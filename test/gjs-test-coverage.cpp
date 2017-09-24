@@ -1843,6 +1843,7 @@ test_coverage_cache_invalidation(gpointer      fixture_data,
 
     const gsize expected_len = G_N_ELEMENTS(expected);
     const char *record = line_starting_with(coverage_data_contents, "SF:");
+    g_assert_nonnull(record);
     g_assert(check_coverage_data_for_source_file(expected, expected_len, record));
 
     g_free(script_output_path);

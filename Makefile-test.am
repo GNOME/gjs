@@ -337,6 +337,7 @@ JS_LOG_COMPILER = $$LOG_COMPILER $$LOG_FLAGS $(top_builddir)/minijasmine
 
 CODE_COVERAGE_IGNORE_PATTERN = */{include,mfbt,gjs/test,gjs/installed-tests}/*
 CODE_COVERAGE_GENHTML_OPTIONS = 			\
+	$(CODE_COVERAGE_GENHTML_OPTIONS_DEFAULT)	\
 	lcov/coverage.lcov 				\
 	--prefix $(abs_top_builddir)/lcov/org/gnome/gjs	\
 	--prefix $(abs_top_builddir) 			\

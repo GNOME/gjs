@@ -431,21 +431,17 @@ get_array_from_js_value(JSContext             *context,
     if (element_clear_func)
         g_array_set_clear_func(c_side_array, element_clear_func);
 
-    if (JS_GetArrayLength(context, js_array, &js_array_len)) {
-        uint32_t i = 0;
-        JS::RootedValue element(context);
-        for (; i < js_array_len; ++i) {
-            if (!JS_GetElement(context, js_array, i, &element)) {
-                g_array_unref(c_side_array);
-                gjs_throw(context, "Failed to get function names array element %d", i);
-                return false;
-            }
+    if (!JS_GetArrayLength(context, js_array, &js_array_len)) {
+        g_array_unref(c_side_array);
+        return false;
+    }
 
-            if (!(inserter(c_side_array, context, element))) {
-                g_array_unref(c_side_array);
-                gjs_throw(context, "Failed to convert array element %d", i);
-                return false;
-            }
+    JS::RootedValue element(context);
+    for (uint32_t i = 0; i < js_array_len; ++i) {
+        if (!JS_GetElement(context, js_array, i, &element) ||
+            !inserter(c_side_array, context, element)) {
+            g_array_unref(c_side_array);
+            return false;
         }
     }
 
@@ -526,12 +522,12 @@ get_hit_count_and_line_data(JSContext       *cx,
                             int32_t         *line)
 {
     JS::RootedId hit_count_name(cx, gjs_intern_string_to_id(cx, "hitCount"));
-    if (!gjs_object_require_property(cx, obj, "function element",
+    if (!gjs_object_require_property(cx, obj, description,
                                      hit_count_name, hit_count))
         return false;
 
     JS::RootedId line_number_name(cx, gjs_intern_string_to_id(cx, "line"));
-    return gjs_object_require_property(cx, obj, "function_element",
+    return gjs_object_require_property(cx, obj, description,
                                        line_number_name, line);
 }
 
@@ -969,33 +965,6 @@ gjs_get_file_checksum(GFile *file)
     g_bytes_unref(data);
     return checksum;
 }
-
-/* The binary data for the cache has the following structure:
- *
- * {
- *     array [ tuple {
- *         string filename;
- *         string? checksum;
- *         tuple? {
- *             mtime_sec;
- *             mtime_usec;
- *         }
- *         array [
- *             int line;
- *         ] executable lines;
- *         array [ tuple {
- *             int branch_point;
- *             array [
- *                 int line;
- *             ] exits;
- *         } branch_info ] branches;
- *         array [ tuple {
- *             int line;
- *             string key;
- *         } function ] functions;
- *     } file ] files;
- */
-const char *COVERAGE_STATISTICS_CACHE_BINARY_DATA_TYPE = "a(sm(xx)msaia(iai)a(is))";
 
 GBytes *
 gjs_serialize_statistics(GjsCoverage *coverage)
