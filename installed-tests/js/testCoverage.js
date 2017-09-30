@@ -1044,21 +1044,30 @@ describe('Coverage.incrementFunctionCounters', function () {
 
 describe('Coverage statistics container', function () {
     const MockFiles = {
-        'filename': "function f() {\n" +
-                    "    return 1;\n" +
-                    "}\n" +
-                    "if (f())\n" +
-                    "    f = 0;\n" +
-                    "\n",
-        'uncached': "function f() {\n" +
-                    "    return 1;\n" +
-                    '}\n',
-        'shebang': `#!/usr/bin/env gjs
+        'prefix/filename':
+            `function f() {
+                return 1;
+            }
+            if (f())
+                f = 0;
+            `,
+        'prefix/uncached':
+            `function f() {
+                return 1;
+            }
+            `,
+        'unprefixed':
+            `function f() {
+                return 1;
+            }
+            `,
+        'prefix/shebang':
+            `#!/usr/bin/env gjs
             function f() {}
             `,
     };
 
-    const MockFilenames = Object.keys(MockFiles).concat(['nonexistent']);
+    const MockFilenames = Object.keys(MockFiles).concat(['prefix/nonexistent']);
 
     let container;
 
@@ -1069,31 +1078,38 @@ describe('Coverage statistics container', function () {
             jasmine.createSpy('getFileChecksum').and.returnValue('abcd');
         Coverage.getFileModificationTime =
             jasmine.createSpy('getFileModificationTime').and.returnValue([1, 2]);
-        container = new Coverage.CoverageStatisticsContainer(MockFilenames);
+        container = new Coverage.CoverageStatisticsContainer(['prefix/']);
     });
 
     it('fetches valid statistics for file', function () {
-        let statistics = container.fetchStatistics('filename');
+        let statistics = container.fetchStatistics('prefix/filename');
         expect(statistics).toBeDefined();
 
         let files = container.getCoveredFiles();
-        expect(files).toEqual(['filename']);
+        expect(files).toEqual(['prefix/filename']);
     });
 
     it('throws for nonexisting file', function () {
-        expect(() => container.fetchStatistics('nonexistent')).toThrow();
+        expect(() => container.fetchStatistics('prefix/nonexistent')).toThrow();
     });
 
     it('handles a shebang on line 1', function () {
-        expect(() => container.fetchStatistics('shebang')).not.toThrow();
+        let statistics = container.fetchStatistics('prefix/shebang');
+        expect(statistics).toBeDefined();
     });
 
     it('ignores a file in angle brackets (our convention for programmatic scripts)', function () {
-        expect(() => container.fetchStatistics('<script>')).not.toThrow();
+        let statistics = container.fetchStatistics('<script>');
+        expect(statistics).not.toBeDefined();
+    });
+
+    it('ignores a file without the specified prefix', function () {
+        let statistics = container.fetchStatistics('unprefixed');
+        expect(statistics).not.toBeDefined();
     });
 
     const MockCache = '{ \
-        "filename": { \
+        "prefix/filename": { \
             "mtime": [1, 2], \
             "checksum": null, \
             "lines": [2, 4, 5], \
@@ -1121,22 +1137,22 @@ describe('Coverage statistics container', function () {
         });
 
         it('fetches counters from cache', function () {
-            container.fetchStatistics('filename');
+            container.fetchStatistics('prefix/filename');
             expect(Coverage._fetchCountersFromReflection).not.toHaveBeenCalled();
         });
 
         it('fetches counters from reflection if missed', function () {
-            container.fetchStatistics('uncached');
+            container.fetchStatistics('prefix/uncached');
             expect(Coverage._fetchCountersFromReflection).toHaveBeenCalled();
         });
 
         it('cache is not stale if all hit', function () {
-            container.fetchStatistics('filename');
+            container.fetchStatistics('prefix/filename');
             expect(container.staleCache()).toBeFalsy();
         });
 
         it('cache is stale if missed', function () {
-            container.fetchStatistics('uncached');
+            container.fetchStatistics('prefix/uncached');
             expect(container.staleCache()).toBeTruthy();
         });
     });
@@ -1147,10 +1163,10 @@ describe('Coverage statistics container', function () {
         beforeEach(function () {
             container = new Coverage.CoverageStatisticsContainer(MockFilenames,
                                                                  MockCache);
-            statistics = container.fetchStatistics('filename');
+            statistics = container.fetchStatistics('prefix/filename');
 
             containerWithNoCaching = new Coverage.CoverageStatisticsContainer(MockFilenames);
-            statisticsWithNoCaching = containerWithNoCaching.fetchStatistics('filename');
+            statisticsWithNoCaching = containerWithNoCaching.fetchStatistics('prefix/filename');
         });
 
         it('have same executable lines as reflection', function () {

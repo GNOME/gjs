@@ -793,6 +793,7 @@ function _fetchCountersFromReflection(filename, contents, nLines) {
 function CoverageStatisticsContainer(prefixes, cache) {
     /* Copy the files array, so that it can be re-used in the tests */
     let cachedASTs = cache ? JSON.parse(cache) : null;
+    let _prefixes = prefixes;
     let coveredFiles = {};
     let cacheMisses = 0;
 
@@ -819,6 +820,10 @@ function CoverageStatisticsContainer(prefixes, cache) {
         // Skip scripts fed to JS engine programmatically.
         if (filename.startsWith('<') && filename.endsWith('>'))
             return undefined;
+
+        if (!_prefixes.some(prefix => filename.startsWith(prefix)))
+            return undefined;
+
         if (!coveredFiles[filename])
             coveredFiles[filename] = createStatisticsFor(filename);
         return coveredFiles[filename];
