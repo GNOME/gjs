@@ -30,25 +30,6 @@ mock-js-resources.h: $(srcdir)/test/mock-js-resources.gresource.xml $(modules_re
 mock-js-resources.c: $(srcdir)/test/mock-js-resources.gresource.xml $(modules_resource_files)
 	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --sourcedir=$(builddir) --generate --c-name mock_js_resources $<
 
-mock_js_invalidation_resources_dir = $(top_srcdir)/test/gjs-test-coverage/cache_invalidation
-mock_js_invalidation_before_resources_files =								\
-	$(mock_js_invalidation_resources_dir)/before/resource.js					\
-	$(mock_js_invalidation_resources_dir)/before/mock-js-resource-cache-before.gresource.xml	\
-	$(NULL)
-mock_js_invalidation_after_resources_files =								\
-	$(mock_js_invalidation_resources_dir)/after/resource.js						\
-	$(mock_js_invalidation_resources_dir)/after/mock-js-resource-cache-after.gresource.xml		\
-	$(NULL)
-mock_js_invalidation_resources_files =			\
-	$(mock_js_invalidation_before_resources_files)	\
-	$(mock_js_invalidation_after_resources_files)	\
-	$(NULL)
-
-mock-cache-invalidation-before.gresource: $(mock_js_invalidation_before_resources_files)
-	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(mock_js_invalidation_resources_dir)/before $(mock_js_invalidation_resources_dir)/before/mock-js-resource-cache-before.gresource.xml
-mock-cache-invalidation-after.gresource: $(mock_js_invalidation_after_resources_files)
-	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(mock_js_invalidation_resources_dir)/after $(mock_js_invalidation_resources_dir)/after/mock-js-resource-cache-after.gresource.xml
-
 jsunit_resources_files := $(shell glib-compile-resources --sourcedir=$(srcdir)/installed-tests/js --generate-dependencies $(srcdir)/installed-tests/js/jsunit.gresources.xml)
 jsunit-resources.h: $(srcdir)/installed-tests/js/jsunit.gresources.xml $(jsunit_resources_files)
 	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir)/installed-tests/js --sourcedir=$(builddir) --generate --c-name jsunit_resources $<
@@ -59,15 +40,11 @@ BUILT_SOURCES += mock-js-resources.c jsunit-resources.h jsunit-resources.c
 
 EXTRA_DIST += 							\
 	$(mock_js_resources_files)				\
-	$(mock_js_invalidation_resources_files)			\
 	$(srcdir)/test/mock-js-resources.gresource.xml		\
-	$(srcdir)/test/gjs-test-coverage/loadedJSFromResource.js \
 	$(jsunit_resources_files)				\
 	$(NULL)
 
 CLEANFILES +=						\
-	mock-cache-invalidation-before.gresource	\
-	mock-cache-invalidation-after.gresource		\
 	mock-js-resources.c				\
 	jsunit-resources.c				\
 	jsunit-resources.h				\
@@ -103,11 +80,6 @@ gjs_tests_gtester_SOURCES =				\
 	test/gjs-test-coverage.cpp			\
 	test/gjs-test-rooting.cpp			\
 	mock-js-resources.c				\
-	$(NULL)
-
-gjs_tests_gtester_DEPENDENCIES =			\
-	mock-cache-invalidation-before.gresource	\
-	mock-cache-invalidation-after.gresource		\
 	$(NULL)
 
 minijasmine_SOURCES =			\
@@ -218,7 +190,6 @@ CLEANFILES += $(TEST_INTROSPECTION_GIRS) $(TEST_INTROSPECTION_TYPELIBS)
 common_jstests_files =						\
 	installed-tests/js/testself.js				\
 	installed-tests/js/testByteArray.js			\
-	installed-tests/js/testCoverage.js			\
 	installed-tests/js/testExceptions.js			\
 	installed-tests/js/testEverythingBasic.js		\
 	installed-tests/js/testEverythingEncapsulated.js	\
