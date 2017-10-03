@@ -1,3 +1,16 @@
+Version 1.50.1
+--------------
+
+- As a debugging aid, gjs_dumpstack() now works even during garbage collection.
+
+- Code coverage tools did not work so well in the last few 1.49 releases. The
+  worst problems are now fixed, although even more improvements will be
+  released in the next unstable version. Fixes include:
+
+  * Specifing prefixes for code coverage files now works again
+  * Code coverage now works on lines inside ES6 class definitions
+  * The detection of which lines are executable has been improved a bit
+
 Version 1.50.0
 --------------
 
