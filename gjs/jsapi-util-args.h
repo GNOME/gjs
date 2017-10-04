@@ -352,9 +352,9 @@ gjs_parse_call_args(JSContext    *cx,
  * value location pairs.  The currently accepted format specifiers are:
  *
  * b: A boolean (pass a bool *)
- * s: A string, converted into UTF-8 (pass a char **)
+ * s: A string, converted into UTF-8 (pass a GjsAutoJSChar *)
  * F: A string, converted into "filename encoding" (i.e. active locale) (pass
- *   a char **)
+ *   a GjsAutoChar *)
  * i: A number, will be converted to a 32-bit int (pass an int32_t * or a
  *   pointer to an enum type)
  * u: A number, converted into a 32-bit unsigned int (pass a uint32_t *)

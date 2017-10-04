@@ -23,7 +23,6 @@
 
 #include <gio/gio.h>
 
-#include "jsapi-private.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 #include "module.h"

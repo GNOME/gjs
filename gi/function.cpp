@@ -35,7 +35,6 @@
 #include "param.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
-#include "gjs/jsapi-private.h"
 #include "gjs/jsapi-wrapper.h"
 #include "gjs/mem.h"
 
@@ -699,7 +698,7 @@ gjs_fill_method_instance(JSContext       *context,
             if (transfer == GI_TRANSFER_EVERYTHING)
                 gjs_fundamental_ref (context, out_arg->v_pointer);
         } else {
-            gjs_throw_custom(context, "TypeError", NULL,
+            gjs_throw_custom(context, JSProto_TypeError, nullptr,
                              "%s.%s is not an object instance neither a fundamental instance of a supported type",
                              g_base_info_get_namespace(container),
                              g_base_info_get_name(container));

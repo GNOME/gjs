@@ -626,7 +626,7 @@ do_import(JSContext       *context,
         /* If no exception occurred, the problem is just that we got to the
          * end of the path. Be sure an exception is set.
          */
-        gjs_throw_custom(context, "Error", "ImportError",
+        gjs_throw_custom(context, JSProto_Error, "ImportError",
                          "No JS module '%s' found in search path", name);
     }
 

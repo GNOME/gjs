@@ -62,8 +62,6 @@ gjs_srcs =				\
 	gjs/importer.h			\
 	gjs/jsapi-class.h		\
 	gjs/jsapi-dynamic-class.cpp	\
-	gjs/jsapi-private.cpp		\
-	gjs/jsapi-private.h		\
 	gjs/jsapi-util.cpp		\
 	gjs/jsapi-util.h		\
 	gjs/jsapi-util-args.h		\
@@ -83,8 +81,6 @@ gjs_srcs =				\
 	util/error.cpp			\
 	util/glib.cpp			\
 	util/glib.h			\
-	util/hash-x32.cpp		\
-	util/hash-x32.h			\
 	util/log.cpp			\
 	util/log.h			\
 	util/misc.cpp			\

@@ -180,7 +180,7 @@ void        gjs_throw                        (JSContext       *context,
                                               const char      *format,
                                               ...)  G_GNUC_PRINTF (2, 3);
 void        gjs_throw_custom                 (JSContext       *context,
-                                              const char      *error_class,
+                                              JSProtoKey       error_kind,
                                               const char      *error_name,
                                               const char      *format,
                                               ...)  G_GNUC_PRINTF (4, 5);
@@ -253,6 +253,8 @@ const char* gjs_get_type_name                (JS::Value        value);
 /* Functions intended for more "internal" use */
 
 void gjs_maybe_gc (JSContext *context);
+void gjs_schedule_gc_if_needed(JSContext *cx);
+void gjs_gc_if_needed(JSContext *cx);
 
 bool gjs_eval_with_scope(JSContext             *context,
                          JS::HandleObject       object,

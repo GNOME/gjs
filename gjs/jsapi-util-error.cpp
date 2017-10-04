@@ -26,6 +26,7 @@
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 #include "gi/gerror.h"
+#include "util/misc.h"
 
 #include <util/log.h>
 
@@ -44,7 +45,7 @@
 static void
 G_GNUC_PRINTF(4, 0)
 gjs_throw_valist(JSContext       *context,
-                 const char      *error_class,
+                 JSProtoKey       error_kind,
                  const char      *error_name,
                  const char      *format,
                  va_list          args)
@@ -87,14 +88,10 @@ gjs_throw_valist(JSContext       *context,
         goto out;
     }
 
-    if (!JS_GetProperty(context, global, error_class, &v_constructor) ||
-        !v_constructor.isObject()) {
-        JS_ReportErrorUTF8(context, "??? Missing Error constructor in global object?");
+    if (!JS_GetClassObject(context, error_kind, &constructor))
         goto out;
-    }
 
     /* throw new Error(message) */
-    constructor = &v_constructor.toObject();
     new_exc = JS_New(context, constructor, error_args);
 
     if (!new_exc)
@@ -141,7 +138,7 @@ gjs_throw(JSContext       *context,
     va_list args;
 
     va_start(args, format);
-    gjs_throw_valist(context, "Error", NULL, format, args);
+    gjs_throw_valist(context, JSProto_Error, nullptr, format, args);
     va_end(args);
 }
 
@@ -151,16 +148,21 @@ gjs_throw(JSContext       *context,
  * error.
  */
 void
-gjs_throw_custom(JSContext       *context,
-                 const char      *error_class,
-                 const char      *error_name,
-                 const char      *format,
+gjs_throw_custom(JSContext  *cx,
+                 JSProtoKey  kind,
+                 const char *error_name,
+                 const char *format,
                  ...)
 {
     va_list args;
+    g_return_if_fail(kind == JSProto_Error || kind == JSProto_InternalError ||
+        kind == JSProto_EvalError || kind == JSProto_RangeError ||
+        kind == JSProto_ReferenceError || kind == JSProto_SyntaxError ||
+        kind == JSProto_TypeError || kind == JSProto_URIError ||
+        kind == JSProto_StopIteration);
 
     va_start(args, format);
-    gjs_throw_valist(context, error_class, error_name, format, args);
+    gjs_throw_valist(cx, kind, error_name, format, args);
     va_end(args);
 }
 
@@ -230,4 +232,44 @@ gjs_format_stack_trace(JSContext       *cx,
         return nullptr;
 
     return g_filename_from_utf8(stack_utf8, -1, nullptr, nullptr, nullptr);
+}
+
+void
+gjs_warning_reporter(JSContext     *context,
+                     JSErrorReport *report)
+{
+    const char *warning;
+    GLogLevelFlags level;
+
+    g_assert(report);
+
+    if (gjs_environment_variable_is_set("GJS_ABORT_ON_OOM") &&
+        report->flags == JSREPORT_ERROR &&
+        report->errorNumber == 137) {
+        /* 137, JSMSG_OUT_OF_MEMORY */
+        g_error("GJS ran out of memory at %s: %i.",
+                report->filename,
+                report->lineno);
+    }
+
+    if ((report->flags & JSREPORT_WARNING) != 0) {
+        warning = "WARNING";
+        level = G_LOG_LEVEL_MESSAGE;
+
+        /* suppress bogus warnings. See mozilla/js/src/js.msg */
+        if (report->errorNumber == 162) {
+            /* 162, JSMSG_UNDEFINED_PROP: warns every time a lazy property
+             * is resolved, since the property starts out
+             * undefined. When this is a real bug it should usually
+             * fail somewhere else anyhow.
+             */
+            return;
+        }
+    } else {
+        warning = "REPORTED";
+        level = G_LOG_LEVEL_WARNING;
+    }
+
+    g_log(G_LOG_DOMAIN, level, "JS %s: [%s %d]: %s", warning, report->filename,
+          report->lineno, report->message().c_str());
 }
