@@ -57,6 +57,7 @@ function do_Set_Env(){
     #Save cache on host
     mkdir -p /cwd/.cache
     export XDG_CACHE_HOME=/cwd/.cache
+    export JHBUILD_RUN_AS_ROOT=1
 
     if [[ -z $DISPLAY ]]; then
         export DISPLAY=":0"
@@ -72,23 +73,6 @@ function do_Patch_JHBuild(){
     # Create and apply a patch
     cd jhbuild
     patch -p1 <<ENDPATCH
-diff --git a/jhbuild/main.py b/jhbuild/main.py
-index a5cf99b..28c31d6 100644
---- a/jhbuild/main.py
-+++ b/jhbuild/main.py
-@@ -94,9 +94,9 @@ def main(args):
-         localedir = None
-     gettext.install('jhbuild', localedir=localedir, unicode=True)
- 
--    if hasattr(os, 'getuid') and os.getuid() == 0:
--        sys.stderr.write(_('You should not run jhbuild as root.\n').encode(_encoding, 'replace'))
--        sys.exit(1)
-+    # if hasattr(os, 'getuid') and os.getuid() == 0:
-+    #    sys.stderr.write(_('You should not run jhbuild as root.\n').encode(_encoding, 'replace'))
-+    #    sys.exit(1)
- 
-     logging.getLogger().setLevel(logging.INFO)
-     logging_handler = logging.StreamHandler()
 diff --git a/jhbuild/utils/systeminstall.py b/jhbuild/utils/systeminstall.py
 index 75b0849..08965fa 100644
 --- a/jhbuild/utils/systeminstall.py
