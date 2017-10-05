@@ -69,50 +69,31 @@ get_file_identifier(GFile *source_file) {
     return path;
 }
 
-static void
+static bool
 write_source_file_header(GOutputStream *stream,
-                         GFile         *source_file)
+                         GFile         *source_file,
+                         GError       **error)
 {
-    char *path = get_file_identifier(source_file);
-    g_output_stream_printf(stream, NULL, NULL, NULL, "SF:%s\n", path);
-    g_free(path);
+    GjsAutoChar path = get_file_identifier(source_file);
+    return g_output_stream_printf(stream, NULL, NULL, error, "SF:%s\n", path.get());
 }
 
-static void
-copy_source_file_to_coverage_output(GFile *source_file,
-                                    GFile *destination_file)
+static bool
+copy_source_file_to_coverage_output(GFile   *source_file,
+                                    GFile   *destination_file,
+                                    GError **error)
 {
-    GError *error = NULL;
-
     /* We need to recursively make the directory we
      * want to copy to, as g_file_copy doesn't do that */
     GjsAutoUnref<GFile> destination_dir = g_file_get_parent(destination_file);
-    if (!g_file_make_directory_with_parents(destination_dir, NULL, &error)) {
-        if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_EXISTS))
-            goto fail;
-        g_clear_error(&error);
+    if (!g_file_make_directory_with_parents(destination_dir, NULL, error)) {
+        if (!g_error_matches(*error, G_IO_ERROR, G_IO_ERROR_EXISTS))
+            return false;
+        g_clear_error(error);
     }
 
-    if (!g_file_copy(source_file,
-                     destination_file,
-                     G_FILE_COPY_OVERWRITE,
-                     NULL,
-                     NULL,
-                     NULL,
-                     &error)) {
-        goto fail;
-    }
-
-    return;
-
-fail:
-    char *source_uri = get_file_identifier(source_file);
-    char *dest_uri = get_file_identifier(destination_file);
-    g_critical("Failed to copy source file %s to destination %s: %s\n",
-               source_uri, dest_uri, error->message);
-    g_free(source_uri);
-    g_free(dest_uri);
-    g_clear_error(&error);
+    return g_file_copy(source_file, destination_file, G_FILE_COPY_OVERWRITE,
+                       nullptr, nullptr, nullptr, error);
 }
 
 /* This function will strip a URI scheme and return
@@ -198,70 +179,43 @@ filename_has_coverage_prefixes(GjsCoverage *self, const char *filename)
     return false;
 }
 
-static bool
+static inline bool
 write_line(GOutputStream *out,
-           const char    *line)
+           const char    *line,
+           GError       **error)
 {
-    GError *error = nullptr;
-    if (!g_output_stream_printf(out, nullptr, nullptr, &error, "%s\n", line)) {
-        g_critical("Error writing coverage data: %s", error->message);
-        g_error_free(error);
-        return false;
-    }
-    return true;
+    return g_output_stream_printf(out, nullptr, nullptr, error, "%s\n", line);
 }
 
-/**
- * gjs_coverage_write_statistics:
- * @coverage: A #GjsCoverage
- * @output_directory: A directory to write coverage information to. Scripts
- * which were provided as part of the coverage-paths construction property will be written
- * out to output_directory, in the same directory structure relative to the source dir where
- * the tests were run.
- *
- * This function takes all available statistics and writes them out to either the file provided
- * or to files of the pattern (filename).info in the same directory as the scanned files. It will
- * provide coverage data for all files ending with ".js" in the coverage directories, even if they
- * were never actually executed.
- */
-void
-gjs_coverage_write_statistics(GjsCoverage *coverage)
+static GjsAutoUnref<GFile>
+write_statistics_internal(GjsCoverage *coverage,
+                          JSContext   *cx,
+                          GError     **error)
 {
     using AutoCChar = std::unique_ptr<char, decltype(&free)>;
     using AutoStrv = std::unique_ptr<char *, decltype(&g_strfreev)>;
 
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
-    GError *error = NULL;
-
-    JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
-    JSAutoCompartment ac(context, gjs_get_import_global(context));
-    JSAutoRequest ar(context);
 
     /* Create output directory if it doesn't exist */
-    if (!g_file_make_directory_with_parents(priv->output_dir, NULL, &error)) {
-        if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_EXISTS)) {
-            g_critical("Could not create coverage output: %s", error->message);
-            g_clear_error(&error);
-            return;
-        }
-        g_clear_error(&error);
+    if (!g_file_make_directory_with_parents(priv->output_dir, nullptr, error)) {
+        if (!g_error_matches(*error, G_IO_ERROR, G_IO_ERROR_EXISTS))
+            return nullptr;
+        g_clear_error(error);
     }
 
     GFile *output_file = g_file_get_child(priv->output_dir, "coverage.lcov");
 
     size_t lcov_length;
-    AutoCChar lcov(js::GetCodeCoverageSummary(context, &lcov_length), free);
+    AutoCChar lcov(js::GetCodeCoverageSummary(cx, &lcov_length), free);
 
-    GOutputStream *ostream =
+    GjsAutoUnref<GOutputStream> ostream =
         G_OUTPUT_STREAM(g_file_append_to(output_file,
                                          G_FILE_CREATE_NONE,
                                          NULL,
-                                         &error));
-    if (!ostream) {
-        g_critical("Could not write coverage data: %s", error->message);
-        g_clear_error(&error);
-        return;
-    }
+                                         error));
+    if (!ostream)
+        return nullptr;
 
     AutoStrv lcov_lines(g_strsplit(lcov.get(), "\n", -1), g_strfreev);
     GjsAutoChar test_name;
@@ -287,8 +241,8 @@ gjs_coverage_write_statistics(GjsCoverage *coverage)
             }
 
             /* Now we can write the test name before writing the source file */
-            if (!write_line(ostream, test_name.get()))
-                break;
+            if (!write_line(ostream, test_name.get(), error))
+                return nullptr;
 
             /* The source file could be a resource, so we must use
              * g_file_new_for_commandline_arg() to disambiguate between URIs and
@@ -298,23 +252,56 @@ gjs_coverage_write_statistics(GjsCoverage *coverage)
                 find_diverging_child_components(source_file, priv->output_dir);
             GjsAutoUnref<GFile> destination_file =
                 g_file_resolve_relative_path(priv->output_dir, diverged_paths);
-            copy_source_file_to_coverage_output(source_file, destination_file);
+            if (!copy_source_file_to_coverage_output(source_file, destination_file, error))
+                return nullptr;
 
             /* Rewrite the source file path to be relative to the output
              * dir so that genhtml will find it */
-            write_source_file_header(ostream, destination_file);
+            if (!write_source_file_header(ostream, destination_file, error))
+                return nullptr;
             continue;
         }
 
-        if (!write_line(ostream, *iter))
-            break;
+        if (!write_line(ostream, *iter, error))
+            return nullptr;
+    }
+
+    return output_file;
+}
+
+/**
+ * gjs_coverage_write_statistics:
+ * @coverage: A #GjsCoverage
+ * @output_directory: A directory to write coverage information to.
+ *
+ * Scripts which were provided as part of the #GjsCoverage:prefixes
+ * construction property will be written out to @output_directory, in the same
+ * directory structure relative to the source dir where the tests were run.
+ *
+ * This function takes all available statistics and writes them out to either
+ * the file provided or to files of the pattern (filename).info in the same
+ * directory as the scanned files. It will provide coverage data for all files
+ * ending with ".js" in the coverage directories.
+ */
+void
+gjs_coverage_write_statistics(GjsCoverage *coverage)
+{
+    auto priv = static_cast<GjsCoveragePrivate *>(gjs_coverage_get_instance_private(coverage));
+    GError *error = nullptr;
+
+    auto cx = static_cast<JSContext *>(gjs_context_get_native_context(priv->context));
+    JSAutoCompartment ac(cx, gjs_get_import_global(cx));
+    JSAutoRequest ar(cx);
+
+    GjsAutoUnref<GFile> output_file = write_statistics_internal(coverage, cx, &error);
+    if (!output_file) {
+        g_critical("Error writing coverage data: %s", error->message);
+        g_error_free(error);
+        return;
     }
 
     GjsAutoChar output_file_path = g_file_get_path(output_file);
     g_message("Wrote coverage statistics to %s", output_file_path.get());
-
-    g_object_unref(ostream);
-    g_object_unref(output_file);
 }
 
 static void
