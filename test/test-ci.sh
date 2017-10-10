@@ -21,7 +21,7 @@ function do_Install_Base_Dependencies(){
         dnf -y -q upgrade
 
         # Base dependencies
-        dnf -y -q install @c-development @development-tools redhat-rpm-config gnome-common python-devel \
+        dnf -y -q install @c-development @development-tools clang redhat-rpm-config gnome-common python-devel \
                           pygobject2 dbus-python perl-Text-CSV perl-XML-Parser gettext-devel gtk-doc ninja-build \
                           zlib-devel libffi-devel \
                           libtool libicu-devel nspr-devel
@@ -46,7 +46,7 @@ function do_Install_Dependencies(){
         dnf -y -q install gtk3 gtk3-devel gobject-introspection Xvfb gnome-desktop-testing dbus-x11 dbus \
                           cairo intltool libxslt bison nspr zlib python3-devel dbus-glib libicu libffi pcre libxml2 libxslt libtool flex \
                           cairo-devel zlib-devel libffi-devel pcre-devel libxml2-devel libxslt-devel \
-                          libedit libedit-devel
+                          libedit libedit-devel libasan libubsan
     fi
 }
 
@@ -63,12 +63,20 @@ function do_Set_Env(){
         export DISPLAY=":0"
     fi
 
+    if [[ -n "$SHELL" ]]; then
+        export SHELL=/bin/bash
+    fi
+
     echo '-- Done --'
 }
 
 function do_Patch_JHBuild(){
     echo
     echo '-- Patching JHBuild --'
+
+    if [[ ! -d jhbuild ]]; then
+      git clone --depth 1 https://github.com/GNOME/jhbuild.git
+    fi
 
     # Create and apply a patch
     cd jhbuild
@@ -97,6 +105,10 @@ function do_Configure_JHBuild(){
 
     mkdir -p ~/.config
     autogenargs="--enable-compile-warnings=error --enable-installed-tests --with-xvfb-tests"
+
+    if [[ -n "${BUILD_OPTS}" ]]; then
+        autogenargs="$autogenargs $BUILD_OPTS"
+    fi
 
     cat <<EOFILE >> ~/.config/jhbuildrc
 module_autogenargs['gjs'] = "$autogenargs"
@@ -131,15 +143,7 @@ function do_Build_Mozilla(){
     echo '-- Building Mozilla SpiderMonkey --'
 
     # Build Mozilla Stuff
-    if [[ -n "$SHELL" ]]; then
-        export SHELL=/bin/bash
-    fi
-
-    #TODO Fix this upstream
-    #STOP!  /root/jhbuild/checkout/mozjs-38.0.0/js/src/configure.in has changed, and your configure is out of date.
-    jhbuild update mozjs38
-    touch ~/jhbuild/checkout/mozjs-38.0.0/js/src/configure
-    jhbuild build mozjs38
+    jhbuild build mozjs52
 }
 
 function do_Build_Package_Dependencies(){
@@ -193,6 +197,7 @@ echo "Doing: $1"
 
 if [[ $1 == "BUILD_MOZ" ]]; then
     do_Install_Base_Dependencies
+    do_Set_Env
 
     do_Show_Compiler
     do_Patch_JHBuild
