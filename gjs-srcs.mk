@@ -52,7 +52,6 @@ gjs_srcs =				\
 	gjs/byteArray.h			\
 	gjs/context.cpp			\
 	gjs/context-private.h		\
-	gjs/coverage-internal.h		\
 	gjs/coverage.cpp 		\
 	gjs/engine.cpp			\
 	gjs/engine.h			\
