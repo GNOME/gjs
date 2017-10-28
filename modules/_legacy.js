@@ -105,18 +105,14 @@ Class.prototype._construct = function(params) {
     if (!parent)
         parent = _Base;
 
-    let newClass;
-    if (params.Abstract) {
-        newClass = function() {
+    let newClass = function() {
+        if (params.Abstract && new.target.name === name)
             throw new TypeError('Cannot instantiate abstract class ' + name);
-        };
-    } else {
-        newClass = function() {
-            this.__caller__ = null;
 
-            return this._construct.apply(this, arguments);
-        };
-    }
+        this.__caller__ = null;
+
+        return this._construct(...arguments);
+    };
 
     // Since it's not possible to create a constructor with
     // a custom [[Prototype]], we have to do this to make
