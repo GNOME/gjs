@@ -1,0 +1,60 @@
+services:
+  - docker
+
+stages:
+- build
+- cleanup
+
+before_script:
+  - cd ..
+  - ln -s $(pwd) /cwd
+  - ln -sf $(pwd)/.cache/jhbuild/build/gjs/test-suite.log $(pwd)/gjs/logFile
+
+.build: &build
+  stage: build
+  artifacts:
+    when: always
+    paths:
+    - $(pwd)/logFile
+
+  script:
+    # Clean the build machine
+    - rm -rf jhbuild/
+    - rm -rf .cache/
+
+    # Build and test GJS
+    - 'if [[ -d "$(pwd)/SAVED/$OS/jhbuild" ]]; then
+         $(pwd)/gjs/test/test-ci.sh GET_FILES;
+       else
+         $(pwd)/gjs/test/test-ci.sh BUILD_MOZ;
+       fi'
+    - $(pwd)/gjs/test/test-ci.sh GJS
+
+ubuntu_gcc:
+  <<: *build
+  image: ubuntu:rolling
+  variables:
+    BASE: ubuntu
+    OS: ubuntu:rolling
+    CC: gcc
+
+fedora_gcc:
+  <<: *build
+  image: fedora:latest
+  variables:
+    BASE: fedora
+    OS: fedora:latest
+    CC: gcc
+    BUILD_OPTS: "--enable-ubsan"
+
+after_failure:
+  stage: cleanup
+  script:
+  - echo '-- FAILURE --'
+  - 'if [[ -f $(pwd)/.cache/jhbuild/build/gjs/test-suite.log ]]; then
+        cat $(pwd)/.cache/jhbuild/build/gjs/test-suite.log;
+    else
+        echo "-- NO LOG FILE FOUND --";
+    fi'
+  when: on_failure
+
