@@ -63,12 +63,20 @@ function do_Set_Env(){
         export DISPLAY=":0"
     fi
 
+    if [[ -n "$SHELL" ]]; then
+        export SHELL=/bin/bash
+    fi
+
     echo '-- Done --'
 }
 
 function do_Patch_JHBuild(){
     echo
     echo '-- Patching JHBuild --'
+
+    if [[ ! -d jhbuild ]]; then
+      git clone --depth 1 https://github.com/GNOME/jhbuild.git
+    fi
 
     # Create and apply a patch
     cd jhbuild
@@ -135,9 +143,6 @@ function do_Build_Mozilla(){
     echo '-- Building Mozilla SpiderMonkey --'
 
     # Build Mozilla Stuff
-    if [[ -n "$SHELL" ]]; then
-        export SHELL=/bin/bash
-    fi
     jhbuild build mozjs52
 }
 
