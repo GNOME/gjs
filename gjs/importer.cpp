@@ -489,7 +489,7 @@ do_import(JSContext       *context,
 
     JS::RootedValue elem(context);
 
-    /* First try importing an internal module like byteArray */
+    /* First try importing an internal module like gi */
     if (priv->is_root &&
         gjs_is_registered_native_module(context, obj, name) &&
         import_native_file(context, obj, name)) {

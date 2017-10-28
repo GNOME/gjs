@@ -215,7 +215,7 @@ describe('GArray', function () {
 });
 
 describe('GByteArray', function () {
-    const refByteArray = ByteArray.fromArray([0, 49, 0xFF, 51]);
+    const refByteArray = Uint8Array.from([0, 49, 0xFF, 51]);
 
     it('can be passed in with transfer none', function () {
         expect(() => GIMarshallingTests.bytearray_none_in(refByteArray))
@@ -233,7 +233,7 @@ describe('GByteArray', function () {
 });
 
 describe('GBytes', function () {
-    const refByteArray = ByteArray.fromArray([0, 49, 0xFF, 51]);
+    const refByteArray = Uint8Array.from([0, 49, 0xFF, 51]);
 
     it('can be created from an array and passed in', function () {
         let bytes = GLib.Bytes.new([0, 49, 0xFF, 51]);
@@ -265,7 +265,7 @@ describe('GBytes', function () {
         expect(array[1]).toEqual(42);
         array[1] = 49;  // Flip the value back
         // Now convert back to GBytes
-        expect(() => GIMarshallingTests.gbytes_none_in(array.toGBytes()))
+        expect(() => GIMarshallingTests.gbytes_none_in(ByteArray.toGBytes(array)))
             .not.toThrow();
     });
 
