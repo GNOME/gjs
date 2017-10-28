@@ -1668,8 +1668,8 @@ gjs_value_to_g_argument(JSContext      *context,
                     !g_type_is_a(gtype, G_TYPE_CLOSURE)) {
 
                     if (g_type_is_a(gtype, G_TYPE_BYTES)
-                        && gjs_typecheck_bytearray(context, obj, false)) {
-                        arg->v_pointer = gjs_byte_array_get_bytes(context, obj);
+                        && JS_IsUint8Array(obj)) {
+                        arg->v_pointer = gjs_byte_array_get_bytes(obj);
                     } else if (g_type_is_a(gtype, G_TYPE_ERROR)) {
                         if (!gjs_typecheck_gerror(context, obj, true)) {
                             arg->v_pointer = NULL;
@@ -1944,13 +1944,13 @@ gjs_value_to_g_argument(JSContext      *context,
         GIArrayType array_type = g_type_info_get_array_type(type_info);
 
         /* First, let's handle the case where we're passed an instance
-         * of our own byteArray class.
+         * of Uint8Array and it needs to be marshalled to GByteArray.
          */
         if (value.isObjectOrNull()) {
             JS::RootedObject bytearray_obj(context, value.toObjectOrNull());
-            if (gjs_typecheck_bytearray(context, bytearray_obj, false)
+            if (JS_IsUint8Array(bytearray_obj)
                 && array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
-                arg->v_pointer = gjs_byte_array_get_byte_array(context, bytearray_obj);
+                arg->v_pointer = gjs_byte_array_get_byte_array(bytearray_obj);
                 break;
             } else {
                 /* Fall through, !handled */
@@ -2262,13 +2262,7 @@ gjs_array_from_carray_internal (JSContext             *context,
 
     /* Special case array(guint8) */
     if (element_type == GI_TYPE_TAG_UINT8) {
-        GByteArray gbytearray;
-
-        gbytearray.data = (guint8 *) array;
-        gbytearray.len = length;
-
-        JS::RootedObject obj(context,
-            gjs_byte_array_from_byte_array(context, &gbytearray));
+        JSObject *obj = gjs_byte_array_from_data(context, length, array);
         if (!obj)
             return false;
         value_p.setObject(*obj);
@@ -2476,13 +2470,8 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
 
     /* Special case array(guint8) */
     if (element_type == GI_TYPE_TAG_UINT8) {
-        GByteArray gbytearray;
-
-        gbytearray.data = (guint8 *) c_array;
-        gbytearray.len = strlen((const char *) c_array);
-
-        JS::RootedObject obj(context,
-            gjs_byte_array_from_byte_array(context, &gbytearray));
+        size_t len = strlen(static_cast<char *>(c_array));
+        JSObject *obj = gjs_byte_array_from_data(context, len, c_array);
         if (!obj)
             return false;
         value_p.setObject(*obj);
@@ -2993,10 +2982,10 @@ gjs_value_from_g_argument (JSContext             *context,
                 return gjs_array_from_fixed_size_array(context, value_p, type_info, arg->v_pointer);
             }
         } else if (g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_BYTE_ARRAY) {
-            JSObject *array = gjs_byte_array_from_byte_array(context,
-                                                             (GByteArray*)arg->v_pointer);
+            auto byte_array = static_cast<GByteArray *>(arg->v_pointer);
+            JSObject *array = gjs_byte_array_from_byte_array(context, byte_array);
             if (!array) {
-                gjs_throw(context, "Couldn't convert GByteArray to a ByteArray");
+                gjs_throw(context, "Couldn't convert GByteArray to a Uint8Array");
                 return false;
             }
             value_p.setObject(*array);
