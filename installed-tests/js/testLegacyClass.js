@@ -292,6 +292,13 @@ describe('Class framework', function () {
         expect(newAbstract.foo).toEqual(42);
     });
 
+    it('allows ES6 classes to inherit from abstract base classes', function() {
+        class AbstractImpl extends AbstractBase {};
+
+        let newAbstract = new AbstractImpl();
+        expect(newAbstract.foo).toEqual(42);
+    });
+
     it('lets methods call other methods without clobbering __caller__', function () {
         let newMagic = new Magic();
         let buffer = [];
