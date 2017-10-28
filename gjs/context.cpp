@@ -298,7 +298,7 @@ gjs_context_class_init(GjsContextClass *klass)
     g_free (priv_typelib_dir);
     }
 
-    gjs_register_native_module("byteArray", gjs_define_byte_array_stuff);
+    gjs_register_native_module("_byteArrayNative", gjs_define_byte_array_stuff);
     gjs_register_native_module("_gi", gjs_define_private_gi_stuff);
     gjs_register_native_module("gi", gjs_define_repo);
 
@@ -504,11 +504,6 @@ gjs_context_constructed(GObject *object)
         gjs_log_exception(cx);
         g_error("Failed to define properties on global object");
     }
-
-    /* Pre-import the byteArray module. We depend on this module for some of
-     * our GObject introspection marshalling, so the ByteArray prototype
-     * defined in it needs to be always available. */
-    gjs_import_native_module(cx, importer, "byteArray");
 
     JS_EndRequest(cx);
 
