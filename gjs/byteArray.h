@@ -30,26 +30,17 @@
 
 G_BEGIN_DECLS
 
-bool        gjs_typecheck_bytearray(JSContext       *context,
-                                    JS::HandleObject obj,
-                                    bool             throw_error);
-
 bool gjs_define_byte_array_stuff(JSContext              *context,
                                  JS::MutableHandleObject module);
+
+JSObject* gjs_byte_array_from_data(JSContext* cx, size_t nbytes, void* data);
 
 JSObject *    gjs_byte_array_from_byte_array (JSContext  *context,
                                               GByteArray *array);
 
-GByteArray *gjs_byte_array_get_byte_array(JSContext       *context,
-                                          JS::HandleObject object);
+GByteArray* gjs_byte_array_get_byte_array(JS::HandleObject obj);
 
-GBytes     *gjs_byte_array_get_bytes(JSContext       *context,
-                                     JS::HandleObject object);
-
-void        gjs_byte_array_peek_data(JSContext       *context,
-                                     JS::HandleObject object,
-                                     guint8         **out_data,
-                                     gsize           *out_len);
+GBytes* gjs_byte_array_get_bytes(JS::HandleObject obj);
 
 G_END_DECLS
 

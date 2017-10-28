@@ -18,8 +18,6 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-const ByteArray = imports.byteArray;
-
 let GLib;
 
 const SIMPLE_TYPES = ['b', 'y', 'n', 'q', 'i', 'u', 'x', 't', 'h', 'd', 's', 'o', 'g'];
@@ -67,7 +65,7 @@ function _read_single_type(signature, forceSimple) {
 }
 
 function _makeBytes(byteArray) {
-    if (byteArray instanceof ByteArray.ByteArray)
+    if (byteArray instanceof Uint8Array)
         return byteArray.toGBytes();
     else
         return new GLib.Bytes(byteArray);
