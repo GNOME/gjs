@@ -4,7 +4,19 @@ NEXT
 - Deprecation: the custom ByteArray is now discouraged. Instead of ByteArray,
   use Javascript's native Uint8Array. The ByteArray module still contains
   functions for converting between byte arrays, strings, and GLib.Bytes
-  instances. With a few exceptions, old code will continue to work.
+  instances.
+
+  The old ByteArray will continue to work as before, except that Uint8Array
+  will now be returned from introspected functions that previously returned a
+  ByteArray. To keep your old code working, change this:
+
+      let byteArray = functionThatReturnsByteArray();
+
+  to this:
+
+      let byteArray = new ByteArray.ByteArray(functionThatReturnsByteArray());
+
+  To port to the new code:
 
   * ByteArray.ByteArray -> Uint8Array
   * ByteArray.fromArray() -> Uint8Array.from()
