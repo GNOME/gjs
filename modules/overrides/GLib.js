@@ -18,6 +18,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
+const ByteArray = imports.byteArray;
+
 let GLib;
 let originalVariantClass;
 
@@ -66,7 +68,7 @@ function _read_single_type(signature, forceSimple) {
 }
 
 function _makeBytes(byteArray) {
-    if (byteArray instanceof Uint8Array)
+    if (byteArray instanceof Uint8Array || byteArray instanceof ByteArray.ByteArray)
         return byteArray.toGBytes();
     else
         return new GLib.Bytes(byteArray);

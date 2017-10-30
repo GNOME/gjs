@@ -25,12 +25,6 @@ describe('Byte array', function () {
         [0xe2, 0x85, 0x9c].forEach((val, ix) => expect(a[ix]).toEqual(val));
     });
 
-    it('can be created from an array', function () {
-        let a = ByteArray.fromArray([ 1, 2, 3, 4 ]);
-        expect(a.length).toEqual(4);
-        [1, 2, 3, 4].forEach((val, ix) => expect(a[ix]).toEqual(val));
-    });
-
     it('can be converted to a string of ASCII characters', function () {
         let a = new Uint8Array(4);
         a[0] = 97;
