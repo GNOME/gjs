@@ -1,3 +1,14 @@
+Version 1.50.2
+--------------
+
+- Closed bugs and merge requests:
+
+  * tweener: Fix a couple of warnings [!5, Florian Müllner]
+  * legacy: Allow ES6 classes to inherit from abstract Lang.Class class [!6,
+    Florian Müllner]
+
+- Minor bugfixes [Philip Chimento]
+
 Version 1.50.1
 --------------
 
