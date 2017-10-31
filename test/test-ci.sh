@@ -177,12 +177,20 @@ function do_Get_Files(){
     echo '-- Done --'
 }
 
-function do_Show_Compiler(){
+function do_Show_Info(){
+
+    echo '--------------------------------'
+    echo 'Useful build system information'
+    id; uname -a
+    printenv
+    echo '--------------------------------'
 
     if [[ ! -z $CC ]]; then
-        echo
-        echo '-- Compiler in use --'
+        echo 'Compiler version'
         $CC --version
+        echo '--------------------------------'
+        $CC -dM -E -x c /dev/null
+        echo '--------------------------------'
     fi
 }
 
@@ -199,7 +207,7 @@ if [[ $1 == "BUILD_MOZ" ]]; then
     do_Install_Base_Dependencies
     do_Set_Env
 
-    do_Show_Compiler
+    do_Show_Info
     do_Patch_JHBuild
     do_Build_JHBuild RESET
     do_Build_Mozilla
@@ -213,7 +221,7 @@ elif [[ $1 == "GJS" ]]; then
     do_Install_Dependencies
     do_Set_Env
 
-    do_Show_Compiler
+    do_Show_Info
     do_Patch_JHBuild
     do_Build_JHBuild
     do_Configure_JHBuild
