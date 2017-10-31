@@ -136,6 +136,8 @@ function do_Build_JHBuild(){
     if [[ $1 == "RESET" ]]; then
         git reset --hard HEAD
     fi
+    echo '-- Done --'
+    cd -
 }
 
 function do_Build_Mozilla(){
@@ -161,10 +163,10 @@ function do_Build_Package_Dependencies(){
 function do_Save_Files(){
     echo
     echo '-- Saving build files --'
-    mkdir -p "/cwd/SAVED/$OS"
+    mkdir -p "/hoard/SAVED/$OS"
 
-    cp -r ~/jhbuild "/cwd/SAVED/$OS/jhbuild"
-    cp -r ~/.local  "/cwd/SAVED/$OS/.local"
+    cp -r ~/jhbuild "/hoard/SAVED/$OS/jhbuild"
+    cp -r ~/.local  "/hoard/SAVED/$OS/.local"
     echo '-- Done --'
 }
 
@@ -172,8 +174,8 @@ function do_Get_Files(){
     echo
     echo '-- Restoring build files --'
 
-    cp -r "/cwd/SAVED/$OS/jhbuild" ~/jhbuild
-    cp -r "/cwd/SAVED/$OS/.local"  ~/.local
+    cp -r "/hoard/SAVED/$OS/jhbuild" ~/jhbuild
+    cp -r "/hoard/SAVED/$OS/.local"  ~/.local
     echo '-- Done --'
 }
 
