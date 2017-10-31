@@ -17,6 +17,13 @@ before_script:
     - $(pwd)/.cache/jhbuild/build/gjs/test-suite.log
 
   script:
+    # Clean the hoard (if requested)
+    - $(pwd)/test/test-ci.sh INSTALL_GIT
+    - commit_message=$(git log -1)
+    - 'if [[ $commit_message == *"[clean hoard]"* && -d "/hoard/SAVED" ]]; then
+         rm -rf /hoard/SAVED;
+       fi'
+
     # Build and test GJS
     - 'if [[ -d "/hoard/SAVED/$OS/jhbuild" ]]; then
          $(pwd)/test/test-ci.sh GET_FILES;
