@@ -1,5 +1,27 @@
 #!/bin/bash -e
 
+function do_Install_Git(){
+    echo
+    echo '-- Installing Git --'
+
+    if [[ $BASE == "ubuntu" ]]; then
+        apt-get update -qq
+
+        # Git
+        apt-get -y -qq install git > /dev/null
+
+    elif [[ $BASE == "fedora" ]]; then
+        dnf -y -q upgrade
+
+        # git
+        dnf -y -q install git
+    else
+        echo
+        echo '-- Error: invalid BASE code --'
+        exit 1
+    fi
+}
+
 function do_Install_Base_Dependencies(){
     echo
     echo '-- Installing Base Dependencies --'
@@ -136,6 +158,8 @@ function do_Build_JHBuild(){
     if [[ $1 == "RESET" ]]; then
         git reset --hard HEAD
     fi
+    echo '-- Done --'
+    cd -
 }
 
 function do_Build_Mozilla(){
@@ -161,10 +185,10 @@ function do_Build_Package_Dependencies(){
 function do_Save_Files(){
     echo
     echo '-- Saving build files --'
-    mkdir -p "/cwd/SAVED/$OS"
+    mkdir -p "/hoard/SAVED/$OS"
 
-    cp -r ~/jhbuild "/cwd/SAVED/$OS/jhbuild"
-    cp -r ~/.local  "/cwd/SAVED/$OS/.local"
+    cp -r ~/jhbuild "/hoard/SAVED/$OS/jhbuild"
+    cp -r ~/.local  "/hoard/SAVED/$OS/.local"
     echo '-- Done --'
 }
 
@@ -172,17 +196,25 @@ function do_Get_Files(){
     echo
     echo '-- Restoring build files --'
 
-    cp -r "/cwd/SAVED/$OS/jhbuild" ~/jhbuild
-    cp -r "/cwd/SAVED/$OS/.local"  ~/.local
+    cp -r "/hoard/SAVED/$OS/jhbuild" ~/jhbuild
+    cp -r "/hoard/SAVED/$OS/.local"  ~/.local
     echo '-- Done --'
 }
 
-function do_Show_Compiler(){
+function do_Show_Info(){
+
+    echo '--------------------------------'
+    echo 'Useful build system information'
+    id; uname -a
+    printenv
+    echo '--------------------------------'
 
     if [[ ! -z $CC ]]; then
-        echo
-        echo '-- Compiler in use --'
+        echo 'Compiler version'
         $CC --version
+        echo '--------------------------------'
+        $CC -dM -E -x c /dev/null
+        echo '--------------------------------'
     fi
 }
 
@@ -199,7 +231,7 @@ if [[ $1 == "BUILD_MOZ" ]]; then
     do_Install_Base_Dependencies
     do_Set_Env
 
-    do_Show_Compiler
+    do_Show_Info
     do_Patch_JHBuild
     do_Build_JHBuild RESET
     do_Build_Mozilla
@@ -208,12 +240,15 @@ if [[ $1 == "BUILD_MOZ" ]]; then
 elif [[ $1 == "GET_FILES" ]]; then
     do_Get_Files
 
+elif [[ $1 == "INSTALL_GIT" ]]; then
+    do_Install_Git
+
 elif [[ $1 == "GJS" ]]; then
     do_Install_Base_Dependencies
     do_Install_Dependencies
     do_Set_Env
 
-    do_Show_Compiler
+    do_Show_Info
     do_Patch_JHBuild
     do_Build_JHBuild
     do_Configure_JHBuild

@@ -6,33 +6,31 @@ stages:
 - cleanup
 
 before_script:
-  - cd ..
   - ln -s $(pwd) /cwd
+  - ln -s $(dirname $(pwd)) /hoard
 
 .build: &build
   stage: build
   artifacts:
     when: always
     paths:
-    - $(pwd)/logFile
+    - $(pwd)/.cache/jhbuild/build/gjs/test-suite.log
 
   script:
-    # Clean the build machine
-    - rm -rf jhbuild/
-    - rm -rf .cache/
-
-    # Make the log File accessible
-    - mkdir -p .cache/jhbuild/build/gjs
-    - touch .cache/jhbuild/build/gjs/test-suite.log
-    - ln -f .cache/jhbuild/build/gjs/test-suite.log $(pwd)/gjs/logFile
+    # Clean the hoard (if requested)
+    - $(pwd)/test/test-ci.sh INSTALL_GIT
+    - commit_message=$(git log -1)
+    - 'if [[ $commit_message == *"[clean hoard]"* && -d "/hoard/SAVED" ]]; then
+         rm -rf /hoard/SAVED;
+       fi'
 
     # Build and test GJS
-    - 'if [[ -d "$(pwd)/SAVED/$OS/jhbuild" ]]; then
-         $(pwd)/gjs/test/test-ci.sh GET_FILES;
+    - 'if [[ -d "/hoard/SAVED/$OS/jhbuild" ]]; then
+         $(pwd)/test/test-ci.sh GET_FILES;
        else
-         $(pwd)/gjs/test/test-ci.sh BUILD_MOZ;
+         $(pwd)/test/test-ci.sh BUILD_MOZ;
        fi'
-    - $(pwd)/gjs/test/test-ci.sh GJS
+    - $(pwd)/test/test-ci.sh GJS
 
 ubuntu_gcc:
   <<: *build
