@@ -32,7 +32,7 @@ before_script:
        fi'
     - $(pwd)/test/test-ci.sh GJS
 
-    # Extra testing
+    # Run extra tests
     - 'if [[ $BUILD_OPTS == *"--enable-installed-tests"* ]]; then
          $(pwd)/test/test-ci.sh GJS_EXTRA;
        fi'
@@ -55,8 +55,10 @@ fedora_gcc:
     BASE: fedora
     OS: fedora:latest
     CC: gcc
+    CPPCHECK: "yes"
     BUILD_OPTS: "--enable-ubsan"
 
+# Failure routine
 on_failure:
   stage: failure
   script:
