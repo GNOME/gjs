@@ -126,7 +126,7 @@ function do_Configure_JHBuild(){
     echo '-- Set JHBuild Configuration --'
 
     mkdir -p ~/.config
-    autogenargs="--enable-compile-warnings=error --enable-installed-tests --with-xvfb-tests"
+    autogenargs="--enable-compile-warnings=error --with-xvfb-tests"
 
     if [[ -n "${BUILD_OPTS}" ]]; then
         autogenargs="$autogenargs $BUILD_OPTS"
@@ -263,9 +263,12 @@ elif [[ $1 == "GJS" ]]; then
     echo
     jhbuild make --check
 
-    # Extra testing
+elif [[ $1 == "GJS_EXTRA" ]]; then
+    # Extra testing. It doesn't build, just run the 'Installed Tests'
     echo
     echo '-- Installed GJS tests --'
+    do_Set_Env
+    PATH=$PATH:~/.local/bin
     xvfb-run jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
 
 else

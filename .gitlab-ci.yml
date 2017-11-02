@@ -24,13 +24,18 @@ before_script:
          rm -rf /hoard/SAVED;
        fi'
 
-    # Build and test GJS
+    # Build dependencies and 'make check' gjs
     - 'if [[ -d "/hoard/SAVED/$OS/jhbuild" ]]; then
          $(pwd)/test/test-ci.sh GET_FILES;
        else
          $(pwd)/test/test-ci.sh BUILD_MOZ;
        fi'
     - $(pwd)/test/test-ci.sh GJS
+
+    # Extra testing
+    - 'if [[ $BUILD_OPTS == *"--enable-installed-tests"* ]]; then
+         $(pwd)/test/test-ci.sh GJS_EXTRA;
+       fi'
 
 ubuntu_gcc:
   <<: *build
@@ -39,6 +44,9 @@ ubuntu_gcc:
     BASE: ubuntu
     OS: ubuntu:rolling
     CC: gcc
+    BUILD_OPTS: "--enable-installed-tests"
+  only:
+    - master@GNOME/gjs
 
 fedora_gcc:
   <<: *build
