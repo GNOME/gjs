@@ -3,7 +3,7 @@ services:
 
 stages:
 - build
-- cleanup
+- failure
 
 before_script:
   - ln -s $(pwd) /cwd
@@ -50,7 +50,7 @@ fedora_gcc:
     BUILD_OPTS: "--enable-ubsan"
 
 on_failure:
-  stage: cleanup
+  stage: failure
   script:
   - echo '-- FAILURE --'
   - 'if [[ -f $(pwd)/.cache/jhbuild/build/gjs/test-suite.log ]]; then
