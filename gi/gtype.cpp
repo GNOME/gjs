@@ -158,6 +158,9 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
 {
     JSAutoRequest ar(context);
 
+    if (gtype == 0)
+        return nullptr;
+
     auto heap_wrapper =
         static_cast<JS::Heap<JSObject *> *>(g_type_get_qdata(gtype, gjs_get_gtype_wrapper_quark()));
     if (heap_wrapper != nullptr)
