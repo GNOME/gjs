@@ -268,13 +268,6 @@ elif [[ $1 == "GJS" ]]; then
     echo
     jhbuild make --check
 
-    if [[ $CPPCHECK == "yes" ]]; then
-        echo
-        echo '-- Code analyzer --'
-        jhbuild run --in-builddir=gjs make cppcheck
-        echo
-    fi
-
 elif [[ $1 == "GJS_EXTRA" ]]; then
     # Extra testing. It doesn't build, just run the 'Installed Tests'
     echo
@@ -283,6 +276,14 @@ elif [[ $1 == "GJS_EXTRA" ]]; then
     PATH=$PATH:~/.local/bin
 
     xvfb-run jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
+
+elif [[ $1 == "CPPCHECK" ]]; then
+    do_Install_Base_Dependencies
+
+    echo
+    echo '-- Code analyzer --'
+    cppcheck --enable=warning,performance,portability,information,missingInclude --force -q .
+    echo
 
 else
     echo
