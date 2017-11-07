@@ -35,7 +35,7 @@ function do_Install_Base_Dependencies(){
                                docbook docbook-xsl libtext-csv-perl \
                                zlib1g-dev \
                                libtool libicu-dev libnspr4-dev \
-                               policykit-1 \
+                               policykit-1 cppcheck \
                                apt-file > /dev/null
         apt-file update
 
@@ -46,7 +46,7 @@ function do_Install_Base_Dependencies(){
         dnf -y -q install @c-development @development-tools clang redhat-rpm-config gnome-common python-devel \
                           pygobject2 dbus-python perl-Text-CSV perl-XML-Parser gettext-devel gtk-doc ninja-build \
                           zlib-devel libffi-devel \
-                          libtool libicu-devel nspr-devel
+                          libtool libicu-devel nspr-devel cppcheck
     else
         echo
         echo '-- Error: invalid BASE code --'
@@ -126,7 +126,7 @@ function do_Configure_JHBuild(){
     echo '-- Set JHBuild Configuration --'
 
     mkdir -p ~/.config
-    autogenargs="--enable-compile-warnings=error --enable-installed-tests --with-xvfb-tests"
+    autogenargs="--enable-compile-warnings=error --with-xvfb-tests"
 
     if [[ -n "${BUILD_OPTS}" ]]; then
         autogenargs="$autogenargs $BUILD_OPTS"
@@ -256,16 +256,32 @@ elif [[ $1 == "GJS" ]]; then
 
     # Build and test the latest commit (merged or from a PR) of Javascript Bindings for GNOME
     echo
-    echo '-- gjs build --'
-    cp -r ../gjs ~/jhbuild/checkout/gjs
+    echo '-- gjs status --'
+    cp -r ./ ~/jhbuild/checkout/gjs
+    rm -rf ~/jhbuild/checkout/gjs/jhbuild
+    rm -rf ~/jhbuild/checkout/gjs/.cache
+
     cd ~/jhbuild/checkout/gjs
     git log --pretty=format:"%h %cd %s" -1
+
+    echo '-- gjs build --'
     echo
     jhbuild make --check
 
-    # Extra testing
+    if [[ $CPPCHECK == "yes" ]]; then
+        echo
+        echo '-- Code analyzer --'
+        jhbuild run --in-builddir=gjs make cppcheck
+        echo
+    fi
+
+elif [[ $1 == "GJS_EXTRA" ]]; then
+    # Extra testing. It doesn't build, just run the 'Installed Tests'
     echo
     echo '-- Installed GJS tests --'
+    do_Set_Env
+    PATH=$PATH:~/.local/bin
+
     xvfb-run jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
 
 else

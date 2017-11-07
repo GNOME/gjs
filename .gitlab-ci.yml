@@ -3,7 +3,7 @@ services:
 
 stages:
 - build
-- cleanup
+- failure
 
 before_script:
   - ln -s $(pwd) /cwd
@@ -24,13 +24,18 @@ before_script:
          rm -rf /hoard/SAVED;
        fi'
 
-    # Build and test GJS
+    # Build dependencies and 'make check' gjs
     - 'if [[ -d "/hoard/SAVED/$OS/jhbuild" ]]; then
          $(pwd)/test/test-ci.sh GET_FILES;
        else
          $(pwd)/test/test-ci.sh BUILD_MOZ;
        fi'
     - $(pwd)/test/test-ci.sh GJS
+
+    # Run extra tests
+    - 'if [[ $BUILD_OPTS == *"--enable-installed-tests"* ]]; then
+         $(pwd)/test/test-ci.sh GJS_EXTRA;
+       fi'
 
 ubuntu_gcc:
   <<: *build
@@ -39,6 +44,9 @@ ubuntu_gcc:
     BASE: ubuntu
     OS: ubuntu:rolling
     CC: gcc
+    BUILD_OPTS: "--enable-installed-tests"
+  only:
+    - master@GNOME/gjs
 
 fedora_gcc:
   <<: *build
@@ -47,10 +55,12 @@ fedora_gcc:
     BASE: fedora
     OS: fedora:latest
     CC: gcc
+    CPPCHECK: "yes"
     BUILD_OPTS: "--enable-ubsan"
 
+# Failure routine
 on_failure:
-  stage: cleanup
+  stage: failure
   script:
   - echo '-- FAILURE --'
   - 'if [[ -f $(pwd)/.cache/jhbuild/build/gjs/test-suite.log ]]; then
