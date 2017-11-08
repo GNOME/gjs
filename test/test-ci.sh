@@ -81,11 +81,11 @@ function do_Set_Env(){
     export XDG_CACHE_HOME=/cwd/.cache
     export JHBUILD_RUN_AS_ROOT=1
 
-    if [[ -z $DISPLAY ]]; then
+    if [[ -z "${DISPLAY}" ]]; then
         export DISPLAY=":0"
     fi
 
-    if [[ -n "$SHELL" ]]; then
+    if [[ -z "${SHELL}" || $BASE == "ubuntu" ]]; then
         export SHELL=/bin/bash
     fi
 
