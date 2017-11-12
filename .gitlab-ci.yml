@@ -6,8 +6,8 @@ stages:
 - failure
 
 before_script:
-  - ln -s $(pwd) /cwd
-  - ln -s $(dirname $(pwd)) /hoard
+  - rm -rf /cwd
+  - ln -sf $(pwd) /cwd
 
 .build: &build
   stage: build
@@ -17,19 +17,7 @@ before_script:
     - $(pwd)/.cache/jhbuild/build/gjs/test-suite.log
 
   script:
-    # Clean the hoard (if requested)
-    - $(pwd)/test/test-ci.sh INSTALL_GIT
-    - commit_message=$(git log -1)
-    - 'if [[ $commit_message == *"[clean hoard]"* && -d "/hoard/SAVED" ]]; then
-         rm -rf /hoard/SAVED;
-       fi'
-
     # Build dependencies and 'make check' gjs
-    - 'if [[ -d "/hoard/SAVED/$OS/jhbuild" ]]; then
-         $(pwd)/test/test-ci.sh GET_FILES;
-       else
-         $(pwd)/test/test-ci.sh BUILD_MOZ;
-       fi'
     - $(pwd)/test/test-ci.sh GJS
 
     # Run extra tests
@@ -39,10 +27,10 @@ before_script:
 
 ubuntu_gcc:
   <<: *build
-  image: ubuntu:rolling
+  image: claudioandre/spidermonkey:ubuntu.1710.gcc
   variables:
     BASE: ubuntu
-    OS: ubuntu:rolling
+    OS: ubuntu.1710.gcc
     CC: gcc
     BUILD_OPTS: "--enable-installed-tests"
   only:
@@ -50,10 +38,10 @@ ubuntu_gcc:
 
 fedora_gcc:
   <<: *build
-  image: fedora:latest
+  image: claudioandre/spidermonkey:fedora.26.gcc
   variables:
     BASE: fedora
-    OS: fedora:latest
+    OS: fedora.26.gcc
     CC: gcc
     CPPCHECK: "yes"
     BUILD_OPTS: "--enable-ubsan"
