@@ -208,6 +208,8 @@ function do_Show_Info(){
     id; uname -a
     printenv
     echo '--------------------------------'
+    cat /etc/*-release
+    echo '--------------------------------'
 
     if [[ ! -z $CC ]]; then
         echo 'Compiler version'
