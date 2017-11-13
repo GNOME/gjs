@@ -1,3 +1,53 @@
+Version 1.51.2
+--------------
+
+- Version 1.51.1 was skipped.
+
+- The home of GJS is now at GNOME's GitLab instance:
+  https://gitlab.gnome.org/GNOME/gjs
+  From now on we'll be taking GitLab merge requests instead of Bugzilla
+  patches. If you want to report a bug, please report it at GitLab.
+
+- Closed bugs and merge requests:
+
+  * Allow throwing GErrors from JS virtual functions [#682701, Giovanni
+    Campagna]
+  * [RFC] bootstrap system [#777724, Jasper St. Pierre, Philip Chimento]
+  * Fix code coverage (and refactor it to take advantage of mozjs52 features)
+    [#788166, !1, !3, Philip Chimento]
+  * Various maintenance [!2, Philip Chimento]
+  * Get GitLab CI working and various improvements [#6, !7, !9, !11, !13,
+    Claudio André]
+  * Add build status badge to README [!8, Claudio André]
+  * Use Docker images for CI [!12, Claudio André]
+
+- Some changes in progress to improve garbage collection when signals are
+  disconnected. See bug #679688 for more information [Giovanni Campagna]
+
+Version 1.50.2
+--------------
+
+- Closed bugs and merge requests:
+
+  * tweener: Fix a couple of warnings [!5, Florian Müllner]
+  * legacy: Allow ES6 classes to inherit from abstract Lang.Class class [!6,
+    Florian Müllner]
+
+- Minor bugfixes [Philip Chimento]
+
+Version 1.50.1
+--------------
+
+- As a debugging aid, gjs_dumpstack() now works even during garbage collection.
+
+- Code coverage tools did not work so well in the last few 1.49 releases. The
+  worst problems are now fixed, although even more improvements will be
+  released in the next unstable version. Fixes include:
+
+  * Specifing prefixes for code coverage files now works again
+  * Code coverage now works on lines inside ES6 class definitions
+  * The detection of which lines are executable has been improved a bit
+
 Version 1.50.0
 --------------
 
