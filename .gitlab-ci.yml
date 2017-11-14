@@ -17,8 +17,13 @@ before_script:
     - $(pwd)/.cache/jhbuild/build/gjs/test-suite.log
 
   script:
+    # Run static code analysis OR
     # Build dependencies and 'make check' gjs
-    - $(pwd)/test/test-ci.sh GJS
+    - 'if [[ -n "${CODECHECK}" ]]; then
+         $(pwd)/test/test-ci.sh "$CODECHECK";
+       else
+         $(pwd)/test/test-ci.sh GJS;
+       fi'
 
     # Run extra tests
     - 'if [[ $BUILD_OPTS == *"--enable-installed-tests"* ]]; then
@@ -43,8 +48,15 @@ fedora_gcc:
     BASE: fedora
     OS: fedora.26.gcc
     CC: gcc
-    CPPCHECK: "yes"
     BUILD_OPTS: "--enable-ubsan"
+
+fedora_cppcheck:
+  <<: *build
+  image: claudioandre/spidermonkey:fedora.26.gcc
+  variables:
+    BASE: fedora
+    OS: fedora.26.gcc
+    CODECHECK: "CPPCHECK"
 
 # Failure routine
 on_failure:
