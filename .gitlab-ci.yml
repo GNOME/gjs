@@ -41,6 +41,17 @@ ubuntu_gcc:
   only:
     - master@GNOME/gjs
 
+ubuntu_clang:
+  <<: *build
+  image: claudioandre/spidermonkey:ubuntu.1710.gcc
+  variables:
+    BASE: ubuntu
+    OS: ubuntu.1710.gcc
+    CC: clang
+    BUILD_OPTS: "--enable-installed-tests"
+  only:
+    - master@GNOME/gjs
+
 fedora_gcc:
   <<: *build
   image: claudioandre/spidermonkey:fedora.26.gcc
@@ -49,6 +60,14 @@ fedora_gcc:
     OS: fedora.26.gcc
     CC: gcc
     BUILD_OPTS: "--enable-ubsan"
+
+fedora_clang:
+  <<: *build
+  image: claudioandre/spidermonkey:fedora.26.gcc
+  variables:
+    BASE: fedora
+    OS: fedora.26.gcc
+    CC: clang
 
 fedora_cppcheck:
   <<: *build
