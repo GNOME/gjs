@@ -1,8 +1,8 @@
 imports.gi.versions.Gtk = '3.0';
 
 const ByteArray = imports.byteArray;
-const GObject = imports.gi.GObject;
-const Gtk = imports.gi.Gtk;
+const {GLib, GObject, Gtk} = imports.gi;
+const System = imports.system;
 
 // This is ugly here, but usually it would be in a resource
 const template = ' \
@@ -103,5 +103,25 @@ describe('Gtk overrides', function () {
 
     it('sets CSS names on classes', function () {
         expect(Gtk.Widget.get_css_name.call(MyComplexGtkSubclass)).toEqual('complex-subclass');
+    });
+
+    it('avoid crashing when GTK vfuncs are called in garbage collection', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*during the sweeping phase of GC*');
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*destroy*');
+
+        let BadLabel = GObject.registerClass(class BadLabel extends Gtk.Label {
+            vfunc_destroy() {}
+        });
+
+        let w = new Gtk.Window();
+        w.add(new BadLabel());
+
+        w.destroy();
+        System.gc();
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGtk.js', 0,
+            'Gtk overrides avoid crashing and print a stack trace');
     });
 });
