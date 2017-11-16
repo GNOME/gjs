@@ -72,6 +72,30 @@ function do_Install_Dependencies(){
     fi
 }
 
+function do_Shrink_Image(){
+    echo
+    echo '-- Cleaning image --'
+    PATH=$PATH:~/.local/bin
+    jhbuild clean || true
+    rm -rf ~/bin/jhbuild ~/.local/bin/jhbuild ~/.cache/jhbuild
+    rm -rf ~/.config/jhbuildrc ~/.jhbuildrc ~/checkout
+    rm -rf ~/jhbuild/checkout
+
+    if [[ $BASE == "ubuntu" ]]; then
+        apt-get -y -qq remove --purge apt-file
+
+        apt-get -y autoremove
+        apt-get -y clean
+        rm -rf /var/lib/apt/lists/*
+
+    elif [[ $BASE == "fedora" ]]; then
+        dnf -y autoremove
+        dnf -y clean all
+    fi
+
+    echo '-- Done --'
+}
+
 function do_Set_Env(){
     echo
     echo '-- Set Environment --'
@@ -80,13 +104,10 @@ function do_Set_Env(){
     mkdir -p /cwd/.cache
     export XDG_CACHE_HOME=/cwd/.cache
     export JHBUILD_RUN_AS_ROOT=1
+    export SHELL=/bin/bash
 
     if [[ -z "${DISPLAY}" ]]; then
         export DISPLAY=":0"
-    fi
-
-    if [[ -z "${SHELL}" || $BASE == "ubuntu" ]]; then
-        export SHELL=/bin/bash
     fi
 
     echo '-- Done --'
@@ -108,7 +129,7 @@ index 75b0849..08965fa 100644
 --- a/jhbuild/utils/systeminstall.py
 +++ b/jhbuild/utils/systeminstall.py
 @@ -428,7 +428,7 @@ class AptSystemInstall(SystemInstall):
- 
+
      def _install_packages(self, native_packages):
          logging.info(_('Installing: %(pkgs)s') % {'pkgs': ' '.join(native_packages)})
 -        args = self._root_command_prefix_args + ['apt-get', 'install']
@@ -185,10 +206,10 @@ function do_Build_Package_Dependencies(){
 function do_Save_Files(){
     echo
     echo '-- Saving build files --'
-    mkdir -p "/hoard/SAVED/$OS"
+    mkdir -p "/cwd/SAVED/$OS"
 
-    cp -r ~/jhbuild "/hoard/SAVED/$OS/jhbuild"
-    cp -r ~/.local  "/hoard/SAVED/$OS/.local"
+    cp -r ~/jhbuild "/cwd/SAVED/$OS/jhbuild"
+    cp -r ~/.local  "/cwd/SAVED/$OS/.local"
     echo '-- Done --'
 }
 
@@ -196,8 +217,8 @@ function do_Get_Files(){
     echo
     echo '-- Restoring build files --'
 
-    cp -r "/hoard/SAVED/$OS/jhbuild" ~/jhbuild
-    cp -r "/hoard/SAVED/$OS/.local"  ~/.local
+    cp -r "/cwd/SAVED/$OS/jhbuild" ~/jhbuild
+    cp -r "/cwd/SAVED/$OS/.local"  ~/.local
     echo '-- Done --'
 }
 
@@ -239,8 +260,18 @@ if [[ $1 == "BUILD_MOZ" ]]; then
     do_Build_Mozilla
     do_Save_Files
 
+    if [[ $2 == "SHRINK" ]]; then
+        do_Shrink_Image
+    fi
+
 elif [[ $1 == "GET_FILES" ]]; then
+    do_Set_Env
     do_Get_Files
+
+    if [[ $2 == "DOCKER" ]]; then
+        do_Install_Base_Dependencies
+        do_Shrink_Image
+    fi
 
 elif [[ $1 == "INSTALL_GIT" ]]; then
     do_Install_Git
@@ -256,12 +287,11 @@ elif [[ $1 == "GJS" ]]; then
     do_Configure_JHBuild
     do_Build_Package_Dependencies gjs
 
-    # Build and test the latest commit (merged or from a PR) of Javascript Bindings for GNOME
+    # Build and test the latest commit (merged or from a merge/pull request) of
+    # Javascript Bindings for GNOME (gjs)
     echo
     echo '-- gjs status --'
     cp -r ./ ~/jhbuild/checkout/gjs
-    rm -rf ~/jhbuild/checkout/gjs/jhbuild
-    rm -rf ~/jhbuild/checkout/gjs/.cache
 
     cd ~/jhbuild/checkout/gjs
     git log --pretty=format:"%h %cd %s" -1
@@ -271,7 +301,7 @@ elif [[ $1 == "GJS" ]]; then
     jhbuild make --check
 
 elif [[ $1 == "GJS_EXTRA" ]]; then
-    # Extra testing. It doesn't build, just run the 'Installed Tests'
+    # Extra testing. It doesn't (re)build, just run the 'Installed Tests'
     echo
     echo '-- Installed GJS tests --'
     do_Set_Env
@@ -295,4 +325,3 @@ fi
 # Done
 echo
 echo '-- DONE --'
-
