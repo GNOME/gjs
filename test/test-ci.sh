@@ -270,6 +270,7 @@ elif [[ $1 == "GET_FILES" ]]; then
 
     if [[ $2 == "DOCKER" ]]; then
         do_Install_Base_Dependencies
+        do_Install_Dependencies
         do_Shrink_Image
     fi
 
@@ -277,8 +278,6 @@ elif [[ $1 == "INSTALL_GIT" ]]; then
     do_Install_Git
 
 elif [[ $1 == "GJS" ]]; then
-    do_Install_Base_Dependencies
-    do_Install_Dependencies
     do_Set_Env
 
     do_Show_Info
@@ -310,8 +309,6 @@ elif [[ $1 == "GJS_EXTRA" ]]; then
     xvfb-run jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
 
 elif [[ $1 == "CPPCHECK" ]]; then
-    do_Install_Base_Dependencies
-
     echo
     echo '-- Code analyzer --'
     cppcheck --enable=warning,performance,portability,information,missingInclude --force -q .
