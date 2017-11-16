@@ -123,7 +123,7 @@ get_name (JSContext *context,
     if (priv == NULL)
         return false;
 
-    return gjs_string_from_utf8(context, priv->gi_namespace, -1, args.rval());
+    return gjs_string_from_utf8(context, priv->gi_namespace, args.rval());
 }
 
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(ns)

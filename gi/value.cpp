@@ -801,7 +801,7 @@ gjs_value_from_g_value_internal(JSContext             *context,
                               "Converting NULL string to JS::NullValue()");
             value_p.setNull();
         } else {
-            if (!gjs_string_from_utf8(context, v, -1, value_p))
+            if (!gjs_string_from_utf8(context, v, value_p))
                 return false;
         }
     } else if (gtype == G_TYPE_CHAR) {

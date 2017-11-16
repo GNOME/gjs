@@ -440,8 +440,7 @@ to_string_func(JSContext *context,
         /* optimization, avoids iconv overhead and runs
          * libmozjs hardwired utf8-to-utf16
          */
-        return gjs_string_from_utf8(context, data, priv->array->len,
-                                    argv.rval());
+        return gjs_string_from_utf8_n(context, data, priv->array->len, argv.rval());
     } else {
         bool ok = false;
         gsize bytes_written;

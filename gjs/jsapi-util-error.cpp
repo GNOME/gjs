@@ -83,7 +83,7 @@ gjs_throw_valist(JSContext       *context,
     JS::AutoValueArray<1> error_args(context);
     result = false;
 
-    if (!gjs_string_from_utf8(context, s, -1, error_args[0])) {
+    if (!gjs_string_from_utf8(context, s, error_args[0])) {
         JS_ReportErrorUTF8(context, "Failed to copy exception string");
         goto out;
     }
@@ -99,7 +99,7 @@ gjs_throw_valist(JSContext       *context,
 
     if (error_name != NULL) {
         JS::RootedValue name_value(context);
-        if (!gjs_string_from_utf8(context, error_name, -1, &name_value) ||
+        if (!gjs_string_from_utf8(context, error_name, &name_value) ||
             !gjs_object_set_property(context, new_exc, GJS_STRING_NAME,
                                      name_value))
             goto out;

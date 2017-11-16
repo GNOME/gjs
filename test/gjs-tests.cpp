@@ -122,7 +122,7 @@ gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(GjsUnitTestFixture *fx,
     GjsAutoJSChar utf8_result(fx->cx);
     JS::RootedValue js_string(fx->cx);
 
-    g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, -1, &js_string));
+    g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, &js_string));
     g_assert(js_string.isString());
     g_assert(gjs_string_to_utf8(fx->cx, js_string, &utf8_result));
     g_assert_cmpstr(VALID_UTF8_STRING, ==, utf8_result);
@@ -176,6 +176,17 @@ gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture *fx,
 }
 
 static void
+test_jsapi_util_string_utf8_nchars_to_js(GjsUnitTestFixture *fx,
+                                         const void         *unused)
+{
+    JS::RootedValue v_out(fx->cx);
+    bool ok = gjs_string_from_utf8_n(fx->cx, VALID_UTF8_STRING,
+                                     strlen(VALID_UTF8_STRING), &v_out);
+    g_assert_true(ok);
+    g_assert_true(v_out.isString());
+}
+
+static void
 test_jsapi_util_string_char16_data(GjsUnitTestFixture *fx,
                                    gconstpointer       unused)
 {
@@ -183,8 +194,7 @@ test_jsapi_util_string_char16_data(GjsUnitTestFixture *fx,
     size_t len;
     JS::RootedValue v_string(fx->cx);
 
-    g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, -1,
-                                       &v_string));
+    g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, &v_string));
     g_assert_true(gjs_string_get_char16_data(fx->cx, v_string, &chars,
                                              &len));
     std::u16string result(chars, len);
@@ -209,8 +219,7 @@ test_jsapi_util_string_to_ucs4(GjsUnitTestFixture *fx,
     size_t len;
     JS::RootedValue v_string(fx->cx);
 
-    g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, -1,
-                                       &v_string));
+    g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, &v_string));
     g_assert_true(gjs_string_to_ucs4(fx->cx, v_string, &chars, &len));
 
     std::u32string result(chars, chars + len);
@@ -231,8 +240,7 @@ test_jsapi_util_debug_string_valid_utf8(GjsUnitTestFixture *fx,
                                         gconstpointer       unused)
 {
     JS::RootedValue v_string(fx->cx);
-    g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, -1,
-                                       &v_string));
+    g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, &v_string));
 
     char *debug_output = gjs_value_debug_string(fx->cx, v_string);
 
@@ -400,6 +408,8 @@ main(int    argc,
                         gjstest_test_func_gjs_jsapi_util_error_throw);
     ADD_JSAPI_UTIL_TEST("string/js/string/utf8",
                         gjstest_test_func_gjs_jsapi_util_string_js_string_utf8);
+    ADD_JSAPI_UTIL_TEST("string/utf8-nchars-to-js",
+                        test_jsapi_util_string_utf8_nchars_to_js);
     ADD_JSAPI_UTIL_TEST("string/char16_data",
                         test_jsapi_util_string_char16_data);
     ADD_JSAPI_UTIL_TEST("string/to_ucs4",

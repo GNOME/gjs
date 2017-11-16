@@ -592,7 +592,7 @@ gjs_array_from_strv(JSContext             *context,
         if (!elems.growBy(1))
             g_error("Unable to grow vector");
 
-        if (!gjs_string_from_utf8(context, strv[i], -1, elems[i]))
+        if (!gjs_string_from_utf8(context, strv[i], elems[i]))
             return false;
     }
 
@@ -2676,7 +2676,8 @@ gjs_value_from_g_argument (JSContext             *context,
 
             /* Preserve the bidirectional mapping between 0 and "" */
             if (arg->v_uint32 == 0) {
-                return gjs_string_from_utf8 (context, "", 0, value_p);
+                value_p.set(JS_GetEmptyStringValue(context));
+                return true;
             } else if (!g_unichar_validate (arg->v_uint32)) {
                 gjs_throw(context,
                           "Invalid unicode codepoint %" G_GUINT32_FORMAT,
@@ -2684,7 +2685,7 @@ gjs_value_from_g_argument (JSContext             *context,
                 return false;
             } else {
                 bytes = g_unichar_to_utf8 (arg->v_uint32, utf8);
-                return gjs_string_from_utf8 (context, (char*)utf8, bytes, value_p);
+                return gjs_string_from_utf8_n(context, utf8, bytes, value_p);
             }
         }
 
@@ -2698,9 +2699,9 @@ gjs_value_from_g_argument (JSContext             *context,
             return true;
         }
     case GI_TYPE_TAG_UTF8:
-        if (arg->v_pointer)
-            return gjs_string_from_utf8(context, (const char *) arg->v_pointer, -1, value_p);
-        else {
+        if (arg->v_pointer) {
+            return gjs_string_from_utf8(context, reinterpret_cast<const char *>(arg->v_pointer), value_p);
+        } else {
             /* For NULL we'll return JS::NullValue(), which is already set
              * in *value_p
              */

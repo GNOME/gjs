@@ -212,8 +212,11 @@ bool        gjs_string_to_utf8               (JSContext       *context,
                                               GjsAutoJSChar   *utf8_string_p);
 bool gjs_string_from_utf8(JSContext             *context,
                           const char            *utf8_string,
-                          ssize_t                n_bytes,
                           JS::MutableHandleValue value_p);
+bool gjs_string_from_utf8_n(JSContext             *cx,
+                            const char            *utf8_chars,
+                            size_t                 len,
+                            JS::MutableHandleValue out);
 
 bool gjs_string_to_filename(JSContext       *cx,
                             const JS::Value  string_val,

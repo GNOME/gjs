@@ -171,7 +171,7 @@ error_get_message(JSContext *context,
         return false;
     }
 
-    return gjs_string_from_utf8(context, priv->gerror->message, -1, args.rval());
+    return gjs_string_from_utf8(context, priv->gerror->message, args.rval());
 }
 
 static bool
@@ -200,40 +200,26 @@ error_to_string(JSContext *context,
                 JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, rec, self, Error, priv);
-    gchar *descr;
-    bool retval;
 
     if (priv == NULL)
         return false;
 
-    rec.rval().setUndefined();
-    retval = false;
-
     /* We follow the same pattern as standard JS errors, at the expense of
        hiding some useful information */
 
+    GjsAutoChar descr;
     if (priv->gerror == NULL) {
         descr = g_strdup_printf("%s.%s",
                                 g_base_info_get_namespace(priv->info),
                                 g_base_info_get_name(priv->info));
-
-        if (!gjs_string_from_utf8(context, descr, -1, rec.rval()))
-            goto out;
     } else {
         descr = g_strdup_printf("%s.%s: %s",
                                 g_base_info_get_namespace(priv->info),
                                 g_base_info_get_name(priv->info),
                                 priv->gerror->message);
-
-        if (!gjs_string_from_utf8(context, descr, -1, rec.rval()))
-            goto out;
     }
 
-    retval = true;
-
- out:
-    g_free(descr);
-    return retval;
+    return gjs_string_from_utf8(context, descr, rec.rval());
 }
 
 static bool
@@ -460,7 +446,7 @@ gjs_error_from_js_gerror(JSContext *cx,
                          GError    *gerror)
 {
     JS::AutoValueArray<1> error_args(cx);
-    if (!gjs_string_from_utf8(cx, gerror->message, -1, error_args[0]))
+    if (!gjs_string_from_utf8(cx, gerror->message, error_args[0]))
         return nullptr;
 
     JSProtoKey error_kind = proto_key_from_error_enum(gerror->code);

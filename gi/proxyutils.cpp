@@ -66,7 +66,7 @@ _gjs_proxy_to_string_func(JSContext             *context,
     
     g_string_append_c(buf, ']');
 
-    if (!gjs_string_from_utf8 (context, buf->str, -1, rval))
+    if (!gjs_string_from_utf8(context, buf->str, rval))
         goto out;
 
     ret = true;

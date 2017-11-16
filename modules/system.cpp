@@ -47,19 +47,13 @@ gjs_address_of(JSContext *context,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JS::RootedObject target_obj(context);
-    bool ret;
-    char *pointer_string;
 
     if (!gjs_parse_call_args(context, "addressOf", argv, "o",
                              "object", &target_obj))
         return false;
 
-    pointer_string = g_strdup_printf("%p", target_obj.get());
-
-    ret = gjs_string_from_utf8(context, pointer_string, -1, argv.rval());
-
-    g_free(pointer_string);
-    return ret;
+    GjsAutoChar pointer_string = g_strdup_printf("%p", target_obj.get());
+    return gjs_string_from_utf8(context, pointer_string, argv.rval());
 }
 
 static bool
@@ -202,8 +196,7 @@ gjs_js_define_system_stuff(JSContext              *context,
                  NULL);
 
     JS::RootedValue value(context);
-    if (!gjs_string_from_utf8(context, program_name,
-                              -1, &value))
+    if (!gjs_string_from_utf8(context, program_name, &value))
         goto out;
 
     /* The name is modeled after program_invocation_name,

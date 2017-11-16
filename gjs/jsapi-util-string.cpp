@@ -54,40 +54,33 @@ gjs_string_to_utf8 (JSContext      *context,
 bool
 gjs_string_from_utf8(JSContext             *context,
                      const char            *utf8_string,
-                     ssize_t                n_bytes,
                      JS::MutableHandleValue value_p)
 {
-    char16_t *u16_string;
-    glong u16_string_length;
-    GError *error;
-
-    /* intentionally using n_bytes even though glib api suggests n_chars; with
-    * n_chars (from g_utf8_strlen()) the result appears truncated
-    */
-
-    error = NULL;
-    u16_string =
-        reinterpret_cast<char16_t *>(g_utf8_to_utf16(utf8_string, n_bytes, NULL,
-                                                     &u16_string_length, &error));
-    if (!u16_string) {
-        gjs_throw(context,
-                  "Failed to convert UTF-8 string to "
-                  "JS string: %s",
-                  error->message);
-                  g_error_free(error);
-        return false;
-    }
-
     JS_BeginRequest(context);
 
-    /* Avoid a copy - assumes that g_malloc == js_malloc == malloc */
-    JS::RootedString str(context,
-                         JS_NewUCString(context, u16_string, u16_string_length));
+    JS::ConstUTF8CharsZ chars(utf8_string, strlen(utf8_string));
+    JS::RootedString str(context, JS_NewStringCopyUTF8Z(context, chars));
     if (str)
         value_p.setString(str);
 
     JS_EndRequest(context);
     return str != nullptr;
+}
+
+bool
+gjs_string_from_utf8_n(JSContext             *cx,
+                       const char            *utf8_chars,
+                       size_t                 len,
+                       JS::MutableHandleValue out)
+{
+    JSAutoRequest ar(cx);
+
+    JS::UTF8Chars chars(utf8_chars, len);
+    JS::RootedString str(cx, JS_NewStringCopyUTF8N(cx, chars));
+    if (str)
+        out.setString(str);
+
+    return !!str;
 }
 
 bool
@@ -123,27 +116,20 @@ gjs_string_from_filename(JSContext             *context,
 {
     gsize written;
     GError *error;
-    gchar *utf8_string;
 
     error = NULL;
-    utf8_string = g_filename_to_utf8(filename_string, n_bytes, NULL,
-                                     &written, &error);
+    GjsAutoChar utf8_string = g_filename_to_utf8(filename_string, n_bytes,
+                                                 nullptr, &written, &error);
     if (error) {
         gjs_throw(context,
                   "Could not convert UTF-8 string '%s' to a filename: '%s'",
                   filename_string,
                   error->message);
         g_error_free(error);
-        g_free(utf8_string);
         return false;
     }
 
-    if (!gjs_string_from_utf8(context, utf8_string, written, value_p))
-        return false;
-
-    g_free(utf8_string);
-
-    return true;
+    return gjs_string_from_utf8_n(context, utf8_string, written, value_p);
 }
 
 /* Converts a JSString's array of Latin-1 chars to an array of a wider integer
