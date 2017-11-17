@@ -23,8 +23,9 @@
 
 #include <config.h>
 
-#include <util/log.h>
-#include <util/glib.h>
+#include <gio/gio.h>
+
+#include <vector>
 
 #include "importer.h"
 #include "jsapi-class.h"
@@ -32,8 +33,8 @@
 #include "mem.h"
 #include "module.h"
 #include "native.h"
-
-#include <gio/gio.h>
+#include "util/glib.h"
+#include "util/log.h"
 
 #ifdef G_OS_WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -64,7 +65,7 @@ static const JSClass gjs_importer_class = *js::Jsvalify(&gjs_importer_real_class
 GJS_DEFINE_PRIV_FROM_JS(Importer, gjs_importer_class)
 
 static JSObject *gjs_define_importer(JSContext *, JS::HandleObject,
-    const char *, const char **, bool);
+    const char *, const char * const *, bool);
 
 static bool
 importer_to_string(JSContext *cx,
@@ -179,10 +180,10 @@ define_meta_properties(JSContext       *context,
 }
 
 static bool
-import_directory(JSContext       *context,
-                 JS::HandleObject obj,
-                 const char      *name,
-                 const char     **full_paths)
+import_directory(JSContext          *context,
+                 JS::HandleObject    obj,
+                 const char         *name,
+                 const char * const *full_paths)
 {
     JSObject *importer;
 
@@ -452,14 +453,10 @@ do_import(JSContext       *context,
           JS::HandleId     id,
           const char      *name)
 {
-    char *filename;
-    char *full_path;
     JS::RootedObject search_path(context);
     guint32 search_path_len;
     guint32 i;
-    bool result, exists, is_array;
-    GPtrArray *directories;
-    GFile *gfile;
+    bool exists, is_array;
 
     if (!gjs_object_require_property(context, obj, "importer",
                                      GJS_STRING_SEARCH_PATH, &search_path))
@@ -477,35 +474,28 @@ do_import(JSContext       *context,
         return false;
     }
 
-    result = false;
-
-    filename = g_strdup_printf("%s.js", name);
-    full_path = NULL;
-    directories = NULL;
-
+    GjsAutoChar filename = g_strdup_printf("%s.js", name);
+    std::vector<GjsAutoChar> directories;
     JS::RootedValue elem(context);
     JS::RootedString str(context);
 
     /* First try importing an internal module like byteArray */
     if (priv->is_root && gjs_is_registered_native_module(context, obj, name)) {
         if (!gjs_import_native_module(context, obj, name))
-            goto out;
+            return false;
 
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "successfully imported module '%s'", name);
-        result = true;
-        goto out;
+        return true;
     }
 
     for (i = 0; i < search_path_len; ++i) {
-        GjsAutoJSChar dirname;
-
         elem.setUndefined();
         if (!JS_GetElement(context, search_path, i, &elem)) {
             /* this means there was an exception, while elem.isUndefined()
              * means no element found
              */
-            goto out;
+            return false;
         }
 
         if (elem.isUndefined())
@@ -513,43 +503,35 @@ do_import(JSContext       *context,
 
         if (!elem.isString()) {
             gjs_throw(context, "importer searchPath contains non-string");
-            goto out;
+            return false;
         }
 
         str = elem.toString();
-        dirname = JS_EncodeStringToUTF8(context, str);
+        GjsAutoJSChar dirname = JS_EncodeStringToUTF8(context, str);
         if (!dirname)
-            goto out;
+            return false;
 
         /* Ignore empty path elements */
         if (dirname[0] == '\0')
             continue;
 
         /* Try importing __init__.js and loading the symbol from it */
-        import_symbol_from_init_js(context, obj, dirname, name, &result);
-        if (result)
-            goto out;
+        bool found = false;
+        if (!import_symbol_from_init_js(context, obj, dirname, name, &found))
+            return false;
+        if (found)
+            return true;
 
         /* Second try importing a directory (a sub-importer) */
-        if (full_path)
-            g_free(full_path);
-        full_path = g_build_filename(dirname, name,
-                                     NULL);
-        gfile = g_file_new_for_commandline_arg(full_path);
+        GjsAutoChar full_path = g_build_filename(dirname, name, nullptr);
+        GjsAutoUnref<GFile> gfile = g_file_new_for_commandline_arg(full_path);
 
         if (g_file_query_file_type(gfile, (GFileQueryInfoFlags) 0, NULL) == G_FILE_TYPE_DIRECTORY) {
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "Adding directory '%s' to child importer '%s'",
-                      full_path, name);
-            if (directories == NULL) {
-                directories = g_ptr_array_new();
-            }
-            g_ptr_array_add(directories, full_path);
-            /* don't free it twice - pass ownership to ptr array */
-            full_path = NULL;
+                      full_path.get(), name);
+            directories.push_back(std::move(full_path));
         }
-
-        g_object_unref(gfile);
 
         /* If we just added to directories, we know we don't need to
          * check for a file.  If we added to directories on an earlier
@@ -557,14 +539,11 @@ do_import(JSContext       *context,
          * path. So, always skip the rest of the loop block if we have
          * directories.
          */
-        if (directories != NULL) {
+        if (!directories.empty())
             continue;
-        }
 
         /* Third, if it's not a directory, try importing a file */
-        g_free(full_path);
-        full_path = g_build_filename(dirname, filename,
-                                     NULL);
+        full_path = g_build_filename(dirname, filename.get(), nullptr);
         gfile = g_file_new_for_commandline_arg(full_path);
         exists = g_file_query_exists(gfile, NULL);
 
@@ -572,65 +551,44 @@ do_import(JSContext       *context,
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "JS import '%s' not found in %s",
                       name, dirname.get());
-
-            g_object_unref(gfile);
             continue;
         }
 
         if (import_file_on_module(context, obj, id, name, gfile)) {
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "successfully imported module '%s'", name);
-            result = true;
+            return true;
         }
-
-        g_object_unref(gfile);
 
         /* Don't keep searching path if we fail to load the file for
          * reasons other than it doesn't exist... i.e. broken files
          * block searching for nonbroken ones
          */
-        goto out;
+        return false;
     }
 
-    if (directories != NULL) {
+    if (!directories.empty()) {
         /* NULL-terminate the char** */
-        g_ptr_array_add(directories, NULL);
+        const char **full_paths = g_new0(const char *, directories.size() + 1);
+        for (size_t ix = 0; ix < directories.size(); ix++)
+            full_paths[ix] = directories[ix].get();
 
-        if (import_directory(context, obj, name,
-                             (const char**) directories->pdata)) {
-            gjs_debug(GJS_DEBUG_IMPORTER,
-                      "successfully imported directory '%s'", name);
-            result = true;
-        }
+        bool result = import_directory(context, obj, name, full_paths);
+        g_free(full_paths);
+        if (!result)
+            return false;
+
+        gjs_debug(GJS_DEBUG_IMPORTER,
+                  "successfully imported directory '%s'", name);
+        return true;
     }
 
- out:
-    if (directories != NULL) {
-        char **str_array;
-
-        /* NULL-terminate the char**
-         * (maybe for a second time, but doesn't matter)
-         */
-        g_ptr_array_add(directories, NULL);
-
-        str_array = (char**) directories->pdata;
-        g_ptr_array_free(directories, false);
-        g_strfreev(str_array);
-    }
-
-    g_free(full_path);
-    g_free(filename);
-
-    if (!result &&
-        !JS_IsExceptionPending(context)) {
-        /* If no exception occurred, the problem is just that we got to the
-         * end of the path. Be sure an exception is set.
-         */
-        gjs_throw_custom(context, JSProto_Error, "ImportError",
-                         "No JS module '%s' found in search path", name);
-    }
-
-    return result;
+    /* If no exception occurred, the problem is just that we got to the
+     * end of the path. Be sure an exception is set. */
+    g_assert(!JS_IsExceptionPending(context));
+    gjs_throw_custom(context, JSProto_Error, "ImportError",
+                     "No JS module '%s' found in search path", name);
+    return false;
 }
 
 /* Note that in a for ... in loop, this will be called first on the object,
@@ -993,11 +951,11 @@ gjs_create_importer(JSContext          *context,
 }
 
 static JSObject *
-gjs_define_importer(JSContext       *context,
-                    JS::HandleObject in_object,
-                    const char      *importer_name,
-                    const char     **initial_search_path,
-                    bool             add_standard_search_path)
+gjs_define_importer(JSContext          *context,
+                    JS::HandleObject    in_object,
+                    const char         *importer_name,
+                    const char * const *initial_search_path,
+                    bool                add_standard_search_path)
 
 {
     JS::RootedObject importer(context,
