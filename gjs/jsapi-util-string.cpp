@@ -30,25 +30,20 @@
 #include "jsapi-wrapper.h"
 
 bool
-gjs_string_to_utf8 (JSContext      *context,
-                    const JS::Value value,
-                    GjsAutoJSChar  *utf8_string_p)
+gjs_string_to_utf8(JSContext      *cx,
+                   const JS::Value value,
+                   GjsAutoJSChar  *utf8_string_p)
 {
-    JS_BeginRequest(context);
+    JSAutoRequest ar(cx);
 
     if (!value.isString()) {
-        gjs_throw(context,
-                  "Value is not a string, cannot convert to UTF-8");
-        JS_EndRequest(context);
+        gjs_throw(cx, "Value is not a string, cannot convert to UTF-8");
         return false;
     }
 
-    JS::RootedString str(context, value.toString());
-    utf8_string_p->reset(context, JS_EncodeStringToUTF8(context, str));
-
-    JS_EndRequest(context);
-
-    return true;
+    JS::RootedString str(cx, value.toString());
+    utf8_string_p->reset(cx, JS_EncodeStringToUTF8(cx, str));
+    return !!*utf8_string_p;
 }
 
 bool
