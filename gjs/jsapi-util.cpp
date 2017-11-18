@@ -529,15 +529,9 @@ gjs_log_exception_full(JSContext       *context,
                                              g_quark_to_string(gerror->domain),
                                              gerror->message);
         } else {
-            JS::RootedValue js_name(context);
-            GjsAutoJSChar utf8_name(context);
-
-            if (gjs_object_get_property(context, exc_obj,
-                                        GJS_STRING_NAME, &js_name) &&
-                js_name.isString() &&
-                gjs_string_to_utf8(context, js_name, &utf8_name)) {
-                is_syntax = strcmp("SyntaxError", utf8_name) == 0;
-            }
+            const JSClass *syntax_error =
+                js::Jsvalify(js::ProtoKeyToClass(JSProto_SyntaxError));
+            is_syntax = JS_InstanceOf(context, exc_obj, syntax_error, nullptr);
 
             utf8_exception = utf8_exception_from_non_gerror_value(context, exc);
         }
