@@ -385,4 +385,9 @@ bool gjs_object_require_converted_property(JSContext       *cx,
                                                  value);
 }
 
+std::string gjs_debug_string(JSString *str);
+std::string gjs_debug_symbol(JS::Symbol * const sym);
+std::string gjs_debug_value(JS::Value v);
+std::string gjs_debug_id(jsid id);
+
 #endif  /* __GJS_JSAPI_UTIL_H__ */
