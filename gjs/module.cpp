@@ -163,17 +163,14 @@ class GjsModule {
          * be supported according to ES6. For compatibility with earlier GJS,
          * we treat it as if it were a real property, but warn about it. */
 
-        GjsAutoJSChar prop_name;
-        if (!gjs_get_string_id(cx, id, &prop_name))
-            return false;
-
         g_warning("Some code accessed the property '%s' on the module '%s'. "
                   "That property was defined with 'let' or 'const' inside the "
                   "module. This was previously supported, but is not correct "
                   "according to the ES6 standard. Any symbols to be exported "
                   "from a module must be defined with 'var'. The property "
                   "access will work as previously for the time being, but "
-                  "please fix your code anyway.", prop_name.get(), m_name);
+                  "please fix your code anyway.",
+                  gjs_debug_id(id).c_str(), m_name);
 
         JS::Rooted<JS::PropertyDescriptor> desc(cx);
         return JS_GetPropertyDescriptorById(cx, lexical, id, &desc) &&

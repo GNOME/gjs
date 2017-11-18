@@ -24,6 +24,9 @@
 #include <config.h>
 
 #include <algorithm>
+#include <iomanip>
+#include <sstream>
+#include <string>
 #include <string.h>
 
 #include "jsapi-util.h"
@@ -364,4 +367,134 @@ gjs_intern_string_to_id(JSContext  *cx,
     JS::RootedString str(cx, JS_AtomizeAndPinString(cx, string));
     JS::RootedId id(cx, INTERNED_STRING_TO_JSID(cx, str));
     return id;
+}
+
+static std::string
+gjs_debug_flat_string(JSFlatString *fstr)
+{
+    JSLinearString *str = js::FlatStringToLinearString(fstr);
+    size_t len = js::GetLinearStringLength(str);
+
+    JS::AutoCheckCannotGC nogc;
+    if (js::LinearStringHasLatin1Chars(str)) {
+        const JS::Latin1Char *chars = js::GetLatin1LinearStringChars(nogc, str);
+        return std::string(reinterpret_cast<const char *>(chars), len);
+    }
+
+    std::ostringstream out;
+    const char16_t *chars = js::GetTwoByteLinearStringChars(nogc, str);
+    for (size_t ix = 0; ix < len; ix++) {
+        char16_t c = chars[ix];
+        if (c == '\n')
+            out << "\\n";
+        else if (c == '\t')
+            out << "\\t";
+        else if (c >= 32 && c < 127)
+            out << c;
+        else if (c <= 255)
+            out << "\\x" << std::setfill('0') << std::setw(2) << unsigned(c);
+        else
+            out << "\\x" << std::setfill('0') << std::setw(4) << unsigned(c);
+    }
+    return out.str();
+}
+
+std::string
+gjs_debug_string(JSString *str)
+{
+    if (!JS_StringIsFlat(str)) {
+        std::ostringstream out("<non-flat string of length ");
+        out << JS_GetStringLength(str) << '>';
+        return out.str();
+    }
+    return gjs_debug_flat_string(JS_ASSERT_STRING_IS_FLAT(str));
+}
+
+std::string
+gjs_debug_symbol(JS::Symbol * const sym)
+{
+    /* This is OK because JS::GetSymbolCode() and JS::GetSymbolDescription()
+     * can't cause a garbage collection */
+    JS::HandleSymbol handle = JS::HandleSymbol::fromMarkedLocation(&sym);
+    JS::SymbolCode code = JS::GetSymbolCode(handle);
+    JSString *descr = JS::GetSymbolDescription(handle);
+
+    if (size_t(code) < JS::WellKnownSymbolLimit)
+        return gjs_debug_string(descr);
+
+    std::ostringstream out;
+    if (code == JS::SymbolCode::InSymbolRegistry) {
+        out << "Symbol.for(";
+        if (descr)
+            out << gjs_debug_string(descr);
+        else
+            out << "undefined";
+        out << ")";
+        return out.str();
+    }
+    if (code == JS::SymbolCode::UniqueSymbol) {
+        if (descr)
+            out << "Symbol(" << gjs_debug_string(descr) << ")";
+        else
+            out << "<Symbol at " << sym << ">";
+        return out.str();
+    }
+
+    out << "<unexpected symbol code " << uint32_t(code) << ">";
+    return out.str();
+}
+
+std::string
+gjs_debug_value(JS::Value v)
+{
+    std::ostringstream out;
+    if (v.isNull())
+        return "null";
+    if (v.isUndefined())
+        return "undefined";
+    if (v.isInt32()) {
+        out << v.toInt32();
+        return out.str();
+    }
+    if (v.isDouble()) {
+        out << v.toDouble();
+        return out.str();
+    }
+    if (v.isString()) {
+        out << gjs_debug_string(v.toString());
+        return out.str();
+    }
+    if (v.isSymbol()) {
+        out << gjs_debug_symbol(v.toSymbol());
+        return out.str();
+    }
+    if (v.isObject() && js::IsFunctionObject(&v.toObject())) {
+        JSFunction* fun = JS_GetObjectFunction(&v.toObject());
+        JSString *display_name = JS_GetFunctionDisplayId(fun);
+        if (display_name)
+            out << "<function " << gjs_debug_string(display_name);
+        else
+            out << "<unnamed function";
+        out << " at " << fun << '>';
+        return out.str();
+    }
+    if (v.isObject()) {
+        JSObject *obj = &v.toObject();
+        const JSClass* clasp = JS_GetClass(obj);
+        out << "<object " << clasp->name << " at " << obj <<  '>';
+        return out.str();
+    }
+    if (v.isBoolean())
+        return (v.toBoolean() ? "true" : "false");
+    if (v.isMagic())
+        return "<magic>";
+    return "unexpected value";
+}
+
+std::string
+gjs_debug_id(jsid id)
+{
+    if (JSID_IS_STRING(id))
+        return gjs_debug_flat_string(JSID_TO_FLAT_STRING(id));
+    return gjs_debug_value(js::IdToValue(id));
 }

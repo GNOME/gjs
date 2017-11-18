@@ -138,15 +138,12 @@ throw_property_lookup_error(JSContext       *cx,
     /* remember gjs_throw() is a no-op if JS_GetProperty()
      * already set an exception
      */
-    GjsAutoJSChar name;
-    gjs_get_string_id(cx, property_name, &name);
-
     if (description)
-        gjs_throw(cx, "No property '%s' in %s (or %s)", name.get(), description,
-                  reason);
+        gjs_throw(cx, "No property '%s' in %s (or %s)",
+                  gjs_debug_id(property_name).c_str(), description, reason);
     else
-        gjs_throw(cx, "No property '%s' in object %p (or %s)", name.get(),
-                  obj.address(), reason);
+        gjs_throw(cx, "No property '%s' in object %p (or %s)",
+                  gjs_debug_id(property_name).c_str(), obj.get(), reason);
 }
 
 /* Returns whether the object had the property; if the object did
