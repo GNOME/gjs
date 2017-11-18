@@ -488,6 +488,7 @@ do_import(JSContext       *context,
     directories = NULL;
 
     JS::RootedValue elem(context);
+    JS::RootedString str(context);
 
     /* First try importing an internal module like byteArray */
     if (priv->is_root && gjs_is_registered_native_module(context, obj, name)) {
@@ -519,8 +520,10 @@ do_import(JSContext       *context,
             goto out;
         }
 
-        if (!gjs_string_to_utf8(context, elem, &dirname))
-            goto out; /* Error message already set */
+        str = elem.toString();
+        dirname.reset(context, JS_EncodeStringToUTF8(context, str));
+        if (!dirname)
+            goto out;
 
         /* Ignore empty path elements */
         if (dirname[0] == '\0')
@@ -673,8 +676,8 @@ importer_enumerate(JSContext        *context,
     }
 
     JS::RootedValue elem(context);
+    JS::RootedString str(context);
     for (i = 0; i < search_path_len; ++i) {
-        GjsAutoJSChar dirname(context);
         char *init_path;
 
         elem.setUndefined();
@@ -693,8 +696,10 @@ importer_enumerate(JSContext        *context,
             return false;
         }
 
-        if (!gjs_string_to_utf8(context, elem, &dirname))
-            return false; /* Error message already set */
+        str = elem.toString();
+        GjsAutoJSChar dirname(context, JS_EncodeStringToUTF8(context, str));
+        if (!dirname)
+            return false;
 
         init_path = g_build_filename(dirname, MODULE_INIT_FILENAME, NULL);
 

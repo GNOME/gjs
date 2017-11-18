@@ -418,7 +418,9 @@ to_string_func(JSContext *context,
     byte_array_ensure_array(priv);
 
     if (argc >= 1 && argv[0].isString()) {
-        if (!gjs_string_to_utf8(context, argv[0], &encoding))
+        JS::RootedString str(context, argv[0].toString());
+        encoding.reset(context, JS_EncodeStringToUTF8(context, str));
+        if (!encoding)
             return false;
 
         /* maybe we should be smarter about utf8 synonyms here.
@@ -550,7 +552,9 @@ from_string_func(JSContext *context,
     }
 
     if (argc > 1 && argv[1].isString()) {
-        if (!gjs_string_to_utf8(context, argv[1], &encoding))
+        JS::RootedString str(context, argv[1].toString());
+        encoding.reset(context, JS_EncodeStringToUTF8(context, str));
+        if (!encoding)
             return false;
 
         /* maybe we should be smarter about utf8 synonyms here.
@@ -566,10 +570,9 @@ from_string_func(JSContext *context,
         /* optimization? avoids iconv overhead and runs
          * libmozjs hardwired utf16-to-utf8.
          */
-        GjsAutoJSChar utf8(context);
-        if (!gjs_string_to_utf8(context,
-                                argv[0],
-                                &utf8))
+        JS::RootedString str(context, argv[0].toString());
+        GjsAutoJSChar utf8(context, JS_EncodeStringToUTF8(context, str));
+        if (!utf8)
             return false;
 
         g_byte_array_set_size(priv->array, 0);

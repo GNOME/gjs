@@ -29,6 +29,19 @@
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 
+/**
+ * gjs_string_to_utf8:
+ * @cx: JSContext
+ * @value: a JS::Value containing a string
+ * @utf8_string_p: return location for a unique JS chars pointer
+ *
+ * Converts the JSString in @value to UTF-8 and puts it in @utf8_string_p.
+ *
+ * This function is a convenience wrapper around JS_EncodeStringToUTF8() that
+ * typechecks the JS::Value and throws an exception if it's the wrong type.
+ * Don't use this function if you already have a JS::RootedString, or if you
+ * know the value already holds a string; use JS_EncodeStringToUTF8() instead.
+ */
 bool
 gjs_string_to_utf8(JSContext      *cx,
                    const JS::Value value,
@@ -159,40 +172,31 @@ from_latin1(JSContext *cx,
 /**
  * gjs_string_get_char16_data:
  * @context: js context
- * @value: a JS::Value
+ * @str: a rooted JSString
  * @data_p: address to return allocated data buffer
  * @len_p: address to return length of data (number of 16-bit characters)
  *
- * Get the binary data (as a sequence of 16-bit characters) in the JSString
- * contained in @value.
- * Throws a JS exception if value is not a string.
+ * Get the binary data (as a sequence of 16-bit characters) in @str.
  *
  * Returns: false if exception thrown
  **/
 bool
 gjs_string_get_char16_data(JSContext       *context,
-                           JS::Value        value,
+                           JS::HandleString str,
                            char16_t       **data_p,
                            size_t          *len_p)
 {
     JSAutoRequest ar(context);
 
-    if (!value.isString()) {
-        gjs_throw(context,
-                  "Value is not a string, can't return binary data from it");
-        return false;
-    }
-
-    if (JS_StringHasLatin1Chars(value.toString()))
-        return from_latin1(context, value.toString(), data_p, len_p);
+    if (JS_StringHasLatin1Chars(str))
+        return from_latin1(context, str, data_p, len_p);
 
     /* From this point on, crash if a GC is triggered while we are using
      * the string's chars */
     JS::AutoCheckCannotGC nogc;
 
     const char16_t *js_data =
-        JS_GetTwoByteStringCharsAndLength(context, nogc,
-                                          value.toString(), len_p);
+        JS_GetTwoByteStringCharsAndLength(context, nogc, str, len_p);
 
     if (js_data == NULL)
         return false;
@@ -205,33 +209,27 @@ gjs_string_get_char16_data(JSContext       *context,
 /**
  * gjs_string_to_ucs4:
  * @cx: a #JSContext
- * @value: JS::Value containing a string
+ * @str: rooted JSString
  * @ucs4_string_p: return location for a #gunichar array
  * @len_p: return location for @ucs4_string_p length
  *
  * Returns: true on success, false otherwise in which case a JS error is thrown
  */
 bool
-gjs_string_to_ucs4(JSContext      *cx,
-                   JS::HandleValue value,
-                   gunichar      **ucs4_string_p,
-                   size_t         *len_p)
+gjs_string_to_ucs4(JSContext       *cx,
+                   JS::HandleString str,
+                   gunichar       **ucs4_string_p,
+                   size_t          *len_p)
 {
     if (ucs4_string_p == NULL)
         return true;
 
-    if (!value.isString()) {
-        gjs_throw(cx, "Value is not a string, cannot convert to UCS-4");
-        return false;
-    }
-
     JSAutoRequest ar(cx);
-    JS::RootedString str(cx, value.toString());
     size_t len;
     GError *error = NULL;
 
     if (JS_StringHasLatin1Chars(str))
-        return from_latin1(cx, value.toString(), ucs4_string_p, len_p);
+        return from_latin1(cx, str, ucs4_string_p, len_p);
 
     /* From this point on, crash if a GC is triggered while we are using
      * the string's chars */
@@ -325,7 +323,9 @@ gjs_get_string_id (JSContext       *context,
         return false;
 
     if (id_val.isString()) {
-        return gjs_string_to_utf8(context, id_val, name_p);
+        JS::RootedString str(context, id_val.toString());
+        name_p->reset(context, JS_EncodeStringToUTF8(context, str));
+        return !!name_p;
     } else {
         return false;
     }

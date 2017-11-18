@@ -192,19 +192,17 @@ test_jsapi_util_string_char16_data(GjsUnitTestFixture *fx,
 {
     char16_t *chars;
     size_t len;
-    JS::RootedValue v_string(fx->cx);
 
-    g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, &v_string));
-    g_assert_true(gjs_string_get_char16_data(fx->cx, v_string, &chars,
-                                             &len));
+    JS::ConstUTF8CharsZ jschars(VALID_UTF8_STRING, strlen(VALID_UTF8_STRING));
+    JS::RootedString str(fx->cx, JS_NewStringCopyUTF8Z(fx->cx, jschars));
+    g_assert_true(gjs_string_get_char16_data(fx->cx, str, &chars, &len));
     std::u16string result(chars, len);
     g_assert_true(result == u"\xc9\xd6 foobar \u30df");
     g_free(chars);
 
     /* Try with a string that is likely to be stored as Latin-1 */
-    v_string.setString(JS_NewStringCopyZ(fx->cx, "abcd"));
-    g_assert_true(gjs_string_get_char16_data(fx->cx, v_string, &chars,
-                                             &len));
+    str = JS_NewStringCopyZ(fx->cx, "abcd");
+    g_assert_true(gjs_string_get_char16_data(fx->cx, str, &chars, &len));
 
     result.assign(chars, len);
     g_assert_true(result == u"abcd");
@@ -217,18 +215,18 @@ test_jsapi_util_string_to_ucs4(GjsUnitTestFixture *fx,
 {
     gunichar *chars;
     size_t len;
-    JS::RootedValue v_string(fx->cx);
 
-    g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, &v_string));
-    g_assert_true(gjs_string_to_ucs4(fx->cx, v_string, &chars, &len));
+    JS::ConstUTF8CharsZ jschars(VALID_UTF8_STRING, strlen(VALID_UTF8_STRING));
+    JS::RootedString str(fx->cx, JS_NewStringCopyUTF8Z(fx->cx, jschars));
+    g_assert_true(gjs_string_to_ucs4(fx->cx, str, &chars, &len));
 
     std::u32string result(chars, chars + len);
     g_assert_true(result == U"\xc9\xd6 foobar \u30df");
     g_free(chars);
 
     /* Try with a string that is likely to be stored as Latin-1 */
-    v_string.setString(JS_NewStringCopyZ(fx->cx, "abcd"));
-    g_assert_true(gjs_string_to_ucs4(fx->cx, v_string, &chars, &len));
+    str = JS_NewStringCopyZ(fx->cx, "abcd");
+    g_assert_true(gjs_string_to_ucs4(fx->cx, str, &chars, &len));
 
     result.assign(chars, chars + len);
     g_assert_true(result == U"abcd");

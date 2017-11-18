@@ -1609,7 +1609,6 @@ real_connect_func(JSContext *context,
     GClosure *closure;
     gulong id;
     guint signal_id;
-    GjsAutoJSChar signal_name(context);
     GQuark signal_detail;
 
     gjs_debug_gsignal("connect obj %p priv %p argc %d", obj.get(), priv, argc);
@@ -1630,9 +1629,10 @@ real_connect_func(JSContext *context,
         return false;
     }
 
-    if (!gjs_string_to_utf8(context, argv[0], &signal_name)) {
+    JS::RootedString signal_str(context, argv[0].toString());
+    GjsAutoJSChar signal_name(context, JS_EncodeStringToUTF8(context, signal_str));
+    if (!signal_name)
         return false;
-    }
 
     if (!g_signal_parse_name(signal_name,
                              G_OBJECT_TYPE(priv->gobj),
@@ -1686,7 +1686,6 @@ emit_func(JSContext *context,
     guint signal_id;
     GQuark signal_detail;
     GSignalQuery signal_query;
-    GjsAutoJSChar signal_name(context);
     GValue *instance_and_args;
     GValue rvalue = G_VALUE_INIT;
     unsigned int i;
@@ -1712,7 +1711,9 @@ emit_func(JSContext *context,
         return false;
     }
 
-    if (!gjs_string_to_utf8(context, argv[0], &signal_name))
+    JS::RootedString signal_str(context, argv[0].toString());
+    GjsAutoJSChar signal_name(context, JS_EncodeStringToUTF8(context, signal_str));
+    if (!signal_name)
         return false;
 
     if (!g_signal_parse_name(signal_name,

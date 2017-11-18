@@ -362,22 +362,21 @@ gjs_define_string_array(JSContext       *context,
  *
  */
 static char *
-gjs_string_readable (JSContext   *context,
-                     JSString    *string)
+gjs_string_readable(JSContext       *context,
+                    JS::HandleString string)
 {
     GString *buf = g_string_new("");
-    GjsAutoJSChar chars(context);
 
     JS_BeginRequest(context);
 
     g_string_append_c(buf, '"');
 
-    if (!gjs_string_to_utf8(context, JS::StringValue(string), &chars)) {
-        /* I'm not sure this code will actually ever be reached, since
-         * JS_EncodeStringToUTF8(), called internally by
-         * gjs_string_to_utf8(), seems to happily output non-valid UTF-8
-         * bytes. However, let's leave this in, since SpiderMonkey may
-         * decide to do this in the future. */
+    GjsAutoJSChar chars(context, JS_EncodeStringToUTF8(context, string));
+    if (!chars) {
+        /* I'm not sure this code will actually ever be reached except in the
+         * case of OOM, since JS_EncodeStringToUTF8() seems to happily output
+         * non-valid UTF-8 bytes. However, let's leave this in, since
+         * SpiderMonkey may decide to do validation in the future. */
 
         /* Find out size of buffer to allocate, not counting 0-terminator */
         size_t len = JS_PutEscapedString(context, NULL, 0, string, '"');
@@ -452,7 +451,8 @@ gjs_value_debug_string(JSContext      *context,
 
     /* Special case debug strings for strings */
     if (value.isString()) {
-        return gjs_string_readable(context, value.toString());
+        JS::RootedString str(context, value.toString());
+        return gjs_string_readable(context, str);
     }
 
     JS_BeginRequest(context);
@@ -498,10 +498,11 @@ static char *
 utf8_exception_from_non_gerror_value(JSContext      *cx,
                                      JS::HandleValue exc)
 {
-    GjsAutoJSChar utf8_exception(cx);
     JS::RootedString exc_str(cx, JS::ToString(cx, exc));
-    if (exc_str)
-        gjs_string_to_utf8(cx, JS::StringValue(exc_str), &utf8_exception);
+    if (!exc_str)
+        return nullptr;
+
+    GjsAutoJSChar utf8_exception(cx, JS_EncodeStringToUTF8(cx, exc_str));
     return utf8_exception.copy();
 }
 
@@ -538,7 +539,7 @@ gjs_log_exception_full(JSContext       *context,
     }
 
     if (message)
-        gjs_string_to_utf8(context, JS::StringValue(message), &utf8_message);
+        utf8_message.reset(context, JS_EncodeStringToUTF8(context, message));
 
     /* We log syntax errors differently, because the stack for those includes
        only the referencing module, but we want to print out the filename and
@@ -555,9 +556,11 @@ gjs_log_exception_full(JSContext       *context,
         gjs_object_get_property(context, exc_obj, GJS_STRING_FILENAME,
                                 &js_fileName);
 
-        if (js_fileName.isString())
-            gjs_string_to_utf8(context, js_fileName, &utf8_filename);
-        else
+        if (js_fileName.isString()) {
+            JS::RootedString str(context, js_fileName.toString());
+            utf8_filename.reset(context, JS_EncodeStringToUTF8(context, str));
+        }
+        if (!utf8_filename)
             utf8_filename.reset(context, JS_strdup(context, "unknown"));
 
         lineNumber = js_lineNumber.toInt32();
@@ -573,23 +576,22 @@ gjs_log_exception_full(JSContext       *context,
     } else {
         GjsAutoJSChar utf8_stack(context);
         JS::RootedValue stack(context);
-        bool have_utf8_stack = false;
 
         if (exc.isObject() &&
             gjs_object_get_property(context, exc_obj, GJS_STRING_STACK,
                                     &stack) &&
             stack.isString()) {
-            gjs_string_to_utf8(context, stack, &utf8_stack);
-            have_utf8_stack = true;
+            JS::RootedString str(context, stack.toString());
+            utf8_stack.reset(context, JS_EncodeStringToUTF8(context, str));
         }
 
         if (message) {
-            if (have_utf8_stack)
+            if (utf8_stack)
                 g_warning("JS ERROR: %s: %s\n%s", utf8_message.get(), utf8_exception, utf8_stack.get());
             else
                 g_warning("JS ERROR: %s: %s", utf8_message.get(), utf8_exception);
         } else {
-            if (have_utf8_stack)
+            if (utf8_stack)
                 g_warning("JS ERROR: %s\n%s", utf8_exception, utf8_stack.get());
             else
                 g_warning("JS ERROR: %s", utf8_exception);
