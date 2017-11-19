@@ -10,8 +10,6 @@ function do_Shrink_Image(){
     rm -rf ~/jhbuild/checkout
 
     if [[ $BASE == "ubuntu" ]]; then
-        apt-get -y -qq remove --purge apt-file
-
         apt-get -y autoremove
         apt-get -y clean
         rm -rf /var/lib/apt/lists/*
