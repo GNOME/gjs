@@ -23,9 +23,6 @@ function do_Build_Package_Dependencies(){
     jhbuild list "$1"
 
     # Build package dependencies
-    if [[ $BASE == "ubuntu" ]]; then
-        jhbuild sysdeps --install "$1"
-    fi
     jhbuild build $(jhbuild list "$1" | sed '$d')
 }
 
