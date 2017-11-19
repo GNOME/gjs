@@ -30,10 +30,11 @@ function do_Install_Base_Dependencies(){
         apt-get update -qq
 
         # Base dependencies
-        apt-get -y -qq install build-essential git clang patch python-dev \
+        apt-get -y -qq install build-essential git clang patch bison flex \
+                               python-dev python3-dev \
                                autotools-dev autoconf gettext pkgconf autopoint yelp-tools \
                                docbook docbook-xsl libtext-csv-perl \
-                               zlib1g-dev \
+                               zlib1g-dev libdbus-glib-1-dev \
                                libtool libicu-dev libnspr4-dev \
                                policykit-1 cppcheck \
                                apt-file > /dev/null
