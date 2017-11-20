@@ -4,6 +4,7 @@ services:
 stages:
 - build
 - failure
+- deploy
 
 before_script:
   - rm -rf /cwd
@@ -28,6 +29,11 @@ before_script:
     # Run extra tests
     - 'if [[ $BUILD_OPTS == *"--enable-installed-tests"* ]]; then
          $(pwd)/test/test-ci.sh GJS_EXTRA;
+       fi'
+
+    # Run code coverage tests
+    - 'if [[ $BUILD_OPTS == *"--enable-code-coverage"* ]]; then
+         $(pwd)/test/test-ci.sh GJS_COVERAGE;
        fi'
 
 ubuntu_gcc:
@@ -68,6 +74,13 @@ fedora_clang:
     BASE: fedora
     OS: fedora.26.gcc
     CC: clang
+    BUILD_OPTS: "--enable-code-coverage"
+    coverage: '/Lines:.*(\d+\.*\d+.*\d+.*%)/' #Lines:.*(\d+\.*\d+.*\d+)
+  artifacts:
+    name: coverage
+    paths:
+    - $(pwd)/coverage/
+    - $(pwd)/.cache/jhbuild/build/gjs/test-suite.log
 
 fedora_cppcheck:
   <<: *build
@@ -88,3 +101,16 @@ on_failure:
         echo "-- NO LOG FILE FOUND --";
     fi'
   when: on_failure
+
+# Publish Code Coverage Report
+pages:
+  stage: deploy
+  dependencies:
+    - fedora_clang
+  script:
+    - mv $(pwd)/coverage/ public/
+  artifacts:
+    paths:
+      - public
+  only:
+    - master@GNOME/gjs

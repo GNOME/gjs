@@ -118,6 +118,18 @@ elif [[ $1 == "GJS_EXTRA" ]]; then
 
     xvfb-run jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
 
+elif [[ $1 == "GJS_COVERAGE" ]]; then
+    # Code coverage test. It doesn't (re)build, just run the 'Coverage Tests'
+    echo
+    echo '-- Code Coverage Report --'
+    do_Set_Env
+    PATH=$PATH:~/.local/bin
+
+    jhbuild run --in-builddir=gjs make check-code-coverage
+    mkdir -p /cwd/coverage
+    cp /cwd/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage.info /cwd/coverage/
+    cp -r /cwd/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage/* /cwd/coverage/
+
 elif [[ $1 == "CPPCHECK" ]]; then
     echo
     echo '-- Code analyzer --'
