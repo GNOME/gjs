@@ -40,3 +40,10 @@ testParamSpec('enum', [Regress.TestEnum, Regress.TestEnum.VALUE2],
 testParamSpec('flags', [Regress.TestFlags, Regress.TestFlags.FLAG2],
     Regress.TestFlags.FLAG2);
 testParamSpec('object', [GObject.Object], null);
+
+describe('GObject.ParamSpec object', function () {
+    it("doesn't crash when resolving a non-string property", function () {
+        let paramSpec = GObject.ParamSpec.string(name, nick, blurb, flags, '');
+        expect(paramSpec[0]).not.toBeDefined();
+    });
+});
