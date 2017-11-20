@@ -438,16 +438,10 @@ object_instance_get_prop(JSContext              *context,
                          JS::HandleId            id,
                          JS::MutableHandleValue  value_p)
 {
-    ObjectInstance *priv;
-    GjsAutoJSChar name;
-
-    if (!gjs_get_string_id(context, id, &name))
-        return true; /* not resolved, but no error */
-
-    priv = priv_from_js(context, obj);
+    ObjectInstance *priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Get prop '%s' hook obj %p priv %p",
-                     name.get(), obj.get(), priv);
+                     "Get prop '%s' hook, obj %s, priv %p",
+                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str(), priv);
 
     if (priv == nullptr)
         /* If we reach this point, either object_instance_new_resolve
@@ -467,6 +461,10 @@ object_instance_get_prop(JSContext              *context,
         gjs_dumpstack();
         return true;
     }
+
+    GjsAutoJSChar name;
+    if (!gjs_get_string_id(context, id, &name))
+        return true; /* not resolved, but no error */
 
     if (!get_prop_from_g_param(context, obj, priv, name, value_p))
         return false;
@@ -562,11 +560,15 @@ object_instance_set_prop(JSContext              *context,
                          JS::ObjectOpResult&     result)
 {
     ObjectInstance *priv;
-    GjsAutoJSChar name;
     bool ret = true;
     bool g_param_was_set = false;
 
     priv = priv_from_js(context, obj);
+
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Set prop '%s' hook, obj %s, priv %p",
+                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str(),
+                     priv);
+
     if (priv == nullptr)
         /* see the comment in object_instance_get_prop() on this */
         return result.succeed();
@@ -584,6 +586,7 @@ object_instance_set_prop(JSContext              *context,
         return result.succeed();
     }
 
+    GjsAutoJSChar name;
     if (!gjs_get_string_id(context, id, &name)) {
         /* We need to keep the wrapper alive in order not to lose custom
          * "expando" properties. In this case if gjs_get_string_id() is false
@@ -591,10 +594,6 @@ object_instance_set_prop(JSContext              *context,
         ensure_uses_toggle_ref(context, priv);
         return result.succeed();  /* not resolved, but no error */
     }
-
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Set prop '%s' hook obj %p priv %p",
-                     name.get(), obj.get(), priv);
 
     ret = set_g_param_from_prop(context, priv, name, g_param_was_set, value_p, result);
     if (g_param_was_set || !ret)
@@ -792,20 +791,12 @@ object_instance_resolve(JSContext       *context,
                         bool            *resolved)
 {
     GIFunctionInfo *method_info;
-    ObjectInstance *priv;
-    GjsAutoJSChar name;
-
-    if (!gjs_get_string_id(context, id, &name)) {
-        *resolved = false;
-        return true; /* not resolved, but no error */
-    }
-
-    priv = priv_from_js(context, obj);
+    ObjectInstance *priv = priv_from_js(context, obj);
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Resolve prop '%s' hook obj %p priv %p (%s.%s) gobj %p %s",
-                     name.get(),
-                     obj.get(),
+                     "Resolve prop '%s' hook, obj %s, priv %p (%s.%s), gobj %p %s",
+                     gjs_debug_id(id).c_str(),
+                     gjs_debug_object(obj).c_str(),
                      priv,
                      priv && priv->info ? g_base_info_get_namespace (priv->info) : "",
                      priv && priv->info ? g_base_info_get_name (priv->info) : "",
@@ -837,9 +828,14 @@ object_instance_resolve(JSContext       *context,
                    priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
                    priv->gobj);
         gjs_dumpstack();
-
         *resolved = false;
         return true;
+    }
+
+    GjsAutoJSChar name;
+    if (!gjs_get_string_id(context, id, &name)) {
+        *resolved = false;
+        return true;  /* not resolved, but no error */
     }
 
     /* If we have no GIRepository information (we're a JS GObject subclass),

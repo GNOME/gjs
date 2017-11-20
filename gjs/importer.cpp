@@ -731,17 +731,11 @@ importer_resolve(JSContext        *context,
         return true;
     }
 
-    GjsAutoJSChar name;
-    if (!gjs_get_string_id(context, id, &name)) {
-        *resolved = false;
-        return true;
-    }
-
     priv = priv_from_js(context, obj);
 
     gjs_debug_jsprop(GJS_DEBUG_IMPORTER,
-                     "Resolve prop '%s' hook obj %p priv %p",
-                     name.get(), obj.get(), priv);
+                     "Resolve prop '%s' hook, obj %s, priv %p",
+                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str(), priv);
     if (!priv) {
         /* we are the prototype, or have the wrong class */
         *resolved = false;
@@ -749,6 +743,13 @@ importer_resolve(JSContext        *context,
     }
 
     JSAutoRequest ar(context);
+
+    GjsAutoJSChar name;
+    if (!gjs_get_string_id(context, id, &name)) {
+        *resolved = false;
+        return true;
+    }
+
     if (!do_import(context, obj, priv, id, name))
         return false;
 
