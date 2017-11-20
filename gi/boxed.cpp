@@ -118,58 +118,14 @@ boxed_resolve(JSContext       *context,
               JS::HandleId     id,
               bool            *resolved)
 {
-    Boxed *priv;
-    GjsAutoJSChar name;
-
-    if (!gjs_get_string_id(context, id, &name)) {
-        *resolved = false;
-        return true;
-    }
-
-    priv = priv_from_js(context, obj);
-    gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook obj %p priv %p",
-                     name.get(), obj.get(), priv);
+    Boxed *priv = priv_from_js(context, obj);
+    gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook, obj %s, priv %p",
+                     gjs_debug_id(id).c_str(), gjs_debug_obj(obj).c_str(), priv);
 
     if (priv == nullptr)
         return false; /* wrong class */
 
-    if (priv->gboxed == NULL) {
-        /* We are the prototype, so look for methods and other class properties */
-        GIFunctionInfo *method_info;
-
-        method_info = g_struct_info_find_method((GIStructInfo*) priv->info,
-                                                name);
-
-        if (method_info != NULL) {
-            const char *method_name;
-
-#if GJS_VERBOSE_ENABLE_GI_USAGE
-            _gjs_log_info_usage((GIBaseInfo*) method_info);
-#endif
-            if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-                method_name = g_base_info_get_name( (GIBaseInfo*) method_info);
-
-                gjs_debug(GJS_DEBUG_GBOXED,
-                          "Defining method %s in prototype for %s.%s",
-                          method_name,
-                          g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                          g_base_info_get_name( (GIBaseInfo*) priv->info));
-
-                /* obj is the Boxed prototype */
-                if (gjs_define_function(context, obj, priv->gtype,
-                                        (GICallableInfo *)method_info) == NULL) {
-                    g_base_info_unref( (GIBaseInfo*) method_info);
-                    return false;
-                }
-
-                *resolved = true;
-            } else {
-                *resolved = false;
-            }
-
-            g_base_info_unref( (GIBaseInfo*) method_info);
-        }
-    } else {
+    if (priv->gboxed) {
         /* We are an instance, not a prototype, so look for
          * per-instance props that we want to define on the
          * JSObject. Generally we do not want to cache these in JS, we
@@ -178,7 +134,46 @@ boxed_resolve(JSContext       *context,
          * hooks, not this resolve hook.
          */
         *resolved = false;
+        return true;
     }
+
+    GjsAutoJSChar name;
+    if (!gjs_get_string_id(context, id, &name)) {
+        *resolved = false;
+        return true;
+    }
+
+    /* We are the prototype, so look for methods and other class properties */
+    GIFunctionInfo *method_info = g_struct_info_find_method(priv->info, name);
+    if (!method_info) {
+        *resolved = false;
+        return true;
+    }
+#if GJS_VERBOSE_ENABLE_GI_USAGE
+    _gjs_log_info_usage(method_info);
+#endif
+
+    if (g_function_info_get_flags(method_info) & GI_FUNCTION_IS_METHOD) {
+        const char *method_name = g_base_info_get_name(method_info);
+
+        gjs_debug(GJS_DEBUG_GBOXED,
+                  "Defining method %s in prototype for %s.%s",
+                  method_name,
+                  g_base_info_get_namespace( (GIBaseInfo*) priv->info),
+                  g_base_info_get_name( (GIBaseInfo*) priv->info));
+
+        /* obj is the Boxed prototype */
+        if (!gjs_define_function(context, obj, priv->gtype, method_info)) {
+            g_base_info_unref( (GIBaseInfo*) method_info);
+            return false;
+        }
+
+        *resolved = true;
+    } else {
+        *resolved = false;
+    }
+
+    g_base_info_unref(method_info);
     return true;
 }
 
