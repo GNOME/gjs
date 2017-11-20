@@ -767,8 +767,10 @@ importer_resolve(JSContext        *context,
         return true;
     }
 
-    if (!gjs_get_string_id(context, id, &name))
-        return false;
+    if (!gjs_get_string_id(context, id, &name)) {
+        *resolved = false;
+        return true;
+    }
 
     /* let Object.prototype resolve these */
     if (strcmp(name, "valueOf") == 0 ||

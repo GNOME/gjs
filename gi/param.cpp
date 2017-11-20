@@ -61,8 +61,10 @@ param_resolve(JSContext       *context,
     GjsAutoJSChar name(context);
     bool ret = false;
 
-    if (!gjs_get_string_id(context, id, &name))
+    if (!gjs_get_string_id(context, id, &name)) {
+        *resolved = false;
         return true; /* not resolved, but no error */
+    }
 
     priv = priv_from_js(context, obj);
 
