@@ -759,7 +759,11 @@ importer_resolve(JSContext        *context,
 {
     Importer *priv;
     jsid module_init_name;
-    GjsAutoJSChar name(context);
+
+    if (!JSID_IS_STRING(id)) {
+        *resolved = false;
+        return true;
+    }
 
     module_init_name = gjs_context_get_const_string(context, GJS_STRING_MODULE_INIT);
     if (id == module_init_name) {
@@ -767,18 +771,21 @@ importer_resolve(JSContext        *context,
         return true;
     }
 
+    /* let Object.prototype resolve these */
+    JSFlatString *str = JSID_TO_FLAT_STRING(id);
+    if (JS_FlatStringEqualsAscii(str, "valueOf") ||
+        JS_FlatStringEqualsAscii(str, "toString") ||
+        JS_FlatStringEqualsAscii(str, "__iterator__")) {
+        *resolved = false;
+        return true;
+    }
+
+    GjsAutoJSChar name(context);
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true;
     }
 
-    /* let Object.prototype resolve these */
-    if (strcmp(name, "valueOf") == 0 ||
-        strcmp(name, "toString") == 0 ||
-        strcmp(name, "__iterator__") == 0) {
-        *resolved = false;
-        return true;
-    }
     priv = priv_from_js(context, obj);
 
     gjs_debug_jsprop(GJS_DEBUG_IMPORTER,
