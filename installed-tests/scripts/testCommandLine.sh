@@ -159,18 +159,20 @@ $gjs -c 'imports.system.exit(0)' --profile=foo 2>&1 | grep -q 'Gjs-WARNING.*--pr
 report "--profile after script should succeed but give a warning"
 rm -rf foo
 
-# --version works
-$gjs --version >/dev/null
-report "--version should work"
-test -n "$($gjs --version)"
-report "--version should print something"
+for version_arg in --version --jsversion; do
+    # --version and --jsversion work
+    $gjs $version_arg >/dev/null
+    report "$version_arg should work"
+    test -n "$($gjs $version_arg)"
+    report "$version_arg should print something"
 
-# --version after a script goes to the script
-script='if(ARGV[0] !== "--version") imports.system.exit(1)'
-$gjs -c "$script" --version
-report "--version after -c should be passed to script"
-test -z "$($gjs -c "$script" --version)"
-report "--version after -c should not print anything"
+    # --version and --jsversion after a script go to the script
+    script="if(ARGV[0] !== '$version_arg') imports.system.exit(1)"
+    $gjs -c "$script" $version_arg
+    report "$version_arg after -c should be passed to script"
+    test -z "$($gjs -c "$script" $version_arg)"
+    report "$version_arg after -c should not print anything"
+done
 
 # --profile
 rm -f gjs-*.syscap foo.syscap

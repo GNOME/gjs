@@ -36,6 +36,7 @@ static char *coverage_output_path = NULL;
 static char *profile_output_path = nullptr;
 static char *command = NULL;
 static gboolean print_version = false;
+static gboolean print_js_version = false;
 static bool enable_profiler = false;
 
 static gboolean parse_profile_arg(const char *, const char *, void *, GError **);
@@ -43,6 +44,8 @@ static gboolean parse_profile_arg(const char *, const char *, void *, GError **)
 /* Keep in sync with entries in check_script_args_for_stray_gjs_args() */
 static GOptionEntry entries[] = {
     { "version", 0, 0, G_OPTION_ARG_NONE, &print_version, "Print GJS version and exit" },
+    { "jsversion", 0, 0, G_OPTION_ARG_NONE, &print_js_version,
+        "Print version of the JS engine and exit" },
     { "command", 'c', 0, G_OPTION_ARG_STRING, &command, "Program passed in as a string", "COMMAND" },
     { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &coverage_prefixes, "Add the prefix PREFIX to the list of files to generate coverage info for", "PREFIX" },
     { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &coverage_output_path, "Write coverage output to a directory DIR. This option is mandatory when using --coverage-path", "DIR", },
@@ -244,6 +247,7 @@ main(int argc, char **argv)
     coverage_output_path = NULL;
     command = NULL;
     print_version = false;
+    print_js_version = false;
     g_option_context_set_ignore_unknown_options(context, false);
     g_option_context_set_help_enabled(context, true);
     if (!g_option_context_parse_strv(context, &gjs_argv, &error))
@@ -253,6 +257,11 @@ main(int argc, char **argv)
 
     if (print_version) {
         g_print("%s\n", PACKAGE_STRING);
+        exit(0);
+    }
+
+    if (print_js_version) {
+        g_print("%s\n", gjs_get_js_version());
         exit(0);
     }
 
