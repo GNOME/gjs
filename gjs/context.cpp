@@ -1077,3 +1077,16 @@ gjs_context_get_profiler(GjsContext *self)
 {
     return self->profiler;
 }
+
+/**
+ * gjs_get_js_version:
+ *
+ * Returns the underlying version of the JS engine.
+ *
+ * Returns: a string
+ */
+const char *
+gjs_get_js_version(void)
+{
+    return JS_GetImplementationVersion();
+}
