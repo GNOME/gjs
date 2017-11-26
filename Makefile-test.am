@@ -63,10 +63,14 @@ check_PROGRAMS += gjs-tests.gtester minijasmine
 
 gjs_tests_gtester_CPPFLAGS =			\
 	$(AM_CPPFLAGS)				\
+	$(PIC_FLAG)				\
 	-DGJS_COMPILATION			\
 	$(GJSTESTS_CFLAGS)			\
 	$(gjs_directory_defines)		\
 	-I$(top_srcdir)/test
+
+gjs_tests_gtester_LDFLAGS =	\
+	$(PIC_FLAG)
 
 gjs_tests_gtester_LDADD =	\
 	libgjs.la		\
@@ -90,11 +94,14 @@ minijasmine_SOURCES =			\
 
 minijasmine_CPPFLAGS =				\
 	$(AM_CPPFLAGS)				\
+	$(PIC_FLAG)				\
 	$(GJS_CFLAGS)				\
 	-I$(top_srcdir)				\
 	-DINSTTESTDIR=\"$(gjsinsttestdir)\"	\
 	-DPKGLIBDIR=\"$(pkglibdir)\"		\
 	$(NULL)
+
+minijasmine_LDFLAGS = $(PIC_FLAG)
 
 minijasmine_LDADD = $(GJS_LIBS) libgjs.la
 
