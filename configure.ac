@@ -243,6 +243,11 @@ AS_IF([test -n "${SAN_FLAGS}"], [
 ])
 AC_SUBST([NO_UNDEFINED_FLAG])
 
+# This is needed (at least) for clang on Ubuntu PIC (Position-Independent Code)
+AX_APPEND_COMPILE_FLAGS([$lt_prog_compiler_pic], [CXXFLAGS])
+AX_APPEND_COMPILE_FLAGS([$lt_prog_compiler_pic], [CFLAGS])
+AX_APPEND_LINK_FLAGS([$lt_prog_compiler_pic])
+
 AC_ARG_WITH([xvfb-tests],
   [AS_HELP_STRING([--with-xvfb-tests],
     [Run all tests under an XVFB server @<:@default=no@:>@])])
