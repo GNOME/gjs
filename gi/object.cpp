@@ -69,6 +69,7 @@ struct ObjectInstance {
     GTypeClass *klass;
 
     unsigned js_object_finalized : 1;
+    unsigned g_object_finalized  : 1;
 };
 
 static std::stack<JS::PersistentRootedObject> object_init_list;
@@ -920,7 +921,10 @@ static void
 wrapped_gobj_dispose_notify(gpointer      data,
                             GObject      *where_the_object_was)
 {
-    wrapped_gobject_list.erase(static_cast<ObjectInstance *>(data));
+    ObjectInstance *priv = static_cast<ObjectInstance *>(data);
+
+    priv->g_object_finalized = true;
+    wrapped_gobject_list.erase(priv);
 #if DEBUG_DISPOSE
     gjs_debug(GJS_DEBUG_GOBJECT, "Wrapped GObject %p disposed", where_the_object_was);
 #endif
@@ -2108,6 +2112,17 @@ gjs_typecheck_object(JSContext       *context,
         if (throw_error) {
             gjs_throw(context,
                       "Object is %s.%s.prototype, not an object instance - cannot convert to GObject*",
+                      priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
+                      priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
+        }
+
+        return false;
+    }
+
+    if (priv->g_object_finalized) {
+        if (throw_error) {
+            gjs_throw(context,
+                      "Object is %s.%s.prototype, has been already deallocated - cannot convert to GObject*",
                       priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
                       priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
         }
