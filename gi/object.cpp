@@ -391,6 +391,9 @@ object_instance_get_prop(JSContext              *context,
     if (priv->gobj == NULL) /* prototype, not an instance. */
         return true;
 
+    if (priv->g_object_finalized)
+        return false;
+
     if (!get_prop_from_g_param(context, obj, priv, name, value_p))
         return false;
 
@@ -500,6 +503,9 @@ object_instance_set_prop(JSContext              *context,
 
     if (priv->gobj == NULL) /* prototype, not an instance. */
         return result.succeed();
+
+    if (priv->g_object_finalized)
+        return false;
 
     ret = set_g_param_from_prop(context, priv, name, g_param_was_set, value_p, result);
     if (g_param_was_set || !ret)
@@ -736,6 +742,11 @@ object_instance_resolve(JSContext       *context,
     if (priv->gobj != NULL) {
         *resolved = false;
         return true;
+    }
+
+    if (priv->g_object_finalized) {
+        *resolved = false;
+        return false;
     }
 
     /* If we have no GIRepository information (we're a JS GObject subclass),
@@ -1422,7 +1433,7 @@ object_instance_trace(JSTracer *tracer,
     ObjectInstance *priv;
 
     priv = (ObjectInstance *) JS_GetPrivate(obj);
-    if (priv == NULL)
+    if (priv == NULL || priv->g_object_finalized)
         return;
 
     for (GClosure *closure : priv->closures)
