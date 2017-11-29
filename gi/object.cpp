@@ -391,8 +391,14 @@ object_instance_get_prop(JSContext              *context,
     if (priv->gobj == NULL) /* prototype, not an instance. */
         return true;
 
-    if (priv->g_object_finalized)
+    if (priv->g_object_finalized) {
+        gjs_throw(context, "Object %s.%s (%p), has been already finalized. "
+                  "Impossible to get any property from it.",
+                  priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
+                  priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
+                  priv->gobj);
         return false;
+    }
 
     if (!get_prop_from_g_param(context, obj, priv, name, value_p))
         return false;
@@ -504,8 +510,15 @@ object_instance_set_prop(JSContext              *context,
     if (priv->gobj == NULL) /* prototype, not an instance. */
         return result.succeed();
 
-    if (priv->g_object_finalized)
+    if (priv->g_object_finalized) {
+        gjs_throw(context, "Object %s.%s (%p), has been already finalized. "
+                  "Impossible to set any property to it.",
+                  priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
+                  priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
+                  priv->gobj);
+
         return false;
+    }
 
     ret = set_g_param_from_prop(context, priv, name, g_param_was_set, value_p, result);
     if (g_param_was_set || !ret)
@@ -746,6 +759,13 @@ object_instance_resolve(JSContext       *context,
 
     if (priv->g_object_finalized) {
         *resolved = false;
+
+        gjs_throw(context, "Object %s.%s (%p), has been already finalized. "
+                  "Impossible to resolve it.",
+                  priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
+                  priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
+                  priv->gobj);
+
         return false;
     }
 
@@ -932,7 +952,7 @@ static void
 wrapped_gobj_dispose_notify(gpointer      data,
                             GObject      *where_the_object_was)
 {
-    ObjectInstance *priv = static_cast<ObjectInstance *>(data);
+    auto *priv = static_cast<ObjectInstance *>(data);
 
     priv->g_object_finalized = true;
     wrapped_gobject_list.erase(priv);
@@ -1433,8 +1453,17 @@ object_instance_trace(JSTracer *tracer,
     ObjectInstance *priv;
 
     priv = (ObjectInstance *) JS_GetPrivate(obj);
-    if (priv == NULL || priv->g_object_finalized)
+    if (priv == NULL)
         return;
+
+    if (priv->g_object_finalized) {
+        g_debug("Object %s.%s (%p), has been already finalized. "
+                "Impossible to trace it.",
+                 priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
+                 priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
+                 priv->gobj);
+        return;
+    }
 
     for (GClosure *closure : priv->closures)
         gjs_closure_trace(closure, tracer);
@@ -2131,12 +2160,13 @@ gjs_typecheck_object(JSContext       *context,
     }
 
     if (priv->g_object_finalized) {
-        if (throw_error) {
-            gjs_throw(context,
-                      "Object is %s.%s.prototype, has been already deallocated - cannot convert to GObject*",
-                      priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
-                      priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
-        }
+        gjs_throw(context,
+                  "Object %s.%s (%p), has been already deallocated - impossible to access to it. "
+                  "This might be caused by the fact that the object has been destroyed from C "
+                  "code using something such as destroy(), dispose(), or remove() vfuncs",
+                  priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
+                  priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
+                  priv->gobj);
 
         return false;
     }
