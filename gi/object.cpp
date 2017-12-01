@@ -758,8 +758,6 @@ object_instance_resolve(JSContext       *context,
     }
 
     if (priv->g_object_finalized) {
-        *resolved = false;
-
         gjs_throw(context, "Object %s.%s (%p), has been already finalized. "
                   "Impossible to resolve it.",
                   priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
