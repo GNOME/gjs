@@ -121,8 +121,25 @@ elif [[ $1 == "GJS_EXTRA" ]]; then
 elif [[ $1 == "CPPCHECK" ]]; then
     echo
     echo '-- Code analyzer --'
-    cppcheck --enable=warning,performance,portability,information,missingInclude --force -q .
+    CHECK_CMD="cppcheck"
+    CHECK_ARG="--enable=warning,performance,portability,information,missingInclude --force -q ."
+
+    # Run the static analyzer
+    eval "$CHECK_CMD $CHECK_ARG" &> report.txt
+    cat report.txt
     echo
+
+    # Compare the report with master and fails if new warnings is found
+    read -r DIFF <<< "$(diff --brief report.txt test/extra/cppcheck-report.txt)"
+
+    if [[ -n "${DIFF}" ]]; then
+        echo '----------------------------------------'
+        echo '###  New warnings found by cppcheck  ###'
+        echo '----------------------------------------'
+        diff report.txt test/extra/cppcheck-report.txt
+        echo '----------------------------------------'
+        exit 3
+    fi
 
 else
     echo
