@@ -1,0 +1,2 @@
+[test/gjs-test-coverage.cpp:823]: (warning) sscanf() without field width limits can crash with huge input data.
+(information) Cppcheck cannot find all the include files (use --check-config for details)
