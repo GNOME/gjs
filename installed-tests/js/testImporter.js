@@ -221,4 +221,9 @@ describe('Importer', function () {
             expect(keys).not.toContain('searchPath');
         });
     });
+
+    it("doesn't crash when resolving a non-string property", function () {
+        expect(imports[0]).not.toBeDefined();
+        expect(imports.foobar[0]).not.toBeDefined();
+    });
 });

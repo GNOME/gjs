@@ -1512,7 +1512,7 @@ function_to_string (JSContext *context,
     g_free(arg_names);
 
  out:
-    if (gjs_string_from_utf8(context, string, -1, rec.rval()))
+    if (gjs_string_from_utf8(context, string, rec.rval()))
         ret = true;
 
     if (free)

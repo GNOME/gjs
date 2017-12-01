@@ -488,11 +488,13 @@ do_import(JSContext       *context,
     directories = NULL;
 
     JS::RootedValue elem(context);
+    JS::RootedString str(context);
 
     /* First try importing an internal module like byteArray */
-    if (priv->is_root &&
-        gjs_is_registered_native_module(context, obj, name) &&
-        import_native_file(context, obj, name)) {
+    if (priv->is_root && gjs_is_registered_native_module(context, obj, name)) {
+        if (!import_native_file(context, obj, name))
+            goto out;
+
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "successfully imported module '%s'", name);
         result = true;
@@ -518,8 +520,10 @@ do_import(JSContext       *context,
             goto out;
         }
 
-        if (!gjs_string_to_utf8(context, elem, &dirname))
-            goto out; /* Error message already set */
+        str = elem.toString();
+        dirname.reset(context, JS_EncodeStringToUTF8(context, str));
+        if (!dirname)
+            goto out;
 
         /* Ignore empty path elements */
         if (dirname[0] == '\0')
@@ -672,8 +676,8 @@ importer_enumerate(JSContext        *context,
     }
 
     JS::RootedValue elem(context);
+    JS::RootedString str(context);
     for (i = 0; i < search_path_len; ++i) {
-        GjsAutoJSChar dirname(context);
         char *init_path;
 
         elem.setUndefined();
@@ -692,8 +696,10 @@ importer_enumerate(JSContext        *context,
             return false;
         }
 
-        if (!gjs_string_to_utf8(context, elem, &dirname))
-            return false; /* Error message already set */
+        str = elem.toString();
+        GjsAutoJSChar dirname(context, JS_EncodeStringToUTF8(context, str));
+        if (!dirname)
+            return false;
 
         init_path = g_build_filename(dirname, MODULE_INIT_FILENAME, NULL);
 
@@ -753,7 +759,11 @@ importer_resolve(JSContext        *context,
 {
     Importer *priv;
     jsid module_init_name;
-    GjsAutoJSChar name(context);
+
+    if (!JSID_IS_STRING(id)) {
+        *resolved = false;
+        return true;
+    }
 
     module_init_name = gjs_context_get_const_string(context, GJS_STRING_MODULE_INIT);
     if (id == module_init_name) {
@@ -761,16 +771,21 @@ importer_resolve(JSContext        *context,
         return true;
     }
 
-    if (!gjs_get_string_id(context, id, &name))
-        return false;
-
     /* let Object.prototype resolve these */
-    if (strcmp(name, "valueOf") == 0 ||
-        strcmp(name, "toString") == 0 ||
-        strcmp(name, "__iterator__") == 0) {
+    JSFlatString *str = JSID_TO_FLAT_STRING(id);
+    if (JS_FlatStringEqualsAscii(str, "valueOf") ||
+        JS_FlatStringEqualsAscii(str, "toString") ||
+        JS_FlatStringEqualsAscii(str, "__iterator__")) {
         *resolved = false;
         return true;
     }
+
+    GjsAutoJSChar name(context);
+    if (!gjs_get_string_id(context, id, &name)) {
+        *resolved = false;
+        return true;
+    }
+
     priv = priv_from_js(context, obj);
 
     gjs_debug_jsprop(GJS_DEBUG_IMPORTER,

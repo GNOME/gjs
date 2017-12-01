@@ -72,13 +72,13 @@
    fun:malloc
    fun:js_malloc
    fun:js_new<mozilla::Vector<const js::Mutex*> >
-   fun:_ZN2js5Mutex14heldMutexStackEv.part.293
+   fun:_ZN2js5Mutex14heldMutexStackEv.part.*
    fun:heldMutexStack
    fun:_ZN2js5Mutex4lockEv
    fun:LockGuard
    fun:_ZN2js25AutoLockHelperThreadStateC1EON7mozilla6detail19GuardObjectNotifierE
    fun:_ZN2js12HelperThread10threadLoopEv
-   fun:callMain<0ul>
+   fun:callMain<0*>
    fun:_ZN2js6detail16ThreadTrampolineIRFvPvEJPNS_12HelperThreadEEE5StartES2_
    fun:start_thread
    fun:clone

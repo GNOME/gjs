@@ -55,21 +55,27 @@ ns_resolve(JSContext       *context,
            bool            *resolved)
 {
     Ns *priv;
-    GjsAutoJSChar name(context);
     GIRepository *repo;
     GIBaseInfo *info;
     bool defined;
 
-    if (!gjs_get_string_id(context, id, &name)) {
+    if (!JSID_IS_STRING(id)) {
         *resolved = false;
         return true; /* not resolved, but no error */
     }
 
     /* let Object.prototype resolve these */
-    if (strcmp(name, "valueOf") == 0 ||
-        strcmp(name, "toString") == 0) {
+    JSFlatString *str = JSID_TO_FLAT_STRING(id);
+    if (JS_FlatStringEqualsAscii(str, "valueOf") ||
+        JS_FlatStringEqualsAscii(str, "toString")) {
         *resolved = false;
         return true;
+    }
+
+    GjsAutoJSChar name(context);
+    if (!gjs_get_string_id(context, id, &name)) {
+        *resolved = false;
+        return true;  /* not resolved, but no error */
     }
 
     priv = priv_from_js(context, obj);
@@ -123,7 +129,7 @@ get_name (JSContext *context,
     if (priv == NULL)
         return false;
 
-    return gjs_string_from_utf8(context, priv->gi_namespace, -1, args.rval());
+    return gjs_string_from_utf8(context, priv->gi_namespace, args.rval());
 }
 
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(ns)

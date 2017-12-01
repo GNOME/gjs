@@ -29,65 +29,66 @@
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 
+/**
+ * gjs_string_to_utf8:
+ * @cx: JSContext
+ * @value: a JS::Value containing a string
+ * @utf8_string_p: return location for a unique JS chars pointer
+ *
+ * Converts the JSString in @value to UTF-8 and puts it in @utf8_string_p.
+ *
+ * This function is a convenience wrapper around JS_EncodeStringToUTF8() that
+ * typechecks the JS::Value and throws an exception if it's the wrong type.
+ * Don't use this function if you already have a JS::RootedString, or if you
+ * know the value already holds a string; use JS_EncodeStringToUTF8() instead.
+ */
 bool
-gjs_string_to_utf8 (JSContext      *context,
-                    const JS::Value value,
-                    GjsAutoJSChar  *utf8_string_p)
+gjs_string_to_utf8(JSContext      *cx,
+                   const JS::Value value,
+                   GjsAutoJSChar  *utf8_string_p)
 {
-    JS_BeginRequest(context);
+    JSAutoRequest ar(cx);
 
     if (!value.isString()) {
-        gjs_throw(context,
-                  "Value is not a string, cannot convert to UTF-8");
-        JS_EndRequest(context);
+        gjs_throw(cx, "Value is not a string, cannot convert to UTF-8");
         return false;
     }
 
-    JS::RootedString str(context, value.toString());
-    utf8_string_p->reset(context, JS_EncodeStringToUTF8(context, str));
-
-    JS_EndRequest(context);
-
-    return true;
+    JS::RootedString str(cx, value.toString());
+    utf8_string_p->reset(cx, JS_EncodeStringToUTF8(cx, str));
+    return !!*utf8_string_p;
 }
 
 bool
 gjs_string_from_utf8(JSContext             *context,
                      const char            *utf8_string,
-                     ssize_t                n_bytes,
                      JS::MutableHandleValue value_p)
 {
-    char16_t *u16_string;
-    glong u16_string_length;
-    GError *error;
-
-    /* intentionally using n_bytes even though glib api suggests n_chars; with
-    * n_chars (from g_utf8_strlen()) the result appears truncated
-    */
-
-    error = NULL;
-    u16_string =
-        reinterpret_cast<char16_t *>(g_utf8_to_utf16(utf8_string, n_bytes, NULL,
-                                                     &u16_string_length, &error));
-    if (!u16_string) {
-        gjs_throw(context,
-                  "Failed to convert UTF-8 string to "
-                  "JS string: %s",
-                  error->message);
-                  g_error_free(error);
-        return false;
-    }
-
     JS_BeginRequest(context);
 
-    /* Avoid a copy - assumes that g_malloc == js_malloc == malloc */
-    JS::RootedString str(context,
-                         JS_NewUCString(context, u16_string, u16_string_length));
+    JS::ConstUTF8CharsZ chars(utf8_string, strlen(utf8_string));
+    JS::RootedString str(context, JS_NewStringCopyUTF8Z(context, chars));
     if (str)
         value_p.setString(str);
 
     JS_EndRequest(context);
     return str != nullptr;
+}
+
+bool
+gjs_string_from_utf8_n(JSContext             *cx,
+                       const char            *utf8_chars,
+                       size_t                 len,
+                       JS::MutableHandleValue out)
+{
+    JSAutoRequest ar(cx);
+
+    JS::UTF8Chars chars(utf8_chars, len);
+    JS::RootedString str(cx, JS_NewStringCopyUTF8N(cx, chars));
+    if (str)
+        out.setString(str);
+
+    return !!str;
 }
 
 bool
@@ -123,27 +124,20 @@ gjs_string_from_filename(JSContext             *context,
 {
     gsize written;
     GError *error;
-    gchar *utf8_string;
 
     error = NULL;
-    utf8_string = g_filename_to_utf8(filename_string, n_bytes, NULL,
-                                     &written, &error);
+    GjsAutoChar utf8_string = g_filename_to_utf8(filename_string, n_bytes,
+                                                 nullptr, &written, &error);
     if (error) {
         gjs_throw(context,
                   "Could not convert UTF-8 string '%s' to a filename: '%s'",
                   filename_string,
                   error->message);
         g_error_free(error);
-        g_free(utf8_string);
         return false;
     }
 
-    if (!gjs_string_from_utf8(context, utf8_string, written, value_p))
-        return false;
-
-    g_free(utf8_string);
-
-    return true;
+    return gjs_string_from_utf8_n(context, utf8_string, written, value_p);
 }
 
 /* Converts a JSString's array of Latin-1 chars to an array of a wider integer
@@ -178,40 +172,31 @@ from_latin1(JSContext *cx,
 /**
  * gjs_string_get_char16_data:
  * @context: js context
- * @value: a JS::Value
+ * @str: a rooted JSString
  * @data_p: address to return allocated data buffer
  * @len_p: address to return length of data (number of 16-bit characters)
  *
- * Get the binary data (as a sequence of 16-bit characters) in the JSString
- * contained in @value.
- * Throws a JS exception if value is not a string.
+ * Get the binary data (as a sequence of 16-bit characters) in @str.
  *
  * Returns: false if exception thrown
  **/
 bool
 gjs_string_get_char16_data(JSContext       *context,
-                           JS::Value        value,
+                           JS::HandleString str,
                            char16_t       **data_p,
                            size_t          *len_p)
 {
     JSAutoRequest ar(context);
 
-    if (!value.isString()) {
-        gjs_throw(context,
-                  "Value is not a string, can't return binary data from it");
-        return false;
-    }
-
-    if (JS_StringHasLatin1Chars(value.toString()))
-        return from_latin1(context, value.toString(), data_p, len_p);
+    if (JS_StringHasLatin1Chars(str))
+        return from_latin1(context, str, data_p, len_p);
 
     /* From this point on, crash if a GC is triggered while we are using
      * the string's chars */
     JS::AutoCheckCannotGC nogc;
 
     const char16_t *js_data =
-        JS_GetTwoByteStringCharsAndLength(context, nogc,
-                                          value.toString(), len_p);
+        JS_GetTwoByteStringCharsAndLength(context, nogc, str, len_p);
 
     if (js_data == NULL)
         return false;
@@ -224,33 +209,27 @@ gjs_string_get_char16_data(JSContext       *context,
 /**
  * gjs_string_to_ucs4:
  * @cx: a #JSContext
- * @value: JS::Value containing a string
+ * @str: rooted JSString
  * @ucs4_string_p: return location for a #gunichar array
  * @len_p: return location for @ucs4_string_p length
  *
  * Returns: true on success, false otherwise in which case a JS error is thrown
  */
 bool
-gjs_string_to_ucs4(JSContext      *cx,
-                   JS::HandleValue value,
-                   gunichar      **ucs4_string_p,
-                   size_t         *len_p)
+gjs_string_to_ucs4(JSContext       *cx,
+                   JS::HandleString str,
+                   gunichar       **ucs4_string_p,
+                   size_t          *len_p)
 {
     if (ucs4_string_p == NULL)
         return true;
 
-    if (!value.isString()) {
-        gjs_throw(cx, "Value is not a string, cannot convert to UCS-4");
-        return false;
-    }
-
     JSAutoRequest ar(cx);
-    JS::RootedString str(cx, value.toString());
     size_t len;
     GError *error = NULL;
 
     if (JS_StringHasLatin1Chars(str))
-        return from_latin1(cx, value.toString(), ucs4_string_p, len_p);
+        return from_latin1(cx, str, ucs4_string_p, len_p);
 
     /* From this point on, crash if a GC is triggered while we are using
      * the string's chars */
@@ -344,7 +323,9 @@ gjs_get_string_id (JSContext       *context,
         return false;
 
     if (id_val.isString()) {
-        return gjs_string_to_utf8(context, id_val, name_p);
+        JS::RootedString str(context, id_val.toString());
+        name_p->reset(context, JS_EncodeStringToUTF8(context, str));
+        return !!name_p;
     } else {
         return false;
     }

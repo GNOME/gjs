@@ -90,8 +90,8 @@ gjs_log(JSContext *cx,
         return true;
     }
 
-    GjsAutoJSChar s(cx);
-    if (!gjs_string_to_utf8(cx, JS::StringValue(jstr), &s))
+    GjsAutoJSChar s(cx, JS_EncodeStringToUTF8(cx, jstr));
+    if (!s)
         return false;
 
     g_message("JS LOG: %s", s.get());
@@ -149,8 +149,8 @@ gjs_print_parse_args(JSContext    *cx,
         exc_state.restore();
 
         if (jstr) {
-            GjsAutoJSChar s(cx);
-            if (!gjs_string_to_utf8(cx, JS::StringValue(jstr), &s)) {
+            GjsAutoJSChar s(cx, JS_EncodeStringToUTF8(cx, jstr));
+            if (!s) {
                 g_string_free(str, true);
                 return false;
             }

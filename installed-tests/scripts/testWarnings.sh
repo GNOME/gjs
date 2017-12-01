@@ -26,4 +26,8 @@ $gjs -c 'imports.gi.GLib.get_home_dir("foobar")' 2>&1 | \
     grep -q 'Too many arguments to .*: expected 0, got 1'
 report "passing too many arguments to a GI function should warn"
 
+$gjs -c '**' 2>&1 | \
+    grep -q 'SyntaxError.*@ <command line>:1'
+report "file and line number are logged for syntax errors"
+
 echo "1..$total"

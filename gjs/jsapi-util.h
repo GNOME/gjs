@@ -212,8 +212,11 @@ bool        gjs_string_to_utf8               (JSContext       *context,
                                               GjsAutoJSChar   *utf8_string_p);
 bool gjs_string_from_utf8(JSContext             *context,
                           const char            *utf8_string,
-                          ssize_t                n_bytes,
                           JS::MutableHandleValue value_p);
+bool gjs_string_from_utf8_n(JSContext             *cx,
+                            const char            *utf8_chars,
+                            size_t                 len,
+                            JS::MutableHandleValue out);
 
 bool gjs_string_to_filename(JSContext       *cx,
                             const JS::Value  string_val,
@@ -224,15 +227,15 @@ bool gjs_string_from_filename(JSContext             *context,
                               ssize_t                n_bytes,
                               JS::MutableHandleValue value_p);
 
-bool gjs_string_get_char16_data(JSContext *context,
-                                JS::Value  value,
-                                char16_t **data_p,
-                                size_t    *len_p);
+bool gjs_string_get_char16_data(JSContext       *cx,
+                                JS::HandleString str,
+                                char16_t       **data_p,
+                                size_t          *len_p);
 
-bool gjs_string_to_ucs4(JSContext      *cx,
-                        JS::HandleValue value,
-                        gunichar      **ucs4_string_p,
-                        size_t         *len_p);
+bool gjs_string_to_ucs4(JSContext       *cx,
+                        JS::HandleString value,
+                        gunichar       **ucs4_string_p,
+                        size_t          *len_p);
 bool gjs_string_from_ucs4(JSContext             *cx,
                           const gunichar        *ucs4_string,
                           ssize_t                n_chars,

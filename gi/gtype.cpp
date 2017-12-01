@@ -100,25 +100,24 @@ gjs_gtype_finalize(JSFreeOp *fop,
 }
 
 static bool
-to_string_func(JSContext *context,
+to_string_func(JSContext *cx,
                unsigned   argc,
                JS::Value *vp)
 {
-    GJS_GET_PRIV(context, argc, vp, rec, obj, void, priv);
-    GType gtype;
-    gchar *strval;
-    bool ret;
+    GJS_GET_PRIV(cx, argc, vp, rec, obj, void, priv);
+    GType gtype = GPOINTER_TO_SIZE(priv);
 
-    gtype = GPOINTER_TO_SIZE(priv);
+    if (gtype == 0) {
+        JS::RootedString str(cx, JS_NewStringCopyZ(cx, "[object GType prototype]"));
+        if (!str)
+            return false;
+        rec.rval().setString(str);
+        return true;
+    }
 
-    if (gtype == 0)
-        strval = g_strdup("[object GType prototype]");
-    else
-        strval = g_strdup_printf("[object GType for '%s']",
-                                 g_type_name(gtype));
-    ret = gjs_string_from_utf8(context, strval, -1, rec.rval());
-    g_free(strval);
-    return ret;
+    GjsAutoChar strval = g_strdup_printf("[object GType for '%s']",
+                                         g_type_name(gtype));
+    return gjs_string_from_utf8(cx, strval, rec.rval());
 }
 
 static bool
@@ -135,7 +134,7 @@ get_name_func (JSContext *context,
         rec.rval().setNull();
         return true;
     }
-    return gjs_string_from_utf8(context, g_type_name(gtype), -1, rec.rval());
+    return gjs_string_from_utf8(context, g_type_name(gtype), rec.rval());
 }
 
 /* Properties */

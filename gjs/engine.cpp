@@ -48,24 +48,12 @@ gjs_locale_to_upper_case (JSContext *context,
                           JS::HandleString src,
                           JS::MutableHandleValue retval)
 {
-    bool success = false;
-    GjsAutoJSChar utf8(context);
-    char *upper_case_utf8 = NULL;
+    GjsAutoJSChar utf8(context, JS_EncodeStringToUTF8(context, src));
+    if (!utf8)
+        return false;
 
-    if (!gjs_string_to_utf8(context, JS::StringValue(src), &utf8))
-        goto out;
-
-    upper_case_utf8 = g_utf8_strup (utf8, -1);
-
-    if (!gjs_string_from_utf8(context, upper_case_utf8, -1, retval))
-        goto out;
-
-    success = true;
-
-out:
-    g_free(upper_case_utf8);
-
-    return success;
+    GjsAutoChar upper_case_utf8 = g_utf8_strup(utf8, -1);
+    return gjs_string_from_utf8(context, upper_case_utf8, retval);
 }
 
 static bool
@@ -73,24 +61,12 @@ gjs_locale_to_lower_case (JSContext *context,
                           JS::HandleString src,
                           JS::MutableHandleValue retval)
 {
-    bool success = false;
-    GjsAutoJSChar utf8(context);
-    char *lower_case_utf8 = NULL;
+    GjsAutoJSChar utf8(context, JS_EncodeStringToUTF8(context, src));
+    if (!utf8)
+        return false;
 
-    if (!gjs_string_to_utf8(context, JS::StringValue(src), &utf8))
-        goto out;
-
-    lower_case_utf8 = g_utf8_strdown (utf8, -1);
-
-    if (!gjs_string_from_utf8(context, lower_case_utf8, -1, retval))
-        goto out;
-
-    success = true;
-
-out:
-    g_free(lower_case_utf8);
-
-    return success;
+    GjsAutoChar lower_case_utf8 = g_utf8_strdown(utf8, -1);
+    return gjs_string_from_utf8(context, lower_case_utf8, retval);
 }
 
 static bool
@@ -99,10 +75,12 @@ gjs_locale_compare (JSContext *context,
                     JS::HandleString src_2,
                     JS::MutableHandleValue retval)
 {
-    GjsAutoJSChar utf8_1(context), utf8_2(context);
+    GjsAutoJSChar utf8_1(context, JS_EncodeStringToUTF8(context, src_1));
+    if (!utf8_1)
+        return false;
 
-    if (!gjs_string_to_utf8(context, JS::StringValue(src_1), &utf8_1) ||
-        !gjs_string_to_utf8(context, JS::StringValue(src_2), &utf8_2))
+    GjsAutoJSChar utf8_2(context, JS_EncodeStringToUTF8(context, src_2));
+    if (!utf8_2)
         return false;
 
     retval.setInt32(g_utf8_collate(utf8_1, utf8_2));
@@ -115,11 +93,9 @@ gjs_locale_to_unicode (JSContext  *context,
                        const char *src,
                        JS::MutableHandleValue retval)
 {
-    bool success;
-    char *utf8;
     GError *error = NULL;
 
-    utf8 = g_locale_to_utf8(src, -1, NULL, NULL, &error);
+    GjsAutoChar utf8 = g_locale_to_utf8(src, -1, NULL, NULL, &error);
     if (!utf8) {
         gjs_throw(context,
                   "Failed to convert locale string to UTF8: %s",
@@ -128,10 +104,7 @@ gjs_locale_to_unicode (JSContext  *context,
         return false;
     }
 
-    success = gjs_string_from_utf8(context, utf8, -1, retval);
-    g_free (utf8);
-
-    return success;
+    return gjs_string_from_utf8(context, utf8, retval);
 }
 
 static JSLocaleCallbacks gjs_locale_callbacks =

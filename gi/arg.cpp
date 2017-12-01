@@ -428,13 +428,14 @@ value_to_ghashtable_key(JSContext      *cx,
     }
 
     case GI_TYPE_TAG_UTF8: {
-        GjsAutoJSChar cstr(cx);
-        JS::RootedValue str_val(cx, value);
-        if (!str_val.isString()) {
-            JS::RootedString str(cx, JS::ToString(cx, str_val));
-            str_val.setString(str);
-        }
-        if (!gjs_string_to_utf8(cx, str_val, &cstr))
+        JS::RootedString str(cx);
+        if (!value.isString())
+            str = JS::ToString(cx, value);
+        else
+            str = value.toString();
+
+        GjsAutoJSChar cstr(cx, JS_EncodeStringToUTF8(cx, str));
+        if (!cstr)
             return false;
         *pointer_out = cstr.copy();
         break;
@@ -592,7 +593,7 @@ gjs_array_from_strv(JSContext             *context,
         if (!elems.growBy(1))
             g_error("Unable to grow vector");
 
-        if (!gjs_string_from_utf8(context, strv[i], -1, elems[i]))
+        if (!gjs_string_from_utf8(context, strv[i], elems[i]))
             return false;
     }
 
@@ -630,12 +631,6 @@ gjs_array_to_strv(JSContext   *context,
             return false;
         }
 
-        if (!elem.isString()) {
-            gjs_throw(context,
-                      "Invalid element in string array");
-            g_strfreev(result);
-            return false;
-        }
         if (!gjs_string_to_utf8(context, elem, &tmp_result)) {
             g_strfreev(result);
             return false;
@@ -649,11 +644,11 @@ gjs_array_to_strv(JSContext   *context,
 }
 
 static bool
-gjs_string_to_intarray(JSContext   *context,
-                       JS::Value    string_val,
-                       GITypeInfo  *param_info,
-                       void       **arr_p,
-                       gsize       *length)
+gjs_string_to_intarray(JSContext       *context,
+                       JS::HandleString str,
+                       GITypeInfo      *param_info,
+                       void           **arr_p,
+                       size_t          *length)
 {
     GITypeTag element_type;
     char16_t *result16;
@@ -661,9 +656,8 @@ gjs_string_to_intarray(JSContext   *context,
     element_type = g_type_info_get_tag(param_info);
 
     if (element_type == GI_TYPE_TAG_INT8 || element_type == GI_TYPE_TAG_UINT8) {
-        GjsAutoJSChar result(context);
-
-        if (!gjs_string_to_utf8(context, string_val, &result))
+        GjsAutoJSChar result(context, JS_EncodeStringToUTF8(context, str));
+        if (!result)
             return false;
         *length = strlen(result);
         *arr_p = result.copy();
@@ -671,8 +665,7 @@ gjs_string_to_intarray(JSContext   *context,
     }
 
     if (element_type == GI_TYPE_TAG_INT16 || element_type == GI_TYPE_TAG_UINT16) {
-        if (!gjs_string_get_char16_data(context, string_val,
-                                        &result16, length))
+        if (!gjs_string_get_char16_data(context, str, &result16, length))
             return false;
         *arr_p = result16;
         return true;
@@ -680,8 +673,7 @@ gjs_string_to_intarray(JSContext   *context,
 
     if (element_type == GI_TYPE_TAG_UNICHAR) {
         gunichar *result_ucs4;
-        JS::RootedValue root(context, string_val);
-        if (!gjs_string_to_ucs4(context, root, &result_ucs4, length))
+        if (!gjs_string_to_ucs4(context, str, &result_ucs4, length))
             return false;
         *arr_p = result_ucs4;
         return true;
@@ -1286,8 +1278,8 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
         *length_p = 0;
     } else if (value.isString()) {
         /* Allow strings as int8/uint8/int16/uint16 arrays */
-        if (!gjs_string_to_intarray(context, value, param_info,
-                                    contents, length_p))
+        JS::RootedString str(context, value.toString());
+        if (!gjs_string_to_intarray(context, str, param_info, contents, length_p))
             goto out;
     } else {
         JS::RootedObject array_obj(context, &value.toObject());
@@ -1493,8 +1485,9 @@ gjs_value_to_g_argument(JSContext      *context,
         if (value.isNull()) {
             arg->v_pointer = NULL;
         } else if (value.isString()) {
-            GjsAutoJSChar utf8_str(context);
-            if (gjs_string_to_utf8(context, value, &utf8_str))
+            JS::RootedString str(context, value.toString());
+            GjsAutoJSChar utf8_str(context, JS_EncodeStringToUTF8(context, str));
+            if (utf8_str)
                 arg->v_pointer = utf8_str.copy();
             else
                 wrong = true;
@@ -2569,8 +2562,8 @@ gjs_object_from_g_hash (JSContext             *context,
         if (!keystr)
             return false;
 
-        GjsAutoJSChar keyutf8(context);
-        if (!gjs_string_to_utf8(context, JS::StringValue(keystr), &keyutf8))
+        GjsAutoJSChar keyutf8(context, JS_EncodeStringToUTF8(context, keystr));
+        if (!keyutf8)
             return false;
 
         if (!gjs_value_from_g_argument(context, &valjs,
@@ -2676,7 +2669,8 @@ gjs_value_from_g_argument (JSContext             *context,
 
             /* Preserve the bidirectional mapping between 0 and "" */
             if (arg->v_uint32 == 0) {
-                return gjs_string_from_utf8 (context, "", 0, value_p);
+                value_p.set(JS_GetEmptyStringValue(context));
+                return true;
             } else if (!g_unichar_validate (arg->v_uint32)) {
                 gjs_throw(context,
                           "Invalid unicode codepoint %" G_GUINT32_FORMAT,
@@ -2684,7 +2678,7 @@ gjs_value_from_g_argument (JSContext             *context,
                 return false;
             } else {
                 bytes = g_unichar_to_utf8 (arg->v_uint32, utf8);
-                return gjs_string_from_utf8 (context, (char*)utf8, bytes, value_p);
+                return gjs_string_from_utf8_n(context, utf8, bytes, value_p);
             }
         }
 
@@ -2698,9 +2692,9 @@ gjs_value_from_g_argument (JSContext             *context,
             return true;
         }
     case GI_TYPE_TAG_UTF8:
-        if (arg->v_pointer)
-            return gjs_string_from_utf8(context, (const char *) arg->v_pointer, -1, value_p);
-        else {
+        if (arg->v_pointer) {
+            return gjs_string_from_utf8(context, reinterpret_cast<const char *>(arg->v_pointer), value_p);
+        } else {
             /* For NULL we'll return JS::NullValue(), which is already set
              * in *value_p
              */
