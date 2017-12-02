@@ -120,9 +120,26 @@ elif [[ $1 == "GJS_EXTRA" ]]; then
 
 elif [[ $1 == "CPPCHECK" ]]; then
     echo
-    echo '-- Code analyzer --'
-    cppcheck --enable=warning,performance,portability,information,missingInclude --force -q .
+    echo '-- Static code analyzer report --'
+    cppcheck --enable=warning,performance,portability,information,missingInclude --force -q . 2>&1 | \
+        sed -E 's/:[0-9]+]/:LINE]/' | tee /cwd/current-report.txt
     echo
+
+    echo '-- Master static code analyzer report --'
+    git clone --depth 1 https://gitlab.gnome.org/GNOME/gjs.git tmp-upstream; cd tmp-upstream || exit 1
+    cppcheck --enable=warning,performance,portability,information,missingInclude --force -q . 2>&1 | \
+        sed -E 's/:[0-9]+]/:LINE]/' | tee /cwd/master-report.txt
+    echo
+
+    # Compare the report with master and fails if new warnings is found
+    if ! diff --brief /cwd/master-report.txt /cwd/current-report.txt > /dev/null; then
+        echo '----------------------------------------'
+        echo '###  New warnings found by cppcheck  ###'
+        echo '----------------------------------------'
+        diff -u /cwd/master-report.txt /cwd/current-report.txt
+        echo '----------------------------------------'
+        exit 3
+    fi
 
 else
     echo
