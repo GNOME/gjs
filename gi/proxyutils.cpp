@@ -63,7 +63,7 @@ _gjs_proxy_to_string_func(JSContext             *context,
     g_string_append_printf(buf, " jsobj@%p", this_obj);
     if (native_address != NULL)
         g_string_append_printf(buf, " native@%p", native_address);
-    
+
     g_string_append_c(buf, ']');
 
     if (!gjs_string_from_utf8 (context, buf->str, -1, rval))
