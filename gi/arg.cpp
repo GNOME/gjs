@@ -1315,6 +1315,38 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
     return ret;
 }
 
+static bool
+is_gdk_atom(GIBaseInfo *info)
+{
+    return (strcmp("Atom", g_base_info_get_name(info)) == 0 &&
+            strcmp("Gdk", g_base_info_get_namespace(info)) == 0);
+}
+
+static void
+intern_gdk_atom(const char *name,
+                GArgument  *ret)
+{
+    GIRepository *repo = g_irepository_get_default();
+    GIFunctionInfo *atom_intern_fun =
+        g_irepository_find_by_name(repo, "Gdk", "atom_intern");
+
+    GIArgument atom_intern_args[2];
+
+    /* Can only store char * in GIArgument. First argument to gdk_atom_intern
+     * is const char *, string isn't modified. */
+    atom_intern_args[0].v_string = const_cast<char *>(name);
+
+    atom_intern_args[1].v_boolean = false;
+
+    g_function_info_invoke(atom_intern_fun,
+                           atom_intern_args, 2,
+                           nullptr, 0,
+                           ret,
+                           nullptr);
+
+    g_base_info_unref(atom_intern_fun);
+}
+
 bool
 gjs_value_to_g_argument(JSContext      *context,
                         JS::HandleValue value,
@@ -1579,6 +1611,24 @@ gjs_value_to_g_argument(JSContext      *context,
                 } else {
                     arg->v_pointer = NULL;
                     wrong = true;
+                }
+            } else if (is_gdk_atom(interface_info)) {
+                if (!value.isNull() && !value.isString()) {
+                    wrong = true;
+                    report_type_mismatch = true;
+                } else if (value.isNull()) {
+                    intern_gdk_atom("NONE", arg);
+                } else {
+                    JS::RootedString str(context, value.toString());
+                    GjsAutoJSChar atom_name(context, JS_EncodeStringToUTF8(context, str));
+
+                    if (!atom_name) {
+                        wrong = true;
+                        g_base_info_unref(interface_info);
+                        break;
+                    }
+
+                    intern_gdk_atom(atom_name, arg);
                 }
             } else if (expect_object != value.isObjectOrNull()) {
                 wrong = true;
@@ -2814,6 +2864,32 @@ gjs_value_from_g_argument (JSContext             *context,
             }
 
             if (interface_type == GI_INFO_TYPE_STRUCT || interface_type == GI_INFO_TYPE_BOXED) {
+                if (is_gdk_atom(interface_info)) {
+                    GIFunctionInfo *atom_name_fun = g_struct_info_find_method(interface_info, "name");
+                    GIArgument atom_name_ret;
+
+                    g_function_info_invoke(atom_name_fun,
+                            arg, 1,
+                            nullptr, 0,
+                            &atom_name_ret,
+                            nullptr);
+
+                    g_base_info_unref(atom_name_fun);
+                    g_base_info_unref(interface_info);
+
+                    if (strcmp("NONE", atom_name_ret.v_string) == 0) {
+                        g_free(atom_name_ret.v_string);
+                        value = JS::NullValue();
+
+                        return true;
+                    }
+
+                    bool atom_name_ok = gjs_string_from_utf8(context, atom_name_ret.v_string, value_p);
+                    g_free(atom_name_ret.v_string);
+
+                    return atom_name_ok;
+                }
+
                 JSObject *obj;
                 GjsBoxedCreationFlags flags;
 
