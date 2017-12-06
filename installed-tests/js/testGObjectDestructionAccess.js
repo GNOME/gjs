@@ -18,25 +18,25 @@ describe('Access to destroyed GObject', () => {
     it('Get property', () => {
         expect(() => {
             let title = destroyedWindow.title;
-        }).toThrowError(/Object Gtk.Window \(0x[a-f0-9]+\), has been already finalized. Impossible to get any property from it./)
+        }).toThrowError(/Object Gtk.Window \(0x[a-f0-9]+\), has been already finalized. Impossible to get any property from it\./)
     });
 
     it('Set property', () => {
         expect(() => {
             destroyedWindow.title = 'I am dead';
-        }).toThrowError(/Object Gtk.Window \(0x[a-f0-9]+\), has been already finalized. Impossible to set any property to it./)
+        }).toThrowError(/Object Gtk.Window \(0x[a-f0-9]+\), has been already finalized. Impossible to set any property to it\./)
     });
 
     it('Access to getter method', () => {
         expect(() => {
             let title = destroyedWindow.get_title();
-        }).toThrowError(/Object Gtk.Window \(0x[a-f0-9]+\), has been already deallocated.*/)
+        }).toThrowError(/Object Gtk.Window \(0x[a-f0-9]+\), has been already deallocated - impossible to access to it\./)
     });
 
     it('Access to setter method', () => {
         expect(() => {
             destroyedWindow.set_title('I am dead');
-        }).toThrowError(/Object Gtk.Window \(0x[a-f0-9]+\), has been already deallocated.*/)
+        }).toThrowError(/Object Gtk.Window \(0x[a-f0-9]+\), has been already deallocated - impossible to access to it\./)
     });
 
     it('Proto function connect', () => {
