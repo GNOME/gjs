@@ -55,4 +55,34 @@ describe('Access to destroyed GObject', () => {
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectMethodSet');
     });
+
+    it('Proto function connect', () => {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x*');
+
+        destroyedWindow.connect('foo-signal', () => {});
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectConnect');
+    });
+
+    it('Proto function connect_after', () => {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x*');
+
+        destroyedWindow.connect_after('foo-signal', () => {});
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectConnectAfter');
+    });
+
+    it('Proto function emit', () => {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x*');
+
+        destroyedWindow.emit('foo-signal');
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectEmit');
+    });
 });
