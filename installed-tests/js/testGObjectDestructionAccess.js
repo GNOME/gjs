@@ -55,4 +55,22 @@ describe('Access to destroyed GObject', () => {
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectMethodSet');
     });
+
+    it('Proto function connect', () => {
+        expect(() => {
+            destroyedWindow.connect('foo-signal', () => {});
+        }).toThrowError(/Object Gtk.Window \(0x[a-f0-9]+\), has been already deallocated - impossible to connect to signal\./)
+    });
+
+    it('Proto function connect_after', () => {
+        expect(() => {
+            destroyedWindow.connect_after('foo-signal', () => {});
+        }).toThrowError(/Object Gtk.Window \(0x[a-f0-9]+\), has been already deallocated - impossible to connect to signal\./)
+    });
+
+    it('Proto function emit', () => {
+        expect(() => {
+            destroyedWindow.emit('foo-signal');
+        }).toThrowError(/Object Gtk.Window \(0x[a-f0-9]+\), has been already deallocated - impossible to emit signal\./)
+    });
 });
