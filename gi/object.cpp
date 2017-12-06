@@ -1677,6 +1677,16 @@ real_connect_func(JSContext *context,
                   priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
         return false;
     }
+    if (priv->g_object_finalized) {
+        gjs_throw(context,
+                  "Object %s.%s (%p), has been already deallocated - impossible to connect to signal. "
+                  "This might be caused by the fact that the object has been destroyed from C "
+                  "code using something such as destroy(), dispose(), or remove() vfuncs",
+                  priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
+                  priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
+                  priv->gobj);
+        return false;
+    }
 
     if (argc != 2 || !argv[0].isString() || !JS::IsCallable(&argv[1].toObject())) {
         gjs_throw(context, "connect() takes two args, the signal name and the callback");
@@ -1761,6 +1771,17 @@ emit_func(JSContext *context,
         gjs_throw(context, "Can't emit signal on %s.%s.prototype; only on instances",
                   priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
                   priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
+        return false;
+    }
+
+    if (priv->g_object_finalized) {
+        gjs_throw(context,
+                  "Object %s.%s (%p), has been already deallocated - impossible to emit signal. "
+                  "This might be caused by the fact that the object has been destroyed from C "
+                  "code using something such as destroy(), dispose(), or remove() vfuncs",
+                  priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
+                  priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
+                  priv->gobj);
         return false;
     }
 
