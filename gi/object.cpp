@@ -1875,7 +1875,9 @@ to_string_func(JSContext *context,
         return false;  /* wrong class passed in */
     }
 
-    return _gjs_proxy_to_string_func(context, obj, "object",
+    return _gjs_proxy_to_string_func(context, obj,
+                                     (priv->g_object_finalized) ?
+                                      "object (FINALIZED)" : "object",
                                      (GIBaseInfo*)priv->info, priv->gtype,
                                      priv->gobj, rec.rval());
 }

@@ -85,4 +85,8 @@ describe('Access to destroyed GObject', () => {
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectEmit');
     });
+
+    it('Proto function toString', () => {
+        expect(destroyedWindow.toString()).toMatch(/\[object \(FINALIZED\) instance proxy GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+    });
 });
