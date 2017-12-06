@@ -56,4 +56,8 @@ describe('Access to destroyed GObject', () => {
             destroyedWindow.emit('foo-signal');
         }).toThrowError(/Object Gtk.Window \(0x[a-f0-9]+\), has been already deallocated - impossible to emit signal\./)
     });
+
+    it('Proto function toString', () => {
+        expect(destroyedWindow.toString()).toMatch(/\[object \(FINALIZED\) instance proxy GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+    });
 });
