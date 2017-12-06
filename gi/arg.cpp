@@ -1315,6 +1315,13 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
     return ret;
 }
 
+static bool
+is_gdk_atom(GIBaseInfo *info)
+{
+    return (strcmp("Atom", g_base_info_get_name(info)) == 0 &&
+            strcmp("Gdk", g_base_info_get_namespace(info)) == 0);
+}
+
 bool
 gjs_value_to_g_argument(JSContext      *context,
                         JS::HandleValue value,
@@ -1581,6 +1588,33 @@ gjs_value_to_g_argument(JSContext      *context,
                     wrong = true;
                 }
             } else if (expect_object != value.isObjectOrNull()) {
+                if (value.isString() && is_gdk_atom(interface_info)) {
+                    JS::RootedString str(context, value.toString());
+                    GjsAutoJSChar utf8_str(context, JS_EncodeStringToUTF8(context, str));
+
+                    if (utf8_str) {
+                        GIRepository *repo = g_irepository_get_default();
+                        GIFunctionInfo *atom_intern_fun =
+                            g_irepository_find_by_name(repo, "Gdk", "atom_intern");
+                        GIArgument atom_intern_ret;
+
+                        GIArgument *atom_intern_args = g_new0(GIArgument, 2);
+                        atom_intern_args[0].v_pointer = utf8_str.copy();
+                        atom_intern_args[1].v_boolean = false;
+
+                        g_function_info_invoke(atom_intern_fun,
+                                               atom_intern_args, 2,
+                                               NULL, 0,
+                                               &atom_intern_ret,
+                                               NULL);
+                        g_free(atom_intern_args[0].v_pointer);
+                        g_free(atom_intern_args);
+
+                        arg->v_pointer = atom_intern_ret.v_pointer;
+                        break;
+                    }
+                }
+
                 wrong = true;
                 report_type_mismatch = true;
                 break;
@@ -2814,6 +2848,24 @@ gjs_value_from_g_argument (JSContext             *context,
             }
 
             if (interface_type == GI_INFO_TYPE_STRUCT || interface_type == GI_INFO_TYPE_BOXED) {
+                if (is_gdk_atom( (GIBaseInfo *) interface_info)) {
+                    GIFunctionInfo *atom_name_fun = g_struct_info_find_method( (GIStructInfo *) interface_info, "name");
+                    GIArgument atom_name_ret;
+
+                    GIArgument *atom_name_args = g_new0(GIArgument, 1);
+                    atom_name_args[0].v_pointer = arg->v_pointer;
+
+                    g_function_info_invoke(atom_name_fun,
+                                           atom_name_args, 1,
+                                           NULL, 0,
+                                           &atom_name_ret,
+                                           NULL);
+                    g_free(atom_name_args);
+
+                    if (gjs_string_from_utf8(context, atom_name_ret.v_string, value_p))
+                        break;
+                }
+
                 JSObject *obj;
                 GjsBoxedCreationFlags flags;
 
