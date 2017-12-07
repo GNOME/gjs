@@ -1615,7 +1615,9 @@ gjs_value_to_g_argument(JSContext      *context,
                                        nullptr, 0,
                                        arg,
                                        nullptr);
+
                 g_free(atom_intern_args[0].v_pointer);
+                g_base_info_unref(atom_intern_fun);
 
                 break;
             } else if (expect_object != value.isObjectOrNull()) {
@@ -2865,8 +2867,10 @@ gjs_value_from_g_argument (JSContext             *context,
                                            &atom_name_ret,
                                            nullptr);
 
-                    if (gjs_string_from_utf8(context, atom_name_ret.v_string, value_p))
-                        break;
+                    g_base_info_unref(atom_name_fun);
+                    g_base_info_unref(interface_info);
+
+                    return gjs_string_from_utf8(context, atom_name_ret.v_string, value_p);
                 }
 
                 JSObject *obj;
