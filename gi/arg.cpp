@@ -1606,7 +1606,7 @@ gjs_value_to_g_argument(JSContext      *context,
                 GIFunctionInfo *atom_intern_fun =
                     g_irepository_find_by_name(repo, "Gdk", "atom_intern");
 
-                GIArgument *atom_intern_args = g_new0(GIArgument, 2);
+                GIArgument atom_intern_args[2];
                 atom_intern_args[0].v_pointer = utf8_str.copy();
                 atom_intern_args[1].v_boolean = false;
 
@@ -1616,7 +1616,6 @@ gjs_value_to_g_argument(JSContext      *context,
                                        arg,
                                        NULL);
                 g_free(atom_intern_args[0].v_pointer);
-                g_free(atom_intern_args);
 
                 break;
             } else if (expect_object != value.isObjectOrNull()) {
@@ -2857,7 +2856,7 @@ gjs_value_from_g_argument (JSContext             *context,
                     GIFunctionInfo *atom_name_fun = g_struct_info_find_method( (GIStructInfo *) interface_info, "name");
                     GIArgument atom_name_ret;
 
-                    GIArgument *atom_name_args = g_new0(GIArgument, 1);
+                    GIArgument atom_name_args[1];
                     atom_name_args[0].v_pointer = arg->v_pointer;
 
                     g_function_info_invoke(atom_name_fun,
@@ -2865,7 +2864,6 @@ gjs_value_from_g_argument (JSContext             *context,
                                            NULL, 0,
                                            &atom_name_ret,
                                            NULL);
-                    g_free(atom_name_args);
 
                     if (gjs_string_from_utf8(context, atom_name_ret.v_string, value_p))
                         break;
