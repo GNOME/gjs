@@ -2852,8 +2852,8 @@ gjs_value_from_g_argument (JSContext             *context,
             }
 
             if (interface_type == GI_INFO_TYPE_STRUCT || interface_type == GI_INFO_TYPE_BOXED) {
-                if (is_gdk_atom( (GIBaseInfo *) interface_info)) {
-                    GIFunctionInfo *atom_name_fun = g_struct_info_find_method( (GIStructInfo *) interface_info, "name");
+                if (is_gdk_atom(interface_info)) {
+                    GIFunctionInfo *atom_name_fun = g_struct_info_find_method(interface_info, "name");
                     GIArgument atom_name_ret;
 
                     GIArgument atom_name_args[1];
