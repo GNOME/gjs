@@ -124,4 +124,8 @@ describe('Gtk overrides', function () {
         GLib.test_assert_expected_messages_internal('Gjs', 'testGtk.js', 0,
             'Gtk overrides avoid crashing and print a stack trace');
     });
+
+    it('accepts string in place of GdkAtom', function () {
+      expect(Gtk.Clipboard.get('CLIPBOARD')).toBeTruthy();
+    });
 });
