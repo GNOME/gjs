@@ -126,6 +126,17 @@ describe('Gtk overrides', function () {
     });
 
     it('accepts string in place of GdkAtom', function () {
-      expect(Gtk.Clipboard.get('CLIPBOARD')).toBeTruthy();
+      expect(() => Gtk.Clipboard.get(1)).toThrow();
+      expect(() => Gtk.Clipboard.get(true)).toThrow();
+      expect(() => Gtk.Clipboard.get(() => undefined)).toThrow();
+
+      const clipboard = Gtk.Clipboard.get('CLIPBOARD');
+      const primary = Gtk.Clipboard.get('PRIMARY');
+      const anotherClipboard = Gtk.Clipboard.get('CLIPBOARD');
+
+      expect(clipboard).toBeTruthy();
+      expect(primary).toBeTruthy();
+      expect(clipboard).not.toBe(primary);
+      expect(clipboard).toBe(anotherClipboard);
     });
 });
