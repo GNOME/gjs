@@ -1612,9 +1612,9 @@ gjs_value_to_g_argument(JSContext      *context,
 
                 g_function_info_invoke(atom_intern_fun,
                                        atom_intern_args, 2,
-                                       NULL, 0,
+                                       nullptr, 0,
                                        arg,
-                                       NULL);
+                                       nullptr);
                 g_free(atom_intern_args[0].v_pointer);
 
                 break;
@@ -2861,9 +2861,9 @@ gjs_value_from_g_argument (JSContext             *context,
 
                     g_function_info_invoke(atom_name_fun,
                                            atom_name_args, 1,
-                                           NULL, 0,
+                                           nullptr, 0,
                                            &atom_name_ret,
-                                           NULL);
+                                           nullptr);
 
                     if (gjs_string_from_utf8(context, atom_name_ret.v_string, value_p))
                         break;
