@@ -1596,7 +1596,6 @@ gjs_value_to_g_argument(JSContext      *context,
                         GIRepository *repo = g_irepository_get_default();
                         GIFunctionInfo *atom_intern_fun =
                             g_irepository_find_by_name(repo, "Gdk", "atom_intern");
-                        GIArgument atom_intern_ret;
 
                         GIArgument *atom_intern_args = g_new0(GIArgument, 2);
                         atom_intern_args[0].v_pointer = utf8_str.copy();
@@ -1605,12 +1604,11 @@ gjs_value_to_g_argument(JSContext      *context,
                         g_function_info_invoke(atom_intern_fun,
                                                atom_intern_args, 2,
                                                NULL, 0,
-                                               &atom_intern_ret,
+                                               arg,
                                                NULL);
                         g_free(atom_intern_args[0].v_pointer);
                         g_free(atom_intern_args);
 
-                        arg->v_pointer = atom_intern_ret.v_pointer;
                         break;
                     }
                 }
