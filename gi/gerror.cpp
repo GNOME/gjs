@@ -423,8 +423,6 @@ proto_key_from_error_enum(int val)
         return JSProto_RangeError;
     case GJS_JS_ERROR_REFERENCE_ERROR:
         return JSProto_ReferenceError;
-    case GJS_JS_ERROR_STOP_ITERATION:
-        return JSProto_StopIteration;
     case GJS_JS_ERROR_SYNTAX_ERROR:
         return JSProto_SyntaxError;
     case GJS_JS_ERROR_TYPE_ERROR:
