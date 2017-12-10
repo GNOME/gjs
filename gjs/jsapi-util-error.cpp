@@ -156,10 +156,10 @@ gjs_throw_custom(JSContext  *cx,
 {
     va_list args;
     g_return_if_fail(kind == JSProto_Error || kind == JSProto_InternalError ||
-        kind == JSProto_EvalError || kind == JSProto_RangeError ||
-        kind == JSProto_ReferenceError || kind == JSProto_SyntaxError ||
-        kind == JSProto_TypeError || kind == JSProto_URIError ||
-        kind == JSProto_StopIteration);
+                     kind == JSProto_EvalError || kind == JSProto_RangeError ||
+                     kind == JSProto_ReferenceError ||
+                     kind == JSProto_SyntaxError || kind == JSProto_TypeError ||
+                     kind == JSProto_URIError);
 
     va_start(args, format);
     gjs_throw_valist(cx, kind, error_name, format, args);
