@@ -222,15 +222,13 @@ repo_finalize(JSFreeOp *fop,
  * class have.
  */
 static const struct JSClassOps gjs_repo_class_ops = {
-    NULL,  /* addProperty */
-    NULL,  /* deleteProperty */
-    NULL,  /* getProperty */
-    NULL,  /* setProperty */
-    NULL,  /* enumerate */
+    nullptr,  // addProperty
+    nullptr,  // deleteProperty
+    nullptr,  // enumerate
+    nullptr,  // newEnumerate
     repo_resolve,
-    nullptr,  /* mayResolve */
-    repo_finalize
-};
+    nullptr,  // mayResolve
+    repo_finalize};
 
 struct JSClass gjs_repo_class = {
     "GIRepository", /* means "new GIRepository()" works */
