@@ -570,9 +570,8 @@ static JSPropertySpec gjs_fundamental_instance_proto_props[] = {
 };
 
 static JSFunctionSpec gjs_fundamental_instance_proto_funcs[] = {
-    JS_FS("toString", to_string_func, 0, 0),
-    JS_FS_END
-};
+    JS_FN("toString", to_string_func, 0, 0),
+    JS_FS_END};
 
 static JSObject *
 gjs_lookup_fundamental_prototype(JSContext    *context,
