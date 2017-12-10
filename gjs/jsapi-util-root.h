@@ -84,10 +84,7 @@ struct GjsHeapOperation<JSObject *> {
         /* If the object has been swept already, then the zone is nullptr */
         if (!obj || !js::gc::detail::GetGCThingZone(uintptr_t(obj)))
             return;
-        /* COMPAT: Use JS::CurrentThreadIsHeapCollecting() in mozjs59 */
-        JS::GCCellPtr ptr(obj, JS::TraceKind::Object);
-        JS::shadow::Runtime *rt = js::gc::detail::GetCellRuntime(ptr.asCell());
-        if (!rt->isHeapCollecting())
+        if (!JS::CurrentThreadIsHeapCollecting())
             JS::ExposeObjectToActiveJS(obj);
     }
 };

@@ -263,11 +263,11 @@ gjs_define_property_dynamic(JSContext       *cx,
     if (!setter_obj)
         return false;
 
-    flags |= JSPROP_SHARED | JSPROP_GETTER | JSPROP_SETTER;
+    flags |= JSPROP_GETTER | JSPROP_SETTER;
 
-    return JS_DefineProperty(cx, proto, prop_name, JS::UndefinedHandleValue, flags,
-                             JS_DATA_TO_FUNC_PTR(JSNative, getter_obj.get()),
-                             JS_DATA_TO_FUNC_PTR(JSNative, setter_obj.get()));
+    return JS_DefineProperty(
+        cx, proto, prop_name, JS_DATA_TO_FUNC_PTR(JSNative, getter_obj.get()),
+        JS_DATA_TO_FUNC_PTR(JSNative, setter_obj.get()), flags);
 }
 
 /**
