@@ -61,13 +61,12 @@ bool gjs_define_global_properties(JSContext       *cx,
                                   JS::HandleObject global,
                                   const char      *bootstrap_script);
 
-JS::Value gjs_get_global_slot(JSContext    *cx,
-                              GjsGlobalSlot slot);
-
 void gjs_set_global_slot(JSContext    *context,
                          GjsGlobalSlot slot,
                          JS::Value     value);
 
 G_END_DECLS
+
+JS::Value gjs_get_global_slot(JSContext* cx, GjsGlobalSlot slot);
 
 #endif  /* GJS_GLOBAL_H */
