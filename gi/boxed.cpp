@@ -855,19 +855,17 @@ boxed_trace(JSTracer *tracer,
  * class have.
  */
 static const struct JSClassOps gjs_boxed_class_ops = {
-    NULL,  /* addProperty */
-    NULL,  /* deleteProperty */
-    NULL,  /* getProperty */
-    NULL,  /* setProperty */
-    NULL,  /* enumerate */
+    nullptr,  // addProperty
+    nullptr,  // deleteProperty
+    nullptr,  // enumerate
+    nullptr,  // newEnumerate
     boxed_resolve,
-    nullptr,  /* mayResolve */
+    nullptr,  // mayResolve
     boxed_finalize,
-    NULL,  /* call */
-    NULL,  /* hasInstance */
-    NULL,  /* construct */
-    boxed_trace
-};
+    nullptr,  // call
+    nullptr,  // hasInstance
+    nullptr,  // construct
+    boxed_trace};
 
 /* We allocate 1 reserved slot; this is typically unused, but if the
  * boxed is for a nested structure inside a parent structure, the
