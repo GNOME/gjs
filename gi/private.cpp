@@ -393,11 +393,11 @@ static bool hook_up_vfunc_symbol_getter(JSContext* cx, unsigned argc,
 }
 
 static JSFunctionSpec module_funcs[] = {
-    JS_FS("override_property", gjs_override_property, 2, GJS_MODULE_PROP_FLAGS),
-    JS_FS("register_interface", gjs_register_interface, 3,
+    JS_FN("override_property", gjs_override_property, 2, GJS_MODULE_PROP_FLAGS),
+    JS_FN("register_interface", gjs_register_interface, 3,
           GJS_MODULE_PROP_FLAGS),
-    JS_FS("register_type", gjs_register_type, 4, GJS_MODULE_PROP_FLAGS),
-    JS_FS("signal_new", gjs_signal_new, 6, GJS_MODULE_PROP_FLAGS),
+    JS_FN("register_type", gjs_register_type, 4, GJS_MODULE_PROP_FLAGS),
+    JS_FN("signal_new", gjs_signal_new, 6, GJS_MODULE_PROP_FLAGS),
     JS_FS_END,
 };
 

@@ -203,19 +203,17 @@ getStride_func(JSContext *context,
 }
 
 JSFunctionSpec gjs_cairo_image_surface_proto_funcs[] = {
-    JS_FS("createFromPNG", createFromPNG_func, 0, 0),
+    JS_FN("createFromPNG", createFromPNG_func, 0, 0),
     // getData
-    JS_FS("getFormat", getFormat_func, 0, 0),
-    JS_FS("getWidth", getWidth_func, 0, 0),
-    JS_FS("getHeight", getHeight_func, 0, 0),
-    JS_FS("getStride", getStride_func, 0, 0),
-    JS_FS_END
-};
+    JS_FN("getFormat", getFormat_func, 0, 0),
+    JS_FN("getWidth", getWidth_func, 0, 0),
+    JS_FN("getHeight", getHeight_func, 0, 0),
+    JS_FN("getStride", getStride_func, 0, 0),
+    JS_FS_END};
 
 JSFunctionSpec gjs_cairo_image_surface_static_funcs[] = {
-    JS_FS("createFromPNG", createFromPNG_func, 1, GJS_MODULE_PROP_FLAGS),
-    JS_FS_END
-};
+    JS_FN("createFromPNG", createFromPNG_func, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FS_END};
 
 JSObject *
 gjs_cairo_image_surface_from_surface(JSContext       *context,
