@@ -177,28 +177,30 @@ _GJS_DEFINE_PROTO_FULL(tn, cn, parent_cn, gjs_##cn##_constructor,  \
 #define GJS_DEFINE_PROTO_ABSTRACT_WITH_PARENT(tn, cn, parent_cn, flags)  \
 _GJS_DEFINE_PROTO_FULL(tn, cn, parent_cn, nullptr, G_TYPE_NONE, flags)
 
-#define _GJS_DEFINE_PROTO_FULL(type_name, cname, parent_cname, ctor, gtype, jsclass_flags) \
-extern JSPropertySpec gjs_##cname##_proto_props[];                           \
-extern JSFunctionSpec gjs_##cname##_proto_funcs[];                           \
-extern JSFunctionSpec gjs_##cname##_static_funcs[];                          \
-static void gjs_##cname##_finalize(JSFreeOp *fop, JSObject *obj);            \
-static const struct JSClassOps gjs_##cname##_class_ops = {                   \
-    nullptr,  /* addProperty */                                              \
-    nullptr,  /* deleteProperty */                                           \
-    nullptr,  /* getProperty */                                              \
-    nullptr,  /* setProperty */                                              \
-    nullptr,  /* enumerate */                                                \
-    nullptr,  /* resolve */                                                  \
-    nullptr,  /* mayResolve */                                               \
-    gjs_##cname##_finalize                                                   \
-};                                                                           \
-static struct JSClass gjs_##cname##_class = {                                \
-    type_name,                                                               \
-    JSCLASS_HAS_PRIVATE | jsclass_flags,                                     \
-    &gjs_##cname##_class_ops                                                 \
-};                                                                           \
-_GJS_DEFINE_GET_PROTO(cname)                                                 \
-_GJS_DEFINE_DEFINE_PROTO(cname, parent_cname, ctor, gtype)
+// clang-format off
+#define _GJS_DEFINE_PROTO_FULL(type_name, cname, parent_cname, ctor, gtype, \
+                               jsclass_flags)                               \
+    extern JSPropertySpec gjs_##cname##_proto_props[];                      \
+    extern JSFunctionSpec gjs_##cname##_proto_funcs[];                      \
+    extern JSFunctionSpec gjs_##cname##_static_funcs[];                     \
+    static void gjs_##cname##_finalize(JSFreeOp* fop, JSObject* obj);       \
+    static const struct JSClassOps gjs_##cname##_class_ops = {              \
+        nullptr,  /* addProperty */                                         \
+        nullptr,  /* deleteProperty */                                      \
+        nullptr,  /* enumerate */                                           \
+        nullptr,  /* newEnumerate */                                        \
+        nullptr,  /* resolve */                                             \
+        nullptr,  /* mayResolve */                                          \
+        gjs_##cname##_finalize                                              \
+    };                                                                      \
+    static struct JSClass gjs_##cname##_class = {                           \
+        type_name,                                                          \
+        JSCLASS_HAS_PRIVATE | jsclass_flags,                                \
+        &gjs_##cname##_class_ops                                            \
+    };                                                                      \
+    _GJS_DEFINE_GET_PROTO(cname)                                            \
+    _GJS_DEFINE_DEFINE_PROTO(cname, parent_cname, ctor, gtype)
+// clang-format on
 
 #define GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, parent_cname)  \
 G_GNUC_UNUSED static                                             \

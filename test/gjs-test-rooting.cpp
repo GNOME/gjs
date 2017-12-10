@@ -27,15 +27,13 @@ test_obj_finalize(JSFreeOp *fop,
 }
 
 static const JSClassOps test_obj_class_ops = {
-    NULL,  /* addProperty */
-    NULL,  /* deleteProperty */
-    NULL,  /* getProperty */
-    NULL,  /* setProperty */
-    NULL,  /* enumerate */
-    NULL,  /* resolve */
-    nullptr,  /* mayResolve */
-    test_obj_finalize
-};
+    nullptr,  // addProperty
+    nullptr,  // deleteProperty
+    nullptr,  // enumerate
+    nullptr,  // newEnumerate
+    nullptr,  // resolve
+    nullptr,  // mayResolve
+    test_obj_finalize};
 
 static JSClass test_obj_class = {
     "TestObj",

@@ -144,15 +144,13 @@ param_finalize(JSFreeOp *fop,
  * class have.
  */
 static const struct JSClassOps gjs_param_class_ops = {
-    NULL,  /* addProperty */
-    NULL,  /* deleteProperty */
-    NULL,  /* getProperty */
-    NULL,  /* setProperty */
-    NULL,  /* enumerate */
+    nullptr,  // addProperty
+    nullptr,  // deleteProperty
+    nullptr,  // enumerate
+    nullptr,  // newEnumerate
     param_resolve,
-    nullptr,  /* mayResolve */
-    param_finalize
-};
+    nullptr,  // mayResolve
+    param_finalize};
 
 struct JSClass gjs_param_class = {
     "GObject_ParamSpec",

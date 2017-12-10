@@ -545,19 +545,17 @@ fundamental_trace(JSTracer *tracer,
  * the prototype unless JSCLASS_CONSTRUCT_PROTOTYPE is in flags.
  */
 static const struct JSClassOps gjs_fundamental_class_ops = {
-    NULL,  /* addProperty */
-    NULL,  /* deleteProperty */
-    NULL,  /* getProperty */
-    NULL,  /* setProperty */
-    NULL,  /* enumerate */
+    nullptr,  // addProperty
+    nullptr,  // deleteProperty
+    nullptr,  // enumerate
+    nullptr,  // newEnumerate
     fundamental_instance_resolve,
-    nullptr,  /* mayResolve */
+    nullptr,  // mayResolve
     fundamental_finalize,
-    NULL,  /* call */
-    NULL,  /* hasInstance */
-    NULL,  /* construct */
-    fundamental_trace
-};
+    nullptr,  // call
+    nullptr,  // hasInstance
+    nullptr,  // construct
+    fundamental_trace};
 
 struct JSClass gjs_fundamental_instance_class = {
     "GFundamental_Object",
