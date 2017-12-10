@@ -194,13 +194,12 @@ class GjsModule {
     }
 
     static constexpr JSClassOps class_ops = {
-        nullptr,  /* addProperty */
-        nullptr,  /* deleteProperty */
-        nullptr,  /* getProperty */
-        nullptr,  /* setProperty */
-        nullptr,  /* enumerate */
+        nullptr,  // addProperty
+        nullptr,  // deleteProperty
+        nullptr,  // enumerate
+        nullptr,  // newEnumerate
         &GjsModule::resolve,
-        nullptr,  /* mayResolve */
+        nullptr,  // mayResolve
         &GjsModule::finalize,
     };
 

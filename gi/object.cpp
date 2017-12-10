@@ -1939,9 +1939,8 @@ bool ObjectPrototype::to_string_impl(JSContext* cx, const JS::CallArgs& args) {
 static const struct JSClassOps gjs_object_class_ops = {
     &ObjectBase::add_property,
     nullptr,  // deleteProperty
-    nullptr,  // getProperty
-    nullptr,  // setProperty
     nullptr,  // enumerate
+    nullptr,  // newEnumerate
     &ObjectBase::resolve,
     nullptr,  // mayResolve
     &ObjectBase::finalize,
