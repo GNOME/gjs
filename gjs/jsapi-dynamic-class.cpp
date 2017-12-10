@@ -121,18 +121,17 @@ gjs_init_class_dynamic(JSContext              *context,
         /* Have to fake it with JSPROP_RESOLVING, otherwise it will trigger
          * the resolve hook */
         if (!JS_DefineProperty(context, constructor, "prototype", prototype,
-                               JSPROP_PERMANENT | JSPROP_READONLY | JSPROP_RESOLVING,
-                               JS_STUBGETTER, JS_STUBSETTER))
+                               JSPROP_PERMANENT | JSPROP_READONLY | JSPROP_RESOLVING))
             goto out;
         if (!JS_DefineProperty(context, prototype, "constructor", constructor,
-                               JSPROP_RESOLVING, JS_STUBGETTER, JS_STUBSETTER))
+                               JSPROP_RESOLVING))
             goto out;
     }
 
     /* The constructor defined by JS_InitClass has no property attributes, but this
        is a more useful default for gjs */
     if (!JS_DefineProperty(context, in_object, class_name, constructor,
-                           GJS_MODULE_PROP_FLAGS, JS_STUBGETTER, JS_STUBSETTER))
+                           GJS_MODULE_PROP_FLAGS))
         goto out;
 
     res = true;

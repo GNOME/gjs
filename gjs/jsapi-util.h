@@ -329,33 +329,25 @@ bool gjs_object_define_property(JSContext       *cx,
                                 JS::HandleObject obj,
                                 GjsConstString   property_name,
                                 JS::HandleValue  value,
-                                unsigned         flags,
-                                JSNative         getter = nullptr,
-                                JSNative         setter = nullptr);
+                                unsigned         flags);
 
 bool gjs_object_define_property(JSContext       *cx,
                                 JS::HandleObject obj,
                                 GjsConstString   property_name,
                                 JS::HandleObject value,
-                                unsigned         flags,
-                                JSNative         getter = nullptr,
-                                JSNative         setter = nullptr);
+                                unsigned         flags);
 
 bool gjs_object_define_property(JSContext       *cx,
                                 JS::HandleObject obj,
                                 GjsConstString   property_name,
                                 JS::HandleString value,
-                                unsigned         flags,
-                                JSNative         getter = nullptr,
-                                JSNative         setter = nullptr);
+                                unsigned         flags);
 
 bool gjs_object_define_property(JSContext       *cx,
                                 JS::HandleObject obj,
                                 GjsConstString   property_name,
                                 uint32_t         value,
-                                unsigned         flags,
-                                JSNative         getter = nullptr,
-                                JSNative         setter = nullptr);
+                                unsigned         flags);
 
 JS::HandleId gjs_context_get_const_string(JSContext     *cx,
                                           GjsConstString string);
