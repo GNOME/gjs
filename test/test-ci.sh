@@ -152,7 +152,7 @@ elif [[ $1 == "CPPCHECK" ]]; then
         echo '----------------------------------------'
         echo '###  New warnings found by cppcheck  ###'
         echo '----------------------------------------'
-        diff -u /cwd/master-report.txt /cwd/current-report.txt
+        diff -u /cwd/master-report.txt /cwd/current-report.txt || true
         echo '----------------------------------------'
         exit 3
     fi
