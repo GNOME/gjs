@@ -265,7 +265,7 @@ run_code(GjsUnitTestFixture *fx,
 {
     const char *script = (const char *) code;
 
-    JS::CompileOptions options(fx->cx, JSVERSION_UNKNOWN);
+    JS::CompileOptions options(fx->cx);
     options.setFileAndLine("unit test", 1);
 
     JS::RootedValue ignored(fx->cx);
@@ -281,7 +281,7 @@ run_code_expect_exception(GjsUnitTestFixture *fx,
 {
     const char *script = (const char *) code;
 
-    JS::CompileOptions options(fx->cx, JSVERSION_UNKNOWN);
+    JS::CompileOptions options(fx->cx);
     options.setFileAndLine("unit test", 1);
 
     JS::RootedValue ignored(fx->cx);
