@@ -255,15 +255,13 @@ error_constructor_value_of(JSContext *context,
  * class have.
  */
 static const struct JSClassOps gjs_error_class_ops = {
-    NULL,  /* addProperty */
-    NULL,  /* deleteProperty */
-    NULL,  /* getProperty */
-    NULL,  /* setProperty */
-    NULL,  /* enumerate */
-    NULL,  /* resolve */
-    nullptr,  /* mayResolve */
-    error_finalize
-};
+    nullptr,  // addProperty
+    nullptr,  // deleteProperty
+    nullptr,  // enumerate
+    nullptr,  // newEnumerate
+    nullptr,  // resolve
+    nullptr,  // mayResolve
+    error_finalize};
 
 struct JSClass gjs_error_class = {
     "GLib_Error",

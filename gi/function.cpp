@@ -1555,16 +1555,14 @@ function_to_string (JSContext *context,
  * class have.
  */
 static const struct JSClassOps gjs_function_class_ops = {
-    NULL,  /* addProperty */
-    NULL,  /* deleteProperty */
-    NULL,  /* getProperty */
-    NULL,  /* setProperty */
-    NULL,  /* enumerate */
-    NULL,  /* resolve */
-    nullptr,  /* mayResolve */
+    nullptr,  // addProperty
+    nullptr,  // deleteProperty
+    nullptr,  // enumerate
+    nullptr,  // newEnumerate
+    nullptr,  // resolve
+    nullptr,  // mayResolve
     function_finalize,
-    function_call
-};
+    function_call};
 
 struct JSClass gjs_function_class = {
     "GIRepositoryFunction", /* means "new GIRepositoryFunction()" works */
