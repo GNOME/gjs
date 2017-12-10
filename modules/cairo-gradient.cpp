@@ -101,11 +101,10 @@ addColorStopRGBA_func(JSContext *context,
 }
 
 JSFunctionSpec gjs_cairo_gradient_proto_funcs[] = {
-    JS_FS("addColorStopRGB", addColorStopRGB_func, 0, 0),
-    JS_FS("addColorStopRGBA", addColorStopRGBA_func, 0, 0),
+    JS_FN("addColorStopRGB", addColorStopRGB_func, 0, 0),
+    JS_FN("addColorStopRGBA", addColorStopRGBA_func, 0, 0),
     // getColorStopRGB
     // getColorStopRGBA
-    JS_FS_END
-};
+    JS_FS_END};
 
 JSFunctionSpec gjs_cairo_gradient_static_funcs[] = { JS_FS_END };
