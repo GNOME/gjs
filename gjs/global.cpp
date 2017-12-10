@@ -238,7 +238,6 @@ public:
     create(JSContext *cx)
     {
         JS::CompartmentOptions compartment_options;
-        compartment_options.behaviors().setVersion(JSVERSION_LATEST);
         JS::RootedObject global(cx,
             JS_NewGlobalObject(cx, &GjsGlobal::klass, nullptr,
                                JS::FireOnNewGlobalHook, compartment_options));
