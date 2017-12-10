@@ -76,7 +76,7 @@ fedora_clang:
     OS: fedora.26.gcc
     CC: clang
     BUILD_OPTS: "--enable-code-coverage"
-    coverage: '/Lines:.\d+.\d+.(\d+\.\d+%)/'
+    coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
   artifacts:
     name: coverage
     paths:
