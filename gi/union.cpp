@@ -286,15 +286,13 @@ to_string_func(JSContext *context,
  * class have.
  */
 static const struct JSClassOps gjs_union_class_ops = {
-    NULL,  /* addProperty */
-    NULL,  /* deleteProperty */
-    NULL,  /* getProperty */
-    NULL,  /* setProperty */
-    NULL,  /* enumerate */
+    nullptr,  // addProperty
+    nullptr,  // deleteProperty
+    nullptr,  // enumerate
+    nullptr,  // newEnumerate
     union_resolve,
-    nullptr,  /* mayResolve */
-    union_finalize
-};
+    nullptr,  // mayResolve
+    union_finalize};
 
 struct JSClass gjs_union_class = {
     "GObject_Union",

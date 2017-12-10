@@ -187,15 +187,13 @@ interface_has_instance_func(JSContext *cx,
 }
 
 static const struct JSClassOps gjs_interface_class_ops = {
-    NULL,  /* addProperty */
-    NULL,  /* deleteProperty */
-    NULL,  /* getProperty */
-    NULL,  /* setProperty */
-    NULL,  /* enumerate */
+    nullptr,  // addProperty
+    nullptr,  // deleteProperty
+    nullptr,  // enumerate
+    nullptr,  // newEnumerate
     interface_resolve,
-    nullptr,  /* mayResolve */
-    interface_finalize
-};
+    nullptr,  // mayResolve
+    interface_finalize};
 
 struct JSClass gjs_interface_class = {
     "GObject_Interface",

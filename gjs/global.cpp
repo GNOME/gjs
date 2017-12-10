@@ -207,19 +207,17 @@ gjs_printerr(JSContext *context,
 
 class GjsGlobal {
     static constexpr JSClassOps class_ops = {
-        nullptr,  /* addProperty */
-        nullptr,  /* deleteProperty */
-        nullptr,  /* getProperty */
-        nullptr,  /* setProperty */
-        nullptr,  /* enumerate */
-        nullptr,  /* resolve */
-        nullptr,  /* mayResolve */
-        nullptr,  /* finalize */
-        nullptr,  /* call */
-        nullptr,  /* hasInstance */
-        nullptr,  /* construct */
-        JS_GlobalObjectTraceHook
-    };
+        nullptr,  // addProperty
+        nullptr,  // deleteProperty
+        nullptr,  // enumerate
+        nullptr,  // newEnumerate
+        nullptr,  // resolve
+        nullptr,  // mayResolve
+        nullptr,  // finalize
+        nullptr,  // call
+        nullptr,  // hasInstance
+        nullptr,  // construct
+        JS_GlobalObjectTraceHook};
 
     static constexpr JSClass klass = {
         "GjsGlobal",
