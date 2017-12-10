@@ -204,14 +204,12 @@ gjs_js_define_system_stuff(JSContext              *context,
     if (!JS_DefineProperty(context, module,
                            "programInvocationName",
                            value,
-                           GJS_MODULE_PROP_FLAGS | JSPROP_READONLY,
-                           JS_STUBGETTER, JS_STUBSETTER))
+                           GJS_MODULE_PROP_FLAGS | JSPROP_READONLY))
         goto out;
 
     if (!JS_DefineProperty(context, module,
                            "version", GJS_VERSION,
-                           GJS_MODULE_PROP_FLAGS | JSPROP_READONLY,
-                           JS_STUBGETTER, JS_STUBSETTER))
+                           GJS_MODULE_PROP_FLAGS | JSPROP_READONLY))
         goto out;
 
     retval = true;

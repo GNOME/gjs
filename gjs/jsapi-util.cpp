@@ -85,13 +85,11 @@ gjs_object_define_property(JSContext       *cx,
                            JS::HandleObject obj,
                            GjsConstString   property_name,
                            JS::HandleValue  value,
-                           unsigned         flags,
-                           JSNative         getter,
-                           JSNative         setter)
+                           unsigned         flags)
 {
     return JS_DefinePropertyById(cx, obj,
                                  gjs_context_get_const_string(cx, property_name),
-                                 value, flags, getter, setter);
+                                 value, flags);
 }
 
 bool
@@ -99,13 +97,11 @@ gjs_object_define_property(JSContext       *cx,
                            JS::HandleObject obj,
                            GjsConstString   property_name,
                            JS::HandleObject value,
-                           unsigned         flags,
-                           JSNative         getter,
-                           JSNative         setter)
+                           unsigned         flags)
 {
     return JS_DefinePropertyById(cx, obj,
                                  gjs_context_get_const_string(cx, property_name),
-                                 value, flags, getter, setter);
+                                 value, flags);
 }
 
 bool
@@ -113,13 +109,11 @@ gjs_object_define_property(JSContext       *cx,
                            JS::HandleObject obj,
                            GjsConstString   property_name,
                            JS::HandleString value,
-                           unsigned         flags,
-                           JSNative         getter,
-                           JSNative         setter)
+                           unsigned         flags)
 {
     return JS_DefinePropertyById(cx, obj,
                                  gjs_context_get_const_string(cx, property_name),
-                                 value, flags, getter, setter);
+                                 value, flags);
 }
 
 bool
@@ -127,13 +121,11 @@ gjs_object_define_property(JSContext       *cx,
                            JS::HandleObject obj,
                            GjsConstString   property_name,
                            uint32_t         value,
-                           unsigned         flags,
-                           JSNative         getter,
-                           JSNative         setter)
+                           unsigned         flags)
 {
     return JS_DefinePropertyById(cx, obj,
                                  gjs_context_get_const_string(cx, property_name),
-                                 value, flags, getter, setter);
+                                 value, flags);
 }
 
 static void
