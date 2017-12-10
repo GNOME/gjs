@@ -131,7 +131,7 @@ elif [[ $1 == "GJS_COVERAGE" ]]; then
     cp -r /cwd/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage/* /cwd/coverage/
 
     echo '-----------------------------------------------------------------'
-    sed -e 's/<[^>]*>//g' /cwd/coverage/index.html  | tr -d ' \t' | sed '/^\s*$/d'
+    sed -e 's/<[^>]*>//g' /cwd/coverage/index.html | tr -d ' \t' | grep -A3 -P '^Lines:$'  | tr '\n' ' '; echo
     echo '-----------------------------------------------------------------'
 
 elif [[ $1 == "CPPCHECK" ]]; then
