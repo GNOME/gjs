@@ -165,15 +165,14 @@ gjs_clear_date_caches(JSContext *context,
 }
 
 static JSFunctionSpec module_funcs[] = {
-    JS_FS("addressOf", gjs_address_of, 1, GJS_MODULE_PROP_FLAGS),
-    JS_FS("refcount", gjs_refcount, 1, GJS_MODULE_PROP_FLAGS),
-    JS_FS("breakpoint", gjs_breakpoint, 0, GJS_MODULE_PROP_FLAGS),
-    JS_FS("dumpHeap", gjs_dump_heap, 1, GJS_MODULE_PROP_FLAGS),
-    JS_FS("gc", gjs_gc, 0, GJS_MODULE_PROP_FLAGS),
-    JS_FS("exit", gjs_exit, 0, GJS_MODULE_PROP_FLAGS),
-    JS_FS("clearDateCaches", gjs_clear_date_caches, 0, GJS_MODULE_PROP_FLAGS),
-    JS_FS_END
-};
+    JS_FN("addressOf", gjs_address_of, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("refcount", gjs_refcount, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("breakpoint", gjs_breakpoint, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FN("dumpHeap", gjs_dump_heap, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("gc", gjs_gc, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FN("exit", gjs_exit, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FN("clearDateCaches", gjs_clear_date_caches, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FS_END};
 
 bool
 gjs_js_define_system_stuff(JSContext              *context,

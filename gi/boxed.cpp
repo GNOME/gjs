@@ -886,9 +886,8 @@ JSPropertySpec gjs_boxed_proto_props[] = {
 };
 
 JSFunctionSpec gjs_boxed_proto_funcs[] = {
-    JS_FS("toString", to_string_func, 0, 0),
-    JS_FS_END
-};
+    JS_FN("toString", to_string_func, 0, 0),
+    JS_FS_END};
 
 static bool
 type_can_be_allocated_directly(GITypeInfo *type_info)

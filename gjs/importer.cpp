@@ -817,9 +817,8 @@ static JSPropertySpec *gjs_importer_proto_props = nullptr;
 static JSFunctionSpec *gjs_importer_static_funcs = nullptr;
 
 JSFunctionSpec gjs_importer_proto_funcs[] = {
-    JS_FS("toString", importer_to_string, 0, 0),
-    JS_FS_END
-};
+    JS_FN("toString", importer_to_string, 0, 0),
+    JS_FS_END};
 
 GJS_DEFINE_PROTO_FUNCS(importer)
 
