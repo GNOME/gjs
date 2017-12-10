@@ -1,3 +1,14 @@
+Version 1.51.3
+--------------
+
+- This release was made from an earlier state of master, before a breaking
+  change was merged, while we decide whether to revert that change or not.
+
+- Closed bugs and merge requests:
+
+  * CI improvements on GitLab [!14, !15, !19, Claudio André]
+  * Fix CI build on Ubuntu [#16, !18, !21, Claudio André, Philip Chimento]
+
 Version 1.51.2
 --------------
 
