@@ -307,9 +307,8 @@ JSPropertySpec gjs_union_proto_props[] = {
 };
 
 JSFunctionSpec gjs_union_proto_funcs[] = {
-    JS_FS("toString", to_string_func, 0, 0),
-    JS_FS_END
-};
+    JS_FN("toString", to_string_func, 0, 0),
+    JS_FS_END};
 
 bool
 gjs_define_union_class(JSContext       *context,

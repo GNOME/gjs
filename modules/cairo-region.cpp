@@ -212,20 +212,19 @@ JSPropertySpec gjs_cairo_region_proto_props[] = {
 };
 
 JSFunctionSpec gjs_cairo_region_proto_funcs[] = {
-    JS_FS("union", union_func, 0, 0),
-    JS_FS("subtract", subtract_func, 0, 0),
-    JS_FS("intersect", intersect_func, 0, 0),
-    JS_FS("xor", xor_func, 0, 0),
+    JS_FN("union", union_func, 0, 0),
+    JS_FN("subtract", subtract_func, 0, 0),
+    JS_FN("intersect", intersect_func, 0, 0),
+    JS_FN("xor", xor_func, 0, 0),
 
-    JS_FS("unionRectangle", union_rectangle_func, 0, 0),
-    JS_FS("subtractRectangle", subtract_rectangle_func, 0, 0),
-    JS_FS("intersectRectangle", intersect_rectangle_func, 0, 0),
-    JS_FS("xorRectangle", xor_rectangle_func, 0, 0),
+    JS_FN("unionRectangle", union_rectangle_func, 0, 0),
+    JS_FN("subtractRectangle", subtract_rectangle_func, 0, 0),
+    JS_FN("intersectRectangle", intersect_rectangle_func, 0, 0),
+    JS_FN("xorRectangle", xor_rectangle_func, 0, 0),
 
-    JS_FS("numRectangles", num_rectangles_func, 0, 0),
-    JS_FS("getRectangle", get_rectangle_func, 0, 0),
-    JS_FS_END
-};
+    JS_FN("numRectangles", num_rectangles_func, 0, 0),
+    JS_FN("getRectangle", get_rectangle_func, 0, 0),
+    JS_FS_END};
 
 JSFunctionSpec gjs_cairo_region_static_funcs[] = { JS_FS_END };
 

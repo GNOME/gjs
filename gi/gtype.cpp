@@ -145,9 +145,8 @@ JSPropertySpec gjs_gtype_proto_props[] = {
 
 /* Functions */
 JSFunctionSpec gjs_gtype_proto_funcs[] = {
-    JS_FS("toString", to_string_func, 0, 0),
-    JS_FS_END
-};
+    JS_FN("toString", to_string_func, 0, 0),
+    JS_FS_END};
 
 JSFunctionSpec gjs_gtype_static_funcs[] = { JS_FS_END };
 

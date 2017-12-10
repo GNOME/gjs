@@ -1977,11 +1977,11 @@ JSPropertySpec gjs_object_instance_proto_props[] = {
 };
 
 JSFunctionSpec gjs_object_instance_proto_funcs[] = {
-    JS_FS("_init", &ObjectBase::init, 0, 0),
-    JS_FS("connect", &ObjectBase::connect, 0, 0),
-    JS_FS("connect_after", &ObjectBase::connect_after, 0, 0),
-    JS_FS("emit", &ObjectBase::emit, 0, 0),
-    JS_FS("toString", &ObjectBase::to_string, 0, 0),
+    JS_FN("_init", &ObjectBase::init, 0, 0),
+    JS_FN("connect", &ObjectBase::connect, 0, 0),
+    JS_FN("connect_after", &ObjectBase::connect_after, 0, 0),
+    JS_FN("emit", &ObjectBase::emit, 0, 0),
+    JS_FN("toString", &ObjectBase::to_string, 0, 0),
     JS_FS_END};
 
 bool
