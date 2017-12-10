@@ -118,7 +118,6 @@ static JSLocaleCallbacks gjs_locale_callbacks =
 static void
 gjs_finalize_callback(JSFreeOp         *fop,
                       JSFinalizeStatus  status,
-                      bool              isCompartment,
                       void             *data)
 {
     auto js_context = static_cast<GjsContext *>(data);
@@ -193,16 +192,13 @@ on_enqueue_promise_job(JSContext       *cx,
     return _gjs_context_enqueue_job(gjs_context, callback);
 }
 
-static void
-on_promise_unhandled_rejection(JSContext                    *cx,
-                               JS::HandleObject              promise,
-                               PromiseRejectionHandlingState state,
-                               void                         *data)
-{
+static void on_promise_unhandled_rejection(
+    JSContext* cx, JS::HandleObject promise,
+    JS::PromiseRejectionHandlingState state, void* data) {
     auto gjs_context = static_cast<GjsContext *>(data);
     uint64_t id = JS::GetPromiseID(promise);
 
-    if (state == PromiseRejectionHandlingState::Handled) {
+    if (state == JS::PromiseRejectionHandlingState::Handled) {
         /* This happens when catching an exception from an await expression. */
         _gjs_context_unregister_unhandled_promise_rejection(gjs_context, id);
         return;
@@ -295,7 +291,7 @@ gjs_create_js_context(GjsContext *js_context)
 
     JS_AddFinalizeCallback(cx, gjs_finalize_callback, js_context);
     JS_SetGCCallback(cx, on_garbage_collect, js_context);
-    JS_SetLocaleCallbacks(cx, &gjs_locale_callbacks);
+    JS_SetLocaleCallbacks(JS_GetRuntime(cx), &gjs_locale_callbacks);
     JS::SetWarningReporter(cx, gjs_warning_reporter);
     JS::SetGetIncumbentGlobalCallback(cx, gjs_get_import_global);
     JS::SetEnqueuePromiseJobCallback(cx, on_enqueue_promise_job, js_context);
