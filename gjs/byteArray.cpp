@@ -809,19 +809,17 @@ static JSPropertySpec gjs_byte_array_proto_props[] = {
 };
 
 static JSFunctionSpec gjs_byte_array_proto_funcs[] = {
-    JS_FS("toString", to_string_func, 0, 0),
-    JS_FS("toGBytes", to_gbytes_func, 0, 0),
-    JS_FS_END
-};
+    JS_FN("toString", to_string_func, 0, 0),
+    JS_FN("toGBytes", to_gbytes_func, 0, 0),
+    JS_FS_END};
 
 static JSFunctionSpec *gjs_byte_array_static_funcs = nullptr;
 
 static JSFunctionSpec gjs_byte_array_module_funcs[] = {
-    JS_FS("fromString", from_string_func, 1, 0),
-    JS_FS("fromArray", from_array_func, 1, 0),
-    JS_FS("fromGBytes", from_gbytes_func, 1, 0),
-    JS_FS_END
-};
+    JS_FN("fromString", from_string_func, 1, 0),
+    JS_FN("fromArray", from_array_func, 1, 0),
+    JS_FN("fromGBytes", from_gbytes_func, 1, 0),
+    JS_FS_END};
 
 GJS_DEFINE_PROTO_FUNCS(byte_array)
 

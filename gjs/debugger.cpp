@@ -101,8 +101,8 @@ static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 // clang-format off
 static JSFunctionSpec debugger_funcs[] = {
-    JS_FS("quit", quit, 1, GJS_MODULE_PROP_FLAGS),
-    JS_FS("readline", do_readline, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("quit", quit, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("readline", do_readline, 1, GJS_MODULE_PROP_FLAGS),
     JS_FS_END
 };
 // clang-format on

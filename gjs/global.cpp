@@ -228,12 +228,11 @@ class GjsGlobal {
     };
 
     static constexpr JSFunctionSpec static_funcs[] = {
-        JS_FS("log", gjs_log, 1, GJS_MODULE_PROP_FLAGS),
-        JS_FS("logError", gjs_log_error, 2, GJS_MODULE_PROP_FLAGS),
-        JS_FS("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
-        JS_FS("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS),
-        JS_FS_END
-    };
+        JS_FN("log", gjs_log, 1, GJS_MODULE_PROP_FLAGS),
+        JS_FN("logError", gjs_log_error, 2, GJS_MODULE_PROP_FLAGS),
+        JS_FN("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
+        JS_FN("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS),
+        JS_FS_END};
 
 public:
 
