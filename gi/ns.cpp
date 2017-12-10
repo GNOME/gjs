@@ -155,15 +155,13 @@ ns_finalize(JSFreeOp *fop,
  * class have.
  */
 static const struct JSClassOps gjs_ns_class_ops = {
-    NULL,  /* addProperty */
-    NULL,  /* deleteProperty */
-    NULL,  /* getProperty */
-    NULL,  /* setProperty */
-    NULL,  /* enumerate */
+    nullptr,  // addProperty
+    nullptr,  // deleteProperty
+    nullptr,  // enumerate
+    nullptr,  // newEnumerate
     ns_resolve,
-    nullptr,  /* mayResolve */
-    ns_finalize
-};
+    nullptr,  // mayResolve
+    ns_finalize};
 
 struct JSClass gjs_ns_class = {
     "GIRepositoryNamespace",
