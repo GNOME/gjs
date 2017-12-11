@@ -1,6 +1,7 @@
 // -*- mode: js; indent-tabs-mode: nil -*-
 imports.gi.versions.Gtk = '3.0';
 
+const GLib = imports.gi.GLib;
 const Gtk = imports.gi.Gtk;
 
 describe('Access to destroyed GObject', () => {
@@ -16,26 +17,42 @@ describe('Access to destroyed GObject', () => {
     });
 
     it('Get property', () => {
-        expect(() => {
-            let title = destroyedWindow.title;
-        }).toThrowError(/Object Gtk.Window \(0x[a-f0-9]+\), has been already finalized. Impossible to get any property from it./)
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x*');
+
+        let title = destroyedWindow.title;
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectPropertyGet');
     });
 
     it('Set property', () => {
-        expect(() => {
-            destroyedWindow.title = 'I am dead';
-        }).toThrowError(/Object Gtk.Window \(0x[a-f0-9]+\), has been already finalized. Impossible to set any property to it./)
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x*');
+
+        destroyedWindow.title = 'I am dead';
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectPropertySet');
     });
 
     it('Access to getter method', () => {
-        expect(() => {
-            let title = destroyedWindow.get_title();
-        }).toThrowError(/Object Gtk.Window \(0x[a-f0-9]+\), has been already deallocated.*/)
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x*');
+
+        let title = destroyedWindow.get_title();
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectMethodGet');
     });
 
     it('Access to setter method', () => {
-        expect(() => {
-            destroyedWindow.set_title('I am dead');
-        }).toThrowError(/Object Gtk.Window \(0x[a-f0-9]+\), has been already deallocated.*/)
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x*');
+
+        destroyedWindow.set_title('I am dead');
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectMethodSet');
     });
 });

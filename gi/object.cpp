@@ -410,12 +410,13 @@ object_instance_get_prop(JSContext              *context,
         return true;
 
     if (priv->g_object_finalized) {
-        gjs_throw(context, "Object %s.%s (%p), has been already finalized. "
-                  "Impossible to get any property from it.",
-                  priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
-                  priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
-                  priv->gobj);
-        return false;
+        g_critical("Object %s.%s (%p), has been already finalized. "
+                   "Impossible to get any property from it.",
+                   priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
+                   priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
+                   priv->gobj);
+        gjs_dumpstack();
+        return true;
     }
 
     if (!get_prop_from_g_param(context, obj, priv, name, value_p))
@@ -529,13 +530,13 @@ object_instance_set_prop(JSContext              *context,
         return result.succeed();
 
     if (priv->g_object_finalized) {
-        gjs_throw(context, "Object %s.%s (%p), has been already finalized. "
-                  "Impossible to set any property to it.",
-                  priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
-                  priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
-                  priv->gobj);
-
-        return false;
+        g_critical("Object %s.%s (%p), has been already finalized. "
+                   "Impossible to set any property to it.",
+                   priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
+                   priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
+                   priv->gobj);
+        gjs_dumpstack();
+        return result.succeed();
     }
 
     ret = set_g_param_from_prop(context, priv, name, g_param_was_set, value_p, result);
@@ -776,13 +777,14 @@ object_instance_resolve(JSContext       *context,
     }
 
     if (priv->g_object_finalized) {
-        gjs_throw(context, "Object %s.%s (%p), has been already finalized. "
-                  "Impossible to resolve it.",
-                  priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
-                  priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
-                  priv->gobj);
+        g_critical("Object %s.%s (%p), has been already finalized. "
+                   "Impossible to resolve it.",
+                   priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
+                   priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
+                   priv->gobj);
+        gjs_dumpstack();
 
-        return false;
+        return true;
     }
 
     /* If we have no GIRepository information (we're a JS GObject subclass),
@@ -2174,15 +2176,15 @@ gjs_typecheck_object(JSContext       *context,
     }
 
     if (priv->g_object_finalized) {
-        gjs_throw(context,
-                  "Object %s.%s (%p), has been already deallocated - impossible to access to it. "
-                  "This might be caused by the fact that the object has been destroyed from C "
-                  "code using something such as destroy(), dispose(), or remove() vfuncs",
-                  priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
-                  priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
-                  priv->gobj);
+        g_critical("Object %s.%s (%p), has been already deallocated - impossible to access to it. "
+                   "This might be caused by the fact that the object has been destroyed from C "
+                   "code using something such as destroy(), dispose(), or remove() vfuncs",
+                   priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
+                   priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
+                   priv->gobj);
+        gjs_dumpstack();
 
-        return false;
+        return true;
     }
 
     g_assert(priv->gtype == G_OBJECT_TYPE(priv->gobj));
