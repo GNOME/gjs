@@ -139,4 +139,9 @@ describe('Gtk overrides', function () {
       expect(clipboard).not.toBe(primary);
       expect(clipboard).toBe(anotherClipboard);
     });
+
+    it('accepts null in place of GdkAtom as GDK_NONE', function () {
+      expect(() => Gtk.Clipboard.get('NONE')).toThrowError(/null/);
+      expect(() => Gtk.Clipboard.get(null)).toThrowError(/null/);
+    });
 });

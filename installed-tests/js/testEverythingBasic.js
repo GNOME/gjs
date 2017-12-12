@@ -697,5 +697,6 @@ describe('Life, the Universe and Everything', function () {
 
     it('presents GdkAtom as string', function () {
         expect(Gdk.Atom.intern('CLIPBOARD', false)).toBe('CLIPBOARD');
+        expect(Gdk.Atom.intern('NONE', false)).toBe(null);
     });
 });
