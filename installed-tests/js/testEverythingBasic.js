@@ -2,6 +2,8 @@ const Regress = imports.gi.Regress;
 const WarnLib = imports.gi.WarnLib;
 
 // We use Gio to have some objects that we know exist
+imports.gi.versions.Gdk = '3.0';
+const Gdk = imports.gi.Gdk;
 const GLib = imports.gi.GLib;
 const Gio = imports.gi.Gio;
 const GObject = imports.gi.GObject;
@@ -692,5 +694,10 @@ describe('Life, the Universe and Everything', function () {
             expect(() => Regress.TestSimpleBoxedA.prototype.copy.call(simpleBoxed))
                 .not.toThrow();
         });
+    });
+
+    it('presents GdkAtom as string', function () {
+        expect(Gdk.Atom.intern('CLIPBOARD', false)).toBe('CLIPBOARD');
+        expect(Gdk.Atom.intern('NONE', false)).toBe(null);
     });
 });

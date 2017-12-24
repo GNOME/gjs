@@ -124,4 +124,36 @@ describe('Gtk overrides', function () {
         GLib.test_assert_expected_messages_internal('Gjs', 'testGtk.js', 0,
             'Gtk overrides avoid crashing and print a stack trace');
     });
+
+    it('accepts string in place of GdkAtom', function () {
+        expect(() => Gtk.Clipboard.get(1)).toThrow();
+        expect(() => Gtk.Clipboard.get(true)).toThrow();
+        expect(() => Gtk.Clipboard.get(() => undefined)).toThrow();
+
+        const clipboard = Gtk.Clipboard.get('CLIPBOARD');
+        const primary = Gtk.Clipboard.get('PRIMARY');
+        const anotherClipboard = Gtk.Clipboard.get('CLIPBOARD');
+
+        expect(clipboard).toBeTruthy();
+        expect(primary).toBeTruthy();
+        expect(clipboard).not.toBe(primary);
+        expect(clipboard).toBe(anotherClipboard);
+    });
+
+    it('accepts null in place of GdkAtom as GDK_NONE', function () {
+        /**
+         * When you pass GDK_NONE (an atom, interned from the 'NONE' string)
+         * to Gtk.Clipboard.get(), it throws an error, mentioning null in
+         * its message.
+         */
+        expect(() => Gtk.Clipboard.get('NONE')).toThrowError(/null/);
+
+        /**
+         * Null is converted to GDK_NONE, so you get the same message. If you
+         * know an API function that accepts GDK_NONE without throwing, and
+         * returns something different when passed another atom, consider
+         * adding a less confusing example here.
+         */
+        expect(() => Gtk.Clipboard.get(null)).toThrowError(/null/);
+    });
 });
