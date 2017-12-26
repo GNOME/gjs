@@ -181,7 +181,7 @@ describe('Cairo', function () {
 
             cr = Gdk.cairo_create(da.window);
             expect(cr.save).toBeDefined();
-            expect(_ts(cr.getTarget())).toEqual('Surface');
+            expect(cr.getTarget()).toBeDefined();
         });
     });
 
