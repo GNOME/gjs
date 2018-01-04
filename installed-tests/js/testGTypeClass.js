@@ -53,6 +53,13 @@ describe('GType object', function () {
     });
 });
 
+describe('GType marshalling', function () {
+    it('marshals the invalid GType object into JS null', function () {
+        expect(GObject.type_from_name('NonexistentType')).toBeNull();
+        expect(GObject.type_parent(GObject.TYPE_STRING)).toBeNull();
+    });
+});
+
 describe('GType prototype object', function () {
     it('has no name', function () {
         expect(GIRepositoryGType.name).toBeNull();

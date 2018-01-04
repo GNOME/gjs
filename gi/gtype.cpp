@@ -155,6 +155,9 @@ JSObject *
 gjs_gtype_create_gtype_wrapper (JSContext *context,
                                 GType      gtype)
 {
+    g_assert(((void) "Attempted to create wrapper object for invalid GType",
+              gtype != 0));
+
     JSAutoRequest ar(context);
 
     auto heap_wrapper =
