@@ -55,4 +55,51 @@ describe('Access to destroyed GObject', () => {
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectMethodSet');
     });
+
+    it('Proto function connect', () => {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x*');
+
+        destroyedWindow.connect('foo-signal', () => {});
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectConnect');
+    });
+
+    it('Proto function connect_after', () => {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x*');
+
+        destroyedWindow.connect_after('foo-signal', () => {});
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectConnectAfter');
+    });
+
+    it('Proto function emit', () => {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x*');
+
+        destroyedWindow.emit('foo-signal');
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectEmit');
+    });
+
+    it('Proto function toString', () => {
+        expect(destroyedWindow.toString()).toMatch(
+            /\[object \(FINALIZED\) instance proxy GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+    });
+
+    it('Porto function toString before/after', () => {
+        var validWindow = new Gtk.Window({type: Gtk.WindowType.TOPLEVEL});
+
+        expect(validWindow.toString()).toMatch(
+            /\[object instance proxy GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+
+        validWindow.destroy();
+
+        expect(validWindow.toString()).toMatch(
+            /\[object \(FINALIZED\) instance proxy GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+    });
 });
