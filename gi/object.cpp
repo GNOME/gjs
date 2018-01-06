@@ -974,8 +974,11 @@ wrapped_gobj_dispose_notify(gpointer      data,
 
     priv->g_object_finalized = true;
 
-    priv->keep_alive.reset();
-    dissociate_list_remove(priv);
+    if (priv->keep_alive.rooted()) {
+        priv->keep_alive.reset();
+        dissociate_list_remove(priv);
+    }
+
     weak_pointer_list.erase(priv);
 #if DEBUG_DISPOSE
     gjs_debug(GJS_DEBUG_GOBJECT, "Wrapped GObject %p disposed", where_the_object_was);
@@ -1681,6 +1684,16 @@ real_connect_func(JSContext *context,
                   priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
         return false;
     }
+    if (priv->g_object_finalized) {
+        g_critical("Object %s.%s (%p), has been already deallocated - impossible to connect to signal. "
+                   "This might be caused by the fact that the object has been destroyed from C "
+                   "code using something such as destroy(), dispose(), or remove() vfuncs",
+                   priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
+                   priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
+                   priv->gobj);
+        gjs_dumpstack();
+        return true;
+    }
 
     if (argc != 2 || !argv[0].isString() || !JS::IsCallable(&argv[1].toObject())) {
         gjs_throw(context, "connect() takes two args, the signal name and the callback");
@@ -1766,6 +1779,17 @@ emit_func(JSContext *context,
                   priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
                   priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
         return false;
+    }
+
+    if (priv->g_object_finalized) {
+        g_critical("Object %s.%s (%p), has been already deallocated - impossible to emit signal. "
+                   "This might be caused by the fact that the object has been destroyed from C "
+                   "code using something such as destroy(), dispose(), or remove() vfuncs",
+                   priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
+                   priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
+                   priv->gobj);
+        gjs_dumpstack();
+        return true;
     }
 
     if (argc < 1 || !argv[0].isString()) {
@@ -1856,7 +1880,9 @@ to_string_func(JSContext *context,
         return false;  /* wrong class passed in */
     }
 
-    return _gjs_proxy_to_string_func(context, obj, "object",
+    return _gjs_proxy_to_string_func(context, obj,
+                                     (priv->g_object_finalized) ?
+                                      "object (FINALIZED)" : "object",
                                      (GIBaseInfo*)priv->info, priv->gtype,
                                      priv->gobj, rec.rval());
 }
