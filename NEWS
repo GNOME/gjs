@@ -1,3 +1,36 @@
+Version 1.51.4
+--------------
+
+- We welcomed code and documentation from several new contributors in this
+  release!
+
+- GJS will now log a warning when a GObject is accessed in Javascript code
+  after the underlying object has been freed in C. (This used to work most of
+  the time, but crash unpredictably.) We now prevent this situation which, is
+  usually caused by a memory management bug in the underlying C library.
+
+- APIs exposed through GObject Introspection that use the GdkAtom type are now
+  usable from Javascript. Previously these did not work. On the Javascript side,
+  a GdkAtom translates to a string, so there is no Gdk.Atom type that you can
+  access. The special atom GDK_NONE translates to null in Javascript, and there
+  is also no Gdk.NONE constant.
+
+- The GitLab CI tasks have continued to gradually become more and more
+  sophisticated.
+
+- Closed bugs and merge requests:
+
+  * Add checks for GObjects that have been finalized [#21, #23, !22, !27, Marco
+    Trevisan]
+  * Fail static analyzer if new warnings are found [!24, Claudio André]
+  * Run code coverage on GitLab [!20, Claudio André]
+  * Amend gtk.js and add gtk-application.js with suggestion [!32, Andy Holmes]
+  * Improve GdkAtom support that is blocking clipboard APIs [#14, !29, makepost]
+  * Test "Cairo context has methods when created from a C function" fails [#27,
+    !35, Valentín Barros]
+  * Various CI improvements [#6, !26, !34, Claudio André]
+  * Various maintenance [!23, !36, Philip Chimento]
+
 Version 1.51.3
 --------------
 
