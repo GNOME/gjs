@@ -1,3 +1,19 @@
+Version 1.50.3
+--------------
+
+- GJS will now log a warning when a GObject is accessed in Javascript code
+  after the underlying object has been freed in C. (This used to work most of
+  the time, but crash unpredictably.) We now prevent this situation which, is
+  usually caused by a memory management bug in the underlying C library.
+
+- Closed bugs and merge requests:
+
+  * Add checks for GObjects that have been finalized [#21, #23, !25, !28, !33,
+    Marco Trevisan]
+  * Test "Cairo context has methods when created from a C function" fails [#27,
+    !35, Valentín Barros]
+  * Various fixes from the master branch for rare crashes [Philip Chimento]
+
 Version 1.50.2
 --------------
 
