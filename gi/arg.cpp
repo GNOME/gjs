@@ -2705,11 +2705,18 @@ gjs_value_from_g_argument (JSContext             *context,
         break;
 
     case GI_TYPE_TAG_GTYPE:
-        {
-            JSObject *obj;
-            obj = gjs_gtype_create_gtype_wrapper(context, arg->v_ssize);
-            value_p.setObjectOrNull(obj);
-        }
+    {
+        GType gtype = arg->v_ssize;
+        if (gtype == 0)
+            return true;  /* value_p is set to JS null */
+
+        JS::RootedObject obj(context, gjs_gtype_create_gtype_wrapper(context, gtype));
+        if (!obj)
+            return false;
+
+        value_p.setObject(*obj);
+        return true;
+    }
         break;
 
     case GI_TYPE_TAG_UNICHAR:
