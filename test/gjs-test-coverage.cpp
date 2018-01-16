@@ -104,7 +104,7 @@ gjs_coverage_fixture_set_up(gpointer      fixture_data,
                             gconstpointer user_data)
 {
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
-    const char         *js_script = "\nvar f = function () { return 1; }\n";
+    const char* js_script = "var f = function () { return 1; }\n";
 
     char *tmp_output_dir_name = g_strdup("/tmp/gjs_coverage_tmp.XXXXXX");
     tmp_output_dir_name = mkdtemp(tmp_output_dir_name);
@@ -553,10 +553,8 @@ test_single_branch_coverage_written_to_coverage_data(gpointer      fixture_data,
                                           fixture->tmp_js_script,
                                           fixture->lcov_output);
 
-    const BranchLineData expected_branches[] = {
-        { 2, 0, TAKEN },
-        { 2, 1, NOT_EXECUTED }
-    };
+    const BranchLineData expected_branches[] = {{2, 0, TAKEN},
+                                                {2, 1, NOT_TAKEN}};
     const gsize expected_branches_len = G_N_ELEMENTS(expected_branches);
 
     /* There are two possible branches here, the second should be taken
@@ -659,10 +657,7 @@ test_branches_for_multiple_case_statements_fallthrough(gpointer      fixture_dat
                                           fixture->lcov_output);
 
     const BranchLineData expected_branches[] = {
-        { 3, 0, TAKEN },
-        { 3, 1, TAKEN },
-        { 3, 2, NOT_EXECUTED }
-    };
+        {3, 0, TAKEN}, {3, 1, TAKEN}, {3, 2, NOT_TAKEN}};
     const gsize expected_branches_len = G_N_ELEMENTS(expected_branches);
 
     /* There are two possible branches here, the second should be taken
@@ -1074,10 +1069,7 @@ test_single_line_hit_written_to_coverage_data(gpointer      fixture_data,
                                           fixture->tmp_js_script,
                                           fixture->lcov_output);
 
-    const LineCountIsMoreThanData data = {
-        2,  /* FIXME: line 1 is never hit */
-        0
-    };
+    const LineCountIsMoreThanData data = {1, 0};
 
     assert_coverage_data_matches_value_for_key(coverage_data_contents, "DA:",
                                                line_hit_count_is_more_than,
@@ -1110,11 +1102,7 @@ test_hits_on_multiline_if_cond(gpointer      fixture_data,
                                           fixture->lcov_output);
 
     /* Hits on all lines, including both lines with a condition (3 and 4) */
-    const LineCountIsMoreThanData data[] = {
-        { 2, 0 },
-        { 3, 0 },
-        { 4, 0 }
-    };
+    const LineCountIsMoreThanData data[] = {{1, 0}, {2, 0}, {3, 0}, {4, 0}};
 
     assert_coverage_data_matches_value_for_key(coverage_data_contents, "DA:",
                                                line_hit_count_is_more_than,
@@ -1228,9 +1216,8 @@ gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(gpointer fixt
     char *base_name = g_file_get_basename(fixture->base_fixture.tmp_js_script);
     char *base_name_without_extension = g_strndup(base_name,
                                                   strlen(base_name) - 3);
-    char *mock_script = g_strconcat("\nconst FirstScript = imports.",
-                                    base_name_without_extension,
-                                    ";\n",
+    char* mock_script = g_strconcat("const FirstScript = imports.",
+                                    base_name_without_extension, ";\n",
                                     "let a = FirstScript.f;\n"
                                     "\n",
                                     NULL);
@@ -1326,21 +1313,9 @@ test_correct_line_coverage_data_written_for_both_source_file_sections(void      
                                           fixture->second_js_source_file,
                                           fixture->base_fixture.lcov_output);
 
-    LineCountIsMoreThanData first_script_matcher = {
-        2,  /* FIXME: line 1 is never hit */
-        0
-    };
+    LineCountIsMoreThanData first_script_matcher = {1, 0};
 
-    LineCountIsMoreThanData second_script_matchers[] = {
-        {
-            2,  /* FIXME: line 1 is never hit */
-            0
-        },
-        {
-            3,  /* FIXME: line 1 is never hit */
-            0
-        }
-    };
+    LineCountIsMoreThanData second_script_matchers[] = {{1, 0}, {2, 0}};
 
     char *first_script_output_path =
         get_output_path_for_script_on_disk(fixture->base_fixture.tmp_js_script,
