@@ -108,7 +108,7 @@ JSNATIVE_TEST_FUNC_BEGIN(one_of_each_type)
     g_assert_cmpint(uintval, ==, 1);
     g_assert_cmpint(int64val, ==, 1);
     g_assert_cmpfloat(dblval, ==, 1.0);
-    g_assert_nonnull(objval);
+    g_assert_true(objval);
 JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(optional_args_all)
@@ -164,7 +164,7 @@ JSNATIVE_TEST_FUNC_BEGIN(one_of_each_nullable_type)
                                  "objval", &objval);
     g_assert_null(strval);
     g_assert_null(fileval);
-    g_assert_null(objval);
+    g_assert_false(objval);
 JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(unwind_free_test)
@@ -175,7 +175,7 @@ JSNATIVE_TEST_FUNC_BEGIN(unwind_free_test)
                                  "objval", &objval,
                                  "intval", &intval,
                                  "error", &uval);
-    g_assert_null(objval);
+    g_assert_false(objval);
 JSNATIVE_TEST_FUNC_END
 
 #define JSNATIVE_BAD_NULLABLE_TEST_FUNC(type, fmt)                 \
