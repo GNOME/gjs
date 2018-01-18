@@ -135,6 +135,9 @@ report "--coverage-prefix after script should succeed but give a warning"
 $gjs -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-output'
 report "--coverage-output after script should succeed but give a warning"
 rm -f foo/coverage.lcov
+$gjs -c 'imports.system.exit(0)' --profile=foo 2>&1 | grep -q 'Gjs-WARNING.*--profile'
+report "--profile after script should succeed but give a warning"
+rm -f foo
 
 # --version works
 $gjs --version >/dev/null
@@ -148,6 +151,16 @@ $gjs -c "$script" --version
 report "--version after -c should be passed to script"
 test -z "$($gjs -c "$script" --version)"
 report "--version after -c should not print anything"
+
+# --profile
+rm -f gjs-*.syscap foo.syscap
+$gjs -c 'imports.system.exit(0)' && test ! -f gjs-*.syscap
+report "no profiling data should be dumped without --profile"
+$gjs --profile -c 'imports.system.exit(0)' && test -f gjs-*.syscap
+report "--profile should dump profiling data to the default file name"
+$gjs --profile=foo.syscap -c 'imports.system.exit(0)' && test -f foo.syscap
+report "--profile with argument should dump profiling data to the named file"
+rm -f gjs-*.syscap foo.syscap
 
 # interpreter handles queued promise jobs correctly
 output=$($gjs promise.js)
