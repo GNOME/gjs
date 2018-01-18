@@ -113,7 +113,8 @@ check_stray_profile_arg(const char *option_name,
 {
     g_warning("You used the --profile option after the script on the GJS "
               "command line. Support for this will be removed in a future "
-              "version. Place the option before the script.");
+              "version. Place the option before the script or use the "
+              "GJS_ENABLE_PROFILER environment variable.");
     g_free(profile_output_path);
     return parse_profile_arg(option_name, value, data, error_out);
 }
@@ -307,6 +308,10 @@ main(int argc, char **argv)
         coverage = gjs_coverage_new(coverage_prefixes, js_context, output);
         g_object_unref(output);
     }
+
+    const char *env_profiler = g_getenv("GJS_ENABLE_PROFILER");
+    if (env_profiler)
+        enable_profiler = true;
 
     profiler = gjs_profiler_new(js_context);
 
