@@ -409,6 +409,9 @@ main(int    argc,
     if (!g_getenv("GJS_TEST_SKIP_TIMEOUT"))
         gjs_crash_after_timeout(60 * 7);
 
+    /* Avoid interference in the tests from stray environment variable */
+    g_unsetenv("GJS_ENABLE_PROFILER");
+
     g_test_init(&argc, &argv, NULL);
 
     g_test_add_func("/gjs/context/construct/destroy", gjstest_test_func_gjs_context_construct_destroy);

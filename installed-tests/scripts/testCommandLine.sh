@@ -6,6 +6,9 @@ else
     gjs="$LOG_COMPILER $LOG_FLAGS gjs-console"
 fi
 
+# Avoid interference in the profiler tests from stray environment variable
+unset GJS_ENABLE_PROFILER
+
 # This JS script should exit immediately with code 42. If that is not working,
 # then it will exit after 3 seconds as a fallback, with code 0.
 cat <<EOF >exit.js
@@ -161,6 +164,9 @@ report "--profile should dump profiling data to the default file name"
 $gjs --profile=foo.syscap -c 'imports.system.exit(0)' && test -f foo.syscap
 report "--profile with argument should dump profiling data to the named file"
 rm -f gjs-*.syscap foo.syscap
+GJS_ENABLE_PROFILER=1 $gjs -c 'imports.system.exit(0)' && test -f gjs-*.syscap
+report "GJS_ENABLE_PROFILER=1 should enable the profiler"
+rm -f gjs-*.syscap
 
 # interpreter handles queued promise jobs correctly
 output=$($gjs promise.js)
