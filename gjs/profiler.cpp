@@ -338,10 +338,8 @@ gjs_profiler_start (GjsProfiler *self)
         return;
 
     GjsAutoChar path = g_strdup(self->filename);
-    if (!path) {
-        GjsAutoChar filename = g_strdup_printf("gjs-profile-%jd", intmax_t(getpid()));
-        path = g_build_filename(g_get_tmp_dir(), filename.get(), nullptr);
-    }
+    if (!path)
+        path = g_strdup_printf("gjs-%jd.syscap", intmax_t(getpid()));
 
     self->capture = sp_capture_writer_new(path, 0);
 
