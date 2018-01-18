@@ -317,19 +317,14 @@ main(int argc, char **argv)
 
     if (interactive_mode && enable_profiler) {
         g_message("Profiler disabled in interactive mode.");
-    } else if (!interactive_mode) {
+    } else if (enable_profiler) {
         profiler = gjs_profiler_new(js_context);
 
-        /* Allow SIGUSR2 (with sigaction param) to enable/disable */
-        gjs_profiler_setup_signals();
-
-        if (enable_profiler) {
-            if (profile_output_path) {
-                gjs_profiler_set_filename(profiler, profile_output_path);
-                g_free(profile_output_path);
-            }
-            gjs_profiler_start(profiler);
+        if (profile_output_path) {
+            gjs_profiler_set_filename(profiler, profile_output_path);
+            g_free(profile_output_path);
         }
+        gjs_profiler_start(profiler);
     }
 
     /* prepare command line arguments */
