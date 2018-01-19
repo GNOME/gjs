@@ -72,6 +72,11 @@ report_xfail () {
     fi
 }
 
+skip () {
+    total=$((total + 1))
+    echo "ok $total - $1 # SKIP $2"
+}
+
 # Test that System.exit() works in gjs-console
 $gjs -c 'imports.system.exit(0)'
 report "System.exit(0) should exit successfully"
@@ -156,14 +161,23 @@ report "--version after -c should not print anything"
 rm -f gjs-*.syscap foo.syscap
 $gjs -c 'imports.system.exit(0)' && test ! -f gjs-*.syscap
 report "no profiling data should be dumped without --profile"
-$gjs --profile -c 'imports.system.exit(0)' && test -f gjs-*.syscap
-report "--profile should dump profiling data to the default file name"
-$gjs --profile=foo.syscap -c 'imports.system.exit(0)' && test -f foo.syscap
-report "--profile with argument should dump profiling data to the named file"
-rm -f gjs-*.syscap foo.syscap
-GJS_ENABLE_PROFILER=1 $gjs -c 'imports.system.exit(0)' && test -f gjs-*.syscap
-report "GJS_ENABLE_PROFILER=1 should enable the profiler"
-rm -f gjs-*.syscap
+
+# Skip some tests if built without profiler support
+if gjs --profile -c 1 2>&1 | grep -q 'Gjs-Message.*Profiler is disabled'; then
+    reason="profiler is disabled"
+    skip "--profile should dump profiling data to the default file name" "$reason"
+    skip "--profile with argument should dump profiling data to the named file" "$reason"
+    skip "GJS_ENABLE_PROFILER=1 should enable the profiler" "$reason"
+else
+    $gjs --profile -c 'imports.system.exit(0)' && test -f gjs-*.syscap
+    report "--profile should dump profiling data to the default file name"
+    $gjs --profile=foo.syscap -c 'imports.system.exit(0)' && test -f foo.syscap
+    report "--profile with argument should dump profiling data to the named file"
+    rm -f gjs-*.syscap foo.syscap
+    GJS_ENABLE_PROFILER=1 $gjs -c 'imports.system.exit(0)' && test -f gjs-*.syscap
+    report "GJS_ENABLE_PROFILER=1 should enable the profiler"
+    rm -f gjs-*.syscap
+fi
 
 # interpreter handles queued promise jobs correctly
 output=$($gjs promise.js)

@@ -77,6 +77,10 @@ endif
 # reasons
 libgjs_la_SOURCES = $(gjs_srcs)
 
+if ENABLE_PROFILER
+libgjs_la_SOURCES += $(gjs_sysprof_srcs)
+endif
+
 # Also, these files used to be a separate library
 libgjs_private_source_files = $(gjs_private_srcs)
 
