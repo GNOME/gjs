@@ -212,6 +212,8 @@ CPPCHECK=cppcheck
 ### cppcheck static code analysis
 #
 cppcheck:
-	$(CPPCHECK) --enable=warning,performance,portability,information,missingInclude --force -q $(top_srcdir) -I $(top_builddir)
+	$(CPPCHECK) --inline-suppr \
+		--enable=warning,performance,portability,information,missingInclude \
+		--force -q $(top_srcdir) -I $(top_builddir)
 
 -include $(top_srcdir)/git.mk
