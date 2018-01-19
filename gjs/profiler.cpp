@@ -288,6 +288,15 @@ gjs_profiler_sigprof(int        signum,
                   "in an unsigned short");
 
     int64_t now = g_get_monotonic_time() * 1000L;
+
+    /* NOTE: cppcheck warns that alloca() is not recommended since it can
+     * easily overflow the stack; however, dynamic allocation is not an option
+     * here since we are in a signal handler.
+     * Another option would be to always allocate G_N_ELEMENTS(self->stack),
+     * but that is by definition at least as large of an allocation and
+     * therefore is more likely to overflow.
+     */
+    // cppcheck-suppress allocaCalled
     SpCaptureAddress *addrs = static_cast<SpCaptureAddress *>(alloca(sizeof *addrs * depth));
 
     for (size_t ix = 0; ix < depth; ix++) {
