@@ -39,7 +39,9 @@
 
 #include "jsapi-util.h"
 #include "profiler.h"
-#include "util/sp-capture-writer.h"
+#ifdef ENABLE_PROFILER
+# include "util/sp-capture-writer.h"
+#endif
 
 /*
  * This is mostly non-exciting code wrapping the builtin Profiler in
@@ -75,6 +77,7 @@
 G_DEFINE_POINTER_TYPE(GjsProfiler, gjs_profiler)
 
 struct _GjsProfiler {
+#ifdef ENABLE_PROFILER
     /* The stack for the JSContext profiler to use for current stack
      * information while executing. We will look into this during our
      * SIGPROF handler.
@@ -86,10 +89,12 @@ struct _GjsProfiler {
 
     /* Buffers and writes our sampled stacks */
     SpCaptureWriter *capture;
+#endif  /* ENABLE_PROFILER */
 
     /* The filename to write to */
     char *filename;
 
+#ifdef ENABLE_PROFILER
     /* Our POSIX timer to wakeup SIGPROF */
     timer_t timer;
 
@@ -101,6 +106,7 @@ struct _GjsProfiler {
 
     /* Cached copy of our pid */
     GPid pid;
+#endif  /* ENABLE_PROFILER */
 
     /* If we are currently sampling */
     unsigned running : 1;
@@ -108,6 +114,7 @@ struct _GjsProfiler {
 
 static GjsProfiler *current_profiler;
 
+#ifdef ENABLE_PROFILER
 /*
  * gjs_profiler_extract_maps:
  *
@@ -163,6 +170,7 @@ gjs_profiler_extract_maps(GjsProfiler *self)
 
     return true;
 }
+#endif  /* ENABLE_PROFILER */
 
 /**
  * gjs_profiler_new:
@@ -191,12 +199,13 @@ gjs_profiler_new(GjsContext *context)
     g_assert(((void)"You can ony create one profiler at a time.",
               !current_profiler));
 
-    auto cx = static_cast<JSContext *>(gjs_context_get_native_context(context));
 
     GjsProfiler *self = g_new0(GjsProfiler, 1);
-    self->cx = cx;
 
+#ifdef ENABLE_PROFILER
+    self->cx = static_cast<JSContext *>(gjs_context_get_native_context(context));
     self->pid = getpid();
+#endif
 
     current_profiler = self;
 
@@ -224,7 +233,9 @@ gjs_profiler_free(GjsProfiler *self)
     current_profiler = nullptr;
 
     g_clear_pointer(&self->filename, g_free);
+#ifdef ENABLE_PROFILER
     g_clear_pointer(&self->capture, sp_capture_writer_unref);
+#endif
     g_free(self);
 }
 
@@ -244,6 +255,8 @@ gjs_profiler_is_running(GjsProfiler *self)
 
     return self->running;
 }
+
+#ifdef ENABLE_PROFILER
 
 /* Run from a signal handler */
 static inline unsigned
@@ -322,6 +335,8 @@ gjs_profiler_sigprof(int        signum,
         gjs_profiler_stop(self);
 }
 
+#endif  /* ENABLE_PROFILER */
+
 /**
  * gjs_profiler_start:
  * @self: A #GjsProfiler
@@ -341,15 +356,17 @@ void
 gjs_profiler_start(GjsProfiler *self)
 {
     g_return_if_fail(self);
+    if (self->running)
+        return;
+
+#ifdef ENABLE_PROFILER
+
     g_return_if_fail(!self->capture);
 
     struct sigaction sa = {{ 0 }};
     struct sigevent sev = {{ 0 }};
     struct itimerspec its = {{ 0 }};
     struct itimerspec old_its;
-
-    if (self->running)
-        return;
 
     GjsAutoChar path = g_strdup(self->filename);
     if (!path)
@@ -425,6 +442,13 @@ gjs_profiler_start(GjsProfiler *self)
     js::EnableContextProfilingStack(self->cx, true);
 
     g_message("Profiler started");
+
+#else  /* !ENABLE_PROFILER */
+
+    self->running = true;
+    g_message("Profiler is disabled. Recompile with --enable-profiler to use.");
+
+#endif  /* ENABLE_PROFILER */
 }
 
 /**
@@ -446,13 +470,14 @@ gjs_profiler_stop(GjsProfiler *self)
 {
     /* Note: can be called from a signal handler */
 
-    struct itimerspec its = {{ 0 }};
-
     g_assert(self);
 
     if (!self->running)
         return;
 
+#ifdef ENABLE_PROFILER
+
+    struct itimerspec its = {{ 0 }};
     timer_settime(self->timer, 0, &its, nullptr);
     timer_delete(self->timer);
 
@@ -464,9 +489,11 @@ gjs_profiler_stop(GjsProfiler *self)
     g_clear_pointer(&self->capture, sp_capture_writer_unref);
 
     self->stack_depth = 0;
-    self->running = false;
-
     g_message("Profiler stopped");
+
+#endif  /* ENABLE_PROFILER */
+
+    self->running = false;
 }
 
 static gboolean
@@ -497,12 +524,20 @@ gjs_profiler_sigusr2(void *unused)
 void
 gjs_profiler_setup_signals(void)
 {
+#ifdef ENABLE_PROFILER
+
     static bool initialized = false;
 
     if (!initialized) {
         initialized = true;
         g_unix_signal_add(SIGUSR2, gjs_profiler_sigusr2, nullptr);
     }
+
+#else  /* !ENABLE_PROFILER */
+
+    g_message("Profiler is disabled. Not setting up signals.");
+
+#endif  /* ENABLE_PROFILER */
 }
 
 /**
@@ -520,6 +555,8 @@ gjs_profiler_setup_signals(void)
 bool
 gjs_profiler_chain_signal(siginfo_t *info)
 {
+#ifdef ENABLE_PROFILER
+
     if (info) {
         if (info->si_signo == SIGPROF) {
             gjs_profiler_sigprof(SIGPROF, info, nullptr);
@@ -531,6 +568,8 @@ gjs_profiler_chain_signal(siginfo_t *info)
             return true;
         }
     }
+
+#endif  /* ENABLE_PROFILER */
 
     return false;
 }
