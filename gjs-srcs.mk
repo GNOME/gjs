@@ -86,9 +86,6 @@ gjs_srcs =				\
 	util/log.h			\
 	util/misc.cpp			\
 	util/misc.h			\
-	util/sp-capture-types.h		\
-	util/sp-capture-writer.c	\
-	util/sp-capture-writer.h	\
 	$(NULL)
 
 # These files were part of a separate library
@@ -106,4 +103,10 @@ gjs_gtk_private_srcs =			\
 
 gjs_console_srcs =	\
 	gjs/console.cpp	\
+	$(NULL)
+
+gjs_sysprof_srcs =			\
+	util/sp-capture-types.h		\
+	util/sp-capture-writer.c	\
+	util/sp-capture-writer.h	\
 	$(NULL)

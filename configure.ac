@@ -30,6 +30,7 @@ PKG_PROG_PKG_CONFIG
 PKG_INSTALLDIR
 
 AC_LANG([C++])
+AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CXX
 AX_CXX_COMPILE_STDCXX_11
 
@@ -104,6 +105,18 @@ AS_IF([test x$have_gtk = xyes], [
   AC_DEFINE([ENABLE_GTK],[1],[Define if you want to build with GTK+ support])
 ], [AS_IF([test "x$with_gtk" = "xyes"],
   [AC_MSG_ERROR([GTK requested but not found])])])
+
+# Some Linux APIs required for profiler
+AC_ARG_ENABLE([profiler],
+  [AS_HELP_STRING([--disable-profiler], [Don't build profiler])])
+AS_IF([test x$enable_profiler != xno], [
+  gl_TIMER_TIME
+  AS_IF([test x$ac_cv_func_timer_settime = xno],
+    [AC_MSG_ERROR([The profiler is currently only supported on Linux.
+Configure with --disable-profiler to skip it on other platforms.])])
+  AC_DEFINE([ENABLE_PROFILER], [1], [Define if the profiler should be built.])
+])
+AM_CONDITIONAL([ENABLE_PROFILER], [test x$enable_profiler != xno])
 
 PKG_CHECK_VAR([GI_DATADIR], [gobject-introspection-1.0], [gidatadir])
 
@@ -309,6 +322,8 @@ AC_MSG_RESULT([
 	readline:		${ac_cv_header_readline_readline_h}
 	dtrace:			${enable_dtrace:-no}
 	systemtap:		${enable_systemtap:-no}
+	Profiler:		${enable_profiler:-yes}
+	timer_settime():	${ac_cv_func_timer_settime}
 	Run tests under:	${TEST_MSG}
 	Code coverage:		${enable_code_coverage}
 ])
