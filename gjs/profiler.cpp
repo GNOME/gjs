@@ -41,7 +41,9 @@
 
 #include "jsapi-util.h"
 #include "profiler.h"
-#include "util/sp-capture-writer.h"
+#ifdef ENABLE_PROFILER
+# include "util/sp-capture-writer.h"
+#endif
 
 /*
  * This is mostly non-exciting code wrapping the builtin Profiler in
@@ -86,14 +88,18 @@ struct _GjsProfiler {
     /* The context being profiled */
     JSContext *cx;
 
+#ifdef ENABLE_PROFILER
     /* Buffers and writes our sampled stacks */
     SpCaptureWriter *capture;
+#endif
 
     /* The filename to write to */
     char *filename;
 
+#ifdef ENABLE_PROFILER
     /* Our POSIX timer to wakeup SIGPROF */
     timer_t timer;
+#endif
 
     /* The depth of @stack. This value may be larger than the
      * number of elements in stack, and so you MUST ensure you
@@ -110,6 +116,7 @@ struct _GjsProfiler {
 
 static GjsProfiler *current_profiler;
 
+#ifdef ENABLE_PROFILER
 /*
  * gjs_profiler_extract_maps:
  *
@@ -165,6 +172,7 @@ gjs_profiler_extract_maps(GjsProfiler *self)
 
     return true;
 }
+#endif  /* ENABLE_PROFILER */
 
 /**
  * gjs_profiler_new:
@@ -221,7 +229,9 @@ gjs_profiler_free(GjsProfiler *self)
         gjs_profiler_stop(self);
 
     g_clear_pointer(&self->filename, g_free);
+#ifdef ENABLE_PROFILER
     g_clear_pointer(&self->capture, sp_capture_writer_unref);
+#endif
     g_free(self);
 }
 
@@ -241,6 +251,8 @@ gjs_profiler_is_running(GjsProfiler *self)
 
     return self->running;
 }
+
+#ifdef ENABLE_PROFILER
 
 /* Run from a signal handler */
 static inline unsigned
@@ -532,6 +544,49 @@ gjs_profiler_chain_signal(siginfo_t *info)
 
     return FALSE;
 }
+
+#else  /* ENABLE_PROFILER */
+
+void
+gjs_profiler_start(GjsProfiler *self)
+{
+    g_return_if_fail(self);
+
+    if (self->running)
+        return;
+
+    self->running = true;
+
+    g_message("Profiler is disabled. Recompile with --enable-profiler to use.");
+}
+
+void
+gjs_profiler_stop(GjsProfiler *self)
+{
+    g_assert(self);
+
+    if (!self->running)
+        return;
+
+    if (self == current_profiler)
+        current_profiler = nullptr;
+
+    self->running = false;
+}
+
+void
+gjs_profiler_setup_signals(void)
+{
+    g_message("Profiler is disabled. Not setting up signals.");
+}
+
+gboolean
+gjs_profiler_chain_signal(siginfo_t *info)
+{
+    return FALSE;
+}
+
+#endif  /* ENABLE_PROFILER */
 
 /**
  * gjs_profiler_set_filename:
