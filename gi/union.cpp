@@ -129,6 +129,19 @@ union_resolve(JSContext       *context,
     return true;
 }
 
+static bool
+union_may_resolve(const JSAtomState& names,
+                  jsid               id,
+                  JSObject          *maybe_obj)
+{
+    if (!JSID_IS_STRING(id))
+        return false;
+    JSFlatString *str = JSID_TO_FLAT_STRING(id);
+    return !(JS_FlatStringEqualsAscii(str, "constructor") ||
+             JS_FlatStringEqualsAscii(str, "prototype") ||
+             JS_FlatStringEqualsAscii(str, "toString"));
+}
+
 static void*
 union_new(JSContext       *context,
           JS::HandleObject obj, /* "this" for constructor */
@@ -294,7 +307,7 @@ static const struct JSClassOps gjs_union_class_ops = {
     NULL,  /* setProperty */
     NULL,  /* enumerate */
     union_resolve,
-    nullptr,  /* mayResolve */
+    union_may_resolve,
     union_finalize
 };
 
