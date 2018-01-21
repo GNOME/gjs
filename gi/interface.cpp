@@ -192,7 +192,7 @@ static const struct JSClassOps gjs_interface_class_ops = {
     nullptr,  // enumerate
     nullptr,  // newEnumerate
     interface_resolve,
-    nullptr,  // mayResolve
+    gjs_dynamic_class_default_may_resolve,
     interface_finalize};
 
 struct JSClass gjs_interface_class = {

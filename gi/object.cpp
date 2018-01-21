@@ -999,6 +999,32 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
     return true;
 }
 
+bool ObjectBase::may_resolve(const JSAtomState& names, jsid id,
+    JSObject *maybe_obj) {
+    if (!JSID_IS_STRING(id))
+        return false;
+    JSFlatString *str = JSID_TO_FLAT_STRING(id);
+
+    if (!maybe_obj)
+        return false;
+
+    auto* priv = ObjectBase::for_js_nocheck(maybe_obj);
+    if (!priv->is_prototype())
+        return false;
+
+    return priv->to_prototype()->may_resolve_impl(str);
+}
+
+bool ObjectPrototype::may_resolve_impl(JSFlatString *str) {
+    return !(JS_FlatStringEqualsAscii(str, "_init") ||
+             JS_FlatStringEqualsAscii(str, "connect") ||
+             JS_FlatStringEqualsAscii(str, "connectAfter") ||
+             JS_FlatStringEqualsAscii(str, "emit") ||
+             JS_FlatStringEqualsAscii(str, "constructor") ||
+             JS_FlatStringEqualsAscii(str, "prototype") ||
+             JS_FlatStringEqualsAscii(str, "toString"));
+}
+
 /* Set properties from args to constructor (args[0] is supposed to be
  * a hash) */
 bool ObjectPrototype::props_to_g_parameters(JSContext* context,
@@ -1981,7 +2007,7 @@ static const struct JSClassOps gjs_object_class_ops = {
     nullptr,  // enumerate
     nullptr,  // newEnumerate
     &ObjectBase::resolve,
-    nullptr,  // mayResolve
+    &ObjectBase::may_resolve,
     &ObjectBase::finalize,
     NULL,
     NULL,

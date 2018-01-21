@@ -149,7 +149,7 @@ static const struct JSClassOps gjs_param_class_ops = {
     nullptr,  // enumerate
     nullptr,  // newEnumerate
     param_resolve,
-    nullptr,  // mayResolve
+    gjs_dynamic_class_default_may_resolve,
     param_finalize};
 
 struct JSClass gjs_param_class = {
