@@ -182,6 +182,19 @@ boxed_resolve(JSContext       *context,
     return true;
 }
 
+static bool
+boxed_may_resolve(const JSAtomState& names,
+                  jsid               id,
+                  JSObject          *maybe_obj)
+{
+    if (!JSID_IS_STRING(id))
+        return false;
+    JSFlatString *str = JSID_TO_FLAT_STRING(id);
+    return !(JS_FlatStringEqualsAscii(str, "constructor") ||
+             JS_FlatStringEqualsAscii(str, "prototype") ||
+             JS_FlatStringEqualsAscii(str, "toString"));
+}
+
 /* Check to see if JS::Value passed in is another Boxed object of the same,
  * and if so, retrieves the Boxed private structure for it.
  */
@@ -918,7 +931,7 @@ static const struct JSClassOps gjs_boxed_class_ops = {
     NULL,  /* setProperty */
     NULL,  /* enumerate */
     boxed_resolve,
-    nullptr,  /* mayResolve */
+    boxed_may_resolve,
     boxed_finalize,
     NULL,  /* call */
     NULL,  /* hasInstance */
