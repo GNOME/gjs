@@ -383,6 +383,19 @@ fundamental_instance_resolve(JSContext       *context,
 }
 
 static bool
+fundamental_instance_may_resolve(const JSAtomState& names,
+                                 jsid               id,
+                                 JSObject          *maybe_obj)
+{
+    if (!JSID_IS_STRING(id))
+        return false;
+    JSFlatString *str = JSID_TO_FLAT_STRING(id);
+    return !(JS_FlatStringEqualsAscii(str, "constructor") ||
+             JS_FlatStringEqualsAscii(str, "prototype") ||
+             JS_FlatStringEqualsAscii(str, "toString"));
+}
+
+static bool
 fundamental_invoke_constructor(FundamentalInstance        *priv,
                                JSContext                  *context,
                                JS::HandleObject            obj,
@@ -551,7 +564,7 @@ static const struct JSClassOps gjs_fundamental_class_ops = {
     NULL,  /* setProperty */
     NULL,  /* enumerate */
     fundamental_instance_resolve,
-    nullptr,  /* mayResolve */
+    fundamental_instance_may_resolve,
     fundamental_finalize,
     NULL,  /* call */
     NULL,  /* hasInstance */

@@ -758,15 +758,15 @@ importer_resolve(JSContext        *context,
                  bool             *resolved)
 {
     Importer *priv;
-    jsid module_init_name;
 
     if (!JSID_IS_STRING(id)) {
         *resolved = false;
         return true;
     }
 
-    module_init_name = gjs_context_get_const_string(context, GJS_STRING_MODULE_INIT);
-    if (id == module_init_name) {
+    if (id == gjs_context_get_const_string(context, GJS_STRING_MODULE_INIT) ||
+        id == gjs_context_get_const_string(context, GJS_STRING_CONSTRUCTOR) ||
+        id == gjs_context_get_const_string(context, GJS_STRING_PROTOTYPE)) {
         *resolved = false;
         return true;
     }

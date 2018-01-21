@@ -60,6 +60,9 @@ gjs_init_class_dynamic(JSContext              *context,
     /* Without a name, JS_NewObject fails */
     g_assert (clasp->name != NULL);
 
+    g_assert(((void) "If you have a resolve hook, you also need mayResolve",
+              (clasp->cOps->resolve == nullptr) == (clasp->cOps->mayResolve == nullptr)));
+
     /* gjs_init_class_dynamic only makes sense for instantiable classes,
        use JS_InitClass for static classes like Math */
     g_assert (constructor_native != NULL);
@@ -191,4 +194,31 @@ gjs_construct_object_dynamic(JSContext                  *context,
         return NULL;
 
     return JS_New(context, constructor, args);
+}
+
+/**
+ * gjs_dynamic_class_default_may_resolve:
+ * @names: SpiderMonkey internal, unused
+ * @id: property ID being queried
+ * @maybe_obj: object being queried, or nullptr if not known
+ *
+ * If you have a resolve hook on a dynamic class, you also need a mayResolve
+ * hook. Otherwise, when gjs_init_class_dynamic() calls
+ * JS_LinkConstructorAndPrototype(), the resolve hook will be called to resolve
+ * the "constructor" and "prototype" properties first.
+ *
+ * If you don't have any other predefined properties or methods that you want
+ * to prevent from being resolved, you can just use this function as the
+ * mayResolve hook.
+ */
+bool
+gjs_dynamic_class_default_may_resolve(const JSAtomState& names,
+                                      jsid               id,
+                                      JSObject          *maybe_obj)
+{
+    if (!JSID_IS_STRING(id))
+        return false;
+    JSFlatString *str = JSID_TO_FLAT_STRING(id);
+    return !(JS_FlatStringEqualsAscii(str, "constructor") ||
+             JS_FlatStringEqualsAscii(str, "prototype"));
 }

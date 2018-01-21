@@ -881,6 +881,23 @@ object_instance_resolve(JSContext       *context,
     return true;
 }
 
+static bool
+object_instance_may_resolve(const JSAtomState& names,
+                            jsid               id,
+                            JSObject          *maybe_obj)
+{
+    if (!JSID_IS_STRING(id))
+        return false;
+    JSFlatString *str = JSID_TO_FLAT_STRING(id);
+    return !(JS_FlatStringEqualsAscii(str, "_init") ||
+             JS_FlatStringEqualsAscii(str, "conntect") ||
+             JS_FlatStringEqualsAscii(str, "connectAfter") ||
+             JS_FlatStringEqualsAscii(str, "emit") ||
+             JS_FlatStringEqualsAscii(str, "constructor") ||
+             JS_FlatStringEqualsAscii(str, "prototype") ||
+             JS_FlatStringEqualsAscii(str, "toString"));
+}
+
 /* Set properties from args to constructor (argv[0] is supposed to be
  * a hash)
  * The GParameter elements in the passed-in vector must be unset by the caller,
@@ -1876,7 +1893,7 @@ static const struct JSClassOps gjs_object_class_ops = {
     object_instance_set_prop,
     NULL,  /* enumerate */
     object_instance_resolve,
-    nullptr,  /* mayResolve */
+    object_instance_may_resolve,
     object_instance_finalize,
     NULL,
     NULL,

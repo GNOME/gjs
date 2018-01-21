@@ -55,6 +55,10 @@ JSObject *gjs_construct_object_dynamic(JSContext                  *cx,
                                        JS::HandleObject            proto,
                                        const JS::HandleValueArray& args);
 
+bool gjs_dynamic_class_default_may_resolve(const JSAtomState& names,
+                                           jsid               id,
+                                           JSObject          *maybe_obj);
+
 /*
  * Helper methods to access private data:
  *
