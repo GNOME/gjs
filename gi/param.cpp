@@ -150,7 +150,7 @@ static const struct JSClassOps gjs_param_class_ops = {
     NULL,  /* setProperty */
     NULL,  /* enumerate */
     param_resolve,
-    nullptr,  /* mayResolve */
+    gjs_dynamic_class_default_may_resolve,
     param_finalize
 };
 

@@ -193,7 +193,7 @@ static const struct JSClassOps gjs_interface_class_ops = {
     NULL,  /* setProperty */
     NULL,  /* enumerate */
     interface_resolve,
-    nullptr,  /* mayResolve */
+    gjs_dynamic_class_default_may_resolve,
     interface_finalize
 };
 
