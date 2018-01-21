@@ -110,11 +110,8 @@ gjs_define_static_methods(JSContext       *context,
     return true;
 }
 
-/*
- * The *objp out parameter, on success, should be null to indicate that id
- * was not resolved; and non-null, referring to obj or one of its prototypes,
- * if id was resolved.
- */
+/* The *resolved out parameter, on success, should be false to indicate that id
+ * was not resolved; and true if id was resolved. */
 static bool
 boxed_resolve(JSContext       *context,
               JS::HandleObject obj,

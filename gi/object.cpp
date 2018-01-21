@@ -708,11 +708,8 @@ is_gobject_field_name(GIObjectInfo *info,
     return true;
 }
 
-/*
- * The *objp out parameter, on success, should be null to indicate that id
- * was not resolved; and non-null, referring to obj or one of its prototypes,
- * if id was resolved.
- */
+/* The *resolved out parameter, on success, should be false to indicate that id
+ * was not resolved; and true if id was resolved. */
 static bool
 object_instance_resolve(JSContext       *context,
                         JS::HandleObject obj,
