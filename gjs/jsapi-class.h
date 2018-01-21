@@ -64,6 +64,9 @@ bool gjs_define_property_dynamic(JSContext       *cx,
                                  JS::HandleValue  private_slot,
                                  unsigned         flags);
 
+bool gjs_dynamic_class_default_may_resolve(const JSAtomState& names, jsid id,
+    JSObject *maybe_obj);
+
 /*
  * Helper methods to access private data:
  *
