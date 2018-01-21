@@ -186,14 +186,16 @@ interface_has_instance_func(JSContext *cx,
     return true;
 }
 
+// clang-format off
 static const struct JSClassOps gjs_interface_class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
     nullptr,  // enumerate
     nullptr,  // newEnumerate
     interface_resolve,
-    nullptr,  // mayResolve
+    gjs_dynamic_class_default_may_resolve,
     interface_finalize};
+// clang-format on
 
 struct JSClass gjs_interface_class = {
     "GObject_Interface",

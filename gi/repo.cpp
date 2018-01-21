@@ -199,6 +199,17 @@ repo_resolve(JSContext       *context,
     return true;
 }
 
+static bool repo_may_resolve(const JSAtomState& names, jsid id,
+                             JSObject* maybe_obj) {
+    if (!JSID_IS_STRING(id))
+        return false;
+    JSFlatString* str = JSID_TO_FLAT_STRING(id);
+    return !(JS_FlatStringEqualsAscii(str, "versions") ||
+             JS_FlatStringEqualsAscii(str, "valueOf") ||
+             JS_FlatStringEqualsAscii(str, "toString") ||
+             JS_FlatStringEqualsAscii(str, "__gjsPrivateNS"));
+}
+
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(repo)
 
 static void
@@ -221,14 +232,16 @@ repo_finalize(JSFreeOp *fop,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
+// clang-format off
 static const struct JSClassOps gjs_repo_class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
     nullptr,  // enumerate
     nullptr,  // newEnumerate
     repo_resolve,
-    nullptr,  // mayResolve
+    repo_may_resolve,
     repo_finalize};
+// clang-format on
 
 struct JSClass gjs_repo_class = {
     "GIRepository", /* means "new GIRepository()" works */

@@ -173,6 +173,16 @@ boxed_resolve(JSContext       *context,
     return true;
 }
 
+static bool boxed_may_resolve(const JSAtomState& names, jsid id,
+                              JSObject* maybe_obj) {
+    if (!JSID_IS_STRING(id))
+        return false;
+    JSFlatString* str = JSID_TO_FLAT_STRING(id);
+    return !(JS_FlatStringEqualsAscii(str, "constructor") ||
+             JS_FlatStringEqualsAscii(str, "prototype") ||
+             JS_FlatStringEqualsAscii(str, "toString"));
+}
+
 /* Check to see if JS::Value passed in is another Boxed object of the same,
  * and if so, retrieves the Boxed private structure for it.
  */
@@ -854,18 +864,20 @@ boxed_trace(JSTracer *tracer,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
+// clang-format off
 static const struct JSClassOps gjs_boxed_class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
     nullptr,  // enumerate
     nullptr,  // newEnumerate
     boxed_resolve,
-    nullptr,  // mayResolve
+    boxed_may_resolve,
     boxed_finalize,
     nullptr,  // call
     nullptr,  // hasInstance
     nullptr,  // construct
     boxed_trace};
+// clang-format on
 
 /* We allocate 1 reserved slot; this is typically unused, but if the
  * boxed is for a nested structure inside a parent structure, the

@@ -127,6 +127,16 @@ union_resolve(JSContext       *context,
     return true;
 }
 
+static bool union_may_resolve(const JSAtomState& names, jsid id,
+                              JSObject* maybe_obj) {
+    if (!JSID_IS_STRING(id))
+        return false;
+    JSFlatString* str = JSID_TO_FLAT_STRING(id);
+    return !(JS_FlatStringEqualsAscii(str, "constructor") ||
+             JS_FlatStringEqualsAscii(str, "prototype") ||
+             JS_FlatStringEqualsAscii(str, "toString"));
+}
+
 static void*
 union_new(JSContext       *context,
           JS::HandleObject obj, /* "this" for constructor */
@@ -285,14 +295,16 @@ to_string_func(JSContext *context,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
+// clang-format off
 static const struct JSClassOps gjs_union_class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
     nullptr,  // enumerate
     nullptr,  // newEnumerate
     union_resolve,
-    nullptr,  // mayResolve
+    union_may_resolve,
     union_finalize};
+// clang-format on
 
 struct JSClass gjs_union_class = {
     "GObject_Union",

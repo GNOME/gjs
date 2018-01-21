@@ -143,14 +143,16 @@ param_finalize(JSFreeOp *fop,
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
+// clang-format off
 static const struct JSClassOps gjs_param_class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
     nullptr,  // enumerate
     nullptr,  // newEnumerate
     param_resolve,
-    nullptr,  // mayResolve
+    gjs_dynamic_class_default_may_resolve,
     param_finalize};
+// clang-format on
 
 struct JSClass gjs_param_class = {
     "GObject_ParamSpec",

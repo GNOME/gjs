@@ -208,6 +208,8 @@ class ObjectBase {
                              JS::HandleId id, JS::HandleValue value);
     static bool resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                         bool* resolved);
+    static bool may_resolve(const JSAtomState& names, jsid id,
+                            JSObject* maybe_obj);
     static void finalize(JSFreeOp* fop, JSObject* obj);
     static void trace(JSTracer* tracer, JSObject* obj);
 
@@ -303,6 +305,7 @@ class ObjectPrototype : public ObjectBase {
  private:
     bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                       bool* resolved);
+    bool may_resolve_impl(JSFlatString* str);
     void trace_impl(JSTracer* tracer);
 
     /* JS methods */
