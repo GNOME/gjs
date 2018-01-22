@@ -325,7 +325,7 @@ gjs_get_string_id (JSContext       *context,
     if (id_val.isString()) {
         JS::RootedString str(context, id_val.toString());
         name_p->reset(JS_EncodeStringToUTF8(context, str));
-        return !!name_p;
+        return !!*name_p;
     } else {
         return false;
     }
