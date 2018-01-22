@@ -408,7 +408,7 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, argv, to, ByteArrayInstance, priv);
-    GjsAutoJSChar encoding(context);
+    GjsAutoJSChar encoding;
     bool encoding_is_utf8;
     gchar *data;
 
@@ -419,7 +419,7 @@ to_string_func(JSContext *context,
 
     if (argc >= 1 && argv[0].isString()) {
         JS::RootedString str(context, argv[0].toString());
-        encoding.reset(context, JS_EncodeStringToUTF8(context, str));
+        encoding = JS_EncodeStringToUTF8(context, str);
         if (!encoding)
             return false;
 
@@ -531,7 +531,7 @@ from_string_func(JSContext *context,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     ByteArrayInstance *priv;
-    GjsAutoJSChar encoding(context);
+    GjsAutoJSChar encoding;
     bool encoding_is_utf8;
     JS::RootedObject obj(context, byte_array_new(context));
 
@@ -553,7 +553,7 @@ from_string_func(JSContext *context,
 
     if (argc > 1 && argv[1].isString()) {
         JS::RootedString str(context, argv[1].toString());
-        encoding.reset(context, JS_EncodeStringToUTF8(context, str));
+        encoding = JS_EncodeStringToUTF8(context, str);
         if (!encoding)
             return false;
 
@@ -571,7 +571,7 @@ from_string_func(JSContext *context,
          * libmozjs hardwired utf16-to-utf8.
          */
         JS::RootedString str(context, argv[0].toString());
-        GjsAutoJSChar utf8(context, JS_EncodeStringToUTF8(context, str));
+        GjsAutoJSChar utf8 = JS_EncodeStringToUTF8(context, str);
         if (!utf8)
             return false;
 

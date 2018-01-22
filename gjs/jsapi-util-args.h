@@ -96,7 +96,7 @@ assign(JSContext      *cx,
     if (c != 's')
         throw g_strdup_printf("Wrong type for %c, got GjsAutoJSChar*", c);
     if (nullable && value.isNull()) {
-        ref->reset(cx, nullptr);
+        ref->reset();
         return;
     }
     if (!gjs_string_to_utf8(cx, value, ref))

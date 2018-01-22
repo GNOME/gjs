@@ -90,7 +90,7 @@ gjs_log(JSContext *cx,
         return true;
     }
 
-    GjsAutoJSChar s(cx, JS_EncodeStringToUTF8(cx, jstr));
+    GjsAutoJSChar s = JS_EncodeStringToUTF8(cx, jstr);
     if (!s)
         return false;
 
@@ -149,7 +149,7 @@ gjs_print_parse_args(JSContext    *cx,
         exc_state.restore();
 
         if (jstr) {
-            GjsAutoJSChar s(cx, JS_EncodeStringToUTF8(cx, jstr));
+            GjsAutoJSChar s = JS_EncodeStringToUTF8(cx, jstr);
             if (!s) {
                 g_string_free(str, true);
                 return false;

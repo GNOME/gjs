@@ -113,7 +113,7 @@ interface_resolve(JSContext       *context,
                   bool            *resolved)
 {
     Interface *priv;
-    GjsAutoJSChar name(context);
+    GjsAutoJSChar name;
     GIFunctionInfo *method_info;
 
     if (!gjs_get_string_id(context, id, &name)) {

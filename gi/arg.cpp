@@ -434,7 +434,7 @@ value_to_ghashtable_key(JSContext      *cx,
         else
             str = value.toString();
 
-        GjsAutoJSChar cstr(cx, JS_EncodeStringToUTF8(cx, str));
+        GjsAutoJSChar cstr = JS_EncodeStringToUTF8(cx, str);
         if (!cstr)
             return false;
         *pointer_out = cstr.copy();
@@ -620,8 +620,6 @@ gjs_array_to_strv(JSContext   *context,
     result = g_new0(char *, length+1);
 
     for (i = 0; i < length; ++i) {
-        GjsAutoJSChar tmp_result(context);
-
         elem = JS::UndefinedValue();
         if (!JS_GetElement(context, array, i, &elem)) {
             g_free(result);
@@ -631,6 +629,7 @@ gjs_array_to_strv(JSContext   *context,
             return false;
         }
 
+        GjsAutoJSChar tmp_result;
         if (!gjs_string_to_utf8(context, elem, &tmp_result)) {
             g_strfreev(result);
             return false;
@@ -656,7 +655,7 @@ gjs_string_to_intarray(JSContext       *context,
     element_type = g_type_info_get_tag(param_info);
 
     if (element_type == GI_TYPE_TAG_INT8 || element_type == GI_TYPE_TAG_UINT8) {
-        GjsAutoJSChar result(context, JS_EncodeStringToUTF8(context, str));
+        GjsAutoJSChar result = JS_EncodeStringToUTF8(context, str);
         if (!result)
             return false;
         *length = strlen(result);
@@ -1518,7 +1517,7 @@ gjs_value_to_g_argument(JSContext      *context,
             arg->v_pointer = NULL;
         } else if (value.isString()) {
             JS::RootedString str(context, value.toString());
-            GjsAutoJSChar utf8_str(context, JS_EncodeStringToUTF8(context, str));
+            GjsAutoJSChar utf8_str = JS_EncodeStringToUTF8(context, str);
             if (utf8_str)
                 arg->v_pointer = utf8_str.copy();
             else
@@ -1620,7 +1619,7 @@ gjs_value_to_g_argument(JSContext      *context,
                     intern_gdk_atom("NONE", arg);
                 } else {
                     JS::RootedString str(context, value.toString());
-                    GjsAutoJSChar atom_name(context, JS_EncodeStringToUTF8(context, str));
+                    GjsAutoJSChar atom_name = JS_EncodeStringToUTF8(context, str);
 
                     if (!atom_name) {
                         wrong = true;
@@ -2612,7 +2611,7 @@ gjs_object_from_g_hash (JSContext             *context,
         if (!keystr)
             return false;
 
-        GjsAutoJSChar keyutf8(context, JS_EncodeStringToUTF8(context, keystr));
+        GjsAutoJSChar keyutf8 = JS_EncodeStringToUTF8(context, keystr);
         if (!keyutf8)
             return false;
 

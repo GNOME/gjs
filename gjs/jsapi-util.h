@@ -65,58 +65,27 @@ public:
     }
 };
 
-class GjsJSFreeArgs {
-private:
-    JSContext *m_cx;
-
-public:
-    explicit GjsJSFreeArgs(JSContext *cx) : m_cx(cx)
-    {}
-
+struct GjsJSFreeArgs {
     void operator() (char *str) {
-        JS_free(m_cx, str);
-    }
-
-    JSContext* get_context() {
-        return m_cx;
-    }
-
-    void set_context(JSContext *cx) {
-        m_cx = cx;
+        JS_free(nullptr, str);
     }
 };
 
-class GjsAutoJSChar {
-private:
-    std::unique_ptr<char, GjsJSFreeArgs> m_ptr;
-
+class GjsAutoJSChar : public std::unique_ptr<char, GjsJSFreeArgs> {
 public:
-    GjsAutoJSChar(JSContext *cx, char *str = nullptr)
-    : m_ptr (str, GjsJSFreeArgs(cx)) {
-        g_assert(cx != nullptr);
-    }
+    GjsAutoJSChar(char *str = nullptr) : unique_ptr(str, GjsJSFreeArgs()) { }
 
     operator const char*() {
-        return m_ptr.get();
+        return get();
     }
 
-    const char* get() {
-        return m_ptr.get();
+    void operator=(char *str) {
+        reset(str);
     }
 
     char* copy() {
         /* Strings acquired by this should be g_free()'ed */
-        return g_strdup(m_ptr.get());
-    }
-
-    char* js_copy() {
-        /* Strings acquired by this should be JS_free()'ed */
-        return JS_strdup(m_ptr.get_deleter().get_context(), m_ptr.get());
-    }
-
-    void reset(JSContext *cx, char *str) {
-        m_ptr.get_deleter().set_context(cx);
-        m_ptr.reset(str);
+        return g_strdup(get());
     }
 };
 
@@ -137,7 +106,6 @@ typedef struct GjsRootedArray GjsRootedArray;
 /* Flags that should be set on properties exported from native code modules.
  * Basically set these on API, but do NOT set them on data.
  *
- * READONLY:  forbid setting prop to another value
  * PERMANENT: forbid deleting the prop
  * ENUMERATE: allows copyProperties to work among other reasons to have it
  */

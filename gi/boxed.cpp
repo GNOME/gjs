@@ -119,7 +119,7 @@ boxed_resolve(JSContext       *context,
               bool            *resolved)
 {
     Boxed *priv;
-    GjsAutoJSChar name(context);
+    GjsAutoJSChar name;
 
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
@@ -275,7 +275,7 @@ boxed_init_from_props(JSContext   *context,
     JS::RootedId prop_id(context);
     for (ix = 0, length = ids.length(); ix < length; ix++) {
         GIFieldInfo *field_info;
-        GjsAutoJSChar name(context);
+        GjsAutoJSChar name;
 
         if (!gjs_get_string_id(context, ids[ix], &name))
             return false;

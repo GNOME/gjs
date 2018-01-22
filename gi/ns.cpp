@@ -69,7 +69,7 @@ ns_resolve(JSContext       *context,
         return true;
     }
 
-    GjsAutoJSChar name(context);
+    GjsAutoJSChar name;
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true;  /* not resolved, but no error */

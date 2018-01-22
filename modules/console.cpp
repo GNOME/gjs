@@ -163,7 +163,7 @@ public:
             if (!message) {
                 g_printerr("(could not convert thrown exception to string)\n");
             } else {
-                GjsAutoJSChar message_utf8(m_cx, JS_EncodeStringToUTF8(m_cx, message));
+                GjsAutoJSChar message_utf8 = JS_EncodeStringToUTF8(m_cx, message);
                 g_printerr("%s\n", message_utf8.get());
             }
         }

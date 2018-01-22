@@ -61,7 +61,7 @@ union_resolve(JSContext       *context,
               bool            *resolved)
 {
     Union *priv;
-    GjsAutoJSChar name(context);
+    GjsAutoJSChar name;
 
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;

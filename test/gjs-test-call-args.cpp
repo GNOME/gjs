@@ -85,7 +85,7 @@ JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(one_of_each_type)
     bool boolval;
-    GjsAutoJSChar strval(cx);
+    GjsAutoJSChar strval;
     GjsAutoChar fileval;
     int intval;
     unsigned uintval;
@@ -155,7 +155,7 @@ JSNATIVE_TEST_FUNC_BEGIN(signed_enum_arg)
 JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(one_of_each_nullable_type)
-    GjsAutoJSChar strval(cx);
+    GjsAutoJSChar strval;
     GjsAutoChar fileval;
     JS::RootedObject objval(cx);
     retval = gjs_parse_call_args(cx, "oneOfEachNullableType", args, "?s?F?o",
@@ -207,21 +207,15 @@ JSNATIVE_BAD_TYPE_TEST_FUNC(unsigned, "t");
 JSNATIVE_BAD_TYPE_TEST_FUNC(int64_t, "f");
 JSNATIVE_BAD_TYPE_TEST_FUNC(double, "b");
 JSNATIVE_BAD_TYPE_TEST_FUNC(GjsAutoChar, "i");
+JSNATIVE_BAD_TYPE_TEST_FUNC(GjsAutoJSChar, "i");
 
 #undef JSNATIVE_BAD_TYPE_TEST_FUNC
 
-#define JSNATIVE_CONSTRUCTED_BAD_TYPE_TEST_FUNC(type, ch)                \
-    JSNATIVE_TEST_FUNC_BEGIN(type##_invalid_type)                        \
-        type val(cx);                                                    \
-        retval = gjs_parse_call_args(cx, #type "InvalidType", args, ch,  \
-                                     "val", &val);                       \
-    JSNATIVE_TEST_FUNC_END
-
-using JS::RootedObject;
-JSNATIVE_CONSTRUCTED_BAD_TYPE_TEST_FUNC(GjsAutoJSChar, "i");
-JSNATIVE_CONSTRUCTED_BAD_TYPE_TEST_FUNC(RootedObject, "i");
-
-#undef JSNATIVE_CONSTRUCTED_BAD_TYPE_TEST_FUNC
+JSNATIVE_TEST_FUNC_BEGIN(object_invalid_type)
+    JS::RootedObject val(cx);
+    retval = gjs_parse_call_args(cx, "objectInvalidType", args, "i",
+                                 "val", &val);
+JSNATIVE_TEST_FUNC_END
 
 static JSFunctionSpec native_test_funcs[] = {
     JS_FS("noArgs", no_args, 0, 0),
@@ -251,7 +245,7 @@ static JSFunctionSpec native_test_funcs[] = {
     JS_FS("doubleInvalidType", double_invalid_type, 0, 0),
     JS_FS("GjsAutoCharInvalidType", GjsAutoChar_invalid_type, 0, 0),
     JS_FS("GjsAutoJSCharInvalidType", GjsAutoJSChar_invalid_type, 0, 0),
-    JS_FS("RootedObjectInvalidType", RootedObject_invalid_type, 0, 0),
+    JS_FS("objectInvalidType", object_invalid_type, 0, 0),
     JS_FS_END
 };
 
@@ -389,7 +383,7 @@ gjs_test_add_tests_for_parse_call_args(void)
                              "GjsAutoJSCharInvalidType(1)"
                              "//*Wrong type for i, got GjsAutoJSChar?");
     ADD_CALL_ARGS_TEST_XFAIL("invalid-object-type",
-                             "RootedObjectInvalidType(1)"
+                             "objectInvalidType(1)"
                              "//*Wrong type for i, got JS::MutableHandleObject");
     ADD_CALL_ARGS_TEST_XFAIL("invalid-boolean",
                              "boolArgNoAssert({})//*Not a boolean");

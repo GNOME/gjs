@@ -58,7 +58,7 @@ param_resolve(JSContext       *context,
     GIObjectInfo *info = NULL;
     GIFunctionInfo *method_info;
     Param *priv;
-    GjsAutoJSChar name(context);
+    GjsAutoJSChar name;
     bool ret = false;
 
     if (!gjs_get_string_id(context, id, &name)) {
