@@ -40,7 +40,7 @@
 #include <js/ProfilingStack.h>
 
 #include "jsapi-util.h"
-#include "profiler.h"
+#include "profiler-private.h"
 #ifdef ENABLE_PROFILER
 # include "util/sp-capture-writer.h"
 #endif
@@ -115,6 +115,16 @@ struct _GjsProfiler {
 };
 
 static GjsProfiler *current_profiler;
+
+/* Internal use only - used to determine whether a profiler is already created,
+ * in order to accommodate code that links to libgjs but doesn't create its own
+ * profiler while deciding what to do for the GJS_ENABLE_PROFILER=1 environment
+ * variable. */
+GjsProfiler *
+_gjs_profiler_get_current(void)
+{
+    return current_profiler;
+}
 
 #ifdef ENABLE_PROFILER
 /*

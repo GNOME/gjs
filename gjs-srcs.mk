@@ -76,6 +76,7 @@ gjs_srcs =				\
 	gjs/native.cpp			\
 	gjs/native.h			\
 	gjs/profiler.cpp		\
+	gjs/profiler-private.h		\
 	gjs/stack.cpp			\
 	modules/modules.cpp		\
 	modules/modules.h		\
