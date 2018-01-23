@@ -35,6 +35,7 @@
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 #include "native.h"
+#include "profiler-private.h"
 #include "byteArray.h"
 #include "gi/object.h"
 #include "gi/repo.h"
@@ -690,6 +691,13 @@ gjs_context_eval(GjsContext   *js_context,
 {
     bool ret = false;
 
+    GjsProfiler *profiler = nullptr;
+    const char *env_profiler = g_getenv("GJS_ENABLE_PROFILER");
+    if (env_profiler && !_gjs_profiler_get_current()) {
+        profiler = gjs_profiler_new(js_context);
+        gjs_profiler_start(profiler);
+    }
+
     JSAutoCompartment ac(js_context->context, js_context->global);
     JSAutoRequest ar(js_context->context);
 
@@ -703,6 +711,9 @@ gjs_context_eval(GjsContext   *js_context,
      * outstanding async tasks before the context is torn down. Drain after
      * uncaught exceptions have been reported since draining runs callbacks. */
     ok = _gjs_context_run_jobs(js_context) && ok;
+
+    if (profiler)
+        gjs_profiler_stop(profiler);
 
     if (!ok) {
         uint8_t code;
@@ -740,6 +751,9 @@ gjs_context_eval(GjsContext   *js_context,
     ret = true;
 
  out:
+    if (profiler)
+        gjs_profiler_free(profiler);
+
     g_object_unref(G_OBJECT(js_context));
     context_reset_exit(js_context);
     return ret;
