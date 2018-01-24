@@ -24,12 +24,84 @@
 #ifndef GJS_PROFILER_PRIVATE_H
 #define GJS_PROFILER_PRIVATE_H
 
+#include <config.h>
+
+#include <sys/time.h>
+
+#include <glib.h>
+#include "jsapi-wrapper.h"
+#include <js/ProfilingStack.h>
+
+#include "context.h"
 #include "profiler.h"
+#ifdef ENABLE_PROFILER
+# include "util/sp-capture-writer.h"
+#endif
 
-G_BEGIN_DECLS
+class GjsProfiler {
+    /* The stack for the JSContext profiler to use for current stack
+     * information while executing. We will look into this during our
+     * SIGPROF handler.
+     */
+    js::ProfileEntry m_stack[1024];
 
-GjsProfiler *_gjs_profiler_get_current(void);
+    /* The context being profiled */
+    JSContext *m_cx;
 
-G_END_DECLS
+    /* The filename to write to */
+    char *m_filename;
+
+    /* The depth of @stack. This value may be larger than the
+     * number of elements in stack, and so you MUST ensure you
+     * don't walk past the end of stack[] when iterating.
+     */
+    uint32_t m_stack_depth;
+
+    /* Cached copy of our pid */
+    GPid m_pid;
+
+    /* If we are currently sampling */
+    unsigned m_running : 1;
+
+    /*
+     * Note that stack_depth could be larger than the number of
+     * items we have in our stack space. We must protect ourselves
+     * against overflowing by discarding anything after that depth
+     * of the stack.
+     *
+     * Can be run from a signal handler.
+     */
+    unsigned stack_size(void) const {
+        return std::min(m_stack_depth, uint32_t(G_N_ELEMENTS(m_stack)));
+    }
+
+public:
+    GjsProfiler(GjsContext *context);
+    ~GjsProfiler();
+
+    void set_filename(const char *filename);
+    void start(void);
+    void stop(void);
+    bool is_running(void) const { return m_running; }
+
+#ifdef ENABLE_PROFILER
+private:
+    /* Buffers and writes our sampled stacks */
+    SpCaptureWriter *m_capture;
+
+    /* Our POSIX timer to wakeup SIGPROF */
+    timer_t m_timer;
+
+    bool extract_maps(void);
+
+public:
+    static void sigprof(int        signum,
+                        siginfo_t *info,
+                        void      *context);
+
+#endif  /* ENABLE_PROFILER */
+};
+
+void _gjs_profiler_setup_signals(void);
 
 #endif  /* GJS_PROFILER_PRIVATE_H */

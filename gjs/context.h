@@ -92,6 +92,11 @@ GJS_EXPORT
 void            gjs_context_gc                    (GjsContext  *context);
 
 GJS_EXPORT
+void gjs_context_start_profiler(GjsContext *self);
+GJS_EXPORT
+void gjs_context_stop_profiler(GjsContext *self);
+
+GJS_EXPORT
 void            gjs_dumpstack                     (void);
 
 G_END_DECLS

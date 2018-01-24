@@ -93,6 +93,11 @@ struct _GjsContext {
     bool draining_job_queue;
 
     std::unordered_map<uint64_t, GjsAutoChar> unhandled_rejection_stacks;
+
+    GjsProfiler *profiler;
+    char *profiler_filename;
+    bool should_profile : 1;
+    bool should_listen_sigusr2 : 1;
 };
 
 /* Keep this consistent with GjsConstString */
@@ -118,6 +123,9 @@ enum {
     PROP_0,
     PROP_SEARCH_PATH,
     PROP_PROGRAM_NAME,
+    PROP_PROFILER_ENABLED,
+    PROP_PROFILER_SIGNAL,
+    PROP_PROFILER_FILENAME,
 };
 
 static GMutex contexts_lock;
@@ -162,6 +170,52 @@ gjs_context_class_init(GjsContextClass *klass)
     g_object_class_install_property(object_class,
                                     PROP_PROGRAM_NAME,
                                     pspec);
+    g_param_spec_unref(pspec);
+
+    /**
+     * GjsContext:profiler-enabled:
+     *
+     * Set this property to profile any JS code run by this context. By
+     * default, the profiler is started and stopped when you call
+     * gjs_context_eval().
+     *
+     * The value of this property is superseded by the GJS_ENABLE_PROFILER
+     * environment variable.
+     *
+     * You may only have one context with the profiler enabled at a time.
+     */
+    pspec = g_param_spec_boolean("profiler-enabled", "Profiler enabled",
+                                 "Whether to profile JS code run by this context",
+                                 FALSE,
+                                 GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+    g_object_class_install_property(object_class, PROP_PROFILER_ENABLED, pspec);
+    g_param_spec_unref(pspec);
+
+    /**
+     * GjsContext:profiler-signal:
+     *
+     * Set this property to install a SIGUSR2 signal handler that starts and
+     * stops the profiler. This property also implies that
+     * #GjsContext:profiler-enabled is set.
+     */
+    pspec = g_param_spec_boolean("profiler-signal", "Profiler signal",
+                                 "Whether to activate the profiler on SIGUSR2",
+                                 FALSE,
+                                 GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+    g_object_class_install_property(object_class, PROP_PROFILER_SIGNAL, pspec);
+    g_param_spec_unref(pspec);
+
+    /**
+     * GjsContext:profiler-filename:
+     *
+     * Filename to write the profiler output to. Setting this to %NULL (its
+     * default value) will write to a file named `gjs-$PID.syscap`.
+     */
+    pspec = g_param_spec_string("profiler-filename", "Profiler filename",
+                                "Filename to write the profiler output to",
+                                NULL,
+                                GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+    g_object_class_install_property(object_class, PROP_PROFILER_FILENAME, pspec);
     g_param_spec_unref(pspec);
 
     /* For GjsPrivate */
@@ -213,6 +267,12 @@ gjs_context_dispose(GObject *object)
     GjsContext *js_context;
 
     js_context = GJS_CONTEXT(object);
+
+    /* Profiler must be stopped and freed before context is shut down */
+    if (js_context->profiler) {
+        delete js_context->profiler;
+        js_context->profiler = nullptr;
+    }
 
     /* Run dispose notifications first, so that anything releasing
      * references in response to this can still get garbage collected */
@@ -269,6 +329,8 @@ gjs_context_finalize(GObject *object)
 
     js_context = GJS_CONTEXT(object);
 
+    g_clear_pointer(&js_context->profiler_filename, g_free);
+
     if (js_context->search_path != NULL) {
         g_strfreev(js_context->search_path);
         js_context->search_path = NULL;
@@ -306,6 +368,20 @@ gjs_context_constructed(GObject *object)
     if (!cx)
         g_error("Failed to create javascript context");
     js_context->context = cx;
+
+    const char *env_profiler = g_getenv("GJS_ENABLE_PROFILER");
+    if (env_profiler)
+        js_context->should_profile = true;
+
+    if (js_context->should_listen_sigusr2) {
+        js_context->should_profile = true;
+        _gjs_profiler_setup_signals();
+    }
+
+    if (js_context->should_profile) {
+        js_context->profiler = new GjsProfiler(js_context);
+        js_context->profiler->set_filename(js_context->profiler_filename);
+    }
 
     new (&js_context->unhandled_rejection_stacks) std::unordered_map<uint64_t, GjsAutoChar>;
     new (&js_context->const_strings) std::array<JS::PersistentRootedId*, GJS_STRING_LAST>;
@@ -390,6 +466,15 @@ gjs_context_set_property (GObject      *object,
         break;
     case PROP_PROGRAM_NAME:
         js_context->program_name = g_value_dup_string(value);
+        break;
+    case PROP_PROFILER_ENABLED:
+        js_context->should_profile = g_value_get_boolean(value);
+        break;
+    case PROP_PROFILER_SIGNAL:
+        js_context->should_listen_sigusr2 = g_value_get_boolean(value);
+        break;
+    case PROP_PROFILER_FILENAME:
+        js_context->profiler_filename = g_value_dup_string(value);
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -691,17 +776,17 @@ gjs_context_eval(GjsContext   *js_context,
 {
     bool ret = false;
 
-    GjsProfiler *profiler = nullptr;
-    const char *env_profiler = g_getenv("GJS_ENABLE_PROFILER");
-    if (env_profiler && !_gjs_profiler_get_current()) {
-        profiler = gjs_profiler_new(js_context);
-        gjs_profiler_start(profiler);
-    }
+    bool auto_profile = js_context->should_profile;
+    if (js_context->profiler->is_running() || js_context->should_listen_sigusr2)
+        auto_profile = false;
 
     JSAutoCompartment ac(js_context->context, js_context->global);
     JSAutoRequest ar(js_context->context);
 
     g_object_ref(G_OBJECT(js_context));
+
+    if (auto_profile)
+        js_context->profiler->start();
 
     JS::RootedValue retval(js_context->context);
     bool ok = gjs_eval_with_scope(js_context->context, nullptr, script,
@@ -712,8 +797,8 @@ gjs_context_eval(GjsContext   *js_context,
      * uncaught exceptions have been reported since draining runs callbacks. */
     ok = _gjs_context_run_jobs(js_context) && ok;
 
-    if (profiler)
-        gjs_profiler_stop(profiler);
+    if (auto_profile)
+        js_context->profiler->stop();
 
     if (!ok) {
         uint8_t code;
@@ -751,9 +836,6 @@ gjs_context_eval(GjsContext   *js_context,
     ret = true;
 
  out:
-    if (profiler)
-        gjs_profiler_free(profiler);
-
     g_object_unref(G_OBJECT(js_context));
     context_reset_exit(js_context);
     return ret;
@@ -855,4 +937,37 @@ gjs_get_import_global(JSContext *context)
 {
     GjsContext *gjs_context = (GjsContext *) JS_GetContextPrivate(context);
     return gjs_context->global;
+}
+
+/**
+ * gjs_context_start_profiler:
+ * @self: a #GjsContext
+ *
+ * Starts the profiler. Usually you won't need to use this, as the profiler
+ * will automatically be started when you call gjs_context_eval(). However, if
+ * you want to profile multiple invocations of gjs_context_eval() with the
+ * same profiler, then call gjs_context_start_profiler() before any of the
+ * evaluations, and gjs_context_stop_profiler() afterwards.
+ */
+void
+gjs_context_start_profiler(GjsContext *self)
+{
+    if (!self->profiler)
+        return;
+    self->profiler->start();
+}
+
+/**
+ * gjs_context_stop_profiler:
+ * @self: a #GjsContext
+ *
+ * Stops the profiler. Usually you won't need to use this. See
+ * gjs_context_start_profiler().
+ */
+void
+gjs_context_stop_profiler(GjsContext *self)
+{
+    if (!self->profiler)
+        return;
+    self->profiler->stop();
 }

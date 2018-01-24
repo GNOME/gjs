@@ -379,10 +379,12 @@ gjstest_test_strip_shebang_return_null_for_just_shebang(void)
 static void
 gjstest_test_profiler_start_stop(void)
 {
-    GjsAutoUnref<GjsContext> context = gjs_context_new();
-    GjsProfiler *profiler = gjs_profiler_new(context);
+    GjsAutoUnref<GjsContext> context =
+        static_cast<GjsContext *>(g_object_new(GJS_TYPE_CONTEXT,
+                                               "profiler-enabled", TRUE,
+                                               nullptr));
 
-    gjs_profiler_start(profiler);
+    gjs_context_start_profiler(context);
 
     for (size_t ix = 0; ix < 100000; ix++) {
         GError *error = nullptr;
@@ -396,8 +398,7 @@ gjstest_test_profiler_start_stop(void)
 #undef TESTJS
     }
 
-    gjs_profiler_stop(profiler);
-    gjs_profiler_free(profiler);
+    gjs_context_stop_profiler(context);
 }
 
 int
