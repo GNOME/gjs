@@ -193,7 +193,6 @@ main(int argc, char **argv)
     GError *error = NULL;
     GjsContext *js_context;
     GjsCoverage *coverage = NULL;
-    GjsProfiler *profiler = nullptr;
     char *script;
     const char *filename;
     const char *program_name;
@@ -284,9 +283,16 @@ main(int argc, char **argv)
     /* This should be removed after a suitable time has passed */
     check_script_args_for_stray_gjs_args(script_argc, script_argv);
 
+    if (interactive_mode && enable_profiler) {
+        g_message("Profiler disabled in interactive mode.");
+        enable_profiler = false;
+        g_unsetenv("GJS_ENABLE_PROFILER");  /* ignore env var in eval() */
+    }
+
     js_context = (GjsContext*) g_object_new(GJS_TYPE_CONTEXT,
                                             "search-path", include_path,
                                             "program-name", program_name,
+                                            "profiler-enabled", enable_profiler,
                                             NULL);
 
     env_coverage_output_path = g_getenv("GJS_COVERAGE_OUTPUT");
@@ -311,20 +317,10 @@ main(int argc, char **argv)
         g_object_unref(output);
     }
 
-    const char *env_profiler = g_getenv("GJS_ENABLE_PROFILER");
-    if (env_profiler)
-        enable_profiler = true;
-
-    if (interactive_mode && enable_profiler) {
-        g_message("Profiler disabled in interactive mode.");
-    } else if (enable_profiler) {
-        profiler = gjs_profiler_new(js_context);
-
-        if (profile_output_path) {
-            gjs_profiler_set_filename(profiler, profile_output_path);
-            g_free(profile_output_path);
-        }
-        gjs_profiler_start(profiler);
+    if (enable_profiler && profile_output_path) {
+        GjsProfiler *profiler = gjs_context_get_profiler(js_context);
+        gjs_profiler_set_filename(profiler, profile_output_path);
+        g_free(profile_output_path);
     }
 
     /* prepare command line arguments */
@@ -357,7 +353,6 @@ main(int argc, char **argv)
     g_strfreev(coverage_prefixes);
     if (coverage)
         g_object_unref(coverage);
-    gjs_profiler_free(profiler);
     g_object_unref(js_context);
     g_free(script);
     exit(code);

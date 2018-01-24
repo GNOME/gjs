@@ -37,6 +37,7 @@
 #include "jsapi-wrapper.h"
 #include <js/ProfilingStack.h>
 
+#include "context.h"
 #include "jsapi-util.h"
 #include "profiler-private.h"
 #ifdef ENABLE_PROFILER
@@ -106,23 +107,16 @@ struct _GjsProfiler {
 
     /* Cached copy of our pid */
     GPid pid;
+
+    /* GLib signal handler ID for SIGUSR2 */
+    unsigned sigusr2_id;
 #endif  /* ENABLE_PROFILER */
 
     /* If we are currently sampling */
     unsigned running : 1;
 };
 
-static GjsProfiler *current_profiler;
-
-/* Internal use only - used to determine whether a profiler is already created,
- * in order to accommodate code that links to libgjs but doesn't create its own
- * profiler while deciding what to do for the GJS_ENABLE_PROFILER=1 environment
- * variable. */
-GjsProfiler *
-_gjs_profiler_get_current(void)
-{
-    return current_profiler;
-}
+static GjsContext *profiling_context;
 
 #ifdef ENABLE_PROFILER
 /*
@@ -182,12 +176,12 @@ gjs_profiler_extract_maps(GjsProfiler *self)
 }
 #endif  /* ENABLE_PROFILER */
 
-/**
- * gjs_profiler_new:
+/*
+ * _gjs_profiler_new:
  * @context: The #GjsContext to profile
  *
  * This creates a new profiler for the #JSContext. It is important that
- * this instance is freed with gjs_profiler_free() before the context is
+ * this instance is freed with _gjs_profiler_free() before the context is
  * destroyed.
  *
  * Call gjs_profiler_start() to enable the profiler, and gjs_profiler_stop()
@@ -199,16 +193,26 @@ gjs_profiler_extract_maps(GjsProfiler *self)
  * sample and stash it away. It is a programming error to mask SIGPROF from
  * the thread controlling the JS context.
  *
- * Returns: (transfer full): A newly allocated #GjsProfiler
+ * If another #GjsContext already has a profiler, or @context already has one,
+ * then returns %NULL instead.
+ *
+ * Returns: (transfer full) (nullable): A newly allocated #GjsProfiler
  */
 GjsProfiler *
-gjs_profiler_new(GjsContext *context)
+_gjs_profiler_new(GjsContext *context)
 {
     g_return_val_if_fail(context, nullptr);
 
-    g_assert(((void)"You can ony create one profiler at a time.",
-              !current_profiler));
+    if (profiling_context == context) {
+        g_critical("You can only create one profiler at a time.");
+        return nullptr;
+    }
 
+    if (profiling_context) {
+        g_message("Not going to profile GjsContext %p; you can only profile "
+                  "one context at a time.", context);
+        return nullptr;
+    }
 
     GjsProfiler *self = g_new0(GjsProfiler, 1);
 
@@ -217,13 +221,13 @@ gjs_profiler_new(GjsContext *context)
     self->pid = getpid();
 #endif
 
-    current_profiler = self;
+    profiling_context = context;
 
     return self;
 }
 
-/**
- * gjs_profiler_free:
+/*
+ * _gjs_profiler_free:
  * @self: A #GjsProfiler
  *
  * Frees a profiler instance and cleans up any allocated data.
@@ -232,7 +236,7 @@ gjs_profiler_new(GjsContext *context)
  * to write the contents of the buffer to the underlying file-descriptor.
  */
 void
-gjs_profiler_free(GjsProfiler *self)
+_gjs_profiler_free(GjsProfiler *self)
 {
     if (!self)
         return;
@@ -240,7 +244,7 @@ gjs_profiler_free(GjsProfiler *self)
     if (self->running)
         gjs_profiler_stop(self);
 
-    current_profiler = nullptr;
+    profiling_context = nullptr;
 
     g_clear_pointer(&self->filename, g_free);
 #ifdef ENABLE_PROFILER
@@ -249,8 +253,8 @@ gjs_profiler_free(GjsProfiler *self)
     g_free(self);
 }
 
-/**
- * gjs_profiler_is_running:
+/*
+ * _gjs_profiler_is_running:
  * @self: A #GjsProfiler
  *
  * Checks if the profiler is currently running. This means that the JS
@@ -259,7 +263,7 @@ gjs_profiler_free(GjsProfiler *self)
  * Returns: %TRUE if the profiler is active.
  */
 bool
-gjs_profiler_is_running(GjsProfiler *self)
+_gjs_profiler_is_running(GjsProfiler *self)
 {
     g_return_val_if_fail(self, false);
 
@@ -288,7 +292,7 @@ gjs_profiler_sigprof(int        signum,
                      siginfo_t *info,
                      void      *unused)
 {
-    GjsProfiler *self = current_profiler;
+    GjsProfiler *self = gjs_context_get_profiler(profiling_context);
 
     g_assert(((void) "SIGPROF handler called with invalid signal info", info));
     g_assert(((void) "SIGPROF handler called with other signal",
@@ -507,10 +511,13 @@ gjs_profiler_stop(GjsProfiler *self)
 }
 
 static gboolean
-gjs_profiler_sigusr2(void *unused)
+gjs_profiler_sigusr2(void *data)
 {
+    auto context = static_cast<GjsContext *>(data);
+    GjsProfiler *current_profiler = gjs_context_get_profiler(context);
+
     if (current_profiler) {
-        if (gjs_profiler_is_running(current_profiler))
+        if (_gjs_profiler_is_running(current_profiler))
             gjs_profiler_stop(current_profiler);
         else
             gjs_profiler_start(current_profiler);
@@ -519,8 +526,9 @@ gjs_profiler_sigusr2(void *unused)
     return G_SOURCE_CONTINUE;
 }
 
-/**
- * gjs_profiler_setup_signals:
+/*
+ * _gjs_profiler_setup_signals:
+ * @context: a #GjsContext with a profiler attached
  *
  * If you want to simply allow profiling of your process with minimal
  * fuss, simply call gjs_profiler_setup_signals(). This will allow
@@ -532,16 +540,17 @@ gjs_profiler_sigusr2(void *unused)
  * own signal handler to pass the signal to a GjsProfiler.
  */
 void
-gjs_profiler_setup_signals(void)
+_gjs_profiler_setup_signals(GjsProfiler *self,
+                            GjsContext  *context)
 {
+    g_return_if_fail(context == profiling_context);
+
 #ifdef ENABLE_PROFILER
 
-    static bool initialized = false;
+    if (self->sigusr2_id != 0)
+        return;
 
-    if (!initialized) {
-        initialized = true;
-        g_unix_signal_add(SIGUSR2, gjs_profiler_sigusr2, nullptr);
-    }
+    self->sigusr2_id = g_unix_signal_add(SIGUSR2, gjs_profiler_sigusr2, context);
 
 #else  /* !ENABLE_PROFILER */
 
@@ -552,6 +561,7 @@ gjs_profiler_setup_signals(void)
 
 /**
  * gjs_profiler_chain_signal:
+ * @context: a #GjsContext with a profiler attached
  * @info: #siginfo_t passed in to signal handler
  *
  * Use this to pass a signal info caught by another signal handler to a
@@ -563,7 +573,8 @@ gjs_profiler_setup_signals(void)
  * Returns: %TRUE if the signal was handled.
  */
 bool
-gjs_profiler_chain_signal(siginfo_t *info)
+gjs_profiler_chain_signal(GjsContext *context,
+                          siginfo_t *info)
 {
 #ifdef ENABLE_PROFILER
 
@@ -574,7 +585,7 @@ gjs_profiler_chain_signal(siginfo_t *info)
         }
 
         if (info->si_signo == SIGUSR2) {
-            gjs_profiler_sigusr2(nullptr);
+            gjs_profiler_sigusr2(context);
             return true;
         }
     }

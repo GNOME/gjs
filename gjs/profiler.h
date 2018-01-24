@@ -24,9 +24,6 @@
 #ifndef GJS_PROFILER_H
 #define GJS_PROFILER_H
 
-#include <signal.h>
-#include <stdbool.h>
-
 #include <glib.h>
 
 #include <gjs/context.h>
@@ -41,12 +38,6 @@ GJS_EXPORT
 GType gjs_profiler_get_type(void);
 
 GJS_EXPORT
-GjsProfiler *gjs_profiler_new(GjsContext *context);
-
-GJS_EXPORT
-void gjs_profiler_free(GjsProfiler *self);
-
-GJS_EXPORT
 void gjs_profiler_set_filename(GjsProfiler *self,
                                const char  *filename);
 
@@ -55,15 +46,6 @@ void gjs_profiler_start(GjsProfiler *self);
 
 GJS_EXPORT
 void gjs_profiler_stop(GjsProfiler *self);
-
-GJS_EXPORT
-bool gjs_profiler_is_running(GjsProfiler *self);
-
-GJS_EXPORT
-void gjs_profiler_setup_signals(void);
-
-GJS_EXPORT
-bool gjs_profiler_chain_signal(siginfo_t *info);
 
 G_END_DECLS
 
