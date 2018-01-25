@@ -32,6 +32,7 @@
 #include <glib-object.h>
 
 #include <gjs/macros.h>
+#include <gjs/profiler.h>
 
 G_BEGIN_DECLS
 
@@ -90,6 +91,13 @@ void            gjs_context_maybe_gc              (GjsContext  *context);
 
 GJS_EXPORT
 void            gjs_context_gc                    (GjsContext  *context);
+
+GJS_EXPORT
+GjsProfiler *gjs_context_get_profiler(GjsContext *self);
+
+GJS_EXPORT
+bool gjs_profiler_chain_signal(GjsContext *context,
+                               siginfo_t  *info);
 
 GJS_EXPORT
 void            gjs_dumpstack                     (void);

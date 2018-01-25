@@ -6,6 +6,9 @@ else
     gjs="$LOG_COMPILER $LOG_FLAGS gjs-console"
 fi
 
+# Avoid interference in the profiler tests from stray environment variable
+unset GJS_ENABLE_PROFILER
+
 # This JS script should exit immediately with code 42. If that is not working,
 # then it will exit after 3 seconds as a fallback, with code 0.
 cat <<EOF >exit.js
@@ -72,6 +75,11 @@ report_xfail () {
     fi
 }
 
+skip () {
+    total=$((total + 1))
+    echo "ok $total - $1 # SKIP $2"
+}
+
 # Test that System.exit() works in gjs-console
 $gjs -c 'imports.system.exit(0)'
 report "System.exit(0) should exit successfully"
@@ -135,6 +143,9 @@ report "--coverage-prefix after script should succeed but give a warning"
 $gjs -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-output'
 report "--coverage-output after script should succeed but give a warning"
 rm -f foo/coverage.lcov
+$gjs -c 'imports.system.exit(0)' --profile=foo 2>&1 | grep -q 'Gjs-WARNING.*--profile'
+report "--profile after script should succeed but give a warning"
+rm -f foo
 
 # --version works
 $gjs --version >/dev/null
@@ -148,6 +159,28 @@ $gjs -c "$script" --version
 report "--version after -c should be passed to script"
 test -z "$($gjs -c "$script" --version)"
 report "--version after -c should not print anything"
+
+# --profile
+rm -f gjs-*.syscap foo.syscap
+$gjs -c 'imports.system.exit(0)' && test ! -f gjs-*.syscap
+report "no profiling data should be dumped without --profile"
+
+# Skip some tests if built without profiler support
+if gjs --profile -c 1 2>&1 | grep -q 'Gjs-Message.*Profiler is disabled'; then
+    reason="profiler is disabled"
+    skip "--profile should dump profiling data to the default file name" "$reason"
+    skip "--profile with argument should dump profiling data to the named file" "$reason"
+    skip "GJS_ENABLE_PROFILER=1 should enable the profiler" "$reason"
+else
+    $gjs --profile -c 'imports.system.exit(0)' && test -f gjs-*.syscap
+    report "--profile should dump profiling data to the default file name"
+    $gjs --profile=foo.syscap -c 'imports.system.exit(0)' && test -f foo.syscap
+    report "--profile with argument should dump profiling data to the named file"
+    rm -f gjs-*.syscap foo.syscap
+    GJS_ENABLE_PROFILER=1 $gjs -c 'imports.system.exit(0)' && test -f gjs-*.syscap
+    report "GJS_ENABLE_PROFILER=1 should enable the profiler"
+    rm -f gjs-*.syscap
+fi
 
 # interpreter handles queued promise jobs correctly
 output=$($gjs promise.js)

@@ -3,6 +3,7 @@ gjs_public_headers =		\
 	gjs/coverage.h		\
 	gjs/gjs.h		\
 	gjs/macros.h		\
+	gjs/profiler.h		\
 	util/error.h		\
 	$(NULL)
 
@@ -74,6 +75,8 @@ gjs_srcs =				\
 	gjs/module.cpp			\
 	gjs/native.cpp			\
 	gjs/native.h			\
+	gjs/profiler.cpp		\
+	gjs/profiler-private.h		\
 	gjs/stack.cpp			\
 	modules/modules.cpp		\
 	modules/modules.h		\
@@ -101,4 +104,10 @@ gjs_gtk_private_srcs =			\
 
 gjs_console_srcs =	\
 	gjs/console.cpp	\
+	$(NULL)
+
+gjs_sysprof_srcs =			\
+	util/sp-capture-types.h		\
+	util/sp-capture-writer.c	\
+	util/sp-capture-writer.h	\
 	$(NULL)

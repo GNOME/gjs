@@ -1,6 +1,6 @@
-/* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
+/* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
- * Copyright (c) 2008  litl, LLC
+ * Copyright (c) 2018 Endless Mobile, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,13 +21,21 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_GJS_H__
-#define __GJS_GJS_H__
+#ifndef GJS_PROFILER_PRIVATE_H
+#define GJS_PROFILER_PRIVATE_H
 
-#include <gjs/macros.h>
-#include <gjs/context.h>
-#include <gjs/coverage.h>
-#include <gjs/profiler.h>
-#include <util/error.h>
+#include "context.h"
+#include "profiler.h"
 
-#endif /* __GJS_GJS_H__ */
+G_BEGIN_DECLS
+
+GjsProfiler *_gjs_profiler_new(GjsContext *context);
+void _gjs_profiler_free(GjsProfiler *self);
+
+bool _gjs_profiler_is_running(GjsProfiler *self);
+
+void _gjs_profiler_setup_signals(GjsProfiler *self, GjsContext *context);
+
+G_END_DECLS
+
+#endif  /* GJS_PROFILER_PRIVATE_H */
