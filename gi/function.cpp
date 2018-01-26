@@ -417,7 +417,7 @@ out:
 
             /* Some other uncatchable exception, e.g. out of memory */
             g_critical("Uncatchable exception while invoking closure");
-            exit(1);
+            g_error("Terminated by uncatchable exception");
         }
 
         /* Fill in the result with some hopefully neutral value */
