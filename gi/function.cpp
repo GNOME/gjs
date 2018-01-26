@@ -416,6 +416,7 @@ out:
                 exit(code);
 
             /* Some other uncatchable exception, e.g. out of memory */
+            g_critical("Uncatchable exception while invoking closure");
             exit(1);
         }
 
