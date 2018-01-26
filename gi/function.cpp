@@ -416,6 +416,8 @@ out:
                 exit(code);
 
             /* Some other uncatchable exception, e.g. out of memory */
+            g_critical("Function %s terminated with uncatchable exception",
+                       g_base_info_get_name(trampoline->info));
             exit(1);
         }
 
