@@ -766,6 +766,7 @@ object_instance_resolve(JSContext       *context,
                    priv->gobj);
         gjs_dumpstack();
 
+        *resolved = false;
         return true;
     }
 
