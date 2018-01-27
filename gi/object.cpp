@@ -953,7 +953,6 @@ wrapped_gobj_dispose_notify(gpointer      data,
     auto *priv = static_cast<ObjectInstance *>(data);
 
     priv->g_object_finalized = true;
-    priv->keep_alive.reset();
     wrapped_gobject_list.erase(priv);
 #if DEBUG_DISPOSE
     gjs_debug(GJS_DEBUG_GOBJECT, "Wrapped GObject %p disposed", where_the_object_was);
