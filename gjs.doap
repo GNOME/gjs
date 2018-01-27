@@ -9,19 +9,19 @@
   <shortname>gjs</shortname>
   <category rdf:resource="http://api.gnome.org/doap-extensions#core" />
 
-  <shortdesc xml:lang="en">GNOME JavaScript/Spidermonkey bindings</shortdesc>
+  <shortdesc xml:lang="en">GNOME JavaScript bindings</shortdesc>
 
-  <description xml:lang="en">GNOME JavaScript/Spidermonkey bindings</description>
+  <description xml:lang="en">GNOME JavaScript bindings</description>
 
-  <homepage rdf:resource="http://live.gnome.org/Gjs" />
+  <homepage rdf:resource="https://wiki.gnome.org/Projects/Gjs" />
   <license rdf:resource="http://usefulinc.com/doap/licenses/gpl" />
   <license rdf:resource="http://usefulinc.com/doap/licenses/lgpl" />
   <license rdf:resource="http://usefulinc.com/doap/licenses/mpl" />
-  <bug-database rdf:resource="http://bugzilla.gnome.org/enter_bug.cgi?product=gjs"/>
+  <bug-database rdf:resource="https://gitlab.gnome.org/GNOME/gjs/"/>
   <download-page rdf:resource="http://download.gnome.org/sources/gjs/" />
-  <mailing-list rdf:resource="mailto:gtk-devel-list@gnome.org" />
+  <mailing-list rdf:resource="mailto:javascript-list@gnome.org" />
 
-  <programming-language>C</programming-language>
+  <programming-language>C++</programming-language>
 
   <maintainer>
     <foaf:Person>
@@ -34,9 +34,9 @@
 
   <maintainer>
     <foaf:Person>
-      <foaf:name>Colin Walters</foaf:name>
-      <foaf:mbox rdf:resource="mailto:walters@verbum.org"/>
-      <gnome:userid>walters</gnome:userid>
+      <foaf:name>Cosimo Cecchi</foaf:name>
+      <foaf:mbox rdf:resource="mailto:cosimoc@src.gnome.org"/>
+      <gnome:userid>cosimoc</gnome:userid>
     </foaf:Person>
   </maintainer>
 
