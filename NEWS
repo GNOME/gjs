@@ -1,3 +1,11 @@
+Version 1.50.4
+--------------
+
+- Closed bugs and merge requests:
+
+  * Gnome Shell crash with places-status extension when you plug an USB device
+    [#33, !38, Philip Chimento]
+
 Version 1.50.3
 --------------
 
