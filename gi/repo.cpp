@@ -91,7 +91,7 @@ resolve_namespace_object(JSContext       *context,
 
     JSAutoRequest ar(context);
 
-    GjsAutoJSChar version(context);
+    GjsAutoJSChar version;
     if (!get_version_for_ns(context, repo_obj, ns_id, &version))
         return false;
 
@@ -113,7 +113,7 @@ resolve_namespace_object(JSContext       *context,
     if (error != NULL) {
         gjs_throw(context,
                   "Requiring %s, version %s: %s",
-                  ns_name, version?version:"none", error->message);
+                  ns_name, version ? version.get() : "none", error->message);
 
         g_error_free(error);
         return false;
@@ -175,7 +175,7 @@ repo_resolve(JSContext       *context,
         return true;
     }
 
-    GjsAutoJSChar name(context);
+    GjsAutoJSChar name;
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true;

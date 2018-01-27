@@ -656,7 +656,7 @@ showText_func(JSContext *context,
               JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoContext, priv);
-    GjsAutoJSChar utf8(context);
+    GjsAutoJSChar utf8;
     cairo_t *cr = priv ? priv->cr : NULL;
 
     if (!gjs_parse_call_args(context, "showText", argv, "s",
@@ -679,7 +679,7 @@ selectFontFace_func(JSContext *context,
                     JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoContext, priv);
-    GjsAutoJSChar family(context);
+    GjsAutoJSChar family;
     cairo_font_slant_t slant;
     cairo_font_weight_t weight;
     cairo_t *cr = priv ? priv->cr : NULL;

@@ -79,12 +79,12 @@ importer_to_string(JSContext *cx,
                                  &module_path))
         return false;
 
-    GjsAutoJSChar path(cx);
     GjsAutoChar output;
 
     if (module_path.isNull()) {
         output = g_strdup_printf("[%s root]", klass->name);
     } else {
+        GjsAutoJSChar path;
         if (!gjs_string_to_utf8(cx, module_path, &path))
             return false;
         output = g_strdup_printf("[%s %s]", klass->name, path.get());
@@ -145,7 +145,7 @@ define_meta_properties(JSContext       *context,
         if (parent_module_path.isNull()) {
             module_path_buf = g_strdup(module_name);
         } else {
-            GjsAutoJSChar parent_path(context);
+            GjsAutoJSChar parent_path;
             if (!gjs_string_to_utf8(context, parent_module_path, &parent_path))
                 return false;
             module_path_buf = g_strdup_printf("%s.%s", parent_path.get(), module_name);
@@ -502,7 +502,7 @@ do_import(JSContext       *context,
     }
 
     for (i = 0; i < search_path_len; ++i) {
-        GjsAutoJSChar dirname(context);
+        GjsAutoJSChar dirname;
 
         elem.setUndefined();
         if (!JS_GetElement(context, search_path, i, &elem)) {
@@ -521,7 +521,7 @@ do_import(JSContext       *context,
         }
 
         str = elem.toString();
-        dirname.reset(context, JS_EncodeStringToUTF8(context, str));
+        dirname = JS_EncodeStringToUTF8(context, str);
         if (!dirname)
             goto out;
 
@@ -697,7 +697,7 @@ importer_enumerate(JSContext        *context,
         }
 
         str = elem.toString();
-        GjsAutoJSChar dirname(context, JS_EncodeStringToUTF8(context, str));
+        GjsAutoJSChar dirname = JS_EncodeStringToUTF8(context, str);
         if (!dirname)
             return false;
 
@@ -746,11 +746,8 @@ importer_enumerate(JSContext        *context,
     return true;
 }
 
-/*
- * The *objp out parameter, on success, should be null to indicate that id
- * was not resolved; and non-null, referring to obj or one of its prototypes,
- * if id was resolved.
- */
+/* The *resolved out parameter, on success, should be false to indicate that id
+ * was not resolved; and true if id was resolved. */
 static bool
 importer_resolve(JSContext        *context,
                  JS::HandleObject  obj,
@@ -780,7 +777,7 @@ importer_resolve(JSContext        *context,
         return true;
     }
 
-    GjsAutoJSChar name(context);
+    GjsAutoJSChar name;
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true;

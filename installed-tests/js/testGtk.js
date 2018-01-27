@@ -64,8 +64,12 @@ const MyComplexGtkSubclassFromResource = GObject.registerClass({
     }
 });
 
-function validateTemplate(description, ClassName) {
-    describe(description, function () {
+const SubclassSubclass = GObject.registerClass(
+    class SubclassSubclass extends MyComplexGtkSubclass {});
+
+function validateTemplate(description, ClassName, pending=false) {
+    let suite = pending ? xdescribe : describe;
+    suite(description, function () {
         let win, content;
         beforeEach(function () {
             win = new Gtk.Window({ type: Gtk.WindowType.TOPLEVEL });
@@ -100,6 +104,7 @@ describe('Gtk overrides', function () {
 
     validateTemplate('UI template', MyComplexGtkSubclass);
     validateTemplate('UI template from resource', MyComplexGtkSubclassFromResource);
+    validateTemplate('Class inheriting from template class', SubclassSubclass, true);
 
     it('sets CSS names on classes', function () {
         expect(Gtk.Widget.get_css_name.call(MyComplexGtkSubclass)).toEqual('complex-subclass');

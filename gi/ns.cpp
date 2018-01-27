@@ -43,11 +43,8 @@ extern struct JSClass gjs_ns_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Ns, gjs_ns_class)
 
-/*
- * The *objp out parameter, on success, should be null to indicate that id
- * was not resolved; and non-null, referring to obj or one of its prototypes,
- * if id was resolved.
- */
+/* The *resolved out parameter, on success, should be false to indicate that id
+ * was not resolved; and true if id was resolved. */
 static bool
 ns_resolve(JSContext       *context,
            JS::HandleObject obj,
@@ -72,7 +69,7 @@ ns_resolve(JSContext       *context,
         return true;
     }
 
-    GjsAutoJSChar name(context);
+    GjsAutoJSChar name;
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true;  /* not resolved, but no error */

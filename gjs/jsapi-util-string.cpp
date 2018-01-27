@@ -55,7 +55,7 @@ gjs_string_to_utf8(JSContext      *cx,
     }
 
     JS::RootedString str(cx, value.toString());
-    utf8_string_p->reset(cx, JS_EncodeStringToUTF8(cx, str));
+    utf8_string_p->reset(JS_EncodeStringToUTF8(cx, str));
     return !!*utf8_string_p;
 }
 
@@ -97,7 +97,7 @@ gjs_string_to_filename(JSContext      *context,
                        GjsAutoChar    *filename_string)
 {
     GError *error;
-    GjsAutoJSChar tmp(context);
+    GjsAutoJSChar tmp;
 
     /* gjs_string_to_filename verifies that filename_val is a string */
 
@@ -324,8 +324,8 @@ gjs_get_string_id (JSContext       *context,
 
     if (id_val.isString()) {
         JS::RootedString str(context, id_val.toString());
-        name_p->reset(context, JS_EncodeStringToUTF8(context, str));
-        return !!name_p;
+        name_p->reset(JS_EncodeStringToUTF8(context, str));
+        return !!*name_p;
     } else {
         return false;
     }
@@ -348,7 +348,7 @@ gjs_unichar_from_string (JSContext *context,
                          JS::Value  value,
                          gunichar  *result)
 {
-    GjsAutoJSChar utf8_str(context);
+    GjsAutoJSChar utf8_str;
     if (gjs_string_to_utf8(context, value, &utf8_str)) {
         *result = g_utf8_get_char(utf8_str);
         return true;

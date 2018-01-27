@@ -110,11 +110,8 @@ gjs_define_static_methods(JSContext       *context,
     return true;
 }
 
-/*
- * The *objp out parameter, on success, should be null to indicate that id
- * was not resolved; and non-null, referring to obj or one of its prototypes,
- * if id was resolved.
- */
+/* The *resolved out parameter, on success, should be false to indicate that id
+ * was not resolved; and true if id was resolved. */
 static bool
 boxed_resolve(JSContext       *context,
               JS::HandleObject obj,
@@ -122,7 +119,7 @@ boxed_resolve(JSContext       *context,
               bool            *resolved)
 {
     Boxed *priv;
-    GjsAutoJSChar name(context);
+    GjsAutoJSChar name;
 
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
@@ -278,7 +275,7 @@ boxed_init_from_props(JSContext   *context,
     JS::RootedId prop_id(context);
     for (ix = 0, length = ids.length(); ix < length; ix++) {
         GIFieldInfo *field_info;
-        GjsAutoJSChar name(context);
+        GjsAutoJSChar name;
 
         if (!gjs_get_string_id(context, ids[ix], &name))
             return false;

@@ -163,7 +163,7 @@ class GjsModule {
          * be supported according to ES6. For compatibility with earlier GJS,
          * we treat it as if it were a real property, but warn about it. */
 
-        GjsAutoJSChar prop_name(cx);
+        GjsAutoJSChar prop_name;
         if (!gjs_get_string_id(cx, id, &prop_name))
             return false;
 

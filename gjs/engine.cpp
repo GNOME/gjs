@@ -48,7 +48,7 @@ gjs_locale_to_upper_case (JSContext *context,
                           JS::HandleString src,
                           JS::MutableHandleValue retval)
 {
-    GjsAutoJSChar utf8(context, JS_EncodeStringToUTF8(context, src));
+    GjsAutoJSChar utf8 = JS_EncodeStringToUTF8(context, src);
     if (!utf8)
         return false;
 
@@ -61,7 +61,7 @@ gjs_locale_to_lower_case (JSContext *context,
                           JS::HandleString src,
                           JS::MutableHandleValue retval)
 {
-    GjsAutoJSChar utf8(context, JS_EncodeStringToUTF8(context, src));
+    GjsAutoJSChar utf8 = JS_EncodeStringToUTF8(context, src);
     if (!utf8)
         return false;
 
@@ -75,11 +75,11 @@ gjs_locale_compare (JSContext *context,
                     JS::HandleString src_2,
                     JS::MutableHandleValue retval)
 {
-    GjsAutoJSChar utf8_1(context, JS_EncodeStringToUTF8(context, src_1));
+    GjsAutoJSChar utf8_1 = JS_EncodeStringToUTF8(context, src_1);
     if (!utf8_1)
         return false;
 
-    GjsAutoJSChar utf8_2(context, JS_EncodeStringToUTF8(context, src_2));
+    GjsAutoJSChar utf8_2 = JS_EncodeStringToUTF8(context, src_2);
     if (!utf8_2)
         return false;
 

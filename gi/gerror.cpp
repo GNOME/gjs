@@ -97,7 +97,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     priv->domain = proto_priv->domain;
 
     JS::RootedObject params_obj(context, &argv[0].toObject());
-    GjsAutoJSChar message(context);
+    GjsAutoJSChar message;
     if (!gjs_object_require_property(context, params_obj,
                                      "GError constructor",
                                      GJS_STRING_MESSAGE, &message))
@@ -571,7 +571,7 @@ gjs_gerror_make_from_error(JSContext       *cx,
     if (!gjs_object_get_property(cx, obj, GJS_STRING_NAME, &v_name))
         return nullptr;
 
-    GjsAutoJSChar name(cx);
+    GjsAutoJSChar name;
     if (!gjs_string_to_utf8(cx, v_name, &name))
         return nullptr;
 
@@ -579,7 +579,7 @@ gjs_gerror_make_from_error(JSContext       *cx,
     if (!gjs_object_get_property(cx, obj, GJS_STRING_MESSAGE, &v_message))
         return nullptr;
 
-    GjsAutoJSChar message(cx);
+    GjsAutoJSChar message;
     if (!gjs_string_to_utf8(cx, v_message, &message))
         return nullptr;
 

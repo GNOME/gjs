@@ -301,7 +301,7 @@ fundamental_instance_resolve(JSContext       *context,
                              bool            *resolved)
 {
     FundamentalInstance *priv;
-    GjsAutoJSChar name(context);
+    GjsAutoJSChar name;
 
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
