@@ -809,7 +809,7 @@ gjs_invoke_c_function(JSContext                             *context,
      * arguments we expect the JS function to take (which does not
      * include PARAM_SKIPPED args).
      *
-     * @js_argc is the number of arguments that were actually passed.
+     * @args.length() is the number of arguments that were actually passed.
      */
     if (args.length() > function->expected_js_argc) {
         GjsAutoChar name = format_function_name(function, is_method);
