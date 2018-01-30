@@ -795,11 +795,16 @@ gjs_context_eval(GjsContext   *js_context,
             goto out;  /* Don't log anything */
         }
 
+        if (!JS_IsExceptionPending(js_context->context)) {
+            g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                        "Script %s terminated with an uncatchable exception",
+                        filename);
+        } else {
+            g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                        "Script %s threw an exception", filename);
+        }
+
         gjs_log_exception(js_context->context);
-        g_set_error(error,
-                    GJS_ERROR,
-                    GJS_ERROR_FAILED,
-                    "JS_EvaluateScript() failed");
         /* No exit code from script, but we don't want to exit(0) */
         *exit_status_p = 1;
         goto out;
