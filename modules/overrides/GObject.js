@@ -451,4 +451,18 @@ function _init() {
     this.Object.prototype.disconnect = function(id) {
         return GObject.signal_handler_disconnect(this, id);
     };
+
+    // A simple workaround if you have a class with .connect, .disconnect or .emit
+    // methods (such as Gio.Socket.connect or NMClient.Device.disconnect)
+    // The original g_signal_* functions are not introspectable anyway, because
+    // we need our own handling of signal argument marshalling
+    this.signal_connect = function(object, name, handler) {
+        return GObject.Object.prototype.connect.call(object, name, handler);
+    };
+    this.signal_connect_after = function(object, name, handler) {
+        return GObject.Object.prototype.connect_after.call(object, name, handler);
+    };
+    this.signal_emit_by_name = function(object, ...nameAndArgs) {
+        return GObject.Object.prototype.emit.apply(object, nameAndArgs);
+    };
 }
