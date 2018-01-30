@@ -797,6 +797,7 @@ gjs_context_eval(GjsContext   *js_context,
         }
 
         if (!JS_IsExceptionPending(js_context->context)) {
+            g_critical("JS_EvaluateScript() raised uncatchable exception");
             g_set_error(error,
                         GJS_ERROR,
                         GJS_ERROR_FAILED,
