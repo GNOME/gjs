@@ -43,6 +43,12 @@ pkgconfig_DATA = gjs-1.0.pc
 
 EXTRA_DIST += gjs-1.0.pc.in
 
+valgrinddir = $(datadir)/gjs-1.0/valgrind
+dist_valgrind_DATA = installed-tests/extra/gjs.supp
+
+lsandir = $(datadir)/gjs-1.0/lsan
+dist_lsan_DATA = installed-tests/extra/lsan.supp
+
 ########################################################################
 gjs_directory_defines = 				\
 	-DGJS_TOP_SRCDIR=\"$(top_srcdir)\"		\
