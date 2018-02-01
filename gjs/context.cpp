@@ -634,6 +634,10 @@ _gjs_context_run_jobs(GjsContext *gjs_context)
                  * System.exit() works in the interactive shell and when
                  * exiting the interpreter. */
                 if (!JS_IsExceptionPending(cx)) {
+                    /* System.exit() is an uncatchable exception, but does not
+                     * indicate a bug. Log everything else. */
+                    if (!_gjs_context_should_exit(gjs_context, nullptr))
+                        g_critical("Promise callback terminated with uncatchable exception");
                     retval = false;
                     continue;
                 }
@@ -791,11 +795,18 @@ gjs_context_eval(GjsContext   *js_context,
             goto out;  /* Don't log anything */
         }
 
+        if (!JS_IsExceptionPending(js_context->context)) {
+            g_critical("Script %s terminated with an uncatchable exception",
+                       filename);
+            g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                        "Script %s terminated with an uncatchable exception",
+                        filename);
+        } else {
+            g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                        "Script %s threw an exception", filename);
+        }
+
         gjs_log_exception(js_context->context);
-        g_set_error(error,
-                    GJS_ERROR,
-                    GJS_ERROR_FAILED,
-                    "JS_EvaluateScript() failed");
         /* No exit code from script, but we don't want to exit(0) */
         *exit_status_p = 1;
         goto out;
