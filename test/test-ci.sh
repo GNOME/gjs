@@ -49,10 +49,10 @@ function do_Show_Info(){
 cd /cwd
 
 source test/extra/do_basic.sh
-source test/extra/do_docker.sh
 source test/extra/do_jhbuild.sh
 source test/extra/do_cache.sh
 source test/extra/do_mozilla.sh
+source test/extra/do_docker.sh
 
 # Show some environment info
 echo
@@ -60,41 +60,21 @@ echo '-- Environment --'
 echo "Running on: $BASE $OS"
 echo "Doing: $1"
 
-if [[ $1 == "BUILD_MOZ" ]]; then
-    do_Install_Base_Dependencies
-    do_Set_Env
-
-    do_Show_Info
-    do_Patch_JHBuild
-    do_Build_JHBuild RESET
-    do_Build_Mozilla
-    do_Save_Files
-
-    if [[ $2 == "SHRINK" ]]; then
-        do_Shrink_Image
-    fi
-
-elif [[ $1 == "GET_FILES" ]]; then
-    do_Set_Env
-    do_Get_Files
-
-    if [[ $2 == "DOCKER" ]]; then
-        do_Install_Base_Dependencies
-        do_Install_Dependencies
-        do_Shrink_Image
-    fi
-
-elif [[ $1 == "INSTALL_GIT" ]]; then
-    do_Install_Git
-
-elif [[ $1 == "GJS" ]]; then
+if [[ $1 == "GJS" ]]; then
     do_Set_Env
 
     do_Show_Info
     do_Patch_JHBuild
     do_Build_JHBuild
     do_Configure_JHBuild
-    do_Build_Package_Dependencies gjs
+
+    if [[ $2 != "devel" ]]; then
+        do_Build_Package_Dependencies gjs
+    else
+      jhbuild build m4-common
+      mkdir -p ~/jhbuild/checkout/gjs
+      do_Install_Extras
+    fi
 
     # Build and test the latest commit (merged or from a merge/pull request) of
     # Javascript Bindings for GNOME (gjs)
@@ -105,6 +85,7 @@ elif [[ $1 == "GJS" ]]; then
     cd ~/jhbuild/checkout/gjs
     git log --pretty=format:"%h %cd %s" -1
 
+    echo
     echo '-- gjs build --'
     echo
     jhbuild make --check
@@ -156,11 +137,6 @@ elif [[ $1 == "CPPCHECK" ]]; then
         echo '----------------------------------------'
         exit 3
     fi
-
-else
-    echo
-    echo '-- NOTHING TO DO --'
-    exit 1
 fi
 # Done
 echo
