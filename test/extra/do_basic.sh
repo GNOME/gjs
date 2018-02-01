@@ -4,7 +4,7 @@ function do_Install_Git(){
     echo
     echo '-- Installing Git --'
 
-    if [[ $BASE == "ubuntu" ]]; then
+    if [[ $BASE == "debian" ]]; then
         apt-get update -qq
 
         # Git
@@ -26,7 +26,7 @@ function do_Install_Base_Dependencies(){
     echo
     echo '-- Installing Base Dependencies --'
 
-    if [[ $BASE == "ubuntu" ]]; then
+    if [[ $BASE == "debian" ]]; then
         apt-get update -qq
 
         # Base dependencies
@@ -59,16 +59,30 @@ function do_Install_Dependencies(){
     echo
     echo '-- Installing Dependencies --'
 
-    if [[ $BASE == "ubuntu" ]]; then
+    if [[ $BASE == "debian" ]]; then
         # Testing dependencies
         apt-get -y -qq install libgtk-3-dev gir1.2-gtk-3.0 xvfb gnome-desktop-testing dbus-x11 dbus \
-                               libreadline6 libreadline6-dev > /dev/null
+                               libedit-dev > /dev/null
 
     elif [[ $BASE == "fedora" ]]; then
         # Testing dependencies
         dnf -y -q install gtk3 gtk3-devel gobject-introspection Xvfb gnome-desktop-testing dbus-x11 dbus \
                           cairo intltool libxslt bison nspr zlib python3-devel dbus-glib libicu libffi pcre libxml2 libxslt libtool flex \
                           cairo-devel zlib-devel libffi-devel pcre-devel libxml2-devel libxslt-devel \
-                          libedit libedit-devel libasan libubsan lcov
+                          libedit-devel libasan libubsan lcov
+    fi
+}
+
+function do_Install_Extras(){
+    echo
+    echo '-- Installing Extra Dependencies --'
+
+    if [[ $BASE == "debian" ]]; then
+        # Distros development versions of needed libraries
+        apt-get -y -qq install libgirepository1.0-dev > /dev/null
+
+    elif [[ $BASE == "fedora" ]]; then
+        # Distros development versions of needed libraries
+        dnf -y -q install gobject-introspection-devel
     fi
 }
