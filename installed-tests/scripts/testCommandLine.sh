@@ -121,14 +121,14 @@ report "--help should print something before -c"
 # --help after a script file name is passed to the script
 $gjs -I sentinel help.js --help
 report "--help after script file should be passed to script"
-test -z "$("$gjs" -I sentinel help.js --help)"
+test -z "$($gjs -I sentinel help.js --help)"
 report "--help after script file should not print anything"
 
 # --help after a -c argument is passed to the script
 script='if(ARGV[0] !== "--help") imports.system.exit(1)'
 $gjs -c "$script" --help
 report "--help after -c should be passed to script"
-test -z "$("$gjs" -c "$script" --help)"
+test -z "$($gjs -c "$script" --help)"
 report "--help after -c should not print anything"
 
 # -I after a program is not consumed by GJS
@@ -145,7 +145,7 @@ report "--coverage-output after script should succeed but give a warning"
 rm -f foo/coverage.lcov
 $gjs -c 'imports.system.exit(0)' --profile=foo 2>&1 | grep -q 'Gjs-WARNING.*--profile'
 report "--profile after script should succeed but give a warning"
-rm -f foo
+rm -rf foo
 
 # --version works
 $gjs --version >/dev/null
@@ -162,22 +162,24 @@ report "--version after -c should not print anything"
 
 # --profile
 rm -f gjs-*.syscap foo.syscap
-$gjs -c 'imports.system.exit(0)' && test ! -f gjs-*.syscap
+$gjs -c 'imports.system.exit(0)' && test ! -f gjs-*.syscap || ls -lah *.syscap
 report "no profiling data should be dumped without --profile"
 
 # Skip some tests if built without profiler support
-if gjs --profile -c 1 2>&1 | grep -q 'Gjs-Message.*Profiler is disabled'; then
+if $gjs --profile -c 1 2>&1 | grep -q 'Gjs-Message.*Profiler is disabled'; then
     reason="profiler is disabled"
     skip "--profile should dump profiling data to the default file name" "$reason"
     skip "--profile with argument should dump profiling data to the named file" "$reason"
     skip "GJS_ENABLE_PROFILER=1 should enable the profiler" "$reason"
 else
-    $gjs --profile -c 'imports.system.exit(0)' && test -f gjs-*.syscap
+    rm -f gjs-*.syscap
+    $gjs --profile -c 'imports.system.exit(0)' && test -f gjs-*.syscap || ls -lah *.syscap
     report "--profile should dump profiling data to the default file name"
-    $gjs --profile=foo.syscap -c 'imports.system.exit(0)' && test -f foo.syscap
+    rm -f gjs-*.syscap
+    $gjs --profile=foo.syscap -c 'imports.system.exit(0)' && test -f foo.syscap || ls -lah *.syscap
     report "--profile with argument should dump profiling data to the named file"
-    rm -f gjs-*.syscap foo.syscap
-    GJS_ENABLE_PROFILER=1 $gjs -c 'imports.system.exit(0)' && test -f gjs-*.syscap
+    rm -f foo.syscap && rm -f gjs-*.syscap
+    GJS_ENABLE_PROFILER=1 $gjs -c 'imports.system.exit(0)' && test -f gjs-*.syscap || ls -lah *.syscap
     report "GJS_ENABLE_PROFILER=1 should enable the profiler"
     rm -f gjs-*.syscap
 fi
@@ -193,7 +195,7 @@ report "interpreter should stop running jobs when one calls System.exit()"
 
 $gjs -c "Promise.resolve().then(() => { throw new Error(); });" 2>&1 | grep -q 'Gjs-WARNING.*Unhandled promise rejection.*[sS]tack trace'
 report "unhandled promise rejection should be reported"
-test -z $($gjs awaitcatch.js)
+test -z "$($gjs awaitcatch.js)"
 report "catching an await expression should not cause unhandled rejection"
 
 rm -f exit.js help.js promise.js awaitcatch.js
