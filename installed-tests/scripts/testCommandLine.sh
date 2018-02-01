@@ -162,7 +162,7 @@ report "--version after -c should not print anything"
 
 # --profile
 rm -f gjs-*.syscap foo.syscap
-$gjs -c 'imports.system.exit(0)' && test ! -f gjs-*.syscap
+$gjs -c 'imports.system.exit(0)' && ! stat gjs-*.syscap &> /dev/null
 report "no profiling data should be dumped without --profile"
 
 # Skip some tests if built without profiler support
@@ -173,7 +173,7 @@ if $gjs --profile -c 1 2>&1 | grep -q 'Gjs-Message.*Profiler is disabled'; then
     skip "GJS_ENABLE_PROFILER=1 should enable the profiler" "$reason"
 else
     rm -f gjs-*.syscap
-    $gjs --profile -c 'imports.system.exit(0)' && test -f gjs-*.syscap
+    $gjs --profile -c 'imports.system.exit(0)' && stat gjs-*.syscap &> /dev/null
     report "--profile should dump profiling data to the default file name"
     rm -f gjs-*.syscap
     $gjs --profile=foo.syscap -c 'imports.system.exit(0)' && test -f foo.syscap
@@ -181,7 +181,7 @@ else
     rm -f foo.syscap && rm -f gjs-*.syscap
     GJS_ENABLE_PROFILER=1 $gjs -c 'imports.system.exit(0)' && stat gjs-*.syscap &> /dev/null
     report "GJS_ENABLE_PROFILER=1 should enable the profiler"
-    ls -lah gjs-*.syscap; rm -f gjs-*.syscap
+    rm -f gjs-*.syscap
 fi
 
 # interpreter handles queued promise jobs correctly
