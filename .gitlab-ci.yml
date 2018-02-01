@@ -24,7 +24,7 @@ before_script:
     - 'if [[ -n "${CODECHECK}" ]]; then
          $(pwd)/test/test-ci.sh "$CODECHECK";
        else
-         $(pwd)/test/test-ci.sh GJS;
+         $(pwd)/test/test-ci.sh GJS "$DEV";
        fi'
 
     # Run extra tests
@@ -39,10 +39,10 @@ before_script:
 
 ubuntu_gcc:
   <<: *build
-  image: claudioandre/spidermonkey:ubuntu.1710.gcc
+  image: claudioandre/spidermonkey:ubuntu.dev.gcc
   variables:
-    BASE: ubuntu
-    OS: ubuntu.1710.gcc
+    BASE: debian
+    OS: ubuntu.dev.gcc
     CC: gcc
     BUILD_OPTS: "--enable-installed-tests"
   only:
@@ -50,31 +50,43 @@ ubuntu_gcc:
 
 ubuntu_clang:
   <<: *build
-  image: claudioandre/spidermonkey:ubuntu.1710.gcc
+  image: claudioandre/spidermonkey:ubuntu.dev.gcc
   variables:
-    BASE: ubuntu
-    OS: ubuntu.1710.gcc
+    BASE: debian
+    OS: ubuntu.dev.gcc
     CC: clang
+    DEV: devel
     BUILD_OPTS: "--enable-installed-tests"
   only:
     - master@GNOME/gjs
 
 fedora_gcc:
   <<: *build
-  image: claudioandre/spidermonkey:fedora.26.gcc
+  image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     BASE: fedora
-    OS: fedora.26.gcc
+    OS: fedora.dev.gcc
     CC: gcc
+    DEV: devel
     BUILD_OPTS: "--enable-ubsan"
 
 fedora_clang:
   <<: *build
-  image: claudioandre/spidermonkey:fedora.26.gcc
+  image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     BASE: fedora
-    OS: fedora.26.gcc
+    OS: fedora.dev.gcc
     CC: clang
+    DEV: devel
+    BUILD_OPTS: "--enable-ubsan"
+
+coverage:
+  <<: *build
+  image: claudioandre/spidermonkey:fedora.27.gcc
+  variables:
+    BASE: fedora
+    OS: fedora.27.gcc
+    CC: gcc
     BUILD_OPTS: "--enable-code-coverage"
     coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
   artifacts:
@@ -83,12 +95,12 @@ fedora_clang:
     - $(pwd)/coverage/
     - $(pwd)/.cache/jhbuild/build/gjs/test-suite.log
 
-fedora_cppcheck:
+cppcheck:
   <<: *build
-  image: claudioandre/spidermonkey:fedora.26.gcc
+  image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     BASE: fedora
-    OS: fedora.26.gcc
+    OS: fedora.dev.gcc
     CODECHECK: "CPPCHECK"
 
 # Failure routine
