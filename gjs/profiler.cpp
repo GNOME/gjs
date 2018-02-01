@@ -510,6 +510,8 @@ gjs_profiler_stop(GjsProfiler *self)
     self->running = false;
 }
 
+#ifdef ENABLE_PROFILER
+
 static gboolean
 gjs_profiler_sigusr2(void *data)
 {
@@ -525,6 +527,8 @@ gjs_profiler_sigusr2(void *data)
 
     return G_SOURCE_CONTINUE;
 }
+
+#endif  /* ENABLE_PROFILER */
 
 /*
  * _gjs_profiler_setup_signals:
