@@ -44,6 +44,7 @@ ubuntu_gcc:
     BASE: debian
     OS: ubuntu.dev.gcc
     CC: gcc
+    DEV: devel
     BUILD_OPTS: "--enable-installed-tests"
   only:
     - master@GNOME/gjs
