@@ -120,11 +120,13 @@ gjs_init_class_dynamic(JSContext              *context,
     } else {
         /* Have to fake it with JSPROP_RESOLVING, otherwise it will trigger
          * the resolve hook */
-        if (!JS_DefineProperty(context, constructor, "prototype", prototype,
-                               JSPROP_PERMANENT | JSPROP_READONLY | JSPROP_RESOLVING))
+        if (!gjs_object_define_property(context, constructor,
+                                        GJS_STRING_PROTOTYPE, prototype,
+                                        JSPROP_PERMANENT | JSPROP_READONLY | JSPROP_RESOLVING))
             goto out;
-        if (!JS_DefineProperty(context, prototype, "constructor", constructor,
-                               JSPROP_RESOLVING))
+        if (!gjs_object_define_property(context, prototype,
+                                        GJS_STRING_CONSTRUCTOR, constructor,
+                                        JSPROP_RESOLVING))
             goto out;
     }
 
