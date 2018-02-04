@@ -116,7 +116,15 @@ struct _GjsContextClass {
     GObjectClass parent;
 };
 
+/* Temporary workaround for https://bugzilla.gnome.org/show_bug.cgi?id=793175 */
+#if __GNUC__ >= 8
+_Pragma("GCC diagnostic push")
+_Pragma("GCC diagnostic ignored \"-Wcast-function-type\"")
+#endif
 G_DEFINE_TYPE(GjsContext, gjs_context, G_TYPE_OBJECT);
+#if __GNUC__ >= 8
+_Pragma("GCC diagnostic pop")
+#endif
 
 enum {
     PROP_0,

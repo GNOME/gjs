@@ -30,7 +30,15 @@ struct _GjsDBusImplementationPrivate {
     guint                 idle_id;
 };
 
+/* Temporary workaround for https://bugzilla.gnome.org/show_bug.cgi?id=793175 */
+#if __GNUC__ >= 8
+_Pragma("GCC diagnostic push")
+_Pragma("GCC diagnostic ignored \"-Wcast-function-type\"")
+#endif
 G_DEFINE_TYPE(GjsDBusImplementation, gjs_dbus_implementation, G_TYPE_DBUS_INTERFACE_SKELETON)
+#if __GNUC__ >= 8
+_Pragma("GCC diagnostic pop")
+#endif
 
 static void
 gjs_dbus_implementation_method_call(GDBusConnection       *connection,
