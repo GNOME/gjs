@@ -88,6 +88,7 @@ if [[ $1 == "GJS" ]]; then
     echo
     echo '-- gjs build --'
     echo
+    export V=1
     jhbuild make --check
 
 elif [[ $1 == "GJS_EXTRA" ]]; then

@@ -2,6 +2,7 @@ services:
   - docker
 
 stages:
+- static_analysis
 - build
 - failure
 - deploy
@@ -98,6 +99,7 @@ coverage:
 
 cppcheck:
   <<: *build
+  stage: static_analysis
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     BASE: fedora
