@@ -106,6 +106,7 @@ GjsPrivate_1_0_gir_SCANNERFLAGS =	\
 	--symbol-prefix=gjs_		\
 	--warn-all			\
 	$(WARN_SCANNERFLAGS)		\
+	--verbose \
 	$(NULL)
 
 if ENABLE_GTK

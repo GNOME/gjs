@@ -139,6 +139,7 @@ Regress_1_0_gir_SCANNERFLAGS =			\
 	--warn-all --warn-error			\
 	$(libregress_scannerflags_includes)	\
 	$(WARN_SCANNERFLAGS)			\
+	--verbose \
 	$(NULL)
 if !ENABLE_CAIRO
 Regress_1_0_gir_CFLAGS = -D_GI_DISABLE_CAIRO
@@ -159,6 +160,7 @@ WarnLib_1_0_gir_FILES = $(nodist_libwarnlib_la_SOURCES)
 WarnLib_1_0_gir_SCANNERFLAGS =		\
 	--c-include="warnlib.h"		\
 	--symbol-prefix=warnlib_	\
+	--verbose \
 	$(NULL)
 TEST_INTROSPECTION_GIRS += WarnLib-1.0.gir
 
@@ -177,6 +179,7 @@ GIMarshallingTests_1_0_gir_SCANNERFLAGS =	\
 	--symbol-prefix=gi_marshalling_tests	\
 	--warn-all --warn-error			\
 	$(WARN_SCANNERFLAGS)			\
+	--verbose \
 	$(NULL)
 TEST_INTROSPECTION_GIRS += GIMarshallingTests-1.0.gir
 
