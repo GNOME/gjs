@@ -34,17 +34,32 @@ function do_Configure_JHBuild(){
     echo '-- Set JHBuild Configuration --'
 
     mkdir -p ~/.config
+
+    cat <<EOFILE > ~/.config/jhbuildrc
+skip = ['gettext', 'yelp-xsl', 'yelp-tools', 'gtk-doc']
+use_local_modulesets = True
+EOFILE
+
+    echo '-- Done --'
+}
+
+function do_Configure_MainBuild(){
+    echo
+    echo '-- Set Main JHBuild Configuration --'
+
+    mkdir -p ~/.config
     autogenargs="--enable-compile-warnings=error --with-xvfb-tests"
 
     if [[ -n "${BUILD_OPTS}" ]]; then
         autogenargs="$autogenargs $BUILD_OPTS"
     fi
 
-    cat <<EOFILE >> ~/.config/jhbuildrc
+    cat <<EOFILE > ~/.config/jhbuildrc
 module_autogenargs['gjs'] = "$autogenargs"
 module_makeargs['gjs'] = '-s'
 skip = ['gettext', 'yelp-xsl', 'yelp-tools', 'gtk-doc']
 use_local_modulesets = True
+disable_Werror = False
 EOFILE
 
     echo '-- Done --'

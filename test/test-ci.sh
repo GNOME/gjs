@@ -71,10 +71,12 @@ if [[ $1 == "GJS" ]]; then
     if [[ $2 != "devel" ]]; then
         do_Build_Package_Dependencies gjs
     else
-      jhbuild build m4-common
-      mkdir -p ~/jhbuild/checkout/gjs
-      do_Install_Extras
+        jhbuild build m4-common
+
+        mkdir -p ~/jhbuild/checkout/gjs
+        do_Install_Extras
     fi
+    do_Configure_MainBuild
 
     # Build and test the latest commit (merged or from a merge/pull request) of
     # Javascript Bindings for GNOME (gjs)
