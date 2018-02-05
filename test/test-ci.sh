@@ -45,6 +45,18 @@ function do_Show_Info(){
     fi
 }
 
+function do_Compare_Reports(){
+    # Compare the report with master and fails if new warnings is found
+    if ! diff --brief /cwd/master-report.txt /cwd/current-report.txt > /dev/null; then
+        echo '----------------------------------------'
+        echo '###  New warnings found by $1  ###'
+        echo '----------------------------------------'
+        diff -u /cwd/master-report.txt /cwd/current-report.txt || true
+        echo '----------------------------------------'
+        exit 3
+    fi
+}
+
 # ----------- Run the Tests -----------
 cd /cwd
 
@@ -88,6 +100,7 @@ if [[ $1 == "GJS" ]]; then
     echo
     echo '-- gjs build --'
     echo
+    export V=1
     jhbuild make --check
 
 elif [[ $1 == "GJS_EXTRA" ]]; then
@@ -128,15 +141,24 @@ elif [[ $1 == "CPPCHECK" ]]; then
         sed -E 's/:[0-9]+]/:LINE]/' | tee /cwd/master-report.txt
     echo
 
-    # Compare the report with master and fails if new warnings is found
-    if ! diff --brief /cwd/master-report.txt /cwd/current-report.txt > /dev/null; then
-        echo '----------------------------------------'
-        echo '###  New warnings found by cppcheck  ###'
-        echo '----------------------------------------'
-        diff -u /cwd/master-report.txt /cwd/current-report.txt || true
-        echo '----------------------------------------'
-        exit 3
-    fi
+    do_Compare_Reports cppcheck
+
+elif [[ $1 == "ESLINT" ]]; then
+    echo
+    echo '-- Javascript linter report --'
+    eslint examples installed-tests modules --format unix 2>&1 | \
+        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' | \
+        tee /cwd/current-report.txt
+
+    echo
+    echo '-- Master Javascript linter report --'
+    git clone --depth 1 https://gitlab.gnome.org/GNOME/gjs.git tmp-upstream; cd tmp-upstream || exit 1
+    eslint examples installed-tests modules --format unix 2>&1 | \
+        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' | \
+        tee /cwd/master-report.txt
+
+    do_Compare_Reports eslint
+
 fi
 # Done
 echo
