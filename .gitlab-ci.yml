@@ -85,6 +85,8 @@ fedora_gcc:
 #     CC: clang
 #     DEV: devel
 #     BUILD_OPTS: "--enable-ubsan"
+#   except:
+#     - /^wip\/.*/
 
 coverage:
   <<: *build
@@ -101,6 +103,8 @@ coverage:
     paths:
     - $(pwd)/coverage/
     - $(pwd)/.cache/jhbuild/build/gjs/test-suite.log
+  except:
+    - /^wip\/.*/
 
 cppcheck:
   <<: *build
