@@ -86,6 +86,8 @@ fedora_gcc:
 #     CC: clang
 #     DEV: devel
 #     BUILD_OPTS: "--enable-ubsan"
+#   except:
+#     - /^wip\/.*/
 
 coverage:
   <<: *build
@@ -97,6 +99,8 @@ coverage:
     CC: gcc
     BUILD_OPTS: "--enable-code-coverage"
     coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
+  except:
+    - /^wip\/.*/
 
 cppcheck:
   <<: *build
