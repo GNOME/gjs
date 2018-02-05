@@ -1,3 +1,38 @@
+Version 1.51.90
+---------------
+
+- Note that all the old Bugzilla bug reports have been migrated over to GitLab.
+
+- GJS now, once again, includes a profiler, which outputs files that can be
+  read with sysprof. To use it, simply run your program with the environment
+  variable GJS_ENABLE_PROFILER=1 set. If your program is a JS script that is
+  executed with the interpreter, you can also pass --profile to the
+  interpreter. See "gjs --help" for more info.
+
+- New API: For programs that want more control over when to start and stop
+  profiling, there is new API for GjsContext. When you create your GjsContext
+  there are two construct-only properties available, "profiler-enabled" and
+  "profiler-sigusr2". If you set profiler-sigusr2 to TRUE, then the profiler
+  can be started and stopped while the program is running by sending SIGUSR2 to
+  the process. You can also use gjs_context_get_profiler(),
+  gjs_profiler_set_filename(), gjs_profiler_start(), and gjs_profiler_stop()
+  for more explicit control.
+
+- New API: GObject.signal_connect(), GObject.signal_disconnect(), and
+  GObject.signal_emit_by_name() are now available in case a GObject-derived
+  class has conflicting connect(), disconnect() or emit() methods.
+
+- Closed bugs and merge requests:
+
+  * Handle 0-valued GType gracefully [#11, !10, Philip Chimento]
+  * Profiler [#31, !37, Christian Hergert, Philip Chimento]
+  * Various maintenance [!40, !59, Philip Chimento, Giovanni Campagna]
+  * Rename GObject.Object.connect/disconnect? [#65, !47, Giovanni Campagna]
+  * Better debugging output for uncatchable exceptions [!39, Simon McVittie]
+  * Update Docker images and various CI maintenance [!54, !56, !57, !58,
+    Claudio André]
+  * Install GJS suppression file for Valgrind [#2, !55, Philip Chimento]
+
 Version 1.50.4
 --------------
 
