@@ -4,11 +4,14 @@ function do_Set_Env(){
     echo
     echo '-- Set Environment --'
 
-    #Save cache on host
-    mkdir -p /cwd/.cache
-    export XDG_CACHE_HOME=/cwd/.cache
+    #Save cache on $pwd (required by artifacts)
+    mkdir -p $(pwd)/.cache
+    export XDG_CACHE_HOME=$(pwd)/.cache
+    cp -r /cwd/.cache $(pwd)/.cache
+
     export JHBUILD_RUN_AS_ROOT=1
     export SHELL=/bin/bash
+    PATH=$PATH:~/.local/bin
 
     if [[ -z "${DISPLAY}" ]]; then
         export DISPLAY=":0"
@@ -46,35 +49,33 @@ function do_Show_Info(){
 }
 
 # ----------- Run the Tests -----------
-cd /cwd
-
-source test/extra/do_basic.sh
-source test/extra/do_jhbuild.sh
-source test/extra/do_cache.sh
-source test/extra/do_mozilla.sh
-source test/extra/do_docker.sh
+if [[ -n "${BUILD_OPTS}" ]]; then
+    extra_opts="($BUILD_OPTS)"
+fi
 
 # Show some environment info
 echo
 echo '-- Environment --'
-echo "Running on: $BASE $OS"
+echo "Running on: $BASE $OS  $extra_opts"
 echo "Doing: $1"
+
+source test/extra/do_jhbuild.sh
+
+# Create the coverage artifacts folders
+mkdir -p $(pwd)/coverage; touch $(pwd)/coverage/doing-"$1"
 
 if [[ $1 == "GJS" ]]; then
     do_Set_Env
-
     do_Show_Info
-    do_Patch_JHBuild
-    do_Build_JHBuild
-    do_Configure_JHBuild
 
     if [[ $2 != "devel" ]]; then
+        do_Get_JHBuild
+        do_Build_JHBuild
+        do_Configure_JHBuild
         do_Build_Package_Dependencies gjs
-    else
-        jhbuild build m4-common
 
+    else
         mkdir -p ~/jhbuild/checkout/gjs
-        do_Install_Extras
     fi
     do_Configure_MainBuild
 
@@ -109,12 +110,11 @@ elif [[ $1 == "GJS_COVERAGE" ]]; then
     PATH=$PATH:~/.local/bin
 
     jhbuild run --in-builddir=gjs make check-code-coverage
-    mkdir -p /cwd/coverage
-    cp /cwd/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage.info /cwd/coverage/
-    cp -r /cwd/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage/* /cwd/coverage/
+    cp $(pwd)/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage.info $(pwd)/coverage/
+    cp -r $(pwd)/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage/* $(pwd)/coverage/
 
     echo '-----------------------------------------------------------------'
-    sed -e 's/<[^>]*>//g' /cwd/coverage/index.html | tr -d ' \t' | grep -A3 -P '^Lines:$'  | tr '\n' ' '; echo
+    sed -e 's/<[^>]*>//g' $(pwd)/coverage/index.html | tr -d ' \t' | grep -A3 -P '^Lines:$'  | tr '\n' ' '; echo
     echo '-----------------------------------------------------------------'
 
 elif [[ $1 == "CPPCHECK" ]]; then

@@ -6,10 +6,6 @@ stages:
 - failure
 - deploy
 
-before_script:
-  - rm -rf /cwd
-  - ln -sf $(pwd) /cwd
-
 .build: &build
   stage: build
   artifacts:
@@ -17,6 +13,9 @@ before_script:
     when: always
     paths:
     - $(pwd)/.cache/jhbuild/build/gjs/test-suite.log
+    - $(pwd)/.cache/jhbuild/build/gjs/config.log
+    - $(pwd)/.cache/jhbuild/build/gjs/Makefile
+    - $(pwd)/coverage/
 
   script:
     # Run static code analysis OR
@@ -91,11 +90,6 @@ coverage:
     CC: gcc
     BUILD_OPTS: "--enable-code-coverage"
     coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
-  artifacts:
-    name: coverage
-    paths:
-    - $(pwd)/coverage/
-    - $(pwd)/.cache/jhbuild/build/gjs/test-suite.log
 
 cppcheck:
   <<: *build
