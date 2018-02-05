@@ -2,6 +2,7 @@ services:
   - docker
 
 stages:
+- static_analysis
 - build
 - failure
 - deploy
@@ -80,6 +81,11 @@ fedora_clang:
     CC: clang
     DEV: devel
     BUILD_OPTS: "--enable-ubsan"
+  artifacts:
+    name: libtool
+    when: on_failure
+    paths:
+    - $(pwd)/.cache/jhbuild/build/gjs/libtool
 
 coverage:
   <<: *build
@@ -98,6 +104,7 @@ coverage:
 
 cppcheck:
   <<: *build
+  stage: static_analysis
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     BASE: fedora
