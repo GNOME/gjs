@@ -75,19 +75,18 @@ fedora_gcc:
     DEV: devel
     BUILD_OPTS: "--enable-ubsan"
 
-# Temporarily disabled: "unknown arguments -mcet and -fcf-protection"
-# fedora_clang:
-#   <<: *build
-#   stage: build
-#   image: claudioandre/spidermonkey:fedora.dev.gcc
-#   variables:
-#     BASE: fedora
-#     OS: fedora.dev.gcc
-#     CC: clang
-#     DEV: devel
-#     BUILD_OPTS: "--enable-ubsan"
-#   except:
-#     - /^wip\/.*/
+fedora_clang:
+  <<: *build
+  stage: build
+  image: claudioandre/spidermonkey:job-342.4  # temporarily pinned to old tag
+  variables:
+    BASE: fedora
+    OS: fedora.dev.gcc
+    CC: clang
+    DEV: devel
+    BUILD_OPTS: "--enable-ubsan"
+  except:
+    - /^wip\/.*/
 
 coverage:
   <<: *build
