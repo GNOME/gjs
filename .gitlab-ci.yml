@@ -2,7 +2,9 @@ services:
   - docker
 
 stages:
+- static_analysis
 - build
+- thorough_tests
 - failure
 - deploy
 
@@ -11,7 +13,6 @@ before_script:
   - ln -sf $(pwd) /cwd
 
 .build: &build
-  stage: build
   artifacts:
     name: log
     when: always
@@ -39,6 +40,7 @@ before_script:
 
 ubuntu_gcc:
   <<: *build
+  stage: build
   image: claudioandre/spidermonkey:ubuntu.dev.gcc
   variables:
     BASE: debian
@@ -51,6 +53,7 @@ ubuntu_gcc:
 
 ubuntu_clang:
   <<: *build
+  stage: build
   image: claudioandre/spidermonkey:ubuntu.dev.gcc
   variables:
     BASE: debian
@@ -63,6 +66,7 @@ ubuntu_clang:
 
 fedora_gcc:
   <<: *build
+  stage: build
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     BASE: fedora
@@ -84,6 +88,7 @@ fedora_gcc:
 
 coverage:
   <<: *build
+  stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.27.gcc
   variables:
     BASE: fedora
@@ -99,6 +104,7 @@ coverage:
 
 cppcheck:
   <<: *build
+  stage: static_analysis
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     BASE: fedora
