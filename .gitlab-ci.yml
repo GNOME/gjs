@@ -2,12 +2,14 @@ services:
   - docker
 
 stages:
+- static_analysis
 - build
+- thorough_tests
 - failure
 - deploy
 
 .build: &build
-  stage: build
+  when: on_success
   artifacts:
     name: log
     when: always
@@ -38,6 +40,7 @@ stages:
 
 ubuntu_gcc:
   <<: *build
+  stage: build
   image: claudioandre/spidermonkey:ubuntu.dev.gcc
   variables:
     BASE: debian
@@ -50,6 +53,7 @@ ubuntu_gcc:
 
 ubuntu_clang:
   <<: *build
+  stage: build
   image: claudioandre/spidermonkey:ubuntu.dev.gcc
   variables:
     BASE: debian
@@ -62,6 +66,7 @@ ubuntu_clang:
 
 fedora_gcc:
   <<: *build
+  stage: build
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     BASE: fedora
@@ -73,6 +78,7 @@ fedora_gcc:
 # Temporarily disabled: "unknown arguments -mcet and -fcf-protection"
 # fedora_clang:
 #   <<: *build
+#   stage: build
 #   image: claudioandre/spidermonkey:fedora.dev.gcc
 #   variables:
 #     BASE: fedora
@@ -80,9 +86,12 @@ fedora_gcc:
 #     CC: clang
 #     DEV: devel
 #     BUILD_OPTS: "--enable-ubsan"
+#   except:
+#     - /^wip\/.*/
 
 coverage:
   <<: *build
+  stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.27.gcc
   variables:
     BASE: fedora
@@ -90,9 +99,12 @@ coverage:
     CC: gcc
     BUILD_OPTS: "--enable-code-coverage"
     coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
+  except:
+    - /^wip\/.*/
 
 cppcheck:
   <<: *build
+  stage: static_analysis
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     BASE: fedora
