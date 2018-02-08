@@ -218,30 +218,6 @@ _Pragma("GCC diagnostic pop")
     case GJS_DEBUG_GPARAM:
         prefix = "JS G PRM";
         break;
-    case GJS_DEBUG_DATABASE:
-        prefix = "JS DB";
-        break;
-    case GJS_DEBUG_RESULTSET:
-        prefix = "JS RS";
-        break;
-    case GJS_DEBUG_WEAK_HASH:
-        prefix = "JS WEAK";
-        break;
-    case GJS_DEBUG_MAINLOOP:
-        prefix = "JS MAINLOOP";
-        break;
-    case GJS_DEBUG_PROPS:
-        prefix = "JS PROPS";
-        break;
-    case GJS_DEBUG_SCOPE:
-        prefix = "JS SCOPE";
-        break;
-    case GJS_DEBUG_HTTP:
-        prefix = "JS HTTP";
-        break;
-    case GJS_DEBUG_BYTE_ARRAY:
-        prefix = "JS BYTE ARRAY";
-        break;
     case GJS_DEBUG_GERROR:
         prefix = "JS G ERR";
         break;
