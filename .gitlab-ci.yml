@@ -87,6 +87,7 @@ fedora_clang:
     BUILD_OPTS: "--enable-ubsan"
   except:
     - /^wip\/.*/
+  allow_failure: true
 
 coverage:
   <<: *build
