@@ -30,6 +30,8 @@
 #include <mutex>
 #include <glib-object.h>
 
+#include "util/log.h"
+
 /* Thread-safe queue for enqueueing toggle-up or toggle-down events on GObjects
  * from any thread. For more information, see object.cpp, comments near
  * wrapped_gobj_toggle_notify(). */
@@ -53,6 +55,11 @@ private:
     std::deque<Item> q;
     unsigned m_idle_id;
     Handler m_toggle_handler;
+
+    /* No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1. */
+    inline void debug(const char *did, void *what) {
+        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue %s %p", did, what);
+    }
 
     std::deque<Item>::iterator find_operation_locked(GObject  *gobj,
                                                      Direction direction);
