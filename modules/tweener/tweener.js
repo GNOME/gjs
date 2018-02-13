@@ -368,7 +368,7 @@ function _onEnterFrame() {
     return true;
 }
 
-const restrictedWords = {
+var restrictedWords = {
     time: true,
     delay: true,
     userFrames: true,
