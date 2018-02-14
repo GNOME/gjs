@@ -32,7 +32,8 @@ var properties = Symbol('GObject properties');
 var requires = Symbol('GObject interface requires');
 var signals = Symbol('GObject signals');
 
-// These four will be aliased to GTK
+// These five will be aliased to GTK
+var _callbacks = Symbol('GTK widget template callbacks');
 var _children = Symbol('GTK widget template children');
 var _cssName = Symbol('GTK widget CSS name');
 var _internalChildren = Symbol('GTK widget template internal children');
@@ -74,6 +75,8 @@ function registerClass(klass) {
             klass[_children] = metaInfo.Children;
         if ('InternalChildren' in metaInfo)
             klass[_internalChildren] = metaInfo.InternalChildren;
+        if ('Callbacks' in metaInfo)
+            klass[_callbacks] = metaInfo.Callbacks;
     }
 
     if (!(klass.prototype instanceof GObject.Object) &&
@@ -440,6 +443,7 @@ function _init() {
     GObject._template = _template;
     GObject._children = _children;
     GObject._internalChildren = _internalChildren;
+    GObject._callbacks = _callbacks;
 
     // fake enum for signal accumulators, keep in sync with gi/object.c
     this.AccumulatorType = {
