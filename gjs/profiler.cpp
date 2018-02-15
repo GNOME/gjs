@@ -24,7 +24,6 @@
 #include <config.h>
 
 #include <algorithm>
-#include <alloca.h>
 #include <errno.h>
 #include <memory>
 #include <signal.h>
@@ -41,6 +40,7 @@
 #include "jsapi-util.h"
 #include "profiler-private.h"
 #ifdef ENABLE_PROFILER
+# include <alloca.h>
 # include "util/sp-capture-writer.h"
 #endif
 
