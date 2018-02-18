@@ -26,6 +26,7 @@
 #ifndef GJS_TOGGLE_H
 #define GJS_TOGGLE_H
 
+#include <atomic>
 #include <deque>
 #include <mutex>
 #include <glib-object.h>
@@ -53,6 +54,8 @@ private:
 
     std::mutex lock;
     std::deque<Item> q;
+    std::atomic_bool m_shutdown = ATOMIC_VAR_INIT(false);
+
     unsigned m_idle_id;
     Handler m_toggle_handler;
 
@@ -79,7 +82,12 @@ public:
      * want to wait for it to be processed in idle time. Returns false if queue
      * is empty. */
     bool handle_toggle(Handler handler);
-    
+
+    /* After calling this, the toggle queue won't accept any more toggles. Only
+     * intended for use when destroying the JSContext and breaking the
+     * associations between C and JS objects. */
+    void shutdown(void);
+
     /* Queues a toggle to be processed in idle time. */
     void enqueue(GObject  *gobj,
                  Direction direction,

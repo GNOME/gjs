@@ -198,6 +198,10 @@ report "unhandled promise rejection should be reported"
 test -z "$($gjs awaitcatch.js)"
 report "catching an await expression should not cause unhandled rejection"
 
+# https://gitlab.gnome.org/GNOME/gjs/issues/26
+$gjs -c 'new imports.gi.Gio.Subprocess({argv: ["true"]}).init(null);'
+report "object unref from other thread after shutdown should not race"
+
 rm -f exit.js help.js promise.js awaitcatch.js
 
 echo "1..$total"
