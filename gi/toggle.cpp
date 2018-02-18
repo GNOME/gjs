@@ -111,10 +111,27 @@ ToggleQueue::handle_toggle(Handler handler)
 }
 
 void
+ToggleQueue::shutdown(void)
+{
+    debug("shutdown", nullptr);
+    g_assert(((void)"Queue should have been emptied before shutting down",
+              q.empty()));
+    m_shutdown = true;
+}
+
+void
 ToggleQueue::enqueue(GObject               *gobj,
                      ToggleQueue::Direction direction,
                      ToggleQueue::Handler   handler)
 {
+    if (G_UNLIKELY (m_shutdown)) {
+        gjs_debug(GJS_DEBUG_GOBJECT, "Enqueuing GObject %p to toggle %s after "
+                  "shutdown, probably from another thread (%p).", gobj,
+                  direction == UP ? "UP" : "DOWN",
+                  g_thread_self());
+        return;
+    }
+
     Item item{gobj, direction};
     /* If we're toggling up we take a reference to the object now,
      * so it won't toggle down before we process it. This ensures we

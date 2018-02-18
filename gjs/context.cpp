@@ -268,7 +268,14 @@ gjs_context_dispose(GObject *object)
     if (js_context->profiler)
         g_clear_pointer(&js_context->profiler, _gjs_profiler_free);
 
-    /* Run dispose notifications first, so that anything releasing
+    /* Stop accepting entries in the toggle queue before running dispose
+     * notifications, which causes all GjsMaybeOwned instances to unroot.
+     * We don't want any objects to toggle down after that. */
+    gjs_debug(GJS_DEBUG_CONTEXT, "Shutting down toggle queue");
+    gjs_object_clear_toggles();
+    gjs_object_shutdown_toggle_queue();
+
+    /* Run dispose notifications next, so that anything releasing
      * references in response to this can still get garbage collected */
     gjs_debug(GJS_DEBUG_CONTEXT,
               "Notifying reference holders of GjsContext dispose");
