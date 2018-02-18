@@ -101,6 +101,8 @@ gjs_debug(GjsDebugTopic topic,
     static bool debug_log_enabled = false;
     static bool checked_for_timestamp = false;
     static bool print_timestamp = false;
+    static bool checked_for_thread = false;
+    static bool print_thread = false;
     static GTimer *timer = NULL;
     const char *prefix;
     va_list args;
@@ -109,6 +111,11 @@ gjs_debug(GjsDebugTopic topic,
     if (!checked_for_timestamp) {
         print_timestamp = gjs_environment_variable_is_set("GJS_DEBUG_TIMESTAMP");
         checked_for_timestamp = true;
+    }
+
+    if (!checked_for_thread) {
+        print_thread = gjs_environment_variable_is_set("GJS_DEBUG_THREAD");
+        checked_for_thread = true;
     }
 
     if (print_timestamp && !timer) {
@@ -273,6 +280,12 @@ _Pragma("GCC diagnostic pop")
         s = s2;
 
         previous = total;
+    }
+
+    if (print_thread) {
+        char *s2 = g_strdup_printf("(thread %p) %s", g_thread_self(), s);
+        g_free(s);
+        s = s2;
     }
 
     write_to_stream(logfp, prefix, s);
