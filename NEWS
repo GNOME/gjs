@@ -1,3 +1,17 @@
+Version 1.51.91
+---------------
+
+- Promises now resolve with a higher priority, so asynchronous code should be
+  faster. [Jason Hicks]
+
+- Closed bugs and merge requests:
+
+  * New build 'warnings' [#117, !62, !63, Claudio André, Philip Chimento]
+  * Various CI maintenance [!64, !65, !66, Claudio André, Philip Chimento]
+  * profiler: Don't include alloca.h when disabled [!69, Ting-Wei Lan]
+  * GNOME crash with fatal error "Finalizing proxy for an object that's
+    scheduled to be unrooted: Gio.Subprocess" in gjs [#26, !70, Philip Chimento]
+
 Version 1.51.90
 ---------------
 
