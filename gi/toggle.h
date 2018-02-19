@@ -26,9 +26,12 @@
 #ifndef GJS_TOGGLE_H
 #define GJS_TOGGLE_H
 
+#include <atomic>
 #include <deque>
 #include <mutex>
 #include <glib-object.h>
+
+#include "util/log.h"
 
 /* Thread-safe queue for enqueueing toggle-up or toggle-down events on GObjects
  * from any thread. For more information, see object.cpp, comments near
@@ -51,8 +54,15 @@ private:
 
     std::mutex lock;
     std::deque<Item> q;
+    std::atomic_bool m_shutdown = ATOMIC_VAR_INIT(false);
+
     unsigned m_idle_id;
     Handler m_toggle_handler;
+
+    /* No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1. */
+    inline void debug(const char *did, void *what) {
+        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue %s %p", did, what);
+    }
 
     std::deque<Item>::iterator find_operation_locked(GObject  *gobj,
                                                      Direction direction);
@@ -72,7 +82,12 @@ public:
      * want to wait for it to be processed in idle time. Returns false if queue
      * is empty. */
     bool handle_toggle(Handler handler);
-    
+
+    /* After calling this, the toggle queue won't accept any more toggles. Only
+     * intended for use when destroying the JSContext and breaking the
+     * associations between C and JS objects. */
+    void shutdown(void);
+
     /* Queues a toggle to be processed in idle time. */
     void enqueue(GObject  *gobj,
                  Direction direction,

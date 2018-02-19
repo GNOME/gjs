@@ -82,6 +82,7 @@ ToggleQueue::is_queued(GObject *gobj)
 std::pair<bool, bool>
 ToggleQueue::cancel(GObject *gobj)
 {
+    debug("cancel", gobj);
     std::lock_guard<std::mutex> hold(lock);
     bool had_toggle_down = find_and_erase_operation_locked(gobj, DOWN);
     bool had_toggle_up = find_and_erase_operation_locked(gobj, UP);
@@ -101,7 +102,8 @@ ToggleQueue::handle_toggle(Handler handler)
         handler(item.gobj, item.direction);
         q.pop_front();
     }
-    
+
+    debug("handle", item.gobj);
     if (item.needs_unref)
         g_object_unref(item.gobj);
     
@@ -109,10 +111,27 @@ ToggleQueue::handle_toggle(Handler handler)
 }
 
 void
+ToggleQueue::shutdown(void)
+{
+    debug("shutdown", nullptr);
+    g_assert(((void)"Queue should have been emptied before shutting down",
+              q.empty()));
+    m_shutdown = true;
+}
+
+void
 ToggleQueue::enqueue(GObject               *gobj,
                      ToggleQueue::Direction direction,
                      ToggleQueue::Handler   handler)
 {
+    if (G_UNLIKELY (m_shutdown)) {
+        gjs_debug(GJS_DEBUG_GOBJECT, "Enqueuing GObject %p to toggle %s after "
+                  "shutdown, probably from another thread (%p).", gobj,
+                  direction == UP ? "UP" : "DOWN",
+                  g_thread_self());
+        return;
+    }
+
     Item item{gobj, direction};
     /* If we're toggling up we take a reference to the object now,
      * so it won't toggle down before we process it. This ensures we
@@ -120,8 +139,11 @@ ToggleQueue::enqueue(GObject               *gobj,
      * (either only up, or down-up)
      */
     if (direction == UP) {
+        debug("enqueue UP", gobj);
         g_object_ref(gobj);
         item.needs_unref = true;
+    } else {
+        debug("enqueue DOWN", gobj);
     }
     /* If we're toggling down, we don't need to take a reference since
      * the associated JSObject already has one, and that JSObject won't

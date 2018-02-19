@@ -1143,16 +1143,19 @@ gjs_object_clear_toggles(void)
 }
 
 void
+gjs_object_shutdown_toggle_queue(void)
+{
+    auto& toggle_queue = ToggleQueue::get_default();
+    toggle_queue.shutdown();
+}
+
+void
 gjs_object_prepare_shutdown(void)
 {
-    /* First, get rid of anything left over on the main context */
-    gjs_object_clear_toggles();
-
-    /* Now, we iterate over all of the objects, breaking the JS <-> C
+    /* We iterate over all of the objects, breaking the JS <-> C
      * association.  We avoid the potential recursion implied in:
      *   toggle ref removal -> gobj dispose -> toggle ref notify
-     * by simply ignoring toggle ref notifications during this process.
-     */
+     * by emptying the toggle queue earlier in the shutdown sequence. */
     std::vector<ObjectInstance *> to_be_released;
     for (auto iter = wrapped_gobject_list.begin(); iter != wrapped_gobject_list.end(); ) {
         ObjectInstance *priv = *iter;

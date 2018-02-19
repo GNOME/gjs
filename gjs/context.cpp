@@ -257,23 +257,34 @@ warn_about_unhandled_promise_rejections(GjsContext *gjs_context)
 static void
 gjs_context_dispose(GObject *object)
 {
+    gjs_debug(GJS_DEBUG_CONTEXT, "JS shutdown sequence");
+
     GjsContext *js_context;
 
     js_context = GJS_CONTEXT(object);
 
     /* Profiler must be stopped and freed before context is shut down */
+    gjs_debug(GJS_DEBUG_CONTEXT, "Stopping profiler");
     if (js_context->profiler)
         g_clear_pointer(&js_context->profiler, _gjs_profiler_free);
 
-    /* Run dispose notifications first, so that anything releasing
+    /* Stop accepting entries in the toggle queue before running dispose
+     * notifications, which causes all GjsMaybeOwned instances to unroot.
+     * We don't want any objects to toggle down after that. */
+    gjs_debug(GJS_DEBUG_CONTEXT, "Shutting down toggle queue");
+    gjs_object_clear_toggles();
+    gjs_object_shutdown_toggle_queue();
+
+    /* Run dispose notifications next, so that anything releasing
      * references in response to this can still get garbage collected */
+    gjs_debug(GJS_DEBUG_CONTEXT,
+              "Notifying reference holders of GjsContext dispose");
     G_OBJECT_CLASS(gjs_context_parent_class)->dispose(object);
 
     if (js_context->context != NULL) {
 
         gjs_debug(GJS_DEBUG_CONTEXT,
-                  "Destroying JS context");
-
+                  "Checking unhandled promise rejections");
         warn_about_unhandled_promise_rejections(js_context);
 
         JS_BeginRequest(js_context->context);
@@ -282,34 +293,42 @@ gjs_context_dispose(GObject *object)
          * that we may not have the JS_GetPrivate() to access the
          * context
          */
+        gjs_debug(GJS_DEBUG_CONTEXT, "Final triggered GC");
         JS_GC(js_context->context);
         JS_EndRequest(js_context->context);
 
+        gjs_debug(GJS_DEBUG_CONTEXT, "Destroying JS context");
         js_context->destroying = true;
 
         /* Now, release all native objects, to avoid recursion between
          * the JS teardown and the C teardown.  The JSObject proxies
          * still exist, but point to NULL.
          */
+        gjs_debug(GJS_DEBUG_CONTEXT, "Releasing all native objects");
         gjs_object_prepare_shutdown();
 
+        gjs_debug(GJS_DEBUG_CONTEXT, "Disabling auto GC");
         if (js_context->auto_gc_id > 0) {
             g_source_remove (js_context->auto_gc_id);
             js_context->auto_gc_id = 0;
         }
 
+        gjs_debug(GJS_DEBUG_CONTEXT, "Ending trace on global object");
         JS_RemoveExtraGCRootsTracer(js_context->context, gjs_context_tracer,
                                     js_context);
         js_context->global = NULL;
 
+        gjs_debug(GJS_DEBUG_CONTEXT, "Unrooting atoms");
         for (auto& root : js_context->const_strings)
             delete root;
 
+        gjs_debug(GJS_DEBUG_CONTEXT, "Freeing allocated resources");
         delete js_context->job_queue;
 
         /* Tear down JS */
         JS_DestroyContext(js_context->context);
         js_context->context = NULL;
+        gjs_debug(GJS_DEBUG_CONTEXT, "JS context destroyed");
     }
 }
 
