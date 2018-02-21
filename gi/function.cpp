@@ -209,6 +209,14 @@ gjs_callback_closure(ffi_cif *cif,
         return;
     }
 
+    auto gjs_cx = static_cast<GjsContext *>(JS_GetContextPrivate(context));
+    if (G_UNLIKELY (!_gjs_context_get_is_owner_thread(gjs_cx))) {
+        warn_about_illegal_js_callback(trampoline, "on a different thread",
+            "an API not intended to be used in JS");
+        gjs_callback_trampoline_unref(trampoline);
+        return;
+    }
+
     JS_BeginRequest(context);
     JSAutoCompartment ac(context,
                          gjs_closure_get_callable(trampoline->js_function));
