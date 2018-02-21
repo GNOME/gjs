@@ -85,6 +85,7 @@ libgjs_la_SOURCES = $(gjs_srcs)
 
 if ENABLE_PROFILER
 libgjs_la_SOURCES += $(gjs_sysprof_srcs)
+libgjs_la_LIBADD += $(LIB_TIMER_TIME)
 endif
 
 # Also, these files used to be a separate library
