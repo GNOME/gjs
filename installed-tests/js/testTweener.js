@@ -406,4 +406,26 @@ describe('Tweener', function () {
         expect(overwrite).toHaveBeenCalledTimes(1);
         expect(complete).toHaveBeenCalledTimes(1);
     });
+
+    it('stays within min and max values', function () {
+        var objectA = {
+            x: 0,
+            y: 0
+        };
+
+        var objectB = {
+            x: 0,
+            y: 0
+        };
+
+        Tweener.addTween(objectA, { x: 300, y: 300, time: 1, max: 255, transition: "linear" });
+        Tweener.addTween(objectB, { x: -200, y: -200, time: 1, delay: 0.5, min: 0, transition: "linear" });
+
+        jasmine.clock().tick(1001);
+
+        expect(objectA.x).toEqual(255);
+        expect(objectA.y).toEqual(255);
+        expect(objectB.x).toEqual(0);
+        expect(objectB.y).toEqual(0);
+    });
 });
