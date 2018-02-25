@@ -112,7 +112,7 @@ describe('Gtk overrides', function () {
 
     it('avoid crashing when GTK vfuncs are called in garbage collection', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            '*during the sweeping phase of GC*');
+            '*during garbage collection*');
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             '*destroy*');
 

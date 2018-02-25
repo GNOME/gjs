@@ -158,6 +158,23 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
     }
 }
 
+static void
+warn_about_illegal_js_callback(const GjsCallbackTrampoline *trampoline,
+                               const char *when,
+                               const char *reason)
+{
+    g_critical("Attempting to run a JS callback %s. This is most likely caused "
+               "by %s. Because it would crash the application, it has been "
+               "blocked.", when, reason);
+    if (trampoline->info) {
+        const char *name = g_base_info_get_name(trampoline->info);
+        g_critical("The offending callback was %s()%s.", name,
+                   trampoline->is_vfunc ? ", a vfunc" : "");
+    }
+    gjs_dumpstack();
+    return;
+}
+
 /* This is our main entry point for ffi_closure callbacks.
  * ffi_prep_closure is doing pure magic and replaces the original
  * function call with this one which gives us the ffi arguments,
@@ -185,18 +202,17 @@ gjs_callback_closure(ffi_cif *cif,
 
     context = gjs_closure_get_context(trampoline->js_function);
     if (G_UNLIKELY(_gjs_context_is_sweeping(context))) {
-        g_critical("Attempting to call back into JSAPI during the sweeping phase of GC. "
-                   "This is most likely caused by not destroying a Clutter actor or Gtk+ "
-                   "widget with ::destroy signals connected, but can also be caused by "
-                   "using the destroy(), dispose(), or remove() vfuncs. "
-                   "Because it would crash the application, it has been "
-                   "blocked and the JS callback not invoked.");
-        if (trampoline->info) {
-            const char *name = g_base_info_get_name(static_cast<GIBaseInfo *>(trampoline->info));
-            g_critical("The offending callback was %s()%s.", name,
-                       trampoline->is_vfunc ? ", a vfunc" : "");
-        }
-        gjs_dumpstack();
+        warn_about_illegal_js_callback(trampoline, "during garbage collection",
+            "destroying a Clutter actor or GTK widget with ::destroy signal "
+            "connected, or using the destroy(), dispose(), or remove() vfuncs");
+        gjs_callback_trampoline_unref(trampoline);
+        return;
+    }
+
+    auto gjs_cx = static_cast<GjsContext *>(JS_GetContextPrivate(context));
+    if (G_UNLIKELY (!_gjs_context_get_is_owner_thread(gjs_cx))) {
+        warn_about_illegal_js_callback(trampoline, "on a different thread",
+            "an API not intended to be used in JS");
         gjs_callback_trampoline_unref(trampoline);
         return;
     }
