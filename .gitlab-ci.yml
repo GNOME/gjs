@@ -14,14 +14,18 @@ stages:
     name: log
     when: always
     paths:
-    - $(pwd)/.cache/jhbuild/build/gjs/test-suite.log
-    - $(pwd)/.cache/jhbuild/build/gjs/config.log
+    - $(pwd)/.cache/jhbuild/build/gjs/*.log
     - $(pwd)/.cache/jhbuild/build/gjs/Makefile
+    - $(pwd)/.cache/jhbuild/build/gjs/configure
     - $(pwd)/coverage/
     - $(pwd)/cppcheck/
     - $(pwd)/cpplint/
     - $(pwd)/eslint/
     - $(pwd)/tokei/
+    - $(pwd)/gjs-1.*/_build/sub/test-suite.log
+    - $(pwd)/*.log
+    - $(pwd)/Makefile
+    - $(pwd)/configure
 
   script:
     # CI starts here. Previous messages are GitLab Runner setup.
@@ -33,11 +37,11 @@ stages:
     - echo
 
     # Run static code analysis OR
-    # Build dependencies and 'make check' gjs
+    # Build dependencies and 'make' gjs
     - 'if [[ -n "${CODECHECK}" ]]; then
          $(pwd)/test/test-ci.sh "$CODECHECK";
        else
-         $(pwd)/test/test-ci.sh GJS "$DEV";
+         $(pwd)/test/test-ci.sh GJS;
        fi'
 
     # Run extra tests
@@ -58,7 +62,6 @@ fedora:
   variables:
     CC: gcc
     DEV: devel
-    TEST: "fast"
 
 ubuntu_gcc:
   <<: *build
@@ -67,6 +70,7 @@ ubuntu_gcc:
   variables:
     CC: gcc
     DEV: devel
+    TEST: "distcheck"
     BUILD_OPTS: "--enable-installed-tests"
   only:
     - master@GNOME/gjs
@@ -78,6 +82,7 @@ ubuntu_clang:
   variables:
     CC: clang
     DEV: devel
+    TEST: "distcheck"
     BUILD_OPTS: "--enable-installed-tests"
   only:
     - master@GNOME/gjs
@@ -89,6 +94,7 @@ fedora_gcc:
   variables:
     CC: gcc
     DEV: devel
+    TEST: "distcheck"
     BUILD_OPTS: "--enable-ubsan"
 
 coverage:
