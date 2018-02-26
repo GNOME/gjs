@@ -40,6 +40,7 @@ function do_Configure_MainBuild(){
 
     if [[ -n "${BUILD_OPTS}" ]]; then
         autogenargs="$autogenargs $BUILD_OPTS"
+        export ci_autogenargs="$autogenargs"
     fi
 
     cat <<EOFILE > ~/.config/jhbuildrc
