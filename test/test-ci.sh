@@ -139,6 +139,13 @@ elif [[ $1 == "CPPCHECK" ]]; then
         echo '----------------------------------------'
         exit 3
     fi
+
+elif [[ $1 == "TOKEI" ]]; then
+    echo
+    echo '-- Project statistics --'
+    echo
+
+    tokei .
 fi
 # Done
 echo

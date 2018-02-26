@@ -98,6 +98,13 @@ cppcheck:
   variables:
     CODECHECK: "CPPCHECK"
 
+code_statistics:
+  <<: *build
+  stage: static_analysis
+  image: claudioandre/spidermonkey:fedora.dev.gcc
+  variables:
+    CODECHECK: "TOKEI"
+
 # Publish Code Coverage Report
 pages:
   stage: docs
