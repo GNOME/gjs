@@ -5,8 +5,7 @@ stages:
 - static_analysis
 - build
 - thorough_tests
-- failure
-- deploy
+- docs
 
 .build: &build
   when: on_success
@@ -43,8 +42,6 @@ ubuntu_gcc:
   stage: build
   image: claudioandre/spidermonkey:ubuntu.dev.gcc
   variables:
-    BASE: debian
-    OS: ubuntu.dev.gcc
     CC: gcc
     DEV: devel
     BUILD_OPTS: "--enable-installed-tests"
@@ -56,8 +53,6 @@ ubuntu_clang:
   stage: build
   image: claudioandre/spidermonkey:ubuntu.dev.gcc
   variables:
-    BASE: debian
-    OS: ubuntu.dev.gcc
     CC: clang
     DEV: devel
     BUILD_OPTS: "--enable-installed-tests"
@@ -69,8 +64,6 @@ fedora_gcc:
   stage: build
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
-    BASE: fedora
-    OS: fedora.dev.gcc
     CC: gcc
     DEV: devel
     BUILD_OPTS: "--enable-ubsan"
@@ -80,8 +73,6 @@ fedora_clang:
   stage: build
   image: claudioandre/spidermonkey:job-342.4  # temporarily pinned to old tag
   variables:
-    BASE: fedora
-    OS: fedora.dev.gcc
     CC: clang
     DEV: devel
     BUILD_OPTS: "--enable-ubsan"
@@ -94,8 +85,6 @@ coverage:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.27.gcc
   variables:
-    BASE: fedora
-    OS: fedora.27.gcc
     CC: gcc
     BUILD_OPTS: "--enable-code-coverage"
     coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
@@ -107,25 +96,11 @@ cppcheck:
   stage: static_analysis
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
-    BASE: fedora
-    OS: fedora.dev.gcc
     CODECHECK: "CPPCHECK"
-
-# Failure routine
-on_failure:
-  stage: failure
-  script:
-  - echo '-- FAILURE --'
-  - 'if [[ -f $(pwd)/.cache/jhbuild/build/gjs/test-suite.log ]]; then
-        cat $(pwd)/.cache/jhbuild/build/gjs/test-suite.log;
-    else
-        echo "-- NO LOG FILE FOUND --";
-    fi'
-  when: on_failure
 
 # Publish Code Coverage Report
 pages:
-  stage: deploy
+  stage: docs
   dependencies:
     - coverage
   script:
