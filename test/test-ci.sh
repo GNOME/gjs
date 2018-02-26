@@ -108,7 +108,7 @@ elif [[ $1 == "GJS_COVERAGE" ]]; then
     echo '-- Code Coverage Report --'
     do_Set_Env
     PATH=$PATH:~/.local/bin
-
+dnf -y -q mesa-libGL-devel
     jhbuild run --in-builddir=gjs make check-code-coverage
     cp $(pwd)/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage.info $(pwd)/coverage/
     cp -r $(pwd)/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage/* $(pwd)/coverage/
