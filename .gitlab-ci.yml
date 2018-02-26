@@ -18,6 +18,9 @@ stages:
     - $(pwd)/.cache/jhbuild/build/gjs/config.log
     - $(pwd)/.cache/jhbuild/build/gjs/Makefile
     - $(pwd)/coverage/
+    - $(pwd)/gjs-1.51.92/_build/sub/test-suite.log
+    - $(pwd)/config.log
+    - $(pwd)/configure
 
   script:
     # Run static code analysis OR
@@ -25,7 +28,7 @@ stages:
     - 'if [[ -n "${CODECHECK}" ]]; then
          $(pwd)/test/test-ci.sh "$CODECHECK";
        else
-         $(pwd)/test/test-ci.sh GJS "$DEV";
+         $(pwd)/test/test-ci.sh GJS;
        fi'
 
     # Run extra tests
