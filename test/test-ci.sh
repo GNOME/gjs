@@ -68,7 +68,7 @@ if [[ $1 == "GJS" ]]; then
     do_Set_Env
     do_Show_Info
 
-    if [[ $2 != "devel" ]]; then
+    if [[ "$DEV" != "devel" ]]; then
         do_Get_JHBuild
         do_Build_JHBuild
         do_Configure_JHBuild
@@ -83,15 +83,30 @@ if [[ $1 == "GJS" ]]; then
     # Javascript Bindings for GNOME (gjs)
     echo
     echo '-- gjs status --'
-    cp -r ./ ~/jhbuild/checkout/gjs
-
-    cd ~/jhbuild/checkout/gjs
     git log --pretty=format:"%h %cd %s" -1
 
     echo
     echo '-- gjs build --'
     echo
-    jhbuild make --check
+
+    if [[ "$DEV" != "devel" ]]; then
+        cp -r ./ ~/jhbuild/checkout/gjs
+        cd ~/jhbuild/checkout/gjs
+
+        jhbuild make --check
+    else
+        # Ignore JHBuild "chroot" and do a system wide (regular) setup
+        export PKG_CONFIG_PATH=/root/jhbuild/install/lib/pkgconfig
+        export LD_LIBRARY_PATH=/root/jhbuild/install/lib
+        export AM_DISTCHECK_CONFIGURE_FLAGS="$ci_autogenargs"
+
+        # Regular (autotools only) build
+        echo "Autogen options: $ci_autogenargs"
+        eval ./autogen.sh "$ci_autogenargs"
+        make -sj2 distcheck
+        make -sj2 install
+    fi
+
 
 elif [[ $1 == "GJS_EXTRA" ]]; then
     # Extra testing. It doesn't (re)build, just run the 'Installed Tests'
