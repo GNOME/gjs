@@ -8,7 +8,6 @@ function do_Set_Env(){
     mkdir -p "$(pwd)"/.cache
     XDG_CACHE_HOME="$(pwd)"/.cache
     export XDG_CACHE_HOME
-    cp -r /cwd/.cache "$(pwd)"/.cache
 
     export JHBUILD_RUN_AS_ROOT=1
     export SHELL=/bin/bash
