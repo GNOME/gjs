@@ -37,6 +37,11 @@ stages:
          $(pwd)/test/test-ci.sh GJS_COVERAGE;
        fi'
 
+    # Run benchmark
+    - 'if [[ $BENCH == "yes" ]]; then
+         $(pwd)/test/test-ci.sh BENCHMARK;
+       fi'
+
 ubuntu_gcc:
   <<: *build
   stage: build
@@ -79,6 +84,15 @@ fedora_clang:
   except:
     - /^wip\/.*/
   allow_failure: true
+
+benchmark:
+  <<: *build
+  stage: static_analysis
+  image: claudioandre/spidermonkey:fedora.dev.gcc
+  variables:
+    CC: gcc
+    DEV: devel
+    BENCH: "yes"
 
 coverage:
   <<: *build

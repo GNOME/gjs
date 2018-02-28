@@ -91,7 +91,7 @@ if [[ $1 == "GJS" ]]; then
     echo
     echo '-- gjs build --'
     echo
-    jhbuild make --check
+    jhbuild make #--check
 
 elif [[ $1 == "GJS_EXTRA" ]]; then
     # Extra testing. It doesn't (re)build, just run the 'Installed Tests'
@@ -139,6 +139,51 @@ elif [[ $1 == "CPPCHECK" ]]; then
         echo '----------------------------------------'
         exit 3
     fi
+
+elif [[ $1 == "BENCHMARK" ]]; then
+    # It doesn't (re)build, just try to get some 'Benchmark results'
+    echo
+    echo '-- Benchmarking report --'
+
+    # Avoid interference in the profiler tests from stray environment variable
+    unset GJS_ENABLE_PROFILER
+
+    # Setup
+    gjs_bin="/root/jhbuild/install/bin/gjs"
+    export mask='{
+  "elapsed-time": %e s
+  "CPU": %P
+  "max-rss": %M kb
+  "avg-rss": %t kb
+  "avg-total": %K kb
+  "swapped": %F
+  "page-faults": %W
+  "context-switched": %c
+  "I/O": %I
+}'
+
+    # Startup time
+    chrt -f 99 /usr/bin/time \
+        -o ~/report \
+        -f "$mask" \
+        -- "$gjs_bin" --help > /dev/null
+
+    # Imports I
+    chrt -f 99 /usr/bin/time \
+        -a -o ~/report \
+        -f "$mask" \
+        -- "$gjs_bin" -c 'imports.system.exit(0)'
+
+    # Imports II
+    chrt -f 99 /usr/bin/time \
+        -a -o ~/report \
+        -f "$mask" \
+        -- "$gjs_bin" -c 'new imports.gi.Gio.Subprocess({argv: ["true"]}).init(null);'
+
+    # Print the analysis
+    echo '----------------------------------------'
+    cat ~/report
+    echo '----------------------------------------'
 fi
 # Done
 echo
