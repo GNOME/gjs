@@ -3,6 +3,7 @@ services:
 
 stages:
 - static_analysis
+- test
 - build
 - thorough_tests
 - docs
@@ -36,6 +37,16 @@ stages:
     - 'if [[ $BUILD_OPTS == *"--enable-code-coverage"* ]]; then
          $(pwd)/test/test-ci.sh GJS_COVERAGE;
        fi'
+
+fedora:
+  <<: *build
+  when: always
+  stage: test
+  image: claudioandre/spidermonkey:fedora.dev.gcc
+  variables:
+    CC: gcc
+    DEV: devel
+    TEST: "fast"
 
 ubuntu_gcc:
   <<: *build
