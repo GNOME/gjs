@@ -71,7 +71,7 @@ fedora_gcc:
 fedora_clang:
   <<: *build
   stage: build
-  image: claudioandre/spidermonkey:job-342.4  # temporarily pinned to old tag
+  image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
   variables:
     CC: clang
     DEV: devel
