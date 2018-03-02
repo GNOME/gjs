@@ -255,6 +255,31 @@ describe('Exported DBus object', function () {
         loop.run();
     });
 
+    it('can call a remote method when not using makeProxyWrapper', function () {
+        let info = Gio.DBusNodeInfo.new_for_xml(TestIface);
+        let iface = info.interfaces[0];
+        let otherProxy = null;
+        Gio.DBusProxy.new_for_bus(Gio.BusType.SESSION,
+                                  Gio.DBusProxyFlags.DO_NOT_AUTO_START,
+                                  iface,
+                                  'org.gnome.gjs.Test',
+                                  '/org/gnome/gjs/Test',
+                                  iface.name,
+                                  null,
+            (o, res) => {
+                otherProxy = Gio.DBusProxy.new_for_bus_finish(res);
+                loop.quit();
+            });
+        loop.run();
+
+        otherProxy.frobateStuffRemote({}, ([result], excp) => {
+            expect(excp).toBeNull();
+            expect(result.hello.deep_unpack()).toEqual('world');
+            loop.quit();
+        });
+        loop.run();
+    });
+
     /* excp must be exactly the exception thrown by the remote method
        (more or less) */
     it('can handle an exception thrown by a remote method', function () {
