@@ -18,6 +18,7 @@ stages:
     - $(pwd)/.cache/jhbuild/build/gjs/config.log
     - $(pwd)/.cache/jhbuild/build/gjs/Makefile
     - $(pwd)/coverage/
+    - $(pwd)/cppcheck/
 
   script:
     # Run static code analysis OR

@@ -61,8 +61,10 @@ echo "Doing: $1"
 
 source test/extra/do_jhbuild.sh
 
-# Create the coverage artifacts folders
+# Create the artifacts folders
 mkdir -p $(pwd)/coverage; touch $(pwd)/coverage/doing-"$1"
+mkdir -p $(pwd)/cppcheck; touch $(pwd)/cppcheck/doing-"$1"
+save_dir=$(pwd)
 
 if [[ $1 == "GJS" ]]; then
     do_Set_Env
@@ -121,16 +123,16 @@ elif [[ $1 == "CPPCHECK" ]]; then
     echo
     echo '-- Static code analyzer report --'
     cppcheck --inline-suppr --enable=warning,performance,portability,information,missingInclude --force -q . 2>&1 | \
-        sed -E 's/:[0-9]+]/:LINE]/' | tee /cwd/current-report.txt
+        tee "$save_dir"/cppcheck/current-report.txt | sed -E 's/:[0-9]+]/:LINE]/' | tee /cwd/current-report.txt
     echo
 
     echo '-- Master static code analyzer report --'
     git clone --depth 1 https://gitlab.gnome.org/GNOME/gjs.git tmp-upstream; cd tmp-upstream || exit 1
     cppcheck --inline-suppr --enable=warning,performance,portability,information,missingInclude --force -q . 2>&1 | \
-        sed -E 's/:[0-9]+]/:LINE]/' | tee /cwd/master-report.txt
+        tee "$save_dir"/cppcheck/master-report.txt | sed -E 's/:[0-9]+]/:LINE]/' | tee /cwd/master-report.txt
     echo
 
-    # Compare the report with master and fails if new warnings is found
+    # Compare the report with master and fails if new warnings are found
     if ! diff --brief /cwd/master-report.txt /cwd/current-report.txt > /dev/null; then
         echo '----------------------------------------'
         echo '###  New warnings found by cppcheck  ###'
