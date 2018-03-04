@@ -66,6 +66,7 @@ source test/extra/do_jhbuild.sh
 save_dir="$(pwd)"
 mkdir -p "$save_dir"/coverage; touch "$save_dir"/coverage/doing-"$1"
 mkdir -p "$save_dir"/cppcheck; touch "$save_dir"/cppcheck/doing-"$1"
+mkdir -p "$save_dir"/cpplint; touch "$save_dir"/cpplint/doing-"$1"
 mkdir -p "$save_dir"/tokei; touch "$save_dir"/tokei/doing-"$1"
 
 if [[ $1 == "GJS" ]]; then
@@ -142,6 +143,34 @@ elif [[ $1 == "CPPCHECK" ]]; then
         diff -u /cwd/master-report.txt /cwd/current-report.txt || true
         echo '----------------------------------------'
         exit 3
+    fi
+
+elif [[ $1 == "CPPLINT" ]]; then
+    # Install needed packages
+    pip install cpplint
+
+    echo
+    echo '-- Lint report --'
+    cpplint $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 | \
+        tee "$save_dir"/cpplint/current-report.txt | sed -E 's/:[0-9]+:/:LINE:/' | tee /cwd/current-report.txt
+    echo
+
+    mkdir -p ~/tmp-upstream; cd ~/tmp-upstream || exit 1
+    git clone --depth 1 https://gitlab.gnome.org/GNOME/gjs.git; cd gjs || exit 1
+
+    echo '-- Master Lint report --'
+    cpplint $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 | \
+        tee "$save_dir"/cpplint/master-report.txt | sed -E 's/:[0-9]+:/:LINE:/' | tee /cwd/master-report.txt
+    echo
+
+    # Compare the report with master and fails if new warnings are found
+    if ! diff --brief /cwd/master-report.txt /cwd/current-report.txt > /dev/null; then
+        echo '----------------------------------------'
+        echo '###  New warnings found by cpplint  ###'
+        echo '----------------------------------------'
+        diff -u /cwd/master-report.txt /cwd/current-report.txt || true
+        echo '----------------------------------------'
+        exit 4
     fi
 
 elif [[ $1 == "TOKEI" ]]; then

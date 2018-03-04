@@ -19,6 +19,7 @@ stages:
     - $(pwd)/.cache/jhbuild/build/gjs/Makefile
     - $(pwd)/coverage/
     - $(pwd)/cppcheck/
+    - $(pwd)/cpplint/
     - $(pwd)/tokei/
 
   script:
@@ -125,6 +126,13 @@ cppcheck:
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     CODECHECK: "CPPCHECK"
+
+cpplint:
+  <<: *build
+  stage: static_analysis
+  image: claudioandre/spidermonkey:fedora.dev.gcc
+  variables:
+    CODECHECK: "CPPLINT"
 
 code_statistics:
   <<: *build
