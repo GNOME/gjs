@@ -64,6 +64,7 @@ source test/extra/do_jhbuild.sh
 # Create the artifacts folders
 mkdir -p $(pwd)/coverage; touch $(pwd)/coverage/doing-"$1"
 mkdir -p $(pwd)/cppcheck; touch $(pwd)/cppcheck/doing-"$1"
+mkdir -p $(pwd)/tokei; touch $(pwd)/tokei/doing-"$1"
 save_dir=$(pwd)
 
 if [[ $1 == "GJS" ]]; then
@@ -147,7 +148,7 @@ elif [[ $1 == "TOKEI" ]]; then
     echo '-- Project statistics --'
     echo
 
-    tokei .
+    tokei . | tee "$save_dir"/tokei/report.txt
 fi
 # Done
 echo

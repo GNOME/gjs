@@ -19,6 +19,7 @@ stages:
     - $(pwd)/.cache/jhbuild/build/gjs/Makefile
     - $(pwd)/coverage/
     - $(pwd)/cppcheck/
+    - $(pwd)/tokei/
 
   script:
     # Run static code analysis OR
