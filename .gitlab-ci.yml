@@ -20,6 +20,7 @@ stages:
     - $(pwd)/coverage/
     - $(pwd)/cppcheck/
     - $(pwd)/cpplint/
+    - $(pwd)/eslint/
     - $(pwd)/tokei/
 
   script:
@@ -133,6 +134,13 @@ cpplint:
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     CODECHECK: "CPPLINT"
+
+eslint:
+  <<: *build
+  stage: static_analysis
+  image: claudioandre/spidermonkey:fedora.dev.gcc
+  variables:
+    CODECHECK: "ESLINT"
 
 code_statistics:
   <<: *build

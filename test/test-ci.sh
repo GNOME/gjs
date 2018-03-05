@@ -94,6 +94,7 @@ save_dir="$(pwd)"
 mkdir -p "$save_dir"/coverage; touch "$save_dir"/coverage/doing-"$1"
 mkdir -p "$save_dir"/cppcheck; touch "$save_dir"/cppcheck/doing-"$1"
 mkdir -p "$save_dir"/cpplint; touch "$save_dir"/cpplint/doing-"$1"
+mkdir -p "$save_dir"/eslint; touch "$save_dir"/eslint/doing-"$1"
 mkdir -p "$save_dir"/tokei; touch "$save_dir"/tokei/doing-"$1"
 
 if [[ $1 == "GJS" ]]; then
@@ -187,6 +188,32 @@ elif [[ $1 == "CPPLINT" ]]; then
 
     # Compare the report with master and fail if new warnings are found
     do_Compare_With_Upstream_Master "cppLint"
+
+elif [[ $1 == "ESLINT" ]]; then
+    # Install needed packages
+    npm install -g eslint
+
+    echo
+    echo '-- Javascript linter report --'
+    eslint examples installed-tests modules --format unix 2>&1 | \
+        tee "$save_dir"/eslint/current-report.txt | \
+        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e 's/\/builds\/claudioandre//' | \
+        tee /cwd/current-report.txt
+    echo
+
+    # Get the code committed at upstream master
+    do_Get_Upstream_Master
+    cp "$save_dir"/.eslint* .
+
+    echo '-- Master Javascript linter report --'
+    eslint examples installed-tests modules --format unix 2>&1 | \
+        tee "$save_dir"/eslint/master-report.txt | \
+        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e 's/\/builds\/claudioandre//' | \
+        tee /cwd/master-report.txt
+    echo
+
+    # Compare the report with master and fail if new warnings are found
+    do_Compare_With_Upstream_Master "esLint"
 
 elif [[ $1 == "TOKEI" ]]; then
     echo
