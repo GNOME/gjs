@@ -49,6 +49,33 @@ function do_Show_Info(){
     fi
 }
 
+function do_Get_Upstream_Master(){
+
+    echo '--------------------------------'
+    echo 'Cloning upstream master'
+
+    mkdir -p ~/tmp-upstream; cd ~/tmp-upstream || exit 1
+    git clone --depth 1 https://gitlab.gnome.org/GNOME/gjs.git; cd gjs || exit 1
+    echo '--------------------------------'
+}
+
+function do_Compare_With_Upstream_Master(){
+
+    echo '--------------------------------'
+    echo 'Compare the working code with upstream master'
+
+    if ! diff --brief /cwd/master-report.txt /cwd/current-report.txt > /dev/null; then
+        echo '----------------------------------------'
+        echo "###  New warnings found by $1  ###"
+        echo '----------------------------------------'
+        diff -u /cwd/master-report.txt /cwd/current-report.txt || true
+        echo '----------------------------------------'
+        exit 3
+    else
+        echo "=> $1 Ok"
+    fi
+}
+
 # ----------- Run the Tests -----------
 if [[ -n "${BUILD_OPTS}" ]]; then
     extra_opts="($BUILD_OPTS)"
@@ -129,21 +156,16 @@ elif [[ $1 == "CPPCHECK" ]]; then
         tee "$save_dir"/cppcheck/current-report.txt | sed -E 's/:[0-9]+]/:LINE]/' | tee /cwd/current-report.txt
     echo
 
+    # Get the code committed at upstream master
+    do_Get_Upstream_Master
+
     echo '-- Master static code analyzer report --'
-    git clone --depth 1 https://gitlab.gnome.org/GNOME/gjs.git tmp-upstream; cd tmp-upstream || exit 1
     cppcheck --inline-suppr --enable=warning,performance,portability,information,missingInclude --force -q . 2>&1 | \
         tee "$save_dir"/cppcheck/master-report.txt | sed -E 's/:[0-9]+]/:LINE]/' | tee /cwd/master-report.txt
     echo
 
-    # Compare the report with master and fails if new warnings are found
-    if ! diff --brief /cwd/master-report.txt /cwd/current-report.txt > /dev/null; then
-        echo '----------------------------------------'
-        echo '###  New warnings found by cppcheck  ###'
-        echo '----------------------------------------'
-        diff -u /cwd/master-report.txt /cwd/current-report.txt || true
-        echo '----------------------------------------'
-        exit 3
-    fi
+    # Compare the report with master and fail if new warnings are found
+    do_Compare_With_Upstream_Master "cppCheck"
 
 elif [[ $1 == "CPPLINT" ]]; then
     # Install needed packages
@@ -155,23 +177,16 @@ elif [[ $1 == "CPPLINT" ]]; then
         tee "$save_dir"/cpplint/current-report.txt | sed -E 's/:[0-9]+:/:LINE:/' | tee /cwd/current-report.txt
     echo
 
-    mkdir -p ~/tmp-upstream; cd ~/tmp-upstream || exit 1
-    git clone --depth 1 https://gitlab.gnome.org/GNOME/gjs.git; cd gjs || exit 1
+    # Get the code committed at upstream master
+    do_Get_Upstream_Master
 
     echo '-- Master Lint report --'
     cpplint $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 | \
         tee "$save_dir"/cpplint/master-report.txt | sed -E 's/:[0-9]+:/:LINE:/' | tee /cwd/master-report.txt
     echo
 
-    # Compare the report with master and fails if new warnings are found
-    if ! diff --brief /cwd/master-report.txt /cwd/current-report.txt > /dev/null; then
-        echo '----------------------------------------'
-        echo '###  New warnings found by cpplint  ###'
-        echo '----------------------------------------'
-        diff -u /cwd/master-report.txt /cwd/current-report.txt || true
-        echo '----------------------------------------'
-        exit 4
-    fi
+    # Compare the report with master and fail if new warnings are found
+    do_Compare_With_Upstream_Master "cppLint"
 
 elif [[ $1 == "TOKEI" ]]; then
     echo
