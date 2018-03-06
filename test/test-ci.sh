@@ -197,7 +197,7 @@ elif [[ $1 == "ESLINT" ]]; then
     echo '-- Javascript linter report --'
     eslint examples installed-tests modules --format unix 2>&1 | \
         tee "$save_dir"/eslint/current-report.txt | \
-        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e 's/\/builds\/claudioandre//' | \
+        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e 's/\/builds\/GNOME//' | \
         tee /cwd/current-report.txt
     echo
 
@@ -208,7 +208,7 @@ elif [[ $1 == "ESLINT" ]]; then
     echo '-- Master Javascript linter report --'
     eslint examples installed-tests modules --format unix 2>&1 | \
         tee "$save_dir"/eslint/master-report.txt | \
-        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e 's/\/builds\/claudioandre//' | \
+        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e 's/\/builds\/GNOME//' | \
         tee /cwd/master-report.txt
     echo
 
