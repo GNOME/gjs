@@ -1,0 +1,43 @@
+{
+    "env": {
+        "es6": true,
+        "jasmine": true
+    },
+    "extends": "eslint:recommended",
+    "rules": {
+        "indent": [
+            "error",
+            4,
+            {
+                "MemberExpression": "off"
+            }
+        ],
+        "linebreak-style": [
+            "error",
+            "unix"
+        ],
+        "quotes": [
+            "error",
+            "single",
+            {
+                "avoidEscape": true
+            }
+        ],
+        "semi": [
+            "error",
+            "always"
+        ]
+    },
+    "globals": {
+        "imports": false,
+        "ARGV": false,
+        "print": false,
+        "printerr": false,
+        "window": false,
+        "log": false,
+        "logError": false
+    },
+    "parserOptions": {
+        "ecmaVersion": 2017
+    }
+}
