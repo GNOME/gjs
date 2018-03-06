@@ -1,3 +1,14 @@
+Version 1.51.92
+---------------
+
+- Closed bugs and merge requests:
+
+  * abort if we are called back in a non-main thread [#75, !72, Philip Chimento]
+  * 3.27.91 build failure on debian/Ubuntu [#122, !73, Tim Lunn]
+  * Analyze project code quality with Code Climate inside CI [#10, !77, Claudio
+    André]
+  * Various CI improvements [!75, !76, !79, !80, !82, !83, Claudio André]
+
 Version 1.51.91
 ---------------
 
