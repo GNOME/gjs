@@ -5,9 +5,10 @@ function do_Set_Env(){
     echo '-- Set Environment --'
 
     #Save cache on $pwd (required by artifacts)
-    mkdir -p $(pwd)/.cache
-    export XDG_CACHE_HOME=$(pwd)/.cache
-    cp -r /cwd/.cache $(pwd)/.cache
+    mkdir -p "$(pwd)"/.cache
+    XDG_CACHE_HOME="$(pwd)"/.cache
+    export XDG_CACHE_HOME
+    cp -r /cwd/.cache "$(pwd)"/.cache
 
     export JHBUILD_RUN_AS_ROOT=1
     export SHELL=/bin/bash
@@ -61,8 +62,11 @@ echo "Doing: $1"
 
 source test/extra/do_jhbuild.sh
 
-# Create the coverage artifacts folders
-mkdir -p $(pwd)/coverage; touch $(pwd)/coverage/doing-"$1"
+# Create the artifacts folders
+save_dir="$(pwd)"
+mkdir -p "$save_dir"/coverage; touch "$save_dir"/coverage/doing-"$1"
+mkdir -p "$save_dir"/cppcheck; touch "$save_dir"/cppcheck/doing-"$1"
+mkdir -p "$save_dir"/tokei; touch "$save_dir"/tokei/doing-"$1"
 
 if [[ $1 == "GJS" ]]; then
     do_Set_Env
@@ -110,27 +114,27 @@ elif [[ $1 == "GJS_COVERAGE" ]]; then
     PATH=$PATH:~/.local/bin
 
     jhbuild run --in-builddir=gjs make check-code-coverage
-    cp $(pwd)/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage.info $(pwd)/coverage/
-    cp -r $(pwd)/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage/* $(pwd)/coverage/
+    cp "$(pwd)"/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage.info "$save_dir"/coverage/
+    cp -r "$(pwd)"/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage/* "$save_dir"/coverage/
 
     echo '-----------------------------------------------------------------'
-    sed -e 's/<[^>]*>//g' $(pwd)/coverage/index.html | tr -d ' \t' | grep -A3 -P '^Lines:$'  | tr '\n' ' '; echo
+    sed -e 's/<[^>]*>//g' "$(pwd)"/coverage/index.html | tr -d ' \t' | grep -A3 -P '^Lines:$'  | tr '\n' ' '; echo
     echo '-----------------------------------------------------------------'
 
 elif [[ $1 == "CPPCHECK" ]]; then
     echo
     echo '-- Static code analyzer report --'
     cppcheck --inline-suppr --enable=warning,performance,portability,information,missingInclude --force -q . 2>&1 | \
-        sed -E 's/:[0-9]+]/:LINE]/' | tee /cwd/current-report.txt
+        tee "$save_dir"/cppcheck/current-report.txt | sed -E 's/:[0-9]+]/:LINE]/' | tee /cwd/current-report.txt
     echo
 
     echo '-- Master static code analyzer report --'
     git clone --depth 1 https://gitlab.gnome.org/GNOME/gjs.git tmp-upstream; cd tmp-upstream || exit 1
     cppcheck --inline-suppr --enable=warning,performance,portability,information,missingInclude --force -q . 2>&1 | \
-        sed -E 's/:[0-9]+]/:LINE]/' | tee /cwd/master-report.txt
+        tee "$save_dir"/cppcheck/master-report.txt | sed -E 's/:[0-9]+]/:LINE]/' | tee /cwd/master-report.txt
     echo
 
-    # Compare the report with master and fails if new warnings is found
+    # Compare the report with master and fails if new warnings are found
     if ! diff --brief /cwd/master-report.txt /cwd/current-report.txt > /dev/null; then
         echo '----------------------------------------'
         echo '###  New warnings found by cppcheck  ###'
@@ -145,7 +149,7 @@ elif [[ $1 == "TOKEI" ]]; then
     echo '-- Project statistics --'
     echo
 
-    tokei .
+    tokei . | tee "$save_dir"/tokei/report.txt
 fi
 # Done
 echo
