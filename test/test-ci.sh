@@ -192,12 +192,13 @@ elif [[ $1 == "CPPLINT" ]]; then
 elif [[ $1 == "ESLINT" ]]; then
     # Install needed packages
     npm install -g eslint
+    tmp_path=$(dirname $CI_PROJECT_DIR)
 
     echo
     echo '-- Javascript linter report --'
     eslint examples installed-tests modules --format unix 2>&1 | \
         tee "$save_dir"/eslint/current-report.txt | \
-        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e 's/\/builds\/GNOME//' | \
+        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e "s,$tmp_path,," | \
         tee /cwd/current-report.txt
     echo
 
@@ -208,7 +209,7 @@ elif [[ $1 == "ESLINT" ]]; then
     echo '-- Master Javascript linter report --'
     eslint examples installed-tests modules --format unix 2>&1 | \
         tee "$save_dir"/eslint/master-report.txt | \
-        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e 's/\/builds\/GNOME//' | \
+        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e "s,$tmp_path,," | \
         tee /cwd/master-report.txt
     echo
 
