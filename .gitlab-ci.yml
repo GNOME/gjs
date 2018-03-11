@@ -156,6 +156,8 @@ code_statistics:
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     CODECHECK: "TOKEI"
+  only:
+    - master@GNOME/gjs
 
 # Publish Code Coverage Report
 pages:
