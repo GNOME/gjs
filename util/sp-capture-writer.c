@@ -432,7 +432,7 @@ sp_capture_writer_new_from_fd (int   fd,
   self = g_new0 (SpCaptureWriter, 1);
   self->ref_count = 1;
   self->fd = fd;
-  self->buf = (guint8 *)g_malloc (buffer_size);
+  self->buf = (guint8 *)g_malloc0 (buffer_size);
   self->len = buffer_size;
   self->next_counter_id = 1;
 
