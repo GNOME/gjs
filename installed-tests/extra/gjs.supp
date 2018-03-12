@@ -84,6 +84,54 @@
    fun:clone
 }
 
+# Various things that I don't believe are related to GJS
+
+{
+   gl-dispatch-init
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   fun:__glDispatchInit
+}
+
+{
+   gl-dispatch-register-stub-callbacks
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   fun:__glDispatchRegisterStubCallbacks
+}
+
+{
+   gtk-style-context
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:g_malloc
+   ...
+   fun:gtk_style_new
+   fun:gtk_widget_get_default_style
+}
+
+# https://bugs.freedesktop.org/show_bug.cgi?id=105466
+{
+   freedesktop-bug-105466
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   ...
+   fun:FcPatternDuplicate
+   fun:_cairo_ft_font_face_create_for_pattern
+   fun:_cairo_ft_font_face_create_for_toy
+   fun:_cairo_toy_font_face_create_impl_face
+   fun:_cairo_toy_font_face_init
+   fun:cairo_toy_font_face_create
+   fun:_cairo_gstate_ensure_font_face
+   fun:_cairo_gstate_ensure_scaled_font
+   fun:_cairo_gstate_get_scaled_font
+   fun:_cairo_default_context_get_scaled_font
+   fun:cairo_show_text
+}
 
 # SpiderMonkey data races
 
