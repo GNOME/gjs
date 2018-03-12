@@ -88,10 +88,16 @@ test $? -eq 42
 report "System.exit(42) should exit with the correct exit code"
 
 # FIXME: should check -eq 42 specifically, but in debug mode we will be
-# hitting an assertion
-$gjs exit.js
-test $? -ne 0
-report "System.exit() should still exit across an FFI boundary"
+# hitting an assertion. For this reason, skip when running under valgrind
+# since nothing will be freed.
+echo "# VALGRIND = $VALGRIND"
+if test -z $VALGRIND; then
+    $gjs exit.js
+    test $? -ne 0
+    report "System.exit() should still exit across an FFI boundary"
+else
+    skip "System.exit() should still exit across an FFI boundary" "running under valgrind"
+fi
 
 # gjs --help prints GJS help
 $gjs --help >/dev/null
