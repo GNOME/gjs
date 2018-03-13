@@ -235,6 +235,16 @@ function _injectToMethod(klass, method, addition) {
     };
 }
 
+function _injectToStaticMethod(klass, method, addition) {
+    var previous = klass[method];
+
+    klass[method] = function(...parameters) {
+        let obj = previous.apply(this, parameters);
+        addition.apply(obj, parameters);
+        return obj;
+    };
+}
+
 function _wrapFunction(klass, method, addition) {
     var previous = klass[method];
 
@@ -388,6 +398,10 @@ function _init() {
 
     _injectToMethod(Gio.DBusProxy.prototype, 'init', _addDBusConvenience);
     _injectToMethod(Gio.DBusProxy.prototype, 'init_async', _addDBusConvenience);
+    _injectToStaticMethod(Gio.DBusProxy, 'new_sync', _addDBusConvenience);
+    _injectToStaticMethod(Gio.DBusProxy, 'new_finish', _addDBusConvenience);
+    _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_sync', _addDBusConvenience);
+    _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_finish', _addDBusConvenience);
     Gio.DBusProxy.prototype.connectSignal = Signals._connect;
     Gio.DBusProxy.prototype.disconnectSignal = Signals._disconnect;
 
