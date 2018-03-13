@@ -114,6 +114,26 @@ coverage:
   except:
     - /^wip\/.*/
 
+sanitizer_gcc:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:fedora.dev.gcc
+  variables:
+    CC: gcc
+    DEV: devel
+    BUILD_OPTS: "--enable-asan"
+  allow_failure: true
+
+sanitizer_clang:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
+  variables:
+    CC: clang
+    DEV: devel
+    BUILD_OPTS: "--enable-asan"
+  allow_failure: true
+
 codequality:
   stage: thorough_tests
   image: docker:latest
