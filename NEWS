@@ -1,3 +1,12 @@
+Version 1.52.0
+--------------
+
+- No changes from 1.51.92 except for the continuous integration configuration.
+
+- Closed bugs and merge requests:
+
+  * Various CI improvements [!84, !85, !86, !87, Claudio André]
+
 Version 1.51.92
 ---------------
 
