@@ -387,7 +387,7 @@ gjstest_test_profiler_start_stop(void)
 
     gjs_profiler_start(profiler);
 
-    for (size_t ix = 0; ix < 100000; ix++) {
+    for (size_t ix = 0; ix < 100; ix++) {
         GError *error = nullptr;
         int estatus;
 

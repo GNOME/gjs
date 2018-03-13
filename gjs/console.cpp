@@ -100,6 +100,7 @@ parse_profile_arg(const char *option_name,
                   GError    **error_out)
 {
     enable_profiler = true;
+    g_free(profile_output_path);
     if (value)
         profile_output_path = g_strdup(value);
     return true;
@@ -115,7 +116,6 @@ check_stray_profile_arg(const char *option_name,
               "command line. Support for this will be removed in a future "
               "version. Place the option before the script or use the "
               "GJS_ENABLE_PROFILER environment variable.");
-    g_free(profile_output_path);
     return parse_profile_arg(option_name, value, data, error_out);
 }
 
@@ -320,7 +320,6 @@ main(int argc, char **argv)
     if (enable_profiler && profile_output_path) {
         GjsProfiler *profiler = gjs_context_get_profiler(js_context);
         gjs_profiler_set_filename(profiler, profile_output_path);
-        g_free(profile_output_path);
     }
 
     /* prepare command line arguments */
@@ -350,6 +349,7 @@ main(int argc, char **argv)
         gjs_coverage_write_statistics(coverage);
 
     g_free(coverage_output_path);
+    g_free(profile_output_path);
     g_strfreev(coverage_prefixes);
     if (coverage)
         g_object_unref(coverage);
