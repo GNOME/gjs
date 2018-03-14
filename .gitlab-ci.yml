@@ -91,17 +91,6 @@ fedora_gcc:
     DEV: devel
     BUILD_OPTS: "--enable-ubsan"
 
-fedora_clang:
-  <<: *build
-  stage: build
-  image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
-  variables:
-    CC: clang
-    DEV: devel
-  except:
-    - /^wip\/.*/
-  allow_failure: true
-
 coverage:
   <<: *build
   stage: thorough_tests
