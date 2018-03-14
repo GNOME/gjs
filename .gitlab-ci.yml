@@ -91,18 +91,6 @@ fedora_gcc:
     DEV: devel
     BUILD_OPTS: "--enable-ubsan"
 
-fedora_clang:
-  <<: *build
-  stage: build
-  image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
-  variables:
-    CC: clang
-    DEV: devel
-    BUILD_OPTS: "--enable-ubsan"
-  except:
-    - /^wip\/.*/
-  allow_failure: true
-
 coverage:
   <<: *build
   stage: thorough_tests
@@ -113,6 +101,24 @@ coverage:
     coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
   except:
     - /^wip\/.*/
+
+sanitizer_gcc:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:fedora.dev.gcc
+  variables:
+    CC: gcc
+    DEV: devel
+    BUILD_OPTS: "--enable-asan --enable-ubsan"
+
+sanitizer_clang:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
+  variables:
+    CC: clang
+    DEV: devel
+    BUILD_OPTS: "--enable-asan --enable-ubsan"
 
 codequality:
   stage: thorough_tests
