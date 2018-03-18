@@ -8,6 +8,7 @@
     <file>modules/tweener/tweener.js</file>
     <file>modules/tweener/tweenList.js</file>
 
+    <file>modules/overrides/cairo.js</file>
     <file>modules/overrides/GLib.js</file>
     <file>modules/overrides/Gio.js</file>
     <file>modules/overrides/GObject.js</file>
