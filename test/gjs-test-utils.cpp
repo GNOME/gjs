@@ -138,9 +138,9 @@ gjs_crash_after_timeout(int seconds)
         return;
     }
 
-    close (pipe_fds[1]);
+    close(pipe_fds[1]);
 
-    gettimeofday (&now, NULL);
+    gettimeofday(&now, NULL);
 
     term_time = now;
     term_time.tv_sec += seconds;
