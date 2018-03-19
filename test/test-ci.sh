@@ -64,14 +64,17 @@ function do_Compare_With_Upstream_Master(){
     echo '--------------------------------'
     echo 'Compare the working code with upstream master'
 
-    if ! diff --brief /cwd/master-report.txt /cwd/current-report.txt > /dev/null; then
+    NEW_WARNINGS=$(comm -13 <(sort < /cwd/master-report.txt) <(sort < /cwd/current-report.txt) | wc -l)
+    REMOVED_WARNINGS=$(comm -23 <(sort < /cwd/master-report.txt) <(sort < /cwd/current-report.txt) | wc -l)
+    if test "$NEW_WARNINGS" -ne 0; then
         echo '----------------------------------------'
-        echo "###  New warnings found by $1  ###"
+        echo "### $NEW_WARNINGS new warnings found by $1 ###"
         echo '----------------------------------------'
-        diff -u /cwd/master-report.txt /cwd/current-report.txt || true
+        diff -u0 /cwd/master-report.txt /cwd/current-report.txt || true
         echo '----------------------------------------'
         exit 3
     else
+        echo "$REMOVED_WARNINGS were fixed."
         echo "=> $1 Ok"
     fi
 }
