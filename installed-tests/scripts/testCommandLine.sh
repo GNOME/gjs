@@ -203,6 +203,9 @@ $gjs -c "Promise.resolve().then(() => { throw new Error(); });" 2>&1 | grep -q '
 report "unhandled promise rejection should be reported"
 test -z "$($gjs awaitcatch.js)"
 report "catching an await expression should not cause unhandled rejection"
+# https://gitlab.gnome.org/GNOME/gjs/issues/18
+$gjs -c "(async () => await true)(); void foobar;" 2>&1 | grep -q 'Script .* threw an exception'
+report "main program exceptions are not swallowed by queued promise jobs"
 
 # https://gitlab.gnome.org/GNOME/gjs/issues/26
 $gjs -c 'new imports.gi.Gio.Subprocess({argv: ["true"]}).init(null);'
