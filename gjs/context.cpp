@@ -432,6 +432,11 @@ gjs_context_constructed(GObject *object)
         g_error("Failed to define properties on global object");
     }
 
+    /* Pre-import the byteArray module. We depend on this module for some of
+     * our GObject introspection marshalling, so the ByteArray prototype
+     * defined in it needs to be always available. */
+    gjs_import_native_module(cx, importer, "byteArray");
+
     JS_EndRequest(cx);
 
     g_mutex_lock (&contexts_lock);

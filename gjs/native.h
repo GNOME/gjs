@@ -42,10 +42,10 @@ bool     gjs_is_registered_native_module(JSContext  *context,
                                          JSObject   *parent,
                                          const char *name);
 
-/* called by importer.c to load a statically linked native module */
-bool gjs_import_native_module (JSContext              *context,
-                               const char             *name,
-                               JS::MutableHandleObject module_out);
+/* called by importer.cpp to load a statically linked native module */
+bool gjs_load_native_module(JSContext              *cx,
+                            const char             *name,
+                            JS::MutableHandleObject module);
 
 G_END_DECLS
 
