@@ -177,14 +177,14 @@ elif [[ $1 == "CPPLINT" ]]; then
     echo
     echo '-- Lint report --'
     cpplint $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 | \
-        tee "$save_dir"/cpplint/current-report.txt | sed -E 's/:[0-9]+:/:LINE:/' > /cwd/current-report.txt
+        tee "$save_dir"/cpplint/current-report.txt | sed -E 's/:[0-9]+:/:LINE:/' | head -n -1 > /cwd/current-report.txt
     cat "$save_dir"/cpplint/current-report.txt
     echo
 
     # Get the code committed at upstream master
     do_Get_Upstream_Master
     cpplint $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 | \
-        tee "$save_dir"/cpplint/master-report.txt | sed -E 's/:[0-9]+:/:LINE:/' > /cwd/master-report.txt
+        tee "$save_dir"/cpplint/master-report.txt | sed -E 's/:[0-9]+:/:LINE:/' | head -n -1 > /cwd/master-report.txt
     echo
 
     # Compare the report with master and fail if new warnings are found
