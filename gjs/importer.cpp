@@ -493,7 +493,7 @@ do_import(JSContext       *context,
     /* First try importing an internal module like byteArray */
     if (priv->is_root && gjs_is_registered_native_module(context, obj, name)) {
         if (!import_native_file(context, obj, name))
-            goto out;
+             goto out; // lint error
 
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "successfully imported module '%s'", name);

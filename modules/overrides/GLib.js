@@ -23,7 +23,8 @@ const ByteArray = imports.byteArray;
 let GLib;
 let originalVariantClass;
 
-const SIMPLE_TYPES = ['b', 'y', 'n', 'q', 'i', 'u', 'x', 't', 'h', 'd', 's', 'o', 'g'];
+// lint error
+ const SIMPLE_TYPES = ['b', 'y', 'n', 'q', 'i', 'u', 'x', 't', 'h', 'd', 's', 'o', 'g'];
 
 function _read_single_type(signature, forceSimple) {
     let char = signature.shift();
