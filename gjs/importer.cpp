@@ -261,33 +261,29 @@ cancel_import(JSContext       *context,
     }
 }
 
-static bool
-import_native_file(JSContext       *context,
-                   JS::HandleObject obj,
-                   const char      *name)
+/*
+ * gjs_import_native_module:
+ * @cx: the #JSContext
+ * @importer: the root importer
+ * @name: Name under which the module was registered with
+ *  gjs_register_native_module()
+ *
+ * Imports a builtin native-code module so that it is available to JS code as
+ * `imports[name]`.
+ *
+ * Returns: true on success, false if an exception was thrown.
+ */
+bool
+gjs_import_native_module(JSContext       *cx,
+                         JS::HandleObject importer,
+                         const char      *name)
 {
-    JS::RootedObject module_obj(context);
-
     gjs_debug(GJS_DEBUG_IMPORTER, "Importing '%s'", name);
 
-    if (!gjs_import_native_module(context, name, &module_obj))
-        return false;
-
-    if (!define_meta_properties(context, module_obj, NULL, name, obj))
-        return false;
-
-    if (JS_IsExceptionPending(context)) {
-        /* I am not sure whether this can happen, but if it does we want to trap it.
-         */
-        gjs_debug(GJS_DEBUG_IMPORTER,
-                  "Module '%s' reported an exception but gjs_import_native_module() returned true",
-                  name);
-        return false;
-    }
-
-    JS::RootedValue v_module(context, JS::ObjectValue(*module_obj));
-    return JS_DefineProperty(context, obj, name, v_module,
-                             GJS_MODULE_PROP_FLAGS);
+    JS::RootedObject module(cx);
+    return gjs_load_native_module(cx, name, &module) &&
+           define_meta_properties(cx, module, nullptr, name, importer) &&
+           JS_DefineProperty(cx, importer, name, module, GJS_MODULE_PROP_FLAGS);
 }
 
 static bool
@@ -492,7 +488,7 @@ do_import(JSContext       *context,
 
     /* First try importing an internal module like byteArray */
     if (priv->is_root && gjs_is_registered_native_module(context, obj, name)) {
-        if (!import_native_file(context, obj, name))
+        if (!gjs_import_native_module(context, obj, name))
             goto out;
 
         gjs_debug(GJS_DEBUG_IMPORTER,
