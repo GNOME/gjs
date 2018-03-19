@@ -155,7 +155,8 @@ elif [[ $1 == "CPPCHECK" ]]; then
     echo
     echo '-- Static code analyzer report --'
     cppcheck --inline-suppr --enable=warning,performance,portability,information,missingInclude --force -q . 2>&1 | \
-        tee "$save_dir"/cppcheck/current-report.txt | sed -E 's/:[0-9]+]/:LINE]/' | tee /cwd/current-report.txt
+        tee "$save_dir"/cppcheck/current-report.txt | sed -E 's/:[0-9]+]/:LINE]/' > /cwd/current-report.txt
+    cat "$save_dir"/cppcheck/current-report.txt
     echo
 
     # Get the code committed at upstream master
@@ -163,7 +164,7 @@ elif [[ $1 == "CPPCHECK" ]]; then
 
     echo '-- Master static code analyzer report --'
     cppcheck --inline-suppr --enable=warning,performance,portability,information,missingInclude --force -q . 2>&1 | \
-        tee "$save_dir"/cppcheck/master-report.txt | sed -E 's/:[0-9]+]/:LINE]/' | tee /cwd/master-report.txt
+        tee "$save_dir"/cppcheck/master-report.txt | sed -E 's/:[0-9]+]/:LINE]/' > /cwd/master-report.txt
     echo
 
     # Compare the report with master and fail if new warnings are found
@@ -176,7 +177,8 @@ elif [[ $1 == "CPPLINT" ]]; then
     echo
     echo '-- Lint report --'
     cpplint $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 | \
-        tee "$save_dir"/cpplint/current-report.txt | sed -E 's/:[0-9]+:/:LINE:/' | tee /cwd/current-report.txt
+        tee "$save_dir"/cpplint/current-report.txt | sed -E 's/:[0-9]+:/:LINE:/' > /cwd/current-report.txt
+    cat "$save_dir"/cpplint/current-report.txt
     echo
 
     # Get the code committed at upstream master
@@ -184,7 +186,7 @@ elif [[ $1 == "CPPLINT" ]]; then
 
     echo '-- Master Lint report --'
     cpplint $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 | \
-        tee "$save_dir"/cpplint/master-report.txt | sed -E 's/:[0-9]+:/:LINE:/' | tee /cwd/master-report.txt
+        tee "$save_dir"/cpplint/master-report.txt | sed -E 's/:[0-9]+:/:LINE:/' > /cwd/master-report.txt
     echo
 
     # Compare the report with master and fail if new warnings are found
@@ -199,8 +201,9 @@ elif [[ $1 == "ESLINT" ]]; then
     echo '-- Javascript linter report --'
     eslint examples installed-tests modules --format unix 2>&1 | \
         tee "$save_dir"/eslint/current-report.txt | \
-        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e "s,$tmp_path,," | \
-        tee /cwd/current-report.txt
+        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e "s,$tmp_path,," \
+        > /cwd/current-report.txt
+        cat "$save_dir"/eslint/current-report.txt
     echo
 
     # Get the code committed at upstream master
@@ -210,8 +213,8 @@ elif [[ $1 == "ESLINT" ]]; then
     echo '-- Master Javascript linter report --'
     eslint examples installed-tests modules --format unix 2>&1 | \
         tee "$save_dir"/eslint/master-report.txt | \
-        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e "s,$tmp_path,," | \
-        tee /cwd/master-report.txt
+        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e "s,$tmp_path,," \
+        > /cwd/master-report.txt
     echo
 
     # Compare the report with master and fail if new warnings are found
