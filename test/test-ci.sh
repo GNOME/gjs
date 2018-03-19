@@ -97,6 +97,11 @@ mkdir -p "$save_dir"/cpplint; touch "$save_dir"/cpplint/doing-"$1"
 mkdir -p "$save_dir"/eslint; touch "$save_dir"/eslint/doing-"$1"
 mkdir -p "$save_dir"/tokei; touch "$save_dir"/tokei/doing-"$1"
 
+# Allow CI to skip jobs. Its goal is to simplify housekeeping.
+# Disable tasks using the commit message. Possibilities are (and/or):
+# [skip eslint]		[skip cpplint]		[skip cppcheck]
+export log_message=$(git log -n 1)
+
 if [[ $1 == "GJS" ]]; then
     do_Set_Env
     do_Show_Info
@@ -150,7 +155,7 @@ elif [[ $1 == "GJS_COVERAGE" ]]; then
     sed -e 's/<[^>]*>//g' "$(pwd)"/coverage/index.html | tr -d ' \t' | grep -A3 -P '^Lines:$'  | tr '\n' ' '; echo
     echo '-----------------------------------------------------------------'
 
-elif [[ $1 == "CPPCHECK" ]]; then
+elif [[ $1 == "CPPCHECK" && "$log_message" != *'[skip cppcheck]'* ]]; then
     echo
     echo '-- Static code analyzer report --'
     cppcheck --inline-suppr --enable=warning,performance,portability,information,missingInclude --force -q . 2>&1 | \
@@ -168,7 +173,7 @@ elif [[ $1 == "CPPCHECK" ]]; then
     # Compare the report with master and fail if new warnings are found
     do_Compare_With_Upstream_Master "cppCheck"
 
-elif [[ $1 == "CPPLINT" ]]; then
+elif [[ $1 == "CPPLINT"  && "$log_message" != *'[skip cpplint]'* ]]; then
     # Install needed packages
     pip install cpplint
 
@@ -189,7 +194,7 @@ elif [[ $1 == "CPPLINT" ]]; then
     # Compare the report with master and fail if new warnings are found
     do_Compare_With_Upstream_Master "cppLint"
 
-elif [[ $1 == "ESLINT" ]]; then
+elif [[ $1 == "ESLINT" && "$log_message" != *'[skip eslint]'* ]]; then
     # Install needed packages
     npm install -g eslint
     tmp_path=$(dirname $CI_PROJECT_DIR)
