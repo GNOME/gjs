@@ -78,6 +78,48 @@ PKG_CHECK_MODULES([GJS_GDBUS], [$gjs_base_packages])
 PKG_CHECK_MODULES([GJS_CONSOLE], [$gjs_base_packages])
 PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
 
+CPPFLAGS_save="$CPPFLAGS"
+CPPFLAGS="$GJS_CFLAGS"
+LIBS_save="$LIBS"
+LIBS="$GJS_LIBS"
+
+dnl If SpiderMonkey was compiled with --enable-debug, then we need to define
+dnl -DDEBUG before including js-config.h.
+AC_MSG_CHECKING([whether SpiderMonkey was configured with --enable-debug])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+#include <js-config.h>
+#ifdef JS_DEBUG
+#error debug yes, if we didn't already error out due to DEBUG not being defined
+#endif
+]])], [
+  AC_MSG_RESULT([no])
+  GJS_DEBUG_DEF=
+], [
+  AC_DEFINE([HAVE_DEBUG_SPIDERMONKEY], [1],
+    [Define to 1 if SpiderMonkey was compiled with --enable-debug])
+  GJS_DEBUG_DEF='#define DEBUG 1'
+  AC_MSG_RESULT([yes])
+])
+
+# Sanity check for SpiderMonkey
+AC_MSG_CHECKING([if a minimal SpiderMonkey program compiles and runs])
+AC_RUN_IFELSE([AC_LANG_PROGRAM([
+$GJS_DEBUG_DEF
+#include <js/Initialization.h>
+  ], [
+if (!JS_Init()) exit(1);
+JS_ShutDown();
+  ])],
+  [AC_MSG_RESULT([yes])],
+  [AC_MSG_RESULT([no])
+    AC_MSG_ERROR([Check if you are using the recommended configuration for
+SpiderMonkey. See the file org.gnome.Sdk.json.in in
+https://gitlab.gnome.org/GNOME/gnome-sdk-images])],
+  [AC_MSG_RESULT([cross-compiling, unable to determine])])
+
+LIBS="$LIBS_save"
+CPPFLAGS="$CPPFLAGS_save"
+
 # Optional cairo dep (enabled by default)
 AC_ARG_WITH(cairo,
   [AS_HELP_STRING([--without-cairo], [Don't build cairo module])])
@@ -204,23 +246,6 @@ AC_ARG_ENABLE([Bsymbolic],
   [AS_HELP_STRING([--disable-Bsymbolic], [avoid linking with -Bsymbolic])])
 AS_IF([test "x$enable_Bsymbolic" != "xno"],
   [AX_APPEND_LINK_FLAGS([-Bsymbolic-functions])])
-
-dnl If SpiderMonkey was compiled with --enable-debug, then we need to define
-dnl -DDEBUG before including js-config.h.
-AC_MSG_CHECKING([whether SpiderMonkey was configured with --enable-debug])
-CPPFLAGS_save="$CPPFLAGS"
-CPPFLAGS="$GJS_CFLAGS"
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
-#include <js-config.h>
-#ifdef JS_DEBUG
-#error debug yes, if we didn't already error out due to DEBUG not being defined
-#endif
-]])], [AC_MSG_RESULT([no])], [
-  AC_DEFINE([HAVE_DEBUG_SPIDERMONKEY], [1],
-    [Define to 1 if SpiderMonkey was compiled with --enable-debug])
-  AC_MSG_RESULT([yes])
-])
-CPPFLAGS="$CPPFLAGS_save"
 
 dnl
 dnl Check for -fsanitize=address and -fsanitize=undefined support
