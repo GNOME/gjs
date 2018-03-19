@@ -807,7 +807,10 @@ gjs_context_eval(GjsContext   *js_context,
     /* The promise job queue should be drained even on error, to finish
      * outstanding async tasks before the context is torn down. Drain after
      * uncaught exceptions have been reported since draining runs callbacks. */
-    ok = _gjs_context_run_jobs(js_context) && ok;
+    {
+        JS::AutoSaveExceptionState saved_exc(js_context->context);
+        ok = _gjs_context_run_jobs(js_context) && ok;
+    }
 
     if (auto_profile)
         gjs_profiler_stop(js_context->profiler);
