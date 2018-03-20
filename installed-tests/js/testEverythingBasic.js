@@ -7,7 +7,6 @@ const Gdk = imports.gi.Gdk;
 const GLib = imports.gi.GLib;
 const Gio = imports.gi.Gio;
 const GObject = imports.gi.GObject;
-const Lang = imports.lang;
 
 describe('Life, the Universe and Everything', function () {
     it('includes booleans', function () {

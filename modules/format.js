@@ -41,7 +41,6 @@ function vprintf(str, args) {
         switch (genericGroup) {
         case '%':
             return '%';
-            break;
         case 's':
             s = String(getArg());
             break;

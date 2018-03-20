@@ -45,7 +45,6 @@ const Signals = imports.signals;
 
 var _inited = false;
 var _engineExists = false;
-var _transitionList = null;
 var _tweenList = null;
 
 var _timeScale = 1;

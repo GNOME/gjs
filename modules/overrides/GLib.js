@@ -21,7 +21,6 @@
 const ByteArray = imports.byteArray;
 
 let GLib;
-let originalVariantClass;
 
 const SIMPLE_TYPES = ['b', 'y', 'n', 'q', 'i', 'u', 'x', 't', 'h', 'd', 's', 'o', 'g'];
 

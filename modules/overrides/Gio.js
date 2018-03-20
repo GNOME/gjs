@@ -19,22 +19,10 @@
 // IN THE SOFTWARE.
 
 var GLib = imports.gi.GLib;
-var GObject = imports.gi.GObject;
 var GjsPrivate = imports.gi.GjsPrivate;
 var Lang = imports.lang;
 var Signals = imports.signals;
 var Gio;
-
-function _signatureLength(sig) {
-    var counter = 0;
-    // make it an array
-    var signature = Array.prototype.slice.call(sig);
-    while (signature.length) {
-        GLib._read_single_type(sig);
-        counter++;
-    }
-    return counter;
-}
 
 function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     var replyFunc;
