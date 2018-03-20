@@ -203,10 +203,7 @@ function _makeProxyWrapper(interfaceXml) {
 function _newNodeInfo(constructor, value) {
     if (typeof value == 'string')
         return constructor(value);
-    else if (value instanceof XML)
-        return constructor(value.toXMLString());
-    else
-        throw TypeError('Invalid type ' + Object.prototype.toString.call(value));
+    throw TypeError(`Invalid type ${Object.prototype.toString.call(value)}`);
 }
 
 function _newInterfaceInfo(value) {
