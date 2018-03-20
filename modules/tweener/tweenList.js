@@ -7,6 +7,7 @@
  * @version             1.0.4
  * @private
  */
+/* exported makePropertiesChain, TweenList */
 /*
 Licensed under the MIT License
 

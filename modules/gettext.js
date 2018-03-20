@@ -18,6 +18,9 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
+/* exported bindtextdomain, dcgettext, dgettext, dngettext, domain, dpgettext,
+gettext, LocaleCategory, ngettext, pgettext, setlocale, textdomain */
+
 /**
  * This module provides a convenience layer for the "gettext" family of functions,
  * relying on GLib for the actual implementation.

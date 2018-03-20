@@ -20,6 +20,8 @@
  * IN THE SOFTWARE.
  */
 
+/* exported addSignalMethods, WithSignals */
+
 // A couple principals of this simple signal system:
 // 1) should look just like our GObject signal binding
 // 2) memory and safety matter more than speed of connect/disconnect/emit

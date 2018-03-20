@@ -1,3 +1,5 @@
+/* exported getCount, getCountViaB, incrementCount */
+
 const B = imports.mutualImport.b;
 
 let count = 0;

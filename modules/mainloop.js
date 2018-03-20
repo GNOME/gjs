@@ -19,6 +19,9 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
+/* exported idle_add, idle_source, quit, run, source_remove, timeout_add,
+timeout_add_seconds, timeout_seconds_source, timeout_source */
+
 // A layer of convenience and backwards-compatibility over GLib MainLoop facilities
 
 const GLib = imports.gi.GLib;

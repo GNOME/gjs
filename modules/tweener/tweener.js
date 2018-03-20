@@ -7,7 +7,11 @@
  * @author              Zeh Fernando, Nate Chatellier, Arthur Debert
  * @version             1.31.71
  */
-
+/* exported addCaller, addTween, FrameTicker, getTweenCount, getTimeScale,
+pauseAllTweens, pauseTweens, PropertyList, registerSpecialProperty,
+registerSpecialPropertyModifier, registerSpecialPropertySplitter,
+removeAllTweens, removeTweens, restrictedWords, resumeAllTweens, resumeTweens,
+setFrameTicker, setTimeScale */
 /*
  Licensed under the MIT License
 

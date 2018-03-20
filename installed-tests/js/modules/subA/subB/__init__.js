@@ -1,3 +1,5 @@
+/* exported ImporterClass, testImporterFunction */
+
 function testImporterFunction() {
     return "__init__ function tested";
 }
