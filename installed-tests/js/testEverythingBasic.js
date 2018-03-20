@@ -492,7 +492,7 @@ describe('Life, the Universe and Everything', function () {
             o.emit_sig_with_array_len_prop();
         });
 
-        xit('can pass parameter to signal with array len parameter via emit', function () {
+        xit('can pass parameter to signal with array len parameter via emit', function (done) {
             o.connect('sig-with-array-len-prop', (signalObj, signalArray) => {
                 expect(signalArray).toEqual([0, 1, 2, 3, 4]);
                 done();
