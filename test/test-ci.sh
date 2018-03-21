@@ -9,6 +9,10 @@ function do_Set_Env(){
     XDG_CACHE_HOME="$(pwd)"/.cache
     export XDG_CACHE_HOME
 
+    #SpiderMonkey
+    export PKG_CONFIG_PATH=/root/jhbuild/install/lib/pkgconfig
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/root/jhbuild/install/lib
+
     export JHBUILD_RUN_AS_ROOT=1
     export SHELL=/bin/bash
     PATH=$PATH:~/.local/bin
@@ -129,8 +133,6 @@ if [[ $1 == "GJS" ]]; then
         jhbuild make --check
     else
         # Ignore JHBuild "chroot" and do a system wide (regular) setup
-        export PKG_CONFIG_PATH=/root/jhbuild/install/lib/pkgconfig
-        export LD_LIBRARY_PATH=/root/jhbuild/install/lib
         export AM_DISTCHECK_CONFIGURE_FLAGS="$ci_autogenargs"
 
         # Regular (autotools only) build
@@ -159,6 +161,21 @@ elif [[ $1 == "GJS_EXTRA" ]]; then
     else
         xvfb-run dbus-run-session -- gnome-desktop-testing-runner gjs
     fi
+
+elif [[ $1 == "VALGRIND" ]]; then
+    # Run Valgrind. It doesn't (re)build, just run the 'Valgrind Tests'
+    echo
+    echo '-- Valgrind Report --'
+    do_Set_Env
+    PATH=$PATH:~/.local/bin
+
+    # Needed setup
+    mkdir -p /root/jhbuild/install/share/glib-2.0/valgrind
+    mkdir -p /usr/local/share/glib-2.0/valgrind
+    cp /usr/share/glib-2.0/valgrind/glib.supp /root/jhbuild/install/share/glib-2.0/valgrind/glib.supp
+    cp /usr/share/glib-2.0/valgrind/glib.supp /usr/local/share/glib-2.0/valgrind/glib.supp
+
+    make check-valgrind
 
 elif [[ $1 == "GJS_COVERAGE" ]]; then
     # Code coverage test. It doesn't (re)build, just run the 'Coverage Tests'
