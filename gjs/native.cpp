@@ -75,16 +75,20 @@ gjs_is_registered_native_module(JSContext  *context,
 }
 
 /**
- * gjs_import_native_module:
- * @context:
- * @module_obj:
+ * gjs_load_native_module:
+ * @context: the #JSContext
+ * @name: Name under which the module was registered with
+ *  gjs_register_native_module()
+ * @module_out: Return location for a #JSObject
  *
- * Return a native module that's been preloaded.
+ * Loads a builtin native-code module called @name into @module_out.
+ *
+ * Returns: true on success, false if an exception was thrown.
  */
 bool
-gjs_import_native_module(JSContext              *context,
-                         const char             *name,
-                         JS::MutableHandleObject module_out)
+gjs_load_native_module(JSContext              *context,
+                       const char             *name,
+                       JS::MutableHandleObject module_out)
 {
     GjsDefineModuleFunc func;
 
