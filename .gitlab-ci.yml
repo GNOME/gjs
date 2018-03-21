@@ -54,6 +54,11 @@ stages:
          $(pwd)/test/test-ci.sh GJS_COVERAGE;
        fi'
 
+    # Run valgrind
+    - 'if [[ $BUILD_OPTS == *"--enable-valgrind"* ]]; then
+         $(pwd)/test/test-ci.sh VALGRIND;
+       fi'
+
 fedora:
   <<: *build
   when: always
@@ -140,6 +145,17 @@ codequality:
     paths: [codeclimate.json]
   only:
     - master@GNOME/gjs
+
+valgrind:
+  <<: *build
+  stage: static_analysis #CORRECT IS thorough_tests
+  image: claudioandre/spidermonkey:fedora.dev.gcc
+  variables:
+    CC: gcc
+    DEV: devel
+    TEST: "build"
+    BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind"
+  allow_failure: true
 
 cppcheck:
   <<: *build
