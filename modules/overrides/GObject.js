@@ -385,7 +385,7 @@ function _init() {
             if (iface.$gtype)
                 return GObject.type_is_a(newClass.$gtype, iface.$gtype);
             return false;
-        }
+        };
 
         return newClass;
     };

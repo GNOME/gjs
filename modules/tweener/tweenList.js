@@ -106,4 +106,4 @@ function makePropertiesChain(obj) {
      * I don't think that applies to JavaScript...
      */
     return obj;
-};
+}
