@@ -9,6 +9,13 @@ function do_Set_Env(){
     XDG_CACHE_HOME="$(pwd)"/.cache
     export XDG_CACHE_HOME
 
+    #SpiderMonkey
+    export PKG_CONFIG_PATH=/root/jhbuild/install/lib/pkgconfig
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/root/jhbuild/install/lib
+
+    #Macros
+    export ACLOCAL_PATH=$ACLOCAL_PATH:/root/jhbuild/install/share/aclocal
+
     export JHBUILD_RUN_AS_ROOT=1
     export SHELL=/bin/bash
     PATH=$PATH:~/.local/bin
@@ -136,9 +143,6 @@ if [[ $1 == "GJS" ]]; then
 
         jhbuild make --check
     else
-        # Ignore JHBuild "chroot" and do a system wide (regular) setup
-        export PKG_CONFIG_PATH=/root/jhbuild/install/lib/pkgconfig
-        export LD_LIBRARY_PATH=/root/jhbuild/install/lib
         export AM_DISTCHECK_CONFIGURE_FLAGS="--enable-compile-warnings=error --with-xvfb-tests"
 
         # Regular (autotools only) build
