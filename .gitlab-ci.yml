@@ -63,6 +63,7 @@ fedora:
   variables:
     CC: gcc
     DEV: devel
+    BUILD_OPTS: "--without-gtk --without-cairo"
 
 ubuntu_gcc:
   <<: *build
@@ -72,7 +73,7 @@ ubuntu_gcc:
     CC: gcc
     DEV: devel
     TEST: "distcheck"
-    BUILD_OPTS: "--enable-installed-tests"
+    BUILD_OPTS: "--without-gtk --without-cairo"
   only:
     - master@GNOME/gjs
 
@@ -84,7 +85,7 @@ ubuntu_clang:
     CC: clang
     DEV: devel
     TEST: "distcheck"
-    BUILD_OPTS: "--enable-installed-tests"
+    BUILD_OPTS: "--without-gtk --without-cairo"
   only:
     - master@GNOME/gjs
 
@@ -96,7 +97,7 @@ fedora_gcc:
     CC: gcc
     DEV: devel
     TEST: "distcheck"
-    BUILD_OPTS: "--enable-ubsan"
+    BUILD_OPTS: "--without-gtk --without-cairo"
 
 coverage:
   <<: *build
@@ -106,6 +107,7 @@ coverage:
     CC: gcc
     BUILD_OPTS: "--enable-code-coverage"
     coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
+    BUILD_OPTS: "--without-gtk --without-cairo"
   except:
     - /^wip\/.*/
 
@@ -116,7 +118,7 @@ sanitizer_gcc:
   variables:
     CC: gcc
     DEV: devel
-    BUILD_OPTS: "--enable-asan --enable-ubsan"
+    BUILD_OPTS: "--enable-asan --enable-ubsan --without-gtk --without-cairo"
 
 sanitizer_clang:
   <<: *build
@@ -125,7 +127,7 @@ sanitizer_clang:
   variables:
     CC: clang
     DEV: devel
-    BUILD_OPTS: "--enable-asan --enable-ubsan"
+    BUILD_OPTS: "--enable-asan --enable-ubsan --without-gtk --without-cairo"
 
 codequality:
   stage: thorough_tests
