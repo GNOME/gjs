@@ -29,12 +29,13 @@ stages:
 
   script:
     # CI starts here. Previous messages are GitLab Runner setup.
-    - echo
-    - echo "*********************************************"
-    - echo "***     JavaScript bindings for GNOME     ***"
-    - echo "***        Continuous Integration         ***"
-    - echo "*********************************************"
-    - echo
+    - 'echo;
+       echo "*********************************************";
+       echo "***     JavaScript bindings for GNOME     ***";
+       echo "***        Continuous Integration         ***";
+       echo "*********************************************";
+       echo;
+    '
 
     # Run static code analysis OR
     # Build dependencies and 'make' gjs
