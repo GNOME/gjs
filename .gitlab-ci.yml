@@ -73,7 +73,6 @@ ubuntu_gcc:
     CC: gcc
     DEV: devel
     TEST: "distcheck"
-    BUILD_OPTS: "--enable-installed-tests"
   only:
     - master@GNOME/gjs
 
@@ -85,7 +84,6 @@ ubuntu_clang:
     CC: clang
     DEV: devel
     TEST: "distcheck"
-    BUILD_OPTS: "--enable-installed-tests"
   only:
     - master@GNOME/gjs
 
@@ -97,6 +95,15 @@ fedora_clang:
     CC: clang
     DEV: devel
     TEST: "distcheck"
+
+installed_tests:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:ubuntu.dev.gcc
+  variables:
+    CC: clang
+    DEV: devel
+    BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
 
 coverage:
   <<: *build
