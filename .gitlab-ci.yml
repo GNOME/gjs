@@ -138,6 +138,8 @@ sanitizer_clang:
     DEV: devel
     TEST: "check"
     BUILD_OPTS: "--enable-asan --enable-ubsan"
+  only:
+    - master@GNOME/gjs
 
 codequality:
   stage: thorough_tests
