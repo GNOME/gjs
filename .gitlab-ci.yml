@@ -29,12 +29,13 @@ stages:
 
   script:
     # CI starts here. Previous messages are GitLab Runner setup.
-    - echo
-    - echo "*********************************************"
-    - echo "***     JavaScript bindings for GNOME     ***"
-    - echo "***        Continuous Integration         ***"
-    - echo "*********************************************"
-    - echo
+    - 'echo;
+       echo "*********************************************";
+       echo "***     JavaScript bindings for GNOME     ***";
+       echo "***        Continuous Integration         ***";
+       echo "*********************************************";
+       echo;
+    '
 
     # Run static code analysis OR
     # Build dependencies and 'make' gjs
@@ -62,6 +63,7 @@ fedora:
   variables:
     CC: gcc
     DEV: devel
+    TEST: "check"
 
 ubuntu_gcc:
   <<: *build
@@ -87,15 +89,14 @@ ubuntu_clang:
   only:
     - master@GNOME/gjs
 
-fedora_gcc:
+fedora_clang:
   <<: *build
   stage: build
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
   variables:
-    CC: gcc
+    CC: clang
     DEV: devel
     TEST: "distcheck"
-    BUILD_OPTS: "--enable-ubsan"
 
 coverage:
   <<: *build
@@ -115,6 +116,7 @@ sanitizer_gcc:
   variables:
     CC: gcc
     DEV: devel
+    TEST: "check"
     BUILD_OPTS: "--enable-asan --enable-ubsan"
 
 sanitizer_clang:
@@ -124,6 +126,7 @@ sanitizer_clang:
   variables:
     CC: clang
     DEV: devel
+    TEST: "check"
     BUILD_OPTS: "--enable-asan --enable-ubsan"
 
 codequality:
@@ -144,28 +147,28 @@ codequality:
 cppcheck:
   <<: *build
   stage: static_analysis
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: claudioandre/spidermonkey:fedora.static.analysis
   variables:
     CODECHECK: "CPPCHECK"
 
 cpplint:
   <<: *build
   stage: static_analysis
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: claudioandre/spidermonkey:fedora.static.analysis
   variables:
     CODECHECK: "CPPLINT"
 
 eslint:
   <<: *build
   stage: static_analysis
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: claudioandre/spidermonkey:fedora.static.analysis
   variables:
     CODECHECK: "ESLINT"
 
 code_statistics:
   <<: *build
   stage: static_analysis
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: claudioandre/spidermonkey:fedora.static.analysis
   variables:
     CODECHECK: "TOKEI"
   only:
