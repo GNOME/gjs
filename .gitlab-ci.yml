@@ -88,15 +88,14 @@ ubuntu_clang:
   only:
     - master@GNOME/gjs
 
-fedora_gcc:
+fedora_clang:
   <<: *build
   stage: build
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
   variables:
-    CC: gcc
+    CC: clang
     DEV: devel
     TEST: "distcheck"
-    BUILD_OPTS: "--enable-ubsan"
 
 coverage:
   <<: *build
