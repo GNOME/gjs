@@ -145,28 +145,28 @@ codequality:
 cppcheck:
   <<: *build
   stage: static_analysis
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: claudioandre/spidermonkey:fedora.static.analysis
   variables:
     CODECHECK: "CPPCHECK"
 
 cpplint:
   <<: *build
   stage: static_analysis
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: claudioandre/spidermonkey:fedora.static.analysis
   variables:
     CODECHECK: "CPPLINT"
 
 eslint:
   <<: *build
   stage: static_analysis
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: claudioandre/spidermonkey:fedora.static.analysis
   variables:
     CODECHECK: "ESLINT"
 
 code_statistics:
   <<: *build
   stage: static_analysis
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: claudioandre/spidermonkey:fedora.static.analysis
   variables:
     CODECHECK: "TOKEI"
   only:
