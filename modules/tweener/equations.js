@@ -8,6 +8,15 @@
  * @version             1.0.2
  */
 
+/* exported easeInBack, easeInBounce, easeInCirc, easeInCubic, easeInElastic,
+easeInExpo, easeInOutBack, easeInOutBounce, easeInOutCirc, easeInOutCubic,
+easeInOutElastic, easeInOutExpo, easeInOutQuad, easeInOutQuart, easeInOutQuint,
+easeInOutSine, easeInQuad, easeInQuart, easeInQuint, easeInSine, easeNone,
+easeOutBack, easeOutBounce, easeOutCirc, easeOutCubic, easeOutElastic,
+easeOutExpo, easeOutInBack, easeOutInBounce, easeOutInCirc, easeOutInCubic,
+easeOutInElastic, easeOutInExpo, easeOutInQuad, easeOutInQuart, easeOutInQuint,
+easeOutInSine, easeOutQuad, easeOutQuart, easeOutQuint, easeOutSine, linear */
+
 /*
  Disclaimer for Robert Penner's Easing Equations license:
 

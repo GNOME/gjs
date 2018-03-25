@@ -1,5 +1,7 @@
 // -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
 
+/* exported format, printf, vprintf */
+
 const GjsPrivate = imports.gi.GjsPrivate;
 
 function vprintf(str, args) {
@@ -39,7 +41,6 @@ function vprintf(str, args) {
         switch (genericGroup) {
         case '%':
             return '%';
-            break;
         case 's':
             s = String(getArg());
             break;

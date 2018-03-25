@@ -7,6 +7,7 @@
  * @version             1.0.4
  * @private
  */
+/* exported makePropertiesChain, TweenList */
 /*
 Licensed under the MIT License
 
@@ -105,4 +106,4 @@ function makePropertiesChain(obj) {
      * I don't think that applies to JavaScript...
      */
     return obj;
-};
+}

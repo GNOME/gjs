@@ -31,7 +31,7 @@ function onDeleteEvent(widget, event) {
     // Returning true gives you a chance to pop up 'are you sure you want to
     // quit?' type dialogs.
     return false;
-};
+}
 
 // When the window is given the "delete_event" signal (this is given by the
 // window manager, usually by the "close" option, or on the titlebar), we ask

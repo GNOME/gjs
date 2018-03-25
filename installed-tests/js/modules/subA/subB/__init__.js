@@ -1,3 +1,5 @@
+/* exported ImporterClass, testImporterFunction */
+
 function testImporterFunction() {
     return "__init__ function tested";
 }
@@ -14,4 +16,4 @@ ImporterClass.prototype = {
     testMethod : function() {
         return this._a;
     }
-}
+};

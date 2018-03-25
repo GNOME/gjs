@@ -1,7 +1,6 @@
 {
     "env": {
-        "es6": true,
-        "jasmine": true
+        "es6": true
     },
     "extends": "eslint:recommended",
     "rules": {
@@ -16,6 +15,12 @@
             "error",
             "unix"
         ],
+        "no-empty": [
+            "error",
+            {
+                "allowEmptyCatch": true
+            }
+        ],
         "quotes": [
             "error",
             "single",
@@ -29,13 +34,16 @@
         ]
     },
     "globals": {
-        "imports": false,
         "ARGV": false,
+        "Debugger": false,
+        "GIRepositoryGType": false,
+        "imports": false,
+        "Intl": false,
+        "log": false,
+        "logError": false,
         "print": false,
         "printerr": false,
-        "window": false,
-        "log": false,
-        "logError": false
+        "window": false
     },
     "parserOptions": {
         "ecmaVersion": 2017

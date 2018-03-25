@@ -19,22 +19,10 @@
 // IN THE SOFTWARE.
 
 var GLib = imports.gi.GLib;
-var GObject = imports.gi.GObject;
 var GjsPrivate = imports.gi.GjsPrivate;
 var Lang = imports.lang;
 var Signals = imports.signals;
 var Gio;
-
-function _signatureLength(sig) {
-    var counter = 0;
-    // make it an array
-    var signature = Array.prototype.slice.call(sig);
-    while (signature.length) {
-        GLib._read_single_type(sig);
-        counter++;
-    }
-    return counter;
-}
 
 function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     var replyFunc;
@@ -215,10 +203,7 @@ function _makeProxyWrapper(interfaceXml) {
 function _newNodeInfo(constructor, value) {
     if (typeof value == 'string')
         return constructor(value);
-    else if (value instanceof XML)
-        return constructor(value.toXMLString());
-    else
-        throw TypeError('Invalid type ' + Object.prototype.toString.call(value));
+    throw TypeError(`Invalid type ${Object.prototype.toString.call(value)}`);
 }
 
 function _newInterfaceInfo(value) {

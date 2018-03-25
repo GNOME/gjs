@@ -18,6 +18,10 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
+/* exported checkSymbol, datadir, init, initFormat, initGettext, initSubmodule,
+libdir, localedir, moduledir, name, pkgdatadir, pkglibdir, prefix, require,
+requireSymbol, run, start, version */
+
 /**
  * This module provides a set of convenience APIs for building packaged
  * applications.

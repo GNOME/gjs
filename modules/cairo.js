@@ -18,6 +18,9 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
+/* exported Antialias, Content, Extend, FillRule, Filter, FontSlant, FontWeight,
+Format, LineCap, LineJoin, Operator, PatternType, SurfaceType */
+
 const Lang = imports.lang;
 
 var Antialias = {
