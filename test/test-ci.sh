@@ -8,7 +8,6 @@ function do_Set_Env(){
     mkdir -p "$(pwd)"/.cache
     XDG_CACHE_HOME="$(pwd)"/.cache
     export XDG_CACHE_HOME
-    cp -r /cwd/.cache "$(pwd)"/.cache
 
     export JHBUILD_RUN_AS_ROOT=1
     export SHELL=/bin/bash
@@ -34,6 +33,7 @@ function do_Show_Info(){
 
     echo '--------------------------------'
     echo 'Useful build system information'
+    echo -n "Processors: "; grep -c ^processor /proc/cpuinfo
     id; uname -a
     printenv
     echo '--------------------------------'
@@ -109,7 +109,7 @@ if [[ $1 == "GJS" ]]; then
     do_Set_Env
     do_Show_Info
 
-    if [[ $2 != "devel" ]]; then
+    if [[ "$DEV" != "devel" ]]; then
         do_Get_JHBuild
         do_Build_JHBuild
         do_Configure_JHBuild
@@ -124,15 +124,36 @@ if [[ $1 == "GJS" ]]; then
     # Javascript Bindings for GNOME (gjs)
     echo
     echo '-- gjs status --'
-    cp -r ./ ~/jhbuild/checkout/gjs
-
-    cd ~/jhbuild/checkout/gjs
     git log --pretty=format:"%h %cd %s" -1
 
     echo
     echo '-- gjs build --'
     echo
-    jhbuild make --check
+
+    if [[ "$DEV" != "devel" ]]; then
+        cp -r ./ ~/jhbuild/checkout/gjs
+        cd ~/jhbuild/checkout/gjs
+
+        jhbuild make --check
+    else
+        # Ignore JHBuild "chroot" and do a system wide (regular) setup
+        export PKG_CONFIG_PATH=/root/jhbuild/install/lib/pkgconfig
+        export LD_LIBRARY_PATH=/root/jhbuild/install/lib
+        export AM_DISTCHECK_CONFIGURE_FLAGS="--enable-compile-warnings=error --with-xvfb-tests"
+
+        # Regular (autotools only) build
+        echo "Autogen options: $ci_autogenargs"
+        eval ./autogen.sh "$ci_autogenargs"
+
+        if [[ $TEST == "build" ]]; then
+            make -sj
+        elif [[ $TEST == "distcheck" ]]; then
+            make -sj distcheck
+        else
+            make -sj check
+        fi
+        make -sj install
+    fi
 
 elif [[ $1 == "GJS_EXTRA" ]]; then
     # Extra testing. It doesn't (re)build, just run the 'Installed Tests'
@@ -141,7 +162,11 @@ elif [[ $1 == "GJS_EXTRA" ]]; then
     do_Set_Env
     PATH=$PATH:~/.local/bin
 
-    xvfb-run jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
+    if [[ "$DEV" != "devel" ]]; then
+        xvfb-run jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
+    else
+        xvfb-run dbus-run-session -- gnome-desktop-testing-runner gjs
+    fi
 
 elif [[ $1 == "GJS_COVERAGE" ]]; then
     # Code coverage test. It doesn't (re)build, just run the 'Coverage Tests'
