@@ -55,6 +55,11 @@ stages:
          $(pwd)/test/test-ci.sh GJS_COVERAGE;
        fi'
 
+    # Run valgrind
+    - 'if [[ $BUILD_OPTS == *"--enable-valgrind"* ]]; then
+         $(pwd)/test/test-ci.sh VALGRIND;
+       fi'
+
 fedora:
   <<: *build
   when: always
@@ -141,6 +146,19 @@ codequality:
     - docker run --env CODECLIMATE_CODE="$PWD" --volume "$PWD":/code --volume /var/run/docker.sock:/var/run/docker.sock --volume /tmp/cc:/tmp/cc codeclimate/codeclimate analyze -f json > codeclimate.json
   artifacts:
     paths: [codeclimate.json]
+  only:
+    - master@GNOME/gjs
+
+valgrind:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:fedora.dev.gcc
+  variables:
+    CC: gcc
+    DEV: devel
+    TEST: "build"
+    BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
+  allow_failure: true
   only:
     - master@GNOME/gjs
 
