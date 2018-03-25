@@ -63,6 +63,7 @@ fedora:
   variables:
     CC: gcc
     DEV: devel
+    TEST: "check"
 
 ubuntu_gcc:
   <<: *build
@@ -115,6 +116,7 @@ sanitizer_gcc:
   variables:
     CC: gcc
     DEV: devel
+    TEST: "check"
     BUILD_OPTS: "--enable-asan --enable-ubsan"
 
 sanitizer_clang:
@@ -124,6 +126,7 @@ sanitizer_clang:
   variables:
     CC: clang
     DEV: devel
+    TEST: "check"
     BUILD_OPTS: "--enable-asan --enable-ubsan"
 
 codequality:

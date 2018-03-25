@@ -149,12 +149,12 @@ if [[ $1 == "GJS" ]]; then
         echo "Autogen options: $ci_autogenargs"
         eval ./autogen.sh "$ci_autogenargs"
 
-        if [[ $TEST == "build" ]]; then
-            make -sj
-        elif [[ $TEST == "distcheck" ]]; then
-            make -sj distcheck
-        else
-            make -sj check
+        make -sj
+
+        if [[ $TEST == "distcheck" ]]; then
+            make -s distcheck
+        elif [[ $TEST == "check" ]]; then
+            make -s check
         fi
         make -sj install
     fi
@@ -167,9 +167,9 @@ elif [[ $1 == "GJS_EXTRA" ]]; then
     PATH=$PATH:~/.local/bin
 
     if [[ "$DEV" != "devel" ]]; then
-        xvfb-run jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
+        xvfb-run -a --server-args="-screen 0 1024x768x24" jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
     else
-        xvfb-run dbus-run-session -- gnome-desktop-testing-runner gjs
+        xvfb-run -a --server-args="-screen 0 1024x768x24" dbus-run-session -- gnome-desktop-testing-runner gjs
     fi
 
 elif [[ $1 == "GJS_COVERAGE" ]]; then
