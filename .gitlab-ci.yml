@@ -98,6 +98,16 @@ fedora_clang:
     DEV: devel
     TEST: "distcheck"
 
+no_profiler:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:fedora.dev.gcc
+  variables:
+    CC: gcc
+    DEV: devel
+    TEST: "check"
+    BUILD_OPTS: "--disable-profiler"
+
 coverage:
   <<: *build
   stage: thorough_tests
