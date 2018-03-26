@@ -171,8 +171,7 @@ valgrind:
     TEST: "build"
     BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
   allow_failure: true
-  only:
-    - master@GNOME/gjs
+  when: manual
 
 cppcheck:
   <<: *build
