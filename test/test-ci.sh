@@ -172,6 +172,15 @@ elif [[ $1 == "GJS_EXTRA" ]]; then
         xvfb-run -a --server-args="-screen 0 1024x768x24" dbus-run-session -- gnome-desktop-testing-runner gjs
     fi
 
+elif [[ $1 == "VALGRIND" ]]; then
+    # Run Valgrind. It doesn't (re)build, just run the 'Valgrind Tests'
+    echo
+    echo '-- Valgrind Report --'
+    do_Set_Env
+    PATH=$PATH:~/.local/bin
+
+    make check-valgrind
+
 elif [[ $1 == "GJS_COVERAGE" ]]; then
     # Code coverage test. It doesn't (re)build, just run the 'Coverage Tests'
     echo
