@@ -313,8 +313,9 @@ gjs_build_string_array(JSContext   *context,
         g_error("Unable to reserve memory for vector");
 
     for (i = 0; i < array_length; ++i) {
+        JS::ConstUTF8CharsZ chars(array_values[i], strlen(array_values[i]));
         JS::RootedValue element(context,
-            JS::StringValue(JS_NewStringCopyZ(context, array_values[i])));
+            JS::StringValue(JS_NewStringCopyUTF8Z(context, chars)));
         if (!elems.append(element))
             g_error("Unable to append to vector");
     }
