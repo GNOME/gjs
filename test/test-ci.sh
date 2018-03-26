@@ -205,9 +205,6 @@ elif [[ $1 == "CPPCHECK" && "$log_message" != *'[skip cppcheck]'* ]]; then
     do_Compare_With_Upstream_Master "cppCheck"
 
 elif [[ $1 == "CPPLINT"  && "$log_message" != *'[skip cpplint]'* ]]; then
-    # Install needed packages
-    pip install cpplint
-
     echo
     echo '-- Lint report --'
     cpplint $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 | \
@@ -225,8 +222,6 @@ elif [[ $1 == "CPPLINT"  && "$log_message" != *'[skip cpplint]'* ]]; then
     do_Compare_With_Upstream_Master "cppLint"
 
 elif [[ $1 == "ESLINT" && "$log_message" != *'[skip eslint]'* ]]; then
-    # Install needed packages
-    npm install -g eslint
     tmp_path=$(dirname $CI_PROJECT_DIR)
 
     echo
