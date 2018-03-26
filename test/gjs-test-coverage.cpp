@@ -52,6 +52,20 @@ typedef struct _GjsCoverageFixture {
     GFile *lcov_output;
 } GjsCoverageFixture;
 
+// SpiderMonkey has a bug where collected coverage data is erased during a
+// garbage collection. If we're running the tests with JS_GC_ZEAL, then we get
+// a GC after every script execution, so we definitely won't have coverage.
+static bool
+skip_if_gc_zeal_mode(void)
+{
+    const char *gc_zeal = g_getenv("JS_GC_ZEAL");
+    if (gc_zeal && (strcmp(gc_zeal, "1") == 0 || strcmp(gc_zeal, "2") == 0)) {
+        g_test_skip("https://bugzilla.mozilla.org/show_bug.cgi?id=1447906");
+        return true;
+    }
+    return false;
+}
+
 static void
 replace_file(GFile      *file,
               const char *contents)
@@ -270,6 +284,9 @@ static void
 test_covered_file_is_duplicated_into_output_if_resource(gpointer      fixture_data,
                                                         gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *mock_resource_filename = "resource:///org/gnome/gjs/mock/test/gjs-test-coverage/loadedJSFromResource.js";
@@ -332,6 +349,9 @@ static void
 test_covered_file_is_duplicated_into_output_if_path(gpointer      fixture_data,
                                                     gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     eval_script(fixture->context, fixture->tmp_js_script);
@@ -371,6 +391,9 @@ static void
 test_new_contents_written(gpointer      fixture_data,
                           gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
     const char *existing_contents = "existing_contents\n";
     replace_file(fixture->lcov_output, existing_contents);
@@ -391,6 +414,9 @@ static void
 test_expected_source_file_name_written_to_coverage_data(gpointer      fixture_data,
                                                         gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     char *coverage_data_contents =
@@ -512,6 +538,9 @@ static void
 test_single_branch_coverage_written_to_coverage_data(gpointer      fixture_data,
                                                      gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_basic_branch =
@@ -555,6 +584,9 @@ static void
 test_multiple_branch_coverage_written_to_coverage_data(gpointer      fixture_data,
                                                        gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_case_statements_branch =
@@ -603,6 +635,9 @@ static void
 test_branches_for_multiple_case_statements_fallthrough(gpointer      fixture_data,
                                                        gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_case_statements_branch =
@@ -677,6 +712,9 @@ static void
 test_branch_not_hit_written_to_coverage_data(gpointer      fixture_data,
                                              gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_never_executed_branch =
@@ -722,6 +760,9 @@ static void
 test_function_names_written_to_coverage_data(gpointer      fixture_data,
                                              gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_named_and_unnamed_functions =
@@ -770,6 +811,9 @@ static void
 test_function_lines_written_to_coverage_data(gpointer      fixture_data,
                                              gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_functions =
@@ -837,6 +881,9 @@ static void
 test_function_hit_counts_for_big_functions_written_to_coverage_data(gpointer      fixture_data,
                                                                     gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_executed_functions =
@@ -883,6 +930,9 @@ static void
 test_function_hit_counts_for_little_functions_written_to_coverage_data(gpointer      fixture_data,
                                                                        gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_executed_functions =
@@ -925,6 +975,9 @@ static void
 test_function_hit_counts_written_to_coverage_data(gpointer      fixture_data,
                                                   gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_executed_functions =
@@ -965,6 +1018,9 @@ static void
 test_total_function_coverage_written_to_coverage_data(gpointer      fixture_data,
                                                       gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_some_executed_functions =
@@ -1022,6 +1078,9 @@ static void
 test_single_line_hit_written_to_coverage_data(gpointer      fixture_data,
                                               gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     char *coverage_data_contents =
@@ -1046,6 +1105,9 @@ static void
 test_hits_on_multiline_if_cond(gpointer      fixture_data,
                                 gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_multine_if_cond =
@@ -1081,6 +1143,9 @@ static void
 test_full_line_tally_written_to_coverage_data(gpointer      fixture_data,
                                               gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     char *coverage_data_contents =
@@ -1102,6 +1167,9 @@ static void
 test_no_hits_to_coverage_data_for_unexecuted(gpointer      fixture_data,
                                              gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     char *coverage_data_contents =
@@ -1118,6 +1186,9 @@ static void
 test_end_of_record_section_written_to_coverage_data(gpointer      fixture_data,
                                                     gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     char *coverage_data_contents =
@@ -1205,6 +1276,9 @@ static void
 test_multiple_source_file_records_written_to_coverage_data(gpointer      fixture_data,
                                                            gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageMultpleSourcesFixutre *fixture = (GjsCoverageMultpleSourcesFixutre *) fixture_data;
 
     char *coverage_data_contents =
@@ -1262,6 +1336,9 @@ static void
 test_correct_line_coverage_data_written_for_both_source_file_sectons(gpointer      fixture_data,
                                                                      gconstpointer user_data)
 {
+    if (skip_if_gc_zeal_mode())
+        return;
+
     GjsCoverageMultpleSourcesFixutre *fixture = (GjsCoverageMultpleSourcesFixutre *) fixture_data;
 
     char *coverage_data_contents =
