@@ -199,7 +199,6 @@ common_jstests_files =						\
 	installed-tests/js/testGIMarshalling.js			\
 	installed-tests/js/testGLib.js				\
 	installed-tests/js/testGObjectClass.js			\
-	installed-tests/js/testGObjectDestructionAccess.js	\
 	installed-tests/js/testGObjectInterface.js		\
 	installed-tests/js/testGTypeClass.js			\
 	installed-tests/js/testGio.js				\
@@ -224,9 +223,10 @@ jasmine_tests += installed-tests/js/testGDBus.js
 endif
 
 if ENABLE_GTK
-jasmine_tests += 				\
-	installed-tests/js/testGtk.js		\
-	installed-tests/js/testLegacyGtk.js	\
+jasmine_tests += 				                \
+	installed-tests/js/testGtk.js		                \
+	installed-tests/js/testGObjectDestructionAccess.js	\
+	installed-tests/js/testLegacyGtk.js	                \
 	$(NULL)
 endif
 
@@ -234,14 +234,15 @@ if ENABLE_CAIRO
 jasmine_tests += installed-tests/js/testCairo.js
 endif
 
-EXTRA_DIST +=						\
-	$(common_jstests_files)				\
-	installed-tests/js/testCairo.js			\
-	installed-tests/js/testGtk.js			\
-	installed-tests/js/testGDBus.js			\
-	installed-tests/js/testLegacyGtk.js		\
-	installed-tests/extra/gjs.supp			\
-	installed-tests/extra/lsan.supp			\
+EXTRA_DIST +=						        \
+	$(common_jstests_files)				        \
+	installed-tests/js/testCairo.js			        \
+	installed-tests/js/testGtk.js			        \
+	installed-tests/js/testGDBus.js			        \
+	installed-tests/js/testGObjectDestructionAccess.js	\
+	installed-tests/js/testLegacyGtk.js		        \
+	installed-tests/extra/gjs.supp			        \
+	installed-tests/extra/lsan.supp			        \
 	$(NULL)
 
 ### TEST EXECUTION #####################################################

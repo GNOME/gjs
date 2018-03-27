@@ -60,6 +60,12 @@ stages:
          $(pwd)/test/test-ci.sh VALGRIND;
        fi'
 
+    - 'echo;
+       echo "*********************************************";
+       echo "***             See you soon              ***";
+       echo "*********************************************";
+    '
+
 fedora:
   <<: *build
   when: always
@@ -168,18 +174,6 @@ codequality:
   only:
     - master@GNOME/gjs
 
-valgrind:
-  <<: *build
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.dev.gcc
-  variables:
-    CC: gcc
-    DEV: devel
-    TEST: "build"
-    BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
-  allow_failure: true
-  when: manual
-
 cppcheck:
   <<: *build
   stage: static_analysis
@@ -222,3 +216,28 @@ pages:
       - public
   only:
     - master@GNOME/gjs
+
+#############################################
+# Optional / Manual CI tests
+#############################################
+valgrind:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:fedora.dev.gcc
+  variables:
+    CC: gcc
+    DEV: devel
+    BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
+  allow_failure: true
+  when: manual
+
+no_graphics:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:fedora.dev.gcc
+  variables:
+    CC: gcc
+    DEV: devel
+    TEST: "check"
+    BUILD_OPTS: "--without-cairo --without-gtk"
+  when: manual
