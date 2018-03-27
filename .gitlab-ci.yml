@@ -78,7 +78,6 @@ ubuntu_gcc:
     CC: gcc
     DEV: devel
     TEST: "distcheck"
-    BUILD_OPTS: "--enable-installed-tests"
   only:
     - master@GNOME/gjs
 
@@ -90,7 +89,6 @@ ubuntu_clang:
     CC: clang
     DEV: devel
     TEST: "distcheck"
-    BUILD_OPTS: "--enable-installed-tests"
   only:
     - master@GNOME/gjs
 
@@ -112,6 +110,15 @@ no_profiler:
     DEV: devel
     TEST: "check"
     BUILD_OPTS: "--disable-profiler"
+
+installed_tests:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:ubuntu.dev.gcc
+  variables:
+    CC: clang
+    DEV: devel
+    BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
 
 coverage:
   <<: *build
