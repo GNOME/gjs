@@ -1072,8 +1072,30 @@ handle_toggle_down(GObject *gobj)
      * collected by the GC
      */
     if (priv->keep_alive.rooted()) {
+        GjsContext *context;
+
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Unrooting object");
         priv->keep_alive.switch_to_unrooted();
+
+        /* During a GC, the collector asks each object which other
+         * objects that it wants to hold on to so if there's an entire
+         * section of the heap graph that's not connected to anything
+         * else, and not reachable from the root set, then it can be
+         * trashed all at once.
+         *
+         * GObjects, however, don't work like that, there's only a
+         * reference count but no notion of who owns the reference so,
+         * a JS object that's proxying a GObject is unconditionally held
+         * alive as long as the GObject has >1 references.
+         *
+         * Since we cannot know how many more wrapped GObjects are going
+         * be marked for garbage collection after the owner is destroyed,
+         * always queue a garbage collection when a toggle reference goes
+         * down.
+         */
+        context = gjs_context_get_current();
+        if (!_gjs_context_destroying(context))
+            _gjs_context_schedule_gc(context);
     }
 }
 
