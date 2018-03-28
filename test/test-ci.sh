@@ -110,7 +110,7 @@ mkdir -p "$save_dir"/tokei; touch "$save_dir"/tokei/doing-"$1"
 # Allow CI to skip jobs. Its goal is to simplify housekeeping.
 # Disable tasks using the commit message. Possibilities are (and/or):
 # [skip eslint]		[skip cpplint]		[skip cppcheck]
-export log_message=$(git log -n 1)
+log_message=$(git log -n 1)
 
 if [[ $1 == "GJS" ]]; then
     do_Set_Env
@@ -231,7 +231,7 @@ elif [[ $1 == "CPPLINT"  && "$log_message" != *'[skip cpplint]'* ]]; then
     do_Compare_With_Upstream_Master "cppLint"
 
 elif [[ $1 == "ESLINT" && "$log_message" != *'[skip eslint]'* ]]; then
-    tmp_path=$(dirname $CI_PROJECT_DIR)
+    tmp_path=$(dirname "$CI_PROJECT_DIR")
 
     echo
     echo '-- Javascript linter report --'
