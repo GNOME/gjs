@@ -3,7 +3,7 @@
 ## Setting up ##
 
 For the time being, we recommend using JHBuild to develop GJS.
-Follow the [instructions from GNOME][jhbuild].
+Follow the [instructions from GNOME](https://wiki.gnome.org/HowDoI/Jhbuild) for [JHBuild](https://git.gnome.org/browse/jhbuild/).
 
 Even if your system includes a development package for mozjs, we
 recommend building it on JHBuild so that you can enable the debugging
@@ -133,4 +133,4 @@ xdg-open ~/.cache/jhbuild/build/gjs/gjs-X.Y.Z-coverage/index.html
 
 (replace `X.Y.Z` with the version number, e.g. `1.48.0`)
 
-[jhbuild] https://wiki.gnome.org/HowDoI/Jhbuild
+[JHBuild](https://wiki.gnome.org/HowDoI/Jhbuild)
