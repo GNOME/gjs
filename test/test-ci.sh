@@ -27,6 +27,12 @@ function do_Set_Env(){
     echo '-- Done --'
 }
 
+function do_Done(){
+    # Done. De-initializes whatever is needed
+    echo
+    echo '-- FINISHED --'
+}
+
 function do_Build_Package_Dependencies(){
     echo
     echo "-- Building Dependencies for $1 --"
@@ -57,6 +63,15 @@ function do_Show_Info(){
 }
 
 function do_Get_Upstream_Master(){
+
+    if [[ "$CI_BUILD_REF_SLUG" == "master" && "$CI_PROJECT_PATH_SLUG" == "gnome-gjs" ]]; then
+        echo '--------------------------------'
+        echo 'Running against upstream master'
+        echo "=> $1 Nothing to do"
+
+        do_Done
+        exit 0
+    fi
 
     echo '--------------------------------'
     echo 'Cloning upstream master'
@@ -110,7 +125,7 @@ mkdir -p "$save_dir"/tokei; touch "$save_dir"/tokei/doing-"$1"
 # Allow CI to skip jobs. Its goal is to simplify housekeeping.
 # Disable tasks using the commit message. Possibilities are (and/or):
 # [skip eslint]		[skip cpplint]		[skip cppcheck]
-export log_message=$(git log -n 1)
+log_message=$(git log -n 1)
 
 if [[ $1 == "GJS" ]]; then
     do_Set_Env
@@ -205,7 +220,7 @@ elif [[ $1 == "CPPCHECK" && "$log_message" != *'[skip cppcheck]'* ]]; then
     echo
 
     # Get the code committed at upstream master
-    do_Get_Upstream_Master
+    do_Get_Upstream_Master "cppCheck"
     cppcheck --inline-suppr --enable=warning,performance,portability,information,missingInclude --force -q . 2>&1 | \
         tee "$save_dir"/cppcheck/master-report.txt | sed -E 's/:[0-9]+]/:LINE]/' > /cwd/master-report.txt
     echo
@@ -222,7 +237,7 @@ elif [[ $1 == "CPPLINT"  && "$log_message" != *'[skip cpplint]'* ]]; then
     echo
 
     # Get the code committed at upstream master
-    do_Get_Upstream_Master
+    do_Get_Upstream_Master "cppLint"
     cpplint --quiet $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 | \
         tee "$save_dir"/cpplint/master-report.txt | sed -E 's/:[0-9]+:/:LINE:/' > /cwd/master-report.txt
     echo
@@ -231,7 +246,7 @@ elif [[ $1 == "CPPLINT"  && "$log_message" != *'[skip cpplint]'* ]]; then
     do_Compare_With_Upstream_Master "cppLint"
 
 elif [[ $1 == "ESLINT" && "$log_message" != *'[skip eslint]'* ]]; then
-    tmp_path=$(dirname $CI_PROJECT_DIR)
+    tmp_path=$(dirname "$CI_PROJECT_DIR")
 
     echo
     echo '-- Javascript linter report --'
@@ -243,7 +258,7 @@ elif [[ $1 == "ESLINT" && "$log_message" != *'[skip eslint]'* ]]; then
     echo
 
     # Get the code committed at upstream master
-    do_Get_Upstream_Master
+    do_Get_Upstream_Master "esLint"
     cp "$save_dir"/.eslint* .
     eslint examples installed-tests modules --format unix 2>&1 | \
         tee "$save_dir"/eslint/master-report.txt | \
@@ -261,6 +276,6 @@ elif [[ $1 == "TOKEI" ]]; then
 
     tokei . | tee "$save_dir"/tokei/report.txt
 fi
-# Done
-echo
-echo '-- DONE --'
+
+# Releases stuff and finishes
+do_Done
