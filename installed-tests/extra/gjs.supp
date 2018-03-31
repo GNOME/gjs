@@ -109,8 +109,21 @@
    fun:malloc
    fun:g_malloc
    ...
-   fun:gtk_style_new
-   fun:gtk_widget_get_default_style
+   fun:gtk_css_node_declaration_make_writable
+   ...
+   fun:gtk_style_constructed
+}
+
+{
+   gtk-style-context2
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:g_malloc
+   ...
+   fun:gtk_css_node_declaration_make_writable_resize
+   ...
+   fun:gtk_style_constructed
 }
 
 # https://bugs.freedesktop.org/show_bug.cgi?id=105466

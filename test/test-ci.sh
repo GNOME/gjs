@@ -158,7 +158,7 @@ if [[ $1 == "GJS" ]]; then
 
         jhbuild make --check
     else
-        export AM_DISTCHECK_CONFIGURE_FLAGS="--enable-compile-warnings=error --with-xvfb-tests"
+        export AM_DISTCHECK_CONFIGURE_FLAGS="--enable-compile-warnings=yes --with-xvfb-tests"
 
         # Regular (autotools only) build
         echo "Autogen options: $ci_autogenargs"

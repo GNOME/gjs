@@ -17,9 +17,10 @@ check_LTLIBRARIES =
 INTROSPECTION_GIRS =
 ## ACLOCAL_AMFLAGS can be removed for Automake 1.13
 ACLOCAL_AMFLAGS = -I m4
-AM_CXXFLAGS = $(WARN_CXXFLAGS) $(CODE_COVERAGE_CFLAGS)
+AM_CFLAGS = $(WARN_CFLAGS) $(CODE_COVERAGE_CFLAGS)
+AM_CXXFLAGS = $(WARN_CXXFLAGS) $(CODE_COVERAGE_CXXFLAGS)
 AM_CPPFLAGS = -DG_LOG_DOMAIN=\"Gjs\" $(CODE_COVERAGE_CPPFLAGS)
-AM_LDFLAGS = $(WARN_LDFLAGS) $(CODE_COVERAGE_LDFLAGS)
+AM_LDFLAGS = $(WARN_LDFLAGS) $(CODE_COVERAGE_LIBS)
 MAINTAINERCLEANFILES =					\
 	$(GITIGNORE_MAINTAINERCLEANFILES_TOPLEVEL)	\
 	$(GITIGNORE_MAINTAINERCLEANFILES_MAKEFILE_IN)	\
@@ -66,6 +67,7 @@ libgjs_la_CPPFLAGS =		\
 	-I$(top_srcdir)/gi	\
 	-DGJS_COMPILATION
 libgjs_la_LDFLAGS = 			\
+	$(AM_LDFLAGS)			\
 	-export-symbols-regex "^[^_]"	\
 	-version-info 0:0:0		\
 	$(NO_UNDEFINED_FLAG)		\
@@ -153,7 +155,7 @@ gjs_console_CPPFLAGS = 		\
 gjs_console_LDADD =		\
 	$(GJS_CONSOLE_LIBS)	\
 	libgjs.la
-gjs_console_LDFLAGS = -rdynamic
+gjs_console_LDFLAGS = $(AM_LDFLAGS) -rdynamic
 gjs_console_SOURCES = $(gjs_console_srcs)
 
 install-exec-hook:
