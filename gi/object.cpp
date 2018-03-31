@@ -219,7 +219,7 @@ get_object_qdata(GObject *gobj)
     auto priv = static_cast<ObjectInstance *>(g_object_get_qdata(gobj,
                                                                  gjs_object_priv_quark()));
 
-    if (priv && G_UNLIKELY(priv->js_object_finalized)) {
+    if (priv && priv->uses_toggle_ref && G_UNLIKELY(priv->js_object_finalized)) {
         g_critical("Object %p (a %s) resurfaced after the JS wrapper was finalized. "
                    "This is some library doing dubious memory management inside dispose()",
                    gobj, g_type_name(G_TYPE_FROM_INSTANCE(gobj)));
@@ -1432,11 +1432,16 @@ disassociate_js_gobject(GObject *gobj)
                    gobj, G_OBJECT_TYPE_NAME(gobj));
     }
 
+    /* Fist, remove the wrapper pointer from the wrapped GObject */
+    set_object_qdata(gobj, nullptr);
+
+    /* Now release all the resources the current wrapper has */
     invalidate_all_closures(priv);
     release_native_object(priv);
 
     /* Mark that a JS object once existed, but it doesn't any more */
     priv->js_object_finalized = true;
+    priv->keep_alive = nullptr;
 }
 
 static void
@@ -1653,6 +1658,9 @@ object_instance_finalize(JSFreeOp  *fop,
     GJS_DEC_COUNTER(object);
     priv->~ObjectInstance();
     g_slice_free(ObjectInstance, priv);
+
+    /* Remove the ObjectInstance pointer from the JSObject */
+    JS_SetPrivate(obj, nullptr);
 }
 
 static JSObject *
