@@ -945,7 +945,6 @@ object_instance_props_to_g_parameters(JSContext                  *context,
     return true;
 }
 
-#define DEBUG_DISPOSE 0
 static void
 wrapped_gobj_dispose_notify(gpointer      data,
                             GObject      *where_the_object_was)
@@ -954,9 +953,8 @@ wrapped_gobj_dispose_notify(gpointer      data,
 
     priv->g_object_finalized = true;
     wrapped_gobject_list.erase(priv);
-#if DEBUG_DISPOSE
-    gjs_debug(GJS_DEBUG_GOBJECT, "Wrapped GObject %p disposed", where_the_object_was);
-#endif
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Wrapped GObject %p disposed",
+                        where_the_object_was);
 }
 
 static void
@@ -967,9 +965,10 @@ gobj_no_longer_kept_alive_func(JS::HandleObject obj,
 
     priv = (ObjectInstance *) data;
 
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                        "GObject wrapper %p will no longer be kept alive, eligible for collection",
-                        obj.get());
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "GObject wrapper %p for GObject "
+                        "%p (%s) was rooted but is now unrooted due to "
+                        "GjsContext dispose", obj.get(), priv->gobj,
+                        G_OBJECT_TYPE_NAME(priv->gobj));
 
     priv->keep_alive.reset();
     wrapped_gobject_list.erase(priv);
@@ -980,15 +979,15 @@ handle_toggle_down(GObject *gobj)
 {
     ObjectInstance *priv = get_object_qdata(gobj);
 
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                        "Toggle notify gobj %p obj %p is_last_ref true",
-                        gobj, priv->keep_alive.get());
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Toggle notify DOWN for GObject "
+                        "%p (%s), JS obj %p", gobj, G_OBJECT_TYPE_NAME(gobj),
+                        priv->keep_alive.get());
 
     /* Change to weak ref so the wrapper-wrappee pair can be
      * collected by the GC
      */
     if (priv->keep_alive.rooted()) {
-        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Removing object from keep alive");
+        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Unrooting object");
         priv->keep_alive.switch_to_unrooted();
     }
 }
@@ -1005,9 +1004,9 @@ handle_toggle_up(GObject   *gobj)
     if (!priv->keep_alive) /* Object already GC'd */
         return;
 
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                        "Toggle notify gobj %p obj %p is_last_ref false",
-                        gobj, priv->keep_alive.get());
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Toggle notify UP for GObject "
+                        "%p (%s), JS obj %p", gobj, G_OBJECT_TYPE_NAME(gobj),
+                        priv->keep_alive.get());
 
     /* Change to strong ref so the wrappee keeps the wrapper alive
      * in case the wrapper has data in it that the app cares about
@@ -1016,7 +1015,7 @@ handle_toggle_up(GObject   *gobj)
         /* FIXME: thread the context through somehow. Maybe by looking up
          * the compartment that obj belongs to. */
         GjsContext *context = gjs_context_get_current();
-        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Adding object to keep alive");
+        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Rooting object");
         auto cx = static_cast<JSContext *>(gjs_context_get_native_context(context));
         priv->keep_alive.switch_to_rooted(cx, gobj_no_longer_kept_alive_func, priv);
     }
@@ -1187,10 +1186,6 @@ init_object_private (JSContext       *context,
     g_assert(priv_from_js(context, object) == NULL);
     JS_SetPrivate(object, priv);
 
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                        "obj instance constructor, obj %p priv %p",
-                        object.get(), priv);
-
     proto_priv = proto_priv_from_js(context, object);
     g_assert(proto_priv != NULL);
 
@@ -1198,6 +1193,10 @@ init_object_private (JSContext       *context,
     priv->info = proto_priv->info;
     if (priv->info)
         g_base_info_ref( (GIBaseInfo*) priv->info);
+
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Instance constructor of %s, "
+                        "JS obj %p, priv %p", g_type_name(priv->gtype),
+                        object.get(), priv);
 
     JS_EndRequest(context);
     return priv;
@@ -1208,6 +1207,10 @@ update_heap_wrapper_weak_pointers(JSContext     *cx,
                                   JSCompartment *compartment,
                                   gpointer       data)
 {
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Weak pointer update callback, "
+                        "%zu wrapped GObject(s) to examine",
+                        wrapped_gobject_list.size());
+
     std::vector<GObject *> to_be_disassociated;
 
     for (auto iter = wrapped_gobject_list.begin(); iter != wrapped_gobject_list.end(); ) {
@@ -1221,6 +1224,10 @@ update_heap_wrapper_weak_pointers(JSContext     *cx,
              * the weak pointer list first, since the disassociation
              * may also cause it to be erased.)
              */
+            gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Found GObject weak pointer "
+                                "whose JS object %p is about to be finalized: "
+                                "%p (%s)", priv->keep_alive.get(), priv->gobj,
+                                G_OBJECT_TYPE_NAME(priv->gobj));
             to_be_disassociated.push_back(priv->gobj);
             iter = wrapped_gobject_list.erase(iter);
         }
@@ -1409,9 +1416,8 @@ G_GNUC_END_IGNORE_DEPRECATIONS
      */
     g_object_unref(gobj);
 
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                        "JSObject created with GObject %p %s",
-                        priv->gobj, g_type_name_from_instance((GTypeInstance*) priv->gobj));
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "JSObject created with GObject %p (%s)",
+                        priv->gobj, G_OBJECT_TYPE_NAME(priv->gobj));
 
     TRACE(GJS_OBJECT_PROXY_NEW(priv, priv->gobj,
                                priv->info ? g_base_info_get_namespace((GIBaseInfo*) priv->info) : "_gjs_private",
@@ -1485,13 +1491,10 @@ object_instance_finalize(JSFreeOp  *fop,
     ObjectInstance *priv;
 
     priv = (ObjectInstance *) JS_GetPrivate(obj);
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                        "finalize obj %p priv %p gtype %s gobj %p", obj, priv,
-                        (priv && priv->gobj) ?
-                        g_type_name_from_instance( (GTypeInstance*) priv->gobj) :
-                        "<no gobject>",
-                        priv ? priv->gobj : NULL);
     g_assert (priv != NULL);
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
+                        "Finalizing %s, JS obj %p, priv %p, GObject %p",
+                        g_type_name(priv->gtype), obj, priv, priv->gobj);
 
     TRACE(GJS_OBJECT_PROXY_FINALIZE(priv, priv->gobj,
                                     priv->info ? g_base_info_get_namespace((GIBaseInfo*) priv->info) : "_gjs_private",
@@ -1532,8 +1535,7 @@ object_instance_finalize(JSFreeOp  *fop,
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Wrapper was finalized despite being kept alive, has refcount >1");
 
-        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                            "Removing from keep alive");
+        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Unrooting object");
 
         priv->keep_alive.reset();
     }
@@ -2072,9 +2074,9 @@ gjs_define_object_class(JSContext              *context,
     priv->klass = (GTypeClass*) g_type_class_ref (gtype);
     JS_SetPrivate(prototype, priv);
 
-    gjs_debug(GJS_DEBUG_GOBJECT, "Defined class %s prototype %p class %p in object %p",
-              constructor_name, prototype.get(), JS_GetClass(prototype),
-              in_object.get());
+    gjs_debug(GJS_DEBUG_GOBJECT, "Defined class for %s (%s), prototype %p, "
+              "JSClass %p, in object %p", constructor_name, g_type_name(gtype),
+              prototype.get(), JS_GetClass(prototype), in_object.get());
 
     if (info)
         gjs_object_define_static_methods(context, constructor, gtype, info);

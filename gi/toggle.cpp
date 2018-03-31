@@ -86,6 +86,12 @@ ToggleQueue::cancel(GObject *gobj)
     std::lock_guard<std::mutex> hold(lock);
     bool had_toggle_down = find_and_erase_operation_locked(gobj, DOWN);
     bool had_toggle_up = find_and_erase_operation_locked(gobj, UP);
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue: %p (%s) was %s", gobj,
+                        G_OBJECT_TYPE_NAME(gobj),
+                        had_toggle_down && had_toggle_up ? "queued to toggle BOTH"
+                            : had_toggle_down ? "queued to toggle DOWN"
+                            : had_toggle_up ? "queued to toggle UP"
+                            : "not queued");
     return {had_toggle_down, had_toggle_up};
 }
 
