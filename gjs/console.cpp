@@ -50,7 +50,8 @@ static GOptionEntry entries[] = {
     { "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
         G_OPTION_ARG_CALLBACK, reinterpret_cast<void *>(&parse_profile_arg),
         "Enable the profiler and write output to FILE (default: gjs-$PID.syscap)",
-        "FILE" },
+        "FILE"
+    },
     { NULL }
 };
 
@@ -133,7 +134,8 @@ check_script_args_for_stray_gjs_args(int           argc,
         { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &new_coverage_output_path },
         { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &new_include_paths },
         { "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
-          G_OPTION_ARG_CALLBACK, reinterpret_cast<void *>(&check_stray_profile_arg) },
+            G_OPTION_ARG_CALLBACK, reinterpret_cast<void *>(&check_stray_profile_arg)
+        },
         { NULL }
     };
     char **argv_copy = g_new(char *, argc + 2);

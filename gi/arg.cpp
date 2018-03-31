@@ -754,13 +754,17 @@ gjs_array_to_intarray(JSContext   *context,
         /* Note that this is truncating assignment. */
         switch (intsize) {
         case 1:
-            ((guint8*)result)[i] = (gint8) intval.u; break;
+            ((guint8*)result)[i] = (gint8) intval.u;
+            break;
         case 2:
-            ((guint16*)result)[i] = (gint16) intval.u; break;
+            ((guint16*)result)[i] = (gint16) intval.u;
+            break;
         case 4:
-            ((guint32*)result)[i] = (gint32) intval.u; break;
+            ((guint32*)result)[i] = (gint32) intval.u;
+            break;
         case 8:
-            ((uint64_t *)result)[i] = (int64_t) intval.u; break;
+            ((uint64_t *)result)[i] = (int64_t) intval.u;
+            break;
         default:
             g_assert_not_reached();
         }
