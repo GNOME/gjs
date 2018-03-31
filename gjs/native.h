@@ -30,12 +30,12 @@
 
 G_BEGIN_DECLS
 
-typedef bool (* GjsDefineModuleFunc) (JSContext              *context,
-                                      JS::MutableHandleObject module_out);
+typedef bool (* GjsDefineModuleFunc)(JSContext              *context,
+                                     JS::MutableHandleObject module_out);
 
 /* called on context init */
-void   gjs_register_native_module (const char            *module_id,
-                                   GjsDefineModuleFunc  func);
+void   gjs_register_native_module(const char            *module_id,
+                                  GjsDefineModuleFunc  func);
 
 /* called by importer.c to to check for already loaded modules */
 bool     gjs_is_registered_native_module(JSContext  *context,

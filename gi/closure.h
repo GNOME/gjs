@@ -31,10 +31,10 @@
 
 G_BEGIN_DECLS
 
-GClosure*  gjs_closure_new           (JSContext    *context,
-                                      JSObject     *callable,
-                                      const char   *description,
-                                      bool          root_function);
+GClosure*  gjs_closure_new(JSContext    *context,
+                           JSObject     *callable,
+                           const char   *description,
+                           bool          root_function);
 
 bool gjs_closure_invoke(GClosure                   *closure,
                         JS::HandleObject            this_obj,
@@ -42,12 +42,12 @@ bool gjs_closure_invoke(GClosure                   *closure,
                         JS::MutableHandleValue      retval,
                         bool                        return_exception);
 
-JSContext* gjs_closure_get_context   (GClosure     *closure);
-bool       gjs_closure_is_valid      (GClosure     *closure);
-JSObject*  gjs_closure_get_callable  (GClosure     *closure);
+JSContext* gjs_closure_get_context(GClosure     *closure);
+bool       gjs_closure_is_valid(GClosure     *closure);
+JSObject*  gjs_closure_get_callable(GClosure     *closure);
 
-void       gjs_closure_trace         (GClosure     *closure,
-                                      JSTracer     *tracer);
+void       gjs_closure_trace(GClosure     *closure,
+                             JSTracer     *tracer);
 
 G_END_DECLS
 

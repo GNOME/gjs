@@ -66,7 +66,7 @@ public:
 };
 
 struct GjsJSFreeArgs {
-    void operator() (char *str) {
+    void operator()(char *str) {
         JS_free(nullptr, str);
     }
 };
@@ -92,13 +92,13 @@ public:
 G_BEGIN_DECLS
 
 #define GJS_UTIL_ERROR gjs_util_error_quark ()
-GQuark gjs_util_error_quark (void);
+GQuark gjs_util_error_quark(void);
 enum {
-  GJS_UTIL_ERROR_NONE,
-  GJS_UTIL_ERROR_ARGUMENT_INVALID,
-  GJS_UTIL_ERROR_ARGUMENT_UNDERFLOW,
-  GJS_UTIL_ERROR_ARGUMENT_OVERFLOW,
-  GJS_UTIL_ERROR_ARGUMENT_TYPE_MISMATCH
+    GJS_UTIL_ERROR_NONE,
+    GJS_UTIL_ERROR_ARGUMENT_INVALID,
+    GJS_UTIL_ERROR_ARGUMENT_UNDERFLOW,
+    GJS_UTIL_ERROR_ARGUMENT_OVERFLOW,
+    GJS_UTIL_ERROR_ARGUMENT_TYPE_MISMATCH
 };
 
 typedef struct GjsRootedArray GjsRootedArray;
@@ -126,16 +126,16 @@ typedef struct GjsRootedArray GjsRootedArray;
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);          \
     JS::RootedObject to(cx, &args.computeThis(cx).toObject())
 
-JSObject*   gjs_get_import_global            (JSContext       *context);
+JSObject*   gjs_get_import_global(JSContext       *context);
 
-void gjs_throw_constructor_error             (JSContext       *context);
+void gjs_throw_constructor_error(JSContext       *context);
 
 void gjs_throw_abstract_constructor_error(JSContext    *context,
                                           JS::CallArgs& args);
 
-JSObject*   gjs_build_string_array           (JSContext       *context,
-                                              gssize           array_length,
-                                              char           **array_values);
+JSObject*   gjs_build_string_array(JSContext       *context,
+                                   gssize           array_length,
+                                   char           **array_values);
 
 JSObject *gjs_define_string_array(JSContext       *context,
                                   JS::HandleObject obj,
@@ -144,20 +144,20 @@ JSObject *gjs_define_string_array(JSContext       *context,
                                   const char     **array_values,
                                   unsigned         attrs);
 
-void        gjs_throw                        (JSContext       *context,
-                                              const char      *format,
-                                              ...)  G_GNUC_PRINTF (2, 3);
-void        gjs_throw_custom                 (JSContext       *context,
-                                              JSProtoKey       error_kind,
-                                              const char      *error_name,
-                                              const char      *format,
-                                              ...)  G_GNUC_PRINTF (4, 5);
-void        gjs_throw_literal                (JSContext       *context,
-                                              const char      *string);
-void        gjs_throw_g_error                (JSContext       *context,
-                                              GError          *error);
+void        gjs_throw(JSContext       *context,
+                      const char      *format,
+                      ...)  G_GNUC_PRINTF(2, 3);
+void        gjs_throw_custom(JSContext       *context,
+                             JSProtoKey       error_kind,
+                             const char      *error_name,
+                             const char      *format,
+                             ...)  G_GNUC_PRINTF(4, 5);
+void        gjs_throw_literal(JSContext       *context,
+                              const char      *string);
+void        gjs_throw_g_error(JSContext       *context,
+                              GError          *error);
 
-bool        gjs_log_exception                (JSContext       *context);
+bool        gjs_log_exception(JSContext       *context);
 
 bool gjs_log_exception_full(JSContext       *context,
                             JS::HandleValue  exc,
@@ -175,9 +175,9 @@ bool gjs_call_function_value(JSContext                  *context,
 void gjs_warning_reporter(JSContext     *cx,
                           JSErrorReport *report);
 
-bool        gjs_string_to_utf8               (JSContext       *context,
-                                              const JS::Value  string_val,
-                                              GjsAutoJSChar   *utf8_string_p);
+bool        gjs_string_to_utf8(JSContext       *context,
+                               const JS::Value  string_val,
+                               GjsAutoJSChar   *utf8_string_p);
 bool gjs_string_from_utf8(JSContext             *context,
                           const char            *utf8_string,
                           JS::MutableHandleValue value_p);
@@ -209,21 +209,21 @@ bool gjs_string_from_ucs4(JSContext             *cx,
                           ssize_t                n_chars,
                           JS::MutableHandleValue value_p);
 
-bool        gjs_get_string_id                (JSContext       *context,
-                                              jsid             id,
-                                              GjsAutoJSChar   *name_p);
-jsid        gjs_intern_string_to_id          (JSContext       *context,
-                                              const char      *string);
+bool        gjs_get_string_id(JSContext       *context,
+                              jsid             id,
+                              GjsAutoJSChar   *name_p);
+jsid        gjs_intern_string_to_id(JSContext       *context,
+                                    const char      *string);
 
-bool        gjs_unichar_from_string          (JSContext       *context,
-                                              JS::Value        string,
-                                              gunichar        *result);
+bool        gjs_unichar_from_string(JSContext       *context,
+                                    JS::Value        string,
+                                    gunichar        *result);
 
-const char* gjs_get_type_name                (JS::Value        value);
+const char* gjs_get_type_name(JS::Value        value);
 
 /* Functions intended for more "internal" use */
 
-void gjs_maybe_gc (JSContext *context);
+void gjs_maybe_gc(JSContext *context);
 void gjs_schedule_gc_if_needed(JSContext *cx);
 void gjs_gc_if_needed(JSContext *cx);
 
@@ -235,35 +235,35 @@ bool gjs_eval_with_scope(JSContext             *context,
                          JS::MutableHandleValue retval);
 
 typedef enum {
-  GJS_STRING_CONSTRUCTOR,
-  GJS_STRING_PROTOTYPE,
-  GJS_STRING_LENGTH,
-  GJS_STRING_IMPORTS,
-  GJS_STRING_PARENT_MODULE,
-  GJS_STRING_MODULE_INIT,
-  GJS_STRING_SEARCH_PATH,
-  GJS_STRING_KEEP_ALIVE_MARKER,
-  GJS_STRING_PRIVATE_NS_MARKER,
-  GJS_STRING_GI_MODULE,
-  GJS_STRING_GI_VERSIONS,
-  GJS_STRING_GI_OVERRIDES,
-  GJS_STRING_GOBJECT_INIT,
-  GJS_STRING_INSTANCE_INIT,
-  GJS_STRING_NEW_INTERNAL,
-  GJS_STRING_NEW,
-  GJS_STRING_MESSAGE,
-  GJS_STRING_CODE,
-  GJS_STRING_STACK,
-  GJS_STRING_FILENAME,
-  GJS_STRING_LINE_NUMBER,
-  GJS_STRING_COLUMN_NUMBER,
-  GJS_STRING_NAME,
-  GJS_STRING_X,
-  GJS_STRING_Y,
-  GJS_STRING_WIDTH,
-  GJS_STRING_HEIGHT,
-  GJS_STRING_MODULE_PATH,
-  GJS_STRING_LAST
+    GJS_STRING_CONSTRUCTOR,
+    GJS_STRING_PROTOTYPE,
+    GJS_STRING_LENGTH,
+    GJS_STRING_IMPORTS,
+    GJS_STRING_PARENT_MODULE,
+    GJS_STRING_MODULE_INIT,
+    GJS_STRING_SEARCH_PATH,
+    GJS_STRING_KEEP_ALIVE_MARKER,
+    GJS_STRING_PRIVATE_NS_MARKER,
+    GJS_STRING_GI_MODULE,
+    GJS_STRING_GI_VERSIONS,
+    GJS_STRING_GI_OVERRIDES,
+    GJS_STRING_GOBJECT_INIT,
+    GJS_STRING_INSTANCE_INIT,
+    GJS_STRING_NEW_INTERNAL,
+    GJS_STRING_NEW,
+    GJS_STRING_MESSAGE,
+    GJS_STRING_CODE,
+    GJS_STRING_STACK,
+    GJS_STRING_FILENAME,
+    GJS_STRING_LINE_NUMBER,
+    GJS_STRING_COLUMN_NUMBER,
+    GJS_STRING_NAME,
+    GJS_STRING_X,
+    GJS_STRING_Y,
+    GJS_STRING_WIDTH,
+    GJS_STRING_HEIGHT,
+    GJS_STRING_MODULE_PATH,
+    GJS_STRING_LAST
 } GjsConstString;
 
 const char * gjs_strip_unix_shebang(const char *script,

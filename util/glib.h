@@ -28,8 +28,8 @@
 
 G_BEGIN_DECLS
 
-char**   gjs_g_strv_concat           (char      ***strv_array,
-                                      int          len);
+char**   gjs_g_strv_concat(char      ***strv_array,
+                           int          len);
 
 G_END_DECLS
 

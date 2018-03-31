@@ -92,8 +92,8 @@ gjs_cairo_radial_gradient_from_pattern(JSContext       *context,
     JS::RootedObject proto(context,
                            gjs_cairo_radial_gradient_get_proto(context));
     JS::RootedObject object(context,
-        JS_NewObjectWithGivenProto(context, &gjs_cairo_radial_gradient_class,
-                                   proto));
+                            JS_NewObjectWithGivenProto(context, &gjs_cairo_radial_gradient_class,
+                                                       proto));
     if (!object) {
         gjs_throw(context, "failed to create radial gradient pattern");
         return NULL;

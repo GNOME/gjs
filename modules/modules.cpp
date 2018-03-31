@@ -34,7 +34,7 @@
 #include "console.h"
 
 void
-gjs_register_static_modules (void)
+gjs_register_static_modules(void)
 {
 #ifdef ENABLE_CAIRO
     gjs_register_native_module("cairoNative", gjs_js_define_cairo_stuff);

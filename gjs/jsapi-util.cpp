@@ -42,9 +42,9 @@
 #include <math.h>
 
 GQuark
-gjs_util_error_quark (void)
+gjs_util_error_quark(void)
 {
-    return g_quark_from_static_string ("gjs-util-error-quark");
+    return g_quark_from_static_string("gjs-util-error-quark");
 }
 
 bool
@@ -314,7 +314,7 @@ gjs_build_string_array(JSContext   *context,
 
     for (i = 0; i < array_length; ++i) {
         JS::RootedValue element(context,
-            JS::StringValue(JS_NewStringCopyZ(context, array_values[i])));
+                                JS::StringValue(JS_NewStringCopyZ(context, array_values[i])));
         if (!elems.append(element))
             g_error("Unable to append to vector");
     }
@@ -333,7 +333,7 @@ gjs_define_string_array(JSContext       *context,
     JSAutoRequest ar(context);
 
     JS::RootedObject array(context,
-        gjs_build_string_array(context, array_length, (char **) array_values));
+                           gjs_build_string_array(context, array_length, (char **) array_values));
 
     if (!array)
         return nullptr;
@@ -389,42 +389,42 @@ gjs_string_readable(JSContext       *context,
 }
 
 static char *
-_gjs_g_utf8_make_valid (const char *name)
+_gjs_g_utf8_make_valid(const char *name)
 {
     GString *string;
     const char *remainder, *invalid;
     int remaining_bytes, valid_bytes;
 
-    g_return_val_if_fail (name != NULL, NULL);
+    g_return_val_if_fail(name != NULL, NULL);
 
     string = nullptr;
     remainder = name;
-    remaining_bytes = strlen (name);
+    remaining_bytes = strlen(name);
 
     while (remaining_bytes != 0) {
-        if (g_utf8_validate (remainder, remaining_bytes, &invalid))
+        if (g_utf8_validate(remainder, remaining_bytes, &invalid))
             break;
         valid_bytes = invalid - remainder;
 
         if (!string)
-            string = g_string_sized_new (remaining_bytes);
+            string = g_string_sized_new(remaining_bytes);
 
-        g_string_append_len (string, remainder, valid_bytes);
+        g_string_append_len(string, remainder, valid_bytes);
         /* append U+FFFD REPLACEMENT CHARACTER */
-        g_string_append (string, "\357\277\275");
+        g_string_append(string, "\357\277\275");
 
         remaining_bytes -= valid_bytes + 1;
         remainder = invalid + 1;
     }
 
     if (!string)
-        return g_strdup (name);
+        return g_strdup(name);
 
-    g_string_append (string, remainder);
+    g_string_append(string, remainder);
 
-    g_assert (g_utf8_validate (string->str, -1, NULL));
+    g_assert(g_utf8_validate(string->str, -1, NULL));
 
-    return g_string_free (string, false);
+    return g_string_free(string, false);
 }
 
 /**
@@ -614,7 +614,7 @@ gjs_log_exception(JSContext  *context)
 
     retval = true;
 
- out:
+out:
     JS_EndRequest(context);
 
     return retval;
@@ -665,8 +665,8 @@ gjs_get_type_name(JS::Value value)
 
 #ifdef __linux__
 static void
-_linux_get_self_process_size (gulong *vm_size,
-                              gulong *rss_size)
+_linux_get_self_process_size(gulong *vm_size,
+                             gulong *rss_size)
 {
     char *contents;
     char *iter;
@@ -675,24 +675,24 @@ _linux_get_self_process_size (gulong *vm_size,
 
     *vm_size = *rss_size = 0;
 
-    if (!g_file_get_contents ("/proc/self/stat", &contents, &len, NULL))
+    if (!g_file_get_contents("/proc/self/stat", &contents, &len, NULL))
         return;
 
     iter = contents;
     /* See "man proc" for where this 22 comes from */
     for (i = 0; i < 22; i++) {
-        iter = strchr (iter, ' ');
+        iter = strchr(iter, ' ');
         if (!iter)
             goto out;
         iter++;
     }
-    sscanf (iter, " %lu", vm_size);
-    iter = strchr (iter, ' ');
+    sscanf(iter, " %lu", vm_size);
+    iter = strchr(iter, ' ');
     if (iter)
-        sscanf (iter, " %lu", rss_size);
+        sscanf(iter, " %lu", rss_size);
 
- out:
-    g_free (contents);
+out:
+    g_free(contents);
 }
 
 static gulong linux_rss_trigger;
@@ -700,7 +700,7 @@ static int64_t last_gc_check_time;
 #endif
 
 void
-gjs_gc_if_needed (JSContext *context)
+gjs_gc_if_needed(JSContext *context)
 {
 #ifdef __linux__
     {
@@ -717,7 +717,7 @@ gjs_gc_if_needed (JSContext *context)
 
         last_gc_check_time = now;
 
-        _linux_get_self_process_size (&vmsize, &rss_size);
+        _linux_get_self_process_size(&vmsize, &rss_size);
 
         /* linux_rss_trigger is initialized to 0, so currently
          * we always do a full GC early.
@@ -746,14 +746,14 @@ gjs_gc_if_needed (JSContext *context)
  * Low level version of gjs_context_maybe_gc().
  */
 void
-gjs_maybe_gc (JSContext *context)
+gjs_maybe_gc(JSContext *context)
 {
     JS_MaybeGC(context);
     gjs_gc_if_needed(context);
 }
 
 void
-gjs_schedule_gc_if_needed (JSContext *context)
+gjs_schedule_gc_if_needed(JSContext *context)
 {
     GjsContext *gjs_context;
 
@@ -793,7 +793,7 @@ gjs_strip_unix_shebang(const char  *script,
     /* handle scripts with UNIX shebangs */
     if (strncmp(script, "#!", 2) == 0) {
         /* If we found a newline, advance the script by one line */
-        const char *s = (const char *) strstr (script, "\n");
+        const char *s = (const char *) strstr(script, "\n");
         if (s != NULL) {
             if (*script_len > 0)
                 *script_len -= (s + 1 - script);
@@ -852,7 +852,7 @@ gjs_eval_with_scope(JSContext             *context,
 
     JS::CompileOptions options(context);
     options.setFileAndLine(filename, start_line_number)
-           .setSourceIsLazy(true);
+    .setSourceIsLazy(true);
 
     std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
     std::u16string utf16_string = convert.from_bytes(script);

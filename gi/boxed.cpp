@@ -90,8 +90,8 @@ gjs_define_static_methods(JSContext       *context,
         GIFunctionInfo *meth_info;
         GIFunctionInfoFlags flags;
 
-        meth_info = g_struct_info_get_method (boxed_info, i);
-        flags = g_function_info_get_flags (meth_info);
+        meth_info = g_struct_info_get_method(boxed_info, i);
+        flags = g_function_info_get_flags(meth_info);
 
         /* Anything that isn't a method we put on the prototype of the
          * constructor.  This includes <constructor> introspection
@@ -146,19 +146,19 @@ boxed_resolve(JSContext       *context,
 #if GJS_VERBOSE_ENABLE_GI_USAGE
             _gjs_log_info_usage((GIBaseInfo*) method_info);
 #endif
-            if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-                method_name = g_base_info_get_name( (GIBaseInfo*) method_info);
+            if (g_function_info_get_flags(method_info) & GI_FUNCTION_IS_METHOD) {
+                method_name = g_base_info_get_name((GIBaseInfo*) method_info);
 
                 gjs_debug(GJS_DEBUG_GBOXED,
                           "Defining method %s in prototype for %s.%s",
                           method_name,
-                          g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                          g_base_info_get_name( (GIBaseInfo*) priv->info));
+                          g_base_info_get_namespace((GIBaseInfo*) priv->info),
+                          g_base_info_get_name((GIBaseInfo*) priv->info));
 
                 /* obj is the Boxed prototype */
                 if (gjs_define_function(context, obj, priv->gtype,
                                         (GICallableInfo *)method_info) == NULL) {
-                    g_base_info_unref( (GIBaseInfo*) method_info);
+                    g_base_info_unref((GIBaseInfo*) method_info);
                     return false;
                 }
 
@@ -167,7 +167,7 @@ boxed_resolve(JSContext       *context,
                 *resolved = false;
             }
 
-            g_base_info_unref( (GIBaseInfo*) method_info);
+            g_base_info_unref((GIBaseInfo*) method_info);
         }
     } else {
         /* We are an instance, not a prototype, so look for
@@ -213,17 +213,17 @@ boxed_new_direct(Boxed       *priv)
 {
     g_assert(priv->can_allocate_directly);
 
-    priv->gboxed = g_slice_alloc0(g_struct_info_get_size (priv->info));
+    priv->gboxed = g_slice_alloc0(g_struct_info_get_size(priv->info));
     priv->allocated_directly = true;
 
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
                         "JSObject created by directly allocating %s",
-                        g_base_info_get_name ((GIBaseInfo *)priv->info));
+                        g_base_info_get_name((GIBaseInfo *)priv->info));
 }
 
 /* When initializing a boxed object from a hash of properties, we don't want
  * to do n O(n) lookups, so put put the fields into a hash table and store it on proto->priv
- * for fast lookup. 
+ * for fast lookup.
  */
 static GHashTable *
 get_field_map(GIStructInfo *struct_info)
@@ -347,7 +347,7 @@ boxed_new(JSContext             *context,
      * exists, otherwise we choose the internal slice allocator if possible;
      * finally, we fallback on the default constructor */
     if (priv->zero_args_constructor >= 0) {
-        GIFunctionInfo *func_info = g_struct_info_get_method (priv->info, priv->zero_args_constructor);
+        GIFunctionInfo *func_info = g_struct_info_get_method(priv->info, priv->zero_args_constructor);
 
         GIArgument rval_arg;
         GError *error = NULL;
@@ -437,21 +437,21 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
     }
 
     *priv = *proto_priv;
-    g_base_info_ref( (GIBaseInfo*) priv->info);
+    g_base_info_ref((GIBaseInfo*) priv->info);
 
     /* Short-circuit copy-construction in the case where we can use g_boxed_copy or memcpy */
     if (argc == 1 &&
         boxed_get_copy_source(context, priv, argv[0], &source_priv)) {
 
-        if (g_type_is_a (priv->gtype, G_TYPE_BOXED)) {
+        if (g_type_is_a(priv->gtype, G_TYPE_BOXED)) {
             priv->gboxed = g_boxed_copy(priv->gtype, source_priv->gboxed);
 
             GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
             return true;
         } else if (priv->can_allocate_directly) {
-            boxed_new_direct (priv);
+            boxed_new_direct(priv);
             memcpy(priv->gboxed, source_priv->gboxed,
-                   g_struct_info_get_size (priv->info));
+                   g_struct_info_get_size(priv->info));
 
             GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
             return true;
@@ -485,21 +485,21 @@ boxed_finalize(JSFreeOp *fop,
 
     if (priv->gboxed && !priv->not_owning_gboxed) {
         if (priv->allocated_directly) {
-            g_slice_free1(g_struct_info_get_size (priv->info), priv->gboxed);
+            g_slice_free1(g_struct_info_get_size(priv->info), priv->gboxed);
         } else {
-            if (g_type_is_a (priv->gtype, G_TYPE_BOXED))
-                g_boxed_free (priv->gtype,  priv->gboxed);
-            else if (g_type_is_a (priv->gtype, G_TYPE_VARIANT))
-                g_variant_unref ((GVariant *) priv->gboxed);
+            if (g_type_is_a(priv->gtype, G_TYPE_BOXED))
+                g_boxed_free(priv->gtype,  priv->gboxed);
+            else if (g_type_is_a(priv->gtype, G_TYPE_VARIANT))
+                g_variant_unref((GVariant *) priv->gboxed);
             else
-                g_assert_not_reached ();
+                g_assert_not_reached();
         }
 
         priv->gboxed = NULL;
     }
 
     if (priv->info) {
-        g_base_info_unref( (GIBaseInfo*) priv->info);
+        g_base_info_unref((GIBaseInfo*) priv->info);
         priv->info = NULL;
     }
 
@@ -541,10 +541,10 @@ get_nested_interface_object(JSContext             *context,
     Boxed *priv;
     Boxed *proto_priv;
 
-    if (!struct_is_simple ((GIStructInfo *)interface_info)) {
+    if (!struct_is_simple((GIStructInfo *)interface_info)) {
         gjs_throw(context, "Reading field %s.%s is not supported",
-                  g_base_info_get_name ((GIBaseInfo *)parent_priv->info),
-                  g_base_info_get_name ((GIBaseInfo *)field_info));
+                  g_base_info_get_name((GIBaseInfo *)parent_priv->info),
+                  g_base_info_get_name((GIBaseInfo *)field_info));
 
         return false;
     }
@@ -554,7 +554,7 @@ get_nested_interface_object(JSContext             *context,
                                                         (GIBoxedInfo*) interface_info));
     proto_priv = priv_from_js(context, proto);
 
-    offset = g_field_info_get_offset (field_info);
+    offset = g_field_info_get_offset(field_info);
 
     obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);
 
@@ -566,8 +566,8 @@ get_nested_interface_object(JSContext             *context,
     new (priv) Boxed();
     JS_SetPrivate(obj, priv);
     priv->info = (GIBoxedInfo*) interface_info;
-    g_base_info_ref( (GIBaseInfo*) priv->info);
-    priv->gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo*) interface_info);
+    g_base_info_ref((GIBaseInfo*) priv->info);
+    priv->gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*) interface_info);
     priv->can_allocate_directly = proto_priv->can_allocate_directly;
 
     /* A structure nested inside a parent object; doesn't have an independent allocation */
@@ -605,7 +605,7 @@ static uint32_t
 native_accessor_slot(JSObject *func_obj)
 {
     return js::GetFunctionNativeReserved(func_obj, SLOT_PROP_NAME)
-        .toPrivateUint32();
+           .toPrivateUint32();
 }
 
 static bool
@@ -624,39 +624,39 @@ boxed_field_getter(JSContext *context,
     if (!field_info)
         return false;
 
-    type_info = g_field_info_get_type (field_info);
+    type_info = g_field_info_get_type(field_info);
 
     if (priv->gboxed == NULL) { /* direct access to proto field */
         gjs_throw(context, "Can't get field %s.%s from a prototype",
-                  g_base_info_get_name ((GIBaseInfo *)priv->info),
-                  g_base_info_get_name ((GIBaseInfo *)field_info));
+                  g_base_info_get_name((GIBaseInfo *)priv->info),
+                  g_base_info_get_name((GIBaseInfo *)field_info));
         goto out;
     }
 
-    if (!g_type_info_is_pointer (type_info) &&
-        g_type_info_get_tag (type_info) == GI_TYPE_TAG_INTERFACE) {
+    if (!g_type_info_is_pointer(type_info) &&
+        g_type_info_get_tag(type_info) == GI_TYPE_TAG_INTERFACE) {
 
         GIBaseInfo *interface_info = g_type_info_get_interface(type_info);
 
-        if (g_base_info_get_type (interface_info) == GI_INFO_TYPE_STRUCT ||
-            g_base_info_get_type (interface_info) == GI_INFO_TYPE_BOXED) {
+        if (g_base_info_get_type(interface_info) == GI_INFO_TYPE_STRUCT ||
+            g_base_info_get_type(interface_info) == GI_INFO_TYPE_BOXED) {
 
-            success = get_nested_interface_object (context, obj, priv,
-                                                   field_info, type_info, interface_info,
-                                                   args.rval());
+            success = get_nested_interface_object(context, obj, priv,
+                                                  field_info, type_info, interface_info,
+                                                  args.rval());
 
-            g_base_info_unref ((GIBaseInfo *)interface_info);
+            g_base_info_unref((GIBaseInfo *)interface_info);
 
             goto out;
         }
 
-        g_base_info_unref ((GIBaseInfo *)interface_info);
+        g_base_info_unref((GIBaseInfo *)interface_info);
     }
 
-    if (!g_field_info_get_field (field_info, priv->gboxed, &arg)) {
+    if (!g_field_info_get_field(field_info, priv->gboxed, &arg)) {
         gjs_throw(context, "Reading field %s.%s is not supported",
-                  g_base_info_get_name ((GIBaseInfo *)priv->info),
-                  g_base_info_get_name ((GIBaseInfo *)field_info));
+                  g_base_info_get_name((GIBaseInfo *)priv->info),
+                  g_base_info_get_name((GIBaseInfo *)field_info));
         goto out;
     }
 
@@ -667,28 +667,28 @@ boxed_field_getter(JSContext *context,
     success = true;
 
 out:
-    g_base_info_unref ((GIBaseInfo *)field_info);
-    g_base_info_unref ((GIBaseInfo *)type_info);
+    g_base_info_unref((GIBaseInfo *)field_info);
+    g_base_info_unref((GIBaseInfo *)type_info);
 
     return success;
 }
 
 static bool
-set_nested_interface_object (JSContext      *context,
-                             Boxed          *parent_priv,
-                             GIFieldInfo    *field_info,
-                             GITypeInfo     *type_info,
-                             GIBaseInfo     *interface_info,
-                             JS::HandleValue value)
+set_nested_interface_object(JSContext      *context,
+                            Boxed          *parent_priv,
+                            GIFieldInfo    *field_info,
+                            GITypeInfo     *type_info,
+                            GIBaseInfo     *interface_info,
+                            JS::HandleValue value)
 {
     int offset;
     Boxed *proto_priv;
     Boxed *source_priv;
 
-    if (!struct_is_simple ((GIStructInfo *)interface_info)) {
+    if (!struct_is_simple((GIStructInfo *)interface_info)) {
         gjs_throw(context, "Writing field %s.%s is not supported",
-                  g_base_info_get_name ((GIBaseInfo *)parent_priv->info),
-                  g_base_info_get_name ((GIBaseInfo *)field_info));
+                  g_base_info_get_name((GIBaseInfo *)parent_priv->info),
+                  g_base_info_get_name((GIBaseInfo *)field_info));
 
         return false;
     }
@@ -705,7 +705,7 @@ set_nested_interface_object (JSContext      *context,
         JS::AutoValueArray<1> args(context);
         args[0].set(value);
         JS::RootedObject tmp_object(context,
-            gjs_construct_object_dynamic(context, proto, args));
+                                    gjs_construct_object_dynamic(context, proto, args));
         if (!tmp_object)
             return false;
 
@@ -714,10 +714,10 @@ set_nested_interface_object (JSContext      *context,
             return false;
     }
 
-    offset = g_field_info_get_offset (field_info);
+    offset = g_field_info_get_offset(field_info);
     memcpy(((char *)parent_priv->gboxed) + offset,
            source_priv->gboxed,
-           g_struct_info_get_size (source_priv->info));
+           g_struct_info_get_size(source_priv->info));
 
     return true;
 }
@@ -733,32 +733,32 @@ boxed_set_field_from_value(JSContext      *context,
     bool success = false;
     bool need_release = false;
 
-    type_info = g_field_info_get_type (field_info);
+    type_info = g_field_info_get_type(field_info);
 
-    if (!g_type_info_is_pointer (type_info) &&
-        g_type_info_get_tag (type_info) == GI_TYPE_TAG_INTERFACE) {
+    if (!g_type_info_is_pointer(type_info) &&
+        g_type_info_get_tag(type_info) == GI_TYPE_TAG_INTERFACE) {
 
         GIBaseInfo *interface_info = g_type_info_get_interface(type_info);
 
-        if (g_base_info_get_type (interface_info) == GI_INFO_TYPE_STRUCT ||
-            g_base_info_get_type (interface_info) == GI_INFO_TYPE_BOXED) {
+        if (g_base_info_get_type(interface_info) == GI_INFO_TYPE_STRUCT ||
+            g_base_info_get_type(interface_info) == GI_INFO_TYPE_BOXED) {
 
-            success = set_nested_interface_object (context, priv,
-                                                   field_info, type_info,
-                                                   interface_info, value);
+            success = set_nested_interface_object(context, priv,
+                                                  field_info, type_info,
+                                                  interface_info, value);
 
-            g_base_info_unref ((GIBaseInfo *)interface_info);
+            g_base_info_unref((GIBaseInfo *)interface_info);
 
             goto out;
         }
 
-        g_base_info_unref ((GIBaseInfo *)interface_info);
+        g_base_info_unref((GIBaseInfo *)interface_info);
 
     }
 
     if (!gjs_value_to_g_argument(context, value,
                                  type_info,
-                                 g_base_info_get_name ((GIBaseInfo *)field_info),
+                                 g_base_info_get_name((GIBaseInfo *)field_info),
                                  GJS_ARGUMENT_FIELD,
                                  GI_TRANSFER_NOTHING,
                                  true, &arg))
@@ -766,10 +766,10 @@ boxed_set_field_from_value(JSContext      *context,
 
     need_release = true;
 
-    if (!g_field_info_set_field (field_info, priv->gboxed, &arg)) {
+    if (!g_field_info_set_field(field_info, priv->gboxed, &arg)) {
         gjs_throw(context, "Writing field %s.%s is not supported",
-                  g_base_info_get_name ((GIBaseInfo *)priv->info),
-                  g_base_info_get_name ((GIBaseInfo *)field_info));
+                  g_base_info_get_name((GIBaseInfo *)priv->info),
+                  g_base_info_get_name((GIBaseInfo *)field_info));
         goto out;
     }
 
@@ -777,11 +777,11 @@ boxed_set_field_from_value(JSContext      *context,
 
 out:
     if (need_release)
-        gjs_g_argument_release (context, GI_TRANSFER_NOTHING,
-                                type_info,
-                                &arg);
+        gjs_g_argument_release(context, GI_TRANSFER_NOTHING,
+                               type_info,
+                               &arg);
 
-    g_base_info_unref ((GIBaseInfo *)type_info);
+    g_base_info_unref((GIBaseInfo *)type_info);
 
     return success;
 }
@@ -802,8 +802,8 @@ boxed_field_setter(JSContext *cx,
 
     if (priv->gboxed == NULL) { /* direct access to proto field */
         gjs_throw(cx, "Can't set field %s.%s on prototype",
-                  g_base_info_get_name ((GIBaseInfo *)priv->info),
-                  g_base_info_get_name ((GIBaseInfo *)field_info));
+                  g_base_info_get_name((GIBaseInfo *)priv->info),
+                  g_base_info_get_name((GIBaseInfo *)field_info));
         goto out;
     }
 
@@ -814,7 +814,7 @@ boxed_field_setter(JSContext *cx,
     success = true;
 
 out:
-    g_base_info_unref ((GIBaseInfo *)field_info);
+    g_base_info_unref((GIBaseInfo *)field_info);
 
     return success;
 }
@@ -824,7 +824,7 @@ define_boxed_class_fields(JSContext       *cx,
                           Boxed           *priv,
                           JS::HandleObject proto)
 {
-    int n_fields = g_struct_info_get_n_fields (priv->info);
+    int n_fields = g_struct_info_get_n_fields(priv->info);
     int i;
 
     /* We define all fields as read/write so that the user gets an
@@ -844,31 +844,31 @@ define_boxed_class_fields(JSContext       *cx,
      */
     if (n_fields > 256) {
         g_warning("Only defining the first 256 fields in boxed type '%s'",
-                  g_base_info_get_name ((GIBaseInfo *)priv->info));
+                  g_base_info_get_name((GIBaseInfo *)priv->info));
         n_fields = 256;
     }
 
     for (i = 0; i < n_fields; i++) {
-        GIFieldInfo *field = g_struct_info_get_field (priv->info, i);
-        const char *field_name = g_base_info_get_name ((GIBaseInfo *)field);
+        GIFieldInfo *field = g_struct_info_get_field(priv->info, i);
+        const char *field_name = g_base_info_get_name((GIBaseInfo *)field);
         GjsAutoChar getter_name = g_strconcat("boxed_field_get::",
                                               field_name, NULL);
         GjsAutoChar setter_name = g_strconcat("boxed_field_set::",
                                               field_name, NULL);
-        g_base_info_unref ((GIBaseInfo *)field);
+        g_base_info_unref((GIBaseInfo *)field);
 
         /* In order to have one getter and setter for all the properties
          * we define, we must provide the property index in a "reserved
          * slot" for which we must unfortunately use the jsfriendapi. */
         JS::RootedObject getter(cx,
-            define_native_accessor_wrapper(cx, boxed_field_getter, 0,
-                                           getter_name, i));
+                                define_native_accessor_wrapper(cx, boxed_field_getter, 0,
+                                                               getter_name, i));
         if (!getter)
             return false;
 
         JS::RootedObject setter(cx,
-            define_native_accessor_wrapper(cx, boxed_field_setter, 1,
-                                           setter_name, i));
+                                define_native_accessor_wrapper(cx, boxed_field_setter, 1,
+                                                               setter_name, i));
         if (!setter)
             return false;
 
@@ -934,7 +934,7 @@ static const struct JSClassOps gjs_boxed_class_ops = {
 struct JSClass gjs_boxed_class = {
     "GObject_Boxed",
     JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE |
-        JSCLASS_HAS_RESERVED_SLOTS(1),
+    JSCLASS_HAS_RESERVED_SLOTS(1),
     &gjs_boxed_class_ops
 };
 
@@ -967,46 +967,46 @@ type_can_be_allocated_directly(GITypeInfo *type_info)
     } else {
         switch (g_type_info_get_tag(type_info)) {
         case GI_TYPE_TAG_INTERFACE:
-            {
-                GIBaseInfo *interface = g_type_info_get_interface(type_info);
-                switch (g_base_info_get_type(interface)) {
-                case GI_INFO_TYPE_BOXED:
-                case GI_INFO_TYPE_STRUCT:
-                    if (!struct_is_simple((GIStructInfo *)interface))
-                        is_simple = false;
-                    break;
-                case GI_INFO_TYPE_UNION:
-                    /* FIXME: Need to implement */
+        {
+            GIBaseInfo *interface = g_type_info_get_interface(type_info);
+            switch (g_base_info_get_type(interface)) {
+            case GI_INFO_TYPE_BOXED:
+            case GI_INFO_TYPE_STRUCT:
+                if (!struct_is_simple((GIStructInfo *)interface))
                     is_simple = false;
-                    break;
-                case GI_INFO_TYPE_OBJECT:
-                case GI_INFO_TYPE_VFUNC:
-                case GI_INFO_TYPE_CALLBACK:
-                case GI_INFO_TYPE_INVALID:
-                case GI_INFO_TYPE_INTERFACE:
-                case GI_INFO_TYPE_FUNCTION:
-                case GI_INFO_TYPE_CONSTANT:
-                case GI_INFO_TYPE_VALUE:
-                case GI_INFO_TYPE_SIGNAL:
-                case GI_INFO_TYPE_PROPERTY:
-                case GI_INFO_TYPE_FIELD:
-                case GI_INFO_TYPE_ARG:
-                case GI_INFO_TYPE_TYPE:
-                case GI_INFO_TYPE_UNRESOLVED:
-                    is_simple = false;
-                    break;
-                case GI_INFO_TYPE_INVALID_0:
-                    g_assert_not_reached();
-                    break;
-                case GI_INFO_TYPE_ENUM:
-                case GI_INFO_TYPE_FLAGS:
-                default:
-                    break;
-                }
-
-                g_base_info_unref(interface);
+                break;
+            case GI_INFO_TYPE_UNION:
+                /* FIXME: Need to implement */
+                is_simple = false;
+                break;
+            case GI_INFO_TYPE_OBJECT:
+            case GI_INFO_TYPE_VFUNC:
+            case GI_INFO_TYPE_CALLBACK:
+            case GI_INFO_TYPE_INVALID:
+            case GI_INFO_TYPE_INTERFACE:
+            case GI_INFO_TYPE_FUNCTION:
+            case GI_INFO_TYPE_CONSTANT:
+            case GI_INFO_TYPE_VALUE:
+            case GI_INFO_TYPE_SIGNAL:
+            case GI_INFO_TYPE_PROPERTY:
+            case GI_INFO_TYPE_FIELD:
+            case GI_INFO_TYPE_ARG:
+            case GI_INFO_TYPE_TYPE:
+            case GI_INFO_TYPE_UNRESOLVED:
+                is_simple = false;
+                break;
+            case GI_INFO_TYPE_INVALID_0:
+                g_assert_not_reached();
+                break;
+            case GI_INFO_TYPE_ENUM:
+            case GI_INFO_TYPE_FLAGS:
+            default:
                 break;
             }
+
+            g_base_info_unref(interface);
+            break;
+        }
         case GI_TYPE_TAG_BOOLEAN:
         case GI_TYPE_TAG_INT8:
         case GI_TYPE_TAG_UINT8:
@@ -1071,7 +1071,7 @@ boxed_fill_prototype_info(JSContext *context,
     int first_constructor = -1;
     jsid first_constructor_name = JSID_VOID;
 
-    priv->gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
+    priv->gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*) priv->info);
     priv->zero_args_constructor = -1;
     priv->zero_args_constructor_name = JSID_VOID;
     priv->default_constructor = -1;
@@ -1111,7 +1111,7 @@ boxed_fill_prototype_info(JSContext *context,
                 }
 
                 if (priv->default_constructor < 0 &&
-                    strcmp(g_base_info_get_name ((GIBaseInfo*) func_info), "new") == 0) {
+                    strcmp(g_base_info_get_name((GIBaseInfo*) func_info), "new") == 0) {
                     priv->default_constructor = i;
                     priv->default_constructor_name = gjs_context_get_const_string(context, GJS_STRING_NEW);
                 }
@@ -1145,11 +1145,11 @@ gjs_define_boxed_class(JSContext       *context,
      * same as Object.
      */
 
-    constructor_name = g_base_info_get_name( (GIBaseInfo*) info);
+    constructor_name = g_base_info_get_name((GIBaseInfo*) info);
 
     if (!gjs_init_class_dynamic(context, in_object,
                                 nullptr, /* parent prototype */
-                                g_base_info_get_namespace( (GIBaseInfo*) info),
+                                g_base_info_get_namespace((GIBaseInfo*) info),
                                 constructor_name,
                                 &gjs_boxed_class,
                                 gjs_boxed_constructor, 1,
@@ -1173,21 +1173,21 @@ gjs_define_boxed_class(JSContext       *context,
     priv->info = info;
     boxed_fill_prototype_info(context, priv);
 
-    g_base_info_ref( (GIBaseInfo*) priv->info);
-    priv->gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo*) priv->info);
+    g_base_info_ref((GIBaseInfo*) priv->info);
+    priv->gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*) priv->info);
     JS_SetPrivate(prototype, priv);
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
               constructor_name, prototype.get(), JS_GetClass(prototype),
               in_object.get());
 
-    priv->can_allocate_directly = struct_is_simple (priv->info);
+    priv->can_allocate_directly = struct_is_simple(priv->info);
 
-    define_boxed_class_fields (context, priv, prototype);
-    gjs_define_static_methods (context, constructor, priv->gtype, priv->info);
+    define_boxed_class_fields(context, priv, prototype);
+    gjs_define_static_methods(context, constructor, priv->gtype, priv->info);
 
     JS::RootedObject gtype_obj(context,
-        gjs_gtype_create_gtype_wrapper(context, priv->gtype));
+                               gjs_gtype_create_gtype_wrapper(context, priv->gtype));
     JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
                       JSPROP_PERMANENT);
 }
@@ -1219,7 +1219,7 @@ gjs_boxed_from_c_struct(JSContext             *context,
     new (priv) Boxed();
 
     *priv = *proto_priv;
-    g_base_info_ref( (GIBaseInfo*) priv->info);
+    g_base_info_ref((GIBaseInfo*) priv->info);
 
     JS_SetPrivate(obj, priv);
 
@@ -1231,17 +1231,17 @@ gjs_boxed_from_c_struct(JSContext             *context,
         priv->gboxed = gboxed;
         priv->not_owning_gboxed = true;
     } else {
-        if (priv->gtype != G_TYPE_NONE && g_type_is_a (priv->gtype, G_TYPE_BOXED)) {
+        if (priv->gtype != G_TYPE_NONE && g_type_is_a(priv->gtype, G_TYPE_BOXED)) {
             priv->gboxed = g_boxed_copy(priv->gtype, gboxed);
         } else if (priv->gtype == G_TYPE_VARIANT) {
-            priv->gboxed = g_variant_ref_sink ((GVariant *) gboxed);
+            priv->gboxed = g_variant_ref_sink((GVariant *) gboxed);
         } else if (priv->can_allocate_directly) {
             boxed_new_direct(priv);
-            memcpy(priv->gboxed, gboxed, g_struct_info_get_size (priv->info));
+            memcpy(priv->gboxed, gboxed, g_struct_info_get_size(priv->info));
         } else {
             gjs_throw(context,
                       "Can't create a Javascript object for %s; no way to copy",
-                      g_base_info_get_name( (GIBaseInfo*) priv->info));
+                      g_base_info_get_name((GIBaseInfo*) priv->info));
         }
     }
 
@@ -1283,15 +1283,15 @@ gjs_typecheck_boxed(JSContext       *context,
         if (throw_error) {
             gjs_throw_custom(context, JSProto_TypeError, nullptr,
                              "Object is %s.%s.prototype, not an object instance - cannot convert to a boxed instance",
-                             g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                             g_base_info_get_name( (GIBaseInfo*) priv->info));
+                             g_base_info_get_namespace((GIBaseInfo*) priv->info),
+                             g_base_info_get_name((GIBaseInfo*) priv->info));
         }
 
         return false;
     }
 
     if (expected_type != G_TYPE_NONE)
-        result = g_type_is_a (priv->gtype, expected_type);
+        result = g_type_is_a(priv->gtype, expected_type);
     else if (expected_info != NULL)
         result = g_base_info_equal((GIBaseInfo*) priv->info, (GIBaseInfo*) expected_info);
     else

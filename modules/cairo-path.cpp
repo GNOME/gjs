@@ -81,7 +81,7 @@ gjs_cairo_path_from_path(JSContext    *context,
 
     JS::RootedObject proto(context, gjs_cairo_path_get_proto(context));
     JS::RootedObject object(context,
-        JS_NewObjectWithGivenProto(context, &gjs_cairo_path_class, proto));
+                            JS_NewObjectWithGivenProto(context, &gjs_cairo_path_class, proto));
     if (!object) {
         gjs_throw(context, "failed to create path");
         return NULL;

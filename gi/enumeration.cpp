@@ -46,7 +46,7 @@ gjs_define_enum_value(JSContext       *context,
     gsize i;
     gint64 value_val;
 
-    value_name = g_base_info_get_name( (GIBaseInfo*) info);
+    value_name = g_base_info_get_name((GIBaseInfo*) info);
     value_val = g_value_info_get_value(info);
 
     /* g-i converts enum members such as GDK_GRAVITY_SOUTH_WEST to
@@ -96,7 +96,7 @@ gjs_define_enum_values(JSContext       *context,
 
         failed = !gjs_define_enum_value(context, in_object, value_info);
 
-        g_base_info_unref( (GIBaseInfo*) value_info);
+        g_base_info_unref((GIBaseInfo*) value_info);
 
         if (failed) {
             return false;
@@ -105,7 +105,7 @@ gjs_define_enum_values(JSContext       *context,
 
     gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
     JS::RootedObject gtype_obj(context,
-        gjs_gtype_create_gtype_wrapper(context, gtype));
+                               gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, in_object, "$gtype", gtype_obj, JSPROP_PERMANENT);
 
     return true;
@@ -162,22 +162,22 @@ gjs_define_enumeration(JSContext       *context,
      * be more complicated in general. I think this is fine.
      */
 
-    enum_name = g_base_info_get_name( (GIBaseInfo*) info);
+    enum_name = g_base_info_get_name((GIBaseInfo*) info);
 
     JS::RootedObject enum_obj(context, JS_NewPlainObject(context));
     if (!enum_obj) {
         g_error("Could not create enumeration %s.%s",
-               	g_base_info_get_namespace( (GIBaseInfo*) info),
+                g_base_info_get_namespace((GIBaseInfo*) info),
                 enum_name);
     }
 
     if (!gjs_define_enum_values(context, enum_obj, info))
         return false;
-    gjs_define_enum_static_methods (context, enum_obj, info);
+    gjs_define_enum_static_methods(context, enum_obj, info);
 
     gjs_debug(GJS_DEBUG_GENUM,
               "Defining %s.%s as %p",
-              g_base_info_get_namespace( (GIBaseInfo*) info),
+              g_base_info_get_namespace((GIBaseInfo*) info),
               enum_name, enum_obj.get());
 
     if (!JS_DefineProperty(context, in_object, enum_name, enum_obj,

@@ -32,15 +32,15 @@
 
 G_BEGIN_DECLS
 
-JSObject * gjs_gtype_create_gtype_wrapper (JSContext *context,
-                                           GType      gtype);
+JSObject * gjs_gtype_create_gtype_wrapper(JSContext *context,
+                                          GType      gtype);
 
 GType       gjs_gtype_get_actual_gtype(JSContext       *context,
                                        JS::HandleObject object);
 
-bool        gjs_typecheck_gtype         (JSContext             *context,
-                                         JS::HandleObject       obj,
-                                         bool                   throw_error);
+bool        gjs_typecheck_gtype(JSContext             *context,
+                                JS::HandleObject       obj,
+                                bool                   throw_error);
 
 const char *gjs_get_names_from_gtype_and_gi_info(GType        gtype,
                                                  GIBaseInfo  *info,

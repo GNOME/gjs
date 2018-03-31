@@ -51,13 +51,13 @@ run_bootstrap(JSContext       *cx,
     GjsAutoChar uri = g_strconcat("resource://", path.get(), nullptr);
     JS::CompileOptions options(cx);
     options.setUTF8(true)
-           .setFileAndLine(uri, 1)
-           .setSourceIsLazy(true);
+    .setFileAndLine(uri, 1)
+    .setSourceIsLazy(true);
 
     JS::RootedScript compiled_script(cx);
     size_t script_len;
     auto script = static_cast<const char *>(g_bytes_get_data(script_bytes.get(),
-                                            &script_len));
+                                                             &script_len));
     if (!JS::Compile(cx, options, script, script_len, &compiled_script))
         return false;
 
@@ -156,7 +156,7 @@ gjs_print_parse_args(JSContext    *cx,
             }
 
             g_string_append(str, s);
-            if (n < (argv.length()-1))
+            if (n < (argv.length() - 1))
                 g_string_append_c(str, ' ');
         } else {
             *buffer = g_string_free(str, true);
@@ -176,7 +176,7 @@ gjs_print(JSContext *context,
           unsigned   argc,
           JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
 
     GjsAutoChar buffer;
     if (!gjs_print_parse_args(context, argv, &buffer))
@@ -243,8 +243,8 @@ public:
         JS::CompartmentOptions compartment_options;
         compartment_options.behaviors().setVersion(JSVERSION_LATEST);
         JS::RootedObject global(cx,
-            JS_NewGlobalObject(cx, &GjsGlobal::klass, nullptr,
-                               JS::FireOnNewGlobalHook, compartment_options));
+                                JS_NewGlobalObject(cx, &GjsGlobal::klass, nullptr,
+                                                   JS::FireOnNewGlobalHook, compartment_options));
         if (!global)
             return nullptr;
 

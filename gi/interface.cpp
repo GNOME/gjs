@@ -86,8 +86,8 @@ gjs_define_static_methods(JSContext       *context,
         GIFunctionInfo *meth_info;
         GIFunctionInfoFlags flags;
 
-        meth_info = g_interface_info_get_method (info, i);
-        flags = g_function_info_get_flags (meth_info);
+        meth_info = g_interface_info_get_method(info, i);
+        flags = g_function_info_get_flags(meth_info);
 
         /* Anything that isn't a method we put on the prototype of the
          * constructor.  This includes <constructor> introspection
@@ -137,7 +137,7 @@ interface_resolve(JSContext       *context,
     method_info = g_interface_info_find_method((GIInterfaceInfo*) priv->info, name);
 
     if (method_info != NULL) {
-        if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+        if (g_function_info_get_flags(method_info) & GI_FUNCTION_IS_METHOD) {
             if (gjs_define_function(context, obj,
                                     priv->gtype,
                                     (GICallableInfo*)method_info) == NULL) {
@@ -261,7 +261,7 @@ gjs_define_interface_class(JSContext              *context,
         gjs_define_static_methods(context, constructor, priv->gtype, priv->info);
 
     JS::RootedObject gtype_obj(context,
-        gjs_gtype_create_gtype_wrapper(context, priv->gtype));
+                               gjs_gtype_create_gtype_wrapper(context, priv->gtype));
     JS_DefineProperty(context, constructor, "$gtype", gtype_obj, JSPROP_PERMANENT);
 
     return true;
@@ -287,7 +287,7 @@ gjs_lookup_interface_constructor(JSContext             *context,
              GI_INFO_TYPE_INTERFACE);
 
     constructor = gjs_lookup_generic_constructor(context, interface_info);
-    if (G_UNLIKELY (constructor == NULL))
+    if (G_UNLIKELY(constructor == NULL))
         return false;
 
     g_base_info_unref(interface_info);

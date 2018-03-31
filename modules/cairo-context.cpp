@@ -932,7 +932,7 @@ gjs_cairo_context_from_context(JSContext *context,
 {
     JS::RootedObject proto(context, gjs_cairo_context_get_proto(context));
     JS::RootedObject object(context,
-        JS_NewObjectWithGivenProto(context, &gjs_cairo_context_class, proto));
+                            JS_NewObjectWithGivenProto(context, &gjs_cairo_context_class, proto));
     if (!object)
         return NULL;
 

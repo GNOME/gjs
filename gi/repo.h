@@ -37,26 +37,26 @@ G_BEGIN_DECLS
 bool gjs_define_repo(JSContext              *cx,
                      JS::MutableHandleObject repo);
 
-const char* gjs_info_type_name                  (GIInfoType      type);
-JSObject*   gjs_lookup_private_namespace        (JSContext      *context);
-JSObject*   gjs_lookup_namespace_object         (JSContext      *context,
-                                                 GIBaseInfo     *info);
+const char* gjs_info_type_name(GIInfoType      type);
+JSObject*   gjs_lookup_private_namespace(JSContext      *context);
+JSObject*   gjs_lookup_namespace_object(JSContext      *context,
+                                        GIBaseInfo     *info);
 
 JSObject *gjs_lookup_namespace_object_by_name(JSContext   *context,
                                               JS::HandleId name);
 
-JSObject *  gjs_lookup_generic_constructor      (JSContext      *context,
-                                                 GIBaseInfo     *info);
-JSObject *  gjs_lookup_generic_prototype        (JSContext      *context,
-                                                 GIBaseInfo     *info);
+JSObject *  gjs_lookup_generic_constructor(JSContext      *context,
+                                           GIBaseInfo     *info);
+JSObject *  gjs_lookup_generic_prototype(JSContext      *context,
+                                         GIBaseInfo     *info);
 
 bool gjs_define_info(JSContext       *context,
                      JS::HandleObject in_object,
                      GIBaseInfo      *info,
                      bool            *defined);
 
-char*       gjs_camel_from_hyphen               (const char     *hyphen_name);
-char*       gjs_hyphen_from_camel               (const char     *camel_name);
+char*       gjs_camel_from_hyphen(const char     *hyphen_name);
+char*       gjs_hyphen_from_camel(const char     *camel_name);
 
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE

@@ -29,21 +29,21 @@
 #include <gjs/gjs.h>
 #include "arg.h"
 
-typedef bool (*GjsArgOverrideToGArgumentFunc) (JSContext      *context,
-                                               JS::Value       value,
-                                               const char     *arg_name,
-                                               GjsArgumentType argument_type,
-                                               GITransfer      transfer,
-                                               bool            may_be_null,
-                                               GArgument      *arg);
+typedef bool (*GjsArgOverrideToGArgumentFunc)(JSContext      *context,
+                                              JS::Value       value,
+                                              const char     *arg_name,
+                                              GjsArgumentType argument_type,
+                                              GITransfer      transfer,
+                                              bool            may_be_null,
+                                              GArgument      *arg);
 
-typedef bool (*GjsArgOverrideFromGArgumentFunc) (JSContext             *context,
-                                                 JS::MutableHandleValue value_p,
-                                                 GIArgument            *arg);
+typedef bool (*GjsArgOverrideFromGArgumentFunc)(JSContext             *context,
+                                                JS::MutableHandleValue value_p,
+                                                GIArgument            *arg);
 
-typedef bool (*GjsArgOverrideReleaseGArgumentFunc) (JSContext *context,
-                                                    GITransfer transfer,
-                                                    GArgument *arg);
+typedef bool (*GjsArgOverrideReleaseGArgumentFunc)(JSContext *context,
+                                                   GITransfer transfer,
+                                                   GArgument *arg);
 
 typedef struct {
     GjsArgOverrideToGArgumentFunc to_func;
@@ -51,26 +51,26 @@ typedef struct {
     GjsArgOverrideReleaseGArgumentFunc release_func;
 } GjsForeignInfo;
 
-bool  gjs_struct_foreign_register                (const char     *gi_namespace,
-                                                  const char     *type_name,
-                                                  GjsForeignInfo *info);
+bool  gjs_struct_foreign_register(const char     *gi_namespace,
+                                  const char     *type_name,
+                                  GjsForeignInfo *info);
 
-bool  gjs_struct_foreign_convert_to_g_argument   (JSContext      *context,
-                                                  JS::Value       value,
-                                                  GIBaseInfo     *interface_info,
-                                                  const char     *arg_name,
-                                                  GjsArgumentType argument_type,
-                                                  GITransfer      transfer,
-                                                  bool            may_be_null,
-                                                  GArgument      *arg);
+bool  gjs_struct_foreign_convert_to_g_argument(JSContext      *context,
+                                               JS::Value       value,
+                                               GIBaseInfo     *interface_info,
+                                               const char     *arg_name,
+                                               GjsArgumentType argument_type,
+                                               GITransfer      transfer,
+                                               bool            may_be_null,
+                                               GArgument      *arg);
 bool gjs_struct_foreign_convert_from_g_argument(JSContext             *context,
                                                 JS::MutableHandleValue value_p,
                                                 GIBaseInfo            *interface_info,
                                                 GIArgument            *arg);
 
-bool  gjs_struct_foreign_release_g_argument      (JSContext      *context,
-                                                  GITransfer      transfer,
-                                                  GIBaseInfo     *interface_info,
-                                                  GArgument      *arg);
+bool  gjs_struct_foreign_release_g_argument(JSContext      *context,
+                                            GITransfer      transfer,
+                                            GIBaseInfo     *interface_info,
+                                            GArgument      *arg);
 
 #endif /* __GJS_OVERRIDE_H__ */

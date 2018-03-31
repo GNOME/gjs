@@ -28,7 +28,7 @@
 
 G_BEGIN_DECLS
 
-bool    gjs_environment_variable_is_set   (const char *env_variable_name);
+bool    gjs_environment_variable_is_set(const char *env_variable_name);
 
 G_END_DECLS
 

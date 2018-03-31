@@ -38,26 +38,26 @@ bool gjs_define_fundamental_class(JSContext              *context,
                                   JS::MutableHandleObject constructor,
                                   JS::MutableHandleObject prototype);
 
-JSObject* gjs_object_from_g_fundamental      (JSContext     *context,
-                                              GIObjectInfo  *info,
-                                              void          *fobj);
+JSObject* gjs_object_from_g_fundamental(JSContext     *context,
+                                        GIObjectInfo  *info,
+                                        void          *fobj);
 
 void     *gjs_g_fundamental_from_object(JSContext       *context,
                                         JS::HandleObject obj);
 
-JSObject *gjs_fundamental_from_g_value       (JSContext     *context,
-                                              const GValue  *value,
-                                              GType          gtype);
+JSObject *gjs_fundamental_from_g_value(JSContext     *context,
+                                       const GValue  *value,
+                                       GType          gtype);
 
 bool      gjs_typecheck_fundamental(JSContext       *context,
                                     JS::HandleObject object,
                                     GType            expected_gtype,
                                     bool             throw_error);
 
-void*     gjs_fundamental_ref                (JSContext     *context,
-                                              void          *fobj);
-void      gjs_fundamental_unref              (JSContext     *context,
-                                              void          *fobj);
+void*     gjs_fundamental_ref(JSContext     *context,
+                              void          *fobj);
+void      gjs_fundamental_unref(JSContext     *context,
+                                void          *fobj);
 
 G_END_DECLS
 

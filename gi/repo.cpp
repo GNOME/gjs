@@ -58,10 +58,10 @@ static bool lookup_override_function(JSContext *, JS::HandleId,
                                      JS::MutableHandleValue);
 
 static bool
-get_version_for_ns (JSContext       *context,
-                    JS::HandleObject repo_obj,
-                    JS::HandleId     ns_id,
-                    GjsAutoJSChar   *version)
+get_version_for_ns(JSContext       *context,
+                   JS::HandleObject repo_obj,
+                   JS::HandleId     ns_id,
+                   GjsAutoJSChar   *version)
 {
     JS::RootedObject versions(context);
     bool found;
@@ -137,9 +137,9 @@ resolve_namespace_object(JSContext       *context,
 
     JS::RootedValue result(context);
     if (!override.isUndefined() &&
-        !JS_CallFunctionValue (context, gi_namespace, /* thisp */
-                               override, /* callee */
-                               JS::HandleValueArray::empty(), &result))
+        !JS_CallFunctionValue(context, gi_namespace,  /* thisp */
+                              override, /* callee */
+                              JS::HandleValueArray::empty(), &result))
         return false;
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
@@ -254,7 +254,7 @@ repo_new(JSContext *context)
         return nullptr;
 
     JS::RootedObject repo(context,
-        JS_NewObjectWithGivenProto(context, &gjs_repo_class, proto));
+                          JS_NewObjectWithGivenProto(context, &gjs_repo_class, proto));
     if (repo == nullptr)
         g_error("No memory to create repo object");
 
@@ -326,8 +326,8 @@ gjs_define_constant(JSContext       *context,
                           GJS_MODULE_PROP_FLAGS))
         ret = true;
 
- out:
-    g_constant_info_free_value (info, &garg);
+out:
+    g_constant_info_free_value(info, &garg);
     g_base_info_unref((GIBaseInfo*) type_info);
     return ret;
 }
@@ -365,9 +365,9 @@ _gjs_log_info_usage(GIBaseInfo *info)
                 transfer = g_arg_info_get_ownership_transfer(arg);
 
                 g_string_append_printf(args,
-                                       "{ GI_DIRECTION_%s, GI_TRANSFER_%s }, ",
-                                       DIRECTION_STRING(direction),
-                                       TRANSFER_STRING(transfer));
+                "{ GI_DIRECTION_%s, GI_TRANSFER_%s }, ",
+                DIRECTION_STRING(direction),
+                TRANSFER_STRING(transfer));
 
                 g_base_info_unref((GIBaseInfo*) arg);
             }
@@ -412,42 +412,42 @@ gjs_define_info(JSContext       *context,
 
     switch (g_base_info_get_type(info)) {
     case GI_INFO_TYPE_FUNCTION:
-        {
-            JSObject *f;
-            f = gjs_define_function(context, in_object, 0, (GICallableInfo*) info);
-            if (f == NULL)
-                return false;
-        }
-        break;
+    {
+        JSObject *f;
+        f = gjs_define_function(context, in_object, 0, (GICallableInfo*) info);
+        if (f == NULL)
+            return false;
+    }
+    break;
     case GI_INFO_TYPE_OBJECT:
-        {
-            GType gtype;
-            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
+    {
+        GType gtype;
+        gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
 
-            if (g_type_is_a (gtype, G_TYPE_PARAM)) {
-                gjs_define_param_class(context, in_object);
-            } else if (g_type_is_a (gtype, G_TYPE_OBJECT)) {
-                JS::RootedObject ignored1(context), ignored2(context);
-                gjs_define_object_class(context, in_object, info, gtype,
-                                        &ignored1, &ignored2);
-            } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-                JS::RootedObject ignored1(context), ignored2(context);
-                if (!gjs_define_fundamental_class(context, in_object,
-                                                  (GIObjectInfo*)info,
-                                                  &ignored1, &ignored2)) {
-                    gjs_throw (context,
-                               "Unsupported fundamental class creation for type %s",
-                               g_type_name(gtype));
-                    return false;
-                }
-            } else {
-                gjs_throw (context,
-                           "Unsupported type %s, deriving from fundamental %s",
-                           g_type_name(gtype), g_type_name(g_type_fundamental(gtype)));
+        if (g_type_is_a(gtype, G_TYPE_PARAM)) {
+            gjs_define_param_class(context, in_object);
+        } else if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
+            JS::RootedObject ignored1(context), ignored2(context);
+            gjs_define_object_class(context, in_object, info, gtype,
+                                    &ignored1, &ignored2);
+        } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
+            JS::RootedObject ignored1(context), ignored2(context);
+            if (!gjs_define_fundamental_class(context, in_object,
+                                              (GIObjectInfo*)info,
+                                              &ignored1, &ignored2)) {
+                gjs_throw(context,
+                          "Unsupported fundamental class creation for type %s",
+                          g_type_name(gtype));
                 return false;
             }
+        } else {
+            gjs_throw(context,
+                      "Unsupported type %s, deriving from fundamental %s",
+                      g_type_name(gtype), g_type_name(g_type_fundamental(gtype)));
+            return false;
         }
-        break;
+    }
+    break;
     case GI_INFO_TYPE_STRUCT:
         /* We don't want GType structures in the namespace,
            we expose their fields as vfuncs and their methods
@@ -457,7 +457,7 @@ gjs_define_info(JSContext       *context,
             *defined = false;
             break;
         }
-        /* Fall through */
+    /* Fall through */
 
     case GI_INFO_TYPE_BOXED:
         gjs_define_boxed_class(context, in_object, (GIBoxedInfo*) info);
@@ -472,7 +472,7 @@ gjs_define_info(JSContext       *context,
             gjs_define_error_class(context, in_object, (GIEnumInfo*) info);
             break;
         }
-        /* fall through */
+    /* fall through */
 
     case GI_INFO_TYPE_FLAGS:
         if (!gjs_define_enumeration(context, in_object, (GIEnumInfo*) info))
@@ -483,14 +483,14 @@ gjs_define_info(JSContext       *context,
             return false;
         break;
     case GI_INFO_TYPE_INTERFACE:
-        {
-            JS::RootedObject ignored(context);
-            gjs_define_interface_class(context, in_object,
-                                       (GIInterfaceInfo *) info,
-                                       g_registered_type_info_get_g_type((GIRegisteredTypeInfo *) info),
-                                       &ignored);
-        }
-        break;
+    {
+        JS::RootedObject ignored(context);
+        gjs_define_interface_class(context, in_object,
+                                   (GIInterfaceInfo *) info,
+                                   g_registered_type_info_get_g_type((GIRegisteredTypeInfo *) info),
+                                   &ignored);
+    }
+    break;
     case GI_INFO_TYPE_INVALID:
     case GI_INFO_TYPE_INVALID_0:
     case GI_INFO_TYPE_CALLBACK:
@@ -532,8 +532,8 @@ gjs_lookup_namespace_object(JSContext  *context,
     ns = g_base_info_get_namespace(info);
     if (ns == NULL) {
         gjs_throw(context, "%s '%s' does not have a namespace",
-                     gjs_info_type_name(g_base_info_get_type(info)),
-                     g_base_info_get_name(info));
+                  gjs_info_type_name(g_base_info_get_type(info)),
+                  g_base_info_get_name(info));
 
         return NULL;
     }
@@ -615,7 +615,7 @@ lookup_override_function(JSContext             *cx,
     }
     return true;
 
- fail:
+fail:
     saved_exc.drop();
     return false;
 }
@@ -627,7 +627,7 @@ gjs_lookup_namespace_object_by_name(JSContext      *context,
     JSAutoRequest ar(context);
 
     JS::RootedValue importer(context,
-        gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS));
+                             gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS));
     g_assert(importer.isObject());
 
     JS::RootedObject repo(context), importer_obj(context, &importer.toObject());
@@ -693,7 +693,7 @@ gjs_info_type_name(GIInfoType type)
         g_assert_not_reached();
         break;
     default:
-      return "???";
+        return "???";
     }
 }
 
@@ -751,17 +751,17 @@ gjs_lookup_generic_constructor(JSContext  *context,
     const char *constructor_name;
 
     JS::RootedObject in_object(context,
-        gjs_lookup_namespace_object(context, (GIBaseInfo*) info));
+                               gjs_lookup_namespace_object(context, (GIBaseInfo*) info));
     constructor_name = g_base_info_get_name((GIBaseInfo*) info);
 
-    if (G_UNLIKELY (!in_object))
+    if (G_UNLIKELY(!in_object))
         return NULL;
 
     JS::RootedValue value(context);
     if (!JS_GetProperty(context, in_object, constructor_name, &value))
         return NULL;
 
-    if (G_UNLIKELY (!value.isObject()))
+    if (G_UNLIKELY(!value.isObject()))
         return NULL;
 
     return &value.toObject();
@@ -781,7 +781,7 @@ gjs_lookup_generic_prototype(JSContext  *context,
                                  GJS_STRING_PROTOTYPE, &value))
         return NULL;
 
-    if (G_UNLIKELY (!value.isObjectOrNull()))
+    if (G_UNLIKELY(!value.isObjectOrNull()))
         return NULL;
 
     return value.toObjectOrNull();

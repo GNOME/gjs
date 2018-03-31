@@ -313,9 +313,9 @@ gjs_string_from_ucs4(JSContext             *cx,
  * Returns: true if *name_p is non-%NULL
  **/
 bool
-gjs_get_string_id (JSContext       *context,
-                   jsid             id,
-                   GjsAutoJSChar   *name_p)
+gjs_get_string_id(JSContext       *context,
+                  jsid             id,
+                  GjsAutoJSChar   *name_p)
 {
     JS::RootedValue id_val(context);
 
@@ -344,9 +344,9 @@ gjs_get_string_id (JSContext       *context,
  * be thrown if @string can not be represented as UTF-8.
  */
 bool
-gjs_unichar_from_string (JSContext *context,
-                         JS::Value  value,
-                         gunichar  *result)
+gjs_unichar_from_string(JSContext *context,
+                        JS::Value  value,
+                        gunichar  *result)
 {
     GjsAutoJSChar utf8_str;
     if (gjs_string_to_utf8(context, value, &utf8_str)) {

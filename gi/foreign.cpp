@@ -47,8 +47,8 @@ get_foreign_structs(void)
     // FIXME: look into hasing on GITypeInfo instead.
     if (!foreign_structs_table) {
         foreign_structs_table = g_hash_table_new_full(g_str_hash, g_str_equal,
-                                     (GDestroyNotify)g_free,
-                                     NULL);
+                                                      (GDestroyNotify)g_free,
+                                                      NULL);
     }
 
     return foreign_structs_table;
@@ -150,7 +150,7 @@ gjs_struct_foreign_convert_to_g_argument(JSContext      *context,
         return false;
 
     if (!foreign->to_func(context, value, arg_name,
-                           argument_type, transfer, may_be_null, arg))
+                          argument_type, transfer, may_be_null, arg))
         return false;
 
     return true;

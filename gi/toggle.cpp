@@ -35,9 +35,9 @@ ToggleQueue::find_operation_locked(GObject               *gobj,
                                    ToggleQueue::Direction direction)
 {
     return std::find_if(q.begin(), q.end(),
-        [gobj, direction](const Item& item)->bool {
-            return item.gobj == gobj && item.direction == direction;
-        });
+    [gobj, direction](const Item & item)->bool {
+        return item.gobj == gobj && item.direction == direction;
+    });
 }
 
 bool
@@ -106,7 +106,7 @@ ToggleQueue::handle_toggle(Handler handler)
     debug("handle", item.gobj);
     if (item.needs_unref)
         g_object_unref(item.gobj);
-    
+
     return true;
 }
 
@@ -124,7 +124,7 @@ ToggleQueue::enqueue(GObject               *gobj,
                      ToggleQueue::Direction direction,
                      ToggleQueue::Handler   handler)
 {
-    if (G_UNLIKELY (m_shutdown)) {
+    if (G_UNLIKELY(m_shutdown)) {
         gjs_debug(GJS_DEBUG_GOBJECT, "Enqueuing GObject %p to toggle %s after "
                   "shutdown, probably from another thread (%p).", gobj,
                   direction == UP ? "UP" : "DOWN",
@@ -152,11 +152,11 @@ ToggleQueue::enqueue(GObject               *gobj,
      *
      * Taking a reference now would be bad anyway, since it would force
      * the object to toggle back up again.
-     */   
+     */
 
     std::lock_guard<std::mutex> hold(lock);
     q.push_back(item);
-    
+
     if (m_idle_id) {
         g_assert(((void) "Should always enqueue with the same handler",
                   m_toggle_handler == handler));

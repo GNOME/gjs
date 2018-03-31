@@ -220,7 +220,7 @@ gjs_console_eval_and_print(JSContext  *cx,
 {
     JS::CompileOptions options(cx);
     options.setUTF8(true)
-           .setFileAndLine("typein", lineno);
+    .setFileAndLine("typein", lineno);
 
     JS::RootedValue result(cx);
     if (!JS::Evaluate(cx, options, bytes, length, &result)) {
@@ -262,7 +262,7 @@ gjs_console_interact(JSContext *context,
 
     JS::SetWarningReporter(context, gjs_console_warning_reporter);
 
-        /* It's an interactive filehandle; drop into read-eval-print loop. */
+    /* It's an interactive filehandle; drop into read-eval-print loop. */
     lineno = 1;
     do {
         /*

@@ -50,7 +50,7 @@ createRGB_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     double red, green, blue;
     cairo_pattern_t *pattern;
     JSObject *pattern_wrapper;
@@ -78,7 +78,7 @@ createRGBA_func(JSContext *context,
                 unsigned   argc,
                 JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     double red, green, blue, alpha;
     cairo_pattern_t *pattern;
     JSObject *pattern_wrapper;
@@ -120,8 +120,8 @@ gjs_cairo_solid_pattern_from_pattern(JSContext       *context,
 
     JS::RootedObject proto(context, gjs_cairo_solid_pattern_get_proto(context));
     JS::RootedObject object(context,
-        JS_NewObjectWithGivenProto(context, &gjs_cairo_solid_pattern_class,
-                                   proto));
+                            JS_NewObjectWithGivenProto(context, &gjs_cairo_solid_pattern_class,
+                                                       proto));
     if (!object) {
         gjs_throw(context, "failed to create solid pattern");
         return NULL;

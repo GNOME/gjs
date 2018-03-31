@@ -41,21 +41,21 @@ typedef enum {
 /* Hack for now... why doesn't gobject-introspection have this? */
 typedef GIStructInfo GIBoxedInfo;
 
-void      gjs_define_boxed_class       (JSContext             *context,
-                                        JS::HandleObject       in_object,
-                                        GIBoxedInfo           *info);
+void      gjs_define_boxed_class(JSContext             *context,
+                                 JS::HandleObject       in_object,
+                                 GIBoxedInfo           *info);
 
-void*     gjs_c_struct_from_boxed      (JSContext             *context,
-                                        JS::HandleObject       obj);
-JSObject* gjs_boxed_from_c_struct      (JSContext             *context,
-                                        GIStructInfo          *info,
-                                        void                  *gboxed,
-                                        GjsBoxedCreationFlags  flags);
-bool      gjs_typecheck_boxed          (JSContext             *context,
-                                        JS::HandleObject       obj,
-                                        GIStructInfo          *expected_info,
-                                        GType                  expected_type,
-                                        bool                   throw_error);
+void*     gjs_c_struct_from_boxed(JSContext             *context,
+                                  JS::HandleObject       obj);
+JSObject* gjs_boxed_from_c_struct(JSContext             *context,
+                                  GIStructInfo          *info,
+                                  void                  *gboxed,
+                                  GjsBoxedCreationFlags  flags);
+bool      gjs_typecheck_boxed(JSContext             *context,
+                              JS::HandleObject       obj,
+                              GIStructInfo          *expected_info,
+                              GType                  expected_type,
+                              bool                   throw_error);
 
 G_END_DECLS
 

@@ -31,10 +31,10 @@
 
 G_BEGIN_DECLS
 
-void gjs_gtk_container_child_set_property (GtkContainer *container,
-                                           GtkWidget    *child,
-                                           const gchar  *property,
-                                           const GValue *value);
+void gjs_gtk_container_child_set_property(GtkContainer *container,
+                                          GtkWidget    *child,
+                                          const gchar  *property,
+                                          const GValue *value);
 
 G_END_DECLS
 

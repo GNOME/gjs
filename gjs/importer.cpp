@@ -64,7 +64,7 @@ static const JSClass gjs_importer_class = *js::Jsvalify(&gjs_importer_real_class
 GJS_DEFINE_PRIV_FROM_JS(Importer, gjs_importer_class)
 
 static JSObject *gjs_define_importer(JSContext *, JS::HandleObject,
-    const char *, const char **, bool);
+                                     const char *, const char **, bool);
 
 static bool
 importer_to_string(JSContext *cx,
@@ -172,8 +172,8 @@ define_meta_properties(JSContext       *context,
         return false;
 
     JS::RootedId to_string_tag_name(context,
-        SYMBOL_TO_JSID(JS::GetWellKnownSymbol(context,
-                                              JS::SymbolCode::toStringTag)));
+                                    SYMBOL_TO_JSID(JS::GetWellKnownSymbol(context,
+                                                                          JS::SymbolCode::toStringTag)));
     return JS_DefinePropertyById(context, module_obj, to_string_tag_name,
                                  to_string_tag, attrs);
 }
@@ -312,7 +312,7 @@ import_module_init(JSContext       *context,
 
     g_assert(script != NULL);
 
-    full_path = g_file_get_parse_name (file);
+    full_path = g_file_get_parse_name(file);
 
     if (!gjs_eval_with_scope(context, module_obj, script, script_len,
                              full_path, &ignored))
@@ -320,7 +320,7 @@ import_module_init(JSContext       *context,
 
     ret = true;
 
- out:
+out:
     g_free(script);
     g_free(full_path);
     return ret;
@@ -424,11 +424,11 @@ import_file_on_module(JSContext       *context,
     char *full_path = NULL;
 
     JS::RootedObject module_obj(context,
-        gjs_module_import(context, obj, id, name, file));
+                                gjs_module_import(context, obj, id, name, file));
     if (!module_obj)
         goto out;
 
-    full_path = g_file_get_parse_name (file);
+    full_path = g_file_get_parse_name(file);
     if (!define_meta_properties(context, module_obj, full_path, name, obj))
         goto out;
 
@@ -437,11 +437,11 @@ import_file_on_module(JSContext       *context,
 
     retval = true;
 
- out:
+out:
     if (!retval)
         cancel_import(context, obj, name);
 
-    g_free (full_path);
+    g_free(full_path);
     return retval;
 }
 
@@ -604,7 +604,7 @@ do_import(JSContext       *context,
         }
     }
 
- out:
+out:
     if (directories != NULL) {
         char **str_array;
 
@@ -875,7 +875,7 @@ importer_new(JSContext *context,
         g_error("Error creating importer prototype");
 
     JS::RootedObject importer(context,
-        JS_NewObjectWithGivenProto(context, &gjs_importer_class, proto));
+                              JS_NewObjectWithGivenProto(context, &gjs_importer_class, proto));
     if (!importer)
         g_error("No memory to create importer");
 
@@ -935,11 +935,11 @@ gjs_get_search_path(void)
         /* ${datadir}/share/gjs-1.0 */
 #ifdef G_OS_WIN32
         extern HMODULE gjs_dll;
-        char *basedir = g_win32_get_package_installation_directory_of_module (gjs_dll);
-        char *gjs_data_dir = g_build_filename (basedir, "share", "gjs-1.0", NULL);
+        char *basedir = g_win32_get_package_installation_directory_of_module(gjs_dll);
+        char *gjs_data_dir = g_build_filename(basedir, "share", "gjs-1.0", NULL);
         g_ptr_array_add(path, g_strdup(gjs_data_dir));
-        g_free (gjs_data_dir);
-        g_free (basedir);
+        g_free(gjs_data_dir);
+        g_free(basedir);
 #else
         g_ptr_array_add(path, g_strdup(GJS_JS_DIR));
 #endif
@@ -1001,8 +1001,8 @@ gjs_define_importer(JSContext       *context,
 
 {
     JS::RootedObject importer(context,
-        gjs_create_importer(context, importer_name, initial_search_path,
-                            add_standard_search_path, false, in_object));
+                              gjs_create_importer(context, importer_name, initial_search_path,
+                                                  add_standard_search_path, false, in_object));
 
     if (!JS_DefineProperty(context, in_object, importer_name, importer,
                            GJS_MODULE_PROP_FLAGS))

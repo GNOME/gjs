@@ -53,10 +53,10 @@ struct _GjsDBusImplementationClass {
 };
 
 GJS_EXPORT
-GType                  gjs_dbus_implementation_get_type (void);
+GType                  gjs_dbus_implementation_get_type(void);
 
-void                   gjs_dbus_implementation_emit_property_changed (GjsDBusImplementation *self, gchar *property, GVariant *newvalue);
-void                   gjs_dbus_implementation_emit_signal           (GjsDBusImplementation *self, gchar *signal_name, GVariant *parameters);
+void                   gjs_dbus_implementation_emit_property_changed(GjsDBusImplementation *self, gchar *property, GVariant *newvalue);
+void                   gjs_dbus_implementation_emit_signal(GjsDBusImplementation *self, gchar *signal_name, GVariant *parameters);
 
 G_END_DECLS
 

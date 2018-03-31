@@ -54,18 +54,18 @@ bool gjs_value_to_explicit_array(JSContext       *context,
                                  GIArgument      *arg,
                                  size_t          *length_p);
 
-void gjs_g_argument_init_default (JSContext      *context,
-                                  GITypeInfo     *type_info,
-                                  GArgument      *arg);
+void gjs_g_argument_init_default(JSContext      *context,
+                                 GITypeInfo     *type_info,
+                                 GArgument      *arg);
 
-bool gjs_value_to_g_argument (JSContext      *context,
-                              JS::HandleValue value,
-                              GITypeInfo     *type_info,
-                              const char     *arg_name,
-                              GjsArgumentType argument_type,
-                              GITransfer      transfer,
-                              bool            may_be_null,
-                              GArgument      *arg);
+bool gjs_value_to_g_argument(JSContext      *context,
+                             JS::HandleValue value,
+                             GITypeInfo     *type_info,
+                             const char     *arg_name,
+                             GjsArgumentType argument_type,
+                             GITransfer      transfer,
+                             bool            may_be_null,
+                             GArgument      *arg);
 
 bool gjs_value_from_g_argument(JSContext             *context,
                                JS::MutableHandleValue value_p,
@@ -79,40 +79,40 @@ bool gjs_value_from_explicit_array(JSContext             *context,
                                    GIArgument            *arg,
                                    int                    length);
 
-bool gjs_g_argument_release    (JSContext  *context,
-                                GITransfer  transfer,
-                                GITypeInfo *type_info,
-                                GArgument  *arg);
-bool gjs_g_argument_release_out_array (JSContext  *context,
-                                       GITransfer  transfer,
-                                       GITypeInfo *type_info,
-                                       guint       length,
-                                       GArgument  *arg);
-bool gjs_g_argument_release_in_array (JSContext  *context,
+bool gjs_g_argument_release(JSContext  *context,
+                            GITransfer  transfer,
+                            GITypeInfo *type_info,
+                            GArgument  *arg);
+bool gjs_g_argument_release_out_array(JSContext  *context,
                                       GITransfer  transfer,
                                       GITypeInfo *type_info,
                                       guint       length,
                                       GArgument  *arg);
-bool gjs_g_argument_release_in_arg (JSContext  *context,
-                                    GITransfer  transfer,
-                                    GITypeInfo *type_info,
-                                    GArgument  *arg);
+bool gjs_g_argument_release_in_array(JSContext  *context,
+                                     GITransfer  transfer,
+                                     GITypeInfo *type_info,
+                                     guint       length,
+                                     GArgument  *arg);
+bool gjs_g_argument_release_in_arg(JSContext  *context,
+                                   GITransfer  transfer,
+                                   GITypeInfo *type_info,
+                                   GArgument  *arg);
 
-bool _gjs_flags_value_is_valid (JSContext   *context,
-                                GType        gtype,
-                                gint64       value);
+bool _gjs_flags_value_is_valid(JSContext   *context,
+                               GType        gtype,
+                               gint64       value);
 
-gint64 _gjs_enum_from_int (GIEnumInfo *enum_info,
-                           int         int_value);
+gint64 _gjs_enum_from_int(GIEnumInfo *enum_info,
+                          int         int_value);
 
 bool gjs_array_from_strv(JSContext             *context,
                          JS::MutableHandleValue value_p,
                          const char           **strv);
 
-bool gjs_array_to_strv (JSContext   *context,
-                        JS::Value    array_value,
-                        unsigned int length,
-                        void       **arr_p);
+bool gjs_array_to_strv(JSContext   *context,
+                       JS::Value    array_value,
+                       unsigned int length,
+                       void       **arr_p);
 
 G_END_DECLS
 

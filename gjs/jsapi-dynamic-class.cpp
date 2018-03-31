@@ -58,11 +58,11 @@ gjs_init_class_dynamic(JSContext              *context,
     bool res = false;
 
     /* Without a name, JS_NewObject fails */
-    g_assert (clasp->name != NULL);
+    g_assert(clasp->name != NULL);
 
     /* gjs_init_class_dynamic only makes sense for instantiable classes,
        use JS_InitClass for static classes like Math */
-    g_assert (constructor_native != NULL);
+    g_assert(constructor_native != NULL);
 
     JS_BeginRequest(context);
 
@@ -140,7 +140,7 @@ gjs_init_class_dynamic(JSContext              *context,
 
     constructor_fun = NULL;
 
- out:
+out:
     JS_EndRequest(context);
     g_free(full_function_name);
 
@@ -148,7 +148,7 @@ gjs_init_class_dynamic(JSContext              *context,
 }
 
 static const char*
-format_dynamic_class_name (const char *name)
+format_dynamic_class_name(const char *name)
 {
     if (g_str_has_prefix(name, "_private_"))
         return name + strlen("_private_");

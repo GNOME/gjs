@@ -117,9 +117,9 @@ ns_resolve(JSContext       *context,
 }
 
 static bool
-get_name (JSContext *context,
-          unsigned   argc,
-          JS::Value *vp)
+get_name(JSContext *context,
+         unsigned   argc,
+         JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, args, obj, Ns, priv);
 
@@ -192,7 +192,7 @@ ns_new(JSContext    *context,
         return nullptr;
 
     JS::RootedObject ns(context,
-        JS_NewObjectWithGivenProto(context, &gjs_ns_class, proto));
+                        JS_NewObjectWithGivenProto(context, &gjs_ns_class, proto));
     if (!ns)
         g_error("No memory to create ns object");
 

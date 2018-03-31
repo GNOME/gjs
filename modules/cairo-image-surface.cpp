@@ -78,7 +78,7 @@ createFromPNG_func(JSContext *context,
                    unsigned   argc,
                    JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     GjsAutoChar filename;
     cairo_surface_t *surface;
 
@@ -93,8 +93,8 @@ createFromPNG_func(JSContext *context,
 
     JS::RootedObject proto(context, gjs_cairo_image_surface_get_proto(context));
     JS::RootedObject surface_wrapper(context,
-        JS_NewObjectWithGivenProto(context, &gjs_cairo_image_surface_class,
-                                   proto));
+                                     JS_NewObjectWithGivenProto(context, &gjs_cairo_image_surface_class,
+                                                                proto));
     if (!surface_wrapper) {
         gjs_throw(context, "failed to create surface");
         return false;
@@ -227,8 +227,8 @@ gjs_cairo_image_surface_from_surface(JSContext       *context,
 
     JS::RootedObject proto(context, gjs_cairo_image_surface_get_proto(context));
     JS::RootedObject object(context,
-        JS_NewObjectWithGivenProto(context, &gjs_cairo_image_surface_class,
-                                   proto));
+                            JS_NewObjectWithGivenProto(context, &gjs_cairo_image_surface_class,
+                                                       proto));
     if (!object) {
         gjs_throw(context, "failed to create image surface");
         return NULL;

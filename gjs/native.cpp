@@ -34,8 +34,8 @@
 static GHashTable *modules = NULL;
 
 void
-gjs_register_native_module (const char          *module_id,
-                            GjsDefineModuleFunc  func)
+gjs_register_native_module(const char          *module_id,
+                           GjsDefineModuleFunc  func)
 {
     if (modules == NULL)
         modules = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
@@ -108,5 +108,5 @@ gjs_load_native_module(JSContext              *context,
         return false;
     }
 
-    return func (context, module_out);
+    return func(context, module_out);
 }

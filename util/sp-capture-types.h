@@ -53,74 +53,74 @@ typedef guint64 SpCaptureAddress;
 
 typedef enum
 {
-  SP_CAPTURE_FRAME_TIMESTAMP = 1,
-  SP_CAPTURE_FRAME_SAMPLE    = 2,
-  SP_CAPTURE_FRAME_MAP       = 3,
-  SP_CAPTURE_FRAME_PROCESS   = 4,
-  SP_CAPTURE_FRAME_FORK      = 5,
-  SP_CAPTURE_FRAME_EXIT      = 6,
-  SP_CAPTURE_FRAME_JITMAP    = 7,
-  SP_CAPTURE_FRAME_CTRDEF    = 8,
-  SP_CAPTURE_FRAME_CTRSET    = 9,
+    SP_CAPTURE_FRAME_TIMESTAMP = 1,
+    SP_CAPTURE_FRAME_SAMPLE    = 2,
+    SP_CAPTURE_FRAME_MAP       = 3,
+    SP_CAPTURE_FRAME_PROCESS   = 4,
+    SP_CAPTURE_FRAME_FORK      = 5,
+    SP_CAPTURE_FRAME_EXIT      = 6,
+    SP_CAPTURE_FRAME_JITMAP    = 7,
+    SP_CAPTURE_FRAME_CTRDEF    = 8,
+    SP_CAPTURE_FRAME_CTRSET    = 9,
 } SpCaptureFrameType;
 
 #pragma pack(push, 1)
 
 typedef struct
 {
-  guint32 magic;
-  guint8  version;
-  guint32 little_endian : 1;
-  guint32 padding : 23;
-  gchar   capture_time[64];
-  gint64  time;
-  gint64  end_time;
-  gchar   suffix[168];
+    guint32 magic;
+    guint8  version;
+    guint32 little_endian : 1;
+    guint32 padding : 23;
+    gchar   capture_time[64];
+    gint64  time;
+    gint64  end_time;
+    gchar   suffix[168];
 } SpCaptureFileHeader;
 
 typedef struct
 {
-  guint16 len;
-  gint16  cpu;
-  gint32  pid;
-  gint64  time;
-  guint8  type;
-  guint64 padding : 56;
-  guint8  data[0];
+    guint16 len;
+    gint16  cpu;
+    gint32  pid;
+    gint64  time;
+    guint8  type;
+    guint64 padding : 56;
+    guint8  data[0];
 } SpCaptureFrame;
 
 typedef struct
 {
-  SpCaptureFrame frame;
-  guint64        start;
-  guint64        end;
-  guint64        offset;
-  guint64        inode;
-  gchar          filename[0];
+    SpCaptureFrame frame;
+    guint64        start;
+    guint64        end;
+    guint64        offset;
+    guint64        inode;
+    gchar          filename[0];
 } SpCaptureMap;
 
 typedef struct
 {
-  SpCaptureFrame frame;
-  guint32        n_jitmaps;
-  guint8         data[0];
+    SpCaptureFrame frame;
+    guint32        n_jitmaps;
+    guint8         data[0];
 } SpCaptureJitmap;
 
 typedef struct
 {
-  SpCaptureFrame   frame;
-  guint16          n_addrs;
-  guint64          padding : 48;
-  SpCaptureAddress addrs[0];
+    SpCaptureFrame   frame;
+    guint16          n_addrs;
+    guint64          padding : 48;
+    SpCaptureAddress addrs[0];
 } SpCaptureSample;
 
 #pragma pack(pop)
 
-G_STATIC_ASSERT (sizeof (SpCaptureFileHeader) == 256);
-G_STATIC_ASSERT (sizeof (SpCaptureFrame) == 24);
-G_STATIC_ASSERT (sizeof (SpCaptureMap) == 56);
-G_STATIC_ASSERT (sizeof (SpCaptureJitmap) == 28);
-G_STATIC_ASSERT (sizeof (SpCaptureSample) == 32);
+G_STATIC_ASSERT(sizeof(SpCaptureFileHeader) == 256);
+G_STATIC_ASSERT(sizeof(SpCaptureFrame) == 24);
+G_STATIC_ASSERT(sizeof(SpCaptureMap) == 56);
+G_STATIC_ASSERT(sizeof(SpCaptureJitmap) == 28);
+G_STATIC_ASSERT(sizeof(SpCaptureSample) == 32);
 
 G_END_DECLS
 

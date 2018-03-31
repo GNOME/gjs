@@ -143,7 +143,7 @@ gjs_profiler_extract_maps(GjsProfiler *self)
     char *content_tmp;
     size_t len;
     if (!g_file_get_contents(path, &content_tmp, &len, nullptr))
-      return false;
+        return false;
     GjsAutoChar content = content_tmp;
 
     AutoStrv lines(g_strsplit(content, "\n", 0), g_strfreev);
@@ -327,7 +327,7 @@ gjs_profiler_sigprof(int        signum,
      * therefore is more likely to overflow.
      */
     // cppcheck-suppress allocaCalled
-    SpCaptureAddress *addrs = static_cast<SpCaptureAddress *>(alloca(sizeof *addrs * depth));
+    SpCaptureAddress *addrs = static_cast<SpCaptureAddress *>(alloca(sizeof * addrs * depth));
 
     for (size_t ix = 0; ix < depth; ix++) {
         js::ProfileEntry& entry = self->stack[ix];

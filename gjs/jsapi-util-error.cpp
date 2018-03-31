@@ -110,7 +110,7 @@ gjs_throw_valist(JSContext       *context,
 
     result = true;
 
- out:
+out:
 
     if (!result) {
         /* try just reporting it to error handler? should not
@@ -156,10 +156,10 @@ gjs_throw_custom(JSContext  *cx,
 {
     va_list args;
     g_return_if_fail(kind == JSProto_Error || kind == JSProto_InternalError ||
-        kind == JSProto_EvalError || kind == JSProto_RangeError ||
-        kind == JSProto_ReferenceError || kind == JSProto_SyntaxError ||
-        kind == JSProto_TypeError || kind == JSProto_URIError ||
-        kind == JSProto_StopIteration);
+                     kind == JSProto_EvalError || kind == JSProto_RangeError ||
+                     kind == JSProto_ReferenceError || kind == JSProto_SyntaxError ||
+                     kind == JSProto_TypeError || kind == JSProto_URIError ||
+                     kind == JSProto_StopIteration);
 
     va_start(args, format);
     gjs_throw_valist(cx, kind, error_name, format, args);
@@ -188,8 +188,8 @@ gjs_throw_literal(JSContext       *context,
  * to report errors from C functions.
  */
 void
-gjs_throw_g_error (JSContext       *context,
-                   GError          *error)
+gjs_throw_g_error(JSContext       *context,
+                  GError          *error)
 {
     if (error == NULL)
         return;
@@ -197,8 +197,8 @@ gjs_throw_g_error (JSContext       *context,
     JS_BeginRequest(context);
 
     JS::RootedValue err(context,
-        JS::ObjectOrNullValue(gjs_error_from_gerror(context, error, true)));
-    g_error_free (error);
+                        JS::ObjectOrNullValue(gjs_error_from_gerror(context, error, true)));
+    g_error_free(error);
     if (!err.isNull())
         JS_SetPendingException(context, err);
 

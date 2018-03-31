@@ -46,7 +46,7 @@
  * GJS_DEBUG_TOPICS or if that variable is not set.
  */
 static bool
-is_allowed_prefix (const char *prefix)
+is_allowed_prefix(const char *prefix)
 {
     static const char *topics = NULL;
     static char **prefixes = NULL;
@@ -139,14 +139,14 @@ gjs_debug(GjsDebugTopic topic,
              * string)
              */
             c = strchr((char *) debug_output, '%');
-            if (c && c[1] == 'u' && !strchr(c+1, '%')) {
+            if (c && c[1] == 'u' && !strchr(c + 1, '%')) {
 #if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-_Pragma("GCC diagnostic push")
-_Pragma("GCC diagnostic ignored \"-Wformat-nonliteral\"")
+                _Pragma("GCC diagnostic push")
+                _Pragma("GCC diagnostic ignored \"-Wformat-nonliteral\"")
 #endif
                 free_me = g_strdup_printf(debug_output, (guint)getpid());
 #if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-_Pragma("GCC diagnostic pop")
+                _Pragma("GCC diagnostic pop")
 #endif
                 log_file = free_me;
             } else {
@@ -229,9 +229,9 @@ _Pragma("GCC diagnostic pop")
     if (!is_allowed_prefix(prefix))
         return;
 
-    va_start (args, format);
-    s = g_strdup_vprintf (format, args);
-    va_end (args);
+    va_start(args, format);
+    s = g_strdup_vprintf(format, args);
+    va_end(args);
 
     if (print_timestamp) {
         static gdouble previous = 0.0;

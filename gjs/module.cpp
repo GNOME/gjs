@@ -90,7 +90,7 @@ class GjsModule {
     {
         JS::CompileOptions options(cx);
         options.setFileAndLine(filename, line_number)
-               .setSourceIsLazy(true);
+        .setSourceIsLazy(true);
 
         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
         std::u16string utf16_string = convert.from_bytes(script);
@@ -177,7 +177,7 @@ class GjsModule {
 
         JS::Rooted<JS::PropertyDescriptor> desc(cx);
         return JS_GetPropertyDescriptorById(cx, lexical, id, &desc) &&
-            JS_DefinePropertyById(cx, module, id, desc);
+               JS_DefinePropertyById(cx, module, id, desc);
     }
 
     static bool

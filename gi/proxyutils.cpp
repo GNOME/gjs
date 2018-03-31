@@ -70,7 +70,7 @@ _gjs_proxy_to_string_func(JSContext             *context,
         goto out;
 
     ret = true;
- out:
-    g_string_free (buf, true);
+out:
+    g_string_free(buf, true);
     return ret;
 }

@@ -37,8 +37,8 @@ bool        gjs_typecheck_bytearray(JSContext       *context,
 bool gjs_define_byte_array_stuff(JSContext              *context,
                                  JS::MutableHandleObject module);
 
-JSObject *    gjs_byte_array_from_byte_array (JSContext  *context,
-                                              GByteArray *array);
+JSObject *    gjs_byte_array_from_byte_array(JSContext  *context,
+                                             GByteArray *array);
 
 GByteArray *gjs_byte_array_get_byte_array(JSContext       *context,
                                           JS::HandleObject object);

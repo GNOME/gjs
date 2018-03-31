@@ -145,7 +145,7 @@ typedef enum {
 
 void gjs_debug(GjsDebugTopic topic,
                const char   *format,
-               ...) G_GNUC_PRINTF (2, 3);
+               ...) G_GNUC_PRINTF(2, 3);
 
 G_END_DECLS
 

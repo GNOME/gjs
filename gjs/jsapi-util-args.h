@@ -215,8 +215,8 @@ assign(JSContext      *cx,
 
 /* Force JS::RootedObject * to be converted to JS::MutableHandleObject,
  * see overload in jsapi-util-args.cpp */
-template<typename T,
-         typename std::enable_if<!std::is_same<T, JS::RootedObject *>::value, int>::type = 0>
+template < typename T,
+           typename std::enable_if < !std::is_same<T, JS::RootedObject *>::value, int >::type = 0 >
 static inline void
 free_if_necessary(T param_ref) {}
 
@@ -245,7 +245,7 @@ parse_call_args_helper(JSContext    *cx,
     bool nullable = false;
     const char *fchar = fmt_required;
 
-    g_return_val_if_fail (param_name != NULL, false);
+    g_return_val_if_fail(param_name != NULL, false);
 
     if (*fchar != '\0') {
         nullable = check_nullable(fchar, fmt_required);

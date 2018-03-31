@@ -285,7 +285,7 @@ gjs_cairo_region_from_region(JSContext *context,
 {
     JS::RootedObject proto(context, gjs_cairo_region_get_proto(context));
     JS::RootedObject object(context,
-        JS_NewObjectWithGivenProto(context, &gjs_cairo_region_class, proto));
+                            JS_NewObjectWithGivenProto(context, &gjs_cairo_region_class, proto));
     if (!object)
         return NULL;
 

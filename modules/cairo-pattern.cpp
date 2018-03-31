@@ -164,21 +164,21 @@ gjs_cairo_pattern_from_pattern(JSContext       *context,
     g_return_val_if_fail(pattern != NULL, NULL);
 
     switch (cairo_pattern_get_type(pattern)) {
-        case CAIRO_PATTERN_TYPE_SOLID:
-            return gjs_cairo_solid_pattern_from_pattern(context, pattern);
-        case CAIRO_PATTERN_TYPE_SURFACE:
-            return gjs_cairo_surface_pattern_from_pattern(context, pattern);
-        case CAIRO_PATTERN_TYPE_LINEAR:
-            return gjs_cairo_linear_gradient_from_pattern(context, pattern);
-        case CAIRO_PATTERN_TYPE_RADIAL:
-            return gjs_cairo_radial_gradient_from_pattern(context, pattern);
-        case CAIRO_PATTERN_TYPE_MESH:
-        case CAIRO_PATTERN_TYPE_RASTER_SOURCE:
-        default:
-            gjs_throw(context,
-                      "failed to create pattern, unsupported pattern type %d",
-                      cairo_pattern_get_type(pattern));
-            return NULL;
+    case CAIRO_PATTERN_TYPE_SOLID:
+        return gjs_cairo_solid_pattern_from_pattern(context, pattern);
+    case CAIRO_PATTERN_TYPE_SURFACE:
+        return gjs_cairo_surface_pattern_from_pattern(context, pattern);
+    case CAIRO_PATTERN_TYPE_LINEAR:
+        return gjs_cairo_linear_gradient_from_pattern(context, pattern);
+    case CAIRO_PATTERN_TYPE_RADIAL:
+        return gjs_cairo_radial_gradient_from_pattern(context, pattern);
+    case CAIRO_PATTERN_TYPE_MESH:
+    case CAIRO_PATTERN_TYPE_RASTER_SOURCE:
+    default:
+        gjs_throw(context,
+                  "failed to create pattern, unsupported pattern type %d",
+                  cairo_pattern_get_type(pattern));
+        return NULL;
     }
 }
 

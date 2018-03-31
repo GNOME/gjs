@@ -28,9 +28,9 @@
 #include "error.h"
 
 GQuark
-gjs_error_quark (void)
+gjs_error_quark(void)
 {
-    return g_quark_from_static_string ("gjs-error-quark");
+    return g_quark_from_static_string("gjs-error-quark");
 }
 
 GQuark

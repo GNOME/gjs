@@ -32,32 +32,32 @@
 G_BEGIN_DECLS
 
 /* For imports.format */
-char * gjs_format_int_alternative_output (int n);
+char * gjs_format_int_alternative_output(int n);
 
 /* For imports.gettext */
 typedef enum
 {
-  GJS_LOCALE_CATEGORY_ALL = LC_ALL,
-  GJS_LOCALE_CATEGORY_COLLATE = LC_COLLATE,
-  GJS_LOCALE_CATEGORY_CTYPE = LC_CTYPE,
-  GJS_LOCALE_CATEGORY_MESSAGES = LC_MESSAGES,
-  GJS_LOCALE_CATEGORY_MONETARY = LC_MONETARY,
-  GJS_LOCALE_CATEGORY_NUMERIC = LC_NUMERIC,
-  GJS_LOCALE_CATEGORY_TIME = LC_TIME
+    GJS_LOCALE_CATEGORY_ALL = LC_ALL,
+    GJS_LOCALE_CATEGORY_COLLATE = LC_COLLATE,
+    GJS_LOCALE_CATEGORY_CTYPE = LC_CTYPE,
+    GJS_LOCALE_CATEGORY_MESSAGES = LC_MESSAGES,
+    GJS_LOCALE_CATEGORY_MONETARY = LC_MONETARY,
+    GJS_LOCALE_CATEGORY_NUMERIC = LC_NUMERIC,
+    GJS_LOCALE_CATEGORY_TIME = LC_TIME
 } GjsLocaleCategory;
 
-const char *gjs_setlocale                (GjsLocaleCategory category,
-                                          const char       *locale);
-void        gjs_textdomain               (const char *domain);
-void        gjs_bindtextdomain           (const char *domain,
-                                          const char *location);
+const char *gjs_setlocale(GjsLocaleCategory category,
+                          const char       *locale);
+void        gjs_textdomain(const char *domain);
+void        gjs_bindtextdomain(const char *domain,
+                               const char *location);
 GJS_EXPORT
-GType       gjs_locale_category_get_type (void) G_GNUC_CONST;
+GType       gjs_locale_category_get_type(void) G_GNUC_CONST;
 
 /* For imports.overrides.GObject */
-GParamFlags gjs_param_spec_get_flags (GParamSpec *pspec);
-GType       gjs_param_spec_get_value_type (GParamSpec *pspec);
-GType       gjs_param_spec_get_owner_type (GParamSpec *pspec);
+GParamFlags gjs_param_spec_get_flags(GParamSpec *pspec);
+GType       gjs_param_spec_get_value_type(GParamSpec *pspec);
+GType       gjs_param_spec_get_owner_type(GParamSpec *pspec);
 
 G_END_DECLS
 

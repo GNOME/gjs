@@ -34,11 +34,11 @@ G_BEGIN_DECLS
 void gjs_define_param_class(JSContext       *context,
                             JS::HandleObject in_object);
 
-GParamSpec *gjs_g_param_from_param (JSContext       *context,
-                                    JS::HandleObject obj);
+GParamSpec *gjs_g_param_from_param(JSContext       *context,
+                                   JS::HandleObject obj);
 
-JSObject*   gjs_param_from_g_param     (JSContext  *context,
-                                        GParamSpec *param);
+JSObject*   gjs_param_from_g_param(JSContext  *context,
+                                   GParamSpec *param);
 
 bool        gjs_typecheck_param(JSContext       *context,
                                 JS::HandleObject obj,

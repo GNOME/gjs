@@ -47,7 +47,7 @@ static GOptionEntry entries[] = {
     { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &coverage_prefixes, "Add the prefix PREFIX to the list of files to generate coverage info for", "PREFIX" },
     { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &coverage_output_path, "Write coverage output to a directory DIR. This option is mandatory when using --coverage-path", "DIR", },
     { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &include_path, "Add the directory DIR to the list of directories to search for js files.", "DIR" },
-    { "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
+    {   "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
         G_OPTION_ARG_CALLBACK, reinterpret_cast<void *>(&parse_profile_arg),
         "Enable the profiler and write output to FILE (default: gjs-$PID.syscap)",
         "FILE"
@@ -133,7 +133,7 @@ check_script_args_for_stray_gjs_args(int           argc,
         { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &new_coverage_prefixes },
         { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &new_coverage_output_path },
         { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &new_include_paths },
-        { "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
+        {   "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
             G_OPTION_ARG_CALLBACK, reinterpret_cast<void *>(&check_stray_profile_arg)
         },
         { NULL }
@@ -251,7 +251,7 @@ main(int argc, char **argv)
     if (!g_option_context_parse_strv(context, &gjs_argv, &error))
         g_error("option parsing failed: %s", error->message);
 
-    g_option_context_free (context);
+    g_option_context_free(context);
 
     if (print_version) {
         g_print("%s\n", PACKAGE_STRING);
@@ -343,7 +343,7 @@ main(int argc, char **argv)
         goto out;
     }
 
- out:
+out:
     g_strfreev(gjs_argv_addr);
 
     /* Probably doesn't make sense to write statistics on failure */

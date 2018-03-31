@@ -45,7 +45,7 @@ gjs_address_of(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     JS::RootedObject target_obj(context);
 
     if (!gjs_parse_call_args(context, "addressOf", argv, "o",
@@ -61,7 +61,7 @@ gjs_refcount(JSContext *context,
              unsigned   argc,
              JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     JS::RootedObject target_obj(context);
     GObject *obj;
 
@@ -85,7 +85,7 @@ gjs_breakpoint(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     if (!gjs_parse_call_args(context, "breakpoint", argv, ""))
         return false;
     G_BREAKPOINT();
@@ -121,7 +121,7 @@ gjs_gc(JSContext *context,
        unsigned   argc,
        JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     if (!gjs_parse_call_args(context, "gc", argv, ""))
         return false;
     JS_GC(context);
@@ -134,7 +134,7 @@ gjs_exit(JSContext *context,
          unsigned   argc,
          JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     gint32 ecode;
     if (!gjs_parse_call_args(context, "exit", argv, "i",
                              "ecode", &ecode))
@@ -214,7 +214,7 @@ gjs_js_define_system_stuff(JSContext              *context,
 
     retval = true;
 
- out:
+out:
     g_free(program_name);
     return retval;
 }

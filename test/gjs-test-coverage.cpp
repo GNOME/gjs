@@ -68,7 +68,7 @@ skip_if_gc_zeal_mode(void)
 
 static void
 replace_file(GFile      *file,
-              const char *contents)
+             const char *contents)
 {
     GError *error = NULL;
     g_file_replace_contents(file, contents, strlen(contents), NULL /* etag */,
@@ -169,12 +169,12 @@ line_starting_with(const char *data,
 
     while (iter) {
         if (strncmp(iter, needle, needle_length) == 0)
-          return iter;
+            return iter;
 
         iter = strstr(iter, "\n");
 
         if (iter)
-          iter += 1;
+            iter += 1;
     }
 
     return NULL;
@@ -263,7 +263,7 @@ assert_coverage_data_matches_values_for_key(const char            *data,
                                             const void            *user_data,
                                             size_t                 data_size)
 {
-    const char *line = line_starting_with (data, key);
+    const char *line = line_starting_with(data, key);
     /* Keep matching. If we fail to match one of them then
      * bail out */
     char *data_iterator = (char *) user_data;
@@ -446,7 +446,7 @@ silence_log_func(const gchar    *domain,
 
 static void
 test_expected_entry_not_written_for_nonexistent_file(gpointer      fixture_data,
-                                                        gconstpointer user_data)
+                                                     gconstpointer user_data)
 {
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
@@ -544,11 +544,11 @@ test_single_branch_coverage_written_to_coverage_data(gpointer      fixture_data,
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_basic_branch =
-            "let x = 0;\n"
-            "if (x > 0)\n"
-            "    x++;\n"
-            "else\n"
-            "    x++;\n";
+        "let x = 0;\n"
+        "if (x > 0)\n"
+        "    x++;\n"
+        "else\n"
+        "    x++;\n";
 
     replace_file(fixture->tmp_js_script, script_with_basic_branch);
 
@@ -590,20 +590,20 @@ test_multiple_branch_coverage_written_to_coverage_data(gpointer      fixture_dat
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_case_statements_branch =
-            "let y;\n"
-            "for (let x = 0; x < 3; x++) {\n"
-            "    switch (x) {\n"
-            "    case 0:\n"
-            "        y = x + 1;\n"
-            "        break;\n"
-            "    case 1:\n"
-            "        y = x + 1;\n"
-            "        break;\n"
-            "    case 2:\n"
-            "        y = x + 1;\n"
-            "        break;\n"
-            "    }\n"
-            "}\n";
+        "let y;\n"
+        "for (let x = 0; x < 3; x++) {\n"
+        "    switch (x) {\n"
+        "    case 0:\n"
+        "        y = x + 1;\n"
+        "        break;\n"
+        "    case 1:\n"
+        "        y = x + 1;\n"
+        "        break;\n"
+        "    case 2:\n"
+        "        y = x + 1;\n"
+        "        break;\n"
+        "    }\n"
+        "}\n";
 
     replace_file(fixture->tmp_js_script, script_with_case_statements_branch);
 
@@ -641,21 +641,21 @@ test_branches_for_multiple_case_statements_fallthrough(gpointer      fixture_dat
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_case_statements_branch =
-            "let y;\n"
-            "for (let x = 0; x < 3; x++) {\n"
-            "    switch (x) {\n"
-            "    case 0:\n"
-            "    case 1:\n"
-            "        y = x + 1;\n"
-            "        break;\n"
-            "    case 2:\n"
-            "        y = x + 1;\n"
-            "        break;\n"
-            "    case 3:\n"
-            "        y = x +1;\n"
-            "        break;\n"
-            "    }\n"
-            "}\n";
+        "let y;\n"
+        "for (let x = 0; x < 3; x++) {\n"
+        "    switch (x) {\n"
+        "    case 0:\n"
+        "    case 1:\n"
+        "        y = x + 1;\n"
+        "        break;\n"
+        "    case 2:\n"
+        "        y = x + 1;\n"
+        "        break;\n"
+        "    case 3:\n"
+        "        y = x +1;\n"
+        "        break;\n"
+        "    }\n"
+        "}\n";
 
     replace_file(fixture->tmp_js_script, script_with_case_statements_branch);
 
@@ -718,13 +718,13 @@ test_branch_not_hit_written_to_coverage_data(gpointer      fixture_data,
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_never_executed_branch =
-            "let x = 0;\n"
-            "if (x > 0) {\n"
-            "    if (x > 0)\n"
-            "        x++;\n"
-            "} else {\n"
-            "    x++;\n"
-            "}\n";
+        "let x = 0;\n"
+        "if (x > 0) {\n"
+        "    if (x > 0)\n"
+        "        x++;\n"
+        "} else {\n"
+        "    x++;\n"
+        "}\n";
 
     replace_file(fixture->tmp_js_script, script_with_never_executed_branch);
 
@@ -766,8 +766,8 @@ test_function_names_written_to_coverage_data(gpointer      fixture_data,
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_named_and_unnamed_functions =
-            "function f(){}\n"
-            "let b = function(){}\n";
+        "function f(){}\n"
+        "let b = function(){}\n";
 
     replace_file(fixture->tmp_js_script, script_with_named_and_unnamed_functions);
 
@@ -887,14 +887,14 @@ test_function_hit_counts_for_big_functions_written_to_coverage_data(gpointer    
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_executed_functions =
-            "function f(){\n"
-            "\n"
-            "\n"
-            "var x = 1;\n"
-            "}\n"
-            "let b = function(){}\n"
-            "f();\n"
-            "b();\n";
+        "function f(){\n"
+        "\n"
+        "\n"
+        "var x = 1;\n"
+        "}\n"
+        "let b = function(){}\n"
+        "f();\n"
+        "b();\n";
 
     replace_file(fixture->tmp_js_script, script_with_executed_functions);
 
@@ -936,12 +936,12 @@ test_function_hit_counts_for_little_functions_written_to_coverage_data(gpointer 
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_executed_functions =
-            "function f(){\n"
-            "var x = function(){};\n"
-            "}\n"
-            "let b = function(){}\n"
-            "f();\n"
-            "b();\n";
+        "function f(){\n"
+        "var x = function(){};\n"
+        "}\n"
+        "let b = function(){}\n"
+        "f();\n"
+        "b();\n";
 
     replace_file(fixture->tmp_js_script, script_with_executed_functions);
 
@@ -981,10 +981,10 @@ test_function_hit_counts_written_to_coverage_data(gpointer      fixture_data,
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_executed_functions =
-            "function f(){}\n"
-            "let b = function(){}\n"
-            "f();\n"
-            "b();\n";
+        "function f(){}\n"
+        "let b = function(){}\n"
+        "f();\n"
+        "b();\n";
 
     replace_file(fixture->tmp_js_script, script_with_executed_functions);
 
@@ -1024,9 +1024,9 @@ test_total_function_coverage_written_to_coverage_data(gpointer      fixture_data
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_some_executed_functions =
-            "function f(){}\n"
-            "let b = function(){}\n"
-            "f();\n";
+        "function f(){}\n"
+        "let b = function(){}\n"
+        "f();\n";
 
     replace_file(fixture->tmp_js_script, script_with_some_executed_functions);
 
@@ -1103,7 +1103,7 @@ test_single_line_hit_written_to_coverage_data(gpointer      fixture_data,
 
 static void
 test_hits_on_multiline_if_cond(gpointer      fixture_data,
-                                gconstpointer user_data)
+                               gconstpointer user_data)
 {
     if (skip_if_gc_zeal_mode())
         return;
@@ -1111,11 +1111,11 @@ test_hits_on_multiline_if_cond(gpointer      fixture_data,
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *script_with_multine_if_cond =
-            "let a = 1;\n"
-            "let b = 1;\n"
-            "if (a &&\n"
-            "    b) {\n"
-            "}\n";
+        "let a = 1;\n"
+        "let b = 1;\n"
+        "if (a &&\n"
+        "    b) {\n"
+        "}\n";
 
     replace_file(fixture->tmp_js_script, script_with_multine_if_cond);
 
@@ -1209,7 +1209,7 @@ typedef struct _GjsCoverageMultipleSourcesFixture {
 
 static void
 gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(gpointer fixture_data,
-                                                                         gconstpointer user_data)
+                                                                   gconstpointer user_data)
 {
     gjs_coverage_fixture_set_up(fixture_data, user_data);
 
@@ -1314,12 +1314,12 @@ assert_coverage_data_for_source_file(ExpectedSourceFileCoverageData *expected,
     for (i = 0; i < expected_size; ++i) {
         if (strncmp(&section_start[3],
                     expected[i].source_file_path,
-                    strlen (expected[i].source_file_path)) == 0) {
+                    strlen(expected[i].source_file_path)) == 0) {
             assert_coverage_data_matches_values_for_key(section_start, "DA:",
                                                         expected[i].n_more_than_matchers,
                                                         line_hit_count_is_more_than,
                                                         expected[i].more_than,
-                                                        sizeof (LineCountIsMoreThanData));
+                                                        sizeof(LineCountIsMoreThanData));
             const char *total_hits_record = line_starting_with(section_start, "LH:");
             g_assert_cmpint(total_hits_record[3], ==, expected[i].expected_lines_hit_character);
             const char *total_found_record = line_starting_with(section_start, "LF:");

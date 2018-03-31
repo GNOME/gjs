@@ -86,25 +86,25 @@ param_resolve(JSContext       *context,
     _gjs_log_info_usage((GIBaseInfo*) method_info);
 #endif
 
-    if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+    if (g_function_info_get_flags(method_info) & GI_FUNCTION_IS_METHOD) {
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Defining method %s in prototype for GObject.ParamSpec",
-                  g_base_info_get_name( (GIBaseInfo*) method_info));
+                  g_base_info_get_name((GIBaseInfo*) method_info));
 
         if (gjs_define_function(context, obj, G_TYPE_PARAM, method_info) == NULL) {
-            g_base_info_unref( (GIBaseInfo*) method_info);
+            g_base_info_unref((GIBaseInfo*) method_info);
             goto out;
         }
 
         *resolved = true; /* we defined the prop in obj */
     }
 
-    g_base_info_unref( (GIBaseInfo*) method_info);
+    g_base_info_unref((GIBaseInfo*) method_info);
 
     ret = true;
- out:
+out:
     if (info != NULL)
-        g_base_info_unref( (GIBaseInfo*)info);
+        g_base_info_unref((GIBaseInfo*)info);
 
     return ret;
 }
@@ -178,16 +178,16 @@ gjs_lookup_param_prototype(JSContext    *context)
 {
     JS::RootedId gobject_name(context, gjs_intern_string_to_id(context, "GObject"));
     JS::RootedObject in_object(context,
-        gjs_lookup_namespace_object_by_name(context, gobject_name));
+                               gjs_lookup_namespace_object_by_name(context, gobject_name));
 
-    if (G_UNLIKELY (!in_object))
+    if (G_UNLIKELY(!in_object))
         return NULL;
 
     JS::RootedValue value(context);
     if (!JS_GetProperty(context, in_object, "ParamSpec", &value))
         return NULL;
 
-    if (G_UNLIKELY (!value.isObject()))
+    if (G_UNLIKELY(!value.isObject()))
         return NULL;
 
     JS::RootedObject constructor(context, &value.toObject());
@@ -197,7 +197,7 @@ gjs_lookup_param_prototype(JSContext    *context)
                                  GJS_STRING_PROTOTYPE, &value))
         return NULL;
 
-    if (G_UNLIKELY (!value.isObjectOrNull()))
+    if (G_UNLIKELY(!value.isObjectOrNull()))
         return NULL;
 
     return value.toObjectOrNull();
@@ -231,12 +231,12 @@ gjs_define_param_class(JSContext       *context,
     }
 
     JS::RootedObject gtype_obj(context,
-        gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM));
+                               gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM));
     JS_DefineProperty(context, constructor, "$gtype", gtype_obj, JSPROP_PERMANENT);
 
     info = (GIObjectInfo*)g_irepository_find_by_gtype(g_irepository_get_default(), G_TYPE_PARAM);
     gjs_object_define_static_methods(context, constructor, G_TYPE_PARAM, info);
-    g_base_info_unref( (GIBaseInfo*) info);
+    g_base_info_unref((GIBaseInfo*) info);
 
     gjs_debug(GJS_DEBUG_GPARAM, "Defined class %s prototype is %p class %p in object %p",
               constructor_name, prototype.get(), JS_GetClass(prototype),
@@ -267,7 +267,7 @@ gjs_param_from_g_param(JSContext    *context,
     priv = g_slice_new0(Param);
     JS_SetPrivate(obj, priv);
     priv->gparam = gparam;
-    g_param_spec_ref (gparam);
+    g_param_spec_ref(gparam);
 
     gjs_debug(GJS_DEBUG_GPARAM,
               "JSObject created with param instance %p type %s",
@@ -315,14 +315,14 @@ gjs_typecheck_param(JSContext       *context,
     }
 
     if (expected_type != G_TYPE_NONE)
-        result = g_type_is_a (G_TYPE_FROM_INSTANCE (priv->gparam), expected_type);
+        result = g_type_is_a(G_TYPE_FROM_INSTANCE(priv->gparam), expected_type);
     else
         result = true;
 
     if (!result && throw_error) {
         gjs_throw_custom(context, JSProto_TypeError, nullptr,
                          "Object is of type %s - cannot convert to %s",
-                         g_type_name(G_TYPE_FROM_INSTANCE (priv->gparam)),
+                         g_type_name(G_TYPE_FROM_INSTANCE(priv->gparam)),
                          g_type_name(expected_type));
     }
 

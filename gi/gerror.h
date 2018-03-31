@@ -32,17 +32,17 @@
 
 G_BEGIN_DECLS
 
-void      gjs_define_error_class       (JSContext             *context,
-                                        JS::HandleObject       in_object,
-                                        GIEnumInfo            *info);
-GError*   gjs_gerror_from_error        (JSContext             *context,
-                                        JS::HandleObject       obj);
-JSObject* gjs_error_from_gerror        (JSContext             *context,
-                                        GError                *gerror,
-                                        bool                   add_stack);
-bool      gjs_typecheck_gerror         (JSContext             *context,
-                                        JS::HandleObject       obj,
-                                        bool                   throw_error);
+void      gjs_define_error_class(JSContext             *context,
+                                 JS::HandleObject       in_object,
+                                 GIEnumInfo            *info);
+GError*   gjs_gerror_from_error(JSContext             *context,
+                                JS::HandleObject       obj);
+JSObject* gjs_error_from_gerror(JSContext             *context,
+                                GError                *gerror,
+                                bool                   add_stack);
+bool      gjs_typecheck_gerror(JSContext             *context,
+                               JS::HandleObject       obj,
+                               bool                   throw_error);
 
 GError *gjs_gerror_make_from_error(JSContext       *cx,
                                    JS::HandleObject obj);

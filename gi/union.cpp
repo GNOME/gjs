@@ -99,20 +99,20 @@ union_resolve(JSContext       *context,
 #if GJS_VERBOSE_ENABLE_GI_USAGE
         _gjs_log_info_usage((GIBaseInfo*) method_info);
 #endif
-        if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-            method_name = g_base_info_get_name( (GIBaseInfo*) method_info);
+        if (g_function_info_get_flags(method_info) & GI_FUNCTION_IS_METHOD) {
+            method_name = g_base_info_get_name((GIBaseInfo*) method_info);
 
             gjs_debug(GJS_DEBUG_GBOXED,
                       "Defining method %s in prototype for %s.%s",
                       method_name,
-                      g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                      g_base_info_get_name( (GIBaseInfo*) priv->info));
+                      g_base_info_get_namespace((GIBaseInfo*) priv->info),
+                      g_base_info_get_name((GIBaseInfo*) priv->info));
 
             /* obj is union proto */
             if (gjs_define_function(context, obj,
                                     g_registered_type_info_get_g_type(priv->info),
                                     method_info) == NULL) {
-                g_base_info_unref( (GIBaseInfo*) method_info);
+                g_base_info_unref((GIBaseInfo*) method_info);
                 return false;
             }
 
@@ -121,7 +121,7 @@ union_resolve(JSContext       *context,
             *resolved = false;
         }
 
-        g_base_info_unref( (GIBaseInfo*) method_info);
+        g_base_info_unref((GIBaseInfo*) method_info);
     } else {
         *resolved = false;
     }
@@ -216,7 +216,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
     }
 
     priv->info = proto_priv->info;
-    g_base_info_ref( (GIBaseInfo*) priv->info);
+    g_base_info_ref((GIBaseInfo*) priv->info);
     priv->gtype = proto_priv->gtype;
 
     /* union_new happens to be implemented by calling
@@ -258,13 +258,13 @@ union_finalize(JSFreeOp *fop,
         return; /* wrong class? */
 
     if (priv->gboxed) {
-        g_boxed_free(g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info),
+        g_boxed_free(g_registered_type_info_get_g_type((GIRegisteredTypeInfo*) priv->info),
                      priv->gboxed);
         priv->gboxed = NULL;
     }
 
     if (priv->info) {
-        g_base_info_unref( (GIBaseInfo*) priv->info);
+        g_base_info_unref((GIBaseInfo*) priv->info);
         priv->info = NULL;
     }
 
@@ -326,7 +326,7 @@ gjs_define_union_class(JSContext       *context,
     /* For certain unions, we may be able to relax this in the future by
      * directly allocating union memory, as we do for structures in boxed.c
      */
-    gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) info);
+    gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*) info);
     if (gtype == G_TYPE_NONE) {
         gjs_throw(context, "Unions must currently be registered as boxed types");
         return false;
@@ -337,10 +337,10 @@ gjs_define_union_class(JSContext       *context,
      * same as Object.
      */
 
-    constructor_name = g_base_info_get_name( (GIBaseInfo*) info);
+    constructor_name = g_base_info_get_name((GIBaseInfo*) info);
 
     if (!gjs_init_class_dynamic(context, in_object, nullptr,
-                                g_base_info_get_namespace( (GIBaseInfo*) info),
+                                g_base_info_get_namespace((GIBaseInfo*) info),
                                 constructor_name,
                                 &gjs_union_class,
                                 gjs_union_constructor, 0,
@@ -360,7 +360,7 @@ gjs_define_union_class(JSContext       *context,
     GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Union);
     priv->info = info;
-    g_base_info_ref( (GIBaseInfo*) priv->info);
+    g_base_info_ref((GIBaseInfo*) priv->info);
     priv->gtype = gtype;
     JS_SetPrivate(prototype, priv);
 
@@ -369,7 +369,7 @@ gjs_define_union_class(JSContext       *context,
               in_object.get());
 
     JS::RootedObject gtype_obj(context,
-        gjs_gtype_create_gtype_wrapper(context, gtype));
+                               gjs_gtype_create_gtype_wrapper(context, gtype));
     JS_DefineProperty(context, constructor, "$gtype", gtype_obj, JSPROP_PERMANENT);
 
     return true;
@@ -390,7 +390,7 @@ gjs_union_from_c_union(JSContext    *context,
     /* For certain unions, we may be able to relax this in the future by
      * directly allocating union memory, as we do for structures in boxed.c
      */
-    gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) info);
+    gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*) info);
     if (gtype == G_TYPE_NONE) {
         gjs_throw(context, "Unions must currently be registered as boxed types");
         return NULL;
@@ -401,7 +401,7 @@ gjs_union_from_c_union(JSContext    *context,
                       g_base_info_get_name((GIBaseInfo *)info), gboxed);
 
     JS::RootedObject proto(context,
-        gjs_lookup_generic_prototype(context, (GIUnionInfo*) info));
+                           gjs_lookup_generic_prototype(context, (GIUnionInfo*) info));
 
     obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);
 
@@ -409,7 +409,7 @@ gjs_union_from_c_union(JSContext    *context,
     priv = g_slice_new0(Union);
     JS_SetPrivate(obj, priv);
     priv->info = info;
-    g_base_info_ref( (GIBaseInfo *) priv->info);
+    g_base_info_ref((GIBaseInfo *) priv->info);
     priv->gtype = gtype;
     priv->gboxed = g_boxed_copy(gtype, gboxed);
 
@@ -449,15 +449,15 @@ gjs_typecheck_union(JSContext       *context,
         if (throw_error) {
             gjs_throw_custom(context, JSProto_TypeError, nullptr,
                              "Object is %s.%s.prototype, not an object instance - cannot convert to a union instance",
-                             g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                             g_base_info_get_name( (GIBaseInfo*) priv->info));
+                             g_base_info_get_namespace((GIBaseInfo*) priv->info),
+                             g_base_info_get_name((GIBaseInfo*) priv->info));
         }
 
         return false;
     }
 
     if (expected_type != G_TYPE_NONE)
-        result = g_type_is_a (priv->gtype, expected_type);
+        result = g_type_is_a(priv->gtype, expected_type);
     else if (expected_info != NULL)
         result = g_base_info_equal((GIBaseInfo*) priv->info, (GIBaseInfo*) expected_info);
     else

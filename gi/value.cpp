@@ -67,13 +67,13 @@ get_signal_info_if_available(GSignalQuery *signal_query)
     if (!obj)
         return NULL;
 
-    info_type = g_base_info_get_type (obj);
+    info_type = g_base_info_get_type(obj);
     if (info_type == GI_INFO_TYPE_OBJECT)
-      signal_info = g_object_info_find_signal((GIObjectInfo*)obj,
-                                              signal_query->signal_name);
+        signal_info = g_object_info_find_signal((GIObjectInfo*)obj,
+                                                signal_query->signal_name);
     else if (info_type == GI_INFO_TYPE_INTERFACE)
-      signal_info = g_interface_info_find_signal((GIInterfaceInfo*)obj,
-                                                 signal_query->signal_name);
+        signal_info = g_interface_info_find_signal((GIInterfaceInfo*)obj,
+                                                   signal_query->signal_name);
     g_base_info_unref((GIBaseInfo*)obj);
 
     return signal_info;
@@ -187,12 +187,12 @@ closure_marshal(GClosure        *closure,
      * before we invoke the closure.
      */
     skip = g_newa(bool, n_param_values);
-    memset(skip, 0, sizeof (bool) * n_param_values);
+    memset(skip, 0, sizeof(bool) * n_param_values);
     array_len_indices_for = g_newa(int, n_param_values);
-    for(i = 0; i < n_param_values; i++)
+    for (i = 0; i < n_param_values; i++)
         array_len_indices_for[i] = -1;
     type_info_for = g_newa(GITypeInfo *, n_param_values);
-    memset(type_info_for, 0, sizeof (gpointer) * n_param_values);
+    memset(type_info_for, 0, sizeof(gpointer) * n_param_values);
 
     signal_info = get_signal_info_if_available(&signal_query);
     if (signal_info) {
@@ -302,9 +302,9 @@ gjs_closure_new_for_signal(JSContext  *context,
 }
 
 GClosure*
-gjs_closure_new_marshaled (JSContext    *context,
-                           JSObject     *callable,
-                           const char   *description)
+gjs_closure_new_marshaled(JSContext    *context,
+                          JSObject     *callable,
+                          const char   *description)
 {
     GClosure *closure;
 
@@ -501,13 +501,13 @@ gjs_value_to_g_value_internal(JSContext      *context,
                     void *result;
                     char **strv;
 
-                    if (!gjs_array_to_strv (context,
-                                            value,
-                                            length, &result))
+                    if (!gjs_array_to_strv(context,
+                                           value,
+                                           length, &result))
                         return false;
                     /* cast to strv in a separate step to avoid type-punning */
                     strv = (char**) result;
-                    g_value_take_boxed (gvalue, strv);
+                    g_value_take_boxed(gvalue, strv);
                 }
             } else {
                 gjs_throw(context,
@@ -545,23 +545,23 @@ gjs_value_to_g_value_internal(JSContext      *context,
 
                 gboxed = gjs_gerror_from_error(context, obj);
             } else {
-                GIBaseInfo *registered = g_irepository_find_by_gtype (NULL, gtype);
+                GIBaseInfo *registered = g_irepository_find_by_gtype(NULL, gtype);
 
                 /* We don't necessarily have the typelib loaded when
                    we first see the structure... */
                 if (registered) {
-                    GIInfoType info_type = g_base_info_get_type (registered);
+                    GIInfoType info_type = g_base_info_get_type(registered);
 
                     if (info_type == GI_INFO_TYPE_STRUCT &&
-                        g_struct_info_is_foreign ((GIStructInfo*)registered)) {
+                        g_struct_info_is_foreign((GIStructInfo*)registered)) {
                         GArgument arg;
 
-                        if (!gjs_struct_foreign_convert_to_g_argument (context, value,
-                                                                       registered,
-                                                                       NULL,
-                                                                       GJS_ARGUMENT_ARGUMENT,
-                                                                       GI_TRANSFER_NOTHING,
-                                                                       true, &arg))
+                        if (!gjs_struct_foreign_convert_to_g_argument(context, value,
+                                                                      registered,
+                                                                      NULL,
+                                                                      GJS_ARGUMENT_ARGUMENT,
+                                                                      GI_TRANSFER_NOTHING,
+                                                                      true, &arg))
                             return false;
 
                         gboxed = arg.v_pointer;
@@ -618,7 +618,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
             return false;
         }
 
-        g_value_set_variant (gvalue, variant);
+        g_value_set_variant(gvalue, variant);
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {
         int64_t value_int64;
 
@@ -640,9 +640,9 @@ gjs_value_to_g_value_internal(JSContext      *context,
             g_value_set_enum(gvalue, v->value);
         } else {
             gjs_throw(context,
-                         "Wrong type %s; enum %s expected",
-                         gjs_get_type_name(value),
-                         g_type_name(gtype));
+                      "Wrong type %s; enum %s expected",
+                      gjs_get_type_name(value),
+                      g_type_name(gtype));
             return false;
         }
     } else if (g_type_is_a(gtype, G_TYPE_FLAGS)) {
@@ -754,8 +754,8 @@ gjs_value_to_g_value_no_copy(JSContext      *context,
 }
 
 static JS::Value
-convert_int_to_enum (GType  gtype,
-                     int    v)
+convert_int_to_enum(GType  gtype,
+                    int    v)
 {
     double v_double;
 
@@ -768,9 +768,9 @@ convert_int_to_enum (GType  gtype,
         /* Need to distinguish between negative integers and unsigned integers */
 
         info = g_irepository_find_by_gtype(g_irepository_get_default(), gtype);
-        g_assert (info);
+        g_assert(info);
 
-        v_double = _gjs_enum_from_int ((GIEnumInfo *)info, v);
+        v_double = _gjs_enum_from_int((GIEnumInfo *)info, v);
         g_base_info_unref(info);
     }
 
@@ -841,9 +841,9 @@ gjs_value_from_g_value_internal(JSContext             *context,
         obj = gjs_object_from_g_object(context, gobj);
         value_p.setObjectOrNull(obj);
     } else if (gtype == G_TYPE_STRV) {
-        if (!gjs_array_from_strv (context,
-                                  value_p,
-                                  (const char**) g_value_get_boxed (gvalue))) {
+        if (!gjs_array_from_strv(context,
+                                 value_p,
+                                 (const char**) g_value_get_boxed(gvalue))) {
             gjs_throw(context, "Failed to convert strv to array");
             return false;
         }
@@ -905,7 +905,7 @@ gjs_value_from_g_value_internal(JSContext             *context,
         GIInfoType type = g_base_info_get_type(info);
         if (type == GI_INFO_TYPE_BOXED || type == GI_INFO_TYPE_STRUCT) {
             if (no_copy)
-                boxed_flags = (GjsBoxedCreationFlags) (boxed_flags | GJS_BOXED_CREATION_NO_COPY);
+                boxed_flags = (GjsBoxedCreationFlags)(boxed_flags | GJS_BOXED_CREATION_NO_COPY);
             obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)info, gboxed, boxed_flags);
         } else if (type == GI_INFO_TYPE_UNION) {
             obj = gjs_union_from_c_union(context, (GIUnionInfo *)info, gboxed);

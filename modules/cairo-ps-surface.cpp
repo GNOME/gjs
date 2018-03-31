@@ -101,7 +101,7 @@ gjs_cairo_ps_surface_from_surface(JSContext       *context,
 
     JS::RootedObject proto(context, gjs_cairo_ps_surface_get_proto(context));
     JS::RootedObject object(context,
-        JS_NewObjectWithGivenProto(context, &gjs_cairo_ps_surface_class, proto));
+                            JS_NewObjectWithGivenProto(context, &gjs_cairo_ps_surface_class, proto));
     if (!object) {
         gjs_throw(context, "failed to create ps surface");
         return NULL;
@@ -117,8 +117,8 @@ gjs_cairo_ps_surface_from_surface(JSContext       *context,
                                   cairo_surface_t *surface)
 {
     gjs_throw(context,
-        "could not create PS surface, recompile cairo and gjs with "
-        "PS support.");
+              "could not create PS surface, recompile cairo and gjs with "
+              "PS support.");
     return NULL;
 }
 #endif /* CAIRO_HAS_PS_SURFACE */

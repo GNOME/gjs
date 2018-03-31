@@ -30,24 +30,24 @@
 
 G_BEGIN_DECLS
 
-bool       gjs_value_to_g_value         (JSContext      *context,
-                                         JS::HandleValue value,
-                                         GValue         *gvalue);
-bool       gjs_value_to_g_value_no_copy (JSContext      *context,
-                                         JS::HandleValue value,
-                                         GValue         *gvalue);
+bool       gjs_value_to_g_value(JSContext      *context,
+                                JS::HandleValue value,
+                                GValue         *gvalue);
+bool       gjs_value_to_g_value_no_copy(JSContext      *context,
+                                        JS::HandleValue value,
+                                        GValue         *gvalue);
 
 bool gjs_value_from_g_value(JSContext             *context,
                             JS::MutableHandleValue value_p,
                             const GValue          *gvalue);
 
-GClosure*  gjs_closure_new_marshaled    (JSContext    *context,
-                                         JSObject     *callable,
-                                         const char   *description);
-GClosure*  gjs_closure_new_for_signal   (JSContext    *context,
-                                         JSObject     *callable,
-                                         const char   *description,
-                                         guint         signal_id);
+GClosure*  gjs_closure_new_marshaled(JSContext    *context,
+                                     JSObject     *callable,
+                                     const char   *description);
+GClosure*  gjs_closure_new_for_signal(JSContext    *context,
+                                      JSObject     *callable,
+                                      const char   *description,
+                                      guint         signal_id);
 
 G_END_DECLS
 

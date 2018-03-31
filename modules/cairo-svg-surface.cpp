@@ -92,8 +92,8 @@ gjs_cairo_svg_surface_from_surface(JSContext       *context,
 
     JS::RootedObject proto(context, gjs_cairo_svg_surface_get_proto(context));
     JS::RootedObject object(context,
-        JS_NewObjectWithGivenProto(context, &gjs_cairo_svg_surface_class,
-                                   proto));
+                            JS_NewObjectWithGivenProto(context, &gjs_cairo_svg_surface_class,
+                                                       proto));
     if (!object) {
         gjs_throw(context, "failed to create svg surface");
         return NULL;
@@ -109,8 +109,8 @@ gjs_cairo_svg_surface_from_surface(JSContext       *context,
                                    cairo_surface_t *surface)
 {
     gjs_throw(context,
-        "could not create SVG surface, recompile cairo and gjs with "
-        "SVG support.");
+              "could not create SVG surface, recompile cairo and gjs with "
+              "SVG support.");
     return NULL;
 }
 #endif /* CAIRO_HAS_SVG_SURFACE */

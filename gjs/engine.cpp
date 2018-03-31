@@ -44,9 +44,9 @@
  * back if necessary.
  */
 static bool
-gjs_locale_to_upper_case (JSContext *context,
-                          JS::HandleString src,
-                          JS::MutableHandleValue retval)
+gjs_locale_to_upper_case(JSContext *context,
+                         JS::HandleString src,
+                         JS::MutableHandleValue retval)
 {
     GjsAutoJSChar utf8 = JS_EncodeStringToUTF8(context, src);
     if (!utf8)
@@ -57,9 +57,9 @@ gjs_locale_to_upper_case (JSContext *context,
 }
 
 static bool
-gjs_locale_to_lower_case (JSContext *context,
-                          JS::HandleString src,
-                          JS::MutableHandleValue retval)
+gjs_locale_to_lower_case(JSContext *context,
+                         JS::HandleString src,
+                         JS::MutableHandleValue retval)
 {
     GjsAutoJSChar utf8 = JS_EncodeStringToUTF8(context, src);
     if (!utf8)
@@ -70,10 +70,10 @@ gjs_locale_to_lower_case (JSContext *context,
 }
 
 static bool
-gjs_locale_compare (JSContext *context,
-                    JS::HandleString src_1,
-                    JS::HandleString src_2,
-                    JS::MutableHandleValue retval)
+gjs_locale_compare(JSContext *context,
+                   JS::HandleString src_1,
+                   JS::HandleString src_2,
+                   JS::MutableHandleValue retval)
 {
     GjsAutoJSChar utf8_1 = JS_EncodeStringToUTF8(context, src_1);
     if (!utf8_1)
@@ -89,9 +89,9 @@ gjs_locale_compare (JSContext *context,
 }
 
 static bool
-gjs_locale_to_unicode (JSContext  *context,
-                       const char *src,
-                       JS::MutableHandleValue retval)
+gjs_locale_to_unicode(JSContext  *context,
+                      const char *src,
+                      JS::MutableHandleValue retval)
 {
     GError *error = NULL;
 
@@ -123,49 +123,49 @@ gjs_finalize_callback(JSFreeOp         *fop,
 {
     auto js_context = static_cast<GjsContext *>(data);
 
-  /* Implementation note for mozjs 24:
-     sweeping happens in two phases, in the first phase all
-     GC things from the allocation arenas are queued for
-     sweeping, then the actual sweeping happens.
-     The first phase is marked by JSFINALIZE_GROUP_START,
-     the second one by JSFINALIZE_GROUP_END, and finally
-     we will see JSFINALIZE_COLLECTION_END at the end of
-     all GC.
-     (see jsgc.cpp, BeginSweepPhase/BeginSweepingZoneGroup
-     and SweepPhase, all called from IncrementalCollectSlice).
-     Incremental GC muds the waters, because BeginSweepPhase
-     is always run to entirety, but SweepPhase can be run
-     incrementally and mixed with JS code runs or even
-     native code, when MaybeGC/IncrementalGC return.
+    /* Implementation note for mozjs 24:
+       sweeping happens in two phases, in the first phase all
+       GC things from the allocation arenas are queued for
+       sweeping, then the actual sweeping happens.
+       The first phase is marked by JSFINALIZE_GROUP_START,
+       the second one by JSFINALIZE_GROUP_END, and finally
+       we will see JSFINALIZE_COLLECTION_END at the end of
+       all GC.
+       (see jsgc.cpp, BeginSweepPhase/BeginSweepingZoneGroup
+       and SweepPhase, all called from IncrementalCollectSlice).
+       Incremental GC muds the waters, because BeginSweepPhase
+       is always run to entirety, but SweepPhase can be run
+       incrementally and mixed with JS code runs or even
+       native code, when MaybeGC/IncrementalGC return.
 
-     Luckily for us, objects are treated specially, and
-     are not really queued for deferred incremental
-     finalization (unless they are marked for background
-     sweeping). Instead, they are finalized immediately
-     during phase 1, so the following guarantees are
-     true (and we rely on them)
-     - phase 1 of GC will begin and end in the same JSAPI
-       call (ie, our callback will be called with GROUP_START
-       and the triggering JSAPI call will not return until
-       we see a GROUP_END)
-     - object finalization will begin and end in the same
-       JSAPI call
-     - therefore, if there is a finalizer frame somewhere
-       in the stack, gjs_runtime_is_sweeping() will return
-       true.
+       Luckily for us, objects are treated specially, and
+       are not really queued for deferred incremental
+       finalization (unless they are marked for background
+       sweeping). Instead, they are finalized immediately
+       during phase 1, so the following guarantees are
+       true (and we rely on them)
+       - phase 1 of GC will begin and end in the same JSAPI
+         call (ie, our callback will be called with GROUP_START
+         and the triggering JSAPI call will not return until
+         we see a GROUP_END)
+       - object finalization will begin and end in the same
+         JSAPI call
+       - therefore, if there is a finalizer frame somewhere
+         in the stack, gjs_runtime_is_sweeping() will return
+         true.
 
-     Comments in mozjs24 imply that this behavior might
-     change in the future, but it hasn't changed in
-     mozilla-central as of 2014-02-23. In addition to
-     that, the mozilla-central version has a huge comment
-     in a different portion of the file, explaining
-     why finalization of objects can't be mixed with JS
-     code, so we can probably rely on this behavior.
-  */
+       Comments in mozjs24 imply that this behavior might
+       change in the future, but it hasn't changed in
+       mozilla-central as of 2014-02-23. In addition to
+       that, the mozilla-central version has a huge comment
+       in a different portion of the file, explaining
+       why finalization of objects can't be mixed with JS
+       code, so we can probably rely on this behavior.
+    */
 
-  if (status == JSFINALIZE_GROUP_START)
+    if (status == JSFINALIZE_GROUP_START)
         _gjs_context_set_sweeping(js_context, true);
-  else if (status == JSFINALIZE_GROUP_END)
+    else if (status == JSFINALIZE_GROUP_END)
         _gjs_context_set_sweeping(js_context, false);
 }
 
@@ -219,27 +219,27 @@ HMODULE gjs_dll;
 static bool gjs_is_inited = false;
 
 BOOL WINAPI
-DllMain (HINSTANCE hinstDLL,
-DWORD     fdwReason,
-LPVOID    lpvReserved)
+DllMain(HINSTANCE hinstDLL,
+        DWORD     fdwReason,
+        LPVOID    lpvReserved)
 {
-  switch (fdwReason)
-  {
-  case DLL_PROCESS_ATTACH:
-    gjs_dll = hinstDLL;
-    gjs_is_inited = JS_Init();
-    break;
+    switch (fdwReason)
+    {
+    case DLL_PROCESS_ATTACH:
+        gjs_dll = hinstDLL;
+        gjs_is_inited = JS_Init();
+        break;
 
-  case DLL_THREAD_DETACH:
-    JS_ShutDown ();
-    break;
+    case DLL_THREAD_DETACH:
+        JS_ShutDown();
+        break;
 
-  default:
-    /* do nothing */
-    ;
+    default:
+        /* do nothing */
+        ;
     }
 
-  return TRUE;
+    return TRUE;
 }
 
 #else
@@ -311,9 +311,9 @@ gjs_create_js_context(GjsContext *js_context)
     if (!g_getenv("GJS_DISABLE_JIT")) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
         JS::ContextOptionsRef(cx)
-            .setIon(true)
-            .setBaseline(true)
-            .setAsmJS(true);
+        .setIon(true)
+        .setBaseline(true)
+        .setAsmJS(true);
     }
 
     return cx;

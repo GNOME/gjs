@@ -30,7 +30,7 @@
 
 G_BEGIN_DECLS
 
-void gjs_register_static_modules (void);
+void gjs_register_static_modules(void);
 
 G_END_DECLS
 

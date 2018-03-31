@@ -45,11 +45,11 @@ gjstest_test_func_gjs_context_construct_destroy(void)
     /* Construct twice just to possibly a case where global state from
      * the first leaks.
      */
-    context = gjs_context_new ();
-    g_object_unref (context);
+    context = gjs_context_new();
+    g_object_unref(context);
 
-    context = gjs_context_new ();
-    g_object_unref (context);
+    context = gjs_context_new();
+    g_object_unref(context);
 }
 
 static void
@@ -59,10 +59,10 @@ gjstest_test_func_gjs_context_construct_eval(void)
     int estatus;
     GError *error = NULL;
 
-    context = gjs_context_new ();
-    if (!gjs_context_eval (context, "1+1", -1, "<input>", &estatus, &error))
-        g_error ("%s", error->message);
-    g_object_unref (context);
+    context = gjs_context_new();
+    if (!gjs_context_eval(context, "1+1", -1, "<input>", &estatus, &error))
+        g_error("%s", error->message);
+    g_object_unref(context);
 }
 
 static void
@@ -451,7 +451,7 @@ main(int    argc,
 
 #undef ADD_JSAPI_UTIL_TEST
 
-    gjs_test_add_tests_for_coverage ();
+    gjs_test_add_tests_for_coverage();
     gjs_test_add_tests_for_parse_call_args();
     gjs_test_add_tests_for_rooting();
 

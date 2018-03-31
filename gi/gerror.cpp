@@ -93,7 +93,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     }
 
     priv->info = proto_priv->info;
-    g_base_info_ref( (GIBaseInfo*) priv->info);
+    g_base_info_ref((GIBaseInfo*) priv->info);
     priv->domain = proto_priv->domain;
 
     JS::RootedObject params_obj(context, &argv[0].toObject());
@@ -130,10 +130,10 @@ error_finalize(JSFreeOp *fop,
     if (priv == NULL)
         return; /* wrong class? */
 
-    g_clear_error (&priv->gerror);
+    g_clear_error(&priv->gerror);
 
     if (priv->info) {
-        g_base_info_unref( (GIBaseInfo*) priv->info);
+        g_base_info_unref((GIBaseInfo*) priv->info);
         priv->info = NULL;
     }
 
@@ -305,17 +305,17 @@ gjs_define_error_class(JSContext       *context,
      * same as Boxed (except that we inherit from GLib.Error).
      */
 
-    constructor_name = g_base_info_get_name( (GIBaseInfo*) info);
+    constructor_name = g_base_info_get_name((GIBaseInfo*) info);
 
     g_irepository_require(NULL, "GLib", "2.0", (GIRepositoryLoadFlags) 0, NULL);
     glib_error_info = (GIBoxedInfo*) g_irepository_find_by_name(NULL, "GLib", "Error");
     JS::RootedObject parent_proto(context,
-        gjs_lookup_generic_prototype(context, glib_error_info));
+                                  gjs_lookup_generic_prototype(context, glib_error_info));
     g_base_info_unref((GIBaseInfo*)glib_error_info);
 
     if (!gjs_init_class_dynamic(context, in_object,
                                 parent_proto,
-                                g_base_info_get_namespace( (GIBaseInfo*) info),
+                                g_base_info_get_namespace((GIBaseInfo*) info),
                                 constructor_name,
                                 &gjs_error_class,
                                 gjs_error_constructor, 1,
@@ -336,8 +336,8 @@ gjs_define_error_class(JSContext       *context,
     GJS_INC_COUNTER(gerror);
     priv = g_slice_new0(Error);
     priv->info = info;
-    g_base_info_ref( (GIBaseInfo*) priv->info);
-    priv->domain = g_quark_from_string (g_enum_info_get_error_domain(priv->info));
+    g_base_info_ref((GIBaseInfo*) priv->info);
+    priv->domain = g_quark_from_string(g_enum_info_get_error_domain(priv->info));
 
     JS_SetPrivate(prototype, priv);
 
@@ -495,14 +495,14 @@ gjs_error_from_gerror(JSContext             *context,
     proto_priv = priv_from_js(context, proto);
 
     JS::RootedObject obj(context,
-        JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto));
+                         JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto));
 
     GJS_INC_COUNTER(gerror);
     priv = g_slice_new0(Error);
     JS_SetPrivate(obj, priv);
     priv->info = info;
     priv->domain = proto_priv->domain;
-    g_base_info_ref( (GIBaseInfo*) priv->info);
+    g_base_info_ref((GIBaseInfo*) priv->info);
     priv->gerror = g_error_copy(gerror);
 
     if (add_stack)
@@ -523,8 +523,8 @@ gjs_gerror_from_error(JSContext       *context,
     /* If this is a plain GBoxed (i.e. a GError without metadata),
        delegate marshalling.
     */
-    if (gjs_typecheck_boxed (context, obj, NULL, G_TYPE_ERROR, false))
-        return (GError*) gjs_c_struct_from_boxed (context, obj);
+    if (gjs_typecheck_boxed(context, obj, NULL, G_TYPE_ERROR, false))
+        return (GError*) gjs_c_struct_from_boxed(context, obj);
 
     priv = priv_from_js(context, obj);
 
@@ -534,8 +534,8 @@ gjs_gerror_from_error(JSContext       *context,
     if (priv->gerror == NULL) {
         gjs_throw(context,
                   "Object is %s.%s.prototype, not an object instance - cannot convert to a boxed instance",
-                  g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                  g_base_info_get_name( (GIBaseInfo*) priv->info));
+                  g_base_info_get_namespace((GIBaseInfo*) priv->info),
+                  g_base_info_get_name((GIBaseInfo*) priv->info));
         return NULL;
     }
 
@@ -543,11 +543,11 @@ gjs_gerror_from_error(JSContext       *context,
 }
 
 bool
-gjs_typecheck_gerror (JSContext       *context,
-                      JS::HandleObject obj,
-                      bool             throw_error)
+gjs_typecheck_gerror(JSContext       *context,
+                     JS::HandleObject obj,
+                     bool             throw_error)
 {
-    if (gjs_typecheck_boxed (context, obj, NULL, G_TYPE_ERROR, false))
+    if (gjs_typecheck_boxed(context, obj, NULL, G_TYPE_ERROR, false))
         return true;
 
     return do_base_typecheck(context, obj, throw_error);

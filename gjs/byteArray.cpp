@@ -40,18 +40,18 @@ typedef struct {
 extern struct JSClass gjs_byte_array_class;
 GJS_DEFINE_PRIV_FROM_JS(ByteArrayInstance, gjs_byte_array_class)
 
-static bool   byte_array_get_prop      (JSContext    *context,
-                                        JS::HandleObject obj,
-                                        JS::HandleId id,
-                                        JS::MutableHandleValue value_p);
-static bool   byte_array_set_prop      (JSContext    *context,
-                                        JS::HandleObject obj,
-                                        JS::HandleId id,
-                                        JS::MutableHandleValue value_p,
-                                        JS::ObjectOpResult&    result);
+static bool   byte_array_get_prop(JSContext    *context,
+                                  JS::HandleObject obj,
+                                  JS::HandleId id,
+                                  JS::MutableHandleValue value_p);
+static bool   byte_array_set_prop(JSContext    *context,
+                                  JS::HandleObject obj,
+                                  JS::HandleId id,
+                                  JS::MutableHandleValue value_p,
+                                  JS::ObjectOpResult&    result);
 GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array);
-static void   byte_array_finalize      (JSFreeOp     *fop,
-                                        JSObject     *obj);
+static void   byte_array_finalize(JSFreeOp     *fop,
+                                  JSObject     *obj);
 
 static JSObject *gjs_byte_array_get_proto(JSContext *);
 
@@ -90,7 +90,7 @@ gjs_value_from_gsize(gsize v)
 }
 
 static void
-byte_array_ensure_array (ByteArrayInstance  *priv)
+byte_array_ensure_array(ByteArrayInstance  *priv)
 {
     if (priv->bytes) {
         priv->array = g_bytes_unref_to_array(priv->bytes);
@@ -101,7 +101,7 @@ byte_array_ensure_array (ByteArrayInstance  *priv)
 }
 
 static void
-byte_array_ensure_gbytes (ByteArrayInstance  *priv)
+byte_array_ensure_gbytes(ByteArrayInstance  *priv)
 {
     if (priv->array) {
         priv->bytes = g_byte_array_free_to_bytes(priv->array);
@@ -172,7 +172,7 @@ byte_array_get_index(JSContext         *context,
 {
     gsize len;
     guint8 *data;
-    
+
     gjs_byte_array_peek_data(context, obj, &data, &len);
 
     if (idx >= len) {
@@ -237,7 +237,7 @@ byte_array_length_getter(JSContext *context,
     if (priv->array != NULL)
         len = priv->array->len;
     else if (priv->bytes != NULL)
-        len = g_bytes_get_size (priv->bytes);
+        len = g_bytes_get_size(priv->bytes);
     args.rval().set(gjs_value_from_gsize(len));
     return true;
 }
@@ -339,18 +339,18 @@ gjs_g_byte_array_new(int preallocated_length)
      * We nul-terminate too for ease of toString() and for security
      * paranoia.
      */
-    array =  (GByteArray*) g_array_sized_new (true, /* nul-terminated */
-                                              true, /* clear to zero */
-                                              1, /* element size */
-                                              preallocated_length);
-   if (preallocated_length > 0) {
-       /* we want to not only allocate the size, but have it
-        * already be the array's length.
-        */
-       g_byte_array_set_size(array, preallocated_length);
-   }
+    array = (GByteArray*) g_array_sized_new(true,   /* nul-terminated */
+                                            true, /* clear to zero */
+                                            1, /* element size */
+                                            preallocated_length);
+    if (preallocated_length > 0) {
+        /* we want to not only allocate the size, but have it
+         * already be the array's length.
+         */
+        g_byte_array_set_size(array, preallocated_length);
+    }
 
-   return array;
+    return array;
 }
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(byte_array)
@@ -453,12 +453,12 @@ to_string_func(JSContext *context,
 
         error = NULL;
         u16_str = g_convert(data,
-                           priv->array->len,
-                           "UTF-16",
-                           encoding,
-                           NULL, /* bytes read */
-                           &bytes_written,
-                           &error);
+                            priv->array->len,
+                            "UTF-16",
+                            encoding,
+                            NULL, /* bytes read */
+                            &bytes_written,
+                            &error);
         if (u16_str == NULL) {
             /* frees the GError */
             gjs_throw_g_error(context, error);
@@ -513,7 +513,7 @@ byte_array_new(JSContext *context)
 
     JS::RootedObject proto(context, gjs_byte_array_get_proto(context));
     JS::RootedObject array(context,
-        JS_NewObjectWithGivenProto(context, &gjs_byte_array_class, proto));
+                           JS_NewObjectWithGivenProto(context, &gjs_byte_array_class, proto));
 
     priv = g_slice_new0(ByteArrayInstance);
 
@@ -529,7 +529,7 @@ from_string_func(JSContext *context,
                  unsigned   argc,
                  JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     ByteArrayInstance *priv;
     GjsAutoJSChar encoding;
     bool encoding_is_utf8;
@@ -539,7 +539,7 @@ from_string_func(JSContext *context,
         return false;
 
     priv = priv_from_js(context, obj);
-    g_assert (priv != NULL);
+    g_assert(priv != NULL);
 
     g_assert(argc > 0); /* because we specified min args 1 */
 
@@ -638,7 +638,7 @@ from_array_func(JSContext *context,
                 unsigned   argc,
                 JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     ByteArrayInstance *priv;
     guint32 len;
     guint32 i;
@@ -649,7 +649,7 @@ from_array_func(JSContext *context,
         return false;
 
     priv = priv_from_js(context, obj);
-    g_assert (priv != NULL);
+    g_assert(priv != NULL);
 
     g_assert(argc > 0); /* because we specified min args 1 */
 
@@ -702,7 +702,7 @@ from_gbytes_func(JSContext *context,
                  unsigned   argc,
                  JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     JS::RootedObject bytes_obj(context);
     GBytes *gbytes;
     ByteArrayInstance *priv;
@@ -720,7 +720,7 @@ from_gbytes_func(JSContext *context,
     if (!obj)
         return false;
     priv = priv_from_js(context, obj);
-    g_assert (priv != NULL);
+    g_assert(priv != NULL);
 
     priv->bytes = g_bytes_ref(gbytes);
 
@@ -729,8 +729,8 @@ from_gbytes_func(JSContext *context,
 }
 
 JSObject *
-gjs_byte_array_from_byte_array (JSContext *context,
-                                GByteArray *array)
+gjs_byte_array_from_byte_array(JSContext *context,
+                               GByteArray *array)
 {
     ByteArrayInstance *priv;
 
@@ -739,7 +739,7 @@ gjs_byte_array_from_byte_array (JSContext *context,
 
     JS::RootedObject proto(context, gjs_byte_array_get_proto(context));
     JS::RootedObject object(context,
-        JS_NewObjectWithGivenProto(context, &gjs_byte_array_class, proto));
+                            JS_NewObjectWithGivenProto(context, &gjs_byte_array_class, proto));
 
     if (!object) {
         gjs_throw(context, "failed to create byte array");
@@ -757,8 +757,8 @@ gjs_byte_array_from_byte_array (JSContext *context,
 }
 
 GBytes *
-gjs_byte_array_get_bytes (JSContext       *context,
-                          JS::HandleObject object)
+gjs_byte_array_get_bytes(JSContext       *context,
+                         JS::HandleObject object)
 {
     ByteArrayInstance *priv;
     priv = priv_from_js(context, object);
@@ -766,12 +766,12 @@ gjs_byte_array_get_bytes (JSContext       *context,
 
     byte_array_ensure_gbytes(priv);
 
-    return g_bytes_ref (priv->bytes);
+    return g_bytes_ref(priv->bytes);
 }
 
 GByteArray *
-gjs_byte_array_get_byte_array (JSContext       *context,
-                               JS::HandleObject obj)
+gjs_byte_array_get_byte_array(JSContext       *context,
+                              JS::HandleObject obj)
 {
     ByteArrayInstance *priv;
     priv = priv_from_js(context, obj);
@@ -779,19 +779,19 @@ gjs_byte_array_get_byte_array (JSContext       *context,
 
     byte_array_ensure_array(priv);
 
-    return g_byte_array_ref (priv->array);
+    return g_byte_array_ref(priv->array);
 }
 
 void
-gjs_byte_array_peek_data (JSContext       *context,
-                          JS::HandleObject obj,
-                          guint8         **out_data,
-                          gsize           *out_len)
+gjs_byte_array_peek_data(JSContext       *context,
+                         JS::HandleObject obj,
+                         guint8         **out_data,
+                         gsize           *out_len)
 {
     ByteArrayInstance *priv;
     priv = priv_from_js(context, obj);
     g_assert(priv != NULL);
-    
+
     if (priv->array != NULL) {
         *out_data = (guint8*)priv->array->data;
         *out_len = (gsize)priv->array->len;
@@ -804,7 +804,7 @@ gjs_byte_array_peek_data (JSContext       *context,
 
 static JSPropertySpec gjs_byte_array_proto_props[] = {
     JS_PSGS("length", byte_array_length_getter, byte_array_length_setter,
-            JSPROP_PERMANENT),
+    JSPROP_PERMANENT),
     JS_PS_END
 };
 
@@ -833,5 +833,5 @@ gjs_define_byte_array_stuff(JSContext              *cx,
 
     JS::RootedObject proto(cx);
     return gjs_byte_array_define_proto(cx, module, &proto) &&
-        JS_DefineFunctions(cx, module, gjs_byte_array_module_funcs);
+           JS_DefineFunctions(cx, module, gjs_byte_array_module_funcs);
 }

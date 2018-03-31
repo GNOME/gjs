@@ -62,7 +62,7 @@ update_gtype_weak_pointers(JSContext     *cx,
                            JSCompartment *compartment,
                            void          *data)
 {
-    for (auto iter = weak_pointer_list.begin(); iter != weak_pointer_list.end(); ) {
+    for (auto iter = weak_pointer_list.begin(); iter != weak_pointer_list.end();) {
         auto heap_wrapper = static_cast<JS::Heap<JSObject *> *>(g_type_get_qdata(*iter, gjs_get_gtype_wrapper_quark()));
         JS_UpdateWeakPointerAfterGC(heap_wrapper);
 
@@ -121,9 +121,9 @@ to_string_func(JSContext *cx,
 }
 
 static bool
-get_name_func (JSContext *context,
-               unsigned   argc,
-               JS::Value *vp)
+get_name_func(JSContext *context,
+              unsigned   argc,
+              JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, rec, obj, void, priv);
     GType gtype;
@@ -152,8 +152,8 @@ JSFunctionSpec gjs_gtype_proto_funcs[] = {
 JSFunctionSpec gjs_gtype_static_funcs[] = { JS_FS_END };
 
 JSObject *
-gjs_gtype_create_gtype_wrapper (JSContext *context,
-                                GType      gtype)
+gjs_gtype_create_gtype_wrapper(JSContext *context,
+                               GType      gtype)
 {
     g_assert(((void) "Attempted to create wrapper object for invalid GType",
               gtype != 0));
@@ -229,9 +229,9 @@ gjs_gtype_get_actual_gtype(JSContext       *context,
 }
 
 bool
-gjs_typecheck_gtype (JSContext             *context,
-                     JS::HandleObject       obj,
-                     bool                   throw_error)
+gjs_typecheck_gtype(JSContext             *context,
+                    JS::HandleObject       obj,
+                    bool                   throw_error)
 {
     return do_base_typecheck(context, obj, throw_error);
 }

@@ -58,17 +58,17 @@
 
 #include <string.h>
 
-static void     gjs_context_dispose           (GObject               *object);
-static void     gjs_context_finalize          (GObject               *object);
-static void     gjs_context_constructed       (GObject               *object);
-static void     gjs_context_get_property      (GObject               *object,
-                                                  guint                  prop_id,
-                                                  GValue                *value,
-                                                  GParamSpec            *pspec);
-static void     gjs_context_set_property      (GObject               *object,
-                                                  guint                  prop_id,
-                                                  const GValue          *value,
-                                                  GParamSpec            *pspec);
+static void     gjs_context_dispose(GObject               *object);
+static void     gjs_context_finalize(GObject               *object);
+static void     gjs_context_constructed(GObject               *object);
+static void     gjs_context_get_property(GObject               *object,
+                                         guint                  prop_id,
+                                         GValue                *value,
+                                         GParamSpec            *pspec);
+static void     gjs_context_set_property(GObject               *object,
+                                         guint                  prop_id,
+                                         const GValue          *value,
+                                         GParamSpec            *pspec);
 
 using JobQueue = JS::GCVector<JSObject *, 0, js::SystemAllocPolicy>;
 
@@ -217,7 +217,7 @@ gjs_context_init(GjsContext *js_context)
 static void
 gjs_context_class_init(GjsContextClass *klass)
 {
-    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+    GObjectClass *object_class = G_OBJECT_CLASS(klass);
     GParamSpec *pspec;
 
     object_class->dispose = gjs_context_dispose;
@@ -231,7 +231,7 @@ gjs_context_class_init(GjsContextClass *klass)
                                "Search path",
                                "Path where modules to import should reside",
                                G_TYPE_STRV,
-                               (GParamFlags) (G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+                               (GParamFlags)(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
 
     g_object_class_install_property(object_class,
                                     PROP_SEARCH_PATH,
@@ -242,7 +242,7 @@ gjs_context_class_init(GjsContextClass *klass)
                                 "Program Name",
                                 "The filename of the launched JS program",
                                 "",
-                                (GParamFlags) (G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+                                (GParamFlags)(G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 
     g_object_class_install_property(object_class,
                                     PROP_PROGRAM_NAME,
@@ -286,14 +286,14 @@ gjs_context_class_init(GjsContextClass *klass)
     {
 #ifdef G_OS_WIN32
         extern HMODULE gjs_dll;
-        char *basedir = g_win32_get_package_installation_directory_of_module (gjs_dll);
-        char *priv_typelib_dir = g_build_filename (basedir, "lib", "girepository-1.0", NULL);
-        g_free (basedir);
+        char *basedir = g_win32_get_package_installation_directory_of_module(gjs_dll);
+        char *priv_typelib_dir = g_build_filename(basedir, "lib", "girepository-1.0", NULL);
+        g_free(basedir);
 #else
-        char *priv_typelib_dir = g_build_filename (PKGLIBDIR, "girepository-1.0", NULL);
+        char *priv_typelib_dir = g_build_filename(PKGLIBDIR, "girepository-1.0", NULL);
 #endif
         g_irepository_prepend_search_path(priv_typelib_dir);
-    g_free (priv_typelib_dir);
+        g_free(priv_typelib_dir);
     }
 
     gjs_register_native_module("byteArray", gjs_define_byte_array_stuff);
@@ -319,7 +319,7 @@ warn_about_unhandled_promise_rejections(GjsContext *gjs_context)
                   "an error handler to your promise chain with .catch() or a "
                   "try-catch block around your await expression. %s%s",
                   stack ? "Stack trace of the failed promise:\n" :
-                    "Unfortunately there is no stack trace of the failed promise.",
+                  "Unfortunately there is no stack trace of the failed promise.",
                   stack ? stack : "");
     }
     gjs_context->unhandled_rejection_stacks.clear();
@@ -380,7 +380,7 @@ gjs_context_dispose(GObject *object)
 
         gjs_debug(GJS_DEBUG_CONTEXT, "Disabling auto GC");
         if (js_context->auto_gc_id > 0) {
-            g_source_remove (js_context->auto_gc_id);
+            g_source_remove(js_context->auto_gc_id);
             js_context->auto_gc_id = 0;
         }
 
@@ -467,7 +467,7 @@ gjs_context_constructed(GObject *object)
     new (&js_context->const_strings) std::array<JS::PersistentRootedId*, GJS_STRING_LAST>;
     for (i = 0; i < GJS_STRING_LAST; i++) {
         js_context->const_strings[i] = new JS::PersistentRootedId(cx,
-            gjs_intern_string_to_id(cx, const_strings[i]));
+                                                                  gjs_intern_string_to_id(cx, const_strings[i]));
     }
 
     js_context->job_queue = new JS::PersistentRooted<JobQueue>(cx);
@@ -488,7 +488,7 @@ gjs_context_constructed(GObject *object)
     JS_AddExtraGCRootsTracer(cx, gjs_context_tracer, js_context);
 
     JS::RootedObject importer(cx, gjs_create_root_importer(cx,
-        js_context->search_path ? js_context->search_path : nullptr));
+                                                           js_context->search_path ? js_context->search_path : nullptr));
     if (!importer)
         g_error("Failed to create root importer");
 
@@ -510,42 +510,42 @@ gjs_context_constructed(GObject *object)
 
     JS_EndRequest(cx);
 
-    g_mutex_lock (&contexts_lock);
+    g_mutex_lock(&contexts_lock);
     all_contexts = g_list_prepend(all_contexts, object);
-    g_mutex_unlock (&contexts_lock);
+    g_mutex_unlock(&contexts_lock);
 
     setup_dump_heap();
 }
 
 static void
-gjs_context_get_property (GObject     *object,
-                          guint        prop_id,
-                          GValue      *value,
-                          GParamSpec  *pspec)
+gjs_context_get_property(GObject     *object,
+                         guint        prop_id,
+                         GValue      *value,
+                         GParamSpec  *pspec)
 {
     GjsContext *js_context;
 
-    js_context = GJS_CONTEXT (object);
+    js_context = GJS_CONTEXT(object);
 
     switch (prop_id) {
     case PROP_PROGRAM_NAME:
         g_value_set_string(value, js_context->program_name);
         break;
     default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
         break;
     }
 }
 
 static void
-gjs_context_set_property (GObject      *object,
-                          guint         prop_id,
-                          const GValue *value,
-                          GParamSpec   *pspec)
+gjs_context_set_property(GObject      *object,
+                         guint         prop_id,
+                         const GValue *value,
+                         GParamSpec   *pspec)
 {
     GjsContext *js_context;
 
-    js_context = GJS_CONTEXT (object);
+    js_context = GJS_CONTEXT(object);
 
     switch (prop_id) {
     case PROP_SEARCH_PATH:
@@ -561,7 +561,7 @@ gjs_context_set_property (GObject      *object,
         js_context->should_listen_sigusr2 = g_value_get_boolean(value);
         break;
     default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
         break;
     }
 }
@@ -570,25 +570,25 @@ gjs_context_set_property (GObject      *object,
 GjsContext*
 gjs_context_new(void)
 {
-    return (GjsContext*) g_object_new (GJS_TYPE_CONTEXT, NULL);
+    return (GjsContext*) g_object_new(GJS_TYPE_CONTEXT, NULL);
 }
 
 GjsContext*
 gjs_context_new_with_search_path(char** search_path)
 {
-    return (GjsContext*) g_object_new (GJS_TYPE_CONTEXT,
-                         "search-path", search_path,
-                         NULL);
+    return (GjsContext*) g_object_new(GJS_TYPE_CONTEXT,
+                                      "search-path", search_path,
+                                      NULL);
 }
 
 bool
-_gjs_context_destroying (GjsContext *context)
+_gjs_context_destroying(GjsContext *context)
 {
     return context->destroying;
 }
 
 static gboolean
-trigger_gc_if_needed (gpointer user_data)
+trigger_gc_if_needed(gpointer user_data)
 {
     GjsContext *js_context = GJS_CONTEXT(user_data);
     js_context->auto_gc_id = 0;
@@ -597,7 +597,7 @@ trigger_gc_if_needed (gpointer user_data)
 }
 
 void
-_gjs_context_schedule_gc_if_needed (GjsContext *js_context)
+_gjs_context_schedule_gc_if_needed(GjsContext *js_context)
 {
     if (js_context->auto_gc_id > 0)
         return;
@@ -783,10 +783,10 @@ _gjs_context_unregister_unhandled_promise_rejection(GjsContext *gjs_context,
 /**
  * gjs_context_maybe_gc:
  * @context: a #GjsContext
- * 
+ *
  * Similar to the Spidermonkey JS_MaybeGC() call which
  * heuristically looks at JS runtime memory usage and
- * may initiate a garbage collection. 
+ * may initiate a garbage collection.
  *
  * This function always unconditionally invokes JS_MaybeGC(), but
  * additionally looks at memory usage from the system malloc()
@@ -800,9 +800,9 @@ _gjs_context_unregister_unhandled_promise_rejection(GjsContext *gjs_context,
  *
  * A good time to call this function is when your application
  * transitions to an idle state.
- */ 
+ */
 void
-gjs_context_maybe_gc (GjsContext  *context)
+gjs_context_maybe_gc(GjsContext  *context)
 {
     gjs_maybe_gc(context->context);
 }
@@ -810,12 +810,12 @@ gjs_context_maybe_gc (GjsContext  *context)
 /**
  * gjs_context_gc:
  * @context: a #GjsContext
- * 
+ *
  * Initiate a full GC; may or may not block until complete.  This
  * function just calls Spidermonkey JS_GC().
- */ 
+ */
 void
-gjs_context_gc (GjsContext  *context)
+gjs_context_gc(GjsContext  *context)
 {
     JS_GC(context->context);
 }
@@ -832,14 +832,14 @@ gjs_context_gc (GjsContext  *context)
 GList*
 gjs_context_get_all(void)
 {
-  GList *result;
-  GList *iter;
-  g_mutex_lock (&contexts_lock);
-  result = g_list_copy(all_contexts);
-  for (iter = result; iter; iter = iter->next)
-    g_object_ref((GObject*)iter->data);
-  g_mutex_unlock (&contexts_lock);
-  return result;
+    GList *result;
+    GList *iter;
+    g_mutex_lock(&contexts_lock);
+    result = g_list_copy(all_contexts);
+    for (iter = result; iter; iter = iter->next)
+        g_object_ref((GObject*)iter->data);
+    g_mutex_unlock(&contexts_lock);
+    return result;
 }
 
 /**
@@ -849,7 +849,7 @@ gjs_context_get_all(void)
  * is a JSContext *
  */
 void*
-gjs_context_get_native_context (GjsContext *js_context)
+gjs_context_get_native_context(GjsContext *js_context)
 {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), NULL);
     return js_context->context;
@@ -935,7 +935,7 @@ gjs_context_eval(GjsContext   *js_context,
 
     ret = true;
 
- out:
+out:
     g_object_unref(G_OBJECT(js_context));
     context_reset_exit(js_context);
     return ret;
@@ -989,15 +989,15 @@ gjs_context_define_string_array(GjsContext  *js_context,
 static GjsContext *current_context;
 
 GjsContext *
-gjs_context_get_current (void)
+gjs_context_get_current(void)
 {
     return current_context;
 }
 
 void
-gjs_context_make_current (GjsContext *context)
+gjs_context_make_current(GjsContext *context)
 {
-    g_assert (context == NULL || current_context == NULL);
+    g_assert(context == NULL || current_context == NULL);
 
     current_context = context;
 }
