@@ -150,7 +150,7 @@ ObjectInstance *wrapped_gobject_list;
 extern struct JSClass gjs_object_instance_class;
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 
-static void            disassociate_js_gobject (GObject *gobj);
+static void disassociate_js_gobject(ObjectInstance *priv);
 static void ensure_uses_toggle_ref(JSContext *cx, ObjectInstance *priv);
 
 typedef enum {
@@ -1330,7 +1330,7 @@ update_heap_wrapper_weak_pointers(JSContext     *cx,
                         "%zu wrapped GObject(s) to examine",
                         wrapped_gobject_list->instance_link.size());
 
-    std::vector<GObject *> to_be_disassociated;
+    std::vector<ObjectInstance *> to_be_disassociated;
     ObjectInstance *priv = wrapped_gobject_list;
 
     while (priv) {
@@ -1348,15 +1348,15 @@ update_heap_wrapper_weak_pointers(JSContext     *cx,
                                 "whose JS object %p is about to be finalized: "
                                 "%p (%s)", priv->keep_alive.get(), priv->gobj,
                                 G_OBJECT_TYPE_NAME(priv->gobj));
-            to_be_disassociated.push_back(priv->gobj);
+            to_be_disassociated.push_back(priv);
             object_instance_unlink(priv);
         }
 
         priv = next;
     }
 
-    for (GObject *gobj : to_be_disassociated)
-        disassociate_js_gobject(gobj);
+    for (ObjectInstance *ex_object : to_be_disassociated)
+        disassociate_js_gobject(ex_object);
 }
 
 static void
@@ -1438,13 +1438,12 @@ invalidate_all_closures(ObjectInstance *priv)
 }
 
 static void
-disassociate_js_gobject(GObject *gobj)
+disassociate_js_gobject(ObjectInstance *priv)
 {
-    ObjectInstance *priv = get_object_qdata(gobj);
     bool had_toggle_down, had_toggle_up;
 
     if (!priv->g_object_finalized)
-        g_object_weak_unref(gobj, wrapped_gobj_dispose_notify, priv);
+        g_object_weak_unref(priv->gobj, wrapped_gobj_dispose_notify, priv);
 
     /* FIXME: this check fails when JS code runs after the main loop ends,
      * because the idle functions are not dispatched without a main loop.
@@ -1454,17 +1453,17 @@ disassociate_js_gobject(GObject *gobj)
      * https://bugzilla.gnome.org/show_bug.cgi?id=778862
      */
     auto& toggle_queue = ToggleQueue::get_default();
-    std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(gobj);
+    std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(priv->gobj);
     if (had_toggle_down != had_toggle_up) {
         g_critical("JS object wrapper for GObject %p (%s) is being released "
                    "while toggle references are still pending. This may happen "
                    "on exit in Gio.Application.vfunc_dbus_unregister(). If you "
                    "encounter it another situation, please report a GJS bug.",
-                   gobj, G_OBJECT_TYPE_NAME(gobj));
+                   priv->gobj, G_OBJECT_TYPE_NAME(priv->gobj));
     }
 
     /* Fist, remove the wrapper pointer from the wrapped GObject */
-    set_object_qdata(gobj, nullptr);
+    set_object_qdata(priv->gobj, nullptr);
 
     /* Now release all the resources the current wrapper has */
     invalidate_all_closures(priv);
