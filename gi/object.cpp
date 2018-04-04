@@ -1302,7 +1302,8 @@ disassociate_js_gobject(ObjectInstance *priv)
 {
     bool had_toggle_down, had_toggle_up;
 
-    g_object_weak_unref(priv->gobj, wrapped_gobj_dispose_notify, priv);
+    if (!priv->g_object_finalized)
+        g_object_weak_unref(priv->gobj, wrapped_gobj_dispose_notify, priv);
 
     /* FIXME: this check fails when JS code runs after the main loop ends,
      * because the idle functions are not dispatched without a main loop.
@@ -1505,25 +1506,13 @@ object_instance_finalize(JSFreeOp  *fop,
 
     /* Object is instance, not prototype, AND GObject is not already freed */
     if (priv->gobj) {
-        bool had_toggle_up;
-        bool had_toggle_down;
-
         if (G_UNLIKELY (priv->gobj->ref_count <= 0)) {
             g_error("Finalizing proxy for an already freed object of type: %s.%s\n",
                     priv->info ? g_base_info_get_namespace((GIBaseInfo*) priv->info) : "",
                     priv->info ? g_base_info_get_name((GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
         }
 
-        auto& toggle_queue = ToggleQueue::get_default();
-        std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(priv->gobj);
-
-        if (!had_toggle_up && had_toggle_down) {
-            g_error("Finalizing proxy for an object that's scheduled to be unrooted: %s.%s\n",
-                    priv->info ? g_base_info_get_namespace((GIBaseInfo*) priv->info) : "",
-                    priv->info ? g_base_info_get_name((GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
-        }
-        
-        release_native_object(priv);
+        disassociate_js_gobject(priv);
     }
 
     if (priv->keep_alive.rooted()) {
