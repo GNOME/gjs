@@ -84,7 +84,7 @@ static std::set<ObjectInstance *> wrapped_gobject_list;
 extern struct JSClass gjs_object_instance_class;
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 
-static void            disassociate_js_gobject (GObject *gobj);
+static void disassociate_js_gobject(ObjectInstance *priv);
 
 typedef enum {
     SOME_ERROR_OCCURRED = false,
@@ -1211,7 +1211,7 @@ update_heap_wrapper_weak_pointers(JSContext     *cx,
                         "%zu wrapped GObject(s) to examine",
                         wrapped_gobject_list.size());
 
-    std::vector<GObject *> to_be_disassociated;
+    std::vector<ObjectInstance *> to_be_disassociated;
 
     for (auto iter = wrapped_gobject_list.begin(); iter != wrapped_gobject_list.end(); ) {
         ObjectInstance *priv = *iter;
@@ -1228,13 +1228,13 @@ update_heap_wrapper_weak_pointers(JSContext     *cx,
                                 "whose JS object %p is about to be finalized: "
                                 "%p (%s)", priv->keep_alive.get(), priv->gobj,
                                 G_OBJECT_TYPE_NAME(priv->gobj));
-            to_be_disassociated.push_back(priv->gobj);
+            to_be_disassociated.push_back(priv);
             iter = wrapped_gobject_list.erase(iter);
         }
     }
 
-    for (GObject *gobj : to_be_disassociated)
-        disassociate_js_gobject(gobj);
+    for (ObjectInstance *priv : to_be_disassociated)
+        disassociate_js_gobject(priv);
 }
 
 static void
@@ -1298,9 +1298,8 @@ invalidate_all_closures(ObjectInstance *priv)
 }
 
 static void
-disassociate_js_gobject(GObject *gobj)
+disassociate_js_gobject(ObjectInstance *priv)
 {
-    ObjectInstance *priv = get_object_qdata(gobj);
     bool had_toggle_down, had_toggle_up;
 
     g_object_weak_unref(priv->gobj, wrapped_gobj_dispose_notify, priv);
@@ -1313,13 +1312,13 @@ disassociate_js_gobject(GObject *gobj)
      * https://bugzilla.gnome.org/show_bug.cgi?id=778862
      */
     auto& toggle_queue = ToggleQueue::get_default();
-    std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(gobj);
+    std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(priv->gobj);
     if (had_toggle_down != had_toggle_up) {
         g_critical("JS object wrapper for GObject %p (%s) is being released "
                    "while toggle references are still pending. This may happen "
                    "on exit in Gio.Application.vfunc_dbus_unregister(). If you "
                    "encounter it another situation, please report a GJS bug.",
-                   gobj, G_OBJECT_TYPE_NAME(gobj));
+                   priv->gobj, G_OBJECT_TYPE_NAME(priv->gobj));
     }
 
     invalidate_all_closures(priv);
