@@ -100,10 +100,10 @@ else
 fi
 
 # ensure the encoding of argv is being properly handled
-$gjs -c 'log(ARGV[0])' "Valentín"
-report "Valentín should be outputed. ValentÃ­n is incorrect and if shown encoding is broken for argv"
-$gjs -c 'log(ARGV[0])' "☭"
-report "☭ should be outputed. If you see a unicode code point, encoding is broken for argv (and possibly imports)"
+$gjs -c 'imports.system.exit((ARGV[0] !== "Valentín") ? 1 : 0)' "Valentín"
+report "Basic unicode encoding (accents, etc) should be functioning properly for ARGV and imports."
+$gjs -c 'imports.system.exit((ARGV[0] !== "☭") ? 1 : 0)' "☭"
+report "Unicode encoding for symbols should be functioning properly for ARGV and imports."
 
 # gjs --help prints GJS help
 $gjs --help >/dev/null
