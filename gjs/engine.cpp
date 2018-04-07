@@ -37,6 +37,10 @@
 #include <windows.h>
 #endif
 
+#ifdef ENABLE_CAIRO
+# include <cairo.h>
+#endif
+
 /* Implementations of locale-specific operations; these are used
  * in the implementation of String.localeCompare(), Date.toLocaleDateString(),
  * and so forth. We take the straight-forward approach of converting
@@ -214,6 +218,16 @@ on_promise_unhandled_rejection(JSContext                    *cx,
                                                       std::move(stack));
 }
 
+static void
+shutdown(void)
+{
+    JS_ShutDown();
+
+#ifdef ENABLE_CAIRO
+    cairo_debug_reset_static_data();  /* for valgrind reports */
+#endif
+}
+
 #ifdef G_OS_WIN32
 HMODULE gjs_dll;
 static bool gjs_is_inited = false;
@@ -231,7 +245,7 @@ LPVOID    lpvReserved)
     break;
 
   case DLL_THREAD_DETACH:
-    JS_ShutDown ();
+    shutdown();
     break;
 
   default:
@@ -251,7 +265,7 @@ public:
     }
 
     ~GjsInit() {
-        JS_ShutDown();
+        shutdown();
     }
 
     operator bool() {

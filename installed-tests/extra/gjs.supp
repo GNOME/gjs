@@ -133,13 +133,10 @@
    match-leak-kinds: definite
    fun:malloc
    ...
-   fun:FcPatternDuplicate
-   fun:_cairo_ft_font_face_create_for_pattern
-   fun:_cairo_ft_font_face_create_for_toy
-   fun:_cairo_toy_font_face_create_impl_face
-   fun:_cairo_toy_font_face_init
-   fun:cairo_toy_font_face_create
-   fun:_cairo_gstate_ensure_font_face
+   fun:FcConfigSubstituteWithPat
+   fun:_cairo_ft_resolve_pattern
+   fun:_cairo_ft_font_face_get_implementation
+   fun:cairo_scaled_font_create
    fun:_cairo_gstate_ensure_scaled_font
    fun:_cairo_gstate_get_scaled_font
    fun:_cairo_default_context_get_scaled_font
