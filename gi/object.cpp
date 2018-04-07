@@ -1523,7 +1523,9 @@ object_instance_finalize(JSFreeOp  *fop,
                     priv->info ? g_base_info_get_namespace((GIBaseInfo*) priv->info) : "",
                     priv->info ? g_base_info_get_name((GIBaseInfo*) priv->info) : g_type_name(priv->gtype));
         }
-        
+
+        if (!priv->g_object_finalized)
+            g_object_weak_unref(priv->gobj, wrapped_gobj_dispose_notify, priv);
         release_native_object(priv);
     }
 
