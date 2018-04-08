@@ -92,7 +92,11 @@ filt_opts.add_argument('--hide-addr', '-ha', dest='hide_addrs', action='append',
                        help='Don\'t show roots with the heap address ADDR')
 
 filt_opts.add_argument('--hide-node', '-hn', dest='hide_nodes', action='append',
-                       metavar='LABEL', default=['GIRepositoryNamespace', 'GjsFileImporter', 'GjsGlobal', 'GjsModule'],
+                       metavar='LABEL', default=['self-hosting-global',
+                                                 'GIRepositoryNamespace',
+                                                 'GjsFileImporter',
+                                                 'GjsGlobal',
+                                                 'GjsModule'],
                        help='Don\'t show nodes with labels containing LABEL')
 
 
