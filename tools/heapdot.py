@@ -14,81 +14,6 @@ gobj_regex = re.compile('([^ ]+) (\(nil\)|0x[a-fA-F0-9]+$)')
 
 
 ###############################################################################
-# Shape Compression
-###############################################################################
-
-def findi(m, x):
-    if not x in m:
-        m[x] = [x, 0]
-        return m[x]
-    if m[x][0] == x:
-        return m[x]
-    z = findi (m, m[x][0])
-    m[x] = z
-    return z
-
-
-def find(m, x):
-    return findi(m, x)[0]
-
-
-def union(m, rep, x, y):
-    xp = findi (m, x)
-    yp = findi (m, y)
-    if xp == yp:
-        return
-    if xp[1] < yp[1]:
-        rep[yp[0]] = rep.get(xp[0], xp[0])
-        if xp[0] in rep:
-            del rep[xp[0]]
-        m[xp[0]][0] = yp[0]
-    elif xp[1] > yp[1]:
-        m[yp[0]][0] = xp[0]
-    else:
-        m[yp[0]][0] = xp[0]
-        m[xp[0]][1] += 1
-
-
-def compress_shapes(graph, nodes, edges):
-    shape_merge = {}
-    shape_rep = {}
-
-    def canon_node(x):
-        y = find(shape_merge, x)
-        if y in shape_rep:
-            y = shape_rep[y]
-        return y
-
-    for x in nodes:
-        if graph.node_labels.get(x, '') != 'shape':
-            continue
-        if not x in edges:
-            continue
-        for y in edges[x]:
-            if graph.node_labels.get(y, '') != 'shape' and graph.node_labels.get(y, '') != 'base_shape':
-                continue
-            union(shape_merge, shape_rep, y, x)
-            break
-
-    # Remove merged away nodes
-    for x in shape_merge.keys():
-        if canon_node(x) != x:
-            nodes.remove(x)
-
-    # Update the edges for merging
-    new_edges = {}
-    for x, dsts in edges.items():
-        new_dsts = set([])
-        for y in dsts:
-            new_dsts.add(canon_node(y))
-        x = canon_node(x)
-        if x in new_dsts:
-            new_dsts.remove(x)
-        new_edges[x] = new_edges.get(x, set([])).union(new_dsts)
-    edges = new_edges
-
-
-###############################################################################
 # DOT Graph Output
 ###############################################################################
 
@@ -100,7 +25,6 @@ def add_dot_graph_path(path):
 
 
 def output_dot_file(args, graph, targs, fname):
-
     # build the set of nodes
     nodes = set([])
     for p in dot_graph_paths:
@@ -116,10 +40,6 @@ def output_dot_file(args, graph, targs, fname):
             if prevNode:
                 edges.setdefault(prevNode, set([])).add(x)
             prevNode = x
-
-    # Shape Compression
-    compress_shapes(graph, nodes, edges)
-
 
     # Write out the DOT graph
     outf = open(fname, 'w')
