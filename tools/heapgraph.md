@@ -20,16 +20,15 @@ IvyBridge i7:
 
 ### Getting a Heap Dump
 
-Currently the only way to dump a heap is from within a script, although in the
-near future it will be possible to send `SIGUSR1` to a GJS process with the env
-variable `GJS_DEBUG_HEAP_OUTPUT` set:
+The more convenient way to dump a heap is to send `SIGUSR1` to a GJS process
+with the env variable `GJS_DEBUG_HEAP_OUTPUT` set:
 
-```
-$ GJS_DEBUG_HEAP_OUTPUT=myApp.heap gjs myApp.js
-$ kill -s SIGUSR1 <gjs-pid>
+```sh
+$ GJS_DEBUG_HEAP_OUTPUT=myApp.heap gjs myApp.js &
+$ kill -USR1 <gjs-pid>
 ```
 
-An example of dumping a heap from within a script:
+It's also possible to dump a heap from within a script via the `System` import:
 
 ```js
 const System = imports.system;
@@ -54,8 +53,8 @@ ANSI styling is used to make the output more readable. Additionally, anything
 that isn't part of the graph will be sent to `stderr` so the output can be
 directed to a file as plain text. Below is a snippet:
 
-```
-$ ./heapgraph.py file.heap Object > file.tree
+```sh
+$ ./heapgraph.py myApp2.heap Object > myApp2.tree
 Parsing file.heap...done
 Found 343 targets with type "Object"
 
