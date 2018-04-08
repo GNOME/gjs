@@ -34,7 +34,6 @@ function _init() {
     Gtk.cssName = GObject._cssName;
     Gtk.internalChildren = GObject._internalChildren;
     Gtk.template = GObject._template;
-    Gtk.callbacks = GObject._callbacks;
 
     let {GtkWidgetClass} = Legacy.defineGtkLegacyObjects(GObject, Gtk);
     Gtk.Widget.prototype.__metaclass__ = GtkWidgetClass;
@@ -68,7 +67,6 @@ function _init() {
         let cssName = klass[Gtk.cssName];
         let children = klass[Gtk.children];
         let internalChildren = klass[Gtk.internalChildren];
-        let callbacks = klass[Gtk.callbacks];
 
         if (template) {
             klass.prototype._instance_init = function() {
@@ -98,11 +96,6 @@ function _init() {
         if (internalChildren) {
             internalChildren.forEach(child =>
                 Gtk.Widget.bind_template_child_full.call(klass, child, true, 0));
-        }
-
-        if (callbacks) {
-            callbacks.forEach(child =>
-                Gtk.Widget.bind_template_callback_full.call(klass, child, klass.prototype[child]));
         }
 
         return klass;
