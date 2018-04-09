@@ -54,6 +54,65 @@
 #include <util/log.h>
 #include <girepository.h>
 
+typedef class GjsListLink GjsListLink;
+typedef struct ObjectInstance ObjectInstance;
+
+static GjsListLink* object_instance_get_link (ObjectInstance *priv);
+
+class GjsListLink {
+private:
+    ObjectInstance *m_prev;
+    ObjectInstance *m_next;
+
+public:
+    ObjectInstance* prev() {
+        return m_prev;
+    }
+
+    ObjectInstance* next() {
+        return m_next;
+    }
+
+    void prepend(ObjectInstance *this_instance,
+                 ObjectInstance *head) {
+        GjsListLink *elem = object_instance_get_link(head);
+
+        g_assert (object_instance_get_link(this_instance) == this);
+
+        if (elem->m_prev) {
+            GjsListLink *prev = object_instance_get_link(elem->m_prev);
+            prev->m_next = this_instance;
+            this->m_prev = elem->m_prev;
+        }
+
+        elem->m_prev = this_instance;
+        this->m_next = head;
+    }
+
+    void unlink() {
+        if (m_prev)
+            object_instance_get_link(m_prev)->m_next = m_next;
+        if (m_next)
+            object_instance_get_link(m_next)->m_prev = m_prev;
+
+        m_prev = m_next = NULL;
+    }
+
+    int size() {
+        GjsListLink *elem = this;
+        int count = 0;
+
+        do {
+            count++;
+            if (!elem->m_next)
+                break;
+            elem = object_instance_get_link(elem->m_next);
+        } while (elem);
+
+        return count;
+    }
+};
+
 struct ObjectInstance {
     GIObjectInfo *info;
     GObject *gobj; /* NULL if we are the prototype and not an instance */
@@ -68,6 +127,8 @@ struct ObjectInstance {
        prototypes) */
     GTypeClass *klass;
 
+    GjsListLink instance_link;
+
     unsigned js_object_finalized : 1;
     unsigned g_object_finalized  : 1;
 };
@@ -79,7 +140,7 @@ using ParamRefArray = std::vector<ParamRef>;
 static std::unordered_map<GType, ParamRefArray> class_init_properties;
 
 static bool weak_pointer_callback = false;
-static std::set<ObjectInstance *> wrapped_gobject_list;
+ObjectInstance *wrapped_gobject_list;
 
 extern struct JSClass gjs_object_instance_class;
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
@@ -91,6 +152,12 @@ typedef enum {
     NO_SUCH_G_PROPERTY,
     VALUE_WAS_SET
 } ValueFromPropertyResult;
+
+static GjsListLink *
+object_instance_get_link (ObjectInstance *priv)
+{
+    return &priv->instance_link;
+}
 
 static GQuark
 gjs_is_custom_type_quark (void)
@@ -946,13 +1013,29 @@ object_instance_props_to_g_parameters(JSContext                  *context,
 }
 
 static void
+object_instance_unlink(ObjectInstance *priv)
+{
+    if (wrapped_gobject_list == priv)
+        wrapped_gobject_list = priv->instance_link.next();
+    priv->instance_link.unlink();
+}
+
+static void
+object_instance_link(ObjectInstance *priv)
+{
+    if (wrapped_gobject_list)
+        priv->instance_link.prepend(priv, wrapped_gobject_list);
+    wrapped_gobject_list = priv;
+}
+
+static void
 wrapped_gobj_dispose_notify(gpointer      data,
                             GObject      *where_the_object_was)
 {
     auto *priv = static_cast<ObjectInstance *>(data);
 
     priv->g_object_finalized = true;
-    wrapped_gobject_list.erase(priv);
+    object_instance_unlink(priv);
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Wrapped GObject %p disposed",
                         where_the_object_was);
 }
@@ -971,7 +1054,7 @@ gobj_no_longer_kept_alive_func(JS::HandleObject obj,
                         G_OBJECT_TYPE_NAME(priv->gobj));
 
     priv->keep_alive.reset();
-    wrapped_gobject_list.erase(priv);
+    unlink_object(priv);
 }
 
 static void
@@ -1156,14 +1239,15 @@ gjs_object_prepare_shutdown(void)
      *   toggle ref removal -> gobj dispose -> toggle ref notify
      * by emptying the toggle queue earlier in the shutdown sequence. */
     std::vector<ObjectInstance *> to_be_released;
-    for (auto iter = wrapped_gobject_list.begin(); iter != wrapped_gobject_list.end(); ) {
-        ObjectInstance *priv = *iter;
-        if (priv->keep_alive.rooted()) {
-            to_be_released.push_back(priv);
-            iter = wrapped_gobject_list.erase(iter);
-        } else {
-            iter++;
+    ObjectInstance *link = wrapped_gobject_list;
+    while (link) {
+        ObjectInstance *next = link->instance_link.next();
+        if (link->keep_alive.rooted()) {
+            to_be_released.push_back(link);
+            object_instance_unlink(link);
         }
+
+        link = next;
     }
     for (ObjectInstance *priv : to_be_released)
         release_native_object(priv);
@@ -1209,16 +1293,17 @@ update_heap_wrapper_weak_pointers(JSContext     *cx,
 {
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Weak pointer update callback, "
                         "%zu wrapped GObject(s) to examine",
-                        wrapped_gobject_list.size());
+                        wrapped_gobject_list->instance_link.size());
 
     std::vector<GObject *> to_be_disassociated;
+    ObjectInstance *priv = wrapped_gobject_list;
 
-    for (auto iter = wrapped_gobject_list.begin(); iter != wrapped_gobject_list.end(); ) {
-        ObjectInstance *priv = *iter;
-        if (priv->keep_alive.rooted() || priv->keep_alive == nullptr ||
-            !priv->keep_alive.update_after_gc()) {
-            iter++;
-        } else {
+    while (priv) {
+        ObjectInstance *next = priv->instance_link.next();
+
+        if (!priv->keep_alive.rooted() &&
+            priv->keep_alive != nullptr &&
+            priv->keep_alive.update_after_gc()) {
             /* Ouch, the JS object is dead already. Disassociate the
              * GObject and hope the GObject dies too. (Remove it from
              * the weak pointer list first, since the disassociation
@@ -1229,8 +1314,10 @@ update_heap_wrapper_weak_pointers(JSContext     *cx,
                                 "%p (%s)", priv->keep_alive.get(), priv->gobj,
                                 G_OBJECT_TYPE_NAME(priv->gobj));
             to_be_disassociated.push_back(priv->gobj);
-            iter = wrapped_gobject_list.erase(iter);
+            object_instance_unlink(priv);
         }
+
+        priv = next;
     }
 
     for (GObject *gobj : to_be_disassociated)
@@ -1263,7 +1350,7 @@ associate_js_gobject (JSContext       *context,
     set_object_qdata(gobj, priv);
 
     ensure_weak_pointer_callback(context);
-    wrapped_gobject_list.insert(priv);
+    object_instance_link(priv);
 
     g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, priv);
 
@@ -1541,7 +1628,7 @@ object_instance_finalize(JSFreeOp  *fop,
 
         priv->keep_alive.reset();
     }
-    wrapped_gobject_list.erase(priv);
+    object_instance_unlink(priv);
 
     if (priv->info) {
         g_base_info_unref( (GIBaseInfo*) priv->info);
