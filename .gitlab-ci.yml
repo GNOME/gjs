@@ -70,7 +70,7 @@ fedora:
   <<: *build
   when: always
   stage: test
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: claudioandre/spidermonkey:job-400.5
   variables:
     CC: gcc
     DEV: devel
