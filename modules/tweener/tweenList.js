@@ -88,6 +88,8 @@ TweenList.prototype = {
             tween.onErrorScope = this.onErrorScope;
         }
         tween.rounded = this.rounded;
+        tween.min = this.min;
+        tween.max = this.max;
         tween.isPaused = this.isPaused;
         tween.timePaused = this.timePaused;
         tween.isCaller = this.isCaller;
