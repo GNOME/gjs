@@ -1,3 +1,68 @@
+Version 1.52.1
+--------------
+
+- This version has more changes than would normally be expected from a stable
+  version. The intention of 1.52.1 is to deliver a version that runs cleaner
+  under performance tools, in time for the upcoming GNOME Shell performance
+  hackfest. We also wanted to deliver a stable CI pipeline before branching
+  GNOME 3.28 off of master.
+
+- Claudio André's work on the CI pipeline deserves a spotlight. We now have
+  test jobs that run linters, sanitizers, Valgrind, and more; the tests are
+  run on up-to-date Docker images; and the reliability errors that were plaguing
+  the test runs are solved.
+
+- In addition to System.dumpHeap(), you can now dump a heap from a running
+  Javascript program by starting it with the environment variable
+  GJS_DEBUG_HEAP_OUTPUT=some_name, and sending it SIGUSR1.
+
+- heapgraph.py is a tool in the repository (not installed in distributions) for
+  analyzing and graphing heap dumps, to aid with tracking down memory leaks.
+
+- The linter CI jobs will compare your branch against GNOME/gjs@master, and fail
+  if your branch added any new linter errors. There may be false positives, and
+  the rules configuration is not perfect. If that's the case on your merge
+  request, you can skip the appropriate linter job by adding the text
+  "[skip (linter)]" in your commit message: e.g., "[skip cpplint]".
+
+- We welcomed first merge requests from several new contributors for this
+  release.
+
+- Closed bugs and merge requests:
+
+  * Crash when resolving promises if exception is pending [#18, !95, Philip
+    Chimento]
+  * gjs_byte_array_get_proto(JSContext*): assertion failed: (((void) "gjs_"
+    "byte_array" "_define_proto() must be called before " "gjs_" "byte_array"
+    "_get_proto()", !v_proto.isUndefined())) [#39, !92, Philip Chimento]
+  * Tools for examining heap graph [#116, !61, !118, Andy Holmes, Tommi
+    Komulainen, Philip Chimento]
+  * Run analysis tools to prepare for release [#120, !88, Philip Chimento]
+  * Add support for passing flags to Gio.DBusProxy in makeProxyWrapper [#122,
+    !81, Florian Müllner]
+  * Cannot instantiate Cairo.Context [#126, !91, Philip Chimento]
+  * GISCAN GjsPrivate-1.0.gir fails [#128, !90, Philip Chimento]
+  * Invalid read of g_object_finalized flag [#129, !117, Philip Chimento]
+  * Fix race condition in coverage file test [#130, !99, Philip Chimento]
+  * Linter jobs should only fail if new lint errors were added [#133, !94,
+    Philip Chimento]
+  * Disable all tests that depends on X if there is no XServer [#135, !109,
+    Claudio André]
+  * Pick a different C++ linter [#137, !102, Philip Chimento]
+  * Create a CI test that builds using autotools only [!74, Claudio André]
+  * CI: enable ASAN [!89, Claudio André]
+  * CI: disable static analysis jobs using the commit message [!93, Claudio
+    André]
+  * profiler: Don't assume layout of struct sigaction [!96, James Cowgill]
+  * Valgrind [!98, Claudio André]
+  * Robustness of CI [!103, Claudio André]
+  * CI: make a separate job for installed tests [!106, Claudio André]
+  * Corrected Markdown format and added links to JHBuild in setup guide for GJS
+    [!111, Avi Zajac]
+  * Update tweener.js -- 48 eslint errors fixed [!112, Karen Medina]
+  * Various maintenance [!100, !104, !105, !107, !110, !113, !116, Claudio
+    André, Philip Chimento]
+
 Version 1.52.0
 --------------
 
