@@ -247,10 +247,12 @@ public:
         m_data = data;
         m_root = new JS::PersistentRooted<T>(m_cx, thing);
 
-        auto gjs_cx = static_cast<GjsContext *>(JS_GetContextPrivate(m_cx));
-        g_assert(GJS_IS_CONTEXT(gjs_cx));
-        g_object_weak_ref(G_OBJECT(gjs_cx), on_context_destroy, this);
-        m_has_weakref = true;
+        if (notify) {
+            auto gjs_cx = static_cast<GjsContext *>(JS_GetContextPrivate(m_cx));
+            g_assert(GJS_IS_CONTEXT(gjs_cx));
+            g_object_weak_ref(G_OBJECT(gjs_cx), on_context_destroy, this);
+            m_has_weakref = true;
+        }
     }
 
     /* You can only assign directly to the GjsMaybeOwned wrapper in the
