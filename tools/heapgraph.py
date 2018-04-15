@@ -301,7 +301,6 @@ tree_graph_paths = {}
 
 
 class style:
-    DIM = '\033[30m'
     BOLD = '\033[1m'
     ITALIC = '\033[3m'
     UNDERLINE = '\033[4m'
@@ -352,13 +351,6 @@ def get_node_label(graph, addr):
     return label[:50]
 
 
-def get_root_label(graph, root):
-    # This won't work on Windows.
-    #label = re.sub(r'0x[0-9a-f]{8}', '*', graph.root_labels[root])
-    label = graph.root_labels[root]
-    return '(ROOT) {}'.format(label)
-
-
 def output_tree_graph(graph, data, base='', parent=''):
     while data:
         addr, children = data.popitem()
@@ -375,9 +367,9 @@ def output_tree_graph(graph, data, base='', parent=''):
         # Color/Style
         if os.isatty(1):
             if parent:
-                edge = style.DIM + edge + style.END
-            else:
                 edge = style.ITALIC + edge + style.END
+            else:
+                edge = style.BOLD + edge + style.END
 
             orig = style.UNDERLINE + 'jsobj@' + addr + style.END
 
