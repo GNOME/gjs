@@ -143,6 +143,29 @@
    fun:cairo_show_text
 }
 
+# Data that Cairo keeps around for the process lifetime
+# This could be freed by calling cairo_debug_reset_static_data(), but it's
+# not a good idea to call that function in production, because certain versions
+# of Cairo have bugs that cause it to fail assertions and crash.
+{
+   cairo-static-data
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   ...
+   fun:FcPatternDuplicate
+   fun:_cairo_ft_font_face_create_for_pattern
+   fun:_cairo_ft_font_face_create_for_toy
+   fun:_cairo_toy_font_face_create_impl_face
+   fun:_cairo_toy_font_face_init
+   fun:cairo_toy_font_face_create
+   fun:_cairo_gstate_ensure_font_face}
+   fun:_cairo_gstate_ensure_scaled_font
+   fun:_cairo_gstate_get_scaled_font
+   fun:_cairo_default_context_get_scaled_font
+   fun:cairo_show_text
+}
+
 # SpiderMonkey data races
 
 # These are in SpiderMonkey's atomics / thread barrier stuff so presumably
