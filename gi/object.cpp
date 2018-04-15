@@ -144,6 +144,7 @@ using ParamRef = std::unique_ptr<GParamSpec, decltype(&g_param_spec_unref)>;
 using ParamRefArray = std::vector<ParamRef>;
 static std::unordered_map<GType, ParamRefArray> class_init_properties;
 
+static bool context_weak_pointer_callback = false;
 static bool weak_pointer_callback = false;
 ObjectInstance *wrapped_gobject_list;
 
@@ -1043,20 +1044,24 @@ wrapped_gobj_dispose_notify(gpointer      data,
 }
 
 static void
-gobj_no_longer_kept_alive_func(JS::HandleObject obj,
-                               void            *data)
+context_dispose_notify(gpointer      data,
+                       GObject      *where_the_object_was)
 {
-    ObjectInstance *priv;
+    ObjectInstance *priv = wrapped_gobject_list;
+    while (priv) {
+        ObjectInstance *next = priv->instance_link.next();
 
-    priv = (ObjectInstance *) data;
+        if (priv->keep_alive.rooted()) {
+            gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "GObject wrapper %p for GObject "
+                                "%p (%s) was rooted but is now unrooted due to "
+                                "GjsContext dispose", obj.get(), priv->gobj,
+                                G_OBJECT_TYPE_NAME(priv->gobj));
+            priv->keep_alive.reset();
+            object_instance_unlink(priv);
+        }
 
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "GObject wrapper %p for GObject "
-                        "%p (%s) was rooted but is now unrooted due to "
-                        "GjsContext dispose", obj.get(), priv->gobj,
-                        G_OBJECT_TYPE_NAME(priv->gobj));
-
-    priv->keep_alive.reset();
-    object_instance_unlink(priv);
+        priv = next;
+    }
 }
 
 static void
@@ -1124,7 +1129,7 @@ handle_toggle_up(GObject   *gobj)
         GjsContext *context = gjs_context_get_current();
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Rooting object");
         auto cx = static_cast<JSContext *>(gjs_context_get_native_context(context));
-        priv->keep_alive.switch_to_rooted(cx, gobj_no_longer_kept_alive_func, priv);
+        priv->keep_alive.switch_to_rooted(cx);
     }
 }
 
@@ -1363,6 +1368,16 @@ ensure_weak_pointer_callback(JSContext *cx)
 }
 
 static void
+ensure_context_weak_pointer_callback(JSContext *cx)
+{
+    if (!context_weak_pointer_callback) {
+        auto gjs_cx = static_cast<GjsContext *>(JS_GetContextPrivate(cx));
+        g_object_weak_ref(G_OBJECT(gjs_cx), context_dispose_notify, NULL);
+        context_weak_pointer_callback = true;
+    }
+}
+
+static void
 associate_js_gobject (JSContext       *context,
                       JS::HandleObject object,
                       GObject         *gobj)
@@ -1379,6 +1394,7 @@ associate_js_gobject (JSContext       *context,
 
     priv->keep_alive = object;
     ensure_weak_pointer_callback(context);
+    ensure_context_weak_pointer_callback(context);
     object_instance_link(priv);
 
     g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, priv);
@@ -1405,7 +1421,7 @@ ensure_uses_toggle_ref(JSContext      *cx,
      * wrappee).
      */
     priv->uses_toggle_ref = true;
-    priv->keep_alive.switch_to_rooted(cx, gobj_no_longer_kept_alive_func, priv);
+    priv->keep_alive.switch_to_rooted(cx);
     g_object_add_toggle_ref(priv->gobj, wrapped_gobj_toggle_notify, nullptr);
 
     /* We now have both a ref and a toggle ref, we only want the toggle ref.
