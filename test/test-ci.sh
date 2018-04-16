@@ -101,6 +101,14 @@ function do_Compare_With_Upstream_Master(){
     fi
 }
 
+function do_Check_Warnings(){
+
+    echo '-----------------------------------------'
+    cat compilation.log | grep "warning:" | awk '{total+=1}END{print "Total number of warnings: "total}'
+    echo '-----------------------------------------'
+
+}
+
 # ----------- Run the Tests -----------
 if [[ -n "${BUILD_OPTS}" ]]; then
     extra_opts="($BUILD_OPTS)"
@@ -164,7 +172,7 @@ if [[ $1 == "GJS" ]]; then
         echo "Autogen options: $ci_autogenargs"
         eval ./autogen.sh "$ci_autogenargs"
 
-        make -sj
+        make -sj 2>&1 | tee compilation.log
 
         if [[ $TEST == "distcheck" ]]; then
             make -s distcheck
@@ -172,6 +180,12 @@ if [[ $1 == "GJS" ]]; then
             make -s check
         fi
         make -sj install
+    fi
+
+    if [[ $WARNINGS == "count" ]]; then
+        echo
+        echo '-- Warnings Report --'
+        do_Check_Warnings
     fi
 
 elif [[ $1 == "GJS_EXTRA" ]]; then
