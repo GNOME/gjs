@@ -2,9 +2,8 @@ services:
   - docker
 
 stages:
-- static_analysis
+- source_check
 - test
-- build
 - thorough_tests
 - docs
 
@@ -65,20 +64,24 @@ stages:
        echo "***             See you soon              ***";
        echo "*********************************************";
     '
-
+#############################################
+# Able to test despite of any Docker image changes
+#############################################
 fedora:
   <<: *build
-  when: always
-  stage: test
-  image: claudioandre/spidermonkey:job-400.5  # temporarily pinned to old tag
+  stage: source_check
+  image: claudioandre/spidermonkey:job-400.5  # pinned on purpose
   variables:
     CC: gcc
     DEV: devel
     TEST: "check"
 
+#############################################
+# Regular tests
+#############################################
 ubuntu_gcc:
   <<: *build
-  stage: build
+  stage: test
   image: claudioandre/spidermonkey:ubuntu.dev.gcc
   variables:
     CC: gcc
@@ -89,7 +92,7 @@ ubuntu_gcc:
 
 ubuntu_clang:
   <<: *build
-  stage: build
+  stage: test
   image: claudioandre/spidermonkey:ubuntu.dev.gcc
   variables:
     CC: clang
@@ -100,7 +103,7 @@ ubuntu_clang:
 
 fedora_clang:
   <<: *build
-  stage: build
+  stage: test
   image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
   variables:
     CC: clang
@@ -174,37 +177,42 @@ codequality:
   only:
     - master@GNOME/gjs
 
+#############################################
+# Static Analyzers
+#############################################
 cppcheck:
   <<: *build
-  stage: static_analysis
+  stage: source_check
   image: claudioandre/spidermonkey:fedora.static.analysis
   variables:
     CODECHECK: "CPPCHECK"
 
 cpplint:
   <<: *build
-  stage: static_analysis
+  stage: source_check
   image: claudioandre/spidermonkey:fedora.static.analysis
   variables:
     CODECHECK: "CPPLINT"
 
 eslint:
   <<: *build
-  stage: static_analysis
+  stage: source_check
   image: claudioandre/spidermonkey:fedora.static.analysis
   variables:
     CODECHECK: "ESLINT"
 
 code_statistics:
   <<: *build
-  stage: static_analysis
+  stage: source_check
   image: claudioandre/spidermonkey:fedora.static.analysis
   variables:
     CODECHECK: "TOKEI"
   only:
     - master@GNOME/gjs
 
-# Publish Code Coverage Report
+#############################################
+# Publish the Code Coverage Report
+#############################################
 pages:
   stage: docs
   dependencies:
