@@ -10,6 +10,8 @@
       <object class="GtkLabel" id="label-child">
         <property name="label">Complex!</property>
         <property name="visible">True</property>
+        <signal name="grab-focus" handler="templateCallback" swapped="no"/>
+        <signal name="grab-focus" handler="templateObjCallback" object="Gjs_MyComplexGtkSubclassFromResource" swapped="no"/>
       </object>
     </child>
     <child>

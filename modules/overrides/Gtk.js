@@ -45,6 +45,16 @@ function _init() {
     }
 
     Gtk.Widget.prototype._init = function(params) {
+        if (this.constructor[Gtk.template]) {
+            Gtk.Widget.set_connect_func.call(this, (builder, obj, signalName, handlerName, connectObj, flags) => {
+                if (connectObj) {
+                    obj.connect(signalName, connectObj[handlerName].bind(connectObj));
+                } else {
+                    obj.connect(signalName, this[handlerName].bind(this));
+                }
+            });
+        }
+
         GObject.Object.prototype._init.call(this, params);
 
         if (this.constructor[Gtk.template]) {

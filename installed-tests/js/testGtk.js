@@ -17,6 +17,8 @@ const template = ' \
       <object class="GtkLabel" id="label-child"> \
         <property name="label">Complex!</property> \
         <property name="visible">True</property> \
+        <signal name="grab-focus" handler="templateCallback" swapped="no"/> \
+        <signal name="grab-focus" handler="templateObjCallback" object="Gjs_MyComplexGtkSubclass" swapped="no"/> \
       </object> \
     </child> \
     <child> \
@@ -52,6 +54,14 @@ MyComplexGtkSubclass.prototype.testChildrenExist = function() {
     expect(this._internal_label_child).toEqual(jasmine.anything());
 };
 
+MyComplexGtkSubclass.prototype.templateCallback = function(widget) {
+    this.templateChildEmitter = widget;
+};
+
+MyComplexGtkSubclass.prototype.templateObjCallback = function(widget) {
+    this.templateObjChildEmitter = widget;
+};
+
 const MyComplexGtkSubclassFromResource = GObject.registerClass({
     Template: 'resource:///org/gjs/jsunit/complex.ui',
     Children: ['label-child', 'label-child2'],
@@ -61,6 +71,14 @@ const MyComplexGtkSubclassFromResource = GObject.registerClass({
         expect(this.label_child).toEqual(jasmine.anything());
         expect(this.label_child2).toEqual(jasmine.anything());
         expect(this._internal_label_child).toEqual(jasmine.anything());
+    }
+
+    templateCallback(widget) {
+        this.templateChildEmitter = widget;
+    }
+
+    templateObjCallback(widget) {
+        this.templateObjChildEmitter = widget;
     }
 });
 
@@ -74,6 +92,7 @@ function validateTemplate(description, ClassName, pending=false) {
         beforeEach(function () {
             win = new Gtk.Window({ type: Gtk.WindowType.TOPLEVEL });
             content = new ClassName();
+            content.label_child.emit('grab-focus');
             win.add(content);
         });
 
@@ -89,6 +108,16 @@ function validateTemplate(description, ClassName, pending=false) {
         it('sets up internal template children with the correct widgets', function () {
             expect(content._internal_label_child.get_label())
                 .toEqual('Complex and internal!');
+        });
+
+        it('connects template callbacks to the correct handler without a connect object', function () {
+            expect(content.templateChildEmitter)
+                .toBe(content.label_child);
+        });
+
+        it('connects template callbacks to the correct handler with a connect object', function () {
+            expect(content.templateObjChildEmitter)
+                .toBe(content.label_child);
         });
 
         afterEach(function () {
