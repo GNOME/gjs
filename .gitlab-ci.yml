@@ -75,6 +75,7 @@ fedora:
     CC: gcc
     DEV: devel
     TEST: "check"
+    WARNINGS: "count"
 
 #############################################
 # Regular tests
