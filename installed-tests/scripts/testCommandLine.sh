@@ -99,6 +99,12 @@ else
     skip "System.exit() should still exit across an FFI boundary" "running under valgrind"
 fi
 
+# ensure the encoding of argv is being properly handled
+$gjs -c 'imports.system.exit((ARGV[0] !== "Valentín") ? 1 : 0)' "Valentín"
+report "Basic unicode encoding (accents, etc) should be functioning properly for ARGV and imports."
+$gjs -c 'imports.system.exit((ARGV[0] !== "☭") ? 1 : 0)' "☭"
+report "Unicode encoding for symbols should be functioning properly for ARGV and imports."
+
 # gjs --help prints GJS help
 $gjs --help >/dev/null
 report "--help should succeed"
