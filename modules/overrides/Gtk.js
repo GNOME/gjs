@@ -47,12 +47,12 @@ function _init() {
     Gtk.Widget.prototype._init = function(params) {
         if (this.constructor[Gtk.template]) {
             Gtk.Widget.set_connect_func.call(this, (builder, obj, signalName, handlerName, connectObj, flags) => {
-                connectObj = connectObj || this;
-
-                if (flags & GObject.ConnectFlags.AFTER) {
-                    obj.connect_after(signalName, connectObj[handlerName].bind(connectObj));
+                if (flags & GObject.ConnectFlags.SWAPPED) {
+                    throw new Error('Unsupported signal flag "swapped"');
+                } else if (flags & GObject.ConnectFlags.AFTER) {
+                    obj.connect_after(signalName, this[handlerName].bind(this));
                 } else {
-                    obj.connect(signalName, connectObj[handlerName].bind(connectObj));
+                    obj.connect(signalName, this[handlerName].bind(this));
                 }
             });
         }

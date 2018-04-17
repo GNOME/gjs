@@ -18,7 +18,6 @@ const template = ' \
         <property name="label">Complex!</property> \
         <property name="visible">True</property> \
         <signal name="grab-focus" handler="templateCallback" swapped="no"/> \
-        <signal name="grab-focus" handler="templateObjCallback" object="Gjs_MyComplexGtkSubclass" swapped="no"/> \
       </object> \
     </child> \
     <child> \
@@ -41,7 +40,11 @@ const MyComplexGtkSubclass = GObject.registerClass({
     Children: ['label-child', 'label-child2'],
     InternalChildren: ['internal-label-child'],
     CssName: 'complex-subclass',
-}, class MyComplexGtkSubclass extends Gtk.Grid {});
+}, class MyComplexGtkSubclass extends Gtk.Grid {
+    templateCallback(widget) {
+        this.callbackEmittedBy = widget;
+    }
+});
 
 // Sadly, putting this in the body of the class will prevent calling
 // get_template_child, since MyComplexGtkSubclass will be bound to the ES6
@@ -52,14 +55,6 @@ MyComplexGtkSubclass.prototype.testChildrenExist = function() {
 
     expect(this.label_child2).toEqual(jasmine.anything());
     expect(this._internal_label_child).toEqual(jasmine.anything());
-};
-
-MyComplexGtkSubclass.prototype.templateCallback = function(widget) {
-    this.templateChildEmitter = widget;
-};
-
-MyComplexGtkSubclass.prototype.templateObjCallback = function(widget) {
-    this.templateObjChildEmitter = widget;
 };
 
 const MyComplexGtkSubclassFromResource = GObject.registerClass({
@@ -74,11 +69,7 @@ const MyComplexGtkSubclassFromResource = GObject.registerClass({
     }
 
     templateCallback(widget) {
-        this.templateChildEmitter = widget;
-    }
-
-    templateObjCallback(widget) {
-        this.templateObjChildEmitter = widget;
+        this.callbackEmittedBy = widget;
     }
 });
 
@@ -110,14 +101,8 @@ function validateTemplate(description, ClassName, pending=false) {
                 .toEqual('Complex and internal!');
         });
 
-        it('connects template callbacks to the correct handler without a connect object', function () {
-            expect(content.templateChildEmitter)
-                .toBe(content.label_child);
-        });
-
-        it('connects template callbacks to the correct handler with a connect object', function () {
-            expect(content.templateObjChildEmitter)
-                .toBe(content.label_child);
+        it('connects template callbacks to the correct handler', function () {
+            expect(content.callbackEmittedBy).toBe(content.label_child);
         });
 
         afterEach(function () {
