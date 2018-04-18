@@ -70,6 +70,11 @@ struct ObjectInstance {
 
     unsigned js_object_finalized : 1;
     unsigned g_object_finalized  : 1;
+
+    /* True if this object has visible JS state, and thus its lifecycle is
+     * managed using toggle references. False if this object just keeps a
+     * hard ref on the underlying GObject, and may be finalized at will. */
+    bool uses_toggle_ref : 1;
 };
 
 static std::stack<JS::PersistentRootedObject> object_init_list;
@@ -85,6 +90,7 @@ extern struct JSClass gjs_object_instance_class;
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 
 static void            disassociate_js_gobject (GObject *gobj);
+static void ensure_uses_toggle_ref(JSContext *cx, ObjectInstance *priv);
 
 typedef enum {
     SOME_ERROR_OCCURRED = false,
@@ -152,7 +158,7 @@ get_object_qdata(GObject *gobj)
     auto priv = static_cast<ObjectInstance *>(g_object_get_qdata(gobj,
                                                                  gjs_object_priv_quark()));
 
-    if (priv && G_UNLIKELY(priv->js_object_finalized)) {
+    if (priv && priv->uses_toggle_ref && G_UNLIKELY(priv->js_object_finalized)) {
         g_critical("Object %p (a %s) resurfaced after the JS wrapper was finalized. "
                    "This is some library doing dubious memory management inside dispose()",
                    gobj, g_type_name(G_TYPE_FROM_INSTANCE(gobj)));
@@ -430,6 +436,9 @@ set_g_param_from_prop(JSContext          *context,
     case SOME_ERROR_OCCURRED:
         return false;
     case NO_SUCH_G_PROPERTY:
+        /* We need to keep the wrapper alive in order not to lose custom
+         * "expando" properties */
+        ensure_uses_toggle_ref(context, priv);
         return result.succeed();
     case VALUE_WAS_SET:
     default:
@@ -496,14 +505,7 @@ object_instance_set_prop(JSContext              *context,
     bool ret = true;
     bool g_param_was_set = false;
 
-    if (!gjs_get_string_id(context, id, &name))
-        return result.succeed();  /* not resolved, but no error */
-
     priv = priv_from_js(context, obj);
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Set prop '%s' hook obj %p priv %p",
-                     name.get(), obj.get(), priv);
-
     if (priv == nullptr)
         /* see the comment in object_instance_get_prop() on this */
         return result.succeed();
@@ -520,6 +522,18 @@ object_instance_set_prop(JSContext              *context,
         gjs_dumpstack();
         return result.succeed();
     }
+
+    if (!gjs_get_string_id(context, id, &name)) {
+        /* We need to keep the wrapper alive in order not to lose custom
+         * "expando" properties. In this case if gjs_get_string_id() is false
+         * then a number or symbol property was probably set. */
+        ensure_uses_toggle_ref(context, priv);
+        return result.succeed();  /* not resolved, but no error */
+    }
+
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
+                     "Set prop '%s' hook obj %p priv %p",
+                     name.get(), obj.get(), priv);
 
     ret = set_g_param_from_prop(context, priv, name, g_param_was_set, value_p, result);
     if (g_param_was_set || !ret)
@@ -1126,7 +1140,10 @@ static void
 release_native_object (ObjectInstance *priv)
 {
     priv->keep_alive.reset();
-    g_object_remove_toggle_ref(priv->gobj, wrapped_gobj_toggle_notify, NULL);
+    if (priv->uses_toggle_ref)
+        g_object_remove_toggle_ref(priv->gobj, wrapped_gobj_toggle_notify, nullptr);
+    else
+        g_object_unref(priv->gobj);
     priv->gobj = NULL;
 }
 
@@ -1256,16 +1273,28 @@ associate_js_gobject (JSContext       *context,
     ObjectInstance *priv;
 
     priv = priv_from_js(context, object);
+    priv->uses_toggle_ref = false;
     priv->gobj = gobj;
 
     g_assert(!priv->keep_alive.rooted());
 
     set_object_qdata(gobj, priv);
 
+    priv->keep_alive = object;
     ensure_weak_pointer_callback(context);
     wrapped_gobject_list.insert(priv);
 
     g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, priv);
+}
+
+static void
+ensure_uses_toggle_ref(JSContext      *cx,
+                       ObjectInstance *priv)
+{
+    if (priv->uses_toggle_ref)
+        return;
+
+    g_assert(!priv->keep_alive.rooted());
 
     /* OK, here is where things get complicated. We want the
      * wrapped gobj to keep the JSObject* wrapper alive, because
@@ -1278,8 +1307,14 @@ associate_js_gobject (JSContext       *context,
      * the wrapper to be garbage collected (and thus unref the
      * wrappee).
      */
-    priv->keep_alive.root(context, object, gobj_no_longer_kept_alive_func, priv);
-    g_object_add_toggle_ref(gobj, wrapped_gobj_toggle_notify, NULL);
+    priv->uses_toggle_ref = true;
+    priv->keep_alive.switch_to_rooted(cx, gobj_no_longer_kept_alive_func, priv);
+    g_object_add_toggle_ref(priv->gobj, wrapped_gobj_toggle_notify, nullptr);
+
+    /* We now have both a ref and a toggle ref, we only want the toggle ref.
+     * This may immediately remove the GC root we just added, since refcount
+     * may drop to 1. */
+    g_object_unref(priv->gobj);
 }
 
 static void
@@ -1322,11 +1357,16 @@ disassociate_js_gobject(GObject *gobj)
                    gobj, G_OBJECT_TYPE_NAME(gobj));
     }
 
+    /* Fist, remove the wrapper pointer from the wrapped GObject */
+    set_object_qdata(gobj, nullptr);
+
+    /* Now release all the resources the current wrapper has */
     invalidate_all_closures(priv);
     release_native_object(priv);
 
     /* Mark that a JS object once existed, but it doesn't any more */
     priv->js_object_finalized = true;
+    priv->keep_alive = nullptr;
 }
 
 static void
@@ -1383,6 +1423,7 @@ G_GNUC_END_IGNORE_DEPRECATIONS
          * we're not actually using it, so just let it get collected. Avoiding
          * this would require a non-trivial amount of work.
          * */
+        ensure_uses_toggle_ref(context, other_priv);
         object.set(other_priv->keep_alive);
         g_object_unref(gobj); /* We already own a reference */
         gobj = NULL;
@@ -1410,11 +1451,6 @@ G_GNUC_END_IGNORE_DEPRECATIONS
 
     if (priv->gobj == NULL)
         associate_js_gobject(context, object, gobj);
-    /* We now have both a ref and a toggle ref, we only want the
-     * toggle ref. This may immediately remove the GC root
-     * we just added, since refcount may drop to 1.
-     */
-    g_object_unref(gobj);
 
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "JSObject created with GObject %p (%s)",
                         priv->gobj, G_OBJECT_TYPE_NAME(priv->gobj));
@@ -1556,6 +1592,9 @@ object_instance_finalize(JSFreeOp  *fop,
     GJS_DEC_COUNTER(object);
     priv->~ObjectInstance();
     g_slice_free(ObjectInstance, priv);
+
+    /* Remove the ObjectInstance pointer from the JSObject */
+    JS_SetPrivate(obj, nullptr);
 }
 
 static JSObject *
@@ -1682,6 +1721,8 @@ real_connect_func(JSContext *context,
         gjs_dumpstack();
         return true;
     }
+
+    ensure_uses_toggle_ref(context, priv);
 
     if (argc != 2 || !argv[0].isString() || !JS::IsCallable(&argv[1].toObject())) {
         gjs_throw(context, "connect() takes two args, the signal name and the callback");
@@ -2122,9 +2163,6 @@ gjs_object_from_g_object(JSContext    *context,
 
         g_object_ref_sink(gobj);
         associate_js_gobject(context, obj, gobj);
-
-        /* see the comment in init_object_instance() for this */
-        g_object_unref(gobj);
 
         g_assert(priv->keep_alive == obj.get());
     }
@@ -2657,6 +2695,10 @@ gjs_object_custom_init(GTypeInstance *instance,
 
     associate_js_gobject(context, object, G_OBJECT (instance));
 
+    /* Custom JS objects will most likely have visible state, so
+     * just do this from the start */
+    ensure_uses_toggle_ref(context, priv);
+
     JS::RootedValue v(context);
     if (!gjs_object_get_property(context, object,
                                  GJS_STRING_INSTANCE_INIT, &v)) {
@@ -3108,6 +3150,9 @@ gjs_object_associate_closure(JSContext       *cx,
     ObjectInstance *priv = priv_from_js(cx, object);
     if (!priv)
         return false;
+
+    if (priv->gobj)
+        ensure_uses_toggle_ref(cx, priv);
 
     do_associate_closure(priv, closure);
     return true;
