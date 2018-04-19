@@ -90,6 +90,7 @@ struct _GjsContext {
     uint8_t exit_code;
 
     guint    auto_gc_id;
+    bool     force_gc;
 
     std::array<JS::PersistentRootedId*, GJS_STRING_LAST> const_strings;
 
@@ -592,19 +593,41 @@ trigger_gc_if_needed (gpointer user_data)
 {
     GjsContext *js_context = GJS_CONTEXT(user_data);
     js_context->auto_gc_id = 0;
-    gjs_gc_if_needed(js_context->context);
+
+    if (js_context->force_gc)
+        JS_GC(js_context->context);
+    else
+        gjs_gc_if_needed(js_context->context);
+
+    js_context->force_gc = false;
+
     return G_SOURCE_REMOVE;
 }
 
-void
-_gjs_context_schedule_gc_if_needed (GjsContext *js_context)
+
+static void
+_gjs_context_schedule_gc_internal(GjsContext *js_context,
+                                  bool        force_gc)
 {
     if (js_context->auto_gc_id > 0)
         return;
 
+    js_context->force_gc |= force_gc;
     js_context->auto_gc_id = g_idle_add_full(G_PRIORITY_LOW,
                                              trigger_gc_if_needed,
                                              js_context, NULL);
+}
+
+void
+_gjs_context_schedule_gc(GjsContext *js_context)
+{
+    _gjs_context_schedule_gc_internal(js_context, true);
+}
+
+void
+_gjs_context_schedule_gc_if_needed(GjsContext *js_context)
+{
+    _gjs_context_schedule_gc_internal(js_context, false);
 }
 
 void
