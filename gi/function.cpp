@@ -200,6 +200,14 @@ gjs_callback_closure(ffi_cif *cif,
     g_assert(trampoline);
     gjs_callback_trampoline_ref(trampoline);
 
+    if (G_UNLIKELY (!gjs_closure_is_valid(trampoline->js_function))) {
+        warn_about_illegal_js_callback(trampoline, "during shutdown",
+            "destroying a Clutter actor or GTK widget with ::destroy signal "
+            "connected, or using the destroy(), dispose(), or remove() vfuncs");
+        gjs_callback_trampoline_unref(trampoline);
+        return;
+    }
+
     context = gjs_closure_get_context(trampoline->js_function);
     if (G_UNLIKELY(_gjs_context_is_sweeping(context))) {
         warn_about_illegal_js_callback(trampoline, "during garbage collection",
