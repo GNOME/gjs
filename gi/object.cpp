@@ -1447,7 +1447,8 @@ disassociate_js_gobject(GObject *gobj)
     ObjectInstance *priv = get_object_qdata(gobj);
     bool had_toggle_down, had_toggle_up;
 
-    g_object_weak_unref(priv->gobj, wrapped_gobj_dispose_notify, priv);
+    if (!priv->g_object_finalized)
+        g_object_weak_unref(gobj, wrapped_gobj_dispose_notify, priv);
 
     /* FIXME: this check fails when JS code runs after the main loop ends,
      * because the idle functions are not dispatched without a main loop.
