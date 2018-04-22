@@ -4,6 +4,7 @@ GitLab has been set up with eslint for this project.  That's great, I applaud th
 
 I will merge this when they get around to adding a pretty-print button to the project editor which fixes the coding style.  Everyone else should do the same.  One person at GitLab investing the effort to add that button in order to get community contributions is not a lot to ask.  Asking every contributor to manually fix their edits, wait on failed pull requests etc, is a cancer on the contributors precious time, and bluntly I am not prepared to contribute to something that pisses away community man hours.
 
+Issue submitted here: [https://gitlab.com/gitlab-org/gitlab-ce/issues/45626](https://gitlab.com/gitlab-org/gitlab-ce/issues/45626)
 
 [![Build Status](https://gitlab.gnome.org/GNOME/gjs/badges/master/build.svg)](https://gitlab.gnome.org/GNOME/gjs/pipelines)
 [![coverage report](https://gitlab.gnome.org/GNOME/gjs/badges/master/coverage.svg)](https://gnome.pages.gitlab.gnome.org/gjs/)
