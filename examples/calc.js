@@ -1,10 +1,10 @@
-#!/usr/bin/env seed
+#!/usr/bin/env gjs
 
-Gdk = imports.gi.Gdk;
-Gtk = imports.gi.Gtk;
-GLib = imports.gi.GLib;
+var Gdk = imports.gi.Gdk;
+var Gtk = imports.gi.Gtk;
+var GLib = imports.gi.GLib;
 
-Gtk.init(Seed.argv);
+Gtk.init(null);
 
 var calc_val = "";
 
@@ -30,12 +30,12 @@ function pressed_equals(button){
     calc_val = calc_val.replace("sin", "Math.sin");
     calc_val = calc_val.replace("cos", "Math.cos");
     calc_val = calc_val.replace("tan", "Math.tan");
-    calc_val = eval(calc_val) + "";
+    calc_val = eval(calc_val);
     // Avoid rediculous amounts of precision from toString.
     if (calc_val == Math.floor(calc_val))
-	calc_val = Seed.sprintf("%d", calc_val);
-    else
-	calc_val = Seed.sprintf("%.4f", calc_val);
+	calc_val = Math.floor(calc_val);
+    else // bizzarely gjs loses str.toFixed() somehow?!
+	calc_val = Math.floor(calc_val*10000)/10000;
     label.set_markup("<span size='30000'>" + calc_val + "</span>");
 }
 
@@ -67,14 +67,14 @@ function pack_buttons(buttons, vbox){
 
     vbox.pack_start(hbox, true, true, 2);
 
-    for(i = 0; i <= 4; i++){
+    for(let i = 0; i <= 4; i++){
 	hbox.pack_start(buttons[i], true, true, 1);
     }
 }
 
 function create_button(str, func){
     var btn = new Gtk.Button({label:str});
-    btn.signal.clicked.connect(func);
+    btn.connect("clicked",func);
     return btn;
 }
 
@@ -120,8 +120,11 @@ function create_buttons(){
 var window = new Gtk.Window({title: "Calculator", resizable: false});
 
 window.resize(250, 250);
-window.signal.hide.connect(Gtk.main_quit);
-window.opacity = 0.95;
+window.connect("destroy", () => {
+    Gtk.main_quit();
+});
+
+window.opacity = 0.6;
 
 var label = new Gtk.Label({label: ""});
 label.set_alignment(1,0);
