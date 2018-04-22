@@ -17,6 +17,7 @@ const template = ' \
       <object class="GtkLabel" id="label-child"> \
         <property name="label">Complex!</property> \
         <property name="visible">True</property> \
+        <signal name="grab-focus" handler="templateCallback" swapped="no"/> \
       </object> \
     </child> \
     <child> \
@@ -39,7 +40,11 @@ const MyComplexGtkSubclass = GObject.registerClass({
     Children: ['label-child', 'label-child2'],
     InternalChildren: ['internal-label-child'],
     CssName: 'complex-subclass',
-}, class MyComplexGtkSubclass extends Gtk.Grid {});
+}, class MyComplexGtkSubclass extends Gtk.Grid {
+    templateCallback(widget) {
+        this.callbackEmittedBy = widget;
+    }
+});
 
 // Sadly, putting this in the body of the class will prevent calling
 // get_template_child, since MyComplexGtkSubclass will be bound to the ES6
@@ -62,6 +67,10 @@ const MyComplexGtkSubclassFromResource = GObject.registerClass({
         expect(this.label_child2).toEqual(jasmine.anything());
         expect(this._internal_label_child).toEqual(jasmine.anything());
     }
+
+    templateCallback(widget) {
+        this.callbackEmittedBy = widget;
+    }
 });
 
 const SubclassSubclass = GObject.registerClass(
@@ -74,6 +83,7 @@ function validateTemplate(description, ClassName, pending=false) {
         beforeEach(function () {
             win = new Gtk.Window({ type: Gtk.WindowType.TOPLEVEL });
             content = new ClassName();
+            content.label_child.emit('grab-focus');
             win.add(content);
         });
 
@@ -89,6 +99,10 @@ function validateTemplate(description, ClassName, pending=false) {
         it('sets up internal template children with the correct widgets', function () {
             expect(content._internal_label_child.get_label())
                 .toEqual('Complex and internal!');
+        });
+
+        it('connects template callbacks to the correct handler', function () {
+            expect(content.callbackEmittedBy).toBe(content.label_child);
         });
 
         afterEach(function () {
