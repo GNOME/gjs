@@ -70,7 +70,7 @@ stages:
 fedora:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:job-400.5  # pinned on purpose
+  image: claudioandre/spidermonkey:job-419.5  # pinned on purpose
   variables:
     CC: gcc
     DEV: devel
@@ -114,7 +114,7 @@ fedora_clang:
 no_profiler:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:job-400.5  # temporarily pinned to old tag
+  image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     CC: gcc
     DEV: devel
@@ -144,7 +144,7 @@ coverage:
 sanitizer_gcc:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:job-400.5  # temporarily pinned to old tag
+  image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     CC: gcc
     DEV: devel
@@ -232,7 +232,7 @@ pages:
 valgrind:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:job-400.5  # temporarily pinned to old tag
+  image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     CC: gcc
     DEV: devel
@@ -243,7 +243,7 @@ valgrind:
 no_graphics:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:job-400.5  # temporarily pinned to old tag
+  image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     CC: gcc
     DEV: devel
