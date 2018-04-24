@@ -250,3 +250,12 @@ no_graphics:
     TEST: "check"
     BUILD_OPTS: "--without-cairo --without-gtk"
   when: manual
+
+lts:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:ubuntu.lts.gcc
+  variables:
+    CC: gcc
+    TEST: "check"
+  when: manual
