@@ -45,7 +45,7 @@ function do_Configure_MainBuild(){
 
     cat <<EOFILE > ~/.config/jhbuildrc
 module_autogenargs['gjs'] = "$autogenargs"
-module_makeargs['gjs'] = '-s'
+module_makeargs['gjs'] = '-s -j 1'
 skip = ['gettext', 'yelp-xsl', 'yelp-tools', 'gtk-doc']
 use_local_modulesets = True
 disable_Werror = False
