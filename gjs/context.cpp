@@ -609,6 +609,8 @@ static void
 _gjs_context_schedule_gc_internal(GjsContext *js_context,
                                   bool        force_gc)
 {
+    js_context->force_gc |= force_gc;
+
     if (js_context->auto_gc_id > 0)
         return;
 
