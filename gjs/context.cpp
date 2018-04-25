@@ -599,6 +599,8 @@ trigger_gc_if_needed (gpointer user_data)
 void
 _gjs_context_schedule_gc_if_needed (GjsContext *js_context)
 {
+    js_context->force_gc |= force_gc;
+
     if (js_context->auto_gc_id > 0)
         return;
 
