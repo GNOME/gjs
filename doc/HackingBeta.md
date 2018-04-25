@@ -25,7 +25,14 @@ TBA
 
 ## Reading material
 
+### JavaScript & SpiderMonkey
+
 * TBA
+
+### Gnome Contribution
+
+* https://wiki.gnome.org/GitLab
+* https://wiki.gnome.org/Newcomers/
 
 ## Walkthroughs
 
