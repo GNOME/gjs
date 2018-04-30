@@ -219,6 +219,7 @@ public:
             return m_root->get() == nullptr;
         return m_heap.unbarrieredGet() == nullptr;
     }
+    inline bool operator!=(std::nullptr_t) const { return !(*this == nullptr); }
 
     /* You can get a Handle<T> if the thing is rooted, so that you can use this
      * wrapper with stack rooting. However, you must not do this if the
