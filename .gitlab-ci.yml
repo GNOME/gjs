@@ -33,6 +33,9 @@ stages:
        echo;
     '
 
+    # GitLab is keeping some files between jobs. Remove them.
+    - rm -rf configure Makefile *.log analysis
+
     # Run static code analysis	OR
     # Build GJS
     - 'if [[ -n "${CODECHECK}" ]]; then
