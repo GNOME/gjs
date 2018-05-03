@@ -118,6 +118,27 @@ function do_Compare_With_Upstream_Master(){
     fi
 }
 
+function do_Create_Artifacts_Folder(){
+
+    # Create the artifacts folders
+    save_dir="$(pwd)"
+
+    if [[ $1 == "GJS_COVERAGE" ]]; then
+         mkdir -p "$save_dir"/coverage; touch "$save_dir"/coverage/doing-"$1"
+    fi
+    mkdir -p "$save_dir"/analysis; touch "$save_dir"/analysis/doing-"$1"
+}
+
+function do_Get_Commit_Message(){
+
+    # Allow CI to skip jobs. Its goal is to simplify housekeeping.
+    # Disable tasks using the commit message. Possibilities are (and/or):
+    # [skip eslint]		[skip cpplint]		[skip cppcheck]
+    #
+    # Just add the "code" anywhere inside the commit message.
+    log_message=$(git log -n 1)
+}
+
 function do_Check_Warnings(){
 
     cat compilation.log | grep "warning:" | awk '{total+=1}END{print "Total number of warnings: "total}'
@@ -136,18 +157,8 @@ echo "Doing: $1"
 
 source test/extra/do_jhbuild.sh
 
-# Create the artifacts folders
-save_dir="$(pwd)"
-mkdir -p "$save_dir"/coverage; touch "$save_dir"/coverage/doing-"$1"
-mkdir -p "$save_dir"/cppcheck; touch "$save_dir"/cppcheck/doing-"$1"
-mkdir -p "$save_dir"/cpplint; touch "$save_dir"/cpplint/doing-"$1"
-mkdir -p "$save_dir"/eslint; touch "$save_dir"/eslint/doing-"$1"
-mkdir -p "$save_dir"/tokei; touch "$save_dir"/tokei/doing-"$1"
-
-# Allow CI to skip jobs. Its goal is to simplify housekeeping.
-# Disable tasks using the commit message. Possibilities are (and/or):
-# [skip eslint]		[skip cpplint]		[skip cppcheck]
-log_message=$(git log -n 1)
+do_Create_Artifacts_Folder "$1"
+do_Get_Commit_Message
 
 if [[ $1 == "GJS" ]]; then
     do_Set_Env
@@ -234,14 +245,14 @@ elif [[ $1 == "CPPCHECK" && "$log_message" != *'[skip cppcheck]'* ]]; then
     do_Print_Labels 'Static code analyzer report '
 
     cppcheck --inline-suppr --enable=warning,performance,portability,information,missingInclude --force -q . 2>&1 | \
-        tee "$save_dir"/cppcheck/current-report.txt | sed -E 's/:[0-9]+]/:LINE]/' > /cwd/current-report.txt
-    cat "$save_dir"/cppcheck/current-report.txt
+        tee "$save_dir"/analysis/current-report.txt | sed -E 's/:[0-9]+]/:LINE]/' > /cwd/current-report.txt
+    cat "$save_dir"/analysis/current-report.txt
     echo
 
     # Get the code committed at upstream master
     do_Get_Upstream_Master "cppCheck"
     cppcheck --inline-suppr --enable=warning,performance,portability,information,missingInclude --force -q . 2>&1 | \
-        tee "$save_dir"/cppcheck/master-report.txt | sed -E 's/:[0-9]+]/:LINE]/' > /cwd/master-report.txt
+        tee "$save_dir"/analysis/master-report.txt | sed -E 's/:[0-9]+]/:LINE]/' > /cwd/master-report.txt
     echo
 
     # Compare the report with master and fail if new warnings are found
@@ -251,14 +262,14 @@ elif [[ $1 == "CPPLINT"  && "$log_message" != *'[skip cpplint]'* ]]; then
     do_Print_Labels 'C/C++ Linter report '
 
     cpplint --quiet $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 | \
-        tee "$save_dir"/cpplint/current-report.txt | sed -E 's/:[0-9]+:/:LINE:/' > /cwd/current-report.txt
-    cat "$save_dir"/cpplint/current-report.txt
+        tee "$save_dir"/analysis/current-report.txt | sed -E 's/:[0-9]+:/:LINE:/' > /cwd/current-report.txt
+    cat "$save_dir"/analysis/current-report.txt
     echo
 
     # Get the code committed at upstream master
     do_Get_Upstream_Master "cppLint"
     cpplint --quiet $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 | \
-        tee "$save_dir"/cpplint/master-report.txt | sed -E 's/:[0-9]+:/:LINE:/' > /cwd/master-report.txt
+        tee "$save_dir"/analysis/master-report.txt | sed -E 's/:[0-9]+:/:LINE:/' > /cwd/master-report.txt
     echo
 
     # Compare the report with master and fail if new warnings are found
@@ -270,17 +281,17 @@ elif [[ $1 == "ESLINT" && "$log_message" != *'[skip eslint]'* ]]; then
     tmp_path=$(dirname "$CI_PROJECT_DIR")
 
     eslint examples installed-tests modules --format unix 2>&1 | \
-        tee "$save_dir"/eslint/current-report.txt | \
+        tee "$save_dir"/analysis/current-report.txt | \
         sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e "s,$tmp_path,," \
         > /cwd/current-report.txt
-        cat "$save_dir"/eslint/current-report.txt
+        cat "$save_dir"/analysis/current-report.txt
     echo
 
     # Get the code committed at upstream master
     do_Get_Upstream_Master "esLint"
     cp "$save_dir"/.eslint* .
     eslint examples installed-tests modules --format unix 2>&1 | \
-        tee "$save_dir"/eslint/master-report.txt | \
+        tee "$save_dir"/analysis/master-report.txt | \
         sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e "s,$tmp_path,," \
         > /cwd/master-report.txt
     echo
@@ -291,7 +302,7 @@ elif [[ $1 == "ESLINT" && "$log_message" != *'[skip eslint]'* ]]; then
 elif [[ $1 == "TOKEI" ]]; then
     do_Print_Labels 'Project statistics'
 
-    tokei . | tee "$save_dir"/tokei/report.txt
+    tokei . | tee "$save_dir"/analysis/report.txt
 fi
 
 # Releases stuff and finishes

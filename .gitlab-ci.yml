@@ -17,10 +17,7 @@ stages:
     - $(pwd)/.cache/jhbuild/build/gjs/Makefile
     - $(pwd)/.cache/jhbuild/build/gjs/configure
     - $(pwd)/coverage/
-    - $(pwd)/cppcheck/
-    - $(pwd)/cpplint/
-    - $(pwd)/eslint/
-    - $(pwd)/tokei/
+    - $(pwd)/analysis/
     - $(pwd)/gjs-1.*/_build/sub/test-suite.log
     - $(pwd)/*.log
     - $(pwd)/Makefile
