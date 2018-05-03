@@ -1,0 +1,28 @@
+{
+    "id": "org.gnome.GjsDev",
+    "runtime": "org.gnome.Platform",
+    "runtime-version": "master",
+    "sdk": "org.gnome.Sdk",
+    "command": "gjs-console",
+    "tags": ["unstable", "development"],
+    "finish-args": [
+        "--filesystem=host",
+        "--share=ipc",
+        "--socket=x11",
+        "--socket=wayland"
+    ],
+    "modules": [
+        {
+            "name": "gjs",
+            "buildsystem": "autotools",
+            "builddir": true,
+            "sources": [
+                {
+                    "type": "git",
+                    "branch": "<<current>>",
+                    "path": "."
+                }
+            ]
+        }
+    ]
+}

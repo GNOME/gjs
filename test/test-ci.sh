@@ -109,6 +109,14 @@ function do_Check_Warnings(){
 
 }
 
+function do_TMP_Prepare_Image(){
+    #TODO Remove me
+    dnf install -y flatpak flatpak-builder git #TODO create a F28 base image?
+    flatpak remote-add --from gnome https://sdk.gnome.org/gnome-nightly.flatpakrepo #TODO I guess there is an image ready out there
+    flatpak install gnome org.gnome.Sdk/x86_64/master #TODO (idem)
+    flatpak install gnome org.gnome.Platform/x86_64/master #TODO (idem)
+}
+
 # ----------- Run the Tests -----------
 if [[ -n "${BUILD_OPTS}" ]]; then
     extra_opts="($BUILD_OPTS)"
@@ -121,7 +129,7 @@ echo "Running on: $BASE $OS  $extra_opts"
 echo "Doing: $1"
 
 source test/extra/do_jhbuild.sh
-
+dnf install -y flatpak flatpak-builder git #TODO REMOVE me
 # Create the artifacts folders
 save_dir="$(pwd)"
 mkdir -p "$save_dir"/coverage; touch "$save_dir"/coverage/doing-"$1"
@@ -289,6 +297,22 @@ elif [[ $1 == "TOKEI" ]]; then
     echo
 
     tokei . | tee "$save_dir"/tokei/report.txt
+
+elif [[ $1 == "FLATPAK" ]]; then
+    echo
+    echo '-- Create a flatpak package --'
+    echo
+
+    do_TMP_Prepare_Image #TODO REMOVE me
+
+    # Move the manifest file to the right location
+    cp test/org.gnome.GjsDev.json .
+
+    # Ajust to the current branch
+    sed -i "s,<<current>>,origin/$CI_COMMIT_REF_NAME,g" org.gnome.GjsDev.json
+
+    flatpak-builder --bundle-sources --repo=devel build org.gnome.GjsDev.json
+    flatpak build-bundle devel gjs.flatpak org.gnome.GjsDev
 fi
 
 # Releases stuff and finishes
