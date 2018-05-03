@@ -1,8 +1,24 @@
 #!/bin/bash -e
 
+function do_Print_Labels(){
+
+    if [[ -n "${1}" ]]; then
+        label_len=${#1}
+        span=$(((54 - $label_len) / 2))
+
+        echo
+        echo "= ======================================================== ="
+        printf "%s %${span}s %s %${span}s %s\n" "=" "" "$1" "" "="
+        echo "= ======================================================== ="
+    else
+        echo "= ========================= Done ========================= ="
+        echo
+    fi
+}
+
 function do_Set_Env(){
-    echo
-    echo '-- Set Environment --'
+
+    do_Print_Labels 'Set Environment '
 
     #Save cache on $pwd (required by artifacts)
     mkdir -p "$(pwd)"/.cache
@@ -24,18 +40,18 @@ function do_Set_Env(){
         export DISPLAY=":0"
     fi
 
-    echo '-- Done --'
+    do_Print_Labels
 }
 
 function do_Done(){
+
     # Done. De-initializes whatever is needed
-    echo
-    echo '-- FINISHED --'
+    do_Print_Labels  'FINISHED'
 }
 
 function do_Build_Package_Dependencies(){
-    echo
-    echo "-- Building Dependencies for $1 --"
+
+    do_Print_Labels "Building Dependencies for $1"
     jhbuild list "$1"
 
     # Build package dependencies
@@ -44,29 +60,29 @@ function do_Build_Package_Dependencies(){
 
 function do_Show_Info(){
 
-    echo '--------------------------------'
+    echo '-----------------------------------------'
     echo 'Useful build system information'
     echo -n "Processors: "; grep -c ^processor /proc/cpuinfo
     grep ^MemTotal /proc/meminfo
     id; uname -a
     printenv
-    echo '--------------------------------'
+    echo '-----------------------------------------'
     cat /etc/*-release
-    echo '--------------------------------'
+    echo '-----------------------------------------'
 
     if [[ ! -z $CC ]]; then
         echo 'Compiler version'
         $CC --version
-        echo '--------------------------------'
+        echo '-----------------------------------------'
         $CC -dM -E -x c /dev/null
-        echo '--------------------------------'
+        echo '-----------------------------------------'
     fi
 }
 
 function do_Get_Upstream_Master(){
 
     if [[ "$CI_BUILD_REF_SLUG" == "master" && "$CI_PROJECT_PATH_SLUG" == "gnome-gjs" ]]; then
-        echo '--------------------------------'
+        echo '-----------------------------------------'
         echo 'Running against upstream master'
         echo "=> $1 Nothing to do"
 
@@ -74,17 +90,17 @@ function do_Get_Upstream_Master(){
         exit 0
     fi
 
-    echo '--------------------------------'
+    echo '-----------------------------------------'
     echo 'Cloning upstream master'
 
     mkdir -p ~/tmp-upstream; cd ~/tmp-upstream || exit 1
     git clone --depth 1 https://gitlab.gnome.org/GNOME/gjs.git; cd gjs || exit 1
-    echo '--------------------------------'
+    echo '-----------------------------------------'
 }
 
 function do_Compare_With_Upstream_Master(){
 
-    echo '--------------------------------'
+    echo '-----------------------------------------'
     echo 'Compare the working code with upstream master'
 
     NEW_WARNINGS=$(comm -13 <(sort < /cwd/master-report.txt) <(sort < /cwd/current-report.txt) | wc -l)
@@ -104,10 +120,7 @@ function do_Compare_With_Upstream_Master(){
 
 function do_Check_Warnings(){
 
-    echo '-----------------------------------------'
     cat compilation.log | grep "warning:" | awk '{total+=1}END{print "Total number of warnings: "total}'
-    echo '-----------------------------------------'
-
 }
 
 # ----------- Run the Tests -----------
@@ -153,13 +166,10 @@ if [[ $1 == "GJS" ]]; then
 
     # Build and test the latest commit (merged or from a merge/pull request) of
     # Javascript Bindings for GNOME (gjs)
-    echo
-    echo '-- gjs status --'
+    do_Print_Labels 'Show GJS git information'
     git log --pretty=format:"%h %cd %s" -1
 
-    echo
-    echo '-- gjs build --'
-    echo
+    do_Print_Labels 'Do the GJS build'
 
     if [[ "$DEV" != "devel" ]]; then
         cp -r ./ ~/jhbuild/checkout/gjs
@@ -184,17 +194,15 @@ if [[ $1 == "GJS" ]]; then
     fi
 
     if [[ $WARNINGS == "count" ]]; then
-        echo
-        echo '-- Warnings Report --'
+        do_Print_Labels 'Warnings Report '
         do_Check_Warnings
+        do_Print_Labels
     fi
 
 elif [[ $1 == "GJS_EXTRA" ]]; then
-    # Extra testing. It doesn't (re)build, just run the 'Installed Tests'
-    echo
-    echo '-- Installed GJS tests --'
+    # It doesn't (re)build, just run the 'Installed Tests'
+    do_Print_Labels 'Run GJS installed tests'
     do_Set_Env
-    PATH=$PATH:~/.local/bin
 
     if [[ "$DEV" != "devel" ]]; then
         xvfb-run -a --server-args="-screen 0 1024x768x24" jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
@@ -203,32 +211,28 @@ elif [[ $1 == "GJS_EXTRA" ]]; then
     fi
 
 elif [[ $1 == "VALGRIND" ]]; then
-    # Run Valgrind. It doesn't (re)build, just run the 'Valgrind Tests'
-    echo
-    echo '-- Valgrind Report --'
+    # It doesn't (re)build, just run the 'Valgrind Tests'
+    do_Print_Labels 'Valgrind Report'
     do_Set_Env
-    PATH=$PATH:~/.local/bin
 
     make check-valgrind
 
 elif [[ $1 == "GJS_COVERAGE" ]]; then
-    # Code coverage test. It doesn't (re)build, just run the 'Coverage Tests'
-    echo
-    echo '-- Code Coverage Report --'
+    # It doesn't (re)build, just run the 'Coverage Tests'
+    do_Print_Labels 'Code Coverage Report'
     do_Set_Env
-    PATH=$PATH:~/.local/bin
 
     jhbuild run --in-builddir=gjs make check-code-coverage
     cp "$(pwd)"/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage.info "$save_dir"/coverage/
     cp -r "$(pwd)"/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage/* "$save_dir"/coverage/
 
-    echo '-----------------------------------------------------------------'
+    echo '-----------------------------------------'
     sed -e 's/<[^>]*>//g' "$(pwd)"/coverage/index.html | tr -d ' \t' | grep -A3 -P '^Lines:$'  | tr '\n' ' '; echo
-    echo '-----------------------------------------------------------------'
+    echo '-----------------------------------------'
 
 elif [[ $1 == "CPPCHECK" && "$log_message" != *'[skip cppcheck]'* ]]; then
-    echo
-    echo '-- Static code analyzer report --'
+    do_Print_Labels 'Static code analyzer report '
+
     cppcheck --inline-suppr --enable=warning,performance,portability,information,missingInclude --force -q . 2>&1 | \
         tee "$save_dir"/cppcheck/current-report.txt | sed -E 's/:[0-9]+]/:LINE]/' > /cwd/current-report.txt
     cat "$save_dir"/cppcheck/current-report.txt
@@ -244,8 +248,8 @@ elif [[ $1 == "CPPCHECK" && "$log_message" != *'[skip cppcheck]'* ]]; then
     do_Compare_With_Upstream_Master "cppCheck"
 
 elif [[ $1 == "CPPLINT"  && "$log_message" != *'[skip cpplint]'* ]]; then
-    echo
-    echo '-- Lint report --'
+    do_Print_Labels 'C/C++ Linter report '
+
     cpplint --quiet $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 | \
         tee "$save_dir"/cpplint/current-report.txt | sed -E 's/:[0-9]+:/:LINE:/' > /cwd/current-report.txt
     cat "$save_dir"/cpplint/current-report.txt
@@ -261,10 +265,10 @@ elif [[ $1 == "CPPLINT"  && "$log_message" != *'[skip cpplint]'* ]]; then
     do_Compare_With_Upstream_Master "cppLint"
 
 elif [[ $1 == "ESLINT" && "$log_message" != *'[skip eslint]'* ]]; then
+    do_Print_Labels 'Javascript Linter report'
+
     tmp_path=$(dirname "$CI_PROJECT_DIR")
 
-    echo
-    echo '-- Javascript linter report --'
     eslint examples installed-tests modules --format unix 2>&1 | \
         tee "$save_dir"/eslint/current-report.txt | \
         sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e "s,$tmp_path,," \
@@ -285,9 +289,7 @@ elif [[ $1 == "ESLINT" && "$log_message" != *'[skip eslint]'* ]]; then
     do_Compare_With_Upstream_Master "esLint"
 
 elif [[ $1 == "TOKEI" ]]; then
-    echo
-    echo '-- Project statistics --'
-    echo
+    do_Print_Labels 'Project statistics'
 
     tokei . | tee "$save_dir"/tokei/report.txt
 fi
