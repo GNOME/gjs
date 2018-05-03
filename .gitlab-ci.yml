@@ -8,7 +8,7 @@ stages:
 - docs
 
 .build: &build
-  when: on_success
+  when: manual
   artifacts:
     name: log
     when: always
@@ -25,6 +25,7 @@ stages:
     - $(pwd)/*.log
     - $(pwd)/Makefile
     - $(pwd)/configure
+    - $(pwd)/*.flatpak
 
   script:
     # CI starts here. Previous messages are GitLab Runner setup.
@@ -259,3 +260,14 @@ lts:
     CC: gcc
     TEST: "check"
   when: manual
+
+#############################################
+# Flatpak packaging
+#############################################
+packaging:
+  <<: *build
+  stage: source_check
+  image: fedora:28
+  variables:
+    CODECHECK: "FLATPAK"
+  when: always
