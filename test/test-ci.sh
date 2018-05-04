@@ -47,6 +47,7 @@ function do_Show_Info(){
     echo '--------------------------------'
     echo 'Useful build system information'
     echo -n "Processors: "; grep -c ^processor /proc/cpuinfo
+    grep ^MemTotal /proc/meminfo
     id; uname -a
     printenv
     echo '--------------------------------'
