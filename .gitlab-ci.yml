@@ -17,10 +17,7 @@ stages:
     - $(pwd)/.cache/jhbuild/build/gjs/Makefile
     - $(pwd)/.cache/jhbuild/build/gjs/configure
     - $(pwd)/coverage/
-    - $(pwd)/cppcheck/
-    - $(pwd)/cpplint/
-    - $(pwd)/eslint/
-    - $(pwd)/tokei/
+    - $(pwd)/analysis/
     - $(pwd)/gjs-1.*/_build/sub/test-suite.log
     - $(pwd)/*.log
     - $(pwd)/Makefile
@@ -36,36 +33,44 @@ stages:
        echo;
     '
 
-    # Run static code analysis OR
-    # Build dependencies and 'make' gjs
+    # GitLab is keeping some files between jobs. Remove them.
+    - rm -rf configure Makefile *.log analysis
+
+    # Run static code analysis	OR
+    # Build GJS
     - 'if [[ -n "${CODECHECK}" ]]; then
          $(pwd)/test/test-ci.sh "$CODECHECK";
        else
          $(pwd)/test/test-ci.sh GJS;
-       fi'
+       fi
+    '
 
-    # Run extra tests
+    # Run installed extra tests
     - 'if [[ $BUILD_OPTS == *"--enable-installed-tests"* ]]; then
          $(pwd)/test/test-ci.sh GJS_EXTRA;
-       fi'
+       fi
+    '
 
     # Run code coverage tests
     - 'if [[ $BUILD_OPTS == *"--enable-code-coverage"* ]]; then
          $(pwd)/test/test-ci.sh GJS_COVERAGE;
-       fi'
+       fi
+    '
 
     # Run valgrind
     - 'if [[ $BUILD_OPTS == *"--enable-valgrind"* ]]; then
          $(pwd)/test/test-ci.sh VALGRIND;
-       fi'
+       fi
+    '
 
     - 'echo;
        echo "*********************************************";
        echo "***             See you soon              ***";
        echo "*********************************************";
     '
+
 #############################################
-# Able to test despite of any Docker image changes
+# Run a test despite of any Docker image change
 #############################################
 fedora:
   <<: *build
