@@ -75,7 +75,7 @@ stages:
 fedora:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:job-419.5  # pinned on purpose
+  image: registry.gitlab.gnome.org/claudioandre/gjs:job-441.5  # pinned on purpose
   variables:
     CC: gcc
     DEV: devel
@@ -88,7 +88,7 @@ fedora:
 ubuntu_gcc:
   <<: *build
   stage: test
-  image: claudioandre/spidermonkey:ubuntu.dev.gcc
+  image: registry.gitlab.gnome.org/claudioandre/gjs:ubuntu.dev.gcc
   variables:
     CC: gcc
     DEV: devel
@@ -99,7 +99,7 @@ ubuntu_gcc:
 ubuntu_clang:
   <<: *build
   stage: test
-  image: claudioandre/spidermonkey:ubuntu.dev.gcc
+  image: registry.gitlab.gnome.org/claudioandre/gjs:ubuntu.dev.gcc
   variables:
     CC: clang
     DEV: devel
@@ -119,7 +119,7 @@ fedora_clang:
 no_profiler:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: registry.gitlab.gnome.org/claudioandre/gjs:fedora.dev.gcc
   variables:
     CC: gcc
     DEV: devel
@@ -129,7 +129,7 @@ no_profiler:
 installed_tests:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:ubuntu.dev.gcc
+  image: registry.gitlab.gnome.org/claudioandre/gjs:ubuntu.dev.gcc
   variables:
     CC: clang
     DEV: devel
@@ -138,7 +138,7 @@ installed_tests:
 coverage:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.27.gcc
+  image: registry.gitlab.gnome.org/claudioandre/gjs:fedora.27.gcc
   variables:
     CC: gcc
     BUILD_OPTS: "--enable-code-coverage"
@@ -149,7 +149,7 @@ coverage:
 sanitizer_gcc:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: registry.gitlab.gnome.org/claudioandre/gjs:fedora.dev.gcc
   variables:
     CC: gcc
     DEV: devel
@@ -189,28 +189,28 @@ codequality:
 cppcheck:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:fedora.static.analysis
+  image: registry.gitlab.gnome.org/claudioandre/gjs:fedora.static.analysis
   variables:
     CODECHECK: "CPPCHECK"
 
 cpplint:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:fedora.static.analysis
+  image: registry.gitlab.gnome.org/claudioandre/gjs:fedora.static.analysis
   variables:
     CODECHECK: "CPPLINT"
 
 eslint:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:fedora.static.analysis
+  image: registry.gitlab.gnome.org/claudioandre/gjs:fedora.static.analysis
   variables:
     CODECHECK: "ESLINT"
 
 code_statistics:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:fedora.static.analysis
+  image: registry.gitlab.gnome.org/claudioandre/gjs:fedora.static.analysis
   variables:
     CODECHECK: "TOKEI"
   only:
@@ -237,7 +237,7 @@ pages:
 valgrind:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: registry.gitlab.gnome.org/claudioandre/gjs:fedora.dev.gcc
   variables:
     CC: gcc
     DEV: devel
@@ -248,7 +248,7 @@ valgrind:
 no_graphics:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: registry.gitlab.gnome.org/claudioandre/gjs:fedora.dev.gcc
   variables:
     CC: gcc
     DEV: devel
@@ -259,7 +259,7 @@ no_graphics:
 lts:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:ubuntu.lts.gcc
+  image: registry.gitlab.gnome.org/claudioandre/gjs:ubuntu.lts.gcc
   variables:
     CC: gcc
     TEST: "check"
