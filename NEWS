@@ -1,3 +1,14 @@
+Version 1.52.3
+--------------
+
+- Closed bugs and merge requests:
+
+  * Include calc.js example from Seed [!130, William Barath, Philip Chimento]
+  * CI: Un-pin the Fedora Docker image [#141, !131, Claudio André]
+  * Reduce overhead of wrapped objects [#142, !121, Carlos Garnacho, Philip
+    Chimento]
+  * Various CI changes [!134, !136, Claudio André]
+
 Version 1.52.2
 --------------
 
