@@ -8,7 +8,7 @@ stages:
 - delivery
 
 .build: &build
-  when: on_success
+  when: manual
   artifacts:
     name: log
     when: always
@@ -283,4 +283,93 @@ packaging:
   environment:
     name: review/$CI_COMMIT_REF_NAME
     url: https://gitlab.gnome.org/$CI_PROJECT_PATH/-/jobs/$CI_JOB_ID/artifacts/raw/${BUNDLE}
+  when: manual
+
+#############################################
+# Create CI Docker Images
+#############################################
+.create_images: &create_images
+  image: docker:latest
+  variables:
+    DOCKER_DRIVER: overlay
+  services:
+    - docker:dind
+  script:
+    # CI starts here. Previous messages are GitLab Runner setup.
+    - 'echo;
+       echo "*********************************************";
+       echo "***     JavaScript bindings for GNOME     ***";
+       echo "***         Docker Image Creation         ***";
+       echo "*********************************************";
+       echo;
+    '
+
+    # To check if there are instruction in the log message
+    - export log_message=$(git log -n 1)
+
+    # Should the image be created?
+
+    - 'if [[ "$GJS_EVENT_TYPE" == "cron" || "$log_message" == *"[build images]"* ||
+             "$log_message" == *"[filter images]"* && "$log_message" != *"[$NAME]"* ]]; then
+         echo -e "\n*** BUILDING ***\n";
+       else
+         echo -e "\n*** NOTHING TO DO ***\n";
+         exit 0;
+       fi
+    '
+
+    # Where the real magic happens
+    - 'docker run -v $(pwd):/cwd -v $(pwd)/test/build-images-ci.sh:/build-images-ci.sh
+         -e BASE=$BASE -e OS=$IMAGE -e BUILD_OPTS=$BUILD_OPTS -e DEV=$DEV -e CC=gcc -e STATIC=$STATIC $IMAGE
+         bash -e -c "cd /cwd && test/build-images-ci.sh BUILD_MOZ"
+    '
+    - 'docker run --name $NAME -v $(pwd):/saved -v $(pwd)/test/build-images-ci.sh:/build-images-ci.sh
+         -e BASE=$BASE -e OS=$IMAGE -e DEV=$DEV -e CC=gcc -e STATIC=$STATIC $IMAGE
+         bash -e -c "cd /saved && test/build-images-ci.sh GET_FILES DOCKER"
+    '
+    - docker commit $NAME $REPO:$NAME
+
+    # Test the build (if requested)
+    - 'if [[ "$log_message" == *"[run test]"* && "$log_message" == *"[$NAME]"* ]]; then
+         rm -rf gjs && git clone https://github.com/GNOME/gjs.git && cd gjs;
+         docker run -v $(pwd):/cwd -e DEV=devel -e TEST=check -e CC=gcc $REPO:$NAME bash -e -c "cd /cwd && test/build-images-ci.sh GJS";
+       fi
+    '
+
+    # Prepare to publish
+    - docker tag $REPO:$NAME $REPO:job-$CI_JOB_ID
+    - docker images
+    - docker login registry.gitlab.gnome.org -u $DOCKER_USER -p $DOCKER_PASS
+
+    # Do not push (if requested)
+    - 'if [[ "$GJS_EVENT_TYPE" == "cron" || "$log_message" != *"[dont push]"* ]]; then
+         docker push $REPO;
+       fi
+    '
+
+    - 'echo;
+       echo "*********************************************";
+       echo "***             See you soon              ***";
+       echo "*********************************************";
+    '
+
+fedora.static.analysis:
+  <<: *create_images
+  stage: source_check
+  variables:
+    BASE: "fedora"
+    IMAGE: "fedora:rawhide"
+    NAME: "fedora.static.analysis"
+    REPO: "registry.gitlab.gnome.org/claudioandre/gjs"
+    STATIC: "yes"
+  when: manual
+
+ubuntu.lts.gcc:
+  <<: *create_images
+  stage: source_check
+  variables:
+    BASE: "debian"
+    IMAGE: "ubuntu:18.04"
+    NAME: "ubuntu.lts.gcc"
+    REPO: "registry.gitlab.gnome.org/claudioandre/gjs"
   when: manual
