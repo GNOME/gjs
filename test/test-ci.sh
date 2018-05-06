@@ -303,6 +303,20 @@ elif [[ $1 == "TOKEI" ]]; then
     do_Print_Labels 'Project statistics'
 
     tokei . | tee "$save_dir"/analysis/report.txt
+
+elif [[ $1 == "FLATPAK" ]]; then
+    do_Print_Labels 'Flatpak packaging'
+
+    # Move the manifest file to the root folder
+    cp test/*.json .
+
+    # Ajust to the current branch
+    sed -i "s,<<ID>>,$APPID,g" ${MANIFEST_PATH}
+    sed -i "s,<<master>>,master,g" ${MANIFEST_PATH}
+    sed -i "s,<<current>>,origin/$CI_COMMIT_REF_NAME,g" ${MANIFEST_PATH}
+
+    flatpak-builder --bundle-sources --repo=devel build ${MANIFEST_PATH}
+    flatpak build-bundle devel ${BUNDLE} --runtime-repo=${RUNTIME_REPO} ${APPID}
 fi
 
 # Releases stuff and finishes
