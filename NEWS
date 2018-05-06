@@ -1,3 +1,31 @@
+Version 1.53.1
+--------------
+
+- Improvements to garbage collection performance. Read for more information:
+  https://feaneron.com/2018/04/20/the-infamous-gnome-shell-memory-leak/
+
+- Now, when building a class from a UI template file (using the `Template`
+  parameter passed to `GObject.registerClass()`, for example) signals defined in
+  the UI template file will be automatically connected.
+
+- As an experimental feature, we now offer a flatpak built with each GJS commit,
+  including branches. You can use this to test your apps with a particular GJS
+  branch before it is merged. Look for it in the "Artifacts" section of the CI
+  pipeline.
+
+- Closed bugs and merge requests:
+
+  * Tweener: Add min/max properties [!67, Jason Hicks]
+  * `ARGV` encoding issues [#22, !108, Evan Welsh]
+  * Make GC much more aggressive [#62, !50, Giovanni Campagna, Georges Basile
+    Stavracas Neto, Philip Chimento]
+  * Queue GC when a GObject reference is toggled down [#140, !114, !127, Georges
+    Basile Stavracas Neto]
+  * overrides: support Gtk template callbacks [!124, Andy Holmes]
+  * Ensure not to miss the force_gc flag [#150, !132, Carlos Garnacho]
+  * Create a flatpak on CI [#153, !135, Claudio André]
+  * Readme update [!138, Claudio André]
+
 Version 1.52.3
 --------------
 
