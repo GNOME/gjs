@@ -1,0 +1,32 @@
+{
+    "id": "<<ID>>",
+    "branch": "<<master>>",
+    "runtime": "org.gnome.Platform",
+    "runtime-version": "master",
+    "sdk": "org.gnome.Sdk",
+    "command": "gjs-console",
+    "tags": ["unstable", "development"],
+    "finish-args": [
+        "--filesystem=host",
+        "--share=ipc",
+        "--share=network",
+        "--device=dri",
+        "--socket=x11",
+        "--socket=wayland",
+        "--socket=pulseaudio"
+    ],
+    "modules": [
+        {
+            "name": "gjs",
+            "buildsystem": "autotools",
+            "builddir": true,
+            "sources": [
+                {
+                    "type": "git",
+                    "branch": "<<current>>",
+                    "path": "."
+                }
+            ]
+        }
+    ]
+}
