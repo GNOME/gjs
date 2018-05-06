@@ -1,3 +1,28 @@
+Version 1.52.3
+--------------
+
+- Closed bugs and merge requests:
+
+  * Include calc.js example from Seed [!130, William Barath, Philip Chimento]
+  * CI: Un-pin the Fedora Docker image [#141, !131, Claudio André]
+  * Reduce overhead of wrapped objects [#142, !121, Carlos Garnacho, Philip
+    Chimento]
+  * Various CI changes [!134, !136, Claudio André]
+
+Version 1.52.2
+--------------
+
+- This is an unscheuled release in order to revert a commit that causes a crash
+  on exit, with some Cairo versions.
+
+- Closed bugs and merge requests:
+
+  * CI: pinned Fedora to old tag [!119, Claudio André]
+  * heapgraph.py: adjust terminal output style [!120, Andy Holmes]
+  * CI: small tweaks [!123, Claudio André]
+  * Warn about compilation warnings [!125, Claudio André]
+  * Miscellaneous commits [Philip Chimento, Jason Hicks]
+
 Version 1.52.1
 --------------
 
