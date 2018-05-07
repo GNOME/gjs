@@ -58,27 +58,6 @@ function do_Build_Package_Dependencies(){
     jhbuild build $(jhbuild list "$1" | sed '$d')
 }
 
-function do_Show_Info(){
-
-    echo '-----------------------------------------'
-    echo 'Useful build system information'
-    echo -n "Processors: "; grep -c ^processor /proc/cpuinfo
-    grep ^MemTotal /proc/meminfo
-    id; uname -a
-    printenv
-    echo '-----------------------------------------'
-    cat /etc/*-release
-    echo '-----------------------------------------'
-
-    if [[ ! -z $CC ]]; then
-        echo 'Compiler version'
-        $CC --version
-        echo '-----------------------------------------'
-        $CC -dM -E -x c /dev/null
-        echo '-----------------------------------------'
-    fi
-}
-
 function do_Get_Upstream_Master(){
 
     if [[ "$CI_BUILD_REF_SLUG" == "master" && "$CI_PROJECT_PATH_SLUG" == "gnome-gjs" ]]; then
@@ -155,7 +134,7 @@ echo '-- Environment --'
 echo "Running on: $BASE $OS  $extra_opts"
 echo "Doing: $1"
 
-source test/extra/do_jhbuild.sh
+source test/extra/do_environment.sh
 
 do_Create_Artifacts_Folder "$1"
 do_Get_Commit_Message
