@@ -1445,21 +1445,12 @@ disassociate_js_gobject(ObjectInstance *priv)
     if (!priv->g_object_finalized)
         g_object_weak_unref(priv->gobj, wrapped_gobj_dispose_notify, priv);
 
-    /* FIXME: this check fails when JS code runs after the main loop ends,
-     * because the idle functions are not dispatched without a main loop.
-     * The only situation I'm aware of where this happens is during the
-     * dbus_unregister stage in GApplication. Ideally this check should be an
-     * assertion.
-     * https://bugzilla.gnome.org/show_bug.cgi?id=778862
-     */
     auto& toggle_queue = ToggleQueue::get_default();
     std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(priv->gobj);
     if (had_toggle_down != had_toggle_up) {
-        g_critical("JS object wrapper for GObject %p (%s) is being released "
-                   "while toggle references are still pending. This may happen "
-                   "on exit in Gio.Application.vfunc_dbus_unregister(). If you "
-                   "encounter it another situation, please report a GJS bug.",
-                   priv->gobj, G_OBJECT_TYPE_NAME(priv->gobj));
+        g_error("JS object wrapper for GObject %p (%s) is being released while "
+                "toggle references are still pending.",
+                priv->gobj, G_OBJECT_TYPE_NAME(priv->gobj));
     }
 
     /* Fist, remove the wrapper pointer from the wrapped GObject */
