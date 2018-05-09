@@ -73,3 +73,24 @@ function do_Build_JHBuild(){
     echo '-- Done --'
     cd -
 }
+
+function do_Show_Info(){
+
+    echo '-----------------------------------------'
+    echo 'Useful build system information'
+    echo -n "Processors: "; grep -c ^processor /proc/cpuinfo
+    grep ^MemTotal /proc/meminfo
+    id; uname -a
+    printenv
+    echo '-----------------------------------------'
+    cat /etc/*-release
+    echo '-----------------------------------------'
+
+    if [[ ! -z $CC ]]; then
+        echo 'Compiler version'
+        $CC --version
+        echo '-----------------------------------------'
+        $CC -dM -E -x c /dev/null
+        echo '-----------------------------------------'
+    fi
+}
