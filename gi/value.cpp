@@ -934,24 +934,15 @@ gjs_value_from_g_value_internal(JSContext             *context,
         bool res;
         GArgument arg;
         GIArgInfo *arg_info;
-        GIBaseInfo *obj;
         GISignalInfo *signal_info;
         GITypeInfo type_info;
 
-        obj = g_irepository_find_by_gtype(NULL, signal_query->itype);
-        if (!obj) {
-            gjs_throw(context, "Signal argument with GType %s isn't introspectable",
-                      g_type_name(signal_query->itype));
-            return false;
-        }
-
-        signal_info = g_object_info_find_signal((GIObjectInfo*)obj, signal_query->signal_name);
-
+        signal_info = get_signal_info_if_available(signal_query);
         if (!signal_info) {
             gjs_throw(context, "Unknown signal.");
-            g_base_info_unref((GIBaseInfo*)obj);
             return false;
         }
+
         arg_info = g_callable_info_get_arg(signal_info, arg_n - 1);
         g_arg_info_load_type(arg_info, &type_info);
 
@@ -965,7 +956,6 @@ gjs_value_from_g_value_internal(JSContext             *context,
 
         g_base_info_unref((GIBaseInfo*)arg_info);
         g_base_info_unref((GIBaseInfo*)signal_info);
-        g_base_info_unref((GIBaseInfo*)obj);
         return res;
     } else if (g_type_is_a(gtype, G_TYPE_POINTER)) {
         gpointer pointer;
