@@ -219,8 +219,6 @@ bool        gjs_unichar_from_string          (JSContext       *context,
                                               JS::Value        string,
                                               gunichar        *result);
 
-const char* gjs_get_type_name                (JS::Value        value);
-
 /* Functions intended for more "internal" use */
 
 void gjs_maybe_gc (JSContext *context);

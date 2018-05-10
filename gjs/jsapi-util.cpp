@@ -638,29 +638,6 @@ gjs_call_function_value(JSContext                  *context,
     return result;
 }
 
-/* get a debug string for type tag in JS::Value */
-const char*
-gjs_get_type_name(JS::Value value)
-{
-    if (value.isNull()) {
-        return "null";
-    } else if (value.isUndefined()) {
-        return "undefined";
-    } else if (value.isInt32()) {
-        return "integer";
-    } else if (value.isDouble()) {
-        return "double";
-    } else if (value.isBoolean()) {
-        return "boolean";
-    } else if (value.isString()) {
-        return "string";
-    } else if (value.isObject()) {
-        return "object";
-    } else {
-        return "<unknown>";
-    }
-}
-
 #ifdef __linux__
 static void
 _linux_get_self_process_size (gulong *vm_size,
