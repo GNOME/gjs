@@ -1,5 +1,4 @@
-const GLib = imports.gi.GLib;
-const Regress = imports.gi.Regress;
+const {GLib, GObject, Regress} = imports.gi;
 const System = imports.system;
 
 describe('Introspected structs', function () {
@@ -286,5 +285,19 @@ describe('Garbage collection of introspected objects', function () {
         orphanObject();
         System.gc();
         GLib.idle_add(GLib.PRIORITY_LOW, () => done());
+    });
+});
+
+describe('Introspected interface', function () {
+    const Implementor = GObject.registerClass({
+        Implements: [Regress.TestInterface],
+    }, class Implementor extends GObject.Object {});
+
+    it('correctly emits interface signals', function () {
+        let obj = new Implementor();
+        let handler = jasmine.createSpy('handler').and.callFake(() => {});
+        obj.connect('interface-signal', handler);
+        obj.emit_signal();
+        expect(handler).toHaveBeenCalled();
     });
 });
