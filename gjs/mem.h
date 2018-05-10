@@ -41,19 +41,16 @@ typedef struct {
 GJS_DECLARE_COUNTER(everything)
 
 GJS_DECLARE_COUNTER(boxed)
-GJS_DECLARE_COUNTER(gerror)
 GJS_DECLARE_COUNTER(closure)
-GJS_DECLARE_COUNTER(database)
 GJS_DECLARE_COUNTER(function)
 GJS_DECLARE_COUNTER(fundamental)
+GJS_DECLARE_COUNTER(gerror)
 GJS_DECLARE_COUNTER(importer)
+GJS_DECLARE_COUNTER(interface)
 GJS_DECLARE_COUNTER(ns)
 GJS_DECLARE_COUNTER(object)
 GJS_DECLARE_COUNTER(param)
 GJS_DECLARE_COUNTER(repo)
-GJS_DECLARE_COUNTER(resultset)
-GJS_DECLARE_COUNTER(weakhash)
-GJS_DECLARE_COUNTER(interface)
 
 #define GJS_INC_COUNTER(name)                \
     do {                                        \
