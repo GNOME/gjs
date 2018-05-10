@@ -944,7 +944,7 @@ gjs_invoke_c_function(JSContext                             *context,
                                   g_base_info_get_namespace( (GIBaseInfo*) function->info),
                                   g_base_info_get_name( (GIBaseInfo*) function->info),
                                   g_base_info_get_name( (GIBaseInfo*) &arg_info),
-                                  gjs_get_type_name(current_arg));
+                                  JS::InformalValueTypeName(current_arg));
                         failed = true;
                         break;
                     }

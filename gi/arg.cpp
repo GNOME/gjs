@@ -1244,7 +1244,7 @@ throw_invalid_argument(JSContext      *context,
 
     gjs_throw(context, "Expected type %s for %s but got type '%s'",
               type_tag_to_human_string(arginfo),
-              display_name, gjs_get_type_name(value));
+              display_name, JS::InformalValueTypeName(value));
     g_free(display_name);
 }
 
@@ -1796,7 +1796,8 @@ gjs_value_to_g_argument(JSContext      *context,
                 if (arg->v_pointer == NULL) {
                     gjs_debug(GJS_DEBUG_GFUNCTION,
                               "conversion of JSObject %p type %s to type %s failed",
-                              &value.toObject(), gjs_get_type_name(value),
+                              &value.toObject(),
+                              JS::InformalValueTypeName(value),
                               g_base_info_get_name ((GIBaseInfo *)interface_info));
 
                     /* gjs_throw should have been called already */
@@ -1836,7 +1837,7 @@ gjs_value_to_g_argument(JSContext      *context,
             } else {
                 gjs_debug(GJS_DEBUG_GFUNCTION,
                           "JSObject type '%s' is neither null nor an object",
-                          gjs_get_type_name(value));
+                          JS::InformalValueTypeName(value));
                 wrong = true;
                 report_type_mismatch = true;
             }
