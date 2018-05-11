@@ -147,7 +147,11 @@ static std::unordered_map<GType, ParamRefArray> class_init_properties;
 static bool weak_pointer_callback = false;
 ObjectInstance *wrapped_gobject_list;
 
-extern struct JSClass gjs_object_instance_class;
+extern const js::Class gjs_object_instance_real_class;
+
+/* Bizarrely, the API for safely casting const js::Class * to const JSClass *
+ * is called "js::Jsvalify" */
+static JSClass gjs_object_instance_class = *js::Jsvalify(&gjs_object_instance_real_class);
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 
 static void            disassociate_js_gobject (GObject *gobj);
@@ -782,6 +786,82 @@ is_gobject_field_name(GIObjectInfo *info,
     g_base_info_unref(field_info);
     return true;
 }
+
+
+static bool
+object_instance_enumerate(JSContext        *context,
+                          JS::HandleObject  obj,
+                          JS::AutoIdVector &properties,
+                          bool              only_enumerable)
+{
+    ObjectInstance *priv;
+
+    guint i, k;
+    guint n_methods;
+    guint n_interfaces;
+
+    priv = priv_from_js(context, obj);
+
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Enumerate %s",
+                     g_type_name(priv->gtype));
+
+    GIObjectInfo *object_info = priv->info;
+
+    GType *interfaces = g_type_interfaces(priv->gtype, &n_interfaces);
+
+    for (i = 0; i < n_interfaces; i++) {
+        GIBaseInfo *base_info;
+        GIInterfaceInfo *iface_info;
+
+        base_info = g_irepository_find_by_gtype(g_irepository_get_default(),
+                                                interfaces[i]);
+
+        if (base_info == NULL) {
+            continue;
+        }
+
+        iface_info = (GIInterfaceInfo*) base_info;
+        n_methods = g_interface_info_get_n_methods(iface_info);
+
+        for (k = 0; k < n_methods; k++) {
+            GIFunctionInfo *meth_info;
+            GIFunctionInfoFlags flags;
+
+            meth_info = g_interface_info_get_method (iface_info, k);
+            flags = g_function_info_get_flags (meth_info);
+            if (flags & GI_FUNCTION_IS_METHOD) {
+                const char *symbol = g_function_info_get_symbol(meth_info);
+                properties.append(gjs_intern_string_to_id(context, symbol));
+            }
+
+            g_base_info_unref((GIBaseInfo*) meth_info);
+        }
+    }
+
+    g_free(interfaces);
+
+    if (object_info != NULL) {
+        n_methods = g_object_info_get_n_methods(object_info);
+
+        for (i = 0; i < n_methods; i++) {
+            GIFunctionInfo *meth_info;
+            GIFunctionInfoFlags flags;
+
+            meth_info = g_object_info_get_method(object_info, i);
+            flags = g_function_info_get_flags (meth_info);
+
+            if (flags & GI_FUNCTION_IS_METHOD) {
+                const char *symbol = g_function_info_get_symbol(meth_info);
+                properties.append(gjs_intern_string_to_id(context, symbol));
+            }
+
+            g_base_info_unref((GIBaseInfo*) meth_info);
+        }
+    }
+
+    return true;
+}
+
 
 /* The *resolved out parameter, on success, should be false to indicate that id
  * was not resolved; and true if id was resolved. */
@@ -1631,7 +1711,7 @@ closure_invalidated(void     *data,
 }
 
 static void
-object_instance_finalize(JSFreeOp  *fop,
+object_instance_finalize(js::FreeOp  *fop,
                          JSObject  *obj)
 {
     ObjectInstance *priv;
@@ -2024,7 +2104,7 @@ to_string_func(JSContext *context,
                                      priv->gobj, rec.rval());
 }
 
-static const struct JSClassOps gjs_object_class_ops = {
+static const struct js::ClassOps gjs_object_class_ops = {
     NULL,  /* addProperty */
     NULL,  /* deleteProperty */
     object_instance_get_prop,
@@ -2039,11 +2119,29 @@ static const struct JSClassOps gjs_object_class_ops = {
     object_instance_trace,
 };
 
-struct JSClass gjs_object_instance_class = {
+static const struct js::ObjectOps gjs_object_object_ops = {
+    NULL,  /* lookupProperty */
+    NULL,  /* defineProperty */
+    NULL,  /* hasProperty */
+    NULL,  /* getProperty */
+    NULL,  /* setProperty */
+    NULL,  /* getOwnPropertyDescriptor */
+    NULL,  /* deleteProperty */
+    NULL,  /* watch */
+    NULL,  /* unwatch */
+    NULL,  /* getElements */
+    object_instance_enumerate /* enumerate new */
+};
+
+const js::Class gjs_object_instance_real_class = {
     "GObject_Object",
     JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE,
-    &gjs_object_class_ops
+    &gjs_object_class_ops,
+    nullptr,
+    nullptr,
+    &gjs_object_object_ops
 };
+
 
 static bool
 init_func (JSContext *context,
