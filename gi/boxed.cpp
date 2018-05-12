@@ -838,12 +838,6 @@ define_boxed_class_fields(JSContext       *cx,
      * as well if doing it ahead of time caused to much start-up
      * memory overhead.
      */
-    if (n_fields > 256) {
-        g_warning("Only defining the first 256 fields in boxed type '%s'",
-                  g_base_info_get_name ((GIBaseInfo *)priv->info));
-        n_fields = 256;
-    }
-
     for (i = 0; i < n_fields; i++) {
         GIFieldInfo *field = g_struct_info_get_field (priv->info, i);
         const char *field_name = g_base_info_get_name ((GIBaseInfo *)field);
