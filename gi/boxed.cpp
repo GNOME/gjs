@@ -827,14 +827,14 @@ define_boxed_class_fields(JSContext       *cx,
      * error message. If we omitted fields or defined them read-only
      * we'd:
      *
-     *  - Storing a new property for a non-accessible field
+     *  - Store a new property for a non-accessible field
      *  - Silently do nothing when writing a read-only field
      *
      * Which is pretty confusing if the only reason a field isn't
      * writable is language binding or memory-management restrictions.
      *
      * We just go ahead and define the fields immediately for the
-     * class; doing it lazily in boxed_new_resolve() would be possible
+     * class; doing it lazily in boxed_resolve() would be possible
      * as well if doing it ahead of time caused to much start-up
      * memory overhead.
      */
