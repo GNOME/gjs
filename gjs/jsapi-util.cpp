@@ -138,15 +138,12 @@ throw_property_lookup_error(JSContext       *cx,
     /* remember gjs_throw() is a no-op if JS_GetProperty()
      * already set an exception
      */
-    GjsAutoJSChar name;
-    gjs_get_string_id(cx, property_name, &name);
-
     if (description)
-        gjs_throw(cx, "No property '%s' in %s (or %s)", name.get(), description,
-                  reason);
+        gjs_throw(cx, "No property '%s' in %s (or %s)",
+                  gjs_debug_id(property_name).c_str(), description, reason);
     else
-        gjs_throw(cx, "No property '%s' in object %p (or %s)", name.get(),
-                  obj.address(), reason);
+        gjs_throw(cx, "No property '%s' in object %p (or %s)",
+                  gjs_debug_id(property_name).c_str(), obj.get(), reason);
 }
 
 /* Returns whether the object had the property; if the object did
@@ -639,29 +636,6 @@ gjs_call_function_value(JSContext                  *context,
 
     JS_EndRequest(context);
     return result;
-}
-
-/* get a debug string for type tag in JS::Value */
-const char*
-gjs_get_type_name(JS::Value value)
-{
-    if (value.isNull()) {
-        return "null";
-    } else if (value.isUndefined()) {
-        return "undefined";
-    } else if (value.isInt32()) {
-        return "integer";
-    } else if (value.isDouble()) {
-        return "double";
-    } else if (value.isBoolean()) {
-        return "boolean";
-    } else if (value.isString()) {
-        return "string";
-    } else if (value.isObject()) {
-        return "object";
-    } else {
-        return "<unknown>";
-    }
 }
 
 #ifdef __linux__

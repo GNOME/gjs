@@ -113,13 +113,7 @@ interface_resolve(JSContext       *context,
                   bool            *resolved)
 {
     Interface *priv;
-    GjsAutoJSChar name;
     GIFunctionInfo *method_info;
-
-    if (!gjs_get_string_id(context, id, &name)) {
-        *resolved = false;
-        return true;
-    }
 
     priv = priv_from_js(context, obj);
 
@@ -130,6 +124,12 @@ interface_resolve(JSContext       *context,
      * from within GJS. In that case, it has no properties that need to be
      * resolved from within C code, as interfaces cannot inherit. */
     if (priv->info == NULL) {
+        *resolved = false;
+        return true;
+    }
+
+    GjsAutoJSChar name;
+    if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true;
     }

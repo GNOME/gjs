@@ -58,20 +58,19 @@ param_resolve(JSContext       *context,
     GIObjectInfo *info = NULL;
     GIFunctionInfo *method_info;
     Param *priv;
-    GjsAutoJSChar name;
     bool ret = false;
 
-    if (!gjs_get_string_id(context, id, &name)) {
-        *resolved = false;
-        return true; /* not resolved, but no error */
-    }
-
     priv = priv_from_js(context, obj);
-
     if (priv != NULL) {
         /* instance, not prototype */
         *resolved = false;
         return true;
+    }
+
+    GjsAutoJSChar name;
+    if (!gjs_get_string_id(context, id, &name)) {
+        *resolved = false;
+        return true; /* not resolved, but no error */
     }
 
     info = (GIObjectInfo*)g_irepository_find_by_gtype(g_irepository_get_default(), G_TYPE_PARAM);

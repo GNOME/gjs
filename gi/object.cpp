@@ -150,7 +150,7 @@ ObjectInstance *wrapped_gobject_list;
 extern struct JSClass gjs_object_instance_class;
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 
-static void            disassociate_js_gobject (GObject *gobj);
+static void disassociate_js_gobject(ObjectInstance *priv);
 static void ensure_uses_toggle_ref(JSContext *cx, ObjectInstance *priv);
 
 typedef enum {
@@ -438,16 +438,10 @@ object_instance_get_prop(JSContext              *context,
                          JS::HandleId            id,
                          JS::MutableHandleValue  value_p)
 {
-    ObjectInstance *priv;
-    GjsAutoJSChar name;
-
-    if (!gjs_get_string_id(context, id, &name))
-        return true; /* not resolved, but no error */
-
-    priv = priv_from_js(context, obj);
+    ObjectInstance *priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Get prop '%s' hook obj %p priv %p",
-                     name.get(), obj.get(), priv);
+                     "Get prop '%s' hook, obj %s, priv %p",
+                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str(), priv);
 
     if (priv == nullptr)
         /* If we reach this point, either object_instance_new_resolve
@@ -467,6 +461,10 @@ object_instance_get_prop(JSContext              *context,
         gjs_dumpstack();
         return true;
     }
+
+    GjsAutoJSChar name;
+    if (!gjs_get_string_id(context, id, &name))
+        return true; /* not resolved, but no error */
 
     if (!get_prop_from_g_param(context, obj, priv, name, value_p))
         return false;
@@ -562,11 +560,15 @@ object_instance_set_prop(JSContext              *context,
                          JS::ObjectOpResult&     result)
 {
     ObjectInstance *priv;
-    GjsAutoJSChar name;
     bool ret = true;
     bool g_param_was_set = false;
 
     priv = priv_from_js(context, obj);
+
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Set prop '%s' hook, obj %s, priv %p",
+                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str(),
+                     priv);
+
     if (priv == nullptr)
         /* see the comment in object_instance_get_prop() on this */
         return result.succeed();
@@ -584,6 +586,7 @@ object_instance_set_prop(JSContext              *context,
         return result.succeed();
     }
 
+    GjsAutoJSChar name;
     if (!gjs_get_string_id(context, id, &name)) {
         /* We need to keep the wrapper alive in order not to lose custom
          * "expando" properties. In this case if gjs_get_string_id() is false
@@ -591,10 +594,6 @@ object_instance_set_prop(JSContext              *context,
         ensure_uses_toggle_ref(context, priv);
         return result.succeed();  /* not resolved, but no error */
     }
-
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Set prop '%s' hook obj %p priv %p",
-                     name.get(), obj.get(), priv);
 
     ret = set_g_param_from_prop(context, priv, name, g_param_was_set, value_p, result);
     if (g_param_was_set || !ret)
@@ -792,20 +791,12 @@ object_instance_resolve(JSContext       *context,
                         bool            *resolved)
 {
     GIFunctionInfo *method_info;
-    ObjectInstance *priv;
-    GjsAutoJSChar name;
-
-    if (!gjs_get_string_id(context, id, &name)) {
-        *resolved = false;
-        return true; /* not resolved, but no error */
-    }
-
-    priv = priv_from_js(context, obj);
+    ObjectInstance *priv = priv_from_js(context, obj);
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Resolve prop '%s' hook obj %p priv %p (%s.%s) gobj %p %s",
-                     name.get(),
-                     obj.get(),
+                     "Resolve prop '%s' hook, obj %s, priv %p (%s.%s), gobj %p %s",
+                     gjs_debug_id(id).c_str(),
+                     gjs_debug_object(obj).c_str(),
                      priv,
                      priv && priv->info ? g_base_info_get_namespace (priv->info) : "",
                      priv && priv->info ? g_base_info_get_name (priv->info) : "",
@@ -837,9 +828,14 @@ object_instance_resolve(JSContext       *context,
                    priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
                    priv->gobj);
         gjs_dumpstack();
-
         *resolved = false;
         return true;
+    }
+
+    GjsAutoJSChar name;
+    if (!gjs_get_string_id(context, id, &name)) {
+        *resolved = false;
+        return true;  /* not resolved, but no error */
     }
 
     /* If we have no GIRepository information (we're a JS GObject subclass),
@@ -1334,7 +1330,7 @@ update_heap_wrapper_weak_pointers(JSContext     *cx,
                         "%zu wrapped GObject(s) to examine",
                         wrapped_gobject_list->instance_link.size());
 
-    std::vector<GObject *> to_be_disassociated;
+    std::vector<ObjectInstance *> to_be_disassociated;
     ObjectInstance *priv = wrapped_gobject_list;
 
     while (priv) {
@@ -1352,15 +1348,15 @@ update_heap_wrapper_weak_pointers(JSContext     *cx,
                                 "whose JS object %p is about to be finalized: "
                                 "%p (%s)", priv->keep_alive.get(), priv->gobj,
                                 G_OBJECT_TYPE_NAME(priv->gobj));
-            to_be_disassociated.push_back(priv->gobj);
+            to_be_disassociated.push_back(priv);
             object_instance_unlink(priv);
         }
 
         priv = next;
     }
 
-    for (GObject *gobj : to_be_disassociated)
-        disassociate_js_gobject(gobj);
+    for (ObjectInstance *ex_object : to_be_disassociated)
+        disassociate_js_gobject(ex_object);
 }
 
 static void
@@ -1442,33 +1438,23 @@ invalidate_all_closures(ObjectInstance *priv)
 }
 
 static void
-disassociate_js_gobject(GObject *gobj)
+disassociate_js_gobject(ObjectInstance *priv)
 {
-    ObjectInstance *priv = get_object_qdata(gobj);
     bool had_toggle_down, had_toggle_up;
 
     if (!priv->g_object_finalized)
-        g_object_weak_unref(gobj, wrapped_gobj_dispose_notify, priv);
+        g_object_weak_unref(priv->gobj, wrapped_gobj_dispose_notify, priv);
 
-    /* FIXME: this check fails when JS code runs after the main loop ends,
-     * because the idle functions are not dispatched without a main loop.
-     * The only situation I'm aware of where this happens is during the
-     * dbus_unregister stage in GApplication. Ideally this check should be an
-     * assertion.
-     * https://bugzilla.gnome.org/show_bug.cgi?id=778862
-     */
     auto& toggle_queue = ToggleQueue::get_default();
-    std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(gobj);
+    std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(priv->gobj);
     if (had_toggle_down != had_toggle_up) {
-        g_critical("JS object wrapper for GObject %p (%s) is being released "
-                   "while toggle references are still pending. This may happen "
-                   "on exit in Gio.Application.vfunc_dbus_unregister(). If you "
-                   "encounter it another situation, please report a GJS bug.",
-                   gobj, G_OBJECT_TYPE_NAME(gobj));
+        g_error("JS object wrapper for GObject %p (%s) is being released while "
+                "toggle references are still pending.",
+                priv->gobj, G_OBJECT_TYPE_NAME(priv->gobj));
     }
 
     /* Fist, remove the wrapper pointer from the wrapped GObject */
-    set_object_qdata(gobj, nullptr);
+    set_object_qdata(priv->gobj, nullptr);
 
     /* Now release all the resources the current wrapper has */
     invalidate_all_closures(priv);

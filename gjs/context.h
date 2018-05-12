@@ -102,6 +102,9 @@ bool gjs_profiler_chain_signal(GjsContext *context,
 GJS_EXPORT
 void            gjs_dumpstack                     (void);
 
+GJS_EXPORT
+const char *gjs_get_js_version(void);
+
 G_END_DECLS
 
 #endif  /* __GJS_CONTEXT_H__ */

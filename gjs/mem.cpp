@@ -35,38 +35,32 @@
 GJS_DEFINE_COUNTER(everything)
 
 GJS_DEFINE_COUNTER(boxed)
-GJS_DEFINE_COUNTER(gerror)
 GJS_DEFINE_COUNTER(closure)
-GJS_DEFINE_COUNTER(database)
 GJS_DEFINE_COUNTER(function)
 GJS_DEFINE_COUNTER(fundamental)
+GJS_DEFINE_COUNTER(gerror)
 GJS_DEFINE_COUNTER(importer)
+GJS_DEFINE_COUNTER(interface)
 GJS_DEFINE_COUNTER(ns)
 GJS_DEFINE_COUNTER(object)
 GJS_DEFINE_COUNTER(param)
 GJS_DEFINE_COUNTER(repo)
-GJS_DEFINE_COUNTER(resultset)
-GJS_DEFINE_COUNTER(weakhash)
-GJS_DEFINE_COUNTER(interface)
 
 #define GJS_LIST_COUNTER(name) \
     & gjs_counter_ ## name
 
 static GjsMemCounter* counters[] = {
     GJS_LIST_COUNTER(boxed),
-    GJS_LIST_COUNTER(gerror),
     GJS_LIST_COUNTER(closure),
-    GJS_LIST_COUNTER(database),
     GJS_LIST_COUNTER(function),
     GJS_LIST_COUNTER(fundamental),
+    GJS_LIST_COUNTER(gerror),
     GJS_LIST_COUNTER(importer),
+    GJS_LIST_COUNTER(interface),
     GJS_LIST_COUNTER(ns),
     GJS_LIST_COUNTER(object),
     GJS_LIST_COUNTER(param),
     GJS_LIST_COUNTER(repo),
-    GJS_LIST_COUNTER(resultset),
-    GJS_LIST_COUNTER(weakhash),
-    GJS_LIST_COUNTER(interface)
 };
 
 void

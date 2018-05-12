@@ -219,8 +219,6 @@ bool        gjs_unichar_from_string          (JSContext       *context,
                                               JS::Value        string,
                                               gunichar        *result);
 
-const char* gjs_get_type_name                (JS::Value        value);
-
 /* Functions intended for more "internal" use */
 
 void gjs_maybe_gc (JSContext *context);
@@ -384,5 +382,10 @@ bool gjs_object_require_converted_property(JSContext       *cx,
                                                  gjs_context_get_const_string(cx, property_name),
                                                  value);
 }
+
+std::string gjs_debug_string(JSString *str);
+std::string gjs_debug_symbol(JS::Symbol * const sym);
+std::string gjs_debug_value(JS::Value v);
+std::string gjs_debug_id(jsid id);
 
 #endif  /* __GJS_JSAPI_UTIL_H__ */
