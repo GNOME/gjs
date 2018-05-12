@@ -182,15 +182,14 @@ line_starting_with(const char *data,
 
 static char *
 write_statistics_and_get_coverage_data(GjsCoverage *coverage,
-                                       GFile       *lcov_output,
-                                       gsize       *coverage_data_length_return)
+                                       GFile       *lcov_output)
 {
     gjs_coverage_write_statistics(coverage);
 
     char  *coverage_data_contents;
 
     g_file_load_contents(lcov_output, NULL /* cancellable */,
-                         &coverage_data_contents, coverage_data_length_return,
+                         &coverage_data_contents, nullptr, /* length out */
                          NULL /* etag */,  NULL /* error */);
 
     g_debug("Coverage data:\n%s", coverage_data_contents);
@@ -221,12 +220,10 @@ static char *
 eval_script_and_get_coverage_data(GjsContext  *context,
                                   GjsCoverage *coverage,
                                   GFile       *script,
-                                  GFile       *lcov_output,
-                                  gsize       *coverage_data_length_return)
+                                  GFile       *lcov_output)
 {
     eval_script(context, script);
-    return write_statistics_and_get_coverage_data(coverage, lcov_output,
-                                                  coverage_data_length_return);
+    return write_statistics_and_get_coverage_data(coverage, lcov_output);
 }
 
 static void
@@ -381,8 +378,7 @@ test_previous_contents_preserved(gpointer      fixture_data,
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
 
     g_assert(strstr(coverage_data_contents, existing_contents) != NULL);
     g_free(coverage_data_contents);
@@ -404,8 +400,7 @@ test_new_contents_written(gpointer      fixture_data,
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
 
     /* We have new content in the coverage data */
     g_assert(strlen(existing_contents) != strlen(coverage_data_contents));
@@ -425,8 +420,7 @@ test_expected_source_file_name_written_to_coverage_data(gpointer      fixture_da
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
 
     char *expected_source_filename =
         get_output_path_for_script_on_disk(fixture->tmp_js_script, fixture->lcov_output_dir);
@@ -468,8 +462,7 @@ test_expected_entry_not_written_for_nonexistent_file(gpointer      fixture_data,
     GFile *doesnotexist = g_file_new_for_path("doesnotexist");
     char *coverage_data_contents =
         eval_script_and_get_coverage_data(fixture->context, fixture->coverage,
-                                          doesnotexist, fixture->lcov_output,
-                                          NULL);
+                                          doesnotexist, fixture->lcov_output);
 
     g_log_set_always_fatal(old_flags);
     g_log_set_default_handler(old_log_func, NULL);
@@ -558,8 +551,7 @@ test_single_branch_coverage_written_to_coverage_data(gpointer      fixture_data,
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
 
     const BranchLineData expected_branches[] = {
         { 2, 0, TAKEN },
@@ -613,8 +605,7 @@ test_multiple_branch_coverage_written_to_coverage_data(gpointer      fixture_dat
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
 
     const BranchLineData expected_branches[] = {
         { 3, 0, TAKEN },
@@ -665,8 +656,7 @@ test_branches_for_multiple_case_statements_fallthrough(gpointer      fixture_dat
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
 
     const BranchLineData expected_branches[] = {
         { 3, 0, TAKEN },
@@ -734,8 +724,7 @@ test_branch_not_hit_written_to_coverage_data(gpointer      fixture_data,
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
 
     any_line_matches_not_executed_branch(coverage_data_contents);
     g_free(coverage_data_contents);
@@ -777,8 +766,7 @@ test_function_names_written_to_coverage_data(gpointer      fixture_data,
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
 
     const char * expected_function_names[] = {
         "top-level",
@@ -829,8 +817,7 @@ test_function_lines_written_to_coverage_data(gpointer      fixture_data,
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
     const char * const expected_function_lines[] = {
         "1",
         "1",
@@ -904,8 +891,7 @@ test_function_hit_counts_for_big_functions_written_to_coverage_data(gpointer    
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
 
     const FunctionHitCountData expected_hit_counts[] = {
         { "top-level", 1 },
@@ -951,8 +937,7 @@ test_function_hit_counts_for_little_functions_written_to_coverage_data(gpointer 
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
 
     const FunctionHitCountData expected_hit_counts[] = {
         { "top-level", 1 },
@@ -994,8 +979,7 @@ test_function_hit_counts_written_to_coverage_data(gpointer      fixture_data,
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
 
     const FunctionHitCountData expected_hit_counts[] = {
         { "top-level", 1 },
@@ -1036,8 +1020,7 @@ test_total_function_coverage_written_to_coverage_data(gpointer      fixture_data
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
 
     /* More than one assert per test is bad, but we are testing interlinked concepts */
     assert_coverage_data_contains_value_for_key(coverage_data_contents,
@@ -1089,8 +1072,7 @@ test_single_line_hit_written_to_coverage_data(gpointer      fixture_data,
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
 
     const LineCountIsMoreThanData data = {
         2,  /* FIXME: line 1 is never hit */
@@ -1125,8 +1107,7 @@ test_hits_on_multiline_if_cond(gpointer      fixture_data,
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
 
     /* Hits on all lines, including both lines with a condition (3 and 4) */
     const LineCountIsMoreThanData data[] = {
@@ -1154,8 +1135,7 @@ test_full_line_tally_written_to_coverage_data(gpointer      fixture_data,
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
 
     /* More than one assert per test is bad, but we are testing interlinked concepts */
     assert_coverage_data_contains_value_for_key(coverage_data_contents,
@@ -1176,8 +1156,7 @@ test_no_hits_to_coverage_data_for_unexecuted(gpointer      fixture_data,
 
     char *coverage_data_contents =
         write_statistics_and_get_coverage_data(fixture->coverage,
-                                               fixture->lcov_output,
-                                               NULL);
+                                               fixture->lcov_output);
 
     /* No files were executed, so the coverage data is empty. */
     g_assert_cmpstr(coverage_data_contents, ==, "\n");
@@ -1197,8 +1176,7 @@ test_end_of_record_section_written_to_coverage_data(gpointer      fixture_data,
         eval_script_and_get_coverage_data(fixture->context,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
-                                          fixture->lcov_output,
-                                          NULL);
+                                          fixture->lcov_output);
 
     g_assert(strstr(coverage_data_contents, "end_of_record") != NULL);
     g_free(coverage_data_contents);
@@ -1287,8 +1265,7 @@ test_multiple_source_file_records_written_to_coverage_data(gpointer      fixture
         eval_script_and_get_coverage_data(fixture->base_fixture.context,
                                           fixture->base_fixture.coverage,
                                           fixture->second_js_source_file,
-                                          fixture->base_fixture.lcov_output,
-                                          NULL);
+                                          fixture->base_fixture.lcov_output);
 
     const char *first_sf_record = line_starting_with(coverage_data_contents, "SF:");
     g_assert(first_sf_record != NULL);
@@ -1347,8 +1324,7 @@ test_correct_line_coverage_data_written_for_both_source_file_sectons(gpointer   
         eval_script_and_get_coverage_data(fixture->base_fixture.context,
                                           fixture->base_fixture.coverage,
                                           fixture->second_js_source_file,
-                                          fixture->base_fixture.lcov_output,
-                                          NULL);
+                                          fixture->base_fixture.lcov_output);
 
     LineCountIsMoreThanData first_script_matcher = {
         2,  /* FIXME: line 1 is never hit */
