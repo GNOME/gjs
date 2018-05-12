@@ -193,6 +193,8 @@ write_statistics_and_get_coverage_data(GjsCoverage *coverage,
                          &coverage_data_contents, coverage_data_length_return,
                          NULL /* etag */,  NULL /* error */);
 
+    g_debug("Coverage data:\n%s", coverage_data_contents);
+
     return coverage_data_contents;
 }
 
