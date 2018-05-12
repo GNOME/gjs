@@ -706,7 +706,7 @@ importer_enumerate(JSContext        *context,
         /* new_for_commandline_arg handles resource:/// paths */
         GjsAutoUnref<GFile> dir = g_file_new_for_commandline_arg(dirname);
         GjsAutoUnref<GFileEnumerator> direnum =
-            g_file_enumerate_children(dir, G_FILE_ATTRIBUTE_STANDARD_TYPE,
+            g_file_enumerate_children(dir, "standard::name,standard::type",
                                       G_FILE_QUERY_INFO_NONE, NULL, NULL);
 
         while (true) {
