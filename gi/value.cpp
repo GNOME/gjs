@@ -342,7 +342,7 @@ gjs_value_guess_g_type(JSContext *context,
     return G_TYPE_INVALID;
 }
 
-static inline bool
+static bool
 throw_expect_type(JSContext      *cx,
                   JS::HandleValue value,
                   const char     *expected_type,
