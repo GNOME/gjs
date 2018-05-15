@@ -21,9 +21,6 @@
  * IN THE SOFTWARE.
  */
 
-#include <codecvt>
-#include <locale>
-
 #include <gio/gio.h>
 
 #include "jsapi-util.h"
@@ -89,20 +86,20 @@ class GjsModule {
                     int              line_number)
     {
         JS::CompileOptions options(cx);
-        options.setFileAndLine(filename, line_number)
+        options.setUTF8(true)
+               .setFileAndLine(filename, line_number)
                .setSourceIsLazy(true);
 
-        std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-        std::u16string utf16_string = convert.from_bytes(script);
-        JS::SourceBufferHolder buf(utf16_string.c_str(), utf16_string.size(),
-                                   JS::SourceBufferHolder::NoOwnership);
+        JS::RootedScript compiled_script(cx);
+        if (!JS::Compile(cx, options, script, script_len, &compiled_script))
+            return false;
 
         JS::AutoObjectVector scope_chain(cx);
         if (!scope_chain.append(module))
             g_error("Unable to append to vector");
 
         JS::RootedValue ignored_retval(cx);
-        if (!JS::Evaluate(cx, scope_chain, options, buf, &ignored_retval))
+        if (!JS_ExecuteScript(cx, scope_chain, compiled_script, &ignored_retval))
             return false;
 
         gjs_schedule_gc_if_needed(cx);

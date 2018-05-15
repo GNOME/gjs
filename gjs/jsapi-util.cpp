@@ -24,8 +24,6 @@
 
 #include <config.h>
 
-#include <codecvt>
-#include <locale>
 #include "jsapi-wrapper.h"
 #include <js/GCAPI.h>
 
@@ -853,19 +851,19 @@ gjs_eval_with_scope(JSContext             *context,
         eval_obj = JS_NewPlainObject(context);
 
     JS::CompileOptions options(context);
-    options.setFileAndLine(filename, start_line_number)
+    options.setUTF8(true)
+           .setFileAndLine(filename, start_line_number)
            .setSourceIsLazy(true);
 
-    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-    std::u16string utf16_string = convert.from_bytes(script);
-    JS::SourceBufferHolder buf(utf16_string.c_str(), utf16_string.size(),
-                               JS::SourceBufferHolder::NoOwnership);
+    JS::RootedScript compiled_script(context);
+    if (!JS::Compile(context, options, script, real_len, &compiled_script))
+        return false;
 
     JS::AutoObjectVector scope_chain(context);
     if (!scope_chain.append(eval_obj))
         g_error("Unable to append to vector");
 
-    if (!JS::Evaluate(context, scope_chain, options, buf, retval))
+    if (!JS_ExecuteScript(context, scope_chain, compiled_script, retval))
         return false;
 
     gjs_schedule_gc_if_needed(context);
