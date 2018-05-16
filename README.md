@@ -3,7 +3,7 @@
 [![Contributors](https://img.shields.io/github/contributors/GNOME/gjs.svg)](https://gitlab.gnome.org/GNOME/gjs/graphs/master)
 [![LoC](https://tokei.rs/b1/github/GNOME/gjs?category=code)](https://gitlab.gnome.org/GNOME/gjs/tree/master)
 [![Last commit](https://img.shields.io/github/last-commit/GNOME/gjs.svg)](https://gitlab.gnome.org/GNOME/gjs/commits/master)
-[![Search hit](https://img.shields.io/github/search/GNOME/gjs/goto.svg)]()
+[![Search hit](https://img.shields.io/github/search/GNOME/gjs/goto.svg?label=github%20hits)](https://github.com/search?utf8=%E2%9C%93&q=gjs&type=)
 [![License](https://img.shields.io/badge/License-LGPL%20v2%2B-blue.svg)](https://gitlab.gnome.org/GNOME/gjs/blob/master/COPYING)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://gitlab.gnome.org/GNOME/gjs/blob/master/COPYING)
 
