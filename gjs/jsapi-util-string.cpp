@@ -445,6 +445,15 @@ gjs_debug_symbol(JS::Symbol * const sym)
 }
 
 std::string
+gjs_debug_object(JSObject * const obj)
+{
+    std::ostringstream out;
+    const JSClass* clasp = JS_GetClass(obj);
+    out << "<object " << clasp->name << " at " << obj <<  '>';
+    return out.str();
+}
+
+std::string
 gjs_debug_value(JS::Value v)
 {
     std::ostringstream out;
@@ -479,9 +488,7 @@ gjs_debug_value(JS::Value v)
         return out.str();
     }
     if (v.isObject()) {
-        JSObject *obj = &v.toObject();
-        const JSClass* clasp = JS_GetClass(obj);
-        out << "<object " << clasp->name << " at " << obj <<  '>';
+        out << gjs_debug_object(&v.toObject());
         return out.str();
     }
     if (v.isBoolean())
