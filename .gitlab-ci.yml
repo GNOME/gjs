@@ -296,3 +296,16 @@ packaging:
     name: review/$CI_COMMIT_REF_NAME
     url: https://gitlab.gnome.org/$CI_PROJECT_PATH/-/jobs/$CI_JOB_ID/artifacts/raw/${BUNDLE}
   when: manual
+
+#############################################
+# Stressing GC
+#############################################
+gc_zeal:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:fedora.debug.gcc
+  variables:
+    CC: gcc
+    DEV: devel
+    TEST: "check"
+    JS_GC_ZEAL: 2
