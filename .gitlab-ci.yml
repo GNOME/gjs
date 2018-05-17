@@ -72,11 +72,12 @@ stages:
 
 #############################################
 # Run a test despite of any Docker image change
+# SpiderMonkey was configured with --enable-debug
 #############################################
 fedora:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:job-419.5  # pinned on purpose
+  image: claudioandre/spidermonkey:job-456.7  # pinned on purpose
   variables:
     CC: gcc
     DEV: devel
