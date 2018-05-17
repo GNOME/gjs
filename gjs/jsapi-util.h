@@ -25,6 +25,7 @@
 #define __GJS_JSAPI_UTIL_H__
 
 #include <memory>
+#include <string>
 #include <stdbool.h>
 
 #include <glib-object.h>
@@ -385,6 +386,7 @@ bool gjs_object_require_converted_property(JSContext       *cx,
 
 std::string gjs_debug_string(JSString *str);
 std::string gjs_debug_symbol(JS::Symbol * const sym);
+std::string gjs_debug_object(JSObject *obj);
 std::string gjs_debug_value(JS::Value v);
 std::string gjs_debug_id(jsid id);
 

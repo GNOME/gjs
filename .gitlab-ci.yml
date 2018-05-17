@@ -157,6 +157,18 @@ sanitizer_gcc:
     TEST: "check"
     BUILD_OPTS: "--enable-asan --enable-ubsan"
 
+# There are a lot of debug log statements that are ifdef'd out in normal usage.
+# These sometimes get invalid expressions in them, leading to annoyance the
+# next time you try to use debug logging.
+with_logging:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:fedora.dev.gcc
+  variables:
+    CC: gcc
+    DEV: devel
+    BUILD_OPTS: CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
+
 sanitizer_clang:
   <<: *build
   stage: thorough_tests

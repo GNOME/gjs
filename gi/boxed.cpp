@@ -120,7 +120,8 @@ boxed_resolve(JSContext       *context,
 {
     Boxed *priv = priv_from_js(context, obj);
     gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook, obj %s, priv %p",
-                     gjs_debug_id(id).c_str(), gjs_debug_obj(obj).c_str(), priv);
+                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str(),
+                     priv);
 
     if (priv == nullptr)
         return false; /* wrong class */
