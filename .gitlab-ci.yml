@@ -72,11 +72,12 @@ stages:
 
 #############################################
 # Run a test despite of any Docker image change
+# SpiderMonkey was configured with --enable-debug
 #############################################
 fedora:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:job-419.5  # pinned on purpose
+  image: claudioandre/spidermonkey:job-456.7  # pinned on purpose
   variables:
     CC: gcc
     DEV: devel
@@ -295,4 +296,40 @@ packaging:
   environment:
     name: review/$CI_COMMIT_REF_NAME
     url: https://gitlab.gnome.org/$CI_PROJECT_PATH/-/jobs/$CI_JOB_ID/artifacts/raw/${BUNDLE}
+  when: manual
+
+#############################################
+# SpiderMonkey GC Tests
+#############################################
+zeal_2:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:fedora.debug.gcc
+  variables:
+    CC: gcc
+    DEV: devel
+    TEST: "check"
+    JS_GC_ZEAL: 2
+  when: manual
+
+zeal_4:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:fedora.debug.gcc
+  variables:
+    CC: gcc
+    DEV: devel
+    TEST: "check"
+    JS_GC_ZEAL: 4
+  when: manual
+
+zeal_11:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:fedora.debug.gcc
+  variables:
+    CC: gcc
+    DEV: devel
+    TEST: "check"
+    JS_GC_ZEAL: 11
   when: manual
