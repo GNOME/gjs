@@ -838,7 +838,14 @@ gjs_eval_with_scope(JSContext             *context,
     if (!scope_chain.append(eval_obj))
         g_error("Unable to append to vector");
 
-    if (!JS::Evaluate(context, scope_chain, options, buf, retval))
+
+    JS::RootedObject module(context);
+    if(!CompileModule(context, options, buf, &module)) {
+        return false;
+    }
+
+    JS::ModuleDeclarationInstantiation(context, module);
+    if (!JS::ModuleEvaluation(context, module))
         return false;
 
     gjs_schedule_gc_if_needed(context);
