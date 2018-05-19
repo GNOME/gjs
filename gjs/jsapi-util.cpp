@@ -838,7 +838,8 @@ gjs_eval_with_scope(JSContext             *context,
     if (!scope_chain.append(eval_obj))
         g_error("Unable to append to vector");
 
-
+    // FIXME: This can't stay because loading scripts as modules forces strict mode
+    // This breaks a lot of current files.
     JS::RootedObject module(context);
     if(!CompileModule(context, options, buf, &module)) {
         return false;
