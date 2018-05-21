@@ -1,3 +1,36 @@
+Version 1.53.2
+--------------
+
+- The `Template` parameter passed to `GObject.registerClass()` now accepts
+  file:/// URIs as well as resource:/// URIs and byte arrays.
+
+- New API: `gjs_get_js_version()` returns a string identifying the version of
+  the underlying SpiderMonkey JS engine. The interpreter executable has also
+  gained a `--jsversion` argument which will print this string.
+
+- Several fixes for memory efficiency and performance.
+
+- Once again we welcomed contributions from a number of first-time contributors!
+
+- Closed bugs and merge requests:
+
+  * Add support for file:/// uri to glade template [#108, !41, Jesus Bermudez,
+    Philip Chimento]
+  * Reduce memory overhead of g_object_weak_ref() [#144, !122, Carlos Garnacho,
+    Philip Chimento]
+  * gjs: JS_GetContextPrivate(): gjs-console killed by SIGSEGV [#148, !121,
+    Philip Chimento]
+  * Use compacting GC on RSS size growth [#151, !133, Carlos Garnacho]
+  * Segfault on enumeration of GjSFileImporter properties when a searchpath
+    entry contains a symlink [#154, !144, Ole Jørgen Brønner]
+  * Compare linter jobs to correct base [#156, !140, Claudio André]
+  * Various maintenance [!141, Philip Chimento]
+  * Support interface signal handlers [!142, Tomasz Miąsko]
+  * Remove unnecessary inline [!145, Emmanuele Bassi]
+  * Add badges to the readme [!146, !147, Claudio André]
+  * Fix debug logging [!148, Philip Chimento]
+  * CI: add a GC zeal test [!149, Claudio André]
+
 Version 1.53.1
 --------------
 
