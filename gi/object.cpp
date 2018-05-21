@@ -144,7 +144,6 @@ using ParamRef = std::unique_ptr<GParamSpec, decltype(&g_param_spec_unref)>;
 using ParamRefArray = std::vector<ParamRef>;
 static std::unordered_map<GType, ParamRefArray> class_init_properties;
 
-static bool context_weak_pointer_callback = false;
 static bool weak_pointer_callback = false;
 ObjectInstance *wrapped_gobject_list;
 
