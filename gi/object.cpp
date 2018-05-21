@@ -98,9 +98,9 @@ class GjsListLink {
         m_prev = m_next = NULL;
     }
 
-    int size() {
+    size_t size() {
         GjsListLink *elem = this;
-        int count = 0;
+        size_t count = 0;
 
         do {
             count++;
