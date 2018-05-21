@@ -1043,9 +1043,9 @@ wrapped_gobj_dispose_notify(gpointer      data,
                         where_the_object_was);
 }
 
-static void
-context_dispose_notify(gpointer      data,
-                       GObject      *where_the_object_was)
+void
+gjs_object_context_dispose_notify(void    *data,
+                                  GObject *where_the_object_was)
 {
     ObjectInstance *priv = wrapped_gobject_list;
     while (priv) {
@@ -1368,16 +1368,6 @@ ensure_weak_pointer_callback(JSContext *cx)
 }
 
 static void
-ensure_context_weak_pointer_callback(JSContext *cx)
-{
-    if (!context_weak_pointer_callback) {
-        auto gjs_cx = static_cast<GjsContext *>(JS_GetContextPrivate(cx));
-        g_object_weak_ref(G_OBJECT(gjs_cx), context_dispose_notify, NULL);
-        context_weak_pointer_callback = true;
-    }
-}
-
-static void
 associate_js_gobject (JSContext       *context,
                       JS::HandleObject object,
                       GObject         *gobj)
@@ -1394,7 +1384,6 @@ associate_js_gobject (JSContext       *context,
 
     priv->keep_alive = object;
     ensure_weak_pointer_callback(context);
-    ensure_context_weak_pointer_callback(context);
     object_instance_link(priv);
 
     g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, priv);

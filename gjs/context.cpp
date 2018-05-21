@@ -516,6 +516,8 @@ gjs_context_constructed(GObject *object)
     g_mutex_unlock (&contexts_lock);
 
     setup_dump_heap();
+
+    g_object_weak_ref(object, gjs_object_context_dispose_notify, nullptr);
 }
 
 static void
