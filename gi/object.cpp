@@ -1054,8 +1054,8 @@ gjs_object_context_dispose_notify(void    *data,
         if (priv->keep_alive.rooted()) {
             gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "GObject wrapper %p for GObject "
                                 "%p (%s) was rooted but is now unrooted due to "
-                                "GjsContext dispose", obj.get(), priv->gobj,
-                                G_OBJECT_TYPE_NAME(priv->gobj));
+                                "GjsContext dispose", priv->keep_alive.get(),
+                                priv->gobj, G_OBJECT_TYPE_NAME(priv->gobj));
             priv->keep_alive.reset();
             object_instance_unlink(priv);
         }
