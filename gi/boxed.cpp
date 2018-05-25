@@ -40,11 +40,6 @@
 
 #include <girepository.h>
 
-/* Reserved slots of JSNative accessor wrappers */
-enum {
-    SLOT_PROP_NAME,
-};
-
 struct Boxed {
     /* prototype info */
     GIBoxedInfo *info;
@@ -579,31 +574,6 @@ get_nested_interface_object(JSContext             *context,
     return true;
 }
 
-static JSObject *
-define_native_accessor_wrapper(JSContext  *cx,
-                               JSNative    call,
-                               unsigned    nargs,
-                               const char *func_name,
-                               uint32_t    id)
-{
-    JSFunction *func = js::NewFunctionWithReserved(cx, call, nargs, 0,
-                                                   func_name);
-    if (!func)
-        return NULL;
-
-    JSObject *func_obj = JS_GetFunctionObject(func);
-    js::SetFunctionNativeReserved(func_obj, SLOT_PROP_NAME,
-                                  JS::PrivateUint32Value(id));
-    return func_obj;
-}
-
-static uint32_t
-native_accessor_slot(JSObject *func_obj)
-{
-    return js::GetFunctionNativeReserved(func_obj, SLOT_PROP_NAME)
-        .toPrivateUint32();
-}
-
 static bool
 boxed_field_getter(JSContext *context,
                    unsigned   argc,
@@ -615,8 +585,9 @@ boxed_field_getter(JSContext *context,
     GArgument arg;
     bool success = false;
 
-    field_info = get_field_info(context, priv,
-                                native_accessor_slot(&args.callee()));
+    uint32_t field_ix = gjs_dynamic_property_private_slot(&args.callee())
+        .toPrivateUint32();
+    field_info = get_field_info(context, priv, field_ix);
     if (!field_info)
         return false;
 
@@ -791,8 +762,9 @@ boxed_field_setter(JSContext *cx,
     GIFieldInfo *field_info;
     bool success = false;
 
-    field_info = get_field_info(cx, priv,
-                                native_accessor_slot(&args.callee()));
+    uint32_t field_ix = gjs_dynamic_property_private_slot(&args.callee())
+        .toPrivateUint32();
+    field_info = get_field_info(cx, priv, field_ix);
     if (!field_info)
         return false;
 
@@ -847,31 +819,14 @@ define_boxed_class_fields(JSContext       *cx,
     for (i = 0; i < n_fields; i++) {
         GIFieldInfo *field = g_struct_info_get_field (priv->info, i);
         const char *field_name = g_base_info_get_name ((GIBaseInfo *)field);
-        GjsAutoChar getter_name = g_strconcat("boxed_field_get::",
-                                              field_name, NULL);
-        GjsAutoChar setter_name = g_strconcat("boxed_field_set::",
-                                              field_name, NULL);
-        g_base_info_unref ((GIBaseInfo *)field);
 
-        /* In order to have one getter and setter for all the properties
-         * we define, we must provide the property index in a "reserved
-         * slot" for which we must unfortunately use the jsfriendapi. */
-        JS::RootedObject getter(cx,
-            define_native_accessor_wrapper(cx, boxed_field_getter, 0,
-                                           getter_name, i));
-        if (!getter)
-            return false;
-
-        JS::RootedObject setter(cx,
-            define_native_accessor_wrapper(cx, boxed_field_setter, 1,
-                                           setter_name, i));
-        if (!setter)
-            return false;
-
-        if (!JS_DefineProperty(cx, proto, field_name, JS::UndefinedHandleValue,
-                               JSPROP_PERMANENT | JSPROP_SHARED | JSPROP_GETTER | JSPROP_SETTER,
-                               JS_DATA_TO_FUNC_PTR(JSNative, getter.get()),
-                               JS_DATA_TO_FUNC_PTR(JSNative, setter.get())))
+        JS::RootedValue private_id(cx, JS::PrivateUint32Value(i));
+        bool ok = gjs_define_property_dynamic(cx, proto, field_name,
+                                              "boxed_field", boxed_field_getter,
+                                              boxed_field_setter, private_id,
+                                              GJS_MODULE_PROP_FLAGS);
+        g_base_info_unref(field);
+        if (!ok)
             return false;
     }
 

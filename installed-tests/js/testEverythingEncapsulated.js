@@ -216,14 +216,7 @@ describe('Introspected GObject', function () {
         expect(() => obj.function_ptr).toThrow();
     });
 
-    it('silently does not set read-only fields', function () {
-        obj.some_int8 = 41;
-        expect(obj.some_int8).toEqual(42);
-        expect(obj.int).toEqual(42);
-    });
-
-    it('throws an error in strict mode when setting a read-only field', function () {
-        'use strict';
+    it('throws when setting a read-only field', function () {
         expect(() => obj.some_int8 = 41).toThrow();
     });
 

@@ -74,3 +74,22 @@ _gjs_proxy_to_string_func(JSContext             *context,
     g_string_free (buf, true);
     return ret;
 }
+
+bool
+_gjs_proxy_throw_nonexistent_field(JSContext  *cx,
+                                   GType       gtype,
+                                   const char *field_name)
+{
+    gjs_throw(cx, "No property %s on %s", field_name, g_type_name(gtype));
+    return false;
+}
+
+bool
+_gjs_proxy_throw_readonly_field(JSContext  *cx,
+                                GType       gtype,
+                                const char *field_name)
+{
+    gjs_throw(cx, "Property %s.%s is not writable", g_type_name(gtype),
+              field_name);
+    return false;
+}

@@ -35,6 +35,11 @@
 #include <string.h>
 #include <math.h>
 
+/* Reserved slots of JSNative accessor wrappers */
+enum {
+    DYNAMIC_PROPERTY_PRIVATE_SLOT,
+};
+
 bool
 gjs_init_class_dynamic(JSContext              *context,
                        JS::HandleObject        in_object,
@@ -193,4 +198,91 @@ gjs_construct_object_dynamic(JSContext                  *context,
         return NULL;
 
     return JS_New(context, constructor, args);
+}
+
+static JSObject *
+define_native_accessor_wrapper(JSContext      *cx,
+                               JSNative        call,
+                               unsigned        nargs,
+                               const char     *func_name,
+                               JS::HandleValue private_slot)
+{
+    JSFunction *func = js::NewFunctionWithReserved(cx, call, nargs, 0, func_name);
+    if (!func)
+        return nullptr;
+
+    JSObject *func_obj = JS_GetFunctionObject(func);
+    js::SetFunctionNativeReserved(func_obj, DYNAMIC_PROPERTY_PRIVATE_SLOT,
+                                  private_slot);
+    return func_obj;
+}
+
+/**
+ * gjs_define_property_dynamic:
+ * @cx: the #JSContext
+ * @proto: the prototype of the object, on which to define the property
+ * @prop_name: name of the property or field in GObject, visible to JS code
+ * @func_namespace: string from which the internal names for the getter and
+ *   setter functions are built, not visible to JS code
+ * @getter: getter function
+ * @setter: setter function
+ * @private_slot: private data in the form of a #JS::Value that the getter and
+ *   setter will have access to
+ * @flags: additional flags to define the property with (other than the ones
+ *   required for a property with native getter/setter)
+ *
+ * When defining properties in a GBoxed or GObject, we can't have a separate
+ * getter and setter for each one, since the properties are defined dynamically.
+ * Therefore we must have one getter and setter for all the properties we define
+ * on all the types. In order to have that, we must provide the getter and
+ * setter with private data, e.g. the field index for GBoxed, in a "reserved
+ * slot" for which we must unfortunately use the jsfriendapi.
+ *
+ * Returns: %true on success, %false if an exception is pending on @cx.
+ */
+bool
+gjs_define_property_dynamic(JSContext       *cx,
+                            JS::HandleObject proto,
+                            const char      *prop_name,
+                            const char      *func_namespace,
+                            JSNative         getter,
+                            JSNative         setter,
+                            JS::HandleValue  private_slot,
+                            unsigned         flags)
+{
+    GjsAutoChar getter_name = g_strconcat(func_namespace, "_get::", prop_name, nullptr);
+    GjsAutoChar setter_name = g_strconcat(func_namespace, "_set::", prop_name, nullptr);
+
+    JS::RootedObject getter_obj(cx,
+        define_native_accessor_wrapper(cx, getter, 0, getter_name, private_slot));
+    if (!getter_obj)
+        return false;
+
+    JS::RootedObject setter_obj(cx,
+        define_native_accessor_wrapper(cx, setter, 1, setter_name, private_slot));
+    if (!setter_obj)
+        return false;
+
+    flags |= JSPROP_SHARED | JSPROP_GETTER | JSPROP_SETTER;
+
+    return JS_DefineProperty(cx, proto, prop_name, JS::UndefinedHandleValue, flags,
+                             JS_DATA_TO_FUNC_PTR(JSNative, getter_obj.get()),
+                             JS_DATA_TO_FUNC_PTR(JSNative, setter_obj.get()));
+}
+
+/**
+ * gjs_dynamic_property_private_slot:
+ * @accessor_obj: the getter or setter as a function object, i.e.
+ *   `&args.callee()` in the #JSNative function
+ *
+ * For use in dynamic property getters and setters (see
+ * gjs_define_property_dynamic()) to retrieve the private data passed there.
+ *
+ * Returns: the JS::Value that was passed to gjs_define_property_dynamic().
+ */
+JS::Value
+gjs_dynamic_property_private_slot(JSObject *accessor_obj)
+{
+    return js::GetFunctionNativeReserved(accessor_obj,
+                                         DYNAMIC_PROPERTY_PRIVATE_SLOT);
 }
