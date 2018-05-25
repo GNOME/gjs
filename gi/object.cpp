@@ -153,12 +153,6 @@ GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 static void disassociate_js_gobject(ObjectInstance *priv);
 static void ensure_uses_toggle_ref(JSContext *cx, ObjectInstance *priv);
 
-typedef enum {
-    SOME_ERROR_OCCURRED = false,
-    NO_SUCH_G_PROPERTY,
-    VALUE_WAS_SET
-} ValueFromPropertyResult;
-
 static GQuark
 gjs_is_custom_type_quark (void)
 {
@@ -237,13 +231,9 @@ set_object_qdata(GObject        *gobj,
     g_object_set_qdata(gobj, gjs_object_priv_quark(), priv);
 }
 
-static ValueFromPropertyResult
-init_g_param_from_property(JSContext      *context,
-                           const char     *js_prop_name,
-                           JS::HandleValue value,
-                           GType           gtype,
-                           GParameter     *parameter,
-                           bool            constructing)
+static GParamSpec *
+param_spec_from_js_prop_name(const char *js_prop_name,
+                             GType       gtype)
 {
     char *gname;
     GParamSpec *param_spec;
@@ -258,39 +248,34 @@ init_g_param_from_property(JSContext      *context,
                                               gname);
     g_type_class_unref(klass);
     g_free(gname);
+    return param_spec;
+}
 
-    if (param_spec == NULL) {
-        /* not a GObject prop, so nothing else to do */
-        return NO_SUCH_G_PROPERTY;
-    }
-
-    /* Do not set JS overridden properties through GObject, to avoid
-     * infinite recursion (but set them when constructing) */
-    if (!constructing &&
-        g_param_spec_get_qdata(param_spec, gjs_is_custom_property_quark()))
-        return NO_SUCH_G_PROPERTY;
-
-
+static bool
+init_g_param_from_property(JSContext      *context,
+                           GParamSpec     *param_spec,
+                           JS::HandleValue value,
+                           GParameter     *parameter)
+{
     if ((param_spec->flags & G_PARAM_WRITABLE) == 0) {
         /* prevent setting the prop even in JS */
-        gjs_throw(context, "Property %s (GObject %s) is not writable",
-                     js_prop_name, param_spec->name);
-        return SOME_ERROR_OCCURRED;
+        gjs_throw(context, "GObject property %s is not writable",
+                  param_spec->name);
+        return false;
     }
 
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Syncing %s to GObject prop %s",
-                     js_prop_name, param_spec->name);
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Syncing GObject prop %s",
+                     param_spec->name);
 
     g_value_init(&parameter->value, G_PARAM_SPEC_VALUE_TYPE(param_spec));
     if (!gjs_value_to_g_value(context, value, &parameter->value)) {
         g_value_unset(&parameter->value);
-        return SOME_ERROR_OCCURRED;
+        return false;
     }
 
     parameter->name = param_spec->name;
 
-    return VALUE_WAS_SET;
+    return true;
 }
 
 static inline ObjectInstance *
@@ -487,22 +472,22 @@ set_g_param_from_prop(JSContext          *context,
     GParameter param = { NULL, { 0, }};
     was_set = false;
 
-    switch (init_g_param_from_property(context, name,
-                                       value_p,
-                                       G_TYPE_FROM_INSTANCE(priv->gobj),
-                                       &param,
-                                       false /* constructing */)) {
-    case SOME_ERROR_OCCURRED:
-        return false;
-    case NO_SUCH_G_PROPERTY:
+    GType gtype = G_TYPE_FROM_INSTANCE(priv->gobj);
+    GParamSpec *param_spec = param_spec_from_js_prop_name(name, gtype);
+    if (!param_spec) {
         /* We need to keep the wrapper alive in order not to lose custom
          * "expando" properties */
         ensure_uses_toggle_ref(context, priv);
         return result.succeed();
-    case VALUE_WAS_SET:
-    default:
-        break;
     }
+
+    /* Do not set JS overridden properties through GObject, to avoid
+     * infinite recursion (unless constructing) */
+    if (g_param_spec_get_qdata(param_spec, gjs_is_custom_property_quark()))
+        return true;
+
+    if (!init_g_param_from_property(context, param_spec, value_p, &param))
+        return false;
 
     g_object_set_property(priv->gobj, param.name,
                           &param.value);
@@ -994,21 +979,15 @@ object_instance_props_to_g_parameters(JSContext                  *context,
             !gjs_get_string_id(context, prop_id, &name))
             return false;
 
-        switch (init_g_param_from_property(context, name,
-                                           value,
-                                           gtype,
-                                           &gparam,
-                                           true /* constructing */)) {
-        case NO_SUCH_G_PROPERTY:
+        GParamSpec *param_spec = param_spec_from_js_prop_name(name, gtype);
+        if (!param_spec) {
             gjs_throw(context, "No property %s on this GObject %s",
                       name.get(), g_type_name(gtype));
-            /* fallthrough */
-        case SOME_ERROR_OCCURRED:
             return false;
-        case VALUE_WAS_SET:
-        default:
-            break;
         }
+
+        if (!init_g_param_from_property(context, param_spec, value, &gparam))
+            return false;
 
         gparams.push_back(gparam);
     }
