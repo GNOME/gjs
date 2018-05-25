@@ -287,6 +287,37 @@ proto_priv_from_js(JSContext       *context,
     return priv_from_js(context, proto);
 }
 
+/* A hook on adding a property to an object. This is called during a set
+ * property operation after all the resolve hooks on the prototype chain have
+ * failed to resolve. We use this to mark an object as needing toggle refs when
+ * custom state is set on it, because we need to keep the JS GObject wrapper
+ * alive in order not to lose custom "expando" properties.
+ */
+static bool
+object_instance_add_prop(JSContext       *cx,
+                         JS::HandleObject obj,
+                         JS::HandleId     id,
+                         JS::HandleValue  value)
+{
+    ObjectInstance *priv = priv_from_js(cx, obj);
+
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
+                     "Add prop '%s' hook, obj %s, priv %p, gobj %p %s",
+                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str(),
+                     priv,
+                     priv ? priv->gobj : nullptr,
+                     priv ? g_type_name(priv->gtype) : "(type unknown)");
+
+    if (!priv ||        /* during init: property is not being added from JS */
+        !priv->gobj ||  /* prototype, not instance */
+        !priv->info ||  /* custom JS class, already uses toggle ref */
+        priv->g_object_finalized)
+        return true;
+
+    ensure_uses_toggle_ref(cx, priv);
+    return true;
+}
+
 static bool
 get_prop_from_g_param(JSContext             *context,
                       JS::HandleObject       obj,
@@ -474,12 +505,8 @@ set_g_param_from_prop(JSContext          *context,
 
     GType gtype = G_TYPE_FROM_INSTANCE(priv->gobj);
     GParamSpec *param_spec = param_spec_from_js_prop_name(name, gtype);
-    if (!param_spec) {
-        /* We need to keep the wrapper alive in order not to lose custom
-         * "expando" properties */
-        ensure_uses_toggle_ref(context, priv);
+    if (!param_spec)
         return result.succeed();
-    }
 
     /* Do not set JS overridden properties through GObject, to avoid
      * infinite recursion (unless constructing) */
@@ -573,10 +600,6 @@ object_instance_set_prop(JSContext              *context,
 
     GjsAutoJSChar name;
     if (!gjs_get_string_id(context, id, &name)) {
-        /* We need to keep the wrapper alive in order not to lose custom
-         * "expando" properties. In this case if gjs_get_string_id() is false
-         * then a number or symbol property was probably set. */
-        ensure_uses_toggle_ref(context, priv);
         return result.succeed();  /* not resolved, but no error */
     }
 
@@ -1382,6 +1405,10 @@ ensure_uses_toggle_ref(JSContext      *cx,
     if (priv->uses_toggle_ref)
         return;
 
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
+                     "Switching object instance %p, gobj %p %s to toggle ref",
+                     priv, priv->gobj, g_type_name(priv->gtype));
+
     g_assert(!priv->keep_alive.rooted());
 
     /* OK, here is where things get complicated. We want the
@@ -1994,7 +2021,7 @@ to_string_func(JSContext *context,
 }
 
 static const struct JSClassOps gjs_object_class_ops = {
-    NULL,  /* addProperty */
+    object_instance_add_prop,
     NULL,  /* deleteProperty */
     object_instance_get_prop,
     object_instance_set_prop,
