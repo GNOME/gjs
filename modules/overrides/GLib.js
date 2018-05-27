@@ -250,7 +250,7 @@ function _init() {
     GLib = this;
 
     // small HACK: we add a matches() method to standard Errors so that
-    // you can do "catch(e if e.matches(Ns.FooError, Ns.FooError.SOME_CODE))"
+    // you can do "if (e.matches(Ns.FooError, Ns.FooError.SOME_CODE))"
     // without checking instanceof
     Error.prototype.matches = function() { return false; };
 
