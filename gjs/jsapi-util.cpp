@@ -845,6 +845,11 @@ gjs_eval_with_scope(JSContext             *context,
     if (!CompileModule(context, options, buf, &module))
         return false;
 
+    if (filename) {
+        auto gjs_cx = static_cast<GjsContext*>(JS_GetContextPrivate(context));
+        gjs_register_module(gjs_cx, filename, module, true);
+    }
+
     JS::ModuleDeclarationInstantiation(context, module);
     if (!JS::ModuleEvaluation(context, module))
         return false;
