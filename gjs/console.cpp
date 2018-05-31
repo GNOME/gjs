@@ -45,6 +45,7 @@ static char *command = NULL;
 static gboolean print_version = false;
 static gboolean print_js_version = false;
 static gboolean debugging = false;
+static gboolean exec_as_module = false;
 static bool enable_profiler = false;
 
 static gboolean parse_profile_arg(const char *, const char *, void *, GError **);
@@ -58,6 +59,8 @@ static GOptionEntry entries[] = {
     { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &coverage_prefixes, "Add the prefix PREFIX to the list of files to generate coverage info for", "PREFIX" },
     { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &coverage_output_path, "Write coverage output to a directory DIR. This option is mandatory when using --coverage-path", "DIR", },
     { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &include_path, "Add the directory DIR to the list of directories to search for js files.", "DIR" },
+    { "module", 'm', 0, G_OPTION_ARG_NONE, &exec_as_module,
+                        "Execute the input as a js module (implies strict mode)" },
     { "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
         G_OPTION_ARG_CALLBACK, reinterpret_cast<void *>(&parse_profile_arg),
         "Enable the profiler and write output to FILE (default: gjs-$PID.syscap)",
@@ -128,12 +131,18 @@ check_script_args_for_stray_gjs_args(int           argc,
     // Don't add new entries here. This is only for arguments that were
     // previously accepted after the script name on the command line, for
     // backwards compatibility.
+    /* Keep in sync with entries[] at the top */
+    // clang-format off
     static GOptionEntry script_check_entries[] = {
         { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &new_coverage_prefixes },
         { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &new_coverage_output_path },
         { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &new_include_paths },
+        { "module", 'm', 0, G_OPTION_ARG_NONE, &exec_as_module },
+        { "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
+          G_OPTION_ARG_CALLBACK, reinterpret_cast<void *>(&check_stray_profile_arg) },
         { NULL }
     };
+    // clang-format on
     char **argv_copy = g_new(char *, argc + 2);
     int ix;
 
@@ -277,11 +286,13 @@ main(int argc, char **argv)
         /* All unprocessed options should be in script_argv */
         g_assert(gjs_argc == 2);
         error = NULL;
+        int command_len = strlen(gjs_argv[1]);
         if (!g_file_get_contents(gjs_argv[1], &script, &len, &error)) {
             g_printerr("%s\n", error->message);
             exit(1);
         }
-        filename = gjs_argv[1];
+        GFile* output = g_file_new_for_commandline_arg(argv[1]);
+        filename = g_file_get_path(output);
         program_name = gjs_argv[1];
     }
 

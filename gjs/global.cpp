@@ -27,8 +27,6 @@
 
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
@@ -112,11 +110,7 @@ static bool gjs_parse_module(JSContext* context, unsigned argc, JS::Value* vp) {
 }
 
 static bool
-run_bootstrap(JSContext       *cx,
-              const char      *bootstrap_script,
               JS::HandleObject global)
-{
-    GjsAutoChar uri = g_strdup_printf(
         "resource:///org/gnome/gjs/modules/_bootstrap/%s.js", bootstrap_script);
 
     JSAutoCompartment ac(cx, global);
@@ -135,19 +129,8 @@ run_bootstrap(JSContext       *cx,
     if (!JS::Compile(cx, options, script.get(), script_len, &compiled_script))
         return false;
 
-    JS::AutoObjectVector scope_chain(cx);
-    scope_chain.infallibleAppend(JS_NewObject(cx, nullptr));
-
-    JS::RootedObject priv_funcs(cx, scope_chain[0]);
-
-    JS_DefineFunctions(
-        cx, priv_funcs,
-        (const JSFunctionSpec[]){
-            JS_FS("parseModule", gjs_parse_module, 2, GJS_MODULE_PROP_FLAGS),
-            JS_FS("setModuleResolveHook", gjs_set_module_resolve_hook, 1,
-                  GJS_MODULE_PROP_FLAGS),
-        });
-    return JS_ExecuteScript(cx, scope_chain, compiled_script);
+    JS::RootedValue ignored(cx);
+    return JS::CloneAndExecuteScript(cx, compiled_script, &ignored);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
