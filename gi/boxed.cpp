@@ -268,7 +268,6 @@ boxed_init_from_props(JSContext   *context,
         priv->field_map = get_field_map(priv->info);
 
     JS::RootedValue value(context);
-    JS::RootedId prop_id(context);
     for (ix = 0, length = ids.length(); ix < length; ix++) {
         GIFieldInfo *field_info;
         GjsAutoJSChar name;
@@ -285,9 +284,9 @@ boxed_init_from_props(JSContext   *context,
 
         /* ids[ix] is reachable because props is rooted, but require_property
          * doesn't know that */
-        prop_id = ids[ix];
         if (!gjs_object_require_property(context, props, "property list",
-                                         prop_id, &value))
+                                         JS::HandleId::fromMarkedLocation(ids[ix].address()),
+                                         &value))
             return false;
 
         if (!boxed_set_field_from_value(context, priv, field_info, value))
@@ -366,15 +365,14 @@ boxed_new(JSContext             *context,
     } else if (priv->can_allocate_directly) {
         boxed_new_direct(priv);
     } else if (priv->default_constructor >= 0) {
-        bool retval;
-
-        /* for simplicity, we simply delegate all the work to the actual JS constructor
-           function (which we retrieve from the JS constructor, that is, Namespace.BoxedType,
-           or object.constructor, given that object was created with the right prototype */
-        JS::RootedId default_constructor_name(context, priv->default_constructor_name);
-        retval = boxed_invoke_constructor(context, obj,
-                                          default_constructor_name, args);
-        return retval;
+        /* for simplicity, we simply delegate all the work to the actual JS
+         * constructor function (which we retrieve from the JS constructor,
+         * that is, Namespace.BoxedType, or object.constructor, given that
+         * object was created with the right prototype. The ID is traced from
+         * the object, so it's OK to create a handle from it. */
+        return boxed_invoke_constructor(context, obj,
+            JS::HandleId::fromMarkedLocation(priv->default_constructor_name.address()),
+            args);
     } else {
         gjs_throw(context, "Unable to construct struct type %s since it has no default constructor and cannot be allocated directly",
                   g_base_info_get_name((GIBaseInfo*) priv->info));
@@ -827,23 +825,17 @@ define_boxed_class_fields(JSContext       *cx,
      * error message. If we omitted fields or defined them read-only
      * we'd:
      *
-     *  - Storing a new property for a non-accessible field
+     *  - Store a new property for a non-accessible field
      *  - Silently do nothing when writing a read-only field
      *
      * Which is pretty confusing if the only reason a field isn't
      * writable is language binding or memory-management restrictions.
      *
      * We just go ahead and define the fields immediately for the
-     * class; doing it lazily in boxed_new_resolve() would be possible
+     * class; doing it lazily in boxed_resolve() would be possible
      * as well if doing it ahead of time caused to much start-up
      * memory overhead.
      */
-    if (n_fields > 256) {
-        g_warning("Only defining the first 256 fields in boxed type '%s'",
-                  g_base_info_get_name ((GIBaseInfo *)priv->info));
-        n_fields = 256;
-    }
-
     for (i = 0; i < n_fields; i++) {
         GIFieldInfo *field = g_struct_info_get_field (priv->info, i);
         const char *field_name = g_base_info_get_name ((GIBaseInfo *)field);
