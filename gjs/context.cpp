@@ -26,6 +26,9 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <locale>
+#include <codecvt>
+#include <iostream>
 
 #include <array>
 #include <unordered_map>
@@ -99,6 +102,7 @@ struct _GjsContext {
     bool draining_job_queue;
 
     std::unordered_map<uint64_t, GjsAutoChar> unhandled_rejection_stacks;
+    std::unordered_map<std::string, JS::PersistentRootedObject> nameToModule;
 
     GjsProfiler *profiler;
     bool should_profile : 1;
@@ -434,6 +438,125 @@ gjs_context_finalize(GObject *object)
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
 
+bool
+gjs_register_module(GjsContext *gjs_cx, const char* name, JS::HandleObject mod, bool is_file) {
+    JSContext *cx = gjs_cx->context;
+    JS::RootedValue module_name_val(cx);
+    if(!gjs_string_from_utf8(cx, name, &module_name_val)) {
+        // TODO: Better error message
+        gjs_throw(cx, "Failed to encode full module path as JS string");
+        return false;
+    }
+
+    // Since this is a file-based module, be sure to set it's host field
+    JS::SetModuleHostDefinedField(mod, module_name_val);
+    gjs_cx->nameToModule[name] = mod;
+    return true;
+}
+
+static bool
+gjs_module_resolve(JSContext *cx, unsigned argc, JS::Value *vp) {
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+    argv.rval().set(JS::NullValue());
+    auto gjs_cx = static_cast<GjsContext *>(JS_GetContextPrivate(cx));
+    if (argv.length() != 2) {
+        gjs_throw(cx, "Must pass 2 arguments to module resolver");
+        return false;
+    }
+
+    if (!argv[0].isObject()) {
+        gjs_throw(cx, "First parameter to module resolver must be a module");
+        return false;
+    }
+
+    if (!argv[1].isString()) {
+        gjs_throw(cx, "Second parameter to module resolver must be a string");
+        return false;
+    }
+
+    // The module from which the resolve request is coming
+    JS::RootedObject mod_obj(cx, &argv[0].toObject());
+
+    // The string name of the module we wish to import
+    GjsAutoJSChar req;
+
+    if(!gjs_string_to_utf8(cx, argv[1], &req)) {
+        gjs_throw(cx, "Unable to decode module request string");
+        return false;
+    }
+
+
+    // check if path is relative
+    if(req[0] == '.' && (req[1] == '/' || (req[1] == '.' && req[2] == '/'))) {
+
+        // If a module has a path, we'll have stored it in the host field
+        JS::Value mod_loc_val = JS::GetModuleHostDefinedField(mod_obj);
+
+        GjsAutoJSChar mod_loc;
+        if (!gjs_string_to_utf8(cx, mod_loc_val, &mod_loc)) {
+            // TODO: include the relative path and module name in error
+            gjs_throw(cx, "Attempting to resolve relative import from non-file module");
+            return false;
+        }
+
+        GjsAutoChar mod_dir = g_path_get_dirname(mod_loc);
+
+        GFile *output = g_file_new_for_commandline_arg_and_cwd(req.get(), mod_dir);
+        GjsAutoChar full_path = g_file_get_path(output);
+        auto module = gjs_cx->nameToModule.find(full_path.get());
+        if(module != gjs_cx->nameToModule.end()) {
+            argv.rval().setObject(*module->second);
+            return true;
+        }
+
+        char* file_str_unsafe;
+        gsize file_len;
+        if(!g_file_get_contents(full_path, &file_str_unsafe, &file_len, NULL)) {
+            // TODO: better error message
+            gjs_throw(cx, "Failed to load file\n");
+            return false;
+        }
+
+        GjsAutoChar file_str(file_str_unsafe);
+
+        int start_line_number = 1;
+        file_str = gjs_strip_unix_shebang(file_str,
+                                        &file_len,
+                                        &start_line_number);
+
+        JS::CompileOptions options(cx);
+        options.setFileAndLine(full_path, start_line_number)
+            .setSourceIsLazy(true);
+
+        std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+        std::u16string utf16_string = convert.from_bytes(file_str);
+        JS::SourceBufferHolder buf(utf16_string.c_str(), utf16_string.size(),
+                                JS::SourceBufferHolder::NoOwnership);
+
+        JS::RootedObject new_module(cx);
+        if(!CompileModule(cx, options, buf, &new_module)) {
+            // TODO: Better error message
+            gjs_throw(cx, "Failed to compile module");
+            return false;
+        }
+
+        gjs_register_module(gjs_cx, full_path, new_module, true);
+
+        argv.rval().setObject(*new_module);
+        return true;
+    }
+
+    auto module = gjs_cx->nameToModule.find(req.get());
+    if(module == gjs_cx->nameToModule.end()) {
+        // TODO: include requested module in error"
+        gjs_throw(cx, "Attempted to load unregistered global module");
+        return false;
+    }
+
+    argv.rval().setObject(*module->second);
+    return true;
+}
+
 static void
 gjs_context_constructed(GObject *object)
 {
@@ -472,6 +595,8 @@ gjs_context_constructed(GObject *object)
     }
 
     js_context->job_queue = new JS::PersistentRooted<JobQueue>(cx);
+    js_context->nameToModule.reserve(1); // required to prevent a crash.
+
     if (!js_context->job_queue)
         g_error("Failed to initialize promise job queue");
 
@@ -503,6 +628,9 @@ gjs_context_constructed(GObject *object)
         gjs_log_exception(cx);
         g_error("Failed to define properties on global object");
     }
+
+    JS::RootedFunction mod_resolve(cx, JS_NewFunction(cx, gjs_module_resolve, 2, 0, NULL));
+    SetModuleResolveHook(cx, mod_resolve);
 
     /* Pre-import the byteArray module. We depend on this module for some of
      * our GObject introspection marshalling, so the ByteArray prototype
