@@ -1336,7 +1336,8 @@ update_heap_wrapper_weak_pointers(JSContext     *cx,
 {
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Weak pointer update callback, "
                         "%zu wrapped GObject(s) to examine",
-                        wrapped_gobject_list->instance_link.size());
+                        wrapped_gobject_list ?
+                            wrapped_gobject_list->instance_link.size() : 0);
 
     std::vector<GObject *> to_be_disassociated;
     ObjectInstance *priv = wrapped_gobject_list;
