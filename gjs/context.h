@@ -105,6 +105,12 @@ void            gjs_dumpstack                     (void);
 GJS_EXPORT
 const char *gjs_get_js_version(void);
 
+GJS_EXPORT
+bool gjs_context_register_module(GjsContext *gjs_cx, const char *name, const char *mod_text, size_t mod_len, const char *filename);
+
+GJS_EXPORT
+bool gjs_context_eval_module(GjsContext *js_context, const char *name, GError **error);
+
 G_END_DECLS
 
 #endif  /* __GJS_CONTEXT_H__ */
