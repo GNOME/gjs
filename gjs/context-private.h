@@ -58,8 +58,6 @@ bool _gjs_context_run_jobs(GjsContext *gjs_context);
 
 void _gjs_context_unregister_unhandled_promise_rejection(GjsContext *gjs_context,
                                                          uint64_t    promise_id);
-bool gjs_register_module(GjsContext* cx, const char* name, JS::HandleObject mod,
-                         bool is_file = false);
 
 G_END_DECLS
 
