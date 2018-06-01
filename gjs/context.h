@@ -97,6 +97,15 @@ GJS_EXPORT GJS_USE const char* gjs_get_js_version(void);
 GJS_EXPORT
 void gjs_context_setup_debugger_console(GjsContext* gjs);
 
+GJS_EXPORT
+bool gjs_context_register_module(GjsContext* context, const char* name,
+                                 const char* mod_text, size_t mod_len,
+                                 const char* filename);
+
+GJS_EXPORT
+bool gjs_context_eval_module(GjsContext* context, const char* name,
+                             GError** error);
+
 G_END_DECLS
 
 #endif /* GJS_CONTEXT_H_ */

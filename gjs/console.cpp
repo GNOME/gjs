@@ -137,7 +137,6 @@ check_script_args_for_stray_gjs_args(int           argc,
         { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &new_coverage_prefixes },
         { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &new_coverage_output_path },
         { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &new_include_paths },
-        { "module", 'm', 0, G_OPTION_ARG_NONE, &exec_as_module },
         { "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
           G_OPTION_ARG_CALLBACK, reinterpret_cast<void *>(&check_stray_profile_arg) },
         { NULL }
@@ -286,12 +285,11 @@ main(int argc, char **argv)
         /* All unprocessed options should be in script_argv */
         g_assert(gjs_argc == 2);
         error = NULL;
-        int command_len = strlen(gjs_argv[1]);
         if (!g_file_get_contents(gjs_argv[1], &script, &len, &error)) {
             g_printerr("%s\n", error->message);
             exit(1);
         }
-        GFile* output = g_file_new_for_commandline_arg(argv[1]);
+        GFile* output = g_file_new_for_commandline_arg(gjs_argv[1]);
         filename = g_file_get_path(output);
         program_name = gjs_argv[1];
     }
@@ -373,9 +371,22 @@ main(int argc, char **argv)
     if (debugging)
         gjs_context_setup_debugger_console(js_context);
 
+    if (exec_as_module) {
+        GFile* output = g_file_new_for_commandline_arg(filename);
+        char* full_path = g_file_get_path(output);
+        if (!gjs_context_register_module(js_context, full_path, script, len,
+                                         full_path)) {
+            g_printerr("Couldn't register root module");
+            goto out;
+        }
+        if (!gjs_context_eval_module(js_context, full_path, &error)) {
+            g_printerr("%s\n", error->message);
+            goto out;
+        }
+    }
     /* evaluate the script */
-    if (!gjs_context_eval(js_context, script, len,
-                          filename, &code, &error)) {
+    else if (!gjs_context_eval(js_context, script, len, filename, &code,
+                               &error)) {
         if (!g_error_matches(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT))
             g_printerr("%s\n", error->message);
         g_clear_error(&error);

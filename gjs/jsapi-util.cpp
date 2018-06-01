@@ -668,7 +668,6 @@ std::u16string gjs_utf8_script_to_utf16(const char* script, ssize_t len) {
     return std::u16string(reinterpret_cast<const char16_t*>(wscript.c_str()));
 #else
     std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-    if (len < 0)
         return convert.from_bytes(script);
     return convert.from_bytes(script, script + len);
 #endif

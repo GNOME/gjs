@@ -27,7 +27,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <codecvt>
-#include <iostream>
 #include <locale>
 
 #include <new>
@@ -464,19 +463,141 @@ gjs_context_finalize(GObject *object)
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
 
-bool gjs_register_module(GjsContext* gjs_cx, const char* name,
-                         JS::HandleObject mod, bool is_file) {
-    JSContext* cx = gjs_cx->context;
-    JS::RootedValue module_name_val(cx);
-    if (!gjs_string_from_utf8(cx, name, &module_name_val)) {
+static void context_reset_exit(GjsContext* js_context) {
+    js_context->should_exit = false;
+    js_context->exit_code = 0;
+}
+
+bool gjs_context_eval_module(GjsContext* js_context, const char* name,
+                             GError** error) {
+    bool ret = false;
+    JSContext* context = js_context->context;
+
+    bool auto_profile = js_context->should_profile;
+    if (auto_profile && (_gjs_profiler_is_running(js_context->profiler) ||
+                         js_context->should_listen_sigusr2))
+        auto_profile = false;
+
+    g_object_ref(G_OBJECT(js_context));
+
+    if (auto_profile)
+        gjs_profiler_start(js_context->profiler);
+
+    auto it = js_context->nameToModule.find(name);
+    if (it == js_context->nameToModule.end()) {
         // TODO: Better error message
-        gjs_throw(cx, "Failed to encode full module path as JS string");
+        g_error("Attempted to evaluate unknown module");
         return false;
     }
 
-    // Since this is a file-based module, be sure to set it's host field
-    JS::SetModuleHostDefinedField(mod, module_name_val);
-    gjs_cx->nameToModule[name] = mod;
+    JSAutoCompartment ac(js_context->context, js_context->global);
+    JSAutoRequest ar(js_context->context);
+
+    if (!JS::ModuleDeclarationInstantiation(context, it->second)) {
+        g_error("Failed to instantiated module");
+        return false;
+    }
+
+    if (!JS::ModuleEvaluation(context, it->second))
+        return false;
+
+    gjs_schedule_gc_if_needed(context);
+
+    if (JS_IsExceptionPending(context)) {
+        g_warning(
+            "ModuleEvaluation returned true but exception was pending; "
+            "did somebody call gjs_throw() without returning false?");
+        return false;
+    }
+
+    gjs_debug(GJS_DEBUG_CONTEXT, "Script evaluation succeeded");
+
+    bool ok = true;
+
+    /* The promise job queue should be drained even on error, to finish
+     * outstanding async tasks before the context is torn down. Drain after
+     * uncaught exceptions have been reported since draining runs callbacks. */
+    {
+        JS::AutoSaveExceptionState saved_exc(js_context->context);
+        ok = _gjs_context_run_jobs(js_context) && ok;
+    }
+
+    if (auto_profile)
+        gjs_profiler_stop(js_context->profiler);
+
+    if (!ok) {
+        uint8_t code;
+        if (_gjs_context_should_exit(js_context, &code)) {
+            /* exit_status_p is public API so can't be changed, but should be
+             * uint8_t, not int */
+            g_set_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
+                        "Exit with code %d", code);
+            goto out;  // Don't log anything
+        }
+
+        if (!JS_IsExceptionPending(js_context->context)) {
+            g_critical("Module %s terminated with an uncatchable exception",
+                       name);
+            g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                        "Mcript %s terminated with an uncatchable exception",
+                        name);
+        } else {
+            g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                        "Module %s threw an exception", name);
+        }
+
+        gjs_log_exception(js_context->context);
+        /* No exit code from script, but we don't want to exit(0) */
+        goto out;
+    }
+
+    ret = true;
+
+out:
+    g_object_unref(G_OBJECT(js_context));
+    context_reset_exit(js_context);
+    return ret;
+}
+
+bool gjs_context_register_module(GjsContext* gjs_cx, const char* name,
+                                 const char* mod_text, size_t mod_len,
+                                 const char* filename) {
+    JSContext* cx = gjs_cx->context;
+
+    JSAutoRequest ar(gjs_cx->context);
+    JSAutoCompartment ac(gjs_cx->context, gjs_cx->global);
+
+    int start_line_number = 1;
+    mod_text = gjs_strip_unix_shebang(mod_text, &mod_len, &start_line_number);
+
+    JS::CompileOptions options(cx);
+    options.setFileAndLine(name, start_line_number).setSourceIsLazy(true);
+
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+    std::u16string utf16_string = convert.from_bytes(mod_text);
+    JS::SourceBufferHolder buf(utf16_string.c_str(), utf16_string.size(),
+                               JS::SourceBufferHolder::NoOwnership);
+
+    JS::RootedObject new_module(cx);
+    if (!CompileModule(cx, options, buf, &new_module)) {
+        // TODO: Better error message
+        gjs_throw(cx, "Failed to compile module");
+        return false;
+    }
+
+    if (filename != NULL) {
+        // Since this is a file-based module, be sure to set it's host field
+        JS::RootedValue filename_val(cx);
+        if (!gjs_string_from_utf8(cx, filename, &filename_val)) {
+            // TODO: Better error message
+            gjs_throw(cx, "Failed to encode full module path as JS string");
+            return false;
+        }
+
+        JS::SetModuleHostDefinedField(new_module, filename_val);
+    }
+
+    gjs_cx->nameToModule[name] = new_module;
     return true;
 }
 
@@ -535,41 +656,21 @@ static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
             return true;
         }
 
-        char* file_str_unsafe;
-        gsize file_len;
-        if (!g_file_get_contents(full_path, &file_str_unsafe, &file_len,
-                                 nullptr)) {
+        char* mod_text_raw;
+        gsize mod_len;
+        if (!g_file_get_contents(full_path, &mod_text_raw, &mod_len, nullptr)) {
             // TODO: better error message
             gjs_throw(cx, "Failed to load file\n");
             return false;
         }
 
-        GjsAutoChar file_str(file_str_unsafe);
+        GjsAutoChar mod_text(mod_text_raw);
 
-        int start_line_number = 1;
-        file_str =
-            gjs_strip_unix_shebang(file_str, &file_len, &start_line_number);
-
-        JS::CompileOptions options(cx);
-        options.setFileAndLine(full_path, start_line_number)
-            .setSourceIsLazy(true);
-
-        std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>
-            convert;
-        std::u16string utf16_string = convert.from_bytes(file_str);
-        JS::SourceBufferHolder buf(utf16_string.c_str(), utf16_string.size(),
-                                   JS::SourceBufferHolder::NoOwnership);
-
-        JS::RootedObject new_module(cx);
-        if (!CompileModule(cx, options, buf, &new_module)) {
-            // TODO: Better error message
-            gjs_throw(cx, "Failed to compile module");
+        if (!gjs_context_register_module(gjs_cx, full_path, mod_text, mod_len,
+                                         full_path))
             return false;
-        }
 
-        gjs_register_module(gjs_cx, full_path, new_module, true);
-
-        argv.rval().setObject(*new_module);
+        argv.rval().setObject(*gjs_cx->nameToModule[full_path.get()]);
         return true;
     }
 
