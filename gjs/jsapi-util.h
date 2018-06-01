@@ -77,8 +77,10 @@ public:
 };
 
 /* For use of GjsAutoInfo<T> in GC hash maps */
+namespace JS {
 template<typename T>
-struct JS::GCPolicy<GjsAutoInfo<T>> : public JS::IgnoreGCPolicy<GjsAutoInfo<T>> {};
+struct GCPolicy<GjsAutoInfo<T>> : public IgnoreGCPolicy<GjsAutoInfo<T>> {};
+}
 
 struct GjsJSFreeArgs {
     void operator() (char *str) {
