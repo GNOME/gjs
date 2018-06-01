@@ -55,6 +55,15 @@ JSObject *gjs_construct_object_dynamic(JSContext                  *cx,
                                        JS::HandleObject            proto,
                                        const JS::HandleValueArray& args);
 
+bool gjs_define_property_dynamic(JSContext       *cx,
+                                 JS::HandleObject proto,
+                                 const char      *prop_name,
+                                 const char      *func_namespace,
+                                 JSNative         getter,
+                                 JSNative         setter,
+                                 JS::HandleValue  private_slot,
+                                 unsigned         flags);
+
 /*
  * Helper methods to access private data:
  *
@@ -334,5 +343,7 @@ gjs_##name##_constructor(JSContext  *context,           \
     }
 
 G_END_DECLS
+
+JS::Value gjs_dynamic_property_private_slot(JSObject *accessor_obj);
 
 #endif /* GJS_JSAPI_CLASS_H */

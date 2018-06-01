@@ -54,6 +54,8 @@
 #include <util/log.h>
 #include <girepository.h>
 
+#include "js/GCHashTable.h"
+
 typedef class GjsListLink GjsListLink;
 typedef struct ObjectInstance ObjectInstance;
 
@@ -113,6 +115,20 @@ class GjsListLink {
     }
 };
 
+using ParamRef = std::unique_ptr<GParamSpec, decltype(&g_param_spec_unref)>;
+using PropertyCache = JS::GCHashMap<JS::Heap<JSString *>, ParamRef,
+                                    js::DefaultHasher<JSString *>,
+                                    js::SystemAllocPolicy>;
+using FieldCache = JS::GCHashMap<JS::Heap<JSString *>, GjsAutoInfo<GIFieldInfo>,
+                                 js::DefaultHasher<JSString *>,
+                                 js::SystemAllocPolicy>;
+
+/* This tells the GCHashMap that the GC doesn't need to care about ParamRef */
+namespace JS {
+template<>
+struct GCPolicy<ParamRef> : public IgnoreGCPolicy<ParamRef> {};
+};
+
 struct ObjectInstance {
     GIObjectInfo *info;
     GObject *gobj; /* NULL if we are the prototype and not an instance */
@@ -140,7 +156,6 @@ struct ObjectInstance {
 
 static std::stack<JS::PersistentRootedObject> object_init_list;
 
-using ParamRef = std::unique_ptr<GParamSpec, decltype(&g_param_spec_unref)>;
 using ParamRefArray = std::vector<ParamRef>;
 static std::unordered_map<GType, ParamRefArray> class_init_properties;
 
@@ -152,12 +167,6 @@ GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 
 static void disassociate_js_gobject(ObjectInstance *priv);
 static void ensure_uses_toggle_ref(JSContext *cx, ObjectInstance *priv);
-
-typedef enum {
-    SOME_ERROR_OCCURRED = false,
-    NO_SUCH_G_PROPERTY,
-    VALUE_WAS_SET
-} ValueFromPropertyResult;
 
 static GQuark
 gjs_is_custom_type_quark (void)
@@ -188,6 +197,12 @@ gjs_object_priv_quark (void)
 
     return val;
 }
+
+static
+G_DEFINE_QUARK(gjs::property-cache, gjs_property_cache);
+
+static
+G_DEFINE_QUARK(gjs::field-cache, gjs_field_cache);
 
 /* Plain g_type_query fails and leaves @query uninitialized for
    dynamic types.
@@ -237,60 +252,55 @@ set_object_qdata(GObject        *gobj,
     g_object_set_qdata(gobj, gjs_object_priv_quark(), priv);
 }
 
-static ValueFromPropertyResult
-init_g_param_from_property(JSContext      *context,
-                           const char     *js_prop_name,
-                           JS::HandleValue value,
-                           GType           gtype,
-                           GParameter     *parameter,
-                           bool            constructing)
+static PropertyCache *
+get_property_cache(ObjectInstance *proto_priv)
+{
+    void *data = g_type_get_qdata(proto_priv->gtype, gjs_property_cache_quark());
+    return static_cast<PropertyCache *>(data);
+}
+
+static FieldCache *
+get_field_cache(ObjectInstance *proto_priv)
+{
+    void *data = g_type_get_qdata(proto_priv->gtype, gjs_field_cache_quark());
+    return static_cast<FieldCache *>(data);
+}
+
+static GParamSpec *
+find_param_spec_from_id(JSContext       *cx,
+                        ObjectInstance  *proto_priv,
+                        JS::HandleString key)
 {
     char *gname;
-    GParamSpec *param_spec;
     void *klass;
 
-    gname = gjs_hyphen_from_camel(js_prop_name);
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Hyphen name %s on %s", gname, g_type_name(gtype));
+    /* First check for the ID in the cache */
+    PropertyCache *cache = get_property_cache(proto_priv);
+    g_assert(cache);
+    auto entry = cache->lookupForAdd(key);
+    if (entry)
+        return entry->value().get();
 
+    GjsAutoJSChar js_prop_name;
+    if (!gjs_string_to_utf8(cx, JS::StringValue(key), &js_prop_name))
+        return nullptr;
+
+    GType gtype = proto_priv->gtype;
+    gname = gjs_hyphen_from_camel(js_prop_name);
     klass = g_type_class_ref(gtype);
-    param_spec = g_object_class_find_property(G_OBJECT_CLASS(klass),
-                                              gname);
+    ParamRef param_spec(g_object_class_find_property(G_OBJECT_CLASS(klass), gname),
+                        g_param_spec_unref);
     g_type_class_unref(klass);
     g_free(gname);
 
-    if (param_spec == NULL) {
-        /* not a GObject prop, so nothing else to do */
-        return NO_SUCH_G_PROPERTY;
+    if (!param_spec) {
+        _gjs_proxy_throw_nonexistent_field(cx, proto_priv->gtype, js_prop_name);
+        return nullptr;
     }
 
-    /* Do not set JS overridden properties through GObject, to avoid
-     * infinite recursion (but set them when constructing) */
-    if (!constructing &&
-        g_param_spec_get_qdata(param_spec, gjs_is_custom_property_quark()))
-        return NO_SUCH_G_PROPERTY;
-
-
-    if ((param_spec->flags & G_PARAM_WRITABLE) == 0) {
-        /* prevent setting the prop even in JS */
-        gjs_throw(context, "Property %s (GObject %s) is not writable",
-                     js_prop_name, param_spec->name);
-        return SOME_ERROR_OCCURRED;
-    }
-
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Syncing %s to GObject prop %s",
-                     js_prop_name, param_spec->name);
-
-    g_value_init(&parameter->value, G_PARAM_SPEC_VALUE_TYPE(param_spec));
-    if (!gjs_value_to_g_value(context, value, &parameter->value)) {
-        g_value_unset(&parameter->value);
-        return SOME_ERROR_OCCURRED;
-    }
-
-    parameter->name = param_spec->name;
-
-    return VALUE_WAS_SET;
+    if (!cache->add(entry, key, std::move(param_spec)))
+        g_error("Out of memory adding param spec to cache");
+    return entry->value().get();  /* owned by property cache */
 }
 
 static inline ObjectInstance *
@@ -302,26 +312,71 @@ proto_priv_from_js(JSContext       *context,
     return priv_from_js(context, proto);
 }
 
+/* A hook on adding a property to an object. This is called during a set
+ * property operation after all the resolve hooks on the prototype chain have
+ * failed to resolve. We use this to mark an object as needing toggle refs when
+ * custom state is set on it, because we need to keep the JS GObject wrapper
+ * alive in order not to lose custom "expando" properties.
+ */
 static bool
-get_prop_from_g_param(JSContext             *context,
-                      JS::HandleObject       obj,
-                      ObjectInstance        *priv,
-                      const char            *name,
-                      JS::MutableHandleValue value_p)
+object_instance_add_prop(JSContext       *cx,
+                         JS::HandleObject obj,
+                         JS::HandleId     id,
+                         JS::HandleValue  value)
 {
-    char *gname;
+    ObjectInstance *priv = priv_from_js(cx, obj);
+
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
+                     "Add prop '%s' hook, obj %s, priv %p, gobj %p %s",
+                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str(),
+                     priv,
+                     priv ? priv->gobj : nullptr,
+                     priv ? g_type_name(priv->gtype) : "(type unknown)");
+
+    if (!priv ||        /* during init: property is not being added from JS */
+        !priv->gobj ||  /* prototype, not instance */
+        !priv->info ||  /* custom JS class, already uses toggle ref */
+        priv->g_object_finalized)
+        return true;
+
+    ensure_uses_toggle_ref(cx, priv);
+    return true;
+}
+
+static bool
+object_prop_getter(JSContext *cx,
+                   unsigned   argc,
+                   JS::Value *vp)
+{
+    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectInstance, priv);
+
+    JS::RootedString name(cx,
+        gjs_dynamic_property_private_slot(&args.callee()).toString());
+
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Property getter '%s', obj %p priv %p",
+                     gjs_debug_string(name).c_str(),
+                     gjs_debug_object(obj).c_str(), priv);
+
+    if (!priv->gobj)  /* prototype, not an instance. */
+        return true;
+        /* Ignore silently; note that this is different from what we do for
+         * boxed types, for historical reasons */
+
+    if (priv->g_object_finalized) {
+        g_critical("Object %s (%p), has been already finalized. "
+                   "Impossible to get any property from it.",
+                   g_type_name(priv->gtype), priv->gobj);
+        gjs_dumpstack();
+        return true;
+    }
+
     GParamSpec *param;
     GValue gvalue = { 0, };
 
-    gname = gjs_hyphen_from_camel(name);
-    param = g_object_class_find_property(G_OBJECT_GET_CLASS(priv->gobj),
-                                         gname);
-    g_free(gname);
+    param = find_param_spec_from_id(cx, proto_priv_from_js(cx, obj), name);
 
-    if (param == NULL) {
-        /* leave value_p as it was */
-        return true;
-    }
+    /* This is guaranteed because we resolved the property before */
+    g_assert(param);
 
     /* Do not fetch JS overridden properties from GObject, to avoid
      * infinite recursion. */
@@ -331,14 +386,13 @@ get_prop_from_g_param(JSContext             *context,
     if ((param->flags & G_PARAM_READABLE) == 0)
         return true;
 
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Overriding %s with GObject prop %s",
-                     name, param->name);
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Accessing GObject property %s",
+                     param->name);
 
     g_value_init(&gvalue, G_PARAM_SPEC_VALUE_TYPE(param));
     g_object_get_property(priv->gobj, param->name,
                           &gvalue);
-    if (!gjs_value_from_g_value(context, value_p, &gvalue)) {
+    if (!gjs_value_from_g_value(cx, args.rval(), &gvalue)) {
         g_value_unset(&gvalue);
         return false;
     }
@@ -374,20 +428,66 @@ lookup_field_info(GIObjectInfo *info,
     return retval;
 }
 
-static bool
-get_prop_from_field(JSContext             *cx,
-                    JS::HandleObject       obj,
-                    ObjectInstance        *priv,
-                    const char            *name,
-                    JS::MutableHandleValue value_p)
+static GIFieldInfo *
+find_field_info_from_id(JSContext       *cx,
+                        ObjectInstance  *proto_priv,
+                        JS::HandleString key)
 {
-    if (priv->info == NULL)
-        return true;  /* Not resolved, but no error; leave value_p untouched */
+    /* First check for the ID in the cache */
+    FieldCache *cache = get_field_cache(proto_priv);
+    g_assert(cache);
+    auto entry = cache->lookupForAdd(key);
+    if (entry)
+        return entry->value().get();
 
-    GIFieldInfo *field = lookup_field_info(priv->info, name);
+    GjsAutoJSChar js_prop_name;
+    if (!gjs_string_to_utf8(cx, JS::StringValue(key), &js_prop_name))
+        return nullptr;
 
-    if (field == NULL)
+    GjsAutoInfo<GIFieldInfo> field =
+        lookup_field_info(proto_priv->info, js_prop_name);
+
+    if (!field) {
+        _gjs_proxy_throw_nonexistent_field(cx, proto_priv->gtype, js_prop_name);
+        return nullptr;
+    }
+
+    if (!cache->add(entry, key, std::move(field)))
+        g_error("Out of memory adding field info to cache");
+    return entry->value().get();  /* owned by field cache */
+}
+
+static bool
+object_field_getter(JSContext *cx,
+                    unsigned   argc,
+                    JS::Value *vp)
+{
+    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectInstance, priv);
+
+    JS::RootedString name(cx,
+        gjs_dynamic_property_private_slot(&args.callee()).toString());
+
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Field getter '%s', obj %p priv %p",
+                     gjs_debug_string(name).c_str(),
+                     gjs_debug_object(obj).c_str(), priv);
+
+    if (priv->gobj == NULL) /* prototype, not an instance. */
         return true;
+        /* Ignore silently; note that this is different from what we do for
+         * boxed types, for historical reasons */
+
+    if (priv->g_object_finalized) {
+        g_critical("Object %s (%p), has been already finalized. "
+                   "Impossible to get GObject field from it.",
+                   g_type_name(priv->gtype), priv->gobj);
+        gjs_dumpstack();
+        return true;
+    }
+
+    GIFieldInfo *field = find_field_info_from_id(cx, proto_priv_from_js(cx, obj),
+                                                 name);
+    /* This is guaranteed because we resolved the property before */
+    g_assert(field);
 
     bool retval = true;
     GITypeInfo *type = NULL;
@@ -395,7 +495,7 @@ get_prop_from_field(JSContext             *cx,
     GIArgument arg = { 0 };
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Overriding %s with GObject field",
-                     name);
+                     gjs_debug_string(name).c_str());
 
     type = g_field_info_get_type(field);
     tag = g_type_info_get_tag(type);
@@ -406,55 +506,53 @@ get_prop_from_field(JSContext             *cx,
         tag == GI_TYPE_TAG_GHASH ||
         tag == GI_TYPE_TAG_ERROR) {
         gjs_throw(cx, "Can't get field %s; GObject introspection supports only "
-                  "fields with simple types, not %s", name,
-                  g_type_tag_to_string(tag));
+                  "fields with simple types, not %s",
+                  gjs_debug_string(name).c_str(), g_type_tag_to_string(tag));
         retval = false;
         goto out;
     }
 
     retval = g_field_info_get_field(field, priv->gobj, &arg);
     if (!retval) {
-        gjs_throw(cx, "Error getting field %s from object", name);
+        gjs_throw(cx, "Error getting field %s from object",
+                  gjs_debug_string(name).c_str());
         goto out;
     }
 
-    retval = gjs_value_from_g_argument(cx, value_p, type, &arg, true);
+    retval = gjs_value_from_g_argument(cx, args.rval(), type, &arg, true);
     /* copy_structs is irrelevant because g_field_info_get_field() doesn't
      * handle boxed types */
 
 out:
     if (type != NULL)
         g_base_info_unref((GIBaseInfo *) type);
-    g_base_info_unref((GIBaseInfo *) field);
     return retval;
 }
 
-/* a hook on getting a property; set value_p to override property's value.
- * Return value is false on OOM/exception.
- */
+/* Dynamic setter for GObject properties. Returns false on OOM/exception.
+ * args.rval() becomes the "stored value" for the property. */
 static bool
-object_instance_get_prop(JSContext              *context,
-                         JS::HandleObject        obj,
-                         JS::HandleId            id,
-                         JS::MutableHandleValue  value_p)
+object_prop_setter(JSContext *cx,
+                   unsigned   argc,
+                   JS::Value *vp)
 {
-    ObjectInstance *priv = priv_from_js(context, obj);
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Get prop '%s' hook, obj %s, priv %p",
-                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str(), priv);
+    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectInstance, priv);
 
-    if (priv == nullptr)
-        /* If we reach this point, either object_instance_new_resolve
-         * did not throw (so name == "_init"), or the property actually
-         * exists and it's not something we should be concerned with */
-        return true;
+    JS::RootedString name(cx,
+        gjs_dynamic_property_private_slot(&args.callee()).toString());
+
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Property setter '%s', obj %p priv %p",
+                     gjs_debug_string(name).c_str(),
+                     gjs_debug_object(obj).c_str(), priv);
 
     if (priv->gobj == NULL) /* prototype, not an instance. */
         return true;
+        /* Ignore silently; note that this is different from what we do for
+         * boxed types, for historical reasons */
 
     if (priv->g_object_finalized) {
         g_critical("Object %s.%s (%p), has been already finalized. "
-                   "Impossible to get any property from it.",
+                   "Impossible to set any property on it.",
                    priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
                    priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
                    priv->gobj);
@@ -462,149 +560,87 @@ object_instance_get_prop(JSContext              *context,
         return true;
     }
 
-    GjsAutoJSChar name;
-    if (!gjs_get_string_id(context, id, &name))
-        return true; /* not resolved, but no error */
-
-    if (!get_prop_from_g_param(context, obj, priv, name, value_p))
+    GParamSpec *param_spec =
+        find_param_spec_from_id(cx, proto_priv_from_js(cx, obj), name);
+    if (!param_spec)
         return false;
 
-    if (!value_p.isUndefined())
+    /* Do not set JS overridden properties through GObject, to avoid
+     * infinite recursion (unless constructing) */
+    if (g_param_spec_get_qdata(param_spec, gjs_is_custom_property_quark()))
         return true;
 
-    /* Fall back to fields */
-    return get_prop_from_field(context, obj, priv, name, value_p);
-}
+    if (!(param_spec->flags & G_PARAM_WRITABLE))
+        /* prevent setting the prop even in JS */
+        return _gjs_proxy_throw_readonly_field(cx, priv->gtype, param_spec->name);
 
-static bool
-set_g_param_from_prop(JSContext          *context,
-                      ObjectInstance     *priv,
-                      const char         *name,
-                      bool&               was_set,
-                      JS::HandleValue     value_p,
-                      JS::ObjectOpResult& result)
-{
-    GParameter param = { NULL, { 0, }};
-    was_set = false;
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop %s",
+                     param_spec->name);
 
-    switch (init_g_param_from_property(context, name,
-                                       value_p,
-                                       G_TYPE_FROM_INSTANCE(priv->gobj),
-                                       &param,
-                                       false /* constructing */)) {
-    case SOME_ERROR_OCCURRED:
+    GValue value = G_VALUE_INIT;
+    g_value_init(&value, G_PARAM_SPEC_VALUE_TYPE(param_spec));
+    if (!gjs_value_to_g_value(cx, args[0], &value)) {
+        g_value_unset(&value);
         return false;
-    case NO_SUCH_G_PROPERTY:
-        /* We need to keep the wrapper alive in order not to lose custom
-         * "expando" properties */
-        ensure_uses_toggle_ref(context, priv);
-        return result.succeed();
-    case VALUE_WAS_SET:
-    default:
-        break;
     }
 
-    g_object_set_property(priv->gobj, param.name,
-                          &param.value);
+    g_object_set_property(priv->gobj, param_spec->name, &value);
+    g_value_unset(&value);
 
-    g_value_unset(&param.value);
-    was_set = true;
-    return result.succeed();
+    /* Clear the JS stored value, to avoid keeping additional references */
+    args.rval().setUndefined();
+
+    return true;
 }
 
 static bool
-check_set_field_from_prop(JSContext             *cx,
-                          ObjectInstance        *priv,
-                          const char            *name,
-                          JS::MutableHandleValue value_p,
-                          JS::ObjectOpResult&    result)
+object_field_setter(JSContext *cx,
+                    unsigned   argc,
+                    JS::Value *vp)
 {
-    if (priv->info == NULL)
-        return result.succeed();
+    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectInstance, priv);
 
-    GIFieldInfo *field = lookup_field_info(priv->info, name);
+    JS::RootedString name(cx,
+        gjs_dynamic_property_private_slot(&args.callee()).toString());
+
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Field setter '%s', obj %p priv %p",
+                     gjs_debug_string(name).c_str(),
+                     gjs_debug_object(obj).c_str(), priv);
+
+    if (priv->gobj == NULL) /* prototype, not an instance. */
+        return true;
+        /* Ignore silently; note that this is different from what we do for
+         * boxed types, for historical reasons */
+
+    if (priv->g_object_finalized) {
+        g_critical("Object %s (%p), has been already finalized. "
+                   "Impossible to set GObject field on it.",
+                   g_type_name(priv->gtype), priv->gobj);
+        gjs_dumpstack();
+        return true;
+    }
+
+    GIFieldInfo *field =
+        find_field_info_from_id(cx, proto_priv_from_js(cx, obj), name);
     if (field == NULL)
-        return result.succeed();
-
-    bool retval = true;
+        return false;
 
     /* As far as I know, GI never exposes GObject instance struct fields as
      * writable, so no need to implement this for the time being */
     if (g_field_info_get_flags(field) & GI_FIELD_IS_WRITABLE) {
         g_message("Field %s of a GObject is writable, but setting it is not "
-                  "implemented", name);
-        result.succeed();
-        goto out;
+                  "implemented", gjs_debug_string(name).c_str());
+        return true;
     }
 
-    result.failReadOnly();  /* still return true; error only in strict mode */
-
-    /* We have to update value_p because JS caches it as the property's "stored
+    /* We have to update args.rval(), because JS caches it as the property's "stored
      * value" (https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/JSAPI_reference/Stored_value)
      * and so subsequent gets would get the stored value instead of accessing
      * the field */
-    value_p.setUndefined();
-out:
-    g_base_info_unref((GIBaseInfo *) field);
-    return retval;
-}
+    args.rval().setUndefined();
 
-/* a hook on setting a property; set value_p to override property value to
- * be set. Return value is false on OOM/exception.
- */
-static bool
-object_instance_set_prop(JSContext              *context,
-                         JS::HandleObject        obj,
-                         JS::HandleId            id,
-                         JS::MutableHandleValue  value_p,
-                         JS::ObjectOpResult&     result)
-{
-    ObjectInstance *priv;
-    bool ret = true;
-    bool g_param_was_set = false;
-
-    priv = priv_from_js(context, obj);
-
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Set prop '%s' hook, obj %s, priv %p",
-                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str(),
-                     priv);
-
-    if (priv == nullptr)
-        /* see the comment in object_instance_get_prop() on this */
-        return result.succeed();
-
-    if (priv->gobj == NULL) /* prototype, not an instance. */
-        return result.succeed();
-
-    if (priv->g_object_finalized) {
-        g_critical("Object %s.%s (%p), has been already finalized. "
-                   "Impossible to set any property to it.",
-                   priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
-                   priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
-                   priv->gobj);
-        gjs_dumpstack();
-        return result.succeed();
-    }
-
-    GjsAutoJSChar name;
-    if (!gjs_get_string_id(context, id, &name)) {
-        /* We need to keep the wrapper alive in order not to lose custom
-         * "expando" properties. In this case if gjs_get_string_id() is false
-         * then a number or symbol property was probably set. */
-        ensure_uses_toggle_ref(context, priv);
-        return result.succeed();  /* not resolved, but no error */
-    }
-
-    ret = set_g_param_from_prop(context, priv, name, g_param_was_set, value_p, result);
-    if (g_param_was_set || !ret)
-        return ret;
-
-    /* note that the prop will also have been set in JS, which I think
-     * is OK, since we hook get and set so will always override that
-     * value. We could also use JS_DefineProperty though and specify a
-     * getter/setter maybe, don't know if that is better.
-     */
-    return check_set_field_from_prop(context, priv, name, value_p, result);
+    return _gjs_proxy_throw_readonly_field(cx, priv->gtype,
+                                           g_base_info_get_name(field));
 }
 
 static bool
@@ -773,12 +809,17 @@ is_gobject_property_name(GIObjectInfo *info,
 
 static bool
 is_gobject_field_name(GIObjectInfo *info,
-                      const char   *name)
+                      const char   *name,
+                      GIFieldInfo **field_info_out)
 {
     GIFieldInfo *field_info = lookup_field_info(info, name);
     if (!field_info)
         return false;
-    g_base_info_unref(field_info);
+
+    if (field_info_out)
+        *field_info_out = field_info;
+    else
+        g_base_info_unref(field_info);
     return true;
 }
 
@@ -886,15 +927,65 @@ object_instance_resolve(JSContext       *context,
          * method resolution. */
     }
 
-    /* If the name refers to a GObject property or field, don't resolve.
-     * Instead, let the getProperty hook handle fetching the property from
-     * GObject. */
-    if (is_gobject_property_name(priv->info, name) ||
-        is_gobject_field_name(priv->info, name)) {
+    /* If the name refers to a GObject property or field, lazily define the
+     * property in JS, on the prototype. */
+    if (is_gobject_property_name(priv->info, name)) {
+        JS::RootedObject proto(context);
+        JS_GetPrototype(context, obj, &proto);
+
+        bool found = false;
+        if (!JS_AlreadyHasOwnPropertyById(context, proto, id, &found))
+            return false;
+        if (found) {
+            /* Already defined, so *resolved = false because we didn't just
+             * define it */
+            *resolved = false;
+            return true;
+        }
+
         gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                         "Breaking out of %p resolve, '%s' is a GObject prop",
-                         obj.get(), name.get());
-        *resolved = false;
+                         "Defining lazy GObject property '%s' in prototype of %s",
+                         gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str());
+
+        JS::RootedValue private_id(context, JS::StringValue(JSID_TO_STRING(id)));
+        if (!gjs_define_property_dynamic(context, proto, name, "gobject_prop",
+                                         object_prop_getter, object_prop_setter,
+                                         private_id, GJS_MODULE_PROP_FLAGS))
+            return false;
+
+        *resolved = true;
+        return true;
+    }
+
+    GIFieldInfo *field_info;
+    if (is_gobject_field_name(priv->info, name, &field_info)) {
+        JS::RootedObject proto(context);
+        JS_GetPrototype(context, obj, &proto);
+
+        bool found = false;
+        if (!JS_AlreadyHasOwnPropertyById(context, proto, id, &found))
+            return false;
+        if (found) {
+            *resolved = false;
+            return true;
+        }
+
+        gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
+                         "Defining lazy GObject field '%s' in prototype of %s",
+                         gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str());
+
+        unsigned flags = GJS_MODULE_PROP_FLAGS;
+        if (!(g_field_info_get_flags(field_info) & GI_FIELD_IS_WRITABLE))
+            flags |= JSPROP_READONLY;
+
+        JS::RootedValue private_id(context, JS::StringValue(JSID_TO_STRING(id)));
+        if (!gjs_define_property_dynamic(context, proto, name, "gobject_field",
+                                         object_field_getter,
+                                         object_field_setter, private_id,
+                                         flags))
+            return false;
+
+        *resolved = true;
         return true;
     }
 
@@ -959,7 +1050,7 @@ static bool
 object_instance_props_to_g_parameters(JSContext                  *context,
                                       JSObject                   *obj,
                                       const JS::HandleValueArray& args,
-                                      GType                       gtype,
+                                      ObjectInstance             *proto_priv,
                                       std::vector<GParameter>&    gparams)
 {
     size_t ix, length;
@@ -989,25 +1080,34 @@ object_instance_props_to_g_parameters(JSContext                  *context,
          * doesn't know that */
         prop_id = ids[ix];
 
-        if (!gjs_object_require_property(context, props, "property list",
-                                         prop_id, &value) ||
-            !gjs_get_string_id(context, prop_id, &name))
+        if (!JSID_IS_STRING(prop_id))
+            return _gjs_proxy_throw_nonexistent_field(context, proto_priv->gtype,
+                                                      gjs_debug_id(prop_id).c_str());
+
+        JS::RootedString js_prop_name(context, JSID_TO_STRING(prop_id));
+        GParamSpec *param_spec = find_param_spec_from_id(context, proto_priv,
+                                                         js_prop_name);
+        if (!param_spec)
             return false;
 
-        switch (init_g_param_from_property(context, name,
-                                           value,
-                                           gtype,
-                                           &gparam,
-                                           true /* constructing */)) {
-        case NO_SUCH_G_PROPERTY:
-            gjs_throw(context, "No property %s on this GObject %s",
-                      name.get(), g_type_name(gtype));
-            /* fallthrough */
-        case SOME_ERROR_OCCURRED:
+        if (!JS_GetPropertyById(context, props, prop_id, &value))
             return false;
-        case VALUE_WAS_SET:
-        default:
-            break;
+        if (value.isUndefined()) {
+            gjs_throw(context, "Invalid value 'undefined' for property %s in "
+                      "object initializer.", param_spec->name);
+            return false;
+        }
+
+        if (!(param_spec->flags & G_PARAM_WRITABLE))
+            return _gjs_proxy_throw_readonly_field(context, proto_priv->gtype,
+                                                   param_spec->name);
+            /* prevent setting the prop even in JS */
+
+        gparam.name = param_spec->name;
+        g_value_init(&gparam.value, G_PARAM_SPEC_VALUE_TYPE(param_spec));
+        if (!gjs_value_to_g_value(context, value, &gparam.value)) {
+            g_value_unset(&gparam.value);
+            return false;
         }
 
         gparams.push_back(gparam);
@@ -1332,7 +1432,8 @@ update_heap_wrapper_weak_pointers(JSContext     *cx,
 {
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Weak pointer update callback, "
                         "%zu wrapped GObject(s) to examine",
-                        wrapped_gobject_list->instance_link.size());
+                        wrapped_gobject_list ?
+                            wrapped_gobject_list->instance_link.size() : 0);
 
     std::vector<ObjectInstance *> to_be_disassociated;
     ObjectInstance *priv = wrapped_gobject_list;
@@ -1402,6 +1503,10 @@ ensure_uses_toggle_ref(JSContext      *cx,
 {
     if (priv->uses_toggle_ref)
         return;
+
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
+                     "Switching object instance %p, gobj %p %s to toggle ref",
+                     priv, priv->gobj, g_type_name(priv->gtype));
 
     g_assert(!priv->keep_alive.rooted());
 
@@ -1493,7 +1598,8 @@ object_instance_init (JSContext                  *context,
     g_assert(gtype != G_TYPE_NONE);
 
     if (!object_instance_props_to_g_parameters(context, object, args,
-                                               gtype, params)) {
+                                               proto_priv_from_js(context, object),
+                                               params)) {
         clear_g_params(params);
         return false;
     }
@@ -1610,6 +1716,13 @@ object_instance_trace(JSTracer *tracer,
 
     for (GClosure *closure : priv->closures)
         gjs_closure_trace(closure, tracer);
+
+    PropertyCache *property_cache = get_property_cache(priv);
+    if (property_cache)
+        property_cache->trace(tracer);
+    FieldCache *field_cache = get_field_cache(priv);
+    if (field_cache)
+        field_cache->trace(tracer);
 }
 
 static void
@@ -1635,6 +1748,20 @@ object_instance_finalize(JSFreeOp  *fop,
     TRACE(GJS_OBJECT_PROXY_FINALIZE(priv, priv->gobj,
                                     priv->info ? g_base_info_get_namespace((GIBaseInfo*) priv->info) : "_gjs_private",
                                     priv->info ? g_base_info_get_name((GIBaseInfo*) priv->info) : g_type_name(priv->gtype)));
+
+    /* Prototype only, although if priv->gobj is null it could also be an
+     * instance struct with a freed gobject. This is annoying. It means we have
+     * to always do this, and have an extra null check. */
+    PropertyCache *property_cache = get_property_cache(priv);
+    if (property_cache) {
+        delete property_cache;
+        g_type_set_qdata(priv->gtype, gjs_property_cache_quark(), nullptr);
+    }
+    FieldCache *field_cache = get_field_cache(priv);
+    if (field_cache) {
+        delete field_cache;
+        g_type_set_qdata(priv->gtype, gjs_field_cache_quark(), nullptr);
+    }
 
     /* This applies only to instances, not prototypes, but it's possible that
      * an instance's GObject is already freed at this point. */
@@ -2015,10 +2142,10 @@ to_string_func(JSContext *context,
 }
 
 static const struct JSClassOps gjs_object_class_ops = {
-    NULL,  /* addProperty */
+    object_instance_add_prop,
     NULL,  /* deleteProperty */
-    object_instance_get_prop,
-    object_instance_set_prop,
+    nullptr,  /* getProperty */
+    nullptr,  /* setProperty */
     NULL,  /* enumerate */
     object_instance_resolve,
     nullptr,  /* mayResolve */
@@ -2215,6 +2342,17 @@ gjs_define_object_class(JSContext              *context,
         g_base_info_ref((GIBaseInfo*) info);
     priv->gtype = gtype;
     priv->klass = (GTypeClass*) g_type_class_ref (gtype);
+
+    auto *property_cache = new PropertyCache();
+    if (!property_cache->init())
+        g_error("Out of memory for property cache of %s", g_type_name(gtype));
+    g_type_set_qdata(gtype, gjs_property_cache_quark(), property_cache);
+
+    auto *field_cache = new FieldCache();
+    if (!field_cache->init())
+        g_error("Out of memory for field cache of %s", g_type_name(gtype));
+    g_type_set_qdata(gtype, gjs_field_cache_quark(), field_cache);
+
     JS_SetPrivate(prototype, priv);
 
     gjs_debug(GJS_DEBUG_GOBJECT, "Defined class for %s (%s), prototype %p, "

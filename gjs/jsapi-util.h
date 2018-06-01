@@ -66,6 +66,20 @@ public:
     }
 };
 
+template<typename T = GIBaseInfo>
+class GjsAutoInfo : public std::unique_ptr<T, decltype(&g_base_info_unref)> {
+public:
+    GjsAutoInfo(T *ptr = nullptr) : GjsAutoInfo::unique_ptr(ptr, g_base_info_unref) {}
+
+    operator T *() { return GjsAutoInfo::unique_ptr::get(); }
+
+    const char *name(void) { return g_base_info_get_name(this); }
+};
+
+/* For use of GjsAutoInfo<T> in GC hash maps */
+template<typename T>
+struct JS::GCPolicy<GjsAutoInfo<T>> : public JS::IgnoreGCPolicy<GjsAutoInfo<T>> {};
+
 struct GjsJSFreeArgs {
     void operator() (char *str) {
         JS_free(nullptr, str);

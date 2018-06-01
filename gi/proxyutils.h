@@ -36,6 +36,14 @@ bool _gjs_proxy_to_string_func(JSContext             *context,
                                gpointer               native_address,
                                JS::MutableHandleValue ret);
 
+bool _gjs_proxy_throw_nonexistent_field(JSContext  *cx,
+                                        GType       gtype,
+                                        const char *field_name);
+
+bool _gjs_proxy_throw_readonly_field(JSContext  *cx,
+                                     GType       gtype,
+                                     const char *field_name);
+
 G_END_DECLS
 
 #endif  /* __GJS_OBJECT_H__ */

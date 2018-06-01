@@ -678,4 +678,12 @@ describe('GObject properties', function () {
         obj.some_gvalue = 'foo';
         expect(obj.some_gvalue).toEqual('foo');
     });
+
+    xit('gets a read-only property', function () {
+        expect(obj.some_readonly).toEqual(42);
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/32');
+
+    xit('throws when setting a read-only property', function () {
+        expect(() => obj.some_readonly = 35).toThrow();
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/32');
 });
