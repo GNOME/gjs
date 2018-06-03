@@ -862,17 +862,6 @@ object_instance_resolve(JSContext       *context,
         return true;
     }
 
-    if (priv->g_object_finalized) {
-        g_critical("Object %s.%s (%p), has been already finalized. "
-                   "Impossible to resolve it.",
-                   priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
-                   priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
-                   priv->gobj);
-        gjs_dumpstack();
-        *resolved = false;
-        return true;
-    }
-
     GjsAutoJSChar name;
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
@@ -1705,15 +1694,6 @@ object_instance_trace(JSTracer *tracer,
     if (priv == NULL)
         return;
 
-    if (priv->g_object_finalized) {
-        g_debug("Object %s.%s (%p), has been already finalized. "
-                "Impossible to trace it.",
-                 priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
-                 priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
-                 priv->gobj);
-        return;
-    }
-
     for (GClosure *closure : priv->closures)
         gjs_closure_trace(closure, tracer);
 
@@ -2418,6 +2398,19 @@ gjs_g_object_from_object(JSContext       *context,
         return NULL;
 
     priv = priv_from_js(context, obj);
+
+    if (priv->g_object_finalized) {
+        g_critical("Object %s.%s (%p), has been already deallocated - "
+                   "impossible to access it. This might be caused by the "
+                   "object having been destroyed from C code using something "
+                   "such as destroy(), dispose(), or remove() vfuncs",
+                   priv->info ? g_base_info_get_namespace(priv->info) : "",
+                   priv->info ? g_base_info_get_name(priv->info) : g_type_name(priv->gtype),
+                   priv->gobj);
+        gjs_dumpstack();
+        return nullptr;
+    }
+
     return priv->gobj;
 }
 
@@ -2464,19 +2457,7 @@ gjs_typecheck_object(JSContext       *context,
         return false;
     }
 
-    if (priv->g_object_finalized) {
-        g_critical("Object %s.%s (%p), has been already deallocated - impossible to access to it. "
-                   "This might be caused by the fact that the object has been destroyed from C "
-                   "code using something such as destroy(), dispose(), or remove() vfuncs",
-                   priv->info ? g_base_info_get_namespace( (GIBaseInfo*) priv->info) : "",
-                   priv->info ? g_base_info_get_name( (GIBaseInfo*) priv->info) : g_type_name(priv->gtype),
-                   priv->gobj);
-        gjs_dumpstack();
-
-        return true;
-    }
-
-    g_assert(priv->gtype == G_OBJECT_TYPE(priv->gobj));
+    g_assert(priv->g_object_finalized || priv->gtype == G_OBJECT_TYPE(priv->gobj));
 
     if (expected_type != G_TYPE_NONE)
         result = g_type_is_a (priv->gtype, expected_type);
