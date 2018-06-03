@@ -303,7 +303,7 @@ find_param_spec_from_id(JSContext       *cx,
     return entry->value().get();  /* owned by property cache */
 }
 
-static inline ObjectInstance *
+static ObjectInstance *
 proto_priv_from_js(JSContext       *context,
                    JS::HandleObject obj)
 {
