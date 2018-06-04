@@ -115,6 +115,13 @@ class GjsListLink {
     }
 };
 
+struct AutoGValueVector : public std::vector<GValue> {
+    ~AutoGValueVector() {
+        for (GValue value : *this)
+            g_value_unset(&value);
+    }
+};
+
 using ParamRef = std::unique_ptr<GParamSpec, decltype(&g_param_spec_unref)>;
 using PropertyCache = JS::GCHashMap<JS::Heap<JSString *>, ParamRef,
                                     js::DefaultHasher<JSString *>,
@@ -1032,7 +1039,7 @@ object_instance_resolve(JSContext       *context,
 
 /* Set properties from args to constructor (argv[0] is supposed to be
  * a hash)
- * The GParameter elements in the passed-in vector must be unset by the caller,
+ * The GValue elements in the passed-in vector must be unset by the caller,
  * regardless of the return value of this function.
  */
 static bool
@@ -1040,7 +1047,8 @@ object_instance_props_to_g_parameters(JSContext                  *context,
                                       JSObject                   *obj,
                                       const JS::HandleValueArray& args,
                                       ObjectInstance             *proto_priv,
-                                      std::vector<GParameter>&    gparams)
+                                      std::vector<const char *>  *names,
+                                      AutoGValueVector           *values)
 {
     size_t ix, length;
 
@@ -1062,8 +1070,7 @@ object_instance_props_to_g_parameters(JSContext                  *context,
     }
 
     for (ix = 0, length = ids.length(); ix < length; ix++) {
-        GjsAutoJSChar name;
-        GParameter gparam = { NULL, { 0, }};
+        GValue gvalue = G_VALUE_INIT;
 
         /* ids[ix] is reachable because props is rooted, but require_property
          * doesn't know that */
@@ -1092,14 +1099,14 @@ object_instance_props_to_g_parameters(JSContext                  *context,
                                                    param_spec->name);
             /* prevent setting the prop even in JS */
 
-        gparam.name = param_spec->name;
-        g_value_init(&gparam.value, G_PARAM_SPEC_VALUE_TYPE(param_spec));
-        if (!gjs_value_to_g_value(context, value, &gparam.value)) {
-            g_value_unset(&gparam.value);
+        g_value_init(&gvalue, G_PARAM_SPEC_VALUE_TYPE(param_spec));
+        if (!gjs_value_to_g_value(context, value, &gvalue)) {
+            g_value_unset(&gvalue);
             return false;
         }
 
-        gparams.push_back(gparam);
+        names->push_back(param_spec->name);  /* owned by GParamSpec in cache */
+        values->push_back(gvalue);
     }
 
     return true;
@@ -1563,13 +1570,6 @@ disassociate_js_gobject(ObjectInstance *priv)
     priv->keep_alive = nullptr;
 }
 
-static void
-clear_g_params(std::vector<GParameter>& params)
-{
-    for (GParameter param : params)
-        g_value_unset(&param.value);
-}
-
 static bool
 object_instance_init (JSContext                  *context,
                       JS::MutableHandleObject     object,
@@ -1577,21 +1577,19 @@ object_instance_init (JSContext                  *context,
 {
     ObjectInstance *priv;
     GType gtype;
-    std::vector<GParameter> params;
     GTypeQuery query;
-    GObject *gobj;
 
     priv = (ObjectInstance *) JS_GetPrivate(object);
 
     gtype = priv->gtype;
     g_assert(gtype != G_TYPE_NONE);
 
+    std::vector<const char *> names;
+    AutoGValueVector values;
     if (!object_instance_props_to_g_parameters(context, object, args,
                                                proto_priv_from_js(context, object),
-                                               params)) {
-        clear_g_params(params);
+                                               &names, &values))
         return false;
-    }
 
     /* Mark this object in the construction stack, it
        will be popped in gjs_object_custom_init() later
@@ -1601,17 +1599,15 @@ object_instance_init (JSContext                  *context,
         object_init_list.emplace(context, object);
     }
 
-G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-    gobj = (GObject*) g_object_newv(gtype, params.size(), params.data());
-G_GNUC_END_IGNORE_DEPRECATIONS
-
-    clear_g_params(params);
+    g_assert(names.size() == values.size());
+    GObject *gobj = g_object_new_with_properties(gtype, values.size(),
+                                                 names.data(), values.data());
 
     ObjectInstance *other_priv = get_object_qdata(gobj);
     if (other_priv && other_priv->keep_alive != object.get()) {
-        /* g_object_newv returned an object that's already tracked by a JS
-         * object. Let's assume this is a singleton like IBus.IBus and return
-         * the existing JS wrapper object.
+        /* g_object_new_with_properties() returned an object that's already
+         * tracked by a JS object. Let's assume this is a singleton like
+         * IBus.IBus and return the existing JS wrapper object.
          *
          * 'object' has a value that was originally created by
          * JS_NewObjectForConstructor in GJS_NATIVE_CONSTRUCTOR_PRELUDE, but
