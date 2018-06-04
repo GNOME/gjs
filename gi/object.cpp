@@ -56,10 +56,7 @@
 
 #include "js/GCHashTable.h"
 
-typedef class GjsListLink GjsListLink;
 typedef struct ObjectInstance ObjectInstance;
-
-static GjsListLink* object_instance_get_link(ObjectInstance *priv);
 
 class GjsListLink {
  private:
@@ -67,52 +64,12 @@ class GjsListLink {
     ObjectInstance *m_next;
 
  public:
-    ObjectInstance* prev() {
-        return m_prev;
-    }
+    ObjectInstance *prev(void) { return m_prev; }
+    ObjectInstance *next(void) { return m_next; }
 
-    ObjectInstance* next() {
-        return m_next;
-    }
-
-    void prepend(ObjectInstance *this_instance,
-                 ObjectInstance *head) {
-        GjsListLink *elem = object_instance_get_link(head);
-
-        g_assert(object_instance_get_link(this_instance) == this);
-
-        if (elem->m_prev) {
-            GjsListLink *prev = object_instance_get_link(elem->m_prev);
-            prev->m_next = this_instance;
-            this->m_prev = elem->m_prev;
-        }
-
-        elem->m_prev = this_instance;
-        this->m_next = head;
-    }
-
-    void unlink() {
-        if (m_prev)
-            object_instance_get_link(m_prev)->m_next = m_next;
-        if (m_next)
-            object_instance_get_link(m_next)->m_prev = m_prev;
-
-        m_prev = m_next = NULL;
-    }
-
-    size_t size() {
-        GjsListLink *elem = this;
-        size_t count = 0;
-
-        do {
-            count++;
-            if (!elem->m_next)
-                break;
-            elem = object_instance_get_link(elem->m_next);
-        } while (elem);
-
-        return count;
-    }
+    void prepend(ObjectInstance *this_instance, ObjectInstance *head);
+    void unlink(void);
+    size_t size(void);
 };
 
 struct AutoGValueVector : public std::vector<GValue> {
@@ -174,6 +131,7 @@ GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 
 static void disassociate_js_gobject(ObjectInstance *priv);
 static void ensure_uses_toggle_ref(JSContext *cx, ObjectInstance *priv);
+static GjsListLink* object_instance_get_link(ObjectInstance *priv);
 
 static GQuark
 gjs_is_custom_type_quark (void)
@@ -224,6 +182,51 @@ g_type_query_dynamic_safe (GType       type,
         type = g_type_parent(type);
 
     g_type_query(type, query);
+}
+
+void
+GjsListLink::prepend(ObjectInstance *this_instance,
+                     ObjectInstance *head)
+{
+    GjsListLink *elem = object_instance_get_link(head);
+
+    g_assert(object_instance_get_link(this_instance) == this);
+
+    if (elem->m_prev) {
+        GjsListLink *prev = object_instance_get_link(elem->m_prev);
+        prev->m_next = this_instance;
+        this->m_prev = elem->m_prev;
+    }
+
+    elem->m_prev = this_instance;
+    this->m_next = head;
+}
+
+void
+GjsListLink::unlink(void)
+{
+    if (m_prev)
+        object_instance_get_link(m_prev)->m_next = m_next;
+    if (m_next)
+        object_instance_get_link(m_next)->m_prev = m_prev;
+
+    m_prev = m_next = nullptr;
+}
+
+size_t
+GjsListLink::size(void)
+{
+    GjsListLink *elem = this;
+    size_t count = 0;
+
+    do {
+        count++;
+        if (!elem->m_next)
+            break;
+        elem = object_instance_get_link(elem->m_next);
+    } while (elem);
+
+    return count;
 }
 
 static void
