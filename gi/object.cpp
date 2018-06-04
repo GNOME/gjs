@@ -222,13 +222,14 @@ GjsListLink::size(void)
     return count;
 }
 
-static void
+static bool
 throw_priv_is_null_error(JSContext *context)
 {
     gjs_throw(context,
               "This JS object wrapper isn't wrapping a GObject."
               " If this is a custom subclass, are you sure you chained"
               " up to the parent _init properly?");
+    return false;
 }
 
 static ObjectInstance *
@@ -1910,10 +1911,9 @@ real_connect_func(JSContext *context,
     GQuark signal_detail;
 
     gjs_debug_gsignal("connect obj %p priv %p argc %d", obj.get(), priv, argc);
-    if (priv == NULL) {
-        throw_priv_is_null_error(context);
-        return false; /* wrong class passed in */
-    }
+    if (!priv)
+        return throw_priv_is_null_error(context);  /* wrong class passed in */
+
     if (priv->gobj == NULL) {
         /* prototype, not an instance. */
         gjs_throw(context, "Can't connect to signals on %s.%s.prototype; only on instances",
@@ -2003,10 +2003,8 @@ emit_func(JSContext *context,
 
     gjs_debug_gsignal("emit obj %p priv %p argc %d", obj.get(), priv, argc);
 
-    if (priv == NULL) {
-        throw_priv_is_null_error(context);
-        return false; /* wrong class passed in */
-    }
+    if (!priv)
+        return throw_priv_is_null_error(context);  /* wrong class passed in */
 
     if (priv->gobj == NULL) {
         /* prototype, not an instance. */
@@ -2112,10 +2110,8 @@ to_string_func(JSContext *context,
 {
     GJS_GET_PRIV(context, argc, vp, rec, obj, ObjectInstance, priv);
 
-    if (priv == NULL) {
-        throw_priv_is_null_error(context);
-        return false;  /* wrong class passed in */
-    }
+    if (!priv)
+        return throw_priv_is_null_error(context);  /* wrong class passed in */
 
     return _gjs_proxy_to_string_func(context, obj,
                                      (priv->g_object_finalized) ?
@@ -2440,11 +2436,8 @@ gjs_typecheck_object(JSContext       *context,
     priv = priv_from_js(context, object);
 
     if (priv == NULL) {
-        if (throw_error) {
-            gjs_throw(context,
-                      "Object instance or prototype has not been properly initialized yet. "
-                      "Did you forget to chain-up from _init()?");
-        }
+        if (throw_error)
+            return throw_priv_is_null_error(context);
 
         return false;
     }
