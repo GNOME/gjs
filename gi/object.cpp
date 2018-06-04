@@ -64,12 +64,12 @@ class GjsListLink {
     ObjectInstance *m_next;
 
  public:
-    ObjectInstance *prev(void) { return m_prev; }
-    ObjectInstance *next(void) { return m_next; }
+    ObjectInstance *prev(void) const { return m_prev; }
+    ObjectInstance *next(void) const { return m_next; }
 
     void prepend(ObjectInstance *this_instance, ObjectInstance *head);
     void unlink(void);
-    size_t size(void);
+    size_t size(void) const;
 };
 
 struct AutoGValueVector : public std::vector<GValue> {
@@ -214,9 +214,9 @@ GjsListLink::unlink(void)
 }
 
 size_t
-GjsListLink::size(void)
+GjsListLink::size(void) const
 {
-    GjsListLink *elem = this;
+    const GjsListLink *elem = this;
     size_t count = 0;
 
     do {
