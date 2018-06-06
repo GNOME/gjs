@@ -621,13 +621,14 @@ gjs_module_resolve(JSContext *cx, unsigned argc, JS::Value *vp) {
 
     // check if path is relative
     if (req[0] == '.' && (req[1] == '/' || (req[1] == '.' && req[2] == '/'))) {
-
         // If a module has a path, we'll have stored it in the host field
         JS::Value mod_loc_val = JS::GetModuleHostDefinedField(mod_obj);
 
         GjsAutoJSChar mod_loc;
         if (!gjs_string_to_utf8(cx, mod_loc_val, &mod_loc)) {
-            gjs_throw(cx, "Attempting to resolve relative import (%s) from non-file module", mod_loc.get());
+            gjs_throw(cx,
+                      "Attempting to resolve relative import (%s) from non-file module", 
+                      mod_loc.get());
             return false;
         }
 
