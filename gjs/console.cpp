@@ -283,13 +283,11 @@ main(int argc, char **argv)
         /* All unprocessed options should be in script_argv */
         g_assert(gjs_argc == 2);
         error = NULL;
-        if (!g_file_get_contents(gjs_argv[1], &script, &len, &error))
-        {
+        if (!g_file_get_contents(gjs_argv[1], &script, &len, &error)) {
             g_printerr("%s\n", error->message);
             exit(1);
         }
-        GFile *output = g_file_new_for_commandline_arg(gjs_argv[1]);
-        filename = g_file_get_path(output);
+        filename = gjs_argv[1];
         program_name = gjs_argv[1];
     }
 
@@ -346,22 +344,23 @@ main(int argc, char **argv)
         goto out;
     }
 
-    if(exec_as_module) {
+    if (exec_as_module) {
         GFile *output = g_file_new_for_commandline_arg(filename);
-        char* full_path = g_file_get_path(output);
-        if(!gjs_context_register_module(js_context, full_path, script, len, full_path)) {
+        char *full_path = g_file_get_path(output);
+        if (!gjs_context_register_module(js_context, full_path, script, len, full_path)) {
             g_printerr("Couldn't register root module");
+            code = 1;
             goto out;
         }
-        if (!gjs_context_eval_module(js_context, full_path, &error))
-        {
+
+        uint8_t code_8 = 0;
+        if (!gjs_context_eval_module(js_context, full_path, &code_8, &error)) {
+            code = code_8;
             g_printerr("%s\n", error->message);
             goto out;
         }
-    }
-    /* evaluate the script */
-    else if (!gjs_context_eval(js_context, script, len,
-                          filename, &code, &error)) {
+    } else if (!gjs_context_eval(js_context, script, len,
+                               filename, &code, &error)) {
         if (!g_error_matches(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT))
             g_printerr("%s\n", error->message);
         g_clear_error(&error);

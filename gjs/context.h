@@ -29,6 +29,7 @@
 #endif
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <glib-object.h>
 
 #include <gjs/macros.h>
@@ -109,7 +110,7 @@ GJS_EXPORT
 bool gjs_context_register_module(GjsContext *gjs_cx, const char *name, const char *mod_text, size_t mod_len, const char *filename);
 
 GJS_EXPORT
-bool gjs_context_eval_module(GjsContext *js_context, const char *name, GError **error);
+bool gjs_context_eval_module(GjsContext *js_context, const char *name, uint8_t *code, GError **error);
 
 G_END_DECLS
 
