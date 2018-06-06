@@ -114,7 +114,7 @@ struct _GjsContext {
     bool draining_job_queue;
 
     std::unordered_map<uint64_t, GjsAutoChar> unhandled_rejection_stacks;
-    std::unordered_map<std::string, JS::PersistentRootedObject> nameToModule;
+    std::unordered_map<std::string, JS::PersistentRootedObject> idToModule;
 
     GjsProfiler *profiler;
     bool should_profile : 1;
@@ -468,8 +468,8 @@ static void context_reset_exit(GjsContext* js_context) {
     js_context->exit_code = 0;
 }
 
-bool gjs_context_eval_module(GjsContext* js_context, const char* name,
-                             GError** error) {
+bool gjs_context_eval_module(GjsContext* js_context, const char* identifier,
+                             uint8_t* code, GError** error) {
     bool ret = false;
     JSContext* context = js_context->context;
 
@@ -483,10 +483,9 @@ bool gjs_context_eval_module(GjsContext* js_context, const char* name,
     if (auto_profile)
         gjs_profiler_start(js_context->profiler);
 
-    auto it = js_context->nameToModule.find(name);
-    if (it == js_context->nameToModule.end()) {
-        // TODO: Better error message
-        g_error("Attempted to evaluate unknown module");
+    auto it = js_context->idToModule.find(identifier);
+    if (it == js_context->idToModule.end()) {
+        g_error("Attempted to evaluate unknown module: %s", identifier);
         return false;
     }
 
@@ -494,12 +493,14 @@ bool gjs_context_eval_module(GjsContext* js_context, const char* name,
     JSAutoRequest ar(js_context->context);
 
     if (!JS::ModuleDeclarationInstantiation(context, it->second)) {
-        g_error("Failed to instantiated module");
+        g_error("Failed to instantiated module: %s", identifier);
         return false;
     }
 
     if (!JS::ModuleEvaluation(context, it->second))
         return false;
+
+    *code = 0;
 
     gjs_schedule_gc_if_needed(context);
 
@@ -510,7 +511,7 @@ bool gjs_context_eval_module(GjsContext* js_context, const char* name,
         return false;
     }
 
-    gjs_debug(GJS_DEBUG_CONTEXT, "Script evaluation succeeded");
+    gjs_debug(GJS_DEBUG_CONTEXT, "Module evaluation succeeded");
 
     bool ok = true;
 
@@ -526,28 +527,26 @@ bool gjs_context_eval_module(GjsContext* js_context, const char* name,
         gjs_profiler_stop(js_context->profiler);
 
     if (!ok) {
-        uint8_t code;
-        if (_gjs_context_should_exit(js_context, &code)) {
-            /* exit_status_p is public API so can't be changed, but should be
-             * uint8_t, not int */
+        if (_gjs_context_should_exit(js_context, code)) {
             g_set_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
-                        "Exit with code %d", code);
+                        "Exit with code %d", *code);
             goto out;  // Don't log anything
         }
 
         if (!JS_IsExceptionPending(js_context->context)) {
             g_critical("Module %s terminated with an uncatchable exception",
-                       name);
+                       identifier);
             g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
-                        "Mcript %s terminated with an uncatchable exception",
-                        name);
+                        "Module %s terminated with an uncatchable exception",
+                        identifier);
         } else {
             g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
-                        "Module %s threw an exception", name);
+                        "Module %s threw an exception", identifier);
         }
 
         gjs_log_exception(js_context->context);
         /* No exit code from script, but we don't want to exit(0) */
+        *code = 1;
         goto out;
     }
 
@@ -559,7 +558,7 @@ out:
     return ret;
 }
 
-bool gjs_context_register_module(GjsContext* gjs_cx, const char* name,
+bool gjs_context_register_module(GjsContext* gjs_cx, const char* identifier,
                                  const char* mod_text, size_t mod_len,
                                  const char* filename) {
     JSContext* cx = gjs_cx->context;
@@ -571,7 +570,7 @@ bool gjs_context_register_module(GjsContext* gjs_cx, const char* name,
     mod_text = gjs_strip_unix_shebang(mod_text, &mod_len, &start_line_number);
 
     JS::CompileOptions options(cx);
-    options.setFileAndLine(name, start_line_number).setSourceIsLazy(true);
+    options.setFileAndLine(identifier, start_line_number).setSourceIsLazy(true);
 
     std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
     std::u16string utf16_string = convert.from_bytes(mod_text);
@@ -580,8 +579,7 @@ bool gjs_context_register_module(GjsContext* gjs_cx, const char* name,
 
     JS::RootedObject new_module(cx);
     if (!CompileModule(cx, options, buf, &new_module)) {
-        // TODO: Better error message
-        gjs_throw(cx, "Failed to compile module");
+        gjs_throw(cx, "Failed to compile module: %s", identifier);
         return false;
     }
 
@@ -589,15 +587,15 @@ bool gjs_context_register_module(GjsContext* gjs_cx, const char* name,
         // Since this is a file-based module, be sure to set it's host field
         JS::RootedValue filename_val(cx);
         if (!gjs_string_from_utf8(cx, filename, &filename_val)) {
-            // TODO: Better error message
-            gjs_throw(cx, "Failed to encode full module path as JS string");
+            gjs_throw(cx, "Failed to encode full module path (%s) as JS string",
+                      filename);
             return false;
         }
 
         JS::SetModuleHostDefinedField(new_module, filename_val);
     }
 
-    gjs_cx->nameToModule[name] = new_module;
+    gjs_cx->idToModule[identifier] = new_module;
     return true;
 }
 
@@ -623,7 +621,7 @@ static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
     // The module from which the resolve request is coming
     JS::RootedObject mod_obj(cx, &argv[0].toObject());
 
-    // The string name of the module we wish to import
+    // The string identifier of the module we wish to import
     GjsAutoJSChar req;
 
     if (!gjs_string_to_utf8(cx, argv[1], &req)) {
@@ -638,10 +636,10 @@ static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
 
         GjsAutoJSChar mod_loc;
         if (!gjs_string_to_utf8(cx, mod_loc_val, &mod_loc)) {
-            // TODO: include the relative path and module name in error
-            gjs_throw(
-                cx,
-                "Attempting to resolve relative import from non-file module");
+            gjs_throw(cx,
+                      "Attempting to resolve relative import (%s) from "
+                      "non-file module",
+                      mod_loc.get());
             return false;
         }
 
@@ -650,8 +648,8 @@ static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
         GFile* output =
             g_file_new_for_commandline_arg_and_cwd(req.get(), mod_dir);
         GjsAutoChar full_path = g_file_get_path(output);
-        auto module = gjs_cx->nameToModule.find(full_path.get());
-        if (module != gjs_cx->nameToModule.end()) {
+        auto module = gjs_cx->idToModule.find(full_path.get());
+        if (module != gjs_cx->idToModule.end()) {
             argv.rval().setObject(*module->second);
             return true;
         }
@@ -659,8 +657,7 @@ static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
         char* mod_text_raw;
         gsize mod_len;
         if (!g_file_get_contents(full_path, &mod_text_raw, &mod_len, nullptr)) {
-            // TODO: better error message
-            gjs_throw(cx, "Failed to load file\n");
+            gjs_throw(cx, "Failed to read file: %s", full_path.get());
             return false;
         }
 
@@ -668,16 +665,18 @@ static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
 
         if (!gjs_context_register_module(gjs_cx, full_path, mod_text, mod_len,
                                          full_path))
+            // gjs_context_register_module should have already thrown any
+            // relevant errors
             return false;
 
-        argv.rval().setObject(*gjs_cx->nameToModule[full_path.get()]);
+        argv.rval().setObject(*gjs_cx->idToModule[full_path.get()]);
         return true;
     }
 
-    auto module = gjs_cx->nameToModule.find(req.get());
-    if (module == gjs_cx->nameToModule.end()) {
-        // TODO: include requested module in error"
-        gjs_throw(cx, "Attempted to load unregistered global module");
+    auto module = gjs_cx->idToModule.find(req.get());
+    if (module == gjs_cx->idToModule.end()) {
+        gjs_throw(cx, "Attempted to load unregistered global module: %s",
+                  req.get());
         return false;
     }
 

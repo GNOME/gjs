@@ -28,16 +28,10 @@
 #    error "Only <gjs/gjs.h> can be included directly."
 #endif
 
-#include <stdbool.h>    /* IWYU pragma: keep */
 #include <sys/signal.h> /* for siginfo_t */
 
 #include <glib-object.h>
 #include <glib.h>
-
-#include <gjs/macros.h>
-#include <gjs/profiler.h>
-
-G_BEGIN_DECLS
 
 typedef struct _GjsContext      GjsContext;
 typedef struct _GjsContextClass GjsContextClass;
@@ -104,7 +98,7 @@ bool gjs_context_register_module(GjsContext* context, const char* name,
 
 GJS_EXPORT
 bool gjs_context_eval_module(GjsContext* context, const char* name,
-                             GError** error);
+                             uint8_t* code, GError** error);
 
 G_END_DECLS
 
