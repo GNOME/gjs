@@ -28,8 +28,9 @@
 #error "Only <gjs/gjs.h> can be included directly."
 #endif
 
-#include <stdbool.h>
 #include <glib-object.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 #include <gjs/macros.h>
 #include <gjs/profiler.h>
@@ -115,7 +116,7 @@ bool gjs_context_register_module(GjsContext* context, const char* name,
 
 GJS_EXPORT
 bool gjs_context_eval_module(GjsContext* context, const char* name,
-                             GError** error);
+                             uint8_t* code, GError** error);
 
 G_END_DECLS
 
