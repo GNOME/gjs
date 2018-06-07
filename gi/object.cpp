@@ -199,6 +199,29 @@ class ObjectInstance {
                   for_what, ns(), name());
         return false;
     }
+    void debug_lifecycle(const char *message) const {
+        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
+                            "[%p: GObject %p JS wrapper %p %s.%s (%s)] %s",
+                            this, m_gobj, m_wrapper.get(), ns(), name(),
+                            type_name(), message);
+    }
+    void debug_jsprop_base(const char *message, const char *id, JSObject *obj) const {
+        gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
+                         "[%p: GObject %p JS object %p %s.%s (%s)] %s '%s'",
+                         this, m_gobj, obj, ns(), name(), type_name(),
+                         message, id);
+    }
+    void debug_jsprop(const char *message, jsid id, JSObject *obj) const {
+        debug_jsprop_base(message, gjs_debug_id(id).c_str(), obj);
+    }
+    void debug_jsprop(const char *message, JSString *id, JSObject *obj) const {
+        debug_jsprop_base(message, gjs_debug_string(id).c_str(), obj);
+    }
+    static void debug_jsprop_static(const char *message, jsid id, JSObject *obj) {
+        gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
+                         "[JS object %p] %s '%s', no instance associated",
+                         obj, message, gjs_debug_id(id).c_str());
+    }
 
     /* Instance-only helper methods */
 
@@ -582,14 +605,13 @@ ObjectInstance::add_property(JSContext       *cx,
 
     /* priv is null during init: property is not being added from JS */
     if (!priv) {
-        gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Add prop '%s' hook, obj %s, "
-                         "no instance associated", gjs_debug_id(id).c_str(),
-                         gjs_debug_object(obj).c_str());
+        debug_jsprop_static("Add property hook", id, obj);
         return true;
     }
 
     return priv->add_property_impl(cx, obj, id, value);
 }
+
 
 bool
 ObjectInstance::add_property_impl(JSContext       *cx,
@@ -597,10 +619,7 @@ ObjectInstance::add_property_impl(JSContext       *cx,
                                   JS::HandleId     id,
                                   JS::HandleValue  value)
 {
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Add prop '%s' hook, obj %s, priv %p, gobj %p %s",
-                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str(),
-                     this, m_gobj, type_name());
+    debug_jsprop("Add property hook", id, obj);
 
     if (is_prototype() || is_custom_js_class() || m_gobj_disposed)
         return true;
@@ -619,9 +638,7 @@ ObjectInstance::prop_getter(JSContext *cx,
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
 
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Property getter '%s', obj %p priv %p",
-                     gjs_debug_string(name).c_str(),
-                     gjs_debug_object(obj).c_str(), priv);
+    priv->debug_jsprop("Property getter", name, obj);
 
     if (priv->is_prototype())
         return true;
@@ -734,9 +751,7 @@ ObjectInstance::field_getter(JSContext *cx,
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
 
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Field getter '%s', obj %p priv %p",
-                     gjs_debug_string(name).c_str(),
-                     gjs_debug_object(obj).c_str(), priv);
+    priv->debug_jsprop("Field getter", name, obj);
 
     if (priv->is_prototype())
         return true;
@@ -812,9 +827,7 @@ ObjectInstance::prop_setter(JSContext *cx,
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
 
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Property setter '%s', obj %p priv %p",
-                     gjs_debug_string(name).c_str(),
-                     gjs_debug_object(obj).c_str(), priv);
+    priv->debug_jsprop("Property setter", name, obj);
 
     if (priv->is_prototype())
         return true;
@@ -876,9 +889,7 @@ ObjectInstance::field_setter(JSContext *cx,
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
 
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Field setter '%s', obj %p priv %p",
-                     gjs_debug_string(name).c_str(),
-                     gjs_debug_object(obj).c_str(), priv);
+    priv->debug_jsprop("Field setter", name, obj);
 
     if (priv->is_prototype())
         return true;
@@ -1114,9 +1125,7 @@ ObjectInstance::resolve(JSContext       *cx,
          * will run afterwards will fail because of the "priv == NULL"
          * check there.
          */
-        gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Resolve prop '%s' hook, obj %s, "
-                         "no instance associated", gjs_debug_id(id).c_str(),
-                         gjs_debug_object(obj).c_str());
+        debug_jsprop_static("Resolve hook", id, obj);
         *resolved = false;
         return true;
     }
@@ -1130,11 +1139,7 @@ ObjectInstance::resolve_impl(JSContext       *context,
                              JS::HandleId     id,
                              bool            *resolved)
 {
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                 "Resolve prop '%s' hook, obj %s, priv %p (%s.%s), gobj %p %s",
-                 gjs_debug_id(id).c_str(),
-                 gjs_debug_object(obj).c_str(),
-                 this, ns(), name(), m_gobj, type_name());
+    debug_jsprop("Resolve hook", id, obj);
 
     if (!is_prototype()) {
         *resolved = false;
@@ -1207,9 +1212,7 @@ ObjectInstance::resolve_impl(JSContext       *context,
             return true;
         }
 
-        gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                         "Defining lazy GObject property '%s' in prototype of %s",
-                         gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str());
+        debug_jsprop("Defining lazy GObject property", id, obj);
 
         JS::RootedValue private_id(context, JS::StringValue(JSID_TO_STRING(id)));
         if (!gjs_define_property_dynamic(context, proto, name, "gobject_prop",
@@ -1235,9 +1238,7 @@ ObjectInstance::resolve_impl(JSContext       *context,
             return true;
         }
 
-        gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                         "Defining lazy GObject field '%s' in prototype of %s",
-                         gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str());
+        debug_jsprop("Defining lazy GObject field", id, obj);
 
         unsigned flags = GJS_MODULE_PROP_FLAGS;
         if (!(g_field_info_get_flags(field_info) & GI_FIELD_IS_WRITABLE))
@@ -1283,8 +1284,7 @@ ObjectInstance::resolve_impl(JSContext       *context,
     if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Defining method %s in prototype for %s (%s.%s)",
-                  g_base_info_get_name( (GIBaseInfo*) method_info),
-                  type_name(), ns(), this->name());
+                  method_info.name(), type_name(), ns(), this->name());
 
         if (!gjs_define_function(context, obj, m_gtype, method_info))
             return false;
@@ -1427,10 +1427,7 @@ void
 ObjectInstance::context_dispose_notify(void)
 {
     if (wrapper_is_rooted()) {
-        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "GObject wrapper %p for GObject "
-                            "%p (%s) was rooted but is now unrooted due to "
-                            "GjsContext dispose", m_wrapper.get(),
-                            m_gobj, type_name());
+        debug_lifecycle("Was rooted, but unrooting due to GjsContext dispose");
         discard_wrapper();
         unlink();
     }
@@ -1439,9 +1436,7 @@ ObjectInstance::context_dispose_notify(void)
 void
 ObjectInstance::toggle_down(void)
 {
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Toggle notify DOWN for GObject "
-                        "%p (%s), JS obj %p", m_gobj, type_name(),
-                        m_wrapper.get());
+    debug_lifecycle("Toggle notify DOWN");
 
     /* Change to weak ref so the wrapper-wrappee pair can be
      * collected by the GC
@@ -1449,7 +1444,7 @@ ObjectInstance::toggle_down(void)
     if (wrapper_is_rooted()) {
         GjsContext *context;
 
-        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Unrooting object");
+        debug_lifecycle("Unrooting wrapper");
         switch_to_unrooted();
 
         /* During a GC, the collector asks each object which other
@@ -1484,9 +1479,7 @@ ObjectInstance::toggle_up(void)
     if (!has_wrapper()) /* Object already GC'd */
         return;
 
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Toggle notify UP for GObject "
-                        "%p (%s), JS obj %p", m_gobj, type_name(),
-                        m_wrapper.get());
+    debug_lifecycle("Toggle notify UP");
 
     /* Change to strong ref so the wrappee keeps the wrapper alive
      * in case the wrapper has data in it that the app cares about
@@ -1495,7 +1488,7 @@ ObjectInstance::toggle_up(void)
         /* FIXME: thread the context through somehow. Maybe by looking up
          * the compartment that obj belongs to. */
         GjsContext *context = gjs_context_get_current();
-        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Rooting object");
+        debug_lifecycle("Rooting wrapper");
         auto cx = static_cast<JSContext *>(gjs_context_get_native_context(context));
         switch_to_rooted(cx);
     }
@@ -1671,8 +1664,7 @@ ObjectInstance::ObjectInstance(JSContext       *cx,
     if (m_info)
         g_base_info_ref(m_info);
 
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Instance constructor of %s, "
-                        "JS obj %p, priv %p", type_name(), object.get(), this);
+    debug_lifecycle("Instance constructor");
 }
 
 ObjectInstance::ObjectInstance(JSObject     *prototype,
@@ -1721,9 +1713,8 @@ ObjectInstance::weak_pointer_was_finalized(void)
          * the weak pointer list first, since the disassociation
          * may also cause it to be erased.)
          */
-        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Found GObject weak pointer "
-                            "whose JS object %p is about to be finalized: "
-                            "%p (%s)", m_wrapper.get(), m_gobj, type_name());
+        debug_lifecycle("Found GObject weak pointer whose JS wrapper is about "
+                        "to be finalized");
         return true;
     }
     return false;
@@ -1764,9 +1755,7 @@ ObjectInstance::ensure_uses_toggle_ref(JSContext *cx)
     if (m_uses_toggle_ref)
         return;
 
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Switching object instance %p, gobj %p %s to toggle ref",
-                     this, m_gobj, type_name());
+    debug_lifecycle("Switching object instance to toggle ref");
 
     g_assert(!wrapper_is_rooted());
 
@@ -1910,8 +1899,7 @@ ObjectInstance::init_impl(JSContext              *context,
     if (!m_gobj)
         associate_js_gobject(context, object, gobj);
 
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "JSObject created with GObject %p (%s)",
-                        m_gobj, type_name());
+    debug_lifecycle("JSObject created");
 
     TRACE(GJS_OBJECT_PROXY_NEW(this, m_gobj, ns(), name()));
 
@@ -1987,9 +1975,7 @@ void
 ObjectInstance::finalize_impl(JSFreeOp  *fop,
                               JSObject  *obj)
 {
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                        "Finalizing %s, JS obj %p, priv %p, GObject %p",
-                        type_name(), obj, this, m_gobj);
+    debug_lifecycle("Finalize");
 
     TRACE(GJS_OBJECT_PROXY_FINALIZE(priv, m_gobj, ns(), name()));
 
@@ -2042,7 +2028,7 @@ ObjectInstance::finalize_impl(JSFreeOp  *fop,
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Wrapper was finalized despite being kept alive, has refcount >1");
 
-        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Unrooting object");
+        debug_lifecycle("Unrooting object");
 
         discard_wrapper();
     }
