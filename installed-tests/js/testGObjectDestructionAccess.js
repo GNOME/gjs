@@ -18,7 +18,7 @@ describe('Access to destroyed GObject', () => {
 
     it('Get property', () => {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'Object GtkWindow (0x*');
+            'Object Gtk.Window (0x*');
 
         let title = destroyedWindow.title;
 
