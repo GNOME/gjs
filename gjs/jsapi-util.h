@@ -73,7 +73,7 @@ public:
 
     operator T *() { return GjsAutoInfo::unique_ptr::get(); }
 
-    const char *name(void) { return g_base_info_get_name(this); }
+    const char *name(void) { return g_base_info_get_name(*this); }
 };
 
 /* For use of GjsAutoInfo<T> in GC hash maps */
