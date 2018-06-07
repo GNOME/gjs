@@ -108,7 +108,7 @@ const char *gjs_get_js_version(void);
 
 GJS_EXPORT
 bool gjs_context_register_module(GjsContext *context,
-                                 const char *name, const char *mod_text, 
+                                 const char *name, const char *mod_text,
                                  size_t mod_len, const char *filename);
 
 GJS_EXPORT
