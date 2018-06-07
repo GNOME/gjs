@@ -221,6 +221,9 @@ public:
     }
     inline bool operator!=(std::nullptr_t) const { return !(*this == nullptr); }
 
+    /* Likewise the truth value does not require a read barrier */
+    inline operator bool() const { return *this != nullptr; }
+
     /* You can get a Handle<T> if the thing is rooted, so that you can use this
      * wrapper with stack rooting. However, you must not do this if the
      * JSContext can be destroyed while the Handle is live. */
@@ -347,7 +350,7 @@ public:
         return GjsHeapOperation<T>::update_after_gc(&m_heap);
     }
 
-    bool rooted(void) { return m_rooted; }
+    bool rooted(void) const { return m_rooted; }
 };
 
 #endif /* GJS_JSAPI_UTIL_ROOT_H */
