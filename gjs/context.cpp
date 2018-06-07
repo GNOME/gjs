@@ -610,7 +610,7 @@ gjs_module_resolve(JSContext *cx, unsigned argc, JS::Value *vp) {
         GjsAutoJSChar mod_loc;
         if (!gjs_string_to_utf8(cx, mod_loc_val, &mod_loc)) {
             gjs_throw(cx,
-                      "Attempting to resolve relative import (%s) from non-file module", 
+                      "Attempting to resolve relative import (%s) from non-file module",
                       mod_loc.get());
             return false;
         }
