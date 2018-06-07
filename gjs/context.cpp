@@ -600,37 +600,20 @@ bool gjs_context_register_module(GjsContext* gjs_cx, const char* identifier,
 }
 
 static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
-    argv.rval().set(JS::NullValue());
     auto gjs_cx = static_cast<GjsContext*>(JS_GetContextPrivate(cx));
-    if (argv.length() != 2) {
-        gjs_throw(cx, "Must pass 2 arguments to module resolver");
-        return false;
-    }
-
-    if (!argv[0].isObject()) {
-        gjs_throw(cx, "First parameter to module resolver must be a module");
-        return false;
-    }
-
-    if (!argv[1].isString()) {
-        gjs_throw(cx, "Second parameter to module resolver must be a string");
-        return false;
-    }
 
     // The module from which the resolve request is coming
-    JS::RootedObject mod_obj(cx, &argv[0].toObject());
+    JS::RootedObject mod_obj(cx);
+    GjsAutoJSChar id;  // The string identifier of the module we wish to import
 
-    // The string identifier of the module we wish to import
-    GjsAutoJSChar req;
-
-    if (!gjs_string_to_utf8(cx, argv[1], &req)) {
-        gjs_throw(cx, "Unable to decode module request string");
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    args.rval().setNull();
+    if (!gjs_parse_call_args(cx, "ModuleResolver", args, "os", "sourceModule",
+                             &mod_obj, "identifier", &id))
         return false;
-    }
 
     // check if path is relative
-    if (req[0] == '.' && (req[1] == '/' || (req[1] == '.' && req[2] == '/'))) {
+    if (id[0] == '.' && (id[1] == '/' || (id[1] == '.' && id[2] == '/'))) {
         // If a module has a path, we'll have stored it in the host field
         JS::Value mod_loc_val = JS::GetModuleHostDefinedField(mod_obj);
 
@@ -646,11 +629,11 @@ static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
         GjsAutoChar mod_dir = g_path_get_dirname(mod_loc);
 
         GFile* output =
-            g_file_new_for_commandline_arg_and_cwd(req.get(), mod_dir);
+            g_file_new_for_commandline_arg_and_cwd(id.get(), mod_dir);
         GjsAutoChar full_path = g_file_get_path(output);
         auto module = gjs_cx->idToModule.find(full_path.get());
         if (module != gjs_cx->idToModule.end()) {
-            argv.rval().setObject(*module->second);
+            args.rval().setObject(*module->second);
             return true;
         }
 
@@ -669,18 +652,18 @@ static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
             // relevant errors
             return false;
 
-        argv.rval().setObject(*gjs_cx->idToModule[full_path.get()]);
+        args.rval().setObject(*gjs_cx->idToModule[full_path.get()]);
         return true;
     }
 
-    auto module = gjs_cx->idToModule.find(req.get());
+    auto module = gjs_cx->idToModule.find(id.get());
     if (module == gjs_cx->idToModule.end()) {
         gjs_throw(cx, "Attempted to load unregistered global module: %s",
-                  req.get());
+                  id.get());
         return false;
     }
 
-    argv.rval().setObject(*module->second);
+    args.rval().setObject(*module->second);
     return true;
 }
 
