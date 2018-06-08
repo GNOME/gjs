@@ -586,14 +586,17 @@ ObjectInstance::find_param_spec_from_id(JSContext       *cx,
     return entry->value().get();  /* owned by property cache */
 }
 
-/* Gets the ObjectInstance corresponding to obj.prototype */
+/* Gets the ObjectInstance corresponding to obj.prototype. Cannot return null,
+ * and asserts so. */
 ObjectInstance *
 ObjectInstance::for_js_prototype(JSContext       *context,
                                  JS::HandleObject obj)
 {
     JS::RootedObject proto(context);
     JS_GetPrototype(context, obj, &proto);
-    return for_js(context, proto);
+    ObjectInstance *retval = for_js(context, proto);
+    g_assert(retval);
+    return retval;
 }
 
 /* A hook on adding a property to an object. This is called during a set
@@ -1654,11 +1657,10 @@ ObjectInstance::ObjectInstance(JSContext       *cx,
 {
     GJS_INC_COUNTER(object);
 
-    g_assert(!ObjectInstance::for_js(cx, object));
+    g_assert(!JS_GetPrivate(object));
     JS_SetPrivate(object, this);
 
     auto *proto_priv = ObjectInstance::for_js_prototype(cx, object);
-    g_assert(proto_priv != NULL);
 
     m_gtype = proto_priv->m_gtype;
     m_info = proto_priv->m_info;
@@ -2361,7 +2363,9 @@ ObjectInstance::init(JSContext *context,
     if (!do_base_typecheck(context, obj, true))
         return false;
 
-    ObjectInstance *priv = ObjectInstance::for_js_nocheck(obj);
+    ObjectInstance *priv = ObjectInstance::for_js(context, obj);
+    g_assert(priv);  /* Already checked by do_base_typecheck() */
+
     return priv->init_impl(context, argv, &obj);
 }
 
@@ -2583,6 +2587,8 @@ gjs_g_object_from_object(JSContext       *cx,
         return NULL;
 
     auto *priv = ObjectInstance::for_js(cx, obj);
+    if (!priv)
+        return nullptr;
 
     if (!priv->check_gobject_disposed("access"))
         return nullptr;
@@ -2750,6 +2756,9 @@ gjs_hook_up_vfunc(JSContext *cx,
     argv.rval().setUndefined();
 
     auto *priv = ObjectInstance::for_js(cx, object);
+    if (!priv)
+        return throw_priv_is_null_error(cx);
+
     return priv->hook_up_vfunc(cx, object, name, function);
 }
 
@@ -2940,6 +2949,9 @@ gjs_object_constructor (GType                  type,
         return NULL;
 
     auto *priv = ObjectInstance::for_js_nocheck(object);
+    /* Should have been set in init_impl() and pushed into object_init_list,
+     * then popped from object_init_list in gjs_object_custom_init() */
+    g_assert(priv);
     /* We only hold a toggle ref at this point, add back a ref that the
      * native code can own.
      */
@@ -3073,6 +3085,7 @@ gjs_object_custom_init(GTypeInstance *instance,
 
     JS::RootedObject object(context, object_init_list.top().get());
     priv = ObjectInstance::for_js_nocheck(object);
+    g_assert(priv);  /* Should have been set in init_impl() */
 
     if (priv->gtype() != G_TYPE_FROM_INSTANCE(instance)) {
         /* This is not the most derived instance_init function,
