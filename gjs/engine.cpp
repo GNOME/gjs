@@ -308,13 +308,14 @@ gjs_create_js_context(GjsContext *js_context)
         JS::ContextOptionsRef(cx).setExtraWarnings(true);
     }
 
-    if (!g_getenv("GJS_DISABLE_JIT")) {
+    bool enable_jit = !(g_getenv("GJS_DISABLE_JIT"));
+    if (enable_jit) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
-        JS::ContextOptionsRef(cx)
-            .setIon(true)
-            .setBaseline(true)
-            .setAsmJS(true);
     }
+    JS::ContextOptionsRef(cx)
+        .setIon(enable_jit)
+        .setBaseline(enable_jit)
+        .setAsmJS(enable_jit);
 
     return cx;
 }
