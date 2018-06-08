@@ -435,6 +435,7 @@ gjs_context_finalize(GObject *object)
     js_context->global.~Heap();
     js_context->const_strings.~array();
     js_context->unhandled_rejection_stacks.~unordered_map();
+    js_context->idToModule.~unordered_map();
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
 
@@ -684,6 +685,7 @@ gjs_context_constructed(GObject *object)
     }
 
     new (&js_context->unhandled_rejection_stacks) std::unordered_map<uint64_t, GjsAutoChar>;
+    new (&js_context->idToModule) std::unordered_map<std::string, JS::PersistentRootedObject>;
     new (&js_context->const_strings) std::array<JS::PersistentRootedId*, GJS_STRING_LAST>;
     for (i = 0; i < GJS_STRING_LAST; i++) {
         js_context->const_strings[i] = new JS::PersistentRootedId(cx,
@@ -691,7 +693,6 @@ gjs_context_constructed(GObject *object)
     }
 
     js_context->job_queue = new JS::PersistentRooted<JobQueue>(cx);
-    js_context->idToModule.reserve(1);  // required to prevent a crash.
 
     if (!js_context->job_queue)
         g_error("Failed to initialize promise job queue");
