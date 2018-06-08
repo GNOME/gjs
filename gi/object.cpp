@@ -2166,7 +2166,7 @@ ObjectInstance::connect_after(JSContext *cx,
 
 bool
 ObjectInstance::connect_impl(JSContext          *context,
-                             const JS::CallArgs& argv,
+                             const JS::CallArgs& args,
                              bool                after)
 {
     GClosure *closure;
@@ -2174,8 +2174,7 @@ ObjectInstance::connect_impl(JSContext          *context,
     guint signal_id;
     GQuark signal_detail;
 
-    gjs_debug_gsignal("connect obj %p priv %p argc %d", m_wrapper.get(), this,
-                      argv.length());
+    gjs_debug_gsignal("connect obj %p priv %p", m_wrapper.get(), this);
 
     if (!check_is_instance(context, "connect to signals"))
         return false;
@@ -2183,15 +2182,17 @@ ObjectInstance::connect_impl(JSContext          *context,
     if (!check_gobject_disposed("connect to any signal on"))
         return true;
 
-    if (argv.length() != 2 || !argv[0].isString() || !JS::IsCallable(&argv[1].toObject())) {
-        gjs_throw(context, "connect() takes two args, the signal name and the callback");
+    GjsAutoJSChar signal_name;
+    JS::RootedObject callback(context);
+    if (!gjs_parse_call_args(context, after ? "connect_after" : "connect", args, "so",
+                             "signal name", &signal_name,
+                             "callback", &callback))
+        return false;
+
+    if (!JS::IsCallable(callback)) {
+        gjs_throw(context, "second arg must be a callback");
         return false;
     }
-
-    JS::RootedString signal_str(context, argv[0].toString());
-    GjsAutoJSChar signal_name = JS_EncodeStringToUTF8(context, signal_str);
-    if (!signal_name)
-        return false;
 
     if (!g_signal_parse_name(signal_name, m_gtype, &signal_id, &signal_detail,
                              true)) {
@@ -2200,7 +2201,7 @@ ObjectInstance::connect_impl(JSContext          *context,
         return false;
     }
 
-    closure = gjs_closure_new_for_signal(context, &argv[1].toObject(), "signal callback", signal_id);
+    closure = gjs_closure_new_for_signal(context, callback, "signal callback", signal_id);
     if (closure == NULL)
         return false;
     associate_closure(context, closure);
@@ -2211,7 +2212,7 @@ ObjectInstance::connect_impl(JSContext          *context,
                                         closure,
                                         after);
 
-    argv.rval().setDouble(id);
+    args.rval().setDouble(id);
 
     return true;
 }
@@ -2248,14 +2249,9 @@ ObjectInstance::emit_impl(JSContext          *context,
     if (!check_gobject_disposed("emit any signal on"))
         return true;
 
-    if (argv.length() < 1 || !argv[0].isString()) {
-        gjs_throw(context, "emit() first arg is the signal name");
-        return false;
-    }
-
-    JS::RootedString signal_str(context, argv[0].toString());
-    GjsAutoJSChar signal_name = JS_EncodeStringToUTF8(context, signal_str);
-    if (!signal_name)
+    GjsAutoJSChar signal_name;
+    if (!gjs_parse_call_args(context, "emit", argv, "!s",
+                             "signal name", &signal_name))
         return false;
 
     if (!g_signal_parse_name(signal_name, m_gtype, &signal_id, &signal_detail,
@@ -3429,28 +3425,30 @@ gjs_signal_new(JSContext *cx,
                unsigned   argc,
                JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    GType gtype;
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     GjsAutoJSChar signal_name;
     GSignalAccumulator accumulator;
     gint signal_id;
     guint i, n_parameters;
-    GType *params, return_type;
-
-    if (argc != 6)
-        return false;
+    int32_t flags, accumulator_enum;
 
     JSAutoRequest ar(cx);
 
-    if (!gjs_string_to_utf8(cx, argv[1], &signal_name))
+    JS::RootedObject gtype_obj(cx), return_gtype_obj(cx), params_obj(cx);
+    if (!gjs_parse_call_args(cx, "signal_new", args, "osiioo",
+                             "gtype", &gtype_obj,
+                             "signal name", &signal_name,
+                             "flags", &flags,
+                             "accumulator", &accumulator_enum,
+                             "return gtype", &return_gtype_obj,
+                             "params", &params_obj))
         return false;
 
-    JS::RootedObject obj(cx, &argv[0].toObject());
-    if (!gjs_typecheck_gtype(cx, obj, true))
+    if (!gjs_typecheck_gtype(cx, gtype_obj, true))
         return false;
 
     /* we only support standard accumulators for now */
-    switch (argv[3].toInt32()) {
+    switch (accumulator_enum) {
     case 1:
         accumulator = g_signal_accumulator_first_wins;
         break;
@@ -3462,19 +3460,17 @@ gjs_signal_new(JSContext *cx,
         accumulator = NULL;
     }
 
-    JS::RootedObject gtype_obj(cx, &argv[4].toObject());
-    return_type = gjs_gtype_get_actual_gtype(cx, gtype_obj);
+    GType return_type = gjs_gtype_get_actual_gtype(cx, return_gtype_obj);
 
     if (accumulator == g_signal_accumulator_true_handled && return_type != G_TYPE_BOOLEAN) {
         gjs_throw (cx, "GObject.SignalAccumulator.TRUE_HANDLED can only be used with boolean signals");
         return false;
     }
 
-    JS::RootedObject params_obj(cx, &argv[5].toObject());
     if (!JS_GetArrayLength(cx, params_obj, &n_parameters))
         return false;
 
-    params = g_newa(GType, n_parameters);
+    GType *params = g_newa(GType, n_parameters);
     JS::RootedValue gtype_val(cx);
     for (i = 0; i < n_parameters; i++) {
         if (!JS_GetElement(cx, params_obj, i, &gtype_val) ||
@@ -3487,11 +3483,11 @@ gjs_signal_new(JSContext *cx,
         params[i] = gjs_gtype_get_actual_gtype(cx, gjs_gtype);
     }
 
-    gtype = gjs_gtype_get_actual_gtype(cx, obj);
+    GType gtype = gjs_gtype_get_actual_gtype(cx, gtype_obj);
 
     signal_id = g_signal_newv(signal_name,
                               gtype,
-                              (GSignalFlags) argv[2].toInt32(), /* signal_flags */
+                              GSignalFlags(flags),
                               NULL, /* class closure */
                               accumulator,
                               NULL, /* accu_data */
@@ -3500,7 +3496,7 @@ gjs_signal_new(JSContext *cx,
                               n_parameters,
                               params);
 
-    argv.rval().setInt32(signal_id);
+    args.rval().setInt32(signal_id);
     return true;
 }
 
