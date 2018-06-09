@@ -232,15 +232,15 @@ free_if_necessary(JS::MutableHandleObject param_ref)
 
 template<typename T>
 static bool
-parse_call_args_helper(JSContext    *cx,
-                       const char   *function_name,
-                       JS::CallArgs& args,
-                       bool          ignore_trailing_args,
-                       const char*&  fmt_required,
-                       const char*&  fmt_optional,
-                       unsigned      param_ix,
-                       const char   *param_name,
-                       T             param_ref)
+parse_call_args_helper(JSContext          *cx,
+                       const char         *function_name,
+                       const JS::CallArgs& args,
+                       bool                ignore_trailing_args,
+                       const char*&        fmt_required,
+                       const char*&        fmt_optional,
+                       unsigned            param_ix,
+                       const char         *param_name,
+                       T                   param_ref)
 {
     bool nullable = false;
     const char *fchar = fmt_required;
@@ -279,16 +279,16 @@ parse_call_args_helper(JSContext    *cx,
 
 template<typename T, typename... Args>
 static bool
-parse_call_args_helper(JSContext    *cx,
-                       const char   *function_name,
-                       JS::CallArgs& args,
-                       bool          ignore_trailing_args,
-                       const char*&  fmt_required,
-                       const char*&  fmt_optional,
-                       unsigned      param_ix,
-                       const char   *param_name,
-                       T             param_ref,
-                       Args       ...params)
+parse_call_args_helper(JSContext          *cx,
+                       const char         *function_name,
+                       const JS::CallArgs& args,
+                       bool                ignore_trailing_args,
+                       const char*&        fmt_required,
+                       const char*&        fmt_optional,
+                       unsigned            param_ix,
+                       const char         *param_name,
+                       T                   param_ref,
+                       Args             ...params)
 {
     bool retval;
 
@@ -311,10 +311,10 @@ parse_call_args_helper(JSContext    *cx,
 /* Empty-args version of the template */
 G_GNUC_UNUSED
 static bool
-gjs_parse_call_args(JSContext    *cx,
-                    const char   *function_name,
-                    JS::CallArgs& args,
-                    const char   *format)
+gjs_parse_call_args(JSContext          *cx,
+                    const char         *function_name,
+                    const JS::CallArgs& args,
+                    const char         *format)
 {
     bool ignore_trailing_args = false;
 
@@ -375,11 +375,11 @@ gjs_parse_call_args(JSContext    *cx,
  */
 template<typename... Args>
 static bool
-gjs_parse_call_args(JSContext    *cx,
-                    const char   *function_name,
-                    JS::CallArgs& args,
-                    const char   *format,
-                    Args       ...params)
+gjs_parse_call_args(JSContext          *cx,
+                    const char         *function_name,
+                    const JS::CallArgs& args,
+                    const char         *format,
+                    Args             ...params)
 {
     const char *fmt_iter, *fmt_required, *fmt_optional;
     unsigned n_required = 0, n_total = 0;
