@@ -7,22 +7,36 @@ stages:
 - thorough_tests
 - delivery
 
-.build: &build
-  when: on_success
+.logging: &logging
   artifacts:
-    name: log
+    name: log_jhbuild
+    when: always
+    paths:
+    - $(pwd)/.cache/jhbuild/build/gjs/*.log
+    - $(pwd)/.cache/jhbuild/build/gjs/Makefile
+    - $(pwd)/.cache/jhbuild/build/gjs/configure
+
+.coverage: &coverage
+  artifacts:
+    name: log_coverage
     when: always
     paths:
     - $(pwd)/.cache/jhbuild/build/gjs/*.log
     - $(pwd)/.cache/jhbuild/build/gjs/Makefile
     - $(pwd)/.cache/jhbuild/build/gjs/configure
     - $(pwd)/coverage/
+
+.build: &build
+  when: on_success
+  artifacts:
+    name: log
+    when: always
+    paths:
     - $(pwd)/analysis/
     - $(pwd)/gjs-1.*/_build/sub/test-suite.log
     - $(pwd)/*.log
     - $(pwd)/Makefile
     - $(pwd)/configure
-    - $(pwd)/*.flatpak
 
   script:
     # CI starts here. Previous messages are GitLab Runner setup.
@@ -130,6 +144,7 @@ installed_tests:
 
 coverage:
   <<: *build
+  <<: *coverage
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.27.gcc
   variables:
@@ -254,6 +269,7 @@ no_graphics:
 
 lts:
   <<: *build
+  <<: *logging
   stage: thorough_tests
   image: claudioandre/spidermonkey:ubuntu.lts.gcc
   variables:
@@ -268,6 +284,10 @@ packaging:
   <<: *build
   stage: delivery
   image: registry.gitlab.gnome.org/gnome/gnome-nightly-oci/nightly:master
+  artifacts:
+    name: package
+    paths:
+    - $(pwd)/*.flatpak
   variables:
     CODECHECK: "FLATPAK"
     APPID: "org.gnome.GjsDevel"
