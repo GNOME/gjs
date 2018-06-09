@@ -143,7 +143,7 @@ if [[ $1 == "GJS" ]]; then
     do_Set_Env
     do_Show_Info
 
-    if [[ "$DEV" != "devel" ]]; then
+    if [[ "$DEV" == "jhbuild" ]]; then
         do_Get_JHBuild
         do_Build_JHBuild
         do_Configure_JHBuild
@@ -161,7 +161,7 @@ if [[ $1 == "GJS" ]]; then
 
     do_Print_Labels 'Do the GJS build'
 
-    if [[ "$DEV" != "devel" ]]; then
+    if [[ "$DEV" == "jhbuild" ]]; then
         cp -r ./ ~/jhbuild/checkout/gjs
         cd ~/jhbuild/checkout/gjs
 
@@ -194,7 +194,7 @@ elif [[ $1 == "GJS_EXTRA" ]]; then
     do_Print_Labels 'Run GJS installed tests'
     do_Set_Env
 
-    if [[ "$DEV" != "devel" ]]; then
+    if [[ "$DEV" == "jhbuild" ]]; then
         xvfb-run -a --server-args="-screen 0 1024x768x24" jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
     else
         xvfb-run -a --server-args="-screen 0 1024x768x24" dbus-run-session -- gnome-desktop-testing-runner gjs
