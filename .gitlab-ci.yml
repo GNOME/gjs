@@ -7,36 +7,34 @@ stages:
 - thorough_tests
 - delivery
 
-.logging: &logging
+.JHBuild files: &JHB_files  [.cache/jhbuild/build/gjs/*.log, .cache/jhbuild/build/gjs/Makefile, .cache/jhbuild/build/gjs/configure]
+.Coverage files: &cov_files [.cache/jhbuild/build/gjs/*.log, .cache/jhbuild/build/gjs/Makefile, .cache/jhbuild/build/gjs/configure, coverage/]
+.Regular files: &reg_files  [configure, Makefile, analysis/, ./*.log, gjs-1.*/_build/sub/test-suite.log]
+.Flatpak files: &pak_files  [./*.flatpak]
+
+.jhbuild: &jhbuild
   artifacts:
     name: log_jhbuild
     when: always
-    paths:
-    - $(pwd)/.cache/jhbuild/build/gjs/*.log
-    - $(pwd)/.cache/jhbuild/build/gjs/Makefile
-    - $(pwd)/.cache/jhbuild/build/gjs/configure
+    paths: *JHB_files
 
 .coverage: &coverage
   artifacts:
     name: log_coverage
     when: always
-    paths:
-    - $(pwd)/.cache/jhbuild/build/gjs/*.log
-    - $(pwd)/.cache/jhbuild/build/gjs/Makefile
-    - $(pwd)/.cache/jhbuild/build/gjs/configure
-    - $(pwd)/coverage/
+    paths: *cov_files
+
+.package: &package
+  artifacts:
+    name: log_package
+    paths: *pak_files
 
 .build: &build
   when: on_success
   artifacts:
     name: log
     when: always
-    paths:
-    - $(pwd)/analysis/
-    - $(pwd)/gjs-1.*/_build/sub/test-suite.log
-    - $(pwd)/*.log
-    - $(pwd)/Makefile
-    - $(pwd)/configure
+    paths: *reg_files
 
   script:
     # CI starts here. Previous messages are GitLab Runner setup.
@@ -269,7 +267,7 @@ no_graphics:
 
 lts:
   <<: *build
-  <<: *logging
+  <<: *jhbuild
   stage: thorough_tests
   image: claudioandre/spidermonkey:ubuntu.lts.gcc
   variables:
@@ -282,12 +280,9 @@ lts:
 #############################################
 packaging:
   <<: *build
+  <<: *package
   stage: delivery
   image: registry.gitlab.gnome.org/gnome/gnome-nightly-oci/nightly:master
-  artifacts:
-    name: package
-    paths:
-    - $(pwd)/*.flatpak
   variables:
     CODECHECK: "FLATPAK"
     APPID: "org.gnome.GjsDevel"
