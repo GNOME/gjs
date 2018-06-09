@@ -83,6 +83,23 @@ template<typename T>
 struct GCPolicy<GjsAutoInfo<T>> : public IgnoreGCPolicy<GjsAutoInfo<T>> {};
 }
 
+class GjsAutoParam
+    : public std::unique_ptr<GParamSpec, decltype(&g_param_spec_unref)> {
+    public:
+    GjsAutoParam(GParamSpec* ptr = nullptr)
+        : unique_ptr(ptr, g_param_spec_unref)
+    {
+    }
+
+    operator GParamSpec*() { return get(); }
+};
+
+/* For use of GjsAutoParam in GC hash maps */
+namespace JS {
+template<>
+struct GCPolicy<GjsAutoParam> : public IgnoreGCPolicy<GjsAutoParam> {};
+}  // namespace JS
+
 struct GjsJSFreeArgs {
     void operator() (char *str) {
         JS_free(nullptr, str);
