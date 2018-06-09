@@ -7,22 +7,36 @@ stages:
 - thorough_tests
 - delivery
 
-.build: &build
-  when: on_success
+.logging: &logging
   artifacts:
-    name: log
+    name: log_jhbuild
+    when: always
+    paths:
+    - $(pwd)/.cache/jhbuild/build/gjs/*.log
+    - $(pwd)/.cache/jhbuild/build/gjs/Makefile
+    - $(pwd)/.cache/jhbuild/build/gjs/configure
+
+.coverage: &coverage
+  artifacts:
+    name: log_coverage
     when: always
     paths:
     - $(pwd)/.cache/jhbuild/build/gjs/*.log
     - $(pwd)/.cache/jhbuild/build/gjs/Makefile
     - $(pwd)/.cache/jhbuild/build/gjs/configure
     - $(pwd)/coverage/
+
+.build: &build
+  when: on_success
+  artifacts:
+    name: log
+    when: always
+    paths:
     - $(pwd)/analysis/
     - $(pwd)/gjs-1.*/_build/sub/test-suite.log
     - $(pwd)/*.log
     - $(pwd)/Makefile
     - $(pwd)/configure
-    - $(pwd)/*.flatpak
 
   script:
     # CI starts here. Previous messages are GitLab Runner setup.
@@ -79,8 +93,6 @@ fedora:
   stage: source_check
   image: claudioandre/spidermonkey:job-456.7  # pinned on purpose
   variables:
-    CC: gcc
-    DEV: devel
     TEST: "check"
     WARNINGS: "count"
 
@@ -92,8 +104,6 @@ ubuntu_gcc:
   stage: test
   image: claudioandre/spidermonkey:ubuntu.dev.gcc
   variables:
-    CC: gcc
-    DEV: devel
     TEST: "distcheck"
   only:
     - master@GNOME/gjs
@@ -104,7 +114,6 @@ ubuntu_clang:
   image: claudioandre/spidermonkey:ubuntu.dev.gcc
   variables:
     CC: clang
-    DEV: devel
     TEST: "distcheck"
   only:
     - master@GNOME/gjs
@@ -115,7 +124,6 @@ fedora_clang:
   image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
   variables:
     CC: clang
-    DEV: devel
     TEST: "distcheck"
 
 no_profiler:
@@ -123,8 +131,6 @@ no_profiler:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
-    CC: gcc
-    DEV: devel
     TEST: "check"
     BUILD_OPTS: "--disable-profiler"
 
@@ -134,15 +140,15 @@ installed_tests:
   image: claudioandre/spidermonkey:ubuntu.dev.gcc
   variables:
     CC: clang
-    DEV: devel
     BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
 
 coverage:
   <<: *build
+  <<: *coverage
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.27.gcc
   variables:
-    CC: gcc
+    DEV: jhbuild
     BUILD_OPTS: "--enable-code-coverage"
     coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
   except:
@@ -153,8 +159,6 @@ sanitizer_gcc:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
-    CC: gcc
-    DEV: devel
     TEST: "check"
     BUILD_OPTS: "--enable-asan --enable-ubsan"
 
@@ -166,8 +170,6 @@ with_logging:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
-    CC: gcc
-    DEV: devel
     BUILD_OPTS: CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
 
 sanitizer_clang:
@@ -176,7 +178,6 @@ sanitizer_clang:
   image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
   variables:
     CC: clang
-    DEV: devel
     TEST: "check"
     BUILD_OPTS: "--enable-asan --enable-ubsan"
   only:
@@ -253,8 +254,6 @@ valgrind:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
-    CC: gcc
-    DEV: devel
     BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
   allow_failure: true
   when: manual
@@ -264,18 +263,17 @@ no_graphics:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
-    CC: gcc
-    DEV: devel
     TEST: "check"
     BUILD_OPTS: "--without-cairo --without-gtk"
   when: manual
 
 lts:
   <<: *build
+  <<: *logging
   stage: thorough_tests
   image: claudioandre/spidermonkey:ubuntu.lts.gcc
   variables:
-    CC: gcc
+    DEV: jhbuild
     TEST: "check"
   when: manual
 
@@ -286,6 +284,10 @@ packaging:
   <<: *build
   stage: delivery
   image: registry.gitlab.gnome.org/gnome/gnome-nightly-oci/nightly:master
+  artifacts:
+    name: package
+    paths:
+    - $(pwd)/*.flatpak
   variables:
     CODECHECK: "FLATPAK"
     APPID: "org.gnome.GjsDevel"
@@ -306,8 +308,6 @@ zeal_2:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.debug.gcc
   variables:
-    CC: gcc
-    DEV: devel
     TEST: "check"
     JS_GC_ZEAL: 2
   when: manual
@@ -317,8 +317,6 @@ zeal_4:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.debug.gcc
   variables:
-    CC: gcc
-    DEV: devel
     TEST: "check"
     JS_GC_ZEAL: 4
   when: manual
@@ -328,8 +326,6 @@ zeal_11:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.debug.gcc
   variables:
-    CC: gcc
-    DEV: devel
     TEST: "check"
     JS_GC_ZEAL: 11
   when: manual
