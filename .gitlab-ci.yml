@@ -79,7 +79,6 @@ fedora:
   stage: source_check
   image: claudioandre/spidermonkey:job-456.7  # pinned on purpose
   variables:
-    CC: gcc
     TEST: "check"
     WARNINGS: "count"
 
@@ -91,7 +90,6 @@ ubuntu_gcc:
   stage: test
   image: claudioandre/spidermonkey:ubuntu.dev.gcc
   variables:
-    CC: gcc
     TEST: "distcheck"
   only:
     - master@GNOME/gjs
@@ -119,7 +117,6 @@ no_profiler:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
-    CC: gcc
     TEST: "check"
     BUILD_OPTS: "--disable-profiler"
 
@@ -136,7 +133,6 @@ coverage:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.27.gcc
   variables:
-    CC: gcc
     DEV: jhbuild
     BUILD_OPTS: "--enable-code-coverage"
     coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
@@ -148,7 +144,6 @@ sanitizer_gcc:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
-    CC: gcc
     TEST: "check"
     BUILD_OPTS: "--enable-asan --enable-ubsan"
 
@@ -160,7 +155,6 @@ with_logging:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
-    CC: gcc
     BUILD_OPTS: CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
 
 sanitizer_clang:
@@ -245,7 +239,6 @@ valgrind:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
-    CC: gcc
     BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
   allow_failure: true
   when: manual
@@ -255,7 +248,6 @@ no_graphics:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
-    CC: gcc
     TEST: "check"
     BUILD_OPTS: "--without-cairo --without-gtk"
   when: manual
@@ -265,7 +257,6 @@ lts:
   stage: thorough_tests
   image: claudioandre/spidermonkey:ubuntu.lts.gcc
   variables:
-    CC: gcc
     DEV: jhbuild
     TEST: "check"
   when: manual
@@ -297,7 +288,6 @@ zeal_2:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.debug.gcc
   variables:
-    CC: gcc
     TEST: "check"
     JS_GC_ZEAL: 2
   when: manual
@@ -307,7 +297,6 @@ zeal_4:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.debug.gcc
   variables:
-    CC: gcc
     TEST: "check"
     JS_GC_ZEAL: 4
   when: manual
@@ -317,7 +306,6 @@ zeal_11:
   stage: thorough_tests
   image: claudioandre/spidermonkey:fedora.debug.gcc
   variables:
-    CC: gcc
     TEST: "check"
     JS_GC_ZEAL: 11
   when: manual
