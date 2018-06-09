@@ -76,8 +76,10 @@ function do_Build_JHBuild(){
 
 function do_Show_Info(){
 
+    local compiler=gcc
+
     echo '-----------------------------------------'
-    echo 'Useful build system information'
+    echo 'Build system information'
     echo -n "Processors: "; grep -c ^processor /proc/cpuinfo
     grep ^MemTotal /proc/meminfo
     id; uname -a
@@ -87,10 +89,11 @@ function do_Show_Info(){
     echo '-----------------------------------------'
 
     if [[ ! -z $CC ]]; then
-        echo 'Compiler version'
-        $CC --version
-        echo '-----------------------------------------'
-        $CC -dM -E -x c /dev/null
-        echo '-----------------------------------------'
+        compiler=$CC
     fi
+    echo 'Compiler version'
+    $compiler --version
+    echo '-----------------------------------------'
+    $compiler -dM -E -x c /dev/null
+    echo '-----------------------------------------'
 }
