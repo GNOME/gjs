@@ -80,19 +80,12 @@ struct AutoGValueVector : public std::vector<GValue> {
     }
 };
 
-using ParamRef = std::unique_ptr<GParamSpec, decltype(&g_param_spec_unref)>;
-using PropertyCache = JS::GCHashMap<JS::Heap<JSString *>, ParamRef,
-                                    js::DefaultHasher<JSString *>,
-                                    js::SystemAllocPolicy>;
+using PropertyCache =
+    JS::GCHashMap<JS::Heap<JSString*>, GjsAutoParam,
+                  js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
 using FieldCache = JS::GCHashMap<JS::Heap<JSString *>, GjsAutoInfo<GIFieldInfo>,
                                  js::DefaultHasher<JSString *>,
                                  js::SystemAllocPolicy>;
-
-/* This tells the GCHashMap that the GC doesn't need to care about ParamRef */
-namespace JS {
-template<>
-struct GCPolicy<ParamRef> : public IgnoreGCPolicy<ParamRef> {};
-};
 
 class ObjectInstance {
     GIObjectInfo *m_info;
@@ -358,8 +351,8 @@ class ObjectInstance {
 
 static std::stack<JS::PersistentRootedObject> object_init_list;
 
-using ParamRefArray = std::vector<ParamRef>;
-static std::unordered_map<GType, ParamRefArray> class_init_properties;
+using AutoParamArray = std::vector<GjsAutoParam>;
+static std::unordered_map<GType, AutoParamArray> class_init_properties;
 
 static bool weak_pointer_callback = false;
 ObjectInstance *ObjectInstance::wrapped_gobject_list = nullptr;
@@ -571,8 +564,7 @@ ObjectInstance::find_param_spec_from_id(JSContext       *cx,
 
     gname = gjs_hyphen_from_camel(js_prop_name);
     GObjectClass *gobj_class = G_OBJECT_CLASS(g_type_class_ref(m_gtype));
-    ParamRef param_spec(g_object_class_find_property(gobj_class, gname),
-                        g_param_spec_unref);
+    GjsAutoParam param_spec = g_object_class_find_property(gobj_class, gname);
     g_type_class_unref(gobj_class);
     g_free(gname);
 
@@ -2940,11 +2932,11 @@ gjs_interface_init(GTypeInterface *g_iface,
     if (found == class_init_properties.end())
         return;
 
-    ParamRefArray& properties = found->second;
-    for (ParamRef& pspec : properties) {
-        g_param_spec_set_qdata(pspec.get(), gjs_is_custom_property_quark(),
+    AutoParamArray& properties = found->second;
+    for (GjsAutoParam& pspec : properties) {
+        g_param_spec_set_qdata(pspec, gjs_is_custom_property_quark(),
                                GINT_TO_POINTER(1));
-        g_object_interface_install_property(g_iface, pspec.get());
+        g_object_interface_install_property(g_iface, pspec);
     }
 
     class_init_properties.erase(found);
@@ -2964,12 +2956,12 @@ gjs_object_class_init(GObjectClass *klass,
     if (found == class_init_properties.end())
         return;
 
-    ParamRefArray& properties = found->second;
+    AutoParamArray& properties = found->second;
     unsigned i = 0;
-    for (ParamRef& pspec : properties) {
-        g_param_spec_set_qdata(pspec.get(), gjs_is_custom_property_quark(),
+    for (GjsAutoParam& pspec : properties) {
+        g_param_spec_set_qdata(pspec, gjs_is_custom_property_quark(),
                                GINT_TO_POINTER(1));
-        g_object_class_install_property(klass, ++i, pspec.get());
+        g_object_class_install_property(klass, ++i, pspec);
     }
 
     class_init_properties.erase(found);
@@ -3110,7 +3102,7 @@ save_properties_for_class_init(JSContext       *cx,
                                uint32_t         n_properties,
                                GType            gtype)
 {
-    ParamRefArray properties_native;
+    AutoParamArray properties_native;
     JS::RootedValue prop_val(cx);
     JS::RootedObject prop_obj(cx);
     for (uint32_t i = 0; i < n_properties; i++) {
@@ -3126,8 +3118,8 @@ save_properties_for_class_init(JSContext       *cx,
         if (!gjs_typecheck_param(cx, prop_obj, G_TYPE_NONE, true))
             return false;
 
-        properties_native.emplace_back(g_param_spec_ref(gjs_g_param_from_param(cx, prop_obj)),
-                                       g_param_spec_unref);
+        properties_native.emplace_back(
+            g_param_spec_ref(gjs_g_param_from_param(cx, prop_obj)));
     }
     class_init_properties[gtype] = std::move(properties_native);
     return true;
