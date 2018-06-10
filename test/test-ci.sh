@@ -212,12 +212,12 @@ elif [[ $1 == "GJS_COVERAGE" ]]; then
     do_Print_Labels 'Code Coverage Report'
     do_Set_Env
 
-    jhbuild run --in-builddir=gjs make check-code-coverage
-    cp "$(pwd)"/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage.info "$save_dir"/coverage/
-    cp -r "$(pwd)"/.cache/jhbuild/build/gjs/gjs-?.*.*-coverage/* "$save_dir"/coverage/
+    make check-code-coverage
+    cp "$(pwd)"/gjs-?.*.*-coverage.info "$save_dir"/coverage/
+    cp -r "$(pwd)"/gjs-?.*.*-coverage/* "$save_dir"/coverage/
 
     echo '-----------------------------------------'
-    sed -e 's/<[^>]*>//g' "$(pwd)"/coverage/index.html | tr -d ' \t' | grep -A3 -P '^Lines:$'  | tr '\n' ' '; echo
+    sed -e 's/<[^>]*>//g' "$save_dir"/coverage/index.html | tr -d ' \t' | grep -A3 -P '^Lines:$'  | tr '\n' ' '; echo
     echo '-----------------------------------------'
 
 elif [[ $1 == "CPPCHECK" && "$log_message" != *'[skip cppcheck]'* ]]; then
