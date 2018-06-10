@@ -697,29 +697,23 @@ ObjectInstance::prop_getter_impl(JSContext             *cx,
     return true;
 }
 
-static GIFieldInfo *
+static GjsAutoInfo<GIFieldInfo>
 lookup_field_info(GIObjectInfo *info,
                   const char   *name)
 {
     int n_fields = g_object_info_get_n_fields(info);
     int ix;
-    GIFieldInfo *retval = NULL;
+    GjsAutoInfo<GIFieldInfo> retval;
 
     for (ix = 0; ix < n_fields; ix++) {
         retval = g_object_info_get_field(info, ix);
-        const char *field_name = g_base_info_get_name((GIBaseInfo *) retval);
-        if (strcmp(name, field_name) == 0)
+        if (strcmp(name, retval.name()) == 0)
             break;
-        g_clear_pointer(&retval, g_base_info_unref);
+        retval.reset();
     }
 
-    if (!retval)
+    if (!retval || !(g_field_info_get_flags(retval) & GI_FIELD_IS_READABLE))
         return nullptr;
-
-    if (!(g_field_info_get_flags(retval) & GI_FIELD_IS_READABLE)) {
-        g_base_info_unref(retval);
-        return nullptr;
-    }
 
     return retval;
 }
@@ -785,15 +779,13 @@ ObjectInstance::field_getter_impl(JSContext             *cx,
     /* This is guaranteed because we resolved the property before */
     g_assert(field);
 
-    bool retval = true;
-    GITypeInfo *type = NULL;
     GITypeTag tag;
     GIArgument arg = { 0 };
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Overriding %s with GObject field",
                      gjs_debug_string(name).c_str());
 
-    type = g_field_info_get_type(field);
+    GjsAutoInfo<GITypeInfo> type = g_field_info_get_type(field);
     tag = g_type_info_get_tag(type);
     if (tag == GI_TYPE_TAG_ARRAY ||
         tag == GI_TYPE_TAG_INTERFACE ||
@@ -804,25 +796,18 @@ ObjectInstance::field_getter_impl(JSContext             *cx,
         gjs_throw(cx, "Can't get field %s; GObject introspection supports only "
                   "fields with simple types, not %s",
                   gjs_debug_string(name).c_str(), g_type_tag_to_string(tag));
-        retval = false;
-        goto out;
+        return false;
     }
 
-    retval = g_field_info_get_field(field, m_gobj, &arg);
-    if (!retval) {
+    if (!g_field_info_get_field(field, m_gobj, &arg)) {
         gjs_throw(cx, "Error getting field %s from object",
                   gjs_debug_string(name).c_str());
-        goto out;
+        return false;
     }
 
-    retval = gjs_value_from_g_argument(cx, rval, type, &arg, true);
+    return gjs_value_from_g_argument(cx, rval, type, &arg, true);
     /* copy_structs is irrelevant because g_field_info_get_field() doesn't
      * handle boxed types */
-
-out:
-    if (type != NULL)
-        g_base_info_unref((GIBaseInfo *) type);
-    return retval;
 }
 
 /* Dynamic setter for GObject properties. Returns false on OOM/exception.
@@ -963,36 +948,29 @@ ObjectInstance::is_vfunc_unchanged(GIVFuncInfo *info)
     return addr1 == addr2;
 }
 
-static GIVFuncInfo *
+static GjsAutoInfo<GIVFuncInfo>
 find_vfunc_on_parents(GIObjectInfo *info,
                       const char   *name,
                       bool         *out_defined_by_parent)
 {
-    GIVFuncInfo *vfunc = NULL;
-    GIObjectInfo *parent;
     bool defined_by_parent = false;
 
     /* ref the first info so that we don't destroy
      * it when unrefing parents later */
-    g_base_info_ref(info);
-    parent = info;
+    GjsAutoInfo<GIObjectInfo> parent = g_base_info_ref(info);
 
     /* Since it isn't possible to override a vfunc on
      * an interface without reimplementing it, we don't need
      * to search the parent types when looking for a vfunc. */
-    vfunc = g_object_info_find_vfunc_using_interfaces(parent, name, NULL);
+    GjsAutoInfo<GIVFuncInfo> vfunc =
+        g_object_info_find_vfunc_using_interfaces(parent, name, nullptr);
     while (!vfunc && parent) {
-        GIObjectInfo *tmp = parent;
-        parent = g_object_info_get_parent(tmp);
-        g_base_info_unref(tmp);
+        parent = g_object_info_get_parent(parent);
         if (parent)
             vfunc = g_object_info_find_vfunc(parent, name);
 
         defined_by_parent = true;
     }
-
-    if (parent)
-        g_base_info_unref(parent);
 
     if (out_defined_by_parent)
         *out_defined_by_parent = defined_by_parent;
@@ -1006,46 +984,33 @@ ObjectInstance::resolve_no_info(JSContext       *cx,
                                 bool            *resolved,
                                 const char      *name)
 {
-    GIFunctionInfo *method_info;
     guint n_interfaces;
     guint i;
 
     GType *interfaces = g_type_interfaces(m_gtype, &n_interfaces);
     for (i = 0; i < n_interfaces; i++) {
-        GIBaseInfo *base_info;
-        GIInterfaceInfo *iface_info;
-
-        base_info = g_irepository_find_by_gtype(g_irepository_get_default(),
-                                                interfaces[i]);
-
-        if (base_info == NULL)
+        GjsAutoInfo<GIInterfaceInfo> iface_info =
+            g_irepository_find_by_gtype(g_irepository_get_default(),
+                                        interfaces[i]);
+        if (!iface_info)
             continue;
 
         /* An interface GType ought to have interface introspection info */
-        g_assert (g_base_info_get_type(base_info) == GI_INFO_TYPE_INTERFACE);
+        g_assert(iface_info.type() == GI_INFO_TYPE_INTERFACE);
 
-        iface_info = (GIInterfaceInfo*) base_info;
-
-        method_info = g_interface_info_find_method(iface_info, name);
-
-        g_base_info_unref(base_info);
-
-
+        GjsAutoInfo<GIFunctionInfo> method_info =
+            g_interface_info_find_method(iface_info, name);
         if (method_info != NULL) {
             if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
                 if (!gjs_define_function(cx, obj, m_gtype, method_info)) {
-                    g_base_info_unref((GIBaseInfo*) method_info);
                     g_free(interfaces);
                     return false;
                 }
 
-                g_base_info_unref((GIBaseInfo*) method_info);
                 *resolved = true;
                 g_free(interfaces);
                 return true;
             }
-
-            g_base_info_unref( (GIBaseInfo*) method_info);
         }
     }
 
@@ -1075,17 +1040,16 @@ is_gobject_property_name(GIObjectInfo *info,
 {
     int n_props = g_object_info_get_n_properties(info);
     int ix;
-    GIPropertyInfo *prop_info = nullptr;
+    GjsAutoInfo<GIPropertyInfo> prop_info;
 
     char *canonical_name = gjs_hyphen_from_camel(name);
     canonicalize_key(canonical_name);
 
     for (ix = 0; ix < n_props; ix++) {
         prop_info = g_object_info_get_property(info, ix);
-        const char *prop_name = g_base_info_get_name(prop_info);
-        if (strcmp(canonical_name, prop_name) == 0)
+        if (strcmp(canonical_name, prop_info.name()) == 0)
             break;
-        g_clear_pointer(&prop_info, g_base_info_unref);
+        prop_info.reset();
     }
 
     g_free(canonical_name);
@@ -1093,29 +1057,7 @@ is_gobject_property_name(GIObjectInfo *info,
     if (!prop_info)
         return false;
 
-    if (!(g_property_info_get_flags(prop_info) & G_PARAM_READABLE)) {
-        g_base_info_unref(prop_info);
-        return false;
-    }
-
-    g_base_info_unref(prop_info);
-    return true;
-}
-
-static bool
-is_gobject_field_name(GIObjectInfo *info,
-                      const char   *name,
-                      GIFieldInfo **field_info_out)
-{
-    GIFieldInfo *field_info = lookup_field_info(info, name);
-    if (!field_info)
-        return false;
-
-    if (field_info_out)
-        *field_info_out = field_info;
-    else
-        g_base_info_unref(field_info);
-    return true;
+    return g_property_info_get_flags(prop_info) & G_PARAM_READABLE;
 }
 
 bool
@@ -1235,8 +1177,8 @@ ObjectInstance::resolve_impl(JSContext       *context,
         return true;
     }
 
-    GIFieldInfo *field_info;
-    if (is_gobject_field_name(m_info, name, &field_info)) {
+    GjsAutoInfo<GIFieldInfo> field_info = lookup_field_info(m_info, name);
+    if (field_info) {
         JS::RootedObject proto(context);
         JS_GetPrototype(context, obj, &proto);
 
@@ -2104,15 +2046,9 @@ static JSObject *
 gjs_lookup_object_prototype(JSContext *context,
                             GType      gtype)
 {
-    GIObjectInfo *info;
-    JSObject *proto;
-
-    info = (GIObjectInfo*)g_irepository_find_by_gtype(g_irepository_get_default(), gtype);
-    proto = gjs_lookup_object_prototype_from_info(context, info, gtype);
-    if (info)
-        g_base_info_unref((GIBaseInfo*)info);
-
-    return proto;
+    GjsAutoInfo<GIObjectInfo> info =
+        g_irepository_find_by_gtype(g_irepository_get_default(), gtype);
+    return gjs_lookup_object_prototype_from_info(context, info, gtype);
 }
 
 void
@@ -2388,17 +2324,16 @@ gjs_object_define_static_methods(JSContext       *context,
                                  GType            gtype,
                                  GIObjectInfo    *object_info)
 {
-    GIStructInfo *gtype_struct;
     int i;
     int n_methods;
 
     n_methods = g_object_info_get_n_methods(object_info);
 
     for (i = 0; i < n_methods; i++) {
-        GIFunctionInfo *meth_info;
         GIFunctionInfoFlags flags;
 
-        meth_info = g_object_info_get_method(object_info, i);
+        GjsAutoInfo<GICallableInfo> meth_info =
+            g_object_info_get_method(object_info, i);
         flags = g_function_info_get_flags (meth_info);
 
         /* Anything that isn't a method we put on the prototype of the
@@ -2409,34 +2344,25 @@ gjs_object_define_static_methods(JSContext       *context,
          * like in the near future.
          */
         if (!(flags & GI_FUNCTION_IS_METHOD)) {
-            if (!gjs_define_function(context, constructor, gtype,
-                                     (GICallableInfo *) meth_info))
+            if (!gjs_define_function(context, constructor, gtype, meth_info))
                 gjs_log_exception(context);
         }
-
-        g_base_info_unref((GIBaseInfo*) meth_info);
     }
 
-    gtype_struct = g_object_info_get_class_struct(object_info);
-
+    GjsAutoInfo<GIStructInfo> gtype_struct =
+        g_object_info_get_class_struct(object_info);
     if (gtype_struct == NULL)
         return;
 
     n_methods = g_struct_info_get_n_methods(gtype_struct);
 
     for (i = 0; i < n_methods; i++) {
-        GIFunctionInfo *meth_info;
+        GjsAutoInfo<GICallableInfo> meth_info =
+            g_struct_info_get_method(gtype_struct, i);
 
-        meth_info = g_struct_info_get_method(gtype_struct, i);
-
-        if (!gjs_define_function(context, constructor, gtype,
-                                 (GICallableInfo *) meth_info))
+        if (!gjs_define_function(context, constructor, gtype, meth_info))
             gjs_log_exception(context);
-
-        g_base_info_unref((GIBaseInfo*) meth_info);
     }
-
-    g_base_info_unref((GIBaseInfo*) gtype_struct);
 }
 
 void
@@ -2666,16 +2592,16 @@ find_vfunc_info (JSContext *context,
                  GIBaseInfo *vfunc_info,
                  const char   *vfunc_name,
                  gpointer *implementor_vtable_ret,
-                 GIFieldInfo **field_info_ret)
+                 GjsAutoInfo<GIFieldInfo> *field_info_ret)
 {
     GType ancestor_gtype;
     int length, i;
     GIBaseInfo *ancestor_info;
-    GIStructInfo *struct_info;
+    GjsAutoInfo<GIStructInfo> struct_info;
     gpointer implementor_class;
     bool is_interface;
 
-    *field_info_ret = NULL;
+    field_info_ret->reset();
     *implementor_vtable_ret = NULL;
 
     ancestor_info = g_base_info_get_container(vfunc_info);
@@ -2707,32 +2633,22 @@ find_vfunc_info (JSContext *context,
 
     length = g_struct_info_get_n_fields(struct_info);
     for (i = 0; i < length; i++) {
-        GIFieldInfo *field_info;
-        GITypeInfo *type_info;
-
-        field_info = g_struct_info_get_field(struct_info, i);
-
-        if (strcmp(g_base_info_get_name((GIBaseInfo*)field_info), vfunc_name) != 0) {
-            g_base_info_unref(field_info);
+        GjsAutoInfo<GIFieldInfo> field_info =
+            g_struct_info_get_field(struct_info, i);
+        if (strcmp(field_info.name(), vfunc_name) != 0)
             continue;
-        }
 
-        type_info = g_field_info_get_type(field_info);
+        GjsAutoInfo<GITypeInfo> type_info = g_field_info_get_type(field_info);
         if (g_type_info_get_tag(type_info) != GI_TYPE_TAG_INTERFACE) {
             /* We have a field with the same name, but it's not a callback.
              * There's no hope of being another field with a correct name,
              * so just abort early. */
-            g_base_info_unref(type_info);
-            g_base_info_unref(field_info);
-            break;
+            return;
         } else {
-            g_base_info_unref(type_info);
-            *field_info_ret = field_info;
-            break;
+            *field_info_ret = std::move(field_info);
+            return;
         }
     }
-
-    g_base_info_unref(struct_info);
 }
 
 static bool
@@ -2786,20 +2702,18 @@ ObjectInstance::hook_up_vfunc(JSContext       *cx,
     if (!vfunc) {
         guint i, n_interfaces;
         GType *interface_list;
-        GIInterfaceInfo *interface;
 
         interface_list = g_type_interfaces(m_gtype, &n_interfaces);
 
         for (i = 0; i < n_interfaces; i++) {
-            interface = (GIInterfaceInfo*)g_irepository_find_by_gtype(g_irepository_get_default(),
-                                                                      interface_list[i]);
+            GjsAutoInfo<GIInterfaceInfo> interface =
+                g_irepository_find_by_gtype(g_irepository_get_default(),
+                                            interface_list[i]);
 
             /* The interface doesn't have to exist -- it could be private
              * or dynamic. */
             if (interface) {
                 vfunc = g_interface_info_find_vfunc(interface, name);
-
-                g_base_info_unref((GIBaseInfo*)interface);
 
                 if (vfunc)
                     break;
@@ -2815,7 +2729,7 @@ ObjectInstance::hook_up_vfunc(JSContext       *cx,
     }
 
     void *implementor_vtable;
-    GIFieldInfo *field_info;
+    GjsAutoInfo<GIFieldInfo> field_info;
     find_vfunc_info(cx, m_gtype, vfunc, name, &implementor_vtable, &field_info);
     if (field_info != NULL) {
         gint offset;
@@ -2831,8 +2745,6 @@ ObjectInstance::hook_up_vfunc(JSContext       *cx,
                                                  wrapper, true);
 
         *((ffi_closure **)method_ptr) = trampoline->closure;
-
-        g_base_info_unref(field_info);
     }
 
     return true;
@@ -3517,21 +3429,16 @@ gjs_lookup_object_constructor(JSContext             *context,
                               JS::MutableHandleValue value_p)
 {
     JSObject *constructor;
-    GIObjectInfo *object_info;
 
-    object_info = (GIObjectInfo*)g_irepository_find_by_gtype(NULL, gtype);
+    GjsAutoInfo<GIObjectInfo> object_info =
+        g_irepository_find_by_gtype(nullptr, gtype);
 
-    g_assert(object_info == NULL ||
-             g_base_info_get_type((GIBaseInfo*)object_info) ==
-             GI_INFO_TYPE_OBJECT);
+    g_assert(!object_info || object_info.type() == GI_INFO_TYPE_OBJECT);
 
     constructor = gjs_lookup_object_constructor_from_info(context, object_info, gtype);
 
     if (G_UNLIKELY (constructor == NULL))
         return false;
-
-    if (object_info)
-        g_base_info_unref((GIBaseInfo*)object_info);
 
     value_p.setObject(*constructor);
     return true;
