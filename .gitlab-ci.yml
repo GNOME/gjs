@@ -144,9 +144,8 @@ coverage:
   <<: *build
   <<: *coverage
   stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.27.gcc
+  image: claudioandre/spidermonkey:ubuntu.dev.gcc
   variables:
-    DEV: jhbuild
     BUILD_OPTS: "--enable-code-coverage"
     coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
   except:
