@@ -323,3 +323,49 @@ zeal_11:
     TEST: "check"
     JS_GC_ZEAL: 11
   when: manual
+
+#############################################
+# Multiarch Tests
+#############################################
+.qemu: &multiarch
+  artifacts:
+    name: log
+    when: always
+    paths: *reg_files
+
+  image: docker:latest
+  variables:
+    DOCKER_DRIVER: overlay
+  services:
+    - docker:dind
+
+  script:
+    # CI starts here. Previous messages are GitLab Runner setup.
+    - 'echo;
+       echo "*********************************************";
+       echo "***     JavaScript bindings for GNOME     ***";
+       echo "***        Continuous Integration         ***";
+       echo "*********************************************";
+       echo;
+    '
+
+    # Register QEMU archs
+    - docker run --rm --privileged multiarch/qemu-user-static:register --reset
+
+    - 'docker run -v $(pwd):/cwd
+          -e DEV=$DEV -e TEST=check -e BUILD_OPTS=$BUILD_OPTS -e CC=$CC -e STATIC=$STATIC $IMAGE
+          bash -e -c "cd /cwd && test/test-ci.sh GJS"
+    '
+
+    - 'echo;
+       echo "*********************************************";
+       echo "***             See you soon              ***";
+       echo "*********************************************";
+    '
+
+armv8:
+  <<: *multiarch
+  stage: thorough_tests
+  variables:
+    IMAGE: "claudioandre/spidermonkey:fedora.aarch64.gcc"
+  when: manual
