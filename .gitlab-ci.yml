@@ -105,22 +105,6 @@ fedora_clang:
     CC: clang
     TEST: "distcheck"
 
-no_profiler:
-  <<: *build
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.dev.gcc
-  variables:
-    TEST: "check"
-    BUILD_OPTS: "--disable-profiler"
-
-installed_tests:
-  <<: *build
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:ubuntu.dev.gcc
-  variables:
-    CC: clang
-    BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
-
 sanitizer_gcc:
   <<: *build
   stage: thorough_tests
@@ -263,6 +247,24 @@ no_graphics:
   variables:
     TEST: "check"
     BUILD_OPTS: "--without-cairo --without-gtk"
+  when: manual
+
+no_profiler:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:fedora.dev.gcc
+  variables:
+    TEST: "check"
+    BUILD_OPTS: "--disable-profiler"
+  when: manual
+
+installed_tests:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:ubuntu.dev.gcc
+  variables:
+    CC: clang
+    BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
   when: manual
 
 lts:
