@@ -326,6 +326,7 @@ class ObjectInstance {
     bool to_string_impl(JSContext *cx, const JS::CallArgs& args);
     bool init_impl(JSContext *cx, const JS::CallArgs& args,
                    JS::MutableHandleObject obj);
+    bool hook_up_vfunc_impl(JSContext *cx, const JS::CallArgs& args);
 
  public:
     static bool connect(JSContext *cx, unsigned argc, JS::Value *vp);
@@ -333,12 +334,15 @@ class ObjectInstance {
     static bool emit(JSContext *cx, unsigned argc, JS::Value *vp);
     static bool to_string(JSContext *cx, unsigned argc, JS::Value *vp);
     static bool init(JSContext *cx, unsigned argc, JS::Value *vp);
+    static bool hook_up_vfunc(JSContext *cx, unsigned argc, JS::Value *vp);
 
     /* Methods connected to "public" API */
+ private:
+    static JS::PersistentRootedSymbol hook_up_vfunc_root;
 
+ public:
     bool typecheck_object(JSContext *cx, GType expected_type, bool throw_error);
-    bool hook_up_vfunc(JSContext *cx, JS::HandleObject wrapper, const char *name,
-                       JS::HandleObject function);
+    static JS::Symbol* hook_up_vfunc_symbol(JSContext *cx);
 
     /* Notification callbacks */
 
@@ -356,6 +360,7 @@ static std::unordered_map<GType, AutoParamArray> class_init_properties;
 
 static bool weak_pointer_callback = false;
 ObjectInstance *ObjectInstance::wrapped_gobject_list = nullptr;
+JS::PersistentRootedSymbol ObjectInstance::hook_up_vfunc_root;
 
 extern struct JSClass gjs_object_instance_class;
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
@@ -2352,6 +2357,19 @@ gjs_object_define_static_methods(JSContext       *context,
     }
 }
 
+JS::Symbol*
+ObjectInstance::hook_up_vfunc_symbol(JSContext *cx)
+{
+    if (!hook_up_vfunc_root.initialized()) {
+        JS::RootedString descr(cx,
+            JS_NewStringCopyZ(cx, "__GObject__hook_up_vfunc"));
+        if (!descr)
+            g_error("Out of memory defining internal symbol");
+        hook_up_vfunc_root.init(cx, JS::NewSymbol(cx, descr));
+    }
+    return hook_up_vfunc_root;
+}
+
 void
 gjs_define_object_class(JSContext              *context,
                         JS::HandleObject        in_object,
@@ -2434,6 +2452,15 @@ gjs_define_object_class(JSContext              *context,
                                 constructor)) {
         g_error("Can't init class %s", constructor_name);
     }
+
+    /* Hook_up_vfunc can't be included in gjs_object_instance_proto_funcs
+     * because it's a custom symbol. */
+    JS::RootedId hook_up_vfunc(context,
+        SYMBOL_TO_JSID(ObjectInstance::hook_up_vfunc_symbol(context)));
+    if (!JS_DefineFunctionById(context, prototype, hook_up_vfunc,
+                               &ObjectInstance::hook_up_vfunc, 3,
+                               GJS_MODULE_PROP_FLAGS))
+        return;
 
     GJS_INC_COUNTER(object);
     priv = g_slice_new0(ObjectInstance);
@@ -2638,39 +2665,33 @@ find_vfunc_info (JSContext *context,
     }
 }
 
-static bool
-gjs_hook_up_vfunc(JSContext *cx,
-                  unsigned   argc,
-                  JS::Value *vp)
+bool
+ObjectInstance::hook_up_vfunc(JSContext *cx,
+                              unsigned   argc,
+                              JS::Value *vp)
 {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    GjsAutoJSChar name;
-    JS::RootedObject object(cx), function(cx);
+    GJS_GET_PRIV(cx, argc, vp, args, object, ObjectInstance, priv);
+    if (!priv)
+        return throw_priv_is_null_error(cx);
 
-    if (!gjs_parse_call_args(cx, "hook_up_vfunc", argv, "oso",
-                             "object", &object,
+    return priv->hook_up_vfunc_impl(cx, args);
+}
+
+bool
+ObjectInstance::hook_up_vfunc_impl(JSContext          *cx,
+                                   const JS::CallArgs& args)
+{
+    g_assert(is_prototype());
+
+    GjsAutoJSChar name;
+    JS::RootedObject function(cx);
+    if (!gjs_parse_call_args(cx, "hook_up_vfunc", args, "so",
                              "name", &name,
                              "function", &function))
         return false;
 
-    if (!do_base_typecheck(cx, object, true))
-        return false;
+    args.rval().setUndefined();
 
-    argv.rval().setUndefined();
-
-    auto *priv = ObjectInstance::for_js(cx, object);
-    if (!priv)
-        return throw_priv_is_null_error(cx);
-
-    return priv->hook_up_vfunc(cx, object, name, function);
-}
-
-bool
-ObjectInstance::hook_up_vfunc(JSContext       *cx,
-                              JS::HandleObject wrapper,
-                              const char      *name,
-                              JS::HandleObject function)
-{
     /* find the first class that actually has repository information */
     GIObjectInfo *info = m_info;
     GType info_gtype = m_gtype;
@@ -2710,7 +2731,8 @@ ObjectInstance::hook_up_vfunc(JSContext       *cx,
     }
 
     if (!vfunc) {
-        gjs_throw(cx, "Could not find definition of virtual function %s", name);
+        gjs_throw(cx, "Could not find definition of virtual function %s",
+                  name.get());
         return false;
     }
 
@@ -2726,6 +2748,7 @@ ObjectInstance::hook_up_vfunc(JSContext       *cx,
         method_ptr = G_STRUCT_MEMBER_P(implementor_vtable, offset);
 
         JS::RootedValue v_function(cx, JS::ObjectValue(*function));
+        JS::RootedObject wrapper(cx, m_wrapper);
         trampoline = gjs_callback_trampoline_new(cx, v_function, vfunc,
                                                  GI_SCOPE_TYPE_NOTIFIED,
                                                  wrapper, true);
@@ -3392,13 +3415,28 @@ gjs_signal_new(JSContext *cx,
     return true;
 }
 
+static bool
+hook_up_vfunc_symbol_getter(JSContext *cx,
+                            unsigned   argc,
+                            JS::Value *vp)
+{
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    args.rval().setSymbol(ObjectInstance::hook_up_vfunc_symbol(cx));
+    return true;
+}
+
 static JSFunctionSpec module_funcs[] = {
     JS_FS("override_property", gjs_override_property, 2, GJS_MODULE_PROP_FLAGS),
     JS_FS("register_interface", gjs_register_interface, 3, GJS_MODULE_PROP_FLAGS),
     JS_FS("register_type", gjs_register_type, 4, GJS_MODULE_PROP_FLAGS),
-    JS_FS("hook_up_vfunc", gjs_hook_up_vfunc, 3, GJS_MODULE_PROP_FLAGS),
     JS_FS("signal_new", gjs_signal_new, 6, GJS_MODULE_PROP_FLAGS),
     JS_FS_END,
+};
+
+static JSPropertySpec module_props[] = {
+    JS_PSG("hook_up_vfunc_symbol", hook_up_vfunc_symbol_getter,
+           GJS_MODULE_PROP_FLAGS),
+    JS_PS_END
 };
 
 bool
@@ -3406,7 +3444,8 @@ gjs_define_private_gi_stuff(JSContext              *cx,
                             JS::MutableHandleObject module)
 {
     module.set(JS_NewPlainObject(cx));
-    return JS_DefineFunctions(cx, module, &module_funcs[0]);
+    return JS_DefineFunctions(cx, module, module_funcs) &&
+        JS_DefineProperties(cx, module, module_props);
 }
 
 bool

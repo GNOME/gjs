@@ -475,7 +475,8 @@ function defineGObjectLegacyObjects(GObject) {
                     let wrapped = this.prototype[name];
 
                     if (name.slice(0, 6) == 'vfunc_') {
-                        Gi.hook_up_vfunc(this.prototype, name.slice(6), wrapped);
+                        this.prototype[Gi.hook_up_vfunc_symbol](name.slice(6),
+                            wrapped);
                     } else if (name.slice(0, 3) == 'on_') {
                         let id = GObject.signal_lookup(name.slice(3).replace('_', '-'), this.$gtype);
                         if (id !== 0) {

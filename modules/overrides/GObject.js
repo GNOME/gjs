@@ -362,7 +362,7 @@ function _init() {
             let func = newClass.prototype[name];
 
             if (name.startsWith('vfunc_')) {
-                Gi.hook_up_vfunc(newClass.prototype, name.slice(6), func);
+                newClass.prototype[Gi.hook_up_vfunc_symbol](name.slice(6), func);
             } else if (name.startsWith('on_')) {
                 let id = GObject.signal_lookup(name.slice(3).replace('_', '-'),
                     newClass.$gtype);
