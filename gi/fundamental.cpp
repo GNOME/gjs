@@ -614,14 +614,12 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
 
     g_assert(constructor);
 
-    if (!gjs_object_get_property(context, constructor,
-                                 GJS_STRING_PROTOTYPE, &value))
+    JS::RootedObject prototype(context);
+    if (!gjs_object_require_property(context, constructor, "constructor object",
+                                     GJS_STRING_PROTOTYPE, &prototype))
         return NULL;
 
-    if (G_UNLIKELY (!value.isObjectOrNull()))
-        return NULL;
-
-    return value.toObjectOrNull();
+    return prototype;
 }
 
 static JSObject*
@@ -697,10 +695,8 @@ gjs_define_fundamental_class(JSContext              *context,
                                 /* funcs of constructor, MyConstructor.myfunc() */
                                 NULL,
                                 prototype,
-                                constructor)) {
-        gjs_log_exception(context);
-        g_error("Can't init class %s", constructor_name);
-    }
+                                constructor))
+        return false;
 
     /* Put the info in the prototype */
     priv = g_slice_new0(Fundamental);
@@ -737,13 +733,13 @@ gjs_define_fundamental_class(JSContext              *context,
                   g_base_info_get_name ((GIBaseInfo *)priv->info));
     }
 
-    gjs_object_define_static_methods(context, constructor, gtype, info);
+    if (!gjs_object_define_static_methods(context, constructor, gtype, info))
+        return false;
 
     JS::RootedObject gtype_obj(context,
         gjs_gtype_create_gtype_wrapper(context, gtype));
-    JS_DefineProperty(context, constructor, "$gtype", gtype_obj, JSPROP_PERMANENT);
-
-    return true;
+    return JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
+                             JSPROP_PERMANENT);
 }
 
 JSObject*
