@@ -97,25 +97,6 @@ fedora:
 #############################################
 # Regular tests
 #############################################
-ubuntu_gcc:
-  <<: *build
-  stage: test
-  image: claudioandre/spidermonkey:ubuntu.dev.gcc
-  variables:
-    TEST: "distcheck"
-  only:
-    - master@GNOME/gjs
-
-ubuntu_clang:
-  <<: *build
-  stage: test
-  image: claudioandre/spidermonkey:ubuntu.dev.gcc
-  variables:
-    CC: clang
-    TEST: "distcheck"
-  only:
-    - master@GNOME/gjs
-
 fedora_clang:
   <<: *build
   stage: test
@@ -123,33 +104,6 @@ fedora_clang:
   variables:
     CC: clang
     TEST: "distcheck"
-
-no_profiler:
-  <<: *build
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.dev.gcc
-  variables:
-    TEST: "check"
-    BUILD_OPTS: "--disable-profiler"
-
-installed_tests:
-  <<: *build
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:ubuntu.dev.gcc
-  variables:
-    CC: clang
-    BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
-
-coverage:
-  <<: *build
-  <<: *coverage
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:ubuntu.dev.gcc
-  variables:
-    BUILD_OPTS: "--enable-code-coverage"
-    coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
-  except:
-    - /^wip\/.*/
 
 sanitizer_gcc:
   <<: *build
@@ -168,6 +122,52 @@ with_logging:
   image: claudioandre/spidermonkey:fedora.dev.gcc
   variables:
     BUILD_OPTS: CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
+
+# Generates
+# The Code Coverage Report
+coverage:
+  <<: *build
+  <<: *coverage
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:ubuntu.dev.gcc
+  variables:
+    BUILD_OPTS: "--enable-code-coverage"
+    coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
+  except:
+    - /^wip\/.*/
+
+# Publish
+# The Coverage Report generated above
+pages:
+  stage: delivery
+  dependencies:
+    - coverage
+  script:
+    - mv $(pwd)/coverage/ public/
+  artifacts:
+    paths:
+      - public
+  only:
+    - master@GNOME/gjs
+
+ubuntu_gcc:
+  <<: *build
+  stage: test
+  image: claudioandre/spidermonkey:ubuntu.dev.gcc
+  variables:
+    TEST: "distcheck"
+  only:
+    - master@GNOME/gjs
+
+ubuntu_clang:
+  <<: *build
+  stage: test
+  image: claudioandre/spidermonkey:ubuntu.dev.gcc
+  variables:
+    CC: clang
+    TEST: "distcheck"
+  only:
+    - master@GNOME/gjs
 
 sanitizer_clang:
   <<: *build
@@ -229,21 +229,6 @@ code_statistics:
     - master@GNOME/gjs
 
 #############################################
-# Publish the Code Coverage Report
-#############################################
-pages:
-  stage: delivery
-  dependencies:
-    - coverage
-  script:
-    - mv $(pwd)/coverage/ public/
-  artifacts:
-    paths:
-      - public
-  only:
-    - master@GNOME/gjs
-
-#############################################
 # Optional / Manual CI tests
 #############################################
 valgrind:
@@ -262,6 +247,24 @@ no_graphics:
   variables:
     TEST: "check"
     BUILD_OPTS: "--without-cairo --without-gtk"
+  when: manual
+
+no_profiler:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:fedora.dev.gcc
+  variables:
+    TEST: "check"
+    BUILD_OPTS: "--disable-profiler"
+  when: manual
+
+installed_tests:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:ubuntu.dev.gcc
+  variables:
+    CC: clang
+    BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
   when: manual
 
 lts:
