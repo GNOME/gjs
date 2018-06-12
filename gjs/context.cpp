@@ -77,6 +77,10 @@ static void     gjs_context_set_property      (GObject               *object,
                                                   guint                  prop_id,
                                                   const GValue          *value,
                                                   GParamSpec            *pspec);
+bool _gjs_context_register_module_inner(GjsContext* gjs_cx,
+                                        const char* identifier,
+                                        const char* filename,
+                                        const char* mod_text, size_t mod_len);
 
 void GjsContextPrivate::EnvironmentPreparer::invoke(JS::HandleObject scope,
                                                     Closure& closure) {
@@ -493,7 +497,8 @@ bool gjs_context_eval_module(GjsContext* js_context, const char* identifier,
     JSAutoRequest ar(js_context->context);
 
     if (!JS::ModuleDeclarationInstantiation(context, it->second)) {
-        g_error("Failed to instantiated module: %s", identifier);
+        gjs_log_exception(context);
+        g_error("Failed to instantiate module: %s", identifier);
         return false;
     }
 
@@ -558,13 +563,21 @@ out:
     return ret;
 }
 
-bool gjs_context_register_module(GjsContext* gjs_cx, const char* identifier,
-                                 const char* mod_text, size_t mod_len,
-                                 const char* filename) {
+/*
+    An internal API for registering modules that returns
+    errors by throwing within the JS context. This allows
+    it to be used as part of the module resolve hook.
+*/
+bool _gjs_context_register_module_inner(GjsContext* gjs_cx,
+                                        const char* identifier,
+                                        const char* filename,
+                                        const char* mod_text, size_t mod_len) {
     JSContext* cx = gjs_cx->context;
 
-    JSAutoRequest ar(gjs_cx->context);
-    JSAutoCompartment ac(gjs_cx->context, gjs_cx->global);
+    if (gjs_cx->idToModule.find(identifier) != gjs_cx->idToModule.end()) {
+        gjs_throw(cx, "Module '%s' is already registered", identifier);
+        return false;
+    }
 
     int start_line_number = 1;
     mod_text = gjs_strip_unix_shebang(mod_text, &mod_len, &start_line_number);
@@ -646,9 +659,9 @@ static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
 
         GjsAutoChar mod_text(mod_text_raw);
 
-        if (!gjs_context_register_module(gjs_cx, full_path, mod_text, mod_len,
-                                         full_path))
-            // gjs_context_register_module should have already thrown any
+        if (!_gjs_context_register_module_inner(gjs_cx, full_path, full_path,
+                                                mod_text, mod_len))
+            // _gjs_context_register_module_inner should have already thrown any
             // relevant errors
             return false;
 
@@ -665,6 +678,58 @@ static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     args.rval().setObject(*module->second);
     return true;
+}
+
+/*
+    Attempts to register a module, reporting any errors
+    through a combination of false return and error parameter
+*/
+bool gjs_context_register_module(GjsContext* gjs_cx, const char* identifier,
+                                 const char* filename, const char* mod_text,
+                                 size_t mod_len, GError** error) {
+    JSContext* context = gjs_cx->context;
+
+    JSAutoRequest ar(context);
+    JSAutoCompartment ac(context, gjs_cx->global);
+
+    // Module registration uses exceptions to report errors
+    // so we'll store the exception state, clear it, attempt to load the module,
+    // then restore the original exception state.
+    JS::AutoSaveExceptionState exp_state(context);
+
+    if (_gjs_context_register_module_inner(gjs_cx, identifier, filename,
+                                           mod_text, mod_len))
+        return true;
+
+    // Our message could come from memory owned by us or by the runtime.
+    const char* msg = nullptr;
+    GjsAutoJSChar auto_msg = nullptr;
+
+    JS::RootedValue exc(context);
+    if (JS_GetPendingException(context, &exc)) {
+        JS::RootedObject exc_obj(context, &exc.toObject());
+        JSErrorReport* report = JS_ErrorFromException(context, exc_obj);
+        if (report) {
+            msg = report->message().c_str();
+        } else {
+            JS::RootedString js_message(context, JS::ToString(context, exc));
+            if (js_message) {
+                auto_msg = JS_EncodeStringToUTF8(context, js_message);
+                msg = auto_msg.get();
+            }
+        }
+    }
+
+    g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                "Error registering module '%s': %s", identifier,
+                msg ? msg : "unknown");
+
+    // We've successfully handled the exception so we can clear it.
+    // This is necessary because AutoSaveExceptionState doesn't erase
+    // exceptions when it restores the previous exception state.
+    JS_ClearPendingException(context);
+
+    return false;
 }
 
 static void

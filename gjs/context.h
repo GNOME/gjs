@@ -93,8 +93,8 @@ void gjs_context_setup_debugger_console(GjsContext* gjs);
 
 GJS_EXPORT
 bool gjs_context_register_module(GjsContext* context, const char* name,
-                                 const char* mod_text, size_t mod_len,
-                                 const char* filename);
+                                 const char* filename, const char* mod_text,
+                                 size_t mod_len, GError** error);
 
 GJS_EXPORT
 bool gjs_context_eval_module(GjsContext* context, const char* name,

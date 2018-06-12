@@ -373,9 +373,9 @@ main(int argc, char **argv)
     if (exec_as_module) {
         GFile* output = g_file_new_for_commandline_arg(filename);
         char* full_path = g_file_get_path(output);
-        if (!gjs_context_register_module(js_context, full_path, script, len,
-                                         full_path)) {
-            g_printerr("Couldn't register root module");
+        if (!gjs_context_register_module(js_context, full_path, full_path,
+                                         script, len, &error)) {
+            g_printerr("%s\n", error->message);
             code = 1;
             goto out;
         }
