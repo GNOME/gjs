@@ -32,7 +32,7 @@
 
 G_BEGIN_DECLS
 
-void gjs_define_object_class(JSContext              *context,
+bool gjs_define_object_class(JSContext              *cx,
                              JS::HandleObject        in_object,
                              GIObjectInfo           *info,
                              GType                   gtype,
@@ -64,7 +64,7 @@ void gjs_object_shutdown_toggle_queue(void);
 void gjs_object_context_dispose_notify(void    *data,
                                        GObject *where_the_object_was);
 
-void gjs_object_define_static_methods(JSContext       *context,
+bool gjs_object_define_static_methods(JSContext       *context,
                                       JS::HandleObject constructor,
                                       GType            gtype,
                                       GIObjectInfo    *object_info);

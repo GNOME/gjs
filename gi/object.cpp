@@ -2003,8 +2003,9 @@ gjs_lookup_object_constructor_from_info(JSContext    *context,
            we need to define it first.
         */
         JS::RootedObject ignored(context);
-        gjs_define_object_class(context, in_object, NULL, gtype, &constructor,
-                                &ignored);
+        if (!gjs_define_object_class(context, in_object, nullptr, gtype,
+                                     &constructor, &ignored))
+            return nullptr;
     } else {
         if (G_UNLIKELY (!value.isObject()))
             return NULL;
@@ -2028,15 +2029,12 @@ gjs_lookup_object_prototype_from_info(JSContext    *context,
     if (G_UNLIKELY(!constructor))
         return NULL;
 
-    JS::RootedValue value(context);
-    if (!gjs_object_get_property(context, constructor,
-                                 GJS_STRING_PROTOTYPE, &value))
+    JS::RootedObject prototype(context);
+    if (!gjs_object_require_property(context, constructor, "constructor object",
+                                     GJS_STRING_PROTOTYPE, &prototype))
         return NULL;
 
-    if (G_UNLIKELY (!value.isObjectOrNull()))
-        return NULL;
-
-    return value.toObjectOrNull();
+    return prototype;
 }
 
 static JSObject *
@@ -2311,7 +2309,7 @@ JSFunctionSpec gjs_object_instance_proto_funcs[] = {
     JS_FS_END
 };
 
-void
+bool
 gjs_object_define_static_methods(JSContext       *context,
                                  JS::HandleObject constructor,
                                  GType            gtype,
@@ -2338,14 +2336,14 @@ gjs_object_define_static_methods(JSContext       *context,
          */
         if (!(flags & GI_FUNCTION_IS_METHOD)) {
             if (!gjs_define_function(context, constructor, gtype, meth_info))
-                gjs_log_exception(context);
+                return false;
         }
     }
 
     GjsAutoInfo<GIStructInfo> gtype_struct =
         g_object_info_get_class_struct(object_info);
     if (gtype_struct == NULL)
-        return;
+        return true;  /* not an error? */
 
     n_methods = g_struct_info_get_n_methods(gtype_struct);
 
@@ -2354,8 +2352,10 @@ gjs_object_define_static_methods(JSContext       *context,
             g_struct_info_get_method(gtype_struct, i);
 
         if (!gjs_define_function(context, constructor, gtype, meth_info))
-            gjs_log_exception(context);
+            return false;
     }
+
+    return true;
 }
 
 JS::Symbol*
@@ -2371,7 +2371,7 @@ ObjectInstance::hook_up_vfunc_symbol(JSContext *cx)
     return hook_up_vfunc_root;
 }
 
-void
+bool
 gjs_define_object_class(JSContext              *context,
                         JS::HandleObject        in_object,
                         GIObjectInfo           *info,
@@ -2431,7 +2431,7 @@ gjs_define_object_class(JSContext              *context,
 
     parent_type = g_type_parent(gtype);
     if (parent_type != G_TYPE_INVALID)
-       parent_proto = gjs_lookup_object_prototype(context, parent_type);
+        parent_proto = gjs_lookup_object_prototype(context, parent_type);
 
     ns = gjs_get_names_from_gtype_and_gi_info(gtype, (GIBaseInfo *) info,
                                               &constructor_name);
@@ -2450,9 +2450,8 @@ gjs_define_object_class(JSContext              *context,
                                 /* funcs of constructor, MyConstructor.myfunc() */
                                 NULL,
                                 prototype,
-                                constructor)) {
-        g_error("Can't init class %s", constructor_name);
-    }
+                                constructor))
+        return false;
 
     /* Hook_up_vfunc can't be included in gjs_object_instance_proto_funcs
      * because it's a custom symbol. */
@@ -2461,7 +2460,7 @@ gjs_define_object_class(JSContext              *context,
     if (!JS_DefineFunctionById(context, prototype, hook_up_vfunc,
                                &ObjectInstance::hook_up_vfunc, 3,
                                GJS_MODULE_PROP_FLAGS))
-        return;
+        return false;
 
     GJS_INC_COUNTER(object);
     priv = g_slice_new0(ObjectInstance);
@@ -2472,12 +2471,13 @@ gjs_define_object_class(JSContext              *context,
               prototype.get(), JS_GetClass(prototype), in_object.get());
 
     if (info)
-        gjs_object_define_static_methods(context, constructor, gtype, info);
+        if (!gjs_object_define_static_methods(context, constructor, gtype, info))
+            return false;
 
     JS::RootedObject gtype_obj(context,
         gjs_gtype_create_gtype_wrapper(context, gtype));
-    JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
-                      JSPROP_PERMANENT);
+    return JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
+                             JSPROP_PERMANENT);
 }
 
 JSObject*
@@ -2601,7 +2601,7 @@ ObjectInstance::typecheck_object(JSContext *context,
 }
 
 
-static void
+static bool
 find_vfunc_info (JSContext *context,
                  GType implementor_gtype,
                  GIBaseInfo *vfunc_info,
@@ -2633,7 +2633,7 @@ find_vfunc_info (JSContext *context,
             g_type_class_unref(implementor_class);
             gjs_throw (context, "Couldn't find GType of implementor of interface %s.",
                        g_type_name(ancestor_gtype));
-            return;
+            return false;
         }
 
         *implementor_vtable_ret = implementor_iface_class;
@@ -2658,12 +2658,13 @@ find_vfunc_info (JSContext *context,
             /* We have a field with the same name, but it's not a callback.
              * There's no hope of being another field with a correct name,
              * so just abort early. */
-            return;
+            return true;
         } else {
             *field_info_ret = std::move(field_info);
-            return;
+            return true;
         }
     }
+    return true;
 }
 
 bool
@@ -2740,7 +2741,10 @@ ObjectInstance::hook_up_vfunc_impl(JSContext          *cx,
 
     void *implementor_vtable;
     GjsAutoInfo<GIFieldInfo> field_info;
-    find_vfunc_info(cx, m_gtype, vfunc, name, &implementor_vtable, &field_info);
+    if (!find_vfunc_info(cx, m_gtype, vfunc, name, &implementor_vtable,
+                         &field_info))
+        return false;
+
     if (field_info != NULL) {
         gint offset;
         gpointer method_ptr;
@@ -3326,8 +3330,9 @@ gjs_register_type(JSContext *cx,
     /* create a custom JSClass */
     JS::RootedObject module(cx, gjs_lookup_private_namespace(cx));
     JS::RootedObject constructor(cx), prototype(cx);
-    gjs_define_object_class(cx, module, nullptr, instance_type, &constructor,
-                            &prototype);
+    if (!gjs_define_object_class(cx, module, nullptr, instance_type, &constructor,
+                                 &prototype))
+        return false;
 
     ObjectInstance *priv = priv_from_js(cx, prototype);
     g_type_set_qdata(instance_type, gjs_object_priv_quark(), priv);
