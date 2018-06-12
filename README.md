@@ -32,6 +32,7 @@ Our CI (continuous integration) testing scheme stresses the source code using:
 - Code Coverage (https://en.wikipedia.org/wiki/Code_coverage);
 - Text only and graphics builds;
 - Profiler enabled and disabled builds;
+- ARMv8 and PPC64LE builds;
 - And DevOps with Flatpak.
 
 ## License
