@@ -334,8 +334,6 @@ zeal_11:
     paths: *reg_files
 
   image: docker:latest
-  variables:
-    DOCKER_DRIVER: overlay
   services:
     - docker:dind
 
@@ -352,8 +350,9 @@ zeal_11:
     # Register QEMU archs
     - docker run --rm --privileged multiarch/qemu-user-static:register --reset
 
+    # Run the multiarch test job using QEMU
     - 'docker run -v $(pwd):/cwd
-          -e DEV=$DEV -e TEST=check -e BUILD_OPTS=$BUILD_OPTS -e CC=$CC -e STATIC=$STATIC $IMAGE
+          -e TEST=check $IMAGE
           bash -e -c "cd /cwd && test/test-ci.sh GJS"
     '
 
@@ -367,5 +366,14 @@ armv8:
   <<: *multiarch
   stage: thorough_tests
   variables:
+    DOCKER_DRIVER: overlay
     IMAGE: "claudioandre/spidermonkey:fedora.aarch64.gcc"
+  when: manual
+
+ppc64le:
+  <<: *multiarch
+  stage: thorough_tests
+  variables:
+    DOCKER_DRIVER: overlay
+    IMAGE: "claudioandre/spidermonkey:fedora.ppc64le.gcc"
   when: manual
