@@ -118,11 +118,9 @@ gjstest_test_func_gjs_gobject_js_defined_type(void)
 static void
 gjstest_test_func_gjs_context_register_module(void)
 {
-    GjsContext *context;
+    GjsContext *context = gjs_context_new();
     uint8_t     exit_code = 0;
     GError *error = nullptr;
-
-    context = gjs_context_new ();
 
     g_assert_true(gjs_context_register_module(
         context, "test", nullptr, "import {foo} from 'test_rep'", 26, &error));
