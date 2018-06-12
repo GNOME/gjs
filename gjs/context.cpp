@@ -690,22 +690,20 @@ gjs_context_register_module(GjsContext *gjs_cx,
         return true;
 
     // Our message could come from memory owned by us or by the runtime.
-    // Thus, we need to conditionally free it at the end of the function.
-    char* msg = nullptr;
-    bool  needs_free = false;
+    const char* msg = nullptr;
+    GjsAutoJSChar auto_msg = nullptr;
 
     JS::RootedValue exc(context);
     if (JS_GetPendingException(context, &exc)) {
         JS::RootedObject exc_obj(context, &exc.toObject());
         JSErrorReport *report = JS_ErrorFromException(context, exc_obj);
         if (report) {
-            // Cast away the const here. We promise we'll be good.
-            msg = reinterpret_cast<char*>(report->message().c_str());
+            msg = report->message().c_str();
         } else {
             JS::RootedString js_message(context, JS::ToString(context, exc));
             if (js_message) {
-                msg = JS_EncodeStringToUTF8(context, js_message);
-                needs_free = true;
+                auto_msg = JS_EncodeStringToUTF8(context, js_message);
+                msg = auto_msg.get();
             }
         }
     }
@@ -715,10 +713,6 @@ gjs_context_register_module(GjsContext *gjs_cx,
                 GJS_ERROR_FAILED,
                 "Error registering module '%s': %s",
                 identifier, msg ? msg : "unknown");
-
-    if (needs_free) {
-        JS_free(context, msg);
-    }
 
     // We've successfully handled the exception so we can clear it.
     // This is necessary because AutoSaveExceptionState doesn't erase
