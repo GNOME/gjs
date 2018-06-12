@@ -7,6 +7,19 @@ stages:
 - thorough_tests
 - delivery
 
+.CI_header: &CI_header  'echo;
+       echo "*********************************************";
+       echo "***     JavaScript bindings for GNOME     ***";
+       echo "***        Continuous Integration         ***";
+       echo "*********************************************";
+       echo;
+    '
+.CI_footer: &CI_footer 'echo;
+       echo "*********************************************";
+       echo "***             See you soon              ***";
+       echo "*********************************************";
+    '
+
 .JHBuild files: &JHB_files  [.cache/jhbuild/build/gjs/*.log, .cache/jhbuild/build/gjs/Makefile, .cache/jhbuild/build/gjs/configure]
 .Coverage files: &cov_files [.cache/jhbuild/build/gjs/*.log, .cache/jhbuild/build/gjs/Makefile, .cache/jhbuild/build/gjs/configure, coverage/]
 .Regular files: &reg_files  [configure, Makefile, analysis/, ./*.log, gjs-1.*/_build/sub/test-suite.log]
@@ -37,14 +50,8 @@ stages:
     paths: *reg_files
 
   script:
-    # CI starts here. Previous messages are GitLab Runner setup.
-    - 'echo;
-       echo "*********************************************";
-       echo "***     JavaScript bindings for GNOME     ***";
-       echo "***        Continuous Integration         ***";
-       echo "*********************************************";
-       echo;
-    '
+    # CI starts here. Previous messages are from GitLab Runner setup.
+    - *CI_header
 
     # GitLab is keeping some files between jobs. Remove them.
     - rm -rf configure Makefile *.log analysis
@@ -76,11 +83,8 @@ stages:
        fi
     '
 
-    - 'echo;
-       echo "*********************************************";
-       echo "***             See you soon              ***";
-       echo "*********************************************";
-    '
+    # Done
+    - *CI_footer
 
 #############################################
 # Run a test despite of any Docker image change
@@ -341,14 +345,8 @@ zeal_11:
     - docker:dind
 
   script:
-    # CI starts here. Previous messages are GitLab Runner setup.
-    - 'echo;
-       echo "*********************************************";
-       echo "***     JavaScript bindings for GNOME     ***";
-       echo "***        Continuous Integration         ***";
-       echo "*********************************************";
-       echo;
-    '
+    # CI starts here. Previous messages are from GitLab Runner setup.
+    - *CI_header
 
     # Register QEMU archs
     - docker run --rm --privileged multiarch/qemu-user-static:register --reset
@@ -359,11 +357,8 @@ zeal_11:
           bash -e -c "cd /cwd && test/test-ci.sh GJS"
     '
 
-    - 'echo;
-       echo "*********************************************";
-       echo "***             See you soon              ***";
-       echo "*********************************************";
-    '
+    # Done
+    - *CI_footer
 
 armv8:
   <<: *multiarch
