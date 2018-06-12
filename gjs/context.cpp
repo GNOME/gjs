@@ -560,11 +560,10 @@ _gjs_context_register_module_inner(GjsContext *gjs_cx,
                             size_t mod_len) {
     JSContext *cx = gjs_cx->context;
 
-    if(gjs_cx->idToModule.find(identifier) != gjs_cx->idToModule.end()) {
+    if (gjs_cx->idToModule.find(identifier) != gjs_cx->idToModule.end()) {
         gjs_throw(cx, "Module '%s' is already registered", identifier);
         return false;
     }
-
 
     int start_line_number = 1;
     mod_text = gjs_strip_unix_shebang(mod_text,
@@ -588,7 +587,6 @@ _gjs_context_register_module_inner(GjsContext *gjs_cx,
 
     if (filename != NULL) {
         // Since this is a file-based module, be sure to set it's host field
-
         JS::RootedValue filename_val(cx);
         if (!gjs_string_from_utf8(cx, filename, &filename_val)) {
             gjs_throw(cx, "Failed to encode full module path (%s) as JS string", filename);
@@ -678,7 +676,6 @@ gjs_context_register_module(GjsContext *gjs_cx,
                             const char* mod_text,
                             size_t mod_len,
                             GError **error) {
-
     JSContext *context = gjs_cx->context;
 
     JSAutoRequest ar(context);
@@ -703,7 +700,7 @@ gjs_context_register_module(GjsContext *gjs_cx,
         JSErrorReport *report = JS_ErrorFromException(context, exc_obj);
         if (report) {
             // Cast away the const here. We promise we'll be good.
-            msg = (char*)report->message().c_str();
+            msg = reinterpret_cast<char*>(report->message().c_str());
         } else {
             JS::RootedString js_message(context, JS::ToString(context, exc));
             if (js_message) {
