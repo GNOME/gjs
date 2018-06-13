@@ -73,7 +73,8 @@ public:
 
     operator T *() { return GjsAutoInfo::unique_ptr::get(); }
 
-    const char *name(void) { return g_base_info_get_name(*this); }
+    const char *name(void) const { return g_base_info_get_name(this->get()); }
+    GIInfoType type(void) const { return g_base_info_get_type(this->get()); }
 };
 
 /* For use of GjsAutoInfo<T> in GC hash maps */
@@ -81,6 +82,23 @@ namespace JS {
 template<typename T>
 struct GCPolicy<GjsAutoInfo<T>> : public IgnoreGCPolicy<GjsAutoInfo<T>> {};
 }
+
+class GjsAutoParam
+    : public std::unique_ptr<GParamSpec, decltype(&g_param_spec_unref)> {
+    public:
+    GjsAutoParam(GParamSpec* ptr = nullptr)
+        : unique_ptr(ptr, g_param_spec_unref)
+    {
+    }
+
+    operator GParamSpec*() { return get(); }
+};
+
+/* For use of GjsAutoParam in GC hash maps */
+namespace JS {
+template<>
+struct GCPolicy<GjsAutoParam> : public IgnoreGCPolicy<GjsAutoParam> {};
+}  // namespace JS
 
 struct GjsJSFreeArgs {
     void operator() (char *str) {

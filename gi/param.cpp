@@ -202,13 +202,12 @@ gjs_lookup_param_prototype(JSContext    *context)
     return value.toObjectOrNull();
 }
 
-void
+bool
 gjs_define_param_class(JSContext       *context,
                        JS::HandleObject in_object)
 {
     const char *constructor_name;
     JS::RootedObject prototype(context), constructor(context);
-    GIObjectInfo *info;
 
     constructor_name = "ParamSpec";
 
@@ -225,21 +224,25 @@ gjs_define_param_class(JSContext       *context,
                                 /* funcs of constructor, MyConstructor.myfunc() */
                                 gjs_param_constructor_funcs,
                                 &prototype,
-                                &constructor)) {
-        g_error("Can't init class %s", constructor_name);
-    }
+                                &constructor))
+        return false;
 
     JS::RootedObject gtype_obj(context,
         gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM));
-    JS_DefineProperty(context, constructor, "$gtype", gtype_obj, JSPROP_PERMANENT);
+    if (!gtype_obj ||
+        !JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
+                           JSPROP_PERMANENT))
+        return false;
 
-    info = (GIObjectInfo*)g_irepository_find_by_gtype(g_irepository_get_default(), G_TYPE_PARAM);
-    gjs_object_define_static_methods(context, constructor, G_TYPE_PARAM, info);
-    g_base_info_unref( (GIBaseInfo*) info);
+    GjsAutoInfo<GIObjectInfo> info =
+        g_irepository_find_by_gtype(g_irepository_get_default(), G_TYPE_PARAM);
+    if (!gjs_object_define_static_methods(context, constructor, G_TYPE_PARAM, info))
+        return false;
 
     gjs_debug(GJS_DEBUG_GPARAM, "Defined class %s prototype is %p class %p in object %p",
               constructor_name, prototype.get(), JS_GetClass(prototype),
               in_object.get());
+    return true;
 }
 
 JSObject*
