@@ -32,8 +32,12 @@
 
 #include <gio/gio.h>
 
+#include "byteArray.h"
 #include "context-private.h"
 #include "engine.h"
+#include "gi/object.h"
+#include "gi/private.h"
+#include "gi/repo.h"
 #include "global.h"
 #include "importer.h"
 #include "jsapi-util.h"
@@ -41,9 +45,6 @@
 #include "mem.h"
 #include "native.h"
 #include "profiler-private.h"
-#include "byteArray.h"
-#include "gi/object.h"
-#include "gi/repo.h"
 
 #include <modules/modules.h>
 
