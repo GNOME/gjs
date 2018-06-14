@@ -29,6 +29,8 @@ gjs_srcs =				\
 	gi/gerror.cpp			\
 	gi/gerror.h			\
 	gi/gjs_gi_trace.h		\
+	gi/gobject.cpp			\
+	gi/gobject.h			\
 	gi/gtype.cpp			\
 	gi/gtype.h			\
 	gi/interface.cpp		\
@@ -39,6 +41,8 @@ gjs_srcs =				\
 	gi/object.h			\
 	gi/param.cpp			\
 	gi/param.h			\
+	gi/private.cpp			\
+	gi/private.h			\
 	gi/proxyutils.cpp		\
 	gi/proxyutils.h			\
 	gi/repo.cpp			\
