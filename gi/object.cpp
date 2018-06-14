@@ -195,13 +195,7 @@ class ObjectInstance {
     /* Helper methods for both prototypes and instances */
 
  private:
-    bool check_is_instance(JSContext *cx, const char *for_what) const {
-        if (!is_prototype())
-            return true;
-        gjs_throw(cx, "Can't %s on %s.%s.prototype; only on instances",
-                  for_what, ns(), name());
-        return false;
-    }
+    bool check_is_instance(JSContext* cx, const char* for_what) const;
     void debug_lifecycle(const char *message) const {
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
                             "[%p: GObject %p JS wrapper %p %s.%s (%s)] %s",
@@ -238,18 +232,7 @@ class ObjectInstance {
 
  public:
     void ensure_uses_toggle_ref(JSContext *cx);
-    bool check_gobject_disposed(const char *for_what) const {
-        if (!m_gobj_disposed)
-            return true;
-
-        g_critical("Object %s.%s (%p), has been already deallocated — "
-                   "impossible to %s it. This might be caused by the object "
-                   "having been destroyed from C code using something such as "
-                   "destroy(), dispose(), or remove() vfuncs.",
-                   ns(), name(), m_gobj, for_what);
-        gjs_dumpstack();
-        return false;
-    }
+    bool check_gobject_disposed(const char* for_what) const;
 
     /* Prototype-only helper methods */
 
@@ -271,16 +254,8 @@ class ObjectInstance {
  private:
     static ObjectInstance *wrapped_gobject_list;
     ObjectInstance *next(void) const { return m_instance_link.next(); }
-    void unlink(void) {
-        if (wrapped_gobject_list == this)
-            wrapped_gobject_list = m_instance_link.next();
-        m_instance_link.unlink();
-    }
-    void link(void) {
-        if (wrapped_gobject_list)
-            m_instance_link.prepend(this, wrapped_gobject_list);
-        wrapped_gobject_list = this;
-    }
+    void link(void);
+    void unlink(void);
 
  public:
     GjsListLink *get_link(void) { return &m_instance_link; }
@@ -457,6 +432,18 @@ GjsListLink::size(void) const
     return count;
 }
 
+void ObjectInstance::link(void) {
+    if (wrapped_gobject_list)
+        m_instance_link.prepend(this, wrapped_gobject_list);
+    wrapped_gobject_list = this;
+}
+
+void ObjectInstance::unlink(void) {
+    if (wrapped_gobject_list == this)
+        wrapped_gobject_list = m_instance_link.next();
+    m_instance_link.unlink();
+}
+
 static bool
 throw_priv_is_null_error(JSContext *context)
 {
@@ -464,6 +451,29 @@ throw_priv_is_null_error(JSContext *context)
               "This JS object wrapper isn't wrapping a GObject."
               " If this is a custom subclass, are you sure you chained"
               " up to the parent _init properly?");
+    return false;
+}
+
+bool ObjectInstance::check_is_instance(JSContext* cx,
+                                       const char* for_what) const {
+    if (!is_prototype())
+        return true;
+    gjs_throw(cx, "Can't %s on %s.%s.prototype; only on instances", for_what,
+              ns(), name());
+    return false;
+}
+
+bool ObjectInstance::check_gobject_disposed(const char* for_what) const {
+    if (!m_gobj_disposed)
+        return true;
+
+    g_critical(
+        "Object %s.%s (%p), has been already deallocated — impossible to %s "
+        "it. This might be caused by the object having been destroyed from C "
+        "code using something such as destroy(), dispose(), or remove() "
+        "vfuncs.",
+        ns(), name(), m_gobj, for_what);
+    gjs_dumpstack();
     return false;
 }
 
