@@ -80,13 +80,6 @@ struct AutoGValueVector : public std::vector<GValue> {
     }
 };
 
-using PropertyCache =
-    JS::GCHashMap<JS::Heap<JSString*>, GjsAutoParam,
-                  js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
-using FieldCache = JS::GCHashMap<JS::Heap<JSString *>, GjsAutoInfo<GIFieldInfo>,
-                                 js::DefaultHasher<JSString *>,
-                                 js::SystemAllocPolicy>;
-
 class ObjectInstance {
     GIObjectInfo *m_info;
     GObject *m_gobj;  /* nullptr if we are the prototype and not an instance */
@@ -110,6 +103,9 @@ class ObjectInstance {
      * managed using toggle references. False if this object just keeps a
      * hard ref on the underlying GObject, and may be finalized at will. */
     bool m_uses_toggle_ref : 1;
+
+ public:
+    static std::stack<JS::PersistentRootedObject> object_init_list;
 
     /* Static methods to get an existing ObjectInstance */
 
@@ -148,6 +144,13 @@ class ObjectInstance {
         return m_info ? g_base_info_get_name(m_info) : type_name();
     }
     const char *type_name(void) const { return g_type_name(m_gtype); }
+
+    using PropertyCache =
+        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoParam,
+                      js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
+    using FieldCache =
+        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoInfo<GIFieldInfo>,
+                      js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
     PropertyCache *get_property_cache(void);  /* Prototype-only */
     FieldCache *get_field_cache(void);  /* Prototype-only */
 
@@ -223,6 +226,9 @@ class ObjectInstance {
                          obj, message, gjs_debug_id(id).c_str());
     }
 
+ public:
+    void type_query_dynamic_safe(GTypeQuery* query);
+
     /* Instance-only helper methods */
 
  private:
@@ -256,6 +262,9 @@ class ObjectInstance {
     bool is_vfunc_unchanged(GIVFuncInfo *info);
     bool resolve_no_info(JSContext *cx, JS::HandleObject obj, bool *resolved,
                          const char *name);
+
+ public:
+    void set_type_qdata(void);
 
     /* Methods to manipulate the linked list of instances */
 
@@ -351,9 +360,13 @@ class ObjectInstance {
     static void closure_invalidated_notify(void *data, GClosure *closure) {
         static_cast<ObjectInstance *>(data)->m_closures.erase(closure);
     }
+
+    /* Quarks */
+    static GQuark custom_type_quark(void);
+    static GQuark custom_property_quark(void);
 };
 
-static std::stack<JS::PersistentRootedObject> object_init_list;
+std::stack<JS::PersistentRootedObject> ObjectInstance::object_init_list{};
 
 using AutoParamArray = std::vector<GjsAutoParam>;
 static std::unordered_map<GType, AutoParamArray> class_init_properties;
@@ -365,25 +378,10 @@ JS::PersistentRootedSymbol ObjectInstance::hook_up_vfunc_root;
 extern struct JSClass gjs_object_instance_class;
 GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
 
-static GQuark
-gjs_is_custom_type_quark (void)
-{
-    static GQuark val = 0;
-    if (!val)
-        val = g_quark_from_static_string ("gjs::custom-type");
-
-    return val;
-}
-
-static GQuark
-gjs_is_custom_property_quark (void)
-{
-    static GQuark val = 0;
-    if (!val)
-        val = g_quark_from_static_string ("gjs::custom-property");
-
-    return val;
-}
+// clang-format off
+G_DEFINE_QUARK(gjs::custom-type, ObjectInstance::custom_type)
+G_DEFINE_QUARK(gjs::custom-property, ObjectInstance::custom_property)
+// clang-format on
 
 static GQuark
 gjs_object_priv_quark (void)
@@ -406,11 +404,9 @@ G_DEFINE_QUARK(gjs::field-cache, gjs_field_cache);
    See https://bugzilla.gnome.org/show_bug.cgi?id=687184 and
    https://bugzilla.gnome.org/show_bug.cgi?id=687211
 */
-static void
-g_type_query_dynamic_safe (GType       type,
-                           GTypeQuery *query)
-{
-    while (g_type_get_qdata(type, gjs_is_custom_type_quark()))
+void ObjectInstance::type_query_dynamic_safe(GTypeQuery* query) {
+    GType type = m_gtype;
+    while (g_type_get_qdata(type, ObjectInstance::custom_type_quark()))
         type = g_type_parent(type);
 
     g_type_query(type, query);
@@ -524,6 +520,11 @@ ObjectInstance::for_gtype(GType gtype)
                                                           gjs_object_priv_quark()));
 }
 
+void ObjectInstance::set_type_qdata(void) {
+    g_assert(is_prototype());
+    g_type_set_qdata(m_gtype, gjs_object_priv_quark(), this);
+}
+
 void
 ObjectInstance::set_object_qdata(void)
 {
@@ -536,16 +537,12 @@ ObjectInstance::unset_object_qdata(void)
     g_object_set_qdata(m_gobj, gjs_object_priv_quark(), nullptr);
 }
 
-PropertyCache *
-ObjectInstance::get_property_cache(void)
-{
+ObjectInstance::PropertyCache* ObjectInstance::get_property_cache(void) {
     void *data = g_type_get_qdata(m_gtype, gjs_property_cache_quark());
     return static_cast<PropertyCache *>(data);
 }
 
-FieldCache *
-ObjectInstance::get_field_cache(void)
-{
+ObjectInstance::FieldCache* ObjectInstance::get_field_cache(void) {
     void *data = g_type_get_qdata(m_gtype, gjs_field_cache_quark());
     return static_cast<FieldCache *>(data);
 }
@@ -674,7 +671,7 @@ ObjectInstance::prop_getter_impl(JSContext             *cx,
 
     /* Do not fetch JS overridden properties from GObject, to avoid
      * infinite recursion. */
-    if (g_param_spec_get_qdata(param, gjs_is_custom_property_quark()))
+    if (g_param_spec_get_qdata(param, ObjectInstance::custom_property_quark()))
         return true;
 
     if ((param->flags & G_PARAM_READABLE) == 0)
@@ -848,7 +845,8 @@ ObjectInstance::prop_setter_impl(JSContext       *cx,
 
     /* Do not set JS overridden properties through GObject, to avoid
      * infinite recursion (unless constructing) */
-    if (g_param_spec_get_qdata(param_spec, gjs_is_custom_property_quark()))
+    if (g_param_spec_get_qdata(param_spec,
+        ObjectInstance::custom_property_quark()))
         return true;
 
     if (!(param_spec->flags & G_PARAM_WRITABLE))
@@ -1782,7 +1780,7 @@ ObjectInstance::init_impl(JSContext              *context,
        will be popped in gjs_object_custom_init() later
        down.
     */
-    if (g_type_get_qdata(m_gtype, gjs_is_custom_type_quark()))
+    if (g_type_get_qdata(m_gtype, ObjectInstance::custom_type_quark()))
         object_init_list.emplace(context, object);
 
     g_assert(names.size() == values.size());
@@ -1807,7 +1805,7 @@ ObjectInstance::init_impl(JSContext              *context,
         return true;
     }
 
-    g_type_query_dynamic_safe(m_gtype, &query);
+    type_query_dynamic_safe(&query);
     if (G_LIKELY (query.type))
         JS_updateMallocCounter(context, query.instance_size);
 
@@ -2822,7 +2820,7 @@ gjs_object_constructor (GType                  type,
                         guint                  n_construct_properties,
                         GObjectConstructParam *construct_properties)
 {
-    if (!object_init_list.empty()) {
+    if (!ObjectInstance::object_init_list.empty()) {
         GType parent_type = g_type_parent(type);
 
         /* The object is being constructed from JS:
@@ -2941,7 +2939,8 @@ gjs_override_property(JSContext *cx,
 
     new_pspec = g_param_spec_override(name, pspec);
 
-    g_param_spec_set_qdata(new_pspec, gjs_is_custom_property_quark(), GINT_TO_POINTER(1));
+    g_param_spec_set_qdata(new_pspec, ObjectInstance::custom_property_quark(),
+                           GINT_TO_POINTER(1));
 
     args.rval().setObject(*gjs_param_from_g_param(cx, new_pspec));
     g_param_spec_unref(new_pspec);
@@ -2961,7 +2960,7 @@ gjs_interface_init(GTypeInterface *g_iface,
 
     AutoParamArray& properties = found->second;
     for (GjsAutoParam& pspec : properties) {
-        g_param_spec_set_qdata(pspec, gjs_is_custom_property_quark(),
+        g_param_spec_set_qdata(pspec, ObjectInstance::custom_property_quark(),
                                GINT_TO_POINTER(1));
         g_object_interface_install_property(g_iface, pspec);
     }
@@ -2986,7 +2985,7 @@ gjs_object_class_init(GObjectClass *klass,
     AutoParamArray& properties = found->second;
     unsigned i = 0;
     for (GjsAutoParam& pspec : properties) {
-        g_param_spec_set_qdata(pspec, gjs_is_custom_property_quark(),
+        g_param_spec_set_qdata(pspec, ObjectInstance::custom_property_quark(),
                                GINT_TO_POINTER(1));
         g_object_class_install_property(klass, ++i, pspec);
     }
@@ -3002,13 +3001,14 @@ gjs_object_custom_init(GTypeInstance *instance,
     JSContext *context;
     ObjectInstance *priv;
 
-    if (object_init_list.empty())
-      return;
+    if (ObjectInstance::object_init_list.empty())
+        return;
 
     gjs_context = gjs_context_get_current();
     context = (JSContext*) gjs_context_get_native_context(gjs_context);
 
-    JS::RootedObject object(context, object_init_list.top().get());
+    JS::RootedObject object(context,
+                            ObjectInstance::object_init_list.top().get());
     priv = ObjectInstance::for_js_nocheck(object);
     g_assert(priv);  /* Should have been set in init_impl() */
 
@@ -3019,7 +3019,7 @@ gjs_object_custom_init(GTypeInstance *instance,
         return;
     }
 
-    object_init_list.pop();
+    ObjectInstance::object_init_list.pop();
 
     priv->associate_js_gobject(context, object, G_OBJECT(instance));
 
@@ -3203,7 +3203,8 @@ gjs_register_interface(JSContext *cx,
     interface_type = g_type_register_static(G_TYPE_INTERFACE, name, &type_info,
                                             (GTypeFlags) 0);
 
-    g_type_set_qdata(interface_type, gjs_is_custom_type_quark(), GINT_TO_POINTER(1));
+    g_type_set_qdata(interface_type, ObjectInstance::custom_type_quark(),
+                     GINT_TO_POINTER(1));
 
     if (!save_properties_for_class_init(cx, properties, n_properties, interface_type))
         return false;
@@ -3246,7 +3247,7 @@ gjs_register_type(JSContext *cx,
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     GjsAutoJSChar name;
-    GType instance_type, parent_type;
+    GType instance_type;
     GTypeQuery query;
     ObjectInstance *parent_priv;
     GTypeInfo type_info = {
@@ -3303,9 +3304,7 @@ gjs_register_type(JSContext *cx,
     /* We checked parent above, in do_base_typecheck() */
     g_assert(parent_priv != NULL);
 
-    parent_type = parent_priv->gtype();
-
-    g_type_query_dynamic_safe(parent_type, &query);
+    parent_priv->type_query_dynamic_safe(&query);
     if (G_UNLIKELY (query.type == 0)) {
         gjs_throw (cx, "Cannot inherit from a non-gjs dynamic type [bug 687184]");
         return false;
@@ -3314,10 +3313,11 @@ gjs_register_type(JSContext *cx,
     type_info.class_size = query.class_size;
     type_info.instance_size = query.instance_size;
 
-    instance_type = g_type_register_static(parent_type, name, &type_info,
-                                           (GTypeFlags) 0);
+    instance_type = g_type_register_static(parent_priv->gtype(), name,
+                                           &type_info, GTypeFlags(0));
 
-    g_type_set_qdata (instance_type, gjs_is_custom_type_quark(), GINT_TO_POINTER (1));
+    g_type_set_qdata(instance_type, ObjectInstance::custom_type_quark(),
+                     GINT_TO_POINTER(1));
 
     if (!save_properties_for_class_init(cx, properties, n_properties, instance_type))
         return false;
