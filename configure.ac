@@ -32,7 +32,7 @@ PKG_INSTALLDIR
 AC_LANG([C++])
 AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CXX
-AX_CXX_COMPILE_STDCXX_11
+AX_CXX_COMPILE_STDCXX_14
 
 LT_PREREQ([2.2.0])
 # no stupid static libraries
@@ -65,7 +65,7 @@ GOBJECT_INTROSPECTION_REQUIRE([1.41.4])
 
 GOBJECT_REQUIREMENT="gobject-2.0 >= glib_required_version"
 gjs_base_packages="$GOBJECT_REQUIREMENT gio-2.0"
-common_packages="gthread-2.0 gio-2.0 >= glib_required_version mozjs-52"
+common_packages="gthread-2.0 gio-2.0 >= glib_required_version mozjs-60"
 gjs_packages="gobject-introspection-1.0 libffi $common_packages"
 gjs_cairo_packages="cairo cairo-gobject $common_packages"
 gjs_gtk_packages="gtk+-3.0 >= 3.20"

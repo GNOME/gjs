@@ -129,7 +129,7 @@ stages:
 fedora:
   <<: *build
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:job-68368_SM52-debug-gcc.fedora-dev  # pinned on purpose
+  image: registry.gitlab.gnome.org/gnome/gjs:job-FIXME_SM60-debug-gcc.fedora-dev  # pinned on purpose
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
     TEST: "check"
@@ -140,7 +140,7 @@ fedora:
 sanitizer_gcc:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
     BUILD_OPTS: "--enable-asan --enable-ubsan"
@@ -154,7 +154,7 @@ sanitizer_gcc:
 with_logging:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
   variables:
     TASK_ID: "ubuntu-x86_64-clang-default-logging-check"
     CC: clang
@@ -167,7 +167,7 @@ with_logging:
 no_graphics:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-without_gtk-check"
     TEST: "check"
@@ -179,7 +179,7 @@ no_graphics:
 no_profiler:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-disable_profiler-check"
     TEST: "check"
@@ -190,7 +190,7 @@ no_profiler:
 no_readline:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-disable_readline-check"
     TEST: "check"
@@ -204,7 +204,7 @@ coverage-automatic:
   <<: *build
   <<: *coverage
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
   variables:
     TASK_ID: "coverage"
     BUILD_OPTS: "--enable-code-coverage"
@@ -307,7 +307,7 @@ code_statistics:
 sanitizer_clang:
   <<: *build
   stage: thorough_tests
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
   variables:
     TASK_ID: "ubuntu-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
@@ -320,7 +320,7 @@ sanitizer_clang:
 fedora_gcc:
   <<: *build
   stage: thorough_tests
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-distcheck"
     TEST: "distcheck"
@@ -331,7 +331,7 @@ fedora_gcc:
 installed_tests:
   <<: *build
   stage: thorough_tests
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-installed_tests"
     BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
@@ -345,7 +345,7 @@ installed_tests:
 ubuntu_gcc:
   <<: *build
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
   variables:
     TASK_ID: "ubuntu-x86_64-gcc-default-default-distcheck"
     TEST: "distcheck"
@@ -356,7 +356,7 @@ ubuntu_gcc:
 ubuntu_clang:
   <<: *build
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
   variables:
     TASK_ID: "ubuntu-x86_64-clang-default-default-distcheck"
     CC: clang
@@ -369,7 +369,7 @@ lts:
   <<: *build
   <<: *jhbuild
   stage: thorough_tests
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.ubuntu-lts
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-lts
   variables:
     TASK_ID: "ubuntu_lts-x86_64-gcc-default-default-check"
     DEV: jhbuild
@@ -381,7 +381,7 @@ lts:
 valgrind:
   <<: *build
   stage: thorough_tests
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-valgrind_check"
     BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
@@ -420,7 +420,7 @@ flatpak:
 zeal_2:
   <<: *build
   stage: thorough_tests
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-debug-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-debug-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal2"
     TEST: "check"
@@ -432,7 +432,7 @@ zeal_2:
 zeal_4:
   <<: *build
   stage: thorough_tests
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-debug-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-debug-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal4"
     TEST: "check"
@@ -444,7 +444,7 @@ zeal_4:
 zeal_11:
   <<: *build
   stage: thorough_tests
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-debug-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-debug-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal11"
     TEST: "check"
@@ -462,7 +462,7 @@ armv8:
   variables:
     TASK_ID: "fedora-armv8-gcc-default-default-check"
     DOCKER_DRIVER: overlay
-    IMAGE: "registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.fedora-dev.aarch64"
+    IMAGE: "registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev.aarch64"
   only:
     variables:
       - $CRON_FREQUENCY == "Weekly"
@@ -473,7 +473,7 @@ ppc64le:
   variables:
     TASK_ID: "fedora-ppc64le-gcc-default-default-check"
     DOCKER_DRIVER: overlay
-    IMAGE: "registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.fedora-dev.ppc64le"
+    IMAGE: "registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev.ppc64le"
   only:
     variables:
       - $CRON_FREQUENCY == "Weekly"
@@ -514,7 +514,7 @@ coverage:
   <<: *build
   <<: *coverage
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
   variables:
     TASK_ID: "coverage"
     BUILD_OPTS: "--enable-code-coverage"
@@ -526,7 +526,7 @@ coverage:
 sanitizer_clang:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
   variables:
     TASK_ID: "ubuntu-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
@@ -539,7 +539,7 @@ sanitizer_clang:
 fedora_gcc:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-distcheck"
     TEST: "distcheck"
@@ -550,7 +550,7 @@ fedora_gcc:
 installed_tests:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-installed_tests"
     BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
@@ -562,7 +562,7 @@ installed_tests:
 ubuntu_gcc:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
   variables:
     TASK_ID: "ubuntu-x86_64-gcc-default-default-distcheck"
     TEST: "distcheck"
@@ -573,7 +573,7 @@ ubuntu_gcc:
 ubuntu_clang:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
   variables:
     TASK_ID: "ubuntu-x86_64-clang-default-default-distcheck"
     CC: clang
@@ -586,7 +586,7 @@ lts:
   <<: *build
   <<: *jhbuild
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.ubuntu-lts
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-lts
   variables:
     TASK_ID: "ubuntu_lts-x86_64-gcc-default-default-check"
     DEV: jhbuild
@@ -598,7 +598,7 @@ lts:
 valgrind:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-valgrind_check"
     BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
@@ -633,7 +633,7 @@ flatpak:
 zeal_2:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-debug-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-debug-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal2"
     TEST: "check"
@@ -645,7 +645,7 @@ zeal_2:
 zeal_4:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-debug-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-debug-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal4"
     TEST: "check"
@@ -657,7 +657,7 @@ zeal_4:
 zeal_11:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM52-debug-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-debug-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal11"
     TEST: "check"
@@ -673,7 +673,7 @@ armv8:
   variables:
     TASK_ID: "fedora-armv8-gcc-default-default-check"
     DOCKER_DRIVER: overlay
-    IMAGE: "registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.fedora-dev.aarch64"
+    IMAGE: "registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev.aarch64"
   when: manual
   except:
     - schedules
@@ -684,7 +684,7 @@ ppc64le:
   variables:
     TASK_ID: "fedora-ppc64le-gcc-default-default-check"
     DOCKER_DRIVER: overlay
-    IMAGE: "registry.gitlab.gnome.org/gnome/gjs:SM52-gcc.fedora-dev.ppc64le"
+    IMAGE: "registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev.ppc64le"
   when: manual
   except:
     - schedules
