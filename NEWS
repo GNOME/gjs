@@ -1,3 +1,8 @@
+NEXT
+----
+
+- GJS now depends on SpiderMonkey 60 and requires a compiler capable of C++14.
+
 Version 1.53.4
 --------------
 

@@ -19,10 +19,10 @@ Even if your system includes a development package for mozjs, we
 recommend building it on JHBuild so that you can enable the debugging
 features. Add this to your JHBuild configuration file:
 ```python
-module_autogenargs['mozjs52'] = '--enable-debug'
+module_autogenargs['mozjs60'] = '--enable-debug'
 ```
 
-Make sure it is built first with `jhbuild build mozjs52`, otherwise
+Make sure it is built first with `jhbuild build mozjs60`, otherwise
 `jhbuild build gjs` will skip it if you have the system package
 installed.
 
@@ -46,7 +46,7 @@ mozjs, but you can grab them from your JHBuild copy of mozjs.
 After reaching a breakpoint in your program, type this to activate the
 pretty-printers:
 ```
-source ~/.cache/jhbuild/build/mozjs-52.Y.Z/js/src/shell/js-gdb.py
+source ~/.cache/jhbuild/build/mozjs-60.Y.Z/js/src/shell/js-gdb.py
 ```
 
 (replace `Y.Z` with mozjs's minor and micro version numbers)
