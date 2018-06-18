@@ -191,6 +191,7 @@ cppcheck:
     CODECHECK: "CPPCHECK"
   except:
     - schedules
+    - tags
 
 cpplint:
   <<: *build
@@ -201,6 +202,7 @@ cpplint:
     CODECHECK: "CPPLINT"
   except:
     - schedules
+    - tags
 
 eslint:
   <<: *build
@@ -211,6 +213,7 @@ eslint:
     CODECHECK: "ESLINT"
   except:
     - schedules
+    - tags
 
 #############################################
 #         Daily jobs / Frequent jobs        #
