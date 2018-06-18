@@ -208,6 +208,8 @@ cppcheck:
   image: claudioandre/spidermonkey:fedora.static-analysis
   variables:
     CODECHECK: "CPPCHECK"
+  except:
+    - tags
 
 cpplint:
   <<: *build
@@ -215,6 +217,8 @@ cpplint:
   image: claudioandre/spidermonkey:fedora.static-analysis
   variables:
     CODECHECK: "CPPLINT"
+  except:
+    - tags
 
 eslint:
   <<: *build
@@ -222,6 +226,8 @@ eslint:
   image: claudioandre/spidermonkey:fedora.static-analysis
   variables:
     CODECHECK: "ESLINT"
+  except:
+    - tags
 
 code_statistics:
   <<: *build
