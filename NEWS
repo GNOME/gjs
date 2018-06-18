@@ -1,3 +1,15 @@
+Version 1.53.3
+--------------
+
+- This release was made from an earlier state of master, before a bug was
+  introduced, while we sort out how to fix it. As a result, we don't have too
+  many changes this round.
+
+- Closed bugs and merge requests:
+
+  * Adding multiple ESLint rules for spacing [!152, Avi Zajac]
+  * Various maintenance [!153, Philip Chimento]
+
 Version 1.53.2
 --------------
 
