@@ -2,6 +2,16 @@
 
 ## Setting up ##
 
+We use the
+[Google style guide](https://google.github.io/styleguide/cppguide.html)
+for C++ code, with a few exceptions, 4-space indents being the main one.
+There is a handy git commit hook that will autoformat your code when you
+commit it.
+In your GJS checkout directory, run
+`tools/git-pre-commit-format install`.
+For more information, see
+<https://github.com/barisione/clang-format-hooks/>.
+
 For the time being, we recommend using JHBuild to develop GJS.
 Follow the [instructions from GNOME](https://wiki.gnome.org/HowDoI/Jhbuild) for [JHBuild](https://git.gnome.org/browse/jhbuild/).
 
