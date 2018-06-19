@@ -35,7 +35,8 @@ struct _GjsDBusImplementationPrivate {
 _Pragma("GCC diagnostic push")
 _Pragma("GCC diagnostic ignored \"-Wcast-function-type\"")
 #endif
-G_DEFINE_TYPE(GjsDBusImplementation, gjs_dbus_implementation, G_TYPE_DBUS_INTERFACE_SKELETON)
+G_DEFINE_TYPE_WITH_PRIVATE(GjsDBusImplementation, gjs_dbus_implementation,
+                           G_TYPE_DBUS_INTERFACE_SKELETON);
 #if __GNUC__ >= 8
 _Pragma("GCC diagnostic pop")
 #endif
@@ -216,8 +217,6 @@ void
 gjs_dbus_implementation_class_init(GjsDBusImplementationClass *klass) {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     GDBusInterfaceSkeletonClass *skeleton_class = G_DBUS_INTERFACE_SKELETON_CLASS(klass);
-
-    g_type_class_add_private(klass, sizeof(GjsDBusImplementationPrivate));
 
     gobject_class->finalize = gjs_dbus_implementation_finalize;
     gobject_class->set_property = gjs_dbus_implementation_set_property;
