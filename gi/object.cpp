@@ -54,17 +54,32 @@
 
 #include "js/GCHashTable.h"
 
+/* This is a trick to print out the sizes of the structs at compile time, in
+ * an error message. */
+// template <int s> struct Measure;
+// Measure<sizeof(ObjectInstance)> instance_size;
+// Measure<sizeof(ObjectPrototype)> prototype_size;
+
+#if defined(__x86_64__) && defined(__clang__)
+/* This isn't meant to be comprehensive, but should trip on at least one CI job
+ * if sizeof(ObjectInstance) is increased. */
+static_assert(sizeof(ObjectInstance) <= 112,
+              "Think very hard before increasing the size of ObjectInstance. "
+              "There can be tens of thousands of them alive in a typical "
+              "gnome-shell run.");
+#endif  // x86-64 clang
+
 std::stack<JS::PersistentRootedObject> ObjectInstance::object_init_list{};
 static bool weak_pointer_callback = false;
 ObjectInstance *ObjectInstance::wrapped_gobject_list = nullptr;
 JS::PersistentRootedSymbol ObjectInstance::hook_up_vfunc_root;
 
 extern struct JSClass gjs_object_instance_class;
-GJS_DEFINE_PRIV_FROM_JS(ObjectInstance, gjs_object_instance_class)
+GJS_DEFINE_PRIV_FROM_JS(ObjectBase, gjs_object_instance_class)
 
 // clang-format off
-G_DEFINE_QUARK(gjs::custom-type, ObjectInstance::custom_type);
-G_DEFINE_QUARK(gjs::custom-property, ObjectInstance::custom_property);
+G_DEFINE_QUARK(gjs::custom-type, ObjectBase::custom_type);
+G_DEFINE_QUARK(gjs::custom-property, ObjectBase::custom_property);
 // clang-format on
 
 static GQuark
@@ -77,20 +92,14 @@ gjs_object_priv_quark (void)
     return val;
 }
 
-static
-G_DEFINE_QUARK(gjs::property-cache, gjs_property_cache);
-
-static
-G_DEFINE_QUARK(gjs::field-cache, gjs_field_cache);
-
 /* Plain g_type_query fails and leaves @query uninitialized for
    dynamic types.
    See https://bugzilla.gnome.org/show_bug.cgi?id=687184 and
    https://bugzilla.gnome.org/show_bug.cgi?id=687211
 */
-void ObjectInstance::type_query_dynamic_safe(GTypeQuery* query) {
-    GType type = m_gtype;
-    while (g_type_get_qdata(type, ObjectInstance::custom_type_quark()))
+void ObjectBase::type_query_dynamic_safe(GTypeQuery* query) {
+    GType type = gtype();
+    while (g_type_get_qdata(type, ObjectBase::custom_type_quark()))
         type = g_type_parent(type);
 
     g_type_query(type, query);
@@ -153,6 +162,22 @@ void ObjectInstance::unlink(void) {
     m_instance_link.unlink();
 }
 
+GIObjectInfo* ObjectBase::info(void) const { return get_prototype()->m_info; }
+
+GType ObjectBase::gtype(void) const { return get_prototype()->m_gtype; }
+
+const void* ObjectBase::gobj_addr(void) const {
+    if (is_prototype())
+        return nullptr;
+    return to_instance()->m_gobj;
+}
+
+const void* ObjectBase::jsobj_addr(void) const {
+    if (is_prototype())
+        return nullptr;
+    return to_instance()->m_wrapper.get();
+}
+
 static bool
 throw_priv_is_null_error(JSContext *context)
 {
@@ -163,12 +188,12 @@ throw_priv_is_null_error(JSContext *context)
     return false;
 }
 
-bool ObjectInstance::check_is_instance(JSContext* cx,
-                                       const char* for_what) const {
+bool ObjectBase::check_is_instance(JSContext* cx, const char* for_what) const {
     if (!is_prototype())
         return true;
+    const ObjectPrototype* priv = to_prototype();
     gjs_throw(cx, "Can't %s on %s.%s.prototype; only on instances", for_what,
-              ns(), name());
+              priv->ns(), priv->name());
     return false;
 }
 
@@ -186,23 +211,18 @@ bool ObjectInstance::check_gobject_disposed(const char* for_what) const {
     return false;
 }
 
-/* Gets the ObjectInstance belonging to a particular JS object wrapper. Checks
+/* Gets the ObjectBase belonging to a particular JS object wrapper. Checks
  * that the wrapper object has the right JSClass (ObjectInstance::klass)
  * and returns null if not. */
-ObjectInstance *
-ObjectInstance::for_js(JSContext       *cx,
-                       JS::HandleObject wrapper)
-{
+ObjectBase* ObjectBase::for_js(JSContext* cx, JS::HandleObject wrapper) {
     return priv_from_js(cx, wrapper);
 }
 
 /* Use when you don't have a JSContext* available. This method is infallible
  * and cannot trigger a GC, so it's safe to use from finalize() and trace().
  * (It can return null if no instance has been set yet.) */
-ObjectInstance *
-ObjectInstance::for_js_nocheck(JSObject *wrapper)
-{
-    return static_cast<ObjectInstance *>(JS_GetPrivate(wrapper));
+ObjectBase* ObjectBase::for_js_nocheck(JSObject* wrapper) {
+    return static_cast<ObjectBase*>(JS_GetPrivate(wrapper));
 }
 
 ObjectInstance *
@@ -231,16 +251,12 @@ ObjectInstance::check_js_object_finalized(void)
     }
 }
 
-/* Prototypes only. */
-ObjectInstance *
-ObjectInstance::for_gtype(GType gtype)
-{
-    return static_cast<ObjectInstance *>(g_type_get_qdata(gtype,
-                                                          gjs_object_priv_quark()));
+ObjectPrototype* ObjectPrototype::for_gtype(GType gtype) {
+    return static_cast<ObjectPrototype*>(
+        g_type_get_qdata(gtype, gjs_object_priv_quark()));
 }
 
-void ObjectInstance::set_type_qdata(void) {
-    g_assert(is_prototype());
+void ObjectPrototype::set_type_qdata(void) {
     g_type_set_qdata(m_gtype, gjs_object_priv_quark(), this);
 }
 
@@ -256,26 +272,12 @@ ObjectInstance::unset_object_qdata(void)
     g_object_set_qdata(m_gobj, gjs_object_priv_quark(), nullptr);
 }
 
-ObjectInstance::PropertyCache* ObjectInstance::get_property_cache(void) {
-    void *data = g_type_get_qdata(m_gtype, gjs_property_cache_quark());
-    return static_cast<PropertyCache *>(data);
-}
-
-ObjectInstance::FieldCache* ObjectInstance::get_field_cache(void) {
-    void *data = g_type_get_qdata(m_gtype, gjs_field_cache_quark());
-    return static_cast<FieldCache *>(data);
-}
-
-GParamSpec *
-ObjectInstance::find_param_spec_from_id(JSContext       *cx,
-                                        JS::HandleString key)
-{
+GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
+                                                     JS::HandleString key) {
     char *gname;
 
     /* First check for the ID in the cache */
-    PropertyCache *cache = get_property_cache();
-    g_assert(cache);
-    auto entry = cache->lookupForAdd(key);
+    auto entry = m_property_cache.lookupForAdd(key);
     if (entry)
         return entry->value().get();
 
@@ -294,22 +296,20 @@ ObjectInstance::find_param_spec_from_id(JSContext       *cx,
         return nullptr;
     }
 
-    if (!cache->add(entry, key, std::move(param_spec)))
+    if (!m_property_cache.add(entry, key, std::move(param_spec)))
         g_error("Out of memory adding param spec to cache");
     return entry->value().get();  /* owned by property cache */
 }
 
-/* Gets the ObjectInstance corresponding to obj.prototype. Cannot return null,
+/* Gets the ObjectPrototype corresponding to obj.prototype. Cannot return null,
  * and asserts so. */
-ObjectInstance *
-ObjectInstance::for_js_prototype(JSContext       *context,
-                                 JS::HandleObject obj)
-{
+ObjectPrototype* ObjectPrototype::for_js_prototype(JSContext* context,
+                                                   JS::HandleObject obj) {
     JS::RootedObject proto(context);
     JS_GetPrototype(context, obj, &proto);
-    ObjectInstance *retval = for_js(context, proto);
+    ObjectBase* retval = ObjectBase::for_js(context, proto);
     g_assert(retval);
-    return retval;
+    return retval->to_prototype();
 }
 
 /* A hook on adding a property to an object. This is called during a set
@@ -318,23 +318,20 @@ ObjectInstance::for_js_prototype(JSContext       *context,
  * custom state is set on it, because we need to keep the JS GObject wrapper
  * alive in order not to lose custom "expando" properties.
  */
-bool
-ObjectInstance::add_property(JSContext       *cx,
-                             JS::HandleObject obj,
-                             JS::HandleId     id,
-                             JS::HandleValue  value)
-{
-    ObjectInstance *priv = for_js(cx, obj);
+bool ObjectBase::add_property(JSContext* cx, JS::HandleObject obj,
+                              JS::HandleId id, JS::HandleValue value) {
+    auto* priv = ObjectBase::for_js(cx, obj);
 
     /* priv is null during init: property is not being added from JS */
     if (!priv) {
         debug_jsprop_static("Add property hook", id, obj);
         return true;
     }
+    if (priv->is_prototype())
+        return true;
 
-    return priv->add_property_impl(cx, obj, id, value);
+    return priv->to_instance()->add_property_impl(cx, obj, id, value);
 }
-
 
 bool
 ObjectInstance::add_property_impl(JSContext       *cx,
@@ -344,19 +341,15 @@ ObjectInstance::add_property_impl(JSContext       *cx,
 {
     debug_jsprop("Add property hook", id, obj);
 
-    if (is_prototype() || is_custom_js_class() || m_gobj_disposed)
+    if (is_custom_js_class() || m_gobj_disposed)
         return true;
 
     ensure_uses_toggle_ref(cx);
     return true;
 }
 
-bool
-ObjectInstance::prop_getter(JSContext *cx,
-                            unsigned   argc,
-                            JS::Value *vp)
-{
-    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectInstance, priv);
+bool ObjectBase::prop_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
 
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
@@ -368,7 +361,7 @@ ObjectInstance::prop_getter(JSContext *cx,
         /* Ignore silently; note that this is different from what we do for
          * boxed types, for historical reasons */
 
-    return priv->prop_getter_impl(cx, obj, name, args.rval());
+    return priv->to_instance()->prop_getter_impl(cx, obj, name, args.rval());
 }
 
 bool
@@ -382,7 +375,7 @@ ObjectInstance::prop_getter_impl(JSContext             *cx,
 
     GValue gvalue = { 0, };
 
-    auto *proto_priv = ObjectInstance::for_js_prototype(cx, obj);
+    auto* proto_priv = ObjectBase::for_js(cx, obj)->get_prototype();
     GParamSpec *param = proto_priv->find_param_spec_from_id(cx, name);
 
     /* This is guaranteed because we resolved the property before */
@@ -431,14 +424,10 @@ lookup_field_info(GIObjectInfo *info,
     return retval;
 }
 
-GIFieldInfo *
-ObjectInstance::find_field_info_from_id(JSContext       *cx,
-                                        JS::HandleString key)
-{
+GIFieldInfo* ObjectPrototype::find_field_info_from_id(JSContext* cx,
+                                                      JS::HandleString key) {
     /* First check for the ID in the cache */
-    FieldCache *cache = get_field_cache();
-    g_assert(cache);
-    auto entry = cache->lookupForAdd(key);
+    auto entry = m_field_cache.lookupForAdd(key);
     if (entry)
         return entry->value().get();
 
@@ -453,17 +442,13 @@ ObjectInstance::find_field_info_from_id(JSContext       *cx,
         return nullptr;
     }
 
-    if (!cache->add(entry, key, std::move(field)))
+    if (!m_field_cache.add(entry, key, std::move(field)))
         g_error("Out of memory adding field info to cache");
     return entry->value().get();  /* owned by field cache */
 }
 
-bool
-ObjectInstance::field_getter(JSContext *cx,
-                             unsigned   argc,
-                             JS::Value *vp)
-{
-    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectInstance, priv);
+bool ObjectBase::field_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
 
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
@@ -475,7 +460,7 @@ ObjectInstance::field_getter(JSContext *cx,
         /* Ignore silently; note that this is different from what we do for
          * boxed types, for historical reasons */
 
-    return priv->field_getter_impl(cx, obj, name, args.rval());
+    return priv->to_instance()->field_getter_impl(cx, obj, name, args.rval());
 }
 
 bool
@@ -487,7 +472,7 @@ ObjectInstance::field_getter_impl(JSContext             *cx,
     if (!check_gobject_disposed("get any property from"))
         return true;
 
-    auto *proto_priv = ObjectInstance::for_js_prototype(cx, obj);
+    auto* proto_priv = ObjectInstance::for_js(cx, obj)->get_prototype();
     GIFieldInfo *field = proto_priv->find_field_info_from_id(cx, name);
     /* This is guaranteed because we resolved the property before */
     g_assert(field);
@@ -525,12 +510,8 @@ ObjectInstance::field_getter_impl(JSContext             *cx,
 
 /* Dynamic setter for GObject properties. Returns false on OOM/exception.
  * args.rval() becomes the "stored value" for the property. */
-bool
-ObjectInstance::prop_setter(JSContext *cx,
-                            unsigned   argc,
-                            JS::Value *vp)
-{
-    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectInstance, priv);
+bool ObjectBase::prop_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
 
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
@@ -545,7 +526,7 @@ ObjectInstance::prop_setter(JSContext *cx,
     /* Clear the JS stored value, to avoid keeping additional references */
     args.rval().setUndefined();
 
-    return priv->prop_setter_impl(cx, obj, name, args[0]);
+    return priv->to_instance()->prop_setter_impl(cx, obj, name, args[0]);
 }
 
 bool
@@ -557,7 +538,7 @@ ObjectInstance::prop_setter_impl(JSContext       *cx,
     if (!check_gobject_disposed("set any property on"))
         return true;
 
-    auto *proto_priv = ObjectInstance::for_js_prototype(cx, obj);
+    auto* proto_priv = ObjectInstance::for_js(cx, obj)->get_prototype();
     GParamSpec *param_spec = proto_priv->find_param_spec_from_id(cx, name);
     if (!param_spec)
         return false;
@@ -569,7 +550,7 @@ ObjectInstance::prop_setter_impl(JSContext       *cx,
 
     if (!(param_spec->flags & G_PARAM_WRITABLE))
         /* prevent setting the prop even in JS */
-        return _gjs_proxy_throw_readonly_field(cx, m_gtype, param_spec->name);
+        return _gjs_proxy_throw_readonly_field(cx, gtype(), param_spec->name);
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop %s",
                      param_spec->name);
@@ -587,12 +568,8 @@ ObjectInstance::prop_setter_impl(JSContext       *cx,
     return true;
 }
 
-bool
-ObjectInstance::field_setter(JSContext *cx,
-                             unsigned   argc,
-                             JS::Value *vp)
-{
-    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectInstance, priv);
+bool ObjectBase::field_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
 
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
@@ -610,7 +587,7 @@ ObjectInstance::field_setter(JSContext *cx,
      * the field */
     args.rval().setUndefined();
 
-    return priv->field_setter_impl(cx, obj, name, args[0]);
+    return priv->to_instance()->field_setter_impl(cx, obj, name, args[0]);
 }
 
 bool
@@ -622,7 +599,7 @@ ObjectInstance::field_setter_impl(JSContext       *cx,
     if (!check_gobject_disposed("set GObject field on"))
         return true;
 
-    auto *proto_priv = ObjectInstance::for_js_prototype(cx, obj);
+    auto* proto_priv = ObjectInstance::for_js(cx, obj)->get_prototype();
     GIFieldInfo *field = proto_priv->find_field_info_from_id(cx, name);
     if (field == NULL)
         return false;
@@ -635,13 +612,11 @@ ObjectInstance::field_setter_impl(JSContext       *cx,
         return true;
     }
 
-    return _gjs_proxy_throw_readonly_field(cx, m_gtype,
+    return _gjs_proxy_throw_readonly_field(cx, gtype(),
                                            g_base_info_get_name(field));
 }
 
-bool
-ObjectInstance::is_vfunc_unchanged(GIVFuncInfo *info)
-{
+bool ObjectPrototype::is_vfunc_unchanged(GIVFuncInfo* info) {
     GType ptype = g_type_parent(m_gtype);
     GError *error = NULL;
     gpointer addr1, addr2;
@@ -691,12 +666,8 @@ find_vfunc_on_parents(GIObjectInfo *info,
     return vfunc;
 }
 
-bool
-ObjectInstance::resolve_no_info(JSContext       *cx,
-                                JS::HandleObject obj,
-                                bool            *resolved,
-                                const char      *name)
-{
+bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
+                                      bool* resolved, const char* name) {
     guint n_interfaces;
     guint i;
 
@@ -772,13 +743,9 @@ is_gobject_property_name(GIObjectInfo *info,
     return g_property_info_get_flags(prop_info) & G_PARAM_READABLE;
 }
 
-bool
-ObjectInstance::resolve(JSContext       *cx,
-                        JS::HandleObject obj,
-                        JS::HandleId     id,
-                        bool            *resolved)
-{
-    auto *priv = ObjectInstance::for_js(cx, obj);
+bool ObjectBase::resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
+                         bool* resolved) {
+    auto* priv = ObjectBase::for_js(cx, obj);
 
     if (!priv) {
         /* We won't have a private until the initializer is called, so
@@ -794,21 +761,17 @@ ObjectInstance::resolve(JSContext       *cx,
         return true;
     }
 
-    return priv->resolve_impl(cx, obj, id, resolved);
-}
-
-bool
-ObjectInstance::resolve_impl(JSContext       *context,
-                             JS::HandleObject obj,
-                             JS::HandleId     id,
-                             bool            *resolved)
-{
-    debug_jsprop("Resolve hook", id, obj);
-
-    if (!is_prototype()) {
+    if (!priv->is_prototype()) {
         *resolved = false;
         return true;
     }
+
+    return priv->to_prototype()->resolve_impl(cx, obj, id, resolved);
+}
+
+bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
+                                   JS::HandleId id, bool* resolved) {
+    debug_jsprop("Resolve hook", id, obj);
 
     GjsAutoJSChar name;
     if (!gjs_get_string_id(context, id, &name)) {
@@ -879,10 +842,9 @@ ObjectInstance::resolve_impl(JSContext       *context,
         debug_jsprop("Defining lazy GObject property", id, obj);
 
         JS::RootedValue private_id(context, JS::StringValue(JSID_TO_STRING(id)));
-        if (!gjs_define_property_dynamic(context, proto, name, "gobject_prop",
-                                         &ObjectInstance::prop_getter,
-                                         &ObjectInstance::prop_setter,
-                                         private_id, GJS_MODULE_PROP_FLAGS))
+        if (!gjs_define_property_dynamic(
+                context, proto, name, "gobject_prop", &ObjectBase::prop_getter,
+                &ObjectBase::prop_setter, private_id, GJS_MODULE_PROP_FLAGS))
             return false;
 
         *resolved = true;
@@ -910,9 +872,9 @@ ObjectInstance::resolve_impl(JSContext       *context,
 
         JS::RootedValue private_id(context, JS::StringValue(JSID_TO_STRING(id)));
         if (!gjs_define_property_dynamic(context, proto, name, "gobject_field",
-                                         &ObjectInstance::field_getter,
-                                         &ObjectInstance::field_setter,
-                                         private_id, flags))
+                                         &ObjectBase::field_getter,
+                                         &ObjectBase::field_setter, private_id,
+                                         flags))
             return false;
 
         *resolved = true;
@@ -963,12 +925,10 @@ ObjectInstance::resolve_impl(JSContext       *context,
 
 /* Set properties from args to constructor (args[0] is supposed to be
  * a hash) */
-bool
-ObjectInstance::props_to_g_parameters(JSContext                  *context,
-                                      const JS::HandleValueArray& args,
-                                      std::vector<const char *>  *names,
-                                      AutoGValueVector           *values)
-{
+bool ObjectPrototype::props_to_g_parameters(JSContext* context,
+                                            const JS::HandleValueArray& args,
+                                            std::vector<const char*>* names,
+                                            AutoGValueVector* values) {
     size_t ix, length;
 
     if (args.length() == 0 || args[0].isUndefined())
@@ -1303,48 +1263,36 @@ ObjectInstance::new_for_js_object(JSContext       *cx,
     return priv;
 }
 
-ObjectInstance::ObjectInstance(JSContext       *cx,
-                               JS::HandleObject object)
-    : m_wrapper_finalized(0),
-      m_gobj_disposed(0),
-      m_uses_toggle_ref(0)
-{
-    GJS_INC_COUNTER(object);
-
+ObjectInstance::ObjectInstance(JSContext* cx, JS::HandleObject object)
+    : ObjectBase(ObjectPrototype::for_js_prototype(cx, object)) {
     g_assert(!JS_GetPrivate(object));
-    JS_SetPrivate(object, this);
 
-    auto *proto_priv = ObjectInstance::for_js_prototype(cx, object);
-
-    m_gtype = proto_priv->m_gtype;
-    m_info = proto_priv->m_info;
-    if (m_info)
-        g_base_info_ref(m_info);
-
+    GJS_INC_COUNTER(object_instance);
     debug_lifecycle("Instance constructor");
 }
 
-ObjectInstance::ObjectInstance(JSObject     *prototype,
-                               GIObjectInfo *info,
-                               GType         gtype)
-    : m_info(info),
-      m_gtype(gtype),
-      m_class(static_cast<GTypeClass *>(g_type_class_ref(gtype)))
-{
+ObjectPrototype* ObjectPrototype::new_for_js_object(GIObjectInfo* info,
+                                                    GType gtype) {
+    auto* priv = g_slice_new0(ObjectPrototype);
+    new (priv) ObjectPrototype(info, gtype);
+    return priv;
+}
+
+ObjectPrototype::ObjectPrototype(GIObjectInfo* info, GType gtype)
+    : ObjectBase(), m_info(info), m_gtype(gtype) {
     if (info)
         g_base_info_ref(info);
 
-    auto *property_cache = new PropertyCache();
-    if (!property_cache->init())
+    g_type_class_ref(gtype);
+
+    if (!m_property_cache.init())
         g_error("Out of memory for property cache of %s", type_name());
-    g_type_set_qdata(gtype, gjs_property_cache_quark(), property_cache);
 
-    auto *field_cache = new FieldCache();
-    if (!field_cache->init())
+    if (!m_field_cache.init())
         g_error("Out of memory for field cache of %s", type_name());
-    g_type_set_qdata(gtype, gjs_field_cache_quark(), field_cache);
 
-    JS_SetPrivate(prototype, this);
+    GJS_INC_COUNTER(object_prototype);
+    debug_lifecycle("Prototype constructor");
 }
 
 static void
@@ -1437,9 +1385,7 @@ ObjectInstance::ensure_uses_toggle_ref(JSContext *cx)
     g_object_unref(m_gobj);
 }
 
-void
-ObjectInstance::invalidate_all_closures(void)
-{
+void ObjectBase::invalidate_all_closures(void) {
     /* Can't loop directly through the items, since invalidating an item's
      * closure might have the effect of removing the item from the set in the
      * invalidate notifier */
@@ -1486,23 +1432,22 @@ ObjectInstance::init_impl(JSContext              *context,
 {
     GTypeQuery query;
 
-    g_assert(m_gtype != G_TYPE_NONE);
+    g_assert(gtype() != G_TYPE_NONE);
 
     std::vector<const char *> names;
     AutoGValueVector values;
-    auto *proto_priv = ObjectInstance::for_js_prototype(context, object);
-    if (!proto_priv->props_to_g_parameters(context, args, &names, &values))
+    if (!m_proto->props_to_g_parameters(context, args, &names, &values))
         return false;
 
     /* Mark this object in the construction stack, it
        will be popped in gjs_object_custom_init() later
        down.
     */
-    if (g_type_get_qdata(m_gtype, ObjectInstance::custom_type_quark()))
+    if (g_type_get_qdata(gtype(), ObjectInstance::custom_type_quark()))
         object_init_list.emplace(context, object);
 
     g_assert(names.size() == values.size());
-    GObject *gobj = g_object_new_with_properties(m_gtype, values.size(),
+    GObject* gobj = g_object_new_with_properties(gtype(), values.size(),
                                                  names.data(), values.data());
 
     ObjectInstance *other_priv = ObjectInstance::for_gobject(gobj);
@@ -1564,7 +1509,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
     /* Init the private variable before we do anything else. If a garbage
      * collection happens when calling the init function then this object
      * might be traced and we will end up dereferencing a null pointer */
-    (void) ObjectInstance::new_for_js_object(context, object);
+    JS_SetPrivate(object, ObjectInstance::new_for_js_object(context, object));
 
     if (!gjs_object_require_property(context, object, "GObject instance",
                                      GJS_STRING_GOBJECT_INIT, &initer))
@@ -1579,72 +1524,53 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
     return ret;
 }
 
-void
-ObjectInstance::trace(JSTracer *tracer,
-                      JSObject *obj)
-{
-    auto *priv = ObjectInstance::for_js_nocheck(obj);
+void ObjectBase::trace(JSTracer* tracer, JSObject* obj) {
+    auto* priv = ObjectBase::for_js_nocheck(obj);
     if (priv == NULL)
         return;
 
-    priv->trace_impl(tracer);
+    if (priv->is_prototype())
+        priv->to_prototype()->trace_impl(tracer);
+    else
+        priv->trace_impl(tracer);
 }
 
-void
-ObjectInstance::trace_impl(JSTracer *tracer)
-{
+void ObjectBase::trace_impl(JSTracer* tracer) {
     for (GClosure *closure : m_closures)
         gjs_closure_trace(closure, tracer);
-
-    PropertyCache *property_cache = get_property_cache();
-    if (property_cache)
-        property_cache->trace(tracer);
-    FieldCache *field_cache = get_field_cache();
-    if (field_cache)
-        field_cache->trace(tracer);
 }
 
-void
-ObjectInstance::finalize(JSFreeOp *fop,
-                         JSObject *obj)
-{
-    auto *priv = ObjectInstance::for_js_nocheck(obj);
+void ObjectPrototype::trace_impl(JSTracer* tracer) {
+    m_property_cache.trace(tracer);
+    m_field_cache.trace(tracer);
+    ObjectBase::trace_impl(tracer);
+}
+
+void ObjectBase::finalize(JSFreeOp* fop, JSObject* obj) {
+    auto* priv = ObjectBase::for_js_nocheck(obj);
     g_assert (priv != NULL);
 
-    priv->finalize_impl(fop, obj);
+    if (priv->is_prototype()) {
+        priv->to_prototype()->~ObjectPrototype();
+        g_slice_free(ObjectPrototype, priv);
+    } else {
+        priv->to_instance()->~ObjectInstance();
+        g_slice_free(ObjectInstance, priv);
+    }
 
-    priv->~ObjectInstance();
-    g_slice_free(ObjectInstance, priv);
+    /* Remove the pointer from the JSObject */
+    JS_SetPrivate(obj, nullptr);
 }
 
-void
-ObjectInstance::finalize_impl(JSFreeOp  *fop,
-                              JSObject  *obj)
-{
+ObjectInstance::~ObjectInstance() {
     debug_lifecycle("Finalize");
 
     TRACE(GJS_OBJECT_PROXY_FINALIZE(priv, m_gobj, ns(), name()));
 
-    /* Prototype only, although if priv->gobj is null it could also be an
-     * instance struct with a freed gobject. This is annoying. It means we have
-     * to always do this, and have an extra null check. */
-    PropertyCache *property_cache = get_property_cache();
-    if (property_cache) {
-        delete property_cache;
-        g_type_set_qdata(m_gtype, gjs_property_cache_quark(), nullptr);
-    }
-    FieldCache *field_cache = get_field_cache();
-    if (field_cache) {
-        delete field_cache;
-        g_type_set_qdata(m_gtype, gjs_field_cache_quark(), nullptr);
-    }
-
-    /* This applies only to instances, not prototypes, but it's possible that
-     * an instance's GObject is already freed at this point. */
     invalidate_all_closures();
 
-    /* Object is instance, not prototype, AND GObject is not already freed */
-    if (!is_prototype()) {
+    /* GObject is not already freed */
+    if (m_gobj) {
         bool had_toggle_up;
         bool had_toggle_down;
 
@@ -1680,13 +1606,16 @@ ObjectInstance::finalize_impl(JSFreeOp  *fop,
     }
     unlink();
 
+    GJS_DEC_COUNTER(object_instance);
+}
+
+ObjectPrototype::~ObjectPrototype() {
+    invalidate_all_closures();
+
     g_clear_pointer(&m_info, g_base_info_unref);
-    g_clear_pointer(&m_class, g_type_class_unref);
+    g_type_class_unref(g_type_class_peek(m_gtype));
 
-    /* Remove the ObjectInstance pointer from the JSObject */
-    JS_SetPrivate(obj, nullptr);
-
-    GJS_DEC_COUNTER(object);
+    GJS_DEC_COUNTER(object_prototype);
 }
 
 JSObject* gjs_lookup_object_constructor_from_info(JSContext* context,
@@ -1759,43 +1688,37 @@ gjs_lookup_object_prototype(JSContext *context,
     return gjs_lookup_object_prototype_from_info(context, info, gtype);
 }
 
-void
-ObjectInstance::associate_closure(JSContext *cx,
-                                  GClosure  *closure)
-{
-    /* FIXME: Should be changed to g_assert(!is_prototype()) but due to the
-     * structs being the same, this could still be an instance, the GObject of
-     * which has been dissociated */
+void ObjectBase::associate_closure(JSContext* cx, GClosure* closure) {
     if (!is_prototype())
-        ensure_uses_toggle_ref(cx);
+        to_instance()->ensure_uses_toggle_ref(cx);
 
     /* This is a weak reference, and will be cleared when the closure is
      * invalidated */
     m_closures.insert(closure);
     g_closure_add_invalidate_notifier(closure, this,
-                                      &ObjectInstance::closure_invalidated_notify);
+                                      &ObjectBase::closure_invalidated_notify);
 }
 
-bool
-ObjectInstance::connect(JSContext *cx,
-                        unsigned   argc,
-                        JS::Value *vp)
-{
-    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectInstance, priv);
+bool ObjectBase::connect(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
     if (!priv)
         return throw_priv_is_null_error(cx); /* wrong class passed in */
-    return priv->connect_impl(cx, args, false);
+
+    if (!priv->check_is_instance(cx, "connect to signals"))
+        return false;
+
+    return priv->to_instance()->connect_impl(cx, args, false);
 }
 
-bool
-ObjectInstance::connect_after(JSContext *cx,
-                              unsigned   argc,
-                              JS::Value *vp)
-{
-    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectInstance, priv);
+bool ObjectBase::connect_after(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
     if (!priv)
         return throw_priv_is_null_error(cx); /* wrong class passed in */
-    return priv->connect_impl(cx, args, true);
+
+    if (!priv->check_is_instance(cx, "connect to signals"))
+        return false;
+
+    return priv->to_instance()->connect_impl(cx, args, true);
 }
 
 bool
@@ -1809,9 +1732,6 @@ ObjectInstance::connect_impl(JSContext          *context,
     GQuark signal_detail;
 
     gjs_debug_gsignal("connect obj %p priv %p", m_wrapper.get(), this);
-
-    if (!check_is_instance(context, "connect to signals"))
-        return false;
 
     if (!check_gobject_disposed("connect to any signal on"))
         return true;
@@ -1828,7 +1748,7 @@ ObjectInstance::connect_impl(JSContext          *context,
         return false;
     }
 
-    if (!g_signal_parse_name(signal_name, m_gtype, &signal_id, &signal_detail,
+    if (!g_signal_parse_name(signal_name, gtype(), &signal_id, &signal_detail,
                              true)) {
         gjs_throw(context, "No signal '%s' on object '%s'",
                   signal_name.get(), type_name());
@@ -1851,15 +1771,15 @@ ObjectInstance::connect_impl(JSContext          *context,
     return true;
 }
 
-bool
-ObjectInstance::emit(JSContext *cx,
-                     unsigned   argc,
-                     JS::Value *vp)
-{
-    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectInstance, priv);
+bool ObjectBase::emit(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
     if (!priv)
         return throw_priv_is_null_error(cx); /* wrong class passed in */
-    return priv->emit_impl(cx, args);
+
+    if (!priv->check_is_instance(cx, "emit signal"))
+        return false;
+
+    return priv->to_instance()->emit_impl(cx, args);
 }
 
 bool
@@ -1877,9 +1797,6 @@ ObjectInstance::emit_impl(JSContext          *context,
     gjs_debug_gsignal("emit obj %p priv %p argc %d", m_wrapper.get(), this,
                       argv.length());
 
-    if (!check_is_instance(context, "emit signal"))
-        return false;
-
     if (!check_gobject_disposed("emit any signal on"))
         return true;
 
@@ -1888,7 +1805,7 @@ ObjectInstance::emit_impl(JSContext          *context,
                              "signal name", &signal_name))
         return false;
 
-    if (!g_signal_parse_name(signal_name, m_gtype, &signal_id, &signal_detail,
+    if (!g_signal_parse_name(signal_name, gtype(), &signal_id, &signal_detail,
                              false)) {
         gjs_throw(context, "No signal '%s' on object '%s'",
                   signal_name.get(), type_name());
@@ -1950,41 +1867,43 @@ ObjectInstance::emit_impl(JSContext          *context,
     return !failed;
 }
 
-bool
-ObjectInstance::to_string(JSContext *cx,
-                          unsigned   argc,
-                          JS::Value *vp)
-{
-    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectInstance, priv);
+bool ObjectBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
     if (!priv)
         return throw_priv_is_null_error(cx);  /* wrong class passed in */
-    return priv->to_string_impl(cx, args);
+
+    if (priv->is_prototype())
+        return priv->to_prototype()->to_string_impl(cx, args);
+    return priv->to_instance()->to_string_impl(cx, args);
 }
 
 bool
 ObjectInstance::to_string_impl(JSContext          *cx,
                                const JS::CallArgs& args)
 {
-    return _gjs_proxy_to_string_func(cx, m_wrapper,
-                                     m_gobj_disposed ?
-                                        "object (FINALIZED)" : "object",
-                                     m_info, m_gtype,
-                                     m_gobj, args.rval());
+    return _gjs_proxy_to_string_func(
+        cx, m_wrapper, m_gobj_disposed ? "object (FINALIZED)" : "object",
+        info(), gtype(), m_gobj, args.rval());
+}
+
+bool ObjectPrototype::to_string_impl(JSContext* cx, const JS::CallArgs& args) {
+    return _gjs_proxy_to_string_func(cx, nullptr, "object prototype", info(),
+                                     gtype(), nullptr, args.rval());
 }
 
 static const struct JSClassOps gjs_object_class_ops = {
-    &ObjectInstance::add_property,
-    NULL,  /* deleteProperty */
-    nullptr,  /* getProperty */
-    nullptr,  /* setProperty */
-    NULL,  /* enumerate */
-    &ObjectInstance::resolve,
-    nullptr,  /* mayResolve */
-    &ObjectInstance::finalize,
+    &ObjectBase::add_property,
+    nullptr,  // deleteProperty
+    nullptr,  // getProperty
+    nullptr,  // setProperty
+    nullptr,  // enumerate
+    &ObjectBase::resolve,
+    nullptr,  // mayResolve
+    &ObjectBase::finalize,
     NULL,
     NULL,
     NULL,
-    &ObjectInstance::trace,
+    &ObjectBase::trace,
 };
 
 struct JSClass gjs_object_instance_class = {
@@ -1993,20 +1912,19 @@ struct JSClass gjs_object_instance_class = {
     &gjs_object_class_ops
 };
 
-bool
-ObjectInstance::init(JSContext *context,
-                     unsigned   argc,
-                     JS::Value *vp)
-{
+bool ObjectBase::init(JSContext* context, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(context, argc, vp, argv, obj);
 
     if (!do_base_typecheck(context, obj, true))
         return false;
 
-    ObjectInstance *priv = ObjectInstance::for_js(context, obj);
+    auto* priv = ObjectBase::for_js(context, obj);
     g_assert(priv);  /* Already checked by do_base_typecheck() */
 
-    return priv->init_impl(context, argv, &obj);
+    if (!priv->check_is_instance(context, "initialize"))
+        return false;
+
+    return priv->to_instance()->init_impl(context, argv, &obj);
 }
 
 JSPropertySpec gjs_object_instance_proto_props[] = {
@@ -2014,13 +1932,12 @@ JSPropertySpec gjs_object_instance_proto_props[] = {
 };
 
 JSFunctionSpec gjs_object_instance_proto_funcs[] = {
-    JS_FS("_init", &ObjectInstance::init, 0, 0),
-    JS_FS("connect", &ObjectInstance::connect, 0, 0),
-    JS_FS("connect_after", &ObjectInstance::connect_after, 0, 0),
-    JS_FS("emit", &ObjectInstance::emit, 0, 0),
-    JS_FS("toString", &ObjectInstance::to_string, 0, 0),
-    JS_FS_END
-};
+    JS_FS("_init", &ObjectBase::init, 0, 0),
+    JS_FS("connect", &ObjectBase::connect, 0, 0),
+    JS_FS("connect_after", &ObjectBase::connect_after, 0, 0),
+    JS_FS("emit", &ObjectBase::emit, 0, 0),
+    JS_FS("toString", &ObjectBase::to_string, 0, 0),
+    JS_FS_END};
 
 bool
 gjs_object_define_static_methods(JSContext       *context,
@@ -2095,7 +2012,6 @@ gjs_define_object_class(JSContext              *context,
     const char *constructor_name;
     JS::RootedObject parent_proto(context);
 
-    ObjectInstance *priv;
     const char *ns;
     GType parent_type;
 
@@ -2171,13 +2087,11 @@ gjs_define_object_class(JSContext              *context,
     JS::RootedId hook_up_vfunc(context,
         SYMBOL_TO_JSID(ObjectInstance::hook_up_vfunc_symbol(context)));
     if (!JS_DefineFunctionById(context, prototype, hook_up_vfunc,
-                               &ObjectInstance::hook_up_vfunc, 3,
+                               &ObjectBase::hook_up_vfunc, 3,
                                GJS_MODULE_PROP_FLAGS))
         return false;
 
-    GJS_INC_COUNTER(object);
-    priv = g_slice_new0(ObjectInstance);
-    new (priv) ObjectInstance(prototype, info, gtype);
+    JS_SetPrivate(prototype, ObjectPrototype::new_for_js_object(info, gtype));
 
     gjs_debug(GJS_DEBUG_GOBJECT, "Defined class for %s (%s), prototype %p, "
               "JSClass %p, in object %p", constructor_name, g_type_name(gtype),
@@ -2223,6 +2137,7 @@ gjs_object_from_g_object(JSContext    *context,
             return nullptr;
 
         priv = ObjectInstance::new_for_js_object(context, obj);
+        JS_SetPrivate(obj, priv);
 
         g_object_ref_sink(gobj);
         priv->associate_js_gobject(context, obj, gobj);
@@ -2240,14 +2155,15 @@ gjs_g_object_from_object(JSContext       *cx,
     if (!obj)
         return NULL;
 
-    auto *priv = ObjectInstance::for_js(cx, obj);
-    if (!priv)
+    auto* priv = ObjectBase::for_js(cx, obj);
+    if (!priv || priv->is_prototype())
         return nullptr;
 
-    if (!priv->check_gobject_disposed("access"))
+    ObjectInstance* instance = priv->to_instance();
+    if (!instance->check_gobject_disposed("access"))
         return nullptr;
 
-    return priv->gobj();
+    return instance->gobj();
 }
 
 bool
@@ -2258,25 +2174,28 @@ gjs_typecheck_is_object(JSContext       *context,
     return do_base_typecheck(context, object, throw_error);
 }
 
-bool
-gjs_typecheck_object(JSContext       *context,
-                     JS::HandleObject object,
-                     GType            expected_type,
-                     bool             throw_error)
-{
-    if (!do_base_typecheck(context, object, throw_error))
+bool gjs_typecheck_object(JSContext* cx, JS::HandleObject object,
+                          GType expected_type, bool throw_error) {
+    if (!do_base_typecheck(cx, object, throw_error))
         return false;
 
-    auto *priv = ObjectInstance::for_js(context, object);
+    auto* priv = ObjectBase::for_js(cx, object);
 
     if (priv == NULL) {
         if (throw_error)
-            return throw_priv_is_null_error(context);
+            return throw_priv_is_null_error(cx);
 
         return false;
     }
 
-    return priv->typecheck_object(context, expected_type, throw_error);
+    /* check_is_instance() throws, so only call if if throw_error.
+     * is_prototype() checks the same thing without throwing. */
+    if ((throw_error && !priv->check_is_instance(cx, "convert to GObject*")) ||
+        priv->is_prototype())
+        return false;
+
+    return priv->to_instance()->typecheck_object(cx, expected_type,
+                                                 throw_error);
 }
 
 bool
@@ -2284,15 +2203,11 @@ ObjectInstance::typecheck_object(JSContext *context,
                                  GType      expected_type,
                                  bool       throw_error)
 {
-    if ((throw_error && !check_is_instance(context, "convert to GObject*")) ||
-        is_prototype())
-        return false;
-
-    g_assert(m_gobj_disposed || m_gtype == G_OBJECT_TYPE(m_gobj));
+    g_assert(m_gobj_disposed || gtype() == G_OBJECT_TYPE(m_gobj));
 
     bool result;
     if (expected_type != G_TYPE_NONE)
-        result = g_type_is_a(m_gtype, expected_type);
+        result = g_type_is_a(gtype(), expected_type);
     else
         result = true;
 
@@ -2380,24 +2295,19 @@ find_vfunc_info (JSContext *context,
     return true;
 }
 
-bool
-ObjectInstance::hook_up_vfunc(JSContext *cx,
-                              unsigned   argc,
-                              JS::Value *vp)
-{
-    GJS_GET_PRIV(cx, argc, vp, args, object, ObjectInstance, priv);
+bool ObjectBase::hook_up_vfunc(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_PRIV(cx, argc, vp, args, prototype, ObjectBase, priv);
     if (!priv)
         return throw_priv_is_null_error(cx);
 
-    return priv->hook_up_vfunc_impl(cx, args);
+    /* Normally we wouldn't assert is_prototype(), but this method can only be
+     * called internally so it's OK to crash if done wrongly */
+    return priv->to_prototype()->hook_up_vfunc_impl(cx, args, prototype);
 }
 
-bool
-ObjectInstance::hook_up_vfunc_impl(JSContext          *cx,
-                                   const JS::CallArgs& args)
-{
-    g_assert(is_prototype());
-
+bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
+                                         const JS::CallArgs& args,
+                                         JS::HandleObject prototype) {
     GjsAutoJSChar name;
     JS::RootedObject function(cx);
     if (!gjs_parse_call_args(cx, "hook_up_vfunc", args, "so",
@@ -2466,10 +2376,8 @@ ObjectInstance::hook_up_vfunc_impl(JSContext          *cx,
         method_ptr = G_STRUCT_MEMBER_P(implementor_vtable, offset);
 
         JS::RootedValue v_function(cx, JS::ObjectValue(*function));
-        JS::RootedObject wrapper(cx, m_wrapper);
-        trampoline = gjs_callback_trampoline_new(cx, v_function, vfunc,
-                                                 GI_SCOPE_TYPE_NOTIFIED,
-                                                 wrapper, true);
+        trampoline = gjs_callback_trampoline_new(
+            cx, v_function, vfunc, GI_SCOPE_TYPE_NOTIFIED, prototype, true);
 
         *((ffi_closure **)method_ptr) = trampoline->closure;
     }
@@ -2503,7 +2411,7 @@ gjs_object_associate_closure(JSContext       *cx,
                              JS::HandleObject object,
                              GClosure        *closure)
 {
-    ObjectInstance *priv = priv_from_js(cx, object);
+    auto* priv = ObjectBase::for_js(cx, object);
     if (!priv)
         return false;
 

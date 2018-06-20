@@ -61,19 +61,266 @@ struct AutoGValueVector : public std::vector<GValue> {
     }
 };
 
-class ObjectInstance {
-    GIObjectInfo* m_info;
-    GObject* m_gobj;  // nullptr if we are the prototype and not an instance
-    GjsMaybeOwned<JSObject*> m_wrapper;
-    GType m_gtype;
+class ObjectPrototype;
+
+/* To conserve memory, we have two different kinds of private data for GObject
+ * JS wrappers: ObjectInstance, and ObjectPrototype. Both inherit from
+ * ObjectBase for their common functionality.
+ *
+ * It's important that ObjectBase and ObjectInstance not grow in size without a
+ * very good reason. There can be tens, maybe hundreds of thousands of these
+ * objects alive in a typical gnome-shell run, so even 8 more bytes will add up.
+ * It's less critical that ObjectPrototype stay small, since only one of these
+ * is allocated per GType.
+ *
+ * Sadly, we cannot have virtual methods in ObjectBase, because SpiderMonkey can
+ * be compiled with or without RTTI, so we cannot count on being able to cast
+ * ObjectBase to ObjectInstance or ObjectPrototype with dynamic_cast<>, and the
+ * vtable would take up just as much space anyway. Instead, we have the
+ * to_prototype() and to_instance() methods which will give you a pointer if the
+ * ObjectBase is of the correct type (and assert if not.)
+ */
+class ObjectBase {
+ protected:
+    /* nullptr if this is an ObjectPrototype; points to the corresponding
+     * ObjectPrototype if this is an ObjectInstance */
+    ObjectPrototype* m_proto;
 
     /* a list of all GClosures installed on this object (from
-     * signals, trampolines and explicit GClosures), used when tracing */
+     * signals, trampolines, explicit GClosures, and vfuncs on prototypes),
+     * used when tracing */
     std::set<GClosure*> m_closures;
 
-    /* the GObjectClass wrapped by this JS Object (only used for
-       prototypes) */
-    GTypeClass* m_class;
+    explicit ObjectBase(ObjectPrototype* proto = nullptr) : m_proto(proto) {}
+
+    /* Methods to get an existing ObjectBase */
+
+ public:
+    static ObjectBase* for_js(JSContext* cx, JS::HandleObject obj);
+    static ObjectBase* for_js_nocheck(JSObject* obj);
+
+    /* Methods for getting a pointer to the correct subclass. We don't use
+     * standard C++ subclasses because that would occupy another 8 bytes in
+     * ObjectInstance for a vtable. */
+
+    bool is_prototype(void) const { return !m_proto; }
+
+    /* The to_instance() and to_prototype() methods assert that this ObjectBase
+     * is of the correct subclass. If you don't want an assert, then either
+     * check beforehand or use get_prototype(). */
+
+    ObjectPrototype* to_prototype(void) {
+        g_assert(is_prototype());
+        return reinterpret_cast<ObjectPrototype*>(this);
+    }
+    const ObjectPrototype* to_prototype(void) const {
+        g_assert(is_prototype());
+        return reinterpret_cast<const ObjectPrototype*>(this);
+    }
+    ObjectInstance* to_instance(void) {
+        g_assert(!is_prototype());
+        return reinterpret_cast<ObjectInstance*>(this);
+    }
+    const ObjectInstance* to_instance(void) const {
+        g_assert(!is_prototype());
+        return reinterpret_cast<const ObjectInstance*>(this);
+    }
+
+    /* get_prototype() doesn't assert. If you call it on an ObjectPrototype, it
+     * returns you the same object cast to the correct type; if you call it on
+     * an ObjectInstance, it returns you the ObjectPrototype belonging to the
+     * corresponding JS prototype. */
+    ObjectPrototype* get_prototype(void) {
+        return is_prototype() ? to_prototype() : m_proto;
+    }
+    const ObjectPrototype* get_prototype(void) const {
+        return is_prototype() ? to_prototype() : m_proto;
+    }
+
+    /* Accessors */
+
+    /* Both ObjectInstance and ObjectPrototype have GIObjectInfo and GType,
+     * but for space reasons we store it only on ObjectPrototype. */
+    GIObjectInfo* info(void) const;
+    GType gtype(void) const;
+
+    const char* ns(void) const {
+        return info() ? g_base_info_get_namespace(info()) : "";
+    }
+    const char* name(void) const {
+        return info() ? g_base_info_get_name(info()) : type_name();
+    }
+    const char* type_name(void) const { return g_type_name(gtype()); }
+    bool is_custom_js_class(void) const { return !info(); }
+
+ private:
+    /* These are used in debug methods only. */
+    const void* gobj_addr(void) const;
+    const void* jsobj_addr(void) const;
+
+    /* Helper methods */
+
+ public:
+    bool check_is_instance(JSContext* cx, const char* for_what) const;
+
+ protected:
+    void debug_lifecycle(const char* message) const {
+        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
+                            "[%p: GObject %p JS wrapper %p %s.%s (%s)] %s",
+                            this, gobj_addr(), jsobj_addr(), ns(), name(),
+                            type_name(), message);
+    }
+    void debug_jsprop_base(const char* message, const char* id,
+                           JSObject* obj) const {
+        gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
+                         "[%p: GObject %p JS object %p %s.%s (%s)] %s '%s'",
+                         this, gobj_addr(), obj, ns(), name(), type_name(),
+                         message, id);
+    }
+    void debug_jsprop(const char* message, jsid id, JSObject* obj) const {
+        debug_jsprop_base(message, gjs_debug_id(id).c_str(), obj);
+    }
+    void debug_jsprop(const char* message, JSString* id, JSObject* obj) const {
+        debug_jsprop_base(message, gjs_debug_string(id).c_str(), obj);
+    }
+    static void debug_jsprop_static(const char* message, jsid id,
+                                    JSObject* obj) {
+        gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
+                         "[JS object %p] %s '%s', no instance associated", obj,
+                         message, gjs_debug_id(id).c_str());
+    }
+
+ public:
+    void type_query_dynamic_safe(GTypeQuery* query);
+
+    /* Methods to manipulate the list of closures */
+
+ protected:
+    void invalidate_all_closures(void);
+
+ public:
+    void associate_closure(JSContext* cx, GClosure* closure);
+    static void closure_invalidated_notify(void* data, GClosure* closure) {
+        static_cast<ObjectBase*>(data)->m_closures.erase(closure);
+    }
+
+    /* JSClass operations */
+
+    static bool add_property(JSContext* cx, JS::HandleObject obj,
+                             JS::HandleId id, JS::HandleValue value);
+    static bool resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
+                        bool* resolved);
+    static void finalize(JSFreeOp* fop, JSObject* obj);
+    static void trace(JSTracer* tracer, JSObject* obj);
+
+ protected:
+    void trace_impl(JSTracer* tracer);
+
+    /* JS property getters/setters */
+
+ public:
+    static bool prop_getter(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool field_getter(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool prop_setter(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool field_setter(JSContext* cx, unsigned argc, JS::Value* vp);
+
+    /* JS methods */
+
+    static bool connect(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool connect_after(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool emit(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool to_string(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool init(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool hook_up_vfunc(JSContext* cx, unsigned argc, JS::Value* vp);
+
+    /* Quarks */
+
+    static GQuark custom_type_quark(void);
+    static GQuark custom_property_quark(void);
+};
+
+class ObjectPrototype : public ObjectBase {
+    // ObjectBase needs to call private methods (such as trace_impl) because
+    // of the unusual inheritance scheme
+    friend class ObjectBase;
+
+    using PropertyCache =
+        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoParam,
+                      js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
+    using FieldCache =
+        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoInfo<GIFieldInfo>,
+                      js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
+
+    GIObjectInfo* m_info;
+    GType m_gtype;
+
+    PropertyCache m_property_cache;
+    FieldCache m_field_cache;
+
+    ObjectPrototype(GIObjectInfo* info, GType gtype);
+    ~ObjectPrototype();
+
+ public:
+    /* Public constructor for instances (uses GSlice allocator) */
+    static ObjectPrototype* new_for_js_object(GIObjectInfo* info, GType gtype);
+
+    static ObjectPrototype* for_js(JSContext* cx, JS::HandleObject obj) {
+        return ObjectBase::for_js(cx, obj)->to_prototype();
+    }
+    static ObjectPrototype* for_gtype(GType gtype);
+    static ObjectPrototype* for_js_prototype(JSContext* cx,
+                                             JS::HandleObject obj);
+
+    /* Helper methods */
+ private:
+    bool is_vfunc_unchanged(GIVFuncInfo* info);
+    bool resolve_no_info(JSContext* cx, JS::HandleObject obj, bool* resolved,
+                         const char* name);
+
+ public:
+    void set_type_qdata(void);
+    GParamSpec* find_param_spec_from_id(JSContext* cx, JS::HandleString key);
+    GIFieldInfo* find_field_info_from_id(JSContext* cx, JS::HandleString key);
+    bool props_to_g_parameters(JSContext* cx, const JS::HandleValueArray& args,
+                               std::vector<const char*>* names,
+                               AutoGValueVector* values);
+
+    /* These are currently only needed in the GObject base init and finalize
+     * functions, for prototypes, even though m_closures is in ObjectBase. */
+    void ref_closures(void) {
+        for (GClosure* closure : m_closures)
+            g_closure_ref(closure);
+    }
+    void unref_closures(void) {
+        for (GClosure* closure : m_closures)
+            g_closure_unref(closure);
+    }
+
+    /* JSClass operations */
+ private:
+    bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
+                      bool* resolved);
+    void trace_impl(JSTracer* tracer);
+
+    /* JS methods */
+ private:
+    bool to_string_impl(JSContext* cx, const JS::CallArgs& args);
+    bool hook_up_vfunc_impl(JSContext* cx, const JS::CallArgs& args,
+                            JS::HandleObject prototype);
+
+    ObjectPrototype(const ObjectPrototype& other) = delete;
+    ObjectPrototype(ObjectPrototype&& other) = delete;
+    ObjectPrototype& operator=(const ObjectPrototype& other) = delete;
+    ObjectPrototype& operator=(ObjectPrototype&& other) = delete;
+};
+
+class ObjectInstance : public ObjectBase {
+    // ObjectBase needs to call private methods (such as trace_impl) because
+    // of the unusual inheritance scheme
+    friend class ObjectBase;
+
+    GObject* m_gobj;  // may be null
+    GjsMaybeOwned<JSObject*> m_wrapper;
 
     GjsListLink m_instance_link;
 
@@ -88,57 +335,25 @@ class ObjectInstance {
  public:
     static std::stack<JS::PersistentRootedObject> object_init_list;
 
-    /* Static methods to get an existing ObjectInstance */
-
- private:
-    static ObjectInstance* for_js_prototype(JSContext* cx,
-                                            JS::HandleObject obj);
-
- public:
-    static ObjectInstance* for_gobject(GObject* gobj);
-    static ObjectInstance* for_js(JSContext* cx, JS::HandleObject obj);
-    static ObjectInstance* for_js_nocheck(JSObject* obj);
-    static ObjectInstance* for_gtype(GType gtype);  // Prototype-only
-
     /* Constructors */
 
  private:
-    /* Constructor for instances */
     ObjectInstance(JSContext* cx, JS::HandleObject obj);
+    ~ObjectInstance();
 
  public:
     /* Public constructor for instances (uses GSlice allocator) */
     static ObjectInstance* new_for_js_object(JSContext* cx,
                                              JS::HandleObject obj);
 
-    /* Constructor for prototypes (only called from gjs_define_object_class) */
-    ObjectInstance(JSObject* prototype, GIObjectInfo* info, GType gtype);
+    static ObjectInstance* for_gobject(GObject* gobj);
 
     /* Accessors */
 
  private:
-    bool is_prototype(void) const { return !m_gobj; }
-    bool is_custom_js_class(void) const { return !m_info; }
     bool has_wrapper(void) const { return !!m_wrapper; }
-    const char* ns(void) const {
-        return m_info ? g_base_info_get_namespace(m_info) : "";
-    }
-    const char* name(void) const {
-        return m_info ? g_base_info_get_name(m_info) : type_name();
-    }
-    const char* type_name(void) const { return g_type_name(m_gtype); }
-
-    using PropertyCache =
-        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoParam,
-                      js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
-    using FieldCache =
-        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoInfo<GIFieldInfo>,
-                      js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
-    PropertyCache* get_property_cache(void);  // Prototype-only
-    FieldCache* get_field_cache(void);        // Prototype-only
 
  public:
-    GType gtype(void) const { return m_gtype; }
     GObject* gobj(void) const { return m_gobj; }
     JSObject* wrapper(void) const { return m_wrapper; }
 
@@ -160,55 +375,7 @@ class ObjectInstance {
     void toggle_down(void);
     void toggle_up(void);
 
-    /* Methods to manipulate the list of closures */
-
- private:
-    void invalidate_all_closures(void);
-
- public:
-    void associate_closure(JSContext* cx, GClosure* closure);
-    void ref_closures(void) {
-        for (GClosure* closure : m_closures)
-            g_closure_ref(closure);
-    }
-    void unref_closures(void) {
-        for (GClosure* closure : m_closures)
-            g_closure_unref(closure);
-    }
-
-    /* Helper methods for both prototypes and instances */
-
- private:
-    bool check_is_instance(JSContext* cx, const char* for_what) const;
-    void debug_lifecycle(const char* message) const {
-        gjs_debug_lifecycle(
-            GJS_DEBUG_GOBJECT, "[%p: GObject %p JS wrapper %p %s.%s (%s)] %s",
-            this, m_gobj, m_wrapper.get(), ns(), name(), type_name(), message);
-    }
-    void debug_jsprop_base(const char* message, const char* id,
-                           JSObject* obj) const {
-        gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                         "[%p: GObject %p JS object %p %s.%s (%s)] %s '%s'",
-                         this, m_gobj, obj, ns(), name(), type_name(), message,
-                         id);
-    }
-    void debug_jsprop(const char* message, jsid id, JSObject* obj) const {
-        debug_jsprop_base(message, gjs_debug_id(id).c_str(), obj);
-    }
-    void debug_jsprop(const char* message, JSString* id, JSObject* obj) const {
-        debug_jsprop_base(message, gjs_debug_string(id).c_str(), obj);
-    }
-    static void debug_jsprop_static(const char* message, jsid id,
-                                    JSObject* obj) {
-        gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                         "[JS object %p] %s '%s', no instance associated", obj,
-                         message, gjs_debug_id(id).c_str());
-    }
-
- public:
-    void type_query_dynamic_safe(GTypeQuery* query);
-
-    /* Instance-only helper methods */
+    /* Helper methods */
 
  private:
     void set_object_qdata(void);
@@ -218,21 +385,6 @@ class ObjectInstance {
  public:
     void ensure_uses_toggle_ref(JSContext* cx);
     bool check_gobject_disposed(const char* for_what) const;
-
-    /* Prototype-only helper methods */
-
- private:
-    GParamSpec* find_param_spec_from_id(JSContext* cx, JS::HandleString key);
-    GIFieldInfo* find_field_info_from_id(JSContext* cx, JS::HandleString key);
-    bool props_to_g_parameters(JSContext* cx, const JS::HandleValueArray& args,
-                               std::vector<const char*>* names,
-                               AutoGValueVector* values);
-    bool is_vfunc_unchanged(GIVFuncInfo* info);
-    bool resolve_no_info(JSContext* cx, JS::HandleObject obj, bool* resolved,
-                         const char* name);
-
- public:
-    void set_type_qdata(void);
 
     /* Methods to manipulate the linked list of instances */
 
@@ -259,18 +411,7 @@ class ObjectInstance {
  private:
     bool add_property_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                            JS::HandleValue value);
-    bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
-                      bool* resolved);
-    void trace_impl(JSTracer* tracer);
     void finalize_impl(JSFreeOp* fop, JSObject* obj);
-
- public:
-    static bool add_property(JSContext* cx, JS::HandleObject obj,
-                             JS::HandleId id, JS::HandleValue value);
-    static bool resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
-                        bool* resolved);
-    static void finalize(JSFreeOp* fop, JSObject* obj);
-    static void trace(JSTracer* tracer, JSObject* obj);
 
     /* JS property getters/setters */
 
@@ -283,10 +424,6 @@ class ObjectInstance {
                           JS::HandleString name, JS::HandleValue value);
     bool field_setter_impl(JSContext* cx, JS::HandleObject obj,
                            JS::HandleString name, JS::HandleValue value);
-    static bool prop_getter(JSContext* cx, unsigned argc, JS::Value* vp);
-    static bool field_getter(JSContext* cx, unsigned argc, JS::Value* vp);
-    static bool prop_setter(JSContext* cx, unsigned argc, JS::Value* vp);
-    static bool field_setter(JSContext* cx, unsigned argc, JS::Value* vp);
 
     /* JS methods */
 
@@ -296,15 +433,6 @@ class ObjectInstance {
     bool to_string_impl(JSContext* cx, const JS::CallArgs& args);
     bool init_impl(JSContext* cx, const JS::CallArgs& args,
                    JS::MutableHandleObject obj);
-    bool hook_up_vfunc_impl(JSContext* cx, const JS::CallArgs& args);
-
- public:
-    static bool connect(JSContext* cx, unsigned argc, JS::Value* vp);
-    static bool connect_after(JSContext* cx, unsigned argc, JS::Value* vp);
-    static bool emit(JSContext* cx, unsigned argc, JS::Value* vp);
-    static bool to_string(JSContext* cx, unsigned argc, JS::Value* vp);
-    static bool init(JSContext* cx, unsigned argc, JS::Value* vp);
-    static bool hook_up_vfunc(JSContext* cx, unsigned argc, JS::Value* vp);
 
     /* Methods connected to "public" API */
  private:
@@ -318,13 +446,11 @@ class ObjectInstance {
 
     void gobj_dispose_notify(void);
     void context_dispose_notify(void);
-    static void closure_invalidated_notify(void* data, GClosure* closure) {
-        static_cast<ObjectInstance*>(data)->m_closures.erase(closure);
-    }
 
-    /* Quarks */
-    static GQuark custom_type_quark(void);
-    static GQuark custom_property_quark(void);
+    ObjectInstance(const ObjectInstance& other) = delete;
+    ObjectInstance(ObjectInstance&& other) = delete;
+    ObjectInstance& operator=(const ObjectInstance& other) = delete;
+    ObjectInstance& operator=(ObjectInstance&& other) = delete;
 };
 
 G_BEGIN_DECLS

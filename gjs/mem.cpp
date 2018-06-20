@@ -42,13 +42,16 @@ GJS_DEFINE_COUNTER(gerror)
 GJS_DEFINE_COUNTER(importer)
 GJS_DEFINE_COUNTER(interface)
 GJS_DEFINE_COUNTER(ns)
-GJS_DEFINE_COUNTER(object)
+GJS_DEFINE_COUNTER(object_instance)
+GJS_DEFINE_COUNTER(object_prototype)
 GJS_DEFINE_COUNTER(param)
 GJS_DEFINE_COUNTER(repo)
 
 #define GJS_LIST_COUNTER(name) \
     & gjs_counter_ ## name
 
+// clang-format off
+// otherwise these are put into 2 columns?!
 static GjsMemCounter* counters[] = {
     GJS_LIST_COUNTER(boxed),
     GJS_LIST_COUNTER(closure),
@@ -58,10 +61,12 @@ static GjsMemCounter* counters[] = {
     GJS_LIST_COUNTER(importer),
     GJS_LIST_COUNTER(interface),
     GJS_LIST_COUNTER(ns),
-    GJS_LIST_COUNTER(object),
+    GJS_LIST_COUNTER(object_instance),
+    GJS_LIST_COUNTER(object_prototype),
     GJS_LIST_COUNTER(param),
     GJS_LIST_COUNTER(repo),
 };
+// clang-format on
 
 void
 gjs_memory_report(const char *where,

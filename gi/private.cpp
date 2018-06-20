@@ -76,7 +76,7 @@ static bool gjs_override_property(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     GjsAutoParam new_pspec = g_param_spec_override(name, pspec);
 
-    g_param_spec_set_qdata(new_pspec, ObjectInstance::custom_property_quark(),
+    g_param_spec_set_qdata(new_pspec, ObjectBase::custom_property_quark(),
                            GINT_TO_POINTER(1));
 
     args.rval().setObject(*gjs_param_from_g_param(cx, new_pspec.get()));
@@ -208,7 +208,7 @@ static bool gjs_register_interface(JSContext* cx, unsigned argc,
     interface_type = g_type_register_static(G_TYPE_INTERFACE, name, &type_info,
                                             GTypeFlags(0));
 
-    g_type_set_qdata(interface_type, ObjectInstance::custom_type_quark(),
+    g_type_set_qdata(interface_type, ObjectBase::custom_type_quark(),
                      GINT_TO_POINTER(1));
 
     if (!save_properties_for_class_init(cx, properties, n_properties,
@@ -274,7 +274,7 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
         return false;
     }
 
-    auto* parent_priv = ObjectInstance::for_js(cx, parent);
+    auto* parent_priv = ObjectPrototype::for_js(cx, parent);
     /* We checked parent above, in gjs_typecheck_is_object() */
     g_assert(parent_priv);
 
@@ -293,7 +293,7 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     GType instance_type = g_type_register_static(parent_priv->gtype(), name,
                                                  &type_info, GTypeFlags(0));
 
-    g_type_set_qdata(instance_type, ObjectInstance::custom_type_quark(),
+    g_type_set_qdata(instance_type, ObjectBase::custom_type_quark(),
                      GINT_TO_POINTER(1));
 
     if (!save_properties_for_class_init(cx, properties, n_properties,
@@ -309,7 +309,7 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     gjs_define_object_class(cx, module, nullptr, instance_type, &constructor,
                             &prototype);
 
-    ObjectInstance* priv = ObjectInstance::for_js(cx, prototype);
+    auto* priv = ObjectPrototype::for_js(cx, prototype);
     priv->set_type_qdata();
 
     argv.rval().setObject(*constructor);
