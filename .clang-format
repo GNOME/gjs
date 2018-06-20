@@ -5,10 +5,13 @@ ColumnLimit: 80
 ---
 Language: Cpp
 BasedOnStyle: Google
+AccessModifierOffset: -3  # to match cpplint
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
+DerivePointerAlignment: false
 ForEachMacros: []
 IndentWidth: 4
+PointerAlignment: Left  # Google style allows both, but clang-format doesn't
 ---
 # We rely mostly on eslint for JavaScript linting, but this is a lax collection
 # of rules that will auto-fix some JS things. We really should use eslint --fix
