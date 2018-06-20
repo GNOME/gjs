@@ -63,7 +63,7 @@
 #if defined(__x86_64__) && defined(__clang__)
 /* This isn't meant to be comprehensive, but should trip on at least one CI job
  * if sizeof(ObjectInstance) is increased. */
-static_assert(sizeof(ObjectInstance) <= 112,
+static_assert(sizeof(ObjectInstance) <= 96,
               "Think very hard before increasing the size of ObjectInstance. "
               "There can be tens of thousands of them alive in a typical "
               "gnome-shell run.");
@@ -1394,7 +1394,7 @@ void ObjectBase::invalidate_all_closures(void) {
         GClosure *closure = *m_closures.begin();
         g_closure_invalidate(closure);
         /* Erase element if not already erased */
-        m_closures.erase(closure);
+        m_closures.remove(closure);
     }
 }
 
@@ -1694,9 +1694,17 @@ void ObjectBase::associate_closure(JSContext* cx, GClosure* closure) {
 
     /* This is a weak reference, and will be cleared when the closure is
      * invalidated */
-    m_closures.insert(closure);
+    auto already_has = std::find(m_closures.begin(), m_closures.end(), closure);
+    g_assert(already_has == m_closures.end() &&
+             "This closure was already associated with this object");
+    m_closures.push_front(closure);
     g_closure_add_invalidate_notifier(closure, this,
                                       &ObjectBase::closure_invalidated_notify);
+}
+
+void ObjectBase::closure_invalidated_notify(void* data, GClosure* closure) {
+    auto* priv = static_cast<ObjectBase*>(data);
+    priv->m_closures.remove(closure);
 }
 
 bool ObjectBase::connect(JSContext* cx, unsigned argc, JS::Value* vp) {
