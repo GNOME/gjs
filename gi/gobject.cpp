@@ -75,13 +75,13 @@ static void jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
 }
 
 static void gjs_object_base_init(void* klass) {
-    auto* priv = ObjectInstance::for_gtype(G_OBJECT_CLASS_TYPE(klass));
+    auto* priv = ObjectPrototype::for_gtype(G_OBJECT_CLASS_TYPE(klass));
     if (priv)
         priv->ref_closures();
 }
 
 static void gjs_object_base_finalize(void* klass) {
-    auto* priv = ObjectInstance::for_gtype(G_OBJECT_CLASS_TYPE(klass));
+    auto* priv = ObjectPrototype::for_gtype(G_OBJECT_CLASS_TYPE(klass));
     if (priv)
         priv->unref_closures();
 }
@@ -134,14 +134,14 @@ static GObject* gjs_object_constructor(
     if (!object)
         return nullptr;
 
-    auto* priv = ObjectInstance::for_js_nocheck(object);
+    auto* priv = ObjectBase::for_js_nocheck(object);
     /* Should have been set in init_impl() and pushed into object_init_list,
      * then popped from object_init_list in gjs_object_custom_init() */
     g_assert(priv);
     /* We only hold a toggle ref at this point, add back a ref that the
      * native code can own.
      */
-    return G_OBJECT(g_object_ref(priv->gobj()));
+    return G_OBJECT(g_object_ref(priv->to_instance()->gobj()));
 }
 
 static void gjs_object_set_gproperty(GObject* object, unsigned property_id,
@@ -181,7 +181,7 @@ static void gjs_object_class_init(void* class_pointer, void* user_data) {
 
     unsigned i = 0;
     for (GjsAutoParam& pspec : properties) {
-        g_param_spec_set_qdata(pspec, ObjectInstance::custom_property_quark(),
+        g_param_spec_set_qdata(pspec, ObjectBase::custom_property_quark(),
                                GINT_TO_POINTER(1));
         g_object_class_install_property(klass, ++i, pspec);
     }
@@ -194,10 +194,11 @@ static void gjs_object_custom_init(GTypeInstance* instance, void* klass) {
     JSContext *cx = current_context();
 
     JS::RootedObject object(cx, ObjectInstance::object_init_list.top());
-    auto* priv = ObjectInstance::for_js_nocheck(object);
-    g_assert(priv);  // Should have been set in init_impl()
+    auto* priv_base = ObjectBase::for_js_nocheck(object);
+    g_assert(priv_base);  // Should have been set in init_impl()
+    ObjectInstance* priv = priv_base->to_instance();
 
-    if (priv->gtype() != G_TYPE_FROM_INSTANCE(instance)) {
+    if (priv_base->gtype() != G_TYPE_FROM_INSTANCE(instance)) {
         /* This is not the most derived instance_init function,
            do nothing.
          */
@@ -234,7 +235,7 @@ static void gjs_interface_init(void* g_iface, void* iface_data) {
         return;
 
     for (GjsAutoParam& pspec : properties) {
-        g_param_spec_set_qdata(pspec, ObjectInstance::custom_property_quark(),
+        g_param_spec_set_qdata(pspec, ObjectBase::custom_property_quark(),
                                GINT_TO_POINTER(1));
         g_object_interface_install_property(g_iface, pspec);
     }
