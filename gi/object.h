@@ -27,8 +27,8 @@
 #include <glib-object.h>
 #include <girepository.h>
 
+#include <forward_list>
 #include <functional>
-#include <set>
 #include <stack>
 #include <vector>
 
@@ -89,7 +89,7 @@ class ObjectBase {
     /* a list of all GClosures installed on this object (from
      * signals, trampolines, explicit GClosures, and vfuncs on prototypes),
      * used when tracing */
-    std::set<GClosure*> m_closures;
+    std::forward_list<GClosure*> m_closures;
 
     explicit ObjectBase(ObjectPrototype* proto = nullptr) : m_proto(proto) {}
 
@@ -200,9 +200,7 @@ class ObjectBase {
 
  public:
     void associate_closure(JSContext* cx, GClosure* closure);
-    static void closure_invalidated_notify(void* data, GClosure* closure) {
-        static_cast<ObjectBase*>(data)->m_closures.erase(closure);
-    }
+    static void closure_invalidated_notify(void* data, GClosure* closure);
 
     /* JSClass operations */
 
