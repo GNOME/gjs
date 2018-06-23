@@ -93,7 +93,7 @@ stages:
 fedora:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:job-456.7  # pinned on purpose
+  image: claudioandre/spidermonkey:job-485.9_SM52-debug-gcc.fedora-dev  # pinned on purpose
   variables:
     TEST: "check"
     WARNINGS: "count"
@@ -112,7 +112,7 @@ fedora_clang:
 sanitizer_gcc:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
   variables:
     TEST: "check"
     BUILD_OPTS: "--enable-asan --enable-ubsan"
@@ -123,7 +123,7 @@ sanitizer_gcc:
 with_logging:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
   variables:
     BUILD_OPTS: CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
 
@@ -133,7 +133,7 @@ coverage:
   <<: *build
   <<: *coverage
   stage: thorough_tests
-  image: claudioandre/spidermonkey:ubuntu.dev.gcc
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
   variables:
     BUILD_OPTS: "--enable-code-coverage"
     coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
@@ -157,7 +157,7 @@ pages:
 ubuntu_gcc:
   <<: *build
   stage: test
-  image: claudioandre/spidermonkey:ubuntu.dev.gcc
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
   variables:
     TEST: "distcheck"
   only:
@@ -166,7 +166,7 @@ ubuntu_gcc:
 ubuntu_clang:
   <<: *build
   stage: test
-  image: claudioandre/spidermonkey:ubuntu.dev.gcc
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
   variables:
     CC: clang
     TEST: "distcheck"
@@ -205,28 +205,28 @@ codequality:
 cppcheck:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:fedora.static.analysis
+  image: claudioandre/spidermonkey:fedora.static-analysis
   variables:
     CODECHECK: "CPPCHECK"
 
 cpplint:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:fedora.static.analysis
+  image: claudioandre/spidermonkey:fedora.static-analysis
   variables:
     CODECHECK: "CPPLINT"
 
 eslint:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:fedora.static.analysis
+  image: claudioandre/spidermonkey:fedora.static-analysis
   variables:
     CODECHECK: "ESLINT"
 
 code_statistics:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:fedora.static.analysis
+  image: claudioandre/spidermonkey:fedora.static-analysis
   variables:
     CODECHECK: "TOKEI"
   only:
@@ -238,7 +238,7 @@ code_statistics:
 valgrind:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
   variables:
     BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
   allow_failure: true
@@ -247,7 +247,7 @@ valgrind:
 no_graphics:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
   variables:
     TEST: "check"
     BUILD_OPTS: "--without-cairo --without-gtk"
@@ -256,7 +256,7 @@ no_graphics:
 no_profiler:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.dev.gcc
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
   variables:
     TEST: "check"
     BUILD_OPTS: "--disable-profiler"
@@ -265,7 +265,7 @@ no_profiler:
 installed_tests:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:ubuntu.dev.gcc
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
   variables:
     CC: clang
     BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
@@ -275,7 +275,7 @@ lts:
   <<: *build
   <<: *jhbuild
   stage: thorough_tests
-  image: claudioandre/spidermonkey:ubuntu.lts.gcc
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-lts
   variables:
     DEV: jhbuild
     TEST: "check"
@@ -307,7 +307,7 @@ packaging:
 zeal_2:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.debug.gcc
+  image: claudioandre/spidermonkey:SM52-debug-gcc.fedora-dev
   variables:
     TEST: "check"
     JS_GC_ZEAL: 2
@@ -316,7 +316,7 @@ zeal_2:
 zeal_4:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.debug.gcc
+  image: claudioandre/spidermonkey:SM52-debug-gcc.fedora-dev
   variables:
     TEST: "check"
     JS_GC_ZEAL: 4
@@ -325,7 +325,7 @@ zeal_4:
 zeal_11:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:fedora.debug.gcc
+  image: claudioandre/spidermonkey:SM52-debug-gcc.fedora-dev
   variables:
     TEST: "check"
     JS_GC_ZEAL: 11
@@ -365,7 +365,7 @@ armv8:
   stage: thorough_tests
   variables:
     DOCKER_DRIVER: overlay
-    IMAGE: "claudioandre/spidermonkey:fedora.aarch64.gcc"
+    IMAGE: "claudioandre/spidermonkey:SM52.fedora-aarch64.gcc"
   when: manual
 
 ppc64le:
@@ -373,5 +373,5 @@ ppc64le:
   stage: thorough_tests
   variables:
     DOCKER_DRIVER: overlay
-    IMAGE: "claudioandre/spidermonkey:fedora.ppc64le.gcc"
+    IMAGE: "claudioandre/spidermonkey:SM52.fedora-ppc64le.gcc"
   when: manual
