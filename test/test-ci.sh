@@ -124,9 +124,11 @@ function do_Check_Warnings(){
     cat compilation.log | grep "warning:" | awk '{total+=1}END{print "Total number of warnings: "total}'
 
     # Discard warnings related to upstream dependencies.
+    # Plus a false positive
     cat compilation.log | grep "warning:" | \
             awk "! /installed-tests\/gimarshallingtests/" | \
-            awk "! /installed-tests\/regress.c/" > \
+            awk "! /installed-tests\/regress.c/" | \
+            awk "! /gi\/arg.cpp/ || ! /'ghash' may be used uninitialized in this function/" > \
             warnings.log
 
     total=$(awk '{total+=1}END{print total}' warnings.log)
