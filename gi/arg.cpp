@@ -1930,7 +1930,18 @@ gjs_value_to_g_argument(JSContext      *context,
                                       &ghash)) {
                 wrong = true;
             } else {
+#if __GNUC__ >= 8
+_Pragma("GCC diagnostic push")
+_Pragma("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
+#endif
+                /* The compiler isn't smart enough to figure out that ghash
+                 * will always be initialized if gjs_object_to_g_hash()
+                 * returns true.
+                 */
                 arg->v_pointer = ghash;
+#if __GNUC__ >= 8
+_Pragma("GCC diagnostic pop")
+#endif
             }
 
             g_base_info_unref((GIBaseInfo*) key_param_info);
