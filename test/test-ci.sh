@@ -120,7 +120,28 @@ function do_Get_Commit_Message(){
 
 function do_Check_Warnings(){
 
-    cat compilation.log | grep "warning:" | awk '{total+=1}END{print "Total number of warnings: "total}'
+    local total=0
+
+    #####
+    # Discard warnings related to upstream dependencies
+    #   installed-tests/gimarshallingtests.c:
+    #   installed-tests/regress.c:
+    #####
+    cat compilation.log | grep "warning:" | \
+            awk "! /installed-tests\/gimarshallingtests/" | \
+            awk "! /installed-tests\/regress.c/" > \
+            warnings.log
+
+    total=$(awk '{total+=1}END{print total}' warnings.log)
+
+    if [[ $total > 0 ]]; then
+        echo '-----------------------------------------'
+        echo "### $total new warning(s) found by compiler ###"
+        echo '-----------------------------------------'
+        cat warnings.log || true
+        echo '-----------------------------------------'
+        exit 4
+    fi
 }
 
 # ----------- Run the Tests -----------
