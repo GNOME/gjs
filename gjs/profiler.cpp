@@ -83,7 +83,7 @@ struct _GjsProfiler {
      * information while executing. We will look into this during our
      * SIGPROF handler.
      */
-    js::ProfileEntry stack[1024];
+    PseudoStack stack;
 
     /* The context being profiled */
     JSContext *cx;
@@ -98,12 +98,6 @@ struct _GjsProfiler {
 #ifdef ENABLE_PROFILER
     /* Our POSIX timer to wakeup SIGPROF */
     timer_t timer;
-
-    /* The depth of @stack. This value may be larger than the
-     * number of elements in stack, and so you MUST ensure you
-     * don't walk past the end of stack[] when iterating.
-     */
-    uint32_t stack_depth;
 
     /* Cached copy of our pid */
     GPid pid;
@@ -272,21 +266,6 @@ _gjs_profiler_is_running(GjsProfiler *self)
 
 #ifdef ENABLE_PROFILER
 
-/* Run from a signal handler */
-static inline unsigned
-gjs_profiler_get_stack_size(GjsProfiler *self)
-{
-    g_assert(((void) "Profiler must be set up before getting stack size", self));
-
-    /*
-     * Note that stack_depth could be larger than the number of
-     * items we have in our stack space. We must protect ourselves
-     * against overflowing by discarding anything after that depth
-     * of the stack.
-     */
-    return std::min(self->stack_depth, uint32_t(G_N_ELEMENTS(self->stack)));
-}
-
 static void
 gjs_profiler_sigprof(int        signum,
                      siginfo_t *info,
@@ -309,33 +288,26 @@ gjs_profiler_sigprof(int        signum,
     if (!self || info->si_code != SI_TIMER)
         return;
 
-    size_t depth = gjs_profiler_get_stack_size(self);
+    uint32_t depth = self->stack.stackSize();
     if (depth == 0)
         return;
-
-    static_assert(G_N_ELEMENTS(self->stack) < G_MAXUSHORT,
-                  "Number of elements in profiler stack should be expressible"
-                  "in an unsigned short");
 
     int64_t now = g_get_monotonic_time() * 1000L;
 
     /* NOTE: cppcheck warns that alloca() is not recommended since it can
      * easily overflow the stack; however, dynamic allocation is not an option
      * here since we are in a signal handler.
-     * Another option would be to always allocate G_N_ELEMENTS(self->stack),
-     * but that is by definition at least as large of an allocation and
-     * therefore is more likely to overflow.
      */
     // cppcheck-suppress allocaCalled
     SpCaptureAddress *addrs = static_cast<SpCaptureAddress *>(alloca(sizeof *addrs * depth));
 
-    for (size_t ix = 0; ix < depth; ix++) {
-        js::ProfileEntry& entry = self->stack[ix];
+    for (uint32_t ix = 0; ix < depth; ix++) {
+        js::ProfileEntry& entry = self->stack.entries[ix];
         const char *label = entry.label();
-        size_t flipped = depth - 1 - ix;
+        uint32_t flipped = depth - 1 - ix;
 
         /*
-         * SPSProfiler will put "js::RunScript" on the stack, but it has
+         * GeckoProfiler will put "js::RunScript" on the stack, but it has
          * a stack address of "this", which is not terribly useful since
          * everything will show up as [stack] when building callgraphs.
          */
@@ -399,8 +371,6 @@ gjs_profiler_start(GjsProfiler *self)
         return;
     }
 
-    self->stack_depth = 0;
-
     /* Setup our signal handler for SIGPROF delivery */
     sa.sa_flags = SA_RESTART | SA_SIGINFO;
     sa.sa_sigaction = gjs_profiler_sigprof;
@@ -449,8 +419,7 @@ gjs_profiler_start(GjsProfiler *self)
     self->running = true;
 
     /* Notify the JS runtime of where to put stack info */
-    js::SetContextProfilingStack(self->cx, self->stack, &self->stack_depth,
-                                 G_N_ELEMENTS(self->stack));
+    js::SetContextProfilingStack(self->cx, &self->stack);
 
     /* Start recording stack info */
     js::EnableContextProfilingStack(self->cx, true);
@@ -496,13 +465,12 @@ gjs_profiler_stop(GjsProfiler *self)
     timer_delete(self->timer);
 
     js::EnableContextProfilingStack(self->cx, false);
-    js::SetContextProfilingStack(self->cx, nullptr, nullptr, 0);
+    js::SetContextProfilingStack(self->cx, nullptr);
 
     sp_capture_writer_flush(self->capture);
 
     g_clear_pointer(&self->capture, sp_capture_writer_unref);
 
-    self->stack_depth = 0;
     g_message("Profiler stopped");
 
 #endif  /* ENABLE_PROFILER */
