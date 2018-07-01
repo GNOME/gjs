@@ -108,6 +108,33 @@ function do_Create_Artifacts_Folder(){
     mkdir -p "$save_dir"/analysis; touch "$save_dir"/analysis/doing-"$1"
 }
 
+function do_Check_Schedules(){
+
+    local DAYLY="codequality  code_statistics  coverage
+                 fedora-x86_64-clang_ubsan_asan-default-default-check
+                 fedora-x86_64-gcc-default-default-distcheck
+                 fedora-x86_64-gcc-default-default-installed_tests"
+
+    local WEEKLY="ubuntu-x86_64-gcc-default-default-distcheck
+                ubuntu-x86_64-clang-default-default-distcheck
+                ubuntu_lts-x86_64-gcc-default-default-check
+                fedora-armv8-gcc-default-default-check
+                fedora-ppc64le-gcc-default-default-check
+                fedora-x86_64-gcc-default-default-valgrind_check
+                fedora-x86_64-gcc-debug-default-check_zeal2
+                fedora-x86_64-gcc-debug-default-check_zeal4
+                fedora-x86_64-gcc-debug-default-check_zeal11
+                packaging"
+
+    if [[ "$CI_PIPELINE_SOURCE" == "schedule" ]]; then
+
+        if [[ !(("$CRON_FREQUENCY" == "Daily" && *"$TASK_ID"* == "$DAYLY") ||
+                ("$CRON_FREQUENCY" == "Weekly"  && *"$TASK_ID"* == "$WEEKLY")) ]]; then
+            echo "= ==================== Nothing to do ===================== =" > quit.ci
+        fi
+    fi
+}
+
 function do_Get_Commit_Message(){
 
     # Allow CI to skip jobs. Its goal is to simplify housekeeping.
@@ -139,7 +166,12 @@ source test/extra/do_environment.sh
 do_Create_Artifacts_Folder "$1"
 do_Get_Commit_Message
 
-if [[ $1 == "GJS" ]]; then
+if [[ $1 == "RUN_JOB" ]]; then
+    rm -f quit.ci
+    do_Check_Schedules
+    exit 0
+
+elif [[ $1 == "GJS" ]]; then
     do_Set_Env
     do_Show_Info
 
