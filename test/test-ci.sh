@@ -124,15 +124,16 @@ function do_Check_Warnings(){
 }
 
 # ----------- Run the Tests -----------
-if [[ -n "${BUILD_OPTS}" ]]; then
-    extra_opts="($BUILD_OPTS)"
+if [[ -n "${TEST}" ]]; then
+    extra_opts="($TEST)"
 fi
 
 # Show some environment info
-echo
-echo '-- Environment --'
-echo "Running on: $BASE $OS  $extra_opts"
-echo "Doing: $1"
+do_Print_Labels  'ENVIRONMENT'
+echo "Running on: $BASE $OS"
+echo "Job: $TASK_ID"
+echo "Build options: $BUILD_OPTS"
+echo "Doing: $1 $extra_opts"
 
 source test/extra/do_environment.sh
 
