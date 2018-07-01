@@ -110,8 +110,17 @@ private:
     bool m_has_weakref;  /* we have a weak reference to the GjsContext */
 
     JSContext *m_cx;
-    JS::Heap<T> m_heap;  /* should be untouched if in rooted mode */
-    JS::PersistentRooted<T> *m_root;  /* should be null if not in rooted mode */
+
+    /* m_rooted controls which of these members we can access. When switching
+     * from one to the other, be careful to call the constructor and destructor
+     * of JS::Heap, since they use post barriers. */
+    union RootUnion {
+        JS::Heap<T> heap;
+        JS::PersistentRooted<T>* root;
+
+        RootUnion() : heap() {}
+        ~RootUnion() {}
+    } m_thing;
 
     DestroyNotify m_notify;
     void *m_data;
@@ -138,8 +147,8 @@ private:
         debug("teardown_rooting()");
         g_assert(m_rooted);
 
-        delete m_root;
-        m_root = nullptr;
+        delete m_thing.root;
+        new (&m_thing.heap) JS::Heap<T>();
         m_rooted = false;
 
         if (!m_has_weakref)
@@ -176,7 +185,6 @@ public:
         m_rooted(false),
         m_has_weakref(false),
         m_cx(nullptr),
-        m_root(nullptr),
         m_notify(nullptr),
         m_data(nullptr)
     {
@@ -188,6 +196,9 @@ public:
         debug("destroyed");
         if (m_rooted)
             teardown_rooting();
+
+        /* Call in either case; teardown_rooting() constructs a new Heap */
+        m_thing.heap.~Heap();
     }
 
     /* To access the GC thing, call get(). In many cases you can just use the
@@ -197,7 +208,7 @@ public:
     const T
     get(void) const
     {
-        return m_rooted ? m_root->get() : m_heap.get();
+        return m_rooted ? m_thing.root->get() : m_thing.heap.get();
     }
     operator const T(void) const { return get(); }
 
@@ -205,8 +216,8 @@ public:
     operator==(const T& other) const
     {
         if (m_rooted)
-            return m_root->get() == other;
-        return m_heap == other;
+            return m_thing.root->get() == other;
+        return m_thing.heap == other;
     }
     inline bool operator!=(const T& other) const { return !(*this == other); }
 
@@ -216,8 +227,8 @@ public:
     operator==(std::nullptr_t) const
     {
         if (m_rooted)
-            return m_root->get() == nullptr;
-        return m_heap.unbarrieredGet() == nullptr;
+            return m_thing.root->get() == nullptr;
+        return m_thing.heap.unbarrieredGet() == nullptr;
     }
     inline bool operator!=(std::nullptr_t) const { return !(*this == nullptr); }
 
@@ -231,7 +242,7 @@ public:
     handle(void)
     {
         g_assert(m_rooted);
-        return *m_root;
+        return *m_thing.root;
     }
 
     /* Roots the GC thing. You must not use this if you're already using the
@@ -244,12 +255,13 @@ public:
     {
         debug("root()");
         g_assert(!m_rooted);
-        g_assert(m_heap.get() == JS::GCPolicy<T>::initial());
+        g_assert(m_thing.heap.get() == JS::GCPolicy<T>::initial());
         m_rooted = true;
         m_cx = cx;
         m_notify = notify;
         m_data = data;
-        m_root = new JS::PersistentRooted<T>(m_cx, thing);
+        m_thing.heap.~Heap();
+        m_thing.root = new JS::PersistentRooted<T>(m_cx, thing);
 
         if (notify) {
             auto gjs_cx = static_cast<GjsContext *>(JS_GetContextPrivate(m_cx));
@@ -265,7 +277,7 @@ public:
     operator=(const T& thing)
     {
         g_assert(!m_rooted);
-        m_heap = thing;
+        m_thing.heap = thing;
     }
 
     /* Marks an object as reachable for one GC with ExposeObjectToActiveJS().
@@ -276,7 +288,7 @@ public:
     {
         debug("prevent_collection()");
         g_assert(!m_rooted);
-        GjsHeapOperation<T>::expose_to_js(m_heap);
+        GjsHeapOperation<T>::expose_to_js(m_thing.heap);
     }
 
     void
@@ -284,7 +296,7 @@ public:
     {
         debug("reset()");
         if (!m_rooted) {
-            m_heap = JS::GCPolicy<T>::initial();
+            m_thing.heap = JS::GCPolicy<T>::initial();
             return;
         }
 
@@ -303,9 +315,9 @@ public:
         g_assert(!m_rooted);
 
         /* Prevent the thing from being garbage collected while it is in neither
-         * m_heap nor m_root */
+         * m_thing.heap nor m_thing.root */
         JSAutoRequest ar(cx);
-        JS::Rooted<T> thing(cx, m_heap);
+        JS::Rooted<T> thing(cx, m_thing.heap);
 
         reset();
         root(cx, thing, notify, data);
@@ -319,12 +331,12 @@ public:
         g_assert(m_rooted);
 
         /* Prevent the thing from being garbage collected while it is in neither
-         * m_heap nor m_root */
+         * m_thing.heap nor m_thing.root */
         JSAutoRequest ar(m_cx);
-        JS::Rooted<T> thing(m_cx, *m_root);
+        JS::Rooted<T> thing(m_cx, *m_thing.root);
 
         reset();
-        m_heap = thing;
+        m_thing.heap = thing;
         g_assert(!m_rooted);
     }
 
@@ -336,7 +348,7 @@ public:
     {
         debug("trace()");
         g_assert(!m_rooted);
-        JS::TraceEdge<T>(tracer, &m_heap, name);
+        JS::TraceEdge<T>(tracer, &m_thing.heap, name);
     }
 
     /* If not tracing, then you must call this method during GC in order to
@@ -347,7 +359,7 @@ public:
     {
         debug("update_after_gc()");
         g_assert(!m_rooted);
-        return GjsHeapOperation<T>::update_after_gc(&m_heap);
+        return GjsHeapOperation<T>::update_after_gc(&m_thing.heap);
     }
 
     bool rooted(void) const { return m_rooted; }
