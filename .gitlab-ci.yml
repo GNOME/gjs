@@ -108,6 +108,8 @@ fedora:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
     TEST: "check"
     WARNINGS: "count"
+  except:
+    - schedules
 
 sanitizer_gcc:
   <<: *build
@@ -117,6 +119,8 @@ sanitizer_gcc:
     TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
     BUILD_OPTS: "--enable-asan --enable-ubsan"
     TEST: "check"
+  except:
+    - schedules
 
 # There are a lot of debug log statements that are ifdef'd out in normal usage.
 # These sometimes get invalid expressions in them, leading to annoyance the
@@ -130,6 +134,8 @@ with_logging:
     CC: clang
     BUILD_OPTS: CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
     TEST: "check"
+  except:
+    - schedules
 
 no_graphics:
   <<: *build
@@ -139,6 +145,8 @@ no_graphics:
     TASK_ID: "fedora-x86_64-gcc-default-without_gtk-check"
     TEST: "check"
     BUILD_OPTS: "--without-cairo --without-gtk"
+  except:
+    - schedules
 
 no_profiler:
   <<: *build
@@ -148,6 +156,8 @@ no_profiler:
     TASK_ID: "fedora-x86_64-gcc-default-disable_profiler-check"
     TEST: "check"
     BUILD_OPTS: "--disable-profiler"
+  except:
+    - schedules
 
 #############################################
 # Static Analyzers
@@ -159,6 +169,8 @@ cppcheck:
   variables:
     TASK_ID: "cppcheck"
     CODECHECK: "CPPCHECK"
+  except:
+    - schedules
 
 cpplint:
   <<: *build
@@ -167,6 +179,8 @@ cpplint:
   variables:
     TASK_ID: "cpplint"
     CODECHECK: "CPPLINT"
+  except:
+    - schedules
 
 eslint:
   <<: *build
@@ -175,6 +189,8 @@ eslint:
   variables:
     TASK_ID: "eslint"
     CODECHECK: "ESLINT"
+  except:
+    - schedules
 
 #############################################
 # Daily jobs / Frequent jobs
