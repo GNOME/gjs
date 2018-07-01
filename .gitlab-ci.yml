@@ -266,8 +266,10 @@ pages:
   stage: delivery
   dependencies:
     - coverage
+    - code_statistics
   script:
     - mv $(pwd)/coverage/ public/
+    - mv $(pwd)/analysis/report.txt public/
   artifacts:
     paths:
       - public
