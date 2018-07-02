@@ -12,6 +12,7 @@ DerivePointerAlignment: false
 ForEachMacros: []
 IndentWidth: 4
 PointerAlignment: Left  # Google style allows both, but clang-format doesn't
+SpacesBeforeTrailingComments: 2
 ---
 # We rely mostly on eslint for JavaScript linting, but this is a lax collection
 # of rules that will auto-fix some JS things. We really should use eslint --fix
@@ -20,8 +21,9 @@ PointerAlignment: Left  # Google style allows both, but clang-format doesn't
 Language: JavaScript
 AlignAfterOpenBracket: DontAlign
 AllowShortFunctionsOnASingleLine: false
-JavaScriptQuotes: Single
+JavaScriptQuotes: Leave  # It's not smart enough to allow " to minimize escapes
 PenaltyBreakBeforeFirstCallParameter: 1000000
 PenaltyExcessCharacter: 1
+SpacesBeforeTrailingComments: 2
 SpacesInContainerLiterals: false
 ...
