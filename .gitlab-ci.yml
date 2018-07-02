@@ -42,6 +42,7 @@ stages:
     name: log_package
     paths: *pak_files
 
+# Regular build
 .build: &build
   when: on_success
   artifacts:
@@ -86,8 +87,35 @@ stages:
     # Done
     - *CI_footer
 
+# Cross (multi architecture) build
+.qemu: &multiarch
+  artifacts:
+    name: log
+    when: always
+    paths: *reg_files
+
+  image: docker:latest
+  services:
+    - docker:dind
+
+  script:
+    # CI starts here. Previous messages are from GitLab Runner setup.
+    - *CI_header
+
+    # Register QEMU archs
+    - docker run --rm --privileged multiarch/qemu-user-static:register --reset
+
+    # Run the multiarch test job using QEMU
+    - 'docker run -v $(pwd):/cwd
+          -e TEST=check -e TASK_ID=$TASK_ID $IMAGE
+          bash -e -c "cd /cwd && test/test-ci.sh GJS"
+    '
+
+    # Done
+    - *CI_footer
+
 #############################################
-# Regular tests
+#               Regular tests               #
 #############################################
 # Test despite any changes in the Docker image
 # SpiderMonkey has been configured with --enable-debug
@@ -151,7 +179,7 @@ no_profiler:
     - schedules
 
 #############################################
-# Static Analyzers
+#              Static Analyzers             #
 #############################################
 cppcheck:
   <<: *build
@@ -184,7 +212,7 @@ eslint:
     - schedules
 
 #############################################
-# Daily jobs / Frequent jobs
+#         Daily jobs / Frequent jobs        #
 #############################################
 codequality:
   stage: source_check
@@ -284,7 +312,7 @@ installed_tests:
       - $CRON_FREQUENCY == "Daily"
 
 #############################################
-# Weekly jobs / Non-Frequent jobs
+#       Weekly jobs / Non-Frequent jobs     #
 #############################################
 ubuntu_gcc:
   <<: *build
@@ -336,7 +364,7 @@ valgrind:
       - $CRON_FREQUENCY == "Weekly"
 
 #############################################
-# Flatpak packaging
+#         Flatpak packaging (weekly)        #
 #############################################
 packaging:
   <<: *build
@@ -359,7 +387,7 @@ packaging:
       - $CRON_FREQUENCY == "Weekly"
 
 #############################################
-# SpiderMonkey GC Tests
+#       SpiderMonkey GC Tests (weekly)      #
 #############################################
 zeal_2:
   <<: *build
@@ -398,37 +426,8 @@ zeal_11:
       - $CRON_FREQUENCY == "Weekly"
 
 #############################################
-# Multiarch Tests
+#          Multiarch Tests (weekly)         #
 #############################################
-.qemu: &multiarch
-  artifacts:
-    name: log
-    when: always
-    paths: *reg_files
-
-  image: docker:latest
-  services:
-    - docker:dind
-  only:
-    variables:
-      - $CRON_FREQUENCY == "Weekly"
-
-  script:
-    # CI starts here. Previous messages are from GitLab Runner setup.
-    - *CI_header
-
-    # Register QEMU archs
-    - docker run --rm --privileged multiarch/qemu-user-static:register --reset
-
-    # Run the multiarch test job using QEMU
-    - 'docker run -v $(pwd):/cwd
-          -e TEST=check -e TASK_ID=$TASK_ID $IMAGE
-          bash -e -c "cd /cwd && test/test-ci.sh GJS"
-    '
-
-    # Done
-    - *CI_footer
-
 armv8:
   <<: *multiarch
   stage: thorough_tests
@@ -436,6 +435,9 @@ armv8:
     TASK_ID: "fedora-armv8-gcc-default-default-check"
     DOCKER_DRIVER: overlay
     IMAGE: "claudioandre/spidermonkey:SM52-gcc.fedora-dev.aarch64"
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Weekly"
 
 ppc64le:
   <<: *multiarch
@@ -444,3 +446,6 @@ ppc64le:
     TASK_ID: "fedora-ppc64le-gcc-default-default-check"
     DOCKER_DRIVER: overlay
     IMAGE: "claudioandre/spidermonkey:SM52-gcc.fedora-dev.ppc64le"
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Weekly"
