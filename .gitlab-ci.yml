@@ -661,3 +661,96 @@ ppc64le:
   when: manual
   except:
     - schedules
+
+#############################################
+#          Create CI Docker Images          #
+#############################################
+.images_template: &create_images
+  image: docker:latest
+  stage: source_check #delivery
+  services:
+    - docker:dind
+
+  script:
+    # CI starts here. Previous messages are from GitLab Runner setup.
+    - *CI_header
+    - env
+
+    # Register QEMU archs
+    - docker run --rm --privileged multiarch/qemu-user-static:register --reset
+
+    # Build using the Dockerfile
+    - 'if [[ -n "$DOCKERFILE" ]]; then
+         wget https://github.com/multiarch/qemu-user-static/releases/download/v2.12.0/x86_64_qemu-${TARGET_ARCH}-static.tar.gz;
+         docker build -f "$DOCKERFILE" -t "$IMAGE" .;
+       fi
+    '
+    - docker images
+
+    # Where the real magic happens
+    - 'docker run --name $NAME -v $(pwd):/saved
+          -e BASE=$BASE -e OS=$IMAGE -e BUILD_OPTS=$BUILD_OPTS -e DEV=$DEV -e CC=gcc -e STATIC=$STATIC $IMAGE
+          bash -e -c "cd /saved && test/ci-images.sh BUILD_MOZ"
+    '
+    - docker commit $NAME $REPO:$NAME
+
+    # Prepare to publish
+    - docker tag "$REPO:$NAME" "$REPO:job-"$CI_JOB_ID"_$NAME"
+    - docker images
+    - docker login ${CI_REGISTRY} -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD}
+
+    # Do not push (if requested)
+    - 'if [[ "$GJS_EVENT_TYPE" == "cron" || "$log_message" != *"[dont push]"* ]]; then
+         docker push $REPO;
+       fi
+    '
+
+    # Done
+    - *CI_footer
+
+.fedora.static-analysis:
+  <<: *create_images
+  variables:
+    BASE: "fedora"
+    DOCKER_DRIVER: overlay
+    IMAGE: "fedora:rawhide"
+    NAME: "fedora.static-analysis"
+    REPO: "${CI_REGISTRY}/${CI_PROJECT_PATH}"
+    STATIC: "analysis"
+
+SM52-debug-gcc.fedora-dev:
+  <<: *create_images
+  variables:
+    BASE: "fedora"
+    BUILD_OPTS: "--enable-debug"
+    DEV: "devel"
+    DOCKER_DRIVER: overlay
+    IMAGE: "fedora:rawhide"
+    NAME: "SM52-debug-gcc.fedora-dev"
+    REPO: "${CI_REGISTRY}/${CI_PROJECT_PATH}"
+
+.fedora.aarch64.gcc:
+  <<: *create_images
+  variables:
+    BASE: "fedora"
+    DEV: "devel"
+    DOCKER_DRIVER: overlay
+    DOCKERFILE: "test/extra/Dockerfile.arm64v8.fedora.29"
+    IMAGE: "claudioandre/spidermonkey:SM52-gcc.fedora-dev.aarch64"
+    NAME: "SM52-gcc.fedora-dev.aarch64"
+    REPO: "claudioandre/spidermonkey"
+    STATIC: "qemu"
+    TARGET_ARCH: "aarch64"
+
+.fedora.ppc64le.gcc:
+  <<: *create_images
+  variables:
+    BASE: "fedora"
+    DEV: "devel"
+    DOCKER_DRIVER: overlay
+    DOCKERFILE: "test/extra/Dockerfile.ppc64le.fedora.29"
+    IMAGE: "claudioandre/spidermonkey:SM52-gcc.fedora-dev.ppc64le"
+    NAME: "SM52-gcc.fedora-dev.ppc64le"
+    REPO: "claudioandre/spidermonkey"
+    STATIC: "qemu"
+    TARGET_ARCH: "ppc64le"
