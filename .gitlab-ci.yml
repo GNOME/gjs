@@ -46,6 +46,7 @@ stages:
 # Regular build
 .build: &build
   when: on_success
+  tags: [win32]
   artifacts:
     name: log
     when: always
