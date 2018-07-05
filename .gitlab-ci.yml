@@ -5,6 +5,7 @@ stages:
 - source_check
 - test
 - thorough_tests
+- manual
 - delivery
 
 .CI_header: &CI_header  'echo;
@@ -42,6 +43,7 @@ stages:
     name: log_package
     paths: *pak_files
 
+# Regular build
 .build: &build
   when: on_success
   artifacts:
@@ -86,254 +88,7 @@ stages:
     # Done
     - *CI_footer
 
-#############################################
-# Run a test despite of any Docker image change
-# SpiderMonkey was configured with --enable-debug
-#############################################
-fedora:
-  <<: *build
-  stage: source_check
-  image: claudioandre/spidermonkey:job-485.9_SM52-debug-gcc.fedora-dev  # pinned on purpose
-  variables:
-    TEST: "check"
-    WARNINGS: "count"
-
-#############################################
-# Regular tests
-#############################################
-fedora_clang:
-  <<: *build
-  stage: test
-  image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
-  variables:
-    CC: clang
-    TEST: "distcheck"
-
-sanitizer_gcc:
-  <<: *build
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
-  variables:
-    TEST: "check"
-    BUILD_OPTS: "--enable-asan --enable-ubsan"
-
-# There are a lot of debug log statements that are ifdef'd out in normal usage.
-# These sometimes get invalid expressions in them, leading to annoyance the
-# next time you try to use debug logging.
-with_logging:
-  <<: *build
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
-  variables:
-    BUILD_OPTS: CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
-
-# Generates
-# The Code Coverage Report
-coverage:
-  <<: *build
-  <<: *coverage
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
-  variables:
-    BUILD_OPTS: "--enable-code-coverage"
-    coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
-  except:
-    - /^wip\/.*/
-
-# Publish
-# The Coverage Report generated above
-pages:
-  stage: delivery
-  dependencies:
-    - coverage
-  script:
-    - mv $(pwd)/coverage/ public/
-  artifacts:
-    paths:
-      - public
-  only:
-    - master@GNOME/gjs
-
-ubuntu_gcc:
-  <<: *build
-  stage: test
-  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
-  variables:
-    TEST: "distcheck"
-  only:
-    - master@GNOME/gjs
-
-ubuntu_clang:
-  <<: *build
-  stage: test
-  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
-  variables:
-    CC: clang
-    TEST: "distcheck"
-  only:
-    - master@GNOME/gjs
-
-sanitizer_clang:
-  <<: *build
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
-  variables:
-    CC: clang
-    TEST: "check"
-    BUILD_OPTS: "--enable-asan --enable-ubsan"
-  only:
-    - master@GNOME/gjs
-
-codequality:
-  stage: thorough_tests
-  image: docker:latest
-  variables:
-    DOCKER_DRIVER: overlay
-  services:
-    - docker:dind
-  script:
-    - docker pull codeclimate/codeclimate
-    - docker run --env CODECLIMATE_CODE="$PWD" --volume "$PWD":/code --volume /var/run/docker.sock:/var/run/docker.sock --volume /tmp/cc:/tmp/cc codeclimate/codeclimate analyze -f json > codeclimate.json
-  artifacts:
-    paths: [codeclimate.json]
-  only:
-    - master@GNOME/gjs
-
-#############################################
-# Static Analyzers
-#############################################
-cppcheck:
-  <<: *build
-  stage: source_check
-  image: claudioandre/spidermonkey:fedora.static-analysis
-  variables:
-    CODECHECK: "CPPCHECK"
-
-cpplint:
-  <<: *build
-  stage: source_check
-  image: claudioandre/spidermonkey:fedora.static-analysis
-  variables:
-    CODECHECK: "CPPLINT"
-
-eslint:
-  <<: *build
-  stage: source_check
-  image: claudioandre/spidermonkey:fedora.static-analysis
-  variables:
-    CODECHECK: "ESLINT"
-
-code_statistics:
-  <<: *build
-  stage: source_check
-  image: claudioandre/spidermonkey:fedora.static-analysis
-  variables:
-    CODECHECK: "TOKEI"
-  only:
-    - master@GNOME/gjs
-
-#############################################
-# Optional / Manual CI tests
-#############################################
-valgrind:
-  <<: *build
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
-  variables:
-    BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
-  allow_failure: true
-  when: manual
-
-no_graphics:
-  <<: *build
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
-  variables:
-    TEST: "check"
-    BUILD_OPTS: "--without-cairo --without-gtk"
-  when: manual
-
-no_profiler:
-  <<: *build
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
-  variables:
-    TEST: "check"
-    BUILD_OPTS: "--disable-profiler"
-  when: manual
-
-installed_tests:
-  <<: *build
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
-  variables:
-    CC: clang
-    BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
-  when: manual
-
-lts:
-  <<: *build
-  <<: *jhbuild
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-lts
-  variables:
-    DEV: jhbuild
-    TEST: "check"
-  when: manual
-
-#############################################
-# Flatpak packaging
-#############################################
-packaging:
-  <<: *build
-  <<: *package
-  stage: delivery
-  image: registry.gitlab.gnome.org/gnome/gnome-nightly-oci/nightly:master
-  variables:
-    CODECHECK: "FLATPAK"
-    APPID: "org.gnome.GjsDevel"
-    BUNDLE: "org.gnome.GjsDevel.flatpak"
-    MANIFEST_PATH: "org.gnome.GjsDevel.json"
-    RUNTIME_REPO: "https://sdk.gnome.org/gnome-nightly.flatpakrepo"
-
-  environment:
-    name: review/$CI_COMMIT_REF_NAME
-    url: https://gitlab.gnome.org/$CI_PROJECT_PATH/-/jobs/$CI_JOB_ID/artifacts/raw/${BUNDLE}
-  when: manual
-
-#############################################
-# SpiderMonkey GC Tests
-#############################################
-zeal_2:
-  <<: *build
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:SM52-debug-gcc.fedora-dev
-  variables:
-    TEST: "check"
-    JS_GC_ZEAL: 2
-  when: manual
-
-zeal_4:
-  <<: *build
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:SM52-debug-gcc.fedora-dev
-  variables:
-    TEST: "check"
-    JS_GC_ZEAL: 4
-  when: manual
-
-zeal_11:
-  <<: *build
-  stage: thorough_tests
-  image: claudioandre/spidermonkey:SM52-debug-gcc.fedora-dev
-  variables:
-    TEST: "check"
-    JS_GC_ZEAL: 11
-  when: manual
-
-#############################################
-# Multiarch Tests
-#############################################
+# Cross (multi architecture) build
 .qemu: &multiarch
   artifacts:
     name: log
@@ -353,25 +108,556 @@ zeal_11:
 
     # Run the multiarch test job using QEMU
     - 'docker run -v $(pwd):/cwd
-          -e TEST=check $IMAGE
+          -e TEST=check -e TASK_ID=$TASK_ID $IMAGE
           bash -e -c "cd /cwd && test/test-ci.sh GJS"
     '
 
     # Done
     - *CI_footer
 
+#############################################
+#               Regular tests               #
+#############################################
+# Test despite any changes in the Docker image
+# SpiderMonkey has been configured with --enable-debug
+fedora:
+  <<: *build
+  stage: source_check
+  image: claudioandre/spidermonkey:job-485.9_SM52-debug-gcc.fedora-dev  # pinned on purpose
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-debug-default-check"
+    TEST: "check"
+    WARNINGS: "count"
+  except:
+    - schedules
+
+sanitizer_gcc:
+  <<: *build
+  stage: test
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
+    BUILD_OPTS: "--enable-asan --enable-ubsan"
+    TEST: "check"
+  except:
+    - schedules
+
+# There are a lot of debug log statements that are ifdef'd out in normal usage.
+# These sometimes get invalid expressions in them, leading to annoyance the
+# next time you try to use debug logging.
+with_logging:
+  <<: *build
+  stage: test
+  image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
+  variables:
+    TASK_ID: "fedora-x86_64-clang-default-logging-check"
+    CC: clang
+    BUILD_OPTS: CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
+    TEST: "check"
+  except:
+    - schedules
+
+no_graphics:
+  <<: *build
+  stage: test
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-default-without_gtk-check"
+    TEST: "check"
+    BUILD_OPTS: "--without-cairo --without-gtk"
+  except:
+    - schedules
+
+no_profiler:
+  <<: *build
+  stage: test
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-default-disable_profiler-check"
+    TEST: "check"
+    BUILD_OPTS: "--disable-profiler"
+  except:
+    - schedules
+
+#############################################
+#              Static Analyzers             #
+#############################################
+cppcheck:
+  <<: *build
+  stage: source_check
+  image: claudioandre/spidermonkey:fedora.static-analysis
+  variables:
+    TASK_ID: "cppcheck"
+    CODECHECK: "CPPCHECK"
+  except:
+    - schedules
+
+cpplint:
+  <<: *build
+  stage: source_check
+  image: claudioandre/spidermonkey:fedora.static-analysis
+  variables:
+    TASK_ID: "cpplint"
+    CODECHECK: "CPPLINT"
+  except:
+    - schedules
+
+eslint:
+  <<: *build
+  stage: source_check
+  image: claudioandre/spidermonkey:fedora.static-analysis
+  variables:
+    TASK_ID: "eslint"
+    CODECHECK: "ESLINT"
+  except:
+    - schedules
+
+#############################################
+#         Daily jobs / Frequent jobs        #
+#############################################
+codequality:
+  stage: source_check
+  image: docker:latest
+  variables:
+    TASK_ID: "codequality"
+    DOCKER_DRIVER: overlay
+  services:
+    - docker:dind
+  script:
+    - docker pull codeclimate/codeclimate
+    - docker run --env CODECLIMATE_CODE="$PWD" --volume "$PWD":/code --volume /var/run/docker.sock:/var/run/docker.sock --volume /tmp/cc:/tmp/cc codeclimate/codeclimate analyze -f json > codeclimate.json
+  artifacts:
+    paths: [codeclimate.json]
+  only:
+    refs:
+      - master@GNOME/gjs
+    variables:
+      - $CRON_FREQUENCY == "Daily"
+
+code_statistics:
+  <<: *build
+  stage: source_check
+  image: claudioandre/spidermonkey:fedora.static-analysis
+  variables:
+    TASK_ID: "code_statistics"
+    CODECHECK: "TOKEI"
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Daily"
+
+# Generates
+# The Code Coverage Report
+coverage:
+  <<: *build
+  <<: *coverage
+  stage: source_check
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
+  variables:
+    TASK_ID: "coverage"
+    BUILD_OPTS: "--enable-code-coverage"
+    coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Daily"
+
+# Publish
+# The Coverage Report generated above
+pages:
+  stage: delivery
+  dependencies:
+    - coverage
+  script:
+    - mv $(pwd)/coverage/ public/
+  artifacts:
+    paths:
+      - public
+  only:
+    refs:
+      - master@GNOME/gjs
+    variables:
+      - $CRON_FREQUENCY == "Daily"
+
+sanitizer_clang:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
+  variables:
+    TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
+    CC: clang
+    BUILD_OPTS: "--enable-asan --enable-ubsan"
+    TEST: "check"
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Daily"
+
+fedora_gcc:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-default-default-distcheck"
+    TEST: "distcheck"
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Daily"
+
+installed_tests:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-default-default-installed_tests"
+    BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Daily"
+
+#############################################
+#       Weekly jobs / Non-Frequent jobs     #
+#############################################
+ubuntu_gcc:
+  <<: *build
+  stage: source_check
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
+  variables:
+    TASK_ID: "ubuntu-x86_64-gcc-default-default-distcheck"
+    TEST: "distcheck"
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Weekly"
+
+ubuntu_clang:
+  <<: *build
+  stage: source_check
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
+  variables:
+    TASK_ID: "ubuntu-x86_64-clang-default-default-distcheck"
+    CC: clang
+    TEST: "distcheck"
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Weekly"
+
+lts:
+  <<: *build
+  <<: *jhbuild
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-lts
+  variables:
+    TASK_ID: "ubuntu_lts-x86_64-gcc-default-default-check"
+    DEV: jhbuild
+    TEST: "check"
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Weekly"
+
+valgrind:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-default-default-valgrind_check"
+    BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
+    TEST: "check"
+  allow_failure: true
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Weekly"
+
+#############################################
+#         Flatpak packaging (weekly)        #
+#############################################
+packaging:
+  <<: *build
+  <<: *package
+  stage: delivery
+  image: registry.gitlab.gnome.org/gnome/gnome-nightly-oci/nightly:master
+  variables:
+    TASK_ID: "packaging"
+    CODECHECK: "FLATPAK"
+    APPID: "org.gnome.GjsDevel"
+    BUNDLE: "org.gnome.GjsDevel.flatpak"
+    MANIFEST_PATH: "org.gnome.GjsDevel.json"
+    RUNTIME_REPO: "https://sdk.gnome.org/gnome-nightly.flatpakrepo"
+
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    url: https://gitlab.gnome.org/$CI_PROJECT_PATH/-/jobs/$CI_JOB_ID/artifacts/raw/${BUNDLE}
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Weekly"
+
+#############################################
+#       SpiderMonkey GC Tests (weekly)      #
+#############################################
+zeal_2:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:SM52-debug-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal2"
+    TEST: "check"
+    JS_GC_ZEAL: 2
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Weekly"
+
+zeal_4:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:SM52-debug-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal4"
+    TEST: "check"
+    JS_GC_ZEAL: 4
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Weekly"
+
+zeal_11:
+  <<: *build
+  stage: thorough_tests
+  image: claudioandre/spidermonkey:SM52-debug-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal11"
+    TEST: "check"
+    JS_GC_ZEAL: 11
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Weekly"
+
+#############################################
+#          Multiarch Tests (weekly)         #
+#############################################
 armv8:
   <<: *multiarch
   stage: thorough_tests
   variables:
+    TASK_ID: "fedora-armv8-gcc-default-default-check"
     DOCKER_DRIVER: overlay
     IMAGE: "claudioandre/spidermonkey:SM52-gcc.fedora-dev.aarch64"
-  when: manual
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Weekly"
 
 ppc64le:
   <<: *multiarch
   stage: thorough_tests
   variables:
+    TASK_ID: "fedora-ppc64le-gcc-default-default-check"
+    DOCKER_DRIVER: overlay
+    IMAGE: "claudioandre/spidermonkey:SM52-gcc.fedora-dev.ppc64le"
+  only:
+    variables:
+      - $CRON_FREQUENCY == "Weekly"
+
+#############################################
+#                Manual Jobs                #
+#############################################
+# Planned as daily
+codequality:
+  stage: manual
+  image: docker:latest
+  variables:
+    TASK_ID: "codequality"
+    DOCKER_DRIVER: overlay
+  services:
+    - docker:dind
+  script:
+    - docker pull codeclimate/codeclimate
+    - docker run --env CODECLIMATE_CODE="$PWD" --volume "$PWD":/code --volume /var/run/docker.sock:/var/run/docker.sock --volume /tmp/cc:/tmp/cc codeclimate/codeclimate analyze -f json > codeclimate.json
+  artifacts:
+    paths: [codeclimate.json]
+  when: manual
+  except:
+    - schedules
+
+code_statistics:
+  <<: *build
+  stage: manual
+  image: claudioandre/spidermonkey:fedora.static-analysis
+  variables:
+    TASK_ID: "code_statistics"
+    CODECHECK: "TOKEI"
+  when: manual
+  except:
+    - schedules
+
+coverage:
+  <<: *build
+  <<: *coverage
+  stage: manual
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
+  variables:
+    TASK_ID: "coverage"
+    BUILD_OPTS: "--enable-code-coverage"
+    coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
+  when: manual
+  except:
+    - schedules
+
+sanitizer_clang:
+  <<: *build
+  stage: manual
+  image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
+  variables:
+    TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
+    CC: clang
+    BUILD_OPTS: "--enable-asan --enable-ubsan"
+    TEST: "check"
+  when: manual
+  except:
+    - schedules
+
+fedora_gcc:
+  <<: *build
+  stage: manual
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-default-default-distcheck"
+    TEST: "distcheck"
+  when: manual
+  except:
+    - schedules
+
+installed_tests:
+  <<: *build
+  stage: manual
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-default-default-installed_tests"
+    BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
+  when: manual
+  except:
+    - schedules
+
+# Planned as weekly
+ubuntu_gcc:
+  <<: *build
+  stage: manual
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
+  variables:
+    TASK_ID: "ubuntu-x86_64-gcc-default-default-distcheck"
+    TEST: "distcheck"
+  when: manual
+  except:
+    - schedules
+
+ubuntu_clang:
+  <<: *build
+  stage: manual
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
+  variables:
+    TASK_ID: "ubuntu-x86_64-clang-default-default-distcheck"
+    CC: clang
+    TEST: "distcheck"
+  when: manual
+  except:
+    - schedules
+
+lts:
+  <<: *build
+  <<: *jhbuild
+  stage: manual
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-lts
+  variables:
+    TASK_ID: "ubuntu_lts-x86_64-gcc-default-default-check"
+    DEV: jhbuild
+    TEST: "check"
+  when: manual
+  except:
+    - schedules
+
+valgrind:
+  <<: *build
+  stage: manual
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-default-default-valgrind_check"
+    BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
+    TEST: "check"
+  allow_failure: true
+  when: manual
+  except:
+    - schedules
+
+# Flatpak packaging (weekly)
+packaging:
+  <<: *build
+  <<: *package
+  stage: manual
+  image: registry.gitlab.gnome.org/gnome/gnome-nightly-oci/nightly:master
+  variables:
+    TASK_ID: "packaging"
+    CODECHECK: "FLATPAK"
+    APPID: "org.gnome.GjsDevel"
+    BUNDLE: "org.gnome.GjsDevel.flatpak"
+    MANIFEST_PATH: "org.gnome.GjsDevel.json"
+    RUNTIME_REPO: "https://sdk.gnome.org/gnome-nightly.flatpakrepo"
+
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    url: https://gitlab.gnome.org/$CI_PROJECT_PATH/-/jobs/$CI_JOB_ID/artifacts/raw/${BUNDLE}
+  when: manual
+  except:
+    - schedules
+
+# SpiderMonkey GC Tests (weekly)
+zeal_2:
+  <<: *build
+  stage: manual
+  image: claudioandre/spidermonkey:SM52-debug-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal2"
+    TEST: "check"
+    JS_GC_ZEAL: 2
+  when: manual
+  except:
+    - schedules
+
+zeal_4:
+  <<: *build
+  stage: manual
+  image: claudioandre/spidermonkey:SM52-debug-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal4"
+    TEST: "check"
+    JS_GC_ZEAL: 4
+  when: manual
+  except:
+    - schedules
+
+zeal_11:
+  <<: *build
+  stage: manual
+  image: claudioandre/spidermonkey:SM52-debug-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal11"
+    TEST: "check"
+    JS_GC_ZEAL: 11
+  when: manual
+  except:
+    - schedules
+
+# Multiarch Tests (weekly)
+armv8:
+  <<: *multiarch
+  stage: manual
+  variables:
+    TASK_ID: "fedora-armv8-gcc-default-default-check"
+    DOCKER_DRIVER: overlay
+    IMAGE: "claudioandre/spidermonkey:SM52-gcc.fedora-dev.aarch64"
+  when: manual
+  except:
+    - schedules
+
+ppc64le:
+  <<: *multiarch
+  stage: manual
+  variables:
+    TASK_ID: "fedora-ppc64le-gcc-default-default-check"
     DOCKER_DRIVER: overlay
     IMAGE: "claudioandre/spidermonkey:SM52-gcc.fedora-dev.ppc64le"
   when: manual
+  except:
+    - schedules
