@@ -663,3 +663,56 @@ ppc64le:
   when: manual
   except:
     - schedules
+
+#############################################
+#          Create CI Docker Images          #
+#############################################
+.Docker image template: &create_docker_image
+  image: docker:latest
+  stage: delivery
+  services:
+    - docker:dind
+  only:
+    variables:
+      - $CRON_TASK == "BUILD_CI_IMAGES"
+
+  script:
+    # CI starts here. Previous messages are from GitLab Runner setup.
+    - *CI_header
+
+    # Skip the build (if requested)
+    - |
+      if [[ -z "${CI_COMMIT_MESSAGE##*[skip images]*}" && -z "${CI_COMMIT_MESSAGE##*$NAME*}" ]]; then
+        echo "== Nothing to do =="
+        exit 0
+      fi
+
+    # Build using the Dockerfile
+    - |
+      if [[ -n "${DOCKERFILE}" ]]; then
+        docker build -f "$DOCKERFILE" -t "$REPO:$NAME" .
+      fi
+
+    # Prepare to publish
+    - docker tag "$REPO:$NAME" "$REPO:job-"$CI_JOB_ID"_$NAME"
+    - docker images
+    - docker login ${CI_REGISTRY} -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD}
+
+    # Do not push (if requested)
+    - |
+      if [[ "${CI_PIPELINE_SOURCE}" == "schedule" || -n "${CI_COMMIT_MESSAGE##*[dont push]*}" ]]; then
+        docker push $REPO
+      fi
+
+    # Done
+    - *CI_footer
+
+fedora.static-analysis:
+  <<: *create_docker_image
+  variables:
+    BASE: "fedora"
+    DOCKER_DRIVER: overlay
+    DOCKERFILE: "test/extra/Dockerfile.fedora.static-analysis"
+    NAME: "fedora.static-analysis"
+    REPO: "${CI_REGISTRY}/${CI_PROJECT_PATH}"
+    CRON_TASK: "BUILD_CI_IMAGES"
