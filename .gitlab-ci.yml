@@ -179,6 +179,40 @@ no_profiler:
   except:
     - schedules
 
+# Generates
+# The Code Coverage Report
+coverage-automatic:
+  <<: *build
+  <<: *coverage
+  stage: source_check
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
+  variables:
+    TASK_ID: "coverage"
+    BUILD_OPTS: "--enable-code-coverage"
+    coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
+  except:
+    - schedules
+  only:
+    refs:
+      - master@GNOME/gjs
+
+# Publishes
+# The reports (coverage and code statistics)
+pages:
+  stage: delivery
+  dependencies:
+    - coverage-automatic
+    - code_statistics
+  script:
+    - mv $(pwd)/coverage/ public/ || true
+    - mv $(pwd)/analysis/report.txt public/ || true
+  artifacts:
+    paths:
+      - public
+  only:
+    refs:
+      - master@GNOME/gjs
+
 #############################################
 #              Static Analyzers             #
 #############################################
@@ -242,40 +276,6 @@ code_statistics:
     TASK_ID: "code_statistics"
     CODECHECK: "TOKEI"
   only:
-    variables:
-      - $CRON_FREQUENCY == "Daily"
-
-# Generates
-# The Code Coverage Report
-coverage:
-  <<: *build
-  <<: *coverage
-  stage: source_check
-  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
-  variables:
-    TASK_ID: "coverage"
-    BUILD_OPTS: "--enable-code-coverage"
-    coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
-  only:
-    variables:
-      - $CRON_FREQUENCY == "Daily"
-
-# Publish
-# The Coverage Report generated above
-pages:
-  stage: delivery
-  dependencies:
-    - coverage
-    - code_statistics
-  script:
-    - mv $(pwd)/coverage/ public/
-    - mv $(pwd)/analysis/report.txt public/
-  artifacts:
-    paths:
-      - public
-  only:
-    refs:
-      - master@GNOME/gjs
     variables:
       - $CRON_FREQUENCY == "Daily"
 
