@@ -690,18 +690,18 @@ ppc64le:
     # Build using the Dockerfile
     - |
       if [[ -n "${DOCKERFILE}" ]]; then
-        docker build -f "$DOCKERFILE" -t "$REPO:$NAME" .
+        docker build -f "$DOCKERFILE" -t "$CI_REGISTRY_IMAGE:$NAME" .
       fi
 
     # Prepare to publish
-    - docker tag "$REPO:$NAME" "$REPO:job-"$CI_JOB_ID"_$NAME"
+    - docker tag "$CI_REGISTRY_IMAGE:$NAME" "$CI_REGISTRY_IMAGE:job-"$CI_JOB_ID"_$NAME"
     - docker images
     - docker login ${CI_REGISTRY} -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD}
 
     # Do not push (if requested)
     - |
       if [[ "${CI_PIPELINE_SOURCE}" == "schedule" || -n "${CI_COMMIT_MESSAGE##*[dont push]*}" ]]; then
-        docker push $REPO
+        docker push $CI_REGISTRY_IMAGE
       fi
 
     # Done
@@ -714,5 +714,4 @@ fedora.static-analysis:
     DOCKER_DRIVER: overlay
     DOCKERFILE: "test/extra/Dockerfile.fedora.static-analysis"
     NAME: "fedora.static-analysis"
-    REPO: "${CI_REGISTRY}/${CI_PROJECT_PATH}"
     CRON_TASK: "BUILD_CI_IMAGES"
