@@ -334,4 +334,22 @@ describe('GObject class with decorator', function () {
             },
         }, class BadOverride extends GObject.Object {})).toThrow();
     });
+
+    it('does not pollute the wrong prototype with GObject properties', function () {
+        const MyCustomCharset = GObject.registerClass(class MyCustomCharset extends Gio.CharsetConverter {
+            _init() {
+                super._init();
+                void this.from_charset;
+            }
+        });
+
+        const MySecondCustomCharset = GObject.registerClass(class MySecondCustomCharset extends GObject.Object {
+            _init() {
+                super._init();
+                this.from_charset = 'another value';
+            }
+        });
+
+        expect (() => new MyCustomCharset() && new MySecondCustomCharset()).not.toThrow();
+    });
 });
