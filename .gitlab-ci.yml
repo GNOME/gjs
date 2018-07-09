@@ -698,11 +698,8 @@ ppc64le:
     - docker images
     - docker login ${CI_REGISTRY} -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD}
 
-    # Do not push (if requested)
-    - |
-      if [[ "${CI_PIPELINE_SOURCE}" == "schedule" || -n "${CI_COMMIT_MESSAGE##*[dont push]*}" ]]; then
-        docker push $CI_REGISTRY_IMAGE
-      fi
+    # Publish
+    - docker push $CI_REGISTRY_IMAGE
 
     # Done
     - *CI_footer
@@ -714,4 +711,3 @@ fedora.static-analysis:
     DOCKER_DRIVER: overlay
     DOCKERFILE: "test/extra/Dockerfile.fedora.static-analysis"
     NAME: "fedora.static-analysis"
-    CRON_TASK: "BUILD_CI_IMAGES"
