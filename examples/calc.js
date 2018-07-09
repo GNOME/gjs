@@ -11,7 +11,7 @@ function update_display() {
     label.set_markup(`<span size='30000'>${calc_val}</span>`);
 
     if(calc_val === '') {
-        label.set_markup("<span size='30000'>0</span>");
+        label.set_markup('<span size="30000">0</span>');
     }
 }
 
@@ -138,4 +138,5 @@ mainvbox.pack_start(create_buttons(), true, true, 2);
 
 win.add(mainvbox);
 win.show_all();
+
 Gtk.main();

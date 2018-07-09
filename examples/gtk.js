@@ -1,6 +1,6 @@
 // Include this in case both GTK3 and GTK4 installed, otherwise an exception
 // will be thrown
-imports.gi.versions.Gtk = "3.0";
+imports.gi.versions.Gtk = '3.0';
 const Gtk = imports.gi.Gtk;
 
 // Initialize Gtk before you start calling anything from the import
@@ -9,7 +9,7 @@ Gtk.init(null);
 // Construct a top-level window
 let window = new Gtk.Window ({
     type: Gtk.WindowType.TOPLEVEL,
-    title: "A default title",
+    title: 'A default title',
     default_width: 300,
     default_height: 250,
     // A decent example of how constants are mapped:
@@ -20,11 +20,11 @@ let window = new Gtk.Window ({
 
 // Object properties can also be set or changed after construction, unless they
 // are marked construct-only.
-window.title = "Hello World!";
+window.title = 'Hello World!';
 
 // This is a callback function
 function onDeleteEvent(widget, event) {
-    log("delete-event emitted");
+    log('delete-event emitted');
     // If you return false in the "delete_event" signal handler, Gtk will emit
     // the "destroy" signal.
     //
@@ -36,20 +36,20 @@ function onDeleteEvent(widget, event) {
 // When the window is given the "delete_event" signal (this is given by the
 // window manager, usually by the "close" option, or on the titlebar), we ask
 // it to call the onDeleteEvent() function as defined above.
-window.connect("delete-event", onDeleteEvent);
+window.connect('delete-event', onDeleteEvent);
 
 // GJS will warn when calling a C function with unexpected arguments...
 //
 //     window.connect("destroy", Gtk.main_quit);
 //
 // ...so use arrow functions for inline callbacks with arguments to adjust
-window.connect("destroy", () => {
+window.connect('destroy', () => {
     Gtk.main_quit();
 });
 
 // Create a button to close the window
 let button = new Gtk.Button({
-    label: "Close the Window",
+    label: 'Close the Window',
     // Set visible to 'true' if you don't want to call button.show() later
     visible: true,
     // Another example of constant mapping:
@@ -60,7 +60,7 @@ let button = new Gtk.Button({
 });
 
 // Connect to the 'clicked' signal, using another way to call an arrow function
-button.connect("clicked", () => window.destroy());
+button.connect('clicked', () => window.destroy());
 
 // Add the button to the window
 window.add(button);
