@@ -687,10 +687,26 @@ ppc64le:
         exit 0
       fi
 
+    # Get multiarch stuff
+    - |
+      if [[ -n "${TARGET_ARCH}" ]]; then
+        docker run --rm --privileged multiarch/qemu-user-static:register --reset
+        wget https://github.com/multiarch/qemu-user-static/releases/download/v2.12.0/x86_64_qemu-${TARGET_ARCH}-static.tar.gz
+      fi
+
     # Build using the Dockerfile
     - |
       if [[ -n "${DOCKERFILE}" ]]; then
         docker build -f "$DOCKERFILE" -t "$CI_REGISTRY_IMAGE:$NAME" .
+      fi
+
+    # Where the real magic happens
+    - |
+      if [[ -n "${IMAGE}" ]]; then
+        docker run --name $NAME -v $(pwd):/on-host \
+          -e BASE=$BASE -e OS=$IMAGE -e BUILD_OPTS=$BUILD_OPTS -e DEV=$DEV -e CC=gcc -e STATIC=$STATIC $IMAGE \
+          bash -e -c "cd /on-host && test/ci-images.sh BUILD_MOZ"
+        docker commit $NAME "$CI_REGISTRY_IMAGE:$NAME"
       fi
 
     # Prepare to publish
@@ -698,8 +714,11 @@ ppc64le:
     - docker images
     - docker login ${CI_REGISTRY} -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD}
 
-    # Publish
-    - docker push $CI_REGISTRY_IMAGE
+    # Publish (if running on a schedule)
+    - |
+      if [[ "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+        docker push "$CI_REGISTRY_IMAGE"
+      fi
 
     # Done
     - *CI_footer
@@ -711,3 +730,63 @@ fedora.static-analysis:
     DOCKER_DRIVER: overlay
     DOCKERFILE: "test/extra/Dockerfile.fedora.static-analysis"
     NAME: "fedora.static-analysis"
+
+SM52-gcc.fedora-dev:
+  <<: *create_docker_image
+  variables:
+    BASE: "fedora"
+    DEV: "devel"
+    DOCKER_DRIVER: overlay
+    IMAGE: "fedora:rawhide"
+    NAME: "SM52-gcc.fedora-dev"
+
+SM52-debug-gcc.fedora-dev:
+  <<: *create_docker_image
+  variables:
+    BASE: "fedora"
+    BUILD_OPTS: "--enable-debug"
+    DEV: "devel"
+    DOCKER_DRIVER: overlay
+    IMAGE: "fedora:rawhide"
+    NAME: "SM52-debug-gcc.fedora-dev"
+
+SM52-gcc.fedora-dev.aarch64:
+  <<: *create_docker_image
+  variables:
+    BASE: "fedora"
+    DEV: "devel"
+    DOCKER_DRIVER: overlay
+    DOCKERFILE: "test/extra/Dockerfile.arm64v8.fedora.29"
+    IMAGE: "${CI_REGISTRY_IMAGE}:SM52-gcc.fedora-dev.aarch64"
+    NAME: "SM52-gcc.fedora-dev.aarch64"
+    STATIC: "qemu"
+    TARGET_ARCH: "aarch64"
+
+SM52-gcc.fedora-dev.ppc64le:
+  <<: *create_docker_image
+  variables:
+    BASE: "fedora"
+    DEV: "devel"
+    DOCKER_DRIVER: overlay
+    DOCKERFILE: "test/extra/Dockerfile.ppc64le.fedora.29"
+    IMAGE: "${CI_REGISTRY_IMAGE}:SM52-gcc.fedora-dev.ppc64le"
+    NAME: "SM52-gcc.fedora-dev.ppc64le"
+    STATIC: "qemu"
+    TARGET_ARCH: "ppc64le"
+
+SM52-gcc.ubuntu-lts:
+  <<: *create_docker_image
+  variables:
+    BASE: "debian"
+    DOCKER_DRIVER: overlay
+    IMAGE: "ubuntu:18.04"
+    NAME: "SM52-gcc.ubuntu-lts"
+
+SM52-gcc.ubuntu-dev:
+  <<: *create_docker_image
+  variables:
+    BASE: "debian"
+    DEV: "devel"
+    DOCKER_DRIVER: overlay
+    IMAGE: "ubuntu:devel"
+    NAME: "SM52-gcc.ubuntu-dev"
