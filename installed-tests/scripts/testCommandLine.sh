@@ -219,6 +219,16 @@ report "main program exceptions are not swallowed by queued promise jobs"
 $gjs -c 'new imports.gi.Gio.Subprocess({argv: ["true"]}).init(null);'
 report "object unref from other thread after shutdown should not race"
 
+# Run the examples
+$gjs examples/gtk.js _AUTO_QUIT
+report "run the example gtk.js"
+
+$gjs examples/gio-cat.js Makefile
+report "run the example gio-cat.js"
+
+$gjs examples/gettext.js _AUTO_QUIT
+report "run the example gettext.js"
+
 rm -f exit.js help.js promise.js awaitcatch.js
 
 echo "1..$total"

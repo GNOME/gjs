@@ -749,9 +749,6 @@ SM52-debug-gcc.fedora-dev:
     DOCKER_DRIVER: overlay
     IMAGE: "fedora:rawhide"
     NAME: "SM52-debug-gcc.fedora-dev"
-    #REMOVE
-    CRON_TASK: "BUILD_CI_IMAGES" 
-    CI_REGISTRY_IMAGE: "registry.gitlab.gnome.org/gnome/gnome-control-center"
 
 SM52-gcc.fedora-dev.aarch64:
   <<: *create_docker_image
