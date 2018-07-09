@@ -1,21 +1,5 @@
 #!/bin/bash -e
 
-function do_Print_Labels(){
-
-    if [[ -n "${1}" ]]; then
-        label_len=${#1}
-        span=$(((54 - $label_len) / 2))
-
-        echo
-        echo "= ======================================================== ="
-        printf "%s %${span}s %s %${span}s %s\n" "=" "" "$1" "" "="
-        echo "= ======================================================== ="
-    else
-        echo "= ========================= Done ========================= ="
-        echo
-    fi
-}
-
 function do_Set_Env(){
 
     do_Print_Labels 'Set Environment '
@@ -41,21 +25,6 @@ function do_Set_Env(){
     fi
 
     do_Print_Labels
-}
-
-function do_Done(){
-
-    # Done. De-initializes whatever is needed
-    do_Print_Labels  'FINISHED'
-}
-
-function do_Build_Package_Dependencies(){
-
-    do_Print_Labels "Building Dependencies for $1"
-    jhbuild list "$1"
-
-    # Build package dependencies
-    jhbuild build $(jhbuild list "$1" | sed '$d')
 }
 
 function do_Get_Upstream_Master(){
@@ -147,14 +116,14 @@ if [[ -n "${TEST}" ]]; then
     extra_opts="($TEST)"
 fi
 
+source test/extra/do_environment.sh
+
 # Show some environment info
 do_Print_Labels  'ENVIRONMENT'
 echo "Running on: $BASE $OS"
 echo "Job: $TASK_ID"
 echo "Build options: $BUILD_OPTS"
 echo "Doing: $1 $extra_opts"
-
-source test/extra/do_environment.sh
 
 do_Create_Artifacts_Folder "$1"
 do_Get_Commit_Message
