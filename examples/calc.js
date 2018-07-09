@@ -138,4 +138,12 @@ mainvbox.pack_start(create_buttons(), true, true, 2);
 
 win.add(mainvbox);
 win.show_all();
+
+// When run by automated testing
+if (ARGV.length > 0 && ARGV[0] == "_AUTO_QUIT") {
+    this.forceQuit = function() {
+        Gtk.main_quit();
+    };
+    imports.gi.GLib.timeout_add(0, 5000, this.forceQuit);
+}
 Gtk.main();

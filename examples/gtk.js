@@ -68,6 +68,14 @@ window.add(button);
 // Show the window
 window.show();
 
+// When run by automated testing
+if (ARGV.length > 0 && ARGV[0] == "_AUTO_QUIT") {
+    this.forceQuit = function() {
+        Gtk.main_quit();
+    };
+    imports.gi.GLib.timeout_add(0, 5000, this.forceQuit);
+}
+
 // All gtk applications must have a Gtk.main(). Control will end here and wait
 // for an event to occur (like a key press or mouse event). The main loop will
 // run until Gtk.main_quit is called.
