@@ -185,7 +185,7 @@ no_profiler:
 cppcheck:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:fedora.static-analysis
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.static-analysis
   variables:
     TASK_ID: "cppcheck"
     CODECHECK: "CPPCHECK"
@@ -195,7 +195,7 @@ cppcheck:
 cpplint:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:fedora.static-analysis
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.static-analysis
   variables:
     TASK_ID: "cpplint"
     CODECHECK: "CPPLINT"
@@ -205,7 +205,7 @@ cpplint:
 eslint:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:fedora.static-analysis
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.static-analysis
   variables:
     TASK_ID: "eslint"
     CODECHECK: "ESLINT"
@@ -237,7 +237,7 @@ codequality:
 code_statistics:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:fedora.static-analysis
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.static-analysis
   variables:
     TASK_ID: "code_statistics"
     CODECHECK: "TOKEI"
@@ -477,7 +477,7 @@ codequality:
 code_statistics:
   <<: *build
   stage: manual
-  image: claudioandre/spidermonkey:fedora.static-analysis
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.static-analysis
   variables:
     TASK_ID: "code_statistics"
     CODECHECK: "TOKEI"
