@@ -827,8 +827,7 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
     /* If the name refers to a GObject property or field, lazily define the
      * property in JS, on the prototype. */
     if (is_gobject_property_name(m_info, name)) {
-        JS::RootedObject proto(context);
-        JS_GetPrototype(context, obj, &proto);
+        JS::RootedObject proto(context, obj);
 
         bool found = false;
         if (!JS_AlreadyHasOwnPropertyById(context, proto, id, &found))
@@ -854,8 +853,7 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
 
     GjsAutoInfo<GIFieldInfo> field_info = lookup_field_info(m_info, name);
     if (field_info) {
-        JS::RootedObject proto(context);
-        JS_GetPrototype(context, obj, &proto);
+        JS::RootedObject proto(context, obj);
 
         bool found = false;
         if (!JS_AlreadyHasOwnPropertyById(context, proto, id, &found))
