@@ -827,11 +827,8 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
     /* If the name refers to a GObject property or field, lazily define the
      * property in JS, on the prototype. */
     if (is_gobject_property_name(m_info, name)) {
-        JS::RootedObject proto(context);
-        JS_GetPrototype(context, obj, &proto);
-
         bool found = false;
-        if (!JS_AlreadyHasOwnPropertyById(context, proto, id, &found))
+        if (!JS_AlreadyHasOwnPropertyById(context, obj, id, &found))
             return false;
         if (found) {
             /* Already defined, so *resolved = false because we didn't just
@@ -844,7 +841,7 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
 
         JS::RootedValue private_id(context, JS::StringValue(JSID_TO_STRING(id)));
         if (!gjs_define_property_dynamic(
-                context, proto, name, "gobject_prop", &ObjectBase::prop_getter,
+                context, obj, name, "gobject_prop", &ObjectBase::prop_getter,
                 &ObjectBase::prop_setter, private_id, GJS_MODULE_PROP_FLAGS))
             return false;
 
@@ -854,11 +851,8 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
 
     GjsAutoInfo<GIFieldInfo> field_info = lookup_field_info(m_info, name);
     if (field_info) {
-        JS::RootedObject proto(context);
-        JS_GetPrototype(context, obj, &proto);
-
         bool found = false;
-        if (!JS_AlreadyHasOwnPropertyById(context, proto, id, &found))
+        if (!JS_AlreadyHasOwnPropertyById(context, obj, id, &found))
             return false;
         if (found) {
             *resolved = false;
@@ -872,7 +866,7 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
             flags |= JSPROP_READONLY;
 
         JS::RootedValue private_id(context, JS::StringValue(JSID_TO_STRING(id)));
-        if (!gjs_define_property_dynamic(context, proto, name, "gobject_field",
+        if (!gjs_define_property_dynamic(context, obj, name, "gobject_field",
                                          &ObjectBase::field_getter,
                                          &ObjectBase::field_setter, private_id,
                                          flags))
