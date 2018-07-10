@@ -23,7 +23,7 @@ stages:
 
 .JHBuild files: &JHB_files  [.cache/jhbuild/build/gjs/*.log, .cache/jhbuild/build/gjs/Makefile, .cache/jhbuild/build/gjs/configure]
 .Coverage files: &cov_files [.cache/jhbuild/build/gjs/*.log, .cache/jhbuild/build/gjs/Makefile, .cache/jhbuild/build/gjs/configure, coverage/]
-.Regular files: &reg_files  [configure, Makefile, analysis/, ./*.log, gjs-1.*/_build/sub/test-suite.log]
+.Regular files: &reg_files  [configure, Makefile, analysis/, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs]
 .Flatpak files: &pak_files  [./*.flatpak]
 
 .jhbuild: &jhbuild
