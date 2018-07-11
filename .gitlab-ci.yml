@@ -85,6 +85,12 @@ stages:
        fi
     '
 
+    # Run the script tests again (to assure they are working)
+    - 'if [[ -n "${SCRIPTCHECK}" ]]; then
+         $(pwd)/test/test-ci.sh SH_CHECKS;
+       fi
+    '
+
     # Done
     - *CI_footer
 
@@ -138,6 +144,7 @@ sanitizer_gcc:
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
     BUILD_OPTS: "--enable-asan --enable-ubsan"
+    SCRIPTCHECK: "yes"
     TEST: "check"
   except:
     - schedules
@@ -165,6 +172,7 @@ no_graphics:
     TASK_ID: "fedora-x86_64-gcc-default-without_gtk-check"
     TEST: "check"
     BUILD_OPTS: "--without-cairo --without-gtk"
+    SCRIPTCHECK: "yes"
   except:
     - schedules
 
