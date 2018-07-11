@@ -2,8 +2,6 @@
 
 function do_Set_Env(){
 
-    do_Print_Labels 'Set Environment '
-
     #Save cache on $pwd (required by artifacts)
     mkdir -p "$(pwd)"/.cache
     XDG_CACHE_HOME="$(pwd)"/.cache
@@ -23,8 +21,6 @@ function do_Set_Env(){
     if [[ -z "${DISPLAY}" ]]; then
         export DISPLAY=":0"
     fi
-
-    do_Print_Labels
 }
 
 function do_Get_Upstream_Master(){
@@ -60,7 +56,7 @@ function do_Compare_With_Upstream_Master(){
         echo '-----------------------------------------'
         diff -u0 /cwd/master-report.txt /cwd/current-report.txt || true
         echo '-----------------------------------------'
-        exit 3
+        exit 1
     else
         echo "$REMOVED_WARNINGS warning(s) were fixed."
         echo "=> $1 Ok"
@@ -107,7 +103,20 @@ function do_Check_Warnings(){
         echo '-----------------------------------------'
         cat warnings.log || true
         echo '-----------------------------------------'
-        exit 4
+        exit 1
+    fi
+}
+
+function do_Check_Script_Errors(){
+
+    local total=0
+    total=$(cat scripts.log | grep 'not ok ' | awk '{total+=1}END{print total}')
+
+    if [[ $total > 0 ]]; then
+        echo '-----------------------------------------'
+        echo "### Found $total erros on scripts.log ###"
+        echo '-----------------------------------------'
+        exit 1
     fi
 }
 
@@ -195,6 +204,20 @@ elif [[ $1 == "VALGRIND" ]]; then
     do_Set_Env
 
     make check-valgrind
+
+elif [[ $1 == "SH_CHECKS" ]]; then
+    # It doesn't (re)build, just run the 'Tests'
+    do_Print_Labels 'Shell Scripts Check'
+    do_Set_Env
+
+    export LC_ALL=en_US.UTF-8
+    export LANG=en_US.UTF-8
+    export LANGUAGE=en_US.UTF-8
+
+    installed-tests/scripts/testCommandLine.sh > scripts.log
+    installed-tests/scripts/testExamples.sh   >> scripts.log
+    installed-tests/scripts/testWarnings.sh   >> scripts.log
+    do_Check_Script_Errors
 
 elif [[ $1 == "GJS_COVERAGE" ]]; then
     # It doesn't (re)build, just run the 'Coverage Tests'
