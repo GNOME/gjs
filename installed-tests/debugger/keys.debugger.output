@@ -1,0 +1,20 @@
+GJS debugger. Type "help" for help
+Debugger statement, toplevel at keys.debugger.js:1:0
+db> c
+Debugger statement, toplevel at keys.debugger.js:6:0
+db> keys a
+$1 = [object Array]
+[
+    "foo",
+    "bar",
+    "tres"
+]
+db> k a
+$2 = [object Array]
+[
+    "foo",
+    "bar",
+    "tres"
+]
+db> c
+Program exited with code 0

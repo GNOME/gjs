@@ -1,0 +1,4 @@
+c
+throw 'foobar' + 3.14;
+fin
+throw

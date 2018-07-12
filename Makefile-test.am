@@ -296,13 +296,39 @@ simple_tests =						\
 	$(NULL)
 EXTRA_DIST += $(simple_tests)
 
+debugger_tests =					\
+	installed-tests/debugger/backtrace.debugger	\
+	installed-tests/debugger/breakpoint.debugger	\
+	installed-tests/debugger/continue.debugger	\
+	installed-tests/debugger/delete.debugger	\
+	installed-tests/debugger/detach.debugger	\
+	installed-tests/debugger/down-up.debugger	\
+	installed-tests/debugger/finish.debugger	\
+	installed-tests/debugger/frame.debugger		\
+	installed-tests/debugger/keys.debugger		\
+	installed-tests/debugger/next.debugger		\
+	installed-tests/debugger/print.debugger		\
+	installed-tests/debugger/quit.debugger		\
+	installed-tests/debugger/return.debugger	\
+	installed-tests/debugger/set.debugger		\
+	installed-tests/debugger/step.debugger		\
+	installed-tests/debugger/throw.debugger		\
+	installed-tests/debugger/until.debugger		\
+	$(NULL)
+EXTRA_DIST +=				\
+	$(debugger_tests)		\
+	$(debugger_tests:%=%.js)	\
+	$(debugger_tests:%=%.output)	\
+	$(NULL)
+
 TESTS =				\
 	gjs-tests.gtester	\
 	$(simple_tests)		\
 	$(jasmine_tests)	\
+	$(debugger_tests)	\
 	$(NULL)
 
-TEST_EXTENSIONS = .gtester .sh .js
+TEST_EXTENSIONS = .gtester .sh .js .debugger
 
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/tap-driver.sh
 
@@ -313,6 +339,9 @@ SH_LOG_DRIVER = $(LOG_DRIVER)
 
 JS_LOG_DRIVER = $(LOG_DRIVER)
 JS_LOG_COMPILER = $$LOG_COMPILER $$LOG_FLAGS $(top_builddir)/minijasmine
+
+DEBUGGER_LOG_DRIVER = $(LOG_DRIVER)
+DEBUGGER_LOG_COMPILER = $(top_srcdir)/installed-tests/debugger-test.sh
 
 CODE_COVERAGE_IGNORE_PATTERN = */{include,mfbt,gjs/test}/*
 CODE_COVERAGE_GENHTML_OPTIONS = 			\

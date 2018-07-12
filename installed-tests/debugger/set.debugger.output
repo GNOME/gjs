@@ -1,0 +1,39 @@
+GJS debugger. Type "help" for help
+Debugger statement, toplevel at set.debugger.js:1:0
+db> # Currently the only option is "pretty" for pretty-printing. Set doesn't yet
+db> # allow setting variables in the program.
+db> c
+Debugger statement, toplevel at set.debugger.js:2:0
+db> p a
+$1 = [object Object]
+{}
+db> set pretty 0
+db> p a
+$2 = [object Object]
+db> set pretty 1
+db> p a
+$3 = [object Object]
+{}
+db> set pretty off
+db> p a
+$4 = [object Object]
+db> set pretty on
+db> p a
+$5 = [object Object]
+{}
+db> set pretty false
+db> p a
+$6 = [object Object]
+db> set pretty true
+db> p a
+$7 = [object Object]
+{}
+db> set pretty no
+db> p a
+$8 = [object Object]
+db> set pretty yes
+db> p a
+$9 = [object Object]
+{}
+db> q
+Program exited with code 0

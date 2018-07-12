@@ -1,0 +1,21 @@
+# Currently the only option is "pretty" for pretty-printing. Set doesn't yet
+# allow setting variables in the program.
+c
+p a
+set pretty 0
+p a
+set pretty 1
+p a
+set pretty off
+p a
+set pretty on
+p a
+set pretty false
+p a
+set pretty true
+p a
+set pretty no
+p a
+set pretty yes
+p a
+q
