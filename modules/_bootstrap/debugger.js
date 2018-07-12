@@ -1,0 +1,749 @@
+/* global Debugger, debuggee, quit, readline, uneval */
+/* -*- indent-tabs-mode: nil; js-indent-level: 4 -*-
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+/*
+ * This is a simple command-line debugger for GJS programs. It is based on
+ * jorendb, which is a toy debugger for shell-js programs included in the
+ * SpiderMonkey source.
+ *
+ * To run it: gjs -d path/to/file.js
+ * Execution will stop at debugger statements (one will be inserted at the start
+ * of the program), and you'll get a prompt.
+ */
+
+// Debugger state.
+var focusedFrame = null;
+var topFrame = null;
+var debuggeeValues = {};
+var nextDebuggeeValueIndex = 1;
+var lastExc = null;
+var options = {pretty: true};
+var breakpoints = [undefined];  // Breakpoint numbers start at 1
+
+// Cleanup functions to run when we next re-enter the repl.
+var replCleanups = [];
+
+// Convert a debuggee value v to a string.
+function dvToString(v) {
+    if (typeof v === 'undefined')
+        return 'undefined';  // uneval(undefined) === '(void 0)', confusing
+    if (v === null)
+        return 'null';  // typeof null === 'object', so avoid that case
+    return (typeof v !== 'object' || v === null) ? uneval(v) : `[object ${v.class}]`;
+}
+
+function summarizeObject(dv) {
+    const obj = {};
+    for (var name of dv.getOwnPropertyNames()) {
+        var v = dv.getOwnPropertyDescriptor(name).value;
+        if (v instanceof Debugger.Object) {
+            v = '(...)';
+        }
+        obj[name] = v;
+    }
+    return obj;
+}
+
+function debuggeeValueToString(dv, style = {pretty: options.pretty}) {
+    const dvrepr = dvToString(dv);
+    if (!style.pretty || dv === null || typeof dv !== 'object')
+        return [dvrepr, undefined];
+
+    if (['Error', 'GIRespositoryNamespace', 'GObject_Object'].includes(dv.class)) {
+        const errval = debuggeeGlobalWrapper.executeInGlobalWithBindings(
+            'v.toString()', {v: dv});
+        return [dvrepr, errval['return']];
+    }
+
+    if (style.brief)
+        return [dvrepr, JSON.stringify(summarizeObject(dv), null, 4)];
+
+    const str = debuggeeGlobalWrapper.executeInGlobalWithBindings(
+        'JSON.stringify(v, null, 4)', {v: dv});
+    if ('throw' in str) {
+        if (style.noerror)
+            return [dvrepr, undefined];
+
+        const substyle = {};
+        Object.assign(substyle, style);
+        substyle.noerror = true;
+        return [dvrepr, debuggeeValueToString(str.throw, substyle)];
+    }
+
+    return [dvrepr, str['return']];
+}
+
+function showDebuggeeValue(dv, style = {pretty: options.pretty}) {
+    const i = nextDebuggeeValueIndex++;
+    debuggeeValues[`$${i}`] = dv;
+    const [brief, full] = debuggeeValueToString(dv, style);
+    print(`$${i} = ${brief}`);
+    if (full !== undefined)
+        print(full);
+}
+
+Object.defineProperty(Debugger.Frame.prototype, 'num', {
+    configurable: true,
+    enumerable: false,
+    get: function() {
+        let i = 0;
+        for (var f = topFrame; f && f !== this; f = f.older)
+            i++;
+        return f === null ? undefined : i;
+    }
+});
+
+Debugger.Frame.prototype.describeFrame = function() {
+    if (this.type == 'call')
+        return `${this.callee.name || '<anonymous>'}(${
+            this.arguments.map(dvToString).join(', ')})`;
+    else if (this.type == 'global')
+        return 'toplevel';
+    else
+        return this.type + ' code';
+};
+
+Debugger.Frame.prototype.describePosition = function() {
+    if (this.script)
+        return this.script.describeOffset(this.offset);
+    return null;
+};
+
+Debugger.Frame.prototype.describeFull = function() {
+    const fr = this.describeFrame();
+    const pos = this.describePosition();
+    if (pos)
+        return `${fr} at ${pos}`;
+    return fr;
+};
+
+Object.defineProperty(Debugger.Frame.prototype, 'line', {
+    configurable: true,
+    enumerable: false,
+    get: function() {
+        if (this.script)
+            return this.script.getOffsetLocation(this.offset).lineNumber;
+        else
+            return null;
+    }
+});
+
+Debugger.Script.prototype.describeOffset = function describeOffset(offset) {
+    const {lineNumber, columnNumber} = this.getOffsetLocation(offset);
+    const url = this.url || '<unknown>';
+    return `${url}:${lineNumber}:${columnNumber}`;
+};
+
+function showFrame(f, n) {
+    if (f === undefined || f === null) {
+        f = focusedFrame;
+        if (f === null) {
+            print('No stack.');
+            return;
+        }
+    }
+    if (n === undefined) {
+        n = f.num;
+        if (n === undefined)
+            throw new Error('Internal error: frame not on stack');
+    }
+
+    print(`#${n.toString().padEnd(4)} ${f.describeFull()}`);
+}
+
+function saveExcursion(fn) {
+    const tf = topFrame, ff = focusedFrame;
+    try {
+        return fn();
+    } finally {
+        topFrame = tf;
+        focusedFrame = ff;
+    }
+}
+
+// Accept debugger commands starting with '#' so that scripting the debugger
+// can be annotated
+function commentCommand(comment) {
+    void comment;
+}
+
+// Evaluate an expression in the Debugger global - used for debugging the
+// debugger
+function evalCommand(expr) {
+    eval(expr);
+}
+
+function quitCommand() {
+    dbg.enabled = false;
+    quit(0);
+}
+
+function backtraceCommand() {
+    if (topFrame === null)
+        print('No stack.');
+    for (var i = 0, f = topFrame; f; i++, f = f.older)
+        showFrame(f, i);
+}
+
+function setCommand(rest) {
+    var space = rest.indexOf(' ');
+    if (space == -1) {
+        print('Invalid set <option> <value> command');
+    } else {
+        var name = rest.substr(0, space);
+        var value = rest.substr(space + 1);
+
+        var yes = ['1', 'yes', 'true', 'on'];
+        var no = ['0', 'no', 'false', 'off'];
+
+        if (yes.includes(value))
+            options[name] = true;
+        else if (no.includes(value))
+            options[name] = false;
+        else
+            options[name] = value;
+    }
+}
+
+function splitPrintOptions(s, style) {
+    const m = /^\/(\w+)/.exec(s);
+    if (!m)
+        return [s, style];
+    if (m[1].indexOf('p') != -1)
+        style.pretty = true;
+    if (m[1].indexOf('b') != -1)
+        style.brief = true;
+    return [s.substr(m[0].length).trimLeft(), style];
+}
+
+function doPrint(expr, style) {
+    // This is the real deal.
+    const cv = saveExcursion(
+        () => focusedFrame === null
+            ? debuggeeGlobalWrapper.executeInGlobalWithBindings(expr, debuggeeValues)
+            : focusedFrame.evalWithBindings(expr, debuggeeValues));
+    if (cv === null) {
+        if (!dbg.enabled)
+            return [cv];
+        print('Debuggee died.');
+    } else if ('return' in cv) {
+        if (!dbg.enabled)
+            return [undefined];
+        showDebuggeeValue(cv['return'], style);
+    } else {
+        if (!dbg.enabled)
+            return [cv];
+        print("Exception caught. (To rethrow it, type 'throw'.)");
+        lastExc = cv.throw;
+        showDebuggeeValue(lastExc, style);
+    }
+}
+
+function printCommand(rest) {
+    var [expr, style] = splitPrintOptions(rest, {pretty: options.pretty});
+    return doPrint(expr, style);
+}
+
+function keysCommand(rest) {
+    return doPrint(`Object.keys(${rest})`);
+}
+
+function detachCommand() {
+    dbg.enabled = false;
+    return [undefined];
+}
+
+function continueCommand() {
+    if (focusedFrame === null) {
+        print('No stack.');
+        return;
+    }
+    return [undefined];
+}
+
+function throwCommand(rest) {
+    if (focusedFrame !== topFrame) {
+        print("To throw, you must select the newest frame (use 'frame 0').");
+        return;
+    } else if (focusedFrame === null) {
+        print('No stack.');
+        return;
+    } else if (rest === '') {
+        return [{throw: lastExc}];
+    } else {
+        var cv = saveExcursion(() => focusedFrame.eval(rest));
+        if (cv === null) {
+            if (!dbg.enabled)
+                return [cv];
+            print('Debuggee died while determining what to throw. Stopped.');
+        } else if ('return' in cv) {
+            return [{throw: cv['return']}];
+        } else {
+            if (!dbg.enabled)
+                return [cv];
+            print('Exception determining what to throw. Stopped.');
+            showDebuggeeValue(cv.throw);
+        }
+        return;
+    }
+}
+
+function frameCommand(rest) {
+    let n, f;
+    if (rest.match(/[0-9]+/)) {
+        n = +rest;
+        f = topFrame;
+        if (f === null) {
+            print('No stack.');
+            return;
+        }
+        for (let i = 0; i < n && f; i++) {
+            if (!f.older) {
+                print(`There is no frame ${rest}.`);
+                return;
+            }
+            f.older.younger = f;
+            f = f.older;
+        }
+        focusedFrame = f;
+        showFrame(f, n);
+    } else if (rest === '') {
+        if (topFrame === null) {
+            print('No stack.');
+        } else {
+            showFrame();
+        }
+    } else {
+        print('do what now?');
+    }
+}
+
+function upCommand() {
+    if (focusedFrame === null)
+        print('No stack.');
+    else if (focusedFrame.older === null)
+        print('Initial frame selected; you cannot go up.');
+    else {
+        focusedFrame.older.younger = focusedFrame;
+        focusedFrame = focusedFrame.older;
+        showFrame();
+    }
+}
+
+function downCommand() {
+    if (focusedFrame === null)
+        print('No stack.');
+    else if (!focusedFrame.younger)
+        print('Youngest frame selected; you cannot go down.');
+    else {
+        focusedFrame = focusedFrame.younger;
+        showFrame();
+    }
+}
+
+function returnCommand(rest) {
+    const f = focusedFrame;
+    if (f !== topFrame) {
+        print("To return, you must select the newest frame (use 'frame 0').");
+    } else if (f === null) {
+        print('Nothing on the stack.');
+    } else if (rest === '') {
+        return [{return: undefined}];
+    } else {
+        const cv = saveExcursion(() => f.eval(rest));
+        if (cv === null) {
+            if (!dbg.enabled)
+                return [cv];
+            print('Debuggee died while determining what to return. Stopped.');
+        } else if ('return' in cv) {
+            return [{return: cv['return']}];
+        } else {
+            if (!dbg.enabled)
+                return [cv];
+            print('Error determining what to return. Stopped.');
+            showDebuggeeValue(cv.throw);
+        }
+    }
+}
+
+function printPop(c) {
+    if (c['return']) {
+        print('Value returned is:');
+        showDebuggeeValue(c['return'], {brief: true});
+    } else if (c['throw']) {
+        print('Frame terminated by exception:');
+        showDebuggeeValue(c['throw']);
+        print("(To rethrow it, type 'throw'.)");
+        lastExc = c['throw'];
+    } else {
+        print('No value returned.');
+    }
+}
+
+// Set |prop| on |obj| to |value|, but then restore its current value
+// when we next enter the repl.
+function setUntilRepl(obj, prop, value) {
+    var saved = obj[prop];
+    obj[prop] = value;
+    replCleanups.push(() => {
+        obj[prop] = saved;
+    });
+}
+
+function doStepOrNext(kind) {
+    if (topFrame === null) {
+        print('Program not running.');
+        return;
+    }
+
+    // TODO: step or finish from any frame in the stack, not just the top one
+    var startFrame = topFrame;
+    var startLine = startFrame.line;
+    if (kind.finish)
+        print(`Run till exit from ${startFrame.describeFull()}`);
+    else
+        print(startFrame.describeFull());
+
+    function stepPopped(completion) {
+        // Note that we're popping this frame; we need to watch for
+        // subsequent step events on its caller.
+        this.reportedPop = true;
+        printPop(completion);
+        topFrame = focusedFrame = this;
+        if (kind.finish || kind.until) {
+            // We want to continue, but this frame is going to be invalid as
+            // soon as this function returns, which will make the replCleanups
+            // assert when it tries to access the dead frame's 'onPop'
+            // property. So clear it out now while the frame is still valid,
+            // and trade it for an 'onStep' callback on the frame we're popping to.
+            preReplCleanups();
+            setUntilRepl(this.older, 'onStep', stepStepped);
+            return undefined;
+        }
+        return repl();
+    }
+
+    function stepEntered(newFrame) {
+        print('entered frame: ' + newFrame.describeFull());
+        if (!kind.until || newFrame.line == kind.stopLine) {
+            topFrame = focusedFrame = newFrame;
+            return repl();
+        }
+        if (kind.until)
+            setUntilRepl(newFrame, 'onStep', stepStepped);
+    }
+
+    function stepStepped() {
+        // print('stepStepped: ' + this.describeFull());
+        var stop = false;
+
+        if (kind.finish) {
+            // 'finish' set a one-time onStep for stopping at the frame it
+            // wants to return to
+            stop = true;
+        } else if (kind.until) {
+            // running until a given line is reached
+            if (this.line == kind.stopLine)
+                stop = true;
+        } else {
+            // regular step; stop whenever the line number changes
+            if ((this.line != startLine) || (this != startFrame))
+                stop = true;
+        }
+
+        if (stop) {
+            topFrame = focusedFrame = this;
+            if (focusedFrame != startFrame)
+                print(focusedFrame.describeFull());
+            return repl();
+        }
+
+        // Otherwise, let execution continue.
+        return undefined;
+    }
+
+    if (kind.step || kind.until)
+        setUntilRepl(dbg, 'onEnterFrame', stepEntered);
+
+    // If we're stepping after an onPop, watch for steps and pops in the
+    // next-older frame; this one is done.
+    var stepFrame = startFrame.reportedPop ? startFrame.older : startFrame;
+    if (!stepFrame || !stepFrame.script)
+        stepFrame = null;
+    if (stepFrame) {
+        if (!kind.finish)
+            setUntilRepl(stepFrame, 'onStep', stepStepped);
+        setUntilRepl(stepFrame, 'onPop', stepPopped);
+    }
+
+    // Let the program continue!
+    return [undefined];
+}
+
+function stepCommand() {
+    return doStepOrNext({step: true});
+}
+
+function nextCommand() {
+    return doStepOrNext({next: true});
+}
+
+function finishCommand() {
+    return doStepOrNext({finish: true});
+}
+
+function untilCommand(line) {
+    return doStepOrNext({until: true, stopLine: Number(line)});
+}
+
+function findBreakpointOffsets(line, currentScript) {
+    const offsets = currentScript.getLineOffsets(line);
+    if (offsets.length !== 0)
+        return [{script: currentScript, offsets}];
+
+    const scripts = dbg.findScripts({line, url: currentScript.url});
+    if (scripts.length === 0)
+        return [];
+
+    return scripts
+        .map(script => ({script, offsets: script.getLineOffsets(line)}))
+        .filter(({offsets}) => offsets.length !== 0);
+}
+
+class BreakpointHandler {
+    constructor(num, script, offset) {
+        this.num = num;
+        this.script = script;
+        this.offset = offset;
+    }
+
+    hit(frame) {
+        return saveExcursion(() => {
+            topFrame = focusedFrame = frame;
+            print(`Breakpoint ${this.num}, ${frame.describeFull()}`);
+            return repl();
+        });
+    }
+
+    toString() {
+        return `Breakpoint ${this.num} at ${this.script.describeOffset(this.offset)}`;
+    }
+}
+
+function breakpointCommand(where) {
+    // Only handles line numbers of the current file
+    // TODO: make it handle function names and other files
+    const line = Number(where);
+    const possibleOffsets = findBreakpointOffsets(line, focusedFrame.script);
+
+    if (possibleOffsets.length === 0) {
+        print('Unable to break at line ' + where);
+        return;
+    }
+
+    possibleOffsets.forEach(({script, offsets}) => {
+        offsets.forEach(offset => {
+            const bp = new BreakpointHandler(breakpoints.length, script, offset);
+            script.setBreakpoint(offset, bp);
+            breakpoints.push(bp);
+            print(bp);
+        });
+    });
+}
+
+function deleteCommand(breaknum) {
+    const bp = breakpoints[breaknum];
+
+    if (bp === undefined) {
+        print(`Breakpoint ${breaknum} already deleted.`);
+        return;
+    }
+
+    const {script, offset} = bp;
+    script.clearBreakpoint(bp, offset);
+    breakpoints[breaknum] = undefined;
+    print(`${bp} deleted`);
+}
+
+// Build the table of commands.
+var commands = {};
+// clang-format off
+var commandArray = [
+    backtraceCommand, 'bt', 'where',
+    breakpointCommand, 'b', 'break',
+    commentCommand, '#',
+    continueCommand, 'c', 'cont',
+    deleteCommand, 'd', 'del',
+    detachCommand,
+    downCommand, 'dn',
+    evalCommand, '!',
+    finishCommand, 'fin',
+    frameCommand, 'f',
+    helpCommand, 'h',
+    keysCommand, 'k',
+    nextCommand, 'n',
+    printCommand, 'p',
+    quitCommand, 'q',
+    returnCommand, 'ret',
+    setCommand,
+    stepCommand, 's',
+    throwCommand, 't',
+    untilCommand, 'u', 'upto',
+    upCommand,
+];
+// clang-format on
+var currentCmd = null;
+for (var i = 0; i < commandArray.length; i++) {
+    var cmd = commandArray[i];
+    if (typeof cmd === 'string')
+        commands[cmd] = currentCmd;
+    else
+        currentCmd = commands[cmd.name.replace(/Command$/, '')] = cmd;
+}
+
+function helpCommand() {
+    print('Available commands:');
+    var printcmd = function(group) {
+        print('  ' + group.join(', '));
+    };
+
+    var group = [];
+    for (var cmd of commandArray) {
+        if (typeof cmd === 'string') {
+            group.push(cmd);
+        } else {
+            // Don't print commands for debugging the debugger
+            if (['comment', 'eval'].includes(group[0]))
+                continue;
+            if (group.length)
+                printcmd(group);
+            group = [cmd.name.replace(/Command$/, '')];
+        }
+    }
+    printcmd(group);
+}
+
+// Break cmd into two parts: its first word and everything else. If it begins
+// with punctuation, treat that as a separate word. The first word is
+// terminated with whitespace or the '/' character. So:
+//
+//   print x         => ['print', 'x']
+//   print           => ['print', '']
+//   !print x        => ['!', 'print x']
+//   ?!wtf!?         => ['?', '!wtf!?']
+//   print/b x       => ['print', '/b x']
+//
+function breakcmd(cmd) {
+    cmd = cmd.trimLeft();
+    if ("!@#$%^&*_+=/?.,<>:;'\"".indexOf(cmd.substr(0, 1)) != -1)
+        return [cmd.substr(0, 1), cmd.substr(1).trimLeft()];
+    var m = /\s+|(?=\/)/.exec(cmd);
+    if (m === null)
+        return [cmd, ''];
+    return [cmd.slice(0, m.index), cmd.slice(m.index + m[0].length)];
+}
+
+function runcmd(cmd) {
+    var pieces = breakcmd(cmd);
+    if (pieces[0] === '')
+        return undefined;
+
+    var first = pieces[0], rest = pieces[1];
+    if (!commands.hasOwnProperty(first)) {
+        print("unrecognized command '" + first + "'");
+        return undefined;
+    }
+
+    cmd = commands[first];
+    if (cmd.length === 0 && rest !== '') {
+        print('this command cannot take an argument');
+        return undefined;
+    }
+
+    return cmd(rest);
+}
+
+function preReplCleanups() {
+    while (replCleanups.length > 0)
+        replCleanups.pop()();
+}
+
+var prevcmd;
+function repl() {
+    preReplCleanups();
+
+    var cmd;
+    for (;;) {
+        cmd = readline();
+        if (cmd === null)
+            return null;
+        else if (cmd === '')
+            cmd = prevcmd;
+
+        try {
+            prevcmd = cmd;
+            var result = runcmd(cmd);
+            if (result === undefined)
+                void result;  // do nothing, return to prompt
+            else if (Array.isArray(result))
+                return result[0];
+            else if (result === null)
+                return null;
+            else
+                throw new Error(
+                    `Internal error: result of runcmd wasn't array or undefined: ${result}`);
+        } catch (exc) {
+            logError(exc, '*** Internal error: exception in the debugger code');
+        }
+    }
+}
+
+var dbg = new Debugger();
+dbg.onNewPromise = function({promiseID, promiseAllocationSite}) {
+    const site = promiseAllocationSite.toString().split('\n')[0];
+    print(`Promise ${promiseID} started from ${site}`);
+    return undefined;
+};
+dbg.onPromiseSettled = function(promise) {
+    let message = `Promise ${promise.promiseID} ${promise.promiseState} `;
+    message += `after ${promise.promiseTimeToResolution.toFixed(3)} ms`;
+    let brief, full;
+    if (promise.promiseState === 'fulfilled' && typeof promise.promiseValue !== 'undefined') {
+        [brief, full] = debuggeeValueToString(promise.promiseValue);
+        message += ` with ${brief}`;
+    } else if (promise.promiseState === 'rejected' &&
+               typeof promise.promiseReason !== 'undefined') {
+        [brief, full] = debuggeeValueToString(promise.promiseReason);
+        message += ` with ${brief}`;
+    }
+    print(message);
+    if (full !== undefined)
+        print(full);
+    return undefined;
+};
+dbg.onDebuggerStatement = function(frame) {
+    return saveExcursion(() => {
+        topFrame = focusedFrame = frame;
+        print(`Debugger statement, ${frame.describeFull()}`);
+        return repl();
+    });
+};
+dbg.onExceptionUnwind = function(frame, value) {
+    return saveExcursion(() => {
+        topFrame = focusedFrame = frame;
+        print("Unwinding due to exception. (Type 'c' to continue unwinding.)");
+        showFrame();
+        print('Exception value is:');
+        showDebuggeeValue(value);
+        return repl();
+    });
+};
+
+var debuggeeGlobalWrapper = dbg.addDebuggee(debuggee);
+
+print('GJS debugger. Type "help" for help');

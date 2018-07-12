@@ -1,0 +1,26 @@
+GJS debugger. Type "help" for help
+Debugger statement, toplevel at down-up.debugger.js:1:0
+db> c
+Debugger statement, d() at down-up.debugger.js:14:4
+db> down
+Youngest frame selected; you cannot go down.
+db> up
+#1    c() at down-up.debugger.js:10:4
+db> up
+#2    b() at down-up.debugger.js:6:4
+db> up
+#3    a() at down-up.debugger.js:2:4
+db> up
+#4    toplevel at down-up.debugger.js:17:0
+db> up
+Initial frame selected; you cannot go up.
+db> down
+#3    a() at down-up.debugger.js:2:4
+db> dn
+#2    b() at down-up.debugger.js:6:4
+db> dn
+#1    c() at down-up.debugger.js:10:4
+db> dn
+#0    d() at down-up.debugger.js:14:4
+db> c
+Program exited with code 0

@@ -1,0 +1,21 @@
+GJS debugger. Type "help" for help
+Debugger statement, toplevel at throw.debugger.js:1:18
+db> c
+Debugger statement, a() at throw.debugger.js:2:4
+db> throw 'foobar' + 3.14;
+Unwinding due to exception. (Type 'c' to continue unwinding.)
+#0    a() at throw.debugger.js:2:4
+Exception value is:
+$1 = "foobar3.14"
+db> fin
+Run till exit from a() at throw.debugger.js:2:4
+Frame terminated by exception:
+$2 = "foobar3.14"
+(To rethrow it, type 'throw'.)
+Unwinding due to exception. (Type 'c' to continue unwinding.)
+#0    toplevel at throw.debugger.js:7:4
+Exception value is:
+$3 = "foobar3.14"
+db> throw
+Exception: foobar3.14
+Program exited with code 0

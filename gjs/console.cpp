@@ -37,11 +37,13 @@ static char *profile_output_path = nullptr;
 static char *command = NULL;
 static gboolean print_version = false;
 static gboolean print_js_version = false;
+static gboolean debugging = false;
 static bool enable_profiler = false;
 
 static gboolean parse_profile_arg(const char *, const char *, void *, GError **);
 
 /* Keep in sync with entries in check_script_args_for_stray_gjs_args() */
+// clang-format off
 static GOptionEntry entries[] = {
     { "version", 0, 0, G_OPTION_ARG_NONE, &print_version, "Print GJS version and exit" },
     { "jsversion", 0, 0, G_OPTION_ARG_NONE, &print_js_version,
@@ -54,8 +56,10 @@ static GOptionEntry entries[] = {
         G_OPTION_ARG_CALLBACK, reinterpret_cast<void *>(&parse_profile_arg),
         "Enable the profiler and write output to FILE (default: gjs-$PID.syscap)",
         "FILE" },
+    { "debugger", 'd', 0, G_OPTION_ARG_NONE, &debugging, "Start in debug mode" },
     { NULL }
 };
+// clang-format on
 
 static char **
 strndupv(int           n,
@@ -248,6 +252,7 @@ main(int argc, char **argv)
     command = NULL;
     print_version = false;
     print_js_version = false;
+    debugging = false;
     g_option_context_set_ignore_unknown_options(context, false);
     g_option_context_set_help_enabled(context, true);
     if (!g_option_context_parse_strv(context, &gjs_argv, &error))
@@ -341,6 +346,19 @@ main(int argc, char **argv)
         goto out;
     }
 
+    /* If we're debugging, set up the debugger and prepend a debugger statement
+     * to the script we're going to evaluate. The debugger statement will break
+     * and cause a debugger prompt to appear.
+     * TODO: This is not great, as it messes up column offsets on the first
+     * line of all scripts. It would be better to hook into a debugger event
+     * and interrupt on the first frame. */
+    if (debugging) {
+        gjs_context_setup_debugger_console(js_context);
+        char* old_script = script;
+        script = g_strconcat("debugger;", old_script, nullptr);
+        g_free(old_script);
+    }
+
     /* evaluate the script */
     if (!gjs_context_eval(js_context, script, len,
                           filename, &code, &error)) {
@@ -364,5 +382,8 @@ main(int argc, char **argv)
         g_object_unref(coverage);
     g_object_unref(js_context);
     g_free(script);
+
+    if (debugging)
+        g_print("Program exited with code %d\n", code);
     exit(code);
 }

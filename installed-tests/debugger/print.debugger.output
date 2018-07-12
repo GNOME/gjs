@@ -1,0 +1,86 @@
+GJS debugger. Type "help" for help
+Debugger statement, toplevel at print.debugger.js:1:0
+db> c
+Debugger statement, toplevel at print.debugger.js:15:0
+db> # Simple types
+db> print a
+$1 = undefined
+db> p b
+$2 = null
+db> p c
+$3 = 42
+db> p d
+$4 = "some string"
+db> p e
+$5 = false
+db> p f
+$6 = true
+db> p g
+$7 = Symbol("foobar")
+db> # Objects
+db> print h
+$8 = [object Array]
+[
+    1,
+    "money",
+    2,
+    "show",
+    {
+        "three": "to",
+        "get ready": "go cat go"
+    }
+]
+db> print/b h
+$9 = [object Array]
+{
+    "0": 1,
+    "1": "money",
+    "2": 2,
+    "3": "show",
+    "4": "(...)",
+    "length": 5
+}
+db> print/p h
+$10 = [object Array]
+[
+    1,
+    "money",
+    2,
+    "show",
+    {
+        "three": "to",
+        "get ready": "go cat go"
+    }
+]
+db> p i
+$11 = [object Object]
+{
+    "some": "plain object",
+    "that": "has keys"
+}
+db> p/b i
+$12 = [object Object]
+{
+    "some": "plain object",
+    "that": "has keys"
+}
+db> p j
+$13 = [object Set]
+{}
+db> p k
+$14 = [object Function]
+db> p/b k
+$15 = [object Function]
+{
+    "prototype": "(...)",
+    "length": 0,
+    "name": "J"
+}
+db> p l
+$16 = [object GObject_Object]
+[object instance proxy GIName:GObject.Object jsobj@0xADDR native@0xADDR]
+db> p m
+$17 = [object Error]
+Error: message
+db> c
+Program exited with code 0

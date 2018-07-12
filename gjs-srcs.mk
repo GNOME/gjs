@@ -58,6 +58,7 @@ gjs_srcs =				\
 	gjs/context.cpp			\
 	gjs/context-private.h		\
 	gjs/coverage.cpp 		\
+	gjs/debugger.cpp		\
 	gjs/engine.cpp			\
 	gjs/engine.h			\
 	gjs/global.cpp			\

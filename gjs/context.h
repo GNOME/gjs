@@ -105,6 +105,12 @@ void            gjs_dumpstack                     (void);
 GJS_EXPORT
 const char *gjs_get_js_version(void);
 
+GJS_EXPORT
+void gjs_context_setup_debugger_console(GjsContext* gjs);
+GJS_EXPORT
+bool gjs_context_set_debugger_script(GjsContext* gjs,
+                                     const char* const* commands);
+
 G_END_DECLS
 
 #endif  /* __GJS_CONTEXT_H__ */

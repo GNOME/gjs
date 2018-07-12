@@ -1,0 +1,10 @@
+GJS debugger. Type "help" for help
+Debugger statement, toplevel at frame.debugger.js:1:0
+db> c
+Debugger statement, b() at frame.debugger.js:6:4
+db> frame 2
+#2    toplevel at frame.debugger.js:9:0
+db> f 1
+#1    a() at frame.debugger.js:2:4
+db> c
+Program exited with code 0

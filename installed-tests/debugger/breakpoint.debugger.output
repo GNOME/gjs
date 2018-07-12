@@ -1,0 +1,20 @@
+GJS debugger. Type "help" for help
+Debugger statement, toplevel at breakpoint.debugger.js:1:0
+db> breakpoint 2
+Breakpoint 1 at breakpoint.debugger.js:2:0
+db> break 4
+Breakpoint 2 at breakpoint.debugger.js:4:4
+db> b 6
+Breakpoint 3 at breakpoint.debugger.js:6:0
+db> c
+1
+Breakpoint 1, toplevel at breakpoint.debugger.js:2:0
+db> c
+2
+Breakpoint 3, toplevel at breakpoint.debugger.js:6:0
+db> c
+3
+Breakpoint 2, foo() at breakpoint.debugger.js:4:4
+db> c
+Function foo
+Program exited with code 0
