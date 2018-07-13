@@ -12,8 +12,8 @@
  * SpiderMonkey source.
  *
  * To run it: gjs -d path/to/file.js
- * Execution will stop at debugger statements (one will be inserted at the start
- * of the program), and you'll get a prompt.
+ * Execution will stop at debugger statements, and you'll get a prompt before
+ * the first frame is executed.
  */
 
 // Debugger state.
@@ -703,6 +703,12 @@ function repl() {
     }
 }
 
+function onInitialEnterFrame(frame) {
+    print('GJS debugger. Type "help" for help');
+    topFrame = focusedFrame = frame;
+    return repl();
+}
+
 var dbg = new Debugger();
 dbg.onNewPromise = function({promiseID, promiseAllocationSite}) {
     const site = promiseAllocationSite.toString().split('\n')[0];
@@ -746,4 +752,4 @@ dbg.onExceptionUnwind = function(frame, value) {
 
 var debuggeeGlobalWrapper = dbg.addDebuggee(debuggee);
 
-print('GJS debugger. Type "help" for help');
+setUntilRepl(dbg, 'onEnterFrame', onInitialEnterFrame);

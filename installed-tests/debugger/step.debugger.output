@@ -1,7 +1,4 @@
 GJS debugger. Type "help" for help
-Debugger statement, toplevel at step.debugger.js:1:0
-db> s
-toplevel at step.debugger.js:1:0
 db> s
 toplevel at step.debugger.js:10:0
 entered frame: a() at step.debugger.js:2:4

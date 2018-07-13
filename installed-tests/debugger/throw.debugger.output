@@ -1,5 +1,4 @@
 GJS debugger. Type "help" for help
-Debugger statement, toplevel at throw.debugger.js:1:18
 db> c
 Debugger statement, a() at throw.debugger.js:2:4
 db> throw 'foobar' + 3.14;

@@ -1,4 +1,3 @@
 GJS debugger. Type "help" for help
-Debugger statement, toplevel at quit.debugger.js:1:0
 db> q
 Program exited with code 0

@@ -1,5 +1,4 @@
 GJS debugger. Type "help" for help
-Debugger statement, toplevel at breakpoint.debugger.js:1:0
 db> breakpoint 2
 Breakpoint 1 at breakpoint.debugger.js:2:0
 db> break 4
