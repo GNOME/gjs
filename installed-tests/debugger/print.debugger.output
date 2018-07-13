@@ -1,5 +1,4 @@
 GJS debugger. Type "help" for help
-Debugger statement, toplevel at print.debugger.js:1:0
 db> c
 Debugger statement, toplevel at print.debugger.js:15:0
 db> # Simple types

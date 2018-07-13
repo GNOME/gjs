@@ -1,5 +1,4 @@
 GJS debugger. Type "help" for help
-Debugger statement, toplevel at finish.debugger.js:1:0
 db> c
 Print me
 Debugger statement, foo() at finish.debugger.js:3:4

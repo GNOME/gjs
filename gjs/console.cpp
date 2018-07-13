@@ -346,18 +346,10 @@ main(int argc, char **argv)
         goto out;
     }
 
-    /* If we're debugging, set up the debugger and prepend a debugger statement
-     * to the script we're going to evaluate. The debugger statement will break
-     * and cause a debugger prompt to appear.
-     * TODO: This is not great, as it messes up column offsets on the first
-     * line of all scripts. It would be better to hook into a debugger event
-     * and interrupt on the first frame. */
-    if (debugging) {
+    /* If we're debugging, set up the debugger. It will break on the first
+     * frame. */
+    if (debugging)
         gjs_context_setup_debugger_console(js_context);
-        char* old_script = script;
-        script = g_strconcat("debugger;", old_script, nullptr);
-        g_free(old_script);
-    }
 
     /* evaluate the script */
     if (!gjs_context_eval(js_context, script, len,

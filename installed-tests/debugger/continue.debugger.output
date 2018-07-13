@@ -1,7 +1,6 @@
 GJS debugger. Type "help" for help
-Debugger statement, toplevel at continue.debugger.js:1:0
 db> continue
-Debugger statement, toplevel at continue.debugger.js:1:9
+Debugger statement, toplevel at continue.debugger.js:1:0
 db> cont
 Debugger statement, toplevel at continue.debugger.js:2:0
 db> c

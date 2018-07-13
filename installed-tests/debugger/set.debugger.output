@@ -1,5 +1,4 @@
 GJS debugger. Type "help" for help
-Debugger statement, toplevel at set.debugger.js:1:0
 db> # Currently the only option is "pretty" for pretty-printing. Set doesn't yet
 db> # allow setting variables in the program.
 db> c

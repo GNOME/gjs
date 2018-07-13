@@ -1,5 +1,4 @@
 GJS debugger. Type "help" for help
-Debugger statement, toplevel at until.debugger.js:1:0
 db> until 3
 toplevel at until.debugger.js:1:0
 1

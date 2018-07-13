@@ -1,5 +1,4 @@
 GJS debugger. Type "help" for help
-Debugger statement, toplevel at frame.debugger.js:1:0
 db> c
 Debugger statement, b() at frame.debugger.js:6:4
 db> frame 2
