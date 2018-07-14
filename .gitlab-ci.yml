@@ -6,7 +6,7 @@ stages:
 - test
 - thorough_tests
 - manual
-- delivery
+- deploy
 
 .CI_header: &CI_header  'echo;
        echo "*********************************************";
@@ -199,7 +199,7 @@ coverage-automatic:
 # Publishes
 # The reports (coverage and code statistics)
 pages:
-  stage: delivery
+  stage: deploy
   dependencies:
     - coverage-automatic
     - code_statistics
@@ -375,7 +375,7 @@ valgrind:
 packaging:
   <<: *build
   <<: *package
-  stage: delivery
+  stage: deploy
   image: registry.gitlab.gnome.org/gnome/gnome-nightly-oci/nightly:master
   variables:
     TASK_ID: "packaging"
@@ -672,7 +672,7 @@ ppc64le:
 #############################################
 .Docker image template: &create_docker_image
   image: docker:latest
-  stage: delivery
+  stage: deploy
   services:
     - docker:dind
   only:
