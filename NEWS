@@ -1,3 +1,58 @@
+Version 1.53.4
+--------------
+
+- Refactored the way GObject properties are accessed. This should be a bit more
+  efficient, as property info (GParamSpec) is now cached for every object type.
+  There may still be some regressions from this; please be on the lookout so
+  we can fix them in the next release.
+
+- The memory usage for each object instance has been reduced, resulting in
+  several dozens of megabytes less memory usage in GNOME Shell.
+
+- The CI pipeline was refactored, now runs a lot faster, detects more failure
+  situations, builds on different architectures, uses the GitLab Docker
+  registry, and publishes code coverage statistics to
+  https://gnome.pages.gitlab.gnome.org/gjs/
+
+- For contributors, the C++ style guide has been updated, and there is now a
+  script in the tools/ directory that will install a Git hook to automatically
+  format your code when you commit it. The configuration may not be perfect yet,
+  so bear with us while we get it right.
+
+- Closed bugs and merge requests:
+
+  * Define GObject properties and fields as JS properties [#160, !151, Philip
+    Chimento]
+  * Possible refcounting bug around GtkListbox signal handlers [#24, !154,
+    Philip Chimento]
+  * Fix up GJS_DISABLE_JIT flag now the JIT is enabled by default in
+    SpiderMonkey [!159, Christopher Wheeldon]
+  * Various CI maintenance [!160, !161, !162, !169, !172, !180, !191, !193,
+    Claudio André]
+  * Update GJS wiki URL [!157, Seth Woodworth]
+  * Build failure in GNOME Continuous [#104, !156, Philip Chimento]
+  * Refactor ObjectInstance into C++ class [!158, !164, Philip Chimento]
+  * Use Ubuntu in the coverage job [!163, Claudio André]
+  * Remove unused files [!165, Claudio André]
+  * Add a ARMv8 build test [!166, Claudio André]
+  * Make CI faster [!167, Claudio André]
+  * Add a PPC4LE build test [!168, Claudio André]
+  * gdbus: Fix deprecated API [!170, Philip Chimento]
+  * Change Docker images names pattern [#173, !174, Claudio André]
+  * Assert failure on a GC_ZEAL run [#165, !173, Philip Chimento]
+  * Do not run linters on tagged commits [!181, Claudio André]
+  * Fail on compiler warnings [!182, Claudio André]
+  * Save code statistics in GitLab Pages [!183, Claudio André]
+  * Build static analysis Docker image in GitLab [!184, !185, !187, !189,
+    Claudio André]
+  * GNOME Shell always crashes with SIGBUS [#171, !188, Georges Basile
+    Stavracas Neto]
+  * Coverage badge is no longer able to show its value [#177, !186, Claudio
+    André]
+  * Move the Docker images creation to GitLab [!190, Claudio André]
+  * Cut the Gordian knot of coding style [#172, !171, Philip Chimento]
+  * Some GObect/GInterface properties broke [#182, !195, Philip Chimento]
+
 Version 1.53.3
 --------------
 
