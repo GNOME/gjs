@@ -123,7 +123,7 @@ stages:
 fedora:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:job-485.9_SM52-debug-gcc.fedora-dev  # pinned on purpose
+  image: claudioandre/spidermonkey:job-512.9_SM52-debug-gcc.fedora-dev  # pinned on purpose
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
     TEST: "check"
@@ -176,6 +176,17 @@ no_profiler:
     TASK_ID: "fedora-x86_64-gcc-default-disable_profiler-check"
     TEST: "check"
     BUILD_OPTS: "--disable-profiler"
+  except:
+    - schedules
+
+no_readline:
+  <<: *build
+  stage: test
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-default-disable_readline-check"
+    TEST: "check"
+    BUILD_OPTS: "--disable-readline"
   except:
     - schedules
 
