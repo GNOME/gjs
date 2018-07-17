@@ -179,6 +179,17 @@ no_profiler:
   except:
     - schedules
 
+no_readline:
+  <<: *build
+  stage: test
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-default-disable_readline-check"
+    TEST: "check"
+    BUILD_OPTS: "--disable-readline"
+  except:
+    - schedules
+
 # Generates
 # The Code Coverage Report
 coverage-automatic:

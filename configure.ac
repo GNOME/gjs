@@ -160,31 +160,41 @@ Configure with --disable-profiler to skip it on other platforms.])])
 ])
 AM_CONDITIONAL([ENABLE_PROFILER], [test x$enable_profiler != xno])
 
+# Optional redline dep (enabled by default)
+AC_ARG_ENABLE([readline],
+  [AS_HELP_STRING([--disable-readline], [Don't build readline-related code @<:@default=no@:>@])])
+AS_IF([test x$enable_readline == xno],[
+  AC_MSG_CHECKING([readline libs])
+])
+
 PKG_CHECK_VAR([GI_DATADIR], [gobject-introspection-1.0], [gidatadir])
 
-# readline
-LIBS_no_readline=$LIBS
+AS_IF([test x$enable_readline != xno],[
+  # readline
+  LIBS_no_readline=$LIBS
 
-# On some systems we need to link readline to a termcap compatible
-# library.
-gjs_cv_lib_readline=no
-AC_MSG_CHECKING([how to link readline libs])
-for gjs_libtermcap in "" ncursesw ncurses curses termcap; do
-  if test -z "$gjs_libtermcap"; then
-    READLINE_LIBS="-lreadline"
-  else
-    READLINE_LIBS="-lreadline -l$gjs_libtermcap"
-  fi
-  LIBS="$READLINE_LIBS $LIBS_no_readline"
-  AC_LINK_IFELSE(
-    [AC_LANG_CALL([],[readline])],
-    [gjs_cv_lib_readline=yes])
-  if test $gjs_cv_lib_readline = yes; then
-    break
-  fi
-done
+  # On some systems we need to link readline to a termcap compatible
+  # library.
+  gjs_cv_lib_readline=no
+  AC_MSG_CHECKING([how to link readline libs])
+  for gjs_libtermcap in "" ncursesw ncurses curses termcap; do
+    if test -z "$gjs_libtermcap"; then
+      READLINE_LIBS="-lreadline"
+    else
+      READLINE_LIBS="-lreadline -l$gjs_libtermcap"
+    fi
+    LIBS="$READLINE_LIBS $LIBS_no_readline"
+    AC_LINK_IFELSE(
+      [AC_LANG_CALL([],[readline])],
+      [gjs_cv_lib_readline=yes])
+    if test $gjs_cv_lib_readline = yes; then
+      break
+    fi
+  done
+],[gjs_cv_lib_readline=no])
+
 if test $gjs_cv_lib_readline = no; then
-  AC_MSG_RESULT([none])
+  AS_IF([test x$enable_readline == xno],[AC_MSG_RESULT([disabled])],[AC_MSG_RESULT([none])])
   READLINE_LIBS=""
   ac_cv_header_readline_readline_h=no
 else
