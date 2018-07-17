@@ -352,4 +352,11 @@ describe('GObject class with decorator', function () {
 
         expect (() => new MyCustomCharset() && new MySecondCustomCharset()).not.toThrow();
     });
+
+    it('resolves properties from interfaces', function() {
+        const mon = Gio.NetworkMonitor.get_default();
+        expect(mon.network_available).toBeDefined();
+        expect(mon.networkAvailable).toBeDefined();
+        expect(mon['network-available']).toBeDefined();
+    });
 });
