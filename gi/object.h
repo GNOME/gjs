@@ -272,8 +272,13 @@ class ObjectPrototype : public ObjectBase {
     /* Helper methods */
  private:
     bool is_vfunc_unchanged(GIVFuncInfo* info);
-    bool resolve_no_info(JSContext* cx, JS::HandleObject obj, bool* resolved,
-                         const char* name);
+    bool lazy_define_gobject_property(JSContext* cx, JS::HandleObject obj,
+                                      JS::HandleId id, bool* resolved,
+                                      const char* name);
+    enum ResolveWhat { ConsiderOnlyMethods, ConsiderMethodsAndProperties };
+    bool resolve_no_info(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
+                         bool* resolved, const char* name,
+                         ResolveWhat resolve_props);
 
  public:
     void set_type_qdata(void);

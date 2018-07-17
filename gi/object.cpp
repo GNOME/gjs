@@ -667,10 +667,76 @@ find_vfunc_on_parents(GIObjectInfo *info,
     return vfunc;
 }
 
+/* Taken from GLib */
+static void canonicalize_key(char* key) {
+    for (char* p = key; *p != 0; p++) {
+        char c = *p;
+
+        if (c != '-' && (c < '0' || c > '9') && (c < 'A' || c > 'Z') &&
+            (c < 'a' || c > 'z'))
+            *p = '-';
+    }
+}
+
+/* @name must already be canonicalized */
+static bool is_ginterface_property_name(GIInterfaceInfo* info,
+                                        const char* name) {
+    int n_props = g_interface_info_get_n_properties(info);
+    GjsAutoInfo<GIPropertyInfo> prop_info;
+
+    for (int ix = 0; ix < n_props; ix++) {
+        prop_info = g_interface_info_get_property(info, ix);
+        if (strcmp(name, prop_info.name()) == 0)
+            break;
+        prop_info.reset();
+    }
+
+    if (!prop_info)
+        return false;
+
+    return g_property_info_get_flags(prop_info) & G_PARAM_READABLE;
+}
+
+bool ObjectPrototype::lazy_define_gobject_property(JSContext* cx,
+                                                   JS::HandleObject obj,
+                                                   JS::HandleId id,
+                                                   bool* resolved,
+                                                   const char* name) {
+    bool found = false;
+    if (!JS_AlreadyHasOwnPropertyById(cx, obj, id, &found))
+        return false;
+    if (found) {
+        /* Already defined, so *resolved = false because we didn't just
+         * define it */
+        *resolved = false;
+        return true;
+    }
+
+    debug_jsprop("Defining lazy GObject property", id, obj);
+
+    JS::RootedValue private_id(cx, JS::StringValue(JSID_TO_STRING(id)));
+    if (!gjs_define_property_dynamic(
+            cx, obj, name, "gobject_prop", &ObjectBase::prop_getter,
+            &ObjectBase::prop_setter, private_id, GJS_MODULE_PROP_FLAGS))
+        return false;
+
+    *resolved = true;
+    return true;
+}
+
 bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
-                                      bool* resolved, const char* name) {
+                                      JS::HandleId id, bool* resolved,
+                                      const char* name,
+                                      ResolveWhat resolve_props) {
     guint n_interfaces;
     guint i;
+
+    GjsAutoChar canonical_name;
+    if (resolve_props == ConsiderMethodsAndProperties) {
+        char* canonical_name_unowned = gjs_hyphen_from_camel(name);
+        canonicalize_key(canonical_name_unowned);
+        canonical_name.reset(canonical_name_unowned);
+    }
 
     GType *interfaces = g_type_interfaces(m_gtype, &n_interfaces);
     for (i = 0; i < n_interfaces; i++) {
@@ -696,26 +762,22 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
                 return true;
             }
         }
+
+        if (resolve_props == ConsiderOnlyMethods)
+            continue;
+
+        /* If the name refers to a GObject property, lazily define the property
+         * in JS as we do below in the real resolve hook. We ignore fields here
+         * because I don't think interfaces can have fields */
+        if (is_ginterface_property_name(iface_info, canonical_name)) {
+            g_free(interfaces);
+            return lazy_define_gobject_property(cx, obj, id, resolved, name);
+        }
     }
 
     *resolved = false;
     g_free(interfaces);
     return true;
-}
-
-/* Taken from GLib */
-static void
-canonicalize_key(char *key)
-{
-    for (char *p = key; *p != 0; p++) {
-        char c = *p;
-
-        if (c != '-' &&
-            (c < '0' || c > '9') &&
-            (c < 'A' || c > 'Z') &&
-            (c < 'a' || c > 'z'))
-            *p = '-';
-    }
 }
 
 static bool
@@ -784,7 +846,8 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
      * we need to look at exposing interfaces. Look up our interfaces through
      * GType data, and then hope that *those* are introspectable. */
     if (is_custom_js_class())
-        return resolve_no_info(context, obj, resolved, name);
+        return resolve_no_info(context, obj, id, resolved, name,
+                               ConsiderMethodsAndProperties);
 
     if (g_str_has_prefix (name, "vfunc_")) {
         /* The only time we find a vfunc info is when we're the base
@@ -824,30 +887,8 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
          * method resolution. */
     }
 
-    /* If the name refers to a GObject property or field, lazily define the
-     * property in JS, on the prototype. */
-    if (is_gobject_property_name(m_info, name)) {
-        bool found = false;
-        if (!JS_AlreadyHasOwnPropertyById(context, obj, id, &found))
-            return false;
-        if (found) {
-            /* Already defined, so *resolved = false because we didn't just
-             * define it */
-            *resolved = false;
-            return true;
-        }
-
-        debug_jsprop("Defining lazy GObject property", id, obj);
-
-        JS::RootedValue private_id(context, JS::StringValue(JSID_TO_STRING(id)));
-        if (!gjs_define_property_dynamic(
-                context, obj, name, "gobject_prop", &ObjectBase::prop_getter,
-                &ObjectBase::prop_setter, private_id, GJS_MODULE_PROP_FLAGS))
-            return false;
-
-        *resolved = true;
-        return true;
-    }
+    if (is_gobject_property_name(m_info, name))
+        return lazy_define_gobject_property(context, obj, id, resolved, name);
 
     GjsAutoInfo<GIFieldInfo> field_info = lookup_field_info(m_info, name);
     if (field_info) {
@@ -896,7 +937,8 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
      * https://bugzilla.gnome.org/show_bug.cgi?id=632922
      */
     if (!method_info)
-        return resolve_no_info(context, obj, resolved, name);
+        return resolve_no_info(context, obj, id, resolved, name,
+                               ConsiderOnlyMethods);
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
     _gjs_log_info_usage((GIBaseInfo*) method_info);
