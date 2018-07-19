@@ -33,10 +33,10 @@ var requires = Symbol('GObject interface requires');
 var signals = Symbol('GObject signals');
 
 // These four will be aliased to GTK
-var _children = Symbol('GTK widget template children');
-var _cssName = Symbol('GTK widget CSS name');
-var _internalChildren = Symbol('GTK widget template internal children');
-var _template = Symbol('GTK widget template');
+var _gtkChildren = Symbol('GTK widget template children');
+var _gtkCssName = Symbol('GTK widget CSS name');
+var _gtkInternalChildren = Symbol('GTK widget template internal children');
+var _gtkTemplate = Symbol('GTK widget template');
 
 function registerClass(klass) {
     if (arguments.length == 2) {
@@ -67,13 +67,13 @@ function registerClass(klass) {
         if ('Requires' in metaInfo)
             klass[requires] = metaInfo.Requires;
         if ('CssName' in metaInfo)
-            klass[_cssName] = metaInfo.CssName;
+            klass[_gtkCssName] = metaInfo.CssName;
         if ('Template' in metaInfo)
-            klass[_template] = metaInfo.Template;
+            klass[_gtkTemplate] = metaInfo.Template;
         if ('Children' in metaInfo)
-            klass[_children] = metaInfo.Children;
+            klass[_gtkChildren] = metaInfo.Children;
         if ('InternalChildren' in metaInfo)
-            klass[_internalChildren] = metaInfo.InternalChildren;
+            klass[_gtkInternalChildren] = metaInfo.InternalChildren;
     }
 
     if (!(klass.prototype instanceof GObject.Object) &&
@@ -458,10 +458,10 @@ function _init() {
         }
     };
 
-    GObject._cssName = _cssName;
-    GObject._template = _template;
-    GObject._children = _children;
-    GObject._internalChildren = _internalChildren;
+    GObject.__gtkCssName__ = _gtkCssName;
+    GObject.__gtkTemplate__ = _gtkTemplate;
+    GObject.__gtkChildren__ = _gtkChildren;
+    GObject.__gtkInternalChildren__ = _gtkInternalChildren;
 
     // fake enum for signal accumulators, keep in sync with gi/object.c
     GObject.AccumulatorType = {
