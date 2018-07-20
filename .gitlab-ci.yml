@@ -207,7 +207,7 @@ coverage-automatic:
   image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
   variables:
     TASK_ID: "coverage"
-    BUILD_OPTS: "--enable-code-coverage"
+    BUILD_OPTS: "--enable-code-coverage --disable-readline"
     coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
   except:
     - schedules
