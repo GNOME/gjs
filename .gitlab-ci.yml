@@ -129,7 +129,7 @@ stages:
 fedora:
   <<: *build
   stage: source_check
-  image: claudioandre/spidermonkey:job-485.9_SM52-debug-gcc.fedora-dev  # pinned on purpose
+  image: claudioandre/spidermonkey:job-512.9_SM52-debug-gcc.fedora-dev  # pinned on purpose
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
     TEST: "check"
@@ -158,7 +158,7 @@ with_logging:
   variables:
     TASK_ID: "fedora-x86_64-clang-default-logging-check"
     CC: clang
-    BUILD_OPTS: CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
+    BUILD_OPTS: "--disable-readline CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'"
     TEST: "check"
     SCRIPTCHECK: "yes"
   except:
@@ -184,6 +184,17 @@ no_profiler:
     TASK_ID: "fedora-x86_64-gcc-default-disable_profiler-check"
     TEST: "check"
     BUILD_OPTS: "--disable-profiler"
+  except:
+    - schedules
+
+no_readline:
+  <<: *build
+  stage: test
+  image: claudioandre/spidermonkey:SM52-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-default-disable_readline-check"
+    TEST: "check"
+    BUILD_OPTS: "--disable-readline"
   except:
     - schedules
 
@@ -297,7 +308,7 @@ sanitizer_clang:
   variables:
     TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
-    BUILD_OPTS: "--enable-asan --enable-ubsan"
+    BUILD_OPTS: "--enable-asan --enable-ubsan --disable-readline"
     TEST: "check"
   only:
     variables:
@@ -516,7 +527,7 @@ sanitizer_clang:
   variables:
     TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
-    BUILD_OPTS: "--enable-asan --enable-ubsan"
+    BUILD_OPTS: "--enable-asan --enable-ubsan --disable-readline"
     TEST: "check"
   when: manual
   except:
