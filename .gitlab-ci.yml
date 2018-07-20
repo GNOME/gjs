@@ -152,7 +152,7 @@ with_logging:
   variables:
     TASK_ID: "ubuntu-x86_64-clang-default-logging-check"
     CC: clang
-    BUILD_OPTS: CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
+    BUILD_OPTS: "CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'"
     TEST: "check"
   except:
     - schedules
@@ -188,7 +188,7 @@ coverage-automatic:
   image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
   variables:
     TASK_ID: "coverage"
-    BUILD_OPTS: "--enable-code-coverage --disable-readline"
+    BUILD_OPTS: "--enable-code-coverage"
     coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
   except:
     - schedules
