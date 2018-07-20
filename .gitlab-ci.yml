@@ -133,6 +133,7 @@ fedora:
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
     TEST: "check"
+    BUILD_OPTS: --disable-readline  # temporary, because we have to rebuild the image
     WARNINGS: "count"
   except:
     - schedules
