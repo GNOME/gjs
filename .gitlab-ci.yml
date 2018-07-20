@@ -154,9 +154,9 @@ sanitizer_gcc:
 with_logging:
   <<: *build
   stage: test
-  image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
   variables:
-    TASK_ID: "fedora-x86_64-clang-default-logging-check"
+    TASK_ID: "ubuntu-x86_64-clang-default-logging-check"
     CC: clang
     BUILD_OPTS: "--disable-readline CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'"
     TEST: "check"
@@ -304,9 +304,9 @@ code_statistics:
 sanitizer_clang:
   <<: *build
   stage: thorough_tests
-  image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
   variables:
-    TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
+    TASK_ID: "ubuntu-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
     BUILD_OPTS: "--enable-asan --enable-ubsan --disable-readline"
     TEST: "check"
@@ -523,9 +523,9 @@ coverage:
 sanitizer_clang:
   <<: *build
   stage: manual
-  image: claudioandre/spidermonkey:new-342.4  # temporarily pinned to old tag
+  image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
   variables:
-    TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
+    TASK_ID: "ubuntu-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
     BUILD_OPTS: "--enable-asan --enable-ubsan --disable-readline"
     TEST: "check"
