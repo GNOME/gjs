@@ -444,6 +444,14 @@ function _init() {
     GObject.__gtkChildren__ = _gtkChildren;
     GObject.__gtkInternalChildren__ = _gtkInternalChildren;
 
+    // Expose GObject static properties for ES6 classes
+
+    GObject.GTypeName = GTypeName;
+    GObject.requires = requires;
+    GObject.interfaces = interfaces;
+    GObject.properties = properties;
+    GObject.signals = signals;
+
     // fake enum for signal accumulators, keep in sync with gi/object.c
     GObject.AccumulatorType = {
         NONE: 0,
