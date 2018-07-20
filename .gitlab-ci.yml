@@ -158,7 +158,7 @@ with_logging:
   variables:
     TASK_ID: "ubuntu-x86_64-clang-default-logging-check"
     CC: clang
-    BUILD_OPTS: "--disable-readline CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'"
+    BUILD_OPTS: "CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'"
     TEST: "check"
     SCRIPTCHECK: "yes"
   except:
@@ -207,7 +207,7 @@ coverage-automatic:
   image: claudioandre/spidermonkey:SM52-gcc.ubuntu-dev
   variables:
     TASK_ID: "coverage"
-    BUILD_OPTS: "--enable-code-coverage --disable-readline"
+    BUILD_OPTS: "--enable-code-coverage"
     coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
   except:
     - schedules
@@ -308,7 +308,7 @@ sanitizer_clang:
   variables:
     TASK_ID: "ubuntu-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
-    BUILD_OPTS: "--enable-asan --enable-ubsan --disable-readline"
+    BUILD_OPTS: "--enable-asan --enable-ubsan"
     TEST: "check"
   only:
     variables:
@@ -527,7 +527,7 @@ sanitizer_clang:
   variables:
     TASK_ID: "ubuntu-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
-    BUILD_OPTS: "--enable-asan --enable-ubsan --disable-readline"
+    BUILD_OPTS: "--enable-asan --enable-ubsan"
     TEST: "check"
   when: manual
   except:
