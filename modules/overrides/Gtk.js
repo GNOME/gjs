@@ -28,10 +28,10 @@ function _init() {
 
     Gtk = this;
 
-    Gtk.children = GObject._children;
-    Gtk.cssName = GObject._cssName;
-    Gtk.internalChildren = GObject._internalChildren;
-    Gtk.template = GObject._template;
+    Gtk.children = GObject.__gtkChildren__;
+    Gtk.cssName = GObject.__gtkCssName__;
+    Gtk.internalChildren = GObject.__gtkInternalChildren__;
+    Gtk.template = GObject.__gtkTemplate__;
 
     let {GtkWidgetClass} = Legacy.defineGtkLegacyObjects(GObject, Gtk);
     Gtk.Widget.prototype.__metaclass__ = GtkWidgetClass;
