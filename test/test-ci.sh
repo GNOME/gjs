@@ -7,9 +7,9 @@ function do_Set_Env(){
     XDG_CACHE_HOME="$(pwd)"/.cache
     export XDG_CACHE_HOME
 
-    #SpiderMonkey
+    #SpiderMonkey and libgjs
     export PKG_CONFIG_PATH=/root/jhbuild/install/lib/pkgconfig
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/root/jhbuild/install/lib
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/root/jhbuild/install/lib:/usr/local/lib
 
     #Macros
     export ACLOCAL_PATH=$ACLOCAL_PATH:/root/jhbuild/install/share/aclocal
