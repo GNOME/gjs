@@ -85,6 +85,12 @@ stages:
        fi
     '
 
+    # Run the script tests again (to assure they are working)
+    - 'if [[ -n "${SCRIPTCHECK}" ]]; then
+         $(pwd)/test/test-ci.sh SH_CHECKS;
+       fi
+    '
+
     # Done
     - *CI_footer
 
@@ -154,6 +160,7 @@ with_logging:
     CC: clang
     BUILD_OPTS: CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
     TEST: "check"
+    SCRIPTCHECK: "yes"
   except:
     - schedules
 
@@ -165,6 +172,7 @@ no_graphics:
     TASK_ID: "fedora-x86_64-gcc-default-without_gtk-check"
     TEST: "check"
     BUILD_OPTS: "--without-cairo --without-gtk"
+    SCRIPTCHECK: "yes"
   except:
     - schedules
 
