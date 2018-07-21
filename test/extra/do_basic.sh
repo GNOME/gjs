@@ -16,7 +16,7 @@ function do_Install_Dependencies(){
                                libtool libicu-dev libnspr4-dev \
                                policykit-1 \
                                libgtk-3-dev gir1.2-gtk-3.0 xvfb gnome-desktop-testing dbus-x11 dbus \
-                               libedit-dev libgl1-mesa-dev lcov
+                               libedit-dev libgl1-mesa-dev lcov libreadline-dev
 
     elif [[ $BASE == "fedora" ]]; then
         if [[ $STATIC == *"qemu"* ]]; then
@@ -34,7 +34,7 @@ function do_Install_Dependencies(){
                           cairo intltool libxslt bison nspr zlib python3-devel dbus-glib libicu libffi pcre \
                           libxml2 libxslt libtool flex \
                           cairo-devel zlib-devel libffi-devel pcre-devel libxml2-devel libxslt-devel \
-                          libedit-devel libasan libubsan libtsan compiler-rt lcov mesa-libGL-devel
+                          libedit-devel libasan libubsan libtsan compiler-rt lcov mesa-libGL-devel readline-devel
 
         if [[ $DEV == "devel" ]]; then
             dnf -y install time
