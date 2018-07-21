@@ -172,7 +172,6 @@ no_graphics:
     TASK_ID: "fedora-x86_64-gcc-default-without_gtk-check"
     TEST: "check"
     BUILD_OPTS: "--without-cairo --without-gtk"
-    SCRIPTCHECK: "yes"
   except:
     - schedules
 
@@ -208,6 +207,7 @@ coverage-automatic:
   variables:
     TASK_ID: "coverage"
     BUILD_OPTS: "--enable-code-coverage"
+    SCRIPTCHECK: "yes"
     coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
   except:
     - schedules
