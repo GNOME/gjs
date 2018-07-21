@@ -193,9 +193,7 @@ AS_IF([test x$enable_readline != xno],[
 
 if test $gjs_cv_lib_readline = no; then
   AS_IF([test x$enable_readline != xno],
-    [AC_MSG_ERROR([Readline requested but not found. Configure with --disable-readline.])]
-  )
-  AC_MSG_RESULT([none])
+    [AC_MSG_ERROR([Readline requested but not found. Configure with --disable-readline.])])
   READLINE_LIBS=""
   ac_cv_header_readline_readline_h=no
 else
