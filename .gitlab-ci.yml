@@ -753,16 +753,16 @@ fedora.static-analysis:
     DOCKERFILE: "test/extra/Dockerfile.fedora.static-analysis"
     NAME: "fedora.static-analysis"
 
-SM52-gcc.fedora-dev:
+SM60-gcc.fedora-dev:
   <<: *create_docker_image
   variables:
     BASE: "fedora"
     DEV: "devel"
     DOCKER_DRIVER: overlay
     IMAGE: "fedora:rawhide"
-    NAME: "SM52-gcc.fedora-dev"
+    NAME: "SM60-gcc.fedora-dev"
 
-SM52-debug-gcc.fedora-dev:
+SM60-debug-gcc.fedora-dev:
   <<: *create_docker_image
   variables:
     BASE: "fedora"
@@ -770,45 +770,45 @@ SM52-debug-gcc.fedora-dev:
     DEV: "devel"
     DOCKER_DRIVER: overlay
     IMAGE: "fedora:rawhide"
-    NAME: "SM52-debug-gcc.fedora-dev"
+    NAME: "SM60-debug-gcc.fedora-dev"
 
-SM52-gcc.fedora-dev.aarch64:
+SM60-gcc.fedora-dev.aarch64:
   <<: *create_docker_image
   variables:
     BASE: "fedora"
     DEV: "devel"
     DOCKER_DRIVER: overlay
     DOCKERFILE: "test/extra/Dockerfile.arm64v8.fedora.29"
-    IMAGE: "${CI_REGISTRY_IMAGE}:SM52-gcc.fedora-dev.aarch64"
-    NAME: "SM52-gcc.fedora-dev.aarch64"
+    IMAGE: "${CI_REGISTRY_IMAGE}:SM60-gcc.fedora-dev.aarch64"
+    NAME: "SM60-gcc.fedora-dev.aarch64"
     STATIC: "qemu"
     TARGET_ARCH: "aarch64"
 
-SM52-gcc.fedora-dev.ppc64le:
+SM60-gcc.fedora-dev.ppc64le:
   <<: *create_docker_image
   variables:
     BASE: "fedora"
     DEV: "devel"
     DOCKER_DRIVER: overlay
     DOCKERFILE: "test/extra/Dockerfile.ppc64le.fedora.29"
-    IMAGE: "${CI_REGISTRY_IMAGE}:SM52-gcc.fedora-dev.ppc64le"
-    NAME: "SM52-gcc.fedora-dev.ppc64le"
+    IMAGE: "${CI_REGISTRY_IMAGE}:SM60-gcc.fedora-dev.ppc64le"
+    NAME: "SM60-gcc.fedora-dev.ppc64le"
     STATIC: "qemu"
     TARGET_ARCH: "ppc64le"
 
-SM52-gcc.ubuntu-lts:
+SM60-gcc.ubuntu-lts:
   <<: *create_docker_image
   variables:
     BASE: "debian"
     DOCKER_DRIVER: overlay
     IMAGE: "ubuntu:18.04"
-    NAME: "SM52-gcc.ubuntu-lts"
+    NAME: "SM60-gcc.ubuntu-lts"
 
-SM52-gcc.ubuntu-dev:
+SM60-gcc.ubuntu-dev:
   <<: *create_docker_image
   variables:
     BASE: "debian"
     DEV: "devel"
     DOCKER_DRIVER: overlay
     IMAGE: "ubuntu:devel"
-    NAME: "SM52-gcc.ubuntu-dev"
+    NAME: "SM60-gcc.ubuntu-dev"
