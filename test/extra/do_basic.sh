@@ -20,9 +20,9 @@ function do_Install_Dependencies(){
 
     elif [[ $BASE == "fedora" ]]; then
         if [[ $STATIC == *"qemu"* ]]; then
-            dnf -y --nogpgcheck upgrade
+            dnf -y --nogpgcheck upgrade --best --allowerasing
         else
-            dnf -y upgrade
+            dnf -y upgrade --best --allowerasing
         fi
 
         # Base dependencies
