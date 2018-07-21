@@ -12,13 +12,13 @@ function do_Shrink_Image(){
 
     elif [[ $BASE == "fedora" ]]; then
         dnf -y clean all
+        rm -rf /var/cache/dnf
     fi
 
     echo '-- Done --'
 }
 
 if [[ $1 == "BUILD_MOZ" ]]; then
-    do_Install_Base_Dependencies
     do_Install_Dependencies
     do_Set_Env
 
