@@ -11,7 +11,8 @@ RUN dnf -y --nogpgcheck upgrade && \
     mkdir -p /cwd && \
     pip install cpplint && \
     npm install -g eslint && \
-    dnf -y clean all
+    dnf -y clean all && \
+    rm -rf /var/cache/dnf
 
 CMD ["/bin/bash"]
 
