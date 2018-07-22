@@ -231,6 +231,9 @@ pages:
   only:
     refs:
       - master@GNOME/gjs
+  except:
+    variables:
+      - $CRON_TASK == "BUILD_CI_IMAGES"
 
 #############################################
 #              Static Analyzers             #
