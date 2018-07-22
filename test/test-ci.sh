@@ -81,9 +81,10 @@ function do_Show_Info(){
 
 function do_Get_Upstream_Master(){
 
-    if [[ "$CI_BUILD_REF_SLUG" == "master" && "$CI_PROJECT_PATH_SLUG" == "gnome-gjs" ]]; then
+    if [[ "$CI_PROJECT_PATH_SLUG" == "gnome-gjs" && \
+         ("$CI_BUILD_REF_SLUG" == "master" || "$CI_BUILD_REF_SLUG" == "gnome-"* || -n "${CI_COMMIT_TAG}") ]]; then
         echo '-----------------------------------------'
-        echo 'Running against upstream master'
+        echo 'Running against upstream'
         echo "=> $1 Nothing to do"
 
         do_Done
