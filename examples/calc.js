@@ -10,7 +10,7 @@ var calc_val = '';
 function update_display() {
     label.set_markup(`<span size='30000'>${calc_val}</span>`);
 
-    if(calc_val === '') {
+    if (calc_val === '') {
         label.set_markup("<span size='30000'>0</span>");
     }
 }
@@ -66,7 +66,7 @@ function pack_buttons(buttons, vbox) {
 
     vbox.pack_start(hbox, true, true, 2);
 
-    for(let i = 0; i <= 4; i++) {
+    for (let i = 0; i <= 4; i++) {
         hbox.pack_start(buttons[i], true, true, 1);
     }
 }
