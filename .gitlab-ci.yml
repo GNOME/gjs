@@ -394,13 +394,13 @@ valgrind:
 #############################################
 #         Flatpak packaging (weekly)        #
 #############################################
-packaging:
+flatpak:
   <<: *build
   <<: *package
   stage: deploy
   image: registry.gitlab.gnome.org/gnome/gnome-nightly-oci/nightly:master
   variables:
-    TASK_ID: "packaging"
+    TASK_ID: "flatpak packaging"
     CODECHECK: "FLATPAK"
     APPID: "org.gnome.GjsDevel"
     BUNDLE: "org.gnome.GjsDevel.flatpak"
@@ -609,13 +609,13 @@ valgrind:
     - schedules
 
 # Flatpak packaging (weekly)
-packaging:
+flatpak:
   <<: *build
   <<: *package
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gnome-nightly-oci/nightly:master
   variables:
-    TASK_ID: "packaging"
+    TASK_ID: "flatpak packaging"
     CODECHECK: "FLATPAK"
     APPID: "org.gnome.GjsDevel"
     BUNDLE: "org.gnome.GjsDevel.flatpak"
