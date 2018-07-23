@@ -1,0 +1,4 @@
+GJS debugger. Type "help" for help
+db> detach
+hi
+Program exited with code 0

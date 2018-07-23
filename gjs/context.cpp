@@ -71,6 +71,26 @@ static void     gjs_context_set_property      (GObject               *object,
                                                   const GValue          *value,
                                                   GParamSpec            *pspec);
 
+/* Environment preparer needed for debugger, taken from SpiderMonkey's
+ * JS shell */
+struct GjsEnvironmentPreparer final : public js::ScriptEnvironmentPreparer {
+    JSContext* m_cx;
+
+    explicit GjsEnvironmentPreparer(JSContext* cx) : m_cx(cx) {
+        js::SetScriptEnvironmentPreparer(m_cx, this);
+    }
+
+    void invoke(JS::HandleObject scope, Closure& closure) override;
+};
+
+void GjsEnvironmentPreparer::invoke(JS::HandleObject scope, Closure& closure) {
+    g_assert(!JS_IsExceptionPending(m_cx));
+
+    JSAutoCompartment ac(m_cx, scope);
+    if (!closure(m_cx))
+        gjs_log_exception(m_cx);
+}
+
 using JobQueue = JS::GCVector<JSObject *, 0, js::SystemAllocPolicy>;
 
 struct _GjsContext {
@@ -104,6 +124,8 @@ struct _GjsContext {
     GjsProfiler *profiler;
     bool should_profile : 1;
     bool should_listen_sigusr2 : 1;
+
+    GjsEnvironmentPreparer environment_preparer;
 };
 
 /* Keep this consistent with GjsConstString */
@@ -432,6 +454,7 @@ gjs_context_finalize(GObject *object)
     js_context->global.~Heap();
     js_context->const_strings.~array();
     js_context->unhandled_rejection_stacks.~unordered_map();
+    js_context->environment_preparer.~GjsEnvironmentPreparer();
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
 
@@ -467,6 +490,7 @@ gjs_context_constructed(GObject *object)
 
     new (&js_context->unhandled_rejection_stacks) std::unordered_map<uint64_t, GjsAutoChar>;
     new (&js_context->const_strings) std::array<JS::PersistentRootedId*, GJS_STRING_LAST>;
+    new (&js_context->environment_preparer) GjsEnvironmentPreparer(cx);
     for (i = 0; i < GJS_STRING_LAST; i++) {
         js_context->const_strings[i] = new JS::PersistentRootedId(cx,
             gjs_intern_string_to_id(cx, const_strings[i]));

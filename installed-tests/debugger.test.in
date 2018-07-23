@@ -1,0 +1,4 @@
+[Test]
+Type=session
+Exec=@pkglibexecdir@/installed-tests/debugger-test.sh @pkglibexecdir@/installed-tests/debugger/@name@
+Output=TAP

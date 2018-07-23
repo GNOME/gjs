@@ -1,0 +1,21 @@
+c
+# Simple types
+print a
+p b
+p c
+p d
+p e
+p f
+p g
+# Objects
+print h
+print/b h
+print/p h
+p i
+p/b i
+p j
+p k
+p/b k
+p l
+p m
+c

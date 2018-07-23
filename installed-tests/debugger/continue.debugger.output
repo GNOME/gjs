@@ -1,0 +1,7 @@
+GJS debugger. Type "help" for help
+db> continue
+Debugger statement, toplevel at continue.debugger.js:1:0
+db> cont
+Debugger statement, toplevel at continue.debugger.js:2:0
+db> c
+Program exited with code 0

@@ -1,0 +1,8 @@
+b 2
+b 6
+b 10
+c
+return
+ret 5
+ret `${4 * 10 + 2} is the answer`
+c

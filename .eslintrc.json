@@ -4,6 +4,7 @@
     },
     "extends": "eslint:recommended",
     "rules": {
+        "array-bracket-spacing": ["error", "never"],
         "brace-style": "error",
         "comma-spacing": [
             "error",
@@ -17,6 +18,13 @@
             4,
             {
                 "MemberExpression": "off"
+            }
+        ],
+        "key-spacing": [
+            "error",
+            {
+                "beforeColon": false,
+                "afterColon": true
             }
         ],
         "keyword-spacing": [
@@ -36,6 +44,7 @@
                 "allowEmptyCatch": true
             }
         ],
+        "nonblock-statement-body-position": ["error", "below"],
         "quotes": [
             "error",
             "single",

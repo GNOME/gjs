@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/gnome/gjs">
+    <file>modules/_bootstrap/debugger.js</file>
     <file>modules/_bootstrap/default.js</file>
     <file>modules/_bootstrap/coverage.js</file>
 

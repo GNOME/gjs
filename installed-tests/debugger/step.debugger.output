@@ -1,0 +1,33 @@
+GJS debugger. Type "help" for help
+db> s
+toplevel at step.debugger.js:10:0
+entered frame: a() at step.debugger.js:2:4
+db> s
+a() at step.debugger.js:2:4
+entered frame: b() at step.debugger.js:7:4
+db> s
+b() at step.debugger.js:7:4
+A line in b
+db> s
+b() at step.debugger.js:8:0
+No value returned.
+db> s
+b() at step.debugger.js:8:0
+a() at step.debugger.js:2:4
+db> s
+a() at step.debugger.js:2:4
+db> s
+a() at step.debugger.js:3:4
+A line in a
+db> s
+a() at step.debugger.js:4:0
+No value returned.
+db> s
+a() at step.debugger.js:4:0
+toplevel at step.debugger.js:10:0
+db> s
+toplevel at step.debugger.js:10:0
+No value returned.
+db> s
+toplevel at step.debugger.js:10:4
+Program exited with code 0

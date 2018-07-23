@@ -1,0 +1,17 @@
+GJS debugger. Type "help" for help
+db> until 3
+toplevel at until.debugger.js:1:0
+1
+2
+db> upto 5
+toplevel at until.debugger.js:3:0
+3
+entered frame: <anonymous>() at until.debugger.js:5:4
+db> u 7
+<anonymous>() at until.debugger.js:5:4
+4
+No value returned.
+toplevel at until.debugger.js:7:0
+db> c
+5
+Program exited with code 0
