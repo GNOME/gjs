@@ -452,6 +452,11 @@ function _init() {
     GObject.properties = properties;
     GObject.signals = signals;
 
+    // Replacement for non-introspectable g_object_set()
+    GObject.Object.prototype.set = function(params) {
+        Object.assign(this, params);
+    };
+
     // fake enum for signal accumulators, keep in sync with gi/object.c
     GObject.AccumulatorType = {
         NONE: 0,
