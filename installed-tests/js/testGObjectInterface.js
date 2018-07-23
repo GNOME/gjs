@@ -84,6 +84,22 @@ const ImplementationOfTwoInterfaces = GObject.registerClass({
     }
 });
 
+const ImplementationOfIntrospectedInterface = GObject.registerClass({
+    Implements: [Gio.Action],
+    Properties: {
+        'enabled': GObject.ParamSpec.override('enabled', Gio.Action),
+        'name': GObject.ParamSpec.override('name', Gio.Action),
+        'state': GObject.ParamSpec.override('state', Gio.Action),
+        'state-type': GObject.ParamSpec.override('state-type', Gio.Action),
+        'parameter-type': GObject.ParamSpec.override('parameter-type',
+            Gio.Action)
+    }
+}, class ImplementationOfIntrospectedInterface extends GObject.Object {
+    get name() {
+        return 'inaction';
+    }
+});
+
 describe('GObject interface', function () {
     it('cannot be instantiated', function () {
         expect(() => new AGObjectInterface()).toThrow();
@@ -245,6 +261,11 @@ describe('GObject interface', function () {
         // g_test_assert_expected_messages() is a macro, not introspectable
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectInterface.js',
             253, 'testGObjectMustOverrideInterfaceProperties');
+    });
+
+    it('can have introspected properties overriden', function() {
+        let obj = new ImplementationOfIntrospectedInterface();
+        expect(obj.name).toEqual('inaction');
     });
 
     it('can be implemented by a class as well as its parent class', function () {
