@@ -415,6 +415,13 @@ describe('Life, the Universe and Everything', function () {
         expect(Regress.TestEnum.param(Regress.TestEnum.VALUE4)).toEqual('value4');
     });
 
+    it('can be answered with GObject.set()', function() {
+        let o = new Regress.TestObj();
+        o.set({ string: 'Answer', int: 42 });
+        expect(o.string).toBe('Answer');
+        expect(o.int).toBe(42);
+    });
+
     describe('Object-valued GProperty', function () {
         let o1, t1, t2;
         beforeEach(function () {
