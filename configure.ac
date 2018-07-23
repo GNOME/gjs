@@ -152,9 +152,20 @@ AS_IF([test x$have_gtk = xyes], [
 AC_ARG_ENABLE([profiler],
   [AS_HELP_STRING([--disable-profiler], [Don't build profiler])])
 AS_IF([test x$enable_profiler != xno], [
+  # Requires timer_settime() - only on Linux
   gl_TIMER_TIME
-  AS_IF([test x$ac_cv_func_timer_settime = xno],
+  # Requires SIGEV_THREAD_ID - not in some stdlibs
+  have_sigev_thread_id=no
+  AC_MSG_CHECKING([for Linux SIGEV_THREAD_ID])
+  AC_COMPILE_IFELSE([
+    AC_LANG_PROGRAM([[#include <signal.h>]], [return SIGEV_THREAD_ID;])
+  ], [
+    have_sigev_thread_id=yes
+    AC_MSG_RESULT([yes])
+  ], [AC_MSG_RESULT([no])])
+  AS_IF([test x$ac_cv_func_timer_settime = xno -o x$have_sigev_thread_id = xno],
     [AC_MSG_ERROR([The profiler is currently only supported on Linux.
+The standard library must support timer_settime() and SIGEV_THREAD_ID.
 Configure with --disable-profiler to skip it on other platforms.])])
   AC_DEFINE([ENABLE_PROFILER], [1], [Define if the profiler should be built.])
 ])
