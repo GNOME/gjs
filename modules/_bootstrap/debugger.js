@@ -266,31 +266,39 @@ function continueCommand() {
     return [undefined];
 }
 
-function throwCommand(rest) {
+function throwOrReturn(rest, action, defaultCompletion) {
     if (focusedFrame !== topFrame) {
         print("To throw, you must select the newest frame (use 'frame 0').");
         return;
-    } else if (focusedFrame === null) {
+    }
+    if (focusedFrame === null) {
         print('No stack.');
         return;
-    } else if (rest === '') {
-        return [{throw: lastExc}];
-    } else {
-        var cv = saveExcursion(() => focusedFrame.eval(rest));
-        if (cv === null) {
-            if (!dbg.enabled)
-                return [cv];
-            print('Debuggee died while determining what to throw. Stopped.');
-        } else if ('return' in cv) {
-            return [{throw: cv['return']}];
-        } else {
-            if (!dbg.enabled)
-                return [cv];
-            print('Exception determining what to throw. Stopped.');
-            showDebuggeeValue(cv.throw);
-        }
+    }
+    if (rest === '')
+        return [defaultCompletion];
+
+    const cv = saveExcursion(() => focusedFrame.eval(rest));
+    if (cv === null) {
+        if (!dbg.enabled)
+            return [cv];
+        print(`Debuggee died while determining what to ${action}. Stopped.`);
         return;
     }
+    if ('return' in cv)
+        return [{[action]: cv['return']}];
+    if (!dbg.enabled)
+        return [cv];
+    print(`Exception determining what to ${action}. Stopped.`);
+    showDebuggeeValue(cv.throw);
+}
+
+function throwCommand(rest) {
+    return throwOrReturn(rest, 'throw', {throw: lastExc});
+}
+
+function returnCommand(rest) {
+    return throwOrReturn(rest, 'return', {return: undefined});
 }
 
 function frameCommand(rest) {
@@ -343,31 +351,6 @@ function downCommand() {
     else {
         focusedFrame = focusedFrame.younger;
         showFrame();
-    }
-}
-
-function returnCommand(rest) {
-    const f = focusedFrame;
-    if (f !== topFrame) {
-        print("To return, you must select the newest frame (use 'frame 0').");
-    } else if (f === null) {
-        print('Nothing on the stack.');
-    } else if (rest === '') {
-        return [{return: undefined}];
-    } else {
-        const cv = saveExcursion(() => f.eval(rest));
-        if (cv === null) {
-            if (!dbg.enabled)
-                return [cv];
-            print('Debuggee died while determining what to return. Stopped.');
-        } else if ('return' in cv) {
-            return [{return: cv['return']}];
-        } else {
-            if (!dbg.enabled)
-                return [cv];
-            print('Error determining what to return. Stopped.');
-            showDebuggeeValue(cv.throw);
-        }
     }
 }
 
