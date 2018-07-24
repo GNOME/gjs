@@ -700,32 +700,6 @@ gjs_info_type_name(GIInfoType type)
 }
 
 char*
-gjs_camel_from_hyphen(const char *hyphen_name)
-{
-    GString *s;
-    const char *p;
-    bool next_upper;
-
-    s = g_string_sized_new(strlen(hyphen_name) + 1);
-
-    next_upper = false;
-    for (p = hyphen_name; *p; ++p) {
-        if (*p == '-' || *p == '_') {
-            next_upper = true;
-        } else {
-            if (next_upper) {
-                g_string_append_c(s, g_ascii_toupper(*p));
-                next_upper = false;
-            } else {
-                g_string_append_c(s, *p);
-            }
-        }
-    }
-
-    return g_string_free(s, false);
-}
-
-char*
 gjs_hyphen_from_camel(const char *camel_name)
 {
     GString *s;

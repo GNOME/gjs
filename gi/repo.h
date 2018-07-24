@@ -55,7 +55,6 @@ bool gjs_define_info(JSContext       *context,
                      GIBaseInfo      *info,
                      bool            *defined);
 
-char*       gjs_camel_from_hyphen               (const char     *hyphen_name);
 char*       gjs_hyphen_from_camel               (const char     *camel_name);
 
 
