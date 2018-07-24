@@ -52,7 +52,7 @@ function do_Install_Extras(){
 
     if [[ $BASE == "debian" ]]; then
         # Distros development versions of needed libraries
-        apt-get -y install libgirepository1.0-dev
+        apt-get -y install libgirepository1.0-dev libwebkit2gtk-4.0-dev notify-osd
 
     elif [[ $BASE == "fedora" ]]; then
         # Distros development versions of needed libraries
