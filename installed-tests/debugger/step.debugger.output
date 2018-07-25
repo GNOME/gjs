@@ -27,7 +27,9 @@ a() at step.debugger.js:4:0
 toplevel at step.debugger.js:10:0
 db> s
 toplevel at step.debugger.js:10:0
+db> s
+toplevel at step.debugger.js:11:0
 No value returned.
 db> s
-toplevel at step.debugger.js:10:4
+toplevel at step.debugger.js:11:0
 Program exited with code 0
