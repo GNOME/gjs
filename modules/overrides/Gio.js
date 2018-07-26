@@ -24,7 +24,7 @@ var Lang = imports.lang;
 var Signals = imports.signals;
 var Gio;
 
-function _proxyInvoker(methodName, sync, inSignature, arg_array) {
+function _proxyInvoker(methodName, callType, inSignature, arg_array) {
     var replyFunc;
     var flags = 0;
     var cancellable = null;
@@ -51,7 +51,7 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     while (arg_array.length > signatureLength) {
         var argNum = arg_array.length - 1;
         var arg = arg_array.pop();
-        if (typeof(arg) == "function" && !sync) {
+        if (typeof(arg) == "function" && callType == 'async') {
             replyFunc = arg;
         } else if (typeof(arg) == "number") {
             flags = arg;
@@ -65,32 +65,42 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
 
     var inVariant = new GLib.Variant('(' + inSignature.join('') + ')', arg_array);
 
-    var asyncCallback = function (proxy, result) {
-        var outVariant = null, succeeded = false;
-        try {
-            outVariant = proxy.call_finish(result);
-            succeeded = true;
-        } catch (e) {
+    var promise = new Promise((resolve, reject) => {
+        this.call(
+            methodName,
+            inVariant,
+            flags,
+            -1,
+            cancellable,
+            (proxy, result) => {
+                try {
+                    let outVariant = this.call_finish(result);
+                    resolve(outVariant.deep_unpack());
+                } catch (e) {
+                    reject(e);
+                }
+            }
+        );
+    });
+
+    switch (callType) {
+    case 'sync':
+        return this.call_sync(
+            methodName,
+            inVariant,
+            flags,
+            -1,
+            cancellable).deep_unpack();
+    case 'async':
+        promise.then(results => {
+            replyFunc(results, null);
+        });
+        promise.catch (e => {
             replyFunc([], e);
-        }
-
-        if (succeeded)
-            replyFunc(outVariant.deep_unpack(), null);
-    };
-
-    if (sync) {
-        return this.call_sync(methodName,
-                              inVariant,
-                              flags,
-                              -1,
-                              cancellable).deep_unpack();
-    } else {
-        return this.call(methodName,
-                         inVariant,
-                         flags,
-                         -1,
-                         cancellable,
-                         asyncCallback);
+        });
+        return;
+    case 'promise':
+        return promise;
     }
 }
 
@@ -100,7 +110,7 @@ function _logReply(result, exc) {
     }
 }
 
-function _makeProxyMethod(method, sync) {
+function _makeProxyMethod(method, callType) {
     var i;
     var name = method.name;
     var inArgs = method.in_args;
@@ -109,7 +119,7 @@ function _makeProxyMethod(method, sync) {
         inSignature.push(inArgs[i].signature);
 
     return function() {
-        return _proxyInvoker.call(this, name, sync, inSignature, arguments);
+        return _proxyInvoker.call(this, name, callType, inSignature, arguments);
     };
 }
 
@@ -152,8 +162,8 @@ function _addDBusConvenience() {
     let i, methods = info.methods;
     for (i = 0; i < methods.length; i++) {
         var method = methods[i];
-        this[method.name + 'Remote'] = _makeProxyMethod(methods[i], false);
-        this[method.name + 'Sync'] = _makeProxyMethod(methods[i], true);
+        this[method.name + 'Remote'] = _makeProxyMethod(methods[i], 'async');
+        this[method.name + 'Sync'] = _makeProxyMethod(methods[i], 'sync');
     }
 
     let properties = info.properties;
