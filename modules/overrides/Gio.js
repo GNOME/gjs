@@ -20,6 +20,7 @@
 
 var GLib = imports.gi.GLib;
 var GjsPrivate = imports.gi.GjsPrivate;
+var GObject = imports.gi.GObject;
 var Lang = imports.lang;
 var Signals = imports.signals;
 var Gio;
@@ -209,6 +210,294 @@ function _makeProxyWrapper(interfaceXml) {
     };
 }
 
+function _createSignalDefinition(sigInfo) {
+    let [first, ...rest] = sigInfo.name;
+    let sigName = [first.toLowerCase(), ...rest]
+        .join('')
+        .replace(/([A-Z])/, match => `-${match.toLowerCase()}`);
+
+    let sig = {};
+    if (sigInfo.args.length) {
+        sig.param_types = sigInfo.args.map(arg => {
+            switch (arg.signature) {
+            case 'b': return GObject.TYPE_BOOLEAN;
+
+            case 'y': return GObject.TYPE_UCHAR;
+
+            case 'n':
+            case 'i': return GObject.TYPE_INT;
+            case 'q':
+            case 'u': return GObject.TYPE_UINT;
+            case 'x': return GObject.TYPE_INT64;
+            case 't': return GObject.TYPE_UINT64;
+            //case 'h': return GObject.TYPE_INT;
+
+            case 'd': return GObject.TYPE_DOUBLE;
+
+            case 's':
+            case 'o':
+            case 'g': return GObject.TYPE_STRING;
+
+            case 'v': return GObject.TYPE_VARIANT;
+
+            case 'as': return GObject.type_from_name('GStrv');
+            case 'ao': return GObject.type_from_name('GStrv');
+            case 'ay': return GObject.TYPE_STRING; //FIXME
+            case 'aay': return GObject.type_from_name('GStrv'); //FIXME
+
+            //case 'a{sv}': return GLib.HashTable.$gtype;
+
+            // fall through to exposing the raw variant
+            default: return GObject.TYPE_VARIANT;
+            }
+        });
+    }
+
+    return [sigName, sig];
+}
+
+function _createPropertyDefinition(propInfo) {
+    let [first, ...rest] = propInfo.name;
+    let propName = [first.toLowerCase(), ...rest].join('');
+
+    let flags = 0;
+    if (propInfo.flags & Gio.DBusPropertyInfoFlags.READABLE)
+        flags |= GObject.ParamFlags.READABLE;
+    if (propInfo.flags & Gio.DBusPropertyInfoFlags.WRITABLE)
+        flags |= GObject.ParamFlags.WRITEABLE;
+
+    let pspec = null;
+    switch (propInfo.signature) {
+    case 'b': pspec = GObject.ParamSpec.boolean(
+        propName,
+        propName,
+        propName,
+        flags,
+        false
+    ); break;
+
+    case 'y': pspec = GObject.ParamSpec.uchar(
+        propName,
+        propName,
+        propName,
+        flags,
+        0,
+        GLib.MAXUINT8,
+        0
+    ); break;
+
+    case 'n': pspec = GObject.ParamSpec.int(
+        propName,
+        propName,
+        propName,
+        flags,
+        GLib.MININT16,
+        GLib.MAXINT16,
+        0
+    ); break;
+
+    case 'i': pspec = GObject.ParamSpec.int(
+        propName,
+        propName,
+        propName,
+        flags,
+        GLib.MININT32,
+        GLib.MAXINT32,
+        0
+    ); break;
+
+    case 'x': pspec = GObject.ParamSpec.int(
+        propName,
+        propName,
+        propName,
+        flags,
+        GLib.MININT64,
+        GLib.MAXINT64,
+        0
+    ); break;
+
+    case 'q': pspec = GObject.ParamSpec.uint(
+        propName,
+        propName,
+        propName,
+        flags,
+        0,
+        GLib.MAXUINT16,
+        0
+    ); break;
+
+    case 'u': pspec = GObject.ParamSpec.uint(
+        propName,
+        propName,
+        propName,
+        flags,
+        0,
+        GLib.MAXUINT32,
+        0
+    ); break;
+
+    case 't': pspec = GObject.ParamSpec.uint(
+        propName,
+        propName,
+        propName,
+        flags,
+        0,
+        GLib.MAXUINT64,
+        0
+    ); break;
+    //case 'h': ???
+
+    case 'd': pspec = GObject.ParamSpec.double(
+        propName,
+        propName,
+        propName,
+        flags,
+        GLib.MINDOUBLE,
+        GLib.MAXDOUBLE,
+        0.0
+    ); break;
+
+    case 's':
+    case 'o':
+    case 'g': pspec = GObject.ParamSpec.string(
+        propName,
+        propName,
+        propName,
+        flags,
+        ''
+    ); break;
+
+    case 'v':
+    case 'as':
+    case 'ao':
+    case 'ay':
+    case 'aay':
+
+    // fall through to exposing the raw variant
+    default: pspec = GObject.param_spec_variant(
+        propName,
+        propName,
+        propName,
+        new GLib.VariantType(propInfo.signature),
+        null,
+        flags
+    ); break;
+    }
+
+    return [propName, pspec];
+}
+
+function _createProxySubclass(interfaceXml) {
+    var info = _newInterfaceInfo(interfaceXml);
+    var iname = info.name;
+    var klassName = `${iname.split('.').pop()}Proxy`;
+
+    let params = { GTypeName: klassName };
+    let signalMap = new Map();
+    let propMap = new Map();
+
+    if (info.signals.length) {
+        params.Signals = {};
+        info.signals.forEach(sig => {
+            let [name, def] = _createSignalDefinition(sig);
+            signalMap.set(sig.name, name);
+            params.Signals[name] = def;
+        });
+    }
+
+    if (info.properties.length) {
+        params.Properties = {};
+        info.properties.forEach(prop => {
+            let [name, def] = _createPropertyDefinition(prop);
+            propMap.set(prop.name, name);
+            params.Properties[name] = def;
+        });
+    }
+
+    this[klassName] = GObject.registerClass(params,
+        class extends Gio.DBusProxy {
+            static new(bus, flags, name, path, cancellable) {
+                let obj = new this[klassName]({
+                    gConnection: bus,
+                    gFlags: flags,
+                    gName: name,
+                    gObjectPath: path,
+                    gInterfaceName: info.name,
+                    gInterfaceInfo: info
+                });
+                return new Promise((resolve, reject) => {
+                    obj.init_async(GLib.PRIORITY_DEFAULT, cancellable, (o, res) => {
+                        try {
+                            obj.init_finish(res);
+                            resolve(obj);
+                        } catch (e) {
+                            reject(e);
+                        }
+                    });
+                });
+            }
+
+            _init(gParams = {}) {
+                if (gParams.hasOwnProperty('g_flags'))
+                    gParams.g_flags |= Gio.DBusProxyFlags.GET_INVALIDATED_PROPERTIES;
+                else if (gParams.hasOwnProperty('gFlags'))
+                    gParams.gFlags |= Gio.DBusProxyFlags.GET_INVALIDATED_PROPERTIES;
+                else
+                    gParams.g_flags = Gio.DBusProxyFlags.GET_INVALIDATED_PROPERTIES;
+
+                super._init(gParams);
+
+                if (params.hasOwnProperty('Signals'))
+                    this.connect('g-signal',
+                        this._onGSignal.bind(this));
+                if (params.hasOwnProperty('Properties'))
+                    this.connect('g-properties-changed',
+                        this._onGPropertiesChanged.bind(this));
+
+                for (let [busName, name] of propMap) {
+                    let pInfo = info.lookup_property(busName);
+                    let propParams = {
+                        configurable: true,
+                        enumerable: true
+                    };
+
+                    if (pInfo.flags & Gio.DBusPropertyInfoFlags.READABLE)
+                        propParams.get =
+                            Lang.bind(this, _propertyGetter, busName);
+
+                    if (pInfo.flags & Gio.DBusPropertyInfoFlags.WRITABLE)
+                        propParams.set =
+                            Lang.bind(this, _propertySetter, busName, pInfo.signature);
+
+                    Object.defineProperty(this, name, propParams);
+                }
+
+                info.methods.forEach(method => {
+                    let [first, ...rest] = method.name;
+                    let name = [first.toLowerCase(), ...rest].join('');
+                    this[name] = _makeProxyMethod(method, 'promise');
+                });
+            }
+
+            _onGSignal(proxy, sender, signal, params) {
+                let args = [];
+                for (let i = 0; i < params.n_children(); i++) {
+                    let v = params.get_child_value(i);
+                    if (v.get_type().is_basic())
+                        args.push(v.unpack());
+                    else
+                        args.push(v);
+                }
+                this.emit(signalMap.get(signal), ...args);
+            }
+
+            _onGPropertiesChanged(proxy, changedProps) {
+                for (let propName in changedProps.deep_unpack())
+                    this.notify(propMap.get(propName));
+            }
+        });
+    return this[klassName];
+}
 
 function _newNodeInfo(constructor, value) {
     if (typeof value == 'string')
@@ -401,6 +690,7 @@ function _init() {
     Gio.DBusProxy.prototype.disconnectSignal = Signals._disconnect;
 
     Gio.DBusProxy.makeProxyWrapper = _makeProxyWrapper;
+    Gio.DBusProxy.createProxySubclass = _createProxySubclass;
 
     // Some helpers
     _wrapFunction(Gio.DBusNodeInfo, 'new_for_xml', _newNodeInfo);
