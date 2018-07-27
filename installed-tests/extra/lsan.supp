@@ -10,3 +10,6 @@ leak:libfontconfig.so.1
 # https://bugzilla.mozilla.org/show_bug.cgi?id=1478679
 leak:js::coverage::LCovSource::writeScript
 leak:js/src/util/Text.cpp
+
+# TEMP
+leak:g_malloc
