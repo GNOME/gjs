@@ -415,12 +415,12 @@ describe('Life, the Universe and Everything', function () {
         expect(Regress.TestEnum.param(Regress.TestEnum.VALUE4)).toEqual('value4');
     });
 
-    it('can be answered with GObject.set()', function() {
+    xit('can be answered with GObject.set()', function() {
         let o = new Regress.TestObj();
         o.set({ string: 'Answer', int: 42 });
         expect(o.string).toBe('Answer');
         expect(o.int).toBe(42);
-    });
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/issues/113');
 
     describe('Object-valued GProperty', function () {
         let o1, t1, t2;
