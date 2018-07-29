@@ -9,7 +9,7 @@ function do_Install_Dependencies(){
 
         # Base dependencies
         apt-get -y     install build-essential git clang patch bison flex \
-                               python-dev python3-dev \
+                               ninja-build python-dev python3-dev \
                                autotools-dev autoconf gettext pkgconf autopoint yelp-tools \
                                docbook docbook-xsl libtext-csv-perl \
                                zlib1g-dev libdbus-glib-1-dev \
