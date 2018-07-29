@@ -1958,8 +1958,8 @@ _Pragma("GCC diagnostic pop")
          */
         if (value.isObjectOrNull()) {
             JS::RootedObject bytearray_obj(context, value.toObjectOrNull());
-            if (JS_IsUint8Array(bytearray_obj) &&
-                array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
+            if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY &&
+                JS_IsUint8Array(bytearray_obj)) {
                 arg->v_pointer = gjs_byte_array_get_byte_array(bytearray_obj);
                 break;
             } else {
