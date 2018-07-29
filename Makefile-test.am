@@ -342,6 +342,7 @@ JS_LOG_COMPILER = $$LOG_COMPILER $$LOG_FLAGS $(top_builddir)/minijasmine
 
 DEBUGGER_LOG_DRIVER = $(LOG_DRIVER)
 DEBUGGER_LOG_COMPILER = $(top_srcdir)/installed-tests/debugger-test.sh
+EXTRA_DIST += installed-tests/debugger-test.sh
 
 CODE_COVERAGE_IGNORE_PATTERN = */{include,mfbt,gjs/test}/*
 CODE_COVERAGE_GENHTML_OPTIONS = 			\
