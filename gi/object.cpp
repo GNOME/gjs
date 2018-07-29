@@ -717,7 +717,11 @@ bool ObjectPrototype::lazy_define_gobject_property(JSContext* cx,
     JS::RootedValue private_id(cx, JS::StringValue(JSID_TO_STRING(id)));
     if (!gjs_define_property_dynamic(
             cx, obj, name, "gobject_prop", &ObjectBase::prop_getter,
-            &ObjectBase::prop_setter, private_id, GJS_MODULE_PROP_FLAGS))
+            &ObjectBase::prop_setter, private_id,
+            // Make property configurable so that interface properties can be
+            // overridden by GObject.ParamSpec.override in the class that
+            // implements them
+            GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT))
         return false;
 
     *resolved = true;
