@@ -1956,7 +1956,7 @@ _Pragma("GCC diagnostic pop")
         /* First, let's handle the case where we're passed an instance
          * of Uint8Array and it needs to be marshalled to GByteArray.
          */
-        if (value.isObjectOrNull()) {
+        if (value.isObject()) {
             JS::RootedObject bytearray_obj(context, value.toObjectOrNull());
             if (JS_IsUint8Array(bytearray_obj) &&
                 array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
