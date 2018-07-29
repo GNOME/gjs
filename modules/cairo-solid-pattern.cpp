@@ -103,10 +103,9 @@ createRGBA_func(JSContext *context,
 }
 
 JSFunctionSpec gjs_cairo_solid_pattern_proto_funcs[] = {
-    JS_FS("createRGB", createRGB_func, 0, 0),
-    JS_FS("createRGBA", createRGBA_func, 0, 0),
-    JS_FS_END
-};
+    JS_FN("createRGB", createRGB_func, 0, 0),
+    JS_FN("createRGBA", createRGBA_func, 0, 0),
+    JS_FS_END};
 
 JSFunctionSpec gjs_cairo_solid_pattern_static_funcs[] = { JS_FS_END };
 

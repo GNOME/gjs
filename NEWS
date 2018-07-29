@@ -1,3 +1,112 @@
+NEXT
+----
+
+- GJS now depends on SpiderMonkey 60 and requires a compiler capable of C++14.
+
+- New JavaScript features! This version of GJS is based on SpiderMonkey 60, an
+  upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 52.
+  Here are the highlights of the new JavaScript features.
+  For more information, look them up on MDN or devdocs.io.
+
+  * New syntax
+    + `for await (... of ...)` syntax is used for async iteration.
+    + The rest operator is now supported in object destructuring: e.g.
+      `({a, b, ...cd} = {a: 1, b: 2, c: 3, d: 4});`
+    + The spread operator is now supported in object literals: e.g.
+      `mergedObject = {...obj1, ...obj2};`
+    + Generator methods can now be async, using the `async function*` syntax,
+      or `async* f() {...}` method shorthand.
+    + It's now allowed to omit the variable binding from a catch statement, if
+      you don't need to access the thrown exception: `try {...} catch {}`
+
+  * New APIs
+    + Promise.prototype.finally(), popular in many third-party Promise
+      libraries, is now available natively.
+    + String.prototype.toLocaleLowerCase() and
+      String.prototype.toLocaleUpperCase() now take an optional locale or
+      array of locales.
+    + Intl.PluralRules is now available.
+    + Intl.NumberFormat.protoype.formatToParts() is now available.
+    + Intl.Collator now has a caseFirst option.
+    + Intl.DateTimeFormat now has an hourCycle option.
+
+  * New behaviour
+    + There are a lot of minor behaviour changes as SpiderMonkey's JS
+      implementation conforms ever closer to ECMAScript standards. For complete
+      information, read the Firefox developer release notes:
+      https://developer.mozilla.org/en-US/Firefox/Releases/53#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/54#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/55#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/56#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/57#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/58#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/59#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/60#JavaScript
+
+  * Backwards-incompatible changes
+    + Conditional catch clauses have been removed, as they were a Mozilla
+      extension which will not be standardized. This requires some attention in
+      GJS programs, as previously we condoned code like `catch (e if
+      e.matches(Gio.IOError, Gio.IOError.EXISTS))`  with a comment in
+      overrides/GLib.js, so it's likely this is used in several places.
+    + The nonstandard `for each (... in ...)` loop was removed.
+    + The nonstandard legacy lambda syntax (`function(x) x*x`) was removed.
+    + The nonstandard Mozilla iteration protocol was removed, as well as
+      nonstandard Mozilla generators, including the Iterator and StopIteration
+      objects, and the Function.prototype.isGenerator() method.
+    + Array comprehensions and generator comprehensions have been removed.
+    + Several nonstandard methods were removed: ArrayBuffer.slice() (but not
+      the standard version, ArrayBuffer.prototype.slice()),
+      Date.prototype.toLocaleFormat(), Function.prototype.isGenerator(),
+      Object.prototype.watch(), and Object.prototype.unwatch().
+
+- Many of the above backwards-incompatible changes can be caught by scanning
+  your source code using https://gitlab.gnome.org/ptomato/moz60tool, or
+  https://extensions.gnome.org/extension/1455/spidermonkey-60-migration-validator/
+
+- Deprecation: the custom ByteArray is now discouraged. Instead of ByteArray,
+  use Javascript's native Uint8Array. The ByteArray module still contains
+  functions for converting between byte arrays, strings, and GLib.Bytes
+  instances.
+
+  The old ByteArray will continue to work as before, except that Uint8Array
+  will now be returned from introspected functions that previously returned a
+  ByteArray. To keep your old code working, change this:
+
+      let byteArray = functionThatReturnsByteArray();
+
+  to this:
+
+      let byteArray = new ByteArray.ByteArray(functionThatReturnsByteArray());
+
+  To port to the new code:
+
+  * ByteArray.ByteArray -> Uint8Array
+  * ByteArray.fromArray() -> Uint8Array.from()
+  * ByteArray.ByteArray.prototype.toString() -> ByteArray.toString()
+  * ByteArray.ByteArray.prototype.toGBytes() -> ByteArray.toGBytes()
+  * ByteArray.fromString(), ByteArray.fromGBytes() remain the same
+
+  * Unlike ByteArray, Uint8Array's length is fixed. Assigning an element past
+    the end of a ByteArray would lengthen the array. Now, it is ignored.
+    Instead use Uint8Array.of(), for example, this code:
+
+        let a = ByteArray.fromArray([97, 98, 99, 100]);
+        a[4] = 101;
+
+    should be replaced by this code:
+
+        let a = Uint8Array.from([97, 98, 99, 100]);
+        a = Uint8Array.of(...a, 101);
+
+    The length of the byte array must be set at creation time. This code will
+    not work anymore:
+
+        let a = new ByteArray.ByteArray();
+        a[0] = 255;
+
+    Instead, use "new Uint8Array(1)" to reserve the correct length.
+
 Version 1.53.4
 --------------
 

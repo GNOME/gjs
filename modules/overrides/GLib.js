@@ -67,7 +67,7 @@ function _read_single_type(signature, forceSimple) {
 }
 
 function _makeBytes(byteArray) {
-    if (byteArray instanceof ByteArray.ByteArray)
+    if (byteArray instanceof Uint8Array || byteArray instanceof ByteArray.ByteArray)
         return byteArray.toGBytes();
     else
         return new GLib.Bytes(byteArray);
@@ -250,7 +250,7 @@ function _init() {
     GLib = this;
 
     // small HACK: we add a matches() method to standard Errors so that
-    // you can do "catch(e if e.matches(Ns.FooError, Ns.FooError.SOME_CODE))"
+    // you can do "if (e.matches(Ns.FooError, Ns.FooError.SOME_CODE))"
     // without checking instanceof
     Error.prototype.matches = function() { return false; };
 

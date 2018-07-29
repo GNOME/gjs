@@ -218,36 +218,35 @@ JSNATIVE_TEST_FUNC_BEGIN(object_invalid_type)
 JSNATIVE_TEST_FUNC_END
 
 static JSFunctionSpec native_test_funcs[] = {
-    JS_FS("noArgs", no_args, 0, 0),
-    JS_FS("noArgsIgnoreTrailing", no_args_ignore_trailing, 0, 0),
-    JS_FS("boolArgNoAssert", bool_arg_no_assert, 0, 0),
-    JS_FS("intArgNoAssert", int_arg_no_assert, 0, 0),
-    JS_FS("objectArgNoAssert", object_arg_no_assert, 0, 0),
-    JS_FS("optionalIntArgsNoAssert", optional_int_args_no_assert, 0, 0),
-    JS_FS("argsIgnoreTrailing", args_ignore_trailing, 0, 0),
-    JS_FS("oneOfEachType", one_of_each_type, 0, 0),
-    JS_FS("optionalArgsAll", optional_args_all, 0, 0),
-    JS_FS("optionalArgsOnlyRequired", optional_args_only_required, 0, 0),
-    JS_FS("onlyOptionalArgs", only_optional_args, 0, 0),
-    JS_FS("unsignedEnumArg", unsigned_enum_arg, 0, 0),
-    JS_FS("signedEnumArg", signed_enum_arg, 0, 0),
-    JS_FS("oneOfEachNullableType", one_of_each_nullable_type, 0, 0),
-    JS_FS("unwindFreeTest", unwind_free_test, 0, 0),
-    JS_FS("boolInvalidNullable", bool_invalid_nullable, 0, 0),
-    JS_FS("intInvalidNullable", int_invalid_nullable, 0, 0),
-    JS_FS("unsignedInvalidNullable", unsigned_invalid_nullable, 0, 0),
-    JS_FS("int64_tInvalidNullable", int64_t_invalid_nullable, 0, 0),
-    JS_FS("doubleInvalidNullable", double_invalid_nullable, 0, 0),
-    JS_FS("boolInvalidType", bool_invalid_type, 0, 0),
-    JS_FS("intInvalidType", int_invalid_type, 0, 0),
-    JS_FS("unsignedInvalidType", unsigned_invalid_type, 0, 0),
-    JS_FS("int64_tInvalidType", int64_t_invalid_type, 0, 0),
-    JS_FS("doubleInvalidType", double_invalid_type, 0, 0),
-    JS_FS("GjsAutoCharInvalidType", GjsAutoChar_invalid_type, 0, 0),
-    JS_FS("GjsAutoJSCharInvalidType", GjsAutoJSChar_invalid_type, 0, 0),
-    JS_FS("objectInvalidType", object_invalid_type, 0, 0),
-    JS_FS_END
-};
+    JS_FN("noArgs", no_args, 0, 0),
+    JS_FN("noArgsIgnoreTrailing", no_args_ignore_trailing, 0, 0),
+    JS_FN("boolArgNoAssert", bool_arg_no_assert, 0, 0),
+    JS_FN("intArgNoAssert", int_arg_no_assert, 0, 0),
+    JS_FN("objectArgNoAssert", object_arg_no_assert, 0, 0),
+    JS_FN("optionalIntArgsNoAssert", optional_int_args_no_assert, 0, 0),
+    JS_FN("argsIgnoreTrailing", args_ignore_trailing, 0, 0),
+    JS_FN("oneOfEachType", one_of_each_type, 0, 0),
+    JS_FN("optionalArgsAll", optional_args_all, 0, 0),
+    JS_FN("optionalArgsOnlyRequired", optional_args_only_required, 0, 0),
+    JS_FN("onlyOptionalArgs", only_optional_args, 0, 0),
+    JS_FN("unsignedEnumArg", unsigned_enum_arg, 0, 0),
+    JS_FN("signedEnumArg", signed_enum_arg, 0, 0),
+    JS_FN("oneOfEachNullableType", one_of_each_nullable_type, 0, 0),
+    JS_FN("unwindFreeTest", unwind_free_test, 0, 0),
+    JS_FN("boolInvalidNullable", bool_invalid_nullable, 0, 0),
+    JS_FN("intInvalidNullable", int_invalid_nullable, 0, 0),
+    JS_FN("unsignedInvalidNullable", unsigned_invalid_nullable, 0, 0),
+    JS_FN("int64_tInvalidNullable", int64_t_invalid_nullable, 0, 0),
+    JS_FN("doubleInvalidNullable", double_invalid_nullable, 0, 0),
+    JS_FN("boolInvalidType", bool_invalid_type, 0, 0),
+    JS_FN("intInvalidType", int_invalid_type, 0, 0),
+    JS_FN("unsignedInvalidType", unsigned_invalid_type, 0, 0),
+    JS_FN("int64_tInvalidType", int64_t_invalid_type, 0, 0),
+    JS_FN("doubleInvalidType", double_invalid_type, 0, 0),
+    JS_FN("GjsAutoCharInvalidType", GjsAutoChar_invalid_type, 0, 0),
+    JS_FN("GjsAutoJSCharInvalidType", GjsAutoJSChar_invalid_type, 0, 0),
+    JS_FN("objectInvalidType", object_invalid_type, 0, 0),
+    JS_FS_END};
 
 static void
 setup(GjsUnitTestFixture *fx,
@@ -266,7 +265,7 @@ run_code(GjsUnitTestFixture *fx,
 {
     const char *script = (const char *) code;
 
-    JS::CompileOptions options(fx->cx, JSVERSION_UNKNOWN);
+    JS::CompileOptions options(fx->cx);
     options.setFileAndLine("unit test", 1);
 
     JS::RootedValue ignored(fx->cx);
@@ -282,7 +281,7 @@ run_code_expect_exception(GjsUnitTestFixture *fx,
 {
     const char *script = (const char *) code;
 
-    JS::CompileOptions options(fx->cx, JSVERSION_UNKNOWN);
+    JS::CompileOptions options(fx->cx);
     options.setFileAndLine("unit test", 1);
 
     JS::RootedValue ignored(fx->cx);

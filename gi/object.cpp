@@ -1939,9 +1939,8 @@ bool ObjectPrototype::to_string_impl(JSContext* cx, const JS::CallArgs& args) {
 static const struct JSClassOps gjs_object_class_ops = {
     &ObjectBase::add_property,
     nullptr,  // deleteProperty
-    nullptr,  // getProperty
-    nullptr,  // setProperty
     nullptr,  // enumerate
+    nullptr,  // newEnumerate
     &ObjectBase::resolve,
     nullptr,  // mayResolve
     &ObjectBase::finalize,
@@ -1977,11 +1976,11 @@ JSPropertySpec gjs_object_instance_proto_props[] = {
 };
 
 JSFunctionSpec gjs_object_instance_proto_funcs[] = {
-    JS_FS("_init", &ObjectBase::init, 0, 0),
-    JS_FS("connect", &ObjectBase::connect, 0, 0),
-    JS_FS("connect_after", &ObjectBase::connect_after, 0, 0),
-    JS_FS("emit", &ObjectBase::emit, 0, 0),
-    JS_FS("toString", &ObjectBase::to_string, 0, 0),
+    JS_FN("_init", &ObjectBase::init, 0, 0),
+    JS_FN("connect", &ObjectBase::connect, 0, 0),
+    JS_FN("connect_after", &ObjectBase::connect_after, 0, 0),
+    JS_FN("emit", &ObjectBase::emit, 0, 0),
+    JS_FN("toString", &ObjectBase::to_string, 0, 0),
     JS_FS_END};
 
 bool

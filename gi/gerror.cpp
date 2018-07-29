@@ -255,15 +255,13 @@ error_constructor_value_of(JSContext *context,
  * class have.
  */
 static const struct JSClassOps gjs_error_class_ops = {
-    NULL,  /* addProperty */
-    NULL,  /* deleteProperty */
-    NULL,  /* getProperty */
-    NULL,  /* setProperty */
-    NULL,  /* enumerate */
-    NULL,  /* resolve */
-    nullptr,  /* mayResolve */
-    error_finalize
-};
+    nullptr,  // addProperty
+    nullptr,  // deleteProperty
+    nullptr,  // enumerate
+    nullptr,  // newEnumerate
+    nullptr,  // resolve
+    nullptr,  // mayResolve
+    error_finalize};
 
 struct JSClass gjs_error_class = {
     "GLib_Error",
@@ -281,14 +279,12 @@ JSPropertySpec gjs_error_proto_props[] = {
 };
 
 JSFunctionSpec gjs_error_proto_funcs[] = {
-    JS_FS("toString", error_to_string, 0, GJS_MODULE_PROP_FLAGS),
-    JS_FS_END
-};
+    JS_FN("toString", error_to_string, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FS_END};
 
 static JSFunctionSpec gjs_error_constructor_funcs[] = {
-    JS_FS("valueOf", error_constructor_value_of, 0, GJS_MODULE_PROP_FLAGS),
-    JS_FS_END
-};
+    JS_FN("valueOf", error_constructor_value_of, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FS_END};
 
 void
 gjs_define_error_class(JSContext       *context,
@@ -427,8 +423,6 @@ proto_key_from_error_enum(int val)
         return JSProto_RangeError;
     case GJS_JS_ERROR_REFERENCE_ERROR:
         return JSProto_ReferenceError;
-    case GJS_JS_ERROR_STOP_ITERATION:
-        return JSProto_StopIteration;
     case GJS_JS_ERROR_SYNTAX_ERROR:
         return JSProto_SyntaxError;
     case GJS_JS_ERROR_TYPE_ERROR:

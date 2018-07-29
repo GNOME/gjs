@@ -17,7 +17,9 @@ a() at next.debugger.js:5:0
 toplevel at next.debugger.js:11:0
 db> n
 toplevel at next.debugger.js:11:0
+db> n
+toplevel at next.debugger.js:12:0
 No value returned.
 db> n
-toplevel at next.debugger.js:11:4
+toplevel at next.debugger.js:12:0
 Program exited with code 0

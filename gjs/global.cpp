@@ -207,19 +207,17 @@ gjs_printerr(JSContext *context,
 
 class GjsGlobal {
     static constexpr JSClassOps class_ops = {
-        nullptr,  /* addProperty */
-        nullptr,  /* deleteProperty */
-        nullptr,  /* getProperty */
-        nullptr,  /* setProperty */
-        nullptr,  /* enumerate */
-        nullptr,  /* resolve */
-        nullptr,  /* mayResolve */
-        nullptr,  /* finalize */
-        nullptr,  /* call */
-        nullptr,  /* hasInstance */
-        nullptr,  /* construct */
-        JS_GlobalObjectTraceHook
-    };
+        nullptr,  // addProperty
+        nullptr,  // deleteProperty
+        nullptr,  // enumerate
+        nullptr,  // newEnumerate
+        nullptr,  // resolve
+        nullptr,  // mayResolve
+        nullptr,  // finalize
+        nullptr,  // call
+        nullptr,  // hasInstance
+        nullptr,  // construct
+        JS_GlobalObjectTraceHook};
 
     static constexpr JSClass klass = {
         "GjsGlobal",
@@ -228,12 +226,11 @@ class GjsGlobal {
     };
 
     static constexpr JSFunctionSpec static_funcs[] = {
-        JS_FS("log", gjs_log, 1, GJS_MODULE_PROP_FLAGS),
-        JS_FS("logError", gjs_log_error, 2, GJS_MODULE_PROP_FLAGS),
-        JS_FS("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
-        JS_FS("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS),
-        JS_FS_END
-    };
+        JS_FN("log", gjs_log, 1, GJS_MODULE_PROP_FLAGS),
+        JS_FN("logError", gjs_log_error, 2, GJS_MODULE_PROP_FLAGS),
+        JS_FN("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
+        JS_FN("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS),
+        JS_FS_END};
 
 public:
 
@@ -241,7 +238,6 @@ public:
     create(JSContext *cx)
     {
         JS::CompartmentOptions compartment_options;
-        compartment_options.behaviors().setVersion(JSVERSION_LATEST);
         JS::RootedObject global(cx,
             JS_NewGlobalObject(cx, &GjsGlobal::klass, nullptr,
                                JS::FireOnNewGlobalHook, compartment_options));

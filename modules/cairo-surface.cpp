@@ -113,7 +113,7 @@ JSFunctionSpec gjs_cairo_surface_proto_funcs[] = {
     // flush
     // getContent
     // getFontOptions
-    JS_FS("getType", getType_func, 0, 0),
+    JS_FN("getType", getType_func, 0, 0),
     // markDirty
     // markDirtyRectangle
     // setDeviceOffset
@@ -123,9 +123,8 @@ JSFunctionSpec gjs_cairo_surface_proto_funcs[] = {
     // copyPage
     // showPage
     // hasShowTextGlyphs
-    JS_FS("writeToPNG", writeToPNG_func, 0, 0),
-    JS_FS_END
-};
+    JS_FN("writeToPNG", writeToPNG_func, 0, 0),
+    JS_FS_END};
 
 JSFunctionSpec gjs_cairo_surface_static_funcs[] = { JS_FS_END };
 
