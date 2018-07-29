@@ -89,7 +89,7 @@ AC_MSG_CHECKING([whether SpiderMonkey was configured with --enable-debug])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 #include <js-config.h>
 #ifdef JS_DEBUG
-#error debug yes, if we didn't already error out due to DEBUG not being defined
+#error debug yes, if we didnt already error out due to DEBUG not being defined
 #endif
 ]])], [
   AC_MSG_RESULT([no])
