@@ -1,7 +1,16 @@
-NEXT
-----
+Version 1.53.90
+---------------
 
 - GJS now depends on SpiderMonkey 60 and requires a compiler capable of C++14.
+
+- GJS includes a simple debugger now. It has basic stepping, breaking, and
+  printing commands, that work like GDB. Activate it by running the GJS console
+  interpreter with the -d or --debugger flag before the name of the JS program
+  on the command line.
+
+- New API for programs that embed GJS: gjs_context_setup_debugger_console().
+  To integrate the debugger into programs that embed the GJS interpreter, call
+  this before executing the JS program.
 
 - New JavaScript features! This version of GJS is based on SpiderMonkey 60, an
   upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 52.
@@ -106,6 +115,38 @@ NEXT
         a[0] = 255;
 
     Instead, use "new Uint8Array(1)" to reserve the correct length.
+
+- Closed bugs and merge requests:
+
+  * Run tests using real software [#178, !192, Claudio André]
+  * Script tests are missing some errors [#179, !192, Claudio André]
+  * Create a '--disable-readline' option and use it [!196, Claudio André]
+  * CI: stop using Fedora for clang builds [!198, Claudio André]
+  * Expose GObject static property symbols. [!197, Evan Welsh]
+  * CI fixes [!200, Claudio André]
+  * Docker images creation [!201, Claudio André]
+  * Get Docker images built and stored in GJS registry [#185, !203, !208,
+    Claudio André, Philip Chimento]
+  * Clear the static analysis image a bit more [!205, Claudio André]
+  * Rename the packaging job to flatpak [!210, Claudio André]
+  * Create SpiderMonkey 60 docker images [!202, Claudio André]
+  * Debugger [#110, !204, Philip Chimento]
+  * Add convenience g_object_set() replacement [!213, Florian Müllner]
+  * Add dependencies of the real tests (examples) [!215, Claudio André]
+  * CWE-126 [#174, !218, Philip Chimento]
+  * gjs no longer builds after recent autoconf-archive updates [#149, !217,
+    Philip Chimento]
+  * gjs-1.52.0 fails to compile against x86_64 musl systems [#132, !214, Philip
+    Chimento]
+  * Run the GTK real tests (recently added) [!212, Claudio André]
+  * Fix thorough tests failures [!220, Philip Chimento]
+  * Port to SpiderMonkey 60 [#161, !199, Philip Chimento]
+  * Replace ByteArray with native ES6 TypedArray [#5, !199, Philip Chimento]
+  * Overriding GInterface properties broke [#186, !216, Florian Müllner, Philip
+    Chimento]
+  * Avoid segfault when checking for GByteArray [!221, Florian Müllner]
+
+- Various build fixes [Philip Chimento]
 
 Version 1.53.4
 --------------
