@@ -3,10 +3,12 @@ const WarnLib = imports.gi.WarnLib;
 
 // We use Gio to have some objects that we know exist
 imports.gi.versions.Gdk = '3.0';
+imports.gi.versions.Gtk = '3.0';
 const Gdk = imports.gi.Gdk;
 const GLib = imports.gi.GLib;
 const Gio = imports.gi.Gio;
 const GObject = imports.gi.GObject;
+const Gtk = imports.gi.Gtk;
 
 describe('Life, the Universe and Everything', function () {
     it('includes booleans', function () {
@@ -421,6 +423,35 @@ describe('Life, the Universe and Everything', function () {
         expect(o.string).toBe('Answer');
         expect(o.int).toBe(42);
     }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/issues/113');
+
+    describe('Object properties', function () {
+        let o1;
+        beforeEach(function () {
+            const ui = `
+                <interface>
+                  <object class="GtkButton" id="button">
+                    <property name="label">Click me</property>
+                  </object>
+                </interface>`;
+
+            Gtk.init(null);
+
+            let builder = Gtk.Builder.new_from_string(ui, -1);
+            o1 = builder.get_object('button');
+        });
+
+        it('are found on the GObject itself', function () {
+            expect(o1.label).toBe('Click me');
+        });
+
+        it('are found on the GObject\'s parents', function () {
+            expect(o1.visible).toBeFalsy();
+        });
+
+        it('are found on the GObject\'s interfaces', function () {
+            expect(o1.action_name).toBeNull();
+        });
+    });
 
     describe('Object-valued GProperty', function () {
         let o1, t1, t2;
