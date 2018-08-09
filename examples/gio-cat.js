@@ -11,7 +11,7 @@ function cat(filename) {
         try {
             contents = f.load_contents_finish(res)[1];
         } catch (e) {
-            log(`*** ERROR: ${  e.message}`);
+            logError(e);
             loop.quit();
             return;
         }
