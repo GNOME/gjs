@@ -4,7 +4,14 @@
     },
     "extends": "eslint:recommended",
     "rules": {
-        "array-bracket-spacing": ["error", "never"],
+        "array-bracket-newline": [
+            "error",
+            "consistent"
+        ],
+        "array-bracket-spacing": [
+            "error",
+            "never"
+        ],
         "brace-style": "error",
         "comma-spacing": [
             "error",
@@ -44,7 +51,24 @@
                 "allowEmptyCatch": true
             }
         ],
-        "nonblock-statement-body-position": ["error", "below"],
+        "no-implicit-coercion": [
+            "error",
+            {
+                "allow": ["!!"]
+            }
+        ],
+        "nonblock-statement-body-position": [
+            "error",
+            "below"
+        ],
+        "object-curly-newline": [
+            "error",
+            {
+                "consistent": true
+            }
+        ],
+        "object-curly-spacing": "error",
+        "prefer-template": "error",
         "quotes": [
             "error",
             "single",

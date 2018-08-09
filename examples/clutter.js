@@ -4,14 +4,15 @@ Clutter.init(null);
 
 let stage = new Clutter.Stage();
 
-let texture = new Clutter.Texture({ filename: 'test.jpg',
-                                    reactive: true });
+let texture = new Clutter.Texture({
+    filename: 'test.jpg',
+    reactive: true,
+});
 
-texture.connect('button-press-event',
-                function(o, event) {
-                    log('Clicked!');
-                    return true;
-                });
+texture.connect('button-press-event', () => {
+    log('Clicked!');
+    return Clutter.EVENT_STOP;
+});
 
 let color = new Clutter.Color();
 color.from_string('Black');
