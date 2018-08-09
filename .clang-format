@@ -13,15 +13,8 @@ ForEachMacros: []
 IndentWidth: 4
 PointerAlignment: Left  # Google style allows both, but clang-format doesn't
 ---
-# We rely mostly on eslint for JavaScript linting, but this is a lax collection
-# of rules that will auto-fix some JS things. We really should use eslint --fix
-# instead, but we need to find a way to get that to operate on diffs like
-# clang-format does.
+# We should use eslint --fix instead, but we need to find a way to get that to
+# operate on diffs like clang-format does.
 Language: JavaScript
-AlignAfterOpenBracket: DontAlign
-AllowShortFunctionsOnASingleLine: false
-JavaScriptQuotes: Single
-PenaltyBreakBeforeFirstCallParameter: 1000000
-PenaltyExcessCharacter: 1
-SpacesInContainerLiterals: false
+DisableFormat: true
 ...

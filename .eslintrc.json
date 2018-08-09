@@ -4,6 +4,14 @@
     },
     "extends": "eslint:recommended",
     "rules": {
+        "array-bracket-newline": [
+            "error",
+            "consistent"
+        ],
+        "array-bracket-spacing": [
+            "error",
+            "never"
+        ],
         "brace-style": "error",
         "comma-spacing": [
             "error",
@@ -36,6 +44,20 @@
                 "allowEmptyCatch": true
             }
         ],
+        "no-implicit-coercion": [
+            "error",
+            {
+                "allow": ["!!"]
+            }
+        ],
+        "object-curly-newline": [
+            "error",
+            {
+                "consistent": true
+            }
+        ],
+        "object-curly-spacing": "error",
+        "prefer-template": "error",
         "quotes": [
             "error",
             "single",
