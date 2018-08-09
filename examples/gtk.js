@@ -23,7 +23,7 @@ let window = new Gtk.Window ({
 window.title = 'Hello World!';
 
 // This is a callback function
-function onDeleteEvent(widget, event) {
+function onDeleteEvent() {
     log('delete-event emitted');
     // If you return false in the "delete_event" signal handler, Gtk will emit
     // the "destroy" signal.
