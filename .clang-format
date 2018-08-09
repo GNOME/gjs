@@ -2,7 +2,7 @@
 # Global Options Go Here
 IndentWidth: 4
 ColumnLimit: 80
----
+--
 Language: Cpp
 BasedOnStyle: Google
 AccessModifierOffset: -3  # to match cpplint
@@ -12,18 +12,9 @@ DerivePointerAlignment: false
 ForEachMacros: []
 IndentWidth: 4
 PointerAlignment: Left  # Google style allows both, but clang-format doesn't
-SpacesBeforeTrailingComments: 2
----
-# We rely mostly on eslint for JavaScript linting, but this is a lax collection
-# of rules that will auto-fix some JS things. We really should use eslint --fix
-# instead, but we need to find a way to get that to operate on diffs like
-# clang-format does.
+--
+# We should use eslint --fix instead, but we need to find a way to get that to
+# operate on diffs like clang-format does.
 Language: JavaScript
-AlignAfterOpenBracket: DontAlign
-AllowShortFunctionsOnASingleLine: false
-JavaScriptQuotes: Leave  # It's not smart enough to allow " to minimize escapes
-PenaltyBreakBeforeFirstCallParameter: 1000000
-PenaltyExcessCharacter: 1
-SpacesBeforeTrailingComments: 2
-SpacesInContainerLiterals: false
+DisableFormat: true
 ...
