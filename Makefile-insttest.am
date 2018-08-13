@@ -1,4 +1,5 @@
 EXTRA_DIST += \
+	installed-tests/debugger.test.in		\
 	installed-tests/minijasmine.test.in		\
 	installed-tests/script.test.in			\
 	installed-tests/js/jsunit.gresources.xml	\
