@@ -56,4 +56,6 @@ pkglib_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
 		< $(srcdir)/installed-tests/script.test.in > $@.tmp && \
 	mv $@.tmp $@
 
+CLEANFILES += $(installedtestmeta_DATA)
+
 endif BUILDOPT_INSTALL_TESTS
