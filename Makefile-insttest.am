@@ -1,4 +1,5 @@
 EXTRA_DIST += \
+	installed-tests/debugger.test.in		\
 	installed-tests/minijasmine.test.in		\
 	installed-tests/script.test.in			\
 	installed-tests/js/jsunit.gresources.xml	\
@@ -54,5 +55,7 @@ pkglib_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
 		-e s,@name\@,$(notdir $<), \
 		< $(srcdir)/installed-tests/script.test.in > $@.tmp && \
 	mv $@.tmp $@
+
+CLEANFILES += $(installedtestmeta_DATA)
 
 endif BUILDOPT_INSTALL_TESTS

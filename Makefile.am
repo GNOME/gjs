@@ -201,7 +201,7 @@ EXTRA_DIST +=					\
 TAG_PREFIX=GJS_
 COMPRESSION=.bz2
 
-DISTCLEANFILES=gjs-*.syscap installed-tests/scripts/*.test installed-tests/js/*.test
+DISTCLEANFILES=gjs-*.syscap
 
 PACKAGE=@PACKAGE@
 VERSION=@VERSION@
