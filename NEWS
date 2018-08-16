@@ -1,3 +1,13 @@
+Version 1.53.91
+---------------
+
+- Closed bugs and merge requests:
+  * CI: add webkit and gtk-app tests [!222, Claudio André]
+  * Fix example eslint errors [!207, Claudio André, Philip Chimento]
+  * Fix more "lost" GInterface properties [!223, Florian Müllner]
+  * Fix --enable-installed-tests when built from a tarball [!224, Simon
+    McVittie]
+
 Version 1.53.90
 ---------------
 
