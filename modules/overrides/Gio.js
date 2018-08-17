@@ -401,4 +401,7 @@ function _init() {
 
     // ListStore
     Gio.ListStore.prototype[Symbol.iterator] = _listModelIterator;
+
+    // Temporary Gio.File.prototype fix
+    Gio._LocalFilePrototype = Gio.File.new_for_path('').constructor.prototype;
 }
