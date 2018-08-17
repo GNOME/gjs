@@ -343,6 +343,31 @@ function* _listModelIterator() {
     }
 }
 
+function _promisify(GioType, asyncFunc, finishFunc) {
+    GioType[`original_${asyncFunc}`] = GioType[asyncFunc];
+    GioType[asyncFunc] = function(...args) {
+        if (!args.every(arg => typeof arg !== 'function')) 
+            return this[`original_${asyncFunc}`](...args);
+        return new Promise((resolve, reject) => {
+            const callStack = new Error().stack.split('\n').filter(line => !line.match(/promisify/)).join('\n');
+            this[`original_${asyncFunc}`](...args, function(source, res) {
+                try {
+                    const result = source[finishFunc](res);
+                    if (result.length > 1 && result[0] == true) 
+                        result.splice(0, 1);
+                    resolve(result);
+                } catch (error) {
+                    if (error.stack) 
+                        error.stack += `### Call stack printed here: ###\n${callStack}`;
+                    else 
+                        error.stack = callStack;
+                    reject(error);
+                }
+            });
+        });
+    };
+}
+
 function _init() {
     Gio = this;
 
@@ -401,4 +426,7 @@ function _init() {
 
     // ListStore
     Gio.ListStore.prototype[Symbol.iterator] = _listModelIterator;
+
+    // Promisify
+    Gio._promisify = _promisify;
 }
