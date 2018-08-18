@@ -26,7 +26,8 @@
 
 #include <stdbool.h>
 #include <glib.h>
-#include "gjs/jsapi-util.h"
+
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 
@@ -68,6 +69,7 @@ GJS_DECLARE_COUNTER(repo)
 #define GJS_GET_COUNTER(name) \
     g_atomic_int_get(&gjs_counter_ ## name .value)
 
+GJS_EXPORT
 void gjs_memory_report(const char *where,
                        bool        die_if_leaks);
 
