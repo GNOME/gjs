@@ -976,6 +976,103 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
     return true;
 }
 
+bool ObjectBase::new_enumerate(JSContext        *cx,
+                               JS::HandleObject  obj,
+                               JS::AutoIdVector &properties,
+                               bool              only_enumerable) {
+    auto* priv = ObjectBase::for_js(cx, obj);
+
+    if (!priv->is_prototype()) {
+        // Instances don't have any methods or properties.
+        // Spidermonkey will call new_enumerate on the prototype next.
+        return true;
+    }
+
+    return priv->to_prototype()->new_enumerate_impl(cx, obj, properties,
+                                                    only_enumerable);
+}
+
+bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
+                                         JS::AutoIdVector& properties,
+                                         bool only_enumerable) {
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Enumerate %s", type_name());
+
+    unsigned n_interfaces;
+    GType* interfaces = g_type_interfaces(gtype(), &n_interfaces);
+
+    for (unsigned k = 0; k < n_interfaces; k++) {
+        GjsAutoInfo<GIInterfaceInfo> iface_info =
+            g_irepository_find_by_gtype(nullptr, interfaces[k]);
+
+        if (!iface_info) {
+            continue;
+        }
+
+        // Methods
+        int n_methods = g_interface_info_get_n_methods(iface_info);
+        for (int i = 0; i < n_methods; i++) {
+            GjsAutoInfo<GIFunctionInfo> meth_info =
+                g_interface_info_get_method(iface_info, i);
+            GIFunctionInfoFlags flags = g_function_info_get_flags(meth_info);
+
+            if (flags & GI_FUNCTION_IS_METHOD) {
+                const char* name = meth_info.name();
+                if (!properties.append(gjs_intern_string_to_id(cx, name))) {
+                    g_error("Unable to append to vector");
+                }
+            }
+        }
+
+        // Properties
+        int n_properties = g_interface_info_get_n_properties(iface_info);
+        for (int i = 0; i < n_properties; i++) {
+            GjsAutoInfo<GIPropertyInfo> prop_info =
+                g_interface_info_get_property(iface_info, i);
+
+            GjsAutoChar js_name = gjs_hyphen_to_underscore(prop_info.name());
+
+            if (!properties.append(gjs_intern_string_to_id(cx, js_name))) {
+                g_error("Unable to append to vector");
+            }
+        }
+    }
+
+    g_free(interfaces);
+
+    if (info()) {
+        // Methods
+        int n_methods = g_object_info_get_n_methods(info());
+        for (int i = 0; i < n_methods; i++) {
+            GjsAutoInfo<GIFunctionInfo> meth_info =
+                g_object_info_get_method(info(), i);
+            GIFunctionInfoFlags flags = g_function_info_get_flags(meth_info);
+
+            if (flags & GI_FUNCTION_IS_METHOD) {
+                const char* name = meth_info.name();
+                if (!properties.append(gjs_intern_string_to_id(cx, name))) {
+                    g_error("Unable to append to vector");
+                }
+            }
+        }
+
+        // Properties
+        int n_properties = g_object_info_get_n_properties(info());
+        for (int i = 0; i < n_properties; i++) {
+            GjsAutoInfo<GIPropertyInfo> prop_info =
+                g_object_info_get_property(info(), i);
+
+            GjsAutoChar js_name = gjs_hyphen_to_underscore(prop_info.name());
+
+            if (!properties.append(gjs_intern_string_to_id(cx, js_name))) {
+                g_error("Unable to append to vector");
+            }
+        }
+    }
+
+    return true;
+}
+
+
 /* Set properties from args to constructor (args[0] is supposed to be
  * a hash) */
 bool ObjectPrototype::props_to_g_parameters(JSContext* context,
@@ -1956,7 +2053,7 @@ static const struct JSClassOps gjs_object_class_ops = {
     &ObjectBase::add_property,
     nullptr,  // deleteProperty
     nullptr,  // enumerate
-    nullptr,  // newEnumerate
+    &ObjectBase::new_enumerate,
     &ObjectBase::resolve,
     nullptr,  // mayResolve
     &ObjectBase::finalize,

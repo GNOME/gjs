@@ -208,6 +208,10 @@ class ObjectBase {
                              JS::HandleId id, JS::HandleValue value);
     static bool resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                         bool* resolved);
+    static bool new_enumerate(
+        JSContext* cx, JS::HandleObject obj,
+        JS::AutoIdVector& properties,  // NOLINT(runtime/references)
+        bool only_enumerable);
     static void finalize(JSFreeOp* fop, JSObject* obj);
     static void trace(JSTracer* tracer, JSObject* obj);
 
@@ -303,6 +307,11 @@ class ObjectPrototype : public ObjectBase {
  private:
     bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                       bool* resolved);
+
+    bool new_enumerate_impl(
+        JSContext* cx, JS::HandleObject obj,
+        JS::AutoIdVector& properties,  // NOLINT(runtime/references)
+        bool only_enumerable);
     void trace_impl(JSTracer* tracer);
 
     /* JS methods */
