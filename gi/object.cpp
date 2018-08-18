@@ -30,6 +30,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "gobject.h"
 #include "object.h"
 #include "gtype.h"
 #include "interface.h"
@@ -982,7 +983,7 @@ bool ObjectBase::new_enumerate(JSContext        *cx,
                                bool              only_enumerable) {
 
     guint i, k;
-    guint n_methods;
+    guint n_methods, n_properties;
     guint n_interfaces;
 
     auto* priv = ObjectBase::for_js(cx, obj);
@@ -1009,8 +1010,9 @@ bool ObjectBase::new_enumerate(JSContext        *cx,
         }
 
         iface_info = (GIInterfaceInfo*) base_info;
-        n_methods = g_interface_info_get_n_methods(iface_info);
 
+        // Methods
+        n_methods = g_interface_info_get_n_methods(iface_info);
         for (k = 0; k < n_methods; k++) {
             GIFunctionInfo *meth_info;
             GIFunctionInfoFlags flags;
@@ -1024,11 +1026,27 @@ bool ObjectBase::new_enumerate(JSContext        *cx,
 
             g_base_info_unref((GIBaseInfo*) meth_info);
         }
+
+        // Properties
+        n_properties = g_interface_info_get_n_properties(iface_info);
+        for (k = 0; k < n_properties; k++) {
+            GIPropertyInfo *property_info;
+
+            property_info = g_interface_info_get_property (iface_info, k);
+
+            const char *symbol = g_base_info_get_name(property_info);
+            GjsAutoChar js_name = hyphen_to_underscore(symbol);
+            properties.append(gjs_intern_string_to_id(cx, js_name));
+
+            g_base_info_unref((GIBaseInfo*) property_info);
+        }
+
     }
 
     g_free(interfaces);
 
     if (object_info != NULL) {
+        // Methods
         n_methods = g_object_info_get_n_methods(object_info);
 
         for (i = 0; i < n_methods; i++) {
@@ -1044,6 +1062,20 @@ bool ObjectBase::new_enumerate(JSContext        *cx,
             }
 
             g_base_info_unref((GIBaseInfo*) meth_info);
+        }
+
+        // Properties
+        n_properties = g_object_info_get_n_properties(object_info);
+        for (k = 0; k < n_properties; k++) {
+            GIPropertyInfo *property_info;
+
+            property_info = g_object_info_get_property (object_info, k);
+
+            const char *symbol = g_base_info_get_name(property_info);
+            GjsAutoChar js_name = hyphen_to_underscore(symbol);
+            properties.append(gjs_intern_string_to_id(cx, js_name));
+
+            g_base_info_unref((GIBaseInfo*) property_info);
         }
     }
 

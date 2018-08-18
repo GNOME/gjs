@@ -53,7 +53,7 @@ bool pop_class_init_properties(GType gtype, AutoParamArray* params_out) {
     return true;
 }
 
-static char* hyphen_to_underscore(const char* str) {
+char* hyphen_to_underscore(const char* str) {
     char *s = g_strdup(str);
     char *retval = s;
     while (*(s++) != '\0') {
