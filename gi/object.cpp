@@ -30,6 +30,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "gobject.h"
 #include "object.h"
 #include "gtype.h"
 #include "interface.h"
@@ -975,6 +976,123 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
 
     return true;
 }
+
+bool ObjectBase::new_enumerate(JSContext        *cx,
+                               JS::HandleObject  obj,
+                               JS::AutoIdVector &properties,
+                               bool              only_enumerable) {
+    guint i, k;
+    guint n_methods, n_properties;
+    guint n_interfaces;
+
+    auto* priv = ObjectBase::for_js(cx, obj);
+
+    if (!priv->is_prototype()) {
+        // Instances don't have any methods or properties.
+        // new_enumerate will be called on the prototype next.
+        return true;
+    }
+
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Enumerate %s",
+                     g_type_name(priv->gtype()));
+
+    GIObjectInfo *object_info = priv->info();
+
+    GType *interfaces = g_type_interfaces(priv->gtype(), &n_interfaces);
+
+    for (k = 0; k < n_interfaces; k++) {
+        GIBaseInfo *base_info;
+        GIInterfaceInfo *iface_info;
+
+        base_info = g_irepository_find_by_gtype(g_irepository_get_default(),
+                                                interfaces[k]);
+
+        if (base_info == NULL) {
+            continue;
+        }
+
+        iface_info = reinterpret_cast<GIInterfaceInfo*>(base_info);
+
+        // Methods
+        n_methods = g_interface_info_get_n_methods(iface_info);
+        for (i = 0; i < n_methods; i++) {
+            GIFunctionInfo *meth_info;
+            GIFunctionInfoFlags flags;
+
+            meth_info = g_interface_info_get_method(iface_info, i);
+            flags = g_function_info_get_flags(meth_info);
+            if (flags & GI_FUNCTION_IS_METHOD) {
+                const char *name = g_base_info_get_name(meth_info);
+                if (!properties.append(gjs_intern_string_to_id(cx, name))) {
+                    g_error("Unable to append to vector");
+                }
+            }
+
+            g_base_info_unref(reinterpret_cast<GIBaseInfo*>(meth_info));
+        }
+
+        // Properties
+        n_properties = g_interface_info_get_n_properties(iface_info);
+        for (i = 0; i < n_properties; i++) {
+            GIPropertyInfo *property_info;
+
+            property_info = g_interface_info_get_property(iface_info, i);
+
+            const char *name = g_base_info_get_name(property_info);
+            GjsAutoChar js_name = hyphen_to_underscore(name);
+
+            if (!properties.append(gjs_intern_string_to_id(cx, js_name))) {
+                g_error("Unable to append to vector");
+            }
+
+            g_base_info_unref(reinterpret_cast<GIBaseInfo*>(property_info));
+        }
+    }
+
+    g_free(interfaces);
+
+    if (object_info != NULL) {
+        // Methods
+        n_methods = g_object_info_get_n_methods(object_info);
+        for (i = 0; i < n_methods; i++) {
+            GIFunctionInfo *meth_info;
+            GIFunctionInfoFlags flags;
+
+            meth_info = g_object_info_get_method(object_info, i);
+            flags = g_function_info_get_flags(meth_info);
+
+            if (flags & GI_FUNCTION_IS_METHOD) {
+                const char *name = g_base_info_get_name(meth_info);
+
+                if (!properties.append(gjs_intern_string_to_id(cx, name))) {
+                    g_error("Unable to append to vector");
+                }
+            }
+
+            g_base_info_unref(reinterpret_cast<GIBaseInfo*>(meth_info));
+        }
+
+        // Properties
+        n_properties = g_object_info_get_n_properties(object_info);
+        for (i = 0; i < n_properties; i++) {
+            GIPropertyInfo *property_info;
+
+            property_info = g_object_info_get_property(object_info, i);
+
+            const char *name = g_base_info_get_name(property_info);
+            GjsAutoChar js_name = hyphen_to_underscore(name);
+
+            if (!properties.append(gjs_intern_string_to_id(cx, js_name))) {
+                g_error("Unable to append to vector");
+            }
+
+            g_base_info_unref(reinterpret_cast<GIBaseInfo*>(property_info));
+        }
+    }
+
+    return true;
+}
+
 
 /* Set properties from args to constructor (args[0] is supposed to be
  * a hash) */
@@ -1956,7 +2074,7 @@ static const struct JSClassOps gjs_object_class_ops = {
     &ObjectBase::add_property,
     nullptr,  // deleteProperty
     nullptr,  // enumerate
-    nullptr,  // newEnumerate
+    &ObjectBase::new_enumerate,
     &ObjectBase::resolve,
     nullptr,  // mayResolve
     &ObjectBase::finalize,
