@@ -976,6 +976,81 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
     return true;
 }
 
+bool ObjectBase::new_enumerate(JSContext        *cx,
+                               JS::HandleObject  obj,
+                               JS::AutoIdVector &properties,
+                               bool              only_enumerable) {
+
+    guint i, k;
+    guint n_methods;
+    guint n_interfaces;
+
+    auto* priv = ObjectBase::for_js(cx, obj);
+
+    if (!priv->is_prototype()) {
+        return true;
+    }
+
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Enumerate %s", g_type_name(priv->gtype()));
+
+    GIObjectInfo *object_info = priv->info();
+
+    GType *interfaces = g_type_interfaces(priv->gtype(), &n_interfaces);
+
+    for (i = 0; i < n_interfaces; i++) {
+        GIBaseInfo *base_info;
+        GIInterfaceInfo *iface_info;
+
+        base_info = g_irepository_find_by_gtype(g_irepository_get_default(),
+                                                interfaces[i]);
+
+        if (base_info == NULL) {
+            continue;
+        }
+
+        iface_info = (GIInterfaceInfo*) base_info;
+        n_methods = g_interface_info_get_n_methods(iface_info);
+
+        for (k = 0; k < n_methods; k++) {
+            GIFunctionInfo *meth_info;
+            GIFunctionInfoFlags flags;
+
+            meth_info = g_interface_info_get_method (iface_info, k);
+            flags = g_function_info_get_flags (meth_info);
+            if (flags & GI_FUNCTION_IS_METHOD) {
+                const char *symbol = g_function_info_get_symbol(meth_info);
+                properties.append(gjs_intern_string_to_id(cx, symbol));
+            }
+
+            g_base_info_unref((GIBaseInfo*) meth_info);
+        }
+    }
+
+    g_free(interfaces);
+
+    if (object_info != NULL) {
+        n_methods = g_object_info_get_n_methods(object_info);
+
+        for (i = 0; i < n_methods; i++) {
+            GIFunctionInfo *meth_info;
+            GIFunctionInfoFlags flags;
+
+            meth_info = g_object_info_get_method(object_info, i);
+            flags = g_function_info_get_flags (meth_info);
+
+            if (flags & GI_FUNCTION_IS_METHOD) {
+                const char *symbol = g_function_info_get_symbol(meth_info);
+                properties.append(gjs_intern_string_to_id(cx, symbol));
+            }
+
+            g_base_info_unref((GIBaseInfo*) meth_info);
+        }
+    }
+
+    return true;
+}
+
+
 /* Set properties from args to constructor (args[0] is supposed to be
  * a hash) */
 bool ObjectPrototype::props_to_g_parameters(JSContext* context,
@@ -1956,7 +2031,7 @@ static const struct JSClassOps gjs_object_class_ops = {
     &ObjectBase::add_property,
     nullptr,  // deleteProperty
     nullptr,  // enumerate
-    nullptr,  // newEnumerate
+    &ObjectBase::new_enumerate,
     &ObjectBase::resolve,
     nullptr,  // mayResolve
     &ObjectBase::finalize,

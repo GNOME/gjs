@@ -208,6 +208,9 @@ class ObjectBase {
                              JS::HandleId id, JS::HandleValue value);
     static bool resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                         bool* resolved);
+    static bool new_enumerate(JSContext *cx, JS::HandleObject obj,
+                        JS::AutoIdVector &properties,
+                        bool only_enumerable);
     static void finalize(JSFreeOp* fop, JSObject* obj);
     static void trace(JSTracer* tracer, JSObject* obj);
 
