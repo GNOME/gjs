@@ -32,6 +32,15 @@
 const char* messages[] = {
     // None:
     "(invalid message)",
+
+    // ByteArrayInstanceToString:
+    "Some code called array.toString() on a Uint8Array instance. Previously "
+    "this would have interpreted the bytes of the array as a string, but that "
+    "is nonstandard. In the future this will return the bytes as "
+    "comma-separated digits. For the time being, the old behavior has been "
+    "preserved, but please fix your code anyway to explicitly call ByteArray"
+    ".toString(array).\n"
+    "(Note that array.toString() may have been called implicitly.)",
 };
 
 struct DeprecationEntry {
