@@ -1,4 +1,5 @@
 const ByteArray = imports.byteArray;
+const {GIMarshallingTests, GLib} = imports.gi;
 
 describe('Byte array', function () {
     it('can be created from a string', function () {
@@ -34,5 +35,29 @@ describe('Byte array', function () {
         let s = ByteArray.toString(a);
         expect(s.length).toEqual(4);
         expect(s).toEqual('abcd');
+    });
+
+    describe('legacy toString() behavior', function () {
+        beforeAll(function () {
+            // Message is only logged once, hence beforeAll and afterAll
+            GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+                'Some code called array.toString()*');
+        });
+
+        it('is preserved when created from a string', function () {
+            let a = ByteArray.fromString('⅜');
+            expect(a.toString()).toEqual('⅜');
+        });
+
+        it('is preserved when marshalled from GI', function () {
+            let a = GIMarshallingTests.bytearray_full_return();
+            expect(() => a.toString()).toThrowError(TypeError,
+                /malformed UTF-8 character sequence/);
+        });
+
+        afterAll(function () {
+            GLib.test_assert_expected_messages_internal('Gjs',
+                'testByteArray.js', 0, 'testToStringCompatibility');
+        });
     });
 });
