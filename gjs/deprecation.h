@@ -28,6 +28,7 @@
 
 enum GjsDeprecationMessageId {
     None,
+    ByteArrayInstanceToString,
 };
 
 void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
