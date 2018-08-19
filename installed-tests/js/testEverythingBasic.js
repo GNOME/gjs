@@ -484,6 +484,25 @@ describe('Life, the Universe and Everything', function () {
         });
     });
 
+    xdescribe('Overridden properties on interfaces', function () {
+        it('set and get properly', function () {
+            const o = new Regress.TestSubObj();
+            o.number = 4;
+            expect(o.number).toEqual(4);
+        });
+
+        it('default properly', function () {
+            const o = new Regress.TestSubObj();
+            expect(o.number).toBeDefined();
+            expect(o.number).toEqual(0);
+        });
+
+        it('construct properly', function () {
+            const o = new Regress.TestSubObj({number: 4});
+            expect(o.number).toEqual(4);
+        });
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/59');
+
     describe('Signal connection', function () {
         let o;
         beforeEach(function () {
