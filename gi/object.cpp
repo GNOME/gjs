@@ -981,24 +981,30 @@ bool ObjectBase::new_enumerate(JSContext        *cx,
                                JS::HandleObject  obj,
                                JS::AutoIdVector &properties,
                                bool              only_enumerable) {
-    guint i, k;
-    guint n_methods, n_properties;
-    guint n_interfaces;
-
     auto* priv = ObjectBase::for_js(cx, obj);
 
-    if (!priv->is_prototype()) {
+    if (priv->is_prototype()) {
+        return priv->to_prototype()->new_enumerate_impl(cx, obj, properties,
+                                                        only_enumerable);
+    } else {
         // Instances don't have any methods or properties.
         // new_enumerate will be called on the prototype next.
         return true;
     }
+}
 
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Enumerate %s",
-                     g_type_name(priv->gtype()));
+bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
+                                         JS::AutoIdVector& properties,
+                                         bool only_enumerable) {
+    guint i, k;
+    guint n_methods, n_properties;
+    guint n_interfaces;
 
-    GIObjectInfo *object_info = priv->info();
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Enumerate %s", type_name());
 
-    GType *interfaces = g_type_interfaces(priv->gtype(), &n_interfaces);
+    GIObjectInfo* object_info = info();
+
+    GType* interfaces = g_type_interfaces(gtype(), &n_interfaces);
 
     for (k = 0; k < n_interfaces; k++) {
         GIBaseInfo *base_info;
