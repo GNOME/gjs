@@ -855,3 +855,13 @@ gjs_eval_with_scope(JSContext             *context,
 
     return true;
 }
+
+char* gjs_hyphen_to_underscore(const char* str) {
+    char *s = g_strdup(str);
+    char *retval = s;
+    while (*(s++) != '\0') {
+        if (*s == '-')
+            *s = '_';
+    }
+    return retval;
+}
