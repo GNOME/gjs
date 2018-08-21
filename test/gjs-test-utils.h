@@ -46,8 +46,6 @@ void gjs_unit_test_fixture_teardown(GjsUnitTestFixture *fx,
 
 char *gjs_unit_test_exception_message(GjsUnitTestFixture *fx);
 
-void gjs_crash_after_timeout(int seconds);
-
 void gjs_test_add_tests_for_coverage ();
 
 void gjs_test_add_tests_for_parse_call_args(void);
