@@ -406,11 +406,6 @@ int
 main(int    argc,
      char **argv)
 {
-    /* give the unit tests 7 minutes to complete, unless an environment variable
-     * is set; use this when running under GDB, for example */
-    if (!g_getenv("GJS_TEST_SKIP_TIMEOUT"))
-        gjs_crash_after_timeout(60 * 7);
-
     /* Avoid interference in the tests from stray environment variable */
     g_unsetenv("GJS_ENABLE_PROFILER");
 
