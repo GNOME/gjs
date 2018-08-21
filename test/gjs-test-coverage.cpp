@@ -35,7 +35,6 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-#include <gio/gunixoutputstream.h>
 #include <gjs/gjs.h>
 
 #include "gjs/coverage.h"
