@@ -30,7 +30,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "gobject.h"
 #include "object.h"
 #include "gtype.h"
 #include "interface.h"
@@ -1037,7 +1036,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
                 g_interface_info_get_property(iface_info, i);
 
             const char *name = g_base_info_get_name(property_info);
-            GjsAutoChar js_name = hyphen_to_underscore(name);
+            GjsAutoChar js_name = gjs_hyphen_to_underscore(name);
 
             if (!properties.append(gjs_intern_string_to_id(cx, js_name))) {
                 g_error("Unable to append to vector");
@@ -1071,7 +1070,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
                 g_object_info_get_property(object_info, i);
 
             const char *name = g_base_info_get_name(property_info);
-            GjsAutoChar js_name = hyphen_to_underscore(name);
+            GjsAutoChar js_name = gjs_hyphen_to_underscore(name);
 
             if (!properties.append(gjs_intern_string_to_id(cx, js_name))) {
                 g_error("Unable to append to vector");

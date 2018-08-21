@@ -32,6 +32,16 @@
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 
+char* gjs_hyphen_to_underscore(const char* str) {
+    char *s = g_strdup(str);
+    char *retval = s;
+    while (*(s++) != '\0') {
+        if (*s == '-')
+            *s = '_';
+    }
+    return retval;
+}
+
 /**
  * gjs_string_to_utf8:
  * @cx: JSContext

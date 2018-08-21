@@ -38,6 +38,4 @@ extern const GTypeInfo gjs_gobject_interface_info;
 void push_class_init_properties(GType gtype, AutoParamArray* params);
 bool pop_class_init_properties(GType gtype, AutoParamArray* params_out);
 
-char* hyphen_to_underscore(const char* str);
-
 #endif  // GI_GOBJECT_H_
