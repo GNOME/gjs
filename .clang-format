@@ -10,6 +10,7 @@ AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 DerivePointerAlignment: false
 ForEachMacros: []
+IndentPPDirectives: AfterHash
 IndentWidth: 4
 PointerAlignment: Left  # Google style allows both, but clang-format doesn't
 SpacesBeforeTrailingComments: 2
