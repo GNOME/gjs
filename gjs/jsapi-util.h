@@ -424,4 +424,6 @@ std::string gjs_debug_object(JSObject *obj);
 std::string gjs_debug_value(JS::Value v);
 std::string gjs_debug_id(jsid id);
 
+char* gjs_hyphen_to_underscore(const char* str);
+
 #endif  /* __GJS_JSAPI_UTIL_H__ */
