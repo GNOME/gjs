@@ -64,13 +64,13 @@ check_PROGRAMS += gjs-tests.gtester minijasmine
 gjs_tests_gtester_CPPFLAGS =			\
 	$(AM_CPPFLAGS)				\
 	-DGJS_COMPILATION			\
-	$(GJSTESTS_CFLAGS)			\
+	$(GJS_CFLAGS)				\
 	$(gjs_directory_defines)		\
 	-I$(top_srcdir)/test
 
 gjs_tests_gtester_LDADD =	\
 	libgjs.la		\
-	$(GJSTESTS_LIBS)
+	$(GJS_LIBS)
 
 gjs_tests_gtester_SOURCES =				\
 	test/gjs-tests.cpp				\
