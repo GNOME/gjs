@@ -1001,8 +1001,6 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Enumerate %s", type_name());
 
-    GIObjectInfo* object_info = info();
-
     GType* interfaces = g_type_interfaces(gtype(), &n_interfaces);
 
     for (k = 0; k < n_interfaces; k++) {
@@ -1044,6 +1042,8 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
     }
 
     g_free(interfaces);
+
+    GIObjectInfo* object_info = info();
 
     if (object_info != NULL) {
         // Methods
