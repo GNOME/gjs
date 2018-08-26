@@ -1009,8 +1009,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
         GjsAutoInfo<GIInterfaceInfo> iface_info =
             g_irepository_find_by_gtype(nullptr, interfaces[k]);
 
-        if (iface_info == nullptr) {
-            // Or should this be treated as an error?
+        if (!iface_info) {
             continue;
         }
 
