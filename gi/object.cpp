@@ -995,15 +995,12 @@ bool ObjectBase::new_enumerate(JSContext        *cx,
 bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
                                          JS::AutoIdVector& properties,
                                          bool only_enumerable) {
-    guint i, k;
-    guint n_methods, n_properties;
-    guint n_interfaces;
-
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Enumerate %s", type_name());
 
+    guint n_interfaces;
     GType* interfaces = g_type_interfaces(gtype(), &n_interfaces);
 
-    for (k = 0; k < n_interfaces; k++) {
+    for (guint k = 0; k < n_interfaces; k++) {
         GjsAutoInfo<GIInterfaceInfo> iface_info =
             g_irepository_find_by_gtype(nullptr, interfaces[k]);
 
@@ -1012,8 +1009,8 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
         }
 
         // Methods
-        n_methods = g_interface_info_get_n_methods(iface_info);
-        for (i = 0; i < n_methods; i++) {
+        int n_methods = g_interface_info_get_n_methods(iface_info);
+        for (int i = 0; i < n_methods; i++) {
             GjsAutoInfo<GIFunctionInfo> meth_info =
                 g_interface_info_get_method(iface_info, i);
             GIFunctionInfoFlags flags = g_function_info_get_flags(meth_info);
@@ -1027,8 +1024,8 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
         }
 
         // Properties
-        n_properties = g_interface_info_get_n_properties(iface_info);
-        for (i = 0; i < n_properties; i++) {
+        int n_properties = g_interface_info_get_n_properties(iface_info);
+        for (int i = 0; i < n_properties; i++) {
             GjsAutoInfo<GIPropertyInfo> property_info =
                 g_interface_info_get_property(iface_info, i);
 
@@ -1047,8 +1044,8 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
 
     if (object_info != NULL) {
         // Methods
-        n_methods = g_object_info_get_n_methods(object_info);
-        for (i = 0; i < n_methods; i++) {
+        int n_methods = g_object_info_get_n_methods(object_info);
+        for (int i = 0; i < n_methods; i++) {
             GjsAutoInfo<GIFunctionInfo> meth_info =
                 g_object_info_get_method(object_info, i);
             GIFunctionInfoFlags flags = g_function_info_get_flags(meth_info);
@@ -1063,8 +1060,8 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
         }
 
         // Properties
-        n_properties = g_object_info_get_n_properties(object_info);
-        for (i = 0; i < n_properties; i++) {
+        int n_properties = g_object_info_get_n_properties(object_info);
+        for (int i = 0; i < n_properties; i++) {
             GjsAutoInfo<GIPropertyInfo> property_info =
                 g_object_info_get_property(object_info, i);
 
