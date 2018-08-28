@@ -1,3 +1,51 @@
+Version 1.53.92
+---------------
+
+- Technology preview of a GNOME 3.32 feature: native Promises for GIO-style
+  asynchronous operations. This is the result of Avi Zajac's summer internship.
+  To use it, you can opt in once for each specific asynchronous method, by
+  including code such as the following:
+
+      Gio._promisify(Gio.InputStream.prototype, 'read_bytes_async',
+          'read_bytes_finish');
+
+  After executing this, you will be able to use native Promises with the
+  Gio.InputStream.prototype.read_async() method, simply by not passing a
+  callback to it:
+
+      try {
+          let bytes = await stream.read_bytes_async(count, priority, cancel);
+      } catch (e) {
+          logError(e, 'Failed to read bytes');
+      }
+
+  Note that any "success" boolean return values are deleted from the array of
+  return values from the async method. That is,
+
+      let [contents, etag] = file.load_contents_async(cancel);
+
+  whereas the callback version still returns a useless [ok, contents, etag]
+  that can never be false, since on false an exception would be thrown. In the
+  callback version, we must keep this for compatibility reasons.
+
+  Note that due to a bug in GJS (https://gitlab.gnome.org/GNOME/gjs/issues/189),
+  promisifying methods on Gio.File.prototype and other interface prototypes will
+  not work. We provide the API Gio._LocalFilePrototype on which you can
+  promisify methods that will work on Gio.File instances on the local disk only:
+
+      Gio._promisify(Gio._LocalFilePrototype, 'load_contents_async',
+          'load_contents_finish');
+
+  We estimate this will cover many common use cases.
+
+  Since this is a technology preview, we do not guarantee API stability with
+  the version coming in GNOME 3.32. These APIs are marked with underscores to
+  emphasize that they are not stable yet. Use them at your own risk.
+
+- Closed bugs and merge requests:
+  * Added promisify to GJS GIO overrides [!225, Avi Zajac]
+  * Temporary fix for Gio.File.prototype [!226, Avi Zajac]
+
 Version 1.53.91
 ---------------
 
