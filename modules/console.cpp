@@ -286,7 +286,8 @@ gjs_console_eval_and_print(JSContext  *cx,
             return false;
     }
 
-    gjs_schedule_gc_if_needed(cx);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+    gjs->schedule_gc_if_needed();
 
     if (result.isUndefined())
         return true;

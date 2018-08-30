@@ -28,6 +28,8 @@
 #include <unistd.h>
 
 #include <array>
+#include <codecvt>
+#include <locale>
 #include <unordered_map>
 
 #include <gio/gio.h>
@@ -574,6 +576,20 @@ void GjsContextPrivate::schedule_gc_internal(bool force_gc) {
                                               nullptr);
 }
 
+/*
+ * GjsContextPrivate::schedule_gc_if_needed:
+ *
+ * Does a minor GC immediately if the JS engine decides one is needed, but also
+ * schedules a full GC in the next idle time.
+ */
+void GjsContextPrivate::schedule_gc_if_needed(void) {
+    // We call JS_MaybeGC immediately, but defer a check for a full GC cycle
+    // to an idle handler.
+    JS_MaybeGC(m_cx);
+
+    schedule_gc_internal(false);
+}
+
 void GjsContextPrivate::exit(uint8_t exit_code) {
     g_assert(!m_should_exit);
     m_should_exit = true;
@@ -812,8 +828,7 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
         gjs_profiler_start(m_profiler);
 
     JS::RootedValue retval(m_cx);
-    bool ok = gjs_eval_with_scope(m_cx, nullptr, script, script_len, filename,
-                                  &retval);
+    bool ok = eval_with_scope(nullptr, script, script_len, filename, &retval);
 
     /* The promise job queue should be drained even on error, to finish
      * outstanding async tasks before the context is torn down. Drain after
@@ -890,6 +905,99 @@ gjs_context_eval_file(GjsContext    *js_context,
 
     return gjs_context_eval(js_context, script, script_len, filename,
                             exit_status_p, error);
+}
+
+/*
+ * GjsContextPrivate::eval_with_scope:
+ * @scope_object: an object to use as the global scope, or nullptr
+ * @script: JavaScript program encoded in UTF-8
+ * @script_len: length of @script
+ * @filename: filename to use as the origin of @script
+ * @retval: location for the return value of @script
+ *
+ * Executes @script with a local scope so that nothing from the script leaks out
+ * into the global scope.
+ * If @scope_object is given, then everything that @script placed in the global
+ * namespace is defined on @scope_object.
+ * Otherwise, the global definitions are just discarded.
+ */
+bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
+                                        const char* script, ssize_t script_len,
+                                        const char* filename,
+                                        JS::MutableHandleValue retval) {
+    int start_line_number = 1;
+    JSAutoRequest ar(m_cx);
+    size_t real_len = script_len;
+
+    if (script_len < 0)
+        real_len = strlen(script);
+
+    script = gjs_strip_unix_shebang(script, &real_len, &start_line_number);
+
+    /* log and clear exception if it's set (should not be, normally...) */
+    if (JS_IsExceptionPending(m_cx)) {
+        g_warning("eval_in_scope called with a pending exception");
+        return false;
+    }
+
+    JS::RootedObject eval_obj(m_cx, scope_object);
+    if (!eval_obj)
+        eval_obj = JS_NewPlainObject(m_cx);
+
+    JS::CompileOptions options(m_cx);
+    options.setFileAndLine(filename, start_line_number).setSourceIsLazy(true);
+
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+    std::u16string utf16_string = convert.from_bytes(script);
+    JS::SourceBufferHolder buf(utf16_string.c_str(), utf16_string.size(),
+                               JS::SourceBufferHolder::NoOwnership);
+
+    JS::AutoObjectVector scope_chain(m_cx);
+    if (!scope_chain.append(eval_obj)) {
+        JS_ReportOutOfMemory(m_cx);
+        return false;
+    }
+
+    if (!JS::Evaluate(m_cx, scope_chain, options, buf, retval))
+        return false;
+
+    schedule_gc_if_needed();
+
+    if (JS_IsExceptionPending(m_cx)) {
+        g_warning(
+            "EvaluateScript returned true but exception was pending; "
+            "did somebody call gjs_throw() without returning false?");
+        return false;
+    }
+
+    gjs_debug(GJS_DEBUG_CONTEXT, "Script evaluation succeeded");
+
+    return true;
+}
+
+/*
+ * GjsContextPrivate::call_function:
+ * @this_obj: Object to use as the 'this' for the function call
+ * @func_val: Callable to call, as a JS value
+ * @args: Arguments to pass to the callable
+ * @rval: Location for the return value
+ *
+ * Use this instead of JS_CallFunctionValue(), because it schedules a GC if
+ * one is needed. It's good practice to check if a GC should be run every time
+ * we return from JS back into C++.
+ */
+bool GjsContextPrivate::call_function(JS::HandleObject this_obj,
+                                      JS::HandleValue func_val,
+                                      const JS::HandleValueArray& args,
+                                      JS::MutableHandleValue rval) {
+    JSAutoRequest ar(m_cx);
+
+    if (!JS_CallFunctionValue(m_cx, this_obj, func_val, args, rval))
+        return false;
+
+    schedule_gc_if_needed();
+
+    return true;
 }
 
 bool
