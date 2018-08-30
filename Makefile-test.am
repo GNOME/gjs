@@ -74,6 +74,8 @@ gjs_tests_gtester_LDADD =	\
 
 gjs_tests_gtester_SOURCES =				\
 	test/gjs-tests.cpp				\
+	test/gjs-test-common.cpp			\
+	test/gjs-test-common.h				\
 	test/gjs-test-utils.cpp				\
 	test/gjs-test-utils.h				\
 	test/gjs-test-call-args.cpp			\

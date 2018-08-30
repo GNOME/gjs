@@ -35,6 +35,7 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/jsapi-wrapper.h"
 #include "gjs-test-utils.h"
+#include "test/gjs-test-common.h"
 
 void
 gjs_unit_test_fixture_setup(GjsUnitTestFixture *fx,
@@ -52,7 +53,7 @@ gjs_unit_test_fixture_setup(GjsUnitTestFixture *fx,
 void
 gjs_unit_test_destroy_context(GjsUnitTestFixture *fx)
 {
-    GjsAutoChar message = gjs_unit_test_exception_message(fx);
+    GjsAutoChar message = gjs_test_get_exception_message(fx->cx);
     if (message)
         g_printerr("**\n%s\n", message.get());
 
@@ -67,24 +68,4 @@ gjs_unit_test_fixture_teardown(GjsUnitTestFixture *fx,
                                gconstpointer      unused)
 {
     gjs_unit_test_destroy_context(fx);
-}
-
-char *
-gjs_unit_test_exception_message(GjsUnitTestFixture *fx)
-{
-    if (!JS_IsExceptionPending(fx->cx))
-        return nullptr;
-
-    JS::RootedValue v_exc(fx->cx);
-    g_assert_true(JS_GetPendingException(fx->cx, &v_exc));
-    g_assert_true(v_exc.isObject());
-
-    JS::RootedObject exc(fx->cx, &v_exc.toObject());
-    JSErrorReport *report = JS_ErrorFromException(fx->cx, exc);
-    g_assert_nonnull(report);
-
-    char *retval = g_strdup(report->message().c_str());
-    g_assert_nonnull(retval);
-    JS_ClearPendingException(fx->cx);
-    return retval;
 }
