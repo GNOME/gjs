@@ -21,8 +21,6 @@
  * IN THE SOFTWARE.
  */
 
-#include "config.h"  // NOLINT(build/include_order)
-
 #include <locale.h>
 #include <unistd.h>
 
