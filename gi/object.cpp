@@ -1678,13 +1678,13 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
      * might be traced and we will end up dereferencing a null pointer */
     JS_SetPrivate(object, ObjectInstance::new_for_js_object(context, object));
 
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     if (!gjs_object_require_property(context, object, "GObject instance",
-                                     atoms.init(), &initer))
+                                     gjs->atoms().init(), &initer))
         return false;
 
     argv.rval().setUndefined();
-    ret = gjs_call_function_value(context, object, initer, argv, argv.rval());
+    ret = gjs->call_function(object, initer, argv, argv.rval());
 
     if (argv.rval().isUndefined())
         argv.rval().setObject(*object);

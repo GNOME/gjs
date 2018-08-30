@@ -250,12 +250,6 @@ GJS_USE
 char *gjs_value_debug_string(JSContext      *context,
                              JS::HandleValue value);
 
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_call_function_value(JSContext                  *context,
-                             JS::HandleObject            obj,
-                             JS::HandleValue             fval,
-                             const JS::HandleValueArray& args,
-                             JS::MutableHandleValue      rval);
 
 void gjs_warning_reporter(JSContext     *cx,
                           JSErrorReport *report);
@@ -315,16 +309,7 @@ bool        gjs_unichar_from_string          (JSContext       *context,
 /* Functions intended for more "internal" use */
 
 void gjs_maybe_gc (JSContext *context);
-void gjs_schedule_gc_if_needed(JSContext *cx);
 void gjs_gc_if_needed(JSContext *cx);
-
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_eval_with_scope(JSContext             *context,
-                         JS::HandleObject       object,
-                         const char            *script,
-                         ssize_t                script_len,
-                         const char            *filename,
-                         JS::MutableHandleValue retval);
 
 GJS_USE
 const char * gjs_strip_unix_shebang(const char *script,

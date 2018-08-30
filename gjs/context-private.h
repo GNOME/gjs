@@ -128,9 +128,17 @@ class GjsContextPrivate {
     GJS_JSAPI_RETURN_CONVENTION
     bool eval(const char* script, ssize_t script_len, const char* filename,
               int* exit_status_p, GError** error);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool eval_with_scope(JS::HandleObject scope_object, const char* script,
+                         ssize_t script_len, const char* filename,
+                         JS::MutableHandleValue retval);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool call_function(JS::HandleObject this_obj, JS::HandleValue func_val,
+                       const JS::HandleValueArray& args,
+                       JS::MutableHandleValue rval);
 
     void schedule_gc(void) { schedule_gc_internal(true); }
-    void schedule_gc_if_needed(void) { schedule_gc_internal(false); }
+    void schedule_gc_if_needed(void);
 
     void exit(uint8_t exit_code);
     GJS_USE bool should_exit(uint8_t* exit_code_p) const;

@@ -28,6 +28,7 @@
 
 #include "arg.h"
 #include "foreign.h"
+#include "gjs/context-private.h"
 #include "gjs/jsapi-wrapper.h"
 
 static struct {
@@ -75,8 +76,9 @@ gjs_foreign_load_foreign_module(JSContext *context,
         //        and only execute this statement if isn't
         script = g_strdup_printf("imports.%s;", gi_namespace);
         JS::RootedValue retval(context);
-        if (!gjs_eval_with_scope(context, nullptr, script, strlen(script),
-                                 "<internal>", &retval)) {
+        GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+        if (!gjs->eval_with_scope(nullptr, script, strlen(script), "<internal>",
+                                  &retval)) {
             g_critical("ERROR importing foreign module %s\n", gi_namespace);
             g_free(script);
             return false;
