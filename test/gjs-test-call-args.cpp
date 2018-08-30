@@ -5,6 +5,7 @@
 #include "gjs/context.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-wrapper.h"
+#include "test/gjs-test-common.h"
 #include "test/gjs-test-utils.h"
 
 #define assert_match(str, pattern)                                            \
@@ -271,7 +272,7 @@ run_code(GjsUnitTestFixture *fx,
     JS::RootedValue ignored(fx->cx);
     bool ok = JS::Evaluate(fx->cx, options, script, strlen(script), &ignored);
 
-    g_assert_null(gjs_unit_test_exception_message(fx));
+    g_assert_null(gjs_test_get_exception_message(fx->cx));
     g_assert_true(ok);
 }
 
@@ -287,7 +288,7 @@ run_code_expect_exception(GjsUnitTestFixture *fx,
     JS::RootedValue ignored(fx->cx);
     bool ok = JS::Evaluate(fx->cx, options, script, strlen(script), &ignored);
     g_assert_false(ok);
-    GjsAutoChar message = gjs_unit_test_exception_message(fx);
+    GjsAutoChar message = gjs_test_get_exception_message(fx->cx);
     g_assert_nonnull(message);
 
     /* Cheap way to shove an expected exception message into the data argument */

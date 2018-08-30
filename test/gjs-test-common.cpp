@@ -1,6 +1,6 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
- * Copyright © 2013 Endless Mobile, Inc.
+ * Copyright © 2018 Philip Chimento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -19,35 +19,27 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
- *
- * Authored By: Sam Spilsbury <sam@endlessm.com>
  */
 
-#ifndef GJS_TEST_UTILS_H
-#define GJS_TEST_UTILS_H
+#include <glib.h>
 
-#include "gjs/context.h"
 #include "gjs/jsapi-wrapper.h"
+#include "test/gjs-test-common.h"
 
-typedef struct _GjsUnitTestFixture GjsUnitTestFixture;
-struct _GjsUnitTestFixture {
-    GjsContext *gjs_context;
-    JSContext *cx;
-    JSCompartment *compartment;
-};
+char* gjs_test_get_exception_message(JSContext* cx) {
+    if (!JS_IsExceptionPending(cx))
+        return nullptr;
 
-void gjs_unit_test_fixture_setup(GjsUnitTestFixture *fx,
-                                 gconstpointer       unused);
+    JS::RootedValue v_exc(cx);
+    g_assert_true(JS_GetPendingException(cx, &v_exc));
+    g_assert_true(v_exc.isObject());
 
-void gjs_unit_test_destroy_context(GjsUnitTestFixture *fx);
+    JS::RootedObject exc(cx, &v_exc.toObject());
+    JSErrorReport* report = JS_ErrorFromException(cx, exc);
+    g_assert_nonnull(report);
 
-void gjs_unit_test_fixture_teardown(GjsUnitTestFixture *fx,
-                                    gconstpointer      unused);
-
-void gjs_test_add_tests_for_coverage ();
-
-void gjs_test_add_tests_for_parse_call_args(void);
-
-void gjs_test_add_tests_for_rooting(void);
-
-#endif
+    char* retval = g_strdup(report->message().c_str());
+    g_assert_nonnull(retval);
+    JS_ClearPendingException(cx);
+    return retval;
+}
