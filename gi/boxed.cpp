@@ -317,11 +317,11 @@ boxed_invoke_constructor(JSContext             *context,
                          JS::HandleId           constructor_name,
                          JS::CallArgs&          args)
 {
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     JS::RootedObject js_constructor(context);
 
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    if (!gjs_object_require_property(context, obj, NULL, atoms.constructor(),
-                                     &js_constructor))
+    if (!gjs_object_require_property(
+            context, obj, nullptr, gjs->atoms().constructor(), &js_constructor))
         return false;
 
     JS::RootedValue js_constructor_func(context);
@@ -329,8 +329,7 @@ boxed_invoke_constructor(JSContext             *context,
                                      constructor_name, &js_constructor_func))
         return false;
 
-    return gjs_call_function_value(context, nullptr, js_constructor_func,
-                                   args, args.rval());
+    return gjs->call_function(nullptr, js_constructor_func, args, args.rval());
 }
 
 GJS_JSAPI_RETURN_CONVENTION

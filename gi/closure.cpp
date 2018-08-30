@@ -240,7 +240,8 @@ gjs_closure_invoke(GClosure                   *closure,
                           " - closure %p", closure);
     }
 
-    gjs_schedule_gc_if_needed(context);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+    gjs->schedule_gc_if_needed();
     return true;
 }
 

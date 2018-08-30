@@ -472,7 +472,7 @@ out:
     }
 
     gjs_callback_trampoline_unref(trampoline);
-    gjs_schedule_gc_if_needed(context);
+    gjs->schedule_gc_if_needed();
 
     JS_EndRequest(context);
 }

@@ -26,6 +26,7 @@
 
 #include <gio/gio.h>
 
+#include "gjs/context-private.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 #include "module.h"
@@ -110,7 +111,8 @@ class GjsModule {
         if (!JS::Evaluate(cx, scope_chain, options, buf, &ignored_retval))
             return false;
 
-        gjs_schedule_gc_if_needed(cx);
+        GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+        gjs->schedule_gc_if_needed();
 
         gjs_debug(GJS_DEBUG_IMPORTER, "Importing module %s succeeded", m_name);
 

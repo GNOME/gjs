@@ -524,26 +524,6 @@ gjs_log_exception(JSContext  *context)
     return retval;
 }
 
-bool
-gjs_call_function_value(JSContext                  *context,
-                        JS::HandleObject            obj,
-                        JS::HandleValue             fval,
-                        const JS::HandleValueArray& args,
-                        JS::MutableHandleValue      rval)
-{
-    bool result;
-
-    JS_BeginRequest(context);
-
-    result = JS_CallFunctionValue(context, obj, fval, args, rval);
-
-    if (result)
-        gjs_schedule_gc_if_needed(context);
-
-    JS_EndRequest(context);
-    return result;
-}
-
 #ifdef __linux__
 static void
 _linux_get_self_process_size (gulong *vm_size,
@@ -633,17 +613,6 @@ gjs_maybe_gc (JSContext *context)
     gjs_gc_if_needed(context);
 }
 
-void
-gjs_schedule_gc_if_needed (JSContext *context)
-{
-    /* We call JS_MaybeGC immediately, but defer a check for a full
-     * GC cycle to an idle handler.
-     */
-    JS_MaybeGC(context);
-
-    GjsContextPrivate::from_cx(context)->schedule_gc_if_needed();
-}
-
 /**
  * gjs_strip_unix_shebang:
  *
@@ -696,64 +665,4 @@ gjs_strip_unix_shebang(const char  *script,
         *start_line_number_out = 1;
 
     return script;
-}
-
-bool
-gjs_eval_with_scope(JSContext             *context,
-                    JS::HandleObject       object,
-                    const char            *script,
-                    ssize_t                script_len,
-                    const char            *filename,
-                    JS::MutableHandleValue retval)
-{
-    int start_line_number = 1;
-    JSAutoRequest ar(context);
-    size_t real_len = script_len;
-
-    if (script_len < 0)
-        real_len = strlen(script);
-
-    script = gjs_strip_unix_shebang(script,
-                                    &real_len,
-                                    &start_line_number);
-
-    /* log and clear exception if it's set (should not be, normally...) */
-    if (JS_IsExceptionPending(context)) {
-        g_warning("gjs_eval_in_scope called with a pending exception");
-        return false;
-    }
-
-    JS::RootedObject eval_obj(context, object);
-    if (!eval_obj)
-        eval_obj = JS_NewPlainObject(context);
-
-    JS::CompileOptions options(context);
-    options.setFileAndLine(filename, start_line_number);
-
-    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-    std::u16string utf16_string = convert.from_bytes(script);
-    JS::SourceBufferHolder buf(utf16_string.c_str(), utf16_string.size(),
-                               JS::SourceBufferHolder::NoOwnership);
-
-    JS::AutoObjectVector scope_chain(context);
-    if (!scope_chain.append(eval_obj)) {
-        JS_ReportOutOfMemory(context);
-        return false;
-    }
-
-    if (!JS::Evaluate(context, scope_chain, options, buf, retval))
-        return false;
-
-    gjs_schedule_gc_if_needed(context);
-
-    if (JS_IsExceptionPending(context)) {
-        g_warning("EvaluateScript returned true but exception was pending; "
-                  "did somebody call gjs_throw() without returning false?");
-        return false;
-    }
-
-    gjs_debug(GJS_DEBUG_CONTEXT,
-              "Script evaluation succeeded");
-
-    return true;
 }
