@@ -59,6 +59,8 @@ gjs_srcs =				\
 	gjs/context-private.h		\
 	gjs/coverage.cpp 		\
 	gjs/debugger.cpp		\
+	gjs/deprecation.cpp		\
+	gjs/deprecation.h		\
 	gjs/engine.cpp			\
 	gjs/engine.h			\
 	gjs/global.cpp			\
