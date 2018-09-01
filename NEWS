@@ -1,3 +1,14 @@
+Version 1.54.0
+--------------
+
+- Compatibility fix for byte arrays: the legacy toString() behaviour of byte
+  arrays returned from GObject-introspected functions is now restored. If you
+  use the functionality, a warning will be logged asking you to upgrade your
+  code.
+
+- Closed bugs and merge requests:
+  * byteArray: Add compatibility toString property [Philip Chimento, !227]
+
 Version 1.53.92
 ---------------
 
