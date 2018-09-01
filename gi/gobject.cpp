@@ -53,23 +53,13 @@ bool pop_class_init_properties(GType gtype, AutoParamArray* params_out) {
     return true;
 }
 
-static char* hyphen_to_underscore(const char* str) {
-    char *s = g_strdup(str);
-    char *retval = s;
-    while (*(s++) != '\0') {
-        if (*s == '-')
-            *s = '_';
-    }
-    return retval;
-}
-
 static void jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
                                 const GValue* value, GParamSpec* pspec) {
     JS::RootedValue jsvalue(cx);
     if (!gjs_value_from_g_value(cx, &jsvalue, value))
         return;
 
-    GjsAutoChar underscore_name = hyphen_to_underscore(pspec->name);
+    GjsAutoChar underscore_name = gjs_hyphen_to_underscore(pspec->name);
     if (!JS_SetProperty(cx, object, underscore_name, jsvalue))
         gjs_log_exception(cx);
 }
@@ -161,7 +151,7 @@ static void gjs_object_get_gproperty(GObject* object, unsigned property_id,
     JS::RootedObject js_obj(cx, priv->wrapper());
     JS::RootedValue jsvalue(cx);
 
-    GjsAutoChar underscore_name = hyphen_to_underscore(pspec->name);
+    GjsAutoChar underscore_name = gjs_hyphen_to_underscore(pspec->name);
     if (!JS_GetProperty(cx, js_obj, underscore_name, &jsvalue) ||
         !gjs_value_to_g_value(cx, jsvalue, value))
         gjs_log_exception(cx);
