@@ -1,7 +1,6 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
- * Copyright (c) 2008 litl, LLC
- * Copyright (c) 2016 Endless Mobile, Inc.
+ * Copyright © 2018 Philip Chimento
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -22,43 +21,11 @@
  * IN THE SOFTWARE.
  */
 
-#include <glib.h>
+#ifndef TEST_GJS_TEST_COMMON_H_
+#define TEST_GJS_TEST_COMMON_H_
 
-#include "gjs/context.h"
-#include "gjs/jsapi-util.h"
 #include "gjs/jsapi-wrapper.h"
-#include "gjs-test-utils.h"
-#include "test/gjs-test-common.h"
 
-void
-gjs_unit_test_fixture_setup(GjsUnitTestFixture *fx,
-                            gconstpointer       unused)
-{
-    fx->gjs_context = gjs_context_new();
-    fx->cx = (JSContext *) gjs_context_get_native_context(fx->gjs_context);
+char* gjs_test_get_exception_message(JSContext* cx);
 
-    JS_BeginRequest(fx->cx);
-
-    JS::RootedObject global(fx->cx, gjs_get_import_global(fx->cx));
-    fx->compartment = JS_EnterCompartment(fx->cx, global);
-}
-
-void
-gjs_unit_test_destroy_context(GjsUnitTestFixture *fx)
-{
-    GjsAutoChar message = gjs_test_get_exception_message(fx->cx);
-    if (message)
-        g_printerr("**\n%s\n", message.get());
-
-    JS_LeaveCompartment(fx->cx, fx->compartment);
-    JS_EndRequest(fx->cx);
-
-    g_object_unref(fx->gjs_context);
-}
-
-void
-gjs_unit_test_fixture_teardown(GjsUnitTestFixture *fx,
-                               gconstpointer      unused)
-{
-    gjs_unit_test_destroy_context(fx);
-}
+#endif  // TEST_GJS_TEST_COMMON_H_

@@ -69,14 +69,11 @@ common_packages="gthread-2.0 gio-2.0 >= glib_required_version mozjs-60"
 gjs_packages="gobject-introspection-1.0 libffi $common_packages"
 gjs_cairo_packages="cairo cairo-gobject $common_packages"
 gjs_gtk_packages="gtk+-3.0 >= 3.20"
-# gjs-tests links against everything
-gjstests_packages="gio-unix-2.0 $gjs_packages"
 
 AX_PKG_CHECK_MODULES([GJS], [$GOBJECT_REQUIREMENT], [$gjs_packages])
 dnl These don't need to be put in the .pc file so use regular PKG_CHECK_MODULES
 PKG_CHECK_MODULES([GJS_GDBUS], [$gjs_base_packages])
 PKG_CHECK_MODULES([GJS_CONSOLE], [$gjs_base_packages])
-PKG_CHECK_MODULES([GJSTESTS], [$gjstests_packages])
 
 CPPFLAGS_save="$CPPFLAGS"
 CPPFLAGS="$GJS_CFLAGS"
@@ -89,7 +86,7 @@ AC_MSG_CHECKING([whether SpiderMonkey was configured with --enable-debug])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 #include <js-config.h>
 #ifdef JS_DEBUG
-#error debug yes, if we didn't already error out due to DEBUG not being defined
+#error debug yes, if we did not already error out due to DEBUG not being defined
 #endif
 ]])], [
   AC_MSG_RESULT([no])

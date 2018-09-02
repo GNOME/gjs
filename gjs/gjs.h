@@ -24,9 +24,10 @@
 #ifndef __GJS_GJS_H__
 #define __GJS_GJS_H__
 
-#include <gjs/macros.h>
 #include <gjs/context.h>
 #include <gjs/coverage.h>
+#include <gjs/macros.h>
+#include <gjs/mem.h>
 #include <gjs/profiler.h>
 #include <util/error.h>
 
