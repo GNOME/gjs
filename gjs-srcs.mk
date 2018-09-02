@@ -3,6 +3,7 @@ gjs_public_headers =		\
 	gjs/coverage.h		\
 	gjs/gjs.h		\
 	gjs/macros.h		\
+	gjs/mem.h		\
 	gjs/profiler.h		\
 	util/error.h		\
 	$(NULL)
@@ -76,7 +77,6 @@ gjs_srcs =				\
 	gjs/jsapi-util-root.h		\
 	gjs/jsapi-util-string.cpp	\
 	gjs/jsapi-wrapper.h		\
-	gjs/mem.h			\
 	gjs/mem.cpp			\
 	gjs/module.h			\
 	gjs/module.cpp			\
