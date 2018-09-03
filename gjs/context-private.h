@@ -26,43 +26,126 @@
 
 #include <inttypes.h>
 
+#include <unordered_map>
+
 #include "context.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 
-G_BEGIN_DECLS
+using JobQueue = JS::GCVector<JSObject*, 0, js::SystemAllocPolicy>;
 
-bool         _gjs_context_destroying                  (GjsContext *js_context);
+class GjsContextPrivate {
+    GjsContext* m_public_context;
+    JSContext* m_cx;
+    JS::Heap<JSObject*> m_global;
+    GThread* m_owner_thread;
 
-void         _gjs_context_schedule_gc_if_needed       (GjsContext *js_context);
+    char* m_program_name;
 
-void _gjs_context_schedule_gc(GjsContext *js_context);
+    char** m_search_path;
 
-void _gjs_context_exit(GjsContext *js_context,
-                       uint8_t     exit_code);
+    unsigned m_auto_gc_id;
 
-bool _gjs_context_get_is_owner_thread(GjsContext *js_context);
+    std::array<JS::PersistentRootedId*, GJS_STRING_LAST> m_atoms;
 
-bool _gjs_context_should_exit(GjsContext *js_context,
-                              uint8_t    *exit_code_p);
+    JS::PersistentRooted<JobQueue>* m_job_queue;
+    unsigned m_idle_drain_handler;
 
-void _gjs_context_set_sweeping(GjsContext *js_context,
-                               bool        sweeping);
+    std::unordered_map<uint64_t, GjsAutoChar> m_unhandled_rejection_stacks;
 
-bool _gjs_context_is_sweeping(JSContext *cx);
+    GjsProfiler* m_profiler;
 
-bool _gjs_context_enqueue_job(GjsContext      *gjs_context,
-                              JS::HandleObject job);
+    /* Environment preparer needed for debugger, taken from SpiderMonkey's
+     * JS shell */
+    struct EnvironmentPreparer final : public js::ScriptEnvironmentPreparer {
+        JSContext* m_cx;
 
-bool _gjs_context_run_jobs(GjsContext *gjs_context);
+        explicit EnvironmentPreparer(JSContext* cx) : m_cx(cx) {
+            js::SetScriptEnvironmentPreparer(m_cx, this);
+        }
 
-void _gjs_context_unregister_unhandled_promise_rejection(GjsContext *gjs_context,
-                                                         uint64_t    promise_id);
+        void invoke(JS::HandleObject scope, Closure& closure) override;
+    };
+    EnvironmentPreparer m_environment_preparer;
 
-G_END_DECLS
+    uint8_t m_exit_code;
 
-void _gjs_context_register_unhandled_promise_rejection(GjsContext   *gjs_context,
-                                                       uint64_t      promise_id,
-                                                       GjsAutoChar&& stack);
+    /* flags */
+    bool m_destroying : 1;
+    bool m_in_gc_sweep : 1;
+    bool m_should_exit : 1;
+    bool m_force_gc : 1;
+    bool m_draining_job_queue : 1;
+    bool m_should_profile : 1;
+    bool m_should_listen_sigusr2 : 1;
+
+    void schedule_gc_internal(bool force_gc);
+    static gboolean trigger_gc_if_needed(void* data);
+    static gboolean drain_job_queue_idle_handler(void* data);
+    void warn_about_unhandled_promise_rejections(void);
+    void reset_exit(void) {
+        m_should_exit = false;
+        m_exit_code = 0;
+    }
+
+ public:
+    /* Retrieving a GjsContextPrivate from JSContext or GjsContext */
+    static GjsContextPrivate* from_cx(JSContext* cx) {
+        return static_cast<GjsContextPrivate*>(JS_GetContextPrivate(cx));
+    }
+    static GjsContextPrivate* from_object(GObject* public_context);
+    static GjsContextPrivate* from_object(GjsContext* public_context);
+    static GjsContextPrivate* from_current_context(void) {
+        return from_object(gjs_context_get_current());
+    }
+
+    GjsContextPrivate(JSContext* cx, GjsContext* public_context);
+    ~GjsContextPrivate(void);
+
+    /* Accessors */
+    GjsContext* public_context(void) const { return m_public_context; }
+    JSContext* context(void) const { return m_cx; }
+    JSObject* global(void) const { return m_global.get(); }
+    GjsProfiler* profiler(void) const { return m_profiler; }
+    bool destroying(void) const { return m_destroying; }
+    bool sweeping(void) const { return m_in_gc_sweep; }
+    void set_sweeping(bool value) { m_in_gc_sweep = value; }
+    const char* program_name(void) const { return m_program_name; }
+    void set_program_name(char* value) { m_program_name = value; }
+    void set_search_path(char** value) { m_search_path = value; }
+    void set_should_profile(bool value) { m_should_profile = value; }
+    void set_should_listen_sigusr2(bool value) {
+        m_should_listen_sigusr2 = value;
+    }
+    bool is_owner_thread(void) const {
+        return m_owner_thread == g_thread_self();
+    }
+
+    bool eval(const char* script, ssize_t script_len, const char* filename,
+              int* exit_status_p, GError** error);
+
+    void schedule_gc(void) { schedule_gc_internal(true); }
+    void schedule_gc_if_needed(void) { schedule_gc_internal(false); }
+
+    void exit(uint8_t exit_code);
+    bool should_exit(uint8_t* exit_code_p) const;
+
+    bool enqueue_job(JS::HandleObject job);
+    bool run_jobs(void);
+    void register_unhandled_promise_rejection(uint64_t id, GjsAutoChar&& stack);
+    void unregister_unhandled_promise_rejection(uint64_t id);
+
+    static void trace(JSTracer* trc, void* data);
+
+    void free_profiler(void);
+    void dispose(void);
+
+    /* It's OK to return JS::HandleId here, to avoid an extra root, with the
+     * caveat that you should not use this value after the GjsContext has
+     * been destroyed. */
+    static JS::HandleId atom(JSContext* cx, GjsConstString name) {
+        return *GjsContextPrivate::from_cx(cx)->m_atoms[name];
+    }
+};
 
 #endif  /* __GJS_CONTEXT_PRIVATE_H__ */

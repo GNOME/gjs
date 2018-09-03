@@ -27,6 +27,7 @@
 #include <glib.h>
 #include <glib-object.h>
 
+#include "gjs/context-private.h"
 #include "gjs/context.h"
 #include "gjs/jsapi-wrapper.h"
 #include "util/log.h"
@@ -151,8 +152,9 @@ private:
         if (!m_has_weakref)
             return;
 
-        auto gjs_cx = static_cast<GjsContext *>(JS_GetContextPrivate(m_cx));
-        g_object_weak_unref(G_OBJECT(gjs_cx), on_context_destroy, this);
+        GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
+        g_object_weak_unref(G_OBJECT(gjs->public_context()), on_context_destroy,
+                            this);
         m_has_weakref = false;
     }
 
@@ -261,9 +263,10 @@ public:
         m_thing.root = new JS::PersistentRooted<T>(m_cx, thing);
 
         if (notify) {
-            auto gjs_cx = static_cast<GjsContext *>(JS_GetContextPrivate(m_cx));
-            g_assert(GJS_IS_CONTEXT(gjs_cx));
-            g_object_weak_ref(G_OBJECT(gjs_cx), on_context_destroy, this);
+            GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
+            g_assert(GJS_IS_CONTEXT(gjs->public_context()));
+            g_object_weak_ref(G_OBJECT(gjs->public_context()),
+                              on_context_destroy, this);
             m_has_weakref = true;
         }
     }
