@@ -24,10 +24,10 @@
 #ifndef GJS_ENGINE_H
 #define GJS_ENGINE_H
 
-#include "context.h"
+#include "gjs/context-private.h"
 #include "jsapi-wrapper.h"
 
-JSContext *gjs_create_js_context(GjsContext *js_context);
+JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs);
 
 bool gjs_load_internal_source(JSContext* cx, const char* filename,
                               JS::UniqueTwoByteChars* src, size_t* length);
