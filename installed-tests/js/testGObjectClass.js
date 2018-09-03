@@ -139,6 +139,8 @@ const Derived = GObject.registerClass(class Derived extends MyObject {
     }
 });
 
+const Cla$$ = GObject.registerClass(class Cla$$ extends MyObject {});
+
 const MyCustomInit = GObject.registerClass(class MyCustomInit extends GObject.Object {
     _instance_init() {
         this.foo = true;
@@ -290,6 +292,13 @@ describe('GObject class with decorator', function () {
         expect(derived instanceof MyObject).toBeTruthy();
 
         expect(derived.readwrite).toEqual('yes');
+    });
+
+    it('can have any valid class name', function () {
+        let obj = new Cla$$();
+
+        expect(obj instanceof Cla$$).toBeTruthy();
+        expect(obj instanceof MyObject).toBeTruthy();
     });
 
     it('calls its _instance_init() function while chaining up in constructor', function () {
