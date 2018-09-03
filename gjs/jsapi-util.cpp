@@ -712,16 +712,12 @@ gjs_maybe_gc (JSContext *context)
 void
 gjs_schedule_gc_if_needed (JSContext *context)
 {
-    GjsContext *gjs_context;
-
     /* We call JS_MaybeGC immediately, but defer a check for a full
      * GC cycle to an idle handler.
      */
     JS_MaybeGC(context);
 
-    gjs_context = (GjsContext *) JS_GetContextPrivate(context);
-    if (gjs_context)
-        _gjs_context_schedule_gc_if_needed(gjs_context);
+    GjsContextPrivate::from_cx(context)->schedule_gc_if_needed();
 }
 
 /**
