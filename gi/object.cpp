@@ -1194,8 +1194,6 @@ ObjectInstance::toggle_down(void)
      * collected by the GC
      */
     if (wrapper_is_rooted()) {
-        GjsContext *context;
-
         debug_lifecycle("Unrooting wrapper");
         switch_to_unrooted();
 
@@ -1215,9 +1213,9 @@ ObjectInstance::toggle_down(void)
          * always queue a garbage collection when a toggle reference goes
          * down.
          */
-        context = gjs_context_get_current();
-        if (!_gjs_context_destroying(context))
-            _gjs_context_schedule_gc(context);
+        GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
+        if (!gjs->destroying())
+            gjs->schedule_gc();
     }
 }
 
@@ -1269,10 +1267,9 @@ wrapped_gobj_toggle_notify(gpointer      data,
 {
     bool is_main_thread;
     bool toggle_up_queued, toggle_down_queued;
-    GjsContext *context;
 
-    context = gjs_context_get_current();
-    if (_gjs_context_destroying(context)) {
+    GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
+    if (gjs->destroying()) {
         /* Do nothing here - we're in the process of disassociating
          * the objects.
          */
@@ -1307,7 +1304,7 @@ wrapped_gobj_toggle_notify(gpointer      data,
      * weak singletons like g_bus_get_sync() objects can see toggle-ups
      * from different threads too.
      */
-    is_main_thread = _gjs_context_get_is_owner_thread(context);
+    is_main_thread = gjs->is_owner_thread();
 
     auto& toggle_queue = ToggleQueue::get_default();
     std::tie(toggle_down_queued, toggle_up_queued) = toggle_queue.is_queued(gobj);

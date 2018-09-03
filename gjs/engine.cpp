@@ -120,7 +120,7 @@ gjs_finalize_callback(JSFreeOp         *fop,
                       JSFinalizeStatus  status,
                       void             *data)
 {
-    auto js_context = static_cast<GjsContext *>(data);
+    auto* gjs = static_cast<GjsContextPrivate*>(data);
 
   /* Implementation note for mozjs 24:
      sweeping happens in two phases, in the first phase all
@@ -163,9 +163,9 @@ gjs_finalize_callback(JSFreeOp         *fop,
   */
 
   if (status == JSFINALIZE_GROUP_START)
-        _gjs_context_set_sweeping(js_context, true);
+        gjs->set_sweeping(true);
   else if (status == JSFINALIZE_GROUP_END)
-        _gjs_context_set_sweeping(js_context, false);
+        gjs->set_sweeping(false);
 }
 
 static void
@@ -188,26 +188,25 @@ on_enqueue_promise_job(JSContext       *cx,
                        JS::HandleObject global,
                        void            *data)
 {
-    auto gjs_context = static_cast<GjsContext *>(data);
-    return _gjs_context_enqueue_job(gjs_context, callback);
+    auto* gjs = static_cast<GjsContextPrivate*>(data);
+    return gjs->enqueue_job(callback);
 }
 
 static void on_promise_unhandled_rejection(
     JSContext* cx, JS::HandleObject promise,
     JS::PromiseRejectionHandlingState state, void* data) {
-    auto gjs_context = static_cast<GjsContext *>(data);
+    auto gjs = static_cast<GjsContextPrivate*>(data);
     uint64_t id = JS::GetPromiseID(promise);
 
     if (state == JS::PromiseRejectionHandlingState::Handled) {
         /* This happens when catching an exception from an await expression. */
-        _gjs_context_unregister_unhandled_promise_rejection(gjs_context, id);
+        gjs->unregister_unhandled_promise_rejection(id);
         return;
     }
 
     JS::RootedObject allocation_site(cx, JS::GetPromiseAllocationSite(promise));
     GjsAutoChar stack = gjs_format_stack_trace(cx, allocation_site);
-    _gjs_context_register_unhandled_promise_rejection(gjs_context, id,
-                                                      std::move(stack));
+    gjs->register_unhandled_promise_rejection(id, std::move(stack));
 }
 
 #ifdef G_OS_WIN32
@@ -258,9 +257,7 @@ public:
 static GjsInit gjs_is_inited;
 #endif
 
-JSContext *
-gjs_create_js_context(GjsContext *js_context)
-{
+JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     g_assert(gjs_is_inited);
     JSContext *cx = JS_NewContext(32 * 1024 * 1024 /* max bytes */);
     if (!cx)
@@ -287,16 +284,17 @@ gjs_create_js_context(GjsContext *js_context)
     // JS_SetGCParameter(cx, JSGC_DECOMMIT_THRESHOLD, 32);
 
     /* set ourselves as the private data */
-    JS_SetContextPrivate(cx, js_context);
+    JS_SetContextPrivate(cx, uninitialized_gjs);
 
-    JS_AddFinalizeCallback(cx, gjs_finalize_callback, js_context);
-    JS_SetGCCallback(cx, on_garbage_collect, js_context);
+    JS_AddFinalizeCallback(cx, gjs_finalize_callback, uninitialized_gjs);
+    JS_SetGCCallback(cx, on_garbage_collect, uninitialized_gjs);
     JS_SetLocaleCallbacks(JS_GetRuntime(cx), &gjs_locale_callbacks);
     JS::SetWarningReporter(cx, gjs_warning_reporter);
     JS::SetGetIncumbentGlobalCallback(cx, gjs_get_import_global);
-    JS::SetEnqueuePromiseJobCallback(cx, on_enqueue_promise_job, js_context);
+    JS::SetEnqueuePromiseJobCallback(cx, on_enqueue_promise_job,
+                                     uninitialized_gjs);
     JS::SetPromiseRejectionTrackerCallback(cx, on_promise_unhandled_rejection,
-                                           js_context);
+                                           uninitialized_gjs);
 
     /* setExtraWarnings: Be extra strict about code that might hide a bug */
     if (!g_getenv("GJS_DISABLE_EXTRA_WARNINGS")) {
