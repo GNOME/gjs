@@ -164,6 +164,11 @@ const Derived = new Lang.Class({
     }
 });
 
+const OddlyNamed = new Lang.Class({
+    Name: 'Legacy.OddlyNamed',
+    Extends: MyObject
+});
+
 const MyCustomInit = new Lang.Class({
     Name: 'MyCustomInit',
     Extends: GObject.Object,
@@ -314,6 +319,13 @@ describe('GObject class', function () {
         expect(derived instanceof MyObject).toBeTruthy();
 
         expect(derived.readwrite).toEqual('yes');
+    });
+
+    it('can have any valid Lang.Class name', function () {
+        let obj = new OddlyNamed();
+
+        expect(obj instanceof OddlyNamed).toBeTruthy();
+        expect(obj instanceof MyObject).toBeTruthy();
     });
 
     it('calls its _instance_init() function while chaining up in constructor', function () {

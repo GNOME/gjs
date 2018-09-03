@@ -434,7 +434,7 @@ function defineGObjectLegacyObjects(GObject) {
         if (params.GTypeName)
             return params.GTypeName;
         else
-            return 'Gjs_' + params.Name;
+            return 'Gjs_' + params.Name.replace(/[^a-z0-9_+-]/gi, '_');
     }
 
     function _getGObjectInterfaces(interfaces) {
