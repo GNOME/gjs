@@ -209,7 +209,8 @@ gjs_callback_closure(ffi_cif *cif,
     }
 
     context = gjs_closure_get_context(trampoline->js_function);
-    if (G_UNLIKELY(_gjs_context_is_sweeping(context))) {
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+    if (G_UNLIKELY(gjs->sweeping())) {
         warn_about_illegal_js_callback(trampoline, "during garbage collection",
             "destroying a Clutter actor or GTK widget with ::destroy signal "
             "connected, or using the destroy(), dispose(), or remove() vfuncs");
@@ -217,8 +218,7 @@ gjs_callback_closure(ffi_cif *cif,
         return;
     }
 
-    auto gjs_cx = static_cast<GjsContext *>(JS_GetContextPrivate(context));
-    if (G_UNLIKELY (!_gjs_context_get_is_owner_thread(gjs_cx))) {
+    if (G_UNLIKELY(!gjs->is_owner_thread())) {
         warn_about_illegal_js_callback(trampoline, "on a different thread",
             "an API not intended to be used in JS");
         gjs_callback_trampoline_unref(trampoline);
@@ -434,9 +434,8 @@ out:
              * main loop, or maybe not, but there's no way to tell, so we have
              * to exit here instead of propagating the exception back to the
              * original calling JS code. */
-            auto gcx = static_cast<GjsContext *>(JS_GetContextPrivate(context));
             uint8_t code;
-            if (_gjs_context_should_exit(gcx, &code))
+            if (gjs->should_exit(&code))
                 exit(code);
 
             /* Some other uncatchable exception, e.g. out of memory */
