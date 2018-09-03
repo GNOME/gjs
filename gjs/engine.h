@@ -24,9 +24,9 @@
 #ifndef GJS_ENGINE_H
 #define GJS_ENGINE_H
 
-#include "context.h"
+#include "gjs/context-private.h"
 #include "jsapi-wrapper.h"
 
-JSContext *gjs_create_js_context(GjsContext *js_context);
+JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs);
 
 #endif  /* GJS_ENGINE_H */
