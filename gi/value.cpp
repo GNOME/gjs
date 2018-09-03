@@ -137,7 +137,8 @@ closure_marshal(GClosure        *closure,
     }
 
     context = gjs_closure_get_context(closure);
-    if (G_UNLIKELY(_gjs_context_is_sweeping(context))) {
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+    if (G_UNLIKELY(gjs->sweeping())) {
         GSignalInvocationHint *hint = (GSignalInvocationHint*) invocation_hint;
 
         g_critical("Attempting to call back into JSAPI during the sweeping phase of GC. "
