@@ -348,8 +348,8 @@ gjs_console_interact(JSContext *context,
         }
         g_string_free(buffer, true);
 
-        auto gjs_context = static_cast<GjsContext *>(JS_GetContextPrivate(context));
-        ok = _gjs_context_run_jobs(gjs_context) && ok;
+        GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+        ok = gjs->run_jobs() && ok;
 
         if (!ok) {
             /* If this was an uncatchable exception, throw another uncatchable

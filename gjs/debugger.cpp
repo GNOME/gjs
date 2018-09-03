@@ -44,8 +44,8 @@ static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!gjs_parse_call_args(cx, "quit", args, "i", "exitcode", &exitcode))
         return false;
 
-    auto* gjs = static_cast<GjsContext*>(JS_GetContextPrivate(cx));
-    _gjs_context_exit(gjs, exitcode);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+    gjs->exit(exitcode);
     return false;  // without gjs_throw() == "throw uncatchable exception"
 }
 
