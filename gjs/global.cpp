@@ -25,6 +25,7 @@
 
 #include <gio/gio.h>
 
+#include "gjs/context-private.h"
 #include "global.h"
 #include "importer.h"
 #include "jsapi-util.h"
@@ -268,11 +269,12 @@ public:
                   v_importer.isObject()));
         JS::RootedObject root_importer(cx, &v_importer.toObject());
 
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
         /* Wrapping is a no-op if the importer is already in the same
          * compartment. */
         if (!JS_WrapObject(cx, &root_importer) ||
-            !gjs_object_define_property(cx, global, GJS_STRING_IMPORTS,
-                                        root_importer, GJS_MODULE_PROP_FLAGS))
+            !JS_DefinePropertyById(cx, global, atoms.imports(), root_importer,
+                                   GJS_MODULE_PROP_FLAGS))
             return false;
 
         if (bootstrap_script) {

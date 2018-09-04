@@ -295,8 +295,8 @@ boxed_invoke_constructor(JSContext             *context,
 {
     JS::RootedObject js_constructor(context);
 
-    if (!gjs_object_require_property(context, obj, NULL,
-                                     GJS_STRING_CONSTRUCTOR,
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    if (!gjs_object_require_property(context, obj, NULL, atoms.constructor(),
                                      &js_constructor))
         return false;
 
@@ -318,9 +318,9 @@ boxed_new(JSContext             *context,
     if (priv->gtype == G_TYPE_VARIANT) {
         /* Short-circuit construction for GVariants by calling into the JS packing
            function */
-        JS::HandleId constructor_name =
-            gjs_context_get_const_string(context, GJS_STRING_NEW_INTERNAL);
-        return boxed_invoke_constructor(context, obj, constructor_name, args);
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+        return boxed_invoke_constructor(context, obj, atoms.new_internal(),
+                                        args);
     }
 
     /* If the structure is registered as a boxed, we can create a new instance by
@@ -1058,7 +1058,8 @@ boxed_fill_prototype_info(JSContext *context,
                 if (priv->default_constructor < 0 &&
                     strcmp(g_base_info_get_name ((GIBaseInfo*) func_info), "new") == 0) {
                     priv->default_constructor = i;
-                    priv->default_constructor_name = gjs_context_get_const_string(context, GJS_STRING_NEW);
+                    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+                    priv->default_constructor_name = atoms.new_();
                 }
             }
 

@@ -176,8 +176,8 @@ gjs_lookup_param_prototype(JSContext    *context)
     JS::RootedObject constructor(context, &value.toObject());
     g_assert(constructor);
 
-    if (!gjs_object_get_property(context, constructor,
-                                 GJS_STRING_PROTOTYPE, &value))
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    if (!JS_GetPropertyById(context, constructor, atoms.prototype(), &value))
         return NULL;
 
     if (G_UNLIKELY (!value.isObjectOrNull()))
