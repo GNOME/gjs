@@ -1280,18 +1280,19 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
             goto out;
     } else {
         JS::RootedObject array_obj(context, &value.toObject());
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
         GITypeTag element_type = g_type_info_get_tag(param_info);
         if (JS_IsUint8Array(array_obj) && (element_type == GI_TYPE_TAG_INT8 ||
                                            element_type == GI_TYPE_TAG_UINT8)) {
             GBytes* bytes = gjs_byte_array_get_bytes(array_obj);
             *contents = g_bytes_unref_to_data(bytes, length_p);
-        } else if (gjs_object_has_property(context, array_obj,
-                                           GJS_STRING_LENGTH, &found_length) &&
+        } else if (JS_HasPropertyById(context, array_obj, atoms.length(),
+                                      &found_length) &&
                    found_length) {
             guint32 length;
 
-            if (!gjs_object_require_converted_property(context, array_obj, NULL,
-                                                       GJS_STRING_LENGTH, &length)) {
+            if (!gjs_object_require_converted_property(
+                    context, array_obj, nullptr, atoms.length(), &length)) {
                 goto out;
             } else {
                 if (!gjs_array_to_array(context,
@@ -1851,16 +1852,16 @@ gjs_value_to_g_argument(JSContext      *context,
          */
         if (value.isObject()) {
             bool found_length;
+            const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
             JS::RootedObject array_obj(context, &value.toObject());
 
-            if (gjs_object_has_property(context, array_obj,
-                                        GJS_STRING_LENGTH, &found_length) &&
+            if (JS_HasPropertyById(context, array_obj, atoms.length(),
+                                   &found_length) &&
                 found_length) {
                 guint32 length;
 
-                if (!gjs_object_require_converted_property(context, array_obj,
-                                                           NULL, GJS_STRING_LENGTH,
-                                                           &length)) {
+                if (!gjs_object_require_converted_property(
+                        context, array_obj, nullptr, atoms.length(), &length)) {
                     wrong = true;
                 } else {
                     GList *list;
