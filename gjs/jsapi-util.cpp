@@ -48,87 +48,6 @@ gjs_util_error_quark (void)
     return g_quark_from_static_string ("gjs-util-error-quark");
 }
 
-bool
-gjs_object_get_property(JSContext             *cx,
-                        JS::HandleObject       obj,
-                        GjsConstString         property_name,
-                        JS::MutableHandleValue value_p)
-{
-    return JS_GetPropertyById(cx, obj,
-                              gjs_context_get_const_string(cx, property_name),
-                              value_p);
-}
-
-bool
-gjs_object_set_property(JSContext       *cx,
-                        JS::HandleObject obj,
-                        GjsConstString   property_name,
-                        JS::HandleValue  value)
-{
-    return JS_SetPropertyById(cx, obj,
-                              gjs_context_get_const_string(cx, property_name),
-                              value);
-}
-
-bool
-gjs_object_has_property(JSContext       *cx,
-                        JS::HandleObject obj,
-                        GjsConstString   property_name,
-                        bool            *found)
-{
-    return JS_HasPropertyById(cx, obj,
-                              gjs_context_get_const_string(cx, property_name),
-                              found);
-}
-
-bool
-gjs_object_define_property(JSContext       *cx,
-                           JS::HandleObject obj,
-                           GjsConstString   property_name,
-                           JS::HandleValue  value,
-                           unsigned         flags)
-{
-    return JS_DefinePropertyById(cx, obj,
-                                 gjs_context_get_const_string(cx, property_name),
-                                 value, flags);
-}
-
-bool
-gjs_object_define_property(JSContext       *cx,
-                           JS::HandleObject obj,
-                           GjsConstString   property_name,
-                           JS::HandleObject value,
-                           unsigned         flags)
-{
-    return JS_DefinePropertyById(cx, obj,
-                                 gjs_context_get_const_string(cx, property_name),
-                                 value, flags);
-}
-
-bool
-gjs_object_define_property(JSContext       *cx,
-                           JS::HandleObject obj,
-                           GjsConstString   property_name,
-                           JS::HandleString value,
-                           unsigned         flags)
-{
-    return JS_DefinePropertyById(cx, obj,
-                                 gjs_context_get_const_string(cx, property_name),
-                                 value, flags);
-}
-
-bool
-gjs_object_define_property(JSContext       *cx,
-                           JS::HandleObject obj,
-                           GjsConstString   property_name,
-                           uint32_t         value,
-                           unsigned         flags)
-{
-    return JS_DefinePropertyById(cx, obj,
-                                 gjs_context_get_const_string(cx, property_name),
-                                 value, flags);
-}
-
 static void
 throw_property_lookup_error(JSContext       *cx,
                             JS::HandleObject obj,
@@ -285,10 +204,10 @@ gjs_throw_abstract_constructor_error(JSContext    *context,
     const JSClass *proto_class;
     const char *name = "anonymous";
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedObject callee(context, &args.callee());
     JS::RootedValue prototype(context);
-    if (gjs_object_get_property(context, callee, GJS_STRING_PROTOTYPE,
-                                &prototype)) {
+    if (JS_GetPropertyById(context, callee, atoms.prototype(), &prototype)) {
         proto_class = JS_GetClass(&prototype.toObject());
         name = proto_class->name;
     }
@@ -504,6 +423,7 @@ gjs_log_exception_full(JSContext       *context,
 {
     char *utf8_exception;
     bool is_syntax;
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
 
     JS_BeginRequest(context);
     JS::RootedObject exc_obj(context);
@@ -541,10 +461,9 @@ gjs_log_exception_full(JSContext       *context,
         JS::RootedValue js_lineNumber(context), js_fileName(context);
         unsigned lineNumber;
 
-        gjs_object_get_property(context, exc_obj, GJS_STRING_LINE_NUMBER,
-                                &js_lineNumber);
-        gjs_object_get_property(context, exc_obj, GJS_STRING_FILENAME,
-                                &js_fileName);
+        JS_GetPropertyById(context, exc_obj, atoms.line_number(),
+                           &js_lineNumber);
+        JS_GetPropertyById(context, exc_obj, atoms.file_name(), &js_fileName);
 
         GjsAutoJSChar utf8_filename;
         if (js_fileName.isString()) {
@@ -569,8 +488,7 @@ gjs_log_exception_full(JSContext       *context,
         JS::RootedValue stack(context);
 
         if (exc.isObject() &&
-            gjs_object_get_property(context, exc_obj, GJS_STRING_STACK,
-                                    &stack) &&
+            JS_GetPropertyById(context, exc_obj, atoms.stack(), &stack) &&
             stack.isString()) {
             JS::RootedString str(context, stack.toString());
             utf8_stack = JS_EncodeStringToUTF8(context, str);
