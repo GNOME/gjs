@@ -462,6 +462,8 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     m_global = global;
     JS_AddExtraGCRootsTracer(m_cx, &GjsContextPrivate::trace, this);
 
+    m_atoms.init_symbols(m_cx);
+
     JS::RootedObject importer(m_cx,
                               gjs_create_root_importer(m_cx, m_search_path));
     if (!importer)
