@@ -35,9 +35,25 @@ GjsAtoms::GjsAtoms(JSContext* cx) {
 #undef INITIALIZE_ATOM
 }
 
+/* Requires a current compartment. Unlike the atoms initialized in the
+ * constructor, this can GC, so it needs to be done after the tracing has been
+ * set up. */
+void GjsAtoms::init_symbols(JSContext* cx) {
+    JS::RootedString descr(cx);
+    JS::Symbol* symbol;
+
+#define INITIALIZE_SYMBOL_ATOM(identifier, str) \
+    descr = JS_AtomizeAndPinString(cx, str);    \
+    symbol = JS::NewSymbol(cx, descr);          \
+    m_##identifier = SYMBOL_TO_JSID(symbol);
+    FOR_EACH_SYMBOL_ATOM(INITIALIZE_SYMBOL_ATOM)
+#undef INITIALIZE_SYMBOL_ATOM
+}
+
 void GjsAtoms::trace(JSTracer* trc) {
 #define TRACE_ATOM(identifier, str) \
     JS::TraceEdge<jsid>(trc, &m_##identifier, "Atom " str);
     FOR_EACH_ATOM(TRACE_ATOM)
+    FOR_EACH_SYMBOL_ATOM(TRACE_ATOM)
 #undef TRACE_ATOM
 }
