@@ -190,8 +190,10 @@ gjs_js_define_system_stuff(JSContext              *context,
     return gjs_string_from_utf8(context, program_name, &value) &&
            /* The name is modeled after program_invocation_name, part of glibc
             */
-           JS_DefineProperty(context, module, "programInvocationName", value,
-                             GJS_MODULE_PROP_FLAGS | JSPROP_READONLY) &&
-           JS_DefineProperty(context, module, "version", GJS_VERSION,
-                             GJS_MODULE_PROP_FLAGS | JSPROP_READONLY);
+           JS_DefinePropertyById(context, module,
+                                 gjs->atoms().program_invocation_name(), value,
+                                 GJS_MODULE_PROP_FLAGS | JSPROP_READONLY) &&
+           JS_DefinePropertyById(context, module, gjs->atoms().version(),
+                                 GJS_VERSION,
+                                 GJS_MODULE_PROP_FLAGS | JSPROP_READONLY);
 }
