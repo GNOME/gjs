@@ -1129,8 +1129,9 @@ gjs_define_boxed_class(JSContext       *context,
 
     JS::RootedObject gtype_obj(context,
         gjs_gtype_create_gtype_wrapper(context, priv->gtype));
-    JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
-                      JSPROP_PERMANENT);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    JS_DefinePropertyById(context, constructor, atoms.gtype(), gtype_obj,
+                          JSPROP_PERMANENT);
 }
 
 JSObject*
