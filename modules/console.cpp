@@ -233,10 +233,6 @@ gjs_console_eval_and_print(JSContext  *cx,
     if (result.isUndefined())
         return true;
 
-    JS::RootedString str(cx, JS::ToString(cx, result));
-    if (!str)
-        return true;
-
     char *display_str;
     display_str = gjs_value_debug_string(cx, result);
     if (display_str) {
