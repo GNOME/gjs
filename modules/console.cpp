@@ -320,6 +320,8 @@ gjs_define_console_stuff(JSContext              *context,
                          JS::MutableHandleObject module)
 {
     module.set(JS_NewPlainObject(context));
-    return JS_DefineFunction(context, module, "interact", gjs_console_interact,
-                             1, GJS_MODULE_PROP_FLAGS);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    return JS_DefineFunctionById(context, module, atoms.interact(),
+                                 gjs_console_interact, 1,
+                                 GJS_MODULE_PROP_FLAGS);
 }

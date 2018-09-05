@@ -122,8 +122,10 @@ void gjs_context_setup_debugger_console(GjsContext* gjs) {
         return;
     }
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedValue v_wrapper(cx, JS::ObjectValue(*debuggee_wrapper));
-    if (!JS_SetProperty(cx, debugger_compartment, "debuggee", v_wrapper) ||
+    if (!JS_SetPropertyById(cx, debugger_compartment, atoms.debuggee(),
+                            v_wrapper) ||
         !JS_DefineFunctions(cx, debugger_compartment, debugger_funcs) ||
         !gjs_define_global_properties(cx, debugger_compartment, "debugger"))
         gjs_log_exception(cx);

@@ -729,8 +729,9 @@ gjs_define_fundamental_class(JSContext              *context,
 
     JS::RootedObject gtype_obj(context,
         gjs_gtype_create_gtype_wrapper(context, gtype));
-    return JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
-                             JSPROP_PERMANENT);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    return JS_DefinePropertyById(context, constructor, atoms.gtype(), gtype_obj,
+                                 JSPROP_PERMANENT);
 }
 
 JSObject*
