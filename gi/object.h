@@ -508,13 +508,9 @@ class ObjectInstance : public ObjectBase {
                    JS::MutableHandleObject obj);
 
     /* Methods connected to "public" API */
- private:
-    static JS::PersistentRootedSymbol hook_up_vfunc_root;
-
  public:
     GJS_USE
     bool typecheck_object(JSContext* cx, GType expected_type, bool throw_error);
-    static JS::Symbol* hook_up_vfunc_symbol(JSContext* cx);
 
     /* Notification callbacks */
 
