@@ -29,6 +29,7 @@
 #include <gjs/context.h>
 
 #include "coverage.h"
+#include "gjs/context-private.h"
 #include "global.h"
 #include "importer.h"
 #include "jsapi-util-args.h"
@@ -340,9 +341,10 @@ bootstrap_coverage(GjsCoverage *coverage)
         if (!JS_WrapObject(context, &debuggeeWrapper))
             return false;
 
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
         JS::RootedValue debuggeeWrapperValue(context, JS::ObjectValue(*debuggeeWrapper));
-        if (!JS_SetProperty(context, debugger_compartment, "debuggee",
-                            debuggeeWrapperValue) ||
+        if (!JS_SetPropertyById(context, debugger_compartment, atoms.debuggee(),
+                                debuggeeWrapperValue) ||
             !gjs_define_global_properties(context, debugger_compartment,
                                           "coverage"))
             return false;
