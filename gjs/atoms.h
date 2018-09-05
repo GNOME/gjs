@@ -56,7 +56,6 @@
     macro(overrides, "overrides") \
     macro(param_spec, "ParamSpec") \
     macro(parent_module, "__parentModule__") \
-    macro(private_ns_marker, "__gjsPrivateNS") \
     macro(program_invocation_name, "programInvocationName") \
     macro(prototype, "prototype") \
     macro(search_path, "searchPath") \
@@ -68,15 +67,21 @@
     macro(window, "window") \
     macro(x, "x") \
     macro(y, "y")
+
+#define FOR_EACH_SYMBOL_ATOM(macro) \
+    macro(hook_up_vfunc, "__GObject__hook_up_vfunc") \
+    macro(private_ns_marker, "__gjsPrivateNS")
 // clang-format on
 
 class GjsAtoms {
 #define DECLARE_ATOM_MEMBER(identifier, str) JS::Heap<jsid> m_##identifier;
     FOR_EACH_ATOM(DECLARE_ATOM_MEMBER)
+    FOR_EACH_SYMBOL_ATOM(DECLARE_ATOM_MEMBER)
 #undef DECLARE_ATOM_MEMBER
 
  public:
     explicit GjsAtoms(JSContext* cx);
+    void init_symbols(JSContext* cx);
 
     void trace(JSTracer* trc);
 
@@ -87,6 +92,7 @@ class GjsAtoms {
         return JS::HandleId::fromMarkedLocation(&m_##identifier.get()); \
     }
     FOR_EACH_ATOM(DECLARE_ATOM_ACCESSOR)
+    FOR_EACH_SYMBOL_ATOM(DECLARE_ATOM_ACCESSOR)
 #undef DECLARE_ATOM_ACCESSOR
 };
 
