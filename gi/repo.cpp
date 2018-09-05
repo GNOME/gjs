@@ -276,14 +276,14 @@ repo_new(JSContext *context)
      * internally.
      */
     JS::RootedString two_point_oh(context, JS_NewStringCopyZ(context, "2.0"));
-    if (!JS_DefineProperty(context, versions, "GLib", two_point_oh,
-                           JSPROP_PERMANENT))
+    if (!JS_DefinePropertyById(context, versions, atoms.glib(), two_point_oh,
+                               JSPROP_PERMANENT))
         return nullptr;
-    if (!JS_DefineProperty(context, versions, "GObject", two_point_oh,
-                           JSPROP_PERMANENT))
+    if (!JS_DefinePropertyById(context, versions, atoms.gobject(), two_point_oh,
+                               JSPROP_PERMANENT))
         return nullptr;
-    if (!JS_DefineProperty(context, versions, "Gio", two_point_oh,
-                           JSPROP_PERMANENT))
+    if (!JS_DefinePropertyById(context, versions, atoms.gio(), two_point_oh,
+                               JSPROP_PERMANENT))
         return nullptr;
 
     JS::RootedObject private_ns(context, JS_NewPlainObject(context));

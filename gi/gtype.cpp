@@ -24,13 +24,15 @@
 
 #include <config.h>
 
+#include <girepository.h>
+
 #include <set>
 
-#include "gtype.h"
+#include "gi/gtype.h"
+#include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
-#include <util/log.h>
-#include <girepository.h>
+#include "util/log.h"
 
 static bool weak_pointer_callback = false;
 static std::set<GType> weak_pointer_list;
@@ -181,11 +183,9 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
     return *heap_wrapper;
 }
 
-static GType
-_gjs_gtype_get_actual_gtype(JSContext       *context,
-                            JS::HandleObject object,
-                            int              recurse)
-{
+static GType _gjs_gtype_get_actual_gtype(JSContext* context,
+                                         const GjsAtoms& atoms,
+                                         JS::HandleObject object, int recurse) {
     JSAutoRequest ar(context);
 
     if (JS_InstanceOf(context, object, &gjs_gtype_class, NULL))
@@ -195,18 +195,19 @@ _gjs_gtype_get_actual_gtype(JSContext       *context,
 
     /* OK, we don't have a GType wrapper object -- grab the "$gtype"
      * property on that and hope it's a GType wrapper object */
-    if (!JS_GetProperty(context, object, "$gtype", &gtype_val) ||
+    if (!JS_GetPropertyById(context, object, atoms.gtype(), &gtype_val) ||
         !gtype_val.isObject()) {
-
         /* OK, so we're not a class. But maybe we're an instance. Check
            for "constructor" and recurse on that. */
-        if (!JS_GetProperty(context, object, "constructor", &gtype_val))
+        if (!JS_GetPropertyById(context, object, atoms.constructor(),
+                                &gtype_val))
             return G_TYPE_INVALID;
     }
 
     if (recurse > 0 && gtype_val.isObject()) {
         JS::RootedObject gtype_obj(context, &gtype_val.toObject());
-        return _gjs_gtype_get_actual_gtype(context, gtype_obj, recurse - 1);
+        return _gjs_gtype_get_actual_gtype(context, atoms, gtype_obj,
+                                           recurse - 1);
     }
 
     return G_TYPE_INVALID;
@@ -224,7 +225,8 @@ gjs_gtype_get_actual_gtype(JSContext       *context,
        GType value.
      */
 
-    return _gjs_gtype_get_actual_gtype(context, object, 2);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    return _gjs_gtype_get_actual_gtype(context, atoms, object, 2);
 }
 
 bool
