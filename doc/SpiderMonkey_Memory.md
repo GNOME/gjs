@@ -48,7 +48,7 @@ The general rule is that SpiderMonkey has a set of GC roots. To do the garbage c
 So if you have a `JS::Value` or `JSObject*`/`JSString*`/`JSFunction*`/`JS::Symbol*` somewhere that is not reachable from one of SpiderMonkey's GC roots - say, declared on the stack or in the private data of an object - that will not be found.
 SpiderMonkey may try to finalize this object even though you have a reference to it.
 
-If you reference JavaScript objects from your custom object, you have to use `JS::Heap<T>` and set the `JSCLASS_MARK_IS_TRACE` flag in your JSClass, and define a trace function in the class struct. A trace function just invokes `JS_CallHeapValueTracer()`, `JS_CallHeapObjectTracer()`, etc. to tell SpiderMonkey about any objects you reference. See [JSTraceOp docs][2].
+If you reference JavaScript objects from your custom object, you have to use `JS::Heap<T>` and set the `JSCLASS_MARK_IS_TRACE` flag in your JSClass, and define a trace function in the class struct. A trace function just invokes `JS::TraceEdge<T>()` to tell SpiderMonkey about any objects you reference. See [JSTraceOp docs][2].
 
 Tracing doesn't add a GC thing to the GC root set!
 It just notifies the interpreter that a thing is reachable from another thing.
