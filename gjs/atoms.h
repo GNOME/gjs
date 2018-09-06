@@ -61,6 +61,7 @@
     macro(search_path, "searchPath") \
     macro(stack, "stack") \
     macro(to_string, "toString") \
+    macro(value_of, "valueOf") \
     macro(version, "version") \
     macro(versions, "versions") \
     macro(width, "width") \
