@@ -740,15 +740,8 @@ importer_resolve(JSContext        *context,
     }
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    if (id == atoms.module_init()) {
-        *resolved = false;
-        return true;
-    }
-
-    /* let Object.prototype resolve these */
-    JSFlatString *str = JSID_TO_FLAT_STRING(id);
-    if (JS_FlatStringEqualsAscii(str, "valueOf") ||
-        JS_FlatStringEqualsAscii(str, "toString")) {
+    if (id == atoms.module_init() || id == atoms.to_string() ||
+        id == atoms.value_of()) {
         *resolved = false;
         return true;
     }
