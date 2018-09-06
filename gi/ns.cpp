@@ -60,9 +60,8 @@ ns_resolve(JSContext       *context,
     }
 
     /* let Object.prototype resolve these */
-    JSFlatString *str = JSID_TO_FLAT_STRING(id);
-    if (JS_FlatStringEqualsAscii(str, "valueOf") ||
-        JS_FlatStringEqualsAscii(str, "toString")) {
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    if (id == atoms.to_string() || id == atoms.value_of()) {
         *resolved = false;
         return true;
     }
