@@ -752,8 +752,7 @@ importer_resolve(JSContext        *context,
     /* let Object.prototype resolve these */
     JSFlatString *str = JSID_TO_FLAT_STRING(id);
     if (JS_FlatStringEqualsAscii(str, "valueOf") ||
-        JS_FlatStringEqualsAscii(str, "toString") ||
-        JS_FlatStringEqualsAscii(str, "__iterator__")) {
+        JS_FlatStringEqualsAscii(str, "toString")) {
         *resolved = false;
         return true;
     }
