@@ -304,15 +304,54 @@ gjs_profiler_sigprof(int        signum,
     for (uint32_t ix = 0; ix < depth; ix++) {
         js::ProfileEntry& entry = self->stack.entries[ix];
         const char *label = entry.label();
+        const char *dynamic_string = entry.dynamicString();
         uint32_t flipped = depth - 1 - ix;
+        size_t label_length = strlen(label);
+
+        /*
+         * 512 is an arbitrarily large size, very likely to be enough to
+         * hold the final string.
+         */
+        char final_string[512] = { 0, };
+        size_t available_length = sizeof (final_string);
+        size_t position = 0;
+
+        if (label_length > 0) {
+            /* Start copying the label to the final string */
+            memcpy(final_string, label, label_length);
+            available_length -= label_length;
+            position += label_length;
+
+            /*
+             * Add a space in between the label and the dynamic string,
+             * If there is one.
+             */
+            if (dynamic_string) {
+                memcpy(final_string + label_length, " ", 1);
+                available_length -=  1;
+                position += 1;
+            }
+        }
+
+        /* Now append the dynamic string at the end of the final string.
+         * The string is cut in case it doesn't fit the remaining space.
+         */
+        if (dynamic_string) {
+            size_t dynamic_string_length = strlen(dynamic_string);
+
+            if (dynamic_string_length > 0) {
+                size_t remaining_length = MIN(available_length - 1, dynamic_string_length);
+                memcpy(final_string + position, dynamic_string, remaining_length);
+            }
+        }
 
         /*
          * GeckoProfiler will put "js::RunScript" on the stack, but it has
          * a stack address of "this", which is not terribly useful since
          * everything will show up as [stack] when building callgraphs.
          */
-        if (label)
-            addrs[flipped] = sp_capture_writer_add_jitmap(self->capture, label);
+        if (final_string[0] != '\0')
+            addrs[flipped] = sp_capture_writer_add_jitmap(self->capture, final_string);
         else
             addrs[flipped] = SpCaptureAddress(entry.stackAddress());
     }
