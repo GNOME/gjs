@@ -69,20 +69,24 @@ static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
         /* optimization, avoids iconv overhead and runs
          * libmozjs hardwired utf8-to-utf16
          */
+
+        // If there are any 0 bytes, including the terminating byte, stop at
+        // the first one
+        if (data[len - 1] == 0 || memchr(data, 0, len))
+            return gjs_string_from_utf8(context, reinterpret_cast<char*>(data),
+                                        rval);
+
         return gjs_string_from_utf8_n(context, reinterpret_cast<char*>(data),
                                       len, rval);
     } else {
-        bool ok = false;
         gsize bytes_written;
         GError *error;
-        JSString *s;
-        char *u16_str;
-        char16_t *u16_out;
 
         error = NULL;
-        u16_str = g_convert(reinterpret_cast<char*>(data), len, "UTF-16",
-                            encoding, nullptr, /* bytes read */
-                            &bytes_written, &error);
+        GjsAutoChar u16_str =
+            g_convert(reinterpret_cast<char*>(data), len, "UTF-16", encoding,
+                      nullptr, /* bytes read */
+                      &bytes_written, &error);
         if (u16_str == NULL) {
             /* frees the GError */
             gjs_throw_g_error(context, error);
@@ -94,17 +98,15 @@ static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
          */
         g_assert((bytes_written % 2) == 0);
 
-        u16_out = g_new(char16_t, bytes_written / 2);
-        memcpy(u16_out, u16_str, bytes_written);
-        s = JS_NewUCStringCopyN(context, u16_out, bytes_written / 2);
-        if (s != NULL) {
-            ok = true;
-            rval.setString(s);
-        }
+        // g_convert 0-terminates the string, although the 0 isn't included in
+        // bytes_written
+        JSString* s = JS_NewUCStringCopyZ(
+            context, reinterpret_cast<char16_t*>(u16_str.get()));
+        if (!s)
+            return false;
 
-        g_free(u16_str);
-        g_free(u16_out);
-        return ok;
+        rval.setString(s);
+        return true;
     }
 }
 
