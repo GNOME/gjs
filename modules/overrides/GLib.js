@@ -112,7 +112,7 @@ function _pack_variant(signature, value) {
 	    return GLib.Variant.new_maybe(null, _pack_variant(signature, value));
 	else
 	    return GLib.Variant.new_maybe(new GLib.VariantType(_read_single_type(signature, false).join('')), null);
-    case 'a':
+    case 'a': {
 	let arrayType = _read_single_type(signature, false);
 	if (arrayType[0] == 's') {
 	    // special case for array of strings
@@ -120,8 +120,17 @@ function _pack_variant(signature, value) {
 	}
 	if (arrayType[0] == 'y') {
 	    // special case for array of bytes
+            let bytes;
+            if (typeof value === 'string') {
+                let byteArray = ByteArray.fromString(value);
+                if (byteArray[byteArray.length - 1] !== 0)
+                    byteArray = Uint8Array.of(...byteArray, 0);
+                bytes = ByteArray.toGBytes(byteArray);
+            } else {
+                bytes = _makeBytes(value);
+            }
 	    return GLib.Variant.new_from_bytes(new GLib.VariantType('ay'),
-                                               _makeBytes(value), true);
+                bytes, true);
 	}
 
 	let arrayValue = [];
@@ -140,6 +149,7 @@ function _pack_variant(signature, value) {
 	    }
 	}
 	return GLib.Variant.new_array(new GLib.VariantType(arrayType.join('')), arrayValue);
+    }
 
     case '(':
 	let children = [ ];
