@@ -1,3 +1,4 @@
+const ByteArray = imports.byteArray;
 const GLib = imports.gi.GLib;
 
 describe('GVariant constructor', function () {
@@ -39,5 +40,12 @@ describe('GVariant constructor', function () {
 
         maybe_variant = new GLib.Variant('ms', 'string');
         expect(maybe_variant.deep_unpack()).toEqual('string');
+    });
+
+    it('constructs a byte array variant', function () {
+        const byteArray = Uint8Array.from('pizza', c => c.charCodeAt(0));
+        const byteArrayVariant = new GLib.Variant('ay', byteArray);
+        expect(ByteArray.toString(byteArrayVariant.deep_unpack()))
+            .toEqual('pizza');
     });
 });

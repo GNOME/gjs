@@ -68,7 +68,7 @@ function _read_single_type(signature, forceSimple) {
 
 function _makeBytes(byteArray) {
     if (byteArray instanceof Uint8Array || byteArray instanceof ByteArray.ByteArray)
-        return byteArray.toGBytes();
+        return ByteArray.toGBytes(byteArray);
     else
         return new GLib.Bytes(byteArray);
 }
