@@ -37,6 +37,28 @@ describe('Byte array', function () {
         expect(s).toEqual('abcd');
     });
 
+    it('can be converted to a string of UTF-8 characters even if it ends with a 0', function () {
+        const a = Uint8Array.of(97, 98, 99, 100, 0);
+        const s = ByteArray.toString(a);
+        expect(s.length).toEqual(4);
+        expect(s).toEqual('abcd');
+    });
+
+    it('can be converted to a string of encoded characters even with a 0 byte', function () {
+        const a = Uint8Array.of(97, 98, 99, 100, 0);
+        const s = ByteArray.toString(a, 'LATIN1');
+        expect(s.length).toEqual(5);
+        expect(s).toEqual('\uFEFFabcd');
+        // GLib puts a BOM in the string, who knows why
+    });
+
+    it('stops converting to a string at an embedded 0 byte', function () {
+        const a = Uint8Array.of(97, 98, 0, 99, 100);
+        const s = ByteArray.toString(a);
+        expect(s.length).toEqual(2);
+        expect(s).toEqual('ab');
+    });
+
     describe('legacy toString() behavior', function () {
         beforeEach(function () {
             GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
@@ -50,8 +72,7 @@ describe('Byte array', function () {
 
         it('is preserved when marshalled from GI', function () {
             let a = GIMarshallingTests.bytearray_full_return();
-            expect(() => a.toString()).toThrowError(TypeError,
-                /malformed UTF-8 character sequence/);
+            expect(a.toString()).toEqual('');
         });
 
         afterEach(function () {

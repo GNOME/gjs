@@ -48,4 +48,25 @@ describe('GVariant constructor', function () {
         expect(ByteArray.toString(byteArrayVariant.deep_unpack()))
             .toEqual('pizza');
     });
+
+    it('constructs a byte array variant from a string', function () {
+        const byteArrayVariant = new GLib.Variant('ay', 'pizza');
+        expect(ByteArray.toString(byteArrayVariant.deep_unpack()))
+            .toEqual('pizza');
+    });
+
+    it('0-terminates a byte array variant constructed from a string', function () {
+        const byteArrayVariant = new GLib.Variant('ay', 'pizza');
+        const a = byteArrayVariant.deep_unpack();
+        [112, 105, 122, 122, 97, 0].forEach((val, ix) =>
+            expect(a[ix]).toEqual(val));
+    });
+
+    it('does not 0-terminate a byte array variant constructed from a Uint8Array', function () {
+        const byteArray = Uint8Array.from('pizza', c => c.charCodeAt(0));
+        const byteArrayVariant = new GLib.Variant('ay', byteArray);
+        const a = byteArrayVariant.deep_unpack();
+        [112, 105, 122, 122, 97].forEach((val, ix) =>
+            expect(a[ix]).toEqual(val));
+    });
 });
