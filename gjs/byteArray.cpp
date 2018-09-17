@@ -83,10 +83,16 @@ static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
         GError *error;
 
         error = NULL;
-        GjsAutoChar u16_str =
-            g_convert(reinterpret_cast<char*>(data), len, "UTF-16", encoding,
-                      nullptr, /* bytes read */
-                      &bytes_written, &error);
+        GjsAutoChar u16_str = g_convert(reinterpret_cast<char*>(data), len,
+        // Make sure the bytes of the UTF-16 string are laid out in memory
+        // such that we can simply reinterpret_cast<char16_t> them.
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+                                        "UTF-16LE",
+#else
+                                        "UTF-16BE",
+#endif
+                                        encoding, nullptr, /* bytes read */
+                                        &bytes_written, &error);
         if (u16_str == NULL) {
             /* frees the GError */
             gjs_throw_g_error(context, error);
