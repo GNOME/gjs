@@ -77,7 +77,6 @@ gjs_throw_valist(JSContext       *context,
     }
 
     JS::RootedObject constructor(context);
-    JS::RootedObject global(context, JS::CurrentGlobalOrNull(context));
     JS::RootedValue v_constructor(context), exc_val(context);
     JS::RootedObject new_exc(context);
     JS::AutoValueArray<1> error_args(context);
