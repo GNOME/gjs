@@ -93,11 +93,8 @@ static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
 #endif
                                         encoding, nullptr, /* bytes read */
                                         &bytes_written, &error);
-        if (u16_str == NULL) {
-            /* frees the GError */
-            gjs_throw_g_error(context, error);
-            return false;
-        }
+        if (!u16_str)
+            return gjs_throw_gerror_message(context, error);  // frees GError
 
         /* bytes_written should be bytes in a UTF-16 string so
          * should be a multiple of 2
@@ -240,11 +237,8 @@ from_string_func(JSContext *context,
             }
         }
 
-        if (encoded == NULL) {
-            /* frees the GError */
-            gjs_throw_g_error(context, error);
-            return false;
-        }
+        if (!encoded)
+            return gjs_throw_gerror_message(context, error);  // frees GError
 
         array_buffer =
             JS_NewExternalArrayBuffer(context, bytes_written, encoded, nullptr,

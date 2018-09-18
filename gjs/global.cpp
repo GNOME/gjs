@@ -41,10 +41,8 @@ run_bootstrap(JSContext       *cx,
     std::unique_ptr<GBytes, decltype(&g_bytes_unref)> script_bytes(
         g_resources_lookup_data(path, G_RESOURCE_LOOKUP_FLAGS_NONE, &error),
         g_bytes_unref);
-    if (!script_bytes) {
-        gjs_throw_g_error(cx, error);
-        return false;
-    }
+    if (!script_bytes)
+        return gjs_throw_gerror_message(cx, error);
 
     JSAutoCompartment ac(cx, global);
 
