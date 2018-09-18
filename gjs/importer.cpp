@@ -300,7 +300,7 @@ import_module_init(JSContext       *context,
         if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_IS_DIRECTORY) &&
             !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_DIRECTORY) &&
             !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-            gjs_throw_g_error(context, error);
+            gjs_throw_gerror_message(context, error);
         else
             g_error_free(error);
 

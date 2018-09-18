@@ -47,6 +47,8 @@ bool      gjs_typecheck_gerror         (JSContext             *context,
 GError *gjs_gerror_make_from_error(JSContext       *cx,
                                    JS::HandleObject obj);
 
+bool gjs_throw_gerror(JSContext* cx, GError* error);
+
 G_END_DECLS
 
 #endif  /* __GJS_ERROR_H__ */

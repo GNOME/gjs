@@ -588,3 +588,28 @@ gjs_gerror_make_from_error(JSContext       *cx,
 
     return g_error_new_literal(GJS_JS_ERROR, code, message);
 }
+
+/*
+ * gjs_throw_gerror:
+ *
+ * Converts a GError into a JavaScript exception, and frees the GError.
+ * Differently from gjs_throw(), it will overwrite an existing exception, as it
+ * is used to report errors from C functions.
+ *
+ * Returns: false, for convenience in returning from the calling function.
+ */
+bool gjs_throw_gerror(JSContext* cx, GError* error) {
+    // return false even if the GError is null, as presumably something failed
+    // in the calling code, and the caller expects to throw.
+    g_return_val_if_fail(error, false);
+
+    JSAutoRequest ar(cx);
+
+    JS::RootedValue err(
+        cx, JS::ObjectOrNullValue(gjs_error_from_gerror(cx, error, true)));
+    g_error_free(error);
+    if (!err.isNull())
+        JS_SetPendingException(cx, err);
+
+    return false;
+}
