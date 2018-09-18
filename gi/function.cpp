@@ -1382,8 +1382,7 @@ release:
     }
 
     if (!failed && did_throw_gerror) {
-        gjs_throw_g_error(context, local_error);
-        return false;
+        return gjs_throw_gerror(context, local_error);
     } else if (failed) {
         return false;
     } else {
@@ -1602,8 +1601,7 @@ init_cached_function_data (JSContext      *context,
         if (!g_function_info_prep_invoker((GIFunctionInfo *)info,
                                           &(function->invoker),
                                           &error)) {
-            gjs_throw_g_error(context, error);
-            return false;
+            return gjs_throw_gerror(context, error);
         }
     } else if (info_type == GI_INFO_TYPE_VFUNC) {
         gpointer addr;
@@ -1611,7 +1609,7 @@ init_cached_function_data (JSContext      *context,
         addr = g_vfunc_info_get_address((GIVFuncInfo *)info, gtype, &error);
         if (error != NULL) {
             if (error->code != G_INVOKE_ERROR_SYMBOL_NOT_FOUND)
-                gjs_throw_g_error(context, error);
+                return gjs_throw_gerror(context, error);
 
             g_clear_error(&error);
             return false;
@@ -1620,8 +1618,7 @@ init_cached_function_data (JSContext      *context,
         if (!g_function_invoker_new_for_address(addr, info,
                                                 &(function->invoker),
                                                 &error)) {
-            gjs_throw_g_error(context, error);
-            return false;
+            return gjs_throw_gerror(context, error);
         }
     }
 
