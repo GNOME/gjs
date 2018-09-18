@@ -37,7 +37,6 @@
 #include "jsapi-class.h"
 #include "jsapi-util.h"
 #include "context-private.h"
-#include <gi/boxed.h>
 
 #include <string.h>
 #include <math.h>
@@ -485,47 +484,28 @@ gjs_value_debug_string(JSContext      *context,
     return debugstr;
 }
 
-static char *
-utf8_exception_from_non_gerror_value(JSContext      *cx,
-                                     JS::HandleValue exc)
-{
-    JS::RootedString exc_str(cx, JS::ToString(cx, exc));
-    if (!exc_str)
-        return nullptr;
-
-    GjsAutoJSChar utf8_exception = JS_EncodeStringToUTF8(cx, exc_str);
-    return utf8_exception.copy();
-}
-
 bool
 gjs_log_exception_full(JSContext       *context,
                        JS::HandleValue  exc,
                        JS::HandleString message)
 {
-    char *utf8_exception;
     bool is_syntax;
 
     JS_BeginRequest(context);
     JS::RootedObject exc_obj(context);
+    JS::RootedString exc_str(context, JS::ToString(context, exc));
+    GjsAutoJSChar utf8_exception;
+    if (exc_str)
+        utf8_exception = JS_EncodeStringToUTF8(context, exc_str);
+    if (!utf8_exception)
+        JS_ClearPendingException(context);
 
     is_syntax = false;
-
-    if (!exc.isObject()) {
-        utf8_exception = utf8_exception_from_non_gerror_value(context, exc);
-    } else {
+    if (exc.isObject()) {
         exc_obj = &exc.toObject();
-        if (gjs_typecheck_boxed(context, exc_obj, NULL, G_TYPE_ERROR, false)) {
-            GError *gerror = (GError *) gjs_c_struct_from_boxed(context, exc_obj);
-            utf8_exception = g_strdup_printf("GLib.Error %s: %s",
-                                             g_quark_to_string(gerror->domain),
-                                             gerror->message);
-        } else {
-            const JSClass *syntax_error =
-                js::Jsvalify(js::ProtoKeyToClass(JSProto_SyntaxError));
-            is_syntax = JS_InstanceOf(context, exc_obj, syntax_error, nullptr);
-
-            utf8_exception = utf8_exception_from_non_gerror_value(context, exc);
-        }
+        const JSClass* syntax_error =
+            js::Jsvalify(js::ProtoKeyToClass(JSProto_SyntaxError));
+        is_syntax = JS_InstanceOf(context, exc_obj, syntax_error, nullptr);
     }
 
     GjsAutoJSChar utf8_message;
@@ -557,10 +537,10 @@ gjs_log_exception_full(JSContext       *context,
         lineNumber = js_lineNumber.toInt32();
 
         if (message) {
-            g_critical("JS ERROR: %s: %s @ %s:%u", utf8_message.get(), utf8_exception,
-                       utf8_filename.get(), lineNumber);
+            g_critical("JS ERROR: %s: %s @ %s:%u", utf8_message.get(),
+                       utf8_exception.get(), utf8_filename.get(), lineNumber);
         } else {
-            g_critical("JS ERROR: %s @ %s:%u", utf8_exception,
+            g_critical("JS ERROR: %s @ %s:%u", utf8_exception.get(),
                        utf8_filename.get(), lineNumber);
         }
 
@@ -578,18 +558,19 @@ gjs_log_exception_full(JSContext       *context,
 
         if (message) {
             if (utf8_stack)
-                g_warning("JS ERROR: %s: %s\n%s", utf8_message.get(), utf8_exception, utf8_stack.get());
+                g_warning("JS ERROR: %s: %s\n%s", utf8_message.get(),
+                          utf8_exception.get(), utf8_stack.get());
             else
-                g_warning("JS ERROR: %s: %s", utf8_message.get(), utf8_exception);
+                g_warning("JS ERROR: %s: %s", utf8_message.get(),
+                          utf8_exception.get());
         } else {
             if (utf8_stack)
-                g_warning("JS ERROR: %s\n%s", utf8_exception, utf8_stack.get());
+                g_warning("JS ERROR: %s\n%s", utf8_exception.get(),
+                          utf8_stack.get());
             else
-                g_warning("JS ERROR: %s", utf8_exception);
+                g_warning("JS ERROR: %s", utf8_exception.get());
         }
     }
-
-    g_free(utf8_exception);
 
     JS_EndRequest(context);
 
