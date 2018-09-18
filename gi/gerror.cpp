@@ -199,15 +199,31 @@ error_to_string(JSContext *context,
                 unsigned   argc,
                 JS::Value *vp)
 {
-    GJS_GET_PRIV(context, argc, vp, rec, self, Error, priv);
+    GJS_GET_THIS(context, argc, vp, rec, self);
 
+    GjsAutoChar descr;
+
+    // An error created via `new GLib.Error` will have a Boxed* private pointer,
+    // not an Error*, so we can't call regular error_to_string() on it.
+    if (gjs_typecheck_boxed(context, self, nullptr, G_TYPE_ERROR, false)) {
+        auto* gerror =
+            static_cast<GError*>(gjs_c_struct_from_boxed(context, self));
+        descr =
+            g_strdup_printf("GLib.Error %s: %s",
+                            g_quark_to_string(gerror->domain), gerror->message);
+
+        return gjs_string_from_utf8(context, descr, rec.rval());
+    }
+
+    if (!do_base_typecheck(context, self, true))
+        return false;
+    Error* priv = priv_from_js(context, self);
     if (priv == NULL)
         return false;
 
     /* We follow the same pattern as standard JS errors, at the expense of
        hiding some useful information */
 
-    GjsAutoChar descr;
     if (priv->gerror == NULL) {
         descr = g_strdup_printf("%s.%s",
                                 g_base_info_get_namespace(priv->info),
@@ -612,4 +628,24 @@ bool gjs_throw_gerror(JSContext* cx, GError* error) {
         JS_SetPendingException(cx, err);
 
     return false;
+}
+
+/*
+ * gjs_define_error_properties:
+ *
+ * Define the expected properties of a JS Error object on a newly-created
+ * boxed object. This is required when creating a GLib.Error via the default
+ * constructor, for example: `new GLib.Error(GLib.quark_from_string('my-error'),
+ * 0, 'message')`.
+ *
+ * This function doesn't throw an exception if it fails.
+ */
+void gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
+    JS::AutoSaveExceptionState saved_exc(cx);
+
+    define_error_properties(cx, obj);
+
+    if (!JS_DefineFunction(cx, obj, "toString", error_to_string, 0,
+                           GJS_MODULE_PROP_FLAGS))
+        saved_exc.restore();
 }
