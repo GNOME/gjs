@@ -25,16 +25,17 @@
 
 #include <string.h>
 
-#include "boxed.h"
 #include "arg.h"
-#include "object.h"
+#include "boxed.h"
+#include "function.h"
+#include "gi/gerror.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
 #include "gjs/mem.h"
-#include "repo.h"
-#include "proxyutils.h"
-#include "function.h"
 #include "gtype.h"
+#include "object.h"
+#include "proxyutils.h"
+#include "repo.h"
 
 #include <util/log.h>
 
@@ -365,9 +366,18 @@ boxed_new(JSContext             *context,
          * that is, Namespace.BoxedType, or object.constructor, given that
          * object was created with the right prototype. The ID is traced from
          * the object, so it's OK to create a handle from it. */
-        return boxed_invoke_constructor(context, obj,
-            JS::HandleId::fromMarkedLocation(priv->default_constructor_name.address()),
-            args);
+        JS::HandleId constructor_name = JS::HandleId::fromMarkedLocation(
+            priv->default_constructor_name.address());
+        if (!boxed_invoke_constructor(context, obj, constructor_name, args))
+            return false;
+
+        // Define the expected Error properties and a better toString()
+        if (priv->gtype == G_TYPE_ERROR) {
+            JS::RootedObject gerror(context, &args.rval().toObject());
+            gjs_define_error_properties(context, gerror);
+        }
+
+        return true;
     } else {
         gjs_throw(context, "Unable to construct struct type %s since it has no default constructor and cannot be allocated directly",
                   g_base_info_get_name((GIBaseInfo*) priv->info));
