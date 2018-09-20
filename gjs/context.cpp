@@ -496,13 +496,13 @@ bool gjs_context_eval_module(GjsContext* js_context, const char* identifier,
     JSAutoCompartment ac(js_context->context, js_context->global);
     JSAutoRequest ar(js_context->context);
 
-    if (!JS::ModuleDeclarationInstantiation(context, it->second)) {
+    if (!JS::ModuleInstantiate(context, it->second)) {
         gjs_log_exception(context);
         g_error("Failed to instantiate module: %s", identifier);
         return false;
     }
 
-    if (!JS::ModuleEvaluation(context, it->second))
+    if (!JS::ModuleEvaluate(context, it->second))
         return false;
 
     *code = 0;
@@ -608,7 +608,7 @@ bool _gjs_context_register_module_inner(GjsContext* gjs_cx,
         JS::SetModuleHostDefinedField(new_module, filename_val);
     }
 
-    gjs_cx->idToModule[identifier] = new_module;
+    gjs_cx->idToModule[identifier].init(cx, new_module);
     return true;
 }
 
