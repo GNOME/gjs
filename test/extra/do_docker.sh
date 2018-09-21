@@ -11,7 +11,7 @@ function do_Shrink_Image(){
         rm -rf /var/lib/apt/lists/*
 
     elif [[ $BASE == "fedora" ]]; then
-        dnf -y clean all
+        dnf --disablerepo=rawhide-modular -y clean all
         rm -rf /var/cache/dnf
     fi
 

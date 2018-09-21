@@ -19,14 +19,16 @@ function do_Install_Dependencies(){
                                libedit-dev libgl1-mesa-dev lcov libreadline-dev
 
     elif [[ $BASE == "fedora" ]]; then
+        # --disablerepo=rawhide-modular: Workaround for Rawhide problem
         if [[ $STATIC == *"qemu"* ]]; then
-            dnf -y --nogpgcheck upgrade --best --allowerasing
+            dnf --disablerepo=rawhide-modular -y --nogpgcheck upgrade --best --allowerasing
         else
-            dnf -y upgrade --best --allowerasing
+            dnf --disablerepo=rawhide-modular -y upgrade --best --allowerasing
         fi
 
         # Base dependencies
-        dnf -y    install @c-development @development-tools clang redhat-rpm-config gnome-common python-devel \
+        dnf --disablerepo=rawhide-modular -y install \
+                          @c-development @development-tools clang redhat-rpm-config gnome-common python-devel \
                           pygobject2 dbus-python perl-Text-CSV perl-XML-Parser gettext-devel gtk-doc \
                           ninja-build zlib-devel libffi-devel \
                           libtool libicu-devel nspr-devel \
@@ -37,7 +39,7 @@ function do_Install_Dependencies(){
                           libedit-devel libasan libubsan libtsan compiler-rt lcov mesa-libGL-devel readline-devel
 
         if [[ $DEV == "devel" ]]; then
-            dnf -y install time
+            dnf --disablerepo=rawhide-modular -y install time
         fi
     else
         echo
@@ -56,11 +58,11 @@ function do_Install_Extras(){
 
     elif [[ $BASE == "fedora" ]]; then
         # Distros development versions of needed libraries
-        dnf -y install gobject-introspection-devel
+        dnf --disablerepo=rawhide-modular -y install gobject-introspection-devel
 
         if [[ $STATIC != *"qemu"* ]]; then
             # Distros debug info of needed libraries
-            dnf -y debuginfo-install glib2-devel gobject-introspection-devel gtk3-devel expat fontconfig cairo glibc
+            dnf --disablerepo=rawhide-modular -y debuginfo-install glib2-devel gobject-introspection-devel gtk3-devel expat fontconfig cairo glibc
         fi
     fi
 }
