@@ -1,3 +1,11 @@
+Version 1.54.1
+--------------
+
+- Closed bugs and merge requests:
+  * legacy: Ensure generated GType names are valid [!229, Florian Müllner]
+  * Fix GJS profiler with MozJS 60 [!230, Georges Basile Stavracas Neto]
+  * Regression with DBus proxies [#202, !231, Philip Chimento]
+
 Version 1.54.0
 --------------
 
