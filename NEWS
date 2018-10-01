@@ -1,3 +1,22 @@
+Version 1.52.4
+--------------
+
+- Closed bugs and merge requests:
+
+  * `ARGV` encoding issues [#22, !108, Evan Welsh]
+  * Segfault on enumeration of GjSFileImporter properties when a searchpath
+    entry contains a symlink [#154, !144, Ole Jørgen Brønner]
+  * Possible refcounting bug around GtkListbox signal handlers [#24, !154,
+    Philip Chimento]
+  * Fix up GJS_DISABLE_JIT flag now the JIT is enabled by default in
+    SpiderMonkey [!159, Christopher Wheeldon]
+  * Expose GObject static property symbols. [!197, Evan Welsh]
+  * Do not run linters on tagged commits [!181, Claudio André]
+  * gjs-1.52.0 fails to compile against x86_64 musl systems [#132, !214, Philip
+    Chimento]
+  * gjs no longer builds after recent autoconf-archive updates [#149, !217,
+    Philip Chimento]
+
 Version 1.52.3
 --------------
 
