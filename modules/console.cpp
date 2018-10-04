@@ -53,6 +53,8 @@
 #include <glib.h>
 #include <glib/gprintf.h>
 
+#include <string>
+
 #include "console.h"
 #include "gjs/context.h"
 #include "gjs/context-private.h"
@@ -187,6 +189,20 @@ gjs_console_warning_reporter(JSContext *cx, JSErrorReport *report)
 class AutoReportException {
     JSContext *m_cx;
 
+    JSErrorReport* error_from_exception_value(JS::HandleValue v_exn) const {
+        if (!v_exn.isObject())
+            return nullptr;
+        JS::RootedObject exn(m_cx, &v_exn.toObject());
+        return JS_ErrorFromException(m_cx, exn);
+    }
+
+    JSObject* stack_from_exception_value(JS::HandleValue v_exn) const {
+        if (!v_exn.isObject())
+            return nullptr;
+        JS::RootedObject exn(m_cx, &v_exn.toObject());
+        return ExceptionStackOrNull(exn);
+    }
+
 public:
     explicit AutoReportException(JSContext *cx) : m_cx(cx) {}
 
@@ -198,22 +214,17 @@ public:
         JS::RootedValue v_exn(m_cx);
         (void) JS_GetPendingException(m_cx, &v_exn);
 
-        JS::RootedObject exn(m_cx, &v_exn.toObject());
-        JSErrorReport *report = JS_ErrorFromException(m_cx, exn);
+        JSErrorReport* report = error_from_exception_value(v_exn);
         if (report) {
             g_assert(!JSREPORT_IS_WARNING(report->flags));
             gjs_console_print_error(report);
         } else {
-            JS::RootedString message(m_cx, JS::ToString(m_cx, v_exn));
-            if (!message) {
-                g_printerr("(could not convert thrown exception to string)\n");
-            } else {
-                GjsAutoJSChar message_utf8 = JS_EncodeStringToUTF8(m_cx, message);
-                g_printerr("%s\n", message_utf8.get());
-            }
+            GjsAutoChar string = gjs_value_debug_string(m_cx, v_exn);
+            g_printerr("error: %s\n", string.get());
+            return;
         }
 
-        JS::RootedObject stack(m_cx, ExceptionStackOrNull(exn));
+        JS::RootedObject stack(m_cx, stack_from_exception_value(v_exn));
         if (stack) {
             GjsAutoChar stack_str = gjs_format_stack_trace(m_cx, stack);
             if (!stack_str)
