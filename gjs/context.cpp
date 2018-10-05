@@ -615,9 +615,10 @@ _gjs_context_schedule_gc_internal(GjsContext *js_context,
         return;
 
     js_context->force_gc |= force_gc;
-    js_context->auto_gc_id = g_idle_add_full(G_PRIORITY_LOW,
-                                             trigger_gc_if_needed,
-                                             js_context, NULL);
+    js_context->auto_gc_id = g_timeout_add_full(G_PRIORITY_LOW,
+                                                10000,
+                                                trigger_gc_if_needed,
+                                                js_context, NULL);
 }
 
 void
