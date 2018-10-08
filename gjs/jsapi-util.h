@@ -168,24 +168,6 @@ struct GjsJSFreeArgs {
     }
 };
 
-class GjsAutoJSChar : public std::unique_ptr<char, GjsJSFreeArgs> {
-public:
-    GjsAutoJSChar(char *str = nullptr) : unique_ptr(str, GjsJSFreeArgs()) { }
-
-    operator const char*() {
-        return get();
-    }
-
-    void operator=(char *str) {
-        reset(str);
-    }
-
-    char* copy() {
-        /* Strings acquired by this should be g_free()'ed */
-        return g_strdup(get());
-    }
-};
-
 G_BEGIN_DECLS
 
 #define GJS_UTIL_ERROR gjs_util_error_quark ()
@@ -271,9 +253,8 @@ bool gjs_call_function_value(JSContext                  *context,
 void gjs_warning_reporter(JSContext     *cx,
                           JSErrorReport *report);
 
-bool        gjs_string_to_utf8               (JSContext       *context,
-                                              const JS::Value  string_val,
-                                              GjsAutoJSChar   *utf8_string_p);
+bool gjs_string_to_utf8(JSContext* cx, const JS::Value string_val,
+                        JS::UniqueChars* utf8_string_p);
 bool gjs_string_from_utf8(JSContext             *context,
                           const char            *utf8_string,
                           JS::MutableHandleValue value_p);
@@ -305,9 +286,7 @@ bool gjs_string_from_ucs4(JSContext             *cx,
                           ssize_t                n_chars,
                           JS::MutableHandleValue value_p);
 
-bool        gjs_get_string_id                (JSContext       *context,
-                                              jsid             id,
-                                              GjsAutoJSChar   *name_p);
+bool gjs_get_string_id(JSContext* cx, jsid id, JS::UniqueChars* name_p);
 jsid        gjs_intern_string_to_id          (JSContext       *context,
                                               const char      *string);
 
@@ -435,11 +414,10 @@ bool gjs_object_require_property(JSContext       *cx,
                                  JS::HandleId     property_name,
                                  int32_t         *value);
 
-bool gjs_object_require_property(JSContext       *cx,
-                                 JS::HandleObject obj,
-                                 const char      *description,
-                                 JS::HandleId     property_name,
-                                 GjsAutoJSChar   *value);
+bool gjs_object_require_property(JSContext* cx, JS::HandleObject obj,
+                                 const char* description,
+                                 JS::HandleId property_name,
+                                 JS::UniqueChars* value);
 
 bool gjs_object_require_property(JSContext              *cx,
                                  JS::HandleObject        obj,

@@ -281,18 +281,18 @@ GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
     if (entry)
         return entry->value().get();
 
-    GjsAutoJSChar js_prop_name;
+    JS::UniqueChars js_prop_name;
     if (!gjs_string_to_utf8(cx, JS::StringValue(key), &js_prop_name))
         return nullptr;
 
-    gname = gjs_hyphen_from_camel(js_prop_name);
+    gname = gjs_hyphen_from_camel(js_prop_name.get());
     GObjectClass *gobj_class = G_OBJECT_CLASS(g_type_class_ref(m_gtype));
     GjsAutoParam param_spec = g_object_class_find_property(gobj_class, gname);
     g_type_class_unref(gobj_class);
     g_free(gname);
 
     if (!param_spec) {
-        _gjs_proxy_throw_nonexistent_field(cx, m_gtype, js_prop_name);
+        _gjs_proxy_throw_nonexistent_field(cx, m_gtype, js_prop_name.get());
         return nullptr;
     }
 
@@ -429,14 +429,14 @@ GIFieldInfo* ObjectPrototype::find_field_info_from_id(JSContext* cx,
     if (entry)
         return entry->value().get();
 
-    GjsAutoJSChar js_prop_name;
+    JS::UniqueChars js_prop_name;
     if (!gjs_string_to_utf8(cx, JS::StringValue(key), &js_prop_name))
         return nullptr;
 
-    GjsAutoFieldInfo field = lookup_field_info(m_info, js_prop_name);
+    GjsAutoFieldInfo field = lookup_field_info(m_info, js_prop_name.get());
 
     if (!field) {
-        _gjs_proxy_throw_nonexistent_field(cx, m_gtype, js_prop_name);
+        _gjs_proxy_throw_nonexistent_field(cx, m_gtype, js_prop_name.get());
         return nullptr;
     }
 
@@ -845,7 +845,7 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
                                    JS::HandleId id, bool* resolved) {
     debug_jsprop("Resolve hook", id, obj);
 
-    GjsAutoJSChar name;
+    JS::UniqueChars name;
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true;  /* not resolved, but no error */
@@ -855,10 +855,10 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
      * we need to look at exposing interfaces. Look up our interfaces through
      * GType data, and then hope that *those* are introspectable. */
     if (is_custom_js_class())
-        return resolve_no_info(context, obj, id, resolved, name,
+        return resolve_no_info(context, obj, id, resolved, name.get(),
                                ConsiderMethodsAndProperties);
 
-    if (g_str_has_prefix (name, "vfunc_")) {
+    if (g_str_has_prefix(name.get(), "vfunc_")) {
         /* The only time we find a vfunc info is when we're the base
          * class that defined the vfunc. If we let regular prototype
          * chaining resolve this, we'd have the implementation for the base's
@@ -895,10 +895,11 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
          * method resolution. */
     }
 
-    if (is_gobject_property_name(m_info, name))
-        return lazy_define_gobject_property(context, obj, id, resolved, name);
+    if (is_gobject_property_name(m_info, name.get()))
+        return lazy_define_gobject_property(context, obj, id, resolved,
+                                            name.get());
 
-    GjsAutoFieldInfo field_info = lookup_field_info(m_info, name);
+    GjsAutoFieldInfo field_info = lookup_field_info(m_info, name.get());
     if (field_info) {
         bool found = false;
         if (!JS_AlreadyHasOwnPropertyById(context, obj, id, &found))
@@ -915,10 +916,10 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
             flags |= JSPROP_READONLY;
 
         JS::RootedValue private_id(context, JS::StringValue(JSID_TO_STRING(id)));
-        if (!gjs_define_property_dynamic(context, obj, name, "gobject_field",
-                                         &ObjectBase::field_getter,
-                                         &ObjectBase::field_setter, private_id,
-                                         flags))
+        if (!gjs_define_property_dynamic(
+                context, obj, name.get(), "gobject_field",
+                &ObjectBase::field_getter, &ObjectBase::field_setter,
+                private_id, flags))
             return false;
 
         *resolved = true;
@@ -937,7 +938,7 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
      */
 
     GjsAutoFunctionInfo method_info =
-        g_object_info_find_method_using_interfaces(m_info, name, nullptr);
+        g_object_info_find_method_using_interfaces(m_info, name.get(), nullptr);
 
     /**
      * Search through any interfaces implemented by the GType;
@@ -945,7 +946,7 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
      * https://bugzilla.gnome.org/show_bug.cgi?id=632922
      */
     if (!method_info)
-        return resolve_no_info(context, obj, id, resolved, name,
+        return resolve_no_info(context, obj, id, resolved, name.get(),
                                ConsiderOnlyMethods);
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
@@ -1884,7 +1885,7 @@ ObjectInstance::connect_impl(JSContext          *context,
     if (!check_gobject_disposed("connect to any signal on"))
         return true;
 
-    GjsAutoJSChar signal_name;
+    JS::UniqueChars signal_name;
     JS::RootedObject callback(context);
     if (!gjs_parse_call_args(context, after ? "connect_after" : "connect", args, "so",
                              "signal name", &signal_name,
@@ -1896,8 +1897,8 @@ ObjectInstance::connect_impl(JSContext          *context,
         return false;
     }
 
-    if (!g_signal_parse_name(signal_name, gtype(), &signal_id, &signal_detail,
-                             true)) {
+    if (!g_signal_parse_name(signal_name.get(), gtype(), &signal_id,
+                             &signal_detail, true)) {
         gjs_throw(context, "No signal '%s' on object '%s'",
                   signal_name.get(), type_name());
         return false;
@@ -1948,13 +1949,13 @@ ObjectInstance::emit_impl(JSContext          *context,
     if (!check_gobject_disposed("emit any signal on"))
         return true;
 
-    GjsAutoJSChar signal_name;
+    JS::UniqueChars signal_name;
     if (!gjs_parse_call_args(context, "emit", argv, "!s",
                              "signal name", &signal_name))
         return false;
 
-    if (!g_signal_parse_name(signal_name, gtype(), &signal_id, &signal_detail,
-                             false)) {
+    if (!g_signal_parse_name(signal_name.get(), gtype(), &signal_id,
+                             &signal_detail, false)) {
         gjs_throw(context, "No signal '%s' on object '%s'",
                   signal_name.get(), type_name());
         return false;
@@ -2449,7 +2450,7 @@ bool ObjectBase::hook_up_vfunc(JSContext* cx, unsigned argc, JS::Value* vp) {
 bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
                                          const JS::CallArgs& args,
                                          JS::HandleObject prototype) {
-    GjsAutoJSChar name;
+    JS::UniqueChars name;
     JS::RootedObject function(cx);
     if (!gjs_parse_call_args(cx, "hook_up_vfunc", args, "so",
                              "name", &name,
@@ -2471,7 +2472,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
      * This is awful, so abort now. */
     g_assert(info != NULL);
 
-    GjsAutoVFuncInfo vfunc = find_vfunc_on_parents(info, name, nullptr);
+    GjsAutoVFuncInfo vfunc = find_vfunc_on_parents(info, name.get(), nullptr);
 
     if (!vfunc) {
         guint i, n_interfaces;
@@ -2486,7 +2487,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
             /* The interface doesn't have to exist -- it could be private
              * or dynamic. */
             if (interface) {
-                vfunc = g_interface_info_find_vfunc(interface, name);
+                vfunc = g_interface_info_find_vfunc(interface, name.get());
 
                 if (vfunc)
                     break;
@@ -2504,7 +2505,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
 
     void *implementor_vtable;
     GjsAutoFieldInfo field_info;
-    if (!find_vfunc_info(cx, m_gtype, vfunc, name, &implementor_vtable,
+    if (!find_vfunc_info(cx, m_gtype, vfunc, name.get(), &implementor_vtable,
                          &field_info))
         return false;
 

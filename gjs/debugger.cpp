@@ -52,7 +52,7 @@ static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JSAutoRequest ar(cx);
 
-    GjsAutoJSChar prompt;
+    JS::UniqueChars prompt;
     if (!gjs_parse_call_args(cx, "readline", args, "|s", "prompt", &prompt))
         return false;
 

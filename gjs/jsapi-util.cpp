@@ -24,22 +24,23 @@
 
 #include <config.h>
 
+#include <math.h>
+#include <string.h>
+
 #include <codecvt>
 #include <locale>
+
 #include "jsapi-wrapper.h"
 #include <js/GCAPI.h>
+#include <js/Printf.h>
 
-#include <util/log.h>
-#include <util/glib.h>
-#include <util/misc.h>
-#include <util/error.h>
-
-#include "jsapi-class.h"
-#include "jsapi-util.h"
-#include "context-private.h"
-
-#include <string.h>
-#include <math.h>
+#include "gjs/context-private.h"
+#include "gjs/jsapi-class.h"
+#include "gjs/jsapi-util.h"
+#include "util/error.h"
+#include "util/glib.h"
+#include "util/log.h"
+#include "util/misc.h"
 
 GQuark
 gjs_util_error_quark (void)
@@ -216,13 +217,10 @@ gjs_object_require_property(JSContext       *cx,
 }
 
 /* Converts JS string value to UTF-8 string. value must be freed with JS_free. */
-bool
-gjs_object_require_property(JSContext       *cx,
-                            JS::HandleObject obj,
-                            const char      *description,
-                            JS::HandleId     property_name,
-                            GjsAutoJSChar   *value)
-{
+bool gjs_object_require_property(JSContext* cx, JS::HandleObject obj,
+                                 const char* description,
+                                 JS::HandleId property_name,
+                                 JS::UniqueChars* value) {
     JS::RootedValue prop_value(cx);
     if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
         gjs_string_to_utf8(cx, prop_value, value))
@@ -361,7 +359,7 @@ gjs_string_readable(JSContext       *context,
 
     g_string_append_c(buf, '"');
 
-    GjsAutoJSChar chars = JS_EncodeStringToUTF8(context, string);
+    JS::UniqueChars chars(JS_EncodeStringToUTF8(context, string));
     if (!chars) {
         /* I'm not sure this code will actually ever be reached except in the
          * case of OOM, since JS_EncodeStringToUTF8() seems to happily output
@@ -376,7 +374,7 @@ gjs_string_readable(JSContext       *context,
         g_string_append(buf, escaped);
         g_free(escaped);
     } else {
-        g_string_append(buf, chars);
+        g_string_append(buf, chars.get());
     }
 
     g_string_append_c(buf, '"');
@@ -494,11 +492,11 @@ gjs_log_exception_full(JSContext       *context,
     JS_BeginRequest(context);
     JS::RootedObject exc_obj(context);
     JS::RootedString exc_str(context, JS::ToString(context, exc));
-    GjsAutoJSChar utf8_exception;
+    JS::UniqueChars utf8_exception;
     if (!exc_str) {
         JS_ClearPendingException(context);
     } else {
-        utf8_exception = JS_EncodeStringToUTF8(context, exc_str);
+        utf8_exception.reset(JS_EncodeStringToUTF8(context, exc_str));
     }
     if (!utf8_exception)
         JS_ClearPendingException(context);
@@ -511,9 +509,9 @@ gjs_log_exception_full(JSContext       *context,
         is_syntax = JS_InstanceOf(context, exc_obj, syntax_error, nullptr);
     }
 
-    GjsAutoJSChar utf8_message;
+    JS::UniqueChars utf8_message;
     if (message)
-        utf8_message = JS_EncodeStringToUTF8(context, message);
+        utf8_message.reset(JS_EncodeStringToUTF8(context, message));
 
     /* We log syntax errors differently, because the stack for those includes
        only the referencing module, but we want to print out the filename and
@@ -529,13 +527,13 @@ gjs_log_exception_full(JSContext       *context,
         gjs_object_get_property(context, exc_obj, GJS_STRING_FILENAME,
                                 &js_fileName);
 
-        GjsAutoJSChar utf8_filename;
+        JS::UniqueChars utf8_filename;
         if (js_fileName.isString()) {
             JS::RootedString str(context, js_fileName.toString());
-            utf8_filename = JS_EncodeStringToUTF8(context, str);
+            utf8_filename.reset(JS_EncodeStringToUTF8(context, str));
         }
         if (!utf8_filename)
-            utf8_filename = JS_strdup(context, "unknown");
+            utf8_filename.reset(JS_strdup(context, "unknown"));
 
         lineNumber = js_lineNumber.toInt32();
 
@@ -548,7 +546,7 @@ gjs_log_exception_full(JSContext       *context,
         }
 
     } else {
-        GjsAutoJSChar utf8_stack;
+        JS::UniqueChars utf8_stack;
         JS::RootedValue stack(context);
 
         if (exc.isObject() &&
@@ -556,7 +554,7 @@ gjs_log_exception_full(JSContext       *context,
                                     &stack) &&
             stack.isString()) {
             JS::RootedString str(context, stack.toString());
-            utf8_stack = JS_EncodeStringToUTF8(context, str);
+            utf8_stack.reset(JS_EncodeStringToUTF8(context, str));
         }
 
         if (message) {

@@ -112,10 +112,7 @@ interface_resolve(JSContext       *context,
                   JS::HandleId     id,
                   bool            *resolved)
 {
-    Interface *priv;
-    GIFunctionInfo *method_info;
-
-    priv = priv_from_js(context, obj);
+    Interface* priv = priv_from_js(context, obj);
 
     if (priv == nullptr)
         return false;
@@ -128,29 +125,24 @@ interface_resolve(JSContext       *context,
         return true;
     }
 
-    GjsAutoJSChar name;
+    JS::UniqueChars name;
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true;
     }
 
-    method_info = g_interface_info_find_method((GIInterfaceInfo*) priv->info, name);
+    GjsAutoFunctionInfo method_info =
+        g_interface_info_find_method(priv->info, name.get());
 
-    if (method_info != NULL) {
+    if (method_info) {
         if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-            if (gjs_define_function(context, obj,
-                                    priv->gtype,
-                                    (GICallableInfo*)method_info) == NULL) {
-                g_base_info_unref((GIBaseInfo*)method_info);
+            if (!gjs_define_function(context, obj, priv->gtype, method_info))
                 return false;
-            }
 
             *resolved = true;
         } else {
             *resolved = false;
         }
-
-        g_base_info_unref((GIBaseInfo*)method_info);
     } else {
         *resolved = false;
     }

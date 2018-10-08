@@ -393,11 +393,11 @@ gjs_value_to_g_value_internal(JSContext      *context,
             g_value_set_string(gvalue, NULL);
         } else if (value.isString()) {
             JS::RootedString str(context, value.toString());
-            GjsAutoJSChar utf8_string = JS_EncodeStringToUTF8(context, str);
+            JS::UniqueChars utf8_string(JS_EncodeStringToUTF8(context, str));
             if (!utf8_string)
                 return false;
 
-            g_value_take_string(gvalue, utf8_string.copy());
+            g_value_set_string(gvalue, utf8_string.get());
         } else {
             return throw_expect_type(context, value, "string");
         }

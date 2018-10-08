@@ -57,12 +57,8 @@ GJS_DEFINE_PRIV_FROM_JS(Repo, gjs_repo_class)
 static bool lookup_override_function(JSContext *, JS::HandleId,
                                      JS::MutableHandleValue);
 
-static bool
-get_version_for_ns (JSContext       *context,
-                    JS::HandleObject repo_obj,
-                    JS::HandleId     ns_id,
-                    GjsAutoJSChar   *version)
-{
+static bool get_version_for_ns(JSContext* context, JS::HandleObject repo_obj,
+                               JS::HandleId ns_id, JS::UniqueChars* version) {
     JS::RootedObject versions(context);
     bool found;
 
@@ -90,7 +86,7 @@ resolve_namespace_object(JSContext       *context,
 
     JSAutoRequest ar(context);
 
-    GjsAutoJSChar version;
+    JS::UniqueChars version;
     if (!get_version_for_ns(context, repo_obj, ns_id, &version))
         return false;
 
@@ -107,8 +103,8 @@ resolve_namespace_object(JSContext       *context,
     g_list_free_full(versions, g_free);
 
     error = NULL;
-    g_irepository_require(nullptr, ns_name, version, (GIRepositoryLoadFlags)0,
-                          &error);
+    g_irepository_require(nullptr, ns_name, version.get(),
+                          GIRepositoryLoadFlags(0), &error);
     if (error != NULL) {
         gjs_throw(context,
                   "Requiring %s, version %s: %s",
@@ -184,15 +180,14 @@ repo_resolve(JSContext       *context,
         return true;
     }
 
-    GjsAutoJSChar name;
+    JS::UniqueChars name;
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true;
     }
 
-    if (!resolve_namespace_object(context, obj, id, name)) {
+    if (!resolve_namespace_object(context, obj, id, name.get()))
         return false;
-    }
 
     *resolved = true;
     return true;
