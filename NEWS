@@ -1,3 +1,23 @@
+Version 1.55.1
+--------------
+
+- New API for programs that embed GJS: gjs_memory_report(). This was already an
+  internal API, but now it is exported.
+
+- Closed bugs and merge requests:
+
+  * object: Implement newEnumerate hook for GObject [!155, Ole Jørgen Brønner]
+  * Various maintenance [!228, Philip Chimento]
+  * ByteArray.toString should stop at null bytes [#195, !232, Philip Chimento]
+  * Byte arrays that represent encoded strings should be 0-terminated [#203,
+    !232, Philip Chimento]
+  * context: Defer and therefore batch forced GC runs [performance] [!236,
+    Daniel van Vugt]
+  * context: use timeout with seconds to schedule a gc trigger [!239, Marco
+    Trevisan]
+  * arg: Add special-case for byte arrays going to C [#67, !49, Jasper
+    St. Pierre, Philip Chimento]
+
 Version 1.52.4
 --------------
 
