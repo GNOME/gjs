@@ -29,4 +29,7 @@
 
 JSContext *gjs_create_js_context(GjsContext *js_context);
 
+bool gjs_load_internal_source(JSContext* cx, const char* filename,
+                              JS::UniqueTwoByteChars* src, size_t* length);
+
 #endif  /* GJS_ENGINE_H */
