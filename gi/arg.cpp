@@ -1325,9 +1325,8 @@ static void
 intern_gdk_atom(const char *name,
                 GArgument  *ret)
 {
-    GIRepository *repo = g_irepository_get_default();
-    GIFunctionInfo *atom_intern_fun =
-        g_irepository_find_by_name(repo, "Gdk", "atom_intern");
+    GjsAutoFunctionInfo atom_intern_fun =
+        g_irepository_find_by_name(nullptr, "Gdk", "atom_intern");
 
     GIArgument atom_intern_args[2];
 
@@ -1342,8 +1341,6 @@ intern_gdk_atom(const char *name,
                            nullptr, 0,
                            ret,
                            nullptr);
-
-    g_base_info_unref(atom_intern_fun);
 }
 
 bool
