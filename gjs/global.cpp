@@ -25,6 +25,7 @@
 
 #include <gio/gio.h>
 
+#include "gjs/engine.h"
 #include "global.h"
 #include "importer.h"
 #include "jsapi-util.h"
@@ -36,28 +37,23 @@ run_bootstrap(JSContext       *cx,
               const char      *bootstrap_script,
               JS::HandleObject global)
 {
-    GjsAutoChar path = g_strdup_printf("/org/gnome/gjs/modules/_bootstrap/%s.js",
-                                       bootstrap_script);
-    GError *error = nullptr;
-    GjsAutoPointer<GBytes, GBytes, g_bytes_unref> script_bytes;
-    script_bytes =
-        g_resources_lookup_data(path, G_RESOURCE_LOOKUP_FLAGS_NONE, &error);
-    if (!script_bytes)
-        return gjs_throw_gerror_message(cx, error);
+    GjsAutoChar uri = g_strdup_printf(
+        "resource:///org/gnome/gjs/modules/_bootstrap/%s.js", bootstrap_script);
 
     JSAutoCompartment ac(cx, global);
 
-    GjsAutoChar uri = g_strconcat("resource://", path.get(), nullptr);
     JS::CompileOptions options(cx);
     options.setUTF8(true)
            .setFileAndLine(uri, 1)
            .setSourceIsLazy(true);
 
-    JS::RootedScript compiled_script(cx);
+    JS::UniqueTwoByteChars script;
     size_t script_len;
-    auto script =
-        static_cast<const char*>(g_bytes_get_data(script_bytes, &script_len));
-    if (!JS::Compile(cx, options, script, script_len, &compiled_script))
+    if (!gjs_load_internal_source(cx, uri.get(), &script, &script_len))
+        return false;
+
+    JS::RootedScript compiled_script(cx);
+    if (!JS::Compile(cx, options, script.get(), script_len, &compiled_script))
         return false;
 
     JS::RootedValue ignored(cx);
