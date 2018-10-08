@@ -8,6 +8,7 @@ BasedOnStyle: Google
 AccessModifierOffset: -3  # to match cpplint
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
+CommentPragmas: '^ NOLINT'
 DerivePointerAlignment: false
 ForEachMacros: []
 IndentPPDirectives: AfterHash
