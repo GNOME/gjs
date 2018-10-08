@@ -23,6 +23,8 @@
 
 #include <config.h>
 
+#include <gio/gio.h>
+
 #include "jsapi-wrapper.h"
 #include <js/Initialization.h>
 
@@ -210,6 +212,39 @@ static void on_promise_unhandled_rejection(
                                                       std::move(stack));
 }
 
+bool gjs_load_internal_source(JSContext* cx, const char* filename,
+                              JS::UniqueTwoByteChars* src, size_t* length) {
+    GError* error = nullptr;
+    const char* path = filename + 11;  // len("resource://")
+    GjsAutoPointer<GBytes, GBytes, g_bytes_unref> script_bytes;
+    script_bytes =
+        g_resources_lookup_data(path, G_RESOURCE_LOOKUP_FLAGS_NONE, &error);
+    if (!script_bytes)
+        return gjs_throw_gerror_message(cx, error);
+
+    size_t script_len;
+    const void* script_data = g_bytes_get_data(script_bytes, &script_len);
+    JS::ConstUTF8CharsZ script(static_cast<const char*>(script_data),
+                               script_len);
+    JS::TwoByteCharsZ chs = JS::UTF8CharsToNewTwoByteCharsZ(cx, script, length);
+    if (!chs)
+        return false;
+
+    src->reset(chs.get());
+    return true;
+}
+
+class GjsSourceHook : public js::SourceHook {
+    bool load(JSContext* cx, const char* filename, char16_t** src,
+              size_t* length) {
+        JS::UniqueTwoByteChars chars;
+        if (!gjs_load_internal_source(cx, filename, &chars, length))
+            return false;
+        *src = chars.release();  // caller owns, per documentation of SourceHook
+        return true;
+    }
+};
+
 #ifdef G_OS_WIN32
 HMODULE gjs_dll;
 static bool gjs_is_inited = false;
@@ -297,6 +332,14 @@ gjs_create_js_context(GjsContext *js_context)
     JS::SetEnqueuePromiseJobCallback(cx, on_enqueue_promise_job, js_context);
     JS::SetPromiseRejectionTrackerCallback(cx, on_promise_unhandled_rejection,
                                            js_context);
+
+    /* We use this to handle "lazy sources" that SpiderMonkey doesn't need to
+     * keep in memory. Most sources should be kept in memory, but we can skip
+     * doing that for the compartment bootstrap code, as it is already in memory
+     * in the form of a GResource. Instead we use the "source hook" to
+     * retrieve it. */
+    auto hook = mozilla::MakeUnique<GjsSourceHook>();
+    js::SetSourceHook(cx, std::move(hook));
 
     /* setExtraWarnings: Be extra strict about code that might hide a bug */
     if (!g_getenv("GJS_DISABLE_EXTRA_WARNINGS")) {
