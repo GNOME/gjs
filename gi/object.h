@@ -250,7 +250,7 @@ class ObjectPrototype : public ObjectBase {
         JS::GCHashMap<JS::Heap<JSString*>, GjsAutoParam,
                       js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
     using FieldCache =
-        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoInfo<GIFieldInfo>,
+        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoInfo<GI_INFO_TYPE_FIELD>,
                       js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
 
     GIObjectInfo* m_info;
