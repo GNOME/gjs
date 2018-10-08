@@ -86,7 +86,7 @@ JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(one_of_each_type)
     bool boolval;
-    GjsAutoJSChar strval;
+    JS::UniqueChars strval;
     GjsAutoChar fileval;
     int intval;
     unsigned uintval;
@@ -103,7 +103,7 @@ JSNATIVE_TEST_FUNC_BEGIN(one_of_each_type)
                                  "dbl", &dblval,
                                  "obj", &objval);
     g_assert_cmpint(boolval, ==, true);
-    g_assert_cmpstr(strval, ==, "foo");
+    g_assert_cmpstr(strval.get(), ==, "foo");
     g_assert_cmpstr(fileval, ==, "foo");
     g_assert_cmpint(intval, ==, 1);
     g_assert_cmpint(uintval, ==, 1);
@@ -156,7 +156,7 @@ JSNATIVE_TEST_FUNC_BEGIN(signed_enum_arg)
 JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(one_of_each_nullable_type)
-    GjsAutoJSChar strval;
+    JS::UniqueChars strval;
     GjsAutoChar fileval;
     JS::RootedObject objval(cx);
     retval = gjs_parse_call_args(cx, "oneOfEachNullableType", args, "?s?F?o",
@@ -208,9 +208,14 @@ JSNATIVE_BAD_TYPE_TEST_FUNC(unsigned, "t");
 JSNATIVE_BAD_TYPE_TEST_FUNC(int64_t, "f");
 JSNATIVE_BAD_TYPE_TEST_FUNC(double, "b");
 JSNATIVE_BAD_TYPE_TEST_FUNC(GjsAutoChar, "i");
-JSNATIVE_BAD_TYPE_TEST_FUNC(GjsAutoJSChar, "i");
 
 #undef JSNATIVE_BAD_TYPE_TEST_FUNC
+
+JSNATIVE_TEST_FUNC_BEGIN(UniqueChars_invalid_type)
+    JS::UniqueChars value;
+    retval = gjs_parse_call_args(cx, "UniqueCharsInvalidType", args, "i",
+                                 "value", &value);
+JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(object_invalid_type)
     JS::RootedObject val(cx);
@@ -245,7 +250,7 @@ static JSFunctionSpec native_test_funcs[] = {
     JS_FN("int64_tInvalidType", int64_t_invalid_type, 0, 0),
     JS_FN("doubleInvalidType", double_invalid_type, 0, 0),
     JS_FN("GjsAutoCharInvalidType", GjsAutoChar_invalid_type, 0, 0),
-    JS_FN("GjsAutoJSCharInvalidType", GjsAutoJSChar_invalid_type, 0, 0),
+    JS_FN("UniqueCharsInvalidType", UniqueChars_invalid_type, 0, 0),
     JS_FN("objectInvalidType", object_invalid_type, 0, 0),
     JS_FS_END};
 
@@ -380,8 +385,8 @@ gjs_test_add_tests_for_parse_call_args(void)
                              "GjsAutoCharInvalidType(1)"
                              "//*Wrong type for i, got GjsAutoChar?");
     ADD_CALL_ARGS_TEST_XFAIL("invalid-autojschar-type",
-                             "GjsAutoJSCharInvalidType(1)"
-                             "//*Wrong type for i, got GjsAutoJSChar?");
+                             "UniqueCharsInvalidType(1)"
+                             "//*Wrong type for i, got JS::UniqueChars?");
     ADD_CALL_ARGS_TEST_XFAIL("invalid-object-type",
                              "objectInvalidType(1)"
                              "//*Wrong type for i, got JS::MutableHandleObject");

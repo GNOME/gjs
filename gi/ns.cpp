@@ -77,14 +77,14 @@ ns_resolve(JSContext       *context,
         return true;
     }
 
-    GjsAutoJSChar name;
+    JS::UniqueChars name;
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true;  /* not resolved, but no error */
     }
 
     GjsAutoBaseInfo info =
-        g_irepository_find_by_name(nullptr, priv->gi_namespace, name);
+        g_irepository_find_by_name(nullptr, priv->gi_namespace, name.get());
     if (!info) {
         *resolved = false; /* No property defined, but no error either */
         return true;
