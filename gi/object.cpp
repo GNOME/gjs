@@ -2452,7 +2452,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
     while (!info && info_gtype != G_TYPE_OBJECT) {
         info_gtype = g_type_parent(info_gtype);
 
-        info = g_irepository_find_by_gtype(g_irepository_get_default(), info_gtype);
+        info = g_irepository_find_by_gtype(nullptr, info_gtype);
     }
 
     /* If we don't have 'info', we don't have the base class (GObject).
