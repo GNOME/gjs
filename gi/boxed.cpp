@@ -134,14 +134,15 @@ boxed_resolve(JSContext       *context,
         return true;
     }
 
-    GjsAutoJSChar name;
+    JS::UniqueChars name;
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true;
     }
 
     /* We are the prototype, so look for methods and other class properties */
-    GIFunctionInfo *method_info = g_struct_info_find_method(priv->info, name);
+    GjsAutoFunctionInfo method_info =
+        g_struct_info_find_method(priv->info, name.get());
     if (!method_info) {
         *resolved = false;
         return true;
@@ -151,26 +152,21 @@ boxed_resolve(JSContext       *context,
 #endif
 
     if (g_function_info_get_flags(method_info) & GI_FUNCTION_IS_METHOD) {
-        const char *method_name = g_base_info_get_name(method_info);
-
         gjs_debug(GJS_DEBUG_GBOXED,
                   "Defining method %s in prototype for %s.%s",
-                  method_name,
+                  method_info.name(),
                   g_base_info_get_namespace( (GIBaseInfo*) priv->info),
                   g_base_info_get_name( (GIBaseInfo*) priv->info));
 
         /* obj is the Boxed prototype */
-        if (!gjs_define_function(context, obj, priv->gtype, method_info)) {
-            g_base_info_unref( (GIBaseInfo*) method_info);
+        if (!gjs_define_function(context, obj, priv->gtype, method_info))
             return false;
-        }
 
         *resolved = true;
     } else {
         *resolved = false;
     }
 
-    g_base_info_unref(method_info);
     return true;
 }
 
@@ -265,13 +261,12 @@ boxed_init_from_props(JSContext   *context,
 
     JS::RootedValue value(context);
     for (ix = 0, length = ids.length(); ix < length; ix++) {
-        GIFieldInfo *field_info;
-        GjsAutoJSChar name;
-
+        JS::UniqueChars name;
         if (!gjs_get_string_id(context, ids[ix], &name))
             return false;
 
-        field_info = (GIFieldInfo *) g_hash_table_lookup(priv->field_map, name);
+        auto* field_info = static_cast<GIFieldInfo*>(
+            g_hash_table_lookup(priv->field_map, name.get()));
         if (field_info == NULL) {
             gjs_throw(context, "No field %s on boxed type %s",
                       name.get(), g_base_info_get_name((GIBaseInfo *)priv->info));

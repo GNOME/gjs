@@ -62,14 +62,15 @@ param_resolve(JSContext       *context,
         return true;
     }
 
-    GjsAutoJSChar name;
+    JS::UniqueChars name;
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true; /* not resolved, but no error */
     }
 
     GjsAutoObjectInfo info = g_irepository_find_by_gtype(nullptr, G_TYPE_PARAM);
-    GjsAutoFunctionInfo method_info = g_object_info_find_method(info, name);
+    GjsAutoFunctionInfo method_info =
+        g_object_info_find_method(info, name.get());
 
     if (!method_info) {
         *resolved = false;

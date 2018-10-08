@@ -81,7 +81,7 @@ importer_to_string(JSContext *cx,
     if (module_path.isNull()) {
         output = g_strdup_printf("[%s root]", klass->name);
     } else {
-        GjsAutoJSChar path;
+        JS::UniqueChars path;
         if (!gjs_string_to_utf8(cx, module_path, &path))
             return false;
         output = g_strdup_printf("[%s %s]", klass->name, path.get());
@@ -142,7 +142,7 @@ define_meta_properties(JSContext       *context,
         if (parent_module_path.isNull()) {
             module_path_buf = g_strdup(module_name);
         } else {
-            GjsAutoJSChar parent_path;
+            JS::UniqueChars parent_path;
             if (!gjs_string_to_utf8(context, parent_module_path, &parent_path))
                 return false;
             module_path_buf = g_strdup_printf("%s.%s", parent_path.get(), module_name);
@@ -503,7 +503,7 @@ do_import(JSContext       *context,
         }
 
         str = elem.toString();
-        GjsAutoJSChar dirname = JS_EncodeStringToUTF8(context, str);
+        JS::UniqueChars dirname(JS_EncodeStringToUTF8(context, str));
         if (!dirname)
             return false;
 
@@ -513,13 +513,14 @@ do_import(JSContext       *context,
 
         /* Try importing __init__.js and loading the symbol from it */
         bool found = false;
-        if (!import_symbol_from_init_js(context, obj, dirname, name, &found))
+        if (!import_symbol_from_init_js(context, obj, dirname.get(), name,
+                                        &found))
             return false;
         if (found)
             return true;
 
         /* Second try importing a directory (a sub-importer) */
-        GjsAutoChar full_path = g_build_filename(dirname, name, nullptr);
+        GjsAutoChar full_path = g_build_filename(dirname.get(), name, nullptr);
         GjsAutoUnref<GFile> gfile = g_file_new_for_commandline_arg(full_path);
 
         if (g_file_query_file_type(gfile, (GFileQueryInfoFlags) 0, NULL) == G_FILE_TYPE_DIRECTORY) {
@@ -539,7 +540,7 @@ do_import(JSContext       *context,
             continue;
 
         /* Third, if it's not a directory, try importing a file */
-        full_path = g_build_filename(dirname, filename.get(), nullptr);
+        full_path = g_build_filename(dirname.get(), filename.get(), nullptr);
         gfile = g_file_new_for_commandline_arg(full_path);
         exists = g_file_query_exists(gfile, NULL);
 
@@ -644,18 +645,19 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
         }
 
         str = elem.toString();
-        GjsAutoJSChar dirname = JS_EncodeStringToUTF8(context, str);
+        JS::UniqueChars dirname(JS_EncodeStringToUTF8(context, str));
         if (!dirname)
             return false;
 
-        init_path = g_build_filename(dirname, MODULE_INIT_FILENAME, NULL);
+        init_path =
+            g_build_filename(dirname.get(), MODULE_INIT_FILENAME, nullptr);
 
         load_module_elements(context, object, properties, init_path);
 
         g_free(init_path);
 
         /* new_for_commandline_arg handles resource:/// paths */
-        GjsAutoUnref<GFile> dir = g_file_new_for_commandline_arg(dirname);
+        GjsAutoUnref<GFile> dir = g_file_new_for_commandline_arg(dirname.get());
         GjsAutoUnref<GFileEnumerator> direnum =
             g_file_enumerate_children(dir, "standard::name,standard::type",
                                       G_FILE_QUERY_INFO_NONE, NULL, NULL);
@@ -737,13 +739,13 @@ importer_resolve(JSContext        *context,
 
     JSAutoRequest ar(context);
 
-    GjsAutoJSChar name;
+    JS::UniqueChars name;
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true;
     }
 
-    if (!do_import(context, obj, priv, id, name))
+    if (!do_import(context, obj, priv, id, name.get()))
         return false;
 
     *resolved = true;

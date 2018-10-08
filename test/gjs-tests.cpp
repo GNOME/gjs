@@ -123,9 +123,9 @@ gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(GjsUnitTestFixture *fx,
     g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, &js_string));
     g_assert(js_string.isString());
 
-    GjsAutoJSChar utf8_result;
+    JS::UniqueChars utf8_result;
     g_assert(gjs_string_to_utf8(fx->cx, js_string, &utf8_result));
-    g_assert_cmpstr(VALID_UTF8_STRING, ==, utf8_result);
+    g_assert_cmpstr(VALID_UTF8_STRING, ==, utf8_result.get());
 }
 
 static void
@@ -148,10 +148,10 @@ gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture *fx,
 
     g_assert(value.isString());
 
-    GjsAutoJSChar s;
+    JS::UniqueChars s;
     gjs_string_to_utf8(fx->cx, value, &s);
     g_assert_nonnull(s);
-    g_assert_cmpstr(s, ==, "This is an exception 42");
+    g_assert_cmpstr(s.get(), ==, "This is an exception 42");
 
     /* keep this around before we clear it */
     JS::RootedValue previous(fx->cx, exc);
