@@ -115,14 +115,14 @@ static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
 
 static bool to_string_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    GjsAutoJSChar encoding;
+    JS::UniqueChars encoding;
     JS::RootedObject byte_array(cx);
 
     if (!gjs_parse_call_args(cx, "toString", args, "o|s", "byteArray",
                              &byte_array, "encoding", &encoding))
         return false;
 
-    return to_string_impl(cx, byte_array, encoding, args.rval());
+    return to_string_impl(cx, byte_array, encoding.get(), args.rval());
 }
 
 /* Workaround to keep existing code compatible. This function is tacked onto
@@ -131,7 +131,7 @@ static bool to_string_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 static bool instance_to_string_func(JSContext* cx, unsigned argc,
                                     JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, args, this_obj);
-    GjsAutoJSChar encoding;
+    JS::UniqueChars encoding;
 
     _gjs_warn_deprecated_once_per_callsite(
         cx, GjsDeprecationMessageId::ByteArrayInstanceToString);
@@ -139,7 +139,7 @@ static bool instance_to_string_func(JSContext* cx, unsigned argc,
     if (!gjs_parse_call_args(cx, "toString", args, "|s", "encoding", &encoding))
         return false;
 
-    return to_string_impl(cx, this_obj, encoding, args.rval());
+    return to_string_impl(cx, this_obj, encoding.get(), args.rval());
 }
 
 static bool
@@ -173,8 +173,8 @@ from_string_func(JSContext *context,
                  JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    GjsAutoJSChar encoding;
-    GjsAutoJSChar utf8;
+    JS::UniqueChars encoding;
+    JS::UniqueChars utf8;
     bool encoding_is_utf8;
     JS::RootedObject obj(context), array_buffer(context);
 
@@ -188,7 +188,7 @@ from_string_func(JSContext *context,
          * doesn't matter much though. encoding_is_utf8 is
          * just an optimization anyway.
          */
-        encoding_is_utf8 = (strcmp(encoding, "UTF-8") == 0);
+        encoding_is_utf8 = (strcmp(encoding.get(), "UTF-8") == 0);
     } else {
         encoding_is_utf8 = true;
     }
@@ -197,7 +197,7 @@ from_string_func(JSContext *context,
         /* optimization? avoids iconv overhead and runs
          * libmozjs hardwired utf16-to-utf8.
          */
-        size_t len = strlen(utf8);
+        size_t len = strlen(utf8.get());
         array_buffer =
             JS_NewArrayBufferWithContents(context, len, utf8.release());
     } else {
@@ -219,7 +219,7 @@ from_string_func(JSContext *context,
                     return false;
 
                 encoded = g_convert((char *) chars, len,
-                                    encoding,  /* to_encoding */
+                                    encoding.get(),  // to_encoding
                                     "LATIN1",  /* from_encoding */
                                     NULL,  /* bytes read */
                                     &bytes_written, &error);
@@ -230,7 +230,7 @@ from_string_func(JSContext *context,
                     return false;
 
                 encoded = g_convert((char *) chars, len * 2,
-                                    encoding,  /* to_encoding */
+                                    encoding.get(),  // to_encoding
                                     "UTF-16",  /* from_encoding */
                                     NULL,  /* bytes read */
                                     &bytes_written, &error);

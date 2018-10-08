@@ -213,16 +213,17 @@ gjs_format_stack_trace(JSContext       *cx,
     JS::AutoSaveExceptionState saved_exc(cx);
 
     JS::RootedString stack_trace(cx);
-    GjsAutoJSChar stack_utf8;
+    JS::UniqueChars stack_utf8;
     if (JS::BuildStackString(cx, saved_frame, &stack_trace, 2))
-        stack_utf8 = JS_EncodeStringToUTF8(cx, stack_trace);
+        stack_utf8.reset(JS_EncodeStringToUTF8(cx, stack_trace));
 
     saved_exc.restore();
 
     if (!stack_utf8)
         return nullptr;
 
-    return g_filename_from_utf8(stack_utf8, -1, nullptr, nullptr, nullptr);
+    return g_filename_from_utf8(stack_utf8.get(), -1, nullptr, nullptr,
+                                nullptr);
 }
 
 void

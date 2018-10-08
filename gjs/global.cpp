@@ -88,7 +88,7 @@ gjs_log(JSContext *cx,
         return true;
     }
 
-    GjsAutoJSChar s = JS_EncodeStringToUTF8(cx, jstr);
+    JS::UniqueChars s(JS_EncodeStringToUTF8(cx, jstr));
     if (!s)
         return false;
 
@@ -147,13 +147,13 @@ gjs_print_parse_args(JSContext    *cx,
         exc_state.restore();
 
         if (jstr) {
-            GjsAutoJSChar s = JS_EncodeStringToUTF8(cx, jstr);
+            JS::UniqueChars s(JS_EncodeStringToUTF8(cx, jstr));
             if (!s) {
                 g_string_free(str, true);
                 return false;
             }
 
-            g_string_append(str, s);
+            g_string_append(str, s.get());
             if (n < (argv.length()-1))
                 g_string_append_c(str, ' ');
         } else {
