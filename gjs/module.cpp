@@ -93,8 +93,7 @@ class GjsModule {
                     int              line_number)
     {
         JS::CompileOptions options(cx);
-        options.setFileAndLine(filename, line_number)
-               .setSourceIsLazy(true);
+        options.setFileAndLine(filename, line_number);
 
         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
         std::u16string utf16_string = convert.from_bytes(script);
