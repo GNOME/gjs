@@ -79,47 +79,37 @@ union_resolve(JSContext       *context,
         return true;
     }
 
-    GjsAutoJSChar name;
+    JS::UniqueChars name;
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true; /* not resolved, but no error */
     }
 
     /* We are the prototype, so look for methods and other class properties */
-    GIFunctionInfo *method_info;
+    GjsAutoFunctionInfo method_info =
+        g_union_info_find_method(priv->info, name.get());
 
-    method_info = g_union_info_find_method((GIUnionInfo*) priv->info,
-                                           name);
-
-    if (method_info != NULL) {
-        const char *method_name;
-
+    if (method_info) {
 #if GJS_VERBOSE_ENABLE_GI_USAGE
-        _gjs_log_info_usage((GIBaseInfo*) method_info);
+        _gjs_log_info_usage(method_info);
 #endif
         if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-            method_name = g_base_info_get_name( (GIBaseInfo*) method_info);
-
             gjs_debug(GJS_DEBUG_GBOXED,
                       "Defining method %s in prototype for %s.%s",
-                      method_name,
+                      method_info.name(),
                       g_base_info_get_namespace( (GIBaseInfo*) priv->info),
                       g_base_info_get_name( (GIBaseInfo*) priv->info));
 
             /* obj is union proto */
-            if (gjs_define_function(context, obj,
-                                    g_registered_type_info_get_g_type(priv->info),
-                                    method_info) == NULL) {
-                g_base_info_unref( (GIBaseInfo*) method_info);
+            if (!gjs_define_function(
+                    context, obj, g_registered_type_info_get_g_type(priv->info),
+                    method_info))
                 return false;
-            }
 
             *resolved = true; /* we defined the prop in object_proto */
         } else {
             *resolved = false;
         }
-
-        g_base_info_unref( (GIBaseInfo*) method_info);
     } else {
         *resolved = false;
     }

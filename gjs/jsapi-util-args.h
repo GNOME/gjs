@@ -86,15 +86,10 @@ assign(JSContext              *cx,
 }
 
 GJS_ALWAYS_INLINE
-static inline void
-assign(JSContext      *cx,
-       char            c,
-       bool            nullable,
-       JS::HandleValue value,
-       GjsAutoJSChar  *ref)
-{
+static inline void assign(JSContext* cx, char c, bool nullable,
+                          JS::HandleValue value, JS::UniqueChars* ref) {
     if (c != 's')
-        throw g_strdup_printf("Wrong type for %c, got GjsAutoJSChar*", c);
+        throw g_strdup_printf("Wrong type for %c, got JS::UniqueChars*", c);
     if (nullable && value.isNull()) {
         ref->reset();
         return;
@@ -352,7 +347,7 @@ gjs_parse_call_args(JSContext          *cx,
  * value location pairs.  The currently accepted format specifiers are:
  *
  * b: A boolean (pass a bool *)
- * s: A string, converted into UTF-8 (pass a GjsAutoJSChar *)
+ * s: A string, converted into UTF-8 (pass a JS::UniqueChars*)
  * F: A string, converted into "filename encoding" (i.e. active locale) (pass
  *   a GjsAutoChar *)
  * i: A number, will be converted to a 32-bit int (pass an int32_t * or a
