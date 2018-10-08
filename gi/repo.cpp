@@ -86,7 +86,6 @@ resolve_namespace_object(JSContext       *context,
                          JS::HandleId     ns_id,
                          const char      *ns_name)
 {
-    GIRepository *repo;
     GError *error;
 
     JSAutoRequest ar(context);
@@ -95,11 +94,10 @@ resolve_namespace_object(JSContext       *context,
     if (!get_version_for_ns(context, repo_obj, ns_id, &version))
         return false;
 
-    repo = g_irepository_get_default();
-    GList *versions = g_irepository_enumerate_versions(repo, ns_name);
+    GList* versions = g_irepository_enumerate_versions(nullptr, ns_name);
     unsigned nversions = g_list_length(versions);
     if (nversions > 1 && !version &&
-        !g_irepository_is_registered(repo, ns_name, NULL)) {
+        !g_irepository_is_registered(nullptr, ns_name, NULL)) {
         GjsAutoChar warn_text = g_strdup_printf("Requiring %s but it has %u "
                                                 "versions available; use "
                                                 "imports.gi.versions to pick one",
@@ -109,7 +107,8 @@ resolve_namespace_object(JSContext       *context,
     g_list_free_full(versions, g_free);
 
     error = NULL;
-    g_irepository_require(repo, ns_name, version, (GIRepositoryLoadFlags) 0, &error);
+    g_irepository_require(nullptr, ns_name, version, (GIRepositoryLoadFlags)0,
+                          &error);
     if (error != NULL) {
         gjs_throw(context,
                   "Requiring %s, version %s: %s",
