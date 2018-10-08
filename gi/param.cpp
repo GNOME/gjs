@@ -232,8 +232,7 @@ gjs_define_param_class(JSContext       *context,
                            JSPROP_PERMANENT))
         return false;
 
-    GjsAutoInfo<GIObjectInfo> info =
-        g_irepository_find_by_gtype(g_irepository_get_default(), G_TYPE_PARAM);
+    GjsAutoObjectInfo info = g_irepository_find_by_gtype(nullptr, G_TYPE_PARAM);
     if (!gjs_object_define_static_methods(context, constructor, G_TYPE_PARAM, info))
         return false;
 

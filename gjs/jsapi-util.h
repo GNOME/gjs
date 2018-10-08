@@ -80,21 +80,83 @@ public:
     C *as() const { return reinterpret_cast<C*>(operator T *()); }
 };
 
-template<typename T = GIBaseInfo>
-class GjsAutoInfo : public std::unique_ptr<T, decltype(&g_base_info_unref)> {
-public:
-    GjsAutoInfo(T *ptr = nullptr) : GjsAutoInfo::unique_ptr(ptr, g_base_info_unref) {}
+// Use this class for owning a GIBaseInfo* of indeterminate type. Any type (e.g.
+// GIFunctionInfo*, GIObjectInfo*) will fit. If you know that the info is of a
+// certain type (e.g. you are storing the return value of a function that
+// returns GIFunctionInfo*,) use one of the derived classes below.
+class GjsAutoBaseInfo
+    : public std::unique_ptr<GIBaseInfo, decltype(&g_base_info_unref)> {
+ public:
+    GjsAutoBaseInfo(GIBaseInfo* ptr = nullptr)
+        : GjsAutoBaseInfo::unique_ptr(ptr, g_base_info_unref) {}
 
-    operator T *() const { return GjsAutoInfo::unique_ptr::get(); }
+    operator GIBaseInfo*() const { return get(); }
 
-    const char *name(void) const { return g_base_info_get_name(this->get()); }
-    GIInfoType type(void) const { return g_base_info_get_type(this->get()); }
+    const char* name(void) const { return g_base_info_get_name(get()); }
+    const char* ns(void) const { return g_base_info_get_namespace(get()); }
+    GIInfoType type(void) const { return g_base_info_get_type(get()); }
 };
 
-/* For use of GjsAutoInfo<T> in GC hash maps */
+// Use GjsAutoInfo, preferably its typedefs below, when you know for sure that
+// the info is either of a certain type or null.
+template <GIInfoType TAG>
+class GjsAutoInfo : public GjsAutoBaseInfo {
+    void validate(void) const {
+        if (*this)
+            g_assert(g_base_info_get_type(get()) == TAG);
+    }
+
+ public:
+    // Normally one-argument constructors should be explicit, but we are trying
+    // to conform to the interface of std::unique_ptr here.
+    GjsAutoInfo(GIBaseInfo* ptr = nullptr)  // NOLINT(runtime/explicit)
+        : GjsAutoBaseInfo(ptr) {
+        validate();
+    }
+
+    void reset(GIBaseInfo* other = nullptr) {
+        GjsAutoInfo::unique_ptr::reset(other);
+        validate();
+    }
+
+    // You should not need this method, because you already know the answer.
+    GIInfoType type(void) = delete;
+};
+
+using GjsAutoEnumInfo = GjsAutoInfo<GI_INFO_TYPE_ENUM>;
+using GjsAutoFieldInfo = GjsAutoInfo<GI_INFO_TYPE_FIELD>;
+using GjsAutoFunctionInfo = GjsAutoInfo<GI_INFO_TYPE_FUNCTION>;
+using GjsAutoInterfaceInfo = GjsAutoInfo<GI_INFO_TYPE_INTERFACE>;
+using GjsAutoObjectInfo = GjsAutoInfo<GI_INFO_TYPE_OBJECT>;
+using GjsAutoPropertyInfo = GjsAutoInfo<GI_INFO_TYPE_PROPERTY>;
+using GjsAutoStructInfo = GjsAutoInfo<GI_INFO_TYPE_STRUCT>;
+using GjsAutoTypeInfo = GjsAutoInfo<GI_INFO_TYPE_TYPE>;
+using GjsAutoVFuncInfo = GjsAutoInfo<GI_INFO_TYPE_VFUNC>;
+
+// GICallableInfo can be one of several tags, so we have to have a separate
+// class, and use GI_IS_CALLABLE_INFO() to validate.
+class GjsAutoCallableInfo : public GjsAutoBaseInfo {
+    void validate(void) const {
+        if (*this)
+            g_assert(GI_IS_CALLABLE_INFO(get()));
+    }
+
+ public:
+    GjsAutoCallableInfo(GIBaseInfo* ptr = nullptr)  // NOLINT(runtime/explicit)
+        : GjsAutoBaseInfo(ptr) {
+        validate();
+    }
+
+    void reset(GIBaseInfo* other = nullptr) {
+        GjsAutoCallableInfo::unique_ptr::reset(other);
+        validate();
+    }
+};
+
+/* For use of GjsAutoInfo<TAG> in GC hash maps */
 namespace JS {
-template<typename T>
-struct GCPolicy<GjsAutoInfo<T>> : public IgnoreGCPolicy<GjsAutoInfo<T>> {};
+template <GIInfoType TAG>
+struct GCPolicy<GjsAutoInfo<TAG>> : public IgnoreGCPolicy<GjsAutoInfo<TAG>> {};
 }
 
 class GjsAutoParam

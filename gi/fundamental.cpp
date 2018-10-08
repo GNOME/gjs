@@ -623,7 +623,7 @@ static JSObject*
 gjs_lookup_fundamental_prototype_from_gtype(JSContext *context,
                                             GType      gtype)
 {
-    GjsAutoInfo<GIObjectInfo> info;
+    GjsAutoObjectInfo info;
 
     /* A given gtype might not have any definition in the introspection
      * data. If that's the case, try to look for a definition of any of the
