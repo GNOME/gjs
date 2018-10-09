@@ -71,6 +71,7 @@ class GjsAutoTypeClass : public std::unique_ptr<T, decltype(&g_type_class_unref)
 public:
     GjsAutoTypeClass(gpointer ptr = nullptr)
         : GjsAutoTypeClass::unique_ptr(reinterpret_cast<T*>(ptr), g_type_class_unref) {}
+    explicit GjsAutoTypeClass(GType gtype) : GjsAutoTypeClass(g_type_class_ref(gtype)) {}
 
     operator T *() const { return GjsAutoTypeClass::unique_ptr::get(); }
 

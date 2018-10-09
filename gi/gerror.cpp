@@ -575,7 +575,7 @@ gjs_gerror_make_from_error(JSContext       *cx,
     if (!gjs_string_to_utf8(cx, v_message, &message))
         return nullptr;
 
-    GjsAutoTypeClass<GEnumClass> klass = g_type_class_ref(GJS_TYPE_JS_ERROR);
+    GjsAutoTypeClass<GEnumClass> klass(GJS_TYPE_JS_ERROR);
     const GEnumValue *value = g_enum_get_value_by_name(klass, name);
     int code;
     if (value)
