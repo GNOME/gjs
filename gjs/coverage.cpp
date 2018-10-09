@@ -199,7 +199,6 @@ write_statistics_internal(GjsCoverage *coverage,
                           JSContext   *cx,
                           GError     **error)
 {
-    using AutoCChar = std::unique_ptr<char, decltype(&free)>;
     using AutoStrv = std::unique_ptr<char *, decltype(&g_strfreev)>;
 
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
@@ -214,7 +213,7 @@ write_statistics_internal(GjsCoverage *coverage,
     GFile *output_file = g_file_get_child(priv->output_dir, "coverage.lcov");
 
     size_t lcov_length;
-    AutoCChar lcov(js::GetCodeCoverageSummary(cx, &lcov_length), free);
+    GjsAutoChar lcov(js::GetCodeCoverageSummary(cx, &lcov_length));
 
     GjsAutoUnref<GOutputStream> ostream =
         G_OUTPUT_STREAM(g_file_append_to(output_file,
@@ -224,7 +223,7 @@ write_statistics_internal(GjsCoverage *coverage,
     if (!ostream)
         return nullptr;
 
-    AutoStrv lcov_lines(g_strsplit(lcov.get(), "\n", -1), g_strfreev);
+    AutoStrv lcov_lines(g_strsplit(lcov, "\n", -1), g_strfreev);
     GjsAutoChar test_name;
     bool ignoring_file = false;
 
