@@ -63,7 +63,7 @@ static bool gjs_override_property(JSContext* cx, unsigned argc, JS::Value* vp) {
         pspec = g_object_interface_find_property(interface_type, name);
         g_type_default_interface_unref(interface_type);
     } else {
-        GjsAutoTypeClass<GObjectClass> class_type = g_type_class_ref(gtype);
+        GjsAutoTypeClass<GObjectClass> class_type(gtype);
         pspec = g_object_class_find_property(class_type, name);
     }
 
