@@ -288,6 +288,12 @@ gjs_string_from_ucs4(JSContext             *cx,
                      ssize_t                n_chars,
                      JS::MutableHandleValue value_p)
 {
+    // a null array pointer takes precedence over whatever `n_chars` says
+    if (!ucs4_string) {
+        value_p.setString(JS_GetEmptyString(cx));
+        return true;
+    }
+
     long u16_string_length;
     GError *error = NULL;
 

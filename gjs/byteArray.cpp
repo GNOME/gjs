@@ -293,8 +293,12 @@ from_gbytes_func(JSContext *context,
 }
 
 JSObject* gjs_byte_array_from_data(JSContext* cx, size_t nbytes, void* data) {
-    JS::RootedObject array_buffer(
-        cx, JS_NewArrayBufferWithContents(cx, nbytes, g_memdup(data, nbytes)));
+    JS::RootedObject array_buffer(cx);
+    // a null data pointer takes precedence over whatever `nbytes` says
+    if (data)
+        array_buffer = JS_NewArrayBufferWithContents(cx, nbytes, g_memdup(data, nbytes));
+    else
+        array_buffer = JS_NewArrayBuffer(cx, 0);
     if (!array_buffer)
         return nullptr;
 
