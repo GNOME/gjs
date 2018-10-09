@@ -86,9 +86,15 @@ struct GCPolicy<GjsAutoInfo<T>> : public IgnoreGCPolicy<GjsAutoInfo<T>> {};
 class GjsAutoParam
     : public std::unique_ptr<GParamSpec, decltype(&g_param_spec_unref)> {
     public:
+    struct AddRef {};
+
     GjsAutoParam(GParamSpec* ptr = nullptr)
-        : unique_ptr(ptr, g_param_spec_unref)
-    {
+        : unique_ptr(ptr, g_param_spec_unref) {}
+
+    GjsAutoParam(GParamSpec* ptr, const AddRef&)
+        : GjsAutoParam(ptr) {
+        if (ptr != nullptr)
+            g_param_spec_ref(ptr);
     }
 
     operator GParamSpec*() { return get(); }
