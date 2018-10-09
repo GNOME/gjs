@@ -53,7 +53,7 @@ _gjs_flags_value_is_valid(JSContext   *context,
     if (gtype == G_TYPE_NONE)
         return true;
 
-    GjsAutoTypeClass<GTypeClass> klass = g_type_class_ref(gtype);
+    GjsAutoTypeClass<GTypeClass> klass(gtype);
 
     /* check all bits are defined for flags.. not necessarily desired */
     tmpval = (guint32)value;
