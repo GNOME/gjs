@@ -279,7 +279,7 @@ GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
     /* First check for the ID in the cache */
     auto entry = m_property_cache.lookupForAdd(key);
     if (entry)
-        return entry->value().get();
+        return entry->value();
 
     GjsAutoJSChar js_prop_name;
     if (!gjs_string_to_utf8(cx, JS::StringValue(key), &js_prop_name))
@@ -299,7 +299,7 @@ GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
 
     if (!m_property_cache.add(entry, key, std::move(param_spec)))
         g_error("Out of memory adding param spec to cache");
-    return entry->value().get();  /* owned by property cache */
+    return pspec; /* owned by property cache */
 }
 
 /* Gets the ObjectPrototype corresponding to obj.prototype. Cannot return null,
