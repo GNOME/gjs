@@ -629,10 +629,10 @@ gjs_lookup_fundamental_prototype_from_gtype(JSContext *context,
     /* A given gtype might not have any definition in the introspection
      * data. If that's the case, try to look for a definition of any of the
      * parent type. */
-    while ((info = (GIObjectInfo *)
+    while (gtype != G_TYPE_INVALID &&
+           (info = (GIObjectInfo *)
             g_irepository_find_by_gtype(g_irepository_get_default(),
-                                        gtype)) == NULL &&
-           gtype != G_TYPE_INVALID)
+                                        gtype)) == NULL)
         gtype = g_type_parent(gtype);
 
     proto = gjs_lookup_fundamental_prototype(context, info, gtype);
