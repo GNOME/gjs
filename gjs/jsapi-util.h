@@ -86,10 +86,13 @@ struct GCPolicy<GjsAutoInfo<T>> : public IgnoreGCPolicy<GjsAutoInfo<T>> {};
 class GjsAutoParam
     : public std::unique_ptr<GParamSpec, decltype(&g_param_spec_unref)> {
     public:
+    struct TakeOwnership {};
+
     GjsAutoParam(GParamSpec* ptr = nullptr)
-        : unique_ptr(ptr, g_param_spec_unref)
-    {
-    }
+        : unique_ptr(ptr, g_param_spec_unref) {}
+
+    GjsAutoParam(GParamSpec* ptr, const TakeOwnership&)
+        : GjsAutoParam(ptr ? g_param_spec_ref(ptr) : nullptr) {}
 
     operator GParamSpec*() { return get(); }
 };
