@@ -274,8 +274,6 @@ ObjectInstance::unset_object_qdata(void)
 
 GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
                                                      JS::HandleString key) {
-    char *gname;
-
     /* First check for the ID in the cache */
     auto entry = m_property_cache.lookupForAdd(key);
     if (entry)
@@ -285,12 +283,11 @@ GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
     if (!gjs_string_to_utf8(cx, JS::StringValue(key), &js_prop_name))
         return nullptr;
 
-    gname = gjs_hyphen_from_camel(js_prop_name);
+    GjsAutoChar gname = gjs_hyphen_from_camel(js_prop_name);
     GObjectClass *gobj_class = G_OBJECT_CLASS(g_type_class_ref(m_gtype));
     GParamSpec* pspec = g_object_class_find_property(gobj_class, gname);
     GjsAutoParam param_spec(pspec, GjsAutoParam::TakeOwnership());
     g_type_class_unref(gobj_class);
-    g_free(gname);
 
     if (!param_spec) {
         _gjs_proxy_throw_nonexistent_field(cx, m_gtype, js_prop_name);
@@ -669,8 +666,8 @@ find_vfunc_on_parents(GIObjectInfo *info,
 }
 
 /* Taken from GLib */
-static void canonicalize_key(char* key) {
-    for (char* p = key; *p != 0; p++) {
+static void canonicalize_key(const GjsAutoChar& key) {
+    for (char* p = key.get(); *p != 0; p++) {
         char c = *p;
 
         if (c != '-' && (c < '0' || c > '9') && (c < 'A' || c > 'Z') &&
@@ -738,9 +735,8 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
 
     GjsAutoChar canonical_name;
     if (resolve_props == ConsiderMethodsAndProperties) {
-        char* canonical_name_unowned = gjs_hyphen_from_camel(name);
-        canonicalize_key(canonical_name_unowned);
-        canonical_name.reset(canonical_name_unowned);
+        canonical_name = gjs_hyphen_from_camel(name);
+        canonicalize_key(canonical_name);
     }
 
     GType *interfaces = g_type_interfaces(m_gtype, &n_interfaces);
@@ -794,7 +790,7 @@ is_gobject_property_name(GIObjectInfo *info,
     int ix;
     GjsAutoInfo<GIPropertyInfo> prop_info;
 
-    char *canonical_name = gjs_hyphen_from_camel(name);
+    GjsAutoChar canonical_name = gjs_hyphen_from_camel(name);
     canonicalize_key(canonical_name);
 
     for (ix = 0; ix < n_props; ix++) {
@@ -808,14 +804,10 @@ is_gobject_property_name(GIObjectInfo *info,
         for (ix = 0; ix < n_ifaces; ix++) {
             GjsAutoInfo<GIInterfaceInfo> iface_info =
                 g_object_info_get_interface(info, ix);
-            if (is_ginterface_property_name(iface_info, canonical_name)) {
-                g_free(canonical_name);
+            if (is_ginterface_property_name(iface_info, canonical_name))
                 return true;
-            }
         }
     }
-
-    g_free(canonical_name);
 
     if (!prop_info)
         return false;
