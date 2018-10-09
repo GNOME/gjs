@@ -287,7 +287,8 @@ GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
 
     gname = gjs_hyphen_from_camel(js_prop_name);
     GObjectClass *gobj_class = G_OBJECT_CLASS(g_type_class_ref(m_gtype));
-    GjsAutoParam param_spec = g_object_class_find_property(gobj_class, gname);
+    GParamSpec* pspec = g_object_class_find_property(gobj_class, gname);
+    GjsAutoParam param_spec(pspec, GjsAutoParam::AddRef());
     g_type_class_unref(gobj_class);
     g_free(gname);
 
