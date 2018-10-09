@@ -598,7 +598,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
 
         if (JS::ToInt64(context, value, &value_int64)) {
             GEnumValue *v;
-            GjsAutoTypeClass<GEnumClass> enum_class = g_type_class_ref(gtype);
+            GjsAutoTypeClass<GEnumClass> enum_class(gtype);
 
             /* See arg.c:_gjs_enum_to_int() */
             v = g_enum_get_value(enum_class, (int)value_int64);
