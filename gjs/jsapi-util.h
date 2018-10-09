@@ -66,6 +66,18 @@ public:
     }
 };
 
+template<typename T = GTypeClass>
+class GjsAutoTypeClass : public std::unique_ptr<T, decltype(&g_type_class_unref)> {
+public:
+    GjsAutoTypeClass(gpointer ptr = nullptr)
+        : GjsAutoTypeClass::unique_ptr(reinterpret_cast<T*>(ptr), g_type_class_unref) {}
+
+    operator T *() const { return GjsAutoTypeClass::unique_ptr::get(); }
+
+    template<typename C>
+    C *cast() const { return reinterpret_cast<C*>(operator T *()); }
+};
+
 template<typename T = GIBaseInfo>
 class GjsAutoInfo : public std::unique_ptr<T, decltype(&g_base_info_unref)> {
 public:
