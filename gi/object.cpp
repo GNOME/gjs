@@ -284,10 +284,9 @@ GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
         return nullptr;
 
     GjsAutoChar gname = gjs_hyphen_from_camel(js_prop_name);
-    GObjectClass *gobj_class = G_OBJECT_CLASS(g_type_class_ref(m_gtype));
+    GjsAutoTypeClass<GObjectClass> gobj_class = g_type_class_ref(m_gtype);
     GParamSpec* pspec = g_object_class_find_property(gobj_class, gname);
     GjsAutoParam param_spec(pspec, GjsAutoParam::TakeOwnership());
-    g_type_class_unref(gobj_class);
 
     if (!param_spec) {
         _gjs_proxy_throw_nonexistent_field(cx, m_gtype, js_prop_name);
@@ -2391,7 +2390,6 @@ find_vfunc_info (JSContext *context,
     int length, i;
     GIBaseInfo *ancestor_info;
     GjsAutoInfo<GIStructInfo> struct_info;
-    gpointer implementor_class;
     bool is_interface;
 
     field_info_ret->reset();
@@ -2402,13 +2400,12 @@ find_vfunc_info (JSContext *context,
 
     is_interface = g_base_info_get_type(ancestor_info) == GI_INFO_TYPE_INTERFACE;
 
-    implementor_class = g_type_class_ref(implementor_gtype);
+    GjsAutoTypeClass<void> implementor_class = g_type_class_ref(implementor_gtype);
     if (is_interface) {
         GTypeInstance *implementor_iface_class;
         implementor_iface_class = (GTypeInstance*) g_type_interface_peek(implementor_class,
                                                         ancestor_gtype);
         if (implementor_iface_class == NULL) {
-            g_type_class_unref(implementor_class);
             gjs_throw (context, "Couldn't find GType of implementor of interface %s.",
                        g_type_name(ancestor_gtype));
             return false;
@@ -2421,8 +2418,6 @@ find_vfunc_info (JSContext *context,
         struct_info = g_object_info_get_class_struct((GIObjectInfo*)ancestor_info);
         *implementor_vtable_ret = implementor_class;
     }
-
-    g_type_class_unref(implementor_class);
 
     length = g_struct_info_get_n_fields(struct_info);
     for (i = 0; i < length; i++) {

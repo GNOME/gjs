@@ -598,12 +598,10 @@ gjs_value_to_g_value_internal(JSContext      *context,
 
         if (JS::ToInt64(context, value, &value_int64)) {
             GEnumValue *v;
-            gpointer gtype_class = g_type_class_ref(gtype);
+            GjsAutoTypeClass<GEnumClass> enum_class = g_type_class_ref(gtype);
 
             /* See arg.c:_gjs_enum_to_int() */
-            v = g_enum_get_value(G_ENUM_CLASS(gtype_class),
-                                 (int)value_int64);
-            g_type_class_unref(gtype_class);
+            v = g_enum_get_value(enum_class, (int)value_int64);
             if (v == NULL) {
                 gjs_throw(context,
                           "%d is not a valid value for enumeration %s",

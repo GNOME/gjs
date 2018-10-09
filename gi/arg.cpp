@@ -48,13 +48,12 @@ _gjs_flags_value_is_valid(JSContext   *context,
 {
     GFlagsValue *v;
     guint32 tmpval;
-    void *klass;
 
     /* FIXME: Do proper value check for flags with GType's */
     if (gtype == G_TYPE_NONE)
         return true;
 
-    klass = g_type_class_ref(gtype);
+    GjsAutoTypeClass<GTypeClass> klass = g_type_class_ref(gtype);
 
     /* check all bits are defined for flags.. not necessarily desired */
     tmpval = (guint32)value;
@@ -66,7 +65,7 @@ _gjs_flags_value_is_valid(JSContext   *context,
     }
 
     while (tmpval) {
-        v = g_flags_get_first_value((GFlagsClass *) klass, tmpval);
+        v = g_flags_get_first_value(klass.as<GFlagsClass>(), tmpval);
         if (!v) {
             gjs_throw(context,
                       "0x%x is not a valid value for flags %s",
@@ -76,7 +75,6 @@ _gjs_flags_value_is_valid(JSContext   *context,
 
         tmpval &= ~v->value;
     }
-    g_type_class_unref(klass);
 
     return true;
 }
