@@ -43,7 +43,7 @@ class GjsAutoChar : public std::unique_ptr<char, decltype(&g_free)> {
 public:
     GjsAutoChar(char *str = nullptr) : unique_ptr(str, g_free) {}
 
-    operator const char *() {
+    operator const char *() const {
         return get();
     }
 
@@ -61,7 +61,7 @@ class GjsAutoUnref : public std::unique_ptr<T, decltype(&g_object_unref)> {
 public:
     GjsAutoUnref(T *ptr = nullptr) : GjsAutoUnref::unique_ptr(ptr, g_object_unref) {}
 
-    operator T *() {
+    operator T *() const {
         return GjsAutoUnref::unique_ptr::get();
     }
 };
@@ -71,7 +71,7 @@ class GjsAutoInfo : public std::unique_ptr<T, decltype(&g_base_info_unref)> {
 public:
     GjsAutoInfo(T *ptr = nullptr) : GjsAutoInfo::unique_ptr(ptr, g_base_info_unref) {}
 
-    operator T *() { return GjsAutoInfo::unique_ptr::get(); }
+    operator T *() const { return GjsAutoInfo::unique_ptr::get(); }
 
     const char *name(void) const { return g_base_info_get_name(this->get()); }
     GIInfoType type(void) const { return g_base_info_get_type(this->get()); }
@@ -97,7 +97,7 @@ class GjsAutoParam
             g_param_spec_ref(ptr);
     }
 
-    operator GParamSpec*() { return get(); }
+    operator GParamSpec*() const { return get(); }
 };
 
 /* For use of GjsAutoParam in GC hash maps */
@@ -116,7 +116,7 @@ class GjsAutoJSChar : public std::unique_ptr<char, GjsJSFreeArgs> {
 public:
     GjsAutoJSChar(char *str = nullptr) : unique_ptr(str, GjsJSFreeArgs()) { }
 
-    operator const char*() {
+    operator const char*() const {
         return get();
     }
 
@@ -124,7 +124,7 @@ public:
         reset(str);
     }
 
-    char* copy() {
+    char* copy() const {
         /* Strings acquired by this should be g_free()'ed */
         return g_strdup(get());
     }
