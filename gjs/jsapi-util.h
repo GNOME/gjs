@@ -70,6 +70,8 @@ struct GjsAutoCharFuncs {
 using GjsAutoChar =
     GjsAutoPointer<char, char, GjsAutoCharFuncs::free, GjsAutoCharFuncs::dup>;
 
+using GjsAutoStrv = GjsAutoPointer<char*, char*, g_strfreev>;
+
 template <typename T>
 using GjsAutoUnref = GjsAutoPointer<T, void, g_object_unref, g_object_ref>;
 
