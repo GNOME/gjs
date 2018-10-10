@@ -211,7 +211,8 @@ write_statistics_internal(GjsCoverage *coverage,
     GFile *output_file = g_file_get_child(priv->output_dir, "coverage.lcov");
 
     size_t lcov_length;
-    AutoCChar lcov(js::GetCodeCoverageSummary(cx, &lcov_length), free);
+    GjsAutoBuilder<char, void, free> lcov(
+        js::GetCodeCoverageSummary(cx, &lcov_length));
 
     GjsAutoUnref<GOutputStream> ostream =
         G_OUTPUT_STREAM(g_file_append_to(output_file,
