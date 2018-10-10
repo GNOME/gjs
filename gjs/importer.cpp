@@ -895,7 +895,6 @@ gjs_create_importer(JSContext          *context,
                     JS::HandleObject    in_object)
 {
     char **paths[2] = {0};
-    char **search_path;
 
     paths[0] = (char**)initial_search_path;
     if (add_standard_search_path) {
@@ -903,18 +902,16 @@ gjs_create_importer(JSContext          *context,
         paths[1] = (char**)gjs_get_search_path();
     }
 
-    search_path = gjs_g_strv_concat(paths, 2);
+    GjsAutoStrv search_path = gjs_g_strv_concat(paths, 2);
 
     JS::RootedObject importer(context, importer_new(context, is_root));
 
     /* API users can replace this property from JS, is the idea */
     if (!gjs_define_string_array(context, importer,
-                                 "searchPath", -1, (const char **)search_path,
+                                 "searchPath", -1, search_path.as<const char *>(),
                                  /* settable (no READONLY) but not deleteable (PERMANENT) */
                                  JSPROP_PERMANENT | JSPROP_RESOLVING))
         g_error("no memory to define importer search path prop");
-
-    g_strfreev(search_path);
 
     if (!define_meta_properties(context, importer, NULL, importer_name, in_object))
         g_error("failed to define meta properties on importer");
