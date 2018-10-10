@@ -551,8 +551,6 @@ GError *
 gjs_gerror_make_from_error(JSContext       *cx,
                            JS::HandleObject obj)
 {
-    using AutoEnumClass = std::unique_ptr<GEnumClass, decltype(&g_type_class_unref)>;
-
     if (gjs_typecheck_gerror(cx, obj, false)) {
         /* This is already a GError, just copy it */
         GError *inner = gjs_gerror_from_error(cx, obj);
@@ -577,9 +575,8 @@ gjs_gerror_make_from_error(JSContext       *cx,
     if (!gjs_string_to_utf8(cx, v_message, &message))
         return nullptr;
 
-    AutoEnumClass klass(static_cast<GEnumClass *>(g_type_class_ref(GJS_TYPE_JS_ERROR)),
-                        g_type_class_unref);
-    const GEnumValue *value = g_enum_get_value_by_name(klass.get(), name);
+    GjsAutoTypeClass<GEnumClass> klass(GJS_TYPE_JS_ERROR);
+    const GEnumValue *value = g_enum_get_value_by_name(klass, name);
     int code;
     if (value)
         code = value->value;

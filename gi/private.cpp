@@ -63,9 +63,8 @@ static bool gjs_override_property(JSContext* cx, unsigned argc, JS::Value* vp) {
         pspec = g_object_interface_find_property(interface_type, name);
         g_type_default_interface_unref(interface_type);
     } else {
-        auto* class_type = static_cast<GTypeClass*>(g_type_class_ref(gtype));
-        pspec = g_object_class_find_property(G_OBJECT_CLASS(class_type), name);
-        g_type_class_unref(class_type);
+        GjsAutoTypeClass<GObjectClass> class_type(gtype);
+        pspec = g_object_class_find_property(class_type, name);
     }
 
     if (!pspec) {
@@ -79,7 +78,7 @@ static bool gjs_override_property(JSContext* cx, unsigned argc, JS::Value* vp) {
     g_param_spec_set_qdata(new_pspec, ObjectBase::custom_property_quark(),
                            GINT_TO_POINTER(1));
 
-    args.rval().setObject(*gjs_param_from_g_param(cx, new_pspec.get()));
+    args.rval().setObject(*gjs_param_from_g_param(cx, new_pspec));
 
     return true;
 }
