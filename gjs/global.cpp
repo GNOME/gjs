@@ -38,9 +38,9 @@ run_bootstrap(JSContext       *cx,
     GjsAutoChar path = g_strdup_printf("/org/gnome/gjs/modules/_bootstrap/%s.js",
                                        bootstrap_script);
     GError *error = nullptr;
-    std::unique_ptr<GBytes, decltype(&g_bytes_unref)> script_bytes(
-        g_resources_lookup_data(path, G_RESOURCE_LOOKUP_FLAGS_NONE, &error),
-        g_bytes_unref);
+    GjsAutoPointer<GBytes, GBytes, g_bytes_unref> script_bytes;
+    script_bytes =
+        g_resources_lookup_data(path, G_RESOURCE_LOOKUP_FLAGS_NONE, &error);
     if (!script_bytes)
         return gjs_throw_gerror_message(cx, error);
 
@@ -54,8 +54,8 @@ run_bootstrap(JSContext       *cx,
 
     JS::RootedScript compiled_script(cx);
     size_t script_len;
-    auto script = static_cast<const char *>(g_bytes_get_data(script_bytes.get(),
-                                            &script_len));
+    auto script =
+        static_cast<const char*>(g_bytes_get_data(script_bytes, &script_len));
     if (!JS::Compile(cx, options, script, script_len, &compiled_script))
         return false;
 
