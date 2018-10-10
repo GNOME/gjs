@@ -722,7 +722,6 @@ convert_int_to_enum (GType  gtype,
         g_assert (info);
 
         v_double = _gjs_enum_from_int(info, v);
-        g_base_info_unref(info);
     }
 
     return JS::NumberValue(v_double);
