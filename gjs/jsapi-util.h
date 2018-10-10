@@ -118,6 +118,7 @@ struct GjsAutoInfo : GjsAutoBaseInfo {
     }
 };
 
+using GjsAutoEnumInfo = GjsAutoInfo<GI_INFO_TYPE_ENUM>;
 using GjsAutoFieldInfo = GjsAutoInfo<GI_INFO_TYPE_FIELD>;
 using GjsAutoFunctionInfo = GjsAutoInfo<GI_INFO_TYPE_FUNCTION>;
 using GjsAutoInterfaceInfo = GjsAutoInfo<GI_INFO_TYPE_INTERFACE>;
