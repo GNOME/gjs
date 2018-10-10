@@ -200,7 +200,6 @@ write_statistics_internal(GjsCoverage *coverage,
                           GError     **error)
 {
     using AutoCChar = std::unique_ptr<char, decltype(&free)>;
-    using AutoStrv = std::unique_ptr<char *, decltype(&g_strfreev)>;
 
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
@@ -224,7 +223,7 @@ write_statistics_internal(GjsCoverage *coverage,
     if (!ostream)
         return nullptr;
 
-    AutoStrv lcov_lines(g_strsplit(lcov.get(), "\n", -1), g_strfreev);
+    GjsAutoStrv lcov_lines = g_strsplit(lcov, "\n", -1);
     GjsAutoChar test_name;
     bool ignoring_file = false;
 
