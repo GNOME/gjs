@@ -43,9 +43,9 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
         throw new Error("Not enough arguments passed for method: " + methodName +
                        ". Expected " + minNumberArgs + ", got " + arg_array.length);
     } else if (arg_array.length > maxNumberArgs) {
-        throw new Error("Too many arguments passed for method: " + methodName +
-                       ". Maximum is " + maxNumberArgs +
-                        " + one callback and/or flags");
+        throw new Error(`Too many arguments passed for method ${methodName}. ` +
+            `Maximum is ${maxNumberArgs} including one callback, ` +
+            'cancellable, and/or flags');
     }
 
     while (arg_array.length > signatureLength) {
