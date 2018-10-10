@@ -39,74 +39,70 @@
 #define GJS_ALWAYS_INLINE
 #endif
 
-class GjsAutoChar : public std::unique_ptr<char, decltype(&g_free)> {
-public:
-    GjsAutoChar(char *str = nullptr) : unique_ptr(str, g_free) {}
+struct GjsAutoTakeOwnership {};
 
-    operator const char *() const {
-        return get();
+template <typename T, typename F, void (*free_func)(F*) = nullptr,
+          F* (*ref_func)(F*) = nullptr>
+struct GjsAutoBuilder : std::unique_ptr<T, decltype(free_func)> {
+    GjsAutoBuilder(T* ptr = nullptr)
+        : GjsAutoBuilder::unique_ptr(ptr, *free_func) {}
+    GjsAutoBuilder(T* ptr, const GjsAutoTakeOwnership&)
+        : GjsAutoBuilder(ptr && std::is_function<decltype(free_func)>() ?
+                            ref_func(ptr) : ptr) {}
+
+    void operator=(T* ptr) {
+        this->reset(ptr && std::is_function<decltype(free_func)>() ?
+                        reinterpret_cast<T*>(ref_func(ptr)) : ptr);
     }
+    void operator=(const T* ptr) { this->operator=(const_cast<T*>(ptr)); }
+    operator T*() const { return this->get(); }
+    T& operator[](size_t i) const { return static_cast<T*>(*this)[i]; };
 
-    void operator= (char *str) {
-        reset(str);
-    }
+    T* copy() const { return reinterpret_cast<T*>(ref_func(this->get())); }
 
-    void operator= (const char *str) {
-        reset(g_strdup(str));
+    template <typename C>
+    C* as() const {
+        return (C*)(operator T*());
     }
 };
+
+struct GjsJSCharFuncs {
+    static char* dup(char* str) {
+        return g_strdup(const_cast<const char*>(str));
+    }
+    static void free(char* str) { g_free(str); }
+};
+using GjsAutoChar =
+    GjsAutoBuilder<char, char, GjsJSCharFuncs::free, GjsJSCharFuncs::dup>;
 
 template <typename T>
-class GjsAutoUnref : public std::unique_ptr<T, decltype(&g_object_unref)> {
-public:
-    GjsAutoUnref(T *ptr = nullptr) : GjsAutoUnref::unique_ptr(ptr, g_object_unref) {}
+using GjsAutoUnref = GjsAutoBuilder<T, void, g_object_unref, g_object_ref>;
 
-    operator T *() const {
-        return GjsAutoUnref::unique_ptr::get();
-    }
-};
-
-template<typename T = GTypeClass>
-class GjsAutoTypeClass : public std::unique_ptr<T, decltype(&g_type_class_unref)> {
-public:
+template <typename T = GTypeClass>
+struct GjsAutoTypeClass : GjsAutoBuilder<T, void, &g_type_class_unref> {
     GjsAutoTypeClass(gpointer ptr = nullptr)
-        : GjsAutoTypeClass::unique_ptr(static_cast<T*>(ptr), g_type_class_unref) {}
+        : GjsAutoBuilder<T, void, g_type_class_unref>(static_cast<T*>(ptr)) {}
     explicit GjsAutoTypeClass(GType gtype)
         : GjsAutoTypeClass(g_type_class_ref(gtype)) {}
-
-    operator T *() const { return GjsAutoTypeClass::unique_ptr::get(); }
-
-    template<typename C>
-    C *as() const { return reinterpret_cast<C*>(operator T *()); }
 };
 
 // Use this class for owning a GIBaseInfo* of indeterminate type. Any type (e.g.
 // GIFunctionInfo*, GIObjectInfo*) will fit. If you know that the info is of a
 // certain type (e.g. you are storing the return value of a function that
 // returns GIFunctionInfo*,) use one of the derived classes below.
-class GjsAutoBaseInfo
-    : public std::unique_ptr<GIBaseInfo, decltype(&g_base_info_unref)> {
- public:
-    GjsAutoBaseInfo(GIBaseInfo* ptr = nullptr)
-        : GjsAutoBaseInfo::unique_ptr(ptr, g_base_info_unref) {}
+struct GjsAutoBaseInfo : GjsAutoBuilder<GIBaseInfo, GIBaseInfo,
+                                        g_base_info_unref, g_base_info_ref> {
+    GjsAutoBaseInfo(GIBaseInfo* ptr = nullptr) : GjsAutoBuilder(ptr) {}
 
-    operator GIBaseInfo*() const { return get(); }
-
-    const char* name(void) const { return g_base_info_get_name(get()); }
-    const char* ns(void) const { return g_base_info_get_namespace(get()); }
-    GIInfoType type(void) const { return g_base_info_get_type(get()); }
+    const char* name() const { return g_base_info_get_name(*this); }
+    const char* ns() const { return g_base_info_get_namespace(*this); }
+    GIInfoType type() const { return g_base_info_get_type(*this); }
 };
 
 // Use GjsAutoInfo, preferably its typedefs below, when you know for sure that
 // the info is either of a certain type or null.
 template <GIInfoType TAG>
-class GjsAutoInfo : public GjsAutoBaseInfo {
-    void validate(void) const {
-        if (*this)
-            g_assert(g_base_info_get_type(get()) == TAG);
-    }
-
- public:
+struct GjsAutoInfo : GjsAutoBaseInfo {
     // Normally one-argument constructors should be explicit, but we are trying
     // to conform to the interface of std::unique_ptr here.
     GjsAutoInfo(GIBaseInfo* ptr = nullptr)  // NOLINT(runtime/explicit)
@@ -115,12 +111,18 @@ class GjsAutoInfo : public GjsAutoBaseInfo {
     }
 
     void reset(GIBaseInfo* other = nullptr) {
-        GjsAutoInfo::unique_ptr::reset(other);
+        GjsAutoBaseInfo::reset(other);
         validate();
     }
 
     // You should not need this method, because you already know the answer.
-    GIInfoType type(void) = delete;
+    GIInfoType type() = delete;
+
+ private:
+    void validate() const {
+        if (GIBaseInfo* base = *this)
+            g_assert(g_base_info_get_type(base) == TAG);
+    }
 };
 
 using GjsAutoEnumInfo = GjsAutoInfo<GI_INFO_TYPE_ENUM>;
@@ -135,21 +137,21 @@ using GjsAutoVFuncInfo = GjsAutoInfo<GI_INFO_TYPE_VFUNC>;
 
 // GICallableInfo can be one of several tags, so we have to have a separate
 // class, and use GI_IS_CALLABLE_INFO() to validate.
-class GjsAutoCallableInfo : public GjsAutoBaseInfo {
-    void validate(void) const {
-        if (*this)
-            g_assert(GI_IS_CALLABLE_INFO(get()));
-    }
-
- public:
+struct GjsAutoCallableInfo : GjsAutoBaseInfo {
     GjsAutoCallableInfo(GIBaseInfo* ptr = nullptr)  // NOLINT(runtime/explicit)
         : GjsAutoBaseInfo(ptr) {
         validate();
     }
 
     void reset(GIBaseInfo* other = nullptr) {
-        GjsAutoCallableInfo::unique_ptr::reset(other);
+        GjsAutoBaseInfo::reset(other);
         validate();
+    }
+
+ private:
+    void validate() const {
+        if (GIBaseInfo* base = *this)
+            g_assert(GI_IS_CALLABLE_INFO(base));
     }
 };
 
@@ -157,33 +159,16 @@ class GjsAutoCallableInfo : public GjsAutoBaseInfo {
 namespace JS {
 template <GIInfoType TAG>
 struct GCPolicy<GjsAutoInfo<TAG>> : public IgnoreGCPolicy<GjsAutoInfo<TAG>> {};
-}
+}  // namespace JS
 
-class GjsAutoParam
-    : public std::unique_ptr<GParamSpec, decltype(&g_param_spec_unref)> {
-    public:
-    struct TakeOwnership {};
-
-    GjsAutoParam(GParamSpec* ptr = nullptr)
-        : unique_ptr(ptr, g_param_spec_unref) {}
-
-    GjsAutoParam(GParamSpec* ptr, const TakeOwnership&)
-        : GjsAutoParam(ptr ? g_param_spec_ref(ptr) : nullptr) {}
-
-    operator GParamSpec*() const { return get(); }
-};
+using GjsAutoParam = GjsAutoBuilder<GParamSpec, GParamSpec, g_param_spec_unref,
+                                    g_param_spec_ref>;
 
 /* For use of GjsAutoParam in GC hash maps */
 namespace JS {
-template<>
+template <>
 struct GCPolicy<GjsAutoParam> : public IgnoreGCPolicy<GjsAutoParam> {};
 }  // namespace JS
-
-struct GjsJSFreeArgs {
-    void operator() (char *str) {
-        JS_free(nullptr, str);
-    }
-};
 
 G_BEGIN_DECLS
 
