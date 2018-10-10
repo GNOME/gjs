@@ -87,7 +87,7 @@ static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
             g_convert(reinterpret_cast<char*>(data), len, "UTF-16", encoding,
                       nullptr, /* bytes read */
                       &bytes_written, &error);
-        if (u16_str == NULL) {
+        if (u16_str == nullptr) {
             /* frees the GError */
             gjs_throw_g_error(context, error);
             return false;

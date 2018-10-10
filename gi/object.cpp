@@ -286,7 +286,7 @@ GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
     GjsAutoChar gname = gjs_hyphen_from_camel(js_prop_name);
     GjsAutoTypeClass<GObjectClass> gobj_class(m_gtype);
     GParamSpec* pspec = g_object_class_find_property(gobj_class, gname);
-    GjsAutoParam param_spec(pspec, GjsAutoParam::TakeOwnership());
+    GjsAutoParam param_spec(pspec, GjsAutoTakeOwnership());
 
     if (!param_spec) {
         _gjs_proxy_throw_nonexistent_field(cx, m_gtype, js_prop_name);
@@ -2400,7 +2400,7 @@ find_vfunc_info (JSContext *context,
 
     is_interface = g_base_info_get_type(ancestor_info) == GI_INFO_TYPE_INTERFACE;
 
-    GjsAutoTypeClass<void> implementor_class(implementor_gtype);
+    GjsAutoTypeClass<GTypeClass> implementor_class(implementor_gtype);
     if (is_interface) {
         GTypeInstance *implementor_iface_class;
         implementor_iface_class = (GTypeInstance*) g_type_interface_peek(implementor_class,
