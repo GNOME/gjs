@@ -274,22 +274,19 @@ ObjectInstance::unset_object_qdata(void)
 
 GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
                                                      JS::HandleString key) {
-    char *gname;
-
     /* First check for the ID in the cache */
     auto entry = m_property_cache.lookupForAdd(key);
     if (entry)
-        return entry->value().get();
+        return entry->value();
 
     GjsAutoJSChar js_prop_name;
     if (!gjs_string_to_utf8(cx, JS::StringValue(key), &js_prop_name))
         return nullptr;
 
-    gname = gjs_hyphen_from_camel(js_prop_name);
-    GObjectClass *gobj_class = G_OBJECT_CLASS(g_type_class_ref(m_gtype));
-    GjsAutoParam param_spec = g_object_class_find_property(gobj_class, gname);
-    g_type_class_unref(gobj_class);
-    g_free(gname);
+    GjsAutoChar gname = gjs_hyphen_from_camel(js_prop_name);
+    GjsAutoTypeClass<GObjectClass> gobj_class(m_gtype);
+    GParamSpec* pspec = g_object_class_find_property(gobj_class, gname);
+    GjsAutoParam param_spec(pspec, GjsAutoParam::TakeOwnership());
 
     if (!param_spec) {
         _gjs_proxy_throw_nonexistent_field(cx, m_gtype, js_prop_name);
@@ -298,7 +295,7 @@ GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
 
     if (!m_property_cache.add(entry, key, std::move(param_spec)))
         g_error("Out of memory adding param spec to cache");
-    return entry->value().get();  /* owned by property cache */
+    return pspec; /* owned by property cache */
 }
 
 /* Gets the ObjectPrototype corresponding to obj.prototype. Cannot return null,
@@ -668,8 +665,8 @@ find_vfunc_on_parents(GIObjectInfo *info,
 }
 
 /* Taken from GLib */
-static void canonicalize_key(char* key) {
-    for (char* p = key; *p != 0; p++) {
+static void canonicalize_key(const GjsAutoChar& key) {
+    for (char* p = key.get(); *p != 0; p++) {
         char c = *p;
 
         if (c != '-' && (c < '0' || c > '9') && (c < 'A' || c > 'Z') &&
@@ -737,9 +734,8 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
 
     GjsAutoChar canonical_name;
     if (resolve_props == ConsiderMethodsAndProperties) {
-        char* canonical_name_unowned = gjs_hyphen_from_camel(name);
-        canonicalize_key(canonical_name_unowned);
-        canonical_name.reset(canonical_name_unowned);
+        canonical_name = gjs_hyphen_from_camel(name);
+        canonicalize_key(canonical_name);
     }
 
     GType *interfaces = g_type_interfaces(m_gtype, &n_interfaces);
@@ -793,7 +789,7 @@ is_gobject_property_name(GIObjectInfo *info,
     int ix;
     GjsAutoInfo<GIPropertyInfo> prop_info;
 
-    char *canonical_name = gjs_hyphen_from_camel(name);
+    GjsAutoChar canonical_name = gjs_hyphen_from_camel(name);
     canonicalize_key(canonical_name);
 
     for (ix = 0; ix < n_props; ix++) {
@@ -807,14 +803,10 @@ is_gobject_property_name(GIObjectInfo *info,
         for (ix = 0; ix < n_ifaces; ix++) {
             GjsAutoInfo<GIInterfaceInfo> iface_info =
                 g_object_info_get_interface(info, ix);
-            if (is_ginterface_property_name(iface_info, canonical_name)) {
-                g_free(canonical_name);
+            if (is_ginterface_property_name(iface_info, canonical_name))
                 return true;
-            }
         }
     }
-
-    g_free(canonical_name);
 
     if (!prop_info)
         return false;
@@ -2398,7 +2390,6 @@ find_vfunc_info (JSContext *context,
     int length, i;
     GIBaseInfo *ancestor_info;
     GjsAutoInfo<GIStructInfo> struct_info;
-    gpointer implementor_class;
     bool is_interface;
 
     field_info_ret->reset();
@@ -2409,13 +2400,12 @@ find_vfunc_info (JSContext *context,
 
     is_interface = g_base_info_get_type(ancestor_info) == GI_INFO_TYPE_INTERFACE;
 
-    implementor_class = g_type_class_ref(implementor_gtype);
+    GjsAutoTypeClass<void> implementor_class(implementor_gtype);
     if (is_interface) {
         GTypeInstance *implementor_iface_class;
         implementor_iface_class = (GTypeInstance*) g_type_interface_peek(implementor_class,
                                                         ancestor_gtype);
         if (implementor_iface_class == NULL) {
-            g_type_class_unref(implementor_class);
             gjs_throw (context, "Couldn't find GType of implementor of interface %s.",
                        g_type_name(ancestor_gtype));
             return false;
@@ -2428,8 +2418,6 @@ find_vfunc_info (JSContext *context,
         struct_info = g_object_info_get_class_struct((GIObjectInfo*)ancestor_info);
         *implementor_vtable_ret = implementor_class;
     }
-
-    g_type_class_unref(implementor_class);
 
     length = g_struct_info_get_n_fields(struct_info);
     for (i = 0; i < length; i++) {

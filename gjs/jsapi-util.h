@@ -43,7 +43,7 @@ class GjsAutoChar : public std::unique_ptr<char, decltype(&g_free)> {
 public:
     GjsAutoChar(char *str = nullptr) : unique_ptr(str, g_free) {}
 
-    operator const char *() {
+    operator const char *() const {
         return get();
     }
 
@@ -61,9 +61,23 @@ class GjsAutoUnref : public std::unique_ptr<T, decltype(&g_object_unref)> {
 public:
     GjsAutoUnref(T *ptr = nullptr) : GjsAutoUnref::unique_ptr(ptr, g_object_unref) {}
 
-    operator T *() {
+    operator T *() const {
         return GjsAutoUnref::unique_ptr::get();
     }
+};
+
+template<typename T = GTypeClass>
+class GjsAutoTypeClass : public std::unique_ptr<T, decltype(&g_type_class_unref)> {
+public:
+    GjsAutoTypeClass(gpointer ptr = nullptr)
+        : GjsAutoTypeClass::unique_ptr(static_cast<T*>(ptr), g_type_class_unref) {}
+    explicit GjsAutoTypeClass(GType gtype)
+        : GjsAutoTypeClass(g_type_class_ref(gtype)) {}
+
+    operator T *() const { return GjsAutoTypeClass::unique_ptr::get(); }
+
+    template<typename C>
+    C *as() const { return reinterpret_cast<C*>(operator T *()); }
 };
 
 template<typename T = GIBaseInfo>
@@ -71,7 +85,7 @@ class GjsAutoInfo : public std::unique_ptr<T, decltype(&g_base_info_unref)> {
 public:
     GjsAutoInfo(T *ptr = nullptr) : GjsAutoInfo::unique_ptr(ptr, g_base_info_unref) {}
 
-    operator T *() { return GjsAutoInfo::unique_ptr::get(); }
+    operator T *() const { return GjsAutoInfo::unique_ptr::get(); }
 
     const char *name(void) const { return g_base_info_get_name(this->get()); }
     GIInfoType type(void) const { return g_base_info_get_type(this->get()); }
@@ -86,12 +100,15 @@ struct GCPolicy<GjsAutoInfo<T>> : public IgnoreGCPolicy<GjsAutoInfo<T>> {};
 class GjsAutoParam
     : public std::unique_ptr<GParamSpec, decltype(&g_param_spec_unref)> {
     public:
-    GjsAutoParam(GParamSpec* ptr = nullptr)
-        : unique_ptr(ptr, g_param_spec_unref)
-    {
-    }
+    struct TakeOwnership {};
 
-    operator GParamSpec*() { return get(); }
+    GjsAutoParam(GParamSpec* ptr = nullptr)
+        : unique_ptr(ptr, g_param_spec_unref) {}
+
+    GjsAutoParam(GParamSpec* ptr, const TakeOwnership&)
+        : GjsAutoParam(ptr ? g_param_spec_ref(ptr) : nullptr) {}
+
+    operator GParamSpec*() const { return get(); }
 };
 
 /* For use of GjsAutoParam in GC hash maps */
@@ -110,7 +127,7 @@ class GjsAutoJSChar : public std::unique_ptr<char, GjsJSFreeArgs> {
 public:
     GjsAutoJSChar(char *str = nullptr) : unique_ptr(str, GjsJSFreeArgs()) { }
 
-    operator const char*() {
+    operator const char*() const {
         return get();
     }
 
@@ -118,7 +135,7 @@ public:
         reset(str);
     }
 
-    char* copy() {
+    char* copy() const {
         /* Strings acquired by this should be g_free()'ed */
         return g_strdup(get());
     }
