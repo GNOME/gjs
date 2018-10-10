@@ -84,7 +84,7 @@ ns_resolve(JSContext       *context,
     }
 
     GjsAutoBaseInfo info =
-        g_irepository_find_by_name(nullptr, priv->gi_namespace, name.get());
+        g_irepository_find_by_name(g_irepository_get_default(), priv->gi_namespace, name.get());
     if (!info) {
         *resolved = false; /* No property defined, but no error either */
         return true;
@@ -92,13 +92,18 @@ ns_resolve(JSContext       *context,
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
               "Found info type %s for '%s' in namespace '%s'",
-              gjs_info_type_name(info.type()), info.name(), info.ns());
+              gjs_info_type_name(g_base_info_get_type(info)),
+              g_base_info_get_name(info),
+              g_base_info_get_namespace(info));
 
     JSAutoRequest ar(context);
 
     if (!gjs_define_info(context, obj, info, &defined)) {
-        gjs_debug(GJS_DEBUG_GNAMESPACE, "Failed to define info '%s'",
-                  info.name());
+        gjs_debug(GJS_DEBUG_GNAMESPACE,
+                  "Failed to define info '%s'",
+                  g_base_info_get_name(info));
+
+        g_base_info_unref(info);
         return false;
     }
 

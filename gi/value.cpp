@@ -717,11 +717,14 @@ convert_int_to_enum (GType  gtype,
         /* Optimize the unambiguous case */
         v_double = v;
     } else {
+        GIBaseInfo *info;
+
         /* Need to distinguish between negative integers and unsigned integers */
-        GjsAutoEnumInfo info = g_irepository_find_by_gtype(nullptr, gtype);
+
+        info = g_irepository_find_by_gtype(g_irepository_get_default(), gtype);
         g_assert (info);
 
-        v_double = _gjs_enum_from_int(info, v);
+        v_double = _gjs_enum_from_int ((GIEnumInfo *)info, v);
         g_base_info_unref(info);
     }
 
@@ -808,6 +811,7 @@ gjs_value_from_g_value_internal(JSContext             *context,
     } else if (g_type_is_a(gtype, G_TYPE_BOXED) ||
                g_type_is_a(gtype, G_TYPE_VARIANT)) {
         GjsBoxedCreationFlags boxed_flags;
+        GIBaseInfo *info;
         void *gboxed;
         JSObject *obj;
 
@@ -833,36 +837,43 @@ gjs_value_from_g_value_internal(JSContext             *context,
 
         /* The only way to differentiate unions and structs is from
          * their g-i info as both GBoxed */
-        GjsAutoBaseInfo info = g_irepository_find_by_gtype(nullptr, gtype);
-        if (!info) {
+        info = g_irepository_find_by_gtype(g_irepository_get_default(),
+                                           gtype);
+        if (info == NULL) {
             gjs_throw(context,
                       "No introspection information found for %s",
                       g_type_name(gtype));
             return false;
         }
 
-        if (info.type() == GI_INFO_TYPE_STRUCT &&
-            g_struct_info_is_foreign(info)) {
+        if (g_base_info_get_type(info) == GI_INFO_TYPE_STRUCT &&
+            g_struct_info_is_foreign((GIStructInfo*)info)) {
+            bool ret;
             GIArgument arg;
             arg.v_pointer = gboxed;
-            return gjs_struct_foreign_convert_from_g_argument(context, value_p,
-                                                              info, &arg);
+            ret = gjs_struct_foreign_convert_from_g_argument(context, value_p, info, &arg);
+            g_base_info_unref(info);
+            return ret;
         }
 
-        GIInfoType type = info.type();
+        GIInfoType type = g_base_info_get_type(info);
         if (type == GI_INFO_TYPE_BOXED || type == GI_INFO_TYPE_STRUCT) {
             if (no_copy)
                 boxed_flags = (GjsBoxedCreationFlags) (boxed_flags | GJS_BOXED_CREATION_NO_COPY);
-            obj = gjs_boxed_from_c_struct(context, info, gboxed, boxed_flags);
+            obj = gjs_boxed_from_c_struct(context, (GIStructInfo *)info, gboxed, boxed_flags);
         } else if (type == GI_INFO_TYPE_UNION) {
-            obj = gjs_union_from_c_union(context, info, gboxed);
+            obj = gjs_union_from_c_union(context, (GIUnionInfo *)info, gboxed);
         } else {
-            gjs_throw(context, "Unexpected introspection type %d for %s",
-                      info.type(), g_type_name(gtype));
+            gjs_throw(context,
+                      "Unexpected introspection type %d for %s",
+                      g_base_info_get_type(info),
+                      g_type_name(gtype));
+            g_base_info_unref(info);
             return false;
         }
 
         value_p.setObjectOrNull(obj);
+        g_base_info_unref(info);
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {
         value_p.set(convert_int_to_enum(gtype, g_value_get_enum(gvalue)));
     } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {

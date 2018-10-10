@@ -243,6 +243,7 @@ fundamental_instance_resolve_interface(JSContext       *context,
                                        Fundamental     *proto_priv,
                                        const char      *name)
 {
+    GIFunctionInfo *method_info;
     bool ret;
     GType *interfaces;
     guint n_interfaces;
@@ -251,23 +252,37 @@ fundamental_instance_resolve_interface(JSContext       *context,
     ret = true;
     interfaces = g_type_interfaces(proto_priv->gtype, &n_interfaces);
     for (i = 0; i < n_interfaces; i++) {
-        GjsAutoInterfaceInfo iface_info =
-            g_irepository_find_by_gtype(nullptr, interfaces[i]);
+        GIBaseInfo *base_info;
+        GIInterfaceInfo *iface_info;
 
-        if (!iface_info)
+        base_info = g_irepository_find_by_gtype(g_irepository_get_default(),
+                                                interfaces[i]);
+
+        if (base_info == NULL)
             continue;
 
-        GjsAutoFunctionInfo method_info =
-            g_interface_info_find_method(iface_info, name);
+        /* An interface GType ought to have interface introspection info */
+        g_assert(g_base_info_get_type(base_info) == GI_INFO_TYPE_INTERFACE);
 
-        if (method_info &&
-            g_function_info_get_flags(method_info) & GI_FUNCTION_IS_METHOD) {
-            if (gjs_define_function(context, obj, proto_priv->gtype,
-                                    method_info)) {
-                *resolved = true;
-            } else {
-                ret = false;
+        iface_info = (GIInterfaceInfo *) base_info;
+
+        method_info = g_interface_info_find_method(iface_info, name);
+
+        g_base_info_unref(base_info);
+
+
+        if (method_info != NULL) {
+            if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+                if (gjs_define_function(context, obj,
+                                        proto_priv->gtype,
+                                        (GICallableInfo *) method_info)) {
+                    *resolved = true;
+                } else {
+                    ret = false;
+                }
             }
+
+            g_base_info_unref((GIBaseInfo *) method_info);
         }
     }
 

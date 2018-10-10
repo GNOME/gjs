@@ -55,7 +55,10 @@ param_resolve(JSContext       *context,
               JS::HandleId     id,
               bool            *resolved)
 {
-    Param* priv = priv_from_js(context, obj);
+    Param *priv;
+    bool ret = false;
+
+    priv = priv_from_js(context, obj);
     if (priv != NULL) {
         /* instance, not prototype */
         *resolved = false;
@@ -68,30 +71,38 @@ param_resolve(JSContext       *context,
         return true; /* not resolved, but no error */
     }
 
-    GjsAutoObjectInfo info = g_irepository_find_by_gtype(nullptr, G_TYPE_PARAM);
+    GjsAutoObjectInfo info = g_irepository_find_by_gtype(g_irepository_get_default(), G_TYPE_PARAM);
     GjsAutoFunctionInfo method_info =
         g_object_info_find_method(info, name.get());
 
-    if (!method_info) {
+    if (method_info == NULL) {
         *resolved = false;
-        return true;
+        ret = true;
+        goto out;
     }
 #if GJS_VERBOSE_ENABLE_GI_USAGE
-    _gjs_log_info_usage(method_info);
+    _gjs_log_info_usage((GIBaseInfo*) method_info);
 #endif
 
     if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Defining method %s in prototype for GObject.ParamSpec",
-                  method_info.name());
+                  g_base_info_get_name( (GIBaseInfo*) method_info));
 
-        if (!gjs_define_function(context, obj, G_TYPE_PARAM, method_info))
-            return false;
+        if (gjs_define_function(context, obj, G_TYPE_PARAM, method_info) == NULL) {
+            g_base_info_unref( (GIBaseInfo*) method_info);
+            goto out;
+        }
 
         *resolved = true; /* we defined the prop in obj */
     }
 
-    return true;
+    g_base_info_unref( (GIBaseInfo*) method_info);
+
+    ret = true;
+ out:
+
+    return ret;
 }
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(param)
