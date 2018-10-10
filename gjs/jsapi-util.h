@@ -66,6 +66,8 @@ struct GjsJSCharFuncs {
 };
 using GjsAutoChar = GjsAutoBuilder<char, char, GjsJSCharFuncs::free, GjsJSCharFuncs::dup>;
 
+using GjsAutoStrv = GjsAutoBuilder<char*, char*, g_strfreev>;
+
 template <typename T>
 using GjsAutoUnref = GjsAutoBuilder<T, void, g_object_unref , g_object_ref>;
 

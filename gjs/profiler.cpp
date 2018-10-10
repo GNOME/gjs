@@ -126,8 +126,6 @@ static GjsContext *profiling_context;
 static bool
 gjs_profiler_extract_maps(GjsProfiler *self)
 {
-    using AutoStrv = std::unique_ptr<char *, decltype(&g_strfreev)>;
-
     int64_t now = g_get_monotonic_time() * 1000L;
 
     g_assert(((void) "Profiler must be set up before extracting maps", self));
@@ -140,9 +138,9 @@ gjs_profiler_extract_maps(GjsProfiler *self)
       return false;
     GjsAutoChar content = content_tmp;
 
-    AutoStrv lines(g_strsplit(content, "\n", 0), g_strfreev);
+    GjsAutoStrv lines = g_strsplit(content, "\n", 0);
 
-    for (size_t ix = 0; lines.get()[ix]; ix++) {
+    for (size_t ix = 0; lines[ix]; ix++) {
         char file[256];
         unsigned long start;
         unsigned long end;
@@ -151,7 +149,7 @@ gjs_profiler_extract_maps(GjsProfiler *self)
 
         file[sizeof file - 1] = '\0';
 
-        int r = sscanf(lines.get()[ix], "%lx-%lx %*15s %lx %*x:%*x %lu %255s",
+        int r = sscanf(lines[ix], "%lx-%lx %*15s %lx %*x:%*x %lu %255s",
                        &start, &end, &offset, &inode, file);
         if (r != 5)
             continue;
