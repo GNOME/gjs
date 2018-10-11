@@ -450,6 +450,11 @@ gjs_value_debug_string(JSContext      *context,
     JS::RootedString str(context, JS::ToString(context, value));
 
     if (!str) {
+        JS_ClearPendingException(context);
+        str = JS_ValueToSource(context, value);
+    }
+
+    if (!str) {
         if (value.isObject()) {
             /* Specifically the Call object (see jsfun.c in spidermonkey)
              * does not have a toString; there may be others also.
