@@ -2371,14 +2371,14 @@ ObjectInstance::typecheck_object(JSContext *context,
 static bool find_vfunc_info(JSContext* context, GType implementor_gtype,
                             GIBaseInfo* vfunc_info, const char* vfunc_name,
                             void** implementor_vtable_ret,
-                            GjsAutoFieldInfo* field_info_ret) {
+                            GjsAutoFieldInfo& field_info_ret) {
     GType ancestor_gtype;
     int length, i;
     GIBaseInfo *ancestor_info;
     GjsAutoStructInfo struct_info;
     bool is_interface;
 
-    field_info_ret->reset();
+    field_info_ret.reset();
     *implementor_vtable_ret = NULL;
 
     ancestor_info = g_base_info_get_container(vfunc_info);
@@ -2418,7 +2418,7 @@ static bool find_vfunc_info(JSContext* context, GType implementor_gtype,
              * so just abort early. */
             return true;
         } else {
-            *field_info_ret = std::move(field_info);
+            field_info_ret = std::move(field_info);
             return true;
         }
     }
@@ -2494,7 +2494,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
     void *implementor_vtable;
     GjsAutoFieldInfo field_info;
     if (!find_vfunc_info(cx, m_gtype, vfunc, name.get(), &implementor_vtable,
-                         &field_info))
+                         field_info))
         return false;
 
     if (field_info != NULL) {
