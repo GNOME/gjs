@@ -104,7 +104,7 @@ gjs_string_from_utf8_n(JSContext             *cx,
 bool
 gjs_string_to_filename(JSContext      *context,
                        const JS::Value filename_val,
-                       GjsAutoChar    *filename_string)
+                       GjsAutoChar    &filename_string)
 {
     GError *error;
     JS::UniqueChars tmp;
@@ -117,9 +117,9 @@ gjs_string_to_filename(JSContext      *context,
     }
 
     error = NULL;
-    *filename_string =
+    filename_string =
         g_filename_from_utf8(tmp.get(), -1, nullptr, nullptr, &error);
-    if (!*filename_string)
+    if (!filename_string)
         return gjs_throw_gerror_message(context, error);
 
     return true;

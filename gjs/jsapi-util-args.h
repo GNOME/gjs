@@ -112,7 +112,7 @@ assign(JSContext      *cx,
         ref->release();
         return;
     }
-    if (!gjs_string_to_filename(cx, value, ref))
+    if (!gjs_string_to_filename(cx, value, *ref))
         throw g_strdup("Couldn't convert to filename");
 }
 

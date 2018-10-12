@@ -419,7 +419,7 @@ value_to_ghashtable_key(JSContext      *cx,
             JS::RootedString str(cx, JS::ToString(cx, str_val));
             str_val.setString(str);
         }
-        if (!gjs_string_to_filename(cx, str_val, &cstr))
+        if (!gjs_string_to_filename(cx, str_val, cstr))
             return false;
         *pointer_out = cstr.release();
         break;
@@ -1502,7 +1502,7 @@ gjs_value_to_g_argument(JSContext      *context,
             arg->v_pointer = NULL;
         } else if (value.isString()) {
             GjsAutoChar filename_str;
-            if (gjs_string_to_filename(context, value, &filename_str))
+            if (gjs_string_to_filename(context, value, filename_str))
                 arg->v_pointer = filename_str.release();
             else
                 wrong = true;
