@@ -265,9 +265,9 @@ bool gjs_string_from_utf8_n(JSContext             *cx,
                             size_t                 len,
                             JS::MutableHandleValue out);
 
-bool gjs_string_to_filename(JSContext       *cx,
-                            const JS::Value  string_val,
-                            GjsAutoChar     *filename_string);
+bool gjs_string_to_filename(JSContext      *cx,
+                            const JS::Value string_val,
+                            GjsAutoChar    &filename_string);
 
 bool gjs_string_from_filename(JSContext             *context,
                               const char            *filename_string,
