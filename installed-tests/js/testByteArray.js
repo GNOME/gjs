@@ -47,9 +47,8 @@ describe('Byte array', function () {
     it('can be converted to a string of encoded characters even with a 0 byte', function () {
         const a = Uint8Array.of(97, 98, 99, 100, 0);
         const s = ByteArray.toString(a, 'LATIN1');
-        expect(s.length).toEqual(5);
-        expect(s).toEqual('\uFEFFabcd');
-        // GLib puts a BOM in the string, who knows why
+        expect(s.length).toEqual(4);
+        expect(s).toEqual('abcd');
     });
 
     it('stops converting to a string at an embedded 0 byte', function () {

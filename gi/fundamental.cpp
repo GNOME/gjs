@@ -243,7 +243,6 @@ fundamental_instance_resolve_interface(JSContext       *context,
                                        Fundamental     *proto_priv,
                                        const char      *name)
 {
-    GIFunctionInfo *method_info;
     bool ret;
     GType *interfaces;
     guint n_interfaces;
@@ -252,37 +251,23 @@ fundamental_instance_resolve_interface(JSContext       *context,
     ret = true;
     interfaces = g_type_interfaces(proto_priv->gtype, &n_interfaces);
     for (i = 0; i < n_interfaces; i++) {
-        GIBaseInfo *base_info;
-        GIInterfaceInfo *iface_info;
+        GjsAutoInterfaceInfo iface_info =
+            g_irepository_find_by_gtype(nullptr, interfaces[i]);
 
-        base_info = g_irepository_find_by_gtype(g_irepository_get_default(),
-                                                interfaces[i]);
-
-        if (base_info == NULL)
+        if (!iface_info)
             continue;
 
-        /* An interface GType ought to have interface introspection info */
-        g_assert(g_base_info_get_type(base_info) == GI_INFO_TYPE_INTERFACE);
+        GjsAutoFunctionInfo method_info =
+            g_interface_info_find_method(iface_info, name);
 
-        iface_info = (GIInterfaceInfo *) base_info;
-
-        method_info = g_interface_info_find_method(iface_info, name);
-
-        g_base_info_unref(base_info);
-
-
-        if (method_info != NULL) {
-            if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-                if (gjs_define_function(context, obj,
-                                        proto_priv->gtype,
-                                        (GICallableInfo *) method_info)) {
-                    *resolved = true;
-                } else {
-                    ret = false;
-                }
+        if (method_info &&
+            g_function_info_get_flags(method_info) & GI_FUNCTION_IS_METHOD) {
+            if (gjs_define_function(context, obj, proto_priv->gtype,
+                                    method_info)) {
+                *resolved = true;
+            } else {
+                ret = false;
             }
-
-            g_base_info_unref((GIBaseInfo *) method_info);
         }
     }
 
@@ -322,7 +307,7 @@ fundamental_instance_resolve(JSContext       *context,
         return true;
     }
 
-    GjsAutoJSChar name;
+    JS::UniqueChars name;
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true; /* not resolved, but no error */
@@ -330,55 +315,43 @@ fundamental_instance_resolve(JSContext       *context,
 
     /* We are the prototype, so look for methods and other class properties */
     Fundamental *proto_priv = (Fundamental *) priv;
-    GIFunctionInfo *method_info;
+    GjsAutoFunctionInfo method_info =
+        g_object_info_find_method(proto_priv->info, name.get());
 
-    method_info = g_object_info_find_method((GIStructInfo*) proto_priv->info,
-                                            name);
-
-    if (method_info != NULL) {
-        const char *method_name;
-
+    if (method_info) {
 #if GJS_VERBOSE_ENABLE_GI_USAGE
-        _gjs_log_info_usage((GIBaseInfo *) method_info);
+        _gjs_log_info_usage(method_info);
 #endif
         if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-            method_name = g_base_info_get_name((GIBaseInfo *) method_info);
-
             /* we do not define deprecated methods in the prototype */
-            if (g_base_info_is_deprecated((GIBaseInfo *) method_info)) {
+            if (g_base_info_is_deprecated(method_info)) {
                 gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
                           "Ignoring definition of deprecated method %s in prototype %s.%s",
-                          method_name,
+                          method_info.name(),
                           g_base_info_get_namespace((GIBaseInfo *) proto_priv->info),
                           g_base_info_get_name((GIBaseInfo *) proto_priv->info));
-                g_base_info_unref((GIBaseInfo *) method_info);
                 *resolved = false;
                 return true;
             }
 
             gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
                       "Defining method %s in prototype for %s.%s",
-                      method_name,
+                      method_info.name(),
                       g_base_info_get_namespace((GIBaseInfo *) proto_priv->info),
                       g_base_info_get_name((GIBaseInfo *) proto_priv->info));
 
-            if (gjs_define_function(context, obj, proto_priv->gtype,
-                                    method_info) == NULL) {
-                g_base_info_unref((GIBaseInfo *) method_info);
+            if (!gjs_define_function(context, obj, proto_priv->gtype,
+                                     method_info))
                 return false;
-            }
 
             *resolved = true;
         }
-
-        g_base_info_unref((GIBaseInfo *) method_info);
     } else {
         *resolved = false;
     }
 
-    bool status =
-        fundamental_instance_resolve_interface(context, obj, resolved,
-                                               proto_priv, name);
+    bool status = fundamental_instance_resolve_interface(
+        context, obj, resolved, proto_priv, name.get());
     return status;
 }
 
@@ -623,7 +596,7 @@ static JSObject*
 gjs_lookup_fundamental_prototype_from_gtype(JSContext *context,
                                             GType      gtype)
 {
-    GjsAutoInfo<GIObjectInfo> info;
+    GjsAutoObjectInfo info;
 
     /* A given gtype might not have any definition in the introspection
      * data. If that's the case, try to look for a definition of any of the

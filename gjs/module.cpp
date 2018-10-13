@@ -124,10 +124,8 @@ class GjsModule {
         int start_line_number = 1;
 
         if (!(g_file_load_contents(file, nullptr, &unowned_script, &script_len,
-                                   nullptr, &error))) {
-            gjs_throw_g_error(cx, error);
-            return false;
-        }
+                                   nullptr, &error)))
+            return gjs_throw_gerror_message(cx, error);
 
         GjsAutoChar script = unowned_script;  /* steals ownership */
         g_assert(script != nullptr);

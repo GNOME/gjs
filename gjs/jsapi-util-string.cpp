@@ -55,11 +55,8 @@ char* gjs_hyphen_to_underscore(const char* str) {
  * Don't use this function if you already have a JS::RootedString, or if you
  * know the value already holds a string; use JS_EncodeStringToUTF8() instead.
  */
-bool
-gjs_string_to_utf8(JSContext      *cx,
-                   const JS::Value value,
-                   GjsAutoJSChar  *utf8_string_p)
-{
+bool gjs_string_to_utf8(JSContext* cx, const JS::Value value,
+                        JS::UniqueChars* utf8_string_p) {
     JSAutoRequest ar(cx);
 
     if (!value.isString()) {
@@ -110,7 +107,7 @@ gjs_string_to_filename(JSContext      *context,
                        GjsAutoChar    *filename_string)
 {
     GError *error;
-    GjsAutoJSChar tmp;
+    JS::UniqueChars tmp;
 
     /* gjs_string_to_filename verifies that filename_val is a string */
 
@@ -120,11 +117,10 @@ gjs_string_to_filename(JSContext      *context,
     }
 
     error = NULL;
-    *filename_string = g_filename_from_utf8(tmp, -1, NULL, NULL, &error);
-    if (!*filename_string) {
-        gjs_throw_g_error(context, error);
-        return false;
-    }
+    *filename_string =
+        g_filename_from_utf8(tmp.get(), -1, nullptr, nullptr, &error);
+    if (!*filename_string)
+        return gjs_throw_gerror_message(context, error);
 
     return true;
 }
@@ -325,11 +321,7 @@ gjs_string_from_ucs4(JSContext             *cx,
  *
  * Returns: true if *name_p is non-%NULL
  **/
-bool
-gjs_get_string_id (JSContext       *context,
-                   jsid             id,
-                   GjsAutoJSChar   *name_p)
-{
+bool gjs_get_string_id(JSContext* context, jsid id, JS::UniqueChars* name_p) {
     JS::RootedValue id_val(context);
 
     if (!JS_IdToValue(context, id, &id_val))
@@ -361,9 +353,9 @@ gjs_unichar_from_string (JSContext *context,
                          JS::Value  value,
                          gunichar  *result)
 {
-    GjsAutoJSChar utf8_str;
+    JS::UniqueChars utf8_str;
     if (gjs_string_to_utf8(context, value, &utf8_str)) {
-        *result = g_utf8_get_char(utf8_str);
+        *result = g_utf8_get_char(utf8_str.get());
         return true;
     }
     return false;

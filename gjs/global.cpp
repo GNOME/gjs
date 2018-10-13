@@ -41,10 +41,8 @@ run_bootstrap(JSContext       *cx,
     std::unique_ptr<GBytes, decltype(&g_bytes_unref)> script_bytes(
         g_resources_lookup_data(path, G_RESOURCE_LOOKUP_FLAGS_NONE, &error),
         g_bytes_unref);
-    if (!script_bytes) {
-        gjs_throw_g_error(cx, error);
-        return false;
-    }
+    if (!script_bytes)
+        return gjs_throw_gerror_message(cx, error);
 
     JSAutoCompartment ac(cx, global);
 
@@ -90,7 +88,7 @@ gjs_log(JSContext *cx,
         return true;
     }
 
-    GjsAutoJSChar s = JS_EncodeStringToUTF8(cx, jstr);
+    JS::UniqueChars s(JS_EncodeStringToUTF8(cx, jstr));
     if (!s)
         return false;
 
@@ -149,13 +147,13 @@ gjs_print_parse_args(JSContext    *cx,
         exc_state.restore();
 
         if (jstr) {
-            GjsAutoJSChar s = JS_EncodeStringToUTF8(cx, jstr);
+            JS::UniqueChars s(JS_EncodeStringToUTF8(cx, jstr));
             if (!s) {
                 g_string_free(str, true);
                 return false;
             }
 
-            g_string_append(str, s);
+            g_string_append(str, s.get());
             if (n < (argv.length()-1))
                 g_string_append_c(str, ' ');
         } else {

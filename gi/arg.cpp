@@ -432,10 +432,10 @@ value_to_ghashtable_key(JSContext      *cx,
         else
             str = value.toString();
 
-        GjsAutoJSChar cstr = JS_EncodeStringToUTF8(cx, str);
+        JS::UniqueChars cstr(JS_EncodeStringToUTF8(cx, str));
         if (!cstr)
             return false;
-        *pointer_out = cstr.copy();
+        *pointer_out = g_strdup(cstr.get());
         break;
     }
 
@@ -627,12 +627,12 @@ gjs_array_to_strv(JSContext   *context,
             return false;
         }
 
-        GjsAutoJSChar tmp_result;
+        JS::UniqueChars tmp_result;
         if (!gjs_string_to_utf8(context, elem, &tmp_result)) {
             g_strfreev(result);
             return false;
         }
-        result[i] = tmp_result.copy();
+        result[i] = g_strdup(tmp_result.get());
     }
 
     *arr_p = result;
@@ -653,11 +653,11 @@ gjs_string_to_intarray(JSContext       *context,
     element_type = g_type_info_get_tag(param_info);
 
     if (element_type == GI_TYPE_TAG_INT8 || element_type == GI_TYPE_TAG_UINT8) {
-        GjsAutoJSChar result = JS_EncodeStringToUTF8(context, str);
+        JS::UniqueChars result(JS_EncodeStringToUTF8(context, str));
         if (!result)
             return false;
-        *length = strlen(result);
-        *arr_p = result.copy();
+        *length = strlen(result.get());
+        *arr_p = g_strdup(result.get());
         return true;
     }
 
@@ -1328,9 +1328,8 @@ static void
 intern_gdk_atom(const char *name,
                 GArgument  *ret)
 {
-    GIRepository *repo = g_irepository_get_default();
-    GIFunctionInfo *atom_intern_fun =
-        g_irepository_find_by_name(repo, "Gdk", "atom_intern");
+    GjsAutoFunctionInfo atom_intern_fun =
+        g_irepository_find_by_name(nullptr, "Gdk", "atom_intern");
 
     GIArgument atom_intern_args[2];
 
@@ -1345,8 +1344,6 @@ intern_gdk_atom(const char *name,
                            nullptr, 0,
                            ret,
                            nullptr);
-
-    g_base_info_unref(atom_intern_fun);
 }
 
 bool
@@ -1520,9 +1517,9 @@ gjs_value_to_g_argument(JSContext      *context,
             arg->v_pointer = NULL;
         } else if (value.isString()) {
             JS::RootedString str(context, value.toString());
-            GjsAutoJSChar utf8_str = JS_EncodeStringToUTF8(context, str);
+            JS::UniqueChars utf8_str(JS_EncodeStringToUTF8(context, str));
             if (utf8_str)
-                arg->v_pointer = utf8_str.copy();
+                arg->v_pointer = g_strdup(utf8_str.get());
             else
                 wrong = true;
         } else {
@@ -1622,15 +1619,15 @@ gjs_value_to_g_argument(JSContext      *context,
                     intern_gdk_atom("NONE", arg);
                 } else {
                     JS::RootedString str(context, value.toString());
-                    GjsAutoJSChar atom_name = JS_EncodeStringToUTF8(context, str);
+                    JS::UniqueChars name(JS_EncodeStringToUTF8(context, str));
 
-                    if (!atom_name) {
+                    if (!name) {
                         wrong = true;
                         g_base_info_unref(interface_info);
                         break;
                     }
 
-                    intern_gdk_atom(atom_name, arg);
+                    intern_gdk_atom(name.get(), arg);
                 }
             } else if (expect_object != value.isObjectOrNull()) {
                 wrong = true;
@@ -2613,7 +2610,7 @@ gjs_object_from_g_hash (JSContext             *context,
         if (!keystr)
             return false;
 
-        GjsAutoJSChar keyutf8 = JS_EncodeStringToUTF8(context, keystr);
+        JS::UniqueChars keyutf8(JS_EncodeStringToUTF8(context, keystr));
         if (!keyutf8)
             return false;
 
@@ -2622,7 +2619,8 @@ gjs_object_from_g_hash (JSContext             *context,
                                        true))
             return false;
 
-        if (!JS_DefineProperty(context, obj, keyutf8, valjs, JSPROP_ENUMERATE))
+        if (!JS_DefineProperty(context, obj, keyutf8.get(), valjs,
+                               JSPROP_ENUMERATE))
             return false;
     }
 

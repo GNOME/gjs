@@ -80,21 +80,83 @@ public:
     C *as() const { return reinterpret_cast<C*>(operator T *()); }
 };
 
-template<typename T = GIBaseInfo>
-class GjsAutoInfo : public std::unique_ptr<T, decltype(&g_base_info_unref)> {
-public:
-    GjsAutoInfo(T *ptr = nullptr) : GjsAutoInfo::unique_ptr(ptr, g_base_info_unref) {}
+// Use this class for owning a GIBaseInfo* of indeterminate type. Any type (e.g.
+// GIFunctionInfo*, GIObjectInfo*) will fit. If you know that the info is of a
+// certain type (e.g. you are storing the return value of a function that
+// returns GIFunctionInfo*,) use one of the derived classes below.
+class GjsAutoBaseInfo
+    : public std::unique_ptr<GIBaseInfo, decltype(&g_base_info_unref)> {
+ public:
+    GjsAutoBaseInfo(GIBaseInfo* ptr = nullptr)
+        : GjsAutoBaseInfo::unique_ptr(ptr, g_base_info_unref) {}
 
-    operator T *() const { return GjsAutoInfo::unique_ptr::get(); }
+    operator GIBaseInfo*() const { return get(); }
 
-    const char *name(void) const { return g_base_info_get_name(this->get()); }
-    GIInfoType type(void) const { return g_base_info_get_type(this->get()); }
+    const char* name(void) const { return g_base_info_get_name(get()); }
+    const char* ns(void) const { return g_base_info_get_namespace(get()); }
+    GIInfoType type(void) const { return g_base_info_get_type(get()); }
 };
 
-/* For use of GjsAutoInfo<T> in GC hash maps */
+// Use GjsAutoInfo, preferably its typedefs below, when you know for sure that
+// the info is either of a certain type or null.
+template <GIInfoType TAG>
+class GjsAutoInfo : public GjsAutoBaseInfo {
+    void validate(void) const {
+        if (*this)
+            g_assert(g_base_info_get_type(get()) == TAG);
+    }
+
+ public:
+    // Normally one-argument constructors should be explicit, but we are trying
+    // to conform to the interface of std::unique_ptr here.
+    GjsAutoInfo(GIBaseInfo* ptr = nullptr)  // NOLINT(runtime/explicit)
+        : GjsAutoBaseInfo(ptr) {
+        validate();
+    }
+
+    void reset(GIBaseInfo* other = nullptr) {
+        GjsAutoInfo::unique_ptr::reset(other);
+        validate();
+    }
+
+    // You should not need this method, because you already know the answer.
+    GIInfoType type(void) = delete;
+};
+
+using GjsAutoEnumInfo = GjsAutoInfo<GI_INFO_TYPE_ENUM>;
+using GjsAutoFieldInfo = GjsAutoInfo<GI_INFO_TYPE_FIELD>;
+using GjsAutoFunctionInfo = GjsAutoInfo<GI_INFO_TYPE_FUNCTION>;
+using GjsAutoInterfaceInfo = GjsAutoInfo<GI_INFO_TYPE_INTERFACE>;
+using GjsAutoObjectInfo = GjsAutoInfo<GI_INFO_TYPE_OBJECT>;
+using GjsAutoPropertyInfo = GjsAutoInfo<GI_INFO_TYPE_PROPERTY>;
+using GjsAutoStructInfo = GjsAutoInfo<GI_INFO_TYPE_STRUCT>;
+using GjsAutoTypeInfo = GjsAutoInfo<GI_INFO_TYPE_TYPE>;
+using GjsAutoVFuncInfo = GjsAutoInfo<GI_INFO_TYPE_VFUNC>;
+
+// GICallableInfo can be one of several tags, so we have to have a separate
+// class, and use GI_IS_CALLABLE_INFO() to validate.
+class GjsAutoCallableInfo : public GjsAutoBaseInfo {
+    void validate(void) const {
+        if (*this)
+            g_assert(GI_IS_CALLABLE_INFO(get()));
+    }
+
+ public:
+    GjsAutoCallableInfo(GIBaseInfo* ptr = nullptr)  // NOLINT(runtime/explicit)
+        : GjsAutoBaseInfo(ptr) {
+        validate();
+    }
+
+    void reset(GIBaseInfo* other = nullptr) {
+        GjsAutoCallableInfo::unique_ptr::reset(other);
+        validate();
+    }
+};
+
+/* For use of GjsAutoInfo<TAG> in GC hash maps */
 namespace JS {
-template<typename T>
-struct GCPolicy<GjsAutoInfo<T>> : public IgnoreGCPolicy<GjsAutoInfo<T>> {};
+template <GIInfoType TAG>
+struct GCPolicy<GjsAutoInfo<TAG>> : public IgnoreGCPolicy<GjsAutoInfo<TAG>> {};
 }
 
 class GjsAutoParam
@@ -120,24 +182,6 @@ struct GCPolicy<GjsAutoParam> : public IgnoreGCPolicy<GjsAutoParam> {};
 struct GjsJSFreeArgs {
     void operator() (char *str) {
         JS_free(nullptr, str);
-    }
-};
-
-class GjsAutoJSChar : public std::unique_ptr<char, GjsJSFreeArgs> {
-public:
-    GjsAutoJSChar(char *str = nullptr) : unique_ptr(str, GjsJSFreeArgs()) { }
-
-    operator const char*() const {
-        return get();
-    }
-
-    void operator=(char *str) {
-        reset(str);
-    }
-
-    char* copy() const {
-        /* Strings acquired by this should be g_free()'ed */
-        return g_strdup(get());
     }
 };
 
@@ -206,8 +250,7 @@ void        gjs_throw_custom                 (JSContext       *context,
                                               ...)  G_GNUC_PRINTF (4, 5);
 void        gjs_throw_literal                (JSContext       *context,
                                               const char      *string);
-void        gjs_throw_g_error                (JSContext       *context,
-                                              GError          *error);
+bool gjs_throw_gerror_message(JSContext* cx, GError* error);
 
 bool        gjs_log_exception                (JSContext       *context);
 
@@ -227,9 +270,8 @@ bool gjs_call_function_value(JSContext                  *context,
 void gjs_warning_reporter(JSContext     *cx,
                           JSErrorReport *report);
 
-bool        gjs_string_to_utf8               (JSContext       *context,
-                                              const JS::Value  string_val,
-                                              GjsAutoJSChar   *utf8_string_p);
+bool gjs_string_to_utf8(JSContext* cx, const JS::Value string_val,
+                        JS::UniqueChars* utf8_string_p);
 bool gjs_string_from_utf8(JSContext             *context,
                           const char            *utf8_string,
                           JS::MutableHandleValue value_p);
@@ -261,9 +303,7 @@ bool gjs_string_from_ucs4(JSContext             *cx,
                           ssize_t                n_chars,
                           JS::MutableHandleValue value_p);
 
-bool        gjs_get_string_id                (JSContext       *context,
-                                              jsid             id,
-                                              GjsAutoJSChar   *name_p);
+bool gjs_get_string_id(JSContext* cx, jsid id, JS::UniqueChars* name_p);
 jsid        gjs_intern_string_to_id          (JSContext       *context,
                                               const char      *string);
 
@@ -391,11 +431,10 @@ bool gjs_object_require_property(JSContext       *cx,
                                  JS::HandleId     property_name,
                                  int32_t         *value);
 
-bool gjs_object_require_property(JSContext       *cx,
-                                 JS::HandleObject obj,
-                                 const char      *description,
-                                 JS::HandleId     property_name,
-                                 GjsAutoJSChar   *value);
+bool gjs_object_require_property(JSContext* cx, JS::HandleObject obj,
+                                 const char* description,
+                                 JS::HandleId property_name,
+                                 JS::UniqueChars* value);
 
 bool gjs_object_require_property(JSContext              *cx,
                                  JS::HandleObject        obj,
