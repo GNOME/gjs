@@ -442,13 +442,8 @@ import_file_on_module(JSContext       *context,
     return retval;
 }
 
-static bool
-do_import(JSContext       *context,
-          JS::HandleObject obj,
-          Importer        *priv,
-          JS::HandleId     id,
-          const char      *name)
-{
+static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
+                      JS::HandleId id) {
     JS::RootedObject search_path(context);
     guint32 search_path_len;
     guint32 i;
@@ -470,20 +465,25 @@ do_import(JSContext       *context,
         return false;
     }
 
-    GjsAutoChar filename = g_strdup_printf("%s.js", name);
+    JS::UniqueChars name;
+    if (!gjs_get_string_id(context, id, &name))
+        return false;
+
+    /* First try importing an internal module like gi */
+    if (priv->is_root &&
+        gjs_is_registered_native_module(context, obj, name.get())) {
+        if (!gjs_import_native_module(context, obj, name.get()))
+            return false;
+
+        gjs_debug(GJS_DEBUG_IMPORTER, "successfully imported module '%s'",
+                  name.get());
+        return true;
+    }
+
+    GjsAutoChar filename = g_strdup_printf("%s.js", name.get());
     std::vector<GjsAutoChar> directories;
     JS::RootedValue elem(context);
     JS::RootedString str(context);
-
-    /* First try importing an internal module like gi */
-    if (priv->is_root && gjs_is_registered_native_module(context, obj, name)) {
-        if (!gjs_import_native_module(context, obj, name))
-            return false;
-
-        gjs_debug(GJS_DEBUG_IMPORTER,
-                  "successfully imported module '%s'", name);
-        return true;
-    }
 
     for (i = 0; i < search_path_len; ++i) {
         elem.setUndefined();
@@ -513,20 +513,21 @@ do_import(JSContext       *context,
 
         /* Try importing __init__.js and loading the symbol from it */
         bool found = false;
-        if (!import_symbol_from_init_js(context, obj, dirname.get(), name,
+        if (!import_symbol_from_init_js(context, obj, dirname.get(), name.get(),
                                         &found))
             return false;
         if (found)
             return true;
 
         /* Second try importing a directory (a sub-importer) */
-        GjsAutoChar full_path = g_build_filename(dirname.get(), name, nullptr);
+        GjsAutoChar full_path =
+            g_build_filename(dirname.get(), name.get(), nullptr);
         GjsAutoUnref<GFile> gfile = g_file_new_for_commandline_arg(full_path);
 
         if (g_file_query_file_type(gfile, (GFileQueryInfoFlags) 0, NULL) == G_FILE_TYPE_DIRECTORY) {
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "Adding directory '%s' to child importer '%s'",
-                      full_path.get(), name);
+                      full_path.get(), name.get());
             directories.push_back(std::move(full_path));
         }
 
@@ -545,15 +546,14 @@ do_import(JSContext       *context,
         exists = g_file_query_exists(gfile, NULL);
 
         if (!exists) {
-            gjs_debug(GJS_DEBUG_IMPORTER,
-                      "JS import '%s' not found in %s",
-                      name, dirname.get());
+            gjs_debug(GJS_DEBUG_IMPORTER, "JS import '%s' not found in %s",
+                      name.get(), dirname.get());
             continue;
         }
 
-        if (import_file_on_module(context, obj, id, name, gfile)) {
-            gjs_debug(GJS_DEBUG_IMPORTER,
-                      "successfully imported module '%s'", name);
+        if (import_file_on_module(context, obj, id, name.get(), gfile)) {
+            gjs_debug(GJS_DEBUG_IMPORTER, "successfully imported module '%s'",
+                      name.get());
             return true;
         }
 
@@ -570,13 +570,13 @@ do_import(JSContext       *context,
         for (size_t ix = 0; ix < directories.size(); ix++)
             full_paths[ix] = directories[ix].get();
 
-        bool result = import_directory(context, obj, name, full_paths);
+        bool result = import_directory(context, obj, name.get(), full_paths);
         g_free(full_paths);
         if (!result)
             return false;
 
-        gjs_debug(GJS_DEBUG_IMPORTER,
-                  "successfully imported directory '%s'", name);
+        gjs_debug(GJS_DEBUG_IMPORTER, "successfully imported directory '%s'",
+                  name.get());
         return true;
     }
 
@@ -584,7 +584,7 @@ do_import(JSContext       *context,
      * end of the path. Be sure an exception is set. */
     g_assert(!JS_IsExceptionPending(context));
     gjs_throw_custom(context, JSProto_Error, "ImportError",
-                     "No JS module '%s' found in search path", name);
+                     "No JS module '%s' found in search path", name.get());
     return false;
 }
 
@@ -739,13 +739,12 @@ importer_resolve(JSContext        *context,
 
     JSAutoRequest ar(context);
 
-    JS::UniqueChars name;
-    if (!gjs_get_string_id(context, id, &name)) {
+    if (!JSID_IS_STRING(id)) {
         *resolved = false;
         return true;
     }
 
-    if (!do_import(context, obj, priv, id, name.get()))
+    if (!do_import(context, obj, priv, id))
         return false;
 
     *resolved = true;
