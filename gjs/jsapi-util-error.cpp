@@ -55,8 +55,6 @@ gjs_throw_valist(JSContext       *context,
 
     s = g_strdup_vprintf(format, args);
 
-    JSAutoCompartment compartment(context, gjs_get_import_global(context));
-
     JS_BeginRequest(context);
 
     if (JS_IsExceptionPending(context)) {
@@ -77,7 +75,6 @@ gjs_throw_valist(JSContext       *context,
     }
 
     JS::RootedObject constructor(context);
-    JS::RootedObject global(context, JS::CurrentGlobalOrNull(context));
     JS::RootedValue v_constructor(context), exc_val(context);
     JS::RootedObject new_exc(context);
     JS::AutoValueArray<1> error_args(context);
@@ -180,29 +177,23 @@ gjs_throw_literal(JSContext       *context,
 }
 
 /**
- * gjs_throw_g_error:
+ * gjs_throw_gerror_message:
  *
- * Convert a GError into a JavaScript Exception, and
- * frees the GError. Differently from gjs_throw(), it
- * will overwrite an existing exception, as it is used
- * to report errors from C functions.
+ * Similar to gjs_throw_gerror(), but does not marshal the GError structure into
+ * JavaScript. Instead, it creates a regular JavaScript Error object and copies
+ * the GError's message into it.
+ *
+ * Use this when handling a GError in an internal function, where the error code
+ * and domain don't matter. So, for example, don't use it to throw errors
+ * around calling from JS into C code.
+ *
+ * Frees the GError.
  */
-void
-gjs_throw_g_error (JSContext       *context,
-                   GError          *error)
-{
-    if (error == NULL)
-        return;
-
-    JS_BeginRequest(context);
-
-    JS::RootedValue err(context,
-        JS::ObjectOrNullValue(gjs_error_from_gerror(context, error, true)));
-    g_error_free (error);
-    if (!err.isNull())
-        JS_SetPendingException(context, err);
-
-    JS_EndRequest(context);
+bool gjs_throw_gerror_message(JSContext* cx, GError* error) {
+    g_return_val_if_fail(error, false);
+    gjs_throw_literal(cx, error->message);
+    g_error_free(error);
+    return false;
 }
 
 /**
@@ -222,16 +213,17 @@ gjs_format_stack_trace(JSContext       *cx,
     JS::AutoSaveExceptionState saved_exc(cx);
 
     JS::RootedString stack_trace(cx);
-    GjsAutoJSChar stack_utf8;
+    JS::UniqueChars stack_utf8;
     if (JS::BuildStackString(cx, saved_frame, &stack_trace, 2))
-        stack_utf8 = JS_EncodeStringToUTF8(cx, stack_trace);
+        stack_utf8.reset(JS_EncodeStringToUTF8(cx, stack_trace));
 
     saved_exc.restore();
 
     if (!stack_utf8)
         return nullptr;
 
-    return g_filename_from_utf8(stack_utf8, -1, nullptr, nullptr, nullptr);
+    return g_filename_from_utf8(stack_utf8.get(), -1, nullptr, nullptr,
+                                nullptr);
 }
 
 void

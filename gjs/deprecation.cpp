@@ -78,7 +78,7 @@ static char* get_callsite(JSContext* cx) {
     if (!frame_string)
         return nullptr;
 
-    GjsAutoJSChar frame_utf8;
+    JS::UniqueChars frame_utf8;
     if (!gjs_string_to_utf8(cx, JS::StringValue(frame_string), &frame_utf8))
         return nullptr;
     return frame_utf8.release();
@@ -89,8 +89,8 @@ static char* get_callsite(JSContext* cx) {
  * stdout or stderr. Do not use this function during GC, for example. */
 void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
                                             const GjsDeprecationMessageId id) {
-    GjsAutoJSChar callsite = get_callsite(cx);
-    DeprecationEntry entry(id, callsite);
+    JS::UniqueChars callsite(get_callsite(cx));
+    DeprecationEntry entry(id, callsite.get());
     if (!logged_messages.count(entry)) {
         JS::UniqueChars stack_dump = JS::FormatStackDump(cx, nullptr, false,
             false, false);

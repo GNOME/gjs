@@ -52,8 +52,6 @@ ns_resolve(JSContext       *context,
            bool            *resolved)
 {
     Ns *priv;
-    GIRepository *repo;
-    GIBaseInfo *info;
     bool defined;
 
     if (!JSID_IS_STRING(id)) {
@@ -79,39 +77,32 @@ ns_resolve(JSContext       *context,
         return true;
     }
 
-    GjsAutoJSChar name;
+    JS::UniqueChars name;
     if (!gjs_get_string_id(context, id, &name)) {
         *resolved = false;
         return true;  /* not resolved, but no error */
     }
 
-    repo = g_irepository_get_default();
-
-    info = g_irepository_find_by_name(repo, priv->gi_namespace, name);
-    if (info == NULL) {
+    GjsAutoBaseInfo info =
+        g_irepository_find_by_name(nullptr, priv->gi_namespace, name.get());
+    if (!info) {
         *resolved = false; /* No property defined, but no error either */
         return true;
     }
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
               "Found info type %s for '%s' in namespace '%s'",
-              gjs_info_type_name(g_base_info_get_type(info)),
-              g_base_info_get_name(info),
-              g_base_info_get_namespace(info));
+              gjs_info_type_name(info.type()), info.name(), info.ns());
 
     JSAutoRequest ar(context);
 
     if (!gjs_define_info(context, obj, info, &defined)) {
-        gjs_debug(GJS_DEBUG_GNAMESPACE,
-                  "Failed to define info '%s'",
-                  g_base_info_get_name(info));
-
-        g_base_info_unref(info);
+        gjs_debug(GJS_DEBUG_GNAMESPACE, "Failed to define info '%s'",
+                  info.name());
         return false;
     }
 
     /* we defined the property in this object? */
-    g_base_info_unref(info);
     *resolved = defined;
     return true;
 }

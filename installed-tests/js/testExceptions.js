@@ -116,13 +116,13 @@ describe('logError', function () {
 
     it('logs an error with no stack trace for an error created with the GLib.Error constructor', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-            'JS ERROR: Gio.IOErrorEnum: a message');
+            'JS ERROR: Gio.IOErrorEnum: a message\n*');
         logError(new GLib.Error(Gio.IOErrorEnum, 0, 'a message'));
     });
 
     it('logs the quark for a JS-created GError type', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-            'JS ERROR: GLib.Error my-error: a message');
+            'JS ERROR: GLib.Error my-error: a message\n*');
         logError(new GLib.Error(GLib.quark_from_string('my-error'), 0, 'a message'));
     });
 
@@ -157,13 +157,13 @@ describe('logError', function () {
 
     it('logs a GLib.Error with prefix', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-            'JS ERROR: prefix: Gio.IOErrorEnum: a message');
+            'JS ERROR: prefix: Gio.IOErrorEnum: a message\n*');
         logError(new GLib.Error(Gio.IOErrorEnum, 0, 'a message'), 'prefix');
     });
 
     it('logs a JS-created GLib.Error with prefix', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-            'JS ERROR: prefix: GLib.Error my-error: a message');
+            'JS ERROR: prefix: GLib.Error my-error: a message\n*');
         logError(new GLib.Error(GLib.quark_from_string('my-error'), 0, 'a message'), 'prefix');
     });
 });

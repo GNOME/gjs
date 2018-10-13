@@ -97,7 +97,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     priv->domain = proto_priv->domain;
 
     JS::RootedObject params_obj(context, &argv[0].toObject());
-    GjsAutoJSChar message;
+    JS::UniqueChars message;
     if (!gjs_object_require_property(context, params_obj,
                                      "GError constructor",
                                      GJS_STRING_MESSAGE, &message))
@@ -108,7 +108,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
                                      GJS_STRING_CODE, &code))
         return false;
 
-    priv->gerror = g_error_new_literal(priv->domain, code, message);
+    priv->gerror = g_error_new_literal(priv->domain, code, message.get());
 
     /* We assume this error will be thrown in the same line as the constructor */
     define_error_properties(context, object);
@@ -199,15 +199,31 @@ error_to_string(JSContext *context,
                 unsigned   argc,
                 JS::Value *vp)
 {
-    GJS_GET_PRIV(context, argc, vp, rec, self, Error, priv);
+    GJS_GET_THIS(context, argc, vp, rec, self);
 
+    GjsAutoChar descr;
+
+    // An error created via `new GLib.Error` will have a Boxed* private pointer,
+    // not an Error*, so we can't call regular error_to_string() on it.
+    if (gjs_typecheck_boxed(context, self, nullptr, G_TYPE_ERROR, false)) {
+        auto* gerror =
+            static_cast<GError*>(gjs_c_struct_from_boxed(context, self));
+        descr =
+            g_strdup_printf("GLib.Error %s: %s",
+                            g_quark_to_string(gerror->domain), gerror->message);
+
+        return gjs_string_from_utf8(context, descr, rec.rval());
+    }
+
+    if (!do_base_typecheck(context, self, true))
+        return false;
+    Error* priv = priv_from_js(context, self);
     if (priv == NULL)
         return false;
 
     /* We follow the same pattern as standard JS errors, at the expense of
        hiding some useful information */
 
-    GjsAutoChar descr;
     if (priv->gerror == NULL) {
         descr = g_strdup_printf("%s.%s",
                                 g_base_info_get_namespace(priv->info),
@@ -563,7 +579,7 @@ gjs_gerror_make_from_error(JSContext       *cx,
     if (!gjs_object_get_property(cx, obj, GJS_STRING_NAME, &v_name))
         return nullptr;
 
-    GjsAutoJSChar name;
+    JS::UniqueChars name;
     if (!gjs_string_to_utf8(cx, v_name, &name))
         return nullptr;
 
@@ -571,17 +587,62 @@ gjs_gerror_make_from_error(JSContext       *cx,
     if (!gjs_object_get_property(cx, obj, GJS_STRING_MESSAGE, &v_message))
         return nullptr;
 
-    GjsAutoJSChar message;
+    JS::UniqueChars message;
     if (!gjs_string_to_utf8(cx, v_message, &message))
         return nullptr;
 
     GjsAutoTypeClass<GEnumClass> klass(GJS_TYPE_JS_ERROR);
-    const GEnumValue *value = g_enum_get_value_by_name(klass, name);
+    const GEnumValue *value = g_enum_get_value_by_name(klass, name.get());
     int code;
     if (value)
         code = value->value;
     else
         code = GJS_JS_ERROR_ERROR;
 
-    return g_error_new_literal(GJS_JS_ERROR, code, message);
+    return g_error_new_literal(GJS_JS_ERROR, code, message.get());
+}
+
+/*
+ * gjs_throw_gerror:
+ *
+ * Converts a GError into a JavaScript exception, and frees the GError.
+ * Differently from gjs_throw(), it will overwrite an existing exception, as it
+ * is used to report errors from C functions.
+ *
+ * Returns: false, for convenience in returning from the calling function.
+ */
+bool gjs_throw_gerror(JSContext* cx, GError* error) {
+    // return false even if the GError is null, as presumably something failed
+    // in the calling code, and the caller expects to throw.
+    g_return_val_if_fail(error, false);
+
+    JSAutoRequest ar(cx);
+
+    JS::RootedValue err(
+        cx, JS::ObjectOrNullValue(gjs_error_from_gerror(cx, error, true)));
+    g_error_free(error);
+    if (!err.isNull())
+        JS_SetPendingException(cx, err);
+
+    return false;
+}
+
+/*
+ * gjs_define_error_properties:
+ *
+ * Define the expected properties of a JS Error object on a newly-created
+ * boxed object. This is required when creating a GLib.Error via the default
+ * constructor, for example: `new GLib.Error(GLib.quark_from_string('my-error'),
+ * 0, 'message')`.
+ *
+ * This function doesn't throw an exception if it fails.
+ */
+void gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
+    JS::AutoSaveExceptionState saved_exc(cx);
+
+    define_error_properties(cx, obj);
+
+    if (!JS_DefineFunction(cx, obj, "toString", error_to_string, 0,
+                           GJS_MODULE_PROP_FLAGS))
+        saved_exc.restore();
 }
