@@ -63,13 +63,18 @@ update_gtype_weak_pointers(JSContext     *cx,
                            void          *data)
 {
     for (auto iter = weak_pointer_list.begin(); iter != weak_pointer_list.end(); ) {
-        auto heap_wrapper = static_cast<JS::Heap<JSObject *> *>(g_type_get_qdata(*iter, gjs_get_gtype_wrapper_quark()));
+        auto gtype = *iter;
+        auto heap_wrapper = static_cast<JS::Heap<JSObject *> *>(
+            g_type_get_qdata(gtype, gjs_get_gtype_wrapper_quark()));
         JS_UpdateWeakPointerAfterGC(heap_wrapper);
 
         /* No read barriers are needed if the only thing we are doing with the
          * pointer is comparing it to nullptr. */
-        if (heap_wrapper->unbarrieredGet() == nullptr)
+        if (heap_wrapper->unbarrieredGet() == nullptr) {
+            g_type_set_qdata(gtype, gjs_get_gtype_wrapper_quark(), NULL);
             iter = weak_pointer_list.erase(iter);
+            delete heap_wrapper;
+        }
         else
             iter++;
     }
@@ -95,8 +100,12 @@ gjs_gtype_finalize(JSFreeOp *fop,
     if (G_UNLIKELY(gtype == 0))
         return;
 
-    weak_pointer_list.erase(gtype);
+    auto heap_wrapper = static_cast<JS::Heap<JSObject*>*>(
+        g_type_get_qdata(gtype, gjs_get_gtype_wrapper_quark()));
+
     g_type_set_qdata(gtype, gjs_get_gtype_wrapper_quark(), NULL);
+    weak_pointer_list.erase(gtype);
+    delete heap_wrapper;
 }
 
 static bool
