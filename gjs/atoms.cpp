@@ -1,6 +1,7 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
  * Copyright (c) 2018 Philip Chimento <philip.chimento@gmail.com>
+ *                    Marco Trevisan <marco.trevisan@canonical.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,38 +22,43 @@
  * IN THE SOFTWARE.
  */
 
+#define GJS_USE_ATOM_FOREACH
+
 #include "gjs/atoms.h"
 #include "gjs/jsapi-wrapper.h"
 
+void GjsAtom::init(JSContext* cx, const char* str) {
+    m_jsid = INTERNED_STRING_TO_JSID(cx, JS_AtomizeAndPinString(cx, str));
+}
+
+JS::HandleId GjsAtom::operator()() const {
+    return JS::HandleId::fromMarkedLocation(&m_jsid.get());
+}
+
+JS::Heap<jsid>* GjsAtom::id() { return &m_jsid; }
+
+void GjsSymbolAtom::init(JSContext* cx, const char* str) {
+    m_jsid = SYMBOL_TO_JSID(JS::NewSymbol(
+        cx, JS::RootedString(cx, JS_AtomizeAndPinString(cx, str))));
+}
+
+#define INITIALIZE_ATOM(identifier, str) identifier.init(cx, str);
+
 GjsAtoms::GjsAtoms(JSContext* cx) {
     JSAutoRequest ar(cx);
-    JSString* atom;
-
-#define INITIALIZE_ATOM(identifier, str)    \
-    atom = JS_AtomizeAndPinString(cx, str); \
-    m_##identifier = INTERNED_STRING_TO_JSID(cx, atom);
     FOR_EACH_ATOM(INITIALIZE_ATOM)
-#undef INITIALIZE_ATOM
 }
 
 /* Requires a current compartment. Unlike the atoms initialized in the
  * constructor, this can GC, so it needs to be done after the tracing has been
  * set up. */
 void GjsAtoms::init_symbols(JSContext* cx) {
-    JS::RootedString descr(cx);
-    JS::Symbol* symbol;
-
-#define INITIALIZE_SYMBOL_ATOM(identifier, str) \
-    descr = JS_AtomizeAndPinString(cx, str);    \
-    symbol = JS::NewSymbol(cx, descr);          \
-    m_##identifier = SYMBOL_TO_JSID(symbol);
-    FOR_EACH_SYMBOL_ATOM(INITIALIZE_SYMBOL_ATOM)
-#undef INITIALIZE_SYMBOL_ATOM
+    FOR_EACH_SYMBOL_ATOM(INITIALIZE_ATOM)
 }
 
 void GjsAtoms::trace(JSTracer* trc) {
 #define TRACE_ATOM(identifier, str) \
-    JS::TraceEdge<jsid>(trc, &m_##identifier, "Atom " str);
+    JS::TraceEdge<jsid>(trc, identifier.id(), "Atom " str);
     FOR_EACH_ATOM(TRACE_ATOM)
     FOR_EACH_SYMBOL_ATOM(TRACE_ATOM)
 #undef TRACE_ATOM
