@@ -918,8 +918,7 @@ gjs_context_eval(GjsContext   *js_context,
 
     JSAutoCompartment ac(js_context->context, js_context->global);
     JSAutoRequest ar(js_context->context);
-
-    g_object_ref(G_OBJECT(js_context));
+    GjsAutoUnref<GjsContext> ctx(js_context, GjsAutoTakeOwnership());
 
     if (auto_profile)
         gjs_profiler_start(js_context->profiler);
@@ -982,7 +981,6 @@ gjs_context_eval(GjsContext   *js_context,
     ret = true;
 
  out:
-    g_object_unref(G_OBJECT(js_context));
     context_reset_exit(js_context);
     return ret;
 }
