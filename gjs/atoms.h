@@ -1,6 +1,7 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
  * Copyright (c) 2018 Philip Chimento <philip.chimento@gmail.com>
+ *                    Marco Trevisan <marco.trevisan@canonical.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -74,27 +75,41 @@
     macro(private_ns_marker, "__gjsPrivateNS")
 // clang-format on
 
-class GjsAtoms {
-#define DECLARE_ATOM_MEMBER(identifier, str) JS::Heap<jsid> m_##identifier;
-    FOR_EACH_ATOM(DECLARE_ATOM_MEMBER)
-    FOR_EACH_SYMBOL_ATOM(DECLARE_ATOM_MEMBER)
-#undef DECLARE_ATOM_MEMBER
+struct GjsAtom {
+    void init(JSContext* cx, const char* str);
 
+    /* It's OK to return JS::HandleId here, to avoid an extra root, with the
+     * caveat that you should not use this value after the GjsContext has been
+     * destroyed.*/
+    JS::HandleId operator()() const;
+    JS::Heap<jsid>* id();
+
+ protected:
+    JS::Heap<jsid> m_jsid;
+};
+
+struct GjsSymbolAtom : GjsAtom {
+    void init(JSContext* cx, const char* str);
+};
+
+class GjsAtoms {
  public:
     explicit GjsAtoms(JSContext* cx);
     void init_symbols(JSContext* cx);
 
     void trace(JSTracer* trc);
 
-/* It's OK to return JS::HandleId here, to avoid an extra root, with the caveat
- * that you should not use this value after the GjsContext has been destroyed.*/
-#define DECLARE_ATOM_ACCESSOR(identifier, str)                          \
-    JS::HandleId identifier(void) const {                               \
-        return JS::HandleId::fromMarkedLocation(&m_##identifier.get()); \
-    }
-    FOR_EACH_ATOM(DECLARE_ATOM_ACCESSOR)
-    FOR_EACH_SYMBOL_ATOM(DECLARE_ATOM_ACCESSOR)
-#undef DECLARE_ATOM_ACCESSOR
+#define DECLARE_ATOM_MEMBER(identifier, str) GjsAtom identifier;
+#define DECLARE_SYMBOL_ATOM_MEMBER(identifier, str) GjsSymbolAtom identifier;
+    FOR_EACH_ATOM(DECLARE_ATOM_MEMBER)
+    FOR_EACH_SYMBOL_ATOM(DECLARE_SYMBOL_ATOM_MEMBER)
+#undef DECLARE_ATOM_MEMBER
+#undef DECLARE_SYMBOL_ATOM_MEMBER
 };
+
+#ifndef GJS_USE_ATOM_FOREACH
+#    undef FOR_EACH_ATOM
+#    undef FOR_EACH_SYMBOL_ATOM
+#endif
 
 #endif  // GJS_ATOMS_H_
