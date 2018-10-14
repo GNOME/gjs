@@ -96,7 +96,8 @@ to_string_func(JSContext *cx,
     GType gtype = GPOINTER_TO_SIZE(priv);
 
     if (gtype == 0) {
-        JS::RootedString str(cx, JS_NewStringCopyZ(cx, "[object GType prototype]"));
+        JS::RootedString str(cx,
+                             JS_AtomizeString(cx, "[object GType prototype]"));
         if (!str)
             return false;
         rec.rval().setString(str);
