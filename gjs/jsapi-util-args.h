@@ -379,7 +379,6 @@ gjs_parse_call_args(JSContext          *cx,
     const char *fmt_iter, *fmt_required, *fmt_optional;
     unsigned n_required = 0, n_total = 0;
     bool optional_args = false, ignore_trailing_args = false, retval;
-    char **parts;
 
     if (*format == '!') {
         ignore_trailing_args = true;
@@ -423,7 +422,7 @@ gjs_parse_call_args(JSContext          *cx,
         return false;
     }
 
-    parts = g_strsplit(format, "|", 2);
+    GjsAutoStrv parts = g_strsplit(format, "|", 2);
     fmt_required = parts[0];
     fmt_optional = parts[1];  /* may be NULL */
 
@@ -431,6 +430,5 @@ gjs_parse_call_args(JSContext          *cx,
                                     ignore_trailing_args, fmt_required,
                                     fmt_optional, 0, params...);
 
-    g_strfreev(parts);
     return retval;
 }
