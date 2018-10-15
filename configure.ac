@@ -8,7 +8,7 @@ m4_define(pkg_version, pkg_major_version.pkg_minor_version.pkg_micro_version)
 m4_define(pkg_int_version, (pkg_major_version * 100 + pkg_minor_version) * 100 + pkg_micro_version)
 
 AC_PREREQ([2.64])
-AC_INIT([gjs],[pkg_version],[http://bugzilla.gnome.org/enter_bug.cgi?product=gjs],[gjs],[https://wiki.gnome.org/Projects/Gjs])
+AC_INIT([gjs],[pkg_version],[https://gitlab.gnome.org/GNOME/gjs/issues],[gjs],[https://wiki.gnome.org/Projects/Gjs])
 AM_INIT_AUTOMAKE([1.11.1 subdir-objects dist-xz no-dist-gzip tar-ustar -Wno-portability])
 AX_IS_RELEASE([git-directory])
 AC_CONFIG_SRCDIR([gjs/console.cpp])
