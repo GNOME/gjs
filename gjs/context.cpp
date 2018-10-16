@@ -515,8 +515,10 @@ gjs_context_constructed(GObject *object)
 
     JS::RootedObject importer(cx, gjs_create_root_importer(cx,
         js_context->search_path ? js_context->search_path : nullptr));
-    if (!importer)
+    if (!importer) {
+        gjs_log_exception(cx);
         g_error("Failed to create root importer");
+    }
 
     JS::Value v_importer = gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS);
     g_assert(((void) "Someone else already created root importer",
