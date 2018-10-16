@@ -707,14 +707,18 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
                 continue;
 
             if (g_file_info_get_file_type(info) == G_FILE_TYPE_DIRECTORY) {
-                if (!properties.append(gjs_intern_string_to_id(context, filename)))
-                    g_error("Unable to append to vector");
+                if (!properties.append(gjs_intern_string_to_id(context, filename))) {
+                    JS_ReportOutOfMemory(context);
+                    return false;
+                }
             } else if (g_str_has_suffix(filename, "." G_MODULE_SUFFIX) ||
                        g_str_has_suffix(filename, ".js")) {
                 GjsAutoChar filename_noext =
                     g_strndup(filename, strlen(filename) - 3);
-                if (!properties.append(gjs_intern_string_to_id(context, filename_noext)))
-                    g_error("Unable to append to vector");
+                if (!properties.append(gjs_intern_string_to_id(context, filename_noext))) {
+                    JS_ReportOutOfMemory(context);
+                    return false;
+                }
             }
         }
     }
