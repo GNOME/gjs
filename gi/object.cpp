@@ -294,8 +294,10 @@ GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
         return nullptr;
     }
 
-    if (!m_property_cache.add(entry, key, std::move(param_spec)))
-        g_error("Out of memory adding param spec to cache");
+    if (!m_property_cache.add(entry, key, std::move(param_spec))) {
+        JS_ReportOutOfMemory(cx);
+        return nullptr;
+    }
     return pspec; /* owned by property cache */
 }
 
@@ -441,8 +443,10 @@ GIFieldInfo* ObjectPrototype::find_field_info_from_id(JSContext* cx,
         return nullptr;
     }
 
-    if (!m_field_cache.add(entry, key, std::move(field)))
-        g_error("Out of memory adding field info to cache");
+    if (!m_field_cache.add(entry, key, std::move(field))) {
+        JS_ReportOutOfMemory(cx);
+        return nullptr;
+    }
     return entry->value().get();  /* owned by field cache */
 }
 
@@ -1009,7 +1013,8 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
             if (flags & GI_FUNCTION_IS_METHOD) {
                 const char* name = meth_info.name();
                 if (!properties.append(gjs_intern_string_to_id(cx, name))) {
-                    g_error("Unable to append to vector");
+                    JS_ReportOutOfMemory(cx);
+                    return false;
                 }
             }
         }
@@ -1023,7 +1028,8 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
             GjsAutoChar js_name = gjs_hyphen_to_underscore(prop_info.name());
 
             if (!properties.append(gjs_intern_string_to_id(cx, js_name))) {
-                g_error("Unable to append to vector");
+                JS_ReportOutOfMemory(cx);
+                return false;
             }
         }
     }
@@ -1040,7 +1046,8 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
             if (flags & GI_FUNCTION_IS_METHOD) {
                 const char* name = meth_info.name();
                 if (!properties.append(gjs_intern_string_to_id(cx, name))) {
-                    g_error("Unable to append to vector");
+                    JS_ReportOutOfMemory(cx);
+                    return false;
                 }
             }
         }
@@ -1054,7 +1061,8 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
             GjsAutoChar js_name = gjs_hyphen_to_underscore(prop_info.name());
 
             if (!properties.append(gjs_intern_string_to_id(cx, js_name))) {
-                g_error("Unable to append to vector");
+                JS_ReportOutOfMemory(cx);
+                return false;
             }
         }
     }
