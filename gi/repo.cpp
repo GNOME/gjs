@@ -125,7 +125,7 @@ static bool resolve_namespace_object(JSContext* context,
        the override module looks for namespaces that import this */
     if (!JS_DefinePropertyById(context, repo_obj, ns_id, gi_namespace,
                                GJS_MODULE_PROP_FLAGS))
-        g_error("no memory to define ns property");
+        return false;
 
     JS::RootedValue override(context);
     if (!lookup_override_function(context, ns_id, &override))
@@ -248,7 +248,7 @@ repo_new(JSContext *context)
     JS::RootedObject repo(context,
         JS_NewObjectWithGivenProto(context, &gjs_repo_class, proto));
     if (repo == nullptr)
-        g_error("No memory to create repo object");
+        return nullptr;
 
     priv = g_slice_new0(Repo);
 
