@@ -831,12 +831,12 @@ importer_new(JSContext *context,
 
     JS::RootedObject proto(context);
     if (!gjs_importer_define_proto(context, nullptr, &proto))
-        g_error("Error creating importer prototype");
+        return nullptr;
 
     JS::RootedObject importer(context,
         JS_NewObjectWithGivenProto(context, &gjs_importer_class, proto));
     if (!importer)
-        g_error("No memory to create importer");
+        return nullptr;
 
     priv = g_slice_new0(Importer);
     priv->is_root = is_root;
@@ -942,10 +942,10 @@ gjs_create_importer(JSContext          *context,
                                  "searchPath", -1, search_path.as<const char *>(),
                                  /* settable (no READONLY) but not deleteable (PERMANENT) */
                                  JSPROP_PERMANENT | JSPROP_RESOLVING))
-        g_error("no memory to define importer search path prop");
+        return nullptr;
 
     if (!define_meta_properties(context, importer, NULL, importer_name, in_object))
-        g_error("failed to define meta properties on importer");
+        return nullptr;
 
     return importer;
 }
@@ -965,7 +965,7 @@ gjs_define_importer(JSContext          *context,
 
     if (!JS_DefineProperty(context, in_object, importer_name, importer,
                            GJS_MODULE_PROP_FLAGS))
-        g_error("no memory to define importer property");
+        return nullptr;
 
     gjs_debug(GJS_DEBUG_IMPORTER,
               "Defined importer '%s' %p in %p", importer_name, importer.get(),
