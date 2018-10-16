@@ -339,7 +339,7 @@ gjs_define_union_class(JSContext       *context,
                                 NULL,
                                 &prototype,
                                 &constructor)) {
-        g_error("Can't init class %s", constructor_name);
+        return false;
     }
 
     GJS_INC_COUNTER(boxed);
