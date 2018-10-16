@@ -97,8 +97,10 @@ class GjsModule {
                                    JS::SourceBufferHolder::NoOwnership);
 
         JS::AutoObjectVector scope_chain(cx);
-        if (!scope_chain.append(module))
-            g_error("Unable to append to vector");
+        if (!scope_chain.append(module)) {
+            JS_ReportOutOfMemory(cx);
+            return false;
+        }
 
         JS::RootedValue ignored_retval(cx);
         if (!JS::Evaluate(cx, scope_chain, options, buf, &ignored_retval))
