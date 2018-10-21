@@ -329,34 +329,42 @@ import_module_init(JSContext       *context,
     return ret;
 }
 
-/* FIXME: this function doesn't handle exceptions properly */
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject *
-load_module_init(JSContext       *context,
-                 JS::HandleObject in_object,
-                 const char      *full_path)
-{
+static JSObject* load_module_init(JSContext* cx, JS::HandleObject in_object,
+                                  const char* full_path) {
     bool found;
 
     /* First we check if js module has already been loaded  */
-    if (gjs_object_has_property(context, in_object, GJS_STRING_MODULE_INIT,
-                                &found) && found) {
-        JS::RootedValue module_obj_val(context);
-        if (gjs_object_get_property(context, in_object,
-                                    GJS_STRING_MODULE_INIT,
-                                    &module_obj_val)) {
-            return &module_obj_val.toObject();
-        }
+    if (!gjs_object_has_property(cx, in_object, GJS_STRING_MODULE_INIT,
+                                 &found))
+        return nullptr;
+    if (found) {
+        JS::RootedValue v_module(cx);
+        if (!gjs_object_get_property(cx, in_object, GJS_STRING_MODULE_INIT,
+                                     &v_module))
+            return nullptr;
+        if (v_module.isObject())
+            return &v_module.toObject();
+
+        gjs_throw(cx, "Unexpected non-object module __init__ imported from %s",
+                  full_path);
+        return nullptr;
     }
 
-    JS::RootedObject module_obj(context, JS_NewPlainObject(context));
-    GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(full_path);
-    if (!import_module_init(context, file, module_obj))
-        return module_obj;
+    JS::RootedObject module_obj(cx, JS_NewPlainObject(cx));
+    if (!module_obj)
+        return nullptr;
 
-    gjs_object_define_property(context, in_object,
-                               GJS_STRING_MODULE_INIT, module_obj,
-                               GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT);
+    GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(full_path);
+    if (!import_module_init(cx, file, module_obj)) {
+        JS_ClearPendingException(cx);
+        return module_obj;
+    }
+
+    if (!gjs_object_define_property(cx, in_object,
+                                    GJS_STRING_MODULE_INIT, module_obj,
+                                    GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT))
+        return nullptr;
 
     return module_obj;
 }
