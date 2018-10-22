@@ -162,7 +162,7 @@ gjs_finalize_callback(JSFreeOp         *fop,
      code, so we can probably rely on this behavior.
   */
 
-  if (status == JSFINALIZE_GROUP_START)
+  if (status == JSFINALIZE_GROUP_PREPARE)
         _gjs_context_set_sweeping(js_context, true);
   else if (status == JSFINALIZE_GROUP_END)
         _gjs_context_set_sweeping(js_context, false);
