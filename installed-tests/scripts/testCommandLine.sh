@@ -219,6 +219,18 @@ report "main program exceptions are not swallowed by queued promise jobs"
 $gjs -c 'new imports.gi.Gio.Subprocess({argv: ["true"]}).init(null);'
 report "object unref from other thread after shutdown should not race"
 
+# https://gitlab.gnome.org/GNOME/gjs/issues/212
+$gjs -c 'imports.gi.versions.Gtk = "3.0";
+         const Gtk = imports.gi.Gtk;
+         const GObject = imports.gi.GObject;
+         Gtk.init(null);
+         let BadWidget = GObject.registerClass(class BadWidget extends Gtk.Widget {
+            vfunc_destroy() {};
+         });
+
+         let w = new BadWidget ();'
+report "avoid crashing when GTK vfuncs are called on context destroy";
+
 rm -f exit.js help.js promise.js awaitcatch.js
 
 echo "1..$total"
