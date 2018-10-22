@@ -383,8 +383,10 @@ ObjectInstance::prop_getter_impl(JSContext             *cx,
     if (g_param_spec_get_qdata(param, ObjectInstance::custom_property_quark()))
         return true;
 
-    if ((param->flags & G_PARAM_READABLE) == 0)
+    if ((param->flags & G_PARAM_READABLE) == 0) {
+        rval.setUndefined();
         return true;
+    }
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Accessing GObject property %s",
                      param->name);
@@ -684,10 +686,7 @@ static bool is_ginterface_property_name(GIInterfaceInfo* info,
         prop_info.reset();
     }
 
-    if (!prop_info)
-        return false;
-
-    return g_property_info_get_flags(prop_info) & G_PARAM_READABLE;
+    return !!prop_info;
 }
 
 bool ObjectPrototype::lazy_define_gobject_property(JSContext* cx,
@@ -799,12 +798,10 @@ is_gobject_property_name(GIObjectInfo *info,
             if (is_ginterface_property_name(iface_info, canonical_name))
                 return true;
         }
+        return false;
     }
 
-    if (!prop_info)
-        return false;
-
-    return g_property_info_get_flags(prop_info) & G_PARAM_READABLE;
+    return true;
 }
 
 bool ObjectBase::resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
