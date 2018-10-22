@@ -234,6 +234,16 @@ describe('Introspected GObject', function () {
         expect(obj.name_conflict).toEqual(42);
         expect(obj.name_conflict instanceof Function).toBeFalsy();
     });
+
+    xit('sets write-only properties', function () {
+        expect(obj.int).not.toEqual(0);
+        obj.write_only = true;
+        expect(obj.int).toEqual(0);
+    });
+
+    it('gives undefined for write-only properties', function () {
+        expect(obj.write_only).not.toBeDefined();
+    });
 });
 
 describe('Introspected function length', function () {
