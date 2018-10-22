@@ -1,3 +1,19 @@
+Version 1.54.2
+--------------
+
+- Closed bugs and merge requests:
+  * context: Defer and therefore batch forced GC runs [performance] [!236,
+    Daniel van Vugt]
+  * context: use timeout with seconds to schedule a gc trigger [!239, Marco
+    Trevisan]
+  * fundamental: Check if gtype is valid before using it [!242, Georges Basile
+    Stavracas Neto]
+
+- Backported a fix for a crash in the interactive interpreter when executing
+  something like `throw "foo"` [Philip Chimento]
+
+- Backported various maintenance from 3.31 [Philip Chimento]
+
 Version 1.54.1
 --------------
 
