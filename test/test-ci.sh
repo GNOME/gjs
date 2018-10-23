@@ -214,9 +214,7 @@ elif [[ $1 == "SH_CHECKS" ]]; then
     export LANG=C.UTF-8
     export LANGUAGE=C.UTF-8
 
-    installed-tests/scripts/testCommandLine.sh > scripts.log
-    installed-tests/scripts/testExamples.sh   >> scripts.log
-    installed-tests/scripts/testWarnings.sh   >> scripts.log
+    installed-tests/scripts/testExamples.sh > scripts.log
     do_Check_Script_Errors
 
 elif [[ $1 == "GJS_COVERAGE" ]]; then
