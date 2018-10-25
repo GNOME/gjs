@@ -19,20 +19,42 @@ Wiki: https://gitlab.gnome.org/GNOME/gjs/wikis/Home
 
 How to build and run if you want to contribute to GJS: see doc/Hacking.md
 
-## Testing
+## Installation
 
-Our CI (continuous integration) testing scheme stresses the source code using:
-- Ubuntu 18.04, Fedora 29 (devel), and Ubuntu 18.10 (devel);
-- gcc 7.3, gcc 8.1, and clang 6.0;
-- C/C++ and Javascript Linters;
-- Code Climate (https://codeclimate.com/);
-- ASAN (address sanitizer) and UBSAN (undefined behavior sanitizer);
-- Valgrind (https://en.wikipedia.org/wiki/Valgrind);
-- Code Coverage (https://en.wikipedia.org/wiki/Code_coverage);
-- Text only and graphics builds;
-- Profiler enabled and disabled builds;
-- ARMv8 and PPC64LE builds;
-- And DevOps with Flatpak.
+* TBA
+
+## Usage
+
+* TBA
+
+## Contributing
+
+1. TBA
+
+## History
+
+* TBA
+
+## Approaches
+
+* TBA
+  * TBA
+
+## Reading material
+
+### JavaScript & SpiderMonkey
+
+* TBA
+
+### Gnome Contribution
+
+* https://wiki.gnome.org/GitLab
+* https://wiki.gnome.org/Newcomers/
+
+## Walkthroughs
+
+* TBA
+  * TBA
 
 ## License
 
