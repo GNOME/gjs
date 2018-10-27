@@ -963,6 +963,16 @@ gjs_array_from_flat_gvalue_array(JSContext             *context,
                                  JS::MutableHandleValue value)
 {
     GValue *values = (GValue *)array;
+
+    // a null array pointer takes precedence over whatever `length` says
+    if (!values) {
+        JSObject* jsarray = JS_NewArrayObject(context, 0);
+        if (!jsarray)
+            return false;
+        value.setObject(*jsarray);
+        return true;
+    }
+
     unsigned int i;
     JS::AutoValueVector elems(context);
     if (!elems.resize(length))
@@ -2282,6 +2292,15 @@ gjs_array_from_carray_internal (JSContext             *context,
     /* Special case array(unichar) to be a string in JS */
     if (element_type == GI_TYPE_TAG_UNICHAR)
         return gjs_string_from_ucs4(context, (gunichar *) array, length, value_p);
+
+    // a null array pointer takes precedence over whatever `length` says
+    if (!array) {
+        JSObject* jsarray = JS_NewArrayObject(context, 0);
+        if (!jsarray)
+            return false;
+        value_p.setObject(*jsarray);
+        return true;
+    }
 
     JS::AutoValueVector elems(context);
     if (!elems.resize(length))
