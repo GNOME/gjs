@@ -3445,11 +3445,9 @@ gjs_g_arg_release_internal(JSContext  *context,
                         GArgument arg_iter;
 
                         arg_iter.v_pointer = g_array_index (array, gpointer, i);
-                        gjs_g_arg_release_internal(context,
-                                                   transfer,
-                                                   param_info,
-                                                   element_type,
-                                                   &arg_iter);
+                        failed = !gjs_g_arg_release_internal(
+                            context, transfer, param_info, element_type,
+                            &arg_iter);
                     }
 
                     g_array_free (array, true);
@@ -3482,10 +3480,8 @@ gjs_g_arg_release_internal(JSContext  *context,
                     GArgument arg_iter;
 
                     arg_iter.v_pointer = g_ptr_array_index (array, i);
-                    gjs_g_argument_release(context,
-                                           transfer,
-                                           param_info,
-                                           &arg_iter);
+                    failed = !gjs_g_argument_release(context, transfer,
+                                                     param_info, &arg_iter);
                 }
             }
 

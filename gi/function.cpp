@@ -1303,16 +1303,14 @@ release:
             transfer = g_arg_info_get_ownership_transfer(&arg_info);
             if (!arg_failed) {
                 if (array_length_pos >= 0) {
-                    gjs_g_argument_release_out_array(context,
-                                                     transfer,
-                                                     &arg_type_info,
-                                                     array_length.toInt32(),
-                                                     arg);
+                    if (!gjs_g_argument_release_out_array(
+                            context, transfer, &arg_type_info,
+                            array_length.toInt32(), arg))
+                        postinvoke_release_failed = true;
                 } else {
-                    gjs_g_argument_release(context,
-                                           transfer,
-                                           &arg_type_info,
-                                           arg);
+                    if (!gjs_g_argument_release(context, transfer,
+                                                &arg_type_info, arg))
+                        postinvoke_release_failed = true;
                 }
             }
 

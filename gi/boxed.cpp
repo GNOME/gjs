@@ -89,10 +89,9 @@ gjs_define_static_methods(JSContext       *context,
     n_methods = g_struct_info_get_n_methods(boxed_info);
 
     for (i = 0; i < n_methods; i++) {
-        GIFunctionInfo *meth_info;
         GIFunctionInfoFlags flags;
 
-        meth_info = g_struct_info_get_method (boxed_info, i);
+        GjsAutoFunctionInfo meth_info = g_struct_info_get_method(boxed_info, i);
         flags = g_function_info_get_flags (meth_info);
 
         /* Anything that isn't a method we put on the prototype of the
@@ -103,11 +102,9 @@ gjs_define_static_methods(JSContext       *context,
          * like in the near future.
          */
         if (!(flags & GI_FUNCTION_IS_METHOD)) {
-            gjs_define_function(context, constructor, gtype,
-                                (GICallableInfo *)meth_info);
+            if (!gjs_define_function(context, constructor, gtype, meth_info))
+                return false;
         }
-
-        g_base_info_unref((GIBaseInfo*) meth_info);
     }
     return true;
 }
@@ -562,6 +559,8 @@ get_nested_interface_object(JSContext             *context,
     JS::RootedObject proto(context,
                            gjs_lookup_generic_prototype(context,
                                                         (GIBoxedInfo*) interface_info));
+    if (!proto)
+        return false;
     proto_priv = priv_from_js(context, proto);
 
     offset = g_field_info_get_offset (field_info);
@@ -682,6 +681,8 @@ set_nested_interface_object (JSContext      *context,
     JS::RootedObject proto(context,
                            gjs_lookup_generic_prototype(context,
                                                         (GIBoxedInfo*) interface_info));
+    if (!proto)
+        return false;
     proto_priv = priv_from_js(context, proto);
 
     /* If we can't directly copy from the source object we need
@@ -762,10 +763,13 @@ boxed_set_field_from_value(JSContext      *context,
     success = true;
 
 out:
-    if (need_release)
-        gjs_g_argument_release (context, GI_TRANSFER_NOTHING,
-                                type_info,
-                                &arg);
+    if (need_release) {
+        JS::AutoSaveExceptionState saved_exc(context);
+        if (!gjs_g_argument_release(context, GI_TRANSFER_NOTHING, type_info,
+                                    &arg))
+            gjs_log_exception(context);
+        saved_exc.restore();
+    }
 
     g_base_info_unref ((GIBaseInfo *)type_info);
 
@@ -1173,6 +1177,8 @@ gjs_boxed_from_c_struct(JSContext             *context,
                       g_base_info_get_name((GIBaseInfo *)info), gboxed);
 
     JS::RootedObject proto(context, gjs_lookup_generic_prototype(context, info));
+    if (!proto)
+        return nullptr;
     proto_priv = priv_from_js(context, proto);
 
     obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);

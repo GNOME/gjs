@@ -279,8 +279,8 @@ gjs_##cname##_define_proto(JSContext              *cx,                       \
     if (gtype != G_TYPE_NONE) {                                              \
         JS::RootedObject gtype_obj(cx,                                       \
             gjs_gtype_create_gtype_wrapper(cx, gtype));                      \
-        if (!JS_DefineProperty(cx, ctor_obj, "$gtype", gtype_obj,            \
-                               JSPROP_PERMANENT))                            \
+        if (!gtype_obj || !JS_DefineProperty(cx, ctor_obj, "$gtype",         \
+                                             gtype_obj,  JSPROP_PERMANENT))  \
             return false;                                                    \
     }                                                                        \
     gjs_debug(GJS_DEBUG_CONTEXT, "Initialized class %s prototype %p",        \

@@ -149,7 +149,8 @@ gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture *fx,
     g_assert(value.isString());
 
     JS::UniqueChars s;
-    gjs_string_to_utf8(fx->cx, value, &s);
+    bool ok = gjs_string_to_utf8(fx->cx, value, &s);
+    g_assert_true(ok);
     g_assert_nonnull(s);
     g_assert_cmpstr(s.get(), ==, "This is an exception 42");
 
