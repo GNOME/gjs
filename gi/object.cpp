@@ -2530,15 +2530,11 @@ gjs_lookup_object_constructor(JSContext             *context,
     return true;
 }
 
-bool
-gjs_object_associate_closure(JSContext       *cx,
-                             JS::HandleObject object,
-                             GClosure        *closure)
-{
+void gjs_object_associate_closure(JSContext* cx, JS::HandleObject object,
+                                  GClosure* closure) {
     auto* priv = ObjectBase::for_js(cx, object);
     if (!priv)
-        return false;
+        return;
 
     priv->associate_closure(cx, closure);
-    return true;
 }
