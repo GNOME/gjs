@@ -47,14 +47,12 @@ bool gjs_value_from_g_value(JSContext             *context,
                             const GValue          *gvalue);
 
 GJS_USE
-GClosure*  gjs_closure_new_marshaled    (JSContext    *context,
-                                         JSObject     *callable,
-                                         const char   *description);
+GClosure* gjs_closure_new_marshaled(JSContext* cx, JSFunction* callable,
+                                    const char* description);
 GJS_USE
-GClosure*  gjs_closure_new_for_signal   (JSContext    *context,
-                                         JSObject     *callable,
-                                         const char   *description,
-                                         guint         signal_id);
+GClosure* gjs_closure_new_for_signal(JSContext* cx, JSFunction* callable,
+                                     const char* description,
+                                     unsigned signal_id);
 
 G_END_DECLS
 
