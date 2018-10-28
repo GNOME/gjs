@@ -875,7 +875,9 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
                 return true;
             }
 
-            gjs_define_function(context, obj, m_gtype, vfunc);
+            if (!gjs_define_function(context, obj, m_gtype, vfunc))
+                return false;
+
             *resolved = true;
             return true;
         }
@@ -2240,6 +2242,9 @@ gjs_define_object_class(JSContext              *context,
 
     JS::RootedObject gtype_obj(context,
         gjs_gtype_create_gtype_wrapper(context, gtype));
+    if (!gtype_obj)
+        return false;
+
     return JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
                              JSPROP_PERMANENT);
 }

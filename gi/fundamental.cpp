@@ -573,8 +573,9 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
            we need to define it first.
         */
         JS::RootedObject ignored(context);
-        gjs_define_fundamental_class(context, in_object, info, &constructor,
-                                     &ignored);
+        if (!gjs_define_fundamental_class(context, in_object, info,
+                                          &constructor, &ignored))
+            return nullptr;
     } else {
         if (G_UNLIKELY (!value.isObject()))
             return NULL;
@@ -701,6 +702,9 @@ gjs_define_fundamental_class(JSContext              *context,
 
     JS::RootedObject gtype_obj(context,
         gjs_gtype_create_gtype_wrapper(context, gtype));
+    if (!gtype_obj)
+        return false;
+
     return JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
                              JSPROP_PERMANENT);
 }

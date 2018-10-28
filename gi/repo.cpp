@@ -479,10 +479,10 @@ gjs_define_info(JSContext       *context,
     case GI_INFO_TYPE_INTERFACE:
         {
             JS::RootedObject ignored(context);
-            gjs_define_interface_class(context, in_object,
-                                       (GIInterfaceInfo *) info,
-                                       g_registered_type_info_get_g_type((GIRegisteredTypeInfo *) info),
-                                       &ignored);
+            if (!gjs_define_interface_class(
+                    context, in_object, info,
+                    g_registered_type_info_get_g_type(info), &ignored))
+                return false;
         }
         break;
     case GI_INFO_TYPE_INVALID:

@@ -220,8 +220,9 @@ static bool gjs_register_interface(JSContext* cx, unsigned argc,
         return false;  // error will have been thrown already
 
     JS::RootedObject constructor(cx);
-    gjs_define_interface_class(cx, module, nullptr, interface_type,
-                               &constructor);
+    if (!gjs_define_interface_class(cx, module, nullptr, interface_type,
+                                    &constructor))
+        return false;
 
     args.rval().setObject(*constructor);
     return true;
@@ -302,8 +303,9 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     /* create a custom JSClass */
     JS::RootedObject module(cx, gjs_lookup_private_namespace(cx));
     JS::RootedObject constructor(cx), prototype(cx);
-    gjs_define_object_class(cx, module, nullptr, instance_type, &constructor,
-                            &prototype);
+    if (!gjs_define_object_class(cx, module, nullptr, instance_type,
+                                 &constructor, &prototype))
+        return false;
 
     auto* priv = ObjectPrototype::for_js(cx, prototype);
     priv->set_type_qdata();
