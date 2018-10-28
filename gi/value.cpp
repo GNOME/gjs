@@ -119,7 +119,6 @@ closure_marshal(GClosure        *closure,
                 gpointer         marshal_data)
 {
     JSContext *context;
-    JSObject *obj;
     unsigned i;
     GSignalQuery signal_query = { 0, };
     GISignalInfo *signal_info;
@@ -158,9 +157,9 @@ closure_marshal(GClosure        *closure,
         return;
     }
 
-    obj = gjs_closure_get_callable(closure);
+    JSFunction* func = gjs_closure_get_callable(closure);
     JSAutoRequest ar(context);
-    JSAutoCompartment ac(context, obj);
+    JSAutoCompartment ac(context, JS_GetFunctionObject(func));
 
     if (marshal_data) {
         /* we are used for a signal handler */
@@ -286,12 +285,8 @@ closure_marshal(GClosure        *closure,
     }
 }
 
-GClosure*
-gjs_closure_new_for_signal(JSContext  *context,
-                           JSObject   *callable,
-                           const char *description,
-                           guint       signal_id)
-{
+GClosure* gjs_closure_new_for_signal(JSContext* context, JSFunction* callable,
+                                     const char* description, guint signal_id) {
     GClosure *closure;
 
     closure = gjs_closure_new(context, callable, description, false);
@@ -301,11 +296,8 @@ gjs_closure_new_for_signal(JSContext  *context,
     return closure;
 }
 
-GClosure*
-gjs_closure_new_marshaled (JSContext    *context,
-                           JSObject     *callable,
-                           const char   *description)
-{
+GClosure* gjs_closure_new_marshaled(JSContext* context, JSFunction* callable,
+                                    const char* description) {
     GClosure *closure;
 
     closure = gjs_closure_new(context, callable, description, true);
