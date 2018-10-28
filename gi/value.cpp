@@ -23,6 +23,8 @@
 
 #include <config.h>
 
+#include <mozilla/Unused.h>
+
 #include <util/log.h>
 
 #include "foreign.h"
@@ -269,7 +271,8 @@ closure_marshal(GClosure        *closure,
             g_base_info_unref((GIBaseInfo *)type_info_for[i]);
 
     JS::RootedValue rval(context);
-    gjs_closure_invoke(closure, nullptr, argv, &rval, false);
+    mozilla::Unused << gjs_closure_invoke(closure, nullptr, argv, &rval, false);
+    // Any exception now pending, is handled when returning control to JS
 
     if (return_value != NULL) {
         if (rval.isUndefined()) {
