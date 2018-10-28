@@ -501,10 +501,7 @@ gjs_callback_trampoline_new(JSContext       *context,
     GjsCallbackTrampoline *trampoline;
     int n_args, i;
 
-    if (function.isNull()) {
-        return NULL;
-    }
-
+    g_assert(function.isObject());
     g_assert(JS_TypeOfValue(context, function) == JSTYPE_FUNCTION);
 
     trampoline = g_slice_new(GjsCallbackTrampoline);

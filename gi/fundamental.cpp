@@ -577,8 +577,12 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
                                           &constructor, &ignored))
             return nullptr;
     } else {
-        if (G_UNLIKELY (!value.isObject()))
+        if (G_UNLIKELY(!value.isObject())) {
+            gjs_throw(context,
+                      "Fundamental constructor was not an object, it was a %s",
+                      JS::InformalValueTypeName(value));
             return NULL;
+        }
 
         constructor = &value.toObject();
     }
