@@ -54,15 +54,15 @@ bool pop_class_init_properties(GType gtype, AutoParamArray* params_out) {
     return true;
 }
 
-static void jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
+GJS_JSAPI_RETURN_CONVENTION
+static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
                                 const GValue* value, GParamSpec* pspec) {
     JS::RootedValue jsvalue(cx);
     if (!gjs_value_from_g_value(cx, &jsvalue, value))
-        return;
+        return false;
 
     GjsAutoChar underscore_name = gjs_hyphen_to_underscore(pspec->name);
-    if (!JS_SetProperty(cx, object, underscore_name, jsvalue))
-        gjs_log_exception(cx);
+    return JS_SetProperty(cx, object, underscore_name, jsvalue);
 }
 
 static void gjs_object_base_init(void* klass) {
@@ -112,8 +112,10 @@ static GObject* gjs_object_constructor(
         JS::RootedObject props_hash(cx, JS_NewPlainObject(cx));
 
         for (unsigned i = 0; i < n_construct_properties; i++)
-            jsobj_set_gproperty(cx, props_hash, construct_properties[i].value,
-                                construct_properties[i].pspec);
+            if (!jsobj_set_gproperty(cx, props_hash,
+                                     construct_properties[i].value,
+                                     construct_properties[i].pspec))
+                return nullptr;
 
         JS::AutoValueArray<1> args(cx);
         args[0].set(JS::ObjectValue(*props_hash));
@@ -141,7 +143,8 @@ static void gjs_object_set_gproperty(GObject* object, unsigned property_id,
     JSContext *cx = current_context();
 
     JS::RootedObject js_obj(cx, priv->wrapper());
-    jsobj_set_gproperty(cx, js_obj, value, pspec);
+    if (!jsobj_set_gproperty(cx, js_obj, value, pspec))
+        gjs_log_exception(cx);
 }
 
 static void gjs_object_get_gproperty(GObject* object, unsigned property_id,
