@@ -29,7 +29,7 @@ function do_Install_Dependencies(){
         dnf -y    install @c-development @development-tools clang redhat-rpm-config gnome-common python-devel \
                           pygobject2 dbus-python perl-Text-CSV perl-XML-Parser gettext-devel gtk-doc \
                           ninja-build zlib-devel libffi-devel \
-                          libtool libicu-devel nspr-devel \
+                          libtool libicu-devel nspr-devel systemtap-sdt-devel \
                           gtk3 gtk3-devel gobject-introspection Xvfb gnome-desktop-testing dbus-x11 \
                           cairo intltool libxslt bison nspr python3-devel dbus-glib libicu \
                           libxslt libtool flex \
