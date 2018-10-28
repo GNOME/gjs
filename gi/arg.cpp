@@ -1776,11 +1776,11 @@ gjs_value_to_g_argument(JSContext      *context,
                         }
                     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                         if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
-                            arg->v_pointer = gjs_closure_new_marshaled(context,
-                                                                       &value.toObject(),
-                                                                       "boxed");
-                            g_closure_ref((GClosure *) arg->v_pointer);
-                            g_closure_sink((GClosure *) arg->v_pointer);
+                            GClosure* closure = gjs_closure_new_marshaled(
+                                context, JS_GetObjectFunction(obj), "boxed");
+                            g_closure_ref(closure);
+                            g_closure_sink(closure);
+                            arg->v_pointer = closure;
                         } else {
                             /* Should have been caught above as STRUCT/BOXED/UNION */
                             gjs_throw(context,
