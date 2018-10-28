@@ -63,7 +63,7 @@
 enum class PrintErrorKind { Error, Warning, StrictWarning, Note };
 
 template <typename T>
-static bool print_single_error(T* report, PrintErrorKind kind);
+static void print_single_error(T* report, PrintErrorKind kind);
 static void print_error_line(const char* prefix, JSErrorNotes::Note* note) {}
 static void print_error_line(const char* prefix, JSErrorReport* report);
 
@@ -92,7 +92,7 @@ gjs_console_print_error(JSErrorReport *report)
 }
 
 template <typename T>
-static bool print_single_error(T* report, PrintErrorKind kind) {
+static void print_single_error(T* report, PrintErrorKind kind) {
     JS::UniqueChars prefix;
     if (report->filename)
         prefix.reset(g_strdup_printf("%s:", report->filename));
@@ -144,7 +144,6 @@ static bool print_single_error(T* report, PrintErrorKind kind) {
     fputc('\n', stderr);
 
     fflush(stderr);
-    return true;
 }
 
 static void print_error_line(const char* prefix, JSErrorReport* report) {
