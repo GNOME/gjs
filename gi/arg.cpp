@@ -23,8 +23,9 @@
 
 #include <config.h>
 
-#include <cstdlib>
+#include <mozilla/Unused.h>
 #include <cmath>
+#include <cstdlib>
 
 #include "arg.h"
 #include "gtype.h"
@@ -1788,7 +1789,8 @@ gjs_value_to_g_argument(JSContext      *context,
                                 gjs_fundamental_ref(context, arg->v_pointer);
                         } else {
                             /* Call again with throw=true to set the exception */
-                            gjs_typecheck_object(context, obj, gtype, true);
+                            mozilla::Unused << gjs_typecheck_object(
+                                context, obj, gtype, true);
                             arg->v_pointer = NULL;
                             wrong = true;
                         }
