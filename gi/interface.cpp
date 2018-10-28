@@ -83,10 +83,9 @@ gjs_define_static_methods(JSContext       *context,
     n_methods = g_interface_info_get_n_methods(info);
 
     for (i = 0; i < n_methods; i++) {
-        GIFunctionInfo *meth_info;
         GIFunctionInfoFlags flags;
 
-        meth_info = g_interface_info_get_method (info, i);
+        GjsAutoFunctionInfo meth_info = g_interface_info_get_method(info, i);
         flags = g_function_info_get_flags (meth_info);
 
         /* Anything that isn't a method we put on the prototype of the
@@ -97,11 +96,9 @@ gjs_define_static_methods(JSContext       *context,
          * like in the near future.
          */
         if (!(flags & GI_FUNCTION_IS_METHOD)) {
-            gjs_define_function(context, constructor, gtype,
-                                (GICallableInfo *)meth_info);
+            if (!gjs_define_function(context, constructor, gtype, meth_info))
+                return false;
         }
-
-        g_base_info_unref((GIBaseInfo*) meth_info);
     }
     return true;
 }
@@ -162,9 +159,10 @@ interface_has_instance_func(JSContext *cx,
     g_assert(interface.isObject());
     JS::RootedObject interface_constructor(cx, &interface.toObject());
     JS::RootedObject interface_proto(cx);
-    gjs_object_require_property(cx, interface_constructor,
-                                "interface constructor",
-                                GJS_STRING_PROTOTYPE, &interface_proto);
+    if (!gjs_object_require_property(cx, interface_constructor,
+                                     "interface constructor",
+                                     GJS_STRING_PROTOTYPE, &interface_proto))
+        return false;
 
     Interface *priv;
     if (!priv_from_js_with_typecheck(cx, interface_proto, &priv))
@@ -247,11 +245,17 @@ gjs_define_interface_class(JSContext              *context,
 
     /* If we have no GIRepository information, then this interface was defined
      * from within GJS and therefore has no C static methods to be defined. */
-    if (priv->info)
-        gjs_define_static_methods(context, constructor, priv->gtype, priv->info);
+    if (priv->info) {
+        if (!gjs_define_static_methods(context, constructor, priv->gtype,
+                                       priv->info))
+            return false;
+    }
 
     JS::RootedObject gtype_obj(context,
         gjs_gtype_create_gtype_wrapper(context, priv->gtype));
+    if (!gtype_obj)
+        return false;
+
     JS_DefineProperty(context, constructor, "$gtype", gtype_obj, JSPROP_PERMANENT);
 
     return true;

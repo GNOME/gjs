@@ -325,22 +325,16 @@ gjs_define_error_class(JSContext       *context,
         gjs_lookup_generic_prototype(context, glib_error_info));
     g_base_info_unref((GIBaseInfo*)glib_error_info);
 
-    if (!gjs_init_class_dynamic(context, in_object,
-                                parent_proto,
-                                g_base_info_get_namespace( (GIBaseInfo*) info),
-                                constructor_name,
-                                &gjs_error_class,
-                                gjs_error_constructor, 1,
-                                /* props of prototype */
-                                &gjs_error_proto_props[0],
-                                /* funcs of prototype */
-                                &gjs_error_proto_funcs[0],
-                                /* props of constructor, MyConstructor.myprop */
-                                NULL,
-                                /* funcs of constructor, MyConstructor.myfunc() */
-                                &gjs_error_constructor_funcs[0],
-                                &prototype,
-                                &constructor)) {
+    if (!parent_proto ||
+        !gjs_init_class_dynamic(
+            context, in_object, parent_proto, g_base_info_get_namespace(info),
+            constructor_name, &gjs_error_class, gjs_error_constructor, 1,
+            gjs_error_proto_props,  // props of prototype
+            gjs_error_proto_funcs,  // funcs of prototype
+            nullptr,  // props of constructor, MyConstructor.myprop
+            gjs_error_constructor_funcs,  // funcs of constructor,
+                                          // MyConstructor.myfunc()
+            &prototype, &constructor)) {
         gjs_log_exception(context);
         g_error("Can't init class %s", constructor_name);
     }

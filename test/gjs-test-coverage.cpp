@@ -305,10 +305,9 @@ test_covered_file_is_duplicated_into_output_if_resource(gpointer      fixture_da
     fixture->coverage = gjs_coverage_new(coverage_scripts, fixture->context,
                                          fixture->lcov_output_dir);
 
-    gjs_context_eval_file(fixture->context,
-                          mock_resource_filename,
-                          NULL,
-                          NULL);
+    bool ok = gjs_context_eval_file(fixture->context, mock_resource_filename,
+                                    nullptr, nullptr);
+    g_assert_true(ok);
 
     gjs_coverage_write_statistics(fixture->coverage);
 
