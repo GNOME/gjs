@@ -361,25 +361,26 @@ load_module_init(JSContext       *context,
     return module_obj;
 }
 
-static void
-load_module_elements(JSContext        *cx,
-                     JS::HandleObject  in_object,
-                     JS::AutoIdVector& prop_ids,
-                     const char       *init_path)
-{
+GJS_JSAPI_RETURN_CONVENTION
+static bool load_module_elements(JSContext* cx, JS::HandleObject in_object,
+                                 JS::AutoIdVector& prop_ids,
+                                 const char* init_path) {
     size_t ix, length;
     JS::RootedObject module_obj(cx, load_module_init(cx, in_object, init_path));
-
     if (!module_obj)
-        return;
+        return false;
 
     JS::Rooted<JS::IdVector> ids(cx, cx);
     if (!JS_Enumerate(cx, module_obj, &ids))
-        return;
+        return false;
 
     for (ix = 0, length = ids.length(); ix < length; ix++)
-        if (!prop_ids.append(ids[ix]))
-            g_error("Unable to append to vector");
+        if (!prop_ids.append(ids[ix])) {
+            JS_ReportOutOfMemory(cx);
+            return false;
+        }
+
+    return true;
 }
 
 /* If error, returns false. If not found, returns true but does not touch
@@ -664,7 +665,8 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
         init_path =
             g_build_filename(dirname.get(), MODULE_INIT_FILENAME, nullptr);
 
-        load_module_elements(context, object, properties, init_path);
+        if (!load_module_elements(context, object, properties, init_path))
+            return false;
 
         g_free(init_path);
 
