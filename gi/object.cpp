@@ -1409,10 +1409,13 @@ ObjectInstance::ObjectInstance(JSContext* cx, JS::HandleObject object)
     debug_lifecycle("Instance constructor");
 }
 
-ObjectPrototype* ObjectPrototype::new_for_js_object(GIObjectInfo* info,
+ObjectPrototype* ObjectPrototype::new_for_js_object(JSContext* cx,
+                                                    GIObjectInfo* info,
                                                     GType gtype) {
     auto* priv = g_slice_new0(ObjectPrototype);
     new (priv) ObjectPrototype(info, gtype);
+    if (!priv->init(cx))
+        return nullptr;
     return priv;
 }
 
@@ -1423,14 +1426,16 @@ ObjectPrototype::ObjectPrototype(GIObjectInfo* info, GType gtype)
 
     g_type_class_ref(gtype);
 
-    if (!m_property_cache.init())
-        g_error("Out of memory for property cache of %s", type_name());
-
-    if (!m_field_cache.init())
-        g_error("Out of memory for field cache of %s", type_name());
-
     GJS_INC_COUNTER(object_prototype);
     debug_lifecycle("Prototype constructor");
+}
+
+bool ObjectPrototype::init(JSContext* cx) {
+    if (!m_property_cache.init() || !m_field_cache.init()) {
+        JS_ReportOutOfMemory(cx);
+        return false;
+    }
+    return true;
 }
 
 static void
@@ -2237,7 +2242,10 @@ gjs_define_object_class(JSContext              *context,
                                GJS_MODULE_PROP_FLAGS))
         return false;
 
-    JS_SetPrivate(prototype, ObjectPrototype::new_for_js_object(info, gtype));
+    auto* priv = ObjectPrototype::new_for_js_object(context, info, gtype);
+    if (!priv)
+        return false;
+    JS_SetPrivate(prototype, priv);
 
     gjs_debug(GJS_DEBUG_GOBJECT, "Defined class for %s (%s), prototype %p, "
               "JSClass %p, in object %p", constructor_name, g_type_name(gtype),
