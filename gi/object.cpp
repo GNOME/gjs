@@ -1901,7 +1901,8 @@ ObjectInstance::connect_impl(JSContext          *context,
         return false;
     }
 
-    closure = gjs_closure_new_for_signal(context, callback, "signal callback", signal_id);
+    closure = gjs_closure_new_for_signal(
+        context, JS_GetObjectFunction(callback), "signal callback", signal_id);
     if (closure == NULL)
         return false;
     associate_closure(context, closure);
@@ -2510,9 +2511,13 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
         offset = g_field_info_get_offset(field_info);
         method_ptr = G_STRUCT_MEMBER_P(implementor_vtable, offset);
 
-        JS::RootedValue v_function(cx, JS::ObjectValue(*function));
+        if (!JS_ObjectIsFunction(cx, function)) {
+            gjs_throw(cx, "Tried to deal with a vfunc that wasn't a function");
+            return false;
+        }
+        JS::RootedFunction func(cx, JS_GetObjectFunction(function));
         trampoline = gjs_callback_trampoline_new(
-            cx, v_function, vfunc, GI_SCOPE_TYPE_NOTIFIED, prototype, true);
+            cx, func, vfunc, GI_SCOPE_TYPE_NOTIFIED, prototype, true);
 
         *((ffi_closure **)method_ptr) = trampoline->closure;
     }

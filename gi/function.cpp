@@ -226,8 +226,8 @@ gjs_callback_closure(ffi_cif *cif,
     }
 
     JS_BeginRequest(context);
-    JSAutoCompartment ac(context,
-                         gjs_closure_get_callable(trampoline->js_function));
+    JSAutoCompartment ac(context, JS_GetFunctionObject(gjs_closure_get_callable(
+                                      trampoline->js_function)));
 
     bool can_throw_gerror = g_callable_info_can_throw_gerror(trampoline->info);
     n_args = g_callable_info_get_n_args(trampoline->info);
@@ -490,22 +490,14 @@ gjs_destroy_notify_callback(gpointer data)
     gjs_callback_trampoline_unref(trampoline);
 }
 
-GjsCallbackTrampoline*
-gjs_callback_trampoline_new(JSContext       *context,
-                            JS::HandleValue  function,
-                            GICallableInfo  *callable_info,
-                            GIScopeType      scope,
-                            JS::HandleObject scope_object,
-                            bool             is_vfunc)
-{
+GjsCallbackTrampoline* gjs_callback_trampoline_new(
+    JSContext* context, JS::HandleFunction function,
+    GICallableInfo* callable_info, GIScopeType scope,
+    JS::HandleObject scope_object, bool is_vfunc) {
     GjsCallbackTrampoline *trampoline;
     int n_args, i;
 
-    if (function.isNull()) {
-        return NULL;
-    }
-
-    g_assert(JS_TypeOfValue(context, function) == JSTYPE_FUNCTION);
+    g_assert(function);
 
     trampoline = g_slice_new(GjsCallbackTrampoline);
     new (trampoline) GjsCallbackTrampoline();
@@ -519,9 +511,8 @@ gjs_callback_trampoline_new(JSContext       *context,
      *   (and same for vfuncs, which are associated with a GObject prototype)
      */
     bool should_root = scope != GI_SCOPE_TYPE_NOTIFIED || !scope_object;
-    trampoline->js_function = gjs_closure_new(context, &function.toObject(),
-                                              g_base_info_get_name(callable_info),
-                                              should_root);
+    trampoline->js_function = gjs_closure_new(
+        context, function, g_base_info_get_name(callable_info), should_root);
     if (!should_root && scope_object)
         gjs_object_associate_closure(context, scope_object,
                                      trampoline->js_function);
@@ -957,13 +948,12 @@ gjs_invoke_c_function(JSContext                             *context,
                         break;
                     }
 
+                    JS::RootedFunction func(
+                        context, JS_GetObjectFunction(&current_arg.toObject()));
                     callable_info = (GICallableInfo*) g_type_info_get_interface(&ainfo);
-                    trampoline = gjs_callback_trampoline_new(context,
-                                                             current_arg,
-                                                             callable_info,
-                                                             scope,
-                                                             is_object_method ? obj : nullptr,
-                                                             false);
+                    trampoline = gjs_callback_trampoline_new(
+                        context, func, callable_info, scope,
+                        is_object_method ? obj : nullptr, false);
                     closure = trampoline->closure;
                     g_base_info_unref(callable_info);
                 }

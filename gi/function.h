@@ -54,12 +54,9 @@ struct GjsCallbackTrampoline {
     GjsParamType *param_types;
 };
 
-GjsCallbackTrampoline* gjs_callback_trampoline_new(JSContext       *context,
-                                                   JS::HandleValue  function,
-                                                   GICallableInfo  *callable_info,
-                                                   GIScopeType      scope,
-                                                   JS::HandleObject scope_object,
-                                                   bool             is_vfunc);
+GjsCallbackTrampoline* gjs_callback_trampoline_new(
+    JSContext* cx, JS::HandleFunction function, GICallableInfo* callable_info,
+    GIScopeType scope, JS::HandleObject scope_object, bool is_vfunc);
 
 void gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline);
 void gjs_callback_trampoline_ref(GjsCallbackTrampoline *trampoline);
