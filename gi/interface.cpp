@@ -256,9 +256,8 @@ gjs_define_interface_class(JSContext              *context,
     if (!gtype_obj)
         return false;
 
-    JS_DefineProperty(context, constructor, "$gtype", gtype_obj, JSPROP_PERMANENT);
-
-    return true;
+    return JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
+                             JSPROP_PERMANENT);
 }
 
 bool

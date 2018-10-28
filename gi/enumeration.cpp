@@ -109,9 +109,8 @@ gjs_define_enum_values(JSContext       *context,
     if (!gtype_obj)
         return false;
 
-    JS_DefineProperty(context, in_object, "$gtype", gtype_obj, JSPROP_PERMANENT);
-
-    return true;
+    return JS_DefineProperty(context, in_object, "$gtype", gtype_obj,
+                             JSPROP_PERMANENT);
 }
 
 bool

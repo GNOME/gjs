@@ -150,6 +150,10 @@ union_new(JSContext       *context,
              * discard.
              */
             if (rval.isNull()) {
+                gjs_throw(context,
+                          "Unable to construct union type %s as its"
+                          "constructor function returned NULL",
+                          g_base_info_get_name(info));
                 return NULL;
             } else {
                 JS::RootedObject rval_obj(context, &rval.toObject());
@@ -355,9 +359,8 @@ gjs_define_union_class(JSContext       *context,
     if (!gtype_obj)
         return false;
 
-    JS_DefineProperty(context, constructor, "$gtype", gtype_obj, JSPROP_PERMANENT);
-
-    return true;
+    return JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
+                             JSPROP_PERMANENT);
 }
 
 JSObject*

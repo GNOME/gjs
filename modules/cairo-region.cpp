@@ -153,19 +153,25 @@ make_rectangle(JSContext *context,
                cairo_rectangle_int_t *rect)
 {
     JS::RootedObject rect_obj(context, JS_NewPlainObject(context));
+    if (!rect_obj)
+        return nullptr;
     JS::RootedValue val(context);
 
     val = JS::Int32Value(rect->x);
-    JS_SetProperty(context, rect_obj, "x", val);
+    if (!JS_SetProperty(context, rect_obj, "x", val))
+        return nullptr;
 
     val = JS::Int32Value(rect->y);
-    JS_SetProperty(context, rect_obj, "y", val);
+    if (!JS_SetProperty(context, rect_obj, "y", val))
+        return nullptr;
 
     val = JS::Int32Value(rect->width);
-    JS_SetProperty(context, rect_obj, "width", val);
+    if (!JS_SetProperty(context, rect_obj, "width", val))
+        return nullptr;
 
     val = JS::Int32Value(rect->height);
-    JS_SetProperty(context, rect_obj, "height", val);
+    if (!JS_SetProperty(context, rect_obj, "height", val))
+        return nullptr;
 
     return rect_obj;
 }
