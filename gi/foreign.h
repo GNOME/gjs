@@ -51,9 +51,8 @@ typedef struct {
     GjsArgOverrideReleaseGArgumentFunc release_func;
 } GjsForeignInfo;
 
-bool  gjs_struct_foreign_register                (const char     *gi_namespace,
-                                                  const char     *type_name,
-                                                  GjsForeignInfo *info);
+void gjs_struct_foreign_register(const char* gi_namespace,
+                                 const char* type_name, GjsForeignInfo* info);
 
 bool  gjs_struct_foreign_convert_to_g_argument   (JSContext      *context,
                                                   JS::Value       value,

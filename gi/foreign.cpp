@@ -87,20 +87,16 @@ gjs_foreign_load_foreign_module(JSContext *context,
     return false;
 }
 
-bool
-gjs_struct_foreign_register(const char *gi_namespace,
-                            const char *type_name,
-                            GjsForeignInfo *info)
-{
+void gjs_struct_foreign_register(const char* gi_namespace,
+                                 const char* type_name, GjsForeignInfo* info) {
     char *canonical_name;
 
-    g_return_val_if_fail(info != NULL, false);
-    g_return_val_if_fail(info->to_func != NULL, false);
-    g_return_val_if_fail(info->from_func != NULL, false);
+    g_return_if_fail(info);
+    g_return_if_fail(info->to_func);
+    g_return_if_fail(info->from_func);
 
     canonical_name = g_strdup_printf("%s.%s", gi_namespace, type_name);
     g_hash_table_insert(get_foreign_structs(), canonical_name, info);
-    return true;
 }
 
 static GjsForeignInfo *
