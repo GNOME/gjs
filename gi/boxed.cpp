@@ -43,7 +43,7 @@
 
 struct Boxed {
     /* prototype info */
-    GIBoxedInfo *info;
+    GIStructInfo* info;
     GType gtype;
     gint zero_args_constructor; /* -1 if none */
     JS::Heap<jsid> zero_args_constructor_name;
@@ -543,9 +543,9 @@ get_nested_interface_object(JSContext             *context,
         return false;
     }
 
-    JS::RootedObject proto(context,
-                           gjs_lookup_generic_prototype(context,
-                                                        (GIBoxedInfo*) interface_info));
+    JS::RootedObject proto(
+        context, gjs_lookup_generic_prototype(context, interface_info));
+
     proto_priv = priv_from_js(context, proto);
 
     offset = g_field_info_get_offset (field_info);
@@ -559,7 +559,7 @@ get_nested_interface_object(JSContext             *context,
     priv = g_slice_new0(Boxed);
     new (priv) Boxed();
     JS_SetPrivate(obj, priv);
-    priv->info = (GIBoxedInfo*) interface_info;
+    priv->info = interface_info;
     g_base_info_ref( (GIBaseInfo*) priv->info);
     priv->gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo*) interface_info);
     priv->can_allocate_directly = proto_priv->can_allocate_directly;
@@ -663,9 +663,9 @@ set_nested_interface_object (JSContext      *context,
         return false;
     }
 
-    JS::RootedObject proto(context,
-                           gjs_lookup_generic_prototype(context,
-                                                        (GIBoxedInfo*) interface_info));
+    JS::RootedObject proto(
+        context, gjs_lookup_generic_prototype(context, interface_info));
+
     proto_priv = priv_from_js(context, proto);
 
     /* If we can't directly copy from the source object we need
@@ -1076,11 +1076,8 @@ boxed_fill_prototype_info(JSContext *context,
     }
 }
 
-void
-gjs_define_boxed_class(JSContext       *context,
-                       JS::HandleObject in_object,
-                       GIBoxedInfo     *info)
-{
+void gjs_define_boxed_class(JSContext* context, JS::HandleObject in_object,
+                            GIStructInfo* info) {
     const char *constructor_name;
     JS::RootedObject prototype(context), constructor(context);
     Boxed *priv;

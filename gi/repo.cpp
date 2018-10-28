@@ -454,7 +454,7 @@ gjs_define_info(JSContext       *context,
         /* Fall through */
 
     case GI_INFO_TYPE_BOXED:
-        gjs_define_boxed_class(context, in_object, (GIBoxedInfo*) info);
+        gjs_define_boxed_class(context, in_object, info);
         break;
     case GI_INFO_TYPE_UNION:
         if (!gjs_define_union_class(context, in_object, (GIUnionInfo*) info))

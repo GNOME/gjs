@@ -38,12 +38,8 @@ typedef enum {
     GJS_BOXED_CREATION_NO_COPY = (1 << 0)
 } GjsBoxedCreationFlags;
 
-/* Hack for now... why doesn't gobject-introspection have this? */
-typedef GIStructInfo GIBoxedInfo;
-
-void      gjs_define_boxed_class       (JSContext             *context,
-                                        JS::HandleObject       in_object,
-                                        GIBoxedInfo           *info);
+void gjs_define_boxed_class(JSContext* cx, JS::HandleObject in_object,
+                            GIStructInfo* info);
 
 void*     gjs_c_struct_from_boxed      (JSContext             *context,
                                         JS::HandleObject       obj);
