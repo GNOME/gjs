@@ -33,10 +33,8 @@
 G_BEGIN_DECLS
 
 GJS_USE
-GClosure*  gjs_closure_new           (JSContext    *context,
-                                      JSObject     *callable,
-                                      const char   *description,
-                                      bool          root_function);
+GClosure* gjs_closure_new(JSContext* cx, JSFunction* callable,
+                          const char* description, bool root_function);
 
 GJS_USE
 bool gjs_closure_invoke(GClosure                   *closure,
@@ -50,7 +48,7 @@ JSContext* gjs_closure_get_context   (GClosure     *closure);
 GJS_USE
 bool       gjs_closure_is_valid      (GClosure     *closure);
 GJS_USE
-JSObject*  gjs_closure_get_callable  (GClosure     *closure);
+JSFunction* gjs_closure_get_callable(GClosure* closure);
 
 void       gjs_closure_trace         (GClosure     *closure,
                                       JSTracer     *tracer);
