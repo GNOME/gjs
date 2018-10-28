@@ -307,11 +307,8 @@ static JSFunctionSpec gjs_error_constructor_funcs[] = {
     JS_FN("valueOf", error_constructor_value_of, 0, GJS_MODULE_PROP_FLAGS),
     JS_FS_END};
 
-void
-gjs_define_error_class(JSContext       *context,
-                       JS::HandleObject in_object,
-                       GIEnumInfo      *info)
-{
+bool gjs_define_error_class(JSContext* context, JS::HandleObject in_object,
+                            GIEnumInfo* info) {
     const char *constructor_name;
     GIBoxedInfo *glib_error_info;
     JS::RootedObject prototype(context), constructor(context);
@@ -340,8 +337,7 @@ gjs_define_error_class(JSContext       *context,
             gjs_error_constructor_funcs,  // funcs of constructor,
                                           // MyConstructor.myfunc()
             &prototype, &constructor)) {
-        gjs_log_exception(context);
-        g_error("Can't init class %s", constructor_name);
+        return false;
     }
 
     GJS_INC_COUNTER(gerror);
@@ -356,8 +352,8 @@ gjs_define_error_class(JSContext       *context,
               constructor_name, prototype.get(), JS_GetClass(prototype),
               in_object.get());
 
-    gjs_define_enum_values(context, constructor, priv->info);
-    gjs_define_enum_static_methods(context, constructor, priv->info);
+    return gjs_define_enum_values(context, constructor, priv->info) &&
+           gjs_define_enum_static_methods(context, constructor, priv->info);
 }
 
 GJS_USE

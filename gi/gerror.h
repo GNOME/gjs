@@ -33,9 +33,9 @@
 
 G_BEGIN_DECLS
 
-void      gjs_define_error_class       (JSContext             *context,
-                                        JS::HandleObject       in_object,
-                                        GIEnumInfo            *info);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_define_error_class(JSContext* cx, JS::HandleObject in_object,
+                            GIEnumInfo* info);
 GJS_JSAPI_RETURN_CONVENTION
 GError*   gjs_gerror_from_error        (JSContext             *context,
                                         JS::HandleObject       obj);

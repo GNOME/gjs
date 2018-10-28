@@ -1117,11 +1117,8 @@ boxed_fill_prototype_info(JSContext *context,
     }
 }
 
-void
-gjs_define_boxed_class(JSContext       *context,
-                       JS::HandleObject in_object,
-                       GIBoxedInfo     *info)
-{
+bool gjs_define_boxed_class(JSContext* context, JS::HandleObject in_object,
+                            GIBoxedInfo* info) {
     const char *constructor_name;
     JS::RootedObject prototype(context), constructor(context);
     Boxed *priv;
@@ -1149,8 +1146,7 @@ gjs_define_boxed_class(JSContext       *context,
                                 NULL,
                                 &prototype,
                                 &constructor)) {
-        gjs_log_exception(context);
-        g_error("Can't init class %s", constructor_name);
+        return false;
     }
 
     GJS_INC_COUNTER(boxed);
@@ -1169,13 +1165,18 @@ gjs_define_boxed_class(JSContext       *context,
 
     priv->can_allocate_directly = struct_is_simple (priv->info);
 
-    define_boxed_class_fields (context, priv, prototype);
-    gjs_define_static_methods (context, constructor, priv->gtype, priv->info);
+    if (!define_boxed_class_fields(context, priv, prototype) ||
+        !gjs_define_static_methods(context, constructor, priv->gtype,
+                                   priv->info))
+        return false;
 
     JS::RootedObject gtype_obj(context,
         gjs_gtype_create_gtype_wrapper(context, priv->gtype));
-    JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
-                      JSPROP_PERMANENT);
+    if (!gtype_obj)
+        return false;
+
+    return JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
+                             JSPROP_PERMANENT);
 }
 
 JSObject*

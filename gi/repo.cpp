@@ -460,7 +460,8 @@ gjs_define_info(JSContext       *context,
         /* Fall through */
 
     case GI_INFO_TYPE_BOXED:
-        gjs_define_boxed_class(context, in_object, (GIBoxedInfo*) info);
+        if (!gjs_define_boxed_class(context, in_object, info))
+            return false;
         break;
     case GI_INFO_TYPE_UNION:
         if (!gjs_define_union_class(context, in_object, (GIUnionInfo*) info))
@@ -469,7 +470,8 @@ gjs_define_info(JSContext       *context,
     case GI_INFO_TYPE_ENUM:
         if (g_enum_info_get_error_domain((GIEnumInfo*) info)) {
             /* define as GError subclass */
-            gjs_define_error_class(context, in_object, (GIEnumInfo*) info);
+            if (!gjs_define_error_class(context, in_object, info))
+                return false;
             break;
         }
         /* fall through */
