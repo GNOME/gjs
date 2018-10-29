@@ -32,6 +32,7 @@
 
 G_BEGIN_DECLS
 
+GJS_USE
 bool         _gjs_context_destroying                  (GjsContext *js_context);
 
 void         _gjs_context_schedule_gc_if_needed       (GjsContext *js_context);
@@ -41,19 +42,24 @@ void _gjs_context_schedule_gc(GjsContext *js_context);
 void _gjs_context_exit(GjsContext *js_context,
                        uint8_t     exit_code);
 
+GJS_USE
 bool _gjs_context_get_is_owner_thread(GjsContext *js_context);
 
+GJS_USE
 bool _gjs_context_should_exit(GjsContext *js_context,
                               uint8_t    *exit_code_p);
 
 void _gjs_context_set_sweeping(GjsContext *js_context,
                                bool        sweeping);
 
+GJS_USE
 bool _gjs_context_is_sweeping(JSContext *cx);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool _gjs_context_enqueue_job(GjsContext      *gjs_context,
                               JS::HandleObject job);
 
+GJS_USE
 bool _gjs_context_run_jobs(GjsContext *gjs_context);
 
 void _gjs_context_unregister_unhandled_promise_rejection(GjsContext *gjs_context,

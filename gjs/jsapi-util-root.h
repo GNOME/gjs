@@ -66,15 +66,13 @@
  */
 template<typename T>
 struct GjsHeapOperation {
-    static bool update_after_gc(JS::Heap<T> *location);
+    GJS_USE static bool update_after_gc(JS::Heap<T>* location);
     static void expose_to_js(JS::Heap<T>& thing);
 };
 
 template<>
 struct GjsHeapOperation<JSObject *> {
-    static bool
-    update_after_gc(JS::Heap<JSObject *> *location)
-    {
+    GJS_USE static bool update_after_gc(JS::Heap<JSObject*>* location) {
         JS_UpdateWeakPointerAfterGC(location);
         return (location->unbarrieredGet() == nullptr);
     }
@@ -202,9 +200,7 @@ public:
      * GjsMaybeOwned wrapper in place of the GC thing itself due to the implicit
      * cast operator. But if you want to call methods on the GC thing, for
      * example if it's a JS::Value, you have to use get(). */
-    const T
-    get(void) const
-    {
+    GJS_USE const T get(void) const {
         return m_rooted ? m_thing.root->get() : m_thing.heap.get();
     }
     operator const T(void) const { return get(); }
@@ -235,9 +231,7 @@ public:
     /* You can get a Handle<T> if the thing is rooted, so that you can use this
      * wrapper with stack rooting. However, you must not do this if the
      * JSContext can be destroyed while the Handle is live. */
-    JS::Handle<T>
-    handle(void)
-    {
+    GJS_USE JS::Handle<T> handle(void) {
         g_assert(m_rooted);
         return *m_thing.root;
     }
@@ -351,15 +345,13 @@ public:
     /* If not tracing, then you must call this method during GC in order to
      * update the object's location if it was moved, or null it out if it was
      * finalized. If the object was finalized, returns true. */
-    bool
-    update_after_gc(void)
-    {
+    GJS_USE bool update_after_gc(void) {
         debug("update_after_gc()");
         g_assert(!m_rooted);
         return GjsHeapOperation<T>::update_after_gc(&m_thing.heap);
     }
 
-    bool rooted(void) const { return m_rooted; }
+    GJS_USE bool rooted(void) const { return m_rooted; }
 };
 
 #endif /* GJS_JSAPI_UTIL_ROOT_H */

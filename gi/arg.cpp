@@ -80,6 +80,7 @@ _gjs_flags_value_is_valid(JSContext   *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 _gjs_enum_value_is_valid(JSContext  *context,
                          GIEnumInfo *enum_info,
@@ -115,6 +116,7 @@ _gjs_enum_value_is_valid(JSContext  *context,
     return found;
 }
 
+GJS_USE
 static bool
 _gjs_enum_uses_signed_type (GIEnumInfo *enum_info)
 {
@@ -132,6 +134,7 @@ _gjs_enum_uses_signed_type (GIEnumInfo *enum_info)
  * is found in g_value_set_enum/g_value_set_flags().
  */
 
+GJS_USE
 gint64
 _gjs_enum_from_int (GIEnumInfo *enum_info,
                     int         int_value)
@@ -143,6 +146,7 @@ _gjs_enum_from_int (GIEnumInfo *enum_info,
 }
 
 /* Here for symmetry, but result is the same for the two cases */
+GJS_USE
 static int
 _gjs_enum_to_int (GIEnumInfo *enum_info,
                   gint64      value)
@@ -153,6 +157,7 @@ _gjs_enum_to_int (GIEnumInfo *enum_info,
 /* Check if an argument of the given needs to be released if we created it
  * from a JS value to pass it into a function and aren't transfering ownership.
  */
+GJS_USE
 static bool
 type_needs_release (GITypeInfo *type_info,
                     GITypeTag   type_tag)
@@ -214,6 +219,7 @@ type_needs_release (GITypeInfo *type_info,
 /* Check if an argument of the given needs to be released if we obtained it
  * from out argument (or the return value), and we're transferring ownership
  */
+GJS_USE
 static bool
 type_needs_out_release(GITypeInfo *type_info,
                        GITypeTag   type_tag)
@@ -252,6 +258,7 @@ type_needs_out_release(GITypeInfo *type_info,
     return false;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_to_g_list(JSContext   *context,
                     JS::Value    array_value,
@@ -329,6 +336,7 @@ gjs_array_to_g_list(JSContext   *context,
     return true;
 }
 
+GJS_USE
 static GHashTable *
 create_hash_table_for_key_type(GITypeInfo  *key_param_info)
 {
@@ -346,6 +354,7 @@ create_hash_table_for_key_type(GITypeInfo  *key_param_info)
 /* Converts a JS::Value to a GHashTable key, stuffing it into @pointer_out if
  * possible, otherwise giving the location of an allocated key in @pointer_out.
  */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 value_to_ghashtable_key(JSContext      *cx,
                         JS::HandleValue value,
@@ -480,6 +489,7 @@ value_to_ghashtable_key(JSContext      *cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_object_to_g_hash(JSContext   *context,
                      JS::Value    hash_value,
@@ -641,6 +651,7 @@ gjs_array_to_strv(JSContext   *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_string_to_intarray(JSContext       *context,
                        JS::HandleString str,
@@ -683,6 +694,7 @@ gjs_string_to_intarray(JSContext       *context,
     return false;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_to_gboolean_array(JSContext      *cx,
                             JS::Value       array_value,
@@ -709,6 +721,7 @@ gjs_array_to_gboolean_array(JSContext      *cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_to_intarray(JSContext   *context,
                       JS::Value    array_value,
@@ -770,6 +783,7 @@ gjs_array_to_intarray(JSContext   *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_gtypearray_to_array(JSContext   *context,
                         JS::Value    array_value,
@@ -815,6 +829,7 @@ gjs_gtypearray_to_array(JSContext   *context,
     return false;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_to_floatarray(JSContext   *context,
                         JS::Value    array_value,
@@ -868,6 +883,7 @@ gjs_array_to_floatarray(JSContext   *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_to_ptrarray(JSContext   *context,
                       JS::Value    array_value,
@@ -922,6 +938,7 @@ gjs_array_to_ptrarray(JSContext   *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_to_flat_gvalue_array(JSContext   *context,
                                JS::Value    array_value,
@@ -957,6 +974,7 @@ gjs_array_to_flat_gvalue_array(JSContext   *context,
     return result;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_from_flat_gvalue_array(JSContext             *context,
                                  gpointer               array,
@@ -997,6 +1015,7 @@ gjs_array_from_flat_gvalue_array(JSContext             *context,
     return result;
 }
 
+GJS_USE
 static bool
 is_gvalue(GIBaseInfo *info,
           GIInfoType  info_type)
@@ -1015,6 +1034,7 @@ is_gvalue(GIBaseInfo *info,
     return false;
 }
 
+GJS_USE
 static bool
 is_gvalue_flat_array(GITypeInfo *param_info,
                      GITypeTag   element_type)
@@ -1037,6 +1057,7 @@ is_gvalue_flat_array(GITypeInfo *param_info,
     return result;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_to_array(JSContext   *context,
                    JS::Value    array_value,
@@ -1126,6 +1147,7 @@ gjs_array_to_array(JSContext   *context,
     }
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static GArray*
 gjs_g_array_new_for_type(JSContext    *context,
                          unsigned int  length,
@@ -1199,6 +1221,7 @@ gjs_g_array_new_for_type(JSContext    *context,
     return g_array_sized_new(true, false, element_size, length);
 }
 
+GJS_USE
 static gchar *
 get_argument_display_name(const char     *arg_name,
                           GjsArgumentType arg_type)
@@ -1221,6 +1244,7 @@ get_argument_display_name(const char     *arg_name,
     }
 }
 
+GJS_USE
 static const char *
 type_tag_to_human_string(GITypeInfo *type_info)
 {
@@ -1257,6 +1281,7 @@ throw_invalid_argument(JSContext      *context,
     g_free(display_name);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_to_explicit_array_internal(JSContext       *context,
                                      JS::HandleValue  value,
@@ -1328,6 +1353,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
     return ret;
 }
 
+GJS_USE
 static bool
 is_gdk_atom(GIBaseInfo *info)
 {
@@ -2220,6 +2246,7 @@ gjs_value_to_explicit_array (JSContext      *context,
                                                 length_p);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_from_g_list (JSContext             *context,
                        JS::MutableHandleValue value_p,
@@ -2266,6 +2293,7 @@ gjs_array_from_g_list (JSContext             *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_from_carray_internal (JSContext             *context,
                                 JS::MutableHandleValue value_p,
@@ -2407,6 +2435,7 @@ gjs_array_from_carray_internal (JSContext             *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_from_fixed_size_array (JSContext             *context,
                                  JS::MutableHandleValue value_p,
@@ -2449,6 +2478,7 @@ gjs_value_from_explicit_array(JSContext             *context,
     return res;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_from_boxed_array (JSContext             *context,
                             JS::MutableHandleValue value_p,
@@ -2487,6 +2517,7 @@ gjs_array_from_boxed_array (JSContext             *context,
     return gjs_array_from_carray_internal(context, value_p, param_info, length, data);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_from_zero_terminated_c_array (JSContext             *context,
                                         JS::MutableHandleValue value_p,
@@ -2593,7 +2624,7 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
     return true;
 }
 
-
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_object_from_g_hash (JSContext             *context,
                         JS::MutableHandleValue value_p,
@@ -3100,6 +3131,7 @@ gjs_value_from_g_argument (JSContext             *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_g_arg_release_internal(JSContext  *context,
                                          GITransfer  transfer,
                                          GITypeInfo *type_info,
@@ -3145,6 +3177,7 @@ gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
  */
 #define TRANSFER_IN_NOTHING (GI_TRANSFER_EVERYTHING + 1)
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_g_arg_release_internal(JSContext  *context,
                            GITransfer  transfer,

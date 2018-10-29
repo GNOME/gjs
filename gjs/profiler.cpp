@@ -123,6 +123,7 @@ static GjsContext *profiling_context;
  * Returns: %TRUE if successful; otherwise %FALSE and the profile
  *   should abort.
  */
+GJS_USE
 static bool
 gjs_profiler_extract_maps(GjsProfiler *self)
 {

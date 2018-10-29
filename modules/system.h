@@ -27,10 +27,13 @@
 
 #include <config.h>
 #include <glib.h>
+
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_js_define_system_stuff(JSContext              *context,
                                 JS::MutableHandleObject module);
 

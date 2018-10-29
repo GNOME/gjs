@@ -151,13 +151,10 @@ gjs_string_from_filename(JSContext             *context,
 
 /* Converts a JSString's array of Latin-1 chars to an array of a wider integer
  * type, by what the compiler believes is the most efficient method possible */
-template<typename T>
-static bool
-from_latin1(JSContext *cx,
-            JSString  *str,
-            T        **data_p,
-            size_t    *len_p)
-{
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION static bool from_latin1(JSContext* cx,
+                                                    JSString* str, T** data_p,
+                                                    size_t* len_p) {
     /* No garbage collection should be triggered while we are using the string's
      * chars. Crash if that happens. */
     JS::AutoCheckCannotGC nogc;
@@ -376,6 +373,7 @@ gjs_intern_string_to_id(JSContext  *cx,
     return INTERNED_STRING_TO_JSID(cx, str);
 }
 
+GJS_USE
 static std::string
 gjs_debug_flat_string(JSFlatString *fstr)
 {

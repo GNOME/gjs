@@ -152,6 +152,7 @@ gjs_init_class_dynamic(JSContext              *context,
     return res;
 }
 
+GJS_USE
 static const char*
 format_dynamic_class_name (const char *name)
 {
@@ -200,6 +201,7 @@ gjs_construct_object_dynamic(JSContext                  *context,
     return JS_New(context, constructor, args);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject *
 define_native_accessor_wrapper(JSContext      *cx,
                                JSNative        call,

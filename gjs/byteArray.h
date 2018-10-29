@@ -26,20 +26,27 @@
 
 #include <stdbool.h>
 #include <glib.h>
+
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_byte_array_stuff(JSContext              *context,
                                  JS::MutableHandleObject module);
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_byte_array_from_data(JSContext* cx, size_t nbytes, void* data);
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject *    gjs_byte_array_from_byte_array (JSContext  *context,
                                               GByteArray *array);
 
+GJS_USE
 GByteArray* gjs_byte_array_get_byte_array(JS::HandleObject obj);
 
+GJS_USE
 GBytes* gjs_byte_array_get_bytes(JS::HandleObject obj);
 
 G_END_DECLS

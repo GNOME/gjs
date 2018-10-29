@@ -82,6 +82,7 @@ G_DEFINE_QUARK(gjs::custom-type, ObjectBase::custom_type)
 G_DEFINE_QUARK(gjs::custom-property, ObjectBase::custom_property)
 // clang-format on
 
+GJS_USE
 static GQuark
 gjs_object_priv_quark (void)
 {
@@ -402,6 +403,7 @@ ObjectInstance::prop_getter_impl(JSContext             *cx,
     return true;
 }
 
+GJS_USE
 static GjsAutoFieldInfo lookup_field_info(GIObjectInfo* info,
                                           const char* name) {
     int n_fields = g_object_info_get_n_fields(info);
@@ -634,6 +636,7 @@ bool ObjectPrototype::is_vfunc_unchanged(GIVFuncInfo* info) {
     return addr1 == addr2;
 }
 
+GJS_USE
 static GjsAutoVFuncInfo find_vfunc_on_parents(GIObjectInfo* info,
                                               const char* name,
                                               bool* out_defined_by_parent) {
@@ -674,6 +677,7 @@ static void canonicalize_key(const GjsAutoChar& key) {
 }
 
 /* @name must already be canonicalized */
+GJS_USE
 static bool is_ginterface_property_name(GIInterfaceInfo* info,
                                         const char* name) {
     int n_props = g_interface_info_get_n_properties(info);
@@ -772,6 +776,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
     return true;
 }
 
+GJS_USE
 static bool
 is_gobject_property_name(GIObjectInfo *info,
                          const char   *name)
@@ -1793,6 +1798,7 @@ JSObject* gjs_lookup_object_constructor_from_info(JSContext* context,
     return constructor;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject *
 gjs_lookup_object_prototype_from_info(JSContext    *context,
                                       GIObjectInfo *info,
@@ -1812,6 +1818,7 @@ gjs_lookup_object_prototype_from_info(JSContext    *context,
     return prototype;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject *
 gjs_lookup_object_prototype(JSContext *context,
                             GType      gtype)
@@ -2370,6 +2377,7 @@ ObjectInstance::typecheck_object(JSContext *context,
     return result;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool find_vfunc_info(JSContext* context, GType implementor_gtype,
                             GIBaseInfo* vfunc_info, const char* vfunc_name,
                             void** implementor_vtable_ret,
