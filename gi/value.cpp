@@ -321,32 +321,38 @@ gjs_closure_new_marshaled (JSContext    *context,
     return closure;
 }
 
-GJS_USE
-static GType
-gjs_value_guess_g_type(JSContext *context,
-                       JS::Value  value)
-{
-    if (value.isNull())
-        return G_TYPE_POINTER;
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_value_guess_g_type(JSContext* context, JS::Value value,
+                                   GType* gtype_out) {
+    g_assert(gtype_out && "Invalid return location");
 
-    if (value.isString())
-        return G_TYPE_STRING;
-
-    if (value.isInt32())
-        return G_TYPE_INT;
-
-    if (value.isDouble())
-        return G_TYPE_DOUBLE;
-
-    if (value.isBoolean())
-        return G_TYPE_BOOLEAN;
-
+    if (value.isNull()) {
+        *gtype_out = G_TYPE_POINTER;
+        return true;
+    }
+    if (value.isString()) {
+        *gtype_out = G_TYPE_STRING;
+        return true;
+    }
+    if (value.isInt32()) {
+        *gtype_out = G_TYPE_INT;
+        return true;
+    }
+    if (value.isDouble()) {
+        *gtype_out = G_TYPE_DOUBLE;
+        return true;
+    }
+    if (value.isBoolean()) {
+        *gtype_out = G_TYPE_BOOLEAN;
+        return true;
+    }
     if (value.isObject()) {
         JS::RootedObject obj(context, &value.toObject());
-        return gjs_gtype_get_actual_gtype(context, obj);
+        return gjs_gtype_get_actual_gtype(context, obj, gtype_out);
     }
 
-    return G_TYPE_INVALID;
+    *gtype_out = G_TYPE_INVALID;
+    return true;
 }
 
 static bool
@@ -374,7 +380,8 @@ gjs_value_to_g_value_internal(JSContext      *context,
     gtype = G_VALUE_TYPE(gvalue);
 
     if (gtype == 0) {
-        gtype = gjs_value_guess_g_type(context, value);
+        if (!gjs_value_guess_g_type(context, value, &gtype))
+            return false;
 
         if (gtype == G_TYPE_INVALID) {
             gjs_throw(context, "Could not guess unspecified GValue type");
@@ -658,7 +665,8 @@ gjs_value_to_g_value_internal(JSContext      *context,
             return throw_expect_type(context, value, "GType object");
 
         JS::RootedObject obj(context, &value.toObject());
-        type = gjs_gtype_get_actual_gtype(context, obj);
+        if (!gjs_gtype_get_actual_gtype(context, obj, &type))
+            return false;
         g_value_set_gtype(gvalue, type);
     } else if (g_type_is_a(gtype, G_TYPE_POINTER)) {
         if (value.isNull()) {
