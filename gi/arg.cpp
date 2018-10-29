@@ -790,11 +790,11 @@ gjs_gtypearray_to_array(JSContext   *context,
                         unsigned int length,
                         void       **arr_p)
 {
-    GType *result;
     unsigned i;
 
     /* add one so we're always zero terminated */
-    result = (GType *) g_malloc0((length+1) * sizeof(GType));
+    GjsAutoPointer<GType, void, g_free> result =
+        static_cast<GType*>(g_malloc0((length + 1) * sizeof(GType)));
 
     JS::RootedObject elem_obj(context), array(context, array_value.toObjectOrNull());
     JS::RootedValue elem(context);
@@ -802,31 +802,28 @@ gjs_gtypearray_to_array(JSContext   *context,
         GType gtype;
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array, i, &elem)) {
-            g_free(result);
-            gjs_throw(context, "Missing array element %u", i);
+        if (!JS_GetElement(context, array, i, &elem))
+            return false;
+
+        if (!elem.isObject()) {
+            gjs_throw(context, "Invalid element in GType array");
             return false;
         }
 
-        if (!elem.isObjectOrNull())
-            goto err;
-
-        elem_obj = elem.toObjectOrNull();
-        gtype = gjs_gtype_get_actual_gtype(context, elem_obj);
-        if (gtype == G_TYPE_INVALID)
-            goto err;
+        elem_obj = &elem.toObject();
+        if (!gjs_gtype_get_actual_gtype(context, elem_obj, &gtype))
+            return false;
+        if (gtype == G_TYPE_INVALID) {
+            gjs_throw(context, "Invalid element in GType array");
+            return false;
+        }
 
         result[i] = gtype;
     }
 
-    *arr_p = result;
+    *arr_p = result.release();
 
     return true;
-
- err:
-    g_free(result);
-    gjs_throw(context, "Invalid element in GType array");
-    return false;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -1523,7 +1520,10 @@ gjs_value_to_g_argument(JSContext      *context,
         if (value.isObjectOrNull()) {
             GType gtype;
             JS::RootedObject obj(context, value.toObjectOrNull());
-            gtype = gjs_gtype_get_actual_gtype(context, obj);
+            if (!gjs_gtype_get_actual_gtype(context, obj, &gtype)) {
+                wrong = true;
+                break;
+            }
             if (gtype == G_TYPE_INVALID)
                 wrong = true;
             arg->v_ssize = gtype;
@@ -1679,7 +1679,11 @@ gjs_value_to_g_argument(JSContext      *context,
                     GType actual_gtype;
                     gpointer klass;
 
-                    actual_gtype = gjs_gtype_get_actual_gtype(context, obj);
+                    if (!gjs_gtype_get_actual_gtype(context, obj,
+                                                    &actual_gtype)) {
+                        wrong = true;
+                        break;
+                    }
 
                     if (actual_gtype == G_TYPE_NONE) {
                         wrong = true;
