@@ -315,28 +315,24 @@ gjs_string_from_ucs4(JSContext             *cx,
 
 /**
  * gjs_get_string_id:
- * @context: a #JSContext
+ * @cx: a #JSContext
  * @id: a jsid that is an object hash key (could be an int or string)
  * @name_p place to store ASCII string version of key
  *
- * If the id is not a string ID, return false and set *name_p to %NULL.
+ * If the id is not a string ID, return true and set *name_p to nullptr.
  * Otherwise, return true and fill in *name_p with ASCII name of id.
  *
- * Returns: true if *name_p is non-%NULL
+ * Returns: false on error, otherwise true
  **/
-bool gjs_get_string_id(JSContext* context, jsid id, JS::UniqueChars* name_p) {
-    JS::RootedValue id_val(context);
-
-    if (!JS_IdToValue(context, id, &id_val))
-        return false;
-
-    if (id_val.isString()) {
-        JS::RootedString str(context, id_val.toString());
-        name_p->reset(JS_EncodeStringToUTF8(context, str));
-        return !!*name_p;
-    } else {
-        return false;
+bool gjs_get_string_id(JSContext* cx, jsid id, JS::UniqueChars* name_p) {
+    if (!JSID_IS_STRING(id)) {
+        name_p->reset();
+        return true;
     }
+
+    JS::RootedString s(cx, JS_FORGET_STRING_FLATNESS(JSID_TO_FLAT_STRING(id)));
+    name_p->reset(JS_EncodeStringToUTF8(cx, s));
+    return !!*name_p;
 }
 
 /**

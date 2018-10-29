@@ -480,6 +480,10 @@ static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
     JS::UniqueChars name;
     if (!gjs_get_string_id(context, id, &name))
         return false;
+    if (!name) {
+        gjs_throw(context, "Importing invalid module name");
+        return false;
+    }
 
     /* First try importing an internal module like gi */
     if (priv->is_root &&
