@@ -51,7 +51,9 @@ static bool gjs_override_property(JSContext* cx, unsigned argc, JS::Value* vp) {
                              "type", &type))
         return false;
 
-    GType gtype = gjs_gtype_get_actual_gtype(cx, type);
+    GType gtype;
+    if (!gjs_gtype_get_actual_gtype(cx, type, &gtype))
+        return false;
     if (gtype == G_TYPE_INVALID) {
         gjs_throw(cx, "Invalid parameter type was not a GType");
         return false;
@@ -163,7 +165,9 @@ static bool get_interface_gtypes(JSContext* cx, JS::HandleObject interfaces,
         }
 
         JS::RootedObject iface(cx, &iface_val.toObject());
-        GType iface_type = gjs_gtype_get_actual_gtype(cx, iface);
+        GType iface_type;
+        if (!gjs_gtype_get_actual_gtype(cx, iface, &iface_type))
+            return false;
         if (iface_type == G_TYPE_INVALID) {
             gjs_throw(
                 cx, "Invalid parameter interfaces (element %d was not a GType)",
@@ -354,7 +358,9 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
             accumulator = NULL;
     }
 
-    GType return_type = gjs_gtype_get_actual_gtype(cx, return_gtype_obj);
+    GType return_type;
+    if (!gjs_gtype_get_actual_gtype(cx, return_gtype_obj, &return_type))
+        return false;
 
     if (accumulator == g_signal_accumulator_true_handled &&
         return_type != G_TYPE_BOOLEAN) {
@@ -378,10 +384,13 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
         }
 
         JS::RootedObject gjs_gtype(cx, &gtype_val.toObject());
-        params[ix] = gjs_gtype_get_actual_gtype(cx, gjs_gtype);
+        if (!gjs_gtype_get_actual_gtype(cx, gjs_gtype, &params[ix]))
+            return false;
     }
 
-    GType gtype = gjs_gtype_get_actual_gtype(cx, gtype_obj);
+    GType gtype;
+    if (!gjs_gtype_get_actual_gtype(cx, gtype_obj, &gtype))
+        return false;
 
     unsigned signal_id = g_signal_newv(
         signal_name.get(), gtype, GSignalFlags(flags),

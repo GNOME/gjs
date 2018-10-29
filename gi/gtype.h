@@ -38,10 +38,9 @@ GJS_JSAPI_RETURN_CONVENTION
 JSObject * gjs_gtype_create_gtype_wrapper (JSContext *context,
                                            GType      gtype);
 
-/* FIXME: This should be GJS_JSAPI_RETURN_CONVENTION, but isn't */
-GJS_USE
-GType       gjs_gtype_get_actual_gtype(JSContext       *context,
-                                       JS::HandleObject object);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_gtype_get_actual_gtype(JSContext* context, JS::HandleObject object,
+                                GType* gtype_out);
 
 GJS_USE
 bool        gjs_typecheck_gtype         (JSContext             *context,

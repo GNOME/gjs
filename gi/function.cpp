@@ -644,7 +644,8 @@ gjs_fill_method_instance(JSContext       *context,
             GType actual_gtype;
             gpointer klass;
 
-            actual_gtype = gjs_gtype_get_actual_gtype(context, obj);
+            if (!gjs_gtype_get_actual_gtype(context, obj, &actual_gtype))
+                return false;
 
             if (actual_gtype == G_TYPE_NONE) {
                 gjs_throw(context, "Invalid GType class passed for instance parameter");
