@@ -54,9 +54,11 @@ extern struct JSClass gjs_repo_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Repo, gjs_repo_class)
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool lookup_override_function(JSContext *, JS::HandleId,
                                      JS::MutableHandleValue);
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool get_version_for_ns(JSContext* context, JS::HandleObject repo_obj,
                                JS::HandleId ns_id, JS::UniqueChars* version) {
     JS::RootedObject versions(context);
@@ -76,6 +78,7 @@ static bool get_version_for_ns(JSContext* context, JS::HandleObject repo_obj,
     return gjs_object_require_property(context, versions, NULL, ns_id, version);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool resolve_namespace_object(JSContext* context,
                                      JS::HandleObject repo_obj,
                                      JS::HandleId ns_id) {
@@ -150,6 +153,7 @@ static bool resolve_namespace_object(JSContext* context,
  * The *resolved out parameter, on success, should be false to indicate that id
  * was not resolved; and true if id was resolved.
  */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 repo_resolve(JSContext       *context,
              JS::HandleObject obj,
@@ -236,6 +240,7 @@ static JSFunctionSpec *gjs_repo_static_funcs = nullptr;
 
 GJS_DEFINE_PROTO_FUNCS(repo)
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject*
 repo_new(JSContext *context)
 {
@@ -294,6 +299,7 @@ gjs_define_repo(JSContext              *cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_define_constant(JSContext       *context,
                     JS::HandleObject in_object,
@@ -538,6 +544,7 @@ gjs_lookup_namespace_object(JSContext  *context,
 
 /* Check if an exception's 'name' property is equal to compare_name. Ignores
  * all errors that might arise. Requires request. */
+GJS_USE
 static bool
 error_has_name(JSContext       *cx,
                JS::HandleValue  thrown_value,
@@ -566,6 +573,7 @@ out:
     return retval;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 lookup_override_function(JSContext             *cx,
                          JS::HandleId           ns_name,

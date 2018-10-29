@@ -36,4 +36,31 @@
 # define GJS_EXPORT
 #endif
 
+/**
+ * GJS_USE:
+ *
+ * Indicates a return value must be used, or the compiler should log a warning.
+ * If it is really okay to ignore the return value, use mozilla::Unused to
+ * bypass this warning.
+ */
+#if defined(__GNUC__) || defined(__clang__)
+#    define GJS_USE __attribute__((warn_unused_result))
+#else
+#    define GJS_USE
+#endif
+
+/**
+ * GJS_JSAPI_RETURN_CONVENTION:
+ *
+ * Same as %GJS_USE, but indicates that a return value of true or non-null means
+ * that no exception must be pending on the passed-in #JSContext. Conversely, a
+ * return value of false or nullptr means that an exception must be pending, or
+ * else an uncatchable exception has been thrown.
+ *
+ * Same as %GJS_USE for now, but in the future this should be able to be used by
+ * static analysis tools to do better consistency checks. It's also intended as
+ * documentation for the programmer.
+ */
+#define GJS_JSAPI_RETURN_CONVENTION GJS_USE
+
 #endif /* GJS_MACROS_H */

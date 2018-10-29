@@ -29,32 +29,42 @@
 
 #include <girepository.h>
 
-#include "gjs/jsapi-wrapper.h"
 #include <util/log.h>
+#include "gjs/jsapi-wrapper.h"
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_repo(JSContext              *cx,
                      JS::MutableHandleObject repo);
 
+GJS_USE
 const char* gjs_info_type_name                  (GIInfoType      type);
+GJS_JSAPI_RETURN_CONVENTION
 JSObject*   gjs_lookup_private_namespace        (JSContext      *context);
+GJS_JSAPI_RETURN_CONVENTION
 JSObject*   gjs_lookup_namespace_object         (JSContext      *context,
                                                  GIBaseInfo     *info);
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject *gjs_lookup_namespace_object_by_name(JSContext   *context,
                                               JS::HandleId name);
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject *  gjs_lookup_generic_constructor      (JSContext      *context,
                                                  GIBaseInfo     *info);
+GJS_JSAPI_RETURN_CONVENTION
 JSObject *  gjs_lookup_generic_prototype        (JSContext      *context,
                                                  GIBaseInfo     *info);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_info(JSContext       *context,
                      JS::HandleObject in_object,
                      GIBaseInfo      *info,
                      bool            *defined);
 
+GJS_USE
 char*       gjs_hyphen_from_camel               (const char     *camel_name);
 
 

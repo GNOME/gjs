@@ -36,6 +36,7 @@
 
 #include "enumeration.h"
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_define_enum_value(JSContext       *context,
                       JS::HandleObject in_object,

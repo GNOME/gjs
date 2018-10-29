@@ -71,6 +71,7 @@ interface_finalize(JSFreeOp *fop,
     g_slice_free(Interface, priv);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_define_static_methods(JSContext       *context,
                           JS::HandleObject constructor,
@@ -103,6 +104,7 @@ gjs_define_static_methods(JSContext       *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 interface_resolve(JSContext       *context,
                   JS::HandleObject obj,
@@ -147,6 +149,7 @@ interface_resolve(JSContext       *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 interface_has_instance_func(JSContext *cx,
                             unsigned   argc,

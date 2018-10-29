@@ -349,6 +349,7 @@ gjs_define_string_array(JSContext       *context,
  * are \x escaped.
  *
  */
+GJS_USE
 static char *
 gjs_string_readable(JSContext       *context,
                     JS::HandleString string)
@@ -384,6 +385,7 @@ gjs_string_readable(JSContext       *context,
     return g_string_free(buf, false);
 }
 
+GJS_USE
 static char *
 _gjs_g_utf8_make_valid (const char *name)
 {

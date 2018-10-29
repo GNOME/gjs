@@ -28,19 +28,18 @@
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-wrapper.h"
+#include "gjs/macros.h"
 
 #include <cairo.h>
 #include <cairo-gobject.h>
 #include "cairo-private.h"
 
-#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(mname) \
-static bool                                         \
-mname##_func(JSContext *context,                    \
-              unsigned   argc,                      \
-              JS::Value *vp)                        \
-{                                                   \
-    GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoContext, priv); \
-    cairo_t *cr = priv ? priv->cr : NULL;
+#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(mname)                        \
+    GJS_JSAPI_RETURN_CONVENTION                                            \
+    static bool mname##_func(JSContext* context, unsigned argc,            \
+                             JS::Value* vp) {                              \
+        GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoContext, priv); \
+        cairo_t* cr = priv ? priv->cr : nullptr;
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END                               \
     return gjs_cairo_check_status(context, cairo_status(cr), "context"); \
@@ -238,6 +237,7 @@ typedef struct {
     cairo_t * cr;
 } GjsCairoContext;
 
+GJS_USE
 static JSObject *gjs_cairo_context_get_proto(JSContext *);
 
 GJS_DEFINE_PROTO_WITH_GTYPE("Context", cairo_context,
@@ -393,7 +393,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC2(translate, cairo_translate, "ff", double, tx, do
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDevice, cairo_user_to_device, "x", "y")
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDeviceDistance, cairo_user_to_device_distance, "x", "y")
 
-
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 dispose_func(JSContext *context,
              unsigned   argc,
@@ -409,6 +409,7 @@ dispose_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 appendPath_func(JSContext *context,
                 unsigned   argc,
@@ -434,6 +435,7 @@ appendPath_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 copyPath_func(JSContext *context,
               unsigned   argc,
@@ -451,6 +453,7 @@ copyPath_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 copyPathFlat_func(JSContext *context,
                   unsigned   argc,
@@ -468,6 +471,7 @@ copyPathFlat_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 mask_func(JSContext *context,
           unsigned   argc,
@@ -497,6 +501,7 @@ mask_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 maskSurface_func(JSContext *context,
                  unsigned   argc,
@@ -529,6 +534,7 @@ maskSurface_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 setDash_func(JSContext *context,
              unsigned   argc,
@@ -587,6 +593,7 @@ setDash_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 setSource_func(JSContext *context,
                unsigned   argc,
@@ -617,6 +624,7 @@ setSource_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 setSourceSurface_func(JSContext *context,
                       unsigned   argc,
@@ -650,6 +658,7 @@ setSourceSurface_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 showText_func(JSContext *context,
               unsigned   argc,
@@ -673,6 +682,7 @@ showText_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 selectFontFace_func(JSContext *context,
                     unsigned   argc,
@@ -699,6 +709,7 @@ selectFontFace_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 popGroup_func(JSContext *context,
               unsigned   argc,
@@ -729,6 +740,7 @@ popGroup_func(JSContext *context,
 
     return true;
 }
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getSource_func(JSContext *context,
                unsigned   argc,
@@ -760,6 +772,7 @@ getSource_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getTarget_func(JSContext *context,
                unsigned   argc,
@@ -791,6 +804,7 @@ getTarget_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getGroupTarget_func(JSContext *context,
                     unsigned   argc,
@@ -952,6 +966,7 @@ gjs_cairo_context_get_context(JSContext       *context,
     return priv->cr;
 }
 
+GJS_USE
 static bool
 context_to_g_argument(JSContext      *context,
                       JS::Value       value,
@@ -974,6 +989,7 @@ context_to_g_argument(JSContext      *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 context_from_g_argument(JSContext             *context,
                         JS::MutableHandleValue value_p,

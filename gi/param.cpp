@@ -49,6 +49,7 @@ GJS_DEFINE_PRIV_FROM_JS(Param, gjs_param_class)
  * The *resolved out parameter, on success, should be false to indicate that id
  * was not resolved; and true if id was resolved.
  */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 param_resolve(JSContext       *context,
               JS::HandleObject obj,
@@ -156,6 +157,7 @@ static JSFunctionSpec gjs_param_constructor_funcs[] = {
     JS_FS_END
 };
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject*
 gjs_lookup_param_prototype(JSContext    *context)
 {

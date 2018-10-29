@@ -30,6 +30,7 @@
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 run_bootstrap(JSContext       *cx,
               const char      *bootstrap_script,
@@ -63,6 +64,7 @@ run_bootstrap(JSContext       *cx,
     return JS::CloneAndExecuteScript(cx, compiled_script, &ignored);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_log(JSContext *cx,
         unsigned   argc,
@@ -98,6 +100,7 @@ gjs_log(JSContext *cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_log_error(JSContext *cx,
               unsigned   argc,
@@ -128,6 +131,7 @@ gjs_log_error(JSContext *cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_print_parse_args(JSContext    *cx,
                      JS::CallArgs& argv,
@@ -169,6 +173,7 @@ gjs_print_parse_args(JSContext    *cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_print(JSContext *context,
           unsigned   argc,
@@ -186,6 +191,7 @@ gjs_print(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_printerr(JSContext *context,
              unsigned   argc,
@@ -230,8 +236,8 @@ class GjsGlobal {
         JS_FN("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS),
         JS_FS_END};
 
-public:
-
+ public:
+    GJS_USE
     static JSObject *
     create(JSContext *cx)
     {
@@ -252,6 +258,7 @@ public:
         return global;
     }
 
+    GJS_JSAPI_RETURN_CONVENTION
     static bool
     define_properties(JSContext       *cx,
                       JS::HandleObject global,

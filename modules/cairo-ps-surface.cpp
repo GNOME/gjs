@@ -31,6 +31,7 @@
 #if CAIRO_HAS_PS_SURFACE
 #include <cairo-ps.h>
 
+GJS_USE
 static JSObject *gjs_cairo_ps_surface_get_proto(JSContext *);
 
 GJS_DEFINE_PROTO_WITH_PARENT("PSSurface", cairo_ps_surface, cairo_surface,

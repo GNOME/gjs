@@ -28,6 +28,7 @@
 #include <glib.h>
 
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 #include <girepository.h>
 
@@ -45,12 +46,15 @@ void      gjs_define_boxed_class       (JSContext             *context,
                                         JS::HandleObject       in_object,
                                         GIBoxedInfo           *info);
 
+GJS_JSAPI_RETURN_CONVENTION
 void*     gjs_c_struct_from_boxed      (JSContext             *context,
                                         JS::HandleObject       obj);
+GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_boxed_from_c_struct      (JSContext             *context,
                                         GIStructInfo          *info,
                                         void                  *gboxed,
                                         GjsBoxedCreationFlags  flags);
+GJS_USE
 bool      gjs_typecheck_boxed          (JSContext             *context,
                                         JS::HandleObject       obj,
                                         GIStructInfo          *expected_info,
