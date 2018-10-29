@@ -1390,22 +1390,17 @@ gjs_value_to_g_argument(JSContext      *context,
                         bool            may_be_null,
                         GArgument      *arg)
 {
-    GITypeTag type_tag;
-    bool wrong;
-    bool out_of_range;
-    bool report_type_mismatch;
-    bool nullable_type;
-
-    type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
+    GITypeTag type_tag = g_type_info_get_tag(type_info);
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting JS::Value to GArgument %s",
                       g_type_tag_to_string(type_tag));
 
-    nullable_type = false;
-    wrong = false; /* return false */
-    out_of_range = false;
-    report_type_mismatch = false; /* wrong=true, and still need to gjs_throw a type problem */
+    bool nullable_type = false;
+    bool wrong = false;  // return false
+    bool out_of_range = false;
+    bool report_type_mismatch = false;  // wrong=true, and still need to
+                                        // gjs_throw a type problem
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
@@ -1587,16 +1582,14 @@ gjs_value_to_g_argument(JSContext      *context,
 
     case GI_TYPE_TAG_INTERFACE:
         {
-            GIBaseInfo* interface_info;
-            GIInfoType interface_type;
             GType gtype;
             bool expect_object;
 
-            interface_info = g_type_info_get_interface(type_info);
+            GjsAutoBaseInfo interface_info =
+                g_type_info_get_interface(type_info);
             g_assert(interface_info != NULL);
 
-            interface_type = g_base_info_get_type(interface_info);
-
+            GIInfoType interface_type = g_base_info_get_type(interface_info);
             if (interface_type == GI_INFO_TYPE_ENUM ||
                 interface_type == GI_INFO_TYPE_FLAGS) {
                 nullable_type = false;
@@ -1607,13 +1600,10 @@ gjs_value_to_g_argument(JSContext      *context,
             }
 
             if (interface_type == GI_INFO_TYPE_STRUCT &&
-                g_struct_info_is_foreign((GIStructInfo*)interface_info)) {
-                bool ret;
-                ret = gjs_struct_foreign_convert_to_g_argument(
-                        context, value, interface_info, arg_name,
-                        arg_type, transfer, may_be_null, arg);
-                g_base_info_unref(interface_info);
-                return ret;
+                g_struct_info_is_foreign(interface_info)) {
+                return gjs_struct_foreign_convert_to_g_argument(
+                    context, value, interface_info, arg_name, arg_type,
+                    transfer, may_be_null, arg);
             }
 
             if (interface_type == GI_INFO_TYPE_STRUCT ||
@@ -1625,8 +1615,7 @@ gjs_value_to_g_argument(JSContext      *context,
                 interface_type == GI_INFO_TYPE_BOXED) {
                 /* These are subtypes of GIRegisteredTypeInfo for which the
                  * cast is safe */
-                gtype = g_registered_type_info_get_g_type
-                    ((GIRegisteredTypeInfo*)interface_info);
+                gtype = g_registered_type_info_get_g_type(interface_info);
             } else if (interface_type == GI_INFO_TYPE_VALUE) {
                 /* Special case for GValues */
                 gtype = G_TYPE_VALUE;
@@ -1660,7 +1649,6 @@ gjs_value_to_g_argument(JSContext      *context,
 
                     if (!name) {
                         wrong = true;
-                        g_base_info_unref(interface_info);
                         break;
                     }
 
@@ -1675,7 +1663,7 @@ gjs_value_to_g_argument(JSContext      *context,
             } else if (value.isObject()) {
                 JS::RootedObject obj(context, &value.toObject());
                 if (interface_type == GI_INFO_TYPE_STRUCT &&
-                    g_struct_info_is_gtype_struct((GIStructInfo*)interface_info)) {
+                    g_struct_info_is_gtype_struct(interface_info)) {
                     GType actual_gtype;
                     gpointer klass;
 
@@ -1703,10 +1691,12 @@ gjs_value_to_g_argument(JSContext      *context,
                         klass = g_type_class_peek(actual_gtype);
 
                     arg->v_pointer = klass;
-                } else if ((interface_type == GI_INFO_TYPE_STRUCT || interface_type == GI_INFO_TYPE_BOXED) &&
-                    /* Handle Struct/Union first since we don't necessarily need a GType for them */
-                    /* We special case Closures later, so skip them here */
-                    !g_type_is_a(gtype, G_TYPE_CLOSURE)) {
+                } else if ((interface_type == GI_INFO_TYPE_STRUCT ||
+                            interface_type == GI_INFO_TYPE_BOXED) &&
+                           !g_type_is_a(gtype, G_TYPE_CLOSURE)) {
+                    // Handle Struct/Union first since we don't necessarily need
+                    // a GType for them. We special case Closures later, so skip
+                    // them here.
                     if (g_type_is_a(gtype, G_TYPE_BYTES) &&
                         JS_IsUint8Array(obj)) {
                         arg->v_pointer = gjs_byte_array_get_bytes(obj);
@@ -1835,10 +1825,10 @@ gjs_value_to_g_argument(JSContext      *context,
                 }
 
                 if (arg->v_pointer == NULL) {
-                    gjs_debug(GJS_DEBUG_GFUNCTION,
-                              "conversion of JSObject %p type %s to type %s failed",
-                              &value.toObject(), JS::InformalValueTypeName(value),
-                              g_base_info_get_name ((GIBaseInfo *)interface_info));
+                    gjs_debug(
+                        GJS_DEBUG_GFUNCTION,
+                        "conversion of JSObject value %s to type %s failed",
+                        gjs_debug_value(value).c_str(), interface_info.name());
 
                     /* gjs_throw should have been called already */
                     wrong = true;
@@ -1850,10 +1840,12 @@ gjs_value_to_g_argument(JSContext      *context,
 
                     if (!JS::ToInt64(context, value, &value_int64))
                         wrong = true;
-                    else if (!_gjs_enum_value_is_valid(context, (GIEnumInfo *)interface_info, value_int64))
+                    else if (!_gjs_enum_value_is_valid(context, interface_info,
+                                                       value_int64))
                         wrong = true;
                     else
-                        arg->v_int = _gjs_enum_to_int ((GIEnumInfo *)interface_info, value_int64);
+                        arg->v_int =
+                            _gjs_enum_to_int(interface_info, value_int64);
 
                 } else if (interface_type == GI_INFO_TYPE_FLAGS) {
                     int64_t value_int64;
@@ -1863,7 +1855,8 @@ gjs_value_to_g_argument(JSContext      *context,
                     else if (!_gjs_flags_value_is_valid(context, gtype, value_int64))
                         wrong = true;
                     else
-                        arg->v_int = _gjs_enum_to_int ((GIEnumInfo *)interface_info, value_int64);
+                        arg->v_int =
+                            _gjs_enum_to_int(interface_info, value_int64);
 
                 } else if (gtype == G_TYPE_NONE) {
                     gjs_throw(context, "Unexpected unregistered type unpacking GArgument from Number");
@@ -1881,7 +1874,6 @@ gjs_value_to_g_argument(JSContext      *context,
                 wrong = true;
                 report_type_mismatch = true;
             }
-            g_base_info_unref( (GIBaseInfo*) interface_info);
         }
         break;
 
