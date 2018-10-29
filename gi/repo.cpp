@@ -93,6 +93,10 @@ static bool resolve_namespace_object(JSContext* context,
     JS::UniqueChars ns_name;
     if (!gjs_get_string_id(context, ns_id, &ns_name))
         return false;
+    if (!ns_name) {
+        gjs_throw(context, "Requiring invalid namespace on imports.gi");
+        return false;
+    }
 
     GList* versions = g_irepository_enumerate_versions(nullptr, ns_name.get());
     unsigned nversions = g_list_length(versions);

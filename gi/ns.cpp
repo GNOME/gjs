@@ -79,7 +79,9 @@ ns_resolve(JSContext       *context,
     }
 
     JS::UniqueChars name;
-    if (!gjs_get_string_id(context, id, &name)) {
+    if (!gjs_get_string_id(context, id, &name))
+        return false;
+    if (!name) {
         *resolved = false;
         return true;  /* not resolved, but no error */
     }
