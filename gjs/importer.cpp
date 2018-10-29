@@ -755,7 +755,9 @@ importer_resolve(JSContext        *context,
     JSAutoRequest ar(context);
 
     JS::UniqueChars name;
-    if (!gjs_get_string_id(context, id, &name)) {
+    if (!gjs_get_string_id(context, id, &name))
+        return false;
+    if (!name) {
         *resolved = false;
         return true;
     }

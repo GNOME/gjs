@@ -840,7 +840,9 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
     debug_jsprop("Resolve hook", id, obj);
 
     JS::UniqueChars name;
-    if (!gjs_get_string_id(context, id, &name)) {
+    if (!gjs_get_string_id(context, id, &name))
+        return false;
+    if (!name) {
         *resolved = false;
         return true;  /* not resolved, but no error */
     }
