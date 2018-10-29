@@ -28,6 +28,7 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
+GJS_USE
 static JSObject *gjs_cairo_surface_pattern_get_proto(JSContext *);
 
 GJS_DEFINE_PROTO_WITH_PARENT("SurfacePattern", cairo_surface_pattern,
@@ -77,7 +78,7 @@ JSPropertySpec gjs_cairo_surface_pattern_proto_props[] = {
     JS_PS_END
 };
 
-
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 setExtend_func(JSContext *context,
                unsigned   argc,
@@ -101,6 +102,7 @@ setExtend_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getExtend_func(JSContext *context,
                unsigned   argc,
@@ -126,6 +128,7 @@ getExtend_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 setFilter_func(JSContext *context,
                unsigned   argc,
@@ -149,6 +152,7 @@ setFilter_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getFilter_func(JSContext *context,
                unsigned   argc,

@@ -26,24 +26,31 @@
 
 #include <stdbool.h>
 #include <glib-object.h>
+
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 
+GJS_JSAPI_RETURN_CONVENTION
 bool       gjs_value_to_g_value         (JSContext      *context,
                                          JS::HandleValue value,
                                          GValue         *gvalue);
+GJS_JSAPI_RETURN_CONVENTION
 bool       gjs_value_to_g_value_no_copy (JSContext      *context,
                                          JS::HandleValue value,
                                          GValue         *gvalue);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_from_g_value(JSContext             *context,
                             JS::MutableHandleValue value_p,
                             const GValue          *gvalue);
 
+GJS_USE
 GClosure*  gjs_closure_new_marshaled    (JSContext    *context,
                                          JSObject     *callable,
                                          const char   *description);
+GJS_USE
 GClosure*  gjs_closure_new_for_signal   (JSContext    *context,
                                          JSObject     *callable,
                                          const char   *description,

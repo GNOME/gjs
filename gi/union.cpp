@@ -54,6 +54,7 @@ GJS_DEFINE_PRIV_FROM_JS(Union, gjs_union_class)
  * The *resolved out parameter, on success, should be false to indicate that id
  * was not resolved; and true if id was resolved.
  */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 union_resolve(JSContext       *context,
               JS::HandleObject obj,
@@ -117,6 +118,7 @@ union_resolve(JSContext       *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static void*
 union_new(JSContext       *context,
           JS::HandleObject obj, /* "this" for constructor */
@@ -261,6 +263,7 @@ union_finalize(JSFreeOp *fop,
     g_slice_free(Union, priv);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 to_string_func(JSContext *context,
                unsigned   argc,

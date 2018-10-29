@@ -27,20 +27,26 @@
 #include <stdbool.h>
 #include <glib.h>
 #include <girepository.h>
+
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_union_class(JSContext       *context,
                             JS::HandleObject in_object,
                             GIUnionInfo     *info);
 
+GJS_JSAPI_RETURN_CONVENTION
 void     *gjs_c_union_from_union(JSContext       *context,
                                  JS::HandleObject obj);
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_union_from_c_union       (JSContext    *context,
                                         GIUnionInfo  *info,
                                         void         *gboxed);
+GJS_JSAPI_RETURN_CONVENTION
 bool      gjs_typecheck_union          (JSContext             *context,
                                         JS::HandleObject       obj,
                                         GIStructInfo          *expected_info,

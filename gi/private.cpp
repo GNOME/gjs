@@ -41,6 +41,7 @@
  * to client code.
  */
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_override_property(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JS::UniqueChars name;
@@ -83,6 +84,7 @@ static bool gjs_override_property(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool validate_interfaces_and_properties_args(JSContext* cx,
                                                     JS::HandleObject interfaces,
                                                     JS::HandleObject properties,
@@ -118,6 +120,7 @@ static bool validate_interfaces_and_properties_args(JSContext* cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool save_properties_for_class_init(JSContext* cx,
                                            JS::HandleObject properties,
                                            uint32_t n_properties, GType gtype) {
@@ -144,6 +147,7 @@ static bool save_properties_for_class_init(JSContext* cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool get_interface_gtypes(JSContext* cx, JS::HandleObject interfaces,
                                  uint32_t n_interfaces, GType* iface_types) {
     for (uint32_t ix = 0; ix < n_interfaces; ix++) {
@@ -172,6 +176,7 @@ static bool get_interface_gtypes(JSContext* cx, JS::HandleObject interfaces,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_register_interface(JSContext* cx, unsigned argc,
                                    JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
@@ -235,6 +240,7 @@ static inline void gjs_add_interface(GType instance_type,
                                 &interface_vtable);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
 
@@ -315,6 +321,7 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
@@ -386,6 +393,7 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool hook_up_vfunc_symbol_getter(JSContext* cx, unsigned argc,
                                         JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);

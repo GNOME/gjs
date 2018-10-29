@@ -237,6 +237,7 @@ public:
 };
 
 #ifdef HAVE_READLINE_READLINE_H
+GJS_USE
 static bool
 gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
 {
@@ -250,6 +251,7 @@ gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
     return true;
 }
 #else
+GJS_USE
 static bool
 gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
 {
@@ -267,6 +269,7 @@ gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
  * exception. (This is because the exception should be auto-printed around the
  * invocation of this function.)
  */
+GJS_USE
 static bool
 gjs_console_eval_and_print(JSContext  *cx,
                            const char *bytes,
@@ -297,6 +300,7 @@ gjs_console_eval_and_print(JSContext  *cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_console_interact(JSContext *context,
                      unsigned   argc,

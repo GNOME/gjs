@@ -46,6 +46,7 @@ class GjsModule {
 
     /* Private data accessors */
 
+    GJS_USE
     static inline GjsModule *
     priv(JSObject *module)
     {
@@ -53,6 +54,7 @@ class GjsModule {
     }
 
     /* Creates a JS module object. Use instead of the class's constructor */
+    GJS_USE
     static JSObject *
     create(JSContext  *cx,
            const char *name)
@@ -63,6 +65,7 @@ class GjsModule {
     }
 
     /* Defines the empty module as a property on the importer */
+    GJS_JSAPI_RETURN_CONVENTION
     bool
     define_import(JSContext       *cx,
                   JS::HandleObject module,
@@ -80,6 +83,7 @@ class GjsModule {
     }
 
     /* Carries out the actual execution of the module code */
+    GJS_JSAPI_RETURN_CONVENTION
     bool
     evaluate_import(JSContext       *cx,
                     JS::HandleObject module,
@@ -113,6 +117,7 @@ class GjsModule {
     }
 
     /* Loads JS code from a file and imports it */
+    GJS_JSAPI_RETURN_CONVENTION
     bool
     import_file(JSContext       *cx,
                 JS::HandleObject module,
@@ -140,6 +145,7 @@ class GjsModule {
 
     /* JSClass operations */
 
+    GJS_JSAPI_RETURN_CONVENTION
     bool
     resolve_impl(JSContext       *cx,
                  JS::HandleObject module,
@@ -175,6 +181,7 @@ class GjsModule {
             JS_DefinePropertyById(cx, module, id, desc);
     }
 
+    GJS_JSAPI_RETURN_CONVENTION
     static bool
     resolve(JSContext       *cx,
             JS::HandleObject module,
@@ -207,9 +214,9 @@ class GjsModule {
         &GjsModule::class_ops,
     };
 
-public:
-
+ public:
     /* Carries out the import operation */
+    GJS_JSAPI_RETURN_CONVENTION
     static JSObject *
     import(JSContext       *cx,
            JS::HandleObject importer,

@@ -41,6 +41,7 @@ static struct {
 
 static GHashTable* foreign_structs_table = NULL;
 
+GJS_USE
 static GHashTable*
 get_foreign_structs(void)
 {
@@ -54,6 +55,7 @@ get_foreign_structs(void)
     return foreign_structs_table;
 }
 
+GJS_USE
 static bool
 gjs_foreign_load_foreign_module(JSContext *context,
                                 const gchar *gi_namespace)
@@ -99,6 +101,7 @@ void gjs_struct_foreign_register(const char* gi_namespace,
     g_hash_table_insert(get_foreign_structs(), canonical_name, info);
 }
 
+GJS_USE
 static GjsForeignInfo *
 gjs_struct_foreign_lookup(JSContext  *context,
                           GIBaseInfo *interface_info)

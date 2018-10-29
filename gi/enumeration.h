@@ -28,19 +28,23 @@
 #include <glib.h>
 
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 #include <girepository.h>
 
 G_BEGIN_DECLS
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_enum_values(JSContext       *context,
                             JS::HandleObject in_object,
                             GIEnumInfo      *info);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_enum_static_methods(JSContext       *context,
                                     JS::HandleObject constructor,
                                     GIEnumInfo      *enum_info);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_enumeration(JSContext       *context,
                             JS::HandleObject in_object,
                             GIEnumInfo      *info);

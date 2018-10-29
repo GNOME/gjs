@@ -28,6 +28,7 @@
 #include <glib.h>
 
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 #include <girepository.h>
 
@@ -43,11 +44,13 @@ typedef enum {
     GJS_ARGUMENT_ARRAY_ELEMENT
 } GjsArgumentType;
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_to_arg(JSContext      *context,
                       JS::HandleValue value,
                       GIArgInfo      *arg_info,
                       GIArgument     *arg);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_to_explicit_array(JSContext       *context,
                                  JS::HandleValue  value,
                                  GIArgInfo       *arg_info,
@@ -58,6 +61,7 @@ void gjs_g_argument_init_default (JSContext      *context,
                                   GITypeInfo     *type_info,
                                   GArgument      *arg);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_to_g_argument (JSContext      *context,
                               JS::HandleValue value,
                               GITypeInfo     *type_info,
@@ -67,48 +71,58 @@ bool gjs_value_to_g_argument (JSContext      *context,
                               bool            may_be_null,
                               GArgument      *arg);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_from_g_argument(JSContext             *context,
                                JS::MutableHandleValue value_p,
                                GITypeInfo            *type_info,
                                GIArgument            *arg,
                                bool                   copy_structs);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_from_explicit_array(JSContext             *context,
                                    JS::MutableHandleValue value_p,
                                    GITypeInfo            *type_info,
                                    GIArgument            *arg,
                                    int                    length);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_g_argument_release    (JSContext  *context,
                                 GITransfer  transfer,
                                 GITypeInfo *type_info,
                                 GArgument  *arg);
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_g_argument_release_out_array (JSContext  *context,
                                        GITransfer  transfer,
                                        GITypeInfo *type_info,
                                        guint       length,
                                        GArgument  *arg);
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_g_argument_release_in_array (JSContext  *context,
                                       GITransfer  transfer,
                                       GITypeInfo *type_info,
                                       guint       length,
                                       GArgument  *arg);
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_g_argument_release_in_arg (JSContext  *context,
                                     GITransfer  transfer,
                                     GITypeInfo *type_info,
                                     GArgument  *arg);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool _gjs_flags_value_is_valid (JSContext   *context,
                                 GType        gtype,
                                 gint64       value);
 
+GJS_USE
 gint64 _gjs_enum_from_int (GIEnumInfo *enum_info,
                            int         int_value);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_array_from_strv(JSContext             *context,
                          JS::MutableHandleValue value_p,
                          const char           **strv);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_array_to_strv (JSContext   *context,
                         JS::Value    array_value,
                         unsigned int length,

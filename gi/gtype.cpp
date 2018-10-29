@@ -35,7 +35,8 @@
 static bool weak_pointer_callback = false;
 static std::set<GType> weak_pointer_list;
 
-static JSObject *gjs_gtype_get_proto(JSContext *) G_GNUC_UNUSED;
+GJS_USE static JSObject* gjs_gtype_get_proto(JSContext* cx) G_GNUC_UNUSED;
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_gtype_define_proto(JSContext *, JS::HandleObject,
                                    JS::MutableHandleObject);
 
@@ -45,6 +46,7 @@ GJS_DEFINE_PROTO_ABSTRACT("GIRepositoryGType", gtype,
 /* priv_from_js adds a "*", so this returns "void *" */
 GJS_DEFINE_PRIV_FROM_JS(void, gjs_gtype_class);
 
+GJS_USE
 static GQuark
 gjs_get_gtype_wrapper_quark(void)
 {
@@ -99,6 +101,7 @@ gjs_gtype_finalize(JSFreeOp *fop,
     g_type_set_qdata(gtype, gjs_get_gtype_wrapper_quark(), NULL);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 to_string_func(JSContext *cx,
                unsigned   argc,
@@ -120,6 +123,7 @@ to_string_func(JSContext *cx,
     return gjs_string_from_utf8(cx, strval, rec.rval());
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 get_name_func (JSContext *context,
                unsigned   argc,

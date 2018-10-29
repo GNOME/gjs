@@ -43,6 +43,7 @@
 
 #include <girepository.h>
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_value_from_g_value_internal(JSContext             *context,
                                             JS::MutableHandleValue value_p,
                                             const GValue          *gvalue,
@@ -55,6 +56,7 @@ static bool gjs_value_from_g_value_internal(JSContext             *context,
  * only works for signals on introspected GObjects, not signals on GJS-defined
  * GObjects nor standalone closures. The return value must be unreffed.
  */
+GJS_USE
 static GISignalInfo *
 get_signal_info_if_available(GSignalQuery *signal_query)
 {
@@ -85,6 +87,7 @@ get_signal_info_if_available(GSignalQuery *signal_query)
  * Fill in value_p with a JS array, converted from a C array stored as a pointer
  * in array_value, with its length stored in array_length_value.
  */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_value_from_array_and_length_values(JSContext             *context,
                                        JS::MutableHandleValue value_p,
@@ -318,6 +321,7 @@ gjs_closure_new_marshaled (JSContext    *context,
     return closure;
 }
 
+GJS_USE
 static GType
 gjs_value_guess_g_type(JSContext *context,
                        JS::Value  value)
@@ -358,6 +362,7 @@ throw_expect_type(JSContext      *cx,
     return false;  /* for convenience */
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_value_to_g_value_internal(JSContext      *context,
                               JS::HandleValue value,
@@ -710,6 +715,7 @@ gjs_value_to_g_value_no_copy(JSContext      *context,
     return gjs_value_to_g_value_internal(context, value, gvalue, true);
 }
 
+GJS_USE
 static JS::Value
 convert_int_to_enum (GType  gtype,
                      int    v)
@@ -730,6 +736,7 @@ convert_int_to_enum (GType  gtype,
     return JS::NumberValue(v_double);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_value_from_g_value_internal(JSContext             *context,
                                 JS::MutableHandleValue value_p,

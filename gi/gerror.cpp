@@ -141,6 +141,7 @@ error_finalize(JSFreeOp *fop,
     g_slice_free(Error, priv);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 error_get_domain(JSContext *context,
                  unsigned   argc,
@@ -155,6 +156,7 @@ error_get_domain(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 error_get_message(JSContext *context,
                   unsigned   argc,
@@ -174,6 +176,7 @@ error_get_message(JSContext *context,
     return gjs_string_from_utf8(context, priv->gerror->message, args.rval());
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 error_get_code(JSContext *context,
                unsigned   argc,
@@ -194,6 +197,7 @@ error_get_code(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 error_to_string(JSContext *context,
                 unsigned   argc,
@@ -238,6 +242,7 @@ error_to_string(JSContext *context,
     return gjs_string_from_utf8(context, descr, rec.rval());
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 error_constructor_value_of(JSContext *context,
                            unsigned   argc,
@@ -355,6 +360,7 @@ gjs_define_error_class(JSContext       *context,
     gjs_define_enum_static_methods(context, constructor, priv->info);
 }
 
+GJS_USE
 static GIEnumInfo *
 find_error_domain_info(GQuark domain)
 {
@@ -421,6 +427,7 @@ define_error_properties(JSContext       *cx,
         exc.restore();
 }
 
+GJS_USE
 static JSProtoKey
 proto_key_from_error_enum(int val)
 {
@@ -445,6 +452,7 @@ proto_key_from_error_enum(int val)
     }
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject *
 gjs_error_from_js_gerror(JSContext *cx,
                          GError    *gerror)

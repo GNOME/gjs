@@ -46,6 +46,7 @@ static void bytes_unref_arraybuffer(void* contents, void* user_data) {
 }
 
 /* implement toString() with an optional encoding arg */
+GJS_JSAPI_RETURN_CONVENTION
 static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
                            const char* encoding, JS::MutableHandleValue rval) {
     bool encoding_is_utf8;
@@ -113,6 +114,7 @@ static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
     }
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool to_string_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JS::UniqueChars encoding;
@@ -128,6 +130,7 @@ static bool to_string_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 /* Workaround to keep existing code compatible. This function is tacked onto
  * any Uint8Array instances created in situations where previously a ByteArray
  * would have been created. It logs a compatibility warning. */
+GJS_JSAPI_RETURN_CONVENTION
 static bool instance_to_string_func(JSContext* cx, unsigned argc,
                                     JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, args, this_obj);
@@ -142,6 +145,7 @@ static bool instance_to_string_func(JSContext* cx, unsigned argc,
     return to_string_impl(cx, this_obj, encoding.get(), args.rval());
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 to_gbytes_func(JSContext *context,
                unsigned   argc,
@@ -167,6 +171,7 @@ to_gbytes_func(JSContext *context,
 }
 
 /* fromString() function implementation */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 from_string_func(JSContext *context,
                  unsigned   argc,
@@ -253,6 +258,7 @@ from_string_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 from_gbytes_func(JSContext *context,
                  unsigned   argc,
