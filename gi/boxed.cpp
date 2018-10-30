@@ -25,12 +25,14 @@
 
 #include <string.h>
 
+#include "gjs/jsapi-wrapper.h"
+#include "js/GCHashTable.h"
+
 #include "arg.h"
 #include "boxed.h"
 #include "function.h"
 #include "gi/gerror.h"
 #include "gjs/jsapi-class.h"
-#include "gjs/jsapi-wrapper.h"
 #include "gjs/mem.h"
 #include "gtype.h"
 #include "object.h"
@@ -42,6 +44,10 @@
 #include <girepository.h>
 
 struct Boxed {
+    using FieldMap =
+        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoFieldInfo,
+                      js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
+
     /* prototype info */
     GIBoxedInfo *info;
     GType gtype;
@@ -52,7 +58,7 @@ struct Boxed {
 
     /* instance info */
     void *gboxed; /* NULL if we are the prototype and not an instance */
-    GHashTable *field_map;
+    FieldMap* field_map;
 
     guint can_allocate_directly : 1;
     guint allocated_directly : 1;
@@ -213,20 +219,27 @@ boxed_new_direct(Boxed       *priv)
  * to do n O(n) lookups, so put put the fields into a hash table and store it on proto->priv
  * for fast lookup. 
  */
-static GHashTable *
-get_field_map(GIStructInfo *struct_info)
-{
-    GHashTable *result;
+static Boxed::FieldMap* get_field_map(JSContext* cx,
+                                      GIStructInfo* struct_info) {
     int n_fields;
     int i;
 
-    result = g_hash_table_new_full(g_str_hash, g_str_equal,
-                                   NULL, (GDestroyNotify)g_base_info_unref);
+    auto* result = new Boxed::FieldMap();
     n_fields = g_struct_info_get_n_fields(struct_info);
+    if (!result->init(n_fields)) {
+        JS_ReportOutOfMemory(cx);
+        return nullptr;
+    }
 
     for (i = 0; i < n_fields; i++) {
-        GIFieldInfo *field_info = g_struct_info_get_field(struct_info, i);
-        g_hash_table_insert(result, (char *)g_base_info_get_name((GIBaseInfo *)field_info), field_info);
+        GjsAutoFieldInfo field_info = g_struct_info_get_field(struct_info, i);
+
+        // We get the string as a jsid later, which is interned. We intern the
+        // string here as well, so it will be the same string pointer
+        JS::RootedString name(cx, JS_NewStringCopyZ(cx, field_info.name()));
+        JSString* atom = JS_AtomizeAndPinJSString(cx, name);
+
+        result->putNewInfallible(atom, std::move(field_info));
     }
 
     return result;
@@ -257,21 +270,25 @@ boxed_init_from_props(JSContext   *context,
     }
 
     if (!priv->field_map)
-        priv->field_map = get_field_map(priv->info);
+        priv->field_map = get_field_map(context, priv->info);
+    if (!priv->field_map)
+        return false;
 
     JS::RootedValue value(context);
     for (ix = 0, length = ids.length(); ix < length; ix++) {
-        JS::UniqueChars name;
-        if (!gjs_get_string_id(context, ids[ix], &name))
-            return false;
-
-        auto* field_info = static_cast<GIFieldInfo*>(
-            g_hash_table_lookup(priv->field_map, name.get()));
-        if (field_info == NULL) {
-            gjs_throw(context, "No field %s on boxed type %s",
-                      name.get(), g_base_info_get_name((GIBaseInfo *)priv->info));
+        if (!JSID_IS_STRING(ids[ix])) {
+            gjs_throw(context, "Fields hash contained a non-string field");
             return false;
         }
+
+        auto entry = priv->field_map->lookup(JSID_TO_STRING(ids[ix]));
+        if (!entry) {
+            gjs_throw(context, "No field %s on boxed type %s",
+                      gjs_debug_id(ids[ix]).c_str(),
+                      g_base_info_get_name(priv->info));
+            return false;
+        }
+        GIFieldInfo* field_info = entry->value().get();
 
         /* ids[ix] is reachable because props is rooted, but require_property
          * doesn't know that */
@@ -497,9 +514,8 @@ boxed_finalize(JSFreeOp *fop,
         priv->info = NULL;
     }
 
-    if (priv->field_map) {
-        g_hash_table_destroy(priv->field_map);
-    }
+    if (priv->field_map)
+        delete priv->field_map;
 
     GJS_DEC_COUNTER(boxed);
     priv->~Boxed();
@@ -853,6 +869,8 @@ boxed_trace(JSTracer *tracer,
                         "Boxed::zero_args_constructor_name");
     JS::TraceEdge<jsid>(tracer, &priv->default_constructor_name,
                         "Boxed::default_constructor_name");
+    if (priv->field_map)
+        priv->field_map->trace(tracer);
 }
 
 /* The bizarre thing about this vtable is that it applies to both

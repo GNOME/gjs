@@ -76,12 +76,9 @@ static bool get_version_for_ns(JSContext* context, JS::HandleObject repo_obj,
     return gjs_object_require_property(context, versions, NULL, ns_id, version);
 }
 
-static bool
-resolve_namespace_object(JSContext       *context,
-                         JS::HandleObject repo_obj,
-                         JS::HandleId     ns_id,
-                         const char      *ns_name)
-{
+static bool resolve_namespace_object(JSContext* context,
+                                     JS::HandleObject repo_obj,
+                                     JS::HandleId ns_id) {
     GError *error;
 
     JSAutoRequest ar(context);
@@ -90,25 +87,28 @@ resolve_namespace_object(JSContext       *context,
     if (!get_version_for_ns(context, repo_obj, ns_id, &version))
         return false;
 
-    GList* versions = g_irepository_enumerate_versions(nullptr, ns_name);
+    JS::UniqueChars ns_name;
+    if (!gjs_get_string_id(context, ns_id, &ns_name))
+        return false;
+
+    GList* versions = g_irepository_enumerate_versions(nullptr, ns_name.get());
     unsigned nversions = g_list_length(versions);
     if (nversions > 1 && !version &&
-        !g_irepository_is_registered(nullptr, ns_name, NULL)) {
-        GjsAutoChar warn_text = g_strdup_printf("Requiring %s but it has %u "
-                                                "versions available; use "
-                                                "imports.gi.versions to pick one",
-                                                ns_name, nversions);
+        !g_irepository_is_registered(nullptr, ns_name.get(), nullptr)) {
+        GjsAutoChar warn_text = g_strdup_printf(
+            "Requiring %s but it has %u versions available; use "
+            "imports.gi.versions to pick one",
+            ns_name.get(), nversions);
         JS_ReportWarningUTF8(context, "%s", warn_text.get());
     }
     g_list_free_full(versions, g_free);
 
     error = NULL;
-    g_irepository_require(nullptr, ns_name, version.get(),
+    g_irepository_require(nullptr, ns_name.get(), version.get(),
                           GIRepositoryLoadFlags(0), &error);
     if (error != NULL) {
-        gjs_throw(context,
-                  "Requiring %s, version %s: %s",
-                  ns_name, version ? version.get() : "none", error->message);
+        gjs_throw(context, "Requiring %s, version %s: %s", ns_name.get(),
+                  version ? version.get() : "none", error->message);
 
         g_error_free(error);
         return false;
@@ -118,12 +118,13 @@ resolve_namespace_object(JSContext       *context,
      * with the given namespace name, pointing to that namespace
      * in the repo.
      */
-    JS::RootedObject gi_namespace(context, gjs_create_ns(context, ns_name));
+    JS::RootedObject gi_namespace(context,
+                                  gjs_create_ns(context, ns_name.get()));
 
     /* Define the property early, to avoid reentrancy issues if
        the override module looks for namespaces that import this */
-    if (!JS_DefineProperty(context, repo_obj, ns_name, gi_namespace,
-                           GJS_MODULE_PROP_FLAGS))
+    if (!JS_DefinePropertyById(context, repo_obj, ns_id, gi_namespace,
+                               GJS_MODULE_PROP_FLAGS))
         g_error("no memory to define ns property");
 
     JS::RootedValue override(context);
@@ -138,7 +139,7 @@ resolve_namespace_object(JSContext       *context,
         return false;
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
-              "Defined namespace '%s' %p in GIRepository %p", ns_name,
+              "Defined namespace '%s' %p in GIRepository %p", ns_name.get(),
               gi_namespace.get(), repo_obj.get());
 
     gjs_schedule_gc_if_needed(context);
@@ -180,13 +181,12 @@ repo_resolve(JSContext       *context,
         return true;
     }
 
-    JS::UniqueChars name;
-    if (!gjs_get_string_id(context, id, &name)) {
+    if (!JSID_IS_STRING(id)) {
         *resolved = false;
         return true;
     }
 
-    if (!resolve_namespace_object(context, obj, id, name.get()))
+    if (!resolve_namespace_object(context, obj, id))
         return false;
 
     *resolved = true;
