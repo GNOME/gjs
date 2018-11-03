@@ -1178,8 +1178,9 @@ bool gjs_define_boxed_class(JSContext* context, JS::HandleObject in_object,
     if (!gtype_obj)
         return false;
 
-    return JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
-                             JSPROP_PERMANENT);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    return JS_DefinePropertyById(context, constructor, atoms.gtype(), gtype_obj,
+                                 JSPROP_PERMANENT);
 }
 
 JSObject*

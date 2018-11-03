@@ -31,28 +31,41 @@
     macro(code, "code") \
     macro(column_number, "columnNumber") \
     macro(constructor, "constructor") \
+    macro(debuggee, "debuggee") \
+    macro(file, "__file__") \
     macro(file_name, "fileName") \
     macro(gi, "gi") \
+    macro(gio, "Gio") \
+    macro(glib, "GLib") \
+    macro(gobject, "GObject") \
+    macro(gtype, "$gtype") \
     macro(height, "height") \
     macro(imports, "imports") \
     macro(init, "_init") \
     macro(instance_init, "_instance_init") \
+    macro(interact, "interact") \
     macro(length, "length") \
     macro(line_number, "lineNumber") \
     macro(message, "message") \
     macro(module_init, "__init__") \
+    macro(module_name, "__moduleName__") \
     macro(module_path, "__modulePath__") \
     macro(name, "name") \
     macro(new_, "new") \
     macro(new_internal, "_new_internal") \
     macro(overrides, "overrides") \
+    macro(param_spec, "ParamSpec") \
     macro(parent_module, "__parentModule__") \
     macro(private_ns_marker, "__gjsPrivateNS") \
+    macro(program_invocation_name, "programInvocationName") \
     macro(prototype, "prototype") \
     macro(search_path, "searchPath") \
     macro(stack, "stack") \
+    macro(to_string, "toString") \
+    macro(version, "version") \
     macro(versions, "versions") \
     macro(width, "width") \
+    macro(window, "window") \
     macro(x, "x") \
     macro(y, "y")
 // clang-format on

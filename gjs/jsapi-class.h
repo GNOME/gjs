@@ -24,6 +24,7 @@
 #ifndef GJS_JSAPI_CLASS_H
 #define GJS_JSAPI_CLASS_H
 
+#include "gjs/context-private.h"
 #include "global.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
@@ -216,7 +217,7 @@ GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
         return &v_proto.toObject();                                            \
     }
 
-#define _GJS_DEFINE_DEFINE_PROTO(cname, parent_cname, ctor, gtype)             \
+#define _GJS_DEFINE_DEFINE_PROTO(cname, parent_cname, ctor, type)              \
     GJS_JSAPI_RETURN_CONVENTION                                                \
     bool gjs_##cname##_define_proto(JSContext* cx, JS::HandleObject module,    \
                                     JS::MutableHandleObject proto) {           \
@@ -266,11 +267,13 @@ GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
         }                                                                      \
                                                                                \
         /* Define the GType value as a "$gtype" property on the constructor */ \
-        if (gtype != G_TYPE_NONE) {                                            \
+        if (type != G_TYPE_NONE) {                                             \
+            const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);              \
             JS::RootedObject gtype_obj(                                        \
-                cx, gjs_gtype_create_gtype_wrapper(cx, gtype));                \
-            if (!gtype_obj || !JS_DefineProperty(cx, ctor_obj, "$gtype",       \
-                                                 gtype_obj, JSPROP_PERMANENT)) \
+                cx, gjs_gtype_create_gtype_wrapper(cx, type));                 \
+            if (!gtype_obj ||                                                  \
+                !JS_DefinePropertyById(cx, ctor_obj, atoms.gtype(), gtype_obj, \
+                                       JSPROP_PERMANENT))                      \
                 return false;                                                  \
         }                                                                      \
         gjs_debug(GJS_DEBUG_CONTEXT, "Initialized class %s prototype %p",      \

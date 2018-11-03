@@ -170,8 +170,9 @@ gjs_lookup_param_prototype(JSContext    *context)
     if (G_UNLIKELY (!in_object))
         return NULL;
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedValue value(context);
-    if (!JS_GetProperty(context, in_object, "ParamSpec", &value))
+    if (!JS_GetPropertyById(context, in_object, atoms.param_spec(), &value))
         return NULL;
 
     if (G_UNLIKELY (!value.isObject()))
@@ -180,7 +181,6 @@ gjs_lookup_param_prototype(JSContext    *context)
     JS::RootedObject constructor(context, &value.toObject());
     g_assert(constructor);
 
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     if (!JS_GetPropertyById(context, constructor, atoms.prototype(), &value))
         return NULL;
 
@@ -217,9 +217,10 @@ gjs_define_param_class(JSContext       *context,
 
     JS::RootedObject gtype_obj(context,
         gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM));
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     if (!gtype_obj ||
-        !JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
-                           JSPROP_PERMANENT))
+        !JS_DefinePropertyById(context, constructor, atoms.gtype(), gtype_obj,
+                               JSPROP_PERMANENT))
         return false;
 
     GjsAutoObjectInfo info = g_irepository_find_by_gtype(nullptr, G_TYPE_PARAM);
