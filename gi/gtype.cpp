@@ -35,7 +35,8 @@
 static bool weak_pointer_callback = false;
 static std::set<GType> weak_pointer_list;
 
-static JSObject *gjs_gtype_get_proto(JSContext *) G_GNUC_UNUSED;
+GJS_USE static JSObject* gjs_gtype_get_proto(JSContext* cx) G_GNUC_UNUSED;
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_gtype_define_proto(JSContext *, JS::HandleObject,
                                    JS::MutableHandleObject);
 
@@ -45,6 +46,7 @@ GJS_DEFINE_PROTO_ABSTRACT("GIRepositoryGType", gtype,
 /* priv_from_js adds a "*", so this returns "void *" */
 GJS_DEFINE_PRIV_FROM_JS(void, gjs_gtype_class);
 
+GJS_USE
 static GQuark
 gjs_get_gtype_wrapper_quark(void)
 {
@@ -99,6 +101,7 @@ gjs_gtype_finalize(JSFreeOp *fop,
     g_type_set_qdata(gtype, gjs_get_gtype_wrapper_quark(), NULL);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 to_string_func(JSContext *cx,
                unsigned   argc,
@@ -120,6 +123,7 @@ to_string_func(JSContext *cx,
     return gjs_string_from_utf8(cx, strval, rec.rval());
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 get_name_func (JSContext *context,
                unsigned   argc,
@@ -181,41 +185,43 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
     return *heap_wrapper;
 }
 
-static GType
-_gjs_gtype_get_actual_gtype(JSContext       *context,
-                            JS::HandleObject object,
-                            int              recurse)
-{
-    JSAutoRequest ar(context);
-
-    if (JS_InstanceOf(context, object, &gjs_gtype_class, NULL))
-        return GPOINTER_TO_SIZE(priv_from_js(context, object));
+GJS_JSAPI_RETURN_CONVENTION
+static bool _gjs_gtype_get_actual_gtype(JSContext* context,
+                                        JS::HandleObject object,
+                                        GType* gtype_out, int recurse) {
+    if (JS_InstanceOf(context, object, &gjs_gtype_class, nullptr)) {
+        *gtype_out = GPOINTER_TO_SIZE(priv_from_js(context, object));
+        return true;
+    }
 
     JS::RootedValue gtype_val(context);
 
     /* OK, we don't have a GType wrapper object -- grab the "$gtype"
      * property on that and hope it's a GType wrapper object */
-    if (!JS_GetProperty(context, object, "$gtype", &gtype_val) ||
-        !gtype_val.isObject()) {
-
+    if (!JS_GetProperty(context, object, "$gtype", &gtype_val))
+        return false;
+    if (!gtype_val.isObject()) {
         /* OK, so we're not a class. But maybe we're an instance. Check
            for "constructor" and recurse on that. */
         if (!JS_GetProperty(context, object, "constructor", &gtype_val))
-            return G_TYPE_INVALID;
+            return false;
     }
 
     if (recurse > 0 && gtype_val.isObject()) {
         JS::RootedObject gtype_obj(context, &gtype_val.toObject());
-        return _gjs_gtype_get_actual_gtype(context, gtype_obj, recurse - 1);
+        return _gjs_gtype_get_actual_gtype(context, gtype_obj, gtype_out,
+                                           recurse - 1);
     }
 
-    return G_TYPE_INVALID;
+    *gtype_out = G_TYPE_INVALID;
+    return true;
 }
 
-GType
-gjs_gtype_get_actual_gtype(JSContext       *context,
-                           JS::HandleObject object)
-{
+bool gjs_gtype_get_actual_gtype(JSContext* context, JS::HandleObject object,
+                                GType* gtype_out) {
+    g_assert(gtype_out && "Missing return location");
+    JSAutoRequest ar(context);
+
     /* 2 means: recurse at most three times (including this
        call).
        The levels are calculated considering that, in the
@@ -224,7 +230,7 @@ gjs_gtype_get_actual_gtype(JSContext       *context,
        GType value.
      */
 
-    return _gjs_gtype_get_actual_gtype(context, object, 2);
+    return _gjs_gtype_get_actual_gtype(context, object, gtype_out, 2);
 }
 
 bool

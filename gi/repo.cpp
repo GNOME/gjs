@@ -54,9 +54,11 @@ extern struct JSClass gjs_repo_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Repo, gjs_repo_class)
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool lookup_override_function(JSContext *, JS::HandleId,
                                      JS::MutableHandleValue);
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool get_version_for_ns(JSContext* context, JS::HandleObject repo_obj,
                                JS::HandleId ns_id, JS::UniqueChars* version) {
     JS::RootedObject versions(context);
@@ -76,6 +78,7 @@ static bool get_version_for_ns(JSContext* context, JS::HandleObject repo_obj,
     return gjs_object_require_property(context, versions, NULL, ns_id, version);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool resolve_namespace_object(JSContext* context,
                                      JS::HandleObject repo_obj,
                                      JS::HandleId ns_id) {
@@ -90,6 +93,10 @@ static bool resolve_namespace_object(JSContext* context,
     JS::UniqueChars ns_name;
     if (!gjs_get_string_id(context, ns_id, &ns_name))
         return false;
+    if (!ns_name) {
+        gjs_throw(context, "Requiring invalid namespace on imports.gi");
+        return false;
+    }
 
     GList* versions = g_irepository_enumerate_versions(nullptr, ns_name.get());
     unsigned nversions = g_list_length(versions);
@@ -150,6 +157,7 @@ static bool resolve_namespace_object(JSContext* context,
  * The *resolved out parameter, on success, should be false to indicate that id
  * was not resolved; and true if id was resolved.
  */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 repo_resolve(JSContext       *context,
              JS::HandleObject obj,
@@ -236,6 +244,7 @@ static JSFunctionSpec *gjs_repo_static_funcs = nullptr;
 
 GJS_DEFINE_PROTO_FUNCS(repo)
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject*
 repo_new(JSContext *context)
 {
@@ -294,6 +303,7 @@ gjs_define_repo(JSContext              *cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_define_constant(JSContext       *context,
                     JS::HandleObject in_object,
@@ -454,7 +464,8 @@ gjs_define_info(JSContext       *context,
         /* Fall through */
 
     case GI_INFO_TYPE_BOXED:
-        gjs_define_boxed_class(context, in_object, (GIBoxedInfo*) info);
+        if (!gjs_define_boxed_class(context, in_object, info))
+            return false;
         break;
     case GI_INFO_TYPE_UNION:
         if (!gjs_define_union_class(context, in_object, (GIUnionInfo*) info))
@@ -463,7 +474,8 @@ gjs_define_info(JSContext       *context,
     case GI_INFO_TYPE_ENUM:
         if (g_enum_info_get_error_domain((GIEnumInfo*) info)) {
             /* define as GError subclass */
-            gjs_define_error_class(context, in_object, (GIEnumInfo*) info);
+            if (!gjs_define_error_class(context, in_object, info))
+                return false;
             break;
         }
         /* fall through */
@@ -479,10 +491,10 @@ gjs_define_info(JSContext       *context,
     case GI_INFO_TYPE_INTERFACE:
         {
             JS::RootedObject ignored(context);
-            gjs_define_interface_class(context, in_object,
-                                       (GIInterfaceInfo *) info,
-                                       g_registered_type_info_get_g_type((GIRegisteredTypeInfo *) info),
-                                       &ignored);
+            if (!gjs_define_interface_class(
+                    context, in_object, info,
+                    g_registered_type_info_get_g_type(info), &ignored))
+                return false;
         }
         break;
     case GI_INFO_TYPE_INVALID:
@@ -538,6 +550,7 @@ gjs_lookup_namespace_object(JSContext  *context,
 
 /* Check if an exception's 'name' property is equal to compare_name. Ignores
  * all errors that might arise. Requires request. */
+GJS_USE
 static bool
 error_has_name(JSContext       *cx,
                JS::HandleValue  thrown_value,
@@ -566,6 +579,7 @@ out:
     return retval;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 lookup_override_function(JSContext             *cx,
                          JS::HandleId           ns_name,

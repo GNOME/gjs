@@ -28,22 +28,28 @@
 #include <glib-object.h>
 
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 
+GJS_USE
 GClosure*  gjs_closure_new           (JSContext    *context,
                                       JSObject     *callable,
                                       const char   *description,
                                       bool          root_function);
 
+GJS_USE
 bool gjs_closure_invoke(GClosure                   *closure,
                         JS::HandleObject            this_obj,
                         const JS::HandleValueArray& args,
                         JS::MutableHandleValue      retval,
                         bool                        return_exception);
 
+GJS_USE
 JSContext* gjs_closure_get_context   (GClosure     *closure);
+GJS_USE
 bool       gjs_closure_is_valid      (GClosure     *closure);
+GJS_USE
 JSObject*  gjs_closure_get_callable  (GClosure     *closure);
 
 void       gjs_closure_trace         (GClosure     *closure,

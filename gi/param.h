@@ -27,19 +27,25 @@
 #include <stdbool.h>
 #include <glib.h>
 #include <girepository.h>
+
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_param_class(JSContext       *context,
                             JS::HandleObject in_object);
 
+GJS_JSAPI_RETURN_CONVENTION
 GParamSpec *gjs_g_param_from_param (JSContext       *context,
                                     JS::HandleObject obj);
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject*   gjs_param_from_g_param     (JSContext  *context,
                                         GParamSpec *param);
 
+GJS_USE
 bool        gjs_typecheck_param(JSContext       *context,
                                 JS::HandleObject obj,
                                 GType            expected_type,

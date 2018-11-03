@@ -28,6 +28,7 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
+GJS_USE
 static JSObject *gjs_cairo_solid_pattern_get_proto(JSContext *);
 
 GJS_DEFINE_PROTO_ABSTRACT_WITH_PARENT("SolidPattern", cairo_solid_pattern,
@@ -45,6 +46,7 @@ JSPropertySpec gjs_cairo_solid_pattern_proto_props[] = {
     JS_PS_END
 };
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 createRGB_func(JSContext *context,
                unsigned   argc,
@@ -73,6 +75,7 @@ createRGB_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 createRGBA_func(JSContext *context,
                 unsigned   argc,

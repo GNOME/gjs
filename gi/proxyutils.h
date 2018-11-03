@@ -25,9 +25,11 @@
 #define __GJS_PROXYUTILS_H__
 
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 
+GJS_JSAPI_RETURN_CONVENTION
 bool _gjs_proxy_to_string_func(JSContext             *context,
                                JSObject              *this_obj,
                                const char            *objtype,

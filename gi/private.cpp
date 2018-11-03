@@ -41,6 +41,7 @@
  * to client code.
  */
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_override_property(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JS::UniqueChars name;
@@ -50,7 +51,9 @@ static bool gjs_override_property(JSContext* cx, unsigned argc, JS::Value* vp) {
                              "type", &type))
         return false;
 
-    GType gtype = gjs_gtype_get_actual_gtype(cx, type);
+    GType gtype;
+    if (!gjs_gtype_get_actual_gtype(cx, type, &gtype))
+        return false;
     if (gtype == G_TYPE_INVALID) {
         gjs_throw(cx, "Invalid parameter type was not a GType");
         return false;
@@ -83,6 +86,7 @@ static bool gjs_override_property(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool validate_interfaces_and_properties_args(JSContext* cx,
                                                     JS::HandleObject interfaces,
                                                     JS::HandleObject properties,
@@ -118,6 +122,7 @@ static bool validate_interfaces_and_properties_args(JSContext* cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool save_properties_for_class_init(JSContext* cx,
                                            JS::HandleObject properties,
                                            uint32_t n_properties, GType gtype) {
@@ -144,6 +149,7 @@ static bool save_properties_for_class_init(JSContext* cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool get_interface_gtypes(JSContext* cx, JS::HandleObject interfaces,
                                  uint32_t n_interfaces, GType* iface_types) {
     for (uint32_t ix = 0; ix < n_interfaces; ix++) {
@@ -159,7 +165,9 @@ static bool get_interface_gtypes(JSContext* cx, JS::HandleObject interfaces,
         }
 
         JS::RootedObject iface(cx, &iface_val.toObject());
-        GType iface_type = gjs_gtype_get_actual_gtype(cx, iface);
+        GType iface_type;
+        if (!gjs_gtype_get_actual_gtype(cx, iface, &iface_type))
+            return false;
         if (iface_type == G_TYPE_INVALID) {
             gjs_throw(
                 cx, "Invalid parameter interfaces (element %d was not a GType)",
@@ -172,6 +180,7 @@ static bool get_interface_gtypes(JSContext* cx, JS::HandleObject interfaces,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_register_interface(JSContext* cx, unsigned argc,
                                    JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
@@ -220,8 +229,9 @@ static bool gjs_register_interface(JSContext* cx, unsigned argc,
         return false;  // error will have been thrown already
 
     JS::RootedObject constructor(cx);
-    gjs_define_interface_class(cx, module, nullptr, interface_type,
-                               &constructor);
+    if (!gjs_define_interface_class(cx, module, nullptr, interface_type,
+                                    &constructor))
+        return false;
 
     args.rval().setObject(*constructor);
     return true;
@@ -234,6 +244,7 @@ static inline void gjs_add_interface(GType instance_type,
                                 &interface_vtable);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
 
@@ -302,8 +313,9 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     /* create a custom JSClass */
     JS::RootedObject module(cx, gjs_lookup_private_namespace(cx));
     JS::RootedObject constructor(cx), prototype(cx);
-    gjs_define_object_class(cx, module, nullptr, instance_type, &constructor,
-                            &prototype);
+    if (!gjs_define_object_class(cx, module, nullptr, instance_type,
+                                 &constructor, &prototype))
+        return false;
 
     auto* priv = ObjectPrototype::for_js(cx, prototype);
     priv->set_type_qdata();
@@ -313,6 +325,7 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
@@ -345,7 +358,9 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
             accumulator = NULL;
     }
 
-    GType return_type = gjs_gtype_get_actual_gtype(cx, return_gtype_obj);
+    GType return_type;
+    if (!gjs_gtype_get_actual_gtype(cx, return_gtype_obj, &return_type))
+        return false;
 
     if (accumulator == g_signal_accumulator_true_handled &&
         return_type != G_TYPE_BOOLEAN) {
@@ -369,10 +384,13 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
         }
 
         JS::RootedObject gjs_gtype(cx, &gtype_val.toObject());
-        params[ix] = gjs_gtype_get_actual_gtype(cx, gjs_gtype);
+        if (!gjs_gtype_get_actual_gtype(cx, gjs_gtype, &params[ix]))
+            return false;
     }
 
-    GType gtype = gjs_gtype_get_actual_gtype(cx, gtype_obj);
+    GType gtype;
+    if (!gjs_gtype_get_actual_gtype(cx, gtype_obj, &gtype))
+        return false;
 
     unsigned signal_id = g_signal_newv(
         signal_name.get(), gtype, GSignalFlags(flags),
@@ -384,6 +402,7 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool hook_up_vfunc_symbol_getter(JSContext* cx, unsigned argc,
                                         JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);

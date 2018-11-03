@@ -31,6 +31,7 @@
 #if CAIRO_HAS_SVG_SURFACE
 #include <cairo-svg.h>
 
+GJS_USE
 static JSObject *gjs_cairo_svg_surface_get_proto(JSContext *);
 
 GJS_DEFINE_PROTO_WITH_PARENT("SVGSurface", cairo_svg_surface,

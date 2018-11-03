@@ -60,6 +60,7 @@ JSPropertySpec gjs_cairo_surface_proto_props[] = {
 };
 
 /* Methods */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 writeToPNG_func(JSContext *context,
                 unsigned   argc,
@@ -85,6 +86,7 @@ writeToPNG_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getType_func(JSContext *context,
              unsigned   argc,
@@ -243,6 +245,7 @@ gjs_cairo_surface_get_surface(JSContext *context,
     return priv->surface;
 }
 
+GJS_USE
 static bool
 surface_to_g_argument(JSContext      *context,
                       JS::Value       value,
@@ -266,6 +269,7 @@ surface_to_g_argument(JSContext      *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 surface_from_g_argument(JSContext             *context,
                         JS::MutableHandleValue value_p,

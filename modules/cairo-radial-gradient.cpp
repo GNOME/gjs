@@ -28,6 +28,7 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
+GJS_USE
 static JSObject *gjs_cairo_radial_gradient_get_proto(JSContext *);
 
 GJS_DEFINE_PROTO_WITH_PARENT("RadialGradient", cairo_radial_gradient,

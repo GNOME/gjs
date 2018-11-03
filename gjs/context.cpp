@@ -702,7 +702,11 @@ static gboolean
 drain_job_queue_idle_handler(void *data)
 {
     auto gjs_context = static_cast<GjsContext *>(data);
-    _gjs_context_run_jobs(gjs_context);
+    if (!_gjs_context_run_jobs(gjs_context)) {
+        auto* cx = static_cast<JSContext*>(
+            gjs_context_get_native_context(gjs_context));
+        gjs_log_exception(cx);
+    }
     /* Uncatchable exceptions are swallowed here - no way to get a handle on
      * the main loop to exit it from this idle handler */
     g_assert(((void) "_gjs_context_run_jobs() should have emptied queue",
@@ -720,8 +724,12 @@ _gjs_context_enqueue_job(GjsContext      *gjs_context,
     else
         g_assert(gjs_context->job_queue->length() == 0);
 
-    if (!gjs_context->job_queue->append(job))
+    if (!gjs_context->job_queue->append(job)) {
+        auto* cx = static_cast<JSContext*>(
+            gjs_context_get_native_context(gjs_context));
+        JS_ReportOutOfMemory(cx);
         return false;
+    }
     if (!gjs_context->idle_drain_handler)
         gjs_context->idle_drain_handler =
             g_idle_add_full(G_PRIORITY_DEFAULT, drain_job_queue_idle_handler,

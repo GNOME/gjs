@@ -26,10 +26,12 @@
 
 #include <gio/gio.h>
 
+#include "gjs/macros.h"
 #include "jsapi-wrapper.h"
 
 G_BEGIN_DECLS
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject *
 gjs_module_import(JSContext       *cx,
                   JS::HandleObject importer,

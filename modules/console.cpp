@@ -63,7 +63,7 @@
 enum class PrintErrorKind { Error, Warning, StrictWarning, Note };
 
 template <typename T>
-static bool print_single_error(T* report, PrintErrorKind kind);
+static void print_single_error(T* report, PrintErrorKind kind);
 static void print_error_line(const char* prefix, JSErrorNotes::Note* note) {}
 static void print_error_line(const char* prefix, JSErrorReport* report);
 
@@ -92,7 +92,7 @@ gjs_console_print_error(JSErrorReport *report)
 }
 
 template <typename T>
-static bool print_single_error(T* report, PrintErrorKind kind) {
+static void print_single_error(T* report, PrintErrorKind kind) {
     JS::UniqueChars prefix;
     if (report->filename)
         prefix.reset(g_strdup_printf("%s:", report->filename));
@@ -144,7 +144,6 @@ static bool print_single_error(T* report, PrintErrorKind kind) {
     fputc('\n', stderr);
 
     fflush(stderr);
-    return true;
 }
 
 static void print_error_line(const char* prefix, JSErrorReport* report) {
@@ -238,6 +237,7 @@ public:
 };
 
 #ifdef HAVE_READLINE_READLINE_H
+GJS_USE
 static bool
 gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
 {
@@ -251,6 +251,7 @@ gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
     return true;
 }
 #else
+GJS_USE
 static bool
 gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
 {
@@ -268,6 +269,7 @@ gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
  * exception. (This is because the exception should be auto-printed around the
  * invocation of this function.)
  */
+GJS_USE
 static bool
 gjs_console_eval_and_print(JSContext  *cx,
                            const char *bytes,
@@ -298,6 +300,7 @@ gjs_console_eval_and_print(JSContext  *cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_console_interact(JSContext *context,
                      unsigned   argc,

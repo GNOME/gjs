@@ -28,27 +28,34 @@
 #include <stdbool.h>
 #include <glib.h>
 #include <girepository.h>
+
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_fundamental_class(JSContext              *context,
                                   JS::HandleObject        in_object,
                                   GIObjectInfo           *info,
                                   JS::MutableHandleObject constructor,
                                   JS::MutableHandleObject prototype);
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_object_from_g_fundamental      (JSContext     *context,
                                               GIObjectInfo  *info,
                                               void          *fobj);
 
+GJS_JSAPI_RETURN_CONVENTION
 void     *gjs_g_fundamental_from_object(JSContext       *context,
                                         JS::HandleObject obj);
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject *gjs_fundamental_from_g_value       (JSContext     *context,
                                               const GValue  *value,
                                               GType          gtype);
 
+GJS_USE
 bool      gjs_typecheck_fundamental(JSContext       *context,
                                     JS::HandleObject object,
                                     GType            expected_gtype,

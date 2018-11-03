@@ -28,6 +28,7 @@
 #include <glib.h>
 
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 #include <girepository.h>
 #include <girffi.h>
@@ -54,6 +55,7 @@ struct GjsCallbackTrampoline {
     GjsParamType *param_types;
 };
 
+GJS_JSAPI_RETURN_CONVENTION
 GjsCallbackTrampoline* gjs_callback_trampoline_new(JSContext       *context,
                                                    JS::HandleValue  function,
                                                    GICallableInfo  *callable_info,
@@ -64,17 +66,20 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(JSContext       *context,
 void gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline);
 void gjs_callback_trampoline_ref(GjsCallbackTrampoline *trampoline);
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject *gjs_define_function(JSContext       *context,
                               JS::HandleObject in_object,
                               GType            gtype,
                               GICallableInfo  *info);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_invoke_c_function_uncached(JSContext                  *context,
                                     GIFunctionInfo             *info,
                                     JS::HandleObject            obj,
                                     const JS::HandleValueArray& args,
                                     JS::MutableHandleValue      rval);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_invoke_constructor_from_c(JSContext                  *context,
                                    JS::HandleObject            constructor,
                                    JS::HandleObject            obj,
