@@ -43,6 +43,7 @@
  * to UTF-8, using the appropriate GLib functions, and converting
  * back if necessary.
  */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_locale_to_upper_case (JSContext *context,
                           JS::HandleString src,
@@ -56,6 +57,7 @@ gjs_locale_to_upper_case (JSContext *context,
     return gjs_string_from_utf8(context, upper_case_utf8, retval);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_locale_to_lower_case (JSContext *context,
                           JS::HandleString src,
@@ -69,6 +71,7 @@ gjs_locale_to_lower_case (JSContext *context,
     return gjs_string_from_utf8(context, lower_case_utf8, retval);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_locale_compare (JSContext *context,
                     JS::HandleString src_1,
@@ -88,6 +91,7 @@ gjs_locale_compare (JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_locale_to_unicode (JSContext  *context,
                        const char *src,
@@ -181,6 +185,7 @@ on_garbage_collect(JSContext *cx,
         gjs_object_clear_toggles();
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 on_enqueue_promise_job(JSContext       *cx,
                        JS::HandleObject callback,

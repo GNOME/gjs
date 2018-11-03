@@ -73,6 +73,7 @@ extern struct JSClass gjs_fundamental_instance_class;
 
 GJS_DEFINE_PRIV_FROM_JS(FundamentalInstance, gjs_fundamental_instance_class)
 
+GJS_USE
 static GQuark
 gjs_fundamental_table_quark (void)
 {
@@ -83,6 +84,7 @@ gjs_fundamental_table_quark (void)
     return val;
 }
 
+GJS_USE
 static GHashTable *
 _ensure_mapping_table(GjsContext *context)
 {
@@ -117,6 +119,7 @@ _fundamental_remove_object(void *native_object)
     g_hash_table_remove(table, native_object);
 }
 
+GJS_USE
 static JSObject *
 _fundamental_lookup_object(void *native_object)
 {
@@ -127,18 +130,21 @@ _fundamental_lookup_object(void *native_object)
 
 /**/
 
+GJS_USE
 static inline bool
 fundamental_is_prototype(Fundamental *priv)
 {
     return (priv->prototype == nullptr);
 }
 
+GJS_USE
 static inline bool
 fundamental_is_prototype(FundamentalInstance *priv)
 {
     return (priv->prototype == nullptr);
 }
 
+GJS_USE
 static inline Fundamental *
 proto_priv_from_js(JSContext       *context,
                    JS::HandleObject obj)
@@ -203,6 +209,7 @@ associate_js_instance_to_fundamental(JSContext       *context,
 /**/
 
 /* Find the first constructor */
+GJS_USE
 static GIFunctionInfo *
 find_fundamental_constructor(JSContext          *context,
                              GIObjectInfo       *info,
@@ -236,6 +243,7 @@ find_fundamental_constructor(JSContext          *context,
 
 /**/
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 fundamental_instance_resolve_interface(JSContext       *context,
                                        JS::HandleObject obj,
@@ -279,6 +287,7 @@ fundamental_instance_resolve_interface(JSContext       *context,
  * The *resolved out parameter, on success, should be false to indicate that id
  * was not resolved; and true if id was resolved.
  */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 fundamental_instance_resolve(JSContext       *context,
                              JS::HandleObject obj,
@@ -308,7 +317,9 @@ fundamental_instance_resolve(JSContext       *context,
     }
 
     JS::UniqueChars name;
-    if (!gjs_get_string_id(context, id, &name)) {
+    if (!gjs_get_string_id(context, id, &name))
+        return false;
+    if (!name) {
         *resolved = false;
         return true; /* not resolved, but no error */
     }
@@ -355,6 +366,7 @@ fundamental_instance_resolve(JSContext       *context,
     return status;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 fundamental_invoke_constructor(FundamentalInstance        *priv,
                                JSContext                  *context,
@@ -468,6 +480,7 @@ fundamental_finalize(JSFreeOp  *fop,
     }
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 to_string_func(JSContext *context,
                unsigned   argc,
@@ -544,6 +557,7 @@ static JSFunctionSpec gjs_fundamental_instance_proto_funcs[] = {
     JS_FN("toString", to_string_func, 0, 0),
     JS_FS_END};
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject *
 gjs_lookup_fundamental_prototype(JSContext    *context,
                                  GIObjectInfo *info,
@@ -573,11 +587,16 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
            we need to define it first.
         */
         JS::RootedObject ignored(context);
-        gjs_define_fundamental_class(context, in_object, info, &constructor,
-                                     &ignored);
+        if (!gjs_define_fundamental_class(context, in_object, info,
+                                          &constructor, &ignored))
+            return nullptr;
     } else {
-        if (G_UNLIKELY (!value.isObject()))
+        if (G_UNLIKELY(!value.isObject())) {
+            gjs_throw(context,
+                      "Fundamental constructor was not an object, it was a %s",
+                      JS::InformalValueTypeName(value));
             return NULL;
+        }
 
         constructor = &value.toObject();
     }
@@ -592,6 +611,7 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
     return prototype;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject*
 gjs_lookup_fundamental_prototype_from_gtype(JSContext *context,
                                             GType      gtype)
@@ -701,6 +721,9 @@ gjs_define_fundamental_class(JSContext              *context,
 
     JS::RootedObject gtype_obj(context,
         gjs_gtype_create_gtype_wrapper(context, gtype));
+    if (!gtype_obj)
+        return false;
+
     return JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
                              JSPROP_PERMANENT);
 }

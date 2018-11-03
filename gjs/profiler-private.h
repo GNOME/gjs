@@ -25,6 +25,7 @@
 #define GJS_PROFILER_PRIVATE_H
 
 #include "context.h"
+#include "gjs/macros.h"
 #include "profiler.h"
 
 G_BEGIN_DECLS
@@ -32,6 +33,7 @@ G_BEGIN_DECLS
 GjsProfiler *_gjs_profiler_new(GjsContext *context);
 void _gjs_profiler_free(GjsProfiler *self);
 
+GJS_USE
 bool _gjs_profiler_is_running(GjsProfiler *self);
 
 void _gjs_profiler_setup_signals(GjsProfiler *self, GjsContext *context);

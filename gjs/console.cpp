@@ -61,6 +61,7 @@ static GOptionEntry entries[] = {
 };
 // clang-format on
 
+GJS_USE
 static char **
 strndupv(int           n,
          char * const *strv)
@@ -75,6 +76,7 @@ strndupv(int           n,
     return retval;
 }
 
+GJS_USE
 static char **
 strcatv(char **strv1,
         char **strv2)

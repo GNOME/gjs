@@ -26,6 +26,7 @@
 
 #include <glib.h>
 
+#include "gjs/macros.h"
 #include "jsapi-wrapper.h"
 
 G_BEGIN_DECLS
@@ -55,8 +56,10 @@ typedef enum {
     GJS_GLOBAL_SLOT_LAST,
 } GjsGlobalSlot;
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject *gjs_create_global_object(JSContext *cx);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_global_properties(JSContext       *cx,
                                   JS::HandleObject global,
                                   const char      *bootstrap_script);

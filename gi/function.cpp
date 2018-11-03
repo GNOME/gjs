@@ -501,10 +501,7 @@ gjs_callback_trampoline_new(JSContext       *context,
     GjsCallbackTrampoline *trampoline;
     int n_args, i;
 
-    if (function.isNull()) {
-        return NULL;
-    }
-
+    g_assert(function.isObject());
     g_assert(JS_TypeOfValue(context, function) == JSTYPE_FUNCTION);
 
     trampoline = g_slice_new(GjsCallbackTrampoline);
@@ -594,6 +591,7 @@ gjs_callback_trampoline_new(JSContext       *context,
 /* an helper function to retrieve array lengths from a GArgument
    (letting the compiler generate good instructions in case of
    big endian machines) */
+GJS_USE
 static unsigned long
 get_length_from_arg (GArgument *arg, GITypeTag tag)
 {
@@ -616,6 +614,7 @@ get_length_from_arg (GArgument *arg, GITypeTag tag)
     g_assert_not_reached();
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_fill_method_instance(JSContext       *context,
                          JS::HandleObject obj,
@@ -645,7 +644,8 @@ gjs_fill_method_instance(JSContext       *context,
             GType actual_gtype;
             gpointer klass;
 
-            actual_gtype = gjs_gtype_get_actual_gtype(context, obj);
+            if (!gjs_gtype_get_actual_gtype(context, obj, &actual_gtype))
+                return false;
 
             if (actual_gtype == G_TYPE_NONE) {
                 gjs_throw(context, "Invalid GType class passed for instance parameter");
@@ -738,6 +738,7 @@ gjs_fill_method_instance(JSContext       *context,
 }
 
 /* Intended for error messages. Return value must be freed */
+GJS_USE
 static char *
 format_function_name(Function *function,
                      bool      is_method)
@@ -772,6 +773,7 @@ complete_async_calls(void)
  * you can decide to keep the return values in #GArgument format by
  * providing a @r_value argument.
  */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_invoke_c_function(JSContext                             *context,
                       Function                              *function,
@@ -1303,16 +1305,14 @@ release:
             transfer = g_arg_info_get_ownership_transfer(&arg_info);
             if (!arg_failed) {
                 if (array_length_pos >= 0) {
-                    gjs_g_argument_release_out_array(context,
-                                                     transfer,
-                                                     &arg_type_info,
-                                                     array_length.toInt32(),
-                                                     arg);
+                    if (!gjs_g_argument_release_out_array(
+                            context, transfer, &arg_type_info,
+                            array_length.toInt32(), arg))
+                        postinvoke_release_failed = true;
                 } else {
-                    gjs_g_argument_release(context,
-                                           transfer,
-                                           &arg_type_info,
-                                           arg);
+                    if (!gjs_g_argument_release(context, transfer,
+                                                &arg_type_info, arg))
+                        postinvoke_release_failed = true;
                 }
             }
 
@@ -1390,6 +1390,7 @@ release:
     }
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 function_call(JSContext *context,
               unsigned   js_argc,
@@ -1453,6 +1454,7 @@ function_finalize(JSFreeOp *fop,
     g_slice_free(Function, priv);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 get_num_arguments (JSContext *context,
                    unsigned   argc,
@@ -1484,6 +1486,7 @@ get_num_arguments (JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 function_to_string (JSContext *context,
                     guint      argc,
@@ -1583,6 +1586,7 @@ static JSFunctionSpec gjs_function_proto_funcs[] = {
 
 static JSFunctionSpec *gjs_function_static_funcs = nullptr;
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 init_cached_function_data (JSContext      *context,
                            Function       *function,
@@ -1729,6 +1733,7 @@ init_cached_function_data (JSContext      *context,
     return true;
 }
 
+GJS_USE
 static inline JSObject *
 gjs_builtin_function_get_proto(JSContext *cx)
 {
@@ -1738,6 +1743,7 @@ gjs_builtin_function_get_proto(JSContext *cx)
 
 GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(function, builtin_function)
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject*
 function_new(JSContext      *context,
              GType           gtype,
@@ -1773,6 +1779,7 @@ function_new(JSContext      *context,
     return function;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject*
 gjs_define_function(JSContext       *context,
                     JS::HandleObject in_object,

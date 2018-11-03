@@ -36,6 +36,7 @@
 
 #include "enumeration.h"
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_define_enum_value(JSContext       *context,
                       JS::HandleObject in_object,
@@ -106,9 +107,11 @@ gjs_define_enum_values(JSContext       *context,
     gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
     JS::RootedObject gtype_obj(context,
         gjs_gtype_create_gtype_wrapper(context, gtype));
-    JS_DefineProperty(context, in_object, "$gtype", gtype_obj, JSPROP_PERMANENT);
+    if (!gtype_obj)
+        return false;
 
-    return true;
+    return JS_DefineProperty(context, in_object, "$gtype", gtype_obj,
+                             JSPROP_PERMANENT);
 }
 
 bool
@@ -121,10 +124,9 @@ gjs_define_enum_static_methods(JSContext       *context,
     n_methods = g_enum_info_get_n_methods(enum_info);
 
     for (i = 0; i < n_methods; i++) {
-        GIFunctionInfo *meth_info;
         GIFunctionInfoFlags flags;
 
-        meth_info = g_enum_info_get_method(enum_info, i);
+        GjsAutoFunctionInfo meth_info = g_enum_info_get_method(enum_info, i);
         flags = g_function_info_get_flags(meth_info);
 
         g_warn_if_fail(!(flags & GI_FUNCTION_IS_METHOD));
@@ -136,11 +138,10 @@ gjs_define_enum_static_methods(JSContext       *context,
          * like in the near future.
          */
         if (!(flags & GI_FUNCTION_IS_METHOD)) {
-            gjs_define_function(context, constructor, G_TYPE_NONE,
-                                (GICallableInfo *)meth_info);
+            if (!gjs_define_function(context, constructor, G_TYPE_NONE,
+                                     meth_info))
+                return false;
         }
-
-        g_base_info_unref((GIBaseInfo*) meth_info);
     }
 
     return true;
@@ -171,9 +172,9 @@ gjs_define_enumeration(JSContext       *context,
                 enum_name);
     }
 
-    if (!gjs_define_enum_values(context, enum_obj, info))
+    if (!gjs_define_enum_values(context, enum_obj, info) ||
+        !gjs_define_enum_static_methods(context, enum_obj, info))
         return false;
-    gjs_define_enum_static_methods (context, enum_obj, info);
 
     gjs_debug(GJS_DEBUG_GENUM,
               "Defining %s.%s as %p",

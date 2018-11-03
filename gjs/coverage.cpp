@@ -68,6 +68,7 @@ enum {
 
 static GParamSpec *properties[PROP_N] = { NULL, };
 
+GJS_USE
 static char *
 get_file_identifier(GFile *source_file) {
     char *path = g_file_get_path(source_file);
@@ -76,6 +77,7 @@ get_file_identifier(GFile *source_file) {
     return path;
 }
 
+GJS_USE
 static bool
 write_source_file_header(GOutputStream *stream,
                          GFile         *source_file,
@@ -85,6 +87,7 @@ write_source_file_header(GOutputStream *stream,
     return g_output_stream_printf(stream, NULL, NULL, error, "SF:%s\n", path.get());
 }
 
+GJS_USE
 static bool
 copy_source_file_to_coverage_output(GFile   *source_file,
                                     GFile   *destination_file,
@@ -107,6 +110,7 @@ copy_source_file_to_coverage_output(GFile   *source_file,
  * the string with the URI scheme stripped or NULL
  * if the path was not a valid URI
  */
+GJS_USE
 static char *
 strip_uri_scheme(const char *potential_uri)
 {
@@ -142,6 +146,7 @@ strip_uri_scheme(const char *potential_uri)
  * automatically return the full URI path with
  * the URI scheme and leading slash stripped out.
  */
+GJS_USE
 static char *
 find_diverging_child_components(GFile *child,
                                 GFile *parent)
@@ -174,6 +179,7 @@ find_diverging_child_components(GFile *child,
     return stripped_uri;
 }
 
+GJS_USE
 static bool
 filename_has_coverage_prefixes(GjsCoverage *self, const char *filename)
 {
@@ -194,6 +200,7 @@ write_line(GOutputStream *out,
     return g_output_stream_printf(out, nullptr, nullptr, error, "%s\n", line);
 }
 
+GJS_USE
 static GjsAutoUnref<GFile>
 write_statistics_internal(GjsCoverage *coverage,
                           JSContext   *cx,
@@ -323,6 +330,7 @@ coverage_tracer(JSTracer *trc, void *data)
     JS::TraceEdge<JSObject *>(trc, &priv->compartment, "Coverage compartment");
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 bootstrap_coverage(GjsCoverage *coverage)
 {

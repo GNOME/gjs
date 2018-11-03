@@ -66,8 +66,10 @@ struct Boxed {
                                     the reference to the C gboxed */
 };
 
+GJS_USE
 static bool struct_is_simple(GIStructInfo *info);
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool boxed_set_field_from_value(JSContext      *context,
                                        Boxed          *priv,
                                        GIFieldInfo    *field_info,
@@ -77,6 +79,7 @@ extern struct JSClass gjs_boxed_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Boxed, gjs_boxed_class)
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_define_static_methods(JSContext       *context,
                           JS::HandleObject constructor,
@@ -89,10 +92,9 @@ gjs_define_static_methods(JSContext       *context,
     n_methods = g_struct_info_get_n_methods(boxed_info);
 
     for (i = 0; i < n_methods; i++) {
-        GIFunctionInfo *meth_info;
         GIFunctionInfoFlags flags;
 
-        meth_info = g_struct_info_get_method (boxed_info, i);
+        GjsAutoFunctionInfo meth_info = g_struct_info_get_method(boxed_info, i);
         flags = g_function_info_get_flags (meth_info);
 
         /* Anything that isn't a method we put on the prototype of the
@@ -103,17 +105,16 @@ gjs_define_static_methods(JSContext       *context,
          * like in the near future.
          */
         if (!(flags & GI_FUNCTION_IS_METHOD)) {
-            gjs_define_function(context, constructor, gtype,
-                                (GICallableInfo *)meth_info);
+            if (!gjs_define_function(context, constructor, gtype, meth_info))
+                return false;
         }
-
-        g_base_info_unref((GIBaseInfo*) meth_info);
     }
     return true;
 }
 
 /* The *resolved out parameter, on success, should be false to indicate that id
  * was not resolved; and true if id was resolved. */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 boxed_resolve(JSContext       *context,
               JS::HandleObject obj,
@@ -141,7 +142,9 @@ boxed_resolve(JSContext       *context,
     }
 
     JS::UniqueChars name;
-    if (!gjs_get_string_id(context, id, &name)) {
+    if (!gjs_get_string_id(context, id, &name))
+        return false;
+    if (!name) {
         *resolved = false;
         return true;
     }
@@ -179,6 +182,7 @@ boxed_resolve(JSContext       *context,
 /* Check to see if JS::Value passed in is another Boxed object of the same,
  * and if so, retrieves the Boxed private structure for it.
  */
+GJS_USE
 static bool
 boxed_get_copy_source(JSContext *context,
                       Boxed     *priv,
@@ -219,6 +223,7 @@ boxed_new_direct(Boxed       *priv)
  * to do n O(n) lookups, so put put the fields into a hash table and store it on proto->priv
  * for fast lookup. 
  */
+GJS_JSAPI_RETURN_CONVENTION
 static Boxed::FieldMap* get_field_map(JSContext* cx,
                                       GIStructInfo* struct_info) {
     int n_fields;
@@ -249,6 +254,7 @@ static Boxed::FieldMap* get_field_map(JSContext* cx,
  * properties to set as fieds of the object. We don't require that every field
  * of the object be set.
  */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 boxed_init_from_props(JSContext   *context,
                       JSObject    *obj,
@@ -304,6 +310,7 @@ boxed_init_from_props(JSContext   *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 boxed_invoke_constructor(JSContext             *context,
                          JS::HandleObject       obj,
@@ -326,6 +333,7 @@ boxed_invoke_constructor(JSContext             *context,
                                    args, args.rval());
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 boxed_new(JSContext             *context,
           JS::HandleObject       obj, /* "this" for constructor */
@@ -522,6 +530,7 @@ boxed_finalize(JSFreeOp *fop,
     g_slice_free(Boxed, priv);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static GIFieldInfo *
 get_field_info(JSContext *cx,
                Boxed     *priv,
@@ -537,6 +546,7 @@ get_field_info(JSContext *cx,
     return field_info;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 get_nested_interface_object(JSContext             *context,
                             JSObject              *parent_obj,
@@ -562,6 +572,8 @@ get_nested_interface_object(JSContext             *context,
     JS::RootedObject proto(context,
                            gjs_lookup_generic_prototype(context,
                                                         (GIBoxedInfo*) interface_info));
+    if (!proto)
+        return false;
     proto_priv = priv_from_js(context, proto);
 
     offset = g_field_info_get_offset (field_info);
@@ -593,6 +605,7 @@ get_nested_interface_object(JSContext             *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 boxed_field_getter(JSContext *context,
                    unsigned   argc,
@@ -659,6 +672,7 @@ out:
     return success;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 set_nested_interface_object (JSContext      *context,
                              Boxed          *parent_priv,
@@ -682,6 +696,8 @@ set_nested_interface_object (JSContext      *context,
     JS::RootedObject proto(context,
                            gjs_lookup_generic_prototype(context,
                                                         (GIBoxedInfo*) interface_info));
+    if (!proto)
+        return false;
     proto_priv = priv_from_js(context, proto);
 
     /* If we can't directly copy from the source object we need
@@ -708,6 +724,7 @@ set_nested_interface_object (JSContext      *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 boxed_set_field_from_value(JSContext      *context,
                            Boxed          *priv,
@@ -762,16 +779,20 @@ boxed_set_field_from_value(JSContext      *context,
     success = true;
 
 out:
-    if (need_release)
-        gjs_g_argument_release (context, GI_TRANSFER_NOTHING,
-                                type_info,
-                                &arg);
+    if (need_release) {
+        JS::AutoSaveExceptionState saved_exc(context);
+        if (!gjs_g_argument_release(context, GI_TRANSFER_NOTHING, type_info,
+                                    &arg))
+            gjs_log_exception(context);
+        saved_exc.restore();
+    }
 
     g_base_info_unref ((GIBaseInfo *)type_info);
 
     return success;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 boxed_field_setter(JSContext *cx,
                    unsigned   argc,
@@ -806,6 +827,7 @@ out:
     return success;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 define_boxed_class_fields(JSContext       *cx,
                           Boxed           *priv,
@@ -846,6 +868,7 @@ define_boxed_class_fields(JSContext       *cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 to_string_func(JSContext *context,
                unsigned   argc,
@@ -910,6 +933,7 @@ JSFunctionSpec gjs_boxed_proto_funcs[] = {
     JS_FN("toString", to_string_func, 0, 0),
     JS_FS_END};
 
+GJS_USE
 static bool
 type_can_be_allocated_directly(GITypeInfo *type_info)
 {
@@ -1002,6 +1026,7 @@ type_can_be_allocated_directly(GITypeInfo *type_info)
  * type that we know how to assign to. If so, then we can allocate and free
  * instances without needing a constructor.
  */
+GJS_USE
 static bool
 struct_is_simple(GIStructInfo *info)
 {
@@ -1094,11 +1119,8 @@ boxed_fill_prototype_info(JSContext *context,
     }
 }
 
-void
-gjs_define_boxed_class(JSContext       *context,
-                       JS::HandleObject in_object,
-                       GIBoxedInfo     *info)
-{
+bool gjs_define_boxed_class(JSContext* context, JS::HandleObject in_object,
+                            GIBoxedInfo* info) {
     const char *constructor_name;
     JS::RootedObject prototype(context), constructor(context);
     Boxed *priv;
@@ -1126,8 +1148,7 @@ gjs_define_boxed_class(JSContext       *context,
                                 NULL,
                                 &prototype,
                                 &constructor)) {
-        gjs_log_exception(context);
-        g_error("Can't init class %s", constructor_name);
+        return false;
     }
 
     GJS_INC_COUNTER(boxed);
@@ -1146,13 +1167,18 @@ gjs_define_boxed_class(JSContext       *context,
 
     priv->can_allocate_directly = struct_is_simple (priv->info);
 
-    define_boxed_class_fields (context, priv, prototype);
-    gjs_define_static_methods (context, constructor, priv->gtype, priv->info);
+    if (!define_boxed_class_fields(context, priv, prototype) ||
+        !gjs_define_static_methods(context, constructor, priv->gtype,
+                                   priv->info))
+        return false;
 
     JS::RootedObject gtype_obj(context,
         gjs_gtype_create_gtype_wrapper(context, priv->gtype));
-    JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
-                      JSPROP_PERMANENT);
+    if (!gtype_obj)
+        return false;
+
+    return JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
+                             JSPROP_PERMANENT);
 }
 
 JSObject*
@@ -1173,6 +1199,8 @@ gjs_boxed_from_c_struct(JSContext             *context,
                       g_base_info_get_name((GIBaseInfo *)info), gboxed);
 
     JS::RootedObject proto(context, gjs_lookup_generic_prototype(context, info));
+    if (!proto)
+        return nullptr;
     proto_priv = priv_from_js(context, proto);
 
     obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);

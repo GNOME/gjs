@@ -82,6 +82,7 @@ G_DEFINE_QUARK(gjs::custom-type, ObjectBase::custom_type)
 G_DEFINE_QUARK(gjs::custom-property, ObjectBase::custom_property)
 // clang-format on
 
+GJS_USE
 static GQuark
 gjs_object_priv_quark (void)
 {
@@ -402,6 +403,7 @@ ObjectInstance::prop_getter_impl(JSContext             *cx,
     return true;
 }
 
+GJS_USE
 static GjsAutoFieldInfo lookup_field_info(GIObjectInfo* info,
                                           const char* name) {
     int n_fields = g_object_info_get_n_fields(info);
@@ -634,6 +636,7 @@ bool ObjectPrototype::is_vfunc_unchanged(GIVFuncInfo* info) {
     return addr1 == addr2;
 }
 
+GJS_USE
 static GjsAutoVFuncInfo find_vfunc_on_parents(GIObjectInfo* info,
                                               const char* name,
                                               bool* out_defined_by_parent) {
@@ -674,6 +677,7 @@ static void canonicalize_key(const GjsAutoChar& key) {
 }
 
 /* @name must already be canonicalized */
+GJS_USE
 static bool is_ginterface_property_name(GIInterfaceInfo* info,
                                         const char* name) {
     int n_props = g_interface_info_get_n_properties(info);
@@ -772,6 +776,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
     return true;
 }
 
+GJS_USE
 static bool
 is_gobject_property_name(GIObjectInfo *info,
                          const char   *name)
@@ -835,7 +840,9 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
     debug_jsprop("Resolve hook", id, obj);
 
     JS::UniqueChars name;
-    if (!gjs_get_string_id(context, id, &name)) {
+    if (!gjs_get_string_id(context, id, &name))
+        return false;
+    if (!name) {
         *resolved = false;
         return true;  /* not resolved, but no error */
     }
@@ -875,7 +882,9 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
                 return true;
             }
 
-            gjs_define_function(context, obj, m_gtype, vfunc);
+            if (!gjs_define_function(context, obj, m_gtype, vfunc))
+                return false;
+
             *resolved = true;
             return true;
         }
@@ -1402,10 +1411,13 @@ ObjectInstance::ObjectInstance(JSContext* cx, JS::HandleObject object)
     debug_lifecycle("Instance constructor");
 }
 
-ObjectPrototype* ObjectPrototype::new_for_js_object(GIObjectInfo* info,
+ObjectPrototype* ObjectPrototype::new_for_js_object(JSContext* cx,
+                                                    GIObjectInfo* info,
                                                     GType gtype) {
     auto* priv = g_slice_new0(ObjectPrototype);
     new (priv) ObjectPrototype(info, gtype);
+    if (!priv->init(cx))
+        return nullptr;
     return priv;
 }
 
@@ -1416,14 +1428,16 @@ ObjectPrototype::ObjectPrototype(GIObjectInfo* info, GType gtype)
 
     g_type_class_ref(gtype);
 
-    if (!m_property_cache.init())
-        g_error("Out of memory for property cache of %s", type_name());
-
-    if (!m_field_cache.init())
-        g_error("Out of memory for field cache of %s", type_name());
-
     GJS_INC_COUNTER(object_prototype);
     debug_lifecycle("Prototype constructor");
+}
+
+bool ObjectPrototype::init(JSContext* cx) {
+    if (!m_property_cache.init() || !m_field_cache.init()) {
+        JS_ReportOutOfMemory(cx);
+        return false;
+    }
+    return true;
 }
 
 static void
@@ -1791,6 +1805,7 @@ JSObject* gjs_lookup_object_constructor_from_info(JSContext* context,
     return constructor;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject *
 gjs_lookup_object_prototype_from_info(JSContext    *context,
                                       GIObjectInfo *info,
@@ -1810,6 +1825,7 @@ gjs_lookup_object_prototype_from_info(JSContext    *context,
     return prototype;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject *
 gjs_lookup_object_prototype(JSContext *context,
                             GType      gtype)
@@ -2228,7 +2244,10 @@ gjs_define_object_class(JSContext              *context,
                                GJS_MODULE_PROP_FLAGS))
         return false;
 
-    JS_SetPrivate(prototype, ObjectPrototype::new_for_js_object(info, gtype));
+    auto* priv = ObjectPrototype::new_for_js_object(context, info, gtype);
+    if (!priv)
+        return false;
+    JS_SetPrivate(prototype, priv);
 
     gjs_debug(GJS_DEBUG_GOBJECT, "Defined class for %s (%s), prototype %p, "
               "JSClass %p, in object %p", constructor_name, g_type_name(gtype),
@@ -2240,6 +2259,9 @@ gjs_define_object_class(JSContext              *context,
 
     JS::RootedObject gtype_obj(context,
         gjs_gtype_create_gtype_wrapper(context, gtype));
+    if (!gtype_obj)
+        return false;
+
     return JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
                              JSPROP_PERMANENT);
 }
@@ -2365,6 +2387,7 @@ ObjectInstance::typecheck_object(JSContext *context,
     return result;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool find_vfunc_info(JSContext* context, GType implementor_gtype,
                             GIBaseInfo* vfunc_info, const char* vfunc_name,
                             void** implementor_vtable_ret,
@@ -2530,15 +2553,11 @@ gjs_lookup_object_constructor(JSContext             *context,
     return true;
 }
 
-bool
-gjs_object_associate_closure(JSContext       *cx,
-                             JS::HandleObject object,
-                             GClosure        *closure)
-{
+void gjs_object_associate_closure(JSContext* cx, JS::HandleObject object,
+                                  GClosure* closure) {
     auto* priv = ObjectBase::for_js(cx, object);
     if (!priv)
-        return false;
+        return;
 
     priv->associate_closure(cx, closure);
-    return true;
 }

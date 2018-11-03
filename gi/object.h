@@ -35,6 +35,7 @@
 #include "gjs/jsapi-util-root.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/jsapi-wrapper.h"
+#include "gjs/macros.h"
 
 #include "js/GCHashTable.h"
 
@@ -46,12 +47,12 @@ class GjsListLink {
     ObjectInstance* m_next;
 
  public:
-    ObjectInstance* prev(void) const { return m_prev; }
-    ObjectInstance* next(void) const { return m_next; }
+    GJS_USE ObjectInstance* prev(void) const { return m_prev; }
+    GJS_USE ObjectInstance* next(void) const { return m_next; }
 
     void prepend(ObjectInstance* this_instance, ObjectInstance* head);
     void unlink(void);
-    size_t size(void) const;
+    GJS_USE size_t size(void) const;
 };
 
 struct AutoGValueVector : public std::vector<GValue> {
@@ -96,31 +97,38 @@ class ObjectBase {
     /* Methods to get an existing ObjectBase */
 
  public:
+    GJS_USE
     static ObjectBase* for_js(JSContext* cx, JS::HandleObject obj);
+    GJS_USE
     static ObjectBase* for_js_nocheck(JSObject* obj);
 
     /* Methods for getting a pointer to the correct subclass. We don't use
      * standard C++ subclasses because that would occupy another 8 bytes in
      * ObjectInstance for a vtable. */
 
+    GJS_USE
     bool is_prototype(void) const { return !m_proto; }
 
     /* The to_instance() and to_prototype() methods assert that this ObjectBase
      * is of the correct subclass. If you don't want an assert, then either
      * check beforehand or use get_prototype(). */
 
+    GJS_USE
     ObjectPrototype* to_prototype(void) {
         g_assert(is_prototype());
         return reinterpret_cast<ObjectPrototype*>(this);
     }
+    GJS_USE
     const ObjectPrototype* to_prototype(void) const {
         g_assert(is_prototype());
         return reinterpret_cast<const ObjectPrototype*>(this);
     }
+    GJS_USE
     ObjectInstance* to_instance(void) {
         g_assert(!is_prototype());
         return reinterpret_cast<ObjectInstance*>(this);
     }
+    GJS_USE
     const ObjectInstance* to_instance(void) const {
         g_assert(!is_prototype());
         return reinterpret_cast<const ObjectInstance*>(this);
@@ -130,9 +138,11 @@ class ObjectBase {
      * returns you the same object cast to the correct type; if you call it on
      * an ObjectInstance, it returns you the ObjectPrototype belonging to the
      * corresponding JS prototype. */
+    GJS_USE
     ObjectPrototype* get_prototype(void) {
         return is_prototype() ? to_prototype() : m_proto;
     }
+    GJS_USE
     const ObjectPrototype* get_prototype(void) const {
         return is_prototype() ? to_prototype() : m_proto;
     }
@@ -141,26 +151,31 @@ class ObjectBase {
 
     /* Both ObjectInstance and ObjectPrototype have GIObjectInfo and GType,
      * but for space reasons we store it only on ObjectPrototype. */
-    GIObjectInfo* info(void) const;
-    GType gtype(void) const;
+    GJS_USE GIObjectInfo* info(void) const;
+    GJS_USE GType gtype(void) const;
 
+    GJS_USE
     const char* ns(void) const {
         return info() ? g_base_info_get_namespace(info()) : "";
     }
+    GJS_USE
     const char* name(void) const {
         return info() ? g_base_info_get_name(info()) : type_name();
     }
+    GJS_USE
     const char* type_name(void) const { return g_type_name(gtype()); }
+    GJS_USE
     bool is_custom_js_class(void) const { return !info(); }
 
  private:
     /* These are used in debug methods only. */
-    const void* gobj_addr(void) const;
-    const void* jsobj_addr(void) const;
+    GJS_USE const void* gobj_addr(void) const;
+    GJS_USE const void* jsobj_addr(void) const;
 
     /* Helper methods */
 
  public:
+    GJS_JSAPI_RETURN_CONVENTION
     bool check_is_instance(JSContext* cx, const char* for_what) const;
 
  protected:
@@ -221,24 +236,34 @@ class ObjectBase {
     /* JS property getters/setters */
 
  public:
+    GJS_JSAPI_RETURN_CONVENTION
     static bool prop_getter(JSContext* cx, unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
     static bool field_getter(JSContext* cx, unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
     static bool prop_setter(JSContext* cx, unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
     static bool field_setter(JSContext* cx, unsigned argc, JS::Value* vp);
 
     /* JS methods */
 
+    GJS_JSAPI_RETURN_CONVENTION
     static bool connect(JSContext* cx, unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
     static bool connect_after(JSContext* cx, unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
     static bool emit(JSContext* cx, unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
     static bool to_string(JSContext* cx, unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
     static bool init(JSContext* cx, unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
     static bool hook_up_vfunc(JSContext* cx, unsigned argc, JS::Value* vp);
 
     /* Quarks */
 
-    static GQuark custom_type_quark(void);
-    static GQuark custom_property_quark(void);
+    GJS_USE static GQuark custom_type_quark(void);
+    GJS_USE static GQuark custom_property_quark(void);
 };
 
 class ObjectPrototype : public ObjectBase {
@@ -260,34 +285,47 @@ class ObjectPrototype : public ObjectBase {
     FieldCache m_field_cache;
 
     ObjectPrototype(GIObjectInfo* info, GType gtype);
+    GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx);
     ~ObjectPrototype();
 
  public:
     /* Public constructor for instances (uses GSlice allocator) */
-    static ObjectPrototype* new_for_js_object(GIObjectInfo* info, GType gtype);
+    GJS_USE
+    static ObjectPrototype* new_for_js_object(JSContext* cx, GIObjectInfo* info,
+                                              GType gtype);
 
+    GJS_USE
     static ObjectPrototype* for_js(JSContext* cx, JS::HandleObject obj) {
         return ObjectBase::for_js(cx, obj)->to_prototype();
     }
+    GJS_USE
     static ObjectPrototype* for_gtype(GType gtype);
+    GJS_USE
     static ObjectPrototype* for_js_prototype(JSContext* cx,
                                              JS::HandleObject obj);
 
     /* Helper methods */
  private:
+    GJS_USE
     bool is_vfunc_unchanged(GIVFuncInfo* info);
+    GJS_JSAPI_RETURN_CONVENTION
     bool lazy_define_gobject_property(JSContext* cx, JS::HandleObject obj,
                                       JS::HandleId id, bool* resolved,
                                       const char* name);
+
     enum ResolveWhat { ConsiderOnlyMethods, ConsiderMethodsAndProperties };
+    GJS_JSAPI_RETURN_CONVENTION
     bool resolve_no_info(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                          bool* resolved, const char* name,
                          ResolveWhat resolve_props);
 
  public:
     void set_type_qdata(void);
+    GJS_JSAPI_RETURN_CONVENTION
     GParamSpec* find_param_spec_from_id(JSContext* cx, JS::HandleString key);
+    GJS_JSAPI_RETURN_CONVENTION
     GIFieldInfo* find_field_info_from_id(JSContext* cx, JS::HandleString key);
+    GJS_JSAPI_RETURN_CONVENTION
     bool props_to_g_parameters(JSContext* cx, const JS::HandleValueArray& args,
                                std::vector<const char*>* names,
                                AutoGValueVector* values);
@@ -305,9 +343,11 @@ class ObjectPrototype : public ObjectBase {
 
     /* JSClass operations */
  private:
+    GJS_JSAPI_RETURN_CONVENTION
     bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                       bool* resolved);
 
+    GJS_JSAPI_RETURN_CONVENTION
     bool new_enumerate_impl(
         JSContext* cx, JS::HandleObject obj,
         JS::AutoIdVector& properties,  // NOLINT(runtime/references)
@@ -316,7 +356,9 @@ class ObjectPrototype : public ObjectBase {
 
     /* JS methods */
  private:
+    GJS_JSAPI_RETURN_CONVENTION
     bool to_string_impl(JSContext* cx, const JS::CallArgs& args);
+    GJS_JSAPI_RETURN_CONVENTION
     bool hook_up_vfunc_impl(JSContext* cx, const JS::CallArgs& args,
                             JS::HandleObject prototype);
 
@@ -355,18 +397,23 @@ class ObjectInstance : public ObjectBase {
 
  public:
     /* Public constructor for instances (uses GSlice allocator) */
+    GJS_USE
     static ObjectInstance* new_for_js_object(JSContext* cx,
                                              JS::HandleObject obj);
 
+    GJS_USE
     static ObjectInstance* for_gobject(GObject* gobj);
 
     /* Accessors */
 
  private:
+    GJS_USE
     bool has_wrapper(void) const { return !!m_wrapper; }
 
  public:
+    GJS_USE
     GObject* gobj(void) const { return m_gobj; }
+    GJS_USE
     JSObject* wrapper(void) const { return m_wrapper; }
 
     /* Methods to manipulate the JS object wrapper */
@@ -375,15 +422,17 @@ class ObjectInstance : public ObjectBase {
     void discard_wrapper(void) { m_wrapper.reset(); }
     void switch_to_rooted(JSContext* cx) { m_wrapper.switch_to_rooted(cx); }
     void switch_to_unrooted(void) { m_wrapper.switch_to_unrooted(); }
+    GJS_USE
     bool update_after_gc(void) { return m_wrapper.update_after_gc(); }
 
  public:
+    GJS_USE
     bool wrapper_is_rooted(void) const { return m_wrapper.rooted(); }
     void release_native_object(void);
     void associate_js_gobject(JSContext* cx, JS::HandleObject obj,
                               GObject* gobj);
     void disassociate_js_gobject(void);
-    bool weak_pointer_was_finalized(void);
+    GJS_USE bool weak_pointer_was_finalized(void);
     void toggle_down(void);
     void toggle_up(void);
 
@@ -396,18 +445,21 @@ class ObjectInstance : public ObjectBase {
 
  public:
     void ensure_uses_toggle_ref(JSContext* cx);
-    bool check_gobject_disposed(const char* for_what) const;
+    GJS_USE bool check_gobject_disposed(const char* for_what) const;
 
     /* Methods to manipulate the linked list of instances */
 
  private:
     static ObjectInstance* wrapped_gobject_list;
+    GJS_USE
     ObjectInstance* next(void) const { return m_instance_link.next(); }
     void link(void);
     void unlink(void);
 
  public:
+    GJS_USE
     GjsListLink* get_link(void) { return &m_instance_link; }
+    GJS_USE
     static size_t num_wrapped_gobjects(void) {
         return wrapped_gobject_list
                    ? wrapped_gobject_list->m_instance_link.size()
@@ -421,6 +473,7 @@ class ObjectInstance : public ObjectBase {
     /* JSClass operations */
 
  private:
+    GJS_JSAPI_RETURN_CONVENTION
     bool add_property_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                            JS::HandleValue value);
     void finalize_impl(JSFreeOp* fop, JSObject* obj);
@@ -428,21 +481,29 @@ class ObjectInstance : public ObjectBase {
     /* JS property getters/setters */
 
  private:
+    GJS_JSAPI_RETURN_CONVENTION
     bool prop_getter_impl(JSContext* cx, JS::HandleObject obj,
                           JS::HandleString name, JS::MutableHandleValue rval);
+    GJS_JSAPI_RETURN_CONVENTION
     bool field_getter_impl(JSContext* cx, JS::HandleObject obj,
                            JS::HandleString name, JS::MutableHandleValue rval);
+    GJS_JSAPI_RETURN_CONVENTION
     bool prop_setter_impl(JSContext* cx, JS::HandleObject obj,
                           JS::HandleString name, JS::HandleValue value);
+    GJS_JSAPI_RETURN_CONVENTION
     bool field_setter_impl(JSContext* cx, JS::HandleObject obj,
                            JS::HandleString name, JS::HandleValue value);
 
     /* JS methods */
 
  private:
+    GJS_JSAPI_RETURN_CONVENTION
     bool connect_impl(JSContext* cx, const JS::CallArgs& args, bool after);
+    GJS_JSAPI_RETURN_CONVENTION
     bool emit_impl(JSContext* cx, const JS::CallArgs& args);
+    GJS_JSAPI_RETURN_CONVENTION
     bool to_string_impl(JSContext* cx, const JS::CallArgs& args);
+    GJS_JSAPI_RETURN_CONVENTION
     bool init_impl(JSContext* cx, const JS::CallArgs& args,
                    JS::MutableHandleObject obj);
 
@@ -451,6 +512,7 @@ class ObjectInstance : public ObjectBase {
     static JS::PersistentRootedSymbol hook_up_vfunc_root;
 
  public:
+    GJS_USE
     bool typecheck_object(JSContext* cx, GType expected_type, bool throw_error);
     static JS::Symbol* hook_up_vfunc_symbol(JSContext* cx);
 
@@ -467,6 +529,7 @@ class ObjectInstance : public ObjectBase {
 
 G_BEGIN_DECLS
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_object_class(JSContext              *cx,
                              JS::HandleObject        in_object,
                              GIObjectInfo           *info,
@@ -474,24 +537,30 @@ bool gjs_define_object_class(JSContext              *cx,
                              JS::MutableHandleObject constructor,
                              JS::MutableHandleObject prototype);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_lookup_object_constructor(JSContext             *context,
                                    GType                  gtype,
                                    JS::MutableHandleValue value_p);
+GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_lookup_object_constructor_from_info(JSContext* cx,
                                                   GIObjectInfo* info,
                                                   GType gtype);
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_object_from_g_object      (JSContext     *context,
                                          GObject       *gobj);
 
+GJS_JSAPI_RETURN_CONVENTION
 GObject  *gjs_g_object_from_object(JSContext       *context,
                                    JS::HandleObject obj);
 
+GJS_USE
 bool      gjs_typecheck_object(JSContext       *context,
                                JS::HandleObject obj,
                                GType            expected_type,
                                bool             throw_error);
 
+GJS_USE
 bool      gjs_typecheck_is_object(JSContext       *context,
                                   JS::HandleObject obj,
                                   bool             throw_error);
@@ -502,14 +571,14 @@ void gjs_object_shutdown_toggle_queue(void);
 void gjs_object_context_dispose_notify(void    *data,
                                        GObject *where_the_object_was);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_object_define_static_methods(JSContext       *context,
                                       JS::HandleObject constructor,
                                       GType            gtype,
                                       GIObjectInfo    *object_info);
 
-bool gjs_object_associate_closure(JSContext       *cx,
-                                  JS::HandleObject obj,
-                                  GClosure        *closure);
+void gjs_object_associate_closure(JSContext* cx, JS::HandleObject obj,
+                                  GClosure* closure);
 
 G_END_DECLS
 

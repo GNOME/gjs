@@ -36,6 +36,7 @@
 #include <stdio.h>
 #endif
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JSAutoRequest ar(cx);
@@ -48,6 +49,7 @@ static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {
     return false;  // without gjs_throw() == "throw uncatchable exception"
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JSAutoRequest ar(cx);

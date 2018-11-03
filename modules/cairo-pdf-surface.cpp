@@ -31,6 +31,7 @@
 #if CAIRO_HAS_PDF_SURFACE
 #include <cairo-pdf.h>
 
+GJS_USE
 static JSObject *gjs_cairo_pdf_surface_get_proto(JSContext *);
 
 GJS_DEFINE_PROTO_WITH_PARENT("PDFSurface", cairo_pdf_surface,

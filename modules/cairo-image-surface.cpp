@@ -29,6 +29,7 @@
 #include <cairo.h>
 #include "cairo-private.h"
 
+GJS_USE
 static JSObject *gjs_cairo_image_surface_get_proto(JSContext *);
 
 GJS_DEFINE_PROTO_WITH_PARENT("ImageSurface", cairo_image_surface,
@@ -73,6 +74,7 @@ JSPropertySpec gjs_cairo_image_surface_proto_props[] = {
     JS_PS_END
 };
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 createFromPNG_func(JSContext *context,
                    unsigned   argc,
@@ -106,6 +108,7 @@ createFromPNG_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getFormat_func(JSContext *context,
                unsigned   argc,
@@ -130,6 +133,7 @@ getFormat_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getWidth_func(JSContext *context,
               unsigned   argc,
@@ -154,6 +158,7 @@ getWidth_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getHeight_func(JSContext *context,
                unsigned   argc,
@@ -178,6 +183,7 @@ getHeight_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getStride_func(JSContext *context,
                unsigned   argc,

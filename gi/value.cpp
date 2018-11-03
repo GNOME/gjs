@@ -23,6 +23,8 @@
 
 #include <config.h>
 
+#include <mozilla/Unused.h>
+
 #include <util/log.h>
 
 #include "foreign.h"
@@ -41,6 +43,7 @@
 
 #include <girepository.h>
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_value_from_g_value_internal(JSContext             *context,
                                             JS::MutableHandleValue value_p,
                                             const GValue          *gvalue,
@@ -53,6 +56,7 @@ static bool gjs_value_from_g_value_internal(JSContext             *context,
  * only works for signals on introspected GObjects, not signals on GJS-defined
  * GObjects nor standalone closures. The return value must be unreffed.
  */
+GJS_USE
 static GISignalInfo *
 get_signal_info_if_available(GSignalQuery *signal_query)
 {
@@ -83,6 +87,7 @@ get_signal_info_if_available(GSignalQuery *signal_query)
  * Fill in value_p with a JS array, converted from a C array stored as a pointer
  * in array_value, with its length stored in array_length_value.
  */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_value_from_array_and_length_values(JSContext             *context,
                                        JS::MutableHandleValue value_p,
@@ -269,7 +274,8 @@ closure_marshal(GClosure        *closure,
             g_base_info_unref((GIBaseInfo *)type_info_for[i]);
 
     JS::RootedValue rval(context);
-    gjs_closure_invoke(closure, nullptr, argv, &rval, false);
+    mozilla::Unused << gjs_closure_invoke(closure, nullptr, argv, &rval, false);
+    // Any exception now pending, is handled when returning control to JS
 
     if (return_value != NULL) {
         if (rval.isUndefined()) {
@@ -315,31 +321,38 @@ gjs_closure_new_marshaled (JSContext    *context,
     return closure;
 }
 
-static GType
-gjs_value_guess_g_type(JSContext *context,
-                       JS::Value  value)
-{
-    if (value.isNull())
-        return G_TYPE_POINTER;
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_value_guess_g_type(JSContext* context, JS::Value value,
+                                   GType* gtype_out) {
+    g_assert(gtype_out && "Invalid return location");
 
-    if (value.isString())
-        return G_TYPE_STRING;
-
-    if (value.isInt32())
-        return G_TYPE_INT;
-
-    if (value.isDouble())
-        return G_TYPE_DOUBLE;
-
-    if (value.isBoolean())
-        return G_TYPE_BOOLEAN;
-
+    if (value.isNull()) {
+        *gtype_out = G_TYPE_POINTER;
+        return true;
+    }
+    if (value.isString()) {
+        *gtype_out = G_TYPE_STRING;
+        return true;
+    }
+    if (value.isInt32()) {
+        *gtype_out = G_TYPE_INT;
+        return true;
+    }
+    if (value.isDouble()) {
+        *gtype_out = G_TYPE_DOUBLE;
+        return true;
+    }
+    if (value.isBoolean()) {
+        *gtype_out = G_TYPE_BOOLEAN;
+        return true;
+    }
     if (value.isObject()) {
         JS::RootedObject obj(context, &value.toObject());
-        return gjs_gtype_get_actual_gtype(context, obj);
+        return gjs_gtype_get_actual_gtype(context, obj, gtype_out);
     }
 
-    return G_TYPE_INVALID;
+    *gtype_out = G_TYPE_INVALID;
+    return true;
 }
 
 static bool
@@ -355,6 +368,7 @@ throw_expect_type(JSContext      *cx,
     return false;  /* for convenience */
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_value_to_g_value_internal(JSContext      *context,
                               JS::HandleValue value,
@@ -366,7 +380,8 @@ gjs_value_to_g_value_internal(JSContext      *context,
     gtype = G_VALUE_TYPE(gvalue);
 
     if (gtype == 0) {
-        gtype = gjs_value_guess_g_type(context, value);
+        if (!gjs_value_guess_g_type(context, value, &gtype))
+            return false;
 
         if (gtype == G_TYPE_INVALID) {
             gjs_throw(context, "Could not guess unspecified GValue type");
@@ -650,7 +665,8 @@ gjs_value_to_g_value_internal(JSContext      *context,
             return throw_expect_type(context, value, "GType object");
 
         JS::RootedObject obj(context, &value.toObject());
-        type = gjs_gtype_get_actual_gtype(context, obj);
+        if (!gjs_gtype_get_actual_gtype(context, obj, &type))
+            return false;
         g_value_set_gtype(gvalue, type);
     } else if (g_type_is_a(gtype, G_TYPE_POINTER)) {
         if (value.isNull()) {
@@ -707,6 +723,7 @@ gjs_value_to_g_value_no_copy(JSContext      *context,
     return gjs_value_to_g_value_internal(context, value, gvalue, true);
 }
 
+GJS_USE
 static JS::Value
 convert_int_to_enum (GType  gtype,
                      int    v)
@@ -727,6 +744,7 @@ convert_int_to_enum (GType  gtype,
     return JS::NumberValue(v_double);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_value_from_g_value_internal(JSContext             *context,
                                 JS::MutableHandleValue value_p,

@@ -54,6 +54,7 @@ GJS_DEFINE_PRIV_FROM_JS(Union, gjs_union_class)
  * The *resolved out parameter, on success, should be false to indicate that id
  * was not resolved; and true if id was resolved.
  */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 union_resolve(JSContext       *context,
               JS::HandleObject obj,
@@ -80,7 +81,9 @@ union_resolve(JSContext       *context,
     }
 
     JS::UniqueChars name;
-    if (!gjs_get_string_id(context, id, &name)) {
+    if (!gjs_get_string_id(context, id, &name))
+        return false;
+    if (!name) {
         *resolved = false;
         return true; /* not resolved, but no error */
     }
@@ -117,6 +120,7 @@ union_resolve(JSContext       *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static void*
 union_new(JSContext       *context,
           JS::HandleObject obj, /* "this" for constructor */
@@ -130,10 +134,9 @@ union_new(JSContext       *context,
     n_methods = g_union_info_get_n_methods(info);
 
     for (i = 0; i < n_methods; ++i) {
-        GIFunctionInfo *func_info;
         GIFunctionInfoFlags flags;
 
-        func_info = g_union_info_get_method(info, i);
+        GjsAutoFunctionInfo func_info = g_union_info_get_method(info, i);
 
         flags = g_function_info_get_flags(func_info);
         if ((flags & GI_FUNCTION_IS_CONSTRUCTOR) != 0 &&
@@ -141,24 +144,26 @@ union_new(JSContext       *context,
 
             JS::RootedValue rval(context, JS::NullValue());
 
-            gjs_invoke_c_function_uncached(context, func_info, obj,
-                                           JS::HandleValueArray::empty(), &rval);
-
-            g_base_info_unref((GIBaseInfo*) func_info);
+            if (!gjs_invoke_c_function_uncached(context, func_info, obj,
+                                                JS::HandleValueArray::empty(),
+                                                &rval))
+                return nullptr;
 
             /* We are somewhat wasteful here; invoke_c_function() above
              * creates a JSObject wrapper for the union that we immediately
              * discard.
              */
             if (rval.isNull()) {
+                gjs_throw(context,
+                          "Unable to construct union type %s as its"
+                          "constructor function returned NULL",
+                          g_base_info_get_name(info));
                 return NULL;
             } else {
                 JS::RootedObject rval_obj(context, &rval.toObject());
                 return gjs_c_union_from_union(context, rval_obj);
             }
         }
-
-        g_base_info_unref((GIBaseInfo*) func_info);
     }
 
     gjs_throw(context, "Unable to construct union type %s since it has no zero-args <constructor>, can only wrap an existing one",
@@ -260,6 +265,7 @@ union_finalize(JSFreeOp *fop,
     g_slice_free(Union, priv);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 to_string_func(JSContext *context,
                unsigned   argc,
@@ -355,9 +361,11 @@ gjs_define_union_class(JSContext       *context,
 
     JS::RootedObject gtype_obj(context,
         gjs_gtype_create_gtype_wrapper(context, gtype));
-    JS_DefineProperty(context, constructor, "$gtype", gtype_obj, JSPROP_PERMANENT);
+    if (!gtype_obj)
+        return false;
 
-    return true;
+    return JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
+                             JSPROP_PERMANENT);
 }
 
 JSObject*
@@ -387,6 +395,8 @@ gjs_union_from_c_union(JSContext    *context,
 
     JS::RootedObject proto(context,
         gjs_lookup_generic_prototype(context, (GIUnionInfo*) info));
+    if (!proto)
+        return nullptr;
 
     obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);
 

@@ -60,6 +60,7 @@ JSPropertySpec gjs_cairo_pattern_proto_props[] = {
 
 /* Methods */
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getType_func(JSContext *context,
              unsigned   argc,

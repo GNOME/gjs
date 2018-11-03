@@ -29,21 +29,26 @@
 #include <girepository.h>
 
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 
-void      gjs_define_error_class       (JSContext             *context,
-                                        JS::HandleObject       in_object,
-                                        GIEnumInfo            *info);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_define_error_class(JSContext* cx, JS::HandleObject in_object,
+                            GIEnumInfo* info);
+GJS_JSAPI_RETURN_CONVENTION
 GError*   gjs_gerror_from_error        (JSContext             *context,
                                         JS::HandleObject       obj);
+GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_error_from_gerror        (JSContext             *context,
                                         GError                *gerror,
                                         bool                   add_stack);
+GJS_USE
 bool      gjs_typecheck_gerror         (JSContext             *context,
                                         JS::HandleObject       obj,
                                         bool                   throw_error);
 
+GJS_JSAPI_RETURN_CONVENTION
 GError *gjs_gerror_make_from_error(JSContext       *cx,
                                    JS::HandleObject obj);
 

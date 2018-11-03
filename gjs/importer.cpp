@@ -60,9 +60,11 @@ extern const JSClass gjs_importer_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Importer, gjs_importer_class)
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject *gjs_define_importer(JSContext *, JS::HandleObject,
     const char *, const char * const *, bool);
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 importer_to_string(JSContext *cx,
                    unsigned   argc,
@@ -91,6 +93,7 @@ importer_to_string(JSContext *cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 define_meta_properties(JSContext       *context,
                        JS::HandleObject module_obj,
@@ -175,6 +178,7 @@ define_meta_properties(JSContext       *context,
                                  to_string_tag, attrs);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 import_directory(JSContext          *context,
                  JS::HandleObject    obj,
@@ -198,6 +202,7 @@ import_directory(JSContext          *context,
 /* Make the property we set in gjs_module_import() permanent;
  * we do this after the import succesfully completes.
  */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 seal_import(JSContext       *cx,
             JS::HandleObject obj,
@@ -283,6 +288,7 @@ gjs_import_native_module(JSContext       *cx,
            JS_DefineProperty(cx, importer, name, module, GJS_MODULE_PROP_FLAGS);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 import_module_init(JSContext       *context,
                    GFile           *file,
@@ -323,60 +329,72 @@ import_module_init(JSContext       *context,
     return ret;
 }
 
-static JSObject *
-load_module_init(JSContext       *context,
-                 JS::HandleObject in_object,
-                 const char      *full_path)
-{
+GJS_JSAPI_RETURN_CONVENTION
+static JSObject* load_module_init(JSContext* cx, JS::HandleObject in_object,
+                                  const char* full_path) {
     bool found;
 
     /* First we check if js module has already been loaded  */
-    if (gjs_object_has_property(context, in_object, GJS_STRING_MODULE_INIT,
-                                &found) && found) {
-        JS::RootedValue module_obj_val(context);
-        if (gjs_object_get_property(context, in_object,
-                                    GJS_STRING_MODULE_INIT,
-                                    &module_obj_val)) {
-            return &module_obj_val.toObject();
-        }
+    if (!gjs_object_has_property(cx, in_object, GJS_STRING_MODULE_INIT,
+                                 &found))
+        return nullptr;
+    if (found) {
+        JS::RootedValue v_module(cx);
+        if (!gjs_object_get_property(cx, in_object, GJS_STRING_MODULE_INIT,
+                                     &v_module))
+            return nullptr;
+        if (v_module.isObject())
+            return &v_module.toObject();
+
+        gjs_throw(cx, "Unexpected non-object module __init__ imported from %s",
+                  full_path);
+        return nullptr;
     }
 
-    JS::RootedObject module_obj(context, JS_NewPlainObject(context));
-    GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(full_path);
-    if (!import_module_init(context, file, module_obj))
-        return module_obj;
+    JS::RootedObject module_obj(cx, JS_NewPlainObject(cx));
+    if (!module_obj)
+        return nullptr;
 
-    gjs_object_define_property(context, in_object,
-                               GJS_STRING_MODULE_INIT, module_obj,
-                               GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT);
+    GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(full_path);
+    if (!import_module_init(cx, file, module_obj)) {
+        JS_ClearPendingException(cx);
+        return module_obj;
+    }
+
+    if (!gjs_object_define_property(cx, in_object,
+                                    GJS_STRING_MODULE_INIT, module_obj,
+                                    GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT))
+        return nullptr;
 
     return module_obj;
 }
 
-static void
-load_module_elements(JSContext        *cx,
-                     JS::HandleObject  in_object,
-                     JS::AutoIdVector& prop_ids,
-                     const char       *init_path)
-{
+GJS_JSAPI_RETURN_CONVENTION
+static bool load_module_elements(JSContext* cx, JS::HandleObject in_object,
+                                 JS::AutoIdVector& prop_ids,
+                                 const char* init_path) {
     size_t ix, length;
     JS::RootedObject module_obj(cx, load_module_init(cx, in_object, init_path));
-
     if (!module_obj)
-        return;
+        return false;
 
     JS::Rooted<JS::IdVector> ids(cx, cx);
     if (!JS_Enumerate(cx, module_obj, &ids))
-        return;
+        return false;
 
     for (ix = 0, length = ids.length(); ix < length; ix++)
-        if (!prop_ids.append(ids[ix]))
-            g_error("Unable to append to vector");
+        if (!prop_ids.append(ids[ix])) {
+            JS_ReportOutOfMemory(cx);
+            return false;
+        }
+
+    return true;
 }
 
 /* If error, returns false. If not found, returns true but does not touch
  * the value at *result. If found, returns true and sets *result = true.
  */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 import_symbol_from_init_js(JSContext       *cx,
                            JS::HandleObject importer,
@@ -410,6 +428,7 @@ import_symbol_from_init_js(JSContext       *cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 import_file_on_module(JSContext       *context,
                       JS::HandleObject obj,
@@ -442,6 +461,7 @@ import_file_on_module(JSContext       *context,
     return retval;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
                       JS::HandleId id) {
     JS::RootedObject search_path(context);
@@ -468,6 +488,10 @@ static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
     JS::UniqueChars name;
     if (!gjs_get_string_id(context, id, &name))
         return false;
+    if (!name) {
+        gjs_throw(context, "Importing invalid module name");
+        return false;
+    }
 
     /* First try importing an internal module like gi */
     if (priv->is_root &&
@@ -591,6 +615,7 @@ static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
 /* Note that in a for ... in loop, this will be called first on the object,
  * then on its prototype.
  */
+GJS_JSAPI_RETURN_CONVENTION
 static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
                                    JS::AutoIdVector& properties,
                                    bool enumerable_only) {
@@ -652,7 +677,8 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
         init_path =
             g_build_filename(dirname.get(), MODULE_INIT_FILENAME, nullptr);
 
-        load_module_elements(context, object, properties, init_path);
+        if (!load_module_elements(context, object, properties, init_path))
+            return false;
 
         g_free(init_path);
 
@@ -697,6 +723,7 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
 
 /* The *resolved out parameter, on success, should be false to indicate that id
  * was not resolved; and true if id was resolved. */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 importer_resolve(JSContext        *context,
                  JS::HandleObject  obj,
@@ -795,6 +822,7 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
 
 GJS_DEFINE_PROTO_FUNCS(importer)
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject*
 importer_new(JSContext *context,
              bool       is_root)
@@ -825,6 +853,7 @@ importer_new(JSContext *context,
     return importer;
 }
 
+GJS_USE
 static G_CONST_RETURN char * G_CONST_RETURN *
 gjs_get_search_path(void)
 {
@@ -887,6 +916,7 @@ gjs_get_search_path(void)
     return (G_CONST_RETURN char * G_CONST_RETURN *)search_path;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject*
 gjs_create_importer(JSContext          *context,
                     const char         *importer_name,
@@ -920,6 +950,7 @@ gjs_create_importer(JSContext          *context,
     return importer;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject *
 gjs_define_importer(JSContext          *context,
                     JS::HandleObject    in_object,

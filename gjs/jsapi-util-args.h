@@ -30,11 +30,8 @@
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 
-GJS_ALWAYS_INLINE
-static inline bool
-check_nullable(const char*& fchar,
-               const char*& fmt_string)
-{
+GJS_ALWAYS_INLINE GJS_USE static inline bool check_nullable(
+    const char*& fchar, const char*& fmt_string) {
     if (*fchar != '?')
         return false;
 
@@ -225,18 +222,12 @@ free_if_necessary(JS::MutableHandleObject param_ref)
     param_ref.set(NULL);
 }
 
-template<typename T>
-static bool
-parse_call_args_helper(JSContext          *cx,
-                       const char         *function_name,
-                       const JS::CallArgs& args,
-                       bool                ignore_trailing_args,
-                       const char*&        fmt_required,
-                       const char*&        fmt_optional,
-                       unsigned            param_ix,
-                       const char         *param_name,
-                       T                   param_ref)
-{
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
+    JSContext* cx, const char* function_name, const JS::CallArgs& args,
+    bool ignore_trailing_args, const char*& fmt_required,
+    const char*& fmt_optional, unsigned param_ix, const char* param_name,
+    T param_ref) {
     bool nullable = false;
     const char *fchar = fmt_required;
 
@@ -272,19 +263,12 @@ parse_call_args_helper(JSContext          *cx,
     return true;
 }
 
-template<typename T, typename... Args>
-static bool
-parse_call_args_helper(JSContext          *cx,
-                       const char         *function_name,
-                       const JS::CallArgs& args,
-                       bool                ignore_trailing_args,
-                       const char*&        fmt_required,
-                       const char*&        fmt_optional,
-                       unsigned            param_ix,
-                       const char         *param_name,
-                       T                   param_ref,
-                       Args             ...params)
-{
+template <typename T, typename... Args>
+GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
+    JSContext* cx, const char* function_name, const JS::CallArgs& args,
+    bool ignore_trailing_args, const char*& fmt_required,
+    const char*& fmt_optional, unsigned param_ix, const char* param_name,
+    T param_ref, Args... params) {
     bool retval;
 
     if (!parse_call_args_helper(cx, function_name, args, ignore_trailing_args,
@@ -304,13 +288,9 @@ parse_call_args_helper(JSContext          *cx,
 }
 
 /* Empty-args version of the template */
-G_GNUC_UNUSED
-static bool
-gjs_parse_call_args(JSContext          *cx,
-                    const char         *function_name,
-                    const JS::CallArgs& args,
-                    const char         *format)
-{
+G_GNUC_UNUSED GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
+    JSContext* cx, const char* function_name, const JS::CallArgs& args,
+    const char* format) {
     bool ignore_trailing_args = false;
 
     if (*format == '!') {
@@ -368,14 +348,10 @@ gjs_parse_call_args(JSContext          *cx,
  * may be null. For 's' or 'F' a null pointer is returned, for 'o' the handle is
  * set to null.
  */
-template<typename... Args>
-static bool
-gjs_parse_call_args(JSContext          *cx,
-                    const char         *function_name,
-                    const JS::CallArgs& args,
-                    const char         *format,
-                    Args             ...params)
-{
+template <typename... Args>
+GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
+    JSContext* cx, const char* function_name, const JS::CallArgs& args,
+    const char* format, Args... params) {
     const char *fmt_iter, *fmt_required, *fmt_optional;
     unsigned n_required = 0, n_total = 0;
     bool optional_args = false, ignore_trailing_args = false, retval;

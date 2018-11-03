@@ -141,6 +141,7 @@ error_finalize(JSFreeOp *fop,
     g_slice_free(Error, priv);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 error_get_domain(JSContext *context,
                  unsigned   argc,
@@ -155,6 +156,7 @@ error_get_domain(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 error_get_message(JSContext *context,
                   unsigned   argc,
@@ -174,6 +176,7 @@ error_get_message(JSContext *context,
     return gjs_string_from_utf8(context, priv->gerror->message, args.rval());
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 error_get_code(JSContext *context,
                unsigned   argc,
@@ -194,6 +197,7 @@ error_get_code(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 error_to_string(JSContext *context,
                 unsigned   argc,
@@ -238,6 +242,7 @@ error_to_string(JSContext *context,
     return gjs_string_from_utf8(context, descr, rec.rval());
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 error_constructor_value_of(JSContext *context,
                            unsigned   argc,
@@ -302,11 +307,8 @@ static JSFunctionSpec gjs_error_constructor_funcs[] = {
     JS_FN("valueOf", error_constructor_value_of, 0, GJS_MODULE_PROP_FLAGS),
     JS_FS_END};
 
-void
-gjs_define_error_class(JSContext       *context,
-                       JS::HandleObject in_object,
-                       GIEnumInfo      *info)
-{
+bool gjs_define_error_class(JSContext* context, JS::HandleObject in_object,
+                            GIEnumInfo* info) {
     const char *constructor_name;
     GIBoxedInfo *glib_error_info;
     JS::RootedObject prototype(context), constructor(context);
@@ -325,24 +327,17 @@ gjs_define_error_class(JSContext       *context,
         gjs_lookup_generic_prototype(context, glib_error_info));
     g_base_info_unref((GIBaseInfo*)glib_error_info);
 
-    if (!gjs_init_class_dynamic(context, in_object,
-                                parent_proto,
-                                g_base_info_get_namespace( (GIBaseInfo*) info),
-                                constructor_name,
-                                &gjs_error_class,
-                                gjs_error_constructor, 1,
-                                /* props of prototype */
-                                &gjs_error_proto_props[0],
-                                /* funcs of prototype */
-                                &gjs_error_proto_funcs[0],
-                                /* props of constructor, MyConstructor.myprop */
-                                NULL,
-                                /* funcs of constructor, MyConstructor.myfunc() */
-                                &gjs_error_constructor_funcs[0],
-                                &prototype,
-                                &constructor)) {
-        gjs_log_exception(context);
-        g_error("Can't init class %s", constructor_name);
+    if (!parent_proto ||
+        !gjs_init_class_dynamic(
+            context, in_object, parent_proto, g_base_info_get_namespace(info),
+            constructor_name, &gjs_error_class, gjs_error_constructor, 1,
+            gjs_error_proto_props,  // props of prototype
+            gjs_error_proto_funcs,  // funcs of prototype
+            nullptr,  // props of constructor, MyConstructor.myprop
+            gjs_error_constructor_funcs,  // funcs of constructor,
+                                          // MyConstructor.myfunc()
+            &prototype, &constructor)) {
+        return false;
     }
 
     GJS_INC_COUNTER(gerror);
@@ -357,10 +352,11 @@ gjs_define_error_class(JSContext       *context,
               constructor_name, prototype.get(), JS_GetClass(prototype),
               in_object.get());
 
-    gjs_define_enum_values(context, constructor, priv->info);
-    gjs_define_enum_static_methods(context, constructor, priv->info);
+    return gjs_define_enum_values(context, constructor, priv->info) &&
+           gjs_define_enum_static_methods(context, constructor, priv->info);
 }
 
+GJS_USE
 static GIEnumInfo *
 find_error_domain_info(GQuark domain)
 {
@@ -427,6 +423,7 @@ define_error_properties(JSContext       *cx,
         exc.restore();
 }
 
+GJS_USE
 static JSProtoKey
 proto_key_from_error_enum(int val)
 {
@@ -451,6 +448,7 @@ proto_key_from_error_enum(int val)
     }
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject *
 gjs_error_from_js_gerror(JSContext *cx,
                          GError    *gerror)

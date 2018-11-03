@@ -31,6 +31,7 @@
 #include <mutex>
 #include <glib-object.h>
 
+#include "gjs/macros.h"
 #include "util/log.h"
 
 /* Thread-safe queue for enqueueing toggle-up or toggle-down events on GObjects
@@ -64,16 +65,19 @@ private:
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue %s %p", did, what);
     }
 
+    GJS_USE
     std::deque<Item>::iterator find_operation_locked(GObject  *gobj,
                                                      Direction direction);
+    GJS_USE
     bool find_and_erase_operation_locked(GObject *gobj, Direction direction);
 
     static gboolean idle_handle_toggle(void *data);
     static void idle_destroy_notify(void *data);
 
-public:
+ public:
     /* These two functions return a pair DOWN, UP signifying whether toggles
      * are / were queued. is_queued() just checks and does not modify. */
+    GJS_USE
     std::pair<bool, bool> is_queued(GObject *gobj);
     /* Cancels pending toggles and returns whether any were queued. */
     std::pair<bool, bool> cancel(GObject *gobj);
@@ -93,6 +97,7 @@ public:
                  Direction direction,
                  Handler   handler);
 
+    GJS_USE
     static ToggleQueue&
     get_default(void) {
         static ToggleQueue the_singleton;

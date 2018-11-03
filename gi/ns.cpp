@@ -45,6 +45,7 @@ GJS_DEFINE_PRIV_FROM_JS(Ns, gjs_ns_class)
 
 /* The *resolved out parameter, on success, should be false to indicate that id
  * was not resolved; and true if id was resolved. */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 ns_resolve(JSContext       *context,
            JS::HandleObject obj,
@@ -78,7 +79,9 @@ ns_resolve(JSContext       *context,
     }
 
     JS::UniqueChars name;
-    if (!gjs_get_string_id(context, id, &name)) {
+    if (!gjs_get_string_id(context, id, &name))
+        return false;
+    if (!name) {
         *resolved = false;
         return true;  /* not resolved, but no error */
     }
@@ -107,6 +110,7 @@ ns_resolve(JSContext       *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 get_name (JSContext *context,
           unsigned   argc,
@@ -170,6 +174,7 @@ static JSFunctionSpec *gjs_ns_static_funcs = nullptr;
 
 GJS_DEFINE_PROTO_FUNCS(ns)
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject*
 ns_new(JSContext    *context,
        const char   *ns_name)
