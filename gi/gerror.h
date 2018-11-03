@@ -52,7 +52,11 @@ GJS_JSAPI_RETURN_CONVENTION
 GError *gjs_gerror_make_from_error(JSContext       *cx,
                                    JS::HandleObject obj);
 
-void gjs_define_error_properties(JSContext* cx, JS::HandleObject obj);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_gerror_to_string(JSContext* cx, unsigned argc, JS::Value* vp);
+
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj);
 
 bool gjs_throw_gerror(JSContext* cx, GError* error);
 
