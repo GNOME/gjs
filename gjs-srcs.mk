@@ -54,6 +54,8 @@ gjs_srcs =				\
 	gi/union.h			\
 	gi/value.cpp			\
 	gi/value.h			\
+	gjs/atoms.cpp			\
+	gjs/atoms.h			\
 	gjs/byteArray.cpp		\
 	gjs/byteArray.h			\
 	gjs/context.cpp			\

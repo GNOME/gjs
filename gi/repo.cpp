@@ -63,10 +63,10 @@ static bool get_version_for_ns(JSContext* context, JS::HandleObject repo_obj,
                                JS::HandleId ns_id, JS::UniqueChars* version) {
     JS::RootedObject versions(context);
     bool found;
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
 
-    if (!gjs_object_require_property(context, repo_obj,
-                                     "GI repository object",
-                                     GJS_STRING_GI_VERSIONS, &versions))
+    if (!gjs_object_require_property(context, repo_obj, "GI repository object",
+                                     atoms.versions(), &versions))
         return false;
 
     if (!JS_AlreadyHasOwnPropertyById(context, versions, ns_id, &found))
@@ -269,9 +269,11 @@ repo_new(JSContext *context)
     gjs_debug_lifecycle(GJS_DEBUG_GREPO,
                         "repo constructor, obj %p priv %p", repo.get(), priv);
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedObject versions(context, JS_NewPlainObject(context));
-    gjs_object_define_property(context, repo, GJS_STRING_GI_VERSIONS,
-                               versions, JSPROP_PERMANENT | JSPROP_RESOLVING);
+    if (!JS_DefinePropertyById(context, repo, atoms.versions(), versions,
+                               JSPROP_PERMANENT | JSPROP_RESOLVING))
+        return nullptr;
 
     /* GLib/GObject/Gio are fixed at 2.0, since we depend on them
      * internally.
@@ -288,9 +290,9 @@ repo_new(JSContext *context)
         return nullptr;
 
     JS::RootedObject private_ns(context, JS_NewPlainObject(context));
-    gjs_object_define_property(context, repo,
-                               GJS_STRING_PRIVATE_NS_MARKER, private_ns,
-                               JSPROP_PERMANENT | JSPROP_RESOLVING);
+    if (!JS_DefinePropertyById(context, repo, atoms.private_ns_marker(),
+                               private_ns, JSPROP_PERMANENT | JSPROP_RESOLVING))
+        return nullptr;
 
     return repo;
 }
@@ -523,9 +525,9 @@ gjs_define_info(JSContext       *context,
 JSObject*
 gjs_lookup_private_namespace(JSContext *context)
 {
-    JS::HandleId ns_name =
-        gjs_context_get_const_string(context, GJS_STRING_PRIVATE_NS_MARKER);
-    return gjs_lookup_namespace_object_by_name(context, ns_name);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    return gjs_lookup_namespace_object_by_name(context,
+                                               atoms.private_ns_marker());
 }
 
 /* Get the namespace object that the GIBaseInfo should be inside */
@@ -563,8 +565,9 @@ error_has_name(JSContext       *cx,
     JS::RootedObject exc(cx, &thrown_value.toObject());
     JS::RootedValue exc_name(cx);
     bool retval = false;
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
 
-    if (!gjs_object_get_property(cx, exc, GJS_STRING_NAME, &exc_name))
+    if (!JS_GetPropertyById(cx, exc, atoms.name(), &exc_name))
         goto out;
 
     int32_t cmp_result;
@@ -593,10 +596,9 @@ lookup_override_function(JSContext             *cx,
 
     JS::RootedObject overridespkg(cx), module(cx);
     JS::RootedObject importer_obj(cx, &importer.toObject());
-
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     if (!gjs_object_require_property(cx, importer_obj, "importer",
-                                     GJS_STRING_GI_OVERRIDES,
-                                     &overridespkg))
+                                     atoms.overrides(), &overridespkg))
         goto fail;
 
     if (!gjs_object_require_property(cx, overridespkg,
@@ -616,7 +618,7 @@ lookup_override_function(JSContext             *cx,
     }
 
     if (!gjs_object_require_property(cx, module, "override module",
-                                     GJS_STRING_GOBJECT_INIT, function) ||
+                                     atoms.init(), function) ||
         !function.isObjectOrNull()) {
         gjs_throw(cx, "Unexpected value for _init in overrides module");
         goto fail;
@@ -639,9 +641,9 @@ gjs_lookup_namespace_object_by_name(JSContext      *context,
     g_assert(importer.isObject());
 
     JS::RootedObject repo(context), importer_obj(context, &importer.toObject());
-
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     if (!gjs_object_require_property(context, importer_obj, "importer",
-                                     GJS_STRING_GI_MODULE, &repo)) {
+                                     atoms.gi(), &repo)) {
         gjs_log_exception(context);
         gjs_throw(context, "No gi property in importer");
         return NULL;
@@ -758,9 +760,9 @@ gjs_lookup_generic_prototype(JSContext  *context,
     if (G_UNLIKELY(!constructor))
         return NULL;
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedValue value(context);
-    if (!gjs_object_get_property(context, constructor,
-                                 GJS_STRING_PROTOTYPE, &value))
+    if (!JS_GetPropertyById(context, constructor, atoms.prototype(), &value))
         return NULL;
 
     if (G_UNLIKELY (!value.isObjectOrNull()))
