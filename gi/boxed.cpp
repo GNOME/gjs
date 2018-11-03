@@ -391,10 +391,11 @@ boxed_new(JSContext             *context,
         if (!boxed_invoke_constructor(context, obj, constructor_name, args))
             return false;
 
-        // Define the expected Error properties and a better toString()
+        // Define the expected Error properties
         if (priv->gtype == G_TYPE_ERROR) {
             JS::RootedObject gerror(context, &args.rval().toObject());
-            gjs_define_error_properties(context, gerror);
+            if (!gjs_define_error_properties(context, gerror))
+                return false;
         }
 
         return true;
@@ -1172,6 +1173,11 @@ bool gjs_define_boxed_class(JSContext* context, JS::HandleObject in_object,
                                    priv->info))
         return false;
 
+    if (priv->gtype == G_TYPE_ERROR &&
+        !JS_DefineFunction(context, prototype, "toString", gjs_gerror_to_string,
+                           0, GJS_MODULE_PROP_FLAGS))
+        return false;
+
     JS::RootedObject gtype_obj(context,
         gjs_gtype_create_gtype_wrapper(context, priv->gtype));
     if (!gtype_obj)
@@ -1181,13 +1187,8 @@ bool gjs_define_boxed_class(JSContext* context, JS::HandleObject in_object,
                              JSPROP_PERMANENT);
 }
 
-JSObject*
-gjs_boxed_from_c_struct(JSContext             *context,
-                        GIStructInfo          *info,
-                        void                  *gboxed,
-                        GjsBoxedCreationFlags  flags)
-{
-    JSObject *obj;
+JSObject* gjs_boxed_from_c_struct(JSContext* cx, GIStructInfo* info,
+                                  void* gboxed, GjsBoxedCreationFlags flags) {
     Boxed *priv;
     Boxed *proto_priv;
 
@@ -1198,12 +1199,15 @@ gjs_boxed_from_c_struct(JSContext             *context,
                       "Wrapping struct %s %p with JSObject",
                       g_base_info_get_name((GIBaseInfo *)info), gboxed);
 
-    JS::RootedObject proto(context, gjs_lookup_generic_prototype(context, info));
+    JS::RootedObject proto(cx, gjs_lookup_generic_prototype(cx, info));
     if (!proto)
         return nullptr;
-    proto_priv = priv_from_js(context, proto);
+    proto_priv = priv_from_js(cx, proto);
 
-    obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);
+    JS::RootedObject obj(
+        cx, JS_NewObjectWithGivenProto(cx, JS_GetClass(proto), proto));
+    if (!obj)
+        return nullptr;
 
     GJS_INC_COUNTER(boxed);
     priv = g_slice_new0(Boxed);
@@ -1230,11 +1234,14 @@ gjs_boxed_from_c_struct(JSContext             *context,
             boxed_new_direct(priv);
             memcpy(priv->gboxed, gboxed, g_struct_info_get_size (priv->info));
         } else {
-            gjs_throw(context,
+            gjs_throw(cx,
                       "Can't create a Javascript object for %s; no way to copy",
-                      g_base_info_get_name( (GIBaseInfo*) priv->info));
+                      g_base_info_get_name(priv->info));
         }
     }
+
+    if (priv->gtype == G_TYPE_ERROR && !gjs_define_error_properties(cx, obj))
+        return nullptr;
 
     return obj;
 }
