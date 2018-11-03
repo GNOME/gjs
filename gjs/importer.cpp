@@ -103,6 +103,7 @@ define_meta_properties(JSContext       *context,
                        JS::HandleObject parent)
 {
     bool parent_is_module;
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
 
     /* For these meta-properties, don't set ENUMERATE since we wouldn't want to
      * copy these symbols to any other object for example. RESOLVING is used to
@@ -124,7 +125,8 @@ define_meta_properties(JSContext       *context,
         JS::RootedValue file(context);
         if (!gjs_string_from_utf8(context, parse_name, &file))
             return false;
-        if (!JS_DefineProperty(context, module_obj, "__file__", file, attrs))
+        if (!JS_DefinePropertyById(context, module_obj, atoms.file(), file,
+                                   attrs))
             return false;
     }
 
@@ -139,7 +141,6 @@ define_meta_properties(JSContext       *context,
             return false;
         parent_module_val.setObject(*parent);
 
-        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
         JS::RootedValue parent_module_path(context);
         if (!JS_GetPropertyById(context, parent, atoms.module_path(),
                                 &parent_module_path))
@@ -165,16 +166,16 @@ define_meta_properties(JSContext       *context,
         to_string_tag.setString(JS_AtomizeString(context, "GjsModule"));
     }
 
-    if (!JS_DefineProperty(context, module_obj,
-                           "__moduleName__", module_name_val, attrs))
+    if (!JS_DefinePropertyById(context, module_obj, atoms.module_name(),
+                               module_name_val, attrs))
         return false;
 
-    if (!JS_DefineProperty(context, module_obj,
-                           "__parentModule__", parent_module_val, attrs))
+    if (!JS_DefinePropertyById(context, module_obj, atoms.parent_module(),
+                               parent_module_val, attrs))
         return false;
 
-    if (!JS_DefineProperty(context, module_obj, "__modulePath__", module_path,
-                           attrs))
+    if (!JS_DefinePropertyById(context, module_obj, atoms.module_path(),
+                               module_path, attrs))
         return false;
 
     JS::RootedId to_string_tag_name(context,
