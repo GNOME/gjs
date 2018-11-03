@@ -261,8 +261,9 @@ class GjsGlobal {
                       JS::HandleObject global,
                       const char      *bootstrap_script)
     {
-        if (!JS_DefineProperty(cx, global, "window", global,
-                               JSPROP_READONLY | JSPROP_PERMANENT) ||
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+        if (!JS_DefinePropertyById(cx, global, atoms.window(), global,
+                                   JSPROP_READONLY | JSPROP_PERMANENT) ||
             !JS_DefineFunctions(cx, global, GjsGlobal::static_funcs))
             return false;
 
@@ -272,7 +273,6 @@ class GjsGlobal {
                   v_importer.isObject()));
         JS::RootedObject root_importer(cx, &v_importer.toObject());
 
-        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
         /* Wrapping is a no-op if the importer is already in the same
          * compartment. */
         if (!JS_WrapObject(cx, &root_importer) ||

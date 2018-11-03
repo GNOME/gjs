@@ -153,25 +153,26 @@ static JSObject *
 make_rectangle(JSContext *context,
                cairo_rectangle_int_t *rect)
 {
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedObject rect_obj(context, JS_NewPlainObject(context));
     if (!rect_obj)
         return nullptr;
     JS::RootedValue val(context);
 
     val = JS::Int32Value(rect->x);
-    if (!JS_SetProperty(context, rect_obj, "x", val))
+    if (!JS_SetPropertyById(context, rect_obj, atoms.x(), val))
         return nullptr;
 
     val = JS::Int32Value(rect->y);
-    if (!JS_SetProperty(context, rect_obj, "y", val))
+    if (!JS_SetPropertyById(context, rect_obj, atoms.y(), val))
         return nullptr;
 
     val = JS::Int32Value(rect->width);
-    if (!JS_SetProperty(context, rect_obj, "width", val))
+    if (!JS_SetPropertyById(context, rect_obj, atoms.width(), val))
         return nullptr;
 
     val = JS::Int32Value(rect->height);
-    if (!JS_SetProperty(context, rect_obj, "height", val))
+    if (!JS_SetPropertyById(context, rect_obj, atoms.height(), val))
         return nullptr;
 
     return rect_obj;
