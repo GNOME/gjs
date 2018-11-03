@@ -29,6 +29,7 @@
 #include <unordered_map>
 
 #include "context.h"
+#include "gjs/atoms.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 
@@ -46,7 +47,7 @@ class GjsContextPrivate {
 
     unsigned m_auto_gc_id;
 
-    std::array<JS::PersistentRootedId*, GJS_STRING_LAST> m_atoms;
+    GjsAtoms m_atoms;
 
     JS::PersistentRooted<JobQueue>* m_job_queue;
     unsigned m_idle_drain_handler;
@@ -107,6 +108,7 @@ class GjsContextPrivate {
     GJS_USE JSContext* context(void) const { return m_cx; }
     GJS_USE JSObject* global(void) const { return m_global.get(); }
     GJS_USE GjsProfiler* profiler(void) const { return m_profiler; }
+    GJS_USE const GjsAtoms& atoms(void) const { return m_atoms; }
     GJS_USE bool destroying(void) const { return m_destroying; }
     GJS_USE bool sweeping(void) const { return m_in_gc_sweep; }
     void set_sweeping(bool value) { m_in_gc_sweep = value; }
@@ -120,6 +122,8 @@ class GjsContextPrivate {
     GJS_USE bool is_owner_thread(void) const {
         return m_owner_thread == g_thread_self();
     }
+    GJS_USE
+    static const GjsAtoms& atoms(JSContext* cx) { return from_cx(cx)->m_atoms; }
 
     GJS_JSAPI_RETURN_CONVENTION
     bool eval(const char* script, ssize_t script_len, const char* filename,
@@ -140,13 +144,6 @@ class GjsContextPrivate {
 
     void free_profiler(void);
     void dispose(void);
-
-    /* It's OK to return JS::HandleId here, to avoid an extra root, with the
-     * caveat that you should not use this value after the GjsContext has
-     * been destroyed. */
-    GJS_USE static JS::HandleId atom(JSContext* cx, GjsConstString name) {
-        return *GjsContextPrivate::from_cx(cx)->m_atoms[name];
-    }
 };
 
 #endif  /* __GJS_CONTEXT_PRIVATE_H__ */

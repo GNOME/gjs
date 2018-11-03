@@ -207,8 +207,9 @@ static void gjs_object_custom_init(GTypeInstance* instance, void* klass) {
      * just do this from the start */
     priv->ensure_uses_toggle_ref(cx);
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedValue v(cx);
-    if (!gjs_object_get_property(cx, object, GJS_STRING_INSTANCE_INIT, &v)) {
+    if (!JS_GetPropertyById(cx, object, atoms.instance_init(), &v)) {
         gjs_log_exception(cx);
         return;
     }

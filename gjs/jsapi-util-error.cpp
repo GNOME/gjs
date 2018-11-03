@@ -23,9 +23,10 @@
 
 #include <config.h>
 
+#include "gi/gerror.h"
+#include "gjs/context-private.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
-#include "gi/gerror.h"
 #include "util/misc.h"
 
 #include <util/log.h>
@@ -95,10 +96,10 @@ gjs_throw_valist(JSContext       *context,
         goto out;
 
     if (error_name != NULL) {
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
         JS::RootedValue name_value(context);
         if (!gjs_string_from_utf8(context, error_name, &name_value) ||
-            !gjs_object_set_property(context, new_exc, GJS_STRING_NAME,
-                                     name_value))
+            !JS_SetPropertyById(context, new_exc, atoms.name(), name_value))
             goto out;
     }
 

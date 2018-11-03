@@ -27,11 +27,12 @@
 
 #include "boxed.h"
 #include "enumeration.h"
+#include "gerror.h"
+#include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
 #include "gjs/mem.h"
 #include "repo.h"
-#include "gerror.h"
 #include "util/error.h"
 
 #include <util/log.h>
@@ -96,14 +97,13 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
 
     JS::RootedObject params_obj(context, &argv[0].toObject());
     JS::UniqueChars message;
-    if (!gjs_object_require_property(context, params_obj,
-                                     "GError constructor",
-                                     GJS_STRING_MESSAGE, &message))
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    if (!gjs_object_require_property(context, params_obj, "GError constructor",
+                                     atoms.message(), &message))
         return false;
 
-    if (!gjs_object_require_property(context, params_obj,
-                                     "GError constructor",
-                                     GJS_STRING_CODE, &code))
+    if (!gjs_object_require_property(context, params_obj, "GError constructor",
+                                     atoms.code(), &code))
         return false;
 
     priv->gerror = g_error_new_literal(priv->domain, code, message.get());
@@ -245,9 +245,10 @@ error_constructor_value_of(JSContext *context,
     GJS_GET_THIS(context, argc, vp, rec, self);
     Error *priv;
     JS::RootedObject prototype(context);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
 
     if (!gjs_object_require_property(context, self, "constructor",
-                                     GJS_STRING_PROTOTYPE, &prototype)) {
+                                     atoms.prototype(), &prototype)) {
         /* This error message will be more informative */
         JS_ClearPendingException(context);
         gjs_throw(context, "GLib.Error.valueOf() called on something that is not"
@@ -398,14 +399,15 @@ bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
         return false;
     }
 
-    return gjs_object_define_property(cx, obj, GJS_STRING_STACK, stack,
-                                      JSPROP_ENUMERATE) &&
-           gjs_object_define_property(cx, obj, GJS_STRING_FILENAME, source,
-                                      JSPROP_ENUMERATE) &&
-           gjs_object_define_property(cx, obj, GJS_STRING_LINE_NUMBER, line,
-                                      JSPROP_ENUMERATE) &&
-           gjs_object_define_property(cx, obj, GJS_STRING_COLUMN_NUMBER, column,
-                                      JSPROP_ENUMERATE);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    return JS_DefinePropertyById(cx, obj, atoms.stack(), stack,
+                                 JSPROP_ENUMERATE) &&
+           JS_DefinePropertyById(cx, obj, atoms.file_name(), source,
+                                 JSPROP_ENUMERATE) &&
+           JS_DefinePropertyById(cx, obj, atoms.line_number(), line,
+                                 JSPROP_ENUMERATE) &&
+           JS_DefinePropertyById(cx, obj, atoms.column_number(), column,
+                                 JSPROP_ENUMERATE);
 }
 
 GJS_USE
@@ -558,8 +560,9 @@ gjs_gerror_make_from_error(JSContext       *cx,
 
     /* Try to make something useful from the error
        name and message (in case this is a JS error) */
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedValue v_name(cx);
-    if (!gjs_object_get_property(cx, obj, GJS_STRING_NAME, &v_name))
+    if (!JS_GetPropertyById(cx, obj, atoms.name(), &v_name))
         return nullptr;
 
     JS::UniqueChars name;
@@ -567,7 +570,7 @@ gjs_gerror_make_from_error(JSContext       *cx,
         return nullptr;
 
     JS::RootedValue v_message(cx);
-    if (!gjs_object_get_property(cx, obj, GJS_STRING_MESSAGE, &v_message))
+    if (!JS_GetPropertyById(cx, obj, atoms.message(), &v_message))
         return nullptr;
 
     JS::UniqueChars message;
