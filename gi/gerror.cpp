@@ -46,8 +46,6 @@ typedef struct {
 
 extern struct JSClass gjs_error_class;
 
-static void define_error_properties(JSContext *, JS::HandleObject);
-
 GJS_DEFINE_PRIV_FROM_JS(Error, gjs_error_class)
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
@@ -111,7 +109,8 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(error)
     priv->gerror = g_error_new_literal(priv->domain, code, message.get());
 
     /* We assume this error will be thrown in the same line as the constructor */
-    define_error_properties(context, object);
+    if (!gjs_define_error_properties(context, object))
+        return false;
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
 
@@ -197,18 +196,13 @@ error_get_code(JSContext *context,
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-error_to_string(JSContext *context,
-                unsigned   argc,
-                JS::Value *vp)
-{
+bool gjs_gerror_to_string(JSContext* context, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(context, argc, vp, rec, self);
 
     GjsAutoChar descr;
 
     // An error created via `new GLib.Error` will have a Boxed* private pointer,
-    // not an Error*, so we can't call regular error_to_string() on it.
+    // not an Error*, so we can't call regular gjs_gerror_to_string() on it.
     if (gjs_typecheck_boxed(context, self, nullptr, G_TYPE_ERROR, false)) {
         auto* gerror =
             static_cast<GError*>(gjs_c_struct_from_boxed(context, self));
@@ -300,7 +294,7 @@ JSPropertySpec gjs_error_proto_props[] = {
 };
 
 JSFunctionSpec gjs_error_proto_funcs[] = {
-    JS_FN("toString", error_to_string, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FN("toString", gjs_gerror_to_string, 0, GJS_MODULE_PROP_FLAGS),
     JS_FS_END};
 
 static JSFunctionSpec gjs_error_constructor_funcs[] = {
@@ -386,41 +380,33 @@ find_error_domain_info(GQuark domain)
 /* define properties that JS Error() expose, such as
    fileName, lineNumber and stack
 */
-static void
-define_error_properties(JSContext       *cx,
-                        JS::HandleObject obj)
-{
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
     JS::RootedObject frame(cx);
     JS::RootedString stack(cx);
     JS::RootedString source(cx);
     uint32_t line, column;
-    JS::AutoSaveExceptionState exc(cx);
 
     if (!JS::CaptureCurrentStack(cx, &frame) ||
-        !JS::BuildStackString(cx, frame, &stack)) {
-        exc.restore();
-        return;
+        !JS::BuildStackString(cx, frame, &stack))
+        return false;
+
+    auto ok = JS::SavedFrameResult::Ok;
+    if (JS::GetSavedFrameSource(cx, frame, &source) != ok ||
+        JS::GetSavedFrameLine(cx, frame, &line) != ok ||
+        JS::GetSavedFrameColumn(cx, frame, &column) != ok) {
+        gjs_throw(cx, "Error getting saved frame information");
+        return false;
     }
 
-    JS::SavedFrameResult result;
-    result = JS::GetSavedFrameSource(cx, frame, &source);
-    g_assert(result == JS::SavedFrameResult::Ok);
-
-    result = JS::GetSavedFrameLine(cx, frame, &line);
-    g_assert(result == JS::SavedFrameResult::Ok);
-
-    result = JS::GetSavedFrameColumn(cx, frame, &column);
-    g_assert(result == JS::SavedFrameResult::Ok);
-
-    if (!gjs_object_define_property(cx, obj, GJS_STRING_STACK, stack,
-                                    JSPROP_ENUMERATE) ||
-        !gjs_object_define_property(cx, obj, GJS_STRING_FILENAME, source,
-                                    JSPROP_ENUMERATE) ||
-        !gjs_object_define_property(cx, obj, GJS_STRING_LINE_NUMBER, line,
-                                    JSPROP_ENUMERATE) ||
-        !gjs_object_define_property(cx, obj, GJS_STRING_COLUMN_NUMBER, column,
-                                    JSPROP_ENUMERATE))
-        exc.restore();
+    return gjs_object_define_property(cx, obj, GJS_STRING_STACK, stack,
+                                      JSPROP_ENUMERATE) &&
+           gjs_object_define_property(cx, obj, GJS_STRING_FILENAME, source,
+                                      JSPROP_ENUMERATE) &&
+           gjs_object_define_property(cx, obj, GJS_STRING_LINE_NUMBER, line,
+                                      JSPROP_ENUMERATE) &&
+           gjs_object_define_property(cx, obj, GJS_STRING_COLUMN_NUMBER, column,
+                                      JSPROP_ENUMERATE);
 }
 
 GJS_USE
@@ -513,8 +499,8 @@ gjs_error_from_gerror(JSContext             *context,
     g_base_info_ref( (GIBaseInfo*) priv->info);
     priv->gerror = g_error_copy(gerror);
 
-    if (add_stack)
-        define_error_properties(context, obj);
+    if (add_stack && !gjs_define_error_properties(context, obj))
+        return nullptr;
 
     return obj;
 }
@@ -623,24 +609,4 @@ bool gjs_throw_gerror(JSContext* cx, GError* error) {
         JS_SetPendingException(cx, err);
 
     return false;
-}
-
-/*
- * gjs_define_error_properties:
- *
- * Define the expected properties of a JS Error object on a newly-created
- * boxed object. This is required when creating a GLib.Error via the default
- * constructor, for example: `new GLib.Error(GLib.quark_from_string('my-error'),
- * 0, 'message')`.
- *
- * This function doesn't throw an exception if it fails.
- */
-void gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
-    JS::AutoSaveExceptionState saved_exc(cx);
-
-    define_error_properties(cx, obj);
-
-    if (!JS_DefineFunction(cx, obj, "toString", error_to_string, 0,
-                           GJS_MODULE_PROP_FLAGS))
-        saved_exc.restore();
 }
