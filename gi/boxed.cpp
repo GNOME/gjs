@@ -391,10 +391,11 @@ boxed_new(JSContext             *context,
         if (!boxed_invoke_constructor(context, obj, constructor_name, args))
             return false;
 
-        // Define the expected Error properties and a better toString()
+        // Define the expected Error properties
         if (priv->gtype == G_TYPE_ERROR) {
             JS::RootedObject gerror(context, &args.rval().toObject());
-            gjs_define_error_properties(context, gerror);
+            if (!gjs_define_error_properties(context, gerror))
+                return false;
         }
 
         return true;
@@ -1170,6 +1171,11 @@ bool gjs_define_boxed_class(JSContext* context, JS::HandleObject in_object,
     if (!define_boxed_class_fields(context, priv, prototype) ||
         !gjs_define_static_methods(context, constructor, priv->gtype,
                                    priv->info))
+        return false;
+
+    if (priv->gtype == G_TYPE_ERROR &&
+        !JS_DefineFunction(context, prototype, "toString", gjs_gerror_to_string,
+                           0, GJS_MODULE_PROP_FLAGS))
         return false;
 
     JS::RootedObject gtype_obj(context,
