@@ -164,9 +164,10 @@ interface_has_instance_func(JSContext *cx,
     g_assert(interface.isObject());
     JS::RootedObject interface_constructor(cx, &interface.toObject());
     JS::RootedObject interface_proto(cx);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     if (!gjs_object_require_property(cx, interface_constructor,
-                                     "interface constructor",
-                                     GJS_STRING_PROTOTYPE, &interface_proto))
+                                     "interface constructor", atoms.prototype(),
+                                     &interface_proto))
         return false;
 
     Interface *priv;

@@ -84,19 +84,6 @@ struct _GjsContext {
     GObject parent;
 };
 
-/* Keep this consistent with GjsConstString in context-private.h */
-static const char *const_strings[] = {
-    "constructor", "prototype", "length",
-    "imports", "__parentModule__", "__init__", "searchPath",
-    "__gjsPrivateNS",
-    "gi", "versions", "overrides",
-    "_init", "_instance_init", "_new_internal", "new",
-    "message", "code", "stack", "fileName", "lineNumber", "columnNumber",
-    "name", "x", "y", "width", "height", "__modulePath__"
-};
-
-G_STATIC_ASSERT(G_N_ELEMENTS(const_strings) == GJS_STRING_LAST);
-
 struct _GjsContextClass {
     GObjectClass parent;
 };
@@ -381,10 +368,6 @@ void GjsContextPrivate::dispose(void) {
         JS_RemoveExtraGCRootsTracer(m_cx, &GjsContextPrivate::trace, this);
         m_global = nullptr;
 
-        gjs_debug(GJS_DEBUG_CONTEXT, "Unrooting atoms");
-        for (auto& root : m_atoms)
-            delete root;
-
         gjs_debug(GJS_DEBUG_CONTEXT, "Freeing allocated resources");
         delete m_job_queue;
 
@@ -441,7 +424,10 @@ gjs_context_constructed(GObject *object)
 }
 
 GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
-    : m_public_context(public_context), m_cx(cx), m_environment_preparer(cx) {
+    : m_public_context(public_context),
+      m_cx(cx),
+      m_atoms(cx),
+      m_environment_preparer(cx) {
     m_owner_thread = g_thread_self();
 
     const char *env_profiler = g_getenv("GJS_ENABLE_PROFILER");
@@ -457,11 +443,6 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
             if (m_should_listen_sigusr2)
                 _gjs_profiler_setup_signals(m_profiler, public_context);
         }
-    }
-
-    for (size_t ix = 0; ix < GJS_STRING_LAST; ix++) {
-        m_atoms[ix] = new JS::PersistentRootedId(
-            m_cx, gjs_intern_string_to_id(m_cx, const_strings[ix]));
     }
 
     m_job_queue = new JS::PersistentRooted<JobQueue>(m_cx);
@@ -948,16 +929,6 @@ gjs_context_make_current (GjsContext *context)
     g_assert (context == NULL || current_context == NULL);
 
     current_context = context;
-}
-
-/* It's OK to return JS::HandleId here, to avoid an extra root, with the
- * caveat that you should not use this value after the GjsContext has
- * been destroyed. */
-JS::HandleId
-gjs_context_get_const_string(JSContext      *context,
-                             GjsConstString  name)
-{
-    return GjsContextPrivate::atom(context, name);
 }
 
 /**

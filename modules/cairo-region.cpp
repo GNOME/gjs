@@ -23,6 +23,7 @@
 #include <config.h>
 
 #include "gi/foreign.h"
+#include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-wrapper.h"
@@ -121,24 +122,25 @@ fill_rectangle(JSContext             *context,
                JS::HandleObject       obj,
                cairo_rectangle_int_t *rect)
 {
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedValue val(context);
 
-    if (!gjs_object_get_property(context, obj, GJS_STRING_X, &val))
+    if (!JS_GetPropertyById(context, obj, atoms.x(), &val))
         return false;
     if (!JS::ToInt32(context, val, &rect->x))
         return false;
 
-    if (!gjs_object_get_property(context, obj, GJS_STRING_Y, &val))
+    if (!JS_GetPropertyById(context, obj, atoms.y(), &val))
         return false;
     if (!JS::ToInt32(context, val, &rect->y))
         return false;
 
-    if (!gjs_object_get_property(context, obj, GJS_STRING_WIDTH, &val))
+    if (!JS_GetPropertyById(context, obj, atoms.width(), &val))
         return false;
     if (!JS::ToInt32(context, val, &rect->width))
         return false;
 
-    if (!gjs_object_get_property(context, obj, GJS_STRING_HEIGHT, &val))
+    if (!JS_GetPropertyById(context, obj, atoms.height(), &val))
         return false;
     if (!JS::ToInt32(context, val, &rect->height))
         return false;
