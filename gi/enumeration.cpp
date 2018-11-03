@@ -25,10 +25,11 @@
 
 #include <string.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "repo.h"
-#include "gtype.h"
 #include "function.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-wrapper.h"
+#include "gtype.h"
+#include "repo.h"
 
 #include <util/log.h>
 
@@ -110,8 +111,9 @@ gjs_define_enum_values(JSContext       *context,
     if (!gtype_obj)
         return false;
 
-    return JS_DefineProperty(context, in_object, "$gtype", gtype_obj,
-                             JSPROP_PERMANENT);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    return JS_DefinePropertyById(context, in_object, atoms.gtype(), gtype_obj,
+                                 JSPROP_PERMANENT);
 }
 
 bool
