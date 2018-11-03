@@ -94,6 +94,8 @@ This is so that the maintainers can re-run the GitLab CI jobs, since
 there is currently a bug in the infrastructure that makes some of the
 jobs fail unnecessarily.
 
+!157 is an example of a small documentation bugfix in a merge request.
+
 That's all!
 
 ## How to contribute code ##
@@ -119,6 +121,10 @@ _If you find a security vulnerability,_ make sure to mark the issue as
 If in doubt, ask on [IRC][irc] whether you should report a bug about
 something, but generally it's OK to just go ahead.
 
+Bug report #170 is a good example of a bug report with an independently
+runnable code snippet for testing, and lots of information, although it
+was written before the templates existed.
+
 ## How to suggest a feature or enhancement ##
 
 If you find yourself wishing for a feature that doesn't exist in GJS,
@@ -129,6 +135,13 @@ Use the "feature" template for this.
 However, for a new feature, the likelihood that it will be implemented
 goes way up if you or someone else plans to submit a merge request along
 with it.
+
+If the feature is small enough that you won't feel like your time was
+wasted if we decide not to adopt it, you can just submit a merge
+request rather than going to the issue tracker.
+Make sure to explain why you think it's a good feature to have!
+!213 is an example of a small feature suggestion that was submitted as a
+merge request.
 
 In cases where you've seen something that needs to be fixed or
 refactored in the code, it's OK not to use a template.
@@ -181,6 +194,9 @@ on the size and complexity of the merge request.
 Be prepared to accept constructive criticism on your code and to work on
 improving it before it's merged; code review comments don't mean it's
 bad.
+
+!242 is an example of a bug fix merge request with a few code review
+comments on it, if you want to get a feel for the process.
 
 Contributors with a GNOME developer account have automatic push access
 to the main GJS repository.
