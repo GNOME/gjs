@@ -1661,8 +1661,9 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
      * might be traced and we will end up dereferencing a null pointer */
     JS_SetPrivate(object, ObjectInstance::new_for_js_object(context, object));
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     if (!gjs_object_require_property(context, object, "GObject instance",
-                                     GJS_STRING_GOBJECT_INIT, &initer))
+                                     atoms.init(), &initer))
         return false;
 
     argv.rval().setUndefined();
@@ -1822,9 +1823,10 @@ gjs_lookup_object_prototype_from_info(JSContext    *context,
     if (G_UNLIKELY(!constructor))
         return NULL;
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedObject prototype(context);
     if (!gjs_object_require_property(context, constructor, "constructor object",
-                                     GJS_STRING_PROTOTYPE, &prototype))
+                                     atoms.prototype(), &prototype))
         return NULL;
 
     return prototype;

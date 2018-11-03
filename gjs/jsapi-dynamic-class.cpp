@@ -28,6 +28,7 @@
 #include <util/glib.h>
 #include <util/misc.h>
 
+#include "gjs/context-private.h"
 #include "jsapi-class.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
@@ -125,13 +126,13 @@ gjs_init_class_dynamic(JSContext              *context,
     } else {
         /* Have to fake it with JSPROP_RESOLVING, otherwise it will trigger
          * the resolve hook */
-        if (!gjs_object_define_property(context, constructor,
-                                        GJS_STRING_PROTOTYPE, prototype,
-                                        JSPROP_PERMANENT | JSPROP_READONLY | JSPROP_RESOLVING))
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+        if (!JS_DefinePropertyById(
+                context, constructor, atoms.prototype(), prototype,
+                JSPROP_PERMANENT | JSPROP_READONLY | JSPROP_RESOLVING))
             goto out;
-        if (!gjs_object_define_property(context, prototype,
-                                        GJS_STRING_CONSTRUCTOR, constructor,
-                                        JSPROP_RESOLVING))
+        if (!JS_DefinePropertyById(context, prototype, atoms.constructor(),
+                                   constructor, JSPROP_RESOLVING))
             goto out;
     }
 
@@ -191,11 +192,11 @@ gjs_construct_object_dynamic(JSContext                  *context,
 {
     JSAutoRequest ar(context);
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedObject constructor(context);
 
     if (!gjs_object_require_property(context, proto, "prototype",
-                                     GJS_STRING_CONSTRUCTOR,
-                                     &constructor))
+                                     atoms.constructor(), &constructor))
         return NULL;
 
     return JS_New(context, constructor, args);
