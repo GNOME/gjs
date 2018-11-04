@@ -238,7 +238,7 @@ gjs_define_interface_class(JSContext              *context,
                                 gjs_interface_static_funcs,
                                 &prototype,
                                 constructor)) {
-        g_error("Can't init class %s", constructor_name);
+        return false;
     }
 
     GJS_INC_COUNTER(interface);

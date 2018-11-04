@@ -87,8 +87,16 @@ struct GjsHeapOperation<JSObject *> {
     }
 };
 
-template<>
-struct GjsHeapOperation<JS::Value> {};
+template <>
+struct GjsHeapOperation<JSFunction*> {
+    static void expose_to_js(const JS::Heap<JSFunction*>& thing) {
+        JSFunction* func = thing.unbarrieredGet();
+        if (!func || !js::gc::detail::GetGCThingZone(uintptr_t(func)))
+            return;
+        if (!JS::CurrentThreadIsHeapCollecting())
+            js::gc::ExposeGCThingToActiveJS(JS::GCCellPtr(func));
+    }
+};
 
 /* GjsMaybeOwned is intended only for use in heap allocation. Do not allocate it
  * on the stack, and do not allocate any instances of structures that have it as
