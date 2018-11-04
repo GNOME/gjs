@@ -93,8 +93,7 @@ class GjsModule {
                     int              line_number)
     {
         JS::CompileOptions options(cx);
-        options.setFileAndLine(filename, line_number)
-               .setSourceIsLazy(true);
+        options.setFileAndLine(filename, line_number);
 
         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
         std::u16string utf16_string = convert.from_bytes(script);
@@ -102,8 +101,10 @@ class GjsModule {
                                    JS::SourceBufferHolder::NoOwnership);
 
         JS::AutoObjectVector scope_chain(cx);
-        if (!scope_chain.append(module))
-            g_error("Unable to append to vector");
+        if (!scope_chain.append(module)) {
+            JS_ReportOutOfMemory(cx);
+            return false;
+        }
 
         JS::RootedValue ignored_retval(cx);
         if (!JS::Evaluate(cx, scope_chain, options, buf, &ignored_retval))

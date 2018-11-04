@@ -304,7 +304,6 @@ static JSFunctionSpec gjs_error_constructor_funcs[] = {
 bool gjs_define_error_class(JSContext* context, JS::HandleObject in_object,
                             GIEnumInfo* info) {
     const char *constructor_name;
-    GIBoxedInfo *glib_error_info;
     JS::RootedObject prototype(context), constructor(context);
     Error *priv;
 
@@ -316,10 +315,10 @@ bool gjs_define_error_class(JSContext* context, JS::HandleObject in_object,
     constructor_name = g_base_info_get_name( (GIBaseInfo*) info);
 
     g_irepository_require(NULL, "GLib", "2.0", (GIRepositoryLoadFlags) 0, NULL);
-    glib_error_info = (GIBoxedInfo*) g_irepository_find_by_name(NULL, "GLib", "Error");
+    GjsAutoStructInfo glib_error_info =
+        g_irepository_find_by_name(nullptr, "GLib", "Error");
     JS::RootedObject parent_proto(context,
         gjs_lookup_generic_prototype(context, glib_error_info));
-    g_base_info_unref((GIBaseInfo*)glib_error_info);
 
     if (!parent_proto ||
         !gjs_init_class_dynamic(

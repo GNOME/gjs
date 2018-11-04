@@ -243,7 +243,7 @@ GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
                                gjs_##cname##_proto_funcs, nullptr,             \
                                gjs_##cname##_static_funcs));                   \
         if (!proto)                                                            \
-            g_error("Can't init class %s", gjs_##cname##_class.name);          \
+            return false;                                                      \
         gjs_set_global_slot(cx, GJS_GLOBAL_SLOT_PROTOTYPE_##cname,             \
                             JS::ObjectValue(*proto));                          \
                                                                                \
