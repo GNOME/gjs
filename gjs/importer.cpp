@@ -97,7 +97,7 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool
 define_meta_properties(JSContext       *context,
                        JS::HandleObject module_obj,
-                       const char      *full_path,
+                       const char      *parse_name,
                        const char      *module_name,
                        JS::HandleObject parent)
 {
@@ -119,9 +119,9 @@ define_meta_properties(JSContext       *context,
               parent.get(), module_obj.get(),
               module_name ? module_name : "<root>", parent_is_module);
 
-    if (full_path != NULL) {
+    if (parse_name != nullptr) {
         JS::RootedValue file(context);
-        if (!gjs_string_from_utf8(context, full_path, &file))
+        if (!gjs_string_from_utf8(context, parse_name, &file))
             return false;
         if (!JS_DefineProperty(context, module_obj, "__file__", file, attrs))
             return false;
@@ -272,25 +272,26 @@ cancel_import(JSContext       *context,
  * gjs_import_native_module:
  * @cx: the #JSContext
  * @importer: the root importer
- * @name: Name under which the module was registered with
- *  gjs_register_native_module()
+ * @parse_name: Name under which the module was registered with
+ *  gjs_register_native_module(), should be in the format as returned by
+ *  g_file_get_parse_name()
  *
  * Imports a builtin native-code module so that it is available to JS code as
- * `imports[name]`.
+ * `imports[parse_name]`.
  *
  * Returns: true on success, false if an exception was thrown.
  */
 bool
 gjs_import_native_module(JSContext       *cx,
                          JS::HandleObject importer,
-                         const char      *name)
+                         const char      *parse_name)
 {
-    gjs_debug(GJS_DEBUG_IMPORTER, "Importing '%s'", name);
+    gjs_debug(GJS_DEBUG_IMPORTER, "Importing '%s'", parse_name);
 
     JS::RootedObject module(cx);
-    return gjs_load_native_module(cx, name, &module) &&
-           define_meta_properties(cx, module, nullptr, name, importer) &&
-           JS_DefineProperty(cx, importer, name, module, GJS_MODULE_PROP_FLAGS);
+    return gjs_load_native_module(cx, parse_name, &module) &&
+           define_meta_properties(cx, module, nullptr, parse_name, importer) &&
+           JS_DefineProperty(cx, importer, parse_name, module, GJS_MODULE_PROP_FLAGS);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
