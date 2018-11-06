@@ -24,7 +24,7 @@
 
 #include <config.h>
 
-#include <set>
+#include <unordered_map>
 
 #include "gtype.h"
 #include "gjs/jsapi-class.h"
@@ -33,7 +33,8 @@
 #include <girepository.h>
 
 static bool weak_pointer_callback = false;
-static std::set<GType> weak_pointer_list;
+static std::unordered_map<GType, std::unique_ptr<JS::Heap<JSObject*>>>
+    weak_pointer_list;
 
 GJS_USE static JSObject* gjs_gtype_get_proto(JSContext* cx) G_GNUC_UNUSED;
 GJS_JSAPI_RETURN_CONVENTION
@@ -46,26 +47,13 @@ GJS_DEFINE_PROTO_ABSTRACT("GIRepositoryGType", gtype,
 /* priv_from_js adds a "*", so this returns "void *" */
 GJS_DEFINE_PRIV_FROM_JS(void, gjs_gtype_class);
 
-GJS_USE
-static GQuark
-gjs_get_gtype_wrapper_quark(void)
-{
-    static gsize once_init = 0;
-    static GQuark value = 0;
-    if (g_once_init_enter(&once_init)) {
-        value = g_quark_from_string("gjs-gtype-wrapper");
-        g_once_init_leave(&once_init, 1);
-    }
-    return value;
-}
-
 static void
 update_gtype_weak_pointers(JSContext     *cx,
                            JSCompartment *compartment,
                            void          *data)
 {
     for (auto iter = weak_pointer_list.begin(); iter != weak_pointer_list.end(); ) {
-        auto heap_wrapper = static_cast<JS::Heap<JSObject *> *>(g_type_get_qdata(*iter, gjs_get_gtype_wrapper_quark()));
+        JS::Heap<JSObject *> *heap_wrapper = iter->second.get();
         JS_UpdateWeakPointerAfterGC(heap_wrapper);
 
         /* No read barriers are needed if the only thing we are doing with the
@@ -98,7 +86,6 @@ gjs_gtype_finalize(JSFreeOp *fop,
         return;
 
     weak_pointer_list.erase(gtype);
-    g_type_set_qdata(gtype, gjs_get_gtype_wrapper_quark(), NULL);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -111,7 +98,8 @@ to_string_func(JSContext *cx,
     GType gtype = GPOINTER_TO_SIZE(priv);
 
     if (gtype == 0) {
-        JS::RootedString str(cx, JS_NewStringCopyZ(cx, "[object GType prototype]"));
+        JS::RootedString str(cx,
+                             JS_AtomizeString(cx, "[object GType prototype]"));
         if (!str)
             return false;
         rec.rval().setString(str);
@@ -163,26 +151,28 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
 
     JSAutoRequest ar(context);
 
-    auto heap_wrapper =
-        static_cast<JS::Heap<JSObject *> *>(g_type_get_qdata(gtype, gjs_get_gtype_wrapper_quark()));
-    if (heap_wrapper != nullptr)
-        return *heap_wrapper;
+    auto heap_wrapper_it = weak_pointer_list.find(gtype);
+    if (heap_wrapper_it != std::end(weak_pointer_list))
+        return *heap_wrapper_it->second;
 
     JS::RootedObject proto(context);
     if (!gjs_gtype_define_proto(context, nullptr, &proto))
         return nullptr;
 
-    heap_wrapper = new JS::Heap<JSObject *>();
-    *heap_wrapper = JS_NewObjectWithGivenProto(context, &gjs_gtype_class, proto);
-    if (*heap_wrapper == nullptr)
+    auto heap_wrapper = std::make_unique<JS::Heap<JSObject *>>();
+    if (!(*heap_wrapper =
+          JS_NewObjectWithGivenProto(context, &gjs_gtype_class, proto)))
         return nullptr;
 
     JS_SetPrivate(*heap_wrapper, GSIZE_TO_POINTER(gtype));
     ensure_weak_pointer_callback(context);
-    g_type_set_qdata(gtype, gjs_get_gtype_wrapper_quark(), heap_wrapper);
-    weak_pointer_list.insert(gtype);
 
-    return *heap_wrapper;
+    /* Saving a reference to the wrapper pointer, as heap_wrapper will be
+     * nullified by std::move */
+    JSObject *gtype_wrapper = *heap_wrapper;
+    weak_pointer_list.insert({gtype, std::move(heap_wrapper)});
+
+    return gtype_wrapper;
 }
 
 GJS_JSAPI_RETURN_CONVENTION

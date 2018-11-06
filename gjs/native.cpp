@@ -77,8 +77,9 @@ gjs_is_registered_native_module(JSContext  *context,
 /**
  * gjs_load_native_module:
  * @context: the #JSContext
- * @name: Name under which the module was registered with
- *  gjs_register_native_module()
+ * @parse_name: Name under which the module was registered with
+ *  gjs_register_native_module(), should be in the format as returned by
+ *  g_file_get_parse_name()
  * @module_out: Return location for a #JSObject
  *
  * Loads a builtin native-code module called @name into @module_out.
@@ -87,24 +88,24 @@ gjs_is_registered_native_module(JSContext  *context,
  */
 bool
 gjs_load_native_module(JSContext              *context,
-                       const char             *name,
+                       const char             *parse_name,
                        JS::MutableHandleObject module_out)
 {
     GjsDefineModuleFunc func;
 
     gjs_debug(GJS_DEBUG_NATIVE,
               "Defining native module '%s'",
-              name);
+              parse_name);
 
     if (modules != NULL)
-        func = (GjsDefineModuleFunc) g_hash_table_lookup(modules, name);
+        func = (GjsDefineModuleFunc) g_hash_table_lookup(modules, parse_name);
     else
         func = NULL;
 
     if (!func) {
         gjs_throw(context,
                   "No native module '%s' has registered itself",
-                  name);
+                  parse_name);
         return false;
     }
 

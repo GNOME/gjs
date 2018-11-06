@@ -97,7 +97,7 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool
 define_meta_properties(JSContext       *context,
                        JS::HandleObject module_obj,
-                       const char      *full_path,
+                       const char      *parse_name,
                        const char      *module_name,
                        JS::HandleObject parent)
 {
@@ -119,8 +119,10 @@ define_meta_properties(JSContext       *context,
               parent.get(), module_obj.get(),
               module_name ? module_name : "<root>", parent_is_module);
 
-    if (full_path != NULL) {
-        JS::RootedString file(context, JS_NewStringCopyZ(context, full_path));
+    if (parse_name != nullptr) {
+        JS::RootedValue file(context);
+        if (!gjs_string_from_utf8(context, parse_name, &file))
+            return false;
         if (!JS_DefineProperty(context, module_obj, "__file__", file, attrs))
             return false;
     }
@@ -132,7 +134,8 @@ define_meta_properties(JSContext       *context,
     JS::RootedValue module_path(context, JS::NullValue());
     JS::RootedValue to_string_tag(context);
     if (parent_is_module) {
-        module_name_val.setString(JS_NewStringCopyZ(context, module_name));
+        if (!gjs_string_from_utf8(context, module_name, &module_name_val))
+            return false;
         parent_module_val.setObject(*parent);
 
         JS::RootedValue parent_module_path(context);
@@ -150,11 +153,13 @@ define_meta_properties(JSContext       *context,
                 return false;
             module_path_buf = g_strdup_printf("%s.%s", parent_path.get(), module_name);
         }
-        module_path.setString(JS_NewStringCopyZ(context, module_path_buf));
+        if (!gjs_string_from_utf8(context, module_path_buf, &module_path))
+            return false;
 
         GjsAutoChar to_string_tag_buf = g_strdup_printf("GjsModule %s",
                                                         module_path_buf.get());
-        to_string_tag.setString(JS_NewStringCopyZ(context, to_string_tag_buf));
+        if (!gjs_string_from_utf8(context, to_string_tag_buf, &to_string_tag))
+            return false;
     } else {
         to_string_tag.setString(JS_AtomizeString(context, "GjsModule"));
     }
@@ -267,25 +272,26 @@ cancel_import(JSContext       *context,
  * gjs_import_native_module:
  * @cx: the #JSContext
  * @importer: the root importer
- * @name: Name under which the module was registered with
- *  gjs_register_native_module()
+ * @parse_name: Name under which the module was registered with
+ *  gjs_register_native_module(), should be in the format as returned by
+ *  g_file_get_parse_name()
  *
  * Imports a builtin native-code module so that it is available to JS code as
- * `imports[name]`.
+ * `imports[parse_name]`.
  *
  * Returns: true on success, false if an exception was thrown.
  */
 bool
 gjs_import_native_module(JSContext       *cx,
                          JS::HandleObject importer,
-                         const char      *name)
+                         const char      *parse_name)
 {
-    gjs_debug(GJS_DEBUG_IMPORTER, "Importing '%s'", name);
+    gjs_debug(GJS_DEBUG_IMPORTER, "Importing '%s'", parse_name);
 
     JS::RootedObject module(cx);
-    return gjs_load_native_module(cx, name, &module) &&
-           define_meta_properties(cx, module, nullptr, name, importer) &&
-           JS_DefineProperty(cx, importer, name, module, GJS_MODULE_PROP_FLAGS);
+    return gjs_load_native_module(cx, parse_name, &module) &&
+           define_meta_properties(cx, module, nullptr, parse_name, importer) &&
+           JS_DefineProperty(cx, importer, parse_name, module, GJS_MODULE_PROP_FLAGS);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
