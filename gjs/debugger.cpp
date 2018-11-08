@@ -44,8 +44,8 @@ static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!gjs_parse_call_args(cx, "quit", args, "i", "exitcode", &exitcode))
         return false;
 
-    auto* gjs = static_cast<GjsContext*>(JS_GetContextPrivate(cx));
-    _gjs_context_exit(gjs, exitcode);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+    gjs->exit(exitcode);
     return false;  // without gjs_throw() == "throw uncatchable exception"
 }
 
@@ -124,8 +124,10 @@ void gjs_context_setup_debugger_console(GjsContext* gjs) {
         return;
     }
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedValue v_wrapper(cx, JS::ObjectValue(*debuggee_wrapper));
-    if (!JS_SetProperty(cx, debugger_compartment, "debuggee", v_wrapper) ||
+    if (!JS_SetPropertyById(cx, debugger_compartment, atoms.debuggee(),
+                            v_wrapper) ||
         !JS_DefineFunctions(cx, debugger_compartment, debugger_funcs) ||
         !gjs_define_global_properties(cx, debugger_compartment, "debugger"))
         gjs_log_exception(cx);

@@ -376,8 +376,8 @@ fundamental_invoke_constructor(FundamentalInstance        *priv,
 {
     JS::RootedObject js_constructor(context);
 
-    if (!gjs_object_require_property(context, obj, NULL,
-                                     GJS_STRING_CONSTRUCTOR,
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    if (!gjs_object_require_property(context, obj, NULL, atoms.constructor(),
                                      &js_constructor) ||
         priv->prototype->constructor_name.get() == JSID_VOID) {
         gjs_throw (context,
@@ -603,9 +603,10 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
 
     g_assert(constructor);
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedObject prototype(context);
     if (!gjs_object_require_property(context, constructor, "constructor object",
-                                     GJS_STRING_PROTOTYPE, &prototype))
+                                     atoms.prototype(), &prototype))
         return NULL;
 
     return prototype;
@@ -724,8 +725,9 @@ gjs_define_fundamental_class(JSContext              *context,
     if (!gtype_obj)
         return false;
 
-    return JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
-                             JSPROP_PERMANENT);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    return JS_DefinePropertyById(context, constructor, atoms.gtype(), gtype_obj,
+                                 JSPROP_PERMANENT);
 }
 
 JSObject*

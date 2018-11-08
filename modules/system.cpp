@@ -140,8 +140,8 @@ gjs_exit(JSContext *context,
                              "ecode", &ecode))
         return false;
 
-    GjsContext *gjs_context = static_cast<GjsContext *>(JS_GetContextPrivate(context));
-    _gjs_context_exit(gjs_context, ecode);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+    gjs->exit(ecode);
     return false;  /* without gjs_throw() == "throw uncatchable exception" */
 }
 
@@ -178,42 +178,22 @@ bool
 gjs_js_define_system_stuff(JSContext              *context,
                            JS::MutableHandleObject module)
 {
-    GjsContext *gjs_context;
-    char *program_name;
-    bool retval;
-
     module.set(JS_NewPlainObject(context));
 
     if (!JS_DefineFunctions(context, module, &module_funcs[0]))
         return false;
 
-    retval = false;
-
-    gjs_context = (GjsContext*) JS_GetContextPrivate(context);
-    g_object_get(gjs_context,
-                 "program-name", &program_name,
-                 NULL);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+    const char* program_name = gjs->program_name();
 
     JS::RootedValue value(context);
-    if (!gjs_string_from_utf8(context, program_name, &value))
-        goto out;
-
-    /* The name is modeled after program_invocation_name,
-       part of the glibc */
-    if (!JS_DefineProperty(context, module,
-                           "programInvocationName",
-                           value,
-                           GJS_MODULE_PROP_FLAGS | JSPROP_READONLY))
-        goto out;
-
-    if (!JS_DefineProperty(context, module,
-                           "version", GJS_VERSION,
-                           GJS_MODULE_PROP_FLAGS | JSPROP_READONLY))
-        goto out;
-
-    retval = true;
-
- out:
-    g_free(program_name);
-    return retval;
+    return gjs_string_from_utf8(context, program_name, &value) &&
+           /* The name is modeled after program_invocation_name, part of glibc
+            */
+           JS_DefinePropertyById(context, module,
+                                 gjs->atoms().program_invocation_name(), value,
+                                 GJS_MODULE_PROP_FLAGS | JSPROP_READONLY) &&
+           JS_DefinePropertyById(context, module, gjs->atoms().version(),
+                                 GJS_VERSION,
+                                 GJS_MODULE_PROP_FLAGS | JSPROP_READONLY);
 }

@@ -27,6 +27,7 @@
 
 #include <vector>
 
+#include "gjs/context-private.h"
 #include "importer.h"
 #include "jsapi-class.h"
 #include "jsapi-wrapper.h"
@@ -73,9 +74,9 @@ importer_to_string(JSContext *cx,
     GJS_GET_THIS(cx, argc, vp, args, importer);
     const JSClass *klass = JS_GetClass(importer);
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedValue module_path(cx);
-    if (!gjs_object_get_property(cx, importer, GJS_STRING_MODULE_PATH,
-                                 &module_path))
+    if (!JS_GetPropertyById(cx, importer, atoms.module_path(), &module_path))
         return false;
 
     GjsAutoChar output;
@@ -102,6 +103,7 @@ define_meta_properties(JSContext       *context,
                        JS::HandleObject parent)
 {
     bool parent_is_module;
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
 
     /* For these meta-properties, don't set ENUMERATE since we wouldn't want to
      * copy these symbols to any other object for example. RESOLVING is used to
@@ -123,7 +125,8 @@ define_meta_properties(JSContext       *context,
         JS::RootedValue file(context);
         if (!gjs_string_from_utf8(context, parse_name, &file))
             return false;
-        if (!JS_DefineProperty(context, module_obj, "__file__", file, attrs))
+        if (!JS_DefinePropertyById(context, module_obj, atoms.file(), file,
+                                   attrs))
             return false;
     }
 
@@ -139,9 +142,8 @@ define_meta_properties(JSContext       *context,
         parent_module_val.setObject(*parent);
 
         JS::RootedValue parent_module_path(context);
-        if (!gjs_object_get_property(context, parent,
-                                     GJS_STRING_MODULE_PATH,
-                                     &parent_module_path))
+        if (!JS_GetPropertyById(context, parent, atoms.module_path(),
+                                &parent_module_path))
             return false;
 
         GjsAutoChar module_path_buf;
@@ -164,16 +166,16 @@ define_meta_properties(JSContext       *context,
         to_string_tag.setString(JS_AtomizeString(context, "GjsModule"));
     }
 
-    if (!JS_DefineProperty(context, module_obj,
-                           "__moduleName__", module_name_val, attrs))
+    if (!JS_DefinePropertyById(context, module_obj, atoms.module_name(),
+                               module_name_val, attrs))
         return false;
 
-    if (!JS_DefineProperty(context, module_obj,
-                           "__parentModule__", parent_module_val, attrs))
+    if (!JS_DefinePropertyById(context, module_obj, atoms.parent_module(),
+                               parent_module_val, attrs))
         return false;
 
-    if (!JS_DefineProperty(context, module_obj, "__modulePath__", module_path,
-                           attrs))
+    if (!JS_DefinePropertyById(context, module_obj, atoms.module_path(),
+                               module_path, attrs))
         return false;
 
     JS::RootedId to_string_tag_name(context,
@@ -339,15 +341,15 @@ GJS_JSAPI_RETURN_CONVENTION
 static JSObject* load_module_init(JSContext* cx, JS::HandleObject in_object,
                                   const char* full_path) {
     bool found;
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
 
     /* First we check if js module has already been loaded  */
-    if (!gjs_object_has_property(cx, in_object, GJS_STRING_MODULE_INIT,
-                                 &found))
+    if (!JS_HasPropertyById(cx, in_object, atoms.module_init(), &found))
         return nullptr;
     if (found) {
         JS::RootedValue v_module(cx);
-        if (!gjs_object_get_property(cx, in_object, GJS_STRING_MODULE_INIT,
-                                     &v_module))
+        if (!JS_GetPropertyById(cx, in_object, atoms.module_init(),
+                                &v_module))
             return nullptr;
         if (v_module.isObject())
             return &v_module.toObject();
@@ -367,9 +369,8 @@ static JSObject* load_module_init(JSContext* cx, JS::HandleObject in_object,
         return module_obj;
     }
 
-    if (!gjs_object_define_property(cx, in_object,
-                                    GJS_STRING_MODULE_INIT, module_obj,
-                                    GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT))
+    if (!JS_DefinePropertyById(cx, in_object, atoms.module_init(), module_obj,
+                               GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT))
         return nullptr;
 
     return module_obj;
@@ -474,9 +475,10 @@ static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
     guint32 search_path_len;
     guint32 i;
     bool exists, is_array;
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
 
     if (!gjs_object_require_property(context, obj, "importer",
-                                     GJS_STRING_SEARCH_PATH, &search_path))
+                                     atoms.search_path(), &search_path))
         return false;
 
     if (!JS_IsArrayObject(context, search_path, &is_array))
@@ -629,6 +631,7 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
     guint32 search_path_len;
     guint32 i;
     bool is_array;
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
 
     priv = priv_from_js(context, object);
 
@@ -638,8 +641,7 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
 
     JS::RootedObject search_path(context);
     if (!gjs_object_require_property(context, object, "importer",
-                                     GJS_STRING_SEARCH_PATH,
-                                     &search_path))
+                                     atoms.search_path(), &search_path))
         return false;
 
     if (!JS_IsArrayObject(context, search_path, &is_array))
@@ -741,24 +743,15 @@ importer_resolve(JSContext        *context,
                  bool             *resolved)
 {
     Importer *priv;
-    jsid module_init_name;
 
     if (!JSID_IS_STRING(id)) {
         *resolved = false;
         return true;
     }
 
-    module_init_name = gjs_context_get_const_string(context, GJS_STRING_MODULE_INIT);
-    if (id == module_init_name) {
-        *resolved = false;
-        return true;
-    }
-
-    /* let Object.prototype resolve these */
-    JSFlatString *str = JSID_TO_FLAT_STRING(id);
-    if (JS_FlatStringEqualsAscii(str, "valueOf") ||
-        JS_FlatStringEqualsAscii(str, "toString") ||
-        JS_FlatStringEqualsAscii(str, "__iterator__")) {
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    if (id == atoms.module_init() || id == atoms.to_string() ||
+        id == atoms.value_of()) {
         *resolved = false;
         return true;
     }
