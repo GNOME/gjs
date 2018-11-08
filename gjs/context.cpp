@@ -462,7 +462,10 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     m_global = global;
     JS_AddExtraGCRootsTracer(m_cx, &GjsContextPrivate::trace, this);
 
-    m_atoms.init_symbols(m_cx);
+    if (!m_atoms.init_atoms(m_cx)) {
+        gjs_log_exception(m_cx);
+        g_error("Failed to initialize global strings");
+    }
 
     JS::RootedObject importer(m_cx,
                               gjs_create_root_importer(m_cx, m_search_path));
