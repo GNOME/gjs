@@ -484,8 +484,12 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, JS::HandleString name,
         /* prevent setting the prop even in JS */
         return gjs_wrapper_throw_readonly_field(cx, gtype(), param_spec->name);
 
-    if (param_spec->flags & G_PARAM_DEPRECATED)
-        _gjs_warn_deprecated_once_per_callsite(cx, DeprecatedGObjectProperty);
+    if (param_spec->flags & G_PARAM_DEPRECATED) {
+        const std::string& class_name = format_name();
+        _gjs_warn_deprecated_once_per_callsite(
+            cx, DeprecatedGObjectProperty,
+            {class_name.c_str(), param_spec->name});
+    }
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop %s",
                      param_spec->name);
