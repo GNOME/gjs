@@ -26,6 +26,7 @@
 #define GJS_ATOMS_H_
 
 #include "gjs/jsapi-wrapper.h"
+#include "gjs/macros.h"
 
 // clang-format off
 #define FOR_EACH_ATOM(macro) \
@@ -76,29 +77,29 @@
 // clang-format on
 
 struct GjsAtom {
-    void init(JSContext* cx, const char* str);
+    GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx, const char* str);
 
     /* It's OK to return JS::HandleId here, to avoid an extra root, with the
      * caveat that you should not use this value after the GjsContext has been
      * destroyed.*/
-    JS::HandleId operator()() const {
+    GJS_USE JS::HandleId operator()() const {
         return JS::HandleId::fromMarkedLocation(&m_jsid.get());
     }
 
-    JS::Heap<jsid>* id() { return &m_jsid; }
+    GJS_USE JS::Heap<jsid>* id() { return &m_jsid; }
 
  protected:
     JS::Heap<jsid> m_jsid;
 };
 
 struct GjsSymbolAtom : GjsAtom {
-    void init(JSContext* cx, const char* str);
+    GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx, const char* str);
 };
 
 class GjsAtoms {
  public:
-    explicit GjsAtoms(JSContext* cx);
-    void init_symbols(JSContext* cx);
+    explicit GjsAtoms(JSContext* cx) {}
+    GJS_JSAPI_RETURN_CONVENTION bool init_atoms(JSContext* cx);
 
     void trace(JSTracer* trc);
 

@@ -27,27 +27,34 @@
 #include "gjs/atoms.h"
 #include "gjs/jsapi-wrapper.h"
 
-void GjsAtom::init(JSContext* cx, const char* str) {
-    m_jsid = INTERNED_STRING_TO_JSID(cx, JS_AtomizeAndPinString(cx, str));
+bool GjsAtom::init(JSContext* cx, const char* str) {
+    JSString* s = JS_AtomizeAndPinString(cx, str);
+    if (!s)
+        return false;
+    m_jsid = INTERNED_STRING_TO_JSID(cx, s);
+    return true;
 }
 
-void GjsSymbolAtom::init(JSContext* cx, const char* str) {
+bool GjsSymbolAtom::init(JSContext* cx, const char* str) {
     JS::RootedString descr(cx, JS_AtomizeAndPinString(cx, str));
-    m_jsid = SYMBOL_TO_JSID(JS::NewSymbol(cx, descr));
+    if (!descr)
+        return false;
+    JS::Symbol* symbol = JS::NewSymbol(cx, descr);
+    if (!symbol)
+        return false;
+    m_jsid = SYMBOL_TO_JSID(symbol);
+    return true;
 }
 
-#define INITIALIZE_ATOM(identifier, str) identifier.init(cx, str);
-
-GjsAtoms::GjsAtoms(JSContext* cx) {
-    JSAutoRequest ar(cx);
+/* Requires a current compartment. This can GC, so it needs to be done after the
+ * tracing has been set up. */
+bool GjsAtoms::init_atoms(JSContext* cx) {
+#define INITIALIZE_ATOM(identifier, str) \
+    if (!identifier.init(cx, str))       \
+        return false;
     FOR_EACH_ATOM(INITIALIZE_ATOM)
-}
-
-/* Requires a current compartment. Unlike the atoms initialized in the
- * constructor, this can GC, so it needs to be done after the tracing has been
- * set up. */
-void GjsAtoms::init_symbols(JSContext* cx) {
     FOR_EACH_SYMBOL_ATOM(INITIALIZE_ATOM)
+    return true;
 }
 
 void GjsAtoms::trace(JSTracer* trc) {
