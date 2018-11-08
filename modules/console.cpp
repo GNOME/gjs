@@ -348,8 +348,8 @@ gjs_console_interact(JSContext *context,
         }
         g_string_free(buffer, true);
 
-        auto gjs_context = static_cast<GjsContext *>(JS_GetContextPrivate(context));
-        ok = _gjs_context_run_jobs(gjs_context) && ok;
+        GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+        ok = gjs->run_jobs() && ok;
 
         if (!ok) {
             /* If this was an uncatchable exception, throw another uncatchable
@@ -375,6 +375,8 @@ gjs_define_console_stuff(JSContext              *context,
                          JS::MutableHandleObject module)
 {
     module.set(JS_NewPlainObject(context));
-    return JS_DefineFunction(context, module, "interact", gjs_console_interact,
-                             1, GJS_MODULE_PROP_FLAGS);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    return JS_DefineFunctionById(context, module, atoms.interact(),
+                                 gjs_console_interact, 1,
+                                 GJS_MODULE_PROP_FLAGS);
 }

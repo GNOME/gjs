@@ -25,6 +25,7 @@
 
 #include "byteArray.h"
 #include "gi/boxed.h"
+#include "gjs/context-private.h"
 #include "gjs/deprecation.h"
 #include "jsapi-util-args.h"
 #include "jsapi-wrapper.h"
@@ -253,7 +254,12 @@ from_string_func(JSContext *context,
     if (!array_buffer)
         return false;
     obj = JS_NewUint8ArrayWithBuffer(context, array_buffer, 0, -1);
-    JS_DefineFunction(context, obj, "toString", instance_to_string_func, 1, 0);
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    if (!JS_DefineFunctionById(context, obj, atoms.to_string(),
+                               instance_to_string_func, 1, 0))
+        return false;
+
     argv.rval().setObject(*obj);
     return true;
 }
@@ -292,7 +298,11 @@ from_gbytes_func(JSContext *context,
         context, JS_NewUint8ArrayWithBuffer(context, array_buffer, 0, -1));
     if (!obj)
         return false;
-    JS_DefineFunction(context, obj, "toString", instance_to_string_func, 1, 0);
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    if (!JS_DefineFunctionById(context, obj, atoms.to_string(),
+                               instance_to_string_func, 1, 0))
+        return false;
 
     argv.rval().setObject(*obj);
     return true;
@@ -310,7 +320,11 @@ JSObject* gjs_byte_array_from_data(JSContext* cx, size_t nbytes, void* data) {
 
     JS::RootedObject array(cx,
                            JS_NewUint8ArrayWithBuffer(cx, array_buffer, 0, -1));
-    JS_DefineFunction(cx, array, "toString", instance_to_string_func, 1, 0);
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    if (!JS_DefineFunctionById(cx, array, atoms.to_string(),
+                               instance_to_string_func, 1, 0))
+        return nullptr;
     return array;
 }
 

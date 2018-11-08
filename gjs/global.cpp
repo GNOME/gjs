@@ -25,6 +25,7 @@
 
 #include <gio/gio.h>
 
+#include "gjs/context-private.h"
 #include "gjs/engine.h"
 #include "global.h"
 #include "importer.h"
@@ -260,8 +261,9 @@ class GjsGlobal {
                       JS::HandleObject global,
                       const char      *bootstrap_script)
     {
-        if (!JS_DefineProperty(cx, global, "window", global,
-                               JSPROP_READONLY | JSPROP_PERMANENT) ||
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+        if (!JS_DefinePropertyById(cx, global, atoms.window(), global,
+                                   JSPROP_READONLY | JSPROP_PERMANENT) ||
             !JS_DefineFunctions(cx, global, GjsGlobal::static_funcs))
             return false;
 
@@ -274,8 +276,8 @@ class GjsGlobal {
         /* Wrapping is a no-op if the importer is already in the same
          * compartment. */
         if (!JS_WrapObject(cx, &root_importer) ||
-            !gjs_object_define_property(cx, global, GJS_STRING_IMPORTS,
-                                        root_importer, GJS_MODULE_PROP_FLAGS))
+            !JS_DefinePropertyById(cx, global, atoms.imports(), root_importer,
+                                   GJS_MODULE_PROP_FLAGS))
             return false;
 
         if (bootstrap_script) {

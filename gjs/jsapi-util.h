@@ -326,93 +326,16 @@ bool gjs_eval_with_scope(JSContext             *context,
                          const char            *filename,
                          JS::MutableHandleValue retval);
 
-typedef enum {
-  GJS_STRING_CONSTRUCTOR,
-  GJS_STRING_PROTOTYPE,
-  GJS_STRING_LENGTH,
-  GJS_STRING_IMPORTS,
-  GJS_STRING_PARENT_MODULE,
-  GJS_STRING_MODULE_INIT,
-  GJS_STRING_SEARCH_PATH,
-  GJS_STRING_KEEP_ALIVE_MARKER,
-  GJS_STRING_PRIVATE_NS_MARKER,
-  GJS_STRING_GI_MODULE,
-  GJS_STRING_GI_VERSIONS,
-  GJS_STRING_GI_OVERRIDES,
-  GJS_STRING_GOBJECT_INIT,
-  GJS_STRING_INSTANCE_INIT,
-  GJS_STRING_NEW_INTERNAL,
-  GJS_STRING_NEW,
-  GJS_STRING_MESSAGE,
-  GJS_STRING_CODE,
-  GJS_STRING_STACK,
-  GJS_STRING_FILENAME,
-  GJS_STRING_LINE_NUMBER,
-  GJS_STRING_COLUMN_NUMBER,
-  GJS_STRING_NAME,
-  GJS_STRING_X,
-  GJS_STRING_Y,
-  GJS_STRING_WIDTH,
-  GJS_STRING_HEIGHT,
-  GJS_STRING_MODULE_PATH,
-  GJS_STRING_LAST
-} GjsConstString;
-
 GJS_USE
 const char * gjs_strip_unix_shebang(const char *script,
                                     size_t     *script_len,
                                     int        *new_start_line_number);
-
-/* These four functions wrap JS_GetPropertyById(), etc., but with a
- * GjsConstString constant instead of a jsid. */
-
-bool gjs_object_get_property(JSContext             *cx,
-                             JS::HandleObject       obj,
-                             GjsConstString         property_name,
-                             JS::MutableHandleValue value_p);
-
-bool gjs_object_set_property(JSContext       *cx,
-                             JS::HandleObject obj,
-                             GjsConstString   property_name,
-                             JS::HandleValue  value);
-
-bool gjs_object_has_property(JSContext       *cx,
-                             JS::HandleObject obj,
-                             GjsConstString   property_name,
-                             bool            *found);
 
 G_END_DECLS
 
 GJS_JSAPI_RETURN_CONVENTION
 GjsAutoChar gjs_format_stack_trace(JSContext       *cx,
                                    JS::HandleObject saved_frame);
-
-bool gjs_object_define_property(JSContext       *cx,
-                                JS::HandleObject obj,
-                                GjsConstString   property_name,
-                                JS::HandleValue  value,
-                                unsigned         flags);
-
-bool gjs_object_define_property(JSContext       *cx,
-                                JS::HandleObject obj,
-                                GjsConstString   property_name,
-                                JS::HandleObject value,
-                                unsigned         flags);
-
-bool gjs_object_define_property(JSContext       *cx,
-                                JS::HandleObject obj,
-                                GjsConstString   property_name,
-                                JS::HandleString value,
-                                unsigned         flags);
-
-bool gjs_object_define_property(JSContext       *cx,
-                                JS::HandleObject obj,
-                                GjsConstString   property_name,
-                                uint32_t         value,
-                                unsigned         flags);
-
-JS::HandleId gjs_context_get_const_string(JSContext     *cx,
-                                          GjsConstString string);
 
 /* Overloaded functions, must be outside G_DECLS. More types are intended to be
  * added as the opportunity arises. */
@@ -457,26 +380,6 @@ bool gjs_object_require_converted_property(JSContext       *context,
                                            const char      *description,
                                            JS::HandleId     property_name,
                                            uint32_t        *value);
-
-/* Here, too, we have wrappers that take a GjsConstString. */
-
-template <typename T>
-GJS_JSAPI_RETURN_CONVENTION bool gjs_object_require_property(
-    JSContext* cx, JS::HandleObject obj, const char* description,
-    GjsConstString property_name, T value) {
-    return gjs_object_require_property(cx, obj, description,
-                                       gjs_context_get_const_string(cx, property_name),
-                                       value);
-}
-
-template <typename T>
-GJS_JSAPI_RETURN_CONVENTION bool gjs_object_require_converted_property(
-    JSContext* cx, JS::HandleObject obj, const char* description,
-    GjsConstString property_name, T value) {
-    return gjs_object_require_converted_property(cx, obj, description,
-                                                 gjs_context_get_const_string(cx, property_name),
-                                                 value);
-}
 
 GJS_USE std::string gjs_debug_string(JSString* str);
 GJS_USE std::string gjs_debug_symbol(JS::Symbol* const sym);

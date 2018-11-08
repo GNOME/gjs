@@ -23,6 +23,7 @@
 #include <config.h>
 
 #include "gi/foreign.h"
+#include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-wrapper.h"
@@ -121,24 +122,25 @@ fill_rectangle(JSContext             *context,
                JS::HandleObject       obj,
                cairo_rectangle_int_t *rect)
 {
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedValue val(context);
 
-    if (!gjs_object_get_property(context, obj, GJS_STRING_X, &val))
+    if (!JS_GetPropertyById(context, obj, atoms.x(), &val))
         return false;
     if (!JS::ToInt32(context, val, &rect->x))
         return false;
 
-    if (!gjs_object_get_property(context, obj, GJS_STRING_Y, &val))
+    if (!JS_GetPropertyById(context, obj, atoms.y(), &val))
         return false;
     if (!JS::ToInt32(context, val, &rect->y))
         return false;
 
-    if (!gjs_object_get_property(context, obj, GJS_STRING_WIDTH, &val))
+    if (!JS_GetPropertyById(context, obj, atoms.width(), &val))
         return false;
     if (!JS::ToInt32(context, val, &rect->width))
         return false;
 
-    if (!gjs_object_get_property(context, obj, GJS_STRING_HEIGHT, &val))
+    if (!JS_GetPropertyById(context, obj, atoms.height(), &val))
         return false;
     if (!JS::ToInt32(context, val, &rect->height))
         return false;
@@ -151,25 +153,26 @@ static JSObject *
 make_rectangle(JSContext *context,
                cairo_rectangle_int_t *rect)
 {
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedObject rect_obj(context, JS_NewPlainObject(context));
     if (!rect_obj)
         return nullptr;
     JS::RootedValue val(context);
 
     val = JS::Int32Value(rect->x);
-    if (!JS_SetProperty(context, rect_obj, "x", val))
+    if (!JS_SetPropertyById(context, rect_obj, atoms.x(), val))
         return nullptr;
 
     val = JS::Int32Value(rect->y);
-    if (!JS_SetProperty(context, rect_obj, "y", val))
+    if (!JS_SetPropertyById(context, rect_obj, atoms.y(), val))
         return nullptr;
 
     val = JS::Int32Value(rect->width);
-    if (!JS_SetProperty(context, rect_obj, "width", val))
+    if (!JS_SetPropertyById(context, rect_obj, atoms.width(), val))
         return nullptr;
 
     val = JS::Int32Value(rect->height);
-    if (!JS_SetProperty(context, rect_obj, "height", val))
+    if (!JS_SetPropertyById(context, rect_obj, atoms.height(), val))
         return nullptr;
 
     return rect_obj;

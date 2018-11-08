@@ -72,7 +72,6 @@ static_assert(sizeof(ObjectInstance) <= 88,
 std::stack<JS::PersistentRootedObject> ObjectInstance::object_init_list{};
 static bool weak_pointer_callback = false;
 ObjectInstance *ObjectInstance::wrapped_gobject_list = nullptr;
-JS::PersistentRootedSymbol ObjectInstance::hook_up_vfunc_root;
 
 extern struct JSClass gjs_object_instance_class;
 GJS_DEFINE_PRIV_FROM_JS(ObjectBase, gjs_object_instance_class)
@@ -1208,8 +1207,6 @@ ObjectInstance::toggle_down(void)
      * collected by the GC
      */
     if (wrapper_is_rooted()) {
-        GjsContext *context;
-
         debug_lifecycle("Unrooting wrapper");
         switch_to_unrooted();
 
@@ -1229,9 +1226,9 @@ ObjectInstance::toggle_down(void)
          * always queue a garbage collection when a toggle reference goes
          * down.
          */
-        context = gjs_context_get_current();
-        if (!_gjs_context_destroying(context))
-            _gjs_context_schedule_gc(context);
+        GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
+        if (!gjs->destroying())
+            gjs->schedule_gc();
     }
 }
 
@@ -1283,10 +1280,9 @@ wrapped_gobj_toggle_notify(gpointer      data,
 {
     bool is_main_thread;
     bool toggle_up_queued, toggle_down_queued;
-    GjsContext *context;
 
-    context = gjs_context_get_current();
-    if (_gjs_context_destroying(context)) {
+    GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
+    if (gjs->destroying()) {
         /* Do nothing here - we're in the process of disassociating
          * the objects.
          */
@@ -1321,7 +1317,7 @@ wrapped_gobj_toggle_notify(gpointer      data,
      * weak singletons like g_bus_get_sync() objects can see toggle-ups
      * from different threads too.
      */
-    is_main_thread = _gjs_context_get_is_owner_thread(context);
+    is_main_thread = gjs->is_owner_thread();
 
     auto& toggle_queue = ToggleQueue::get_default();
     std::tie(toggle_down_queued, toggle_up_queued) = toggle_queue.is_queued(gobj);
@@ -1664,8 +1660,9 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(object_instance)
      * might be traced and we will end up dereferencing a null pointer */
     JS_SetPrivate(object, ObjectInstance::new_for_js_object(context, object));
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     if (!gjs_object_require_property(context, object, "GObject instance",
-                                     GJS_STRING_GOBJECT_INIT, &initer))
+                                     atoms.init(), &initer))
         return false;
 
     argv.rval().setUndefined();
@@ -1825,9 +1822,10 @@ gjs_lookup_object_prototype_from_info(JSContext    *context,
     if (G_UNLIKELY(!constructor))
         return NULL;
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedObject prototype(context);
     if (!gjs_object_require_property(context, constructor, "constructor object",
-                                     GJS_STRING_PROTOTYPE, &prototype))
+                                     atoms.prototype(), &prototype))
         return NULL;
 
     return prototype;
@@ -2150,19 +2148,6 @@ gjs_object_define_static_methods(JSContext       *context,
     return true;
 }
 
-JS::Symbol*
-ObjectInstance::hook_up_vfunc_symbol(JSContext *cx)
-{
-    if (!hook_up_vfunc_root.initialized()) {
-        JS::RootedString descr(cx,
-            JS_NewStringCopyZ(cx, "__GObject__hook_up_vfunc"));
-        if (!descr)
-            g_error("Out of memory defining internal symbol");
-        hook_up_vfunc_root.init(cx, JS::NewSymbol(cx, descr));
-    }
-    return hook_up_vfunc_root;
-}
-
 bool
 gjs_define_object_class(JSContext              *context,
                         JS::HandleObject        in_object,
@@ -2246,9 +2231,8 @@ gjs_define_object_class(JSContext              *context,
 
     /* Hook_up_vfunc can't be included in gjs_object_instance_proto_funcs
      * because it's a custom symbol. */
-    JS::RootedId hook_up_vfunc(context,
-        SYMBOL_TO_JSID(ObjectInstance::hook_up_vfunc_symbol(context)));
-    if (!JS_DefineFunctionById(context, prototype, hook_up_vfunc,
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    if (!JS_DefineFunctionById(context, prototype, atoms.hook_up_vfunc(),
                                &ObjectBase::hook_up_vfunc, 3,
                                GJS_MODULE_PROP_FLAGS))
         return false;
@@ -2271,8 +2255,8 @@ gjs_define_object_class(JSContext              *context,
     if (!gtype_obj)
         return false;
 
-    return JS_DefineProperty(context, constructor, "$gtype", gtype_obj,
-                             JSPROP_PERMANENT);
+    return JS_DefinePropertyById(context, constructor, atoms.gtype(), gtype_obj,
+                                 JSPROP_PERMANENT);
 }
 
 JSObject*

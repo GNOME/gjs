@@ -141,7 +141,8 @@ closure_marshal(GClosure        *closure,
     }
 
     context = gjs_closure_get_context(closure);
-    if (G_UNLIKELY(_gjs_context_is_sweeping(context))) {
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+    if (G_UNLIKELY(gjs->sweeping())) {
         GSignalInvocationHint *hint = (GSignalInvocationHint*) invocation_hint;
 
         g_critical("Attempting to call back into JSAPI during the sweeping phase of GC. "
@@ -477,16 +478,15 @@ gjs_value_to_g_value_internal(JSContext      *context,
         if (value.isNull()) {
             /* do nothing */
         } else {
+            const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
             JS::RootedObject array_obj(context, &value.toObject());
-            if (gjs_object_has_property(context, array_obj,
-                                        GJS_STRING_LENGTH, &found_length) &&
+            if (JS_HasPropertyById(context, array_obj, atoms.length(),
+                                   &found_length) &&
                 found_length) {
                 guint32 length;
 
-                if (!gjs_object_require_converted_property(context, array_obj,
-                                                           NULL,
-                                                           GJS_STRING_LENGTH,
-                                                           &length)) {
+                if (!gjs_object_require_converted_property(
+                        context, array_obj, nullptr, atoms.length(), &length)) {
                     JS_ClearPendingException(context);
                     return throw_expect_type(context, value, "strv");
                 } else {
