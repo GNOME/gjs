@@ -573,9 +573,6 @@ bool gjs_object_define_static_methods(JSContext       *context,
                                       GType            gtype,
                                       GIObjectInfo    *object_info);
 
-void gjs_object_associate_closure(JSContext* cx, JS::HandleObject obj,
-                                  GClosure* closure);
-
 G_END_DECLS
 
 #endif  /* __GJS_OBJECT_H__ */

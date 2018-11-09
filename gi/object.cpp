@@ -2551,12 +2551,3 @@ gjs_lookup_object_constructor(JSContext             *context,
     value_p.setObject(*constructor);
     return true;
 }
-
-void gjs_object_associate_closure(JSContext* cx, JS::HandleObject object,
-                                  GClosure* closure) {
-    auto* priv = ObjectBase::for_js(cx, object);
-    if (!priv)
-        return;
-
-    priv->associate_closure(cx, closure);
-}
