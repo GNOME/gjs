@@ -360,21 +360,17 @@ bool ObjectBase::prop_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
         /* Ignore silently; note that this is different from what we do for
          * boxed types, for historical reasons */
 
-    return priv->to_instance()->prop_getter_impl(cx, obj, name, args.rval());
+    return priv->to_instance()->prop_getter_impl(cx, name, args.rval());
 }
 
-bool
-ObjectInstance::prop_getter_impl(JSContext             *cx,
-                                 JS::HandleObject       obj,
-                                 JS::HandleString       name,
-                                 JS::MutableHandleValue rval)
-{
+bool ObjectInstance::prop_getter_impl(JSContext* cx, JS::HandleString name,
+                                      JS::MutableHandleValue rval) {
     if (!check_gobject_disposed("get any property from"))
         return true;
 
     GValue gvalue = { 0, };
 
-    auto* proto_priv = ObjectBase::for_js(cx, obj)->get_prototype();
+    ObjectPrototype* proto_priv = get_prototype();
     GParamSpec *param = proto_priv->find_param_spec_from_id(cx, name);
 
     /* This is guaranteed because we resolved the property before */
@@ -462,19 +458,15 @@ bool ObjectBase::field_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
         /* Ignore silently; note that this is different from what we do for
          * boxed types, for historical reasons */
 
-    return priv->to_instance()->field_getter_impl(cx, obj, name, args.rval());
+    return priv->to_instance()->field_getter_impl(cx, name, args.rval());
 }
 
-bool
-ObjectInstance::field_getter_impl(JSContext             *cx,
-                                  JS::HandleObject       obj,
-                                  JS::HandleString       name,
-                                  JS::MutableHandleValue rval)
-{
+bool ObjectInstance::field_getter_impl(JSContext* cx, JS::HandleString name,
+                                       JS::MutableHandleValue rval) {
     if (!check_gobject_disposed("get any property from"))
         return true;
 
-    auto* proto_priv = ObjectInstance::for_js(cx, obj)->get_prototype();
+    ObjectPrototype* proto_priv = get_prototype();
     GIFieldInfo *field = proto_priv->find_field_info_from_id(cx, name);
     /* This is guaranteed because we resolved the property before */
     g_assert(field);
@@ -528,19 +520,15 @@ bool ObjectBase::prop_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
     /* Clear the JS stored value, to avoid keeping additional references */
     args.rval().setUndefined();
 
-    return priv->to_instance()->prop_setter_impl(cx, obj, name, args[0]);
+    return priv->to_instance()->prop_setter_impl(cx, name, args[0]);
 }
 
-bool
-ObjectInstance::prop_setter_impl(JSContext       *cx,
-                                 JS::HandleObject obj,
-                                 JS::HandleString name,
-                                 JS::HandleValue  value)
-{
+bool ObjectInstance::prop_setter_impl(JSContext* cx, JS::HandleString name,
+                                      JS::HandleValue value) {
     if (!check_gobject_disposed("set any property on"))
         return true;
 
-    auto* proto_priv = ObjectInstance::for_js(cx, obj)->get_prototype();
+    ObjectPrototype* proto_priv = get_prototype();
     GParamSpec *param_spec = proto_priv->find_param_spec_from_id(cx, name);
     if (!param_spec)
         return false;
@@ -590,19 +578,15 @@ bool ObjectBase::field_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
      * the field */
     args.rval().setUndefined();
 
-    return priv->to_instance()->field_setter_impl(cx, obj, name, args[0]);
+    return priv->to_instance()->field_setter_impl(cx, name, args[0]);
 }
 
-bool
-ObjectInstance::field_setter_impl(JSContext       *cx,
-                                  JS::HandleObject obj,
-                                  JS::HandleString name,
-                                  JS::HandleValue  value)
-{
+bool ObjectInstance::field_setter_impl(JSContext* cx, JS::HandleString name,
+                                       JS::HandleValue value) {
     if (!check_gobject_disposed("set GObject field on"))
         return true;
 
-    auto* proto_priv = ObjectInstance::for_js(cx, obj)->get_prototype();
+    ObjectPrototype* proto_priv = get_prototype();
     GIFieldInfo *field = proto_priv->find_field_info_from_id(cx, name);
     if (field == NULL)
         return false;
