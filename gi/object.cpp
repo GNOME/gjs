@@ -1733,7 +1733,7 @@ void ObjectBase::finalize(JSFreeOp* fop, JSObject* obj) {
 ObjectInstance::~ObjectInstance() {
     debug_lifecycle("Finalize");
 
-    TRACE(GJS_OBJECT_PROXY_FINALIZE(priv, m_gobj, ns(), name()));
+    TRACE(GJS_OBJECT_PROXY_FINALIZE(this, m_gobj, ns(), name()));
 
     invalidate_all_closures();
 
