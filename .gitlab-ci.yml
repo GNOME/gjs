@@ -165,6 +165,17 @@ with_logging:
   except:
     - schedules
 
+with_systemtap:
+  <<: *build
+  stage: test
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-default-systemtap-check"
+    TEST: "check"
+    BUILD_OPTS: "--enable-systemtap"
+  except:
+    - schedules
+
 no_graphics:
   <<: *build
   stage: test
