@@ -172,18 +172,6 @@ struct GCPolicy<GjsAutoParam> : public IgnoreGCPolicy<GjsAutoParam> {};
 
 G_BEGIN_DECLS
 
-#define GJS_UTIL_ERROR gjs_util_error_quark ()
-GQuark gjs_util_error_quark (void);
-enum {
-  GJS_UTIL_ERROR_NONE,
-  GJS_UTIL_ERROR_ARGUMENT_INVALID,
-  GJS_UTIL_ERROR_ARGUMENT_UNDERFLOW,
-  GJS_UTIL_ERROR_ARGUMENT_OVERFLOW,
-  GJS_UTIL_ERROR_ARGUMENT_TYPE_MISMATCH
-};
-
-typedef struct GjsRootedArray GjsRootedArray;
-
 /* Flags that should be set on properties exported from native code modules.
  * Basically set these on API, but do NOT set them on data.
  *
