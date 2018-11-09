@@ -42,12 +42,6 @@
 #include "util/log.h"
 #include "util/misc.h"
 
-GQuark
-gjs_util_error_quark (void)
-{
-    return g_quark_from_static_string ("gjs-util-error-quark");
-}
-
 static void
 throw_property_lookup_error(JSContext       *cx,
                             JS::HandleObject obj,
