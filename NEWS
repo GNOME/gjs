@@ -1,3 +1,17 @@
+Version 1.54.3
+--------------
+
+- Closed bugs and merge requests:
+  * object: Fix write-only properties [!246, Philip Chimento]
+  * SIGSEGV when exiting gnome-shell [#212, !247, Andrea Azzarone]
+  * SelectionData.get_targets crashes with "Unable to resize vector" [#201,
+    !241, Philip Chimento]
+  * Gnome-shell crashes on destroying cached param specs [#213, !240, Marco
+    Trevisan]
+  * GType memleak fixes [!244, Marco Trevisan]
+  * Fix build with --enable-dtrace and create CI job to ensure it doesn't break
+    in the future [#196, !253, Philip Chimento]
+
 Version 1.54.2
 --------------
 
