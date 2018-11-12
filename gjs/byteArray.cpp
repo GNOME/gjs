@@ -50,6 +50,12 @@ static void bytes_unref_arraybuffer(void* contents, void* user_data) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
                            const char* encoding, JS::MutableHandleValue rval) {
+    if (!JS_IsUint8Array(byte_array)) {
+        gjs_throw(context,
+                  "Argument to ByteArray.toString() must be a Uint8Array");
+        return false;
+    }
+
     bool encoding_is_utf8;
     uint8_t* data;
 
@@ -160,6 +166,12 @@ to_gbytes_func(JSContext *context,
     if (!gjs_parse_call_args(context, "toGBytes", rec, "o",
                              "byteArray", &byte_array))
         return false;
+
+    if (!JS_IsUint8Array(byte_array)) {
+        gjs_throw(context,
+                  "Argument to ByteArray.toString() must be a Uint8Array");
+        return false;
+    }
 
     GBytes* bytes = gjs_byte_array_get_bytes(byte_array);
     gbytes_info = g_irepository_find_by_gtype(NULL, G_TYPE_BYTES);
