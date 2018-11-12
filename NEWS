@@ -1,3 +1,28 @@
+Version 1.55.2
+--------------
+
+- Closed bugs and merge requests:
+  * Gnome-shell crashes on destroying cached param specs [#213, !240, Marco
+    Trevisan]
+  * Various maintenance [!235, !250, Philip Chimento]
+  * Auto pointers builder [!243, Marco Trevisan]
+  * configure.ac: Update bug link [!245, Andrea Azzarone]
+  * SIGSEGV when exiting gnome-shell [#212, !247, Andrea Azzarone, Philip
+    Chimento]
+  * Fix build with --enable-dtrace and create CI job to ensure it doesn't break
+    in the future [#196, !237, !253, Philip Chimento]
+  * Delay JSString-to-UTF8 conversion [!249, Philip Chimento]
+  * Annotate return values [!251, Philip Chimento]
+  * Fix a regression with GError toString() [!252, Philip Chimento]
+  * GType memleak fixes [!244, Marco Trevisan]
+  * Atoms refactor [!233, Philip Chimento, Marco Trevisan]
+  * Write a "Code Hospitable" README file [#17, !248, Philip Chimento, Andy
+    Holmes, Avi Zajac]
+  * object: Method lookup repeatedly traverses introspection [#54, !53, Colin
+    Walters, Philip Chimento]
+  * Handler of GtkEditable::insert-text signal is not run [#147, !143, Tomasz
+    Miąsko, Philip Chimento]
+
 Version 1.54.3
 --------------
 
