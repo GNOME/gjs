@@ -73,6 +73,11 @@ static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
     bool is_shared_memory;
     js::GetUint8ArrayLengthAndData(byte_array, &len, &is_shared_memory, &data);
 
+    if (len == 0) {
+        rval.setString(JS_GetEmptyString(context));
+        return true;
+    }
+
     if (encoding_is_utf8) {
         /* optimization, avoids iconv overhead and runs
          * libmozjs hardwired utf8-to-utf16
