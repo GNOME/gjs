@@ -58,6 +58,18 @@ describe('Byte array', function () {
         expect(s).toEqual('ab');
     });
 
+    it('deals gracefully with a 0-length array', function () {
+        const a = new Uint8Array(0);
+        expect(ByteArray.toString(a)).toEqual('');
+        expect(ByteArray.toGBytes(a).get_size()).toEqual(0);
+    });
+
+    it('deals gracefully with a non Uint8Array', function () {
+        const a = [97, 98, 99, 100, 0];
+        expect(() => ByteArray.toString(a)).toThrow();
+        expect(() => ByteArray.toGBytes(a)).toThrow();
+    });
+
     describe('legacy toString() behavior', function () {
         beforeEach(function () {
             GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,

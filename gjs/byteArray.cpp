@@ -50,6 +50,12 @@ static void bytes_unref_arraybuffer(void* contents, void* user_data) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
                            const char* encoding, JS::MutableHandleValue rval) {
+    if (!JS_IsUint8Array(byte_array)) {
+        gjs_throw(context,
+                  "Argument to ByteArray.toString() must be a Uint8Array");
+        return false;
+    }
+
     bool encoding_is_utf8;
     uint8_t* data;
 
@@ -66,6 +72,11 @@ static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
     uint32_t len;
     bool is_shared_memory;
     js::GetUint8ArrayLengthAndData(byte_array, &len, &is_shared_memory, &data);
+
+    if (len == 0) {
+        rval.setString(JS_GetEmptyString(context));
+        return true;
+    }
 
     if (encoding_is_utf8) {
         /* optimization, avoids iconv overhead and runs
@@ -161,7 +172,16 @@ to_gbytes_func(JSContext *context,
                              "byteArray", &byte_array))
         return false;
 
+    if (!JS_IsUint8Array(byte_array)) {
+        gjs_throw(context,
+                  "Argument to ByteArray.toGBytes() must be a Uint8Array");
+        return false;
+    }
+
     GBytes* bytes = gjs_byte_array_get_bytes(byte_array);
+
+    g_irepository_require(nullptr, "GLib", "2.0", GIRepositoryLoadFlags(0),
+                          nullptr);
     gbytes_info = g_irepository_find_by_gtype(NULL, G_TYPE_BYTES);
     ret_bytes_obj = gjs_boxed_from_c_struct(context, (GIStructInfo*)gbytes_info,
                                             bytes, GJS_BOXED_CREATION_NONE);
