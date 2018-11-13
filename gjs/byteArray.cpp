@@ -179,6 +179,9 @@ to_gbytes_func(JSContext *context,
     }
 
     GBytes* bytes = gjs_byte_array_get_bytes(byte_array);
+
+    g_irepository_require(nullptr, "GLib", "2.0", GIRepositoryLoadFlags(0),
+                          nullptr);
     gbytes_info = g_irepository_find_by_gtype(NULL, G_TYPE_BYTES);
     ret_bytes_obj = gjs_boxed_from_c_struct(context, (GIStructInfo*)gbytes_info,
                                             bytes, GJS_BOXED_CREATION_NONE);
