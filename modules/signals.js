@@ -82,16 +82,11 @@ function _signalHandlerIsConnected(id) {
     if (!('_signalConnections' in this))
         return false;
 
-    let i;
-    let length = this._signalConnections.length;
-    for (i = 0; i < length; ++i) {
-        let connection = this._signalConnections[i];
-        if (connection.id == id) {
-            if (connection.disconnected) {
-                return false;
-            }
-            return true;
-        }
+    const {length} = this._signalConnections;
+    for (let i = 0; i < length; ++i) {
+        const connection = this._signalConnections[i];
+        if (connection.id === id)
+            return !connection.disconnected;
     }
 
     return false;
@@ -173,7 +168,7 @@ function addSignalMethods(proto) {
     _addSignalMethod(proto, "connect", _connect);
     _addSignalMethod(proto, "disconnect", _disconnect);
     _addSignalMethod(proto, "emit", _emit);
-    _addSignalMethod(proto, 'signalHandlerIsConnected', _signalHandlerIsConnected)
+    _addSignalMethod(proto, 'signalHandlerIsConnected', _signalHandlerIsConnected);
     // this one is not in GObject, but useful
     _addSignalMethod(proto, "disconnectAll", _disconnectAll);
 }
