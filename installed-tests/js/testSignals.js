@@ -92,6 +92,13 @@ function testSignals(klass) {
         expect(bonk).not.toHaveBeenCalled();
     });
 
+    it('determines if a signal is connected on a JS object', function () {
+        let id = foo.connect('bar', bar);
+        expect(foo.signalHandlerIsConnected(id)).toEqual(true);
+        foo.disconnect(id);
+        expect(foo.signalHandlerIsConnected(id)).toEqual(false);
+    });
+
     describe('with exception in signal handler', function () {
         let bar2;
         beforeEach(function () {
