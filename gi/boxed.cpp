@@ -1160,7 +1160,6 @@ bool gjs_define_boxed_class(JSContext* context, JS::HandleObject in_object,
     boxed_fill_prototype_info(context, priv);
 
     g_base_info_ref( (GIBaseInfo*) priv->info);
-    priv->gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo*) priv->info);
     JS_SetPrivate(prototype, priv);
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
