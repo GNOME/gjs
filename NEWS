@@ -1,3 +1,22 @@
+Version 1.52.5
+--------------
+
+- Closed bugs and merge requests:
+
+  * context: Ensure force_gc flag is not lost if the idle is scheduled
+    [#150, Carlos Garnacho]
+  * object: don't use toggle references unless necessary [#679688,
+    Giovanni Campagna]
+  * object: properly disassociate wrappers [!256, Georges Basile
+    Stavracas Neto]
+  * object: Only weak unref if GObject is still alive [!127]
+  * object: Queue a forced GC when toggling down [#140, Georges Basile
+    Stavracas Neto]
+  * context: Defer and therefore batch forced GC runs
+    [GNOME/gnome-shell#582, Daniel van Vugt]
+  * Avoid context weak refs [!122, #144, Carlos Garnacho]
+  * Use compacting GC on RSS size growth [!133, #151, Carlos Garnacho]
+
 Version 1.52.4
 --------------
 
