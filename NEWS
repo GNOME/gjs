@@ -1,3 +1,35 @@
+Version 1.52.5
+--------------
+
+- This was a release consisting only of backports from the GNOME 3.30 branch to
+  the GNOME 3.28 branch.
+
+- This release includes the "Big Hammer" patch from GNOME 3.30 to reduce memory
+  usage. For more information, read the blog post at
+  https://feaneron.com/2018/04/20/the-infamous-gnome-shell-memory-leak/
+  It was not originally intended to be backported to GNOME 3.28, but in practice
+  several Linux distributions already backported it, and it has been working
+  well to reduce memory usage, and the bugs have been ironed out of it.
+
+  It does decrease performance somewhat, so if you don't want that then don't
+  install this update.
+
+- Closed bugs and merge requests:
+
+  * Ensure not to miss the force_gc flag [#150, !132, Carlos Garnacho]
+  * Make GC much more aggressive [#62, !50, Giovanni Campagna, Georges Basile
+    Stavracas Neto, Philip Chimento]
+  * Queue GC when a GObject reference is toggled down [#140, !114, !127, Georges
+    Basile Stavracas Neto]
+  * Reduce memory overhead of g_object_weak_ref() [#144, !122, Carlos Garnacho,
+    Philip Chimento]
+  * context: Defer and therefore batch forced GC runs [performance] [!236,
+    Daniel van Vugt]
+  * context: use timeout with seconds to schedule a gc trigger [!239, Marco
+    Trevisan]
+  * Use compacting GC on RSS size growth [!133, #151, Carlos Garnacho]
+  * GType memleak fixes [!244, Marco Trevisan]
+
 Version 1.55.2
 --------------
 
