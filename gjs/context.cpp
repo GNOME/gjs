@@ -936,7 +936,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
 
     /* log and clear exception if it's set (should not be, normally...) */
     if (JS_IsExceptionPending(m_cx)) {
-        g_warning("eval_in_scope called with a pending exception");
+        g_warning("eval_with_scope() called with a pending exception");
         return false;
     }
 
@@ -965,7 +965,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
 
     if (JS_IsExceptionPending(m_cx)) {
         g_warning(
-            "EvaluateScript returned true but exception was pending; "
+            "JS::Evaluate() returned true but exception was pending; "
             "did somebody call gjs_throw() without returning false?");
         return false;
     }
