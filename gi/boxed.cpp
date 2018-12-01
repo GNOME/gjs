@@ -134,8 +134,8 @@ boxed_resolve(JSContext       *context,
          * per-instance props that we want to define on the
          * JSObject. Generally we do not want to cache these in JS, we
          * want to always pull them from the C object, or JS would not
-         * see any changes made from C. So we use the get/set prop
-         * hooks, not this resolve hook.
+         * see any changes made from C. So we use the property accessors, not
+         * this resolve hook.
          */
         *resolved = false;
         return true;
@@ -179,8 +179,9 @@ boxed_resolve(JSContext       *context,
     return true;
 }
 
-/* Check to see if JS::Value passed in is another Boxed object of the same,
- * and if so, retrieves the Boxed private structure for it.
+/* Check to see if JS::Value passed in is another Boxed object of the same type,
+ * and if so, retrieve the Boxed private structure for it. This function does
+ * not throw any JS exceptions.
  */
 GJS_USE
 static bool
