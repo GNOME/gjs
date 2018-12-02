@@ -134,8 +134,8 @@ boxed_resolve(JSContext       *context,
          * per-instance props that we want to define on the
          * JSObject. Generally we do not want to cache these in JS, we
          * want to always pull them from the C object, or JS would not
-         * see any changes made from C. So we use the get/set prop
-         * hooks, not this resolve hook.
+         * see any changes made from C. So we use the property accessors, not
+         * this resolve hook.
          */
         *resolved = false;
         return true;
@@ -179,8 +179,9 @@ boxed_resolve(JSContext       *context,
     return true;
 }
 
-/* Check to see if JS::Value passed in is another Boxed object of the same,
- * and if so, retrieves the Boxed private structure for it.
+/* Check to see if JS::Value passed in is another Boxed object of the same type,
+ * and if so, retrieve the Boxed private structure for it. This function does
+ * not throw any JS exceptions.
  */
 GJS_USE
 static bool
@@ -317,11 +318,11 @@ boxed_invoke_constructor(JSContext             *context,
                          JS::HandleId           constructor_name,
                          JS::CallArgs&          args)
 {
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     JS::RootedObject js_constructor(context);
 
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    if (!gjs_object_require_property(context, obj, NULL, atoms.constructor(),
-                                     &js_constructor))
+    if (!gjs_object_require_property(
+            context, obj, nullptr, gjs->atoms().constructor(), &js_constructor))
         return false;
 
     JS::RootedValue js_constructor_func(context);
@@ -329,8 +330,7 @@ boxed_invoke_constructor(JSContext             *context,
                                      constructor_name, &js_constructor_func))
         return false;
 
-    return gjs_call_function_value(context, nullptr, js_constructor_func,
-                                   args, args.rval());
+    return gjs->call_function(nullptr, js_constructor_func, args, args.rval());
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -1160,7 +1160,6 @@ bool gjs_define_boxed_class(JSContext* context, JS::HandleObject in_object,
     boxed_fill_prototype_info(context, priv);
 
     g_base_info_ref( (GIBaseInfo*) priv->info);
-    priv->gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo*) priv->info);
     JS_SetPrivate(prototype, priv);
 
     gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",

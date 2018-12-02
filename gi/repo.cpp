@@ -149,7 +149,8 @@ static bool resolve_namespace_object(JSContext* context,
               "Defined namespace '%s' %p in GIRepository %p", ns_name.get(),
               gi_namespace.get(), repo_obj.get());
 
-    gjs_schedule_gc_if_needed(context);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+    gjs->schedule_gc_if_needed();
     return true;
 }
 

@@ -184,7 +184,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(union)
 
     priv = g_slice_new0(Union);
 
-    GJS_INC_COUNTER(boxed);
+    GJS_INC_COUNTER(union);
 
     g_assert(priv_from_js(context, object) == NULL);
     JS_SetPrivate(object, priv);
@@ -261,7 +261,7 @@ union_finalize(JSFreeOp *fop,
         priv->info = NULL;
     }
 
-    GJS_DEC_COUNTER(boxed);
+    GJS_DEC_COUNTER(union);
     g_slice_free(Union, priv);
 }
 
@@ -348,7 +348,7 @@ gjs_define_union_class(JSContext       *context,
         return false;
     }
 
-    GJS_INC_COUNTER(boxed);
+    GJS_INC_COUNTER(union);
     priv = g_slice_new0(Union);
     priv->info = info;
     g_base_info_ref( (GIBaseInfo*) priv->info);
@@ -401,7 +401,7 @@ gjs_union_from_c_union(JSContext    *context,
 
     obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);
 
-    GJS_INC_COUNTER(boxed);
+    GJS_INC_COUNTER(union);
     priv = g_slice_new0(Union);
     JS_SetPrivate(obj, priv);
     priv->info = info;
