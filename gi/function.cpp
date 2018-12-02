@@ -472,7 +472,7 @@ out:
     }
 
     gjs_callback_trampoline_unref(trampoline);
-    gjs_schedule_gc_if_needed(context);
+    gjs->schedule_gc_if_needed();
 
     JS_EndRequest(context);
 }
@@ -512,9 +512,15 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
     bool should_root = scope != GI_SCOPE_TYPE_NOTIFIED || !scope_object;
     trampoline->js_function = gjs_closure_new(
         context, function, g_base_info_get_name(callable_info), should_root);
-    if (!should_root && scope_object)
-        gjs_object_associate_closure(context, scope_object,
-                                     trampoline->js_function);
+    if (!should_root && scope_object) {
+        ObjectBase* scope_priv = ObjectBase::for_js(context, scope_object);
+        if (!scope_priv) {
+            gjs_throw(context, "Signal connected to wrong type of object");
+            return nullptr;
+        }
+
+        scope_priv->associate_closure(context, trampoline->js_function);
+    }
 
     /* Analyze param types and directions, similarly to init_cached_function_data */
     n_args = g_callable_info_get_n_args(trampoline->info);

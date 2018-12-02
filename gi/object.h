@@ -482,17 +482,17 @@ class ObjectInstance : public ObjectBase {
 
  private:
     GJS_JSAPI_RETURN_CONVENTION
-    bool prop_getter_impl(JSContext* cx, JS::HandleObject obj,
-                          JS::HandleString name, JS::MutableHandleValue rval);
+    bool prop_getter_impl(JSContext* cx, JS::HandleString name,
+                          JS::MutableHandleValue rval);
     GJS_JSAPI_RETURN_CONVENTION
-    bool field_getter_impl(JSContext* cx, JS::HandleObject obj,
-                           JS::HandleString name, JS::MutableHandleValue rval);
+    bool field_getter_impl(JSContext* cx, JS::HandleString name,
+                           JS::MutableHandleValue rval);
     GJS_JSAPI_RETURN_CONVENTION
-    bool prop_setter_impl(JSContext* cx, JS::HandleObject obj,
-                          JS::HandleString name, JS::HandleValue value);
+    bool prop_setter_impl(JSContext* cx, JS::HandleString name,
+                          JS::HandleValue value);
     GJS_JSAPI_RETURN_CONVENTION
-    bool field_setter_impl(JSContext* cx, JS::HandleObject obj,
-                           JS::HandleString name, JS::HandleValue value);
+    bool field_setter_impl(JSContext* cx, JS::HandleString name,
+                           JS::HandleValue value);
 
     /* JS methods */
 
@@ -572,9 +572,6 @@ bool gjs_object_define_static_methods(JSContext       *context,
                                       JS::HandleObject constructor,
                                       GType            gtype,
                                       GIObjectInfo    *object_info);
-
-void gjs_object_associate_closure(JSContext* cx, JS::HandleObject obj,
-                                  GClosure* closure);
 
 G_END_DECLS
 

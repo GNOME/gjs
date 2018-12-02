@@ -308,6 +308,7 @@ import_module_init(JSContext       *context,
     gsize script_len = 0;
     GError *error = NULL;
 
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     JS::RootedValue ignored(context);
 
     if (!(g_file_load_contents(file, NULL, &script, &script_len, NULL, &error))) {
@@ -325,8 +326,8 @@ import_module_init(JSContext       *context,
 
     full_path = g_file_get_parse_name (file);
 
-    if (!gjs_eval_with_scope(context, module_obj, script, script_len,
-                             full_path, &ignored))
+    if (!gjs->eval_with_scope(module_obj, script, script_len, full_path,
+                              &ignored))
         goto out;
 
     ret = true;
