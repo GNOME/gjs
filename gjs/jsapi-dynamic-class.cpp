@@ -72,7 +72,7 @@ gjs_init_class_dynamic(JSContext              *context,
 
     JS_BeginRequest(context);
 
-    /* Class initalization consists of three parts:
+    /* Class initalization consists of five parts:
        - building a prototype
        - defining prototype properties and functions
        - building a constructor and definining it on the right object
