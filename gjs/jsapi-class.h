@@ -33,20 +33,12 @@
 G_BEGIN_DECLS
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_init_class_dynamic(JSContext              *cx,
-                            JS::HandleObject        in_object,
-                            JS::HandleObject        parent_proto,
-                            const char             *ns_name,
-                            const char             *class_name,
-                            JSClass                *clasp,
-                            JSNative                constructor_native,
-                            unsigned                nargs,
-                            JSPropertySpec         *ps,
-                            JSFunctionSpec         *fs,
-                            JSPropertySpec         *static_ps,
-                            JSFunctionSpec         *static_fs,
-                            JS::MutableHandleObject prototype,
-                            JS::MutableHandleObject constructor);
+bool gjs_init_class_dynamic(
+    JSContext* cx, JS::HandleObject in_object, JS::HandleObject parent_proto,
+    const char* ns_name, const char* class_name, const JSClass* clasp,
+    JSNative constructor_native, unsigned nargs, JSPropertySpec* ps,
+    JSFunctionSpec* fs, JSPropertySpec* static_ps, JSFunctionSpec* static_fs,
+    JS::MutableHandleObject prototype, JS::MutableHandleObject constructor);
 
 GJS_USE
 bool gjs_typecheck_instance(JSContext       *cx,
