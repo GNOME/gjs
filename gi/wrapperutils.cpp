@@ -25,21 +25,16 @@
 
 #include <string.h>
 
-#include "proxyutils.h"
+#include "gi/wrapperutils.h"
 
 /* Default spidermonkey toString is worthless.  Replace it
  * with something that gives us both the introspection name
  * and a memory address.
  */
-bool
-_gjs_proxy_to_string_func(JSContext             *context,
-                          JSObject              *this_obj,
-                          const char            *objtype,
-                          GIBaseInfo            *info,
-                          GType                  gtype,
-                          gpointer               native_address,
-                          JS::MutableHandleValue rval)
-{
+bool gjs_wrapper_to_string_func(JSContext* context, JSObject* this_obj,
+                                const char* objtype, GIBaseInfo* info,
+                                GType gtype, void* native_address,
+                                JS::MutableHandleValue rval) {
     GString *buf;
     bool ret = false;
 
@@ -49,7 +44,7 @@ _gjs_proxy_to_string_func(JSContext             *context,
     if (native_address == NULL)
         g_string_append(buf, " prototype of");
     else
-        g_string_append(buf, " instance proxy");
+        g_string_append(buf, " instance wrapper");
 
     if (info != NULL) {
         g_string_append_printf(buf, " GIName:%s.%s",
@@ -75,20 +70,14 @@ _gjs_proxy_to_string_func(JSContext             *context,
     return ret;
 }
 
-bool
-_gjs_proxy_throw_nonexistent_field(JSContext  *cx,
-                                   GType       gtype,
-                                   const char *field_name)
-{
+bool gjs_wrapper_throw_nonexistent_field(JSContext* cx, GType gtype,
+                                         const char* field_name) {
     gjs_throw(cx, "No property %s on %s", field_name, g_type_name(gtype));
     return false;
 }
 
-bool
-_gjs_proxy_throw_readonly_field(JSContext  *cx,
-                                GType       gtype,
-                                const char *field_name)
-{
+bool gjs_wrapper_throw_readonly_field(JSContext* cx, GType gtype,
+                                      const char* field_name) {
     gjs_throw(cx, "Property %s.%s is not writable", g_type_name(gtype),
               field_name);
     return false;

@@ -1529,14 +1529,14 @@ function_to_string (JSContext *context,
     arg_names = g_string_free(arg_names_str, false);
 
     if (g_base_info_get_type(priv->info) == GI_INFO_TYPE_FUNCTION) {
-        string = g_strdup_printf("function %s(%s) {\n\t/* proxy for native symbol %s(); */\n}",
-                                 g_base_info_get_name ((GIBaseInfo *) priv->info),
-                                 arg_names,
-                                 g_function_info_get_symbol ((GIFunctionInfo *) priv->info));
+        string = g_strdup_printf(
+            "function %s(%s) {\n\t/* wrapper for native symbol %s(); */\n}",
+            g_base_info_get_name(priv->info), arg_names,
+            g_function_info_get_symbol(priv->info));
     } else {
-        string = g_strdup_printf("function %s(%s) {\n\t/* proxy for native symbol */\n}",
-                                 g_base_info_get_name ((GIBaseInfo *) priv->info),
-                                 arg_names);
+        string = g_strdup_printf(
+            "function %s(%s) {\n\t/* wrapper for native symbol */\n}",
+            g_base_info_get_name(priv->info), arg_names);
     }
 
     g_free(arg_names);

@@ -77,7 +77,7 @@ $15 = [object Function]
 }
 db> p l
 $16 = [object GObject_Object]
-[object instance proxy GIName:GObject.Object jsobj@0xADDR native@0xADDR]
+[object instance wrapper GIName:GObject.Object jsobj@0xADDR native@0xADDR]
 db> p m
 $17 = [object Error]
 Error: message

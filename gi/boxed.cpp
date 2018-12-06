@@ -32,11 +32,11 @@
 #include "boxed.h"
 #include "function.h"
 #include "gi/gerror.h"
+#include "gi/wrapperutils.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/mem-private.h"
 #include "gtype.h"
 #include "object.h"
-#include "proxyutils.h"
 #include "repo.h"
 
 #include <util/log.h>
@@ -876,9 +876,8 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, rec, obj, Boxed, priv);
-    return _gjs_proxy_to_string_func(context, obj, "boxed",
-                                     (GIBaseInfo*)priv->info, priv->gtype,
-                                     priv->gboxed, rec.rval());
+    return gjs_wrapper_to_string_func(context, obj, "boxed", priv->info,
+                                      priv->gtype, priv->gboxed, rec.rval());
 }
 
 static void
