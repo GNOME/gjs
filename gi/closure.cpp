@@ -30,7 +30,7 @@
 #include "closure.h"
 #include "gjs/jsapi-util-root.h"
 #include "gjs/jsapi-wrapper.h"
-#include "gjs/mem.h"
+#include "gjs/mem-private.h"
 
 struct Closure {
     JSContext *context;

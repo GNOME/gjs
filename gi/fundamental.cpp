@@ -35,7 +35,7 @@
 #include "repo.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
-#include "gjs/mem.h"
+#include "gjs/mem-private.h"
 
 #include <gjs/context.h>
 #include <util/log.h>

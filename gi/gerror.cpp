@@ -31,7 +31,7 @@
 #include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
-#include "gjs/mem.h"
+#include "gjs/mem-private.h"
 #include "repo.h"
 #include "util/error.h"
 

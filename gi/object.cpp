@@ -47,7 +47,7 @@
 #include "gjs/jsapi-util-root.h"
 #include "gjs/jsapi-wrapper.h"
 #include "gjs/context-private.h"
-#include "gjs/mem.h"
+#include "gjs/mem-private.h"
 
 #include <util/log.h>
 #include <girepository.h>

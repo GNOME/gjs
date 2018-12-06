@@ -23,8 +23,9 @@
 
 #include <config.h>
 
-#include "mem.h"
-#include <util/log.h>
+#include "gjs/mem-private.h"
+#include "gjs/mem.h"
+#include "util/log.h"
 
 #define GJS_DEFINE_COUNTER(name)             \
     GjsMemCounter gjs_counter_ ## name = { \
