@@ -44,8 +44,6 @@ gjs_srcs =				\
 	gi/param.h			\
 	gi/private.cpp			\
 	gi/private.h			\
-	gi/proxyutils.cpp		\
-	gi/proxyutils.h			\
 	gi/repo.cpp			\
 	gi/repo.h			\
 	gi/toggle.cpp			\
@@ -54,6 +52,8 @@ gjs_srcs =				\
 	gi/union.h			\
 	gi/value.cpp			\
 	gi/value.h			\
+	gi/wrapperutils.cpp		\
+	gi/wrapperutils.h		\
 	gjs/atoms.cpp			\
 	gjs/atoms.h			\
 	gjs/byteArray.cpp		\

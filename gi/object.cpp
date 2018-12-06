@@ -30,24 +30,24 @@
 #include <unordered_map>
 #include <vector>
 
-#include "object.h"
-#include "gtype.h"
-#include "interface.h"
-#include "gjs/jsapi-util-args.h"
-#include "arg.h"
-#include "repo.h"
-#include "function.h"
-#include "proxyutils.h"
-#include "param.h"
-#include "toggle.h"
-#include "value.h"
-#include "closure.h"
-#include "gjs_gi_trace.h"
+#include "gi/arg.h"
+#include "gi/closure.h"
+#include "gi/function.h"
+#include "gi/gjs_gi_trace.h"
+#include "gi/object.h"
+#include "gi/param.h"
+#include "gi/wrapperutils.h"
+#include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
+#include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util-root.h"
 #include "gjs/jsapi-wrapper.h"
-#include "gjs/context-private.h"
 #include "gjs/mem-private.h"
+#include "gtype.h"
+#include "interface.h"
+#include "repo.h"
+#include "toggle.h"
+#include "value.h"
 
 #include <util/log.h>
 #include <girepository.h>
@@ -289,7 +289,7 @@ GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
     GjsAutoParam param_spec(pspec, GjsAutoTakeOwnership());
 
     if (!param_spec) {
-        _gjs_proxy_throw_nonexistent_field(cx, m_gtype, js_prop_name.get());
+        gjs_wrapper_throw_nonexistent_field(cx, m_gtype, js_prop_name.get());
         return nullptr;
     }
 
@@ -434,7 +434,7 @@ GIFieldInfo* ObjectPrototype::find_field_info_from_id(JSContext* cx,
     GjsAutoFieldInfo field = lookup_field_info(m_info, js_prop_name.get());
 
     if (!field) {
-        _gjs_proxy_throw_nonexistent_field(cx, m_gtype, js_prop_name.get());
+        gjs_wrapper_throw_nonexistent_field(cx, m_gtype, js_prop_name.get());
         return nullptr;
     }
 
@@ -541,7 +541,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, JS::HandleString name,
 
     if (!(param_spec->flags & G_PARAM_WRITABLE))
         /* prevent setting the prop even in JS */
-        return _gjs_proxy_throw_readonly_field(cx, gtype(), param_spec->name);
+        return gjs_wrapper_throw_readonly_field(cx, gtype(), param_spec->name);
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop %s",
                      param_spec->name);
@@ -599,8 +599,8 @@ bool ObjectInstance::field_setter_impl(JSContext* cx, JS::HandleString name,
         return true;
     }
 
-    return _gjs_proxy_throw_readonly_field(cx, gtype(),
-                                           g_base_info_get_name(field));
+    return gjs_wrapper_throw_readonly_field(cx, gtype(),
+                                            g_base_info_get_name(field));
 }
 
 bool ObjectPrototype::is_vfunc_unchanged(GIVFuncInfo* info) {
@@ -1116,8 +1116,8 @@ bool ObjectPrototype::props_to_g_parameters(JSContext* context,
         prop_id = ids[ix];
 
         if (!JSID_IS_STRING(prop_id))
-            return _gjs_proxy_throw_nonexistent_field(context, m_gtype,
-                                                      gjs_debug_id(prop_id).c_str());
+            return gjs_wrapper_throw_nonexistent_field(
+                context, m_gtype, gjs_debug_id(prop_id).c_str());
 
         JS::RootedString js_prop_name(context, JSID_TO_STRING(prop_id));
         GParamSpec *param_spec = find_param_spec_from_id(context, js_prop_name);
@@ -1133,8 +1133,8 @@ bool ObjectPrototype::props_to_g_parameters(JSContext* context,
         }
 
         if (!(param_spec->flags & G_PARAM_WRITABLE))
-            return _gjs_proxy_throw_readonly_field(context, m_gtype,
-                                                   param_spec->name);
+            return gjs_wrapper_throw_readonly_field(context, m_gtype,
+                                                    param_spec->name);
             /* prevent setting the prop even in JS */
 
         g_value_init(&gvalue, G_PARAM_SPEC_VALUE_TYPE(param_spec));
@@ -1231,7 +1231,7 @@ ObjectInstance::toggle_down(void)
          *
          * GObjects, however, don't work like that, there's only a
          * reference count but no notion of who owns the reference so,
-         * a JS object that's proxying a GObject is unconditionally held
+         * a JS object that's wrapping a GObject is unconditionally held
          * alive as long as the GObject has >1 references.
          *
          * Since we cannot know how many more wrapped GObjects are going
@@ -1653,7 +1653,7 @@ ObjectInstance::init_impl(JSContext              *context,
 
     debug_lifecycle("JSObject created");
 
-    TRACE(GJS_OBJECT_PROXY_NEW(this, m_gobj, ns(), name()));
+    TRACE(GJS_OBJECT_WRAPPER_NEW(this, m_gobj, ns(), name()));
 
     args.rval().setObject(*object);
     return true;
@@ -1727,7 +1727,7 @@ void ObjectBase::finalize(JSFreeOp* fop, JSObject* obj) {
 ObjectInstance::~ObjectInstance() {
     debug_lifecycle("Finalize");
 
-    TRACE(GJS_OBJECT_PROXY_FINALIZE(this, m_gobj, ns(), name()));
+    TRACE(GJS_OBJECT_WRAPPER_FINALIZE(this, m_gobj, ns(), name()));
 
     invalidate_all_closures();
 
@@ -1737,16 +1737,20 @@ ObjectInstance::~ObjectInstance() {
         bool had_toggle_down;
 
         if (G_UNLIKELY (m_gobj->ref_count <= 0)) {
-            g_error("Finalizing proxy for an already freed object of type: %s.%s\n",
-                    ns(), name());
+            g_error(
+                "Finalizing wrapper for an already freed object of type: "
+                "%s.%s\n",
+                ns(), name());
         }
 
         auto& toggle_queue = ToggleQueue::get_default();
         std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(m_gobj);
 
         if (!had_toggle_up && had_toggle_down) {
-            g_error("Finalizing proxy for an object that's scheduled to be unrooted: %s.%s\n",
-                    ns(), name());
+            g_error(
+                "Finalizing wrapper for an object that's scheduled to be "
+                "unrooted: %s.%s\n",
+                ns(), name());
         }
 
         if (!m_gobj_disposed)
@@ -2054,14 +2058,14 @@ bool
 ObjectInstance::to_string_impl(JSContext          *cx,
                                const JS::CallArgs& args)
 {
-    return _gjs_proxy_to_string_func(
+    return gjs_wrapper_to_string_func(
         cx, m_wrapper, m_gobj_disposed ? "object (FINALIZED)" : "object",
         info(), gtype(), m_gobj, args.rval());
 }
 
 bool ObjectPrototype::to_string_impl(JSContext* cx, const JS::CallArgs& args) {
-    return _gjs_proxy_to_string_func(cx, nullptr, "object prototype", info(),
-                                     gtype(), nullptr, args.rval());
+    return gjs_wrapper_to_string_func(cx, nullptr, "object prototype", info(),
+                                      gtype(), nullptr, args.rval());
 }
 
 static const struct JSClassOps gjs_object_class_ops = {
