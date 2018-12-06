@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_PROXYUTILS_H__
-#define __GJS_PROXYUTILS_H__
+#ifndef GI_WRAPPERUTILS_H_
+#define GI_WRAPPERUTILS_H_
 
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -30,22 +30,17 @@
 G_BEGIN_DECLS
 
 GJS_JSAPI_RETURN_CONVENTION
-bool _gjs_proxy_to_string_func(JSContext             *context,
-                               JSObject              *this_obj,
-                               const char            *objtype,
-                               GIBaseInfo            *info,
-                               GType                  gtype,
-                               gpointer               native_address,
-                               JS::MutableHandleValue ret);
+bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
+                                const char* objtype, GIBaseInfo* info,
+                                GType gtype, void* native_address,
+                                JS::MutableHandleValue ret);
 
-bool _gjs_proxy_throw_nonexistent_field(JSContext  *cx,
-                                        GType       gtype,
-                                        const char *field_name);
+bool gjs_wrapper_throw_nonexistent_field(JSContext* cx, GType gtype,
+                                         const char* field_name);
 
-bool _gjs_proxy_throw_readonly_field(JSContext  *cx,
-                                     GType       gtype,
-                                     const char *field_name);
+bool gjs_wrapper_throw_readonly_field(JSContext* cx, GType gtype,
+                                      const char* field_name);
 
 G_END_DECLS
 
-#endif  /* __GJS_OBJECT_H__ */
+#endif  // GI_WRAPPERUTILS_H_
