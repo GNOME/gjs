@@ -28,10 +28,10 @@
 #include <vector>
 
 #include "gjs/context-private.h"
+#include "gjs/mem-private.h"
 #include "importer.h"
 #include "jsapi-class.h"
 #include "jsapi-wrapper.h"
-#include "mem.h"
 #include "module.h"
 #include "native.h"
 #include "util/glib.h"

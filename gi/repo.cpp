@@ -23,22 +23,22 @@
 
 #include <config.h>
 
-#include "repo.h"
-#include "ns.h"
-#include "function.h"
-#include "object.h"
-#include "param.h"
-#include "boxed.h"
-#include "union.h"
-#include "enumeration.h"
-#include "arg.h"
-#include "foreign.h"
-#include "fundamental.h"
-#include "interface.h"
-#include "gerror.h"
+#include "gi/arg.h"
+#include "gi/boxed.h"
+#include "gi/enumeration.h"
+#include "gi/foreign.h"
+#include "gi/function.h"
+#include "gi/fundamental.h"
+#include "gi/gerror.h"
+#include "gi/interface.h"
+#include "gi/ns.h"
+#include "gi/object.h"
+#include "gi/param.h"
+#include "gi/repo.h"
+#include "gi/union.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
-#include "gjs/mem.h"
+#include "gjs/mem-private.h"
 
 #include <util/misc.h>
 

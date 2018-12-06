@@ -80,6 +80,7 @@ gjs_srcs =				\
 	gjs/jsapi-util-string.cpp	\
 	gjs/jsapi-wrapper.h		\
 	gjs/mem.cpp			\
+	gjs/mem-private.h		\
 	gjs/module.h			\
 	gjs/module.cpp			\
 	gjs/native.cpp			\

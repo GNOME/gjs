@@ -33,7 +33,7 @@
 #include "function.h"
 #include "gi/gerror.h"
 #include "gjs/jsapi-class.h"
-#include "gjs/mem.h"
+#include "gjs/mem-private.h"
 #include "gtype.h"
 #include "object.h"
 #include "proxyutils.h"

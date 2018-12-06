@@ -33,7 +33,7 @@
 #include "object.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
-#include "gjs/mem.h"
+#include "gjs/mem-private.h"
 #include "repo.h"
 #include "proxyutils.h"
 #include "function.h"
