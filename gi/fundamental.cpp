@@ -27,12 +27,12 @@
 #include "fundamental.h"
 
 #include "arg.h"
-#include "object.h"
 #include "boxed.h"
 #include "function.h"
-#include "gtype.h"
-#include "proxyutils.h"
-#include "repo.h"
+#include "gi/gtype.h"
+#include "gi/object.h"
+#include "gi/repo.h"
+#include "gi/wrapperutils.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
 #include "gjs/mem-private.h"
@@ -485,18 +485,14 @@ to_string_func(JSContext *context,
     if (fundamental_is_prototype(priv)) {
         Fundamental *proto_priv = (Fundamental *) priv;
 
-        if (!_gjs_proxy_to_string_func(context, obj, "fundamental",
-                                       (GIBaseInfo *) proto_priv->info,
-                                       proto_priv->gtype,
-                                       proto_priv->gfundamental,
-                                       rec.rval()))
+        if (!gjs_wrapper_to_string_func(context, obj, "fundamental",
+                                        proto_priv->info, proto_priv->gtype,
+                                        proto_priv->gfundamental, rec.rval()))
             return false;
     } else {
-        if (!_gjs_proxy_to_string_func(context, obj, "fundamental",
-                                       (GIBaseInfo *) priv->prototype->info,
-                                       priv->prototype->gtype,
-                                       priv->gfundamental,
-                                       rec.rval()))
+        if (!gjs_wrapper_to_string_func(
+                context, obj, "fundamental", priv->prototype->info,
+                priv->prototype->gtype, priv->gfundamental, rec.rval()))
             return false;
     }
 
