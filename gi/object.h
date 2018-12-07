@@ -32,6 +32,7 @@
 #include <stack>
 #include <vector>
 
+#include "gi/wrapperutils.h"
 #include "gjs/jsapi-util-root.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/jsapi-wrapper.h"
@@ -64,146 +65,51 @@ struct AutoGValueVector : public std::vector<GValue> {
 
 class ObjectPrototype;
 
-/* To conserve memory, we have two different kinds of private data for GObject
- * JS wrappers: ObjectInstance, and ObjectPrototype. Both inherit from
- * ObjectBase for their common functionality.
+/*
+ * ObjectBase:
+ *
+ * Specialization of GIWrapperBase for GObject instances. See the documentation
+ * in wrapperutils.h.
  *
  * It's important that ObjectBase and ObjectInstance not grow in size without a
  * very good reason. There can be tens, maybe hundreds of thousands of these
  * objects alive in a typical gnome-shell run, so even 8 more bytes will add up.
  * It's less critical that ObjectPrototype stay small, since only one of these
  * is allocated per GType.
- *
- * Sadly, we cannot have virtual methods in ObjectBase, because SpiderMonkey can
- * be compiled with or without RTTI, so we cannot count on being able to cast
- * ObjectBase to ObjectInstance or ObjectPrototype with dynamic_cast<>, and the
- * vtable would take up just as much space anyway. Instead, we have the
- * to_prototype() and to_instance() methods which will give you a pointer if the
- * ObjectBase is of the correct type (and assert if not.)
  */
-class ObjectBase {
- protected:
-    /* nullptr if this is an ObjectPrototype; points to the corresponding
-     * ObjectPrototype if this is an ObjectInstance */
-    ObjectPrototype* m_proto;
+class ObjectBase
+    : public GIWrapperBase<ObjectBase, ObjectPrototype, ObjectInstance> {
+    friend class GIWrapperBase;
 
+ protected:
     /* a list of all GClosures installed on this object (from
      * signals, trampolines, explicit GClosures, and vfuncs on prototypes),
      * used when tracing */
     std::forward_list<GClosure*> m_closures;
 
-    explicit ObjectBase(ObjectPrototype* proto = nullptr) : m_proto(proto) {}
-
-    /* Methods to get an existing ObjectBase */
+    explicit ObjectBase(ObjectPrototype* proto = nullptr)
+        : GIWrapperBase(proto) {}
 
  public:
-    GJS_USE
-    static ObjectBase* for_js(JSContext* cx, JS::HandleObject obj);
-    GJS_USE
-    static ObjectBase* for_js_nocheck(JSObject* obj);
+    static const GjsDebugTopic debug_topic = GJS_DEBUG_GOBJECT;
+    static constexpr const char* debug_tag = "GObject";
 
-    /* Methods for getting a pointer to the correct subclass. We don't use
-     * standard C++ subclasses because that would occupy another 8 bytes in
-     * ObjectInstance for a vtable. */
-
-    GJS_USE
-    bool is_prototype(void) const { return !m_proto; }
-
-    /* The to_instance() and to_prototype() methods assert that this ObjectBase
-     * is of the correct subclass. If you don't want an assert, then either
-     * check beforehand or use get_prototype(). */
-
-    GJS_USE
-    ObjectPrototype* to_prototype(void) {
-        g_assert(is_prototype());
-        return reinterpret_cast<ObjectPrototype*>(this);
-    }
-    GJS_USE
-    const ObjectPrototype* to_prototype(void) const {
-        g_assert(is_prototype());
-        return reinterpret_cast<const ObjectPrototype*>(this);
-    }
-    GJS_USE
-    ObjectInstance* to_instance(void) {
-        g_assert(!is_prototype());
-        return reinterpret_cast<ObjectInstance*>(this);
-    }
-    GJS_USE
-    const ObjectInstance* to_instance(void) const {
-        g_assert(!is_prototype());
-        return reinterpret_cast<const ObjectInstance*>(this);
-    }
-
-    /* get_prototype() doesn't assert. If you call it on an ObjectPrototype, it
-     * returns you the same object cast to the correct type; if you call it on
-     * an ObjectInstance, it returns you the ObjectPrototype belonging to the
-     * corresponding JS prototype. */
-    GJS_USE
-    ObjectPrototype* get_prototype(void) {
-        return is_prototype() ? to_prototype() : m_proto;
-    }
-    GJS_USE
-    const ObjectPrototype* get_prototype(void) const {
-        return is_prototype() ? to_prototype() : m_proto;
-    }
-
-    /* Accessors */
-
-    /* Both ObjectInstance and ObjectPrototype have GIObjectInfo and GType,
-     * but for space reasons we store it only on ObjectPrototype. */
-    GJS_USE GIObjectInfo* info(void) const;
-    GJS_USE GType gtype(void) const;
-
-    GJS_USE
-    const char* ns(void) const {
-        return info() ? g_base_info_get_namespace(info()) : "";
-    }
-    GJS_USE
-    const char* name(void) const {
-        return info() ? g_base_info_get_name(info()) : type_name();
-    }
-    GJS_USE
-    const char* type_name(void) const { return g_type_name(gtype()); }
-    GJS_USE
-    bool is_custom_js_class(void) const { return !info(); }
+    static const struct JSClassOps class_ops;
+    static const struct JSClass klass;
+    static JSFunctionSpec proto_methods[];
 
  private:
-    /* These are used in debug methods only. */
-    GJS_USE const void* gobj_addr(void) const;
-    GJS_USE const void* jsobj_addr(void) const;
+    // This is used in debug methods only.
+    GJS_USE const JSObject* jsobj_addr(void) const;
 
     /* Helper methods */
 
- public:
-    GJS_JSAPI_RETURN_CONVENTION
-    bool check_is_instance(JSContext* cx, const char* for_what) const;
-
  protected:
     void debug_lifecycle(const char* message) const {
-        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                            "[%p: GObject %p JS wrapper %p %s.%s (%s)] %s",
-                            this, gobj_addr(), jsobj_addr(), ns(), name(),
-                            type_name(), message);
+        GIWrapperBase::debug_lifecycle(jsobj_addr(), message);
     }
-    void debug_jsprop_base(const char* message, const char* id,
-                           JSObject* obj) const {
-        gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                         "[%p: GObject %p JS object %p %s.%s (%s)] %s '%s'",
-                         this, gobj_addr(), obj, ns(), name(), type_name(),
-                         message, id);
-    }
-    void debug_jsprop(const char* message, jsid id, JSObject* obj) const {
-        debug_jsprop_base(message, gjs_debug_id(id).c_str(), obj);
-    }
-    void debug_jsprop(const char* message, JSString* id, JSObject* obj) const {
-        debug_jsprop_base(message, gjs_debug_string(id).c_str(), obj);
-    }
-    static void debug_jsprop_static(const char* message, jsid id,
-                                    JSObject* obj) {
-        gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                         "[JS object %p] %s '%s', no instance associated", obj,
-                         message, gjs_debug_id(id).c_str());
-    }
+
+    bool id_is_never_lazy(jsid name, const GjsAtoms& atoms);
 
  public:
     void type_query_dynamic_safe(GTypeQuery* query);
@@ -221,16 +127,8 @@ class ObjectBase {
 
     static bool add_property(JSContext* cx, JS::HandleObject obj,
                              JS::HandleId id, JS::HandleValue value);
-    static bool resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
-                        bool* resolved);
-    static bool new_enumerate(
-        JSContext* cx, JS::HandleObject obj,
-        JS::AutoIdVector& properties,  // NOLINT(runtime/references)
-        bool only_enumerable);
-    static void finalize(JSFreeOp* fop, JSObject* obj);
-    static void trace(JSTracer* tracer, JSObject* obj);
 
- protected:
+ private:
     void trace_impl(JSTracer* tracer);
 
     /* JS property getters/setters */
@@ -255,8 +153,9 @@ class ObjectBase {
     static bool emit(JSContext* cx, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool to_string(JSContext* cx, unsigned argc, JS::Value* vp);
+    GJS_USE const char* to_string_kind(void) const;
     GJS_JSAPI_RETURN_CONVENTION
-    static bool init(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool init_gobject(JSContext* cx, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool hook_up_vfunc(JSContext* cx, unsigned argc, JS::Value* vp);
 
@@ -266,10 +165,10 @@ class ObjectBase {
     GJS_USE static GQuark custom_property_quark(void);
 };
 
-class ObjectPrototype : public ObjectBase {
-    // ObjectBase needs to call private methods (such as trace_impl) because
-    // of the unusual inheritance scheme
-    friend class ObjectBase;
+class ObjectPrototype
+    : public GIWrapperPrototype<ObjectBase, ObjectPrototype, ObjectInstance> {
+    friend class GIWrapperPrototype;
+    friend class GIWrapperBase;
 
     using PropertyCache =
         JS::GCHashMap<JS::Heap<JSString*>, GjsAutoParam,
@@ -277,9 +176,6 @@ class ObjectPrototype : public ObjectBase {
     using FieldCache =
         JS::GCHashMap<JS::Heap<JSString*>, GjsAutoInfo<GI_INFO_TYPE_FIELD>,
                       js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
-
-    GIObjectInfo* m_info;
-    GType m_gtype;
 
     PropertyCache m_property_cache;
     FieldCache m_field_cache;
@@ -289,23 +185,14 @@ class ObjectPrototype : public ObjectBase {
     ~ObjectPrototype();
 
  public:
-    /* Public constructor for instances (uses GSlice allocator) */
-    GJS_USE
-    static ObjectPrototype* create(JSContext* cx, GIObjectInfo* info,
-                                   GType gtype);
-
-    GJS_USE
-    static ObjectPrototype* for_js(JSContext* cx, JS::HandleObject obj) {
-        return ObjectBase::for_js(cx, obj)->to_prototype();
-    }
     GJS_USE
     static ObjectPrototype* for_gtype(GType gtype);
-    GJS_USE
-    static ObjectPrototype* for_js_prototype(JSContext* cx,
-                                             JS::HandleObject obj);
 
     /* Helper methods */
  private:
+    GJS_JSAPI_RETURN_CONVENTION
+    bool get_parent_proto(JSContext* cx, JS::MutableHandleObject proto) const;
+
     GJS_USE
     bool is_vfunc_unchanged(GIVFuncInfo* info);
     GJS_JSAPI_RETURN_CONVENTION
@@ -345,7 +232,7 @@ class ObjectPrototype : public ObjectBase {
  private:
     GJS_JSAPI_RETURN_CONVENTION
     bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
-                      bool* resolved);
+                      const char* prop_name, bool* resolved);
 
     GJS_JSAPI_RETURN_CONVENTION
     bool new_enumerate_impl(
@@ -355,25 +242,20 @@ class ObjectPrototype : public ObjectBase {
     void trace_impl(JSTracer* tracer);
 
     /* JS methods */
- private:
-    GJS_JSAPI_RETURN_CONVENTION
-    bool to_string_impl(JSContext* cx, const JS::CallArgs& args);
+ public:
     GJS_JSAPI_RETURN_CONVENTION
     bool hook_up_vfunc_impl(JSContext* cx, const JS::CallArgs& args,
                             JS::HandleObject prototype);
-
-    ObjectPrototype(const ObjectPrototype& other) = delete;
-    ObjectPrototype(ObjectPrototype&& other) = delete;
-    ObjectPrototype& operator=(const ObjectPrototype& other) = delete;
-    ObjectPrototype& operator=(ObjectPrototype&& other) = delete;
 };
 
-class ObjectInstance : public ObjectBase {
-    // ObjectBase needs to call private methods (such as trace_impl) because
-    // of the unusual inheritance scheme
-    friend class ObjectBase;
+class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
+                                                ObjectInstance, GObject> {
+    friend class GIWrapperInstance;
+    friend class GIWrapperBase;
+    friend class ObjectBase;  // for add_property, prop_getter, etc.
 
-    GObject* m_gobj;  // may be null
+    // GIWrapperInstance::m_ptr may be null in ObjectInstance.
+
     GjsMaybeOwned<JSObject*> m_wrapper;
 
     GjsListLink m_instance_link;
@@ -395,12 +277,9 @@ class ObjectInstance : public ObjectBase {
     ObjectInstance(JSContext* cx, JS::HandleObject obj);
     ~ObjectInstance();
 
- public:
-    /* Public constructor for instances (uses GSlice allocator) */
-    GJS_USE
-    static ObjectInstance* new_for_js_object(JSContext* cx,
-                                             JS::HandleObject obj);
+    // Extra method to get an existing ObjectInstance from qdata
 
+ public:
     GJS_USE
     static ObjectInstance* for_gobject(GObject* gobj);
 
@@ -411,8 +290,6 @@ class ObjectInstance : public ObjectBase {
     bool has_wrapper(void) const { return !!m_wrapper; }
 
  public:
-    GJS_USE
-    GObject* gobj(void) const { return m_gobj; }
     GJS_USE
     JSObject* wrapper(void) const { return m_wrapper; }
 
@@ -476,7 +353,6 @@ class ObjectInstance : public ObjectBase {
     GJS_JSAPI_RETURN_CONVENTION
     bool add_property_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                            JS::HandleValue value);
-    void finalize_impl(JSFreeOp* fop, JSObject* obj);
 
     /* JS property getters/setters */
 
@@ -494,6 +370,12 @@ class ObjectInstance : public ObjectBase {
     bool field_setter_impl(JSContext* cx, JS::HandleString name,
                            JS::HandleValue value);
 
+    // JS constructor
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool constructor_impl(JSContext* cx, JS::HandleObject obj,
+                          const JS::CallArgs& args);
+
     /* JS methods */
 
  private:
@@ -502,25 +384,19 @@ class ObjectInstance : public ObjectBase {
     GJS_JSAPI_RETURN_CONVENTION
     bool emit_impl(JSContext* cx, const JS::CallArgs& args);
     GJS_JSAPI_RETURN_CONVENTION
-    bool to_string_impl(JSContext* cx, const JS::CallArgs& args);
-    GJS_JSAPI_RETURN_CONVENTION
     bool init_impl(JSContext* cx, const JS::CallArgs& args,
                    JS::MutableHandleObject obj);
+    GJS_USE const char* to_string_kind(void) const;
 
-    /* Methods connected to "public" API */
- public:
-    GJS_USE
-    bool typecheck_object(JSContext* cx, GType expected_type, bool throw_error);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool typecheck_impl(JSContext* cx, GIBaseInfo* expected_info,
+                        GType expected_type) const;
 
     /* Notification callbacks */
 
+ public:
     void gobj_dispose_notify(void);
     void context_dispose_notify(void);
-
-    ObjectInstance(const ObjectInstance& other) = delete;
-    ObjectInstance(ObjectInstance&& other) = delete;
-    ObjectInstance& operator=(const ObjectInstance& other) = delete;
-    ObjectInstance& operator=(ObjectInstance&& other) = delete;
 };
 
 G_BEGIN_DECLS
