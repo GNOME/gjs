@@ -807,7 +807,13 @@ class GIWrapperPrototype : public Base {
         g_assert(in_object);
         g_assert(gtype != G_TYPE_INVALID);
 
-        auto* priv = g_slice_new0(Prototype);
+        // We have to keep the Prototype in an arcbox because some of its
+        // members are needed in some Instance destructors, e.g. m_gtype to
+        // figure out how to free the Instance's m_ptr, and m_info to figure out
+        // how many bytes to free if it is allocated directly. Storing a
+        // refcount on the prototype is cheaper than storing pointers to m_info
+        // and m_gtype on each instance.
+        auto* priv = g_atomic_rc_box_new0(Prototype);
         new (priv) Prototype(info, gtype);
         if (!priv->init(cx))
             return nullptr;
@@ -866,13 +872,25 @@ class GIWrapperPrototype : public Base {
     GJS_USE Info* info(void) const { return m_info; }
     GJS_USE GType gtype(void) const { return m_gtype; }
 
+    // Helper methods
+
+ private:
+    static void destroy_notify(void* ptr) {
+        static_cast<Prototype*>(ptr)->~Prototype();
+    }
+
+ public:
+    Prototype* acquire(void) {
+        g_atomic_rc_box_acquire(this);
+        return static_cast<Prototype*>(this);
+    }
+
+    void release(void) { g_atomic_rc_box_release_full(this, &destroy_notify); }
+
     // JSClass operations
 
  protected:
-    void finalize_impl(JSFreeOp* fop, JSObject* obj) {
-        static_cast<Prototype*>(this)->~Prototype();
-        g_slice_free(Prototype, this);
-    }
+    void finalize_impl(JSFreeOp* fop, JSObject* obj) { release(); }
 
     // Override if necessary
     void trace_impl(JSTracer* trc) {}
@@ -896,9 +914,10 @@ class GIWrapperInstance : public Base {
 
     explicit GIWrapperInstance(JSContext* cx, JS::HandleObject obj)
         : Base(Prototype::for_js_prototype(cx, obj)) {
+        Base::m_proto->acquire();
         Base::GIWrapperBase::debug_lifecycle(obj, "Instance constructor");
     }
-    ~GIWrapperInstance(void) {}
+    ~GIWrapperInstance(void) { Base::m_proto->release(); }
 
  public:
     /*
