@@ -35,7 +35,8 @@ typedef struct {
 
 GJS_DECLARE_COUNTER(everything)
 
-GJS_DECLARE_COUNTER(boxed)
+GJS_DECLARE_COUNTER(boxed_instance)
+GJS_DECLARE_COUNTER(boxed_prototype)
 GJS_DECLARE_COUNTER(closure)
 GJS_DECLARE_COUNTER(function)
 GJS_DECLARE_COUNTER(fundamental)

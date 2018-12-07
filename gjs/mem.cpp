@@ -35,7 +35,8 @@
 
 GJS_DEFINE_COUNTER(everything)
 
-GJS_DEFINE_COUNTER(boxed)
+GJS_DEFINE_COUNTER(boxed_instance)
+GJS_DEFINE_COUNTER(boxed_prototype)
 GJS_DEFINE_COUNTER(closure)
 GJS_DEFINE_COUNTER(function)
 GJS_DEFINE_COUNTER(fundamental)
@@ -56,7 +57,8 @@ GJS_DEFINE_COUNTER(union)
 // clang-format off
 // otherwise these are put into 2 columns?!
 static GjsMemCounter* counters[] = {
-    GJS_LIST_COUNTER(boxed),
+    GJS_LIST_COUNTER(boxed_instance),
+    GJS_LIST_COUNTER(boxed_prototype),
     GJS_LIST_COUNTER(closure),
     GJS_LIST_COUNTER(function),
     GJS_LIST_COUNTER(fundamental),
