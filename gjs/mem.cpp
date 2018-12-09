@@ -39,7 +39,8 @@ GJS_DEFINE_COUNTER(boxed_instance)
 GJS_DEFINE_COUNTER(boxed_prototype)
 GJS_DEFINE_COUNTER(closure)
 GJS_DEFINE_COUNTER(function)
-GJS_DEFINE_COUNTER(fundamental)
+GJS_DEFINE_COUNTER(fundamental_instance)
+GJS_DEFINE_COUNTER(fundamental_prototype)
 GJS_DEFINE_COUNTER(gerror)
 GJS_DEFINE_COUNTER(importer)
 GJS_DEFINE_COUNTER(interface)
@@ -61,7 +62,8 @@ static GjsMemCounter* counters[] = {
     GJS_LIST_COUNTER(boxed_prototype),
     GJS_LIST_COUNTER(closure),
     GJS_LIST_COUNTER(function),
-    GJS_LIST_COUNTER(fundamental),
+    GJS_LIST_COUNTER(fundamental_instance),
+    GJS_LIST_COUNTER(fundamental_prototype),
     GJS_LIST_COUNTER(gerror),
     GJS_LIST_COUNTER(importer),
     GJS_LIST_COUNTER(interface),
