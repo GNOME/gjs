@@ -1417,9 +1417,8 @@ ObjectInstance::ObjectInstance(JSContext* cx, JS::HandleObject object)
     debug_lifecycle("Instance constructor");
 }
 
-ObjectPrototype* ObjectPrototype::new_for_js_object(JSContext* cx,
-                                                    GIObjectInfo* info,
-                                                    GType gtype) {
+ObjectPrototype* ObjectPrototype::create(JSContext* cx, GIObjectInfo* info,
+                                         GType gtype) {
     auto* priv = g_slice_new0(ObjectPrototype);
     new (priv) ObjectPrototype(info, gtype);
     if (!priv->init(cx))
@@ -2239,7 +2238,7 @@ gjs_define_object_class(JSContext              *context,
                                GJS_MODULE_PROP_FLAGS))
         return false;
 
-    auto* priv = ObjectPrototype::new_for_js_object(context, info, gtype);
+    auto* priv = ObjectPrototype::create(context, info, gtype);
     if (!priv)
         return false;
     JS_SetPrivate(prototype, priv);
