@@ -231,6 +231,8 @@ find_fundamental_constructor(JSContext          *context,
 
             name = g_base_info_get_name((GIBaseInfo *) func_info);
             constructor_name.set(gjs_intern_string_to_id(context, name));
+            if (constructor_name == JSID_VOID)
+                return nullptr;
 
             return func_info;
         }
