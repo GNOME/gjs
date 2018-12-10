@@ -163,14 +163,13 @@ GJS_JSAPI_RETURN_CONVENTION
 static JSObject*
 gjs_lookup_param_prototype(JSContext    *context)
 {
-    JS::RootedId gobject_name(context, gjs_intern_string_to_id(context, "GObject"));
-    JS::RootedObject in_object(context,
-        gjs_lookup_namespace_object_by_name(context, gobject_name));
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    JS::RootedObject in_object(
+        context, gjs_lookup_namespace_object_by_name(context, atoms.gobject()));
 
     if (G_UNLIKELY (!in_object))
         return NULL;
 
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedValue value(context);
     if (!JS_GetPropertyById(context, in_object, atoms.param_spec(), &value))
         return NULL;

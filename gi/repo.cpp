@@ -547,6 +547,8 @@ gjs_lookup_namespace_object(JSContext  *context,
     }
 
     JS::RootedId ns_name(context, gjs_intern_string_to_id(context, ns));
+    if (ns_name == JSID_VOID)
+        return nullptr;
     return gjs_lookup_namespace_object_by_name(context, ns_name);
 }
 

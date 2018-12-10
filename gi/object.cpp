@@ -1013,7 +1013,10 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
 
             if (flags & GI_FUNCTION_IS_METHOD) {
                 const char* name = meth_info.name();
-                if (!properties.append(gjs_intern_string_to_id(cx, name))) {
+                jsid id = gjs_intern_string_to_id(cx, name);
+                if (id == JSID_VOID)
+                    return false;
+                if (!properties.append(id)) {
                     JS_ReportOutOfMemory(cx);
                     return false;
                 }
@@ -1028,7 +1031,10 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
 
             GjsAutoChar js_name = gjs_hyphen_to_underscore(prop_info.name());
 
-            if (!properties.append(gjs_intern_string_to_id(cx, js_name))) {
+            jsid id = gjs_intern_string_to_id(cx, js_name);
+            if (id == JSID_VOID)
+                return false;
+            if (!properties.append(id)) {
                 JS_ReportOutOfMemory(cx);
                 return false;
             }
@@ -1046,7 +1052,10 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
 
             if (flags & GI_FUNCTION_IS_METHOD) {
                 const char* name = meth_info.name();
-                if (!properties.append(gjs_intern_string_to_id(cx, name))) {
+                jsid id = gjs_intern_string_to_id(cx, name);
+                if (id == JSID_VOID)
+                    return false;
+                if (!properties.append(id)) {
                     JS_ReportOutOfMemory(cx);
                     return false;
                 }
@@ -1060,8 +1069,10 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
                 g_object_info_get_property(info(), i);
 
             GjsAutoChar js_name = gjs_hyphen_to_underscore(prop_info.name());
-
-            if (!properties.append(gjs_intern_string_to_id(cx, js_name))) {
+            jsid id = gjs_intern_string_to_id(cx, js_name);
+            if (id == JSID_VOID)
+                return false;
+            if (!properties.append(id)) {
                 JS_ReportOutOfMemory(cx);
                 return false;
             }

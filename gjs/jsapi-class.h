@@ -244,6 +244,8 @@ GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
         JS::RootedObject ctor_obj(cx);                                         \
         JS::RootedId class_name(                                               \
             cx, gjs_intern_string_to_id(cx, gjs_##cname##_class.name));        \
+        if (class_name == JSID_VOID)                                           \
+            return false;                                                      \
         if (!gjs_object_require_property(cx, in_obj, #cname " constructor",    \
                                          class_name, &ctor_obj))               \
             return false;                                                      \
