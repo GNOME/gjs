@@ -51,7 +51,8 @@ GJS_DECLARE_COUNTER(object_instance)
 GJS_DECLARE_COUNTER(object_prototype)
 GJS_DECLARE_COUNTER(param)
 GJS_DECLARE_COUNTER(repo)
-GJS_DECLARE_COUNTER(union)
+GJS_DECLARE_COUNTER(union_instance)
+GJS_DECLARE_COUNTER(union_prototype)
 
 #define GJS_INC_COUNTER(name)                               \
     do {                                                    \
