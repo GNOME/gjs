@@ -51,7 +51,8 @@ GJS_DEFINE_COUNTER(object_instance)
 GJS_DEFINE_COUNTER(object_prototype)
 GJS_DEFINE_COUNTER(param)
 GJS_DEFINE_COUNTER(repo)
-GJS_DEFINE_COUNTER(union)
+GJS_DEFINE_COUNTER(union_instance)
+GJS_DEFINE_COUNTER(union_prototype)
 
 #define GJS_LIST_COUNTER(name) \
     & gjs_counter_ ## name
@@ -75,7 +76,8 @@ static GjsMemCounter* counters[] = {
     GJS_LIST_COUNTER(object_prototype),
     GJS_LIST_COUNTER(param),
     GJS_LIST_COUNTER(repo),
-    GJS_LIST_COUNTER(union),
+    GJS_LIST_COUNTER(union_instance),
+    GJS_LIST_COUNTER(union_prototype),
 };
 // clang-format on
 
