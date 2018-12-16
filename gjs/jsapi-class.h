@@ -24,6 +24,7 @@
 #ifndef GJS_JSAPI_CLASS_H
 #define GJS_JSAPI_CLASS_H
 
+#include "gi/wrapperutils.h"
 #include "gjs/context-private.h"
 #include "global.h"
 #include "jsapi-util.h"
@@ -262,12 +263,7 @@ GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
                                                                                \
         /* Define the GType value as a "$gtype" property on the constructor */ \
         if (type != G_TYPE_NONE) {                                             \
-            const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);              \
-            JS::RootedObject gtype_obj(                                        \
-                cx, gjs_gtype_create_gtype_wrapper(cx, type));                 \
-            if (!gtype_obj ||                                                  \
-                !JS_DefinePropertyById(cx, ctor_obj, atoms.gtype(), gtype_obj, \
-                                       JSPROP_PERMANENT))                      \
+            if (!gjs_wrapper_define_gtype_prop(cx, ctor_obj, type))            \
                 return false;                                                  \
         }                                                                      \
         gjs_debug(GJS_DEBUG_CONTEXT, "Initialized class %s prototype %p",      \

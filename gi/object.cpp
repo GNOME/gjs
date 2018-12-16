@@ -2266,13 +2266,7 @@ gjs_define_object_class(JSContext              *context,
         if (!gjs_object_define_static_methods(context, constructor, gtype, info))
             return false;
 
-    JS::RootedObject gtype_obj(context,
-        gjs_gtype_create_gtype_wrapper(context, gtype));
-    if (!gtype_obj)
-        return false;
-
-    return JS_DefinePropertyById(context, constructor, atoms.gtype(), gtype_obj,
-                                 JSPROP_PERMANENT);
+    return gjs_wrapper_define_gtype_prop(context, constructor, gtype);
 }
 
 JSObject*

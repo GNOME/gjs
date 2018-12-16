@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include "function.h"
+#include "gi/wrapperutils.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-wrapper.h"
 #include "gtype.h"
@@ -85,7 +86,6 @@ gjs_define_enum_values(JSContext       *context,
                        JS::HandleObject in_object,
                        GIEnumInfo      *info)
 {
-    GType gtype;
     int i, n_values;
 
     /* Fill in enum values first, so we don't define the enum itself until we're
@@ -104,16 +104,7 @@ gjs_define_enum_values(JSContext       *context,
             return false;
         }
     }
-
-    gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
-    JS::RootedObject gtype_obj(context,
-        gjs_gtype_create_gtype_wrapper(context, gtype));
-    if (!gtype_obj)
-        return false;
-
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    return JS_DefinePropertyById(context, in_object, atoms.gtype(), gtype_obj,
-                                 JSPROP_PERMANENT);
+    return true;
 }
 
 bool
@@ -174,8 +165,11 @@ gjs_define_enumeration(JSContext       *context,
         return false;
     }
 
+    GType gtype = g_registered_type_info_get_g_type(info);
+
     if (!gjs_define_enum_values(context, enum_obj, info) ||
-        !gjs_define_enum_static_methods(context, enum_obj, info))
+        !gjs_define_enum_static_methods(context, enum_obj, info) ||
+        !gjs_wrapper_define_gtype_prop(context, enum_obj, gtype))
         return false;
 
     gjs_debug(GJS_DEBUG_GENUM,
