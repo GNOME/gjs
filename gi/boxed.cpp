@@ -1177,14 +1177,7 @@ bool gjs_define_boxed_class(JSContext* context, JS::HandleObject in_object,
                            0, GJS_MODULE_PROP_FLAGS))
         return false;
 
-    JS::RootedObject gtype_obj(context,
-        gjs_gtype_create_gtype_wrapper(context, priv->gtype));
-    if (!gtype_obj)
-        return false;
-
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    return JS_DefinePropertyById(context, constructor, atoms.gtype(), gtype_obj,
-                                 JSPROP_PERMANENT);
+    return gjs_wrapper_define_gtype_prop(context, constructor, priv->gtype);
 }
 
 JSObject* gjs_boxed_from_c_struct(JSContext* cx, GIStructInfo* info,
