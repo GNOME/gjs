@@ -24,6 +24,7 @@
 #ifndef GI_WRAPPERUTILS_H_
 #define GI_WRAPPERUTILS_H_
 
+#include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
@@ -40,6 +41,10 @@ bool gjs_wrapper_throw_nonexistent_field(JSContext* cx, GType gtype,
 
 bool gjs_wrapper_throw_readonly_field(JSContext* cx, GType gtype,
                                       const char* field_name);
+
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
+                                   GType gtype);
 
 G_END_DECLS
 

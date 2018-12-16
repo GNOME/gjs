@@ -704,17 +704,9 @@ gjs_define_fundamental_class(JSContext              *context,
                   g_base_info_get_name ((GIBaseInfo *)priv->info));
     }
 
-    if (!gjs_object_define_static_methods(context, constructor, gtype, info))
-        return false;
-
-    JS::RootedObject gtype_obj(context,
-        gjs_gtype_create_gtype_wrapper(context, gtype));
-    if (!gtype_obj)
-        return false;
-
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    return JS_DefinePropertyById(context, constructor, atoms.gtype(), gtype_obj,
-                                 JSPROP_PERMANENT);
+    return gjs_object_define_static_methods(context, constructor, gtype,
+                                            info) &&
+           gjs_wrapper_define_gtype_prop(context, constructor, gtype);
 }
 
 JSObject*

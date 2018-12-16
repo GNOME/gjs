@@ -214,12 +214,7 @@ gjs_define_param_class(JSContext       *context,
                                 &constructor))
         return false;
 
-    JS::RootedObject gtype_obj(context,
-        gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM));
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    if (!gtype_obj ||
-        !JS_DefinePropertyById(context, constructor, atoms.gtype(), gtype_obj,
-                               JSPROP_PERMANENT))
+    if (!gjs_wrapper_define_gtype_prop(context, constructor, G_TYPE_PARAM))
         return false;
 
     GjsAutoObjectInfo info = g_irepository_find_by_gtype(nullptr, G_TYPE_PARAM);
