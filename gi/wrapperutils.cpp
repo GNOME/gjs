@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include "gi/wrapperutils.h"
+#include "gjs/context-private.h"
 
 /* Default spidermonkey toString is worthless.  Replace it
  * with something that gives us both the introspection name
@@ -81,4 +82,15 @@ bool gjs_wrapper_throw_readonly_field(JSContext* cx, GType gtype,
     gjs_throw(cx, "Property %s.%s is not writable", g_type_name(gtype),
               field_name);
     return false;
+}
+
+bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
+                                   GType gtype) {
+    JS::RootedObject gtype_obj(cx, gjs_gtype_create_gtype_wrapper(cx, gtype));
+    if (!gtype_obj)
+        return false;
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    return JS_DefinePropertyById(cx, constructor, atoms.gtype(), gtype_obj,
+                                 GJS_MODULE_PROP_FLAGS);
 }
