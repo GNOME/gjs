@@ -210,11 +210,10 @@ associate_js_instance_to_fundamental(JSContext       *context,
 
 /* Find the first constructor */
 GJS_USE
-static GIFunctionInfo *
-find_fundamental_constructor(JSContext          *context,
-                             GIObjectInfo       *info,
-                             JS::MutableHandleId constructor_name)
-{
+static bool find_fundamental_constructor(
+    JSContext* context, GIObjectInfo* info,
+    JS::MutableHandleId constructor_name,
+    GjsAutoFunctionInfo* constructor_info) {
     int i, n_methods;
 
     n_methods = g_object_info_get_n_methods(info);
@@ -232,15 +231,16 @@ find_fundamental_constructor(JSContext          *context,
             name = g_base_info_get_name((GIBaseInfo *) func_info);
             constructor_name.set(gjs_intern_string_to_id(context, name));
             if (constructor_name == JSID_VOID)
-                return nullptr;
+                return false;
 
-            return func_info;
+            constructor_info->reset(func_info);
+            return true;
         }
 
         g_base_info_unref((GIBaseInfo *) func_info);
     }
 
-    return NULL;
+    return true;
 }
 
 /**/
@@ -631,15 +631,16 @@ gjs_define_fundamental_class(JSContext              *context,
     Fundamental *priv;
     GType parent_gtype;
     GType gtype;
-    GIFunctionInfo *constructor_info;
+    GjsAutoFunctionInfo constructor_info;
     /* See the comment in gjs_define_object_class() for an explanation
      * of how this all works; Fundamental is pretty much the same as
      * Object.
      */
 
     constructor_name = g_base_info_get_name((GIBaseInfo *) info);
-    constructor_info = find_fundamental_constructor(context, info,
-                                                    &js_constructor_name);
+    if (!find_fundamental_constructor(context, info, &js_constructor_name,
+                                      &constructor_info))
+        return false;
 
     gtype = g_registered_type_info_get_g_type (info);
     parent_gtype = g_type_parent(gtype);
@@ -679,7 +680,8 @@ gjs_define_fundamental_class(JSContext              *context,
     priv->info = g_base_info_ref((GIBaseInfo *) info);
     priv->gtype = gtype;
     priv->constructor_name = js_constructor_name;
-    priv->constructor_info = constructor_info;
+    priv->constructor_info =
+        constructor_info ? constructor_info.copy() : nullptr;
     priv->ref_function = g_object_info_get_ref_function_pointer(info);
     g_assert(priv->ref_function != NULL);
     priv->unref_function = g_object_info_get_unref_function_pointer(info);
