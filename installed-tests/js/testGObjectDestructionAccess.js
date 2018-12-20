@@ -91,7 +91,7 @@ describe('Access to destroyed GObject', () => {
             /\[object \(FINALIZED\) instance wrapper GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
     });
 
-    it('Porto function toString before/after', () => {
+    it('Proto function toString before/after', () => {
         var validWindow = new Gtk.Window({type: Gtk.WindowType.TOPLEVEL});
 
         expect(validWindow.toString()).toMatch(
