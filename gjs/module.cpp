@@ -27,6 +27,7 @@
 #include <gio/gio.h>
 
 #include "gjs/context-private.h"
+#include "gjs/mem-private.h"
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 #include "module.h"
@@ -38,11 +39,13 @@ class GjsModule {
     GjsModule(const char *name)
     {
         m_name = g_strdup(name);
+        GJS_INC_COUNTER(module);
     }
 
     ~GjsModule()
     {
         g_free(m_name);
+        GJS_DEC_COUNTER(module);
     }
 
     /* Private data accessors */
