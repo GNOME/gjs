@@ -34,7 +34,7 @@
  */
 bool gjs_wrapper_to_string_func(JSContext* context, JSObject* this_obj,
                                 const char* objtype, GIBaseInfo* info,
-                                GType gtype, void* native_address,
+                                GType gtype, const void* native_address,
                                 JS::MutableHandleValue rval) {
     GString *buf;
     bool ret = false;
