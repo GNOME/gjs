@@ -33,7 +33,7 @@ G_BEGIN_DECLS
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
                                 const char* objtype, GIBaseInfo* info,
-                                GType gtype, void* native_address,
+                                GType gtype, const void* native_address,
                                 JS::MutableHandleValue ret);
 
 bool gjs_wrapper_throw_nonexistent_field(JSContext* cx, GType gtype,
