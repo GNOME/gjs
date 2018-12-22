@@ -747,8 +747,12 @@ gjs_lookup_generic_constructor(JSContext  *context,
     if (!JS_GetProperty(context, in_object, constructor_name, &value))
         return NULL;
 
-    if (G_UNLIKELY (!value.isObject()))
+    if (G_UNLIKELY(!value.isObject())) {
+        gjs_throw(context,
+                  "Constructor of %s.%s was the wrong type, expected an object",
+                  g_base_info_get_namespace(info), constructor_name);
         return NULL;
+    }
 
     return &value.toObject();
 }
@@ -767,8 +771,12 @@ gjs_lookup_generic_prototype(JSContext  *context,
     if (!JS_GetPropertyById(context, constructor, atoms.prototype(), &value))
         return NULL;
 
-    if (G_UNLIKELY (!value.isObjectOrNull()))
+    if (G_UNLIKELY(!value.isObject())) {
+        gjs_throw(context,
+                  "Prototype of %s.%s was the wrong type, expected an object",
+                  g_base_info_get_namespace(info), g_base_info_get_name(info));
         return NULL;
+    }
 
-    return value.toObjectOrNull();
+    return &value.toObject();
 }
