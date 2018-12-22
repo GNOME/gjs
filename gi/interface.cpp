@@ -37,74 +37,36 @@
 
 #include <girepository.h>
 
-typedef struct {
-    GIInterfaceInfo *info;
-    GType gtype;
-    /* the GTypeInterface vtable wrapped by this JS Object (only used for
-       prototypes) */
-    GTypeInterface *vtable;
-} Interface;
-
-extern struct JSClass gjs_interface_class;
-
-GJS_DEFINE_PRIV_FROM_JS(Interface, gjs_interface_class)
-
-GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(interface)
-
-static void
-interface_finalize(JSFreeOp *fop,
-                   JSObject *obj)
-{
-    Interface *priv;
-
-    priv = (Interface*) JS_GetPrivate(obj);
-
-    if (priv == NULL)
-        return;
-
-    if (priv->info != NULL)
-        g_base_info_unref((GIBaseInfo*)priv->info);
-
-    g_clear_pointer(&priv->vtable, (GDestroyNotify)g_type_default_interface_unref);
-
-    GJS_DEC_COUNTER(interface);
-    g_slice_free(Interface, priv);
+InterfacePrototype::InterfacePrototype(GIInterfaceInfo* info, GType gtype)
+    : GIWrapperPrototype(info, gtype),
+      m_vtable(
+          static_cast<GTypeInterface*>(g_type_default_interface_ref(gtype))) {
+    GJS_INC_COUNTER(interface);
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-interface_resolve(JSContext       *context,
-                  JS::HandleObject obj,
-                  JS::HandleId     id,
-                  bool            *resolved)
-{
-    Interface* priv = priv_from_js(context, obj);
+InterfacePrototype::~InterfacePrototype(void) {
+    g_clear_pointer(&m_vtable, g_type_default_interface_unref);
+    GJS_DEC_COUNTER(interface);
+}
 
-    if (priv == nullptr)
-        return false;
-
+// See GIWrapperBase::resolve().
+bool InterfacePrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
+                                      JS::HandleId id, const char* name,
+                                      bool* resolved) {
     /* If we have no GIRepository information then this interface was defined
      * from within GJS. In that case, it has no properties that need to be
      * resolved from within C code, as interfaces cannot inherit. */
-    if (priv->info == NULL) {
-        *resolved = false;
-        return true;
-    }
-
-    JS::UniqueChars name;
-    if (!gjs_get_string_id(context, id, &name))
-        return false;
-    if (!name) {
+    if (is_custom_js_class()) {
         *resolved = false;
         return true;
     }
 
     GjsAutoFunctionInfo method_info =
-        g_interface_info_find_method(priv->info, name.get());
+        g_interface_info_find_method(m_info, name);
 
     if (method_info) {
         if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-            if (!gjs_define_function(context, obj, priv->gtype, method_info))
+            if (!gjs_define_function(context, obj, m_gtype, method_info))
                 return false;
 
             *resolved = true;
@@ -118,18 +80,16 @@ interface_resolve(JSContext       *context,
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-interface_has_instance_func(JSContext *cx,
-                            unsigned   argc,
-                            JS::Value *vp)
-{
-    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    /* This method is not called directly, so no need for error messages */
+/*
+ * InterfaceBase::has_instance:
+ *
+ * JSNative implementation of `[Symbol.hasInstance]()`. This method is never
+ * called directly, but instead is called indirectly by the JS engine as part of
+ * an `instanceof` expression.
+ */
+bool InterfaceBase::has_instance(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, args, interface_constructor);
 
-    JS::RootedValue interface(cx, args.computeThis(cx));
-    g_assert(interface.isObject());
-    JS::RootedObject interface_constructor(cx, &interface.toObject());
     JS::RootedObject interface_proto(cx);
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     if (!gjs_object_require_property(cx, interface_constructor,
@@ -137,45 +97,47 @@ interface_has_instance_func(JSContext *cx,
                                      &interface_proto))
         return false;
 
-    Interface *priv;
-    if (!priv_from_js_with_typecheck(cx, interface_proto, &priv))
+    InterfaceBase* priv = InterfaceBase::for_js_typecheck(cx, interface_proto);
+    if (!priv)
         return false;
 
+    return priv->to_prototype()->has_instance_impl(cx, args);
+}
+
+// See InterfaceBase::has_instance().
+bool InterfacePrototype::has_instance_impl(JSContext* cx,
+                                           const JS::CallArgs& args) {
+    // This method is never called directly, so no need for error messages.
     g_assert(args.length() == 1);
     g_assert(args[0].isObject());
     JS::RootedObject instance(cx, &args[0].toObject());
-    bool isinstance = gjs_typecheck_object(cx, instance, priv->gtype, false);
+    bool isinstance = gjs_typecheck_object(cx, instance, m_gtype, false);
     args.rval().setBoolean(isinstance);
     return true;
 }
 
-static const struct JSClassOps gjs_interface_class_ops = {
+// clang-format off
+const struct JSClassOps InterfaceBase::class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
     nullptr,  // enumerate
     nullptr,  // newEnumerate
-    interface_resolve,
+    &InterfaceBase::resolve,
     nullptr,  // mayResolve
-    interface_finalize};
+    &InterfaceBase::finalize,
+};
 
-struct JSClass gjs_interface_class = {
+const struct JSClass InterfaceBase::klass = {
     "GObject_Interface",
     JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
-    &gjs_interface_class_ops
+    &InterfaceBase::class_ops
 };
 
-JSPropertySpec gjs_interface_proto_props[] = {
-    JS_PS_END
-};
-
-JSFunctionSpec gjs_interface_proto_funcs[] = {
+JSFunctionSpec InterfaceBase::static_methods[] = {
+    JS_SYM_FN(hasInstance, &InterfaceBase::has_instance, 1, 0),
     JS_FS_END
 };
-
-JSFunctionSpec gjs_interface_static_funcs[] = {
-    JS_SYM_FN(hasInstance, interface_has_instance_func, 1, 0),
-    JS_FS_END
-};
+// clang-format on
 
 bool
 gjs_define_interface_class(JSContext              *context,
@@ -184,47 +146,21 @@ gjs_define_interface_class(JSContext              *context,
                            GType                   gtype,
                            JS::MutableHandleObject constructor)
 {
-    Interface *priv;
-    const char *constructor_name;
-    const char *ns;
     JS::RootedObject prototype(context);
 
-    ns = gjs_get_names_from_gtype_and_gi_info(gtype, (GIBaseInfo *) info,
-                                              &constructor_name);
-
-    if (!gjs_init_class_dynamic(context, in_object, nullptr, ns,
-                                constructor_name,
-                                &gjs_interface_class,
-                                gjs_interface_constructor, 0,
-                                /* props of prototype */
-                                &gjs_interface_proto_props[0],
-                                /* funcs of prototype */
-                                &gjs_interface_proto_funcs[0],
-                                /* props of constructor, MyConstructor.myprop */
-                                NULL,
-                                /* funcs of constructor, MyConstructor.myfunc() */
-                                gjs_interface_static_funcs,
-                                &prototype,
-                                constructor)) {
+    if (!InterfacePrototype::create_class(context, in_object, info, gtype,
+                                          constructor, &prototype))
         return false;
-    }
-
-    GJS_INC_COUNTER(interface);
-    priv = g_slice_new0(Interface);
-    priv->info = info == NULL ? NULL : g_base_info_ref((GIBaseInfo *) info);
-    priv->gtype = gtype;
-    priv->vtable = (GTypeInterface *) g_type_default_interface_ref(gtype);
-    JS_SetPrivate(prototype, priv);
 
     /* If we have no GIRepository information, then this interface was defined
      * from within GJS and therefore has no C static methods to be defined. */
-    if (priv->info) {
+    if (info) {
         if (!gjs_define_static_methods<InfoType::Interface>(
-                context, constructor, priv->gtype, priv->info))
+                context, constructor, gtype, info))
             return false;
     }
 
-    return gjs_wrapper_define_gtype_prop(context, constructor, priv->gtype);
+    return true;
 }
 
 bool
