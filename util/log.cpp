@@ -221,6 +221,9 @@ _Pragma("GCC diagnostic pop")
     case GJS_DEBUG_GERROR:
         prefix = "JS G ERR";
         break;
+    case GJS_DEBUG_GINTERFACE:
+        prefix = "JS G IFACE";
+        break;
     default:
         prefix = "???";
         break;

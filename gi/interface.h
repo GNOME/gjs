@@ -29,8 +29,94 @@
 #include <glib.h>
 #include <girepository.h>
 
+#include "gi/wrapperutils.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+
+class InterfacePrototype;
+class InterfaceInstance;
+
+/* For more information on this Base/Prototype/Interface scheme, see the notes
+ * in wrapperutils.h.
+ *
+ * What's unusual about this subclass is that InterfaceInstance should never
+ * actually be instantiated. Interfaces can't be constructed, and
+ * GIWrapperBase::constructor() is overridden to just throw an exception and not
+ * create any JS wrapper object.
+ *
+ * We use the template classes from wrapperutils.h anyway, because there is
+ * still a lot of common code.
+ */
+
+class InterfaceBase : public GIWrapperBase<InterfaceBase, InterfacePrototype,
+                                           InterfaceInstance> {
+    friend class GIWrapperBase;
+
+ protected:
+    explicit InterfaceBase(InterfacePrototype* proto = nullptr)
+        : GIWrapperBase(proto) {}
+    ~InterfaceBase(void) {}
+
+    static const GjsDebugTopic debug_topic = GJS_DEBUG_GINTERFACE;
+    static constexpr const char* debug_tag = "GInterface";
+
+    static const struct JSClassOps class_ops;
+    static const struct JSClass klass;
+    static JSFunctionSpec static_methods[];
+
+    GJS_USE const char* to_string_kind(void) const { return "interface"; }
+
+    // JSNative methods
+
+    // Overrides GIWrapperBase::constructor().
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool constructor(JSContext* cx, unsigned argc, JS::Value* vp) {
+        JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+        gjs_throw_abstract_constructor_error(cx, args);
+        return false;
+    }
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool has_instance(JSContext* cx, unsigned argc, JS::Value* vp);
+};
+
+class InterfacePrototype
+    : public GIWrapperPrototype<InterfaceBase, InterfacePrototype,
+                                InterfaceInstance, GIInterfaceInfo> {
+    friend class GIWrapperPrototype;
+    friend class GIWrapperBase;
+    friend class InterfaceBase;  // for has_instance_impl
+
+    // the GTypeInterface vtable wrapped by this JS object
+    GTypeInterface* m_vtable;
+
+    explicit InterfacePrototype(GIInterfaceInfo* info, GType gtype);
+    ~InterfacePrototype(void);
+
+    // JSClass operations
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
+                      const char* name, bool* resolved);
+
+    // JS methods
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool has_instance_impl(JSContext* cx, const JS::CallArgs& args);
+};
+
+class InterfaceInstance
+    : public GIWrapperInstance<InterfaceBase, InterfacePrototype,
+                               InterfaceInstance> {
+    friend class GIWrapperInstance;
+    friend class GIWrapperBase;
+
+    G_GNUC_NORETURN InterfaceInstance(JSContext* cx, JS::HandleObject obj)
+        : GIWrapperInstance(cx, obj) {
+        g_assert_not_reached();
+    }
+    G_GNUC_NORETURN ~InterfaceInstance(void) { g_assert_not_reached(); }
+};
 
 G_BEGIN_DECLS
 
