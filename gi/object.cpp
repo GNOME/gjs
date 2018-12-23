@@ -935,7 +935,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
 
     g_free(interfaces);
 
-    if (info()) {
+    if (!is_custom_js_class()) {
         // Methods
         int n_methods = g_object_info_get_n_methods(info());
         for (int i = 0; i < n_methods; i++) {
