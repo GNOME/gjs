@@ -23,8 +23,9 @@
 
 #include <config.h>
 
-#include "mem.h"
-#include <util/log.h>
+#include "gjs/mem-private.h"
+#include "gjs/mem.h"
+#include "util/log.h"
 
 #define GJS_DEFINE_COUNTER(name)             \
     GjsMemCounter gjs_counter_ ## name = { \
@@ -41,6 +42,7 @@ GJS_DEFINE_COUNTER(fundamental)
 GJS_DEFINE_COUNTER(gerror)
 GJS_DEFINE_COUNTER(importer)
 GJS_DEFINE_COUNTER(interface)
+GJS_DEFINE_COUNTER(module)
 GJS_DEFINE_COUNTER(ns)
 GJS_DEFINE_COUNTER(object_instance)
 GJS_DEFINE_COUNTER(object_prototype)
@@ -61,6 +63,7 @@ static GjsMemCounter* counters[] = {
     GJS_LIST_COUNTER(gerror),
     GJS_LIST_COUNTER(importer),
     GJS_LIST_COUNTER(interface),
+    GJS_LIST_COUNTER(module),
     GJS_LIST_COUNTER(ns),
     GJS_LIST_COUNTER(object_instance),
     GJS_LIST_COUNTER(object_prototype),
@@ -98,14 +101,13 @@ gjs_memory_report(const char *where,
               "  %d objects currently alive",
               GJS_GET_COUNTER(everything));
 
-    for (i = 0; i < n_counters; ++i) {
-        gjs_debug(GJS_DEBUG_MEMORY,
-                  "    %12s = %d",
-                  counters[i]->name,
-                  counters[i]->value);
-    }
+    if (GJS_GET_COUNTER(everything) > 0) {
+        for (i = 0; i < n_counters; ++i) {
+            gjs_debug(GJS_DEBUG_MEMORY, "    %24s = %d", counters[i]->name,
+                      counters[i]->value);
+        }
 
-    if (die_if_leaks && GJS_GET_COUNTER(everything) > 0) {
-        g_error("%s: JavaScript objects were leaked.", where);
+        if (die_if_leaks)
+            g_error("%s: JavaScript objects were leaked.", where);
     }
 }

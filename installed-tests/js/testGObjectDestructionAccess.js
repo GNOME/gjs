@@ -88,18 +88,18 @@ describe('Access to destroyed GObject', () => {
 
     it('Proto function toString', () => {
         expect(destroyedWindow.toString()).toMatch(
-            /\[object \(FINALIZED\) instance proxy GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+            /\[object \(FINALIZED\) instance wrapper GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
     });
 
-    it('Porto function toString before/after', () => {
+    it('Proto function toString before/after', () => {
         var validWindow = new Gtk.Window({type: Gtk.WindowType.TOPLEVEL});
 
         expect(validWindow.toString()).toMatch(
-            /\[object instance proxy GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+            /\[object instance wrapper GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
 
         validWindow.destroy();
 
         expect(validWindow.toString()).toMatch(
-            /\[object \(FINALIZED\) instance proxy GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+            /\[object \(FINALIZED\) instance wrapper GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
     });
 });

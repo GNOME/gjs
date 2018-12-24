@@ -27,15 +27,15 @@
 #include "fundamental.h"
 
 #include "arg.h"
-#include "object.h"
 #include "boxed.h"
 #include "function.h"
-#include "gtype.h"
-#include "proxyutils.h"
-#include "repo.h"
+#include "gi/gtype.h"
+#include "gi/object.h"
+#include "gi/repo.h"
+#include "gi/wrapperutils.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
-#include "gjs/mem.h"
+#include "gjs/mem-private.h"
 
 #include <gjs/context.h>
 #include <util/log.h>
@@ -210,11 +210,10 @@ associate_js_instance_to_fundamental(JSContext       *context,
 
 /* Find the first constructor */
 GJS_USE
-static GIFunctionInfo *
-find_fundamental_constructor(JSContext          *context,
-                             GIObjectInfo       *info,
-                             JS::MutableHandleId constructor_name)
-{
+static bool find_fundamental_constructor(
+    JSContext* context, GIObjectInfo* info,
+    JS::MutableHandleId constructor_name,
+    GjsAutoFunctionInfo* constructor_info) {
     int i, n_methods;
 
     n_methods = g_object_info_get_n_methods(info);
@@ -231,14 +230,17 @@ find_fundamental_constructor(JSContext          *context,
 
             name = g_base_info_get_name((GIBaseInfo *) func_info);
             constructor_name.set(gjs_intern_string_to_id(context, name));
+            if (constructor_name == JSID_VOID)
+                return false;
 
-            return func_info;
+            constructor_info->reset(func_info);
+            return true;
         }
 
         g_base_info_unref((GIBaseInfo *) func_info);
     }
 
-    return NULL;
+    return true;
 }
 
 /**/
@@ -401,14 +403,6 @@ fundamental_invoke_constructor(FundamentalInstance        *priv,
     return gjs_invoke_constructor_from_c(context, constructor, obj, args, rvalue);
 }
 
-/* If we set JSCLASS_CONSTRUCT_PROTOTYPE flag, then this is called on
- * the prototype in addition to on each instance. When called on the
- * prototype, "obj" is the prototype, and "retval" is the prototype
- * also, but can be replaced with another object to use instead as the
- * prototype. If we don't set JSCLASS_CONSTRUCT_PROTOTYPE we can
- * identify the prototype as an object of our class with NULL private
- * data.
- */
 GJS_NATIVE_CONSTRUCTOR_DECLARE(fundamental_instance)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(fundamental_instance)
@@ -491,18 +485,14 @@ to_string_func(JSContext *context,
     if (fundamental_is_prototype(priv)) {
         Fundamental *proto_priv = (Fundamental *) priv;
 
-        if (!_gjs_proxy_to_string_func(context, obj, "fundamental",
-                                       (GIBaseInfo *) proto_priv->info,
-                                       proto_priv->gtype,
-                                       proto_priv->gfundamental,
-                                       rec.rval()))
+        if (!gjs_wrapper_to_string_func(context, obj, "fundamental",
+                                        proto_priv->info, proto_priv->gtype,
+                                        proto_priv->gfundamental, rec.rval()))
             return false;
     } else {
-        if (!_gjs_proxy_to_string_func(context, obj, "fundamental",
-                                       (GIBaseInfo *) priv->prototype->info,
-                                       priv->prototype->gtype,
-                                       priv->gfundamental,
-                                       rec.rval()))
+        if (!gjs_wrapper_to_string_func(
+                context, obj, "fundamental", priv->prototype->info,
+                priv->prototype->gtype, priv->gfundamental, rec.rval()))
             return false;
     }
 
@@ -524,11 +514,6 @@ fundamental_trace(JSTracer *tracer,
 /* The bizarre thing about this vtable is that it applies to both
  * instances of the object, and to the prototype that instances of the
  * class have.
- *
- * Also, there's a constructor field in here, but as far as I can
- * tell, it would only be used if no constructor were provided to
- * JS_InitClass. The constructor from JS_InitClass is not applied to
- * the prototype unless JSCLASS_CONSTRUCT_PROTOTYPE is in flags.
  */
 static const struct JSClassOps gjs_fundamental_class_ops = {
     nullptr,  // addProperty
@@ -642,15 +627,16 @@ gjs_define_fundamental_class(JSContext              *context,
     Fundamental *priv;
     GType parent_gtype;
     GType gtype;
-    GIFunctionInfo *constructor_info;
+    GjsAutoFunctionInfo constructor_info;
     /* See the comment in gjs_define_object_class() for an explanation
      * of how this all works; Fundamental is pretty much the same as
      * Object.
      */
 
     constructor_name = g_base_info_get_name((GIBaseInfo *) info);
-    constructor_info = find_fundamental_constructor(context, info,
-                                                    &js_constructor_name);
+    if (!find_fundamental_constructor(context, info, &js_constructor_name,
+                                      &constructor_info))
+        return false;
 
     gtype = g_registered_type_info_get_g_type (info);
     parent_gtype = g_type_parent(gtype);
@@ -690,7 +676,8 @@ gjs_define_fundamental_class(JSContext              *context,
     priv->info = g_base_info_ref((GIBaseInfo *) info);
     priv->gtype = gtype;
     priv->constructor_name = js_constructor_name;
-    priv->constructor_info = constructor_info;
+    priv->constructor_info =
+        constructor_info ? constructor_info.copy() : nullptr;
     priv->ref_function = g_object_info_get_ref_function_pointer(info);
     g_assert(priv->ref_function != NULL);
     priv->unref_function = g_object_info_get_unref_function_pointer(info);
@@ -717,17 +704,9 @@ gjs_define_fundamental_class(JSContext              *context,
                   g_base_info_get_name ((GIBaseInfo *)priv->info));
     }
 
-    if (!gjs_object_define_static_methods(context, constructor, gtype, info))
-        return false;
-
-    JS::RootedObject gtype_obj(context,
-        gjs_gtype_create_gtype_wrapper(context, gtype));
-    if (!gtype_obj)
-        return false;
-
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    return JS_DefinePropertyById(context, constructor, atoms.gtype(), gtype_obj,
-                                 JSPROP_PERMANENT);
+    return gjs_object_define_static_methods(context, constructor, gtype,
+                                            info) &&
+           gjs_wrapper_define_gtype_prop(context, constructor, gtype);
 }
 
 JSObject*

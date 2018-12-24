@@ -28,10 +28,10 @@
 #include <vector>
 
 #include "gjs/context-private.h"
+#include "gjs/mem-private.h"
 #include "importer.h"
 #include "jsapi-class.h"
 #include "jsapi-wrapper.h"
-#include "mem.h"
 #include "module.h"
 #include "native.h"
 #include "util/glib.h"
@@ -716,7 +716,10 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
                 continue;
 
             if (g_file_info_get_file_type(info) == G_FILE_TYPE_DIRECTORY) {
-                if (!properties.append(gjs_intern_string_to_id(context, filename))) {
+                jsid id = gjs_intern_string_to_id(context, filename);
+                if (id == JSID_VOID)
+                    return false;
+                if (!properties.append(id)) {
                     JS_ReportOutOfMemory(context);
                     return false;
                 }
@@ -724,7 +727,10 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
                        g_str_has_suffix(filename, ".js")) {
                 GjsAutoChar filename_noext =
                     g_strndup(filename, strlen(filename) - 3);
-                if (!properties.append(gjs_intern_string_to_id(context, filename_noext))) {
+                jsid id = gjs_intern_string_to_id(context, filename_noext);
+                if (id == JSID_VOID)
+                    return false;
+                if (!properties.append(id)) {
                     JS_ReportOutOfMemory(context);
                     return false;
                 }

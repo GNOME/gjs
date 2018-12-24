@@ -25,15 +25,15 @@
 
 #include <string.h>
 
-#include "param.h"
-#include "arg.h"
-#include "object.h"
-#include "repo.h"
-#include "gtype.h"
-#include "function.h"
+#include "gi/arg.h"
+#include "gi/function.h"
+#include "gi/gtype.h"
+#include "gi/object.h"
+#include "gi/param.h"
+#include "gi/repo.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
-#include "gjs/mem.h"
+#include "gjs/mem-private.h"
 
 #include <util/log.h>
 
@@ -163,14 +163,13 @@ GJS_JSAPI_RETURN_CONVENTION
 static JSObject*
 gjs_lookup_param_prototype(JSContext    *context)
 {
-    JS::RootedId gobject_name(context, gjs_intern_string_to_id(context, "GObject"));
-    JS::RootedObject in_object(context,
-        gjs_lookup_namespace_object_by_name(context, gobject_name));
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    JS::RootedObject in_object(
+        context, gjs_lookup_namespace_object_by_name(context, atoms.gobject()));
 
     if (G_UNLIKELY (!in_object))
         return NULL;
 
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedValue value(context);
     if (!JS_GetPropertyById(context, in_object, atoms.param_spec(), &value))
         return NULL;
@@ -215,12 +214,7 @@ gjs_define_param_class(JSContext       *context,
                                 &constructor))
         return false;
 
-    JS::RootedObject gtype_obj(context,
-        gjs_gtype_create_gtype_wrapper(context, G_TYPE_PARAM));
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    if (!gtype_obj ||
-        !JS_DefinePropertyById(context, constructor, atoms.gtype(), gtype_obj,
-                               JSPROP_PERMANENT))
+    if (!gjs_wrapper_define_gtype_prop(context, constructor, G_TYPE_PARAM))
         return false;
 
     GjsAutoObjectInfo info = g_irepository_find_by_gtype(nullptr, G_TYPE_PARAM);
