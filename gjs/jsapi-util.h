@@ -285,7 +285,7 @@ bool gjs_string_from_ucs4(JSContext             *cx,
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_get_string_id(JSContext* cx, jsid id, JS::UniqueChars* name_p);
-GJS_USE
+GJS_JSAPI_RETURN_CONVENTION
 jsid        gjs_intern_string_to_id          (JSContext       *context,
                                               const char      *string);
 

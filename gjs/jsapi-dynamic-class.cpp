@@ -41,22 +41,15 @@ enum {
     DYNAMIC_PROPERTY_PRIVATE_SLOT,
 };
 
-bool
-gjs_init_class_dynamic(JSContext              *context,
-                       JS::HandleObject        in_object,
-                       JS::HandleObject        parent_proto,
-                       const char             *ns_name,
-                       const char             *class_name,
-                       JSClass                *clasp,
-                       JSNative                constructor_native,
-                       unsigned                nargs,
-                       JSPropertySpec         *proto_ps,
-                       JSFunctionSpec         *proto_fs,
-                       JSPropertySpec         *static_ps,
-                       JSFunctionSpec         *static_fs,
-                       JS::MutableHandleObject prototype,
-                       JS::MutableHandleObject constructor)
-{
+bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
+                            JS::HandleObject parent_proto, const char* ns_name,
+                            const char* class_name, const JSClass* clasp,
+                            JSNative constructor_native, unsigned nargs,
+                            JSPropertySpec* proto_ps, JSFunctionSpec* proto_fs,
+                            JSPropertySpec* static_ps,
+                            JSFunctionSpec* static_fs,
+                            JS::MutableHandleObject prototype,
+                            JS::MutableHandleObject constructor) {
     /* Force these variables on the stack, so the conservative GC will
        find them */
     JSFunction * volatile constructor_fun;
@@ -72,7 +65,7 @@ gjs_init_class_dynamic(JSContext              *context,
 
     JS_BeginRequest(context);
 
-    /* Class initalization consists of three parts:
+    /* Class initalization consists of five parts:
        - building a prototype
        - defining prototype properties and functions
        - building a constructor and definining it on the right object

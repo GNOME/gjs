@@ -32,11 +32,11 @@
 #include "boxed.h"
 #include "function.h"
 #include "gi/gerror.h"
+#include "gi/wrapperutils.h"
 #include "gjs/jsapi-class.h"
-#include "gjs/mem.h"
+#include "gjs/mem-private.h"
 #include "gtype.h"
 #include "object.h"
-#include "proxyutils.h"
 #include "repo.h"
 
 #include <util/log.h>
@@ -876,9 +876,8 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, rec, obj, Boxed, priv);
-    return _gjs_proxy_to_string_func(context, obj, "boxed",
-                                     (GIBaseInfo*)priv->info, priv->gtype,
-                                     priv->gboxed, rec.rval());
+    return gjs_wrapper_to_string_func(context, obj, "boxed", priv->info,
+                                      priv->gtype, priv->gboxed, rec.rval());
 }
 
 static void
@@ -1178,14 +1177,7 @@ bool gjs_define_boxed_class(JSContext* context, JS::HandleObject in_object,
                            0, GJS_MODULE_PROP_FLAGS))
         return false;
 
-    JS::RootedObject gtype_obj(context,
-        gjs_gtype_create_gtype_wrapper(context, priv->gtype));
-    if (!gtype_obj)
-        return false;
-
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    return JS_DefinePropertyById(context, constructor, atoms.gtype(), gtype_obj,
-                                 JSPROP_PERMANENT);
+    return gjs_wrapper_define_gtype_prop(context, constructor, priv->gtype);
 }
 
 JSObject* gjs_boxed_from_c_struct(JSContext* cx, GIStructInfo* info,

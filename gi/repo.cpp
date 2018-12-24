@@ -23,22 +23,22 @@
 
 #include <config.h>
 
-#include "repo.h"
-#include "ns.h"
-#include "function.h"
-#include "object.h"
-#include "param.h"
-#include "boxed.h"
-#include "union.h"
-#include "enumeration.h"
-#include "arg.h"
-#include "foreign.h"
-#include "fundamental.h"
-#include "interface.h"
-#include "gerror.h"
+#include "gi/arg.h"
+#include "gi/boxed.h"
+#include "gi/enumeration.h"
+#include "gi/foreign.h"
+#include "gi/function.h"
+#include "gi/fundamental.h"
+#include "gi/gerror.h"
+#include "gi/interface.h"
+#include "gi/ns.h"
+#include "gi/object.h"
+#include "gi/param.h"
+#include "gi/repo.h"
+#include "gi/union.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
-#include "gjs/mem.h"
+#include "gjs/mem-private.h"
 
 #include <util/misc.h>
 
@@ -547,6 +547,8 @@ gjs_lookup_namespace_object(JSContext  *context,
     }
 
     JS::RootedId ns_name(context, gjs_intern_string_to_id(context, ns));
+    if (ns_name == JSID_VOID)
+        return nullptr;
     return gjs_lookup_namespace_object_by_name(context, ns_name);
 }
 
@@ -745,8 +747,12 @@ gjs_lookup_generic_constructor(JSContext  *context,
     if (!JS_GetProperty(context, in_object, constructor_name, &value))
         return NULL;
 
-    if (G_UNLIKELY (!value.isObject()))
+    if (G_UNLIKELY(!value.isObject())) {
+        gjs_throw(context,
+                  "Constructor of %s.%s was the wrong type, expected an object",
+                  g_base_info_get_namespace(info), constructor_name);
         return NULL;
+    }
 
     return &value.toObject();
 }
@@ -765,8 +771,12 @@ gjs_lookup_generic_prototype(JSContext  *context,
     if (!JS_GetPropertyById(context, constructor, atoms.prototype(), &value))
         return NULL;
 
-    if (G_UNLIKELY (!value.isObjectOrNull()))
+    if (G_UNLIKELY(!value.isObject())) {
+        gjs_throw(context,
+                  "Prototype of %s.%s was the wrong type, expected an object",
+                  g_base_info_get_namespace(info), g_base_info_get_name(info));
         return NULL;
+    }
 
-    return value.toObjectOrNull();
+    return &value.toObject();
 }

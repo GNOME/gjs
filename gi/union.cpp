@@ -25,20 +25,21 @@
 
 #include <string.h>
 
+#include <girepository.h>
+
 /* include first for logging related #define used in repo.h */
 #include <util/log.h>
 
-#include "union.h"
 #include "arg.h"
-#include "object.h"
+#include "gi/function.h"
+#include "gi/gtype.h"
+#include "gi/object.h"
+#include "gi/union.h"
+#include "gi/wrapperutils.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
-#include "gjs/mem.h"
+#include "gjs/mem-private.h"
 #include "repo.h"
-#include "proxyutils.h"
-#include "function.h"
-#include "gtype.h"
-#include <girepository.h>
 
 typedef struct {
     GIUnionInfo *info;
@@ -272,9 +273,8 @@ to_string_func(JSContext *context,
                JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, rec, obj, Union, priv);
-    return _gjs_proxy_to_string_func(context, obj, "union",
-                                     (GIBaseInfo*)priv->info, priv->gtype,
-                                     priv->gboxed, rec.rval());
+    return gjs_wrapper_to_string_func(context, obj, "union", priv->info,
+                                      priv->gtype, priv->gboxed, rec.rval());
 }
 
 /* The bizarre thing about this vtable is that it applies to both
@@ -359,14 +359,7 @@ gjs_define_union_class(JSContext       *context,
               constructor_name, prototype.get(), JS_GetClass(prototype),
               in_object.get());
 
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    JS::RootedObject gtype_obj(context,
-        gjs_gtype_create_gtype_wrapper(context, gtype));
-    if (!gtype_obj)
-        return false;
-
-    return JS_DefinePropertyById(context, constructor, atoms.gtype(), gtype_obj,
-                                 JSPROP_PERMANENT);
+    return gjs_wrapper_define_gtype_prop(context, constructor, gtype);
 }
 
 JSObject*

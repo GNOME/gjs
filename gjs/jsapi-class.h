@@ -24,6 +24,7 @@
 #ifndef GJS_JSAPI_CLASS_H
 #define GJS_JSAPI_CLASS_H
 
+#include "gi/wrapperutils.h"
 #include "gjs/context-private.h"
 #include "global.h"
 #include "jsapi-util.h"
@@ -33,20 +34,12 @@
 G_BEGIN_DECLS
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_init_class_dynamic(JSContext              *cx,
-                            JS::HandleObject        in_object,
-                            JS::HandleObject        parent_proto,
-                            const char             *ns_name,
-                            const char             *class_name,
-                            JSClass                *clasp,
-                            JSNative                constructor_native,
-                            unsigned                nargs,
-                            JSPropertySpec         *ps,
-                            JSFunctionSpec         *fs,
-                            JSPropertySpec         *static_ps,
-                            JSFunctionSpec         *static_fs,
-                            JS::MutableHandleObject prototype,
-                            JS::MutableHandleObject constructor);
+bool gjs_init_class_dynamic(
+    JSContext* cx, JS::HandleObject in_object, JS::HandleObject parent_proto,
+    const char* ns_name, const char* class_name, const JSClass* clasp,
+    JSNative constructor_native, unsigned nargs, JSPropertySpec* ps,
+    JSFunctionSpec* fs, JSPropertySpec* static_ps, JSFunctionSpec* static_fs,
+    JS::MutableHandleObject prototype, JS::MutableHandleObject constructor);
 
 GJS_USE
 bool gjs_typecheck_instance(JSContext       *cx,
@@ -252,6 +245,8 @@ GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
         JS::RootedObject ctor_obj(cx);                                         \
         JS::RootedId class_name(                                               \
             cx, gjs_intern_string_to_id(cx, gjs_##cname##_class.name));        \
+        if (class_name == JSID_VOID)                                           \
+            return false;                                                      \
         if (!gjs_object_require_property(cx, in_obj, #cname " constructor",    \
                                          class_name, &ctor_obj))               \
             return false;                                                      \
@@ -268,12 +263,7 @@ GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
                                                                                \
         /* Define the GType value as a "$gtype" property on the constructor */ \
         if (type != G_TYPE_NONE) {                                             \
-            const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);              \
-            JS::RootedObject gtype_obj(                                        \
-                cx, gjs_gtype_create_gtype_wrapper(cx, type));                 \
-            if (!gtype_obj ||                                                  \
-                !JS_DefinePropertyById(cx, ctor_obj, atoms.gtype(), gtype_obj, \
-                                       JSPROP_PERMANENT))                      \
+            if (!gjs_wrapper_define_gtype_prop(cx, ctor_obj, type))            \
                 return false;                                                  \
         }                                                                      \
         gjs_debug(GJS_DEBUG_CONTEXT, "Initialized class %s prototype %p",      \

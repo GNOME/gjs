@@ -24,14 +24,14 @@
 
 #include <config.h>
 
-#include "function.h"
-#include "gtype.h"
-#include "interface.h"
-#include "object.h"
-#include "repo.h"
+#include "gi/function.h"
+#include "gi/gtype.h"
+#include "gi/interface.h"
+#include "gi/object.h"
+#include "gi/repo.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
-#include "gjs/mem.h"
+#include "gjs/mem-private.h"
 
 #include <util/log.h>
 
@@ -257,14 +257,7 @@ gjs_define_interface_class(JSContext              *context,
             return false;
     }
 
-    JS::RootedObject gtype_obj(context,
-        gjs_gtype_create_gtype_wrapper(context, priv->gtype));
-    if (!gtype_obj)
-        return false;
-
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    return JS_DefinePropertyById(context, constructor, atoms.gtype(), gtype_obj,
-                                 JSPROP_PERMANENT);
+    return gjs_wrapper_define_gtype_prop(context, constructor, priv->gtype);
 }
 
 bool

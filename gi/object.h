@@ -291,8 +291,8 @@ class ObjectPrototype : public ObjectBase {
  public:
     /* Public constructor for instances (uses GSlice allocator) */
     GJS_USE
-    static ObjectPrototype* new_for_js_object(JSContext* cx, GIObjectInfo* info,
-                                              GType gtype);
+    static ObjectPrototype* create(JSContext* cx, GIObjectInfo* info,
+                                   GType gtype);
 
     GJS_USE
     static ObjectPrototype* for_js(JSContext* cx, JS::HandleObject obj) {
