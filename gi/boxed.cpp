@@ -704,8 +704,6 @@ bool BoxedPrototype::define_boxed_class_fields(JSContext* cx,
 
 // Overrides GIWrapperPrototype::trace_impl().
 void BoxedPrototype::trace_impl(JSTracer* trc) {
-    JS::TraceEdge<jsid>(trc, &m_zero_args_constructor_name,
-                        "Boxed::zero_args_constructor_name");
     JS::TraceEdge<jsid>(trc, &m_default_constructor_name,
                         "Boxed::default_constructor_name");
     if (m_field_map)
@@ -861,7 +859,6 @@ struct_is_simple(GIStructInfo *info)
 BoxedPrototype::BoxedPrototype(GIStructInfo* info, GType gtype)
     : GIWrapperPrototype(info, gtype),
       m_zero_args_constructor(-1),
-      m_zero_args_constructor_name(JSID_VOID),
       m_default_constructor(-1),
       m_default_constructor_name(JSID_VOID),
       m_can_allocate_directly(struct_is_simple(info)) {
@@ -873,6 +870,7 @@ bool BoxedPrototype::init(JSContext* context) {
     int i, n_methods;
     int first_constructor = -1;
     jsid first_constructor_name = JSID_VOID;
+    jsid zero_args_constructor_name = JSID_VOID;
 
     if (m_gtype != G_TYPE_NONE) {
         /* If the structure is registered as a boxed, we can create a new instance by
@@ -900,9 +898,9 @@ bool BoxedPrototype::init(JSContext* context) {
                 if (m_zero_args_constructor < 0 &&
                     g_callable_info_get_n_args(func_info) == 0) {
                     m_zero_args_constructor = i;
-                    m_zero_args_constructor_name =
+                    zero_args_constructor_name =
                         gjs_intern_string_to_id(context, func_info.name());
-                    if (m_zero_args_constructor_name == JSID_VOID)
+                    if (zero_args_constructor_name == JSID_VOID)
                         return false;
                 }
 
@@ -917,7 +915,7 @@ bool BoxedPrototype::init(JSContext* context) {
 
         if (m_default_constructor < 0) {
             m_default_constructor = m_zero_args_constructor;
-            m_default_constructor_name = m_zero_args_constructor_name;
+            m_default_constructor_name = zero_args_constructor_name;
         }
         if (m_default_constructor < 0) {
             m_default_constructor = first_constructor;
