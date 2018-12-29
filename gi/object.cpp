@@ -799,7 +799,10 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
                 return true;
             }
 
-            *resolved = gjs_define_function(context, obj, m_gtype, vfunc) != NULL;
+            if (!gjs_define_function(context, obj, m_gtype, vfunc))
+                return false;
+
+            *resolved = true;
             return true;
         }
 
