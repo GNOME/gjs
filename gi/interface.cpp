@@ -73,39 +73,6 @@ interface_finalize(JSFreeOp *fop,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool
-gjs_define_static_methods(JSContext       *context,
-                          JS::HandleObject constructor,
-                          GType            gtype,
-                          GIInterfaceInfo *info)
-{
-    int i;
-    int n_methods;
-
-    n_methods = g_interface_info_get_n_methods(info);
-
-    for (i = 0; i < n_methods; i++) {
-        GIFunctionInfoFlags flags;
-
-        GjsAutoFunctionInfo meth_info = g_interface_info_get_method(info, i);
-        flags = g_function_info_get_flags (meth_info);
-
-        /* Anything that isn't a method we put on the prototype of the
-         * constructor.  This includes <constructor> introspection
-         * methods, as well as the forthcoming "static methods"
-         * support.  We may want to change this to use
-         * GI_FUNCTION_IS_CONSTRUCTOR and GI_FUNCTION_IS_STATIC or the
-         * like in the near future.
-         */
-        if (!(flags & GI_FUNCTION_IS_METHOD)) {
-            if (!gjs_define_function(context, constructor, gtype, meth_info))
-                return false;
-        }
-    }
-    return true;
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
 interface_resolve(JSContext       *context,
                   JS::HandleObject obj,
                   JS::HandleId     id,
@@ -252,8 +219,8 @@ gjs_define_interface_class(JSContext              *context,
     /* If we have no GIRepository information, then this interface was defined
      * from within GJS and therefore has no C static methods to be defined. */
     if (priv->info) {
-        if (!gjs_define_static_methods(context, constructor, priv->gtype,
-                                       priv->info))
+        if (!gjs_define_static_methods<InfoType::Interface>(
+                context, constructor, priv->gtype, priv->info))
             return false;
     }
 

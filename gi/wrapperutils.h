@@ -48,4 +48,18 @@ bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
 
 G_END_DECLS
 
+namespace InfoType {
+enum Tag { Enum, Interface, Object, Struct };
+};
+
+/*
+ * gjs_define_static_methods:
+ *
+ * Defines all static methods from @info on @constructor. Also includes class
+ * methods for GIObjectInfo, and interface methods for GIInterfaceInfo.
+ */
+template <InfoType::Tag>
+GJS_JSAPI_RETURN_CONVENTION bool gjs_define_static_methods(
+    JSContext* cx, JS::HandleObject constructor, GType gtype, GIBaseInfo* info);
+
 #endif  // GI_WRAPPERUTILS_H_
