@@ -347,7 +347,8 @@ bool gjs_define_error_class(JSContext* context, JS::HandleObject in_object,
               in_object.get());
 
     return gjs_define_enum_values(context, constructor, priv->info) &&
-           gjs_define_enum_static_methods(context, constructor, priv->info);
+           gjs_define_static_methods<InfoType::Enum>(context, constructor,
+                                                     G_TYPE_ERROR, priv->info);
 }
 
 GJS_USE

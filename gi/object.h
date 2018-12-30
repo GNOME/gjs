@@ -567,12 +567,6 @@ void gjs_object_shutdown_toggle_queue(void);
 void gjs_object_context_dispose_notify(void    *data,
                                        GObject *where_the_object_was);
 
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_object_define_static_methods(JSContext       *context,
-                                      JS::HandleObject constructor,
-                                      GType            gtype,
-                                      GIObjectInfo    *object_info);
-
 G_END_DECLS
 
 #endif  /* __GJS_OBJECT_H__ */

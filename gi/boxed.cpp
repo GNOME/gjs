@@ -79,39 +79,6 @@ extern struct JSClass gjs_boxed_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Boxed, gjs_boxed_class)
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_define_static_methods(JSContext       *context,
-                          JS::HandleObject constructor,
-                          GType            gtype,
-                          GIStructInfo    *boxed_info)
-{
-    int i;
-    int n_methods;
-
-    n_methods = g_struct_info_get_n_methods(boxed_info);
-
-    for (i = 0; i < n_methods; i++) {
-        GIFunctionInfoFlags flags;
-
-        GjsAutoFunctionInfo meth_info = g_struct_info_get_method(boxed_info, i);
-        flags = g_function_info_get_flags (meth_info);
-
-        /* Anything that isn't a method we put on the prototype of the
-         * constructor.  This includes <constructor> introspection
-         * methods, as well as the forthcoming "static methods"
-         * support.  We may want to change this to use
-         * GI_FUNCTION_IS_CONSTRUCTOR and GI_FUNCTION_IS_STATIC or the
-         * like in the near future.
-         */
-        if (!(flags & GI_FUNCTION_IS_METHOD)) {
-            if (!gjs_define_function(context, constructor, gtype, meth_info))
-                return false;
-        }
-    }
-    return true;
-}
-
 /* The *resolved out parameter, on success, should be false to indicate that id
  * was not resolved; and true if id was resolved. */
 GJS_JSAPI_RETURN_CONVENTION
@@ -1168,8 +1135,8 @@ bool gjs_define_boxed_class(JSContext* context, JS::HandleObject in_object,
     priv->can_allocate_directly = struct_is_simple (priv->info);
 
     if (!define_boxed_class_fields(context, priv, prototype) ||
-        !gjs_define_static_methods(context, constructor, priv->gtype,
-                                   priv->info))
+        !gjs_define_static_methods<InfoType::Struct>(context, constructor,
+                                                     priv->gtype, priv->info))
         return false;
 
     if (priv->gtype == G_TYPE_ERROR &&

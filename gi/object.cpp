@@ -2116,55 +2116,6 @@ JSFunctionSpec gjs_object_instance_proto_funcs[] = {
     JS_FS_END};
 
 bool
-gjs_object_define_static_methods(JSContext       *context,
-                                 JS::HandleObject constructor,
-                                 GType            gtype,
-                                 GIObjectInfo    *object_info)
-{
-    int i;
-    int n_methods;
-
-    n_methods = g_object_info_get_n_methods(object_info);
-
-    for (i = 0; i < n_methods; i++) {
-        GIFunctionInfoFlags flags;
-
-        GjsAutoCallableInfo meth_info =
-            g_object_info_get_method(object_info, i);
-        flags = g_function_info_get_flags (meth_info);
-
-        /* Anything that isn't a method we put on the prototype of the
-         * constructor.  This includes <constructor> introspection
-         * methods, as well as the forthcoming "static methods"
-         * support.  We may want to change this to use
-         * GI_FUNCTION_IS_CONSTRUCTOR and GI_FUNCTION_IS_STATIC or the
-         * like in the near future.
-         */
-        if (!(flags & GI_FUNCTION_IS_METHOD)) {
-            if (!gjs_define_function(context, constructor, gtype, meth_info))
-                return false;
-        }
-    }
-
-    GjsAutoStructInfo gtype_struct =
-        g_object_info_get_class_struct(object_info);
-    if (gtype_struct == NULL)
-        return true;  /* not an error? */
-
-    n_methods = g_struct_info_get_n_methods(gtype_struct);
-
-    for (i = 0; i < n_methods; i++) {
-        GjsAutoCallableInfo meth_info =
-            g_struct_info_get_method(gtype_struct, i);
-
-        if (!gjs_define_function(context, constructor, gtype, meth_info))
-            return false;
-    }
-
-    return true;
-}
-
-bool
 gjs_define_object_class(JSContext              *context,
                         JS::HandleObject        in_object,
                         GIObjectInfo           *info,
@@ -2263,7 +2214,8 @@ gjs_define_object_class(JSContext              *context,
               prototype.get(), JS_GetClass(prototype), in_object.get());
 
     if (info)
-        if (!gjs_object_define_static_methods(context, constructor, gtype, info))
+        if (!gjs_define_static_methods<InfoType::Object>(context, constructor,
+                                                         gtype, info))
             return false;
 
     return gjs_wrapper_define_gtype_prop(context, constructor, gtype);

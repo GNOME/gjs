@@ -704,8 +704,8 @@ gjs_define_fundamental_class(JSContext              *context,
                   g_base_info_get_name ((GIBaseInfo *)priv->info));
     }
 
-    return gjs_object_define_static_methods(context, constructor, gtype,
-                                            info) &&
+    return gjs_define_static_methods<InfoType::Object>(context, constructor,
+                                                       gtype, info) &&
            gjs_wrapper_define_gtype_prop(context, constructor, gtype);
 }
 
