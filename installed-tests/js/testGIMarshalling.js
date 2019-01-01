@@ -658,6 +658,99 @@ describe('Virtual function', function () {
     });
 });
 
+describe('GObject virtual function', function () {
+    it('can have its property read', function () {
+        expect(GObject.Object.prototype.vfunc_constructed).toBeTruthy();
+    });
+
+    it('can have its property overridden with an anonymous function', function () {
+        try {
+            let callback = {
+                vfunc_constructed: (a) => `constructed${a}`
+            };
+
+            let key = 'vfunc_constructed';
+
+            class _SimpleTestClass1 extends GObject.Object {
+                constructor() {
+                    super(...arguments);
+                    this.__constructed = false;
+                }
+            }
+
+            if (GObject.Object.prototype.vfunc_constructed) {
+                let parentFunc = GObject.Object.prototype.vfunc_constructed;
+                _SimpleTestClass1.prototype[key] = function () {
+                    parentFunc.call(this, ...arguments);
+                    this.__constructed = callback[key]('123');
+                };
+            } else {
+                _SimpleTestClass1.prototype[key] = function () {
+                    this.__constructed = true;
+                };
+            }
+
+            const SimpleTestClass1 = GObject.registerClass({GTypeName: 'SimpleTestClass1'}, _SimpleTestClass1);
+
+            let testInstance = new SimpleTestClass1();
+
+            expect(testInstance.__constructed).toEqual('constructed123');
+        } catch (e) {
+            fail('Exception should not be thrown');
+        }
+    });
+
+    it('can access the parent prototype with super()', function () {
+        try {
+            class _SimpleTestClass2 extends GObject.Object {
+                constructor() {
+                    super(...arguments);
+                    this.__constructed = false;
+                }
+
+                vfunc_constructed() {
+                    super.vfunc_constructed();
+                    this.__constructed = true;
+                }
+            }
+
+            const SimpleTestClass2 = GObject.registerClass({GTypeName: 'SimpleTestClass2'}, _SimpleTestClass2);
+
+            let testInstance = new SimpleTestClass2();
+
+            expect(testInstance.__constructed).toEqual(true);
+        } catch (e) {
+            fail('Exception should not be thrown');
+        }
+    });
+
+    it('handles non-existing properties', function () {
+        try {
+
+            const _SimpleTestClass3 = class extends GObject.Object {
+                constructor() {
+                    super(...arguments);
+                    this.__constructed = false;
+                }
+            };
+
+            _SimpleTestClass3.prototype.vfunc_doesnt_exist = function () {};
+
+            if (GObject.Object.prototype.vfunc_doesnt_exist) {
+                fail('Virtual function should not exist');
+            }
+
+            const SimpleTestClass3 = GObject.registerClass({GTypeName: 'SimpleTestClass3'}, _SimpleTestClass3);
+
+            let testInstance = new SimpleTestClass3();
+
+            expect(testInstance.__constructed).toEqual(undefined);
+
+            fail('Exception should be thrown');
+        } catch (e) {}
+    });
+});
+
 describe('Interface', function () {
     it('can be returned', function () {
         let ifaceImpl = new GIMarshallingTests.InterfaceImpl();
