@@ -99,6 +99,8 @@ class BoxedPrototype : public GIWrapperPrototype<BoxedBase, BoxedPrototype,
 
     GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx);
 
+    static constexpr InfoType::Tag info_type_tag = InfoType::Struct;
+
     // Accessors
 
  public:

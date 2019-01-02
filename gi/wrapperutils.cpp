@@ -121,6 +121,7 @@ DECLARE_POLICY(Enum, enum, no_type_struct)
 DECLARE_POLICY(Interface, interface, g_interface_info_get_iface_struct)
 DECLARE_POLICY(Object, object, g_object_info_get_class_struct)
 DECLARE_POLICY(Struct, struct, no_type_struct)
+DECLARE_POLICY(Union, union, no_type_struct)
 
 #undef DECLARE_POLICY
 
@@ -175,4 +176,6 @@ template bool gjs_define_static_methods<InfoType::Interface>(
 template bool gjs_define_static_methods<InfoType::Object>(
     JSContext* cx, JS::HandleObject constructor, GType gtype, GIBaseInfo* info);
 template bool gjs_define_static_methods<InfoType::Struct>(
+    JSContext* cx, JS::HandleObject constructor, GType gtype, GIBaseInfo* info);
+template bool gjs_define_static_methods<InfoType::Union>(
     JSContext* cx, JS::HandleObject constructor, GType gtype, GIBaseInfo* info);

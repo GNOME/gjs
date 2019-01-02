@@ -957,13 +957,11 @@ bool BoxedPrototype::init(JSContext* context) {
 bool BoxedPrototype::define_class(JSContext* context,
                                   JS::HandleObject in_object,
                                   GIStructInfo* info) {
-    JS::RootedObject prototype(context), constructor(context);
+    JS::RootedObject prototype(context), unused_constructor(context);
     GType gtype = g_registered_type_info_get_g_type(info);
     BoxedPrototype* priv = BoxedPrototype::create_class(
-        context, in_object, info, gtype, &constructor, &prototype);
-    if (!priv || !priv->define_boxed_class_fields(context, prototype) ||
-        !gjs_define_static_methods<InfoType::Struct>(context, constructor, gtype,
-                                                     info))
+        context, in_object, info, gtype, &unused_constructor, &prototype);
+    if (!priv || !priv->define_boxed_class_fields(context, prototype))
         return false;
 
     if (gtype == G_TYPE_ERROR &&
