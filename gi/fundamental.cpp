@@ -422,8 +422,7 @@ bool FundamentalPrototype::define_class(JSContext* cx,
                   priv->ns(), priv->name());
     }
 
-    return gjs_define_static_methods<InfoType::Object>(cx, constructor, gtype,
-                                                       info);
+    return true;
 }
 
 /*

@@ -59,6 +59,8 @@ class UnionPrototype : public GIWrapperPrototype<UnionBase, UnionPrototype,
                                     GIUnionInfo>;
     friend class GIWrapperBase<UnionBase, UnionPrototype, UnionInstance>;
 
+    static constexpr InfoType::Tag info_type_tag = InfoType::Union;
+
     explicit UnionPrototype(GIUnionInfo* info, GType gtype);
     ~UnionPrototype(void);
 

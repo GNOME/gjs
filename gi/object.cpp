@@ -2000,17 +2000,9 @@ bool ObjectPrototype::define_class(JSContext* context,
     /* Hook_up_vfunc can't be included in gjs_object_instance_proto_funcs
      * because it's a custom symbol. */
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    if (!JS_DefineFunctionById(context, prototype, atoms.hook_up_vfunc(),
-                               &ObjectBase::hook_up_vfunc, 3,
-                               GJS_MODULE_PROP_FLAGS))
-        return false;
-
-    if (info)
-        if (!gjs_define_static_methods<InfoType::Object>(context, constructor,
-                                                         gtype, info))
-            return false;
-
-    return true;
+    return JS_DefineFunctionById(context, prototype, atoms.hook_up_vfunc(),
+                                 &ObjectBase::hook_up_vfunc, 3,
+                                 GJS_MODULE_PROP_FLAGS);
 }
 
 /*

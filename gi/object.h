@@ -206,6 +206,8 @@ class ObjectPrototype
     GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx);
     ~ObjectPrototype();
 
+    static constexpr InfoType::Tag info_type_tag = InfoType::Object;
+
  public:
     GJS_USE
     static ObjectPrototype* for_gtype(GType gtype);
