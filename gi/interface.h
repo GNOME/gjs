@@ -93,6 +93,8 @@ class InterfacePrototype
     // the GTypeInterface vtable wrapped by this JS object
     GTypeInterface* m_vtable;
 
+    static constexpr InfoType::Tag info_type_tag = InfoType::Interface;
+
     explicit InterfacePrototype(GIInterfaceInfo* info, GType gtype);
     ~InterfacePrototype(void);
 

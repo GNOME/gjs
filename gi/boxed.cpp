@@ -961,9 +961,7 @@ bool BoxedPrototype::define_class(JSContext* context,
     GType gtype = g_registered_type_info_get_g_type(info);
     BoxedPrototype* priv = BoxedPrototype::create_class(
         context, in_object, info, gtype, &constructor, &prototype);
-    if (!priv || !priv->define_boxed_class_fields(context, prototype) ||
-        !gjs_define_static_methods<InfoType::Struct>(context, constructor, gtype,
-                                                     info))
+    if (!priv || !priv->define_boxed_class_fields(context, prototype))
         return false;
 
     if (gtype == G_TYPE_ERROR &&

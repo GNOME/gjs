@@ -148,20 +148,8 @@ gjs_define_interface_class(JSContext              *context,
                            JS::MutableHandleObject constructor)
 {
     JS::RootedObject prototype(context);
-
-    if (!InterfacePrototype::create_class(context, in_object, info, gtype,
-                                          constructor, &prototype))
-        return false;
-
-    /* If we have no GIRepository information, then this interface was defined
-     * from within GJS and therefore has no C static methods to be defined. */
-    if (info) {
-        if (!gjs_define_static_methods<InfoType::Interface>(
-                context, constructor, gtype, info))
-            return false;
-    }
-
-    return true;
+    return !!InterfacePrototype::create_class(context, in_object, info, gtype,
+                                              constructor, &prototype);
 }
 
 bool

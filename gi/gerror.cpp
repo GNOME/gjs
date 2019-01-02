@@ -238,13 +238,10 @@ bool ErrorPrototype::define_class(JSContext* context,
     // prototype of GLib.Error; and create_class() will not define it since we
     // supply a parent in get_parent_proto().
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    if (!JS_DefineFunctionById(context, prototype, atoms.to_string(),
-                               &ErrorBase::to_string, 0, GJS_MODULE_PROP_FLAGS))
-        return false;
-
-    return gjs_define_enum_values(context, constructor, info) &&
-           gjs_define_static_methods<InfoType::Enum>(context, constructor,
-                                                     G_TYPE_ERROR, info);
+    return JS_DefineFunctionById(context, prototype, atoms.to_string(),
+                                 &ErrorBase::to_string, 0,
+                                 GJS_MODULE_PROP_FLAGS) &&
+           gjs_define_enum_values(context, constructor, info);
 }
 
 GJS_USE

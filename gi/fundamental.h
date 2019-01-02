@@ -91,6 +91,8 @@ class FundamentalPrototype
 
     GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx);
 
+    static constexpr InfoType::Tag info_type_tag = InfoType::Object;
+
  public:
     GJS_JSAPI_RETURN_CONVENTION
     static FundamentalPrototype* for_gtype(JSContext* cx, GType gtype);

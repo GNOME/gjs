@@ -116,6 +116,8 @@ class ErrorPrototype : public GIWrapperPrototype<ErrorBase, ErrorPrototype,
 
     GQuark m_domain;
 
+    static constexpr InfoType::Tag info_type_tag = InfoType::Enum;
+
     explicit ErrorPrototype(GIEnumInfo* info, GType gtype);
     ~ErrorPrototype(void);
 
