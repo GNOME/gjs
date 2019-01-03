@@ -145,7 +145,9 @@ class FundamentalInstance
                           const JS::CallArgs& args);
 
  public:
-    void associate_js_instance(JSObject* object, void* gfundamental);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool associate_js_instance(JSContext* cx, JSObject* object,
+                               void* gfundamental);
 };
 
 G_BEGIN_DECLS
