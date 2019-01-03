@@ -34,10 +34,6 @@
 #include "gjs/jsapi-wrapper.h"
 #include "util/log.h"
 
-static bool weak_pointer_callback = false;
-static std::unordered_map<GType, std::unique_ptr<JS::Heap<JSObject*>>>
-    weak_pointer_list;
-
 GJS_USE static JSObject* gjs_gtype_get_proto(JSContext* cx) G_GNUC_UNUSED;
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_gtype_define_proto(JSContext *, JS::HandleObject,
@@ -50,34 +46,6 @@ GJS_DEFINE_PROTO_ABSTRACT("GIRepositoryGType", gtype,
 GJS_DEFINE_PRIV_FROM_JS(void, gjs_gtype_class);
 
 static void
-update_gtype_weak_pointers(JSContext     *cx,
-                           JSCompartment *compartment,
-                           void          *data)
-{
-    for (auto iter = weak_pointer_list.begin(); iter != weak_pointer_list.end(); ) {
-        JS::Heap<JSObject *> *heap_wrapper = iter->second.get();
-        JS_UpdateWeakPointerAfterGC(heap_wrapper);
-
-        /* No read barriers are needed if the only thing we are doing with the
-         * pointer is comparing it to nullptr. */
-        if (heap_wrapper->unbarrieredGet() == nullptr)
-            iter = weak_pointer_list.erase(iter);
-        else
-            iter++;
-    }
-}
-
-static void
-ensure_weak_pointer_callback(JSContext *cx)
-{
-    if (!weak_pointer_callback) {
-        JS_AddWeakPointerCompartmentCallback(cx, update_gtype_weak_pointers,
-                                             nullptr);
-        weak_pointer_callback = true;
-    }
-}
-
-static void
 gjs_gtype_finalize(JSFreeOp *fop,
                    JSObject *obj)
 {
@@ -86,8 +54,6 @@ gjs_gtype_finalize(JSFreeOp *fop,
     /* proto doesn't have a private set */
     if (G_UNLIKELY(gtype == 0))
         return;
-
-    weak_pointer_list.erase(gtype);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -153,26 +119,23 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
 
     JSAutoRequest ar(context);
 
-    auto heap_wrapper_it = weak_pointer_list.find(gtype);
-    if (heap_wrapper_it != std::end(weak_pointer_list))
-        return *heap_wrapper_it->second;
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+    auto p = gjs->gtype_table().lookupForAdd(gtype);
+    if (p)
+        return p->value();
 
     JS::RootedObject proto(context);
     if (!gjs_gtype_define_proto(context, nullptr, &proto))
         return nullptr;
 
-    auto heap_wrapper = std::make_unique<JS::Heap<JSObject *>>();
-    if (!(*heap_wrapper =
-          JS_NewObjectWithGivenProto(context, &gjs_gtype_class, proto)))
+    JS::RootedObject gtype_wrapper(
+        context, JS_NewObjectWithGivenProto(context, &gjs_gtype_class, proto));
+    if (!gtype_wrapper)
         return nullptr;
 
-    JS_SetPrivate(*heap_wrapper, GSIZE_TO_POINTER(gtype));
-    ensure_weak_pointer_callback(context);
+    JS_SetPrivate(gtype_wrapper, GSIZE_TO_POINTER(gtype));
 
-    /* Saving a reference to the wrapper pointer, as heap_wrapper will be
-     * nullified by std::move */
-    JSObject *gtype_wrapper = *heap_wrapper;
-    weak_pointer_list.insert({gtype, std::move(heap_wrapper)});
+    gjs->gtype_table().add(p, gtype, gtype_wrapper);
 
     return gtype_wrapper;
 }

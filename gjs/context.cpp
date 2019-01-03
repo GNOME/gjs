@@ -356,6 +356,8 @@ void GjsContextPrivate::dispose(void) {
 
         gjs_debug(GJS_DEBUG_CONTEXT, "Releasing cached JS wrappers");
         m_fundamental_table->clear();
+        m_gtype_table->clear();
+
         /* Do a full GC here before tearing down, since once we do
          * that we may not have the JS_GetPrivate() to access the
          * context
@@ -387,6 +389,7 @@ void GjsContextPrivate::dispose(void) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Freeing allocated resources");
         delete m_job_queue;
         delete m_fundamental_table;
+        delete m_gtype_table;
 
         /* Tear down JS */
         JS_DestroyContext(m_cx);
@@ -470,6 +473,10 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     m_fundamental_table = new JS::WeakCache<FundamentalTable>(rt);
     if (!m_fundamental_table->init())
         g_error("Failed to initialize fundamental objects table");
+
+    m_gtype_table = new JS::WeakCache<GTypeTable>(rt);
+    if (!m_gtype_table->init())
+        g_error("Failed to initialize GType objects table");
 
     JS_BeginRequest(m_cx);
 
