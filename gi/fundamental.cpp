@@ -493,6 +493,16 @@ gjs_fundamental_from_g_value(JSContext    *context,
     return gjs_object_from_g_fundamental(context, proto_priv->info(), fobj);
 }
 
+bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
+                                GValue* gvalue) {
+    auto* priv = FundamentalBase::for_js_typecheck(cx, obj);
+    if (!priv || !priv->check_is_instance(cx, "convert to GValue"))
+        return false;
+
+    priv->to_instance()->set_value(gvalue);
+    return true;
+}
+
 void*
 gjs_g_fundamental_from_object(JSContext       *context,
                               JS::HandleObject obj)
