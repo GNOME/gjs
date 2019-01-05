@@ -26,6 +26,7 @@
 #define GI_WRAPPERUTILS_H_
 
 #include "gjs/context-private.h"
+#include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/log.h"
