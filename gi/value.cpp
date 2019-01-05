@@ -683,6 +683,15 @@ gjs_value_to_g_value_internal(JSContext      *context,
         } else {
             return throw_expect_type(context, value, "integer");
         }
+    } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
+        // The gtype is none of the above, it should be derived from a custom
+        // fundamental type.
+        if (!value.isObject())
+            return throw_expect_type(context, value, "object", gtype);
+
+        JS::RootedObject fundamental_object(context, &value.toObject());
+        if (!FundamentalBase::to_gvalue(context, fundamental_object, gvalue))
+            return false;
     } else {
         gjs_debug(GJS_DEBUG_GCLOSURE, "JS::Value is number %d gtype fundamental %d transformable to int %d from int %d",
                   value.isNumber(),
