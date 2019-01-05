@@ -62,6 +62,12 @@ class FundamentalBase
     // Helper methods
 
     GJS_USE const char* to_string_kind(void) const { return "fundamental"; }
+
+    // Public API
+
+ public:
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool to_gvalue(JSContext* cx, JS::HandleObject obj, GValue* gvalue);
 };
 
 class FundamentalPrototype
@@ -101,6 +107,9 @@ class FundamentalPrototype
     GJS_USE void* call_get_value_function(const GValue* value) const {
         return m_get_value_function(value);
     }
+    void call_set_value_function(GValue* value, void* object) const {
+        m_set_value_function(value, object);
+    }
 
     // Helper methods
 
@@ -125,6 +134,7 @@ class FundamentalPrototype
 class FundamentalInstance
     : public GIWrapperInstance<FundamentalBase, FundamentalPrototype,
                                FundamentalInstance> {
+    friend class FundamentalBase;  // for set_value()
     friend class GIWrapperInstance<FundamentalBase, FundamentalPrototype,
                                    FundamentalInstance>;
     friend class GIWrapperBase<FundamentalBase, FundamentalPrototype,
@@ -142,6 +152,9 @@ class FundamentalInstance
 
     void ref(void) { get_prototype()->call_ref_function(m_ptr); }
     void unref(void) { get_prototype()->call_unref_function(m_ptr); }
+    void set_value(GValue* gvalue) const {
+        get_prototype()->call_set_value_function(gvalue, m_ptr);
+    }
 
     // JS constructor
 
