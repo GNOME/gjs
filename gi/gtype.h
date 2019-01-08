@@ -47,11 +47,6 @@ bool        gjs_typecheck_gtype         (JSContext             *context,
                                          JS::HandleObject       obj,
                                          bool                   throw_error);
 
-GJS_USE
-const char *gjs_get_names_from_gtype_and_gi_info(GType        gtype,
-                                                 GIBaseInfo  *info,
-                                                 const char **constructor_name);
-
 G_END_DECLS
 
 #endif  /* __GJS_INTERFACE_H__ */

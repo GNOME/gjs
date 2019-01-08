@@ -35,11 +35,14 @@ typedef struct {
 
 GJS_DECLARE_COUNTER(everything)
 
-GJS_DECLARE_COUNTER(boxed)
+GJS_DECLARE_COUNTER(boxed_instance)
+GJS_DECLARE_COUNTER(boxed_prototype)
 GJS_DECLARE_COUNTER(closure)
 GJS_DECLARE_COUNTER(function)
-GJS_DECLARE_COUNTER(fundamental)
-GJS_DECLARE_COUNTER(gerror)
+GJS_DECLARE_COUNTER(fundamental_instance)
+GJS_DECLARE_COUNTER(fundamental_prototype)
+GJS_DECLARE_COUNTER(gerror_instance)
+GJS_DECLARE_COUNTER(gerror_prototype)
 GJS_DECLARE_COUNTER(importer)
 GJS_DECLARE_COUNTER(interface)
 GJS_DECLARE_COUNTER(module)
@@ -48,7 +51,8 @@ GJS_DECLARE_COUNTER(object_instance)
 GJS_DECLARE_COUNTER(object_prototype)
 GJS_DECLARE_COUNTER(param)
 GJS_DECLARE_COUNTER(repo)
-GJS_DECLARE_COUNTER(union)
+GJS_DECLARE_COUNTER(union_instance)
+GJS_DECLARE_COUNTER(union_prototype)
 
 #define GJS_INC_COUNTER(name)                               \
     do {                                                    \

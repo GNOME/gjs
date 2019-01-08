@@ -35,11 +35,14 @@
 
 GJS_DEFINE_COUNTER(everything)
 
-GJS_DEFINE_COUNTER(boxed)
+GJS_DEFINE_COUNTER(boxed_instance)
+GJS_DEFINE_COUNTER(boxed_prototype)
 GJS_DEFINE_COUNTER(closure)
 GJS_DEFINE_COUNTER(function)
-GJS_DEFINE_COUNTER(fundamental)
-GJS_DEFINE_COUNTER(gerror)
+GJS_DEFINE_COUNTER(fundamental_instance)
+GJS_DEFINE_COUNTER(fundamental_prototype)
+GJS_DEFINE_COUNTER(gerror_instance)
+GJS_DEFINE_COUNTER(gerror_prototype)
 GJS_DEFINE_COUNTER(importer)
 GJS_DEFINE_COUNTER(interface)
 GJS_DEFINE_COUNTER(module)
@@ -48,7 +51,8 @@ GJS_DEFINE_COUNTER(object_instance)
 GJS_DEFINE_COUNTER(object_prototype)
 GJS_DEFINE_COUNTER(param)
 GJS_DEFINE_COUNTER(repo)
-GJS_DEFINE_COUNTER(union)
+GJS_DEFINE_COUNTER(union_instance)
+GJS_DEFINE_COUNTER(union_prototype)
 
 #define GJS_LIST_COUNTER(name) \
     & gjs_counter_ ## name
@@ -56,11 +60,14 @@ GJS_DEFINE_COUNTER(union)
 // clang-format off
 // otherwise these are put into 2 columns?!
 static GjsMemCounter* counters[] = {
-    GJS_LIST_COUNTER(boxed),
+    GJS_LIST_COUNTER(boxed_instance),
+    GJS_LIST_COUNTER(boxed_prototype),
     GJS_LIST_COUNTER(closure),
     GJS_LIST_COUNTER(function),
-    GJS_LIST_COUNTER(fundamental),
-    GJS_LIST_COUNTER(gerror),
+    GJS_LIST_COUNTER(fundamental_instance),
+    GJS_LIST_COUNTER(fundamental_prototype),
+    GJS_LIST_COUNTER(gerror_instance),
+    GJS_LIST_COUNTER(gerror_prototype),
     GJS_LIST_COUNTER(importer),
     GJS_LIST_COUNTER(interface),
     GJS_LIST_COUNTER(module),
@@ -69,7 +76,8 @@ static GjsMemCounter* counters[] = {
     GJS_LIST_COUNTER(object_prototype),
     GJS_LIST_COUNTER(param),
     GJS_LIST_COUNTER(repo),
-    GJS_LIST_COUNTER(union),
+    GJS_LIST_COUNTER(union_instance),
+    GJS_LIST_COUNTER(union_prototype),
 };
 // clang-format on
 

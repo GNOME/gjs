@@ -50,6 +50,7 @@ typedef enum {
     GJS_DEBUG_GPARAM,
     GJS_DEBUG_GERROR,
     GJS_DEBUG_GFUNDAMENTAL,
+    GJS_DEBUG_GINTERFACE,
 } GjsDebugTopic;
 
 /* These defines are because we have some pretty expensive and
