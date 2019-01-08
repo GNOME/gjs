@@ -25,6 +25,7 @@
 
 #include <string.h>
 
+#include "gi/function.h"
 #include "gi/wrapperutils.h"
 #include "gjs/context-private.h"
 
@@ -94,3 +95,82 @@ bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
     return JS_DefinePropertyById(cx, constructor, atoms.gtype(), gtype_obj,
                                  GJS_MODULE_PROP_FLAGS);
 }
+
+// These policies work around having separate g_foo_info_get_n_methods() and
+// g_foo_info_get_method() functions for different GIInfoTypes. It's not
+// possible to use GIFooInfo* as the template parameter, because the GIFooInfo
+// structs are all typedefs of GIBaseInfo. It's also not possible to use the
+// GIInfoType enum value as the template parameter, because GI_INFO_TYPE_BOXED
+// could be either a GIStructInfo or GIUnionInfo.
+template <InfoType::Tag TAG>
+struct InfoMethodsPolicy {};
+
+#define DECLARE_POLICY(tag, type, type_struct_func)                            \
+    template <>                                                                \
+    struct InfoMethodsPolicy<InfoType::tag> {                                  \
+        using T = GI##tag##Info;                                               \
+        static constexpr int (*n_methods)(T*) = g_##type##_info_get_n_methods; \
+        static constexpr GIFunctionInfo* (*method)(T*, int) = g_##type         \
+            ##_info_get_method;                                                \
+        static constexpr GIStructInfo* (*type_struct)(T*) = type_struct_func;  \
+    };
+
+DECLARE_POLICY(Enum, enum, nullptr)
+DECLARE_POLICY(Interface, interface, g_interface_info_get_iface_struct)
+DECLARE_POLICY(Object, object, g_object_info_get_class_struct)
+DECLARE_POLICY(Struct, struct, nullptr)
+
+#undef DECLARE_POLICY
+
+template <InfoType::Tag TAG>
+bool gjs_define_static_methods(JSContext* cx, JS::HandleObject constructor,
+                               GType gtype, GIBaseInfo* info) {
+    int n_methods = InfoMethodsPolicy<TAG>::n_methods(info);
+
+    for (int ix = 0; ix < n_methods; ix++) {
+        GjsAutoFunctionInfo meth_info =
+            InfoMethodsPolicy<TAG>::method(info, ix);
+        GIFunctionInfoFlags flags = g_function_info_get_flags(meth_info);
+
+        // Anything that isn't a method we put on the constructor. This
+        // includes <constructor> introspection methods, as well as static
+        // methods. We may want to change this to use
+        // GI_FUNCTION_IS_CONSTRUCTOR and GI_FUNCTION_IS_STATIC or the like
+        // in the future.
+        if (!(flags & GI_FUNCTION_IS_METHOD)) {
+            if (!gjs_define_function(cx, constructor, gtype, meth_info))
+                return false;
+        }
+    }
+
+    if (!InfoMethodsPolicy<TAG>::type_struct)
+        return true;
+
+    // Also define class/interface methods if there is a gtype struct
+
+    GjsAutoStructInfo type_struct = InfoMethodsPolicy<TAG>::type_struct(info);
+    if (!type_struct)
+        return true;  // not an error?
+
+    n_methods = g_struct_info_get_n_methods(type_struct);
+
+    for (int ix = 0; ix < n_methods; ix++) {
+        GjsAutoFunctionInfo meth_info =
+            g_struct_info_get_method(type_struct, ix);
+
+        if (!gjs_define_function(cx, constructor, gtype, meth_info))
+            return false;
+    }
+
+    return true;
+}
+
+// All possible instantiations are needed
+template bool gjs_define_static_methods<InfoType::Enum>(
+    JSContext* cx, JS::HandleObject constructor, GType gtype, GIBaseInfo* info);
+template bool gjs_define_static_methods<InfoType::Interface>(
+    JSContext* cx, JS::HandleObject constructor, GType gtype, GIBaseInfo* info);
+template bool gjs_define_static_methods<InfoType::Object>(
+    JSContext* cx, JS::HandleObject constructor, GType gtype, GIBaseInfo* info);
+template bool gjs_define_static_methods<InfoType::Struct>(
+    JSContext* cx, JS::HandleObject constructor, GType gtype, GIBaseInfo* info);

@@ -134,7 +134,7 @@ static GObject* gjs_object_constructor(
     /* We only hold a toggle ref at this point, add back a ref that the
      * native code can own.
      */
-    return G_OBJECT(g_object_ref(priv->to_instance()->gobj()));
+    return G_OBJECT(g_object_ref(priv->to_instance()->ptr()));
 }
 
 static void gjs_object_set_gproperty(GObject* object, unsigned property_id,

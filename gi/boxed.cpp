@@ -43,115 +43,21 @@
 
 #include <girepository.h>
 
-struct Boxed {
-    using FieldMap =
-        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoFieldInfo,
-                      js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
-
-    /* prototype info */
-    GIStructInfo* info;
-    GType gtype;
-    gint zero_args_constructor; /* -1 if none */
-    JS::Heap<jsid> zero_args_constructor_name;
-    gint default_constructor; /* -1 if none */
-    JS::Heap<jsid> default_constructor_name;
-
-    /* instance info */
-    void *gboxed; /* NULL if we are the prototype and not an instance */
-    FieldMap* field_map;
-
-    guint can_allocate_directly : 1;
-    guint allocated_directly : 1;
-    guint not_owning_gboxed : 1; /* if set, the JS wrapper does not own
-                                    the reference to the C gboxed */
-};
+BoxedInstance::BoxedInstance(JSContext* cx, JS::HandleObject obj)
+    : GIWrapperInstance(cx, obj) {
+    GJS_INC_COUNTER(boxed_instance);
+}
 
 GJS_USE
 static bool struct_is_simple(GIStructInfo *info);
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool boxed_set_field_from_value(JSContext      *context,
-                                       Boxed          *priv,
-                                       GIFieldInfo    *field_info,
-                                       JS::HandleValue value);
-
-extern struct JSClass gjs_boxed_class;
-
-GJS_DEFINE_PRIV_FROM_JS(Boxed, gjs_boxed_class)
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_define_static_methods(JSContext       *context,
-                          JS::HandleObject constructor,
-                          GType            gtype,
-                          GIStructInfo    *boxed_info)
-{
-    int i;
-    int n_methods;
-
-    n_methods = g_struct_info_get_n_methods(boxed_info);
-
-    for (i = 0; i < n_methods; i++) {
-        GIFunctionInfoFlags flags;
-
-        GjsAutoFunctionInfo meth_info = g_struct_info_get_method(boxed_info, i);
-        flags = g_function_info_get_flags (meth_info);
-
-        /* Anything that isn't a method we put on the prototype of the
-         * constructor.  This includes <constructor> introspection
-         * methods, as well as the forthcoming "static methods"
-         * support.  We may want to change this to use
-         * GI_FUNCTION_IS_CONSTRUCTOR and GI_FUNCTION_IS_STATIC or the
-         * like in the near future.
-         */
-        if (!(flags & GI_FUNCTION_IS_METHOD)) {
-            if (!gjs_define_function(context, constructor, gtype, meth_info))
-                return false;
-        }
-    }
-    return true;
-}
-
-/* The *resolved out parameter, on success, should be false to indicate that id
- * was not resolved; and true if id was resolved. */
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-boxed_resolve(JSContext       *context,
-              JS::HandleObject obj,
-              JS::HandleId     id,
-              bool            *resolved)
-{
-    Boxed *priv = priv_from_js(context, obj);
-    gjs_debug_jsprop(GJS_DEBUG_GBOXED, "Resolve prop '%s' hook, obj %s, priv %p",
-                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str(),
-                     priv);
-
-    if (priv == nullptr)
-        return false; /* wrong class */
-
-    if (priv->gboxed) {
-        /* We are an instance, not a prototype, so look for
-         * per-instance props that we want to define on the
-         * JSObject. Generally we do not want to cache these in JS, we
-         * want to always pull them from the C object, or JS would not
-         * see any changes made from C. So we use the property accessors, not
-         * this resolve hook.
-         */
-        *resolved = false;
-        return true;
-    }
-
-    JS::UniqueChars name;
-    if (!gjs_get_string_id(context, id, &name))
-        return false;
-    if (!name) {
-        *resolved = false;
-        return true;
-    }
-
-    /* We are the prototype, so look for methods and other class properties */
+// See GIWrapperBase::resolve().
+bool BoxedPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
+                                  JS::HandleId id, const char* prop_name,
+                                  bool* resolved) {
+    // Look for methods and other class properties
     GjsAutoFunctionInfo method_info =
-        g_struct_info_find_method(priv->info, name.get());
+        g_struct_info_find_method(info(), prop_name);
     if (!method_info) {
         *resolved = false;
         return true;
@@ -161,14 +67,11 @@ boxed_resolve(JSContext       *context,
 #endif
 
     if (g_function_info_get_flags(method_info) & GI_FUNCTION_IS_METHOD) {
-        gjs_debug(GJS_DEBUG_GBOXED,
-                  "Defining method %s in prototype for %s.%s",
-                  method_info.name(),
-                  g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                  g_base_info_get_name( (GIBaseInfo*) priv->info));
+        gjs_debug(GJS_DEBUG_GBOXED, "Defining method %s in prototype for %s.%s",
+                  method_info.name(), ns(), name());
 
         /* obj is the Boxed prototype */
-        if (!gjs_define_function(context, obj, priv->gtype, method_info))
+        if (!gjs_define_function(cx, obj, gtype(), method_info))
             return false;
 
         *resolved = true;
@@ -179,58 +82,53 @@ boxed_resolve(JSContext       *context,
     return true;
 }
 
-/* Check to see if JS::Value passed in is another Boxed object of the same type,
- * and if so, retrieve the Boxed private structure for it. This function does
- * not throw any JS exceptions.
+/*
+ * BoxedBase::get_copy_source():
+ *
+ * Check to see if JS::Value passed in is another Boxed instance object of the
+ * same type, and if so, retrieve the BoxedInstance private structure for it.
+ * This function does not throw any JS exceptions.
  */
-GJS_USE
-static bool
-boxed_get_copy_source(JSContext *context,
-                      Boxed     *priv,
-                      JS::Value  value,
-                      Boxed    **source_priv_out)
-{
-    Boxed *source_priv;
-
+BoxedBase* BoxedBase::get_copy_source(JSContext* context,
+                                      JS::Value value) const {
     if (!value.isObject())
-        return false;
+        return nullptr;
 
     JS::RootedObject object(context, &value.toObject());
-    if (!priv_from_js_with_typecheck(context, object, &source_priv))
-        return false;
+    BoxedBase* source_priv = BoxedBase::for_js(context, object);
+    if (!source_priv || !g_base_info_equal(info(), source_priv->info()))
+        return nullptr;
 
-    if (!g_base_info_equal((GIBaseInfo*) priv->info, (GIBaseInfo*) source_priv->info))
-        return false;
-
-    *source_priv_out = source_priv;
-
-    return true;
+    return source_priv;
 }
 
-static void
-boxed_new_direct(Boxed       *priv)
-{
-    g_assert(priv->can_allocate_directly);
+/*
+ * BoxedInstance::allocate_directly:
+ *
+ * Allocate a boxed object of the correct size, set all the bytes to 0, and set
+ * m_ptr to point to it. This is used when constructing a boxed object that can
+ * be allocated directly (i.e., does not need to be created by a constructor
+ * function.)
+ */
+void BoxedInstance::allocate_directly(void) {
+    g_assert(get_prototype()->can_allocate_directly());
 
-    priv->gboxed = g_slice_alloc0(g_struct_info_get_size (priv->info));
-    priv->allocated_directly = true;
+    m_ptr = g_slice_alloc0(g_struct_info_get_size(info()));
+    m_allocated_directly = true;
 
-    gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
-                        "JSObject created by directly allocating %s",
-                        g_base_info_get_name ((GIBaseInfo *)priv->info));
+    debug_lifecycle("JSObject created by direct allocation");
 }
 
 /* When initializing a boxed object from a hash of properties, we don't want
  * to do n O(n) lookups, so put put the fields into a hash table and store it on proto->priv
  * for fast lookup. 
  */
-GJS_JSAPI_RETURN_CONVENTION
-static Boxed::FieldMap* get_field_map(JSContext* cx,
-                                      GIStructInfo* struct_info) {
+BoxedPrototype::FieldMap* BoxedPrototype::create_field_map(
+    JSContext* cx, GIStructInfo* struct_info) {
     int n_fields;
     int i;
 
-    auto* result = new Boxed::FieldMap();
+    auto* result = new BoxedPrototype::FieldMap();
     n_fields = g_struct_info_get_n_fields(struct_info);
     if (!result->init(n_fields)) {
         JS_ReportOutOfMemory(cx);
@@ -251,17 +149,45 @@ static Boxed::FieldMap* get_field_map(JSContext* cx,
     return result;
 }
 
+/*
+ * BoxedPrototype::ensure_field_map:
+ *
+ * BoxedPrototype keeps a cache of field names to introspection info.
+ * We only create the field cache the first time it is needed. An alternative
+ * would be to create it when the prototype is created, in BoxedPrototype::init.
+ */
+bool BoxedPrototype::ensure_field_map(JSContext* cx) {
+    if (!m_field_map)
+        m_field_map = create_field_map(cx, info());
+    return !!m_field_map;
+}
+
+/*
+ * BoxedPrototype::lookup_field:
+ *
+ * Look up the introspection info corresponding to the field name @prop_name,
+ * creating the field cache if necessary.
+ */
+GIFieldInfo* BoxedPrototype::lookup_field(JSContext* cx, JSString* prop_name) {
+    if (!ensure_field_map(cx))
+        return nullptr;
+
+    auto entry = m_field_map->lookup(prop_name);
+    if (!entry) {
+        gjs_throw(cx, "No field %s on boxed type %s",
+                  gjs_debug_string(prop_name).c_str(), name());
+        return nullptr;
+    }
+
+    return entry->value().get();
+}
+
 /* Initialize a newly created Boxed from an object that is a "hash" of
  * properties to set as fieds of the object. We don't require that every field
  * of the object be set.
  */
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-boxed_init_from_props(JSContext   *context,
-                      JSObject    *obj,
-                      Boxed       *priv,
-                      JS::Value    props_value)
-{
+bool BoxedInstance::init_from_props(JSContext* context, JSObject* obj,
+                                    JS::Value props_value) {
     size_t ix, length;
 
     if (!props_value.isObject()) {
@@ -276,11 +202,6 @@ boxed_init_from_props(JSContext   *context,
         return false;
     }
 
-    if (!priv->field_map)
-        priv->field_map = get_field_map(context, priv->info);
-    if (!priv->field_map)
-        return false;
-
     JS::RootedValue value(context);
     for (ix = 0, length = ids.length(); ix < length; ix++) {
         if (!JSID_IS_STRING(ids[ix])) {
@@ -288,14 +209,10 @@ boxed_init_from_props(JSContext   *context,
             return false;
         }
 
-        auto entry = priv->field_map->lookup(JSID_TO_STRING(ids[ix]));
-        if (!entry) {
-            gjs_throw(context, "No field %s on boxed type %s",
-                      gjs_debug_id(ids[ix]).c_str(),
-                      g_base_info_get_name(priv->info));
+        GIFieldInfo* field_info =
+            get_prototype()->lookup_field(context, JSID_TO_STRING(ids[ix]));
+        if (!field_info)
             return false;
-        }
-        GIFieldInfo* field_info = entry->value().get();
 
         /* ids[ix] is reachable because props is rooted, but require_property
          * doesn't know that */
@@ -304,7 +221,7 @@ boxed_init_from_props(JSContext   *context,
                                          &value))
             return false;
 
-        if (!boxed_set_field_from_value(context, priv, field_info, value))
+        if (!field_setter_impl(context, field_info, value))
             return false;
     }
 
@@ -312,12 +229,9 @@ boxed_init_from_props(JSContext   *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-boxed_invoke_constructor(JSContext             *context,
-                         JS::HandleObject       obj,
-                         JS::HandleId           constructor_name,
-                         JS::CallArgs&          args)
-{
+static bool boxed_invoke_constructor(JSContext* context, JS::HandleObject obj,
+                                     JS::HandleId constructor_name,
+                                     const JS::CallArgs& args) {
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     JS::RootedObject js_constructor(context);
 
@@ -333,20 +247,64 @@ boxed_invoke_constructor(JSContext             *context,
     return gjs->call_function(nullptr, js_constructor_func, args, args.rval());
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-boxed_new(JSContext             *context,
-          JS::HandleObject       obj, /* "this" for constructor */
-          Boxed                 *priv,
-          JS::CallArgs&          args)
-{
-    if (priv->gtype == G_TYPE_VARIANT) {
+/*
+ * BoxedInstance::copy_boxed:
+ *
+ * Allocate a new boxed pointer using g_boxed_copy(), either from a raw boxed
+ * pointer or another BoxedInstance.
+ */
+void BoxedInstance::copy_boxed(void* boxed_ptr) {
+    m_ptr = g_boxed_copy(gtype(), boxed_ptr);
+}
+
+void BoxedInstance::copy_boxed(BoxedInstance* source) {
+    copy_boxed(source->ptr());
+}
+
+/*
+ * BoxedInstance::copy_memory:
+ *
+ * Allocate a new boxed pointer by copying the contents of another boxed pointer
+ * or another BoxedInstance.
+ */
+void BoxedInstance::copy_memory(void* boxed_ptr) {
+    allocate_directly();
+    memcpy(m_ptr, boxed_ptr, g_struct_info_get_size(info()));
+}
+
+void BoxedInstance::copy_memory(BoxedInstance* source) {
+    copy_memory(source->ptr());
+}
+
+// See GIWrapperBase::constructor().
+bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
+                                     const JS::CallArgs& args) {
+    // Short-circuit copy-construction in the case where we can use copy_boxed()
+    // or copy_memory()
+    BoxedBase* source_priv;
+    if (args.length() == 1 &&
+        (source_priv = get_copy_source(context, args[0]))) {
+        if (!source_priv->check_is_instance(context, "construct boxed object"))
+            return false;
+
+        if (g_type_is_a(gtype(), G_TYPE_BOXED)) {
+            copy_boxed(source_priv->to_instance());
+            return true;
+        } else if (get_prototype()->can_allocate_directly()) {
+            copy_memory(source_priv->to_instance());
+            return true;
+        }
+    }
+
+    if (gtype() == G_TYPE_VARIANT) {
         /* Short-circuit construction for GVariants by calling into the JS packing
            function */
         const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
         return boxed_invoke_constructor(context, obj, atoms.new_internal(),
                                         args);
     }
+
+    BoxedPrototype* proto = get_prototype();
 
     /* If the structure is registered as a boxed, we can create a new instance by
      * looking for a zero-args constructor and calling it.
@@ -357,8 +315,8 @@ boxed_new(JSContext             *context,
      * For backward compatibility, we choose the zero args constructor if one
      * exists, otherwise we choose the internal slice allocator if possible;
      * finally, we fallback on the default constructor */
-    if (priv->zero_args_constructor >= 0) {
-        GIFunctionInfo *func_info = g_struct_info_get_method (priv->info, priv->zero_args_constructor);
+    if (proto->has_zero_args_constructor()) {
+        GjsAutoFunctionInfo func_info = proto->zero_args_constructor_info();
 
         GIArgument rval_arg;
         GError *error = NULL;
@@ -366,33 +324,26 @@ boxed_new(JSContext             *context,
         if (!g_function_info_invoke(func_info, NULL, 0, NULL, 0, &rval_arg, &error)) {
             gjs_throw(context, "Failed to invoke boxed constructor: %s", error->message);
             g_clear_error(&error);
-            g_base_info_unref((GIBaseInfo*) func_info);
             return false;
         }
 
-        g_base_info_unref((GIBaseInfo*) func_info);
+        m_ptr = rval_arg.v_pointer;
 
-        priv->gboxed = rval_arg.v_pointer;
+        debug_lifecycle("JSObject created with boxed instance");
 
-        gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
-                            "JSObject created with boxed instance %p type %s",
-                            priv->gboxed, g_type_name(priv->gtype));
-
-    } else if (priv->can_allocate_directly) {
-        boxed_new_direct(priv);
-    } else if (priv->default_constructor >= 0) {
+    } else if (proto->can_allocate_directly()) {
+        allocate_directly();
+    } else if (proto->has_default_constructor()) {
         /* for simplicity, we simply delegate all the work to the actual JS
          * constructor function (which we retrieve from the JS constructor,
          * that is, Namespace.BoxedType, or object.constructor, given that
-         * object was created with the right prototype. The ID is traced from
-         * the object, so it's OK to create a handle from it. */
-        JS::HandleId constructor_name = JS::HandleId::fromMarkedLocation(
-            priv->default_constructor_name.address());
-        if (!boxed_invoke_constructor(context, obj, constructor_name, args))
+         * object was created with the right prototype. */
+        if (!boxed_invoke_constructor(context, obj,
+                                      proto->default_constructor_name(), args))
             return false;
 
         // Define the expected Error properties
-        if (priv->gtype == G_TYPE_ERROR) {
+        if (gtype() == G_TYPE_ERROR) {
             JS::RootedObject gerror(context, &args.rval().toObject());
             if (!gjs_define_error_properties(context, gerror))
                 return false;
@@ -400,8 +351,10 @@ boxed_new(JSContext             *context,
 
         return true;
     } else {
-        gjs_throw(context, "Unable to construct struct type %s since it has no default constructor and cannot be allocated directly",
-                  g_base_info_get_name((GIBaseInfo*) priv->info));
+        gjs_throw(context,
+                  "Unable to construct struct type %s since it has no default "
+                  "constructor and cannot be allocated directly",
+                  name());
         return false;
     }
 
@@ -411,161 +364,85 @@ boxed_new(JSContext             *context,
         return true;
 
     if (args.length() > 1) {
-        gjs_throw(context, "Constructor with multiple arguments not supported for %s",
-                  g_base_info_get_name((GIBaseInfo *)priv->info));
+        gjs_throw(context,
+                  "Constructor with multiple arguments not supported for %s",
+                  name());
         return false;
     }
 
-    return boxed_init_from_props(context, obj, priv, args[0]);
+    return init_from_props(context, obj, args[0]);
 }
 
-GJS_NATIVE_CONSTRUCTOR_DECLARE(boxed)
-{
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(boxed)
-    Boxed *priv;
-    Boxed *proto_priv;
-    JS::RootedObject proto(context);
-    Boxed *source_priv;
-    bool retval;
-
-    GJS_NATIVE_CONSTRUCTOR_PRELUDE(boxed);
-
-    priv = g_slice_new0(Boxed);
-    new (priv) Boxed();
-
-    GJS_INC_COUNTER(boxed);
-
-    g_assert(priv_from_js(context, object) == NULL);
-    JS_SetPrivate(object, priv);
-
-    gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
-                        "boxed constructor, obj %p priv %p",
-                        object.get(), priv);
-
-    JS_GetPrototype(context, object, &proto);
-    gjs_debug_lifecycle(GJS_DEBUG_GBOXED, "boxed instance __proto__ is %p",
-                        proto.get());
-    /* If we're the prototype, then post-construct we'll fill in priv->info.
-     * If we are not the prototype, though, then we'll get ->info from the
-     * prototype and then create a GObject if we don't have one already.
-     */
-    proto_priv = priv_from_js(context, proto);
-    if (proto_priv == NULL) {
-        gjs_debug(GJS_DEBUG_GBOXED,
-                  "Bad prototype set on boxed? Must match JSClass of object. JS error should have been reported.");
-        return false;
-    }
-
-    *priv = *proto_priv;
-    g_base_info_ref( (GIBaseInfo*) priv->info);
-
-    /* Short-circuit copy-construction in the case where we can use g_boxed_copy or memcpy */
-    if (argc == 1 &&
-        boxed_get_copy_source(context, priv, argv[0], &source_priv)) {
-
-        if (g_type_is_a (priv->gtype, G_TYPE_BOXED)) {
-            priv->gboxed = g_boxed_copy(priv->gtype, source_priv->gboxed);
-
-            GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
-            return true;
-        } else if (priv->can_allocate_directly) {
-            boxed_new_direct (priv);
-            memcpy(priv->gboxed, source_priv->gboxed,
-                   g_struct_info_get_size (priv->info));
-
-            GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
-            return true;
-        }
-    }
-
-    /* we may need to return a value different from object
-       (for example because we delegate to another constructor)
-    */
-
-    argv.rval().setUndefined();
-    retval = boxed_new(context, object, priv, argv);
-
-    if (argv.rval().isUndefined())
-        GJS_NATIVE_CONSTRUCTOR_FINISH(boxed);
-
-    return retval;
-}
-
-static void
-boxed_finalize(JSFreeOp *fop,
-               JSObject *obj)
-{
-    Boxed *priv;
-
-    priv = (Boxed *) JS_GetPrivate(obj);
-    gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
-                        "finalize, obj %p priv %p", obj, priv);
-    if (priv == NULL)
-        return; /* wrong class? */
-
-    if (priv->gboxed && !priv->not_owning_gboxed) {
-        if (priv->allocated_directly) {
-            g_slice_free1(g_struct_info_get_size (priv->info), priv->gboxed);
+BoxedInstance::~BoxedInstance() {
+    if (!m_not_owning_ptr) {
+        if (m_allocated_directly) {
+            g_slice_free1(g_struct_info_get_size(info()), m_ptr);
         } else {
-            if (g_type_is_a (priv->gtype, G_TYPE_BOXED))
-                g_boxed_free (priv->gtype,  priv->gboxed);
-            else if (g_type_is_a (priv->gtype, G_TYPE_VARIANT))
-                g_variant_unref ((GVariant *) priv->gboxed);
+            if (g_type_is_a(gtype(), G_TYPE_BOXED))
+                g_boxed_free(gtype(), m_ptr);
+            else if (g_type_is_a(gtype(), G_TYPE_VARIANT))
+                g_variant_unref(static_cast<GVariant*>(m_ptr));
             else
                 g_assert_not_reached ();
         }
 
-        priv->gboxed = NULL;
+        m_ptr = nullptr;
     }
 
-    if (priv->info) {
-        g_base_info_unref( (GIBaseInfo*) priv->info);
-        priv->info = NULL;
-    }
-
-    if (priv->field_map)
-        delete priv->field_map;
-
-    GJS_DEC_COUNTER(boxed);
-    priv->~Boxed();
-    g_slice_free(Boxed, priv);
+    GJS_DEC_COUNTER(boxed_instance);
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static GIFieldInfo *
-get_field_info(JSContext *cx,
-               Boxed     *priv,
-               uint32_t   id)
-{
-    GIFieldInfo *field_info = g_struct_info_get_field(priv->info, id);
+BoxedPrototype::~BoxedPrototype(void) {
+    g_clear_pointer(&m_info, g_base_info_unref);
+
+    if (m_field_map)
+        delete m_field_map;
+
+    GJS_DEC_COUNTER(boxed_prototype);
+}
+
+/*
+ * BoxedBase::get_field_info:
+ *
+ * Does the same thing as g_struct_info_get_field(), but throws a JS exception
+ * if there is no such field.
+ */
+GIFieldInfo* BoxedBase::get_field_info(JSContext* cx, uint32_t id) const {
+    GIFieldInfo* field_info = g_struct_info_get_field(info(), id);
     if (field_info == NULL) {
-        gjs_throw(cx, "No field %d on boxed type %s",
-                  id, g_base_info_get_name((GIBaseInfo *)priv->info));
+        gjs_throw(cx, "No field %d on boxed type %s", id, name());
         return NULL;
     }
 
     return field_info;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-get_nested_interface_object(JSContext             *context,
-                            JSObject              *parent_obj,
-                            Boxed                 *parent_priv,
-                            GIFieldInfo           *field_info,
-                            GITypeInfo            *type_info,
-                            GIBaseInfo            *interface_info,
-                            JS::MutableHandleValue value)
-{
-    JSObject *obj;
+/*
+ * BoxedInstance::get_nested_interface_object:
+ * @parent_obj: the BoxedInstance JS object that owns `this`
+ * @field_info: introspection info for the field of the parent boxed type that
+ *   is another boxed type
+ * @interface_info: introspection info for the nested boxed type
+ * @value: return location for a new BoxedInstance JS object
+ *
+ * Some boxed types have a field that consists of another boxed type. We want to
+ * be able to expose these nested boxed types without copying them, because
+ * changing fields of the nested boxed struct should affect the enclosing boxed
+ * struct.
+ *
+ * This method creates a new BoxedInstance and JS object for a nested boxed
+ * struct. Since both the nested JS object and the parent boxed's JS object
+ * refer to the same memory, the parent JS object will be prevented from being
+ * garbage collected while the nested JS object is active.
+ */
+bool BoxedInstance::get_nested_interface_object(
+    JSContext* context, JSObject* parent_obj, GIFieldInfo* field_info,
+    GIBaseInfo* interface_info, JS::MutableHandleValue value) const {
     int offset;
-    Boxed *priv;
-    Boxed *proto_priv;
 
     if (!struct_is_simple ((GIStructInfo *)interface_info)) {
-        gjs_throw(context, "Reading field %s.%s is not supported",
-                  g_base_info_get_name ((GIBaseInfo *)parent_priv->info),
-                  g_base_info_get_name ((GIBaseInfo *)field_info));
+        gjs_throw(context, "Reading field %s.%s is not supported", name(),
+                  g_base_info_get_name(field_info));
 
         return false;
     }
@@ -575,27 +452,20 @@ get_nested_interface_object(JSContext             *context,
 
     if (!proto)
         return false;
-    proto_priv = priv_from_js(context, proto);
 
     offset = g_field_info_get_offset (field_info);
 
-    obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);
+    JS::RootedObject obj(context, JS_NewObjectWithGivenProto(
+                                      context, JS_GetClass(proto), proto));
 
     if (!obj)
         return false;
 
-    GJS_INC_COUNTER(boxed);
-    priv = g_slice_new0(Boxed);
-    new (priv) Boxed();
-    JS_SetPrivate(obj, priv);
-    priv->info = interface_info;
-    g_base_info_ref( (GIBaseInfo*) priv->info);
-    priv->gtype = g_registered_type_info_get_g_type ((GIRegisteredTypeInfo*) interface_info);
-    priv->can_allocate_directly = proto_priv->can_allocate_directly;
+    BoxedInstance* priv = BoxedInstance::new_for_js_object(context, obj);
 
     /* A structure nested inside a parent object; doesn't have an independent allocation */
-    priv->gboxed = ((char *)parent_priv->gboxed) + offset;
-    priv->not_owning_gboxed = true;
+    priv->m_ptr = raw_ptr() + offset;
+    priv->m_not_owning_ptr = true;
 
     /* We never actually read the reserved slot, but we put the parent object
      * into it to hold onto the parent object.
@@ -606,90 +476,76 @@ get_nested_interface_object(JSContext             *context,
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-boxed_field_getter(JSContext *context,
-                   unsigned   argc,
-                   JS::Value *vp)
-{
-    GJS_GET_PRIV(context, argc, vp, args, obj, Boxed, priv);
-    GIFieldInfo *field_info;
-    GITypeInfo *type_info;
-    GArgument arg;
-    bool success = false;
+/*
+ * BoxedBase::field_getter:
+ *
+ * JSNative property getter that is called when accessing a field defined on a
+ * boxed type. Delegates to BoxedInstance::field_getter_impl() if the minimal
+ * conditions have been met.
+ */
+bool BoxedBase::field_getter(JSContext* context, unsigned argc, JS::Value* vp) {
+    GJS_GET_WRAPPER_PRIV(context, argc, vp, args, obj, BoxedBase, priv);
+    if (!priv->check_is_instance(context, "get a field"))
+        return false;
 
     uint32_t field_ix = gjs_dynamic_property_private_slot(&args.callee())
         .toPrivateUint32();
-    field_info = get_field_info(context, priv, field_ix);
+    GjsAutoFieldInfo field_info = priv->get_field_info(context, field_ix);
     if (!field_info)
         return false;
 
-    type_info = g_field_info_get_type (field_info);
-
-    if (priv->gboxed == NULL) { /* direct access to proto field */
-        gjs_throw(context, "Can't get field %s.%s from a prototype",
-                  g_base_info_get_name ((GIBaseInfo *)priv->info),
-                  g_base_info_get_name ((GIBaseInfo *)field_info));
-        goto out;
-    }
-
-    if (!g_type_info_is_pointer (type_info) &&
-        g_type_info_get_tag (type_info) == GI_TYPE_TAG_INTERFACE) {
-
-        GIBaseInfo *interface_info = g_type_info_get_interface(type_info);
-
-        if (g_base_info_get_type (interface_info) == GI_INFO_TYPE_STRUCT ||
-            g_base_info_get_type (interface_info) == GI_INFO_TYPE_BOXED) {
-
-            success = get_nested_interface_object (context, obj, priv,
-                                                   field_info, type_info, interface_info,
-                                                   args.rval());
-
-            g_base_info_unref ((GIBaseInfo *)interface_info);
-
-            goto out;
-        }
-
-        g_base_info_unref ((GIBaseInfo *)interface_info);
-    }
-
-    if (!g_field_info_get_field (field_info, priv->gboxed, &arg)) {
-        gjs_throw(context, "Reading field %s.%s is not supported",
-                  g_base_info_get_name ((GIBaseInfo *)priv->info),
-                  g_base_info_get_name ((GIBaseInfo *)field_info));
-        goto out;
-    }
-
-    if (!gjs_value_from_g_argument(context, args.rval(), type_info,
-                                   &arg, true))
-        goto out;
-
-    success = true;
-
-out:
-    g_base_info_unref ((GIBaseInfo *)field_info);
-    g_base_info_unref ((GIBaseInfo *)type_info);
-
-    return success;
+    return priv->to_instance()->field_getter_impl(context, obj, field_info,
+                                                  args.rval());
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-set_nested_interface_object (JSContext      *context,
-                             Boxed          *parent_priv,
-                             GIFieldInfo    *field_info,
-                             GITypeInfo     *type_info,
-                             GIBaseInfo     *interface_info,
-                             JS::HandleValue value)
-{
+// See BoxedBase::field_getter().
+bool BoxedInstance::field_getter_impl(JSContext* cx, JSObject* obj,
+                                      GIFieldInfo* field_info,
+                                      JS::MutableHandleValue rval) const {
+    GjsAutoTypeInfo type_info = g_field_info_get_type(field_info);
+
+    if (!g_type_info_is_pointer(type_info) &&
+        g_type_info_get_tag(type_info) == GI_TYPE_TAG_INTERFACE) {
+        GjsAutoBaseInfo interface_info = g_type_info_get_interface(type_info);
+
+        if (interface_info.type() == GI_INFO_TYPE_STRUCT ||
+            interface_info.type() == GI_INFO_TYPE_BOXED) {
+            return get_nested_interface_object(cx, obj, field_info,
+                                               interface_info, rval);
+        }
+    }
+
+    GIArgument arg;
+    if (!g_field_info_get_field(field_info, m_ptr, &arg)) {
+        gjs_throw(cx, "Reading field %s.%s is not supported", name(),
+                  g_base_info_get_name(field_info));
+        return false;
+    }
+
+    return gjs_value_from_g_argument(cx, rval, type_info, &arg, true);
+}
+
+/*
+ * BoxedInstance::set_nested_interface_object:
+ * @field_info: introspection info for the field of the parent boxed type that
+ *   is another boxed type
+ * @interface_info: introspection info for the nested boxed type
+ * @value: holds a BoxedInstance JS object of type @interface_info
+ *
+ * Some boxed types have a field that consists of another boxed type. This
+ * method is called from BoxedInstance::field_setter_impl() when any such field
+ * is being set. The contents of the BoxedInstance JS object in @value are
+ * copied into the correct place in this BoxedInstance's memory.
+ */
+bool BoxedInstance::set_nested_interface_object(JSContext* context,
+                                                GIFieldInfo* field_info,
+                                                GIBaseInfo* interface_info,
+                                                JS::HandleValue value) {
     int offset;
-    Boxed *proto_priv;
-    Boxed *source_priv;
 
     if (!struct_is_simple ((GIStructInfo *)interface_info)) {
-        gjs_throw(context, "Writing field %s.%s is not supported",
-                  g_base_info_get_name ((GIBaseInfo *)parent_priv->info),
-                  g_base_info_get_name ((GIBaseInfo *)field_info));
+        gjs_throw(context, "Writing field %s.%s is not supported", name(),
+                  g_base_info_get_name(field_info));
 
         return false;
     }
@@ -699,12 +555,12 @@ set_nested_interface_object (JSContext      *context,
 
     if (!proto)
         return false;
-    proto_priv = priv_from_js(context, proto);
 
     /* If we can't directly copy from the source object we need
      * to construct a new temporary object.
      */
-    if (!boxed_get_copy_source(context, proto_priv, value, &source_priv)) {
+    BoxedBase* source_priv = get_copy_source(context, value);
+    if (!source_priv) {
         JS::AutoValueArray<1> args(context);
         args[0].set(value);
         JS::RootedObject tmp_object(context,
@@ -712,26 +568,25 @@ set_nested_interface_object (JSContext      *context,
         if (!tmp_object)
             return false;
 
-        source_priv = priv_from_js(context, tmp_object);
+        source_priv = BoxedBase::for_js_typecheck(context, tmp_object);
         if (!source_priv)
             return false;
     }
 
+    if (!source_priv->check_is_instance(context, "copy"))
+        return false;
+
     offset = g_field_info_get_offset (field_info);
-    memcpy(((char *)parent_priv->gboxed) + offset,
-           source_priv->gboxed,
-           g_struct_info_get_size (source_priv->info));
+    memcpy(raw_ptr() + offset, source_priv->to_instance()->ptr(),
+           g_struct_info_get_size(source_priv->info()));
 
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-boxed_set_field_from_value(JSContext      *context,
-                           Boxed          *priv,
-                           GIFieldInfo    *field_info,
-                           JS::HandleValue value)
-{
+// See BoxedBase::field_setter().
+bool BoxedInstance::field_setter_impl(JSContext* context,
+                                      GIFieldInfo* field_info,
+                                      JS::HandleValue value) {
     GITypeInfo *type_info;
     GArgument arg;
     bool success = false;
@@ -746,10 +601,8 @@ boxed_set_field_from_value(JSContext      *context,
 
         if (g_base_info_get_type (interface_info) == GI_INFO_TYPE_STRUCT ||
             g_base_info_get_type (interface_info) == GI_INFO_TYPE_BOXED) {
-
-            success = set_nested_interface_object (context, priv,
-                                                   field_info, type_info,
-                                                   interface_info, value);
+            success = set_nested_interface_object(context, field_info,
+                                                  interface_info, value);
 
             g_base_info_unref ((GIBaseInfo *)interface_info);
 
@@ -770,10 +623,9 @@ boxed_set_field_from_value(JSContext      *context,
 
     need_release = true;
 
-    if (!g_field_info_set_field (field_info, priv->gboxed, &arg)) {
-        gjs_throw(context, "Writing field %s.%s is not supported",
-                  g_base_info_get_name ((GIBaseInfo *)priv->info),
-                  g_base_info_get_name ((GIBaseInfo *)field_info));
+    if (!g_field_info_set_field(field_info, m_ptr, &arg)) {
+        gjs_throw(context, "Writing field %s.%s is not supported", name(),
+                  g_base_info_get_name(field_info));
         goto out;
     }
 
@@ -793,48 +645,40 @@ out:
     return success;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-boxed_field_setter(JSContext *cx,
-                   unsigned   argc,
-                   JS::Value *vp)
-{
-    GJS_GET_PRIV(cx, argc, vp, args, obj, Boxed, priv);
-    GIFieldInfo *field_info;
-    bool success = false;
+/*
+ * BoxedBase::field_setter:
+ *
+ * JSNative property setter that is called when writing to a field defined on a
+ * boxed type. Delegates to BoxedInstance::field_setter_impl() if the minimal
+ * conditions have been met.
+ */
+bool BoxedBase::field_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, BoxedBase, priv);
+    if (!priv->check_is_instance(cx, "set a field"))
+        return false;
 
     uint32_t field_ix = gjs_dynamic_property_private_slot(&args.callee())
         .toPrivateUint32();
-    field_info = get_field_info(cx, priv, field_ix);
+    GjsAutoFieldInfo field_info = priv->get_field_info(cx, field_ix);
     if (!field_info)
         return false;
 
-    if (priv->gboxed == NULL) { /* direct access to proto field */
-        gjs_throw(cx, "Can't set field %s.%s on prototype",
-                  g_base_info_get_name ((GIBaseInfo *)priv->info),
-                  g_base_info_get_name ((GIBaseInfo *)field_info));
-        goto out;
-    }
-
-    if (!boxed_set_field_from_value(cx, priv, field_info, args[0]))
-        goto out;
+    if (!priv->to_instance()->field_setter_impl(cx, field_info, args[0]))
+        return false;
 
     args.rval().setUndefined();  /* No stored value */
-    success = true;
-
-out:
-    g_base_info_unref ((GIBaseInfo *)field_info);
-
-    return success;
+    return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-define_boxed_class_fields(JSContext       *cx,
-                          Boxed           *priv,
-                          JS::HandleObject proto)
-{
-    int n_fields = g_struct_info_get_n_fields (priv->info);
+/*
+ * BoxedPrototype::define_boxed_class_fields:
+ *
+ * Defines properties on the JS prototype object, with JSNative getters and
+ * setters, for all the fields exposed by GObject introspection.
+ */
+bool BoxedPrototype::define_boxed_class_fields(JSContext* cx,
+                                               JS::HandleObject proto) {
+    int n_fields = g_struct_info_get_n_fields(info());
     int i;
 
     /* We define all fields as read/write so that the user gets an
@@ -853,85 +697,55 @@ define_boxed_class_fields(JSContext       *cx,
      * memory overhead.
      */
     for (i = 0; i < n_fields; i++) {
-        GIFieldInfo *field = g_struct_info_get_field (priv->info, i);
-        const char *field_name = g_base_info_get_name ((GIBaseInfo *)field);
-
+        GjsAutoFieldInfo field = g_struct_info_get_field(info(), i);
         JS::RootedValue private_id(cx, JS::PrivateUint32Value(i));
-        bool ok = gjs_define_property_dynamic(cx, proto, field_name,
-                                              "boxed_field", boxed_field_getter,
-                                              boxed_field_setter, private_id,
-                                              GJS_MODULE_PROP_FLAGS);
-        g_base_info_unref(field);
-        if (!ok)
+        if (!gjs_define_property_dynamic(cx, proto, field.name(), "boxed_field",
+                                         &BoxedBase::field_getter,
+                                         &BoxedBase::field_setter, private_id,
+                                         GJS_MODULE_PROP_FLAGS))
             return false;
     }
 
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-to_string_func(JSContext *context,
-               unsigned   argc,
-               JS::Value *vp)
-{
-    GJS_GET_PRIV(context, argc, vp, rec, obj, Boxed, priv);
-    return gjs_wrapper_to_string_func(context, obj, "boxed", priv->info,
-                                      priv->gtype, priv->gboxed, rec.rval());
-}
-
-static void
-boxed_trace(JSTracer *tracer,
-            JSObject *obj)
-{
-    Boxed *priv = reinterpret_cast<Boxed *>(JS_GetPrivate(obj));
-    if (priv == NULL)
-        return;
-
-    JS::TraceEdge<jsid>(tracer, &priv->zero_args_constructor_name,
+// Overrides GIWrapperPrototype::trace_impl().
+void BoxedPrototype::trace_impl(JSTracer* trc) {
+    JS::TraceEdge<jsid>(trc, &m_zero_args_constructor_name,
                         "Boxed::zero_args_constructor_name");
-    JS::TraceEdge<jsid>(tracer, &priv->default_constructor_name,
+    JS::TraceEdge<jsid>(trc, &m_default_constructor_name,
                         "Boxed::default_constructor_name");
-    if (priv->field_map)
-        priv->field_map->trace(tracer);
+    if (m_field_map)
+        m_field_map->trace(trc);
 }
 
-/* The bizarre thing about this vtable is that it applies to both
- * instances of the object, and to the prototype that instances of the
- * class have.
- */
-static const struct JSClassOps gjs_boxed_class_ops = {
+// clang-format off
+const struct JSClassOps BoxedBase::class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
     nullptr,  // enumerate
     nullptr,  // newEnumerate
-    boxed_resolve,
+    &BoxedBase::resolve,
     nullptr,  // mayResolve
-    boxed_finalize,
+    &BoxedBase::finalize,
     nullptr,  // call
     nullptr,  // hasInstance
     nullptr,  // construct
-    boxed_trace};
+    &BoxedBase::trace
+};
 
 /* We allocate 1 reserved slot; this is typically unused, but if the
  * boxed is for a nested structure inside a parent structure, the
  * reserved slot is used to hold onto the parent Javascript object and
  * make sure it doesn't get freed.
  */
-struct JSClass gjs_boxed_class = {
+const struct JSClass BoxedBase::klass = {
     "GObject_Boxed",
     JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE |
         JSCLASS_HAS_RESERVED_SLOTS(1),
-    &gjs_boxed_class_ops
+    &BoxedBase::class_ops
 };
-
-JSPropertySpec gjs_boxed_proto_props[] = {
-    JS_PS_END
-};
-
-JSFunctionSpec gjs_boxed_proto_funcs[] = {
-    JS_FN("toString", to_string_func, 0, 0),
-    JS_FS_END};
+// clang-format on
 
 GJS_USE
 static bool
@@ -1051,140 +865,97 @@ struct_is_simple(GIStructInfo *info)
     return is_simple;
 }
 
-static void
-boxed_fill_prototype_info(JSContext *context,
-                          Boxed     *priv)
-{
+BoxedPrototype::BoxedPrototype(GIStructInfo* info, GType gtype)
+    : GIWrapperPrototype(info, gtype),
+      m_zero_args_constructor(-1),
+      m_zero_args_constructor_name(JSID_VOID),
+      m_default_constructor(-1),
+      m_default_constructor_name(JSID_VOID),
+      m_can_allocate_directly(struct_is_simple(info)) {
+    GJS_INC_COUNTER(boxed_prototype);
+}
+
+// Overrides GIWrapperPrototype::init().
+bool BoxedPrototype::init(JSContext* context) {
     int i, n_methods;
     int first_constructor = -1;
     jsid first_constructor_name = JSID_VOID;
 
-    priv->gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) priv->info);
-    priv->zero_args_constructor = -1;
-    priv->zero_args_constructor_name = JSID_VOID;
-    priv->default_constructor = -1;
-    priv->default_constructor_name = JSID_VOID;
-
-    if (priv->gtype != G_TYPE_NONE) {
+    if (m_gtype != G_TYPE_NONE) {
         /* If the structure is registered as a boxed, we can create a new instance by
          * looking for a zero-args constructor and calling it; constructors don't
          * really make sense for non-boxed types, since there is no memory management
          * for the return value.
          */
-        n_methods = g_struct_info_get_n_methods(priv->info);
+        n_methods = g_struct_info_get_n_methods(m_info);
 
         for (i = 0; i < n_methods; ++i) {
-            GIFunctionInfo *func_info;
             GIFunctionInfoFlags flags;
 
-            func_info = g_struct_info_get_method(priv->info, i);
+            GjsAutoFunctionInfo func_info = g_struct_info_get_method(m_info, i);
 
             flags = g_function_info_get_flags(func_info);
             if ((flags & GI_FUNCTION_IS_CONSTRUCTOR) != 0) {
                 if (first_constructor < 0) {
-                    const char *name;
-
-                    name = g_base_info_get_name((GIBaseInfo*) func_info);
                     first_constructor = i;
-                    first_constructor_name = gjs_intern_string_to_id(context, name);
+                    first_constructor_name =
+                        gjs_intern_string_to_id(context, func_info.name());
+                    if (first_constructor_name == JSID_VOID)
+                        return false;
                 }
 
-                if (priv->zero_args_constructor < 0 &&
-                    g_callable_info_get_n_args((GICallableInfo*) func_info) == 0) {
-                    const char *name;
-
-                    name = g_base_info_get_name((GIBaseInfo*) func_info);
-                    priv->zero_args_constructor = i;
-                    priv->zero_args_constructor_name = gjs_intern_string_to_id(context, name);
+                if (m_zero_args_constructor < 0 &&
+                    g_callable_info_get_n_args(func_info) == 0) {
+                    m_zero_args_constructor = i;
+                    m_zero_args_constructor_name =
+                        gjs_intern_string_to_id(context, func_info.name());
+                    if (m_zero_args_constructor_name == JSID_VOID)
+                        return false;
                 }
 
-                if (priv->default_constructor < 0 &&
-                    strcmp(g_base_info_get_name ((GIBaseInfo*) func_info), "new") == 0) {
-                    priv->default_constructor = i;
+                if (m_default_constructor < 0 &&
+                    strcmp(func_info.name(), "new") == 0) {
+                    m_default_constructor = i;
                     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-                    priv->default_constructor_name = atoms.new_();
+                    m_default_constructor_name = atoms.new_();
                 }
             }
-
-            g_base_info_unref((GIBaseInfo*) func_info);
         }
 
-        if (priv->default_constructor < 0) {
-            priv->default_constructor = priv->zero_args_constructor;
-            priv->default_constructor_name = priv->zero_args_constructor_name;
+        if (m_default_constructor < 0) {
+            m_default_constructor = m_zero_args_constructor;
+            m_default_constructor_name = m_zero_args_constructor_name;
         }
-        if (priv->default_constructor < 0) {
-            priv->default_constructor = first_constructor;
-            priv->default_constructor_name = first_constructor_name;
+        if (m_default_constructor < 0) {
+            m_default_constructor = first_constructor;
+            m_default_constructor_name = first_constructor_name;
         }
     }
+
+    return true;
 }
 
 bool gjs_define_boxed_class(JSContext* context, JS::HandleObject in_object,
                             GIStructInfo* info) {
-    const char *constructor_name;
     JS::RootedObject prototype(context), constructor(context);
-    Boxed *priv;
-
-    /* See the comment in gjs_define_object_class() for an
-     * explanation of how this all works; Boxed is pretty much the
-     * same as Object.
-     */
-
-    constructor_name = g_base_info_get_name( (GIBaseInfo*) info);
-
-    if (!gjs_init_class_dynamic(context, in_object,
-                                nullptr, /* parent prototype */
-                                g_base_info_get_namespace( (GIBaseInfo*) info),
-                                constructor_name,
-                                &gjs_boxed_class,
-                                gjs_boxed_constructor, 1,
-                                /* props of prototype */
-                                &gjs_boxed_proto_props[0],
-                                /* funcs of prototype */
-                                &gjs_boxed_proto_funcs[0],
-                                /* props of constructor, MyConstructor.myprop */
-                                NULL,
-                                /* funcs of constructor, MyConstructor.myfunc() */
-                                NULL,
-                                &prototype,
-                                &constructor)) {
-        return false;
-    }
-
-    GJS_INC_COUNTER(boxed);
-    priv = g_slice_new0(Boxed);
-    new (priv) Boxed();
-    priv->info = info;
-    boxed_fill_prototype_info(context, priv);
-
-    g_base_info_ref( (GIBaseInfo*) priv->info);
-    JS_SetPrivate(prototype, priv);
-
-    gjs_debug(GJS_DEBUG_GBOXED, "Defined class %s prototype is %p class %p in object %p",
-              constructor_name, prototype.get(), JS_GetClass(prototype),
-              in_object.get());
-
-    priv->can_allocate_directly = struct_is_simple (priv->info);
-
-    if (!define_boxed_class_fields(context, priv, prototype) ||
-        !gjs_define_static_methods(context, constructor, priv->gtype,
-                                   priv->info))
+    GType gtype = g_registered_type_info_get_g_type(info);
+    BoxedPrototype* priv = BoxedPrototype::create_class(
+        context, in_object, info, gtype, &constructor, &prototype);
+    if (!priv || !priv->define_boxed_class_fields(context, prototype) ||
+        !gjs_define_static_methods<InfoType::Struct>(context, constructor, gtype,
+                                                     info))
         return false;
 
-    if (priv->gtype == G_TYPE_ERROR &&
+    if (gtype == G_TYPE_ERROR &&
         !JS_DefineFunction(context, prototype, "toString", gjs_gerror_to_string,
                            0, GJS_MODULE_PROP_FLAGS))
         return false;
 
-    return gjs_wrapper_define_gtype_prop(context, constructor, priv->gtype);
+    return true;
 }
 
 JSObject* gjs_boxed_from_c_struct(JSContext* cx, GIStructInfo* info,
                                   void* gboxed, GjsBoxedCreationFlags flags) {
-    Boxed *priv;
-    Boxed *proto_priv;
-
     if (gboxed == NULL)
         return NULL;
 
@@ -1195,64 +966,77 @@ JSObject* gjs_boxed_from_c_struct(JSContext* cx, GIStructInfo* info,
     JS::RootedObject proto(cx, gjs_lookup_generic_prototype(cx, info));
     if (!proto)
         return nullptr;
-    proto_priv = priv_from_js(cx, proto);
 
     JS::RootedObject obj(
         cx, JS_NewObjectWithGivenProto(cx, JS_GetClass(proto), proto));
     if (!obj)
         return nullptr;
 
-    GJS_INC_COUNTER(boxed);
-    priv = g_slice_new0(Boxed);
-    new (priv) Boxed();
-
-    *priv = *proto_priv;
-    g_base_info_ref( (GIBaseInfo*) priv->info);
-
-    JS_SetPrivate(obj, priv);
+    BoxedInstance* priv = BoxedInstance::new_for_js_object(cx, obj);
+    if (!priv)
+        return nullptr;
 
     if ((flags & GJS_BOXED_CREATION_NO_COPY) != 0) {
-        /* we need to create a JS Boxed which references the
-         * original C struct, not a copy of it. Used for
-         * G_SIGNAL_TYPE_STATIC_SCOPE
-         */
-        priv->gboxed = gboxed;
-        priv->not_owning_gboxed = true;
+        if (!priv->init_from_c_struct(cx, gboxed, BoxedInstance::NoCopy()))
+            return nullptr;
     } else {
-        if (priv->gtype != G_TYPE_NONE && g_type_is_a (priv->gtype, G_TYPE_BOXED)) {
-            priv->gboxed = g_boxed_copy(priv->gtype, gboxed);
-        } else if (priv->gtype == G_TYPE_VARIANT) {
-            priv->gboxed = g_variant_ref_sink ((GVariant *) gboxed);
-        } else if (priv->can_allocate_directly) {
-            boxed_new_direct(priv);
-            memcpy(priv->gboxed, gboxed, g_struct_info_get_size (priv->info));
-        } else {
-            gjs_throw(cx,
-                      "Can't create a Javascript object for %s; no way to copy",
-                      g_base_info_get_name(priv->info));
-        }
+        if (!priv->init_from_c_struct(cx, gboxed))
+            return nullptr;
     }
 
-    if (priv->gtype == G_TYPE_ERROR && !gjs_define_error_properties(cx, obj))
+    if (priv->gtype() == G_TYPE_ERROR && !gjs_define_error_properties(cx, obj))
         return nullptr;
 
     return obj;
+}
+
+/*
+ * BoxedInstance::init_from_c_struct:
+ *
+ * Do the necessary initialization when creating a BoxedInstance JS object from
+ * a C boxed struct pointer.
+ *
+ * There are two overloads of this method; the NoCopy overload will simply take
+ * the passed-in pointer, while the normal method will take a reference, or if
+ * the boxed type can be directly allocated, copy the memory.
+ */
+bool BoxedInstance::init_from_c_struct(JSContext* cx, void* gboxed, NoCopy) {
+    // We need to create a JS Boxed which references the original C struct, not
+    // a copy of it. Used for G_SIGNAL_TYPE_STATIC_SCOPE.
+    m_ptr = gboxed;
+    m_not_owning_ptr = true;
+    return true;
+}
+
+bool BoxedInstance::init_from_c_struct(JSContext* cx, void* gboxed) {
+    if (gtype() != G_TYPE_NONE && g_type_is_a(gtype(), G_TYPE_BOXED)) {
+        copy_boxed(gboxed);
+        return true;
+    } else if (gtype() == G_TYPE_VARIANT) {
+        m_ptr = g_variant_ref_sink(static_cast<GVariant*>(gboxed));
+        return true;
+    } else if (get_prototype()->can_allocate_directly()) {
+        copy_memory(gboxed);
+        return true;
+    }
+
+    gjs_throw(cx, "Can't create a Javascript object for %s; no way to copy",
+              name());
+    return false;
 }
 
 void*
 gjs_c_struct_from_boxed(JSContext       *context,
                         JS::HandleObject obj)
 {
-    Boxed *priv;
-
     if (!obj)
         return NULL;
 
-    priv = priv_from_js(context, obj);
-    if (priv == NULL)
+    BoxedBase* priv = BoxedBase::for_js_typecheck(context, obj);
+    if (!priv || !priv->check_is_instance(context, "get a boxed pointer"))
         return NULL;
 
-    return priv->gboxed;
+    return priv->to_instance()->ptr();
 }
 
 bool
@@ -1262,48 +1046,9 @@ gjs_typecheck_boxed(JSContext       *context,
                     GType            expected_type,
                     bool             throw_error)
 {
-    Boxed *priv;
-    bool result;
-
-    if (!do_base_typecheck(context, object, throw_error))
-        return false;
-
-    priv = priv_from_js(context, object);
-
-    if (priv->gboxed == NULL) {
-        if (throw_error) {
-            gjs_throw_custom(context, JSProto_TypeError, nullptr,
-                             "Object is %s.%s.prototype, not an object instance - cannot convert to a boxed instance",
-                             g_base_info_get_namespace( (GIBaseInfo*) priv->info),
-                             g_base_info_get_name( (GIBaseInfo*) priv->info));
-        }
-
-        return false;
-    }
-
-    if (expected_type != G_TYPE_NONE)
-        result = g_type_is_a (priv->gtype, expected_type);
-    else if (expected_info != NULL)
-        result = g_base_info_equal((GIBaseInfo*) priv->info, (GIBaseInfo*) expected_info);
-    else
-        result = true;
-
-    if (!result && throw_error) {
-        if (expected_info != NULL) {
-            gjs_throw_custom(context, JSProto_TypeError, nullptr,
-                             "Object is of type %s.%s - cannot convert to %s.%s",
-                             g_base_info_get_namespace((GIBaseInfo*) priv->info),
-                             g_base_info_get_name((GIBaseInfo*) priv->info),
-                             g_base_info_get_namespace((GIBaseInfo*) expected_info),
-                             g_base_info_get_name((GIBaseInfo*) expected_info));
-        } else {
-            gjs_throw_custom(context, JSProto_TypeError, nullptr,
-                             "Object is of type %s.%s - cannot convert to %s",
-                             g_base_info_get_namespace((GIBaseInfo*) priv->info),
-                             g_base_info_get_name((GIBaseInfo*) priv->info),
-                             g_type_name(expected_type));
-        }
-    }
-
-    return result;
+    if (throw_error)
+        return BoxedBase::typecheck(context, object, expected_info,
+                                    expected_type);
+    return BoxedBase::typecheck(context, object, expected_info, expected_type,
+                                BoxedBase::TypecheckNoThrow());
 }

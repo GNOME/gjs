@@ -218,7 +218,8 @@ gjs_define_param_class(JSContext       *context,
         return false;
 
     GjsAutoObjectInfo info = g_irepository_find_by_gtype(nullptr, G_TYPE_PARAM);
-    if (!gjs_object_define_static_methods(context, constructor, G_TYPE_PARAM, info))
+    if (!gjs_define_static_methods<InfoType::Object>(context, constructor,
+                                                     G_TYPE_PARAM, info))
         return false;
 
     gjs_debug(GJS_DEBUG_GPARAM, "Defined class %s prototype is %p class %p in object %p",

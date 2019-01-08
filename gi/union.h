@@ -28,8 +28,68 @@
 #include <glib.h>
 #include <girepository.h>
 
+#include "gi/wrapperutils.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+
+class UnionPrototype;
+class UnionInstance;
+
+class UnionBase
+    : public GIWrapperBase<UnionBase, UnionPrototype, UnionInstance> {
+    friend class GIWrapperBase;
+
+ protected:
+    explicit UnionBase(UnionPrototype* proto = nullptr)
+        : GIWrapperBase(proto) {}
+    ~UnionBase(void) {}
+
+    static const GjsDebugTopic debug_topic = GJS_DEBUG_GBOXED;
+    static constexpr const char* debug_tag = "union";
+
+    static const JSClassOps class_ops;
+    static const JSClass klass;
+
+    GJS_USE static const char* to_string_kind(void) { return "union"; }
+};
+
+class UnionPrototype : public GIWrapperPrototype<UnionBase, UnionPrototype,
+                                                 UnionInstance, GIUnionInfo> {
+    friend class GIWrapperPrototype;
+    friend class GIWrapperBase;
+
+    explicit UnionPrototype(GIUnionInfo* info, GType gtype);
+    ~UnionPrototype(void);
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
+                      const char* prop_name, bool* resolved);
+
+    // Overrides GIWrapperPrototype::constructor_nargs().
+    GJS_USE unsigned constructor_nargs(void) const { return 0; }
+};
+
+class UnionInstance
+    : public GIWrapperInstance<UnionBase, UnionPrototype, UnionInstance> {
+    friend class GIWrapperInstance;
+    friend class GIWrapperBase;
+
+    explicit UnionInstance(JSContext* cx, JS::HandleObject obj);
+    ~UnionInstance(void);
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool constructor_impl(JSContext* cx, JS::HandleObject obj,
+                          const JS::CallArgs& args);
+
+ public:
+    /*
+     * UnionInstance::copy_union:
+     *
+     * Allocate a new union pointer using g_boxed_copy(), from a raw union
+     * pointer.
+     */
+    void copy_union(void* ptr) { m_ptr = g_boxed_copy(gtype(), ptr); }
+};
 
 G_BEGIN_DECLS
 

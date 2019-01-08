@@ -108,39 +108,6 @@ gjs_define_enum_values(JSContext       *context,
 }
 
 bool
-gjs_define_enum_static_methods(JSContext       *context,
-                               JS::HandleObject constructor,
-                               GIEnumInfo      *enum_info)
-{
-    int i, n_methods;
-
-    n_methods = g_enum_info_get_n_methods(enum_info);
-
-    for (i = 0; i < n_methods; i++) {
-        GIFunctionInfoFlags flags;
-
-        GjsAutoFunctionInfo meth_info = g_enum_info_get_method(enum_info, i);
-        flags = g_function_info_get_flags(meth_info);
-
-        g_warn_if_fail(!(flags & GI_FUNCTION_IS_METHOD));
-        /* Anything that isn't a method we put on the prototype of the
-         * constructor.  This includes <constructor> introspection
-         * methods, as well as the forthcoming "static methods"
-         * support.  We may want to change this to use
-         * GI_FUNCTION_IS_CONSTRUCTOR and GI_FUNCTION_IS_STATIC or the
-         * like in the near future.
-         */
-        if (!(flags & GI_FUNCTION_IS_METHOD)) {
-            if (!gjs_define_function(context, constructor, G_TYPE_NONE,
-                                     meth_info))
-                return false;
-        }
-    }
-
-    return true;
-}
-
-bool
 gjs_define_enumeration(JSContext       *context,
                        JS::HandleObject in_object,
                        GIEnumInfo      *info)
@@ -168,7 +135,8 @@ gjs_define_enumeration(JSContext       *context,
     GType gtype = g_registered_type_info_get_g_type(info);
 
     if (!gjs_define_enum_values(context, enum_obj, info) ||
-        !gjs_define_enum_static_methods(context, enum_obj, info) ||
+        !gjs_define_static_methods<InfoType::Enum>(context, enum_obj, gtype,
+                                                   info) ||
         !gjs_wrapper_define_gtype_prop(context, enum_obj, gtype))
         return false;
 
