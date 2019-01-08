@@ -1,3 +1,11 @@
+Version 1.55.4
+--------------
+
+- Closed bugs and merge requests:
+  * Various maintenance [!258, Philip Chimento]
+  * Boxed copy constructor should not be called, split Boxed into prototype and
+    instance structs [#215, !260, Philip Chimento]
+
 Version 1.55.3
 --------------
 
