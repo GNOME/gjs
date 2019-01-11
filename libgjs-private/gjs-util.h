@@ -59,6 +59,9 @@ GParamFlags gjs_param_spec_get_flags (GParamSpec *pspec);
 GType       gjs_param_spec_get_value_type (GParamSpec *pspec);
 GType       gjs_param_spec_get_owner_type (GParamSpec *pspec);
 
+/* For tests */
+int gjs_open_bytes(GBytes* bytes, GError** error);
+
 G_END_DECLS
 
 #endif

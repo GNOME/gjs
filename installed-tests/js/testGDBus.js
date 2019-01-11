@@ -1,9 +1,9 @@
-const Gio = imports.gi.Gio;
-const GLib = imports.gi.GLib;
+const ByteArray = imports.byteArray;
+const {Gio, GjsPrivate, GLib} = imports.gi;
 
 /* The methods list with their signatures.
  *
- * *** NOTE: If you add stuff here, you need to update testIntrospectReal
+ * *** NOTE: If you add stuff here, you need to update the Test class below.
  */
 var TestIface = '<node> \
 <interface name="org.gnome.gjs.Test"> \
@@ -71,6 +71,22 @@ var TestIface = '<node> \
 </method> \
 <method name="structArray"> \
     <arg type="a(ii)" direction="out"/> \
+</method> \
+<method name="fdIn"> \
+    <arg type="h" direction="in"/> \
+    <arg type="ay" direction="out"/> \
+</method> \
+<method name="fdIn2"> \
+    <arg type="h" direction="in"/> \
+    <arg type="ay" direction="out"/> \
+</method> \
+<method name="fdOut"> \
+    <arg type="ay" direction="in"/> \
+    <arg type="h" direction="out"/> \
+</method> \
+<method name="fdOut2"> \
+    <arg type="ay" direction="in"/> \
+    <arg type="h" direction="out"/> \
 </method> \
 <signal name="signalFoo"> \
     <arg type="s" direction="out"/> \
@@ -200,6 +216,39 @@ class Test {
 
     structArray() {
         return [[128, 123456], [42, 654321]];
+    }
+
+    fdIn(fdIndex, fdList) {
+        const fd = fdList.get(fdIndex);
+        const stream = new Gio.UnixInputStream({fd, closeFd: true});
+        const bytes = stream.read_bytes(4096, null);
+        return bytes;
+    }
+
+    // Same as fdIn(), but implemented asynchronously
+    fdIn2Async([fdIndex], invocation, fdList) {
+        const fd = fdList.get(fdIndex);
+        const stream = new Gio.UnixInputStream({fd, closeFd: true});
+        stream.read_bytes_async(4096, GLib.PRIORITY_DEFAULT, null, (obj, res) => {
+            const bytes = obj.read_bytes_finish(res);
+            invocation.return_value(new GLib.Variant('(ay)', [bytes]));
+        });
+    }
+
+    fdOut(bytes) {
+        const fd = GjsPrivate.open_bytes(bytes);
+        const fdList = Gio.UnixFDList.new_from_array([fd]);
+        return [0, fdList];
+    }
+
+    fdOut2Async([bytes], invocation) {
+        GLib.idle_add(GLib.PRIORITY_DEFAULT, function() {
+            const fd = GjsPrivate.open_bytes(bytes);
+            const fdList = Gio.UnixFDList.new_from_array([fd]);
+            invocation.return_value_with_unix_fd_list(new GLib.Variant('(h)', [0]),
+                fdList);
+            return GLib.SOURCE_REMOVE;
+        });
     }
 }
 
@@ -483,5 +532,64 @@ describe('Exported DBus object', function () {
             loop.quit();
         });
         loop.run();
+    });
+
+    it('can call a remote method with a Unix FD', function (done) {
+        const expectedBytes = ByteArray.fromString('some bytes');
+        const fd = GjsPrivate.open_bytes(expectedBytes);
+        const fdList = Gio.UnixFDList.new_from_array([fd]);
+        proxy.fdInRemote(0, fdList, ([bytes], exc, outFdList) => {
+            expect(exc).toBeNull();
+            expect(outFdList).toBeNull();
+            expect(bytes).toEqual(expectedBytes);
+            done();
+        });
+    });
+
+    it('can call an asynchronously implemented remote method with a Unix FD', function (done) {
+        const expectedBytes = ByteArray.fromString('some bytes');
+        const fd = GjsPrivate.open_bytes(expectedBytes);
+        const fdList = Gio.UnixFDList.new_from_array([fd]);
+        proxy.fdIn2Remote(0, fdList, ([bytes], exc, outFdList) => {
+            expect(exc).toBeNull();
+            expect(outFdList).toBeNull();
+            expect(bytes).toEqual(expectedBytes);
+            done();
+        });
+    });
+
+    function readBytesFromFdSync(fd) {
+        const stream = new Gio.UnixInputStream({fd, closeFd: true});
+        const bytes = stream.read_bytes(4096, null);
+        return ByteArray.fromGBytes(bytes);
+    }
+
+    it('can call a remote method that returns a Unix FD', function (done) {
+        const expectedBytes = ByteArray.fromString('some bytes');
+        proxy.fdOutRemote(expectedBytes, ([fdIndex], exc, outFdList) => {
+            expect(exc).toBeNull();
+            const bytes = readBytesFromFdSync(outFdList.get(fdIndex));
+            expect(bytes).toEqual(expectedBytes);
+            done();
+        });
+    });
+
+    it('can call an asynchronously implemented remote method that returns a Unix FD', function (done) {
+        const expectedBytes = ByteArray.fromString('some bytes');
+        proxy.fdOut2Remote(expectedBytes, ([fdIndex], exc, outFdList) => {
+            expect(exc).toBeNull();
+            const bytes = readBytesFromFdSync(outFdList.get(fdIndex));
+            expect(bytes).toEqual(expectedBytes);
+            done();
+        });
+    });
+
+    it('throws an exception when not passing a Gio.UnixFDList to a method that requires one', function () {
+        expect(() => proxy.fdInRemote(0, () => {})).toThrow();
+    });
+
+    it('throws an exception when passing a handle out of range of a Gio.UnixFDList', function () {
+        const fdList = new Gio.UnixFDList();
+        expect(() => proxy.fdInRemote(0, fdList, () => {})).toThrow();
     });
 });
