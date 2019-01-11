@@ -664,90 +664,72 @@ describe('GObject virtual function', function () {
     });
 
     it('can have its property overridden with an anonymous function', function () {
-        try {
-            let callback = {
-                vfunc_constructed: (a) => `constructed${a}`
-            };
+        let callback;
 
-            let key = 'vfunc_constructed';
+        let key = 'vfunc_constructed';
 
-            class _SimpleTestClass1 extends GObject.Object {
-                constructor() {
-                    super(...arguments);
-                    this.__constructed = false;
-                }
+        class _SimpleTestClass1 extends GObject.Object {
+            _init() {
+                super._init(...arguments);
             }
-
-            if (GObject.Object.prototype.vfunc_constructed) {
-                let parentFunc = GObject.Object.prototype.vfunc_constructed;
-                _SimpleTestClass1.prototype[key] = function () {
-                    parentFunc.call(this, ...arguments);
-                    this.__constructed = callback[key]('123');
-                };
-            } else {
-                _SimpleTestClass1.prototype[key] = function () {
-                    this.__constructed = true;
-                };
-            }
-
-            const SimpleTestClass1 = GObject.registerClass({GTypeName: 'SimpleTestClass1'}, _SimpleTestClass1);
-
-            let testInstance = new SimpleTestClass1();
-
-            expect(testInstance.__constructed).toEqual('constructed123');
-        } catch (e) {
-            fail('Exception should not be thrown');
         }
+
+        if (GObject.Object.prototype.vfunc_constructed) {
+            let parentFunc = GObject.Object.prototype.vfunc_constructed;
+            _SimpleTestClass1.prototype[key] = function () {
+                parentFunc.call(this, ...arguments);
+                callback('123');
+            };
+        } else {
+            _SimpleTestClass1.prototype[key] = function () {
+                callback('abc');
+            };
+        }
+
+        callback = jasmine.createSpy('callback');
+
+        const SimpleTestClass1 = GObject.registerClass({GTypeName: 'SimpleTestClass1'}, _SimpleTestClass1);
+        new SimpleTestClass1();
+
+        expect(callback).toHaveBeenCalledWith('123');
     });
 
     it('can access the parent prototype with super()', function () {
-        try {
-            class _SimpleTestClass2 extends GObject.Object {
-                constructor() {
-                    super(...arguments);
-                    this.__constructed = false;
-                }
+        let callback;
 
-                vfunc_constructed() {
-                    super.vfunc_constructed();
-                    this.__constructed = true;
-                }
+        class _SimpleTestClass2 extends GObject.Object {
+            _init() {
+                super._init(...arguments);
             }
 
-            const SimpleTestClass2 = GObject.registerClass({GTypeName: 'SimpleTestClass2'}, _SimpleTestClass2);
-
-            let testInstance = new SimpleTestClass2();
-
-            expect(testInstance.__constructed).toEqual(true);
-        } catch (e) {
-            fail('Exception should not be thrown');
+            vfunc_constructed() {
+                super.vfunc_constructed();
+                callback('vfunc_constructed');
+            }
         }
+
+        callback = jasmine.createSpy('callback');
+
+        const SimpleTestClass2 = GObject.registerClass({GTypeName: 'SimpleTestClass2'}, _SimpleTestClass2);
+        new SimpleTestClass2();
+
+        expect(callback).toHaveBeenCalledWith('vfunc_constructed');
     });
 
     it('handles non-existing properties', function () {
-        try {
-
-            const _SimpleTestClass3 = class extends GObject.Object {
-                constructor() {
-                    super(...arguments);
-                    this.__constructed = false;
-                }
-            };
-
-            _SimpleTestClass3.prototype.vfunc_doesnt_exist = function () {};
-
-            if (GObject.Object.prototype.vfunc_doesnt_exist) {
-                fail('Virtual function should not exist');
+        const _SimpleTestClass3 = class extends GObject.Object {
+            _init() {
+                super._init(...arguments);
             }
+        };
 
-            const SimpleTestClass3 = GObject.registerClass({GTypeName: 'SimpleTestClass3'}, _SimpleTestClass3);
+        _SimpleTestClass3.prototype.vfunc_doesnt_exist = function () {};
 
-            let testInstance = new SimpleTestClass3();
+        if (GObject.Object.prototype.vfunc_doesnt_exist) {
+            fail('Virtual function should not exist');
+        }
 
-            expect(testInstance.__constructed).toEqual(undefined);
-
-            fail('Exception should be thrown');
-        } catch (e) {}
+        expect(() => GObject.registerClass({GTypeName: 'SimpleTestClass3'}, _SimpleTestClass3)).toThrow();
     });
 });
 
