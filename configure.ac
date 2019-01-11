@@ -337,6 +337,26 @@ AS_IF([test "x$with_dbus_tests" != "xno"], [
 ])
 AM_CONDITIONAL([DBUS_TESTS], [test "x$with_dbus_tests" != "xno"])
 
+AC_MSG_CHECKING([for a suitable UTF-8 locale to run the tests in])
+LOCALES=$(locale -a)
+AS_CASE([$LOCALES],
+  dnl Prefer C.UTF-8 although it is only available with newer libc
+  [*C.UTF-8*], [TESTS_LOCALE=C.UTF-8],
+
+  dnl Most systems will probably have this
+  [*en_US.UTF-8*], [TESTS_LOCALE=en_US.UTF-8],
+  [*en_US.utf8*], [TESTS_LOCALE=en_US.utf8],
+
+  dnl If not, fall back to any English UTF-8 locale or any UTF-8 locale at all
+  [*en_*.UTF-8*], [TESTS_LOCALE=$(echo $LOCALES | grep -m1 en_.\*\\.UTF-8)],
+  [*en_*.utf8*], [TESTS_LOCALE=$(echo $LOCALES | grep -m1 en_.\*\\.utf8)],
+  [*.UTF-8*], [TESTS_LOCALE=$(echo $LOCALES | grep -m1 \\.UTF-8)],
+  [*.utf8*], [TESTS_LOCALE=$(echo $LOCALES | grep -m1 \\.utf8)],
+
+  [TESTS_LOCALE=C])
+AC_MSG_RESULT([$TESTS_LOCALE])
+AC_SUBST([TESTS_LOCALE])
+
 AC_SUBST([gjsjsdir], [\${datadir}/gjs-1.0])
 
 dnl automake 1.11/1.12 defines this but does not substitute it
@@ -361,6 +381,12 @@ PKG_CHECK_EXISTS([gobject-introspection-1.0 >= 1.57.2], [], [
     AC_MSG_WARN([You do not have a new enough version of
 gobject-introspection to run the tests. You can still build GJS, but some
 tests will fail.])])
+
+AS_IF([test "$TESTS_LOCALE" = "C"], [
+  AC_MSG_WARN([Your libc does not have the C.UTF-8 locale and no other
+suitable UTF-8 fallback locale could be found. You can still build GJS, but
+some tests will fail.])
+])
 
 TEST_MSG=
 AM_COND_IF([XVFB_TESTS], [TEST_MSG="xvfb "])
