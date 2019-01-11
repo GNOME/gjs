@@ -286,7 +286,7 @@ AM_TESTS_ENVIRONMENT =					\
 	export G_FILENAME_ENCODING=latin1;		\
 	export LSAN_OPTIONS="suppressions=$(abs_top_srcdir)/installed-tests/extra/lsan.supp"; \
 	export NO_AT_BRIDGE=1;				\
-	export LC_ALL=C.UTF-8;				\
+	export LC_ALL=$(TESTS_LOCALE);			\
 	$(COVERAGE_TESTS_ENVIRONMENT)			\
 	$(GTK_TESTS_ENVIRONMENT)			\
 	$(XVFB_START)					\
