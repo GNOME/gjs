@@ -24,10 +24,59 @@ var Lang = imports.lang;
 var Signals = imports.signals;
 var Gio;
 
+// Ensures that a Gio.UnixFDList being passed into or out of a DBus method with
+// a parameter type that includes 'h' somewhere, actually has entries in it for
+// each of the indices being passed as an 'h' parameter.
+function _validateFDVariant(variant, fdList) {
+    switch (String.fromCharCode(variant.classify())) {
+    case 'b':
+    case 'y':
+    case 'n':
+    case 'q':
+    case 'i':
+    case 'u':
+    case 'x':
+    case 't':
+    case 'd':
+    case 'o':
+    case 'g':
+    case 's':
+        return;
+    case 'h': {
+        const val = variant.get_handle();
+        const numFds = fdList.get_length();
+        if (val >= numFds)
+            throw new Error(`handle ${val} is out of range of Gio.UnixFDList ` +
+                `containing ${numFds} FDs`);
+        return;
+    }
+    case 'v':
+        _validateFDVariant(variant.get_variant(), fdList);
+        return;
+    case 'm': {
+        let val = variant.get_maybe();
+        if (val)
+            _validateFDVariant(val, fdList);
+        return;
+    }
+    case 'a':
+    case '(':
+    case '{': {
+        let nElements = variant.n_children();
+        for (let ix = 0; ix < nElements; ix++)
+            _validateFDVariant(variant.get_child_value(ix), fdList);
+        return;
+    }
+    }
+
+    throw new Error('Assertion failure: this code should not be reached');
+}
+
 function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     var replyFunc;
     var flags = 0;
     var cancellable = null;
+    let fdList = null;
 
     /* Convert arg_array to a *real* array */
     arg_array = Array.prototype.slice.call(arg_array);
@@ -37,7 +86,7 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
 
     var signatureLength = inSignature.length;
     var minNumberArgs = signatureLength;
-    var maxNumberArgs = signatureLength + 3;
+    var maxNumberArgs = signatureLength + 4;
 
     if (arg_array.length < minNumberArgs) {
         throw new Error("Not enough arguments passed for method: " + methodName +
@@ -45,7 +94,7 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     } else if (arg_array.length > maxNumberArgs) {
         throw new Error(`Too many arguments passed for method ${methodName}. ` +
             `Maximum is ${maxNumberArgs} including one callback, ` +
-            'cancellable, and/or flags');
+            'Gio.Cancellable, Gio.UnixFDList, and/or flags');
     }
 
     while (arg_array.length > signatureLength) {
@@ -57,41 +106,44 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
             flags = arg;
         } else if (arg instanceof Gio.Cancellable) {
             cancellable = arg;
+        } else if (arg instanceof Gio.UnixFDList) {
+            fdList = arg;
         } else {
-            throw new Error("Argument " + argNum + " of method " + methodName +
-                            " is " + typeof(arg) + ". It should be a callback, flags or a Gio.Cancellable");
+            throw new Error(`Argument ${argNum} of method ${methodName} is ` +
+                `${typeof arg}. It should be a callback, flags, ` +
+                'Gio.UnixFDList, or a Gio.Cancellable');
         }
     }
 
-    var inVariant = new GLib.Variant('(' + inSignature.join('') + ')', arg_array);
+    const inTypeString = `(${inSignature.join('')})`;
+    const inVariant = new GLib.Variant(inTypeString, arg_array);
+    if (inTypeString.includes('h')) {
+        if (!fdList)
+            throw new Error(`Method ${methodName} with input type containing ` +
+                '"h" must have a Gio.UnixFDList as an argument');
+        _validateFDVariant(inVariant, fdList);
+    }
 
     var asyncCallback = function (proxy, result) {
-        var outVariant = null, succeeded = false;
         try {
-            outVariant = proxy.call_finish(result);
-            succeeded = true;
+            const [outVariant, outFdList] =
+                proxy.call_with_unix_fd_list_finish(result);
+            replyFunc(outVariant.deep_unpack(), null, outFdList);
         } catch (e) {
-            replyFunc([], e);
+            replyFunc([], e, null);
         }
-
-        if (succeeded)
-            replyFunc(outVariant.deep_unpack(), null);
     };
 
     if (sync) {
-        return this.call_sync(methodName,
-                              inVariant,
-                              flags,
-                              -1,
-                              cancellable).deep_unpack();
-    } else {
-        return this.call(methodName,
-                         inVariant,
-                         flags,
-                         -1,
-                         cancellable,
-                         asyncCallback);
+        const [outVariant, outFdList] = this.call_with_unix_fd_list_sync(
+            methodName, inVariant, flags, -1, fdList, cancellable);
+        if (fdList)
+            return [outVariant.deep_unpack(), outFdList];
+        return outVariant.deep_unpack();
     }
+
+    return this.call_with_unix_fd_list(methodName, inVariant, flags, -1, fdList,
+        cancellable, asyncCallback);
 }
 
 function _logReply(result, exc) {
@@ -253,7 +305,8 @@ function _handleMethodCall(info, impl, method_name, parameters, invocation) {
     if (this[method_name]) {
         let retval;
         try {
-            retval = this[method_name].apply(this, parameters.deep_unpack());
+            const fdList = invocation.get_message().get_unix_fd_list();
+            retval = this[method_name](...parameters.deep_unpack(), fdList);
         } catch (e) {
             if (e instanceof GLib.Error) {
                 invocation.return_gerror(e);
@@ -273,26 +326,31 @@ function _handleMethodCall(info, impl, method_name, parameters, invocation) {
             retval = new GLib.Variant('()', []);
         }
         try {
+            let outFdList = null;
             if (!(retval instanceof GLib.Variant)) {
                 // attempt packing according to out signature
                 let methodInfo = info.lookup_method(method_name);
                 let outArgs = methodInfo.out_args;
                 let outSignature = _makeOutSignature(outArgs);
-                if (outArgs.length == 1) {
+                if (outSignature.includes('h') &&
+                    retval[retval.length - 1] instanceof Gio.UnixFDList) {
+                    outFdList = retval.pop();
+                } else if (outArgs.length == 1) {
                     // if one arg, we don't require the handler wrapping it
                     // into an Array
                     retval = [retval];
                 }
                 retval = new GLib.Variant(outSignature, retval);
             }
-            invocation.return_value(retval);
+            invocation.return_value_with_unix_fd_list(retval, outFdList);
         } catch(e) {
             // if we don't do this, the other side will never see a reply
             invocation.return_dbus_error('org.gnome.gjs.JSError.ValueError',
                                          "Service implementation returned an incorrect value type");
         }
     } else if (this[method_name + 'Async']) {
-        this[method_name + 'Async'](parameters.deep_unpack(), invocation);
+        const fdList = invocation.get_message().get_unix_fd_list();
+        this[`${method_name}Async`](parameters.deep_unpack(), invocation, fdList);
     } else {
         log('Missing handler for DBus method ' + method_name);
         invocation.return_gerror(new Gio.DBusError({ code: Gio.DBusError.UNKNOWN_METHOD,

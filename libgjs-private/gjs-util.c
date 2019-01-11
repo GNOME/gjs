@@ -21,8 +21,13 @@
  */
 
 #include <config.h>
+
+#include <errno.h>
+#include <fcntl.h>
 #include <string.h>
 
+#include <gio/gio.h>
+#include <glib-unix.h>
 #include <glib.h>
 #include <glib/gi18n.h>
 
@@ -107,4 +112,78 @@ GType
 gjs_param_spec_get_owner_type(GParamSpec *pspec)
 {
     return pspec->owner_type;
+}
+
+// Adapted from glnx_throw_errno_prefix()
+G_GNUC_PRINTF(2, 3)
+static gboolean throw_errno_prefix(GError** error, const char* fmt, ...) {
+    int errsv = errno;
+    char* old_msg;
+    GString* buf;
+
+    va_list args;
+
+    if (!error)
+        return FALSE;
+
+    va_start(args, fmt);
+
+    g_set_error_literal(error, G_IO_ERROR, g_io_error_from_errno(errsv),
+                        g_strerror(errsv));
+
+    old_msg = g_steal_pointer(&(*error)->message);
+    buf = g_string_new("");
+    g_string_append_vprintf(buf, fmt, args);
+    g_string_append(buf, ": ");
+    g_string_append(buf, old_msg);
+    g_free(old_msg);
+    (*error)->message = g_string_free(g_steal_pointer(&buf), FALSE);
+
+    va_end(args);
+
+    errno = errsv;
+    return FALSE;
+}
+
+/**
+ * gjs_open_bytes:
+ * @bytes: bytes to send to the pipe
+ * @error: Return location for a #GError, or %NULL
+ *
+ * Creates a pipe and sends @bytes to it, such that it is suitable for passing
+ * to g_subprocess_launcher_take_fd().
+ *
+ * Returns: file descriptor, or -1 on error
+ */
+int gjs_open_bytes(GBytes* bytes, GError** error) {
+    int pipefd[2], result;
+    size_t count;
+    const void* buf;
+    ssize_t bytes_written;
+
+    g_return_val_if_fail(bytes, -1);
+    g_return_val_if_fail(error == NULL || *error == NULL, -1);
+
+    if (!g_unix_open_pipe(pipefd, FD_CLOEXEC, error))
+        return -1;
+
+    buf = g_bytes_get_data(bytes, &count);
+
+    bytes_written = write(pipefd[1], buf, count);
+    if (bytes_written < 0) {
+        throw_errno_prefix(error, "write");
+        return -1;
+    }
+
+    if ((size_t)bytes_written != count)
+        g_warning("%s: %zd bytes sent, only %zu bytes written", __func__, count,
+                  bytes_written);
+
+    result = close(pipefd[1]);
+    if (result == -1) {
+        throw_errno_prefix(error, "close");
+        return -1;
+    }
+
+    return pipefd[0];
 }
