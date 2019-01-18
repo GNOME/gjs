@@ -571,7 +571,7 @@ void GjsContextPrivate::schedule_gc_internal(bool force_gc) {
     if (m_auto_gc_id > 0)
         return;
 
-    m_auto_gc_id = g_timeout_add_seconds_full(G_PRIORITY_LOW, 10,
+    m_auto_gc_id = g_timeout_add_seconds_full(G_PRIORITY_LOW, 300,
                                               trigger_gc_if_needed, this,
                                               nullptr);
 }
