@@ -664,7 +664,7 @@ class GIWrapperPrototype : public Base {
     bool init(JSContext* cx) { return true; }
 
     // The following three methods are private because they are used only in
-    // define_class().
+    // create_class().
 
  private:
     /*
