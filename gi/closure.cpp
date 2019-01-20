@@ -105,7 +105,7 @@ static void global_context_finalized(JS::HandleFunction func, void* data) {
     gjs_debug_closure(
         "Context global object destroy notifier on closure %p which calls "
         "object %p",
-        c, c->func.get());
+        c, c->func.debug_addr());
 
     if (c->func) {
         g_assert(c->func == func.get());
@@ -135,7 +135,7 @@ closure_invalidated(gpointer data,
 
     GJS_DEC_COUNTER(closure);
     gjs_debug_closure("Invalidating closure %p which calls function %p",
-                      closure, c->func.get());
+                      closure, c->func.debug_addr());
 
     if (!c->func) {
         gjs_debug_closure("   (closure %p already dead, nothing to do)",
@@ -165,7 +165,7 @@ closure_set_invalid(gpointer  data,
     Closure *self = &((GjsClosure*) closure)->priv;
 
     gjs_debug_closure("Invalidating signal closure %p which calls function %p",
-                      closure, self->func.get());
+                      closure, self->func.debug_addr());
 
     self->func.prevent_collection();
     self->func.reset();
@@ -217,7 +217,7 @@ gjs_closure_invoke(GClosure                   *closure,
         gjs_debug_closure(
             "Closure invocation failed (exception should have been thrown) "
             "closure %p function %p",
-            closure, c->func.get());
+            closure, c->func.debug_addr());
         /* If an exception has been thrown, log it, unless the caller
          * explicitly wants to handle it manually (for example to turn it
          * into a GError), in which case it replaces the return value
@@ -320,7 +320,7 @@ GClosure* gjs_closure_new(JSContext* context, JSFunction* callable,
     g_closure_add_finalize_notifier(&gc->base, NULL, closure_finalize);
 
     gjs_debug_closure("Create closure %p which calls function %p '%s'", gc,
-                      c->func.get(), description);
+                      c->func.debug_addr(), description);
 
     JS_EndRequest(context);
 

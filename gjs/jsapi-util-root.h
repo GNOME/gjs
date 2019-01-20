@@ -215,6 +215,13 @@ public:
     }
     operator const T(void) const { return get(); }
 
+    /* Use debug_addr() only for debug logging, because it is unbarriered. */
+    template <typename U = T>
+    GJS_USE const T
+    debug_addr(std::enable_if_t<std::is_pointer<U>::value>* = nullptr) const {
+        return m_rooted ? m_thing.root->get() : m_thing.heap.unbarrieredGet();
+    }
+
     bool
     operator==(const T& other) const
     {
