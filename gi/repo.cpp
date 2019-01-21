@@ -476,7 +476,7 @@ gjs_define_info(JSContext       *context,
     case GI_INFO_TYPE_ENUM:
         if (g_enum_info_get_error_domain((GIEnumInfo*) info)) {
             /* define as GError subclass */
-            if (!gjs_define_error_class(context, in_object, info))
+            if (!ErrorPrototype::define_class(context, in_object, info))
                 return false;
             break;
         }
