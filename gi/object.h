@@ -125,6 +125,17 @@ class ObjectBase
  public:
     void type_query_dynamic_safe(GTypeQuery* query);
 
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool typecheck(JSContext* cx, JS::HandleObject obj,
+                          GIObjectInfo* expected_info, GType expected_gtype);
+    GJS_USE
+    static bool typecheck(JSContext* cx, JS::HandleObject obj,
+                          GIObjectInfo* expected_info, GType expected_gtype,
+                          TypecheckNoThrow no_throw) {
+        return GIWrapperBase::typecheck(cx, obj, expected_info, expected_gtype,
+                                        no_throw);
+    }
+
     /* Methods to manipulate the list of closures */
 
  protected:
@@ -438,12 +449,6 @@ JSObject* gjs_lookup_object_constructor_from_info(JSContext* cx,
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_object_from_g_object      (JSContext     *context,
                                          GObject       *gobj);
-
-GJS_USE
-bool      gjs_typecheck_object(JSContext       *context,
-                               JS::HandleObject obj,
-                               GType            expected_type,
-                               bool             throw_error);
 
 GJS_USE
 bool      gjs_typecheck_is_object(JSContext       *context,

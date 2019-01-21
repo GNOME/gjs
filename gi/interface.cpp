@@ -111,7 +111,8 @@ bool InterfacePrototype::has_instance_impl(JSContext* cx,
     g_assert(args.length() == 1);
     g_assert(args[0].isObject());
     JS::RootedObject instance(cx, &args[0].toObject());
-    bool isinstance = gjs_typecheck_object(cx, instance, m_gtype, false);
+    bool isinstance = ObjectBase::typecheck(cx, instance, nullptr, m_gtype,
+                                            ObjectBase::TypecheckNoThrow());
     args.rval().setBoolean(isinstance);
     return true;
 }

@@ -253,17 +253,3 @@ void* UnionInstance::copy_ptr(JSContext* cx, GType gtype, void* ptr) {
               "boxed");
     return nullptr;
 }
-
-bool
-gjs_typecheck_union(JSContext       *context,
-                    JS::HandleObject object,
-                    GIStructInfo    *expected_info,
-                    GType            expected_type,
-                    bool             throw_error)
-{
-    if (throw_error)
-        return UnionBase::typecheck(context, object, expected_info,
-                                    expected_type);
-    return UnionBase::typecheck(context, object, expected_info, expected_type,
-                                UnionBase::TypecheckNoThrow());
-}
