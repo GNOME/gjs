@@ -229,9 +229,9 @@ static bool gjs_register_interface(JSContext* cx, unsigned argc,
     if (!module)
         return false;  // error will have been thrown already
 
-    JS::RootedObject constructor(cx);
-    if (!gjs_define_interface_class(cx, module, nullptr, interface_type,
-                                    &constructor))
+    JS::RootedObject constructor(cx), ignored_prototype(cx);
+    if (!InterfacePrototype::create_class(cx, module, nullptr, interface_type,
+                                          &constructor, &ignored_prototype))
         return false;
 
     args.rval().setObject(*constructor);

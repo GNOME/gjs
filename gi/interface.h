@@ -128,13 +128,6 @@ class InterfaceInstance
 G_BEGIN_DECLS
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_interface_class(JSContext              *context,
-                                JS::HandleObject        in_object,
-                                GIInterfaceInfo        *info,
-                                GType                   gtype,
-                                JS::MutableHandleObject constructor);
-
-GJS_JSAPI_RETURN_CONVENTION
 bool gjs_lookup_interface_constructor(JSContext             *context,
                                       GType                  gtype,
                                       JS::MutableHandleValue value_p);

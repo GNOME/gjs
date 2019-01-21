@@ -141,18 +141,6 @@ JSFunctionSpec InterfaceBase::static_methods[] = {
 // clang-format on
 
 bool
-gjs_define_interface_class(JSContext              *context,
-                           JS::HandleObject        in_object,
-                           GIInterfaceInfo        *info,
-                           GType                   gtype,
-                           JS::MutableHandleObject constructor)
-{
-    JS::RootedObject prototype(context);
-    return !!InterfacePrototype::create_class(context, in_object, info, gtype,
-                                              constructor, &prototype);
-}
-
-bool
 gjs_lookup_interface_constructor(JSContext             *context,
                                  GType                  gtype,
                                  JS::MutableHandleValue value_p)
