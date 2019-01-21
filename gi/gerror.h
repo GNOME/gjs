@@ -100,6 +100,12 @@ class ErrorBase
                                         GIArgument* arg,
                                         GIDirection transfer_direction,
                                         GITransfer transfer_ownership);
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool typecheck(JSContext* cx, JS::HandleObject obj);
+    GJS_USE
+    static bool typecheck(JSContext* cx, JS::HandleObject obj,
+                          TypecheckNoThrow);
 };
 
 class ErrorPrototype : public GIWrapperPrototype<ErrorBase, ErrorPrototype,
@@ -159,11 +165,6 @@ GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_error_from_gerror        (JSContext             *context,
                                         GError                *gerror,
                                         bool                   add_stack);
-GJS_USE
-bool      gjs_typecheck_gerror         (JSContext             *context,
-                                        JS::HandleObject       obj,
-                                        bool                   throw_error);
-
 GJS_JSAPI_RETURN_CONVENTION
 GError *gjs_gerror_make_from_error(JSContext       *cx,
                                    JS::HandleObject obj);

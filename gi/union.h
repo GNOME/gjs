@@ -106,12 +106,6 @@ GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_union_from_c_union       (JSContext    *context,
                                         GIUnionInfo  *info,
                                         void         *gboxed);
-GJS_JSAPI_RETURN_CONVENTION
-bool      gjs_typecheck_union          (JSContext             *context,
-                                        JS::HandleObject       obj,
-                                        GIStructInfo          *expected_info,
-                                        GType                  expected_type,
-                                        bool                   throw_error);
 
 G_END_DECLS
 
