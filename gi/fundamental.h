@@ -129,6 +129,13 @@ class FundamentalPrototype
     bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                       const char* prop_name, bool* resolved);
     void trace_impl(JSTracer* trc);
+
+    // Public API
+ public:
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool define_class(JSContext* cx, JS::HandleObject in_object,
+                             GIObjectInfo* info,
+                             JS::MutableHandleObject constructor);
 };
 
 class FundamentalInstance
@@ -156,6 +163,10 @@ class FundamentalInstance
         get_prototype()->call_set_value_function(gvalue, m_ptr);
     }
 
+    GJS_JSAPI_RETURN_CONVENTION
+    bool associate_js_instance(JSContext* cx, JSObject* object,
+                               void* gfundamental);
+
     // JS constructor
 
     GJS_JSAPI_RETURN_CONVENTION
@@ -164,34 +175,12 @@ class FundamentalInstance
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
-    bool associate_js_instance(JSContext* cx, JSObject* object,
-                               void* gfundamental);
+    static JSObject* object_for_c_ptr(JSContext* cx, void* gfundamental);
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* object_for_gvalue(JSContext* cx, const GValue* gvalue,
+                                       GType gtype);
 
     static void* copy_ptr(JSContext* cx, GType gtype, void* gfundamental);
 };
-
-G_BEGIN_DECLS
-
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_fundamental_class(JSContext              *context,
-                                  JS::HandleObject        in_object,
-                                  GIObjectInfo           *info,
-                                  JS::MutableHandleObject constructor,
-                                  JS::MutableHandleObject prototype);
-
-GJS_JSAPI_RETURN_CONVENTION
-JSObject* gjs_object_from_g_fundamental      (JSContext     *context,
-                                              GIObjectInfo  *info,
-                                              void          *fobj);
-
-GJS_JSAPI_RETURN_CONVENTION
-JSObject *gjs_fundamental_from_g_value       (JSContext     *context,
-                                              const GValue  *value,
-                                              GType          gtype);
-
-void      gjs_fundamental_unref              (JSContext     *context,
-                                              void          *fobj);
-
-G_END_DECLS
 
 #endif  /* __GJS_FUNDAMENTAL_H__ */
