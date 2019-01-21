@@ -827,7 +827,6 @@ gjs_value_from_g_value_internal(JSContext             *context,
         return false;
     } else if (g_type_is_a(gtype, G_TYPE_BOXED) ||
                g_type_is_a(gtype, G_TYPE_VARIANT)) {
-        GjsBoxedCreationFlags boxed_flags;
         void *gboxed;
         JSObject *obj;
 
@@ -835,7 +834,6 @@ gjs_value_from_g_value_internal(JSContext             *context,
             gboxed = g_value_get_boxed(gvalue);
         else
             gboxed = g_value_get_variant(gvalue);
-        boxed_flags = GJS_BOXED_CREATION_NONE;
 
         /* special case GError */
         if (g_type_is_a(gtype, G_TYPE_ERROR)) {
@@ -872,8 +870,10 @@ gjs_value_from_g_value_internal(JSContext             *context,
         GIInfoType type = info.type();
         if (type == GI_INFO_TYPE_BOXED || type == GI_INFO_TYPE_STRUCT) {
             if (no_copy)
-                boxed_flags = (GjsBoxedCreationFlags) (boxed_flags | GJS_BOXED_CREATION_NO_COPY);
-            obj = gjs_boxed_from_c_struct(context, info, gboxed, boxed_flags);
+                obj = BoxedInstance::new_for_c_struct(context, info, gboxed,
+                                                      BoxedInstance::NoCopy());
+            else
+                obj = BoxedInstance::new_for_c_struct(context, info, gboxed);
         } else if (type == GI_INFO_TYPE_UNION) {
             obj = gjs_union_from_c_union(context, info, gboxed);
         } else {

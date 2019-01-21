@@ -2907,19 +2907,14 @@ gjs_value_from_g_argument (JSContext             *context,
                 }
 
                 JSObject *obj;
-                GjsBoxedCreationFlags flags;
 
-                if (copy_structs)
-                    flags = GJS_BOXED_CREATION_NONE;
-                else if (g_type_is_a(gtype, G_TYPE_VARIANT))
-                    flags = GJS_BOXED_CREATION_NONE;
+                if (copy_structs || g_type_is_a(gtype, G_TYPE_VARIANT))
+                    obj = BoxedInstance::new_for_c_struct(
+                        context, interface_info, arg->v_pointer);
                 else
-                    flags = GJS_BOXED_CREATION_NO_COPY;
-
-                obj = gjs_boxed_from_c_struct(context,
-                                              (GIStructInfo *)interface_info,
-                                              arg->v_pointer,
-                                              flags);
+                    obj = BoxedInstance::new_for_c_struct(
+                        context, interface_info, arg->v_pointer,
+                        BoxedInstance::NoCopy());
 
                 if (obj)
                     value = JS::ObjectValue(*obj);
