@@ -123,10 +123,6 @@ bool ErrorBase::get_code(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
-bool gjs_gerror_to_string(JSContext* context, unsigned argc, JS::Value* vp) {
-    return ErrorBase::to_string(context, argc, vp);
-}
-
 // JSNative implementation of `toString()`.
 bool ErrorBase::to_string(JSContext* context, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(context, argc, vp, rec, self);
@@ -134,7 +130,7 @@ bool ErrorBase::to_string(JSContext* context, unsigned argc, JS::Value* vp) {
     GjsAutoChar descr;
 
     // An error created via `new GLib.Error` will have a Boxed* private pointer,
-    // not an Error*, so we can't call regular gjs_gerror_to_string() on it.
+    // not an Error*, so we can't call regular to_string() on it.
     if (BoxedBase::typecheck(context, self, nullptr, G_TYPE_ERROR,
                              BoxedBase::TypecheckNoThrow())) {
         auto* gerror = BoxedBase::to_c_ptr<GError>(context, self);
@@ -230,8 +226,9 @@ bool ErrorPrototype::get_parent_proto(JSContext* cx,
     return !!proto;
 }
 
-bool gjs_define_error_class(JSContext* context, JS::HandleObject in_object,
-                            GIEnumInfo* info) {
+bool ErrorPrototype::define_class(JSContext* context,
+                                  JS::HandleObject in_object,
+                                  GIEnumInfo* info) {
     JS::RootedObject prototype(context), constructor(context);
     if (!ErrorPrototype::create_class(context, in_object, info, G_TYPE_ERROR,
                                       &constructor, &prototype))
@@ -352,11 +349,7 @@ gjs_error_from_js_gerror(JSContext *cx,
     return JS_New(cx, error_constructor, error_args);
 }
 
-JSObject*
-gjs_error_from_gerror(JSContext             *context,
-                      GError                *gerror,
-                      bool                   add_stack)
-{
+JSObject* ErrorInstance::object_for_c_ptr(JSContext* context, GError* gerror) {
     GIEnumInfo *info;
 
     if (gerror == NULL)
@@ -391,9 +384,6 @@ gjs_error_from_gerror(JSContext             *context,
 
     ErrorInstance* priv = ErrorInstance::new_for_js_object(context, obj);
     priv->copy_gerror(gerror);
-
-    if (add_stack && !gjs_define_error_properties(context, obj))
-        return nullptr;
 
     return obj;
 }
@@ -510,11 +500,14 @@ bool gjs_throw_gerror(JSContext* cx, GError* error) {
 
     JSAutoRequest ar(cx);
 
-    JS::RootedValue err(
-        cx, JS::ObjectOrNullValue(gjs_error_from_gerror(cx, error, true)));
+    JS::RootedObject err_obj(cx, ErrorInstance::object_for_c_ptr(cx, error));
+    if (!err_obj || !gjs_define_error_properties(cx, err_obj))
+        return false;
+
     g_error_free(error);
-    if (!err.isNull())
-        JS_SetPendingException(cx, err);
+
+    JS::RootedValue err(cx, JS::ObjectValue(*err_obj));
+    JS_SetPendingException(cx, err);
 
     return false;
 }
