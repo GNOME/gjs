@@ -437,15 +437,10 @@ gjs_define_info(JSContext       *context,
                                                    gtype, &ignored1, &ignored2))
                     return false;
             } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-                JS::RootedObject ignored1(context), ignored2(context);
-                if (!gjs_define_fundamental_class(context, in_object,
-                                                  (GIObjectInfo*)info,
-                                                  &ignored1, &ignored2)) {
-                    gjs_throw (context,
-                               "Unsupported fundamental class creation for type %s",
-                               g_type_name(gtype));
+                JS::RootedObject ignored(context);
+                if (!FundamentalPrototype::define_class(context, in_object,
+                                                        info, &ignored))
                     return false;
-                }
             } else {
                 gjs_throw (context,
                            "Unsupported type %s, deriving from fundamental %s",
