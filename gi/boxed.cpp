@@ -971,8 +971,8 @@ bool BoxedPrototype::define_class(JSContext* context,
         return false;
 
     if (gtype == G_TYPE_ERROR &&
-        !JS_DefineFunction(context, prototype, "toString", gjs_gerror_to_string,
-                           0, GJS_MODULE_PROP_FLAGS))
+        !JS_DefineFunction(context, prototype, "toString",
+                           &ErrorBase::to_string, 0, GJS_MODULE_PROP_FLAGS))
         return false;
 
     return true;

@@ -839,9 +839,11 @@ gjs_value_from_g_value_internal(JSContext             *context,
 
         /* special case GError */
         if (g_type_is_a(gtype, G_TYPE_ERROR)) {
-            obj = gjs_error_from_gerror(context, (GError*) gboxed, false);
-            value_p.setObjectOrNull(obj);
-
+            obj = ErrorInstance::object_for_c_ptr(context,
+                                                  static_cast<GError*>(gboxed));
+            if (!obj)
+                return false;
+            value_p.setObject(*obj);
             return true;
         }
 

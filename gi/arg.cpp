@@ -2770,7 +2770,8 @@ gjs_value_from_g_argument (JSContext             *context,
     case GI_TYPE_TAG_ERROR:
         {
             if (arg->v_pointer) {
-                JSObject *obj = gjs_error_from_gerror(context, (GError *) arg->v_pointer, false);
+                JSObject* obj = ErrorInstance::object_for_c_ptr(
+                    context, static_cast<GError*>(arg->v_pointer));
                 if (obj) {
                     value_p.setObject(*obj);
                     return true;
@@ -2868,9 +2869,8 @@ gjs_value_from_g_argument (JSContext             *context,
                 goto out;
             }
             if (g_type_is_a(gtype, G_TYPE_ERROR)) {
-                JSObject *obj;
-
-                obj = gjs_error_from_gerror(context, (GError *) arg->v_pointer, false);
+                JSObject* obj = ErrorInstance::object_for_c_ptr(
+                    context, static_cast<GError*>(arg->v_pointer));
                 if (obj)
                     value = JS::ObjectValue(*obj);
                 else
