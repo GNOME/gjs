@@ -1046,17 +1046,3 @@ void* BoxedInstance::copy_ptr(JSContext* cx, GType gtype, void* ptr) {
               "boxed");
     return nullptr;
 }
-
-bool
-gjs_typecheck_boxed(JSContext       *context,
-                    JS::HandleObject object,
-                    GIStructInfo    *expected_info,
-                    GType            expected_type,
-                    bool             throw_error)
-{
-    if (throw_error)
-        return BoxedBase::typecheck(context, object, expected_info,
-                                    expected_type);
-    return BoxedBase::typecheck(context, object, expected_info, expected_type,
-                                BoxedBase::TypecheckNoThrow());
-}

@@ -165,10 +165,14 @@ const JSObject* ObjectBase::jsobj_addr(void) const {
     return to_instance()->wrapper();
 }
 
-static bool
-throw_priv_is_null_error(JSContext *context)
-{
-    gjs_throw(context,
+// Overrides GIWrapperBase::typecheck(). We only override the overload that
+// throws, so that we can throw our own more informative error.
+bool ObjectBase::typecheck(JSContext* cx, JS::HandleObject obj,
+                           GIObjectInfo* expected_info, GType expected_gtype) {
+    if (GIWrapperBase::typecheck(cx, obj, expected_info, expected_gtype))
+        return true;
+
+    gjs_throw(cx,
               "This JS object wrapper isn't wrapping a GObject."
               " If this is a custom subclass, are you sure you chained"
               " up to the parent _init properly?");
@@ -2085,17 +2089,6 @@ gjs_typecheck_is_object(JSContext       *context,
     if (throw_error)
         return !!ObjectBase::for_js_typecheck(context, object);
     return !!ObjectBase::for_js(context, object);
-}
-
-bool gjs_typecheck_object(JSContext* cx, JS::HandleObject object,
-                          GType expected_type, bool throw_error) {
-    if (throw_error) {
-        if (!ObjectBase::typecheck(cx, object, nullptr, expected_type))
-            return throw_priv_is_null_error(cx);
-        return true;
-    }
-    return ObjectBase::typecheck(cx, object, nullptr, expected_type,
-                                 ObjectBase::TypecheckNoThrow());
 }
 
 // Overrides GIWrapperInstance::typecheck_impl()

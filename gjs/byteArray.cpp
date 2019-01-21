@@ -298,7 +298,7 @@ from_gbytes_func(JSContext *context,
                              "bytes", &bytes_obj))
         return false;
 
-    if (!gjs_typecheck_boxed(context, bytes_obj, NULL, G_TYPE_BYTES, true))
+    if (!BoxedBase::typecheck(context, bytes_obj, nullptr, G_TYPE_BYTES))
         return false;
 
     gbytes = BoxedBase::to_c_ptr<GBytes>(context, bytes_obj);

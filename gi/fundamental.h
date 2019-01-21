@@ -189,12 +189,6 @@ JSObject *gjs_fundamental_from_g_value       (JSContext     *context,
                                               const GValue  *value,
                                               GType          gtype);
 
-GJS_USE
-bool      gjs_typecheck_fundamental(JSContext       *context,
-                                    JS::HandleObject object,
-                                    GType            expected_gtype,
-                                    bool             throw_error);
-
 void      gjs_fundamental_unref              (JSContext     *context,
                                               void          *fobj);
 
