@@ -35,15 +35,6 @@
 
 #include "js/GCHashTable.h"
 
-G_BEGIN_DECLS
-
-typedef enum {
-    GJS_BOXED_CREATION_NONE    =  0,
-    GJS_BOXED_CREATION_NO_COPY = (1 << 0)
-} GjsBoxedCreationFlags;
-
-G_END_DECLS
-
 class BoxedPrototype;
 class BoxedInstance;
 
@@ -85,6 +76,10 @@ class BoxedBase
  public:
     GJS_USE
     BoxedBase* get_copy_source(JSContext* cx, JS::Value value) const;
+
+    template <typename T = void>
+    GJS_JSAPI_RETURN_CONVENTION static T* to_c_struct(JSContext* cx,
+                                                      JS::HandleObject obj);
 };
 
 class BoxedPrototype : public GIWrapperPrototype<BoxedBase, BoxedPrototype,
@@ -146,10 +141,13 @@ class BoxedPrototype : public GIWrapperPrototype<BoxedBase, BoxedPrototype,
     static FieldMap* create_field_map(JSContext* cx, GIStructInfo* struct_info);
     GJS_JSAPI_RETURN_CONVENTION
     bool ensure_field_map(JSContext* cx);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool define_boxed_class_fields(JSContext* cx, JS::HandleObject proto);
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
-    bool define_boxed_class_fields(JSContext* cx, JS::HandleObject proto);
+    static bool define_class(JSContext* cx, JS::HandleObject in_object,
+                             GIStructInfo* info);
     GJS_JSAPI_RETURN_CONVENTION
     GIFieldInfo* lookup_field(JSContext* cx, JSString* prop_name);
 };
@@ -213,24 +211,22 @@ class BoxedInstance
  public:
     struct NoCopy {};
 
+ private:
     GJS_JSAPI_RETURN_CONVENTION
     bool init_from_c_struct(JSContext* cx, void* gboxed);
     GJS_JSAPI_RETURN_CONVENTION
     bool init_from_c_struct(JSContext* cx, void* gboxed, NoCopy);
+    template <typename... Args>
+    GJS_JSAPI_RETURN_CONVENTION static JSObject* new_for_c_struct_impl(
+        JSContext* cx, GIStructInfo* info, void* gboxed, Args&&... args);
+
+ public:
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* new_for_c_struct(JSContext* cx, GIStructInfo* info,
+                                      void* gboxed);
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* new_for_c_struct(JSContext* cx, GIStructInfo* info,
+                                      void* gboxed, NoCopy);
 };
-
-G_BEGIN_DECLS
-
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_boxed_class(JSContext* cx, JS::HandleObject in_object,
-                            GIStructInfo* info);
-
-GJS_JSAPI_RETURN_CONVENTION
-JSObject* gjs_boxed_from_c_struct      (JSContext             *context,
-                                        GIStructInfo          *info,
-                                        void                  *gboxed,
-                                        GjsBoxedCreationFlags  flags);
-
-G_END_DECLS
 
 #endif  /* __GJS_BOXED_H__ */

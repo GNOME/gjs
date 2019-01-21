@@ -374,7 +374,7 @@ gjs_error_from_gerror(JSContext             *context,
         JSObject *retval;
 
         glib_boxed = g_irepository_find_by_name(NULL, "GLib", "Error");
-        retval = gjs_boxed_from_c_struct(context, glib_boxed, gerror, (GjsBoxedCreationFlags) 0);
+        retval = BoxedInstance::new_for_c_struct(context, glib_boxed, gerror);
 
         g_base_info_unref(glib_boxed);
         return retval;
