@@ -30,6 +30,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <mozilla/Unused.h>
+
 #include "gi/arg.h"
 #include "gi/closure.h"
 #include "gi/function.h"
@@ -2021,20 +2023,17 @@ gjs_object_from_g_object(JSContext    *context,
     return priv->wrapper();
 }
 
-GObject*
-gjs_g_object_from_object(JSContext       *cx,
-                         JS::HandleObject obj)
-{
-    if (!obj)
-        return NULL;
-
+// Overrides GIWrapperBase::to_c_ptr()
+GObject* ObjectBase::to_c_ptr(JSContext* cx, JS::HandleObject obj) {
     auto* priv = ObjectBase::for_js(cx, obj);
     if (!priv || priv->is_prototype())
         return nullptr;
 
     ObjectInstance* instance = priv->to_instance();
-    if (!instance->check_gobject_disposed("access"))
-        return nullptr;
+
+    // In this case, we don't want the expectation to be that we've thrown an
+    // exception, as it would be if we returned nullptr; just log the message.
+    mozilla::Unused << instance->check_gobject_disposed("access");
 
     return instance->ptr();
 }

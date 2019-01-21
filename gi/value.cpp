@@ -462,11 +462,9 @@ gjs_value_to_g_value_internal(JSContext      *context,
             /* nothing to do */
         } else if (value.isObject()) {
             JS::RootedObject obj(context, &value.toObject());
-
-            if (!gjs_typecheck_object(context, obj, gtype, true))
+            if (!gjs_typecheck_object(context, obj, gtype, true) ||
+                !(gobj = ObjectBase::to_c_ptr(context, obj)))
                 return false;
-
-            gobj = gjs_g_object_from_object(context, obj);
         } else {
             return throw_expect_type(context, value, "object", gtype);
         }
@@ -529,10 +527,9 @@ gjs_value_to_g_value_internal(JSContext      *context,
 
             if (g_type_is_a(gtype, G_TYPE_ERROR)) {
                 /* special case GError */
-                if (!gjs_typecheck_gerror(context, obj, true))
+                gboxed = ErrorBase::to_c_ptr(context, obj);
+                if (!gboxed)
                     return false;
-
-                gboxed = gjs_gerror_from_error(context, obj);
             } else {
                 GIBaseInfo *registered = g_irepository_find_by_gtype (NULL, gtype);
 
@@ -566,13 +563,15 @@ gjs_value_to_g_value_internal(JSContext      *context,
                 */
                 if (!gboxed) {
                     if (gjs_typecheck_union(context, obj, NULL, gtype, false)) {
-                        gboxed = gjs_c_union_from_union(context, obj);
+                        gboxed = UnionBase::to_c_ptr(context, obj);
                     } else {
                         if (!gjs_typecheck_boxed(context, obj, NULL, gtype, true))
                             return false;
 
-                        gboxed = gjs_c_struct_from_boxed(context, obj);
+                        gboxed = BoxedBase::to_c_ptr(context, obj);
                     }
+                    if (!gboxed)
+                        return false;
                 }
             }
         } else {
@@ -594,7 +593,9 @@ gjs_value_to_g_value_internal(JSContext      *context,
             if (!gjs_typecheck_boxed(context, obj, NULL, G_TYPE_VARIANT, true))
                 return false;
 
-            variant = (GVariant*) gjs_c_struct_from_boxed(context, obj);
+            variant = BoxedBase::to_c_ptr<GVariant>(context, obj);
+            if (!variant)
+                return false;
         } else {
             return throw_expect_type(context, value, "boxed type", gtype);
         }

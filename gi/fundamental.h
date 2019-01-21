@@ -166,6 +166,8 @@ class FundamentalInstance
     GJS_JSAPI_RETURN_CONVENTION
     bool associate_js_instance(JSContext* cx, JSObject* object,
                                void* gfundamental);
+
+    static void* copy_ptr(JSContext* cx, GType gtype, void* gfundamental);
 };
 
 G_BEGIN_DECLS
@@ -183,10 +185,6 @@ JSObject* gjs_object_from_g_fundamental      (JSContext     *context,
                                               void          *fobj);
 
 GJS_JSAPI_RETURN_CONVENTION
-void     *gjs_g_fundamental_from_object(JSContext       *context,
-                                        JS::HandleObject obj);
-
-GJS_JSAPI_RETURN_CONVENTION
 JSObject *gjs_fundamental_from_g_value       (JSContext     *context,
                                               const GValue  *value,
                                               GType          gtype);
@@ -197,8 +195,6 @@ bool      gjs_typecheck_fundamental(JSContext       *context,
                                     GType            expected_gtype,
                                     bool             throw_error);
 
-void*     gjs_fundamental_ref                (JSContext     *context,
-                                              void          *fobj);
 void      gjs_fundamental_unref              (JSContext     *context,
                                               void          *fobj);
 

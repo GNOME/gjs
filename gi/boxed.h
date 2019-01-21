@@ -190,6 +190,9 @@ class BoxedInstance
                                      GIBaseInfo* interface_info,
                                      JS::HandleValue value);
 
+    GJS_JSAPI_RETURN_CONVENTION
+    static void* copy_ptr(JSContext* cx, GType gtype, void* ptr);
+
     // JS property accessors
 
     GJS_JSAPI_RETURN_CONVENTION
@@ -222,9 +225,6 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_boxed_class(JSContext* cx, JS::HandleObject in_object,
                             GIStructInfo* info);
 
-GJS_JSAPI_RETURN_CONVENTION
-void*     gjs_c_struct_from_boxed      (JSContext             *context,
-                                        JS::HandleObject       obj);
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_boxed_from_c_struct      (JSContext             *context,
                                         GIStructInfo          *info,
