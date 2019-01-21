@@ -503,19 +503,6 @@ bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
     return true;
 }
 
-bool
-gjs_typecheck_fundamental(JSContext       *context,
-                          JS::HandleObject object,
-                          GType            expected_gtype,
-                          bool             throw_error)
-{
-    if (throw_error)
-        return FundamentalBase::typecheck(context, object, nullptr,
-                                          expected_gtype);
-    return FundamentalBase::typecheck(context, object, nullptr, expected_gtype,
-                                      FundamentalBase::TypecheckNoThrow());
-}
-
 void* FundamentalInstance::copy_ptr(JSContext* cx, GType gtype,
                                     void* gfundamental) {
     auto* priv = FundamentalPrototype::for_gtype(cx, gtype);

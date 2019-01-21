@@ -1763,7 +1763,9 @@ gjs_value_to_g_argument(JSContext      *context,
                     } else if (G_TYPE_IS_INTERFACE(gtype)) {
                         /* Could be a GObject interface that's missing a prerequisite, or could
                            be a fundamental */
-                        if (gjs_typecheck_object(context, obj, gtype, false)) {
+                        if (ObjectBase::typecheck(
+                                context, obj, nullptr, gtype,
+                                ObjectBase::TypecheckNoThrow())) {
                             if (!ObjectBase::transfer_to_gi_argument(
                                     context, obj, arg, GI_DIRECTION_IN,
                                     transfer, gtype)) {
