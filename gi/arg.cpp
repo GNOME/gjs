@@ -2944,8 +2944,8 @@ gjs_value_from_g_argument (JSContext             *context,
             } else if (gtype == G_TYPE_NONE) {
                 gjs_throw(context, "Unexpected unregistered type packing GArgument into JS::Value");
             } else if (G_TYPE_IS_INSTANTIATABLE(gtype) || G_TYPE_IS_INTERFACE(gtype)) {
-                JSObject *obj;
-                obj = gjs_object_from_g_fundamental(context, (GIObjectInfo *)interface_info, arg->v_pointer);
+                JSObject* obj = FundamentalInstance::object_for_c_ptr(
+                    context, arg->v_pointer);
                 if (obj)
                     value = JS::ObjectValue(*obj);
             } else {
@@ -3227,8 +3227,11 @@ gjs_g_arg_release_internal(JSContext  *context,
                     failed = true;
                 }
             } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-                if (transfer != TRANSFER_IN_NOTHING)
-                    gjs_fundamental_unref(context, arg->v_pointer);
+                if (transfer != TRANSFER_IN_NOTHING) {
+                    auto* priv =
+                        FundamentalPrototype::for_gtype(context, gtype);
+                    priv->call_unref_function(arg->v_pointer);
+                }
             } else {
                 gjs_throw(context, "Unhandled GType %s releasing GArgument",
                           g_type_name(gtype));

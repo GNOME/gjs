@@ -958,8 +958,8 @@ gjs_value_from_g_value_internal(JSContext             *context,
     } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
         /* The gtype is none of the above, it should be a custom
            fundamental type. */
-        JSObject *obj;
-        obj = gjs_fundamental_from_g_value(context, (const GValue*)gvalue, gtype);
+        JSObject* obj =
+            FundamentalInstance::object_for_gvalue(context, gvalue, gtype);
         if (obj == NULL)
             return false;
         else
