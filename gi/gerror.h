@@ -124,6 +124,10 @@ class ErrorPrototype : public GIWrapperPrototype<ErrorBase, ErrorPrototype,
 
  public:
     GJS_USE GQuark domain(void) const { return m_domain; }
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool define_class(JSContext* cx, JS::HandleObject in_object,
+                             GIEnumInfo* info);
 };
 
 class ErrorInstance : public GIWrapperInstance<ErrorBase, ErrorPrototype,
@@ -154,23 +158,19 @@ class ErrorInstance : public GIWrapperInstance<ErrorBase, ErrorPrototype,
     GJS_JSAPI_RETURN_CONVENTION
     bool constructor_impl(JSContext* cx, JS::HandleObject obj,
                           const JS::CallArgs& args);
+
+    // Public API
+
+ public:
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* object_for_c_ptr(JSContext* cx, GError* gerror);
 };
 
 G_BEGIN_DECLS
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_error_class(JSContext* cx, JS::HandleObject in_object,
-                            GIEnumInfo* info);
-GJS_JSAPI_RETURN_CONVENTION
-JSObject* gjs_error_from_gerror        (JSContext             *context,
-                                        GError                *gerror,
-                                        bool                   add_stack);
-GJS_JSAPI_RETURN_CONVENTION
 GError *gjs_gerror_make_from_error(JSContext       *cx,
                                    JS::HandleObject obj);
-
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_gerror_to_string(JSContext* cx, unsigned argc, JS::Value* vp);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj);
