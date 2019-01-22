@@ -374,7 +374,7 @@ void GjsContextPrivate::dispose(void) {
          * still exist, but point to NULL.
          */
         gjs_debug(GJS_DEBUG_CONTEXT, "Releasing all native objects");
-        gjs_object_prepare_shutdown();
+        ObjectInstance::prepare_shutdown();
 
         gjs_debug(GJS_DEBUG_CONTEXT, "Disabling auto GC");
         if (m_auto_gc_id > 0) {
@@ -440,7 +440,7 @@ gjs_context_constructed(GObject *object)
 
     setup_dump_heap();
 
-    g_object_weak_ref(object, gjs_object_context_dispose_notify, nullptr);
+    g_object_weak_ref(object, &ObjectInstance::context_dispose_notify, nullptr);
 }
 
 GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
