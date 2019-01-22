@@ -236,8 +236,14 @@ gjs_callback_closure(ffi_cif *cif,
 
     JS::RootedObject this_object(context);
     if (trampoline->is_vfunc) {
-        auto this_gobject = static_cast<GObject *>(args[0]->v_pointer);
-        this_object = gjs_object_from_g_object(context, this_gobject);
+        GObject* gobj = G_OBJECT(args[0]->v_pointer);
+        if (gobj) {
+            this_object = ObjectInstance::wrapper_from_gobject(context, gobj);
+            if (!this_object) {
+                gjs_log_exception(context);
+                return;
+            }
+        }
 
         /* "this" is not included in the GI signature, but is in the C (and
          * FFI) signature */
@@ -688,7 +694,7 @@ gjs_fill_method_instance(JSContext       *context,
             if (transfer == GI_TRANSFER_EVERYTHING)
                 g_param_spec_ref ((GParamSpec*) out_arg->v_pointer);
         } else if (G_TYPE_IS_INTERFACE(gtype)) {
-            if (gjs_typecheck_is_object(context, obj, false)) {
+            if (ObjectBase::check_jsclass(context, obj)) {
                 if (!ObjectBase::transfer_to_gi_argument(context, obj, out_arg,
                                                          GI_DIRECTION_OUT,
                                                          transfer, gtype))

@@ -153,6 +153,16 @@ class GIWrapperBase {
     }
 
     /*
+     * GIWrapperBase::check_jsclass:
+     *
+     * Checks if the given wrapper object has the right JSClass (Base::klass).
+     */
+    GJS_USE
+    static bool check_jsclass(JSContext* cx, JS::HandleObject wrapper) {
+        return !!for_js(cx, wrapper);
+    }
+
+    /*
      * GIWrapperBase::for_js_typecheck:
      *
      * Like for_js(), only throws a JS exception if the wrapper object has the
