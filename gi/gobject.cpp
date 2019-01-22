@@ -201,24 +201,7 @@ static void gjs_object_custom_init(GTypeInstance* instance, void* klass) {
 
     ObjectInstance::object_init_list.pop();
 
-    priv->associate_js_gobject(cx, object, G_OBJECT(instance));
-
-    /* Custom JS objects will most likely have visible state, so
-     * just do this from the start */
-    priv->ensure_uses_toggle_ref(cx);
-
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-    JS::RootedValue v(cx);
-    if (!JS_GetPropertyById(cx, object, atoms.instance_init(), &v)) {
-        gjs_log_exception(cx);
-        return;
-    }
-
-    if (!v.isObject())
-        return;
-
-    JS::RootedValue r(cx);
-    if (!JS_CallFunctionValue(cx, object, v, JS::HandleValueArray::empty(), &r))
+    if (!priv->init_custom_class_from_gobject(cx, object, G_OBJECT(instance)))
         gjs_log_exception(cx);
 }
 
