@@ -240,6 +240,12 @@ class ObjectPrototype
                                std::vector<const char*>* names,
                                AutoGValueVector* values);
 
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool define_class(JSContext* cx, JS::HandleObject in_object,
+                             GIObjectInfo* info, GType gtype,
+                             JS::MutableHandleObject constructor,
+                             JS::MutableHandleObject prototype);
+
     /* These are currently only needed in the GObject base init and finalize
      * functions, for prototypes, even though m_closures is in ObjectBase. */
     void ref_closures(void) {
@@ -292,6 +298,8 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
      * hard ref on the underlying GObject, and may be finalized at will. */
     bool m_uses_toggle_ref : 1;
 
+    static bool s_weak_pointer_callback;
+
  public:
     static std::stack<JS::PersistentRootedObject> object_init_list;
 
@@ -300,6 +308,9 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
  private:
     ObjectInstance(JSContext* cx, JS::HandleObject obj);
     ~ObjectInstance();
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static ObjectInstance* new_for_gobject(JSContext* cx, GObject* gobj);
 
     // Extra method to get an existing ObjectInstance from qdata
 
@@ -325,17 +336,25 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     void switch_to_unrooted(void) { m_wrapper.switch_to_unrooted(); }
     GJS_USE
     bool update_after_gc(void) { return m_wrapper.update_after_gc(); }
-
- public:
     GJS_USE
     bool wrapper_is_rooted(void) const { return m_wrapper.rooted(); }
     void release_native_object(void);
     void associate_js_gobject(JSContext* cx, JS::HandleObject obj,
                               GObject* gobj);
     void disassociate_js_gobject(void);
+    void handle_context_dispose(void);
     GJS_USE bool weak_pointer_was_finalized(void);
+    static void ensure_weak_pointer_callback(JSContext* cx);
+    static void update_heap_wrapper_weak_pointers(JSContext* cx,
+                                                  JSCompartment* compartment,
+                                                  void* data);
+
+ public:
     void toggle_down(void);
     void toggle_up(void);
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* wrapper_from_gobject(JSContext* cx, GObject* ptr);
 
     /* Helper methods */
 
@@ -343,14 +362,18 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     void set_object_qdata(void);
     void unset_object_qdata(void);
     void check_js_object_finalized(void);
-
- public:
     void ensure_uses_toggle_ref(JSContext* cx);
     GJS_USE bool check_gobject_disposed(const char* for_what) const;
+
+ public:
     static GObject* copy_ptr(JSContext* G_GNUC_UNUSED, GType G_GNUC_UNUSED,
                              void* ptr) {
         return G_OBJECT(g_object_ref(G_OBJECT(ptr)));
     }
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool init_custom_class_from_gobject(JSContext* cx, JS::HandleObject wrapper,
+                                        GObject* gobj);
 
     /* Methods to manipulate the linked list of instances */
 
@@ -360,10 +383,6 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     ObjectInstance* next(void) const { return m_instance_link.next(); }
     void link(void);
     void unlink(void);
-
- public:
-    GJS_USE
-    GjsListLink* get_link(void) { return &m_instance_link; }
     GJS_USE
     static size_t num_wrapped_gobjects(void) {
         return wrapped_gobject_list
@@ -374,6 +393,10 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     using Predicate = std::function<bool(ObjectInstance*)>;
     static void iterate_wrapped_gobjects(Action action);
     static void remove_wrapped_gobjects_if(Predicate predicate, Action action);
+
+ public:
+    GJS_USE GjsListLink* get_link(void) { return &m_instance_link; }
+    static void prepare_shutdown(void);
 
     /* JSClass operations */
 
@@ -424,18 +447,11 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
 
  public:
     void gobj_dispose_notify(void);
-    void context_dispose_notify(void);
+    static void context_dispose_notify(void* data,
+                                       GObject* where_the_object_was);
 };
 
 G_BEGIN_DECLS
-
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_object_class(JSContext              *cx,
-                             JS::HandleObject        in_object,
-                             GIObjectInfo           *info,
-                             GType                   gtype,
-                             JS::MutableHandleObject constructor,
-                             JS::MutableHandleObject prototype);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_lookup_object_constructor(JSContext             *context,
@@ -446,20 +462,8 @@ JSObject* gjs_lookup_object_constructor_from_info(JSContext* cx,
                                                   GIObjectInfo* info,
                                                   GType gtype);
 
-GJS_JSAPI_RETURN_CONVENTION
-JSObject* gjs_object_from_g_object      (JSContext     *context,
-                                         GObject       *gobj);
-
-GJS_USE
-bool      gjs_typecheck_is_object(JSContext       *context,
-                                  JS::HandleObject obj,
-                                  bool             throw_error);
-
-void gjs_object_prepare_shutdown(void);
 void gjs_object_clear_toggles(void);
 void gjs_object_shutdown_toggle_queue(void);
-void gjs_object_context_dispose_notify(void    *data,
-                                       GObject *where_the_object_was);
 
 G_END_DECLS
 

@@ -807,12 +807,17 @@ gjs_value_from_g_value_internal(JSContext             *context,
         value_p.setBoolean(!!v);
     } else if (g_type_is_a(gtype, G_TYPE_OBJECT) || g_type_is_a(gtype, G_TYPE_INTERFACE)) {
         GObject *gobj;
-        JSObject *obj;
 
         gobj = (GObject*) g_value_get_object(gvalue);
 
-        obj = gjs_object_from_g_object(context, gobj);
-        value_p.setObjectOrNull(obj);
+        if (gobj) {
+            JSObject* obj = ObjectInstance::wrapper_from_gobject(context, gobj);
+            if (!obj)
+                return false;
+            value_p.setObject(*obj);
+        } else {
+            value_p.setNull();
+        }
     } else if (gtype == G_TYPE_STRV) {
         if (!gjs_array_from_strv (context,
                                   value_p,
