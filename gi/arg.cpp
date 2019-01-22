@@ -2944,8 +2944,9 @@ gjs_value_from_g_argument (JSContext             *context,
             }
 
             if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
-                JSObject *obj;
-                obj = gjs_object_from_g_object(context, G_OBJECT(arg->v_pointer));
+                // arg->v_pointer == nullptr is already handled above
+                JSObject* obj = ObjectInstance::wrapper_from_gobject(
+                    context, G_OBJECT(arg->v_pointer));
                 if (obj)
                     value = JS::ObjectValue(*obj);
             } else if (g_type_is_a(gtype, G_TYPE_BOXED) ||
