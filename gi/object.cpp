@@ -69,7 +69,6 @@ static_assert(sizeof(ObjectInstance) <= 88,
               "gnome-shell run.");
 #endif  // x86-64 clang
 
-std::stack<JS::PersistentRootedObject> ObjectInstance::object_init_list{};
 bool ObjectInstance::s_weak_pointer_callback = false;
 ObjectInstance *ObjectInstance::wrapped_gobject_list = nullptr;
 
@@ -1469,8 +1468,13 @@ ObjectInstance::init_impl(JSContext              *context,
        will be popped in gjs_object_custom_init() later
        down.
     */
-    if (g_type_get_qdata(gtype(), ObjectInstance::custom_type_quark()))
-        object_init_list.emplace(context, object);
+    if (g_type_get_qdata(gtype(), ObjectInstance::custom_type_quark())) {
+        GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+        if (!gjs->object_init_list().append(object)) {
+            JS_ReportOutOfMemory(context);
+            return false;
+        }
+    }
 
     g_assert(names.size() == values.size());
     GObject* gobj = g_object_new_with_properties(gtype(), values.size(),
