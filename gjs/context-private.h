@@ -38,6 +38,7 @@
 #include "js/SweepingAPI.h"
 
 using JobQueue = JS::GCVector<JSObject*, 0, js::SystemAllocPolicy>;
+using ObjectInitList = JS::GCVector<JSObject*, 0, js::SystemAllocPolicy>;
 using FundamentalTable =
     JS::GCHashMap<void*, JS::Heap<JSObject*>, js::DefaultHasher<void*>,
                   js::SystemAllocPolicy>;
@@ -99,6 +100,11 @@ class GjsContextPrivate {
     JS::WeakCache<FundamentalTable>* m_fundamental_table;
     JS::WeakCache<GTypeTable>* m_gtype_table;
 
+    // List that holds JSObject GObject wrappers for JS-created classes, from
+    // the time of their creation until their GObject instance init function is
+    // called
+    ObjectInitList m_object_init_list;
+
     uint8_t m_exit_code;
 
     /* flags */
@@ -157,6 +163,9 @@ class GjsContextPrivate {
     }
     GJS_USE JS::WeakCache<GTypeTable>& gtype_table(void) {
         return *m_gtype_table;
+    }
+    GJS_USE ObjectInitList& object_init_list(void) {
+        return m_object_init_list;
     }
     GJS_USE
     static const GjsAtoms& atoms(JSContext* cx) { return from_cx(cx)->m_atoms; }

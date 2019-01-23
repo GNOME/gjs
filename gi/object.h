@@ -29,7 +29,6 @@
 
 #include <forward_list>
 #include <functional>
-#include <stack>
 #include <vector>
 
 #include "gi/wrapperutils.h"
@@ -291,9 +290,6 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     bool m_uses_toggle_ref : 1;
 
     static bool s_weak_pointer_callback;
-
- public:
-    static std::stack<JS::PersistentRootedObject> object_init_list;
 
     /* Constructors */
 
