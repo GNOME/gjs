@@ -300,6 +300,7 @@ void GjsContextPrivate::trace(JSTracer* trc, void* data) {
     JS::TraceEdge<JSObject*>(trc, &gjs->m_global, "GJS global object");
     gjs->m_atoms.trace(trc);
     gjs->m_job_queue.trace(trc);
+    gjs->m_object_init_list.trace(trc);
 }
 
 void GjsContextPrivate::warn_about_unhandled_promise_rejections(void) {
