@@ -75,7 +75,7 @@ class GjsContextPrivate {
 
     GjsAtoms m_atoms;
 
-    JS::PersistentRooted<JobQueue>* m_job_queue;
+    JobQueue m_job_queue;
     unsigned m_idle_drain_handler;
 
     std::unordered_map<uint64_t, GjsAutoChar> m_unhandled_rejection_stacks;
