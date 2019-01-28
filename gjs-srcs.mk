@@ -101,9 +101,9 @@ gjs_srcs =				\
 
 # These files were part of a separate library
 gjs_private_srcs =				\
-	libgjs-private/gjs-gdbus-wrapper.cpp	\
+	libgjs-private/gjs-gdbus-wrapper.c	\
 	libgjs-private/gjs-gdbus-wrapper.h	\
-	libgjs-private/gjs-util.cpp		\
+	libgjs-private/gjs-util.c		\
 	libgjs-private/gjs-util.h		\
 	libgjs-private/gjs-gtk-util.h		\
 	$(NULL)

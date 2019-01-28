@@ -93,7 +93,7 @@ gjs_dbus_implementation_property_set(GDBusConnection       *connection,
 
     g_signal_emit(self, signals[SIGNAL_HANDLE_PROPERTY_SET], 0, property_name, value);
 
-    return true;
+    return TRUE;
 }
 
 static void
