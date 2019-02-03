@@ -1384,6 +1384,223 @@ intern_gdk_atom(const char *name,
                            nullptr);
 }
 
+static bool value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
+                                           GIBaseInfo* interface_info,
+                                           GIInfoType interface_type,
+                                           GITransfer transfer,
+                                           bool expect_object, GIArgument* arg,
+                                           bool* report_type_mismatch) {
+    g_assert(report_type_mismatch);
+    GType gtype = G_TYPE_NONE;
+
+    if (interface_type == GI_INFO_TYPE_STRUCT ||
+        interface_type == GI_INFO_TYPE_ENUM ||
+        interface_type == GI_INFO_TYPE_FLAGS ||
+        interface_type == GI_INFO_TYPE_OBJECT ||
+        interface_type == GI_INFO_TYPE_INTERFACE ||
+        interface_type == GI_INFO_TYPE_UNION ||
+        interface_type == GI_INFO_TYPE_BOXED) {
+        // These are subtypes of GIRegisteredTypeInfo for which the cast is safe
+        gtype = g_registered_type_info_get_g_type(interface_info);
+    } else if (interface_type == GI_INFO_TYPE_VALUE) {
+        // Special case for GValues
+        gtype = G_TYPE_VALUE;
+    }
+
+    if (gtype != G_TYPE_NONE)
+        gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "gtype of INTERFACE is %s",
+                          g_type_name(gtype));
+
+    if (gtype == G_TYPE_VALUE) {
+        GValue gvalue = G_VALUE_INIT;
+
+        if (!gjs_value_to_g_value(cx, value, &gvalue)) {
+            arg->v_pointer = nullptr;
+            return false;
+        }
+
+        arg->v_pointer = g_boxed_copy(G_TYPE_VALUE, &gvalue);
+        g_value_unset(&gvalue);
+        return true;
+
+    } else if (is_gdk_atom(interface_info)) {
+        if (!value.isNull() && !value.isString()) {
+            *report_type_mismatch = true;
+            return false;
+        } else if (value.isNull()) {
+            intern_gdk_atom("NONE", arg);
+            return true;
+        }
+
+        JS::RootedString str(cx, value.toString());
+        JS::UniqueChars name(JS_EncodeStringToUTF8(cx, str));
+        if (!name)
+            return false;
+
+        intern_gdk_atom(name.get(), arg);
+        return true;
+
+    } else if (expect_object != value.isObjectOrNull()) {
+        *report_type_mismatch = true;
+        return false;
+
+    } else if (value.isNull()) {
+        arg->v_pointer = nullptr;
+        return true;
+
+    } else if (value.isObject()) {
+        JS::RootedObject obj(cx, &value.toObject());
+        if (interface_type == GI_INFO_TYPE_STRUCT &&
+            g_struct_info_is_gtype_struct(interface_info)) {
+            GType actual_gtype;
+            if (!gjs_gtype_get_actual_gtype(cx, obj, &actual_gtype))
+                return false;
+
+            if (actual_gtype == G_TYPE_NONE) {
+                *report_type_mismatch = true;
+                return false;
+            }
+
+            // We use peek here to simplify reference counting (we just ignore
+            // transfer annotation, as GType classes are never really freed)
+            // We know that the GType class is referenced at least once when
+            // the JS constructor is initialized.
+            void* klass;
+            if (g_type_is_a(actual_gtype, G_TYPE_INTERFACE))
+                klass = g_type_default_interface_peek(actual_gtype);
+            else
+                klass = g_type_class_peek(actual_gtype);
+
+            arg->v_pointer = klass;
+            return true;
+
+        } else if ((interface_type == GI_INFO_TYPE_STRUCT ||
+                    interface_type == GI_INFO_TYPE_BOXED) &&
+                   !g_type_is_a(gtype, G_TYPE_CLOSURE)) {
+            // Handle Struct/Union first since we don't necessarily need a GType
+            // for them. We special case Closures later, so skip them here.
+            if (g_type_is_a(gtype, G_TYPE_BYTES) && JS_IsUint8Array(obj)) {
+                arg->v_pointer = gjs_byte_array_get_bytes(obj);
+                return true;
+            }
+            if (g_type_is_a(gtype, G_TYPE_ERROR)) {
+                return ErrorBase::transfer_to_gi_argument(
+                    cx, obj, arg, GI_DIRECTION_IN, transfer);
+            }
+            return BoxedBase::transfer_to_gi_argument(
+                cx, obj, arg, GI_DIRECTION_IN, transfer, gtype, interface_info);
+
+        } else if (interface_type == GI_INFO_TYPE_UNION) {
+            return UnionBase::transfer_to_gi_argument(
+                cx, obj, arg, GI_DIRECTION_IN, transfer, gtype, interface_info);
+
+        } else if (gtype != G_TYPE_NONE) {
+            if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
+                return ObjectBase::transfer_to_gi_argument(
+                    cx, obj, arg, GI_DIRECTION_IN, transfer, gtype);
+
+            } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
+                if (!gjs_typecheck_param(cx, obj, gtype, true)) {
+                    arg->v_pointer = nullptr;
+                    return false;
+                }
+                arg->v_pointer = gjs_g_param_from_param(cx, obj);
+                if (transfer != GI_TRANSFER_NOTHING)
+                    g_param_spec_ref(G_PARAM_SPEC(arg->v_pointer));
+                return true;
+
+            } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
+                if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
+                    GClosure* closure = gjs_closure_new_marshaled(
+                        cx, JS_GetObjectFunction(obj), "boxed");
+                    g_closure_ref(closure);
+                    g_closure_sink(closure);
+                    arg->v_pointer = closure;
+                    return true;
+                }
+
+                // Should have been caught above as STRUCT/BOXED/UNION
+                gjs_throw(
+                    cx,
+                    "Boxed type %s registered for unexpected interface_type %d",
+                    g_type_name(gtype), interface_type);
+                return false;
+
+            } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
+                return FundamentalBase::transfer_to_gi_argument(
+                    cx, obj, arg, GI_DIRECTION_IN, transfer, gtype);
+
+            } else if (G_TYPE_IS_INTERFACE(gtype)) {
+                // Could be a GObject interface that's missing a prerequisite,
+                // or could be a fundamental
+                if (ObjectBase::typecheck(cx, obj, nullptr, gtype,
+                                          ObjectBase::TypecheckNoThrow())) {
+                    return ObjectBase::transfer_to_gi_argument(
+                        cx, obj, arg, GI_DIRECTION_IN, transfer, gtype);
+                }
+
+                // If this typecheck fails, then it's neither an object nor a
+                // fundamental
+                return FundamentalBase::transfer_to_gi_argument(
+                    cx, obj, arg, GI_DIRECTION_IN, transfer, gtype);
+            }
+
+            gjs_throw(cx, "Unhandled GType %s unpacking GIArgument from Object",
+                      g_type_name(gtype));
+            arg->v_pointer = nullptr;
+            return false;
+        }
+
+        gjs_debug(GJS_DEBUG_GFUNCTION,
+                  "conversion of JSObject value %s to type %s failed",
+                  gjs_debug_value(value).c_str(),
+                  g_base_info_get_name(interface_info));
+
+        gjs_throw(cx,
+                  "Unexpected unregistered type unpacking GIArgument from "
+                  "Object");
+        return false;
+
+    } else if (value.isNumber()) {
+        if (interface_type == GI_INFO_TYPE_ENUM) {
+            int64_t value_int64;
+
+            if (!JS::ToInt64(cx, value, &value_int64) ||
+                !_gjs_enum_value_is_valid(cx, interface_info, value_int64))
+                return false;
+
+            arg->v_int = _gjs_enum_to_int(interface_info, value_int64);
+            return true;
+
+        } else if (interface_type == GI_INFO_TYPE_FLAGS) {
+            int64_t value_int64;
+
+            if (!JS::ToInt64(cx, value, &value_int64) ||
+                !_gjs_flags_value_is_valid(cx, gtype, value_int64))
+                return false;
+
+            arg->v_int = _gjs_enum_to_int(interface_info, value_int64);
+            return true;
+
+        } else if (gtype == G_TYPE_NONE) {
+            gjs_throw(cx,
+                      "Unexpected unregistered type unpacking GIArgument from "
+                      "Number");
+            return false;
+        }
+
+        gjs_throw(cx, "Unhandled GType %s unpacking GIArgument from Number",
+                  g_type_name(gtype));
+        return false;
+    }
+
+    gjs_debug(GJS_DEBUG_GFUNCTION,
+              "JSObject type '%s' is neither null nor an object",
+              JS::InformalValueTypeName(value));
+    *report_type_mismatch = true;
+    return false;
+}
+
 bool
 gjs_value_to_g_argument(JSContext      *context,
                         JS::HandleValue value,
@@ -1581,7 +1798,6 @@ gjs_value_to_g_argument(JSContext      *context,
 
     case GI_TYPE_TAG_INTERFACE:
         {
-            GType gtype;
             bool expect_object;
 
             GjsAutoBaseInfo interface_info =
@@ -1605,229 +1821,10 @@ gjs_value_to_g_argument(JSContext      *context,
                     transfer, may_be_null, arg);
             }
 
-            if (interface_type == GI_INFO_TYPE_STRUCT ||
-                interface_type == GI_INFO_TYPE_ENUM ||
-                interface_type == GI_INFO_TYPE_FLAGS ||
-                interface_type == GI_INFO_TYPE_OBJECT ||
-                interface_type == GI_INFO_TYPE_INTERFACE ||
-                interface_type == GI_INFO_TYPE_UNION ||
-                interface_type == GI_INFO_TYPE_BOXED) {
-                /* These are subtypes of GIRegisteredTypeInfo for which the
-                 * cast is safe */
-                gtype = g_registered_type_info_get_g_type(interface_info);
-            } else if (interface_type == GI_INFO_TYPE_VALUE) {
-                /* Special case for GValues */
-                gtype = G_TYPE_VALUE;
-            } else {
-                gtype = G_TYPE_NONE;
-            }
-
-            if (gtype != G_TYPE_NONE)
-                gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                                  "gtype of INTERFACE is %s", g_type_name(gtype));
-
-            if (gtype == G_TYPE_VALUE) {
-                GValue gvalue = { 0, };
-
-                if (gjs_value_to_g_value(context, value, &gvalue)) {
-                    arg->v_pointer = g_boxed_copy (G_TYPE_VALUE, &gvalue);
-                    g_value_unset (&gvalue);
-                } else {
-                    arg->v_pointer = NULL;
-                    wrong = true;
-                }
-            } else if (is_gdk_atom(interface_info)) {
-                if (!value.isNull() && !value.isString()) {
-                    wrong = true;
-                    report_type_mismatch = true;
-                } else if (value.isNull()) {
-                    intern_gdk_atom("NONE", arg);
-                } else {
-                    JS::RootedString str(context, value.toString());
-                    JS::UniqueChars name(JS_EncodeStringToUTF8(context, str));
-
-                    if (!name) {
-                        wrong = true;
-                        break;
-                    }
-
-                    intern_gdk_atom(name.get(), arg);
-                }
-            } else if (expect_object != value.isObjectOrNull()) {
+            if (!value_to_interface_gi_argument(
+                    context, value, interface_info, interface_type, transfer,
+                    expect_object, arg, &report_type_mismatch))
                 wrong = true;
-                report_type_mismatch = true;
-                break;
-            } else if (value.isNull()) {
-                arg->v_pointer = NULL;
-            } else if (value.isObject()) {
-                JS::RootedObject obj(context, &value.toObject());
-                if (interface_type == GI_INFO_TYPE_STRUCT &&
-                    g_struct_info_is_gtype_struct(interface_info)) {
-                    GType actual_gtype;
-                    gpointer klass;
-
-                    if (!gjs_gtype_get_actual_gtype(context, obj,
-                                                    &actual_gtype)) {
-                        wrong = true;
-                        break;
-                    }
-
-                    if (actual_gtype == G_TYPE_NONE) {
-                        wrong = true;
-                        report_type_mismatch = true;
-                        break;
-                    }
-
-                    /* We use peek here to simplify reference counting (we just ignore
-                       transfer annotation, as GType classes are never really freed)
-                       We know that the GType class is referenced at least once when
-                       the JS constructor is initialized.
-                    */
-
-                    if (g_type_is_a(actual_gtype, G_TYPE_INTERFACE))
-                        klass = g_type_default_interface_peek(actual_gtype);
-                    else
-                        klass = g_type_class_peek(actual_gtype);
-
-                    arg->v_pointer = klass;
-                } else if ((interface_type == GI_INFO_TYPE_STRUCT ||
-                            interface_type == GI_INFO_TYPE_BOXED) &&
-                           !g_type_is_a(gtype, G_TYPE_CLOSURE)) {
-                    // Handle Struct/Union first since we don't necessarily need
-                    // a GType for them. We special case Closures later, so skip
-                    // them here.
-                    if (g_type_is_a(gtype, G_TYPE_BYTES) &&
-                        JS_IsUint8Array(obj)) {
-                        arg->v_pointer = gjs_byte_array_get_bytes(obj);
-                    } else if (g_type_is_a(gtype, G_TYPE_ERROR)) {
-                        if (!ErrorBase::transfer_to_gi_argument(
-                                context, obj, arg, GI_DIRECTION_IN, transfer))
-                            wrong = true;
-                    } else {
-                        if (!BoxedBase::transfer_to_gi_argument(
-                                context, obj, arg, GI_DIRECTION_IN, transfer,
-                                gtype, interface_info))
-                            wrong = true;
-                    }
-
-                } else if (interface_type == GI_INFO_TYPE_UNION) {
-                    if (!UnionBase::transfer_to_gi_argument(
-                            context, obj, arg, GI_DIRECTION_IN, transfer, gtype,
-                            interface_info))
-                        wrong = true;
-
-                } else if (gtype != G_TYPE_NONE) {
-                    if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
-                        if (!ObjectBase::transfer_to_gi_argument(
-                                context, obj, arg, GI_DIRECTION_IN, transfer,
-                                gtype))
-                            wrong = true;
-                    } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-                        if (gjs_typecheck_param(context, obj, gtype, true)) {
-                            arg->v_pointer = gjs_g_param_from_param(context, obj);
-                            if (transfer != GI_TRANSFER_NOTHING)
-                                g_param_spec_ref(G_PARAM_SPEC(arg->v_pointer));
-                        } else {
-                            arg->v_pointer = NULL;
-                            wrong = true;
-                        }
-                    } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
-                        if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
-                            GClosure* closure = gjs_closure_new_marshaled(
-                                context, JS_GetObjectFunction(obj), "boxed");
-                            g_closure_ref(closure);
-                            g_closure_sink(closure);
-                            arg->v_pointer = closure;
-                        } else {
-                            /* Should have been caught above as STRUCT/BOXED/UNION */
-                            gjs_throw(context,
-                                      "Boxed type %s registered for unexpected interface_type %d",
-                                      g_type_name(gtype),
-                                      interface_type);
-                        }
-                    } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-                        if (!FundamentalBase::transfer_to_gi_argument(
-                                context, obj, arg, GI_DIRECTION_IN, transfer,
-                                gtype))
-                            wrong = true;
-                    } else if (G_TYPE_IS_INTERFACE(gtype)) {
-                        /* Could be a GObject interface that's missing a prerequisite, or could
-                           be a fundamental */
-                        if (ObjectBase::typecheck(
-                                context, obj, nullptr, gtype,
-                                ObjectBase::TypecheckNoThrow())) {
-                            if (!ObjectBase::transfer_to_gi_argument(
-                                    context, obj, arg, GI_DIRECTION_IN,
-                                    transfer, gtype))
-                                wrong = true;
-                        } else {
-                            // If this typecheck fails, then it's neither an
-                            // object nor a fundamental
-                            if (!FundamentalBase::transfer_to_gi_argument(
-                                    context, obj, arg, GI_DIRECTION_IN,
-                                    transfer, gtype))
-                                wrong = true;
-                        }
-                    } else {
-                        gjs_throw(context, "Unhandled GType %s unpacking GArgument from Object",
-                                  g_type_name(gtype));
-                        arg->v_pointer = NULL;
-                        wrong = true;
-                    }
-                } else {
-                    gjs_throw(context, "Unexpected unregistered type unpacking GArgument from Object");
-                }
-
-                if (arg->v_pointer == NULL) {
-                    gjs_debug(
-                        GJS_DEBUG_GFUNCTION,
-                        "conversion of JSObject value %s to type %s failed",
-                        gjs_debug_value(value).c_str(), interface_info.name());
-
-                    /* gjs_throw should have been called already */
-                    wrong = true;
-                }
-
-            } else if (value.isNumber()) {
-                if (interface_type == GI_INFO_TYPE_ENUM) {
-                    int64_t value_int64;
-
-                    if (!JS::ToInt64(context, value, &value_int64))
-                        wrong = true;
-                    else if (!_gjs_enum_value_is_valid(context, interface_info,
-                                                       value_int64))
-                        wrong = true;
-                    else
-                        arg->v_int =
-                            _gjs_enum_to_int(interface_info, value_int64);
-
-                } else if (interface_type == GI_INFO_TYPE_FLAGS) {
-                    int64_t value_int64;
-
-                    if (!JS::ToInt64(context, value, &value_int64))
-                        wrong = true;
-                    else if (!_gjs_flags_value_is_valid(context, gtype, value_int64))
-                        wrong = true;
-                    else
-                        arg->v_int =
-                            _gjs_enum_to_int(interface_info, value_int64);
-
-                } else if (gtype == G_TYPE_NONE) {
-                    gjs_throw(context, "Unexpected unregistered type unpacking GArgument from Number");
-                    wrong = true;
-                } else {
-                    gjs_throw(context, "Unhandled GType %s unpacking GArgument from Number",
-                              g_type_name(gtype));
-                    wrong = true;
-                }
-
-            } else {
-                gjs_debug(GJS_DEBUG_GFUNCTION,
-                          "JSObject type '%s' is neither null nor an object",
-                          JS::InformalValueTypeName(value));
-                wrong = true;
-                report_type_mismatch = true;
-            }
         }
         break;
 
