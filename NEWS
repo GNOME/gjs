@@ -1,3 +1,47 @@
+Version 1.55.90
+---------------
+
+- New JS API: It's now possible to call and implement DBus methods whose
+  parameters or return types include file descriptor lists (type signature 'h'.)
+  This involves passing or receiving a Gio.UnixFDList instance along with the
+  parameters or return values.
+
+  To call a method with a file descriptor list, pass the Gio.UnixFDList along
+  with the rest of the parameters, in any order, the same way you would pass a
+  Gio.Cancellable or async callback.
+
+  For return values, things are a little more complicated, in order to avoid
+  breaking existing code. Previously, synchronously called DBus proxy methods
+  would return an unpacked GVariant. Now, but only if called with a
+  Gio.UnixFDList, they will return [unpacked GVariant, Gio.UnixFDList]. This
+  does not break existing code because it was not possible to call a method with
+  a Gio.UnixFDList before, and the return value is unchanged if not calling with
+  a Gio.UnixFDList. This does mean, unfortunately, that if you have a method
+  with an 'h' in its return signature but not in its argument signatures, you
+  will have to call it with an empty FDList in order to receive an FDList with
+  the return value, when calling synchronously.
+
+  On the DBus service side, when receiving a method call, we now pass the
+  Gio.UnixFDList received from DBus to the called method. Previously, sync
+  methods were passed the parameters, and async methods were passed the
+  parameters plus the Gio.DBusInvocation object. Appending the Gio.UnixFDList to
+  those parameters also should not break existing code.
+
+  See the new tests in installed-tests/js/testGDBus.js for examples of calling
+  methods with FD lists.
+
+- We have observed on the CI server that GJS 1.55.90 will hang forever while
+  running the test suite compiled with GCC 9.0.0 and configured with the
+  --enable-asan and --enable-ubsan arguments. This should be addressed in one of
+  the following 1.55.x releases.
+
+- Closed bugs and merge requests:
+  * GDBus proxy overrides should support Gio.DBusProxy.call_with_unix_fd_list()
+    [#204, !263, Philip Chimento]
+  * Add regression tests for GObject vfuncs [!259, Jason Hicks]
+  * GjsPrivate: Sources should be C files [!262, Philip Chimento]
+  * build: Vendor last-good version of AX_CODE_COVERAGE [!264, Philip Chimento]
+
 Version 1.55.4
 --------------
 
