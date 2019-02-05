@@ -49,7 +49,7 @@ AC_PROG_AWK
 
 AX_COMPILER_FLAGS
 
-AX_CODE_COVERAGE
+GJS_CODE_COVERAGE
 dnl Clang does not need to link with -lgcov
 AX_CHECK_LINK_FLAG([-lgcov],, [
 	CODE_COVERAGE_LIBS=
