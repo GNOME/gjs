@@ -155,7 +155,7 @@ fedora:
   except:
     - schedules
 
-sanitizer_gcc:
+.sanitizer_gcc:
   <<: *build
   stage: test
   image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
