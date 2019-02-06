@@ -143,7 +143,9 @@ bool gjs_define_static_methods(JSContext* cx, JS::HandleObject constructor,
         }
     }
 
-    if (!InfoMethodsPolicy<TAG>::type_struct)
+    // Casting to void* avoids warning that the function pointer will never be
+    // null in template instantiations where it is not null
+    if (!reinterpret_cast<void*>(InfoMethodsPolicy<TAG>::type_struct))
         return true;
 
     // Also define class/interface methods if there is a gtype struct
