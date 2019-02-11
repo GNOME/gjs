@@ -375,29 +375,17 @@ static GjsAutoFieldInfo lookup_field_info(GIObjectInfo* info,
     return retval;
 }
 
-GIFieldInfo* ObjectPrototype::find_field_info_from_id(JSContext* cx,
-                                                      JS::HandleString key) {
-    /* First check for the ID in the cache */
+// Retrieves a GIFieldInfo for a field named @key. This is for use in
+// field_getter_impl() and field_setter_impl(), where the field info *must* have
+// been cached previously in resolve_impl(). This will fail an assertion if
+// there is no cached field info.
+//
+// The caller does not own the return value, and it can never be null.
+GIFieldInfo* ObjectPrototype::lookup_cached_field_info(JSContext* cx,
+                                                       JS::HandleString key) {
     auto entry = m_field_cache.lookupForAdd(key);
-    if (entry)
-        return entry->value().get();
-
-    JS::UniqueChars js_prop_name;
-    if (!gjs_string_to_utf8(cx, JS::StringValue(key), &js_prop_name))
-        return nullptr;
-
-    GjsAutoFieldInfo field = lookup_field_info(m_info, js_prop_name.get());
-
-    if (!field) {
-        gjs_wrapper_throw_nonexistent_field(cx, m_gtype, js_prop_name.get());
-        return nullptr;
-    }
-
-    if (!m_field_cache.add(entry, key, std::move(field))) {
-        JS_ReportOutOfMemory(cx);
-        return nullptr;
-    }
-    return entry->value().get();  /* owned by field cache */
+    g_assert(entry && "Field info should have been cached in resolve_impl()");
+    return entry->value().get();
 }
 
 bool ObjectBase::field_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -422,10 +410,7 @@ bool ObjectInstance::field_getter_impl(JSContext* cx, JS::HandleString name,
         return true;
 
     ObjectPrototype* proto_priv = get_prototype();
-    GIFieldInfo *field = proto_priv->find_field_info_from_id(cx, name);
-    /* This is guaranteed because we resolved the property before */
-    g_assert(field);
-
+    GIFieldInfo* field = proto_priv->lookup_cached_field_info(cx, name);
     GITypeTag tag;
     GIArgument arg = { 0 };
 
@@ -542,9 +527,7 @@ bool ObjectInstance::field_setter_impl(JSContext* cx, JS::HandleString name,
         return true;
 
     ObjectPrototype* proto_priv = get_prototype();
-    GIFieldInfo *field = proto_priv->find_field_info_from_id(cx, name);
-    if (field == NULL)
-        return false;
+    GIFieldInfo* field = proto_priv->lookup_cached_field_info(cx, name);
 
     /* As far as I know, GI never exposes GObject instance struct fields as
      * writable, so no need to implement this for the time being */
@@ -829,7 +812,13 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
         if (!(g_field_info_get_flags(field_info) & GI_FIELD_IS_WRITABLE))
             flags |= JSPROP_READONLY;
 
-        JS::RootedValue private_id(context, JS::StringValue(JSID_TO_STRING(id)));
+        JS::RootedString key(context, JSID_TO_STRING(id));
+        if (!m_field_cache.putNew(key, field_info.release())) {
+            JS_ReportOutOfMemory(context);
+            return false;
+        }
+
+        JS::RootedValue private_id(context, JS::StringValue(key));
         if (!gjs_define_property_dynamic(
                 context, obj, name, "gobject_field", &ObjectBase::field_getter,
                 &ObjectBase::field_setter, private_id, flags))
