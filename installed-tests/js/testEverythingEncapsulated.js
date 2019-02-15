@@ -243,6 +243,19 @@ describe('Introspected GObject', function () {
     it('gives undefined for write-only properties', function () {
         expect(obj.write_only).not.toBeDefined();
     });
+
+    it('can read fields from a parent class', function () {
+        let subobj = new Regress.TestSubObj({
+            int: 42,
+            float: 3.1416,
+            double: 2.71828,
+        });
+
+        // see "can access fields with simple types" above
+        expect(subobj.some_int8).toEqual(subobj.int);
+        expect(subobj.some_float).toEqual(subobj.float);
+        expect(subobj.some_double).toEqual(subobj.double);
+    });
 });
 
 describe('Introspected function length', function () {
