@@ -780,3 +780,12 @@ gjs_lookup_generic_prototype(JSContext  *context,
 
     return &value.toObject();
 }
+
+JSObject* gjs_new_object_with_generic_prototype(JSContext* cx,
+                                                GIBaseInfo* info) {
+    JS::RootedObject proto(cx, gjs_lookup_generic_prototype(cx, info));
+    if (!proto)
+        return nullptr;
+
+    return JS_NewObjectWithGivenProto(cx, JS_GetClass(proto), proto);
+}

@@ -382,10 +382,8 @@ gjs_error_from_gerror(JSContext             *context,
                       "Wrapping struct %s with JSObject",
                       g_base_info_get_name((GIBaseInfo *)info));
 
-    JS::RootedObject proto(context, gjs_lookup_generic_prototype(context, info));
-
     JS::RootedObject obj(context,
-        JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto));
+                         gjs_new_object_with_generic_prototype(context, info));
     if (!obj)
         return nullptr;
 

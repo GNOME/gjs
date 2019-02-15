@@ -33,7 +33,19 @@
 #include "jsapi-util.h"
 #include "jsapi-wrapper.h"
 
+#include "js/GCHashTable.h"
+#include "js/SweepingAPI.h"
+
 using JobQueue = JS::GCVector<JSObject*, 0, js::SystemAllocPolicy>;
+using FundamentalTable =
+    JS::GCHashMap<void*, JS::Heap<JSObject*>, js::DefaultHasher<void*>,
+                  js::SystemAllocPolicy>;
+
+// FundamentalTable's key type is void*, the GC sweep method should ignore it
+namespace JS {
+template <>
+struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
+}  // namespace JS
 
 class GjsContextPrivate {
     GjsContext* m_public_context;
@@ -68,6 +80,9 @@ class GjsContextPrivate {
         void invoke(JS::HandleObject scope, Closure& closure) override;
     };
     EnvironmentPreparer m_environment_preparer;
+
+    // Weak pointer mapping from fundamental native pointer to JSObject
+    JS::WeakCache<FundamentalTable>* m_fundamental_table;
 
     uint8_t m_exit_code;
 
@@ -121,6 +136,9 @@ class GjsContextPrivate {
     }
     GJS_USE bool is_owner_thread(void) const {
         return m_owner_thread == g_thread_self();
+    }
+    GJS_USE JS::WeakCache<FundamentalTable>& fundamental_table(void) {
+        return *m_fundamental_table;
     }
     GJS_USE
     static const GjsAtoms& atoms(JSContext* cx) { return from_cx(cx)->m_atoms; }

@@ -97,7 +97,6 @@ class BoxedPrototype : public GIWrapperPrototype<BoxedBase, BoxedPrototype,
                       js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
 
     int m_zero_args_constructor;  // -1 if none
-    JS::Heap<jsid> m_zero_args_constructor_name;
     int m_default_constructor;  // -1 if none
     JS::Heap<jsid> m_default_constructor_name;
     FieldMap* m_field_map;
