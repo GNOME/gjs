@@ -375,31 +375,6 @@ static GjsAutoFieldInfo lookup_field_info(GIObjectInfo* info,
     return retval;
 }
 
-GIFieldInfo* ObjectPrototype::find_field_info_from_id(JSContext* cx,
-                                                      JS::HandleString key) {
-    /* First check for the ID in the cache */
-    auto entry = m_field_cache.lookupForAdd(key);
-    if (entry)
-        return entry->value().get();
-
-    JS::UniqueChars js_prop_name;
-    if (!gjs_string_to_utf8(cx, JS::StringValue(key), &js_prop_name))
-        return nullptr;
-
-    GjsAutoFieldInfo field = lookup_field_info(m_info, js_prop_name.get());
-
-    if (!field) {
-        gjs_wrapper_throw_nonexistent_field(cx, m_gtype, js_prop_name.get());
-        return nullptr;
-    }
-
-    if (!m_field_cache.add(entry, key, std::move(field))) {
-        JS_ReportOutOfMemory(cx);
-        return nullptr;
-    }
-    return entry->value().get();  /* owned by field cache */
-}
-
 bool ObjectBase::field_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
 
@@ -422,10 +397,7 @@ bool ObjectInstance::field_getter_impl(JSContext* cx, JS::HandleString name,
         return true;
 
     ObjectPrototype* proto_priv = get_prototype();
-    GIFieldInfo *field = proto_priv->find_field_info_from_id(cx, name);
-    /* This is guaranteed because we resolved the property before */
-    g_assert(field);
-
+    GIFieldInfo* field = proto_priv->lookup_cached_field_info(cx, name);
     GITypeTag tag;
     GIArgument arg = { 0 };
 
@@ -542,9 +514,7 @@ bool ObjectInstance::field_setter_impl(JSContext* cx, JS::HandleString name,
         return true;
 
     ObjectPrototype* proto_priv = get_prototype();
-    GIFieldInfo *field = proto_priv->find_field_info_from_id(cx, name);
-    if (field == NULL)
-        return false;
+    GIFieldInfo* field = proto_priv->lookup_cached_field_info(cx, name);
 
     /* As far as I know, GI never exposes GObject instance struct fields as
      * writable, so no need to implement this for the time being */
@@ -829,7 +799,13 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
         if (!(g_field_info_get_flags(field_info) & GI_FIELD_IS_WRITABLE))
             flags |= JSPROP_READONLY;
 
-        JS::RootedValue private_id(context, JS::StringValue(JSID_TO_STRING(id)));
+        JS::RootedString key(context, JSID_TO_STRING(id));
+        if (!m_field_cache.putNew(key, field_info.release())) {
+            JS_ReportOutOfMemory(context);
+            return false;
+        }
+
+        JS::RootedValue private_id(context, JS::StringValue(key));
         if (!gjs_define_property_dynamic(
                 context, obj, name, "gobject_field", &ObjectBase::field_getter,
                 &ObjectBase::field_setter, private_id, flags))
@@ -1677,6 +1653,44 @@ gjs_lookup_object_prototype(JSContext *context,
 {
     GjsAutoObjectInfo info = g_irepository_find_by_gtype(nullptr, gtype);
     return gjs_lookup_object_prototype_from_info(context, info, gtype);
+}
+
+// Retrieves a GIFieldInfo for a field named @key. This is for use in
+// field_getter_impl() and field_setter_impl(), where the field info *must* have
+// been cached previously in resolve_impl() on this ObjectPrototype or one of
+// its parent ObjectPrototypes. This will fail an assertion if there is no
+// cached field info.
+//
+// The caller does not own the return value, and it can never be null.
+GIFieldInfo* ObjectPrototype::lookup_cached_field_info(JSContext* cx,
+                                                       JS::HandleString key) {
+    if (is_custom_js_class()) {
+        // Custom JS classes can't have fields. We must be looking up a field on
+        // a GObject-introspected parent.
+        GType parent_gtype = g_type_parent(m_gtype);
+        g_assert(parent_gtype != G_TYPE_INVALID &&
+                 "Custom JS class must have parent");
+        ObjectPrototype* parent_proto =
+            ObjectPrototype::for_gtype(parent_gtype);
+        g_assert(parent_proto &&
+                 "Custom JS class's parent must have been accessed in JS");
+        return parent_proto->lookup_cached_field_info(cx, key);
+    }
+
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
+                     "Looking up cached field info for '%s' in '%s' prototype",
+                     gjs_debug_string(key).c_str(), g_type_name(m_gtype));
+    auto entry = m_field_cache.lookupForAdd(key);
+    if (entry)
+        return entry->value().get();
+
+    // We must be looking up a field defined on a parent. Look up the prototype
+    // object via its GIObjectInfo.
+    GjsAutoObjectInfo parent_info = g_object_info_get_parent(m_info);
+    JS::RootedObject parent_proto(cx, gjs_lookup_object_prototype_from_info(
+                                          cx, parent_info, G_TYPE_INVALID));
+    ObjectPrototype* parent = ObjectPrototype::for_js(cx, parent_proto);
+    return parent->lookup_cached_field_info(cx, key);
 }
 
 void ObjectBase::associate_closure(JSContext* cx, GClosure* closure) {

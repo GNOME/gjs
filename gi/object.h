@@ -211,7 +211,7 @@ class ObjectPrototype
     GJS_JSAPI_RETURN_CONVENTION
     GParamSpec* find_param_spec_from_id(JSContext* cx, JS::HandleString key);
     GJS_JSAPI_RETURN_CONVENTION
-    GIFieldInfo* find_field_info_from_id(JSContext* cx, JS::HandleString key);
+    GIFieldInfo* lookup_cached_field_info(JSContext* cx, JS::HandleString key);
     GJS_JSAPI_RETURN_CONVENTION
     bool props_to_g_parameters(JSContext* cx, const JS::HandleValueArray& args,
                                std::vector<const char*>* names,
