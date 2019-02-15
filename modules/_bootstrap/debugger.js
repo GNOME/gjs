@@ -601,7 +601,8 @@ function helpCommand() {
             group.push(cmd);
         } else {
             // Don't print commands for debugging the debugger
-            if (['comment', 'eval'].includes(group[0]))
+            if ([commentCommand, evalCommand].includes(cmd) ||
+                ['comment', 'eval'].includes(group[0]))
                 continue;
             if (group.length)
                 printcmd(group);

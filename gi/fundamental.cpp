@@ -33,6 +33,7 @@
 #include "gi/object.h"
 #include "gi/repo.h"
 #include "gi/wrapperutils.h"
+#include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
 #include "gjs/mem-private.h"
@@ -40,63 +41,6 @@
 #include <gjs/context.h>
 #include <util/log.h>
 #include <girepository.h>
-
-GJS_USE
-static GQuark
-gjs_fundamental_table_quark (void)
-{
-    static GQuark val = 0;
-    if (!val)
-        val = g_quark_from_static_string("gjs::fundamental-table");
-
-    return val;
-}
-
-GJS_USE
-static GHashTable *
-_ensure_mapping_table(GjsContext *context)
-{
-    GHashTable *table =
-        (GHashTable *) g_object_get_qdata ((GObject *) context,
-                                           gjs_fundamental_table_quark());
-
-    if (G_UNLIKELY(table == NULL)) {
-        table = g_hash_table_new(NULL, NULL);
-        g_object_set_qdata_full((GObject *) context,
-                                gjs_fundamental_table_quark(),
-                                table,
-                                (GDestroyNotify) g_hash_table_unref);
-    }
-
-    return table;
-}
-
-static void
-_fundamental_add_object(void *native_object, JSObject *js_object)
-{
-    GHashTable *table = _ensure_mapping_table(gjs_context_get_current());
-
-    g_hash_table_insert(table, native_object, js_object);
-}
-
-static void
-_fundamental_remove_object(void *native_object)
-{
-    GHashTable *table = _ensure_mapping_table(gjs_context_get_current());
-
-    g_hash_table_remove(table, native_object);
-}
-
-GJS_USE
-static JSObject *
-_fundamental_lookup_object(void *native_object)
-{
-    GHashTable *table = _ensure_mapping_table(gjs_context_get_current());
-
-    return (JSObject *) g_hash_table_lookup(table, native_object);
-}
-
-/**/
 
 FundamentalInstance::FundamentalInstance(JSContext* cx, JS::HandleObject obj)
     : GIWrapperInstance(cx, obj) {
@@ -110,16 +54,20 @@ FundamentalInstance::FundamentalInstance(JSContext* cx, JS::HandleObject obj)
  * future if you have a pointer to @gfundamental. (Assuming @object has not been
  * garbage collected in the meantime.)
  */
-void FundamentalInstance::associate_js_instance(JSObject* object,
+bool FundamentalInstance::associate_js_instance(JSContext* cx, JSObject* object,
                                                 void* gfundamental) {
     m_ptr = gfundamental;
 
-    g_assert(_fundamental_lookup_object(gfundamental) == NULL);
-    _fundamental_add_object(gfundamental, object);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+    if (!gjs->fundamental_table().putNew(gfundamental, object)) {
+        JS_ReportOutOfMemory(cx);
+        return false;
+    }
 
     debug_lifecycle(object, "associated JSObject with fundamental");
 
     ref();
+    return true;
 }
 
 /**/
@@ -275,10 +223,9 @@ bool FundamentalInstance::constructor_impl(JSContext* cx,
     GArgument ret_value;
     GITypeInfo return_info;
 
-    if (!invoke_constructor(cx, object, argv, &ret_value))
+    if (!invoke_constructor(cx, object, argv, &ret_value) ||
+        !associate_js_instance(cx, object, ret_value.v_pointer))
         return false;
-
-    associate_js_instance(object, ret_value.v_pointer);
 
     GICallableInfo* constructor_info = get_prototype()->constructor_info();
     g_callable_info_load_return_type(constructor_info, &return_info);
@@ -290,7 +237,6 @@ bool FundamentalInstance::constructor_impl(JSContext* cx,
 
 FundamentalInstance::~FundamentalInstance(void) {
     if (m_ptr) {
-        _fundamental_remove_object(m_ptr);
         unref();
         m_ptr = nullptr;
     }
@@ -480,9 +426,10 @@ gjs_object_from_g_fundamental(JSContext    *context,
     if (gfundamental == NULL)
         return NULL;
 
-    JS::RootedObject object(context, _fundamental_lookup_object(gfundamental));
-    if (object)
-        return object;
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+    auto p = gjs->fundamental_table().lookup(gfundamental);
+    if (p)
+        return p->value();
 
     gjs_debug_marshal(GJS_DEBUG_GFUNDAMENTAL,
                       "Wrapping fundamental %s.%s %p with JSObject",
@@ -496,14 +443,16 @@ gjs_object_from_g_fundamental(JSContext    *context,
     if (!proto)
         return NULL;
 
-    object = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);
+    JS::RootedObject object(context, JS_NewObjectWithGivenProto(
+                                         context, JS_GetClass(proto), proto));
 
     if (!object)
         return nullptr;
 
     auto* priv = FundamentalInstance::new_for_js_object(context, object);
 
-    priv->associate_js_instance(object, gfundamental);
+    if (!priv->associate_js_instance(context, object, gfundamental))
+        return nullptr;
 
     return object;
 }

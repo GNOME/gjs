@@ -57,6 +57,9 @@ JSObject *  gjs_lookup_generic_constructor      (JSContext      *context,
 GJS_JSAPI_RETURN_CONVENTION
 JSObject *  gjs_lookup_generic_prototype        (JSContext      *context,
                                                  GIBaseInfo     *info);
+GJS_JSAPI_RETURN_CONVENTION
+JSObject* gjs_new_object_with_generic_prototype(JSContext* cx,
+                                                GIBaseInfo* info);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_info(JSContext       *context,
