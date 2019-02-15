@@ -93,7 +93,7 @@ bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     return JS_DefinePropertyById(cx, constructor, atoms.gtype(), gtype_obj,
-                                 GJS_MODULE_PROP_FLAGS);
+                                 JSPROP_PERMANENT);
 }
 
 // These policies work around having separate g_foo_info_get_n_methods() and
