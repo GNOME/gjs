@@ -1,3 +1,16 @@
+Version 1.55.91
+---------------
+
+- The problem of freezing while running the tests using GCC's sanitizers was
+  determined to be a bug in GCC, which was fixed in GCC 9.0.1.
+
+- Closed bugs and merge requests:
+  * gnome-sound-recorder crashes deep inside libgjs [#223, !266, Philip
+    Chimento]
+  * Various maintenance [!267, Philip Chimento]
+  * wrapperutils: Define $gtype property as non-enumerable [!268, Philip
+    Chimento]
+
 Version 1.55.90
 ---------------
 
