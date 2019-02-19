@@ -12,6 +12,7 @@
             "error",
             "never"
         ],
+        "arrow-spacing": "error",
         "brace-style": "error",
         "comma-spacing": [
             "error",
