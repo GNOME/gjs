@@ -399,8 +399,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
     }
 
     GjsAutoStrv parts = g_strsplit(format, "|", 2);
-    fmt_required = parts[0];
-    fmt_optional = parts[1];  /* may be NULL */
+    fmt_required = parts.get()[0];
+    fmt_optional = parts.get()[1];  /* may be NULL */
 
     retval = parse_call_args_helper(cx, function_name, args,
                                     ignore_trailing_args, fmt_required,
