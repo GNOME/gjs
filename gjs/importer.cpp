@@ -707,7 +707,7 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
             GjsAutoChar filename = g_file_get_basename(file);
 
             /* skip hidden files and directories (.svn, .git, ...) */
-            if (filename[0] == '.')
+            if (filename.get()[0] == '.')
                 continue;
 
             /* skip module init file */
