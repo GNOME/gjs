@@ -658,7 +658,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
 
         GjsAutoFunctionInfo method_info =
             g_interface_info_find_method(iface_info, name);
-        if (method_info != NULL) {
+        if (method_info) {
             if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
                 if (!gjs_define_function(cx, obj, m_gtype, method_info)) {
                     g_free(interfaces);
@@ -760,8 +760,7 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
         bool defined_by_parent;
         GjsAutoVFuncInfo vfunc = find_vfunc_on_parents(
             m_info, name_without_vfunc_, &defined_by_parent);
-        if (vfunc != NULL) {
-
+        if (vfunc) {
             /* In the event that the vfunc is unchanged, let regular
              * prototypal inheritance take over. */
             if (defined_by_parent && is_vfunc_unchanged(vfunc)) {
@@ -2195,7 +2194,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
                          &field_info))
         return false;
 
-    if (field_info != NULL) {
+    if (field_info) {
         gint offset;
         gpointer method_ptr;
         GjsCallbackTrampoline *trampoline;
