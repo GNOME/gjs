@@ -27,11 +27,14 @@
 #include <string.h>
 
 #include <gio/gio.h>
-#include <glib-unix.h>
 #include <glib.h>
 #include <glib/gi18n.h>
 
 #include "gjs-util.h"
+
+#ifdef G_OS_UNIX
+#    include <glib-unix.h>
+#endif
 
 char *
 gjs_format_int_alternative_output(int n)
@@ -164,6 +167,7 @@ int gjs_open_bytes(GBytes* bytes, GError** error) {
     g_return_val_if_fail(bytes, -1);
     g_return_val_if_fail(error == NULL || *error == NULL, -1);
 
+#ifdef G_OS_UNIX
     if (!g_unix_open_pipe(pipefd, FD_CLOEXEC, error))
         return -1;
 
@@ -186,4 +190,7 @@ int gjs_open_bytes(GBytes* bytes, GError** error) {
     }
 
     return pipefd[0];
+#else
+    g_error("%s is currently supported on UNIX only", __func__);
+#endif
 }
