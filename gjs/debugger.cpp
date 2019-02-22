@@ -22,7 +22,14 @@
  * Authored By: Philip Chimento <philip.chimento@gmail.com>
  */
 
-#include <unistd.h>
+#ifdef XP_WIN
+# include <io.h>
+# ifndef STDIN_FILENO
+#  define STDIN_FILENO 0
+# endif
+#else
+# include <unistd.h>
+#endif
 
 #include <gio/gio.h>
 
