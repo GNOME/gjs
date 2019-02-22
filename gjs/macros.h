@@ -32,6 +32,7 @@
 # else
 #  define GJS_EXPORT __declspec(dllimport)
 # endif
+#    define siginfo_t void
 #else
 # define GJS_EXPORT
 #endif
