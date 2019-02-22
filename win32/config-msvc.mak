@@ -25,7 +25,8 @@ LIBGJS_BASE_DEP_LIBS =			\
 	$(GJS_BASE_LIBS)		\
 	ffi.lib				\
 	intl.lib			\
-	mozjs-$(MOZJS_VERSION).lib
+	mozjs-$(MOZJS_VERSION).lib	\
+	mozglue.lib
 
 # For Cairo support
 CAIRO_LIBS = cairo-gobject.lib cairo.lib
@@ -59,7 +60,8 @@ GJS_BASE_CFLAGS =			\
 	/wd4530				\
 	/wd4099				\
 	/wd4251				\
-	/wd4800
+	/wd4800				\
+	/Zc:externConstexpr
 
 LIBGJS_DEP_INCLUDES = $(BASE_INCLUDES)
 LIBGJS_DEP_LIBS = $(LIBGJS_BASE_DEP_LIBS)
