@@ -63,4 +63,10 @@
  */
 #define GJS_JSAPI_RETURN_CONVENTION GJS_USE
 
+#ifdef G_OS_UNIX
+# define GJS_SIGNAL_HANDLER_TYPE siginfo_t *
+#else
+# define GJS_SIGNAL_HANDLER_TYPE void *
+#endif
+
 #endif /* GJS_MACROS_H */
