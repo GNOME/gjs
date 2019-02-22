@@ -83,8 +83,8 @@ void            gjs_context_gc                    (GjsContext  *context);
 
 GJS_EXPORT GJS_USE GjsProfiler* gjs_context_get_profiler(GjsContext* self);
 
-GJS_EXPORT GJS_USE bool gjs_profiler_chain_signal(GjsContext* context,
-                                                  siginfo_t* info);
+GJS_EXPORT GJS_USE bool gjs_profiler_chain_signal(GjsContext*             context,
+                                                  GJS_SIGNAL_HANDLER_TYPE info);
 
 GJS_EXPORT
 void            gjs_dumpstack                     (void);

@@ -27,16 +27,18 @@
 #include <errno.h>
 #include <memory>
 #include <signal.h>
-#include <sys/syscall.h>
 #include <sys/types.h>
-#include <unistd.h>
 
-#include <glib-unix.h>
+#ifndef XP_WIN
+# include <sys/syscall.h>
+# include <glib-unix.h>
+#endif
 
 #include "jsapi-wrapper.h"
 #include <js/ProfilingStack.h>
 
 #include "context.h"
+
 #include "jsapi-util.h"
 #include "profiler-private.h"
 #ifdef ENABLE_PROFILER
@@ -573,7 +575,8 @@ _gjs_profiler_setup_signals(GjsProfiler *self,
 /**
  * gjs_profiler_chain_signal:
  * @context: a #GjsContext with a profiler attached
- * @info: #siginfo_t passed in to signal handler
+ * @info: #GJS_SIGNAL_HANDLER_TYPE passed in to signal handler, which is
+ *        equivalent to siginfo_t * on UNIX platforms.
  *
  * Use this to pass a signal info caught by another signal handler to a
  * GjsProfiler. This might be needed if you have your own complex signal
@@ -584,8 +587,8 @@ _gjs_profiler_setup_signals(GjsProfiler *self,
  * Returns: %TRUE if the signal was handled.
  */
 bool
-gjs_profiler_chain_signal(GjsContext *context,
-                          siginfo_t *info)
+gjs_profiler_chain_signal(GjsContext              *context,
+                          GJS_SIGNAL_HANDLER_TYPE  info)
 {
 #ifdef ENABLE_PROFILER
 
