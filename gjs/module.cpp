@@ -99,8 +99,15 @@ class GjsModule {
         JS::CompileOptions options(cx);
         options.setFileAndLine(filename, line_number);
 
+        std::u16string utf16_string;
+
+#if !defined (_MSC_VER) || (_MSC_VER < 1900)
         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-        std::u16string utf16_string = convert.from_bytes(script);
+        utf16_string = convert.from_bytes(script);
+#else
+        utf16_string = utf8_to_utf16 (script);
+#endif
+
         JS::SourceBufferHolder buf(utf16_string.c_str(), utf16_string.size(),
                                    JS::SourceBufferHolder::NoOwnership);
 

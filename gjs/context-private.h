@@ -36,6 +36,11 @@
 #include "js/GCHashTable.h"
 #include "js/SweepingAPI.h"
 
+#ifdef G_OS_WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 using JobQueue = JS::GCVector<JSObject*, 0, js::SystemAllocPolicy>;
 using FundamentalTable =
     JS::GCHashMap<void*, JS::Heap<JSObject*>, js::DefaultHasher<void*>,
@@ -172,4 +177,26 @@ class GjsContextPrivate {
     void dispose(void);
 };
 
+#if defined (G_OS_WIN32) && defined (_MSC_VER) && (_MSC_VER >= 1900)
+/* Unfortunately Visual Studio's C++ .lib somehow did not contain the right codecvt stuff
+ * that we need to convert from utf8 to utf16 (char16_t), so we need to work around this
+ * Visual Studio bug.  Use Windows API MultiByteToWideChar() and obtain the std::u16string on
+ * the std::wstring we obtain from MultiByteToWideChar().  See:
+ * https://social.msdn.microsoft.com/Forums/en-US/8f40dcd8-c67f-4eba-9134-a19b9178e481/vs-2015-rc-linker-stdcodecvt-error?forum=vcgeneral
+ */
+static std::u16string
+utf8_to_utf16 (std::string str)
+{
+    int len = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, NULL, 0);
+    if (len == 0)
+        return nullptr;
+
+    std::wstring wstr(str.length(), 0);
+    if (MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, &wstr[0], len) == 0)
+        return nullptr;
+
+    std::u16string u16str(wstr.begin(), wstr.end());
+    return u16str;
+}
+#endif
 #endif  /* __GJS_CONTEXT_PRIVATE_H__ */
