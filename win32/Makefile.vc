@@ -18,8 +18,8 @@
 
 !if "$(VALID_CFGSET)" == "TRUE"
 
-# We need Visual Studio 2013 or later
-!if $(VSVER) < 12
+# We need Visual Studio 2017 15.6 or later
+!if $(VCVERSION) < 1913
 VALID_MSC = FALSE
 !else
 VALID_MSC = TRUE
@@ -53,7 +53,7 @@ tests: all
 
 !else # "$(VALID_MSC)" == "TRUE"
 all:
-	@echo You need Visual Studio 2013 or later.
+	@echo You need Visual Studio 2017 15.6 or later.
 
 !endif # "$(VALID_MSC)" == "TRUE"
 
