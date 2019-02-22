@@ -27,7 +27,11 @@
 #include <string.h>
 
 #include <gio/gio.h>
-#include <glib-unix.h>
+
+#ifndef G_OS_WIN32
+# include <glib-unix.h>
+#endif
+
 #include <glib.h>
 #include <glib/gi18n.h>
 
@@ -164,6 +168,7 @@ int gjs_open_bytes(GBytes* bytes, GError** error) {
     g_return_val_if_fail(bytes, -1);
     g_return_val_if_fail(error == NULL || *error == NULL, -1);
 
+#ifdef G_OS_UNIX
     if (!g_unix_open_pipe(pipefd, FD_CLOEXEC, error))
         return -1;
 
@@ -186,4 +191,8 @@ int gjs_open_bytes(GBytes* bytes, GError** error) {
     }
 
     return pipefd[0];
+#else
+    g_warning ("%s is currently supported on UNIX only", __func__);
+    return -1;
+#endif
 }
