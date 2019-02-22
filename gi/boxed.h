@@ -55,7 +55,7 @@ class BoxedInstance;
 
 class BoxedBase
     : public GIWrapperBase<BoxedBase, BoxedPrototype, BoxedInstance> {
-    friend class GIWrapperBase;
+    friend class GIWrapperBase<BoxedBase, BoxedPrototype, BoxedInstance>;
 
  protected:
     explicit BoxedBase(BoxedPrototype* proto = nullptr)
@@ -89,8 +89,9 @@ class BoxedBase
 
 class BoxedPrototype : public GIWrapperPrototype<BoxedBase, BoxedPrototype,
                                                  BoxedInstance, GIStructInfo> {
-    friend class GIWrapperPrototype;
-    friend class GIWrapperBase;
+    friend class GIWrapperPrototype<BoxedBase, BoxedPrototype,
+                                    BoxedInstance, GIStructInfo>;
+    friend class GIWrapperBase<BoxedBase, BoxedPrototype, BoxedInstance>;
 
     using FieldMap =
         JS::GCHashMap<JS::Heap<JSString*>, GjsAutoFieldInfo,
@@ -155,8 +156,8 @@ class BoxedPrototype : public GIWrapperPrototype<BoxedBase, BoxedPrototype,
 
 class BoxedInstance
     : public GIWrapperInstance<BoxedBase, BoxedPrototype, BoxedInstance> {
-    friend class GIWrapperInstance;
-    friend class GIWrapperBase;
+    friend class GIWrapperInstance<BoxedBase, BoxedPrototype, BoxedInstance>;
+    friend class GIWrapperBase<BoxedBase, BoxedPrototype, BoxedInstance>;
     friend class BoxedBase;  // for field_getter, etc.
 
     bool m_allocated_directly : 1;
