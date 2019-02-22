@@ -1,14 +1,15 @@
 Instructions for building GJS on Visual Studio
 ==============================================
 Building the GJS on Windows is now supported using Visual Studio
-versions 2013 or later in both 32-bit and 64-bit (x64) flavors,
-via NMake Makefiles.  Due to C++-11 usage, Visual Studio 2012 or
-earlier is not supported.
+versions 2017 15.6.x or later in both 32-bit and 64-bit (x64) flavors,
+via NMake Makefiles.  Due to C++-14 usage, Visual Studio 2015 or
+earlier is not supported, nor is Visual Studio 2017 15.5.x or earlier,
+as the compiler flag /Zc:externConstexpr is needed.
 
 You will need the following items to build GJS using Visual Studio:
 -SpiderMonkey 60 (mozjs-60)
 -GObject-Introspection (G-I) 1.41.4 or later
--GLib 2.50.x or later, (which includes GIO, GObject, and the associated tools)
+-GLib 2.54.x or later, (which includes GIO, GObject, and the associated tools)
 -Cairo including Cairo-GObject support, unless NO_CAIRO=1 is specified.
 -GTK+-3.20.x or later, unless NO_GTK=1 is specified.
 -and anything that the above items depends on.
@@ -49,8 +50,7 @@ PREFIX: Optional.  Base directory of where the third-party headers, libraries
         specified, $(PREFIX) is set as $(srcroot)\..\vs$(X)\$(platform), where
         $(platform) is win32 for 32-bit builds or x64 for 64-bit builds, and
         $(X) is the short version of the Visual Studio used, as follows:
-        2013: 12
-        2015: 14
+        2017: 15
 
 Explanation of options, set by <option>=1:
 ------------------------------------------

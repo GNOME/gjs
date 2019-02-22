@@ -59,7 +59,8 @@ GJS_BASE_CFLAGS =			\
 	/wd4530				\
 	/wd4099				\
 	/wd4251				\
-	/wd4800
+	/wd4800				\
+	/Zc:externConstexpr
 
 LIBGJS_DEP_INCLUDES = $(BASE_INCLUDES)
 LIBGJS_DEP_LIBS = $(LIBGJS_BASE_DEP_LIBS)
