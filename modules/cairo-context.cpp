@@ -588,7 +588,7 @@ setDash_func(JSContext *context,
         dashes_c.push_back(b);
     }
 
-    cairo_set_dash(cr, &dashes_c[0], dashes_c.size(), offset);
+    cairo_set_dash(cr, dashes_c.data(), dashes_c.size(), offset);
     argv.rval().setUndefined();
     return true;
 }
