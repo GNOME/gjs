@@ -966,8 +966,14 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     JS::CompileOptions options(m_cx);
     options.setFileAndLine(filename, start_line_number).setSourceIsLazy(true);
 
+#if defined (G_OS_WIN32) && (defined (_MSC_VER) && (_MSC_VER >= 1900))
+    std::wstring wscript = gjs_win32_vc140_utf8_to_utf16 (script);
+    std::u16string utf16_string((char16_t *)wscript.c_str());
+#else
     std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
     std::u16string utf16_string = convert.from_bytes(script);
+#endif
+
     JS::SourceBufferHolder buf(utf16_string.c_str(), utf16_string.size(),
                                JS::SourceBufferHolder::NoOwnership);
 
