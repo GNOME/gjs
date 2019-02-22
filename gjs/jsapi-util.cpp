@@ -34,6 +34,11 @@
 #include <js/GCAPI.h>
 #include <js/Printf.h>
 
+#if defined (XP_WIN)
+# define WIN32_LEAN_AND_MEAN
+# include <windows.h>
+#endif
+
 #include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
@@ -660,3 +665,28 @@ gjs_strip_unix_shebang(const char  *script,
 
     return script;
 }
+
+#if defined (G_OS_WIN32) && (defined (_MSC_VER) && (_MSC_VER >= 1900))
+GJS_USE std::wstring
+gjs_win32_vc140_utf8_to_utf16 (const gchar *str)
+{
+/* Unfortunately Visual Studio's C++ .lib somehow did not contain the right codecvt stuff
+ * that we need to convert from utf8 to utf16 (char16_t), so we need to work around this
+ * Visual Studio bug.  Use Windows API MultiByteToWideChar() and obtain the std::u16string on
+ * the std::wstring we obtain from MultiByteToWideChar().  See:
+ * https://social.msdn.microsoft.com/Forums/en-US/8f40dcd8-c67f-4eba-9134-a19b9178e481/vs-2015-rc-linker-stdcodecvt-error?forum=vcgeneral
+ */
+    int len = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
+    int result;
+    if (len == 0)
+        return nullptr;
+
+    std::wstring wstr(len, 0);
+    result = MultiByteToWideChar(CP_UTF8, 0, str, -1, &wstr[0], len);
+    if (result == 0)
+        return nullptr;
+
+    wstr.resize(strlen(str));
+    return wstr;
+}
+#endif

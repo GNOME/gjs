@@ -363,4 +363,8 @@ GJS_USE std::string gjs_debug_id(jsid id);
 GJS_USE
 char* gjs_hyphen_to_underscore(const char* str);
 
+#ifdef G_OS_WIN32 && (defined (_MSC_VER) && (_MSC_VER >= 1900))
+GJS_USE std::wstring gjs_win32_vc140_utf8_to_utf16 (const gchar *str);
+#endif
+
 #endif  /* __GJS_JSAPI_UTIL_H__ */
