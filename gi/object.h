@@ -79,7 +79,7 @@ class ObjectPrototype;
  */
 class ObjectBase
     : public GIWrapperBase<ObjectBase, ObjectPrototype, ObjectInstance> {
-    friend class GIWrapperBase;
+    friend class GIWrapperBase<ObjectBase, ObjectPrototype, ObjectInstance>;
 
  protected:
     /* a list of all GClosures installed on this object (from
@@ -167,8 +167,9 @@ class ObjectBase
 
 class ObjectPrototype
     : public GIWrapperPrototype<ObjectBase, ObjectPrototype, ObjectInstance> {
-    friend class GIWrapperPrototype;
-    friend class GIWrapperBase;
+    friend class GIWrapperPrototype<ObjectBase, ObjectPrototype,
+                                    ObjectInstance>;
+    friend class GIWrapperBase<ObjectBase, ObjectPrototype, ObjectInstance>;
 
     using PropertyCache =
         JS::GCHashMap<JS::Heap<JSString*>, GjsAutoParam,
@@ -250,8 +251,9 @@ class ObjectPrototype
 
 class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
                                                 ObjectInstance, GObject> {
-    friend class GIWrapperInstance;
-    friend class GIWrapperBase;
+    friend class GIWrapperInstance<ObjectBase, ObjectPrototype, ObjectInstance,
+                                   GObject>;
+    friend class GIWrapperBase<ObjectBase, ObjectPrototype, ObjectInstance>;
     friend class ObjectBase;  // for add_property, prop_getter, etc.
 
     // GIWrapperInstance::m_ptr may be null in ObjectInstance.

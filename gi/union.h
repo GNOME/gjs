@@ -37,7 +37,7 @@ class UnionInstance;
 
 class UnionBase
     : public GIWrapperBase<UnionBase, UnionPrototype, UnionInstance> {
-    friend class GIWrapperBase;
+    friend class GIWrapperBase<UnionBase, UnionPrototype, UnionInstance>;
 
  protected:
     explicit UnionBase(UnionPrototype* proto = nullptr)
@@ -55,8 +55,9 @@ class UnionBase
 
 class UnionPrototype : public GIWrapperPrototype<UnionBase, UnionPrototype,
                                                  UnionInstance, GIUnionInfo> {
-    friend class GIWrapperPrototype;
-    friend class GIWrapperBase;
+    friend class GIWrapperPrototype<UnionBase, UnionPrototype, UnionInstance,
+                                    GIUnionInfo>;
+    friend class GIWrapperBase<UnionBase, UnionPrototype, UnionInstance>;
 
     explicit UnionPrototype(GIUnionInfo* info, GType gtype);
     ~UnionPrototype(void);
@@ -71,8 +72,8 @@ class UnionPrototype : public GIWrapperPrototype<UnionBase, UnionPrototype,
 
 class UnionInstance
     : public GIWrapperInstance<UnionBase, UnionPrototype, UnionInstance> {
-    friend class GIWrapperInstance;
-    friend class GIWrapperBase;
+    friend class GIWrapperInstance<UnionBase, UnionPrototype, UnionInstance>;
+    friend class GIWrapperBase<UnionBase, UnionPrototype, UnionInstance>;
 
     explicit UnionInstance(JSContext* cx, JS::HandleObject obj);
     ~UnionInstance(void);

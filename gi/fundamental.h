@@ -45,7 +45,8 @@ class FundamentalInstance;
 class FundamentalBase
     : public GIWrapperBase<FundamentalBase, FundamentalPrototype,
                            FundamentalInstance> {
-    friend class GIWrapperBase;
+    friend class GIWrapperBase<FundamentalBase, FundamentalPrototype,
+                               FundamentalInstance>;
 
  protected:
     explicit FundamentalBase(FundamentalPrototype* proto = nullptr)
@@ -66,8 +67,10 @@ class FundamentalBase
 class FundamentalPrototype
     : public GIWrapperPrototype<FundamentalBase, FundamentalPrototype,
                                 FundamentalInstance> {
-    friend class GIWrapperPrototype;
-    friend class GIWrapperBase;
+    friend class GIWrapperPrototype<FundamentalBase, FundamentalPrototype,
+                                    FundamentalInstance>;
+    friend class GIWrapperBase<FundamentalBase, FundamentalPrototype,
+                               FundamentalInstance>;
 
     GIObjectInfoRefFunction m_ref_function;
     GIObjectInfoUnrefFunction m_unref_function;
@@ -122,8 +125,10 @@ class FundamentalPrototype
 class FundamentalInstance
     : public GIWrapperInstance<FundamentalBase, FundamentalPrototype,
                                FundamentalInstance> {
-    friend class GIWrapperInstance;
-    friend class GIWrapperBase;
+    friend class GIWrapperInstance<FundamentalBase, FundamentalPrototype,
+                                   FundamentalInstance>;
+    friend class GIWrapperBase<FundamentalBase, FundamentalPrototype,
+                               FundamentalInstance>;
 
     explicit FundamentalInstance(JSContext* cx, JS::HandleObject obj);
     ~FundamentalInstance(void);
