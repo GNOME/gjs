@@ -22,9 +22,17 @@
  * Authored By: Philip Chimento <philip.chimento@gmail.com>
  */
 
-#include <unistd.h>
 
 #include <gio/gio.h>
+
+#ifdef G_OS_WIN32
+# include <io.h>
+# ifndef STDIN_FILENO
+#  define STDIN_FILENO 0
+# endif
+#else
+# include <unistd.h>
+#endif
 
 #include "gjs/context-private.h"
 #include "gjs/global.h"
