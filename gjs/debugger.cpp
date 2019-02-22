@@ -98,7 +98,7 @@ static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
             args.rval().setUndefined();
             return true;
         }
-    } while (line && line[0] == '\0');
+    } while (line.get() && line.get()[0] == '\0');
 
     /* Add line to history and convert it to a JSString so that we can pass it
      * back as the return value */
