@@ -304,7 +304,13 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
         if (!boxed_invoke_constructor(context, obj, atoms.new_internal(), args))
             return false;
 
-        debug_lifecycle("Boxed construction delegated to GVariant constructor");
+        // The return value of GLib.Variant.new_internal() gets its own
+        // BoxedInstance, and the one we're setting up in this constructor is
+        // discarded.
+        m_not_owning_ptr = true;
+        debug_lifecycle(
+            "Boxed construction delegated to GVariant constructor, "
+            "boxed object discarded");
 
         return true;
     }
@@ -354,7 +360,13 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
                 return false;
         }
 
-        debug_lifecycle("Boxed construction delegated to JS constructor");
+        // The return value of the JS constructor gets its own BoxedInstance,
+        // and this one is discarded. Mark that the boxed pointer doesn't need
+        // to be freed, since it remains null.
+        m_not_owning_ptr = true;
+        debug_lifecycle(
+            "Boxed construction delegated to JS constructor, "
+            "boxed object discarded");
 
         return true;
     } else {
