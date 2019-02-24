@@ -297,14 +297,11 @@ elif [[ $1 == "FLATPAK" ]]; then
     do_Print_Labels 'Flatpak packaging'
 
     # Move the manifest file to the root folder
-    cp test/*.json .
+    cp "test/$MANIFEST" .
 
-    # Ajust to the current branch
-    sed -i "s,<<ID>>,$APPID,g" ${MANIFEST_PATH}
-    sed -i "s,<<master>>,master,g" ${MANIFEST_PATH}
-
-    flatpak-builder --bundle-sources --repo=devel build ${MANIFEST_PATH}
-    flatpak build-bundle devel ${BUNDLE} --runtime-repo=${RUNTIME_REPO} ${APPID}
+    flatpak-builder --version
+    flatpak-builder --bundle-sources --repo=devel build "$MANIFEST"
+    flatpak build-bundle devel ${BUNDLE} --runtime-repo=${RUNTIME_REPO} org.gnome.GjsDevel
 fi
 
 # Releases stuff and finishes
