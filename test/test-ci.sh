@@ -302,7 +302,6 @@ elif [[ $1 == "FLATPAK" ]]; then
     # Ajust to the current branch
     sed -i "s,<<ID>>,$APPID,g" ${MANIFEST_PATH}
     sed -i "s,<<master>>,master,g" ${MANIFEST_PATH}
-    sed -i "s,<<current>>,origin/$CI_COMMIT_REF_NAME,g" ${MANIFEST_PATH}
 
     flatpak-builder --bundle-sources --repo=devel build ${MANIFEST_PATH}
     flatpak build-bundle devel ${BUNDLE} --runtime-repo=${RUNTIME_REPO} ${APPID}
