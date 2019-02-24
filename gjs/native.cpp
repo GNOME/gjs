@@ -55,19 +55,13 @@ gjs_register_native_module (const char          *module_id,
 
 /**
  * gjs_is_registered_native_module:
- * @context:
- * @parent: the parent object defining the namespace
  * @name: name of the module
  *
  * Checks if a native module corresponding to @name has already
  * been registered. This is used to check to see if a name is a
  * builtin module without starting to try and load it.
  */
-bool
-gjs_is_registered_native_module(JSContext  *context,
-                                JSObject   *parent,
-                                const char *name)
-{
+bool gjs_is_registered_native_module(const char* name) {
     if (modules == NULL)
         return false;
 
