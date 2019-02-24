@@ -23,7 +23,7 @@
             "sources": [
                 {
                     "type": "git",
-                    "branch": "<<current>>",
+                    "branch": "HEAD",
                     "path": "."
                 }
             ]
