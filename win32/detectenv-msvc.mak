@@ -97,6 +97,14 @@ VSVER = 16
 VSVER = 0
 !endif
 
+# Visual Studio 2015, 2017 and 2019 link to the vc140 C/C++ runtimes,
+# so we get a vc140.pdb for all these builds.
+!if $(VSVER) < 15
+PDBVER = $(VSVER)
+!else
+PDBVER = 14
+!endif
+
 !if "$(VSVER)" == "0"
 MSG = ^
 This NMake Makefile set supports Visual Studio^

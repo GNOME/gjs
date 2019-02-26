@@ -38,13 +38,13 @@ NULL=
 !if [call create-lists.bat header gjs_objs.mak libgjs_dll_OBJS]
 !endif
 
-!if [for %c in ($(LIBGJS_SOURCES)) do @if "%~xc" == ".cpp" @call create-lists.bat file gjs_objs.mak ^$(CFG)\^$(PLAT)\libgjs\%~nc.obj]
+!if [for %c in ($(LIBGJS_SOURCES)) do @if "%~xc" == ".cpp" @call create-lists.bat file gjs_objs.mak vs^$(VSVER)\^$(CFG)\^$(PLAT)\libgjs\%~nc.obj]
 !endif
 
-!if [for %c in ($(LIBGJS_SOURCES)) do @if "%~xc" == ".c" @call create-lists.bat file gjs_objs.mak ^$(CFG)\^$(PLAT)\libgjs\%~nc.obj]
+!if [for %c in ($(LIBGJS_SOURCES)) do @if "%~xc" == ".c" @call create-lists.bat file gjs_objs.mak vs^$(VSVER)\^$(CFG)\^$(PLAT)\libgjs\%~nc.obj]
 !endif
 
-!if [for %c in ($(module_resource_srcs)) do @if "%~xc" == ".c" @call create-lists.bat file gjs_objs.mak ^$(CFG)\^$(PLAT)\libgjs\%~nc.obj]
+!if [for %c in ($(module_resource_srcs)) do @if "%~xc" == ".c" @call create-lists.bat file gjs_objs.mak vs^$(VSVER)\^$(CFG)\^$(PLAT)\libgjs\%~nc.obj]
 !endif
 
 !if [call create-lists.bat footer gjs_objs.mak]
@@ -53,7 +53,7 @@ NULL=
 !if [call create-lists.bat header gjs_objs.mak gjs_OBJS]
 !endif
 
-!if [for %c in ($(gjs_console_srcs)) do @if "%~xc" == ".cpp" @call create-lists.bat file gjs_objs.mak ^$(CFG)\^$(PLAT)\gjs-console\%~nc.obj]
+!if [for %c in ($(gjs_console_srcs)) do @if "%~xc" == ".cpp" @call create-lists.bat file gjs_objs.mak vs^$(VSVER)\^$(CFG)\^$(PLAT)\gjs-console\%~nc.obj]
 !endif
 
 !if [call create-lists.bat footer gjs_objs.mak]
@@ -68,7 +68,7 @@ NULL=
 !if [call create-lists.bat header gjs_modules_objs.mak module_resources_generated_srcs]
 !endif
 
-!if [for %c in ($(module_resource_srcs)) do @call create-lists.bat file gjs_modules_objs.mak ^$(CFG)\^$(PLAT)\module-resources\%c]
+!if [for %c in ($(module_resource_srcs)) do @call create-lists.bat file gjs_modules_objs.mak vs^$(VSVER)\^$(CFG)\^$(PLAT)\module-resources\%c]
 !endif
 
 !if [call create-lists.bat footer gjs_modules_objs.mak]
@@ -77,7 +77,7 @@ NULL=
 !if [call create-lists.bat header gjs_modules_objs.mak module_system_OBJS]
 !endif
 
-!if [for %c in ($(module_system_srcs)) do @if "%~xc" == ".cpp" @call create-lists.bat file gjs_modules_objs.mak ^$(CFG)\^$(PLAT)\module-system\%~nc.obj]
+!if [for %c in ($(module_system_srcs)) do @if "%~xc" == ".cpp" @call create-lists.bat file gjs_modules_objs.mak vs^$(VSVER)\^$(CFG)\^$(PLAT)\module-system\%~nc.obj]
 !endif
 
 !if [call create-lists.bat footer gjs_modules_objs.mak]
@@ -86,7 +86,7 @@ NULL=
 !if [call create-lists.bat header gjs_modules_objs.mak module_console_OBJS]
 !endif
 
-!if [for %c in ($(module_console_srcs)) do @if "%~xc" == ".cpp" @call create-lists.bat file gjs_modules_objs.mak ^$(CFG)\^$(PLAT)\module-console\%~nc.obj]
+!if [for %c in ($(module_console_srcs)) do @if "%~xc" == ".cpp" @call create-lists.bat file gjs_modules_objs.mak vs^$(VSVER)\^$(CFG)\^$(PLAT)\module-console\%~nc.obj]
 !endif
 
 !if [call create-lists.bat footer gjs_modules_objs.mak]
@@ -95,7 +95,7 @@ NULL=
 !if [call create-lists.bat header gjs_modules_objs.mak module_cairo_OBJS]
 !endif
 
-!if [for %c in ($(module_cairo_srcs)) do @if "%~xc" == ".cpp" @call create-lists.bat file gjs_modules_objs.mak ^$(CFG)\^$(PLAT)\module-cairo\%~nc.obj]
+!if [for %c in ($(module_cairo_srcs)) do @if "%~xc" == ".cpp" @call create-lists.bat file gjs_modules_objs.mak vs^$(VSVER)\^$(CFG)\^$(PLAT)\module-cairo\%~nc.obj]
 !endif
 
 !if [call create-lists.bat footer gjs_modules_objs.mak]
