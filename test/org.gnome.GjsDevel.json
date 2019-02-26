@@ -1,6 +1,6 @@
 {
-    "id": "<<ID>>",
-    "branch": "<<master>>",
+    "id": "org.gnome.GjsDevel",
+    "branch": "master",
     "runtime": "org.gnome.Platform",
     "runtime-version": "master",
     "sdk": "org.gnome.Sdk",
@@ -18,12 +18,11 @@
     "modules": [
         {
             "name": "gjs",
-            "buildsystem": "autotools",
             "builddir": true,
             "sources": [
                 {
                     "type": "git",
-                    "branch": "<<current>>",
+                    "branch": "HEAD",
                     "path": "."
                 }
             ]

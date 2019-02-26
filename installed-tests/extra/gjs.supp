@@ -158,6 +158,17 @@
    fun:cairo_show_text
 }
 
+# https://gitlab.gnome.org/GNOME/gobject-introspection/issues/265
+{
+   gobject-introspection-default-repository
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:realloc
+   ...
+   fun:build_typelib_key
+   fun:register_internal
+}
+
 # SpiderMonkey data races
 
 # These are in SpiderMonkey's atomics / thread barrier stuff so presumably
