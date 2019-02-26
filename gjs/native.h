@@ -41,9 +41,7 @@ void   gjs_register_native_module (const char            *module_id,
 
 /* called by importer.c to to check for already loaded modules */
 GJS_USE
-bool     gjs_is_registered_native_module(JSContext  *context,
-                                         JSObject   *parent,
-                                         const char *name);
+bool gjs_is_registered_native_module(const char* name);
 
 /* called by importer.cpp to load a statically linked native module */
 GJS_JSAPI_RETURN_CONVENTION

@@ -503,8 +503,7 @@ static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
     }
 
     /* First try importing an internal module like gi */
-    if (priv->is_root &&
-        gjs_is_registered_native_module(context, obj, name.get())) {
+    if (priv->is_root && gjs_is_registered_native_module(name.get())) {
         if (!gjs_import_native_module(context, obj, name.get()))
             return false;
 

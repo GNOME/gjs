@@ -629,9 +629,8 @@ flatpak:
   variables:
     TASK_ID: "flatpak packaging"
     CODECHECK: "FLATPAK"
-    APPID: "org.gnome.GjsDevel"
     BUNDLE: "org.gnome.GjsDevel.flatpak"
-    MANIFEST_PATH: "org.gnome.GjsDevel.json"
+    MANIFEST: org.gnome.GjsDevel.json
     RUNTIME_REPO: "https://sdk.gnome.org/gnome-nightly.flatpakrepo"
 
   environment:
