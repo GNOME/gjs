@@ -14,7 +14,7 @@ function do_Install_Dependencies(){
                                docbook docbook-xsl libtext-csv-perl \
                                zlib1g-dev libdbus-glib-1-dev \
                                libtool libicu-dev libnspr4-dev \
-                               policykit-1 \
+                               policykit-1 python3-setuptools \
                                libgtk-3-dev gir1.2-gtk-3.0 xvfb gnome-desktop-testing dbus-x11 dbus \
                                libedit-dev libgl1-mesa-dev lcov libreadline-dev
 
