@@ -70,8 +70,6 @@ A more realistic example would be connecting to a signal on a
 method of a prototype:
 
 ```js
-const Lang = imports.lang;
-
 MyPrototype = {
     _init : function() {
        fnorb.connect('frobate', this._onFnorbFrobate.bind(this));
