@@ -251,14 +251,18 @@ elif [[ $1 == "CPPLINT"  && "$log_message" != *'[skip cpplint]'* ]]; then
     do_Print_Labels 'C/C++ Linter report '
 
     cpplint --quiet $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 | \
-        tee "$save_dir"/analysis/current-report.txt | sed -E -e 's/:[0-9]+:/:LINE:/' -e 's/  +/ /g' > /cwd/current-report.txt
+        tee "$save_dir"/analysis/current-report.txt | \
+        sed -E -e 's/:[0-9]+:/:LINE:/' -e 's/Total errors found: [0-9]+//' -e 's/  +/ /g' \
+        > /cwd/current-report.txt
     cat "$save_dir"/analysis/current-report.txt
     echo
 
     # Get the code committed at upstream master
     do_Get_Upstream_Master "cppLint"
     cpplint --quiet $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 | \
-        tee "$save_dir"/analysis/master-report.txt | sed -E -e 's/:[0-9]+:/:LINE:/' -e 's/  +/ /g' > /cwd/master-report.txt
+        tee "$save_dir"/analysis/master-report.txt | \
+        sed -E -e 's/:[0-9]+:/:LINE:/' -e 's/Total errors found: [0-9]+//' -e 's/  +/ /g' \
+        > /cwd/master-report.txt
     echo
 
     # Compare the report with master and fail if new warnings are found
