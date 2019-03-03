@@ -248,7 +248,8 @@ FundamentalPrototype::FundamentalPrototype(GIObjectInfo* info, GType gtype)
       m_ref_function(g_object_info_get_ref_function_pointer(info)),
       m_unref_function(g_object_info_get_unref_function_pointer(info)),
       m_get_value_function(g_object_info_get_get_value_function_pointer(info)),
-      m_set_value_function(g_object_info_get_set_value_function_pointer(info)) {
+      m_set_value_function(g_object_info_get_set_value_function_pointer(info)),
+      m_constructor_info(nullptr) {
     g_assert(m_ref_function);
     g_assert(m_unref_function);
     g_assert(m_set_value_function);
