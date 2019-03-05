@@ -87,10 +87,22 @@ VSVER = 10
 VSVER = 11
 !elseif $(VCVERSION) > 1799 && $(VCVERSION) < 1900
 VSVER = 12
-!elseif $(VCVERSION) > 1899 && $(VCVERSION) < 2000
+!elseif $(VCVERSION) > 1899 && $(VCVERSION) < 1910
 VSVER = 14
+!elseif $(VCVERSION) > 1909 && $(VCVERSION) < 1920
+VSVER = 15
+!elseif $(VCVERSION) > 1919 && $(VCVERSION) < 2000
+VSVER = 16
 !else
 VSVER = 0
+!endif
+
+# Visual Studio 2015, 2017 and 2019 link to the vc140 C/C++ runtimes,
+# so we get a vc140.pdb for all these builds.
+!if $(VSVER) < 15
+PDBVER = $(VSVER)
+!else
+PDBVER = 14
 !endif
 
 !if "$(VSVER)" == "0"

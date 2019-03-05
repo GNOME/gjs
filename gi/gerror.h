@@ -51,7 +51,7 @@ class ErrorInstance;
 
 class ErrorBase
     : public GIWrapperBase<ErrorBase, ErrorPrototype, ErrorInstance> {
-    friend class GIWrapperBase;
+    friend class GIWrapperBase<ErrorBase, ErrorPrototype, ErrorInstance>;
 
  protected:
     explicit ErrorBase(ErrorPrototype* proto = nullptr)
@@ -93,8 +93,9 @@ class ErrorBase
 
 class ErrorPrototype : public GIWrapperPrototype<ErrorBase, ErrorPrototype,
                                                  ErrorInstance, GIEnumInfo> {
-    friend class GIWrapperPrototype;
-    friend class GIWrapperBase;
+    friend class GIWrapperPrototype<ErrorBase, ErrorPrototype, ErrorInstance,
+                                    GIEnumInfo>;
+    friend class GIWrapperBase<ErrorBase, ErrorPrototype, ErrorInstance>;
 
     GQuark m_domain;
 
@@ -110,8 +111,9 @@ class ErrorPrototype : public GIWrapperPrototype<ErrorBase, ErrorPrototype,
 
 class ErrorInstance : public GIWrapperInstance<ErrorBase, ErrorPrototype,
                                                ErrorInstance, GError> {
-    friend class GIWrapperInstance;
-    friend class GIWrapperBase;
+    friend class GIWrapperInstance<ErrorBase, ErrorPrototype, ErrorInstance,
+                                   GError>;
+    friend class GIWrapperBase<ErrorBase, ErrorPrototype, ErrorInstance>;
 
     explicit ErrorInstance(JSContext* cx, JS::HandleObject obj);
     ~ErrorInstance(void);

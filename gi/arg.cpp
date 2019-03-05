@@ -1592,7 +1592,7 @@ gjs_value_to_g_argument(JSContext      *context,
 
             GjsAutoBaseInfo interface_info =
                 g_type_info_get_interface(type_info);
-            g_assert(interface_info != NULL);
+            g_assert(interface_info);
 
             GIInfoType interface_type = g_base_info_get_type(interface_info);
             if (interface_type == GI_INFO_TYPE_ENUM ||

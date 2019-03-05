@@ -50,7 +50,8 @@ class InterfaceInstance;
 
 class InterfaceBase : public GIWrapperBase<InterfaceBase, InterfacePrototype,
                                            InterfaceInstance> {
-    friend class GIWrapperBase;
+    friend class GIWrapperBase<InterfaceBase, InterfacePrototype,
+                               InterfaceInstance>;
 
  protected:
     explicit InterfaceBase(InterfacePrototype* proto = nullptr)
@@ -83,8 +84,10 @@ class InterfaceBase : public GIWrapperBase<InterfaceBase, InterfacePrototype,
 class InterfacePrototype
     : public GIWrapperPrototype<InterfaceBase, InterfacePrototype,
                                 InterfaceInstance, GIInterfaceInfo> {
-    friend class GIWrapperPrototype;
-    friend class GIWrapperBase;
+    friend class GIWrapperPrototype<InterfaceBase, InterfacePrototype,
+                                    InterfaceInstance, GIInterfaceInfo>;
+    friend class GIWrapperBase<InterfaceBase, InterfacePrototype,
+                               InterfaceInstance>;
     friend class InterfaceBase;  // for has_instance_impl
 
     // the GTypeInterface vtable wrapped by this JS object
@@ -108,8 +111,10 @@ class InterfacePrototype
 class InterfaceInstance
     : public GIWrapperInstance<InterfaceBase, InterfacePrototype,
                                InterfaceInstance> {
-    friend class GIWrapperInstance;
-    friend class GIWrapperBase;
+    friend class GIWrapperInstance<InterfaceBase, InterfacePrototype,
+                                   InterfaceInstance>;
+    friend class GIWrapperBase<InterfaceBase, InterfacePrototype,
+                               InterfaceInstance>;
 
     G_GNUC_NORETURN InterfaceInstance(JSContext* cx, JS::HandleObject obj)
         : GIWrapperInstance(cx, obj) {
