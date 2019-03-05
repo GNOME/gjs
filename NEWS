@@ -1,3 +1,16 @@
+Version 1.55.92
+---------------
+
+- Closed bugs and merge requests:
+  * Fix CI failures [!269, Philip Chimento]
+  * Possible memory allocation/deallocation bug (possibly in js_free() in GJS)
+    [!270, Chun-wei Fan, Philip Chimento]
+  * cairo-context: Special-case 0-sized vector [!271, Florian Müllner]
+  * Add some more eslint rules [!272, Florian Müllner]
+  * win32/NMake: Fix introspection builds [!274, Chun-wei Fan]
+  * NMake/libgjs-private: Export all the public symbols there [!275, Chun-wei
+    Fan]
+
 Version 1.55.91
 ---------------
 
