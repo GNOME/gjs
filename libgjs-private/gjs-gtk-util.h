@@ -29,8 +29,11 @@
 
 #include <gtk/gtk.h>
 
+#include <gjs/macros.h>
+
 G_BEGIN_DECLS
 
+GJS_EXPORT
 void gjs_gtk_container_child_set_property (GtkContainer *container,
                                            GtkWidget    *child,
                                            const gchar  *property,
