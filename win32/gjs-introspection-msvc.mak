@@ -18,7 +18,7 @@ vs$(VSVER)\$(CFG)\$(PLAT)\GjsPrivate-1.0.gir: vs$(VSVER)\$(CFG)\$(PLAT)\gjs.lib 
 	--add-include-path=$(G_IR_INCLUDEDIR)		\
 	--pkg-export=gjs				\
 	--cflags-begin					\
-	$(CFLAGS) $(LIBGJS_CFLAGS_BASE)			\
+	$(LIBGJS_CFLAGS_BASE)				\
 	--cflags-end					\
 	--filelist=vs$(VSVER)\$(CFG)\$(PLAT)\libgjs\gjs_private_list	\
 	-L.\vs$(VSVER)\$(CFG)\$(PLAT)	\
@@ -27,7 +27,7 @@ vs$(VSVER)\$(CFG)\$(PLAT)\GjsPrivate-1.0.gir: vs$(VSVER)\$(CFG)\$(PLAT)\gjs.lib 
 vs$(VSVER)\$(CFG)\$(PLAT)\GjsPrivate-1.0.typelib: vs$(VSVER)\$(CFG)\$(PLAT)\GjsPrivate-1.0.gir
 	$(PREFIX)\bin\g-ir-compiler			\
 	--includedir=vs$(VSVER)\$(CFG)\$(PLAT) --debug --verbose	\
-	$(**:\=/).gir					\
+	$(**:\=/)					\
 	-o $@
 !else
 !error $(ERROR_MSG)
