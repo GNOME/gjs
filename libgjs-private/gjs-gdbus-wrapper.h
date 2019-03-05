@@ -55,7 +55,9 @@ struct _GjsDBusImplementationClass {
 GJS_EXPORT
 GType                  gjs_dbus_implementation_get_type (void);
 
+GJS_EXPORT
 void                   gjs_dbus_implementation_emit_property_changed (GjsDBusImplementation *self, gchar *property, GVariant *newvalue);
+GJS_EXPORT
 void                   gjs_dbus_implementation_emit_signal           (GjsDBusImplementation *self, gchar *signal_name, GVariant *parameters);
 
 G_END_DECLS
