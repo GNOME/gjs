@@ -22,8 +22,6 @@
  * Authored By: Philip Chimento <philip.chimento@gmail.com>
  */
 
-#include <unistd.h>
-
 #include <gio/gio.h>
 
 #include "gjs/context-private.h"
@@ -34,6 +32,15 @@
 #include <readline/history.h>
 #include <readline/readline.h>
 #include <stdio.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+#    include <unistd.h>
+#elif defined(XP_WIN)
+#    include <io.h>
+#    ifndef STDIN_FILENO
+#        define STDIN_FILENO 0
+#    endif
 #endif
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -90,7 +97,7 @@ static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
             args.rval().setUndefined();
             return true;
         }
-    } while (line && line[0] == '\0');
+    } while (line && line.get()[0] == '\0');
 
     /* Add line to history and convert it to a JSString so that we can pass it
      * back as the return value */

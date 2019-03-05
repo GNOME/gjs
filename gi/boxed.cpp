@@ -882,6 +882,7 @@ BoxedPrototype::BoxedPrototype(GIStructInfo* info, GType gtype)
       m_zero_args_constructor(-1),
       m_default_constructor(-1),
       m_default_constructor_name(JSID_VOID),
+      m_field_map(nullptr),
       m_can_allocate_directly(struct_is_simple(info)) {
     GJS_INC_COUNTER(boxed_prototype);
 }

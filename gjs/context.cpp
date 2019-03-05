@@ -25,7 +25,6 @@
 
 #include <signal.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #include <array>
 #include <codecvt>
@@ -57,6 +56,10 @@
 #ifdef G_OS_WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+#    include <unistd.h>
 #endif
 
 #include <string.h>
@@ -126,6 +129,8 @@ static GList *all_contexts = NULL;
 static GjsAutoChar dump_heap_output;
 static unsigned dump_heap_idle_id = 0;
 
+#ifdef G_OS_UNIX
+/* Currently heap dumping is only supported on UNIX platforms! */
 static void
 gjs_context_dump_heaps(void)
 {
@@ -167,6 +172,7 @@ dump_heap_signal_handler(int signum)
         dump_heap_idle_id = g_idle_add_full(G_PRIORITY_HIGH_IDLE,
                                             dump_heap_idle, nullptr, nullptr);
 }
+#endif
 
 static void
 setup_dump_heap(void)
@@ -178,6 +184,7 @@ setup_dump_heap(void)
         /* install signal handler only if environment variable is set */
         const char *heap_output = g_getenv("GJS_DEBUG_HEAP_OUTPUT");
         if (heap_output) {
+#ifdef G_OS_UNIX
             struct sigaction sa;
 
             dump_heap_output = g_strdup(heap_output);
@@ -185,6 +192,10 @@ setup_dump_heap(void)
             memset(&sa, 0, sizeof(sa));
             sa.sa_handler = dump_heap_signal_handler;
             sigaction(SIGUSR1, &sa, nullptr);
+#else
+            g_message(
+                "heap dump is currently only supported on UNIX platforms");
+#endif
         }
     }
 }
@@ -956,8 +967,14 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     JS::CompileOptions options(m_cx);
     options.setFileAndLine(filename, start_line_number).setSourceIsLazy(true);
 
+#if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
+    std::wstring wscript = gjs_win32_vc140_utf8_to_utf16(script);
+    std::u16string utf16_string(reinterpret_cast<const char16_t*>(wscript.c_str()));
+#else
     std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
     std::u16string utf16_string = convert.from_bytes(script);
+#endif
+
     JS::SourceBufferHolder buf(utf16_string.c_str(), utf16_string.size(),
                                JS::SourceBufferHolder::NoOwnership);
 

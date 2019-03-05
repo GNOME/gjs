@@ -27,11 +27,7 @@
 #include <errno.h>
 #include <memory>
 #include <signal.h>
-#include <sys/syscall.h>
 #include <sys/types.h>
-#include <unistd.h>
-
-#include <glib-unix.h>
 
 #include "jsapi-wrapper.h"
 #include <js/ProfilingStack.h>
@@ -39,9 +35,19 @@
 #include "context.h"
 #include "jsapi-util.h"
 #include "profiler-private.h"
+
 #ifdef ENABLE_PROFILER
 # include <alloca.h>
-# include "util/sp-capture-writer.h"
+#    ifdef HAVE_SYS_SYSCALL_H
+#        include <sys/syscall.h>
+#    endif
+#    ifdef HAVE_UNISTD_H
+#        include <unistd.h>
+#    endif
+#    ifdef G_OS_UNIX
+#        include <glib-unix.h>
+#    endif
+#    include "util/sp-capture-writer.h"
 #endif
 
 /*
