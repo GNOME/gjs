@@ -1297,6 +1297,11 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
     GITypeInfo *param_info;
     bool found_length;
 
+    gjs_debug_marshal(
+        GJS_DEBUG_GFUNCTION,
+        "Converting argument '%s' JS value %s to C array, transfer %d",
+        arg_name, gjs_debug_value(value).c_str(), transfer);
+
     param_info = g_type_info_get_param_type(type_info, 0);
 
     if ((value.isNull() && !may_be_null) ||
@@ -1613,9 +1618,10 @@ gjs_value_to_g_argument(JSContext      *context,
 {
     GITypeTag type_tag = g_type_info_get_tag(type_info);
 
-    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Converting JS::Value to GArgument %s",
-                      g_type_tag_to_string(type_tag));
+    gjs_debug_marshal(
+        GJS_DEBUG_GFUNCTION,
+        "Converting argument '%s' JS value %s to GIArgument type %s", arg_name,
+        gjs_debug_value(value).c_str(), g_type_tag_to_string(type_tag));
 
     bool nullable_type = false;
     bool wrong = false;  // return false
