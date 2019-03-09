@@ -865,10 +865,15 @@ gjs_invoke_c_function(JSContext                             *context,
         GIArgInfo arg_info;
         bool arg_removed = false;
 
-        /* gjs_debug(GJS_DEBUG_GFUNCTION, "gi_arg_pos: %d c_arg_pos: %d js_arg_pos: %d", gi_arg_pos, c_arg_pos, js_arg_pos); */
-
         g_callable_info_load_arg( (GICallableInfo*) function->info, gi_arg_pos, &arg_info);
         direction = g_arg_info_get_direction(&arg_info);
+
+        gjs_debug_marshal(
+            GJS_DEBUG_GFUNCTION,
+            "Processing argument '%s' (direction %d), %d/%d GI args, "
+            "%d/%d C args, %d/%zu JS args",
+            g_base_info_get_name(&arg_info), direction, gi_arg_pos, gi_argc,
+            c_arg_pos, c_argc, js_arg_pos, args.length());
 
         g_assert_cmpuint(c_arg_pos, <, c_argc);
         ffi_arg_pointers[c_arg_pos] = &in_arg_cvalues[c_arg_pos];
@@ -1214,6 +1219,14 @@ release:
                  */
                 transfer = GI_TRANSFER_NOTHING;
             }
+
+            gjs_debug_marshal(
+                GJS_DEBUG_GFUNCTION,
+                "Releasing in-argument '%s' (direction %d, transfer %d), "
+                "%d/%d GI args, %d/%d C args",
+                g_base_info_get_name(&arg_info), direction, transfer,
+                gi_arg_pos, gi_argc, c_arg_pos, processed_c_args);
+
             if (param_type == PARAM_CALLBACK) {
                 ffi_closure *closure = (ffi_closure *) arg->v_pointer;
                 if (closure) {
