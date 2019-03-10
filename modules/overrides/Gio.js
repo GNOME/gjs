@@ -490,4 +490,59 @@ function _init() {
 
     // Temporary Gio.File.prototype fix
     Gio._LocalFilePrototype = Gio.File.new_for_path('').constructor.prototype;
+
+    // Override Gio.Settings - the C API asserts if trying to access a
+    // nonexistent schema or key, which is not handy for shell-extension writers
+
+    Gio.Settings.prototype._realMethods = Object.assign({}, Gio.Settings.prototype);
+
+    function createCheckedMethod(method) {
+        return function(key, ...args) {
+            this._checkKey(key);
+            return this._realMethods[method].call(this, key, ...args);
+        };
+    }
+
+    Object.assign(Gio.Settings.prototype, {
+        _realInit: Gio.Settings.prototype._init,  // add manually, not enumerable
+        _init(props = {}) {
+            if (!props.schema)
+                throw new Error("Property 'schema' is required for Gio.Settings");
+
+            const listSchemas = Gio.Settings.list_schemas();
+            if (!listSchemas.includes(props.schema))
+                throw new Error(`GSettings schema ${props.schema} not found`);
+
+            return this._realInit(props);
+        },
+
+        _checkKey(key) {
+            if (!this.list_keys().includes(key))
+                throw new Error(`GSettings key ${key} not found in schema ${this.schema}`);
+        },
+
+        get_boolean: createCheckedMethod('get_boolean'),
+        set_boolean: createCheckedMethod('set_boolean'),
+        get_double: createCheckedMethod('get_double'),
+        set_double: createCheckedMethod('set_double'),
+        get_enum: createCheckedMethod('get_enum'),
+        set_enum: createCheckedMethod('set_enum'),
+        get_flags: createCheckedMethod('get_flags'),
+        set_flags: createCheckedMethod('set_flags'),
+        get_int: createCheckedMethod('get_int'),
+        set_int: createCheckedMethod('set_int'),
+        get_int64: createCheckedMethod('get_int64'),
+        set_int64: createCheckedMethod('set_int64'),
+        get_string: createCheckedMethod('get_string'),
+        set_string: createCheckedMethod('set_string'),
+        get_strv: createCheckedMethod('get_strv'),
+        set_strv: createCheckedMethod('set_strv'),
+        get_uint: createCheckedMethod('get_uint'),
+        set_uint: createCheckedMethod('set_uint'),
+        get_uint64: createCheckedMethod('get_uint64'),
+        set_uint64: createCheckedMethod('set_uint64'),
+        get_value: createCheckedMethod('get_value'),
+        set_value: createCheckedMethod('set_value'),
+        reset: createCheckedMethod('reset'),
+    });
 }

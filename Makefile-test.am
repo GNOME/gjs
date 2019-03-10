@@ -50,6 +50,10 @@ CLEANFILES +=						\
 	jsunit-resources.h				\
 	$(NULL)
 
+gsettings_SCHEMAS = installed-tests/js/org.gnome.GjsTest.gschema.xml
+EXTRA_DIST += $(gsettings_SCHEMAS)
+@GSETTINGS_RULES@
+
 ### TEST PROGRAMS ######################################################
 
 # gjs-tests.gtester checks private APIs and is run only uninstalled,
@@ -287,6 +291,7 @@ AM_TESTS_ENVIRONMENT =					\
 	export LSAN_OPTIONS="suppressions=$(abs_top_srcdir)/installed-tests/extra/lsan.supp"; \
 	export NO_AT_BRIDGE=1;				\
 	export LC_ALL=$(TESTS_LOCALE);			\
+	export GSETTINGS_SCHEMA_DIR="$(srcdir)/installed-tests/js" \
 	$(COVERAGE_TESTS_ENVIRONMENT)			\
 	$(GTK_TESTS_ENVIRONMENT)			\
 	$(XVFB_START)					\
