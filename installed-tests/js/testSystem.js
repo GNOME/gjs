@@ -28,3 +28,9 @@ describe('System.gc()', function () {
         expect(System.gc).not.toThrow();
     });
 });
+
+describe('System.dumpHeap()', function () {
+    it('throws but does not crash when given a nonexistent path', function () {
+        expect(() => System.dumpHeap('/does/not/exist')).toThrow();
+    });
+});

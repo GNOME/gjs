@@ -24,6 +24,8 @@
 
 #include <config.h>
 
+#include <errno.h>
+#include <string.h>
 #include <sys/types.h>
 #include <time.h>
 
@@ -106,6 +108,11 @@ gjs_dump_heap(JSContext *cx,
 
     if (filename) {
         FILE *fp = fopen(filename, "a");
+        if (!fp) {
+            gjs_throw(cx, "Cannot dump heap to %s: %s", filename.get(),
+                      strerror(errno));
+            return false;
+        }
         js::DumpHeap(cx, fp, js::IgnoreNurseryObjects);
         fclose(fp);
     } else {
