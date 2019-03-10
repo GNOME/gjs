@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id='org.gnome.GjsTest' path='/org/gnome/GjsTest/'>
+    <key name='window-size' type='(ii)'>
+      <default>(-1, -1)</default>
+    </key>
+    <key name='maximized' type='b'>
+      <default>false</default>
+    </key>
+    <key name='fullscreen' type='b'>
+      <default>false</default>
+    </key>
+  </schema>
+</schemalist>
