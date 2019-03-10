@@ -313,6 +313,8 @@ gjs_callback_closure(ffi_cif *cif,
             case PARAM_CALLBACK:
                 /* Callbacks that accept another callback as a parameter are not
                  * supported, see gjs_callback_trampoline_new() */
+            case PARAM_UNKNOWN:
+                // PARAM_UNKNOWN is currently not ever set on a callback's args.
             default:
                 g_assert_not_reached();
         }
@@ -1040,6 +1042,18 @@ gjs_invoke_c_function(JSContext                             *context,
                 break;
             }
 
+            case PARAM_UNKNOWN:
+                gjs_throw(context,
+                          "Error invoking %s.%s: impossible to determine what "
+                          "to pass to the '%s' argument. It may be that the "
+                          "function is unsupported, or there may be a bug in "
+                          "its annotations.",
+                          g_base_info_get_namespace(function->info),
+                          g_base_info_get_name(function->info),
+                          g_base_info_get_name(&arg_info));
+                failed = true;
+                break;
+
             default:
                 ;
             }
@@ -1661,8 +1675,13 @@ init_cached_function_data (JSContext      *context,
             if (interface_type == GI_INFO_TYPE_CALLBACK) {
                 if (strcmp(g_base_info_get_name(interface_info), "DestroyNotify") == 0 &&
                     strcmp(g_base_info_get_namespace(interface_info), "GLib") == 0) {
-                    /* Skip GDestroyNotify if they appear before the respective callback */
-                    function->param_types[i] = PARAM_SKIPPED;
+                    // We don't know (yet) what to do with GDestroyNotify
+                    // appearing before a callback. If the callback comes later
+                    // in the argument list, then PARAM_UNKNOWN will be
+                    // overwritten with PARAM_SKIPPED. If no callback follows,
+                    // then this is probably an unsupported function, so the
+                    // value will remain PARAM_UNKNOWN.
+                    function->param_types[i] = PARAM_UNKNOWN;
                 } else {
                     function->param_types[i] = PARAM_CALLBACK;
                     function->expected_js_argc += 1;
