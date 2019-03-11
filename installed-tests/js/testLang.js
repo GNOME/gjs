@@ -74,14 +74,6 @@ describe('Lang module', function () {
             });
         });
 
-        it('throws an error when no function supplied', function () {
-            expect(() => Lang.bind(o, undefined)).toThrow();
-        });
-
-        it('throws an error when this-object undefined', function () {
-            expect(() => Lang.bind(undefined, function () {})).toThrow();
-        });
-
         it('supplies extra arguments to the function', function () {
             let callback = Lang.bind(o, o.callback, 42, 1138);
             callback();
