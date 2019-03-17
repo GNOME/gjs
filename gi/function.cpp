@@ -1210,7 +1210,15 @@ release:
 
             if (direction == GI_DIRECTION_IN) {
                 arg = &in_arg_cvalues[c_arg_pos];
-                transfer = g_arg_info_get_ownership_transfer(&arg_info);
+
+                // If we failed before calling the function, or if the function
+                // threw an exception, then any GI_TRANSFER_EVERYTHING or
+                // GI_TRANSFER_CONTAINER parameters were not transferred. Treat
+                // them as GI_TRANSFER_NOTHING so that they are freed.
+                if (!failed && !did_throw_gerror)
+                    transfer = g_arg_info_get_ownership_transfer(&arg_info);
+                else
+                    transfer = GI_TRANSFER_NOTHING;
             } else {
                 arg = &inout_original_arg_cvalues[c_arg_pos];
                 /* For inout, transfer refers to what we get back from the function; for
