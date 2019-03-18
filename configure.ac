@@ -339,22 +339,7 @@ AS_IF([test "x$with_dbus_tests" != "xno"], [
 AM_CONDITIONAL([DBUS_TESTS], [test "x$with_dbus_tests" != "xno"])
 
 AC_MSG_CHECKING([for a suitable UTF-8 locale to run the tests in])
-LOCALES=$(locale -a)
-AS_CASE([$LOCALES],
-  dnl Prefer C.UTF-8 although it is only available with newer libc
-  [*C.UTF-8*], [TESTS_LOCALE=C.UTF-8],
-
-  dnl Most systems will probably have this
-  [*en_US.UTF-8*], [TESTS_LOCALE=en_US.UTF-8],
-  [*en_US.utf8*], [TESTS_LOCALE=en_US.utf8],
-
-  dnl If not, fall back to any English UTF-8 locale or any UTF-8 locale at all
-  [*en_*.UTF-8*], [TESTS_LOCALE=$(echo $LOCALES | grep -m1 en_.\*\\.UTF-8)],
-  [*en_*.utf8*], [TESTS_LOCALE=$(echo $LOCALES | grep -m1 en_.\*\\.utf8)],
-  [*.UTF-8*], [TESTS_LOCALE=$(echo $LOCALES | grep -m1 \\.UTF-8)],
-  [*.utf8*], [TESTS_LOCALE=$(echo $LOCALES | grep -m1 \\.utf8)],
-
-  [TESTS_LOCALE=C])
+TESTS_LOCALE=$($srcdir/build/choose-tests-locale.sh)
 AC_MSG_RESULT([$TESTS_LOCALE])
 AC_SUBST([TESTS_LOCALE])
 
