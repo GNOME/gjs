@@ -19,9 +19,6 @@ AC_REQUIRE_AUX_FILE([tap-driver.sh])
 AC_SUBST(GJS_VERSION, m4_eval(pkg_int_version))
 AC_DEFINE([GJS_VERSION], pkg_int_version, [The gjs version as an integer])
 
-AC_SUBST([GETTEXT_PACKAGE], [gjs])
-AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], ["$GETTEXT_PACKAGE"], [The name of the gettext domain])
-
 AM_MAINTAINER_MODE([enable])
 AM_SILENT_RULES([yes])
 
